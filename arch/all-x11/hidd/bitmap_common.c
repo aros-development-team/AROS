@@ -184,29 +184,16 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm
 	, ULONG width, ULONG height, ULONG depth
 	, struct pHidd_BitMap_GetImage *msg)
 {
-    BOOL use_modulo = TRUE;
-
-    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, width))
-    {
-    	use_modulo = FALSE;	
-    }
-       
     switch (msg->pixFmt)
     {
 	case vHidd_StdPixFmt_Native:
-    	    if (!use_modulo)
-	    {
-		memcpy(buf, image->data, msg->modulo * height);
-		((UBYTE *)buf) += msg->modulo * height;
-	    }
-	    else
 	    {
 		LONG  y;
         	UBYTE *imdata = image->data;
 
 		for (y = 0; y < height; y ++)
 		{
-		    memcpy(buf, imdata, msg->modulo);
+		    memcpy(buf, imdata, msg->width * image->bits_per_pixel / 8);
 
 		    ((UBYTE *)imdata) += image->bytes_per_line;
 		    ((UBYTE *)buf) += msg->modulo;
@@ -597,24 +584,9 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 	, struct pHidd_BitMap_PutImage *msg
 )
 {
-
-    /* Test if modulo == width */
-    BOOL use_modulo = TRUE;
-
-    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, width))
-    {
-    	use_modulo = FALSE;	
-    }
-       
     switch (msg->pixFmt)
     {
 	case vHidd_StdPixFmt_Native:
-    	    if (!use_modulo)
-	    {
-		memcpy(image->data, buf, msg->modulo * height);
-		((UBYTE *)buf) += msg->modulo * height;
-	    }
-	    else
 	    {
 		LONG y;
         	UBYTE *imdata = image->data;
@@ -622,7 +594,7 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm
 
 		for (y = 0; y < height; y ++)
 		{
-		    memcpy(imdata, buf, msg->modulo);
+		    memcpy(imdata, buf, msg->width * image->bits_per_pixel / 8);
 
 		    ((UBYTE *)imdata) += image->bytes_per_line;
 		    ((UBYTE *)buf) += msg->modulo;
