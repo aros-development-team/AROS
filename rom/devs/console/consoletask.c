@@ -13,6 +13,7 @@
 
 #include <proto/exec.h>
 #include <proto/boopsi.h>
+#include <proto/console.h>
 #include <exec/io.h>
 #include <exec/alerts.h>
 #include <dos/dos.h>
@@ -24,6 +25,7 @@
 #include <signal.h>
 
 #include "console_gcc.h"
+#include "consoleif.h"
 
 /* #define DEBUG 1 */
 #include <aros/debug.h>
@@ -123,61 +125,84 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 	{
 	    /* A message from the console device input handler */
 	    struct cdihMessage *cdihmsg;
-	    while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) )
 
+	    while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) )
 	    {
 
-kprintf("GOT INPUT FROM CONSOLE INPUT HANDLER: ");
-printstring(cdihmsg->inputBuf, cdihmsg->numBytes, ConsoleDevice);
+		D(bug("GOT MESSAGE FROM CONSOLE INPUT HANDLER: "));
 		/* Check that the ConUnit has not been disposed,
 		   while the message was passed
 		*/
 		if (checkconunit(cdihmsg->unit, ConsoleDevice))
 		{
-		    struct IOStdReq *req, *nextreq;
-		    ULONG tocopy;
-
-#if 0	/* stegerg: this must be done by the guy using console.device, for
-           example CON: */
-	   	    
-		    /* Echo the newly received characters to the console */
-		    writeToConsole((struct ConUnit *)cdihmsg->unit
-		    	, cdihmsg->inputBuf
-			, cdihmsg->numBytes
-			, ConsoleDevice
-		    );
-#endif		    
-		    /* Copy received characters to the console unit input buffer.
-		       If the buffer is full, then console input will be lost
-		    */
-		    tocopy = MIN(cdihmsg->numBytes, CON_INPUTBUF_SIZE - ICU(cdihmsg->unit)->numStoredChars);
-		    /* Copy the input over to the unit's buffer */
-		    CopyMem(cdihmsg->inputBuf
-		     	, ICU(cdihmsg->unit)->inputBuf + ICU(cdihmsg->unit)->numStoredChars
-			, tocopy
-		    );
-		    
-		    ICU(cdihmsg->unit)->numStoredChars += tocopy;
-		    
-		    /* See if there are any queued io read requests that wants to be replied */
-		    ForeachNodeSafe(&ConsoleDevice->readRequests, req, nextreq)
+		    switch(cdihmsg->ie.ie_Class)
 		    {
-
-		     	if ((APTR)req->io_Unit == (APTR)cdihmsg->unit)
+		        case IECLASS_RAWKEY:
 			{
-			    /* Paranoia */
-			    if (0 != ICU(req->io_Unit)->numStoredChars)
+			    #define MAPRAWKEY_BUFSIZE 80
+
+			    struct IOStdReq *req, *nextreq;
+			    UBYTE  inputBuf[MAPRAWKEY_BUFSIZE + 1];			    
+			    LONG actual;
+			    ULONG tocopy;
+			    
+	   	  	    /* Convert it to ANSI chars */
+	    		    actual = RawKeyConvert(&cdihmsg->ie
+						   ,inputBuf
+						   ,MAPRAWKEY_BUFSIZE
+						   ,NULL);
+
+			    D(bug("RawKeyConvert returned %ld\n", actual));
+
+			
+			    if (actual > 0)
 			    {
-			        Remove((struct Node *)req);
-			     	answer_read_request(req, ConsoleDevice);
-			    }
-			}
-		    }
-		}
+				/* Copy received characters to the console unit input buffer.
+				   If the buffer is full, then console input will be lost
+				*/
+				tocopy = MIN(actual, CON_INPUTBUF_SIZE - ICU(cdihmsg->unit)->numStoredChars);
+				/* Copy the input over to the unit's buffer */
+				CopyMem(inputBuf
+		     			, ICU(cdihmsg->unit)->inputBuf + ICU(cdihmsg->unit)->numStoredChars
+					, tocopy
+				);
+
+				ICU(cdihmsg->unit)->numStoredChars += tocopy;
+		    
+				/* See if there are any queued io read requests that wants to be replied */
+				ForeachNodeSafe(&ConsoleDevice->readRequests, req, nextreq)
+				{
+
+		     		    if ((APTR)req->io_Unit == (APTR)cdihmsg->unit)
+				    {
+					/* Paranoia */
+					if (0 != ICU(req->io_Unit)->numStoredChars)
+					{
+			        	    Remove((struct Node *)req);
+			     		    answer_read_request(req, ConsoleDevice);
+					}
+				    }
+				}
+		    	    } /* if (actual > 0) */
+
+			} /* IECLASS_RAWKEY */
+			break; 
+			
+			case IECLASS_SIZEWINDOW:
+			{
+			    Console_NewWindowSize(cdihmsg->unit);
+			} /* IECLASS_NEWSIZE */
+			break;
+			
+		    } /* switch(cdihmsg->ie.ie_Class) */
+
+		    
+		} /* if (checkconunit(cdihmsg->unit, ConsoleDevice)) */
 		
 		/* Tell the input handler we're done */
 		ReplyMsg((struct Message *)cdihmsg);
-	    }
+		
+	    } /* while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) ) */
 	    
 	}
 	else if (wakeupsig & commandsig)
@@ -248,7 +273,7 @@ static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *Consol
 {
     Object *unit;
     
-    kprintf("answer_read_request\n");
+    D(bug("answer_read_request\n"));
     /* This function assumes that there are at least one character
        available in the unitsinput buffer 
     */
