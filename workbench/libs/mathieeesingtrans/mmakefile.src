@@ -12,6 +12,8 @@ FILES	:= \
 
 ARCHIVE	:= mathieeesingtrans.arch
 
+USE_CLIB_STATIC := yes
+
 #MM- workbench-libs-mathieeesingtrans : setup includes \
 #MM	workbench-libs-mathieeesingtrans-module
 %make_module_setup mmake=workbench-libs-mathieeesingtrans

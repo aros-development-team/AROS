@@ -9,6 +9,8 @@ MODTYPE	    := library
 FILES	    := ieeedpbas_fpu
 ARCHIVE	    := mathieeedoubbas.arch
 
+USE_CLIB_STATIC := yes
+
 #MM- workbench-libs-mathieeedoubbas : setup includes \
 #MM	workbench-libs-mathieeedoubbas-module
 %make_module_setup mmake=workbench-libs-mathieeedoubbas
