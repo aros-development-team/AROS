@@ -5,7 +5,6 @@
 #include <string.h>
 
 #include "misc.h"
-#include <aros/debug.h>
 
 char *program_name;
 void nonfatal(const char *msg, const char *errorstr)
