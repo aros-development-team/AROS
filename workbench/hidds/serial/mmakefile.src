@@ -1,93 +1,23 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
+MODNAME	:=  serial
+MODTYPE	:=  hidd
 
-#OS_INCLUDES := -I$(GENINCDIR)
+USER_CFLAGS :=	-DAROS_USE_OOP -I.
 
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I.
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
 
-# will be expand to LIBNAME.LIBPOST i.e. serial.hidd
-LIBNAME     := serial
-LIBPOST     := hidd
-DESTDIR	    := $(HIDDSDIR)
+INCLUDE_FILES := $(wildcard include/*.h)
 
-OBJDIR	    := $(GENDIR)/$(CURDIR)
+# When there is actually a hidd.serial class for here, generate the whole
+# lot.
 
-FILES       := 
-	       
-#EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
+%make_hidd_stubs hidd=serial
 
+#MM includes-copy
+%copy_includes path=hidd
 
-STUBS       := $(LIBNAME)_stubs
-STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
-STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
-
-MY_INCLS    := $(wildcard include/*.h)
-DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
-GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-
-
-# Allways generate module in Sys:Hidds/
-
-
-#MM workbench-hidd-serial-setup :
-workbench-hidd-serial-setup :
-	%mkdirs_q $(OBJDIR)
-
-#MM workbench-hidd-serial-stubs : workbench-hidd-serial-setup
-workbench-hidd-serial-stubs : $(STUB_FILE)
-	@$(NOP)
-
-# --- QUICK HACKS BEGIN --- 
-# These are hacks for faster execution of "mmake" and "make". Use them
-# only if you know set the setup is correct and do not add them as targets
-# in other makefiles.
-#
-# Usage: 
-#   mmake AROS.hidd-serial-quick
-#   make -f TOP=/dh1/AROS CURDIR=workbench/hidds/serial mmakefile hidd-serial-quick
-
-
-
-##MM hidd-serial-module-quick : kernel-oop-$(ARCH)-$(CPU)
-#hidd-serial-module-quick : $(LIB) $(SLIB)
-#	@$(NOP)
-
-##MM hidd-serial-includes-quick : hidd-oop-$(ARCH)-$(CPU)
-#hidd-serial-includes-quick : setup-includes includes-copy 
-#	$(NOP)
-
-# --- QUICK HACKS END ---
-
-# create stubs-file
-
-$(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
-	%mklib_q from=$(STUB_OBJS)
-
-$(OBJDIR)/%.o : %.c	
-	%compile_q	
-
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(INCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-#MM
-setup-includes :
-	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
-
-
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB) *.s
-
-
+%include_deps
 %common
