@@ -19,14 +19,20 @@
 #include "prefs.h"
 #include "misc.h"
 #include "gui.h"
+#include "version.h"
 
 #define DEBUG 1
 #include <aros/debug.h>
 
-CONST_STRPTR version = "$VER: Font 0.14 (14.1.2002)";
+CONST_STRPTR versionString = VERSIONSTR;
 
-extern struct FontPrefs *fontPrefs[3];	// prefs.c
 extern struct RDArgs *readArgs; // args.c
+
+/*** Prototypes *************************************************************/
+BOOL Initialize(void);
+void Deinitialize(void);
+
+
 
 void quitApp(STRPTR errorMsg, UBYTE errorCode)
 {    
@@ -37,22 +43,38 @@ void quitApp(STRPTR errorMsg, UBYTE errorCode)
         ShowError(errorMsg);
     }
     
-    Prefs_Deinitialize();
-    Locale_Deinitialize();
-    
-    if(readArgs != NULL) FreeArgs(readArgs);
+    Deinitialize();
     
     exit(errorCode);
+}
+
+BOOL Initialize(void)
+{
+    if (!Locale_Initialize()) goto error;
+    if (!FP_Initialize()) goto error;
+    if (!FPWindow_Initialize()) goto error;
+
+    return TRUE;
+
+error:
+    return FALSE;
+}
+
+void Deinitialize(void)
+{
+    FPWindow_Deinitialize();
+    FP_Deinitialize();
+    Locale_Deinitialize();
+
+    if(readArgs != NULL) FreeArgs(readArgs);
 }
 
 
 int main( void )
 {
     Object *application,  *window;
-    
-    if (!Locale_Initialize()) return 20;
-    if (!Prefs_Initialize()) return 20;
-    if (!FPWindow_Initialize()) return 20;
+
+    if (!Initialize()) goto error;
     
     switch (processArguments())
     {
@@ -64,7 +86,6 @@ int main( void )
             quitApp(NULL, RETURN_FAIL);
             break;
     }
-
     
     application = ApplicationObject,
         SubWindow, window = FPWindowObject,
@@ -94,9 +115,10 @@ int main( void )
         MUI_DisposeObject(application);
     }
 
-    FPWindow_Deinitialize();
-    
     quitApp(NULL, RETURN_OK);
+
+error:
+    quitApp("Initialization failed.", RETURN_FAIL);
     
-    return 0;
+    return 0; /* Never reached */
 }

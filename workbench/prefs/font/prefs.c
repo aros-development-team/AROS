@@ -24,7 +24,7 @@
 /*** Variables **************************************************************/
 struct IFFHandle *iffHandle;
 struct FontPrefs *fp_Current[FP_COUNT];
-
+struct FontPrefs *fp_Original[FP_COUNT];
 
 /*** Functions **************************************************************/
 /* Setup ********************************************************************/
@@ -48,11 +48,11 @@ void initDefaultPrefs(struct FontPrefs **fontPrefsPtr)
     }
 }
 
-BOOL Prefs_Initialize(void)
+BOOL FP_Initialize(void)
 {
     UBYTE i;
 
-    for (i = 0; i <= 2; i++)
+    for (i = 0; i <= FP_COUNT; i++)
     {
         fp_Current[i] = AllocMem
         (
@@ -70,11 +70,11 @@ BOOL Prefs_Initialize(void)
     return TRUE;
 }
 
-void Prefs_Deinitialize(void)
+void FP_Deinitialize(void)
 {
     UBYTE i;
     
-    for (i = 0; i <= 2; i++)
+    for (i = 0; i <= FP_COUNT; i++)
     {
         if (fp_Current[i] != NULL) FreeMem(fp_Current[i], sizeof(struct FontPrefs));
     }
