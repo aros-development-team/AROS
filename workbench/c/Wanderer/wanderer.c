@@ -73,13 +73,12 @@ void closemuimaster(void)
 int openmuimaster(void)
 {
 /*    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+ */
     return 0;
-*/
 }
 void closemuimaster(void)
 {
 /*    if (MUIMasterBase) CloseLibrary(MUIMasterBase);*/
-    return 1;
 }
 #endif
 
@@ -164,7 +163,7 @@ AROS_UFH3(void, hook_func_standard,
 	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
 
 	if (func)
-		func(funcptr + 1);
+		func((ULONG *)(funcptr + 1));
 }
 
 /**************************************************************************
@@ -508,7 +507,7 @@ STATIC IPTR Wanderer_HandleTimer(struct IClass *cl, Object *obj, Msg msg)
 
 STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct Wanderer_Data *data = (struct Wanderer_Data*)INST_DATA(cl,obj);
+/*      struct Wanderer_Data *data = (struct Wanderer_Data*)INST_DATA(cl,obj); */
     return 0;
 }
 
@@ -866,6 +865,9 @@ int main(void)
     }
 
     app = WandererObject,
+	MUIA_Application_Title, "Wanderer",
+	MUIA_Application_Version, "$VER: Wanderer 0.1 (10.12.02)",
+	MUIA_Application_Description, "The AROS filesystem GUI",
     	SubWindow, root_iconwnd = IconWindowObject,
 	    MUIA_UserData, 1,
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
