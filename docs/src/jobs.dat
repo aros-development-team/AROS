@@ -431,9 +431,9 @@ dos00034;1;SDuvan;Write SendPkt
 dos00035;1;SDuvan;Write WaitPkt
 dos00036;1;SDuvan;Write ReplyPkt
 dos00037;1;SDuvan;Write AbortPkt
-dos00038;0;;Write LockRecord
+dos00038;2;SDuvan;Write LockRecord
 dos00039;0;;Write LockRecords
-dos00040;0;;Write UnLockRecord
+dos00040;2;SDuvan;Write UnLockRecord
 dos00041;0;;Write UnLockRecords
 dos00042;2;matthias;Write SelectInput
 dos00043;2;matthias;Write SelectOutput
