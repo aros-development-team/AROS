@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997-98 AROS - The Amiga Research OS
+    Copyright (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Unix filedescriptor/socket IO
@@ -552,8 +552,13 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 
     nml = MemTemplate;
 
-#define STACKSIZE 8192
-    nml.nml_ME[1].me_Length = STACKSIZE;
+    /*
+	The original stack size was 8192, however some emulated systems
+	require a large stack during signal handlers. FreeBSD in fact
+	says that it requires 8192 just FOR the signal handler. I have
+	changed this to AROS_STACKSIZE for that reason.
+    */
+    nml.nml_ME[1].me_Length = AROS_STACKSIZE;
 
     ml = AllocEntry ((struct MemList *)&nml);
 
@@ -565,7 +570,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
 	newtask->tc_Node.ln_Pri  = 30;
 	newtask->tc_Node.ln_Name = "UnixIO.task";
 
-	newtask->tc_SPReg   = (APTR)((ULONG)ml->ml_ME[1].me_Addr + STACKSIZE);
+	newtask->tc_SPReg   = (APTR)((ULONG)ml->ml_ME[1].me_Addr + AROS_STACKSIZE);
 	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
 	newtask->tc_SPUpper = newtask->tc_SPReg;
 

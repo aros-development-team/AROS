@@ -614,7 +614,7 @@ AROS_LH2(ULONG, Init,
 	{ NP_Input, 0 },
 	{ NP_Output, 0 },
 	{ NP_Name, (IPTR)ldDemonName },
-	{ NP_StackSize, 4096 },
+	{ NP_StackSize, AROS_STACKSIZE },
 	{ TAG_END , 0 }
     };
 

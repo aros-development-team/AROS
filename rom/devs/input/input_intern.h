@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  2000/02/26 13:20:15  iaint
+    Changed the stacksize to be at least AROS_STACKSIZE. This is very important - some of these were allocating stacks that were probably less than the amount required to perform signal processing in emulated systems.
+
     Revision 1.5  2000/01/22 20:29:31  stegerg
     added ActQualifier to inputbase struct.
 
@@ -44,7 +47,7 @@
 #endif
 
 /* Size of the input device's stack */
-#define IDTASK_STACKSIZE 25000
+#define IDTASK_STACKSIZE (AROS_STACKSIZE + 10240)
 /* Priority of the input.device task */
 #define IDTASK_PRIORITY 20
 

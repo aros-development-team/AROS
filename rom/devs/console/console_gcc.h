@@ -1,46 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.11  2000/01/26 23:12:37  stegerg
-    console device inputhandler no longer sends maprawkey'ed
-    message with keys in a buffer inside the message, but
-    instead the inputevent.
-
-    Revision 1.10  2000/01/17 23:38:40  stegerg
-    added C_CURSOR_VISIBLE and C_CURSOR_INVISIBLE,
-    which are detected but not implemented yet.
-
-    Revision 1.9  1999/12/26 21:44:22  nlorentz
-    Now console works also for input, so you can run programs from newshell. Some current issues: cursor rendering does not work very well, and you have to press CTRL-Enter instead of just Enter to execute a command
-
-    Revision 1.8  1999/09/20 17:33:09  stegerg
-    GFX_XMAX/GFX_YMAX macro fixed
-
-    Revision 1.7  1999/03/18 20:16:11  nlorentz
-    Reworked escape sequence parsing. Microemacs does not crash anymore, but it sends some strange undocumented sequences
-
-    Revision 1.6  1998/11/07 10:41:21  nlorentz
-    Various small bugfixes
-
-    Revision 1.5  1998/10/20 16:44:17  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1998/10/03 12:02:33  nlorentz
-    Bugfixes, but still buggy
-
-    Revision 1.3  1998/08/24 13:32:43  nlorentz
-    Update, now demowin works again
-
-    Revision 1.2  1998/08/01 17:53:39  nlorentz
-    Now able to text to the console
-
-    Revision 1.1  1998/07/31 19:28:23  nlorentz
-    A start at the console device
-
-    Revision 1.1  1996/08/23 17:32:23  digulla
-    Implementation of the console.device
-
 
     Desc:
     Lang:
@@ -68,7 +28,7 @@
 struct ConsoleBase;
 
 /* Constants */
-#define COTASK_STACKSIZE 8192
+#define COTASK_STACKSIZE (AROS_STACKSIZE + 4)
 #define COTASK_PRIORITY  10
 
 

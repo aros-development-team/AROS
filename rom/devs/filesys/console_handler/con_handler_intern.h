@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#define CONTASK_STACKSIZE 8192
+#define CONTASK_STACKSIZE (AROS_STACKSIZE)
 #define CONTASK_PRIORITY 0
 
 #define CONSOLEBUFFER_SIZE 256

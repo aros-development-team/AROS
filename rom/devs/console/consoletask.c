@@ -21,8 +21,10 @@
 
 #include <devices/input.h>
 
+#if 0
 #include <sys/types.h>
 #include <signal.h>
+#endif
 
 #include "console_gcc.h"
 #include "consoleif.h"

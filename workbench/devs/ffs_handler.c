@@ -293,11 +293,11 @@ AROS_LH2(struct ffsbase *, init,
 	    task->tc_Node.ln_Type=NT_TASK;
 	    task->tc_Node.ln_Name="ffs.handler task";
 
-	    stack=AllocMem(2048,MEMF_PUBLIC);
+	    stack=AllocMem(AROS_STACKSIZE,MEMF_PUBLIC);
 	    if(stack!=NULL)
 	    {
 		task->tc_SPLower=stack;
-		task->tc_SPUpper=(BYTE *)stack+2048;
+		task->tc_SPUpper=(BYTE *)stack+AROS_STACKSIZE;
 #if AROS_STACK_GROWS_DOWNWARDS
 		task->tc_SPReg=(BYTE *)task->tc_SPUpper-SP_OFFSET-sizeof(APTR);
 		((APTR *)task->tc_SPUpper)[-1]=ffsbase;

@@ -123,6 +123,10 @@ void internal_ChildFree(APTR tid);
     /* Do this early to ease implementation of failure code */
     NEWLIST((struct List *)&process->pr_LocalVars);
 
+    /* We need a minimum stack to handle interrupt contexts */
+    if(defaults[9].ti_Data < AROS_STACKSIZE)
+	defaults[9].ti_Data = AROS_STACKSIZE;
+
     stack = AllocMem(defaults[9].ti_Data, MEMF_PUBLIC);
     ENOMEM_IF(stack == NULL);
 
