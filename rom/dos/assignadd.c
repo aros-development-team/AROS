@@ -5,6 +5,10 @@
     Desc:
     Lang: english
 */
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -45,10 +49,34 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+    struct DosList *dl;
+    struct AssignList **al, *newal;
 
-    aros_print_not_implemented ("AssignAdd");
+    if (!lock)
+	return 0;
 
-    return DOSFALSE;
+    dl = LockDosList(LDF_ASSIGNS|LDF_WRITE);
+    dl = FindDosEntry(dl, name, LDF_ASSIGNS);
+    if ((dl == NULL) || (dl->dol_Type != DLT_DIRECTORY))
+    {
+	UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+	return 0;
+    }
+
+    newal = AllocVec(sizeof(struct AssignList), MEMF_PUBLIC|MEMF_CLEAR);
+    if (newal == NULL)
+    {
+	UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+	SetIoErr(ERROR_NO_FREE_STORE);
+	return 0;
+    }
+
+    newal->al_Lock = lock;
+    for (al = &dl->dol_misc.dol_assign.dol_List; *al; al = &((*al)->al_Next));
+
+    *al = newal;
+    UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+    return 1;
     AROS_LIBFUNC_EXIT
 } /* AssignAdd */
