@@ -464,8 +464,8 @@ static IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	   	    (struct Gadget *)o,
     	    	    msg->gpi_GInfo->gi_Window,
     	    	    msg->gpi_GInfo->gi_Requester,
-    	    	    msg->gpi_Mouse.X - data->last_x,
-    	    	    msg->gpi_Mouse.Y - data->last_y,
+    	    	    msg->gpi_Mouse.X, /* - data->last_x, */
+    	    	    msg->gpi_Mouse.Y, /* - data->last_y, */
     	    	    IntuitionBase
     		);
 	    	    	

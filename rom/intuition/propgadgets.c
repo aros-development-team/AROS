@@ -17,6 +17,7 @@
 #define DEBUG 0
 #	include <aros/debug.h>
 
+static WORD clickoffset_x, clickoffset_y;
 
 VOID HandlePropSelectDown
 (
@@ -40,10 +41,18 @@ VOID HandlePropSelectDown
 	return;
 
     CalcBBox (w, gadget, &knob);
-
+ 
+    /* This func gets mouse coords relative to gadget box */
+    
+    mouse_x += knob.Left;
+    mouse_y += knob.Top;
+    
     if (!CalcKnobSize (gadget, &knob))
 	return;
 
+    clickoffset_x = mouse_x - knob.Left;
+    clickoffset_y = mouse_y - knob.Top;
+    
     dx = pi->HorizPot;
     dy = pi->VertPot;
 
@@ -180,9 +189,26 @@ VOID HandlePropMouseMove
 	pi->HorizPot = (dx * MAXPOT) /
 	(pi->CWidth - knob.Width);
 	*/
+	
+	/* stegerg: dx and dy are not delta values
+	            anymore but relative to gadget
+		    box */
+		    
+	dx = dx - clickoffset_x;
+	dy = dy - clickoffset_y;
+	
 	if (pi->Flags & FREEHORIZ
 	    && pi->CWidth != knob.Width)
 	{
+
+	    dx = (dx * MAXPOT) / (pi->CWidth - knob.Width);
+	    if (dx < 0)
+	    {
+	    	dx = 0;
+	    } else if (dx > MAXPOT) {
+	    	dx = MAXPOT;
+	    }
+#if 0
 	    dx = (dx * MAXPOT) /(pi->CWidth - knob.Width);
 
 	    if (dx < 0)
@@ -201,11 +227,23 @@ VOID HandlePropMouseMove
 	    else
 		dx = pi->HorizPot + dx;
 	    }
+#endif
+
 	} /* FREEHORIZ */
 
 	if (pi->Flags & FREEVERT
 	    && pi->CHeight != knob.Height)
 	{
+	    dy = (dy * MAXPOT) / (pi->CHeight - knob.Height);
+
+	    if (dy < 0)
+	    {
+	    	dy = 0;
+	    } else if (dy > MAXPOT) {
+	    	dy = MAXPOT;
+	    }
+
+#if 0
 	    dy = (dy * MAXPOT) / (pi->CHeight - knob.Height);
 
 	    if (dy < 0)
@@ -224,6 +262,8 @@ VOID HandlePropMouseMove
 		else
 		    dy = pi->VertPot + dy;
 	    }
+#endif
+
 	} /* FREEVERT */
     } /* Has PropInfo and Mouse is over knob */
 
