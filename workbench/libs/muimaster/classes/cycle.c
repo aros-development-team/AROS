@@ -145,7 +145,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
     
 #if 1
-    DoMethod(imgobj, MUIM_Notify, MUIA_Pressed, FALSE,
+    DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE,
     	     (IPTR)obj, 2, MUIM_CallHook, (IPTR)&data->pressedhook);
 #else
     DoMethod(imgobj, MUIM_Notify, MUIA_Pressed, FALSE,
