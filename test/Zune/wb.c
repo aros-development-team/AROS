@@ -83,6 +83,9 @@ enum
     MEN_WORKBENCH = 1,
     MEN_WORKBENCH_BACKDROP,
     MEN_WORKBENCH_EXECUTE,
+    MEN_WORKBENCH_SHELL,
+    MEN_WORKBENCH_ABOUT,
+    MEN_WORKBENCH_QUIT,
 };
 
 static struct NewMenu nm[] =
@@ -93,16 +96,17 @@ static struct NewMenu nm[] =
     {NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
     {NM_ITEM,  "Last Message" },
-    {NM_ITEM,  "Shell",              "Z"},
-    {NM_ITEM,  "About...",           "?"},
-    {NM_ITEM,  "Quit...",            "Q"},
+    {NM_ITEM,  "Shell",              "W", NULL,               NULL, (void*)MEN_WORKBENCH_SHELL},
+    {NM_ITEM,  "About...",           "?", NULL,               NULL, (void*)MEN_WORKBENCH_ABOUT},
+    {NM_ITEM,  "Quit...",            "Q", NULL,               NULL, (void*)MEN_WORKBENCH_QUIT},
 
   {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "New Drawer", "N"},
     {NM_ITEM,  "Open Parent" },
     {NM_ITEM,  "Close", "K"},
     {NM_ITEM,  "Update" },
-    {NM_ITEM,  "Select Contents", "A"},
+    {NM_ITEM,  "Select contents", "A"},
+    {NM_ITEM,  "Clear selection", "Z"},
     {NM_ITEM,  "Clean Up", "."},
     {NM_ITEM,  "Snapshot" },
       {NM_SUB, "Window"},
@@ -259,7 +263,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     is_root = (int)GetTagData(MUIA_IconWindow_IsRoot,FALSE,msg->ops_AttrList);
     if (is_root)
     {
-	title = "Workbench";
+	title = "AROS Workbench";
 	iconlist = MUI_NewObject(MUIC_IconVolumeList, TAG_DONE);
     } else
     {
@@ -423,6 +427,76 @@ void execute_cancel(void)
     set(execute_wnd,MUIA_Window_Open,FALSE);
 }
 
+/*******************************/
+
+void shell_open(char **cd_ptr)
+{
+    BPTR cd = Lock(*cd_ptr,ACCESS_READ);
+#ifdef _AROS
+    BPTR win = Open("CON:10/10/640/480/AROS-Shell/CLOSE", MODE_OLDFILE);
+#else
+    BPTR win = Open("CON:10/10/640/480/AROS-Shell/AUTO/CLOSE", MODE_OLDFILE);
+#endif
+
+#ifdef _AROS
+    if (SystemTags("",
+#else
+    if (SystemTags("newshell",
+#endif
+	SYS_Asynch,     TRUE,
+#ifdef _AROS
+	SYS_Background, FALSE,
+#endif
+	SYS_Input,	    (IPTR)win,
+	SYS_Output,	    (IPTR)NULL,
+#ifdef _AROS
+	SYS_Error,	    (IPTR)NULL,
+	SYS_UserShell,  TRUE,
+#endif
+	NP_CurrentDir, cd,
+	TAG_DONE) == -1)
+    {
+    	Close(win);
+    	UnLock(cd);
+    }
+}
+
+void workbench_about(void)
+{
+    MUI_Request(app,NULL,0,"About AROS Workbench", "*Better than ever",
+	"AROS ROM version 0.7 (alpha)\n"
+	"AROS Workbench version 0.1 (alpha)\n\n"
+	"Copyright © 2002, The AROS Development Team.\n"
+	"All rights reserved.\n\n"
+	"\033cWe made it...\n\n"
+	"\033bThe AROS Development Team\033n\n"
+	"Aaron Digulla, Georg Steger, Nils Henrik Lorentzen,\n"
+	"Henning Kiel, Staf Verhaegen, Henrik Berglund,\n"
+	"Michal Schulz, Iain Templeton, Fabio Alemagna,\n"
+	"Sebastian Heutling, Johan Grip, Tobias Seiler,\n"
+	"Johan Alfredsson, Adam Chodorowski, Matt Parsons...\n"
+	"\nTo be continued...",NULL);
+}
+
+void workbench_quit(void)
+{
+    if (MUI_Request(app,NULL,0,"AROS Workbench", "*Ok|Cancel", "Do you really want to quit the Workbench?",NULL))
+	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+}
+
+/**************************************************************************
+ Start all menu notifies
+**************************************************************************/
+VOID DoAllMenuNotifies(Object *strip, char *path)
+{
+    if (!strip) return;
+
+    DoMenuNotify(strip,MEN_WORKBENCH_EXECUTE,execute_open, path);
+    DoMenuNotify(strip,MEN_WORKBENCH_SHELL,shell_open,path);
+    DoMenuNotify(strip,MEN_WORKBENCH_ABOUT,workbench_about,NULL);
+    DoMenuNotify(strip,MEN_WORKBENCH_QUIT,workbench_quit,NULL);
+}
+
 /**************************************************************************
  This is our action hook called by the IconWindow class.
 
@@ -479,7 +553,7 @@ AROS_UFH3(void, hook_func_action,
 		DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
 		/* If "Execute Command" entry is clicked open the execute window */
-		DoMenuNotify(menustrip, MEN_WORKBENCH_EXECUTE, execute_open, drw);
+		DoAllMenuNotifies(menustrip,drw);
 
 		/* Add the window to the application */
 		DoMethod(app,OM_ADDMEMBER,drawerwnd);
@@ -559,10 +633,10 @@ int main(void)
     {
 	ULONG sigs = 0;
 
-	DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, workbench_quit);
 
 	/* If "Execute Command" entry is clicked open the execute window */
-	DoMenuNotify(root_menustrip,MEN_WORKBENCH_EXECUTE,execute_open, "RAM:");
+	DoAllMenuNotifies(root_menustrip,"RAM:");
 
         /* Execute Window Notifies */
         DoMethod(execute_command_string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, execute_ok);
