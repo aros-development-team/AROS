@@ -258,6 +258,29 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Generate a rule to compile a C source file to an shared object file with a
+# .so suffix. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file
+%define rule_compile_shared basename=/A cflags=$(CFLAGS) targetdir=
+
+ifeq (%(targetdir),)
+%(basename).so : %(basename).c
+	%compile_q opt="$(SHARED_CFLAGS) %(cflags)"
+else
+%(targetdir)/$(notdir %(basename)).so : %(basename).c
+	%compile_q opt="$(SHARED_CFLAGS) %(cflags)"
+endif
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Generate a rule to assemble a source file to an object file. Basename may
 # contain a directory part, then the source file has to be in that directory.
 # The generated file will be put in the object directory without the directory.
@@ -287,6 +310,16 @@ endif
 
 %(libdir)/lib%(libname).a : %(objs)
 	%mklib_q from=$^
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Link the %(objs) to the library %(libdir)/lib%(libname).so in
+%define rule_link_shlib libname=/A objs=/A libdir=$(LIBDIR)
+
+%(libdir)/lib%(libname).so : %(objs)
+	@$(SHARED_LD) $(SHARED_LDFLAGS) -o $@ $^
 %end
 #------------------------------------------------------------------------------
 
@@ -597,9 +630,10 @@ endif
 %define build_module_macro mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= archfile= linklibfiles= cflags=$(CFLAGS) dflags= \
-  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK)
+  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK) \
+  genshlinklib=no
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes"
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib"
 
 .PHONY : setup-module$(BDID)
 
@@ -622,7 +656,7 @@ BD_FUNCS$(BDID)      := %(funcs)
 BD_FILES$(BDID)      := %(files)
 BD_ARCHFILE$(BDID)   := %(archfile)
 BD_LIBFILES$(BDID)   := %(linklibfiles)
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),handler device),)
+ifneq ($(wildcard $(BD_CONFFILE$(BDID))),)
 BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
 else
 BD_ENDFILE$(BDID)    := 
@@ -660,11 +694,12 @@ ifeq ($(BD_FUNCS$(BDID)),)
     BD_GENINCS$(BDID):= clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
   endif    
 else
-  ifneq ($(findstring $(BD_MODTYPE$(BDID)),library gadget),)
+  ifneq ($(findstring $(BD_MODTYPE$(BDID)),library gadget device),)
     BD_GENINCS$(BDID):= clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
   endif
 endif
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),handler device),)
+# Only generate libdefs.h if the config file exists
+ifneq ($(wildcard $(BD_CONFFILE$(BDID))),)
   BD_LIBDEFSINC$(BDID):= $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 else
   BD_LIBDEFSINC$(BDID):=
@@ -714,7 +749,8 @@ TMP_DEPS += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp \
   $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
 endif
 
-#MM
+#MM %(mmake) : setup-clib
+
 %(mmake) : $(TMP_DEPS)
 
 #MM
@@ -734,7 +770,7 @@ endif
 
 #MM- includes-generate : %(mmake)-includes
 #MM- includes-copy : %(mmake)-includes
-#MM %(mmake)-includes : %(mmake)-includes-libdefs
+#MM %(mmake)-includes : %(mmake)-includes-libdefs setup-clib
 
 TMP_DEPS := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifneq ($(BD_GENINCS$(BDID)),)
@@ -748,7 +784,7 @@ endif
 #MM
 %(mmake)-includes-libdefs : $(BD_LIBDEFSINC$(BDID))
 
-ifeq ($(TARGET),%(mmake)) # Avoid conflicts
+ifneq ($(findstring $(TARGET),%(mmake) %(mmake)-linklib),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID))))
 endif
@@ -841,18 +877,43 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
 
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
 
-%include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
+# %(mmake)-linklib is a real big mess (bigger then the rest) but it has
+# to disappear in the so don't try to hard
+#MM %(mmake)-linklib : %(mmake)-setup setup-clib
 
-#MM %(mmake)-linklib : %(mmake) %(mmake)-setup
+TMP_DEPS :=
+ifneq ($(BD_GENINCS$(BDID)),)
+TMP_DEPS += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp \
+  $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
+endif
+
+%(mmake)-linklib : $(TMP_DEPS)
 
 # Link only when target %(mmake)-linklib otherwise for example jpeg.datatype
 # that depend on the jpeg library can cause to get this rule executed unwanted
 ifeq ($(TARGET),%(mmake)-linklib)
+ifneq (%(genshlinklib),yes)
 %(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).a
+else
+%(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).so
+endif
 
 %rule_link_linklib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))"
+
+BD_SHOBJS$(BDID) := $(patsubst %.o,%.so,$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
+
+%rule_compile_shared basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) 
+%rule_compile_shared basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
+%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
+%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
+
+%rule_link_shlib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
+  objs=$(BD_SHOBJS$(BDID))
+
 endif
+
+%include_deps depstargets="%(mmake) %(mmake)-linklib deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
