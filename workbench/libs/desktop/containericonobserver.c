@@ -52,7 +52,6 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
                    *dirWindow,
                    *iconcontainer,
                    *strip;
-    struct TagItem *icTags;
     BYTE            terminator;
     struct NewMenu *menuDat;
     Object         *desktop = NULL;
@@ -96,32 +95,25 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     menuDat = BuildDesktopMenus();
 
     GetAttr(IA_Desktop, _presentation(obj), &desktop);
+   
+    iconcontainer = CreateDesktopObject
+    (
+        CDO_IconContainer, 
+        
+        ICOA_Directory, newDir,
+        ICA_Desktop,       desktop,
+        ICA_VertScroller,  vert,
+        ICA_HorizScroller, horiz,
+        MUIA_FillArea, FALSE,
+        MUIA_InnerLeft, 0,
+        MUIA_InnerTop, 0,
+        MUIA_InnerRight, 0,
+        MUIA_InnerBottom, 0,
+        
+        TAG_DONE
+    );
 
-    icTags = AllocVec(sizeof(struct TagItem) * 10, MEMF_ANY);
-    icTags[0].ti_Tag = MUIA_FillArea;
-    icTags[0].ti_Data = FALSE;
-    icTags[1].ti_Tag = ICOA_Directory;
-    icTags[1].ti_Data = newDir;
-    icTags[2].ti_Tag = ICA_VertScroller;
-    icTags[2].ti_Data = vert;
-    icTags[3].ti_Tag = ICA_HorizScroller;
-    icTags[3].ti_Data = horiz;
-    icTags[4].ti_Tag = MUIA_InnerLeft;
-    icTags[4].ti_Data = 0;
-    icTags[5].ti_Tag = MUIA_InnerTop;
-    icTags[5].ti_Data = 0;
-    icTags[6].ti_Tag = MUIA_InnerRight;
-    icTags[6].ti_Data = 0;
-    icTags[7].ti_Tag = MUIA_InnerBottom;
-    icTags[7].ti_Data = 0;
-    icTags[8].ti_Tag = ICA_Desktop;
-    icTags[8].ti_Data = desktop;
-    icTags[9].ti_Tag = TAG_END;
-    icTags[9].ti_Data = 0;
-
-    iconcontainer = CreateDesktopObjectA(CDO_IconContainer, icTags);
-
-// TEMPORARY!!!!! Use CreateDesktopObjectA(CDO_Window.....) instead!
+    // TEMPORARY!!!!! Use CreateDesktopObjectA(CDO_Window.....) instead!
     dirWindow = WindowObject,
         MUIA_Window_Width, 300,
         MUIA_Window_Height, 300,
