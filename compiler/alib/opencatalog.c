@@ -8,7 +8,7 @@
 #define AROS_TAGRETURNTYPE  struct Catalog *
 #include <utility/tagitem.h>
 
-extern struct LocaleBase *LocaleBase;
+extern struct Library *LocaleBase;
 
 /*****************************************************************************
 

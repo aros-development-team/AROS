@@ -19,8 +19,6 @@
 #include <exec/types.h>
 #include <utility/utility.h>
 
-extern struct UtilityBase * UtilityBase;
-
 #define BUFFER_SIZE   100
 
 /*****************************************************************************

@@ -10,7 +10,7 @@
 #include "alib_intern.h"
 #include <utility/tagitem.h>
 
-extern struct ArosBase * ArosBase;
+extern struct Library * ArosBase;
 
 /*****************************************************************************
 

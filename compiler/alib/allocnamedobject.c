@@ -11,7 +11,6 @@
 #include <proto/utility.h>
 #undef CallHookPkt
 #include "alib_intern.h"
-extern struct UtilityBase * UtilityBase;
 
 /*****************************************************************************
 
