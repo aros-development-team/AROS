@@ -69,7 +69,7 @@ VOID HandlePropSelectDown
 	}
 	else if (mouse_x >= knob.Left + knob.Width)
 	{
-	    if (dx + pi->HPotRes < MAXPOT)
+	    if (dx < MAXPOT - pi->HPotRes)
 		dx += pi->HPotRes;
 	    else
 		dx = MAXPOT;
@@ -87,7 +87,7 @@ VOID HandlePropSelectDown
 	}
 	else if (mouse_y >= knob.Top + knob.Height)
 	{
-	    if (dy + pi->VPotRes < MAXPOT)
+	    if (dy < MAXPOT - pi->VPotRes)
 		dy += pi->VPotRes;
 	    else
 		dy = MAXPOT;
@@ -210,26 +210,6 @@ VOID HandlePropMouseMove
 	    } else if (dx > MAXPOT) {
 	    	dx = MAXPOT;
 	    }
-#if 0
-	    dx = (dx * MAXPOT) /(pi->CWidth - knob.Width);
-
-	    if (dx < 0)
-	    {
-		dx = -dx;
-
-		if (dx > pi->HorizPot)
-		    dx = 0;
-		else
-		    dx = pi->HorizPot - dx;
-	    }
-	    else
-	    {
-	    if (dx + pi->HorizPot > MAXPOT)
-		dx = MAXPOT;
-	    else
-		dx = pi->HorizPot + dx;
-	    }
-#endif
 
 	} /* FREEHORIZ */
 
@@ -245,28 +225,8 @@ VOID HandlePropMouseMove
 	    	dy = MAXPOT;
 	    }
 
-#if 0
-	    dy = (dy * MAXPOT) / (pi->CHeight - knob.Height);
-
-	    if (dy < 0)
-	    {
-		dy = -dy;
-
-		if (dy > pi->VertPot)
-		    dy = 0;
-		else
-		    dy = pi->VertPot - dy;
-	    }
-	    else
-	    {
-		if (dy + pi->VertPot > MAXPOT)
-		    dy = MAXPOT;
-		else
-		    dy = pi->VertPot + dy;
-	    }
-#endif
-
 	} /* FREEVERT */
+
     } /* Has PropInfo and Mouse is over knob */
 
     NewModifyProp (gadget
@@ -327,7 +287,7 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 	if (pi->HorizBody)
 	{
 	    if (pi->HorizBody < MAXBODY/2)
-		pi->HPotRes = MAXPOT / ((MAXBODY / pi->HorizBody) - 1);
+		pi->HPotRes = MAXPOT * 32768 / ((MAXBODY * 32768 / pi->HorizBody) - 32768);
 	    else
 		pi->HPotRes = MAXPOT;
 	}
@@ -346,7 +306,7 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 	if (pi->VertBody)
 	{
 	    if (pi->VertBody < MAXBODY/2)
-		pi->VPotRes = MAXPOT / ((MAXBODY / pi->VertBody) - 1);
+		pi->VPotRes = MAXPOT * 32768 / ((MAXBODY * 32768 / pi->VertBody) - 32768);
 	    else
 		pi->VPotRes = MAXPOT;
 	}
@@ -697,6 +657,9 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 	    } /* if (flags & AUTOKNOB) */
 	    else
 	    {
+	        ((struct Image *)gadget->GadgetRender)->LeftEdge = 0;
+		((struct Image *)gadget->GadgetRender)->TopEdge = 0;
+		
 	        DrawImageState(rp,
 			       (struct Image *)gadget->GadgetRender,
 			       knob->Left,
