@@ -90,6 +90,14 @@ purify - A small script which can be put in front of the C compiler
 
 	It will modify some options to purify the code.
 
+bin/ - This directory contains all generated files under the name of your
+	OS (eg. bin/linux/). This directory is called $(ARCHDIR). Below this
+	are two more directories: $(BINDIR) where the files should be put
+	which the end user should see and $(GENDIR) where you can create
+	a directory to put all files one part of AROS needs (eg. libs/ or
+	os/). The diretory $(OSGENDIR) is below $(GENDIR) and all *.o files
+	in this directory are collected to the AmigaOS.lib.
+
 c/ - This directory contains a couple of applications for AROS and some
 	demos.
 
