@@ -564,6 +564,7 @@ AROS_UFH3(void, LDDemon,
        disk-based libraries or devices.
     */
     
+#if 0
     Forbid(); /* To assure that if bootprocess is still not added to the system, it won't start here */
     bootproc = FindTask("Boot Process");
     if (bootproc)
@@ -573,7 +574,7 @@ AROS_UFH3(void, LDDemon,
     else
     	kprintf("lddemon.c: LDDemon process scheduled after Boot process\nor name of Boot Process changed\nwhich causes Boot process to halt\n");
     Permit();
-    
+#endif
     for(;;)
     {
 	WaitPort(DOSBase->dl_LDDemonPort);
