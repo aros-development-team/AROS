@@ -182,7 +182,7 @@ AROS_LH3(void, open,
 	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&afsbase->rport);
 	(void)GetMsg(&afsbase->rport);
-	if (iofs->io_DosError == 0)
+	if (iofs->IOFS.io_Unit != NULL)
 	{
 		AddTail(&afsbase->device_list, &(((struct AfsHandle *)iofs->IOFS.io_Unit)->volume->ln));
 		iofs->IOFS.io_Device = &afsbase->device;
