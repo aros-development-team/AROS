@@ -449,7 +449,7 @@ IPTR Clock$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 	
 	if (c == 1)
 	{
-	    if ((data->edithand == EDITHAND_HOUR) && data->frozen)
+	    if ((data->edithand == MUIV_Clock_EditHand_Hour) && data->frozen)
 	    {
 	    	SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
 	    }
@@ -470,7 +470,7 @@ IPTR Clock$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if (c == 1)
 	{
-	    if ((data->edithand == EDITHAND_MIN) && data->frozen)
+	    if ((data->edithand == MUIV_Clock_EditHand_Minute) && data->frozen)
 	    {
 	    	SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
 	    }
@@ -491,7 +491,7 @@ IPTR Clock$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if (c == 1)
 	{
-	    if ((data->edithand == EDITHAND_SEC) && data->frozen)
+	    if ((data->edithand == MUIV_Clock_EditHand_Second) && data->frozen)
 	    {
 	    	SetAPen(_rp(obj), (data->editpen == -1) ? _dri(obj)->dri_Pens[SHINEPEN] : data->editpen);
 	    }
