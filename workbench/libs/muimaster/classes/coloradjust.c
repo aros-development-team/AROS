@@ -28,7 +28,6 @@
 
 #include "mui.h"
 #include "muimaster_intern.h"
-#include "textengine.h"
 #include "support.h"
 
 /*  #define MYDEBUG 1 */
