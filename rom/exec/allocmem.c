@@ -186,7 +186,7 @@
 			    {
 				/* Return the last bytes. */
 				p1->mc_Next=p2;
-				mc=(struct MemChunk *)((UBYTE *)p2+byteSize);
+				mc=(struct MemChunk *)((UBYTE *)p2+p2->mc_Bytes-byteSize);
 			    }else
 			    {
 				/* Return the first bytes. */
