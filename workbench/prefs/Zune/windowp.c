@@ -229,27 +229,27 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj,
     DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Big, (IPTR)str);
 
 /* Backgrounds */
-    str = (STRPTR)xget(data->background_window_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_window_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Window,
 	     (IPTR)str);
 
-    str = (STRPTR)xget(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Requester,
 	     (IPTR)str);
 
 /* Spacing */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Left,
-	     xget(data->spacing_left_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_left_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Right,
-	     xget(data->spacing_right_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_right_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Top,
-	     xget(data->spacing_top_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_top_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Bottom,
-	     xget(data->spacing_bottom_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_bottom_slider, MUIA_Numeric_Value));
 
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Redraw,
-	     xget(data->redraw_cycle, MUIA_Cycle_Active));
+	     XGET(data->redraw_cycle, MUIA_Cycle_Active));
     return TRUE;
 }
 

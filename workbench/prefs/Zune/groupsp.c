@@ -209,37 +209,37 @@ static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj,
     DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Title, (IPTR)str);
 
 /* Backgrounds */
-    str = (STRPTR)xget(data->background_framed_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_framed_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Framed,
 	     (IPTR)str);
 
-    str = (STRPTR)xget(data->background_register_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_register_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Register,
 	     (IPTR)str);
 
-    str = (STRPTR)xget(data->background_page_popimage,MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_page_popimage,MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Page,
 	     (IPTR)str);
 
 /* Frames */
-    str = (STRPTR)xget(data->normal_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->normal_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Group,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->virtual_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->virtual_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Virtual,
 	     (IPTR)str);
 
 /* Spacing */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Group_HSpacing,
-	     xget(data->spacing_horiz_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_horiz_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Group_VSpacing,
-	     xget(data->spacing_vert_slider, MUIA_Numeric_Value));
+	     XGET(data->spacing_vert_slider, MUIA_Numeric_Value));
 
 /* Title (Cycles) */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_GroupTitle_Position,
-	     xget(data->title_position_cycle, MUIA_Cycle_Active));
+	     XGET(data->title_position_cycle, MUIA_Cycle_Active));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_GroupTitle_Color,
-	     xget(data->title_color_cycle, MUIA_Cycle_Active));
+	     XGET(data->title_color_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }

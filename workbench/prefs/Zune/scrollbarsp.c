@@ -271,18 +271,18 @@ static IPTR ScrollbarsP_GadgetsToConfig(struct IClass *cl, Object *obj,
     int i;
 
 /* Frame */
-    str = (STRPTR)xget(data->popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_Prop,
 	     (IPTR)str);
 
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Scrollbar_Type,
-	     xget(data->gadget_type_cycle, MUIA_Cycle_Active));
+	     XGET(data->gadget_type_cycle, MUIA_Cycle_Active));
 
 /* Radio */
     for (i = 0; i < 3; i++)
     {
-	if (xget(data->pos_radios[i], MUIA_Selected))
+	if (XGET(data->pos_radios[i], MUIA_Selected))
 	    pos = i;
     }
 
@@ -290,22 +290,22 @@ static IPTR ScrollbarsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 	     MUICFG_Scrollbar_Arrangement, pos);
 
 /* Images */
-    str = (STRPTR)xget(data->background_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Prop,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->knob_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->knob_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_PropKnob,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->arrow_up_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->arrow_up_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_ArrowUp,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->arrow_down_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->arrow_down_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_ArrowDown,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->arrow_left_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->arrow_left_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_ArrowLeft,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->arrow_right_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->arrow_right_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_ArrowRight,
 	     (IPTR)str);
     return TRUE;

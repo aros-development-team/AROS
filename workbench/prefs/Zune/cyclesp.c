@@ -203,27 +203,27 @@ static IPTR CyclesP_GadgetsToConfig(struct IClass *cl, Object *obj,
     STRPTR str;
 
 /* Frame */
-    str = (STRPTR)xget(data->menu_popframe, MUIA_Framedisplay_Spec);
+    str = (STRPTR)XGET(data->menu_popframe, MUIA_Framedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_PopUp,
 	     (IPTR)str);
 /* Images */
-    str = (STRPTR)xget(data->background_menu_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->background_menu_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_PopUp,
 	     (IPTR)str);
-    str = (STRPTR)xget(data->cycle_popimage, MUIA_Imagedisplay_Spec);
+    str = (STRPTR)XGET(data->cycle_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_Cycle,
 	     (IPTR)str);
 /* Sliders */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Level,
-	     xget(data->menu_level_slider, MUIA_Numeric_Value));
+	     XGET(data->menu_level_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Speed,
-	     xget(data->menu_speed_slider, MUIA_Numeric_Value));
+	     XGET(data->menu_speed_slider, MUIA_Numeric_Value));
 /* Checkmark */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_Menu_Recessed,
-	     xget(data->recessed_entries_checkmark, MUIA_Selected));
+	     XGET(data->recessed_entries_checkmark, MUIA_Selected));
 /* Cycles */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Cycle_MenuCtrl_Position,
-	     xget(data->menu_position_cycle, MUIA_Cycle_Active));
+	     XGET(data->menu_position_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }

@@ -299,7 +299,7 @@ static void main_page_list_display(struct Hook *h, char **strings, struct page_e
 *****************************************************************/
 void main_page_active(void)
 {
-    int new_active = xget(main_page_list,MUIA_List_Active);
+    int new_active = XGET(main_page_list,MUIA_List_Active);
     Object *new_group;
 
     if (new_active == -1) new_group = main_page_space;
@@ -638,7 +638,7 @@ int main(void)
 		{
 		    load_prefs((STRPTR)args[ARG_APPNAME]);
 		    set(main_wnd, MUIA_Window_Open, TRUE);
-		    if (xget(main_wnd,MUIA_Window_Open))
+		    if (XGET(main_wnd,MUIA_Window_Open))
 		    {
 			loop();
 		    }
