@@ -16,18 +16,6 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#if 0
-asm
-(
-    ".text\n"
-    "\n"
-    "move.l      4.w,a6\n"
-    "bra         _entry\n"
-);
-#endif
-#endif
-
 /* Don't define symbols before the entry point. */
 extern struct ExecBase * SysBase;
 extern struct WBStartup *WBenchMsg;
