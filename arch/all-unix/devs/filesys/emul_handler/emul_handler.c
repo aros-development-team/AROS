@@ -53,7 +53,6 @@
 #include <stddef.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/statfs.h>
 #include <sys/time.h>
 #include <pwd.h>
 
@@ -61,6 +60,7 @@
 
 #if defined(__linux__) || defined(__CYGWIN32__)
 #include <sys/vfs.h>
+#include <sys/statfs.h>
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #include <sys/param.h>
 #include <sys/mount.h>
