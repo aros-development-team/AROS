@@ -19,6 +19,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
 #include <graphics/rastport.h>
+#include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
 
 
@@ -199,7 +200,7 @@ int charsinstring(STRPTR string, char c);
 
 
 
-UWORD BgPattern[2] = { 0xAAAA, 0x5555 };
+UWORD BgPattern[2]  = { 0xAAAA, 0x5555 };
 
 /* draw the contents of the requester */
 void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
@@ -218,12 +219,12 @@ void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
     SetABPenDrMd(req->RPort,
                  dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
                  JAM1);
-    req->RPort->AreaPtrn = BgPattern;
-    req->RPort->AreaPtSz = 1;
+    SetAfPt(req->RPort, BgPattern, 1);
     RectFill(req->RPort, scr->WBorLeft,
                          scr->WBorTop + dims->fontheight - 1,
                          req->Width - scr->WBorRight - 1,
                          req->Height - scr->WBorBottom - 1);
+    SetAfPt(req->RPort, NULL, 0);
 
     /* draw textframe */
     frame = (struct Image *)NewObject(NULL, FRAMEICLASS,
