@@ -21,7 +21,6 @@
 
 #define AROS_BOCHS_HACK			0
 #define AROS_SERIAL_DEBUG		0
-#define AROS_IDE_DRIVER                 0
 
 #define AROS_MUNGWALL_DEBUG 	    	1
 #define AROS_STACK_DEBUG    	    	1
