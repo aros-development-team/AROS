@@ -7,20 +7,18 @@ include $(TOP)/config/make.cfg
 # Setup the ALIB metatargets...
 #MM- setup-alib-linux : setup-alib-linux-$(CPU)
 
-#MM setup-linux :
-setup-linux :
-	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
-	%add_objects rom/boot/strap_emul
-
 # These are the targets to get mmake to do what I want...
-#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM) setup-alib-linux
+#MM- setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-$(GFXSYSTEM) setup-alib-linux
 
 #MM- setup-exec-m68k : setup-exec-linux-m68k
 
 #MM- kernel-linux : \
 #MM    kernel-unix \
-#MM    exec-linux \
 #MM    hidd-linux
+
+%rule_archalias mainmmake=kernel-exec arch=linux alias=unix
+%rule_archalias mainmmake=kernel-dos arch=linux alias=unix
+%rule_archalias mainmmake=kernel-battclock arch=linux alias=unix
 
 #MM- exec-m68k : exec-linux-m68k
 
@@ -31,35 +29,5 @@ setup-linux :
 MM- check : check-exec-unix
 
 #MM- contrib-linux : contrib-complete
-
-#MM setup-exec-linux : setup-exec-unix setup-exec-$(CPU)
-setup-exec-linux : $(GENINCDIR)/sigcore.h
-	%add_objects rom/exec/init
-
-#MM
-$(GENINCDIR)/sigcore.h : $(TOP)/config/linux/exec/sigcore.h.src
-	%mkdirs_q $(GENINCDIR)
-	$(SHELL) $(TOP)/config/linux/exec/mksigcore.sh $(TOP)/config/linux/exec $(GENINCDIR)/sigcore.h
-
-#MM
-exec-linux : $(OSGENDIR)/exec/init.o
-
-FILES		:= exec/init
-DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
-OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
-CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
-		   $(CFLAGS)
-
-$(OSGENDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OSGENDIR)/%.d : %.c
-	%mkdepend_q $(CFLAGS2)
-
-%include_deps
-
-#MM
-clean ::
-	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
 
 %common

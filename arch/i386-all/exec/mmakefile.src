@@ -1,34 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES		:= execstubs
-OBJDIR		:= $(OSGENDIR)/exec
-OS_INCLUDES	:= -I$(OSINCDIR)
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
-CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
-AFLAGS2 	:= $(AFLAGS) -I..
-TESTS		:=
-
-#MM
-exec-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
-	@$(NOP)
-
-#MM
-setup-exec-i386 :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OBJDIR)/%.o : %.s
-	%assemble_q opt=$(AFLAGS2)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+SPECIAL_AFLAGS := -I..
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec \
+  asmfiles=execstubs \
+  arch=i386
 
 %common

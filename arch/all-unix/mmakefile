@@ -1,11 +1,8 @@
 $ Id $
 
 #MM- kernel-unix : \
-#MM    exec-unix \
-#MM    dos-unix \
 #MM    graphics-$(GFXSYSTEM) kernel-x11gfx-kobj hidd-graphics-linklib \
 #MM    intuition-$(GFXSYSTEM) \
 #MM    kernel-unixio-kobj \
-#MM    battclock-unix \
 #MM    workbench-hidd-unix \
 #MM    kernel-fs-emul-kobj

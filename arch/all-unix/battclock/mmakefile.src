@@ -1,41 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXCL_FILES  := readbattclock
-FILES	    := readbattclock
-OBJDIR	    := $(OSGENDIR)/battclock
-OBJS	    := $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
-
 OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/battclock -I..
-CFILES		:= $(foreach f,$(FILES),$(f).c)
-DEPS		:= $(patsubst %.c,$(OBJDIR)/%.d,$(CFILES))
-
-#MM battclock-unix : setup-battclock-unix
-battclock-unix : print-flags $(OBJS)
-	@$(NOP)
-
-print-flags :
-	@$(ECHO) "CFLAGS=$(CFLAGS)"
-
-#MM
-setup-battclock-unix :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES),rom/battclock/$(f))
-	%exclude_files $(foreach f,$(EXCL_FILES),rom/battclock/$(f))
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(OBJDIR)
-
-$(OBJDIR)/%.o : %.s
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(HOST_CC)
-
-$(OBJDIR)/%.d : %.c $(MACHINE_H)
-	%mkdepend_q
+USER_CFLAGS	:= -I$(TOP)/rom/battclock -I..
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock \
+  arch=unix \
+  files=readbattclock \
+  compiler=host
 
 %common
-%include_deps

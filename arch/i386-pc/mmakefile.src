@@ -29,8 +29,6 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #
 
 #MM- kernel-pc-i386 : \
-#MM     exec-pc-i386 \
-#MM     dos-pc-i386 \
 #MM	kernel-bootmenu-kobj \
 #MM	kernel-misc-kobj \
 #MM	kernel-bootloader-kobj \

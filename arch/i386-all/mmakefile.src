@@ -42,7 +42,7 @@ includes-cygwin-i386 : $(INCFILES) machine.i
 clean::
 	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
-#MM- kernel-i386 : exec-i386
+#MM- kernel-i386 :
 
 $(INCDIR)/aros/%.h : %.h
 	%mkdirs_q $(INCDIR)/aros

@@ -1,56 +1,18 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR		:= $(OSGENDIR)/exec
+CFILES		:= \
+	disable enable switch preparecontext rawputchar addtask cause \
+	dispatch debug supervisor reschedule permit wait remtask \
+	settaskpri signal setexcept superstate userstate core traps \
+	screen serialrawio exec_init execfunctions prepareexecbase
 
-#why would we need this at all?!
-#OS_INCLUDES	:= -I$(GENINCDIR)
+AFILES		:= coldreboot corelow execstubs getcpu stackswap 
 
-CFLAGS2 	:= $(CFLAGS) -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
-AFLAGS2 	:= $(AFLAGS) -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
-TESTS		:=
-
-FILES		:= \
-	disable enable switch preparecontext coldreboot stackswap \
-	rawputchar addtask cause dispatch debug supervisor reschedule \
-	permit wait remtask settaskpri signal setexcept superstate userstate
-	
-COREFILES	:= \
-	core corelow traps execstubs getcpu screen serialrawio
-
-REPLFILES	:= \
-	exec_init execfunctions prepareexecbase
-
-#MM
-exec-pc-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
-	$(foreach f,$(REPLFILES), $(OBJDIR)/$(f).o) \
-	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
-	@$(NOP)
-
-#MM
-setup-exec-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
-	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
-	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q opt=$(AFLAGS2)
-
-$(OBJDIR)/%.o : %.s
-	@as $(INCLUDES) -o $@ $<
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-init.s: init.c
-	%ctoasm_q
+USER_CFLAGS 	:= -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
+SPECIAL_AFLAGS 	:= -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=pc-i386 \
+  files=$(CFILES) asmfiles=$(AFILES) compiler=host
 
 %common
