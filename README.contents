@@ -203,11 +203,3 @@ test/ - Testcode which is more complex.
 utility/ - Sourcecode for the utility.library. See dos/ for more
 	information.
 
-
---
-Aaron "Optimizer" Digulla      Team AMIGA          AROS Head of Development
-Author of XDME, ResTrackLib, CInt.		   (since no one else wanted)
-"(to) optimize: Make a program faster by improving the algorithms rather than
-by buying a faster machine."
-
-
