@@ -1,0 +1,27 @@
+## version $VER: loadresource.catalog 1.0 (25.01.2005)
+## language magyar
+## codeset 0
+;
+; Translated by Miklós Németh
+;
+;
+MSG_ABOUT
+Névjegy
+; About
+;
+MSG_AUTHORS
+Készítõk
+; Authors
+;
+MSG_SPONSORS
+Szponzorok
+; Sponsors
+;
+MSG_SECTION_PROGRAMMING
+Programozás
+; Programming
+;
+MSG_SECTION_TRANSLATING
+Fordítás
+; Translating
+;
