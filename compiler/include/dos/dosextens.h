@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: LibBase and some important structures
@@ -288,6 +288,9 @@ struct CommandLineInterface
     BPTR cli_Module;
 };
 
+/* CLI_DEFAULTSTACK_UNIT * cli_DefaultStack = stack in bytes */
+
+#define CLI_DEFAULTSTACK_UNIT	sizeof(LONG)
 
 /* Devices process structure as returned by GetDeviceProc(). */
 struct DevProc
