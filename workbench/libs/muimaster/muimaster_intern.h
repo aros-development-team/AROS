@@ -202,9 +202,7 @@ struct MUIMasterBase_intern
 #define DataTypesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->datatypesbase)
 */
 
-#ifndef _COMPILER_H
-#include "compiler.h"
-#endif
+#include "support_amigaos.h"
 
 #endif /* ! __AROS__ */
 
