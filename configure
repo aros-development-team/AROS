@@ -117,4 +117,6 @@ fi
 
 echo "MKDEPEND = $MKDEPEND" >> $1
 
-cd config ; make TOP=.. CURDIR=./config config
+if [ -d config ]; then
+    cd config ; make TOP=.. CURDIR=./config config
+fi
