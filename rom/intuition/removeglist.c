@@ -61,8 +61,7 @@
     if (!pred->NextGadget)
 	return ~0;
 
-    for (last=gadget; last->NextGadget && numGad; last=last->NextGadget)
-	numGad --;
+    for (last=gadget; last->NextGadget && --numGad; last=last->NextGadget);
 
     pred->NextGadget = last->NextGadget;
     last->NextGadget = NULL;
