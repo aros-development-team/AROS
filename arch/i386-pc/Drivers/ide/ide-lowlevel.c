@@ -270,8 +270,29 @@ struct ide_Unit *InitUnit(ULONG num, struct ideBase *ib)
         unit->au_PortAddr   = ib->ide_BoardAddr[num];
 
         /* Fill structure with drive parameters */
+	
+	/* stegerg: lock semaphore to protect against hw accesses
+	            by other tasks (ide.task), because UnitInfo()
+		    below accesses hw too. */
+		    
+	ObtainSemaphore(&ib->ide_HardwareLock);
         UnitInfo(unit);
-        
+
+	if (unit->au_Flags & AF_AtapiDev)
+	{
+	    if (unit->au_Flags & AF_Removable)
+	    {
+	    	/* stegerg: This flag will cause normal quick cmds
+		   (TD_CHANGENUM/TD_CHANGESTATE) to be treated slow,
+		   until disk presence has been checked first
+		   time. Then the flag will be cleared again */
+		   
+	    	unit->au_Flags |= AF_DiskPresenceUnknown;
+	    }
+	}
+	
+        ReleaseSemaphore(&ib->ide_HardwareLock);
+	
         ib->ide_Units[num] = unit;
     }
 
@@ -639,6 +660,7 @@ ULONG atapi_TestUnit(struct ide_Unit *unit)
             return sense;
         }
     }
+
     return atapi_ErrCmd();
 }
 
@@ -811,7 +833,7 @@ struct wait WaitTable[] = {
 ULONG WaitBusySlow(ULONG port, struct ide_Unit *unit)
 {
     int i=1000;
-    
+
     if (unit->au_Flags & AF_SlowDevice)
     {
         int t=0;
