@@ -138,7 +138,7 @@ LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lexec -lAmigaOS \
 	-lboot -lintuition -lgraphics -ldos -lconsole \
 	-lhiddcl -lunixiocl -lboopsi -lutility -ltimer \
-	-laros -lmathffp -lexpansion -lbattclock \
+	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-lamiga -larossupport -linput -lkeymap
 
 # BEGIN_DESC{internaltarget}
