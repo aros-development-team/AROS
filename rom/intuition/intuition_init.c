@@ -45,6 +45,7 @@ AROS_UFP3(static ULONG, rootDispatcher,
 /* There has to be a better way... */
 struct IClass *InitImageClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitFrameIClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitSysIClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitGadgetClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
@@ -137,11 +138,13 @@ AROS_LH2(struct LIBBASETYPE *, init,
     /* Add all other classes */
     InitImageClass (LIBBASE); /* After ROOTCLASS */
     InitFrameIClass (LIBBASE); /* After IMAGECLASS */
+    InitSysIClass (LIBBASE); /* After IMAGECLASS */
 
     InitICClass (LIBBASE); /* After ROOTCLASS */
 
     InitGadgetClass (LIBBASE); /* After ROOTCLASS */
     InitButtonGClass (LIBBASE); /* After GADGETCLASS */
+    InitFrButtonClass (LIBBASE); /* After BUTTONGCLASS */
 
     /* You would return NULL if the init failed */
     return LIBBASE;
