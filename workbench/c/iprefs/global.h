@@ -176,6 +176,10 @@ void Cleanup(STRPTR msg);
 /* patches.c */
 
 void Install_RawDoFmtPatch(void);
+void Install_StrnicmpPatch(void);
+void Install_StricmpPatch(void);
+void Install_ToLowerPatch(void);
+void Install_ToUpperPatch(void);
 
 /*********************************************************************************************/
 

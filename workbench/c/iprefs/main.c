@@ -30,7 +30,7 @@ libtable[] =
 {
     {&IntuitionBase     , "intuition.library"           , 39, FALSE },
     {&GfxBase           , "graphics.library"            , 39, FALSE },
-    {&UtilityBase       , "utility.library"             , 39, FALSE },
+    {&UtilityBase       , "utility.library"             , 39, TRUE  },
     {&IFFParseBase  	, "iffparse.library"	    	, 39, FALSE },
     {&LocaleBase    	, "locale.library"  	    	, 39, TRUE  },
     {&KeymapBase        , "keymap.library"              , 39, FALSE },
@@ -225,6 +225,47 @@ static void KillNotifications(void)
 
 /*********************************************************************************************/
 
+static void InstallPatches(void)
+{
+    struct IPrefsSem 	   *sem;
+    BOOL    	    	   created_sem = FALSE;
+    
+    sem = AllocVec(sizeof(struct IPrefsSem), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!sem) Cleanup("Out of memory!");
+    
+    InitSemaphore(&sem->sem);
+    sem->sem.ss_Link.ln_Name = sem->semname;
+    strcpy(sem->semname, IPREFS_SEM_NAME);
+    
+    Forbid();
+    if(!(iprefssem = (struct IPrefsSem *)FindSemaphore(IPREFS_SEM_NAME)))
+    {
+    	iprefssem = sem;
+	AddSemaphore(&iprefssem->sem);
+	
+	created_sem = TRUE;
+    }
+    Permit();
+    
+    if (created_sem)
+    {
+    	Install_RawDoFmtPatch();
+	Install_StrnicmpPatch();
+	Install_StricmpPatch();
+	Install_ToLowerPatch();
+	Install_ToUpperPatch();
+	
+    	patches_installed = TRUE;
+    }
+    else
+    {
+     	FreeVec(sem);
+    }
+        
+}
+
+/*********************************************************************************************/
+
 static void HandleAll(void)
 {
     ULONG sigs;
@@ -251,42 +292,6 @@ static void HandleAll(void)
 	} /* if (sigs & notifysig) */
 	
     } /* for(;;) */
-}
-
-/*********************************************************************************************/
-
-static void InstallPatches(void)
-{
-    struct IPrefsSem 	   *sem;
-    BOOL    	    	   created_sem = FALSE;
-    
-    sem = AllocVec(sizeof(struct IPrefsSem), MEMF_PUBLIC | MEMF_CLEAR);
-    if (!sem) Cleanup("Out of memory!");
-    
-    InitSemaphore(&sem->sem);
-    sem->sem.ss_Link.ln_Name = sem->semname;
-    strcpy(sem->semname, IPREFS_SEM_NAME);
-    
-    Forbid();
-    if(!(iprefssem = (struct IPrefsSem *)FindSemaphore(IPREFS_SEM_NAME)))
-    {
-    	iprefssem = sem;
-	AddSemaphore(&iprefssem->sem);
-	
-	created_sem = TRUE;
-    }
-    Permit();
-    
-    if (created_sem)
-    {
-    	Install_RawDoFmtPatch();
-    	patches_installed = TRUE;
-    }
-    else
-    {
-     	FreeVec(sem);
-    }
-        
 }
 
 /*********************************************************************************************/
