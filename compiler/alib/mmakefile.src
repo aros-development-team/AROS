@@ -64,9 +64,6 @@ linklibs : $(LIB) $(STARTUP)
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 
-#MM linklibs : setup includes
-linklibs : $(LIB) $(STARTUP)
-
 #MM
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) $(STARTUP)
