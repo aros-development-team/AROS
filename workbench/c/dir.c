@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/02 16:39:43  digulla
+    Correct prototype for function passed on to QSort()
+
     Revision 1.8  1996/09/21 15:49:26  digulla
     Use AROS instead of C.lib functions
 
@@ -72,7 +75,7 @@ static int AddEntry (struct table * table, char * entry)
     return 1;
 }
 
-static int compare_strings (const void * s1, const void * s2)
+static int compare_strings (const APTR s1, const APTR s2)
 {
     return Stricmp (*(char **)s1, *(char **)s2);
 }
