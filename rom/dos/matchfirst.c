@@ -82,6 +82,9 @@
   PatLength = 2*strlen(pat)+2;
   
   ParsedPattern = AllocMem(PatLength, MEMF_ANY);
+  
+  AP->ap_Base = NULL;
+  
   if (NULL != ParsedPattern)
   {
     LONG PatStart = 0;
