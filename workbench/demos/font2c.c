@@ -396,6 +396,10 @@ static VOID print_chardata_ascii(struct TextFont *tf, FILE *fh)
 	ULONG charloc;
 	UWORD bitno, width;
 	
+	/* Warning: Should these be used for something? */
+	(void)charkern;
+	(void)charspace;
+
 	charptr = tf->tf_CharData;
 	
 	/* tf_CharLoc is *allways* non-NULL */
