@@ -145,9 +145,9 @@ AROS_LH2(struct IFFParseBase_intern *, init,
  AROS_LHA(struct IFFParseBase_intern *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
      struct ExecBase *, SysBase, 0, BASENAME)
+#endif
 {
     AROS_LIBFUNC_INIT
-#endif
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
