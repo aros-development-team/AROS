@@ -3,11 +3,15 @@
     $Id$
 */
 
+#define NO_INLINE_STDARG /* turn off inline def */
+
 #include <aros/debug.h>
 #include <aros/asmcall.h>
 
 #include <intuition/classusr.h>
 #include <intuition/classes.h>
+
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -80,7 +84,6 @@ ULONG DoSuperMethod(Class * cl, Object * obj, ULONG MethodID, ...)
 } /* DoSuperMethod */
 
 #define AROS_TAGRETURNTYPE APTR
-#define NO_INLINE_STDARG /* turn off inline def */
 
 APTR NewObject(struct IClass *classPtr, UBYTE *classID, ULONG tag1, ...)
 {
