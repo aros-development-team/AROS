@@ -30,7 +30,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.5 (05.01.2001)\n";
+static const char version[] = "$VER: WiMP 0.6 (07.01.2001)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -78,10 +78,14 @@ struct Window *Window;
 struct Window *InfoWindow = NULL;
 struct RastPort *iw_rp;
 struct Menu *menus;
+ULONG IDCMP;
 ULONG lock;
 ULONG w_sigbit, iw_sigbit;
 
 enum {None_type,Window_type,Screen_type,Max_type};
+
+#define ClearIDCMP() {IDCMP = Window->IDCMPFlags; Window->IDCMPFlags = NULL;}
+#define ResetIDCMP() {Window->IDCMPFlags = IDCMP;}
 
 #define ID_SHOW 10
 struct NewGadget showgad =
@@ -243,9 +247,10 @@ static struct NewMenu nm[] =
 
 #define EASYTRUE 1
 const STRPTR TITLE_TXT		= "WiMP - The Window Manipulation Program";
+const STRPTR INFOTITLE_TXT	= "WiMP - InfoWindow";
 const STRPTR CLOSESCREEN_TXT	= "Do you really want to Close the selected Screen?";
 const STRPTR CLOSEWINDOW_TXT	= "Do you really want to Close the selected Window?";
-const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\nCopyright 2000 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS";
+const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\n\nCopyright 2000-2001 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS - The Amiga Research OS";
 const STRPTR YESNO_TXT		= "Yes.|No!";
 const STRPTR CONTINUE_TXT	= "Continue";
 
@@ -622,7 +627,7 @@ return;
 VOID open_infowindow()
 {
   InfoWindow = OpenWindowTags ( NULL
-	, WA_Title,	TITLE_TXT
+	, WA_Title,	INFOTITLE_TXT
 	, WA_Left,	0
 	, WA_Top,	0
 	, WA_Width,	580
@@ -873,7 +878,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			  case 0: /* About */
 				es.es_TextFormat = ABOUT_TXT;
 				es.es_GadgetFormat = CONTINUE_TXT;
+				ClearIDCMP();
 				EasyRequest(Window,&es,NULL,NULL,NULL);
+				ResetIDCMP();
 				break;
 			  case 2: /* Quit */
 				quit = 1;
@@ -896,7 +903,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				    case Screen_type :
 					es.es_TextFormat = CLOSESCREEN_TXT;
 					es.es_GadgetFormat = YESNO_TXT;
+					ClearIDCMP();
 					killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+					ResetIDCMP();
 					if ( killit == EASYTRUE )
 					{
 					  CloseScreen((struct Screen *)object);
@@ -905,7 +914,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 				    case Window_type :
 					es.es_TextFormat = CLOSEWINDOW_TXT;
 					es.es_GadgetFormat = YESNO_TXT;
+					ClearIDCMP();
 					killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+					ResetIDCMP();
 					if ( killit == EASYTRUE )
 					{
 					  CloseWindow((struct Window *)object);
@@ -1068,7 +1079,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 		  case ID_ABOUT:
 			es.es_TextFormat = ABOUT_TXT;
 			es.es_GadgetFormat = CONTINUE_TXT;
+			ClearIDCMP();
 			EasyRequest(Window,&es,NULL,NULL,NULL);
+			ResetIDCMP();
 			break;
 
 		  case ID_RETHINK:
@@ -1189,7 +1202,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			    case Screen_type :
 				es.es_TextFormat = CLOSESCREEN_TXT;
 				es.es_GadgetFormat = YESNO_TXT;
+				ClearIDCMP();
 				killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+				ResetIDCMP();
 				if ( killit == EASYTRUE )
 				{
 				  CloseScreen((struct Screen *)object);
@@ -1198,7 +1213,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 			    case Window_type :
 				es.es_TextFormat = CLOSEWINDOW_TXT;
 				es.es_GadgetFormat = YESNO_TXT;
+				ClearIDCMP();
 				killit = EasyRequest(Window,&es,NULL,NULL,NULL);
+				ResetIDCMP();
 				if ( killit == EASYTRUE )
 				{
 				  CloseWindow((struct Window *)object);
