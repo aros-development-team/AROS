@@ -8,36 +8,37 @@ LIBS	:= -lamiga -larossupport -larosc -larosm
 OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
 
 BOOT_FILES := \
-	C/Shell \
-	S/Startup-Sequence S/hidd.prefs \
-	Prefs/Env-Archive/Sys/font.prefs \
-	Prefs/Env-Archive/Sys/nv_location \
-	contrib/aminet/untgz \
-	boot/grub/stage1 boot/grub/stage2
+    C/Shell \
+    S/Startup-Sequence S/hidd.prefs \
+    Prefs/Env-Archive/Sys/font.prefs \
+    Prefs/Env-Archive/Sys/nv_location \
+    contrib/aminet/untgz \
+    boot/grub/stage1 boot/grub/stage2
 
 BOOT_TAR_FILES := \
-	C \
-	Classes/DataTypes/ascii.datatype Classes/DataTypes/binary.datatype Classes/DataTypes/text.datatype \
-	Classes/Gadgets/arospalette.gadget \
-	Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
-	Demos \
-	Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
-        Devs/parallel.device Devs/serial.device Devs/Mountlist Devs/fdsk.device Devs/pipefs.handler \
-        Devs/zero.handler \
-	Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/12 \
-	Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
-	Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
-	Libs/locale.library Libs/mathieeedoubbas.library Libs/mathieeedoubtrans.library \
-	Libs/reqtools.library \
-	Locale/Countries Locale/Languages \
-	Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
-	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
-	S \
-	System \
-	Tools/Commodities \
-	Tools/calculator Tools/WiMP Tools/HDToolBox \
-	Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
-	contrib/aminet/Format64
+    C \
+    Classes/DataTypes/ascii.datatype \
+    Classes/DataTypes/binary.datatype \
+    Classes/DataTypes/text.datatype \
+    Classes/Gadgets/arospalette.gadget \
+    Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
+    Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
+    Devs/parallel.device Devs/serial.device Devs/Mountlist Devs/fdsk.device Devs/pipefs.handler \
+    Devs/zero.handler \
+    Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/12 \
+    Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
+    Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
+    Libs/locale.library Libs/mathieeedoubbas.library Libs/mathieeedoubtrans.library \
+    Libs/reqtools.library Libs/muimaster.library \
+    Locale/Countries Locale/Languages \
+    Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
+    Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
+    S \
+    System \
+    Tools/Commodities \
+    Tools/calculator Tools/WiMP Tools/HDToolBox \
+    Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
+    contrib/aminet/Format64
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
@@ -62,7 +63,7 @@ setup-pc-i386 :
 
 #MM
 workbench-s-pc-i386 : Startup-Sequence
-	@$(CP) $< $(SDIR)
+	#@$(CP) $< $(SDIR)
 	@$(NOP)
 
 #MM kernel-link-pc-i386 : setup
@@ -85,9 +86,10 @@ $(BINDIR)/boot/grub/% : %
 bootdisk-pc-i386: \
 	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.tgz \
 	$(BINDIR)/boot/aros-pc-i386 install
-	@$(CP) Startup-Sequence $(BOOT_DEST_DIR)/S
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $(BOOT_DEST_DIR)/S/Startup-Sequence
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(CP) $(BINDIR)/boot/aros-pc-i386 $(BOOT_DEST_DIR)/boot
-	@gzip -f $(BOOT_DEST_DIR)/boot/aros-pc-i386
+	@gzip -9 -f $(BOOT_DEST_DIR)/boot/aros-pc-i386
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
 	@./install $(OSGENDIR)/boot/aros.bin
 
