@@ -432,7 +432,6 @@ BOOL RenderLabel( struct Gadget *gad, struct IBox *gadbox,
             y = gadbox->Top + (gadbox->Height - height) / 2 + 1;
         }
 
-        y += rport->Font->tf_Baseline;
         if (gad->Flags & GFLG_LABELSTRING)
         {
             SetABPenDrMd(rport, 1, 0, JAM1);

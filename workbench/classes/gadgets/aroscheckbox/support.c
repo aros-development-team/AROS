@@ -149,7 +149,6 @@ BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
             y = gad->TopEdge + (gad->Height - height) / 2 + 1;
         }
 
-        y += rport->Font->tf_Baseline;
         if (gad->Flags & GFLG_LABELSTRING)
         {
             SetABPenDrMd(rport, 1, 0, JAM1);
