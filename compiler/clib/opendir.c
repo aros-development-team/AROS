@@ -57,14 +57,16 @@
     DIR *dir;
     int fd;
     fdesc *desc;
+#if 0
     char *dupname;
+#endif
 
     if (!name)
     {
     	errno = EFAULT;
 	goto err1;
     }
-		/*
+/*
     dupname = strdup(name);
     if (!dupname) goto err1;
 
@@ -79,7 +81,7 @@
 	if (name[1] == '/')
 	{
 	    name +=
-	      */
+*/
     dir = malloc(sizeof(DIR));
     if (!dir) goto err2;
 
