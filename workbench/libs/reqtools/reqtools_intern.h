@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -52,15 +52,16 @@ LONG PaletteRequestA (char *title, struct rtReqInfo *reqinfo, struct TagItem *ta
 
 /****************************************************************************************/
 
+struct ReqToolsBase_intern {
+    struct ReqToolsBase ReqToolsBase;
+    
+    struct ExecBase *rt_SysBase;
+};
+
 /* Fix name clashes */
 typedef  struct IntuitionBase  IntuiBase;
 
 #define GPB(x) 		((struct ReqToolsBase *)x)
-
-#ifdef __AROS__
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct ReqToolsBase *, RTBase, 3, ReqTools)
-#endif
 
 /****************************************************************************************/
 
