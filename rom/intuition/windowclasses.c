@@ -410,10 +410,16 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
 	    retval = dragbar_handleinput(cl, o, (struct gpInput *)msg);
 	    break;
 	    
+	case OM_NEW:
+	    retval = DoSuperMethodA(cl, o, msg);
+	    if (NULL != retval) {
+	    	((struct Gadget *)retval)->GadgetType |= GTYP_SYSGADGET;
+	    }
+	    break;
+	
+	    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
-//  retval can also be 0 here... so I shoudldn't do this here.
-//	    ((struct Gadget *)retval)->GadgetType |= GTYP_SYSGADGET;
 	    break;
     }
     
