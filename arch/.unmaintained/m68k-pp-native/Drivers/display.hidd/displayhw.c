@@ -150,7 +150,7 @@ void DisplayRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
  		s3 = MERGE;
 		m = (srcPtr[7] & 0x01010101) | ((srcPtr[6] & 0x01010101) << 4);
  		s4 = MERGE;
-		*((unsigned long*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+		*((unsigned long*)dstPtr) = s4 | (s3 << 8) | (s2 << 16) | (s1 << 24);
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
