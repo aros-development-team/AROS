@@ -6,6 +6,12 @@
     Lang: English.
 */
 
+/*
+ * Define the following to have a combined mouse and keyboard hidd!
+ * Has to come before include kbd.h!
+ */
+#define MOUSE_ACTIVE 1
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -29,13 +35,20 @@
 #include "kbd.h"
 #include "keys.h"
 
-#define DEBUG 0
+#include "../../speaker.h"
+
+#define DEBUG 1
 #include <aros/debug.h>
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 void kbd_updateleds();
-int kbd_reset();
+int kbd_reset(void);
+
+#ifdef MOUSE_ACTIVE
+int mouse_reset(void);
+#endif
+
 long pckey2hidd (ULONG event);
 
 static AttrBase HiddKbdAB;
@@ -165,6 +178,7 @@ keytable[] =
     {0, -1 }
 };
 
+
 /***** Kbd::New()  ***************************************/
 static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
@@ -176,7 +190,7 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
     EnterFunc(bug("Kbd::New()\n"));
  
     ObtainSemaphoreShared( &XSD(cl)->sema);
- 
+
     if (XSD(cl)->kbdhidd)
     	has_kbd_hidd = TRUE;
 
@@ -246,14 +260,62 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
             HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
 
             Disable();
-	        kbd_reset();		/* Reset the keyboard */
-	        Enable();
+            kbd_reset();		/* Reset the keyboard */
+            Enable();
             
             kbd_updateleds();
             ObtainSemaphore(&XSD(cl)->sema);
             XSD(cl)->kbdhidd = o;
             ReleaseSemaphore(&XSD(cl)->sema);
+
         }
+        
+#if MOUSE_ACTIVE
+        if ((XSD(cl)->irqhidd_mouse = NewObject(NULL, CLID_Hidd_IRQ, NULL)))
+        {
+            /* install mouse irq handler */
+
+            HIDDT_IRQ_Handler   *irq_mouse;
+
+            irq_mouse = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
+
+            if (!irq_mouse)
+            {
+                kprintf("ERROR: Cannot install PS/2 Mouse\n");
+                Alert( AT_DeadEnd | AN_IntrMem );
+            }
+	        
+            irq_mouse->h_Node.ln_Pri  = 127;		/* Set the highest pri */
+            irq_mouse->h_Node.ln_Name = "Mouse class irq";
+#warning Uses same routine as keyboard for irq handling!
+            irq_mouse->h_Code         = kbd_keyint;     /* Use same routine since uses same hw! */
+            irq_mouse->h_Data         = (APTR)o;
+
+            HIDD_IRQ_AddHandler(XSD(cl)->irqhidd_mouse, irq_mouse, vHidd_IRQ_Mouse);
+
+            D(bug("Installed mouse irq handler!\n"));
+
+            Disable();
+            mouse_reset();
+            Enable();
+
+        }
+#endif
+
+  /*
+   * Please leave the following lines here.
+   * It only works when they are here. I don't know why, but
+   * I'll find a way to avoid them...
+   */
+  Sound(400,100000000);
+  D(bug("reseting keyboard!\n"));
+  kbd_reset();
+
+#warning There is an endless loop here for testing purposes.
+  while (1)
+  {
+
+  }
     }
     ReturnPtr("Kbd::New", Object *, o);
 }
@@ -270,13 +332,14 @@ static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *
     key = pckey2hidd(msg->event);
     D(bug("%lx ",key));
     if (key == 0x78)	// Reset request
-		ColdReboot();
-	if (data->kbd_callback)
-	{
-    	data->kbd_callback(data->callbackdata, key);
-	}
+        ColdReboot();
+    if (data->kbd_callback)
+    {
+       data->kbd_callback(data->callbackdata, key);
+    }
     ReturnVoid("Kbd::HandleEvent");
 }
+
 
 #undef XSD
 #define XSD(cl) xsd
@@ -377,16 +440,26 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 	__asm__ __volatile__ ("outb %%al,$" #port::"a"(__value)); })
 
 #define WaitForInput			\
-	({  do				\
+	({ int i = 0,dummy;		\
+	   do				\
 	    {				\
 		info=inb(0x64);		\
-	    } while(!(info & 0x01)); })
+	    } while((info & 0x01)); 	\
+	   while (i < 1000000)		\
+	   {				\
+	     dummy = i*i;		\
+	     i++;			\
+	   }})
+	
 
 #define WaitForOutput			\
 	({  do				\
 	    {				\
 		info=inb(0x64);		\
-	    } while(info & 0x02); })
+	    } while(info & 0x02); 	\
+	    inb(0x60);			\
+	})
+
 
 ULONG kbd_keystate=0;
 #define LCTRL	0x00000008
@@ -398,28 +471,8 @@ ULONG kbd_keystate=0;
 #define	LMETA	0x00000200
 #define RMETA	0x00000400
 
-int kbd_reset()
-{
-    UBYTE key,info;
-    do {
-        key=inb(0x60);		/* Empty keys queue */
-        info=inb(0x64);
-    } while (info & 0x01);
-    kbd_keystate=0;
-    WaitForOutput;
-    outb(0xaa,0x64);	/* Initialize and test keyboard */
-    key=inb(0x60);
-    if (key==0x55)	/* 0x55 means everything went OK */
-    {
-        WaitForOutput;
-        outb(0xf6,0x60);	/* Standard settings */
-        key=inb(0x60);
-        kbd_updateleds();	/* Turn all leds off */
-        return TRUE;
-    }
-    return FALSE;
-}
 
+#warning Old place of kbd_reset
 
 void kbd_updateleds()
 {
@@ -437,20 +490,26 @@ void kbd_updateleds()
 #undef SysBase
 #define SysBase (hw->sysBase)
 
+static UBYTE mouse_data[3];
+static UBYTE mouse_collected_bytes = 0;
+static UBYTE expected_mouse_acks = 0;
+
 void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     UBYTE   keycode;        /* Recent Keycode get */
     UBYTE   info;           /* Data from info reg */
     UWORD   event;          /* Event sent to handleevent method */
     static UWORD le;        /* Last event used to prevent from some reps */    
+    info = inb(0x64);
 
-    info=inb(0x64);     /* Get data from information port */
-    if (!(info & 0x20))	/* If bit 5 set data from mouse. Otherwise keyboard */
+    while ((info & 0x01))     /* data from information port */
     {
+      if (!(info & 0x20))	/* If bit 5 set data from mouse. Otherwise keyboard */
+      {
         keycode=inb(0x60);
         if (keycode==0xe0)	/* Special key */
         {
-	        WaitForInput;
+            WaitForInput;
             keycode=inb(0x60);
             if (keycode==0x2a)	/* Shift modifier - we can skip it */
             {
@@ -463,7 +522,8 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             if (event==0x40aa)		/* If you get something like this... */
             {                       /* Special Shift up.... */
                 //return -1;		/* Treat it as NoKey and don't let */
-                return;
+                info = inb(0x64);
+                continue;
             }				/* Other interrupts see it */
         }
         else if (keycode==0xe1)	/* Pause key */
@@ -483,7 +543,16 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         else if (keycode==0xfa)
         {
 	        //return -1;		/* Treat it as NoKey */
-            return;
+            D(bug("!!! Got Keyboard ACK!!!\n"));
+            info = inb(0x64);
+            continue;
+        }
+        else if (keycode==0xfe)
+        {
+            /* supposed to resend the command */
+            D(bug("!!! Got Resend command from Keyboard!\n"));
+            info = inb(0x64);
+            continue;
         }	
         else event=keycode;
         if ((event==le) && (
@@ -492,7 +561,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             le==K_LAlt || le==K_RAlt || le==K_LMeta || le==K_RMeta))
         {
             //return -1;	/* Do not repeat shift pressed or something like this */
-            return;
+            continue;
         }		/* Just forgot about interrupt */
         switch(event)
         {
@@ -562,7 +631,69 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             event=K_ResetRequest;
         if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
         Hidd_Kbd_HandleEvent((Object *)irq->h_Data,(ULONG) event);
-    }
+      }
+#if MOUSE_ACTIVE
+      else
+      {
+        UBYTE mousecode = inb(0x60);
+        if (0xfa == mousecode) 
+        {
+          D(bug("                             Got a mouse ACK!\n"));
+          if (expected_mouse_acks) {
+            expected_mouse_acks--;
+          }
+        }
+        else
+        {
+          expected_mouse_acks = 0;
+          mouse_data[mouse_collected_bytes] = mousecode;
+          
+          if (0 == (mouse_data[0] & 8))
+            mouse_collected_bytes = 0;
+          else
+          {
+            mouse_collected_bytes++;
+            if (3 == mouse_collected_bytes) 
+            {
+              mouse_collected_bytes = 0;
+              /*
+               * Let's see whether these data can be right...
+               *
+               *  D7 D6 D5 D4 D3 D2 D1 D0
+               *  YV XV YS X2  1  M  R  L
+               *  X7 .  .  .  .  .  .  X1   (X, signed)
+               *  Y7 .  .  .  .  .  .  Y1   (Y, signed)
+               *
+               *  YV,XV : over flow in x/y direction
+               *  XS,YS : represents sign of X and Y
+               *  X,Y   : displacement in x and y direction.
+               *  X and Y are signed, XS, YS are there to double check the
+               *  sign and correctnes of the collected data (?).
+               *
+               *  http://www.hut.fi/~then/mytexts/mouse.htm
+               */
+              if ( (( (mouse_data[0] & 0x10) && (char)mouse_data[1] <  0) ||
+                    (!(mouse_data[0] & 0x10) && (char)mouse_data[1] >= 0)   ) &&
+                   (( (mouse_data[0] & 0x20) && (char)mouse_data[2] <  0) ||
+                    (!(mouse_data[0] & 0x20) && (char)mouse_data[2] >= 0    )))
+              {
+                D(bug("Got the following: 1. byte: 0x%x, dx=%d, dy=%d\n",
+                      mouse_data[0],
+                      mouse_data[1],
+                      mouse_data[2]));
+                /*
+                 * Pass them on to the handler!
+                 */
+              
+#warning The mouse data *seem* right at this point and can now be treated!
+              }
+            }
+          }
+        }
+      }
+#endif
+      info = inb(0x64);
+    } /* while data can be read */
 
     //return 0;	/* Enable processing other intServers */
     return;
@@ -598,3 +729,179 @@ long pckey2hidd (ULONG event)
     ReturnInt ("xk2h", long, result);
 }
 
+#warning This should go somewhere higher but D(bug()) is not possible there
+
+
+/*
+ * Please leave this routine as is for now.
+ * It works and that is all that matters right now.
+ */
+int kbd_reset(void)
+{
+    UBYTE retval, status;
+    UBYTE key,info;
+    do {
+        inb(0x60);		/* Empty keys queue */
+        info=inb(0x64);
+    } while (info & 0x01);
+    kbd_keystate=0;
+
+
+    WaitForOutput;	/* Disable mouse interface */
+    outb(0xa7, 0x64);
+
+    WaitForOutput;
+    outb(0xaa,0x64);	/* Initialize and test keyboard */
+    WaitForInput;
+    retval = inb(0x60);
+    if (retval != 0x55)
+    {
+      D(bug("Error! Got reset return value %x.\n",retval));
+      return FALSE;
+    }
+
+
+    WaitForOutput;
+    outb(0xae,0x64);    /* enable keyboard */
+
+    D(bug("Keyboard enabled!\n"));
+
+    WaitForOutput;
+    outb(0x60, 0x64);  // Write mode
+    WaitForOutput;
+    outb(0x47, 0x60);  // set paramters: scan code to pc conversion, 
+                       //                enable mouse and keyboard,
+                       //                enable IRQ 1 & 12.
+
+    D(bug("Successfully reset keyboard!\n"));
+
+    return TRUE;
+}
+
+#ifdef MOUSE_ACTIVE
+
+/*
+ * Please leave this routine as is for now.
+ * It works and that is all that matters right now.
+ */
+int mouse_reset(void)
+{
+    UBYTE info;
+    UBYTE retval;
+
+    WaitForOutput;
+    outb(0x60, 0x64);	/* write mode */
+    WaitForOutput;
+    outb(0x74, 0x60);   /*  */
+    WaitForOutput;
+    WaitForInput;
+    retval = inb(0x60);
+//    D(bug("Return from disabling all irqs: 0x%x\n",retval));
+    
+
+    WaitForOutput;
+    outb(0xa8, 0x64);   /* enable mouse interface */
+
+
+    WaitForOutput;
+    outb(0xa9,0x64);	/* Initialize and test mouse interface */
+    WaitForInput;
+    retval = inb(0x60);
+    if (retval != 0x00)
+    {
+      D(bug("Error! (1) Got return value %x from mouse interface test.\n",retval));
+//      return FALSE;
+    }
+
+    WaitForOutput;
+    outb(0xa8, 0x64);   /* enable mouse interface */
+
+
+    WaitForOutput;
+    outb(0xd4,0x64);	/* write to mouse */
+    WaitForOutput;
+    outb(0xff,0x60);	/* reset mouse */
+    WaitForOutput;
+    WaitForInput;
+    retval = inb(0x60);
+//    D(bug("Return value from reset mouse: 0x%x\n",retval));
+    
+    WaitForOutput;
+    outb(0xd4,0x64);	/* write to mouse */
+    WaitForOutput;
+    outb(0xf4,0x60);	/* enable mouse device */
+    WaitForOutput;
+    WaitForInput;
+    retval = inb(0x60);
+//    D(bug("Return value from enable mouse: 0x%x\n",retval));
+
+    do
+    {
+      WaitForOutput;
+      outb(0xd4,0x64);	/* write to mouse */
+      WaitForOutput;
+      outb(0xf3,0x60);	/* set samples */
+      WaitForInput;
+      WaitForOutput;
+      outb(0xd4,0x64);	/* write to mouse */
+      WaitForOutput;
+      outb(50,0x60);	/* 50 samples/s */
+      WaitForOutput;
+      WaitForInput;
+      retval = inb(0x60);
+//      D(bug("Return value from setting mouse samples: 0x%x\n",retval));
+    }
+    while (0xfe == retval);
+
+
+    do
+    {
+      WaitForOutput;
+      outb(0xd4,0x64);	/* write to mouse */
+      WaitForOutput;
+      outb(0xe7,0x60);	/* set 2:1 scaling */
+      WaitForOutput;
+      WaitForInput;
+      retval = inb(0x60);
+//      D(bug("Return value from setting mouse scaling 2:1: 0x%x\n",retval));
+    }
+    while (0xfe == retval);
+
+
+    do
+    {
+      WaitForOutput;
+      outb(0xd4,0x64);	/* write to mouse */
+      WaitForOutput;
+      outb(0xea,0x60);	/* stream mode on mouse device */
+      WaitForOutput;
+      WaitForInput;
+      retval = inb(0x60);
+//      D(bug("Return value from stream mode on mouse: 0x%x\n",retval));
+    }
+    while (0xfe == retval);
+
+    do
+    {
+      WaitForOutput;
+      outb(0xd4,0x64);	/* write to mouse */
+      WaitForOutput;
+      outb(0xf4,0x60);	/* enable mouse device */
+      WaitForOutput;
+      WaitForInput;
+      retval = inb(0x60);
+//      D(bug("Return value from enable mouse: 0x%x\n",retval));
+    }
+    while (0xfe == retval);
+
+
+    WaitForOutput;
+    outb(0x47, 0x64);     /* enable mouse,keyboard & irqs */
+    WaitForOutput;
+
+    expected_mouse_acks = 1;
+
+    D(bug("Initialized PS/2 mouse!\n"));
+}
+
+#endif

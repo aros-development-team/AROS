@@ -62,6 +62,10 @@ struct kbd_staticdata
 
     Object *irqhidd;
     Object *kbdhidd;
+    
+#if MOUSE_ACTIVE
+    Object *irqhidd_mouse;
+#endif
 };
 
 BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
