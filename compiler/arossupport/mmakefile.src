@@ -46,7 +46,6 @@ INCLUDE_FILES	    := $(wildcard include/*.h)
 #MM includes-copy
 
 %make_linklib_setup mmake=linklibs-arossupport
-%make_vpath
 %copy_includes path=aros
 
 # These files need special CFLAGS
