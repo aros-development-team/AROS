@@ -117,9 +117,9 @@ Area.mui/MUIA_Dropable              done
 Area.mui/MUIA_ExportID
 Area.mui/MUIA_FillArea              done
 Area.mui/MUIA_FixHeight             done
-Area.mui/MUIA_FixHeightTxt          need text/font
+Area.mui/MUIA_FixHeightTxt          done
 Area.mui/MUIA_FixWidth              done
-Area.mui/MUIA_FixWidthTxt           need text/font
+Area.mui/MUIA_FixWidthTxt           done
 Area.mui/MUIA_Font                  done
 Area.mui/MUIA_Frame                 done
 Area.mui/MUIA_FramePhantomHoriz     done
@@ -286,9 +286,15 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->mad_Flags |= MADF_FIXHEIGHT;
 		data->mad_HardHeight = tag->ti_Data;
 		break;
+	    case MUIA_FixHeightTxt:
+	    	data->mad_HardHeightTxt = (STRPTR)tag->ti_Data;
+		break;
 	    case MUIA_FixWidth:
 		data->mad_Flags |= MADF_FIXWIDTH;
 		data->mad_HardWidth = tag->ti_Data;
+		break;
+	    case MUIA_FixWidthTxt:
+	    	data->mad_HardWidthTxt = (STRPTR)tag->ti_Data;
 		break;
 	    case MUIA_Font:
 		data->mad_FontPreset = tag->ti_Data;
@@ -739,49 +745,74 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
  */
 void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
 {
-    if (_flags(obj) & MADF_FIXHEIGHT)
+    struct MUI_AreaData *data = muiAreaData(obj);
+    
+    if ((_flags(obj) & MADF_FIXHEIGHT) && data->mad_HardHeight)
     {
 	int h;
 
-	if (muiAreaData(obj)->mad_HardHeight != 0)
-	    h = CLAMP(muiAreaData(obj)->mad_HardHeight,
-		  MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
-	else
-	    h = MUI_MAXMAX;
+    	h = data->mad_HardHeight + data->mad_subheight;
+	
+	MinMaxInfo->MinHeight =
+	MinMaxInfo->DefHeight = 
+	MinMaxInfo->MaxHeight = CLAMP(h, MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
+    }
+    else if (data->mad_HardHeightTxt)
+    {
+    	ZText *text;
+	
+	if ((text = zune_text_new(NULL, data->mad_HardHeightTxt, ZTEXT_ARG_NONE, 0)))
+	{
+	    zune_text_get_bounds(text, obj);
+	    
+	    MinMaxInfo->MinHeight =
+	    MinMaxInfo->DefHeight =
+	    MinMaxInfo->MaxHeight = 
+	    	CLAMP(text->height + data->mad_subheight, MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
+	    
+	    zune_text_destroy(text);
+	}
 
-	MinMaxInfo->MinHeight = MinMaxInfo->DefHeight =
-	    CLAMP(muiAreaData(obj)->mad_HardHeight,
-		  MinMaxInfo->MinHeight, MinMaxInfo->MaxHeight);
-
-	MinMaxInfo->MaxHeight = h;
     }
     else if (_flags(obj) & MADF_MAXHEIGHT)
     {	
 	MinMaxInfo->MaxHeight =
-	    CLAMP(muiAreaData(obj)->mad_HardHeight,
+	    CLAMP(data->mad_HardHeight + data->mad_subheight,
 		  MinMaxInfo->MinHeight,
 		  MinMaxInfo->MaxHeight);
     }
 
-    if (_flags(obj) & MADF_FIXWIDTH)
+    if ((_flags(obj) & MADF_FIXWIDTH) && data->mad_HardWidth)
     {
 	int w;
 
-	if (muiAreaData(obj)->mad_HardWidth != 0)
-	    w = CLAMP(muiAreaData(obj)->mad_HardWidth,
-		  MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
-	else
-	    w = MUI_MAXMAX;
+    	w = data->mad_HardWidth + data->mad_subwidth;
+	
+	MinMaxInfo->MinWidth =
+	MinMaxInfo->DefWidth = 
+	MinMaxInfo->MaxWidth = CLAMP(w, MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
+    }
+    else if (data->mad_HardWidthTxt)
+    {
+    	ZText *text;
+	
+	if ((text = zune_text_new(NULL, data->mad_HardWidthTxt, ZTEXT_ARG_NONE, 0)))
+	{
+	    zune_text_get_bounds(text, obj);
+	    
+	    MinMaxInfo->MinWidth =
+	    MinMaxInfo->DefWidth =
+	    MinMaxInfo->MaxWidth = 
+	    	CLAMP(text->width + data->mad_subwidth, MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
+	    
+	    zune_text_destroy(text);
+	}
 
-	MinMaxInfo->MinWidth = MinMaxInfo->DefWidth =
-	    CLAMP(muiAreaData(obj)->mad_HardWidth,
-		  MinMaxInfo->MinWidth, MinMaxInfo->MaxWidth);
-	MinMaxInfo->MaxWidth = w;
     }
     else if (_flags(obj) & MADF_MAXWIDTH)
     {
 	MinMaxInfo->MaxWidth =
-	    CLAMP(muiAreaData(obj)->mad_HardWidth,
+	    CLAMP(data->mad_HardWidth + data->mad_subwidth,
 		  MinMaxInfo->MinWidth,
 		  MinMaxInfo->MaxWidth);
     }
