@@ -38,57 +38,58 @@
     HISTORY
  
 ******************************************************************************/
-
 #include "include/machine.i"
 
 	.text
 	.globl	AROS_SLIB_ENTRY(StackSwap,Exec)
 	_FUNCTION(AROS_SLIB_ENTRY(StackSwap,Exec))
 AROS_SLIB_ENTRY(StackSwap,Exec):
-	/* Preserve returnaddress and fix sp */
-	popl	%edx
-	movl	4(%esp),%eax
+	/* Save %ebx content */
+	pushl	%ebx
+	
+	/* Take the function's parameters */
+	movl	8(%esp),  %ebx  //newStack
+	movl	12(%esp), %eax  //SysBase
 
-	/* Get pointer to tc_SPLower in a1 (tc_SPUpper is next) */
-	movl	ThisTask(%eax),%ecx
-	leal	tc_SPLower(%ecx),%ecx
-
-	/* Just to be sure interrupts always find a good stackframe */
+	/* Disable interrupts, to be sure they always find a good stackframe */
 	pushl	%eax
 	call	*Disable(%eax)
 	popl	%eax
 
-	movl	(%esp),%eax
-	pushl	%ebx
+	/* FindTask(NULL) in %edx */
+	movl	ThisTask(%eax), %edx
+	
+	/* Swap Lower boundaries, %ecx is used as temp register */
+	movl    tc_SPLower(%edx), %ecx
+	xchgl	%ecx,             stk_Lower(%ebx)
+	movl    %ecx,             tc_SPLower(%edx)
 
-	/* Swap Lower boundaries */
-	movl	(%eax),%ebx
-	xchgl	%ebx,(%ecx)
-	movl	%ebx,(%eax)
+	/* Swap Upper boundaries, %ecx is used as temp register */
+	movl    tc_SPUpper(%edx), %ecx
+	xchgl	%ecx,             stk_Upper(%ebx)
+	movl    %ecx,             tc_SPUpper(%edx)
+	
+	/* We need to restore %ebx before swapping stack pointers, so
+	   put its content in a register whose content doesn't matter
+	   anymore to us, like %edx.  */
+	movl    %ebx, %edx  // newStack, ThisTask is lost
 
-	addl	$4,%eax
-	addl	$4,%ecx
+	/* Now restore %ebx */
+	popl	%ebx        
+	
+	/* And take the function's return address, before we
+	   swap stacks.  */
+	popl    %ecx    // return address    
+	
+	/* Swap stack pointers */
+	xchgl	%esp, stk_Pointer(%edx) 
 
-	/* Swap higher boundaries */
-	movl	(%eax),%ebx
-	xchgl	%ebx,(%ecx)
-	movl	%ebx,(%eax)
-
-	addl	$4,%eax
-
-	/* Swap stackpointers */
-	popl	%ebx
-	xchgl	(%eax),%esp
-
-	pushl %edx
-	movl	(4),%eax
 	/* Reenable interrupts. */
 	pushl	%eax
 	call	*Enable(%eax)
 	popl	%eax
-//	popl	%edx
-
-	/* Restore returnaddress and return */
-//	pushl	%edx
-	ret
+	
+	/* Return. %ecx contains the return address, and the stack is already
+	   adjusted, we don't need, or even can, use ret here.  */
+        jmp	*%ecx
 
