@@ -505,3 +505,5 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
 
     return TRUE;
 }
+
+const char HIDD_End = 0;
