@@ -262,9 +262,9 @@ void UpdateAreaPtrn (struct RastPort * rp)
         /* Just a default pattern for now :-( */
         Pixmap stipple;
         #define stipple_bitmap_width 4
-        #define stipple_bitmap_height 4
+        #define stipple_bitmap_height 2
         static char stipple_bitmap_bits[] = {
-          0x0c,0x0c,0x03,0x03};
+          0x02,0x08};
 
         XSetFillStyle (sysDisplay
             , GetGC(rp)
@@ -288,6 +288,11 @@ void UpdateAreaPtrn (struct RastPort * rp)
 void UpdateLinePtrn (struct RastPort * rp)
 {
     XGCValues gcval;
+
+    XSetFillStyle (sysDisplay
+        , GetGC(rp)
+        , FillSolid
+    );
 
     if (!(rp->Flags & 0x10) )
 	return;
