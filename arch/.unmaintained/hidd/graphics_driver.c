@@ -585,7 +585,8 @@ ULOCK_HIDD(bm);
 		    {
 #warning setbitmapfast should handle drawmodes (JAM1, JAM2,..)
 			setbitmapfast(CR->BitMap
-		    		, intersect.MinX, intersect.MinY
+		    		, intersect.MinX // - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY // - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, GetAPen(rp)
@@ -710,7 +711,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 			BltBitMap(srcBitMap
 		    		, xSrc + xoffset, ySrc + yoffset
 				, CR->BitMap
-		    		, intersect.MinX - CR->bounds.MinX
+		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
@@ -1126,11 +1127,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     /* No one may access the layer while I am doing this here! */
     LockLayerRom(L);
   }
-
-  if (0 != (Width & 0x07))
-    Width = (Width >> 3) + 1;
-  else
-    Width = (Width >> 3);
+  
+  Width = WIDTH_TO_BYTES(Width);
 
   /* does this rastport have a layer? */
   if (NULL != L)
@@ -1173,11 +1171,9 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
         LONG Offset;
         if (NULL == CR->lobs)
         {
-	  
-          i = (y + YRel) * Width + 
-             ((x + XRel) >> 3);
-          Mask = (1 << (7-((x + XRel) & 0x07)));
-	  
+
+          i = COORD_TO_BYTEIDX(x + XRel, y + YRel, Width);
+          Mask = XCOORD_TO_MASK(x + XRel);
 	  if (bm->Flags & BMF_AROS_DISPLAYED)
 	  {
 	    penno = HIDD_BM_GetPixel(BM_OBJ(bm), x + XRel, y + YRel);
@@ -1201,27 +1197,26 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
            
           Width = GetBitMapAttr(bm, BMA_WIDTH);
           /* Calculate the Width of the bitplane in bytes */
-          if (Width & 0x07)
-            Width = (Width >> 3) + 1;
-          else
-            Width = (Width >> 3);
+	  
+	  Width = WIDTH_TO_BYTES(Width);
            
           if (0 == (L->Flags & LAYERSUPER))
           { 
             /* no superbitmap */
             Offset = CR->bounds.MinX & 0x0f;
           
-            i = (y - (CR->bounds.MinY - YRel)) * Width + 
-               ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
+            i = COORD_TO_BYTEIDX( x - (CR->bounds.MinX - XRel) + Offset
+	    			, y - (CR->bounds.MinY - YRel)
+				, Width
+	    );   
                 /* Offset: optimization for blitting!! */
-            Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
+            Mask = XCOORD_TO_MASK(Offset + x - (CR->bounds.MinX - XRel));
           }
           else
           {
             /* with superbitmap */
-            i =  (y + L->Scroll_Y) * Width +
-                ((x + L->Scroll_X) >> 3);
-            Mask = 1 << (7 - ((x + L->Scroll_X) & 0x07));                 
+            i =  COORD_TO_BYTEIDX(x + L->Scroll_X, y + L->Scroll_Y, Width);
+            Mask = XCOORD_TO_MASK(x + L->Scroll_X);
           }
           
         }       
@@ -1240,8 +1235,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
         /* no need to unlock the layer!!!! */
         return HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
     }
-    i = y * Width + (x >> 3);
-    Mask = (1 << (7-(x & 0x07)));
+    i = COORD_TO_BYTEIDX(x, y, Width);
+    Mask = XCOORD_TO_MASK(x);
   }
 
  /* get the pen for this rastport */
@@ -1336,10 +1331,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     LockLayerRom(L);
   }
   
-  if (0 != (Width & 0x07))
-    Width = (Width >> 3) + 1;
-  else
-    Width = (Width >> 3);
+  Width = WIDTH_TO_BYTES(Width);
 
   /* does this rastport have a layer? */
   if (NULL != L)
@@ -1381,9 +1373,8 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         {
 
           /* this ClipRect is not hidden! */
-          i = (y + YRel) * Width + 
-             ((x + XRel) >> 3);
-          Mask = 1 << (7-((x + XRel) & 0x07));
+	  i = COORD_TO_BYTEIDX(x + XRel, y + YRel, Width);
+          Mask = XCOORD_TO_MASK(x + XRel);
 
           /* and let the driver set the pixel to the X-Window also,
              but this Pixel has a relative position!! */
@@ -1407,35 +1398,32 @@ ULOCK_HIDD(bm);
              will be shown once the layer moves... 
            */
 	   
-
-		
 	  found_offscreen = TRUE;
 	  
           bm = CR -> BitMap;
            
           Width = GetBitMapAttr(bm, BMA_WIDTH);
           /* Calculate the Width of the bitplane in bytes */
-          if (Width & 0x07)
-            Width = (Width >> 3) + 1;
-          else
-            Width = (Width >> 3);
+	  
+	  Width = WIDTH_TO_BYTES(Width);
            
           if (0 == (L->Flags & LAYERSUPER))
           { 
             /* no superbitmap */
             Offset = CR->bounds.MinX & 0x0f;
           
-            i = (y - (CR->bounds.MinY - YRel)) * Width + 
-               ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
+            i = COORD_TO_BYTEIDX( x - (CR->bounds.MinX - XRel) + Offset
+	    			, y - (CR->bounds.MinY - YRel)
+				, Width
+	    );   
                 /* Offset: optimization for blitting!! */
-            Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
+            Mask = XCOORD_TO_MASK(Offset + x - (CR->bounds.MinX - XRel) );
           }
           else
           {
             /* with superbitmap */
-            i = ((y + L->Scroll_Y) * Width) +
-                ((x + L->Scroll_X) >> 3);
-            Mask = 1 << (7 - ((x + L->Scroll_X) & 0x07));                 
+            i = COORD_TO_BYTEIDX(x + L->Scroll_X, y + L->Scroll_Y, Width);
+            Mask = XCOORD_TO_MASK(x + L->Scroll_X);
           }
           
         }       
@@ -1450,8 +1438,8 @@ ULOCK_HIDD(bm);
   else
   { /* this is probably something like a screen */
   
-    i = y * Width + (x >> 3);
-    Mask = (1 << (7-(x & 0x07)));
+    i = COORD_TO_BYTEIDX(x, y, Width);
+    Mask = XCOORD_TO_MASK( x );
 
     /* and let the driver set the pixel to the X-Window also */
     if (bm->Flags & BMF_AROS_DISPLAYED)
@@ -1475,7 +1463,7 @@ ULOCK_HIDD(bm);
     CLR_Mask = ~Mask;
   
     /* we use brute force and write the pixel to
-       all bitplane, setting the bitplanes where the pen is
+       all bitplanes, setting the bitplanes where the pen is
        '1' and clearing the other ones */
     for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
     {
@@ -1593,7 +1581,8 @@ ULOCK_HIDD(bm);
 		    else
 		    {
 		    	setbitmapfast(CR->BitMap
-		    		, intersect.MinX, intersect.MinY
+		    		, intersect.MinX // - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY // - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, color
@@ -3022,7 +3011,7 @@ ULOCK_HIDD(bm);
 		    {
 			UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
 		    
-		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX;
+		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
 		    
 		    	UBYTE *array_ptr	= array + (array_rel_y * array_width) + array_rel_x;
@@ -3153,13 +3142,13 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		    
 		    /* Read from the HIDD */
 	
-		    amiga2hidd_fast(BM_OBJ(bm)
+		    hidd2amiga_fast(BM_OBJ(bm)
 			, intersect.MinX, intersect.MinY
 			, (APTR)array
 			, array_rel_x
 			, array_rel_y
 			, inter_width, inter_height
-			, pixarray_to_buf
+			, buf_to_pixarray
 		    );
 		}
 		else
@@ -3172,7 +3161,7 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		    else
 		    {
 		    	UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
-		    	LONG cr_rel_x = intersect.MinX - CR->bounds.MinX;
+		    	LONG cr_rel_x = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
 		    
 		    	LONG y;
@@ -3224,8 +3213,8 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
     UBYTE bpen = GetBPen(rp);
     LONG x, y;
 
-    /* Find the exact startbyte */
-    srcptr = source + (x_src >> 3);
+    /* Find the exact startbyte. x_src is max 15 */
+    srcptr = ((UBYTE *)source) + XCOORD_TO_BYTEIDX(x_src);
     
     /* Find the exact startbit */
     x_src &= 0x07;
@@ -3233,11 +3222,12 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 
     for (y = 0; y < ysize; y ++)
     {
+	UBYTE *byteptr = srcptr;
     	for (x = 0; x < xsize; x ++)
 	{
 	    UBYTE pen;
-	    UBYTE mask = 1 << (7 - ((x + x_src) & 0x07));
-	    BOOL is_set = ((*srcptr & mask) ? TRUE : FALSE);
+	    UBYTE mask = XCOORD_TO_MASK( x + x_src );
+	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
 	    BOOL set_pixel = FALSE;
 	    
 	    if (drmd & INVERSVID)
@@ -3292,7 +3282,7 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 	
 	    /* Last pixel in this byte ? */
 	    if (((x + x_src) & 0x07) == 0x07)
-	    	srcptr ++;
+	    	byteptr ++;
 		
 	}
 	srcptr += modulo;
@@ -3323,10 +3313,10 @@ VOID template_to_buf(struct template_info *ti
     EnterFunc(bug("template_to_buf(%p, %d, %d, %d, %d, %p)\n"
     			, ti, x_src, y_src, xsize, ysize, buf));
     /* Find the exact startbyte */
-    srcptr = ti->source + (x_src >> 3) + (ti->modulo * y_src);
+    srcptr = ti->source + XCOORD_TO_BYTEIDX(x_src) + (ti->modulo * y_src);
     
     D(bug("offset (in bytes): %d, modulo=%d, y_src=%d, x_src=%d\n"
-    	, (x_src >> 3) + (ti->modulo * y_src), ti->modulo, y_src, x_src ));
+    	, XCOORD_TO_BYTEIDX(x_src) + (ti->modulo * y_src), ti->modulo, y_src, x_src ));
     /* Find the exact startbit */
     
     x_src &= 0x07;
@@ -3339,7 +3329,7 @@ VOID template_to_buf(struct template_info *ti
 	UBYTE *byteptr = srcptr;
     	for (x = 0; x < xsize; x ++)
 	{
-	    UBYTE mask = 1 << (7 - ((x + x_src) & 0x07));
+	    UBYTE mask = XCOORD_TO_MASK(x + x_src);
 	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
 	    
 	    if (ti->invertsrc)
@@ -3513,14 +3503,14 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 		    
 		    	/* This is the tricky one: render into offscreen cliprect bitmap */
 		    	clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
-		    	clipped_source = source + (((clipped_xsrc - 1) >> 4) + 1);
-		    	clipped_xsrc &= 0x0F;
+		    	clipped_source = source + XCOORD_TO_BYTEIDX(clipped_xsrc);
+		    	clipped_xsrc &= 0x07;
 
 		    	blttemplate_amiga(clipped_source
 		    		, clipped_xsrc
 				, srcMod
 				, CR->BitMap
-				, intersect.MinX - CR->bounds.MinX
+				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
@@ -3860,7 +3850,7 @@ D(bug("Done putting to hidd\n"));
 		    	bltpattern_amiga( &pi
 		    		, CR->BitMap
 				, xMin, yMin
-				, intersect.MinX - CR->bounds.MinX
+				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
@@ -4103,7 +4093,7 @@ ULOCK_HIDD(bm);
 		    
 		    	rp->BitMap = CR->BitMap;
 		    
-		    	msg.MinX = intersect.MinX - CR->bounds.MinX;
+		    	msg.MinX = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	msg.MinY = intersect.MinY - CR->bounds.MinY;
 		    	msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
 		    	msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
@@ -4394,15 +4384,13 @@ LOCK_HIDD(bm);
 		    	bltmask_amiga( &bmi
 		    		, xSrc + xoffset, ySrc + yoffset
 				, CR->BitMap
-		    		, intersect.MinX - CR->bounds.MinX
+		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, minterm
 		    	);
 		    }
-		    
-		    
 		}
 	    }
 	}
