@@ -28,7 +28,7 @@ struct arosc_userdata
 
 __BEGIN_DECLS
 
-struct arosc_userdata *__get_arosc_userdata(void);
+struct arosc_userdata *__get_arosc_userdata(void) __pure;
 
 __END_DECLS
 
