@@ -217,11 +217,11 @@ struct BlockCache *getFreeCacheBlock
 	)
 {
 struct BlockCache *cache;
-struct BlockCache *smallest=0;
+struct BlockCache *smallest=NULL;
 
 	D(bug("afs.handler:    getFreeCacheBlock: getting cacheblock %ld\n",blocknum));
 	cache=volume->blockcache;
-	while (cache)
+	while (cache != NULL)
 	{
 		if (cache->blocknum==blocknum)
 		{
@@ -240,7 +240,7 @@ struct BlockCache *smallest=0;
 		}
 		if (!(cache->flags & BCF_USED))
 		{
-			if (smallest)
+			if (smallest != NULL)
 			{
 				if (smallest->acc_count>cache->acc_count)
 					smallest=cache;
@@ -253,7 +253,8 @@ struct BlockCache *smallest=0;
 		cache=cache->next;
 	}
 	// block not cached
-	if (smallest) {
+	if (smallest != NULL)
+	{
 		smallest->acc_count=1;
 		smallest->blocknum=blocknum;
 		smallest->volume=volume;
@@ -299,7 +300,7 @@ struct BlockCache *getBlock
 struct BlockCache *blockbuffer;
 
 	blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum);
-	if (blockbuffer)
+	if (blockbuffer != NULL)
 	{
 		if (blockbuffer->acc_count==1)
 		{
@@ -315,7 +316,7 @@ struct BlockCache *blockbuffer;
 						)
 				)
 			{
-				blockbuffer=0;
+				blockbuffer=NULL;
 			}
 		}
 	}
