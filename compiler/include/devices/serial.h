@@ -5,7 +5,7 @@
     (C) 1997 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Serial device commands etc.
+    Desc: Serial device commands, structures, defintions etc.
     Lang: english
 */
 
@@ -39,6 +39,9 @@ struct IOExtSer
 #define   SDCMD_BREAK	       (CMD_NONSTD+1)
 #define   SDCMD_SETPARAMS      (CMD_NONSTD+2)
 
+/*
+** The follwoing flags(bits) are to be set in IOExtSer->IOSer.io_Flags
+*/
 
 #define	SERB_PARTY_ON	0
 #define	SERF_PARTY_ON	(1<<0)
@@ -57,6 +60,10 @@ struct IOExtSer
 #define SERB_XDISABLED	7
 #define SERF_XDISABLED	(1<<7)
 
+/*
+** The following flags(bits) are to be found in IOExtSer->io_Status
+*/
+
 #define	IO_STATB_OVERRUN    8
 #define	IO_STATF_OVERRUN    (1<<8)
 #define	IO_STATB_WROTEBREAK 9
@@ -69,11 +76,17 @@ struct IOExtSer
 #define	IO_STATF_XOFFREAD   (1<<12) 
 
 
+
+
 #define	SEXTB_MARK	0
 #define	SEXTF_MARK	(1<<0)
 #define	SEXTB_MSPON	1
 #define	SEXTF_MSPON	(1<<1)
 
+
+/*
+** The follwoing error codes are to be found in IOExtSer->IOSer.io_Error
+*/
 
 #define SerErr_DevBusy	       1
 #define SerErr_BaudMismatch    2
@@ -86,6 +99,11 @@ struct IOExtSer
 #define SerErr_NoDSR	      13
 #define SerErr_DetectedBreak  15
 
+#define SERIALNAME     "serial.device"
+
+/*
+**  Anything below this point is obsolete.
+*/
 
 #ifdef DEVICES_SERIAL_H_OBSOLETE
 #define SerErr_InvBaud	       3
@@ -116,7 +134,5 @@ struct IOExtSer
 #define	IOSERF_BUFRREAD (1<<7)
 #endif
 
-
-#define SERIALNAME     "serial.device"
 
 #endif  /*  DEVICES_SERIAL_H  */
