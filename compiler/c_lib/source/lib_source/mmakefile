@@ -21,7 +21,7 @@ clean :
 setup : make-dirs copy-scripts
 
 make-dirs :
-	@if test ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
+	@if $(TEST) ! -d $(SCRIPTDIR) ; then $(MKDIR) $(SCRIPTDIR) ; else true ; fi
 
 copy-scripts : $(SCRIPTDIR)/genlibdefs.awk $(SCRIPTDIR)/genfunctable.awk
 
