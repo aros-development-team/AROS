@@ -17,6 +17,8 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 
+static const char version[] = "$VER: readicon 41.1 (14.3.1997)\n";
+
 #define IM(x)       ((struct Image *)x)
 
 struct IntuitionBase *IntuitionBase;

@@ -14,6 +14,8 @@ struct IntuitionBase *IntuitionBase;
 struct Library *GfxBase;
 struct Window *win;
 
+static const char version[] = "$VER: regiontest 41.1 (14.3.1997)\n";
+
 void doall(void);
 
 int main(int argc, char **argv)

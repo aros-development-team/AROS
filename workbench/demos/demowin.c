@@ -1,6 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
-    $VER: demowin.c 1.17 (22.2.97)
+    $Id$
 
     Desc: A short demo for the features of Intuition and Graphics
     Lang: english
@@ -39,6 +39,8 @@
 #   define D(x)     /* eps */
 #endif
 #define bug	kprintf
+
+static const char version[] = "$VER: demowin 41.1 (14.3.1997)\n";
 
 struct Library *ConsoleDevice;
 struct IntuitionBase *IntuitionBase;

@@ -39,11 +39,6 @@ a) uses obsolete includes, which are not included in the AROS distribution and
 b) is not fully compatible with gcc.
 
 All changes are indicated by AROS NOTE.
-
-    $Log$
-    Revision 1.2  1997/03/06 18:17:47  srittau
-    Made sift AROS compatible.
-
 */
 
 /*

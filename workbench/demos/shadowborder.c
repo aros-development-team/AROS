@@ -44,6 +44,8 @@ responsibility is assumed.
 
 #include <stdio.h>
 
+static const char version[] = "$VER: shadowborder 41.1 (14.3.1997)\n";
+
 #ifdef __AROS
 #include <proto/alib.h>
 #endif

@@ -43,7 +43,12 @@ responsibility is assumed.
 
 #include <stdio.h>
 
-#ifdef _AROS
+static const char version[] = "$VER: compleximage 41.1 (14.3.1997)\n";
+
+#ifdef __AROS
+#ifdef __chip
+#undef __chip
+#endif
 #define __chip
 #include <proto/alib.h>
 #endif
@@ -128,7 +133,7 @@ if (IntuitionBase != NULL)
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
 			    WA_CustomScreen, scr,
-#ifdef _AROS
+#ifdef __AROS
 			    WA_IDCMP,	     IDCMP_RAWKEY,
 #endif
 			    TAG_END)))
@@ -168,7 +173,7 @@ if (IntuitionBase != NULL)
 	    myImage.PlaneOnOff = 0x1;
 	    DrawImage(win->RPort,&myImage,100,50);
 
-#ifdef _AROS
+#ifdef __AROS
 	    /* Wait for a keypress */
 	    Wait (1L << win->UserPort->mp_SigBit);
 #else

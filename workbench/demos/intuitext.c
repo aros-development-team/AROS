@@ -45,6 +45,8 @@ responsibility is assumed.
 
 #include <stdio.h>
 
+static const char version[] = "$VER: intuitext 41.1 (14.3.1997)\n";
+
 #ifdef __AROS
 #define __chip
 #include <proto/alib.h>
