@@ -100,7 +100,7 @@ struct mouse_data
         {
             OOP_Object	*irqhidd;
             
-            UBYTE       mouse_data[3];
+            UBYTE       mouse_data[4];
             UBYTE       mouse_collected_bytes;
             UBYTE       expected_mouse_acks;
 
