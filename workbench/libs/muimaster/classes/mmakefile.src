@@ -8,8 +8,12 @@ USER_CFLAGS := -I..
 #MM- workbench-libs-muimaster : \
 #MM     workbench-classes-zune-aboutmui \
 #MM     workbench-classes-zune-colorfield \
+#MM     workbench-classes-zune-imageadjust \
 #MM     workbench-classes-zune-pendisplay \
 #MM     workbench-classes-zune-popasl \
+#MM     workbench-classes-zune-popframe \
+#MM     workbench-classes-zune-popimage \
+#MM     workbench-classes-zune-poppen \
 #MM     workbench-classes-zune-scrollgroup \
 #MM     workbench-classes-zune-settingsgroup \
 #MM     workbench-classes-zune-virtgroup
@@ -17,8 +21,12 @@ USER_CFLAGS := -I..
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
 #MM     workbench-classes-zune-colorfield-clean \
+#MM     workbench-classes-zune-imageadjust-clean \
 #MM     workbench-classes-zune-pendisplay-clean \
 #MM     workbench-classes-zune-popasl-clean \
+#MM     workbench-classes-zune-popframe-clean \
+#MM     workbench-classes-zune-popimage-clean \
+#MM     workbench-classes-zune-poppen-clean \
 #MM     workbench-classes-zune-scrollgroup-clean \
 #MM     workbench-classes-zune-settingsgroup-clean \
 #MM     workbench-classes-zune-virtgroup-clean
