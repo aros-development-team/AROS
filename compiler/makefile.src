@@ -7,7 +7,6 @@ ifeq ($(FLAVOUR),native)
 SUBDIRS=include arossupport alib clib
 else
 SUBDIRS=include arossupport alib clib
-#arossupport
 #vcpp vbcc
 endif
 
