@@ -1,31 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1996/10/24 15:51:23  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.5  1996/10/15 15:45:31  digulla
-    Two new functions: LockIBase() and UnlockIBase()
-    Modified code to make sure that it is impossible to access illegal data (ie.
-    	fields of a window which is currently beeing closed).
-
-    Revision 1.4  1996/09/21 15:54:21  digulla
-    Use Screens' font if there is one
-
-    Revision 1.3  1996/09/21 14:20:26  digulla
-    DEBUG Code
-    Initialize new RastPort with InitRastPort()
-
-    Revision 1.2  1996/08/29 13:33:32  digulla
-    Moved common code from driver to Intuition
-    More docs
-
-    Revision 1.1  1996/08/13 15:37:27  digulla
-    First function for intuition.library
-
-
-    Desc:
+    Desc: Intuition function OpenWindow()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -105,15 +82,13 @@ extern int intui_GetWindowSize (void);
     ));
 
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
-    rp = AllocMem (sizeof (struct RastPort), MEMF_ANY);
+    rp = CreateRastPort ();
 
     if (!w || !rp)
 	goto failexit;
 
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
 	goto failexit;
-
-    InitRastPort (rp);
 
     w->LeftEdge    = newWindow->LeftEdge;
     w->TopEdge	   = newWindow->TopEdge;
@@ -175,7 +150,7 @@ failexit:
     ModifyIDCMP (w, 0L);
 
     if (rp)
-	FreeMem (rp, sizeof (struct RastPort));
+	FreeRastPort (rp);
 
     if (w)
     {

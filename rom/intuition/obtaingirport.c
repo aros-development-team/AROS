@@ -1,15 +1,12 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1996/10/25 14:17:55  aros
-    New functions
 
-
-    Desc:
+    Desc: Intuition Function ObtainGIRPort()
     Lang: english
 */
 #include "intuition_intern.h"
+#include <clib/graphics_protos.h>
 
 /*****************************************************************************
 
@@ -51,8 +48,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* TODO */
-    return gInfo->gi_RastPort;
+    return CloneRastPort (gInfo->gi_RastPort);
 
     AROS_LIBFUNC_EXIT
 } /* ObtainGIRPort */

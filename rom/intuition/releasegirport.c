@@ -1,15 +1,12 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1996/10/25 14:17:55  aros
-    New functions
 
-
-    Desc:
+    Desc: Intuition function ReleaseGIRPort()
     Lang: english
 */
 #include "intuition_intern.h"
+#include <clib/graphics_protos.h>
 
 /*****************************************************************************
 
@@ -26,10 +23,13 @@
 	struct IntuitionBase *, IntuitionBase, 94, Intuition)
 
 /*  FUNCTION
+	Release a RastPort previously obtained by ObtainGIRPort().
 
     INPUTS
+	rp - The result of ObtainGIRPort()
 
     RESULT
+	None.
 
     NOTES
 
@@ -50,7 +50,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* TODO */
+    FreeRastPort (rp);
 
     AROS_LIBFUNC_EXIT
 } /* ReleaseGIRPort */

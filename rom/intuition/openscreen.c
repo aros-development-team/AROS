@@ -1,18 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1996/10/24 15:51:23  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.2  1996/09/21 15:54:01  digulla
-    Fill private fields
-
-    Revision 1.1  1996/09/21 14:11:39  digulla
-    Open and close screens
-
-
-    Desc:
+    Desc: Intuition function OpenScreen()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -79,7 +69,18 @@
 	, newScreen->Depth
     ));
 
-    if ((screen = AllocMem (sizeof (struct IntScreen), MEMF_ANY | MEMF_CLEAR)))
+    screen = AllocMem (sizeof (struct IntScreen), MEMF_ANY | MEMF_CLEAR);
+
+    if (screen)
+    {
+	if (!InitRastPort (&screen->Screen.RastPort))
+	{
+	    FreeMem (screen, sizeof (struct IntScreen));
+	    screen = NULL;
+	}
+    }
+
+    if (screen)
     {
 	COPY(LeftEdge);
 	COPY(TopEdge);
@@ -105,7 +106,6 @@
 	screen->Screen.WBorRight = 0;
 	screen->Screen.WBorBottom = 0;
 
-	InitRastPort (&screen->Screen.RastPort);
 
 	screen->Screen.RastPort.BitMap = &screen->Screen.BitMap;
 
@@ -129,6 +129,8 @@
 	if (!screen->DInfo.dri_Font)
 	    screen->DInfo.dri_Font = GfxBase->DefaultFont;
 
+	SetFont (&screen->Screen.RastPort, screen->DInfo.dri_Font);
+
 	screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
 	screen->Pens[BLOCKPEN]	= screen->Screen.BlockPen;
 	screen->Pens[TEXTPEN] = 1;
@@ -143,6 +145,6 @@
 	screen->Pens[BARTRIMPEN] = 1;
     }
 
-    ReturnPtr ("OpenScreen", struct Screen *, screen);
+    ReturnPtr ("OpenScreen", struct Screen *, &screen->Screen);
     AROS_LIBFUNC_EXIT
 } /* OpenScreen */
