@@ -1,0 +1,33 @@
+MAIL_FILE=/tmp/_aros_build_mail_body
+
+MAIL_SUBJECT_PREFIX="[BUILD]"
+MAIL_SUBJECT_BASE="Nightly build on $CFG_NAME"
+
+MAIL_SUBJECT=""
+
+# $1 = description of result of build
+mail_start()
+{
+    MAIL_SUBJECT="$MAIL_SUBJECT_PREFIX $MAIL_SUBJECT_BASE $1"
+    
+    touch $MAIL_FILE
+    mail_write "$MAIL_SUBJECT_BASE $1."
+    mail_write "Build started at $START_TIME, finished at $STOP_TIME."
+}
+
+mail_write()
+{
+    echo >>$MAIL_FILE $*
+}
+
+# $1 = extra options (attachements)
+mail_send()
+{
+    mutt -s $MAIL_SUBJECT -c $CFG_MAIL_CC $1 $CFG_MAIL_TO <$MAIL_FILE
+}
+
+mail_stop()
+{
+    rm -f $MAIL_FILE
+}
+
