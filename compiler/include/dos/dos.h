@@ -368,6 +368,10 @@ struct InfoData
 #define OFFSET_CURRENT    0
 #define OFFSET_END        1
 
+/* Limits of the "int" type */
+#define MAXINT ((int)(((unsigned int)~0)/2))
+#define MININT (-MAXINT - 1)
+
 /* Used in ChangeMode() */
 #define CHANGE_LOCK 0
 #define CHANGE_FH   1
