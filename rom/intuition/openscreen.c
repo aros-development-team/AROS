@@ -1480,6 +1480,9 @@ AROS_LH1(struct Screen *, OpenScreen,
             screen->DInfo.dri_Font->tf_Accessors++;
             Permit();
     	#endif
+	
+	    screen->SpecialFlags |= SF_SysFont;
+	    
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Set ScreenFont\n"));
 
         }
