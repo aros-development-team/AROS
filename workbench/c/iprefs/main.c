@@ -10,6 +10,8 @@
 
 #include "global.h"
 
+#include <dos/dostags.h>
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -69,7 +71,9 @@ preftable[] =
 
 /*********************************************************************************************/
 
-static ULONG notifysig;
+static struct Task *launchertask;
+static char 	   *launchertask_name = "« IPrefs Launcher »";
+static ULONG 	    notifysig;
 
 /*********************************************************************************************/
 
@@ -97,10 +101,12 @@ void Cleanup(STRPTR msg)
 {
     if (msg)
     {
-	if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
+	if (IntuitionBase /* && !((struct Process *)FindTask(NULL))->pr_CLI */)
 	{
 	    ShowMessage("IPrefs", msg, "Ok");     
-	} else {
+	}
+	else if (FindTask(NULL)->tc_Node.ln_Name == launchertask_name)
+	{
 	    printf("IPrefs: %s\n", msg);
 	}
     }
@@ -111,6 +117,52 @@ void Cleanup(STRPTR msg)
     exit(prog_exitcode);
 }
 
+
+/*********************************************************************************************/
+
+static void Detach(void)
+{
+    struct Task *thistask = FindTask(NULL);
+    
+    if (!(launchertask = FindTask(launchertask_name)))
+    {
+    	struct TagItem sys_tags[] =
+	{
+	    {SYS_Input , (IPTR)Open("NIL:", MODE_OLDFILE)},
+	    {SYS_Output, NULL	    	    	    	 },
+	    {SYS_Asynch, TRUE	    	    	    	 },
+	    {TAG_DONE	    	    	    	    	 }
+	};
+	
+	/* we are in the process started from Shell, which is
+	   responsible for detaching. */
+	   
+	thistask->tc_Node.ln_Name = launchertask_name;
+	
+	SystemTagList("C:IPrefs", sys_tags);
+	
+#warning check if systemtaglist succeeded
+#if 0
+	{
+	    Cleanup("Could not detach from Shell!\n");
+	}
+#endif
+	
+	/* Wait for the detached IPrefs to notify us that
+	   it is done handling the initial notifications */
+
+#warning add a timeout	   
+	Wait(SIGBREAKF_CTRL_F);
+	
+	Cleanup(NULL);
+    }
+    else
+    {
+    	/* We are in the real detached IPrefs process */
+	
+    	thistask->tc_Node.ln_Name = IPREFS_SEM_NAME;
+    }
+}
 
 /*********************************************************************************************/
 
@@ -300,12 +352,30 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
+static void NotifyLauncherTask(void)
+{
+    if (launchertask)
+    {
+    	Forbid();
+	if ((launchertask = FindTask(launchertask_name)))
+	{
+	    Signal(launchertask, SIGBREAKF_CTRL_F);
+	}
+	Permit();
+    }
+}
+
+/*********************************************************************************************/
+
 int main(void)
 {
+    Detach();
     OpenLibs();
     GetENVName();
     StartNotifications();
     PreparePatches();
+    HandleNotify();
+    NotifyLauncherTask();
     HandleAll();
     Cleanup(NULL);
     
