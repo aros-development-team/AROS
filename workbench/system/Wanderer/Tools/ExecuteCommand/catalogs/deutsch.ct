@@ -8,8 +8,8 @@ Kommando Ausführen
 ; Execute Command
 ;
 MSG_LABEL_COMMANDLINE
-Kommando und Argumente
-; Command and arguments
+Kommando und Argumente:
+; Command and arguments:
 ;
 MSG_BUTTON_EXECUTE
 A_usführen

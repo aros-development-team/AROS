@@ -32,7 +32,8 @@ struct  MUIP_ExecuteCommand_ExecuteCommand  { ULONG MethodID; ULONG delayed; };
 struct ExecuteCommand_DATA
 {
     Object *ecd_Window,
-           *ecd_CommandString;
+           *ecd_CommandString,
+           *ecd_CommandPop;
     BPTR    ecd_Parent;
     BOOL    ecd_UnlockParent;
     BOOL    ecd_SaveCommand;
@@ -54,6 +55,7 @@ IPTR ExecuteCommand__OM_NEW
     BOOL                        saveCommand    = FALSE;
     Object                     *window,
                                *commandString,
+                               *commandPop,
                                *executeButton,
                                *cancelButton;
     
@@ -109,11 +111,12 @@ IPTR ExecuteCommand__OM_NEW
             MUIA_Window_CloseGadget, FALSE,
             
             WindowContents, (IPTR) VGroup,
-                Child, (IPTR) HGroup,
-                    GroupFrameT(_(MSG_LABEL_COMMANDLINE)),
-                    Child, (IPTR) PopaslObject,
+                Child, (IPTR) VGroup,
+                    Child, (IPTR) LLabel(_(MSG_LABEL_COMMANDLINE)),
+                    Child, (IPTR) commandPop = PopaslObject,
                         MUIA_Popstring_String, (IPTR) commandString = StringObject,
                             MUIA_String_Contents, (IPTR) initial,
+                            MUIA_CycleChain,             1,
                             StringFrame,
                         End,
                         MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile),
@@ -150,6 +153,7 @@ IPTR ExecuteCommand__OM_NEW
     data = INST_DATA(CLASS, self);
     data->ecd_Window        = window;
     data->ecd_CommandString = commandString;
+    data->ecd_CommandPop    = commandPop;
     data->ecd_Parent        = parent;
     data->ecd_UnlockParent  = unlockParent;
     data->ecd_SaveCommand   = saveCommand;
@@ -177,6 +181,12 @@ IPTR ExecuteCommand__OM_NEW
     (
         executeButton, MUIM_Notify, MUIA_Pressed, FALSE,
         (IPTR) self, 2, MUIM_ExecuteCommand_ExecuteCommand, TRUE
+    );
+    
+    DoMethod
+    (
+        commandPop, MUIM_Notify, MUIA_Popasl_Active, FALSE,
+        (IPTR) window, 3, MUIM_Set, MUIA_Window_ActiveObject, (IPTR) commandString
     );
     
     return (IPTR) self;
@@ -221,12 +231,16 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
     
     if (message->delayed)
     {
-        SET(data->ecd_Window, MUIA_Window_Open, FALSE);
-        DoMethod
-        (
-            self, MUIM_Application_PushMethod, (IPTR) self, 2,
-            MUIM_ExecuteCommand_ExecuteCommand, FALSE
-        );
+        if (!XGET(data->ecd_CommandPop, MUIA_Popasl_Active))
+        {
+            SET(data->ecd_Window, MUIA_Window_Open, FALSE);
+            
+            DoMethod
+            (
+                self, MUIM_Application_PushMethod, (IPTR) self, 2,
+                MUIM_ExecuteCommand_ExecuteCommand, FALSE
+            );
+        }
     }
     else
     {
