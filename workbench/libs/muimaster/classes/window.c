@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 
+#include <intuition/imageclass.h>
 #include <clib/alib_protos.h>
 #include <graphics/gfxmacros.h>
 #include <proto/exec.h>
@@ -150,6 +151,9 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
     int i;
     struct ZunePrefsNew *prefs = muiGlobalInfo(obj)->mgi_Prefs;
 
+    Object *temp_obj;
+    ULONG val;
+
     if (!(mri->mri_Screen = LockPubScreen(NULL))) return FALSE;
     if (!(mri->mri_DrawInfo = GetScreenDrawInfo(mri->mri_Screen)))
     {
@@ -172,6 +176,20 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
     for (i=0;i<MPEN_COUNT;i++)
 	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, prefs->muipens[i].red, prefs->muipens[i].green, prefs->muipens[i].blue, NULL);
     mri->mri_Pens = mri->mri_PensStorage;
+
+    mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize + 1;
+
+    temp_obj = NewObject(NULL,"sysiclass",
+    	SYSIA_DrawInfo, mri->mri_DrawInfo,
+    	SYSIA_Which, SIZEIMAGE,
+    	TAG_DONE);
+    if (temp_obj)
+    {
+	GetAttr(IA_Height,temp_obj,&val);
+    	DisposeObject(temp_obj);
+    	mri->mri_BorderBottom = val;
+    } else mri->mri_BorderBottom = mri->mri_Screen->WBorBottom;
+
     return TRUE;
 }
 
@@ -264,7 +282,7 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     {
 	if (data->wd_Y <= MUIV_Window_TopEdge_Delta(0))
 	{
-	    data->wd_Y = data->wd_RenderInfo.mri_Screen->BarHeight + MUIV_Window_TopEdge_Delta(0) - data->wd_Y;
+	    data->wd_Y = data->wd_RenderInfo.mri_Screen->BarHeight + 1 + MUIV_Window_TopEdge_Delta(0) - data->wd_Y;
 	}
     }
 
@@ -1044,10 +1062,8 @@ static void window_select_dimensions (struct MUI_WindowData *data)
 {
     if (!data->wd_Width)
     {
-	if (data->wd_ReqWidth > 0)
-	    data->wd_Width = data->wd_ReqWidth;
-	else if (data->wd_ReqWidth == MUIV_Window_Width_Default)
-	    data->wd_Width = data->wd_MinMax.DefWidth;
+	if (data->wd_ReqWidth > 0) data->wd_Width = data->wd_ReqWidth;
+	else if (data->wd_ReqWidth == MUIV_Window_Width_Default) data->wd_Width = data->wd_MinMax.DefWidth;
 	else if (_between(MUIV_Window_Width_MinMax(100),
 			  data->wd_ReqWidth,
 			  MUIV_Window_Width_MinMax(0)))
@@ -1071,10 +1087,8 @@ static void window_select_dimensions (struct MUI_WindowData *data)
 		* (- (data->wd_ReqWidth + 100)) / 100;
 	}
 
-	if (data->wd_ReqHeight > 0)
-	    data->wd_Height = data->wd_ReqHeight;
-	else if (data->wd_ReqHeight == MUIV_Window_Height_Default)
-	    data->wd_Height = data->wd_MinMax.DefHeight;
+	if (data->wd_ReqHeight > 0) data->wd_Height = data->wd_ReqHeight;
+	else if (data->wd_ReqHeight == MUIV_Window_Height_Default) data->wd_Height = data->wd_MinMax.DefHeight;
 	else if (_between(MUIV_Window_Height_MinMax(100),
 			  data->wd_ReqHeight,
 			  MUIV_Window_Height_MinMax(0)))
@@ -1087,8 +1101,19 @@ static void window_select_dimensions (struct MUI_WindowData *data)
 			  data->wd_ReqHeight,
 			  MUIV_Window_Height_Screen(0)))
 	{
-	    data->wd_Height = data->wd_RenderInfo.mri_ScreenHeight
-		* (- (data->wd_ReqHeight + 200)) / 100;
+	    struct Screen *scr;
+	    int height;
+
+	    scr = data->wd_RenderInfo.mri_Screen;
+
+	    height = scr->Height - data->wd_RenderInfo.mri_BorderTop - data->wd_RenderInfo.mri_BorderBottom;
+
+	    /* This is new to Zune: If TopEdge Delta is requested
+	     * the screenheight doesn't cover the barlayer */
+	    if (data->wd_Y <= MUIV_Window_TopEdge_Delta(0))
+		height -= scr->BarHeight + 1;
+
+	    data->wd_Height = height * (- (data->wd_ReqHeight + 200)) / 100;
 	}
 	else if (_between(MUIV_Window_Height_Visible(100),
 			  data->wd_ReqHeight,
