@@ -779,85 +779,10 @@ void intui_ProcessEvents (void)
 
 			    break;
 
-			case GTYP_PROPGADGET: {
-			    struct BBox knob;
-			    struct PropInfo * pi;
-			    UWORD dx, dy, flags;
+			case GTYP_PROPGADGET:
+			    HandlePropSelectDown(gadget, w, NULL, xb->x, xb->y, IntuitionBase);
+			    break;
 
-			    pi = (struct PropInfo *)gadget->SpecialInfo;
-
-			    if (!pi)
-				break;
-
-			    CalcBBox (w, gadget, &knob);
-
-			    if (!CalcKnobSize (gadget, &knob))
-				break;
-
-			    dx = pi->HorizPot;
-			    dy = pi->VertPot;
-
-			    if (pi->Flags & FREEHORIZ)
-			    {
-				if (xb->x < knob.Left)
-				{
-				    if (dx > pi->HPotRes)
-					dx -= pi->HPotRes;
-				    else
-					dx = 0;
-				}
-				else if (xb->x >= knob.Left + knob.Width)
-				{
-				    if (dx + pi->HPotRes < MAXPOT)
-					dx += pi->HPotRes;
-				    else
-					dx = MAXPOT;
-				}
-			    }
-
-			    if (pi->Flags & FREEVERT)
-			    {
-				if (xb->y < knob.Top)
-				{
-				    if (dy > pi->VPotRes)
-					dy -= pi->VPotRes;
-				    else
-					dy = 0;
-				}
-				else if (xb->y >= knob.Top + knob.Height)
-				{
-				    if (dy + pi->VPotRes < MAXPOT)
-					dy += pi->VPotRes;
-				    else
-					dy = MAXPOT;
-				}
-			    }
-
-			    flags = pi->Flags;
-
-			    if (xb->x >= knob.Left
-				&& xb->y >= knob.Top
-				&& xb->x < knob.Left + knob.Width
-				&& xb->y < knob.Top + knob.Height
-			    )
-				flags |= KNOBHIT;
-			    else
-				flags &= ~KNOBHIT;
-
-			    gadget->Flags |= GFLG_SELECTED;
-
-			    NewModifyProp (gadget
-				, w
-				, NULL
-				, flags
-				, dx
-				, dy
-				, pi->HorizBody
-				, pi->VertBody
-				, 1
-			    );
-
-			    break; }
 
 			case GTYP_CUSTOMGADGET: {
 			    struct gpInput gpi;
@@ -940,26 +865,9 @@ void intui_ProcessEvents (void)
 
 			    break;
 
-			case GTYP_PROPGADGET: {
-			    struct PropInfo * pi;
-
-			    pi = (struct PropInfo *)gadget->SpecialInfo;
-
-			    gadget->Flags &= ~GFLG_SELECTED;
-
-			    if (pi)
-				NewModifyProp (gadget
-				    , w
-				    , NULL
-				    , pi->Flags &= ~KNOBHIT
-				    , pi->HorizPot
-				    , pi->VertPot
-				    , pi->HorizBody
-				    , pi->VertBody
-				    , 1
-				);
-
-			    break; }
+			case GTYP_PROPGADGET:
+			    HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
+			    break; 
 
 			case GTYP_CUSTOMGADGET: {
 			    struct gpInput gpi;
@@ -1078,102 +986,22 @@ void intui_ProcessEvents (void)
 
 			break;
 
-		    case GTYP_PROPGADGET: {
-			struct BBox knob;
-			long dx, dy;
-			struct PropInfo * pi;
+		    case GTYP_PROPGADGET: 
+		    
+		    	HandlePropMouseMove
+		    	(
+		    	    gadget,
+		    	    w,
+		    	    NULL,
+	    	    	    /* Delta movement */
+		    	    xm->x - mpos_x,
+		    	    xm->y - mpos_y,
+		    	    IntuitionBase
+		    	);
+		    	    
+		    	break;
+		    	/* PROPGADGET */
 
-			pi = (struct PropInfo *)gadget->SpecialInfo;
-
-			/* Has propinfo and the mouse was over the
-			    knob */
-			if (pi && (pi->Flags & KNOBHIT))
-			{
-			    CalcBBox (w, gadget, &knob);
-
-			    if (!CalcKnobSize (gadget, &knob))
-				break;
-
-			    /* Delta movement */
-			    dx = xm->x - mpos_x;
-			    dy = xm->y - mpos_y;
-
-			    /* Move the knob the same amount, ie.
-				knob.Left += dx; knob.Top += dy;
-
-				knob.Left = knob.Left
-				    + (pi->CWidth - knob.Width)
-				    * pi->HorizPot / MAXPOT;
-
-				ie. dx = (pi->CWidth - knob.Width)
-				    * pi->HorizPot / MAXPOT;
-
-				or
-
-				pi->HorizPot = (dx * MAXPOT) /
-				    (pi->CWidth - knob.Width);
-			    */
-			    if (pi->Flags & FREEHORIZ
-				&& pi->CWidth != knob.Width)
-			    {
-				dx = (dx * MAXPOT) /
-					(pi->CWidth - knob.Width);
-
-				if (dx < 0)
-				{
-				    dx = -dx;
-
-				    if (dx > pi->HorizPot)
-					dx = 0;
-				    else
-					dx = pi->HorizPot - dx;
-				}
-				else
-				{
-				    if (dx + pi->HorizPot > MAXPOT)
-					dx = MAXPOT;
-				    else
-					dx = pi->HorizPot + dx;
-				}
-			    } /* FREEHORIZ */
-
-			    if (pi->Flags & FREEVERT
-				&& pi->CHeight != knob.Height)
-			    {
-				dy = (dy * MAXPOT) /
-					(pi->CHeight - knob.Height);
-
-				if (dy < 0)
-				{
-				    dy = -dy;
-
-				    if (dy > pi->VertPot)
-					dy = 0;
-				    else
-					dy = pi->VertPot - dy;
-				}
-				else
-				{
-				    if (dy + pi->VertPot > MAXPOT)
-					dy = MAXPOT;
-				    else
-					dy = pi->VertPot + dy;
-				}
-			    } /* FREEVERT */
-			} /* Has PropInfo and Mouse is over knob */
-
-			NewModifyProp (gadget
-			    , w
-			    , NULL
-			    , pi->Flags
-			    , dx
-			    , dy
-			    , pi->HorizBody
-			    , pi->VertBody
-			    , 1
-			);
-
-			break; } /* PROPGADGET */
 
 		    case GTYP_CUSTOMGADGET: {
 			struct gpInput gpi;
