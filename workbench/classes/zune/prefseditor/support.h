@@ -11,5 +11,7 @@
 
 /*** Prototypes *************************************************************/
 BPTR CreateTemporary(STRPTR buffer, CONST_STRPTR prefix);
+BOOL MakeDir(CONST_STRPTR path);
+BOOL MakeDirs(STRPTR path);
 
 #endif /* _SUPPORT_H_ */
