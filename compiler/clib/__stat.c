@@ -35,8 +35,6 @@ int __stat(BPTR lock, struct stat *sb)
         return -1;
     }
 
-    memset(fib, 0, sizeof(*fib));
-
     if (!Examine(lock, fib))
     {
         errno = IoErr2errno(IoErr());
