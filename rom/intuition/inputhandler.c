@@ -401,14 +401,46 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			struct gpInput gpi;
 			IPTR retval;
 			ULONG termination;
+			
+			/* We should send IDCMP_GADGETDOWN for GACT_IMMEDIATE gadgets */
+			if (new_gadget)
+			{
+			    
+			    if (gadget->Activation & GACT_IMMEDIATE)
+			    {
+			    	struct IntuiMessage *imsg;
+				
+				imsg = alloc_intuimessage(IntuitionBase);
+				if (!imsg)
+				{
+				
+				     /* If we can't send IDCMPGADGETDOWN we do not activate this gadget */
+				     gadget = NULL;
+				     break;
+				}
+				     
+				imsg->Class = IDCMP_GADGETDOWN;
+				imsg->IAddress = gadget;
+				
+				send_intuimessage(imsg, w, IntuitionBase);
+			    }
 
-			gpi.MethodID	= ((new_gadget) ? GM_GOACTIVE : GM_HANDLEINPUT);
+
+			    gpi.MethodID = GM_GOACTIVE;
+				
+			}
+			else
+			{
+			    gpi.MethodID = GM_HANDLEINPUT;
+			}
+
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
 			gpi.gpi_Mouse.X = im->MouseX;
 			gpi.gpi_Mouse.Y = im->MouseY;
 			gpi.gpi_TabletData	= NULL;
+
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
 
@@ -567,8 +599,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    } /* switch GadgetType */
 
 		} /* if (a gadget is currently active) */
-
-
 
 		break; /* SELECTUP */
 
@@ -774,14 +804,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
 			
-			/* Hack to make Gadtools slider & scroller gadgets work */
-			if (retval == GMR_INTERIMUPDATE)
-			{
-			    im->Code = termination & 0x0000FFFF;
-			    im->IAddress = gadget;
-			    retval = GMR_MEACTIVE;
-			}
-
 			if (retval != GMR_MEACTIVE)
 			{
 			    struct gpGoInactive gpgi;
@@ -1033,7 +1055,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    }
 		}
 	    }
-	    
 	    
 	    break;
 
