@@ -111,7 +111,7 @@ int main (void)
 
     printf ("#define AROS_STACK_GROWS_DOWNWARDS %d /* Stack direction */\n", (adr2 < adr1));
     printf ("#define AROS_BIG_ENDIAN            %d /* Big or little endian */\n", (*first_byte == 0x11));
-    printf ("#define AROS_SIZEOFULONG           %d /* Size of an ULONG */\n", sizeof (ULONG));
+    printf ("#define AROS_SIZEOFULONG           %ld /* Size of an ULONG */\n", (unsigned long)sizeof (ULONG));
     printf ("#define AROS_WORDALIGN             %d /* Alignment for WORD */\n",   wordalign);
     printf ("#define AROS_LONGALIGN             %d /* Alignment for LONG */\n",   longalign);
     printf ("#define AROS_PTRALIGN              %d /* Alignment for PTR */\n",    ptralign);
