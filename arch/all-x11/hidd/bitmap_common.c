@@ -1020,6 +1020,8 @@ LX11
 	    val.ts_x_origin	= msg->destX - msg->srcX;
 	    val.ts_y_origin	= msg->destY - msg->srcY;
 	    val.fill_style	= FillStippled;
+
+	    XSetFunction(data->display, data->gc, GXcopy); /* stegerg: added, CHECKME:!! */
 	    
 	    XChangeGC(data->display
 	    	, data->gc
