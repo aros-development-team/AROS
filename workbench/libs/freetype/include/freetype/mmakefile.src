@@ -1,7 +1,7 @@
 include $(TOP)/config/make.cfg
 
 #MM
-contrib-freetype-includes : includes-copy
+workbench-libs-freetype-includes : includes-copy
 
 INCLUDE_FILES := $(wildcard *.h)
 

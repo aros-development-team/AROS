@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES		:= -I../graph -I../../include -I../../src/base -I../../config
-EXEDIR			:= $(BINDIR)/contrib/Freetype
+EXEDIR			:= $(BINDIR)/Demos/FreeType
 OBJDIR 			:= $(GENDIR)/$(CURDIR)
 FREETYPELINKLIB		:= $(LIBDIR)/libfreetype2.a
 FREETYPEGRAPHLIB	:= $(LIBDIR)/libfreetypegraph.a
@@ -16,12 +16,12 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 %make_common_setup
 
-#MM contrib-freetype-demos-quick : 
-contrib-freetype-demos-quick : contrib-freetype-demos
+#MM workbench-libs-freetype-demos-quick : 
+workbench-libs-freetype-demos-quick : workbench-libs-freetype-demos
 	@$(NOP)
 	
-#MM contrib-freetype-demos : setup includes linklibs contrib-freetype-linklib contrib-freetype-graph contrib-freetype-fonts
-contrib-freetype-demos : $(EXES)
+#MM workbench-libs-freetype-demos : setup includes linklibs workbench-libs-freetype-linklib workbench-libs-freetype-graph
+workbench-libs-freetype-demos : $(EXES)
 	@$(NOP)
 
 #MM

@@ -1,54 +1,55 @@
 # $Id$
+
 include $(TOP)/config/make.cfg
 
 FILESDIR := \
-      aros/ftglyphengine \
-      aros/kerning \
-      aros/glyph \
-      aros/openengine \
-      aros/closeengine \
-      aros/setinfoa \
-      aros/obtaininfoa \
-      aros/releaseinfoa \
-      base/ftbase \
-      base/ftinit \
-      ../config/aros/ftsystem \
-      base/ftdebug \
-      base/ftglyph \
-      base/ftbbox \
-      base/ftmm \
-      base/ftsynth \
-      autohint/autohint \
-      autohint/ahoptim \
-      cache/ftcache \
-      cff/cff \
-      pshinter/pshinter \
-      psaux/psaux \
-      psnames/psnames \
-      raster/raster \
-      sfnt/sfnt \
-      smooth/smooth \
-      truetype/truetype \
-      type1/type1 \
-      cid/type1cid \
-      type42/type42 \
-      bdf/bdf \
-      pcf/pcf \
-      pfr/pfr \
-      winfonts/winfnt \
-      gzip/ftgzip
+    aros/ftglyphengine \
+    aros/kerning \
+    aros/glyph \
+    aros/openengine \
+    aros/closeengine \
+    aros/setinfoa \
+    aros/obtaininfoa \
+    aros/releaseinfoa \
+    base/ftbase \
+    base/ftinit \
+    ../config/aros/ftsystem \
+    base/ftdebug \
+    base/ftglyph \
+    base/ftbbox \
+    base/ftmm \
+    base/ftsynth \
+    autohint/autohint \
+    autohint/ahoptim \
+    cache/ftcache \
+    cff/cff \
+    pshinter/pshinter \
+    psaux/psaux \
+    psnames/psnames \
+    raster/raster \
+    sfnt/sfnt \
+    smooth/smooth \
+    truetype/truetype \
+    type1/type1 \
+    cid/type1cid \
+    type42/type42 \
+    bdf/bdf \
+    pcf/pcf \
+    pfr/pfr \
+    winfonts/winfnt \
+    gzip/ftgzip
 
 USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
-#MM contrib-freetype-linklib : contrib-freetype-includes
-#MM contrib-freetype-module : contrib-freetype-includes
+#MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
+#MM workbench-libs-freetype-module : workbench-libs-freetype-includes
 
 %rule_compile basename=../config/aros/ftsystem targetdir=$(GENDIR)/$(CURDIR)
 
-%build_linklib mmake=contrib-freetype-linklib libname=freetype2 \
+%build_linklib mmake=workbench-libs-freetype-linklib libname=freetype2 \
     files=$(FILESDIR)
 
-%build_module mmake=contrib-freetype-module modname=freetype2 \
+%build_module mmake=workbench-libs-freetype-module modname=freetype2 \
     modtype=library files="$(FILESDIR) freetype2_init" linklibname=freetype2shared \
     linklibfiles=tagcall uselibs="arosc_shared amiga"
  

@@ -15,21 +15,21 @@ USER_INCLUDES	:= -I.
 %genlib_cpak
 
 
-#MM contrib-freetype-library : setup includes linklibs contrib-freetype-linklib
-contrib-freetype-library : $(SLIB)
+#MM workbench-libs-freetype-library : setup includes linklibs workbench-libs-freetype-linklib
+workbench-libs-freetype-library : $(SLIB)
 	@$(NOP)
 
 
-#MM contrib-freetype-library-quick : 
-contrib-freetype-library-quick : $(SLIB)
+#MM workbench-libs-freetype-library-quick : 
+workbench-libs-freetype-library-quick : $(SLIB)
 	
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
 		
 
-#MM contrib-freetype-library-clean :
-contrib-freetype-library-clean : clean
+#MM workbench-libs-freetype-library-clean :
+workbench-libs-freetype-library-clean : clean
 
 #MM
 clean ::
