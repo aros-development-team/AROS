@@ -1991,7 +1991,7 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 	    break;
 
 	case DTA_Title:
-	    D(bug("Set: DTA_Sync  %ld\n", ti->ti_Data));
+	    D(bug("Set: DTA_Title  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_Busy:
