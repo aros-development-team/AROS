@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-font-catalogs \
-                name=Font subdir=System/Preferences
+                name=Font subdir=System/Prefs

@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-serial-catalogs \
-                name=Serial subdir=System/Preferences
+                name=Serial subdir=System/Prefs

@@ -30,7 +30,7 @@ InitLocale( VOID )
 {
     if( ( LocaleBase = LOCALECAST OpenLibrary( "locale.library", 0 ) ) )
     {
-	Catalog = OpenCatalogA( NULL, "System/Preferences/ReqTools.catalog", NULL );
+	Catalog = OpenCatalogA( NULL, "System/Prefs/ReqTools.catalog", NULL );
     }
 }
 

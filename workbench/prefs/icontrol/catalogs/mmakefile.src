@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-icontrol-catalogs \
-                name=IControl subdir=System/Preferences
+                name=IControl subdir=System/Prefs

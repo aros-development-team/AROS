@@ -871,7 +871,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("System/Preferences/Serial.catalog", 1);
+    InitLocale("System/Prefs/Serial.catalog", 1);
     InitMenus();
     OpenLibs();
     GetArguments();
