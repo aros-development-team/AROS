@@ -34,6 +34,7 @@
 #include <aros/rt.h>
 #include <aros/arossupportbase.h>
 #include <hardware/intbits.h>
+#include <hardware/custom.h>
 #include "memory.h"
 #include <aros/machine.h>
 #include <aros/asmcall.h>
@@ -105,8 +106,8 @@ AROS_UFH5 (void, IntServer,
 	if( AROS_UFC4( int, irq->is_Code,
 		AROS_UFCA (struct Custom *,   custom,       A0),
 		AROS_UFCA (APTR,              irq->is_Data, A1),
-		AROS_UFCA (APTR,	      irq->is_Code, A5),
-                AROS_UFCA (struct ExecBase *, SysBase,      A6)
+		AROS_UFCA (APTR,              irq->is_Code, A5),
+		AROS_UFCA (struct ExecBase *, SysBase,      A6)
 	))
 	    break;
     }
@@ -437,10 +438,13 @@ printf ("SysBase = %p\n", SysBase);
     }
 
     {
-        /* last thing before we go, make ^H the erase character */
+	/* last thing before we go, make ^H the erase character */
 	struct termios t;
 	tcgetattr(0, &t);
 	t.c_cc[VERASE] = '\b';
+#ifndef TCSASOFT
+#   define TCSASOFT 0
+#endif
 	tcsetattr(0, TCSANOW|TCSASOFT, &t);
     }
     RemTask(NULL); /* get rid of Boot task */
