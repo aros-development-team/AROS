@@ -727,7 +727,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 
     struct MinNode ihn_Node;
 
-    signal = msg->signal;
+    signal = *msg->signal;
     
     /* if user didn't handle ctrl-c himself, quit */
     if (signal & SIGBREAKF_CTRL_C)
