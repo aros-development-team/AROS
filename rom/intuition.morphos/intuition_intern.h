@@ -170,7 +170,7 @@ void * memclr(APTR, ULONG);
 #endif
 
 /* simpleref layers have gadgets redrawn when app calls beginrefresh() */
-#define BEGINUPDATEGADGETREFRESH
+//#define BEGINUPDATEGADGETREFRESH
 //#define DAMAGECACHE
 
 //#define USEWINDOWLOCK
