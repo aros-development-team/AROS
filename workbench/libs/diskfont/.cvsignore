@@ -2,3 +2,4 @@ makefile
 diskfont_functable.c
 diskfont_endtag.c
 libdefs.h
+*.map
