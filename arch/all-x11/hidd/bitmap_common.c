@@ -329,6 +329,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     data = INST_DATA(cl, o);
     GetAttr(o, aHidd_BitMap_DrawMode, &mode);
 
+// kprintf("Drawable to get pixels from: %p\n", DRAWABLE(data));
 LX11    
     image = XGetImage(data->display
     	, DRAWABLE(data)
@@ -500,14 +501,15 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
     Drawable dest;
     struct bitmap_data *data = INST_DATA(cl, o);
     
-    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
+
+    GetAttr(msg->dest, aHidd_BitMap_DrawMode, &mode);
     
     EnterFunc(bug("X11Gfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 	
-
     if (o != msg->dest)
     {
+
     	GetAttr(msg->dest, aHidd_X11BitMap_Drawable, (IPTR *)&dest);
 	
 	if (0 == dest)
@@ -525,10 +527,12 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
     	dest = DRAWABLE(data);
     }
 
-
+/*    kprintf("src: %p, dest: %p, mode: %d\n", DRAWABLE(data), dest, mode);
+*/
     if (mode == vHidd_GC_DrawMode_Copy) /* Optimize this drawmode */
     {
-
+/*    kprintf("Copy drawmode\n");
+*/
 LX11
     	XCopyArea(data->display
     		, DRAWABLE(data)	/* src	*/
@@ -599,7 +603,7 @@ UX11
 	/* Put image back into display */
 LX11
 	XPutImage(data->display
-    		, DRAWABLE(data)
+    		, dest
 		, data->gc
 		, dst_image
 		, 0, 0

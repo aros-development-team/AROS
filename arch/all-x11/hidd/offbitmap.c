@@ -112,23 +112,35 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
 	
 	/* Get the X11 window from the friend window */
+	if (NULL == friend) {
+		kprintf("ALERT!!! NO FRIEND BITMAP in config/x11/hidd/offbitmap.c\n");
+		Alert(AT_DeadEnd);
+	}
+	
 	GetAttr(friend, aHidd_X11BitMap_Drawable, &friend_drawable);
 	
 	if (0 == friend_drawable) {
-		kprintf("ALERT!!! FRIEND BITMAP HAS NO DRAWABLE\n");
+		kprintf("ALERT!!! FRIEND BITMAP HAS NO DRAWABLE in config/x11/hidd/offbitmap.c\n");
 		Alert(AT_DeadEnd);
 	}
 	
 	    
-	D(bug("Creating X Pixmap\n"));
+	D(bug("Creating X Pixmap, %p, %d, %d, %d\n"
+		, friend_drawable
+		, width
+		, height
+		, depth
+	));
 	
 LX11	
 	DRAWABLE(data) = XCreatePixmap( data->display
 		, friend_drawable
 		, width
 		, height
-		, depth
+		, DefaultDepth (GetSysDisplay(), GetSysScreen())
 	);
+	
+	XFlush(data->display);
 UX11	    
 	D(bug("X Pixmap : %p\n", DRAWABLE(data) ));
 	if (DRAWABLE(data))
@@ -136,10 +148,10 @@ UX11
 	
 	    XGCValues gcval;
 		    
-	    D(bug("Calling XMapRaised\n"));
 LX11	    
 
 	    /* Create X11 GC */
+	    D(bug("Creating GC\n"));
 	 
 	    gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
 	    gcval.graphics_exposures = True;
@@ -153,7 +165,9 @@ LX11
 UX11		
 	    if (data->gc)
 	    {
+LX11	    
 	    	XFlush(data->display);
+UX11		
 	    }
 	    else
 	    {

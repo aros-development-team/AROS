@@ -209,6 +209,7 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_PlaneMask   : *msg->storage = (IPTR) data->planeMask; break;
 	    case aoHidd_BitMap_Font	   : *msg->storage = (IPTR) data->font; break;
 	    case aoHidd_BitMap_ColorExpansionMode  : *msg->storage = data->colExp; break;
+	    case aoHidd_BitMap_Friend	   : *msg->storage = (IPTR)data->friend; break;
 	    
     
             default: DoSuperMethod(cl, obj, (Msg) msg);

@@ -167,7 +167,7 @@ enum {
     aoHidd_BitMap_ColorExpansionMode,	/* [ISG] Mode for color expansion operations */
     
     
-    aoHidd_BitMap_Friend,	/* [I..] Friend bitmap. The bitmap will be allocated so that it
+    aoHidd_BitMap_Friend,	/* [I.G] Friend bitmap. The bitmap will be allocated so that it
     				   is optimized for blitting to this bitmap */
     
     num_Hidd_BitMap_Attrs
