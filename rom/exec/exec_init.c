@@ -18,7 +18,6 @@
 #include <hardware/intbits.h>
 #include <hardware/custom.h>
 #include <dos/dosextens.h>
-#include <stdlib.h>
 
 #include <aros/system.h>
 #include <aros/arossupportbase.h>
