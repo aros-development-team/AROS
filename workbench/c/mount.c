@@ -14,6 +14,8 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
+static const char version[] = "$VER: Mount 1.0 (19.2.1997)\n";
+
 static struct UtilityBase *UtilityBase;
 
 LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
@@ -257,6 +259,7 @@ int main (int argc, char ** argv)
 	    FreeArgs(rda);
 	}else
 	    error=IoErr();
+        CloseLibrary((struct Library *)UtilityBase);
     }else
 	error=ERROR_OBJECT_NOT_FOUND;
     if(error)
