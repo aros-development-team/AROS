@@ -13,6 +13,7 @@
 
     NAME */
 #include <stdlib.h>
+#include <math.h>
 
 	double strtod (
 
@@ -56,7 +57,7 @@
 {
     double        val = 0;
     int           tail, exp = 0;
-    char          c = 0, ce = 0;
+    char          c = 0, c2 = 0;
 
     while (isspace (*str))
 	str ++;
@@ -83,7 +84,7 @@
 	    }
 	}
 
-	if(tolower(*str) == 'e')
+	if(tolower(*str ++) == 'e')
 	{
 	    if (*str == '+' || *str == '-')
 	        c2 = *str ++;
