@@ -57,8 +57,14 @@ _xstrndup (const char * str, size_t len, const char * file, int line)
 
     assert (str);
 
-    nstr = strndup (str);
-
+#ifdef HAVE_STRNDUP
+    nstr = strndup (str, len);
+#else
+    nstr = malloc(strlen(str) >= len ? len, strlen(str) + 1);
+    if (nstr)
+	strncpy (nstr, str, len);
+#endif
+    
     if (!nstr)
     {
 	fprintf (stderr, "Out of memory in %s:%d", file, line);

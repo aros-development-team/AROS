@@ -22,7 +22,7 @@ AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS(getcwd strdup strerror)
+AC_CHECK_FUNCS(getcwd strdup strndup strerror)
 
 AM_CONFIG_HEADER(config.h)
 AC_OUTPUT(Makefile)

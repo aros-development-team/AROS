@@ -193,7 +193,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
     if (st.st_mtime > node->time)
     {
 	List newdirs, newmakefiles;
-	DirNode * subdir = NULL;
+	DirNode * subdir = NULL, * subdir2;
 	Makefile * makefile;
 	
 	if (debug)
@@ -301,10 +301,8 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 	}
 	closedir (dirh);
 	
-	ForeachNode (&node->subdirs, subdir)
-	{
+	ForeachNodeSafe (&node->subdirs, subdir, subdir2)
 	    freedirnode  (subdir);
-	}
 	AssignList (&node->subdirs, &newdirs);
 
 	/* Clear the makefiles that have disappeared */
