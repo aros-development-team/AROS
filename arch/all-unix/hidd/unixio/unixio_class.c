@@ -48,7 +48,7 @@
 
 static const UBYTE name[];
 static const UBYTE version[];
-static ULONG AROS_SLIB_ENTRY(init,UnixIO)();
+static void * AROS_SLIB_ENTRY(init,UnixIO)();
 extern const char UnixIO_End;
 
 int unixio_entry(void)
@@ -346,7 +346,7 @@ AROS_UFH3(static IPTR, dispatch_unixioclass,
 #undef BOOPSIBase
 #undef UtilityBase
 
-AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, UnixIO),
+AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
     AROS_UFHA(ULONG, dummy2, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
