@@ -34,14 +34,14 @@ static OOP_AttrBase HiddVesaGfxBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = 
 {
-    { IID_Hidd_BitMap,          &HiddBitMapAttrBase },
-    { IID_Hidd_PixFmt,          &HiddPixFmtAttrBase },
-    { IID_Hidd_Gfx,             &HiddGfxAttrBase },
-    { IID_Hidd_Sync,            &HiddSyncAttrBase },
+    { IID_Hidd_BitMap	    , &HiddBitMapAttrBase   	},
+    { IID_Hidd_PixFmt	    , &HiddPixFmtAttrBase   	},
+    { IID_Hidd_Gfx  	    , &HiddGfxAttrBase      	},
+    { IID_Hidd_Sync 	    , &HiddSyncAttrBase     	},
     /* Private bases */
-    { IID_Hidd_VesaGfx,         &HiddVesaGfxAttrBase},
-    { IID_Hidd_VesaGfxBitMap,   &HiddVesaGfxBitMapAttrBase},
-    { NULL, NULL }
+    { IID_Hidd_VesaGfx	    , &HiddVesaGfxAttrBase  	},
+    { IID_Hidd_VesaGfxBitMap, &HiddVesaGfxBitMapAttrBase},
+    { NULL  	    	    , NULL  	    	    	}
 };
 
 #define MNAME(x) vesagfxonbitmap_ ## x
@@ -53,25 +53,29 @@ static struct OOP_ABDescr attrbases[] =
 static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("VesaGfx.BitMap::New()\n"));
+    
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-	struct BitmapData *data;
-	LONG multi=1;
-	OOP_Object *pf;
-	IPTR width, height, depth;
-	HIDDT_ModeID modeid;
-	OOP_Object *sync;
-	ULONG pixelc;
+	struct BitmapData   *data;
+	OOP_Object  	    *pf;
+	IPTR 	    	     width, height, depth, multi;
+	HIDDT_ModeID 	     modeid;
+	OOP_Object  	    *sync;
+	ULONG 	    	     pixelc;
 
 	data = OOP_INST_DATA(cl, o);
+	
 	/* clear all data  */
 	memset(data, 0, sizeof(struct BitmapData));
+	
 	/* Get attr values */
-	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
-	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
-	OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+	OOP_GetAttr(o, aHidd_BitMap_Width, &width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+	OOP_GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &multi);
+	
 	ASSERT (width != 0 && height != 0 && depth != 0);
 	/* 
 	   We must only create depths that are supported by the friend drawable
@@ -83,13 +87,6 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	data->height = height;
 	data->bpp = depth;
 	data->disp = -1;
-
-    	if (depth>24)
-	    multi = 4;	
-	else if (depth>16)
-	    multi = 3;
-	else if (depth>8)
-	    multi = 2;
 	    
 	data->bytesperpix = multi;
 	data->data = &XSD(cl)->data;
@@ -105,6 +102,7 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     
 	/* We should be able to get modeID from the bitmap */
 	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
+	
 	if ((modeid != vHidd_ModeID_Invalid) && (data->VideoData))
 	{
 	    /*
@@ -112,14 +110,19 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	       bitmap immediately
 	       */
 	    XSD(cl)->visible = data;	/* Set created object as visible */
+	    
 	    ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 	}
+	
 	{
 	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
 	}
+	
 	o = NULL;
+	
     } /* if created object */
+    
     ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 }
 
@@ -190,7 +193,9 @@ OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
     if(MetaAttrBase)
     {
 	D(bug("Got attrbase\n"));
+	
 	/*		for (;;) {cl = cl; } */
+	
 	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 	if(cl)
 	{
@@ -208,9 +213,12 @@ OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
 		cl = NULL;
 	    }
 	}
+	
 	/* We don't need this anymore */
 	OOP_ReleaseAttrBase(IID_Meta);
+	
     } /* if(MetaAttrBase) */
+    
     ReturnPtr("init_vesagfxonbmclass", OOP_Class *,  cl);
 }
 

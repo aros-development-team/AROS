@@ -34,13 +34,13 @@ static OOP_AttrBase HiddVesaGfxBitMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = 
 {
-    {IID_Hidd_BitMap,          &HiddBitMapAttrBase},
-    {IID_Hidd_PixFmt,          &HiddPixFmtAttrBase},
-    {IID_Hidd_Gfx,             &HiddGfxAttrBase},
+    {IID_Hidd_BitMap	    , &HiddBitMapAttrBase   	    },
+    {IID_Hidd_PixFmt	    , &HiddPixFmtAttrBase   	    },
+    {IID_Hidd_Gfx   	    , &HiddGfxAttrBase	    	    },
     /* Private bases */
-    {IID_Hidd_VesaGfx,         &HiddVesaGfxAttrBase},
-    {IID_Hidd_VesaGfxBitMap,   &HiddVesaGfxBitMapAttrBase},
-    {NULL, NULL}
+    {IID_Hidd_VesaGfx	    , &HiddVesaGfxAttrBase  	    },
+    {IID_Hidd_VesaGfxBitMap , &HiddVesaGfxBitMapAttrBase    },
+    {NULL   	    	    , NULL  	    	    	    }
 };
 
 #define MNAME(x) vesagfxoffbitmap_ ## x
@@ -50,43 +50,44 @@ static struct OOP_ABDescr attrbases[] =
 /*********** BitMap::New() *************************************/
 static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+
     EnterFunc(bug("VesaGfx.BitMap::New()\n"));
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-	struct BitmapData *data;
-	LONG multi=1;
-	IPTR width, height, depth;
-	OOP_Object *friend, *pf;
+	struct BitmapData   *data;
+	IPTR 	    	     width, height, depth, multi;
+	OOP_Object  	    *friend, *pf;
+	
 	data = OOP_INST_DATA(cl, o);
+	
 	/* clear all data  */
 	memset(data, 0, sizeof(struct BitmapData));
+	
 	/* Get attr values */
-	OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
-	OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
-	OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
-	OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
+	OOP_GetAttr(o, aHidd_BitMap_Width, &width);
+	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+	OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &multi);
+	
 	/* Get the friend bitmap. This should be a displayable bitmap */
-	OOP_GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
+	OOP_GetAttr(o, aHidd_BitMap_Friend, (IPTR *)&friend);
+	
 	/* If you got a friend bitmap, copy its colormap */
 	if (friend)
 	{
 	    struct BitmapData *src = OOP_INST_DATA(cl, friend);
 	    CopyMem(&src->cmap, &data->cmap, 4*16);
 	}
+	
 	ASSERT (width != 0 && height != 0 && depth != 0);
+	
 	width=(width+15) & ~15;
 	data->width = width;
 	data->height = height;
 	data->bpp = depth;
 	data->disp = 0;
-
-    	if (depth>24)
-	    multi = 4;	
-	else if (depth>16)
-	    multi = 3;
-	else if (depth>8)
-	    multi = 2;
 
 	data->bytesperpix = multi;
 	data->bytesperline = width * multi;
@@ -95,16 +96,22 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	if (data->VideoData)
 	{
 	    data->data = &XSD(cl)->data;
+	    
 	    if (XSD(cl)->activecallback)
 		XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
+		
 	    ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 	} /* if got data->VideoData */
+	
 	{
 	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
 	}
+	
 	o = NULL;
+	
     } /* if created object */
+    
     ReturnPtr("VesaGfx.BitMap::New()", OOP_Object *, o);
 }
 
@@ -114,9 +121,12 @@ static VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("VesaGfx.BitMap::Dispose()\n"));
+    
     if (data->VideoData)
 	FreeVec(data->VideoData);
+	
     OOP_DoSuperMethod(cl, o, msg);
+    
     ReturnVoid("VesaGfx.BitMap::Dispose");
 }
 
@@ -172,15 +182,19 @@ OOP_Class *init_vesagfxoffbmclass(struct VesaGfx_staticdata *xsd)
 
     EnterFunc(bug("init_vesagfxoffbmclass(xsd=%p)\n", xsd));
     D(bug("Metattrbase: %x\n", MetaAttrBase));
+    
     if(MetaAttrBase)
     {
 	D(bug("Got attrbase\n"));
+	
 	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 	if(cl)
 	{
 	    D(bug("BitMap class ok\n"));
+	    
 	    xsd->offbmclass = cl;
 	    cl->UserData     = (APTR) xsd;
+	    
 	    /* Get attrbase for the BitMap interface */
 	    if (OOP_ObtainAttrBases(attrbases))
 	    {
@@ -192,9 +206,12 @@ OOP_Class *init_vesagfxoffbmclass(struct VesaGfx_staticdata *xsd)
 		cl = NULL;
 	    }
 	}
+	
 	/* We don't need this anymore */
 	OOP_ReleaseAttrBase(IID_Meta);
+	
     } /* if(MetaAttrBase) */
+    
     ReturnPtr("init_vesagfxoffbmclass", OOP_Class *,  cl);
 }
 
@@ -207,8 +224,9 @@ void free_vesagfxoffbmclass(struct VesaGfx_staticdata *xsd)
     {
 	OOP_RemoveClass(xsd->offbmclass);
 	if(xsd->offbmclass)
-	    OOP_DisposeObject((OOP_Object *) xsd->offbmclass);
+	    OOP_DisposeObject((OOP_Object *) xsd->offbmclass);	    
 	xsd->offbmclass = NULL;
+	
 	OOP_ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_vesagfxoffbmclass");
