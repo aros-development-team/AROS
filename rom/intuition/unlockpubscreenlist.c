@@ -2,7 +2,7 @@
     (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function UnLockPubScreenList()
+    Desc: Intuition function UnlockPubScreenList()
     Lang: english
 */
 #include "intuition_intern.h"
@@ -12,7 +12,7 @@
     NAME */
 #include <proto/intuition.h>
 
-	AROS_LH0(void, UnLockPubScreenList,
+	AROS_LH0(void, UnlockPubScreenList,
 
 /*  SYNOPSIS */
 	/* VOID */
@@ -43,8 +43,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/UnLockPubScreenList()
-    aros_print_not_implemented ("UnLockPubScreenList");
+#warning TODO: Write intuition/UnlockPubScreenList()
+    aros_print_not_implemented ("UnlockPubScreenList");
 
     AROS_LIBFUNC_EXIT
-} /* UnLockPubScreenList */
+} /* UnlockPubScreenList */
