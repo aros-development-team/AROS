@@ -83,42 +83,35 @@
    * First Create the new region of the layer:
    * adjust its size and position.
    */
-  OrRegionRegion(l->shape,newshape);
-
+   
+  
+  /* First create newshape with 0,0 origin, because l->shaperegion is in layer coords */
+  
+  newshape = NewRectRegion(0, 0, l->bounds.MaxX - l->bounds.MinX + dw, l->bounds.MaxY - l->bounds.MinY + dh);
+  if (l->shaperegion)
+  {
+    AndRegionRegion(l->shaperegion, newshape);
+  }
+  
+  /* Now make newshape relative to old(!!) layer screen coords */
+  _TranslateRect(&newshape->bounds, l->bounds.MinX, l->bounds.MinY);
+  
+  /* rectw and recth are now only needed for backfilling if layer got bigger -> see end of func */
+  
   if (dw > 0)
   {
-    rectw.MinX = l->shape->bounds.MaxX+1;
-    rectw.MinY = l->shape->bounds.MinY;
+    rectw.MinX = l->bounds.MaxX+1;
+    rectw.MinY = l->bounds.MinY;
     rectw.MaxX = rectw.MinX + dw - 1;
-    rectw.MaxY = l->shape->bounds.MaxY+dh;
-    OrRectRegion(newshape, &rectw); 
-  }
-  else
-  if (dw < 0)
-  {
-    rectw.MinX = l->shape->bounds.MinX;
-    rectw.MinY = l->shape->bounds.MinY;
-    rectw.MaxX = l->shape->bounds.MaxX+dw;
-    rectw.MaxY = l->shape->bounds.MaxY+dh;
-    AndRectRegion(newshape, &rectw); 
+    rectw.MaxY = l->bounds.MaxY+dh;
   }
 
   if (dh > 0)
   {
-    recth.MinX = l->shape->bounds.MinX;
-    recth.MinY = l->shape->bounds.MaxY + 1;
-    recth.MaxX = l->shape->bounds.MaxX+dw;
+    recth.MinX = l->bounds.MinX;
+    recth.MinY = l->bounds.MaxY + 1;
+    recth.MaxX = l->bounds.MaxX+dw;
     recth.MaxY = recth.MinY + dh - 1;
-    OrRectRegion(newshape, &recth); 
-  }
-  else
-  if (dh < 0)
-  {
-    recth.MinX = l->shape->bounds.MinX;
-    recth.MinY = l->shape->bounds.MinY;
-    recth.MaxX = l->shape->bounds.MaxX+dw;
-    recth.MaxY = l->shape->bounds.MaxY+dh;
-    AndRectRegion(newshape, &recth); 
   }
 
   if (dx || dy)
