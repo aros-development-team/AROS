@@ -98,6 +98,9 @@ if (IntuitionBase != NULL)
 			WA_Width,	200,
 			WA_Height,	100,
 			WA_RMBTrap,	TRUE,
+#ifdef __AROS
+			WA_IDCMP,	IDCMP_RAWKEY,
+#endif
 			TAG_END)))
 	{
 	myImage.LeftEdge    = MYIMAGE_LEFT;
@@ -116,11 +119,16 @@ if (IntuitionBase != NULL)
 	/* Draw the same image at a new location */
 	DrawImage(win->RPort,&myImage,100,10);
 
+#ifdef __AROS
+	/* Wait for a keypress */
+	Wait (1L << win->UserPort->mp_SigBit);
+#else
 	/* Wait a bit, then quit.
 	** In a real application, this would be an event loop, like the
 	** one described in the Intuition Input and Output Methods chapter.
 	*/
 	Delay(200);
+#endif
 
 	CloseWindow(win);
 	}
