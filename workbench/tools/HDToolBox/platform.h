@@ -15,9 +15,6 @@ do                                               \
     l->lh_Head     = (struct Node *)&l->lh_Tail; \
 } while (0)
 
-#define MAKENODE(succ,pred,name,type,pri) {succ,pred,type,pri,name}
-#else
-#define MAKENODE(succ,pred,name,type,pri) {succ,pred,name,type,pri}
 #endif
 
 #endif /* PLATFORM_H */

@@ -1,3 +1,6 @@
+##  Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+##  $Id$
+
 CC 	:= gcc
 LD	:= gcc
 RM  	:= rm
@@ -6,17 +9,16 @@ LDFLAGS := -noixemul -s
 EXE := /ram/HDToolBox
 FILES	:= \
 	main \
-	gadgets \
-	details \
 	debug \
+	devices \
+	gui \
+	harddisks \
 	hdtoolbox_support \
-	layoutmain \
-	layoutpartitions \
-	layoutdetails \
+	locale \
 	partitions \
 	partitiontables \
-	partitiontypes \
-	ptclass
+	ptclass \
+	prefs
 
 CFILES := $(FILES)
 

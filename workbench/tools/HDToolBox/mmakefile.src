@@ -4,16 +4,15 @@ include $(TOP)/config/make.cfg
 
 FILES = \
 		main \
-		gadgets \
-		details \
+		devices \
+		gui \
+		harddisks \
 		hdtoolbox_support \
-		layoutmain \
-		layoutpartitions \
-		layoutdetails \
+		locale \
 		partitions \
 		partitiontables \
-		partitiontypes \
-		ptclass
+		ptclass \
+		prefs
 		
 
 EXEDIR = $(AROSDIR)/Tools
@@ -21,19 +20,27 @@ EXE = $(EXEDIR)/HDToolBox
 
 USE_CLIB_SHARED := yes
 USE_MLIB := yes
+USE_MUILIB := yes
 USE_AMIGALIB := yes
 
 USER_CFLAGS := -Wunused -Wall #-Werror
 
-#MM workbench-tools:
-#MM workbench-tools-quick:
+#MM workbench-tools: setup-hdtoolbox-catalogs
+#MM workbench-tools-quick: setup-hdtoolbox-catalogs
 
 %make_prog_setup mmake=workbench-tools
 
-workbench-tools: setup $(EXE)
-workbench-tools-quick: setup $(EXE)
+workbench-tools: setup $(EXE) copyfiles
+workbench-tools-quick: setup $(EXE) copyfiles
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+#MM
+copyfiles : setup $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
+	@$(NOP)
+
+$(BINDIR)/Prefs/Env-Archive/% : env-archive/%
+	@$(CP) $< $@
 
 %common
 %include_deps

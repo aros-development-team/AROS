@@ -14,11 +14,12 @@
 
 struct Node *getNumNode(struct List *, int);
 ULONG getNodeNum(struct Node *);
-ULONG countNodes(struct List *);
+ULONG countNodes(struct List *, UBYTE);
 LONG RequestList(struct List *, ULONG *);
 void typestrncpy(STRPTR, STRPTR, ULONG);
-UWORD ownsprintf(STRPTR, STRPTR, ...);
+UWORD strcpyESC(STRPTR, STRPTR, ...);
 void getSizeStr(STRPTR, ULONG);
+ULONG sizeStrToUL(STRPTR);
 LONG GetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
 LONG SetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
 LONG GetPartitionTableAttrsA(struct PartitionHandle *, LONG, ...);

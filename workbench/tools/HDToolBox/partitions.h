@@ -9,40 +9,29 @@
 #include <exec/nodes.h>
 #include <intuition/intuition.h>
 
+#include "gui.h"
 #include "partitiontables.h"
 
-struct PartitionNode {
-	struct Node ln;
-	struct PartitionTableNode *root;
+struct HDTBPartition {
+	struct ListNode listnode;
+	struct HDTBPartition *root;
 	struct PartitionHandle *ph;
-	ULONG flags;
 	struct DosEnvec de;
-	ULONG pos;
 	struct PartitionType type;
+	struct PartitionTable *table;
+	ULONG flags;
+	ULONG pos;
 };
 
-#define PNF_CHANGED       (1<<0)
-#define PNF_ADDED         (1<<1)
-#define PNF_NEW_TABLE     (1<<2)
-#define PNF_DEL_TABLE     (1<<3)
-#define PNF_TABLE         (1<<4)
-#define PNF_FLAGS_CHANGED (1<<5)
-#define PNF_DE_CHANGED    (1<<6)
-#define PNF_BOOTABLE      (1<<16)
-#define PNF_AUTOMOUNT     (1<<17)
+#define PNF_ACTIVE        (1<<0)
+#define PNF_BOOTABLE      (1<<1)
+#define PNF_AUTOMOUNT     (1<<2)
 
-void par_Init(struct Window *, struct PartitionTableNode *);
-void viewPartitionData(struct Window *, struct PartitionTableNode *, struct PartitionNode *);
-void viewDosEnvecData(struct Window *, struct PartitionTableNode *, struct DosEnvec *);
-BOOL pcp_Ok(struct PartitionTableNode *);
-void pcp_Cancel(struct PartitionTableNode *);
-void changeStartCyl(struct Window *, struct PartitionTableNode *, struct PartitionNode *, ULONG);
-void changeEndCyl(struct Window *, struct PartitionTableNode *, struct PartitionNode *, ULONG);
-void changeTotalCyl(struct Window *, struct PartitionTableNode *, struct PartitionNode *, ULONG);
-struct PartitionNode *addPartition(struct Window *, struct PartitionTableNode *, struct DosEnvec *);
-void deletePartition(struct Window *, struct PartitionNode *);
-void changeBootPri(struct Window *, struct PartitionNode *, LONG);
-void changeName(struct Window *, struct PartitionNode *, STRPTR);
-BOOL validValue(struct PartitionTableNode *, struct PartitionNode *, ULONG);
+void findPartitions(struct ListNode *, struct HDTBPartition *);
+void freePartitionNode(struct HDTBPartition *);
+void freePartitionList(struct List *);
+BOOL validValue(struct HDTBPartition *, struct HDTBPartition *, ULONG);
+struct HDTBPartition *addPartition(struct HDTBPartition *, struct DosEnvec *);
+
 #endif
 
