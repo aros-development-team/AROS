@@ -7,8 +7,19 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 # General rule to create AROS for native
 #   
 
-#MM- AROS-native : setup setup-native includes compiler kernel \
+#MM- AROS-native : general-setup-native-i386 kernel-native-i386 software-native-i386
+
+#MM- general-setup-native-i386: setup setup-native includes compiler
+
+#MM- kernel-native-i386 : general-setup-native-i386 kernel create-mf-inc-again \
 #MM	    create-mf-inc-again kernel-link-native
+
+#MM- software-native-i386 : general-setup binary-native-i386 \
+#MM	    workbench-native-i386 demos contrib-native-i386
+
+#MM- workbench-native-i386 : workbench-complete workbench
+
+#MM- contrib-native-i386 : contrib-complete
 
 #
 # Kernel modules
