@@ -1,76 +1,33 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+ * Copyright (c) 1993 Martin Birgmeier
+ * All rights reserved.
+ *
+ * You may redistribute unmodified or modified versions of this source
+ * code provided that the above copyright notice and this and the
+ * following conditions are retained.
+ *
+ * This software is provided ``as is'', and comes with no warranties
+ * of any kind. I shall in no event be liable for anything that happens
+ * to anyone/anything when using this software.
+ */
 
-    Desc: Function srand48()
-    Lang: english
-*/
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
 
-#include <aros/machine.h>
-extern unsigned char __Xrand[8];
-extern unsigned char __arand[8];
-extern unsigned short __crand;
+#include "rand48.h"
 
+extern unsigned short _rand48_seed[3];
+extern unsigned short _rand48_mult[3];
+extern unsigned short _rand48_add;
 
-/*****************************************************************************
-
-    NAME */
-#include <stdlib.h>
-
-	void lcong48 (
-
-/*  SYNOPSIS */
-	unsigned short int param[7])
-/*  FUNCTION
-        Initialize the random number generator
-
-    INPUTS
-        param[0-2] specify X
-        param[3-5] specify a
-        param[6] specifies c
-
-    RESULT
-        None
-
-    NOTES
-        This function must not be used in a shared library or
-        in a threaded application.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-	srand48()
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
+void
+lcong48(unsigned short p[7])
 {
-#if (AROS_BIG_ENDIAN == 0)
-  #define XHIGH 4
-  #define XMIDDLE 2
-  #define XLOW 0
-  #define AHIGH 4
-  #define AMIDDLE 2
-  #define ALOW 0
-#else
-  #define XHIGH 2
-  #define XMIDDLE 4
-  #define XLOW 6
-  #define AHIGH 0
-  #define AMIDDLE 2
-  #define ALOW 4
-#endif
-  *(unsigned short *)&__Xrand[XHIGH]   = param[2];
-  *(unsigned short *)&__Xrand[XMIDDLE] = param[1];
-  *(unsigned short *)&__Xrand[XLOW]    = param[0];
-
-  *(unsigned short *)&__arand[AHIGH]   = param[5];
-  *(unsigned short *)&__arand[AMIDDLE] = param[4];
-  *(unsigned short *)&__arand[ALOW]    = param[3];
-
-  __crand = param[6];
-} /* lcong48 */
+	_rand48_seed[0] = p[0];
+	_rand48_seed[1] = p[1];
+	_rand48_seed[2] = p[2];
+	_rand48_mult[0] = p[3];
+	_rand48_mult[1] = p[4];
+	_rand48_mult[2] = p[5];
+	_rand48_add = p[6];
+}
