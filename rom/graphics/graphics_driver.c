@@ -369,7 +369,7 @@ static BOOL init_cursor(struct GfxBase *GfxBase)
 	    col[0].alpha	= 0x0000;
 	    col[1].red		= 0x0000;
 	    col[1].green	= 0x0000;
-	    col[1].blue		= 0x0000;
+	    col[1].blue		= 0x1200;
 	    col[1].alpha	= 0x0000;
 	    col[2].red		= 0xE0E0;
 	    col[2].green	= 0xE0E0;
