@@ -115,12 +115,15 @@ AROS_UFH5S(void, IntServer,
     AROS_UFHA(struct ExecBase *, SysBase, A6));
 
 #undef memcpy
-#define memcpy(_d, _s, _len)                               \
-do                                                         \
-{                                                          \
-    int len = _len;                                        \
-    for (;len;len--) ((char *)_d)[len] = ((char *)_s)[len];\
-} while (0)
+#define memcpy(_d, _s, _len)                     \
+{                                                \
+    int len = _len;                              \
+    while (len)                                  \
+    {                                            \
+       ((char *)_d)[len-1] = ((char *)_s)[len-1];\
+       len--;                                    \
+    }                                            \
+}
 
 
 /* Temporary information */
@@ -427,7 +430,7 @@ void exec_cinit()
      * propertly)
      */
 
-#if 0
+#if 1
     asm("rep\n\tstosl"
         :
         :"eax"(0),              /* Fill with 0 */
@@ -792,7 +795,6 @@ void exec_cinit()
 						rkprintf("Error: Cannot install Interrupt Servers!\n");
 //						Alert(AT_DeadEnd | AN_IntrMem);
 					}
-#warning "maybe this should be NT_SOFTINT"
 					is->is_Node.ln_Type = NT_SOFTINT;	//INTERRUPT;
 					is->is_Node.ln_Pri = 0;
 					is->is_Node.ln_Name = "SW Interrupt Dispatcher";
