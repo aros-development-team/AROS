@@ -1,6 +1,5 @@
-#   $Id$
-#
-#   Makefile to make Serial prefs program.
+# $Id$
+# Makefile to make Serial prefs program.
 
 include $(TOP)/config/make.cfg
 
@@ -14,14 +13,12 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_COOLIMAGESLIB := yes
 
-#MM workbench-prefs : includes linklibs setup-serialprefs-catalogs
-#MM workbench-prefs-quick : setup-serialprefs-catalogs
+#MM- workbench-prefs : workbench-prefs-serial
+#MM workbench-prefs-serial : includes linklibs setup-serialprefs-catalogs
 
-%make_prog_setup mmake=workbench-prefs
-%make_prog_setup mmake=workbench-prefs-quick
+%make_prog_setup mmake=workbench-prefs-serial
 
-workbench-prefs : setup $(EXE)
-workbench-prefs-quick : $(EXE)
+workbench-prefs-serial : setup $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
