@@ -48,7 +48,12 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 	    {
 	        ULONG lock;
 		
-	    	port->mp_Flags   = PA_SIGNAL;
+		/* We do not want to be woken up by message replies.
+		   We are anyway woken up about 10 times a second by
+		   timer events
+		*/
+	    	port->mp_Flags   = PA_IGNORE;
+		
 	    	port->mp_SigBit  = SIGB_INTUITION;
 	    	port->mp_SigTask = FindTask("input.device");
 	    	NEWLIST( &(port->mp_MsgList) );
@@ -773,6 +778,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		} /* switch GadgetType */
 	    } /* if (a gadget is currently active) */
 
+
 		/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
 		   note that this comes after handling gadgets, because gadgets should get all events.
 		*/
@@ -808,9 +814,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    } /* switch (im->im_Code)  (what button was pressed ?) */
 	    break;
 
-		/* Check if there is already a MOUSEMOVE in the msg queue
-		** of the task
-		*/
 
 
 
@@ -1020,6 +1023,7 @@ D(bug("Window: %p\n", w));
 
 
                 case IMCODE_MOVEWINDOW: { 
+kprintf("Moving window (%d, %d)\n", msg->dx, msg->dy);
                      MoveLayer(NULL,
                                msg->Window->WLayer,
                                msg->dx,
@@ -1091,7 +1095,16 @@ D(bug("Window: %p\n", w));
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
 		
-		/* ActivateWindow + other stuff goes here */
+		case IMCODE_CHANGEWINDOWBOX:
+		    intui_ChangeWindowBox(msg->Window
+		    	, msg->left, msg->top
+			, msg->width, msg->height
+		    );
+		    
+		    FreeMem(msg, sizeof (struct shortIntuiMessage));
+		    
+		    break;
+		
 	    }
 	    
 	    if (TRUE == CheckLayersBehind)
@@ -1128,6 +1141,7 @@ D(bug("Window: %p\n", w));
 	      }
 	    }
 	}
+
 	else
 	{
 	    free_intuimessage(im, IntuitionBase);
@@ -1188,7 +1202,9 @@ inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struc
     /* Mark the message as taken */    
 
     /* Reply the message to intuition */
-    imsg->ExecMessage.mn_ReplyPort = w->WindowPort;
+/*    imsg->ExecMessage.mn_ReplyPort = w->WindowPort;
+*/
+    imsg->ExecMessage.mn_ReplyPort = NULL;
     imsg->IDCMPWindow = w;
     
     PutMsg(w->UserPort, (struct Message *)imsg);
