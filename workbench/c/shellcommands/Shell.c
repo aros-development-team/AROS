@@ -483,6 +483,12 @@ LONG interact(void)
 	    {
 		Close(cli->cli_CurrentInput);
 
+	        if (AROS_BSTR_strlen(cli->cli_CommandFile))
+		{
+	            DeleteFile(BADDR(cli->cli_CommandFile));
+		    AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
+		}
+		
 		if (!cli->cli_Background)
 	        {
 		    cli->cli_CurrentInput = cli->cli_StandardInput;
