@@ -135,7 +135,6 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	    
 	    if (bm->state)
 	    {
-		LOCK_ALL
 		LOCK_HW
 
 		InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer, 
@@ -147,7 +146,6 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		DPMS(sd, sd->dpms);
 
 		UNLOCK_HW
-	        UNLOCK_ALL
 
 		return o;
 	    }
@@ -194,7 +192,6 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 		if (bm->state)
 		{
-		    LOCK_ALL
 		    LOCK_HW
 		    
 		    InitMode(sd, bm->state, width, height, depth, pixel, bm->framebuffer,
@@ -206,7 +203,6 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		    DPMS(sd, sd->dpms);
 
 		    UNLOCK_HW
-		    UNLOCK_ALL
 
 		    return o;
 		}
@@ -317,12 +313,9 @@ static VOID bm__del(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
 
-    LOCK_ALL
-
     LOCK_HW
     NVDmaKickoff(&sd->Card);
     NVSync(sd);
-    UNLOCK_HW
     
     if (bm->fbgfx)
     {
@@ -339,7 +332,7 @@ static VOID bm__del(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     bm->state = NULL;
 
-    UNLOCK_ALL
+    UNLOCK_HW
 
     OOP_DoSuperMethod(cl, o, msg);
 }
@@ -383,35 +376,21 @@ static VOID bm__clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *m
 
 	sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 
-	if (bm->surface_format != sd->surface_format)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-	    NVDmaNext(&sd->Card, bm->surface_format);
-	    sd->surface_format = bm->surface_format;
-	    D(bug("[NVBitMap] surface_format <- %d\n", sd->surface_format));
-	}
-        if (bm->pitch != sd->dst_pitch)
-        {
-	    NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
-	    NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
-	    sd->dst_pitch = bm->pitch;
-	    D(bug("[NVBitMap] pitch <- %08x\n", (bm->pitch << 16) | sd->src_pitch));
-	}
-	if (bm->rect_format != sd->rect_format)
-	{
-	    NVDmaStart(&sd->Card, RECT_FORMAT, 1);
-	    NVDmaNext(&sd->Card, bm->rect_format);
-	    sd->rect_format = bm->rect_format;
-	    D(bug("[NVBitMap] rect_format <- %d\n", sd->rect_format));
-	}
-	if (bm->framebuffer != sd->dst_offset)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-	    NVDmaNext(&sd->Card, bm->framebuffer);
-	    sd->dst_offset = bm->framebuffer;
-	    D(bug("[NVBitMap] dst_offset <- %p\n", sd->dst_offset));
-	}
-        NVSetRopSolid(sd, vHidd_GC_DrawMode_Copy, ~0 << bm->depth);
+	NVDmaStart(&sd->Card, SURFACE_FORMAT, 4);
+	NVDmaNext(&sd->Card, bm->surface_format);
+	NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
+	NVDmaNext(&sd->Card, sd->src_offset);
+	NVDmaNext(&sd->Card, bm->framebuffer);
+	
+	sd->surface_format = bm->surface_format;
+	sd->dst_pitch 	= bm->pitch;
+	sd->dst_offset 	= bm->framebuffer;
+
+	NVDmaStart(&sd->Card, RECT_FORMAT, 1);
+	NVDmaNext(&sd->Card, bm->rect_format);
+	sd->rect_format = bm->rect_format;
+			
+	NVSetRopSolid(sd, vHidd_GC_DrawMode_Copy, ~0 << bm->depth);
         NVDmaStart(&sd->Card, RECT_SOLID_COLOR, 1);
         NVDmaNext(&sd->Card, GC_BG(msg->gc));
 
@@ -466,10 +445,12 @@ D(bug("[NVBitMap] PutPixel %d:%d-%x (pitch %d, bpp %d) @ %p\n", msg->x, msg->y, 
     if (bm->fbgfx)
 	ptr += (IPTR)sd->Card.FrameBuffer;
 
-    LOCK_HW
+// !!!!!!! Locking and DMA flushing slows down this method a lot!
+
+//    LOCK_HW
     
-    NVDmaKickoff(&sd->Card);
-    NVSync(sd);
+//    NVDmaKickoff(&sd->Card);
+//    NVSync(sd);
 
     switch (bm->bpp)
     {
@@ -484,7 +465,7 @@ D(bug("[NVBitMap] PutPixel %d:%d-%x (pitch %d, bpp %d) @ %p\n", msg->x, msg->y, 
 	    break;
     }
     
-    UNLOCK_HW
+//    UNLOCK_HW
 }
 
 static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
@@ -497,10 +478,12 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     if (bm->fbgfx)
 	ptr += (IPTR)sd->Card.FrameBuffer;
  
-    LOCK_HW
+// !!!!!!! Locking and DMA flushing slows down this method a lot!
+
+//    LOCK_HW
     
-    NVDmaKickoff(&sd->Card);
-    NVSync(sd);
+//    NVDmaKickoff(&sd->Card);
+//    NVSync(sd);
 
     switch (bm->bpp)
     {
@@ -515,7 +498,7 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 	    break;
     }
 
-    UNLOCK_HW
+//    UNLOCK_HW
     
     /* Get pen number from colortab */
     return pixel;
@@ -535,34 +518,20 @@ static VOID bm__fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 
 	sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 
-	if (bm->surface_format != sd->surface_format)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-	    NVDmaNext(&sd->Card, bm->surface_format);
-	    sd->surface_format = bm->surface_format;
-	    D(bug("[NVBitMap] surface_format <- %d\n", sd->surface_format));
-	}
-        if (bm->pitch != sd->dst_pitch)
-        {
-	    NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
-	    NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
-	    sd->dst_pitch = bm->pitch;
-	    D(bug("[NVBitMap] pitch <- %08x\n", (bm->pitch << 16) | sd->src_pitch));
-	}
-	if (bm->rect_format != sd->rect_format)
-	{
-	    NVDmaStart(&sd->Card, RECT_FORMAT, 1);
-	    NVDmaNext(&sd->Card, bm->rect_format);
-	    sd->rect_format = bm->rect_format;
-	    D(bug("[NVBitMap] rect_format <- %d\n", sd->rect_format));
-	}
-	if (bm->framebuffer != sd->dst_offset)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-	    NVDmaNext(&sd->Card, bm->framebuffer);
-	    sd->dst_offset = bm->framebuffer;
-	    D(bug("[NVBitMap] dst_offset <- %p\n", sd->dst_offset));
-	}
+	NVDmaStart(&sd->Card, SURFACE_FORMAT, 4);
+	NVDmaNext(&sd->Card, bm->surface_format);
+	NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
+	NVDmaNext(&sd->Card, sd->src_offset);
+	NVDmaNext(&sd->Card, bm->framebuffer);
+	
+	sd->surface_format = bm->surface_format;
+	sd->dst_pitch 	= bm->pitch;
+	sd->dst_offset 	= bm->framebuffer;
+
+	NVDmaStart(&sd->Card, RECT_FORMAT, 1);
+	NVDmaNext(&sd->Card, bm->rect_format);
+	sd->rect_format = bm->rect_format;
+
         NVSetRopSolid(sd, GC_DRMD(msg->gc), ~0 << bm->depth);
         NVDmaStart(&sd->Card, RECT_SOLID_COLOR, 1);
         NVDmaNext(&sd->Card, GC_FG(msg->gc));
@@ -609,14 +578,14 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
 	LOCK_HW
 	
 	sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
-
-	if (sd->dst_offset != bm->framebuffer)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-	    NVDmaNext(&sd->Card, bm->framebuffer);
-	    sd->dst_offset = bm->framebuffer;
-	    D(bug("[NVBitMap] dst_offset <- %p\n", sd->dst_offset));
-	}
+	
+	NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
+	NVDmaNext(&sd->Card, bm->framebuffer);
+	sd->dst_offset = bm->framebuffer;
+	
+	NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
+	NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
+	sd->dst_pitch = bm->pitch;
 
 	if (GC_DOCLIP(gc))
 	{
@@ -640,7 +609,7 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
 	{
 	    NVDmaStart(&sd->Card, CLIP_POINT, 2);
 	    NVDmaNext(&sd->Card, 0x00000000);
-	    NVDmaNext(&sd->Card, 0xffffffff);
+	    NVDmaNext(&sd->Card, 0xff00ff00);
 	}
 	
 	NVSync(sd);
@@ -834,7 +803,7 @@ static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 }
 #endif
 
-static VOID _bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     if (cl == sd->offbmclass)
     {
@@ -864,34 +833,17 @@ static VOID _bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_P
 
 	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
 	
-	if ((bm->surface_format != sd->surface_format))
-	{
-	    NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
-	    NVDmaNext(&sd->Card, bm->surface_format);
-	    sd->surface_format = bm->surface_format;
-	    D(bug("[NVidia] surface_format <- %d\n", sd->surface_format));
-	}
-
-	if (bm->pitch != sd->dst_pitch)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
-	    NVDmaNext(&sd->Card, (bm->pitch << 16) | ((msg->width * bm->bpp + 63) & ~63));
-	    sd->dst_pitch = bm->pitch;
-	    sd->src_pitch = (msg->width * bm->bpp + 63) & ~63;
-	    D(bug("[NVidia] pitch <- %08x\n", (sd->dst_pitch << 16) | sd->src_pitch));
-	}
-
-	if (bm->framebuffer != sd->dst_offset)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-	    NVDmaNext(&sd->Card, bm->framebuffer);
-	    sd->dst_offset = bm->framebuffer;
-	    D(bug("[NVidia] dst_offset=%p\n", sd->dst_offset));
-	}
-
-	NVDmaStart(&sd->Card, SURFACE_OFFSET_SRC, 1);
-	NVDmaNext(&sd->Card, (IPTR)ptr);
+	NVDmaStart(&sd->Card, SURFACE_FORMAT, 4);
+	NVDmaNext(&sd->Card, bm->surface_format);
+        NVDmaNext(&sd->Card, (bm->pitch << 16) | ((msg->width * bm->bpp + 63) & ~63));
+        NVDmaNext(&sd->Card, (IPTR)ptr);
+        NVDmaNext(&sd->Card, bm->framebuffer);
+	
+	sd->surface_format = bm->surface_format;
+	sd->dst_pitch = bm->pitch;
+	sd->src_pitch = (msg->width * bm->bpp + 63) & ~63;
 	sd->src_offset = (IPTR)ptr;
+        sd->dst_offset = bm->framebuffer;
 	
 	for (y=0; y < msg->height; y++)
 	{    
@@ -997,13 +949,13 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 
         sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 
-	if (sd->dst_offset != bm->framebuffer)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-	    NVDmaNext(&sd->Card, bm->framebuffer);
-	    sd->dst_offset = bm->framebuffer;
-	    D(bug("[NVBitMap] dst_offset <- %p\n", sd->dst_offset));
-	}
+	NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
+	NVDmaNext(&sd->Card, bm->framebuffer);
+	sd->dst_offset = bm->framebuffer;
+	
+	NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
+	NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
+	sd->dst_pitch = bm->pitch;
 
 	if (GC_DOCLIP(gc))
 	{
@@ -1013,7 +965,7 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 				  (GC_CLIPX2(gc)-GC_CLIPX1(gc)+1));
 	}
 	
-	NVSetRopSolid(sd, GC_DRMD(gc), ~0);
+	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
 	NVDmaStart(&sd->Card, LINE_COLOR, 1);
 	NVDmaNext(&sd->Card, GC_FG(gc));
 
@@ -1035,7 +987,7 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 	{
 	    NVDmaStart(&sd->Card, CLIP_POINT, 2);
 	    NVDmaNext(&sd->Card, 0x00000000);
-	    NVDmaNext(&sd->Card, 0xffffffff);
+	    NVDmaNext(&sd->Card, 0xff00ff00);
 	}
 
 	NVSync(sd);
@@ -1062,13 +1014,13 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
 
         sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 
-	if (sd->dst_offset != bm->framebuffer)
-	{
-	    NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
-	    NVDmaNext(&sd->Card, bm->framebuffer);
-	    sd->dst_offset = bm->framebuffer;
-	    D(bug("[NVBitMap] dst_offset <- %p\n", sd->dst_offset));
-	}
+	NVDmaStart(&sd->Card, SURFACE_OFFSET_DST, 1);
+	NVDmaNext(&sd->Card, bm->framebuffer);
+	sd->dst_offset = bm->framebuffer;
+	
+	NVDmaStart(&sd->Card, SURFACE_PITCH, 1);
+	NVDmaNext(&sd->Card, (bm->pitch << 16) | sd->src_pitch);
+	sd->dst_pitch = bm->pitch;
 
 	if (GC_DOCLIP(gc))
 	{
@@ -1078,7 +1030,7 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
 				  (GC_CLIPX2(gc)-GC_CLIPX1(gc)+1));
 	}
 	
-	NVSetRopSolid(sd, GC_DRMD(gc), ~0);
+	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
 	NVDmaStart(&sd->Card, LINE_COLOR, 1);
 	NVDmaNext(&sd->Card, GC_FG(gc));
     
@@ -1093,7 +1045,7 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
 	{
 	    NVDmaStart(&sd->Card, CLIP_POINT, 2);
 	    NVDmaNext(&sd->Card, 0x00000000);
-	    NVDmaNext(&sd->Card, 0xffffffff);
+	    NVDmaNext(&sd->Card, 0xff00ff00);
 	}
 
 	NVSync(sd);
@@ -1126,10 +1078,10 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__fillrect),	moHidd_BitMap_FillRect },
 	{ OOP_METHODDEF(bm__bpl),	moHidd_BitMap_BytesPerLine },
 	{ OOP_METHODDEF(bm__drawline),	moHidd_BitMap_DrawLine },
-	{ OOP_METHODDEF(_bm__putimagelut),	moHidd_BitMap_PutImageLUT },
-	{ OOP_METHODDEF(bm__blitcolexp),    moHidd_BitMap_BlitColorExpansion },
-	{ OOP_METHODDEF(bm__drawrect),	    moHidd_BitMap_DrawRect },
-	{ OOP_METHODDEF(bm__drawpoly),	    moHidd_BitMap_DrawPolygon },
+	{ OOP_METHODDEF(bm__putimagelut),moHidd_BitMap_PutImageLUT },
+	{ OOP_METHODDEF(bm__blitcolexp),moHidd_BitMap_BlitColorExpansion },
+	{ OOP_METHODDEF(bm__drawrect),	moHidd_BitMap_DrawRect },
+	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
 	{ NULL, 0 }
     };
 
@@ -1191,10 +1143,10 @@ OOP_Class *init_offbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__fillrect),	moHidd_BitMap_FillRect },
 	{ OOP_METHODDEF(bm__bpl),	moHidd_BitMap_BytesPerLine },
 	{ OOP_METHODDEF(bm__drawline),	moHidd_BitMap_DrawLine },
-	{ OOP_METHODDEF(_bm__putimagelut),	moHidd_BitMap_PutImageLUT },
-	{ OOP_METHODDEF(bm__blitcolexp),    moHidd_BitMap_BlitColorExpansion },
-	{ OOP_METHODDEF(bm__drawrect),	    moHidd_BitMap_DrawRect },
-	{ OOP_METHODDEF(bm__drawpoly),	    moHidd_BitMap_DrawPolygon },
+	{ OOP_METHODDEF(bm__putimagelut),moHidd_BitMap_PutImageLUT },
+	{ OOP_METHODDEF(bm__blitcolexp),moHidd_BitMap_BlitColorExpansion },
+	{ OOP_METHODDEF(bm__drawrect),	moHidd_BitMap_DrawRect },
+	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
 	{ NULL, 0 }
     };
 

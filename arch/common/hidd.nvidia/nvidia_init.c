@@ -550,7 +550,6 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
 	    sd->sysbase = SysBase;
 	    sd->CardMem = &LIBBASE->mh;
 	    
-	    InitSemaphore(&sd->GlobalLock);
 	    InitSemaphore(&sd->HWLock);
 
 	    sd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
