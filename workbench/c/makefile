@@ -21,7 +21,7 @@ FILES = \
 	avail \
 	cd \
 	copy \
-        date \
+	date \
 	delete \
 	dir \
 	echo \
@@ -50,10 +50,12 @@ clean:
 	-$(RM) $(EXES)
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee -a $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(APPCFLAGS) -c $< -o $@
+	$(CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee -a $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
