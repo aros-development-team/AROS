@@ -18,7 +18,7 @@ execute ./configure --enable-build-type=nightly
 make    tools mmake contrib
 
 cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU/AROS
-move    Contrib $PACKAGE
+move    Extras $PACKAGE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 archive $ARCHIVE $PACKAGE
