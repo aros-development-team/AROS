@@ -16,6 +16,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "prefs.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -263,6 +264,13 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 
     if (!data->usewinborder)
     {
+	BOOL isnewlook;
+
+	if (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_type == SCROLLBAR_TYPE_NEWLOOK)
+	    isnewlook = TRUE;
+	else
+	    isnewlook = FALSE;
+
 	if ((data->prop_object = NewObject(NULL, "propgclass",
 			GA_Left, _mleft(obj),
 			GA_Top, _mtop(obj),
@@ -273,7 +281,7 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 			PGA_Total, data->entries,
 			PGA_Visible, data->visible,
 			PGA_Top, data->first,
-    			PGA_NewLook, TRUE,
+    			PGA_NewLook, isnewlook,
     			PGA_Borderless, TRUE,
 		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
     			TAG_DONE)))
