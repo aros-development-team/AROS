@@ -1415,6 +1415,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     Object                      *active_object = NULL;
     IPTR                         disabled;
     ULONG                        key;
+    ULONG                        deadkey;
 
     /* get the vanilla key for control char */
     {
@@ -1427,7 +1428,8 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     }
 
     imsg_copy = *event;
-    imsg_copy.IAddress = NULL; /* be sure to trap access to that */
+    deadkey = *(ULONG *)event->IAddress;
+    imsg_copy.IAddress = &deadkey;
     ReplyMsg((struct Message*)event);
     event = &imsg_copy;
 
