@@ -116,7 +116,7 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 
 $(OBJDIR)/functions.c : mmakefile.src %(archive)
 %mkdir_q $(OBJDIR)
-	@$(ARCHTOOL) -s %(archive) $@
+	@$(ARCHTOOL) -s $@ %(archive)
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
@@ -558,7 +558,7 @@ ifndef NO_FUNCTABLE
 %mkfunctable_arch archive=%(archive)
 endif
 
-$(END_FILE).c :
+$(END_FILE).c : libdefs.h
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
