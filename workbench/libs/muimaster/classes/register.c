@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #include <string.h>
 #include <exec/memory.h>
 #include <intuition/icclass.h>

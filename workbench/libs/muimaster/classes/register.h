@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef _MUI_CLASSES_REGISTER_H
 #define _MUI_CLASSES_REGISTER_H
 

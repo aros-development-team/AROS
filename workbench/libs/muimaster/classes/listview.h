@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef _CLASSES_LISTVIEW_H
 #define _CLASSES_LISTVIEW_H
 
