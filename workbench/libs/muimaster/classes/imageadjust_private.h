@@ -32,9 +32,12 @@ struct Imageadjust_DATA
 
     Object *external_list;
     struct Hook external_display_hook;
+    struct Hook external_construct_hook;
+    struct Hook external_destruct_hook;
 
     char *imagespec;
     LONG adjust_type;
+    Object *originator;
 };
 
 #endif /* _IMAGEADJUST_PRIVATE_H_ */

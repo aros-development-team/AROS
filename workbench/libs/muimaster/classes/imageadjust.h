@@ -15,6 +15,7 @@
 /*** Attributes *************************************************************/
 #define MUIA_Imageadjust_Type (MUIB_MUI|0x00422f2b) /* MUI: V11 i.. LONG */
 #define MUIA_Imageadjust_Spec (MUIB_MUI|0x004279e1) /* MUI: ??? .g. char * */
+#define MUIA_Imageadjust_Originator (MUIB_Imageadjust|0x00000000) /* Zune: i.. Object * */
 
 enum
 {
@@ -26,7 +27,6 @@ enum
 
 /*** Methods ****************************************************************/
 #define MUIM_Imageadjust_ReadExternal (MUIB_Imageadjust | 0x00000000) /* PRIV */
-
 
 extern const struct __MUIBuiltinClass _MUI_Imageadjust_desc; /* PRIV */
 
