@@ -39,6 +39,7 @@ struct Imageadjust_DATA
 
     struct Hook gradient_hook;
     Object *gradient_imagedisplay;
+    Object *gradient_angle_slider;
     Object *gradient_start_poppen;
     Object *gradient_end_poppen;
     char gradient_imagespec[128];
@@ -81,9 +82,10 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
     struct MUI_RGBcolor *start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor);
     struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
+    int angle = XGET(data->gradient_angle_slider, MUIA_Numeric_Value);
 
-    snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec), "7:%c,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
-                 'v',
+    snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec), "7:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+                 angle,
                  start_rgb->red,start_rgb->green,start_rgb->blue,
                  end_rgb->red,end_rgb->green,end_rgb->blue);
 
@@ -287,6 +289,8 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 			col.blue = spec.u.gradient.end_rgb[2]*0x01010101;
 
 			set(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor, &col);
+
+			set(data->gradient_angle_slider, MUIA_Numeric_Value, spec.u.gradient.angle);
 		    }
 
 		    Gradient_Function(NULL,obj,&data);
@@ -316,6 +320,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *gradient_imagedisplay = NULL;
     Object *gradient_start_poppen = NULL;
     Object *gradient_end_poppen = NULL;
+    Object *gradient_angle_slider = NULL;
     char *spec = NULL;
     LONG i;
     LONG adjust_type;
@@ -367,6 +372,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
 	        End),
+	    Child, (IPTR)(gradient_angle_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 359, End),
 	    Child, HGroup,
 		Child, (IPTR)(gradient_start_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"r00000000,00000000,00000000", End),
 		Child, (IPTR)(gradient_end_poppen = PoppenObject, MUIA_Pendisplay_Spec, (IPTR)"rffffffff,ffffffff,ffffffff", End),
@@ -494,12 +500,15 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->gradient_imagedisplay = gradient_imagedisplay;
 	data->gradient_start_poppen = gradient_start_poppen;
 	data->gradient_end_poppen = gradient_end_poppen;
+	data->gradient_angle_slider = gradient_angle_slider;
 
 	data->gradient_hook.h_Entry = HookEntry;
 	data->gradient_hook.h_SubEntry = (HOOKFUNC)Gradient_Function;
 	DoMethod(gradient_start_poppen, MUIM_Notify, MUIA_Pendisplay_Spec, MUIV_EveryTime,
 		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
 	DoMethod(gradient_end_poppen, MUIM_Notify, MUIA_Pendisplay_Spec, MUIV_EveryTime,
+		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
+	DoMethod(gradient_angle_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
 		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
 
 	/* Set the gradient image to correct values */
