@@ -134,7 +134,7 @@ AROS_LH7(void, ScrollWindowRasterNoFill,
          AROS_LHA(WORD           , ymax, D5),
 
          /*  LOCATION */
-         struct IntuitionBase *, IntuitionBase, 133, Intuition)
+         struct IntuitionBase *, IntuitionBase, 159, Intuition)
 
 {
     AROS_LIBFUNC_INIT
