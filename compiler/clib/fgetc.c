@@ -11,6 +11,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__errno.h"
+#include "__open.h"
+
 
 /*****************************************************************************
 
@@ -49,23 +51,31 @@
 ******************************************************************************/
 {
     int c;
+    fdesc *fdesc = __getfdesc(stream);
 
-	c = FGetC ((BPTR)stream->fh);
+    if (!fdesc)
+    {
+        errno = EBADF;
+	stream->flags |= _STDIO_ERROR;
+	return EOF;
+    }
+
+    c = FGetC ((BPTR)(fdesc->fh));
 
     if (c == EOF)
     {
-		c = IoErr ();
+	c = IoErr ();
 
-		if (c)
-		{
-	    	errno = IoErr2errno (c);
+	if (c)
+	{
+    	    errno = IoErr2errno (c);
 
-			stream->flags |= _STDIO_FILEFLAG_ERROR;
-		}
-		else
-	    	stream->flags |= _STDIO_FILEFLAG_EOF;
+	    stream->flags |= _STDIO_ERROR;
+	}
+	else
+	    stream->flags |= _STDIO_EOF;
 
-		c = EOF;
+	c = EOF;
     }
 
     return c;

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function open()
@@ -7,17 +7,16 @@
 */
 #include <exec/memory.h>
 #include <dos/dos.h>
+#include <dos/filesystem.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>
 #include "__errno.h"
-#include "__stdio.h"
-
+#include "__open.h"
 
 /*****************************************************************************
 
     NAME */
-#include <unistd.h>
 #include <fcntl.h>
 
 	int open (
@@ -90,50 +89,94 @@
 
 ******************************************************************************/
 {
-    FILENODE * fn;
-    BPTR       fh;
-    int        openmode;
+    BPTR fh;
+    int  openmode;
+    int  fd;
+    fdesc *currdesc;
 
-    if (!(fn = AllocMem (sizeof (FILENODE), MEMF_ANY)) )
+    /* filter out invalid modes */
+    switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
     {
-	errno = ENOMEM;
-	return -1;
+    	case O_EXCL:
+    	case O_EXCL|O_TRUNC:
+            errno = EINVAL;
+            return -1;
     }
 
     switch (flags & O_ACCMODE)
     {
-    case O_RDONLY:
-	openmode = MODE_OLDFILE;
-	break;
+        case O_RDONLY:
+	    openmode = FMF_READ;
+	    break;
 
-    case O_WRONLY:
-	if (flags & O_CREAT)
-	    openmode = MODE_NEWFILE;
-	else
-	    openmode = MODE_NEWFILE;
+        case O_WRONLY:
+    	    openmode = FMF_WRITE;
+	    break;
 
-	break;
+    	case O_RDWR:
+	    openmode = FMF_WRITE | FMF_READ;
+	    break;
 
-    case O_RDWR:
-	openmode = MODE_READWRITE;
-	break;
-
+     	default:
+	    errno = EINVAL;
+	    return -1;
     }
 
-    if (!(fh = Open ((char *)pathname, openmode)) )
+    if (flags & O_TRUNC)  openmode |= FMF_CLEAR;
+    if (flags & O_CREAT) openmode |= FMF_CREATE;
+
+    currdesc = malloc(sizeof(fdesc));
+    if (!currdesc) return -1;
+
+    fd = __getfdslot(__getfirstfd(0));
+
+    if (fd!=-1)
     {
-	FreeMem (fn, sizeof (FILENODE));
+	BPTR fh2 = NULL;
 
-	errno = IoErr2errno (IoErr ());
-	return -1;
+	/* See if the file exists and "lock" it. */
+	if (!(flags & O_CREAT) || (flags & O_EXCL))
+	{
+	    fh2 = Open((char *)pathname, FMF_READ);
+	    /* if O_CREAT is not set and the file doesn't exist return an error */
+	    if (!fh2 && !(flags & O_CREAT))
+	    {
+	    	errno = ENOENT;
+		free(currdesc);
+	  	return -1;
+	    }
+	    /* if O_EXCL is set and the file already exist return an error */
+	    else if (fh2 && (flags & O_EXCL))
+	    {
+	    	errno = EEXIST;
+		free(currdesc);
+		Close(fh2);
+	  	return -1;
+            }
+	}
+
+	if (!(fh = Open ((char *)pathname, openmode)) )
+    	{
+	    errno = IoErr2errno (IoErr ());
+	    free(currdesc);
+	    return -1;
+        }
+
+	currdesc->fh        = fh;
+	currdesc->flags     = flags;
+	currdesc->opencount = 1;
+
+	__setfdesc(fd, currdesc);
+
+	/* Unlock the file */
+	if (fh2) Close(fh2);
+    }
+    else
+    {
+        free(currdesc);
     }
 
-    fn->File.fh = (void *)fh;
-    fn->File.flags = 0;
-    fn->fd = __stdio_fd ++;
+    return fd;
 
-    AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
-
-    return fn->fd;
 } /* open */
 

@@ -5,13 +5,20 @@
     Desc: stdio internals
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+
 #include <exec/lists.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
+#include "__open.h"
 #include "__stdio.h"
 
 FILE * stdin;
@@ -25,43 +32,86 @@ struct MinList __stdio_files =
     (struct MinNode *)&__stdio_files
 };
 
-int __stdio_fd = 3;
 
-static FILENODE *new_file_node(BPTR fh, long flags, int fd)
+int __smode2oflags(char *mode)
 {
-	FILENODE *fn;
+    int ret = -1;
 
-	if (!(fn = malloc (sizeof (FILENODE))) )
+    switch (*mode++)
     {
-		SetIoErr(ERROR_NO_FREE_STORE);
-		exit(RETURN_FAIL);
+	case 'r':
+	    ret = O_RDONLY;
+	    break;
+
+	case 'w':
+	    ret = O_WRONLY | O_CREAT | O_TRUNC;
+	    break;
+
+	case 'a':
+	    ret = O_WRONLY | O_CREAT | O_APPEND;
+	    break;
+
+	default:
+	    errno = EINVAL;
+	    return -1;
     }
 
-    fn->File.fh = (void *)fh;
-    fn->File.flags = flags;
-    fn->fd = fd;
+    if ( *mode == '+' || (*mode == 'b' && mode[1] == '+'))
+    {
+	ret = O_RDWR | (ret & ~O_ACCMODE);
+    }
+    else if (*mode)
+    {
+    	errno = EINVAL;
+	return -1;
+    }
 
-	return fn;
+    return ret;
+}
+
+int __oflags2sflags(int omode)
+{
+    int ret;
+
+    switch (omode & O_ACCMODE)
+    {
+    	case O_RDONLY:
+	    ret = _STDIO_READ;
+    	    break;
+
+	case O_WRONLY:
+	    ret = _STDIO_WRITE;
+	    break;
+
+	case O_RDWR:
+	    ret = _STDIO_READ | _STDIO_WRITE;
+	    break;
+
+        default:
+	    errno = EINVAL;
+	    return 0;
+    }
+
+    if (omode & O_APPEND)
+    	ret |= _STDIO_APPEND;
+
+    return ret;
 }
 
 void __init_stdio(void)
 {
-	struct Process *me;
-	FILENODE *fn;
-
-	fn = new_file_node(Input(), 0, 0);
-	AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
-	stdin = FILENODE2FILE(fn);
-
-	fn = new_file_node(Output(), 0, 1);
-    AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
-	stdout = FILENODE2FILE(fn);
-
-	me = (struct Process *)FindTask (NULL);
-	fn = new_file_node(me->pr_CES ? me->pr_CES : me->pr_COS, 0, 2);
-    AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
-	stderr = FILENODE2FILE(fn);
+    if
+    (
+        !(stdin  = fdopen(STDIN_FILENO, NULL))  ||
+    	!(stdout = fdopen(STDOUT_FILENO, NULL)) ||
+    	!(stderr = fdopen(STDERR_FILENO, NULL))
+    )
+    {
+    	SetIoErr(ERROR_NO_FREE_STORE);
+    	exit(20);
+    }
 }
 
 ADD2INIT(__init_stdio, 5);
+
 

@@ -12,6 +12,7 @@
 #include <proto/dos.h>
 #include "__errno.h"
 #include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -54,33 +55,15 @@
 ******************************************************************************/
 {
     ssize_t cnt;
+    fdesc *fdesc = __getfdesc(fd);
 
-    switch (fd)
+    if (!fdesc)
     {
-    case 0: /* Stdin */
-	cnt = Read (Input(), buf, count);
-	break;
-
-    case 1: /* Stdout */
-    case 2: /* Stderr */
-	errno = EINVAL;
-	return EOF;
-
-    default: {
-	FILENODE * fn;
-
-	fn = GetFilenode4fd (fd);
-
-	if (!fn)
-	{
-	    errno = EBADF;
-	    return EOF;
-	}
-
-	cnt = Read ((BPTR)fn->File.fh, buf, count);
-
-	break; }
+	errno = EBADF;
+	return -1;
     }
+
+    cnt = Read ((BPTR)fdesc->fh, buf, count);
 
     if (cnt == -1)
 	errno = IoErr2errno (IoErr ());

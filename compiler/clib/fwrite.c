@@ -12,6 +12,7 @@
 #include <proto/dos.h>
 #include "__errno.h"
 #include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -57,13 +58,21 @@
 {
     size_t cnt;
 
-	cnt = FWrite ((BPTR)(stream->fh), buf, size, nblocks);
+    fdesc *fdesc = __getfdesc(stream->fd);
+
+    if (!fdesc)
+    {
+	errno = EBADF;
+	return 0;
+    }
+
+    cnt = FWrite ((BPTR)(fdesc->fh), buf, size, nblocks);
 
     if (cnt == -1)
     {
-		errno = IoErr2errno (IoErr ());
+	errno = IoErr2errno (IoErr ());
 
-		cnt = 0;
+	cnt = 0;
     }
 
     return cnt;

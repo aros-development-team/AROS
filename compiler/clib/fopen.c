@@ -1,14 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function fopen()
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
-#include <exec/lists.h>
-#include <errno.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include "__stdio.h"
 
@@ -83,32 +80,12 @@
 {
     FILENODE * fn;
     int        fd;
-    int        openmode;
+    int        openmode = __smode2oflags(mode);
 
-    while (*mode)
-    {
-	switch (*mode)
-	{
-	case 'r': openmode = O_RDONLY; break;
-	case 'w': openmode = O_WRONLY | O_CREAT; break;
-	case 'a': openmode = O_WRONLY | O_APPEND | O_CREAT; break;
-	case '+':
-	    openmode = O_RDWR | (openmode & ~O_ACCMODE);
-	    break;
+    fd = open(pathname, openmode, 644);
+    if (fd == -1)
+    	return NULL;
 
-	default:
-	    /* ignore */
-	    break;
-	}
-
-	mode ++;
-    }
-
-    if ((fd = open (pathname, openmode, 644)) == -1)
-	return NULL;
-
-    fn = (FILENODE *)GetTail (&__stdio_files);
-
-    return FILENODE2FILE(fn);
+    return fdopen(fd, NULL);
 } /* fopen */
 

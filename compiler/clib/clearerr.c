@@ -42,6 +42,6 @@
 
 ******************************************************************************/
 {
-    stream->flags &= ~(_STDIO_FILEFLAG_EOF | _STDIO_FILEFLAG_ERROR);
+    stream->flags &= ~(_STDIO_EOF | _STDIO_ERROR);
 } /* clearerr */
 

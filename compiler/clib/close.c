@@ -5,11 +5,11 @@
     Desc: ANSI C function close()
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
+#include <unistd.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>
-#include "__stdio.h"
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -50,21 +50,33 @@
 
 ******************************************************************************/
 {
-    FILENODE * fn;
+    fdesc *fdesc;
 
-    ForeachNode (&__stdio_files,fn)
+    if (!(fdesc = __getfdesc(fd)))
     {
-	if (fn->fd == fd)
-	{
-	    Remove ((struct Node *)fn);
-	    Close ((BPTR)fn->File.fh);
-	    FreeMem (fn, sizeof (FILENODE));
-
-	    return 0;
-	}
+        errno = EBADF;
+	return -1;
     }
 
-    errno = EBADF;
-    return -1;
+    if (--fdesc->opencount == 0)
+    {
+	if (
+	    fdesc->fh!=__stdfiles[STDIN_FILENO] &&
+	    fdesc->fh!=__stdfiles[STDOUT_FILENO] &&
+	    fdesc->fh!=__stdfiles[STDERR_FILENO] &&
+	    !Close(fdesc->fh)
+	)
+	{
+	    fdesc->opencount++;
+	    errno = IoErr2errno(IoErr());
+	    return -1;
+        }
+
+	free(fdesc);
+    }
+
+    __setfdesc(fd, NULL);
+
+    return 0;
 } /* close */
 

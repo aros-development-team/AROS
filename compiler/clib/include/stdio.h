@@ -32,14 +32,18 @@
 
 #ifndef __typedef_FILE
 #   define __typedef_FILE
-    typedef struct __FILE
+    typedef struct
     {
-	void * fh;
-	long   flags;
+    	int fd;
+    	int flags;
     } FILE;
 
-#   define _STDIO_FILEFLAG_EOF	   0x0001L
-#   define _STDIO_FILEFLAG_ERROR   0x0002L
+#   define _STDIO_EOF    0x0001L
+#   define _STDIO_ERROR  0x0002L
+#   define _STDIO_WRITE  0x0004L
+#   define _STDIO_READ   0x0008L
+#   define _STDIO_RDWR   _STDIO_WRITE | _STDIO_READ
+#   define _STDIO_APPEND 0x0010L
 #endif
 
 #ifndef __typedef_fpos_t
@@ -51,9 +55,10 @@ typedef long fpos_t;
 #define SEEK_CUR    0
 #define SEEK_END    -1
 
-extern FILE * stdin, * stdout, * stderr;
+extern FILE *stdin, *stdout, *stderr;
 
-extern FILE * fopen (const char * name, const char * mode);
+extern FILE *fopen (const char * name, const char * mode);
+extern FILE *fdopen (int filedes, const char *mode);
 extern int fclose (FILE *);
 extern int printf (const char * format, ...);
 extern int vprintf (const char * format, va_list args);
