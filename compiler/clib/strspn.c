@@ -23,7 +23,7 @@
 
     INPUTS
 	str - The string to check.
-	reject - Characters which must not be in str.
+	accept - Characters which have to be in str.
 
     RESULT
 	Length of the initial segment of str which contains only
