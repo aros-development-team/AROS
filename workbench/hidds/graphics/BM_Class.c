@@ -1975,7 +1975,7 @@ void free_bitmapclass(struct class_static_data *csd)
 
 
 #undef OOPBase
-#define OOPBase (OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(o)))->UserData)
+#define OOPBase (OOP_OOPBASE(o))
 
 /*********** Stubs for private methods **********************/
 BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)

@@ -2003,7 +2003,7 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
 
 
 #undef OOPBase
-#define OOPBase (OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(o)))->UserData)
+#define OOPBase (OOP_OOPBASE(o))
 
 /*********** Stubs for private methods **********************/
 OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
