@@ -6,12 +6,12 @@
     Lang: english
 */
 #include <aros/system.h>
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #undef FreeMem /* Don't use any kind of macro here :) We want the real thing */
 #include <proto/exec.h>
 
 extern struct ExecBase * SysBase;
-extern void PurgeChunk (ULONG *, ULONG);
 
 /*****************************************************************************
 
@@ -51,23 +51,6 @@ extern void PurgeChunk (ULONG *, ULONG);
 
 ******************************************************************************/
 {
-    PurgeChunk ((ULONG *)mem, size);
+    MUNGE_BLOCK (mem, size, MEMFILL_FREE);
     FreeMem (mem, size);
 } /* NastyFreeMem */
-
-
-/* Don't use #if on this one since it may be used by some other routine, too.
-    It's not static by design. */
-void PurgeChunk (ULONG * ptr, ULONG size)
-{
-    while (size >= sizeof (ULONG))
-    {
-#if SIZEOFULONG > 4
-	*ptr ++ = 0xDEAFBEEFDEADBEEFL;
-#else
-	*ptr ++ = 0xDEAFBEEFL;
-#endif
-	size -= sizeof (ULONG);
-    }
-}
-
