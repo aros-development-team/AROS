@@ -52,6 +52,7 @@ static IPTR aslprop_new(Class * cl, Object * o, struct opSet * msg)
     struct TagItem fitags[] =
     {
 	{IA_FrameType, FRAME_BUTTON},
+	{IA_EdgesOnly, TRUE 	   },
 	{TAG_DONE, 0UL}
     };
     
@@ -232,6 +233,31 @@ static IPTR aslprop_render(Class *cl, Object *o, struct gpRender *msg)
 		       IDS_NORMAL,
 		       msg->gpr_GInfo->gi_DrInfo);
 
+    #if AVOID_FLICKER
+    	{
+	    struct IBox ibox, fbox;
+	    
+	    fbox.Left = x;
+	    fbox.Top = y;
+	    fbox.Width = w;
+	    fbox.Height = h;
+	    
+	    ibox.Left   = x + BORDERPROPSPACINGX;
+	    ibox.Top    = y + BORDERPROPSPACINGY;
+	    ibox.Width  = w - BORDERPROPSPACINGX * 2;
+	    ibox.Height = h - BORDERPROPSPACINGY * 2;
+	    
+	    PaintInnerFrame(msg->gpr_RPort,
+	    	    	    msg->gpr_GInfo->gi_DrInfo,
+			    data->frame,
+			    &fbox,
+			    &ibox,
+			    msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN],
+			    AslBase);
+	    
+	}
+    #endif
+    
     } /* if (msg->gpr_Redraw == GREDRAW_REDRAW) */
     
     retval = DoSuperMethodA(cl, o, (Msg)msg);
