@@ -29,7 +29,7 @@ extern struct TagItem hdtags[], cdttags[], mbbltags[], llftags[],
 
 extern struct creategadget maingadgets[];
 
-void findHDs(char *device, int maxUnits) {
+void findHDs(char *device, ULONG maxUnits) {
 struct HDUnitNode *node;
 int i,count;
 
@@ -218,12 +218,11 @@ ULONG i;
 	return 0;
 }
 
-void findPartitionTables(struct Window *mainwin, char *device, int maxUnits) {
+void findPartitionTables(struct Window *mainwin, struct List *hdlist) {
 struct HDUnitNode *hd;
 
 	hdtags[0].ti_Data = (STACKIPTR)&pt_list;
-	findHDs(device, maxUnits);
-	hd = (struct HDUnitNode *)hd_list.lh_Head;
+	hd = (struct HDUnitNode *)hdlist->lh_Head;
 	while (hd->ln.ln_Succ)
 	{
 		if (findPT(mainwin, hd->root, hd->ln.ln_Name, hd->unit)==0)
@@ -364,9 +363,7 @@ struct EasyStruct es =
 }
 
 void freePartitionTable(struct PartitionTableNode *ptn) {
-kprintf("close\n");
 	ClosePartitionTable(ptn->ph);
-kprintf("close done\n");
 	FreeVec(ptn->ln.ln_Name);
 	FreeMem(ptn, sizeof(struct PartitionTableNode));
 }

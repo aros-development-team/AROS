@@ -100,12 +100,13 @@ ULONG initEnv(char *device) {
 	if (!mainwin)
 		return ERR_WINDOW;
 	if (device)
-		findPartitionTables(mainwin, device, 2);
+		findHDs(device, 2);
 	else
 	{
-		findPartitionTables(mainwin, "ide.device", 4);
-		findPartitionTables(mainwin, "scsi.device", 6);
+		findHDs("ide.device", 4);
+		findHDs("scsi.device", 6);
 	}
+	findPartitionTables(mainwin, &hd_list);
 	return ERR_NONE;
 }
 
