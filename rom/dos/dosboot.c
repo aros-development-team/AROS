@@ -7,7 +7,7 @@
 */
 
 
-# define  DEBUG  1
+# define  DEBUG  0
 # include <aros/debug.h>
 
 #include <aros/macros.h>
@@ -141,6 +141,8 @@ boot:
 
     strcpy( bootName, deviceName );
     strcat( bootName, ":" );
+    
+    kprintf("[DOS] Booting from device %s\n",bootName);
     
     /* We don't need expansion.library any more */
     CloseLibrary( (struct Library *) ExpansionBase );
@@ -305,7 +307,7 @@ BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
     LONG            bufferLength;
     struct InfoData info;
     
-    bufferLength = strlen( deviceName ) + 2;
+    bufferLength = strlen( deviceName ) + 15;
     
     if( (buffer = AllocMem( bufferLength, MEMF_ANY ) ) == NULL ) 
     {
@@ -313,7 +315,7 @@ BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
     }
     
     strcpy( buffer, deviceName );        
-    strcat( buffer, ":" );
+    strcat( buffer, ":s/hidd.prefs" );
        
     if( (lock = Lock( buffer, SHARED_LOCK )) == 0 )
     {
