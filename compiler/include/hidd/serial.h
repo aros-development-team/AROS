@@ -125,6 +125,7 @@ struct pHidd_SerialUnit_GetCapabilities
 #define TAG_PARITY_OFF	0x02
 #define TAG_STOP_BITS	0x03
 #define TAG_DATALENGTH	0x04
+#define TAG_SET_MCR	0x05
 
 /* some values for parities */
 
