@@ -605,7 +605,7 @@ if test "$with_sdl" != "yes" -a "$with_sdl" != no; then
     AC_MSG_ERROR("use either \'yes\' or \'no\' as arguments to --with-sdl")
 fi
 
-if test "$with_sdl" == "yes" -a "$HAVE_SDL_LIB" == "no"; then
+if test "$with_sdl" = "yes" -a "$HAVE_SDL_LIB" = "no"; then
     AC_MSG_ERROR(["sdl-config was not found, cannot configure for use with SDL"])
 fi
 AC_MSG_RESULT($with_sdl)
