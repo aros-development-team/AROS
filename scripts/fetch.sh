@@ -9,7 +9,7 @@ usage()
     error "Usage: $1 -a archive [-as archive_suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
-sf_mirrors="mesh"
+sf_mirrors="aleron voxel heanet avh umn unc puzzle mesh"
 
 fetch_sf()
 {
@@ -21,7 +21,8 @@ fetch_sf()
         fetch "http://prdownloads.sourceforge.net/$origin" "${file}?use_mirror=${mirror}" "$destination" \
             2>/dev/null && \
             full_path=`awk '/<META[ \t\n]+HTTP-EQUIV.+/ { match($4, /=.+"/); print substr($4, RSTART+1, RLENGTH-2) }' "${file}?use_mirror=${mirror}"` && \
-            rm "${file}?use_mirror=mesh" && \
+            rm "${file}?use_mirror=${mirror}" && \
+            test "x$full_path" != "x" && \
             fetch "`dirname $full_path`" "$file" "$destination" && \
             break
     done
