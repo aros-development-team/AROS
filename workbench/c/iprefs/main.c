@@ -94,8 +94,8 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 }
 /*********************************************************************************************/
 
-LONG __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
-struct Process *__detacher_process = NULL;
+LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
+struct Process *__detacher_process              = NULL;
 
 void DoDetach(void)
 {
@@ -104,7 +104,6 @@ void DoDetach(void)
     {
         Signal((struct Task *)__detacher_process, __detacher_must_wait_for_signal);
     }
-    __detacher_process = NULL;
 }
 
 /*********************************************************************************************/
@@ -318,11 +317,10 @@ static void HandleAll(void)
 
 
 int __nocommandline = 1;
+STRPTR __detached_name = IPREFS_SEM_NAME;
 
 int main(void)
 {
-    FindTask(NULL)->tc_Node.ln_Name = IPREFS_SEM_NAME;
-
     OpenLibs();
     GetENVName();
     StartNotifications();
