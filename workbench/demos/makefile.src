@@ -12,22 +12,23 @@ OBJDIR = $(GENDIR)/workbench/demos
 
 %define_libs
 
-FILES = \
-	compleximage \
-	demowin \
-	gtdemo \
-	helloworld \
-	inquire \
-	intuitext \
-	librarytest \
-	listfonts \
-	readicon \
-	regiontest \
-	rtdemo \
-	shadowborder \
-	sift \
-	simpleimage \
-	mathtest
+ifeq ($(FLAVOUR),native)
+#
+# Some files cause problems:
+#
+# 1) No (working) __chip keyword in ld
+# 2) Missing functions because we don't link with libc.a
+#
+
+FILES = gtdemo helloworld inquire intuitext librarytest listfonts \
+	readicon regiontest shadowborder sift
+
+else
+
+FILES = compleximage demowin gtdemo helloworld inquire intuitext \
+	librarytest listfonts readicon regiontest rtdemo shadowborder \
+	sift simpleimage mathtest
+endif
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
