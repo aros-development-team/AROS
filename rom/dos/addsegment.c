@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Add a segment to the resident list.
     Lang: english
 */
 #include "dos_intern.h"
@@ -10,31 +10,50 @@
 /*****************************************************************************
 
     NAME */
+#include <dos/dosextens.h>
 #include <proto/dos.h>
 
-	AROS_LH3(LONG, AddSegment,
+	AROS_LH3(BOOL, AddSegment,
 
 /*  SYNOPSIS */
 	AROS_LHA(STRPTR, name, D1),
 	AROS_LHA(BPTR  , seg, D2),
-	AROS_LHA(LONG  , system, D3),
+	AROS_LHA(LONG  , type, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 129, Dos)
 
 /*  FUNCTION
+	Adds a program segment to the system resident list. You can later
+	use these segments to run programs.
+
+	The name field should refer to a NULL terminated strings, which 
+	will be copied. The type field determines the type of resident
+	program. Normal programs should have type >= 0, system segments
+	should have type == CMD_SYSTEM.
+
+	Note that all other values of type are reserved.
 
     INPUTS
+	name		- Name of the segment. This is used by FindSegment().
+	seg		- Segment to add.
+	type		- What type of segment (initial use count).
 
     RESULT
+	Segment will have been added to the DOS resident list.
+
+	!= 0	success
+	== 0	failure
 
     NOTES
 
     EXAMPLE
 
     BUGS
+	Uses Forbid() based locking.
 
     SEE ALSO
+	FindSegment(), RemSegment()
 
     INTERNALS
 
@@ -46,10 +65,36 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("AddSegment");
+    struct Segment *sptr, *next, *prev;
+    int namelen = strlen(name);
 
-    return DOSFALSE;
-    AROS_LIBFUNC_EXIT
+    /* Make sure type is valid */
+    if( type < -1 )
+	return FALSE;
+
+    sptr = AllocVec(sizeof(struct Segment) + namelen - 3,
+		    MEMF_CLEAR|MEMF_PUBLIC);
+
+    if( sptr != NULL )
+    {
+	sptr->seg_UC = type;
+	sptr->seg_Seg = seg;
+	
+#ifdef AROS_FAST_BSTR
+	CopyMem(name, sptr->seg_Name, namelen);
+#else
+	Copymem(name, &sptr->seg_Name[1], namelen);
+	*sptr->seg_Name = namelen;
+#endif
+
+	/* Sigh, we just add the segment to the start of the list */
+	Forbid();
+	sptr->seg_Next = DOSBase->dl_ResList;
+	DOSBase->dl_ResList = MKBADDR(sptr);
+	Permit();
+	return TRUE;
+    }
+    return FALSE;
+
 } /* AddSegment */
