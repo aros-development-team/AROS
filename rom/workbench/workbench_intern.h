@@ -81,7 +81,7 @@ struct WorkbenchBase {
 
 #define SysBase         (WorkbenchBase->wb_SysBase)
 #define UtilityBase     ((struct UtilityBase *)(WorkbenchBase->wb_UtilityBase))
-#define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_UtilityBase))
+#define IntuitionBase   ((struct IntuitionBase *)(WorkbenchBase->wb_IntuitionBase))
 #define DOSBase         ((struct DosLibrary *)(WorkbenchBase->wb_DOSBase))
 
 /* Quick macros for obtaining and releasing the semaphore. */
