@@ -643,6 +643,7 @@ $(OBJDIR)/headers.stamp : $(FSRCS) $(SCRIPTDIR)/genshared \
 	    $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk
 	@$(SCRIPTDIR)/genshared -clib -prefix $(GENINCDIR) $(FSRCS)
 	@$(SCRIPTDIR)/genshared -defines -prefix $(GENINCDIR) $(FSRCS)
+	@$(TOUCH) $@
 
 $(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
 	$(CP) $< $@
