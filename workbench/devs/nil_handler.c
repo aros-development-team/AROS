@@ -240,7 +240,7 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_SEEK:
-	    iofs->io_Union.io_SEEK.io_Offset  =0;
+	    iofs->io_Union.io_SEEK.io_Offset = 0;
 	    break;
 
 	case FSA_CLOSE:
@@ -249,7 +249,10 @@ AROS_LH1(void, beginio,
 	    Permit();
 	    break;
 
-        case FSA_SET_FILE_SIZE:
+	case FSA_IS_INTERACTIVE:
+	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = TRUE;
+	    break;
+	case FSA_SET_FILE_SIZE:
         case FSA_EXAMINE:
         case FSA_EXAMINE_NEXT:
         case FSA_EXAMINE_ALL:
