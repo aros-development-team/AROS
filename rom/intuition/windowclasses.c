@@ -567,18 +567,18 @@ static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
 	RectFill(rp,container.Left,
 		    container.Top,
 		    container.Left,
-		    container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+		    container.Top + container.Height - 1 - 1);
 	RectFill(rp,container.Left + 1,
 		    container.Top,
-		    container.Left + container.Width - 1,
+		    container.Left + container.Width - 1 - 1,
 		    container.Top);
 	
 	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
 	RectFill(rp,container.Left + container.Width - 1,
-		    container.Top + 1,
+		    container.Top,
 		    container.Left + container.Width - 1,
 		    container.Top + container.Height - 1);
-	RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
+	RectFill(rp,container.Left,
 		    container.Top + container.Height - 1,
 		    container.Left + container.Width - 2,
 		    container.Top + container.Height - 1);
@@ -829,6 +829,7 @@ static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
 	    	{IA_Height, 		G(o)->Height - 2						},
 	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]					},
 	    	{SYSIA_DrawInfo,	(IPTR)dri							},
+		{SYSIA_WithBorder,	FALSE								},
 	    	{TAG_DONE, 0UL}
 	    };
 
@@ -949,6 +950,7 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	    	{IA_Height, 		G(o)->Height - 2						},
 	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]					},
 	    	{SYSIA_DrawInfo,	(IPTR)dri							},
+		{SYSIA_WithBorder,	FALSE								},
 	    	{TAG_DONE, 0UL}
 	    };
 
@@ -1019,24 +1021,33 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	/* For now just render a tiny black edge around the image */
 
 	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
+
+	/* left edge */
 	RectFill(rp,container.Left,
 		    container.Top,
 		    container.Left,
 		    container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+
+	/* top edge */
 	RectFill(rp,container.Left + 1,
 		    container.Top,
-		    container.Left + container.Width - 1,
+		    container.Left + container.Width - 1 - ((container.Top == 0) ? 0 : 1),
 		    container.Top);
 	
 	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
+
+	/* right edge */
 	RectFill(rp,container.Left + container.Width - 1,
-		    container.Top + 1,
+		    container.Top + ((container.Top == 0) ? 1 : 0),
 		    container.Left + container.Width - 1,
 		    container.Top + container.Height - 1);
+
+	/* bottom edge */
 	RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
 		    container.Top + container.Height - 1,
 		    container.Left + container.Width - 2,
 		    container.Top + container.Height - 1);
+
     return;
 }
 
