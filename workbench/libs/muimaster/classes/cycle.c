@@ -78,13 +78,12 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_InnerBottom, 1,
         MUIA_Group_Horiz, TRUE,
         
-        Child, (IPTR) imgobj = ImageObject,
+        Child, (IPTR) (imgobj = ImageObject,
             MUIA_InnerLeft,             2,
             MUIA_Image_Spec,     (IPTR) "6:17",
             MUIA_Image_FreeVert,        TRUE,
-        End,
-        Child, (IPTR) pageobj = PageGroup,
-        End,
+        End),
+        Child, (IPTR) (pageobj = PageGroup, End),
         
         TAG_MORE, (IPTR) msg->ops_AttrList
     );

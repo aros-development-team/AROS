@@ -127,26 +127,26 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
             MUIA_Window_TopEdge,            _bottom(obj) + y + 1,
             
             WindowContents, (IPTR) VGroup,
-                Child, (IPTR) data->imageadjust = MUI_NewObject
+                Child, (IPTR) (data->imageadjust = MUI_NewObject
                 (
                     MUIC_Imageadjust,
                     MUIA_CycleChain,              1,
                     MUIA_Imageadjust_Spec, (IPTR) img_spec,
                     MUIA_Imageadjust_Type,        data->adjust_type,
                     TAG_DONE
-                ),
+                )),
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, (IPTR) ok_button = MUI_MakeObject
+                    Child, (IPTR) (ok_button = MUI_MakeObject
                     (
                         MUIO_Button, (IPTR) "_Ok"
-                    ),
+                    )),
                     Child, (IPTR) HVSpace,
                     Child, (IPTR) HVSpace,
-                    Child, (IPTR) cancel_button = MUI_MakeObject
+                    Child, (IPTR) (cancel_button = MUI_MakeObject
                     (
                         MUIO_Button, (IPTR) "_Cancel"
-                    ),
+                    )),
                 End,
             End,
         End;
