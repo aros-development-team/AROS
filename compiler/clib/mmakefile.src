@@ -94,6 +94,7 @@ SHARED	:= \
 	__isinf \
 	__open \
 	__rand48 \
+	__spawnv \
 	__stat \
 	__stdio \
 	__upath \
