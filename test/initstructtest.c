@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/23 14:06:54  aros
+    Missing include
+
     Revision 1.3  1996/10/19 17:07:31  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -15,6 +18,7 @@
 #include <aros/machine.h>
 #include "initstruct.h"
 #include <stdio.h>
+#include <stddef.h>
 
 struct demo
 {

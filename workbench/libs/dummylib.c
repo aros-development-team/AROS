@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:05:18  aros
+    Missing include
+
     Revision 1.5  1996/09/13 17:57:09  digulla
     Use IPTR
 
@@ -25,6 +28,7 @@
 #   include "dummylib_gcc.h"
 #endif
 #include "initstruct.h"
+#include <stddef.h>
 
 struct inittable;
 extern const char name[];
