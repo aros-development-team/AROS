@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "dos_intern.h"
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -71,7 +72,7 @@
 		break;
 	}
 
-	buf[len++] = c;
+	buf[len] = c;
 
 	if (c == '\n')
 	    break;
