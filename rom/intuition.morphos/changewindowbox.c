@@ -86,20 +86,7 @@ AROS_LH5(void, ChangeWindowBox,
     msg.top    = top;
 
     msg.width  = width;
-    if (window->Flags & WFLG_SIZEGADGET)
-    {
-        if (width < window->MinWidth) width = window->MinWidth;
-        if (width > window->MaxWidth) width = window->MaxWidth;
-    }
-    if (width > window->WScreen->Width) msg.width = window->WScreen->Width;
-
     msg.height = height;
-    if (window->Flags & WFLG_SIZEGADGET)
-    {
-        if (height < window->MinHeight) height = window->MinHeight;
-        if (height > window->MaxHeight) height = window->MaxHeight;
-    }
-    if (height > window->WScreen->Height) msg.height = window->WScreen->Height;
 
     DoASyncAction((APTR)int_changewindowbox, &msg.msg, sizeof(msg), IntuitionBase);
 //    DoSyncAction((APTR)int_changewindowbox, &msg.msg, IntuitionBase);
@@ -113,9 +100,22 @@ static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
                                 struct IntuitionBase *IntuitionBase)
 {
     struct Window *window = msg->window;
-
+    
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
     
+    if (window->Flags & WFLG_SIZEGADGET)
+    {
+        if (msg->width < window->MinWidth) msg->width = window->MinWidth;
+        if (msg->width > (UWORD)window->MaxWidth) msg->width = (UWORD)window->MaxWidth;
+    }
+    if (msg->width > window->WScreen->Width) msg->width = window->WScreen->Width;
+
+    if (window->Flags & WFLG_SIZEGADGET)
+    {
+        if (msg->height < window->MinHeight) msg->height = window->MinHeight;
+        if (msg->height > (UWORD)window->MaxHeight) msg->height = (UWORD)window->MaxHeight;
+    }
+    if (msg->height > window->WScreen->Height) msg->height = window->WScreen->Height;
 
     DoMoveSizeWindow(window, msg->left, msg->top, msg->width, msg->height, TRUE, IntuitionBase);
 }
