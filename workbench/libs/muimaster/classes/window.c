@@ -2866,7 +2866,8 @@ static ULONG Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
  This adds the the control char handler and also do the MUIA_CycleChain
  stuff. Orginal MUI does this in an other way.
 **************************************************************************/
-static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_AddControlCharHandler *msg)
+static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj,
+					  struct MUIP_Window_AddControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
@@ -2877,10 +2878,10 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 #endif
 	Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
     }
-    /* Due to the lack of an better idea ... */
+    /* Due to the lack of a better idea ... */
     if (muiAreaData(msg->ccnode->ehn_Object)->mad_Flags & MADF_CYCLECHAIN)
     {
-	struct ObjNode *node = mui_alloc_struct(struct ObjNode);
+	struct ObjNode *node = AllocVecPooled(data->wd_MemoryPool, sizeof(struct ObjNode));
 	if (node)
 	{
 	    node->obj = msg->ccnode->ehn_Object;
@@ -2893,7 +2894,8 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 /**************************************************************************
 
 **************************************************************************/
-static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_RemControlCharHandler *msg)
+static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj,
+					  struct MUIP_Window_RemControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct ObjNode     *node = FindObjNode(&data->wd_CycleChain,msg->ccnode->ehn_Object);
@@ -2904,7 +2906,7 @@ static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct
     {
     	/* Remove from the chain list */
 	Remove((struct Node *)node);
-	mui_free(node);
+	FreeVecPooled(data->wd_MemoryPool, node);
     }
 
     return TRUE;
