@@ -565,6 +565,28 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 
     if (!(_flags(ehn->ehn_Object) & MADF_CANDRAW)) return 0;
 
+    if (event->Class == IDCMP_MOUSEBUTTONS && event->Code == SELECTDOWN && (_flags(ehn->ehn_Object) & MADF_INVIRTUALGROUP))
+    {
+	/* Here we filter out SELECTDOWN messages if objects is in a virtual group but the click went out of the virtual group */
+    	Object *obj = ehn->ehn_Object;
+    	Object *parent = obj;
+    	Object *wnd = _win(obj);
+
+	while (get(parent,MUIA_Parent,&parent))
+	{
+	    if (!parent) break;
+	    if (wnd == parent) break;
+	    if (_flags(parent) & MADF_ISVIRTUALGROUP)
+	    {
+		if (event->MouseX < _mleft(parent) || event->MouseX > _mright(parent) || event->MouseY < _mtop(parent) || event->MouseY > _mbottom(parent))
+		{
+		    return 0;
+		}
+	    }
+	}
+	
+    }
+
     if (ehn->ehn_Class)
 	res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
     else
