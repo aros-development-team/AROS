@@ -37,6 +37,7 @@ FILES := amiga2date \
 	obtainpentest \
 	writepixelarray \
 	rawtest \
+	strchr \
 	camdtree
 
 EXEDIR := $(AROSDIR)/test
@@ -53,8 +54,11 @@ USE_COOLIMAGESLIB := yes
 
 %make_prog_setup mmake=test
 
-test : $(EXES)
+test : setup $(EXES)
 
+setup ::
+	%mkdir_q $(EXEDIR)
+	
 %make_prog_single dir=$(EXEDIR)
 
 %common
