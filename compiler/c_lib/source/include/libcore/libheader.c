@@ -87,7 +87,7 @@
  * (moveq #-1,d0 ; rts) in a constant variable.
  */
 #if (defined(__mc68000__) && (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE))
-const LONG entry = 0x70FF4E75;
+const LONG LC_BUILDNAME(entry) = 0x70FF4E75;
 #else
 LONG ASM LC_BUILDNAME(entry) (void)
 {
