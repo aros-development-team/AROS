@@ -16,4 +16,8 @@
 #define __P(protos)	()
 #endif
 
+/* FreeBSD's code use this, but we don't need it, so define it to expand to
+   nothing.  */
+#define __FBSDID(x)
+
 #endif /* _SYS_CDEFS_H_ */
