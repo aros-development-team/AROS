@@ -10,8 +10,8 @@ USER_LIBS   := amiga arosc m mui
 #MM     workbench-classes-zune-aboutmui \
 #MM     workbench-classes-zune-boopsi \
 #MM     workbench-classes-zune-colorfield \
-#MM     workbench-classes-zune-imageadjust \
-#MM     workbench-classes-zune-pendisplay \
+##MM     workbench-classes-zune-imageadjust \
+##MM     workbench-classes-zune-pendisplay \
 #MM     workbench-classes-zune-popasl \
 #MM     workbench-classes-zune-popframe \
 #MM     workbench-classes-zune-popimage \
