@@ -339,15 +339,13 @@ UX11
 	    char *pattern;
 	    int y,z;
 
-/* Find a way to determine the depth of the AreaPtrn */
-	    depth = 1;	/* Number of bitplanes used for AreaPtrn */
-	    		/* Dummy value for now! */
+	    depth = rp->BitMap->Depth;	/* Number of bitplanes used for AreaPtrn */
 	    width = 16;
-	    height = 1>>(rp->AreaPtSz); /* AreaPtSz is negative */
-	    foreground = 0;	/* Specify the foreground and background
-	    			   pixel values to use. (Xlib Ref.Man.)
-	    			   Dummy values for now! */
-	    background = 1;
+	    height = 1>>(rp->AreaPtSz);	/* AreaPtSz is negative */
+	    
+/* Specify the foreground and background pixel values to use.(Xlib Ref.Man.) */	    
+	    foreground = BlackPixel(sysDisplay, sysScreen);	
+	    background = WhitePixel(sysDisplay, sysScreen);
 
 	    pattern = AllocMem(2*height*depth*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
 	    for (z=0; z<depth; z++)
