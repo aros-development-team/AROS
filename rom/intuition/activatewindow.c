@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  1999/03/26 10:37:44  nlorentz
+    Set WFLG_WINDOWACTIVE flag
+
     Revision 1.9  1999/03/25 04:26:23  bergers
     Update for deffered treatment of windows.
 
@@ -96,7 +99,7 @@
         msg->Class 	= IDCMP_WBENCHMESSAGE;
 	msg->Code  	= IMCODE_ACTIVATEWINDOW;
 	msg->Window	= window;
-	
+
         PutMsg(window->WindowPort, (struct Message *)msg);
 	
     }
@@ -112,6 +115,7 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
 
     ULONG lock;
     struct Window *oldactive;
+    
 
     intui_ActivateWindow (window);
 
@@ -134,6 +138,7 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
 	oldactive->Flags &= ~WFLG_WINDOWACTIVE;
 	RefreshWindowFrame(oldactive);
     }    
+
     
     RefreshWindowFrame(window);
 }
