@@ -484,9 +484,12 @@ struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
 			 struct InputEvent *ie, STACKULONG methodid,
 			 BOOL *reuse_event, struct IntuitionBase *IntuitionBase)
 {
+    struct IIHData *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
     struct gpInput gpi;
     IPTR retval;
     ULONG termination;
+    
+    ie->ie_Qualifier = iihdata->ActQualifier;
     
     gpi.MethodID = methodid;
     gpi.gpi_GInfo = gi;
