@@ -359,7 +359,7 @@ BEGIN {
 		if (lastwaslf)
 		{
 		    lastwaslf=0;
-		    gsub(/^[ \t]+/,"",yytext);
+		    #gsub(/^[ \t]+/,"",yytext);
 		}
 	    }
 	}
@@ -406,6 +406,12 @@ function yylex() {
 
 	return "cmd";
     }
+    else if (match(yyrest,/^\\\\/))
+    {
+	yytext="\\";
+	yyrest=substr(yyrest,3);
+	return "text";
+    }
     else if (match(yyrest,/^\|[^\|]+\|/))
     {
 	yytext=substr(yyrest,RSTART+1,RLENGTH-2);
@@ -429,7 +435,6 @@ function yylex() {
 	gsub(/</,"\\&lt;",yytext);
 	gsub(/>/,"\\&gt;",yytext);
 	gsub(/"/,"\\&quot;",yytext);
-	gsub(/ +/," ",yytext);
 
 	return "text";
     }
