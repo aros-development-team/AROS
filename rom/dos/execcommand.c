@@ -14,6 +14,9 @@
 */
 
 
+#  define  DEBUG  0
+#  include <aros/debug.h>
+
 #include "dos_intern.h"
 
 #include <dos/dos.h>
@@ -25,6 +28,8 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+
+#include <string.h>
 
 #define  PROCESS(x)  ((struct Process *)x)
 
@@ -63,7 +68,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 
     if(command != NULL)
     {
-	LONG length = strlen(command) + 1;
+	LONG length = strlen(command) + strlen("COMMAND ") + 1;
 
 	comStr = AllocVec(length, MEMF_PUBLIC | MEMF_CLEAR);
 	
@@ -73,10 +78,13 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	    return FALSE;
 	}
 	
-	CopyMem(command, comStr, length);
+	strcpy(comStr, "COMMAND ");
+	strcat(comStr, command);
 	
 	tags[14].ti_Data = (IPTR)comStr;
     }	
+
+    kprintf("Execcommand: Got commandline... %s\n", comStr);
 
     /* TODO: Support segments */
     shellSeg = LoadSeg(shell);
@@ -125,8 +133,12 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	tags[10].ti_Data = (IPTR)DupLock(curDir);
 	CurrentDir(curDir);	            /* ... and replace it */
     }
+
+    kprintf("Calling CreateNewProc()\n");
     
     process = CreateNewProc(tags);
+
+    kprintf("Process created, pointer = %p\n", process);
     
     /* For now, we just return a boolean telling whether we could start the
        shell or not. To be able to return the right thing here, we must
