@@ -49,7 +49,6 @@ static ULONG String_New(struct IClass *cl, Object * obj, struct opSet *msg)
 
     if (!obj)
     {
-    	CoerceMethod(cl,obj,OM_DISPOSE);
 	return NULL;
     }
 
