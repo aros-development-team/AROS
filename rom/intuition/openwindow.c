@@ -414,6 +414,10 @@
     {
     	if (w->Width  > w->WScreen->Width)  w->Width  = w->WScreen->Width;
 	if (w->Height > w->WScreen->Height) w->Height = w->WScreen->Height;
+
+	if (w->LeftEdge < 0) w->LeftEdge = 0;
+	if (w->TopEdge < 0) w->TopEdge = 0;
+	
 	if ((w->LeftEdge + w->Width) > w->WScreen->Width)
 	    w->LeftEdge = w->WScreen->Width - w->Width;
 	if ((w->TopEdge + w->Height) > w->WScreen->Height)
