@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -39,37 +40,31 @@
     INTERNALS
 
     HISTORY
-  27-11-96    digulla automatically created from
-	  iffparse_lib.fd and clib/iffparse_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
+    struct IntContextNode   * cn;
+    struct LocalContextItem * node,
+			    * nextnode;
 
-    struct IntContextNode *cn;
-
-    struct LocalContextItem  *node,
-			    *nextnode;
-
-  /* We should free the LCIs of the default context-node
-      ( CollectionItems and such )
+    /*
+	We should free the LCIs of the default context-node
+	( CollectionItems and such )
     */
-    cn = (struct IntContextNode*)RootChunk(iff);
+    cn = (struct IntContextNode*)RootChunk (iff);
 
     node = (struct LocalContextItem*)cn->cn_LCIList.mlh_Head;
 
     while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
     {
-	PurgeLCI(node, IPB(IFFParseBase));
+	PurgeLCI (node, IPB(IFFParseBase));
 
 	node = nextnode;
     }
 
-
-    FreeMem(iff,sizeof (struct IntIFFHandle));
-
-    return;
+    FreeMem (iff, sizeof (struct IntIFFHandle));
 
     AROS_LIBFUNC_EXIT
 } /* FreeIFF */

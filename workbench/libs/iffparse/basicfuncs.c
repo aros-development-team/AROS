@@ -26,20 +26,10 @@ LONG PushContextNode
 
 
     /* Set the composite flag if we have a composite contextnnode */
-    if
-    (
-	id == ID_FORM
-    ||
-	id == ID_LIST
-    ||
-	id == ID_CAT
-    ||
-	id == ID_PROP
-    )
+    if (id == ID_FORM || id == ID_LIST || id == ID_CAT || id == ID_PROP)
     {
 	composite = TRUE;
 	/* We have a new type, check it */
-
     }
     else
     {
@@ -47,18 +37,10 @@ LONG PushContextNode
 	/* No composite type found.  Get old type from top contextnode */
 	cn = TopChunk(iff);
 	type = cn->cn_Type;
-
     }
 
       /* Check if type and ids are valid */
-    if
-    (
-	!(
-	    GoodType(type)
-	&&
-	    GoodID(id)
-	)
-    )
+    if (!(GoodType(type) && GoodID(id)) )
 	return (IFFERR_MANGLED);
 
     /* Allocate a new context node */
@@ -89,12 +71,7 @@ LONG PushContextNode
 
     GetIntCN(cn)->cn_Composite = composite;
     /* Initialize the LCI-list */
-    NewList
-    (
-	(struct List*)&( GetIntCN(cn)->cn_LCIList )
-    );
-
-
+    NewList ((struct List*)&( GetIntCN(cn)->cn_LCIList ));
 
     /* Deeper stack */
     iff->iff_Depth ++;
