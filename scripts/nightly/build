@@ -17,7 +17,6 @@ resetl
 FAILED=""
 
 for package in $CFG_PACKAGES; do
-    setl $package.log
     zsh $SP/pkg/$package
     if [ $? != 0 ]; then
         printe "Build of package '"$package"' FAILED."
@@ -25,7 +24,6 @@ for package in $CFG_PACKAGES; do
     else
         printi "Build of package '"$package"' completed successfully."
     fi
-    resetl
 done
 
 setl cleanup.log

@@ -2,6 +2,7 @@
 # Creates source packages.
 
 source $SP/setup
+setl   sources.log 
 
 printi "Creating source packages..."
 
@@ -27,3 +28,5 @@ cd      $ROOT
 delete  $BUILD_BASE/$PACKAGE
 
 cd      $ROOT
+resetl
+
