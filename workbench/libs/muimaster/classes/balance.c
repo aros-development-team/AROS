@@ -135,25 +135,12 @@ static ULONG Balance_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup
 
 /**************************************************************************
  MUIM_AskMinMax
-
- AskMinMax method will be called before the window is opened
- and before layout takes place. We need to tell MUI the
- minimum, maximum and default size of our object.
 **************************************************************************/
 static ULONG Balance_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
 
-    /*
-    ** let our superclass first fill in what it thinks about sizes.
-    ** this will e.g. add the size of frame and inner spacing.
-    */
     DoSuperMethodA(cl, obj, (Msg)msg);
-
-    /*
-    ** now add the values specific to our object. note that we
-    ** indeed need to *add* these values, not just set them!
-    */
 
     if (data->horizgroup)
     {
@@ -176,12 +163,6 @@ static ULONG Balance_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMi
 
 /**************************************************************************
  MUIM_Draw
-
- Draw method is called whenever MUI feels we should render
- our object. This usually happens after layout is finished
- or when we need to refresh in a simplerefresh window.
- Note: You may only render within
-       _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj).
 **************************************************************************/
 static ULONG  Balance_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
@@ -189,31 +170,16 @@ static ULONG  Balance_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     struct MUI_RenderInfo *mri;
     LONG col1, col2;
 
-    /*
-    ** let our superclass draw itself first, area class would
-    ** e.g. draw the frame and clear the whole region. What
-    ** it does exactly depends on msg->flags.
-    */
-
     DoSuperMethodA(cl, obj, (Msg)msg);
-
-    /*
-    ** if MADF_DRAWOBJECT isn't set, we shouldn't draw anything.
-    ** MUI just wanted to update the frame or something like that.
-    */
 
     if (!(msg->flags & MADF_DRAWOBJECT))
 	return 0;
-
 
     if (_mwidth(obj) < 1 || _mheight(obj) < 1)
 	return TRUE;
 
     mri = muiRenderInfo(obj);
 
-    /*
-     * ok, everything ready to render...
-     */
     if (data->state == NOT_CLICKED)
     {
 	col1 = MPEN_TEXT;
@@ -225,9 +191,6 @@ static ULONG  Balance_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	col1 = MPEN_SHINE;
     }
 
-    /*
-     * ok, everything ready to render...
-     */
     if (data->horizgroup)
     {
 	SetAPen(_rp(obj), _pens(obj)[col1]);
@@ -354,7 +317,7 @@ static ULONG get_total_weight_2(struct MUI_BalanceData *data, Object *objA, Obje
     }
 }
 
-/* seems OK */
+
 static void set_weight_2 (struct MUI_BalanceData *data, WORD current)
 {
     LONG weightB;
@@ -401,7 +364,7 @@ static void set_weight_2 (struct MUI_BalanceData *data, WORD current)
     }
 }
 
-/* seems OK */
+
 static void recalc_weights_neighbours (struct IClass *cl, Object *obj, WORD mouse)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
@@ -483,6 +446,7 @@ static LONG get_size (struct MUI_BalanceData *data, Object *obj)
     }
 }
 
+#if 0
 static void set_interpolated_weight (struct MUI_BalanceData *data, Object *obj,
 				     LONG oldw, LONG neww)
 {
@@ -502,8 +466,8 @@ static void set_interpolated_weight (struct MUI_BalanceData *data, Object *obj,
     }
   
 }
+#endif
 
-/* FIXME */
 static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD current)
 {
     LONG weightB;
@@ -511,29 +475,24 @@ static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD curr
     LONG ldelta, rdelta, lwbygad, rwbygad, lbonus, rbonus, lneg, rneg, lzero, rzero, count;
     int lfirst, rfirst;
 
-/*      D(bug("set_weight_all\n")); */
-
     {
-/*  	D(bug("L=%ld, orig=%ld, R=%ld || curr=%d\n", */
-/*  	      data->first_bound, data->clickpos, data->second_bound, */
-/*  	      current)); */
 	if (data->lsize && data->rsize)
 	{
-	    weightA = data->lsum + ((current - data->clickpos) * ((data->lsum / (double)data->lsize) + (data->rsum / (double)data->rsize)) / 2.0);
+	    weightA = data->lsum
+		+ ((current - data->clickpos)
+		   * ((data->lsum / (double)data->lsize) + (data->rsum / (double)data->rsize))
+		   / 2.0);
 	}
 	else
 	    weightA = data->lsum;
 
-/*  	D(bug("found wA1 = %ld [%ld * %ld / %ld]\n", weightA, current - data->first_bound + 1, */
-/*  	      data->lsum, data->clickpos - data->first_bound + 1)); */
-
 	if (weightA > data->total_weight)
-	{ 
+	{
 	    D(bug("*** weightA > data->total_weight\n"));
 	    weightA = data->total_weight;
 	}
 	if (weightA < 0)
-	{ 
+	{
 	    D(bug("*** weightA < 0n"));
 	    weightA = 0;
 	}
@@ -589,7 +548,6 @@ static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD curr
 	    {
 		WORD w1, w2;
 		w1 = get_weight(data, sibling);
-/*  		set_interpolated_weight(data, sibling, data->oldWeightA, weightA); */
 		w2 = w1;
 		if (w2 || (count < 2))
 		{
@@ -610,7 +568,6 @@ static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD curr
 	    {
 		WORD w1, w2;
 		w1 = get_weight(data, sibling);
-/*  		set_interpolated_weight(data, sibling, data->oldWeightB, weightB); */
 		w2 = w1;
 		if (w2 || (count < 2))
 		{
@@ -644,7 +601,7 @@ static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD curr
     data->oldWeightB = weightB;
 }
 
-/* FIXME */
+
 static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
@@ -727,7 +684,7 @@ static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
     set_weight_all(data, obj, mouse);
 }
 
-/* seems OK */
+
 static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
@@ -745,7 +702,7 @@ static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
     /* full drawing, or sketch */
     if (muiGlobalInfo(obj)->mgi_Prefs->balancing_look == BALANCING_SHOW_OBJECTS)
     {
-	MUI_Redraw(_parent(obj),MADF_DRAWALL);
+	MUI_Redraw(_parent(obj), MADF_DRAWALL);
     }
     else
     {
@@ -768,10 +725,10 @@ static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
     }
 }
 
+
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-/* seems OK */
 static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_BalanceData *data = INST_DATA(cl, obj);
@@ -807,7 +764,7 @@ static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 			data->first_bound = -1;
 			data->second_bound = -1;
 			srand(1);
-			MUI_Redraw(obj,MADF_DRAWOBJECT);
+			MUI_Redraw(obj, MADF_DRAWOBJECT);
 		    }
 	        }
 		else /* msg->imsg->Code != SELECTDOWN */
@@ -819,9 +776,9 @@ static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			data->state = NOT_CLICKED;
 			if (data->total_weight != -1)
-			    MUI_Redraw(_parent(obj),MADF_DRAWALL);
+			    MUI_Redraw(_parent(obj), MADF_DRAWALL);
 			else
-			    MUI_Redraw(obj,MADF_DRAWALL);
+			    MUI_Redraw(obj, MADF_DRAWALL);
 	  	    }
 		}
 		break;
@@ -858,9 +815,6 @@ BOOPSI_DISPATCHER(IPTR, Balance_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
 	case OM_NEW: return Balance_New(cl, obj, (struct opSet *) msg);
 	case MUIM_Setup: return Balance_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Balance_Cleanup(cl, obj, (APTR)msg);
@@ -872,9 +826,6 @@ BOOPSI_DISPATCHER(IPTR, Balance_Dispatcher, cl, obj, msg)
 }
 
 
-/*
- * Class descriptor.
- */
 const struct __MUIBuiltinClass _MUI_Balance_desc = { 
     MUIC_Balance,
     MUIC_Area,
