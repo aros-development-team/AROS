@@ -579,6 +579,28 @@ void GenerateLayers3(void)
   frame(layers[i]);
 }
 
+void GenerateLayers4(void)
+{
+  int i;
+  int c = 0;
+  while (c < 5)
+  {
+    i = unusedlayer();
+    if (-1 == i)
+      return;
+    layers[i] = CreateBehindLayer(&screen->LayerInfo, 
+                                   screen->RastPort.BitMap,
+                                   10+c*10,
+                                   10+c*10,
+                                   100+c*10,
+                                   100+c*10,
+                                   LAYERSMART,
+                                   NULL);
+    frame(layers[i]);
+    c++;
+  }
+}
+
 void DemoA(void)
 {
 #define DELAYTIME 50
@@ -1130,6 +1152,7 @@ void doall(void)
         printf("movelayer [ml] movesizelayer [msl] sizelayer [sl] scrollayer [scl]\n");
         printf("motion [mot] DumpCliprects [dc] \n");
         printf("Frame [F]  DemoA DemoB DemoC DemoD\n");
+        printf("Generate a few layers: [gl1,gl2,gl3,gl4]\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
     {
@@ -1202,6 +1225,14 @@ void doall(void)
     else if (!strcmp(buf, "gl2")) 
     {
       GenerateLayers2();
+    } 
+    else if (!strcmp(buf, "gl3")) 
+    {
+      GenerateLayers3();
+    } 
+    else if (!strcmp(buf, "gl4")) 
+    {
+      GenerateLayers4();
     } 
     else if (!strcmp(buf, "dc")) 
     {
