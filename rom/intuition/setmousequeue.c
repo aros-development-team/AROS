@@ -53,10 +53,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/SetMouseQueue()
-    aros_print_not_implemented ("SetMouseQueue");
+#warning Does not check if the window is unknown
 
-    return -1;
+    LONG result;
+    
+    result = ((struct IntWindow *)window)->mousequeue;
+    ((struct IntWindow *)window)->mousequeue = queuelength;
+    
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* SetMouseQueue */
