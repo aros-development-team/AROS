@@ -48,5 +48,7 @@
 #   warning TODO: Implement icon/LayoutIconA()
     aros_print_not_implemented("icon/LayoutIconA()");
     
+    return FALSE;
+    
     AROS_LIBFUNC_EXIT
 } /* LayoutIconA() */
