@@ -62,7 +62,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer * _l = l->back, * lparent;
+  struct Layer * _l, * lparent;
   struct ClipRect * cr, *_cr;
   /*
    * all children must have been destroyed before.
@@ -75,33 +75,35 @@
             __FUNCTION__,
             l);
     UnlockLayers(l->LayerInfo);
+kprintf("%s %d\n",__FUNCTION__,__LINE__);  
     return FALSE;
   }
-  
-  lparent = l->parent;
-  
+kprintf("%s %d\n",__FUNCTION__,__LINE__);  
+    
   if (IS_VISIBLE(l))
   { 
     struct Region * r = NewRegion();
+kprintf("%s %d\n",__FUNCTION__,__LINE__);  
 
     OrRegionRegion(l->VisibleRegion, r);
+    _l = l->back;
+    lparent = l->parent;
 
     /*
      * Visit all layers behind this layer until my parent comes
      * I also visit my parent. If my parent is invisible I must
      * go further to the parent of that parent etc.
      */
-    while ((NULL != _l) && !IS_EMPTYREGION(r))
+    while (1)
     {
-      if (IS_VISIBLE(_l))
-      {
-        ClearRegion(_l->VisibleRegion);
+      ClearRegion(_l->VisibleRegion);
+      if (IS_VISIBLE(_l)  && DO_OVERLAP(&r->bounds, &_l->shape->bounds))
         _ShowPartsOfLayer(_l, r);
-        AndRegionRegion(_l->VisibleRegion, l->shape);
-      }
       else
-      {
-      }
+        OrRegionRegion(r,_l->VisibleRegion);
+
+      if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
+        AndRegionRegion(_l->VisibleRegion, l->shape);
       
       if (_l == lparent)
       {
@@ -125,11 +127,13 @@
 
     if (!IS_EMPTYREGION(l->shape))
     {
-//kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
+kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
       if (lparent && 
           (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
         _BackFillRegion(lparent, l->shape, FALSE);
     }
+    else
+      kprintf("NOTHING TO CLEAR!\n");
   }
   
   /*
