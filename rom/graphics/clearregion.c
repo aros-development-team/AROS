@@ -52,9 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    ASSERT_VALID_PTR(region);
-
     struct RegionRectangleExtChunk *NextChunk;
+
+    ASSERT_VALID_PTR(region);
 
     if (!region->RegionRectangle)
         return;
