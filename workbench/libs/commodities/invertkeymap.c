@@ -1,20 +1,21 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: English
 */
-
-/*****************************************************************************
-
-    NAME */
-
-#include "cxintern.h"
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include <proto/keymap.h>
 #include <proto/timer.h>
+#include <aros/debug.h>
+#include "cxintern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/commodities.h>
 
     AROS_LH3(BOOL, InvertKeyMap,
 
@@ -86,7 +87,7 @@
 	case 1 :   /* One code / qualifier */
 	    event->ie_Prev1DownCode = 0;
 	    event->ie_Prev1DownQual = 0;
-	    kprintf("Buf 0: %i\n", buf[0]);
+	    D(bug("Buf 0: %i\n", buf[0]));
 	    event->ie_Code = (WORD)(buf[0]);
 	    event->ie_Qualifier = (WORD) buf[1];
 	    return TRUE;
