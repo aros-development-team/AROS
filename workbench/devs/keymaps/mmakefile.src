@@ -4,7 +4,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 KEYMAPDIR := $(DEVSDIR)/Keymaps
 
-KEYMAPS := pc105_d pc105_i
+KEYMAPS := pc105_d pc105_i pc105_s
 
 KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(KEYMAPDIR)/$(f))
 
