@@ -27,10 +27,10 @@
 
 /*  FUNCTION
        If the layer is a backdrop layer it will be moved to the most
-       behind position. If it is a non-backdrop later it will be moved
+       behind position. If it is a non-backdrop layer it will be moved
        in front of the first backdrop layer.
        The areas of simple layers, that become visible by moving this
-       layer, are added to the damagalist and the LAYERREFRESH flags
+       layer, are added to the damagelist and the LAYERREFRESH flag
        is set.  
 
     INPUTS

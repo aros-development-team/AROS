@@ -33,7 +33,10 @@
 
 /*  FUNCTION
         Moves and resizes the layer in one step. Collects damage lists
-        for thos layers that become visible and are simple layers.
+        for those layers that become visible and are simple layers.
+        If the layer to be moved is becoming larger the additional
+        areas are added to a damagelist if it is a non-superbitmap
+        layer. Refresh is also triggered for this layer.
 
     INPUTS
         l     - pointer to layer to be moved

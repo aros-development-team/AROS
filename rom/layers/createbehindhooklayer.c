@@ -31,11 +31,27 @@
 	struct LayersBase *, LayersBase, 32, Layers)
 
 /*  FUNCTION
+        Creates a layer behind other layers. A backdrop layer will
+        be created at the most behind positon, a non-backdrop layer 
+        will be placed behind the last non-backdrop layer and in front
+        of the first backdrop layer.
 
     INPUTS
-
+        li    - pointer to layer info structure
+        bm    - pointer to common bitmap (= bitmap of screen)
+        x0    - upper left corner x-coordinate
+        y0    - upper left corner y-coordinate
+        x1    - lower right corner x-coordinate
+        y1    - lower right corner y-coordinate
+        flags - flags for this layer
+        Hook  - Backfill hook for this layer
+        BitMap- optional SuperBitMap for this layer. Used if the LAYERSUPER
+                flag is set
+        
     RESULT
-
+        Pointer to the newly created layer. NULL if layer could not be 
+        created (Probably out of memory).
+        
     NOTES
 
     EXAMPLE

@@ -27,8 +27,12 @@
 	struct LayersBase *, LayersBase, 17, Layers)
 
 /*  FUNCTION
+        Unlocks a layer for access by other tasks. A layer has
+        to be unlocked as many times as it has been locked until
+        another task can access it.
 
     INPUTS
+        layer - pointer to layer to be unlocked
 
     RESULT
 

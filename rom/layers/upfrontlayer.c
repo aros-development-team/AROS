@@ -31,6 +31,8 @@
         it is brought in front of all backdrop layers and behind the
         last non-backdrop layer. By clearing the BACKDROP flag of a layer
         a backdrop layer can be brought in front of all other layers.
+        Parts of a simple layer that become visible are added to the 
+        damage list and the REFRESH flag is set.
 
     INPUTS
         dummy - unused

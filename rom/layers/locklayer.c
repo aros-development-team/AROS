@@ -28,8 +28,13 @@
 	struct LayersBase *, LayersBase, 16, Layers)
 
 /*  FUNCTION
-
+        Locks a layer for exclusive access by this task.
+        A layer can be locked multiple times but has to be unlocked
+        as many times as it has been locked so that other tasks
+        can access it.
+ 
     INPUTS
+        layer - pointer to layer to be locked
 
     RESULT
 

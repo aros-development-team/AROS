@@ -29,8 +29,11 @@
         Resizes the given layer by adding dx to its width and dy
         to its height.
         If parts of simple layers become visible those parts are
-        added to the damage list and a refhresh is triggered for
+        added to the damage list and a refresh is triggered for
         those layers. 
+        If the new layer is bigger than before the additional parts
+        are added to a damage list if the layer is a non-super-
+        bitmap layer. Refresh is also triggered for this layer.
 
     INPUTS
         l    - pointer to layer to be resized
@@ -319,12 +322,14 @@
                 bm /* Destination Bitmap - */,
                 DestX,
                 CR->bounds.MinY,
-                CR->bounds.MaxX-DestX+1,
-                CR->bounds.MaxY-CR->bounds.MinY+1,
+                CR->bounds.MaxX - DestX           + 1,
+                CR->bounds.MaxY - CR->bounds.MinY + 1,
                 0x000 /* supposed to clear the destination */,
                 0xff,
                 NULL
               );
+              OrRectRegion(l->DamageList, &CR->bounds);
+              l->Flags |= LAYERREFRESH;
 	    }
             else
 	    {
@@ -369,6 +374,8 @@
                 0xff,
                 NULL
               );
+              OrRectRegion(l->DamageList, &CR->bounds);
+              l->Flags |= LAYERREFRESH;
 	    }
             else
 	    {
