@@ -1,5 +1,5 @@
 #
-# Makefile for SimpleMail
+# Makefile for zunemaster.library
 #
 
 # If Kickstart isn't defined, we don't run on AmigaOS
@@ -26,9 +26,9 @@ STRIP  = $(CROSS_COMPILE)strip
 
 # Change these as required
 OPTIMIZE = -O3
-DEBUG = -g#-ggdb # -g -DDEBUG
+DEBUG = #-g #-DMYDEBUG #-ggdb # -g -DDEBUG
 INC = -I include -I .
-CFLAGS = -D__AMIGAOS4__ -DNDEBUG -D__USE_INLINE__ -DCoerceMethod=ICoerceMethod -DDoMethod=IDoMethod -DDoMethodA=IDoMethod -DDoSuperMethod=IDoSuperMethod -DDoSuperMethodA=IDoSuperMethodA -Wall -fno-strict-aliasing -c $(OPTIMIZE) $(DEBUG) $(INC)
+CFLAGS = -D__AMIGAOS4__ -DNDEBUG -D__USE_INLINE__ -Wall -fno-strict-aliasing -c $(OPTIMIZE) $(DEBUG) $(INC)
 
 # Flags passed to gcc during linking
 LINK = -nostartfiles
@@ -168,13 +168,23 @@ envs:
 dirs:
 	-$(MKDIR) ppc-amigaos-objs ppc-amigaos-objs/classes
 
+buildincludes: buildincludes.c
+	gcc $< -o $@
+
+.PHONY: includes
+includes: dirs buildincludes
+	-$(RM) include-generated
+	-$(MKDIR) include-generated include-generated/libraries include-generated/proto include-generated/inline4 include-generated/interfaces
+	buildincludes >include-generated/libraries/mui.h
+	cp include/proto/zunemaster.h include-generated/proto
+	cp include/proto/muimaster.h include-generated/proto
+	cp include/inline4/zunemaster.h include-generated/inline4
+	cp include/interfaces/zunemaster.h include-generated/interfaces
+
 # Rules for building
 $(TARGET): $(OBJS) $(AOBJS)
 	$(CC) $(LINK) -o $@.debug $(OBJS) $(AOBJS) $(LIBS) -Wl,--cref,-M,-Map=$@.map
 	$(STRIP) --strip-all -o $@ $@.debug
-
-ppc-amigaos-objs/%.o: %.S
-	$(CC) -Wa,-mregnames $(AFLAGS) -I$/home/sba/amigaos4/include -c $< -o $@
 
 ppc-amigaos-objs/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
