@@ -66,7 +66,10 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
             AllocMem(sizeof(struct Preferences),
                      MEMF_CLEAR);
 
+    
+/*Must not call this function because the defereed action port is not initialized, yet
     SetPrefs(GetPrivIBase(IntuitionBase)->DefaultPreferences,
              sizeof(struct Preferences),
              TRUE);
+*/
 }
