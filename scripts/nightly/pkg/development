@@ -1,0 +1,28 @@
+#!/bin/zsh
+# Creates AROS development package.
+
+source  $SP/setup
+setl    development.log
+
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
+printi "Creating AROS development binary package..."
+PACKAGE=$BASENAME-$HOST_CPU-all-development
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+copy    $SOURCE_AROS    $BUILD_BASE/AROS
+copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+
+cd      $BUILD_BASE/AROS
+execute ./configure --enable-build-type=nightly
+make    tools mmake development-binutils development-gcc development-collect-aros
+
+cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU/AROS
+move    Development $PACKAGE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+archive $ARCHIVE $PACKAGE
+
+cd      $ROOT
+delete  $BUILD_BASE/AROS
+resetl
