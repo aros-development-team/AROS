@@ -13,7 +13,7 @@
 #   include <exec/types.h>
 #endif
 
-#warning libcore/compiler.h is deprecated. Please use aros/asmcall.h and the AROS_ macros
+/*#warning libcore/compiler.h is deprecated. Please use aros/asmcall.h and the AROS_ macros*/
 
 /* Basically, Amiga C compilers must reach the goal to be
    as SAS/C compatible as possible. But on the other hand,
