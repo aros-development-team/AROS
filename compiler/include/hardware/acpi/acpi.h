@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS Generic ACPI & APIC Definitions.
+    Desc: AROS Generic ACPI Definitions.
     Lang: english
 */
 #ifndef __AROS_ACPI_H__
@@ -19,17 +19,6 @@
 #endif
 
 #define     MAX_ACPI_TABLES                 32
-#define     MAX_IO_APICS                    32
-
-
-/********** APIC DEFINITIONS ****************/
-
-struct GenericAPIC                                                          /* !! DO NOT USE!! THIS WILL BE REMOVED SOON!! */
-{ 
-    char                                    *name; 
-    IPTR                                    (*probe)(); 
-    IPTR                                    (*apic_id_registered)();
-};
 
 /********** ACPI DEFINITIONS ****************/
  
@@ -443,8 +432,6 @@ struct ACPIBase
     struct  UtilityBase                     *ACPIB_UtilBase;
     struct  CPUBase                         *ACPIB_CPUBase;
 
-    BOOL                                    ACPIB_APIC_Enabled;
-    int                                     ACPIB_APIC_IRQ_Model;
     struct GenericAPIC                      *ACPIB_GenericAPIC;         /* !! DO NOT USE!! THIS WILL BE REMOVED SOON!! */
 
     APTR                                    ACPIB_RSDP_Addr;
@@ -469,7 +456,6 @@ struct ACPIBase
 
     BOOL                                    ACPIB_SMP_Enabled;
     int                                     ACPIB_SMP_Config;
-
 };
 
 #endif /* __AROS_ACPI_H__ */
