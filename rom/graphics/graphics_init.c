@@ -5,6 +5,7 @@
     Desc: Graphics library
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE 1
 #include <exec/resident.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
@@ -84,6 +85,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_INIT
 
     SysBase = sysBase;
+    
+    NEWLIST(&LIBBASE->TextFonts);
+    InitSemaphore( &((struct GfxBase_intern *)GfxBase)->tfe_hashtab_sema );
 
     Disable();
     if (!driver_init (LIBBASE))
