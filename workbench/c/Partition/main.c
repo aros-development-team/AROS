@@ -1,35 +1,26 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 #include <devices/trackdisk.h>
-
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/partition.h>
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define SH_GLOBAL_SYSBASE TRUE
-#define SH_GLOBAL_DOSBASE TRUE
-#include <aros/shcommands.h>
+#include "args.h"
 
-AROS_SH2
-(
-    Partition, 0.1,
-    AROS_SHA(BOOL, ,   FORCE, /S,   FALSE),
-    AROS_SHA(BOOL, ,   QUIET, /S,   FALSE)
-)
+int main(void)
 {
-    AROS_SHCOMMAND_INIT
-    
-    struct Library         *PartitionBase = NULL;
     struct PartitionHandle *root    = NULL, /* root partition */
                            *mbrp    = NULL, /* MBR partition */
                            *rdbp    = NULL; /* RDB partition */
@@ -42,20 +33,15 @@ AROS_SH2
     LONG                    reserved = 0;
     TEXT                    choice = 'N';
     
-    if (SHArg(QUIET) && !SHArg(FORCE))
+    if (!ReadArguments()) return RETURN_FAIL;
+    
+    if (ARG(QUIET) && !ARG(FORCE))
     {
         PutStr("ERROR: Cannot specify QUIET without FORCE.\n");
         return RETURN_FAIL;
     }
     
-    PartitionBase = OpenLibrary("partition.library", 0);
-    if (PartitionBase == NULL)
-    {
-        PutStr("ERROR: Could not open partition.library.\n");
-        return RETURN_FAIL;
-    }
-    
-    if (!SHArg(FORCE))
+    if (!ARG(FORCE))
     {
         Printf("About to partition ide.device unit 0.\n");
         Printf("This will DESTROY ALL DATA on the drive!\n");
@@ -70,7 +56,7 @@ AROS_SH2
 
     if (choice != 'y' && choice != 'Y') return RETURN_OK;
     
-    if (!SHArg(QUIET))
+    if (!ARG(QUIET))
     {
         Printf("Partitioning drive...");
         Flush(Output());
@@ -197,11 +183,7 @@ AROS_SH2
     ClosePartitionTable(root);
     CloseRootPartition(root);
 
-    if (!SHArg(QUIET)) Printf("done\n");
-    
-    CloseLibrary(PartitionBase);
-    
+    if (!ARG(QUIET)) Printf("done\n");
+        
     return RETURN_OK;
-
-    AROS_SHCOMMAND_EXIT
 }
