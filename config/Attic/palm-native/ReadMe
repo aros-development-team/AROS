@@ -178,3 +178,16 @@ Knowledge (more or less)
 - The memory allocation function currently in use does not even allow 
   allocation of 0x10000 bytes. It simply returns NULL then.
 
+
+
+Uploading elf code to the Palm
+------------------------------
+
+- There must not be any symobols defines as common ('C') when the executable 
+  is examined with 'nm'. Use '-dp' when linking to allocate space for such
+  kind of symbols in the .bss section. 
+
+- You MUST pass -Wa,-mc68000 as argument to gcc or -mc68000 to as
+  (assembler) because otherwise you might get 68020 instructions like
+  bsr.l <label> which do not exist on an mc68000.
+
