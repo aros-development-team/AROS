@@ -1,8 +1,12 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     $Log$
+    Revision 1.38  2001/10/05 18:42:01  stegerg
+    No need for private field "initialfont" in IntWindow structure,
+    because there's Window->IFont which can (must) be used instead.
+
     Revision 1.37  2001/01/27 20:00:31  stegerg
     clear SIGF_INTUITION before using it
 
@@ -408,7 +412,7 @@ VOID int_closewindow(struct IntuiActionMessage *msg, struct IntuitionBase *Intui
 
     /* Free resources */
     
-    CloseFont (IW(window)->initialfont);
+    CloseFont (window->IFont);
     
     /* Let the driver clean up. Driver wil dealloc window's rastport */
     intui_CloseWindow (window, IntuitionBase);

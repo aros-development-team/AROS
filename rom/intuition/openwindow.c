@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function OpenWindow()
@@ -638,10 +638,10 @@
 #warning: Really hacky way of re-opening GfxBase->DefaultFont
 
     Forbid();
-    IW(w)->initialfont = GfxBase->DefaultFont;
-    IW(w)->initialfont->tf_Accessors++;
+    w->IFont = GfxBase->DefaultFont;
+    w->IFont->tf_Accessors++;
     Permit();
-    SetFont (rp, IW(w)->initialfont);
+    SetFont (rp, w->IFont);
         
     D(bug("set fonts\n"));
 
@@ -759,7 +759,7 @@ failexit:
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);
 	
-	if (IW(w)->initialfont) CloseFont(IW(w)->initialfont);
+	if (w->IFont) CloseFont(w->IFont);
 	
 	if (w->UserPort)
 	    DeleteMsgPort(w->UserPort);

@@ -322,7 +322,6 @@ struct IntWindow
     struct Image		* AmigaKey;
     struct Image 		* Checkmark;
     struct Window		* menulendwindow;
-    struct TextFont 	    	* initialfont;
 
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here
