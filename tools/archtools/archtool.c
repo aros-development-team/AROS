@@ -3351,11 +3351,7 @@ char *upperbasename;
   fprintf( fdo, "#   include <aros/system.h>\n" );
   fprintf( fdo, "#endif\n\n" );
   fprintf( fdo, "#include <clib/%s_protos.h>\n\n", lc->libname );
-  fprintf( fdo, "#if defined(_AMIGA) && defined(__GNUC__)\n" );
-  fprintf( fdo, "#   include <inline/%s.h>\n", lc->libname );
-  fprintf( fdo, "#else\n" );
-  fprintf( fdo, "#   include <defines/%s.h>\n", lc->libname );
-  fprintf( fdo, "#endif\n\n" );
+  fprintf( fdo, "#include <defines/%s.h>\n\n", lc->libname );
   if(lc->option & o_hasrt)
   {
     fprintf( fdo, "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
@@ -3748,11 +3744,7 @@ int firstlvo;
   fprintf( fdo[2], "#   include <aros/system.h>\n" );
   fprintf( fdo[2], "#endif\n\n" );
   fprintf( fdo[2], "#include <clib/%s_protos.h>\n\n", lc->libname );
-  fprintf( fdo[2], "#if defined(_AMIGA) && defined(__GNUC__)\n" );
-  fprintf( fdo[2], "#   include <inline/%s.h>\n", lc->libname );
-  fprintf( fdo[2], "#else\n" );
-  fprintf( fdo[2], "#   include <defines/%s.h>\n", lc->libname );
-  fprintf( fdo[2], "#endif\n\n" );
+  fprintf( fdo[2], "#include <defines/%s.h>\n\n", lc->libname );
   if(lc->option & o_hasrt)
   {
     fprintf( fdo[2], "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
