@@ -95,6 +95,7 @@ FUNCTIONS := \
 	modifyprop \
 	movescreen \
 	movewindow \
+	movewindowinfrontof \
 	nextobject \
 	nextpubscreen \
 	newmodifyprop \
@@ -133,6 +134,7 @@ FUNCTIONS := \
 	setedithook \
 	setgadgetattrsa \
 	setmenustrip \
+	setmousequeue \
 	setpointer \
 	setwindowtitles \
 	showtitle \
