@@ -8,12 +8,13 @@
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/intuition.h>
+#include <aros/machine.h>
 
 #include <math.h>
 #include <stdio.h>
 
-#define SCREENWIDTH  500
-#define SCREENHEIGHT 400
+#define SCREENWIDTH  300
+#define SCREENHEIGHT 200
 #define SCREENCY (SCREENHEIGHT / 2)
 
 /***********************************************************************************/
@@ -226,11 +227,13 @@ static void action(void)
 		tttr = (ttr1 + ttr2) / 2;
 		tttg = (ttg1 + ttg2) / 2;
 		tttb = (ttb1 + ttb2) / 2;
-		
+
+#if AROS_BIG_ENDIAN
 		col = (tttr << 16) + (tttg << 8) + tttb;
-		
+#else		
+		col = (tttb << 24) + (tttg << 16) + (tttr << 8);
+#endif		
 		//kprintf("col[%d,%d] = %08x\n", x,y,col);
-		
 	        tab[y * SCREENWIDTH + x] = col;
 		
 	    } /* for(y = 0; y < SCREENHEIGHT; y ++) */
