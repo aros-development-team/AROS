@@ -12,8 +12,11 @@
 #include <proto/intuition.h>
 #include <intuition/cghooks.h>
 #include <intuition/imageclass.h>
-#include "intuition_intern.h"
 #include <graphics/gfxmacros.h>
+
+#include <string.h>
+
+#include "intuition_intern.h"
 #include "gadgets.h"
 
 #define DEBUG_REFRESHBOOLGADGET(x)  ;
