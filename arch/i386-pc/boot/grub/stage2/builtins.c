@@ -3859,20 +3859,99 @@ static struct builtin builtin_setup =
 static int
 setvbe_func (char *arg, int flags)
 {
-  int mode_number;
+    int mode_number = -1;
+    int count = 1;
+    int mode = 0x03;
+    int width,height,depth;
 
-  if (! *arg)
+    if (! *arg)
     {
-      errnum = ERR_BAD_ARGUMENT;
-      return 1;
+	errnum = ERR_BAD_ARGUMENT;
+	return 1;
     }
 
-  if (! safe_parse_maxint (&arg, &mode_number))
-    return 1;
+    if (! safe_parse_maxint (&arg, &width))
+	return 1;
+    arg = skip_to(0,arg);
+    if (! safe_parse_maxint (&arg, &height))
+	return 1;
+    arg = skip_to(0,arg);
+    if (! safe_parse_maxint (&arg, &depth))
+	return 1;
 
-  mbi.vbe_mode = mode_number;
-  grub_printf("Kernel will start in Vesa mode 0x%x\n",mode_number);
-  return 0;
+    grub_printf("Scanning for a %dx%d %d deep vesa mode.\n",width,height,depth);
+
+    if (! (mbi.flags & MB_INFO_VIDEO_INFO))
+    {
+	grub_printf (" VBE BIOS is not present.\n");
+	return 0;
+    }
+
+    /* Check the version.  */
+    if (vbe_info_block.version < 0x0200)
+    {
+	grub_printf (" VBE version %d.%d is not supported.\n",
+		(int) (vbe_info_block.version >> 8),
+		(int) (vbe_info_block.version & 0xFF));
+	return 0;
+    }
+
+    /* Print some information.  */
+    grub_printf (" VBE version %d.%d\n",
+	    (int) (vbe_info_block.version >> 8),
+	    (int) (vbe_info_block.version & 0xFF));
+
+    /* Iterate probing modes.  */
+    for (mode_list
+	    = (unsigned short *) VBE_FAR_PTR (vbe_info_block.video_mode);
+	    *mode_list != 0xFFFF;
+	    mode_list++)
+    {
+	if (get_vbe_mode_info (*mode_list, &mode_info_block) != 0x004F)
+	    continue;
+
+	/* Skip this, if this is not supported or linear frame buffer
+	   mode is not support.  */
+	if ((mode_info_block.mode_attributes & 0x0081) != 0x0081)
+	    continue;
+
+	if (mode_number == -1 || mode_number == *mode_list)
+	{
+	    if ((mode_info_block.x_resolution == width) &&
+		(mode_info_block.y_resolution == height))
+	    {
+		if ((depth == 15 || depth == 16)&&(mode_info_block.bits_per_pixel==15 || mode_info_block.bits_per_pixel == 16))
+		{
+		    mode = *mode_list;
+		    break;
+		}
+		if ((depth == 24 || depth == 32)&&(mode_info_block.bits_per_pixel==24 || mode_info_block.bits_per_pixel == 32))
+		{
+		    mode = *mode_list;
+		    break;
+		}
+		if (depth == mode_info_block.bits_per_pixel)
+		{
+		    mode = *mode_list;
+		    break;
+		}
+	    }
+
+	    if (mode_number != -1)
+		break;
+
+	    count++;
+	}
+    }
+
+    if (mode == 0x03)
+	grub_printf ("No matching mode found.\n");
+    else
+    {
+	mbi.vbe_mode = mode;
+	grub_printf("Kernel will start in Vesa mode 0x%x\n",mode);
+    }
+    return 0;
 }
 
 static struct builtin builtin_setvbe =
@@ -3880,7 +3959,7 @@ static struct builtin builtin_setvbe =
   "setvbe",
   setvbe_func,
   BUILTIN_CMDLINE,
-  "setvbe MODE_NUMBER",
+  "setvbe WIDTH HEIGHT DEPTH",
   "Manually select a VESA graphicsmode for the kernel."
   "Used after loading the kernel image, but before booting"
 };
