@@ -190,7 +190,7 @@ AROS_UFH1(void, idleCount,
 
 extern ULONG SoftIntDispatch();
 
-#ifdef CREATE_ROM
+#ifdef AROS_CREATE_ROM
 #	define sysBase SysBase
 #endif
 
@@ -201,7 +201,7 @@ AROS_LH2(LIBBASETYPEPTR, init,
 {
     AROS_LIBFUNC_INIT
 
-#ifndef CREATE_ROM
+#ifndef AROS_CREATE_ROM
     SysBase = sysBase;
 #endif
 
