@@ -136,6 +136,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		{WA_InnerWidth		, 0			},
 		{WA_InnerHeight		, 0			},
 		{WA_AutoAdjust		, TRUE			},
+		{WA_NewLookMenus    	, TRUE	    	    	},
 		{TAG_DONE					}
 	    };
 
@@ -207,7 +208,8 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		
 		D(bug("Window limits set\n"));
 				
-				
+		SetFont(win->RPort, ld->ld_Font);
+			
 		/* Layout the requester */
 		ld->ld_Command = LDCMD_LAYOUT;
 		if (CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase)))

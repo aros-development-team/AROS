@@ -54,6 +54,7 @@ struct AslListViewData
     struct List		emptylist;
     struct Hook		default_renderhook;
     struct Hook		*renderhook;
+    struct TextFont 	*font;
     ULONG  		clicksec;
     ULONG		clickmicro;
     WORD		minx;
@@ -217,6 +218,8 @@ static void renderitem(Class *cl, Object *o, struct Node *node, WORD liney, stru
     struct ASLLVDrawMsg 	msg;
     
     data = INST_DATA(cl, o);
+    
+    if (data->font) SetFont(rp, data->font);
     
     msg.lvdm_MethodID = ASLLV_DRAW;
     msg.lvdm_RastPort = rp;
@@ -517,6 +520,10 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 	    case ASLLV_ReadOnly:
 	    	data->readonly = tidata ? TRUE : FALSE;
 		break;
+	
+	    case ASLLV_Font:
+	    	data->font = (struct TextFont *)tidata;
+		break;
 		
 	} /* switch(tag->ti_Tag) */
 	 
@@ -580,7 +587,7 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 	    CoerceMethod(cl, o, OM_DISPOSE);
 	    o = NULL;
 	} else {
-	   data->itemheight = GetTagData(ASLLV_ItemHeight, data->ld->ld_Font->tf_XSize, msg->ops_AttrList);
+	   data->itemheight = GetTagData(ASLLV_ItemHeight, data->ld->ld_Font->tf_YSize, msg->ops_AttrList);
 	   data->spacing    = GetTagData(ASLLV_Spacing, BORDERLVITEMSPACINGY * 2, msg->ops_AttrList);
 
 	   data->lineheight = data->itemheight + data->spacing;

@@ -444,6 +444,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {ASLLV_Labels	, (IPTR)&udata->NameListviewList		},
 	    {GA_Previous    	, 0 	    	    	    	    	    	},
 	    {TAG_IGNORE     	, (IPTR)&udata->SizeListviewRenderHook	    	},
+	    {ASLLV_Font     	, (IPTR)ld->ld_Font 	    	    	    	},
 	    {TAG_DONE								}
 	};
 	
@@ -532,6 +533,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_RelVerify   	, TRUE	    	    	    	    },
 	    {GA_UserData    	, (IPTR)ld  	    	    	    },
 	    {GA_TabCycle    	, TRUE	    	    	    	    },
+	    {STRINGA_Font   	, (IPTR)ld->ld_Font 	    	    },
 	    {TAG_DONE	    	    	    	    	    	    }
 	};
 
@@ -682,8 +684,9 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	struct TagItem menu_tags[] =
 	{
-	    {GTMN_NewLookMenus	, TRUE		},
-	    {TAG_DONE				}
+	    {GTMN_NewLookMenus  , TRUE  	    	    	},
+	    {GTMN_TextAttr	, GetIR(iforeq)->ir_TextAttr 	},
+	    {TAG_DONE   	    	    	    	    	}
 	};
 	
 	/* Don't fail, if menus cannot be created/layouted, because a requester
