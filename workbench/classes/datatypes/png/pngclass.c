@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,14 +31,17 @@
 #include <proto/iffparse.h>
 #include <proto/datatypes.h>
 
+#include <aros/symbolsets.h>
+
 #include <png.h>
 
 #include <setjmp.h>
 
-#include "compilerspecific.h"
 #include "debug.h"
 
 #include "methods.h"
+
+ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 /**************************************************************************************************/
 
@@ -420,14 +423,14 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 		if (png.png_num_lace_passes == 0)
 		{
 		    if(!DoSuperMethod(cl, o,
-				      PDTM_WRITEPIXELARRAY, // Method_ID
-				      (IPTR) buf,	    // PixelData
-				      png.png_format,	    // PixelFormat
-				      0,		    // PixelArrayMod (number of bytes per row)
-				      0,		    // Left edge
-				      y,	    	    // Top edge
-				      png.png_width,	    // Width
-				      1))		    // Height (here: one line)
+				      PDTM_WRITEPIXELARRAY, /* Method_ID */
+				      (IPTR) buf,	    /* PixelData */
+				      png.png_format,	    /* PixelFormat */
+				      0,		    /* PixelArrayMod (number of bytes per row) */
+				      0,		    /* Left edge */
+				      y,	    	    /* Top edge */
+				      png.png_width,	    /* Width */
+				      1))		    /* Height (here: one line) */
 		    {
 		    	png_error(png.png_ptr, "Out of memory!");
 		    } 
@@ -460,78 +463,18 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 
 /**************************************************************************************************/
 
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-       AROS_UFHA(Class *, cl, A0),
-       AROS_UFHA(Object *, o, A2),
-       AROS_UFHA(Msg, msg, A1))
-#else
-ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-#endif
+IPTR PNG__OM_NEW(struct IClass *cl, Object *o, Msg msg)
 {
-#ifdef __AROS__
-    AROS_USERFUNC_INIT
-#endif
-
-    IPTR retval;
-
-    putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
-
-    D(bug("png.datatype/DT_Dispatcher: Entering\n"));
-
-    switch(msg->MethodID)
+    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    if (retval != (IPTR)0)
     {
-	case OM_NEW:
-	    D(bug("png.datatype/DT_Dispatcher: Method OM_NEW\n"));
-	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-	    if (retval)
-	    {
-		if (!LoadPNG(cl, (Object *)retval))
-		{
-		    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
-		    retval = 0;
-		}
-	    }
-	    break;
-    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    
-    } /* switch(msg->MethodID) */
-
-    D(bug("png.datatype/DT_Dispatcher: Leaving\n"));
-
-    return retval;
-    
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
-}
-
-/**************************************************************************************************/
-
-struct IClass *DT_MakeClass(struct Library *pngbase)
-{
-    struct IClass *cl;
-    
-    cl = MakeClass("png.datatype", "picture.datatype", 0, 0, 0);
-
-    D(bug("png.datatype/DT_MakeClass: DT_Dispatcher 0x%lx\n", (unsigned long) DT_Dispatcher));
-
-    if (cl)
-    {
-#ifdef __AROS__
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
-    cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
-    cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-    cl->cl_UserData = (IPTR)pngbase; /* Required by datatypes (see disposedtobject) */
+	if (!LoadPNG(cl, (Object *)retval))
+	{
+	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
+	    return (IPTR)0;
+	}
     }
-
-    return cl;
+    return retval;
 }
 
 /**************************************************************************************************/
-
