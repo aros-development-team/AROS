@@ -19,7 +19,6 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 #include <oop/oop.h>
-#include <ctype.h>
 #include <string.h>
 
 #include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
@@ -59,6 +58,14 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 
 #define HIDDPREFSFILE "Sys:s/hidd.prefs"
 
+/* We don't link with c library so I mus implement this separately */
+static BOOL isblank(int c)
+{
+    if (c == 9 || c == 32)
+    	return TRUE;
+	
+    return FALSE;
+}
 
 BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 {
