@@ -55,6 +55,9 @@ extern void deventry();
 extern const char end;
 
 
+#define  NRF_NOT_REPLIED  NRF_MAGIC
+
+
 /* Device node */
 struct cnode
 {
@@ -1784,37 +1787,14 @@ void deventry(struct rambase *rambase)
 	    struct NotifyMessage *nMessage;
 	    
 	    kprintf("Got replied notify message\n");
-#if 0 
-
-TODO: Clear received flags for WAIT_REPLY handling
-
-	    if (nr->nr_Flags & NRF_WAIT_REPLY)
-	    {
-		while (TRUE)
-		{
-		    struct NotifyMessage *nMessage;
-		    
-		    nMessage = (struct NotifyMessage *)
-			               WaitPort(rambase->notifyPort);
-
-		    if (nMessage->nm_NReq == nr)
-		    {
-			FreeVec(GetMsg(rambase->notifyPort));
-			break;
-		    }
-
-		    FreeVec(GetMsg(rambase->notifyPort));
-		}
-	    }
-#endif
 
 	    while ((nMessage = (struct NotifyMessage *)GetMsg(rambase->notifyPort)) != NULL)
 	    {
+		nMessage->nm_NReq->nr_Flags &= ~NRF_NOT_REPLIED;
 		FreeVec(nMessage);
 	    }
-
 	}
-
+	
 	if (flags & fileOpMask)
 	{
 	    processFSM(rambase);
@@ -2453,7 +2433,8 @@ void Notify_notifyTasks(struct rambase *rambase, struct MinList *notifications)
 
 	kprintf("Found receiver %p\n", rr);
 
-	if (nr->nr_Flags & NRF_SEND_MESSAGE)
+	if (nr->nr_Flags & NRF_SEND_MESSAGE &&
+	    !(nr->nr_Flags & NRF_WAIT_REPLY && nr->nr_Flags & NRF_NOT_REPLIED))
 	{
 	    struct NotifyMessage *nm = AllocVec(sizeof(struct NotifyMessage),
 						MEMF_PUBLIC | MEMF_CLEAR);
@@ -2466,6 +2447,7 @@ void Notify_notifyTasks(struct rambase *rambase, struct MinList *notifications)
 	    nm->nm_ExecMessage.mn_ReplyPort = rambase->notifyPort;
 	    nm->nm_ExecMessage.mn_Length = sizeof(struct NotifyMessage);
 	    nm->nm_NReq = nr;
+	    nr->nr_Flags |= NRF_NOT_REPLIED;
 
 	    PutMsg(nr->nr_stuff.nr_Msg.nr_Port, &nm->nm_ExecMessage);
 	}
