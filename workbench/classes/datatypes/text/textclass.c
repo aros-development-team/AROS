@@ -2173,11 +2173,32 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 
 	    if (diff_y)
 	    {
+#ifdef _AROS
+		IPTR val;
+		LONG top, total, visible;
+		
+		GetDTAttrs((Object *)g, DTA_TopVert, &val, TAG_DONE); top = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_TotalVert, &val, TAG_DONE); total = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_VisibleVert, &val, TAG_DONE); visible = (LONG)val;
+
 		newy = td->vert_top + ((diff_y < 0) ? -1 : 1);
-		notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
+
+		if (newy + visible > total) newy = total - visible;
+		if (newy < 0) newy = 0;
+		
+		if (newy != top)
+		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+				      GA_ID, g->GadgetID,
+				      DTA_TopVert, newy,
+				      TAG_DONE);
+		
+#else
+		newy = td->vert_top + ((diff_y < 0) ? -1 : 1);
+		notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
 				  GA_ID, g->GadgetID,
 				  DTA_TopVert, newy,
 				  TAG_DONE);
+#endif
 	    }
 	}
     }
