@@ -89,6 +89,7 @@ FILES	:= \
     startup \
     systemtags \
     timedelay \
+    unlockbitmaptags \
     videocontroltags
 
 
