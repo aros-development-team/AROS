@@ -314,7 +314,6 @@ IPTR iconHandleInput(Class * cl, Object * obj, struct MUIP_HandleInput * msg)
                                      data->lastClickMicros, nowSeconds,
                                      nowMicros))
                                 {
-                                	kprintf("%d : executed\n", obj);
                                     SetAttrs(obj, IA_Executed, TRUE, TAG_END);
                                 }
                                 else
@@ -774,7 +773,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             }
             
             data->lastModifiedPart = TextObject,
-                MUIA_Text_Contents, buffer, 
+                MUIA_Text_Contents, buffer,
             End;
             
             FreeVec(buffer);

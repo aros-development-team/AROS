@@ -100,6 +100,7 @@ IPTR abstractIconConNew(Class * cl, Object * obj, struct opSet *ops)
 
         data->memberCount=0;
         data->applyMethodsToMembers=applyMethodsToMembers;
+        data->desktop=desktop;
     }
 
     return retval;
