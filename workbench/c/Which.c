@@ -28,10 +28,7 @@
 
    HISTORY  980902 SDuvan  implemented */
 
-/* NOTES: * Currently doesn't locate directories -- easy to fix in
-            WriteifOK()
-
-	  * Executable files in AROS currently haven't got the
+/* NOTES: * Executable files in AROS currently haven't got the
             e-flag set, which makes Which unusable for now in
 	    emulated mode.
  */
