@@ -12,7 +12,7 @@ mail_start()
     
     touch $MAIL_FILE
     mail_write "$MAIL_SUBJECT_BASE $1."
-    mail_write "Build started at $START_TIME, finished at $STOP_TIME."
+    mail_write "Build started at $START_TIME UTC, finished at $STOP_TIME UTC."
 }
 
 mail_write()
