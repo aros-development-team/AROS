@@ -34,6 +34,9 @@ struct bltnode
   int    (*cleanup) ();
 };
 
+/* cxref mixes up with the function pointers in the previous struct */
+extern int __cxref_bug_blit;
+
 #define CLEANUP 0x40
 #define CLEANME 0x40
 
