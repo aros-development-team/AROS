@@ -1,3 +1,15 @@
+Fri Oct 10 11:07:11 CEST 1997  Aaron Digulla  <digulla@aros.fh-konstanz.de>
+
+    * You can now use ".target" to build the target for the first
+      project.
+    * xmalloc(), xstrdup() and xfree() now tell the caller in case of error.
+    * Fixed some bugs
+    * If there is an error while regenerating a makefile, delete it (so we
+      don't end up with a corrupt makefile).
+    * Show expanded paths everywhere
+    * New option --debug. This shows all the infos MetaMake collects.
+    * Released Version 0.6
+
 Thu Oct  2 11:28:57 CEST 1997  Aaron Digulla  <digulla@aros.fh-konstanz.de>
 
     * You can now use ".target" syntax to build "target" in the first project.
@@ -13,11 +25,11 @@ Thu Oct  2 11:28:57 CEST 1997  Aaron Digulla  <digulla@aros.fh-konstanz.de>
 Thu Oct  2 10:58:05 1997  Kaveh R. Ghazi  <ghazi@caip.rutgers.edu>
 
     * Makefile.am: Set AUTOMAKE_OPTIONS = ansi2knr.
-        
+
     * acconfig.h: New file.
-        
+
     * configure.in: Update AC_PREREQ to 2.12.  Add AM_C_PROTOTYPES.
-        
+
     * mmake.c: Fix #endif comment.  Ensure __STDC__ == 1 when using
       stdarg.h.  Check HAVE_SYS_STAT_H before including sys/stat.h.
       Check HAVE_SYS_TYPES_H not HAVE_SYS_STAT_H for sys/types.h.
