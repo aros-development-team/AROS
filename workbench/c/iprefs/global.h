@@ -177,6 +177,10 @@ void Cleanup(STRPTR msg);
 
 void InstallPatches(void);
 
+/* localeprefs.c */
+
+void LocalePrefs_Handler(STRPTR filename);
+
 /*********************************************************************************************/
 
 #endif /* GLOBAL_H */

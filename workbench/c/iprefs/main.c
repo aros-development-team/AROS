@@ -46,24 +46,24 @@ static struct prefinfo
 {
     STRPTR  	    	    filename;
     STRPTR  	    	    filenamebuffer;
-    void    	    	    (*func)(void);
+    void    	    	    (*func)(STRPTR);
     struct NotifyRequest    nr;
     BOOL    	    	    notifystarted;
 }
 preftable[] =
 {
-    {"input"	    , inputprefsname    , NULL},
-    {"font" 	    , fontprefsname     , NULL},
-    {"screenmode"   , screenprefsname	, NULL},
-    {"locale"	    , localeprefsname	, NULL},
-    {"palette"	    , paletteprefsname  , NULL},
-    {"wbpattern"    , patternprefsname  , NULL},
-    {"icontrol"     , icontrolprefsname , NULL},
-    {"serial"	    , serialprefsname	, NULL},
-    {"printer"	    , printerprefsname	, NULL},
-    {"pointer"	    , pointerprefsname  , NULL},
-    {"overscan"     , overscanprefsname , NULL},
-    {NULL   	    	    	    	      }
+    {"input"	    , inputprefsname    , NULL	    	    	},
+    {"font" 	    , fontprefsname     , NULL	    	    	},
+    {"screenmode"   , screenprefsname	, NULL	    	    	},
+    {"locale"	    , localeprefsname	, LocalePrefs_Handler	},
+    {"palette"	    , paletteprefsname  , NULL	    	    	},
+    {"wbpattern"    , patternprefsname  , NULL	    	    	},
+    {"icontrol"     , icontrolprefsname , NULL	    	    	},
+    {"serial"	    , serialprefsname	, NULL	    	    	},
+    {"printer"	    , printerprefsname	, NULL	    	    	},
+    {"pointer"	    , pointerprefsname  , NULL	    	    	},
+    {"overscan"     , overscanprefsname , NULL	    	    	},
+    {NULL   	    	    	    	      	    	    	}
     
 };
 
@@ -181,7 +181,7 @@ static void StartNotifications(void)
 	
 	preftable[i].nr.nr_Name     	    	= preftable[i].filenamebuffer;
 	preftable[i].nr.nr_UserData 	    	= i;
-	preftable[i].nr.nr_Flags    	    	= NRF_SEND_MESSAGE; // | NRF_NOTIFY_INITIAL;
+	preftable[i].nr.nr_Flags    	    	= NRF_SEND_MESSAGE | NRF_NOTIFY_INITIAL;
 	preftable[i].nr.nr_stuff.nr_Msg.nr_Port = notifyport;
 	
 	D(bug("\nTrying to start notification for file \"%s\".\n", preftable[i].filenamebuffer));
@@ -276,8 +276,15 @@ static void HandleAll(void)
 	    
 	    while((msg = (struct NotifyMessage *)GetMsg(notifyport)))
 	    {
-	    	D(bug("Received notify message. UserData = %d --> File = \"%s\"\n", msg->nm_NReq->nr_UserData,
-		    	    	    	    	    	    	    	    	    preftable[msg->nm_NReq->nr_UserData].filenamebuffer));
+	    	WORD id = msg->nm_NReq->nr_UserData;
+
+	    	D(bug("Received notify message. UserData = %d --> File = \"%s\"\n", id,
+		    	    	    	    	    	    	    	    	    preftable[id].filenamebuffer));
+		
+		if (preftable[id].func)
+		{
+		    preftable[id].func(preftable[id].filenamebuffer);
+		}
 		
 	    	ReplyMsg(&msg->nm_ExecMessage);
 		
