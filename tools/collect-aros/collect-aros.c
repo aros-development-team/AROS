@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "collect-aros.h"
 
@@ -223,7 +224,8 @@ int main(int argc, char *argv[])
     if (ret)
     {
 	free(command);
-	command = joinstrings(GCCPATH " -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, " ", setsfilename, NULL);
+	command = joinstrings(GCCPATH " -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, 
+" ", setsfilename, NULL);
 	xsystem(command);
 	free(command);
 	command = joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL);
