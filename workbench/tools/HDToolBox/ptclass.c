@@ -305,9 +305,11 @@ IPTR retval = 0;
 	{
 	case PTCT_PartitionTable:
 		*msg->opg_Storage = (IPTR)data->table;
+		retval = 1;
 		break;
 	case PTCT_ActivePartition:
 		*msg->opg_Storage = (IPTR)data->active;
+		retval = 1;
 		break;
 	case PTCT_ActiveType:
 		if ((struct DosEnvec *)data->active == &data->gap)
@@ -316,6 +318,9 @@ IPTR retval = 0;
 			*msg->opg_Storage = (IPTR)PTS_NOTHING;
 		else
 			*msg->opg_Storage = (IPTR)PTS_PARTITION;
+		retval = 1;
+		break;
+		
 	case PTCT_Flags:
 		break;
 	default:
@@ -342,6 +347,7 @@ ULONG last=0xFFFFFFFF;
 	de->de_Surfaces = table->dg.dg_Heads;
 	de->de_BlocksPerTrack = table->dg.dg_TrackSectors;
 	de->de_BufMemType = table->dg.dg_BufMemType;
+
 	pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
 	while (pn->listnode.ln.ln_Succ != NULL)
 	{
@@ -375,6 +381,7 @@ ULONG last=0xFFFFFFFF;
 		last=table->dg.dg_Cylinders-1;
 	de->de_LowCyl = first;
 	de->de_HighCyl = last;
+
 	return de;
 }
 
@@ -450,6 +457,7 @@ ULONG skipcyl;
 	blocks = table->dg.dg_Heads*table->dg.dg_TrackSectors;
 	skipcyl = table->table->reserved/blocks;
 	cyls = (table->dg.dg_Cylinders-1)-skipcyl;
+
 #endif
 	spc = pn->de_Surfaces*pn->de_BlocksPerTrack;
 #if 0
@@ -543,6 +551,7 @@ struct RastPort *rport;
 WORD	    	 drawtype;
 
 	data = INST_DATA(cl, obj);
+
 	data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH,data->table);
 	rport = ObtainGIRPort(msg->gpi_GInfo);
 	if (data->active != NULL)
@@ -561,6 +570,7 @@ WORD	    	 drawtype;
 		DrawPartition(rport, data, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	data->active = getActive(data);
+
 	if ((struct DosEnvec *)data->active == &data->gap)
 	{
 	    	drawtype = DPTYPE_EMPTY_SELECTED;
