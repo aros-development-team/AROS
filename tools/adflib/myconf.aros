@@ -29,7 +29,6 @@ int main(int argc, char *argv[])
 END
 
 gcc myctest.c -o myctest
-rm myctest.c
 
 if [ `./myctest |cut -d' ' -f 1` != 4 ]
     then echo "#error sizeof(long)!=4"
@@ -51,4 +50,4 @@ else
     echo "#endif /* LITT_ENDIAN */"
 fi
 
-rm myctest
+rm myctest*
