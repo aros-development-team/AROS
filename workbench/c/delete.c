@@ -58,6 +58,8 @@
 
     INTERNALS
 
+    Shows a good usage of the pattern matching capabilities.
+
     HISTORY
 
     25.11.2000  SDuvan  --  (Re)Implemented (the old version didn't no much)
