@@ -28,7 +28,8 @@ all: setup $(SLIBDIR)/icon.library
 
 $(SLIBDIR)/icon.library: $(DEPLIBS) \
 	    $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-	$(CC) $(ILDFLAGS) $^ $(LIBS) -o $@
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $^ $(LIBS) -o $@
 
 setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
@@ -38,7 +39,8 @@ clean:
 	$(RM) $(OBJDIR) *.err
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 icon_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
