@@ -95,12 +95,19 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 void CalcBBox (struct Window * window, struct Gadget * gadget,
 	struct BBox * bbox)
 {
-#define ADDREL(flag,field)  ((gadget->Flags & (flag)) ? window->field : 0)
+   /* 
+
+    #define ADDREL(flag,field)  ((gadget->Flags & (flag)) ? window->field : 0)
 
     bbox->Left	 = ADDREL(GFLG_RELRIGHT,Width-1)   + gadget->LeftEdge;
     bbox->Top	 = ADDREL(GFLG_RELBOTTOM,Height-1) + gadget->TopEdge;
     bbox->Width  = ADDREL(GFLG_RELWIDTH,Width)     + gadget->Width;
     bbox->Height = ADDREL(GFLG_RELHEIGHT,Height)   + gadget->Height;
+    
+    */
+    
+   GetDomGadgetIBox(gadget, window, NULL, (struct IBox *)bbox);
+   
 } /* CalcBBox */
 
 /* Figure out the size of the gadget rectangle, taking relative
@@ -205,3 +212,161 @@ VOID drawrect(struct RastPort *rp
     
     return;
 }
+
+void GetGadgetDomain(struct Gadget *gad, struct Window *win,
+                     struct Requester *req, struct IBox *box)
+{
+    switch (gad->GadgetType & (GTYP_GADGETTYPE & ~GTYP_SYSGADGET))
+    {
+	case GTYP_SCRGADGET:
+	    box->Left	= 0;
+	    box->Top	= 0;
+	    box->Width  = win->WScreen->Width;
+	    box->Height = win->WScreen->Height;
+
+	    break;
+
+	case GTYP_GZZGADGET:
+	    /* stegerg: this means gadget is in window border! */
+
+	    box->Left	= 0;
+	    box->Top	= 0;
+	    box->Width  = win->Width;
+	    box->Height = win->Height;
+
+	    break;
+
+	case GTYP_REQGADGET:
+	    box->Left	= req->LeftEdge;
+	    box->Top	= req->TopEdge;
+	    box->Width  = req->Width;
+	    box->Height = req->Height;
+
+	    break;
+
+	default:
+	    if (win->Flags & WFLG_GIMMEZEROZERO)
+	    {
+		/* stegerg: domain.left and domain.top must not be added
+		   to gadget position when it is rendered, because gadgets
+		   in the innerlayer of a gzz gadget are already shifted
+		   thanks to the innerlayer. */
+
+		box->Left   = win->BorderLeft;
+		box->Top    = win->BorderTop;
+
+		box->Width  = win->Width - win->BorderLeft - win->BorderRight;
+		box->Height = win->Height - win->BorderTop - win->BorderBottom;
+		
+	    } else {		    	
+		box->Left   = 0;
+		box->Top    = 0;
+		box->Width  = win->Width;
+		box->Height = win->Height;
+		
+	    }
+
+	    break;
+
+    } /* switch (gadgettype) */
+}
+
+WORD GetGadgetLeft(struct Gadget *gad, struct Window *win, struct Requester *req)
+{
+    struct IBox box;
+
+    GetGadgetDomain(gad, win, req, &box);
+    
+    return gad->LeftEdge + ADDREL(gad, GFLG_RELRIGHT, (&box), Width - 1);
+}
+
+WORD GetGadgetTop(struct Gadget *gad, struct Window *win, struct Requester *req)
+{
+    struct IBox box;
+
+    GetGadgetDomain(gad, win, req, &box);
+    
+    return gad->TopEdge + ADDREL(gad, GFLG_RELBOTTOM, (&box), Height - 1);
+}
+
+WORD GetGadgetWidth(struct Gadget *gad, struct Window *win, struct Requester *req)
+{
+    struct IBox box;
+
+    GetGadgetDomain(gad, win, req, &box);
+    
+    return gad->Width + ADDREL(gad, GFLG_RELWIDTH, (&box), Width);
+}
+
+WORD GetGadgetHeight(struct Gadget *gad, struct Window *win, struct Requester *req)
+{
+    struct IBox box;
+
+    GetGadgetDomain(gad, win, req, &box);
+    
+    return gad->Height + ADDREL(gad, GFLG_RELHEIGHT, (&box), Height);
+}
+
+/* gadget box in screen coords */
+void GetScrGadgetIBox(struct Gadget *gad, struct Window *win,
+		      struct Requester *req, struct IBox *box)
+{
+    struct IBox domain;
+    
+    GetGadgetDomain(gad, win, req, &domain);
+    
+    if (req)
+    {
+    	/* leftedge, topedge members of window and requester
+	   are on the same offset */
+	   
+    	win = (struct Window *)req;
+    }
+   
+    box->Left = domain.Left +
+    		gad->LeftEdge + ADDREL(gad, GFLG_RELRIGHT, (&domain), Width - 1) +
+		(win ? win->LeftEdge : 0);
+		
+    box->Top  = domain.Top +
+    		gad->TopEdge + ADDREL(gad, GFLG_RELBOTTOM, (&domain), Height - 1) +
+		(win ? win->TopEdge : 0);
+
+    box->Width = gad->Width + ADDREL(gad, GFLG_RELWIDTH, (&domain), Width);
+ 
+    box->Height = gad->Height + ADDREL(gad, GFLG_RELHEIGHT, (&domain), Height);
+}
+
+/* gadget box relative to upper left window edge */
+void GetWinGadgetIBox(struct Gadget *gad, struct Window *win,
+		      struct Requester *req, struct IBox *box)
+{
+    GetScrGadgetIBox(gad, win, req, box);
+    
+    if (req)
+    {
+        /* leftedge, topedge members of window and requester
+	   are on the same offset */
+	   
+    	win = (struct Window *)req;
+    }
+    
+    if (win)
+    {
+    	box->Left -= win->LeftEdge;
+    	box->Top  -= win->TopEdge;
+    }
+}
+
+/* gadget box in domain coords */
+void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
+		      struct Requester *req, struct IBox *box)
+{
+    struct IBox domain;
+    
+    GetWinGadgetIBox(gad, win, req, box);
+    GetGadgetDomain(gad, win, req, &domain);
+    
+    box->Left -= domain.Left;
+    box->Top  -= domain.Top;
+}
+
