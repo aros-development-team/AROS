@@ -30,7 +30,8 @@ FILES = helloworld \
 	makedir \
 	mount \
 	simpleimage \
-	intuitext
+	intuitext \
+	compleximage
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
