@@ -383,8 +383,8 @@ void HandleDeferedActions(struct IIHData *iihdata,
     while(next_am)
     {
         struct Window * targetwindow = am->Window;
-	struct Screen * targetscreen = targetwindow->WScreen;
-        struct Layer  * targetlayer = targetwindow->WLayer, *L;
+	struct Screen * targetscreen = targetwindow ? targetwindow->WScreen : NULL;
+        struct Layer  * L, *targetlayer = targetwindow ? targetwindow->WLayer : NULL;
         BOOL CheckLayersBehind = FALSE;
         BOOL CheckLayersInFront = FALSE;
 	BOOL remove_am = TRUE;
@@ -760,12 +760,41 @@ void HandleDeferedActions(struct IIHData *iihdata,
 		break;
 	    
 	    case AMCODE_NEWPREFS:
-	      /*
-	      ** The preferences were changed and now I need to inform
-	      ** all interested windows about this.
-	      */
-	      notify_newprefs(IntuitionBase);
-	    break;
+		/*
+		** The preferences were changed and now I need to inform
+		** all interested windows about this.
+		*/
+		notify_newprefs(IntuitionBase);
+	        break;
+	
+	    case AMCODE_SCREENSHOWTITLE:
+	    	targetscreen = (struct Screen *)am->Gadget;
+		if ((targetscreen->Flags & SHOWTITLE) && (am->dx == FALSE))
+		{
+		    BehindLayer(0, targetscreen->BarLayer);
+		    
+		    Forbid();
+		    targetscreen->Flags &= ~SHOWTITLE;
+		    Permit();
+		    
+		    L = targetscreen->BarLayer->front;
+		    CheckLayersInFront = TRUE;
+		    
+		} else if (!(targetscreen->Flags & SHOWTITLE) && (am->dx == TRUE))
+		{
+		    UpfrontLayer(0, targetscreen->BarLayer);
+		    
+		    if (targetscreen->BarLayer->Flags & LAYERREFRESH)
+		    {
+		        RenderScreenBar(targetscreen, TRUE, IntuitionBase);
+		    }
+		    
+		    Forbid();
+		    targetscreen->Flags |= SHOWTITLE;
+		    Permit();
+		}
+		break;
+		
 	}
 
  	/* targetwindow might be invalid here (AM_CLOSEWINDOW) !!!!!!!!! */
