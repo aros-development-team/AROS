@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -23,8 +23,10 @@
 	struct DosLibrary *, DOSBase, 33, Dos)
 
 /*  FUNCTION
+        Waits for at least the time specified as timeout.
 
     INPUTS
+        timeout - the minimum time to wait in ticks (1/50 seconds)
 
     RESULT
 
