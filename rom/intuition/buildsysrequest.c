@@ -365,9 +365,11 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 {
     struct TagItem frame_tags[] =
     {
-    	{IA_FrameType, FRAME_BUTTON},
-	{IA_EdgesOnly, TRUE 	   },
-	{TAG_DONE   	    	   }
+    	{IA_FrameType, FRAME_BUTTON 	    	    	    	},
+	{IA_EdgesOnly, TRUE 	    	    	    	    	},
+	{IA_Width    , dims->gadgetwidth 	    	    	},
+	{IA_Height   , dims->fontheight + BUTTONBORDER_Y * 2 	},
+	{TAG_DONE   	    	    	    	    	    	}
     };
     struct Gadget   *gadgetlist, *thisgadget = NULL;
     struct Image    *gadgetframe;
@@ -400,11 +402,9 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 	    {GA_ID  	 , gadgetid 	    	    	    	    	},
 	    {GA_Previous , (IPTR)thisgadget	    	   	    	},
 	    {GA_Left	 , xoffset  	    	    	    	    	},
-	    {GA_Width	 , dims->gadgetwidth	    	    	    	},
 	    {GA_Top 	 , dims->height -
 	    	    	   scr->WBorBottom - dims->fontheight -
 			   OUTERSPACING_Y - BUTTONBORDER_Y * 2	    	},
-	    {GA_Height	 , dims->fontheight + BUTTONBORDER_Y * 2	},
 	    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]   	    	},
 	    {GA_Image	 , (IPTR)gadgetframe	    	    	    	},
 	    {GA_RelVerify, TRUE     	    	    	    	    	},
