@@ -127,12 +127,12 @@
 
 #ifndef __typedef_STRPTR
 #   define __typedef_STRPTR
-    typedef char * STRPTR;	/* Pointer to string (NULL terminated) */
+    typedef UBYTE STRPTR;	/* Pointer to string (NULL terminated) */
 #endif
 
 #ifndef __typedef_CONST_STRPTR
 #   define __typedef_CONST_STRPTR
-    typedef const char * CONST_STRPTR;	/* Pointer to constant string (NULL terminated) */
+    typedef const UBYTE * CONST_STRPTR;	/* Pointer to constant string (NULL terminated) */
 #endif
 
 #ifndef __typedef_TEXT
