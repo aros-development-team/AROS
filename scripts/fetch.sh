@@ -31,7 +31,10 @@ fetch()
             rm -f "$destination/$file".tmp
 	    ;;
 	"")
-	    cp "$origin/$file" "$destination/$file";;
+	    if ! cp "$origin/$file" "$destination/$file"; then
+	        ret=false;
+	    fi
+	    ;;
 	*)
 	    echo "Unknown protocol type \`$protocol'"
 	    ret=false;;
