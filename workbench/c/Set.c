@@ -75,118 +75,89 @@
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
-
-#define ARG_TEMPLATE    "NAME,STRING/F"
-#define ARG_NAME        0
-#define ARG_STRING      1
-#define TOTAL_ARGS      2
+#include "shcommands.h"
 
 #define BUFFER_SIZE     160
 
-static const char version[] = "$VER: Set 41.0 (27.07.1997)\n";
+static void GetNewString(STRPTR, STRPTR, LONG);
 
-void GetNewString(STRPTR, STRPTR, LONG);
-
-int __nocommandline;
-
-int main(void)
+AROS_SH2(Set, 41.0, 27.07.1997,
+AROS_SHA(,NAME,    ,NULL),
+AROS_SHA(,STRING,/F,NULL))
 {
-	struct RDArgs   * rda;
+    AROS_SHCOMMAND_INIT
+
     struct Process  * SetProc;
     struct LocalVar * SetNode;
-    IPTR            * args[TOTAL_ARGS] = { NULL, NULL };
     IPTR              OutArgs[3];
-    int               Return_Value;
-    BOOL              Success;
     LONG              VarLength;
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
 
-    Return_Value = RETURN_OK;
-
-    rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
-    if (rda)
+    if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {
-        if (args[ARG_NAME] != NULL || args[ARG_STRING] != NULL)
+        /* Make sure we get to here is either arguments are
+         * provided on the command line.
+         */
+        if (SHArg(NAME) != NULL && SHArg(STRING) != NULL)
         {
-            /* Make sure we get to here is either arguments are
-             * provided on the command line.
+            /* Add the new local variable to the list.
              */
-            if (args[ARG_NAME] != NULL && args[ARG_STRING] != NULL)
-            {
-                /* Add the new local variable to the list.
-                 */
-                Success = SetVar((STRPTR)args[ARG_NAME],
-                                 (STRPTR)args[ARG_STRING],
-                                 -1,
-                                 GVF_LOCAL_ONLY
-                );
-                if (Success == FALSE)
-                {
-                    PrintFault(IoErr(), "Set");
-                    Return_Value = RETURN_ERROR;
-                }
+	    if
+	    (
+	        !SetVar((STRPTR)SHArg(NAME),
+                        (STRPTR)SHArg(STRING),
+                        -1,
+                        GVF_LOCAL_ONLY)
+            )
+	    {
+	        SHReturn(RETURN_ERROR);
             }
-        }
-        else
-        {
-            /* Display a list of local variables.
-             */
-            Forbid();
-            SetProc = (struct Process *)FindTask(NULL);
-            Permit();
-
-            if (SetProc != NULL)
-            {
-                ForeachNode((struct List *)&(SetProc->pr_LocalVars),
-                            (struct Node *)SetNode
-                )
-                {
-                    if (SetNode->lv_Node.ln_Type == LV_VAR)
-                    {
-                        /* Get a clean variable with no excess
-                         * characters.
-                         */
-                        VarLength = -1;
-                        VarLength = GetVar(SetNode->lv_Node.ln_Name,
-                                           &Buffer1[0],
-                                           BUFFER_SIZE,
-                                           GVF_LOCAL_ONLY
-                        );
-                        if (VarLength != -1)
-                        {
-                            GetNewString(&Buffer1[0],
-                                         &Buffer2[0],
-                                         VarLength
-                            );
-
-                            Buffer2[VarLength] = NULL;
-
-                            OutArgs[0] = (IPTR)SetNode->lv_Node.ln_Name;
-                            OutArgs[1] = (IPTR)&Buffer2[0];
-                            OutArgs[2] = (IPTR)NULL;
-                            VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
-                        }
-                    }    
-                }
-            }
-        }
+	}
     }
     else
     {
-        PrintFault(IoErr(), "Set");
+	SetProc = (struct Process *)FindTask(NULL);
 
-        Return_Value = RETURN_ERROR;
+	ForeachNode((struct List *)&(SetProc->pr_LocalVars),
+                    (struct Node *)SetNode
+        )
+        {
+            if (SetNode->lv_Node.ln_Type == LV_VAR)
+            {
+                /* Get a clean variable with no excess
+                 * characters.
+                 */
+                VarLength = -1;
+                VarLength = GetVar(SetNode->lv_Node.ln_Name,
+                                   &Buffer1[0],
+                                   BUFFER_SIZE,
+                                   GVF_LOCAL_ONLY
+                );
+                if (VarLength != -1)
+                {
+                    GetNewString(&Buffer1[0],
+                                 &Buffer2[0],
+                                 VarLength
+                    );
+
+                    Buffer2[VarLength] = NULL;
+
+		    OutArgs[0] = (IPTR)SetNode->lv_Node.ln_Name;
+                    OutArgs[1] = (IPTR)&Buffer2[0];
+                    OutArgs[2] = (IPTR)NULL;
+                    VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
+                }
+            }
+        }
     }
 
-    if (rda)
-        FreeArgs(rda);
+    SHReturn(RETURN_OK);
 
-    return (Return_Value);
-
+    AROS_SHCOMMAND_EXIT
 } /* main */
 
-void GetNewString(STRPTR s, STRPTR d, LONG l)
+static void GetNewString(STRPTR s, STRPTR d, LONG l)
 {
     int i;
     int j;
@@ -205,7 +176,7 @@ void GetNewString(STRPTR s, STRPTR d, LONG l)
         else
         {
             d[j] = s[i];
-            
+
             i++;
             j++;
         }
