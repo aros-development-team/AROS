@@ -11,7 +11,7 @@ NOTE: This is beta. If you want this code, then have a look at our
 \item Some new functions
 \item We have the first game for AROS: Moria3D runs after minor changes
 \item All neccessary includes to compile AROS
-\item Added conditional muild (see make.defaults)
+\item Added conditional build (see make.defaults)
 \item Much faster linking on Unix
 \end{itemize}
 
