@@ -111,15 +111,15 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
 
 BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct SysIData *data = INST_DATA(cl, obj);
-    struct TagItem  *taglist, *tag;
-    struct TextFont *reffont = NULL;
-    int     	     size = SYSISIZE_MEDRES;
-    int     	     def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
-    int     	     def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
-    int     	     def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
-    BOOL    	     unsupported = FALSE;
-    BOOL    	     set_width = FALSE, set_height = FALSE;
+    struct SysIData 	*data = INST_DATA(cl, obj);
+    struct TagItem  	*taglist, *tag;
+    struct TextFont 	*reffont = NULL;
+    int     	     	 size = SYSISIZE_MEDRES;
+    int     	     	 def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
+    int     	     	 def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
+    int     	     	 def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
+    BOOL    	     	 unsupported = FALSE;
+    BOOL    	     	 set_width = FALSE, set_height = FALSE;
 
     taglist = msg->ops_AttrList;
     while ((tag = NextTagItem(&taglist)))
@@ -208,6 +208,9 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     if ((!data->dri) || (unsupported))
         return FALSE;
 
+    #define REFHEIGHT (reffont->tf_YSize)
+    #define REFWIDTH  REFHEIGHT
+    
     //  if (!data->screen) data->screen = int_FindScreenByDrawInfo(data->dri,IntuitionBase);
 
     switch(data->type)
@@ -298,21 +301,21 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             break;
 
 	case MENUCHECK:
-            def_low_width  = reffont->tf_XSize * 3 / 2;
-            def_low_height = reffont->tf_YSize;
+            def_low_width  = REFWIDTH / 2 + 4; // reffont->tf_XSize * 3 / 2;
+            def_low_height = REFHEIGHT;
             size = SYSISIZE_LOWRES;
             break;
 
 	case AMIGAKEY:
             if (MENUS_AMIGALOOK)
             {
-        	def_low_width  = reffont->tf_XSize * 2;
-        	def_low_height = reffont->tf_YSize;
+        	def_low_width  = REFWIDTH * 3 / 2; //reffont->tf_XSize * 2;
+        	def_low_height = REFHEIGHT;
             }
             else
             {
-        	def_low_width  = reffont->tf_XSize * 2;
-        	def_low_height = reffont->tf_YSize + 1;
+        	def_low_width  = (REFWIDTH + 1) * 3 / 2; // reffont->tf_XSize * 2;
+        	def_low_height = REFHEIGHT + 1;
             }
             size = SYSISIZE_LOWRES;
             break;
@@ -321,8 +324,8 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             /*
              * We really need some aspect ratio here..this sucks
              */
-            def_low_width  = reffont->tf_XSize * 3 - 1;
-            def_low_height = reffont->tf_YSize + 1;
+            def_low_width  = (REFWIDTH + 1) * 2; // reffont->tf_XSize * 3 - 1;
+            def_low_height = REFHEIGHT + 1;
             size = SYSISIZE_LOWRES;
             break;
 
@@ -330,8 +333,8 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             /*
              * We really need some aspect ratio here..this sucks
              */
-            def_low_width  = 26;//reffont->tf_XSize * 2;
-            def_low_height = reffont->tf_YSize + 3;
+            def_low_width  = (REFWIDTH + 3) * 2;//reffont->tf_XSize * 2;
+            def_low_height = REFHEIGHT + 3;
             size = SYSISIZE_LOWRES;
             break;
 
