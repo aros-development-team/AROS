@@ -117,13 +117,13 @@ struct DeviceNode
     /* The next two fields are not used by AROS. Their original name was:
        dn_Task and dn_Lock */
     struct MsgPort * dn_NoAROS1;
-    BPTR             dn_NoAROS2;
 #endif
+    BPTR             dn_Lock;	/* dol_Lock field */
 
     BSTR dn_Handler;    /* Null-terminated device name for handler. */
-    LONG dn_NoAROS3[2]; /* PRIVATE */
+    LONG dn_NoAROS2[2]; /* PRIVATE */
     BPTR dn_Startup;    /* (struct FileSysStartupMsg *) see above */
-    BPTR dn_NoAROS4[2]; /* PRIVATE */
+    BPTR dn_NoAROS3[2]; /* PRIVATE */
 
     /* For the following two fields, see comments in <dos/dosextens.h>.
        Both fields specify the name of the handler. */
