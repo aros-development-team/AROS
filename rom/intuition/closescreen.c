@@ -84,12 +84,18 @@
 		else
 		    IntuitionBase->ActiveScreen = NULL;
 	    }
+	    
+	    /* Free the RasInfo of the viewport */
+	    FreeMem(screen->ViewPort.RasInfo, sizeof (struct RasInfo));
+	    
+	    /* Free the screen's bitmap */
+	    FreeBitMap(screen->RastPort.BitMap);
 
 	    /* Free the RastPort's contents */
 	    DeinitRastPort (&screen->RastPort);
 
 	    /* Free the memory */
-	    FreeMem (screen, sizeof (struct Screen));
+	    FreeMem (screen, sizeof (struct IntScreen));
 
 	    ReturnBool("CloseScreen",TRUE);
 	}
