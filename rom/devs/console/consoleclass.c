@@ -15,6 +15,8 @@
 #include "consoleif.h"
 #include "console_gcc.h"
 
+#include <string.h>
+
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
@@ -61,6 +63,9 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 	data = INST_DATA(cl, o);
 	
 	unit = (struct ConUnit *)data;
+	
+	memset(data, 0, sizeof(struct consoledata));
+	
     	/* Initialize the unit fields */
     	unit->cu_Window = win;
     	    	
@@ -113,7 +118,8 @@ static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
     {
     	XCCP = 0;
     }
-    
+    XCP = XCCP; /* ?? */
+ 
     return;
 }
 
@@ -136,6 +142,7 @@ static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
     	XCCP = CHAR_XMIN(o);
     	Console_Down(o, 1);
     }
+    XCP = XCCP; /* ?? */
     
     ReturnVoid("Console::Right");
 }
@@ -153,6 +160,7 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
     {
     	YCCP = CHAR_YMIN(o);
     }
+    YCP = YCCP; /* ?? */
 
     return;
 }
@@ -175,6 +183,8 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 	Console_DoCommand(o, C_SCROLL_UP, &scroll_param);
 	YCCP = CHAR_YMAX(o);
     }
+    YCP = YCCP; /* ?? */
+    
     D(bug("New coords: char (%d, %d), gfx (%d, %d)\n",
     	XCCP, YCCP, CP_X(o), CP_Y(o) ));
     ReturnVoid("Console::Down");
