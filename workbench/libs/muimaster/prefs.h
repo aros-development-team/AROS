@@ -82,6 +82,16 @@ typedef enum RegisterLook {
     REGISTER_LOOK_GADTOOLS,
 } RegisterLook;
 
+typedef enum ListviewRefresh {
+    LISTVIEW_REFRESH_LINEAR,
+    LISTVIEW_REFRESH_MIXED,
+} ListviewRefresh;
+
+typedef enum ListviewMulti {
+    LISTVIEW_MULTI_SHIFTED,
+    LISTVIEW_MULTI_ALWAYS,
+} ListviewMulti;
+
 /*
  * User Prefs for interface drawing
  */
@@ -113,8 +123,8 @@ struct ZunePrefsNew
     BOOL         register_truncate_titles; /* ok, waiting for prefs editor */
 
     /* Buttons */
-    WORD     radiobutton_hspacing; /* ok, waiting for prefs editor */
-    WORD     radiobutton_vspacing; /* ok, waiting for prefs editor */
+    WORD     radiobutton_hspacing;
+    WORD     radiobutton_vspacing;
 
     /* Cycles */
     CycleMenuPosition cycle_menu_position; /* yet unused, remove this comment when handled */
@@ -130,7 +140,11 @@ struct ZunePrefsNew
     struct MUI_PenSpec string_text_inactive; /* yet unused, remove this comment when handled */
 
     /* Lists */
-    WORD     list_linespacing; /* yet unused, remove this comment when handled */
+    ListviewMulti   list_multi; /* yet unused, remove this comment when handled */
+    ListviewRefresh list_refresh; /* yet unused, remove this comment when handled */
+    UWORD           list_linespacing; /* yet unused, remove this comment when handled */
+    BOOL            list_smoothed; /* yet unused, remove this comment when handled */
+    UWORD           list_smoothval; /* yet unused, remove this comment when handled */
 
     /* Navigation */
     BOOL                 dragndrop_left_button; /* yet unused, remove this comment when handled */

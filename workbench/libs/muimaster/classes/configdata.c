@@ -183,7 +183,11 @@ static struct def_ulval DefULValues[] =
     { MUICFG_Cycle_MenuCtrl_Level, 2 },
     { MUICFG_Cycle_MenuCtrl_Speed, 0 },
     { MUICFG_Cycle_Menu_Recessed, FALSE },
-    { MUICFG_List_FontLeading, 1 },
+    { MUICFG_Listview_Font_Leading, 1 },
+    { MUICFG_Listview_Smoothed, FALSE },
+    { MUICFG_Listview_SmoothVal, 0 },
+    { MUICFG_Listview_Refresh, LISTVIEW_REFRESH_MIXED },
+    { MUICFG_Listview_Multi, LISTVIEW_MULTI_SHIFTED },
     { MUICFG_GroupTitle_Position, GROUP_TITLE_POSITION_CENTERED },
     { MUICFG_GroupTitle_Color, GROUP_TITLE_COLOR_HILITE },
     { MUICFG_Scrollbar_Type, SCROLLBAR_TYPE_STANDARD },
@@ -322,7 +326,11 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Lists ----------*/
 
-    data->prefs.list_linespacing = GetConfigULong(obj, MUICFG_List_FontLeading);
+    data->prefs.list_linespacing = GetConfigULong(obj, MUICFG_Listview_Font_Leading);
+    data->prefs.list_smoothed = GetConfigULong(obj, MUICFG_Listview_Smoothed);
+    data->prefs.list_smoothval = GetConfigULong(obj, MUICFG_Listview_SmoothVal);
+    data->prefs.list_multi = GetConfigULong(obj, MUICFG_Listview_Multi);
+    data->prefs.list_refresh = GetConfigULong(obj, MUICFG_Listview_Refresh);
 
     /*---------- Strings ----------*/
     /* all taken care of in frames and images */
