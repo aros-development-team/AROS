@@ -1,2 +1,3 @@
-makefile
-makefile.bak
+mmakefile
+*.bak
+*.err
