@@ -775,7 +775,7 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 	WORD i, len;
 	BOOL dojump = TRUE;
 		
-	GetAttr(STRINGA_TextVal, gad, (IPTR *)&val);
+	GetAttr(STRINGA_TextVal, (Object *)gad, (IPTR *)&val);
 	strcpy(buffer, val);
 
 	len = strlen(buffer);

@@ -225,7 +225,10 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		    }
 		    
 		    if (ld->ld_Menu) SetMenuStrip(win, ld->ld_Menu);
-			
+	
+		    ld->ld_Command = LDCMD_WINDOWOPENED;
+		    CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
+		    		
 		    /* Wait for the user to do something */	
 		    success = HandleEvents(ld, reqinfo, ASLB(AslBase));
 		

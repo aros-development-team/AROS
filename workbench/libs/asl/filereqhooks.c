@@ -1356,7 +1356,7 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
 	    }
 	    numargs = numselected > 0 ? numselected : 1;
 	    
-	    if ((wbarg = AllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs)))
+	    if ((wbarg = AllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase)))
 	    {
 	        struct ASLLVFileReqNode *node;
 		WORD 			i = 0;
@@ -1392,14 +1392,14 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
 		
 		if (i == 0)
 		{
-		    FreeVecPooled(req->fr_ArgList);
+		    FreeVecPooled(req->fr_ArgList, AslBase);
 		    req->fr_ArgList = NULL;
 		} else {
 		    req->fr_NumArgs = i;		
 		    lock = 0; /* clear lock to avoid that it is unlocked below */
 		}
 		
-	    } /* if ((wbarg = AllocVecPooled(sizeof(struct WBArg) * numargs, MEMF_PUBLIC))) */
+	    } /* if ((wbarg = AllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs, AslBase))) */
 	    
 	    if (lock) UnLock(lock);
 	    

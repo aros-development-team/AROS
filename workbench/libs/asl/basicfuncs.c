@@ -265,10 +265,8 @@ struct LayoutData *AllocCommon
     struct AslBase_intern	*AslBase
 )
 {
-
-    struct Screen *screen = NULL;
-
-    struct LayoutData *ld;
+    struct Screen 	*screen = NULL;
+    struct LayoutData 	*ld;
 
 
     ld = AllocMem(sizeof (struct LayoutData), MEMF_ANY|MEMF_CLEAR);
@@ -378,12 +376,12 @@ failure:
 
 STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *AslBase)
 {
-    struct IFFHandle *iff;
-    struct Library *IFFParseBase;
+    struct IFFHandle 		*iff;
+    struct Library 		*IFFParseBase;
 
-    struct StoredProperty *sp;
+    struct StoredProperty 	*sp;
 
-    struct FontPrefs *fp = NULL;
+    struct FontPrefs 		*fp = NULL;
 
     IFFParseBase = OpenLibrary("iffparse.library", 0);
     if (IFFParseBase)
@@ -481,14 +479,14 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
 
 BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct TextFont *font = NULL;
-    struct Library *DiskfontBase;
+    struct TextFont 	*font = NULL;
+    struct Library 	*DiskfontBase;
 
-    struct TextAttr *usedattr;
+    struct TextAttr 	*usedattr;
 
-    BOOL success = FALSE;
+    BOOL 		success = FALSE;
 
-    struct TextAttr topaz8 = {"topaz.font", 8, 0, 0 };
+    struct TextAttr 	topaz8 = {"topaz.font", 8, 0, 0 };
 
     /* Default to satisfy GCC */
     usedattr = &topaz8;
@@ -577,12 +575,12 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslBase_intern *AslBase)
 {
+    struct IntReq	*intreq = ld->ld_IntReq;
+    APTR		req = ld->ld_Req;
     struct IntuiMessage *imsg;
-    struct MsgPort *port;
-
-    BOOL success = TRUE;
-
-    BOOL terminated = FALSE;
+    struct MsgPort	*port;
+    BOOL 		success = TRUE;
+    BOOL 		terminated = FALSE;
 
     EnterFunc(bug("HandleEvents(ld=%p, reqinfo=%p)\n", ld, reqinfo));
     port = ld->ld_Window->UserPort;
@@ -591,89 +589,62 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
     {
 	if ((imsg = (struct IntuiMessage *)GetMsg(port)) != NULL)
 	{
-
-	    switch (imsg->Class)
+	    if ((imsg->IDCMPWindow == ld->ld_Window) ||
+	        (imsg->IDCMPWindow == ld->ld_Window2))
 	    {
-		struct Gadget *glist;
-		struct Window *win;
+		switch (imsg->Class)
+		{
+		    case IDCMP_MOUSEMOVE:
+			break;
 
-		case IDCMP_MOUSEMOVE:
-		    break;
+		    case IDCMP_NEWSIZE:
+			ld->ld_Command = LDCMD_LAYOUT;
+			CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
+			break;
 
-		case IDCMP_NEWSIZE:
-#if 0
-		    win = ld->ld_Window;
-		    SetAPen(win->RPort, 0);
-		    RectFill(win->RPort,
-		             win->BorderLeft,
-		             win->BorderTop,
-		             win->Width - win->BorderRight,
-		             win->Height- win->BorderTop);
-#endif
-		    break;
-		    
-		case IDCMP_REFRESHWINDOW:
+		    case IDCMP_REFRESHWINDOW:
+			BeginRefresh(imsg->IDCMPWindow);
+			EndRefresh(imsg->IDCMPWindow, TRUE);
+			break;
 
-		    win = ld->ld_Window;
-		    glist =  ld->ld_GList;
+		    default:
+			/* Call the requester specific hook to handle events */
+			ld->ld_Command = LDCMD_HANDLEEVENTS;
+			ld->ld_Event = imsg;
 
-		    /* Window has changed its size, we must do
-		    some relayout and then refresh */
-
-//		    RemoveGList(win, glist, 2);
-
-		    ld->ld_Command = LDCMD_LAYOUT;
-
-//		    CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
-
-//		    AddGList(win, glist, -1,  2, NULL);
-		    D(bug("HE: Refreshing gadgets\n"));
-//		    RefreshGList(glist, win, NULL, -1);
-
-		    D(bug("HE: Gadgets refreshed\n"));
-
-		    BeginRefresh(win);
-		    EndRefresh(win, TRUE);
-
-		    /* If the window was sized smaller the window borders will
-		    for some reason contain the gadget imagery, so we must
-		    refresh them */
-
-//		    RefreshWindowFrame(win);
-		    D(bug("HE: Window frame refreshed\n"));
-		    break;
-
-		default:
-		    /* Call the requester specific hook to handle events */
-		    ld->ld_Command = LDCMD_HANDLEEVENTS;
-		    ld->ld_Event = imsg;
-
-		    success = CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase));
-		    if (success == LDRET_FINISHED)
-		    {
-			success    = TRUE;
-			terminated = TRUE;
-		    }
-		    if (!success)
-		    {
-			success = FALSE;
-			terminated = TRUE;
-		    }
-		    break;
+			success = CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase));
+			if (success == LDRET_FINISHED)
+			{
+			    success    = TRUE;
+			    terminated = TRUE;
+			}
+			if (!success)
+			{
+			    success = FALSE;
+			    terminated = TRUE;
+			}
+			break;
 
 
-	    } /* switch (imsg->Class */
+		} /* switch (imsg->Class */
+	    
+	    } /* if (imsg->IDCMPWindow is ld->ld_Window or ld->ld_Window2) */
+	    else if (intreq->ir_IntuiMsgFunc)
+	    {
+		CallHookPkt(intreq->ir_IntuiMsgFunc, req, imsg);
+	    }
 	    ReplyMsg((struct Message *)imsg);
-
 
 	} /* if ((imsg = GetMsg(port)) != NULL) */
 	else
 	{
 	    Wait(1L << port->mp_SigBit);
 	}
+	
     } /* while (!terminated) */
     
     ReturnBool ("HandleEvents", success);
+    
 } /* HandleEvents() */
 
 /*****************************************************************************************/
@@ -710,13 +681,13 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 	    #undef GetFR
 	    #define GetFR(r) ((struct FileRequester *)r)
 
-	    FreeVecPooled(GetFR(req)->fr_Drawer);
+	    FreeVecPooled(GetFR(req)->fr_Drawer, AslBase);
 	    GetFR(req)->fr_Drawer = NULL;
 
-	    FreeVecPooled(GetFR(req)->fr_File);
+	    FreeVecPooled(GetFR(req)->fr_File, AslBase);
 	    GetFR(req)->fr_File = NULL;
 
-	    FreeVecPooled(GetFR(req)->fr_Pattern);
+	    FreeVecPooled(GetFR(req)->fr_Pattern, AslBase);
 	    GetFR(req)->fr_Pattern = NULL;
 	    
 	    if (GetFR(req)->fr_ArgList)
@@ -728,10 +699,10 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 		
 		for (wbarg = GetFR(req)->fr_ArgList; GetFR(req)->fr_NumArgs --; wbarg ++)
 		{
-		    FreeVecPooled(wbarg->wa_Name);
+		    FreeVecPooled(wbarg->wa_Name, AslBase);
 		}
 		
-		FreeVecPooled(GetFR(req)->fr_ArgList);
+		FreeVecPooled(GetFR(req)->fr_ArgList, AslBase);
 		GetFR(req)->fr_ArgList = NULL;
 	    }
 
@@ -752,7 +723,7 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 WORD CountNodes(struct List *list, WORD flag)
 {
     struct Node *node;
-    WORD result = 0;
+    WORD 	result = 0;
     
     ForeachNode(list, node)
     {
@@ -800,7 +771,7 @@ void SortInNode(APTR req, struct List *list, struct Node *node,
 
 /*****************************************************************************************/
 
-APTR AllocVecPooled(APTR pool, IPTR size)
+APTR AllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase)
 {
     IPTR *mem;
     
@@ -817,7 +788,7 @@ APTR AllocVecPooled(APTR pool, IPTR size)
 
 /*****************************************************************************************/
 
-void FreeVecPooled(APTR mem)
+void FreeVecPooled(APTR mem, struct AslBase_intern *AslBase)
 {
     IPTR *imem = (IPTR *)mem;
     
@@ -873,7 +844,7 @@ char *VecPooledCloneString(const char *name1, const char *name2, APTR pool, stru
     WORD len1 = strlen(name1) + 1;
     WORD len2 = name2 ? strlen(name2) : 0;
 
-    if ((clone = AllocVecPooled(pool, len1 + len2)))
+    if ((clone = AllocVecPooled(pool, len1 + len2, AslBase)))
     {
         CopyMem(name1, clone, len1);
 	if (name2) strcat(clone, name2);
@@ -894,6 +865,8 @@ AROS_UFH2 (void, puttostr,
     (*strPtrPtr) ++;
     AROS_LIBFUNC_EXIT
 }
+
+/*****************************************************************************************/
 
 char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase)
 {
@@ -916,6 +889,35 @@ char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBas
     return clone;
 }
 
+/*****************************************************************************************/
+
+void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase)
+{
+    struct IntuiMessage *msg;
+
+    Forbid();
+
+    if(window->UserPort != NULL)
+    {
+	while((msg = (struct IntuiMessage *)GetMsg(window->UserPort)) != NULL)
+	{
+	    if(msg->IDCMPWindow == window)
+	    {
+		Remove((struct Node *)msg);
+		ReplyMsg((struct Message *)msg);
+	    }
+	}
+    }
+
+    window->UserPort = NULL;
+
+    ModifyIDCMP(window, 0);
+
+    Permit();
+
+    CloseWindow(window);
+}
+    
 /*****************************************************************************************/
 
 AROS_UFH3(ULONG, StringEditFunc,
@@ -956,7 +958,6 @@ AROS_UFH3(ULONG, StringEditFunc,
     return retcode;
 }
 
-/*****************************************************************************************/
 /*****************************************************************************************/
 /*****************************************************************************************/
 /*****************************************************************************************/

@@ -13,6 +13,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
+#include <exec/initializers.h>
 #include <dos/dos.h>
 #include <graphics/modeid.h>
 #include <graphics/displayinfo.h>
@@ -34,7 +35,7 @@
 
 /*****************************************************************************************/
 
-static WORD SMCompareNodes(struct IntModeReq *imreq, struct DisplayMode *node1,
+static WORD SMCompareNodes(struct IntSMReq *ismreq, struct DisplayMode *node1,
 			   struct DisplayMode *node2, struct AslBase_intern *AslBase)
 {
     return Stricmp(node1->dm_Node.ln_Name, node2->dm_Node.ln_Name);
@@ -45,7 +46,7 @@ static WORD SMCompareNodes(struct IntModeReq *imreq, struct DisplayMode *node1,
 LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	 *udata = (struct SMUserData *)ld->ld_UserData;	
-    struct IntModeReq 	 *imreq = (struct IntModeReq *)ld->ld_IntReq;
+    struct IntSMReq 	 *ismreq = (struct IntSMReq *)ld->ld_IntReq;
     struct DisplayMode   *dispmode;
     struct DimensionInfo diminfo;
     struct DisplayInfo   dispinfo;
@@ -77,47 +78,49 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		D(bug("SMGetModes: No NameInfo. Making by hand. Name = \"%s\"\n", name));
 	    }
 	    
-	    if (diminfo.MaxDepth < imreq->ism_MinDepth) continue;
+	    if (diminfo.MaxDepth < ismreq->ism_MinDepth) continue;
 	    
-	    if ((diminfo.MinRasterWidth  > imreq->ism_MaxWidth ) ||
-	        (diminfo.MaxRasterWidth  < imreq->ism_MinWidth ) ||
-		(diminfo.MinRasterHeight > imreq->ism_MaxHeight) ||
-		(diminfo.MaxRasterHeight < imreq->ism_MinHeight)) continue;
+	    if ((diminfo.MinRasterWidth  > ismreq->ism_MaxWidth ) ||
+	        (diminfo.MaxRasterWidth  < ismreq->ism_MinWidth ) ||
+		(diminfo.MinRasterHeight > ismreq->ism_MaxHeight) ||
+		(diminfo.MaxRasterHeight < ismreq->ism_MinHeight)) continue;
 		
-	    if ((dispinfo.PropertyFlags   & imreq->ism_PropertyMask) !=
-	        (imreq->ism_PropertyFlags & imreq->ism_PropertyMask)) continue;
+	    if ((dispinfo.PropertyFlags   & ismreq->ism_PropertyMask) !=
+	        (ismreq->ism_PropertyFlags & ismreq->ism_PropertyMask)) continue;
 	
-	    if (imreq->ism_FilterFunc)
+	    if (ismreq->ism_FilterFunc)
 	    {
-		if (CallHookPkt(imreq->ism_FilterFunc, ld->ld_Req, (APTR)displayid) == 0)
+		if (CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)displayid) == 0)
 		    continue;     
 	    }
 	    
 	    dispmode = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct DisplayMode));
 	    if (!dispmode) return ERROR_NO_FREE_STORE;
 	    
+	    diminfo.Header.DisplayID = displayid; /* AROS bug? */
+	    
 	    dispmode->dm_DimensionInfo = diminfo;
 	    dispmode->dm_PropertyFlags = dispinfo.PropertyFlags;
 	    dispmode->dm_Node.ln_Name  = PooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
 
-	    SortInNode(imreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
+	    SortInNode(ismreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
 	    
 	} /* if diminfo and dispinfo could be retrieved */
 	
     } /* while(INVALID_ID != (displayid = NextDisplayInfo(displayid))) */
     
-    if (imreq->ism_CustomSMList)
+    if (ismreq->ism_CustomSMList)
     {
         struct DisplayMode *succ;
 	
-	ForeachNodeSafe(imreq->ism_CustomSMList, dispmode, succ)
+	ForeachNodeSafe(ismreq->ism_CustomSMList, dispmode, succ)
 	{
 	    /* custom modes must have displayID from range 0xFFFF0000 .. 0xFFFFFFFF */
 	    
-	    if (succ->dm_DimensionInfo.Header.DisplayID < 0xFFFF0000) continue;
+	    if (dispmode->dm_DimensionInfo.Header.DisplayID < 0xFFFF0000) continue;
 	    
 	    Remove(&dispmode->dm_Node);
-	    SortInNode(imreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
+	    SortInNode(ismreq, &udata->ListviewList, &dispmode->dm_Node, (APTR)SMCompareNodes, AslBase);
 	}	
     }
     
@@ -173,11 +176,11 @@ UWORD SMGetOverscan(struct LayoutData *ld, struct DisplayMode *dispmode,
 		    struct Rectangle **rect, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
-    struct IntModeReq 	*imreq = (struct IntModeReq *)ld->ld_IntReq;
-    UWORD		overscantype = imreq->ism_OverscanType;
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
+    UWORD		overscantype = ismreq->ism_OverscanType;
     IPTR		val;
     
-    if (imreq->ism_Flags & ISMF_DOOVERSCAN)
+    if (ismreq->ism_Flags & ISMF_DOOVERSCAN)
     {
         GetAttr(ASLCY_Active, udata->OverscanGadget, &val);
 	overscantype = val + 1;	
@@ -214,7 +217,7 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
 		 LONG *width, LONG *height, LONG *depth, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
-    struct IntModeReq 	*imreq = (struct IntModeReq *)ld->ld_IntReq;
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
     struct Rectangle    *rect;
     struct TagItem	set_tags[] =
     {
@@ -226,17 +229,17 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
     
     if (width)
     {
-        if (*width < imreq->ism_MinWidth)
-	    *width = imreq->ism_MinWidth;
-	else if (*width > imreq->ism_MaxWidth)
-	    *width = imreq->ism_MaxWidth;
+        if (*width < ismreq->ism_MinWidth)
+	    *width = ismreq->ism_MinWidth;
+	else if (*width > ismreq->ism_MaxWidth)
+	    *width = ismreq->ism_MaxWidth;
 	
 	if (*width < dispmode->dm_DimensionInfo.MinRasterWidth)
 	    *width = dispmode->dm_DimensionInfo.MinRasterWidth;
 	else if (*width > dispmode->dm_DimensionInfo.MaxRasterWidth)
 	    *width = dispmode->dm_DimensionInfo.MaxRasterWidth;
 	    
-	if (imreq->ism_Flags & ISMF_DOWIDTH)
+	if (ismreq->ism_Flags & ISMF_DOWIDTH)
 	{  
 	    set_tags[0].ti_Data = *width;
 	    
@@ -252,17 +255,17 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
 
     if (height)
     {
-        if (*height < imreq->ism_MinHeight)
-	    *height = imreq->ism_MinHeight;
-	else if (*height > imreq->ism_MaxHeight)
-	    *height = imreq->ism_MaxHeight;
+        if (*height < ismreq->ism_MinHeight)
+	    *height = ismreq->ism_MinHeight;
+	else if (*height > ismreq->ism_MaxHeight)
+	    *height = ismreq->ism_MaxHeight;
 
 	if (*height < dispmode->dm_DimensionInfo.MinRasterHeight)
 	    *height = dispmode->dm_DimensionInfo.MinRasterHeight;
 	else if (*height > dispmode->dm_DimensionInfo.MaxRasterHeight)
 	    *height = dispmode->dm_DimensionInfo.MaxRasterHeight;
 	
-	if (imreq->ism_Flags & ISMF_DOHEIGHT)
+	if (ismreq->ism_Flags & ISMF_DOHEIGHT)
 	{  
 	    set_tags[0].ti_Data = *height;
 	    
@@ -283,6 +286,7 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
 void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
     struct DisplayMode	*dispmode;
     struct Rectangle    *rect;
     struct TagItem 	set_tags[] =
@@ -291,7 +295,7 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 	{ASLLV_MakeVisible	, 0		},
 	{TAG_DONE				}
     };
-    LONG		width, height;
+    LONG		width, height, depth;
     
     dispmode = (struct DisplayMode *)FindListNode(&udata->ListviewList, which);
     
@@ -305,14 +309,84 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
     } else {
         SetAttrsA(udata->Listview, set_tags);
     }
+     
+    if (ismreq->ism_Flags & ISMF_DODEPTH)
+    {   
+        STRPTR	*array = udata->Colorarray;
+	STRPTR 	text = udata->Colortext;
+	WORD	i, min, max;
+	
+	set_tags[0].ti_Tag = ASLCY_Labels;
+	set_tags[0].ti_Data = 0;
+	set_tags[1].ti_Tag = TAG_DONE;
+
+	if (ld->ld_Window)
+	{
+            SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
+	} else {
+            SetAttrsA(udata->DepthGadget, set_tags);
+	}
+	
+	if (dispmode->dm_DimensionInfo.MaxDepth > 8)
+	{
+	    sprintf(text, "%ld", 1L << dispmode->dm_DimensionInfo.MaxDepth);
+	    *array++ = text;
+	}
+	else if (dispmode->dm_PropertyFlags & DIPF_IS_EXTRAHALFBRITE)
+	{
+	    *array++ = "64";
+	}
+	else if (dispmode->dm_PropertyFlags & DIPF_IS_HAM)
+	{
+	    if (dispmode->dm_DimensionInfo.MaxDepth >= 6)
+	    {
+	        *array++ = "4096";
+            }
+	    if (dispmode->dm_DimensionInfo.MaxDepth >= 8)
+	    {
+	        *array++ = "16777216";
+	    }
+	}
+	else
+	{
+	    max = ismreq->ism_MaxDepth;
+	    if (dispmode->dm_DimensionInfo.MaxDepth < max)
+	        max = dispmode->dm_DimensionInfo.MaxDepth;
+		
+	    min = ismreq->ism_MinDepth;
+	    if (min > max) max = min;
+	    
+	    for(i = min; i <= max; i++)
+	    {
+	        sprintf(text, "%ld", 1L << i);
+		*array++ = text;
+		
+		text += strlen(text) + 1;
+	    }
+	    
+	}
+	
+	*array++ = NULL;
+	
+	set_tags[0].ti_Data = (IPTR)udata->Colorarray;
+	if (ld->ld_Window)
+	{
+            SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
+	} else {
+            SetAttrsA(udata->DepthGadget, set_tags);
+	}
+
+	
+    } /* if (ismreq->ism_Flags & ISMF_DODEPTH) */
     
     SMGetOverscan(ld, dispmode, &rect,  AslBase);
-    
+
     width  = rect->MaxX - rect->MinX + 1;
     height = rect->MaxY - rect->MinY + 1;
     
     SMFixValues(ld, dispmode, &width, &height, 0, AslBase);
     
+    SMRefreshPropertyWindow(ld, dispmode, AslBase);
 }
 
 /*****************************************************************************************/
@@ -320,13 +394,28 @@ void SMActivateMode(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 void SMRestore(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
-    struct IntModeReq 	*imreq = (struct IntModeReq *)ld->ld_IntReq;
-    struct DisplayMode	*dispmode;    
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
+    struct DisplayMode	*dispmode;
+    struct Rectangle	*rect;
     LONG		i = 0, active = 0;
+    LONG		width = ismreq->ism_DisplayWidth;
+    LONG		height = ismreq->ism_DisplayHeight;
+    
+    /* the order of the function calls is important! */
+    
+    if (ismreq->ism_Flags & ISMF_DOOVERSCAN)
+    {
+        SMSetOverscan(ld, ismreq->ism_OverscanType, AslBase);
+    }
+    
+    if (ismreq->ism_Flags & ISMF_DOAUTOSCROLL)
+    {
+        SMSetAutoScroll(ld, ismreq->ism_AutoScroll, AslBase);
+    }
     
     ForeachNode(&udata->ListviewList, dispmode)
     {
-        if (dispmode->dm_DimensionInfo.Header.DisplayID == imreq->ism_DisplayID)
+        if (dispmode->dm_DimensionInfo.Header.DisplayID == ismreq->ism_DisplayID)
 	{
 	    active = i;
 	    break;
@@ -335,6 +424,12 @@ void SMRestore(struct LayoutData *ld, struct AslBase_intern *AslBase)
     }
     
     SMActivateMode(ld, active, AslBase);
+
+    dispmode = SMGetActiveMode(ld, AslBase);    
+    ASSERT_VALID_PTR(dispmode);
+        
+    SMFixValues(ld, dispmode, &width, &height, 0, AslBase);
+  
 }
 
 /*****************************************************************************************/
@@ -387,3 +482,245 @@ BOOL SMGetAutoScroll(struct LayoutData *ld, struct AslBase_intern *AslBase)
 }
 
 /*****************************************************************************************/
+
+void SMSetOverscan(struct LayoutData *ld, UWORD oscan, struct AslBase_intern *AslBase)
+{
+    struct SMUserData   *udata = (struct SMUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLCY_Active	, oscan - 1	},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->OverscanGadget);
+    
+    if (ld->ld_Window)
+    {
+        SetGadgetAttrsA((struct Gadget *)udata->OverscanGadget, ld->ld_Window, NULL, set_tags);
+    } else {
+        SetAttrsA(udata->OverscanGadget, set_tags);
+    }
+    
+}
+
+/*****************************************************************************************/
+
+void SMSetAutoScroll(struct LayoutData *ld, BOOL onoff, struct AslBase_intern *AslBase)
+{
+    struct SMUserData   *udata = (struct SMUserData *)ld->ld_UserData;  
+    struct TagItem	set_tags[] =
+    {
+        {ASLCY_Active	, onoff		},
+	{TAG_DONE		   	}
+    };
+    
+    ASSERT(udata->AutoScrollGadget);
+    
+    if (ld->ld_Window)
+    {
+        SetGadgetAttrsA((struct Gadget *)udata->AutoScrollGadget, ld->ld_Window, NULL, set_tags);
+    } else {
+        SetAttrsA(udata->AutoScrollGadget, set_tags);
+    }
+    
+}
+
+/*****************************************************************************************/
+
+void SMOpenPropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
+    struct DisplayMode	*dispmode;
+    WORD		i, x, y, w, h;
+      
+    if (ld->ld_Window2) return;
+    
+    x = ld->ld_Window->LeftEdge + ismreq->ism_InfoLeftEdge;
+    y = ld->ld_Window->TopEdge  + ismreq->ism_InfoTopEdge;
+    
+    i = (&SREQ_LAST_PROPERTY_ITEM(ismreq) - &SREQ_FIRST_PROPERTY_ITEM(ismreq)) /
+        sizeof(STRPTR) + 1;
+	
+    w = BiggestTextLength(&SREQ_FIRST_PROPERTY_ITEM(ismreq),
+			  i,
+			  &(ld->ld_DummyRP),
+			  AslBase);
+    
+    w += OUTERSPACINGX * 2 + BORDERLVSPACINGX * 2 + BORDERLVITEMSPACINGX * 2;
+    
+    h = SREQ_MAX_PROPERTIES * (ld->ld_Font->tf_YSize + BORDERLVITEMSPACINGY * 2);
+    
+    h += OUTERSPACINGY * 2 + BORDERLVSPACINGY * 2;
+    
+    {
+	struct TagItem	lv_tags[] =
+	{
+	    {GA_Left		, ld->ld_WBorLeft + OUTERSPACINGX	},
+	    {GA_Top		, ld->ld_WBorTop + OUTERSPACINGY	},
+	    {GA_Width		, w - OUTERSPACINGX * 2			},
+	    {GA_Height		, h - OUTERSPACINGY * 2			},
+	    {GA_UserData	, (IPTR)ld				},
+	    {ASLLV_ReadOnly	, TRUE					},
+	    {TAG_DONE							}
+	};
+	
+	udata->PropertyGadget = NewObjectA(AslBase->asllistviewclass, NULL, lv_tags);
+	if (!udata->PropertyGadget) return;
+	
+    }
+    
+    {
+    	struct TagItem	win_tags[] =
+	{
+	    {WA_CustomScreen	, (IPTR)ld->ld_Screen			},
+	    {WA_Left		, x					},
+	    {WA_Top		, y					},
+	    {WA_InnerWidth	, w					},
+	    {WA_InnerHeight	, h					},
+	    {WA_AutoAdjust	, TRUE					},
+	    {WA_Title		, (IPTR)ismreq->ism_PropertyList_Title	},
+	    {WA_CloseGadget	, TRUE					},
+	    {WA_DepthGadget	, TRUE					},
+	    {WA_DragBar		, TRUE					},
+	    {WA_SimpleRefresh	, TRUE					},
+	    {WA_NoCareRefresh	, TRUE					},
+	    {WA_IDCMP		, 0					},
+	    {WA_Gadgets		, (IPTR)udata->PropertyGadget		},
+	    {TAG_DONE							}
+	};
+	
+	
+	ld->ld_Window2 = OpenWindowTagList(0, win_tags);
+	if (!ld->ld_Window2)
+	{
+	     DisposeObject(udata->PropertyGadget);
+	     udata->PropertyGadget = 0;
+	     return;
+	}
+	
+	ld->ld_Window2->UserPort = ld->ld_Window->UserPort;	
+	ModifyIDCMP(ld->ld_Window2, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY);
+    }
+    
+    dispmode = SMGetActiveMode(ld, AslBase);
+    ASSERT_VALID_PTR(dispmode);
+    
+    SMRefreshPropertyWindow(ld, dispmode, AslBase);
+}
+
+/*****************************************************************************************/
+
+void SMClosePropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
+
+    if (!ld->ld_Window2) return;
+    
+    RemoveGadget(ld->ld_Window2, (struct Gadget *)udata->PropertyGadget);
+    DisposeObject(udata->PropertyGadget);
+    udata->PropertyGadget = 0;
+
+    ismreq->ism_InfoLeftEdge = ld->ld_Window2->LeftEdge - ld->ld_Window->LeftEdge;
+    ismreq->ism_InfoTopEdge  = ld->ld_Window2->TopEdge  - ld->ld_Window->TopEdge;
+    
+    CloseWindowSafely(ld->ld_Window2, AslBase);
+    
+    ld->ld_Window2 = 0;
+}
+
+/*****************************************************************************************/
+
+ULONG SMHandlePropertyEvents(struct LayoutData *ld, struct IntuiMessage *imsg, struct AslBase_intern *AslBase)
+{
+    struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
+ 
+    switch(imsg->Class)
+    {
+        case IDCMP_VANILLAKEY:
+	    if (imsg->Code != 27) break;
+	    /* fall through */
+	    
+	case IDCMP_CLOSEWINDOW:
+	    SMClosePropertyWindow(ld, AslBase);
+	    break;
+	    
+    } /* switch(imsg->Class) */
+    
+    return GHRET_OK;   
+}
+
+/*****************************************************************************************/
+
+void SMRefreshPropertyWindow(struct LayoutData *ld, struct DisplayMode *dispmode, struct AslBase_intern *AslBase)
+{
+    struct SMUserData 	*udata = (struct SMUserData *)ld->ld_UserData;    
+    struct IntSMReq 	*ismreq = (struct IntSMReq *)ld->ld_IntReq;
+    struct TagItem	set_tags[] =
+    {
+        {ASLLV_Labels,	0	},
+	{TAG_DONE		}
+    };
+    struct Node 	*node = udata->PropertyNodes;
+
+    #define OF(x) (OFFSET(IntSMReq, ism_PropertyList_ ## x))
+    
+    static struct propertyinfo
+    {
+        ULONG mask;
+	ULONG flags;
+	ULONG offset;
+    } *pi, pitable [] = 
+    {
+        {DIPF_IS_WB		, 0			, OF(NotWB)		},
+	{DIPF_IS_GENLOCK	, 0			, OF(NotGenlock)	},
+	{DIPF_IS_DRAGGABLE	, 0			, OF(NotDraggable)	},
+	{DIPF_IS_HAM		, DIPF_IS_HAM		, OF(HAM)		},
+	{DIPF_IS_EXTRAHALFBRITE , DIPF_IS_EXTRAHALFBRITE, OF(EHB)		},
+	{DIPF_IS_LACE		, DIPF_IS_LACE		, OF(Interlace)		},
+	{DIPF_IS_ECS		, DIPF_IS_ECS		, OF(ECS)		},
+	{DIPF_IS_WB		, DIPF_IS_WB		, OF(WB)		},
+	{DIPF_IS_GENLOCK	, DIPF_IS_GENLOCK	, OF(Genlock)		},
+	{DIPF_IS_DRAGGABLE	, DIPF_IS_DRAGGABLE	, OF(Draggable)		},
+	{DIPF_IS_PF2PRI		, DIPF_IS_PF2PRI	, OF(DPFPri2)		},
+	{0			, 0			, 0			}	
+    };
+    
+    if (!ld->ld_Window2) return;
+    
+    SetGadgetAttrsA((struct Gadget *)udata->PropertyGadget, ld->ld_Window2, NULL, set_tags);
+    
+    NEWLIST(&udata->PropertyList);
+    
+    for(pi = pitable; pi->mask != 0; pi++)
+    {
+        if ((dispmode->dm_PropertyFlags & pi->mask) == pi->flags)
+	{
+	    node->ln_Name = *(STRPTR *)(((UBYTE *)ismreq) + pi->offset);
+	    AddTail(&udata->PropertyList, node);
+	    node++;
+	}
+    }
+    set_tags[0].ti_Data = (IPTR)&udata->PropertyList;
+    
+    SetGadgetAttrsA((struct Gadget *)udata->PropertyGadget, ld->ld_Window2, NULL, set_tags);
+    
+}
+
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+
+
+
+
+
+
+
+
+
+
+

@@ -30,6 +30,9 @@
 #define SREQ_FIRST_OBJECT(x) ((x)->Listview)
 #define SREQ_LAST_OBJECT(x) ((x)->AutoScrollGadget)
 
+#define SREQ_MAX_PROPERTIES	9
+
+
 struct SMUserData
 {
     Object			*Listview;	
@@ -49,10 +52,13 @@ struct SMUserData
     struct ScrollerGadget 	ScrollGad;
     struct List			ListviewList;
     struct Hook			ListviewHook;
+    struct List			PropertyList;
+    struct Node			PropertyNodes[SREQ_MAX_PROPERTIES];
+    Object			*PropertyGadget;
     UWORD 			ButWidth;
     UWORD 			ButHeight;    
-    STRPTR			colorarray[33];
-    UBYTE			colortext[150];
+    STRPTR			Colorarray[33];
+    UBYTE			Colortext[150];
     UBYTE 			Flags;
 	
 };

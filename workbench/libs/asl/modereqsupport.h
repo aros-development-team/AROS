@@ -32,6 +32,16 @@ LONG SMGetStringValue(struct LayoutData *ld, Object *obj, struct AslBase_intern 
 LONG SMGetWidth(struct LayoutData *ld, struct AslBase_intern *AslBase);
 LONG SMGetHeight(struct LayoutData *ld, struct AslBase_intern *AslBase);
 BOOL SMGetAutoScroll(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void SMSetOverscan(struct LayoutData *ld, UWORD oscan, struct AslBase_intern *AslBase);
+void SMSetAutoScroll(struct LayoutData *ld, BOOL onoff, struct AslBase_intern *AslBase);
+void SMOpenPropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void SMClosePropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase);
+ULONG SMHandlePropertyEvents(struct LayoutData *ld, struct IntuiMessage *imsg, struct AslBase_intern *AslBase);
+void SMRefreshPropertyWindow(struct LayoutData *ld, struct DisplayMode *dispmode, struct AslBase_intern *AslBase);
+
+
+
+
 
 
 

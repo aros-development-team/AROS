@@ -66,6 +66,7 @@ struct AslListViewData
     BYTE		doubleclicked;
     BYTE		domultiselect;
     BYTE		multiselecting;
+    BYTE		readonly;
 };
 
 /***********************************************************************************/
@@ -155,8 +156,8 @@ AROS_UFH3(IPTR, ASLLVRenderHook,
 
 static struct Node *findnode(Class *cl, Object *o, WORD which)
 {
-    struct AslListViewData *data;
-    struct Node *node = NULL;
+    struct AslListViewData 	*data;
+    struct Node 		*node = NULL;
 
     data = INST_DATA(cl, o);
     
@@ -203,8 +204,8 @@ static void makenodetable(Class *cl, Object *o)
 
 static void renderitem(Class *cl, Object *o, struct Node *node, WORD liney, struct RastPort *rp)
 {
-    struct AslListViewData *data;
-    struct ASLLVDrawMsg msg;
+    struct AslListViewData 	*data;
+    struct ASLLVDrawMsg 	msg;
     
     data = INST_DATA(cl, o);
     
@@ -256,7 +257,7 @@ static void rendersingleitem(Class *cl, Object *o, struct GadgetInfo *gi, WORD w
 	(which < data->total))
     {
 	struct RastPort *rp;
-    	struct Node *node;
+    	struct Node 	*node;
 
 	node = findnode(cl, o, which);
 
@@ -285,8 +286,8 @@ static void rendersingleitem(Class *cl, Object *o, struct GadgetInfo *gi, WORD w
 
 static WORD mouseitem(Class *cl, Object *o, WORD mousex, WORD mousey)
 {
-    struct AslListViewData *data;
-    WORD result = -5;
+    struct AslListViewData 	*data;
+    WORD 			result = -5;
     
     data = INST_DATA(cl, o);
 
@@ -378,7 +379,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslListViewData 	*data = INST_DATA(cl, o);
     struct TagItem 		*tag, *tstate = msg->ops_AttrList;
-    IPTR 			retval;
+    IPTR 			retval, tidata;
     BOOL 			redraw = FALSE, notify_all = FALSE, notify_top = FALSE;
     WORD 			newtop;
     
@@ -386,10 +387,12 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
+        tidata = tag->ti_Data;
+	
         switch(tag->ti_Tag)
 	{
             case ASLLV_Top:
-		newtop = tag->ti_Data;
+		newtop = tidata;
 		if (newtop + data->visible > data->total)
 		{
 	            newtop = data->total - data->visible;
@@ -406,7 +409,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		break;
 
 	    case ASLLV_MakeVisible:
-		newtop = (WORD)tag->ti_Data;
+		newtop = (WORD)tidata;
 		
 		if (newtop < 0)
 		{
@@ -445,7 +448,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		    WORD	n = 0;
 		    WORD 	old_active = data->active;
 		    
-		    data->active = (WORD)tag->ti_Data;
+		    data->active = (WORD)tidata;
 		    
 		    if (data->domultiselect)
 		    {
@@ -479,7 +482,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 	        break;
 		
 	    case ASLLV_Labels:
-	    	data->labels = tag->ti_Data ? (struct List *)tag->ti_Data : &data->emptylist;
+	    	data->labels = tidata ? (struct List *)tidata : &data->emptylist;
 		data->total = CountNodes(data->labels, 0);
 		data->active = -1;
 		
@@ -499,7 +502,11 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		break;
 
 	    case ASLLV_DoMultiSelect:
-	    	data->domultiselect = tag->ti_Data ? TRUE : FALSE;
+	    	data->domultiselect = tidata ? TRUE : FALSE;
+		break;
+
+	    case ASLLV_ReadOnly:
+	    	data->readonly = tidata ? TRUE : FALSE;
 		break;
 		
 	} /* switch(tag->ti_Tag) */
@@ -539,8 +546,8 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 
 static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 {
-    struct AslListViewData *data;
-    struct TagItem fitags[] =
+    struct AslListViewData 	*data;
+    struct TagItem 		fitags[] =
     {
 	{IA_FrameType, FRAME_BUTTON},
 	{IA_EdgesOnly, TRUE	   },
@@ -591,8 +598,8 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 
 static IPTR asllistview_get(Class * cl, Object * o, struct opGet *msg)
 {
-    struct AslListViewData *data;
-    IPTR retval = 1;
+    struct AslListViewData 	*data;
+    IPTR 			retval = 1;
     
     data = INST_DATA(cl, o);
     
@@ -627,8 +634,8 @@ static IPTR asllistview_get(Class * cl, Object * o, struct opGet *msg)
 
 static IPTR asllistview_dispose(Class * cl, Object * o, Msg msg)
 {
-    struct AslListViewData *data;
-    IPTR retval;
+    struct AslListViewData 	*data;
+    IPTR 			retval;
     
     data = INST_DATA(cl, o);
     if (data->frame) DisposeObject(data->frame);
@@ -642,12 +649,13 @@ static IPTR asllistview_dispose(Class * cl, Object * o, Msg msg)
 
 static IPTR asllistview_goactive(Class *cl, Object *o, struct gpInput *msg)
 {
-    struct AslListViewData *data;
-    WORD i;
+    struct AslListViewData 	*data;
+    WORD 			i;
+    IPTR 			retval = GMR_NOREUSE;
     
-    IPTR retval = GMR_NOREUSE;
+    data = INST_DATA(cl, o);    
+    if ((data->total < 1) || (data->readonly)) return retval;
     
-    data = INST_DATA(cl, o);
     i = mouseitem(cl, o, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);
         
     if (i >= 0)
@@ -670,7 +678,7 @@ static IPTR asllistview_goactive(Class *cl, Object *o, struct gpInput *msg)
 		if (data->domultiselect)
 		{
 		    struct Node *node;
-		    WORD n = 0;
+		    WORD	n = 0;
 		    
 		    ForeachNode(data->labels, node)
 		    {
@@ -823,8 +831,8 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
 {
-    struct AslListViewData *data;
-    IPTR retval = 0;
+    struct AslListViewData 	*data;
+    IPTR 			retval = 0;
     
     data = INST_DATA(cl, o);
     
@@ -865,8 +873,8 @@ static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
 
 static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 {
-    struct AslListViewData *data;
-    IPTR retval = 0;
+    struct AslListViewData 	*data;
+    IPTR 			retval = 0;
     
     data = INST_DATA(cl, o);
     
@@ -874,9 +882,10 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
     {
         struct TagItem im_tags[] =
 	{
-	    {IA_Width	, data->width	},
-	    {IA_Height	, data->height	},
-	    {TAG_DONE			}
+	    {IA_Width		, data->width		},
+	    {IA_Height		, data->height		},
+	    {IA_Recessed	, data->readonly	},
+	    {TAG_DONE					}
 	};	
 
 	SetAttrsA(data->frame, im_tags);

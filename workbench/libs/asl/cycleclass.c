@@ -64,7 +64,6 @@ struct CycleItem
 struct AslCycleData
 {
     Object			*frame;
-    struct MinList		itemlist;
     struct CycleItem		*itemmemory;
     struct RastPort		*rp;
     struct RastPort		clonerp;
@@ -104,6 +103,10 @@ struct AslCycleData
     BYTE			turbocountdown;
 };
 
+
+/***********************************************************************************/
+
+static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg);
 
 /***********************************************************************************/
 
@@ -254,7 +257,7 @@ static void DrawMenu(Class *cl, Object *o, struct DrawInfo *dri)
 static void UnselectActiveItem(Class *cl, Object *o, struct DrawInfo *dri)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
-    WORD old;
+    WORD 		old;
 
     old = data->selected;
     data->selected = -1;
@@ -266,15 +269,13 @@ static void UnselectActiveItem(Class *cl, Object *o, struct DrawInfo *dri)
 static IPTR aslcycle_new(Class * cl, Object * o, struct opSet *msg)
 {
     struct AslCycleData *data;
-    struct CycleItem *item;
-    struct TagItem fitags[] =
+    struct TagItem 	fitags[] =
     {
 	{IA_FrameType, FRAME_BUTTON},
 	{IA_EdgesOnly, FALSE	   },
 	{TAG_DONE    , 0UL	   }
     };
-    WORD i;
-    IPTR rc = NULL;
+    IPTR 		rc = NULL;
     
     if ((o = (Object *)DoSuperMethodA(cl, o, (Msg)msg)))
     {
@@ -284,28 +285,11 @@ static IPTR aslcycle_new(Class * cl, Object * o, struct opSet *msg)
 	   RELWIDTH/RELHEIGHT or not */	   
 	G(o)->Flags |= GFLG_RELSPECIAL;
 
-	data->labels = (char **)GetTagData(ASLCY_Labels, 0, msg->ops_AttrList);
-	data->active = GetTagData(ASLCY_Active, 0, msg->ops_AttrList);
-	data->popupwindow = 0;
-	NEWLIST((struct List *)&data->itemlist);
-
-	/* count items */
-	for(i = 0; data->labels[i]; i++);
-	data->numitems = i;
-
-	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
-        data->itemmemory = AllocVec(i * sizeof(struct CycleItem), MEMF_PUBLIC | MEMF_CLEAR);
-	
-	if (data->frame && data->itemmemory)
+	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);	
+	if (data->frame)
 	{
-	    item = data->itemmemory;
-
-	    for(i = 0;i < data->numitems;i++,item++)
-	    {
-		item->string = data->labels[i];
-		item->charlen = strlen(item->string);
-	    }
-
+	    aslcycle_set(cl, o, msg);
+	    
 	    rc = (ULONG)o;
 	} else {
 
@@ -328,6 +312,94 @@ static IPTR aslcycle_dispose(Class * cl, Object * o, Msg msg)
     
     return DoSuperMethodA(cl, o, msg);
 }
+
+/***********************************************************************************/
+
+static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg)
+{
+    struct AslCycleData *data = INST_DATA(cl, o);
+    struct TagItem 	*tag, *tstate = msg->ops_AttrList;
+    IPTR		retval, tidata;
+    
+    retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
+    
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    {
+        tidata = tag->ti_Data;
+	
+        switch(tag->ti_Tag)
+	{
+            case ASLCY_Active:
+	        data->active = tidata;
+	        retval += 1;
+		break;
+	
+	    case ASLCY_Labels:
+	        data->labels = (char **)tidata;
+
+	        if (data->itemmemory)
+		{
+		    FreeVec(data->itemmemory);
+		    data->itemmemory = 0;
+		}
+		
+		data->active   = 0;
+		data->numitems = 0;
+		
+		if (data->labels)
+		{
+		    WORD i;
+		    
+		    for(i = 0; data->labels[i]; i++)
+		    {
+		    }
+		    
+		    if (i) data->itemmemory = AllocVec(i * sizeof(struct CycleItem), MEMF_PUBLIC | MEMF_CLEAR);
+		    
+		    if (!data->itemmemory)
+		    {
+		        data->labels = 0;
+		    } else {
+		        struct CycleItem *item = data->itemmemory;
+			
+			data->numitems = i;
+			
+			for(i = 0; i < data->numitems;i++,item++)
+			{
+			    item->string  = data->labels[i];
+			    item->charlen =  strlen(item->string);
+			}
+			
+			if (msg->ops_GInfo)
+			{
+			    struct gpLayout gpl;
+			    
+			    gpl.MethodID    = GM_LAYOUT;
+			    gpl.gpl_GInfo   = msg->ops_GInfo;
+			    gpl.gpl_Initial = 0;
+			    
+			    DoMethodA(o, (Msg)&gpl);
+			}			
+			
+		    } /* if (data->itemmemory) */
+		    			    
+		} /* if (data->labels) */
+		
+		retval += 1;
+		break;
+
+	} /* switch(tag->ti_Tag) */
+	 
+    } /* while((tag = NextTagItem(&tstate))) */ 
+    
+    if (retval)
+    {
+        RenderObject_Update(cl, o, msg->ops_GInfo);
+    }
+    
+    return retval;    
+}
+
 
 /***********************************************************************************/
 
@@ -356,9 +428,9 @@ static IPTR aslcycle_get(Class * cl, Object * o, struct opGet *msg)
 static IPTR aslcycle_layout(Class * cl, Object * o, struct gpLayout *msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
-    struct CycleItem *item;
-    WORD len, i;
-    WORD x, y, w, h;
+    struct CycleItem 	*item;
+    WORD 		len, i;
+    WORD 		x, y, w, h;
 
     getgadgetcoords(G(o), msg->gpl_GInfo, &x, &y, &w, &h);
     
@@ -430,13 +502,13 @@ static IPTR aslcycle_layout(Class * cl, Object * o, struct gpLayout *msg)
 
 static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 {
-    struct AslCycleData  *data = INST_DATA(cl, o);
-    struct RastPort	 *rp   = msg->gpr_RPort;
-    struct DrawInfo 	 *dri  = msg->gpr_GInfo->gi_DrInfo;
-    struct CycleItem 	 *item;
-    WORD gadx, gady, gadw, gadh, x, y, y2, a1, a2;
+    struct AslCycleData *data = INST_DATA(cl, o);
+    struct RastPort	*rp   = msg->gpr_RPort;
+    struct DrawInfo 	*dri  = msg->gpr_GInfo->gi_DrInfo;
+    struct CycleItem 	*item;
+    WORD 		gadx, gady, gadw, gadh, x, y, y2, a1, a2;
     
-    BOOL selected;
+    BOOL 		selected;
     
     if (rp)
     {
@@ -462,22 +534,24 @@ static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 		       msg->gpr_GInfo->gi_DrInfo);
 		       
 	
-	selected = (G(o)->Flags & GFLG_SELECTED) ? TRUE: FALSE;
-	SetABPenDrMd(rp, dri->dri_Pens[selected ? FILLTEXTPEN : TEXTPEN], 0, JAM1);
+	if (data->labels)
+	{
+	    selected = (G(o)->Flags & GFLG_SELECTED) ? TRUE: FALSE;
+	    SetABPenDrMd(rp, dri->dri_Pens[selected ? FILLTEXTPEN : TEXTPEN], 0, JAM1);
 
-	item = &data->itemmemory[data->active];
+	    item = &data->itemmemory[data->active];
 
-	a1 = gadx + BORDERCYCLESPACINGX;
-	a2 = gadx + gadw - CYCLEIMAGEWIDTH - BORDERCYCLESPACINGX;
-	x  = (a1 + a2 - item->pixellen) / 2;
+	    a1 = gadx + BORDERCYCLESPACINGX;
+	    a2 = gadx + gadw - CYCLEIMAGEWIDTH - BORDERCYCLESPACINGX;
+	    x  = (a1 + a2 - item->pixellen) / 2;
 
-	y  = gady + (gadh - data->font->tf_YSize) / 2 + data->font->tf_Baseline;
+	    y  = gady + (gadh - data->font->tf_YSize) / 2 + data->font->tf_Baseline;
 
-	Move(rp, x, y);
-	Text(rp, item->string, item->charlen);
+	    Move(rp, x, y);
+	    Text(rp, item->string, item->charlen);
+	}
 
 	x = gadx + gadw - CYCLEIMAGEWIDTH;
-
 	y = gady + 2;
 	y2 = gady + gadh - 1 - 2;
 
@@ -502,10 +576,12 @@ static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 
 static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
 {
-    struct AslCycleData  *data = INST_DATA(cl, o);
-    WORD x, y, x2, y2, gadx, gady, gadw, gadh;
+    struct AslCycleData *data = INST_DATA(cl, o);
+    WORD 		x, y, x2, y2, gadx, gady, gadw, gadh;
     
-    IPTR rc = GMR_MEACTIVE;
+    IPTR 		rc = GMR_MEACTIVE;
+    
+    if (!data->labels) return GMR_NOREUSE;
     
     data->popup = FALSE;
     data->sentgadgetup = FALSE;
@@ -517,52 +593,52 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
 
     if (data->maypopup && (data->numitems > 2) && (x < gadx + gadw - CYCLEIMAGEWIDTH))
     {
-	    x = msg->gpi_GInfo->gi_Window->LeftEdge + gadx;
-	    y = msg->gpi_GInfo->gi_Window->TopEdge + gady + gadh;
+	x = msg->gpi_GInfo->gi_Window->LeftEdge + gadx;
+	y = msg->gpi_GInfo->gi_Window->TopEdge + gady + gadh;
 
-	    if (x < 0) x = 0;
-	    if ((x + data->menuwidth) > msg->gpi_GInfo->gi_Screen->Width)
-	    {
-		x = msg->gpi_GInfo->gi_Screen->Width - data->menuwidth;
-	    }
+	if (x < 0) x = 0;
+	if ((x + data->menuwidth) > msg->gpi_GInfo->gi_Screen->Width)
+	{
+	    x = msg->gpi_GInfo->gi_Screen->Width - data->menuwidth;
+	}
 
-	    if (y < 0) y = 0;
-	    if ((y + data->menuheight) > msg->gpi_GInfo->gi_Screen->Height)
-	    {
-		y = msg->gpi_GInfo->gi_Screen->Height - data->menuheight;
-	    }
+	if (y < 0) y = 0;
+	if ((y + data->menuheight) > msg->gpi_GInfo->gi_Screen->Height)
+	{
+	    y = msg->gpi_GInfo->gi_Screen->Height - data->menuheight;
+	}
 
-	    x2 = x + data->menuwidth - 1;
-	    y2 = y + data->menuheight - 1;
+	x2 = x + data->menuwidth - 1;
+	y2 = y + data->menuheight - 1;
 
-	    if ((data->popupwindow = OpenWindowTags(0,WA_CustomScreen, msg->gpi_GInfo->gi_Screen, 
-						      WA_Left, x,
-						      WA_Top, y,
-						      WA_Width, data->menuwidth,
-						      WA_Height, data->menuheight,
-						      WA_Flags, WFLG_BORDERLESS,
-						      WA_BackFill, LAYERS_NOBACKFILL,
-						      TAG_DONE)))
-	    {
-		data->menuleft = 0;
-		data->menutop = 0;
-		data->rp = data->popupwindow->RPort;
+	if ((data->popupwindow = OpenWindowTags(0,WA_CustomScreen, msg->gpi_GInfo->gi_Screen, 
+						  WA_Left, x,
+						  WA_Top, y,
+						  WA_Width, data->menuwidth,
+						  WA_Height, data->menuheight,
+						  WA_Flags, WFLG_BORDERLESS,
+						  WA_BackFill, LAYERS_NOBACKFILL,
+						  TAG_DONE)))
+	{
+	    data->menuleft = 0;
+	    data->menutop = 0;
+	    data->rp = data->popupwindow->RPort;
 
-	    }
+	}
 
-	    if (data->popupwindow)
-	    {
-		data->layerx1 = x;  data->layery1 = y;
-		data->layerx2 = x2; data->layery2 = y2;
+	if (data->popupwindow)
+	{
+	    data->layerx1 = x;  data->layery1 = y;
+	    data->layerx2 = x2; data->layery2 = y2;
 
-		data->top = 0;
-		data->selected = -1;
-		SetDrMd(data->rp, JAM1);
-		SetFont(data->rp, data->font);
+	    data->top = 0;
+	    data->selected = -1;
+	    SetDrMd(data->rp, JAM1);
+	    SetFont(data->rp, data->font);
 
-		data->popup = TRUE;
-		DrawMenu(cl, o, msg->gpi_GInfo->gi_DrInfo);
-	    }
+	    data->popup = TRUE;
+	    DrawMenu(cl, o, msg->gpi_GInfo->gi_DrInfo);
+	}
 
     } /* if (data->maypopup && (data->numitems > 2) && (x < gadx + gadw - CYCLEIMAGEWIDTH)) */
     else
@@ -578,9 +654,9 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
 
 static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 {
-    struct AslCycleData  *data = INST_DATA(cl, o);
-    WORD gadx, gady, gadw, gadh, x, y, i;
-    IPTR rc = GMR_MEACTIVE;
+    struct AslCycleData *data = INST_DATA(cl, o);
+    WORD 		gadx, gady, gadw, gadh, x, y, i;
+    IPTR 		rc = GMR_MEACTIVE;
 
     getgadgetcoords(G(o), msg->gpi_GInfo, &gadx, &gady, &gadw, &gadh);
     
@@ -685,10 +761,10 @@ static IPTR aslcycle_handleinput(Class * cl, Object * o, struct gpInput *msg)
 			break;
 
 		    default:
-			if (msg->gpi_Mouse.X >= 0 &&
-			    msg->gpi_Mouse.Y >= 0 &&
-			    msg->gpi_Mouse.X <= gadw &&
-			    msg->gpi_Mouse.Y <= gadh)
+			if ((msg->gpi_Mouse.X >= 0   ) &&
+			    (msg->gpi_Mouse.Y >= 0   ) &&
+			    (msg->gpi_Mouse.X <  gadw) &&
+			    (msg->gpi_Mouse.Y <  gadh))
 			{
 			    if (!(G(o)->Flags & GFLG_SELECTED))
 			    {
@@ -739,8 +815,6 @@ static IPTR aslcycle_goinactive(Class * cl, Object * o, struct gpGoInactive *msg
 }
 
 /***********************************************************************************/
-/***********************************************************************************/
-/***********************************************************************************/
 
 AROS_UFH3S(IPTR, dispatch_aslcycleclass,
 	  AROS_UFHA(Class *, cl, A0),
@@ -760,6 +834,10 @@ AROS_UFH3S(IPTR, dispatch_aslcycleclass,
 	    retval = aslcycle_dispose(cl, o, msg);
 	    break;
 
+	case OM_SET:
+	    retval = aslcycle_set(cl, o, (struct opSet *)msg);
+	    break;
+	    
 	case OM_GET:
 	    retval = aslcycle_get(cl, o, (struct opGet *)msg);
 	    break;

@@ -8,8 +8,10 @@
 
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
 #include "asl_intern.h"
 
 /*****************************************************************************
@@ -53,12 +55,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,AslBase)
 
-    struct IntReq *intreq;
-    APTR req;
+    struct IntReq	 *intreq;
+    APTR 		req;
 	
-    struct ReqNode *reqnode;
-    struct AslReqInfo *reqinfo;
+    struct ReqNode 	*reqnode;
+    struct AslReqInfo 	*reqinfo;
 
+    SetIoErr(0);
+    
     /* Parameter check */
     if 
     ( 
@@ -69,7 +73,7 @@
     	(reqType != ASL_ScreenModeRequest)
     )
 	return (NULL);
-	
+    	
     reqinfo = &(ASLB(AslBase)->ReqInfo[reqType]);
 	
     /* Allocate memory for internal requester structure */
@@ -117,6 +121,8 @@
 		    AddTail( (struct List*)&(ASLB(AslBase)->ReqList), (struct Node*)reqnode);
 		    ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
 
+		    SetIoErr(0);
+		    
 		    return (req);
 
 		}
@@ -131,6 +137,8 @@
 	
     } /* if (Alloc private request structure) */
 	
+    SetIoErr(ERROR_NO_FREE_STORE);
+    
     return (NULL);
 
     AROS_LIBFUNC_EXIT

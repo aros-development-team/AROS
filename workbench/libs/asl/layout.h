@@ -55,7 +55,7 @@ struct AslBase_intern;
 #define BUTTONEXTRAWIDTH 	16
 #define BUTTONEXTRAHEIGHT 	8
 
-#define CYCLEEXTRAWIDTH  	16
+#define CYCLEEXTRAWIDTH  	32
 
 #define IMAGEBUTTONEXTRAHEIGHT 	4
 #define IMAGEBUTTONEXTRAWIDTH  	4
@@ -97,6 +97,7 @@ struct AslBase_intern;
 #define ASLLV_Total		(ASLLV_Dummy + 8)
 #define ASLLV_DoMultiSelect	(ASLLV_Dummy + 9)
 #define ASLLV_MakeVisible	(ASLLV_Dummy + 10)
+#define ASLLV_ReadOnly		(ASLLV_Dummy + 11)
 
 #define ASLBT_Dummy		(PGA_Top + 300)
 #define ASLBT_CoolImage		(ASLBT_Dummy + 1)
@@ -176,13 +177,14 @@ struct ASLLVFileReqNode
 
 /* This command should calculate window's min size 
 */
-#define LDCMD_INIT		0 
+#define LDCMD_INIT		0
+#define LDCMD_WINDOWOPENED	1 
 /* Layout the gadgets */
-#define LDCMD_LAYOUT		1 
+#define LDCMD_LAYOUT		2 
 
-#define LDCMD_HANDLEEVENTS	2 
+#define LDCMD_HANDLEEVENTS	3 
 /* Cleanup anything requester specific allocated in INIT, LAYOUT or HANDLEEVENTS */
-#define LDCMD_CLEANUP		3 
+#define LDCMD_CLEANUP		4 
 
 /* Special retuen value for HANDLEEVENTS to express that the
 user has successfully requested something and hit "OK" */
@@ -200,6 +202,7 @@ struct LayoutData
     BOOL		ld_TrueColor;
     struct Gadget	*ld_GList;
     struct Window	*ld_Window;
+    struct Window	*ld_Window2;
     struct Menu		*ld_Menu;
     struct Screen	*ld_Screen;
     struct DrawInfo	*ld_Dri;

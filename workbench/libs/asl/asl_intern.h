@@ -106,7 +106,8 @@ struct IntFileReq
     UWORD		ifr_SortDrawers;
     BOOL		ifr_InitialShowVolumes;
     
-    /* Some gadgettext specific for the file requester */
+    /* Some GUI strings specific for the file requester */
+
     STRPTR		ifr_VolumesText;
     STRPTR		ifr_ParentText;
     STRPTR		ifr_PatternText;
@@ -163,15 +164,17 @@ struct IntFontReq
 
 };
 
-#define ISMF_DOAUTOSCROLL 1
-#define ISMF_DODEPTH      2
-#define ISMF_DOHEIGHT     4
-#define ISMF_DOWIDTH      8
-#define ISMF_DOOVERSCAN   16
+/*****************************************************************************************/
+
+#define ISMF_DOAUTOSCROLL 	1
+#define ISMF_DODEPTH      	2
+#define ISMF_DOHEIGHT     	4
+#define ISMF_DOWIDTH      	8
+#define ISMF_DOOVERSCAN   	16
 
 /*****************************************************************************************/
 
-struct IntModeReq
+struct IntSMReq
 {
     struct IntReq	ism_IntReq;
     struct List		*ism_CustomSMList;
@@ -197,7 +200,7 @@ struct IntModeReq
     LONG		ism_InfoTopEdge;
     BOOL		ism_InfoOpened;
     
-    /* Some gadgettext specific for the screenmode requester */
+    /* Some GUI strings specific for the screenmode requester */
     
     STRPTR		ism_OverscanText;
     STRPTR		ism_Overscan1Text;
@@ -222,8 +225,22 @@ struct IntModeReq
     STRPTR		ism_Item_Control_Cancel;
     
     STRPTR		ism_PropertyList_Title;
-    
+    STRPTR		ism_PropertyList_NotWB;
+    STRPTR		ism_PropertyList_NotGenlock;
+    STRPTR		ism_PropertyList_NotDraggable;
+    STRPTR		ism_PropertyList_HAM;
+    STRPTR		ism_PropertyList_EHB;
+    STRPTR		ism_PropertyList_Interlace;
+    STRPTR		ism_PropertyList_ECS;
+    STRPTR		ism_PropertyList_WB;
+    STRPTR		ism_PropertyList_Genlock;
+    STRPTR		ism_PropertyList_Draggable;
+    STRPTR		ism_PropertyList_DPFPri2;
+    STRPTR		ism_PropertyList_RefreshRate;
 };
+
+#define SREQ_FIRST_PROPERTY_ITEM(x) ((x)->ism_PropertyList_NotWB)
+#define SREQ_LAST_PROPERTY_ITEM(x) ((x)->ism_PropertyList_RefreshRate)
 
 /*****************************************************************************************/
 
@@ -307,14 +324,15 @@ void SortInNode(APTR req, struct List *list, struct Node *node,
 		WORD (*compare)(APTR, APTR, APTR, struct AslBase_intern *),
 		struct AslBase_intern *AslBase);
 
-APTR AllocVecPooled(APTR pool, IPTR size);
-void FreeVecPooled(APTR mem);
+APTR AllocVecPooled(APTR pool, IPTR size, struct AslBase_intern *AslBase);
+void FreeVecPooled(APTR mem, struct AslBase_intern *AslBase);
 char *PooledCloneString(const char *name1, const char *name2, APTR pool,
 			struct AslBase_intern *AslBase);
 char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern *AslBase);
 char *VecPooledCloneString(const char *name1, const char *name2, APTR pool,
 			   struct AslBase_intern *AslBase);
 char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase);
+void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase);
 
 AROS_UFP3(ULONG, StringEditFunc,
     AROS_UFPA(struct Hook *,		hook,		A0),

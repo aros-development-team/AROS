@@ -127,6 +127,20 @@ static IPTR aslbutton_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
+static IPTR aslbutton_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+{
+    WORD gadx, gady, gadw, gadh;
+    
+    getgadgetcoords(G(o), msg->gpht_GInfo, &gadx, &gady, &gadw, &gadh);
+
+    return ((msg->gpht_Mouse.X >= 0) &&
+    	    (msg->gpht_Mouse.Y >= 0) &&
+	    (msg->gpht_Mouse.X < gadw) &&
+	    (msg->gpht_Mouse.Y < gadh)) ? GMR_GADGETHIT : 0;
+}
+
+/***********************************************************************************/
+
 static IPTR aslbutton_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct AslButtonData *data;
@@ -278,6 +292,10 @@ AROS_UFH3S(IPTR, dispatch_aslbuttonclass,
 	    retval = aslbutton_dispose(cl, obj, msg);
 	    break;
 	
+	case GM_HITTEST:
+	    retval = aslbutton_hittest(cl, obj, (struct gpHitTest *)msg);
+	    break;
+	    
 	case GM_RENDER:
 	    retval = aslbutton_render(cl, obj, (struct gpRender *)msg);
 	    break;

@@ -133,20 +133,20 @@ const struct IntFileReq def_filereq =
 {
     {
 	ASL_FileRequest,
-	NULL,		/* Window		*/
-	NULL,		/* Screen		*/
-	NULL,		/* PubScreenName	*/
-	NULL,		/* IntuiMsgFunc 	*/
-	NULL,		/* TextAttr		*/
-	NULL,		/* Locale		*/
-	NULL,		/* MemPool		*/
-	2048,		/* MemPoolPuddle	*/
-	2048,		/* MemPoolThresh	*/
-	"Select File",
-	"Ok",
-	"Cancel",
-	-1, -1,	 	/* --> center on screen */
-	300, 300
+	NULL,			/* Window		*/
+	NULL,			/* Screen		*/
+	NULL,			/* PubScreenName	*/
+	NULL,			/* IntuiMsgFunc 	*/
+	NULL,			/* TextAttr		*/
+	NULL,			/* Locale		*/
+	NULL,			/* MemPool		*/
+	2048,			/* MemPoolPuddle	*/
+	2048,			/* MemPoolThresh	*/
+	"Select File",		/* TitleText		*/
+	"Ok",			/* PositiveText		*/
+	"Cancel",		/* NegativeText		*/
+	-1, -1,	 		/* --> center on screen */
+	300, 300		/* Width/Height		*/
     },
 
     "",				/* File 	 	*/
@@ -204,48 +204,48 @@ const struct IntFileReq def_filereq =
     
 };
 
-const struct IntModeReq def_modereq =
+const struct IntSMReq def_smreq =
 {
     {
 	ASL_ScreenModeRequest,
-	NULL,	/* Window		*/
-	NULL,	/* Screen		*/
-	NULL,	/* PubScreenName	*/
-	NULL,	/* IntuiMsgFunc 	*/
-	NULL,	/* TextAttr		*/
-	NULL,	/* Locale		*/
-	NULL,	/* MemPool		*/
-	2048,	/* MemPoolPuddle	*/
-	2048,	/* MemPoolThresh	*/
-	"Select Screen Mode",
-	"Ok",
-	"Cancel",
-	-1, -1,	 /* --> center on screen */
-	300, 300
+	NULL,				/* Window		*/
+	NULL,				/* Screen		*/
+	NULL,				/* PubScreenName	*/
+	NULL,				/* IntuiMsgFunc 	*/
+	NULL,				/* TextAttr		*/
+	NULL,				/* Locale		*/
+	NULL,				/* MemPool		*/
+	2048,				/* MemPoolPuddle	*/
+	2048,				/* MemPoolThresh	*/
+	"Select Screen Mode",		/* TitleText		*/
+	"Ok",				/* PositiveText		*/
+	"Cancel",			/* NegativeText		*/
+	-1, -1,	 			/* --> center on screen */
+	300, 300			/* Width/Height		*/
     },
 
-    NULL,		/* CustomSMList */
-    NULL,		/* FilterFunc */
-    0,			/* Flags */
-    LORES_KEY,		/* DisplayID */
-    640,		/* DisplayWidth */
-    200,		/* DisplayHeight */
-    640,		/* BitMapWidth */
-    200,		/* BitMapHeight */
-    2,			/* DisplayDepth */
-    OSCAN_TEXT,		/* OverscanType */
-    TRUE,		/* AutoScroll */
-    DIPF_IS_WB,		/* PropertyFlags */
-    DIPF_IS_WB,		/* PropertyMask */
-    1,			/* MinDepth */
-    24,			/* MaxDepth */
-    16,			/* MinWidth */
-    16384,		/* MaxWidth */
-    16,			/* MinHeight */
-    16384,		/* MaxHeight */
-    0,			/* InfoLeftEdge */
-    0,			/* InfoTopEdge */
-    FALSE,		/* InfoOpened */
+    NULL,				/* CustomSMList 	*/
+    NULL,				/* FilterFunc 		*/
+    0,					/* Flags 		*/
+    LORES_KEY,				/* DisplayID 		*/
+    640,				/* DisplayWidth 	*/
+    200,				/* DisplayHeight 	*/
+    640,				/* BitMapWidth 		*/
+    200,				/* BitMapHeight 	*/
+    2,					/* DisplayDepth 	*/
+    OSCAN_TEXT,				/* OverscanType 	*/
+    TRUE,				/* AutoScroll 		*/
+    DIPF_IS_WB,				/* PropertyFlags 	*/
+    DIPF_IS_WB,				/* PropertyMask 	*/
+    1,					/* MinDepth 		*/
+    24,					/* MaxDepth 		*/
+    16,					/* MinWidth 		*/
+    16384,				/* MaxWidth 		*/
+    16,					/* MinHeight 		*/
+    16384,				/* MaxHeight 		*/
+    20,					/* InfoLeftEdge 	*/
+    20,					/* InfoTopEdge 		*/
+    FALSE,				/* InfoOpened 		*/
     
     "Overscan",
     "Text Size",
@@ -269,46 +269,57 @@ const struct IntModeReq def_modereq =
     "O\0Ok",
     "C\0Cancel",
     
-    "Mode Properties"
-    
-    
+    "Mode Properties",			/* PropertyList_Title 		*/
+    "Does not support Workbench",	/* PropertyList_NotWB 		*/
+    "Does not support genlock",		/* PropertyList_NotGenlock 	*/
+    "Not draggable",			/* PropertyList_NotDraggable 	*/
+    "Hold & Modify",			/* PropertyList_HAM 		*/
+    "Extra-HalfBright",			/* PropertyList_EHB 		*/
+    "Interlaced",			/* PropertyList_Interlaced 	*/
+    "Requires ECS",			/* PropertyList_ECS 		*/
+    "Supports Workbench",		/* PropertyList_WB 		*/
+    "Supports genlock",			/* PropertyList_Genlock 	*/
+    "Draggable",			/* PropertyList_Draggable 	*/
+    "DualPlayfield Priority 2",		/* PropertyList_DPFPri2 	*/
+    "%ldHz, %ld,%ldkHz"			/* PropertyList_RefreshRate 	*/
+        
 };
 
 const struct IntFontReq def_fontreq =
 {
     {
 	ASL_FontRequest,
-	NULL,	/* Window		*/
-	NULL,	/* Screen		*/
-	NULL,	/* PubScreenName	*/
-	NULL,	/* IntuiMsgFunc 	*/
-	NULL,	/* TextAttr		*/
-	NULL,	/* Locale		*/
-	NULL,	/* MemPool		*/
-	0,	/* MemPoolPuddle	*/
-	0,	/* MemPoolThresh	*/
-	"Open font",
-	"OK",
-	"Cancel",
-	0, 0,
-	500, 300
+	NULL,				/* Window		*/
+	NULL,				/* Screen		*/
+	NULL,				/* PubScreenName	*/
+	NULL,				/* IntuiMsgFunc 	*/
+	NULL,				/* TextAttr		*/
+	NULL,				/* Locale		*/
+	NULL,				/* MemPool		*/
+	0,				/* MemPoolPuddle	*/
+	0,				/* MemPoolThresh	*/
+	"Open font",			/* TitleText		*/
+	"OK",				/* PositiveText		*/
+	"Cancel",			/* NegativeText		*/
+	-1, -1,				/* --> center on screen */
+	500, 300			/* Width/Height		*/
     },
-    {"topaz", 8, 0, 0}, /* Default textattr */
-    TEXTPEN,		/* FrontPen	*/
-    BACKGROUNDPEN,	/* BackPen	*/
-    JAM1,		/* DrawMode	*/
-    0,		/* Flags	*/
+    {"topaz", 8, 0, 0}, 		/* Default textattr 	*/
+    TEXTPEN,				/* FrontPen		*/
+    BACKGROUNDPEN,			/* BackPen		*/
+    JAM1,				/* DrawMode		*/
+    0,					/* Flags		*/
 
-    2,		/* Minheight	*/
-    100,	/* MaxHeight	*/
-    NULL,	/* FilterFunc	*/
-    NULL,	/* HookFunc	*/
-    32, 	/* MaxFrontPen	*/
-    32, 	/* MaxBackPen	*/
+    2,					/* Minheight		*/
+    100,				/* MaxHeight		*/
+    NULL,				/* FilterFunc		*/
+    NULL,				/* HookFunc		*/
+    32, 				/* MaxFrontPen		*/
+    32, 				/* MaxBackPen		*/
 
-    NULL,	/* ModeList	*/
-    NULL,	/* FrontPens	*/
-    NULL	/* BackPens	*/
+    NULL,				/* ModeList		*/
+    NULL,				/* FrontPens		*/
+    NULL				/* BackPens		*/
 
 };
 
@@ -626,9 +637,9 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
     /* Set screenmode requester info */
 
     reqinfo = &(ASLB(AslBase)->ReqInfo[ASL_ScreenModeRequest]);
-    reqinfo->IntReqSize 	= sizeof (struct IntModeReq);
+    reqinfo->IntReqSize 	= sizeof (struct IntSMReq);
     reqinfo->ReqSize		= sizeof (struct ScreenModeRequester);
-    reqinfo->DefaultReq 	= (struct IntModeReq *)&def_modereq;
+    reqinfo->DefaultReq 	= (struct IntSMReq *)&def_smreq;
     reqinfo->UserDataSize	= sizeof(struct SMUserData);
 
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
