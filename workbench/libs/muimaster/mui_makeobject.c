@@ -11,6 +11,10 @@
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
+#ifdef HAVE_COOLIMAGES
+#include <libraries/coolimages.h>
+#include <proto/coolimages.h>
+#endif
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -179,6 +183,92 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	    break;
 	}
 
+    	case MUIO_CoolButton: /* STRPTR label, APTR CoolImage, ULONG flags */
+#ifdef HAVE_COOLIMAGES
+	if (CoolImagesBase)
+	{
+	    struct CoolImage *img;
+	    char    	     *label = (char*)params[0];
+	    int     	      control_char = 0;
+	    ULONG   	      flags = params[2];
+	 
+	    if (flags & MUIO_CoolButton_CoolImageID)
+	    {
+	    	img = COOL_ObtainImageA(params[1], NULL);
+	    }
+	    else
+	    {
+	    	img = (struct CoolImage *)params[1];
+	    }
+	    
+	    if (img)
+	    {
+            	/* find the control char */
+
+		if (label)
+		{
+		    unsigned char *p = label;
+		    unsigned char c;
+
+		    while ((c = *p++))
+		    {
+			if (c == '_')
+			{
+			    control_char = ToLower(*p);
+			    break;
+			}
+		    }
+
+		} /* if (label) */
+		
+		return HGroup,
+		    MUIA_VertWeight, 0,
+		    ButtonFrame,
+		    MUIA_Background, MUII_ButtonBack,
+		    MUIA_InputMode, MUIV_InputMode_RelVerify,
+		    control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
+		    MUIA_Group_HorizSpacing, 0,
+		    MUIA_Group_SameHeight, TRUE,
+		    Child, HSpace(2),
+		    Child, VGroup,
+		    	MUIA_Group_VertSpacing, 0,
+			Child, RectangleObject, End,
+			Child, ChunkyImageObject,
+			    MUIA_FixWidth, img->width,
+			    MUIA_FixHeight, img->height,
+			    MUIA_ChunkyImage_Pixels, (IPTR)img->data,
+			    MUIA_ChunkyImage_NumColors, img->numcolors,
+			    MUIA_ChunkyImage_Palette, (IPTR)img->pal,
+			    MUIA_Bitmap_Width, img->width,
+			    MUIA_Bitmap_Height, img->height,
+			    MUIA_Bitmap_UseFriend, TRUE,
+			    MUIA_Bitmap_Transparent, 0,
+			    End,
+			Child, RectangleObject, End,
+			End,
+		    Child, HSpace(2),
+		    Child, RectangleObject, End,
+		    Child, VGroup,
+		    	MUIA_Group_VertSpacing, 0,
+			Child, RectangleObject, End,
+			Child, TextObject,
+			    MUIA_Font, MUIV_Font_Button,
+			    MUIA_Text_HiCharIdx, '_',
+			    MUIA_Text_Contents, (IPTR)label,
+			    MUIA_Text_SetMax, TRUE,
+			    End,
+			Child, RectangleObject, End,
+			End,
+		    Child, RectangleObject, End,
+		    Child, HSpace(2),
+		    End;
+	    	
+	    } /* if (img) */
+	    
+	} /* if (CoolImagesBase) */
+#endif
+	/* fall through */
+	
 	case MUIO_Button: /* STRPTR label */
 	{
             /* find the control char */
