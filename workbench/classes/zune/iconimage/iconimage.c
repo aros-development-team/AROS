@@ -26,12 +26,9 @@
 #include "iconimage.h"
 #include "iconimage_private.h"
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 
 /*** Methods ****************************************************************/
-IPTR IconImage__OM_NEW
+Object *IconImage__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -82,7 +79,7 @@ IPTR IconImage__OM_NEW
     data = INST_DATA(CLASS, self);
     data->iid_DiskObject = diskObject;
 
-    return (IPTR) self;
+    return self;
     
 error:
     return NULL;
