@@ -15,6 +15,86 @@ Old News
 <HR WIDTH="100%">
 <TABLE>
 
+<TR><TD VALIGN=TOP>2.10.2000</TD><TD>
+There is now a simple binary.datatype plus the skeleton for the
+picture.datatype. The shell supports now color escape sequences
+and more language catalogs were added for MultiView and More.
+Done by Georg Steger (who else ;-)
+</TD></TR>
+
+<TR><TD VALIGN=TOP>27.9.2000</TD><TD>
+Georg Steger improved the console.device (TAB handling,
+stopping output with right mousebutton and keypress).
+Unlike on the original AmigaOS, clicking the right
+mousebutton in a console window will <strong>not</strong>
+block the whole display but just the output in this window.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>22.9.2000</TD><TD>
+There is now a new tool to generate shared libraries,
+devices, gadgets, datatypes and HIDDs. And we have
+macros to access the PC speaker (which should help
+to debug AROS Native/x86). Credits go to Lars Bischoff
+and Georg Steger.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>20.9.2000</TD><TD>
+The clipboard.device, written by Johan Alfredsson is now
+ready (kudos for fixing the last bugs and testing it go
+to Georg Steger). Also, we have now ConClip.<P>
+
+We also have a working datatypes.library (for a while now)
+but Georg Steger has ported some datatypes (text and ascii
+to be precise) from Aminet. The binary datatype will be next
+and maybe we'll have a picture.datatype soon, too.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>15.9.2000</TD><TD>
+Again, more than one month has passed since the last status
+update *sigh*. It's not that there are no news; it's me :-)
+Ok, again whole six weeks of news:<P>
+
+Michael Schulz had to stop working on AROS Native/i386
+because he's moving. Nonetheless, the native version of AROS
+boots (you can move the mouse and you will see some windows)
+but since there still is no filesystem, you cannot run any
+programs. We try to get the sources for SFS to fix this. The
+author has been positive to open the sources but he wants to
+clean them first.<P>
+
+Work is also being done to make AROS boot with Bochs and 
+VMware. It already works with VMware but VMware is quite
+expensive.<P>
+
+Also, we try to compile AROS on 
+<A HREF="http://www.freiburg.linux.de/~uae/">UAE</A> with the new 
+<A HREF="http://byron.csse.monash.edu.au/">JIT</A> by 
+Bernie Meyer.  The JIT seems to work,
+the compile doesn't (yet). This would be a great step to
+help to debug AROS.<P>
+
+Some bugs were introduced into BGUI by porting it to AROS 
+but these were squased.  BGUI now compiles on AROS and
+AmigaOS. We plan to develop our version of the Workbench
+with it. Also, work has begun to move the BGUI site to
+the AROS site (which means that it will be much more often
+be down ;-) Honestly, I'm working on fixing this :-)<P>
+
+Also, the AROS port to NetBSD/x86 has been updated (it
+compiles again) plus there is a new port to Solaris/sparc.
+The new port compiles but AROS doesn't start, yet.<P>
+
+On a sad note, the AROS project at my company, the
+<A HREF="http://www.sowatec.com/">Sowatec AG</A> has not started. On the
+positive side, it has not been dropped, either. The problem
+is that we simply cannot find enough people to staff it. So
+if you're living in Europe, interested in the Amiga and
+willing to work with PCs and Unix, please get in contact
+with us (the restriction with Europe is just because of the
+problems we would have to get a work permission for you plus
+the higher risk we would impose in you moving here).
+</TD></TR>
+
 <TR><TD VALIGN=TOP>1.8.2000</TD><TD>
 BGUI has been completely ported to AROS, now. This means that the library
 can be compiled and that all demos run. Cudos go to Stefan Berger.<P>

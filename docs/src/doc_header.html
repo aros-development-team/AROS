@@ -21,6 +21,65 @@ since 12. October 1999.
 <HR WIDTH="100%"><p>
 <H2>NEWS</H2>
 <TABLE>
+<TR><TD VALIGN=TOP>19.11.2000</TD><TD>
+Joerg Dietrich committed a ppm.datatype (for PPM pictures).
+Tobias Seiler fixed a long standing bug in the keyboard initialization
+of AROS Native/i386, so PS/2 keyboards should work now.
+Georg Steger ported more and more programs which use Reqtools and
+fixed a lot of bugs in the code. The port of Reqtools should be
+finished, soon.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>18.11.2000</TD><TD>
+Bugfixes in reqtools.library and Intuition by Georg Steger while 
+Johan Alfredsson worked in more DOS commands (Info, Status, Execute)
+and fixed a lot of bugs in the dos.library.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>14.11.2000</TD><TD>
+Georg Steger finished gadtools.library. Cool Work ! He also fixed some
+bugs in the graphics.library-to-HIDD driver. On the following day, he
+fixed bugs and committed new code for the C library while Johan Alfredsson
+cleaned the dos.library. Again one day later, Georg committed the first
+version of a port of reqtools.library and fixed some bugs in the 
+workbench.library.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>11.11.2000</TD><TD>
+Johan Alfredsson finished his nonvolatile.library and C:Which. Two days
+later, he fixed some more Amiga Shell commands and internals.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>8.11.2000</TD><TD>
+Georg Steger committed rewritten routines for the DOS functions
+MatchFirst(), MatchNext() and MatchEnd(). These should work in all
+cases, now. This fixes all those pety bugs like <TT>List C:</TT>.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>6.11.2000</TD><TD>
+Joerg Dietrich committed dtdesc, a tool to create and examine DataType
+descriptors. Georg Steger improved the building of the FTXT Datatype with
+it. Later that day, Joerg backported our binary.datatype to AmigaOS 3.5.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>5.11.2000</TD><TD>
+Johan Alfredsson commited a first version of a nonvolatile.library
+and nvdisk.library..
+</TD></TR>
+
+<TR><TD VALIGN=TOP>3.11.2000</TD><TD>
+Johan Alfredsson ported the C:Search utility written by Neil Cafferkey
+to AROS. Georg Steger renamed our OO Routines into something more
+easily distinguishable from BOOPSI (our OO system also used DoMethod(), etc.
+which could cause confusions).
+</TD></TR>
+
+<TR><TD VALIGN=TOP>18.10.2000</TD><TD>
+AROS runs on Bochs now, if a bit slow. Georg Steger, who fixed the
+last bugs, added a README.Bochs how to make it work. Right now,
+he's trying to make AROS work with plex86.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>11.10.2000</TD><TD>
 Cleanup of the AROS source tree by Bernardo Innocenti, primitive
 hardfile support of FFS-formatted floppy disks (ADF) by Georg
@@ -30,86 +89,6 @@ change the position of the mouse pointer on the screen and now
 you can move the window around. Since VGA.HIDD doesn't support
 the XOR drawing mode, yet, there is still some garbage when you
 move the window but that should be fixed, soon :-)
-</TD></TR>
-
-<TR><TD VALIGN=TOP>2.10.2000</TD><TD>
-There is now a simple binary.datatype plus the skeleton for the
-picture.datatype. The shell supports now color escape sequences
-and more language catalogs were added for MultiView and More.
-Done by Georg Steger (who else ;-)
-</TD></TR>
-
-<TR><TD VALIGN=TOP>27.9.2000</TD><TD>
-Georg Steger improved the console.device (TAB handling,
-stopping output with right mousebutton and keypress).
-Unlike on the original AmigaOS, clicking the right
-mousebutton in a console window will <strong>not</strong>
-block the whole display but just the output in this window.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>22.9.2000</TD><TD>
-There is now a new tool to generate shared libraries,
-devices, gadgets, datatypes and HIDDs. And we have
-macros to access the PC speaker (which should help
-to debug AROS Native/x86). Credits go to Lars Bischoff
-and Georg Steger.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>20.9.2000</TD><TD>
-The clipboard.device, written by Johan Alfredsson is now
-ready (kudos for fixing the last bugs and testing it go
-to Georg Steger). Also, we have now ConClip.<P>
-
-We also have a working datatypes.library (for a while now)
-but Georg Steger has ported some datatypes (text and ascii
-to be precise) from Aminet. The binary datatype will be next
-and maybe we'll have a picture.datatype soon, too.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>15.9.2000</TD><TD>
-Again, more than one month has passed since the last status
-update *sigh*. It's not that there are no news; it's me :-)
-Ok, again whole six weeks of news:<P>
-
-Michael Schulz had to stop working on AROS Native/i386
-because he's moving. Nonetheless, the native version of AROS
-boots (you can move the mouse and you will see some windows)
-but since there still is no filesystem, you cannot run any
-programs. We try to get the sources for SFS to fix this. The
-author has been positive to open the sources but he wants to
-clean them first.<P>
-
-Work is also being done to make AROS boot with Bochs and 
-VMware. It already works with VMware but VMware is quite
-expensive.<P>
-
-Also, we try to compile AROS on 
-<A HREF="http://www.freiburg.linux.de/~uae/">UAE</A> with the new 
-<A HREF="http://byron.csse.monash.edu.au/">JIT</A> by 
-Bernie Meyer.  The JIT seems to work,
-the compile doesn't (yet). This would be a great step to
-help to debug AROS.<P>
-
-Some bugs were introduced into BGUI by porting it to AROS 
-but these were squased.  BGUI now compiles on AROS and
-AmigaOS. We plan to develop our version of the Workbench
-with it. Also, work has begun to move the BGUI site to
-the AROS site (which means that it will be much more often
-be down ;-) Honestly, I'm working on fixing this :-)<P>
-
-Also, the AROS port to NetBSD/x86 has been updated (it
-compiles again) plus there is a new port to Solaris/sparc.
-The new port compiles but AROS doesn't start, yet.<P>
-
-On a sad note, the AROS project at my company, the
-<A HREF="http://www.sowatec.com/">Sowatec AG</A> has not started. On the
-positive side, it has not been dropped, either. The problem
-is that we simply cannot find enough people to staff it. So
-if you're living in Europe, interested in the Amiga and
-willing to work with PCs and Unix, please get in contact
-with us (the restriction with Europe is just because of the
-problems we would have to get a work permission for you plus
-the higher risk we would impose in you moving here).
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
