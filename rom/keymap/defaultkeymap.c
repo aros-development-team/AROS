@@ -199,7 +199,7 @@ static IPTR lokeymap[] =
     BYTES('}', '}', ')', '0'),		/* 0A 0 */
     BYTES('_', '-', '_', '-'),		/* 0B Right of 0 */
     BYTES('+', '=', '+', '='),		/* 0C 2nd right of 0 */
-    BYTES('\\', '|', '\\', '|'),	/* 0D 3rd right of 0 */
+    BYTES('|', '\\', '|', '\\'),	/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),			/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
     BYTES('Q', 'q', 'Q', 'q'), 		/* 10 */
