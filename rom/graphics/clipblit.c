@@ -103,6 +103,10 @@
     struct Rectangle Rect;
     struct RegionRectangle * RR;
 
+    /* did I get the region structure? */
+    if (NULL == R)
+      return;
+
     /* define the rectangle of the destination */
     Rect.MinX = xDest;
     Rect.MaxX = xDest+xSize;
@@ -160,6 +164,8 @@
       /* That's all */
       return ;
     } /* if (NULL != RR)*/
+    
+    DisposeRegion(R);
   } /* if (destRP == srcRP) */
   /* here: process all cases that don't overlap */
 
@@ -173,7 +179,7 @@
                     ySize,
                     minterm,
                     GfxBase);
-
+                    
   AROS_LIBFUNC_EXIT
 } /* ClipBlit */
 
