@@ -1,7 +1,7 @@
 #ifndef KEYMAP_INTERN_H
 #define KEYMAP_INTERN_H
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keymaps internal structure
