@@ -516,15 +516,6 @@ void GenerateLayers2(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   i = unusedlayer();
@@ -537,15 +528,6 @@ void GenerateLayers2(void)
                                  LAYERSMART,
                                  NULL);
 
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   i = unusedlayer();
@@ -557,15 +539,7 @@ void GenerateLayers2(void)
                                  190,
                                  LAYERSMART,
                                  NULL);
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
+
   frame(layers[i]);
 
   i = unusedlayer();
@@ -578,15 +552,6 @@ void GenerateLayers2(void)
                                  LAYERSMART,
                                  NULL);
 
-  /*
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 }
 
@@ -1154,7 +1119,7 @@ void DemoD()
     Delay(5);
     ScrollLayer(0, layers[0], 0 ,1);
   }
-
+  
   c = 0;
   while (c < 41)
   {
@@ -1203,6 +1168,7 @@ void DemoD()
     MoveSizeLayer(layers[2], 2, -1, -1, -1);
     c++;
   }
+
   c = 0;
   while (c < 30)
   {
@@ -1211,7 +1177,7 @@ void DemoD()
     MoveLayer(0, layers[5], 2, 1);
     c++;
   }
-  
+
   c = 0;
   while (c < 30)
   {
