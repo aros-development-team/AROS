@@ -2,7 +2,7 @@
 #define HIDD_VGAHW_H
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: VGA hardwired.
@@ -56,5 +56,33 @@ struct vgaHWRec
   unsigned char DAC[768];       /* Internal Colorlookuptable */
   char NoClock;                 /* number of selected clock */
 };
+
+/* CRT controller register indices */
+
+#define CRTC_H_TOTAL	    0
+#define CRTC_H_DISPLAY	    1
+#define CRTC_H_BLANK_START  2
+#define CRTC_H_BLANK_END    3
+#define CRTC_H_SYNC_START   4
+#define CRTC_H_SYNC_END	    5
+#define CRTC_V_TOTAL	    6
+#define CRTC_OVERFLOW	    7
+#define CRTC_PRESET_ROW	    8
+#define CRTC_MAX_SCAN	    9
+#define CRTC_CURSOR_START   10
+#define CRTC_CURSOR_END	    11
+#define CRTC_START_HI	    12
+#define CRTC_START_LO	    13
+#define CRTC_CURSOR_HI	    14
+#define CRTC_CURSOR_LO	    15
+#define CRTC_V_SYNC_START   16
+#define CRTC_V_SYNC_END	    17
+#define CRTC_V_DISP_END	    18
+#define CRTC_OFFSET	    19
+#define CRTC_UNDERLINE	    20
+#define CRTC_V_BLANK_START  21
+#define CRTC_V_BLANK_END    22
+#define CRTC_MODE	    23
+#define CRTC_LINE_COMPARE   24
 
 #endif /* HIDD_VGAHW_H */
