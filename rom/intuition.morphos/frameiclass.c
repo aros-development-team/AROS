@@ -454,8 +454,6 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
             }
             break;
 
-        default:
-
         } /* switch */
     } /* while */
 
