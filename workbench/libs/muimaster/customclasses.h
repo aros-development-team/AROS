@@ -45,70 +45,70 @@ ADD2EXIT(name ## _Deinitialize, 100);                                 \
 
 /******************************************************************/
 
-#define ZUNE_CUSTOMCLASS1(name, base, parent_name, parent_class,  \
-                          m1, m1_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
+#define ZUNE_CUSTOMCLASS_1(name, base, parent_name, parent_class,  \
+                           m1, m1_msg_type)                        \
+    __ZUNE_CUSTOMCLASS_START(name)                                 \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
 
-#define ZUNE_CUSTOMCLASS2(name, base, parent_name, parent_class,  \
-                          m1, m1_msg_type,                        \
-                          m2, m2_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
+#define ZUNE_CUSTOMCLASS_2(name, base, parent_name, parent_class,  \
+                           m1, m1_msg_type,                        \
+                           m2, m2_msg_type)                        \
+    __ZUNE_CUSTOMCLASS_START(name)                                 \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
 
-#define ZUNE_CUSTOMCLASS3(name, base, parent_name, parent_class,  \
-                          m1, m1_msg_type,                        \
-                          m2, m2_msg_type,                        \
-                          m3, m3_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
+#define ZUNE_CUSTOMCLASS_3(name, base, parent_name, parent_class,  \
+                           m1, m1_msg_type,                        \
+                           m2, m2_msg_type,                        \
+                           m3, m3_msg_type)                        \
+    __ZUNE_CUSTOMCLASS_START(name)                                 \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
 
-#define ZUNE_CUSTOMCLASS4(name, base, parent_name, parent_class,  \
-                          m1, m1_msg_type,                        \
-                          m2, m2_msg_type,                        \
-                          m3, m3_msg_type,                        \
-                          m4, m4_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
+#define ZUNE_CUSTOMCLASS_4(name, base, parent_name, parent_class,  \
+                           m1, m1_msg_type,                        \
+                           m2, m2_msg_type,                        \
+                           m3, m3_msg_type,                        \
+                           m4, m4_msg_type)                        \
+    __ZUNE_CUSTOMCLASS_START(name)                                 \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
 
-#define ZUNE_CUSTOMCLASS5(name, base, parent_name, parent_class,  \
-                          m1, m1_msg_type,                        \
-                          m2, m2_msg_type,                        \
-                          m3, m3_msg_type,                        \
-                          m4, m4_msg_type,                        \
-                          m5, m5_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
+#define ZUNE_CUSTOMCLASS_5(name, base, parent_name, parent_class,  \
+                           m1, m1_msg_type,                        \
+                           m2, m2_msg_type,                        \
+                           m3, m3_msg_type,                        \
+                           m4, m4_msg_type,                        \
+                           m5, m5_msg_type)                        \
+    __ZUNE_CUSTOMCLASS_START(name)                                 \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
 
-#define ZUNE_CUSTOMCLASS6(name, base, parent_name, parent_class,  \
-                          m1, m1_msg_type,                        \
-                          m2, m2_msg_type,                        \
-                          m3, m3_msg_type,                        \
-                          m4, m4_msg_type,                        \
-                          m5, m5_msg_type,                        \
-                          m6, m6_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class) \
+#define ZUNE_CUSTOMCLASS_6(name, base, parent_name, parent_class,  \
+                           m1, m1_msg_type,                        \
+                           m2, m2_msg_type,                        \
+                           m3, m3_msg_type,                        \
+                           m4, m4_msg_type,                        \
+                           m5, m5_msg_type,                        \
+                           m6, m6_msg_type)                        \
+    __ZUNE_CUSTOMCLASS_START(name)                                 \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
 
 #endif /* !ZUNE_CUSTOMCLASSES_H */
