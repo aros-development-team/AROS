@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/17 16:17:23  digulla
+    BADDR() instead of MKBADDR()
+
     Revision 1.6  1996/09/13 17:50:07  digulla
     Use IPTR
 
@@ -127,14 +130,14 @@
 	iofs->io_Args[2]=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
 	if(!Stricmp(name,"CONSOLE:"))
 	{
-	    iofs->IOFS.io_Device=((struct FileHandle *)MKBADDR(con))->fh_Device;
-	    iofs->IOFS.io_Unit	=((struct FileHandle *)MKBADDR(con))->fh_Unit;
+	    iofs->IOFS.io_Device=((struct FileHandle *)BADDR(con))->fh_Device;
+	    iofs->IOFS.io_Unit	=((struct FileHandle *)BADDR(con))->fh_Unit;
 	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
 	}else if(!Stricmp(name,"*"))
 	{
-	    iofs->IOFS.io_Device=((struct FileHandle *)MKBADDR(ast))->fh_Device;
-	    iofs->IOFS.io_Unit	=((struct FileHandle *)MKBADDR(ast))->fh_Unit;
+	    iofs->IOFS.io_Device=((struct FileHandle *)BADDR(ast))->fh_Device;
+	    iofs->IOFS.io_Unit	=((struct FileHandle *)BADDR(ast))->fh_Unit;
 	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
 	}else
