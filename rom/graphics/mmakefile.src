@@ -58,6 +58,7 @@ FUNCTIONS := \
 	bltbitmap \
 	bltbitmaprastport \
 	bltclear \
+	bltmaskbitmaprastport \
 	bltpattern \
 	blttemplate \
 	cleareol \
@@ -78,6 +79,7 @@ FUNCTIONS := \
 	drawellipse \
 	extendfont \
 	eraserect \
+	flood \
 	freebitmap \
 	freecolormap \
 	freecoplist \
