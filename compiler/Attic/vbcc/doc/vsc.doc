@@ -12,7 +12,7 @@ INTRODUCTION
     which do not have a corresponding scheduler.
 
     This document only deals with the target independant parts of vsc.
-    Be sure to read all the documents in the doc directory for your machine.
+    Be sure to read all the documents for your machine.
 
     NOTE: This is a pre-alpha-release! Doesn't really work!
 
@@ -33,9 +33,9 @@ LEGAL
 USAGE
 
     Usually vsc will be called by a frontend. However if you call it
-    directly, it has to be done like this.
+    directly, it has to be done like this:
 
-    vbcc [options] input-file output-file
+    vsc [options] input-file output-file
 
     The following options are supported:
 

@@ -15,7 +15,7 @@ struct AddressingMode{
 #define MAXR 73
 
 /*  Number of commandline-options the code-generator accepts.       */
-#define MAXGF 10
+#define MAXGF 20
 
 /*  If this is set to zero vbcc will not generate ICs where the     */
 /*  target operand is the same as the 2nd source operand.           */
@@ -40,7 +40,7 @@ struct AddressingMode{
 /*  If switch-statements should be generated as a sequence of       */
 /*  SUB,TST,BEQ ICs rather than COMPARE,BEQ ICs set this to 1.      */
 /*  This can yield better code on some machines.                    */
-#define SWITCHSUBS 1
+#define SWITCHSUBS 0
 
 /*  In optimizing compilation certain library memcpy/strcpy-calls   */
 /*  with length known at compile-time will be inlined using an      */

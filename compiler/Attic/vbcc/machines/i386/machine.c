@@ -8,7 +8,7 @@ static char FILE_[]=__FILE__;
 /*  Public data that MUST be there.				*/
 
 /* Name and copyright. */
-char cg_copyright[]="vbcc code-generator for i386 V0.3 (c) in 1996-97 by Volker Barthelmann";
+char cg_copyright[]="vbcc code-generator for i386 V0.4a (c) in 1996-97 by Volker Barthelmann";
 
 /*  Commandline-flags the code-generator accepts		*/
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,
@@ -19,15 +19,8 @@ char *g_flags_name[MAXGF]={"cpu","fpu","no-delayed-popping","const-in-data",
 			   "g"};
 union ppi g_flags_val[MAXGF];
 
-#define G_FLAG_CPU		(g_flags[0] & USEDFLAG)
-#define G_FLAG_FPU		(g_flags[1] & USEDFLAG)
-#define G_FLAG_NO_DELAY_POP	(g_flags[2] & USEDFLAG)
-#define G_FLAG_CONST_IN_DATA	(g_flags[3] & USEDFLAG)
-#define G_FLAG_MERGE_CONST	(g_flags[4] & USEDFLAG)
-#define G_FLAG_ELF		(g_flags[5] & USEDFLAG)
-#define G_FLAG_LONGALIGN	(g_flags[6] & USEDFLAG)
-#define G_FLAG_USE_FP		(g_flags[7] & USEDFLAG)
 #define G_FLAG_DEBUG		(g_flags[8] & USEDFLAG)
+#define G_FLAG_USE_FP		((g_flags[7] & USEDFLAG) && !G_FLAG_DEBUG)
 
 /*  Alignment-requirements for all types in bytes.		*/
 zlong align[16];
@@ -55,6 +48,9 @@ char *regnames[MAXR+1]={"noreg","%eax","%ecx","%edx","%ebx",
 /*  The Size of each register in bytes. 			*/
 zlong regsize[MAXR+1];
 
+/*  Type which can store each register. */
+struct Typ *regtype[MAXR+1];
+
 /*  regsa[reg]!=0 if a certain register is allocated and should */
 /*  not be used by the compiler pass.				*/
 int regsa[MAXR+1];
@@ -67,9 +63,10 @@ int regscratch[MAXR+1]={0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1};
 /*  Some private data and functions.	*/
 /****************************************/
 
-static long malign[16]={1,1,2,2,2,2,2,2,2,2,2,2,2,2,2};
+static long malign[16]=  {1,1,2,2,2,2,2,1,2,1,1,1,2,1};
 static long msizetab[16]={0,1,2,4,4,4,8,0,4,0,0,0,4,0};
 
+struct Typ ltyp={LONG},ldbl={DOUBLE};
 
 #define DATA 0
 #define BSS 1
@@ -110,14 +107,14 @@ static int addfpconst(struct obj *o,int t)
 {
     struct fpconstlist *p=firstfpc;
     t&=NQ;
-    if(G_FLAG_MERGE_CONST){
-	for(p=firstfpc;p;p=p->next){
-	    if(t==p->typ){
-		eval_const(&p->val,t);
-		if(t==FLOAT&&zdeqto(vdouble,zf2zd(o->val.vfloat))) return(p->label);
-		if(t==DOUBLE&&zdeqto(vdouble,o->val.vdouble)) return(p->label);
-	    }
-	}
+    if(g_flags[4]&USEDFLAG){
+        for(p=firstfpc;p;p=p->next){
+            if(t==p->typ){
+                eval_const(&p->val,t);
+                if(t==FLOAT&&zdeqto(vdouble,zf2zd(o->val.vfloat))) return(p->label);
+                if(t==DOUBLE&&zdeqto(vdouble,o->val.vdouble)) return(p->label);
+            }
+        }
     }
     p=mymalloc(sizeof(struct fpconstlist));
     p->next=firstfpc;
@@ -130,43 +127,43 @@ static int addfpconst(struct obj *o,int t)
 static void probj2(FILE *f,struct obj *p,int t)
 /*  Gibt Objekt auf Bildschirm aus			*/
 {
-    if((p->flags&(DREFOBJ|REG))==(DREFOBJ|REG)) fprintf(f,"(");
-    if(p->flags&VARADR) fprintf(f,"$");
-    if((p->flags&VAR)&&!(p->flags&REG)) {
-	if(p->v->storage_class==AUTO||p->v->storage_class==REGISTER){
-	    if(p->v->offset<0) fprintf(f,"%ld(%%esp)",(long)(loff-zl2l(p->v->offset)+zl2l(p->val.vlong))-stackoffset+pushedsize);
-		else	       fprintf(f,"%ld(%%esp)",(long)(zl2l(p->v->offset)+zl2l(p->val.vlong)-stackoffset));
-	}else{
-	    if(!zleqto(l2zl(0L),p->val.vlong)){printval(f,&p->val,LONG,0);fprintf(f,"+");}
-	    if(p->v->storage_class==STATIC&&(p->v->vtyp->flags&NQ)!=FUNKT){
-		fprintf(f,"%s%ld",labprefix,zl2l(p->v->offset));
-	    }else{
-		fprintf(f,"%s%s",idprefix,p->v->identifier);
-	    }
-	}
+  if((p->flags&(DREFOBJ|REG))==(DREFOBJ|REG)) fprintf(f,"(");
+  if(p->flags&VARADR) fprintf(f,"$");
+  if((p->flags&VAR)&&!(p->flags&REG)) {
+    if(p->v->storage_class==AUTO||p->v->storage_class==REGISTER){
+      if(p->v->offset<0) fprintf(f,"%ld(%%esp)",(long)(loff-zl2l(p->v->offset)+zl2l(p->val.vlong))-stackoffset+pushedsize);
+      else           fprintf(f,"%ld(%%esp)",(long)(zl2l(p->v->offset)+zl2l(p->val.vlong)-stackoffset));
+    }else{
+      if(!zleqto(l2zl(0L),p->val.vlong)){printval(f,&p->val,LONG,0);fprintf(f,"+");}
+      if(p->v->storage_class==STATIC&&(p->v->vtyp->flags&NQ)!=FUNKT){
+	fprintf(f,"%sl%ld",labprefix,zl2l(p->v->offset));
+      }else{
+	fprintf(f,"%s%s",idprefix,p->v->identifier);
+      }
     }
-    if(p->flags&REG){
-	if(p->reg>8){
-	    int i;
-	    for(i=0;i<8;i++){
-		if(fst[i]==p->reg)
-		    fprintf(f,"%s",regnames[i+9]);
-	    }
-	}else{
-          t&=NQ;
-          if(t==CHAR&&!(p->flags&DREFOBJ)) fprintf(f,"%%%cl",regnames[p->reg][2]);
-          else if(t==SHORT&&!(p->flags&DREFOBJ)) fprintf(f,"%%%s",regnames[p->reg]+2);
-          else fprintf(f,"%s",regnames[p->reg]);
-	}
+  }
+  if(p->flags&REG){
+    if(p->reg>8){
+      int i;
+      for(i=0;i<8;i++){
+	if(fst[i]==p->reg)
+	  fprintf(f,"%s",regnames[i+9]);
+      }
+    }else{
+      t&=NQ;
+      if(t==CHAR&&!(p->flags&DREFOBJ)) fprintf(f,"%%%cl",regnames[p->reg][2]);
+      else if(t==SHORT&&!(p->flags&DREFOBJ)) fprintf(f,"%%%s",regnames[p->reg]+2);
+      else fprintf(f,"%s",regnames[p->reg]);
     }
-    if(p->flags&KONST){
-	if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
-	    fprintf(f,"%s%d",labprefix,addfpconst(p,t));
-	}else{
-	    fprintf(f,"$");printval(f,&p->val,t&NU,0);
-	}
+  }
+  if(p->flags&KONST){
+    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
+      fprintf(f,"%sl%d",labprefix,addfpconst(p,t));
+    }else{
+      fprintf(f,"$");printval(f,&p->val,t&NU,0);
     }
-    if((p->flags&(DREFOBJ|REG))==(DREFOBJ|REG)) fprintf(f,")");
+  }
+  if((p->flags&(DREFOBJ|REG))==(DREFOBJ|REG)) fprintf(f,")");
 }
 static void fxch(FILE *f,int i)
 {
@@ -588,45 +585,45 @@ static void move(FILE *f,struct obj *q,int qr,struct obj *z,int zr,int t)
 /*  Generates code to move object q (or register qr) into object z (or  */
 /*  register zr).							*/
 {
-    t&=NQ;
-    if(q&&(q->flags&(REG|DREFOBJ))==REG) qr=q->reg;
-    if(z&&(z->flags&(REG|DREFOBJ))==REG) zr=z->reg;
-    if(qr&&zr){
-	if(qr!=zr)
-	    fprintf(f,"\tmovl\t%s,%s\n",regnames[qr],regnames[zr]);
-	return;
+  t&=NQ;
+  if(q&&(q->flags&(REG|DREFOBJ))==REG) qr=q->reg;
+  if(z&&(z->flags&(REG|DREFOBJ))==REG) zr=z->reg;
+  if(qr&&zr){
+    if(qr!=zr)
+      fprintf(f,"\tmovl\t%s,%s\n",regnames[qr],regnames[zr]);
+    return;
+  }
+  if(zr&&(q->flags&KONST)){
+    eval_const(&q->val,t);
+    if(zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))&&zdeqto(vdouble,d2zd(0.0))){
+      fprintf(f,"\txorl\t%s,%s\n",regnames[zr],regnames[zr]);
+      return;
     }
-    if(zr&&(q->flags&KONST)){
-	eval_const(&q->val,t);
-	if(zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))&&zdeqto(vdouble,d2zd(0.0))){
-	    fprintf(f,"\txorl\t%s,%s\n",regnames[zr],regnames[zr]);
-	    return;
-	}
-    }
-    fprintf(f,"\tmov%c\t",x_t[t&NQ]);
-    if(qr){
-      if(t==SHORT) fprintf(f,"%%%s",regnames[qr]+2);
-      else if(t==CHAR) fprintf(f,"%%%cl",regnames[qr][2]);
-      else fprintf(f,"%s",regnames[qr]);
-    }else
-      probj2(f,q,t);
-    fprintf(f,",");
-    if(zr){
-      if(t==SHORT) fprintf(f,"%%%s",regnames[zr]+2);
-      else if(t==CHAR) fprintf(f,"%%%cl",regnames[zr][2]);
-      else fprintf(f,"%s",regnames[zr]);
-    }else
-      probj2(f,z,t);
-    fprintf(f,"\n");
+  }
+  fprintf(f,"\tmov%c\t",x_t[t&NQ]);
+  if(qr){
+    if(t==SHORT) fprintf(f,"%%%s",regnames[qr]+2);
+    else if(t==CHAR) fprintf(f,"%%%cl",regnames[qr][2]);
+    else fprintf(f,"%s",regnames[qr]);
+  }else 
+    probj2(f,q,t);
+  fprintf(f,",");
+  if(zr){
+    if(t==SHORT) fprintf(f,"%%%s",regnames[zr]+2);
+    else if(t==CHAR) fprintf(f,"%%%cl",regnames[zr][2]);
+    else fprintf(f,"%s",regnames[zr]);
+  }else 
+    probj2(f,z,t);
+  fprintf(f,"\n");
 }
 static long pof2(zulong x)
 /*  Yields log2(x)+1 oder 0. */
 {
     zulong p;int ln=1;
     p=ul2zul(1L);
-    while(zulleq(p,x)){
-	if(zuleqto(x,p)) return(ln);
-	ln++;p=zuladd(p,p);
+    while(ln<=32&&zulleq(p,x)){
+        if(zuleqto(x,p)) return(ln);
+        ln++;p=zuladd(p,p);
     }
     return(0);
 }
@@ -645,15 +642,15 @@ int init_cg(void)
     /*	because they are stored in the target's arithmetic.             */
     maxalign=l2zl(4L);
     char_bit=l2zl(8L);
-    if(G_FLAG_LONGALIGN){
-	for(i=SHORT;i<16;i++) malign[i]=4;
+    if(g_flags[6]&USEDFLAG){
+        for(i=SHORT;i<16;i++) malign[i]=4;
     }
     for(i=0;i<16;i++){
 	sizetab[i]=l2zl(msizetab[i]);
 	align[i]=l2zl(malign[i]);
     }
-    for(i=1;i<= 8;i++) regsize[i]=l2zl(4L);
-    for(i=9;i<=16;i++) regsize[i]=l2zl(8L);
+    for(i=1;i<= 8;i++) {regsize[i]=l2zl(4L);regtype[i]=&ltyp;}
+    for(i=9;i<=16;i++) {regsize[i]=l2zl(8L);regtype[i]=&ldbl;}
 
     /*	Initialize the min/max-settings. Note that the types of the	*/
     /*	host system may be different from the target system and you may */
@@ -679,9 +676,9 @@ int init_cg(void)
     regsa[sp]=1;
     /*	We need at least one free slot in the flaoting point stack  */
     regsa[16]=1;regscratch[16]=0;
-    /*	Use l%d as labels and _%s as identifiers by default. If     */
-    /*	-elf is specified we use .l%d and %s instead.		    */
-    if(G_FLAG_ELF) labprefix=".L"; else idprefix="_";
+    /*  Use l%d as labels and _%s as identifiers by default. If     */
+    /*  -elf is specified we use .l%d and %s instead.               */
+    if(g_flags[5]&USEDFLAG) labprefix="."; else idprefix="_";
     return(1);
 }
 
@@ -762,7 +759,7 @@ void gen_align(FILE *f,zlong align)
 /*  This function has to make sure the next data is	*/
 /*  aligned to multiples of <align> bytes.		*/
 {
-    if(!zlleq(align,l2zl(1L))) fprintf(f,"\t.align\t2\n");
+    if(!zlleq(align,l2zl(1L))) fprintf(f,"\t.align\t4\n");
 }
 
 void gen_var_head(FILE *f,struct Var *v)
@@ -773,24 +770,24 @@ void gen_var_head(FILE *f,struct Var *v)
     int constflag;
     if(v->clist) constflag=is_const(v->vtyp);
     if(v->storage_class==STATIC){
-	if((v->vtyp->flags&NQ)==FUNKT) return;
-	if(v->clist&&(!constflag||G_FLAG_CONST_IN_DATA)&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	if(v->clist&&constflag&&!G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
-	if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
-	if(section!=BSS) fprintf(f,"\t.align\t2\n%s%ld:\n",labprefix,zl2l(v->offset));
-	    else fprintf(f,"\t.lcomm\t%s%ld,",labprefix,zl2l(v->offset));
-	newobj=1;
+        if((v->vtyp->flags&NQ)==FUNKT) return;
+        if(v->clist&&(!constflag||(g_flags[3]&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
+        if(v->clist&&constflag&&!(g_flags[3]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
+        if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
+        if(section!=BSS) fprintf(f,"\t.align\t4\n%sl%ld:\n",labprefix,zl2l(v->offset));
+            else fprintf(f,"\t.lcomm\t%sl%ld,",labprefix,zl2l(v->offset));
+        newobj=1;
     }
     if(v->storage_class==EXTERN){
-	fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
-	if(v->flags&(DEFINED|TENTATIVE)){
-	    if(v->clist&&(!constflag||G_FLAG_CONST_IN_DATA)&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	    if(v->clist&&constflag&&!G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
-	    if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
-	    if(section!=BSS) fprintf(f,"\t.align\t2\n%s%s:\n",idprefix,v->identifier);
-		else fprintf(f,"\t.comm\t%s%s,",idprefix,v->identifier);
-	    newobj=1;
-	}
+        fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
+        if(v->flags&(DEFINED|TENTATIVE)){
+            if(v->clist&&(!constflag||(g_flags[3]&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
+            if(v->clist&&constflag&&!(g_flags[3]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
+            if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
+            if(section!=BSS) fprintf(f,"\t.align\t4\n%s%s:\n",idprefix,v->identifier);
+                else fprintf(f,"\t.comm\t%s%s,",idprefix,v->identifier);
+            newobj=1;
+        }
     }
 }
 
@@ -872,11 +869,11 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 		stackoffset+=notpopped;notpopped=0;
 	    }
 	}
-	if(c==LABEL) {forder(f);fprintf(f,"%s%d:\n",labprefix,t);continue;}
+	if(c==LABEL) {forder(f);fprintf(f,"%sl%d:\n",labprefix,t);continue;}
 	if(c>=BEQ&&c<=BRA){
 	    forder(f);
-	    if(lastcomp&UNSIGNED) fprintf(f,"\tj%s\t%s%d\n",ccu[c-BEQ],labprefix,t);
-		else		  fprintf(f,"\tj%s\t%s%d\n",ccs[c-BEQ],labprefix,t);
+	    if(lastcomp&UNSIGNED) fprintf(f,"\tj%s\t%sl%d\n",ccu[c-BEQ],labprefix,t);
+		else		  fprintf(f,"\tj%s\t%sl%d\n",ccs[c-BEQ],labprefix,t);
 	    continue;
 	}
 	if(c==MOVETOREG){
@@ -1046,392 +1043,396 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 			fprintf(f,"\tfistp%c\t",x_t[t&NQ]);
 			probj2(f,&p->z,t);fprintf(f,"\n");fpop();
 		      }
-		    }
-		}
-		continue;
-	    }
-	    ierror(0);
-	}
-	if(c==MINUS||c==KOMPLEMENT){
-	    char *s;
-	    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
-		if(isreg(z)&&p->z.reg==9&&isreg(q1)&&p->q1.reg==9){
-		    fprintf(f,"\tfchs\n");
-		    continue;
-		}
-		fload(f,&p->q1,t);
-		fprintf(f,"\tfchs\n");
-		fprintf(f,"\tfstp%c\t",x_t[t&NQ]);
-		probj2(f,&p->z,t);fprintf(f,"\n");
-		fpop();
-		continue;
-	    }
-	    if(c==MINUS) s="neg"; else s="not";
-	    if(compare_objects(&p->q1,&p->q2)){
-		fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
-		probj2(f,&p->z,t);fprintf(f,"\n");
-		continue;
-	    }
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,t);
-	    move(f,&p->q1,0,0,reg,t);
-	    fprintf(f,"\t%s%c\t%s\n",s,x_t[t&NQ],regnames[reg]);
-	    move(f,0,reg,&p->z,0,t);
-	    continue;
-	}
-	if(c==SETRETURN){
-	    if(p->z.reg){
-		if(p->z.reg==9){
-		    if(!isreg(q1)||fst[0]!=p->q1.reg)
-			fload(f,&p->q1,t);
-		}else{
-		    move(f,&p->q1,0,0,p->z.reg,t);
-		}
-	    }
-	    continue;
-	}
-	if(c==GETRETURN){
-	    if(p->q1.reg){
-		if(p->q1.reg==9){
-		    if(!isreg(z)||fst[0]!=p->z.reg)
-			fstore(f,&p->z,t);
-		}else{
-		    move(f,0,p->q1.reg,&p->z,0,t);
-		}
-	    }
-	    continue;
-	}
-	if(c==CALL){
-	    int reg;
-	    if(p->q1.flags&DREFOBJ){
-		if(!(p->q1.flags&REG)) ierror(0);
-		fprintf(f,"\tcall\t*%s\n",regnames[p->q1.reg]);
+                    }
+                }
+                continue;
+            }
+            ierror(0);
+        }
+        if(c==MINUS||c==KOMPLEMENT){
+            char *s;
+            if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
+                if(isreg(z)&&p->z.reg==9&&isreg(q1)&&p->q1.reg==9){
+                    fprintf(f,"\tfchs\n");
+                    continue;
+                }
+                fload(f,&p->q1,t);
+                fprintf(f,"\tfchs\n");
+                fprintf(f,"\tfstp%c\t",x_t[t&NQ]);
+                probj2(f,&p->z,t);fprintf(f,"\n");
+                fpop();
+                continue;
+            }
+            if(c==MINUS) s="neg"; else s="not";
+            if(compare_objects(&p->q1,&p->q2)){
+                fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
+                probj2(f,&p->z,t);fprintf(f,"\n");
+                continue;
+            }
+            if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,t);
+            move(f,&p->q1,0,0,reg,t);
+            fprintf(f,"\t%s%c\t%s\n",s,x_t[t&NQ],regnames[reg]);
+            move(f,0,reg,&p->z,0,t);
+            continue;
+        }
+        if(c==SETRETURN){
+            if(p->z.reg){
+                if(p->z.reg==9){
+                    if(!isreg(q1)||fst[0]!=p->q1.reg)
+                        fload(f,&p->q1,t);
+                }else{
+                    move(f,&p->q1,0,0,p->z.reg,t);
+                }
+            }
+            continue;
+        }
+        if(c==GETRETURN){
+            if(p->q1.reg){
+                if(p->q1.reg==9){
+                    if(!isreg(z)||fst[0]!=p->z.reg)
+                        fstore(f,&p->z,t);
+                }else{
+                    move(f,0,p->q1.reg,&p->z,0,t);
+                }
+            }
+            continue;
+        }
+        if(c==CALL){
+            int reg;
+	    if((p->q1.flags&VAR)&&p->q1.v->fi&&p->q1.v->fi->inline_asm){
+	      fprintf(f,"%s\n",p->q1.v->fi->inline_asm);
 	    }else{
-		fprintf(f,"\tcall\t");probj2(f,&p->q1,t);
-		fprintf(f,"\n");
+	      if(p->q1.flags&DREFOBJ){
+                if(!(p->q1.flags&REG)) ierror(0);
+                fprintf(f,"\tcall\t*%s\n",regnames[p->q1.reg]);
+	      }else{
+                fprintf(f,"\tcall\t");probj2(f,&p->q1,t);
+                fprintf(f,"\n");
+	      }
 	    }
-	    if(!zleqto(l2zl(0L),p->q2.val.vlong)){
-		notpopped+=zl2l(p->q2.val.vlong);
-		dontpop-=zl2l(p->q2.val.vlong);
-		if(!G_FLAG_NO_DELAY_POP&&stackoffset==-notpopped){
-		/*  Entfernen der Parameter verzoegern	*/
-		}else{
-		    fprintf(f,"\taddl\t$%ld,%%esp\n",zl2l(p->q2.val.vlong));
-		    stackoffset+=zl2l(p->q2.val.vlong);
-		    notpopped-=zl2l(p->q2.val.vlong);
-		}
-	    }
-	    continue;
-	}
-	if(c==ASSIGN||c==PUSH){
-	    if(c==PUSH) dontpop+=zl2l(p->q2.val.vlong);
-	    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
-		if(c==ASSIGN){
-		    prfst(f,"fassign");
-		    fload(f,&p->q1,t);
-		    fstore(f,&p->z,t);
-		    continue;
-		}else if(isreg(q1)){
-		    prfst(f,"fpush");
-		    fprintf(f,"\tsubl\t$%ld,%s\n",zl2l(sizetab[t&NQ]),regnames[sp]);
-		    stackoffset-=zl2l(sizetab[t&NQ]);
-		    if(fst[0]==p->q1.reg){
-			fprintf(f,"\tfst%c\t(%s)\n",x_t[t&NQ],regnames[sp]);
-		    }else{
-			fload(f,&p->q1,t);
-			fprintf(f,"\tfstp%c\t(%s)\n",x_t[t&NQ],regnames[sp]);
-			fpop();
-		    }
-		    continue;
-		}
-	    }
-	    if((t&NQ)>POINTER||!zleqto(p->q2.val.vlong,sizetab[t&NQ])||!zlleq(p->q2.val.vlong,l2zl(4L))){
-		int mdi=di,msi=si,m=0;long l;
-		l=zl2l(p->q2.val.vlong);
-		if(regs[cx]){m|=1;if(!cxl)cxl=++label;fprintf(f,"\tmovl\t%s,%s%d\n",regnames[cx],labprefix,cxl);}
-		if(regs[msi]||!regused[msi]){m|=2;if(!sil)sil=++label;fprintf(f,"\tmovl\t%s,%s%d\n",regnames[msi],labprefix,sil);}
-		if(regs[mdi]||!regused[mdi]){m|=4;if(!dil)dil=++label;fprintf(f,"\tmovl\t%s,%s%d\n",regnames[mdi],labprefix,dil);}
-		if((p->z.flags&REG)&&p->z.reg==msi&&(p->q1.flags&REG)&&p->q1.reg==mdi){
-		    msi=di;mdi=si;
-		    m|=8;
-		}
-		if(!(p->z.flags&REG)||p->z.reg!=msi){
-		    fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
-		    fprintf(f,",%s\n",regnames[msi]);
-		}
-		if(c==PUSH){
-		    fprintf(f,"\tsubl\t$%ld,%s\n\tmovl\t%s,%s\n",l,regnames[sp],regnames[sp],regnames[mdi]);
-		    stackoffset-=l;
-		}else{
-		    fprintf(f,"\tleal\t");probj2(f,&p->z,t);
-		    fprintf(f,",%s\n",regnames[mdi]);
-		}
-		if((p->z.flags&REG)&&p->z.reg==msi){
-		    fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
-		    fprintf(f,",%s\n",regnames[msi]);
-		}
-		if(m&8){
-		    msi=si;mdi=di;
-		    fprintf(f,"\txch\t%s,%s\n",regnames[msi],regnames[mdi]);
-		}
-		if((t&NQ)==ARRAY||(t&NQ)==CHAR||l<4){
-		    fprintf(f,"\tmovl\t$%ld,%s\n\trep\n\tmovsb\n",l,regnames[cx]);
-		}else{
-		    if(l>=8)
-			fprintf(f,"\tmovl\t$%ld,%s\n\trep\n",l/4,regnames[cx]);
-		    fprintf(f,"\tmovsl\n");
-		    if(l%2) fprintf(f,"\tmovsw\n");
-		    if(l%1) fprintf(f,"\tmovsb\n");
-		}
-		if(m&4) fprintf(f,"\tmovl\t%s%d,%s\n",labprefix,dil,regnames[mdi]);
-		if(m&2) fprintf(f,"\tmovl\t%s%d,%s\n",labprefix,sil,regnames[msi]);
-		if(m&1) fprintf(f,"\tmovl\t%s%d,%s\n",labprefix,cxl,regnames[cx]);
-		continue;
-	    }
-	    if(t==FLOAT) t=LONG;
-	    if(c==PUSH){
-		fprintf(f,"\tpush%c\t",x_t[t&NQ]);
-		probj2(f,&p->q1,t);fprintf(f,"\n");
-		stackoffset-=zl2l(p->q2.val.vlong);
-		continue;
-	    }
-	    if(c==ASSIGN){
-		if(p->q1.flags&KONST){
-		    move(f,&p->q1,0,&p->z,0,t);
-		    continue;
-		}
-		if(isreg(z)) reg=p->z.reg;
-		else if(isreg(q1)) reg=p->q1.reg;
-		else reg=get_reg(f,p,t);
-		move(f,&p->q1,0,0,reg,t);
-		move(f,0,reg,&p->z,0,t);
-		continue;
-	    }
-	    ierror(0);
-	}
-	if(c==ADDRESS){
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,LONG);
-	    fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
-	    fprintf(f,",%s\n",regnames[reg]);
-	    move(f,0,reg,&p->z,0,POINTER);
-	    continue;
-	}
-	if(c==TEST){
-	    lastcomp=t;
-	    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
-		if(isreg(q1)&&fst[0]==p->q1.reg){
-		    fprintf(f,"\tftst\n");lastcomp|=UNSIGNED;
-		    continue;
-		}else{
-		    p->code=c=COMPARE;
-		    p->q2.flags=KONST;
-		    p->q2.val.vdouble=d2zd(0.0);
-		    if((t&NQ)==FLOAT) p->q2.val.vfloat=zd2zf(p->q2.val.vdouble);
-		    /*	fall through to COMPARE */
-		}
-	    }else{
-		fprintf(f,"\tcmp%c\t$0,",x_t[t&NQ]);
-		probj2(f,&p->q1,t);fprintf(f,"\n");
-		continue;
-	    }
-	}
-	if(c==COMPARE){
-	    lastcomp=t;
-	    if(isreg(q2)||(p->q1.flags&KONST)){
-		struct IC *b=p->next;
-		struct obj o;
-		o=p->q1;p->q1=p->q2;p->q2=o;
-		while(b&&b->code==FREEREG) b=b->next;
-		if(!b) ierror(0);
-		if(b->code==BLT) b->code=BGT;
-		else if(b->code==BLE) b->code=BGE;
-		else if(b->code==BGT) b->code=BLT;
-		else if(b->code==BGE) b->code=BLE;
-	    }
-	    if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
-		prfst(f,"fcomp");
-		if(isreg(q1)&&p->q1.reg==fst[0]){
-		    fprintf(f,"\tfcom%c\t",x_t[t&NQ]);
-		    probj2(f,&p->q2,t);fprintf(f,"\n");
-		}else{
-		    fload(f,&p->q1,t);
-		    fprintf(f,"\tfcomp%c\t",x_t[t&NQ]);
-		    probj2(f,&p->q2,t);fprintf(f,"\n");
-		    fpop();
-		}
-		fprintf(f,"\tfstsw\n\tsahf\n");
-		lastcomp|=UNSIGNED;
-		continue;
-	    }
-	    if(!isreg(q1)){
-		if(!isreg(q2)){
-		    reg=get_reg(f,p,t);
-		    move(f,&p->q1,0,0,reg,t);
-		    p->q1.flags=REG;
-		    p->q1.reg=reg;
-		}
-	    }
-	    fprintf(f,"\tcmp%c\t",x_t[t&NQ]);
-	    probj2(f,&p->q2,t);fprintf(f,",");
-	    probj2(f,&p->q1,t);fprintf(f,"\n");
-	    continue;
-	}
-	if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
-	    char s[2];
-	    prfst(f,"fmath");
-	    if(isreg(q2)) s[0]=0; else {s[0]=x_t[t&NQ];s[1]=0;}
-	    if(isreg(z)&&isreg(q1)&&p->q1.reg==fst[0]&&p->z.reg==fst[0]){
-		fprintf(f,"\t%s%s\t",farithmetics[c-LSHIFT],s);
-		probj2(f,&p->q2,t); fprintf(f,"\n");continue;
-	    }
-	    fload(f,&p->q1,t);
-	    fprintf(f,"\t%s%s\t",farithmetics[c-LSHIFT],s);
-	    probj2(f,&p->q2,t); fprintf(f,"\n");
-	    fstore(f,&p->z,t); continue;
-	}
-	if((c==MULT||c==DIV||(c==MOD&&(p->typf&UNSIGNED)))&&(p->q2.flags&KONST)){
-	    long ln;
-	    eval_const(&p->q2.val,t);
-	    if(zlleq(l2zl(0L),vlong)&&zulleq(ul2zul(0UL),vulong)){
-		if(ln=pof2(vulong)){
-		    if(c==MOD){
-			vlong=zlsub(vlong,l2zl(1L));
-			p->code=AND;
-		    }else{
-			vlong=l2zl(ln-1);
-			if(c==DIV) p->code=RSHIFT; else p->code=LSHIFT;
-		    }
-		    c=p->code;
-		    if((t&NU)==CHAR) p->q2.val.vchar=zl2zc(vlong);
-		    if((t&NU)==SHORT) p->q2.val.vshort=zl2zs(vlong);
-		    if((t&NU)==INT) p->q2.val.vint=zl2zi(vlong);
-		    if((t&NU)==LONG) p->q2.val.vlong=vlong;
-		    vulong=zl2zul(vlong);
-		    if((t&NU)==(UNSIGNED|CHAR)) p->q2.val.vuchar=zul2zuc(vulong);
-		    if((t&NU)==(UNSIGNED|SHORT)) p->q2.val.vushort=zul2zus(vulong);
-		    if((t&NU)==(UNSIGNED|INT))  p->q2.val.vuint=zul2zui(vulong);
-		    if((t&NU)==(UNSIGNED|LONG)) p->q2.val.vulong=vulong;
-		}
-	    }
-	}
-	if(c==MOD||c==DIV){
-	    int m=0;
-	    if(regs[ax]&&(!isreg(z)||p->z.reg!=ax)){
-		fprintf(f,"\tpushl\t%s\n",regnames[ax]);
-		stackoffset-=4;m|=1;
-	    }
-	    if(regs[dx]&&(!isreg(z)||p->z.reg!=dx)){
-		fprintf(f,"\tpushl\t%s\n",regnames[dx]);
-		stackoffset-=4;m|=2;
-	    }
-	    if((p->q2.flags&(REG|DREFOBJ))==(REG|DREFOBJ)&&(p->q2.reg==ax||p->q2.reg==dx)){
-		move(f,&p->q2,0,0,dx,t);
-		fprintf(f,"\tpushl\t%s\n",regnames[dx]);
-		m|=8;stackoffset-=4;
-	    }
-	    move(f,&p->q1,0,0,ax,t);
-	    if(p->q2.flags&KONST){
-		fprintf(f,"\tpush%c\t",x_t[t&NQ]);probj2(f,&p->q2,t);
-		fprintf(f,"\n");m|=4;stackoffset-=4;
-	    }
-	    if(t&UNSIGNED) fprintf(f,"\txorl\t%s,%s\n\tdivl\t",regnames[dx],regnames[dx]);
-		else	   fprintf(f,"\tcltd\n\tidivl\t");
-	    if((m&12)||(isreg(q2)&&p->q2.reg==dx)){
-		fprintf(f,"(%s)",regnames[sp]);
-	    }else if(isreg(q2)&&p->q2.reg==ax){
-		fprintf(f,"%s(%s)",(m&2)?"4":"",regnames[sp]);
-	    }else{
-		probj2(f,&p->q2,t);
-	    }
-	    fprintf(f,"\n");
-	    if(c==DIV) move(f,0,ax,&p->z,0,t);
-		else   move(f,0,dx,&p->z,0,t);
-	    if(m&4){ fprintf(f,"\taddl\t$%ld,%s\n",zl2l(sizetab[t&NQ]),regnames[sp]);stackoffset+=4;}
-	    if(m&8){ fprintf(f,"\tpopl\t%s\n",regnames[dx]);stackoffset+=4;}
-	    if(m&2){ fprintf(f,"\tpopl\t%s\n",regnames[dx]);stackoffset+=4;}
-	    if(m&1){ fprintf(f,"\tpopl\t%s\n",regnames[ax]);stackoffset+=4;}
-	    continue;
-	}
-	if(!(p->q2.flags&KONST)&&(c==LSHIFT||c==RSHIFT)){
-	    char *s=arithmetics[c-LSHIFT];
-	    int fl=0;
-	    if(c==RSHIFT&&(t&UNSIGNED)) s="shr";
-	    if(((p->q1.flags&REG)&&p->q1.reg==cx)||((p->z.flags&REG)&&p->z.reg==cx)
-	       ||(!compare_objects(&p->q1,&p->z)&&!isreg(q1))){
-              fl=regs[cx];regs[cx]=2; /* don't want cx */
-		reg=get_reg(f,p,t);
-              regs[cx]=fl;
-              if(isreg(z)&&p->z.reg==cx) fl=0;
-              if(fl){fprintf(f,"\tpushl\t%s\n",regnames[cx]);stackoffset-=4;}
-		move(f,&p->q1,0,0,reg,t);
-		move(f,&p->q2,0,0,cx,t);
-		fprintf(f,"\t%s%c\t%%cl,%s\n",s,x_t[t&NQ],regnames[reg]);
-		move(f,0,reg,&p->z,0,t);
-              if(fl){fprintf(f,"\tpopl\t%s\n",regnames[cx]);stackoffset+=4;}
-		continue;
-	    }else{
-		if(!isreg(q2)||p->q2.reg!=cx){
-		    if(regs[cx]){fprintf(f,"\tpushl\t%s\n",regnames[cx]);stackoffset-=4;fl=1;}
-		    move(f,&p->q2,0,0,cx,t);
-		}
-		if(compare_objects(&p->q1,&p->z)){
-		    fprintf(f,"\t%s%c\t%%cl,",s,x_t[t&NQ]);
-		    probj2(f,&p->z,t);fprintf(f,"\n");
-		}else{
-		    move(f,0,p->q1.reg,&p->z,0,t);
-		    fprintf(f,"\t%s%c\t%%cl,",s,x_t[t&NQ]);
-		    probj2(f,&p->z,t);fprintf(f,"\n");
-		}
-		if(fl) {fprintf(f,"\tpopl\t%s\n",regnames[cx]);stackoffset+=4;}
-		continue;
-	    }
-	}
-	if((c>=LSHIFT&&c<=MOD)||(c>=OR&&c<=AND)){
-	    char *s;
-	    if(c>=OR&&c<=AND) s=logicals[c-OR];
-		else s=arithmetics[c-LSHIFT];
-	    if(c==RSHIFT&&(t&UNSIGNED)) s="shr";
-	    if(c!=MULT&&compare_objects(&p->q1,&p->z)){
-		if(isreg(z)||isreg(q1)||(p->q2.flags&KONST)){
-		    if((p->q2.flags&KONST)&&(c==ADD||c==SUB)){
-			eval_const(&p->q2.val,t);
-			if(zleqto(vlong,l2zl(1L))&&zuleqto(vulong,ul2zul(1UL))&&zdeqto(vdouble,d2zd(1.0))){
-			    if(c==ADD) s="inc"; else s="dec";
-			    fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
-			    probj2(f,&p->z,t);fprintf(f,"\n");
-			    continue;
-			}
-		    }
-		    fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
-		    probj2(f,&p->q2,t);fprintf(f,",");
-		    probj2(f,&p->z,t);fprintf(f,"\n");
-		    continue;
-		}else{
-		    if(isreg(q2)) reg=p->q2.reg; else reg=get_reg(f,p,t);
-		    move(f,&p->q2,0,0,reg,t);
-		    fprintf(f,"\t%s%c\t%s",s,x_t[t&NQ],regnames[reg]);
-		    fprintf(f,","); probj2(f,&p->z,t);fprintf(f,"\n");
-		    continue;
-		}
-	    }
-	    if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,t);
-	    move(f,&p->q1,0,0,reg,t);
-	    if((p->q2.flags&KONST)&&(c==ADD||c==SUB)){
-		eval_const(&p->q2.val,t);
-		if(zleqto(vlong,l2zl(1L))&&zuleqto(vulong,ul2zul(1UL))&&zdeqto(vdouble,d2zd(1.0))){
-		    if(c==ADD) s="inc"; else s="dec";
-		    fprintf(f,"\t%s%c\t%s\n",s,x_t[t&NQ],regnames[reg]);
-		}else{
-		    fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
-		    probj2(f,&p->q2,t);fprintf(f,",%s\n",regnames[reg]);
-		}
-	    }else{
-		fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
-		probj2(f,&p->q2,t);fprintf(f,",%s\n",regnames[reg]);
-	    }
-	    move(f,0,reg,&p->z,0,t);
-	    continue;
-	}
-	ierror(0);
+            if(!zleqto(l2zl(0L),p->q2.val.vlong)){
+	      notpopped+=zl2l(p->q2.val.vlong);
+	      dontpop-=zl2l(p->q2.val.vlong);
+	      if(!(g_flags[2]&USEDFLAG)&&stackoffset==-notpopped){
+                /*  Entfernen der Parameter verzoegern  */
+	      }else{
+		fprintf(f,"\taddl\t$%ld,%%esp\n",zl2l(p->q2.val.vlong));
+		stackoffset+=zl2l(p->q2.val.vlong);
+		notpopped-=zl2l(p->q2.val.vlong);
+	      }
+            }
+            continue;
+        }
+        if(c==ASSIGN||c==PUSH){
+            if(c==PUSH) dontpop+=zl2l(p->q2.val.vlong);
+            if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
+                if(c==ASSIGN){
+                    prfst(f,"fassign");
+                    fload(f,&p->q1,t);
+                    fstore(f,&p->z,t);
+                    continue;
+                }else if(isreg(q1)){
+                    prfst(f,"fpush");
+                    fprintf(f,"\tsubl\t$%ld,%s\n",zl2l(sizetab[t&NQ]),regnames[sp]);
+                    stackoffset-=zl2l(sizetab[t&NQ]);
+                    if(fst[0]==p->q1.reg){
+                        fprintf(f,"\tfst%c\t(%s)\n",x_t[t&NQ],regnames[sp]);
+                    }else{
+                        fload(f,&p->q1,t);
+                        fprintf(f,"\tfstp%c\t(%s)\n",x_t[t&NQ],regnames[sp]);
+                        fpop();
+                    }
+                    continue;
+                }
+            }
+            if((t&NQ)>POINTER||!zleqto(p->q2.val.vlong,sizetab[t&NQ])||!zlleq(p->q2.val.vlong,l2zl(4L))){
+                int mdi=di,msi=si,m=0;long l;
+                l=zl2l(p->q2.val.vlong);
+                if(regs[cx]){m|=1;if(!cxl)cxl=++label;fprintf(f,"\tmovl\t%s,%sl%d\n",regnames[cx],labprefix,cxl);}
+                if(regs[msi]||!regused[msi]){m|=2;if(!sil)sil=++label;fprintf(f,"\tmovl\t%s,%sl%d\n",regnames[msi],labprefix,sil);}
+                if(regs[mdi]||!regused[mdi]){m|=4;if(!dil)dil=++label;fprintf(f,"\tmovl\t%s,%sl%d\n",regnames[mdi],labprefix,dil);}
+                if((p->z.flags&REG)&&p->z.reg==msi&&(p->q1.flags&REG)&&p->q1.reg==mdi){
+                    msi=di;mdi=si;
+                    m|=8;
+                }
+                if(!(p->z.flags&REG)||p->z.reg!=msi){
+                    fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
+                    fprintf(f,",%s\n",regnames[msi]);
+                }
+                if(c==PUSH){
+                    fprintf(f,"\tsubl\t$%ld,%s\n\tmovl\t%s,%s\n",l,regnames[sp],regnames[sp],regnames[mdi]);
+                    stackoffset-=l;
+                }else{
+                    fprintf(f,"\tleal\t");probj2(f,&p->z,t);
+                    fprintf(f,",%s\n",regnames[mdi]);
+                }
+                if((p->z.flags&REG)&&p->z.reg==msi){
+                    fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
+                    fprintf(f,",%s\n",regnames[msi]);
+                }
+                if(m&8){
+                    msi=si;mdi=di;
+                    fprintf(f,"\txch\t%s,%s\n",regnames[msi],regnames[mdi]);
+                }
+                if((t&NQ)==ARRAY||(t&NQ)==CHAR||l<4){
+                    fprintf(f,"\tmovl\t$%ld,%s\n\trep\n\tmovsb\n",l,regnames[cx]);
+                }else{
+                    if(l>=8)
+                        fprintf(f,"\tmovl\t$%ld,%s\n\trep\n",l/4,regnames[cx]);
+                    fprintf(f,"\tmovsl\n");
+                    if(l%2) fprintf(f,"\tmovsw\n");
+                    if(l%1) fprintf(f,"\tmovsb\n");
+                }
+                if(m&4) fprintf(f,"\tmovl\t%sl%d,%s\n",labprefix,dil,regnames[mdi]);
+                if(m&2) fprintf(f,"\tmovl\t%sl%d,%s\n",labprefix,sil,regnames[msi]);
+                if(m&1) fprintf(f,"\tmovl\t%sl%d,%s\n",labprefix,cxl,regnames[cx]);
+                continue;
+            }
+            if(t==FLOAT) t=LONG;
+            if(c==PUSH){
+                fprintf(f,"\tpush%c\t",x_t[t&NQ]);
+                probj2(f,&p->q1,t);fprintf(f,"\n");
+                stackoffset-=zl2l(p->q2.val.vlong);
+                continue;
+            }
+            if(c==ASSIGN){
+                if(p->q1.flags&KONST){
+                    move(f,&p->q1,0,&p->z,0,t);
+                    continue;
+                }
+                if(isreg(z)) reg=p->z.reg;
+                else if(isreg(q1)) reg=p->q1.reg;
+                else reg=get_reg(f,p,t);
+                move(f,&p->q1,0,0,reg,t);
+                move(f,0,reg,&p->z,0,t);
+                continue;
+            }
+            ierror(0);
+        }
+        if(c==ADDRESS){
+            if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,LONG);
+            fprintf(f,"\tleal\t");probj2(f,&p->q1,t);
+            fprintf(f,",%s\n",regnames[reg]);
+            move(f,0,reg,&p->z,0,POINTER);
+            continue;
+        }
+        if(c==TEST){
+            lastcomp=t;
+            if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
+                if(isreg(q1)&&fst[0]==p->q1.reg){
+                    fprintf(f,"\tftst\n");lastcomp|=UNSIGNED;
+                    continue;
+                }else{
+                    p->code=c=COMPARE;
+                    p->q2.flags=KONST;
+                    p->q2.val.vdouble=d2zd(0.0);
+                    if((t&NQ)==FLOAT) p->q2.val.vfloat=zd2zf(p->q2.val.vdouble);
+                    /*  fall through to COMPARE */
+                }
+            }else{
+                fprintf(f,"\tcmp%c\t$0,",x_t[t&NQ]);
+                probj2(f,&p->q1,t);fprintf(f,"\n");
+                continue;
+            }
+        }
+        if(c==COMPARE){
+            lastcomp=t;
+            if(isreg(q2)||(p->q1.flags&KONST)){
+                struct IC *b=p->next;
+                struct obj o;
+                o=p->q1;p->q1=p->q2;p->q2=o;
+                while(b&&b->code==FREEREG) b=b->next;
+                if(!b) ierror(0);
+                if(b->code==BLT) b->code=BGT;
+                else if(b->code==BLE) b->code=BGE;
+                else if(b->code==BGT) b->code=BLT;
+                else if(b->code==BGE) b->code=BLE;
+            }
+            if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
+                prfst(f,"fcomp");
+                if(isreg(q1)&&p->q1.reg==fst[0]){
+                    fprintf(f,"\tfcom%c\t",x_t[t&NQ]);
+                    probj2(f,&p->q2,t);fprintf(f,"\n");
+                }else{
+                    fload(f,&p->q1,t);
+                    fprintf(f,"\tfcomp%c\t",x_t[t&NQ]);
+                    probj2(f,&p->q2,t);fprintf(f,"\n");
+                    fpop();
+                }
+                fprintf(f,"\tfstsw\n\tsahf\n");
+                lastcomp|=UNSIGNED;
+                continue;
+            }
+            if(!isreg(q1)){
+                if(!isreg(q2)){
+                    reg=get_reg(f,p,t);
+                    move(f,&p->q1,0,0,reg,t);
+                    p->q1.flags=REG;
+                    p->q1.reg=reg;
+                }
+            }
+            fprintf(f,"\tcmp%c\t",x_t[t&NQ]);
+            probj2(f,&p->q2,t);fprintf(f,",");
+            probj2(f,&p->q1,t);fprintf(f,"\n");
+            continue;
+        }
+        if((t&NQ)==FLOAT||(t&NQ)==DOUBLE){
+            char s[2];
+            prfst(f,"fmath");
+            if(isreg(q2)) s[0]=0; else {s[0]=x_t[t&NQ];s[1]=0;}
+            if(isreg(z)&&isreg(q1)&&p->q1.reg==fst[0]&&p->z.reg==fst[0]){
+                fprintf(f,"\t%s%s\t",farithmetics[c-LSHIFT],s);
+                probj2(f,&p->q2,t); fprintf(f,"\n");continue;
+            }
+            fload(f,&p->q1,t);
+            fprintf(f,"\t%s%s\t",farithmetics[c-LSHIFT],s);
+            probj2(f,&p->q2,t); fprintf(f,"\n");
+            fstore(f,&p->z,t); continue;
+        }
+        if((c==MULT||c==DIV||(c==MOD&&(p->typf&UNSIGNED)))&&(p->q2.flags&KONST)){
+            long ln;
+            eval_const(&p->q2.val,t);
+            if(zlleq(l2zl(0L),vlong)&&zulleq(ul2zul(0UL),vulong)){
+                if(ln=pof2(vulong)){
+                    if(c==MOD){
+                        vlong=zlsub(vlong,l2zl(1L));
+                        p->code=AND;
+                    }else{
+                        vlong=l2zl(ln-1);
+                        if(c==DIV) p->code=RSHIFT; else p->code=LSHIFT;
+                    }
+                    c=p->code;
+                    if((t&NU)==CHAR) p->q2.val.vchar=zl2zc(vlong);
+                    if((t&NU)==SHORT) p->q2.val.vshort=zl2zs(vlong);
+                    if((t&NU)==INT) p->q2.val.vint=zl2zi(vlong);
+                    if((t&NU)==LONG) p->q2.val.vlong=vlong;
+                    vulong=zl2zul(vlong);
+                    if((t&NU)==(UNSIGNED|CHAR)) p->q2.val.vuchar=zul2zuc(vulong);
+                    if((t&NU)==(UNSIGNED|SHORT)) p->q2.val.vushort=zul2zus(vulong);
+                    if((t&NU)==(UNSIGNED|INT))  p->q2.val.vuint=zul2zui(vulong);
+                    if((t&NU)==(UNSIGNED|LONG)) p->q2.val.vulong=vulong;
+                }
+            }
+        }
+        if(c==MOD||c==DIV){
+            int m=0;
+            if(regs[ax]&&(!isreg(z)||p->z.reg!=ax)){
+                fprintf(f,"\tpushl\t%s\n",regnames[ax]);
+                stackoffset-=4;m|=1;
+            }
+            if(regs[dx]&&(!isreg(z)||p->z.reg!=dx)){
+                fprintf(f,"\tpushl\t%s\n",regnames[dx]);
+                stackoffset-=4;m|=2;
+            }
+            if((p->q2.flags&(REG|DREFOBJ))==(REG|DREFOBJ)&&(p->q2.reg==ax||p->q2.reg==dx)){
+                move(f,&p->q2,0,0,dx,t);
+                fprintf(f,"\tpushl\t%s\n",regnames[dx]);
+                m|=8;stackoffset-=4;
+            }
+            move(f,&p->q1,0,0,ax,t);
+            if(p->q2.flags&KONST){
+                fprintf(f,"\tpush%c\t",x_t[t&NQ]);probj2(f,&p->q2,t);
+                fprintf(f,"\n");m|=4;stackoffset-=4;
+            }
+            if(t&UNSIGNED) fprintf(f,"\txorl\t%s,%s\n\tdivl\t",regnames[dx],regnames[dx]);
+                else       fprintf(f,"\tcltd\n\tidivl\t");
+            if((m&12)||(isreg(q2)&&p->q2.reg==dx)){
+                fprintf(f,"(%s)",regnames[sp]);
+            }else if(isreg(q2)&&p->q2.reg==ax){
+                fprintf(f,"%s(%s)",(m&2)?"4":"",regnames[sp]);
+            }else{
+                probj2(f,&p->q2,t);
+            }
+            fprintf(f,"\n");
+            if(c==DIV) move(f,0,ax,&p->z,0,t);
+                else   move(f,0,dx,&p->z,0,t);
+            if(m&4){ fprintf(f,"\taddl\t$%ld,%s\n",zl2l(sizetab[t&NQ]),regnames[sp]);stackoffset+=4;}
+            if(m&8){ fprintf(f,"\tpopl\t%s\n",regnames[dx]);stackoffset+=4;}
+            if(m&2){ fprintf(f,"\tpopl\t%s\n",regnames[dx]);stackoffset+=4;}
+            if(m&1){ fprintf(f,"\tpopl\t%s\n",regnames[ax]);stackoffset+=4;}
+            continue;
+        }
+        if(!(p->q2.flags&KONST)&&(c==LSHIFT||c==RSHIFT)){
+            char *s=arithmetics[c-LSHIFT];
+            int fl=0;
+            if(c==RSHIFT&&(t&UNSIGNED)) s="shr";
+            if(((p->q1.flags&REG)&&p->q1.reg==cx)||((p->z.flags&REG)&&p->z.reg==cx)
+               ||(!compare_objects(&p->q1,&p->z)&&!isreg(q1))){
+	        fl=regs[cx];regs[cx]=2; /* don't want cx */
+                reg=get_reg(f,p,t);
+		regs[cx]=fl;
+		if(isreg(z)&&p->z.reg==cx) fl=0;
+		if(fl){fprintf(f,"\tpushl\t%s\n",regnames[cx]);stackoffset-=4;}
+                move(f,&p->q1,0,0,reg,t);
+                move(f,&p->q2,0,0,cx,t);
+                fprintf(f,"\t%s%c\t%%cl,%s\n",s,x_t[t&NQ],regnames[reg]);
+                move(f,0,reg,&p->z,0,t);
+		if(fl){fprintf(f,"\tpopl\t%s\n",regnames[cx]);stackoffset+=4;}
+                continue;
+            }else{
+                if(!isreg(q2)||p->q2.reg!=cx){
+                    if(regs[cx]){fprintf(f,"\tpushl\t%s\n",regnames[cx]);stackoffset-=4;fl=1;}
+                    move(f,&p->q2,0,0,cx,t);
+                }
+                if(compare_objects(&p->q1,&p->z)){
+                    fprintf(f,"\t%s%c\t%%cl,",s,x_t[t&NQ]);
+                    probj2(f,&p->z,t);fprintf(f,"\n");
+                }else{
+                    move(f,0,p->q1.reg,&p->z,0,t);
+                    fprintf(f,"\t%s%c\t%%cl,",s,x_t[t&NQ]);
+                    probj2(f,&p->z,t);fprintf(f,"\n");
+                }
+                if(fl) {fprintf(f,"\tpopl\t%s\n",regnames[cx]);stackoffset+=4;}
+                continue;
+            }
+        }
+        if((c>=LSHIFT&&c<=MOD)||(c>=OR&&c<=AND)){
+            char *s;
+            if(c>=OR&&c<=AND) s=logicals[c-OR];
+                else s=arithmetics[c-LSHIFT];
+            if(c==RSHIFT&&(t&UNSIGNED)) s="shr";
+            if(c!=MULT&&compare_objects(&p->q1,&p->z)){
+                if(isreg(z)||isreg(q1)||(p->q2.flags&KONST)){
+                    if((p->q2.flags&KONST)&&(c==ADD||c==SUB)){
+                        eval_const(&p->q2.val,t);
+                        if(zleqto(vlong,l2zl(1L))&&zuleqto(vulong,ul2zul(1UL))&&zdeqto(vdouble,d2zd(1.0))){
+                            if(c==ADD) s="inc"; else s="dec";
+                            fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
+                            probj2(f,&p->z,t);fprintf(f,"\n");
+                            continue;
+                        }
+                    }
+                    fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
+                    probj2(f,&p->q2,t);fprintf(f,",");
+                    probj2(f,&p->z,t);fprintf(f,"\n");
+                    continue;
+                }else{
+                    if(isreg(q2)) reg=p->q2.reg; else reg=get_reg(f,p,t);
+                    move(f,&p->q2,0,0,reg,t);
+                    fprintf(f,"\t%s%c\t%s",s,x_t[t&NQ],regnames[reg]);
+                    fprintf(f,","); probj2(f,&p->z,t);fprintf(f,"\n");
+                    continue;
+                }
+            }
+            if(isreg(z)) reg=p->z.reg; else reg=get_reg(f,p,t);
+            move(f,&p->q1,0,0,reg,t);
+            if((p->q2.flags&KONST)&&(c==ADD||c==SUB)){
+                eval_const(&p->q2.val,t);
+                if(zleqto(vlong,l2zl(1L))&&zuleqto(vulong,ul2zul(1UL))&&zdeqto(vdouble,d2zd(1.0))){
+                    if(c==ADD) s="inc"; else s="dec";
+                    fprintf(f,"\t%s%c\t%s\n",s,x_t[t&NQ],regnames[reg]);
+                }else{
+                    fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
+                    probj2(f,&p->q2,t);fprintf(f,",%s\n",regnames[reg]);
+                }
+            }else{
+                fprintf(f,"\t%s%c\t",s,x_t[t&NQ]);
+                probj2(f,&p->q2,t);fprintf(f,",%s\n",regnames[reg]);
+            }
+            move(f,0,reg,&p->z,0,t);
+            continue;
+        }
+        ierror(0);
     }
     if(notpopped){
 	fprintf(f,"\taddl\t$%ld,%%esp\n",notpopped);
@@ -1450,24 +1451,25 @@ void cleanup_cg(FILE *f)
     struct fpconstlist *p;
     unsigned char *ip;
     while(p=firstfpc){
-	if(f){
-	    if(section!=CODE){fprintf(f,codename);section=CODE;}
-	    fprintf(f,"%s%d:\n\t.long\t",labprefix,p->label);
-	    ip=(unsigned char *)&p->val.vdouble;
-	    fprintf(f,"0x%02x%02x%02x%02x",ip[3],ip[2],ip[1],ip[0]);
-	    if((p->typ&NQ)==DOUBLE){
-		fprintf(f,",0x%02x%02x%02x%02x",ip[7],ip[6],ip[5],ip[4]);
-	    }
-	    fprintf(f,"\n");
-	}
-	firstfpc=p->next;
-	free(p);
+        if(f){
+            if(section!=CODE){fprintf(f,codename);section=CODE;}
+	    fprintf(f,"\t.align\t4\n");
+            fprintf(f,"%sl%d:\n\t.long\t",labprefix,p->label);
+            ip=(unsigned char *)&p->val.vdouble;
+            fprintf(f,"0x%02x%02x%02x%02x",ip[3],ip[2],ip[1],ip[0]);
+            if((p->typ&NQ)==DOUBLE){
+                fprintf(f,",0x%02x%02x%02x%02x",ip[7],ip[6],ip[5],ip[4]);
+            }
+            fprintf(f,"\n");
+        }
+        firstfpc=p->next;
+        free(p);
     }
     if(f){
-	if(section!=BSS){fprintf(f,bssname);section=BSS;}
-	if(cxl) fprintf(f,"\t.lcomm\t%s%d,4\n",labprefix,cxl);
-	if(sil) fprintf(f,"\t.lcomm\t%s%d,4\n",labprefix,sil);
-	if(dil) fprintf(f,"\t.lcomm\t%s%d,4\n",labprefix,dil);
+        if(section!=BSS){fprintf(f,bssname);section=BSS;}
+        if(cxl) fprintf(f,"\t.lcomm\t%sl%d,4\n",labprefix,cxl);
+        if(sil) fprintf(f,"\t.lcomm\t%sl%d,4\n",labprefix,sil);
+        if(dil) fprintf(f,"\t.lcomm\t%sl%d,4\n",labprefix,dil);
     }
 }
 

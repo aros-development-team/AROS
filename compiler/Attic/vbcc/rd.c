@@ -280,7 +280,7 @@ int fold(struct IC *p)
             }
             if((c==BEQ&&cc==0)||(c==BNE&&cc!=0)||(c==BLT&&cc<0)||(c==BGT&&cc>0)||(c==BLE&&cc<=0)||(c==BGE&&cc>=0)){
                 if(DEBUG&1024){ printf("changed following branch to BRA:\n");pric2(stdout,bp);}
-                bp->code=BRA;
+                bp->code=BRA;bp->q1.flags=0;
             }else{
                 if(DEBUG&1024){ printf("removed following branch:\n");pric2(stdout,bp);}
                 if(have_alias){ free(bp->use_list);free(bp->change_list);}
@@ -363,7 +363,7 @@ int propagate(struct obj *o,int replace)
             /*  Wenn es keine Zuweisung einer Konstanten ist, ist keine */
             /*  Weitergabe von Konstanten moeglich.                     */
             if(p->code!=ASSIGN) return(0);
-            if(!(p->q1.flags&KONST)) return(0);
+            if((p->q1.flags&(KONST|DREFOBJ))!=KONST) return(0);
             if(val){
                 /*  Wenn mehr als eine Konstante, muessen alle gleich sein  */
                 /*  und den gleichen Typ haben.                             */

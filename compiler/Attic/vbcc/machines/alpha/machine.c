@@ -8,7 +8,7 @@ static char FILE_[]=__FILE__;
 /*  Public data that MUST be there.                             */
 
 /* Name and copyright. */
-char cg_copyright[]="vbcc code-generator for DEC Alpha V0.3 (c) in 1997 by Volker Barthelmann";
+char cg_copyright[]="vbcc code-generator for DEC Alpha V0.3a (c) in 1997 by Volker Barthelmann";
 
 /*  Commandline-flags the code-generator accepts                */
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,0,0,0};
@@ -46,6 +46,9 @@ char *regnames[MAXR+1]={"noreg",
 /*  The Size of each register in bytes.                         */
 zlong regsize[MAXR+1];
 
+/*  A type which can store each register. */
+struct Typ *regtype[MAXR+1];
+
 /*  regsa[reg]!=0 if a certain register is allocated and should */
 /*  not be used by the compiler pass.                           */
 int regsa[MAXR+1];
@@ -63,8 +66,10 @@ struct reg_handle empty_reg_handle={0};
 /*  Private data and functions.         */
 /****************************************/
 
-static long malign[16]={1,1,2,4,8,4,8,4,8,1,1,1,4,4,4};
+static long malign[16]=  {1,1,2,4,8,4,8,1,8,1,1,1,4,1};
 static long msizetab[16]={1,1,2,4,8,4,8,0,8,0,0,0,4,0};
+
+static struct Typ ltyp={LONG};
 
 static char x_t[16]={'?','b','w','l','q','s','t','?','q'};
 
@@ -427,7 +432,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
   if((p->z.flags&(REG|DREFOBJ))==REG) zreg=p->z.reg;
   
  
-  if(p->q1.flags&KONST){
+  if((p->q1.flags&(KONST|DREFOBJ))==KONST){
     eval_const(&p->q1.val,typ);
     if(zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))&&zdeqto(vdouble,d2zd(0.0))){
       if((typ&NQ)==FLOAT||(typ&NQ)==DOUBLE) q1reg=f31; else q1reg=r31;
@@ -453,7 +458,7 @@ static struct IC *do_refs(FILE *f,struct IC *p)
       if((typ&NQ)==FLOAT||(typ&NQ)==DOUBLE) reg=f1; else reg=t1;
       if((c==ASSIGN||(c>=CONVCHAR&&c<=CONVULONG))&&zreg&&(reg-r31)*(zreg-r31)>0) reg=zreg;
       if(c==SETRETURN&&p->z.reg) reg=p->z.reg;
-      if(p->q1.flags&DREFOBJ) {typ1=POINTER;reg=t1;} else typ1=typ;
+      if((p->q1.flags&DREFOBJ)||c==ADDI2P||c==SUBIFP) {typ1=POINTER;reg=t1;} else typ1=typ;
       if(c==CALL) reg=vp;
       if((c==MOD||c==DIV)&&(typ1&NQ)<=LONG&&!regs[25]) reg=25; /* Linux-div */
       if((typ1&NQ)<=POINTER){
@@ -469,11 +474,14 @@ static struct IC *do_refs(FILE *f,struct IC *p)
       if((c==ASSIGN||(c>=CONVCHAR&&c<=CONVULONG))&&zreg&&regok(zreg,typ,0)) reg=zreg;
       if(c==SETRETURN&&p->z.reg) reg=p->z.reg;
       if((c==MOD||c==DIV)&&(typ&NQ)<=LONG&&!regs[25]) reg=25; /* Linux-div */
-      load_reg(f,reg,cam(IMM_IND,q1reg,-1,0),typ,t1);
+      if(c==ADDI2P||c==SUBIFP) 
+	load_reg(f,reg,cam(IMM_IND,q1reg,-1,0),POINTER,t1);
+      else
+	load_reg(f,reg,cam(IMM_IND,q1reg,-1,0),typ,t1);
       q1reg=reg;
     }
   }
-  if(p->q2.flags&KONST){
+  if((p->q2.flags&(KONST|DREFOBJ))==KONST){
     eval_const(&p->q2.val,typ);
     if(zleqto(vlong,l2zl(0L))&&zuleqto(vulong,ul2zul(0UL))&&zdeqto(vdouble,d2zd(0.0))){
       if((typ&NQ)==FLOAT||(typ&NQ)==DOUBLE) q2reg=f31; else q2reg=r31;
@@ -526,7 +534,7 @@ static long pof2(zulong x)
 {
     zulong p;int ln=1;
     p=ul2zul(1L);
-    while(zulleq(p,x)){
+    while(ln<=64&&zulleq(p,x)){
         if(zuleqto(x,p)) return(ln);
         ln++;p=zuladd(p,p);
     }
@@ -537,7 +545,7 @@ static void pr(FILE *f,struct IC *p)
 {
   int typ=p->typf;
   if(p->z.flags){
-    if(p->code==ADDRESS) typ=POINTER;
+    if(p->code==ADDRESS||p->code==ADDI2P||p->code==SUBIFP) typ=POINTER;
     if(!isreg(z)){
       if(p->z.flags&DREFOBJ){
 	if(p->z.flags&REG){
@@ -811,9 +819,8 @@ int init_cg(void)
     sizetab[i]=l2zl(msizetab[i]);
     align[i]=l2zl(malign[i]);
   }
-  for(i= 1;i<=32;i++) regsize[i]=l2zl(4L);
-  for(i=33;i<=64;i++) regsize[i]=l2zl(8L);
-  for(i=65;i<=72;i++) regsize[i]=l2zl(1L);
+  for(i= 1;i<=32;i++) {regsize[i]=l2zl(8L);regtype[i]=&ltyp;}
+  for(i=33;i<=64;i++) {regsize[i]=l2zl(8L);regtype[i]=&ltyp;}
   
   /*  Use multiple ccs.   */
   multiple_ccs=0; /* not yet */
@@ -932,7 +939,7 @@ void gen_align(FILE *f,zlong align)
 /*  This function has to make sure the next data is     */
 /*  aligned to multiples of <align> bytes.              */
 {
-  if(!zlleq(align,l2zl(1L))) fprintf(f,"\t.align\t3\n");
+  fprintf(f,"\t.align\t3\n");
 }
 
 void gen_var_head(FILE *f,struct Var *v)
@@ -1023,9 +1030,9 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
  	m->q2.flags=0;m->code=c=TEST; 
       } 
     } 
-    if((t&NQ)<=LONG&&(m->q2.flags&KONST)&&(t&NQ)<=LONG&&(c==MULT||c==DIV||(c==MOD&&(t&UNSIGNED)))){ 
+    if((t&NQ)<=LONG&&(m->q2.flags&KONST)&&(c==MULT||c==DIV||(c==MOD&&(t&UNSIGNED)))){ 
       eval_const(&m->q2.val,t); 
-      i=pof2(vlong); 
+      i=pof2(vulong); 
       if(i){
  	if(c==MOD){ 
  	  vlong=zlsub(vlong,l2zl(1L)); 
@@ -1066,7 +1073,11 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
   }
   /* Noch nicht ok. */
   if(varargs){
-    fixargs=v->vtyp->exact->count;
+    fixargs=0;
+    for(i=0;i<v->vtyp->exact->count;i++){
+      c=(*v->vtyp->exact->sl)[i].styp->flags&NQ;
+      if(c<=POINTER) fixargs++;
+    }
     if(fixargs<6) addbuf+=(6-fixargs)*16;
   }
   function_top(f,v,zl2l(offset+addbuf),maxpushed);
@@ -1122,13 +1133,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	if(!helpl) helpl=++label;
 	cl=0;mr=0;ms=0;
 	for(i=1;i<=32;i++){
-	  if(regused[i]&&!regscratch[i]&&!regs[i]) mr=i;
+	  if(i!=17&&i!=18&&i!=19&&regused[i]&&!regscratch[i]&&!regs[i]) mr=i;
 	  if(regs[i]&&regscratch[i]) ms=1;
 	}
 	if(mr==0) mr=t3;
-	if(regs[17]||regs[18]||regs[19]||regs[1]) ms=1;
+	if(regs[17]||regs[18]||regs[19]||function_calls==0) ms=1;
 	if(ms) fprintf(f,"\tlda\t%s,%s%d\n",regnames[mr],labprefix,helpl);
-	if(regs[1]) fprintf(f,"\tstq\t%s,%d(%s)\n",regnames[1],8*cl++,regnames[mr]);
 	if(regs[17]) fprintf(f,"\tstq\t%s,%d(%s)\n",regnames[17],8*cl++,regnames[mr]);
 	if(regs[18]) fprintf(f,"\tstq\t%s,%d(%s)\n",regnames[18],8*cl++,regnames[mr]);
 	if(regs[19]) fprintf(f,"\tstq\t%s,%d(%s)\n",regnames[19],8*cl++,regnames[mr]);
@@ -1230,9 +1240,10 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	continue;
       } 
       for(i=1;i<=32;i++){
-	if(regs[i]&&regscratch[i])
+	if(i!=17&&i!=18&&i!=19&&regs[i]&&regscratch[i])
 	  fprintf(f,"\tstq\t%s,%d(%s)\n",regnames[i],8*cl++,regnames[mr]);
       }
+      if(function_calls==0) fprintf(f,"\tstq\t%s,%d(%s)\n",regnames[lr],8*cl++,regnames[mr]);
       if(cl>helps) helps=cl;
       loops.val.vlong=size;
       loops.flags=KONST;
@@ -1243,14 +1254,14 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
       fprintf(f,"\tldgp\t%s,0(%s)\n",regnames[gp],regnames[lr]);
       cl=0;
       if(ms&&mr==t3) fprintf(f,"\tlda\t%s,%s%d\n",regnames[mr],labprefix,helpl);
-      if(regs[1]) fprintf(f,"\tldq\t%s,%d(%s)\n",regnames[1],8*cl++,regnames[mr]);
       if(regs[17]) fprintf(f,"\tldq\t%s,%d(%s)\n",regnames[17],8*cl++,regnames[mr]);
       if(regs[18]) fprintf(f,"\tldq\t%s,%d(%s)\n",regnames[18],8*cl++,regnames[mr]);
       if(regs[19]) fprintf(f,"\tldq\t%s,%d(%s)\n",regnames[19],8*cl++,regnames[mr]);
       for(i=1;i<=32;i++){
-	if(regs[i]&&regscratch[i])
+	if(i!=17&&i!=18&&i!=19&&regs[i]&&regscratch[i])
 	  fprintf(f,"\tldq\t%s,%d(%s)\n",regnames[i],8*cl++,regnames[mr]);
       }
+      if(function_calls==0) fprintf(f,"\tldq\t%s,%d(%s)\n",regnames[lr],8*cl++,regnames[mr]);     
       p->z.flags=0;
       continue;
     }
@@ -1336,11 +1347,16 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	zreg=p->q1.reg;
 	st[zreg]=ESGN;
       }else
-	ierror(0);
+	p->z.flags=0;
       continue;
     }
     if(c==CALL){
       int reg;
+      if((p->q1.flags&VAR)&&p->q1.v->fi&&p->q1.v->fi->inline_asm){
+	fprintf(f,"%s\n",p->q1.v->fi->inline_asm);
+	pushed-=zl2l(p->q2.val.vlong);
+	continue;
+      }
       if((p->q1.flags&VAR)&&p->q1.v->storage_class==EXTERN&&!(g_flags[6]&USEDFLAG)){
 	char *s=p->q1.v->identifier;
 	if(!strcmp("abs",s)||!strcmp("labs",s)){
@@ -1585,7 +1601,7 @@ void cleanup_cg(FILE *f)
     firstfpc=p->next;
     free(p);
   }
-  if(f&&helps) fprintf(f,"\t.lcomm\t%s%d,%d\n",labprefix,helpl,helps);
+  if(f&&helps) fprintf(f,"\t.lcomm\t%s%d,%d\n",labprefix,helpl,helps*8);
 }
 
 

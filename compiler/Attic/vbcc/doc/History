@@ -9,6 +9,63 @@ vbcc is (c) in 1995-97 by Volker Barthelmann
 (vcu68k):  changes in the compiler frontend for unix68k
 
 
+Changes since V0.5k
+
+- -ml option added to vc
+- remove() and rename() added (clappc)
+- vc accepts +file anywhere now
+
+Changes since V0.5j
+
+- -setccs added (cgppc)
+- bug fix: some bugs for ppc fixed (cgppc)
+- bug fix: problems with SUBPFP in ic.c
+- bug fix: do_refs() had problems with pointer-constants (cgm68k)
+- bug fix: similar problem for i386 (cgi386)
+- obsolete EOF-check in main() removed
+- format for -cc/-ccv changed (vc)
+- + does not need the full path anymore (vc)
+
+Changes since V0.5i
+
+- fixed minor bugs in strcmp, strncmp and memcmp (cla68k,clappc)
+- fixed certain problems with regargs
+- some bug-fixes (cgppc,cgalpha)
+- bug-fix: KONST|DREFOBJ was incorrectly propagated as constant
+- hacked fd2lib to create libcall-includes (cla68k)
+
+Changes since V0.5h
+
+- -ul added to vc
+- -no-regnames added (cgppc)
+- changed gen_cond() void
+- support for struct-return and HAVE_REGPARMS
+- several bug-fixes (cgppc,cgalpha)
+- removed debugging-output in printzul
+- warning 208 extended to simple endless loops
+- cyclic dependencies in load_reg_parms are handled now
+- several bug fixes (cgppc)
+
+Changes since V0.5g
+
+- argument-registers were assigned before rewriting array/function-types
+- r2 is reserved (cgppc)
+- warning 168 is no more displayed for main()
+- bug-fix: alignment of floating-point-constants not always ok (cgppc,cgi386)
+- bug-fix: sub const with short types (cgppc)
+- function-inlining works with register-parameters
+- added stdarg-support (cgppc)
+- leaf-functions don't creat a stack-frame (cgppc)
+- some bug fixes (cgppc)
+- several changes in handling of alignments
+- added support for modulo (cgppc)
+- some modifications on alignments (cgm68k,cgppc)
+- -amiga-align added (cgppc)
+- mysupp included in extra.lib (cla68k)
+- some docs updated
+- added memread_id, memwrite_id and memwrite_completely to vsc.h
+- added inline-assembly-functions
+
 Changes since V0.5f
 
 - added examples of stdarg.h into the codegen-docs

@@ -694,7 +694,7 @@ int type_expression2(np p)
             if(i==sd->count-1&&(flags&(PRINTFLIKE|SCANFLIKE))){
                 if(al->arg->left&&al->arg->left->flags==STRING){
                 /*  Argumente anhand des Formatstrings ueberpruefen */
-                    struct const_list *cl=(struct const_list *)al->arg->left->identifier;
+                    struct const_list *cl=al->arg->left->cl;
                     int fused=0;
                     al=al->next;
                     while(cl&&cl->other){

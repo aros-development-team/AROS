@@ -193,10 +193,12 @@ struct flowgraph *create_loop_headers(struct flowgraph *fg,int av)
                         (*ls)=nl;
                         ls=&nl->next;
                         if(lp->graph->branchout==g){
-                            if(DEBUG&1024) printf("changing branch\n");
-                            if(lp->graph->end->code<BEQ||lp->graph->end->code>BRA) ierror(0);
-                            lp->graph->end->typf=lic->typf;
-                            lp->graph->branchout=new;
+			  struct IC *p=lp->graph->end;
+			  if(DEBUG&1024) printf("changing branch\n");
+			  while(p&&p->code==FREEREG) p=p->prev;
+			  if(!p||p->code<BEQ||p->code>BRA) ierror(0);
+			  p->typf=lic->typf;
+			  lp->graph->branchout=new;
                         }
                         lp->graph=new;
                     }
@@ -279,10 +281,12 @@ struct flowgraph *create_loop_footers(struct flowgraph *fg,int av)
                     (*ls)=nl;
                     ls=&nl->next;
                     if(lp->graph->branchout==out){
-                        if(DEBUG&1024) printf("changing branch\n");
-                        if(lp->graph->end->code<BEQ||lp->graph->end->code>BRA) ierror(0);
-                        lp->graph->end->typf=lic->typf;
-                        lp->graph->branchout=new;
+		      struct IC *p=lp->graph->end;
+		      if(DEBUG&1024) printf("changing branch\n");
+		      while(p&&p->code==FREEREG) p=p->prev;
+		      if(!p||p->code<BEQ||p->code>BRA) ierror(0);
+		      p->typf=lic->typf;
+		      lp->graph->branchout=new;
                     }
                     lp->graph=new;
                 }
@@ -1159,7 +1163,7 @@ int do_unroll(int donothing)
             }
         }
         if(flags==UNROLL_INVARIANT){
-            struct IC *new; struct Var *v; int out=++label;
+            struct IC *new; struct Var *v; int out=++label,code;
             long i; struct Typ *t;
             if(DEBUG&1024) printf("unrolling non-constant loop\n");
             if(cmp->q1.flags&VAR) t=cmp->q1.v->vtyp; else t=cmp->q2.v->vtyp;
@@ -1180,6 +1184,7 @@ int do_unroll(int donothing)
             if(branch->code==BGE) new->code=BLT;
             if(branch->code==BEQ) new->code=BNE;
             if(branch->code==BNE) new->code=BEQ;
+	    code=branch->code;
             new->typf=out;
             insert_IC(head->start,new);
             new=mymalloc(ICS); *new=*cmp;
@@ -1244,24 +1249,42 @@ int do_unroll(int donothing)
             new->q2.val.vlong=l2zl(unroll-1);
             eval_const(&new->q2.val,LONG);
             insert_const2(&new->q2.val,new->typf);
-            new->z=new->q1;
             insert_IC(head->start,new);
-            new=mymalloc(ICS); *new=*ind;
+            new=mymalloc(ICS);
+	    *new=*ind;
             new->change_cnt=new->use_cnt=0;
             new->code=DIV;
             new->q1=head->start->next->z;
             new->z=new->q1;
             insert_IC(head->start,new);
-            new=mymalloc(ICS); *new=*head->start->next;
+	    new=mymalloc(ICS);
+	    *new=*head->start->next;
+	    new->code=ADD;
+	    insert_IC(head->start,new);
+	    if(code==BLT||code==BGT){
+	      new=mymalloc(ICS);
+	      *new=*head->start->next;
+	      new->code=SUB;
+	      new->q2.val.vlong=l2zl(1L);
+	      eval_const(&new->q2.val,LONG);
+	      insert_const2(&new->q2.val,new->typf);
+	      insert_IC(head->start,new);
+	    }
+            new=mymalloc(ICS);
+	    *new=*head->start->next;
             new->change_cnt=new->use_cnt=0;
             new->code=SUB;
             if(!compare_objs(&ind->z,&cmp->q1,new->typf)){
-                if(ind->code==ADD){new->q1=cmp->q2;new->q2=ind->z;}
-                    else          {new->q2=cmp->q2;new->q2=ind->z;}
+                if(code==BLT||code==BLE){new->q1=cmp->q2;new->q2=ind->z;}
+                    else                {new->q2=cmp->q2;new->q1=ind->z;}
             }else{
-                if(ind->code==ADD){new->q1=cmp->q1;new->q2=ind->z;}
-                    else          {new->q2=cmp->q1;new->q2=ind->z;}
+                if(code==BLT||code==BLE){new->q1=cmp->q1;new->q2=ind->z;}
+                    else                {new->q2=cmp->q1;new->q1=ind->z;}
             }
+	    if(ind->code==SUB){
+	      struct obj o;
+	      o=new->q1;new->q1=new->q2;new->q2=o;
+	    }
             insert_IC(head->start,new);
             copy_code(start->start->next,cmp->prev,start->start,unroll-1);
             label+=unroll;
@@ -1321,7 +1344,7 @@ void unroll(struct flowgraph *start,struct flowgraph *head)
         if(p==end->start) return;
         p=p->prev;
     }while(p);
-    if(!e||e->flags&KONST){
+    if(!e||(e->flags&KONST)){
         if(e) end_val=e->val;
         if(DEBUG&1024) printf("end condition is constant\n");
     }else{
@@ -1363,7 +1386,7 @@ void unroll(struct flowgraph *start,struct flowgraph *head)
     if(e&&!(e->flags&KONST)){
         /*  Anzahl der Schleifendurchlaeufe kann beim Eintritt in die   */
         /*  Schleife zur Laufzeit berechnet werden.                     */
-/*        add_ur(UNROLL_INVARIANT,0,4,start,head,cmp,branch,p);*/
+/*         add_ur(UNROLL_INVARIANT,0,4,start,head,cmp,branch,p); */
         return;
     }
     i=p->z.v->index;

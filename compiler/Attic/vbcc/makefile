@@ -1,6 +1,6 @@
 
 CC	= cc
-CFLAGS	= -g -I. -I$(OBJDIR)
+CFLAGS	= -I. -I$(OBJDIR)
 LDFLAGS = -lm
 
 OBJDIR = stage1

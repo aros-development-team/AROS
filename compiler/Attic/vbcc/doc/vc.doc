@@ -45,11 +45,9 @@ INSTALLATION
                 searching the includes in vinclude: and defining __STDC__)
                 is "-pp=vcpp -Ivinclude: -D__STDC__=1 %s %s %s"
 
-    -cc=string  For the compiler. Note that you cannot use vc to call
-                another compiler than vbcc. But you can call different
-                versions of vbcc this way, e.g.:
-                "-cc=vbcca68k -quiet" or
-                "-cc=vbcci386 -quiet"
+    -cc=string  For the compiler. Will be called like in
+                printf(string,infile,outfile,options,optimization), e.g.
+                "-cc=vbccm68k -quiet %s -o= %s %s -O=%d"
 
     -as=string  The same for the assembler, E.g.:
                 "-as=PhxAss opt NRQBTLPSM quiet %s to %s" or
@@ -73,7 +71,6 @@ INSTALLATION
     -l2=string  The same like -ld, but standard-startup and -libraries should
                 not be linked; used when -nostdlib is specified.
 
-
     All those strings should tell the command to omit any output apart from
     error messages if possible. However for every of those options there
     exists one with an additional 'v', i.e. -ppv=, -asv=, etc. which should
@@ -81,11 +78,20 @@ INSTALLATION
     If vc is invoked with the -vv option the verbose commands will be called,
     if not the quiet ones will be used.
 
+    -ul=string  Format for additional libraries specified with -l<lib>.
+                The result of printf(string,lib) will be added to the
+                command invoking the linker. Examples are:
+                "-ul=vlib:%s.lib" or "-ul=-l%s"
+
+    -ml=n       If the linker line is longer than <n> characters the objects
+                will be written to a temporary file and passed to the linker
+                with @tmpfile. This will not work with all linkers.
+
 
 CONFIG
 
     vc looks for a config file named 'vc.config' in the current directory
-    first and then in some other files which have been specified
+    first and then in some other places which have been specified
     while compiling vc (on the Amiga this will be ENV:vc.config then
     VBCC:vc.config; on Unix systems /etc/vc.config). If it is found it will
     be treated as a collection of additional command line arguments. Every
@@ -93,8 +99,9 @@ CONFIG
     used and furthermore must each argument be placed on its own line.
     There should be an example vc.config.
 
-    If the _first_ argument of vc is '+file' then <file> will be used as
-    config-file.
+    If one option '+file' is specified then <file> will be used as
+    config-file (it will be searched in the same directories as the
+    default config-files). Only the first such option will be used.
 
 
 USAGE

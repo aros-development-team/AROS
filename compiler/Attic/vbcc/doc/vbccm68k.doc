@@ -290,17 +290,6 @@ KNOWN PROBLEMS
       of significant bits) may not work as expected (especially if the
       optimizer was turned on).
 
-    - The Amiga68k code-generator is not fully portable, but depends
-      on the host machine having similar data types like the Amiga.
-
-      As long as no floating point constants are used it should work on
-      every system that uses 8bit chars, 16bit shorts and 32bit ints/longs
-      using twos complement arithmetic.
-
-      If floating point constants are used the host system must use 32bit
-      IEEE floats and 64bit IEEE doubles and store them in the same way like
-      the 680x0. Most current 32bit RISC cpus seem to work like this.
-
 
 Volker Barthelmann                                      volker@vb.franken.de
 Kennedy-Ring 39

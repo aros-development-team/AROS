@@ -1,6 +1,6 @@
 #include <stdlib.h>
-#include <limits.h>
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -24,6 +24,11 @@
 #define NQ 15   /* f&NQ gives type without any qualifiers */
 #define NU 31   /* f&NU gives type without any qualifiers but UNSIGNED */
 
+/* operations on bit-vectors */
+#define BSET(array,bit) (array)[(bit)/CHAR_BIT]|=1<<((bit)%CHAR_BIT)
+#define BCLR(array,bit) (array)[(bit)/CHAR_BIT]&=~(1<<((bit)%CHAR_BIT))
+#define BTST(array,bit) ((array)[(bit)/CHAR_BIT]&(1<<((bit)%CHAR_BIT)))
+
 /* type-qualifiers */
 #define UNSIGNED 16
 #define CONST 64
@@ -34,38 +39,56 @@
 /*  macro for internal errors */
 #define ierror(a) error(-1,(a),__LINE__,FILE_)
 
+/* this header is provided by the code generator */
 #include "machine.h"
 
-/*  additional information for functions, used by the optimizer,    */
-struct function_info{
-    struct IC *first_ic;    /* inline copy of function starts here */
-    struct IC *last_ic;     /*  "       "       "      ends here   */
-    struct Var *vars;       /* pointer to list of vars of that function */
+struct fi_list {
+  char *identifier;
+  int class;
+  int type;
 };
 
-/*  Structure for types.    */
+/*  additional information for functions; used by the optimizer  */
+struct function_info{
+  struct IC *first_ic;    /* inline copy of function starts here */
+  struct IC *last_ic;     /*  "       "       "      ends here   */
+  struct Var *vars;       /* pointer to list of vars of that function */
+  char *inline_asm;       /* pointer to code for inline assembler */
+  char *translation_unit; /* string as ID for the translation-unit */
+  unsigned long flags;    /* misc flags, see above */
+  int unresolved_calls;   /* number of function-calls not yet resolved */
+  struct fi_list *calls;  /* list of functions called by that function */
+  /* registers used and modified by that function */
+  unsigned char regs_used[(MAXR+CHAR_BIT)/CHAR_BIT];
+  unsigned char regs_modified[(MAXR+CHAR_BIT)/CHAR_BIT];
+  /* variables used and modified by this function */
+  struct fi_list *used;
+  struct fi_list *modified;
+};
+
+/*  struct for types.    */
 struct Typ{
-    int flags;  /*  see above   */
-    struct Typ *next;
-    struct struct_declaration *exact;   /* used for STRUCT/UNION/FUNKT  */
-    zlong size;     /*  used for ARRAY  */
+  int flags;  /*  see above   */
+  struct Typ *next;
+  struct struct_declaration *exact;   /* used for STRUCT/UNION/FUNKT  */
+  zlong size;     /*  used for ARRAY  */
 };
 #define TYPS sizeof(struct Typ)
 
 struct Var{
-    int storage_class;  /* see below    */
-    int reg;            /* Var is assigned to this hard-reg */
-    int priority;       /* Priority to be used in simple_regs() */
-    int flags;          /* see below */
-    char *identifier;   /* name of the variable */
-    int nesting;        /* can be freely used by the frontend */
-    int index;          /* used by the optimizer */
-    zlong offset;       /* offset relative to the stack frame */
-    struct Typ *vtyp;   /* type of the variable */
-    struct const_list *clist;   /* initialized? */
-    struct Var *next;   /* pointer to next variable */
-    struct function_info *fi;   /* used by the optimizer */
-    struct Var *inline_copy;    /* used for function-inlining */
+  int storage_class;  /* see below    */
+  int reg;            /* Var is assigned to this hard-reg */
+  int priority;       /* Priority to be used in simple_regs() */
+  int flags;          /* see below */
+  char *identifier;   /* name of the variable */
+  int nesting;        /* can be freely used by the frontend */
+  int index;          /* used by the optimizer */
+  zlong offset;       /* offset relative to the stack frame */
+  struct Typ *vtyp;   /* type of the variable */
+  struct const_list *clist;   /* initialized? */
+  struct Var *next;   /* pointer to next variable */
+  struct function_info *fi;   /* used by the optimizer */
+  struct Var *inline_copy;    /* used for function-inlining */
 };
 
 /* available storage-classes */
@@ -92,49 +115,51 @@ struct Var{
 #define DNOTTYPESAFE 4096   /*  "               "    */
 #define REGPARM 8192        /* the var is a register parameter */
 
-#define SLSIZE 32   /*  struct_lists in diesen Abstaenden realloc'en    */
+#define SLSIZE 32   /* realloc struct_lists in those steps */
 
 /*  These structs are used to describe members of STRUCT/UNION or   */
 /*  parameters of FUNKT. Some of the entries in struct_list are not */
 /*  relevant for both alternatives.                                 */
 struct struct_declaration{
-    int count;  /* number of members/parameters */
-    struct struct_declaration *next;
-    struct struct_list (*sl)[];
+  int count;  /* number of members/parameters */
+  struct struct_declaration *next;
+  struct struct_list (*sl)[];
 };
+
+/* C-only */
 struct struct_list{
-    char *identifier;   /* name of the struct/union-tag */
-    struct Typ *styp;   /* type of the member/parameter */
-    int storage_class;  /* storage-class of function-parameter */
-    int reg;            /* register to pass function-parameter */
+  char *identifier;   /* name of the struct/union-tag */
+  struct Typ *styp;   /* type of the member/parameter */
+  int storage_class;  /* storage-class of function-parameter */
+  int reg;            /* register to pass function-parameter */
 };
 
 /* This struct represents objects in the intermediate code. */
 struct obj{
-    int flags;      /* see below */
-    int reg;        /* number of reg if flags&REG */
-    struct Var *v;
-    struct AddressingMode *am;
-    union atyps{
-        zchar vchar;
-        zuchar vuchar;
-        zshort vshort;
-        zushort vushort;
-        zint vint;
-        zuint vuint;
-        zlong vlong;
-        zulong vulong;
-        zfloat vfloat;
-        zdouble vdouble;
-        zpointer vpointer;
-    }val;
+  int flags;      /* see below */
+  int reg;        /* number of reg if flags&REG */
+  struct Var *v;
+  struct AddressingMode *am;
+  union atyps{
+    zchar vchar;
+    zuchar vuchar;
+    zshort vshort;
+    zushort vushort;
+    zint vint;
+    zuint vuint;
+    zlong vlong;
+    zulong vulong;
+    zfloat vfloat;
+    zdouble vdouble;
+    zpointer vpointer;
+  }val;
 };
 
 
 /*  Available flags in struct obj.  */
-                    /*  KONST muss immer am kleinsten sein, um beim swappen */
+                    /*  KONST muss immer am kleinsten sein, um beim Swappen */
                     /*  fuer available_expressions und Konstanten nach      */
-                    /*  rechts nicht in eine Endlosschleife zu kommen       */
+                    /*  rechts nicht in eine Endlosschleife zu kommen.      */
 
 #define KONST 1     /*  The object is a constant. Its value is stored in    */
                     /*  val.                                                */
@@ -149,22 +174,22 @@ struct obj{
 
 /*  The quads in the intermediate code. */
 struct IC{
-    struct IC *prev;    /* pointer to the next IC */
-    struct IC *next;    /* pointer to the previous IC */
-    int code;           /* see below */
-    int typf;           /* usually type of the operands, see interface.doc */
-    int defindex;       /* used by optimizer */
-    int expindex;
-    int copyindex;
-    int change_cnt;
-    int use_cnt;
-    int line;           /* corresponding line in source file (or 0) */
-    struct varlist *change_list;    /* used by optimizer */
-    struct varlist *use_list;
-    struct obj q1;      /* source 1 */
-    struct obj q2;      /* source 2 */
-    struct obj z;       /* target */
-    char *file;         /* filename of the source file */
+  struct IC *prev;    /* pointer to the next IC */
+  struct IC *next;    /* pointer to the previous IC */
+  int code;           /* see below */
+  int typf;           /* usually type of the operands, see interface.doc */
+  int defindex;       /* used by optimizer */
+  int expindex;
+  int copyindex;
+  int change_cnt;
+  int use_cnt;
+  int line;           /* corresponding line in source file (or 0) */
+  struct varlist *change_list;    /* used by optimizer */
+  struct varlist *use_list;
+  struct obj q1;      /* source 1 */
+  struct obj q2;      /* source 2 */
+  struct obj z;       /* target */
+  char *file;         /* filename of the source file */
 };
 #define ICS sizeof(struct IC)
 
@@ -293,8 +318,8 @@ extern int DEBUG;
 
 /*  used by the optimizer */
 struct varlist{
-    struct Var *v;
-    int flags;
+  struct Var *v;
+  int flags;
 };
 #define VLS sizeof(struct varlist)
 
@@ -302,6 +327,7 @@ struct varlist{
 extern struct IC *first_ic,*last_ic;
 extern int regs[MAXR+1],regsa[MAXR+1],regused[MAXR+1],regscratch[MAXR+1];
 extern zlong regsize[MAXR+1];
+extern struct Typ *regtype[MAXR+1];
 extern struct Var *regsv[MAXR+1];
 extern char *regnames[];
 
@@ -323,14 +349,15 @@ extern int function_calls;
 
 /*  Das haette ich gern woanders    */
 struct node{
-    int flags,lvalue,sidefx;
-    struct Typ *ntyp;
-    struct node *left;
-    struct node *right;
-    struct argument_list *alist;
-    char *identifier;
-    union atyps val;
-    struct obj o;
+  int flags,lvalue,sidefx;
+  struct Typ *ntyp;
+  struct node *left;
+  struct node *right;
+  struct argument_list *alist;
+  char *identifier;
+  struct const_list *cl;
+  union atyps val;
+  struct obj o;
 };
 
 typedef struct node *np;
@@ -338,9 +365,9 @@ typedef struct node *np;
 #define NODES sizeof(struct node)
 
 struct const_list{
-    union atyps val;
-    np tree;
-    struct const_list *other,*next;
+  union atyps val;
+  np tree;
+  struct const_list *other,*next;
 };
 #define CLS sizeof(struct const_list)
 
@@ -366,7 +393,7 @@ extern struct Var *vl1,*vl2,*vl3;
 extern int fline;
 extern char errfname[FILENAME_MAX+1];
 
-/* function which must be provided by the frontend */
+/* functions which must be provided by the frontend */
 extern void add_IC(struct IC *);
 extern void error(int,...);
 extern struct Var *add_tmp_var(struct Typ *);
@@ -389,6 +416,8 @@ extern struct Typ *clone_typ(struct Typ *);
 extern zlong szof(struct Typ *);
 extern zlong falign(struct Typ *);
 extern void eval_const(union atyps *,int);
+extern struct function_info *new_fi(void);
+extern void free_fi(struct function_info *);
 
 extern void optimize(long, struct Var *);
 extern void remove_IC(struct IC *);
@@ -409,7 +438,9 @@ extern void gen_var_head(FILE *,struct Var *);
 extern void gen_align(FILE *,zlong);
 extern int shortcut(int, int);
 extern int must_convert(np,int);
-/*  Deklarationen fuer Registerparameterfunktionen. */
+
+/* additional declarations for targets which pass arguments in */
+/* registers by default.                                       */
 #ifdef HAVE_REGPARMS
 extern struct reg_handle empty_reg_handle;
 extern int reg_parm(struct reg_handle *, struct Typ *);

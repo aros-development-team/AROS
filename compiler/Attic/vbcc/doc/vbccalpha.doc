@@ -61,7 +61,7 @@ SOME INTERNALS
     The register names are:
 
         $0 through $31 for the general purpose registers and
-        $f0 through $f31 for the floating point registers	
+        $f0 through $f31 for the floating point registers
 
     The registers $0-$8, $16-$28, $f0, $f1 and $f10-$f30
     are used as scratch registers (i.e. they can be destroyed in function
@@ -124,8 +124,7 @@ STDARG
 
 KNOWN PROBLEMS
 
-    - generated code is very poor
-    - returning of structs/unions does not work
+    - generated code is not very good
     - nested function calls which pass parameters on the stack will not work
     - several other problems
 

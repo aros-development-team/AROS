@@ -43,7 +43,6 @@ struct argument_list{
 #define MAXINPUT 2000    /* maximale Laenge einer Eingabezeile in Bytes  */
 #define MAXN 64 /* maximale Verschachtelung von Bloecken */
 
-extern void free_fi(struct function_info *);
 extern struct Typ *arith_typ(struct Typ*,struct Typ *);
 extern void insert_const(np);
 extern int int_erw(int);
@@ -96,7 +95,7 @@ struct regargs_list{
     struct Var *v;
 };
 #ifdef HAVE_REGPARMS
-extern zlong push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **,struct reg_handle *);
+extern zlong push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **,struct reg_handle *,struct obj *,int);
 #else
 extern zlong push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **);
 #endif
@@ -138,7 +137,7 @@ extern zlong local_offset[MAXN];
 
 extern void scratch_var(struct obj *,int,struct Typ *);
 extern void get_scratch(struct obj *,int,int,struct Typ *);
-extern struct obj gen_cond(int,int,int);
+extern void gen_cond(struct obj *,int,int,int);
 
 #define MAXCF 30
 extern int c_flags[MAXCF];

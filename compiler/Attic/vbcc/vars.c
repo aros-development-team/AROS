@@ -60,5 +60,5 @@ char *cur_func="shouldn't happen!";
 int read_new_line;
 
 
-char *copyright="vbcc V0.5g (c) in 1995-97 by Volker Barthelmann";
+char *copyright="vbcc V0.5j (c) in 1995-97 by Volker Barthelmann";
 

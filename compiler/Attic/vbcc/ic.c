@@ -93,7 +93,7 @@ void add_IC(struct IC *new)
     code=new->code;
     if(code>=BEQ&&code<=BRA) new->q1.flags=new->q2.flags=new->z.flags=0;
     if(code==ALLOCREG||code==FREEREG||code==SAVEREGS||code==RESTOREREGS) new->typf=0;
-    if(DEBUG&64) pric2(stdout,new);
+    if(DEBUG&64){ pric(stdout,first_ic);printf("new\n");pric2(stdout,new);printf("-\n");}
     if(new->q1.flags&VAR){
         if(!new->q1.v) ierror(0);
         new->q1.v->flags|=USEDASSOURCE;
@@ -193,7 +193,7 @@ void add_IC(struct IC *new)
     /*  Merken, on Fliesskomma benutzt wurde    */
     if(code!=LABEL&&(code<BEQ||code>BRA)){
         if((new->typf&NQ)==FLOAT||(new->typf&NQ)==DOUBLE) float_used=1;
-	if(code==CONVFLOAT||code==CONVDOUBLE) float_used=1;
+        if(code==CONVFLOAT||code==CONVDOUBLE) float_used=1;
     }
     if((new->q1.flags&SCRATCH)&&(new->q1.reg!=new->z.reg||!(new->z.flags&REG)))
         free_reg(new->q1.reg);
@@ -207,7 +207,7 @@ void gen_IC(np p,int ltrue,int lfalse)
     if(!p) return;
     if(p->flags==STRING){
     /*  hier fehlt noch die Verwaltung der String-Inhalte   */
-        p->o.v=add_var(empty,clone_typ(p->ntyp),STATIC,(struct const_list *)p->identifier);
+        p->o.v=add_var(empty,clone_typ(p->ntyp),STATIC,p->cl);
         p->o.v->flags|=DEFINED;
         p->o.flags=VAR;
         p->o.reg=0;
@@ -414,7 +414,7 @@ void gen_IC(np p,int ltrue,int lfalse)
         }
         if(!ltrue){
             gen_label(l2);
-            if(p->flags==LAND) p->o=gen_cond(0,l3,l4); else p->o=gen_cond(1,l3,l4);
+            if(p->flags==LAND) gen_cond(&p->o,0,l3,l4); else gen_cond(&p->o,1,l3,l4);
         }else{
             new=mymalloc(ICS);
             new->code=BRA;
@@ -440,7 +440,7 @@ void gen_IC(np p,int ltrue,int lfalse)
             p->o.flags=0;
         }else{
             gen_label(l3);
-            p->o=gen_cond(0,l1,l2);
+            gen_cond(&p->o,0,l1,l2);
         }
         return;
     }
@@ -497,12 +497,13 @@ void gen_IC(np p,int ltrue,int lfalse)
             p->o.flags=0;
         }else{
             gen_label(l3);
-            p->o=gen_cond(1,l1,l2);
+            gen_cond(&p->o,1,l1,l2);
         }
         return;
     }
     if(p->flags==CALL){
-        int r=0;struct obj *op;zlong sz;
+        int r=0;struct obj *op,ret_obj;zlong sz;
+        int mregs[MAXR+1];
         if(p->left->flags==ADDRESS&&p->left->left->flags==IDENTIFIER){
             struct Var *v;
             gen_IC(p->left,0,0); r=1;
@@ -587,34 +588,41 @@ void gen_IC(np p,int ltrue,int lfalse)
                     /*  evtl. ist ein IC praktisch ein SETRETURN, falls das */
                     /*  Rueckgabeziel ueber Parameterzeiger angespr. wird   */
                     if(ip->z.flags&VAR){
-                        iv=ip->z.v;
-                        if(iv->storage_class==AUTO||iv->storage_class==REGISTER){
-                            if(!*iv->identifier&&zleqto(iv->offset,l2zl(0L))){
-                                new->z=p->o;
-                            }else{
-                                if(!iv->inline_copy)
-                                    iv->inline_copy=add_var(empty,clone_typ(iv->vtyp),iv->storage_class,0);
-                                new->z.v=iv->inline_copy;
-                            }/*else if(iv->inline_copy) ierror(0);*/
-                        }
+                      iv=ip->z.v;
+                      if(iv->storage_class==AUTO||iv->storage_class==REGISTER){
+                        if(!*iv->identifier&&zleqto(iv->offset,l2zl(0L))){
+                          new->z=p->o;
+                        }else{
+                          if(!iv->inline_copy){
+                            iv->inline_copy=add_var(empty,clone_typ(iv->vtyp),iv->storage_class,0);
+                            iv->inline_copy->reg=iv->reg;
+                          }
+                          new->z.v=iv->inline_copy;
+                        }/*else if(iv->inline_copy) ierror(0);*/
+                      }
                     }
                     /*  Kopien aller auto/register Variablen erzeugen   */
                     if(ip->q1.flags&VAR){
-                        iv=ip->q1.v;
-                        if(iv->storage_class==AUTO||iv->storage_class==REGISTER){
-                            if(!iv->inline_copy)
-                                iv->inline_copy=add_var(empty,clone_typ(iv->vtyp),iv->storage_class,0);
-                            new->q1.v=iv->inline_copy;
-                        }/*else if(iv->inline_copy) ierror(0);*/
+                      iv=ip->q1.v;
+                      if(iv->storage_class==AUTO||iv->storage_class==REGISTER){
+                        if(!iv->inline_copy){
+                          iv->inline_copy=add_var(empty,clone_typ(iv->vtyp),iv->storage_class,0);
+                          iv->inline_copy->reg=iv->reg;
+                        }
+                        new->q1.v=iv->inline_copy;
+                      }/*else if(iv->inline_copy) ierror(0);*/
                     }
                     if(ip->q2.flags&VAR){
-                        iv=ip->q2.v;
-                        if(iv->storage_class==AUTO||iv->storage_class==REGISTER){
-                            if(!iv->inline_copy)
-                                iv->inline_copy=add_var(empty,clone_typ(iv->vtyp),iv->storage_class,0);
-                            new->q2.v=iv->inline_copy;
-                        }/*else if(iv->inline_copy) ierror(0);*/
+                      iv=ip->q2.v;
+                      if(iv->storage_class==AUTO||iv->storage_class==REGISTER){
+                        if(!iv->inline_copy){
+                          iv->inline_copy=add_var(empty,clone_typ(iv->vtyp),iv->storage_class,0);
+                          iv->inline_copy->reg=iv->reg;
+                        }
+                        new->q2.v=iv->inline_copy;
+                      }/*else if(iv->inline_copy) ierror(0);*/
                     }
+                    if(c==CALL) function_calls+=currentpri;
                     if(c==LABEL||(c>=BEQ&&c<=BRA)){
                         if(new->typf>lc) lc=new->typf;
                         new->typf+=label;
@@ -636,7 +644,7 @@ void gen_IC(np p,int ltrue,int lfalse)
                     np n=p->alist->arg;
                     if(n->flags==ADDRESSA&&n->left->flags==STRING){
                         struct const_list *cl;zulong len=ul2zul(0UL);
-                        cl=(struct const_list *)n->left->identifier;
+                        cl=n->left->cl;
                         while(cl){
                             if(zleqto(l2zl(0L),zc2zl(cl->other->val.vchar))) break;
                             len=zuladd(len,ul2zul(1UL));
@@ -652,12 +660,12 @@ void gen_IC(np p,int ltrue,int lfalse)
                     }
                 }
 
-                if(INLINEMEMCPY>0&&(c_flags_val[0].l&2)){
+                if(INLINEMEMCPY>0&&(optflags&2)){
                     if(!strcmp(v->identifier,"strcpy")&&p->alist&&p->alist->next&&p->alist->next->arg){
                         np n=p->alist->next->arg;
                         if(n->flags==ADDRESSA&&n->left->flags==STRING){
                             struct const_list *cl;zlong len=l2zl(0L);
-                            cl=(struct const_list *)n->left->identifier;
+                            cl=n->left->cl;
                             while(cl){
                                 len=zladd(len,l2zl(1L));
                                 if(zleqto(zc2zl(cl->other->val.vchar),l2zl(0L))) break;
@@ -686,10 +694,37 @@ void gen_IC(np p,int ltrue,int lfalse)
             }
         }
         rl=0;
+        if(!(optflags&2)){
+          int r;
+          for(r=1;r<=MAXR;r++){mregs[r]=regs[r];regs[r]&=~32;}
+        }
 #ifdef HAVE_REGPARMS
+        if(!freturn(p->ntyp)){
+          struct IC *new2;
+          new2=mymalloc(ICS);
+          new2->code=ADDRESS;
+          new2->typf=p->ntyp->flags&NU;
+          new2->q1.flags=VAR;
+          new2->q1.v=add_var(empty,clone_typ(p->ntyp),AUTO,0);
+          new2->q1.val.vlong=l2zl(0L);
+          op=&new2->q1;
+          new2->q2.flags=0;
+          get_scratch(&new2->z,POINTER,p->ntyp->flags&NU,0);
+          ret_obj=new2->z;
+          add_IC(new2);
+        }
         {
             struct reg_handle reg_handle=empty_reg_handle;
-            sz=push_args(p->alist,p->left->ntyp->next->exact,0,&rl,&reg_handle);
+            if(!freturn(p->ntyp)){
+              static struct Typ ptyp={POINTER};
+              int reg;
+              ptyp.next=p->ntyp;
+              reg=reg_parm(&reg_handle,&ptyp);
+              if(!reg) ierror(0);
+              sz=push_args(p->alist,p->left->ntyp->next->exact,0,&rl,&reg_handle,&ret_obj,reg);
+            }else{
+              sz=push_args(p->alist,p->left->ntyp->next->exact,0,&rl,&reg_handle,0,-1);
+            }
         }
 #else
         sz=push_args(p->alist,p->left->ntyp->next->exact,0,&rl);
@@ -724,7 +759,7 @@ void gen_IC(np p,int ltrue,int lfalse)
         }
 /*            p->left->o.flags-=DREFOBJ|VARADR; Was sollte das??    */
 
-        if(c_flags_val[0].l&2){
+        if(optflags&2){
             while(rl){
                 struct regargs_list *m;
                 new=mymalloc(ICS);
@@ -738,9 +773,12 @@ void gen_IC(np p,int ltrue,int lfalse)
                 m=rl->next;free(rl);rl=m;
             }
         }
+#ifndef HAVE_REGPARMS
         /*  gegebenenfalls Adresse des Ziels auf den Stack  */
         if(!freturn(p->ntyp)){
-            struct obj o;
+#ifdef ORDERED_PUSH
+            ierror(0);
+#endif
             new=mymalloc(ICS);
             new->code=ADDRESS;
             new->typf=p->ntyp->flags&NU;
@@ -750,20 +788,21 @@ void gen_IC(np p,int ltrue,int lfalse)
             op=&new->q1;
             new->q2.flags=0;
             get_scratch(&new->z,POINTER,p->ntyp->flags&NU,0);
-            o=new->z;
+            ret_obj=new->z;
             add_IC(new);
             new=mymalloc(ICS);
             new->code=PUSH;
             new->typf=POINTER;
-            new->q1=o;
+            new->q1=ret_obj;
             new->q2.flags=new->z.flags=0;
             new->q2.val.vlong=sizetab[POINTER];
             add_IC(new);
             sz=zladd(sz,sizetab[POINTER]);
         }
+#endif
         /*  Scratchregister evtl. sichern   */
         savescratch(MOVEFROMREG,last_ic,0);
-	function_calls+=currentpri;
+        function_calls+=currentpri;
         new=mymalloc(ICS);
         new->code=CALL;
         new->typf=FUNKT;
@@ -795,6 +834,13 @@ void gen_IC(np p,int ltrue,int lfalse)
         }
         /*  Scratchregister evtl. wiederherstellen  */
         savescratch(MOVETOREG,last_ic,r);
+        if(!(optflags&2)){
+          int r;
+          for(r=1;r<=MAXR;r++){
+            if(regs[r])
+              regs[r]|=(mregs[r]&32);
+          }
+        }
         /*  Evtl. gespeicherte Registerargumente wiederherstellen.  */
         while(rl){
             struct regargs_list *m;
@@ -802,7 +848,7 @@ void gen_IC(np p,int ltrue,int lfalse)
                 new=mymalloc(ICS);
                 new->code=MOVETOREG;
                 new->typf=0;
-                new->q1.flags=VAR;
+                new->q1.flags=VAR|DONTREGISTERIZE;
                 new->q1.v=rl->v;
                 new->q1.val.vlong=l2zl(0L);
                 new->z.flags=REG;
@@ -940,38 +986,47 @@ void gen_IC(np p,int ltrue,int lfalse)
     p->o.flags=0;
 }
 #ifdef HAVE_REGPARMS
-zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,struct regargs_list **rl,struct reg_handle *reg_handle)
+zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,struct regargs_list **rl,struct reg_handle *reg_handle,struct obj *radr,int rreg)
 #else
 zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,struct regargs_list **rl)
 #endif
 /*  Legt die Argumente eines Funktionsaufrufs in umgekehrter Reihenfolge    */
 /*  auf den Stack. Es wird Integer-Erweiterung vorgenommen und float wird   */
-/*  nach double konvertiert, falls kein Prototype da ist. Ausserdem werden  */
-/*  alle Argumente in ihrer Groesse aligned. Das ist evtl. nicht fuer jede  */
-/*  CPU ausreichend. Hier muss evtl. noch etwas getan werden.               */
+/*  nach double konvertiert, falls kein Prototype da ist.                   */
 {
-    int t,reg;struct IC *new;struct regargs_list *nrl;zlong sz,of;
+    int t,reg;struct IC *new;struct regargs_list *nrl;zlong sz,of;struct obj *arg;
 #ifdef HAVE_REGPARMS
     int stdreg;
-#endif
-    if(!al) return(0);
-#ifdef HAVE_REGPARMS
-    if(n<sd->count) stdreg=reg_parm(reg_handle,(*sd->sl)[n].styp);
-        else        stdreg=reg_parm(reg_handle,al->arg->ntyp);
+    if(!al&&!radr) return(0);
+    if(radr){
+      stdreg=rreg;
+    }else{
+      if(n<sd->count) stdreg=reg_parm(reg_handle,(*sd->sl)[n].styp);
+      else        stdreg=reg_parm(reg_handle,al->arg->ntyp);
+    }
     reg=stdreg;
 #else
+    if(!al) return(0);
     reg=0;
 #endif
-    if(!al->arg) ierror(0);
-    if(!sd) ierror(0);
-    if(n<sd->count){
-      t=(*sd->sl)[n].styp->flags;sz=szof((*sd->sl)[n].styp);
-      reg=(*sd->sl)[n].reg;
+#ifdef HAVE_REGPARMS
+    if(!radr){
+#endif
+      if(!al->arg) ierror(0);
+      if(!sd) ierror(0);
+      if(n<sd->count){
+        t=(*sd->sl)[n].styp->flags;sz=szof((*sd->sl)[n].styp);
+        reg=(*sd->sl)[n].reg;
+      }else{
+        t=al->arg->ntyp->flags;sz=szof(al->arg->ntyp);
+      }
+      if((t&NQ)>=CHAR&&(t&NQ)<=LONG) {t=int_erw(t);sz=sizetab[t&NQ];}
+      if((t&NQ)==FLOAT&&n>=sd->count) {t=DOUBLE;sz=sizetab[t];}
+#ifdef HAVE_REGPARMS
     }else{
-      t=al->arg->ntyp->flags;sz=szof(al->arg->ntyp);
+      t=POINTER;
     }
-    if((t&NQ)>=CHAR&&(t&NQ)<=LONG) {t=int_erw(t);sz=sizetab[t&NQ];}
-    if((t&NQ)==FLOAT&&n>=sd->count) {t=DOUBLE;sz=sizetab[t];}
+#endif
     sz=zlmult(zldiv(zladd(sz,zlsub(maxalign,l2zl(1L))),maxalign),maxalign);
 #ifdef ORDERED_PUSH
     if(reg==0){
@@ -989,21 +1044,36 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
     }
 #endif
 #ifdef HAVE_REGPARMS
-    if(al->next) of=push_args(al->next,sd,n+1,rl,reg_handle); else of=l2zl(0L);
+    if(radr){
+      if(al) of=push_args(al,sd,0,rl,reg_handle,0,0); else of=l2zl(0L);
+    }else{
+      if(al->next) of=push_args(al->next,sd,n+1,rl,reg_handle,0,0); else of=l2zl(0L);
+    }
 #else
     if(al->next) of=push_args(al->next,sd,n+1,rl); else of=l2zl(0L);
 #endif
 #ifdef ORDERED_PUSH
     if(reg==0) return zladd(of,sz);
 #endif
+#ifdef HAVE_REGPARMS
+    if(radr){
+      arg=radr;
+    }else{
+      gen_IC(al->arg,0,0);
+      convert(al->arg,t&NU);
+      arg=&al->arg->o;
+    }
+#else
     gen_IC(al->arg,0,0);
     convert(al->arg,t&NU);
+    arg=&al->arg->o;
+#endif
     if(reg==0){
         /*  Parameteruebergabe ueber Stack. */
         new=mymalloc(ICS);
         new->code=PUSH;
         new->typf=t;
-        new->q1=al->arg->o;
+        new->q1=*arg;
         new->q2.flags=new->z.flags=0;
         new->q2.val.vlong=sz;
         add_IC(new);
@@ -1011,7 +1081,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
     }else{
         /*  Parameteruebergabe in Register. */
         struct Var *v=0; struct Typ *t2;
-        if(c_flags_val[0].l&2){
+        if(optflags&2){
         /*  Version fuer Optimizer. */
             t2=mymalloc(TYPS);
             t2->flags=t;
@@ -1024,7 +1094,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
             new=mymalloc(ICS);
             new->code=ASSIGN;
             new->typf=t;
-            new->q1=al->arg->o;
+            new->q1=*arg;
             new->q2.flags=0;
             new->q2.val.vlong=sizetab[t&NQ];
             new->z.flags=VAR;
@@ -1036,7 +1106,12 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
             nrl->reg=reg;
             nrl->v=v;
             *rl=nrl;
-            if(n==0){
+#ifdef HAVE_REGPARMS
+            if(radr||rreg==-1)
+#else
+            if(n==0)
+#endif
+            {
             /*  Letztes Argument; jetzt in Register laden.  */
                 for(;nrl;nrl=nrl->next){
                     new=mymalloc(ICS);
@@ -1068,14 +1143,10 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
                 add_IC(new);
                 regs[reg]=33;regused[reg]++;
             }else{
-                if(al->arg->o.flags!=(REG|SCRATCH)||al->arg->o.reg!=reg){
-                    t2=mymalloc(TYPS);
-                    t2->flags=ARRAY;
-                    t2->size=regsize[reg];
-                    t2->next=mymalloc(TYPS);
-                    t2->next->flags=CHAR;
-                    t2->next->next=0;
+                if(arg->flags!=(REG|SCRATCH)||arg->reg!=reg){
+                    t2=clone_typ(regtype[reg]);
                     v=add_var(empty,t2,AUTO,0);
+                    v->flags|=USEDASADR;
                     new=mymalloc(ICS);
                     new->code=MOVEFROMREG;
                     new->typf=0;
@@ -1083,7 +1154,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
                     new->q1.reg=reg;
                     new->q2.flags=0;
                     new->q2.val.vlong=regsize[reg];
-                    new->z.flags=VAR;
+                    new->z.flags=VAR|DONTREGISTERIZE;
                     new->z.v=v;
                     new->z.val.vlong=l2zl(0L);
                     add_IC(new);
@@ -1092,7 +1163,7 @@ zlong push_args(struct argument_list *al,struct struct_declaration *sd,int n,str
             new=mymalloc(ICS);
             new->code=ASSIGN;
             new->typf=t;
-            new->q1=al->arg->o;
+            new->q1=*arg;
             new->q2.flags=new->z.flags=0;
             new->q2.val.vlong=sizetab[t&NQ];
             new->z.flags=REG;
@@ -1168,7 +1239,7 @@ void free_reg(int r)
 {
     struct IC *new;
     if(!r||nocode) return;
-    if(regs[r]==0) {printf("Register %s:\n",regnames[r]);ierror(0);}
+    if(regs[r]==0) {printf("Register %d(%s):\n",r,regnames[r]);ierror(0);}
     if(DEBUG&16) printf("freed %s\n",regnames[r]);
     new=mymalloc(ICS);
     new->code=FREEREG;
@@ -1189,8 +1260,8 @@ void gen_label(int l)
     new->q1.flags=new->q2.flags=new->z.flags=0;
     add_IC(new);
 }
-struct obj gen_cond(int m,int l1,int l2)
-/*  Generiert code, der 0 oder 1 in Register schreibt   */
+void gen_cond(struct obj *p,int m,int l1,int l2)
+/*  Generiert code, der 0 oder 1 in Register schreibt. Schreibt obj nach p. */
 {
     struct IC *new;
     struct obj omerk;
@@ -1223,7 +1294,7 @@ struct obj gen_cond(int m,int l1,int l2)
     new->z.flags=SCRATCH|REG;*/
     add_IC(new);
     gen_label(l2);
-    return(omerk);
+    *p=omerk;
 }
 void scratch_var(struct obj *o,int t,struct Typ *typ)
 /*  liefert eine temporaere Variable                            */
@@ -1249,7 +1320,7 @@ void scratch_var(struct obj *o,int t,struct Typ *typ)
 void get_scratch(struct obj *o,int t1,int t2,struct Typ *typ)
 /*  liefert ein Scratchregister oder eine Scratchvariable       */
 {
-    if(!(c_flags_val[0].l&2)&&(o->reg=allocreg(t1,t2))){
+    if(!(optflags&2)&&(o->reg=allocreg(t1,t2))){
         o->flags=SCRATCH|REG;
     }else{
         scratch_var(o,t1,typ);
@@ -1276,12 +1347,12 @@ int do_arith(np p,struct IC *new,np dest,struct obj *o)
         new->code=SUBPFP;
         new->q1=p->left->o;
         new->q2=p->right->o;
-        if(!dest&&p->left->o.flags&SCRATCH&&regok(p->left->o.reg,INT,0)){
+        if(!dest&&(p->left->o.flags&SCRATCH)&&regok(p->left->o.reg,INT,0)){
             new->z=p->left->o;
             new->z.flags&=~DREFOBJ;
         }else{
             if(USEQ2ASZ&&(p->right->o.flags&SCRATCH)&&regok(p->right->o.reg,INT,0)){
-                new->z=p->left->o;
+                new->z=p->right->o;
                 new->z.flags&=(~DREFOBJ);
             }else{
                 get_scratch(&new->z,INT,0,0);
@@ -1301,7 +1372,7 @@ int do_arith(np p,struct IC *new,np dest,struct obj *o)
             new->typf=INT;
             add_IC(new);
         }
-	if(dest) dest->o.flags=mflags;
+        if(dest) dest->o.flags=mflags;
         return(f);
     }
     if((p->flags==ADD||p->flags==SUB)&&(p->ntyp->flags&NQ)==POINTER){
@@ -1320,7 +1391,7 @@ int do_arith(np p,struct IC *new,np dest,struct obj *o)
         }
         p->o=new->z;
         add_IC(new);
-	if(dest) dest->o.flags=mflags;
+        if(dest) dest->o.flags=mflags;
         return(f);
     }
     convert(p->left,p->ntyp->flags&NU);
@@ -1368,13 +1439,9 @@ void savescratch(int code,struct IC *p,int dontsave)
             if(!regsbuf[i]){
                 struct Typ *t;
                 if(code!=MOVEFROMREG) continue;
-                t=mymalloc(TYPS);
-                t->flags=ARRAY;
-                t->size=regsize[i];
-                t->next=mymalloc(TYPS);
-                t->next->flags=CHAR;
-                t->next->next=0;
+                t=clone_typ(regtype[i]);
                 regsbuf[i]=add_var(empty,t,AUTO,0);
+                regsbuf[i]->flags|=USEDASADR;
                 regbnesting[i]=nesting;
             }
             new=mymalloc(ICS);
@@ -1383,11 +1450,11 @@ void savescratch(int code,struct IC *p,int dontsave)
             new->code=code;
             if(code==MOVEFROMREG){
                 new->q1.flags=REG;new->q1.reg=i;
-                new->z.flags=VAR;new->z.v=regsbuf[i];
+                new->z.flags=VAR|DONTREGISTERIZE;new->z.v=regsbuf[i];
                 new->z.val.vlong=l2zl(0L);
             }else{
                 new->z.flags=REG;new->z.reg=i;
-                new->q1.flags=VAR;new->q1.v=regsbuf[i];
+                new->q1.flags=VAR|DONTREGISTERIZE;new->q1.v=regsbuf[i];
                 new->q1.val.vlong=l2zl(0L);
             }
             new->use_cnt=new->change_cnt=0;

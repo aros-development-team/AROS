@@ -10,7 +10,7 @@ static char FILE_[]=__FILE__;
 /*  Public data that MUST be there.                             */
 
 /* Name and copyright. */
-char cg_copyright[]="vbcc code-generator for m68k V1.1 (c) in 1995-97 by Volker Barthelmann";
+char cg_copyright[]="vbcc code-generator for m68k V1.1a (c) in 1995-97 by Volker Barthelmann";
 
 /*  Commandline-flags the code-generator accepts                */
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -25,7 +25,7 @@ union ppi g_flags_val[MAXGF];
 zlong align[16];
 
 /*  Alignment that is sufficient for every object.              */
-zlong maxalign=2;
+zlong maxalign;
 
 /*  CHAR_BIT of the target machine.                             */
 zlong char_bit;
@@ -46,6 +46,9 @@ char *regnames[MAXR+1]={"noreg","a0","a1","a2","a3","a4","a5","a6","a7",
 /*  The Size of each register in bytes.                         */
 zlong regsize[MAXR+1];
 
+/*  Type which can store each register. */
+struct Typ *regtype[MAXR+1];
+
 /*  regsa[reg]!=0 if a certain register is allocated and should */
 /*  not be used by the compiler pass.                           */
 int regsa[MAXR+1]={0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -58,8 +61,10 @@ int regscratch[MAXR+1]={0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0};
 /*  Some private data and functions.    */
 /****************************************/
 
-static long malign[16]={1,1,2,2,2,2,2,2,2,2,2,2,2,2,2};
+static long malign[16]=  {1,1,2,2,2,2,2,1,2,1,1,1,2,1};
 static long msizetab[16]={0,1,2,4,4,4,8,0,4,0,0,0,4,0};
+
+static struct Typ ltyp={LONG},larray={ARRAY,&ltyp};
 
 static char reglist[200];
 
@@ -116,7 +121,7 @@ static long pof2(zulong x)
 {
     zulong p;int ln=1;
     p=ul2zul(1L);
-    while(zulleq(p,x)){
+    while(ln<=32&&zulleq(p,x)){
         if(zuleqto(x,p)) return(ln);
         ln++;p=zuladd(p,p);
     }
@@ -466,7 +471,7 @@ static void function_top(FILE *f,struct Var *v,long offset)
         }
     }
     if(gas){
-        fprintf(f,"\t.align\t2\n_%s:\n",v->identifier);
+        fprintf(f,"\t.align\t4\n_%s:\n",v->identifier);
     }else{
         fprintf(f,"\tcnop\t0,4\n_%s\n",v->identifier);
     }
@@ -1198,6 +1203,7 @@ int init_cg(void)
 /*  once at the beginning and should return 0 in case of problems.      */
 {
     int i;
+    larray.size=l2zl(3L);
     /*  Initialize some values which cannot be statically initialized   */
     /*  because they are stored in the target's arithmetic.             */
     maxalign=l2zl(4L);
@@ -1206,8 +1212,8 @@ int init_cg(void)
         sizetab[i]=l2zl(msizetab[i]);
         align[i]=l2zl(malign[i]);
     }
-    for(i= 1;i<=16;i++) regsize[i]=l2zl( 4L);
-    for(i=17;i<=24;i++) regsize[i]=l2zl(12L);
+    for(i= 1;i<=16;i++) {regsize[i]=l2zl( 4L);regtype[i]=&ltyp;}
+    for(i=17;i<=24;i++) {regsize[i]=l2zl(12L);regtype[i]=&larray;}
 
     /*  default CPU is 68000    */
     if(!(g_flags[0]&USEDFLAG)) g_flags_val[0].l=68000;
@@ -1373,7 +1379,7 @@ void gen_align(FILE *f,zlong align)
 {
     if(align>1){
         if(gas){
-            fprintf(f,"\t.align\t2\n");
+            fprintf(f,"\t.align\t4\n");
         }else{
             fprintf(f,"\tcnop\t0,4\n");
         }
@@ -1392,7 +1398,7 @@ void gen_var_head(FILE *f,struct Var *v)
         if(v->clist&&constflag&&!(g_flags[7]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
         if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
         if(gas){
-            if(section!=BSS) fprintf(f,"\t.align\t2\nl%ld:\n",zl2l(v->offset));
+            if(section!=BSS) fprintf(f,"\t.align\t4\nl%ld:\n",zl2l(v->offset));
                 else fprintf(f,"\t.lcomm\tl%ld,",zl2l(v->offset));
         }else{
             fprintf(f,"\tcnop\t0,4\nl%ld\n",zl2l(v->offset));
@@ -1410,7 +1416,7 @@ void gen_var_head(FILE *f,struct Var *v)
             if(v->clist&&constflag&&!(g_flags[7]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
             if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
             if(gas){
-                if(section!=BSS) fprintf(f,"\t.align\t2\n_%s:\n",v->identifier);
+                if(section!=BSS) fprintf(f,"\t.align\t4\n_%s:\n",v->identifier);
                     else fprintf(f,"\t.comm\t_%s,",v->identifier);
             }else{
                 fprintf(f,"\tcnop\t0,4\n_%s\n",v->identifier);
@@ -1945,31 +1951,35 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
             continue;
         }
         if(c==CALL){
+	  if((p->q1.flags&VAR)&&p->q1.v->fi&&p->q1.v->fi->inline_asm){
+	    fprintf(f,"%s\n",p->q1.v->fi->inline_asm);
+	  }else{
             if(gas){
-                fprintf(f,"\tjbsr\t");
+	      fprintf(f,"\tjbsr\t");
             }else{
-                fprintf(f,"\tjsr\t");
+	      fprintf(f,"\tjsr\t");
             }
             /*  Wenn geta4() aufgerufen wurde, merken.  */
             if((p->q1.flags&(VAR|DREFOBJ))==VAR&&!strcmp(p->q1.v->identifier,"geta4")&&p->q1.v->storage_class==EXTERN)
-                geta4=1;
+	      geta4=1;
             if((p->q1.flags&(DREFOBJ|REG))==DREFOBJ) ierror(0);
             probj2(f,&p->q1,t);
             fprintf(f,"\n");
-            if(dbout) act_line=0;
-            if(zl2l(p->q2.val.vlong)){
-                notpopped+=zl2l(p->q2.val.vlong);
-                dontpop-=zl2l(p->q2.val.vlong);
-                if(!(g_flags[10]&USEDFLAG)&&!(pushedreg&30)&&stackoffset==-notpopped){
-                /*  Entfernen der Parameter verzoegern  */
-                }else{
-                    if(dbout&&!gas){ act_line=p->line; fprintf(f,"\tdebug\t%d\n",act_line);}
-                    fprintf(f,"\tadd%s.%s\t#%ld,a7\n",quick[zl2l(p->q2.val.vlong)<=8],strshort[zl2l(p->q2.val.vlong)<32768],zl2l(p->q2.val.vlong));
-                    stackoffset+=zl2l(p->q2.val.vlong);
-                    notpopped-=zl2l(p->q2.val.vlong);
-                }
-            }
-            continue;
+	  }
+	  if(dbout) act_line=0;
+	  if(zl2l(p->q2.val.vlong)){
+	    notpopped+=zl2l(p->q2.val.vlong);
+	    dontpop-=zl2l(p->q2.val.vlong);
+	    if(!(g_flags[10]&USEDFLAG)&&!(pushedreg&30)&&stackoffset==-notpopped){
+	      /*  Entfernen der Parameter verzoegern  */
+	    }else{
+	      if(dbout&&!gas){ act_line=p->line; fprintf(f,"\tdebug\t%d\n",act_line);}
+	      fprintf(f,"\tadd%s.%s\t#%ld,a7\n",quick[zl2l(p->q2.val.vlong)<=8],strshort[zl2l(p->q2.val.vlong)<32768],zl2l(p->q2.val.vlong));
+	      stackoffset+=zl2l(p->q2.val.vlong);
+	      notpopped-=zl2l(p->q2.val.vlong);
+	    }
+	  }
+	  continue;
         }
         if(c==TEST){
             /*  ConditionCodes schon gesetzt?   */

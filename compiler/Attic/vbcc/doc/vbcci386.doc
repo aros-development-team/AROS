@@ -58,9 +58,7 @@ ADDITIONAL OPTIONS FOR THIS VERSION
                 This may simplify debugging and very slightly reduce the
                 stack size needed by the compiled program.
 
-    -safe-fp
-
-                Do not use the floating-point-stack for register variables.
+    -safe-fp    Do not use the floating-point-stack for register variables.
                 At the moment this is necessary as vbcci386 still has problems
                 in some cases otherwise.
 
@@ -121,7 +119,7 @@ STDARG
 
 KNOWN PROBLEMS
 
-    - generated code is very poor
+    - generated code is not very good
     - functions which return floating-point values don't work
 
 

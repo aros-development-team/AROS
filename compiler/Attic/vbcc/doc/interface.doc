@@ -644,8 +644,8 @@ DATA TYPES
     used, but align[type&15] must yield the correct alignment for every type.
     align[CHAR] must be 1.
 
-    zlong maxalign; must be set to an alignment in bytes that is ok for every
-    type.
+    zlong maxalign; must be set to an alignment in bytes that is used when
+    pushing arguments on the stack.
 
     The array zlong sizetab[16] must contain the sizes of every type in bytes.
 

@@ -518,7 +518,7 @@ void error(int errn,...)
 /*  Behandelt Ausgaben wie Fehler und Meldungen */
 {
     int type;
-    va_list vl;char *errstr="",*txt;
+    va_list vl;char *errstr="",*txt=errfname;
     if(errn==-1) errn=158;
     type=err_out[errn].flags;
     if(type&DONTWARN) return;
@@ -529,9 +529,9 @@ void error(int errn,...)
 	printf("%s %d: ",errstr,errn);
     }else if(type&INFUNC){
 	if((type&INIC)&&err_ic&&err_ic->line){
-	    if(!(c_flags[17]&USEDFLAG)) txt=filename[incnesting];
-		else txt=errfname;
-	    printf("%s %d in line %d of \"%s\": ",errstr,errn,err_ic->line,txt);
+	    /* if(!(c_flags[17]&USEDFLAG)) txt=filename[incnesting];
+		else txt=errfname; */
+	    printf("%s %d in line %d of \"%s\": ",errstr,errn,err_ic->line,errfname);
 	}else{
 	    printf("%s %d in function \"%s\": ",errstr,errn,cur_func);
 	}
@@ -549,7 +549,7 @@ void error(int errn,...)
 	    while(c=*p++)
 		if(c==':'||c=='/'||c=='\\') txt=p;
 	}
-	printf("%s %d in line %d of \"%s\": ",errstr,errn,n,txt);
+	printf("%s %d in line %d of \"%s\": ",errstr,errn,n,errfname);
     }
     vprintf(err_out[errn].text,vl);
     printf("\n");

@@ -75,6 +75,20 @@ struct sinfo {
   /* Bit-vector which contains 1s for every register that is modified  */
   /* by this instruction. Use pseudo-register MEM if it writes memory. */
   unsigned char modifies[REGS_SIZE];
+
+  /* An ID which identifies the memory-object which is read. 0 means    */
+  /* no further information available. Two accesses with different IDs  */
+  /* are guaranteed not to access the same memory.                      */
+  unsigned long memread_id;
+
+  /* An ID which identifies the memory-object which is written. 0 means */
+  /* no further information available. Two accesses with different IDs  */
+  /* are guaranteed not to access the same memory.                      */
+  unsigned long memwrite_id;
+
+  /* If this flag is set to 1 then the write to the object with the     */
+  /* ID specified by memwrite_id completely overwrites the object.      */
+  unsigned int memwrite_completely;
 };
 
 

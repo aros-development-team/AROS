@@ -166,6 +166,9 @@ int peephole(void)
             c=p->code;
             t=p->typf;
             ic_count++;
+	    if(c==LABEL&&report_suspicious_loops&&p->next&&p->next->code==BRA&&p->next->typf==t){
+	      error(208);report_suspicious_loops=0;
+	    }
             if(p->q1.flags&KONST){
                 if((p->q2.flags&KONST)||!p->q2.flags){
                     struct IC *old=p->prev;
@@ -505,7 +508,7 @@ void optimize(long flags,struct Var *function)
                 /*  fuer function inlinig vorbereiten   */
                     struct IC *p,*new;
                     if(DEBUG&1024) printf("function <%s> prepared for inlining(ic_count=%d)\n",function->identifier,ic_count);
-                    function->fi=mymalloc(sizeof(struct function_info));
+                    function->fi=new_fi();
                     function->fi->first_ic=first_ic;
                     function->fi->last_ic=last_ic;
                     first_ic=last_ic=0;

@@ -30,9 +30,9 @@ struct NameList{
 /*  Ab dieser Laenge werden Objektfiles nicht direkt uebergeben,    */
 /*  sondern aus einem File an den Linker uebergeben                 */
 #ifdef AMIGA
-#define MAXCLEN 500
+int MAXCLEN=500;
 #else
-#define MAXCLEN 32000
+int MAXCLEN=32000;
 #endif
 
 #define NOTMPFILE 2048
@@ -53,10 +53,18 @@ char *ppname=empty,*ccname=empty,*asname=empty,*ldname=empty,*l2name=empty,*rmna
 /*  dasselbe fuer VERBOSE   */
 char *ppv=empty,*ccv=empty,*asv=empty,*ldv=empty,*l2v=empty,*rmv=empty;
 
-#ifdef AMIGA
-const char *config_names[]={"vc.config","ENV:vc.config","VBCC:vc.config"};
+#if defined(AMIGA)
+const char *config_name="vc.config";
+const char *search_dirs[]={"","ENV:","VBCC:"};
+char *ul="vlib:%s.lib";
+#elif defined(WINTEL)
+const char *config_name="vc.cfg";
+const char *search_dirs[]={"","%VCCFG%\\"};
+char *ul="-l%s";
 #else
-const char *config_names[]={"vc.config","~/vc.config","/etc/vc.config"};
+const char *config_name="vc.config";
+const char *search_dirs[]={"","~/","/etc/"};
+char *ul="-l%s";
 #endif
 
 /*  String fuer die Default libraries   */
@@ -139,41 +147,28 @@ void add_name(char *obj,struct NameList **first,struct NameList **last)
         (*last)->next=new;*last=new;
     }
 }
-int read_config(void)
+int read_config(const char *cfg_name)
 {
     int i,count; long size;
-    char *p;
-#ifdef AMIGA
-    BPTR file;
-    for(i=0;i<sizeof(config_names)/sizeof(config_names[0]);i++){
-        file=Lock((STRPTR)config_names[i],-2);
-        if(file) break;
-    }
-    if(!file) {puts("No config file!");raus(EXIT_FAILURE);}
-    if(!Examine(file,&fib)){puts("Examine() failed!");raus(EXIT_FAILURE);}
-    size=fib.fib_Size;
-    config=malloc(size);
-    if(!config){printf(nomem);raus(EXIT_FAILURE);}
-    UnLock(file);
-    file=Open((STRPTR)config_names[i],MODE_OLDFILE);
-    if(!file) return(0);
-    size=Read(file,config,size);
-    Close(file);
-#else
-    FILE *file;
-    for(i=0;i<sizeof(config_names)/sizeof(config_names[0]);i++){
-        file=fopen(config_names[i],"rb");
-        if(file) break;
+    char *p,*name;
+    FILE *file=0;
+    for(i=0;i<sizeof(search_dirs)/sizeof(search_dirs[0]);i++){
+      name=malloc(strlen(search_dirs[i])+strlen(cfg_name)+1);
+      if(!name) {printf(nomem);raus(EXIT_FAILURE);}
+      strcpy(name,search_dirs[i]);
+      strcat(name,cfg_name);
+      file=fopen(name,"rb");
+      free(name);
+      if(file) break;
     }
     if(!file) {puts("No config file!");raus(EXIT_FAILURE);}
     if(fseek(file,0,SEEK_END)) return(0);
-    size=ftell(file);   /*  noch errorcheck */
+    size=ftell(file);
     if(fseek(file,0,SEEK_SET)) return(0);
     config=malloc(size);
     if(!config){printf(nomem);raus(EXIT_FAILURE);}
     fread(config,1,size,file);
     fclose(file);
-#endif
     count=0;p=config;
     while(p<config+size&&*p){
         count++;
@@ -191,11 +186,15 @@ int read_config(void)
 
 int main(int argc,char *argv[])
 {
-    int tfl,i,opt=1,len=10,pm,count;char *parm;
-    if(argc>=2&&argv[1][0]=='+'){
-        config_names[0]=argv[1]+1;argv[1][0]=0;
+    int tfl,i,len=10,pm,count;char *parm;long opt=1;
+    for(i=1;i<argc;i++){
+        if(argv[i][0]=='+'){
+            config_name=argv[i]+1;
+            argv[i][0]=0;
+            break;
+        }
     }
-    count=read_config();
+    count=read_config(config_name);
 #ifdef AMIGA
     if(pm=DOSBase->lib_Version>=36){
         if(ap=(struct AnchorPath *)calloc(sizeof(struct AnchorPath)+NAMEBUF,1))
@@ -204,7 +203,12 @@ int main(int argc,char *argv[])
 #endif
     for(i=1;i<argc+count;i++){
         if(i<argc) parm=argv[i]; else parm=confp[i-argc];
+        if(!strncmp(parm,"-ul=",4)){ul=parm+4;*parm=0;}
+    }
+    for(i=1;i<argc+count;i++){
+        if(i<argc) parm=argv[i]; else parm=confp[i-argc];
 /*        printf("Parameter %d=%s\n",i,parm);*/
+        if(!strncmp(parm,"-ml=",4)){MAXCLEN=atoi(parm+4);*parm=0;}
         if(!strncmp(parm,"-pp=",4)){ppname=parm+4;*parm=0;}
         if(!strncmp(parm,"-cc=",4)){ccname=parm+4;*parm=0;}
         if(!strncmp(parm,"-as=",4)){asname=parm+4;*parm=0;}
@@ -242,20 +246,15 @@ int main(int argc,char *argv[])
             flags|=OUTPUTSET;*parm=0;continue;
         }
         if(parm[0]=='-'&&parm[1]=='l'){
-            if((strlen(userlibs)+strlen(parm)+15)>=USERLIBS){puts("Userlibs too long");exit(20);}
-#ifdef AMIGA
-            strcat(userlibs," vlib:");
-            strcat(userlibs,parm+2);
-            strcat(userlibs,".lib");
-#else
-            strcat(userlibs," ");
-            strcat(userlibs,parm);
-#endif
+            size_t l=strlen(userlibs);
+            if((l+strlen(parm)-2+strlen(ul)+1)>=USERLIBS){puts("Userlibs too long");exit(20);}
+            userlibs[l]=' ';
+            sprintf(userlibs+l+1,ul,parm+2);
             *parm=0;continue;
         }
         len+=strlen(parm)+10;
     }
-    if(flags&VERBOSE) printf("vc frontend for vbcc (c) in 1995-96 by Volker Barthelmann\n");
+    if(flags&VERBOSE) printf("vc frontend for vbcc (c) in 1995-97 by Volker Barthelmann\n");
     if(!(flags&7)) flags|=5;
     tfl=flags&7;
     if(flags&VERYVERBOSE){ppname=ppv;ccname=ccv;asname=asv;ldname=ldv;rmname=rmv;l2name=l2v;}
@@ -276,7 +275,7 @@ int main(int argc,char *argv[])
             }
         }
     }
-    if(flags&VERYVERBOSE) printf("flags=%d opt=%d len=%d\n",flags,opt,len);
+    if(flags&VERYVERBOSE) printf("flags=%d opt=%ld len=%d\n",flags,opt,len);
     namebuf[0]='\"'; namebuf2[0]='\"';
     for(i=1;i<argc;i++){
         int t,j;char *file;
@@ -329,7 +328,7 @@ int main(int argc,char *argv[])
                 if(j==CCSRC){
                     file=add_suffix(file,".asm");
                     if(tfl==ASSRC&&(flags&OUTPUTSET)) file=destname;
-                    sprintf(command,"%s -O=%-4d %s %s -o= %s",ccname,opt,options,oldfile,file);
+                    sprintf(command,ccname,oldfile,file,options,opt);
                     if((tfl)!=ASSRC) add_name(file,&first_scratch,&last_scratch);
                 }
                 if(j==ASSRC){

@@ -10,9 +10,9 @@ static char FILE_[]=__FILE__;
 int (*savings)[MAXR+1],regu[MAXR+1];
 int *rvlist;
 
-struct regp {int treg;struct Var *tvar;};
+struct regp {int treg;struct Var *tvar,*tmp;};
 void do_load_parms(struct regp [],struct flowgraph *);
-void load_one_parm(int,int,struct Var *,struct flowgraph *);
+void load_one_parm(int,int,struct Var *,struct Var *,struct flowgraph *);
 
 int cmp_savings(const void *v1,const void *v2)
 /*  Vergleichsfkt, um rvlist nach savings zu sortieren  */
@@ -60,8 +60,8 @@ void load_reg_parms(struct flowgraph *fg)
 /*  Laedt Registerparameter, falls noetig.                              */
 {
     int i,j; struct Var *v;
-    struct regp regp[MAXR+1];
-    for(i=1;i<=MAXR;i++){ regp[i].treg=0;regp[i].tvar=0;}
+    struct regp regp[MAXR+1]={0};
+/*     for(i=1;i<=MAXR;i++){ regp[i].treg=0;regp[i].tvar=0;} */
     for(i=0;i<vcount-rcount;i++){
         v=vilist[i];
         if((v->flags&REGPARM)&&fg->regv[v->reg]!=v&&(BTST(fg->av_in,i)||(v->flags&USEDASADR))){
@@ -848,8 +848,8 @@ void load_simple_reg_parms(void)
 /*  Laedt Registerparameter, falls noetig. Nicht-optimierende Version.  */
 {
   int i,j; struct Var *v;
-  struct regp regp[MAXR+1];
-  for(i=1;i<=MAXR;i++) {regp[i].treg=0;regp[i].tvar=0;}
+  struct regp regp[MAXR+1]={0};
+/*   for(i=1;i<=MAXR;i++) {regp[i].treg=0;regp[i].tvar=0;} */
   for(i=0;i<=1;i++){
     if(i==0) v=vl3; else v=vl2;
     for(;v;v=v->next){
@@ -864,43 +864,68 @@ void load_simple_reg_parms(void)
 }
 void do_load_parms(struct regp regp[],struct flowgraph *fg)
 {
-  int i,j,c=0,notdone;
-  struct {int freg,treg;struct Var *tvar;} order[MAXR]={0};
+  int i,j,c,notdone;
+  struct {int freg,treg;struct Var *tvar,*tmp;} order[MAXR]={0};
+  if(DEBUG&1){
+    printf("do_load_parms:\n");
+    for(i=1;i<=MAXR;i++)
+      if(regp[i].tvar)
+	printf("%s->%s(%s)\n",regnames[i],regnames[regp[i].treg],regp[i].tvar->identifier);
+  }
   do{
+    c=0;
+    do{
+      notdone=0;
+      for(i=1;i<=MAXR;i++){
+	if(!regp[i].tvar) continue;
+	j=regp[i].treg;
+	if(j==0||regp[j].tvar==0||regp[i].tmp){
+	  order[c].freg=i;
+	  order[c].treg=j;
+	  order[c].tvar=regp[i].tvar;
+	  if(regp[i].tmp){order[c].treg=0;order[c].tvar=regp[i].tmp;}
+	  c++; notdone=1;
+	  regp[i].treg=0;
+	  regp[i].tvar=0;
+	}
+      }
+    }while(notdone);
+    for(i=c-1;i>=0;i--)
+      load_one_parm(order[i].freg,order[i].treg,0,order[i].tvar,fg);
     notdone=0;
     for(i=1;i<=MAXR;i++){
-      if(!regp[i].tvar) continue;
-      j=regp[i].treg;
-      if(j==0||regp[j].tvar==0){
-	order[c].freg=i;
-	order[c].treg=j;
-	order[c].tvar=regp[i].tvar;
-	c++; notdone=1;
-	regp[i].treg=0;
-	regp[i].tvar=0;
+      if(regp[i].tvar){
+	regp[i].tmp=add_tmp_var(clone_typ(regp[i].tvar->vtyp));
+	load_one_parm(0,regp[i].treg,regp[i].tmp,regp[i].tvar,fg);
+	notdone=1; break;
       }
     }
   }while(notdone);
-  for(i=1;i<=MAXR;i++)
-    if(regp[i].tvar) ierror(0);
-  for(c--;c>=0;c--)
-    load_one_parm(order[c].freg,order[c].treg,order[c].tvar,fg);
 }
-void load_one_parm(int freg,int treg,struct Var *tvar,struct flowgraph *fg)
+void load_one_parm(int freg,int treg,struct Var *fvar,struct Var *tvar,struct flowgraph *fg)
 {
-  struct IC *new; 
-  if(fg)
-    insert_allocreg(fg,0,FREEREG,freg);
-  else
-    insert_simple_allocreg(0,FREEREG,freg);
+  struct IC *new;
+  if(DEBUG&1) printf("lop: %s(%s)->%s(%s)\n",regnames[freg],fvar?fvar->identifier:empty,regnames[treg],tvar?tvar->identifier:empty);
+  if(freg){
+    if(fg)
+      insert_allocreg(fg,0,FREEREG,freg);
+    else
+      insert_simple_allocreg(0,FREEREG,freg);
+  }
   new=mymalloc(ICS);
   new->line=0;
   new->file=0;
   new->code=ASSIGN;
   new->typf=tvar->vtyp->flags;
   if((new->typf&NQ)==FLOAT||(new->typf&NQ)==DOUBLE) float_used=1;
-  new->q1.flags=REG;
-  new->q1.reg=freg;
+  if(fvar){
+    new->q1.flags=VAR;
+    new->q1.v=fvar;
+    new->q1.val.vlong=l2zl(0L);
+  }else{
+    new->q1.flags=REG;
+    new->q1.reg=freg;
+  }
   new->q2.flags=0;
   new->q2.val.vlong=szof(tvar->vtyp);
   if(treg)
@@ -912,13 +937,13 @@ void load_one_parm(int freg,int treg,struct Var *tvar,struct flowgraph *fg)
   new->z.reg=treg;
   new->q1.am=new->q2.am=new->z.am=0;
   new->use_cnt=new->change_cnt=0;
-  new->use_list=new->change_list=0;
+  new->use_list=new->change_list=0;  
   if(fg){
     insert_IC_fg(fg,0,new);
-    insert_allocreg(fg,0,ALLOCREG,freg);
+    if(freg) insert_allocreg(fg,0,ALLOCREG,freg);
   }else{
     insert_IC(0,new);
-    insert_simple_allocreg(0,ALLOCREG,freg);
+    if(freg) insert_simple_allocreg(0,ALLOCREG,freg);
   }
   if(new->z.flags&REG){
     /*  ALLOCREG verschieben    */
