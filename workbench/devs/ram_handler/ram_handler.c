@@ -372,10 +372,10 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 
 				    FreeMem(dn, sizeof (struct DeviceNode));
 			        }
-				else
-				if (AddTask(task, deventry, NULL) != NULL)
-		    		    return rambase;
 			    }
+			    else
+ 			    if (AddTask(task, deventry, NULL) != NULL)
+		    		return rambase;
 
 			    FreeMem(semaphore, sizeof(struct SignalSemaphore));
 			}
