@@ -1,15 +1,16 @@
-#   $Id$
+# $Id$
 #
-#   Generate the mui.lib library (normally called libmui.a).
-#
+# Generate the mui.lib library (normally called libmui.a).
+
 include $(TOP)/config/make.cfg
 
-LIB	:= mui
+LIB	  := mui
 
-FILES	:= mui_allocaslrequesttags \
-	   mui_aslrequesttags \
-	   mui_makeobject \
-    	   mui_newobject 
+FILES := \
+    mui_allocaslrequesttags \
+	mui_aslrequesttags \
+	mui_makeobject \
+    mui_newobject 
 
 #MM- linklibs: linklibs-mui
 #MM linklibs-mui : includes
