@@ -20,6 +20,7 @@
 #ifndef INTUITION_SCREENS_H
 #   include <intuition/screens.h>
 #endif
+
 /* #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
@@ -112,6 +113,7 @@ BOOL LayoutMenus( struct Menu * menu, APTR vi, ULONG tag1, ...);
 
 /* Graphics */
 LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ...);
+void GetRPAttrs( struct RastPort * rp, Tag tag1, ...);
 
 /* Intuition */
 void SetWindowPointer( struct Window * window, ULONG tag1, ...);
