@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/12 14:52:47  digulla
+    Better way to separate public and private parts of the library base
+
     Revision 1.3  1996/08/31 12:58:14  aros
     Merged in/modified for FreeBSD.
 
@@ -13,8 +16,6 @@
 */
 #ifndef UTILITY_INTERN_H
 #define UTILITY_INTERN_H
-
-#define UTILITY_UTILITY_H
 
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
@@ -46,6 +47,9 @@
 #ifndef AROS_LIBCALL_H
 #include <aros/libcall.h>
 #endif
+#ifndef UTILITY_UTILITY_H
+#include <utility/utility.h>
+#endif
 #ifndef CLIB_EXEC_PROTOS_H
 #include <clib/exec_protos.h>
 #endif
@@ -53,10 +57,10 @@
 #include <clib/utility_protos.h>
 #endif
 
-/* digulla
-        I could use a table for this conversion, but the utility.library
-        functions are patched by locale anyway, so this would be some
-        kind of overkill.
+/*
+	I could use a table for this conversion, but the utility.library
+	functions are patched by locale anyway, so this would be some
+	kind of overkill.
 */
 
 #define TOLOWER(a) \
@@ -65,44 +69,40 @@
 #define TOUPPER(a) \
 (((a)>='a'&&(a)<='z') || ((a)>=0xe0 && (a)<=0xfe && (a)!=0xf7) ? (a)+0x20 : (a) )
 
-/* iaint from here... */
-
 /*
     This is the internal version of the UtilityBase structure
-    It overrides the definition in utility/utility.h
 */
 
-
-#define UTILITYNAME "utility.library"
-
-struct UtilityBase
+struct IntUtilityBase
 {
-    struct Library       ub_LibNode;
-    UBYTE                ub_Language;
-    UBYTE                ub_Reserved;
+    struct UtilityBase UBase;
 
     /*
        This is where the private data starts.
     */
-    struct ExecBase     *ub_SysBase;
-    ULONG                ub_LastID;
+    struct ExecBase	*ub_SysBase;
+    ULONG		 ub_LastID;
 
-    struct NamedObject  *ub_GlobalNameSpace;
+    struct NamedObject	*ub_GlobalNameSpace;
 
     /*
-        This should always be at the end, and it is only valid when the
-        library is loaded from disk, eg testing...
+	This should always be at the end, and it is only valid when the
+	library is loaded from disk, eg testing...
 
-        The reference is still in here of course, it just means that
-        when I change the library base I will have to recompile most of
-        the files, oh well...
+	The reference is still in here of course, it just means that
+	when I change the library base I will have to recompile most of
+	the files, oh well...
     */
-    ULONG                ub_SegList;
+    ULONG		 ub_SegList;
 };
-
 
 /* digulla again... Needed for close() */
 #define expunge() \
  __AROS_LC0(BPTR, expunge, struct UtilityBase *, UtilityBase, 3, Utility)
+
+#define GetIntUtilityBase(ub)   ((struct IntUtilityBase *)(ub))
+#define GetUtilityBase(ub)      (GetIntUtilityBase(ub)->UBase)
+
+#define SysBase 	(GetIntUtilityBase(UtilityBase)->ub_SysBase)
 
 #endif
