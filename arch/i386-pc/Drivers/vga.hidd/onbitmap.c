@@ -207,13 +207,14 @@ static BOOL onbitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColo
     return ret;
 }
 
+
 /*** init_onbmclass *********************************************************/
 
 #undef XSD
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 7
+#define NUM_BITMAP_METHODS 8
 
 Class *init_onbmclass(struct vga_staticdata *xsd)
 {
@@ -234,7 +235,7 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
     	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
 //    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-//    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
+    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
 //    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
 //    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
 //    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},

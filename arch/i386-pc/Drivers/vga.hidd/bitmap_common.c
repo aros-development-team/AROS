@@ -282,3 +282,147 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 
     return;
 }
+
+
+
+
+static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
+{
+  /*
+    Attributes of msg:
+      srcX, srcY, dest, destX, destY, width, height
+    Object o is source BitMap object.
+   */
+  struct bitmap_data * data_src = INST_DATA(cl, o);
+  struct bitmap_data * data_dst = INST_DATA(cl, msg->dest);
+
+  unsigned char * ptr_src = (char *)(data_src->VideoData + (msg->srcX + (msg->srcY * data_src->width)) / 8);
+  unsigned char * ptr_dst = (char *)(data_dst->VideoData + (msg->destX + (msg->destY * data_dst->width)) / 8);
+  unsigned char * ptr_dst_v = (char *)(0xa0000 + (msg->destX + (msg->destY * data_dst->width)) / 8 );
+  
+  ULONG size_src = (data_src->width * data_src->height) >> 3;
+  ULONG size_dst = (data_dst->width * data_dst->height) >> 3;
+  
+  ULONG depth;
+  ULONG depth2;
+  UWORD mask = 0x100;
+
+  ULONG shift_src = msg->srcX & 7;
+  
+  ULONG shift_dst = msg->destX & 7;
+  UBYTE shiftmask_dst = 0;
+  
+  LONG w;
+  ULONG h = 0;
+  UBYTE pix;
+  ULONG i = 0;
+  ULONG j = 0;
+ 
+  int d;
+
+  if (shift_dst)
+    shiftmask_dst = ((BYTE)0x80 >> (shift_dst - 1));
+  
+  GetAttr(o, aHidd_BitMap_Depth, &depth);
+
+  if (-1 == data_dst->disp)
+  {
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+    outw(0x3ce,0x0000);
+    outw(0x3ce,0x0001);
+    outw(0x3ce,0x0005);
+  }
+
+  for (d=0; d < depth; d++)
+  {
+    if (-1 == data_dst->disp)
+    {
+      outw(0x3c4, mask | 2);
+      mask = mask << 1;
+    }
+
+    while (h < msg->height)
+    {
+      i = h * data_src->width >> 3;
+      j = h * data_dst->width >> 3;
+      /*
+      ** Read 8 pixels
+      */
+      w = msg->width;
+      pix = ptr_src[i++];
+      if (0 != shift_src)
+        pix = (pix << shift_src) | (ptr_src[i] >> (8 - shift_src));
+      
+      if (w >= 8)
+      {
+        do
+        {
+          /* Now distribute these 8 bits to the destination */
+          if (0 != shift_dst)
+          {
+            ptr_dst[j] = (ptr_dst[j] & shiftmask_dst) | (pix >> shift_dst);
+            j++;
+            ptr_dst[j] = (pix << (8 - shift_dst)) | (ptr_dst[j] & ~shiftmask_dst);
+            if (-1 == data_dst->disp)
+            {
+              /* also write it to video mem! */
+              ptr_dst_v[j-1] = ptr_dst[j-1];
+              ptr_dst_v[j  ] = ptr_dst[j  ];
+            } 
+          }
+          else
+	  { 
+            ptr_dst[j] = pix;
+            if (-1 == data_dst->disp)
+              ptr_dst_v[j] = pix;
+            j++;
+          }
+          w-=8;
+          pix = ptr_src[i++];
+          if (0 != shift_src)
+            pix = (pix << shift_src) | (ptr_src[i] >> (8 - shift_src));
+        }
+        while (w >= 8);
+      }
+      
+      /* There are still some pixels to distribute but less than 8 */
+      if (w > 0)
+      {
+        WORD pixmask = ((WORD)0xff80 >> (w-1));
+        pix &= pixmask;
+        pixmask ^= 0xff;
+        if (0 != shift_dst)
+        {
+          ptr_dst[j] = (ptr_dst[j] & (pixmask >> shift_dst)) | 
+                       (pix >> shift_dst);
+          if (-1 == data_dst->disp)
+            ptr_dst_v[j] = ptr_dst[j];
+          w = w - (8 - shift_dst);
+          if (w > 0)
+          {
+            j++;
+            pixmask = (pixmask << 8) | 0xff;
+            pixmask = pixmask << (8 - shift_dst);
+            pixmask >>= 8;
+            ptr_dst[j] = (pix << (8 - shift_dst)) | 
+                         (ptr_dst[j] & pixmask);
+            if (-1 == data_dst->disp)
+              ptr_dst_v[j] = ptr_dst[j];
+          }
+        }
+        else
+        {
+          ptr_dst[j] = pix | (ptr_dst[j] & pixmask);
+          if (-1 == data_dst->disp)
+            ptr_dst_v[j] = ptr_dst[j];
+        }
+      }
+      h++;
+    } /* while (h  < msg->height) */
+    ptr_src = (char *)(ptr_src + size_src);
+    ptr_dst = (char *)(ptr_dst + size_dst);
+  } /* for () */
+
+  if (-1 == data_dst->disp)
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
+}

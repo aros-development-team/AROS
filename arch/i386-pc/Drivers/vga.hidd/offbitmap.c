@@ -208,7 +208,6 @@ VOID bitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 }
 
 
-
 #undef SDEBUG
 #undef DEBUG
 #define SDEBUG 0
@@ -224,7 +223,7 @@ VOID bitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 
 //#define NUM_BITMAP_METHODS 14
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 7
+#define NUM_BITMAP_METHODS 8
 
 
 Class *init_offbmclass(struct vga_staticdata *xsd)
@@ -246,7 +245,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
     	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
 //    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-//    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
+    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
 //    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
 //    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
 //    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
@@ -330,3 +329,4 @@ void free_offbmclass(struct vga_staticdata *xsd)
     }
     ReturnVoid("free_bmclass");
 }
+
