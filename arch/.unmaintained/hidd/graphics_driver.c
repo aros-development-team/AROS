@@ -621,10 +621,17 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
     }
     else
     {
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle toblit, intersect;
+	
+	LockLayerRom( L );
+	
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
+	
+	CR = L->ClipRect;
 	
 	toblit.MinX = xDest + xrel;
 	toblit.MinY = yDest + yrel;
@@ -683,7 +690,9 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 		}
 	    }
 	    CR = CR->Next;
-	}
+	} /* while */
+	
+	UnlockLayerRom( L );
 	
 
     }
@@ -1479,9 +1488,12 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
         /* Layered rastport, we have to clip this operation. */
     	/* Window rastport, we need to clip th operation */
 	
-        struct ClipRect *CR = L->ClipRect;
+        struct ClipRect *CR;
 	struct Rectangle intersect;
 	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
 	
 	while (NULL != CR)
 	{
@@ -1542,6 +1554,8 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	    
 	    CR = CR->Next;
 	} /* while (cliprects to examine) */
+	
+	UnlockLayerRom( L );
 	
 	
     }
@@ -2864,10 +2878,16 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
     {
     	/* Window rastport, we need to clip th operation */
 	
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle towrite, intersect;
+	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
 	
 	towrite.MinX = xstart + xrel;
 	towrite.MinY = ystart + yrel;
@@ -2957,6 +2977,8 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	    CR = CR->Next;
 	} /* while (cliprects to examine) */
 	
+	UnlockLayerRom( L );
+	
     } /* if (not screen rastport) */
 	
     ReturnInt("driver_WritePixelArray8", LONG, pixwritten);
@@ -3007,10 +3029,16 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
     {
     	/* Window rastport, we need to clip th operation */
 	
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle toread, intersect;
+	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
 	
 	toread.MinX = xstart + xrel;
 	toread.MinY = ystart + yrel;
@@ -3088,6 +3116,8 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 	    
 	    CR = CR->Next;
 	} /* while (cliprects to examine) */
+	
+	UnlockLayerRom( L );
 	
     } /* if (not screen rastport) */
 	
@@ -3330,10 +3360,16 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
     {
     	/* Window rastport, we need to clip the operation */
 	
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle toblit, intersect;
+	
+	LockLayerRom(L);
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
 	
 	toblit.MinX = xDest + xrel;
 	toblit.MinY = yDest + yrel;
@@ -3402,6 +3438,8 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 	    
 	    CR = CR->Next;
 	} /* while (cliprects to examine) */
+	
+	UnlockLayerRom( L );
 	
     } /* if (not screen rastport) */
     
@@ -3640,10 +3678,16 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     {
     	/* Window rastport, we need to clip the operation */
 	
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle toblit, intersect;
+	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
 	
 	toblit.MinX = xMin + xrel;
 	toblit.MinY = yMin + yrel;
@@ -3704,6 +3748,8 @@ D(bug("Done putting to hidd\n"));
 	    
 	    CR = CR->Next;
 	} /* while (cliprects to examine) */
+	
+	UnlockLayerRom( L );
 	
     } /* if (not screen rastport) */
 	
@@ -3857,11 +3903,17 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     }
     else
     {
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle toerase, intersect;
 	struct layerhookmsg msg;
+	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
 	
 	toerase.MinX = x1 + xrel;
 	toerase.MinY = y1 + yrel;
@@ -3916,6 +3968,7 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	    }
 	    CR = CR->Next;
 	}
+	UnlockLayerRom( L );
 	
 
     }
@@ -4130,10 +4183,16 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
     }
     else
     {
-        struct ClipRect *CR = L->ClipRect;
-	WORD xrel = L->bounds.MinX;
-        WORD yrel = L->bounds.MinY;
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
 	struct Rectangle toblit, intersect;
+	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
 	
 	toblit.MinX = xDest + xrel;
 	toblit.MinY = yDest + yrel;
@@ -4187,6 +4246,7 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 	    }
 	    CR = CR->Next;
 	}
+	UnlockLayerRom( L );
 	
     }
 	
