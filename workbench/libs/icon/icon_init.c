@@ -5,6 +5,7 @@
     Desc: Init of icon.library
     Lang: english
 */
+#define SAVEDS
 #include <utility/utility.h> /* this must be before icon_intern.h */
 
 #include "icon_intern.h"
@@ -13,7 +14,11 @@
 #define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->ib_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->ib_SegList)
 #define LC_RESIDENTNAME		Icon_resident
+#ifdef __MORPHOS__
+#define LC_RESIDENTFLAGS	RTF_AUTOINIT | RTF_PPC
+#else
 #define LC_RESIDENTFLAGS	RTF_AUTOINIT
+#endif
 #define LC_RESIDENTPRI		0
 #define LC_LIBBASESIZE		sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
@@ -31,6 +36,10 @@
 #undef DOSBase
 #undef SysBase
 
+#ifdef __MORPHOS__
+    unsigned long __amigappc__ = 1;
+#endif
+
 struct ExecBase   * SysBase; /* global variable */
 struct DosLibrary * DOSBase;
 
@@ -46,7 +55,7 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     if (!LB(lh)->utilitybase)
 	return NULL;
 
-    LB(lh)->dsh.h_Entry = (void *)dosstreamhook;
+    LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = DOSBase;
 
     return TRUE;

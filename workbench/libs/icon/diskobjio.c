@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#ifdef __MORPHOS__
+#undef __NOLIBBASE__
+#endif
+
 #include <stdio.h>
 #include <stddef.h>
 
@@ -13,6 +17,7 @@
 #include <aros/bigendianio.h>
 #include <aros/asmcall.h>
 #include <aros/debug.h>
+#include <aros/macros.h>
 #include <workbench/workbench.h>
 
 #include <proto/alib.h>
@@ -54,27 +59,27 @@ AROS_UFP3S(ULONG, ProcessFlagPtr,
 
 static const struct Hook ProcessDrawerDataHook =
 {
-    { NULL, NULL}, ProcessDrawerData, NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessDrawerData), NULL, NULL
 },
 ProcessGadgetRenderHook =
 {
-    { NULL, NULL}, ProcessGadgetRender, NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessGadgetRender), NULL, NULL
 },
 ProcessSelectRenderHook =
 {
-    { NULL, NULL}, ProcessSelectRender, NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessSelectRender), NULL, NULL
 },
 ProcessFlagPtrHook =
 {
-    { NULL, NULL}, ProcessFlagPtr, NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessFlagPtr), NULL, NULL
 },
 ProcessDefaultToolHook =
 {
-    { NULL, NULL}, ProcessDefaultTool, NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessDefaultTool), NULL, NULL
 },
 ProcessToolTypesHook =
 {
-    { NULL, NULL}, ProcessToolTypes, NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessToolTypes), NULL, NULL
 };
 
 #undef O
