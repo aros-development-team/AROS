@@ -4,9 +4,16 @@
 
 */
 
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include "partition_support.h"
+#include "partition_intern.h"
+
 /*****************************************************************************
 
     NAME */
+#include <libraries/partition.h>
+
    AROS_LH1(void, ClosePartitionTable,
 
 /*  SYNOPSIS */
