@@ -121,7 +121,7 @@ static void hilightpoint(WORD point)
     WORD x = points[point][0];
     WORD y = points[point][1];
     
-kprintf("hilightpoint %d,%d\n", x, y);
+    //kprintf("hilightpoint %d,%d\n", x, y);
     
     SetABPenDrMd(winrp, 2, 0, COMPLEMENT);
     Move(winrp, x - 3, y - 3);
