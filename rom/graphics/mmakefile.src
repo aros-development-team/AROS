@@ -15,7 +15,7 @@ LIB		:=$(LIBDIR)/lib$(LIBNAME).so
 
 INIT_FILE	:= $(LIBNAME)_init
 
-FILES		:= $(LIBNAME)_functable intregions
+FILES		:= $(LIBNAME)_functable intregions graphics_misc
 
 END_FILE	:= $(LIBNAME)_endtag
 
