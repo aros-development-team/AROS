@@ -20,6 +20,7 @@
 #include <proto/dos.h>
 #include <oop/oop.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
 #include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
