@@ -32,7 +32,7 @@ clean:
 	$(RM) $(OBJDIR) *.err
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 icon_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
