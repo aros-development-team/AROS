@@ -1,11 +1,19 @@
 printf
-<A HREF="printf.asc"><stdfunc>printf</stdfunc></A>
+<A HREF="printf.asc"><stdfuncnc>printf</stdfuncnc></A>
 assert
-<A HREF="assert.asc"><stdfunc>assert</stdfunc></A>
+<A HREF="assert.asc"><stdfuncnc>assert</stdfuncnc></A>
 NULL
 <ckeyword>NULL</ckeyword>
 int
 <ckeyword>int</ckeyword>
+typedef
+<ckeyword>typedef</ckeyword>
+static
+<ckeyword>static</ckeyword>
+const
+<ckeyword>const</ckeyword>
+extern
+<ckeyword>extern</ckeyword>
 char
 <ckeyword>char</ckeyword>
 void
@@ -107,6 +115,6 @@ __cplusplus
 <stdio.h>
 <A HREF="/usr/include/stdio.h"><cheader>&lt;stdio.h&gt;</cheader></A>
 NewList
-<A HREF="addhead.html"><stdfunc>NewList</stdfunc></A>
+<A HREF="addhead.html"><stdfuncnc>NewList</stdfuncnc></A>
 AddHead
-<A HREF="addhead.html"><stdfunc>AddHead</stdfunc></A>
+<A HREF="addhead.html"><stdfuncnc>AddHead</stdfuncnc></A>
