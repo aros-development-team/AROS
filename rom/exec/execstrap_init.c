@@ -58,15 +58,19 @@ struct Resident resident =
     106,		/* Just above exec.library.
 			   Because exec is RTF_SINGLETASK, and this is
 			   RTF_COLDSTART, we'll still be started after
-			   exec */
+			   exec. */
     (char *)name,
     (char *)&version[6],
     &start
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.5 (14.2.97)";
+const char version[] = "$VER: exec.strap 41.6 (27.02.97)";
 
+/*
+    Debug functions need SysBase as a global var. Not really legal, as we are
+    supposed to be ROM-code compatible.
+*/
 struct ExecBase *SysBase;
 
 int start(void)
@@ -95,14 +99,7 @@ int start(void)
     }
 
     /* First patch SetFunction itself. */
-#if 0
-    /* Produces very strange code. "c:version" prints
-       "Kickstart 39.106. Could not find version information for ''" and fails:
-    */
-    /* Appears to generate correct code if compiled for 68000, and strange code
-       if compiled for 68020+ */
     SetFunc( 70, SetFunction);
-#endif
 
     /*
 	The biggie: SetFunction() as many library vectors as possible.
@@ -147,17 +144,22 @@ int start(void)
 #endif
 
     /*
-       BTW:  What bit(s) is (are) set for the MC68060?
-       BTW2: They would really be set by the 68060.library, which will obviously
-             not have executed at this point in the reset-procedure.
-       BTW3: If there is an agreed upon bit for the 68060, we could examine the
-             type of processor for ourselves in exec.strap, and update AttnFlags
-             accordingly.
-       BTW4: The 68060 can be recognized by its Processor Configuration Register (PCR).
-             This register also contains the bit to enable Superscalar Operation,
-             which we could set at this point in the reset-procedure to speed
-             things up considerably (if nothing breaks).
-       BTW5: For the MC68060, we could also enable the Branch Cache at this point.
+	BTW:  What bit(s) is (are) set for the MC68060?
+	ANS:  Bit 7.
+	BTW2: They would really be set by the 68060.library, which will obviously
+              not have executed at this point in the reset-procedure.
+	ANS:  So we have to recognize it ourselves. Write routine.
+	BTW3: If there is an agreed upon bit for the 68060, we could examine the
+              type of processor for ourselves in exec.strap, and update AttnFlags
+              accordingly.
+	ANS:  See 2.
+	BTW4: The 68060 can be recognized by its Processor Configuration Register (PCR).
+              This register also contains the bit to enable Superscalar Operation,
+              which we could set at this point in the reset-procedure to speed
+              things up considerably (if nothing breaks).
+	ANS:  Just try it.
+      	BTW5: For the MC68060, we could also enable the Branch Cache at this point.
+	ANS:  Yep.
     */
 
 #if 0
@@ -255,11 +257,11 @@ int start(void)
     /* Can only be patched if we have control over the microkernel: */
     SetFunc( 94, _ObtainSemaphore);
 #endif
-#if 0 /* YYY */
+#if 0 /* ZZZ */
     SetFunc( 96, AttemptSemaphore);
 #endif
     SetFunc( 99, FindSemaphore);
-#if 0 /* YYY */
+#if 1 /* YYY */
     SetFunc(100, AddSemaphore);
 #endif
     SetFunc(101, RemSemaphore);
@@ -274,7 +276,7 @@ int start(void)
 #endif
     SetFunc(114, AllocVec);
     SetFunc(115, FreeVec);
-#if 0 /* YYY */
+#if 0 /* ZZZ */
     SetFunc(120, AttemptSemaphoreShared);
 #endif
 
