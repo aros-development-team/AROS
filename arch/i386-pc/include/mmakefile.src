@@ -5,7 +5,6 @@ GENINC	:= $(TOOLDIR)/geninc-i386-native$(HOST_EXE_SUFFIX)
 _INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))             \
             $(foreach f,$(shell ls aros/*.[hi]), $(f))    \
             $(foreach f,$(shell ls asm/*.[hi]), $(f))      \
-            $(foreach f,$(shell ls libcore/*.c), $(f))          \
             $(foreach f,$(shell ls exec/*.[hi]), $(f))
 
 INCFILES := $(foreach f,$(_INCLUDES), $(INCDIR)/$(f) $(GENINCDIR)/$(f))
