@@ -34,6 +34,8 @@ AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
 {
     CloseLibrary(aroscbase);
+    
+    return TRUE;
 }
 
 ADD2INITLIB(InitData, 0);
