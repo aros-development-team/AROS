@@ -13,6 +13,9 @@
 #include <exec/memory.h>
 
 #include "x11gfx_intern.h"
+#include "x11.h"
+
+#undef OOPBase
 
 /* Support functions */
 ULONG map_x11_to_hidd(long *penarray, ULONG x11pixel)
@@ -65,6 +68,42 @@ BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase)
 
 /* Creates an XImage AND allocates bitmap */
 
+#undef OOPBase
+#define OOPBase ((struct Library *)OCLASS(OCLASS(o)))
+
+
+VOID Hidd_X11Mouse_HandleEvent(Object *o, XEvent *event)
+{
+    struct pHidd_X11Mouse_HandleEvent msg;
+    static MethodID mid = 0;
+    
+    if (!mid)
+    	mid = GetMethodID(IID_Hidd_X11Mouse, moHidd_X11Mouse_HandleEvent);
+	
+    msg.mID = mid;
+    msg.event = event;
+    
+    DoMethod(o, (Msg) &msg);
+}
+
+
+VOID Hidd_X11Kbd_HandleEvent(Object *o, XEvent *event)
+{
+    struct pHidd_X11Kbd_HandleEvent msg;
+    static MethodID mid = 0;
+    
+    if (!mid)
+    	mid = GetMethodID(IID_Hidd_X11Kbd, moHidd_X11Kbd_HandleEvent);
+	
+    msg.mID = mid;
+    msg.event = event;
+    
+    DoMethod(o, (Msg) &msg);
+}
+
+
+#if 0
+
 XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBYTE height)
 {
     XImage *image;
@@ -72,8 +111,8 @@ XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBY
 		, DefaultVisual(display, screen)
 		, depth
 		, ZPixmap
-		, 0	/* Offset	*/
-		, NULL	/* Data		*/
+		, 0
+		, NULL
 		, width
 		, height
 		, 16
@@ -84,7 +123,7 @@ XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBY
     {
         ULONG size;
 	
-	size = ((width - 1) >> 3) + 1; /* bytes per row */
+	size = ((width - 1) >> 3) + 1;
 	size = size * height * depth;
 	
         image->data = AllocVec(size, MEMF_ANY);
@@ -104,3 +143,4 @@ VOID free_ximage(XImage *image)
     image->data = NULL;
     XFree(image);
 }
+#endif

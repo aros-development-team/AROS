@@ -25,6 +25,7 @@
 #include <exec/memory.h>
 
 #include "x11gfx_intern.h"
+#include "x11.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -42,18 +43,6 @@ struct osbm_data
     ULONG *hidd2x11cmap;
     
 };
-
-#undef X11GfxBase
-#define X11GfxBase ((struct x11gfxbase *)cl->UserData)
-
-#undef OOPBase
-#define OOPBase (X11GfxBase->oopbase)
-
-#undef SysBase
-#define SysBase (X11GfxBase->sysbase)
-
-#undef UtilityBase
-#define UtilityBase (X11GfxBase->utilitybase)
 
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddX11GfxAB = 0;
@@ -78,7 +67,7 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct TagItem super_tags[] =
     {
 	{ aHidd_BitMap_AllocBuffer, FALSE }, /* Superclass should NOT allocate buffer */
-	{ TAG_MORE, msg->attrList }
+	{ TAG_MORE, (IPTR)msg->attrList }
 	
     };
     struct pRoot_New super_msg;
@@ -251,9 +240,10 @@ static ULONG bitmap_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel 
 #define NUM_BITMAP_METHODS 2
 
 
-#undef X11GfxBase
+#undef XSD
+#define XSD(cl) xsd
 
-Class *init_osbitmapclass(struct x11gfxbase *X11GfxBase)
+Class *init_osbmclass(struct x11_staticdata *xsd)
 {
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
@@ -289,7 +279,7 @@ Class *init_osbitmapclass(struct x11gfxbase *X11GfxBase)
     
     Class *cl = NULL;
 
-    EnterFunc(bug("init_osbitmapclass(X11GfxBase=%p)\n", X11GfxBase));
+    EnterFunc(bug("init_osbitmapclass(xsd=%p)\n", xsd));
 
     if(MetaAttrBase)
     {
@@ -297,19 +287,20 @@ Class *init_osbitmapclass(struct x11gfxbase *X11GfxBase)
         if(cl)
         {
             D(bug("BitMap class ok\n"));
-            X11GfxBase->osbitmapclass = cl;
-            cl->UserData     = (APTR) X11GfxBase;
+            xsd->osbmclass = cl;
+            cl->UserData     = (APTR)xsd;
            
             /* Get attrbase for the BitMap interface */
    	   
 	    /* Get semiprivate attrbase */
 	    if (obtainattrbases(attrbases, OOPBase))
             {
+		
                 AddClass(cl);
             }
             else
             {
-                free_osbitmapclass(X11GfxBase);
+                free_osbmclass( xsd );
                 cl = NULL;
             }
         }
@@ -324,18 +315,18 @@ Class *init_osbitmapclass(struct x11gfxbase *X11GfxBase)
 
 /*** free_osbitmapclass *********************************************************/
 
-void free_osbitmapclass(struct x11gfxbase *X11GfxBase)
+void free_osbmclass(struct x11_staticdata *xsd)
 {
-    EnterFunc(bug("free_osbitmapclass(X11GfxBase=%p)\n", X11GfxBase));
+    EnterFunc(bug("free_osbmclass(xsd=%p)\n", xsd));
 
-    if(X11GfxBase)
+    if(xsd)
     {
-        RemoveClass(X11GfxBase->osbitmapclass);
-        if(X11GfxBase->osbitmapclass) DisposeObject((Object *) X11GfxBase->osbitmapclass);
-        X11GfxBase->osbitmapclass = NULL;
+        RemoveClass(xsd->osbmclass);
+        if(xsd->osbmclass) DisposeObject((Object *) xsd->osbmclass);
+        xsd->osbmclass = NULL;
 	
 	releaseattrbases(attrbases, OOPBase);
     }
 
-    ReturnVoid("free_osbitmapclass");
+    ReturnVoid("free_osbmclass");
 }

@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <X11/Xlib.h>
@@ -19,6 +21,8 @@
 #include <proto/utility.h>
 
 #include <exec/memory.h>
+#include <exec/lists.h>
+
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
 #include <oop/oop.h>
@@ -26,35 +30,20 @@
 #include <hidd/graphics.h>
 
 #include "x11gfx_intern.h"
+#include "x11.h"
 
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 
 
-
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
-
-/* Class static data */
-#undef X11GfxBase
-#define X11GfxBase ((struct x11gfxbase *)cl->UserData)
-
-#undef OOPBase
-#define OOPBase (X11GfxBase->oopbase)
-
-#undef SysBase
-#define SysBase (X11GfxBase->sysbase)
-
-#undef UtilityBase
-#define UtilityBase (X11GfxBase->utilitybase)
-
 
 
 #define GetSysDisplay() (data->display)
 #define GetSysScreen()  (data->screen)
 #define GetSysCursor()  (data->cursor)
 
-#define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddX11GfxAB = 0;
 static AttrBase HiddX11OsbmAB = 0;
@@ -83,8 +72,6 @@ struct bitmap_data
     int		screen;
     
 };
-
-
 
 
 
@@ -171,6 +158,8 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    XMapRaised (GetSysDisplay(), data->xwindow);
 
 	    /* Wait for MapNotify (ie. for window to be displayed) */
+/*	nlorentz: No onger necessary as the X11 hidd will gather all events.
+*/
 	    for (;;)
 	    {
 		XEvent e;
@@ -192,6 +181,24 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    );
 	    if (data->gc)
 	    {
+	
+
+	        /* Maintain a list of open windows for the X11 event handler in x11.c */
+	        struct xwinnode * node = AllocMem(sizeof (struct xwinnode), MEMF_PUBLIC);
+
+		if (node)
+		{
+		    ObtainSemaphore( &XSD(cl)->winlistsema);
+		    
+		    node->xwindow = data->xwindow;
+		    AddTail( (struct List *)&XSD(cl)->xwindowlist, (struct Node *)node );
+		    
+		    ReleaseSemaphore( &XSD(cl)->winlistsema);
+		}
+		else
+		{
+		    ok = FALSE;
+		}
 	    }
 	    else
 	    {
@@ -226,14 +233,30 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
+    
     if (data->gc)
     {
     	XFreeGC(data->display, data->gc);
     }
     if (data->xwindow)
     {
+        struct xwinnode *node, *safe;
+	ObtainSemaphore( &XSD(cl)->winlistsema );
+	
+        ForeachNodeSafe( &XSD(cl)->xwindowlist, node, safe)
+	{
+	    if (node->xwindow == data->xwindow)
+	    {
+	        Remove((struct Node *)node);
+		FreeMem(node, sizeof (struct xwinnode));
+	    }
+	    
+	}
+	ReleaseSemaphore( &XSD(cl)->winlistsema );
+	
     	XDestroyWindow( GetSysDisplay(), data->xwindow);
 	XFlush( GetSysDisplay() );
+	
     }
     
     
@@ -296,14 +319,16 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	
 	if (XAllocColor(data->display, data->colmap, &xc))
 	{
-		D(bug("Successfully allocated color (%x, %x, %x)\n",
+/*	*((ULONG *)0) = 0;
+*/		D(bug("Successfully allocated color (%x, %x, %x)\n",
 			xc.red, xc.green, xc.blue));
 			
 	    /* Remember the color */
-	    data->hidd2x11cmap[xc_i] =xc.pixel;
+	    data->hidd2x11cmap[xc_i] = xc.pixel;
         			
-	}		
-    }
+	}
+/*	*((ULONG *)0) = 0;
+*/    }
     
     
     ReturnBool("X11Gfx.BitMap::SetColors",  TRUE);
@@ -394,7 +419,6 @@ static VOID bitmap_fillrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     
     if (mode == vHIDD_GC_DrawMode_Copy)
     {
-    	
 	XFillRectangle(data->display
 		, data->xwindow
 		, data->gc
@@ -817,15 +841,16 @@ static VOID bitmap_blitcolorexpansion(Class *cl, Object *o, struct pHidd_BitMap_
     ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
 }
 
-/*** init_bitmapclass *********************************************************/
+/*** init_bmclass *********************************************************/
 
-#undef X11GfxBase
+#undef XSD
+#define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   3
 #define NUM_BITMAP_METHODS 10
 
 
-Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
+Class *init_bmclass(struct x11_staticdata *xsd)
 {
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
@@ -869,7 +894,7 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
     
     Class *cl = NULL;
 
-    EnterFunc(bug("init_bitmapclass(X11GfxBase=%p)\n", X11GfxBase));
+    EnterFunc(bug("init_bitmapclass(xsd=%p)\n", xsd));
 
     if(MetaAttrBase)
     {
@@ -877,8 +902,8 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
         if(cl)
         {
             D(bug("BitMap class ok\n"));
-            X11GfxBase->bitmapclass = cl;
-            cl->UserData     = (APTR) X11GfxBase;
+            xsd->bmclass = cl;
+            cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
 	    if (obtainattrbases(attrbases, OOPBase))
@@ -887,7 +912,7 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
             }
             else
             {
-                free_bitmapclass(X11GfxBase);
+                free_bmclass( xsd );
                 cl = NULL;
             }
         }
@@ -896,25 +921,25 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
 	ReleaseAttrBase(IID_Meta);
     } /* if(MetaAttrBase) */
 
-    ReturnPtr("init_bitmapclass", Class *,  cl);
+    ReturnPtr("init_bmclass", Class *,  cl);
 }
 
 
 /*** free_bitmapclass *********************************************************/
 
-void free_bitmapclass(struct x11gfxbase *X11GfxBase)
+void free_bmclass(struct x11_staticdata *xsd)
 {
-    EnterFunc(bug("free_bitmapclass(X11GfxBase=%p)\n", X11GfxBase));
+    EnterFunc(bug("free_bmclass(xsd=%p)\n", xsd));
 
-    if(X11GfxBase)
+    if(xsd)
     {
-        RemoveClass(X11GfxBase->bitmapclass);
-        if(X11GfxBase->bitmapclass) DisposeObject((Object *) X11GfxBase->bitmapclass);
-        X11GfxBase->bitmapclass = NULL;
+        RemoveClass(xsd->bmclass);
+        if(xsd->bmclass) DisposeObject((Object *) xsd->bmclass);
+        xsd->bmclass = NULL;
 	
 	releaseattrbases(attrbases, OOPBase);
 	
     }
 
-    ReturnVoid("free_bitmapclass");
+    ReturnVoid("free_bmclass");
 }

@@ -27,22 +27,12 @@
 #include <hidd/graphics.h>
 
 #include "x11gfx_intern.h"
+#include "x11.h"
 
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 
-
-#undef SysBase
-#define SysBase (X11GfxBase->sysbase)
-
-#undef OOPBase
-#define OOPBase (X11GfxBase->oopbase)
-
-#undef UtilityBase
-#define UtilityBase (X11GfxBase->utilitybase)
-
-#define X11GfxBase ((struct x11gfxbase *)cl->UserData)
 
 #define IS_X11GFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11GfxAB) < num_Hidd_X11Gfx_Attrs)
 
@@ -53,7 +43,7 @@
 static AttrBase HiddBitMapAttrBase = 0;  
 static AttrBase HiddX11GfxAB = 0;
 
-struct abdescr attrbases[] =
+static struct abdescr attrbases[] =
 {
     { IID_Hidd_BitMap, &HiddBitMapAttrBase },
     { IID_Hidd_X11Gfx, &HiddX11GfxAB },
@@ -70,6 +60,7 @@ struct gfx_data
     long hidd2x11cmap[256];
     Colormap	colmap;
     Cursor	cursor;
+   
 };
 
 /*********************
@@ -82,20 +73,12 @@ struct gfx_data
 static BOOL initx11stuff(struct gfx_data *data)
 {
 /*    XColor fg, bg; */
-    BOOL ok = TRUE;
-    char *displayname;
-
-    /* Try to get the display */
-    if (!(displayname = getenv("DISPLAY")))
-	displayname =":0.0";
-
-
-    data->display = XOpenDisplay(displayname);
-    if (!data->display)
-    	ok = FALSE;
-    else
-    {
+	BOOL ok = TRUE;
+	
         XColor bg, fg;
+	
+	
+	
     	data->screen = DefaultScreen( data->display );
 	
 	data->depth  = DisplayPlanes( data->display, data->screen );
@@ -120,7 +103,6 @@ static BOOL initx11stuff(struct gfx_data *data)
 		, &fg, &bg
 	);
 
-    } /* if (Could get sysdisplay) */
     
     return ok;
 
@@ -170,6 +152,8 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	MethodID dispose_mid;
 	struct gfx_data *data = INST_DATA(cl, o);
 	
+	data->display = XSD(cl)->display;
+	
 	/* Do GfxHidd initalization here */
 	if (initx11stuff(data));
 	{
@@ -200,7 +184,6 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 {
 
     BOOL displayable;
-    Class *bm_cl;
     Object *bm;
     
     struct gfx_data *data;
@@ -231,7 +214,7 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     if (displayable)
     {
-    	bm = NewObject(X11GfxBase->bitmapclass, NULL, tags);
+    	bm = NewObject(XSD(cl)->bmclass, NULL, tags);
     }
     else
     {
@@ -268,14 +251,15 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
     return;
 }
 
-#undef X11GfxBase
+#undef XSD
+#define XSD(cl) xsd
 
 /********************  init_gfxclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
 #define NUM_GFXHIDD_METHODS 1
 
-Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
+Class *init_gfxclass (struct x11_staticdata *xsd)
 {
     Class *cl = NULL;
 
@@ -308,6 +292,7 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd_Gfx},
 	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
 	{ aMeta_InstSize,		(IPTR)sizeof (struct gfx_data) },
+	{ aMeta_ID,		(IPTR)CLID_Hidd_X11Gfx },
 	{TAG_DONE, 0UL}
     };
 
@@ -320,15 +305,17 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
     
     	if(cl)
     	{
+	    cl->UserData = (APTR)xsd;
+	    xsd->gfxclass = cl;
+	    
 	    if (obtainattrbases(attrbases, OOPBase))
 	    {
 		D(bug("GfxHiddClass ok\n"));
-		cl->UserData = (APTR)X11GfxBase;
 	    	AddClass(cl);
 	    }
 	    else
 	    {
-	    	free_gfxclass(X11GfxBase);
+	    	free_gfxclass( xsd );
 		cl = NULL;
 	    }
 	}
@@ -343,17 +330,17 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 
 
 /*************** free_gfxclass()  **********************************/
-VOID free_gfxclass(struct x11gfxbase *X11GfxBase)
+VOID free_gfxclass(struct x11_staticdata *xsd)
 {
-    EnterFunc(bug("free_gfxclass(X11GfxBase=%p)\n", X11GfxBase));
+    EnterFunc(bug("free_gfxclass(xsd=%p)\n", xsd));
 
-    if(X11GfxBase)
+    if(xsd)
     {
 
-        RemoveClass(X11GfxBase->gfxclass);
+        RemoveClass(xsd->gfxclass);
 	
-        if(X11GfxBase->gfxclass) DisposeObject((Object *) X11GfxBase->gfxclass);
-        X11GfxBase->gfxclass = NULL;
+        if(xsd->gfxclass) DisposeObject((Object *) xsd->gfxclass);
+        xsd->gfxclass = NULL;
 	
 	releaseattrbases(attrbases, OOPBase);
 

@@ -23,47 +23,17 @@
 
 #include <X11/Xlib.h>
 
-/* Library stuff */
-struct x11gfxbase
-{
-    struct Library 	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
 
-    struct Library	*utilitybase;
-    struct Library	*oopbase;
-    
-    Class		*gfxclass;
-    Class		*gcclass;
-    Class		*bitmapclass;
-    Class		*osbitmapclass;
-	
-};
-
-
-Class *init_gfxclass   		( struct x11gfxbase *x11gfxbase );
-Class *init_osbitmapclass    	( struct x11gfxbase *X11GfxBase );
-Class *init_bitmapclass		( struct x11gfxbase *X11GfxBase );
-
-VOID free_osbitmapclass	( struct x11gfxbase *X11GfxBase );
-VOID free_bitmapclass	( struct x11gfxbase *X11GfxBase );
-VOID free_gfxclass	( struct x11gfxbase *X11GfxBase );
 
 ULONG map_x11_to_hidd(long *penarray, ULONG x11pixel);
 XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBYTE height);
 VOID free_ximage(XImage *image);
 
 
-struct abdescr
-{
-    STRPTR interfaceid;
-    AttrBase *attrbase;
-};
-
-BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
-VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
 
 /* Private Attrs and methods for the X11Gfx Hidd */
+
+#define CLID_Hidd_X11Gfx	"hidd.gfx.x11"
 
 #define IID_Hidd_X11Gfx "hidd.graphics.x11gfx"
 #define IID_Hidd_X11Osbm "hidd.graphics.x11osbm"
