@@ -50,5 +50,7 @@ BOOL MakeDirs( STRPTR path )
             if( !success ) return FALSE;
         }
     }
+    
+    return TRUE;
 }
 
