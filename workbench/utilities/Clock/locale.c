@@ -11,28 +11,27 @@
 
 struct Catalog *catalog;
 
-
-void InitLocale( STRPTR catname, ULONG version )
+void InitLocale(STRPTR catalogName, ULONG version)
 {
-    if( LocaleBase != NULL )
+    if(LocaleBase != NULL)
     {
 	catalog = OpenCatalog
         (
-            NULL, catname, OC_Version, version, TAG_DONE
+            NULL, catalogName, OC_Version, version, TAG_DONE
         );
     }
 }
 
-void CleanupLocale( void )
+void CleanupLocale(void)
 {
-    if( catalog != NULL ) CloseCatalog( catalog );
+    if(catalog != NULL) CloseCatalog(catalog);
 }
 
 STRPTR MSG( ULONG id )
 {
-    if( catalog != NULL )
+    if(catalog != NULL)
     {
-	return GetCatalogStr( catalog, id, CatCompArray[id].cca_Str );
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {

@@ -2,84 +2,15 @@
 ## codeset 0
 ## language français
 ;
-MSG_CANT_OPEN_LIB
-Impossible d'ouvrir %s V%ld !\n
-; Can't open %s V%ld!\n
+MSG_ERROR_CANT_CREATE_APPLICATION
+*** Error: Can not create application object.
+; Error: Can not create application object.
 ;
-;
-MSG_CANT_LOCK_SCR
-Impossible de vérouiller l'écran public !
-; Can't lock public screen!
-;
-MSG_CANT_GET_DRI
-Impossible d'obtenir la structure DrawInfo !
-; Can't get DrawInfo!
-;
-MSG_CANT_GET_VI
-Impossible d'obtenir la structure VisualInfo !
-; Can't get VisualInfo!
-;
-MSG_CANT_CREATE_GADGET
-Impossible de créer les Gadgets !
-; Can't create gadgets!
-;
-MSG_CANT_CREATE_MENUS
-Impossible de créer les Menus !
-; Can't create menus!
-;
-MSG_CANT_CREATE_WIN
-Impossible de créer la fenêtre !
-; Can't create window!
-;
-MSG_WINTITLE
+MSG_WINDOW_TITLE
 Horloge
 ; Clock
 ;
 MSG_OK
 Ok
 ; Ok
-;
-MSG_MEN_PROJECT
-Projet
-; Project
-;
-MSG_MEN_PROJECT_ANALOG
-A\0Analogique
-; A\0Analog
-;
-MSG_MEN_PROJECT_DIGITAL
-D\0Digitale
-; D\0Digital
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Quitter
-; Q\0Quit
-;
-MSG_MEN_SETTINGS
-Configuration
-; Settings
-;
-MSG_MEN_SETTINGS_DATE
- \0Afficher la date
-;  \0Date
-;
-MSG_MEN_SETTINGS_SECONDS
- \0Afficher les secondes
-;  \0Seconds
-;
-MSG_MEN_SETTINGS_DIGITALFORMAT
- \0Format digital
-; \0Digital Format
-;
-MSG_MEN_SETTINGS_ALARM
-W\0Alarme
-; M\0Alarm
-;
-MSG_MEN_SETTINGS_SETALARM
- \0 Poser l'alarme ...
-; \0Set Alarm...
-;
-MSG_MEN_SETTINGS_SAVE
- \0Sauver la configuration
-; \0Save Settings
 ;

@@ -14,45 +14,36 @@
 #include <libraries/mui.h>
 #include <zune/clock.h>
 
-#include <stdlib.h> /* for exit() */
+#include <string.h> /* memset() */
+#include <stdlib.h> /* exit() */
 
 #include "locale.h"
+#include "version.h"
 
-#define ARG_TEMPLATE    "DIGITAL/S,LEFT/N,TOP/N,WIDTH/N,HEIGHT/N," \
-    	    	    	"24HOUR/S,SECONDS/S,DATE/S,FORMAT/N,PUBSCREEN/K"
+/*** Version string *********************************************************/
 
-#define ARG_DIGITAL      0
-#define ARG_LEFT    	 1
-#define ARG_TOP     	 2
-#define ARG_WIDTH     	 3
-#define ARG_HEIGHT  	 4
-#define ARG_24HOUR  	 5
-#define ARG_SECONDS   	 6
-#define ARG_DATE    	 7
-#define ARG_FORMAT    	 8
-#define ARG_PUBSCREEN    9
+char *versionString = VERSIONSTR;
 
-#define NUM_ARGS        10
+/*** Argument parsing *******************************************************/
 
-static WORD           opt_winleft   = MUIV_Window_LeftEdge_Centered,
-                      opt_wintop    = MUIV_Window_TopEdge_Centered,
-                      opt_winwidth  = 150,
-                      opt_winheight = 150;
+#define ARG_TEMPLATE    "LEFT/N,TOP/N,WIDTH/N,HEIGHT/N"
 
-char s[256];
-BYTE    	    	    	opt_analogmode;
-BYTE    	    	    	opt_showdate;
-BYTE    	    	    	opt_showsecs;
-BYTE    	    	    	opt_alarm;
-BYTE    	    	    	opt_format;
-BYTE    	    	    	opt_24hour;
+#define ARG_LEFT    	 0
+#define ARG_TOP     	 1
+#define ARG_WIDTH     	 2
+#define ARG_HEIGHT  	 3
 
-static struct RDArgs *myargs;
-static IPTR           args[NUM_ARGS];
+#define NUM_ARGS         4
+
+/*** Options ****************************************************************/
+
+static WORD optionLeft   = MUIV_Window_LeftEdge_Centered,
+            optionTop    = MUIV_Window_TopEdge_Centered,
+            optionWidth  = 150,
+            optionHeight = 150;
 
 
-static void FreeArguments(void);
-
+/*** Functions **************************************************************/
 
 WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 {
@@ -67,27 +58,27 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
     return 0; //EasyRequestArgs(win, &es, NULL, NULL);  
 }
 
-void Cleanup( STRPTR msg )
+void Cleanup( STRPTR message )
 {
-    if( msg != NULL )
+    if( message != NULL )
     {
 	if
         ( 
                IntuitionBase != NULL 
-            && ((struct Process *) FindTask( NULL ))->pr_CLI == NULL)
+            && ((struct Process *) FindTask(NULL))->pr_CLI == NULL
+        )
 	{
-	    ShowMessage( "Clock", msg, MSG(MSG_OK) );     
+	    ShowMessage( "Clock", message, MSG(MSG_OK) );     
 	}
 	else
 	{
-	    Printf( "Clock: %s\n", msg );
+	    Printf( "Clock: %s\n", message );
 	}
     }
     
-    FreeArguments();
     CleanupLocale();
     
-    if( msg != NULL )
+    if( message != NULL )
         exit( 20 );
     else
         exit( 0 );
@@ -95,26 +86,26 @@ void Cleanup( STRPTR msg )
 
 static void GetArguments(void)
 {
-    if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
+#   define TMPSIZE 256
+    TEXT           tmp[TMPSIZE];
+    struct RDArgs *rdargs = NULL;
+    IPTR           args[NUM_ARGS];
+    
+    memset(args, 0, sizeof( args ));
+    rdargs = ReadArgs(ARG_TEMPLATE, args, NULL);
+    if (rdargs == NULL)
     {
-	Fault(IoErr(), 0, s, 256);
-	Cleanup(s);
+	Fault(IoErr(), 0, tmp, TMPSIZE);
+	Cleanup(tmp);
     }
 
-    if (args[ARG_DIGITAL] == 0) opt_analogmode = 1;
-    if (args[ARG_24HOUR]) opt_24hour = 1;
-    if (args[ARG_SECONDS]) opt_showsecs = 1;
-    if (args[ARG_DATE]) opt_showdate = 1;
-    
-    if (args[ARG_LEFT]) opt_winleft = *(IPTR *)args[ARG_LEFT];
-    if (args[ARG_TOP]) opt_wintop = *(IPTR *)args[ARG_TOP];
-    if (args[ARG_WIDTH]) opt_winwidth = *(IPTR *)args[ARG_WIDTH];
-    if (args[ARG_HEIGHT]) opt_winheight = *(IPTR *)args[ARG_HEIGHT];
-}
-
-static void FreeArguments(void)
-{
-    if (myargs) FreeArgs(myargs);
+    if (args[ARG_LEFT])   optionLeft   = *(IPTR *) args[ARG_LEFT];
+    if (args[ARG_TOP])    optionTop    = *(IPTR *) args[ARG_TOP];
+    if (args[ARG_WIDTH])  optionWidth  = *(IPTR *) args[ARG_WIDTH];
+    if (args[ARG_HEIGHT]) optionHeight = *(IPTR *) args[ARG_HEIGHT];
+        
+    FreeArgs(rdargs);
+#   undef TMPSIZE 
 }
 
 int main(void)
@@ -126,20 +117,20 @@ int main(void)
     
     application = ApplicationObject,
         SubWindow, window = WindowObject,
-            MUIA_Window_Title,       MSG( MSG_WINTITLE ),
+            MUIA_Window_Title,       MSG( MSG_WINDOW_TITLE ),
             MUIA_Window_Activate,    TRUE,
             MUIA_Window_NoMenus,     TRUE,
-            MUIA_Window_LeftEdge,    opt_winleft,
-            MUIA_Window_TopEdge,     opt_wintop,
-            MUIA_Window_Width,       opt_winwidth,
-            MUIA_Window_Height,      opt_winheight,
+            MUIA_Window_LeftEdge,    optionLeft,
+            MUIA_Window_TopEdge,     optionTop,
+            MUIA_Window_Width,       optionWidth,
+            MUIA_Window_Height,      optionHeight,
             
             WindowContents, ClockObject,
             End,
         End,
     End;
 
-    if( application )
+    if (application)
     {
         ULONG signals = 0;
         
@@ -150,25 +141,28 @@ int main(void)
             MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
         );
         
-        SetAttrs( window, MUIA_Window_Open, TRUE, TAG_DONE );
+        SetAttrs(window, MUIA_Window_Open, TRUE, TAG_DONE);
         
         while
         ( 
-               DoMethod( application, MUIM_Application_NewInput, &signals ) 
+               DoMethod(application, MUIM_Application_NewInput, &signals) 
             != MUIV_Application_ReturnID_Quit
         )
         {
-            if( signals )
+            if(signals)
             {
-                signals = Wait( signals | SIGBREAKF_CTRL_C );
-                if( signals & SIGBREAKF_CTRL_C ) break;
+                signals = Wait(signals | SIGBREAKF_CTRL_C);
+                if(signals & SIGBREAKF_CTRL_C) break;
             }
         }
         
-        SetAttrs( window, MUIA_Window_Open, FALSE, TAG_DONE );
-        MUI_DisposeObject( application );
+        SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
+        MUI_DisposeObject(application);
     }
-
+    else
+    {
+        Cleanup(MSG(MSG_ERROR_CANT_CREATE_APPLICATION));
+    }
     
     Cleanup(NULL);
     
