@@ -49,9 +49,10 @@ AROS_LH2(int, init,
     /*  We have been run at a low priority, after emul.handler,
         but before DOS. We have to create get DOS to boot off 
         the emul.handler FS.
-       
-        Here is what we do. We create a BootNode for the bootlist which
-        has a da_BootPoint which points to the real boot code above.
+
+	There is very little for us to do. emul.handler should have
+	installed a boot node for itself, so DOS will just try and
+	run from that.       
 
     	We can then cause the boot to continue by calling
     	InitResident(FindResident("dos.library"));
