@@ -321,6 +321,7 @@ static ULONG String_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     if (0 == DoSuperMethodA(cl, obj, (Msg) msg))
 	return FALSE;
 
+    data->is_active = FALSE;
     set(obj, MUIA_Background,
 	(IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
 
