@@ -6,10 +6,10 @@
 
 #include <proto/exec.h>
 #include <proto/keymap.h>
+#include <proto/utility.h>
 
 #include "intuition_intern.h"
 
-#include <ctype.h>
 
 #define	DEBUG_SYSREQHANDLER(x)	;
 
@@ -128,7 +128,7 @@ AROS_LH3(LONG, SysReqHandler,
                 {
                     if (msg->Qualifier & IEQUALIFIER_LCOMMAND)
                     {
-                        if  (toupper(rawbuffer[0]) == toupper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue))
+                        if  (ToUpper(rawbuffer[0]) == ToUpper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue))
                         {
                             if (((struct IntRequestUserData *)window->UserData)->NumGadgets > 1)
                             {
@@ -140,7 +140,7 @@ AROS_LH3(LONG, SysReqHandler,
                             }
                         }
 
-                        if  (toupper(rawbuffer[0]) == toupper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse))
+                        if  (ToUpper(rawbuffer[0]) == ToUpper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse))
                         {
                             result = 0;
                         }
