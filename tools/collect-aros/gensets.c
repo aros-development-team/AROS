@@ -15,11 +15,11 @@ typedef struct setnode
 {
     char *secname;
     int   off_setname;
-    unsigned long pri;
+    long  pri;
     struct setnode *next;
 } setnode;
 
-setnode *new_setnode(const char *name, setnode *next, int off, unsigned long pri){
+static setnode *new_setnode(const char *name, setnode *next, int off, long pri){
    setnode *n;
 
    if (!(n          = calloc(1, sizeof(setnode))) ||
@@ -36,7 +36,7 @@ setnode *new_setnode(const char *name, setnode *next, int off, unsigned long pri
    return n;
 }
 
-setnode *get_setnode(setnode **list, const char *name, int off, unsigned long pri)
+static setnode *get_setnode(setnode **list, const char *name, int off, long pri)
 {
     setnode **curr = list;
 
@@ -94,7 +94,7 @@ void emit_sets(setnode *setlist, FILE *out)
 	    fprintf
 	    (
 	        out,
-		"    KEEP(*(%s.%lu))\n",
+		"    KEEP(*(%s.%ld))\n",
 		setlist->secname, setlist->pri
 	    );
 
@@ -116,9 +116,9 @@ void emit_sets(setnode *setlist, FILE *out)
 
 void parse_secname(const char *secname, setnode **setlist_ptr)
 {
-    char          *idx;
-    int            off;
-    unsigned long  pri = 0;
+    char  *idx;
+    int    off;
+    long   pri = 0;
 
     if (strncmp(secname, ".aros.set.", 10) == 0)
         off = 10;
@@ -135,7 +135,7 @@ void parse_secname(const char *secname, setnode **setlist_ptr)
     if (idx)
     {
         *idx = '\0';
-	pri  = strtoul(&idx[1], NULL, 10);
+	pri  = strtol(&idx[1], NULL, 10);
     }
 
     get_setnode(setlist_ptr, secname, off, pri);
