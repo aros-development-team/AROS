@@ -1,5 +1,6 @@
 /*
     (C) 1997 AROS - The Amiga Replacement OS
+    $Id$
 
     Desc: Addbuffers CLI command
     Lang: english
