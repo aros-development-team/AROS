@@ -11,7 +11,7 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(ULONG *, QueryPartitionTableAttrs,
+   AROS_LH1(struct PartitionAttribute *, QueryPartitionTableAttrs,
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, table,       A1),
