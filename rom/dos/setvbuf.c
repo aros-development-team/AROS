@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #include "dos_intern.h"
 
@@ -29,6 +26,7 @@
     INPUTS
 
     RESULT
+        0 if operation succeeded. 
 
     NOTES
 
@@ -40,22 +38,29 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
+        
+    ASSERT_VALID_PTR( fh );
 
     switch (type)
     {
-        case BUF_LINE: fh->fh_Flags = (fh->fh_Flags & ~FHF_NOBUF) | FHF_LINEBUF; break;
-        case BUF_FULL: fh->fh_Flags = fh->fh_Flags & ~(FHF_NOBUF | FHF_LINEBUF); break;
-        case BUF_NONE: fh->fh_Flags = (fh->fh_Flags | FHF_NOBUF) & ~FHF_LINEBUF; break;
+        case BUF_LINE: 
+            fh->fh_Flags = (fh->fh_Flags & ~FHF_NOBUF) | FHF_LINEBUF; 
+            break;
+        
+        case BUF_FULL: 
+            fh->fh_Flags = fh->fh_Flags & ~(FHF_NOBUF | FHF_LINEBUF); 
+            break;
+        
+        case BUF_NONE: 
+            fh->fh_Flags = (fh->fh_Flags | FHF_NOBUF) & ~FHF_LINEBUF; 
+            break;
+        
 	default:
 	    return EOF;
     }
@@ -86,5 +91,6 @@
     }
 
     return 0;
+    
     AROS_LIBFUNC_EXIT
 } /* SetVBuf */
