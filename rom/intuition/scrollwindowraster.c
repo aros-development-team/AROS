@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include "inputhandler_support.h"
 
 /*****************************************************************************
 
@@ -80,7 +81,7 @@
        Send a refresh message to the window if it doesn't already
        have one.
     */
-    windowneedsrefresh(win, IntuitionBase);
+    WindowNeedsRefresh(win, IntuitionBase);
   } 
 
   AROS_LIBFUNC_EXIT
