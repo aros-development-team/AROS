@@ -208,7 +208,7 @@ static void MakeWin(void)
                               win->Height,
                               GetBitMapAttr(win->RPort->BitMap, BMA_DEPTH),
                               BMF_CLEAR,
-                              NULL
+                              scr->RastPort.BitMap
                              );
 
 
