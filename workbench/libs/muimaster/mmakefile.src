@@ -13,6 +13,7 @@ CLASSES   := application \
 	     group \
 	     notify \
 	     numeric \
+	     prop \
 	     rectangle \
 	     slider \
 	     string \
