@@ -105,7 +105,7 @@ Object *SystemPrefsWindow__OM_NEW
             Child, (IPTR) MenuObject,
                 MUIA_Menu_Title, __(MSG_MENU_PREFS),
                 
-                /*
+                /* FIXME: implement
                 Child, (IPTR) importMI = MakeMenuitem(_(MSG_MENU_PREFS_IMPORT)),
                 Child, (IPTR) exportMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT)),
                 Child, (IPTR) MakeMenuitem(NM_BARLABEL),
