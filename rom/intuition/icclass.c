@@ -54,7 +54,7 @@ AROS_UFH3(static IPTR, dispatch_icclass,
     struct ICData *ic;
 
     if (msg->MethodID != OM_NEW)
-	ic = INST_DATA(cl, retval);
+	ic = INST_DATA(cl, o);
 
     switch(msg->MethodID)
     {
