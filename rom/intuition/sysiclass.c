@@ -291,13 +291,16 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	    break;
 	    
         case AMIGAKEY:
-	    #if MENUS_AMIGALOOK
+	    if (MENUS_AMIGALOOK)
+	    {
 	        if (IM(obj)->Width  == 0) IM(obj)->Width  = reffont->tf_XSize * 2;
 	        if (IM(obj)->Height == 0) IM(obj)->Height = reffont->tf_YSize;
-	    #else
+	    }
+	    else
+	    {
 	        if (IM(obj)->Width  == 0) IM(obj)->Width  = reffont->tf_XSize * 2;
 	        if (IM(obj)->Height == 0) IM(obj)->Height = reffont->tf_YSize + 1;
-	    #endif
+	    }
 	    break;
     
     } /* switch(data->type) */
@@ -1022,11 +1025,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     case MENUCHECK: {
         UWORD *pens = data->dri->dri_Pens;
 	
-    #if MENUS_AMIGALOOK
-    	SetAPen(rport, pens[BARBLOCKPEN]);
-    #else
-	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-    #endif
+	if (MENUS_AMIGALOOK)
+	{
+	    SetAPen(rport, pens[BARBLOCKPEN]);
+	}
+	else
+	{
+	    SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+	}
 	RectFill(rport, left, top, right, bottom);
 
 	SetAPen(rport, pens[BARDETAILPEN]);
@@ -1037,70 +1043,76 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 
     case AMIGAKEY: {
         UWORD *pens = data->dri->dri_Pens;
-
-    #if MENUS_AMIGALOOK
         struct TextFont *oldfont;
 	UBYTE oldstyle;
 	
-    	SetAPen(rport, pens[BARDETAILPEN]);
-    #else
-	SetAPen(rport, pens[SHINEPEN]);
-    #endif
+
+	if (MENUS_AMIGALOOK)
+	{
+    	    SetAPen(rport, pens[BARDETAILPEN]);
+	}
+    	else
+	{
+	    SetAPen(rport, pens[SHINEPEN]);
+	}
 
 	RectFill(rport, left, top, right, bottom);
 
-    #if MENUS_AMIGALOOK
-	SetAPen(rport, pens[BARBLOCKPEN]);
-
-	oldfont = rport->Font;
-	oldstyle = rport->AlgoStyle;
-	
-	SetFont(rport, GfxBase->DefaultFont);
-	SetSoftStyle(rport, FSF_ITALIC, AskSoftStyle(rport));
-
-	Move(rport, left + (width - rport->TxWidth) / 2,
-		    top  + (height - rport->TxHeight) / 2 + rport->TxBaseline);
-	Text(rport, "A", 1);
-	
-	SetSoftStyle(rport, oldstyle, AskSoftStyle(rport));
-	SetFont(rport, oldfont);
-
-	SetAPen(rport, pens[BARBLOCKPEN]);
-    #else
-	SetAPen(rport, pens[SHADOWPEN]);
-
-	RectFill(rport, left + 1, top, right - 1, top);
-	RectFill(rport, right, top + 1, right, bottom - 1);
-	RectFill(rport, left + 1, bottom, right - 1, bottom);
-	RectFill(rport, left, top + 1, left, bottom - 1);
-
-        SetAPen(rport, pens[BACKGROUNDPEN]);	
-	RectFill(rport, left + 1, bottom - 1, right - 1, bottom - 1);
-	RectFill(rport, right - 1, top + 1, right - 1, bottom - 2);
-	
-	RectFill(rport, left + 2, top + 2, left + 4, top + 2);
-	RectFill(rport, left + 2, top + 3, left + 2, top + 4);
-	
-	SetAPen(rport, pens[SHADOWPEN]);
-	RectFill(rport, left + 2, bottom - 2, right - 2, bottom - 2);
-	RectFill(rport, right - 2, top + 2, right - 2, bottom - 4);
-	
+	if (MENUS_AMIGALOOK)
 	{
-	    WORD a_size   = height - 7;	    
-	    WORD a_left   = left + 5;
-	    WORD a_top    = top + 2;
-	    WORD a_right  = a_left + a_size;
-	    WORD a_bottom = a_top + a_size;
-	    
-	    Move(rport, a_left, a_bottom);
-	    Draw(rport, a_right, a_top);
-	    Draw(rport, a_right, a_bottom);
-	    Move(rport, a_right - 1, a_top + 1);
-	    Draw(rport, a_right - 1, a_bottom);
-	}	 
+	    SetAPen(rport, pens[BARBLOCKPEN]);
 
-        SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-    #endif
+	    oldfont = rport->Font;
+	    oldstyle = rport->AlgoStyle;
+
+	    SetFont(rport, GfxBase->DefaultFont);
+	    SetSoftStyle(rport, FSF_ITALIC, AskSoftStyle(rport));
+
+	    Move(rport, left + (width - rport->TxWidth) / 2,
+		    top  + (height - rport->TxHeight) / 2 + rport->TxBaseline);
+	    Text(rport, "A", 1);
+	
+	    SetSoftStyle(rport, oldstyle, AskSoftStyle(rport));
+	    SetFont(rport, oldfont);
+
+	    SetAPen(rport, pens[BARBLOCKPEN]);
+	}
+	else
+	{
+	    SetAPen(rport, pens[SHADOWPEN]);
+
+	    RectFill(rport, left + 1, top, right - 1, top);
+	    RectFill(rport, right, top + 1, right, bottom - 1);
+	    RectFill(rport, left + 1, bottom, right - 1, bottom);
+	    RectFill(rport, left, top + 1, left, bottom - 1);
+
+            SetAPen(rport, pens[BACKGROUNDPEN]);	
+	    RectFill(rport, left + 1, bottom - 1, right - 1, bottom - 1);
+	    RectFill(rport, right - 1, top + 1, right - 1, bottom - 2);
+	
+	    RectFill(rport, left + 2, top + 2, left + 4, top + 2);
+	    RectFill(rport, left + 2, top + 3, left + 2, top + 4);
+	
+	    SetAPen(rport, pens[SHADOWPEN]);
+	    RectFill(rport, left + 2, bottom - 2, right - 2, bottom - 2);
+	    RectFill(rport, right - 2, top + 2, right - 2, bottom - 4);
+	
+	    {
+		WORD a_size   = height - 7;	    
+		WORD a_left   = left + 5;
+		WORD a_top    = top + 2;
+		WORD a_right  = a_left + a_size;
+		WORD a_bottom = a_top + a_size;
+	    
+		Move(rport, a_left, a_bottom);
+		Draw(rport, a_right, a_top);
+		Draw(rport, a_right, a_bottom);
+		Move(rport, a_right - 1, a_top + 1);
+		Draw(rport, a_right - 1, a_bottom);
+	    }	 
+
+            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+	}
 	WritePixel(rport, left, top);
 	WritePixel(rport, right, top);
 	WritePixel(rport, right, bottom);

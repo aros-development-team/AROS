@@ -116,41 +116,42 @@ static void DrawFrame(
     Draw(rport, left + width, top + height);
     Draw(rport, left + 1, top + height);
 
-#if FRAME_SIZE == 1
-    if (thicken != FALSE)
+    if (FRAME_SIZE == 1)
     {
-	/* Thicken Right Side */
-	Move(rport, left + width - 1, top + height - 1);
-	Draw(rport, left + width - 1, top + 1);
+	if (thicken != FALSE)
+	{
+	    /* Thicken Right Side */
+	    Move(rport, left + width - 1, top + height - 1);
+	    Draw(rport, left + width - 1, top + 1);
 
-	/* Thicken Left Side */
-	SetAPen(rport, shine);
-	Move(rport, left + 1, top + height - 1);
-	Draw(rport, left + 1, top + 1);
+	    /* Thicken Left Side */
+	    SetAPen(rport, shine);
+	    Move(rport, left + 1, top + height - 1);
+	    Draw(rport, left + 1, top + 1);
 
-    } /* if */
-    
-#elif FRAME_SIZE == 2
-    if (thicken != FALSE)
+	} /* if */
+    }
+    else if (FRAME_SIZE == 2)
     {
-	/* Thicken Right Side */
-	Move(rport, left + width - 1, top + 1);
-	Draw(rport, left + width - 1, top + height - 1);
+	if (thicken != FALSE)
+	{
+	    /* Thicken Right Side */
+	    Move(rport, left + width - 1, top + 1);
+	    Draw(rport, left + width - 1, top + height - 1);
 
-	/* Thicken Bottom Side */
-	Draw(rport, left + 2, top + height - 1);
-	
-	/* Thicken Left Side */
-	SetAPen(rport, shine);
+	    /* Thicken Bottom Side */
+	    Draw(rport, left + 2, top + height - 1);
 
-	Move(rport, left + 1, top + height - 1);
-	Draw(rport, left + 1, top + 1);
+	    /* Thicken Left Side */
+	    SetAPen(rport, shine);
 
-	/* Thicken Top Side */	
-	Draw(rport, left + width - 2, top + 1);
-	
-    } /* if */
- #endif
+	    Move(rport, left + 1, top + height - 1);
+	    Draw(rport, left + 1, top + 1);
+
+	    /* Thicken Top Side */	
+	    Draw(rport, left + width - 2, top + 1);
+	} /* if */
+    }
 
 } /* DrawFrame */
 
@@ -362,7 +363,7 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 				      IntuitionBase);
 	        break;
 	}
-	
+
 	retval = 1UL;
     }
     else
@@ -412,36 +413,38 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 			for areas in AppWindows where icons may be dropped.
 	    */
 	    fid->fid_FrameType = (WORD)tag->ti_Data;
-	    
+
 	    switch(fid->fid_FrameType)
 	    {
 	        case FRAME_DEFAULT:
 		    fid->fid_HOffset = fid->fid_VOffset = 1;
 		    break;
-		    
+
 		case FRAME_BUTTON:
 		    fid->fid_HOffset = 1;
 		    fid->fid_VOffset = 1;
 		    break;
-		
+
 		case FRAME_RIDGE:
 		    fid->fid_HOffset = 2;
 		    fid->fid_VOffset = 2;
 		    break;
-		    
+
 		case FRAME_ICONDROPBOX:
 		    fid->fid_HOffset = 3;
 		    fid->fid_VOffset = 3;
 		    break;
 
 	    } /* switch(fid->fid_FrameType) */
-	    
-#if FRAME_SIZE > 0
-	    fid->fid_HOffset *= 2;
-#endif
-#if FRAME_SIZE == 2
-	    fid->fid_VOffset *= 2;
-#endif
+
+	    if (FRAME_SIZE > 0)
+	    {
+		fid->fid_HOffset *= 2;
+	    }
+	    if (FRAME_SIZE == 2)
+	    {
+		fid->fid_VOffset *= 2;
+	    }
 	    break;
 
 	} /* switch */
