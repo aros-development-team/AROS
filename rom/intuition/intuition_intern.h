@@ -381,8 +381,8 @@ enum
 #define WMFLG_TABLETMESSAGES	 (1 << 4)
 					      
 /* Called by intuition to free a window */
-VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
-VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+extern VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
+extern VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
 
 /* Driver prototypes */
 
@@ -392,10 +392,10 @@ extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
 extern int intui_GetWindowSize (void);
 extern void intui_WindowLimits (struct Window * window,
-	    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
+	    			WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
 extern void intui_ActivateWindow (struct Window *);
 extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
-	    WORD width, WORD height);
+	    			   WORD width, WORD height);
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *, 
@@ -403,12 +403,12 @@ extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *,
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_RefreshWindowFrame(struct Window *win);
 extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase);
-void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
-                           WORD ymin, WORD xmax, WORD ymax, struct IntuitionBase * IntuitionBase);
+extern void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
+                           	     WORD ymin, WORD xmax, WORD ymax, struct IntuitionBase * IntuitionBase);
 
 /* Miscellaneous prototypes */
-void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
-void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
+extern void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
+extern void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
 
 /* intuition_misc protos */
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
@@ -420,6 +420,7 @@ extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBas
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
 extern void SendDeferedActionMsg(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
 extern void UpdateMouseCoords(struct Window *win);
+extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,

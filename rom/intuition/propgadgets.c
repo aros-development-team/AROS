@@ -227,18 +227,23 @@ VOID HandlePropMouseMove
 
 	} /* FREEVERT */
 
+	if ( ((pi->Flags & FREEHORIZ) && (dx != pi->HorizPot)) ||
+	     ((pi->Flags & FREEVERT)  && (dy != pi->VertPot)) )
+	
+	{     
+	    NewModifyProp (gadget
+		, w
+		, NULL
+		, pi->Flags
+		, dx
+		, dy
+		, pi->HorizBody
+		, pi->VertBody
+		, 1
+		);
+	}
+	
     } /* Has PropInfo and Mouse is over knob */
-
-    NewModifyProp (gadget
-	, w
-	, NULL
-	, pi->Flags
-	, dx
-	, dy
-	, pi->HorizBody
-	, pi->VertBody
-	, 1
-	);
 	
     return;
 }
@@ -326,6 +331,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
     struct GadgetInfo gi;
     struct RastPort * rp;
     struct BBox bbox, kbox;
+    
     D(bug("RefreshPropGadget(gad=%p, win=%s)\n", gadget, window->Title));
     
     if ((dri = GetScreenDrawInfo(window->WScreen)))
@@ -376,11 +382,9 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 
 		SetAfPt(rp, pattern, 1);
 		SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-		SetBPen(rp, dri->dri_Pens[(gadget->Activation & (GACT_TOPBORDER |
-	    							 GACT_LEFTBORDER |
-								 GACT_RIGHTBORDER |
-								 GACT_BOTTOMBORDER)) ? ((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
-							  			     : BACKGROUNDPEN]);
+		SetBPen(rp, dri->dri_Pens[IS_BORDER_GADGET(gadget) ?
+					((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
+							  	             : BACKGROUNDPEN]);
 		RectFill(rp, bbox.Left,
 	    		     bbox.Top,
 			     bbox.Left + bbox.Width - 1,
@@ -450,48 +454,71 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 	gi.gi_Layer = gi.gi_RastPort->Layer;
 	
     	if ((rp = ObtainGIRPort(&gi)))
-	{	
+	{		    
 	    SetDrMd (rp, JAM2);
 
-	    if (clear && clear->Width > 0 && clear->Height > 0)
+	    if (clear)
 	    {
-
+		struct Rectangle a, b, clearrects[4];
+		WORD		 i, nrects;
+		
+		a.MinX = clear->Left;
+		a.MinY = clear->Top;
+		a.MaxX = clear->Left + clear->Width - 1;
+		a.MaxY = clear->Top + clear->Height - 1;
+		
+		b.MinX = knob->Left;
+		b.MinY = knob->Top;
+		b.MaxX = knob->Left + knob->Width - 1;
+		b.MaxY = knob->Top + knob->Height - 1;
+				
+		nrects = SubtractRectFromRect(&a, &b, clearrects);
+		
 		if (pi->Flags & PROPNEWLOOK)
 		{
 		    UWORD pattern[] = {0x5555,0xAAAA};
 
 		    SetAfPt(rp, pattern, 1);
 		    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-		    SetBPen(rp, dri->dri_Pens[(gadget->Activation & (GACT_TOPBORDER |
-	    							     GACT_LEFTBORDER |
-								     GACT_RIGHTBORDER |
-								     GACT_BOTTOMBORDER)) ? ((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
-							  				 : BACKGROUNDPEN]);
-		    RectFill(rp, clear->Left,
-	    			 clear->Top,
-				 clear->Left + clear->Width - 1,
-				 clear->Top + clear->Height - 1);
-		    SetAfPt(rp, 0, 0);
-
+		    SetBPen(rp, dri->dri_Pens[IS_BORDER_GADGET(gadget) ?
+		    			((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
+							  		     : BACKGROUNDPEN]);
 		} else {
 		    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-		    RectFill(rp, clear->Left,
-	    			 clear->Top,
-				 clear->Left + clear->Width - 1,
-				 clear->Top + clear->Height - 1);
 		}
-	    }
-
+		
+		/*kprintf("\n=== oldknob = %d,%d-%d,%d   newknob = %d,%d-%d,%d\n",
+			a.MinX,
+			a.MinY,
+			a.MaxX,
+			a.MaxY,
+			b.MinX,
+			b.MinY,
+			b.MaxX,
+			b.MaxY);*/
+			
+		for(i = 0; i < nrects; i++)
+		{
+		    /*kprintf("=== clearing %d,%d - %d,%d\n",
+		    clearrects[i].MinX,clearrects[i].MinY,clearrects[i].MaxX,clearrects[i].MaxY);*/
+		    
+		    RectFill(rp, clearrects[i].MinX,
+		    		 clearrects[i].MinY,
+				 clearrects[i].MaxX,
+				 clearrects[i].MaxY);
+		}
+		
+		SetAfPt(rp, 0, 0);
+		
+	    } /* if (clear) */
+	    	    
 	    if (flags & AUTOKNOB)
 	    {
 		int hit = ((flags & KNOBHIT) != 0);
 
 		if (flags & PROPNEWLOOK)
 		{
-	            if (gadget->Activation & (GACT_TOPBORDER |
-					      GACT_LEFTBORDER |
-					      GACT_RIGHTBORDER |
-					      GACT_BOTTOMBORDER))
+	            if (IS_BORDER_GADGET(gadget))
 		    {
 			if (flags & PROPBORDERLESS)
 			{
@@ -527,15 +554,9 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 			    knob->Top++;
 			    knob->Width -= 2;
 			    knob->Height -= 2;
-
-			    SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-
-			    /* Interior */
-			    RectFill(rp,knob->Left,
-		    			knob->Top,
-					knob->Left + knob->Width - 1,
-					knob->Top + knob->Height - 1);
-			} else
+					
+			} /* PROPBORDERLESS */
+			else
 			{
 		            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
 
@@ -556,6 +577,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 				knob->Left++,
 				knob->Width -= 2;
 			    }
+			    
 			    if (flags & FREEVERT)
 			    {
 				/* black line at the top and at the bottom */
@@ -573,7 +595,9 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 				knob->Top++;
 				knob->Height -= 2;
 			    }
-			}
+
+			    
+			} /* not PROPBORDERLESS */
 
 			SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
 
@@ -604,7 +628,9 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
 		    	    knob->Width--;
 			    knob->Height--;
-			} else
+			    
+			} /* propborderless */
+			else
 			{
 		            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
 
@@ -642,7 +668,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 				knob->Top++;
 				knob->Height -= 2;
 			    }
-			}
+			    
+			} /* not propborderless */
 
 			SetAPen(rp, dri->dri_Pens[SHINEPEN]);
 

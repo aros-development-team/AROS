@@ -2,6 +2,16 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/07/09 22:04:44  stegerg
+    (almost) no more flickering prop gadgets.
+    there's still a strange gfx trash with the prop gadgets used by
+    the BGUI demo GroupView (apart from the right/bottom window borders
+    which have wrong color)
+
+    When the prop gadget knob is moved right or down it doesnt clear everything
+    away at the left/top side :-\ Dont know what happens here, other prop gadgets
+    in window borders work fine, for example the ones in "More".
+
     Revision 1.7  1999/07/19 21:59:36  stegerg
     prop gadgets now in amiga look
 
@@ -95,10 +105,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    struct PropInfo * pi;
-    struct BBox old, new;
-    int right, bottom;
 
+    struct PropInfo 	*pi;
+    struct BBox 	old, new;
+    BOOL		knobok1, knobok2;
+    
     if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_PROPGADGET
 	|| !gadget->SpecialInfo
     )
@@ -110,7 +121,7 @@
 
     new = old;
 
-    CalcKnobSize (gadget, &old);
+    knobok1 = CalcKnobSize (gadget, &old);
 
     pi->Flags = flags;
     pi->HorizPot = horizPot;
@@ -118,31 +129,14 @@
     pi->HorizBody = horizBody;
     pi->VertBody = vertBody;
 
-    CalcKnobSize (gadget, &new);
+    knobok2 = CalcKnobSize (gadget, &new);
 
-    right = old.Left + old.Width; /* No -1 here; we don't add +1 later */
-    bottom = old.Top + old.Height;
-
-    /* Calculate area to clear */
-    if (new.Left < old.Left)
-	old.Left = new.Left;
-
-    if (new.Top < old.Top)
-	old.Top = new.Top;
-
-    if (new.Left+new.Width > right)
-	right = new.Left + new.Width;
-
-    if (new.Top+new.Height > bottom)
-	bottom = new.Top + new.Height;
-
-    old.Width = right - old.Left; /* No +1 here; see above */
-    old.Height = bottom - old.Top; /* No +1 here; see above */
-
-    RefreshPropGadgetKnob (gadget, &old, &new, window, IntuitionBase);
+    if (knobok2)
+        RefreshPropGadgetKnob (gadget, knobok1 ? &old : 0, &new, window, IntuitionBase);
 
     if (numGad > 1 && gadget->NextGadget)
-	RefreshGList (gadget->NextGadget, window, requester, numGad-1);
+	RefreshGList (gadget->NextGadget, window, requester, numGad - 1);
 
     AROS_LIBFUNC_EXIT
+    
 } /* NewModifyProp */
