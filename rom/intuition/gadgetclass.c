@@ -112,6 +112,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	case GA_Previous:
 	    if( (tidata != 0L) && (msg->MethodID == OM_NEW) )
 	    {
+		EG(o)->NextGadget = ((struct ExtGadget *)tidata)->NextGadget;
 		((struct ExtGadget *)tidata)->NextGadget = EG(o);
 	    }
 	    break;
