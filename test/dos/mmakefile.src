@@ -1,0 +1,18 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := getenv
+EXEDIR          := $(AROS_TESTS)/dos
+
+#MM- test : test-dos
+#MM- test-quick : test-dos-quick
+
+#MM test-dos : includes linklibs 
+
+%build_progs mmake=test-dos \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m"
+
+%common
