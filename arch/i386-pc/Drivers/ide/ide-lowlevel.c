@@ -911,11 +911,14 @@ ULONG ata_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULO
 {
     struct ideBase  *ib;
     ULONG           port;
+    ULONG	    temp;
 
     ib = unit->au_Device;
     port = unit->au_PortAddr;
+    *act = 0;
 
-    *act = count;
+//    if (count != 1)
+//	D(bug("[IDE] ata_Read: block %d, count %d, buffer %08x\n",block,count,buffer));
 
     /* if block addr is valid (less than total blocks) */
     if (block < unit->au_Blocks)
@@ -929,45 +932,41 @@ ULONG ata_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULO
 
             /* Do whole count. Repeat until count >0. At end of each loop
              * increment block address */
-            for(;*act;IncBlockAddr(port, unit))
-            {
-                /* Sector count (0 == 256 sectors) */
-                ide_out(count, ata_SectorCnt, port);
-                /* Do read! */
-                ide_out(ATA_READ, ata_Command, port);
+            for(temp=count;temp;IncBlockAddr(port, unit))
+	    {
+		/* We only do one sector per read */
+		ide_out(1, ata_SectorCnt, port);
+		/* Do read! */
+		ide_out(ATA_READ, ata_Command, port);
 
-                do
-                {
-                    /* Wait for completion */
-                    if (!WaitBusy(port, unit))
-                        return TDERR_NotSpecified;
+		/* Wait for completion */
+		if (!WaitBusy(port, unit))
+		    return TDERR_NotSpecified;
 
-                    /* Data buffer ready? */
-                    if (!(ide_in(ata_Status, port) & ATAF_DATAREQ))
-                        return TDERR_NotSpecified;
+		/* Data buffer ready? */
+		if (!(ide_in(ata_Status, port) & ATAF_DATAREQ))
+		    return TDERR_NotSpecified;
 
-                    /* Yes. Copy ide buffer */
-                    insw(port, buffer, 512 / 2);
+		/* Yes. Copy ide buffer */
+		insw(port, buffer, 512 / 2);
 
-                    /* Handle swapped bit here!!!!!!!! */
+		/* Wait for completion */
+		if (!WaitBusy(port, unit))
+		    return TDERR_NotSpecified;
 
-                    /* Wait for completion */
-                    if (!WaitBusy(port, unit))
-                        return TDERR_NotSpecified;
+		/* Exit if there was any error */
+		if (ide_in(ata_Status, port) & ATAF_ERROR)
+		    return TDERR_NotSpecified;
 
-                    /* Exit if there was any error */
-                    if (ide_in(ata_Status, port) & ATAF_ERROR)
-                        return TDERR_NotSpecified;
-                /* Loop 'till lobyte of count !=0 */
-                } while((--(*act)) & 0xff);
-            }
-            
-            *act = count;
+		/* Cleanup */
+		buffer += unit->au_SectSize;
+		*act += unit->au_SectSize;
+		temp--;
+	    }
             /* No errors. Return */
             return 0;       
         }
     }
-    
     ResumeError(port, unit);
     
     /* Fail. */
@@ -977,11 +976,13 @@ ULONG ata_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULO
 ULONG ata_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULONG *act)
 {
     ULONG port;
+    ULONG temp;
 
     port = unit->au_PortAddr;
+    *act = 0;
 
-    *act = count;
-    
+//    if (count != 1)
+//	D(bug("[IDE] ata_Write: block %d, count %d, buffer %08x\n",block,count,buffer));
     if (block < unit->au_Blocks)
     {
         if (count)
@@ -989,32 +990,31 @@ ULONG ata_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, UL
             if (!BlockAddr(block, unit))
                 return TDERR_NotSpecified;
             
-            for (; *act; IncBlockAddr(port, unit))
-            {
-                ide_out(count, ata_SectorCnt, port);
-                ide_out(ATA_WRITE, ata_Command, port);
+            for (temp=count;temp; IncBlockAddr(port, unit))
+	    {
+		ide_out(count, ata_SectorCnt, port);
+		ide_out(ATA_WRITE, ata_Command, port);
 
-                /* Handle swapped right now!!!! */
+		if (!WaitBusy(port, unit))
+		    return TDERR_NotSpecified;
 
-                do
-                {
-                    if (!WaitBusy(port, unit))
-                        return TDERR_NotSpecified;
-                    
-                    if ((ide_in(ata_Status, port) & (ATAF_ERROR | ATAF_DATAREQ)) !=
-                                    ATAF_DATAREQ)
-                        return TDERR_NotSpecified;
+		if ((ide_in(ata_Status, port) & (ATAF_ERROR | ATAF_DATAREQ)) !=
+			ATAF_DATAREQ)
+		    return TDERR_NotSpecified;
 
-                    outsw(port, buffer, 512 / 2);
-                } while((--(*act)) & 0xff);
-                
-                if (!WaitBusy(port, unit))
-                    return TDERR_NotSpecified;
-            }
+		outsw(port, buffer, 512 / 2);
+
+		if (!WaitBusy(port, unit))
+		    return TDERR_NotSpecified;
+
+		*act += unit->au_SectSize;
+		temp--;
+	    }
 
             if (ide_in(ata_Status, port) & ATAF_ERROR)
                 return TDERR_NotSpecified;
             
+	    buffer += unit->au_SectSize;
             *act = count;
             return 0;
         }
@@ -1191,52 +1191,13 @@ void ResumeError(ULONG port, struct ide_Unit *unit)
 
 void IncBlockAddr(ULONG port, struct ide_Unit *unit)
 {
-    if (unit->au_Flags & AF_LBAMode)
-    {
-        UBYTE tmp;
-        tmp = ide_in(ata_SectorNum, port);
-        ide_out(++tmp, ata_SectorNum, port);
-        if (tmp)
-            return;
-        tmp = ide_in(ata_CylinderL, port);
-        ide_out(++tmp, ata_CylinderL, port);
-        if (tmp)
-            return;
-        tmp = ide_in(ata_CylinderH, port);
-        ide_out(++tmp, ata_CylinderH, port);
-        if (tmp)
-            return;
-        tmp = ide_in(ata_DevHead, port);
-        ide_out(++tmp, ata_DevHead, port);
-    }
-    else
-    {
-        UBYTE tmp;
-
-        tmp = ide_in(ata_SectorNum, port);
-        if (tmp == unit->au_SectorsT)
-        {
-            ide_out(1, ata_SectorNum, port);
-            tmp = (ide_in(ata_DevHead, port) && 0x0f) + 1;
-            if (tmp == unit->au_Heads)
-            {
-                ide_out(ide_in(ata_DevHead, port) && 0xf0,
-                                ata_DevHead, port);
-                tmp = ide_in(ata_CylinderL, port);
-                ide_out(++tmp, ata_CylinderL, port);
-                if (!tmp)
-                    ide_out(ide_in(ata_CylinderH, port) + 1,
-                                    ata_CylinderH, port);
-            } else ide_out(ide_in(ata_DevHead, port) + 1,
-                            ata_DevHead, port);
-        }
-        else ide_out(++tmp, ata_SectorNum, port);
-    }
+    BlockAddr((unit->au_CurrSect)+1,unit);
 }
 
 int BlockAddr(ULONG block, struct ide_Unit *unit)
 {
     ULONG port = unit->au_PortAddr;
+    unit->au_CurrSect = block;
     
     /* LBA mode active? */
     if (unit->au_Flags & AF_LBAMode)
@@ -1276,28 +1237,7 @@ int BlockAddr(ULONG block, struct ide_Unit *unit)
 
 ULONG ActualAddr(ULONG port, struct ide_Unit *unit)
 {
-    ULONG block;
-    
-    if (unit->au_Flags & AF_LBAMode)
-    {
-        block = ide_in(ata_DevHead, port) & 0x0f;
-        block <<= 8;
-        block |= ide_in(ata_CylinderH, port);
-        block <<= 8;
-        block |= ide_in(ata_CylinderL, port);
-        block <<= 8;
-        block |= ide_in(ata_SectorNum, port);
-    }
-    else
-    {
-        block = ide_in(ata_CylinderH, port) << 8 |
-                ide_in(ata_CylinderL, port);
-        block *= unit->au_SectorsC;
-        block += (ide_in(ata_DevHead, port) & 0x0f) * unit->au_SectorsT;
-        block += ide_in(ata_SectorNum, port) - 1;
-    }
-    
-    return block;
+    return (unit->au_CurrSect);
 }
 
 int WaitBusy(ULONG port, struct ide_Unit *unit)
