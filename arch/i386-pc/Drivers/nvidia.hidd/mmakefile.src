@@ -11,7 +11,7 @@ ENDFUNC :=	$(END_FILE).o
 #MM Drivers-pc-i386-disabled : 
 Drivers-pc-i386-disabled : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/hidd.gfx.nvidia
-	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
+	@ld -rd $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/hidd.gfx.nvidia.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.gfx.nvidia.o
 

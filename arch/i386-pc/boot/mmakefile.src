@@ -123,7 +123,7 @@ $(OSGENDIR)/boot/%.o : %.s
 	@as $(INCLUDES) $< -o $@
 
 $(OSGENDIR)/boot/%.o : $(LIBDIR)/%.a
-	@ld -r --whole-archive $< -o $@
+	@ld -rd --whole-archive $< -o $@
 
 $(OSGENDIR)/boot/%.d : %.c
 	%mkdepend_q
