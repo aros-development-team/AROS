@@ -78,9 +78,9 @@ void _Exec_Enable(struct ExecBase * SysBase)
 
 	if( --SysBase->IDNestCnt < 0) {
 		/*
-		 * Enable interrupt by unmasking them
+		 * Enable interrupt by allowing all of them.
 		 */
-		WREG_L(IMR) = ~((1 << 1) | (1 << 5));
+		SetSR(0x0000,0x0700);
 	}
 
 	AROS_LIBFUNC_EXIT
