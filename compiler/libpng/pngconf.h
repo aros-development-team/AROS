@@ -635,7 +635,7 @@
 /* These are currently experimental features, define them if you want */
 
 /* very little testing */
-/*
+
 #ifdef PNG_READ_SUPPORTED
 #  ifndef PNG_READ_16_TO_8_ACCURATE_SCALE_SUPPORTED
 #    define PNG_READ_16_TO_8_ACCURATE_SCALE_SUPPORTED
@@ -647,7 +647,7 @@
 #ifndef PNG_NO_ZALLOC_ZERO
 #  define PNG_ZALLOC_ZERO
 #endif
-*/
+
 
 /* This is only for PowerPC big-endian and 680x0 systems */
 /* some testing */
