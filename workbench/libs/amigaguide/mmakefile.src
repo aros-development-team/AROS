@@ -1,14 +1,13 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
+
+MODNAME  := amigaguide
+MODTYPE	 := library
 
 USER_INCLUDES := -I.
 
-LIBNAME  := amigaguide
-ULIBNAME := AmigaGuide
-
 FILES := 
-
-FUNCTIONS := \
+FUNCS := \
 	addamigaguidehosta \
 	amigaguidesignal \
 	closeamigaguide \
@@ -28,20 +27,11 @@ FUNCTIONS := \
 	setamigaguidecontexta \
 	unlockamigaguidebase 
 
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-libs-amigaguide : setup includes linklibs
-workbench-libs-amigaguide : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM 
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+#MM- workbench-libs-amigaguide : setup includes linklibs workbench-libs-amigaguide-module
+%make_module_setup mmake=workbench-libs-amigaguide
+%make_module_cpak
+%make_module mmake=workbench-libs-amigaguide
+%make_lib_includes
 
 %common
+%include_deps

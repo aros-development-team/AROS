@@ -1,34 +1,23 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 USER_CFLAGS   := -DCOMPILE_DATATYPE
 
-LIBNAME  := picture
-ULIBNAME := Picture
-LIBPOST  := datatype
-DESTDIR  := $(DATATYPESDIR)
+MODNAME := picture
+MODTYPE := datatype
 
-FILES := picture_init pictureclass libfunc
-# support
+FILES := pictureclass libfunc
+FUNCS := obtainengine
 
-FUNCTIONS := \
-	obtainengine
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
 
-%define_libs prelibs=-l$(LIBNAME)
+#MM workbench-datatypes-picture : setup includes linklibs
+workbench-datatypes-picture : workbench-datatypes-picture-module
 
-%genlib_cpak
-
-#MM workbench-classes-datatypes-picture : setup includes
-workbench-classes-datatypes-picture : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(DATATYPESDIR) $(DESTDIRS)
-
-#MM 
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+%make_module_setup mmake=workbench-datatypes-picture
+%make_module mmake=workbench-datatypes-picture
 
 %common
+%include_deps

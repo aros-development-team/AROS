@@ -1,51 +1,26 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME 	:= icon
-ULIBNAME	:= Icon
+MODNAME	    := icon
+MODTYPE	    := library
 
-FILES		:= basicfuncs diskobjio
-FUNCTIONS	:= \
-		addfreelist \
-		bumprevision \
-		deletediskobject \
-		findtooltype \
-		freediskobject \
-		freefreelist \
-		getdefdiskobject \
-		getdiskobject \
-		getdiskobjectnew \
-		matchtoolvalue \
-		putdefdiskobject \
-		putdiskobject
+FILES	:=  basicfuncs diskobjio
+FUNCS	:=  addfreelist bumprevision deletediskobject findtooltype \
+	    freediskobject freefreelist getdefdiskobject getdiskobject \
+	    getdiskobjectnew matchtoolvalue putdefdiskobject putdiskobject
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_AMIGALIB := yes
+USE_ROMLIB := yes
+USE_MLIB := yes
+USE_AROSLIB := yes
 
-%genlib_cpak
-
-#MM workbench-libs-icon : setup includes linklibs
-workbench-libs-icon : $(SLIB)
-	@$(NOP)
-
-
-#MM workbench-libs-icon-quick : 
-workbench-libs-icon-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-icon : setup includes linklibs workbench-libs-icon-module
+%make_module_setup mmake=workbench-libs-icon
+%make_module_cpak
+%make_module mmake=workbench-libs-icon
+%make_lib_includes
 
 %common
-%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
+%include_deps

@@ -1,123 +1,37 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# BEGIN_DESC{makefile}
-# This is the mmakefile for workbench.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
+MODNAME := workbench
+MODTYPE := library
 
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I.
+USER_CFLAGS := -I.
 
-# BEGIN_DESC{localmakevar}
-# \item{LIBNAME} The lowercase name of the library (without the extension).
-#	This is used to help derive some filenames.
-#
-# \item{ULIBNAME} This also contains the library name, but with the correct
-#	case (the same as found in the library base name).
-#
-# \item{OSMODULE} The name of the file which is created when compiling to
-#	a target with module files. In this library it is expansion.library.
-#
-# \item{FILES} This is a list of all files (without the .c) that
-#	contain internal functions of the library. You do not need to include
-#	the library init, function-table or end files.
-#
-# \item{FUNCTIONS} This is a list of all the functions that make
-#	up the library. The mmakefile will strip all the files in
-#	this list for which a special CPU dependant version exists.
-#	This list is concatenated into the file functions.c before
-#	compilation for a speed boost.
-# END_DESC{localmakevar}
-
-OBJDIR	 := $(GENDIR)/$(CURDIR)
-LIBNAME  := workbench
-ULIBNAME := Workbench
-
-OSMODULE  := workbench.library
-FILES     := handler support
-FUNCTIONS := \
+FILES := handler support
+FUNCS := \
     addappicona \
     addappmenuitema \
     addappwindowa \
+    addappwindowdropzonea \
+    changeworkbenchselectiona \
+    closeworkbenchobjecta \
+    makeworkbenchobjectvisiblea \
+    openworkbenchobjecta \
+    registerworkbench \
     removeappicon \
     removeappmenuitem \
     removeappwindow \
-    wbinfo \
-    openworkbenchobjecta \
-    closeworkbenchobjecta \
-    workbenchcontrola \
-    addappwindowdropzonea \
     removeappwindowdropzone \
-    changeworkbenchselectiona \
-    makeworkbenchobjectvisiblea \
-    registerworkbench \
-    unregisterworkbench 
+    unregisterworkbench \
+    wbinfo \
+    workbenchcontrola
 
-# BEGIN_DESC{localmakevar}
-# \item{DEPLIBS} List of extra libraries that you want included during
-#	the linking process. You should not include the paths in this
-#	list, as it will be added later. You do not need to include your
-#	own lib here. If your module will be linked again after creation
-#	to create a monolithic kernel file, you do not need to specify
-#	any libs here (as they will be added later). If you want the
-#	module to be separate (like AROSfA) you should specify the
-#	libraries.
-# END_DESC{localmakevar}
+MAKE_SHLIB := $(SHARED_WORKBENCH)
 
-ifeq ("$(FLAVOUR)","native")
-DEPLIBS :=
-else
-DEPLIBS :=
-endif
-
-# BEGIN_DESC{localmakevar}
-# This is where the machine dependant magic comes in. The directories under the
-# $(TOP)/config subtree will create lists of files which they wish to be used.
-# These lists are used to add files to the link, and to prevent the compilation
-# of other files.
-#
-# We create versions of the file lists for use with creating the function
-# table, which needs all of the files listed.
-#
-# We also set up the $(OBJDIR) variable, and do some test to see whether we
-# are compiling a shared library.
-# END_DESC{localmakevar}
-
-ALL_FILES := $(FILES)
-ALL_FUNCTIONS := $(FUNCTIONS)
-PRE_FUNCS := $(FUNCTIONS)
-%prepare_replace rom/workbench
-%filter_replace FILES
-%filter_replace FUNCTIONS
-
-# Set up for shared library creation.
-ifeq ("$(SHARED_WORKBENCH)","yes")
-SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
-endif
-%prepare_shlib $(LIBNAME) $(SHARED_WORKBENCH)
-
-# Uncomment NO_FUNCTABLE line if you don't want the function table made
-# NO_FUNCTABLE := 1
-%genromlib_finline
-
-
-#MM kernel-workbench-linklib : setup includes kernel-workbench-$(ARCH)-$(CPU)
-kernel-workbench-linklib : $(LIB)
-	@$(NOP)
-
-#MM kernel-workbench-module : setup includes kernel-workbench-$(ARCH)-$(CPU)
-kernel-workbench-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
-	@$(NOP)
-
-#MM kernel-workbench-module-quick : kernel-workbench-$(ARCH)-$(CPU)
-kernel-workbench-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
-	@$(NOP)
-
-#MM clean setup
-
-%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
-%ctoasm_q
+#MM- kernel-workbench : includes linklibs
+%make_module_setup mmake=kernel-workbench
+%make_module_cpak
+%make_module mmake=kernel-workbench
+%make_lib_includes
 
 %common
-%include_deps $(foreach f, $(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps

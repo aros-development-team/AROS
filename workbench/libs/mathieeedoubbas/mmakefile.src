@@ -1,36 +1,20 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+USER_INCLUDES	:= -I.
 
-LIBNAME 	:= mathieeedoubbas
-ULIBNAME	:= MathIeeeDoubBas
+MODNAME	    := mathieeedoubbas
+MODTYPE	    := library
 
-FILES		:= ieeedpbas_fpu
-ARCHIVE		:= mathieeedoubbas.arch
+FILES	    :=
+ARCHIVE	    :=	mathieeedoubbas.arch
 
-# NO THIS IS VERY WRONG - iaint
-#%#define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
-
-%genlib_arch
-
-#MM workbench-libs-mathieeedoubbas : setup includes linklibs
-workbench-libs-mathieeedoubbas : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-mathieeedoubbas : setup includes \
+#MM	workbench-libs-mathieeedoubbas-module
+%make_module_setup mmake=workbench-libs-mathieeedoubbas
+%make_module_archtool
+%make_module mmake=workbench-libs-mathieeedoubbas
+%make_lib_incl_arch
 
 %common
-%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
+%include_deps

@@ -1,12 +1,12 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I. -I..
 
-LIBNAME 	:= asl
-ULIBNAME	:= Asl
+MODNAME 	:= asl
+MODTYPE		:= library
 
-FILES := functable basicfuncs \
+FILES := basicfuncs \
 	 filereqhooks filereqsupport \
 	 modereqhooks modereqsupport \
          fontreqhooks fontreqsupport \
@@ -15,32 +15,22 @@ FILES := functable basicfuncs \
 	 buttonclass stringclass cycleclass \
 	 gadgets coolimagedata locale 
 
-FUNCTIONS := allocfilerequest	\
+FUNCS := allocfilerequest	\
 	allocaslrequest 	\
 	aslrequest		\
 	freeaslrequest		\
 	freefilerequest 	\
 	requestfile
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_ROMLIB := yes
+USE_MLIB := yes
+USE_AMIGALIB := yes
 
-%genlib_cpak
-
-#MM workbench-libs-asl : setup includes linklibs setup-asl-catalogs
-workbench-libs-asl : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-asl-quick : setup-asl-catalogs
-workbench-libs-asl-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+#MM- workbench-libs-asl : setup includes linklibs workbench-libs-asl-module
+%make_module_setup mmake=workbench-libs-asl
+%make_module_cpak
+%make_module mmake=workbench-libs-asl
+%make_lib_includes
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps

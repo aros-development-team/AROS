@@ -1,40 +1,23 @@
-# $Id$
+#    $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
+USER_INCLUDES	:= -I.
 
-LIBNAME 	:= mathieeedoubtrans
-ULIBNAME	:= MathIeeeDoubTrans
+MODNAME	    :=	mathieeedoubtrans
+MODTYPE	    :=	library
 
-FILES		:= \
+FILES	:= \
 	intern_ieeedpisodd \
 	intern_ieeedpld
-#	ieeedptrans_fpu
 
-ARCHIVE		:= mathieeedoubtrans.arch
+ARCHIVE	:= mathieeedoubtrans.arch
 
-
-#%#define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
-
-%genlib_arch
-
-#MM workbench-libs-mathieeedoubtrans : setup includes linklibs
-workbench-libs-mathieeedoubtrans : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-mathieeedoubtrans : setup includes \
+#MM	workbench-libs-mathieeedoubtrans-module
+%make_module_setup mmake=workbench-libs-mathieeedoubtrans
+%make_module_archtool
+%make_module mmake=workbench-libs-mathieeedoubtrans
+%make_lib_incl_arch
 
 %common
-%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
+%include_deps

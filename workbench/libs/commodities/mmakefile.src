@@ -1,80 +1,51 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES = -I.. -I.
 
-LIBNAME 	:= commodities
-ULIBNAME	:= Commodities
+MODNAME 	:= commodities
+MODTYPE		:= library
 
-# BEGIN_DESC{makefile}
-# This is the makefile for commodities.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
+FILES := commodities_inputhandler eventfuncs
 
-# BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
-#
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
-#
-# END_DESC{localmakevar}
+FUNCS := activatecxobj \
+	 addievents \
+	 attachcxobj \
+	 clearcxobjerror \
+	 createcxobj \
+	 cxbroker \
+	 cxmsgdata \
+	 cxmsgid \
+	 cxmsgtype \
+	 cxnotify \
+	 cxobjerror \
+	 cxobjtype \
+	 deletecxobj \
+	 deletecxobjall \
+	 disposecxmsg \
+	 divertcxmsg \
+	 enqueuecxobj \
+	 freebrokerlist \
+	 getbrokerlist \
+	 insertcxobj \
+	 invertkeymap \
+	 matchix \
+	 parseix \
+	 removecxobj \
+	 routecxmsg \
+	 setcxobjpri \
+	 setfilter \
+	 setfilterix \
+	 settranslate
 
-FILES := functable commodities_inputhandler eventfuncs
-
-FUNCTIONS := activatecxobj \
-	     addievents \
-	     attachcxobj \
-	     clearcxobjerror \
-	     createcxobj \
-	     cxbroker \
-	     cxmsgdata \
-	     cxmsgid \
-	     cxmsgtype \
-	     cxnotify \
-	     cxobjerror \
-	     cxobjtype \
-	     deletecxobj \
-	     deletecxobjall \
-	     disposecxmsg \
-	     divertcxmsg \
-	     enqueuecxobj \
-	     freebrokerlist \
-	     getbrokerlist \
-	     insertcxobj \
-	     invertkeymap \
-	     matchix \
-	     parseix \
-	     removecxobj \
-	     routecxmsg \
-	     setcxobjpri \
-	     setfilter \
-	     setfilterix \
-	     settranslate
+USE_ROMLIB := yes
+USE_AROSLIB := yes
 	     
-
-
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-libs-commodities : setup includes linklibs
-workbench-libs-commodities : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-commodities : setup includes linklibs workbench-libs-commodities-module
+%make_module_setup mmake=workbench-libs-commodities
+%make_module_cpak
+%make_module mmake=workbench-libs-commodities
+%make_lib_includes
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps

@@ -1,57 +1,44 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I.. -I.
+USER_INCLUDES	:= -I. -I..
 
-LIBNAME 	:= gadtools
-ULIBNAME	:= GadTools
-CLASSFILES	:= buttonclass textclass sliderclass arrowclass scrollerclass \
-		   stringclass listviewclass checkboxclass cycleclass mxclass paletteclass
+MODNAME     := gadtools
+MODTYPE	    := library
+
+CLASSES	:=  buttonclass textclass sliderclass arrowclass scrollerclass \
+	    stringclass listviewclass checkboxclass cycleclass mxclass \
+	    paletteclass
 		   
-FILES		:= basicfuncs gadgets menus $(CLASSFILES)
-FUNCTIONS	:= \
-	createcontext \
-	creategadgeta \
-	createmenusa \
-	drawbevelboxa \
-	freegadgets \
-	freemenus \
-	freevisualinfo \
-	getvisualinfoa \
-	gt_beginrefresh \
-	gt_endrefresh \
-	gt_filterimsg \
-	gt_getgadgetattrsa \
-	gt_getimsg \
-	gt_postfilterimsg \
-	gt_refreshwindow \
-	gt_replyimsg \
-	gt_setgadgetattrsa \
-	layoutmenuitemsa \
-	layoutmenusa
+FILES	:=  basicfuncs gadgets menus $(CLASSES)
+FUNCS	:=  createcontext \
+	    creategadgeta \
+	    createmenusa \
+	    drawbevelboxa \
+	    freegadgets \
+	    freemenus \
+	    freevisualinfo \
+	    getvisualinfoa \
+	    gt_beginrefresh \
+	    gt_endrefresh \
+	    gt_filterimsg \
+	    gt_getgadgetattrsa \
+	    gt_getimsg \
+	    gt_postfilterimsg \
+	    gt_refreshwindow \
+	    gt_replyimsg \
+	    gt_setgadgetattrsa \
+	    layoutmenuitemsa \
+	    layoutmenusa
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
 
-%genlib_cpak
-
-#MM workbench-libs-gadtools : setup includes linklibs
-workbench-libs-gadtools : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-gadtools-quick :
-workbench-libs-gadtools-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-gadtools : setup includes linklibs workbench-libs-gadtools-module
+%make_module_setup mmake=workbench-libs-gadtools
+%make_module_cpak
+%make_module mmake=workbench-libs-gadtools
+%make_lib_includes
 
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform
@@ -67,4 +54,4 @@ $(OBJDIR)/%.d : %.c
 #endif
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps

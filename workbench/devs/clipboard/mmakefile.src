@@ -1,44 +1,18 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(GENDIR)/workbench/devs
+MODNAME := clipboard
+MODTYPE := device
 
-%define_libs
-%make_common_setup
+USE_AMIGALIB := yes
 
-FILES	:= clipboard
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB	:= $(LIBDIR)/libclipboard.a
-DEVS    := $(DEVSDIR)/clipboard.device
+#MM- workbench-devs-complete : workbench-devs-clipboard
+#MM workbench-devs-clipboard : setup includes linklibs
 
-#MM
-workbench-devs-$(ARCH)-$(CPU) : $(LIB)
-	@$(NOP)
+workbench-devs-clipboard : $(AROS_DEVS)/clipboard.device
 
-$(LIB) : $(OBJS)
-	%mklib_q
-
-
-#MM workbench-devs : workbench-devs-$(ARCH)-$(CPU)
-workbench-devs : $(DEVS)
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-$(DEVSDIR)/clipboard.device : $(OBJDIR)/clipboard.o
-	%link_q startup=
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%make_module_setup mmake=workbench-devs-clipboard
+%make_module_single mmake=workbench-devs-clipboard
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
+%include_deps

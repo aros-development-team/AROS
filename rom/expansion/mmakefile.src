@@ -1,73 +1,30 @@
-# $Id$
+#   $Id$
+#
+#   Generate expansion.library
+#
 include $(TOP)/config/make.cfg
 
+MODNAME := expansion
+MODTYPE := library
 USER_INCLUDES := -I.
 
-LIBNAME  := expansion
-ULIBNAME := Expansion
-
-FUNCTIONS = addbootnode addconfigdev adddosnode allocboardmem \
+FILES := 
+FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 	    allocconfigdev allocexpansionmem configboard configchain \
 	    findconfigdev freeboardmem freeconfigdev freeexpansionmem \
 	    getcurrentbinding makedosnode obtainconfigbinding \
 	    readexpansionbyte readexpansionrom releaseconfigbinding \
 	    remconfigdev setcurrentbinding writeexpansionbyte
 
-INIT_FILE   := $(LIBNAME)_init
-FILES	    :=
+USE_CLIB := yes
+MAKE_SHLIB := $(SHARED_EXPANSION)
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
+#MM- kernel-expansion : setup includes linklibs
 
-LIB	    := $(LIBDIR)/lib$(LIBNAME).a
-
-# ***** Not Native ***************
-else
-
-# The filename of the linklib
-ifeq ("$(SHARED_EXPANSION)","yes")
-LIB=$(LIBDIR)/libexpansion.so
-else
-LIB=$(LIBDIR)/libexpansion.a
-endif
-
-# ***** END ***************
-endif
-
-%prepare_shlib expansion $(SHARED_EXPANSION)
-ifeq ("$(SHARED_EXPANSION)","yes")
-SPECIAL_CFLAGS := $(SHARED_CFLAGS)
-endif
-
-# Do the magic required for function replacement.
-# Keep this value for later
-ALL_FILES	:= $(FILES)
-ALL_FUNCTIONS	:= $(FUNCTIONS)
-FUNCTABLE_SRCS	:= $(foreach f,$(FUNCTIONS),$(f).c)
-
-%prepare_replace rom/expansion
-%filter_replace FUNCTIONS
-%filter_replace FILES
-
-.PHONY : all clean setup
-
-ifeq ($(FLAVOUR),native)
-DEPLIBS := arossupport arosc
-else
-DEPLIBS :=
-endif
-
-#MM kernel-expansion-linklib : setup includes
-kernel-expansion-linklib : setup $(LIB)
-	@$(NOP)
-
-#MM kernel-expansion-module : setup includes
-kernel-expansion-module : setup $(OSMODDIR)/expansion.library
-
-%genromlib_finline
-
-%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES)"
-%ctoasm_q
+%make_module_setup mmake=kernel-expansion
+%make_module_cpak
+%make_module mmake=kernel-expansion
+%make_lib_includes
 
 %common
 %include_deps

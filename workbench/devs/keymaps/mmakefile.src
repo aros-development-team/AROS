@@ -1,31 +1,31 @@
+#   $Id$
 include $(TOP)/config/make.cfg
-
-OBJDIR := $(GENDIR)/$(CURDIR)
-
-KEYMAPDIR := $(DEVSDIR)/Keymaps
 
 KEYMAPS := pc105_d pc105_i pc105_s
 
-KEYMAPOBJS := $(foreach f,$(KEYMAPS),$(KEYMAPDIR)/$(f))
-
-CFLAGS := $(INCLUDES) -nostartfiles -nostdlib -Xlinker -r
-
-#MM workbench-devs-keymaps : setup includes keymapobjs
-workbench-devs-keymaps : keymapobjs
-	@$(NOP)
+#MM- workbench-devs-complete : workbench-devs-keymaps
+#MM workbench-devs-keymaps : setup includes
+workbench-devs-keymaps : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 
 #MM
-setup :
-	%mkdirs_q $(KEYMAPDIR)
+workbench-devs-keymaps-quick : workbench-devs-keymaps
+
+CFLAGS := $(USER_CFLAGS) $(TARGET_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
+LDFLAGS := $(USER_LDFLAGS) $(TARGET_LDFLAGS) $(STATIC_LDFLAGS)
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+$(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
+	%link_q cmd=$(STATIC_LD) startup= libs=
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(TARGET_CC)
 
 #MM
-keymapobjs : $(KEYMAPOBJS)
-	@$(NOP)
-	
-$(KEYMAPDIR)/%: %.c
-	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(CC) $(CFLAGS) $< -o $@ 2>&1|tee $*.err
-	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+setup ::
+	%mkdirs_q $(AROS_DEVS)/Keymaps $(OBJDIR)
+
+#MM
+clean ::
+	-$(RM) $(AROS_DEVS)/Keymaps $(OBJDIR)
 
 %common
-

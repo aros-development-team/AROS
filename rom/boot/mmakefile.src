@@ -1,79 +1,59 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
-
-OBJDIR	:= $(GENDIR)/$(CURDIR)
-LIBNAME	:= boot
 
 # This directory contains a number of modules that only have an effect during
 # boot time. Things such as the system boot strap, the bootmenu and syscheck
 # modules would go in here.
 
-# This is a list of files to choose from, it is only used to compute
-# dependancies. $(OBJS) is initially empty, you should use %add_replace
-# in order to select modules.
+FILES :=
 
+# We have a different strap depending upon which particular system that we 
+# run in. 
 ifeq ($(FLAVOUR),emulation)
-FILES	:= strap_emul
+FILES := $(MODULES) strap_emul
 else
-FILES := strap
+FILES := $(MODULES) strap
 endif
 
-DEF_OBJ :=
-%prepare_replace rom/boot
+# Need this to suppress a warning, and get the correct path. MODNAME is used
+# in particular for constructing the link library name
+MODNAME :=
+MODTYPE := module
 
-OBJS := $(foreach f,$(FILES) $(DEF_OBJ), $(OBJDIR)/$(f).o)
-DEPS	:= $(foreach f, $(FILES) $(DEF_OBJ), $(OBJDIR)/$(f).d)
+#MM- kernel-boot : setup includes linklibs
 
-%prepare_shlib boot $(SHARED_BOOT)
+%make_module_setup mmake=kernel-boot
 
-ifeq ($(FLAVOUR),native)
-# Native/standalone flavour has each module as a separate file
-MODULES := $(foreach f,$(DEF_OBJ) $(ADDITIONAL_OBJS), $(OSMODDIR)/$(f))
+#MM kernel-boot-module : kernel-boot
+MODULES := $(foreach f,$(FILES),$(MOD_DIR)/$(f))
+kernel-boot-module-quick : kernel-boot-module
+kernel-boot-module : $(MODULES)
 
-#MM
-kernel-boot-module: $(MODULES)
-	@$(NOP)
+$(MOD_DIR)/% : $(OBJDIR)/%.o
+	%link_module_q objs=$(OBJDIR)/$*.o
 
-LIBS := -L$(LIBDIR) -lamiga
-LIBLIST := amiga
-LIBDEPS := $(foreach f,$(LIBLIST), $(LIBDIR)/lib$(f).a)
+#MM kernel-boot-linklib : kernel-boot
+LIB := $(AROSDIR)/lib/libboot.a
+SHARED := $(AROSDIR)/lib/libboot.so
+kernel-boot-linklib-quick : kernel-boot-linklib
 
-$(OSMODDIR)/% : $(OBJDIR)/%.o
-	@$(ECHO) "Building $(notdir $@)..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $@.map $(LIBS) $^ -o $@ 2>&1 \
-	    | tee $@.x-err
-	@$(IF) $(TEST) ! -s $@.map; then $(RM) $@.map; else true; fi
-	@$(IF) $(TEST) ! -s $@.x-err; then $(RM) $@.x-err; else true; fi
-	@$(STRIP) $@
-
+ifeq ($(SHARED_BOOT),yes)
+kernel-boot-linklib : $(SHARED)
 else
-# emulated/linklib has modules collected into a linklib
-
-#MM
 kernel-boot-linklib : $(LIB)
-	@$(NOP)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
-
 endif
 
-#MM- kernel-boot : setup includes kernel-boot-$(ARCH)-$(CPU)
+$(LIB) : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	%mklib_q from=$^
 
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB) *.s mmakefile
+$(SHARED): $(foreach f,$(FILES),$(OBJDIR)/$(f).so)
+	@$(ECHO) "Linking $(notdir $@)..."
+	@$(SHARED_LD) $(SHARED_LDFLAGS) -o $@ $^
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
+#MM kernel-boot-module-quick kernel-boot-linklib-quick
+%make_module_common
 
-%asm_rule "$(FILES)"
-
-%ctoasm_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 %common
 %include_deps

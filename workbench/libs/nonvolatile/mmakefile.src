@@ -1,61 +1,27 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES = -I.. -I.
 
-LIBNAME 	:= nonvolatile
-ULIBNAME	:= Nonvolatile
+MODNAME := nonvolatile
+MODTYPE := library
 
-# BEGIN_DESC{makefile}
-# This is the makefile for nonvolatile.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
+FILES := 
+FUNCS := deletenv \
+	 freenvdata \
+	 getcopynv \
+	 getnvinfo \
+	 getnvlist \
+	 setnvprotection \
+	 storenv	     
 
-# BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
-#
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
-#
-# END_DESC{localmakevar}
+USE_ROMLIB := yes
 
-FILES := functable
-
-FUNCTIONS := deletenv \
-	     freenvdata \
-	     getcopynv \
-	     getnvinfo \
-	     getnvlist \
-	     setnvprotection \
-	     storenv	     
-
-
-%define_libs prelibs=-l$(LIBNAME)
-
-%genlib_cpak
-
-#MM workbench-libs-nonvolatile : setup includes linklibs
-workbench-libs-nonvolatile : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-nonvolatile-quick : 
-workbench-libs-nonvolatile-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-libs-nonvolatile : setup includes linklibs workbench-libs-nonvolatile-module
+%make_module_setup mmake=workbench-libs-nonvolatile
+%make_module_cpak
+%make_module mmake=workbench-libs-nonvolatile
+%make_lib_includes
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps

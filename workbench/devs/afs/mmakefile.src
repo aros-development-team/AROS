@@ -1,61 +1,30 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(GENDIR)/$(CURDIR)
+MODNAME := afs
+MODTYPE := handler
 
-AFSHANDLER := $(DEVSDIR)/afs.handler
-FILES :=	arosdevice \
-			main \
-			volumes \
-			filehandles1 \
-			filehandles2 \
-			filehandles3 \
-			hashing \
-			extstrings \
-			bitmap \
-			blockaccess \
-			error \
-			checksums \
-			misc
+INIT_FILE := arosdevice
+FILES := main \
+	volumes \
+	filehandles1 \
+	filehandles2 \
+	filehandles3 \
+	hashing \
+	extstrings \
+	bitmap \
+	blockaccess \
+	error \
+	checksums \
+	misc
+FUNCS :=
 
-OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB := $(LIBDIR)/libafs.a
+USE_LIBDEFS := no
 
-%make_common_setup
-
-#MM workbench-devs: workbench-devs-afshandler
-workbench-devs: workbench-devs-afshandler
-
-#MM workbench-devs-quick: workbench-devs-afshandler
-workbench-devs-quick: workbench-devs-afshandler
-
-#MM workbench-devs-afshandler:
-workbench-devs-afshandler: $(AFSHANDLER)
-
-#MM
-kernel-devs-native-i386 : $(LIB)
-	@$(NOP)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-$(AFSHANDLER) : $(OBJS)
-	%link_q from=$(OBJS) startup=
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- workbench-fs-complete : workbench-fs-afs
+#MM- workbench-fs-afs : setup includes linklibs workbench-fs-afs-module
+%make_module_setup mmake=workbench-fs-afs
+%make_module mmake=workbench-fs-afs
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
+%include_deps
