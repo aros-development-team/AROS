@@ -15,8 +15,8 @@
 #ifndef DEBUG_SetFunction
 #   define DEBUG_SetFunction 0
 #endif
+#undef DEBUG
 #if DEBUG_SetFunction
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

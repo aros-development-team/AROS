@@ -15,8 +15,8 @@
 #ifndef DEBUG_OpenWindow
 #   define DEBUG_OpenWindow 0
 #endif
+#undef DEBUG
 #if DEBUG_OpenWindow
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #	include <aros/debug.h>

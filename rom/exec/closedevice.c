@@ -17,8 +17,8 @@
 #ifndef DEBUG_CloseDevice
 #   define DEBUG_CloseDevice 0
 #endif
+#undef DEBUG
 #if DEBUG_CloseDevice
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

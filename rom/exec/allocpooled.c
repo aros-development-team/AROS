@@ -14,8 +14,8 @@
 #ifndef DEBUG_AllocPooled
 #   define DEBUG_AllocPooled 0
 #endif
+#undef DEBUG
 #if DEBUG_AllocPooled
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.11  1998/01/16 23:07:16  hkiel
+    Always #undef DEBUG to assure proper behaviour with cpak
+
     Revision 1.10  1998/01/05 21:06:43  hkiel
     Added masquerade to #include <aros/debug.h> for cpak.
 
@@ -50,8 +53,8 @@
 #ifndef DEBUG_CloseWindow
 #   define DEBUG_CloseWindow 0
 #endif
+#undef DEBUG
 #if DEBUG_CloseWindow
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #	include <aros/debug.h>

@@ -12,8 +12,8 @@
 #ifndef DEBUG_CloseScreen
 #   define DEBUG_CloseScreen 0
 #endif
+#undef DEBUG
 #if DEBUG_CloseScreen
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #	include <aros/debug.h>

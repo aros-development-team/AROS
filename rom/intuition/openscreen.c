@@ -13,8 +13,8 @@
 #ifndef DEBUG_OpenScreen
 #   define DEBUG_OpenScreen 0
 #endif
+#undef DEBUG
 #if DEBUG_OpenScreen
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #	include <aros/debug.h>

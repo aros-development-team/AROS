@@ -14,8 +14,8 @@
 #ifndef DEBUG_InitResident
 #   define DEBUG_InitResident 0
 #endif
+#undef DEBUG
 #if DEBUG_InitResident
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

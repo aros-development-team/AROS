@@ -19,8 +19,8 @@
 #ifndef DEBUG_AllocMem
 #   define DEBUG_AllocMem 0
 #endif
+#undef DEBUG
 #if DEBUG_AllocMem
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

@@ -15,8 +15,8 @@
 #ifndef DEBUG_RemLibrary
 #   define DEBUG_RemLibrary 0
 #endif
+#undef DEBUG
 #if DEBUG_RemLibrary
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

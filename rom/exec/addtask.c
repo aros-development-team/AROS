@@ -18,8 +18,8 @@
 #ifndef DEBUG_AddTask
 #   define DEBUG_AddTask 0
 #endif
+#undef DEBUG
 #if DEBUG_AddTask
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

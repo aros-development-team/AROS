@@ -18,8 +18,8 @@
 #ifndef DEBUG_FreeMem
 #   define DEBUG_FreeMem 0
 #endif
+#undef DEBUG
 #if DEBUG_FreeMem
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>

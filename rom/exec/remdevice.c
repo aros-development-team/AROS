@@ -16,8 +16,8 @@
 #ifndef DEBUG_RemDevice
 #   define DEBUG_RemDevice 0
 #endif
+#undef DEBUG
 #if DEBUG_RemDevice
-#   undef DEBUG
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>
