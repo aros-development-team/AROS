@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS Palette gadget for use in gadtools.
-    Lang: english
+    AROS Palette gadget for use in gadtools.
 */
 
 #define USE_BOOPSI_STUBS
@@ -34,7 +33,7 @@
 *********************/
 STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
 {
-    struct TagItem *tag, *tstate;
+    const struct TagItem *tag, *tstate;
     IPTR retval = 0UL;
     struct PaletteData *data = INST_DATA(cl, o);
     
@@ -171,7 +170,7 @@ STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
     struct TagItem tags[] =
     {
 	{GA_RelSpecial, TRUE},
-	{TAG_MORE, NULL}
+	{TAG_MORE, 0}
     };
 
     EnterFunc(bug("Palette::New()\n"));

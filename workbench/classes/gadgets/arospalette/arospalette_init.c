@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROSPalette initialization code.
-    Lang: English.
+    AROSPalette initialization code.
 */
 
 #include <stddef.h>
@@ -52,17 +51,17 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!GfxBase)
     	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
     if (!GfxBase)
-	return(NULL);
+	return FALSE;
 
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
-	return(NULL);
+	return FALSE;
 
     if (!IntuitionBase)
     	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
-	return (NULL);
+	return FALSE;
 
     /* ------------------------- */
     /* Create the class itself */
@@ -70,10 +69,9 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!lh->classptr)
     	lh->classptr = InitPaletteClass(lh);
     if (!lh->classptr)
-    	return (NULL);
+    	return FALSE;
     /* ------------------------- */
 
-    /* You would return NULL if the init failed. */
     return TRUE;
 
 }
