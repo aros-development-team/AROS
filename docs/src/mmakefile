@@ -6,6 +6,8 @@ DEST	:= ../html/
 JOBDEST := $(DEST)jobserver/
 MIC	:= $(TOP)/scripts/moveifchanged
 LITE	:= /usr/local/Hughes/bin/lite
+GNUPLOT := gnuplot
+PPMTOGIF := ppmtogif
 
 FILES := main.src
 
@@ -100,7 +102,7 @@ src2html : conv/src2html
 	cp $< $@
 
 $(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
-	    includes src2html keywords.db files.db
+	    src2html keywords.db files.db
 	export TOP="$(TOP)" ; \
 	$(SRC2HTML) ; \
 	$(SRC2HTML) ; \
@@ -137,8 +139,6 @@ $(JOBDEST).ht% : jobserv.ht%
 $(JOBDEST)cgi-bin/%.cgi : %.cgi
 	cp $< $@
 	chmod 755 $@
-
-LITE=/usr/local/Hughes/bin/lite
 
 %.lib : %.lsrc
 	$(LITE) -l$@ $<
@@ -225,16 +225,20 @@ $(DEST)inc_index.html : $(INCLUDE_SRCS)
 	chmod a+r $@
 
 #MM all-docs : setup-docs
-all-docs : includes docs 
+all-docs : includes docs
 
-includes : devlist.inc contents.inc status.inc \
-	support.lib \
-	jobserv-free.inc jobserv-work.inc jobserv-done.inc
+includes : devlist.inc contents.inc status.inc support.lib \
+	jobserv-free.inc jobserv-work.inc jobserv-done.inc \
+	$(DEST)progress.gif
+
+$(DEST)progress.gif : size2plot.gp $(TOP)/../CVSROOT/aros.size
+	$(GNUPLOT) size2plot.gp
+	$(PPMTOGIF) gen/plot.pbm > $@
 
 support.lib : support.lsrc
 	$(LITE) -l$@ $<
 
-devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt 
+devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
 
 status.inc :
