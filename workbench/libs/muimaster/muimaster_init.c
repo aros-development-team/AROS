@@ -128,6 +128,11 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     if (!CyberGfxBase)
     	CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
     /* continue even if cybergraphics.library is not available */
+
+#ifdef HAVE_COOLIMAGES
+    if (!CoolImagesBase)
+    	CoolImagesBase = OpenLibrary("coolimages.library", 0);
+#endif
     
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
@@ -201,6 +206,11 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     
     CloseLibrary(CyberGfxBase);
     CyberGfxBase = NULL;
+
+#ifdef HAVE_COOLIMAGES
+    CloseLibrary(CoolImagesBase);
+    CoolImagesBase = NULL;
+#endif
 }
 
 /****************************************************************************************/
