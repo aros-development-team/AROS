@@ -81,7 +81,7 @@
   }
   
   /* now I reinstall the regular ClipRects. */
-  l->ClipRect = l->_cliprects;
+  l->ClipRect = l->cr;
 
   UnlockLayer(l);
 

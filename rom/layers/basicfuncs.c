@@ -809,9 +809,9 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
  * list.
  */
 
-void CopyClipRectsClipRects(struct Layer * L,
-                            struct ClipRect * srcCR,
-                            struct ClipRect * destCR)
+void CopyAndFreeClipRectsClipRects(struct Layer * L,
+                                   struct ClipRect * srcCR,
+                                   struct ClipRect * destCR)
 {
   struct ClipRect * sCR = srcCR;
   while (TRUE)
@@ -876,7 +876,7 @@ void CopyClipRectsClipRects(struct Layer * L,
            
           if (a == area)
           {
-            FreeBitMap(dCR);
+            FreeBitMap(dCR->BitMap);
             dCR -> BitMap = sCR -> BitMap;
             break;
           }

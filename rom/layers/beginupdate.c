@@ -109,13 +109,13 @@
   /*
     Now exchange the two ClipRect lists. The converted damage list
     will be placed in the position of the regular ClipRect list
-    and the regular one will be kept in l->_cliprects until
+    and the regular one will be kept in l->cr until
     EndUpdate() is called.
     For the freeing of the damage list I will wait until 
     EndUpdate(.., TRUE) is called and then free it. 
    */
 
-  l->_cliprects = l->ClipRect;
+  l->cr         = l->ClipRect;
   l->ClipRect   = FirstCR;
   return TRUE;
 

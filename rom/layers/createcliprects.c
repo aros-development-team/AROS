@@ -314,10 +314,10 @@ struct ClipRect * CopyClipRectsInRegion(struct Layer * L,
     
       while (NULL != RR && area > 0)
       {
-        if (!Rect.MinX > RR->bounds.MaxX ||
-             Rect.MinY > RR->bounds.MaxY ||
-             Rect.MaxX < RR->bounds.MinX ||
-             Rect.MaxY < RR->bounds.MinY   )
+        if (!(Rect.MinX > RR->bounds.MaxX ||
+              Rect.MinY > RR->bounds.MaxY ||
+              Rect.MaxX < RR->bounds.MinX ||
+              Rect.MaxY < RR->bounds.MinY   ))
         {
           /* this is at least partly matching */
           if (NULL == CR_new)

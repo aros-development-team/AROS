@@ -60,35 +60,41 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Region * OldRegion = l->ClipRegion;
-  struct ClipRect * FirstCR; 
-
 
   /* is there a clipregion currently installed? */
   if (NULL != OldRegion)
   { 
-    /* free all the ClipRects that make up this layer and
-       were created due to it being a clipregioned layer 
+    /*
+     *  Copy the contents of the region cliprects to the regular
+     *  cliprects if layer is a SMARTLAYER. Also free the list of 
+     *  region cliprects.
      */
-    _FreeClipRectListBM(l,l->ClipRect);
+    if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)))
+      CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
+    else
+      _FreeClipRectListBM(l, l->ClipRect);
     
-    /* only reinstall the regular cliprects if there is no
-       new region given
-    */
+    /* restore the regular ClipRects */
+    l->ClipRect = l->_cliprects;
+
+    /* if there's no new region then leave after cleaning up */
     if (NULL == region)
     {
-      l->ClipRect = l->_cliprects;
       l->_cliprects = NULL;
       l->ClipRegion = NULL;
       return OldRegion;
     }
+    
   }
+
+  /* at this point the regular cliprects are in l->ClipRect in any case !*/
 
   /* if there's no new region to install then there's nothing else to do */
   if (NULL == region)
-    return;
+    return OldRegion;
 
-  /* First I cut down the region to the rectangle of the layer */
-  l -> ClipRegion = region;
+  /* install the new clipregion */
+  l->ClipRegion = region;
     
   /* convert the region to a list of ClipRects */
   /* backup the old cliprects */

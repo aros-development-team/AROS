@@ -18,7 +18,7 @@
 	AROS_LHA(struct ClipRect *, cr, A1),
 
 /*  LOCATION */
-	struct LayersBase *, LayersBase, 40, Layers)
+	struct LayersBase *, LayersBase, 21, Layers)
 
 /*  FUNCTION
 

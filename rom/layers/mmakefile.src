@@ -52,6 +52,7 @@ FUNCTIONS := \
 	endupdate			\
 	fattenlayerinfo			\
 	initlayers			\
+	installclipregion		\
 	installlayerhook		\
 	installlayerinfohook		\
 	locklayer			\

@@ -419,7 +419,6 @@
     {
       struct ClipRect * _CR;
       struct Region * R = NewRegion();
-      BOOL madeRelative = FALSE;
       /* Walk through all the old layers cliprects and check whether they
          were visible. If a part was not visible then add it to the 
          new layers damagelist */

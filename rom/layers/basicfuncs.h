@@ -97,7 +97,7 @@ struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li);
 
 struct ClipRect * _AllocClipRect(struct Layer * L);
 void _FreeClipRect(struct ClipRect * CR, struct Layer * L);
-void _FreeClipRectList(struct Layer * L, struct ClipRect * CR);
+void _FreeClipRectListBM(struct Layer * L, struct ClipRect * CR);
 
 void FreeCRBitMap(struct ClipRect *   cr);
 
@@ -116,5 +116,8 @@ void FreeLayerResources(struct Layer_Info *  li,
 void CleanTopLayer(struct Layer_Info * LI);
 void CleanupLayers(struct Layer_Info * LI);
 void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect );
+void CopyAndFreeClipRectsClipRects(struct Layer * L,
+                                   struct ClipRect * srcCR,
+                                   struct ClipRect * destCR);
 
 /*-----------------------------------END-----------------------------------*/
