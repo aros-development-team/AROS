@@ -647,10 +647,10 @@ sub parse_sfd ( $ ) {
 
     # Create some other variables
 
-    ( $$result{'basename'} = $$result{'libname'} ) =~ s/(.*)\.\w+/$1/;
+    ( $$result{'basename'} = $file ) =~ s:.*/(\w+?)_lib\.sfd:$1:;
 
     if ($$result{'basename'} eq '') {
-	( $$result{'basename'} = $file ) =~ s:.*/(\w+?)_lib\.sfd:$1: or do {
+	( $$result{'basename'} = $$result{'libname'} ) =~ s/(.*)\.\w+/$1/ or do {
 	    print STDERR "Unable to find or guess base name.\n";
 	    print STDERR "Please add \"==libname module_name\" to SFD file.\n";
 	    die;
