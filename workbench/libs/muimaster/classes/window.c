@@ -1098,29 +1098,13 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 }
 
 
-/* process window message, this does a ReplyMsg() to the message */
-/* Called from application.c */
-void _zune_window_message(struct IntuiMessage *imsg)
+BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
+			struct IntuiMessage *imsg)
 {
     struct Window *iWin;
-    Object        *oWin;
-    struct MUI_WindowData *data;
+    BOOL is_handled = TRUE;
 
     iWin = imsg->IDCMPWindow;
-    oWin = (Object *)iWin->UserData;
-    data = muiWindowData(oWin);
-
-/*      D(bug("win %p, imsg->Class = %d\n", oWin, imsg->Class)); */
-
-    if (data->wd_DragObject)
-    {
-	HandleDragging(oWin, data, imsg);
-	ReplyMsg((struct Message*)imsg);
-	return;
-    }
-
-    data->wd_Flags |= MUIWF_HANDLEMESSAGE;
-
     switch (imsg->Class)
     {
     	case IDCMP_MOUSEMOVE:
@@ -1138,6 +1122,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
             {
                 iWin->Flags &= ~WFLG_RMBTRAP;
             }
+	    is_handled = FALSE; /* fowardable to area event handlers */
 	    break;
 
 	case IDCMP_ACTIVEWINDOW:
@@ -1342,12 +1327,41 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		}
 	    }
 
+	default:
+	    is_handled = FALSE;
+	    break;
+    } /* switch (imsg->Class) */
+
+    return is_handled;
+}
+
+/* process window message, this does a ReplyMsg() to the message */
+/* Called from application.c */
+void _zune_window_message(struct IntuiMessage *imsg)
+{
+    struct Window *iWin;
+    Object        *oWin;
+    struct MUI_WindowData *data;
+
+    iWin = imsg->IDCMPWindow;
+    oWin = (Object *)iWin->UserData;
+    data = muiWindowData(oWin);
+
+/*      D(bug("win %p, imsg->Class = %d\n", oWin, imsg->Class)); */
+
+    if (data->wd_DragObject)
+    {
+	HandleDragging(oWin, data, imsg);
+	ReplyMsg((struct Message*)imsg);
+	return;
     }
 
-    HandleInputEvent(oWin, data, imsg);
+    data->wd_Flags |= MUIWF_HANDLEMESSAGE;
+
+    if (!HandleWindowEvent(oWin, data, imsg))
+	HandleInputEvent(oWin, data, imsg);
 
     data->wd_Flags &= ~MUIWF_HANDLEMESSAGE;
-
     ReplyMsg((struct Message*)imsg);
 
     if (data->wd_Flags & MUIWF_CLOSEME)
@@ -1355,7 +1369,6 @@ void _zune_window_message(struct IntuiMessage *imsg)
     	/* Now it's safe to close the window */
 /*      	D(bug("Detected delayed closing. Going to close the window now.\n")); */
     	nnset(oWin,MUIA_Window_Open,FALSE);
-	data->wd_Flags &= ~MUIWF_CLOSEME;
     }
 
 }
@@ -2638,6 +2651,7 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     D(bug("in window_Close %ld\n", __LINE__));
 
     data->wd_Flags &= ~MUIWF_OPENED;
+    data->wd_Flags &= ~MUIWF_CLOSEME;
     data->wd_Menustrip = NULL;
 
     /* free display dependant data */
