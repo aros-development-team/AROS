@@ -18,3 +18,5 @@ struct MinList __stdio_files =
     NULL,
     (struct MinNode *)&__stdio_files
 };
+
+int __stdio_fd = 4;

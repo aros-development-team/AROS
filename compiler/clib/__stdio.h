@@ -9,6 +9,7 @@
     Lang: english
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <exec/lists.h>
 
 typedef struct __FILENODE
@@ -19,6 +20,10 @@ typedef struct __FILENODE
 } FILENODE;
 
 extern struct MinList __stdio_files;
+extern int __stdio_fd;
+
+#define FILENODE2FILE(fn)       (&((fn)->File))
+#define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))
 
 /* Prototypes */
 FILENODE * GetFilenode4fd (int fd);
