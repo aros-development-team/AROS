@@ -240,7 +240,7 @@ static BOOL string2command( BYTE 	*cmd_ptr
     UBYTE *write_str = *writestr_ptr;
 
     UBYTE *csi_str = write_str;
-    LONG csi_toparse;
+    LONG csi_toparse = 0;
 
     BOOL found = FALSE,
     	 csi   = FALSE;
