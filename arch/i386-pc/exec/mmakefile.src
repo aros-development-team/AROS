@@ -3,8 +3,8 @@ include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(OSGENDIR)/exec
 OS_INCLUDES	:= -I$(GENINCDIR)
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
-CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
+SPECIAL_CFLAGS	:= -I$(TOP)/rom/exec -I..
+CFLAGS2 	:= $(CFLAGS)
 AFLAGS2 	:= $(AFLAGS) -I.. -I$(GENINCDIR)
 TESTS		:=
 FILES		:= \
