@@ -250,3 +250,9 @@ mreckt@wurzelausix.CS.Uni-SB.DE
   shell cmd
 starts demowin and even returns when pressing the Exit button, but the
 window is not closed.
+
+BUG000037
+srittau@aros.org
+Resource Tracking is disabled on native platforms. See file
+compiler/arossupport/include/rt.h
+
