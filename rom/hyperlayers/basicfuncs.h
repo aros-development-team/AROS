@@ -55,7 +55,7 @@ void _CallLayerHook(struct Hook * h,
 
 void SetLayerPriorities(struct Layer_Info * li);
 struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y);
-void _FreeLayer(struct Layer * l);
+void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase);
 
 /***************************************************************************/
 /*                               LAYERINFO                                 */
@@ -97,9 +97,9 @@ BOOL AddLayersResource(struct Layer_Info * li,
 
 struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li);
 
-struct ClipRect * _AllocClipRect(struct Layer * L);
-void _FreeClipRect(struct ClipRect * CR, struct Layer * L);
-void _FreeClipRectListBM(struct Layer * L, struct ClipRect * CR);
+struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase);
+void _FreeClipRect(struct ClipRect * CR, struct Layer * L, struct LayersBase *LayersBase);
+void _FreeClipRectListBM(struct Layer * L, struct ClipRect * CR, struct LayersBase *LayersBase);
 
 void FreeCRBitMap(struct ClipRect *   cr);
 
@@ -128,7 +128,8 @@ int _CopyClipRectsToClipRects(struct Layer * l,
 			      int destdx,
                               int backupmode,
                               int freelist,
-                              int addtodamagelist);
+                              int addtodamagelist,
+			      struct LayersBase *LayersBase);
 void UninstallClipRegionClipRects(struct Layer_Info * LI);
 void InstallClipRegionClipRects(struct Layer_Info * LI);
 
@@ -163,7 +164,7 @@ int _ShowPartsOfLayer(struct Layer * l,
                       struct Region * show_region,
                       struct LayersBase *);
 
-int _ShowLayer(struct Layer * l);
+int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase);
 
 struct Layer * _FindFirstFamilyMember(struct Layer * l);
 
@@ -174,7 +175,8 @@ void _BackFillRegion(struct Layer * l,
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
-                                             struct Region *inverter);
+                                             struct Region *inverter,
+					     struct LayersBase *LayersBase);
 
 int _SetRegion(struct Region *, struct Region *);
 

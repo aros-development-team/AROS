@@ -41,6 +41,14 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
   SysBase = lh->lb_SysBase;
   
+  InitSemaphore(&lh->lb_MemLock);
+ 
+  if (!lh->lb_ClipRectPool)
+     lh->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
+
+  if (!lh->lb_ClipRectPool)
+     return FALSE;
+
   if (!GfxBase)
     GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
     

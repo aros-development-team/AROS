@@ -31,6 +31,8 @@ extern struct ExecBase * SysBase;
 
 #define SCROLLSIGN +
 
+#define USE_POOLS 1
+
 /*
  *  Sections:
  *
@@ -160,7 +162,7 @@ void _CallLayerHook(struct Hook * h,
 /*
  * Free a layer and all its associated structures
  */
-void _FreeLayer(struct Layer * l)
+void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
 {
   struct ClipRect * cr = l->ClipRect, * _cr;
   
@@ -169,7 +171,13 @@ void _FreeLayer(struct Layer * l)
     if (cr->BitMap)
       FreeBitMap(cr->BitMap);
     _cr = cr->Next;
+#if USE_POOLS  
+    ObtainSemaphore(&LayersBase->lb_MemLock);
+    FreePooled(LayersBase->lb_ClipRectPool, cr, sizeof(struct ClipRect));
+    ReleaseSemaphore(&LayersBase->lb_MemLock);
+#else
     FreeMem(cr, sizeof(struct ClipRect));
+#endif
     cr = _cr;
   }
 
@@ -181,7 +189,13 @@ void _FreeLayer(struct Layer * l)
   while (cr)
   {
     _cr = cr->Next;
+#if USE_POOLS  
+    ObtainSemaphore(&LayersBase->lb_MemLock);
+    FreePooled(LayersBase->lb_ClipRectPool, cr, sizeof(struct ClipRect));
+    ReleaseSemaphore(&LayersBase->lb_MemLock);
+#else
     FreeMem(cr, sizeof(struct ClipRect));
+#endif
     cr = _cr;
   }
 
@@ -331,7 +345,7 @@ void _TranslateRect(struct Rectangle *rect, WORD dx, WORD dy)
  * Allocate memory for a ClipRect.
  */
 
-struct ClipRect * _AllocClipRect(struct Layer * L)
+struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase)
 {
   struct ClipRect * CR;
   
@@ -349,8 +363,14 @@ struct ClipRect * _AllocClipRect(struct Layer * L)
     CR->BitMap = NULL;
     return CR;
   }
-  
+
+#if USE_POOLS  
+  ObtainSemaphore(&LayersBase->lb_MemLock);
+  CR = (struct ClipRect *)AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
+  ReleaseSemaphore(&LayersBase->lb_MemLock);
+#else
   CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
+#endif
   return CR;
 }
 
@@ -359,7 +379,8 @@ struct ClipRect * _AllocClipRect(struct Layer * L)
  */
 
 void _FreeClipRect(struct ClipRect   * CR,
-                   struct Layer      * L)
+                   struct Layer      * L,
+		   struct LayersBase * LayersBase)
 {
   if (L->SuperSaveClipRectCounter < MAXSUPERSAVECLIPRECTS)
   {
@@ -369,7 +390,15 @@ void _FreeClipRect(struct ClipRect   * CR,
     L -> SuperSaveClipRectCounter++;
   }
   else
+  {
+#if USE_POOLS  
+    ObtainSemaphore(&LayersBase->lb_MemLock);
+    FreePooled(LayersBase->lb_ClipRectPool, CR, sizeof(struct ClipRect));
+    ReleaseSemaphore(&LayersBase->lb_MemLock);
+#else
     FreeMem(CR, sizeof(struct ClipRect));
+#endif
+  }
 }
 
 /*
@@ -377,7 +406,8 @@ void _FreeClipRect(struct ClipRect   * CR,
  */
 
 void _FreeClipRectListBM(struct Layer * L,
-                         struct ClipRect * CR)
+                         struct ClipRect * CR,
+			 struct LayersBase *LayersBase)
 {
   struct ClipRect * _CR = CR;
   BOOL isSmart; 
@@ -423,7 +453,8 @@ void _FreeClipRectListBM(struct Layer * L,
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
-                                             struct Region * inverter)
+                                             struct Region * inverter,
+					     struct LayersBase *LayersBase)
 {
   int looped = FALSE;
   struct ClipRect * firstcr = NULL, * cr;
@@ -436,12 +467,12 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
     struct RegionRectangle * rr = r->RegionRectangle;
     while (rr)
     {
-      cr = _AllocClipRect(l);
+      cr = _AllocClipRect(l, LayersBase);
       cr->bounds.MinX = rr->bounds.MinX + r->bounds.MinX;
       cr->bounds.MinY = rr->bounds.MinY + r->bounds.MinY;
       cr->bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
       cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
-      cr->lobs  = invisible;
+      cr->lobs  = (struct Layer *)invisible;
       cr->Next  = firstcr;
 
       if (TRUE == invisible && IS_SMARTREFRESH(l))
@@ -504,7 +535,8 @@ int _CopyClipRectsToClipRects(struct Layer * l,
 			      int destdx,
                               int backupmode,
                               int freelist,
-                              int addtodamagelist)
+                              int addtodamagelist,
+			      struct LayersBase *LayersBase)
 {
   struct BitMap * display_bm = l->rp->BitMap;
 
@@ -943,7 +975,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
       _cr = oldcr->Next;
       if (oldcr->BitMap)
         FreeBitMap(oldcr->BitMap);
-      _FreeClipRect(oldcr, l);
+      _FreeClipRect(oldcr, l, LayersBase);
       oldcr = _cr;
     }
     else
@@ -1024,7 +1056,7 @@ int _BackupPartsOfLayer(struct Layer * l,
   AndRegionRegion(l->shape,&r);
   AndRegionRegion(l->parent->shape,&r);
 
-  newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL);
+  newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
 
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
@@ -1033,7 +1065,8 @@ int _BackupPartsOfLayer(struct Layer * l,
                             dx,
                             backupsimplerefresh,
                             TRUE,
-                            TRUE);
+                            TRUE,
+			    LayersBase);
 
   l->ClipRect = newcr;
 
@@ -1083,7 +1116,7 @@ int _ShowPartsOfLayer(struct Layer * l,
   AndRegionRegion(l->shape,&r);
   AndRegionRegion(l->parent->shape,&r);
   
-  newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL);
+  newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
 
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
@@ -1092,7 +1125,8 @@ int _ShowPartsOfLayer(struct Layer * l,
 			    0,
                             FALSE,
                             TRUE,
-                            FALSE);
+                            FALSE,
+			    LayersBase);
 
 
   l->ClipRect = newcr;
@@ -1103,7 +1137,7 @@ int _ShowPartsOfLayer(struct Layer * l,
   return TRUE;
 }
 
-int _ShowLayer(struct Layer * l)
+int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
 {
   struct Region r;
   struct RegionRectangle * rr;
@@ -1122,7 +1156,15 @@ int _ShowLayer(struct Layer * l)
 
     while (NULL != rr)
     {
-      struct ClipRect * cr = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
+      struct ClipRect * cr;
+
+#if USE_POOLS  
+      ObtainSemaphore(&LayersBase->lb_MemLock);
+      cr = (struct ClipRect *)AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
+      ReleaseSemaphore(&LayersBase->lb_MemLock);
+#else     
+      cr = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
+#endif
 
 //kprintf("\t\tinvisible: %d !!!!!!!!!!!!\n",invisible);
 
@@ -1404,9 +1446,10 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 				    destdx,
 	                            FALSE,
 	                            TRUE,
-				    FALSE);
+				    FALSE,
+				    LayersBase);
 	else
-          _FreeClipRectListBM(l, l->ClipRect);
+          _FreeClipRectListBM(l, l->ClipRect, LayersBase);
       }
 
       /* restore the regular ClipRects */
@@ -1438,7 +1481,8 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
       l->ClipRect = _CreateClipRectsFromRegion(&r,
                                                l,
                                                FALSE,
-                                               region);
+                                               region,
+					       LayersBase);
                                                
       _CopyClipRectsToClipRects(l,
                                 l->_cliprects,
@@ -1447,7 +1491,8 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 				destdx,
                                 FALSE,
                                 FALSE,
-				TRUE); /* stegerg: should be FALSE. but that does not work??? */
+				TRUE,
+				LayersBase); /* stegerg: should be FALSE. but that does not work??? */
 
       _TranslateRect(&region->bounds, -l->bounds.MinX, -l->bounds.MinY);
 
