@@ -1,9 +1,8 @@
 /*
-   (C) 2001 AROS - The Amiga Research OS
+   Copyright © 2001, The AROS Development Team. All rights reserved.
    $Id$
 
-   Desc: Partition initialization code
-   Lang: English
+   Library initialization code.
 */
 
 
