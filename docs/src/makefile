@@ -19,6 +19,9 @@ all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
 	$(DEST)cgi-bin/search.cgi \
 	$(DEST)cgi-bin/counter.cgi
 
+index :
+	cd $(DEST) ; glimpseindex -H . -o .
+
 $(DEST)srcs:
 	ln -s $(TOP) $(DEST)srcs
 
