@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROSListview initialization code.
-    Lang: English.
+    AROSListview initialization code.
 */
 #include <stddef.h>
 #include <proto/exec.h>
@@ -62,22 +61,22 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!GfxBase)
 	GfxBase = (GraphicsBase *)OpenLibrary(GRAPHICSNAME, 37);
     if (!GfxBase)
-	return(NULL);
+	return FALSE;
 
     if (!UtilityBase)
 	UtilityBase = OpenLibrary(UTILITYNAME, 37);
     if (!UtilityBase)
-	return(NULL);
+	return FALSE;
 
     if (!IntuitionBase)
 	IntuitionBase = (IntuiBase *)OpenLibrary(INTUITIONNAME, 37);
     if (!IntuitionBase)
-	return (NULL);
+	return FALSE;
 
     if (!DOSBase)
 	DOSBase = OpenLibrary(DOSNAME, 37);
     if (!DOSBase)
-	return (NULL);
+	return FALSE;
 
     /* ------------------------- */
     /* Create the class itself */
@@ -85,7 +84,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!lh->classptr)
     	lh->classptr = InitListviewClass(lh);
     if (!lh->classptr)
-	return (NULL);
+	return FALSE;
 
 
     /* ------------------------- */
