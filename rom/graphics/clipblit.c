@@ -122,7 +122,7 @@
     /* check whether operation succeeds = enough memory available*/
     if (FALSE == OrRectRegion(R,&Rect))
     {
-      DiposeRegion(R);
+      DisposeRegion(R);
       goto exit;
     }
 
@@ -145,7 +145,7 @@
          will have to split this up into several calls to the
          internal ClipBlit routine
       */
-      xs = XDest-xSrc;
+      xs = xDest-xSrc;
       ys = yDest-ySrc;
       if (xs < 0) xs = -xs;
       if (ys < 0) ys = -ys;
@@ -155,12 +155,13 @@
         width or height of the source area, then it is the more
         difficult case
       */
-      if (xs * 2 > xSize || ys * 2 > ySize)
+      if (xs * 2 > xSize || 
+          ys * 2 > ySize)
       {
         /* 
            In this case I use a special routine to copy the rectangle 
         */
-        //!!! missing
+        /* */                  
         
       }
       else
