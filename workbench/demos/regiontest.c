@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) {
 	    if ((win = OpenWindowTags(NULL,
 				     WA_IDCMP,	IDCMP_RAWKEY,
-				     WA_Height, 600,
+				     WA_Height, 400,
 				     WA_Width, 800,
 				     TAG_END))) {
 		doall();

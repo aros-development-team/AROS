@@ -19,7 +19,6 @@ FILES	:= \
 
 else
 FILES	:= \
-    cctest \
     childchild \
     childwindow \
     clippingtest \
@@ -38,13 +37,8 @@ FILES	:= \
     gtdemo \
     gtmultiselect \
     helloworld \
-    inquire \
     intuitext \
-    keymaptest \
-    layerstest \
-    librarytest \
     listfonts \
-    mathtest \
     menudemo \
     modelclassdemo \
     multiple_timers \
