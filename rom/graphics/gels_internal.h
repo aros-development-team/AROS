@@ -1,6 +1,14 @@
 #ifndef GELS_INTERNAL_H
 #define GELS_INTERNAL_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
 #include <graphics/gels.h>
 #include <exec/types.h>
 

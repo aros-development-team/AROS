@@ -1,6 +1,13 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
 #include <exec/types.h>
 #include <graphics/view.h>
-
 
 /*
 ** In case the representation of colors in the ColorTable of the color map
