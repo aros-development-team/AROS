@@ -109,7 +109,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
        that this is a HIDD bitmap and should be handled by the driver */
 
     if ( srcBitMap->Pad != 0 || destBitMap->Pad != 0 
-      || srcBitMap->Flags & BMF_AROS_DISPLAYED || destBitMap->Flags & BMF_AROS_DISPLAYED)
+      || srcBitMap->Flags & BMF_AROS_HIDD || destBitMap->Flags & BMF_AROS_HIDD)
     {
 	planecnt = driver_BltBitMap (srcBitMap, xSrc, ySrc
 	    , destBitMap, xDest, yDest
