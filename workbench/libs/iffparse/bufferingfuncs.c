@@ -260,7 +260,6 @@ BOOL SeekBuffer
     LONG offset_into_bigbuf,
 	  new_offset_into_bigbuf;
 
-
     /* Get the size of the buffers */
     bufnodesize  = buflist->bl_BufferNodeSize;
     bufnode	 = buflist->bl_CurrentNode;
@@ -273,9 +272,7 @@ BOOL SeekBuffer
        this will be substarction.*/
     new_offset_into_bigbuf = offset_into_bigbuf + offset;
 
-
     /* Are we seeking forwards, backwords or not at all ? */
-
     if (offset > 0)
     {
 	/* Forwards seek */
@@ -294,9 +291,11 @@ BOOL SeekBuffer
 		/* We have to jump to the next buffer in the list */
 		bufnode = (struct BufferNode*)bufnode->bn_Node.mln_Succ;
 
+#if 0
 		if (!bufnode->bn_Node.mln_Succ)
 		    /* Oops !! No more buffers to seek in */
 		    return (FALSE);
+#endif
 
 		offset -= left2seekinbuf;
 		bufnodenum ++;
@@ -344,9 +343,11 @@ BOOL SeekBuffer
 		/* We have to jump to the next buffer in the list */
 		bufnode = (struct BufferNode*)bufnode->bn_Node.mln_Pred;
 
+#if 0
 		if (bufnode->bn_Node.mln_Pred == NULL )
 		    /* Oops !! No more buffers to seek in */
 		    return (FALSE);
+#endif
 
 		offset -= left2seekinbuf;
 		bufnodenum --;
