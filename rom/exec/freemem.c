@@ -96,7 +96,7 @@
 #if MDEBUG
 	/* Add the size of mung walls and extra MemChunk room (for orig
 	allocsize)  around the block */
-	memoryBlock -= (MUNGWALL_SIZE + MEMCHUNK_TOTAL);
+	memoryBlock -= MUNGWALL_SIZE + MEMCHUNK_TOTAL;
 	byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
 #endif
 
@@ -114,8 +114,9 @@
 		    __t->tc_Node.ln_Name);\
 	}
 	
-	CHECK_WALL(memoryBlock + MEMCHUNK_TOTAL, MUNGWALL_SIZE);
-	CHECK_WALL(memoryBlock + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE);
+	CHECK_WALL((UBYTE *)memoryBlock + MEMCHUNK_TOTAL, 0xDB, MUNGWALL_SIZE);
+	CHECK_WALL((UBYTE *)memoryBlock + MEMCHUNK_TOTAL + MUNGWALL_SIZE + origsize, 0xDB,
+		MUNGWALL_SIZE + AROS_ROUNDUP2(origsize, MEMCHUNK_TOTAL) - origsize);
 
 	/* Fill block with weird stuff to esploit bugs in applications
 	 *
@@ -128,7 +129,7 @@
 	/* DOH! it doesn't work even this way. What's wrong???
 	 * 
 	 * if ((SysBase->TDNestCnt < 0) && (SysBase->IDNestCnt < 0))
-	 *	MUNGE_BLOCK(memoryBlock, byteSize, MEMFILL_FREE)
+	 *	MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
 	 */
 #endif
 

@@ -74,7 +74,6 @@
 {
     AROS_LIBFUNC_INIT
     struct Interrupt *lmh;
-    struct MemHandlerData lmhd={ byteSize,requirements,0 };
     APTR res = NULL;
 #if ENABLE_RT || MDEBUG
     ULONG origSize = byteSize;
@@ -93,13 +92,12 @@
        This all will look like this:
        
        [MEMCHUNK_FOR_EXTRA_STUFF][BEFORE-MUNGWALL][<alloced-memory-for-user>][AFTER_MUNGWALL]
-       
+ 
        The first ULONG in MEMCHUNK_FOR_EXTRA_STUFF is used to save the original alloc
        size (byteSize) param. So it is possible in FreeMem to check, if freemem size
        matches allocmem size or not.
-       
     */
-    
+ 
     byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
 #endif /* MDEBUG */
 
@@ -114,7 +112,6 @@
     for(;;)
     {
 	struct MemHeader *mh;
-	ULONG lmhr;
 
 	/* Loop over MemHeader structures */
 	mh=(struct MemHeader *)SysBase->MemList.lh_Head;
@@ -248,42 +245,48 @@
 	}
 
 	/* All memory headers done. Check low memory handlers. */
-	do
 	{
-	    /* Is there another one? */
-	    if(lmh->is_Node.ln_Succ==NULL)
-	    {
-		/* No. return 'Not enough memory'. */
-		Permit();
-		goto end;
-	    }
-	    /* Yes. Execute it. */
-	    lmhr = AROS_UFC3 (LONG, lmh->is_Code,
-		AROS_UFCA(struct MemHandlerData *,&lmhd,A0),
-		AROS_UFCA(APTR,lmh->is_Data,A1),
-		AROS_UFCA(struct ExecBase *,SysBase,A6)
-	    );
+	    ULONG lmhr;
+	    struct MemHandlerData lmhd={ byteSize,requirements,0 };
 
-	    /* Check returncode. */
-	    if(lmhr==MEM_TRY_AGAIN)
+	    do
 	    {
-		/* MemHandler said he did something. Try again. */
-		/* Is there any program that depends on this flag??? */
-		lmhd.memh_Flags|=MEMHF_RECYCLE;
-		break;
-	    }
-	    /* Nothing more to expect from this handler. */
-	    lmh=(struct Interrupt *)lmh->is_Node.ln_Succ;
-	    lmhd.memh_Flags&=~MEMHF_RECYCLE;
+		/* Is there another one? */
+		if(lmh->is_Node.ln_Succ==NULL)
+		{
+		    /* No. return 'Not enough memory'. */
+		    Permit();
+		    goto end;
+		}
 
-	/*
-	    If this handler did nothing at all there's no need
-	    to try the allocation. Try the next handler immediately.
-	*/
-	}while(lmhr==MEM_DID_NOTHING);
+		/* Yes. Execute it. */
+		lmhr = AROS_UFC3 (LONG, lmh->is_Code,
+		    AROS_UFCA(struct MemHandlerData *,&lmhd,A0),
+		    AROS_UFCA(APTR,lmh->is_Data,A1),
+		    AROS_UFCA(struct ExecBase *,SysBase,A6)
+		);
+
+		/* Check returncode. */
+		if(lmhr==MEM_TRY_AGAIN)
+		{
+		    /* MemHandler said he did something. Try again. */
+		    /* Is there any program that depends on this flag??? */
+		    lmhd.memh_Flags|=MEMHF_RECYCLE;
+		    break;
+		}
+		/* Nothing more to expect from this handler. */
+		lmh=(struct Interrupt *)lmh->is_Node.ln_Succ;
+		lmhd.memh_Flags&=~MEMHF_RECYCLE;
+
+	    /* If this handler did nothing at all there's no need
+	     * to try the allocation. Try the next handler immediately.
+	     */
+	    } while(lmhr==MEM_DID_NOTHING);
+	}
     }
 
 end:
+
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);
 #endif
@@ -291,26 +294,26 @@ end:
 #if MDEBUG
     if (res)
     {
-        /* Safe orig byteSize before wall (there is one MemChunk room before wall for such
-	   stuff. See above) */
-	
+        /* Save orig byteSize before wall (there is one MemChunk room before wall for such
+	 * stuff (see above).
+	 */
 	*(ULONG *)res = origSize;
+
+	/* Skip to the start of the pre-wall */
         res += MEMCHUNK_TOTAL;
 
-	/* Initialize walls */
-	MUNGE_BLOCK(res, MUNGWALL_SIZE, MEMFILL_WALL)
-	MUNGE_BLOCK(res - MEMCHUNK_TOTAL + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE, MEMFILL_WALL)
+	/* Initialize pre-wall */
+	BUILD_WALL(res, 0xDB, MUNGWALL_SIZE);
 
 	/* move over the block between the walls */
 	res += MUNGWALL_SIZE;
 
+	/* Fill the block with weird stuff to exploit bugs in applications */
 	if (!(requirements & MEMF_CLEAR))
-	{
-	    byteSize -= (MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL);
-	    
-	    /* Fill the block with weird stuff to exploit bugs in applications */
-	    MUNGE_BLOCK(res, byteSize, MEMFILL_ALLOC)
-	}
+	    MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize - MUNGWALL_SIZE * 2 - MEMCHUNK_TOTAL);
+
+	/* Initialize post-wall */
+	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
     }
 #endif /* MDEBUG */
 
