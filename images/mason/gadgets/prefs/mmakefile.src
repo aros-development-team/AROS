@@ -1,0 +1,17 @@
+include $(TOP)/config/make.cfg
+
+FILES := \
+    Test.png \
+    Revert.png \
+    Save.png \
+    Use.png \
+    Cancel.png
+
+#MM- themes-mason-images-gadgets : themes-mason-images-gadgets-preferences
+#MM themes-mason-images-gadgets-preferences : setup
+themes-mason-images-gadgets-preferences : files-copy
+
+%copy_files_q files=$(FILES) dst=$(AROS_THEMES)/Mason/Images/Gadgets/Preferences
+
+%common
+
