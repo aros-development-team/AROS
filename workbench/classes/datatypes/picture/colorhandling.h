@@ -4,7 +4,7 @@
 */
 
 #define CLIP(x) ((x)>0xff ? 0xff : ((x)<0x00 ? 0x00 : (x)))
-// #define MOD16(x) (x)
+#define MOD2(x) (((x)+1)&~1)
 #define MOD16(x) (((x)+15)&~15)
 
 struct HistEntry
@@ -19,6 +19,8 @@ BOOL AllocSrcBuffer( struct Picture_Data *pd, long width, long height, ULONG pix
 BOOL AllocDestBM( struct Picture_Data *pd, long width, long height, int depth );
 void FreeSource( struct Picture_Data *pd );
 void FreeDest( struct Picture_Data *pd );
+void InitGreyColTable( struct Picture_Data *pd );
+void InitRGBColTable( struct Picture_Data *pd );
 BOOL ConvertBitmap2Chunky( struct Picture_Data *pd );
 BOOL ConvertChunky2Bitmap( struct Picture_Data *pd );
 BOOL CreateMaskPlane( struct Picture_Data *pd );

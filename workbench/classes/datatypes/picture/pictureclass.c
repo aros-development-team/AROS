@@ -434,16 +434,13 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	    *(msg->opg_Storage)=(ULONG) &pd->DestColRegs;
 	    break;
 
-	case PDTA_ColorTable:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)&pd->ColTable));
-	    *(msg->opg_Storage)=(ULONG) &pd->ColTable;
-	    break;
-
 	case PDTA_AllocatedPens:
 	    D(bug("picture.datatype/OM_GET: Tag PDTA_AllocatedPens: Handled by PDTA_ColorTable2\n"));
 	case PDTA_ColorTable2:
-	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable2: 0x%lx\n", (long)&pd->ColTable2));
-	    *(msg->opg_Storage)=(ULONG) &pd->ColTable2;
+	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable2: Handled by PDTA_ColorTable\n"));
+	case PDTA_ColorTable:
+	    D(bug("picture.datatype/OM_GET: Tag PDTA_ColorTable: 0x%lx\n", (long)&pd->ColTable));
+	    *(msg->opg_Storage)=(ULONG) &pd->ColTable;
 	    break;
 
 	case PDTA_NumColors:
@@ -587,65 +584,8 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
     SizeY = MIN(NominalHeight - TopVert, domain->Height);
     D(bug("picture.datatype/GM_RENDER: Size X %ld Y %ld\n", SizeX, SizeY));
 
-#if 0
-    if( pd->DestBuffer )
-    {
-	if( pd->TrueColorDest )
-	{
-	    if( pd->TrueColorSrc )
-	    {
-		D(bug("picture.datatype/GM_RENDER: TrueColor source/dest, PixelFormat %ld\n", pd->DestPixelFormat));
-		if( !WritePixelArray( pd->DestBuffer,
-				    SrcX,
-				    SrcY,
-				    pd->DestWidthBytes,
-				    msg->gpr_RPort,
-				    DestX,
-				    DestY,
-				    SizeX,
-				    SizeY,
-				    pd->DestPixelFormat) )
-		{
-		    D(bug("picture.datatype/GM_RENDER: WritePixelArray failed !\n"));
-		    return FALSE;
-		}
-	    }
-	    else /* if(pd->TrueColorSrc) */
-	    {
-		D(bug("picture.datatype/GM_RENDER: Colormapped source, TrueColor dest\n"));
-		if( !WriteLUTPixelArray( pd->DestBuffer,
-				    SrcX,
-				    SrcY,
-				    pd->DestWidthBytes,
-				    msg->gpr_RPort,
-				    pd->ColTableXRGB,
-				    DestX,
-				    DestY,
-				    SizeX,
-				    SizeY,
-				    CTABFMT_XRGB8 ) )
-		{
-		    D(bug("picture.datatype/GM_RENDER: WriteLUTPixelArray failed !\n"));
-		    return FALSE;
-		}
-	    } /* else(pd->TrueColorSrc) */
-	}
-	else /* if(pd->TrueColorDest) */
-	{
-	    D(bug("picture.datatype/GM_RENDER: Colormapped chunky source, Colormapped dest\n"));
-	    WriteChunkyPixels( msg->gpr_RPort,
-			    DestX,
-			    DestY,
-			    DestX+SizeX-1,
-			    DestY+SizeY-1,
-			    pd->DestBuffer + SrcX + SrcY * pd->DestWidthBytes,
-			    pd->DestWidthBytes );
-	} /* else(pd->TrueColorDest) */
-    }
-#endif
     if( pd->DestBM )
     {
-	D(bug("picture.datatype/GM_RENDER: Blitting bitmap\n"));
         BltBitMapRastPort( pd->DestBM,
                           SrcX,
                           SrcY,
@@ -777,12 +717,10 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
             }
             if( pd->TrueColorDest )
             {
-                D(bug("picture.datatype/DTM_ASYNCLAYOUT: TrueColor src/dest mode; no remapping required\n"));
                 success = ConvertTC2TC( pd );
             }
             else
             {
-                D(bug("picture.datatype/DTM_ASYNCLAYOUT: TrueColor src, Colormapped dest mode\n"));
                 success = ConvertTC2CM( pd );
             }
         }
@@ -798,12 +736,10 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	    }
             if( pd->TrueColorDest )
             {
-                D(bug("picture.datatype/DTM_ASYNCLAYOUT: Colormapped src, TrueColor dest mode; no remapping required\n"));
                 success = ConvertCM2TC( pd );
             }
             else
             {
-                D(bug("picture.datatype/DTM_ASYNCLAYOUT: Colormapped src, Colormapped dest mode\n"));
                 success = ConvertCM2CM( pd );
             }
         } /* else(pd->TrueColorSrc) */
@@ -819,7 +755,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     ReleaseSemaphore( &si->si_Lock );   /* unlock object data */
     if( !success )
     {
-        D(bug("picture.datatype/DTM_ASYNCLAYOUT: Layout failed !\n"));
+        D(bug("picture.datatype/DTM_ASYNCLAYOUT: Layout failed during remapping !\n"));
 	return FALSE;
     }
 
@@ -905,29 +841,19 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
             switch( pixelformat )
             {
                 case PBPAFMT_GREY8:
-                    {
-                        int i, j;
-                        ULONG * colregs;
-
-                        j = 0;
-                        colregs = pd->SrcColRegs;
-                        for( i=0; i<256; i++ )
-                        {
-                            colregs[j++] = i<<24;
-                            colregs[j++] = i<<24;
-                            colregs[j++] = i<<24;
-                        }
-                    }
+		    InitGreyColTable( pd );
                     pixelbytes = 1;
                     break;
                 case PBPAFMT_LUT8:
                     pixelbytes = 1;
                     break;
                 case PBPAFMT_RGB:
+		    InitRGBColTable( pd );
                     pixelbytes = 3;
 		    pd->TrueColorSrc = TRUE;
                     break;
                 case PBPAFMT_ARGB:
+		    InitRGBColTable( pd );
                     pixelbytes = 4;
 		    pd->TrueColorSrc = TRUE;
                     break;
@@ -973,8 +899,6 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
         long line, lines;
         APTR srcstart;
         APTR deststart;
-//        UBYTE *src;
-//        ULONG *dest;
         long srcwidth, numbytes;
         long srcmod, destmod;
 
