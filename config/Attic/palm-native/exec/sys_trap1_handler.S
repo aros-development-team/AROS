@@ -24,3 +24,4 @@ jumptable:
 	dc.l	_sys_dispatch         // d7 = 0
 	dc.l	_sys_trap1_SetSR      // d7 = 4
 	dc.l	_sys_trap1_Supervisor // d7 = 8
+	dc.l	_sys_trap1_SuperState // d7 = 12

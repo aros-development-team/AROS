@@ -7,7 +7,10 @@
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
+#include <exec/memory.h>
 #include <asm/ptrace.h>
+#include "etask.h"
+#include "exec_util.h"
 
 /*****************************************************************************
 
@@ -57,23 +60,35 @@
 ******************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	ULONG * sp = (APTR)task->tc_SPReg;
-	struct pt_regs *pr=(struct pt_regs *)((ULONG)task->tc_SPReg - sizeof(struct pt_regs) - sizeof(APTR));
-	int i = 0;
 
-#warning Might need more args (SysBase)!
-	*sp = (ULONG)fallBack;
-
-	while (i < sizeof(struct pt_regs)) {
-		((char *)pr)[i] = 0;
-		i++;
+	struct pt_regs *regs;
+	
+	UBYTE *sp = (UBYTE *)task->tc_SPReg;
+	
+	/* Push fallBack address */
+	sp -= sizeof(APTR);
+	*(APTR *)sp = fallBack;
+	
+	if (!(task->tc_Flags & TF_ETASK)) {
+	  *(ULONG *)0x0bad0001=0;
+	  return FALSE;
 	}
-
-	pr->usp = sp;
-	pr->pc  = (ULONG)entryPoint;
-
-	task->tc_SPReg = (APTR)pr;
-
+	  
+	GetIntETask (task)->iet_Context = AllocTaskMem (task
+	    , SIZEOF_ALL_REGISTERS
+	    , MEMF_PUBLIC|MEMF_CLEAR
+	);
+	
+	if (!(regs  = (struct pt_regs *)GetIntETask(task)->iet_Context)) {
+	  *(ULONG *)0x0bad0003=0;
+	  return FALSE;
+	}
+	
+	regs->usp = sp;
+	regs->pc  = (ULONG)entryPoint;
+	
+	task->tc_SPReg = sp;
+	
 	return TRUE;
 	AROS_LIBFUNC_EXIT
 }

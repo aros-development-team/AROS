@@ -107,6 +107,13 @@
     /* This is moved into SysBase at the tasks's startup */
     task->tc_IDNestCnt=-1;
     task->tc_TDNestCnt=-1;
+    
+    task->tc_State = TS_ADDED;
+    task->tc_Flags = 0;
+    
+    task->tc_SigWait = 0;
+    task->tc_SigRecvd = 0;
+    task->tc_SigExcept = 0;
 
     /* Signals default to all system signals allocated. */
     if(task->tc_SigAlloc == 0)
@@ -121,74 +128,32 @@
     if(task->tc_TrapCode == NULL)
 	task->tc_TrapCode = SysBase->TaskTrapCode;
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE) || 1
+    if (task->tc_ExceptCode == NULL)
+        task->tc_ExceptCode=SysBase->TaskExceptCode;
+
     /*
 	If you can't to store the registers on the signal stack, you
 	must set this flag.
     */
     task->tc_Flags |= TF_ETASK;
-#endif
 
     /* Allocate the ETask structure if requested */
     if (task->tc_Flags & TF_ETASK)
     {
-	struct ETask *et;
-
-	/*
-	 *  We don't add this to the task memory, it isn't free'd by
-	 *  RemTask(), rather by somebody else calling ChildFree().
-	 *  Alternatively, an orphaned task will free its own ETask.
-	 */
-	task->tc_UnionETask.tc_ETask = AllocVec
-	(
-	    sizeof (struct IntETask),
-	    MEMF_ANY|MEMF_CLEAR
+	task->tc_UnionETask.tc_ETask = AllocTaskMem (task
+	    , sizeof (struct IntETask)
+	    , MEMF_ANY|MEMF_CLEAR
 	);
 
 	if (!task->tc_UnionETask.tc_ETask)
 	    return NULL;
 
-	et = (struct ETask *)task->tc_UnionETask.tc_ETask;
-	et->et_Parent = FindTask(NULL);
-	NEWLIST(&et->et_Children);
-
-	/* Initialise the message list */
-	NEWLIST(&et->et_TaskMsgPort.mp_MsgList);
-	et->et_TaskMsgPort.mp_Flags = PA_SIGNAL;
-	et->et_TaskMsgPort.mp_Node.ln_Type = NT_MSGPORT;
-	et->et_TaskMsgPort.mp_SigTask = task;
-	et->et_TaskMsgPort.mp_SigBit = SIGB_CHILD;
-
-	/* Initialise the trap fields */
-	et->et_TrapAlloc = SysBase->TaskTrapAlloc;
-	et->et_TrapAble = 0;
-
-#if 0
-	Forbid();
-	while(et->et_UniqueID == 0)
-	{
-	    /*
-	     *	Add some fuzz on wrapping. Its likely that the early numbers
-	     *	where taken by somebody else.
-	     */
-	    if(++SysBase->ex_TaskID == 0)
-		SysBase->exTaskID = 1024;
-
-	    Disable();
-	    if(FindTaskByID(SysBase->ex_TaskID, SysBase) == NULL)
-		et->et_UniqueID = SysBase->ex_TaskID;
-	    Enable();
-	}
-	Permit();
-#endif
-    }
-    else
-    {
-	task->tc_UnionETask.tc_ETrap.tc_ETrapAlloc = SysBase->TaskTrapAlloc;
-	task->tc_UnionETask.tc_ETrap.tc_ETrapAble = 0;
+	/* I'm the parent task */
+	GetETask(task)->et_Parent = FindTask(NULL);
     }
 
-    /* Get new stackpointer. Note, the doc says this MUST be initialised. */
+    /* Get new stackpointer. */
+    /* sp=task->tc_SPReg; */
     if (task->tc_SPReg==NULL)
 #if AROS_STACK_GROWS_DOWNWARDS
 	task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
@@ -196,11 +161,11 @@
 	task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
 #endif
 
-#if AROS_STACK_DEBUG
+#ifdef STACKSNOOP
     {
         UBYTE *startfill, *endfill;
-
-    #if AROS_STACK_GROWS_DOWNWARDS
+	
+    #if AROS_STACK_GROWS_DOWNWARDS	
 	startfill = (UBYTE *)task->tc_SPLower;
 	endfill   = ((UBYTE *)task->tc_SPReg) - 16;
     #else
@@ -212,20 +177,23 @@
 	{
 	    *startfill++ = 0xE1;
 	}
-
+	
     }
 #endif
 
     /* Default finalizer? */
-    if(finalPC == NULL)
-	finalPC = SysBase->TaskExitCode;
+    if(finalPC==NULL)
+	finalPC=SysBase->TaskExitCode;
 
     /* Init new context. */
     if (!PrepareContext (task, initialPC, finalPC))
     {
-	FreeVec(task->tc_UnionETask.tc_ETask);
+	FreeTaskMem (task, task->tc_UnionETask.tc_ETask);
 	return NULL;
     }
+
+    /* store sp */
+    /* task->tc_SPReg=sp; */
 
     /* Set the task flags for switch and launch. */
     if(task->tc_Switch)
@@ -253,6 +221,7 @@
 	is still active.) If the current task isn't of type TS_RUN it
 	is already gone.
     */
+
     if(task->tc_Node.ln_Pri>SysBase->ThisTask->tc_Node.ln_Pri&&
        SysBase->ThisTask->tc_State==TS_RUN)
     {
@@ -262,20 +231,32 @@
 	    SysBase->AttnResched|=0x80;
 	else
 	{
+#if 0
+	    /* Switches are allowed. Move the current task away. */
+	    //SysBase->ThisTask->tc_State=TS_READY;
+	    //Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+
+	    /* And force a reschedule. */
+	    Reschedule(task);
+//	    Supervisor(Exec_Switch);   //Switch();
+#else
+// This is the old way of doing it before most parts of this function were copied from the i386 version.
 	    /* Switches are allowed. Move the current task away. */
 	    SysBase->ThisTask->tc_State=TS_READY;
 	    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 	    /* And force a rescedule. */
 	    Switch();
+#endif
 	}
     }
 
     Enable();
-
+    
     ReturnPtr ("AddTask", struct Task *, task);
     AROS_LIBFUNC_EXIT
 } /* AddTask */
+
 
 /* Default finaliser. */
 void AROS_SLIB_ENTRY(TaskFinaliser,Exec)(void)

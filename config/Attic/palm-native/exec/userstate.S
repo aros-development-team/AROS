@@ -48,7 +48,7 @@
 
 AROS_SLIB_ENTRY(UserState,Exec):
 #ifndef DoRegisterCalls
-	move.l	$4,%a6         // Get SysBase
+	move.l	0x4.w,%a6      // Get SysBase
 	move.l  4(%ssp),%d0    // get sysStack
 #endif
 	/*

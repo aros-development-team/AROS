@@ -26,7 +26,7 @@ AROS_LH0(void, Switch,
     Disable();
     
     if( (this->tc_State != TS_RUN)
-		&& !(this->tc_Flags & TF_EXCEPT) )
+         && !(this->tc_Flags & TF_EXCEPT) )
     {
         /*      Its quite possible that they have interrupts Disabled(),
             we should fix that here, otherwise we can't switch. 
