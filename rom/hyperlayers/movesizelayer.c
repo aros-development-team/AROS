@@ -225,6 +225,9 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
     _l = _l->back;
   }
 
+  _SetRegion(&cutnewshape, l->visibleshape);
+  ClearRegion(&cutnewshape);
+
   /* 
    * Now make them visible again.
    */
@@ -248,6 +251,13 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
 
     if (IS_VISIBLE(_l))
     {
+      /*
+       * I must recalcualte the visible shape of
+       * every child layer here if the layer's size
+       * has changed. 
+       */
+      _SetRegion(_l->shape, _l->visibleshape);
+      AndRegionRegion(_l->parent->visibleshape, _l->visibleshape);
 #if 0
 kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
         __FUNCTION__);
@@ -255,9 +265,8 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
       ClearRegion(l->VisibleRegion);
       _ShowPartsOfLayer(_l, &r, LayersBase);
       
-      _SetRegion(_l->shape, &rtmp);
-      AndRegionRegion(_l->parent->shape, &rtmp);
-      ClearRegionRegion(&rtmp, &r);
+      
+      ClearRegionRegion(_l->visibleshape, &r);
       
     }
       
@@ -270,7 +279,7 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
    * its parent visible.
    */
   _SetRegion(l->VisibleRegion, &r);
-  ClearRegionRegion(&cutnewshape, &r);
+  ClearRegionRegion(l->visibleshape, &r);
   _l = l->back;
   lparent = l->parent;
     
@@ -281,7 +290,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
         __FUNCTION__);
 #endif
     if (IS_VISIBLE(_l) && 
-         (DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds) ||
+       (/* DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) || */
           DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
     {
       ClearRegion(_l->VisibleRegion);
@@ -307,15 +316,11 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     }
       
     if (IS_VISIBLE(_l))
-    {
-      _SetRegion(_l->shape, &rtmp);
-      AndRegionRegion(_l->parent->shape, &rtmp);
-      ClearRegionRegion(&rtmp, &r);
-    }  
+      ClearRegionRegion(_l->visibleshape, &r);
+
     _l = _l->back;
   }
 
-  ClearRegion(&cutnewshape);
   ClearRegion(&rtmp);
     
   /*  
