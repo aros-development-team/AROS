@@ -1208,7 +1208,7 @@ clean ::
 # a separate directory. In that case see make_prog_multi
 #
 
-%define make_prog_single dir=/A 
+%define make_prog_single dir=/A
 %make_prog_common dir=%(dir)
 
 %(dir)/% : $(OBJDIR)/%.o
@@ -1253,7 +1253,7 @@ clean ::
 #------------------------------------------------------------------------------
 # Common code that is used to build statically linked programs
 #
-%define make_prog_setup mmake=/A
+%define make_prog_setup mmake=/A startup=$(AROS_LIB)/startup.o
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
 #MM
 %(mmake)-clean : clean
@@ -1265,7 +1265,7 @@ CFLAGS  := $(TARGET_CFLAGS) $(USER_CFLAGS) $(STATIC_CFLAGS) $(INCLUDES) -I$(AROS
 LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
 
 %make_common_setup
-%make_use_linklibs
+%make_use_linklibs startup=%(startup)
 
 %end
 
@@ -1275,7 +1275,7 @@ LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
 #   be changed later on to support that kind of thing.
 #
 
-%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs=$(PRELIBS) postlibs= startup=$(LIBDIR)/startup.o
+%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs=$(PRELIBS) postlibs= startup=$(AROS_LIB)/startup.o
 %(libs) := -L$(LIBDIR) %(prelibs)
 %(deps) :=
 STARTUP := %(startup)
@@ -1321,12 +1321,12 @@ ifdef USE_HIDDSTUBS
 endif
 
 # USE_ROMLIB is a special one to say that this is a shared module, and it
-# should use the restricted c.lib, this currently the same as the normal
-# static c.lib - it may in the future have different functions from
-# amiga.lib, c.lib, m.lib and arossuport.lib
+# should use the restricted c.lib. Currently this includes the static parts
+# of the normal C lib, but in the future it may contain quite a bit more.
+
 ifdef USE_ROMLIB
-%(libs) := $(%(libs)) -larosc
-%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+%(libs) := $(%(libs)) -lrom
+%(deps) := $(%(deps)) $(LIBDIR)/librom.a
 endif
 
 ifdef USE_CLIB
@@ -1360,8 +1360,10 @@ endif
 # These must always be linked if we are NOT building a module,
 # otherwise strange things might happen.
 ifndef MODULE
+ifndef NO_AUTOINIT
 %(libs) := $(%(libs)) -lautoinit
 %(deps) := $(%(deps)) $(LIBDIR)/libautoinit.a
+endif
 endif
 
 %(libs) := $(%(libs)) %(postlibs)
@@ -1505,13 +1507,10 @@ endif
 # Use the old archtool to generate the files functions.[ch].
 #
 %define make_module_archtool
-ifneq ($(USE_CPAK),no)
 F_NAME := functions
 
 $(OBJDIR)/functions.c : $(ARCHIVE)
 	@$(ARCHTOOL) -s $@ $(ARCHIVE)
-
-endif
 
 # This version of $(OBJDIR)/functable.c will override the one later.
 # Especially with $(FUNCS) == ""...
