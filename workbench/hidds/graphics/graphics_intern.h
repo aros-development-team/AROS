@@ -35,6 +35,7 @@ struct HIDDBitMapData
     ULONG bytesPerPixel; /* bytes per pixel               */
     APTR  colorTab;      /* color table of the bitmap     */
     APTR  buffer;        /* content of the bitmap         */
+    HIDDT_Color *coltab;
 };
 
 
@@ -63,6 +64,7 @@ struct class_static_data
     Class                *gfxhiddclass; /* graphics hidd class    */
     Class                *bitmapclass;  /* bitmap class           */
     Class                *gcclass;      /* graphics context class */
+    Class		 *colormapclass; /* colormap class	  */
 };
 
 

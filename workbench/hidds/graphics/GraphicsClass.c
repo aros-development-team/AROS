@@ -19,6 +19,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
+#define SDEBUG 1
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -108,10 +109,10 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
     
     struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
-        {(IPTR (*)())hiddgfx_newgc,         moHidd_Gfx_NewGC},
-        {(IPTR (*)())hiddgfx_disposegc,     moHidd_Gfx_DisposeGC},
-        {(IPTR (*)())hiddgfx_newbitmap,     moHidd_Gfx_NewBitMap},
-        {(IPTR (*)())hiddgfx_disposebitmap, moHidd_Gfx_DisposeBitMap},
+        {(IPTR (*)())hiddgfx_newgc,         	moHidd_Gfx_NewGC},
+        {(IPTR (*)())hiddgfx_disposegc,     	moHidd_Gfx_DisposeGC},
+        {(IPTR (*)())hiddgfx_newbitmap,     	moHidd_Gfx_NewBitMap},
+        {(IPTR (*)())hiddgfx_disposebitmap, 	moHidd_Gfx_DisposeBitMap},
         {NULL, 0UL}
     };
     
@@ -184,6 +185,7 @@ void free_gfxhiddclass(struct class_static_data *csd)
     if(csd)
     {
         RemoveClass(csd->gfxhiddclass);
+	
         free_gcclass(csd);
         free_bitmapclass(csd);
         if(csd->gfxhiddclass) DisposeObject((Object *) csd->gfxhiddclass);

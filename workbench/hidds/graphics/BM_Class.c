@@ -22,6 +22,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
+#define SDEBUG 1
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -30,6 +31,23 @@
 static AttrBase HiddBitMapAttrBase = 0;
 
 /*** BitMap::New() ************************************************************/
+
+
+/* BitMap baseclass has the following behaviour:
+
+    It can allocate nondisplayable bitmaps, but not
+    displayable ones. (Determined by the aHidd_BitMap_Displayable (BOOL) attr).
+    If the bitmap is not displayable, then a suitable bitmap
+    will be initialized from memory by this baseclass.
+    If displayable, then the subclass(es) *MUST* take
+    care of initializing a bitmap. This may for example
+    be an X11 window for a x11gfx.hidd. Either way, this class
+    will initialize and store the width/height etc attrs.
+*/    
+
+    
+
+
 
 static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
@@ -84,8 +102,9 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
         if(data->displayable)
         {
-            /* no support for a displayable bitmap */
-            ok = FALSE;
+            /* no support for a displayable bitmap, 
+	    we don't allocate anything, but still exit cleanly */
+            ok = TRUE;
         }
         else
         {
@@ -140,7 +159,8 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
     /* free all on error */
     if(ok == FALSE)
     {
-        if(obj) DisposeObject(obj);
+        MethodID dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
+        if(obj) CoerceMethod(cl, obj, (Msg)&dispose_mid);
         obj = NULL;
     }
 
@@ -173,6 +193,10 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
                 plane++;
             }
         }
+    }
+    if (data->coltab)
+    {
+	 FreeVec(data->coltab);
     }
 
     FreeVec(data->buffer);
@@ -210,6 +234,48 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
     ReturnVoid("BitMap::Get");
 }
 
+
+/************* BitMap::SetColors() ******************************/
+#define UB(x) ((UBYTE *)x)
+static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
+{
+    /* Copy the colors into the internal buffer */
+    struct HIDDBitMapData *data = INST_DATA(cl, o);
+    ULONG copy_size;
+
+    EnterFunc(bug("GfxHIDD.CM::SetColors()\n"));
+    
+    /* Subclass has initialized HIDDT_Color->pixelVal field and such.
+       Just copy it into the colortab.
+    */
+    if (!data->coltab)
+    {
+        /* For now palette is hardcoded to 256 colors */
+        ULONG coltab_size;
+	coltab_size = UB(&data->coltab[255]) - UB(&data->coltab[0]);
+	data->coltab = AllocVec(coltab_size, MEMF_ANY);
+	if (data->coltab)
+	{
+	    ULONG i;
+	    /* Init to unset, red = 0xFFFF */
+	    for (i = 0; i < 256; i ++)
+	    {
+	    	data->coltab[i].red = 0xFFFF;
+	    }
+	    
+	}
+	else
+   	    ReturnBool("GfxHIDD.CM::SetColors", TRUE);
+
+    }
+    
+    copy_size = UB(&data->coltab[msg->numColors]) - UB(&data->coltab[0]);
+
+    /* Copy supplied colors into internal colortab [ CopyMem(src, dest, size) ] */
+    CopyMem(msg->colors, &data->coltab[msg->firstColor],  copy_size);
+    
+    ReturnBool("GfxHIDD.CM::SetColors", TRUE);
+}
 
 /*** BitMap::PrivateSet() *****************************************************/
 
@@ -262,7 +328,7 @@ static VOID bitmap_private_set(Class *cl, Object *obj, struct pHidd_BitMap_Priva
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 1
+#define NUM_BITMAP_METHODS 2
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -277,6 +343,7 @@ Class *init_bitmapclass(struct class_static_data *csd)
     struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
         {(IPTR (*)())bitmap_private_set, moHidd_BitMap_PrivateSet},
+        {(IPTR (*)())bitmap_setcolors, 	 moHidd_BitMap_SetColors},
         {NULL, 0UL}
     };
     

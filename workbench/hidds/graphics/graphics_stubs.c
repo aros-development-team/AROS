@@ -2,7 +2,7 @@
     (C) 1998 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Stubs for graphics, bitmap and gc hidd class
+    Desc: Stubs for graphics, bitmap, gc and colormap hidd class
     Lang: english
 */
 
@@ -30,6 +30,17 @@
 
 #undef OOPBase
 #define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(obj)))->UserData)
+
+
+/* A small utility function for using varargs when setting attrs */
+
+IPTR SetAttrsTags(Object *obj, IPTR tag1,...)
+{
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+    retval = SetAttrs(obj, AROS_SLOWSTACKTAGS_ARG(tag1));
+    AROS_SLOWSTACKTAGS_POST
+
+}
 
 /***************************************************************/
 
@@ -87,6 +98,22 @@ void HIDD_Gfx_DisposeBitMap(Object *obj, Object *bitMap)
     p.bitMap = bitMap;
 
     DoMethod(obj, (Msg) &p);
+}
+/***************************************************************/
+
+BOOL HIDD_BM_SetColors (Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_SetColors p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColors);
+        
+    p.mID	 = mid;
+    p.colors	 = colors;
+    p.firstColor = firstColor;
+    p.numColors	 = numColors;
+
+    return DoMethod(obj, (Msg) &p);
 }
 /***************************************************************/
 
@@ -316,5 +343,3 @@ VOID HIDD_GC_Clear (Object *obj)
 
     DoMethod(obj, (Msg) &p);
 }
-/***************************************************************/
-

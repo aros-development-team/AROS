@@ -52,8 +52,8 @@ enum
     moHidd_Gfx_NewGC = 0,       /* Its only allowd to use these methods   */
     moHidd_Gfx_DisposeGC,       /* to create and to dispose a GC and      */
     moHidd_Gfx_NewBitMap,       /* bitmap because only the graphics-hidd  */
-    moHidd_Gfx_DisposeBitMap    /* class knows which gc- and bitmap-class */
-                                /* works together.                        */
+    moHidd_Gfx_DisposeBitMap   /* class knows which gc- and bitmap-class */
+				/* works together.                        */
 };
 
 
@@ -91,12 +91,26 @@ struct pHidd_Gfx_DisposeBitMap
 };
 
 
+
 /**** BitMap definitions ******************************************************/
+
+
+	/* Types */
+	
+typedef struct
+{
+   UWORD	red;
+   UWORD	green;
+   UWORD	blue;
+   
+} HIDDT_Color;
+
 
 enum
 {
     /* Methods for a bitmap */
 
+    moHidd_BitMap_SetColors,
     moHidd_BitMap_PrivateSet
 };
 
@@ -154,6 +168,15 @@ struct pHidd_BitMap_PrivateSet
     struct TagItem *attrList;
 };
 
+struct pHidd_BitMap_SetColors
+{
+    MethodID	mID;
+    HIDDT_Color	*colors;
+    ULONG	firstColor;
+    ULONG	numColors;
+};
+
+
 
 /**** Graphics context definitions ********************************************/
 
@@ -190,7 +213,7 @@ enum
     aoHidd_GC_Font,                /* [.SG] Current font                       */
     aoHidd_GC_ColorMask,           /* [.SG] Prevents some color bits from      */
                                    /*       changing                           */
-    aoHidd_GC_LinePattern,         /* [.SG] Pattern foor line drawing          */
+    aoHidd_GC_LinePattern,         /* [.SG] Pattern for line drawing          */
     aoHidd_GC_PlaneMask,           /* [.SG] Shape bitmap                       */
     
     num_Hidd_GC_Attrs
@@ -286,6 +309,7 @@ struct pHidd_GC_Clear
     MethodID    mID;
 };
 
+
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
 Object * HIDD_Gfx_NewGC        (Object *hiddGfx, ULONG gcType, struct TagItem *tagList);
@@ -293,10 +317,12 @@ VOID     HIDD_Gfx_DisposeGC    (Object *hiddGfx, Object *gc);
 Object * HIDD_Gfx_NewBitMap    (Object *hiddGfx, struct TagItem *tagList);
 VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
 
+
 VOID     HIDD_BM_BltBitMap   (Object obj, Object dest, WORD srcX, WORD srcY, WORD destX, WORD destY, WORD width, WORD height);
 BOOL     HIDD_BM_Show        (Object obj);
 VOID     HIDD_BM_Move        (Object obj, WORD x, WORD y);
 BOOL     HIDD_BM_DepthArrange(Object obj, Object bm);
+BOOL	 HIDD_BM_SetColors	(Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG numcolors);
 
 ULONG    HIDD_GC_WritePixelDirect(Object *obj, WORD x, WORD y, ULONG val);
 ULONG    HIDD_GC_ReadPixel       (Object *obj, WORD x, WORD y);
@@ -315,5 +341,6 @@ VOID     HIDD_GC_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWOR
 VOID     HIDD_GC_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
 VOID     HIDD_GC_FillSpan        (Object *obj);
 VOID     HIDD_GC_Clear           (Object *obj);
+
 
 #endif /* HIDD_GRAPHICS_H */

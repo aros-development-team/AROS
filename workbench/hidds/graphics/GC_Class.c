@@ -22,9 +22,9 @@
 #include "graphics_intern.h"
 
 #undef  SDEBUG
-#define SDEBUG 0
+#define SDEBUG 1
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg);
@@ -103,7 +103,7 @@ static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg)
     struct TagItem *tag, *tstate;
     ULONG  idx;
 
-    EnterFunc(bug("GC::Set()"));
+    EnterFunc(bug("GC::Set()\n"));
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -1071,7 +1071,7 @@ static VOID gc_drawfilltext_q(Class *cl, Object *obj, struct pHidd_GC_DrawText *
 {
     struct HIDDGCData *data = INST_DATA(cl, obj);
 
-    EnterFunc(bug("GC::DrawFillText_Q()"));
+    EnterFunc(bug("GC::DrawFillText_Q()\n"));
 
     D(bug("Sorry, not implemented yet\n"));
 
@@ -1080,7 +1080,7 @@ static VOID gc_drawfilltext_q(Class *cl, Object *obj, struct pHidd_GC_DrawText *
 
 
 #undef  SDEBUG
-#define SDEBUG 0
+#define SDEBUG 1
 #undef  DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
@@ -1121,7 +1121,7 @@ static VOID gc_fillspan_q(Class *cl, Object *obj, struct pHidd_GC_DrawText *msg)
 {
     struct HIDDGCData *data = INST_DATA(cl, obj);
 
-    EnterFunc(bug("GC::FillSpan_Q()"));
+    EnterFunc(bug("GC::FillSpan_Q()\n"));
 
     D(bug("Sorry, not implemented yet\n"));
 
@@ -1168,7 +1168,7 @@ static VOID gc_clear_q(Class *cl, Object *obj, struct pHidd_GC_Clear *msg)
     WORD  x, y;
     ULONG width, height;
 
-    EnterFunc(bug("GC::Clear_Q()"));
+    EnterFunc(bug("GC::Clear_Q()\n"));
 
     GetAttr(data->bitMap, aHidd_BitMap_Width, &width);
     GetAttr(data->bitMap, aHidd_BitMap_Height, &height);
