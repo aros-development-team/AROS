@@ -64,8 +64,6 @@ static const UBYTE version[] = VERSION_STRING;
 extern void debugmem(void);
 extern void idleTask(struct ExecBase *);
 
-static struct AROSSupportBase AROSSupportBase;
-
 /**************** GLOBAL SYSBASE ***************/
 #ifndef AROS_CREATE_ROM
 struct ExecBase * SysBase = NULL;
@@ -79,20 +77,22 @@ struct ExecBase * SysBase = NULL;
 #undef kprintf
 #undef rkprintf
 #undef vkprintf
-struct Library * PrepareAROSSupportBase (void)
+struct Library * PrepareAROSSupportBase (struct ExecBase * SysBase)
 {
-    AROSSupportBase.kprintf = (void *)kprintf;
-    AROSSupportBase.rkprintf = (void *)rkprintf;
-    AROSSupportBase.vkprintf = (void *)vkprintf;
+	struct AROSSupportBase * AROSSupportBase;
+	AROSSupportBase = AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR);
+	AROSSupportBase->kprintf = (void *)kprintf;
+	AROSSupportBase->rkprintf = (void *)rkprintf;
+	AROSSupportBase->vkprintf = (void *)vkprintf;
 
 #warning FIXME Add code to read in the debug options
 
-    return (struct Library *)&AROSSupportBase;
+	return (struct Library *)AROSSupportBase;
 }
 
-void AROSSupportBase_SetStdOut (void * stdout)
+void AROSSupportBase_SetStdOut (struct AROSSupportBase * AROSSupportBase, void * stdout)
 {
-    AROSSupportBase.StdOut = stdout;
+	AROSSupportBase->StdOut = stdout;
 }
 
 void _aros_not_implemented(char *X)

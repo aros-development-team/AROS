@@ -28,8 +28,7 @@
 
 extern void *ExecFunctions[];
 
-//extern struct ExecBase *SysBase; /* Get rid of this */
-extern struct Library * PrepareAROSSupportBase (void);
+extern struct Library * PrepareAROSSupportBase (struct ExecBase *);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 extern void AROS_SLIB_ENTRY(CacheClearU,Exec)();
 extern void AROS_SLIB_ENTRY(TrapHandler,Exec)();
@@ -60,6 +59,11 @@ extern void *stderr;
 struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 {
     ULONG neg, i;
+    /* 
+       basically this does not get anything useful, yet, but still
+       I need to have SysBase defined here...
+     */
+    AROS_GET_SYSBASE
 
     neg = AROS_ALIGN(LIB_VECTSIZE * EXEC_NUMVECT);
 
@@ -134,7 +138,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->TaskSigAlloc = 0xFFFF;
     SysBase->TaskTrapAlloc = 0;
 
-    SysBase->DebugAROSBase = PrepareAROSSupportBase();
+    SysBase->DebugAROSBase = PrepareAROSSupportBase(SysBase);
 
     return SysBase;
 }
