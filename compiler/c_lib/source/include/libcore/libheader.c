@@ -1,5 +1,5 @@
 /*
-**	$VER: libheader.c 37.14 (13.8.97)
+**	$VER: libheader.c 37.15 (14.8.97)
 **
 **	This file must be compiled and must be passed as the first
 **	object to link to the linker.
@@ -60,10 +60,10 @@ extern AROS_LH0 (BPTR, ExpungeLib,
     struct LibHeader *, lh, 3, LibHeader
 );
 
-struct Resident ALIGNED ROMTag =     /* do not change */
+struct Resident const ALIGNED ROMTag =	   /* do not change */
 {
-    RTC_MATCHWORD,  /* This is a romtag */
-    &ROMTag,	    /* This is a valid romtag */
+    RTC_MATCHWORD,		    /* This is a romtag */
+    (struct Resident *)&ROMTag,     /* This is a valid romtag */
     (APTR) &LIBEND,
     RTF_AUTOINIT,
     VERSION_NUMBER,
