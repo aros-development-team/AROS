@@ -281,7 +281,7 @@ VOID parallelunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_
 }  
 
 /******* ParallelUnit::Stop() **********************************/
-VOID parallelunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
+VOID parallelunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_Stop *msg)
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 
@@ -387,7 +387,7 @@ AROS_UFH3(void, parallelunit_write_more_data,
 
 
 #define NUM_ROOT_METHODS 2
-#define NUM_PARALLELUNIT_METHODS 2
+#define NUM_PARALLELUNIT_METHODS 5
 
 OOP_Class *init_parallelunitclass (struct class_static_data *csd)
 {
