@@ -323,7 +323,6 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	    {
 		SetABPenDrMd(msg->imp_RPort, pens[BACKGROUNDPEN], pens[BACKGROUNDPEN], JAM1);
 	    } /* if */
-
 	    RectFill(msg->imp_RPort,
 		left + loffset,
 		top  + toffset,
@@ -477,7 +476,7 @@ AROS_UFH3S(IPTR, dispatch_frameiclass,
 	    struct FrameIData *fid = INST_DATA(cl, retval);
 
 	    /* set some defaults */
-	    fid->fid_EdgesOnly = TRUE;
+	    fid->fid_EdgesOnly = FALSE;
 	    fid->fid_Recessed  = FALSE;
 	    fid->fid_FrameType = FRAME_DEFAULT;
 
