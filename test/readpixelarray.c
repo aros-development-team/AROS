@@ -199,6 +199,9 @@ static void action(void)
         getevents();
 	
     } /* while(!Keys[KC_ESC]) */
+
+    if (buf)
+	FreeVec(buf);
 }
 
 /***********************************************************************************/
