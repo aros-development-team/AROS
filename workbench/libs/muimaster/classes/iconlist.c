@@ -210,6 +210,7 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 	ty = _mtop(obj)  - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
 	
         // FIXME: this isn't a very optimal to make an outline...
+        SetSoftStyle(_rp(obj), FSF_BOLD, FSF_BOLD);
         SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
         Move(_rp(obj), tx - 1, ty - 1); Text(_rp(obj), icon->entry.label, nameLength);
         Move(_rp(obj), tx - 1, ty    ); Text(_rp(obj), icon->entry.label, nameLength);
