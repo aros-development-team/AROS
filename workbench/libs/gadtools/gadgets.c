@@ -264,7 +264,7 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
     };
     
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -323,7 +323,7 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     };
 
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -391,7 +391,7 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     
    
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -501,7 +501,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 
     	
     /* Parse tags */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	    
@@ -728,7 +728,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     EnterFunc(bug("makescroller(stdgadtags=%p, vi=%p, taglist = %p)\n",
     		stdgadtags, vi, taglist));
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -953,7 +953,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     
    
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -1037,7 +1037,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     
    
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -1142,7 +1142,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     EnterFunc(bug("makelistview()\n"));
     
     /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
     	IPTR tidata = tag->ti_Data;
     	
