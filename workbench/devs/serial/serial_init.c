@@ -630,6 +630,15 @@ AROS_LH1(void, beginio,
 
     /*******************************************************************/
 
+    case CMD_START:
+    break;
+
+    /*******************************************************************/
+    case CMD_STOP:
+    break;
+
+    /*******************************************************************/
+
     case SDCMD_QUERY:
 
       SU->su_Status = 0;
@@ -772,6 +781,31 @@ AROS_LH1(void, beginio,
       */
       if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
         ReplyMsg(&ioreq->IOSer.io_Message);
+    break;
+
+    /*******************************************************************/
+
+    case SDCMD_BREAK:
+      if (0 != (ioreq->io_SerFlags & SERF_QUEUEDBRK))
+      {
+        /* might have to queue that request */
+        if (0 != (SU->su_Status & STATUS_WRITES_PENDING))
+        {
+kprintf("%s: Queuing SDCMD_BREAK! This probably doesn't work correctly!\n");
+          PutMsg(&SU->su_QWriteCommandPort,
+                 (struct Message *)ioreq);
+          ioreq->IOSer.io_Flags &= ~IOF_QUICK;
+          break;
+        }
+      }
+      
+      /* Immediately execute this command */
+      ioreq->IOSer.io_Error = HIDD_SerialUnit_SendBreak(SU->su_Unit, 
+                                                        SU->su_BrkTime);
+
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
+      
     break;
 
     /*******************************************************************/
