@@ -26,7 +26,8 @@ FILES = \
 	rtdemo \
 	shadowborder \
 	sift \
-	simpleimage
+	simpleimage \
+	mathtest
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)

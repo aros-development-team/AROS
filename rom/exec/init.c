@@ -44,6 +44,7 @@ extern const struct Resident Graphics_resident;
 extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
 extern const struct Resident Console_resident;
+extern const struct Resident Mathffp_resident;
 extern void InitCore(void);
 
 #define MEMSIZE 1024*1024
@@ -261,15 +262,15 @@ printf ("SysBase = %p\n", SysBase);
 
 #ifndef _AMIGA
     if (mmap((APTR)0, getpagesize(), PROT_READ|PROT_WRITE,
-        MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0) != (APTR)0)
+	MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0) != (APTR)0)
       {
-        perror("mmap: Can't map page zero");
-        exit(10);
+	perror("mmap: Can't map page zero");
+	exit(10);
       }
     *(APTR *)4 = SysBase;
     if (mprotect((APTR)0, getpagesize(), PROT_READ)) {
-        perror("mprotect");
-        exit(10);
+	perror("mprotect");
+	exit(10);
     }
 #endif
 
@@ -355,6 +356,7 @@ printf ("SysBase = %p\n", SysBase);
 
     (void) InitResident((struct Resident *)&Graphics_resident,0);
     (void) InitResident((struct Resident *)&Intuition_resident,0);
+    (void) InitResident((struct Resident *)&Mathffp_resident,0);
 
     {
 	struct consolebase

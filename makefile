@@ -46,6 +46,7 @@ DEP_LIBS= $(LIBAMIGAOS) \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
 	-lintuition -lgraphics -ldos -lexec -lutility \
+	-lmathffp \
 	-lamiga -larossupport
 
 # BEGIN_DESC{localmakevar}
