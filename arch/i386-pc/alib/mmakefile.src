@@ -12,6 +12,6 @@ include $(TOP)/config/make.cfg
 ## 	-$(RM) $(TESTS)
 ## 
 ## $(LIBDIR)/%.o : %.c
-## 	%compile_q cmd=$(SYS_CC)
+## 	%compile_q cmd=$(TARGET_CC)
 ## 
 ## %common
