@@ -8,7 +8,6 @@ FORCE_DEPLIBS 	:=
 FORCE_LIBS 		:= $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a $(MOSLIB)/libstring.a \
 				  $(MOSLIB)/libmath.a $(MOSLIB)/libc.a $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
 TARGET_CFLAGS	:= -O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__
-USE_CPAK 		:= no
 endif
 
 FILES	:=  af_fontdescr_io memoryfontfunc diskfontfunc \

@@ -176,18 +176,6 @@ endif
 #------------------------------------------------------------------------------
 
 
-#-------------------------------------------------------------------------
-# Use cpak to generate the files functions.[ch]
-#
-%define rule_module_collect files=/A dir=.
-
-%(dir)/functions.c %(dir)/functions.h : $(addsuffix .c,%(files))
-	%mkdir_q %(dir)
-	@$(CPAK) -d %(dir) %(files)
-%end
-#------------------------------------------------------------------------------
-
-
 #------------------------------------------------------------------------------
 # Rule to generate a functable
 #
@@ -1319,25 +1307,6 @@ endif
 %end
 
 #------------------------------------------------------------------------------
-%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) functions=$(FUNCTIONS) deplibs="$(DEPLIBS)"
-	@$(ECHO) "Creating library %(to)..."
-	@%(ar) %(to) %(from)
-	@%(ranlib) %(to)
-	@$(RM) $(RMLIB)
-
-$(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-%compile_q opt="$(CFLAGS) -I$(OBJDIR)"
-
-$(OBJDIR)/functions.c : mmakefile.src $(foreach f,%(functions),$(f).c)
-	@$(CPAK) %(functions)
-%mkdir_q $(OBJDIR)
-	@$(MV) functions.c functions.h $(OBJDIR)
-
-$(OBJDIR)/functions.d : $(OBJDIR)/functions.c
-%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
-%end
-
-#------------------------------------------------------------------------------
 # Same but more noisy
 %define mklib ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
 	@$(ECHO) "Creating library %(to)..."
@@ -1643,98 +1612,6 @@ $(OBJDIR)/%.d : %.c
 %end
 
 #------------------------------------------------------------------------------
-# version of genromlib that allows you to use cpak and generates inline
-%define genromlib_finline flags=$(CFLAGS) cc=$(CC) files=$(FILES) functions=$(FUNCTIONS) hasrt=
-ifndef INIT_FILE
-INIT_FILE := $(LIBNAME)_init
-endif
-ifndef END_FILE
-END_FILE := $(OBJDIR)/endtag
-endif
-ifndef OBJDIR
-OBJDIR := $(GENDIR)/$(CURDIR)
-endif
-ifndef INITFUNC
-INITFUNC := $(OBJDIR)/$(INIT_FILE).o
-endif
-ifndef ENDFUNC
-ENDFUNC := $(END_FILE).o
-endif
-ifndef OSMODULE
-OSMODULE := $(LIBNAME).library
-endif
-ifndef NO_FUNCTABLE
-SYS_FILES := $(SYS_FILES) $(INIT_FILE) functable
-else
-SYS_FILES := $(SYS_FILES) $(INIT_FILE)
-endif
-ifndef OBJS
-OBJS := $(foreach f,%(files) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-endif
-SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
-ifndef DEPLIBS
-DEPLIBS :=
-endif
-ifndef DEPS
-DEPS := $(foreach f,$(INIT_FILE) functions $(FILES) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
-endif
-ALL_OBJS := $(SYS_OBJS) $(OBJS) $(OBJDIR)/functions.o $(ENDFUNC)
-
-$(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
-	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
-	@$(ECHO) "Building $(notdir $@) ..."
-	@%(cc) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(OSMODULE).map -L$(LIBDIR) \
-	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(COMPILER_LIBS) \
-	    -o $@ 2>&1 | tee $(OSMODULE).err
-	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
-	@$(STRIP) $@
-
-setup ::
-%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
-
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) \
-	    $(LIB) $(OSMODDIR)/$(OSMODULE)
-
-# Collect all functions in a linklib for fast linking
-$(LIB) : $(ALL_OBJS)
-%mklib_f from=$(ALL_OBJS) functions=%(functions)
-
-$(OBJDIR)/%.o : %.c
-%compile_q
-
-$(OBJDIR)/%.o : $(OBJDIR)/%.c
-%compile_q opt="$(CFLAGS) -I$(OBJDIR)"
-
-%libdefs_rule
-
-ifndef NO_FUNCTABLE
-ifndef FUNCTABLE_SRCS
-FUNCTABLE_SRCS := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
-endif
-
-%mkfunctable_q
-endif
-
-%mkendtag_q
-
-$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
-
-ifneq (,$(ADDITIONAL_OBJS))
-$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
-	@$(ECHO) "Error: The precompiled object $@ did not exist."
-	@exit 1
-endif
-
-$(OBJDIR)/%.d : %.c
-%mkdepend_q
-
-# Generate include files
-%genlibincludesinline hasrt=%(hasrt)
-
-%end
-
-#------------------------------------------------------------------------------
 %define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
 #MM includes-generate : setup-clib
 includes-generate :: setup includes-setup $(OBJDIR)/headers.stamp \
@@ -1899,75 +1776,6 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 	@$(FOR) file in %(files) ; do \
 	    $(ECHO) >> $(GENDIR)/config.files "not $$file" ; \
 	done
-%end
-
-#------------------------------------------------------------------------------
-%define genlib_cpak hasrt=
-ifndef LIBPOST
-  LIBPOST := library
-endif
-ifndef DESTDIR
-  DESTDIR := $(SLIBDIR)
-endif
-ifndef BASENAME
-  BASENAME := $(ULIBNAME)
-endif
-
-SLIB	      := $(DESTDIR)/$(LIBNAME).$(LIBPOST)
-LIB	      := $(LIBDIR)/lib$(LIBNAME).a
-OBJDIR	      := $(GENDIR)/$(CURDIR)
-INIT_FILE     := $(LIBNAME)_init
-END_FILE      := $(OBJDIR)/endtag
-INITFUNC      := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC       := $(END_FILE).o
-SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
-OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
-DEPS          := $(DEPS) $(foreach f,$(INIT_FILE) functable functions $(FILES) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
-
-$(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
-	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(COMPILER_LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
-	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
-	@$(STRIP) $@
-
-$(LIB) : $(OBJS)
-	@$(ECHO) "Adding functions to $(notdir $@) ..."
-	@$(AR) $@ $(OBJS)
-	@$(RANLIB) $@
-
-$(OBJDIR)/functions.c : mmakefile.src $(foreach f,$(FUNCTIONS),$(f).c)
-	@$(CPAK) $(FUNCTIONS)
-%mkdir_q $(OBJDIR)
-	@$(MV) functions.c functions.h $(OBJDIR)
-
-ALL_FUNCTIONS := $(FUNCTIONS)
-%genlibincludesinline hasrt=%(hasrt)
-
-$(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-%compile_q opt="$(CFLAGS) -I$(OBJDIR) -I."
-
-$(OBJDIR)/functions.d : $(OBJDIR)/functions.c
-%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
-
-$(OBJDIR)/%.o : %.c
-%compile_q
-
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-
-%mkfunctable_q
-
-%mkendtag_q
-
-$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
-
-%libdefs_rule
-
-$(OBJDIR)/%.d : %.c
-%mkdepend_q
-
-%include_deps
-
 %end
 
 #------------------------------------------------------------------------------
