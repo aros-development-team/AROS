@@ -59,6 +59,7 @@
        app task and not Intuition.
        
     */
+    DEBUG_REFRESHWINDOW(dprintf("RefreshWindow: win %p req %p\n", win, req));
        
     AROS_LIBFUNC_EXIT
     

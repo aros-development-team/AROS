@@ -25,8 +25,10 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 
+#if 0
 #define SDEBUG 0
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include "gadtools_intern.h"
@@ -61,7 +63,10 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
     tags[3].ti_Data = (IPTR) stdgadtags;
 
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
-
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
     return obj;
 }
 
@@ -97,6 +102,10 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
     	return (NULL);
 	
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
 
     ReturnPtr("makecheckbox()", struct Gadget *, obj);
 }
@@ -121,6 +130,7 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
 	{TAG_MORE	, (IPTR)NULL	}  /* 5 */
     };
 
+    EnterFunc(bug("makecycle()\n"));
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCY_Labels, FALSE, taglist);
@@ -140,7 +150,12 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
 	
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
-    return obj;
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
+
+    ReturnPtr("makecycle()", struct Gadget *, obj);
 }
 
 /****************************************************************************************/
@@ -152,7 +167,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem *taglist)
 {
     struct IClass *cl;
-    struct Gadget *gad;
+    struct Gadget *obj;
     int labels = 0;
     STRPTR *labellist;
     struct TagItem *tag, tags[] =
@@ -236,9 +251,14 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     if (!cl)
     	return (NULL);
 	
-    gad = (struct Gadget *) NewObjectA(cl, NULL, tags);
+    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
-    return gad;
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
+
+    return obj;
 }
 
 /****************************************************************************************/
@@ -294,6 +314,11 @@ struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
     	return (NULL);
 
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
 
     return obj;
 }
@@ -359,6 +384,11 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     if (!cl)
     	return (NULL);
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
 
     return (obj);
 }
@@ -428,6 +458,11 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     	return (NULL);
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
+
     return  (obj);
 }
 
@@ -463,7 +498,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	{GTSL_Level	, 0		},
     	{PGA_Freedom	, FREEHORIZ	},
 	{PGA_Borderless	, TRUE		},
-	{PGA_NewLook	, TRUE		},
+	{PGA_NewLook	, FALSE		},
 	{GA_Bounds	, (IPTR)&bbox	},
 	{GA_FollowMouse	, TRUE		},
     	{TAG_MORE	, (IPTR)NULL	}
@@ -479,10 +514,11 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	 {GTNM_Format		, (IPTR)NULL	},
     	 {GTNM_Justification	, GTJ_LEFT	},
 	 {GTA_Text_DispFunc	, (IPTR)NULL	},
-	 {GA_Previous		, (IPTR)NULL	},
+	 {GA_Next		, (IPTR)NULL	},
 	 {GA_DrawInfo		, (IPTR)NULL	},
 	 {GTNM_Number		, 0		},
 	 {GTA_GadgetKind	, SLIDER_KIND	},
+	 {GA_Previous		, (IPTR)NULL	},
 	 {TAG_DONE				}
     };
     STRPTR lformat = NULL;
@@ -494,7 +530,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     Class *slidercl;
     struct Gadget *slidergad = NULL, *levelgad = NULL;
 
-    /* open neede classes */
+    /* open needed classes */
     slidercl = makesliderclass(GadToolsBase);
     if (!slidercl)
     	return (NULL);
@@ -558,6 +594,8 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     if (!slidergad)
     	return (NULL);
 
+    slidergad->GadgetType |= GTYP_GADTOOLS;
+
     if (lformat || lmaxlen || lmaxpixellen)
     {
 	WORD x, y;
@@ -571,7 +609,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 	     {TAG_DONE			}
 	};
 	    
-    	/* Set som defaults */
+    	/* Set some defaults */
     	if (!lformat)
     	    lformat = "%ld";
     	if (!lmaxlen)
@@ -635,6 +673,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	ltags[8].ti_Data = (IPTR)slidergad;
     	ltags[9].ti_Data = (IPTR)vi->vi_dri;
     	ltags[10].ti_Data = (IPTR)level;
+	ltags[12].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
 
 	textcl = maketextclass(GadToolsBase);
     	if (!textcl)
@@ -649,11 +688,14 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	    DisposeObject((Object *)slidergad);
     	    return (NULL);
     	}
+	levelgad->GadgetType |= GTYP_GADTOOLS;
     	
     	/* Set up a notification from the slider to the level */
     	lntags[0].ti_Data = (IPTR)levelgad;
     	lntags[1].ti_Data = (IPTR)slider2level;
     	SetAttrsA((Object *)slidergad, lntags);
+
+	return (levelgad);
     	    
     } /* if (slider should have a level attached) */
     
@@ -697,7 +739,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	{GA_Immediate	, TRUE		},
 	{GTA_GadgetKind	, SCROLLER_KIND	},
 	{PGA_Borderless	, TRUE		},
-	{PGA_NewLook	, TRUE		},
+	{PGA_NewLook	, FALSE		},
 	{GA_Bounds	, (IPTR) &bbox	},
 	{GA_FollowMouse	, TRUE		},
 	{TAG_MORE	, (IPTR)NULL	}
@@ -708,7 +750,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
  
     
     UWORD freedom = stags[3].ti_Data; /* default */
-    WORD arrowdim = -1, arrowkind = SCROLLER_KIND;
+    WORD arrowdim = 0 /* -1*/, arrowkind = SCROLLER_KIND;
     BOOL relverify, immediate;
     ULONG scr_dim_tag;
     
@@ -745,11 +787,15 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     /* if there is a bounding box the label position
        will be calculated based on this box and not
        the gadget coords */
+
+    DEBUG_CREATESCROLLER(bug("makescroller: arrowdim %ld\n", arrowdim));
        
     bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
     bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
     bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
     bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+
+    DEBUG_CREATESCROLLER(bug("makescroller: left %ld top %ld width %ld height %ld\n", bbox.Left, bbox.Top, bbox.Width, bbox.Height));
 
     stags[12].ti_Data = (IPTR)stdgadtags;
     
@@ -757,12 +803,16 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
     if (arrowdim == -1)
     {
-    	if (freedom == FREEVERT)
+ 	DEBUG_CREATESCROLLER(bug("makescroller: default arrowdim\n"));
+   	if (freedom == FREEVERT)
 	{
 	    arrowdim = GetTagData(GA_Width, 16, stdgadtags);
+	    DEBUG_CREATESCROLLER(bug("makescroller: freevert arrowdim %ld\n", arrowdim));
 	} else {
 	    arrowdim = GetTagData(GA_Height, 16, stdgadtags);
+	    DEBUG_CREATESCROLLER(bug("makescroller: freehoriz arrowdim %ld\n", arrowdim));
 	}
+	DEBUG_CREATESCROLLER(bug("makescroller: arrowdim %ld\n", arrowdim));
     }
     
     scr_dim_tag = ((freedom == FREEVERT) ? GA_Height : GA_Width);
@@ -786,6 +836,11 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
     if (!scroller)
     	return (NULL);
+
+    scroller->GadgetType |= GTYP_GADTOOLS;
+
+    DEBUG_CREATESCROLLER(bug("makescroller: scroller gadget 0x%lx scroller Width %ld Height %ld\n",scroller,scroller->Width,scroller->Height));
+    DEBUG_CREATESCROLLER(bug("makescroller: scroller nextgadget 0x%lx\n",scroller->NextGadget));
     
     if (arrowdim) /* Scroller has arrows ? */
     {
@@ -799,12 +854,13 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    {GA_Height		, 0		},
     	    {GTA_Arrow_Type	, 0		},
     	    {GA_DrawInfo	, (IPTR)NULL	},
-    	    {GA_Previous	, (IPTR)NULL	},
+    	    {GA_Next	    	, (IPTR)NULL	},
     	    {GTA_Arrow_Scroller	, (IPTR)NULL	},
     	    {GA_RelVerify	, TRUE		},
     	    {GA_Immediate	, TRUE		},
     	    {GA_ID		, 0		},
 	    {GTA_GadgetKind	, arrowkind	},
+	    {GA_Previous	, (IPTR)NULL	},
     	    {TAG_DONE				}
     	};
     	struct TagItem tellscrollertags[] =
@@ -817,6 +873,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	atags[5].ti_Data = (IPTR)vi->vi_dri;    /* Set GA_DrawInfo */
     	atags[6].ti_Data = (IPTR)scroller;	/* Set GA_Previous */
     	atags[7].ti_Data = (IPTR)scroller;	/* Set GTA_Arrow_Scroller */
+	atags[12].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
 
     	/* These must be the same as for scroller */
 /*    	atags[8].ti_Data = (IPTR)relverify;
@@ -830,16 +887,23 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    
     	if (freedom == FREEVERT)
     	{
-    	    D(bug("Freedom=FREEVERT\n"));
+	    DEBUG_CREATESCROLLER(bug("makescroller: Freedom=FREEVERT\n"));
     	    atags[0].ti_Data = scroller->LeftEdge - BORDERPROPSPACINGX;
     	    atags[1].ti_Data = scroller->TopEdge + BORDERPROPSPACINGY + scroller->Height;
     	    atags[2].ti_Data = scroller->Width + BORDERPROPSPACINGX * 2;
     	    atags[3].ti_Data = arrowdim;
     	    atags[4].ti_Data = UPIMAGE;
     	    
+	    DEBUG_CREATESCROLLER(bug("makescroller: Width %ld Height %ld\n",atags[2].ti_Data,atags[3].ti_Data));
+
     	    arrow_dec = NewObjectA(arrowcl, NULL, atags);
     	    if (!arrow_dec)
     	    	goto failure;
+
+	    arrow_dec->GadgetType |= GTYP_GADTOOLS;
+
+	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
+	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec nextgadget 0x%lx\n",arrow_dec->NextGadget));
     	    
     	    ((ULONG)atags[1].ti_Data) += arrowdim;
     	    atags[4].ti_Data = DOWNIMAGE;
@@ -848,21 +912,32 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    arrow_inc = NewObjectA(arrowcl, NULL, atags);
     	    if (!arrow_inc)
     	    	goto failure;
+
+	    arrow_inc->GadgetType |= GTYP_GADTOOLS;
+
+	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc gadget 0x%lx\n",arrow_inc));
+	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc nextgadget 0x%lx\n",arrow_inc->NextGadget));
     	    
     	}
     	else
     	{
-    	    D(bug("Freedom=FREEHORIZ\n"));
+	    DEBUG_CREATESCROLLER(bug("makescroller: Freedom=FREEHORIZ\n"));
 
     	    atags[0].ti_Data = scroller->LeftEdge + scroller->Width + BORDERPROPSPACINGX;
     	    atags[1].ti_Data = scroller->TopEdge - BORDERPROPSPACINGY;
     	    atags[2].ti_Data = arrowdim;
     	    atags[3].ti_Data = scroller->Height + BORDERPROPSPACINGY * 2;
     	    atags[4].ti_Data = LEFTIMAGE;
+
+	    DEBUG_CREATESCROLLER(bug("makescroller: Width %ld Height %ld\n",atags[3].ti_Data,atags[2].ti_Data));
     	    
     	    arrow_dec = NewObjectA(arrowcl, NULL, atags);
     	    if (!arrow_dec)
     	    	goto failure;
+
+	    arrow_dec->GadgetType |= GTYP_GADTOOLS;
+
+	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
     	    
     	    ((ULONG)atags[0].ti_Data) += arrowdim;
     	    atags[4].ti_Data = RIGHTIMAGE;
@@ -872,13 +947,19 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    if (!arrow_inc)
     	    	goto failure;
     	    	
+	    arrow_inc->GadgetType |= GTYP_GADTOOLS;
+
+	    DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc gadget 0x%lx\n",arrow_inc));
     	    	
     	} /* if (scroller is FREEVERT or FREEHORIZ) */
     	
 	tellscrollertags[0].ti_Data = (IPTR)arrow_dec;
 	tellscrollertags[1].ti_Data = (IPTR)arrow_inc;
 	
+	DEBUG_CREATESCROLLER(bug("makescroller: tell scroller about arrows\n"));
 	SetAttrsA(scroller, tellscrollertags);
+
+	ReturnPtr ("makescroller", struct Gadget *, arrow_inc);
 	
     } /* if (scroller should have arrows attached) */
     
@@ -979,6 +1060,10 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     	return (NULL);
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
 
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
     return  (obj);
 }
 
@@ -1062,7 +1147,10 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     if (!cl)
     	return (NULL);
     obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
-
+    if (obj)
+    {
+	obj->GadgetType |= GTYP_GADTOOLS;
+    }
     return  (obj);
 }
 
@@ -1097,8 +1185,10 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     WORD scroller_width = 16; /* default */
     
     struct TagItem *lv_width_tag, *lv_height_tag;
-    WORD lv_width, lv_height /*, viewheight */;
-    
+    WORD lv_width, lv_height;
+#if CORRECT_LISTVIEWHEIGHT
+    WORD viewheight;
+#endif
     WORD ysize, totalitemheight = 0;
     
     struct TagItem *tag, lvtags[] =
@@ -1182,10 +1272,9 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     /* If not set allready, set Spacing */
     if (lvtags[9].ti_Data == 0)
     	lvtags[9].ti_Data = LV_DEF_INTERNAL_SPACING;
-    	
-    D(bug("item ysize: %d\n", ysize));
-    
-    
+
+    DEBUG_CREATELISTVIEW(bug("makelistview: item ysize %ld\n", ysize));
+    	     
     /* Find the dimension specific tags */
     lv_width_tag  = FindTagItem(GA_Width,  stdgadtags);
     lv_height_tag = FindTagItem(GA_Height, stdgadtags);
@@ -1222,25 +1311,26 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 	EG(showselgad)->LeftEdge       = EG(showselgad)->BoundsLeftEdge + BORDERSTRINGSPACINGX;
 	EG(showselgad)->TopEdge        = EG(showselgad)->BoundsTopEdge  + BORDERSTRINGSPACINGY;
 	
-    	D(bug("Showselected gadget specified"));
+	D(bug("makelistview: Showselected gadget specified"));
 
     }
     
 			/* GTLV_ItemHeight + LAYOUTA_Spacing */
     totalitemheight = lvtags[5].ti_Data + lvtags[9].ti_Data;
-    
-    #if 0 /* stegerg: I think it looks better without this adjustment. Think of
-             GTLV_ShowSelected and aligning with other gadgets */
+
+#if CORRECT_LISTVIEWHEIGHT    
+ /* stegerg: I think it looks better without this adjustment. Think of
+    GTLV_ShowSelected and aligning with other gadgets */
     
     /* Adjust listview height so that an exact number of items fits in it */
     viewheight = lv_height - (2 * LV_BORDER_Y);
     lv_height -= (viewheight % totalitemheight);
     
-    #endif
+#endif
     
     /* Reinsert the modified dimension attrs into the listview taglist */
     
-    D(bug("Dimension passed to listview: w=%d, h=%d\n", lv_width, lv_height));
+    D(bug("makelistview: Dimension passed to listview: w=%d, h=%d\n", lv_width, lv_height));
 
     lv_width_tag->ti_Data  = (IPTR)lv_width;
     lv_height_tag->ti_Data = (IPTR)lv_height;
@@ -1250,8 +1340,8 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     cl = makelistviewclass(GadToolsBase);
     if (cl)
     {
-    	D(bug("Listview class opened\n"));
-    	lvgad = (struct Gadget *)NewObjectA(cl, NULL, lvtags);
+ 	D(bug("makelistview: Listview class opened\n"));
+   	lvgad = (struct Gadget *)NewObjectA(cl, NULL, lvtags);
     	if (lvgad)
         {
     	    struct TagItem scr_stdtags[] =
@@ -1260,9 +1350,10 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 	   	{GA_Top		, 0L		},
 	    	{GA_Width	, 0L		},
 	    	{GA_Height	, 0L		},
-	    	{GA_Previous	, (IPTR)NULL	},
+	    	{GA_Next	, (IPTR)NULL	},
 	    	{GA_ID		, 0L		},
 	    	{GA_DrawInfo	, (IPTR)NULL	},
+		{GA_Previous	, (IPTR)NULL	},
 	    	{TAG_DONE			}
             };
         
@@ -1277,8 +1368,12 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 		{GTA_Scroller_ScrollerKind	, LISTVIEW_KIND		},
             	{TAG_DONE						}
             };
+
+	    lvgad->GadgetType |= GTYP_GADTOOLS;
         
-            D(bug("Listview gadget created: %p\n", lvgad));
+            D(bug("makelistview: Listview gadget created: %p\n", lvgad));
+	    D(bug("makelistview: scroller_width %ld\n",scroller_width));
+
     	    /* Create a scroller object to use with the listviev */
     	    scr_stdtags[0].ti_Data = lvgad->LeftEdge + lvgad->Width  - 1 + SCROLLER_SPACING;
     	    scr_stdtags[1].ti_Data = lvgad->TopEdge;
@@ -1287,35 +1382,50 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	    scr_stdtags[4].ti_Data = (IPTR)lvgad;
     	    scr_stdtags[5].ti_Data = lvgad->GadgetID;
     	    scr_stdtags[6].ti_Data = (IPTR)vi->vi_dri;
+	    scr_stdtags[7].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
     	
     	    scrollergad = makescroller(GadToolsBase, scr_stdtags, vi, scr_specialtags);
     	    if (scrollergad)
     	    {
-    	    	struct TagItem lvset_tags[] = {{GTA_Listview_Scroller, (IPTR)NULL}, {TAG_DONE, }};
+		struct TagItem lvset_tags[] =
+		{
+		    {GTA_Listview_Scroller, (IPTR)NULL	},
+		    {TAG_DONE,				}
+		};
     	    	struct TagItem scrnotify_tags[] =
     	    	{
     	    	    {ICA_TARGET	, (IPTR)NULL	},
     	    	    {ICA_MAP	, (IPTR)NULL	},
     	    	    {TAG_DONE	 		}
     	    	};
-
-                D(bug("Scroller gadget created: %p\n", scrollergad));
+    	    	struct Gadget *prop_of_scrollergad;
+		
+		D(bug("makelistview: Scroller gadget created: %p\n", scrollergad));
                 
+		/* the scrollergadget is a multigadget gadget: arrowinc->arrowdec->prop */
+		#warning This relies on scroller gadget to always contain arrow gadgets
+		#warning If this ever changes the line below must be updated.
+		prop_of_scrollergad = scrollergad->NextGadget->NextGadget;
+		
 		scrollergad->Activation &= ~GACT_FOLLOWMOUSE;
 		    	    
     	    	/* Tell the listview about the scroller and the showselgad */
-    	    	lvset_tags[0].ti_Data = (IPTR)scrollergad;
+		DEBUG_CREATELISTVIEW(bug("makelistview: tell listview about scroller\n"));
+    	    	lvset_tags[0].ti_Data = (IPTR)prop_of_scrollergad;
     	    	SetAttrsA((Object *)lvgad, lvset_tags);
     	    	
     	    	/* Tell the scroller to notify the listview when its PGA_Top attribute changes */
+		DEBUG_CREATELISTVIEW(bug("makelistview: tell scroller about notification\n"));
     	    	scrnotify_tags[0].ti_Data = (IPTR)lvgad;
     	    	scrnotify_tags[1].ti_Data = (IPTR)scroller2lv;
     	    	
-    	    	SetAttrsA((Object *)scrollergad, scrnotify_tags);
+    	    	SetAttrsA((Object *)prop_of_scrollergad, scrnotify_tags);
     	    	
-    		ReturnPtr ("makelistview", struct Gadget *, lvgad);
+    		ReturnPtr ("makelistview", struct Gadget *, scrollergad);
     	    }
-    	    
+
+ 	    DisposeObject(lvgad);
+   	    
     	} /* if (lvgad created) */
     	
     } /* if (listviewclass initialized) */

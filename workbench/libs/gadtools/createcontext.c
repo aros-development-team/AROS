@@ -58,7 +58,9 @@
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase_intern *,GadToolsBase)
 
     struct GT_ContextGadget *rc;
-    
+
+    DEBUG_CREATECONTEXT(dprintf("CreateContext: glistptr 0x%lx\n", glistpointer));
+ 
     rc = (struct GT_ContextGadget *)AllocMem(sizeof(struct GT_ContextGadget), MEMF_PUBLIC | MEMF_CLEAR);
     if (rc)
     {
@@ -69,6 +71,8 @@
     }
     
     *glistpointer = (struct Gadget *)rc;
+
+    DEBUG_CREATECONTEXT(dprintf("CreateContext: return 0x%lx\n", rc));
     
     return (struct Gadget *)rc;
 

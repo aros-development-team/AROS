@@ -50,6 +50,8 @@
 
     struct Gadget 	*lastgad = NULL, *nextgad = NULL;
 
+    DEBUG_FREEGADGETS(dprintf("FreeGadgets: glist 0x%lx\n", glist));
+
     if (!glist)
 	return;
 
@@ -60,6 +62,8 @@
 	{
 	    if ((glist->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
 	    {	
+		DEBUG_FREEGADGETS(dprintf("FreeGadgets: free gadget 0x%lx\n", glist));
+
 	        /* must check this, because arrowclass uses GA_LabelImage! */
 		if ((glist->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT)
 		{		
@@ -75,6 +79,7 @@
 		{
 		    /* This is a GadTools Context Gadget */
 		    
+		    DEBUG_FREEGADGETS(dprintf("FreeGadgets: free context 0x%lx\n", glist));
 		    FreeMem(glist, sizeof(struct GT_ContextGadget));
 		}
 		else if ( (((struct GT_GenericGadget *)glist)->magic  == GENERIC_MAGIC) &&
@@ -82,8 +87,13 @@
 		{
 		    /* This is a GadTools Generic Kind Gadget */
 		    
+		    DEBUG_FREEGADGETS(dprintf("FreeGadgets: free generic 0x%lx\n", glist));
 		    freeitext(GTB(GadToolsBase), ((struct GT_GenericGadget *)glist)->itext);
 		    FreeMem(glist, sizeof(struct GT_GenericGadget));
+		}
+		else
+		{
+		    DEBUG_FREEGADGETS(dprintf("FreeGadgets: bad gadget 0x%lx\n", glist));
 		}
 		
 	    } /* if ((glist->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) else ... */
@@ -91,6 +101,7 @@
 	} /* if (glist->GadgetType & GTYP_GADTOOLS) */
 	else
 	{
+	    DEBUG_FREEGADGETS(dprintf("FreeGadgets: skip non-gadtools 0x%lx\n", glist));
 	    if (lastgad != NULL)
 		lastgad->NextGadget = glist;
 	    lastgad = glist;
@@ -100,6 +111,8 @@
 
     if (lastgad != NULL)
 	lastgad->NextGadget = NULL;
+
+    DEBUG_FREEGADGETS(dprintf("FreeGadgets: done\n"));
 
     AROS_LIBFUNC_EXIT
 } /* FreeGadgets */

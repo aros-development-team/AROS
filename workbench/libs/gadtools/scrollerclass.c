@@ -13,6 +13,7 @@
 #include <proto/dos.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
 #include <intuition/cghooks.h>
@@ -66,12 +67,19 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 
     struct ScrollerData *data = INST_DATA(cl, o);
 
+    D(bug("scroller_set(cl 0x%lx o 0x%lx msg 0x%lx)\n",cl,o,msg));
+
     tags[3].ti_Data = (IPTR)msg->ops_AttrList;
     
     /* Get old values */
     DoSuperMethod(cl, o, OM_GET, PGA_Total, 	&(tags[0].ti_Data));
     DoSuperMethod(cl, o, OM_GET, PGA_Top, 	&(tags[1].ti_Data));
     DoSuperMethod(cl, o, OM_GET, PGA_Visible, 	&(tags[2].ti_Data));
+
+    D(bug("scroller_set: Old Total %ld Top %ld Visible %ld\n",
+		tags[0].ti_Data,
+		tags[1].ti_Data,
+		tags[2].ti_Data));
 
     tstate = msg->ops_AttrList;
     
@@ -85,14 +93,17 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 		break;
 
     	     case GTSC_Total:
+		D(bug("scroller_set: GTSC_Total %ld\n",tag->ti_Data));
     	     	tags[0].ti_Data  = tag->ti_Data;
     	     	break;
 
     	     case GTSC_Top:
+		D(bug("scroller_set: GTSC_Top %ld\n",tag->ti_Data));
 		tags[1].ti_Data  = tag->ti_Data;
 		break;
     	     	
     	     case GTSC_Visible:
+		D(bug("scroller_set: GTSC_Visible %ld\n",tag->ti_Data));
             	tags[2].ti_Data  = tag->ti_Data;
             	break;
             	
@@ -293,18 +304,22 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
 
     IPTR retval;
 
+    D(bug("dispatch_scrollerclass: cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
     switch (msg->MethodID)
     {
 	case OM_NEW:
+	    D(bug("dispatch_scrollerclass: OM_NEW\n"));
 	    retval = scroller_new(cl, o, (struct opSet *) msg);
 	    break;
 
 	case OM_DISPOSE:
+	    D(bug("dispatch_scrollerclass: OM_DISPOSE\n"));
 	    retval = scroller_dispose(cl, o, msg);
 	    break;
 	
 	case OM_UPDATE:
 	case OM_SET:
+	    D(bug("dispatch_scrollerclass: OM_SET\n"));
 	    retval = scroller_set(cl, o, (struct opSet *) msg);
 	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
 	     * because it would circumvent the subclass from fully overriding it.
@@ -327,18 +342,22 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
 	    break;
 
 	case OM_GET:
+	    D(bug("dispatch_scrollerclass: OM_GET\n"));
 	    retval = scroller_get(cl, o, (struct opGet *)msg);
     	    break;
 
 	case GM_RENDER:
+	    D(bug("dispatch_scrollerclass: OM_RENDER\n"));
     	    retval = scroller_render(cl, o, (struct gpRender *)msg);
 	    break;
 
 	default:
+	    D(bug("dispatch_scrollerclass: gate..\n"));
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
     }
 
+    D(bug("dispatch_scrollerclass: retval 0x%lx\n",retval));
     return retval;
 
     AROS_USERFUNC_EXIT
