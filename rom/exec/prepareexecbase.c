@@ -96,6 +96,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->ResourceList.lh_Type = NT_RESOURCE;
     NEWLIST(&SysBase->DeviceList);
     SysBase->DeviceList.lh_Type = NT_DEVICE;
+    NEWLIST(&SysBase->IntrList);
+    SysBase->IntrList.lh_Type = NT_INTERRUPT;
     NEWLIST(&SysBase->LibList);
     SysBase->LibList.lh_Type = NT_LIBRARY;
     ADDHEAD(&SysBase->LibList, &SysBase->LibNode.lib_Node);
