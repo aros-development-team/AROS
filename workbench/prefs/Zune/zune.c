@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/utility.h>
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -85,13 +86,55 @@ void close_libs(void)
     close_muimaster();
 }
 
+struct Hook hook_standard;
+
 static Object *app;
 static Object *open_menuitem;
 static Object *append_menuitem;
 static Object *saveas_menuitem;
 static Object *aboutzune_menuitem;
 static Object *quit_menuitem;
+
 static Object *main_wnd;
+static Object *main_page_list;
+static Object *main_page_group; /* contains the selelected group */
+static Object *main_page_space; /* a space object */
+
+struct page_entry
+{
+    char *name;
+    Object *group;  /* The group which should be is displayed, maybe NULL */
+
+    int (*init)(struct page_entry *); /* this function initializes the group, maybe NULL */
+};
+
+struct page_entry main_page_entries[] =
+{
+    {"Info",NULL,NULL},
+    {"System",NULL,NULL},
+    {"Windows",NULL,NULL},
+};
+
+/****************************************************************
+ Our standard hook function, for easy call backs
+*****************************************************************/
+__saveds static __asm void hook_func_standard(register __a0 struct Hook *h, register __a1 ULONG * funcptr)
+{
+    void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+    if (func) func(funcptr + 1);
+}
+
+/****************************************************************
+ The display function for the page listview
+*****************************************************************/
+__saveds __asm void main_page_list_display(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct page_entry *entry)
+{
+    if (entry)
+    {
+        strings[0] = entry->name;
+    }
+}
+
 
 /****************************************************************
  Allocalte resources for gui
@@ -102,6 +145,11 @@ int init_gui(void)
     Object *use_button;
     Object *test_button;
     Object *cancel_button;
+
+    static struct Hook page_display_hook;
+
+    hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
+    page_display_hook.h_Entry = (HOOKFUNC)main_page_list_display;
 
     app = ApplicationObject,
 	MUIA_Application_Menustrip, MenuitemObject,
@@ -120,20 +168,45 @@ int init_gui(void)
     	    MUIA_Window_Title, "Zune - Preferences",
 	    MUIA_Window_Activate, TRUE,
 
-    	    WindowContents, HGroup,
-    	    	Child, save_button = MakeButton("Save"),
-    	    	Child, use_button = MakeButton("Use"),
-    	    	Child, test_button = MakeButton("Test"),
-    	    	Child, cancel_button = MakeButton("Cancel"),
+    	    WindowContents, VGroup,
+    	    	Child, HGroup,
+		    Child, ListviewObject,
+			MUIA_Listview_List, main_page_list = ListObject,
+			    InputListFrame,
+			    MUIA_List_DisplayHook, &page_display_hook,
+			    End,
+			End,
+		    Child, main_page_group = VGroup,
+			Child, main_page_space = HVSpace,
+		        End,
+		    End,
+    	    	Child, HGroup,
+		    Child, save_button = MakeButton("Save"),
+		    Child, use_button = MakeButton("Use"),
+    	    	    Child, test_button = MakeButton("Test"),
+    	    	    Child, cancel_button = MakeButton("Cancel"),
+    	    	    End,
 		End,
     	    End,
     	End;
 
     if (app)
     {
+    	int i;
+
 	DoMethod(main_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(quit_menuitem, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+	for (i=0;i<(sizeof(main_page_entries)/sizeof(main_page_entries[0]));i++)
+	{
+	    struct page_entry *p = &main_page_entries[i];
+	    if (p->init) p->init(p);
+	    DoMethod(main_page_list,MUIM_List_InsertSingle,p,MUIV_List_Insert_Bottom);
+	}
+
+	/* Activate first entry */
+	set(main_page_list,MUIA_List_Active,0);
 
 	return 1;
     }
