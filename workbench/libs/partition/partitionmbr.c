@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -310,6 +310,7 @@ struct TagItem *tag;
 		tag = findTagItem(PT_POSITION, taglist);
 		if (tag)
 		{
+
 			pos = tag->ti_Data;
 			entry = &((struct MBR *)root->table->data)->pcpt[pos];
 			tag = findTagItem(PT_ACTIVE, taglist);
@@ -318,7 +319,14 @@ struct TagItem *tag;
 			else
 				entry->status = 0;
 			tag = findTagItem(PT_TYPE, taglist);
-			entry->type = tag ? tag->ti_Data : 0;
+			if (tag)
+			{
+			struct PartitionType *ptype = tag->ti_Data;
+
+				entry->type = ptype->id[0];
+			}
+			else
+				entry->type = 0;
 			PartitionMBRSetDosEnvec(root, entry, de);
 			ph = PartitionMBRNewHandle(PartitionBase,	root, pos, entry);
 			if (ph)
@@ -417,7 +425,12 @@ LONG PartitionMBRGetPartitionAttrs
 			CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
 			break;
 		case PT_TYPE:
-			*((LONG *)taglist[0].ti_Data) = (LONG)data->entry->type;
+			{
+			struct PartitionType *ptype = taglist[0].ti_Data;
+
+				ptype->id[0] = (LONG)data->entry->type;
+				ptype->id_len = 1;
+			}
 			break;
 		case PT_POSITION:
 			*((LONG *)taglist[0].ti_Data) = (LONG)data->position;
@@ -454,7 +467,11 @@ LONG PartitionMBRSetPartitionAttrs
 			}
 			break;
 		case PT_TYPE:
-			data->entry->type = (UBYTE)taglist[0].ti_Data;
+			{
+			struct PartitionType *ptype = taglist[0].ti_Data;
+
+				data->entry->type = ptype->id[0];
+			}
 			break;
 		case PT_POSITION:
 			if (taglist[0].ti_Data != data->position)
