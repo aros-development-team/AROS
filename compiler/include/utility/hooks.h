@@ -20,9 +20,9 @@
 struct Hook
 {
     struct MinNode  h_MinNode;
-    IPTR          (*h_Entry)();     /* Main entry point */
-    IPTR          (*h_SubEntry)();  /* Secondary entry point */
-    APTR            h_Data;         /* Whatever you want */
+    APTR	  (*h_Entry)();     /* Main entry point */
+    APTR	  (*h_SubEntry)();  /* Secondary entry point */
+    APTR	    h_Data;	    /* Whatever you want */
 };
 
 /* You can use this if you want for casting function pointers. */
@@ -34,9 +34,9 @@ typedef IPTR (*HOOKFUNC)(struct Hook *, APTR, APTR);
     The callback hook is invoked with the following parameters, which
     on an Amiga/m68k are passed in the following registers:
 
-    A0  -   pointer to the Hook data structure
-    A2  -   pointer to Hook specific data ("object")
-    A1  -   pointer to Hook parameters ("message")
+    A0	-   pointer to the Hook data structure
+    A2	-   pointer to Hook specific data ("object")
+    A1	-   pointer to Hook parameters ("message")
 
     When the Hook is invoked, control is passed to the h_Entry function.
     This function MUST be defined in the following manner for correct
@@ -65,12 +65,12 @@ typedef IPTR (*HOOKFUNC)(struct Hook *, APTR, APTR);
     A sample stub (in new Motorola m68k syntax):
 
     _HookEntry:
-	move.l  a1,-(sp)
-	move.l  a2,-(sp)
-	move.l  a0,-(sp)
-	move.l  (h_SubEntry,a0),a0
-	jsr     (a0)
-	lea     (12,sp),sp
+	move.l	a1,-(sp)
+	move.l	a2,-(sp)
+	move.l	a0,-(sp)
+	move.l	(h_SubEntry,a0),a0
+	jsr	(a0)
+	lea	(12,sp),sp
 	rts
 
     There is a suitable function defined in amiga.lib called HookEntry
