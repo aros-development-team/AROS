@@ -22,6 +22,8 @@
 
 #include <aros/debug.h>
 
+#define USE_TWO_WINDOWS
+
 struct IntuitionBase *IntuitionBase;
 struct Library *GfxBase;
 struct Library *LayersBase;
@@ -56,7 +58,6 @@ int main(int argc, char **argv)
 		w1 = openwindow(screen, 100, 100, 200, 200);
 		if (w1)
 		{
-#if 0	        
 
 #ifdef USE_TWO_WINDOWS
 		    struct Window *w2;
@@ -77,7 +78,6 @@ int main(int argc, char **argv)
 		    
 #endif		    
 
-#endif		
 
 		    CloseWindow(w1);
 		}
@@ -109,7 +109,7 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
 			  WA_CustomScreen, screen,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
-			  WA_Zoom,		TRUE,
+			  WA_Zoom,		FALSE,
 			  WA_CloseGadget,	TRUE,
 			  WA_Title,		"X11 gfxhidd demo",
                           TAG_END);
@@ -183,7 +183,7 @@ D(bug("Calling Flood()\n"));
 
 VOID test_bltmask(struct Window *w)
 {
-    ULONG mask[] = {
+/*    ULONG mask[] = {
 	0xAAAAAAAA,
 	0xAAAAAAAA,
 	0xFFFFFFFF,
@@ -191,7 +191,7 @@ VOID test_bltmask(struct Window *w)
 	0xAAAAAAAA,
 	0xAAAAAAAA
     };
-    
+*/    
     /* Fill a area to blit from */
     
     SetAPen(w->RPort, 1);
@@ -199,13 +199,13 @@ VOID test_bltmask(struct Window *w)
     RectFill(w->RPort, SRC_X, SRC_Y, SRC_X + MASK_WIDTH - 1, SRC_Y + MASK_HEIGHT);
     
     /* Blit from source area */
-/*    BltMaskBitMapRastPort(
+/*    BltMaskBitMapRastPort(w->RPort
     	, SRC_X, SRC_Y
 	, DEST_X, DEST_Y
 	, MASK_WIDTH, MASK_HEIGHT
 	, 0x00C0
 	, (PLANEPTR) mask
-    );
+   );
 */
 				
     return;
