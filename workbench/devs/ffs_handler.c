@@ -1589,111 +1589,136 @@ static LONG examine_all(struct ffsbase *ffsbase, struct fh *dir, struct ExAllDat
     return 0;
 }
 
+/****************************************************************************/
+
+
+/* Strip off a possible voulume name */
+STRPTR fixName(STRPTR name)
+{
+    STRPTR colon = strchr(name, ':');
+
+    if (colon != NULL)
+    {
+	return colon + 1;
+    }
+
+    return name;
+}
+
+
 /****************************************************************************************/
 
 void deventry(struct ffsbase *ffsbase)
 {
-    struct IOFileSys 	*iofs;
-    LONG 		error=0;
-    struct vol 		*vol;
+    struct IOFileSys *iofs;
+    struct vol 	     *vol;
+
+    LONG error = 0;
+
     /*
     	Init device ports. AllocSignal() cannot fail because this is a
 	freshly created task with all signal bits still free. 
     */
-    ffsbase->port.mp_SigBit=AllocSignal(-1);
-    ffsbase->port.mp_Flags=PA_SIGNAL;
-    ffsbase->dport.mp_SigBit=AllocSignal(-1);
-    ffsbase->dport.mp_Flags=PA_SIGNAL;
+    ffsbase->port.mp_SigBit = AllocSignal(-1);
+    ffsbase->port.mp_Flags = PA_SIGNAL;
+    ffsbase->dport.mp_SigBit = AllocSignal(-1);
+    ffsbase->dport.mp_Flags = PA_SIGNAL;
 
     /* Get and process the messages. */
-    for(;;)
+    for (;;)
     {
     	while((iofs=(struct IOFileSys *)GetMsg(&ffsbase->port))!=NULL)
     	{
     	    switch(iofs->IOFS.io_Command)
     	    {
-    	        case (UWORD)-1:
-    	            error=mount(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-		    	        iofs->io_Union.io_OpenDevice.io_DeviceName,
-                                iofs->io_Union.io_OpenDevice.io_Unit,
-		    	        iofs->io_Union.io_OpenDevice.io_Environ);
-		    iofs->io_DosError=error;
-		    if(!error)
-			(void)disk_change(ffsbase,(struct dev *)((struct fh *)iofs->IOFS.io_Unit)->vol);
-		    PutMsg(&ffsbase->rport,&iofs->IOFS.io_Message);
-		    continue;
-		    
-		case FSA_OPEN:
-		    error=open(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-                               iofs->io_Union.io_OPEN.io_Filename,
-                               iofs->io_Union.io_OPEN.io_FileMode);
-		    break;
-		    
-		case FSA_OPEN_FILE:
-		    error=open_file(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-                                    iofs->io_Union.io_OPEN_FILE.io_Filename,
-                                    iofs->io_Union.io_OPEN_FILE.io_FileMode,
-                                    iofs->io_Union.io_OPEN_FILE.io_Protection);
-		    break;
-		    
-		case FSA_READ:
-		    error=read(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
-                               iofs->io_Union.io_READ.io_Buffer,
-                               &iofs->io_Union.io_READ.io_Length);
-		    break;
-		    
-		case FSA_CLOSE:
-		    error=free_lock(ffsbase,(struct fh *)iofs->IOFS.io_Unit);
-		    break;
-		    
-		case FSA_CREATE_DIR:
-		    error=create_dir(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-                                     iofs->io_Union.io_CREATE_DIR.io_Filename,
-                                     iofs->io_Union.io_CREATE_DIR.io_Protection);
-		    break;
-		    
-		case FSA_EXAMINE:
-		    error=examine(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
-		                  iofs->io_Union.io_EXAMINE.io_ead,
-		                  iofs->io_Union.io_EXAMINE.io_Size,
-                                  iofs->io_Union.io_EXAMINE.io_Mode);
-		    break;
-		    
-		case FSA_EXAMINE_ALL:
-		    error=examine_all(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
-		                      iofs->io_Union.io_EXAMINE_ALL.io_ead,
-		                      iofs->io_Union.io_EXAMINE_ALL.io_Size,
-                                      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
-		    break;
-		    
-		default:
-		    error=ERROR_ACTION_NOT_KNOWN;
-		    break;
+	    case (UWORD)-1:
+		error = mount(ffsbase, (struct fh **)&iofs->IOFS.io_Unit,
+			      iofs->io_Union.io_OpenDevice.io_DeviceName,
+			      iofs->io_Union.io_OpenDevice.io_Unit,
+			      iofs->io_Union.io_OpenDevice.io_Environ);
+		iofs->io_DosError = error;
+		
+		if (!error)
+		{
+		    (void)disk_change(ffsbase,(struct dev *)((struct fh *)iofs->IOFS.io_Unit)->vol);
+		}
+		
+		PutMsg(&ffsbase->rport, &iofs->IOFS.io_Message);
+		continue;
+		
+	    case FSA_OPEN:
+		error = open(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
+			     fixName(iofs->io_Union.io_OPEN.io_Filename),
+			     iofs->io_Union.io_OPEN.io_FileMode);
+		break;
+		
+	    case FSA_OPEN_FILE:
+		error = open_file(ffsbase, (struct fh **)&iofs->IOFS.io_Unit,
+				  fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+				  iofs->io_Union.io_OPEN_FILE.io_FileMode,
+				  iofs->io_Union.io_OPEN_FILE.io_Protection);
+		break;
+		
+	    case FSA_READ:
+		error = read(ffsbase, (struct fh *)iofs->IOFS.io_Unit,
+			     iofs->io_Union.io_READ.io_Buffer,
+			     &iofs->io_Union.io_READ.io_Length);
+		break;
+		
+	    case FSA_CLOSE:
+		error = free_lock(ffsbase, (struct fh *)iofs->IOFS.io_Unit);
+		break;
+		
+	    case FSA_CREATE_DIR:
+		error = create_dir(ffsbase, (struct fh **)&iofs->IOFS.io_Unit,
+				   fixName(iofs->io_Union.io_CREATE_DIR.io_Filename),
+				   iofs->io_Union.io_CREATE_DIR.io_Protection);
+		break;
+		
+	    case FSA_EXAMINE:
+		error = examine(ffsbase, (struct fh *)iofs->IOFS.io_Unit,
+				iofs->io_Union.io_EXAMINE.io_ead,
+				iofs->io_Union.io_EXAMINE.io_Size,
+				iofs->io_Union.io_EXAMINE.io_Mode);
+		break;
+		
+	    case FSA_EXAMINE_ALL:
+		error = examine_all(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
+				    iofs->io_Union.io_EXAMINE_ALL.io_ead,
+				    iofs->io_Union.io_EXAMINE_ALL.io_Size,
+				    iofs->io_Union.io_EXAMINE_ALL.io_Mode);
+		break;
+		
+	    default:
+		error = ERROR_ACTION_NOT_KNOWN;
+		break;
 		    
     	    } /* switch(iofs->IOFS.io_Command) */
 	    
-    	    iofs->io_DosError=error;
+    	    iofs->io_DosError = error;
     	    ReplyMsg(&iofs->IOFS.io_Message);
 	    
     	} /* while((iofs=(struct IOFileSys *)GetMsg(&ffsbase->port))!=NULL) */
 	
-    	if(ffsbase->dlflag)
+    	if (ffsbase->dlflag)
     	{
-    	    if(AttemptLockDosList(LDF_VOLUMES|LDF_WRITE)!=NULL)
+    	    if (AttemptLockDosList(LDF_VOLUMES | LDF_WRITE) != NULL)
     	    {
-    	        while((vol=(struct vol *)RemHead((struct List *)&ffsbase->removed))!=NULL)
+    	        while ((vol = (struct vol *)RemHead((struct List *)&ffsbase->removed)) != NULL)
     	        {
     	            (void)RemDosEntry(vol->dlist);
     	            FreeDosEntry(vol->dlist);
-    	            FreeMem(vol,sizeof(struct vol));
+    	            FreeMem(vol, sizeof(struct vol));
     	        }
-    	        while((vol=(struct vol *)RemHead((struct List *)&ffsbase->inserted))!=NULL)
+
+    	        while ((vol = (struct vol *)RemHead((struct List *)&ffsbase->inserted)) != NULL)
     	        {
     	            AddHead((struct List *)&ffsbase->mounted,(struct Node *)vol);
     	            (void)AddDosEntry(vol->dlist);
     	        }
-    	        UnLockDosList(LDF_VOLUMES|LDF_WRITE);
-    	        ffsbase->dlflag=0;
+		
+    	        UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+    	        ffsbase->dlflag = 0;
     	    }
 	    else
     	    {
@@ -1703,13 +1728,13 @@ void deventry(struct ffsbase *ffsbase)
     	    }
 	    
     	} /* if(ffsbase->dlflag) */
+
     	WaitPort(&ffsbase->port);
-	
     } /* for(;;) */
 }
 
 /****************************************************************************************/
 
-const char end=0;
+const char end = 0;
 
 /****************************************************************************************/
