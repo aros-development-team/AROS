@@ -14,7 +14,7 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(void, GetGBuffers,
+	AROS_LH3(BOOL, GetGBuffers,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct AnimOb *, anOb, A0),

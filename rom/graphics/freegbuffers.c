@@ -135,9 +135,6 @@
     /* go to next component */
     CurAnimComp = CurAnimComp -> NextComp;
   }
-  /* all allocations went OK */
-  return TRUE;
-
 
   AROS_LIBFUNC_EXIT
 } /* FreeGBuffers */

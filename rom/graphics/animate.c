@@ -14,7 +14,7 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH3(void, Animate,
+	AROS_LH2(void, Animate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct AnimOb **, anKey, A0),
