@@ -59,7 +59,7 @@ void Purify_InitStack (char * stackBase, long stackSize)
     {
 	node = Purify_AddMemory (argv[t]
 	    , strlen (argv[t]) + 1
-	    , PURIFY_MemFlag_Readable
+	    , PURIFY_MemFlag_Readable|PURIFY_MemFlag_Writable
 	    , PURIFY_MemType_Stack
 	);
 
