@@ -474,12 +474,22 @@ AROS_UFH3(VOID, conTaskEntry,
 
     StartAsyncConsoleRead(fh, conbase);
 
-    while(! ((fh->usecount == 0) && ((fh->flags & FHFLG_EOF) || !(fh->flags & FHFLG_WAIT))) )
+    for(;;)
     {
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
 	ULONG contaskmask = 1L << fh->contaskmp->mp_SigBit;
 	ULONG sigs;
 
+    	if (fh->usecount == 0)
+	{
+	    if ((fh->flags & FHFLG_EOF) ||
+	    	(fh->window == NULL) ||
+		(!(fh->flags & FHFLG_WAIT)))
+	    {
+	    	break;
+	    }
+	}
+	
 #if BETTER_WRITE_HANDLING
 	/* Dont wait if a write is pending and a write really can be done */
 	if ((fh->flags & FHFLG_WRITEPENDING) &&
@@ -888,7 +898,7 @@ AROS_UFH3(VOID, conTaskEntry,
 #endif
 	} /* if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart) && (fh->inputsize == 0)) */
 
-    } /* while(! ((fh->usecount == 0) && ((fh->flags & FHFLG_EOF) || !(fh->flags & FHFLG_WAIT))) ) */
+    } /* for(;;) */
 
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
     {
@@ -915,11 +925,6 @@ AROS_UFH3(VOID, conTaskEntry,
     if (fh->wintitle) FreeVec(fh->wintitle);
 
     FreeMem(fh, sizeof (struct filehandle));
-        
-    /* let's kill ourselves */
-    RemTask(FindTask(NULL));
-    
-    /* this point must never be reached */
 }
 
 /****************************************************************************************/
