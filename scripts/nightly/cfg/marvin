@@ -1,2 +1,2 @@
-CFG_NAME="freebsd-1"
+CFG_NAME="marvin"
 CFG_PACKAGES=hosted
