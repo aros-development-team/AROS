@@ -440,11 +440,18 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_ShowMe:
-		if (tag->ti_Data)
-		    data->mad_Flags |= MADF_SHOWME;
-		else
-		    data->mad_Flags &= ~MADF_SHOWME;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+		{
+		    Object *parent;
+		    Object *win;
+		    get(obj, MUIA_Parent, &parent);
+		    win = _win(obj);
+
+		    if (tag->ti_Data) data->mad_Flags |= MADF_SHOWME;
+		    else data->mad_Flags &= ~MADF_SHOWME;
+
+		    if (parent == win || (parent && (_flags(parent)&MADF_CANDRAW)))
+			DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+		}
 		break;
 
 	    case MUIA_Selected:
