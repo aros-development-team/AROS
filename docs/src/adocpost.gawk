@@ -35,7 +35,7 @@ BEGIN {
 	{
 	    if (first)
 	    {
-		print "<A NAME=\"bylib\"></A><DT><FONT SIZE=\"+2\"><B>A.2 Reference by library</B></FONT><DD><DL>"
+		print "<DT><A NAME=\"bylib\"></A><FONT SIZE=\"+2\"><B>A.2 Reference by library</B></FONT><DD><DL>"
 		dl++;
 		first=0;
 		cnt=1;
@@ -73,7 +73,7 @@ BEGIN {
 		{
 		    while (horiz && horiz < cols)
 		    {
-			print "<TD WIDTH=25%> </TD>"
+			print "<TD WIDTH=\"25%\"> </TD>"
 			horiz++;
 		    }
 		    print "</TR></TABLE>"
@@ -121,7 +121,7 @@ BEGIN {
 		{
 		    while (horiz && horiz < cols)
 		    {
-			print "<TD WIDTH=25%> </TD>"
+			print "<TD WIDTH=\"25%\"> </TD>"
 			horiz++;
 		    }
 		    print "</TR></TABLE>"
@@ -132,7 +132,7 @@ BEGIN {
 		print "<A NAME=\"lib"lib char"\"></A>"
 		print "<B>"char"</B><DD>"
 
-		print "<TABLE WIDTH=80%>"
+		print "<TABLE WIDTH=\"80%\">"
 		table=1;
 		horiz=0;
 	    }
@@ -142,7 +142,7 @@ BEGIN {
 		print "<TR>"
 	    }
 
-	    print "<TD WIDTH=25%>"
+	    print "<TD WIDTH=\"25%\">"
 	    print "<A HREF=\""$4"\">"$3"()</A> "
 	    print "</TD>"
 	    horiz++;
@@ -187,7 +187,7 @@ BEGIN {
 		{
 		    while (horiz && horiz < cols)
 		    {
-			print "<TD WIDTH=25%> </TD>"
+			print "<TD WIDTH=\"25%\"> </TD>"
 			horiz++;
 		    }
 		    print "</TR></TABLE>"
@@ -208,7 +208,7 @@ BEGIN {
 		print "<DL>"
 		dl++;
 
-		print "<TABLE WIDTH=80%>"
+		print "<TABLE WIDTH=\"80%\">"
 		table=1;
 		horiz=0;
 	    }
@@ -218,7 +218,7 @@ BEGIN {
 		print "<TR>"
 	    }
 
-	    print "<TD WIDTH=25%>"
+	    print "<TD WIDTH=\"25%\">"
 	    print "<A HREF=\"" $3 "\">" $2 "()</A>"
 	    print "</TD>"
 
@@ -254,7 +254,7 @@ END {
 	{
 	    while (horiz && horiz < cols)
 	    {
-		print "<TD WIDTH=25%> </TD>"
+		print "<TD WIDTH=\"25%\"> </TD>"
 		horiz++;
 	    }
 	    print "</TABLE>"
@@ -279,7 +279,7 @@ END {
 	{
 	    while (horiz && horiz < cols)
 	    {
-		print "<TD WIDTH=25%> </TD>"
+		print "<TD WIDTH=\"25%\"> </TD>"
 		horiz++;
 	    }
 	    print "</TABLE>"
