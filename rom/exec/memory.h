@@ -8,7 +8,7 @@
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
 
-#include <aros/debug.h>
+//#include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
