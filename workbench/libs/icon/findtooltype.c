@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Find a tooltype entry from an array of tool types.
+    Find a tooltype entry from an array of tool types.
 */
 #include "icon_intern.h"
 
@@ -48,8 +48,12 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
-    ULONG typenamelen;
-
+    
+    ULONG typenamelen = 0;
+    
+    /* Make sure we have sane input parameters */
+    if (toolTypeArray == NULL || typeName == NULL) return NULL;
+    
     typenamelen = strlen(typeName);
 
     while (*toolTypeArray)
@@ -66,5 +70,6 @@
     }
 
     return NULL;
+    
     AROS_LIBFUNC_EXIT
 } /* FindToolType */
