@@ -339,6 +339,9 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 		    , hunks[symtab[i].shindex].memory + symtab[i].value
 		    , &strtab[symtab[i].name]
 		);
+
+		/* Print only the first symbol */
+		break;
 	    }
 	}
     }
@@ -358,7 +361,13 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 
 	    loaded = hunks[t].memory;
 
-	    if (strtab)
+	    if (strtab
+		&& (
+		    !strcmp (".text", &shstrtab[sh->name])
+		    || !strcmp (".rodata", &shstrtab[sh->name])
+		    || !strcmp (".data", &shstrtab[sh->name])
+		)
+	    )
 	    {
 		kprintf ("    Section at 0x%p ... 0x%p: %s\n"
 		    , loaded
