@@ -314,18 +314,54 @@ static IPTR Clock_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_ClockData *data = INST_DATA(cl, obj);
     struct RastPort 	 *obj_rp;
+    struct Region   	 *region;
+    struct Rectangle	 rect;
+    APTR    	    	 clip;
     WORD    	    	 r, x, y, x2, y2, i, cx, cy, c;
+    WORD    	    	 new_clockbmw, new_clockbmh;
+    WORD    	    	 clock_posx, clock_posy;
     DOUBLE  	    	 angle;
-    
-    DoSuperMethodA(cl, obj, (Msg)msg);
-  
-    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
-    
+
     r = (_mwidth(obj) - SHADOW_OFFX) / 2;
     y = (_mheight(obj) - SHADOW_OFFY) / 2;
     
     r = (r < y) ? r : y;
     
+    new_clockbmw = r * 2 + 1 + SHADOW_OFFX;
+    new_clockbmh = r * 2 + 1 + SHADOW_OFFY;
+    
+    clock_posx = _mleft(obj) + (_mwidth(obj) - new_clockbmw) / 2;
+    clock_posy = _mtop(obj) + (_mheight(obj) - new_clockbmh) / 2;
+    
+    region = NewRegion();
+    if (region)
+    {
+    	rect.MinX = _left(obj);
+	rect.MinY = _top(obj);
+	rect.MaxX = _right(obj);
+	rect.MaxY = _bottom(obj);
+	
+	OrRectRegion(region, &rect);
+	
+	rect.MinX = clock_posx;
+	rect.MinY = clock_posy;
+	rect.MaxX = clock_posx + new_clockbmw - 1;
+	rect.MaxY = clock_posy + new_clockbmh - 1;
+	
+	ClearRectRegion(region, &rect);
+	
+	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+    }
+    
+    DoSuperMethodA(cl, obj, (Msg)msg);
+  
+    if (region)
+    {
+    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+    }
+    
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
+        
     if (!data->clockbm || (data->clockbmr != r))
     {
     	if (data->clockbm)
@@ -336,10 +372,9 @@ static IPTR Clock_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 	    data->clockraster = NULL;
 	}
 
-	data->clockbmw = r * 2 + 1 + SHADOW_OFFX;
-	data->clockbmh = r * 2 + 1 + SHADOW_OFFY;
-    
-	
+	data->clockbmw = new_clockbmw;
+	data->clockbmh = new_clockbmh;
+    	
     	data->clockbm = AllocBitMap(data->clockbmw,
 	    	    	    	    data->clockbmh,
 				    GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH),
@@ -371,8 +406,8 @@ static IPTR Clock_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     obj_rp = _rp(obj);
     _rp(obj) = &data->clockrp;
 
-    DoMethod(obj, MUIM_DrawBackground, 0, 0, data->clockbmw , data->clockbmh, 0, 0, 0);
-    
+    DoMethod(obj, MUIM_DrawBackground, 0, 0, data->clockbmw , data->clockbmh, clock_posx, clock_posy, 0);
+   
     cx = r + SHADOW_OFFX;
     cy = r + SHADOW_OFFY;
     
@@ -484,8 +519,8 @@ static IPTR Clock_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     	    	      0,
 		      0,
     	    	      _rp(obj),
-		      _mleft(obj) + (_mwidth(obj) - data->clockbmw) / 2 ,
-		      _mtop(obj) + (_mheight(obj) - data->clockbmh) / 2,
+		      clock_posx,
+		      clock_posy,
 		      data->clockbmw,
 		      data->clockbmh, 192);
     
