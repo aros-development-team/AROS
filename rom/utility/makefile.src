@@ -127,4 +127,4 @@ $(OBJDIR)/%.d: %.c
 %include_deps
 
 $(OBJDIR)/utility_init.o: libdefs.h
-
+$(OBJDIR)/endtag.d: libdefs.h
