@@ -206,3 +206,47 @@ bergers@aros.org
 Henon started with "henon ?" should be recognized and the help-text 
 should appear. -> The "?" as a signle character is not recognized!!
 The problem was probably the buggy code in compiler/alib/startup.c.
+
+BUG000030 work
+srittau@aros.org
+"Filenote", "Rename" and "Protect" segfault. The buggy code seems to
+be somewhere in MatchFirst().
+
+BUG000031
+mreckt@wurzelausix.CS.Uni-SB.DE
+"run" runs another program, but never returns.
+
+BUG000032
+srittau@aros.org
+"rtdemo" segfaults.
+
+BUG000033
+mreckt@wurzelausix.CS.Uni-SB.DE
+  Workbench:> RequestChoice test test yes no 
+  Loading "RequestChoice"...
+  Hunk type 0x4c457f not implemented
+      Symbol at 0x401fecb8: entry
+      Section at 0x401fecb8 ... 0x401ffadc: .text
+      Section at 0x401ffae8 ... 0x401ffb86: .rodata
+      Section at 0x401f5cf0 ... 0x401f5d03: .data
+  LDCaller: Calling libOpen() of dos.library
+  LDCaller: Calling libOpen() of intuition.library
+  GURU Meditation 8100 0005
+  Deadend/Exec/Corrupt memory list detected in FreeMem
+  Task: 0x401e7ae8 (Boot Process)
+
+BUG000034
+srittau@aros.org
+"wait" segfaults, if certain times are used. Probably a problem with
+Delay() (or wait's communication with Delay()).
+
+BUG000035
+mreckt@wurzelausix.CS.Uni-SB.DE
+"newshell" complains: "Device not mounted"
+
+BUG000036
+mreckt@wurzelausix.CS.Uni-SB.DE
+  echo SYS:Demos/demowin > cmd
+  shell cmd
+starts demowin and even returns when pressing the Exit button, but the
+window is not closed.
