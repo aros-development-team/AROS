@@ -131,6 +131,15 @@ const HIDDT_PixelFormat stdpfs[] =
 	, vHidd_StdPixFmt_RGBA32
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
+    	  /* A8B8G8R8 */
+	  
+	  32, 32, 4
+	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
+	, 0, 8, 16, 24
+	, 0, 0
+	, vHidd_StdPixFmt_ABGR32
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
     	  /* X8R8G8B8 */
 	  
 	  24, 24, 4
@@ -156,6 +165,15 @@ const HIDDT_PixelFormat stdpfs[] =
 	, 24, 16, 8, 0
 	, 0, 0
 	, vHidd_StdPixFmt_RGB032
+	, PF_GRAPHTYPE(TrueColor, Chunky)
+    }, {
+    	  /* X8B8G8R8 */
+	  
+	  24, 24, 4
+	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x00000000
+	, 0, 8, 16, 0
+	, 0, 0
+	, vHidd_StdPixFmt_0BGR32
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
     	  /* 8 Bit chunky */
