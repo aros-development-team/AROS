@@ -2,7 +2,7 @@
 #define _SYS_TIME_H
 
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: ANSI-C header file sys/time.h
@@ -36,5 +36,9 @@ struct timezone
 #define DST_RUM     8  /* Rumanian style. */
 #define DST_TUR     9  /* Turkish style. */
 #define DST_AUSTALT 10 /* Alternate Australian style. */
+
+/* clib functions */
+int gettimeofday(struct timeval * tv, struct timezone * tz);
+int settimeofday(const struct timeval * tv, const struct timezone * tz);
 
 #endif /* _SYS_TIME_H */
