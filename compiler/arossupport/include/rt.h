@@ -17,7 +17,8 @@
 
 #   define RTT_ALLOCMEM     0
 #   define RTT_ALLOCVEC     1
-#   define RTT_MAX	    2
+#   define RTT_LIBRARY	    2
+#   define RTT_MAX	    3
 
 void RT_Init (void);
 void RT_Exit (void);
@@ -37,13 +38,17 @@ void RT_Leave (void);
 #	    include <proto/exec.h>
 #	endif
 #	undef AllocMem
-#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_ALLOCMEM,(ULONG)size,(ULONG)flags)
+#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_ALLOCMEM,(ULONG)(size),(ULONG)(flags))
 #	undef FreeMem
-#	define FreeMem(ptr,size)        (void)RT_Free(RTT_ALLOCMEM,(APTR)ptr,(ULONG)size)
+#	define FreeMem(ptr,size)        (void)RT_Free(RTT_ALLOCMEM,(APTR)(ptr),(ULONG)(size))
 #	undef AllocVec
-#	define AllocVec(size,flags)     (APTR)RT_Add(RTT_ALLOCVEC,(ULONG)size,(ULONG)flags)
+#	define AllocVec(size,flags)     (APTR)RT_Add(RTT_ALLOCVEC,(ULONG)(size),(ULONG)(flags))
 #	undef FreeVec
-#	define FreeVec(ptr)             (void)RT_Free(RTT_ALLOCVEC,(APTR)ptr)
+#	define FreeVec(ptr)             (void)RT_Free(RTT_ALLOCVEC,(APTR)(ptr))
+#	undef OpenLibrary
+#	define OpenLibrary(name,ver)    (APTR)RT_Add(RTT_LIBRARY,(STRPTR)(name),(ULONG)(ver))
+#	undef CloseLibrary
+#	define CloseLibrary(lib)        (void)RT_Free(RTT_LIBRARY,(struct Library *)(lib))
 #   endif
 #else
 #   define RT_Init()                /* eps */

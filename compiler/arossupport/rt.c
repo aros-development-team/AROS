@@ -40,6 +40,15 @@ typedef struct
 }
 MemoryResource;
 
+typedef struct
+{
+    RTNode	     Node;
+    struct Library * Lib;
+    STRPTR	     Name;
+    ULONG	     Version;
+}
+LibraryResource;
+
 typedef struct __RTDesc RTDesc;
 
 typedef IPTR (* RT_AllocFunc) (RTNode *, va_list, BOOL * success);
@@ -61,10 +70,16 @@ static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success);
 static IPTR RT_FreeMem (MemoryResource * rt);
 static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr, va_list args);
 static IPTR RT_ShowErrorMem (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
+
 static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success);
 static IPTR RT_FreeVec (MemoryResource * rt);
 static IPTR RT_SearchVec (RTDesc * desc, MemoryResource ** rtptr, va_list args);
 static IPTR RT_ShowErrorVec (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
+
+static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success);
+static IPTR RT_CloseLibrary (LibraryResource * rt);
+static IPTR RT_SearchLib (RTDesc * desc, LibraryResource ** rtptr, va_list args);
+static IPTR RT_ShowErrorLib (RTDesc *, LibraryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
 /* Return values of SearchFunc */
 #define RT_SEARCH_FOUND 	    0
@@ -90,7 +105,14 @@ RTDesc RT_Resources[RTT_MAX] =
 	(RT_FreeFunc)  RT_FreeVec,
 	(RT_SearchFunc)RT_SearchVec,
 	(RT_ShowError) RT_ShowErrorVec,
-    }
+    },
+    { /* RTT_LIBRARY */
+	sizeof (LibraryResource),
+	(RT_AllocFunc) RT_OpenLibrary,
+	(RT_FreeFunc)  RT_CloseLibrary,
+	(RT_SearchFunc)RT_SearchLib,
+	(RT_ShowError) RT_ShowErrorLib,
+    },
 };
 
 typedef struct
@@ -264,7 +286,6 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	kprintf ("RT_IntAdd: Out of memory\n");
 	return FALSE;
     }
-kprintf ("AllocMem(RTNode) = %p\n", rtnew);
 
     rtnew->File = file;
     rtnew->Line = line;
@@ -443,7 +464,6 @@ kprintf ("AllocMem(RTNode) = %p\n", rtnew);
 
     if (ret == RT_SEARCH_FOUND)
     {
-kprintf ("FreeMem (%p, %d)\n", rt, RT_Resources[rtt].Size);
 	ret = (*(RT_Resources[rtt].FreeFunc)) (rt);
 
 	Remove ((struct Node *)rt);
@@ -713,7 +733,6 @@ kprintf ("FreeMem (%p, %d)\n", rt, RT_Resources[rtt].Size);
     if (!InitWasCalled)
 	return;
 
-kprintf ("FreeMem (%p, %d)\n", rtnode, RT_Resources[rtt].Size);
     /* Print an error */
     (void) (*(RT_Resources[rtt].ShowError))
     (
@@ -741,7 +760,6 @@ static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success)
     rt->Flags = va_arg (args, ULONG);
 
     rt->Memory = AllocMem (rt->Size, rt->Flags);
-kprintf ("AllocMem(%d, %x) = %p\n", rt->Size, rt->Flags, rt->Memory);
 
     if (!rt->Memory)
 	*success = FALSE;
@@ -864,10 +882,8 @@ static IPTR RT_SearchVec (RTDesc * desc, MemoryResource ** rtptr,
 {
     MemoryResource * rt;
     APTR    memory;
-    ULONG   size;
 
     memory = va_arg (args, APTR);
-    size   = va_arg (args, ULONG);
 
     ForeachNode (&desc->ResList, rt)
     {
@@ -924,5 +940,88 @@ static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
 
     return ret;
 } /* RT_ShowErrorVec */
+
+static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success)
+{
+    rt->Name	= va_arg (args, STRPTR);
+    rt->Version = va_arg (args, ULONG);
+
+    rt->Lib = OpenLibrary (rt->Name, rt->Version);
+
+    if (!rt->Lib)
+	*success = FALSE;
+
+    return (IPTR)(rt->Lib);
+} /* RT_OpenLibrary */
+
+static IPTR RT_CloseLibrary (LibraryResource * rt)
+{
+    CloseLibrary (rt->Lib);
+
+    return TRUE;
+} /* RT_CloseLibrary */
+
+static IPTR RT_SearchLib (RTDesc * desc, LibraryResource ** rtptr,
+	va_list args)
+{
+    LibraryResource * rt;
+    struct Library  * lib;
+
+    lib = va_arg (args, struct Library *);
+
+    ForeachNode (&desc->ResList, rt)
+    {
+	if (rt->Lib == lib)
+	{
+	    *rtptr = rt;
+
+	    return RT_SEARCH_FOUND;
+	}
+    }
+
+    return RT_SEARCH_NOT_FOUND;
+} /* RT_SearchLib */
+
+static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+
+    if (mode != RT_EXIT)
+    {
+	const char     * modestr = (mode == RT_FREE) ? "Free" : "Check";
+	struct Library * base;
+
+	base = va_arg (args, struct Library *);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: Library not found\n"
+		    "    %s at %s:%d\n"
+		    "    Base=%p\n"
+		, modestr
+		, modestr
+		, file, line
+		, base
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: Library was not closed\n"
+		"    Opened at %s:%d\n"
+		"    Base=%p Name=%s Version=%08lx\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->Lib, rt->Name, rt->Version
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorLib */
 
 
