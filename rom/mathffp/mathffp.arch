@@ -257,7 +257,7 @@ kprintf("SPAdd(%x,%x)=%x\n",fnum1,fnum2,Res);
     BUGS
 
     SEE ALSO
-        SPFloor()
+        @Math.Floor@
 
     INTERNALS
       ALGORITHM:
@@ -602,7 +602,7 @@ kprintf("SPFix(%x)=%d\n",fnum,Res);
     BUGS
 
     SEE ALSO
-
+        @Math.Floor@
 
     INTERNALS
       ALGORITHM:

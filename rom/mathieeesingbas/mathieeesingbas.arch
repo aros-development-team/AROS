@@ -814,7 +814,7 @@
     BUGS
 
     SEE ALSO
-
+        @Math.Floor@
 
     INTERNALS
 
@@ -884,7 +884,7 @@
     BUGS
 
     SEE ALSO
-        IEEESPFloor()
+        @Math.Floor@
 
     INTERNALS
       ALGORITHM:
