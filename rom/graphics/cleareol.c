@@ -59,18 +59,13 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    UBYTE      oldFgPen;
+    ULONG oldDrMd = GetDrMd(rp);;
+    ULONG width = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
 
-    ULONG      width = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
-
-    oldFgPen = rp->FgPen;
-
-    SetAPen(rp, (rp->DrawMode == JAM2) ? rp->BgPen : 0);
-
+    SetDrMd(rp, oldDrMd ^ INVERSVID);
     RectFill(rp, rp->cp_x, rp->cp_y - rp->TxBaseline, width - 1,
 	     rp->cp_y - rp->TxBaseline + rp->Font->tf_YSize - 1);
-
-    SetAPen(rp, oldFgPen);
+    SetDrMd(rp, oldDrMd);
 
     AROS_LIBFUNC_EXIT
 } /* ClearEOL */
