@@ -25,6 +25,16 @@
 
 extern struct GfxBase * GfxBase;
 
+/* Macros */
+#define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
+
+/* Defines */
+#define BMT_STANDARD	0x0000	/* Standard bitmap */
+#define BMT_RGB 	0x1234	/* RTG Bitmap. 24bit RGB chunky */
+#define BMT_RGBA	0x1238	/* RTG Bitmap. 32bit RGBA chunky */
+#define BMT_DRIVER	0x8000	/* Special RTG bitmap.
+				   Use this as an offset. */
+
 /* Forward declaration */
 struct ViewPort;
 
@@ -42,6 +52,12 @@ struct ViewPort;
     AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
 
 /* Driver prototypes */
+extern struct BitMap * driver_AllocBitMap (ULONG, ULONG, ULONG, ULONG,
+			struct BitMap *, struct GfxBase *);
+extern LONG driver_BltBitMap ( struct BitMap * srcBitMap, LONG xSrc,
+			LONG ySrc, struct BitMap * destBitMap, LONG xDest,
+			LONG yDest, LONG xSize, LONG ySize, ULONG minterm,
+			ULONG mask, PLANEPTR tempA, struct GfxBase *);
 extern int driver_CloneRastPort (struct RastPort *, struct RastPort *,
 			struct GfxBase *);
 extern void driver_CloseFont (struct TextFont *, struct GfxBase *);
@@ -51,6 +67,7 @@ extern void driver_DrawEllipse (struct RastPort *, LONG x, LONG y,
 			LONG rx, LONG ry, struct GfxBase *);
 extern void driver_EraseRect (struct RastPort *, LONG, LONG, LONG, LONG,
 			    struct GfxBase *);
+extern void driver_FreeBitMap (struct BitMap *, struct GfxBase *);
 extern int  driver_InitRastPort (struct RastPort *, struct GfxBase *);
 extern void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count, struct GfxBase *);
 extern void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table, struct GfxBase *);

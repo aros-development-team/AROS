@@ -19,6 +19,9 @@
 
 #define static	/* nothing */
 
+#define BMT_XIMAGE	(BMT_DRIVER+0)
+#define BMT_XWINDOW	(BMT_DRIVER+1)
+
 static Display	     * sysDisplay;
 static int	       sysScreen;
 static Cursor	       sysCursor;
@@ -184,6 +187,24 @@ void SetGC (struct RastPort * rp, GC gc)
 
 void SetXWindow (struct RastPort * rp, int win)
 {
+    if (rp->BitMap)
+    {
+	int width, height, depth;
+
+	XGetGeometry (sysDisplay, win, NULL, NULL, NULL
+	    , &width, &height
+	    , NULL
+	    , &depth
+	);
+
+	rp->BitMap->BytesPerRow = ((width+15) >> 4)*2;
+	rp->BitMap->Rows = height;
+	rp->BitMap->Depth = depth;
+	rp->BitMap->Flags = 0;
+	rp->BitMap->Pad = BMT_XWINDOW;
+	rp->BitMap->Planes[0] = (PLANEPTR)win;
+    }
+
     rp->longreserved[1] = (IPTR)win;
 }
 
@@ -618,6 +639,18 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
     if (!gc)
 	return FALSE;
 
+    if (!rp->BitMap)
+    {
+	rp->BitMap = AllocMem (sizeof (struct BitMap), MEMF_CLEAR|MEMF_ANY);
+
+	if (!rp->BitMap)
+	{
+	    XFreeGC (sysDisplay, gc);
+
+	    return FALSE;
+	}
+    }
+
     SetGC (rp, gc);
 
     return TRUE;
@@ -652,6 +685,11 @@ void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 	XFreeGC (sysDisplay, gc);
 
 	SetGC (rp, NULL);
+    }
+
+    if (rp->BitMap)
+    {
+	FreeMem (rp->BitMap, sizeof (struct BitMap));
     }
 }
 
@@ -790,4 +828,175 @@ void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
 	sysPlaneMask |= sysCMap[t];
 
 } /* driver_LoadRGB4 */
+
+struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
+	ULONG flags, struct BitMap * friend, struct GfxBase * GfxBase)
+{
+    struct BitMap * nbm;
+
+    nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
+
+    if (nbm)
+    {
+	if (flags & BMF_DISPLAYABLE)
+	    depth = DefaultDepth (GetSysDisplay (), GetSysScreen ());
+
+	nbm->BytesPerRow = 0;
+	nbm->Rows	 = sizey;
+	nbm->Pad	 = BMT_XIMAGE;
+
+	nbm->Planes[0] = malloc (RASSIZE(sizex,sizey)*4);
+
+	if (flags & BMF_CLEAR)
+	    memset (nbm->Planes[0], 0, RASSIZE(sizex,sizey)*4);
+
+	nbm->Planes[1] = (PLANEPTR) XCreateImage (sysDisplay
+	    , DefaultVisual (GetSysDisplay (), GetSysScreen ())
+	    , depth
+	    , ZPixmap
+	    , 0
+	    , nbm->Planes[0]
+	    , sizex
+	    , sizey
+	    , 16
+	    , 0
+	);
+
+	if (!nbm->Planes[0] || !nbm->Planes[1])
+	{
+	    if (nbm->Planes[0])
+		free (nbm->Planes[0]);
+
+	    FreeMem (nbm, sizeof (struct BitMap));
+
+	    return NULL;
+	}
+    }
+
+    return nbm;
+}
+
+ULONG getBitMapPixel (struct BitMap * bm, LONG x, LONG y)
+{
+    ULONG pen, plane;
+    ULONG bit;
+    PLANEPTR ptr;
+
+    pen = 0;
+
+    bit = 1L << (x & 7);
+
+    for (plane=0; plane<bm->Depth; plane++)
+    {
+	ptr = bm->Planes[plane] + y*bm->BytesPerRow + x/8;
+
+	if (*ptr & bit)
+	    pen |= 1L << plane;
+    }
+
+    if (bm->Depth < PEN_BITS)
+	return sysCMap[pen];
+    else
+	return pen;
+}
+
+void copyBitMapToImage (struct BitMap * srcBitMap, LONG xSrc, LONG ySrc,
+    XImage * xImage, LONG xDest, LONG yDest,
+    ULONG minterm, ULONG mask)
+{
+    ULONG sColor, dColor;
+
+    if (xSrc < 0 || xSrc >= (srcBitMap->BytesPerRow * 8)
+	|| ySrc < 0 || ySrc >= srcBitMap->Rows
+	|| xDest < 0 || yDest < 0
+	|| xDest >= xImage->width || yDest >= xImage->height
+    )
+	return;
+
+    sColor = getBitMapPixel (srcBitMap, xSrc, ySrc);
+    dColor = XGetPixel (xImage, xDest, yDest);
+
+    switch (minterm)
+    {
+    case 0x00C0:
+	dColor = (dColor & ~mask) | (sColor & mask);
+	break;
+
+    case 0x0030:
+	dColor = (dColor & ~mask) | (~sColor & mask);
+	break;
+
+    case 0x0050:
+	dColor ^= mask;
+	break;
+
+    }
+}
+
+LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
+	LONG ySrc, struct BitMap * destBitMap, LONG xDest,
+	LONG yDest, LONG xSize, LONG ySize, ULONG minterm,
+	ULONG mask, PLANEPTR tempA, struct GfxBase * GfxBase)
+{
+    LONG planecnt = 0;
+
+    switch (srcBitMap->Pad)
+    {
+    case BMT_STANDARD:
+	switch (destBitMap->Pad)
+	{
+	case BMT_STANDARD:
+	    /* Not possible */
+	    break;
+
+	case BMT_XIMAGE: {
+	    LONG x, y;
+
+	    for (y=0; y<ySize; y++)
+	    {
+		for (x=0; x<xSize; x++)
+		{
+		    copyBitMapToImage (srcBitMap, x+xSrc, y+ySrc
+			, (XImage *)(destBitMap->Planes[0])
+			, x+xDest, y+yDest
+			, minterm, mask
+		    );
+		}
+	    }
+
+	    planecnt = ((XImage *)(destBitMap->Planes[0]))->depth;
+
+	    break; }
+
+	}
+
+	break;
+
+    case BMT_XIMAGE:
+	switch (destBitMap->Pad)
+	{
+	case BMT_STANDARD:
+	    break;
+
+	case BMT_XIMAGE:
+	    break;
+
+	}
+
+	break;
+    }
+
+    return planecnt;
+}
+
+void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
+{
+    switch (bm->Pad)
+    {
+    case BMT_XIMAGE:
+	XDestroyImage ((XImage *)(bm->Planes[1]));
+	break;
+
+    }
+}
 

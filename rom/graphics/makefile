@@ -8,7 +8,10 @@ include $(TOP)/config/make.cfg
 FILES = graphics_init graphics_functable
 FUNCTIONS = \
 	addfont \
+	allocbitmap \
+	allocraster \
 	askfont \
+	bltbitmap \
 	clonerastport \
 	closefont \
 	createrastport \
@@ -16,6 +19,8 @@ FUNCTIONS = \
 	draw \
 	drawellipse \
 	eraserect \
+	freebitmap \
+	freeraster \
 	freerastport \
 	getapen \
 	getbpen \
