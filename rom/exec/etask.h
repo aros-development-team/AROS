@@ -2,7 +2,7 @@
 #define _ETASK_H
 
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal description of the ETask structure
