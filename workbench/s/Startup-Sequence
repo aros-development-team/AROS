@@ -4,6 +4,9 @@ mount NIL:
 makedir ram:T
 assign T: ram:t
 assign LOCALE: sys:Locale
+
+makedir env
+assign ENV: env
 ;
 ; To mount unit /dev/fd0 as drive FDSK: make a link from
 ; fdsk/Unit0 to /dev/fd0 (you'll need access rights on the device
