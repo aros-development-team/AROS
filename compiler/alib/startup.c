@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 01:41:05  aros
+    Added __main()
+
     Revision 1.3  1996/10/19 17:02:33  aros
     Added support for malloc() and free(). I added it to the general startup,
     because it uses only a few bytes and with MemHeaders, it would have been
@@ -57,3 +60,16 @@ struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
 APTR __startup_mempool = NULL;
+
+/*	Stub function for GCC __main().
+
+	The __main() function is originally used for C++ style constructors
+	and destructors in C. This replacement does nothing and gets rid of
+	linker-errors about references to __main().
+*/
+
+void __main(void)
+{
+/* Do nothing. */
+}
+
