@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: The task Dispatcher for m68k; taken from i386native version of Cause().
+    Desc: The task Dispatcher for m68k; taken from i386-native version
     Lang: english
 */
 
