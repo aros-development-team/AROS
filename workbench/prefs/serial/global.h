@@ -207,25 +207,6 @@
 
 /*********************************************************************************************/
 
-struct ListviewEntry
-{
-    struct Node node;
-    UBYTE   	name[30];
-    UBYTE   	realname[30];
-};
-
-struct CountryEntry
-{
-    struct ListviewEntry lve;
-};
-
-struct LanguageEntry
-{
-    struct ListviewEntry lve;
-};
-
-/*********************************************************************************************/
-
 /* main.c */
 
 void Cleanup(STRPTR msg);
