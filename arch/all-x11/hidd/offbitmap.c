@@ -108,16 +108,16 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	GetAttr(o, aHidd_BitMap_Height, 	&height);
 	GetAttr(o, aHidd_BitMap_Depth,		&depth);
 	
+	
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
 	
 	/* Get the X11 window from the friend window */
-	if (NULL == friend) {
-		kprintf("ALERT!!! NO FRIEND BITMAP in config/x11/hidd/offbitmap.c\n");
-		Alert(AT_DeadEnd);
+	if (NULL != friend) {
+		GetAttr(friend, aHidd_X11BitMap_Drawable, &friend_drawable);
+	} else {
+		friend_drawable = XSD(cl)->dummy_window_for_creating_pixmaps;
 	}
-	
-	GetAttr(friend, aHidd_X11BitMap_Drawable, &friend_drawable);
 	
 	if (0 == friend_drawable) {
 		kprintf("ALERT!!! FRIEND BITMAP HAS NO DRAWABLE in config/x11/hidd/offbitmap.c\n");
@@ -132,13 +132,25 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		, depth
 	));
 	
+	/* We must only create depths that are supported by the friend drawable
+	   Currently we only support the default depth, and depth 1
+	*/
+	
+	if (depth != 1)
+	{
+	    depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
+	}
+	
+	data->depth = depth;
+	
 LX11	
 	DRAWABLE(data) = XCreatePixmap( data->display
 		, friend_drawable
 		, width
 		, height
-		, DefaultDepth (GetSysDisplay(), GetSysScreen())
+		, depth
 	);
+
 	
 	XFlush(data->display);
 UX11	    
@@ -153,14 +165,15 @@ LX11
 	    /* Create X11 GC */
 	    D(bug("Creating GC\n"));
 	 
-	    gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
+	    gcval.plane_mask = AllPlanes;
 	    gcval.graphics_exposures = True;
 	 
 	    data->gc = XCreateGC( data->display
-	 		, DefaultRootWindow( data->display )
+	 		, DRAWABLE(data)
 			, GCPlaneMask | GCGraphicsExposures
 			, &gcval
 		    );
+
 
 UX11		
 	    if (data->gc)

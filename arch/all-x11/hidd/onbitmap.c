@@ -126,6 +126,8 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	winattr.background_pixel = WhitePixel(GetSysDisplay(), GetSysScreen());
 	    
 	D(bug("Creating XWindow\n"));
+	
+	data->depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
 LX11	
 	DRAWABLE(data) = XCreateWindow( GetSysDisplay()
 	    		, DefaultRootWindow (GetSysDisplay())
@@ -134,7 +136,7 @@ LX11
 			, width
 			, height
 			, 0	/* BorderWidth	*/
-			, DefaultDepth (GetSysDisplay(), GetSysScreen())
+			, data->depth
 			, InputOutput
 			, DefaultVisual (GetSysDisplay(), GetSysScreen())
 			, CWBackingStore
@@ -156,11 +158,11 @@ LX11
 
 	    /* Create X11 GC */
 	 
-	    gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
+	    gcval.plane_mask = AllPlanes;
 	    gcval.graphics_exposures = True;
 	 
 	    data->gc = XCreateGC( data->display
-	 		, DefaultRootWindow( data->display )
+	 		, DRAWABLE(data)
 			, GCPlaneMask | GCGraphicsExposures
 			, &gcval
 		    );

@@ -113,7 +113,7 @@ struct xwinnode
 
 struct x11_staticdata
 {
-    struct SignalSemaphore sema; /* Protexting this whole struct */
+    struct SignalSemaphore sema; /* Protecting this whole struct */
     struct SignalSemaphore x11sema;
     
     struct Library *oopbase;
@@ -137,6 +137,11 @@ struct x11_staticdata
     
     struct MinList xwindowlist;
     struct SignalSemaphore winlistsema;
+    
+    /* This window is used as a frien drawable for pixmaps. The window is
+       never mapped, ie. it is never shown onscreen.
+    */
+    Window dummy_window_for_creating_pixmaps;
     
 };
 

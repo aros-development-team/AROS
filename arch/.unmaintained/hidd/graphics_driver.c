@@ -71,8 +71,6 @@
 
 #define RPF_DRIVER_INITED (1L << 15)
 
-#warning All set drawing attribute/Render code should be semaphore protected to avoid race conditions on the drawing attrs
-
 struct shared_driverdata
 {
     Object *gfxhidd;
@@ -1655,6 +1653,137 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
     ReturnVoid("driver_DrawEllipse");
 }
 
+
+void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
+	, WORD destx, WORD desty, UWORD width, UWORD height)
+{
+    struct gfx_driverdata *dd;
+    struct Layer *L = rp->Layer;
+    struct BitMap *bm = rp->BitMap;
+    
+    struct TagItem setgc_tags[] =
+    {
+    	{aHidd_BitMap_GC, 0UL},
+	{TAG_DONE, 0UL}
+    };
+    
+    EnterFunc(bug("blit_glyph_fast(%d, %d, %d, %d, %d)\n"
+    	, xsrc, destx, desty, width, heiht));
+	
+	
+    if (!CorrectDriverData(rp, GfxBase))
+    	ReturnVoid("blit_glyph_fast");
+	
+    dd = GetDriverData(rp);
+    
+    /* Prepare for setting bitmap GC */
+    setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
+    /* Prepare for setting bitmap GC */
+LOCK_HIDD(bm);    
+    SetAttrs( BM_OBJ(bm), setgc_tags );
+    
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen */
+	HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+		, fontbm
+		, xsrc, 0
+		, destx, desty
+		, width, height
+	);
+		
+	
+	
+    }
+    else
+    {
+    	/* Window rastport, we need to clip the operation */
+	
+        struct ClipRect *CR;
+	WORD xrel;
+        WORD yrel;
+	struct Rectangle toblit, intersect;
+	
+	
+	LockLayerRom( L );
+	
+	CR = L->ClipRect;
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
+	
+	toblit.MinX = xrel + destx;
+	toblit.MinY = yrel + desty;
+	toblit.MaxX = xrel + (destx + width  - 1);
+	toblit.MaxY = yrel + (desty + height - 1);
+	
+	for (;NULL != CR; CR = CR->Next)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ? */
+	    if (andrectrect(&CR->bounds, &toblit, &intersect))
+	    {
+		    
+		
+	        if (NULL == CR->lobs)
+		{
+		
+		    HIDD_BM_BlitColorExpansion(BM_OBJ(bm)
+		    	, fontbm
+			, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
+			, intersect.MinY - toblit.MinY		/* srcY		*/
+			, intersect.MinX, intersect.MinY	/* destX, destY	*/
+			, intersect.MaxX - intersect.MinX + 1	/* width	*/
+			, intersect.MaxY - intersect.MinY + 1	/* height	*/
+		    );
+
+		}
+		else
+		{
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("blit_glyph_fast(): Superbitmap not handled yet\n");
+		    else
+		    {
+
+LOCK_HIDD(CR->BitMap);			
+
+			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
+			
+			HIDD_BM_BlitColorExpansion(BM_OBJ(bm)
+				, fontbm
+				, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
+				, intersect.MinY - toblit.MinY		/* srcY		*/
+				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY - CR->bounds.MinY	/* destY	*/
+				, intersect.MaxX - intersect.MinX + 1	/* width	*/
+				, intersect.MaxY - intersect.MinY + 1	/* height	*/
+			);
+ULOCK_HIDD(CR->BitMap);			
+			
+		    }
+
+		}
+		
+	    } /* if (cliprect intersects with area we want to draw to) */
+	    
+	} /* while (cliprects to examine) */
+	
+	UnlockLayerRom( L );
+	
+    } /* if (not screen rastport) */
+
+ULOCK_HIDD(bm);
+
+    ReturnVoid("blit_glyph_fast");
+}
+    
+    
+
 #define NUMCHARS(tf) ((tf->tf_HiChar - tf->tf_LoChar) + 2)
 #define CTF(x) ((struct ColorTextFont *)x)
 
@@ -1666,6 +1795,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     WORD  render_y;
     struct TextFont *tf;
     WORD current_x;
+    struct tfe_hashnode *hn;
+    Object *fontbm = NULL;
     
     if (!CorrectDriverData (rp, GfxBase))
     	return;
@@ -1675,6 +1806,13 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
       LockLayerRom(rp->Layer);	
     
     tf = rp->Font;
+    
+    /* Check if font has character data as a HIDD bitmap */
+    hn = tfe_hashlookup_intern(tf, GfxBase);
+    if (NULL != hn) {
+	fontbm = hn->font_bitmap;    
+    }
+    
 
     /* Render along font's baseline */
     render_y = rp->cp_y - tf->tf_Baseline;
@@ -1701,29 +1839,46 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    
 	if (tf->tf_Style & FSF_COLORFONT)
 	{
+#warning Handle color fonts	
 	}
 	else
 	{
-	
-	    UWORD *src;
 	    WORD xoffset;
-	    
 	    xoffset = charloc >> 16;
+	
+	    if (NULL != fontbm)
+	    {
+//	 	kprintf("F ");  
+		blit_glyph_fast(rp
+			, fontbm
+			, xoffset
+			, render_x, render_y
+			, charloc & 0xFFFF
+			, tf->tf_YSize
+		);
 	    
-	    src = ((UWORD *)tf->tf_CharData) + (xoffset >> 4);
-	    xoffset &= 0x0F;
+	    }
+	    else
+	    {
+	    
+	    	UWORD *src;
+	    
+//	 	kprintf("S ");  
+	    	src = ((UWORD *)tf->tf_CharData) + (xoffset >> 4);
+	    	xoffset &= 0x0F;
 
-	    /* Get pointer to start of chardata */
-	    D(bug("Blitting char at idx %d: %c\n", idx, *string));
+	    	/* Get pointer to start of chardata */
+	    	D(bug("Blitting char at idx %d: %c\n", idx, *string));
 	    
-	    BltTemplate((PLANEPTR) src
-	    	, xoffset
-		, tf->tf_Modulo
-		, rp
-		, render_x, render_y
-		, charloc & 0xFFFF 
-		, tf->tf_YSize
-	    );
+	    	BltTemplate((PLANEPTR) src
+	    		, xoffset
+			, tf->tf_Modulo
+			, rp
+			, render_x, render_y
+			, charloc & 0xFFFF 
+			, tf->tf_YSize
+	    	);
+	    }
 	    
 	}
 	
@@ -2366,6 +2521,7 @@ void driver_SetFont (struct RastPort * rp, struct TextFont * font,
     CorrectDriverData (rp, GfxBase);
 }
 
+
 struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	struct GfxBase * GfxBase)
 {
@@ -2395,6 +2551,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	    if (ExtendFont(tf, NULL))
 	    {
 	        tags = ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags;
+		
 	    }
 	    else
 	    	tags = NULL;
@@ -2408,8 +2565,8 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	}
     }
     Permit();
-	
 
+    
     return best_so_far;
 }
 
@@ -3807,6 +3964,7 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	{ aHidd_BitMap_Height,	ySize },
 	{ aHidd_BitMap_Depth,	1 },
 	{ aHidd_BitMap_Displayable, FALSE },
+	{ aHidd_BitMap_Friend, (IPTR)BM_OBJ(bm)	},
 	{ TAG_DONE, 0UL }
     };
 
@@ -3824,7 +3982,7 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     
     /* Create an offscreen HIDD bitmap of depth 1 to use in color expansion */
-    template_bm = NewObject(NULL, CLID_Hidd_PlanarBM, bm_tags);
+    template_bm = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
     if (!template_bm)
     	ReturnVoid("driver_BltTemplate");
 	
@@ -4728,3 +4886,85 @@ ULOCK_HIDD(bm);
     ReturnVoid("driver_BltMaskBitMapRastPort");
 }
 
+
+
+BOOL driver_FontHIDDInit(struct TextFont *font, struct GfxBase *GfxBase)
+{
+    /* First create a text font extension if not allredy present */
+    if (ExtendFont(font, NULL))
+    {
+	/* Get the font hash node */
+	struct tfe_hashnode *hn;
+	
+	hn = tfe_hashlookup_intern(font, GfxBase);
+	
+	if (NULL == hn->font_bitmap)
+	{
+	    ULONG width, height;
+	    /* Caclulate sizes for the font bitmap */
+	    struct TagItem bm_tags[] = {
+	    	{ aHidd_BitMap_Width,		0	},
+		{ aHidd_BitMap_Height,		0	},
+		{ aHidd_BitMap_Displayable,	FALSE	},
+		{ aHidd_BitMap_Depth,		1	},
+		{ TAG_DONE,	0UL }
+	    
+	    };
+
+	    width  = font->tf_Modulo * 8;
+	    height = font->tf_YSize;
+	    
+	    bm_tags[0].ti_Data = width;
+	    bm_tags[1].ti_Data = height;
+	    
+#warning Handle color textfonts
+	    
+	    hn->font_bitmap = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
+	    if (NULL != hn->font_bitmap)
+	    {
+	    	struct template_info ti;
+		ti.source	= font->tf_CharData;
+		ti.x_src	= 0;
+		ti.modulo	= font->tf_Modulo;
+		ti.invertsrc	= FALSE;
+		
+	    	/* Copy the character data into the bitmap */
+		amiga2hidd_fast((APTR)&ti
+			, 0, 0
+			, hn->font_bitmap
+			, 0, 0
+			, width, height
+			, template_to_buf
+		);
+		
+		/* All done */
+		return TRUE;
+			
+	    }
+	    
+	    
+	}
+	else
+	{
+	    return TRUE;
+	}
+    }
+	
+    return FALSE;
+}
+
+void driver_FontHIDDCleanup(struct TextFont *font, struct GfxBase *GfxBase)
+{
+    /* Get the font hash node */
+    struct tfe_hashnode *hn;
+	
+    hn = tfe_hashlookup_intern(font, GfxBase);
+	
+
+    if (NULL != hn->font_bitmap)
+    {
+	DisposeObject(hn->font_bitmap);
+    }
+    
+    return;
+}

@@ -22,6 +22,9 @@
 #ifndef GRAPHICS_RASTPORT_H
 #   include <graphics/rastport.h>
 #endif
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
+#endif
 
 /* This structure is used for hash lookup of textfontextensions.
     Works somewhat like GfxNew(), GfxAssociate(), GfxLookup() etc */
@@ -31,6 +34,9 @@ struct tfe_hashnode
     struct tfe_hashnode 	*next;
     struct TextFont		*back;
     struct TextFontExtension	*ext;
+    
+    /* A bitmap describing the font */
+    Object *font_bitmap;
 };
 
 extern struct GfxBase * GfxBase;
@@ -52,8 +58,9 @@ struct GfxBase_intern
 };
 
 extern struct TextFontExtension *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase);
+extern struct tfe_hashnode *tfe_hashlookup_intern(struct TextFont *tf, struct GfxBase *GfxBase);
 
-extern BOOL tfe_hashadd(struct TextFontExtension * etf
+extern struct tfe_hashnode *tfe_hashadd(struct TextFontExtension * etf
 		, struct TextFont *tf
 		, struct GfxBase *GfxBase);
 extern VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
@@ -205,6 +212,9 @@ extern LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
 			    struct GfxBase *);
 			    
 extern void driver_WaitTOF (struct GfxBase *);
+
+extern BOOL driver_FontHIDDInit(struct TextFont *font, struct GfxBase *GfxBase);
+extern void driver_FontHIDDCleanup(struct TextFont *font, struct GfxBase *GfxBase);
 
 
 /* functions in support.c */

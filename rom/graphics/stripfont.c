@@ -8,6 +8,7 @@
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/oop.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************
@@ -57,10 +58,14 @@
 	return;
 		
     /* Does the font have an extension ? */
+    
     tfe = tfe_hashlookup(font, GfxBase);
-    if (tfe)
+    if (NULL != tfe)
     {
-    	/* Remove the hashitem (tfe_hashdeledet has semaphore protection) */
+    	/* Remove the hashitem (tfe_hashdelete() has semaphore protection) */
+	
+	driver_FontHIDDCleanup(font, GfxBase);
+	
 	tfe_hashdelete(font, GfxBase);
     
 	font->tf_Extension = tfe->tfe_OrigReplyPort;

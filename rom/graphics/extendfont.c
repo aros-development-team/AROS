@@ -27,7 +27,7 @@
 
 /*  FUNCTION
 	Checks whether or not a TextFont has a TextFontExtension.
-	If no extension exists, and tags are fontTags are supplied,
+	If no extension exists, and tags are supplied,
 	then it will try to build one.
 
     INPUTS
@@ -79,21 +79,26 @@
 	    
     if ((tfe = AllocMem(sizeof (struct TextFontExtension), MEMF_ANY|MEMF_CLEAR)) != NULL)
     {
-	/* We take a copy of the tagitems */
+	/* We make a copy of the tagitems */
 	if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
 	{
 	    /* Fill in the textfontextension *before* we make it public */
+	    struct tfe_hashnode *hn;
 				
-	    tfe->tfe_MatchWord	= 0; /* unused */
-	    tfe->tfe_BackPtr	= font;
+	    tfe->tfe_MatchWord		= 0; /* unused */
+	    tfe->tfe_BackPtr		= font;
 	    tfe->tfe_OrigReplyPort	= font->tf_Message.mn_ReplyPort;
 					
 	    TFE(font->tf_Extension) = tfe;
 	    font->tf_Style |= FSF_TAGGED;
 		
-	    if (tfe_hashadd(tfe, font, GfxBase))
+	    hn = tfe_hashadd(tfe, font, GfxBase);
+	    if (NULL != hn)
 	    {
-		return TRUE;
+	    	if (driver_FontHIDDInit(font, GfxBase))
+		{
+		    return TRUE;
+		}
 	    }
 	    FreeTagItems(fontTags);
 

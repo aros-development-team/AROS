@@ -64,7 +64,7 @@ struct gfx_data
 };
 
 
-static VOID cleanupx11stuff(struct gfx_data *data);
+static VOID cleanupx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
 static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
 
 /*********************
@@ -111,7 +111,7 @@ static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
     EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
     data = INST_DATA(cl, o);
     
-    cleanupx11stuff(data);
+    cleanupx11stuff(data, XSD(cl));
     D(bug("X11Gfx::Dispose: calling super\n"));
     
     DoSuperMethod(cl, o, msg);
@@ -334,16 +334,46 @@ LX11
 		, data->cursor
 		, &fg, &bg
 	);
+	
+	
+	/* Create a dummy window for pixmaps */
+	
+	xsd->dummy_window_for_creating_pixmaps = XCreateSimpleWindow(
+		  data->display
+		, DefaultRootWindow(data->display)
+		, 0, 0
+		, 100, 100
+		, 0
+		, BlackPixel(data->display, data->screen)
+		, BlackPixel(data->display, data->screen)
+	);
+	
+	
+	if (0 == xsd->dummy_window_for_creating_pixmaps)
+	{
+	    ok = FALSE;
+	   
+	}
 
+#if 0
+	else
+	{
+	    XMapRaised(data->display, xsd->dummy_window_for_creating_pixmaps);
+	}
+#endif
 UX11
     
     ReturnBool("initx11stuff()\n", ok);
 
 }
 
-static VOID cleanupx11stuff(struct gfx_data *data)
+static VOID cleanupx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
 {
     /* Do nothing for now */
+    if (0 != xsd->dummy_window_for_creating_pixmaps)
+    {
+    	XDestroyWindow(data->display, xsd->dummy_window_for_creating_pixmaps);
+    }
     return;
 }
 

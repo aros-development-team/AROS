@@ -1,4 +1,6 @@
 
+#include <sys/types.h>
+#include <signal.h>
 
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
@@ -197,9 +199,6 @@ UX11
     	/* Special drawmode */
 	
 
-/*	kprintf("Getting image (%d, %d, %d, %d)\n", msg->minX, msg->minY
-		, width, height);
-*/
 LX11	
 	image = XGetImage(data->display
 		, DRAWABLE(data)
@@ -222,12 +221,10 @@ UX11
 		
 
 		pixel = XGetPixel(image, x, y);
-// kprintf("image: %p (%d, %d)\n", image, x, y);		    
 		
 		
 		dest = map_x11_to_hidd(data->hidd2x11cmap,  pixel /* XGetPixel(image, x, y) */);
 
-// kprintf("src, dest, val: %d, %d, %d\n", src, dest, val);		    
 
 		/* Apply drawmodes to pixel */
 	   	if(mode & 1) val = ( src &  dest);
@@ -329,19 +326,29 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     data = INST_DATA(cl, o);
     GetAttr(o, aHidd_BitMap_DrawMode, &mode);
 
-// kprintf("Drawable to get pixels from: %p\n", DRAWABLE(data));
 LX11    
+    if (1 == data->depth) {
+    	XSetForeground(data->display, data->gc, WhitePixel(data->display, data->screen));
+    	XDrawLine(data->display
+		, DRAWABLE(data)
+		, data->gc
+		, 0, 0
+		, 7
+		, 7
+	);
+    }
     image = XGetImage(data->display
     	, DRAWABLE(data)
 	, msg->x, msg->y
 	, msg->width, msg->height
-	, AllPlanes
-	, ZPixmap
+	, data->depth == 1 ? 0x1 : AllPlanes
+	, data->depth == 1 ? XYPixmap : ZPixmap
     );
-UX11    
+UX11
+    assert(image != 0);    
     if (!image)
     	ReturnVoid("X11Gfx.BitMap::PutImage(couldn't get XImage)");
-    	
+
     D(bug("drawmode: %d\n", mode));
     if (mode == vHidd_GC_DrawMode_Copy)
     {
@@ -351,9 +358,15 @@ UX11
 	{
 	    for (x = 0; x < msg->width; x ++)
 	    {
-		
-		XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
-		
+	    	if (data->depth == 1) {
+			if (*pixarray ++ == 0) {
+				XPutPixel(image, x, y, 0);
+			} else {
+				XPutPixel(image, x, y, 1);
+			}
+		} else {
+			XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
+		}
 		
 	    }
 	    
@@ -387,19 +400,19 @@ UX11
 	}
     }
     /* Put image back into display */
+
 LX11    
+
     XPutImage(data->display
     	, DRAWABLE(data)
 	, data->gc
 	, image
 	, 0, 0
 	, msg->x, msg->y
-	, msg->width, msg->height);
-	
-	
-   XDestroyImage(image);
-
-   XFlush(data->display);
+	, msg->width, msg->height
+    );
+    XDestroyImage(image);
+    XFlush(data->display);
 UX11   
    ReturnVoid("X11Gfx.BitMap::PutImage");
 
@@ -416,23 +429,16 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
     ULONG fg, bg, fg_pixel, bg_pixel;
     LONG x, y;
     
+    Drawable d;
+    
+    
     EnterFunc(bug("X11Gfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n"
     	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
     
     /* Get the color expansion mode */
     GetAttr(o, aHidd_BitMap_ColorExpansionMode, &cemd);
-
-LX11    
-    dest_im = XGetImage(data->display
-    	, DRAWABLE(data)
-	, msg->destX, msg->destY
-	, msg->width, msg->height
-	, AllPlanes
-	, ZPixmap);
-    	
-UX11    
-    if (!dest_im)
-    	ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
+    
+    GetAttr(msg->srcBitMap, aHidd_X11BitMap_Drawable, (IPTR *)&d);
 
     GetAttr(o, aHidd_BitMap_Foreground, &fg);
     GetAttr(o, aHidd_BitMap_Background, &bg);
@@ -444,54 +450,108 @@ UX11
     
     D(bug("fg_pixel: %d\n", fg_pixel));
     D(bug("bg_pixel: %d\n", bg_pixel));
-
-    D(bug("Src bm: %p\n", msg->srcBitMap));
-    for (y = 0; y < msg->height; y ++)
+    
+    if (0 != d)
     {
-    	for (x = 0; x < msg->width; x ++)
+	XSetForeground(data->display, data->gc, fg_pixel);
+    	if (cemd & vHidd_GC_ColExp_Opaque)  
 	{
-	    ULONG is_set;
+//	    kprintf("XCP\n");
+	    XSetBackground(data->display, data->gc, bg_pixel);
 	    
-	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+	    XCopyPlane(data->display
+	    	, d, DRAWABLE(data)
+		, data->gc
+		, msg->srcX, msg->srcY
+		, msg->width, msg->height
+		, msg->destX, msg->destY
+		, 0x01
+	    );
+	} else {
+	    /* Do transparent blit */
 	    
-/* D(bug("%d", is_set)); */
-	    if (is_set)
-	    {
-	    	XPutPixel(dest_im, x, y, fg_pixel);
-		
-	    }
-	    else
-	    {
-		if (cemd & vHidd_GC_ColExp_Opaque)
-		{
-		    XPutPixel(dest_im, x, y, bg_pixel);
-		}
-	    }
-	} /* for (each x) */
-/*	D(bug("\n")); */
+//	    kprintf(" XSCM\n");
+
+	    XSetClipOrigin(data->display
+	    	, data->gc
+		, msg->destX - msg->srcX
+		, msg->destY - msg->srcY
+	    );
+	    XSetClipMask(data->display, data->gc, d);
 	    
-    } /* for (each y) */
-    
-    
-    /* Put image back into display */
+	    XFillRectangle(data->display
+	    	, DRAWABLE(data)
+		, data->gc
+		, msg->destX, msg->destY
+		, msg->width, msg->height
+	    );
+	    
+	    /* Reset clipmask and clip origin */
+	    XSetClipMask(data->display, data->gc, None);
+	    XSetClipOrigin(data->display, data->gc, 0, 0);
+	}
+    }
+    else
+    {
+
 LX11    
-    XPutImage(data->display
-    	, DRAWABLE(data)
-	, data->gc
-	, dest_im
-	, 0, 0
-	, msg->destX, msg->destY
-	, msg->width, msg->height
-    );
-    
-    
-    XDestroyImage(dest_im);
-    
-    XFlush(data->display);
-    
+	dest_im = XGetImage(data->display
+		, DRAWABLE(data)
+		, msg->destX, msg->destY
+		, msg->width, msg->height
+		, AllPlanes
+		, ZPixmap);
+    	
 UX11    
+	if (!dest_im)
+    	    ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
+
+
+	D(bug("Src bm: %p\n", msg->srcBitMap));
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+		ULONG is_set;
+	    
+	    	is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+	    
+	    	if (is_set)
+	    	{
+	    	    XPutPixel(dest_im, x, y, fg_pixel);
+		
+	    	}
+	    	else
+	    	{
+		    if (cemd & vHidd_GC_ColExp_Opaque)
+		    {
+			XPutPixel(dest_im, x, y, bg_pixel);
+		    }
+		}
+	    } /* for (each x) */
+	    
+    	} /* for (each y) */
     
-    ReturnVoid("X11Gfx.BitMap::BlitColorExpansion()");
+	/* Put image back into display */
+LX11    
+	XPutImage(data->display
+    		, DRAWABLE(data)
+		, data->gc
+		, dest_im
+		, 0, 0
+		, msg->destX, msg->destY
+		, msg->width, msg->height
+    	);
+
+    	XDestroyImage(dest_im);
+UX11
+    }
+    
+
+LX11
+    XFlush(data->display);
+UX11    
+    ReturnVoid("X11Gfx.BitMap::BlitColorExpansion");
 }
 
 /*********  BitMap::CopyBox()  *************************************/
@@ -527,12 +587,8 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
     	dest = DRAWABLE(data);
     }
 
-/*    kprintf("src: %p, dest: %p, mode: %d\n", DRAWABLE(data), dest, mode);
-*/
     if (mode == vHidd_GC_DrawMode_Copy) /* Optimize this drawmode */
     {
-/*    kprintf("Copy drawmode\n");
-*/
 LX11
     	XCopyArea(data->display
     		, DRAWABLE(data)	/* src	*/

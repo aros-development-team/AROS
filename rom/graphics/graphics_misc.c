@@ -26,11 +26,11 @@ ULONG CalcHashIndex(ULONG n)
 }
 
 
-/* Functions for solving the TextFontExtensionProblem using hashes */
+/* Functions for solving the TextFontExtension problem using hashes */
 
 #define GFBI(x) ((struct GfxBase_intern *)x)
 
-static ULONG tfe_calchashidx(APTR ptr)
+static inline ULONG tfe_calchashidx(APTR ptr)
 {
     ULONG val = (ULONG)ptr;
 
@@ -44,7 +44,8 @@ static ULONG tfe_calchashidx(APTR ptr)
     return idx;
 }
 
-struct TextFontExtension *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase)
+
+struct tfe_hashnode *tfe_hashlookup_intern(struct TextFont *tf, struct GfxBase *GfxBase)
 {
    
     ULONG idx = tfe_calchashidx(tf);
@@ -55,15 +56,41 @@ struct TextFontExtension *tfe_hashlookup(struct TextFont *tf, struct GfxBase *Gf
     for ( n = GFBI(GfxBase)->tfe_hashtab[idx]; n; n = n->next)
     {
         if (n->back == tf)
-	    return n->ext;
+	{
+	    break;
+	}
     }
 
     ReleaseSemaphore( &GFBI(GfxBase)->tfe_hashtab_sema );
     
-    return NULL;
+    return n;
 }
 
-BOOL tfe_hashadd(struct TextFontExtension * etf
+struct TextFontExtension *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase)
+{
+   
+    ULONG idx = tfe_calchashidx(tf);
+    struct tfe_hashnode *n;
+    struct TextFontExtension *tfe = NULL;
+    
+
+    ObtainSemaphoreShared( &GFBI(GfxBase)->tfe_hashtab_sema );
+    
+    for ( n = GFBI(GfxBase)->tfe_hashtab[idx]; n; n = n->next)
+    {
+        if (n->back == tf)
+	{
+	    tfe = n->ext;
+	    break;
+	}
+    }
+
+    ReleaseSemaphore( &GFBI(GfxBase)->tfe_hashtab_sema );
+    
+    return tfe;
+}
+
+struct tfe_hashnode *tfe_hashadd(struct TextFontExtension * etf
 		, struct TextFont *tf
 		, struct GfxBase *GfxBase)
 
@@ -71,7 +98,7 @@ BOOL tfe_hashadd(struct TextFontExtension * etf
     ULONG idx = tfe_calchashidx(tf);
     struct tfe_hashnode *n;
     
-    n = AllocMem( sizeof (struct tfe_hashnode), MEMF_ANY);
+    n = AllocMem( sizeof (struct tfe_hashnode), MEMF_ANY|MEMF_CLEAR);
     if (n)
     {
     	n->back = tf;
@@ -84,10 +111,10 @@ BOOL tfe_hashadd(struct TextFontExtension * etf
 	
 	ReleaseSemaphore( &GFBI(GfxBase)->tfe_hashtab_sema );
 	
-	return TRUE;
+	return n;
 
     }
-    return FALSE;
+    return NULL;
 }
 
 VOID tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase)
