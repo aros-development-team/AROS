@@ -70,7 +70,7 @@ Task: 0x80765e8 (Idle task)
 Either the problem is that the stack grows or the Task structure for the
 idle task gets corrupted. Might be connected to BUG000007.
 
-BUG000009 partial fix
+BUG000009 fixed
 digulla@aros.fh-konstanz.de
 demowin doesn't refresh correctly anymore since Moria3D bug has been
 fixed. The initial REFRESH is not sent to the window.
@@ -81,7 +81,7 @@ moves the mouse :-/
 This will be fixed as soon as the X Graphics HIDD is available.
 Maybe connected to BUG000010.
 
-BUG000010
+BUG000010 fixed
 digulla@aros.fh-konstanz.de
 Refresh doesn't work correctly or not at all if the window is resized.
 This will be fixed as soon as the X Graphics HIDD is available.
@@ -152,7 +152,7 @@ bergers@aros.org
 Demos/demowin kills the X server (on Linux/m68k) after correctly drawing the
 windowcontents.
 
-BUG000022
+BUG000022 fixed
 bergers@aros.org
 After Demos/listfonts the next entry to the shell will cause a Segmentation 
 Fault. The output of listfonts looks like garbage at some lines.
@@ -166,6 +166,9 @@ before that line everything works out alright and you'll be able to enter
 commands to the shell. But if you put these two lines after the call to
 CallHookPkt() you'll get the segmentation fault. Unfortunately I don't know
 which code is executed by the call to CallHookPkt()."
+
+The problem was caused by lots of bugs in the diskfont library. (Fixed
+by Georg Steger.)
 
 BUG000023
 bergers@aros.org
@@ -395,7 +398,7 @@ the strings are only partially displayed in their correct colors (for
 active/inactive window): The strings first part is in the correct color
 but then they swap fg and bg color.
 
-BUG000057 fixed (somewhat)
+BUG000057 fixed
 bergers@aros.org
 Demos/filereq is a simple refreshed (is this the reason ??) window and has a 
 few problems. The slider bar is incorrectly drawn, no reaction on pushed
@@ -453,7 +456,7 @@ bergers@aros.org
 ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
 crashes.
 
-BUG000065 seem to be fixed
+BUG000065 seems to be fixed
 bernie@aros.org
 AROS dumps core when you attempt to cd into a plain file (try "cd aros" in
 the Workbench: directory).
@@ -535,4 +538,3 @@ stefan.berger@att.net
 'Aros' only links correctly if layers library has a global variable
 GfxBase, otherwise GfxBase is undefined in graphics.library.
 Also see 'nm -u libgraphics.so'
-
