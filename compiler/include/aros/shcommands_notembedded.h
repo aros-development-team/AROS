@@ -7,6 +7,7 @@
 #define SHCOMMANDS_EMBEDDED_H
 
 #include <dos/dos.h>
+#include <dos/rdargs.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <aros/asmcall.h>
