@@ -61,7 +61,9 @@ and
 - Another attempt
 \item \link{Memory Protection for AmigaOS}
 {http://www.informatik.tu-muenchen.de/~stieber/AmigaOS-Speicherschutz},
-Only in German.
+(only in German) or
+\link{Memory Protection FAQ}{http://olis.north.de/~indy/Speicherschutz-FAQ.html}
+(also in German).
 \item \label{ADE}\link{ADE - Amiga Development Environment}
 {http://www.ninemoons.com/ADE/ADE.html} on
 \link{Cronus}{http://www.ninemoons.com/}
