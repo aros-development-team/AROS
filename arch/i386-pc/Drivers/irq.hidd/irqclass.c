@@ -147,7 +147,7 @@ OOP_Class *init_irqclass (struct irq_staticdata *isd)
         OOP_AddClass(cl);
     }
 
-    ReturnPtr("init_irqclass", Class *, cl);
+    ReturnPtr("init_irqclass", OOP_Class *, cl);
 }
 
 void free_irqclass(struct irq_staticdata *isd)
