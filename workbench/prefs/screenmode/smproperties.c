@@ -53,31 +53,30 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     self = (Object *)DoSuperNewTags
     (
         CLASS, self, NULL,
-        Child, (IPTR)HGroup,
-	    Child, (IPTR)ColGroup(4),
-	        Child, (IPTR)Label1("\33lWidth:"),
-	        Child, HLeft(width = NumericbuttonObject, End),
-		Child, (IPTR)(def_width = CheckMarkObject, End),
-	        Child, (IPTR)Label1("\33l_default"),
+	MUIA_Group_Horiz, TRUE,
+        Child, (IPTR)ColGroup(4),
+	    Child, (IPTR)Label1("\33lWidth:"),
+	    Child, HLeft(width = NumericbuttonObject, End),
+	    Child, (IPTR)(def_width = CheckMarkObject, End),
+	    Child, (IPTR)Label1("\33l_default"),
 	        
-		Child, (IPTR)Label1("\33lHeight:"),
-	        Child, HLeft(height = NumericbuttonObject, End),
-		Child, (IPTR)(def_height = CheckMarkObject, End),
-	        Child, (IPTR)Label1("\33ld_efault"),
+	    Child, (IPTR)Label1("\33lHeight:"),
+	    Child, HLeft(height = NumericbuttonObject, End),
+	    Child, (IPTR)(def_height = CheckMarkObject, End),
+	    Child, (IPTR)Label1("\33ld_efault"),
 	        
-		Child, (IPTR)Label1("\33lDepth:"),
-	        Child, HLeft(depth = NumericbuttonObject, End),
-		Child, (IPTR)RectangleObject, End,
-		Child, (IPTR)RectangleObject, End,		
-	    End,  
+	    Child, (IPTR)Label1("\33lDepth:"),
+	    Child, HLeft(depth = NumericbuttonObject, End),
+	    Child, (IPTR)RectangleObject, End,
+	    Child, (IPTR)RectangleObject, End,		
+	End,  
 	    
-	    Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
+	Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
 	    
-	    Child, (IPTR)HCenter(HGroup,
-		Child, (IPTR)Label1("\33lAutoscroll"),
-		Child, (IPTR)(autoscroll = CheckMarkObject, End),
-	    End),
-	End,
+	Child, (IPTR)HCenter(HGroup,
+	    Child, (IPTR)Label1("\33lAutoscroll"),
+	    Child, (IPTR)(autoscroll = CheckMarkObject, End),
+	End),
 	
         TAG_MORE, (IPTR)message->ops_AttrList
     );
