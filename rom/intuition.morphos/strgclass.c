@@ -87,7 +87,7 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
     struct TagItem *tag, *tstate;
     struct StrGData *data = INST_DATA(cl, o);
 
-    for (tstate = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tstate)); )
+    for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
     {
         IPTR tidata = tag->ti_Data;
         BOOL notify = FALSE;
