@@ -232,6 +232,15 @@ error:
 
     CloseLibrary((struct Library *)DOSBase);
 
+    /* Reply startup message to Workbench.
+     * We Forbid() to avoid being UnLoadSeg()ed before we're really finished.
+     */
+    if (WBenchMsg)
+    {
+	Forbid();
+	ReplyMsg(WBenchMsg);
+    }
+
     return __startup_error;
 } /* entry */
 
