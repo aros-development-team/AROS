@@ -252,9 +252,6 @@ $(TMP_TARGETBASE).d : %(basename).c
 # - alias: the alias to which this should point
 %define rule_archalias mainmmake=\A arch=\A alias=\A
 
-#MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU) \
-#MM    %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
-
 #MM- %(mainmmake)-%(arch) : %(mainmmake)-%(alias)
 %end
 #------------------------------------------------------------------------------
