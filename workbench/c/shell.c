@@ -519,12 +519,15 @@ static void printPrompt(void)
 	    switch(AROS_BSTR_getchar(prompt, i))
 	    {
 	    case 'N':
+	    case 'n':
 		printCliNum();
 		break;
 	    case 'R':
+	    case 'r':
 		printResult();
 		break;
 	    case 'S':
+	    case 's':
 		printPath();
 		break;
 	    default:
