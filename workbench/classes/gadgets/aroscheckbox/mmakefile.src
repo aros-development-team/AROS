@@ -1,0 +1,94 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I..
+
+# This should maube be set in $(TOP)/config/make.cfg instead
+GADGETDIR=$(BINDIR)/Classes/Gadgets
+
+# Main function for aroscheckbox.gadget. Need this apart as an anchor for the link:
+INIT_FILE = aroscheckbox_init
+
+FILES = aroscheckbox_functable checkboxclass support
+
+# Guarantee that this will go at the end of the file:
+END_FILE    := aroscheckbox_endtag
+FUNCTIONS   :=
+OBJDIR	    := $(GENDIR)/$(CURDIR)
+OBJS	    := $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
+INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC     := $(OBJDIR)/$(END_FILE).o
+
+CLASS	    := $(GADGETDIR)/aroscheckbox.gadget
+
+#MM workbench : setup includes
+workbench : show-flags $(CLASS)
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Generate a map file
+MAPGEN = -Xlinker -M
+
+# Strip resulting binary
+STRIP = strip
+
+# ***** Not Native ***************
+else
+
+MAPGEN =
+STRIP = true
+
+# ***** END ***************
+endif
+
+%define_libs prelibs=-laroscheckbox
+
+# The filename of the linklib
+LIB := $(LIBDIR)/libaroscheckbox.a
+
+$(CLASS) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroscheckboxlib.map
+	%checkuds
+	@$(IF) $(TEST) ! -s aroscheckboxlib.map; then $(RM) aroscheckboxlib.map ; else $(NOP) ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB) : $(OBJS)
+	@$(ECHO) "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(GADGETDIR)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+aroscheckbox_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q AROSCheckbox
+
+aroscheckbox_endtag.c : $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q AROSCheckbox
+
+$(OBJDIR)/aroscheckbox_init.o : libdefs.h
+
+%libdefs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
