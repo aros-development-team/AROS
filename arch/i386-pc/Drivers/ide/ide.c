@@ -178,14 +178,14 @@ AROS_LH2(struct ideBase *,  init,
                             if ( bus.ib_Dev0 >= IDE_DEVTYPE_ATA )
                             {
                                 IBase->ide_BoardAddr[cunit] = Ports[i];
-                                IBase->ide_DevMaskArray[cunit++] = bus.ib_Dev0;
+                                IBase->ide_DevMaskArray[cunit++] = bus.ib_Dev0 | 0xa0;
                                 D(bug("ide_init: Master found at port %x\n",Ports[i]));
                             }
                             /* Slave, perhaps */
                             if ( bus.ib_Dev1 >= IDE_DEVTYPE_ATA )
                             {
                                 IBase->ide_BoardAddr[cunit] = Ports[i];
-                                IBase->ide_DevMaskArray[cunit++] = bus.ib_Dev1 | ATAF_SLAVE;
+                                IBase->ide_DevMaskArray[cunit++] = bus.ib_Dev1 | ATAF_SLAVE | 0xa0;
                                 D(bug("ide_init:  Slave found at port %x\n",Ports[i]));
                             }                            
                         }
