@@ -18,6 +18,8 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "exec_debug.h"
 #ifndef DEBUG_AllocMem
 #   define DEBUG_AllocMem 0

@@ -8,8 +8,14 @@
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/macros.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "memory.h"
+
+#define MDEBUG 1
+#include <aros/debug.h>
 
 /*****************************************************************************
 
