@@ -57,25 +57,6 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #define G(x) ((struct Gadget*)(x))
 #define GADGETID(x) (((struct Gadget*)(x))->GadgetID)
 
-#ifdef _AROS
-#define DO_HALFSHINE_GUN(a,b) ({ ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4); val + (val<<8) + (val<<16) + (val<<24);})
-#define DO_HALFSHADOW_GUN(a,b) ({ ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6); val + (val<<8) + (val<<16) + (val<<24);})
-#else
-static ULONG DO_HALFSHINE_GUN(ULONG a, ULONG b)
-{
-    ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4);
-    val = val + (val<<8) + (val<<16) + (val<<24);
-    return val;
-}
-
-static ULONG DO_HALFSHADOW_GUN(ULONG a, ULONG b)
-{
-    ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6);
-    val = val + (val<<8) + (val<<16) + (val<<24);
-    return val;
-}
-#endif
-
 /* this is for the cycle list */
 struct ObjNode
 {
@@ -178,6 +159,20 @@ struct __dummyXFC3__
 /** Public functions                                                       **/
 /****************************************************************************/
 
+static ULONG DoHalfshineGun(ULONG a, ULONG b)
+{
+    ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4);
+    val = val + (val<<8) + (val<<16) + (val<<24);
+    return val;
+}
+
+static ULONG DoHalfshadowGun(ULONG a, ULONG b)
+{
+    ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6);
+    val = val + (val<<8) + (val<<16) + (val<<24);
+    return val;
+}
+
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     ULONG rgbtable[3 * 3];
@@ -214,15 +209,15 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 
     mri->mri_PensStorage[MPEN_HALFSHINE] = 
 	ObtainBestPenA(mri->mri_Colormap,
-		       DO_HALFSHINE_GUN(rgbtable[0], rgbtable[3]),
-		       DO_HALFSHINE_GUN(rgbtable[1], rgbtable[4]),
-		       DO_HALFSHINE_GUN(rgbtable[2], rgbtable[5]), NULL);
+		       DoHalfshineGun(rgbtable[0], rgbtable[3]),
+		       DoHalfshineGun(rgbtable[1], rgbtable[4]),
+		       DoHalfshineGun(rgbtable[2], rgbtable[5]), NULL);
 
     mri->mri_PensStorage[MPEN_HALFSHADOW] = 
 	ObtainBestPenA(mri->mri_Colormap,
-		       DO_HALFSHADOW_GUN(rgbtable[6], rgbtable[3]),
-		       DO_HALFSHADOW_GUN(rgbtable[7], rgbtable[4]),
-		       DO_HALFSHADOW_GUN(rgbtable[8], rgbtable[5]), NULL);
+		       DoHalfshadowGun(rgbtable[6], rgbtable[3]),
+		       DoHalfshadowGun(rgbtable[7], rgbtable[4]),
+		       DoHalfshadowGun(rgbtable[8], rgbtable[5]), NULL);
 
 /* I'm really not sure that MUI does this for MPEN_MARK, but it seems mostly acceptable -dlc */
     mri->mri_PensStorage[MPEN_MARK] =
