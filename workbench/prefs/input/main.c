@@ -265,6 +265,7 @@ static void GetVisual(void)
 
 static void FreeVisual(void)
 {
+    if (vi) FreeVisualInfo(vi);
     if (dri) FreeScreenDrawInfo(scr, dri);
     if (scr) UnlockPubScreen(NULL, scr);
 }
@@ -510,12 +511,13 @@ static void MakeGadgets(void)
 	if (!buttontable[i].gad) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
 	
     }
-    
+
     for(i = 0; i < NUM_PAGES; i++)
     {
     	if (!(pagetable[i].handler(PAGECMD_MAKEGADGETS, 0)))
 	    Cleanup(MSG(MSG_CANT_CREATE_GADGET));
     }
+
 }
 
 /*********************************************************************************************/
