@@ -17,8 +17,9 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
-/*  #define MYDEBUG 1 */
+/*#define MYDEBUG 1*/
 #include "debug.h"
+
 #include "support.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -32,6 +33,7 @@ struct MUI_SliderData
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
     struct MUI_ImageSpec_intern *knob_bg;
+    LONG knob_offset; /* current pixel offest for fine algiment */
     LONG knob_left;
     LONG knob_top;
     LONG knob_width;
@@ -40,6 +42,9 @@ struct MUI_SliderData
     LONG last_val;
     LONG max_text_width;
     LONG state; /* When using mouse */
+    int keep_knob_offset;
+
+    int same_knop_value; /* 1 if the knob value didn't change in since last call of MUIM_Draw */
 };
 
 
@@ -107,6 +112,30 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
     data->ehn.ehn_Class    = cl;
 
     return (ULONG)obj;
+}
+
+/**************************************************************************
+ MUIM_Show
+**************************************************************************/
+static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+    struct TagItem *tags, *tag;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+	switch (tag->ti_Tag)
+	{
+	    case    MUIA_Numeric_Value:
+		    if (!data->keep_knob_offset)
+		    {
+			/* reset the offset */
+			data->knob_offset = 0;
+			break;
+		    }
+	}
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);    
 }
 
 /**************************************************************************
@@ -236,6 +265,11 @@ static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 
     if (data->knob_bg)
 	zune_imspec_hide(data->knob_bg);
+
+    /* This may look ugly when window is resized but it is easier than recalculating
+     * the knob offset in Slider_Show */
+    data->knob_offset = 0;
+
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -260,12 +294,26 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (data->flags & SLIDER_HORIZ)
     {
 	data->knob_top  = _mtop(obj);
-        data->knob_left = DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width) + _mleft(obj);
+        data->knob_left = DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width) + data->knob_offset + _mleft(obj);
+
+	if (data->knob_left < _mleft(obj)) data->knob_left = _mleft(obj);
+	else
+	{
+	    if (data->knob_left + data->knob_width > _mright(obj))
+		data->knob_left = _mright(obj) - data->knob_width;
+	}
     }
     else
     {
-        data->knob_top  = (_mheight(obj) - data->knob_height - DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScale, 0, _mheight(obj) - data->knob_height)) + _mtop(obj);
+        data->knob_top  = (_mheight(obj) - data->knob_height - DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScale, 0, _mheight(obj) - data->knob_height)) + data->knob_offset + _mtop(obj);
 	data->knob_left = _mleft(obj);
+
+	if (data->knob_top < _mtop(obj)) data->knob_top = _mtop(obj);
+	else
+	{
+	    if (data->knob_top + data->knob_height > _mbottom(obj))
+		data->knob_top = _mbottom(obj) - data->knob_height;
+	}
     }
 
     DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0,0,0);
@@ -292,6 +340,7 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop + 1);
     Text(_rp(obj), buf, strlen(buf));
 
+    data->same_knop_value = 0;
     return TRUE;
 }
 
@@ -362,11 +411,21 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 	{
 	    IPTR oldval;
 	    LONG newval;
+	    LONG pixel;
+	    LONG oldko = data->knob_offset;
 
 	    if (data->flags & SLIDER_HORIZ)
+	    {
 		newval =  DoSuperMethod(cl, obj, MUIM_Numeric_ScaleToValue,
-					0, _mwidth(obj) - data->knob_width,
-					msg->imsg->MouseX - data->knob_click);
+				        0, _mwidth(obj) - data->knob_width,
+				        msg->imsg->MouseX - data->knob_click);
+
+		pixel = DoSuperMethod(cl, obj,MUIM_Numeric_ValueToScaleExt, newval, 0, _mwidth(obj) - data->knob_width) + data->knob_click;
+		if (data->knob_offset < 0) data->knob_offset = 0;
+		data->knob_offset = msg->imsg->MouseX - pixel;
+		data->keep_knob_offset = 1;
+//		D(bug("%ld %ld %ld %ld %ld\n",data->knob_offset, pixel, msg->imsg->MouseX, _mleft(obj), data->knob_click));
+	    }
 	    else
 	    {
 		LONG scale;
@@ -375,14 +434,22 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 		newval =  DoSuperMethod(cl, obj, MUIM_Numeric_ScaleToValue,
 					0, _mheight(obj) - data->knob_height,
 					scale);
-		D(bug("%p: Y=%ld scale=%ld val=%ld\n", obj, msg->imsg->MouseY, scale, newval));
+		pixel = (_mheight(obj) - data->knob_height - DoSuperMethod(cl, obj, MUIM_Numeric_ValueToScaleExt, newval, 0, _mheight(obj) - data->knob_height)) + data->knob_click;
+		data->knob_offset = msg->imsg->MouseY - pixel;
+		data->keep_knob_offset = 1;
+//		D(bug("%0lx: Y=%ld scale=%ld val=%ld pixel: %ld koff: %ld\n", obj, msg->imsg->MouseY, scale, newval, pixel, data->knob_offset));
 	    }
 
 	    get(obj, MUIA_Numeric_Value, &oldval);
 	    if ((LONG)oldval != newval)
 	    {
 		set(obj, MUIA_Numeric_Value, newval);
+	    } else if (oldko != data->knob_offset)
+	    {
+	    	data->same_knop_value = 1;
+	    	MUI_Redraw(obj, MADF_DRAWOBJECT);
 	    }
+	    data->keep_knob_offset = 0;
 	}
 	break;
     }
@@ -395,6 +462,7 @@ BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
 	case OM_NEW: return Slider_New(cl, obj, (struct opSet *)msg);
+	case OM_SET: return Slider_Set(cl, obj, (struct opSet *)msg);
 	case MUIM_Setup: return Slider_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Slider_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_Show: return Slider_Show(cl, obj, (APTR)msg);
