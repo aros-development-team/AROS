@@ -511,7 +511,8 @@ mExitChange(struct IClass *cl, Object *obj,
 
 /* FIXME: this needs optimization !!! */
 	/* as a last resort only */
-	DoMethodA(_win(obj), (Msg)&method);
+	if ((_flags(obj) & MADF_SETUP) && _win(obj))
+	    DoMethodA(_win(obj), (Msg)&method);
     }
 
     return TRUE;
