@@ -61,6 +61,10 @@
 #include <utility/utility.h>
 #endif	/* UTILITY_TAGITEM_H */
 
+#ifndef INTUITION_INTUITION_H
+#include <intuition/intuition.h>
+#endif	/* INTUITION_INTUITION_H */
+
 #define	REQTOOLSNAME		 "reqtools.library"
 #define	REQTOOLSVERSION		 38L
 
