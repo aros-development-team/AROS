@@ -13,8 +13,21 @@ struct Library * MathTransBase;
 
 int main(int argc, char ** argv)
 {
-    LONG FFPOne, FFPTwo, FFPOnehalf;
+    LONG FFPOne, FFPTwo, FFPOnehalf, FFPMinusOne, FFPNull;
     LONG res;
+
+    FFPOne	= 0x80000041UL;
+    FFPTwo	= 0x80000042UL;
+    FFPMinusOne = 0x800000C1UL;
+    FFPOnehalf	= 0x80000040UL;
+    FFPNull	= 0x00000000UL;
+
+#define CHECK(func,args,cres) \
+    res = func args; \
+    if (res != cres) \
+	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=%08lx)\n", __LINE__, res, cres); \
+    else \
+	printf ("OK  : " #func " " #args "\n");
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
     {
@@ -25,37 +38,15 @@ int main(int argc, char ** argv)
     printf("Basic mathffp functionality test...\n");
 
     /* this should set the zero-bit*/
-    if ( 0 != SPAbs(0))
-	printf("Error with the SPAbs-function!\n");
-    else
-	printf("SPAbs-function seems ok!\n");
+    CHECK(SPAbs,(0),FFPNull);
 
-    FFPOne = SPFlt(1);
-    FFPTwo = SPAdd(FFPOne, FFPOne);
-    FFPOnehalf = SPDiv(FFPTwo, FFPOne);
-	/* 0.5 = 1/2 ;the call to SPDiv is correct even if it seems wrong!*/
-
-    if ( 0x80000041 != FFPOne)
-	printf("Error with the SPlt-function!\n");
-    else
-	printf("SPFlt-function seems ok!\n");
-
-    if ( 0x80000042 != FFPTwo)
-    {
-	printf("Error with the SPAdd-function!\n Exiting!\n");
-	return -1;
-    }
-    else
-	printf("SPAdd-function seems ok!\n");
-
-    if ( 0x80000040 != FFPOnehalf)
-    {
-	printf("Error with the SPDiv-function!\n Exiting!\n");
-	return -1;
-    }
-    else
-	printf("SPDiv-function seems ok!\n");
-
+    CHECK(SPFlt,(0),FFPNull);
+    CHECK(SPFlt,(1),FFPOne);
+    CHECK(SPFlt,(2),FFPTwo);
+    CHECK(SPFlt,(-1),FFPMinusOne);
+    CHECK(SPAdd,(FFPOne, FFPOne),FFPTwo);
+    CHECK(SPDiv,(FFPTwo, FFPOne),FFPOnehalf);
+    CHECK(SPMul,(FFPOne, FFPTwo),FFPTwo);
 
     CloseLibrary(MathBase);
 
@@ -67,24 +58,17 @@ int main(int argc, char ** argv)
 
     printf("Very basic mathtrans functionality test...\n");
 
-#define CHECK(func,args,cres) \
-    res = func args; \
-    if (res != cres) \
-	printf ("Error with the " #func "-function (got=0x%08lx expected=" #cres ")\n", res); \
-    else \
-	printf (#func "-function ok!\n");
-
-    CHECK (SPLog, (FFPTwo), 0xb1721840);
-    CHECK (SPLog10, (FFPTwo), 0x9a209b3f);
-    CHECK (SPSin, (FFPOne), 0xd76aa440);
-    CHECK (SPCos, (FFPOne), 0x8a514040);
-    CHECK (SPTan, (FFPOne), 0xc7592341);
-    CHECK (SPSinh, (FFPOne), 0x966cfe41);
-    CHECK (SPCosh, (FFPOne), 0xc583aa41);
-    CHECK (SPTanh, (FFPOne), 0xc2f7d640);
-    CHECK (SPExp, (FFPTwo), 0xec732543);
-    CHECK (SPAsin, (FFPOnehalf), 0x860a9240);
-    CHECK (SPAcos, (FFPOnehalf), 0x860a9241);
+    CHECK (SPLog,   (FFPTwo),     0xb1721840UL);
+    CHECK (SPLog10, (FFPTwo),     0x9a209b3fUL);
+    CHECK (SPSin,   (FFPOne),     0xd76aa440UL);
+    CHECK (SPCos,   (FFPOne),     0x8a514040UL);
+    CHECK (SPTan,   (FFPOne),     0xc7592341UL);
+    CHECK (SPSinh,  (FFPOne),     0x966cfe41UL);
+    CHECK (SPCosh,  (FFPOne),     0xc583aa41UL);
+    CHECK (SPTanh,  (FFPOne),     0xc2f7d640UL);
+    CHECK (SPExp,   (FFPTwo),     0xec732543UL);
+    CHECK (SPAsin,  (FFPOnehalf), 0x860a9240UL);
+    CHECK (SPAcos,  (FFPOnehalf), 0x860a9241UL);
 
     CloseLibrary(MathTransBase);
 
