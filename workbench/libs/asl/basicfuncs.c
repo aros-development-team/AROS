@@ -47,12 +47,7 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *, struct AslBase_intern *);
 
 /*****************************************************************************************/
 
-/****************/
-/* FindReqNode	*/
-/****************/
-
 /* Finds the internal requester data for a requester */
-
 
 struct ReqNode *FindReqNode(APTR req, struct AslBase_intern *AslBase)
 {
@@ -75,10 +70,6 @@ struct ReqNode *FindReqNode(APTR req, struct AslBase_intern *AslBase)
 }
 
 /*****************************************************************************************/
-
-/********************/
-/* ParseCommonTags	*/
-/********************/
 
 VOID ParseCommonTags
 (
@@ -225,11 +216,6 @@ VOID ParseCommonTags
 
 /*****************************************************************************************/
 
-
-/****************/
-/* FreeCommon	*/
-/****************/
-
 VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     if (ld)
@@ -270,10 +256,6 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 }
 
 /*****************************************************************************************/
-
-/********************/
-/* AllocCommon		*/
-/********************/
 
 struct LayoutData *AllocCommon
 (
@@ -383,12 +365,6 @@ failure:
 
 /*****************************************************************************************/
 
-
-/****************/
-/* GetFontPrefs */
-/****************/
-
-
 #define SKIPLONG(ptr, num) ptr += sizeof (LONG) * num
 
 #define CONVBYTE(ptr, dest) dest = *ptr ++
@@ -397,6 +373,8 @@ failure:
 
 #define CONVWORD(ptr, dest) dest = ptr[0] << 8 | ptr[1]; \
 		ptr += sizeof (WORD);
+
+/*****************************************************************************************/
 
 STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *AslBase)
 {
@@ -489,10 +467,6 @@ STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
-/******************/
-/* FreeFontPrefs  */
-/******************/
-
 STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
 {
 
@@ -504,10 +478,6 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
 
 
 /*****************************************************************************************/
-
-/************/
-/* GetFont  */
-/************/
 
 BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
@@ -604,10 +574,6 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 }
 
 /*****************************************************************************************/
-
-/****************/
-/* HandleEvents */
-/****************/
 
 BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslBase_intern *AslBase)
 {
@@ -712,9 +678,6 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
 /*****************************************************************************************/
 
-/************************
-**  BiggestTextLength  **
-************************/
 UWORD BiggestTextLength(STRPTR          *strarray,
 			UWORD		numstrings,
 			struct RastPort *rp,
@@ -736,11 +699,8 @@ UWORD BiggestTextLength(STRPTR          *strarray,
 
 /*****************************************************************************************/
 
-/*********************
-**  StripRequester  **
-*********************/
-
 /* Strip special info from the requester structure */
+
 VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 {
     switch (reqtype)

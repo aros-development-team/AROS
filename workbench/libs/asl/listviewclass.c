@@ -382,7 +382,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
     BOOL 			redraw = FALSE, notify_all = FALSE, notify_top = FALSE;
     WORD 			newtop;
     
-    retval = DoSuperMethodA(cl, o, (Msg) msg);
+    retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
 
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
@@ -569,16 +569,10 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 
 	   data->lineheight = data->itemheight + data->spacing;
 
-	   data->labels	    = (struct List *)GetTagData(ASLLV_Labels, NULL, msg->ops_AttrList);
 	   NEWLIST(&data->emptylist);	   
-	   if (!data->labels) data->labels = &data->emptylist;
-	   
-	   data->total = CountNodes(data->labels, 0);
-	   data->visible = data->total;
+	   data->labels = &data->emptylist;
 	   data->active = -1;
 	   data->rendersingleitem = -1;
-	   
-	   makenodetable(cl, o);
 	   
 	   data->renderhook = (struct Hook *)GetTagData(ASLLV_CallBack, NULL, msg->ops_AttrList);
     	   data->default_renderhook.h_Entry = (APTR) AROS_ASMSYMNAME(ASLLVRenderHook);
@@ -586,9 +580,7 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
     	   data->default_renderhook.h_Data = (APTR)AslBase;
 	   if (!data->renderhook) data->renderhook = &data->default_renderhook;
 
-	   data->domultiselect = GetTagData(ASLLV_DoMultiSelect, 0, msg->ops_AttrList) ? TRUE : FALSE;
-	   
-	   notifyall(cl, o, NULL, OPUF_INTERIM);
+	   asllistview_set(cl, o, msg);
 	}
     }
 

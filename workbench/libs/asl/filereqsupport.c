@@ -357,7 +357,7 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 	    if (success) for(;;)
 	    {
 		struct ASLLVFileReqNode *node;
-		BOOL ok, addentry = TRUE;
+		BOOL 			ok, addentry = TRUE;
 		
 		ok = ExNext(lock, fib);
 		
@@ -436,10 +436,9 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 		{
 		    if ((node = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct ASLLVFileReqNode))))
 		    {
-			char datebuffer[LEN_DATSTRING];
-			char timebuffer[LEN_DATSTRING];
-			
 			struct DateTime dt;
+			char 		datebuffer[LEN_DATSTRING];
+			char 		timebuffer[LEN_DATSTRING];			
 
 			if (fib->fib_FileName[0])
 			{

@@ -16,6 +16,7 @@
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
 #include <graphics/gfx.h>
@@ -36,12 +37,11 @@
 
 /*****************************************************************************************/
 
-STATIC BOOL FRGadInit(struct LayoutData *, struct AslBase_intern *);
-STATIC BOOL FRGadLayout(struct LayoutData *, struct AslBase_intern *);
-STATIC VOID FRGadCleanup(struct LayoutData *, struct AslBase_intern *);
+STATIC BOOL  FRGadInit(struct LayoutData *, struct AslBase_intern *);
+STATIC BOOL  FRGadLayout(struct LayoutData *, struct AslBase_intern *);
+STATIC VOID  FRGadCleanup(struct LayoutData *, struct AslBase_intern *);
 STATIC ULONG FRHandleEvents(struct LayoutData *, struct AslBase_intern *);
-
-STATIC ULONG GetSelectedFiles(struct FRUserData *, struct LayoutData *, struct AslBase_intern *AslBase);
+STATIC ULONG FRGetSelectedFiles(struct LayoutData *, struct AslBase_intern *AslBase);
 
 /*****************************************************************************************/
 
@@ -377,26 +377,26 @@ AROS_UFH3(ULONG, FRGadgetryHook,
 
     switch (ld->ld_Command)
     {
-    case LDCMD_INIT:
-	retval = (ULONG)FRGadInit(ld, ASLB(AslBase));
-	break;
+	case LDCMD_INIT:
+	    retval = (ULONG)FRGadInit(ld, ASLB(AslBase));
+	    break;
 
-    case LDCMD_LAYOUT:
-	retval = (ULONG)FRGadLayout(ld, ASLB(AslBase));
-	break;
+	case LDCMD_LAYOUT:
+	    retval = (ULONG)FRGadLayout(ld, ASLB(AslBase));
+	    break;
 
-    case LDCMD_HANDLEEVENTS:
-	retval = (ULONG)FRHandleEvents(ld, ASLB(AslBase));
-	break;
+	case LDCMD_HANDLEEVENTS:
+	    retval = (ULONG)FRHandleEvents(ld, ASLB(AslBase));
+	    break;
 
-    case LDCMD_CLEANUP:
-	FRGadCleanup(ld, ASLB(AslBase));
-	retval = GHRET_OK;
-	break;
+	case LDCMD_CLEANUP:
+	    FRGadCleanup(ld, ASLB(AslBase));
+	    retval = GHRET_OK;
+	    break;
 
-    default:
-	retval = GHRET_FAIL;
-	break;
+	default:
+	    retval = GHRET_FAIL;
+	    break;
     }
 
     return (retval);
@@ -428,9 +428,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{ ID_BUTPARENT  , ifreq->ifr_ParentText	        , &cool_dotimage    , &udata->ParentBut  },
 	{ ID_BUTCANCEL  , GetIR(ifreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
     };
-
     Object 			*gad;
     STRPTR 			butstr[NUMBUTS];
+    LONG			error = ERROR_NO_FREE_STORE;
     WORD 			gadrows, x, y, w, h, i, y2;
     
     NEWLIST(&udata->ListviewList);
@@ -817,12 +817,16 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}
     }
     
-    ReturnBool ("FRGadInit", TRUE);
-failure:
+    SetIoErr(0);
 
-D(bug("failure\n"));
+    ReturnBool ("FRGadInit", TRUE);
+
+failure:
+    D(bug("failure\n"));
 
     FRGadCleanup(ld, ASLB(AslBase));
+
+    SetIoErr(error);
 
     ReturnBool ("FRGadInit", FALSE);
 
@@ -1022,7 +1026,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    /* fall through */
 
 		case ID_BUTOK:
-		    retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+		    retval = FRGetSelectedFiles(ld, ASLB(AslBase));
 		    break;
 
         	case ID_STRPATTERN:
@@ -1064,7 +1068,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			{
 			    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
 			    {
-		        	retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+		        	retval = FRGetSelectedFiles(ld, ASLB(AslBase));
 				break;
 			    } else {
 		        	ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
@@ -1077,7 +1081,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 		case ID_LISTVIEW:
 		    {
-	        	struct ASLLVFileReqNode 	*node;
+	        	struct ASLLVFileReqNode *node;
 			IPTR 			active;
 
 			GetAttr(ASLLV_Active, udata->Listview, &active);
@@ -1099,7 +1103,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 					if (imsg->Code) /* TRUE if double clicked */
 					{
-					    retval = GetSelectedFiles(udata, ld, AslBase);
+					    retval = FRGetSelectedFiles(ld, AslBase);
 					}
 				    }
 				    break;
@@ -1180,7 +1184,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			        break;
 					
 			    case FRMEN_OK:
-			    	retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+			    	retval = FRGetSelectedFiles(ld, ASLB(AslBase));
 				break;
 
 			    case FRMEN_CANCEL:
@@ -1292,16 +1296,15 @@ STATIC VOID FRGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
-STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
-				struct LayoutData	*ld,
-				struct AslBase_intern	*AslBase)
+STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct IntReq *intreq = ld->ld_IntReq;
-    struct IntFileReq *ifreq = (struct IntFileReq *)intreq;
-    struct FileRequester *req = (struct FileRequester *)ld->ld_Req;
-    char *name;
+    struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct IntReq 		*intreq = ld->ld_IntReq;
+    struct IntFileReq 		*ifreq = (struct IntFileReq *)intreq;
+    struct FileRequester 	*req = (struct FileRequester *)ld->ld_Req;
+    char 			*name;
     
-    ULONG retval = GHRET_OK;
+    ULONG 			retval = GHRET_OK;
     
     /* Kill possible old output variables from a previous AslRequest call
        on the same requester */
@@ -1356,7 +1359,7 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 	    if ((wbarg = AllocVecPooled(intreq->ir_MemPool, sizeof(struct WBArg) * numargs)))
 	    {
 	        struct ASLLVFileReqNode *node;
-		WORD i = 0;
+		WORD 			i = 0;
 		
 	        req->fr_ArgList = wbarg;
 		

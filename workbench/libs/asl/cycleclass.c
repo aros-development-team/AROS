@@ -331,6 +331,28 @@ static IPTR aslcycle_dispose(Class * cl, Object * o, Msg msg)
 
 /***********************************************************************************/
 
+static IPTR aslcycle_get(Class * cl, Object * o, struct opGet *msg)
+{
+    struct AslCycleData *data = INST_DATA(cl, o);
+
+    IPTR retval = 1;
+    
+    switch(msg->opg_AttrID)
+    {
+        case ASLCY_Active:
+	    *msg->opg_Storage = data->active;
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
+    }
+    
+    return retval;
+}
+
+/***********************************************************************************/
+
 static IPTR aslcycle_layout(Class * cl, Object * o, struct gpLayout *msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
@@ -736,6 +758,10 @@ AROS_UFH3S(IPTR, dispatch_aslcycleclass,
 	
 	case OM_DISPOSE:
 	    retval = aslcycle_dispose(cl, o, msg);
+	    break;
+
+	case OM_GET:
+	    retval = aslcycle_get(cl, o, (struct opGet *)msg);
 	    break;
 	
 	case GM_LAYOUT:

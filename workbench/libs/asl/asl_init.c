@@ -233,7 +233,7 @@ const struct IntModeReq def_modereq =
     640,		/* BitMapWidth */
     200,		/* BitMapHeight */
     2,			/* DisplayDepth */
-    0,			/* OverscanType */
+    OSCAN_TEXT,		/* OverscanType */
     TRUE,		/* AutoScroll */
     DIPF_IS_WB,		/* PropertyFlags */
     DIPF_IS_WB,		/* PropertyMask */

@@ -16,6 +16,7 @@
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
 #include <graphics/displayinfo.h>
@@ -41,10 +42,11 @@
 
 /*****************************************************************************************/
 
-STATIC BOOL SMGadInit(struct LayoutData *, struct AslBase_intern *);
-STATIC BOOL SMGadLayout(struct LayoutData *, struct AslBase_intern *);
-STATIC VOID SMGadCleanup(struct LayoutData *, struct AslBase_intern *);
+STATIC BOOL  SMGadInit(struct LayoutData *, struct AslBase_intern *);
+STATIC BOOL  SMGadLayout(struct LayoutData *, struct AslBase_intern *);
+STATIC VOID  SMGadCleanup(struct LayoutData *, struct AslBase_intern *);
 STATIC ULONG SMHandleEvents(struct LayoutData *, struct AslBase_intern *);
+STATIC ULONG SMGetSelectedMode(struct LayoutData *, struct AslBase_intern *AslBase);
 
 /*****************************************************************************************/
 
@@ -66,10 +68,6 @@ STATIC ULONG SMHandleEvents(struct LayoutData *, struct AslBase_intern *);
 
 
 /*****************************************************************************************/
-
-/****************
-**  SMTagHook  **
-****************/
 
 AROS_UFH3(VOID, SMTagHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
@@ -135,8 +133,7 @@ AROS_UFH3(VOID, SMTagHook,
 		break;
 		
 	    case ASLSM_UserData:
-		((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tidata;
-		break;
+		((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tidata;		break;
 
 	    case ASLSM_InitialAutoScroll:
 	        imreq->ism_AutoScroll = tidata ? TRUE : FALSE;
@@ -171,7 +168,8 @@ AROS_UFH3(VOID, SMTagHook,
 		break;
 	
 	    case ASLSM_InitialOverscanType:
-	        imreq->ism_OverscanType = tidata;
+	        imreq->ism_OverscanType = (((LONG)tidata >= OSCAN_TEXT) &&
+					   ((LONG)tidata <= OSCAN_VIDEO)) ? tidata: OSCAN_TEXT;
 		break;
 	
 	    case ASLSM_MinWidth:
@@ -229,9 +227,6 @@ AROS_UFH3(VOID, SMTagHook,
 
 /*****************************************************************************************/
 
-/*********************
-**  SMGadgetryHook  **
-*********************/
 AROS_UFH3(ULONG, SMGadgetryHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(struct LayoutData *,      ld,             A2),
@@ -242,37 +237,32 @@ AROS_UFH3(ULONG, SMGadgetryHook,
 
     switch (ld->ld_Command)
     {
-    case LDCMD_INIT:
-	retval = (ULONG)SMGadInit(ld, ASLB(AslBase));
-	break;
+	case LDCMD_INIT:
+	    retval = (ULONG)SMGadInit(ld, ASLB(AslBase));
+	    break;
 
-    case LDCMD_LAYOUT:
-	retval = (ULONG)SMGadLayout(ld, ASLB(AslBase));
-	break;
+	case LDCMD_LAYOUT:
+	    retval = (ULONG)SMGadLayout(ld, ASLB(AslBase));
+	    break;
 
-    case LDCMD_HANDLEEVENTS:
-	retval = (ULONG)SMHandleEvents(ld, ASLB(AslBase));
-	break;
+	case LDCMD_HANDLEEVENTS:
+	    retval = (ULONG)SMHandleEvents(ld, ASLB(AslBase));
+	    break;
 
-    case LDCMD_CLEANUP:
-	SMGadCleanup(ld, ASLB(AslBase));
-	retval = GHRET_OK;
-	break;
+	case LDCMD_CLEANUP:
+	    SMGadCleanup(ld, ASLB(AslBase));
+	    retval = GHRET_OK;
+	    break;
 
-    default:
-	retval = GHRET_FAIL;
-	break;
+	default:
+	    retval = GHRET_FAIL;
+	    break;
     }
 
     return (retval);
 }
 
 /*****************************************************************************************/
-
-
-/****************
-**  SMGadInit  **
-****************/
 
 struct ButtonInfo
 {
@@ -292,11 +282,17 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
         { ID_BUTOK	, GetIR(imreq)->ir_PositiveText , &cool_monitorimage, &udata->OKBut	 },
 	{ ID_BUTCANCEL  , GetIR(imreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
     };
-
     Object 		*gad;
+    LONG		error;
     WORD 		gadrows, x, y, w, h, i, y2;
     
+    
     NEWLIST(&udata->ListviewList);
+
+    error = SMGetModes(ld, AslBase);
+    if (error) goto failure;
+    
+    error = ERROR_NO_FREE_STORE;
     
     /* calc. min. size */
     
@@ -368,6 +364,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_UserData	, (IPTR)ld					},
 	    {GA_ID		, ID_LISTVIEW					},
 	    {GA_RelVerify	, TRUE						},
+	    {ASLLV_Labels	, (IPTR)&udata->ListviewList			},
 	    {TAG_DONE								}
 	};
 	
@@ -532,7 +529,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		{GA_UserData		, (IPTR)ld			 },
 		{GA_ID			, ID_OVERSCAN			 },
 		{ASLCY_Labels		, (IPTR)&imreq->ism_Overscan1Text},
-		{ASLCY_Active		, imreq->ism_OverscanType	 },
+		{ASLCY_Active		, imreq->ism_OverscanType - 1	 },
 		{TAG_DONE						 }
 		
 	    };
@@ -556,6 +553,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		{GA_Height		, udata->ButHeight		 },
 		{GA_RelVerify		, TRUE				 },
 		{GA_UserData		, (IPTR)ld			 },
+		{GA_TabCycle		, TRUE				 },
 		{STRINGA_MaxChars	, 8				 },
 		{TAG_DONE						 }
 	    };
@@ -644,8 +642,6 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}
 	
     } /* if (i) */
-
-    SMGetModes(ld, AslBase);
          
     ld->ld_GList = (struct Gadget *)udata->Listview;							 
     
@@ -683,9 +679,14 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}
     }
     
+    SMRestore(ld, AslBase);
+    
+    SetIoErr(0);
     ReturnBool ("SMGadInit", TRUE);
+    
 failure:
-
+    SetIoErr(error);
+    
 D(bug("failure\n"));
 
     SMGadCleanup(ld, ASLB(AslBase));
@@ -696,25 +697,12 @@ D(bug("failure\n"));
 
 /*****************************************************************************************/
 
-/******************
-**  SMGadLayout  **
-******************/
-
 STATIC BOOL SMGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    struct SMUserData *udata = ld->ld_UserData;
-    struct IntModeReq *imreq = (struct IntModeReq *)ld->ld_IntReq;
-
-    
     ReturnBool ("SMGadLayout", TRUE );
 }
 
 /*****************************************************************************************/
-
-
-/*********************
-**  SMHandleEvents  **
-*********************/
 
 STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
@@ -749,6 +737,15 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    break;
 	    }
 	    break;
+
+	case IDCMP_VANILLAKEY:
+	    switch(imsg->Code)
+	    {
+	        case 27:
+		    retval = FALSE;
+		    break;
+	    }
+	    break;
 	
 	case IDCMP_GADGETUP:
 	    gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
@@ -762,12 +759,116 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    break;
 
 		case ID_BUTOK:
-		    retval = GHRET_FINISHED_OK;
+		    retval = SMGetSelectedMode(ld, AslBase);
 		    break;
 
+		case ID_LISTVIEW:		
+		    {
+	        	struct DisplayMode 	*dispmode;
+			IPTR 			active;
+
+			GetAttr(ASLLV_Active, udata->Listview, &active);
+
+			if ((dispmode = (struct DisplayMode *)FindListNode(&udata->ListviewList, (WORD)active)))
+			{
+			    SMActivateMode(ld, active, AslBase);
+			
+			    if (imsg->Code) /* TRUE if double clicked */
+			    {
+				retval = SMGetSelectedMode(ld, AslBase);
+			    }
+			}
+		    }
+		    break;
+		
+		case ID_OVERSCAN:
+		    SMChangeActiveLVItem(ld, 0, 0, AslBase);
+		    break;
+		
+		case ID_WIDTH:
+		    {
+		        struct DisplayMode 	*dispmode;
+			LONG			width;
+			
+			dispmode = SMGetActiveMode(ld, AslBase);
+			ASSERT_VALID_PTR(dispmode);
+			
+			width  = SMGetWidth (ld, AslBase);
+			 
+			SMFixValues(ld, dispmode, &width, 0, 0, AslBase);			
+		    }
+		    break;
+		    		         
+		case ID_HEIGHT:
+		    {
+		        struct DisplayMode 	*dispmode;
+			LONG			height;
+			
+			dispmode = SMGetActiveMode(ld, AslBase);
+			ASSERT_VALID_PTR(dispmode);
+			
+			height  = SMGetWidth (ld, AslBase);
+			 
+			SMFixValues(ld, dispmode, 0, &height, 0, AslBase);			
+		    }
+		    break;
+		    		         
 	    } /* switch (gadget ID) */
 
 	    break; /* case IDCMP_GADGETUP: */
+
+	case IDCMP_MENUPICK:
+	    if (ld->ld_Menu)
+	    {
+	        UWORD men = imsg->Code;
+
+		while(men != MENUNULL)
+		{
+		    struct MenuItem *item;
+		    
+		    if ((item = ItemAddress(ld->ld_Menu, men)))
+		    {
+			switch((IPTR)GTMENUITEM_USERDATA(item))
+			{
+			    /* Control menu */
+			    
+			    case SMMEN_LASTMODE:
+		    		SMChangeActiveLVItem(ld, -1, 0, AslBase);
+			        break;
+				
+			    case SMMEN_NEXTMODE:
+		    		SMChangeActiveLVItem(ld, 1, 0, AslBase);
+			        break;
+			
+			    case SMMEN_PROPERTYLIST:
+			        break;
+				
+			    case SMMEN_RESTORE:
+			        SMRestore(ld, AslBase);
+			        break;
+				
+			    case SMMEN_OK:
+			        retval = SMGetSelectedMode(ld, AslBase);
+				break;
+
+			    case SMMEN_CANCEL:
+			        retval = FALSE;
+				break;
+			    
+			} /* switch id */
+
+		        men = item->NextSelect;
+		    } /* if ((item = ItemAddress(ld->ld_Menu, men))) */
+		    else
+		    {
+		        men = MENUNULL;
+		    }
+		    
+		} /* while(men != MENUNULL) */
+		
+	    } /* if (ld->ld_Menu) */
+	    
+	    break; /* case IDCMP_MENUPICK: */
 
     } /* switch (imsg->Class) */
 
@@ -776,9 +877,6 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 /*****************************************************************************************/
 
-/*******************
-**  SMGadCleanup  **
-*******************/
 STATIC VOID SMGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct SMUserData 		*udata;
@@ -811,5 +909,72 @@ STATIC VOID SMGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ReturnVoid("SMGadCleanup");
 }
 
+/*****************************************************************************************/
+
+STATIC ULONG SMGetSelectedMode(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct SMUserData 		*udata = (struct SMUserData *)ld->ld_UserData;	
+    struct IntReq 		*intreq = ld->ld_IntReq;
+    struct IntModeReq 		*imreq = (struct IntModeReq *)intreq;
+    struct ScreenModeRequester 	*req = (struct ScreenModeRequester *)ld->ld_Req;
+    struct DisplayMode		*dispmode;
+    struct Rectangle		*rect;
+    LONG			width, height;
+    
+    dispmode = SMGetActiveMode(ld, AslBase);    
+    ASSERT_VALID_PTR(dispmode);
+    
+    imreq->ism_DisplayID =
+    req->sm_DisplayID = dispmode->dm_DimensionInfo.Header.DisplayID;
+
+    /* OverscanType: This must be before width/height because of rect variable!
+    **               SMGetOverscan() can handle the case when ASLSM_DoOverscanType
+    **		     is not set to TRUE
+    **/
+    
+    imreq->ism_OverscanType =
+    req->sm_OverscanType = SMGetOverscan(ld, dispmode, &rect, AslBase);
+    
+    /* Width */
+    
+    if (imreq->ism_Flags & ISMF_DOWIDTH)
+    {
+        width = SMGetWidth(ld, AslBase);
+    } else {
+        width = rect->MaxX - rect->MinX + 1;
+    }    
+    
+    SMFixValues(ld, dispmode, &width, 0, 0, AslBase);    
+    
+    imreq->ism_DisplayWidth = 
+    req->sm_DisplayWidth    = width;
+    
+    /* Height */
+    
+    if (imreq->ism_Flags & ISMF_DOHEIGHT)
+    {
+        height = SMGetHeight(ld, AslBase);
+    } else {
+        height = rect->MaxY - rect->MinY + 1;
+    }
+    
+    SMFixValues(ld, dispmode, 0, &height, 0, AslBase);
+    
+    imreq->ism_DisplayHeight =
+    req->sm_DisplayHeight   = height;
+        
+    /* AutoScroll */
+    if (imreq->ism_Flags & ISMF_DOAUTOSCROLL)
+    {
+        imreq->ism_AutoScroll = SMGetAutoScroll(ld, AslBase);
+    }
+    req->sm_AutoScroll = imreq->ism_AutoScroll;
+    
+    return GHRET_FINISHED_OK;    
+}
+
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
 /*****************************************************************************************/
 
