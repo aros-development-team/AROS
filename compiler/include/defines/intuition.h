@@ -168,12 +168,12 @@
     AROS_LCA(struct DrawInfo *, drawInfo,   A2), \
     struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
-#define EasyRequestArgs(window, easyStruct, IDCMP_ptr, ArgList) \
+#define EasyRequestArgs(window, easyStruct, IDCMP_ptr, argList) \
     AROS_LC4(LONG, EasyRequestArgs, \
     AROS_LCA(struct Window     *, window, A0), \
     AROS_LCA(struct EasyStruct *, easyStruct, A1), \
     AROS_LCA(ULONG             *, IDCMP_ptr, A2), \
-    AROS_LCA(APTR               , ArgList, A3), \
+    AROS_LCA(APTR               , argList, A3), \
     struct IntuitionBase *, IntuitionBase, 98, Intuition)
 
 #define EndRefresh(window, complete) \

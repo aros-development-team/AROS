@@ -169,10 +169,10 @@ AROS_LP6(void, DrawImageState,
     struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
 AROS_LP4(LONG, EasyRequestArgs,
-    AROS_LPA(struct Window     *, Window, A0),
+    AROS_LPA(struct Window     *, window, A0),
     AROS_LPA(struct EasyStruct *, easyStruct, A1),
     AROS_LPA(ULONG             *, IDCMP_ptr, A2),
-    AROS_LPA(APTR               , ArgList, A3),
+    AROS_LPA(APTR               , argList, A3),
     struct IntuitionBase *, IntuitionBase, 98, Intuition)
 
 AROS_LP2(void, EndRefresh,
@@ -202,7 +202,7 @@ AROS_LP2(void, FreeScreenDrawInfo,
     struct IntuitionBase *, IntuitionBase, 116, Intuition)
 
 AROS_LP1(void, FreeSysRequest,
-    AROS_LPA(struct Window *, Window, A0),
+    AROS_LPA(struct Window *, window, A0),
     struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
 AROS_LP3(ULONG, GetAttr,
@@ -429,7 +429,7 @@ AROS_LP3(void, SizeWindow,
     struct IntuitionBase *, IntuitionBase, 48, Intuition)
 
 AROS_LP3(LONG, SysReqHandler,
-    AROS_LPA(struct Window  *, Window, A0),
+    AROS_LPA(struct Window  *, window, A0),
     AROS_LPA(ULONG   *,        IDCMPFlagsPtr, A1),
     AROS_LPA(BOOL            , WaitInput, D0),
     struct IntuitionBase *, IntuitionBase, 100, Intuition)
@@ -444,7 +444,7 @@ AROS_LP2(void, UnlockPubScreen,
     struct IntuitionBase *, IntuitionBase, 86, Intuition)
 
 AROS_LP5(BOOL, WindowLimits,
-    AROS_LPA(struct Window *, Window, A0),
+    AROS_LPA(struct Window *, window, A0),
     AROS_LPA(WORD,            MinWidth, D0),
     AROS_LPA(WORD,            MinHeight, D1),
     AROS_LPA(UWORD,           MaxWidth, D2),
