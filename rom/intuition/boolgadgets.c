@@ -9,6 +9,7 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <intuition/cghooks.h>
+#include <intuition/imageclass.h>
 #include "intuition_intern.h"
 #include <graphics/gfxmacros.h>
 #include "gadgets.h"
@@ -16,11 +17,12 @@
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	    struct IntuitionBase * IntuitionBase)
 {
-    struct GadgetInfo gi;
-    struct RastPort *rp;
-    struct BBox bbox;
-
-    APTR  render;
+    struct GadgetInfo 	gi;
+    struct RastPort 	*rp;
+    struct DrawInfo 	*dri;
+    struct BBox 	bbox;
+    ULONG		state;
+    APTR  		render;
 
 
 #define RENDERGADGET(win,gad,rend)              \
@@ -28,10 +30,12 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	{					\
 	    if (gad->Flags & GFLG_GADGIMAGE)    \
 	    {					\
-		DrawImage (rp                   \
+		DrawImageState (rp              \
 		    , (struct Image *)rend      \
 		    , bbox.Left 		\
 		    , bbox.Top			\
+		    , state			\
+		    , dri			\
 		);				\
 	    }					\
 	    else				\
@@ -49,43 +53,29 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
     CalcBBox (window, gadget, &bbox);
 
-    if (bbox.Width <= 0 || bbox.Height <= 0)
-	return;
-
+    state = GetGadgetState(window, gadget);
+        
     SET_GI_RPORT(&gi, window, gadget);
     gi.gi_Layer = gi.gi_RastPort->Layer;
     
     rp = ObtainGIRPort(&gi);
     if (!rp) return;
     
+    dri = GetScreenDrawInfo(window->WScreen);
+    
     SetDrMd (rp, JAM1);
 
-/* nlorentz: Why do we have EraseRect here ?
-	This erases DOpus' gadget text when a
-	gadget is pressed and released. (DOpus does not
-	put anything in gadget->GadgetText, but instead only
-	renders the button text once and assumes that the
-	text is never deleted.
-
-	
-    EraseRect (rp
-	, bbox.Left
-	, bbox.Top
-	, bbox.Left + bbox.Width - 1
-	, bbox.Top + bbox.Height - 1
-    );
-*/
     switch (gadget->Flags & GFLG_GADGHIGHBITS)
     {
-    case GFLG_GADGHIMAGE:
-	render = GETRENDER(gadget);
-	RENDERGADGET(window,gadget,render);
-	break;
+	case GFLG_GADGHIMAGE:
+	    render = GETRENDER(gadget);
+	    RENDERGADGET(window,gadget,render);
+	    break;
 
-    case GFLG_GADGHNONE:
-	render = gadget->GadgetRender;
-	RENDERGADGET(window,gadget,render);
-	break;
+	case GFLG_GADGHNONE:
+	    render = gadget->GadgetRender;
+	    RENDERGADGET(window,gadget,render);
+	    break;
 
     } /* switch GadgetHighlightMethod */
 
@@ -124,79 +114,83 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	    break; }
 
 	case GFLG_LABELIMAGE:
-	    DrawImage (rp
+	    DrawImageState (rp
 		, (struct Image *)gadget->GadgetText
 		, bbox.Left
 		, bbox.Top
+		, IDS_NORMAL
+		, dri
 	    );
 	    break;
 	}
     } /* GadgetText */
 
-    switch (gadget->Flags & GFLG_GADGHIGHBITS)
+    if ((bbox.Width >= 1) && (bbox.Height >= 1))
     {
-    case GFLG_GADGHCOMP:
-	render = gadget->GadgetRender;
-	RENDERGADGET(window,gadget,render);
-
-	if (gadget->Flags & GFLG_SELECTED)
+	switch (gadget->Flags & GFLG_GADGHIGHBITS)
 	{
-	    SetDrMd (rp, COMPLEMENT);
+	case GFLG_GADGHCOMP:
+	    render = gadget->GadgetRender;
+	    RENDERGADGET(window,gadget,render);
 
-	    RectFill (rp
-		, bbox.Left
-		, bbox.Top
-		, bbox.Left + bbox.Width - 1
-		, bbox.Top + bbox.Height - 1
-	    );
-	}
-
-	break;
-
-    case GFLG_GADGHBOX:
-	render = gadget->GadgetRender;
-	RENDERGADGET(window,gadget,render);
-
-	if (gadget->Flags & GFLG_SELECTED)
-	{
-	    SetDrMd (rp, COMPLEMENT);
-
-#define BOXWIDTH 5
-	    RectFill (rp
-		, bbox.Left
-		, bbox.Top
-		, bbox.Left + bbox.Width - 1
-		, bbox.Top + bbox.Height - 1
-	    );
-
-	    if (bbox.Width > 2*BOXWIDTH && bbox.Height > 2*BOXWIDTH)
+	    if (gadget->Flags & GFLG_SELECTED)
 	    {
+		SetDrMd (rp, COMPLEMENT);
+
 		RectFill (rp
-		    , bbox.Left + BOXWIDTH
-		    , bbox.Top + BOXWIDTH
-		    , bbox.Left + bbox.Width - BOXWIDTH - 1
-		    , bbox.Top + bbox.Height - BOXWIDTH - 1
+		    , bbox.Left
+		    , bbox.Top
+		    , bbox.Left + bbox.Width - 1
+		    , bbox.Top + bbox.Height - 1
 		);
 	    }
+
+	    break;
+
+	case GFLG_GADGHBOX:
+	    render = gadget->GadgetRender;
+	    RENDERGADGET(window,gadget,render);
+
+	    if (gadget->Flags & GFLG_SELECTED)
+	    {
+		SetDrMd (rp, COMPLEMENT);
+
+    #define BOXWIDTH 5
+		RectFill (rp
+		    , bbox.Left
+		    , bbox.Top
+		    , bbox.Left + bbox.Width - 1
+		    , bbox.Top + bbox.Height - 1
+		);
+
+		if (bbox.Width > 2*BOXWIDTH && bbox.Height > 2*BOXWIDTH)
+		{
+		    RectFill (rp
+			, bbox.Left + BOXWIDTH
+			, bbox.Top + BOXWIDTH
+			, bbox.Left + bbox.Width - BOXWIDTH - 1
+			, bbox.Top + bbox.Height - BOXWIDTH - 1
+		    );
+		}
+	    }
+
+	    break;
+
+	} /* Highlight after contents have been drawn */
+
+	if ( gadget->Flags & GFLG_DISABLED )
+	{
+            RenderDisabledPattern(rp, dri, bbox.Left,
+					   bbox.Top,
+					   bbox.Left + bbox.Width - 1,
+	    				   bbox.Top + bbox.Height - 1,
+					   IntuitionBase );
 	}
-
-	break;
 	
-    } /* Highlight after contents have been drawn */
-
-    if ( gadget->Flags & GFLG_DISABLED )
-    {
-        struct DrawInfo *dri = GetScreenDrawInfo(window->WScreen);
-	
-        RenderDisabledPattern(rp, dri, bbox.Left,
-				       bbox.Top,
-				       bbox.Left + bbox.Width - 1,
-	    			       bbox.Top + bbox.Height - 1,
-				       IntuitionBase );
-
-	if (dri) FreeScreenDrawInfo(window->WScreen, dri);
-    }
-
+    } /* if ((bbox.Width >= 1) && (bbox.Height >= 1)) */
+    
+    FreeScreenDrawInfo(window->WScreen, dri);
+    
     ReleaseGIRPort(rp);
     
 } /* RefreshBoolGadget */
