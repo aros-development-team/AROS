@@ -23,8 +23,10 @@
 #include <libraries/gadtools.h>
 #include <proto/alib.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#undef SDEBUG
+#define SDEBUG 0
+#undef DEBUG
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "aroscheckbox_intern.h"
