@@ -27,4 +27,4 @@ machine :
 	./machine
 
 %common
-%include_deps $(TOP)/bin/$(TARGET_ARCH)-$(TARGET_CPU)/gen/config/host.cfg
+%include_deps $(TOP)/bin/$(AROS_TARGET_ARCH)-$(TARGET_CPU)/gen/config/host.cfg

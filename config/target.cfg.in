@@ -7,8 +7,6 @@
 # -------------------------------------------------------------------------- 
 # TARGET SECTION
 # -------------------------------------------------------------------------- 
-#TARGET_ARCH	:= @aros_target_arch@
-#TARGET_CPU	:= @aros_target_cpu@
 FLAVOUR		:= @aros_flavour@
 SHARED_MOD	:= @aros_shared_default@
 SYS_INCLUDES	:= @aros_target_incl@

@@ -1,7 +1,7 @@
 ## Makefile for LCD test
 TOP = ../../..
 include $(TOP)/config/make.cfg
-TARGET_ARCH = 
+AROS_TARGET_ARCH = 
 
 TARGET = exec
 APPNAME = "Exec test"

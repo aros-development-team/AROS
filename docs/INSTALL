@@ -90,9 +90,9 @@ Basic Installation of AROS-SOURCES
 	The last target specified to "configure" is the default target.
 
 	To change the target, simply type
-	'TARGET_ARCH=$arch TARGET_CPU=$cpu make'
+	'AROS_TARGET_ARCH=$arch TARGET_CPU=$cpu make'
 	where arch and cpu are chosen as in step 6. If you build eg.
-	linux-i386 and freebsd-i386, then specifying only TARGET_ARCH
+	linux-i386 and freebsd-i386, then specifying only AROS_TARGET_ARCH
 	will suffice as the CPU stays the same.
 
 	Build for multiple host architectures (eg. when sharing the

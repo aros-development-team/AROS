@@ -1,7 +1,7 @@
 ## Makefile for LCD test
 TOP = ../../..
 include $(TOP)/config/host.cfg
-TARGET_ARCH = 
+AROS_TARGET_ARCH = 
 
 TARGET = loader
 APPNAME = "AROS loader"
