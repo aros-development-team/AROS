@@ -1341,8 +1341,11 @@ _INC_PATH :=
 endif
 
 ifneq (%(mmake),)
+#MM 
+includes-copy : %(mmake)
+
 #MM
-%(mmake) : includes-setup $(INCL_FILES_1) $(INC_FILES_2)
+%(mmake) : %(mmake)-includes-setup $(INCL_FILES_1) $(INC_FILES_2)
 else
 #MM
 includes-copy : includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
@@ -1354,7 +1357,11 @@ $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 $(GENINCDIR)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
 
+ifneq (%(mmake),)
+%(mmake)-includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+else
 includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+endif
 
 $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
 	%mkdir_q dir=$@
@@ -1385,13 +1392,18 @@ setup ::
 INCL_FILES_1 := $(foreach f,$(INCLUDE_FILES),$(AROS_INCLUDES)/%(path)/$(f))
 INCL_FILES_2 := $(foreach f,$(INCLUDE_FILES),$(GENINCDIR)/%(path)/$(f))
 
-includes-copy : $(INCL_FILES_1) $(INCL_FILES_2)
+includes-copy : includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
 
 $(AROS_INCLUDES)/%(path)/%.h : %.h
 	@$(CP) $< $@
 
 $(GENINCDIR)/%(path)/%.h : %.h
 	@$(CP) $< $@
+
+includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+
+$(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
+	@$(MKDIR) $@
 
 %end
 
