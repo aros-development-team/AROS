@@ -14,7 +14,7 @@ FILES := \
 	filehandles3 \
 	hashing \
 	misc \
-	os_linux_support \
+	os_unix_support \
 	volumes
 
 AFSSRCDIR := $(TOP)/workbench/devs/afs
