@@ -12,8 +12,8 @@
 #include <math.h>
 #include <stdio.h>
 
-#define SCREENWIDTH  320
-#define SCREENHEIGHT 200
+#define SCREENWIDTH  500
+#define SCREENHEIGHT 400
 #define SCREENCY (SCREENHEIGHT / 2)
 
 /***********************************************************************************/
@@ -34,7 +34,7 @@ static void cleanup(char *msg)
 {
     if (msg)
     {
-        printf("cgfxdemo: %s\n",msg);
+        printf("WritePixelArray: %s\n",msg);
     }
     
     if (win) CloseWindow(win);
@@ -87,16 +87,16 @@ static void getvisual(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(NULL, WA_CustomScreen, (IPTR)scr, 
-    			       WA_InnerWidth, 320,
-    			       WA_InnerHeight, 200,
-			       WA_Title, (IPTR)"CGFXDemo",
-			       WA_DragBar, TRUE,
-			       WA_DepthGadget, TRUE,
-			       WA_CloseGadget, TRUE,
-			       WA_Activate, TRUE,
-			       WA_IDCMP, IDCMP_CLOSEWINDOW |
-			       		 IDCMP_RAWKEY,
+    win = OpenWindowTags(NULL, WA_CustomScreen	, (IPTR)scr, 
+    			       WA_InnerWidth	, SCREENWIDTH,
+    			       WA_InnerHeight	, SCREENHEIGHT,
+			       WA_Title		, (IPTR)"WritePixelArray: Move mouse!",
+			       WA_DragBar	, TRUE,
+			       WA_DepthGadget	, TRUE,
+			       WA_CloseGadget	, TRUE,
+			       WA_Activate	, TRUE,
+			       WA_IDCMP		, IDCMP_CLOSEWINDOW |
+			       			  IDCMP_RAWKEY,
 			       TAG_DONE);
 			       
    if (!win) cleanup("Can't open window");
@@ -145,25 +145,105 @@ static void getevents(void)
 
 static void action(void)
 {
-    static LONG tab[320 * 200];
-    LONG start = 0;
+    static LONG tab[SCREENWIDTH * SCREENHEIGHT];
+    LONG x, y;
+    LONG ar1, ar2, ar3, ar4;
+    LONG ag1, ag2, ag3, ag4;
+    LONG ab1, ab2, ab3, ab4;
+    LONG r1, r2, r3, r4;
+    LONG g1, g2, g3, g4;
+    LONG b1, b2, b3, b4;
+    LONG tr1, tg1, tb1;
+    LONG tr2, tg2, tb2;
+    LONG tr3, tg3, tb3;
+    LONG tr4, tg4, tb4;
+    LONG ttr1, ttg1, ttb1;
+    LONG ttr2, ttg2, ttb2;
+    LONG tttr, tttg, tttb;
+    
+    LONG col;
+    
+    ar1 = 0xFF; ag1 = 0xFF; ab1 = 0xFF; 
+    ar2 = 0xFF; ag2 = 0x00; ab2 = 0x00; 
+    ar3 = 0x00; ag3 = 0xFF; ab3 = 0x00; 
+    ar4 = 0x00; ag4 = 0x00; ab4 = 0xFF; 
+
+    r1 = 0xFF; g1 = 0xFF; b1 = 0xFF; 
+    r2 = 0xFF; g2 = 0x00; b2 = 0x00; 
+    r3 = 0x00; g3 = 0xFF; b3 = 0x00; 
+    r4 = 0x00; g4 = 0x00; b4 = 0xFF; 
     
     while(!Keys[KC_ESC])
     {
-        LONG i, col = start;
+        x = scr->MouseX;
+	if (x < 0) x = 0; else if (x >= scr->Width) x = scr->Width - 1;
 	
-	for (i = 0; i < 320 * 200;i++)
+	r1 = ar1 + (ar2 - ar1) * x / (scr->Width - 1);
+	g1 = ag1 + (ag2 - ag1) * x / (scr->Width - 1);
+	b1 = ab1 + (ab2 - ab1) * x / (scr->Width - 1);
+	
+	r2 = ar2 + (ar3 - ar2) * x / (scr->Width - 1);
+	g2 = ag2 + (ag3 - ag2) * x / (scr->Width - 1);
+	b2 = ab2 + (ab3 - ab2) * x / (scr->Width - 1);
+
+	r3 = ar3 + (ar4 - ar3) * x / (scr->Width - 1);
+	g3 = ag3 + (ag4 - ag3) * x / (scr->Width - 1);
+	b3 = ab3 + (ab4 - ab3) * x / (scr->Width - 1);
+
+	r4 = ar4 + (ar1 - ar4) * x / (scr->Width - 1);
+	g4 = ag4 + (ag1 - ag4) * x / (scr->Width - 1);
+	b4 = ab4 + (ab1 - ab4) * x / (scr->Width - 1);
+	
+	
+        for(y = 0; y < SCREENHEIGHT; y ++)
 	{
-	     tab[i] = col++;
-	}
-        
-	WritePixelArray(tab, 0, 0, 320, 
-			win->RPort, win->BorderLeft, win->BorderTop, 320, 200,
-			RECTFMT_RGBA);
-	start+=100;
+	    for(x = 0; x < SCREENWIDTH; x++)
+	    {
+	        tr1 = r1 + (r2 - r1) * x / (SCREENWIDTH - 1);
+		tg1 = g1 + (g2 - g1) * x / (SCREENWIDTH - 1);
+		tb1 = b1 + (b2 - b1) * x / (SCREENWIDTH - 1);
+	
+		tr2 = r3 + (r4 - r3) * x / (SCREENWIDTH - 1);
+		tg2 = g3 + (g4 - g3) * x / (SCREENWIDTH - 1);
+		tb2 = b3 + (b4 - b3) * x / (SCREENWIDTH - 1);
+		
+		tr3 = r1 + (r3 - r1) * y / (SCREENHEIGHT - 1);
+		tg3 = g1 + (g3 - g1) * y / (SCREENHEIGHT - 1);
+		tb3 = b1 + (b3 - b1) * y / (SCREENHEIGHT - 1);
+		
+		tr4 = r2 + (r4 - r2) * y / (SCREENHEIGHT - 1);
+		tg4 = g2 + (g4 - g2) * y / (SCREENHEIGHT - 1);
+		tb4 = b2 + (b4 - b2) * y / (SCREENHEIGHT - 1);
+		
+		ttr1 = tr1 + (tr2 - tr1) * y / (SCREENHEIGHT - 1);
+		ttg1 = tg1 + (tg2 - tg1) * y / (SCREENHEIGHT - 1);
+		ttb1 = tg1 + (tg2 - tg1) * y / (SCREENHEIGHT - 1);
+		
+		ttr2 = tr3 + (tr4 - tr3) * x / (SCREENWIDTH - 1);
+		ttg2 = tg3 + (tg4 - tg3) * x / (SCREENWIDTH - 1);
+		ttb2 = tb3 + (tb4 - tb3) * x / (SCREENWIDTH - 1);
+		
+		tttr = (ttr1 + ttr2) / 2;
+		tttg = (ttg1 + ttg2) / 2;
+		tttb = (ttb1 + ttb2) / 2;
+		
+		col = (tttr << 16) + (tttg << 8) + tttb;
+		
+		//kprintf("col[%d,%d] = %08x\n", x,y,col);
+		
+	        tab[y * SCREENWIDTH + x] = col;
+		
+	    } /* for(y = 0; y < SCREENHEIGHT; y ++) */
+	    
+	} /* for(y = 0; y < SCREENHEIGHT; y ++) */
+	
+	WritePixelArray(tab, 0, 0, SCREENWIDTH * sizeof(LONG), 
+			win->RPort, win->BorderLeft, win->BorderTop, SCREENWIDTH, SCREENHEIGHT,
+			RECTFMT_ARGB);
 	
         getevents();
-    }
+	
+    } /* while(!Keys[KC_ESC]) */
 }
 
 /***********************************************************************************/
