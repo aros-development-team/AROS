@@ -1,0 +1,74 @@
+/*
+    Copyright (C) 1995-1998 AROS
+    $Id$
+
+    Desc: Internal information about the timer.device and HIDD's
+    Lang: english
+*/
+
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+#ifndef EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
+#ifndef EXEC_INTERRUPTS_H
+#include <exec/interrupts.h>
+#endif
+#ifndef EXEC_IO_H
+#include <exec/io.h>
+#endif
+#ifndef EXEC_DEVICES_H
+#include <exec/devices.h>
+#endif
+#ifndef DEVICES_TIMER_H
+#include <devices/timer.h>
+#endif
+#ifndef HIDD_TIMER_H
+#include <hidd/timer.h>
+#endif
+#ifndef DOS_BPTR_H
+#include <dos/bptr.h>
+#endif
+
+#include <aros/system.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
+
+#define TWL_COUNTVBL	0
+#define TWL_WAITVBL	1
+#define TWL_MICROHZ	2
+#define TWL_ECLOCK	3
+#define TWL_WAITECLOCK	4
+#define NUM_LISTS	5
+
+struct TimerBase
+{
+    /* Required by the system */
+    struct Device	 tb_Device;
+    struct ExecBase	*tb_SysBase;
+    struct Library	*tb_BOOPSIBase;
+    BPTR		 tb_SegList;
+
+    struct IClass	*tb_TimerHIDD;
+    ULONG		 tb_MiscFlags;		/* miscellaneous flags */
+    struct timeval	 tb_CurrentTime;	/* system time */
+
+    /* This is required for the vertical blanking stuff */
+    struct Interrupt	 tb_VBlankInt;
+    struct IClass	*tb_VBlankHIDD;		/* vblank hidd class */
+    struct timeval	 tb_VBlankTime;		/* vblank interval */
+    
+    /* Lists for waiting vblank, waituntil, microhz, eclock, waiteclock */
+    struct MinList	 tb_WaitLists[NUM_LISTS];
+};
+
+#define GetTimerBase(tb)	((struct TimerBase *)(tb))
+#define GetDevice(tb)		((struct Device *)(tb))
+
+#define SysBase			(GetTimerBase(TimerBase)->tb_SysBase)
+#define BOOPSIBase		(GetTimerBase(TimerBase)->tb_BOOPSIBase)
+
+#define TF_GO		(1L<<0)
+#define TF_GotVBlank	(1L<<1)	/* HIDD used for VBlank units */
+#define TF_GotEClock	(1L<<2)	/* HIDD used for other units */
