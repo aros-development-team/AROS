@@ -20,10 +20,6 @@
 
 /****************************************************************************************/
 
-#ifndef TURN_OFF_DEBUG 
-#define DEBUG 0
-#endif
-
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -51,7 +47,7 @@ struct DirEntry
     struct MinList	   FileList;
 };
 
-struct DFData /*DiskFontData */
+struct DF_FontsData /*DiskFontData */
 {
 #ifdef PROGDIRFONTSDIR
     struct DirEntry       *ProgdirDirEntry;
@@ -63,6 +59,31 @@ struct DFData /*DiskFontData */
     UWORD                  RememberIndex;
 };
 
+struct DF_FileData
+{
+    struct FontDescrHeader *FDH;
+    STRPTR                  FilePart;
+    STRPTR                  OrigName;
+    struct TTextAttr       *LastAttr;
+    UWORD                   AttrsIndex;
+    UWORD                   RememberIndex;
+    struct TTextAttr        ExtraAttr;
+};
+
+typedef enum {DF_FONTSDATA, DF_FILEDATA} DF_DataType;
+
+struct DF_Data
+{
+    DF_DataType       Type;
+    struct TTextAttr *ReqAttr;
+    union
+    {
+	struct DF_FontsData FontsData;
+	struct DF_FileData  FileData;
+    } u;
+};
+
+    
 /****************************************************************************************/
 
 /*****************/
@@ -436,6 +457,7 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, struct FileHandle *fh, s
 		fe->FileName = (STRPTR)(fe+1);
 		strcpy(fe->FileName, fe2.FileName);
 		fe->FileChanged = fe2.FileChanged;
+		fe->ContentsID = fe2.ContentsID;
 		fe->Numentries = fe2.Numentries;
 		fe->Attrs = (struct TTextAttr *)(fe->FileName + strlen(fe2.FileName)+1);
 
@@ -659,17 +681,27 @@ STATIC struct DirEntry *ReadDirEntry(BPTR dirlock, struct DirEntry *direntry, st
 
 /****************************************************************************************/
 
-STATIC VOID FreeResources(struct DFData *dfdata, struct DiskfontBase_intern *DiskfontBase)
+STATIC VOID FreeResources(struct DF_Data *df_data, struct DiskfontBase_intern *DiskfontBase)
 {
-    D(bug("FreeResources(dfdata=%p)\n", dfdata));
+    D(bug("FreeResources(df_data=%p)\n", df_data));
 
     ReleaseSemaphore(&DiskfontBase->fontssemaphore);
 
+    switch (df_data->Type)
+    {
+    case DF_FONTSDATA:
 #ifdef PROGDIRFONTSDIR
-    FreeDirEntry(dfdata->ProgdirDirEntry, DiskfontBase);
+	FreeDirEntry(df_data->u.FontsData.ProgdirDirEntry, DiskfontBase);
 #endif
+	break;
+	
+    case DF_FILEDATA:
+	if (df_data->u.FileData.FDH != NULL)
+	    FreeFontDescr(df_data->u.FileData.FDH, DiskfontBase);
+	break;
+    }
     
-    FreeMem(dfdata, sizeof (struct DFData));
+    FreeMem(df_data, sizeof (struct DF_Data));
   
     ReturnVoid("FreeResources");
 }
@@ -700,103 +732,152 @@ VOID CleanUpFontsDirEntryList(struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-STATIC struct DFData *AllocResources(struct DiskfontBase_intern *DiskfontBase)
+STATIC struct DF_Data *AllocResources(struct TTextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct DFData *dfdata;
+    struct DF_Data *df_data;
     
     D(bug("AllocResources(void)\n"));
 
     ObtainSemaphore(&DiskfontBase->fontssemaphore);
     
     /* Allocate user data */
-    if ((dfdata = AllocMem( sizeof (struct DFData), MEMF_ANY | MEMF_CLEAR)))
+    if ((df_data = AllocMem( sizeof (struct DF_Data), MEMF_ANY | MEMF_CLEAR)))
     {
-	struct DevProc *dp = NULL;
-	struct MinList newdirlist;
-
-#ifdef PROGDIRFONTSDIR
-	do
+	df_data->ReqAttr = reqattr;
+	
+	if (reqattr==NULL || FilePart(reqattr->tta_Name)==reqattr->tta_Name)
 	{
-	    struct Process *Self;
-	    APTR oldwinptr;
-	    BPTR lock;
-	    
-	    dfdata->ProgdirDirEntry = NULL;
-	    
-	    if (!GetProgramDir())
-		break;
+	    struct DevProc *dp = NULL;
+	    struct MinList newdirlist;
 
-	    Self               = (struct Process *) FindTask(NULL);
-	    oldwinptr          = Self->pr_WindowPtr;
-	    Self->pr_WindowPtr = (APTR) -1;
-	    lock               = Lock(PROGDIRFONTSDIR, ACCESS_READ);
-	    Self->pr_WindowPtr = oldwinptr;
-
-	    D(bug("AllocResources: PROGDIR:Fonts DirLock = 0x%lx\n", lock));
+	    df_data->Type = DF_FONTSDATA;
 	    
-	    if (!lock)
-		break;
+#ifdef PROGDIRFONTSDIR
+	    do
+	    {
+		struct Process *Self;
+		APTR oldwinptr;
+		BPTR lock;
+	    
+		df_data->u.FontsData.ProgdirDirEntry = NULL;
+	    
+		if (!GetProgramDir())
+		    break;
 
-	    dfdata->ProgdirDirEntry = ReadDirEntry(lock, NULL, DiskfontBase);
-	    D(bug("AllocResources: PROGDIR:Fonts direntry 0x%lx\n", dfdata->ProgdirDirEntry));
-	} while (0);
+		Self               = (struct Process *) FindTask(NULL);
+		oldwinptr          = Self->pr_WindowPtr;
+		Self->pr_WindowPtr = (APTR) -1;
+		lock               = Lock(PROGDIRFONTSDIR, ACCESS_READ);
+		Self->pr_WindowPtr = oldwinptr;
+
+		D(bug("AllocResources: PROGDIR:Fonts DirLock = 0x%lx\n", lock));
+	    
+		if (!lock)
+		    break;
+
+		df_data->u.FontsData.ProgdirDirEntry = ReadDirEntry(lock, NULL, DiskfontBase);
+		D(bug("AllocResources: PROGDIR:Fonts direntry 0x%lx\n", df_data->u.FontsData.ProgdirDirEntry));
+	    } while (0);
 #endif
 
-	NEWLIST(&newdirlist);
-	while((dp = GetDeviceProc(FONTSDIR, dp))!=NULL)
-	{
-	    struct DirEntry *direntry, *direntry2;
-	    BPTR lock;
-	    
-	    D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp->dvp_Lock));
-	    
-	    lock = DupLock(dp->dvp_Lock);
-	    if (lock==NULL)
+	    NEWLIST(&newdirlist);
+	    while((dp = GetDeviceProc(FONTSDIR, dp))!=NULL)
 	    {
-		D(bug("AllocResources: Could not duplicate lock\n"));
-		continue;
-	    }
+		struct DirEntry *direntry, *direntry2;
+		BPTR lock;
+	    
+		D(bug("AllocResources: FONTS: lock = 0x%lx\n", dp->dvp_Lock));
+	    
+		lock = DupLock(dp->dvp_Lock);
+		if (lock==NULL)
+		{
+		    D(bug("AllocResources: Could not duplicate lock\n"));
+		    continue;
+		}
 
-	    /* See if direntry is already in memory */
-	    for (direntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
-		 direntry != NULL;
-		 direntry = (struct DirEntry *)GetSucc(direntry))
-	    {
-		if (SameLock(direntry->DirLock, lock) == LOCK_SAME)
+		/* See if direntry is already in memory */
+		for (direntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
+		     direntry != NULL;
+		     direntry = (struct DirEntry *)GetSucc(direntry))
+		{
+		    if (SameLock(direntry->DirLock, lock) == LOCK_SAME)
+		    {
+			REMOVE(direntry);
+			break;
+		    }
+		}
+
+		/* Read or update fonts information in this directory */
+		direntry = ReadDirEntry(lock, direntry, DiskfontBase);
+		if (direntry!=NULL)
+		{
+		    D(bug("AllocResources: addtail direntry 0x%lx\n", direntry));
+		    D(bug("AllocResources: first FileEntry: %p\n", GetHead(&direntry->FileList)));
+		    ADDTAIL(&newdirlist, direntry);
+		}
+		else
+		    D(bug("AllocResources: Error reading DirEntry\n"));
+	    
+		/* Clean up directory lists that are in memory but not in the
+		 * FONTS: assign anymore */
+		ForeachNodeSafe(&DiskfontBase->fontsdirentrylist, direntry, direntry2)
 		{
 		    REMOVE(direntry);
-		    break;
+		    FreeDirEntry(direntry, DiskfontBase);
+		}
+	    
+		ForeachNodeSafe(&newdirlist, direntry, direntry2)
+		{
+		    REMOVE(direntry);
+		    ADDTAIL(&DiskfontBase->fontsdirentrylist, direntry);
 		}
 	    }
+	}
+	else
+	{
+	    struct FontDescrHeader *fdh;
+	    
+	    df_data->Type = DF_FILEDATA;
+	    fdh = ReadFontDescr(reqattr->tta_Name, DiskfontBase);
+	    df_data->u.FileData.FDH = fdh;
+	    
+	    if (fdh != NULL);
+	    {
+		if (fdh->ContentsID==OFCH_ID)
+		{
+		    UBYTE SupportedStyles = OTAG_GetSupportedStyles(fdh->OTagList, DiskfontBase);
 
-	    /* Read or update fonts information in this directory */
-	    direntry = ReadDirEntry(lock, direntry, DiskfontBase);
-	    if (direntry!=NULL)
-	    {
-		D(bug("AllocResources: addtail direntry 0x%lx\n", direntry));
-		D(bug("AllocResources: first FileEntry: %p\n", GetHead(&direntry->FileList)));
-		ADDTAIL(&newdirlist, direntry);
-	    }
-	    else
-		D(bug("AllocResources: Error reading DirEntry\n"));
-	    
-	    /* Clean up directory lists that are in memory but not in the
-	     * FONTS: assign anymore */
-	    ForeachNodeSafe(&DiskfontBase->fontsdirentrylist, direntry, direntry2)
-	    {
-		REMOVE(direntry);
-		FreeDirEntry(direntry, DiskfontBase);
-	    }
-	    
-	    ForeachNodeSafe(&newdirlist, direntry, direntry2)
-	    {
-		REMOVE(direntry);
-		ADDTAIL(&DiskfontBase->fontsdirentrylist, direntry);
+		    df_data->u.FileData.ExtraAttr.tta_Name = reqattr->tta_Name;
+		    df_data->u.FileData.ExtraAttr.tta_YSize = reqattr->tta_YSize;
+		    df_data->u.FileData.ExtraAttr.tta_Style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
+		    df_data->u.FileData.ExtraAttr.tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
+
+		    df_data->u.FileData.ExtraAttr.tta_Tags = NULL;
+		    if (reqattr->tta_Style & FSF_TAGGED)
+		    {
+			df_data->u.FileData.ExtraAttr.tta_Style |= FSF_TAGGED;
+			df_data->u.FileData.ExtraAttr.tta_Tags = reqattr->tta_Tags;
+		    }
+			
+		    if ((reqattr->tta_Style & FSF_BOLD)
+			&& !(df_data->u.FileData.ExtraAttr.tta_Style & FSF_BOLD)
+			&& (SupportedStyles & FSF_BOLD))
+		    {
+			df_data->u.FileData.ExtraAttr.tta_Style |= FSF_BOLD;
+		    }
+			
+		    if ((reqattr->tta_Style & FSF_ITALIC)
+			&& !(df_data->u.FileData.ExtraAttr.tta_Style & FSF_ITALIC)
+			&& (SupportedStyles & FSF_ITALIC))
+		    {
+			df_data->u.FileData.ExtraAttr.tta_Style |= FSF_ITALIC;
+		    }
+		}
 	    }
 	}
     }
-	
-    ReturnPtr("AllocResources", struct DFData *, dfdata);
+    
+    ReturnPtr("AllocResources", struct DF_Data *, df_data);
 }
 
 /****************************************************************************************/
@@ -807,55 +888,67 @@ STATIC struct DFData *AllocResources(struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-APTR DF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
+APTR DF_IteratorInit(struct TTextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct DFData *dfdata;
+    struct DF_Data *df_data;
 
-    D(bug("DF_IteratorInit()\n"));
+    D(bug("DF_IteratorInit(reqattr=0x%lx)\n", reqattr));
     
-    dfdata = AllocResources(DiskfontBase);
-    if (dfdata == NULL)
+    df_data = AllocResources(reqattr, DiskfontBase);
+    if (df_data == NULL)
     {
 	D(bug("DF_IteratorInit: Error executing Allocresources\n"));
 	ReturnPtr("DF_IteratorInit", APTR, NULL);
     }
 
-    dfdata->CurrentDirEntry = NULL;
-    dfdata->CurrentFileEntry = NULL;
+    switch (df_data->Type)
+    {
+    case DF_FONTSDATA:
+	df_data->u.FontsData.CurrentDirEntry = NULL;
+	df_data->u.FontsData.CurrentFileEntry = NULL;
     
 #ifdef PROGDIRFONTSDIR
-    if (dfdata->ProgdirDirEntry != NULL)
-    {
-	D(bug("DF_IteratorInit: ProgdirDirEntry found\n"));
-	dfdata->CurrentDirEntry = dfdata->ProgdirDirEntry;
-	dfdata->CurrentFileEntry = (struct FileEntry *)GetHead(dfdata->ProgdirDirEntry);
-    }
-    else
-	D(bug("DF_IteratorInit: No ProgdirEntry found\n"));
+	if (df_data->u.FontsData.ProgdirDirEntry != NULL)
+	{
+	    D(bug("DF_IteratorInit: ProgdirDirEntry found\n"));
+	    df_data->u.FontsData.CurrentDirEntry = df_data->u.FontsData.ProgdirDirEntry;
+	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(df_data->u.FontsData.ProgdirDirEntry);
+	}
+	else
+	    D(bug("DF_IteratorInit: No ProgdirEntry found\n"));
 #endif
-    if (dfdata->CurrentDirEntry == NULL || dfdata->CurrentFileEntry == NULL)
-    {
-	dfdata->CurrentDirEntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
-	if (dfdata->CurrentDirEntry != NULL)
-	    dfdata->CurrentFileEntry = (struct FileEntry *)GetHead(&dfdata->CurrentDirEntry->FileList);
-    }
-
-    D(bug("DF_IteratorInit: CurrentDirEntry: %p CurrentFileEntry: %p\n",
-	  dfdata->CurrentDirEntry, dfdata->CurrentFileEntry));
-    
-    /* If DirEntry was empty search for one that is not empty */
-    while (dfdata->CurrentDirEntry != NULL && dfdata->CurrentFileEntry == NULL)
-    {
-	dfdata->CurrentDirEntry = (struct DirEntry *)GetSucc(dfdata->CurrentDirEntry);
-	if (dfdata->CurrentDirEntry != NULL)
-	    dfdata->CurrentFileEntry = (struct FileEntry *)GetHead(dfdata->CurrentDirEntry);
+	if (df_data->u.FontsData.CurrentDirEntry == NULL || df_data->u.FontsData.CurrentFileEntry == NULL)
+	{
+	    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
+	    if (df_data->u.FontsData.CurrentDirEntry != NULL)
+		df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.CurrentDirEntry->FileList);
+	}
 
 	D(bug("DF_IteratorInit: CurrentDirEntry: %p CurrentFileEntry: %p\n",
-	      dfdata->CurrentDirEntry, dfdata->CurrentFileEntry));
-    }
-    dfdata->AttrsIndex = 0;
+	      df_data->u.FontsData.CurrentDirEntry, df_data->u.FontsData.CurrentFileEntry));
+    
+	/* If DirEntry was empty search for one that is not empty */
+	while (df_data->u.FontsData.CurrentDirEntry != NULL && df_data->u.FontsData.CurrentFileEntry == NULL)
+	{
+	    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
+	    if (df_data->u.FontsData.CurrentDirEntry != NULL)
+		df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(df_data->u.FontsData.CurrentDirEntry);
 
-    ReturnPtr("DF_IteratorInit", APTR, dfdata);
+	    D(bug("DF_IteratorInit: CurrentDirEntry: %p CurrentFileEntry: %p\n",
+		  df_data->u.FontsData.CurrentDirEntry, df_data->u.FontsData.CurrentFileEntry));
+	}
+	df_data->u.FontsData.AttrsIndex = 0;
+	
+	break;
+
+    case DF_FILEDATA:
+	df_data->u.FileData.AttrsIndex = 0;
+	df_data->u.FileData.FilePart = FilePart(df_data->ReqAttr->tta_Name);
+	df_data->u.FileData.LastAttr = NULL;
+	break;
+    }
+    
+    ReturnPtr("DF_IteratorInit", APTR, df_data);
 }
 
 /****************************************************************************************/
@@ -866,73 +959,126 @@ APTR DF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct TTextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
+struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 {
     struct TTextAttr *retval;
-    struct DFData *dfdata = (struct DFData *)iterator;
+    struct DF_Data *df_data = (struct DF_Data *)iterator;
 
     D(bug("DF_IteratorGetNext(iterator=0x%lx)\n", iterator));
     
-    if (dfdata==NULL || dfdata->CurrentDirEntry==NULL)
+    if (df_data==NULL)
 	ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, NULL);
     
-    retval = dfdata->CurrentFileEntry->Attrs + dfdata->AttrsIndex;
-    if (dfdata->CurrentFileEntry->ContentsID == OFCH_ID
-	&& reqattr != NULL
-	&& dfdata->AttrsIndex == dfdata->CurrentFileEntry->Numentries-1)
+    switch (df_data->Type)
     {
-        /* The last attr for a outline font is filled with values matching
-	 * as close as possible the reqattr */
-        retval->tta_YSize = reqattr->tta_YSize;
-        retval->tta_Style = dfdata->CurrentFileEntry->FontStyle;
-        
-        retval->tta_Tags  = NULL;
-       
-        if (reqattr->tta_Style & FSF_TAGGED)
+    case DF_FONTSDATA:
+	if (df_data->u.FontsData.CurrentDirEntry==NULL)
+	    ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, NULL);
+	    
+	retval = df_data->u.FontsData.CurrentFileEntry->Attrs + df_data->u.FontsData.AttrsIndex;
+	D(bug("DF_IteratorGetNext:\n"
+	      "  ContentsID: 0x%x == 0x%x\n"
+	      "  ReqAttr: %p\n"
+	      "  AttrIndex: %d, Numentries: %d\n",
+	      df_data->u.FontsData.CurrentFileEntry->ContentsID, OFCH_ID,
+	      df_data->ReqAttr,
+	      df_data->u.FontsData.AttrsIndex, df_data->u.FontsData.CurrentFileEntry->Numentries));
+	
+	if (df_data->u.FontsData.CurrentFileEntry->ContentsID == OFCH_ID
+	    && df_data->ReqAttr != NULL
+	    && df_data->u.FontsData.AttrsIndex == df_data->u.FontsData.CurrentFileEntry->Numentries-1)
 	{
-	     retval->tta_Style |= FSF_TAGGED;
-	     retval->tta_Tags  = reqattr->tta_Tags;
-	}
+	    D(bug("DF_IteratorGetNext: Setting last outline element\n"));
+	    
+	    /* The last attr for a outline font is filled with values matching
+	     * as close as possible the reqattr */
+	    retval->tta_YSize = df_data->ReqAttr->tta_YSize;
+	    retval->tta_Style = df_data->u.FontsData.CurrentFileEntry->FontStyle;
+	    
+	    retval->tta_Tags  = NULL;
+       
+	    if (df_data->ReqAttr->tta_Style & FSF_TAGGED)
+	    {
+		retval->tta_Style |= FSF_TAGGED;
+		retval->tta_Tags  = df_data->ReqAttr->tta_Tags;
+	    }
 
-        if ((reqattr->tta_Style & FSF_BOLD)
-	    && !(retval->tta_Style & FSF_BOLD)
-	    && (dfdata->CurrentFileEntry->SupportedStyles & FSF_BOLD))
-	{
-	    retval->tta_Style |= FSF_BOLD;
+	    if ((df_data->ReqAttr->tta_Style & FSF_BOLD)
+		&& !(retval->tta_Style & FSF_BOLD)
+		&& (df_data->u.FontsData.CurrentFileEntry->SupportedStyles & FSF_BOLD))
+	    {
+		retval->tta_Style |= FSF_BOLD;
+	    }
+       
+	    if ((df_data->ReqAttr->tta_Style & FSF_ITALIC)
+		&& !(retval->tta_Style & FSF_ITALIC)
+		&& (df_data->u.FontsData.CurrentFileEntry->SupportedStyles & FSF_ITALIC))
+	    {
+		retval->tta_Style |= FSF_ITALIC;
+	    }
 	}
        
-        if ((reqattr->tta_Style & FSF_ITALIC)
-	    && !(retval->tta_Style & FSF_ITALIC)
-	    && (dfdata->CurrentFileEntry->SupportedStyles & FSF_ITALIC))
+	/* Let the iterator point to the next attr */
+	if ((df_data->u.FontsData.AttrsIndex == df_data->u.FontsData.CurrentFileEntry->Numentries-1)
+	    || (df_data->u.FontsData.CurrentFileEntry->ContentsID == OFCH_ID && df_data->ReqAttr==NULL && df_data->u.FontsData.AttrsIndex == df_data->u.FontsData.CurrentFileEntry->Numentries-1))
 	{
-	    retval->tta_Style |= FSF_ITALIC;
-	}
-    }
-       
-    /* Let the iterator point to the next attr */
-    if ((dfdata->AttrsIndex == dfdata->CurrentFileEntry->Numentries-1)
-	|| (dfdata->CurrentFileEntry->ContentsID == OFCH_ID && reqattr==NULL && dfdata->AttrsIndex == dfdata->CurrentFileEntry->Numentries-1))
-    {
-	dfdata->PrevFileEntry = dfdata->CurrentFileEntry;
-	dfdata->CurrentFileEntry = (struct FileEntry *)GetSucc(dfdata->CurrentFileEntry);
-	dfdata->AttrsIndex = 0;
-	if (dfdata->CurrentFileEntry == NULL)
-	{
+	    df_data->u.FontsData.PrevFileEntry = df_data->u.FontsData.CurrentFileEntry;
+	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetSucc(df_data->u.FontsData.CurrentFileEntry);
+	    df_data->u.FontsData.AttrsIndex = 0;
+	    if (df_data->u.FontsData.CurrentFileEntry == NULL)
+	    {
 #ifdef PROGDIRFONTSDIR
-	    if (dfdata->CurrentDirEntry == dfdata->ProgdirDirEntry)
-		dfdata->CurrentDirEntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
-	    else
-		dfdata->CurrentDirEntry = (struct DirEntry *)GetSucc(dfdata->CurrentDirEntry);
+		if (df_data->u.FontsData.CurrentDirEntry == df_data->u.FontsData.ProgdirDirEntry)
+		    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetHead(&DiskfontBase->fontsdirentrylist);
+		else
+		    df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
 #else
-	    dfdata->CurrentDirEntry = (struct DirEntry *)GetSucc(dfdata->CurrentDirEntry);
+		df_data->u.FontsData.CurrentDirEntry = (struct DirEntry *)GetSucc(df_data->u.FontsData.CurrentDirEntry);
 #endif
-	    if (dfdata->CurrentDirEntry != NULL)
-		dfdata->CurrentFileEntry = (struct FileEntry *)GetHead(&dfdata->CurrentDirEntry->FileList);
+		if (df_data->u.FontsData.CurrentDirEntry != NULL)
+		    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetHead(&df_data->u.FontsData.CurrentDirEntry->FileList);
+	    }
 	}
-    }
-    else
-	dfdata->AttrsIndex++;
+	else
+	    df_data->u.FontsData.AttrsIndex++;
+	break;
+	
+    case DF_FILEDATA:
+	if (df_data->u.FileData.LastAttr != NULL)
+	{
+	    df_data->u.FileData.LastAttr->tta_Name = df_data->u.FileData.OrigName;
+	    df_data->u.FileData.LastAttr = NULL;
+	}
+	
+	if (df_data->u.FileData.FDH==NULL
+	    || df_data->u.FileData.AttrsIndex > df_data->u.FileData.FDH->NumEntries)
+	    ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, NULL);
 
+	/* Get the TextAttr the iterator is pointing to
+	 * If it points to the element after the last element return
+	 * the Extra Attr that matches the outline font as close as possible
+	 */
+	if (df_data->u.FileData.AttrsIndex == df_data->u.FileData.FDH->NumEntries)
+	    retval = &df_data->u.FileData.ExtraAttr;
+	else
+	{
+	    retval = &df_data->u.FileData.FDH->TAttrArray[df_data->u.FileData.AttrsIndex];
+	    df_data->u.FileData.OrigName = retval->tta_Name;
+	    retval->tta_Name = df_data->u.FileData.FilePart;
+	    df_data->u.FileData.LastAttr = retval;
+	}
+	
+	/* Let the iterator point to the next element.
+	 */
+	df_data->u.FileData.AttrsIndex++;
+	if (df_data->u.FileData.FDH->ContentsID != OFCH_ID
+	    && df_data->u.FileData.AttrsIndex == df_data->u.FileData.FDH->NumEntries)
+	{
+	    df_data->u.FileData.AttrsIndex++;
+	}
+	break;
+    }
+	
     ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, retval);
 }
 
@@ -946,22 +1092,36 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct TTextAttr *reqattr, s
 
 VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct DFData *dfdata = (struct DFData *)iterator;
+    struct DF_Data *df_data = (struct DF_Data *)iterator;
 
     D(bug("DF_IteratorRemember(iterator=0x%lx)\n", iterator));
-    
-    if (dfdata->AttrsIndex > 0)
+
+    switch (df_data->Type)
     {
-	dfdata->RememberIndex = dfdata->AttrsIndex-1;
-	dfdata->RememberFileEntry = dfdata->CurrentFileEntry;
-    }
-    else
-    {
-	dfdata->RememberFileEntry = dfdata->PrevFileEntry;
-	dfdata->RememberIndex = dfdata->RememberFileEntry->Numentries-1;
-    }
+    case DF_FONTSDATA:
+	if (df_data->u.FontsData.AttrsIndex > 0)
+	{
+	    df_data->u.FontsData.RememberIndex = df_data->u.FontsData.AttrsIndex-1;
+	    df_data->u.FontsData.RememberFileEntry = df_data->u.FontsData.CurrentFileEntry;
+	}
+	else
+	{
+	    df_data->u.FontsData.RememberFileEntry = df_data->u.FontsData.PrevFileEntry;
+	    df_data->u.FontsData.RememberIndex = df_data->u.FontsData.RememberFileEntry->Numentries-1;
+	}
     
-    D(bug("DF_IteratorRemember: Remembered font: %s\n", dfdata->RememberFileEntry->Attrs[dfdata->RememberIndex].tta_Name));
+	D(bug("DF_IteratorRemember: Remembered font: %s/%d\n",
+	      df_data->u.FontsData.RememberFileEntry->Attrs[df_data->u.FontsData.RememberIndex].tta_Name,
+	      df_data->u.FontsData.RememberFileEntry->Attrs[df_data->u.FontsData.RememberIndex].tta_YSize));
+	break;
+
+    case DF_FILEDATA:
+	df_data->u.FileData.RememberIndex = df_data->u.FileData.AttrsIndex-1;
+
+	D(bug("DF_IteratorRemember: Remembered font: %s(%d)\n",
+	      df_data->ReqAttr->tta_Name, df_data->u.FileData.RememberIndex));
+	break;
+    }
 }
 
 /****************************************************************************************/
@@ -972,50 +1132,100 @@ VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase
 
 /****************************************************************************************/
 
-struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct TTextAttr *tattr, struct DiskfontBase_intern *DiskfontBase)
+struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct DFData *dfdata = (struct DFData *)iterator;
-    struct TextFont *tf = NULL;
-    BPTR olddir;
+    struct DF_Data *df_data = (struct DF_Data *)iterator;
     struct FontDescrHeader *fdh;
+    struct TTextAttr *RememberAttr;
+    struct TextFont *tf = NULL;
+    BPTR olddir, lock, dirlock;
 
-    D(bug("DF_IteratorRememberOpen(iterator=0x%lx, tattr=0x%lx)\n", iterator, tattr));
-    
-    olddir = CurrentDir(dfdata->RememberFileEntry->DirEntry->DirLock);
+    D(bug("DF_IteratorRememberOpen(iterator=0x%lx)\n", iterator));
 
-    fdh = ReadFontDescr(dfdata->RememberFileEntry->FileName, DiskfontBase);
+    /* Set current dir and get the Remember TextAttr */
+    switch (df_data->Type)
+    {
+    case DF_FONTSDATA:
+	olddir = CurrentDir(df_data->u.FontsData.RememberFileEntry->DirEntry->DirLock);
+	fdh = ReadFontDescr(df_data->u.FontsData.RememberFileEntry->FileName, DiskfontBase);
+	RememberAttr = &fdh->TAttrArray[df_data->u.FontsData.RememberIndex];
+	break;
+	
+    case DF_FILEDATA:
+	if (df_data->u.FileData.LastAttr != NULL)
+	{
+	    df_data->u.FileData.LastAttr->tta_Name = df_data->u.FileData.OrigName;
+	    df_data->u.FileData.LastAttr = NULL;
+	}
+	
+	RememberAttr = NULL;
+	lock = Lock(df_data->ReqAttr->tta_Name, ACCESS_READ);
+	if (lock == NULL)
+	{
+	    D(bug("DF_IteratorRememberOpen: Could not lock file\n"));
+	    break;
+	}
+	
+	dirlock = ParentDir(lock);
+	UnLock(lock);
+	if (dirlock == NULL)
+	{
+	    D(bug("DF_IteratorRememberOpen: Could not get ParentDir\n"));
+	    break;
+	}
+	olddir = CurrentDir(dirlock);
+	
+	fdh = df_data->u.FileData.FDH;
+	if (df_data->u.FileData.RememberIndex == fdh->NumEntries)
+	    RememberAttr = &df_data->u.FileData.ExtraAttr;
+	else
+	    RememberAttr = &fdh->TAttrArray[df_data->u.FileData.RememberIndex];
+	break;
+    }
+
+    if (RememberAttr == NULL)
+	return NULL;
     
     if (fdh != NULL)
     {
 	D(bug("DF_IteratorRememberOpen: Font Description read\n"));
 	
-	if (IS_OUTLINE_FONT(&dfdata->RememberFileEntry->Attrs[dfdata->RememberIndex]))
+	if (IS_OUTLINE_FONT(RememberAttr))
 	{
 	    D(bug("DF_IteratorRememberOpen: loading outline font\n"));
 	
-	    tf = OTAG_ReadOutlineFont(&fdh->TAttrArray[dfdata->RememberIndex],
-				      tattr,
+	    tf = OTAG_ReadOutlineFont(RememberAttr,
+				      df_data->ReqAttr,
 				      fdh->OTagList,
 				      DiskfontBase);
 	    D(bug("DF_IteratorRememberOpen: tf=0x%lx\n", tf));
+	
 	}
 	else
 	{
 	    D(bug("DF_IteratorRememberOpen: loading bitmap font\n"));
-	    
-	    tf = ReadDiskFont(&fdh->TAttrArray[dfdata->RememberIndex],
-			      tattr->tta_Name,
+	
+	    tf = ReadDiskFont(RememberAttr,
+			      FilePart(df_data->ReqAttr->tta_Name),
 			      DiskfontBase);
 
 	    D(bug("DF_IteratorRememberOpen: tf=0x%lx\n", tf));
 	}
-
-        FreeFontDescr(fdh, DiskfontBase);
     }
     else
 	D(bug("DF_IteratorRememberOpen: Font Description read failed\n"));
-    
-    CurrentDir(olddir);
+
+    dirlock = CurrentDir(olddir);
+    switch (df_data->Type)
+    {
+    case DF_FONTSDATA:
+	FreeFontDescr(fdh, DiskfontBase);
+	break;
+	
+    case DF_FILEDATA:
+	UnLock(dirlock);
+	break;
+    }
 
     if (tf != NULL)
     {
@@ -1064,9 +1274,12 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct TTextAttr *tattr,
 
 VOID DF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct DFData *dfdata = (struct DFData *)iterator;
+    struct DF_Data *df_data = (struct DF_Data *)iterator;
+
+    if (df_data->Type == DF_FILEDATA && df_data->u.FileData.LastAttr != NULL)
+	df_data->u.FileData.LastAttr->tta_Name = df_data->u.FileData.OrigName;
     
-    FreeResources(dfdata, DiskfontBase);
+    FreeResources(df_data, DiskfontBase);
 }
 
 /****************************************************************************************/
@@ -1114,7 +1327,7 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
        
         for (i=0; i<fdh->NumEntries; i++)
 	{
-	    match_weight = WeighTAMatch((struct TTextAttr *)reqattr,
+	    match_weight = WeighTAMatch((struct TextAttr *)reqattr,
 					(struct TextAttr *)&fdh->TAttrArray[i],
 					fdh->TAttrArray[i].tta_Tags);
 	   

@@ -14,7 +14,6 @@
 #include <graphics/gfxbase.h>
 #include "diskfont_intern.h"
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 /****************************************************************************************/
