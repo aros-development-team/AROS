@@ -4,7 +4,7 @@ include $(TOP)/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
-all: setup $(OSGENDIR)/init.o $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
+all: setup  $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
 	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
 	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
 	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
