@@ -144,6 +144,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
     return FALSE;
 }
 
+#if 0
 /*
    This version will read the MBR and then add all partitions of type 0x30
    as bootnodes. It could be a bit smarter though.
@@ -202,6 +203,7 @@ void RDBInfo(struct ide_Unit *unit)
     }
     return;
 }
+#endif
 
 /* Try to get CHS info from this drive */
 void SearchCHS(struct ide_Unit *unit)
@@ -509,7 +511,8 @@ void UnitInfo(struct ide_Unit *unit)
 	{
 	    case DG_DIRECT_ACCESS:
 		CalculateGeometry(unit,&id);
-		RDBInfo(unit);
+		if (unit->au_DevType == DG_DIRECT_ACCESS)
+		   AddVolume(0, unit->au_Cylinders, unit);
 		break;
 	    case DG_CDROM:
 		AddVolume(0,0,unit);
@@ -1205,6 +1208,38 @@ ULONG ata_Identify(APTR buffer, struct ide_Unit *unit)
     return 0;
 }
 
+LONG ata_ScsiCmd(struct SCSICmd *scsicmd, struct ide_Unit *unit)
+{
+    ULONG port;
+    UBYTE comm;
+    
+    port = unit->au_PortAddr;
+
+    comm = scsicmd->scsi_Command[0];
+
+    ide_out(unit->au_DevMask, ata_DevHead, port);
+    if (WaitBusy(port, unit))
+    {
+        ide_out(comm, ata_Command, port);
+        if (WaitBusy(port, unit))
+        {
+            scsicmd->scsi_Status = ide_in(ata_Status, port);
+				if (scsicmd->scsi_Status & ATAF_DATAREQ)
+            {
+                insw(port, scsicmd->scsi_Data, scsicmd->scsi_Length / 2);
+
+                scsicmd->scsi_Status = ide_in(ata_Status, port);
+                if (!(scsicmd->scsi_Status & ATAF_ERROR))
+                {
+                    return 0;
+                }
+            }
+        }               
+    }
+
+    ResumeError(port, unit);
+    return HFERR_BadStatus;
+}
 /**** Helper functions ********************************************************/
 
 void ResumeError(ULONG port, struct ide_Unit *unit)

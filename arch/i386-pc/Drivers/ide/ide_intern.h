@@ -12,6 +12,7 @@
 #include <exec/interrupts.h>
 #include <exec/devices.h>
 #include <exec/tasks.h>
+#include <devices/scsidisk.h>
 #include <devices/timer.h>
 #include <devices/newstyle.h>
 #include <string.h>
@@ -286,6 +287,7 @@ ULONG ata_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, UL
 ULONG ata_Seek(ULONG block, struct ide_Unit *unit);
 ULONG ata_Eject(struct ide_Unit *unit);
 ULONG ata_Identify(APTR buffer, struct ide_Unit *unit);
+LONG ata_ScsiCmd(struct SCSICmd *, struct ide_Unit *);
 
 ULONG atapi_TestUnit(struct ide_Unit *unit);
 ULONG atapi_Read(ULONG, ULONG, APTR, struct ide_Unit *, ULONG *);
