@@ -339,6 +339,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	nnset(wheel, WHEEL_HSB, (IPTR)&hsb);
 	/* just to be sure - colorwheel seems to have some problems */
 	nnset(wheel, WHEEL_Saturation, hsb.cw_Saturation);
+	nnset(wheel, WHEEL_Hue, hsb.cw_Hue);
 	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
 	nnset(data->grad, GRAD_PenArray, data->gradpenarray);
     }
@@ -446,6 +447,7 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	    ConvertRGBToHSB(&cw, &hsb);
     	    nnset(data->wheel, WHEEL_HSB, (IPTR)&hsb);
 	    nnset(data->wheel, WHEEL_Saturation, hsb.cw_Saturation);
+	    nnset(data->wheel, WHEEL_Hue, hsb.cw_Hue);
 	    nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
 	    
 	    if ((_flags(obj) & MADF_SETUP) && (data->gradpen != -1))
@@ -533,6 +535,7 @@ static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
 	ConvertRGBToHSB(&rgb, &hsb);
 	/* setting this will force wheel to properly set its display */
 	nnset(data->wheel, WHEEL_Saturation, hsb.cw_Saturation);
+	nnset(data->wheel, WHEEL_Hue, hsb.cw_Hue);
 
 	hsb.cw_Brightness = 0xFFFFFFFF;
 	ConvertHSBToRGB(&hsb, &rgb);
