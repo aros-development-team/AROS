@@ -161,8 +161,8 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     layout_hook->h_Entry = (HOOKFUNC)Listview_Layout_Function;
 
     obj = (Object *)DoSuperNew(cl, obj,
-    	MUIA_Group_Horiz, FALSE,
-    	Child, group = GroupObject,
+	MUIA_Group_Horiz, FALSE,
+	Child, group = GroupObject,
 	    MUIA_Group_LayoutHook, layout_hook,
 	    Child, list,
 	    Child, vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,

@@ -38,7 +38,14 @@ struct ListEntry
     APTR data;
     LONG *widths; /* The widths of the column */
     LONG height; /* line height */
+    WORD flags; /* see below */
+    WORD parents; /* number of entries parent's, used for the list tree stuff */
 };
+
+#define LE_FLAG_LIST     (1<<0)  /* Entry is a list, possibly containing childs */
+#define LE_FLAG_CLOSED   (1<<1)  /* The entry (list) is closed (means that all childs are invisible) */
+#define LE_FLAG_VISIBLE  (1<<2)  /* The entry is visible */
+#define LE_FLAG_SELECTED (1<<3)  /* The entry is selected */
 
 struct ColumnInfo
 {
@@ -98,6 +105,10 @@ struct MUI_ListData
 
     struct MUI_EventHandlerNode ehn;
     int mouse_click; /* see below if mouse is hold down */
+
+    /* Render optimization */
+    int update; /* 1 - update everything, 2 - redraw entry at update_pos */
+    int update_pos;
 };
 
 #define MOUSE_CLICK_ENTRY 1 /* on entry clicked */ 
@@ -584,13 +595,25 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    if (new_entries_active < 0) new_entries_active = 0;
 			    else if (new_entries_active >= data->entries_num) new_entries_active = data->entries_num - 1;
 			} else new_entries_active = -1;
-			data->entries_active = new_entries_active;
-			MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+			if (data->entries_active != new_entries_active)
+			{
+			    LONG old = data->entries_active;
+			    data->entries_active = new_entries_active;
+
+			    data->update = 2;
+			    data->update_pos = old;
+			    MUI_Redraw(obj,MADF_DRAWUPDATE);
+			    data->update = 2;
+			    data->update_pos = data->entries_active;
+			    MUI_Redraw(obj,MADF_DRAWUPDATE);
+			}
 		    }
 		    break;
 
 	    case    MUIA_List_First:
 		    data->entries_first = tag->ti_Data;
+		    data->update = 1;
 		    MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    if (data->vertprop_first != tag->ti_Data)
 		    {
@@ -729,23 +752,29 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (msg->flags & MADF_DRAWUPDATE)
-	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0,0);
+    {
+    	if (data->update == 1)
+	    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0,0);
+    }
 
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
 			   _mwidth(obj), _mheight(obj));
 
-    y = _mtop(obj);
-    if (data->title_height && data->title)
+    if (!(msg->flags & MADF_DRAWUPDATE) || ((msg->flags & MADF_DRAWUPDATE) && data->update == 1))
     {
-	List_DrawEntry(cl,obj,ENTRY_TITLE,y);
-	y += data->entries[ENTRY_TITLE]->height;
-	SetAPen(_rp(obj),_pens(obj)[MPEN_SHADOW]);
-	Move(_rp(obj),_mleft(obj), y);
-	Draw(_rp(obj),_mright(obj), y);
-	SetAPen(_rp(obj),_pens(obj)[MPEN_SHINE]);
-	y++;
-	Move(_rp(obj),_mleft(obj), y);
-	Draw(_rp(obj),_mright(obj), y);
+	y = _mtop(obj);
+	if (data->title_height && data->title)
+	{
+	    List_DrawEntry(cl,obj,ENTRY_TITLE,y);
+	    y += data->entries[ENTRY_TITLE]->height;
+	    SetAPen(_rp(obj),_pens(obj)[MPEN_SHADOW]);
+	    Move(_rp(obj),_mleft(obj), y);
+	    Draw(_rp(obj),_mright(obj), y);
+	    SetAPen(_rp(obj),_pens(obj)[MPEN_SHINE]);
+	    y++;
+	    Move(_rp(obj),_mleft(obj), y);
+	    Draw(_rp(obj),_mright(obj), y);
+	}
     }
 
     y = data->entries_top_pixel;
@@ -753,18 +782,31 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     for (entry_pos = data->entries_first; entry_pos < data->entries_first + data->entries_visible && entry_pos < data->entries_num; entry_pos++)
     {
 	struct ListEntry *entry = data->entries[entry_pos];
-	if (entry_pos == data->entries_active)
-	{
-	    /* TODO: Correct background */
-	    SetAPen(_rp(obj),_pens(obj)[MPEN_FILL]);
-	    RectFill(_rp(obj),_mleft(obj),y,_mright(obj), y + data->entry_maxheight - 1);
+
+        if (!(msg->flags & MADF_DRAWUPDATE) ||
+            ((msg->flags & MADF_DRAWUPDATE) && data->update == 1) ||
+            ((msg->flags & MADF_DRAWUPDATE) && data->update == 2 && data->update_pos == entry_pos))
+        {
+	    if (entry_pos == data->entries_active)
+	    {
+		/* TODO: Correct background */
+		SetAPen(_rp(obj),_pens(obj)[MPEN_FILL]);
+		RectFill(_rp(obj),_mleft(obj),y,_mright(obj), y + data->entry_maxheight - 1);
+	    } else
+	    {
+		if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2 && data->update_pos == entry_pos)
+		{
+		    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),y,_mwidth(obj), data->entry_maxheight,0,0);
+		}
+	    }
+	    List_DrawEntry(cl,obj,entry_pos,y);
 	}
-	List_DrawEntry(cl,obj,entry_pos,y);
     	y += data->entry_maxheight;
     }
 
     MUI_RemoveClipping(muiRenderInfo(obj),clip);
 
+    data->update = 0;
     return 0;
 }
 
@@ -869,6 +911,79 @@ static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *
     }
     /* Should never fail when shrinking */
     SetListSize(data,0);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_List_Exchange
+**************************************************************************/
+static ULONG List_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exchange *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    LONG pos1;
+    LONG pos2;
+
+    switch(msg->pos1)
+    {
+	case    MUIV_List_Exchange_Top: pos1 = 0; break;
+	case    MUIV_List_Exchange_Active: pos1 = data->entries_active;break;
+	case    MUIV_List_Exchange_Bottom: pos1 = data->entries_num - 1;break;
+	case    MUIV_List_Exchange_Next:break;
+	case    MUIV_List_Exchange_Previous:break;
+	default: pos1 = msg->pos1;
+    }
+
+    switch(msg->pos2)
+    {
+	case    MUIV_List_Exchange_Top: pos2 = 0; break;
+	case    MUIV_List_Exchange_Active: pos2 = data->entries_active;break;
+	case    MUIV_List_Exchange_Bottom: pos2 = data->entries_num - 1;break;
+	case    MUIV_List_Exchange_Next: pos2 = pos1 + 1; break;
+	case    MUIV_List_Exchange_Previous: pos2 = pos1 - 1;break;
+	default: pos2 = msg->pos2;
+    }
+
+    if (pos1 >= 0 && pos1 < data->entries_num && pos2 >= 0 && pos2 <= data->entries_num && pos1 != pos2)
+    {
+    	struct ListEntry *save = data->entries[pos1];
+    	data->entries[pos1] = data->entries[pos2];
+    	data->entries[pos2] = save;
+
+	data->update = 2;
+	data->update_pos = pos1;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+	data->update = 2;
+	data->update_pos = pos2;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_List_Redraw
+**************************************************************************/
+static ULONG List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    if (msg->pos == MUIV_List_Redraw_All)
+    {
+	data->update = 1;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
+    } else
+    {
+    	LONG pos;
+    	if (msg->pos == MUIV_List_Redraw_Active) pos = data->entries_active;
+    	else pos = msg->pos;
+
+    	if (pos != -1)
+    	{
+	    data->update = 2;
+	    data->update_pos = pos;
+	    MUI_Redraw(obj,MADF_DRAWUPDATE);
+	}
+    }
     return 0;
 }
 
@@ -1025,6 +1140,7 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 		TAG_DONE);
 	}
 
+	data->update = 1;
 	MUI_Redraw(obj,MADF_DRAWUPDATE);
 
     	data->insert_position = pos;
@@ -1154,10 +1270,13 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 	case MUIM_Layout: return List_Layout(cl,obj,(struct MUIP_Layout *)msg);
 	case MUIM_HandleEvent: return List_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
 	case MUIM_List_Clear: return List_Clear(cl,obj,(struct MUIP_List_Clear *)msg);
+	case MUIM_List_Exchange: return List_Exchange(cl,obj,(struct MUIP_List_Exchange *)msg);
 	case MUIM_List_Insert: return List_Insert(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingle: return List_InsertSingle(cl,obj,(APTR)msg);
 	case MUIM_List_GetEntry: return List_GetEntry(cl,obj,(APTR)msg);
+	case MUIM_List_Redraw: return List_Redraw(cl,obj,(APTR)msg);
 	case MUIM_List_Remove: return List_Remove(cl,obj,(APTR)msg);
+
 	case MUIM_List_Construct: return List_Construct(cl,obj,(APTR)msg);
 	case MUIM_List_Destruct: return List_Destruct(cl,obj,(APTR)msg);
 	case MUIM_List_Compare: return List_Compare(cl,obj,(APTR)msg);
