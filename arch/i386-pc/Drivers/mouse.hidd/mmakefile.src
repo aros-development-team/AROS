@@ -1,4 +1,5 @@
-# $Id:
+# $Id$
+
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I. -I../../include
@@ -9,8 +10,8 @@ LIBS    :=	-L$(LIBDIR) -lhiddstubs
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
-#MM Drivers-native : workbench-hidd-serial-stubs
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
+#MM Drivers-native-i386 : workbench-hidd-serial-stubs
+Drivers-native-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/hidd.bus.mouse
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(LIBS) \
 	    -o $(OSGENDIR)/boot/hidd.bus.mouse.o
