@@ -27,8 +27,17 @@ static void SIGHANDLER (int sig)
 }
 #endif /* __linux__ */
 
-#define SB_SAR	    15
-#define SF_SAR	    0x8000
+#ifdef __FreeBSD__
+static void sighandler (int sig, sigcontext_t * sc);
+
+static void SIGHANDLER (int sig)
+{
+	sighandler( sig, (sigcontext_t*)(&sig+2));
+}
+#endif /* _FreeBSD */
+
+#define SB_SAR 15
+#define SF_SAR 0x8000
 
 struct ExecBase _SysBase, * SysBase = &_SysBase;
 struct Task Task1, Task2, Task3, TaskMain;
@@ -286,7 +295,9 @@ void InitCore(void)
 
     sa.sa_handler  = (SIGHANDLER_T)SIGHANDLER;
     sa.sa_flags    = SA_RESTART;
+#ifdef __linux__
     sa.sa_restorer = NULL;
+#endif /* __linux__ */
     sigfillset (&sa.sa_mask);
 
     sigaction (SIGALRM, &sa, NULL);

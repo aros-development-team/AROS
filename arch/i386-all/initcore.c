@@ -25,6 +25,15 @@ static void SIGHANDLER (int sig)
 }
 #endif /* __linux__ */
 
+#ifdef __FreeBSD__
+static void sighandler (int sig, sigcontext_t * sc);
+
+static void SIGHANDLER (int sig)
+{
+    sighandler (sig, (sigcontext_t *)(&sig+2));
+}
+#endif /* __FreeBSD__ */
+
 #if 0
 static void UnixDispatch (sigcontext_t * sc, struct ExecBase * SysBase);
 #endif
@@ -138,7 +147,9 @@ void InitCore(void)
     sa.sa_handler  = (SIGHANDLER_T)SIGHANDLER;
     sigfillset (&sa.sa_mask);
     sa.sa_flags    = SA_RESTART;
+#ifdef __linux__
     sa.sa_restorer = NULL;
+#endif
 
     for (i=0; i<(sizeof(sig2int)/sizeof(sig2int[0])); i++)
     {

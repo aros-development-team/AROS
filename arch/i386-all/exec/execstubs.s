@@ -95,10 +95,10 @@ cname:				    ; \
 	STUB0(AROS_CDEFNAME(os_disable),AROS_CSYMNAME(_os_disable))
 	STUB0(AROS_CDEFNAME(os_enable),AROS_CSYMNAME(_os_enable))
 
-	STUB1(AROS_SLIB_ENTRY(Forbid,Exec),_Forbid)
-	STUB1(AROS_SLIB_ENTRY(Permit,Exec),_Permit)
-	STUB1(AROS_SLIB_ENTRY(Disable,Exec),_Disable)
-	STUB1(AROS_SLIB_ENTRY(Enable,Exec),_Enable)
+	STUB1(AROS_SLIB_ENTRY(Forbid,Exec),AROS_CSYMNAME(_Forbid))
+	STUB1(AROS_SLIB_ENTRY(Permit,Exec),AROS_CSYMNAME(_Permit))
+	STUB1(AROS_SLIB_ENTRY(Disable,Exec),AROS_CSYMNAME(_Disable))
+	STUB1(AROS_SLIB_ENTRY(Enable,Exec),AROS_CSYMNAME(_Enable))
 
 	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec),AROS_CSYMNAME(_ObtainSemaphore))
 	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_ReleaseSemaphore))
