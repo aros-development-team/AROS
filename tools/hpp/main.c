@@ -6,6 +6,8 @@
 #include "var.h"
 #include "db.h"
 
+static const char version[] = "$VER: hpp 0.2 (19.11.1997)\r\n";
+
 void main (int argc, char ** argv)
 {
     StdioStream * ss;
