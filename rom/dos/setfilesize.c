@@ -73,8 +73,7 @@
     iofs->IOFS.io_Unit   =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_SET_FILE_SIZE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_SET_FILE_SIZE.io_Negative=offset<0?-1:0;
-    iofs->io_Union.io_SET_FILE_SIZE.io_Offset  =offset;
+    iofs->io_Union.io_SET_FILE_SIZE.io_Offset  =(QUAD)offset;
     iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode=mode;
 
     /* Send the request. */
@@ -84,7 +83,7 @@
     if((me->pr_Result2=iofs->io_DosError))
         return -1;    
     else
-        return iofs->io_Union.io_SET_FILE_SIZE.io_Offset;
+        return (LONG)iofs->io_Union.io_SET_FILE_SIZE.io_Offset;
     
     AROS_LIBFUNC_EXIT
 } /* SetFileSize */

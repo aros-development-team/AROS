@@ -78,9 +78,8 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_SEEK;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_SEEK.io_Negative=position<0?-1:0;
-    iofs->io_Union.io_SEEK.io_Offset  =position;
-    iofs->io_Union.io_SEEK.io_SeekMode=mode;
+    iofs->io_Union.io_SEEK.io_Offset=(QUAD)position;
+    iofs->io_Union.io_SEEK.io_SeekMode     =mode;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
@@ -90,6 +89,6 @@
     if(iofs->io_DosError)
 	return -1;
     else
-	return iofs->io_Union.io_SEEK.io_Offset;
+	return (LONG)iofs->io_Union.io_SEEK.io_Offset;
     AROS_LIBFUNC_EXIT
 } /* Seek */
