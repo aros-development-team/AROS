@@ -65,11 +65,12 @@
     ULONG   drmd;
     WORD    x, y, d, plane;
     WORD    xoff, yoff;
-    UWORD * bits[24];
+    UWORD * bits[8];
     UWORD   bitmask;
     UWORD   shift;
     UWORD   offset;
     ULONG   pen = 0;
+    ULONG   planeonoff, planepick;
     ULONG   lastPen = 0;
 #define START_BITMASK	0x8000L
 
@@ -80,13 +81,22 @@
     /* Change RastPort to the mode I need */
     SetDrMd (rp, JAM1);
 
-    /* For all borders... */
+    planepick  = image->PlanePick;
+    planeonoff = image->PlaneOnOff & ~planepick;
+    
+    /* For all images... */
     for ( ; image; image=image->NextImage)
     {
+/*	kprintf("*** Drawing Image %x. Next Image = %x\n widht = %d  height = %d  depth = %d  planepick = %d  planeonoff = %d\n",
+		image,image->NextImage,
+		image->Width,image->Height,image->Depth,image->PlanePick,image->PlaneOnOff);*/
+	
 	/* Use x to store size of one image plane */
 	x = ((image->Width + 15) >> 4) * image->Height;
 	y = 0;
-	shift = image->PlanePick;
+
+#if 0
+	shift = planepick;
 
 	for (d=0; d < image->Depth; d++)
 	{
@@ -99,6 +109,15 @@
 	    bits[y ++] = image->ImageData + d * x;
 	    shift >>= 1;
 	}
+#else
+	shift = 1;
+	
+	for(d = 0; d < image->Depth;d++)
+	{
+	    bits[d] = (planepick & shift) ? image->ImageData + (y++) * x : NULL;
+	    shift <<= 1;	
+	}
+#endif
 
 	offset	= 0;
 
@@ -106,16 +125,18 @@
 
 	for (y=0; y < image->Height; y++, yoff++)
 	{
+	
 	    bitmask = START_BITMASK;
 
 	    xoff = image->LeftEdge + leftOffset;
 
 	    for (x=0; x < image->Width; x++, xoff++)
 	    {
-		pen = image->PlaneOnOff;
+		pen = planeonoff;
 		shift = 1;
 		plane = 0;
 
+#if 0
 		for (d=0; d < image->Depth; d++)
 		{
 		    UWORD dat;
@@ -134,6 +155,25 @@
 		    plane ++;
 		    shift <<= 1;
 		}
+#else
+		for(d = 0; d < image->Depth; d++)
+		{
+		    if (planepick & shift)
+		    {
+		        UWORD dat;
+			
+		        dat = bits[d][offset];
+			dat = AROS_WORD2BE(dat);
+			
+			if (dat & bitmask)
+			{
+			    pen |= shift;
+			}
+		    }
+		    
+		    shift <<= 1;
+		}
+#endif
 
 /* kprintf (" x=%2d y=%2d   offset=%3d bitmask=%04x bits[]=%04x pen=%d\n"
     , x
