@@ -905,7 +905,7 @@ int i;
 			{
 				set(adddevicegadgets.win, MUIA_Window_Open, TRUE);
 			}
-			else if (iln->parent->ln.ln_Type == LNT_Harddisk)
+			else if ((iln->parent->ln.ln_Type == LNT_Harddisk) || (iln->parent->ln.ln_Type == LNT_Partition))
 			{
 				struct HDTBPartition *table;
 				table = (struct HDTBPartition *)iln->parent;
@@ -916,7 +916,7 @@ int i;
 						) ||
 						(table->table->max_partitions == 0)
 					)
-				{
+				{	
 					DoMethod
 					(
 						addpartitiongadgets.win,
