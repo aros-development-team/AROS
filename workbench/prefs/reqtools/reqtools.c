@@ -988,7 +988,7 @@ CreateIcon( STRPTR fname )
         dob->do_Version        = WB_DISKVERSION;
         dob->do_Type        = WBPROJECT;
         dob->do_DefaultTool    = "ReqTools";
-        dob->do_ToolTypes    = (char **)ToolTypes;
+        dob->do_ToolTypes    = ToolTypes;
         dob->do_CurrentX    = dob->do_CurrentY = NO_ICON_POSITION;
         PutDiskObject( fname, dob );
         FreeDiskObject( dob );
