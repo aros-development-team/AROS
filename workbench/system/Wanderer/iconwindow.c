@@ -21,202 +21,261 @@ extern CONST_STRPTR rootBG, dirsBG;
 struct IconWindow_DATA
 {
     Object *iconlist; /* The iconlist it displays */
-    int is_root;
-    int is_backdrop;
+    BOOL is_root;
+    BOOL is_backdrop;
     struct Hook *action_hook;
 };
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindow_DATA *data = INST_DATA(CLASS, self)
 
-
-STATIC IPTR IconWindow__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+/*** Methods ****************************************************************/
+Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct Hook *action_hook;
     int is_root, is_backdrop;
-    struct IconWindow_DATA *data;
-
     Object *iconlist;
 
     /* More than one GetTagData is not really efficient but since this is called very unoften... */
-    is_backdrop = (int)GetTagData(MUIA_IconWindow_IsBackdrop, 0, msg->ops_AttrList);
-    is_root = (int)GetTagData(MUIA_IconWindow_IsRoot, 0, msg->ops_AttrList);
-    action_hook = (struct Hook*)GetTagData(MUIA_IconWindow_ActionHook, NULL, msg->ops_AttrList);
+    is_backdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
+    is_root = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
+    action_hook = (struct Hook*) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
 
     if (is_root)
     {
-        iconlist = MUI_NewObject
-        (
-            MUIC_IconVolumeList,
-            MUIA_Background,     (IPTR) rootBG, 
-            TAG_DONE
-        );
+        iconlist = IconVolumeListObject,
+            MUIA_Background, (IPTR) rootBG, 
+        End;
     }
     else
     {
-	STRPTR drw = (STRPTR) GetTagData(MUIA_IconWindow_Drawer,NULL,msg->ops_AttrList);
-	iconlist = MUI_NewObject
-        (
-            MUIC_IconDrawerList,
+        STRPTR drw = (STRPTR) GetTagData(MUIA_IconWindow_Drawer,(IPTR)NULL,message->ops_AttrList);
+        iconlist = IconDrawerListObject,
             MUIA_Background,            (IPTR) dirsBG,
             MUIA_IconDrawerList_Drawer, (IPTR) drw, 
-            TAG_DONE
+        End;
+    }
+    
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
+        
+        MUIA_Window_Width,              300,
+        MUIA_Window_Height,             300,
+        MUIA_Window_ScreenTitle, (IPTR) "",
+        
+        WindowContents, (IPTR) VGroup,
+            InnerSpacing(0,0),
+            
+            Child, (IPTR) IconListviewObject,
+                MUIA_IconListview_UseWinBorder,        TRUE,
+                MUIA_IconListview_IconList,     (IPTR) iconlist,
+            End,
+        End,
+        
+        TAG_MORE, (IPTR) message->ops_AttrList
+    );
+    
+    if (self != NULL)
+    {
+        SETUP_INST_DATA;
+        
+        data->iconlist = iconlist;
+        data->is_root = is_root;
+        data->action_hook = action_hook;
+        
+        data->is_backdrop = -1;
+        set(self, MUIA_IconWindow_IsBackdrop, is_backdrop);
+        
+        /*
+            If double clicked then we call our own private methods, that's 
+            easier then using Hooks 
+        */
+        DoMethod
+        (
+            iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, 
+            (IPTR) self, 1, MUIM_IconWindow_DoubleClicked
+        );
+        
+        DoMethod
+        (
+            iconlist, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_IconWindow_IconsDropped
+        );
+        
+        DoMethod
+        (
+            iconlist, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_IconWindow_Clicked
         );
     }
-
-    /* Now call the super methods new method with additional tags */
-    obj = (Object*)DoSuperNewTags(cl,obj,NULL,
-	MUIA_Window_Width,300,
-	MUIA_Window_Height,300,
-	MUIA_Window_ScreenTitle, (IPTR) "",
-	WindowContents, VGroup,
-		InnerSpacing(0,0),
-		MUIA_Group_Child, MUI_NewObject(MUIC_IconListview, MUIA_IconListview_UseWinBorder, TRUE, MUIA_IconListview_IconList, iconlist, TAG_DONE),
-		End,
-	TAG_MORE, (IPTR)msg->ops_AttrList);
-    if (!obj) return NULL;
-
-    /* Get and initialize the instance's data */
-    data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
-    data->iconlist = iconlist;
-    data->is_root = is_root;
-    data->action_hook = action_hook;
-
-    data->is_backdrop = -1;
-    set(obj, MUIA_IconWindow_IsBackdrop, is_backdrop);
-
-    /* If double clicked then we call our own private methods, that's easier then using Hooks */
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_DoubleClick,TRUE, obj, 1, MUIM_IconWindow_DoubleClicked);
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_IconsDropped, MUIV_EveryTime, obj, 1, MUIM_IconWindow_IconsDropped);
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Clicked, MUIV_EveryTime, obj, 1, MUIM_IconWindow_Clicked);
-    return (IPTR)obj;
+    
+    return self;
 }
 
-STATIC IPTR IconWindow__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
-    struct TagItem        *tags = msg->ops_AttrList;
-    struct TagItem        *tag;
+    SETUP_INST_DATA;
+    struct TagItem *tstate = message->ops_AttrList, 
+                   *tag;
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-	switch (tag->ti_Tag)
-	{
-	    case    MUIA_IconWindow_IsBackdrop:
-		    if ((!!tag->ti_Data) != data->is_backdrop)
-		    {
-		    	int is_open = XGET(obj, MUIA_Window_Open);
-		    	if (is_open) set(obj, MUIA_Window_Open, FALSE);
-		        if (tag->ti_Data)
-		        {
-		            SetAttrs(obj,
-				MUIA_Window_Title, NULL,
-				MUIA_Window_UseBottomBorderScroller, FALSE,
-				MUIA_Window_UseRightBorderScroller, FALSE,
-				MUIA_Window_WandererBackdrop, TRUE,
-				TAG_DONE);
-				
-		        } else
-		        {
-			    char *title;
-			    if (data->is_root) title = "Wanderer";
-			    else title = (char*)XGET(data->iconlist, MUIA_IconDrawerList_Drawer);
-
-			    SetAttrs(obj,
-				MUIA_Window_Title,title,
-				MUIA_Window_UseBottomBorderScroller, TRUE,
-				MUIA_Window_UseRightBorderScroller, TRUE,
-				MUIA_Window_WandererBackdrop, FALSE,
-				TAG_DONE);
-			}
-		        data->is_backdrop = !!tag->ti_Data;
-		    	if (is_open) set(obj, MUIA_Window_Open, TRUE);
-		     }
-		     break;
-
-	}
+        switch (tag->ti_Tag)
+        {
+            case MUIA_IconWindow_IsBackdrop:
+                if ((!!tag->ti_Data) != data->is_backdrop)
+                {
+                    BOOL is_open = XGET(self, MUIA_Window_Open);
+                    if (is_open) set(self, MUIA_Window_Open, FALSE);
+                    if (tag->ti_Data)
+                    {
+                        SetAttrs
+                        (
+                            self,
+                            MUIA_Window_Title,                   (IPTR) NULL,
+                            MUIA_Window_UseBottomBorderScroller,        FALSE,
+                            MUIA_Window_UseRightBorderScroller,         FALSE,
+                            MUIA_Window_WandererBackdrop,               TRUE,
+                            TAG_DONE
+                        );
+                    }
+                    else
+                    {
+                        char *title;
+                        if (data->is_root) title = "Wanderer";
+                        else title = (char*)XGET(data->iconlist, MUIA_IconDrawerList_Drawer);
+                        
+                        SetAttrs
+                        (
+                            self,
+                            MUIA_Window_Title,                   (IPTR) title,
+                            MUIA_Window_UseBottomBorderScroller,        TRUE,
+                            MUIA_Window_UseRightBorderScroller,         TRUE,
+                            MUIA_Window_WandererBackdrop,               FALSE,
+                            TAG_DONE
+                        );
+                    }
+                    data->is_backdrop = !!tag->ti_Data;
+                    if (is_open) set(self, MUIA_Window_Open, TRUE);
+                 }
+                 break;
+        }
     }
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+    
+    return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
 
-STATIC IPTR IconWindow__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
-    switch (msg->opg_AttrID)
+    SETUP_INST_DATA;
+    IPTR *store = message->opg_Storage;
+    IPTR  rv    = TRUE;
+    
+    switch (message->opg_AttrID)
     {
-	case	MUIA_IconWindow_Drawer:
-		if (!data->is_root)
-		    *msg->opg_Storage = XGET(data->iconlist,MUIA_IconDrawerList_Drawer);
-		else *msg->opg_Storage = NULL;
-		return 1;
-
-	case    MUIA_IconWindow_IconList:
-		*msg->opg_Storage = (ULONG)data->iconlist;
-		return 1;
+        case MUIA_IconWindow_Drawer:
+            *store = !data->is_root
+                ? XGET(data->iconlist, MUIA_IconDrawerList_Drawer)
+                : (IPTR) NULL;
+            break;
+        
+        case MUIA_IconWindow_IconList:
+            *message->opg_Storage = (ULONG)data->iconlist;
+            break;;
+        
+        default:
+            rv = DoSuperMethodA(CLASS, self, (Msg) message);
     }
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+    
+    return rv;
 }
 
-STATIC IPTR IconWindow__MUIM_IconWindow_DoubleClicked(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconWindow__MUIM_IconWindow_DoubleClicked
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
+    SETUP_INST_DATA;
+    
     if (data->action_hook)
     {
-	struct IconWindow_ActionMsg msg;
-	msg.type = ICONWINDOW_ACTION_OPEN;
-	msg.iconlist = data->iconlist;
-	msg.isroot = data->is_root;
-	msg.click = NULL;
-	CallHookPkt(data->action_hook,obj,&msg);
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_OPEN;
+        msg.iconlist = data->iconlist;
+        msg.isroot   = data->is_root;
+        msg.click    = NULL;
+        CallHookPkt(data->action_hook,self,&msg);
     }
-    return NULL; /* irrelevant */
+    
+    return TRUE;
 }
 
-STATIC IPTR IconWindow__MUIM_IconWindow_Clicked(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconWindow__MUIM_IconWindow_Clicked
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);;
+    SETUP_INST_DATA;
+    
     if (data->action_hook)
     {
-	struct IconWindow_ActionMsg msg;
-	msg.type = ICONWINDOW_ACTION_CLICK;
-	msg.iconlist = data->iconlist;
-	msg.isroot = data->is_root;
-	msg.click = (struct IconList_Click*)XGET(data->iconlist, MUIA_IconList_Clicked);
-	CallHookPkt(data->action_hook,obj,&msg);
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_CLICK;
+        msg.iconlist = data->iconlist;
+        msg.isroot   = data->is_root;
+        msg.click    = (struct IconList_Click * )XGET(data->iconlist, MUIA_IconList_Clicked);
+        CallHookPkt(data->action_hook,self,&msg);
     }
-    return NULL; /* irrelevant */
+    
+    return TRUE;
 }
 
-STATIC IPTR IconWindow__MUIM_IconWindow_IconsDropped(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconWindow__MUIM_IconWindow_IconsDropped
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
+    SETUP_INST_DATA;
+    
     if (data->action_hook)
     {
-	struct IconWindow_ActionMsg msg;
-	msg.type = ICONWINDOW_ACTION_ICONDROP;
-	msg.iconlist = data->iconlist;
-	msg.isroot = data->is_root;
-	msg.click = (struct IconList_Click*)XGET(data->iconlist, MUIA_IconList_Clicked);
-	CallHookPkt(data->action_hook,obj,&msg);
+        struct IconWindow_ActionMsg msg;
+        msg.type     = ICONWINDOW_ACTION_ICONDROP;
+        msg.iconlist = data->iconlist;
+        msg.isroot   = data->is_root;
+        msg.click    = (struct IconList_Click*)XGET(data->iconlist, MUIA_IconList_Clicked);
+        CallHookPkt(data->action_hook,self,&msg);
     }
-    return NULL;
+    
+    return TRUE;
 }
 
-STATIC IPTR IconWindow__MUIM_IconWindow_Open(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconWindow__MUIM_IconWindow_Open
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
-    DoMethod(data->iconlist,MUIM_IconList_Clear);
-    set(obj,MUIA_Window_Open,TRUE);
-    DoMethod(data->iconlist,MUIM_IconList_Update);
-    return 1;
+    SETUP_INST_DATA;
+    
+    DoMethod(data->iconlist, MUIM_IconList_Clear);
+    set(self, MUIA_Window_Open, TRUE);
+    DoMethod(data->iconlist, MUIM_IconList_Update);
+    
+    return TRUE;
 }
 
-STATIC IPTR IconWindow__MUIM_IconWindow_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
+IPTR IconWindow__MUIM_IconWindow_UnselectAll
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
-    struct IconWindow_DATA *data = (struct IconWindow_DATA*)INST_DATA(cl,obj);
-    DoMethod(data->iconlist,MUIM_IconList_UnselectAll);
-    return 1;
+    SETUP_INST_DATA;
+    
+    DoMethod(data->iconlist, MUIM_IconList_UnselectAll);
+    
+    return TRUE;
 }
 
 /*** Setup ******************************************************************/
