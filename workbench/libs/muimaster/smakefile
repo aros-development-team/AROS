@@ -15,7 +15,8 @@ SUPPORTOBJS = \
   objs/support_amigaos.o \
   objs/support_classes.o \
   objs/textengine.o \
-  objs/bubbleengine.o
+  objs/bubbleengine.o \
+  objs/clipboard.o
 
 LIBOBJS = \
   objs/mui_addclipping.o\
@@ -200,6 +201,9 @@ objs/textengine.o: textengine.c
 
 objs/bubbleengine.o: bubbleengine.c
   sc $(CFLAGS) bubbleengine.c objname=$@
+
+objs/clipboard.o: clipboard.c
+  sc $(CFLAGS) clipboard.c objname=$@
 
 objs/penspec.o: penspec.c
   sc $(CFLAGS) penspec.c objname=$@

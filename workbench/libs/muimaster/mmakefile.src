@@ -65,6 +65,7 @@ CLASSES := \
 
 FILES := \
     bubbleengine \
+    clipboard \
     datatypescache \
     dragndrop \
     font \
