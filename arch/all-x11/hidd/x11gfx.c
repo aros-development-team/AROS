@@ -305,6 +305,41 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	bg.flags = (DoRed | DoGreen | DoBlue);
 
 	XRecolorCursor(data->display, data->cursor, &fg, &bg);
+	
+	switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
+	{
+	    case WhenMapped:
+   	    case Always:
+	    	break;
+		
+	    case NotUseful:
+	    	bug("\n"
+		    "+----------------------------------------------------------|\n"
+		    "| Your X Server seems to have backing store disabled!      |\n"
+		    "| ===================================================      |\n"
+		    "|                                                          |\n"
+		    "| If possible you should try to switch it on, otherwise    |\n"
+		    "| AROS will have problems with it's display. When AROS     |\n"
+		    "| X window is hidden by other X windows, or is dragged     |\n"
+		    "| off screen, then the gfx in those parts will get lost,   |\n"
+		    "| unless backing store support is enabled.                 |\n"
+		    "|                                                          |\n"
+		    "| In case your X11 Server is XFree 4.x then switching on   |\n"
+		    "| backingstore support can be done by starting the X11     |\n"
+		    "| server with something like \"startx -- +bs\". Depending    |\n"
+		    "| on what gfxcard driver you use it might also be possible |\n"
+		    "| to turn it on by adding                                  |\n"
+		    "|                                                          |\n"
+		    "|         Option \"Backingstore\"                            |\n"
+		    "|                                                          |\n"
+		    "| to the Device Section of your XFree86 config file, which |\n"
+		    "| usually is \"/etc/X11/XF86Config\".                        |\n"
+		    "+----------------------------------------------------------+\n"
+		    "\n");
+	    	break;
+		
+	}
+	
     	UNLOCK_X11
 	
 	D(bug("X11Gfx::New(): Got object from super\n"));
