@@ -181,16 +181,11 @@ static struct OOP_ABDescr attrbases[] = {
 
 #define NUMLUTPIX (PIXELBUF_SIZE)
 
-/* This buffer is used for planar-to-chunky-converion */
-static ULONG *pixel_buf;
-static struct SignalSemaphore pixbuf_sema;
-static struct SignalSemaphore blit_sema;
+#define LOCK_PIXBUF ObtainSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
+#define ULOCK_PIXBUF ReleaseSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
 
-#define LOCK_PIXBUF ObtainSemaphore(&pixbuf_sema);
-#define ULOCK_PIXBUF ReleaseSemaphore(&pixbuf_sema);
-
-#define LOCK_BLIT ObtainSemaphore(&blit_sema);
-#define ULOCK_BLIT ReleaseSemaphore(&blit_sema);
+#define LOCK_BLIT ObtainSemaphore(&(PrivGBase(GfxBase)->blit_sema));
+#define ULOCK_BLIT ReleaseSemaphore(&(PrivGBase(GfxBase)->blit_sema));
 
 struct ETextFont
 {
@@ -355,8 +350,8 @@ int driver_init(struct GfxBase * GfxBase)
     EnterFunc(bug("driver_init()\n"));
     
     /* Initialize the semaphore used for the chunky buffer */
-    InitSemaphore(&pixbuf_sema);
-    InitSemaphore(&blit_sema);
+    InitSemaphore(&(PrivGBase(GfxBase)->pixbuf_sema));
+    InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
     
     /* Allocate memory for driver data */
     SDD(GfxBase) = (struct shared_driverdata *)AllocMem(sizeof (struct shared_driverdata), MEMF_ANY|MEMF_CLEAR);
@@ -367,18 +362,18 @@ int driver_init(struct GfxBase * GfxBase)
 	if ( SDD(GfxBase)->oopbase )
 	{
 	    /* Init the needed attrbases */
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
+#warning Activate me again!
+//	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		/* Init the driver's defaultfont */
 		if (init_romfonts(GfxBase))
 		{
-		    pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
-		    if (pixel_buf) {
+		    PrivGBase(GfxBase)->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
+		    if (PrivGBase(GfxBase)->pixel_buf) {
 		    
 			ReturnInt("driver_init", int, TRUE);
 		
-			FreeMem(pixel_buf, PIXELBUF_SIZE);
+			FreeMem(PrivGBase(GfxBase)->pixel_buf, PIXELBUF_SIZE);
 		    }
 		}	
 		OOP_ReleaseAttrBases(attrbases);
@@ -2353,7 +2348,7 @@ LOCK_PIXBUF
 		, current_x + x_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
-		, pixel_buf
+		, PrivGBase(GfxBase)->pixel_buf
 		, bm_obj
 		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
 		, GfxBase
@@ -2364,7 +2359,7 @@ LOCK_PIXBUF
 
 	HIDD_BM_PutImage(bm_obj
 		, hidd_gc
-		, (UBYTE*)pixel_buf
+		, (UBYTE*)PrivGBase(GfxBase)->pixel_buf
 		, tocopy_w * sizeof (HIDDT_Pixel)
 		, x_dest + current_x
 		, y_dest + current_y
@@ -2456,7 +2451,7 @@ LOCK_PIXBUF
 	
 	/* Get some more pixels from the HIDD */
 	HIDD_BM_GetImage(bm_obj
-		, (UBYTE *)pixel_buf
+		, (UBYTE *)PrivGBase(GfxBase)->pixel_buf
 		, tocopy_w
 		, x_src + current_x
 		, y_src + current_y
@@ -2471,7 +2466,7 @@ LOCK_PIXBUF
 		, current_x + x_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
-		, (HIDDT_Pixel *)pixel_buf
+		, (HIDDT_Pixel *)PrivGBase(GfxBase)->pixel_buf
 		, bm_obj
 		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
 	);
@@ -4715,7 +4710,7 @@ static ULONG dm_render(APTR dmr_data
 	    HIDDT_DrawMode old_drmd;
 
     	    tocopy_h = MIN(lines_todo, max_tocopy_h);
-    	    msg->memptr = pixel_buf;
+    	    msg->memptr = PrivGBase(GfxBase)->pixel_buf;
 	    msg->bytesperrow = bytesperrow;
     
 	    msg->bytesperpix = (UWORD)bytesperpixel;
@@ -4727,7 +4722,7 @@ LOCK_PIXBUF
 	    OOP_GetAttr(dmrd->gc, aHidd_GC_DrawMode, &old_drmd);
 	    OOP_SetAttrs(dmrd->gc, gc_tags);
 	    HIDD_BM_PutImage(dstbm_obj, dmrd->gc
-		, (UBYTE *)pixel_buf
+		, (UBYTE *)PrivGBase(GfxBase)->pixel_buf
 		, bytesperrow
 		, x1, y1, width, height
 		, dmrd->stdpf
