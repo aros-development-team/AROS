@@ -8,12 +8,20 @@
 
 #define DEBUG 1
 
-#include <exec/types.h>
-#include <exec/resident.h>
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <exec/resident.h>
+#include <exec/types.h>
+#include <libraries/configvars.h>
+#include <libraries/expansionbase.h>
+#include <libraries/partition.h>
+#include <utility/tagitem.h>
 
 #include <proto/exec.h>
+#include <proto/expansion.h>
+#include <proto/partition.h>
 
 #ifdef DEBUG
 #include <aros/debug.h>
@@ -44,6 +52,157 @@ const struct Resident boot_resident =
 	(APTR)&boot_init
 };
 
+ULONG getOffset(struct PartitionBase *PartitionBase, struct PartitionHandle *ph) {
+STACKIPTR tags[3];
+struct DosEnvec de;
+ULONG offset=0;
+
+    tags[0] = PT_DOSENVEC;
+    tags[1] = (STACKIPTR)&de;
+    tags[2] = TAG_DONE;
+    ph = ph->root;
+    while (ph->root)
+    {
+	GetPartitionAttrs(ph, (struct TagItem *)tags);
+	offset += de.de_LowCyl;
+    	ph = ph->root;
+    }
+    return offset;
+}
+
+void addPartitionVolume
+    (
+	struct ExpansionBase *ExpansionBase,
+	struct PartitionBase *PartitionBase,
+	struct FileSysStartupMsg *fssm,
+	struct PartitionHandle *table,
+	struct PartitionHandle *pn
+    )
+{
+UBYTE name[32];
+ULONG i;
+ULONG *attrs;
+STACKIPTR tags[5];
+IPTR *pp;
+struct DeviceNode *devnode;
+
+    attrs = QueryPartitionAttrs(table);
+    while ((*attrs) && (*attrs != PTA_NAME))
+	attrs++;
+    if (*attrs)
+    {
+	pp = AllocVec(sizeof(struct DosEnvec)+sizeof(IPTR)*4, MEMF_PUBLIC | MEMF_CLEAR);
+	if (pp)
+	{
+	    tags[0] = PT_NAME;
+	    tags[1] = (STACKIPTR)name;
+	    tags[2] = PT_DOSENVEC;
+	    tags[3] = (STACKIPTR)&pp[4];
+	    tags[4] = TAG_DONE;
+	    GetPartitionAttrs(pn, (struct TagItem *)tags);
+	    pp[0] = (IPTR)"afs.handler";
+	    pp[1] = (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device);
+	    pp[2] = fssm->fssm_Unit;
+	    pp[3] = fssm->fssm_Flags;
+	    i = getOffset(PartitionBase, pn);
+	    pp[DE_LOWCYL+4] += i;
+	    pp[DE_HIGHCYL+4] += i;
+	    devnode = MakeDosNode(pp);
+	    if (devnode)
+	    {
+		devnode->dn_OldName = MKBADDR(AllocVec(strlen(name)+2, MEMF_PUBLIC | MEMF_CLEAR));
+		if (devnode->dn_OldName)
+		{
+		    i=0;
+		    while (name[i])
+		    {
+			AROS_BSTR_putchar(devnode->dn_OldName, i, name[i]);
+			i++;
+		    }
+		    AROS_BSTR_setstrlen(devnode->dn_OldName, i);
+		    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
+		    AddBootNode(pp[DE_BOOTPRI+4], 0, devnode, 0);
+		    return;
+		}
+	    }
+	    FreeVec(pp);
+	}
+    }
+}
+
+BOOL checkTables
+    (
+	struct ExpansionBase *ExpansionBase,
+	struct PartitionBase *PartitionBase,
+	struct FileSysStartupMsg *fssm,
+	struct PartitionHandle *table
+    )
+{
+BOOL retval = FALSE;
+struct PartitionHandle *ph;
+
+	if (OpenPartitionTable(table) == 0)
+	{
+		ph = (struct PartitionHandle *)table->table->list.lh_Head;
+		while (ph->ln.ln_Succ)
+		{
+			checkTables(ExpansionBase, PartitionBase, fssm, ph);
+			addPartitionVolume(ExpansionBase, PartitionBase, fssm, table, ph);
+			ph = (struct PartitionHandle *)ph->ln.ln_Succ;
+		}
+		retval = TRUE;
+		ClosePartitionTable(table);
+	}
+	return retval;
+}
+
+BOOL isRemovable(struct ExecBase *SysBase, struct IOExtTD *ioreq) {
+struct DriveGeometry dg;
+
+	ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
+	ioreq->iotd_Req.io_Data = &dg;
+	ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
+	DoIO((struct IORequest *)ioreq);
+	return (dg.dg_Flags & DGF_REMOVABLE) ? TRUE : FALSE;
+}
+
+void checkPartitions
+	(
+		struct ExpansionBase *ExpansionBase,
+		struct ExecBase *SysBase,
+		struct BootNode *bn
+	)
+{
+struct PartitionBase *PartitionBase;
+struct PartitionHandle *pt;
+struct FileSysStartupMsg *fssm;
+
+	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 1);
+	if (PartitionBase)
+	{
+		fssm = BADDR(((struct DeviceNode *)bn->bn_DeviceNode)->dn_Startup);
+		pt=OpenRootPartition(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit);
+		if (pt)
+		{
+			if (isRemovable(SysBase,pt->bd->ioreq))
+			{
+				/* don't check removable devices for partition tables */
+				Enqueue(&ExpansionBase->MountList, bn);
+			}
+			else
+			{
+				if (!checkTables(ExpansionBase, PartitionBase, fssm, pt))
+				{
+					/* no partition table found, so reinsert node */
+					Enqueue(&ExpansionBase->MountList, bn);
+				}
+			}
+			CloseRootPartition(pt);
+		}
+		CloseLibrary((struct Library *)PartitionBase);
+	}
+}
+
 AROS_UFH3(int, AROS_SLIB_ENTRY(init,boot),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(ULONG, seglist, A0),
@@ -51,9 +210,29 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init,boot),
 )
 {
     AROS_USERFUNC_INIT
-
+    struct ExpansionBase *ExpansionBase;
+    struct BootNode      *bootNode;
+    struct List list;
     struct Resident *DOSResident;
-
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
+	if( ExpansionBase == NULL )
+	{
+		D(bug( "Could not open expansion.library, something's wrong!\n"));
+		Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
+	}
+	/* move all boot nodes into another list */
+	NEWLIST(&list);
+	while ((bootNode = (struct BootNode *)RemHead(&ExpansionBase->MountList)))
+	{
+		AddTail(&list, &bootNode->bn_Node);
+		bootNode = (struct BootNode *)bootNode->bn_Node.ln_Succ;
+	}
+	/* check boot nodes for partition tables */
+	while ((bootNode = (struct BootNode *)RemHead(&list)))
+		checkPartitions(ExpansionBase, SysBase, bootNode);
+	CloseLibrary((struct Library *)ExpansionBase);
+#endif
     DOSResident = FindResident( "dos.library" );
 
     if( DOSResident == NULL )
