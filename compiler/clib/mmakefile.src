@@ -312,7 +312,6 @@ ROM_STATIC := \
 	atoi \
 	atol \
 	bsearch \
-	ctype \
 	isinf \
 	labs \
 	qsort \
