@@ -55,7 +55,7 @@
 			bitwise equivalence   eqv, E, e
 
 	TO          --  File to write the result to
-	LFORMAT     --  Printf-like specification of what to write.
+	LFORMAT     --  printf-like specification of what to write.
 	                The possible swiches are:
 			 
 			%x  --  hexadecimal output
@@ -177,7 +177,7 @@ int main(void)
 	    }
 	    else
 	    {
-		Printf("Cannot open output file %s\n", toFile);
+		printf("Cannot open output file %s\n", toFile);
 		FreeArgs(rda);
 
 		return RETURN_FAIL;
@@ -190,7 +190,7 @@ int main(void)
 	}
 	else
 	{
-	    Printf("%i\n", g_result);
+	    printf("%i\n", g_result);
 	}
 	
 	/* Reinstall output stream if we changed it */
@@ -229,11 +229,11 @@ void printLformat(STRPTR format, int value)
 	case '*':
 	    if (format[i] == 'n')
 	    {
-		Printf("\n");
+		printf("\n");
 	    }
 	    else
 	    {
-		Printf("*");
+		printf("*");
 	    }
 
 	    break;
@@ -245,26 +245,26 @@ void printLformat(STRPTR format, int value)
 	    {
             /* Hexadecimal display */
 	    case 'x':
-		Printf("%x", value);
+		printf("%x", value);
 		break;
 
 	    /* Octal display */
 	    case 'o':
-		Printf("%o", value);
+		printf("%o", value);
 		break;
 
             /* Integer display */
 	    case 'n':
-		Printf("%i", value);
+		printf("%i", value);
 		break;
 
 	    /* Character display */
 	    case 'c':
-		Printf("%c", value);
+		printf("%c", value);
 		break;
 
 	    case '%':
-		Printf("%%");
+		printf("%%");
 		break;
 
 		/* Stupid user writes "...%" */
@@ -273,7 +273,7 @@ void printLformat(STRPTR format, int value)
 		break;
 
 	    default:
-		Printf("%%%c", format[i]);
+		printf("%%%c", format[i]);
 		break;
 		
 	    } /* switch(%-command) */
@@ -281,7 +281,7 @@ void printLformat(STRPTR format, int value)
 	    break;
 
 	default:
-	    Printf("%c", format[i]);
+	    printf("%c", format[i]);
 	    break;
 	} /* switch format character */
     }
