@@ -6,7 +6,7 @@
 */
 #include "genmodule.h"
 
-void writeincdefines(void)
+void writeincdefines(int dummy)
 {
     FILE *out;
     char line[256];
@@ -35,31 +35,34 @@ void writeincdefines(void)
 	    "#include <exec/types.h>\n"
 	    "\n",
 	    modulenameupper, modulenameupper, modulename);
-    for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
+    if (!dummy)
     {
-	fprintf(out,
-		"\n"
-		"#define %s(",
-		funclistit->name);
-	for (arglistit = funclistit->arguments;
-	     arglistit!=NULL;
-	     arglistit = arglistit->next)
+	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
-	    if (arglistit != funclistit->arguments)
-		fprintf(out, ", ");
-	    fprintf(out, "%s", arglistit->name);
+	    fprintf(out,
+		    "\n"
+		    "#define %s(",
+		    funclistit->name);
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next)
+	    {
+		if (arglistit != funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", arglistit->name);
+	    }
+	    fprintf(out,
+		    ") \\\n"
+		    "        AROS_LC%d(%s, %s, \\\n",
+		    funclistit->argcount, funclistit->type, funclistit->name);
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next)
+		fprintf(out, "                  AROS_LCA(%s,%s,%s), \\\n",
+			arglistit->type, arglistit->name, arglistit->reg);
+	    fprintf(out, "        %s *, %s, %u, %s)\n", libbasetypeextern, libbase,
+		    funclistit->lvo, basename);
 	}
-	fprintf(out,
-		") \\\n"
-		"        AROS_LC%d(%s, %s, \\\n",
-		funclistit->argcount, funclistit->type, funclistit->name);
-	for (arglistit = funclistit->arguments;
-	     arglistit!=NULL;
-	     arglistit = arglistit->next)
-	    fprintf(out, "                  AROS_LCA(%s,%s,%s), \\\n",
-		    arglistit->type, arglistit->name, arglistit->reg);
-	fprintf(out, "        %s *, %s, %u, %s)\n", libbasetypeextern, libbase,
-		funclistit->lvo, basename);
     }
     fprintf(out,
 	    "\n"

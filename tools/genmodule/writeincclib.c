@@ -6,7 +6,7 @@
 */
 #include "genmodule.h"
 
-void writeincclib(void)
+void writeincclib(int dummy)
 {
     FILE *out;
     char line[256];
@@ -34,16 +34,19 @@ void writeincclib(void)
 	    modulenameupper, modulenameupper);
     for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
-    for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
+    if (!dummy)
     {
-	fprintf(out, "\nAROS_LP%d(%s, %s,\n", funclistit->argcount, funclistit->type, funclistit->name);
+	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
+	{
+	    fprintf(out, "\nAROS_LP%d(%s, %s,\n", funclistit->argcount, funclistit->type, funclistit->name);
 
-	for (arglistit = funclistit->arguments; arglistit!=NULL; arglistit = arglistit->next)
-	    fprintf(out, "        AROS_LPA(%s, %s, %s),\n",
-		    arglistit->type, arglistit->name, arglistit->reg);
+	    for (arglistit = funclistit->arguments; arglistit!=NULL; arglistit = arglistit->next)
+		fprintf(out, "        AROS_LPA(%s, %s, %s),\n",
+			arglistit->type, arglistit->name, arglistit->reg);
 
-	fprintf(out, "        struct Library *, %sBase, %u, %s)\n",
-		basename, funclistit->lvo, basename);
+	    fprintf(out, "        struct Library *, %sBase, %u, %s)\n",
+		    basename, funclistit->lvo, basename);
+	}
     }
     fprintf(out, "\n#endif /* CLIB_%s_PROTOS_H */\n", modulenameupper);
 }

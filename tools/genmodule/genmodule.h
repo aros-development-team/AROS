@@ -60,9 +60,9 @@ extern struct linelist *cdeflines, *protolines;
 
 void readconfig(void);
 void readref(void);
-void writeincproto(void);
-void writeincclib(void);
-void writeincdefines(void);
+void writeincproto(int dummy);
+void writeincclib(int dummy);
+void writeincdefines(int dummy);
 void writeinclibdefs(void);
 void writefunctable(void);
 void writestart(void);

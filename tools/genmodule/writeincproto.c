@@ -5,7 +5,7 @@
 */
 #include "genmodule.h"
 
-void writeincproto(void)
+void writeincproto(int dummy)
 {
     FILE *out;
     char line[256];
