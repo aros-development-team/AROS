@@ -5,9 +5,6 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(wildcard include/*.h)
 
-# Allways generate module in Sys:Hidds/
-
-
 %copy_includes path=hidd
 
 #MM

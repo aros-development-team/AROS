@@ -7,10 +7,6 @@ MY_INCLS    := $(wildcard include/*.h)
 DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
-
-# Allways generate module in Sys:Hidds/
-
-
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
