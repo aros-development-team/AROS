@@ -78,11 +78,11 @@
 	    Look for the first node with a lower pri as the node
 	    we have to insert into the list.
 	*/
-	if (node->ln_Pri >= next->ln_Pri)
+	if (node->ln_Pri > next->ln_Pri)
 	    break;
     }
 
-    /* Insert the node. The situation looks like this:
+    /* Insert the node before(!) next. The situation looks like this:
 
 	    A<->next<->B *<-node->*
 
@@ -91,16 +91,16 @@
 	ln_Succ and ln_Pred of node contain illegal pointers.
     */
 
-    /* Let node point to B: A<->next<->B *<->node->B */
+    /* Let node point to A: A<-node */
     node->ln_Pred	   = next->ln_Pred;
 
-    /* Let B point to node */
+    /* Let A point to node: A->node */
     next->ln_Pred->ln_Succ = node;
 
-    /* Make next point to node: A<->next->node<->B */
+    /* Make next point to node: A<->node<-next<->B */
     next->ln_Pred	   = node;
 
-    /* Make node point to next: A<->next<->node<->B */
+    /* Make node point to next: A<->node->next<->B */
     node->ln_Succ	   = next;
 
     AROS_LIBFUNC_EXIT
