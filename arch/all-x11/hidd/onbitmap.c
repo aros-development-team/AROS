@@ -320,9 +320,9 @@ UX11
 		msg->bmobj = o;
 		msg->execmsg.mn_ReplyPort = port;
 		
+		XSync(GetSysDisplay(), FALSE);
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
-		
-		
+				
 		/* Wait for the reply, so we are sure that the x11 task
 		   has got it */
 
@@ -338,6 +338,7 @@ UX11
 		msg->notify_type = NOTY_MAPWINDOW;
 		msg->execmsg.mn_ReplyPort = port;
 
+		XSync(GetSysDisplay(), FALSE);
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
 
 		/* Wait for result */
