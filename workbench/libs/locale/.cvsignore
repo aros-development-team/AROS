@@ -1,2 +1,8 @@
-mmakefile
+*functable.c
+*endtag.c
+functions.[ch]
 libdefs.h
+makefile
+*.map
+*.err
+mmakefile
