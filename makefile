@@ -40,13 +40,7 @@ LIBS=-L$(LIBDIR) \
 #	for the main targets (eg. all, clean).
 #
 # END_DESC{localmakevar}
-ifeq ($(FLAVOUR),native)
-# Only these subdirs for the native Amiga version, for the moment.
-SUBDIRS = config \
-	include clib exec
-else
-SUBDIRS = config rom apps/compiler workbench apps
-endif
+SUBDIRS = config apps/compiler rom workbencg apps
 
 # BEGIN_DESC{localmakevar}
 # \item{TESTDIR} The director in which the test cases will be put in
