@@ -32,6 +32,11 @@
 
 #define NUM_ARGS        5
 
+#define DO_SPECIAL_BUTTON_LAYOUT 1 /* all button get same width, but as small as possible,
+    	    	    	    	      and spread along whole parent group */
+
+#define SPACING_BUTTONGROUP 4
+
 /*********************************************************************************************/
 
 static struct libinfo
@@ -45,17 +50,17 @@ libtable[] =
 {
     {&IntuitionBase     , "intuition.library"	 , 39, TRUE  },
     {&GfxBase           , "graphics.library" 	 , 40, TRUE  }, /* 40, because of WriteChunkyPixels */
-    {&GadToolsBase      , "gadtools.library" 	 , 39, TRUE  },
     {&UtilityBase       , "utility.library"  	 , 39, TRUE  },
-    {&IFFParseBase      , "iffparse.library" 	 , 39, TRUE  },
-    {&CyberGfxBase  	, "cybergraphics.library", 39, FALSE },
     {&MUIMasterBase 	, "muimaster.library"	 , 0 , TRUE  },
     {NULL                                            	     }
 };
 
 /*********************************************************************************************/
 
-static struct Hook  	    	yearhook, clockhook, activehook;	    	
+static struct Hook  	    	yearhook, clockhook, activehook;
+#if DO_SPECIAL_BUTTON_LAYOUT
+static struct Hook  	    	buttonlayouthook;	    	
+#endif
 static struct RDArgs        	*myargs;
 static Object	    	    	*activetimestrobj;
 static IPTR                 	args[NUM_ARGS];
@@ -97,7 +102,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
     es.es_TextFormat   = text;
     es.es_GadgetFormat = gadtext;
    
-    return EasyRequestArgs(win, &es, NULL, NULL);  
+    return EasyRequestArgs(NULL, &es, NULL, NULL);  
 }
 
 /*********************************************************************************************/
@@ -231,6 +236,92 @@ static void FreeVisual(void)
 
 /*********************************************************************************************/
 
+#if DO_SPECIAL_BUTTON_LAYOUT
+
+/*********************************************************************************************/
+
+static ULONG ButtonLayoutFunc(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *msg)
+{
+    IPTR retval = MUILM_UNKNOWN;
+    
+    switch(msg->lm_Type)
+    {
+    	case MUILM_MINMAX:
+	    {
+	    	Object *cstate = (Object *)msg->lm_Children->mlh_Head;
+		Object *child;
+		
+		WORD maxminwidth = 0;
+		WORD maxminheight = 0;
+		WORD numchilds = 0;
+		
+		while((child = NextObject(&cstate)))
+		{
+		    if (_minwidth(child)  > maxminwidth) maxminwidth = _minwidth(child);
+    	    	    if (_minheight(child) > maxminheight) maxminheight = _minheight(child);
+		    numchilds++;
+		}
+		
+		msg->lm_MinMax.MinWidth = 
+		msg->lm_MinMax.DefWidth = numchilds * maxminwidth + SPACING_BUTTONGROUP * (numchilds - 1);
+		msg->lm_MinMax.MaxWidth = MUI_MAXMAX;
+		
+		msg->lm_MinMax.MinHeight =
+		msg->lm_MinMax.DefHeight =
+		msg->lm_MinMax.MaxHeight = maxminheight;
+	    }
+	    retval = 0;
+	    break;
+	    
+	case MUILM_LAYOUT:
+	    {
+	    	Object *cstate = (Object *)msg->lm_Children->mlh_Head;
+		Object *child;
+		
+		WORD maxminwidth = 0;
+		WORD maxminheight = 0;
+		WORD numchilds = 0;
+		WORD x = 0, i = 0;
+		
+		while((child = NextObject(&cstate)))
+		{
+		    if (_minwidth(child)  > maxminwidth) maxminwidth = _minwidth(child);
+    	    	    if (_minheight(child) > maxminheight) maxminheight = _minheight(child);
+		    numchilds++;
+		}
+		
+    	    	cstate = (Object *)msg->lm_Children->mlh_Head;
+		while((child = NextObject(&cstate)))
+		{
+		    if (i == numchilds -1)
+		    {
+		    	x = msg->lm_Layout.Width - maxminwidth;
+		    }
+		    else
+		    {
+    	    	    	x = maxminwidth + (msg->lm_Layout.Width - numchilds * maxminwidth) / (numchilds - 1);
+		    	x *= i;
+		    }
+		    MUI_Layout(child, x, 0, maxminwidth, maxminheight, 0);
+
+		    i++;
+		}
+			
+	    }
+	    retval = TRUE;
+	    break;
+	    
+    } /* switch(msg->lm_Type) */
+    
+    return retval;
+}
+
+/*********************************************************************************************/
+
+#endif /* DO_SPECIAL_BUTTON_LAYOUT */
+
+/*********************************************************************************************/
+
 static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
 {
     IPTR year;
@@ -361,12 +452,17 @@ static void MakeGUI(void)
     extern struct NewMenu nm;
     
     Object *menu, *yearaddobj, *yearsubobj, *timeaddobj, *timesubobj;
+    Object *saveobj, *useobj, *cancelobj;
     
     if (!MakeCalendarClass() || !MakeClockClass())
     {
     	Cleanup(MSG(MSG_CANT_CREATE_APP));
     }
     
+#if DO_SPECIAL_BUTTON_LAYOUT
+    buttonlayouthook.h_Entry = HookEntry;
+    buttonlayouthook.h_SubEntry = (HOOKFUNC)ButtonLayoutFunc;
+#endif
     yearhook.h_Entry = HookEntry;
     yearhook.h_SubEntry = (HOOKFUNC)YearFunc;
     
@@ -508,11 +604,15 @@ static void MakeGUI(void)
 		    	End,
 		    End,
 		Child, HGroup, /* save/use/cancel button row */
+    	    	#if DO_SPECIAL_BUTTON_LAYOUT
+		    MUIA_Group_LayoutHook, (IPTR)&buttonlayouthook,
+    	    	#else
 		    MUIA_FixHeight, 1,
 		    MUIA_Group_SameWidth, TRUE,
-		    Child, CoolImageIDButton(MSG(MSG_GAD_SAVE), COOL_SAVEIMAGE_ID),
-		    Child, CoolImageIDButton(MSG(MSG_GAD_USE), COOL_DOTIMAGE_ID),
-		    Child, CoolImageIDButton(MSG(MSG_GAD_CANCEL), COOL_CANCELIMAGE_ID),
+    	    	#endif
+		    Child, saveobj = CoolImageIDButton(MSG(MSG_GAD_SAVE), COOL_SAVEIMAGE_ID),
+		    Child, useobj = CoolImageIDButton(MSG(MSG_GAD_USE), COOL_DOTIMAGE_ID),
+		    Child, cancelobj = CoolImageIDButton(MSG(MSG_GAD_CANCEL), COOL_CANCELIMAGE_ID),
 		    End,
 		End,
 	    End,
@@ -522,6 +622,8 @@ static void MakeGUI(void)
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
     DoMethod(wnd, MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, app, 3, MUIM_CallHook, (IPTR)&activehook, MUIV_TriggerValue);
     DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, calobj, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
     DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);

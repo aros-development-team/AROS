@@ -68,24 +68,8 @@
 #include <devices/timer.h>
 #endif
 
-#ifndef DEVICES_INPUT_H
-#include <devices/input.h>
-#endif
-
-#ifndef DEVICES_INPUTEVENT_H
-#include <devices/inputevent.h>
-#endif
-
 #ifndef LIBRARIES_GADTOOLS_H
 #include <libraries/gadtools.h>
-#endif
-
-#ifndef LIBRARIES_ASL_H
-#include <libraries/asl.h>
-#endif
-
-#ifndef LIBRARIES_IFFPARSE_H
-#include <libraries/iffparse.h>
 #endif
 
 #ifndef UTILITY_UTILITY_H
@@ -102,18 +86,6 @@
 
 #ifndef LIBRARIES_LOCALE_H
 #include <libraries/locale.h>
-#endif
-
-#ifndef CYBERGRAPHX_CYBERGRAPHICS_H
-#include <cybergraphx/cybergraphics.h>
-#endif
-
-#ifndef DATATYPES_DATATYPES_H
-#include <datatypes/datatypes.h>
-#endif
-
-#ifndef DATATYPES_DATATYPESCLASS_H
-#include <datatypes/datatypesclass.h>
 #endif
 
 #ifndef LIBRARIES_MUI_H
@@ -150,21 +122,6 @@
 #include <proto/alib.h>
 #endif
 
-#ifndef PROTO_GADTOOLS_H
-#include <proto/gadtools.h>
-#endif
-
-#ifndef PROTO_ASL_H
-#include <proto/asl.h>
-#endif
-
-#ifndef PROTO_IFFPARSE_H
-#include <proto/iffparse.h>
-#endif
-
-#ifndef PROTO_CYBERGRAPHICS_H
-#include <proto/cybergraphics.h>
-#endif
 
 #ifndef PROTO_MUIMASTER_H
 #include <proto/muimaster.h>
