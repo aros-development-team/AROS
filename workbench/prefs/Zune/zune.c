@@ -1,11 +1,13 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002, The AROS Development Team.
     All rights reserved.
-    
+
     $Id$
 */
 
 #include <string.h>
+
+#include <exec/memory.h>
 
 #include <libraries/asl.h>
 #include <libraries/mui.h>
@@ -149,7 +151,7 @@ static void SavePrefs(STRPTR filename, Object *obj)
 	    	{
 		    BPTR lock;
 		    *path_end = 0;
-		    if ((lock = CreateDir(filename)))
+		    if ((lock = CreateDir(path)))
 		    {
 			UnLock(lock);
 			iff->iff_Stream = Open(filename,MODE_NEWFILE);
