@@ -25,8 +25,10 @@
 	LP0NR(0x1fe, LONG, RawMayGetChar, \
 	, EXEC_BASE_NAME)
 
+#ifndef RawPutChar
 #define RawPutChar(chr) \
 	LP1NR(0x204, RawPutChar, UBYTE, chr, d0, \
 	, EXEC_BASE_NAME)
+#endif
 
 #endif /* _EXEC_PINLINE_H */
