@@ -6,13 +6,6 @@ GENCONFIG_H := $(GENINCDIR)/aros/config.h
 
 #MM setup : setup-$(ARCH)-$(CPU)
 setup : make-dirs
-	@$(ECHO) "Creating mf.inc files..."
-	@touch $(GENDIR)/config.files
-	@$(SORT) -k 2 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
-	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
-	@$(AWK) -f $(TOP)/scripts/genreplace.gawk \
-		-v TOP="$(TOP)" -v GENDIR="$(GENDIR)" \
-		$(GENDIR)/config.files
 
 make-dirs :
 	%mkdirs_q $(INCDIR)/aros $(GENINCDIR)/aros
