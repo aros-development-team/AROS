@@ -159,15 +159,15 @@ __AROS_LP1(struct Window *, OpenWindow,
 __AROS_LP4(void, PrintIText,
     __AROS_LPA(struct RastPort  *, rp, A0),
     __AROS_LPA(struct IntuiText *, iText, A1),
-    __AROS_LPA(long              , left, D0),
-    __AROS_LPA(long              , top, D1),
+    __AROS_LPA(long              , leftOffset, D0),
+    __AROS_LPA(long              , topOffset, D1),
     struct IntuitionBase *, IntuitionBase, 36, Intuition)
-#define PrintIText(rp, iText, left, top) \
+#define PrintIText(rp, iText, leftOffset, topOffset) \
     __AROS_LC4(void, PrintIText, \
     __AROS_LCA(struct RastPort  *, rp, A0), \
     __AROS_LCA(struct IntuiText *, iText, A1), \
-    __AROS_LCA(long              , left, D0), \
-    __AROS_LCA(long              , top, D1), \
+    __AROS_LCA(long              , leftOffset, D0), \
+    __AROS_LCA(long              , topOffset, D1), \
     struct IntuitionBase *, IntuitionBase, 36, Intuition)
 
 __AROS_LP3(void, RefreshGadgets,
