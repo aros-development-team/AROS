@@ -10,8 +10,6 @@
 #include <devices/keymap.h>
 #include <proto/console.h>
 
-extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, LONG,
-				struct KeyMap *);
 
 /*****************************************************************************
 
