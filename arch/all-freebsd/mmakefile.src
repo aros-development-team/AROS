@@ -111,7 +111,7 @@ clean ::
 	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
 
 $(OSGENDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
+	%compile_q cmd=$(HOST_CC) opt=$(CFLAGS2)
 
 $(OSGENDIR)/%.d : %.c
 	%mkdepend_q $(CFLAGS2)
