@@ -76,7 +76,7 @@ static void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi,
 
 static IPTR coolbutton_new(Class * cl, Object * o, struct opSet * msg)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct CoolButtonData *data;
     struct TagItem fitags[] =
     {
@@ -130,7 +130,7 @@ static IPTR coolbutton_new(Class * cl, Object * o, struct opSet * msg)
 
 static IPTR coolbutton_dispose(Class * cl, Object * o, Msg msg)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct CoolButtonData *data;
     
     data = INST_DATA(cl, o);
@@ -321,7 +321,7 @@ AROS_UFH3S(IPTR, cool_buttonclass_dispatcher,
 
 BOOL InitCoolButtonClass(struct Library *CyberGfxBase)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     BOOL retval = FALSE;
     
     cool_cybergfxbase = CyberGfxBase;

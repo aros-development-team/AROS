@@ -39,7 +39,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     if (SysBase->LibNode.lib_Version >= 39)
 	return (CreatePool (requirements, puddleSize, threshSize));
 

@@ -15,7 +15,7 @@ extern LONG    __startup_error;
 int __addexitfunc(struct AtExitNode *aen)
 {
     GETUSER;
-    AROS_GET_SYSBASE;
+    AROS_GET_SYSBASE_OK
   
     AddHead((struct List *)&__atexit_list, (struct Node *)aen);
 
@@ -34,7 +34,7 @@ int __init_atexit(void)
 void __exit_atexit(void)
 {
     GETUSER;
-    AROS_GET_SYSBASE;
+    AROS_GET_SYSBASE_OK
 
     {  
 	struct AtExitNode *aen;

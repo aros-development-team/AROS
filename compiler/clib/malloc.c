@@ -67,7 +67,7 @@ APTR __startup_mempool;
     GETUSER;
 
     UBYTE *mem = NULL;
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     ObtainSemaphore(&__startup_memsem);
 
@@ -99,7 +99,7 @@ APTR __startup_mempool;
 int __init_memstuff(void)
 {
     GETUSER;
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     InitSemaphore(&__startup_memsem);
     __startup_mempool = CreatePool(MEMF_ANY, 4096L, 2000L);
 
@@ -115,7 +115,7 @@ int __init_memstuff(void)
 void __exit_memstuff(void)
 {
     GETUSER;
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     
     if (__startup_mempool)
     {

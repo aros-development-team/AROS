@@ -69,7 +69,7 @@ struct ReadLevel
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct MinList     _list;
     struct ReadLevel * curr;
 

@@ -54,7 +54,7 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     ASSERT_VALID_PTR(obj);
     if (!obj)
@@ -68,7 +68,7 @@
 
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
 
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
     ASSERT_VALID_PTR(obj);

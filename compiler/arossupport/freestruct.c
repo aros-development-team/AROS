@@ -64,7 +64,7 @@ struct FreeLevel
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     struct MinList     _list;
     struct FreeLevel * curr;
 

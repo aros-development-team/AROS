@@ -63,7 +63,7 @@ extern APTR __startup_mempool;
     {
     	struct memheader       *mh     = (struct memheader *)(((UBYTE *)memory) - AROS_ALIGN(sizeof(struct memheader)));
 	struct SignalSemaphore *memsem;
-        AROS_GET_SYSBASE
+        AROS_GET_SYSBASE_OK
 	ObtainSemaphore(mh->memsem);
 
 	memsem = mh->memsem;

@@ -69,7 +69,7 @@ void RT_ExitDos (void)
 
 static IPTR RT_Open (RTData * rtd, FileResource * rt, va_list args, BOOL * success)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     STRPTR path;
 
     path = va_arg (args, STRPTR);
@@ -125,7 +125,7 @@ static IPTR RT_Open (RTData * rtd, FileResource * rt, va_list args, BOOL * succe
 
 static IPTR RT_Close (RTData * rtd, FileResource * rt)
 {
-    AROS_GET_SYSBASE
+    AROS_GET_SYSBASE_OK
     Close (rt->FH);
     FreeVec (rt->Path);
 
