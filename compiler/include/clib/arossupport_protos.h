@@ -12,7 +12,7 @@
 #ifndef  EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifndef AROS_AROSBASE_H
+#ifndef AROS_AROSSUPPORTBASE_H
 #   include <aros/arossupportbase.h>
 #endif
 #ifndef EXEC_EXECBASE_H
