@@ -146,7 +146,8 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
                 	 CurVSprite->Height,
                 	 0x0c0);
 #endif
-         	CurVSprite->Flags |= BACKSAVED;
+#warning Cannot set this flag since for some reason ClipBlit seems not to copy the right stuff. Also see below in the subroutine for EraseRect!!!
+//         	CurVSprite->Flags |= BACKSAVED;
             }
 
 
@@ -282,7 +283,7 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
 	    InitBitMap(&bm, 
                        CurVSprite->Depth,
                        CurVSprite->Width * 16,
-                      CurVSprite->Height);
+                       CurVSprite->Height);
 	    i = 0;
 	    while (i < bm.Depth && i < 8)
 	    {
@@ -299,11 +300,21 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
                               CurVSprite->Width << 4,
                               CurVSprite->Height,
                               0x0c0);
-
 	    CurVSprite->Flags &= ~BACKSAVED;
 	    
 	} /* if (0 != (CurVSprite->Flags & BACKSAVED)) */
-	
+	else
+	{
+	    /*
+	     * No background was saved. So let's restore the
+	     * standard background!
+	     */
+#warning This is only here temporarily until a bugfix for the ClipBlit above has been found! Its not copying the right info!
+	    EraseRect(rp,
+	              CurVSprite->OldX,
+	              CurVSprite->OldY,
+	              CurVSprite->OldX + ( CurVSprite->Width << 4 ) - 1,
+	              CurVSprite->OldY +   CurVSprite->Height       - 1);
+	}
     } /* if (0 == (CurVSprite->Flags & SAVEBOB)) */
-    
 }
