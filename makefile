@@ -33,15 +33,19 @@ LIBAMIGAOS = $(LIBDIR)/libAmigaOS.a
 else
 LIBAMIGAOS = $(LIBDIR)/libAmigaOS.so
 endif
+ifneq ("$(SHARED_DOS)","yes")
+SHELL_DEPLIB_DOS=$(LIBDIR)/libdos.a
+endif
 
 DEP_LIBS= $(LIBAMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
     $(LIBDIR)/libamiga.a \
-    $(LIBDIR)/libaros.a
+    $(LIBDIR)/libaros.a \
+    $(SHELL_DEPLIB_DOS)
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
-	-lintuition -lgraphics -ldos -lexec -lutility \
+	-lintuition -lgraphics -ldos -lexec -ldos -lutility \
 	-lamiga -laros
 
 # BEGIN_DESC{localmakevar}
@@ -223,11 +227,18 @@ ifeq ("$(SHARED_EXEC)","yes")
 DEPLIBEXEC=$(LIBDIR)/libexec.so
 LIBEXEC=-lexec
 else
-DEPLIBEXEC= #$(LIBDIR)/libexec.a
+DEPLIBEXEC=
+LIBEXEC=
+endif
+ifeq ("$(SHARED_DOS)","yes")
+DEPLIBEXEC=$(LIBDIR)/libdos.so
+LIBEXEC=-ldos
+else
+DEPLIBEXEC=
 LIBEXEC=
 endif
 
-LIBLIBS=$(DEPLIBEXEC) $(LIBDIR)/libdos.so $(LIBDIR)/libutility.so \
+LIBLIBS=$(DEPLIBEXEC) $(DEPLIBDOS) $(LIBDIR)/libutility.so \
 	$(LIBDIR)/libgraphics.so \
 	$(LIBDIR)/libintuition.so
 LIBPATH=$(shell cd $(LIBDIR) ; pwd)
@@ -239,7 +250,7 @@ ifeq ("$(SHARED_AR)","")
 	@$(RANLIB) $@
 else
 	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
-		-lintuition -lgraphics -ldos -lutility $(LIBEXEC) -lamiga
+		-lintuition -lgraphics $(LIBDOS) -lutility $(LIBEXEC) -lamiga
 endif
 
 GENPROTOS=$(TOP)/scripts/genprotos
