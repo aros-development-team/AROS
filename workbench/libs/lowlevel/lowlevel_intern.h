@@ -14,6 +14,9 @@
 #include <exec/interrupts.h>
 #include <exec/semaphores.h>
 
+#include <proto/exec.h>
+#include <libcore/base.h>
+
 #include <aros/debug.h>
 
 /*
@@ -22,13 +25,9 @@
     Library, and use the workbench.library functions to get information.
 */
 
-extern struct ExecBase *SysBase;
-
 struct LowLevelBase
 {
-    struct Library   LibNode;
-    BPTR             ll_SegList;
-    struct ExecBase *ll_SysBase;
+    struct LibHeader ll_LibHeader;
 
     struct SignalSemaphore ll_Lock;
     struct Interrupt       ll_VBlank;
