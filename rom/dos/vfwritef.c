@@ -269,7 +269,7 @@ LONG putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh)
     }
 
     return icount;
-}
+} /* VFWritef */
     
 
 /* Generate a text string from a number */
