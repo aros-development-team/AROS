@@ -1,3 +1,6 @@
+source  $SP/setup
+setl    update.log
+
 printi  "Updating sources..."
 
 printi  "Updating AROS sources..."
@@ -15,3 +18,4 @@ delete  $SOURCE_NECESSARY
 move    contrib $SOURCE_NECESSARY
 
 cd      $ROOT
+resetl
