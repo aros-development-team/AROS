@@ -14,6 +14,7 @@ extern void Warn	    PARAMS ((const char * fmt, ...));
 extern void StdError	    PARAMS ((const char * fmt, ...));
 extern void StdWarn	    PARAMS ((const char * fmt, ...));
 extern void PrintErrorStack PARAMS ((void));
+extern void ClearErrorStack PARAMS ((void));
 extern void PushMsg	    PARAMS ((const char * pre, const char * fmt,
 				va_list args, const char * post));
 extern void PushError	    PARAMS ((const char * fmt, ...));

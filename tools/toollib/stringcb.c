@@ -29,11 +29,19 @@ StringUngetCB (StringStream * ss, int c, CBD data)
 	errno = EINVAL;
 	c = -2;
     }
-    else
+    else if (c != -1)
     {
 	ss->pos --;
 
 	if (c != ss->string[ss->pos])
+	{
+	    errno = EINVAL;
+	    c = -2;
+	}
+    }
+    else /* EOF */
+    {
+	if (ss->pos != ss->max)
 	{
 	    errno = EINVAL;
 	    c = -2;

@@ -47,7 +47,7 @@ StdWarn (const char * fmt, ...)
     va_end (args);
 }
 
-static int    ErrorSP;
+static int    ErrorSP = 0;
 static char * ErrorStack[32];
 
 void
@@ -75,6 +75,12 @@ PushMsg (const char * pre, const char * fmt, va_list args, const char * post)
     {
 	len = strlen (post);
 
+	if (rest >= 2)
+	{
+	    strcat (buffer, ": ");
+	    rest -= 2;
+	}
+
 	if (len < rest)
 	{
 	    strcpy (buffer + sizeof(buffer) - rest, post);
@@ -95,6 +101,12 @@ PrintErrorStack (void)
     while (ErrorSP--)
 	fprintf (stderr, "%s\n", ErrorStack[ErrorSP]);
 
+    ErrorSP = 0;
+}
+
+void
+ClearErrorStack (void)
+{
     ErrorSP = 0;
 }
 
