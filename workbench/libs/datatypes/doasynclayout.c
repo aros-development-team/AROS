@@ -105,7 +105,7 @@ void AsyncLayouter(void)
 	AROS_LHA(struct gpLayout *, gpl   , A1),
 
 /*  LOCATION */
-	struct Library *, DataTypesBase, 14, Datatypes)
+	struct Library *, DataTypesBase, 14, DataTypes)
 
 /*  FUNCTION
 
