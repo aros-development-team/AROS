@@ -225,10 +225,12 @@ SHARED	:= \
 	seekdir \
 	setbuf \
 	setenv \
+	setgid \
 	setgrent \
 	setlinebuf \
         setlocale \
         setpwent \
+	setuid \
 	setvbuf \
 	sigaction \
 	sigaddset \

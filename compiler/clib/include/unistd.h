@@ -221,10 +221,10 @@ off_t       lseek(int filedes, off_t offset, int whence);
 int         pipe(int filedes[2]);
 ssize_t     read(int d, void *buf, size_t nbytes);
 int         rmdir(const char *path);
-/* NOTIMPL int         setgid(gid_t gid); */
+int         setgid(gid_t gid);
 /* NOTIMPL int         setpgid(pid_t pid, pid_t pgrp); */
 /* NOTIMPL pid_t       setsid(void); */
-/* NOTIMPL int         setuid(uid_t uid); */
+int         setuid(uid_t uid);
 unsigned    sleep(unsigned);
 /* NOTIMPL long        sysconf(int name); */
 /* NOTIMPL pid_t       tcgetpgrp(int fd); */
