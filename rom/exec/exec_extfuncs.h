@@ -133,3 +133,5 @@ extern void AROS_SLIB_ENTRY(AddMemHandler,Exec)();
 extern void AROS_SLIB_ENTRY(RemMemHandler,Exec)();
 extern void AROS_SLIB_ENTRY(ObtainQuickVector,Exec)();
 extern void AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec)();
+extern void AROS_SLIB_ENTRY(AllocVecPooled,Exec)();
+extern void AROS_SLIB_ENTRY(FreeVecPooled,Exec)();

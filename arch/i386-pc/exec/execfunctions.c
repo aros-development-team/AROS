@@ -143,6 +143,8 @@ void AROS_SLIB_ENTRY(RawIOInit,Exec)();
 void AROS_SLIB_ENTRY(RawMayGetChar,Exec)();
 void AROS_SLIB_ENTRY(RawPutChar,Exec)();
 void AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec)();
+void AROS_SLIB_ENTRY(AllocVecPooled,Exec)();
+void AROS_SLIB_ENTRY(FreeVecPooled,Exec)();
 
 const void *ExecFunctions[] __attribute__((section(".rodata"))) =
 {
@@ -282,6 +284,19 @@ const void *ExecFunctions[] __attribute__((section(".rodata"))) =
 	NULL,
 	&AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec),
 	NULL,
-	NULL,
+	NULL, /* 137 */
+        NULL,
+        NULL,
+        NULL, /* 140 */
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL, /* 145 */
+        NULL,
+        NULL,
+        NULL,
+        &AROS_SLIB_ENTRY(AllocVecPooled,Exec), /* 149 */
+        &AROS_SLIB_ENTRY(FreeVecPooled,Exec),  /* 150 */
 	(APTR)-1
 };
