@@ -1,3 +1,8 @@
+/*
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -19,3 +24,4 @@ int main()
 error:
     return 1;
 }
+
