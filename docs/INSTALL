@@ -16,87 +16,36 @@ Basic Installation of AROS-SOURCES
 	It is possible to build AROS in your main cvs-copy, as all
 	generated files should be ignored by the CVS server, but I think
 	it is better to leave your copy clean, if you can afford the disk
-	space. A complete compilation has over 5000 files and ~40MB
+	space. A complete compilation has over 6000 files and ~50MB
 	for -O2 optimized binaries!
 
 3. Build all the necessary tools for compilation.
 	Get all non-AROS tools,
 	i.e. get a c-compiler (gcc recommended), binutils, gawk, etc.
 	Now compile AROS' tools.
-	Either run "autogen.sh" with possible options as mentioned in e)
-	or (the same, but do everything on your own):
+	Run "autogen.sh" with possible options as mentioned below.
 
-	a) MetaMake, short mmake.
-		cd AROS/tools/MetaMake
-		./configure
+	* '--enable-gfxhidd' / '--disable-gfxhidd'
+	  This determines whether you want to enable gfx via the
+	  graphics.hidd or old direct X11 calls.
 
-		  ./configure -v --prefix=/gg
-		    if you are using ADE/GG on the Amiga --- if configure
-		    doesn't work and you're using ADE just copy the
-		    Makefile.amiga to Makefile and config.h.amiga to
-		    config.h
-		  )
-		make
-		  if make doesn't work just do a "gcc mmake.c -o mmake"
-		make install
-		cd ../..
-		cp mmake.config.in $HOME/.mmake.config
-		  ( This installs it for global use or if you only intend
-		    to start mmake in the AROS directory:
-		  cp mmake.config.in mmake.config
-		  )
-		Now edit your mmake.config file to your needs:
-		- uncomment and adjust "top /home/digulla/AROS", if you
-		  want to compile from anywhere else than the top dir.
+	  '--enable-gfxhidd' is the default. This value will be
+	  cached and can be overridden at any time running
+	  configure again with the new option (this will require
+	  to recompile major parts of AROS, though).
 
-	b) The Makefile-Generation tool, short genmf.
-		cd AROS/tools/genmf
-		make
-		  ( to use the binary, or to use the old gawk script,
-		    edit mmake.config and comment out the other
-		    "genmakefilescript"-line
-		  )
-
-	c) The function-packer, cpak.
-		This one should not be needed to be compiled first,
-		because it will be generated "on the fly" (if needed),
-		but just to mention it, because it is used:
-			cd AROS/tools/cpak
-			make
-
-	d) The function archive utility, archtool.
-		Should be generated automatically, but there may
-		still be problems with mixing system and AROS headers
-		when archtool is made on the fly. Do the following:
-		cd AROS:tools/archtools
-		make
+	Use "./configure --help" for all possible options.
 
 
-	e) The configure script.
-		Goto the top dir of AROS and call `autoconfig` which
-		will generate "configure" from "configure.in".
-		Then you must run configure.
-		This will examine your system and create the necessary
-		files for the build.
-
-		It has one option:
-		'--enable-gfxhidd' / '--disable-gfxhidd'
-		  This determines whether you want to enable gfx via the
-		  graphics.hidd or old direct X11 calls.
-		  '--disable-gfxhidd' is the default. This value will be
-		  cached and can be overridden at any time running
-		  configure again with the new option (this will require
-		  to recompile major parts of AROS, though).
-
-		Use "./configure --help" for all possible options.
+	We're heading for "autoconf ; configure ; make" builds, but
+	right now some other things have to be initialized.
 
 	That's it. And now for the most important step:
 
 5. Compile your sources.
 	Call the wrapper Makefile with 'make' or
 	if you have the .mmake.config in your $HOME dir, and adjusted
-	the "top" variable in it, just call mmake, or if you haven't,
-	call mmake in the topdir of AROS (e.g: /usr/src/AROS)
+	the "top" variable in it, just call mmake.
 
 Now everything should compile well, and your binaries are placed in
 AROS/bin/(os)-(cpu-type)/AROS.
