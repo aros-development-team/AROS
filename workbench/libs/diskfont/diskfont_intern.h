@@ -165,7 +165,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, st
 
 #define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
 
-APTR AllocSegment(APTR, ULONG, ULONG, struct DiskfontBase_intern *);
+APTR AllocSegment(BPTR *, ULONG, ULONG, struct DiskfontBase_intern *);
 struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase_intern *);
 struct TagItem *ReadTagsNum(BPTR, ULONG *, struct DiskfontBase_intern *);
 /*BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);*/
