@@ -87,7 +87,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     struct Window   	*w  = CU(o)->cu_Window;
     struct RastPort 	*rp = w->RPort;
     UBYTE 		*params = msg->Params;
-    struct stdcondata 	*data = INST_DATA(cl, o);
+/*  struct stdcondata 	*data = INST_DATA(cl, o); */
     
     EnterFunc(bug("StdCon::DoCommand(o=%p, cmd=%d, params=%p)\n",
     	o, msg->Command, params));
@@ -229,7 +229,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	break;
 
     case C_ERASE_IN_LINE: {
-    	UBYTE param = 1;
+    	/*UBYTE param = 1;*/
         UBYTE oldpen = rp->FgPen;
         
 	Console_RenderCursor(o);
@@ -345,7 +345,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 static VOID stdcon_rendercursor(Class *cl, Object *o, struct P_Console_RenderCursor *msg)
 {
      struct RastPort *rp = RASTPORT(o);
-     struct stdcondata *data = INST_DATA(cl, o);
+/*   struct stdcondata *data = INST_DATA(cl, o); */
      
      /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
      SetDrMd(rp, COMPLEMENT);
@@ -382,7 +382,7 @@ static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *m
 static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindowSize *msg)
 {
     struct RastPort *rp = RASTPORT(o);
-    struct stdcondata *data = INST_DATA(cl, o);
+/*  struct stdcondata *data = INST_DATA(cl, o); */
     WORD old_xmax = CHAR_XMAX(o);
     WORD old_ymax = CHAR_YMAX(o);
     WORD old_xcp = XCP;
@@ -424,9 +424,30 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 
     if ((old_xcp != XCP) || (old_ycp != YCP)) 
     {
+    #if 0
         SetAPen(rp, 0);
 	SetDrMd(rp, JAM2);
 	RectFill(rp, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
+    #endif
+
+    	if (old_ycp != YCP)
+	{
+	    struct P_Console_Left p;
+	    
+	    /* Scroll up one line */
+
+	    SetAPen(rp, 0);
+	    SetDrMd(rp, JAM2);
+	    ScrollRaster(rp,
+	                 0, CU(o)->cu_YRSize,
+			 GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
+    	    
+	    /* Move cursor to column 0 */
+	    	    
+	    p.MethodID = M_Console_Left;
+	    p.Num      = CU(o)->cu_XCP;
+	    DoSuperMethodA(cl, o, (Msg)&p);
+	}
 	
     	Console_RenderCursor(o);
     }
