@@ -1,8 +1,6 @@
 # $Id$
 TOP=../..
 
-SPECIAL_CFLAGS = -D__AROS
-
 include $(TOP)/config/make.cfg
 
 #CC=$(PURIFY) $(SYS_CC)
@@ -10,7 +8,8 @@ EXEDIR=$(BINDIR)/Demos
 
 OBJDIR = $(GENDIR)/demos
 LIBS = -L$(LIBDIR) -lamiga -laros -larosc
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
+	$(LIBDIR)/libarosc.a
 
 FILES = helloworld \
 	librarytest \
