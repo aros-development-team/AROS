@@ -857,7 +857,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		if (data->wd_ActiveObject)
 		{
 		    data->wd_ActiveObject = NULL;
-		    DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(obj)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
 		    if (old_activenode)
 		    {
 			data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ)?((struct ObjNode*)old_activenode->node.mln_Succ)->obj:NULL;
@@ -877,7 +877,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		if (data->wd_ActiveObject)
 		{
 		    data->wd_ActiveObject = NULL;
-		    DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(obj)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
 		    if (old_activenode)
 		    {
 			 data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred)?((struct ObjNode*)old_activenode->node.mln_Pred)->obj:NULL;
@@ -905,7 +905,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 
     if (data->wd_ActiveObject)
     {
-	DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+	if (_flags(obj)&MADF_CANDRAW) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
     }
 }
 
