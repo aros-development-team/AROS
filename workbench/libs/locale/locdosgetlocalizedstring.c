@@ -57,6 +57,7 @@
 {
     AROS_LIBFUNC_INIT
     
+extern struct LocaleBase *globallocalebase;
 #define LocaleBase globallocalebase
 
     struct Catalog *catalog = (struct Catalog *)DOSBase->dl_Errors;
