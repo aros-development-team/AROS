@@ -362,27 +362,27 @@ static void function_top(FILE *f,struct Var *v,long offset)
     int i;
     if(section!=CODE){fprintf(f,codename);section=CODE;}
 
-/*ADA*/
-fprintf (f, "\t.align 16\n");
-/* Tell GDB that a new function starts here.
+    /*ADA*/
+    fprintf (f, "\t.align 16\n");
+    /* Tell GDB that a new function starts here.
 
-    Format: "<name>:F<type>",36,0,<line>,<symname>
+	Format: "<name>:F<type>",36,0,<line>,<symname>
 
-    <name> Is the name of the function
-    <type> is the return type (only the number as defined above, ie.
-	    if int is t1, then this is 1).
-    <line> The line in the source
-    <symname> The name of the symbol as it appears in the object file.
+	<name> Is the name of the function
+	<type> is the return type (only the number as defined above, ie.
+		if int is t1, then this is 1).
+	<line> The line in the source
+	<symname> The name of the symbol as it appears in the object file.
 
-    Right now, all functions return void.
-*/
-fprintf (f, ".stabs \"%s:F19\",36,0,%d,%s%s\n", v->identifier, fline, idprefix,v->identifier);
+	Right now, all functions return void.
+    */
+    fprintf (f, ".stabs \"%s:F19\",36,0,%d,%s%s\n", v->identifier, fline, idprefix,v->identifier);
 
     if(v->storage_class==EXTERN) fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
     fprintf(f,"%s%s:\n",idprefix,v->identifier);
 
-/*ADA*/
-debug_offset_func=v->identifier;
+    /*ADA*/
+    debug_offset_func=v->identifier;
 
     for(pushedsize=0,i=1;i<sp;i++){
 	if(regused[i]&&!regscratch[i]){
@@ -392,10 +392,10 @@ debug_offset_func=v->identifier;
     }
     if(offset) fprintf(f,"\tsubl\t$%ld,%%esp\n",offset);
 
-/* Tell GDB that the code of the function starts here */
-emitdebugline (f,fline);
-local_debug_func_count ++;
-fprintf (f, ".LBB%d:\n", local_debug_func_count);
+    /* Tell GDB that the code of the function starts here */
+    emitdebugline (f,fline);
+    local_debug_func_count ++;
+    fprintf (f, ".LBB%d:\n", local_debug_func_count);
 }
 static void function_bottom(FILE *f,struct Var *v,long offset)
 /*  erzeugt Funktionsende			*/
@@ -403,8 +403,8 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
     int i;
     forder(f);
 
-emitdebugline (f,fline);
-fprintf (f, ".LBE%d:\n", local_debug_func_count);
+    emitdebugline (f,fline);
+    fprintf (f, ".LBE%d:\n", local_debug_func_count);
 
     if(offset) fprintf(f,"\taddl\t$%ld,%%esp\n",offset);
     for(i=sp-1;i>0;i--){
@@ -414,14 +414,14 @@ fprintf (f, ".LBE%d:\n", local_debug_func_count);
     }
     fprintf(f,"\tret\n");
 
-fprintf (f, ".Lfe%d:\n\t.size\t%s,.Lfe%d-%s%s\n",
-    local_debug_func_count, v->identifier,
-    local_debug_func_count, idprefix,v->identifier);
-/* Tell GDB the real size of the function */
-fprintf (f, ".stabn 192,0,0,.LBB%d-%s%s\n",
-    local_debug_func_count, idprefix,v->identifier);
-fprintf (f, ".stabn 224,0,0,.LBE%d-%s%s\n",
-    local_debug_func_count, idprefix,v->identifier);
+    fprintf (f, ".Lfe%d:\n\t.size\t%s,.Lfe%d-%s%s\n",
+	local_debug_func_count, v->identifier,
+	local_debug_func_count, idprefix,v->identifier);
+    /* Tell GDB the real size of the function */
+    fprintf (f, ".stabn 192,0,0,.LBB%d-%s%s\n",
+	local_debug_func_count, idprefix,v->identifier);
+    fprintf (f, ".stabn 224,0,0,.LBE%d-%s%s\n",
+	local_debug_func_count, idprefix,v->identifier);
 }
 static int is_const(struct Typ *t)
 /*  Tests if a type can be placed in the code-section.	*/
@@ -721,12 +721,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	c=p->code;t=p->typf;
 	if(c==NOP) continue;
 
-/*ADA*/
-if (lastline != p->line)
-{
-    emitdebugline(f,p->line);
-    lastline = p->line;
-}
+	/*ADA*/
+	if (lastline != p->line)
+	{
+	    emitdebugline(f,p->line);
+	    lastline = p->line;
+	}
 
 	if(c==SUBPFP) c=SUB;
 	if(c==SUBIFP) c=SUB;

@@ -1,5 +1,6 @@
 
-CC = cc -g
+CC	= cc -g
+CFLAGS	= -I. -I$(OBJDIR)
 LDFLAGS = -lm
 
 OBJDIR = stage1
@@ -18,13 +19,13 @@ stage1: setup
 	make TARGET=$(TARGET)
 
 stage2: setup
-	make OBJDIR=stage2 TARGET=$(TARGET) BINDIR=bin2 CC="bin1/vc +vc-stage2.config -Istage2"
+	make OBJDIR=stage2 TARGET=$(TARGET) BINDIR=bin2 CC="bin1/vc +vc-stage2.config"
 
 stage3: setup
-	make OBJDIR=stage3 TARGET=$(TARGET) BINDIR=bin3 CC="bin2/vc +vc-stage3.config -Istage3"
+	make OBJDIR=stage3 TARGET=$(TARGET) BINDIR=bin3 CC="bin2/vc +vc-stage3.config"
 
 stage4: setup
-	make OBJDIR=stage4 TARGET=$(TARGET) BINDIR=bin4 CC="bin3/vc +vc-stage4.config -Istage4"
+	make OBJDIR=stage4 TARGET=$(TARGET) BINDIR=bin4 CC="bin3/vc +vc-stage4.config"
 
 bootstrap:
 	make stage1 TARGET=$(TARGET)
@@ -43,13 +44,9 @@ compare:
 clean:
 	rm -r stage? bin?
 
-ifneq ("$(OBJDIR)","stage1")
-OTHERFILES = $(OBJDIR)/dt.c dt.h
-endif
-
 .PHONY: stage1 stage2
 
-prepstage: $(OTHERFILES) $(OBJDIR)/machine.h $(OBJDIR)/machine.dt $(OBJDIR)/machine.c
+prepstage: $(OBJDIR)/machine.h $(OBJDIR)/machine.dt $(OBJDIR)/machine.c
 
 $(OBJDIR)/machine.h : machines/$(TARGET)/machine.h
 	cp $< $@
@@ -146,75 +143,75 @@ $(BINDIR)/dtgen: datatypes/dtgen.c datatypes/datatypes.h datatypes/dtconv.h
 #	 $(BINDIR)/dtgen $(OBJDIR)/machine.dt dt.h dt.c
 
 $(OBJDIR)/dt.o: dt.h dt.c
-	$(CC) -c dt.c -o $(OBJDIR)/dt.o -I$(OBJDIR) -Idatatypes
+	$(CC) $(CFLAGS) -c dt.c -o $(OBJDIR)/dt.o -Idatatypes
 
 $(OBJDIR)/tasm.o: tasm.c supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c tasm.c -o $(OBJDIR)/tasm.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c tasm.c -o $(OBJDIR)/tasm.o
 
 $(OBJDIR)/mbasic.o: mbasic.c supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c mbasic.c -o $(OBJDIR)/mbasic.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c mbasic.c -o $(OBJDIR)/mbasic.o
 
 $(OBJDIR)/supp.o: supp.c supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c supp.c -o $(OBJDIR)/supp.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c supp.c -o $(OBJDIR)/supp.o
 
 $(OBJDIR)/main.o: main.c vbc.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c main.c -o $(OBJDIR)/main.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c main.c -o $(OBJDIR)/main.o
 
 $(OBJDIR)/vars.o: vars.c vbc.h supp.h $(OBJDIR)/machine.h errors.h dt.h
-	$(CC) -c vars.c -o $(OBJDIR)/vars.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c vars.c -o $(OBJDIR)/vars.o
 
 $(OBJDIR)/declaration.o: declaration.c vbc.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c declaration.c -o $(OBJDIR)/declaration.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c declaration.c -o $(OBJDIR)/declaration.o
 
 $(OBJDIR)/parse_expr.o: parse_expr.c vbc.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c parse_expr.c -o $(OBJDIR)/parse_expr.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c parse_expr.c -o $(OBJDIR)/parse_expr.o
 
 $(OBJDIR)/type_expr.o: type_expr.c vbc.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c type_expr.c -o $(OBJDIR)/type_expr.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c type_expr.c -o $(OBJDIR)/type_expr.o
 
 $(OBJDIR)/ic.o: ic.c vbc.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c ic.c -o $(OBJDIR)/ic.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c ic.c -o $(OBJDIR)/ic.o
 
 $(OBJDIR)/statements.o: statements.c vbc.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c statements.c -o $(OBJDIR)/statements.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c statements.c -o $(OBJDIR)/statements.o
 
 $(OBJDIR)/opt.o: opt.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c opt.c -o $(OBJDIR)/opt.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c opt.c -o $(OBJDIR)/opt.o
 
 $(OBJDIR)/av.o: av.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c av.c -o $(OBJDIR)/av.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c av.c -o $(OBJDIR)/av.o
 
 $(OBJDIR)/rd.o: rd.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c rd.c -o $(OBJDIR)/rd.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c rd.c -o $(OBJDIR)/rd.o
 
 $(OBJDIR)/regs.o: regs.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c regs.c -o $(OBJDIR)/regs.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c regs.c -o $(OBJDIR)/regs.o
 
 $(OBJDIR)/flow.o: flow.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c flow.c -o $(OBJDIR)/flow.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c flow.c -o $(OBJDIR)/flow.o
 
 $(OBJDIR)/cse.o: cse.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c cse.c -o $(OBJDIR)/cse.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c cse.c -o $(OBJDIR)/cse.o
 
 $(OBJDIR)/cp.o: cp.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c cp.c -o $(OBJDIR)/cp.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c cp.c -o $(OBJDIR)/cp.o
 
 $(OBJDIR)/loop.o: loop.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c loop.c -o $(OBJDIR)/loop.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c loop.c -o $(OBJDIR)/loop.o
 
 $(OBJDIR)/alias.o: alias.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c alias.c -o $(OBJDIR)/alias.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c alias.c -o $(OBJDIR)/alias.o
 
 $(OBJDIR)/preproc.o: preproc.c vbpp.h supp.h vbc.h dt.h
-	$(CC) -c preproc.c -o $(OBJDIR)/preproc.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c preproc.c -o $(OBJDIR)/preproc.o
 
 $(OBJDIR)/machine.o: $(OBJDIR)/machine.c supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c $(OBJDIR)/machine.c -o $(OBJDIR)/machine.o -I$(OBJDIR) -I.
+	$(CC) $(CFLAGS) -c $(OBJDIR)/machine.c -o $(OBJDIR)/machine.o
 
 $(OBJDIR)/opts.o: opt.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c -DNO_OPTIMIZER opt.c -o $(OBJDIR)/opts.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c -DNO_OPTIMIZER opt.c -o $(OBJDIR)/opts.o
 
 $(OBJDIR)/regss.o: regs.c opt.h supp.h $(OBJDIR)/machine.h dt.h
-	$(CC) -c -DNO_OPTIMIZER regs.c -o $(OBJDIR)/regss.o -I$(OBJDIR)
+	$(CC) $(CFLAGS) -c -DNO_OPTIMIZER regs.c -o $(OBJDIR)/regss.o
 
 
