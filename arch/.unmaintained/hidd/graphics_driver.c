@@ -5081,7 +5081,7 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
     
     buf = (UBYTE *)srcrect;
     
-    buf += COORD_TO_BYTEIDX(srcx, srcy, srcmod);
+    buf += CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, srcmod);
     
     pixwritten = write_pixels_8(rp
     	, buf
