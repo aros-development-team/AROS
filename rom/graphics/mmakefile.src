@@ -48,7 +48,9 @@ FUNCTIONS := \
 	allocspritedataa \
 	andrectrect \
 	andrectregion \
+        andrectregionnd \
 	andregionregion \
+        andregionregionnd \
 	animate \
 	areadraw \
 	areaellipse \
@@ -73,7 +75,9 @@ FUNCTIONS := \
 	changevpbitmap \
 	cleareol \
 	clearrectregion \
+	clearrectregionnd \
 	clearregionregion \
+	clearregionregionnd \
 	clearregion \
 	clearscreen \
 	clipblit \
@@ -156,7 +160,9 @@ FUNCTIONS := \
 	openfont \
 	openmonitor \
 	orrectregion \
+	orrectregionnd \
 	orregionregion \
+	orregionregionnd \
 	ownblitter \
 	polydraw \
 	qblit \
@@ -214,7 +220,9 @@ FUNCTIONS := \
 	writepixelarray8 \
 	writepixelline8 \
 	xorrectregion \
-	xorregionregion
+	xorrectregionnd \
+	xorregionregion \
+	xorregionregionnd
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
