@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/11/15 20:21:56  SDuvan
+    Updated layout
+
     Revision 1.9  1998/10/20 16:44:27  hkiel
     Amiga Research OS
 
@@ -59,7 +62,7 @@
 	dlist - pointer to dos list entry.
 
     RESULT
-	!=0 if all went well, 0 otherwise.
+	!= 0 if all went well, 0 otherwise.
 
     NOTES
 	Since anybody who wants to use a device or volume node in the
@@ -84,30 +87,39 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    LONG success=1;
+
+    LONG            success = 1;
     struct DosList *dl;
 
-    dl=LockDosList(LDF_ALL|LDF_WRITE);
-    if(dlist->dol_Type!=DLT_VOLUME)
-	for(;;)
+    dl = LockDosList(LDF_ALL | LDF_WRITE);
+
+    if(dlist->dol_Type != DLT_VOLUME)
+    {
+	while(TRUE)
 	{
-	    dl=dl->dol_Next;
-	    if(dl==NULL)
+	    dl = dl->dol_Next;
+
+	    if(dl == NULL)
 		break;
-	    if(dl->dol_Type!=DLT_VOLUME&&
-	       !Stricmp(dl->dol_DevName,dlist->dol_DevName))
+
+	    if(dl->dol_Type != DLT_VOLUME &&
+	       !Stricmp(dl->dol_DevName, dlist->dol_DevName))
 	    {
-		success=0;
+		success = 0;
 		break;
 	    }
 	}
+    }
+
     if(success)
     {
-	dlist->dol_Next=DOSBase->dl_DevInfo;
-	DOSBase->dl_DevInfo=dlist;
+	dlist->dol_Next = DOSBase->dl_DevInfo;
+	DOSBase->dl_DevInfo = dlist;
     }
-    UnLockDosList(LDF_ALL|LDF_WRITE);
+
+    UnLockDosList(LDF_ALL | LDF_WRITE);
 
     return success;    
+
     AROS_LIBFUNC_EXIT
 } /* AddDosEntry */

@@ -15,7 +15,10 @@
 #include <string.h>
 #include "dos_intern.h"
 
-LONG DevName(CONST_STRPTR name, struct Device **devptr, struct DosLibrary *DOSBase)
+
+
+LONG DevName(CONST_STRPTR name, struct Device **devptr,
+	     struct DosLibrary *DOSBase)
 {
     LONG error = 0L;
     STRPTR volname;
@@ -26,90 +29,107 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr, struct DosLibrary *DOSBa
 
     /* If file is "PROGDIR:" or relative to current directory, just return
        device from pr_HomeDir or pr_CurrentDir. */
-    if (!Strnicmp(name, "PROGDIR:", 8))
+    if(!Strnicmp(name, "PROGDIR:", 8))
     {
 	*devptr = ((struct FileHandle *)BADDR(me->pr_HomeDir))->fh_Device;
-	return 0L;
-    } else if (*name == ':')
-    {
-	*devptr = ((struct FileHandle *)BADDR(me->pr_CurrentDir))->fh_Device;
-	return 0L;
+	return 0;
     }
-
-    /* Copy volume name */
-    s1 = name;
-    volname = NULL;
-    while (*s1)
-    {
-        if (*s1++ == ':')
-        {
-            volname = (STRPTR)AllocVec(s1-name, MEMF_ANY);
-            if (!volname)
-            {
-                SetIoErr(ERROR_NO_FREE_STORE);
-                return ERROR_NO_FREE_STORE;
-            }
-            CopyMem(name, volname, s1-name-1);
-            volname[s1-name-1] = '\0';
-            break;
-        }
-    }
-
-    /* If path is relative to current directory, get device from pr_CurrentDir.
-    */
-    if (!volname)
+    else if(*name == ':')
     {
 	*devptr = ((struct FileHandle *)BADDR(me->pr_CurrentDir))->fh_Device;
 	return 0;
     }
 
-    /* Get the device pointer from dos-list. */
-    dl = LockDosList(LDF_ALL|LDF_READ);
-    dl = FindDosEntry(dl, volname, LDF_ALL);
-    if (dl)
+    /* Copy volume name */
+    s1 = name;
+    volname = NULL;
+
+    while(*s1)
     {
-        if (dl->dol_Type == DLT_LATE)
+        if(*s1++ == ':')
+        {
+            volname = (STRPTR)AllocVec(s1 - name, MEMF_ANY);
+
+            if(volname == NULL)
+            {
+                SetIoErr(ERROR_NO_FREE_STORE);
+                return ERROR_NO_FREE_STORE;
+            }
+
+            CopyMem(name, volname, s1 - name - 1);
+            volname[s1 - name - 1] = '\0';
+            break;
+        }
+    }
+
+    /* If path is relative to current directory, get device from
+       pr_CurrentDir. */
+    if(volname == NULL)
+    {
+	*devptr = ((struct FileHandle *)BADDR(me->pr_CurrentDir))->fh_Device;
+	return 0;
+    }
+    
+    /* Get the device pointer from dos-list. */
+    dl = LockDosList(LDF_ALL | LDF_READ);
+    dl = FindDosEntry(dl, volname, LDF_ALL);
+
+    if(dl != NULL)
+    {
+        if(dl->dol_Type == DLT_LATE)
         {
             /* Late binding assign: mount first */
-            BPTR lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
-            UnLockDosList(LDF_ALL|LDF_READ);
+            BPTR lock = Lock(dl->dol_misc.dol_assign.dol_AssignName,
+			     SHARED_LOCK);
+            UnLockDosList(LDF_ALL | LDF_READ);
             dl = NULL;
-            if (lock)
+
+            if(lock != NULL)
             {
                 AssignLock(volname, lock);
-                dl = LockDosList(LDF_ALL|LDF_READ);
+                dl = LockDosList(LDF_ALL | LDF_READ);
                 dl = FindDosEntry(dl, volname, LDF_ALL);
-                if (dl)
+
+                if(dl != NULL)
                     *devptr = dl->dol_Device;
                 else
                     error = ERROR_DEVICE_NOT_MOUNTED;
-                UnLockDosList(LDF_ALL|LDF_READ);
-            } else
-                error = IoErr();
 
-        } else if (dl->dol_Type == DLT_NONBINDING)
+                UnLockDosList(LDF_ALL | LDF_READ);
+            }
+	    else
+                error = IoErr();
+	    
+        }
+	else if(dl->dol_Type == DLT_NONBINDING)
         {
-            BPTR lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
-            UnLockDosList(LDF_ALL|LDF_READ);
+            BPTR lock = Lock(dl->dol_misc.dol_assign.dol_AssignName,
+			     SHARED_LOCK);
+            UnLockDosList(LDF_ALL | LDF_READ);
             fh = (struct FileHandle *)BADDR(lock);
-            if (fh)
+
+            if(fh != NULL)
             {
                 *devptr = fh->fh_Device;
                 UnLock(lock);
-            } else
+            }
+	    else
                 error = IoErr();
-        } else
+        }
+	else
         {
             *devptr = dl->dol_Device;
-            UnLockDosList(LDF_ALL|LDF_READ);
+            UnLockDosList(LDF_ALL | LDF_READ);
         }
-    } else
+    }
+    else
     {
-        UnLockDosList(LDF_ALL|LDF_READ);
+        UnLockDosList(LDF_ALL | LDF_READ);
         error = ERROR_DEVICE_NOT_MOUNTED;
     }
-
+    
     FreeVec(volname);
     SetIoErr(error);
+
     return error;
 } /* DevName */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/15 20:22:31  SDuvan
+    Updated layout
+
     Revision 1.7  1998/10/20 16:44:49  hkiel
     Amiga Research OS
 
@@ -77,18 +80,25 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     struct DosList *dl;
 
-    dl=LockDosList(LDF_ALL|LDF_WRITE);
-    for(;;)
+    if(dlist == NULL)
+	return 0;
+
+    dl = LockDosList(LDF_ALL | LDF_WRITE);
+
+    while(TRUE)
     {
-        if(dl->dol_Next==dlist)
+        if(dl->dol_Next == dlist)
 	{
-	    dl->dol_Next=dlist->dol_Next;
+	    dl->dol_Next = dlist->dol_Next;
 	    break;
 	}
-	dl=dl->dol_Next;
-    }
-    UnLockDosList(LDF_ALL|LDF_WRITE);
 
+	dl = dl->dol_Next;
+    }
+
+    UnLockDosList(LDF_ALL | LDF_WRITE);
+    
     return 1;
+
     AROS_LIBFUNC_EXIT
 } /* RemDosEntry */
