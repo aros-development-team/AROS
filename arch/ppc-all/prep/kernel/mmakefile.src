@@ -40,7 +40,7 @@ $(OBJDIR)/%.o : %.c
 	%compile_q opt=$(MY_CFLAGS)
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q opt=$(MY_CFLAGS)
+	%mkdepend_q flags=$(MY_CFLAGS)
 
 	%ctoasm_q 
 
