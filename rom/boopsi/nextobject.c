@@ -57,16 +57,23 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,BOOPSIBase)
     APTR oldobject;
-
+    struct _Object *nextobject;
+    
     oldobject = (APTR)(*((Object **)objectPtrPtr));
+    
     if (oldobject)
     {
-        struct _Object *carrier;
-
-        carrier = oldobject - sizeof(struct _Object);
-	*((Object **)objectPtrPtr) = (Object *)carrier->o_Node.mln_Succ;
-    } else
-        *((Object **)objectPtrPtr) = NULL;
+    	nextobject = (struct _Object *)_OBJECT(oldobject)->o_Node.mln_Succ;
+    
+    	if (nextobject)
+    	{
+	    *((Object **)objectPtrPtr) = BASEOBJECT(nextobject);
+    	} 
+    	else
+    	{
+            *((Object **)objectPtrPtr) = NULL;
+    	}
+    }
 
     return oldobject;
     AROS_LIBFUNC_EXIT
