@@ -53,9 +53,6 @@
     cl = MUI_GetClass(classname);
     if (cl)
     {
-#ifndef __MAXON__
-#warning FIXME: I should increase the open count of library (use cl->hook->data)
-#endif
 	Object *obj = NewObjectA(cl, NULL, tags);
 
 	if (!obj)
