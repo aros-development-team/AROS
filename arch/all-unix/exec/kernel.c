@@ -27,7 +27,6 @@
 #undef timeval
 
 #include <proto/exec.h>
-#include <exec_pdefs.h>
 
 #define DEBUG_TT    0
 #if DEBUG_TT

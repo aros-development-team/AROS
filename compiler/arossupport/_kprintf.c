@@ -9,7 +9,6 @@
 #include <proto/exec.h>
 #include <aros/asmcall.h>
 #include <stdarg.h>
-#include "exec_private.h"
 
 /* All I need is a global variable SysBase */
 extern struct ExecBase *SysBase;

@@ -8,7 +8,6 @@
 
 #include <exec/execbase.h>
 #include <proto/exec.h>
-#include <exec_pdefs.h>
 
 #include <stdlib.h>
 #include <signal.h>

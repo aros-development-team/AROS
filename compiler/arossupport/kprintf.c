@@ -18,7 +18,6 @@
 #undef vkprintf
 #include <unistd.h>
 #include <exec/execbase.h>
-#include "exec_private.h"
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 
