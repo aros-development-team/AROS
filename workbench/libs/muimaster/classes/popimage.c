@@ -72,6 +72,20 @@ static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+
+    if (data->wnd)
+    {
+    	MUI_DisposeObject(data->wnd);
+    	data->wnd = NULL;
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);   
+}
 
 /**************************************************************************
  MUIM_Hide
@@ -101,12 +115,19 @@ STATIC IPTR Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
     {
     	Object *ok_button, *cancel_button;
     	char *img_spec;
+	ULONG x = 0, y = 0;
+
+	get(_win(obj), MUIA_Window_LeftEdge, &x);
+	get(_win(obj), MUIA_Window_TopEdge, &y);
 
 	get(obj,MUIA_Imagedisplay_Spec, &img_spec);
 
     	data->wnd = WindowObject,
 	  MUIA_Window_Title, (IPTR)data->wintitle,
           MUIA_Window_Activate, TRUE,
+	    MUIA_Window_IsSubWindow, TRUE,
+	    MUIA_Window_LeftEdge, _left(obj) + x,
+	    MUIA_Window_TopEdge, _bottom(obj) + y + 1,
     	    WindowContents, VGroup,
 		Child, data->imageadjust = MUI_NewObject(
 		    MUIC_Imageadjust,
@@ -188,6 +209,7 @@ BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
 	case OM_NEW: return Popimage_New(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Popimage_Dispose(cl, obj, msg);
 	case MUIM_Hide: return Popimage_Hide(cl, obj, (APTR)msg);
 	case MUIM_Popimage_OpenWindow: return Popimage_OpenWindow(cl, obj, (APTR)msg);
 	case MUIM_Popimage_CloseWindow: return Popimage_CloseWindow(cl, obj, (APTR)msg);
