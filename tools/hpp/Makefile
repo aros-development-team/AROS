@@ -36,10 +36,10 @@ test_%.o : %.c
 test : all ctest.html background.html background.ps ctest.ps AddHead.c \
 	lists.c lists.html
 
-%.html : srcs/%.src $(HPP) tohtml.inc
+%.html : srcs/%.src $(HPP) tohtml.inc format
 	$(HPP) $(HPPFLAGS) tohtml.inc $< > $@
 
-lists.html : srcs/lists.src $(HPP)
+lists.html : srcs/lists.src $(HPP) format
 	$(HPP) $(HPPFLAGS) -set functiontmpl=amigafunc.tmpl tohtml.inc $< -o $@
 
 AddHead.c : srcs/lists.src toc.inc ssrc.tmpl $(HPP)
@@ -51,16 +51,16 @@ lists.c : srcs/lists.src toc.inc msrc.tmpl $(HPP)
 	sed -f toc.filter lists.h > lists.tmp
 	mv lists.tmp lists.h
 
-ctest.html : srcs/ctest.c ctohtml tohtml.inc $(HPP)
+ctest.html : srcs/ctest.c ctohtml tohtml.inc $(HPP) format
 	ctohtml $<
 
-ctest.tex : srcs/ctest.c ctolatex tolatex.inc $(HPP) ctolatex.filter
+ctest.tex : srcs/ctest.c ctolatex tolatex.inc $(HPP) ctolatex.filter format
 	ctolatex $<
 
-%.html : %.c ctohtml $(HPP) tohtml.inc
+%.html : %.c ctohtml $(HPP) tohtml.inc format
 	ctohtml $< > $@
 
-%.tex : srcs/%.src $(HPP) tolatex.inc
+%.tex : srcs/%.src $(HPP) tolatex.inc format
 	$(HPP) $(HPPFLAGS) tolatex.inc $< > $@
 
 %.dvi : %.tex

@@ -18,6 +18,9 @@ pure :
 
 clean :
 	-rm -f *.o lib*.a
+	sed '/^# DO NOT DELETE$$/,$$d' Makefile > Makefile.tmp
+	echo "# DO NOT DELETE" >> Makefile.tmp
+	mv -f Makefile.tmp Makefile
 
 depend :
 	makedepend -- $(CFLAGS) -- *.c
