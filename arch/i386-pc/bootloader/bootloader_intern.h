@@ -24,7 +24,7 @@ struct BootLoaderBase
 {
     struct Node		 bl_Node;
     struct ExecBase	*bl_SysBase;
-    struct Library	*bl_UtilBase;
+    struct Library	*bl_UtilityBase;
     ULONG		 Flags;
     STRPTR		 LdrName;
     struct List		 Args;
@@ -35,4 +35,4 @@ struct BootLoaderBase
 #ifdef UtilityBase
 #undef UtilityBase
 #endif
-#define UtilityBase	(BootLoaderBase->bl_UtilBase)
+#define UtilityBase	(BootLoaderBase->bl_UtilityBase)
