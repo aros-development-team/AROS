@@ -8,12 +8,14 @@ DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   mathieeesingbas expansion oop layers workbench cybergraphics \
-	   bootmenu partition 
+	   bootmenu partition
 KDEVS   := timer input keyboard console gameport ide trackdisk
 KHNDLRS := con nil ram cdrom afs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc nvidia
-KRSRCS  := battclock bootloader cpu misc
-#Disabled HIDD usbuhci
+KRSRCS  := battclock bootloader misc 
+
+#Disabled RSRC cpu
+#Disabled HIDD usbuhci vmwaregfx
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
       	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
@@ -33,7 +35,7 @@ BOOT_TAR_FILES := \
     C/AddBuffers C/AddDatatypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
     C/ChangeTaskPri C/ConClip C/Copy C/Date C/Delete C/Dir C/Echo C/Else \
     C/EndCli C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote C/Format \
-    C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List C/LoadWB C/Lock \
+    C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List C/Lock \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
     C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
     C/SetDate C/Setenv C/Skip C/Sort C/Stack C/Status C/Touch C/Type C/Unalias \
@@ -126,6 +128,9 @@ $(BINDIR)/boot/grub/% : %
 #MM bootdisk-pc-i386 : software-pc-i386 workbench test
 bootdisk-pc-i386: $(OSGENDIR)/boot/aros.bin
 
+#MM
+bootdisk-pc-i386-quick : bootdisk-pc-i386
+
 
 $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence
 $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz install
@@ -143,7 +148,7 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence:
 install: install.c
 	@$(HOST_CC) install.c -o install
 
-$(BOOT_DEST_DIR)/AROS.pkg :
+$(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(RM) -rf $(GENDIR)/gen/rom/bootdisk.compressed
 	@$(MKDIR) -p $(GENDIR)/gen/rom/bootdisk.compressed
