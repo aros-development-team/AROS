@@ -348,6 +348,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem       *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
     BOOL forward = TRUE;
+    BOOL need_recalc = FALSE;
     ULONG retval;
     
     int virt_offx = data->virt_offx, virt_offy = data->virt_offy;
@@ -372,7 +373,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_Columns:
 		data->columns = MAX((ULONG)tag->ti_Data, 1);
 		data->rows = 0;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
+		need_recalc = TRUE;
 		break;
 	    case MUIA_Group_ActivePage:
 		change_active_page(cl, obj, (LONG)tag->ti_Data);
@@ -387,7 +388,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_Rows:
 		data->rows = MAX((ULONG)tag->ti_Data, 1);
 		data->columns = 0;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
+		need_recalc = TRUE;
 		break;
 	    case MUIA_Group_Spacing:
 		data->flags |= (GROUP_HSPACING | GROUP_VSPACING);
@@ -419,6 +420,9 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	
     }
     
+    if (need_recalc)
+	DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
+
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
     /* seems to be the documented behaviour, however it should be slow! */
@@ -661,8 +665,6 @@ Group_ExitChange(struct IClass *cl, Object *obj,
     {
 	data->flags &= ~GROUP_CHANGING;
 
-/* FIXME: this needs optimization !!! */
-	/* as a last resort only */
 	if ((_flags(obj) & MADF_SETUP) && _win(obj))
 	    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
     }
@@ -1371,6 +1373,11 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 	    data->rows = data->num_childs / data->columns;
     }
 
+    if (data->columns < 1)
+	data->columns = 1;
+    if (data->rows < 1)
+	data->rows = 1;
+
     if (data->row_infos != NULL)
 	mui_free(data->row_infos);
 
@@ -1387,7 +1394,6 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 
     data->horiz_weight_sum = 0;
     data->vert_weight_sum = 0;
-
 
     tmp.MinHeight = tmp.DefHeight = tmp.MaxHeight = (data->rows - 1) * data->vert_spacing;
     tmp.MinWidth = tmp.DefWidth = tmp.MaxWidth = (data->columns - 1) * data->horiz_spacing;
@@ -2241,6 +2247,9 @@ group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
     WORD total_init_width;
     WORD remainder_height;
     WORD remainder_width;
+
+    if (data->rows == 0 || data->columns == 0)
+	return;
 
     if (data->num_childs % data->rows || data->num_childs % data->columns)
 	return;
