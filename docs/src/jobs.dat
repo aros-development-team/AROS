@@ -108,7 +108,7 @@ c00019;2;laguest;Write C:Filenote
 c00020;2;laguest;Write C:Get
 c00021;2;laguest;Write C:GetEnv
 c00022;2;SDuvan;Write C:If
-c00023;1;Stephan Rupprecht,SDuvan;Write C:Info
+c00023;2;Stephan Rupprecht,SDuvan;Write C:Info
 c00024;2;chodorowski,SDuvan;Write C:Join
 c00025;2;SDuvan;Write C:Lab
 c00027;1;matthias,bergers,SDuvan;Write C:List
