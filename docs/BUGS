@@ -1,8 +1,8 @@
 BUG000001 fixed
 digulla@wi-pc44.fh-konstanz.de
 assign DEVS: devs -> ok
-list devs: -> ok
-list devs:nil.handler -> "List: Object is of wrong type"
+list devs: -> ok 
+list devs:nil.handler -> "List: Object is of wrong type" 
 The problem was that list treated files as directories.
 
 BUG000002 fixed
