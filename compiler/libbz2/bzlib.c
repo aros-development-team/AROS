@@ -143,6 +143,7 @@ int bz_config_ok ( void )
 
 
 /*---------------------------------------------------*/
+#ifndef BZ_NO_CLIB
 static
 void* default_bzalloc ( void* opaque, Int32 items, Int32 size )
 {
@@ -155,7 +156,7 @@ void default_bzfree ( void* opaque, void* addr )
 {
    if (addr != NULL) free ( addr );
 }
-
+#endif
 
 /*---------------------------------------------------*/
 static
@@ -207,8 +208,13 @@ int BZ_API(BZ2_bzCompressInit)
      return BZ_PARAM_ERROR;
 
    if (workFactor == 0) workFactor = 30;
+#ifndef BZ_NO_CLIB
    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
+#else
+   if (strm->bzalloc == NULL) return BZ_PARAM_ERROR;
+   if (strm->bzfree == NULL) return BZ_PARAM_ERROR;
+#endif
 
    s = BZALLOC( sizeof(EState) );
    if (s == NULL) return BZ_MEM_ERROR;
@@ -547,8 +553,13 @@ int BZ_API(BZ2_bzDecompressInit)
    if (small != 0 && small != 1) return BZ_PARAM_ERROR;
    if (verbosity < 0 || verbosity > 4) return BZ_PARAM_ERROR;
 
+#ifndef BZ_NO_CLIB
    if (strm->bzalloc == NULL) strm->bzalloc = default_bzalloc;
    if (strm->bzfree == NULL) strm->bzfree = default_bzfree;
+#else
+   if (strm->bzalloc == NULL) return BZ_PARAM_ERROR;
+   if (strm->bzfree == NULL) return BZ_PARAM_ERROR;
+#endif
 
    s = BZALLOC( sizeof(DState) );
    if (s == NULL) return BZ_MEM_ERROR;
