@@ -24,7 +24,7 @@
 
 #include <aros/rt.h>
 
-static const char version[] = "$VER: assign 41.3 (4.7.1997)\n";
+static const char version[] = "$VER: assign 41.4 (24.7.1997)\n";
 
 void dolist()
 {
