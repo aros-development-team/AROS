@@ -1181,7 +1181,7 @@ extern void _aros_not_implemented (char *X);
 	    "move.l %3,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
-	    "move.l %%d0-%%d1,%0\n\t"		    \
+	    "movem.l %%d0-%%d1,%0\n\t"		    \
 	    :"=g"(_##name##_re)                     \
 	    :"r"(_n1),"r"(_n2),"g"(bn)		    \
 	    :D0,D1,A0,A1,"memory","cc");            \
