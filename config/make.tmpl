@@ -497,21 +497,24 @@ endif
 
 
 #------------------------------------------------------------------------------
-# Build an imported source tree which uses the configure script from the autoconf package.
-# This rule will try to "integrate" the produced files as much as possible in the AROS
-# build, for exampley by putting libraries in the standard library directory, includes
-# in the standard include directory, and so on. You can however override this behaviour.
+# Build an imported source tree which uses the configure script from the
+# autoconf package.  This rule will try to "integrate" the produced files as
+# much as possible in the AROS build, for exampley by putting libraries in the
+# standard library directory, includes in the standard include directory, and
+# so on. You can however override this behaviour.
 #
-# As a special "bonus" for you, the PROGDIR environment variable is defined to be %(bindir) (or
-# its deduced value) when running "make install", and "PROGDIR:" when running "make" alone; you
-# can use this feature to pass the configure script some more parameters whose value depends upon
-# the PROGDIR env var, so that the program gets all its stuff installed in the proper place when
-# building it, but when running it from inside AROS it can also find that stuff by simply opening
-# PROGDIR:, which it will do automatically if it uses the configuration parameters set when running
-# ./configure
+# As a special "bonus" for you, the PROGDIR environment variable is defined to
+# be %(bindir) (or its deduced value) when running "make install", and
+# "PROGDIR:" when running "make" alone; you can use this feature to pass the
+# configure script some more parameters whose value depends upon the PROGDIR
+# env var, so that the program gets all its stuff installed in the proper place
+# when building it, but when running it from inside AROS it can also find that
+# stuff by simply opening PROGDIR:, which it will do automatically if it uses
+# the configuration parameters set when running ./configure
 #
-# *NOTICE*: DO NOT put a trailing '/' (slash) after $PROGDIR, as the variable already contains
-# either a '/' (slash) or a ':' (colon), thus simply attach it to the name which has to follow it.
+# *NOTICE*: DO NOT put a trailing '/' (slash) after $PROGDIR, as the variable
+# already contains either a '/' (slash) or a ':' (colon), thus simply attach it
+# to the name which has to follow it.
 
 %define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
     bindir= libdir= includedir= extraoptions= nix=no host=no install_target=install
