@@ -190,7 +190,9 @@ IPTR Popframe__MUIM_Popframe_CloseWindow(struct IClass *cl, Object *obj,
 IPTR Popframe__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
 				     struct MUIP_DisconnectParent *msg)
 {
-    DoMethod(obj, MUIM_Popframe_CloseWindow, FALSE);
+    struct Popframe_DATA *data = INST_DATA(cl, obj);
+
+    if (data->wnd) DoMethod(obj, MUIM_Popframe_CloseWindow, FALSE);
     return DoSuperMethodA(cl, obj, msg);
 }
 

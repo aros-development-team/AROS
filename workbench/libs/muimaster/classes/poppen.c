@@ -160,7 +160,9 @@ IPTR Poppen__MUIM_Poppen_CloseWindow(struct IClass *cl, Object *obj,
 IPTR Poppen__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
 				   struct MUIP_DisconnectParent *msg)
 {
-    DoMethod(obj, MUIM_Poppen_CloseWindow, FALSE);
+    struct Poppen_DATA *data = INST_DATA(cl, obj);
+
+    if (data->wnd) DoMethod(obj, MUIM_Poppen_CloseWindow, FALSE);
     return DoSuperMethodA(cl, obj, msg);
 }
 
