@@ -74,7 +74,7 @@ static void InputFunc(struct Hook *hook, Object *obj, APTR msg)
 {
     struct MUI_PenadjustData *data = (struct MUI_PenadjustData *)hook->h_Data;
     IPTR    	    	      val;
-    
+
     get(obj, MUIA_Group_ActivePage, &val);
     
     switch(val)
@@ -105,6 +105,9 @@ static void InputFunc(struct Hook *hook, Object *obj, APTR msg)
     }
     
     zune_pen_intern_to_spec(&data->intpenspec, &data->penspec);
+
+kprintf(" ## penspec now %s\n", &data->penspec);
+
 }
 
 /**************************************************************************
@@ -220,7 +223,7 @@ static IPTR Penadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch(msg->opg_AttrID)
     {
-    	case MUIA_Pendisplay_Spec:
+    	case MUIA_Penadjust_Spec:
 	    *store = (IPTR)&data->penspec;
 	    break;
 	    
