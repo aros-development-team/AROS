@@ -2,7 +2,7 @@ Outstanding bugs:
 BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
 BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
 BUG000077 BUG000078 BUG000079 BUG000081 BUG000082
-BUG000083 BUG000084 BUG000085 
+BUG000083 BUG000085
 
 
 
@@ -590,7 +590,7 @@ adam.chodorowski@chello.se
 In the CLI, entered commands containing only blank characters are not treated 
 as empty and are incorrectly added to the command history.
 
-BUG000084
+BUG000084 Fixed
 adam.chodorowski@chello.se
 In the CLI, the command history is circular (ie. it wraps around). The proper
 behaviour would be to stop at the endpoints and present an empty prompt (this
