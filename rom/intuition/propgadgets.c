@@ -317,7 +317,8 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
     if (pi->Flags & FREEHORIZ)
     {
 	knobbox->Width = pi->CWidth * pi->HorizBody / MAXBODY;
-
+        if (knobbox->Width < KNOBHMIN) knobbox->Width = KNOBHMIN;
+	
 	knobbox->Left = knobbox->Left + (pi->CWidth - knobbox->Width)
 		* pi->HorizPot / MAXPOT;
 
@@ -335,7 +336,8 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
     if (pi->Flags & FREEVERT)
     {
 	knobbox->Height = pi->CHeight * pi->VertBody / MAXBODY;
-
+        if (knobbox->Height < KNOBVMIN) knobbox->Height = KNOBVMIN;
+	
 	knobbox->Top = knobbox->Top + (pi->CHeight - knobbox->Height)
 		* pi->VertPot / MAXPOT;
 
@@ -435,11 +437,10 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 			 bbox.Left + bbox.Width - 1,
 			 bbox.Top + bbox.Height - 1);
 	}
-	    
-
+	    	
 	if (!CalcKnobSize (gadget, &kbox))
 	    return;
-
+	
 	RefreshPropGadgetKnob (gadget, NULL, &kbox, window, IntuitionBase);
 
 	SetDrMd (window->RPort, DrawMode);
