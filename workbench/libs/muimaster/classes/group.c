@@ -1325,13 +1325,23 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 
     if (!data->columns)
     {
-    	if (data->num_childs % data->rows) return;
-	data->columns = data->num_childs / data->rows;
+    	if (data->num_childs % data->rows)
+	{
+	    data->columns = 1;
+	    data->rows = data->num_childs;
+	}
+	else
+	    data->columns = data->num_childs / data->rows;
     }
     else
     {
-    	if (data->num_childs % data->columns) return;
-	data->rows = data->num_childs / data->columns;
+    	if (data->num_childs % data->columns)
+	{
+	    data->rows = 1;
+	    data->columns = data->num_childs;
+	}
+	else
+	    data->rows = data->num_childs / data->columns;
     }
 
     if (data->row_infos != NULL)
@@ -1405,6 +1415,7 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 	    continue;
 
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
+	D(bug("minmax_pagemode(%p) minh child = %d tmpmin=%d\n", obj, _minheight(child), tmp.MinHeight));
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
 	tmp.MaxHeight = MIN(tmp.MaxHeight, w0_maxheight(child));
 	tmp.MaxWidth = MIN(tmp.MaxWidth, w0_maxwidth(child));
@@ -1462,7 +1473,9 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
      */
     if (data->flags & GROUP_PAGEMODE)
     {
+	D(bug("minmax_pagemode(%p) minh initial = %d\n", obj, msg->MinMaxInfo->MinHeight));
 	group_minmax_pagemode(cl, obj, lm.lm_Children, msg);
+	D(bug("minmax_pagemode(%p) minh = %d\n", obj, msg->MinMaxInfo->MinHeight));
     }
     else if (data->layout_hook)
     {
