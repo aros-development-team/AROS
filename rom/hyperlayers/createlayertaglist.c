@@ -212,9 +212,15 @@ kprintf("Creating a layer on top!\n");
     }
     else
       if (parent)
+      {
         OrRegionRegion(parent->shape, l->VisibleRegion);
+        l->nesting = parent->nesting+1;
+      }
       else
+      {
         OrRegionRegion(l->shape, l->VisibleRegion);
+        l->nesting = 0;
+      }
     
     if (IS_VISIBLE(l))
     {
@@ -248,6 +254,8 @@ kprintf("\t\tbacking up parts of layer %p!\n",_l);
   }
   else
     goto failexit;
+
+  kprintf("Leaving %s\n",__FUNCTION__);
   
   return l;
   
@@ -265,6 +273,8 @@ failexit:
   {
     FreeRastPort(rp);
   }
+
+  kprintf("Leaving %s - faiure!\n",__FUNCTION__);
   
   return NULL;
 

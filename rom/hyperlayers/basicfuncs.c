@@ -153,21 +153,6 @@ void _CallLayerHook(struct Hook * h,
 /*                                 LAYER                                   */
 /***************************************************************************/
 
-/* Set the priorities of the layer. The farther in the front it is the
-   higher its priority will be.
- */
- 
-void SetLayerPriorities(struct Layer_Info * li)
-{
-  struct Layer * L = li -> top_layer;
-  UWORD pri = 10000;
-  while (NULL != L)
-  {
-    L -> priority = pri;
-    pri--;
-    L = L->back;
-  }
-}
 
 struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y)
 {
@@ -556,33 +541,6 @@ void FreeLayerResources(struct Layer_Info * li,
  * Makes sure that the top most layer only consists of one cliprect 
  */
 
-void CleanTopLayer(struct Layer_Info * LI)
-{
-  struct Layer * L_top = LI->top_layer;
-  struct ClipRect * CR;
-  if (NULL == L_top)
-    return;
-  
-  L_top->Flags &= ~LAYERUPDATING;
-  
-  CR = L_top->ClipRect;
-  if (NULL != CR->Next)
-  {
-    struct ClipRect * _CR = CR->Next;
-    /* the topmost layer should only have one ClipRect */
-    CR->bounds = L_top->bounds;
-    CR->Next = NULL;
-    
-    CR = _CR;
-    while (CR != NULL)
-    {
-      _CR = CR->Next;
-      _FreeClipRect(CR, L_top);
-      
-      CR = _CR;
-    }
-  }
-}
 
 /* 
  * When a clipregion is installed a secondary list of cliprects
@@ -844,33 +802,35 @@ int _BackupPartsOfLayer(struct Layer * l,
               if (xSrc < 0)
               {
                 xSize += xSrc;
-                xSrc = 0;
+                xSrc = -xSrc;
               }
+              else
+                xSrc = 0;
               
               ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
               if (ySrc < 0)
               {
                 ySize += ySrc;
-                ySrc = 0;
+                ySrc = -ySrc;
               }
+              else
+                ySrc = 0;
 kprintf("Using olc cr's BitMap!\n");
               srcbm = oldcr->BitMap;
             }
             else
             {
-              xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
-              if (xSrc < 0)
-              {
-                xSize += xSrc;
-                xSrc = _cr->bounds.MinX;
-              }
+              /*
+               * Copy from screen.
+               */
+              xSrc = _cr->bounds.MinX;
+              ySrc = _cr->bounds.MinY;
               
-              ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
-              if (ySrc < 0)
-              {
-                ySize += ySrc;
-                ySrc = _cr->bounds.MinY;
-              }
+              if (_cr->bounds.MinX > oldcr->bounds.MinX)
+                xSize = xSize - (_cr->bounds.MinX-oldcr->bounds.MinX);
+
+              if (_cr->bounds.MinY > oldcr->bounds.MinY)
+                ySize = ySize - (_cr->bounds.MinY-oldcr->bounds.MinY);
 
               srcbm = l->rp->BitMap;
 kprintf("Using bitmap of screen!\n");
@@ -884,11 +844,228 @@ kprintf("Using bitmap of screen!\n");
 
             xDest = (_cr->bounds.MinX > oldcr->bounds.MinX) ?
                     0 :
-                    (_cr->bounds.MinX - oldcr->bounds.MinX);
+                    (oldcr->bounds.MinX - -cr->bounds.MinX);
 
             yDest = (_cr->bounds.MinY > oldcr->bounds.MinY) ?
                     0 :
-                    (_cr->bounds.MinY - oldcr->bounds.MinY);
+                    (oldcr->bounds.MinY - -cr->bounds.MinY);
+            
+            
+            if (IS_SMARTREFRESH(l))
+            {
+              /*
+               * Get a bitmap (if not there) and make a backup
+               */
+              if (NULL == _cr->BitMap)
+              {
+kprintf("Alloc bitmap!\n");
+                _cr->BitMap = AllocBitMap(
+                   _cr->bounds.MaxX - _cr->bounds.MinX + 1,
+                   _cr->bounds.MaxY - _cr->bounds.MinY + 1,
+                   display_bm->Depth,
+                   BMF_CLEAR,
+                   display_bm);
+              }
+            }
+
+kprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+            BltBitMap(srcbm,
+                      xSrc,
+                      ySrc,
+                      _cr->BitMap,
+                      xDest,
+                      yDest,
+                      xSize,
+                      ySize,
+                      0x0c0,
+                      0xff,
+                      NULL);
+kprintf("!!!!!! %s %d backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
+        __FUNCTION__,
+        __LINE__,
+        xSrc,
+        ySrc,
+        xDest,
+        yDest,
+        xSize,
+        ySize);
+
+            area-= (xSize * ySize);
+            
+          }
+        }
+        
+      }
+      _cr = _cr->Next;
+    }
+    
+    _cr = oldcr->Next;
+    if (oldcr->BitMap)
+      FreeBitMap(oldcr->BitMap);
+    _FreeClipRect(oldcr, l);
+    oldcr = _cr;
+  }
+  
+  l->ClipRect = firstcr;
+
+  /*
+   * The hid region must be subtracted from
+   * the visible region of this layer.
+   */
+  ClearRegionRegion(hide_region, l->VisibleRegion);
+
+  return TRUE;
+}
+
+/*
+ * Show any parts of the layer that overlap with the backup_region
+ * and that are not already show.
+ *
+ * This function MUST not manipulate show_region!!!!
+ */
+int _ShowPartsOfLayer(struct Layer * l, 
+                      struct Region * show_region,
+                      struct BitMap * display_bm)
+{
+  struct ClipRect * cr, * firstcr = NULL, * oldcr;
+  struct RegionRectangle * rr;
+  struct Region * r = NewRegion();
+  int invisible = FALSE;
+  
+#warning Write function to copy a region
+  OrRegionRegion(show_region,r);
+  OrRegionRegion(l->VisibleRegion,r);
+  AndRegionRegion(l->shape,r);
+  
+  /*
+   * From region r create cliprects
+   */
+  while (1)
+  {
+    rr = r->RegionRectangle;
+    while (rr)
+    {
+      cr = _AllocClipRect(l);
+      cr->bounds.MinX = rr->bounds.MinX + r->bounds.MinX;
+      cr->bounds.MinY = rr->bounds.MinY + r->bounds.MinY;
+      cr->bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
+      cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
+      cr->lobs  = invisible;
+      cr->Next  = firstcr;
+
+      firstcr = cr;
+
+      rr = rr->Next;
+    }
+
+    if (FALSE == invisible)
+    {
+      /*
+       * Flip the shape to the visible part
+       */
+      XorRegionRegion(l->shape,r);
+      invisible = TRUE;
+    }
+    else
+      break;
+  }
+  
+  DisposeRegion(r);
+  /*
+   * firstcr holds all new cliprects.
+   * lobs = TRUE means that that cr will be visible.
+   */
+  oldcr = l->ClipRect;
+
+  while (NULL != oldcr)
+  {
+    struct ClipRect * _cr = firstcr;
+    int area = RECTAREA(&oldcr->bounds);
+    while (_cr && 0 != area)
+    {
+      /*
+       * Do the two rectangles overlap?
+       */
+      if (DO_OVERLAP(&_cr->bounds,&oldcr->bounds))
+      {
+        /*
+         * Is this new one supposed to be invisible?
+         */
+        if (NULL != _cr->lobs)
+        {
+          struct BitMap * srcbm;
+          if (IS_SIMPLEREFRESH(l))
+          {
+            /*
+             * Nothing to do
+             */
+          }
+          else
+          {
+            LONG xSrc, xDest;
+            LONG ySrc, yDest;
+            LONG xSize, ySize;
+            
+            xSize = oldcr->bounds.MaxX - oldcr->bounds.MinX + 1;
+            ySize = oldcr->bounds.MaxY - oldcr->bounds.MinY + 1;
+
+            /*
+             * Does the source rect have a bitmap (off screen)
+             * or is it on the screen.
+             */            
+            if (oldcr->BitMap)
+            {
+              xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
+              if (xSrc < 0)
+              {
+                xSize += xSrc;
+                xSrc = -xSrc;
+              }
+              else
+                xSrc = 0;
+              
+              ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
+              if (ySrc < 0)
+              {
+                ySize += ySrc;
+                ySrc = -ySrc;
+              }
+              else
+                ySrc = 0;
+kprintf("Using old cr's BitMap!\n");
+              srcbm = oldcr->BitMap;
+            }
+            else
+            {
+              /*
+               * Copy from screen.
+               */
+              xSrc = _cr->bounds.MinX;
+              ySrc = _cr->bounds.MinY;
+              
+              if (_cr->bounds.MinX > oldcr->bounds.MinX)
+                xSize = xSize - (_cr->bounds.MinX-oldcr->bounds.MinX);
+
+              if (_cr->bounds.MinY > oldcr->bounds.MinY)
+                ySize = ySize - (_cr->bounds.MinY-oldcr->bounds.MinY);
+
+              srcbm = l->rp->BitMap;
+kprintf("Using bitmap of screen!\n");
+            }
+
+            if (oldcr->bounds.MaxX - _cr->bounds.MaxX > 0)
+              xSize = xSize - (oldcr->bounds.MaxX - _cr->bounds.MaxX);
+
+            if (oldcr->bounds.MaxY - _cr->bounds.MaxY > 0)
+              ySize = ySize - (oldcr->bounds.MaxY - _cr->bounds.MaxY);
+
+            xDest = (_cr->bounds.MinX > oldcr->bounds.MinX) ?
+                    0 :
+                    (oldcr->bounds.MinX - _cr->bounds.MinX);
+
+            yDest = (_cr->bounds.MinY > oldcr->bounds.MinY) ?
+                    0 :
+                    (oldcr->bounds.MinY - _cr->bounds.MinY);
             
             
             if (IS_SMARTREFRESH(l))
@@ -932,8 +1109,88 @@ kprintf("!!!!!!backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
             
           }
         }
-        
-      }
+        else
+        {
+          /*
+           * The new one is visible. if the old one was not visible
+           * then I have to show it.
+           */
+          if (IS_SIMPLEREFRESH(l))
+          {
+            /*
+             *  Nothing to do.
+             */
+          }
+          else
+          {
+            if (NULL != oldcr->lobs)
+            {
+              LONG xSrc, xDest;
+              LONG ySrc, yDest;
+              LONG xSize, ySize;
+           
+              xSize = oldcr->bounds.MaxX - oldcr->bounds.MinX + 1;
+              ySize = oldcr->bounds.MaxY - oldcr->bounds.MinY + 1;
+              /*
+               * I have to make the old one visible
+               * two cases left: SMART REFRESH and SUPERBITMAP
+               */
+
+              if (IS_SMARTREFRESH(l))
+              {
+                xSrc = (oldcr->bounds.MinX - _cr->bounds.MinX);
+                if (xSrc < 0)
+                {
+                  xSize += xSrc;
+                  xSrc = -xSrc;
+                }
+                else
+                  xSrc = 0;
+              
+                ySrc = (oldcr->bounds.MinY - _cr->bounds.MinY);
+                if (ySrc < 0)
+                {
+                  ySize += ySrc;
+                  ySrc = -ySrc;
+                }
+                else
+                  ySrc = 0;
+              }
+              else
+              {
+#warning Missing, maybe the same as above.
+              }
+
+              if (oldcr->bounds.MaxX - _cr->bounds.MaxX > 0)
+                xSize = xSize - (oldcr->bounds.MaxX - _cr->bounds.MaxX);
+
+              if (oldcr->bounds.MaxY - _cr->bounds.MaxY > 0)
+                ySize = ySize - (oldcr->bounds.MaxY - _cr->bounds.MaxY);
+
+              xDest = (_cr->bounds.MinX > oldcr->bounds.MinX) ?
+                         _cr->bounds.MinX :
+                       oldcr->bounds.MinX;
+
+              yDest = (_cr->bounds.MinY > oldcr->bounds.MinY) ?
+                         _cr->bounds.MinY :
+                       oldcr->bounds.MinY;
+
+              BltBitMap(oldcr->BitMap,
+                        xSrc,
+                        ySrc,
+                        l->rp->BitMap,
+                        xDest,
+                        yDest,
+                        xSize,
+                        ySize,
+                        0x0c0,
+                        0xff,
+                        NULL);
+              
+            } /* if was hidden cliprect */
+          } /* if is simple else ... */
+        } /* if new cliprect is visible or invisible   */
+      } /* if rectangles overlap */
       _cr = _cr->Next;
     }
     
@@ -950,7 +1207,7 @@ kprintf("!!!!!!backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
    * The hid region must be subtracted from
    * the visible region of this layer.
    */
-  ClearRegionRegion(hide_region, l->VisibleRegion);
+  OrRegionRegion(show_region, l->VisibleRegion);
 
   return TRUE;
 }
@@ -1040,7 +1297,7 @@ kprintf("\t\tClearing background! %d/%d-%d/%d\n",
 }
 
 
-ClearRegionRegion(struct Region * rd, struct Region * r)
+int ClearRegionRegion(struct Region * rd, struct Region * r)
 {
   struct RegionRectangle * rr = rd->RegionRectangle;
   while (rr) 
@@ -1053,4 +1310,18 @@ ClearRegionRegion(struct Region * rd, struct Region * r)
     ClearRectRegion(r, &rect);
     rr = rr->Next;
   }
+  
+  return TRUE;
+}
+
+struct Layer * _FindFirstFamilyMember(struct Layer * l)
+{
+  struct Layer * lastgood = l, *_l = l->front;
+  
+  while ((NULL != _l) && (_l->nesting > l->nesting))
+  {
+    lastgood = _l;
+    _l = _l->front;
+  }
+  return lastgood;
 }
