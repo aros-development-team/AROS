@@ -204,6 +204,17 @@ VOID DoMenuNotify(Object* strip, int id, void *function, void *arg)
     }
 }
 
+/**************************************************************************
+ Returns the screen title as a static buffer
+**************************************************************************/
+char *GetScreenTitle(void)
+{
+    static char title[256];
+    /* AROS probably don't have graphics mem but without it look so empty */
+    sprintf(title,"Wanderer  %ld graphics mem  %ld other mem",AvailMem(MEMF_CHIP),AvailMem(MEMF_FAST));
+    return title;
+}
+
 /* Our global variables */
 struct Library *MUIMasterBase;
 
@@ -281,6 +292,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_Window_Height,300,
 	MUIA_Window_UseBottomBorderScroller, TRUE,
 	MUIA_Window_UseRightBorderScroller, TRUE,
+	MUIA_Window_ScreenTitle, GetScreenTitle(),
 	WindowContents, VGroup,
 		MUIA_Group_Child, MUI_NewObject(MUIC_IconListview, MUIA_IconListview_UseWinBorder, TRUE, MUIA_IconListview_IconList, iconlist, TAG_DONE),
 		End,
@@ -340,6 +352,79 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 struct MUI_CustomClass *CL_IconWindow;
 
 #define IconWindowObject (Object*)NewObject(CL_IconWindow->mcc_Class, NULL
+
+
+/**************************************************************************
+ This is a custom class inheriting from the Application Class.
+ We need it support the (periodically) updating of the windows titles and
+ we don't want to open timer.device by hand.
+**************************************************************************/
+struct Wanderer_Data
+{
+    struct MUI_InputHandlerNode ihn;
+};
+
+#define MUIM_Wanderer_UpdateTitles 0x8719129
+
+STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct Wanderer_Data *data;
+
+    obj = (Object*)DoSuperMethodA(cl,obj,(Msg)msg);
+    if (!obj) return NULL;
+
+    data = (struct Wanderer_Data*)INST_DATA(cl,obj);
+
+    /* A timer input handler */
+    data->ihn.ihn_Flags = MUIIHNF_TIMER;
+
+    /* called every second (this is only for timer input handlers) */
+    data->ihn.ihn_Millis = 1000;
+
+    /* The following method of the given should be called if the
+     * event happens (one second has passed) */
+    data->ihn.ihn_Object = obj;
+    data->ihn.ihn_Method = MUIM_Wanderer_UpdateTitles;
+
+    DoMethod(obj, MUIM_Application_AddInputHandler, &data->ihn);
+    
+    return (IPTR)obj;
+}
+
+STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Wanderer_Data *data = (struct Wanderer_Data*)INST_DATA(cl,obj);
+    DoMethod(obj, MUIM_Application_RemInputHandler, &data->ihn);
+    return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+STATIC IPTR Wanderer_UpdateTitles(struct IClass *cl, Object *obj, Msg msg)
+{
+    Object *cstate = (Object*)(((struct List*)xget(obj, MUIA_Application_WindowList))->lh_Head);
+    Object *child;
+    char *scr_title = GetScreenTitle();
+
+    while ((child = NextObject(&cstate)))
+	set(child, MUIA_Window_ScreenTitle, scr_title);
+    return 0; /* irrelevant */
+}
+
+/* Use this macro for dispatchers if you don't want #ifdefs */
+BOOPSI_DISPATCHER(IPTR,Wanderer_Dispatcher,cl,obj,msg)
+{
+    switch (msg->MethodID)
+    {
+	case OM_NEW: return Wanderer_New(cl,obj,(APTR)msg);
+	case OM_DISPOSE: return Wanderer_Dispose(cl,obj,(APTR)msg);
+	case MUIM_Wanderer_UpdateTitles: return Wanderer_UpdateTitles(cl,obj,(APTR)msg);
+    }
+    return DoSuperMethodA(cl,obj,msg);
+}
+
+struct MUI_CustomClass *CL_Wanderer;
+
+#define WandererObject (Object*)NewObject(CL_Wanderer->mcc_Class, NULL
+
 
 /******** Execute Window ********/
 
@@ -599,13 +684,23 @@ int main(void)
 	return 20;
     }
 
-    app = ApplicationObject,
+    /* Create the Wanderer class which inherits from MUIC_Application (ApplicationClass) */
+    CL_Wanderer = MUI_CreateCustomClass(NULL,MUIC_Application,NULL,sizeof(struct Wanderer_Data), Wanderer_Dispatcher);
+    if (!CL_Wanderer)
+    {
+	MUI_DeleteCustomClass(CL_IconWindow);
+	CloseLibrary(MUIMasterBase);
+	return 20;
+    }
+
+    app = WandererObject,
     	SubWindow, root_iconwnd = IconWindowObject,
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
 	    MUIA_Window_LeftEdge, 0,
 	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
 	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
 	    MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+	    MUIA_Window_ScreenTitle, GetScreenTitle(),
             MUIA_IconWindow_IsRoot, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
 	    End,
@@ -659,6 +754,7 @@ int main(void)
 	MUI_DisposeObject(app);
     }
 
+    MUI_DeleteCustomClass(CL_Wanderer);
     MUI_DeleteCustomClass(CL_IconWindow);
 /*    CloseLibrary(MUIMasterBase);*/
     closemuimaster();
