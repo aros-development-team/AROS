@@ -6,8 +6,7 @@
     Lang: english
 */
 
-#define ENABLE_RT		1
-#define ENABLE_RT_INTUITION	0
+#define ENABLE_RT	1
 
 #include <aros/rt.h>
 
