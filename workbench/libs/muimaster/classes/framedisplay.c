@@ -110,7 +110,7 @@ IPTR Framedisplay__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_As
 IPTR Framedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct Framedisplay_DATA *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *zframe;
+    const struct ZuneFrameGfx *zframe;
     APTR region;
     WORD ileft, itop, iright, ibottom;
     int i;

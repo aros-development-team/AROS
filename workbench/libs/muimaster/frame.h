@@ -66,9 +66,9 @@ struct ZuneFrameGfx {
     UWORD  ibottom;
 };
 
-struct ZuneFrameGfx *zune_zframe_get (struct MUI_FrameSpec_intern *frameSpec);
-struct ZuneFrameGfx *zune_zframe_get_with_state (struct MUI_FrameSpec_intern *frameSpec,
-						 UWORD state);
+const struct ZuneFrameGfx *zune_zframe_get (const struct MUI_FrameSpec_intern *frameSpec);
+const struct ZuneFrameGfx *zune_zframe_get_with_state (const struct MUI_FrameSpec_intern *frameSpec,
+			  			       UWORD state);
 
 BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
 				STRPTR spec);

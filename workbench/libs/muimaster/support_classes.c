@@ -77,7 +77,7 @@ BOOL DestroyClasses(struct Library *MUIMasterBase)
     return TRUE;
 }
 
-static const struct __MUIBuiltinClass *builtins[] =
+static const struct __MUIBuiltinClass * const builtins[] =
 {
     &_MUI_Notify_desc,
     &_MUI_Family_desc,

@@ -144,7 +144,7 @@ static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *knob_frame;
+    const struct ZuneFrameGfx *knob_frame;
     LONG min;
     LONG max;
     LONG val;
@@ -280,7 +280,7 @@ static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *knob_frame;
+    const struct ZuneFrameGfx *knob_frame;
     int knob_frame_state;
     LONG val;
     char *buf;

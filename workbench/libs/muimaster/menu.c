@@ -143,7 +143,7 @@ struct MenuHandlerData
 #define ITEXT_EXTRA_TOP    1
 #define ITEXT_EXTRA_BOTTOM 1
 
-static const char *subitemindicator = "»";
+static const char subitemindicator[] = "»";
 
 /**************************************************************************************************/
 
@@ -644,7 +644,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd)
         mhd->nummenubaritems++;
     }
     
-    mhd->menubaritemwidth  = maxw + TextLength(temprp, (char *)subitemindicator, 1) + 
+    mhd->menubaritemwidth  = maxw + TextLength(temprp, subitemindicator, 1) + 
     			     TEXT_AMIGAKEY_SPACING +
     			     ITEXT_EXTRA_LEFT +
 			     ITEXT_EXTRA_RIGHT;
@@ -761,11 +761,11 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd)
 #if MENUS_UNDERMOUSE
     if (menu->FirstItem)
     {
-        WORD silen = TextLength(rp, (char *)subitemindicator, 1);
+        WORD silen = TextLength(rp, subitemindicator, 1);
 	WORD x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - ITEXT_EXTRA_RIGHT - silen;
 	
 	Move(rp, x2, y + rp->TxBaseline);
-	Text(rp, (char *)subitemindicator, 1);
+	Text(rp, subitemindicator, 1);
     }
 #endif
 

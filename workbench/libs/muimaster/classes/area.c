@@ -108,8 +108,8 @@ static const int __revision = 1;
 //static STRPTR zune_area_to_string (Object *area);
 //#endif
 static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
-				   struct MUI_FrameSpec_intern *frame,
-				   struct ZuneFrameGfx *zframe);
+				   const struct MUI_FrameSpec_intern *frame,
+				   const struct ZuneFrameGfx *zframe);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
@@ -748,8 +748,8 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *zframe;
-    struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    const struct ZuneFrameGfx *zframe;
+    const struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
 
     zframe = zune_zframe_get(frame);
 
@@ -872,7 +872,7 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
  * draw object background if MADF_FILLAREA.
  */
 static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data, ULONG flags,
-					 struct ZuneFrameGfx *zframe, WORD frame_top)
+					 const struct ZuneFrameGfx *zframe, WORD frame_top)
 {
     struct MUI_ImageSpec_intern *background;
     int bgtop, bgleft, bgw, bgh;
@@ -931,7 +931,7 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
  * draw object frame + title if not MADF_FRAMEPHANTOM.
  */
 static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
-				    struct ZuneFrameGfx *zframe, WORD frame_top)
+				    const struct ZuneFrameGfx *zframe, WORD frame_top)
 {
     APTR textdrawclip = (APTR)-1;
     struct Region *region;
@@ -1044,7 +1044,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *zframe;
+    const struct ZuneFrameGfx *zframe;
     struct TextFont *obj_font = NULL;
     WORD frame_top = _top(obj);
     //APTR areaclip;
@@ -1067,7 +1067,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
  */
     {
 	/* on selected state, will get the opposite frame */
-	struct MUI_FrameSpec_intern *frame;
+	const struct MUI_FrameSpec_intern *frame;
 	int state;
 
 	frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
@@ -1235,8 +1235,8 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *zframe;
-    struct MUI_FrameSpec_intern *frame;
+    const struct ZuneFrameGfx *zframe;
+    const struct MUI_FrameSpec_intern *frame;
 
     muiRenderInfo(obj) = msg->RenderInfo;
 
@@ -1864,7 +1864,7 @@ static ULONG Area_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_Cr
     struct MUI_DragImage *img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage),MEMF_CLEAR);
     if (img)
     {
-    	struct ZuneFrameGfx *zframe;
+    	const struct ZuneFrameGfx *zframe;
 	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
 	zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
@@ -1954,8 +1954,8 @@ static ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFin
  * Inner dimensions being clamped to 0..32, it shouldnt cause too much harm
  */
 static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
-				   struct MUI_FrameSpec_intern *frame,
-				   struct ZuneFrameGfx *zframe)
+				   const struct MUI_FrameSpec_intern *frame,
+				   const struct ZuneFrameGfx *zframe)
 {
 
 /*      if (XGET(obj, MUIA_UserData) == 42) */
@@ -2039,8 +2039,8 @@ static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
 static ULONG Area_UpdateInnerSizes(struct IClass *cl, Object *obj, struct MUIP_UpdateInnerSizes *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
-    struct ZuneFrameGfx *zframe;
-    struct MUI_FrameSpec_intern *frame;
+    const struct ZuneFrameGfx *zframe;
+    const struct MUI_FrameSpec_intern *frame;
 
     if (_flags(obj) & MADF_SETUP)
     {

@@ -502,7 +502,7 @@ struct vector_image
     VECTOR_DRAW_FUNC draw_func;
 };
 
-static struct vector_image vector_table[] =
+static const struct vector_image vector_table[] =
 {
     { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowup_draw },
     { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowdown_draw },
