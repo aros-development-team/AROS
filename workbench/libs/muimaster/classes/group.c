@@ -1023,9 +1023,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     msg->MinMaxInfo->MinWidth += tmp.MinWidth; \
     msg->MinMaxInfo->MinHeight += tmp.MinHeight; \
     msg->MinMaxInfo->MaxWidth += tmp.MaxWidth; \
-    msg->MinMaxInfo->MaxWidth = MIN(msg->MinMaxInfo->MaxWidth, MUI_MAXMAX); \
     msg->MinMaxInfo->MaxHeight += tmp.MaxHeight; \
-    msg->MinMaxInfo->MaxHeight = MIN(msg->MinMaxInfo->MaxHeight, MUI_MAXMAX); \
     msg->MinMaxInfo->DefWidth += tmp.DefWidth; \
     msg->MinMaxInfo->DefHeight += tmp.DefHeight;
 
@@ -1193,6 +1191,8 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 	req->MinHeight += min_h;
 	req->DefHeight += def_h;
 	req->MaxHeight += max_h;
+	if (req->MaxHeight > MUI_MAXMAX)
+	    req->MaxHeight = MUI_MAXMAX;
     }
 }
 
@@ -1245,6 +1245,8 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	req->MinWidth += min_w;
 	req->DefWidth += def_w;
 	req->MaxWidth += max_w;
+	if (req->MaxWidth > MUI_MAXMAX)
+	    req->MaxWidth = MUI_MAXMAX;
     }
 }
 
