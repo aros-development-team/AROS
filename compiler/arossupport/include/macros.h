@@ -16,6 +16,8 @@
 #if AROS_BIG_ENDIAN
 #   define AROS_WORD2BE(w)     (w)
 #   define AROS_LONG2BE(l)     (l)
+#   define AROS_BE2WORD(w)     (w)
+#   define AROS_BE2LONG(l)     (l)
 #else
 #   define AROS_WORD2BE(w)     ((((w) >> 8) & 0x00FF) | (((w) & 0x00FF) << 8))
 #   define AROS_LONG2BE(l)     \
@@ -25,6 +27,8 @@
 	    ((((unsigned long)(l)) <<  8) & 0x00FF0000UL) | \
 	    ((((unsigned long)(l)) << 24) & 0xFF000000UL)   \
 	)
+#   define AROS_BE2WORD(w)     AROS_WORD2BE(w)
+#   define AROS_BE2LONG(l)     AROS_LONG2BE(l)
 #endif
 
 /* Return the least set bit, ie. 0xFF00 will return 0x0100 */
