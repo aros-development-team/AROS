@@ -92,9 +92,13 @@ fi
 mail_stop
 
 printi "Compressing log files..."
-for file in $LOG_BASE/*.log; do
+pushd
+cd $LOG_BASE
+for file in *.log; do
     bzip2 $file
+    md5sum $file.bz2 >$file.bz2.md5
 done
+popd
 
 # Prune old nightly builds
 find Archive/ -maxdepth 1 -ctime +2 | xargs rm -rf
