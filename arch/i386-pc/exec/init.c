@@ -27,6 +27,7 @@
 #include <exec/resident.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
+#include <exec/io.h>
 #include <proto/exec.h>
 
 unsigned long Memory;	/* Size of whole memory */
@@ -162,10 +163,10 @@ int main()
     } while (temp==0xDEADBEEF);
     Memory24=(Memory>0x01000000) ? 0x01000000 : Memory;
 
-    DetectCPU();
-
     InitGfxAROS();
     
+    DetectCPU();
+
     AROS_InfoText(0,(char*)&text0);
     AROS_InfoText(1,"4.0 ROM\n");
     sprintf((char*)&text1,"CPU: %s %ldMHz\n",
@@ -234,6 +235,31 @@ int main()
 
     /* Enter SAD */
     Debug(0);
+
+    /* Small kbdhidd test */
+    {
+	struct IORequest *io;
+	struct MsgPort *mp;
+
+	kprintf("Opening kbd.hidd\n");
+	kprintf("Got: %08.8lx\n",OpenLibrary("kbd.hidd",0));
+	mp=CreateMsgPort();
+	io=CreateIORequest(mp,sizeof(struct IOStdReq));
+	kprintf("Result of opening device %d\n",
+	    OpenDevice("keyboard.device",0,io,0));
+	kprintf("Doing CMD_HIDDINIT...\n");
+	{
+	    #define ioStd(x) ((struct IOStdReq *)x)
+	    UBYTE *data;
+	    data = AllocMem(100, MEMF_PUBLIC);
+	    strcpy(data, "hidd.kbd.hw");
+	    ioStd(io)->io_Command=32000;
+	    ioStd(io)->io_Data=data;
+	    ioStd(io)->io_Length=strlen(data);
+	    DoIO(io);
+	    kprintf("Got io_ERROR=%d",io->io_Error);
+	}
+    }
 
     /*
 	All done. In normal cases CPU should never reach this instuctions
