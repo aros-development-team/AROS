@@ -69,6 +69,7 @@ struct MUI_WindowData
     struct MUI_RenderInfo wd_RenderInfo;
     struct MUI_MinMax     wd_MinMax;
     struct IBox    wd_AltDim;       /* zoomed dimensions */
+    BOOL           wd_ZoomGadget;   /* enable/disable zoomgadget (altdim stuff) */
     APTR           wd_MemoryPool;   /* for nodes and stuff to deallocate at OM_DISPOSE */
     struct MinList wd_CycleChain;   /* objects activated with tab */
     struct MinList wd_EHList;       /* event handlers */
@@ -495,7 +496,9 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
             WA_RMBTrap   :
             TAG_IGNORE,         (IPTR) TRUE,
         WA_Gadgets,             (IPTR) data->wd_VertProp,
-        WA_Zoom,                (IPTR) &altdims,
+        data->wd_ZoomGadget ?
+            WA_Zoom         :
+            TAG_IGNORE,         (IPTR) &altdims,
         backfill,               (IPTR) LAYERS_NOBACKFILL,
         TAG_DONE
     );
@@ -2346,7 +2349,7 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET 
                       | WFLG_CLOSEGADGET | WFLG_SIMPLE_REFRESH 
                       | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
-
+    data->wd_ZoomGadget = TRUE;
     data->wd_Events = GetDefaultEvents();
     data->wd_ActiveObject = NULL;
     data->wd_ID = 0;
@@ -2384,7 +2387,11 @@ static IPTR Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_SizeGadget:
 		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
 		break;
-
+            
+            case MUIA_Window_ZoomGadget:
+                data->wd_ZoomGadget = tag->ti_Data;
+                break;
+            
 	    case MUIA_Window_Backdrop:
 		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
 		break;
