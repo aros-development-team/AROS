@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/09/13 17:51:23  digulla
+    Use IPTR
+
     Revision 1.9  1996/09/11 16:56:16  digulla
     Move PurgeChunk() to aros.lib
 
@@ -107,11 +110,11 @@ extern void PurgeChunk (ULONG *, ULONG);
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
     /* Align size to the requirements */
-    byteSize+=(ULONG)memoryBlock&(MEMCHUNK_TOTAL-1);
+    byteSize+=(IPTR)memoryBlock&(MEMCHUNK_TOTAL-1);
     byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
 
     /* Align the block as well */
-    memoryBlock=(APTR)((ULONG)memoryBlock&~(MEMCHUNK_TOTAL-1));
+    memoryBlock=(APTR)((IPTR)memoryBlock&~(MEMCHUNK_TOTAL-1));
 
     /* Start and end(+1) of the block */
     p3=(struct MemChunk *)memoryBlock;
@@ -167,7 +170,7 @@ extern void PurgeChunk (ULONG *, ULONG);
 		    2. The end (+1) of the current MemChunk
 		       must be lower than the start of the next one.
 		*/
-		if(  ((ULONG)p2|p2->mc_Bytes)&(MEMCHUNK_TOTAL-1)
+		if(  ((IPTR)p2|p2->mc_Bytes)&(MEMCHUNK_TOTAL-1)
 		    ||(  (UBYTE *)p2+p2->mc_Bytes>=(UBYTE *)p2->mc_Next
 			&&p2->mc_Next!=NULL))
 		    Alert(AN_MemCorrupt|AT_DeadEnd);

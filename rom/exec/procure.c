@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:23  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:56:05  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -75,7 +78,7 @@
     Forbid();
 
     /* Try to get the semaphore immediately. */
-    if((ULONG)bidMsg->ssm_Message.mn_Node.ln_Name==SM_SHARED?
+    if((IPTR)(bidMsg->ssm_Message.mn_Node.ln_Name)==SM_SHARED?
        AttemptSemaphoreShared(sigSem):AttemptSemaphore(sigSem))
     {
 	/* Got it. Reply the message. */

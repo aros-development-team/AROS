@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/13 17:52:11  digulla
+    Use IPTR
+
     Revision 1.5  1996/09/12 14:47:55  digulla
     More stack
 
@@ -334,7 +337,7 @@ static void tinymain(void)
     LONG error=0;
 
     lb.file=Input();
-    rda=ReadArgs("FROM,COMMAND/K/F",(ULONG *)args,NULL);
+    rda=ReadArgs("FROM,COMMAND/K/F",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	if(args[1])

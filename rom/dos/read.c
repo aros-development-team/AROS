@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:50:08  digulla
+    Use IPTR
+
     Revision 1.3  1996/08/13 13:52:50  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -80,23 +83,23 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_READ;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=(LONG)buffer;
+    iofs->io_Args[0]=(IPTR)buffer;
     iofs->io_Args[1]=length;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     /* Set error code and return */
     if((me->pr_Result2=iofs->io_DosError))
-        return -1;    
+	return -1;
     else
-        return iofs->io_Args[1];
-    
+	return iofs->io_Args[1];
+
     __AROS_FUNC_EXIT
 } /* Read */

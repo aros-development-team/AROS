@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/13 17:57:05  digulla
+    Use IPTR
+
     Revision 1.2  1996/09/12 14:52:01  digulla
     Use correct way to access external names (was missing)
 
@@ -147,7 +150,7 @@ struct hnode
 struct filehandle
 {
     struct dnode *node;
-    ULONG position;
+    IPTR position;
 };
 
 int entry(void)
@@ -1079,7 +1082,7 @@ static LONG examine(struct fnode *file, struct ExAllData *ead, ULONG size, ULONG
 		    break;
 	    }
 	case 0:
-	    ead->ed_Next=(struct ExAllData *)(((ULONG)next+PTRALIGN-1)&~(PTRALIGN-1));
+	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+PTRALIGN-1)&~(PTRALIGN-1));
     }
     return 0;
 }
@@ -1111,7 +1114,7 @@ static LONG examine_all(struct filehandle *dir, struct ExAllData *ead, ULONG siz
 		return error;
 	    ent->usecount++;
 	    last->ed_Next=NULL;
-	    dir->position=(ULONG)ent;
+	    dir->position=(IPTR)ent;
 	    return 0;
 	}
 	last=ead;
@@ -1119,7 +1122,7 @@ static LONG examine_all(struct filehandle *dir, struct ExAllData *ead, ULONG siz
 	ent=(struct fnode *)ent->node.mln_Succ;
     }while(ent->node.mln_Succ!=NULL);
     last->ed_Next=NULL;
-    dir->position=(ULONG)ent;
+    dir->position=(IPTR)ent;
     return 0;
 }
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/09/13 17:57:08  digulla
+    Use IPTR
+
     Revision 1.8  1996/08/30 17:00:59  digulla
     Tried a timer with higher resolution to have 50 task switches per second,
     but it crashes. If someone wants to debug it, define ENABLE_TIMER and compile
@@ -170,7 +173,7 @@ int main(int argc,char *argv[])
     mh.mh_Node.ln_Pri =0;
     mh.mh_Attributes  =MEMF_FAST|MEMF_PUBLIC; /* Public to my emulation */
     mh.mh_First=(struct MemChunk *)
-		(((ULONG)memory+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1));
+		(((IPTR)memory+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1));
     mh.mh_First->mc_Next=NULL;
     mh.mh_First->mc_Bytes=MEMSIZE;
     mh.mh_Lower=mh.mh_First;
@@ -323,10 +326,10 @@ int main(int argc,char *argv[])
 
 	struct TagItem bootprocess[]=
 	{
-	    { NP_Entry, (ULONG)boot },
+	    { NP_Entry, (IPTR)boot },
 	    { NP_Input, MKBADDR(fh_stdin) },
 	    { NP_Output, MKBADDR(fh_stdout) },
-	    { NP_Name, (ULONG)"Boot process" },
+	    { NP_Name, (IPTR)"Boot process" },
 	    { NP_StackSize, 8000 }, /* linux's printf needs that much. */
 	    { NP_Cli, 1 },
 	    { TAG_END, 0 }

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:22  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:55:59  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -69,9 +72,9 @@
 	the misaligned leading bytes of the source first. I use sizeof(LONG)
 	instead of LONGALIGN because it is sometimes faster.
     */
-    mis =(ULONG)src&(sizeof(LONG)-1);
+    mis =(IPTR)src&(sizeof(LONG)-1);
     if(mis>size)
-        mis=size;
+	mis=size;
     size-=mis;
 
     if(mis)
@@ -83,7 +86,7 @@
 	The source has the right alignment now. All I need to do is to
 	check if this is true for the destination, too.
     */
-    if(!((ULONG)dst&(LONGALIGN-1)))
+    if(!((IPTR)dst&(LONGALIGN-1)))
     {
 	/* Yes. I may copy LONGs. */
 	LONG *s=(LONG *)src,*d=(LONG *)dst;

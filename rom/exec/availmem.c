@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:22  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:55:58  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -108,7 +111,7 @@
 			    2. The end (+1) of the current MemChunk
 			       must be lower than the start of the next one.
 			*/
-			if(  ((ULONG)mc|mc->mc_Bytes)&(sizeof(struct MemChunk)-1)
+			if(  ((IPTR)mc|mc->mc_Bytes)&(sizeof(struct MemChunk)-1)
 			   ||(  (UBYTE *)mc+mc->mc_Bytes>=(UBYTE *)mc->mc_Next
 			      &&mc->mc_Next!=NULL))
 			    Alert(AT_DeadEnd|AN_MemoryInsane);

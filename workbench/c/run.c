@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:52:11  digulla
+    Use IPTR
+
     Revision 1.3  1996/08/01 17:40:45  digulla
     Added standard header for all files
 
@@ -45,7 +48,7 @@ static LONG tinymain(void)
     ULONG num;
     LONG error=0;
 
-    rda=ReadArgs("COMMAND/A/F",(ULONG *)args,NULL);
+    rda=ReadArgs("COMMAND/A/F",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	error=RETURN_ERROR;
@@ -68,7 +71,7 @@ static LONG tinymain(void)
 		    {
 			struct TagItem tags[]=
 			{
-			    { NP_Name, (LONG)"Background task" },
+			    { NP_Name, (IPTR)"Background task" },
 			    { NP_Arguments, 0 },
 			    { NP_Input, 0 },
 			    { NP_Output, 0 },
@@ -77,7 +80,7 @@ static LONG tinymain(void)
 			    { NP_Cli, 1 },
 			    { TAG_END, 0 }
 			};
-			tags[1].ti_Data=(LONG)buf;
+			tags[1].ti_Data=(IPTR)buf;
 			tags[2].ti_Data=in;
 			tags[3].ti_Data=out;
 			tags[5].ti_Data=shell;

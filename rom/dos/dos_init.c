@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/13 17:50:06  digulla
+    Use IPTR
+
     Revision 1.5  1996/09/12 14:52:03  digulla
     Use correct way to access external names (was missing)
 
@@ -102,10 +105,10 @@ __AROS_LH2(struct DosLibrary *, init,
     {
 	static const struct TagItem tags[]=
 	{
-	    { NP_Entry, (LONG)LDDemon },
+	    { NP_Entry, (IPTR)LDDemon },
 	    { NP_Input, 0 },
 	    { NP_Output, 0 },
-	    { NP_Name, (LONG)"lib & dev loader demon" },
+	    { NP_Name, (IPTR)"lib & dev loader demon" },
 	    { TAG_END, 0 }
 	};
 	dosBase->dl_LDDemon=CreateNewProc((struct TagItem *)tags);

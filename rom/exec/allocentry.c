@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:22  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:55:57  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -72,7 +75,7 @@ __AROS_LH1(struct MemList *, AllocEntry,
     ret=(struct MemList *)AllocMem(mlsize,MEMF_PUBLIC);
 
     /* Check nasty case where the returncode is misleading :-( */
-    if((ULONG)ret&0x80ul<<(sizeof(APTR)-1)*8)
+    if((IPTR)ret&0x80ul<<(sizeof(APTR)-1)*8)
     {
 	FreeMem(ret,mlsize);
 	ret=NULL;
@@ -99,7 +102,7 @@ __AROS_LH1(struct MemList *, AllocEntry,
 	{
 	    /* No. Set returncode to "none of the 'ml_ME[i].me_Reqs' memory". */
 	    entry=(struct MemList *)
-		  ((ULONG)entry->ml_ME[i].me_Reqs|0x80ul<<(sizeof(APTR)-1)*8);
+		  ((IPTR)entry->ml_ME[i].me_Reqs|0x80ul<<(sizeof(APTR)-1)*8);
 
 	    /* Free everything allocated until now... */
 	    for(;i-->0;)

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:50:06  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:52:45  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -119,7 +122,7 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_EXAMINE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=(LONG)buffer;
+    iofs->io_Args[0]=(IPTR)buffer;
     iofs->io_Args[1]=512;
     iofs->io_Args[2]=ED_OWNER;
 

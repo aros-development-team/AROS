@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:23  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:56:03  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -153,13 +156,13 @@
 	{
 	    case 0:
 		/* Align pointer to LONG requirements */
-		it =(UBYTE *)(((ULONG)it +LONGALIGN-1)&~(LONGALIGN-1));
-		dst=(UBYTE *)(((ULONG)dst+LONGALIGN-1)&~(LONGALIGN-1));
+		it =(UBYTE *)(((IPTR)it +LONGALIGN-1)&~(LONGALIGN-1));
+		dst=(UBYTE *)(((IPTR)dst+LONGALIGN-1)&~(LONGALIGN-1));
 		break;
 	    case 1:
 		/* Same for WORDs */
-		it =(UBYTE *)(((ULONG)it +WORDALIGN-1)&~(WORDALIGN-1));
-		dst=(UBYTE *)(((ULONG)dst+WORDALIGN-1)&~(WORDALIGN-1));
+		it =(UBYTE *)(((IPTR)it +WORDALIGN-1)&~(WORDALIGN-1));
+		dst=(UBYTE *)(((IPTR)dst+WORDALIGN-1)&~(WORDALIGN-1));
 		break;
 	    case 2:
 		/* Nothing to do for bytes */
@@ -248,7 +251,7 @@
 	}
 
 	/* Align next instruction byte */
-	it=(UBYTE *)(((ULONG)it+LONGALIGN-1)&~(LONGALIGN-1));
+	it=(UBYTE *)(((IPTR)it+LONGALIGN-1)&~(LONGALIGN-1));
     }
     __AROS_FUNC_EXIT
 }

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/13 17:52:11  digulla
+    Use IPTR
+
     Revision 1.2  1996/08/01 17:40:45  digulla
     Added standard header for all files
 
@@ -27,8 +30,8 @@ LONG entry(struct ExecBase *sysbase)
     DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(DOSBase!=NULL)
     {
-        error=tinymain();
-        CloseLibrary((struct Library *)DOSBase);
+	error=tinymain();
+	CloseLibrary((struct Library *)DOSBase);
     }
     return error;
 }
@@ -36,7 +39,7 @@ LONG entry(struct ExecBase *sysbase)
 static LONG tinymain(void)
 {
     struct RDArgs *rda;
-    ULONG args[6]={ 0, 0, 0, 0, 0, 0 };
+    IPTR args[6]={ 0, 0, 0, 0, 0, 0 };
 
     rda=ReadArgs("PATH/M,ADD/S,SHOW/S,RESET/S,REMOVE/S,QUIET/S",args,NULL);
     if(rda!=NULL)
@@ -60,13 +63,13 @@ static LONG tinymain(void)
 	    next[1]=Lock(*names,SHARED_LOCK);
 	    if(!next[1])
 	    {
-	        FreeVec(next);
-	        break;
+		FreeVec(next);
+		break;
 	    }
 	    cur[0]=MKBADDR(next);
 	    cur=next;
 	    if(!args[5])
-	        VPrintf("%s added.\n",(ULONG *)names);
+		VPrintf("%s added.\n",(ULONG *)names);
 	    names++;
 	}
 	cur[0]=0;

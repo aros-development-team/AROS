@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:23  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:56:05  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -90,7 +93,7 @@
 {
     __AROS_FUNC_INIT
     /* Cast for easier access */
-    ULONG stream=(ULONG)DataStream;
+    ULONG stream=(IPTR)DataStream;
 
     /* As long as there is something to format left */
     while(*FormatString)
@@ -146,13 +149,13 @@
 	    /* Get minimal width */
 	    if(*FormatString>='0'&&*FormatString<='9')
 	    {
-	        do
+		do
 		    minwidth=minwidth*10+(*FormatString++-'0');
-	        while(*FormatString>='0'&&*FormatString<='9');
+		while(*FormatString>='0'&&*FormatString<='9');
 
-	        /* Dot following width modifier? */
-	        if(*FormatString=='.')
-	        {
+		/* Dot following width modifier? */
+		if(*FormatString=='.')
+		{
 		    FormatString++;
 		    /* Get maximum width */
 		    if(*FormatString>='0'&&*FormatString<='9')
@@ -163,12 +166,12 @@
 			while(*FormatString>='0'&&*FormatString<='9');
 		    }
 		}
-	        else
-	        {
+		else
+		{
 		    /* No. It was in fact a maxwidth modifier */
 		    maxwidth=minwidth;
 		    minwidth=0;
-	        }
+		}
 	    }
 
 	    /* 'l' modifier? (long argument) */

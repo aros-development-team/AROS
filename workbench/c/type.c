@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:52:11  digulla
+    Use IPTR
+
     Revision 1.3  1996/08/13 15:34:04  digulla
     #include <exec/execbase.h> was missing
 
@@ -263,7 +266,7 @@ LONG dumpfile(struct file *in, struct file *out)
 
 LONG tinymain(void)
 {
-    ULONG args[5]={ 0, 0, 0, 0, 0 };
+    IPTR args[5]={ 0, 0, 0, 0, 0 };
     struct RDArgs *rda;
     struct file *in, *out;
     STRPTR *names;

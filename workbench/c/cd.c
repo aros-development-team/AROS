@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:52:09  digulla
+    Use IPTR
+
     Revision 1.3  1996/08/13 15:34:04  digulla
     #include <exec/execbase.h> was missing
 
@@ -48,7 +51,7 @@ static LONG tinymain(void)
     struct FileInfoBlock *fib;
     LONG error=0;
 
-    rda=ReadArgs("DIR",(ULONG *)args,NULL);
+    rda=ReadArgs("DIR",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	if(args[0])

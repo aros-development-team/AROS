@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/13 17:50:07  digulla
+    Use IPTR
+
     Revision 1.5  1996/09/11 13:02:22  digulla
     Open() and Lock() are two different functions now (M. Fleischer)
 
@@ -126,13 +129,13 @@
 	{
 	    iofs->IOFS.io_Device=((struct FileHandle *)MKBADDR(con))->fh_Device;
 	    iofs->IOFS.io_Unit	=((struct FileHandle *)MKBADDR(con))->fh_Unit;
-	    iofs->io_Args[0]=(LONG)"";
+	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
 	}else if(!Stricmp(name,"*"))
 	{
 	    iofs->IOFS.io_Device=((struct FileHandle *)MKBADDR(ast))->fh_Device;
 	    iofs->IOFS.io_Unit	=((struct FileHandle *)MKBADDR(ast))->fh_Unit;
-	    iofs->io_Args[0]=(LONG)"";
+	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
 	}else
 	    (void)DoName(iofs,name);

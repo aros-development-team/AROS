@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/13 17:51:22  digulla
+    Use IPTR
+
     Revision 1.6  1996/08/23 17:06:56  digulla
     Began work on ressource tracking
 
@@ -145,7 +148,7 @@
 		    {
 #if !defined(NO_CONSISTENCY_CHECKS)
 			/* Consistency check: Check alignment restrictions */
-			if( ((ULONG)p2|(ULONG)p2->mc_Bytes)
+			if( ((IPTR)p2|(ULONG)p2->mc_Bytes)
 			   & (MEMCHUNK_TOTAL-1) )
 			    Alert(AN_MemCorrupt|AT_DeadEnd);
 #endif

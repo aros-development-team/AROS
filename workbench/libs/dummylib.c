@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:57:09  digulla
+    Use IPTR
+
     Revision 1.4  1996/09/12 14:52:04  digulla
     Use correct way to access external names (was missing)
 
@@ -97,11 +100,11 @@ struct inittable
 const struct inittable datatable=
 {
     { { I_CPYO(1,B,O(library.lib_Node.ln_Type)), { NT_LIBRARY } } },
-    { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (LONG)name } } },
+    { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
     { { I_CPYO(1,W,O(library.lib_Version     )), { 1 } } },
     { { I_CPYO(1,W,O(library.lib_Revision    )), { 0 } } },
-    { { I_CPYO(1,L,O(library.lib_IdString    )), { (LONG)&version[6] } } },
+    { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
 	I_END ()
 };
 

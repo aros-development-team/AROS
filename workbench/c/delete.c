@@ -19,8 +19,8 @@ LONG entry(struct ExecBase *sysbase)
     DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(DOSBase!=NULL)
     {
-        error=tinymain();
-        CloseLibrary((struct Library *)DOSBase);
+	error=tinymain();
+	CloseLibrary((struct Library *)DOSBase);
     }
     return error;
 }
@@ -30,11 +30,11 @@ static LONG tinymain(void)
     STRPTR args[1]={ 0 };
     struct RDArgs *rda;
     LONG error=0;
-    
-    rda=ReadArgs("FILE/A",(ULONG *)args,NULL);
+
+    rda=ReadArgs("FILE/A",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
-        DeleteFile(args[0]);
+	DeleteFile(args[0]);
 	FreeArgs(rda);
     }else
 	error=RETURN_FAIL;

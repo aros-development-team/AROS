@@ -32,7 +32,7 @@ static LONG tinymain(void)
     BPTR dir;
     LONG error=0;
 
-    rda=ReadArgs("DEVICE/A,DIR/A",(ULONG *)args,NULL);
+    rda=ReadArgs("DEVICE/A,DIR/A",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	dir=Lock(args[1],SHARED_LOCK);

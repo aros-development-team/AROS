@@ -2,13 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/09/13 17:57:07  digulla
+    Use IPTR
+
     Revision 1.9  1996/09/13 04:23:23  aros
     Define FreeBSD should have been __FreeBSD__ (sorry my fault).
 
     Revision 1.8  1996/09/11 16:54:24  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.7  1996/09/11 14:40:10  digulla
     Integrated patch by I. Templeton: Under FreeBSD, there is a clash with
@@ -433,7 +436,7 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 		    break;
 	    }
 	case 0:
-	    ead->ed_Next=(struct ExAllData *)(((ULONG)next+PTRALIGN-1)&~(PTRALIGN-1));
+	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+PTRALIGN-1)&~(PTRALIGN-1));
 	    return 0;
     }
 }

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/13 17:50:06  digulla
+    Use IPTR
+
     Revision 1.1  1996/09/11 12:54:45  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -29,26 +32,26 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name)
 
     if(!Strnicmp(name,"PROGDIR:",8))
     {
-        cur=me->pr_HomeDir;
-        volname=NULL;
-        pathname=name+8;
+	cur=me->pr_HomeDir;
+	volname=NULL;
+	pathname=name+8;
     }else
     {
-        /* Copy volume name */
-        cur=me->pr_CurrentDir;
-        s1=name;
-        pathname=name;
-        volname=NULL;
-        while(*s1)
-    	    if(*s1++==':')
-    	    {
-	        volname=(STRPTR)AllocMem(s1-name,MEMF_ANY);
-	        if(volname==NULL)
-	            return me->pr_Result2=ERROR_NO_FREE_STORE;
-	        CopyMem(name,volname,s1-name-1);
-	        volname[s1-name-1]=0;
-	        pathname=s1;
-	        break;
+	/* Copy volume name */
+	cur=me->pr_CurrentDir;
+	s1=name;
+	pathname=name;
+	volname=NULL;
+	while(*s1)
+	    if(*s1++==':')
+	    {
+		volname=(STRPTR)AllocMem(s1-name,MEMF_ANY);
+		if(volname==NULL)
+		    return me->pr_Result2=ERROR_NO_FREE_STORE;
+		CopyMem(name,volname,s1-name-1);
+		volname[s1-name-1]=0;
+		pathname=s1;
+		break;
 	    }
     }
 
@@ -77,12 +80,12 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name)
     }
 
     iofs->IOFS.io_Device =device;
-    iofs->IOFS.io_Unit   =unit;
-    iofs->io_Args[0]=(LONG)pathname;
+    iofs->IOFS.io_Unit	 =unit;
+    iofs->io_Args[0]=(IPTR)pathname;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     if(dl!=NULL)
 	UnLockDosList(LDF_ALL|LDF_READ);
 

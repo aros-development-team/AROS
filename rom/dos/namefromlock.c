@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:50:07  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:52:49  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -144,7 +147,7 @@
 	/* Read name of current lock (into the user supplied buffer) */
 	iofs->IOFS.io_Unit=curlock;
 	iofs->IOFS.io_Command=FSA_EXAMINE;
-	iofs->io_Args[0]=(LONG)buffer;
+	iofs->io_Args[0]=(IPTR)buffer;
 	iofs->io_Args[1]=name-buffer;
 	iofs->io_Args[2]=ED_TYPE;
 	DoIO(&iofs->IOFS);
@@ -169,7 +172,7 @@
 	if(!error&&ead->ed_Type!=ST_ROOT)
 	{
 	    iofs->IOFS.io_Command=FSA_OPEN;
-	    iofs->io_Args[0]=(LONG)"/";
+	    iofs->io_Args[0]=(IPTR)"/";
 	    iofs->io_Args[1]=0;
 	    DoIO(&iofs->IOFS);
 	    curlock=iofs->IOFS.io_Unit;

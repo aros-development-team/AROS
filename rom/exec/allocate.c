@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:21  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:55:57  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -118,7 +121,7 @@ __AROS_LH2(APTR, Allocate,
     {
 #if !defined(NO_CONSISTENCY_CHECKS)
 	/* Consistency check: Check alignment restrictions */
-	if( ((ULONG)p2|(ULONG)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1) )
+	if( ((IPTR)p2|(ULONG)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1) )
 	{
 	    Alert(AN_MemCorrupt);
 	    return NULL;

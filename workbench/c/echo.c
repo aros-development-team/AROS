@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:52:10  digulla
+    Use IPTR
+
     Revision 1.3  1996/08/13 15:34:04  digulla
     #include <exec/execbase.h> was missing
 
@@ -39,7 +42,7 @@ LONG entry(struct ExecBase *sysbase)
 
 static LONG tinymain(void)
 {
-    ULONG args[5]={ 0, 0, 0, 0, 0 };
+    IPTR args[5]={ 0, 0, 0, 0, 0 };
     struct RDArgs *rda;
     STRPTR *a, b;
     ULONG l, max=~0ul;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/13 17:52:10  digulla
+    Use IPTR
+
     Revision 1.5  1996/08/01 17:40:44  digulla
     Added standard header for all files
 
@@ -144,7 +147,7 @@ static LONG do_dir (void)
 	if(eac!=NULL)
 	{
 	    int t;
-	    LONG argv[3];
+	    IPTR argv[3];
 
 	    eac->eac_LastKey=0;
 	    do
@@ -198,7 +201,7 @@ static LONG do_dir (void)
 
 		    for (t=0; t<dirs.num; t++)
 		    {
-			argv[0] = (LONG) dirs.entries[t];
+			argv[0] = (IPTR) dirs.entries[t];
 
 			if (args.all)
 			{
@@ -224,8 +227,8 @@ static LONG do_dir (void)
 
 		    for (t=0; t<files.num; t+=2)
 		    {
-			argv[0] = (LONG) (files.entries[t]);
-			argv[1] = (LONG) (t+1 < files.num ? files.entries[t+1] : "");
+			argv[0] = (IPTR) (files.entries[t]);
+			argv[1] = (IPTR) (t+1 < files.num ? files.entries[t+1] : "");
 			if (args.all)
 			    showline ("    %-25.s %-25.s\n", argv);
 			else
@@ -271,7 +274,7 @@ static LONG tinymain(void)
     struct RDArgs *rda;
     LONG error=0;
 
-    rda=ReadArgs("Dir,OPT/K,ALL/S",(ULONG *)&args,NULL);
+    rda=ReadArgs("Dir,OPT/K,ALL/S",(IPTR *)&args,NULL);
     if(rda!=NULL)
     {
 	strcpy (path, args.dir!=NULL?args.dir:"");

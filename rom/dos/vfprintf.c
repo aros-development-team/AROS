@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:50:09  digulla
+    Use IPTR
+
     Revision 1.3  1996/08/13 13:52:52  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -25,11 +28,11 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
     if(vfp->count>=0)
     {
 	if(FPUTC(vfp->file,chr)<0)
-        {
-            vfp->count=-1;
-            return;
-        }
-        vfp->count++;
+	{
+	    vfp->count=-1;
+	    return;
+	}
+	vfp->count++;
     }
     __AROS_FUNC_EXIT
 }
@@ -44,7 +47,7 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
 /*  SYNOPSIS */
 	__AROS_LHA(BPTR,   file,     D1),
 	__AROS_LHA(STRPTR, format,   D2),
-	__AROS_LHA(LONG *, argarray, D3),
+	__AROS_LHA(IPTR *, argarray, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 59, Dos)
@@ -75,7 +78,7 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct vfp vfp;
-    
+
     vfp.file=file;
     vfp.count=0;
 
@@ -84,8 +87,8 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
     /* Remove the last character (which is a NUL character) */
     if(vfp.count>0)
     {
-        vfp.count--;
-        ((struct FileHandle *)BADDR(file))->fh_Pos--;
+	vfp.count--;
+	((struct FileHandle *)BADDR(file))->fh_Pos--;
     }
     return vfp.count;
     __AROS_FUNC_EXIT

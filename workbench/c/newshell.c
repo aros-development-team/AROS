@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/13 17:52:11  digulla
+    Use IPTR
+
     Revision 1.2  1996/08/01 17:40:45  digulla
     Added standard header for all files
 
@@ -43,8 +46,8 @@ static LONG tinymain(void)
     STRPTR s1, s2, s3, buf;
     struct Process *process;
     LONG error=RETURN_ERROR;
-    
-    rda=ReadArgs("WINDOW,FROM",(ULONG *)args,NULL);
+
+    rda=ReadArgs("WINDOW,FROM",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	s1=s2=(STRPTR)args[1];
@@ -69,7 +72,7 @@ static LONG tinymain(void)
 	    }
 	    *s3++='\"';
 	    *s3=0;
-	
+
 	    shell=LoadSeg("c:shell");
 	    if(shell)
 	    {
@@ -80,11 +83,11 @@ static LONG tinymain(void)
 		    lock=DupLockFromFH(out);
 		    if(lock)
 		    {
-		        in=OpenFromLock(lock);
-		        if(!in)
-		            UnLock(lock);
+			in=OpenFromLock(lock);
+			if(!in)
+			    UnLock(lock);
 		    }else
-		        in=0;
+			in=0;
 		    if(in)
 		    {
 			struct TagItem tags[]=
@@ -97,7 +100,7 @@ static LONG tinymain(void)
 			    { NP_Cli, 1 },
 			    { TAG_END, 0 }
 			};
-			tags[0].ti_Data=(LONG)buf;
+			tags[0].ti_Data=(IPTR)buf;
 			tags[1].ti_Data=in;
 			tags[2].ti_Data=out;
 			tags[4].ti_Data=shell;

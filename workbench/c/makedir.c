@@ -32,7 +32,7 @@ static LONG tinymain(void)
     LONG error=0;
     BPTR lock;
 
-    rda=ReadArgs("DIR/A",(ULONG *)args,NULL);
+    rda=ReadArgs("DIR/A",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	lock = CreateDir(args[0]);

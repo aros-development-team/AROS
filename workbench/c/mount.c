@@ -33,7 +33,7 @@ static LONG tinymain(void)
     struct Process *me=(struct Process *)FindTask(NULL);
     LONG error=0;
 
-    rda=ReadArgs("FILESYS/A,DEVICE/A",(ULONG *)args,NULL);
+    rda=ReadArgs("FILESYS/A,DEVICE/A",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	iofs=(struct IOFileSys *)CreateIORequest(&me->pr_MsgPort,sizeof(struct IOFileSys));
@@ -42,7 +42,7 @@ static LONG tinymain(void)
 	    if(!OpenDevice(args[0],0,&iofs->IOFS,0))
 	    {
 		iofs->IOFS.io_Command=FSA_MOUNT;
-		iofs->io_Args[0]=(ULONG)args[1];
+		iofs->io_Args[0]=(IPTR)args[1];
 		iofs->io_Args[1]=0;
 		if (DoIO(&iofs->IOFS))
 		{

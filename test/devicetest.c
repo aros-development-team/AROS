@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/13 17:57:10  digulla
+    Use IPTR
+
     Revision 1.2  1996/08/01 17:41:38  digulla
     Added standard header for all files
 
@@ -29,7 +32,7 @@ int main(void)
     dummy=(struct dummybase *)MakeLibrary(((APTR *)resident.rt_Init)[1],
 					  ((APTR *)resident.rt_Init)[2],
 					  ((APTR *)resident.rt_Init)[3],
-					  (ULONG)((APTR *)resident.rt_Init)[0],1);
+					  (IPTR)((APTR *)resident.rt_Init)[0],1);
     if(dummy!=NULL)
     {
 	Forbid();

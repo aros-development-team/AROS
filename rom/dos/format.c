@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/13 17:50:07  digulla
+    Use IPTR
+
     Revision 1.1  1996/09/11 12:54:45  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -63,30 +66,30 @@
     if(dl!=NULL)
     {
 
-        /* Get pointer to I/O request. Use stackspace for now. */
-        struct IOFileSys io,*iofs=&io;
+	/* Get pointer to I/O request. Use stackspace for now. */
+	struct IOFileSys io,*iofs=&io;
 
-        /* Prepare I/O request. */
-        iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-        iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-        iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-        iofs->IOFS.io_Device =dl->dol_Device;
-        iofs->IOFS.io_Unit   =dl->dol_Unit;
-        iofs->IOFS.io_Command=FSA_FORMAT;
-        iofs->IOFS.io_Flags  =0;
-        iofs->io_Args[0]=(ULONG)volumename;
-        iofs->io_Args[1]=dostype;
+	/* Prepare I/O request. */
+	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
+	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+	iofs->IOFS.io_Device =dl->dol_Device;
+	iofs->IOFS.io_Unit   =dl->dol_Unit;
+	iofs->IOFS.io_Command=FSA_FORMAT;
+	iofs->IOFS.io_Flags  =0;
+	iofs->io_Args[0]=(IPTR)volumename;
+	iofs->io_Args[1]=dostype;
 
-        /* Send the request. */
-        DoIO(&iofs->IOFS);
-        
-        /* Set error code */
-        if(!iofs->io_DosError)
-            success=1; 
+	/* Send the request. */
+	DoIO(&iofs->IOFS);
+
+	/* Set error code */
+	if(!iofs->io_DosError)
+	    success=1;
 	else
 	    me->pr_Result2=iofs->io_DosError;
     }else
-        me->pr_Result2=ERROR_DEVICE_NOT_MOUNTED;
+	me->pr_Result2=ERROR_DEVICE_NOT_MOUNTED;
     /* All Done. */
     UnLockDosList(LDF_DEVICES|LDF_READ);
     return success;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:52:10  digulla
+    Use IPTR
+
     Revision 1.4  1996/09/12 14:49:25  digulla
     More checks
     Better code to specify size of buffer
@@ -57,10 +60,10 @@ static LONG tinymain(void)
     struct ExAllData *ead;
     static UBYTE buffer[4096];
     UBYTE flags[9];
-    LONG argv[5];
+    IPTR argv[5];
     LONG error=0, rc=RETURN_OK;
 
-    rda=ReadArgs("DIR",(ULONG *)args,NULL);
+    rda=ReadArgs("DIR",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
 	dir=Lock(args[0]!=NULL?args[0]:"",SHARED_LOCK);
@@ -105,12 +108,12 @@ static LONG tinymain(void)
 
 			    flags[i] = 0;
 
-			    argv[0]=(LONG)ead->ed_Name;
+			    argv[0]=(IPTR)ead->ed_Name;
 			    if(ead->ed_Type>=0)
 			    {
-				argv[1]=(LONG)flags;
-				argv[2]=(LONG)date;
-				argv[3]=(LONG)time;
+				argv[1]=(IPTR)flags;
+				argv[2]=(IPTR)date;
+				argv[3]=(IPTR)time;
 				if(VPrintf("%-25.s   <Dir> %7.s %s %s\n",argv)<0)
 				{
 				    error=RETURN_ERROR;
@@ -121,9 +124,9 @@ static LONG tinymain(void)
 			    }else
 			    {
 				argv[1]=ead->ed_Size;
-				argv[2]=(LONG)flags;
-				argv[3]=(LONG)date;
-				argv[4]=(LONG)time;
+				argv[2]=(IPTR)flags;
+				argv[3]=(IPTR)date;
+				argv[4]=(IPTR)time;
 				if(VPrintf("%-25.s %7.ld %7.s %s %s\n",argv)<0)
 				{
 				    error=RETURN_ERROR;

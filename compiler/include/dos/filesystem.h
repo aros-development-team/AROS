@@ -6,7 +6,7 @@ struct IOFileSys
 {
     struct IORequest IOFS; /* Standard I/O request */
     LONG io_DosError;	/* Dos error code */
-    LONG io_Args[4];	/* Array of Arguments */
+    IPTR io_Args[4];	/* Array of Arguments (Ints and Pointers) */
 };
 
 /*
@@ -26,7 +26,7 @@ struct IOFileSys
 #define FSA_IS_INTERACTIVE	11
 #define FSA_SAME_LOCK		12
 #define FSA_EXAMINE		13
-#define FSA_EXAMINE_ALL		14
+#define FSA_EXAMINE_ALL 	14
 #define FSA_EXAMINE_ALL_END	15
 #define FSA_OPEN_FILE		16
 #define FSA_CREATE_DIR		17
@@ -35,8 +35,8 @@ struct IOFileSys
 #define FSA_RENAME		20
 #define FSA_READ_SOFTLINK	21
 #define FSA_DELETE_OBJECT	22
-#define FSA_SET_COMMENT		23
-#define FSA_SET_PROTECT		24
+#define FSA_SET_COMMENT 	23
+#define FSA_SET_PROTECT 	24
 #define FSA_SET_OWNER		25
 #define FSA_SET_DATE		26
 #define FSA_IS_FILESYSTEM	27
@@ -48,12 +48,12 @@ struct IOFileSys
 #define FSA_FLUSH		31
 #define FSA_INHIBIT		32
 #define FSA_WRITE_PROTECT	33
-#define FSA_DISK_CHANGE		34
+#define FSA_DISK_CHANGE 	34
 #define FSA_ADD_NOTIFY		35
 #define FSA_REMOVE_NOTIFY	36
 #define FSA_DISK_INFO		37
 #define FSA_CHANGE_SIGNAL	38
-#define FSA_LOCK_RECORD		39
+#define FSA_LOCK_RECORD 	39
 #define FSA_UNLOCK_RECORD	40
 #endif
 
@@ -64,13 +64,13 @@ struct IOFileSys
 #define FMF_READ	8 /* open for reading */
 #define FMF_CREATE	16 /* create file if it doesn't exist */
 #define FMF_CLEAR	32 /* clear file on open */
-#define FMF_RAW		64 /* switch cooked to raw and vice versa */
+#define FMF_RAW 	64 /* switch cooked to raw and vice versa */
 
 /* Mount modes */
 #define MMF_READ	1 /* Mounted for reading */
 #define MMF_WRITE	2 /* Mounted for writing */
 #define MMF_READ_CACHE	4 /* Read cache enabled */
-#define MMF_WRITE_CACHE	8 /* Write cache enabled */
+#define MMF_WRITE_CACHE 8 /* Write cache enabled */
 #define MMF_OFFLINE	16 /* Filesystem doesn't use the device currently */
 #define MMF_LOCKED	32 /* Mount mode is password protected */
 

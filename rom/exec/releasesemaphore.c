@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:51:24  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/13 13:56:05  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -82,7 +85,7 @@
 	sn=(struct SemaphoreNode *)sigSem->ss_WaitQueue.mlh_Head;
 
 	/* Is it a shared lock? */
-	if((ULONG)sn->node.ln_Name!=SM_EXCLUSIVE)
+	if((IPTR)sn->node.ln_Name!=SM_EXCLUSIVE)
 	{
 	    /* Yes. Process all shared locks in the list. */
 	    while(sn->node.ln_Succ!=NULL)
@@ -94,7 +97,7 @@
 		sn=(struct SemaphoreNode *)sn->node.ln_Succ;
 
 		/* Is this a shared lock? */
-		if((ULONG)on->node.ln_Name!=SM_EXCLUSIVE)
+		if((IPTR)on->node.ln_Name!=SM_EXCLUSIVE)
 		{
 		    /* Yes. Remove it from the list */
 		    Remove(&on->node);

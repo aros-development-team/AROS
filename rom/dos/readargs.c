@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/13 17:50:08  digulla
+    Use IPTR
+
     Revision 1.4  1996/08/16 14:04:08  digulla
     Fixed bug in docs. Bugfix in code is still pending.
 
@@ -30,7 +33,7 @@
 
 /*  SYNOPSIS */
 	__AROS_LHA(STRPTR,          template, D1),
-	__AROS_LHA(LONG *,          array,    D2),
+	__AROS_LHA(IPTR *,          array,    D2),
 	__AROS_LHA(struct RDArgs *, rdargs,   D3),
 
 /*  LOCATION */
@@ -153,7 +156,7 @@
     s1=cs.CS_Buffer;
     while(*s1++)
 	;
-    cs.CS_Length=s1-cs.CS_Buffer-1;
+    cs.CS_Length=(IPTR)s1-(IPTR)cs.CS_Buffer-1;
     cs.CS_CurChr=0;
 
     /* Check commandline for a single '?' */
@@ -411,7 +414,7 @@
 		case REST:
 		case SWITCH:
 		    /* Simple arguments are just copied. */
-		    array[arg]=(LONG)argbuf[arg];
+		    array[arg]=(IPTR)argbuf[arg];
 		    break;
 		case TOGGLE:
 		    /* /T logically inverts the argument. */
@@ -431,7 +434,7 @@
 		    {
 			/* Abuse the argbuf buffer. It's not needed anymore. */
 			argbuf[arg]=(STRPTR)value;
-			array[arg]=(LONG)&argbuf[arg];
+			array[arg]=(IPTR)&argbuf[arg];
 		    }
 		    break;
 	    }
@@ -457,7 +460,7 @@ end:
     }else
     {
 	/* All went well. Prepare result and return. */
-	rda->RDA_DAList=(LONG)dalist;
+	rda->RDA_DAList=(IPTR)dalist;
 	dalist->ArgBuf=argbuf;
 	dalist->StrBuf=strbuf;
 	dalist->MultVec=multvec;

@@ -2,10 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/13 17:50:09  digulla
+    Use IPTR
+
     Revision 1.5  1996/09/11 16:54:23  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.4  1996/08/13 13:52:51  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
@@ -84,7 +87,7 @@ LONG __AROS_SLIB_ENTRY(RunProcess,Dos)(struct Process *proc,
 	return -1;
 
     sss.stk_Lower=stack;
-    sss.stk_Upper=(ULONG)stack+stacksize;
+    sss.stk_Upper=(IPTR)stack+stacksize;
 
     oldresult=me->pr_Result2;
     if(me->pr_CIS)

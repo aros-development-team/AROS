@@ -2,10 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/13 17:57:09  digulla
+    Use IPTR
+
     Revision 1.5  1996/09/11 16:54:31  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.4  1996/08/29 13:33:31  digulla
     Moved common code from driver to Intuition
@@ -120,11 +123,11 @@ __AROS_LH2(struct IntuitionBase *, init,
     __AROS_FUNC_INIT
     struct TagItem inputTask[]=
     {
-	{ NP_Entry,	(ULONG)intui_ProcessEvents },
+	{ NP_Entry,	(IPTR)intui_ProcessEvents },
 	{ NP_Input,	0L },
 	{ NP_Output,	0L },
-	{ NP_Name,	(ULONG)"input.device" },
-	{ NP_StackSize, 20000 },
+	{ NP_Name,	(IPTR)"input.device" },
+	{ NP_StackSize, 100000 },
 	{ NP_Priority,	50 },
 	{ TAG_END, 0 }
     };
@@ -245,7 +248,7 @@ __AROS_LH0I(int, null,
 /******************************************************************************
 
     NAME */
-	static ULONG rootDispatcher (
+	static IPTR rootDispatcher (
 
 /*  SYNOPSIS */
 	Class  * cl,
@@ -283,7 +286,7 @@ __AROS_LH0I(int, null,
 
 ******************************************************************************/
 {
-    ULONG retval = 0;
+    IPTR retval = 0;
 
     switch (msg->MethodID)
     {
@@ -292,13 +295,13 @@ __AROS_LH0I(int, null,
 
 	/* Nur Speicher besorgen. Im Object steht, wieviel.
 	   (Das Object ist keines. Es ist der Class-Pointer selbst !) */
-	retval = (ULONG) AllocMem (cl->cl_InstOffset
+	retval = (IPTR) AllocMem (cl->cl_InstOffset
 		+ cl->cl_InstSize
 		+ sizeof (struct _Object)
 	    , MEMF_ANY
 	    );
 
-	retval = (ULONG) BASEOBJECT(retval);
+	retval = (IPTR) BASEOBJECT(retval);
 	break; }
 
     case OM_DISPOSE:

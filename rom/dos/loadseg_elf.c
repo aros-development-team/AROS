@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/13 17:50:07  digulla
+    Use IPTR
+
     Revision 1.6  1996/08/15 13:18:21  digulla
     First attempt to allow debugging in shared code but the strings are not
     loaded correctly yet
@@ -250,12 +253,12 @@ kprintf ("StrTab-Section: name=%d type=%d flags=%d\n",
 		{
 		case RELO_32:
 		    *(ULONG *)&loaded[reltab[i].addr]+=
-			(ULONG)hunks[symbol->shindex].memory+symbol->value;
+			(IPTR)hunks[symbol->shindex].memory+symbol->value;
 		    break;
 		case RELO_PC32:
 		    *(ULONG *)&loaded[reltab[i].addr]+=
-			(ULONG)hunks[symbol->shindex].memory +
-			symbol->value - (ULONG)&loaded[reltab[i].addr];
+			(IPTR)hunks[symbol->shindex].memory +
+			symbol->value - (IPTR)&loaded[reltab[i].addr];
 		    break;
 		default:
 		    ERROR(ERROR_BAD_HUNK);

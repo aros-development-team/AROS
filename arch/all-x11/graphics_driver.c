@@ -189,12 +189,12 @@ int GetXWindow (struct RastPort * rp)
 
 void SetGC (struct RastPort * rp, GC gc)
 {
-    rp->longreserved[0] = (ULONG)gc;
+    rp->longreserved[0] = (IPTR)gc;
 }
 
 void SetXWindow (struct RastPort * rp, int win)
 {
-    rp->longreserved[1] = (ULONG)win;
+    rp->longreserved[1] = (IPTR)win;
 }
 
 Display * GetSysDisplay (void)
@@ -235,7 +235,7 @@ void driver_RectFill (struct RastPort * rp, long x1, long y1, long x2, long y2)
     {
 	ULONG pen;
 
-	pen = ((ULONG)rp->FgPen) & 3L;
+	pen = ((ULONG)(rp->FgPen)) & 3L;
 
 	XSetForeground (sysDisplay, GetGC (rp), sysPlaneMask);
 
