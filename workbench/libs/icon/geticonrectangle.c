@@ -15,7 +15,7 @@
     NAME */
 #include <proto/icon.h>
 
-	AROS_LH5(void, GetIconRectangleA,
+	AROS_LH5(BOOL, GetIconRectangleA,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A0),
