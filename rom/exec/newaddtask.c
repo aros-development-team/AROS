@@ -153,6 +153,8 @@
 
 	et = (struct ETask *)task->tc_UnionETask.tc_ETask;
 	et->et_Parent = FindTask(NULL);
+	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
+	
 	NEWLIST(&et->et_Children);
 
 	/* Initialise the message list */
