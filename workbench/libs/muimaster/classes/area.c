@@ -167,7 +167,6 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
-static void area_disabled_change(struct IClass *cl, Object *obj);
 
 //static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 //static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
@@ -581,7 +580,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (change_disable)
     {
-	area_disabled_change(cl, obj);
+	MUI_Redraw(obj, MADF_DRAWOBJECT);
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -1814,17 +1813,6 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data)
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
-static void area_disabled_change(struct IClass *cl, Object *obj)
-{
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-    if (data->mad_DisableCount)
-    {
-    }
-    else
-    {
-    }
-}
 
 BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 {
