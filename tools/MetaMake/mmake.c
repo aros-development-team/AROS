@@ -611,14 +611,6 @@ init (void)
     char line[256];
     FILE * optfh;
 
-    if (!home)
-    {
-	fprintf (stderr,
-	    "Please set the HOME env var (with setenv or export)\n"
-	);
-	exit (10);
-    }
-
     NewList(&projects);
     defaultprj = project = initproject ("default");
     AddTail(&projects, project);
@@ -653,6 +645,9 @@ init (void)
 
     if (!optfh)
     {
+	fprintf (stderr,
+	    "Please set the HOME or MMAKE_CONFIG env var (with setenv or export)\n"
+	);
 	error ("Opening %s for reading", optionfile);
 	exit (10);
     }
