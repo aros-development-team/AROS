@@ -3,22 +3,13 @@ include $(TOP)/config/make.cfg
 
 OS_INCLUDES := -I$(SYS_INCLUDES) -I$(GENINCDIR)
 
-MODNAME := emul
-MODTYPE := handler
-
-INIT_FILE := emul_handler
-FILES :=
-FUNCS :=
-
-USE_LIBDEFS := no
-
-# This requires linking against system libraries, do not build a module.
-NO_MODULE := yes
-
 #MM- kernel-filesys-unix : kernel-fs-emul
-#MM- kernel-fs-emul : setup includes linklibs kernel-fs-emul-linklib
-%make_module_setup mmake=kernel-fs-emul
-%make_module mmake=kernel-fs-emul
+#MM- kernel-fs-emul : setup includes linklibs kernel-fs-emul-intern-linklib
 
+%build_module_macro mmake=kernel-fs-emul-intern \
+  modname=emul modtype=handler \
+  initfile=emul_handler
+
+  
 %common
-%include_deps
+
