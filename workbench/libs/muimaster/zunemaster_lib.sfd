@@ -10,6 +10,7 @@
 ==include <intuition/classusr.h>
 ==include <intuition/gadgetclass.h>
 ==include <utility/tagitem.h>
+==include <libraries/mui.h>
 ==public
 *
 * Public entries
@@ -20,7 +21,7 @@ Object *MUI_NewObject(CONST_STRPTR classname, Tag tag1,...)(A0,A1)
 VOID MUI_DisposeObject(Object *obj)(A0)
 LONG MUI_RequestA(APTR app,APTR win, ULONG flags, CONST_STRPTR title, CONST_STRPTR gadgets, CONST_STRPTR format,APTR params)(D0,D1,D2,A0,A1,A2,A3)
 ==varargs
-LONG MUI_Request(APTR app,APTR win, ULONG flags, CONST_STRPTR title, CONST_STRPTR gadgets, CONST_STRPTR format,...)(D0,D1,D2,A0,A1,A2,A3)
+LONG MUI_Request(APTR app,APTR win, ULONG flags, CONST_STRPTR title, CONST_STRPTR gadgets, CONST_STRPTR format, ULONG dummy, ...)(D0,D1,D2,A0,A1,A2,A3)
 APTR MUI_AllocAslRequest(ULONG reqType, struct TagItem *tagList)(D0,A0)
 ==varargs
 APTR MUI_AllocAslRequestTags(ULONG reqType, Tag tag1, ...)(D0,A0)
@@ -39,7 +40,7 @@ struct MUI_CustomClass *MUI_CreateCustomClass(struct Library *base,CONST_STRPTR 
 BOOL MUI_DeleteCustomClass(struct MUI_CustomClass *mcc)(A0)
 Object *MUI_MakeObjectA(LONG type,ULONG *params)(D0,A0)
 ==varargs
-Object *MUI_MakeObject(LONG type,...)(D0,A0)
+Object *MUI_MakeObject(LONG type, ULONG dummy, ...)(D0,A0)
 BOOL MUI_Layout(Object *obj,LONG left,LONG top,LONG width,LONG height,ULONG flags)(A0,D0,D1,D2,D3,D4)
 ==reserve 4
 LONG MUI_ObtainPen(struct MUI_RenderInfo *mri,struct MUI_PenSpec *spec,ULONG flags)(A0,A1,D0)
