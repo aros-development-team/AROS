@@ -11,9 +11,10 @@
 
 #include "gui.h"
 
-struct Window   *window = NULL;
-struct Screen   *screen = NULL;
-struct RastPort *rp     = NULL;
+struct Window   *background = NULL;
+struct Window   *window     = NULL;
+struct Screen   *screen     = NULL;
+struct RastPort *rp         = NULL;
 WORD             width, height;
 
 BOOL GUI_Open()
@@ -24,9 +25,20 @@ BOOL GUI_Open()
         width  = screen->Width / 3;
         height = width / 12;
         
+        background = OpenWindowTags
+        (
+            NULL,
+            WA_Left, 0,
+            WA_Top,  0,
+            WA_Width, screen->Width,
+            WA_Height, screen->Height,
+            WA_Borderless, TRUE,
+            TAG_DONE, NULL
+        );
+        
         window = OpenWindowTags
         ( 
-            NULL, 
+            NULL,
             WA_Title,         "Unpacking...",
             WA_InnerWidth,    width,
             WA_InnerHeight,   height,
@@ -35,11 +47,15 @@ BOOL GUI_Open()
             WA_GimmeZeroZero, TRUE,
             WA_Activate,      TRUE,
             WA_DragBar,       TRUE,
-            TAG_END           
+            WA_CustomScreen,  screen,
+            TAG_DONE,          NULL
         );        
         
-        if( window != NULL )
+        if( background != NULL && window != NULL )
         {
+            SetAPen( background->RPort, 1 );
+            RectFill( background->RPort, 0, 0, screen->Width, screen->Height );
+        
             rp = window->RPort;
             SetAPen( rp, 3 );
             
@@ -55,8 +71,9 @@ BOOL GUI_Open()
 void GUI_Close()
 {
     if( window != NULL ) CloseWindow( window );
+    if( background != NULL ) CloseWindow( background );
     if( screen != NULL ) UnlockPubScreen( NULL, screen );
-
+    
     CloseWorkBench();
 }
 
