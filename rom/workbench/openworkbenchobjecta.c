@@ -249,6 +249,8 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
         }
     }
     
+    D(bug("OpenWorkbenchObject: success = %d\n"));
+    
     return success;
 
     AROS_LIBFUNC_EXIT
@@ -427,7 +429,7 @@ BOOL __WB_BuildArguments
                     Filter out args where both lock AND name are NULL, since 
                     they are completely worthless to the application.
                 */
-                if (lastLock != NULL || tag->ti_Data != NULL)
+                if (lastLock != NULL || (STRPTR) tag->ti_Data != NULL)
                 {
                     numArgs++;
                 }
@@ -467,7 +469,7 @@ BOOL __WB_BuildArguments
                         Filter out args where both lock AND name are NULL, 
                         since they are completely worthless to the application.
                     */
-                    if (lastLock != NULL || tag->ti_Data != NULL)
+                    if (lastLock != NULL || (STRPTR) tag->ti_Data != NULL)
                     {
                         STRPTR name = (STRPTR) tag->ti_Data;
                         
