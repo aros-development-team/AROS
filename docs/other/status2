@@ -39,6 +39,7 @@ intentions in case you havent read about them.
   Although Amiga OS 3.5 is just around the corner we're still focussing on
 recoding version 3.1 of the OS for the simple reason that we don't know more 
 about the changes between the two versions than most of you. 
+
   AROS is almost completely written in 'C' and actually the only few lines 
 that needed to be implemented in assembly exist on the version for 
 Linux/M68k.
@@ -56,11 +57,13 @@ close attention to separating the hardware dependend code pieces from the rest
 and this will help us to create such a system. M68k and especially PPC driven 
 machines are a target as well and we realize that the latter ones could be
 are real success for our efforts. 
+
   Yet another desired goal is to merge AROS and UAE such that the original 
 custom hardware of the Amigas can be emulated and possibly mixed binary 
 executable code could be executed, which means that this would allow you to 
 run natively compiled code and the original Amiga compiled code at the same 
 time. 
+
   We will decide which direction to go by ruling out how we can be most 
 successful in. Our main focus will remain on further extending the Linux 
 version, however, as this will also contribute to all other directions.
@@ -86,4 +89,4 @@ whether you can provide one of these factors as we really need people who
 We're looking forward to hearing from you!
 
 
-
+The AROS Development Team
