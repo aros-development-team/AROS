@@ -63,37 +63,7 @@
 
     /* It the quick flag is cleared it wasn't done quick. Wait for completion. */
     if(!(iORequest->io_Flags&IOF_QUICK))
-    {
-	ULONG iosigf = 1<<iORequest->io_Message.mn_ReplyPort->mp_SigBit;
-	ULONG sigs = 0;
-
-	while
-	(
-	    !(sigs & SIGBREAKF_CTRL_C)  ||
-	    !(iORequest->io_Flags&IOF_QUICK) &&
-	    iORequest->io_Message.mn_Node.ln_Type==NT_MESSAGE
-	)
-	{
-	    sigs = Wait(iosigf | SIGBREAKF_CTRL_C);
-
-	    if(iORequest->io_Message.mn_Node.ln_Type==NT_REPLYMSG)
-            {
-	        /* Arbitrate for the message queue. */
-	        Disable();
-
-	        /* Remove the message */
-	        Remove(&iORequest->io_Message.mn_Node);
-  	        Enable();
-
-		break;
-	    }
-	    else
-	    if (sigs & SIGBREAKF_CTRL_C)
-	    {
-	        AbortIO(iORequest);
-  	    }
-	}
-    }
+	WaitIO(iORequest);
 
     /* All done. Get returncode. */
     return iORequest->io_Error;
