@@ -536,6 +536,8 @@
     if (screenTitle != NULL)
 	SetWindowTitles (w, (UBYTE *)~0L, screenTitle);
 
+    UpdateMouseCoords(w);
+    
     goto exit;
 
 failexit:
