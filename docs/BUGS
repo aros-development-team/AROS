@@ -201,7 +201,8 @@ BUG000028
 srittau@aros.org
 The sliders next to listviews don't work.
 
-BUG000029
+BUG000029 fixed
 bergers@aros.org
 Henon started with "henon ?" should be recognized and the help-text 
 should appear. -> The "?" as a signle character is not recognized!!
+The problem was probably the buggy code in compiler/alib/startup.c.
