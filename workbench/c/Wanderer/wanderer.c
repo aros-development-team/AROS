@@ -650,9 +650,9 @@ void execute_ok(void)
 	    	SYS_Asynch,	TRUE,
 	    	SYS_Input,  (IPTR)input,
 	    	SYS_Output, (IPTR)NULL,
-                __AROS__ ?
-	    	SYS_Error :
-                TAG_IGNORE,  (IPTR)NULL,
+#ifdef __AROS__
+	    	SYS_Error,  (IPTR)NULL,
+#endif
 		NP_CurrentDir, lock, /* Will be freed automatical if successful */
 	    	TAG_DONE) == -1)
         {
