@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 SPECIAL_CFLAGS = -I/usr/include
 
@@ -59,8 +60,7 @@ FUNCTIONS = \
 	windowtofront
 
 all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
+	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
@@ -79,11 +79,9 @@ intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $^
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
-include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
-
+ifneq ($(TARGET),clean)
+include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
+endif

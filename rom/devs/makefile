@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 include $(TOP)/config/make.cfg
 
@@ -20,6 +21,7 @@ clean:
 	$(RM) $(OSGENDIR)
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    ( cd $$dir ; \
 	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
 		clean ) ; \
 	done
@@ -32,9 +34,9 @@ $(OSGENDIR)/%.o: %.c
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+endif

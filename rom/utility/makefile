@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 include $(TOP)/config/make.cfg
 
@@ -65,7 +66,7 @@ setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libutility.a
+	-$(RM) $(OSGENDIR) *.err $(LIBDIR)/libutility.a
 
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
@@ -78,10 +79,9 @@ utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $^
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
-
+endif

@@ -21,8 +21,11 @@ all:
 
 clean:
 	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    echo "Cleaning in $(CURDIR)/$$dir..." ; \
+	    ( cd $$dir ; \
 	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		clean ) ; \
+		TARGET=clean clean ) ; \
 	done
 
+setup:
+	@true
