@@ -4,7 +4,7 @@
 
 struct DrawerIconObserverClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

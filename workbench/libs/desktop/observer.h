@@ -18,16 +18,16 @@
 
 struct FreeNode
 {
-	struct MinNode f_Node;
-	APTR f_mem;
+    struct MinNode f_Node;
+    APTR f_mem;
 };
 
 struct ObserverClassData
 {
-	Object *presentation;
-	Object *parent;
-	struct MinList freeList;
-	BOOL inTree;
+    Object *presentation;
+    Object *parent;
+    struct MinList freeList;
+    BOOL inTree;
 };
 
 struct __dummyObserverData__
@@ -38,14 +38,14 @@ struct __dummyObserverData__
 
 struct ObsFreeListAddMsg
 {
-	Msg methodID;
-	APTR free;
+    Msg methodID;
+    APTR free;
 };
 
 struct ObsDeleteMsg
 {
-	Msg methodID;
-	Object *obj;
+    Msg methodID;
+    Object *obj;
 };
 
 #define observerData(obj) (&(((struct __dummyObserverData__ *)(obj))->ocd))

@@ -23,16 +23,16 @@
 
 struct IconObserverClassData
 {
-	BOOL selected;
-	UBYTE *name, *directory;
-	UBYTE *comment;
-	BOOL script, pure, archived, readable, writeable, executable, deleteable;
+    BOOL selected;
+    UBYTE *name, *directory;
+    UBYTE *comment;
+    BOOL script, pure, archived, readable, writeable, executable, deleteable;
 };
 
 struct __dummyIconObsData__
 {
     struct MUI_NotifyData mnd;
-	struct ObserverClassData ocd;
+    struct ObserverClassData ocd;
     struct IconObserverClassData icd;
 };
 

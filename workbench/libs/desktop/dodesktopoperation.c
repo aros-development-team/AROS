@@ -60,61 +60,61 @@
 {
     AROS_LIBFUNC_INIT
 
-	struct DesktopOperation *dop, *subdop;
-	BOOL found=FALSE;
-	ULONG result=0;
-	Object *newObject;
-	Object *target;
+    struct DesktopOperation *dop, *subdop;
+    BOOL found=FALSE;
+    ULONG result=0;
+    Object *newObject;
+    Object *target;
 
-	dop=DesktopBase->db_OperationList.lh_Head;
-	while(dop->do_Node.ln_Succ && !found)
-	{
-		if(operationCode==dop->do_Code)
-		{
-			newObject=NewObjectA(dop->do_Impl->mcc_Class, NULL, NULL);
-			if(newObject)
-			{
-				target=GetTagData(DDO_Target, NULL, tags);
-				if(target)
-				{
-					result=DoMethod(newObject, OPM_Execute, target, operationCode);
-				}
-				DisposeObject(newObject);
-			}
+    dop=DesktopBase->db_OperationList.lh_Head;
+    while(dop->do_Node.ln_Succ && !found)
+    {
+        if(operationCode==dop->do_Code)
+        {
+            newObject=NewObjectA(dop->do_Impl->mcc_Class, NULL, NULL);
+            if(newObject)
+            {
+                target=GetTagData(DDO_Target, NULL, tags);
+                if(target)
+                {
+                    result=DoMethod(newObject, OPM_Execute, target, operationCode);
+                }
+                DisposeObject(newObject);
+            }
 
-			found=TRUE;
-		}
+            found=TRUE;
+        }
 
-		if(!IsListEmpty(&dop->do_SubItems))
-		{
-			subdop=dop->do_SubItems.lh_Head;
-			while(subdop->do_Node.ln_Succ && !found)
-			{
-				if(operationCode==subdop->do_Code)
-				{
-					newObject=NewObjectA(subdop->do_Impl->mcc_Class, NULL, NULL);
-					if(newObject)
-					{
-						target=GetTagData(DDO_Target, NULL, tags);
-						if(target)
-						{
-							result=DoMethod(newObject, OPM_Execute, target, operationCode);
-						}
-						DisposeObject(newObject);
-					}
+        if(!IsListEmpty(&dop->do_SubItems))
+        {
+            subdop=dop->do_SubItems.lh_Head;
+            while(subdop->do_Node.ln_Succ && !found)
+            {
+                if(operationCode==subdop->do_Code)
+                {
+                    newObject=NewObjectA(subdop->do_Impl->mcc_Class, NULL, NULL);
+                    if(newObject)
+                    {
+                        target=GetTagData(DDO_Target, NULL, tags);
+                        if(target)
+                        {
+                            result=DoMethod(newObject, OPM_Execute, target, operationCode);
+                        }
+                        DisposeObject(newObject);
+                    }
 
-					found=TRUE;
-				}
+                    found=TRUE;
+                }
 
-				subdop=subdop->do_Node.ln_Succ;
-			}
+                subdop=subdop->do_Node.ln_Succ;
+            }
 
-		}
+        }
 
-		dop=(struct DesktopOperation*)dop->do_Node.ln_Succ;
-	}
+        dop=(struct DesktopOperation*)dop->do_Node.ln_Succ;
+    }
 
-	return result;
+    return result;
 
     AROS_LIBFUNC_EXIT
 } /* DoDesktopOperation */

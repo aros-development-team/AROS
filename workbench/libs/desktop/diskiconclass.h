@@ -4,7 +4,7 @@
 
 struct DiskIconClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

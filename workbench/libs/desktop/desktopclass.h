@@ -13,7 +13,7 @@
 
 struct DesktopClassData
 {
-	Object *activeWindow;
+    Object *activeWindow;
 };
 
 

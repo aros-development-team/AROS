@@ -4,7 +4,7 @@
 
 struct TrashcanIconClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

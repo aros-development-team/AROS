@@ -13,21 +13,21 @@
 
 struct DesktopObserverClassData
 {
-	Class *defaultWindow;
-	struct TagItem *defaultWindowArgs;
+    Class *defaultWindow;
+    struct TagItem *defaultWindowArgs;
 };
 
 struct doDeleteWindow
 {
-	Msg MethodID;
-	Object *icObs;
+    Msg MethodID;
+    Object *icObs;
 };
 
 //struct icoAddIcon
 //{
-//	Msg methodID;
-//	ULONG wsr_Results;
-//	struct SingleResult *wsr_ResultsArray;
+//  Msg methodID;
+//  ULONG wsr_Results;
+//  struct SingleResult *wsr_ResultsArray;
 //};
 
 #endif

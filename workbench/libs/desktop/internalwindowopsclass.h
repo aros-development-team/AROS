@@ -10,7 +10,7 @@
 
 struct InternalWindowOpsClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

@@ -4,7 +4,7 @@
 
 struct ProjectIconObserverClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

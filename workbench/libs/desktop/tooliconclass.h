@@ -4,7 +4,7 @@
 
 struct ToolIconClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

@@ -15,22 +15,22 @@
 
 struct IconContainerObserverClassData
 {
-	UBYTE *directory;
+    UBYTE *directory;
 
-	// this lock is ONLY valid before the object is added
-	// to the application tree - that is, before OA_InTree
-	// is set to TRUE, and before a scan request message is
-	// sent to the handler. The lock will be unlocked when
-	// the handler deems that scanning is complete.
-	BPTR dirLock;
-	Object *desktop;
+    // this lock is ONLY valid before the object is added
+    // to the application tree - that is, before OA_InTree
+    // is set to TRUE, and before a scan request message is
+    // sent to the handler. The lock will be unlocked when
+    // the handler deems that scanning is complete.
+    BPTR dirLock;
+    Object *desktop;
 };
 
 struct icoAddIcon
 {
-	Msg methodID;
-	ULONG wsr_Results;
-	struct SingleResult *wsr_ResultsArray;
+    Msg methodID;
+    ULONG wsr_Results;
+    struct SingleResult *wsr_ResultsArray;
 };
 
 #endif
