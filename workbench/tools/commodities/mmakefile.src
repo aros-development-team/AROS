@@ -9,7 +9,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 %define_libs
 
-FILES := Exchange Blanker Opaque AutoPoint
+FILES := Exchange Blanker Opaque AutoPoint ClickToFront
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
