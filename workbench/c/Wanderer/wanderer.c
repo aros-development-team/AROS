@@ -17,12 +17,12 @@
 #include <intuition/icclass.h>
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
-#include <gadgets/colorwheel.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/workbench.h>
 
 #ifdef _AROS
 #include <libraries/mui.h>
@@ -362,10 +362,13 @@ struct MUI_CustomClass *CL_IconWindow;
 **************************************************************************/
 struct Wanderer_Data
 {
-    struct MUI_InputHandlerNode ihn;
+    struct MUI_InputHandlerNode timer_ihn;
+    struct MUI_InputHandlerNode notify_ihn;
+    struct MsgPort *notify_port;
 };
 
-#define MUIM_Wanderer_UpdateTitles 0x8719129
+#define MUIM_Wanderer_HandleTimer  0x8719129
+#define MUIM_Wanderer_HandleNotify 0x871912a
 
 STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -376,30 +379,53 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = (struct Wanderer_Data*)INST_DATA(cl,obj);
 
-    /* A timer input handler */
-    data->ihn.ihn_Flags = MUIIHNF_TIMER;
+    if (!(data->notify_port = CreateMsgPort()))
+    {
+	CoerceMethod(cl,obj,OM_DISPOSE);
+	return NULL;
+    }
 
+    RegisterWorkbench(data->notify_port);
+
+    /* Setup two input handlers */
+
+    /* The first one is invoked every time we get a message from the Notify Port */
+    data->notify_ihn.ihn_Signals = 1UL<<data->notify_port->mp_SigBit;
+    data->notify_ihn.ihn_Object = obj;
+    data->notify_ihn.ihn_Method = MUIM_Wanderer_HandleNotify;
+    DoMethod(obj, MUIM_Application_AddInputHandler, &data->notify_ihn);
+
+    /* The second one is a timer handler */
+    data->timer_ihn.ihn_Flags = MUIIHNF_TIMER;
     /* called every second (this is only for timer input handlers) */
-    data->ihn.ihn_Millis = 1000;
-
+    data->timer_ihn.ihn_Millis = 1000;
     /* The following method of the given should be called if the
      * event happens (one second has passed) */
-    data->ihn.ihn_Object = obj;
-    data->ihn.ihn_Method = MUIM_Wanderer_UpdateTitles;
+    data->timer_ihn.ihn_Object = obj;
+    data->timer_ihn.ihn_Method = MUIM_Wanderer_HandleTimer;
 
-    DoMethod(obj, MUIM_Application_AddInputHandler, &data->ihn);
-    
+    DoMethod(obj, MUIM_Application_AddInputHandler, &data->timer_ihn);
+
     return (IPTR)obj;
 }
 
 STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Wanderer_Data *data = (struct Wanderer_Data*)INST_DATA(cl,obj);
-    DoMethod(obj, MUIM_Application_RemInputHandler, &data->ihn);
+    if (data->notify_port)
+    {
+	/* They only have been added if the creation of the msg port was
+	 * successful */
+	DoMethod(obj, MUIM_Application_RemInputHandler, &data->timer_ihn);
+	DoMethod(obj, MUIM_Application_RemInputHandler, &data->notify_ihn);
+	
+	UnregisterWorkbench(data->notify_port);
+	data->notify_port = NULL;
+    }
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-STATIC IPTR Wanderer_UpdateTitles(struct IClass *cl, Object *obj, Msg msg)
+STATIC IPTR Wanderer_HandleTimer(struct IClass *cl, Object *obj, Msg msg)
 {
     Object *cstate = (Object*)(((struct List*)xget(obj, MUIA_Application_WindowList))->lh_Head);
     Object *child;
@@ -410,6 +436,12 @@ STATIC IPTR Wanderer_UpdateTitles(struct IClass *cl, Object *obj, Msg msg)
     return 0; /* irrelevant */
 }
 
+STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Wanderer_Data *data = (struct Wanderer_Data*)INST_DATA(cl,obj);
+    return 0;
+}
+
 /* Use this macro for dispatchers if you don't want #ifdefs */
 BOOPSI_DISPATCHER(IPTR,Wanderer_Dispatcher,cl,obj,msg)
 {
@@ -417,7 +449,8 @@ BOOPSI_DISPATCHER(IPTR,Wanderer_Dispatcher,cl,obj,msg)
     {
 	case OM_NEW: return Wanderer_New(cl,obj,(APTR)msg);
 	case OM_DISPOSE: return Wanderer_Dispose(cl,obj,(APTR)msg);
-	case MUIM_Wanderer_UpdateTitles: return Wanderer_UpdateTitles(cl,obj,(APTR)msg);
+	case MUIM_Wanderer_HandleTimer: return Wanderer_HandleTimer(cl,obj,(APTR)msg);
+	case MUIM_Wanderer_HandleNotify: return Wanderer_HandleNotify(cl,obj,(APTR)msg);
     }
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -530,12 +563,10 @@ void shell_open(char **cd_ptr)
     if (SystemTags("newshell",
 #endif
 	SYS_Asynch,     TRUE,
-#ifdef _AROS
-	SYS_Background, FALSE,
-#endif
 	SYS_Input,	    (IPTR)win,
 	SYS_Output,	    (IPTR)NULL,
 #ifdef _AROS
+	SYS_Background, FALSE,
 	SYS_Error,	    (IPTR)NULL,
 	SYS_UserShell,  TRUE,
 #endif
