@@ -16,6 +16,8 @@
 #include <graphics/gfx.h>
 #endif
 
+#define MUIMASTER_NAME "muimaster.library"
+
 /* Sometype defs in AROS */
 #ifndef _AROS
 #ifndef _AROS_TYPES_DEFINED
