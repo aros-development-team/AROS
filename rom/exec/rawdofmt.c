@@ -70,7 +70,8 @@
 	{   RawDoFmt(format, &format+1, &callback, &buffer);   }
 
     BUGS
-	PutChData cannot be modified from the callback hook.
+	PutChData cannot be modified from the callback hook on non-m68k
+	systems.
 
     SEE ALSO
 
@@ -84,6 +85,11 @@
     AROS_LIBFUNC_INIT
     /* Cast for easier access */
     ULONG stream=(IPTR)DataStream;
+#ifdef __mc68000__
+    register APTR pdata __asm(A3) = PutChData;
+#else
+#   define pdata PutChData
+#endif
 
     /* As long as there is something to format left */
     while(*FormatString)
@@ -247,6 +253,16 @@
 			    width++;
 			}while(n);
 		    }
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+		    /* 
+			If maxwidth is set (illegal for numbers), assume they
+			forgot the '.' (Example: C:Avail)
+		    */
+		    if (maxwidth != ~0)
+		    {
+			minwidth=maxwidth;
+		    }
+#endif
 		    break;
 
 		/* unsigned sedecimal value */
@@ -281,6 +297,12 @@
 			    width++;
 			}while(n);
 		    }
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+		    if (maxwidth != ~0)
+		    {
+			minwidth=maxwidth;
+		    }
+#endif
 		    break;
 
 		/* C string */
@@ -325,6 +347,12 @@
 			*buf=*(UWORD *)stream;
 			stream+=sizeof(UWORD);
 		    }
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+		    if (maxwidth != ~0)
+		    {
+			minwidth=maxwidth;
+		    }
+#endif
 		    break;
 
 		/* '%' before '\0'? */
@@ -369,7 +397,7 @@
 	    if(minus&&fill!=' ')
 		AROS_UFC2(void, PutChProc,
 		   AROS_UFCA(UBYTE, '-'      , D0),
-		   AROS_UFCA(APTR , PutChData, A3)
+		   AROS_UFCA(APTR , pdata, A3)
 		);
 #endif
 	    /* Pad left if not left aligned */
@@ -377,7 +405,7 @@
 		for(i=width+minus;i<minwidth;i++)
 		    AROS_UFC2(void, PutChProc,
 		       AROS_UFCA(UBYTE, fill     , D0),
-		       AROS_UFCA(APTR , PutChData, A3)
+		       AROS_UFCA(APTR , pdata, A3)
 		    );
 
 	    /* Print '-' (if there is one and the pad character is a space) */
@@ -388,7 +416,7 @@
 #endif
 		AROS_UFC2(void, PutChProc,
 		   AROS_UFCA(UBYTE, '-'      , D0),
-		   AROS_UFCA(APTR , PutChData, A3)
+		   AROS_UFCA(APTR , pdata, A3)
 		);
 
 	    /* Print body upto width */
@@ -396,7 +424,7 @@
 	    {
 		AROS_UFC2(void, PutChProc,
 		   AROS_UFCA(UBYTE, *buf      , D0),
-		   AROS_UFCA(APTR , PutChData , A3)
+		   AROS_UFCA(APTR , pdata , A3)
 		);
 
 		buf++;
@@ -408,7 +436,7 @@
 		    /* Pad right with '0'? Sigh - if the user wants to! */
 		    AROS_UFC2(void, PutChProc,
 		       AROS_UFCA(UBYTE, fill      , D0),
-		       AROS_UFCA(APTR , PutChData , A3)
+		       AROS_UFCA(APTR , pdata , A3)
 		    );
 
 	}else
@@ -416,7 +444,7 @@
 	    /* No '%' sign? Put the formatstring out */
 	    AROS_UFC2(void, PutChProc,
 		AROS_UFCA(UBYTE, *FormatString, D0),
-		AROS_UFCA(APTR ,  PutChData   , A3)
+		AROS_UFCA(APTR ,  pdata   , A3)
 	    );
 	    FormatString++;
 	}
@@ -424,7 +452,7 @@
     /* All done. Put the terminator out. */
     AROS_UFC2(void, PutChProc,
 	AROS_UFCA(UBYTE, '\0'     , D0),
-	AROS_UFCA(APTR , PutChData, A3)
+	AROS_UFCA(APTR , pdata, A3)
     );
 
 
