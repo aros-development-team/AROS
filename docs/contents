@@ -2,6 +2,8 @@ README.txt - How to build the docs
 
 developer.sgml - Demo of an SGML-Version of the AROS docs
 
+developer/ - HTML docs generated from developer.sgml
+
 src/ - The sources for the docs
 
 other/ - Other material (eg. articles sent to magazines and NEWS groups)
