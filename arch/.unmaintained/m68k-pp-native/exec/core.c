@@ -106,7 +106,7 @@ static void do_db_IRQ(unsigned int virq, struct pt_regs * regs)
 	struct irqServer     * iServer;
 	struct irqDescriptor * desc = &PLATFORMDATA(SysBase)->irq_desc[virq];
 
-//	D(bug("In do_db_IRQ(virq=%d)\n",virq));
+	D(bug("In do_db_IRQ(virq=%d)\n",virq));
 	{
 		unsigned int status;
 		mask_and_ack_dbirq(virq);
@@ -115,16 +115,18 @@ static void do_db_IRQ(unsigned int virq, struct pt_regs * regs)
 		if (!(status & (IRQ_DISABLED | IRQ_INPROGRESS))) {
 			iServer = desc->id_server;
 			status |= IRQ_INPROGRESS;
+		} else {
+			D(bug("IRQ server used!? %p",desc->id_server));
 		}
 		desc->id_status = status;
 	}
 
 	/* Exit early if we had no action or it was disabled */
 	if (!iServer) {
-//		D(bug("No IRQ handler found!\n"));
+		D(bug("No IRQ handler found!\n"));
 		return;
 	}
-//D(bug("Handling virq %d in handler!\n",virq));
+	D(bug("Handling virq %d in handler!\n",virq));
 	handle_IRQ_event(virq, regs, iServer);
 
 	{
@@ -202,7 +204,8 @@ extern void sys_Dispatch(struct pt_regs * regs);
 	 * looking at the interrupt pending register depending on what irq
 	 * level I have.
 	 */
-//D(bug("isr=0x%x,irq=%d\n",isr,irq));
+
+	//D(bug("isr=0x%x,irq=%d\n",isr,irq));
 	switch (irq) {
 		case 0:
 
@@ -231,21 +234,21 @@ extern void sys_Dispatch(struct pt_regs * regs);
 				 */
 				sys_Dispatch(regs);
 				/* This is WRONG, but that's the IRQ I get for timer2 */
-				irq_desc[vHidd_IRQ_Timer].id_count++;
-				irq_desc[vHidd_IRQ_Timer].id_handler->ic_handle(vHidd_IRQ_Timer, regs);
+				irq_desc[0].id_count++;
+				irq_desc[0].id_handler->ic_handle(vHidd_IRQ_Timer, regs);
 				/*
-				 * Leave the following three lines as they are.
-				 * If you remove the D(bug()) then the emulation
-				 * will be extremly slow (probably the first line
-				 * is removed by gcc then).
+				 * Leave the following two lines as they are.
 				 */
 				tstat2 = RREG_W(TSTAT2);
 				WREG_W(TSTAT2) = 0;
-				//D(bug("%x ",tstat2));
 			}
 
 			if (isr & UART1_F) {
 				/* UART 1 */
+				treated = TRUE;
+
+				irq_desc[irq].id_count++;
+				irq_desc[irq].id_handler->ic_handle(4, regs);
 			}
 
 			if (isr & WDT_F) {
@@ -254,6 +257,10 @@ extern void sys_Dispatch(struct pt_regs * regs);
 
 			if (isr & RTC_F) {
 				/* real time clock */
+				treated = TRUE;
+
+				irq_desc[irq].id_count++;
+				//irq_desc[irq].id_handler->ic_handle(, regs);
 			}
 
 			if (isr & LCDC_F) {
@@ -335,7 +342,7 @@ BOOL irqSet(int irq, struct irqServer *is, void * isd, struct ExecBase * SysBase
 {
 	BOOL rc = FALSE;
 	if (is) {
-		struct irqServer * _is = AllocMem(sizeof(struct irqServer), 
+		struct irqServer * _is = AllocMem(sizeof(struct irqServer),
 		                                  MEMF_PUBLIC|MEMF_CLEAR);
 		if (NULL != _is) {
 			rc = TRUE;
