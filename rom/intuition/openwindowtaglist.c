@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.15  2000/09/16 12:04:45  lbischoff
+    set defaults for width and height to ~0 which means
+    lower right corner of window == lower right corner of screen.
+
     Revision 1.14  2000/08/12 23:55:00  bernie
     Add semicolons behind ASSERT#?() macro invokations
 
@@ -96,7 +100,7 @@
     struct ExtNewWindow nw =
     {
 	0, 0, 		/* Left, Top */
-	640, 200, 	/* Width, Height */
+	~0, ~0, 	/* Width, Height */
 	0xFF, 0xFF, 	/* DetailPen, BlockPen */
 	0L, 		/* IDCMPFlags */
 	0L, 		/* Flags */
