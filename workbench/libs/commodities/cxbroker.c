@@ -87,7 +87,7 @@ extern struct InputEvent *cxIHandler();
     AROS_LIBFUNC_INIT
 
     LONG    myerr = CBERR_OK;
-    CxObj  *co;
+    CxObj  *co = NULL;
     CxObj  *temp;
 
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
