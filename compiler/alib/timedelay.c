@@ -73,12 +73,15 @@
     tr.tr_node.io_Message.mn_ReplyPort = &mp;
     tr.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
 
+    SetSignal(0, SIGF_SINGLE);
+
     if(OpenDevice("timer.device", Unit, (struct IORequest *)&tr, 0) == 0)
     {
 	tr.tr_node.io_Command = TR_ADDREQUEST;
 	tr.tr_node.io_Flags = 0;
 	tr.tr_time.tv_secs = Seconds;
 	tr.tr_time.tv_micro = MicroSeconds;
+		
 	DoIO((struct IORequest *)&tr);
 
 	CloseDevice((struct IORequest *)&tr);
