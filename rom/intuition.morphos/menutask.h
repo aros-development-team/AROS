@@ -67,9 +67,9 @@ struct MenuHandlerData
     BOOL                       isundermouse;
 #ifdef USEWINDOWLOCK
     BOOL                       windowlock;
-#endif
+#endif /* USEWINDOWLOCK */
 };
-#else
+#else 
 
 struct MenuHandlerData
 {
@@ -106,14 +106,21 @@ struct MenuHandlerData
     ULONG       openmicros;
 };
 
-#endif
+#endif /* SKINS */
 
 BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase);
 struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *IntuitionBase);
 void DefaultMenuHandler(struct MenuTaskParams *taskparams);
-void AddToSelection(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,struct IntuitionBase *IntuitionBase);
 
+#ifdef SKINS
+void AddToSelection(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,struct IntuitionBase *IntuitionBase);
 BOOL HandleCheckItem(struct MenuHandlerData *mhd, struct SmallMenuEntry *entry,
                             struct IntuitionBase *IntuitionBase);
+#else
+void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
+void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD itemnum,
+                            struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 
 #endif
+
+#endif /* MENUTASK_H */

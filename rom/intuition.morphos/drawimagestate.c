@@ -89,8 +89,13 @@ AROS_LH6(void, DrawImageState,
     if (rp->Layer) LockLayer(0,rp->Layer);
 
     /* Store important variables of the RastPort */
+#ifdef __MORPHOS__
     GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,RPTAG_APen,(ULONG)&apen,
                RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+#else
+    GetRPAttrs(rp,RPTAG_APen,(ULONG)&apen,
+               RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+#endif
 
     while(image)
     {
@@ -286,7 +291,11 @@ AROS_LH6(void, DrawImageState,
         image = image->NextImage;
     }
 
+#ifdef __MORPHOS__
     SetRPAttrs(rp,RPTAG_APen,apen,RPTAG_BPen,bpen,RPTAG_DrMd,drmd,RPTAG_PenMode,penmode,TAG_DONE);
+#else
+    SetRPAttrs(rp,RPTAG_APen,apen,RPTAG_BPen,bpen,RPTAG_DrMd,drmd,TAG_DONE);
+#endif
 
     if (rp->Layer) UnlockLayer(rp->Layer);
 

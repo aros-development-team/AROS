@@ -41,10 +41,8 @@ FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
 	     requesters strgadgets strgclass  pointerclass windowclasses \
 	     intuition_misc inputhandler_support inputhandler_actions \
-	     menus menutask barlabelclass fillrectclass groupgclass wbtasktalk \
-	     rootclass icclass modelclass itexticlass misc
-## need some more thinking:
-## sysiclass
+	     menus  barlabelclass fillrectclass groupgclass wbtasktalk \
+	     rootclass icclass modelclass itexticlass misc sysiclass menutask
 
 FUNCTIONS := \
 	activategadget \

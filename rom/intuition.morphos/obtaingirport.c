@@ -93,7 +93,11 @@ AROS_LH1(struct RastPort *, ObtainGIRPort,
                 }
 
                 SetWriteMask(rp, 0xFF);
+#ifdef __MORPHOS__
                 SetRPAttrs(rp,RPTAG_DrMd,JAM1,RPTAG_PenMode,TRUE,TAG_DONE);
+#else
+                SetRPAttrs(rp,RPTAG_DrMd,JAM1,TAG_DONE);
+#endif /* __MORPHOS__ */
             }
         }
 

@@ -42,7 +42,7 @@
 #include "menus.h"
 
 #ifdef SKINS
-#include "mosmisc.h"
+#   include "mosmisc.h"
 #endif
 
 #undef DEBUG

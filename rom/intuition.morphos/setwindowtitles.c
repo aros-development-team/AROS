@@ -8,7 +8,10 @@
 #include <proto/layers.h>
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
-#include "renderwindowframe.h"
+
+#ifdef __MORPHOS__
+#   include "renderwindowframe.h"
+#endif
 
 #include <string.h>
 
@@ -113,7 +116,9 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
 
     if (change)
     {
+#ifdef __MORPHOS__
         if (window == GetPrivScreen(window->WScreen)->TitlebarBufferWin) GetPrivScreen(window->WScreen)->TitlebarBufferWin = 0;
+#endif
         int_RefreshWindowFrame(window, REFRESHGAD_TOPBORDER, 0, DOUBLEBUFFER, IntuitionBase);
     }
 

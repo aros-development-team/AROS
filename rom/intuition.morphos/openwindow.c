@@ -10,6 +10,7 @@
 #include <graphics/gfx.h>
 #include <intuition/intuition.h>
 #include <intuition/imageclass.h>
+#include <intuition/extensions.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -20,9 +21,12 @@
 #include "intuition_intern.h"
 #include "inputhandler.h"
 #include "inputhandler_actions.h"
-#include "intuition_extend.h"
 #include "boopsigadgets.h"
-#include "transplayers.h"
+
+#ifdef SKINS
+    #include "transplayers.h"
+    #include "intuition_extend.h"
+#endif
 
 #ifndef DEBUG_OpenWindow
 #   define DEBUG_OpenWindow 0

@@ -74,8 +74,14 @@ AROS_LH4(void, PrintIText,
                  rp, iText, leftOffset, topOffset));
 
     /* Store important variables of the RastPort */
+#ifdef __MORPHOS__
     GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,RPTAG_APen,(ULONG)&apen,
            RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+#else
+    GetRPAttrs(rp,RPTAG_APen,(ULONG)&apen,
+           RPTAG_BPen,(ULONG)&bpen,RPTAG_DrMd,(ULONG)&drmd,TAG_DONE);
+#endif
+
     font  = rp->Font;
     style = rp->AlgoStyle;
 
@@ -113,7 +119,11 @@ AROS_LH4(void, PrintIText,
     }
 
     /* Restore RastPort */
+#ifdef __MORPHOS__
     SetRPAttrs(rp,RPTAG_APen,apen,RPTAG_BPen,bpen,RPTAG_DrMd,drmd,RPTAG_PenMode,penmode,TAG_DONE);
+#else
+    SetRPAttrs(rp,RPTAG_APen,apen,RPTAG_BPen,bpen,RPTAG_DrMd,drmd,TAG_DONE);
+#endif
     SetFont      (rp, font);
     SetSoftStyle (rp, style, AskSoftStyle(rp));
 

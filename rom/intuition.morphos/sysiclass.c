@@ -1,11 +1,3 @@
-/*
-    (C) 1997-2001 AROS - The Amiga Research OS
-    $Id$
- 
-    Desc: Implementation of SYSICLASS
-    Lang: english
-*/
-
 /**************************************************************************************************/
 
 #include <exec/types.h>
@@ -17,12 +9,11 @@
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
+#include <intuition/extensions.h>
 #include <intuition/screens.h>
 
 #include <proto/graphics.h>
-#include <proto/cybergraphics.h>
 #include <graphics/rastport.h>
-#include <cybergraphx/cybergraphics.h>
 
 #include <proto/utility.h>
 #include <utility/tagitem.h>
@@ -31,16 +22,24 @@
 
 #include <aros/asmcall.h>
 #include "intuition_intern.h"
-#include "intuition_customize.h"
+#ifdef __MORPHOS__
 #include "intuition_extend.h"
-#include "renderwindowframe.h"
+#endif
 #include "maybe_boopsi.h"
 
 #include "gadgets.h" /* Some handy rendering funtions */
 
-#include "sysiclass.h"
-
-extern ULONG HookEntry();
+extern BYTE *ibPrefs;
+extern BYTE *ibSnapshot;
+extern BYTE *ibSnapshotSel;
+extern BYTE *ibPopupSel;
+extern BYTE *ibPopup;
+extern BYTE *ibIconify;
+extern BYTE *ibIconifySel;
+extern BYTE *ibLock;
+extern BYTE *ibLockSel;
+extern VOID DrawIB(struct RastPort *rp,BYTE *ib,LONG cx,LONG cy,struct IntuitionBase *IntuitionBase);
+extern void DrawJUMP(struct RastPort *rp,ULONG state,LONG cx,LONG cy,struct IntuitionBase *IntuitionBase);
 
 #undef DEBUG
 #define DEBUG 0
@@ -51,42 +50,132 @@ extern ULONG HookEntry();
 #define DEFSIZE_WIDTH  14
 #define DEFSIZE_HEIGHT 14
 
+#if 0 /* stegerg: ???? */
+
+/* Image data */
+#define ARROWDOWN_WIDTH    18
+#define ARROWDOWN_HEIGHT   11
+
+UWORD ArrowDown0Data[] =
+    {
+        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0C0C, 0x4000,
+        0x0738, 0x4000, 0x03F0, 0x4000, 0x01E0, 0x4000, 0x00C0, 0x4000,
+        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+
+        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+    };
+
+UWORD ArrowDown1Data[] =
+    {
+        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8C0C, 0x0000,
+        0x8738, 0x0000, 0x83F0, 0x0000, 0x81E0, 0x0000, 0x80C0, 0x0000,
+        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+
+        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+    };
+
+#define ARROWUP_WIDTH    18
+#define ARROWUP_HEIGHT   11
+
+UWORD ArrowUp0Data[] =
+    {
+        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x00C0, 0x4000,
+        0x01E0, 0x4000, 0x03F0, 0x4000, 0x0738, 0x4000, 0x0C0C, 0x4000,
+        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+
+        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+    };
+
+UWORD ArrowUp1Data[] =
+    {
+        0xFFFF, 0x8000, 0x8000, 0x0000, 0x8000, 0x0000, 0x80C0, 0x0000,
+        0x81E0, 0x0000, 0x83F0, 0x0000, 0x8738, 0x0000, 0x8C0C, 0x0000,
+        0x8000, 0x0000, 0x8000, 0x0000, 0x8000, 0x0000,
+
+        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+        0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000, 0x0000, 0x4000,
+        0x0000, 0x4000, 0x0000, 0x4000, 0x7FFF, 0xC000,
+    };
+
+#define ARROWLEFT_WIDTH    11
+#define ARROWLEFT_HEIGHT   16
+
+UWORD ArrowLeft0Data[] =
+    {
+        0x0000, 0x0020, 0x0020, 0x0120, 0x0320, 0x0620, 0x0E20, 0x1C20,
+        0x1C20, 0x0E20, 0x0620, 0x0320, 0x0120, 0x0020, 0x0020, 0xFFE0,
+
+        0xFFE0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
+        0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000,
+    };
+
+UWORD ArrowLeft1Data[] =
+    {
+        0xFFE0, 0x8000, 0x8000, 0x8100, 0x8300, 0x8600, 0x8E00, 0x9C00,
+        0x9C00, 0x8E00, 0x8600, 0x8300, 0x8100, 0x8000, 0x8000, 0x0000,
+
+        0x0000, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
+        0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
+    };
+
+#define ARROWRIGHT_WIDTH    11
+#define ARROWRIGHT_HEIGHT   16
+
+UWORD ArrowRight0Data[] =
+    {
+        0x0000, 0x0020, 0x0020, 0x1020, 0x1820, 0x0C20, 0x0E20, 0x0720,
+        0x0720, 0x0E20, 0x0C20, 0x1820, 0x1020, 0x0020, 0x0020, 0xFFE0,
+
+        0xFFE0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
+        0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x0000,
+    };
+
+UWORD ArrowRight1Data[] =
+    {
+        0xFFE0, 0x8000, 0x8000, 0x9000, 0x9800, 0x8C00, 0x8E00, 0x8700,
+        0x8700, 0x8E00, 0x8C00, 0x9800, 0x9000, 0x8000, 0x8000, 0x0000,
+
+        0x0000, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020,
+        0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
+    };
+
+#endif
+
 /**************************************************************************************************/
 
 /* Some handy transparent base class object casting defines.
  */
 #define IM(o) ((struct Image *)o)
 
+static UWORD getbgpen(ULONG state, UWORD *pens);
+static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
+                             WORD left, WORD top, WORD width, WORD height,
+                             struct IntuitionBase *IntuitionBase);
+
+#undef IntuitionBase
+#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
+
 
 /**************************************************************************************************/
 
-#ifndef SYSIDATA
 struct SysIData
 {
-    ULONG                type;
-    struct IntDrawInfo  *dri;
-    struct Image        *frame;
-    UWORD                flags;
-    struct Window       *window;
+    ULONG       type;
+    struct DrawInfo *dri;
+    struct Image    *frame;
+    UWORD       flags;
 };
 
 #define SYSIFLG_GADTOOLS 1
 #define SYSIFLG_NOBORDER 2
-#define SYSIFLG_STDLOOK  16
-#define SYSIFLG_WINDOWOK 32
-
-void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
-                             WORD left, WORD top, WORD width, WORD height,
-                             struct IntuitionBase *IntuitionBase);
-#endif
 
 /**************************************************************************************************/
-#if 0
-static UWORD getbgpen(ULONG state, UWORD *pens);
-#endif
-
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
 /* Some handy drawing functions */
 
@@ -112,13 +201,12 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     int def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
     int def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
     int def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
-    //ULONG  type = 0;
 
     BOOL unsupported = FALSE;
     BOOL set_width = FALSE, set_height = FALSE;
 
     taglist = msg->ops_AttrList;
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
         switch(tag->ti_Tag)
         {
@@ -131,7 +219,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             break;
 
         case SYSIA_DrawInfo:
-            data->dri = (struct IntDrawInfo *)tag->ti_Data;
+            data->dri = (struct DrawInfo *)tag->ti_Data;
             reffont = data->dri->dri_Font;
             break;
 
@@ -164,8 +252,6 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             case MUIIMAGE:
             case POPUPIMAGE:
             case SNAPSHOTIMAGE:
-            case MENUTOGGLEIMAGE:
-            case SUBMENUIMAGE:
                 break;
 
             default:
@@ -198,14 +284,6 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
             }
             break;
 
-        case IA_Window:
-            if (tag->ti_Data)
-            {
-                data->window = (struct Window *)tag->ti_Data;
-                data->flags |= SYSIFLG_WINDOWOK;
-            }
-            break;
-
         } /* switch(tag->ti_Tag) */
 
     } /* while ((tag = NextTagItem(&taglist))) */
@@ -214,6 +292,8 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
     if ((!data->dri) || (unsupported))
         return FALSE;
+
+    //  if (!data->screen) data->screen = int_FindScreenByDrawInfo(data->dri,IntuitionBase);
 
     switch(data->type)
     {
@@ -239,11 +319,6 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
     case DEPTHIMAGE:
     case ZOOMIMAGE:
-        def_low_width = 18;
-        def_med_width = 24;
-        def_high_width = 24;
-        break;
-
     case ICONIFYIMAGE:
     case LOCKIMAGE:
     case MUIIMAGE:
@@ -253,6 +328,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         def_low_width = 18;
         def_med_width = 24;
         def_high_width = 24;
+        if ((data->type == DEPTHIMAGE)||(data->type == ZOOMIMAGE)) IM(obj)->LeftEdge = -1;
         break;
 
     case SDEPTHIMAGE:
@@ -265,7 +341,6 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         def_low_width = 15;
         def_med_width = 20;
         def_high_width = 20;
-
         break;
 
     case SIZEIMAGE:
@@ -278,9 +353,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         break;
 
     case MENUCHECK:
-        //def_low_width  = reffont->tf_XSize * 3 / 2;
-        //jDc: what's wrong with 1:1 ratio?? ;)
-        def_low_width = reffont->tf_YSize;
+        def_low_width  = reffont->tf_XSize * 3 / 2;
         def_low_height = reffont->tf_YSize;
         size = SYSISIZE_LOWRES;
         break;
@@ -290,16 +363,9 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         def_low_width  = reffont->tf_XSize * 2;
         def_low_height = reffont->tf_YSize;
 #else
-        def_low_width  = reffont->tf_XSize * 2;
+def_low_width  = reffont->tf_XSize * 2;
         def_low_height = reffont->tf_YSize + 1;
 #endif
-        size = SYSISIZE_LOWRES;
-        break;
-
-    case MENUTOGGLEIMAGE:
-    case SUBMENUIMAGE:
-        def_low_width = reffont->tf_YSize;
-        def_low_height = reffont->tf_YSize;
         size = SYSISIZE_LOWRES;
         break;
 
@@ -329,8 +395,6 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     if (!set_height)
         IM(obj)->Height = size == SYSISIZE_LOWRES ? def_low_height :
                           (size == SYSISIZE_HIRES ? def_high_height : def_med_height);
-
-    sysi_skinnew(cl,obj,set_width,set_height,IntuitionBase);
 
     return TRUE;
 }
@@ -368,11 +432,13 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     case CHECKIMAGE:
         {
             struct TagItem tags[] =
-            {
-                {IA_FrameType, FRAME_BUTTON},
-                {IA_EdgesOnly, FALSE},
-                {TAG_MORE, 0L}
-            };
+                {
+                    {
+                        IA_FrameType, FRAME_BUTTON
+                    },
+                    {IA_EdgesOnly, FALSE},
+                    {TAG_MORE, 0L}
+                };
 
             tags[2].ti_Data = (IPTR)msg->ops_AttrList;
             data->frame = NewObjectA(NULL, FRAMEICLASS, tags);
@@ -407,8 +473,6 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     case POPUPIMAGE:
     case SNAPSHOTIMAGE:
     case JUMPIMAGE:
-    case MENUTOGGLEIMAGE:
-    case SUBMENUIMAGE:
         break;
 
     default:
@@ -447,15 +511,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     UWORD height = IM(obj)->Height;
     WORD right = left + width - 1;
     WORD bottom = top + height - 1;
-    struct sysiclassprefs *sysiclassprefs;
-
-    SANITY_CHECK(rport)
 
     SetDrMd(rport, JAM1);
-
-    if (sysi_drawskin(cl,obj,msg,IntuitionBase)) return;
-
-    sysiclassprefs = (struct sysiclassprefs *)int_GetCustomPrefs(TYPE_SYSICLASS,data->dri,IntuitionBase);
 
     switch(data->type)
     {
@@ -467,7 +524,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             /* Draw frame */
             DrawImageState(rport, data->frame,
                            msg->imp_Offset.X, msg->imp_Offset.Y,
-                           IDS_NORMAL, (struct DrawInfo *)data->dri);
+                           IDS_NORMAL, data->dri);
 
             /* Draw checkmark (only if image is in selected state) */
             if (msg->imp_State == IDS_SELECTED)
@@ -487,7 +544,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 Move(rport, right -1 , top);
                 Draw(rport, right, top);
 #else
-draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
+                draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
                 draw_thick_line(cl, rport, left + 1, bottom, right - 1, top, 0);
 #endif
 
@@ -595,78 +652,36 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
             break;
         }
 
-    case MENUCHECK:
-    case SUBMENUIMAGE:
-    case MENUTOGGLEIMAGE:
+    case LEFTIMAGE:
         {
-            UWORD *pens = data->dri->dri_Pens;
+            UWORD hspacing,vspacing;
+            WORD cy;
 
-//#if MENUS_AMIGALOOK
-//            SetAPen(rport, pens[BARBLOCKPEN]);
-//#else
-//            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-//#endif
+            hspacing = HSPACING;
+            vspacing = VSPACING;
 
-//            if (hd.image)
-//            {
-//                /*EraseRect(rport,left,top,right,bottom);*/
-//                /*menutask will handle this!*/
-//            }
-//            else
-//            {
-//                RectFill(rport,left, top, right, bottom);
-//            }
-
-            SetAPen(rport, pens[BARDETAILPEN]);
-            
-            switch (data->type)
+            if (width <= 12)
             {
-                case MENUCHECK:
-                    draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
-                    draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
-                    break;
-
-                case MENUTOGGLEIMAGE:
-                    RectFill(rport,left,top,left + width - 1,top);
-                    RectFill(rport,left,top + height - 1,left + width - 1,top + height - 1);
-                    RectFill(rport,left,top,left,top + height - 1);
-                    RectFill(rport,left + width - 1, top, left + width - 1, top + height -1);
-                    left++;top++;width -= 2; height -=2;
-                    if (msg->imp_State == IDS_SELECTED)
-                    {
-                        draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
-                        draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
-                    }
-                    break;
-
-                case SUBMENUIMAGE:
-                    Move(rport,left + width - 2, top + height/2);
-                    Draw(rport,left + width - 6, top + height/2 - 2);
-                    Move(rport,left + width - 2, top + height/2);
-                    Draw(rport,left + width - 6, top + height/2 + 2);
-                    break;
+                hspacing = HSPACING_MIDDLE;
+            }
+            if (width <= 10)
+            {
+                hspacing = HSPACING_SMALL;
             }
 
-            break;
-        }
-
-    case MUIIMAGE:
-        {
-            //UWORD *pens = data->dri->dri_Pens;
-
-            int_RenderWindowFrame(data->window,left,top,width,height,data->dri,IntuitionBase);
+            if (height <= 12)
+            {
+                vspacing = VSPACING_MIDDLE;
+            }
+            if (height <= 10)
+            {
+                vspacing = VSPACING_SMALL;
+            }
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                if (data->window)
-                {
-                    int_RenderWindowFrameBorder(data->window,left,top,width,height,data->dri,IntuitionBase);
-                }
-                else
-                {
-                    renderimageframe(rport, data->type, msg->imp_State, data->dri->dri_Pens,
-                                     left, top, width, height, IntuitionBase);
-                }
+                renderimageframe(rport, LEFTIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -675,9 +690,727 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
                 height -= 2;
             }
 
+            if (data->flags & SYSIFLG_GADTOOLS)
+            {
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                cy = height / 2;
+
+                Move(rport, left + width - 1 - hspacing, top + vspacing + 1);
+                Draw(rport, left + hspacing, top + height - cy);
+                Move(rport, left + width - 1 - hspacing, top + vspacing);
+                Draw(rport, left + hspacing, top + height - cy - 1);
+
+                Move(rport, left + width - 1 - hspacing, top + height - 1- vspacing - 1);
+                Draw(rport, left + hspacing, top + cy - 1);
+                Move(rport, left + width - 1 - hspacing, top + height - 1 - vspacing);
+                Draw(rport, left + hspacing, top + cy);
+            }
+            else
+            {
+                WORD i;
+
+                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+
+                RectFill(rport, left, top, right, bottom);
+
+                left += hspacing;
+                top += vspacing;
+                width -= hspacing * 2;
+                height -= vspacing * 2;
+
+                right = left + width - 1;
+                bottom = top + height - 1;
+
+                cy = (height + 1) / 2;
+
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                for(i = 0; i < cy; i++)
+                {
+                    RectFill(rport, left + (cy - i - 1) * width / cy,
+                             top + i,
+                             right - i * width / cy / 2,
+                             top + i);
+                    RectFill(rport, left + (cy - i - 1) * width / cy,
+                             bottom - i,
+                             right - i * width / cy / 2,
+                             bottom - i);
+                }
+
+            }
+            break;
+        }
+
+    case UPIMAGE:
+        {
+            UWORD hspacing,vspacing;
+            WORD cx;
+
+            hspacing = HSPACING;
+            vspacing = VSPACING;
+
+            if (width <= 12)
+            {
+                hspacing = HSPACING_MIDDLE;
+            }
+            if (width <= 10)
+            {
+                hspacing = HSPACING_SMALL;
+            }
+
+            if (height <= 12)
+            {
+                vspacing = VSPACING_MIDDLE;
+            }
+            if (height <= 10)
+            {
+                vspacing = VSPACING_SMALL;
+            }
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, UPIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, IntuitionBase);
+                left++;
+                top++;
+                right--;
+                bottom--;
+                width -= 2;
+                height -= 2;
+            }
+
+            if (data->flags & SYSIFLG_GADTOOLS)
+            {
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                cx = width / 2;
+
+                Move(rport, left + hspacing + 1, top + height - 1 - vspacing);
+                Draw(rport, left + width - cx, top + vspacing);
+                Move(rport, left + hspacing, top + height - 1 - vspacing);
+                Draw(rport, left + width - cx - 1, top + vspacing);
+
+                Move(rport, left + width - 1 - hspacing - 1, top + height - 1 - vspacing);
+                Draw(rport, left + cx - 1, top + vspacing);
+                Move(rport, left + width - 1 - hspacing, top + height - 1 - vspacing);
+                Draw(rport, left + cx, top + vspacing);
+            }
+            else
+            {
+                WORD i;
+
+                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+
+                RectFill(rport, left, top, right, bottom);
+
+                left += hspacing;
+                top += vspacing;
+                width -= hspacing * 2;
+                height -= vspacing * 2;
+
+                right = left + width - 1;
+                bottom = top + height - 1;
+
+                cx = (width + 1) / 2;
+
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                for(i = 0; i < cx; i++)
+                {
+                    RectFill(rport, left + i,
+                             top + (cx - i - 1) * height / cx,
+                             left + i,
+                             bottom - i * height / cx / 2);
+                    RectFill(rport, right - i,
+                             top + (cx - i - 1) * height / cx,
+                             right - i,
+                             bottom - i * height / cx / 2);
+                }
+
+            }
+            break;
+        }
+
+    case RIGHTIMAGE:
+        {
+            UWORD hspacing,vspacing;
+            WORD cy;
+
+            hspacing = HSPACING;
+            vspacing = VSPACING;
+
+            if (width <= 12)
+            {
+                hspacing = HSPACING_MIDDLE;
+            }
+            if (width <= 10)
+            {
+                hspacing = HSPACING_SMALL;
+            }
+
+            if (height <= 12)
+            {
+                vspacing = VSPACING_MIDDLE;
+            }
+            if (height <= 10)
+            {
+                vspacing = VSPACING_SMALL;
+            }
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, RIGHTIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, IntuitionBase);
+                left++;
+                top++;
+                right--;
+                bottom--;
+                width -= 2;
+                height -= 2;
+            }
+
+            if (data->flags & SYSIFLG_GADTOOLS)
+            {
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                cy = height / 2;
+
+                Move(rport, left + hspacing, top + vspacing + 1);
+                Draw(rport, left + width - 1 - hspacing, top + height - cy);
+                Move(rport, left + hspacing, top + vspacing);
+                Draw(rport, left + width - 1 - hspacing, top + height - cy - 1);
+
+                Move(rport, left + hspacing, top + height - 1- vspacing - 1);
+                Draw(rport, left + width - 1 - hspacing, top + cy - 1);
+                Move(rport, left + hspacing, top + height - 1 - vspacing);
+                Draw(rport, left + width - 1 - hspacing, top + cy);
+
+            }
+            else
+            {
+                WORD i;
+
+                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+
+                RectFill(rport, left, top, right, bottom);
+
+                left += hspacing;
+                top += vspacing;
+                width -= hspacing * 2;
+                height -= vspacing * 2;
+
+                right = left + width - 1;
+                bottom = top + height - 1;
+
+                cy = (height + 1) / 2;
+
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                for(i = 0; i < cy; i++)
+                {
+                    RectFill(rport, left + i * width / cy / 2,
+                             top + i,
+                             right - (cy - i - 1) * width / cy,
+                             top + i);
+                    RectFill(rport, left + i * width / cy / 2,
+                             bottom - i,
+                             right - (cy - i - 1) * width / cy,
+                             bottom - i);
+                }
+
+            }
+            break;
+        }
+
+    case DOWNIMAGE:
+        {
+            UWORD hspacing,vspacing;
+            WORD cx;
+
+            hspacing = HSPACING;
+            vspacing = VSPACING;
+
+            if (width <= 12)
+            {
+                hspacing = HSPACING_MIDDLE;
+            }
+            if (width <= 10)
+            {
+                hspacing = HSPACING_SMALL;
+            }
+
+            if (height <= 12)
+            {
+                vspacing = VSPACING_MIDDLE;
+            }
+            if (height <= 10)
+            {
+                vspacing = VSPACING_SMALL;
+            }
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, DOWNIMAGE, msg->imp_State, data->dri->dri_Pens,
+                                 left, top, width, height, IntuitionBase);
+                left++;
+                top++;
+                right--;
+                bottom--;
+                width -= 2;
+                height -= 2;
+            }
+
+            if (data->flags & SYSIFLG_GADTOOLS)
+            {
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                cx = width / 2;
+
+                Move(rport, left + hspacing + 1, top + vspacing);
+                Draw(rport, left + width - cx, top + height - 1 - vspacing);
+                Move(rport, left + hspacing, top + vspacing);
+                Draw(rport, left + width - cx - 1, top + height - 1 - vspacing);
+
+                Move(rport, left + width - 1 - hspacing - 1, top + vspacing);
+                Draw(rport, left + cx - 1, top + height - 1 - vspacing);
+                Move(rport, left + width - 1 - hspacing, top + vspacing);
+                Draw(rport, left + cx, top + height - 1 - vspacing);
+            }
+            else
+            {
+                WORD i;
+
+                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+
+                RectFill(rport, left, top, right, bottom);
+
+                left += hspacing;
+                top += vspacing;
+                width -= hspacing * 2;
+                height -= vspacing * 2;
+
+                right = left + width - 1;
+                bottom = top + height - 1;
+
+                cx = (width + 1) / 2;
+
+                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+                for(i = 0; i < cx; i++)
+                {
+                    RectFill(rport, left + i,
+                             top + i * height / cx / 2,
+                             left + i,
+                             bottom - (cx - i - 1) * height / cx);
+                    RectFill(rport, right - i,
+                             top + i * height / cx / 2,
+                             right -  i,
+                             bottom - (cx - i - 1) * height / cx);
+
+                }
+
+            }
+            break;
+        }
+
+    case DEPTHIMAGE:
+    case SDEPTHIMAGE:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+            UWORD bg;
+
+            WORD h_spacing;
+            WORD v_spacing;
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, DEPTHIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
+                left += 2;
+                top++;
+                right--;
+                bottom--;
+                width -= 3;
+                height -= 2;
+            }
+
+            h_spacing = width / 6;
+            v_spacing = height / 6;
+
+            if (data->type == DEPTHIMAGE)
+            {
+                bg = getbgpen(msg->imp_State, pens);
+            }
+            else
+            {
+                bg = pens[BACKGROUNDPEN];
+            }
+
+            /* Clear background into correct color */
+            SetAPen(rport, bg);
+            RectFill(rport, left, top, right, bottom);
+
+            /* Draw a image of two partly overlapped tiny windows,
+            */
+
+            left += h_spacing;
+            top  += v_spacing;
+
+            width  -= h_spacing * 2;
+            height -= v_spacing * 2;
+
+            right  = left + width  - 1;
+            bottom = top  + height - 1;
+
+            /* Render top left window  */
+
+            SetAPen(rport, pens[SHADOWPEN]);
+            drawrect(rport
+                     , left
+                     , top
+                     , right - (width / 3 )
+                     , bottom - (height / 3)
+                     , IntuitionBase);
+
+
+            /* Fill top left window (inside of the frame above) */
+
+            if ((msg->imp_State != IDS_INACTIVENORMAL) &&
+                    (data->type != SDEPTHIMAGE))
+            {
+                SetAPen(rport,pens[BACKGROUNDPEN]);
+                RectFill(rport
+                         , left         + 1
+                         , top          + 1
+                         , right - (width / 3)   - 1
+                         , bottom - (height / 3) - 1);
+
+            }
+
+            /* Render bottom right window  */
+            SetAPen(rport, pens[SHADOWPEN]);
+            drawrect(rport
+                     , left + (width / 3)
+                     , top + (height / 3)
+                     , right
+                     , bottom
+                     , IntuitionBase);
+
+            /* Fill bottom right window (inside of the frame above) */
+            SetAPen(rport, pens[((msg->imp_State == IDS_INACTIVENORMAL) &&
+                                 (data->type != SDEPTHIMAGE)) ? BACKGROUNDPEN : SHINEPEN]);
+            RectFill(rport
+                     , left + (width / 3)   + 1
+                     , top + (height / 3)   + 1
+                     , right            - 1
+                     , bottom       - 1);
+
+
+            if (msg->imp_State == IDS_SELECTED)
+            {
+                /* Re-Render top left window  */
+
+                SetAPen(rport, pens[SHADOWPEN]);
+                drawrect(rport
+                         , left
+                         , top
+                         , right - (width / 3 )
+                         , bottom - (height / 3)
+                         , IntuitionBase);
+            }
+            break;
+        }
+
+
+
+
+    case CLOSEIMAGE:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+            WORD h_spacing;
+            WORD v_spacing;
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, CLOSEIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
+                left++ ;
+                top++;
+                width -= 3; /* 3 is no bug! */
+                height -= 2;
+            }
+
+            right = left + width - 1;
+            bottom = top + height - 1;
+            h_spacing = width * 4 / 10;
+            v_spacing = height * 3 / 10;
+
+            SetAPen(rport, getbgpen(msg->imp_State, pens));
+            RectFill(rport, left, top, right, bottom);
+
+            left += h_spacing;
+            right -= h_spacing;
+            top += v_spacing;
+            bottom -= v_spacing;
+
+            SetAPen(rport, pens[SHADOWPEN]);
+            RectFill(rport, left, top, right, bottom);
+
+            left++;
+            top++;
+            right--;
+            bottom--;
+
+            SetAPen(rport, pens[(msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
+            RectFill(rport, left, top, right, bottom);
+
+            break;
+        }
+
+    case ZOOMIMAGE:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+            UWORD bg;
+            WORD h_spacing;
+            WORD v_spacing;
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, ZOOMIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
+                left += 2;
+                top++;
+                width -= 3;
+                height -= 2;
+            }
+
+            right = left + width - 1;
+            bottom = top + height - 1 ;
+            h_spacing = width / 6;
+            v_spacing = height / 6;
+
+            bg = getbgpen(msg->imp_State, pens);
+
+            /* Clear background into correct color */
+            SetAPen(rport, bg);
+            RectFill(rport, left, top, right, bottom);
+
+            left += h_spacing;
+            right -= h_spacing;
+            top += v_spacing;
+            bottom -= v_spacing;
+
+            SetAPen(rport, pens[SHADOWPEN]);
+            RectFill(rport, left, top, right, bottom);
+
+            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? SHINEPEN :
+                                (msg->imp_State == IDS_NORMAL) ? FILLPEN : BACKGROUNDPEN]);
+            RectFill(rport, left + 1, top + 1, right - 1, bottom - 1);
+
+            right = left + (right - left + 1) / 2;
+            bottom = top + (bottom - top + 1) / 2;
+
+            if (right - left <  4) right = left + 4;
+
+            SetAPen(rport, pens[SHADOWPEN]);
+            RectFill(rport, left, top, right, bottom);
+
+            left += 2;
+            right -= 2;
+            top += 1;
+            bottom -= 1;
+
+            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN :
+                                (msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
+            RectFill(rport,left, top, right, bottom);
+            break;
+        }
+
+
+    case SIZEIMAGE:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+            UWORD bg;
+            WORD h_spacing;
+            WORD v_spacing;
+
+            WORD x, y;
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
+                left++;
+                top++;
+                right--;
+                bottom--;
+                width -= 2;
+                height -= 2;
+            }
+
+            h_spacing = width  / 5;
+            v_spacing = height / 5;
+
+            bg = getbgpen(msg->imp_State, pens);
+
+            /* Clear background into correct color */
+            SetAPen(rport, bg);
+            RectFill(rport, left, top, right, bottom);
+
+            /* A triangle image */
+
+            left += h_spacing;
+            top  += v_spacing;
+
+            right  = left + width  - 1 - (h_spacing * 2);
+            bottom = top  + height - 1 - (v_spacing * 2);
+
+            width  = right  - left + 1;
+            height = bottom - top  + 1;
+
+            if (msg->imp_State != IDS_INACTIVENORMAL)
+            {
+                SetAPen(rport, pens[SHINEPEN]);
+                for(y = top; y <= bottom; y++)
+                {
+                    x = left + (bottom - y) * width / height;
+                    RectFill(rport, x, y, right, y);
+                }
+            }
+
+            SetAPen(rport, pens[SHADOWPEN]);
+            /* Draw triangle border */
+            Move(rport, left, bottom);
+            Draw(rport, right, top);
+            Draw(rport, right, bottom);
+            Draw(rport, left, bottom);
+
+            break;
+        }
+
+    case MENUCHECK:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+
+#if MENUS_AMIGALOOK
+            SetAPen(rport, pens[BARBLOCKPEN]);
+#else
+            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+#endif
+
+            RectFill(rport, left, top, right, bottom);
+
+            SetAPen(rport, pens[BARDETAILPEN]);
+            draw_thick_line(cl, rport, left + 1, top + height / 3 , left + 1, bottom, 0);
+            draw_thick_line(cl, rport, left + 2, bottom, right - 2, top, 0);
+
+            break;
+        }
+
+    case AMIGAKEY:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+
+#if MENUS_AMIGALOOK
+            struct TextFont *oldfont;
+            UBYTE oldstyle;
+
+            SetAPen(rport, pens[BARDETAILPEN]);
+#else
+            SetAPen(rport, pens[SHINEPEN]);
+#endif
+
+            RectFill(rport, left, top, right, bottom);
+
+#if MENUS_AMIGALOOK
+            SetAPen(rport, pens[BARBLOCKPEN]);
+
+            oldfont = rport->Font;
+            oldstyle = rport->AlgoStyle;
+
+            SetFont(rport, GfxBase->DefaultFont);
+            SetSoftStyle(rport, FSF_ITALIC, AskSoftStyle(rport));
+
+            Move(rport, left + (width - rport->TxWidth) / 2,
+                 top  + (height - rport->TxHeight) / 2 + rport->TxBaseline);
+            Text(rport, "A", 1);
+
+            SetSoftStyle(rport, oldstyle, AskSoftStyle(rport));
+            SetFont(rport, oldfont);
+
+            SetAPen(rport, pens[BARBLOCKPEN]);
+#else
+            SetAPen(rport, pens[SHADOWPEN]);
+
+            RectFill(rport, left + 1, top, right - 1, top);
+            RectFill(rport, right, top + 1, right, bottom - 1);
+            RectFill(rport, left + 1, bottom, right - 1, bottom);
+            RectFill(rport, left, top + 1, left, bottom - 1);
+
+            SetAPen(rport, pens[BACKGROUNDPEN]);
+            RectFill(rport, left + 1, bottom - 1, right - 1, bottom - 1);
+            RectFill(rport, right - 1, top + 1, right - 1, bottom - 2);
+
+            RectFill(rport, left + 2, top + 2, left + 4, top + 2);
+            RectFill(rport, left + 2, top + 3, left + 2, top + 4);
+
+            SetAPen(rport, pens[SHADOWPEN]);
+            RectFill(rport, left + 2, bottom - 2, right - 2, bottom - 2);
+            RectFill(rport, right - 2, top + 2, right - 2, bottom - 4);
+
+            {
+                WORD a_size   = height - 7;
+                WORD a_left   = left + 5;
+                WORD a_top    = top + 2;
+                WORD a_right  = a_left + a_size;
+                WORD a_bottom = a_top + a_size;
+
+                Move(rport, a_left, a_bottom);
+                Draw(rport, a_right, a_top);
+                Draw(rport, a_right, a_bottom);
+                Move(rport, a_right - 1, a_top + 1);
+                Draw(rport, a_right - 1, a_bottom);
+            }
+
+            SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+#endif
+            WritePixel(rport, left, top);
+            WritePixel(rport, right, top);
+            WritePixel(rport, right, bottom);
+            WritePixel(rport, left, bottom);
+
+            break;
+        }
+
+        /* MUI and other non-std images */
+
+    case MUIIMAGE:
+        {
+            UWORD *pens = data->dri->dri_Pens;
+            UWORD bg;
+
+            if (!(data->flags & SYSIFLG_NOBORDER))
+            {
+                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
+                left++;
+                top++;
+                right--;
+                bottom--;
+                width -= 2;
+                height -= 2;
+            }
+
+            bg = getbgpen(msg->imp_State, pens);
+
+            /* Clear background into correct color */
+            SetAPen(rport, bg);
+            RectFill(rport, left, top, right, bottom);
+
             /* DRAW IMAGE :) */
 
-            DrawIB(rport,(BYTE*)muiimage[SIM_PREFS],left+(width/2),top+(height/2),IntuitionBase);
+            DrawIB(rport,(BYTE *)ibPrefs,left+(width/2),top+(height/2),IntuitionBase);
 
             break;
         }
@@ -687,21 +1420,13 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
     case ICONIFYIMAGE:
     case LOCKIMAGE:
         {
-            //UWORD *pens = data->dri->dri_Pens;
-
-            int_RenderWindowFrame(data->window,left,top,width,height,data->dri,IntuitionBase);
+            UWORD *pens = data->dri->dri_Pens;
+            UWORD bg;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                if (data->window)
-                {
-                    int_RenderWindowFrameBorder(data->window,left,top,width,height,data->dri,IntuitionBase);
-                }
-                else
-                {
-                    renderimageframe(rport, data->type, msg->imp_State, data->dri->dri_Pens,
-                                     left, top, width, height, IntuitionBase);
-                }
+                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -710,17 +1435,23 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
                 height -= 2;
             }
 
+            bg = getbgpen(msg->imp_State, pens);
+
+            /* Clear background into correct color */
+            SetAPen(rport, bg);
+            RectFill(rport, left, top, right, bottom);
+
             /* DRAW IMAGE :) */
 
             if (data->type == SNAPSHOTIMAGE)
             {
                 if (msg->imp_State == IDS_SELECTED)
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_SNAPSHOTSEL],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibSnapshotSel,left+(width/2),top+(height/2),IntuitionBase);
                 }
                 else
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_SNAPSHOT],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibSnapshot,left+(width/2),top+(height/2),IntuitionBase);
                 }
             }
 
@@ -728,11 +1459,11 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
             {
                 if (msg->imp_State == IDS_SELECTED)
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_POPUPSEL],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibPopupSel,left+(width/2),top+(height/2),IntuitionBase);
                 }
                 else
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_POPUP],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibPopup,left+(width/2),top+(height/2),IntuitionBase);
                 }
             }
 
@@ -740,11 +1471,11 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
             {
                 if (msg->imp_State == IDS_SELECTED)
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_ICONIFYSEL],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibIconifySel,left+(width/2),top+(height/2),IntuitionBase);
                 }
                 else
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_ICONIFY],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibIconify,left+(width/2),top+(height/2),IntuitionBase);
                 }
             }
 
@@ -752,11 +1483,11 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
             {
                 if ((msg->imp_State == IDS_SELECTED) || (msg->imp_State == IDS_INACTIVESELECTED))
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_LOCKSEL],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibLockSel,left+(width/2),top+(height/2),IntuitionBase);
                 }
                 else
                 {
-                    DrawIB(rport,(BYTE*)muiimage[SIM_LOCK],left+(width/2),top+(height/2),IntuitionBase);
+                    DrawIB(rport,(BYTE *)ibLock,left+(width/2),top+(height/2),IntuitionBase);
                 }
             }
 
@@ -765,21 +1496,13 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
 
     case JUMPIMAGE:
         {
-            //UWORD *pens = data->dri->dri_Pens;
-
-            int_RenderWindowFrame(data->window,left,top,width,height,data->dri,IntuitionBase);
+            UWORD *pens = data->dri->dri_Pens;
+            UWORD bg;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                if (data->window)
-                {
-                    int_RenderWindowFrameBorder(data->window,left,top,width,height,data->dri,IntuitionBase);
-                }
-                else
-                {
-                    renderimageframe(rport, data->type, msg->imp_State, data->dri->dri_Pens,
-                                     left, top, width, height, IntuitionBase);
-                }
+                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
+                                 left, top, width, height, IntuitionBase);
                 left++;
                 top++;
                 right--;
@@ -787,6 +1510,12 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
                 width -= 2;
                 height -= 2;
             }
+
+            bg = getbgpen(msg->imp_State, pens);
+
+            /* Clear background into correct color */
+            SetAPen(rport, bg);
+            RectFill(rport, left, top, right, bottom);
 
             /* DRAW IMAGE :) */
 
@@ -796,7 +1525,8 @@ draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
         }
 
     } /* switch (image type) */
-    int_FreeCustomPrefs(TYPE_SYSICLASS,data->dri,IntuitionBase);
+exit:
+
     return;
 }
 
@@ -813,29 +1543,19 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
     IPTR retval = 0UL;
     struct SysIData *data;
 
-    D(bug(dprintf("dispatch_sysiclass: class 0x%lx object 0x%lx\n",cl,obj);))
-
     switch (msg->MethodID)
     {
     case OM_NEW:
-
-        D(bug(dprintf("dispatch_sysiclass: OM_NEW\n");))
-
         retval = (IPTR)sysi_new(cl, (Class *)obj, (struct opSet *)msg);
         break;
 
     case OM_DISPOSE:
-        D(bug(dprintf("dispatch_sysiclass: OM_DISPOSE\n");))
-
         data = INST_DATA(cl, obj);
         DisposeObject(data->frame);
         retval = DoSuperMethodA(cl, obj, msg);
         break;
 
     case OM_SET:
-
-        D(bug(dprintf("dispatch_sysiclass: OM_SET\n");))
-
         data = INST_DATA(cl, obj);
         if (data->frame)
             DoMethodA((Object *)data->frame, msg);
@@ -843,9 +1563,6 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
         break;
 
     case IM_DRAW:
-
-        D(bug(dprintf("dispatch_sysiclass: IM_DRAW\n");))
-
         sysi_draw(cl, obj, (struct impDraw *)msg);
         break;
 
@@ -853,8 +1570,6 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
         retval = DoSuperMethodA(cl, obj, msg);
         break;
     }
-
-    D(bug(dprintf("dispatch_sysiclass: done\n");))
 
     return retval;
 
@@ -887,7 +1602,6 @@ struct IClass *InitSysIClass (struct IntuitionBase * IntuitionBase)
 
 /**************************************************************************************************/
 
-#if 0
 static UWORD getbgpen(ULONG state, UWORD *pens)
 {
     UWORD bg;
@@ -909,11 +1623,10 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
     }
     return bg;
 }
-#endif
 
 /**************************************************************************************************/
 
-void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
+static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase)
 {
