@@ -539,7 +539,7 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
     LIBBASE->LibNode.lib_IdString   = (STRPTR)&nv_VersionID[6];
 
     /* Global memory pool and static data creation */
-    LIBBASE->memPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
+    LIBBASE->memPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
     if (LIBBASE->memPool)
     {
 	struct staticdata *sd;
