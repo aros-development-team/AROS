@@ -11,17 +11,17 @@ BltBitMap:
 	move.l	%d6,-(%sp)
 	move.l	%d7,-(%sp)
 	move.l	%a2,-(%sp)
-	move.l	36(%sp),%d2
-	move.l	40(%sp),%d3
-	move.l	44(%sp),%d4
-	move.l	48(%sp),%d5
-	move.l	52(%sp),%d6
-	move.l	56(%sp),%d7
-	move.l	60(%sp),%a2
-	move.l	64(%sp),%a0
-	move.l	68(%sp),%d0
-	move.l	72(%sp),%d1
-	move.l	76(%sp),%a1
+	move.l	36(%sp),%a0
+	move.l	40(%sp),%d0
+	move.l	44(%sp),%d1
+	move.l	48(%sp),%a1
+	move.l	52(%sp),%d2
+	move.l	56(%sp),%d3
+	move.l	60(%sp),%d4
+	move.l	64(%sp),%d5
+	move.l	68(%sp),%d6
+	move.l	72(%sp),%d7
+	move.l	76(%sp),%a2
 	move.l	80(%sp),%a6
 	jsr	-30(%a6)
 	move.l	(%sp)+,%a2
@@ -45,15 +45,15 @@ BltBitMapRastPort:
 	move.l	%d4,-(%sp)
 	move.l	%d5,-(%sp)
 	move.l	%d6,-(%sp)
-	move.l	28(%sp),%d2
-	move.l	32(%sp),%d3
-	move.l	36(%sp),%d4
-	move.l	40(%sp),%d5
-	move.l	44(%sp),%d6
-	move.l	48(%sp),%a0
-	move.l	52(%sp),%d0
-	move.l	56(%sp),%d1
-	move.l	60(%sp),%a1
+	move.l	28(%sp),%a0
+	move.l	32(%sp),%d0
+	move.l	36(%sp),%d1
+	move.l	40(%sp),%a1
+	move.l	44(%sp),%d2
+	move.l	48(%sp),%d3
+	move.l	52(%sp),%d4
+	move.l	56(%sp),%d5
+	move.l	60(%sp),%d6
 	move.l	64(%sp),%a6
 	jsr	-606(%a6)
 	move.l	(%sp)+,%d6
@@ -76,16 +76,16 @@ BltMaskBitMapRastPort:
 	move.l	%d5,-(%sp)
 	move.l	%d6,-(%sp)
 	move.l	%a2,-(%sp)
-	move.l	32(%sp),%d2
-	move.l	36(%sp),%d3
-	move.l	40(%sp),%d4
-	move.l	44(%sp),%d5
-	move.l	48(%sp),%d6
-	move.l	52(%sp),%a2
-	move.l	56(%sp),%a0
-	move.l	60(%sp),%d0
-	move.l	64(%sp),%d1
-	move.l	68(%sp),%a1
+	move.l	32(%sp),%a0
+	move.l	36(%sp),%d0
+	move.l	40(%sp),%d1
+	move.l	44(%sp),%a1
+	move.l	48(%sp),%d2
+	move.l	52(%sp),%d3
+	move.l	56(%sp),%d4
+	move.l	60(%sp),%d5
+	move.l	64(%sp),%d6
+	move.l	68(%sp),%a2
 	move.l	72(%sp),%a6
 	jsr	-636(%a6)
 	move.l	(%sp)+,%a2
@@ -108,15 +108,15 @@ ClipBlit:
 	move.l	%d4,-(%sp)
 	move.l	%d5,-(%sp)
 	move.l	%d6,-(%sp)
-	move.l	28(%sp),%d2
-	move.l	32(%sp),%d3
-	move.l	36(%sp),%d4
-	move.l	40(%sp),%d5
-	move.l	44(%sp),%d6
-	move.l	48(%sp),%a0
-	move.l	52(%sp),%d0
-	move.l	56(%sp),%d1
-	move.l	60(%sp),%a1
+	move.l	28(%sp),%a0
+	move.l	32(%sp),%d0
+	move.l	36(%sp),%d1
+	move.l	40(%sp),%a1
+	move.l	44(%sp),%d2
+	move.l	48(%sp),%d3
+	move.l	52(%sp),%d4
+	move.l	56(%sp),%d5
+	move.l	60(%sp),%d6
 	move.l	64(%sp),%a6
 	jsr	-552(%a6)
 	move.l	(%sp)+,%d6
@@ -138,15 +138,15 @@ NewModifyProp:
 	move.l	%d3,-(%sp)
 	move.l	%d4,-(%sp)
 	move.l	%d5,-(%sp)
-	move.l	28(%sp),%d1
-	move.l	32(%sp),%d2
-	move.l	36(%sp),%d3
-	move.l	40(%sp),%d4
-	move.l	44(%sp),%d5
-	move.l	48(%sp),%a0
-	move.l	52(%sp),%a1
-	move.l	56(%sp),%a2
-	move.l	60(%sp),%d0
+	move.l	28(%sp),%a0
+	move.l	32(%sp),%a1
+	move.l	36(%sp),%a2
+	move.l	40(%sp),%d0
+	move.l	44(%sp),%d1
+	move.l	48(%sp),%d2
+	move.l	52(%sp),%d3
+	move.l	56(%sp),%d4
+	move.l	60(%sp),%d5
 	move.l	64(%sp),%a6
 	jsr	-468(%a6)
 	move.l	(%sp)+,%d5
@@ -168,15 +168,15 @@ CreateBehindHookLayer:
 	move.l	%d4,-(%sp)
 	move.l	%a3,-(%sp)
 	move.l	%a2,-(%sp)
-	move.l	28(%sp),%d2
-	move.l	32(%sp),%d3
-	move.l	36(%sp),%d4
-	move.l	40(%sp),%a3
-	move.l	44(%sp),%a2
-	move.l	48(%sp),%a0
-	move.l	52(%sp),%a1
-	move.l	56(%sp),%d0
-	move.l	60(%sp),%d1
+	move.l	28(%sp),%a0
+	move.l	32(%sp),%a1
+	move.l	36(%sp),%d0
+	move.l	40(%sp),%d1
+	move.l	44(%sp),%d2
+	move.l	48(%sp),%d3
+	move.l	52(%sp),%d4
+	move.l	56(%sp),%a3
+	move.l	60(%sp),%a2
 	move.l	64(%sp),%a6
 	jsr	-192(%a6)
 	move.l	(%sp)+,%a2
@@ -198,15 +198,15 @@ CreateUpfrontHookLayer:
 	move.l	%d4,-(%sp)
 	move.l	%a3,-(%sp)
 	move.l	%a2,-(%sp)
-	move.l	28(%sp),%d2
-	move.l	32(%sp),%d3
-	move.l	36(%sp),%d4
-	move.l	40(%sp),%a3
-	move.l	44(%sp),%a2
-	move.l	48(%sp),%a0
-	move.l	52(%sp),%a1
-	move.l	56(%sp),%d0
-	move.l	60(%sp),%d1
+	move.l	28(%sp),%a0
+	move.l	32(%sp),%a1
+	move.l	36(%sp),%d0
+	move.l	40(%sp),%d1
+	move.l	44(%sp),%d2
+	move.l	48(%sp),%d3
+	move.l	52(%sp),%d4
+	move.l	56(%sp),%a3
+	move.l	60(%sp),%a2
 	move.l	64(%sp),%a6
 	jsr	-186(%a6)
 	move.l	(%sp)+,%a2
