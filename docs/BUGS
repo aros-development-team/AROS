@@ -33,3 +33,21 @@ the name "(Null)", is this the list-head or does it have any special
 meaning (i.e.,
 is it a real device?)
 
+BUG000005
+digulla@wi-pc44.fh-konstanz.de
+newshell crashes because
+Program received signal SIGSEGV, Segmentation fault.
+0x8056535 in _Exec_DoIO (iORequest=0x80c1fe0, SysBase=0x806a290) at doio.c:67
+67	    __AROS_LVO_CALL1(void,5,iORequest->io_Device,iORequest,A1);
+io_Device is NULL
+#0  0x8056535 in _Exec_DoIO (iORequest=0x80c1fe0, SysBase=0x806a290)
+    at doio.c:67
+is called with ThisTask()->pr_CurrentDir.
+#1  0x80615a5 in DoName (iofs=0x80c1fe0, name=0x8063b74 "", DOSBase=0x806baa0)
+    at doname.c:90
+#2  0x805818d in _Dos_Lock (name=0x8063b74 "", accessMode=-2,
+    DOSBase=0x806baa0) at lock.c:103
+#3  0x8057159 in _Dos_DupLock (lock=33697770, DOSBase=0x806baa0)
+    at duplock.c:112
+
+
