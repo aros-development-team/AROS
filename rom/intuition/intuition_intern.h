@@ -108,7 +108,8 @@ extern int  intui_open (struct IntuitionBase *);
 extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
 extern int intui_GetWindowSize (void);
-
+extern void intui_WindowLimits (struct Window * window,
+	    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
 extern void intui_ActivateWindow (struct Window *);
 extern void intui_BeginRefresh (struct Window * window,
 	    struct IntuitionBase * IntuitionBase);
