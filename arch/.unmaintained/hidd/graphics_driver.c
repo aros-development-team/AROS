@@ -784,18 +784,11 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
   LONG dx = 1, dy = 1;
   LONG _x, _y;
   LONG steps, counter;
-  UWORD LinePtrn;
-  BYTE shift = (rp->linpatcnt & 0x0f);
-
+  
   EnterFunc(bug("driver_Draw(rp=%p, x=%d, y=%d)\n", rp, x, y));
 
     if (!CorrectDriverData (rp, GfxBase))
     	return;
-
-  /* Initilize the LinePattern to its initial value. */
-  /* I wished there was a rotation command in C */  
-  LinePtrn = (rp->LinePtrn >>       shift) |
-             (rp->LinePtrn << (16 - shift));
 
   if (rp->cp_x != x)
     if (rp->cp_x > x)
@@ -832,29 +825,13 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
     steps = dx;
   else
     steps = dy;
-  
-  /* now I can aleady set the linpatcnt from the amount of steps I will
-     have to go through. The highest value for the linpatcnt that
-     I want is 15 as more doens't make sense to shift the pattern with
-     16 bits anyway. */
-  rp->linpatcnt = (BYTE)(shift + (steps + 1)) & 0x0f; 
-  
+    
   counter = 0;  
   while (counter <= steps)
   {
     counter++;
-    /* see whether the linepattern permits to set this pixel... 
-       it depends whether the lowest bit in thge pattern is set. */
-    if (0 != (LinePtrn & 0x01))
-    {
-      WritePixel(rp, x, y);
-      /* a fast way to rotate the linepattern by one bit ... 
-         I know that the highest bit has to be '1' now. */
-      LinePtrn = (LinePtrn >> 1) | 0x8000;
-    }
-    else
-      LinePtrn = LinePtrn >> 1;
- 
+    WritePixel(rp, x, y);
+
     if (dx > dy)
     {
       x += x_step;
@@ -1717,6 +1694,344 @@ static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xs
     
 }
 
+
+
+/* Minterms and GC drawmodes are in opposite order */
+#define MINTERM_TO_GCDRMD(minterm) 	\
+((  	  ((minterm & 0x80) >> 3)	\
+	| ((minterm & 0x40) >> 1)	\
+	| ((minterm & 0x20) << 1)	\
+	| ((minterm & 0x10) << 3) )  >> 4 )
+
+#define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
+#define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
+	( ((y) * (bytes_per_row)) + ((x) >> 3) )
+
+static VOID setbitmappixel(struct BitMap *bm
+	, LONG x, LONG y
+	, ULONG pen
+	, UBYTE depth
+	, UBYTE plane_mask)
+{
+    UBYTE i;
+    ULONG idx;
+    UBYTE mask, clr_mask;
+    ULONG penmask;
+
+    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
+
+    mask = 1L << (7 - (x & 0x07));
+    clr_mask = ~mask;
+    
+    penmask = 1;
+    for (i = 0; i < depth; i ++)
+    {
+
+	if ((1L << i) & plane_mask)
+	{
+            UBYTE *plane = bm->Planes[i];
+	
+	    if ((penmask & pen) != 0)
+		plane[idx] |=  mask;
+	    else
+		plane[idx] &=  clr_mask;
+
+	}
+	penmask <<= 1;
+	
+    }
+    return;
+}
+
+static ULONG getbitmappixel(struct BitMap *bm
+	, LONG x
+	, LONG y
+	, UBYTE depth
+	, UBYTE plane_mask)
+{
+    UBYTE i;
+    ULONG idx;
+
+    ULONG mask;
+    ULONG pen = 0L;
+    
+    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
+    mask = 1L << (7 - (x & 0x07));
+    
+    for (i = depth - 1; depth ; i -- , depth -- )
+    {
+        if ((1L << i) & plane_mask)
+	{
+	    UBYTE *plane = bm->Planes[i];
+	    pen <<= 1;
+	
+	    if ((plane[idx] & mask) != 0)
+		pen |= 1;
+	}
+    }
+    return pen;
+}
+
+	
+static VOID amiga2hidd_fast(struct BitMap *src_bm
+	, LONG x_src , LONG	y_src
+	, Object 	*gc
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, ULONG minterm
+	, ULONG plane_mask
+)
+{
+#define NUMPIX 2000 /* We can chunky2bitmap-convert 1000 pixels before writing pixarray */
+#define DEPTH 8
+    
+    UBYTE src_depth;
+    ULONG src_width;
+    
+    ULONG temp_buf[NUMPIX];
+    ULONG tocopy_w,
+    	  tocopy_h;
+	  
+    ULONG pixels_left_to_process = xsize * ysize;
+	  
+    ULONG bytes_per_row;
+    LONG current_x, current_y, next_x, next_y;
+    
+    struct TagItem gc_tags[] =
+    {
+    	{aHidd_GC_DrawMode, 0UL },
+	{TAG_DONE, 0UL}
+    };
+    
+    /* Set the GC drawmode according to minterm */
+    gc_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+    SetAttrs(gc, gc_tags);
+    
+    src_depth = GetBitMapAttr(src_bm, BMA_DEPTH);
+    src_width = GetBitMapAttr(src_bm, BMA_WIDTH);
+    
+    
+    bytes_per_row = WIDTH_TO_BYTES(src_width);
+    
+    next_x = 0;
+    next_y = 0;
+    
+    while (pixels_left_to_process)
+    {
+
+	/* Get some more pixels from the HIDD*/
+	ULONG *bufptr = temp_buf;
+	LONG y;
+
+	current_x = next_x;
+	current_y = next_y;
+	
+	if (NUMPIX < xsize)
+	{
+	   /* buffer cant hold a single horizontal line, and must 
+	      divide each line into copies */
+	    tocopy_w = xsize - current_x;
+	    if (tocopy_w > NUMPIX)
+	    {
+	        /* Not quite finished with current horizontal pixel line */
+	    	tocopy_w = NUMPIX;
+		next_x += NUMPIX;
+	    }
+	    else
+	    {	/* Start at a new line */
+	    	next_x = 0;
+		next_y ++;
+	    }
+	    tocopy_h = 1;
+	    
+    	}
+	else /* We can copy one or several whole horizontal lines at a time */
+	{
+	    tocopy_h = MIN(NUMPIX / xsize, ysize);
+
+	    tocopy_w = xsize;
+
+	    next_x = 0;
+	    next_y += tocopy_h;
+	    
+	
+	}
+	
+	/* Fill buffer with pixels from bitmap */
+    	for (y = current_y; y < tocopy_h; y ++)
+	{
+	    LONG x;
+	    
+	    for (x = current_x; x < tocopy_w; x ++)
+	    {
+	    
+		*bufptr ++ = getbitmappixel(src_bm
+			, x + x_src
+			, y + y_src
+			, src_depth, plane_mask);
+			
+		pixels_left_to_process --;
+
+	    }
+
+	}
+	
+	HIDD_GC_WritePixelArray(gc
+		, temp_buf
+		, x_dest + current_x, y_dest + current_y
+		, tocopy_w, tocopy_h);
+	
+	
+    } /* while (pixels left to copy) */
+    
+    return;
+    
+}
+	
+
+static VOID hidd2amiga_fast(Object *gc
+	, LONG x_src , LONG y_src
+	, struct BitMap *dst_bm
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, ULONG minterm
+	, ULONG plane_mask
+)
+{
+
+    UBYTE dst_depth;
+    UBYTE dst_width;
+    ULONG temp_buf[NUMPIX];
+    ULONG tocopy_w, tocopy_h;
+    
+    ULONG pixels_left_to_process = xsize * ysize;
+    ULONG bytes_per_row;
+    ULONG current_x, current_y, next_x, next_y;
+    
+    
+    dst_depth = GetBitMapAttr(dst_bm, BMA_DEPTH);
+    dst_width = GetBitMapAttr(dst_bm, BMA_WIDTH);
+    
+    bytes_per_row = WIDTH_TO_BYTES(dst_width);
+    
+    next_x = 0;
+    next_y = 0;
+    
+
+    while (pixels_left_to_process)
+    {
+	/* Get some more pixels from the HIDD */
+    	ULONG *bufptr = temp_buf;
+	
+	current_x = next_x;
+	current_y = next_y;
+	
+	if (NUMPIX < xsize)
+	{
+	   /* buffer cant hold a single horizontal line, and must 
+	      divide each line into copies */
+	    tocopy_w = xsize - current_x;
+	    if (tocopy_w > NUMPIX)
+	    {
+	        /* Not quite finished with current horizontal pixel line */
+	    	tocopy_w = NUMPIX;
+		next_x += NUMPIX;
+	    }
+	    else
+	    {	/* Start at a new line */
+	    
+	    	next_x = 0;
+		next_y ++;
+	    }
+	    tocopy_h = 1;
+	    
+    	}
+    	else
+    	{
+	    tocopy_h = MIN(NUMPIX / xsize, ysize);
+	    tocopy_w = xsize;
+
+	    next_x = 0;
+	    next_y += tocopy_h;
+	    
+    	}
+	
+	
+	HIDD_GC_ReadPixelArray(gc
+		, temp_buf
+		, x_src + current_x
+		, y_src + current_y
+		, tocopy_w, tocopy_h);
+
+
+	/*  Write pixels to the bitmap */
+	
+	/* Optimize bitmap copy */
+	
+	if (minterm ==  0x00C0)
+	{
+	    LONG y;
+	    for (y = current_y; y < tocopy_h; y ++)
+	    {
+	        LONG x;
+		for (x = current_x; x < tocopy_w; x ++)
+		{
+
+		    setbitmappixel(dst_bm
+		    	, x + x_dest
+			, y + y_dest
+			, *bufptr ++, dst_depth, plane_mask);
+
+
+	    	    pixels_left_to_process --;
+		}
+		
+	    }
+
+	}
+	else
+	{
+	    LONG y;
+	    
+	    for (y = current_y; y < tocopy_h; y ++)
+	    {
+		LONG x;
+		
+		for (x = current_x; x < tocopy_w; x ++)
+		{
+		    ULONG src = *bufptr ++ , dest = 0;
+		    /* Set the pixel using correct minterm */
+
+
+
+		    dest = getbitmappixel(dst_bm
+			, x + x_dest
+			, y + y_dest
+			, dst_depth, plane_mask);
+
+		    if (minterm & 0x0010) dest  = ~src & ~dest;
+		    if (minterm & 0x0020) dest |= ~src & dest;
+		    if (minterm & 0x0040) dest |=  src & ~dest;
+		    if (minterm & 0x0080) dest |= src & dest;
+		    
+		    setbitmappixel(dst_bm
+			, x + x_dest
+			, y + y_dest
+			, dest, dst_depth, plane_mask);
+	    	    pixels_left_to_process --;
+
+		}
+		
+	    }
+	    
+	}
+
+    }
+    
+    return;
+    
+}
+
 static VOID clearbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize)
 {
     LONG modulo;
@@ -1804,55 +2119,6 @@ static VOID clearbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG 
     
 }
 
-static VOID setbitmappixel(struct BitMap *bm, LONG x, LONG y, ULONG pen, ULONG bytesperrow, UBYTE depth)
-{
-    UBYTE i;
-    ULONG idx;
-    UBYTE mask, clr_mask;
-    ULONG penmask;
-
-    idx  = y * bytesperrow + (x >> 3);
-    mask = 1L << (7 - (x & 0x07));
-    clr_mask = ~mask;
-    
-    penmask = 1;
-    for (i = 0; i < depth; i ++)
-    {
-        UBYTE *plane = bm->Planes[i];
-	
-        if ((penmask & pen) != 0)
-	    plane[idx] |=  mask;
-	else
-	    plane[idx] &=  clr_mask;
-
-	penmask <<= 1;
-	
-    }
-    return;
-
-}
-
-static ULONG getbitmappixel(struct BitMap *bm, LONG x, LONG y, ULONG bytesperrow, UBYTE depth)
-{
-    UBYTE i;
-    ULONG idx;
-    ULONG mask;
-    ULONG pen = 0L;
-    
-    idx  = y * bytesperrow + (x >> 3);
-    mask = 1L << (7 - (x & 0x07));
-    
-    for (i = depth - 1; depth ; i -- , depth -- )
-    {
-        UBYTE *plane = bm->Planes[i];
-	pen <<= 1;
-	
-	if ((plane[idx] & mask) != 0)
-	    pen |= 1;
-	
-    }
-    return pen;
-}
 
 LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	LONG ySrc, struct BitMap * destBitMap, LONG xDest,
@@ -1861,17 +2127,12 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 {
     LONG planecnt = 8;
     
-    struct TagItem gc_tags[] =
-    {
-	{aHidd_GC_Foreground,	0UL},
-	{TAG_DONE, 0UL}
-    };
     
     EnterFunc(bug("driver_BltBitMap()\n"));
 
-    kprintf("driver_BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %d, %d)\n",
+/*    kprintf("driver_BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %d, %d)\n",
     	srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm, mask);
-    
+*/    
     /* The posibble cases:
 	1) both src and dest is HIDD bitmaps
 	2) src is HIDD bitmap, dest is amigabitmap.
@@ -1892,75 +2153,69 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	    /* Case 1. */
 	    switch (minterm)
 	    {
-	    	case 0x00: /* Clear dest */
- kprintf("clear HIDD bitmap\n");
+	    	case 0x00:  { /* Clear dest */
+ 		    struct TagItem tags[] =
+		    {
+		    	{aHidd_GC_Foreground,	0UL},
+			{aHidd_GC_DrawMode,	vHIDD_GC_DrawMode_Copy},
+			{TAG_DONE, 0UL}
+		    };
 
-		    gc_tags[0].ti_Data = 0L;
-		    SetAttrs(dst_gc, gc_tags);
-		    
+		    SetAttrs(dst_gc, tags);
+/* kprintf("clear HIDD bitmap\n");
+*/		    
 		    HIDD_GC_FillRect(dst_gc
 		    	, xDest, yDest
 			, xDest + xSize - 1
 			, yDest + ySize - 1
 		    );
 			
-		    break;
+		    break; }
 		
-		case 0xC0: /* Plain copy */
- kprintf("copy HIDD to HIDD\n");
-		    HIDD_GC_CopyArea(src_gc
+
+		default: {
+		    struct TagItem drmd_tags[] =
+		    {
+		    	{ aHidd_GC_DrawMode,	0UL},
+			{ TAG_DONE, 0UL}
+		    };
+		    
+		    drmd_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+		    SetAttrs(dst_gc, drmd_tags);
+
+/* kprintf("copy HIDD to HIDD\n");
+*/		    HIDD_GC_CopyArea(src_gc
 		    	, xSrc, ySrc
 			, dst_gc
 			, xDest, yDest
 			, xSize, ySize
 		    );
-		    break;
+		    break;  }
 		    
-		default:
-		    kprintf("driver_BltBitMap(): minterm %d not implemented in case 1\n");
-		    break;
-	    }
+	    } /* switch */
 	    
 	}
 	else
 	{
-	    LONG x, y;
 	    /* Case 2. */
 	    switch (minterm)
 	    {
 	        case 0: /* Clear Amiga bitmap */
- kprintf("clear amiga bitmap\n");
-		    clearbitmapfast(destBitMap, xDest, yDest, xSize, ySize);
+/* kprintf("clear amiga bitmap\n");
+*/		    clearbitmapfast(destBitMap, xDest, yDest, xSize, ySize);
 		    
 		    break;
 		    
-		case 0XC0: { /* Copy from HIDD bm to Amiga BM */
-		    ULONG width = GetBitMapAttr(destBitMap, BMA_WIDTH);
-		    UBYTE depth = GetBitMapAttr(destBitMap, BMA_DEPTH);
- kprintf("copy HIDD to Amiga:\n");
-
-		    width = ((width - 1) >> 3) + 1; /* width in bytes */
-		    for (x = 0; x < xSize; x ++)
-		    {
-		    	for (y = 0; y < ySize; y ++)
-			{
-		    	    ULONG pen;
-			    /* Get the pen value */
-
-			    pen = HIDD_GC_ReadPixel(BM_GC_OBJ(srcBitMap), x + xSrc, y + ySrc);
-			    setbitmappixel(destBitMap
-			    	, x + xDest
-				, y + yDest
-				, pen
-				, width
-				, depth
-			    );
-			}
-		    }
-
-		    break; }
 		default:
-		    kprintf("driver_BltBitMap(): minterm %d not implemented in case 2\n");
+/* kprintf("copy HIDD to Amiga:\n");
+*/		    hidd2amiga_fast( BM_GC_OBJ(srcBitMap)
+		    	, xSrc, ySrc
+			, destBitMap
+			, xDest, yDest
+			, xSize, ySize
+			, minterm, mask);
+			
+			
 		    break;
 		
 	    } /* switch (minterm) */
@@ -1975,13 +2230,20 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	/* Case 3. */
 	switch (minterm)
 	{
-	    case 0:/* Clear the destination */
 
- kprintf("clear HIDD bitmap\n"); 
+	    case 0: {/* Clear the destination */
 
-		gc_tags[0].ti_Data = 0L;
-		SetAttrs(dst_gc, gc_tags);
-		    
+ 		    struct TagItem tags[] =
+		    {
+		    	{aHidd_GC_Foreground,	0UL},
+			{aHidd_GC_DrawMode,	vHIDD_GC_DrawMode_Copy},
+			{TAG_DONE, 0UL}
+		    };
+
+		    SetAttrs(dst_gc, tags);
+
+/* kprintf("clear HIDD bitmap\n"); 
+*/		    
 		HIDD_GC_FillRect(dst_gc
 		    , xDest, yDest
 		    , xDest + xSize - 1
@@ -1989,46 +2251,30 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 		);
 
 	    
-	    break;
+	    break; }
 	    
-	    case 0xC0: {
-	    	/* Copy from Amiga bitmap to HIDD */
-		ULONG width = GetBitMapAttr(srcBitMap, BMA_WIDTH);
-		UBYTE depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
-		LONG x, y;
 
- kprintf("copy Amiga to HIDD\n"); 
-		    
-		width = ((width - 1) >> 3) + 1; /* width in bytes */
-		
-		for (x = 0; x < xSize; x ++)
+	    default: {
+		struct TagItem drmd_tags[] =
 		{
-		    for (y = 0; y < ySize; y ++)
-		    {
-		    	ULONG pen;
+		    { aHidd_GC_DrawMode,	0UL},
+		    { TAG_DONE, 0UL}
+		};
+		    
+		drmd_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+		SetAttrs(dst_gc, drmd_tags);
 
-			/* Get the pen value */
-			pen = getbitmappixel(srcBitMap
-				, x + xSrc
-				, y + ySrc
-				, width
-				, depth
-			);
-
-
-			gc_tags[0].ti_Data = pen;
-			SetAttrs(BM_GC_OBJ(destBitMap), gc_tags);
-			HIDD_GC_WritePixel(BM_GC_OBJ(destBitMap), x + xDest, y + yDest);
-
-		    }
-
-		} /* for */
-		
+/* kprintf("copy Amiga to HIDD\n"); 
+*/	    	amiga2hidd_fast(srcBitMap
+			, xSrc, ySrc
+			, BM_GC_OBJ(destBitMap)
+			, xDest, yDest
+			, xSize, ySize
+			, minterm, mask
+		);
+			
+			
 		break; }
-
-	    default:
-		kprintf("driver_BltBitMap(): minterm %d not implemented in case 3\n");
-		break;
 	}
     
     }
@@ -2096,8 +2342,15 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 	    ULONG ystart, ULONG xstop, ULONG ystop, UBYTE * array,
 	    struct RastPort * temprp, struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+    struct gfx_driverdata *dd;
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return 0;
+	
+    dd = GetDriverData(rp);
+    
     return 0;
+    
 } /* driver_WritePixelArray8 */
 
 
