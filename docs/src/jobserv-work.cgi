@@ -30,7 +30,7 @@ $query = msqlStoreResult ();
 printf ("Now select the jobs you want to mark as completed or deallocate\n");
 printf ("and submit the form<P>\n");
 
-printf ("<FORM ACTION=\"/~digulla/jobserver/cgi-bin/jobserv.cgi\" METHOD=\"PUT\">\n");
+printf ("<FORM ACTION=\"/~digulla/jobserver/cgi-bin/jobserv.cgi\" METHOD=\"GET\">\n");
 printf ("<TABLE>\n");
 printf ("<TR><TH>Free</TH><TH>Done</TH><TH>Job</TH><TH>Free</TH><TH>Done</TH><TH>Job</TH></TR>\n");
 
