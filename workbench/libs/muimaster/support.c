@@ -69,12 +69,29 @@ IPTR XGET(Object *obj, Tag attr)
 /**************************************************************************
  Call the Setup Method of an given object, but before set the renderinfo
 **************************************************************************/
-ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
+IPTR DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
 {
     /* MUI set the correct render info *before* it calls MUIM_Setup so please only use this function instead of DoMethodA() */
     muiRenderInfo(obj) = info;
     return DoMethod(obj, MUIM_Setup, (IPTR)info);
 }
+
+IPTR DoShowMethod(Object *obj)
+{
+    IPTR ret;
+
+    ret = DoMethod(obj, MUIM_Show);
+    if (ret)
+	_flags(obj) |= MADF_CANDRAW;
+    return ret;
+}
+
+IPTR DoHideMethod(Object *obj)
+{
+    _flags(obj) &= ~MADF_CANDRAW;
+    return DoMethod(obj, MUIM_Hide);
+}
+
 
 void *Node_Next(APTR node)
 {

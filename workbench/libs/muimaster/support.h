@@ -56,7 +56,9 @@ struct MUI_RenderInfo;
 IPTR XGET(Object *obj, Tag attr);
 #endif
 
-ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
+IPTR DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
+IPTR DoShowMethod(Object *obj);
+IPTR DoHideMethod(Object *obj);
 
 /* returns next node of this node */
 void *Node_Next(APTR node);
