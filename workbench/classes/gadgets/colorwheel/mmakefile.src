@@ -7,10 +7,15 @@ FUNCS := \
 	converthsbtorgb \
 	convertrgbtohsb
 
-#MM workbench-gadgets-colorwheel : includes linklibs
+#MM workbench-gadgets-colorwheel-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-cybergraphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-layers-includes
 
 %build_module_macro mmake=workbench-gadgets-colorwheel modname=colorwheel \
   modtype=gadget funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
   uselibs="amiga m rom"
 
-%common
