@@ -1,5 +1,5 @@
 /*
-    (C) Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The shell program.
@@ -443,12 +443,14 @@ LONG interact(void)
 	SetVBuf(Output(), NULL, BUF_FULL, -1);
 	if (strcmp(FindTask(NULL)->tc_Node.ln_Name, "Boot Shell") == 0)
 	{
-	    PutStr("AROS Amiga® Research Operating System\n"
-	           "Copyright © 1995-2001 AROS Team\n"
-	           "All rights reserved.\n"
-		   "AROS is licensed under the terms of the AROS PUBLIC LICENSE (APL), a copy of "
-		   "which you should have received with it.\n"
-		   "Visit http://www.aros.org/ for further information\n");
+	    PutStr
+	    (
+	    	"AROS - The Amiga® Research Operating System\n"
+		"Copyright © 1995-2001, The AROS Development Team. All rights reserved.\n"
+		"AROS is licensed under the terms of the AROS Public License (APL),\n"
+		"a copy of which you should have received with this distribution.\n"
+		"Visit http://www.aros.org/ for more information.\n"
+	    );    
 	}
 	else
 	{
