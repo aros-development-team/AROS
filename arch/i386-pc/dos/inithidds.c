@@ -31,8 +31,7 @@
 
 #include <aros/asmcall.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #warning This is just a temporary and hackish way to get the HIDDs up and working
@@ -95,18 +94,18 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	if (!(OpenLibrary("mouse.hidd",0L)))
 	{
 	    success = FALSE;
-	    kprintf("Failed to open mouse.hidd\n");
+	    bug("[DOS] InitHidds: Failed to open mouse.hidd\n");
 	}
 
 	if (!(OpenLibrary("kbd.hidd",0L)))
 	{
 	    success = FALSE;
-	    kprintf("Failed to open kbd.hidd\n");
+	    bug("[DOS] InitHidds: Failed to open kbd.hidd\n");
 	}
 	if (!(OpenLibrary("graphics.hidd",0L)))
 	{
 	    success = FALSE;
-	    kprintf("Failed to open graphics.hidd\n");
+	    bug("[DOS] InitHidds: Failed to open graphics.hidd\n");
 	}
 
 	/* Prepare the VGA hidd as a fallback */
@@ -121,17 +120,16 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	    {
 		ForeachNode(list,node)
 		{
-		    D(bug("[DOS] InitHidds: Parsing %s\n",node->ln_Name));
 		    if (0 == strncmp(node->ln_Name,"gfx=",4))
 		    {
-			D(bug("[DOS] InitHidds: Using %s as graphics driver\n"));
+			bug("[DOS] InitHidds: Using %s as graphics driver\n",&node->ln_Name[4]);
 			strncpy(gfxname,&(node->ln_Name[4]),BUFSIZE-1);
 		    }
 		    if (0 == strncmp(node->ln_Name,"lib=",4))
 		    {
-			D(bug("[DOS] InitHidds: Opening library %s\n",&node->ln_Name[4]));
+			bug("[DOS] InitHidds: Opening library %s\n",&node->ln_Name[4]);
 			if (!(OpenLibrary(&node->ln_Name[4],0L)))
-			    bug("Failed to open %s\n",&node->ln_Name[4]);
+			    bug("[DOS] InitHidds: Failed to open %s\n",&node->ln_Name[4]);
 			if (0 == strcmp(&node->ln_Name[4],"hidd.gfx.vga"))
 			    vga = TRUE;
 		    }
@@ -166,20 +164,20 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	/* Set up the graphics HIDD system */
 	if (!init_gfx(gfxname, base))
 	{
-	    kprintf("Could not init gfx hidd %s\n", gfxname);
+	    bug("[DOS] InitHidds: Could not init gfx hidd %s\n", gfxname);
 	    success = FALSE;
 	}
 
 	/* And finally keyboard and mouse */
 	if (!init_device("hidd.kbd.hw", "keyboard.device", base))
 	{
-	    kprintf("Could not init keyboard hidd\n");
+	    bug("[DOS] InitHidds: Could not init keyboard hidd\n");
 	    success = FALSE;
 	}
 
 	if (!init_device("hidd.bus.mouse", "gameport.device", base))
 	{
-	    kprintf("Could not init mouse hidd\n");
+	    bug("[DOS] InitHidds: Could not init mouse hidd\n");
 	    success = FALSE;
 	}
 	CloseLibrary(OOPBase);
