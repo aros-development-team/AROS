@@ -291,7 +291,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     /* We now start up the interrupts */
     Enable();
-    Permit();	/* Use this to check whether PMT works or not */
 
     /* This will cause everything else to run. This call will not return.
 	This is because it eventually falls into strap, which will call

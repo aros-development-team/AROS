@@ -30,6 +30,8 @@
 #include <exec/io.h>
 #include <proto/exec.h>
 
+#include <memory.h>
+
 unsigned long Memory;	/* Size of whole memory */
 unsigned long Memory24; /* Size of DMA memory (24 bit) */
 APTR ssp=(APTR)-1;      /* System stack pointer */
@@ -72,11 +74,13 @@ extern const struct Resident
     Gameport_resident,
     Keymap_resident,
     Input_resident,
-//    Intuition_resident,
+    Intuition_resident,
     kbdHidd_resident,
-//    Console_resident,
+    Console_resident,
     Mathffp_resident,
     Mathieeesingbas_resident,
+    TrackDisk_resident,
+    Misc_resident,
     Workbench_resident;
 //    Dos_resident,
 //    LDDemon_resident,
@@ -97,14 +101,16 @@ static const struct Resident *romtagList[] =
     &Graphics_resident, 		    /* ColdStart,   65	 */
     &Layers_resident,			    /* ColdStart,   60   */
     &Timer_resident,			    /* ColdStart,   50	 */
+    &Misc_resident,			    /* ColdStart,   45   */
     &Battclock_resident,		    /* ColdStart,   45	 */
     &Keyboard_resident,			    /* ColdStart,   44	 */
     &Gameport_resident,			    /* ColdStart,   43	 */
     &Keymap_resident,			    /* ColdStart,   40	 */
     &Input_resident,			    /* ColdStart,   30	 */
-//    &Intuition_resident,		    /* ColdStart,   10	 */
+    &Intuition_resident,		    /* ColdStart,   10	 */
     &kbdHidd_resident,			    /* ColdStart,   9    */
-//    &Console_resident,			    /* ColdStart,   5	 */
+    &Console_resident,			    /* ColdStart,   5	 */
+    &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
     &Workbench_resident,		    /* ColdStart,  -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
@@ -144,7 +150,6 @@ int abs(int x)
 
 int main()
 {
-    ULONG temp;
     char text0[] = "AROS - The Amiga Research OS\n";
     char text1[60];
     char text2[] = "\nOops! Kernel under construction...\n";
@@ -152,16 +157,23 @@ int main()
 /* Get memory size. This code works even with 4GB of memory
    BIOS would have some troubles if you have more than 64MB */
 
-    Memory=0x00100000;
-    do
-    {
-	Memory+=0x10;	/* Step by 16 bytes. If it's too slow you can adjust it */
-	Memory24=*(ULONG *)Memory;      /* Memory24 is temporary now */
-	*(ULONG *)Memory=0xDEADBEEF;
-	temp=*(ULONG *)Memory;
-	*(ULONG *)Memory=Memory24;
-    } while (temp==0xDEADBEEF);
+    asm (
+        "       movl    $0x00100000,%%edi       \n"
+        ".lmm1: movl    (%%edi),%%eax           \n"
+        "       movl    $0xdeadbeef,(%%edi)     \n"
+        "       cmpl    $0xdeadbeef,(%%edi)     \n"
+        "       movl    %%eax,(%%edi)           \n"
+        "       jne     .lmm2                   \n"
+        "       addl    $16,%%edi               \n"
+        "       jmp     .lmm1                   \n"
+        ".lmm2: movl    %%edi,%%eax"
+        :"=a"(Memory)
+        :
+        :"cc","eax","edi");
+    
     Memory24=(Memory>0x01000000) ? 0x01000000 : Memory;
+
+    supervisor=0;                                                                                                  
 
     InitGfxAROS();
     
@@ -183,13 +195,13 @@ int main()
 
     mh=(struct MemHeader*)0x00100000;
     mh->mh_Node.ln_Type = NT_MEMORY;
-    mh->mh_Node.ln_Name = "24bit memory";
+    mh->mh_Node.ln_Name = "chip memory";
     mh->mh_Node.ln_Pri = -5;
     mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA |
 			MEMF_KICK;
-    mh->mh_First = (struct MemChunk *)((UBYTE *)mh + sizeof(struct MemHeader));
+    mh->mh_First = (struct MemChunk *)((UBYTE*)mh+MEMHEADER_TOTAL);
     mh->mh_First->mc_Next = NULL;
-    mh->mh_First->mc_Bytes = Memory24 - 0x00100000 - sizeof(struct MemHeader);
+    mh->mh_First->mc_Bytes = Memory24 - 0x00100000 - MEMHEADER_TOTAL;
     mh->mh_Lower = mh->mh_First;
     mh->mh_Upper = (APTR)Memory24;
     mh->mh_Free = mh->mh_First->mc_Bytes;
@@ -233,8 +245,12 @@ int main()
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
+/* Here goes test area... */
+
     /* Enter SAD */
     Debug(0);
+
+    #define ioStd(x) ((struct IOStdReq *)x)
 
     /* Small kbdhidd test */
     {
@@ -249,7 +265,6 @@ int main()
 	    OpenDevice("keyboard.device",0,io,0));
 	kprintf("Doing CMD_HIDDINIT...\n");
 	{
-	    #define ioStd(x) ((struct IOStdReq *)x)
 	    UBYTE *data;
 	    data = AllocMem(100, MEMF_PUBLIC);
 	    strcpy(data, "hidd.kbd.hw");
@@ -268,3 +283,5 @@ int main()
     kprintf(text2);
 return 0;
 }
+
+
