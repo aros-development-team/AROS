@@ -1565,10 +1565,22 @@ static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *ms
     return 0;
 }
 
-static ULONG IsObjectVisible(Object *obj, Object *child)
+static ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase)
 {
-    if (_right(child) < _mleft(obj) || _left(child) > _mright(obj) || _bottom(child) < _mtop(obj) || _top(child) > _mbottom(obj))
-	return FALSE;
+    Object *wnd;
+    Object *obj;
+
+    wnd = _win(child);
+    obj = child;
+
+    while (get(obj,MUIA_Parent, &obj))
+    {
+    	if (!obj) break;
+	if (obj == wnd) break;
+
+	if (_right(child) < _mleft(obj) || _left(child) > _mright(obj) || _bottom(child) < _mtop(obj) || _top(child) > _mbottom(obj))
+	    return FALSE;
+    }
     return TRUE;
 }
 
@@ -1603,7 +1615,7 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     	{
 	    while ((child = NextObject(&cstate)))
 	    {
-		if (IsObjectVisible(obj,child))
+		if (IsObjectVisible(child,MUIMasterBase))
 		    DoMethod(child, MUIM_Show);
 	    }
     	} else
@@ -1643,7 +1655,7 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     	{
 	    while ((child = NextObject(&cstate)))
 	    {
-		if (IsObjectVisible(obj,child))
+		if (IsObjectVisible(child,MUIMasterBase))
 		    DoMethod(child, MUIM_Hide);
 	    }
     	} else
