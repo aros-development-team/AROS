@@ -1,5 +1,9 @@
 # $Id$
 
+#MM AROS-linux : setup includes compiler kernel workbench demos apps
+AROS-linux :
+	@$(NOP)
+
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-exec-$(CPU) setup-x11
 setup-linux :
 	@$(NOP)
