@@ -162,7 +162,16 @@
            In this case I use a special routine to copy the rectangle 
         */
         /* */                  
-        
+        driver_MoveRaster(srcRP,
+                          xDest-xSrc,
+                          yDest-ySrc,
+                          (xSrc < xDest) ? xSrc : xDest,
+                          (ySrc < yDest) ? ySrc : yDest,
+                          (xSrc > xDest) ? xSrc : xDest,
+                          (ySrc > yDest) ? ySrc : yDest,
+                          FALSE,
+                          GfxBase);
+                                  
       }
       else
       {
