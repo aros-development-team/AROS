@@ -1,14 +1,6 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.2  2001/02/04 01:08:09  bergers
-    Implemented GetLanguageSelection().
-
-    Revision 1.1  2000/03/18 18:27:47  bergers
-    Empty libraries. None of the functions have been implemented, yet, but I hope that someone will do it. :-)
-
-
 
     Desc: Internal header file for lowlevel library
     Lang: english
