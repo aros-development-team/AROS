@@ -1096,7 +1096,7 @@ endif
 # options:
 # - conffile (default: $(MODULE).conf): The name of the config file.
 # - cflags (default: $(CFLAGS)): The C options used during compilation
-%define build_module mmake=\A modname=\A modtype=\A conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref linklibname=$(BD_MODNAME$(BDID))
+%define build_module mmake=\A modname=\A modtype=\A conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref linklibname=$(BD_MODNAME$(BDID)) uselibs=
 
 %buildid
 
@@ -1124,6 +1124,13 @@ BD_ENDOBJ$(BDID)     := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 BD_GENINCS$(BDID)    := proto/$(BD_MODNAME$(BDID)).h clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h
 BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
 BD_REFFILE$(BDID)    := %(reffile)
+BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs))
+BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs)))
+
+#Add extra flag if shared AROS C library is used
+ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
+BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
+endif
 
 %rule_compile basename=% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
@@ -1172,8 +1179,8 @@ $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
 	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
 	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
 
-$(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
-	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) objs="$(subst $(BD_ENDOBJ$(BDID)),,$^)"
+$(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
+	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) objs=$(BD_OBJS$(BDID)) libs=$(BD_LIBS$(BDID))
 
 $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) : $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID)))
 	@cd $(subst $(AROS_INCLUDES),$(GENINCDIR),$(dir $@)); \
@@ -1263,19 +1270,24 @@ setup ::
 #   $(GENINCDIR) path must not contain any references to the C runtime
 #   library header files.
 #
-%define copy_includes path=. dir=include
+%define copy_includes mmake= includes=$(INCLUDE_FILES) path=. dir=include
 
 ifneq (%(dir),)
-INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),$(INCLUDE_FILES))
-INCL_FILES_2 := $(subst %(dir),$(GENINCDIR)/%(path),$(INCLUDE_FILES))
+INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),%(includes))
+INCL_FILES_2 := $(subst %(dir),$(GENINCDIR)/%(path),%(includes))
 _INC_PATH := %(dir)/
 else
-INCL_FILES_1 := $(foreach f,$(INCLUDE_FILES),$(AROS_INCLUDES)/%(path)/$(f))
-INCL_FILES_2 := $(foreach f,$(INCLUDE_FILES),$(GENINCDIR)/%(path)/$(f))
+INCL_FILES_1 := $(foreach f,%(includes),$(AROS_INCLUDES)/%(path)/$(f))
+INCL_FILES_2 := $(foreach f,%(includes),$(GENINCDIR)/%(path)/$(f))
 _INC_PATH :=
 endif
 
+ifneq (%(mmake),)
+#MM
+%(mmake) : setup $(INCL_FILES_1) $(INC_FILES_2)
+else
 includes-copy : setup $(INCL_FILES_1) $(INCL_FILES_2)
+endif
 
 $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
