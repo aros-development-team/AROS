@@ -10,13 +10,17 @@ FILES = adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
 	openfromlock output printfault putstr read readargs readitem	    \
 	remdosentry runcommand seek selectinput selectoutput setioerr	    \
 	setowner strtolong ungetc unloadseg unlockdoslist vfprintf	    \
-	vprintf write filepart
+	vprintf write filepart addbuffers changemode createdir deletefile   \
+	exallend isfilesystem lock matchpattern matchpatternnocase          \
+	parsepattern parsepatternnocase setcomment setfiledate setfilesize  \
+	setprotection
 
 all: setup $(OSGENDIR)/dos_init.o $(OSGENDIR)/dos_functable.o \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(OSGENDIR)/lddemon.o \
 	$(OSGENDIR)/errorlist.o \
 	$(OSGENDIR)/loadseg_elf.o \
+	$(OSGENDIR)/doname.o \
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
