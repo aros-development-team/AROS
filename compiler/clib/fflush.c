@@ -53,6 +53,8 @@
 ******************************************************************************/
 {
     GETUSER;
+    AROS_GET_SYSBASE
+    AROS_GET_DOSBASE
 
     /* flush all streams opened for output */
     if (!stream)
