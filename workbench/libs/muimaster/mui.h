@@ -40,8 +40,8 @@
     AROS_UFH3(SAVEDS rettype, name,\
         AROS_UFHA(Class  *, cl,  A0),\
         AROS_UFHA(Object *, obj, A2),\
-        AROS_UFHA(Msg     , msg, A1)) {AROS_USERFUNC_INIT;
-#define BOOPSI_DISPATCHER_END AROS_USERFUNC_EXIT;}
+        AROS_UFHA(Msg     , msg, A1)) {AROS_USERFUNC_INIT
+#define BOOPSI_DISPATCHER_END AROS_USERFUNC_EXIT}
 #define BOOPSI_DISPATCHER_PROTO(rettype,name,cl,obj,msg) \
     AROS_UFP3(SAVEDS rettype, name,\
         AROS_UFPA(Class  *, cl,  A0),\
