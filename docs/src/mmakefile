@@ -17,19 +17,18 @@ AUTODOC_SRCS := $(wildcard $(TOP)/rom/*/*.arch \
 	$(TOP)/compiler/*/*.arch \
 	$(TOP)/workbench/libs/*/*.arch)
 
-SRC2HTML := $(DOCGENDIR)/src2html
 RUN_SRC2HTML := $(SRC2HTML) --html --output=index.html \
 		--keywords=keywords.db \
 	    	--files=files.db main.src
 
 #MM- all-docs : setup-docs doc-includes docs
-#MM docs : setup-docs copy-pics
+#MM docs : src2html setup-docs copy-pics
 docs : autodocs $(HTMLDIR)/srcs $(HTMLDIR)/index.html \
 	copy-files \
 	access-rights
 
 #MM
-setup-docs : make-dirs $(SRC2HTML)
+setup-docs : make-dirs
 
 make-dirs :
 	@mkdir -p $(HTMLDIR) $(HTMLDIR)/autodocs $(HTMLDIR)/pics \
@@ -65,13 +64,6 @@ $(HTMLDIR)/srcs :
 clean ::
 	-rm -f $(HTML)
 	-rm -rf $(DOCGENDIR)
-	cd src2html ; make clean
-
-$(SRC2HTML) : src2html/src2html
-	cp $< $@
-
-src2html/src2html :
-	cd ./src2html ; make
 
 $(HTMLDIR)/index.html : $(FILES) doc_header.html doc_footer.html \
 	    	$(SRC2HTML) keywords.db files.db \
