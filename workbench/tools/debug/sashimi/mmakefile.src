@@ -9,7 +9,7 @@ FILES	:= sashimi
 EXEDIR := $(AROSDIR)/Tools/Debug
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 

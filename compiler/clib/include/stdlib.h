@@ -11,6 +11,7 @@
 
 #include <sys/_types.h>
 #include <sys/_posix.h>
+#include <sys/arosc.h>
 
 /* It seems that also stdlib.h defines alloca() */
 #include <alloca.h>
@@ -52,13 +53,7 @@ typedef struct lldiv_t {
 #define EXIT_FAILURE	1 /* Failing exit status */
 
 /* Gives the largest size of a multibyte character for the current locale */
-#define MB_CUR_MAX      __mb_cur_max
-
-#if !defined _CLIB_KERNEL_ && !defined _CLIB_LIBRARY_
-extern int __mb_cur_max;
-#else
-#   include <libraries/arosc.h>
-#endif
+#define MB_CUR_MAX      (__get_arosc_userdata()->acud_mb_cur_max)
 
 __BEGIN_DECLS
 

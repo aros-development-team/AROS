@@ -9,7 +9,7 @@ FILES  := test virttest gradient
 EXEDIR := $(AROSDIR)/test/Zune
 EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes

@@ -18,12 +18,6 @@
 
 long __gmtoffset;
 
-#ifndef _CLIB_KERNEL_
-static struct timerequest  __timereq;
-static struct MsgPort      __timeport;
-static struct Device      *TimerBase = NULL;
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -109,9 +103,7 @@ static struct Device      *TimerBase = NULL;
 
     if (tv)
     {
-        GETUSER;
-
-        GetSysTime(&atv);
+        GetSysTime((struct timeval *)&atv);
         tv->tv_sec  = atv.tv_secs;
         tv->tv_usec = atv.tv_micro;
 
@@ -131,8 +123,6 @@ static struct Device      *TimerBase = NULL;
 
 static int __init_timerbase(void)
 {
-    GETUSER;
-
     __timeport.mp_Node.ln_Type   = NT_MSGPORT;
     __timeport.mp_Node.ln_Pri    = 0;
     __timeport.mp_Node.ln_Name   = NULL;
@@ -172,8 +162,6 @@ static int __init_timerbase(void)
 
 static void __exit_timerbase(void)
 {
-    GETUSER;
-    
     if (TimerBase != NULL)
         CloseDevice((struct IORequest *)&__timereq);
 }

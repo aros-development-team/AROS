@@ -10,6 +10,7 @@
 */
 #include <sys/_types.h>
 #include <sys/cdefs.h>
+#include <sys/arosc.h>
 
 #ifndef __AROS_SIZE_T_DECLARED
 #define __AROS_SIZE_T_DECLARED
@@ -76,13 +77,12 @@ typedef	_AROS_VA_LIST_	va_list;
 #define SEEK_CUR    1
 #define SEEK_END    2
 
-#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
-    extern FILE *stdin, *stdout, *stderr;
-#else
-#include <libraries/arosc.h>
-#endif
+#define stdin  ((FILE *)__get_arosc_userdata()->acud_stdin)
+#define stdout ((FILE *)__get_arosc_userdata()->acud_stdout)
+#define stderr ((FILE *)__get_arosc_userdata()->acud_stderr)
 
 __BEGIN_DECLS
+
 
 int remove(const char *filename);
 int rename(const char *from, const char *to);

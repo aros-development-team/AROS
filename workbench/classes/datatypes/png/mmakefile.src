@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := pngclass libfunc
+FILES := pngclass libfunc memory
 FUNCS := obtainengine
 
 #MM- workbench-datatypes-complete: workbench-datatypes-png
@@ -11,6 +11,6 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module_macro mmake=workbench-datatypes-png modname=png \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="png amiga z arosc m"
+  uselibs="png_nostdio amiga z rom m"
 
 %common

@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/symbolsets.h>
 #include <ctype.h>
 
 const unsigned short int __ctype_b_array[384] =
@@ -502,11 +503,20 @@ const int __ctype_tolower_array[384] =
     248,249,250,251, 252,253,254,255,
 };
 
+#ifdef ___AROSC_PRIVDATA_H
 
-const unsigned short int *const __ctype_b = &__ctype_b_array[128];
+static int __ctype_init(void)
+{
+    __ctype_b       = &__ctype_b_array[128];
+    __ctype_toupper = &__ctype_toupper_array[128];
+    __ctype_tolower = &__ctype_tolower_array[128];
 
-const int *const __ctype_toupper = &__ctype_toupper_array[128];
-const int *const __ctype_tolower = &__ctype_tolower_array[128];
+    return 0;
+}
+
+ADD2INIT(__ctype_init, 20);
+
+#endif
 
 /*****************************************************************************
 

@@ -9,7 +9,7 @@
     Lang: english
 */
 
-#include <aros/system.h>
+#include <sys/cdefs.h>
 
 #define EPERM		 1	/* Operation not permitted */
 #define ENOENT		 2	/* No such file or directory */
@@ -136,12 +136,7 @@
 
 #define EDEADLOCK	EDEADLK
 
-__BEGIN_DECLS
-
-int *__get_errno_ptr(void);
-
-__END_DECLS
-
-#define errno (*__get_errno_ptr())
+#include <sys/arosc.h>
+#define errno (__get_arosc_userdata()->acud_errno)
 
 #endif /* _ERRNO_H_ */

@@ -8,10 +8,6 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-#ifndef _CLIB_KERNEL_
-extern APTR __startup_mempool;
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -50,9 +46,8 @@ extern APTR __startup_mempool;
 {
     if (memory)
     {
-        GETUSER;
 	AROS_GET_SYSBASE_OK
-	
+
 	unsigned char *mem;
 	size_t         size;
 

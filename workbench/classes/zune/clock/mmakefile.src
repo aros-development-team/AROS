@@ -11,7 +11,7 @@ INCLUDE_FILES := clock.h
     mmake=workbench-classes-zune-clock \
     modname=Clock modtype=mcc \
     conffile=clock.conf \
-    uselibs="amiga m arosc"
+    uselibs="amiga m rom"
     
 %copy_includes path=zune dir=
     

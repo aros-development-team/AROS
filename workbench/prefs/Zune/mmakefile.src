@@ -14,6 +14,6 @@ EXEDIR := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-zune \
     progname=Zune targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc_shared"
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
 
 %common

@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#include <sys/arosc.h>
+
 #define _ISupper    0x0001  /* UPPERCASE */
 #define _ISlower    0x0002  /* lowercase */
 #define _ISalpha    0x0004  /* a-y */
@@ -22,9 +24,9 @@
 #define _ISpunct    0x0400  /* .,:;!? */
 #define _ISalnum    (_ISalpha | _ISdigit)
 
-extern const unsigned short int *const __ctype_b;
-extern const int *const __ctype_toupper;
-extern const int *const __ctype_tolower;
+#define __ctype_b       (__get_arosc_userdata()->acud_ctype_b)
+#define __ctype_toupper (__get_arosc_userdata()->acud_ctype_toupper)
+#define __ctype_tolower (__get_arosc_userdata()->acud_ctype_tolower)
 
 #define _istype(c,type) \
     (__ctype_b[(int) (c)] & (unsigned short int) (type))

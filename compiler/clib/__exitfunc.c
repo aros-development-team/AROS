@@ -4,28 +4,19 @@
 */
 
 #include <aros/symbolsets.h>
-
+#include <aros/startup.h>
+#include <exec/lists.h>
 #include "__exitfunc.h"
-
-#ifndef _CLIB_KERNEL_
-static struct MinList __atexit_list;
-extern LONG    __startup_error;
-#endif
 
 int __addexitfunc(struct AtExitNode *aen)
 {
-    GETUSER;
-    AROS_GET_SYSBASE_OK
-  
-    AddHead((struct List *)&__atexit_list, (struct Node *)aen);
+    ADDHEAD((struct List *)&__atexit_list, (struct Node *)aen);
 
     return 0;
 }
 
 int __init_atexit(void)
 {
-    GETUSER;
-
     NEWLIST((struct List *)&__atexit_list);
 
     return 0;
@@ -33,13 +24,10 @@ int __init_atexit(void)
 
 void __exit_atexit(void)
 {
-    GETUSER;
-    AROS_GET_SYSBASE_OK
-
-    {  
+    {
 	struct AtExitNode *aen;
 
-	while ((aen = (struct AtExitNode *) RemHead(
+	while ((aen = (struct AtExitNode *) REMHEAD(
 	                           (struct List *) &__atexit_list)))
 	{
 	    switch (aen->node.ln_Type)
@@ -47,9 +35,9 @@ void __exit_atexit(void)
 	    case AEN_VOID:
 		aen->func.fvoid();
 		break;
-	  
+
 	    case AEN_PTR:
-		aen->func.fptr(__startup_error, aen->ptr);
+		aen->func.fptr(__aros_startup_error, aen->ptr);
 		break;
 	    }
 	}

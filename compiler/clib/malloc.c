@@ -11,11 +11,6 @@
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 
-#ifndef _CLIB_KERNEL_
-struct SignalSemaphore __startup_memsem;
-APTR __startup_mempool;
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -54,8 +49,6 @@ APTR __startup_mempool;
 
 ******************************************************************************/
 {
-    GETUSER;
-
     UBYTE *mem = NULL;
     AROS_GET_SYSBASE_OK
 
@@ -76,7 +69,6 @@ APTR __startup_mempool;
 
 int __init_memstuff(void)
 {
-    GETUSER;
     AROS_GET_SYSBASE_OK
     __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 4096L, 2000L);
 
@@ -91,7 +83,6 @@ int __init_memstuff(void)
 
 void __exit_memstuff(void)
 {
-    GETUSER;
     AROS_GET_SYSBASE_OK
 
     if (__startup_mempool)

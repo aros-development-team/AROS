@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-system : workbench-system-ftmanager
-#MM workbench-system-ftmanager : workbench-libs-freetype-module
+##MM- workbench-system : workbench-system-ftmanager
+##MM workbench-system-ftmanager : workbench-libs-freetype-module
 
 FILES  := ftmanager
 EXEDIR := $(AROS_SYSTEM)
@@ -11,6 +11,6 @@ USER_CFLAGS := -I$(TOP)/rom/exec
 
 %build_prog mmake=workbench-system-ftmanager \
     progname=FTManager targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="freetype2shared mui amiga arosc_shared"
+    files=$(FILES) uselibs="freetype2shared mui amiga arosc"
 
 %common

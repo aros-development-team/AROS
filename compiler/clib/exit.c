@@ -7,13 +7,8 @@
 */
 
 #include <exec/types.h>
-#include <libraries/arosc.h>
 #include <setjmp.h>
-
-#ifndef _CLIB_KERNEL_
-    extern jmp_buf __startup_jmp_buf;
-    extern LONG    __startup_error;
-#endif
+#include <aros/startup.h>
 
 /*****************************************************************************
 
@@ -61,11 +56,10 @@
 
 ******************************************************************************/
 {
-    GETUSER;
 
-    __startup_error = code;
+    __aros_startup_error = code;
 
-    longjmp (__startup_jmp_buf, 1);
+    longjmp (__aros_startup_jmp_buf, 1);
 
     /* never reached */
 } /* exit */

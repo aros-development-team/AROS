@@ -14,7 +14,7 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-locale \
     progname=Locale targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
 
 
 IMAGES      := earthmap_small timezones_small

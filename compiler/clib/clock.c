@@ -9,10 +9,6 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 
-#ifndef _CLIB_KERNEL_
-struct DateStamp __startup_datestamp;
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -48,8 +44,6 @@ struct DateStamp __startup_datestamp;
 
 ******************************************************************************/
 {
-    GETUSER;
-
     struct DateStamp 	t;
     clock_t		retval;
 
@@ -76,8 +70,6 @@ struct DateStamp __startup_datestamp;
 
 int __init_clock(void)
 {
-    GETUSER;
-
     DateStamp(&__startup_datestamp);
     return 0;
 }

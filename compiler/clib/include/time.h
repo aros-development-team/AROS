@@ -11,6 +11,7 @@
 #include <sys/_types.h>
 #include <sys/_posix.h>
 #include <sys/cdefs.h>
+#include <sys/arosc.h>
 
 #ifndef __AROS_TIME_T_DECLARED
 #define __AROS_TIME_T_DECLARED
@@ -79,13 +80,9 @@ struct sigevent;
 
 #endif /* !_ANSI_SOURCE && _P1003_1B_VISIBLE */
 
-#if !defined _CLIB_KERNEL_ && !defined _CLIB_LIBRARY_
-    extern int       daylight;
-    extern long int  timezone;
-    extern char     *tzname[];
-#else
-#   include <libraries/arosc.h>
-#endif
+#define __daylight (__get_arosc_userdata()->acud_daylight)
+#define __timezone (__get_arosc_userdata()->acud_timezone)
+#define __tzname   (__get_arosc_userdata()->acud_tzname)
 
 __BEGIN_DECLS
 char      *asctime(const struct tm *);

@@ -22,7 +22,7 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
 
 %build_prog mmake=workbench-tools-hdtoolbox \
     progname=HDToolBox targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui amiga arosc_shared m"
+    files=$(FILES) uselibs="mui amiga arosc m"
 
 
 #MM workbench-tools-hdtoolbox-prefs : workbench-tools-hdtoolbox-prefs-setup

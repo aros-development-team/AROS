@@ -14,6 +14,6 @@ FUNCS := addclass disposeobject donotify findclass freeclass freeicdata \
 #  modname=boopsi modtype=library \
 #  funcs=$(FUNCS) files=$(FILES) \
 #  conffile=lib.conf \
-#  uselibs="amiga arosc_shared"
+#  uselibs="amiga arosc"
 
 %common

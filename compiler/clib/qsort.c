@@ -120,6 +120,7 @@ med3(const char *a, const char *b, const char *c, int (*cmp)(const void *, const
 	char *pa, *pb, *pc, *pd, *pl, *pm, *pn;
 	int d, r, swaptype, swap_cnt;
 
+	
 loop:	SWAPINIT(a, es);
 	swap_cnt = 0;
 	if (n < 7) {

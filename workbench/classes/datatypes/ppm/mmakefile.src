@@ -10,6 +10,6 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module_macro mmake=workbench-datatypes-ppm modname=ppm \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="amiga arosc"
+  uselibs="amiga rom"
 
 %common

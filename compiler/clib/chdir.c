@@ -12,11 +12,6 @@
 #include <errno.h>
 #include "__errno.h"
 
-#ifndef _CLIB_KERNEL_
-static BOOL __startup_cd_changed;  /* Need this since NULL is a valid lock */
-static BPTR __startup_cd_lock;     
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -57,8 +52,6 @@ static BPTR __startup_cd_lock;
 
 ******************************************************************************/
 {
-    GETUSER;
-
     BPTR oldlock;
     BPTR newlock = Lock( path, SHARED_LOCK );
 
@@ -96,8 +89,6 @@ error:
 
 int __init_chdir(void)
 {
-    GETUSER;
-
     __startup_cd_changed = FALSE;
 
     return 0;
@@ -105,8 +96,6 @@ int __init_chdir(void)
 
 void __exit_chdir(void)
 {
-    GETUSER;
-
     if( __startup_cd_changed )
     {
         BPTR lock;

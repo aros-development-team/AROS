@@ -6,6 +6,6 @@ include $(TOP)/config/make.cfg
 
 %build_module_macro mmake=workbench-libs-coolimages modname=coolimages \
   modtype=library funcs=cool_obtainimagea \
-  uselibs="coolimagesstatic amiga arosc" conffile=lib.conf
+  uselibs="coolimagesstatic amiga rom" conffile=lib.conf
 
 %common

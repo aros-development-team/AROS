@@ -4,7 +4,6 @@
 
 __sighandler_t *signal(int sig, __sighandler_t *handler)
 {
-    GETUSER;
 #warning implement signal
 
     fprintf(stderr, "**clib warning**: signal() not implemented\n");

@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := createhdfile
 EXES := $(AROSDIR)/Build/Tools/createhdfile
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 PRELIBS := $(PRELIBS) -ladf
 
 #MM- build-tools : build-tools-createhdfile

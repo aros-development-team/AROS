@@ -10,7 +10,7 @@ INCLUDE_FILES := iconimage.h
     mmake=workbench-classes-zune-iconimage \
     modname=IconImage modtype=mcc \
     conffile=iconimage.conf \
-    uselibs="amiga arosc"
+    uselibs="amiga rom"
     
 %copy_includes path=zune dir=
     

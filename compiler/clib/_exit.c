@@ -6,13 +6,8 @@
 */
 
 #include <exec/types.h>
-#include <libraries/arosc.h>
 #include <setjmp.h>
-
-#ifndef _CLIB_KERNEL_
-    extern jmp_buf __startup_jmp_buf;
-    extern LONG    __startup_error;
-#endif
+#include <aros/startup.h>
 
 /*****************************************************************************
 
@@ -26,7 +21,7 @@
 
 /*  FUNCTION
 	Terminates the running program immediately. The code is returned to 
-        the program which has called the running program. In contrast to 
+        the program which has called the running program. In contrast to
         exit(), this function does not call user exit-handlers added with 
         atexit() or on_exit(). It does, however, close open filehandles.
 
@@ -37,7 +32,7 @@
 	None. This function does not return.
 
     NOTES
-        This function must not be used in a shared library or in a threaded 
+        This function must not be used in a shared library or in a threaded
         application.
 
    EXAMPLE
@@ -53,11 +48,9 @@
 
 ******************************************************************************/
 {
-    GETUSER;
+    __aros_startup_error = code;
 
-    __startup_error = code;
-
-    longjmp (__startup_jmp_buf, 1);
+    longjmp (__aros_startup_jmp_buf, 1);
 
 #   warning TODO: _exit() is not properly implemented
 

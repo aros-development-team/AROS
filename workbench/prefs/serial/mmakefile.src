@@ -11,6 +11,6 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-serial \
     progname=Serial targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc_shared m"
+    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
 
 %common

@@ -13,7 +13,7 @@ EXEDIR := $(AROSDIR)/Tools/Commodities
 
 #%build_prog mmake=workbench-tools \
 #    progname=StartMenu targetdir=$(EXEDIR) \
-#    files=$(FILES) uselibs="amiga arosc_shared m"
+#    files=$(FILES) uselibs="amiga arosc m"
 
 %common
 

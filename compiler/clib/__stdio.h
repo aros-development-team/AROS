@@ -19,12 +19,6 @@ typedef struct
     FILE File;
 } FILENODE;
 
-#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
-extern struct MinList __stdio_files;
-#else
-#include <libraries/arosc.h>
-#endif
-
 #define FILENODE2FILE(fn)       (&((fn)->File))
 #define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))
 

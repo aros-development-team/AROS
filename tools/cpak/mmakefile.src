@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := cpak
 EXES := $(AROSDIR)/Build/Tools/cpak
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 
 #MM- build-tools : build-tools-cpak
 

@@ -62,8 +62,6 @@
 
 ******************************************************************************/
 {
-    GETUSER;
-    
     int oflags, wanted_accmode, current_accmode;
     fdesc *fdesc;
     FILENODE *fn;

@@ -8,11 +8,6 @@
 #include <exec/types.h>
 #include <setjmp.h>
 
-#ifndef _CLIB_KERNEL_
-    extern jmp_buf __startup_jmp_buf;
-    extern LONG    __startup_error;
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -52,12 +47,5 @@
 
 ******************************************************************************/
 {
-    GETUSER;
-
-    __startup_error = 20;
-
-    longjmp (__startup_jmp_buf, 1);
-
-    /* never reached */
-} /* abort */
-
+    exit(20);
+}

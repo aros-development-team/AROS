@@ -33,6 +33,6 @@ USER_LDFLAGS:=--verbose
 %build_module_macro mmake=workbench-libs-mathieeedoubtrans \
  modname=mathieeedoubtrans modtype=library \
  files=$(FILES) funcs=$(FUNCS) \
- conffile=lib.conf uselibs=arosc
+ conffile=lib.conf uselibs=rom
 
 %common

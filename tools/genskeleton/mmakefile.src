@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := genskeleton
 EXES := $(AROSDIR)/Build/Tools/genskeleton
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 
 #MM- build-tools : build-tools-genskeleton
 

@@ -13,7 +13,7 @@ EXEDIR := $(AROS_C)
 
 %build_prog mmake=workbench-c \
     progname=IPrefs targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga arosc_shared m" \
+    files=$(FILES) uselibs="arossupport amiga arosc m" \
     detach=yes
 
 %common

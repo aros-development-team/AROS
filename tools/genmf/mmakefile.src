@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 FILES := genmf
 EXES := $(AROSDIR)/Build/Tools/genmf
 
-USE_CLIB_SHARED := yes
+USE_CLIB := yes
 
 #MM- build-tools : build-tools-genmf
 
