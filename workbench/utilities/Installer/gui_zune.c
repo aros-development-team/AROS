@@ -161,6 +161,7 @@ struct Screen *scr;
 
     app = ApplicationObject,
 	MUIA_Application_Title, "AROS - Installer",
+	MUIA_Application_DoubleStart, TRUE,
 
    	SubWindow, wnd = WindowObject,
 	    MUIA_Window_Title,	GuiWinTitle,
@@ -771,6 +772,7 @@ long int request_number(struct ParameterList *pl)
 {
 long int retval;
 long int i, min, max;
+char minmax[MAXARGSIZE];
 
     retval = GetPL( pl, _DEFAULT ).intval;
     if( GetPL( pl, _RANGE ).used == 1 )
@@ -784,9 +786,11 @@ long int i, min, max;
 	    min = max;
 	    max = i;
 	}
+	sprintf(minmax, "Range = [%ld, %ld]", min, max);
     }
     else
     {
+	minmax[0] = 0;
 #define INTMAX  32767
 	max = INTMAX;
 	min = ( retval < 0 ) ? retval : 0;
@@ -819,6 +823,11 @@ long int i, min, max;
 			MUIA_String_AdvanceOnCR,TRUE,
 			MUIA_CycleChain,	TRUE,
 		    End,
+		    Child, TextObject,
+			MUIA_Text_Contents, (IPTR)(minmax),
+			MUIA_Text_Editable, FALSE,
+			MUIA_Text_Multiline, FALSE,
+		    End,
 		End,
 	    End;
 
@@ -838,7 +847,7 @@ long int i, min, max;
 			break;
 		    case Push_Proceed:
 			GetAttr(MUIA_String_Integer, st, &retval);
-			if ( retval < max && retval > min)
+			if ( retval <= max && retval >= min)
 			{
 			    running = FALSE;
 			}
@@ -891,11 +900,11 @@ int i;
 
     if( GetPL(pl, _DEFAULT).used == 1 )
     {
-	string = GetPL(pl, _DEFAULT).arg[0];
+	string = StrDup(GetPL(pl, _DEFAULT).arg[0]);
     }
     else
     {
-	string = EMPTY_STRING;
+	string = StrDup(EMPTY_STRING);
     }
     TRANSSCRIPT();
     if( get_var_int( "@user-level" ) > _NOVICE )
@@ -928,6 +937,7 @@ int i;
 
 	if (wc)
 	{
+	char *str;
 	    AddContents(wc);
 
 	    while (running)
@@ -961,21 +971,22 @@ kprintf("Skip\n");
 		}
 		WaitCTRL(sigs);
 	    }
-	    get(st, MUIA_String_Contents, (IPTR *)&string);
+	    get(st, MUIA_String_Contents, (IPTR *)&str);
+	    string = StrDup(str);
 
 	    DelContents(wc);
 	}
 	FreeVec(out);
 	disable_skip(FALSE);
     }
+    retval = addquotes(string);
+    FreeVec(string);
     if( preferences.transcriptstream != NULL )
     {
-	Write(preferences.transcriptstream, "Ask String: Result was \"", 24);
+	Write(preferences.transcriptstream, "Ask String: Result was ", 23);
 	Write(preferences.transcriptstream, retval, strlen(retval));
-	Write(preferences.transcriptstream, "\".\n\n", 4);
+	Write(preferences.transcriptstream, ".\n\n", 3);
     }
-
-    retval = addquotes(string);
 
 return retval;
 }
