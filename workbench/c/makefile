@@ -22,7 +22,11 @@ EXES = $(EXEDIR)/helloworld \
 	$(EXEDIR)/dir \
 	$(EXEDIR)/wait \
 	$(EXEDIR)/forkbomb \
-	$(EXEDIR)/demowin
+	$(EXEDIR)/demowin \
+	$(EXEDIR)/assign \
+	$(EXEDIR)/delete \
+	$(EXEDIR)/makedir \
+	$(EXEDIR)/mount
 
 all: setup $(EXES)
 
