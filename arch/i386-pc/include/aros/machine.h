@@ -103,8 +103,11 @@ struct JumpVec
 
 /* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
    recognise them */
+/*
+  NOT DO THIS ON NATIVE
 #undef PassThroughErrnos
 #define PassThroughErrnos 0x40000000
+*/
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
