@@ -6,6 +6,7 @@ ChangeLog
 INSTALL
 Makefile.am
 NEWS
+TODO
 acconfig.h
 aclocal.m4
 ansi2knr.1
@@ -21,3 +22,6 @@ mkinstalldirs
 stamp-h.in
 mmake.c
 mmake.txt
+README.GeekGadgets
+Makefile.amiga
+config.h.amiga
