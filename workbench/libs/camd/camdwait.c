@@ -8,8 +8,8 @@
 #undef SysBase
 #undef DOSBase
 
-struct SignalSemaphore camdwaitsemaphore={0};
-struct SignalSemaphore camdwaitsemaphore2={0};
+struct SignalSemaphore camdwaitsemaphore={{0}};
+struct SignalSemaphore camdwaitsemaphore2={{0}};
 
 struct Task *camdwaittask;
 ULONG camdwaitsig;

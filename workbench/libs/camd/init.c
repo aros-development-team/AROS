@@ -83,7 +83,11 @@ void UninitCamd(struct CamdBase *CamdBase){
 		temp2=driver->next;
 		(*driver->mididevicedata->Expunge)();
 		FreeDriverData(driver,CamdBase);
+#ifdef _AROS
+		Camd_CloseMidiDevice(driver->mididevicedata,CamdBase);
+#else
 		CloseMidiDevice(driver->mididevicedata,CamdBase);
+#endif
 		driver=temp2;
 	}
 
