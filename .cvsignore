@@ -18,5 +18,7 @@ errors
 configure.scan
 TODO
 mmake
+mmake.config
 mmake.cache
 .pure
+mmakefile
