@@ -1,9 +1,8 @@
 # $Id$
 
 TOP=../..
-COMPILE_KERNEL = yes # Must have a value, no matter which one
 
-USER_INCLUDES=-I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
+USER_INCLUDES=-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
 
 include $(TOP)/config/make.cfg
 
@@ -29,6 +28,13 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-ifneq ($(TARGET),clean)
--include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+ifeq ($(TARGET),clean)
+NODEPS:=yes
+endif
+ifeq ($(TARGET),setup)
+NODEPS:=yes
+endif
+
+ifndef NODEPS
+include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 endif
