@@ -127,25 +127,26 @@ static const char* KMsgCancelDanger =
 static const char* KMsgProceed =
 "_Proceed";
 
-#define MUIM_NextStep           (0x00335551)
-#define MUIM_PrevStep           (0x00335552)
-#define MUIM_UndoSteps          (0x00335553)
+#define MUIM_IC_NextStep           (0x00335551)
+#define MUIM_IC_PrevStep           (0x00335552)
+#define MUIM_IC_UndoSteps          (0x00335553)
 
-#define MUIM_Install            (0x00335554)
+#define MUIM_IC_Install            (0x00335554)
 
 #define MUIM_FindDrives         (0x00335555)
 #define MUIM_PartitionFree      (0x00335556)
 #define MUIM_Partition          (0x00335557)
 #define MUIM_Format             (0x00335558)
-#define MUIM_MakeDirs           (0x00335559)
-#define MUIM_CopyFiles          (0x0033555a)
-#define MUIM_CopyFile           (0x0033555b)
 
-#define MUIM_CancelInstall      (0x0033556a)
-#define MUIM_ContinueInstall    (0x0033556b)
-#define MUIM_QuitInstall        (0x0033556c)
+#define MUIM_IC_MakeDirs           (0x00335559)
+#define MUIM_IC_CopyFiles          (0x0033555a)
+#define MUIM_IC_CopyFile           (0x0033555b)
+
+#define MUIM_IC_CancelInstall      (0x0033556a)
+#define MUIM_IC_ContinueInstall    (0x0033556b)
+#define MUIM_IC_QuitInstall        (0x0033556c)
+
 #define MUIM_Reboot             (0x0033556d)
-
 #define MUIM_RefreshWindow      (0x00335570)
 
 /* to be made obsolete */
@@ -177,8 +178,10 @@ static const char* KMsgProceed =
 #define MUIA_OBJ_Proceed        (0x00335596)
 #define MUIA_OBJ_Cancel         (0x00335597)
 
-#define MUIA_License_File       (0x00335598)
-#define MUIA_License_Mandatory  (0x00335599)
+#define MUIA_IC_License_File		(0x00335598)
+#define MUIA_IC_License_Mandatory	(0x00335599)
+
+#define MUIA_IC_EnableUndo			(0x00335599)
 /* IO Retry Window */
 
 #define MUIA_OBJ_IO_RWindow     (0x0033559a)
