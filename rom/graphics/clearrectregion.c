@@ -52,6 +52,11 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+#if USE_BANDED_FUNCTIONS
+
+    return _ClearRectRegion(region, rectangle, GfxBase);
+
+#else
 
     struct RegionRectangle* lastrects = NULL;
 
@@ -156,6 +161,6 @@
     region->RegionRectangle = lastrects;
 
     return TRUE;
-
+#endif
     AROS_LIBFUNC_EXIT
 } /* ClearRectRegion */

@@ -56,6 +56,11 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+#if USE_BANDED_FUNCTIONS
+
+    return _XorRectRegion(region, rectangle, GfxBase);
+
+#else
 
     struct Region* intersection, *copy2;
 
@@ -70,7 +75,7 @@
 		if (intersection->RegionRectangle)
 		{
 		    BOOL result;
-		    
+
 		    if (!(result = ClearRegionRegion(intersection, region)))
 		    {
 		        /* reinstall old RegionRectangles and bounds*/
@@ -93,7 +98,7 @@
 	DisposeRegion(intersection);
     }
     return FALSE;
-
+#endif
     AROS_LIBFUNC_EXIT
 
 } /* XorRectRegion */

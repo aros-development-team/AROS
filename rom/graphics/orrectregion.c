@@ -60,6 +60,12 @@
 {
     AROS_LIBFUNC_INIT
 
+#if USE_BANDED_FUNCTIONS
+
+    return _OrRectRegion(region, rectangle, GfxBase);
+
+#else
+
     struct RegionRectangle* nrect, *rr;
     WORD xoffset = 0;
     WORD yoffset = 0;
@@ -214,6 +220,6 @@
     }
 
     return TRUE;
-
+#endif
     AROS_LIBFUNC_EXIT
 } /* OrRectRegion */

@@ -52,6 +52,13 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+#if USE_BANDED_FUNCTIONS
+
+    return _ClearRegionRegion(region1, region2, GfxBase);
+
+#else
+
+    struct Region *bak = CopyRegion(region2);
 
     ASSERT_VALID_PTR(region1);
     ASSERT_VALID_PTR(region2);
@@ -64,7 +71,7 @@
 	struct RegionRectangle	*backup;
 	struct Rectangle    	clearrect;
 
-	if (!(backup = copyrrects(region2->RegionRectangle)))
+	if (!CopyRegionRectangleList(region2->RegionRectangle, &backup))
 	    return FALSE;
 
 	for (rr = region1->RegionRectangle; rr; rr = rr->Next)
@@ -84,9 +91,8 @@
 	/* the backup is not needed anymore in this case */
 	DisposeRegionRectangleList(backup);
     }
-
-    return TRUE;    
-    
+    return TRUE;
+#endif
     AROS_LIBFUNC_EXIT
-    
+
 } /* ClearRegionRegion */

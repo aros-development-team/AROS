@@ -58,7 +58,12 @@
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
-    
+#if USE_BANDED_FUNCTIONS
+
+    return _AndRegionRegion(region1, region2, GfxBase);
+
+#else
+
   struct Region Backup;
   struct Region Work;
   struct RegionRectangle * RR = region1->RegionRectangle;
@@ -77,7 +82,7 @@
     struct Rectangle CurRectangle;
     /* make a copy of region2 */
     ClearRegion(&Backup);
-    if (NULL == (Backup.RegionRectangle = copyrrects(region2->RegionRectangle)))
+    if (!CopyRegionRectangleList(region2->RegionRectangle, &Backup.RegionRectangle))
     {
       ClearRegion(&Backup);
       ClearRegion(&Work);
@@ -104,7 +109,7 @@
     /* treat the next RegionRectangle */
     RR=RR->Next; 
   }
-  
+
   /* everything went alright, so I can change region2 now */
   ClearRegion(region2);
   ClearRegion(&Backup);
@@ -114,6 +119,6 @@
   /* mustn't clear Work as the result is in region2 now !! */
 
   return TRUE;
-  
+#endif
   AROS_LIBFUNC_EXIT
 }

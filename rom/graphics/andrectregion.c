@@ -54,6 +54,12 @@
 {
     AROS_LIBFUNC_INIT
 
+#if USE_BANDED_FUNCTIONS
+
+    return _AndRectRegion(region, rectangle, GfxBase);
+
+#else
+
     if (region->RegionRectangle) { /* no rectangles, nothing to do */
 	struct RegionRectangle* rr, *rr2;
 	struct Rectangle intersection;
@@ -142,6 +148,7 @@
 	}
     }
 
+#endif
     AROS_LIBFUNC_EXIT
 } /* AndRectRegion */
 

@@ -22,6 +22,9 @@
 #ifndef GRAPHICS_RASTPORT_H
 #   include <graphics/rastport.h>
 #endif
+#ifndef GRAPHICS_REGIONS_H
+#   include <graphics/regions.h>
+#endif
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
@@ -29,6 +32,8 @@
 #   include <graphics/view.h>
 #endif
 
+#include <exec/memory.h>
+#include <proto/exec.h>
 #include <graphics/scale.h>
 #include "fontsupport.h"
 
@@ -197,7 +202,7 @@ extern LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 			    ULONG ystart, ULONG xstop, ULONG ystop,
 			    UBYTE * array, struct RastPort * temprp,
 			    struct GfxBase *);
-			    
+
 extern BOOL driver_ExtendFont(struct TextFont *font, struct tfe_hashnode *hn, struct GfxBase *GfxBase);
 extern void driver_StripFont(struct TextFont *font, struct tfe_hashnode *hn, struct GfxBase *GfxBase);
 
@@ -262,9 +267,45 @@ VOID color_get(struct ColorMap *cm,
 		ULONG *b,
 		ULONG index);
 
+#if !REGIONS_USE_MEMPOOL
+#    define NewRegionRectangle()   AllocMem(sizeof(struct RegionRectangle), MEMF_CLEAR)
+#    define DisposeRegionRectangle(rr) FreeMem(rr, sizeof(struct RegionRectangle));
+#else
+#    define NewRegionRectangle()                                                          \
+     ({                                                                                   \
+        struct RegionRectangle *rr;                                                       \
+     										          \
+        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);				  \
+        rr = AllocPooled(PrivGBase(GfxBase)->regionpool, sizeof(struct RegionRectangle)); \
+        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);				  \
+                                                                                          \
+        rr;                                                                               \
+     })
 
-              
-       
+#    define  DisposeRegionRectangle(rr)                                                   \
+     {                                                                                   \
+         ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);                                 \
+         FreePooled(PrivGBase(GfxBase)->regionpool, rr, sizeof(struct RegionRectangle));  \
+         ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);                                \
+     }
+#endif
+
+void _DisposeRegionRectangleList
+(
+    struct RegionRectangle *regionrectangle,
+    struct GfxBase         *GfxBase
+);
+
+BOOL _CopyRegionRectangleList
+(
+    struct RegionRectangle  *src,
+    struct RegionRectangle **dstptr,
+    struct GfxBase          *GfxBase
+);
+
+#define DisposeRegionRectangleList(list)     _DisposeRegionRectangleList(list, GfxBase)
+#define CopyRegionRectangleList(src, dstptr) _CopyRegionRectangleList(src, dstptr, GfxBase)
+
 #endif /* GRAPHICS_INTERN_H */
 
 

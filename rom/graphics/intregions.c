@@ -13,6 +13,9 @@
 #include <proto/graphics.h>
 #include <clib/macros.h>
 #include "intregions.h"
+#include "graphics_intern.h"
+
+#include <aros/debug.h>
 
 /* clears from rect the area that overlaps with clearrect
  * and returns the remaining RegionRectangles in *erg
@@ -93,35 +96,62 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     return TRUE;
 }  /* clearrectrect() */
 
-/* return a copy of all RegionRectangles linked with the given
- * RegionRectangle or NULL if out of memory
- */
-struct RegionRectangle* copyrrects(struct RegionRectangle* src)
+
+void _DisposeRegionRectangleList
+(
+    struct RegionRectangle *regionrectangle,
+    struct GfxBase         *GfxBase
+)
 {
-    struct RegionRectangle* nrects, *cur, *last, *rr;
+    struct RegionRectangle *next;
 
-    nrects = NewRegionRectangle();
-    if (!nrects)
-	return NULL;
-    nrects->Prev = NULL;
-    nrects->Next = NULL; /* !!! in case allocation fails disposerects is called and this must be valid! */
-    nrects->bounds = src->bounds;
+    ASSERT_VALID_PTR_OR_NULL(regionrectangle);
 
-    last = nrects;
-
-    for (rr = src->Next; rr; rr = rr->Next) {
-	if (!(cur = NewRegionRectangle())) {
-	    DisposeRegionRectangleList(nrects);
-	    return NULL;
-	}
-	cur->bounds = rr->bounds;
-	last->Next = cur;
-	cur->Prev = last;
-	cur->Next = NULL; /* !!! in case allocation fails disposerects is called and this must be valid! */
-	last = cur;
+    while(regionrectangle)
+    {
+    	next = regionrectangle->Next;
+	DisposeRegionRectangle(regionrectangle);
+	regionrectangle = next;
     }
-    last->Next = NULL;
+} /* DisposeRegionRectangleList */
 
-    return nrects;
-}  /* copyrrects() */
 
+/* return a copy of all RegionRectangles linked with src
+ * in *dstptr. Returns FALSE in case there's no enough memory
+ */
+BOOL _CopyRegionRectangleList
+(
+    struct RegionRectangle  *src,
+    struct RegionRectangle **dstptr,
+    struct GfxBase          *GfxBase
+)
+{
+    struct RegionRectangle *first = NULL;
+    struct RegionRectangle *prev  = NULL;
+
+    for (; src; src = src->Next)
+    {
+        struct RegionRectangle *new = NewRegionRectangle();
+
+        if (!new)
+        {
+            DisposeRegionRectangleList(*dstptr);
+            return FALSE;
+        }
+
+        new->Prev = prev;
+        new->Next = NULL;
+        new->bounds = src->bounds;
+
+        if (!first)
+            first = new;
+        else
+            prev->Next = new;
+
+        prev = new;
+    }
+
+    *dstptr = first;
+
+    return TRUE;
+}
