@@ -21,6 +21,9 @@
 
 *****************************************************************************/
 
+#define AROS_USE_OOP
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <exec/types.h>
 #include <exec/nodes.h>
 #include <exec/memory.h>
@@ -29,6 +32,13 @@
 #include <exec/execbase.h>
 #include <exec/io.h>
 #include <proto/exec.h>
+
+#include <graphics/gfx.h>
+#include <intuition/intuition.h>
+#include <utility/tagitem.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <devices/keyboard.h>
 
 #include <memory.h>
 
@@ -58,6 +68,8 @@ extern void DetectCPU();
 
 extern int sprintf(char *,const char *,...);
 
+extern int GetMemSize();
+
 extern const struct Resident
     Expansion_resident,
     Exec_resident,
@@ -81,6 +93,9 @@ extern const struct Resident
     Mathieeesingbas_resident,
     TrackDisk_resident,
     Misc_resident,
+    Cybergraphics_resident,
+    hiddgraphics_resident,
+    vgaHidd_resident,
     Workbench_resident;
 //    Dos_resident,
 //    LDDemon_resident,
@@ -109,6 +124,9 @@ static const struct Resident *romtagList[] =
     &Input_resident,			    /* ColdStart,   30	 */
     &Intuition_resident,		    /* ColdStart,   10	 */
     &kbdHidd_resident,			    /* ColdStart,   9    */
+    &vgaHidd_resident,			    /* ColdStart,   9    */
+    &hiddgraphics_resident,		    /* ColdStart,   9    */
+    &Cybergraphics_resident,		    /* ColdStart,   8    */
     &Console_resident,			    /* ColdStart,   5	 */
     &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
@@ -157,20 +175,7 @@ int main()
 /* Get memory size. This code works even with 4GB of memory
    BIOS would have some troubles if you have more than 64MB */
 
-    asm (
-        "       movl    $0x00100000,%%edi       \n"
-        ".lmm1: movl    (%%edi),%%eax           \n"
-        "       movl    $0xdeadbeef,(%%edi)     \n"
-        "       cmpl    $0xdeadbeef,(%%edi)     \n"
-        "       movl    %%eax,(%%edi)           \n"
-        "       jne     .lmm2                   \n"
-        "       addl    $16,%%edi               \n"
-        "       jmp     .lmm1                   \n"
-        ".lmm2: movl    %%edi,%%eax"
-        :"=a"(Memory)
-        :
-        :"cc","eax","edi");
-    
+    Memory=GetMemSize();    
     Memory24=(Memory>0x01000000) ? 0x01000000 : Memory;
 
     supervisor=0;                                                                                                  
@@ -250,6 +255,69 @@ int main()
     /* Enter SAD */
     Debug(0);
 
+#if 0
+
+    kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
+    kprintf("vga.hidd = %08.8lx\n",OpenLibrary("vga.hidd",0));
+    
+    {
+	struct GfxBase *GfxBase;
+	BOOL success = FALSE;
+    
+        kprintf("init_gfx(hiddbase=%s)\n", "hidd.gfx.vga");
+    
+        GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+        if (GfxBase)
+        {
+
+	    /*  Call private gfx.library call to init the HIDD.
+	        Gfx library is responsable for closing the HIDD
+	        library (although it will probably not be neccesary).
+	    */
+
+	    kprintf("calling private gfx LateGfxInit()\n");
+	    if (LateGfxInit("hidd.gfx.vga"))
+	    {
+	        struct IntuitionBase *IntuitionBase;
+	        kprintf("success\n");
+			    
+	        /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
+	        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+	        if (IntuitionBase)
+	        {
+	    	    if (LateIntuiInit(NULL))
+	    	    {
+			success = TRUE;
+		    }
+		    CloseLibrary((struct Library *)IntuitionBase);
+		}
+	    }
+	    kprintf("Closing gfx\n");
+	
+	    CloseLibrary((struct Library *)GfxBase);
+	
+	}
+    }
+
+    {
+        struct IntuitionBase *IntuitionBase;
+
+	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
+	if (IntuitionBase)
+	{
+	    struct TagItem tags[] = {
+		{WA_Width,			320},
+		{WA_Height,			240},
+		{WA_Left,			100},
+		{WA_Top,			100},
+		{WA_Title, (IPTR)"Sample window..."},
+		{TAG_DONE,			  0}};
+	    OpenWindowTagList(0, tags);
+	}
+    }
+    
+#endif
+
     #define ioStd(x) ((struct IOStdReq *)x)
 
     /* Small kbdhidd test */
@@ -273,6 +341,8 @@ int main()
 	    ioStd(io)->io_Length=strlen(data);
 	    DoIO(io);
 	    kprintf("Got io_ERROR=%d",io->io_Error);
+	    kprintf(text2);
+	    kprintf("Doing kbd reads...\n");
 	}
     }
 

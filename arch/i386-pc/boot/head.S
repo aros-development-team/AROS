@@ -263,6 +263,25 @@ int_entry:	.long	0
 		.long	0
 
 
+/*
+ Guess MemorySize - function used only by init.c
+ Moved here because of some problems with asm and c merge
+*/
+
+		.globl	GetMemSize
+GetMemSize:	pushl	%edi			/* Save temp used reg */
+		movl    $0x00100000,%edi	/* start address */
+.lmm1:		movl    (%edi),%eax		/* Save, write, test and restore... */
+		movl    $0xdeadbeef,(%edi)
+		cmpl    $0xdeadbeef,(%edi)
+		movl    %eax,(%edi)
+		jne     .lmm2			/* We found unusable memory - finish */
+		addl    $16,%edi
+		jmp     .lmm1
+.lmm2:		movl    %edi,%eax		/* Store first nonexisting byte addr */
+		popl	%edi			/* That's it! Short and fast ;-) */
+		ret
+		
 /* Detecting CPU type - this code has bee taken directly from linux sources */
 
 
