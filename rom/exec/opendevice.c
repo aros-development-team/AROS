@@ -24,8 +24,8 @@
 #include <aros/debug.h>
 #undef kprintf
 
-char timername[] = "timer.device";
-char inputname[] = "input.device";
+char *const timername = "timer.device";
+char *const inputname = "input.device";
 
 /*****************************************************************************
 

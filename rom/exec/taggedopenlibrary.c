@@ -9,7 +9,7 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-char *libnames[] =
+char *const libnames[] =
 {
     "graphics.library",
     "layers.library",
@@ -23,7 +23,7 @@ char *libnames[] =
     "workbench.library"
 };
 
-char *copyrights[] =
+char *const copyrights[] =
 {
     "AMIGA Replacement Operating System (AROS)",
     "Copyright © 1995-1997 ",
