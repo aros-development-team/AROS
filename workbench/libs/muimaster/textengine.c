@@ -60,6 +60,7 @@ extern struct Library *MUIMasterBase;
 
 struct zune_context
 {
+    LONG dripen;
     LONG pen;
     ULONG style;
     UBYTE align;
@@ -127,6 +128,7 @@ ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, 
     buf = dup_content;
 
     zc.pen = -1;
+    zc.dripen = -1;
     zc.style = FS_NORMAL;
     zc.align = ZTL_LEFT;
     zc.imspec = NULL;
@@ -259,7 +261,8 @@ void zune_text_chunk_new(struct zune_context *zc)
     if (!(ztc = mui_alloc_struct(ZTextChunk))) return;
 
     ztc->style = zc->style;
-    ztc->dripen = zc->pen;
+    ztc->dripen = zc->dripen;
+    ztc->pen = zc->pen;
     if (zc->imspec)
     {
 	D(bug("zune_text_chunk_new: imspec %s\n", zc->imspec));
@@ -376,12 +379,38 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
 	    zc->text_start = t + 1;	    
 	    break;
 	}
+	case 'P': /* pen number */
+	{
+	    LONG pen;
+	    char *t;
+
+	    if (*s != '[')
+		break;
+	    s++;
+	    /* s points on the first char of pen from ObtainPen printed as %ld.
+	     *  Extract it to the trailing ']'.
+	     */
+	    t = strchr(s, ']');
+	    if (t == NULL)
+		break;
+	    *t = 0;
+	    if (sscanf(s, "%ld", &pen) == 1)
+	    {
+		D(bug("pen = %ld\n", pen));
+		zc->pen = pen;
+	    }
+	    *t = ']';
+	    zc->text = t;
+	    zune_text_chunk_new(zc);
+	    zc->text_start = t + 1;	    
+	    break;
+	}
 	case '-': zc->text += strlenlf(s); break; /* disable engine */
 
 	default: /* some other ESC code ? */
 	    if (isdigit(c)) /* pen */
 	    {
-		zc->pen = c - '0';
+		zc->dripen = c - '0';
 	    }
 	    break;
     }
@@ -615,6 +644,10 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 		{
 		    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
 		}
+		else if (chunk_node->pen != -1)
+		{
+		    SetABPenDrMd(rp, chunk_node->pen, 0, JAM1);
+		}
 		else
 		{
 		    SetDrMd(rp, JAM1);
@@ -683,8 +716,18 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 	    }
 	    
 	    Move(rp,x,top);
-	    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
-
+	    if (chunk_node->dripen != -1)
+	    {
+		SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
+	    }
+	    else if (chunk_node->pen != -1)
+	    {
+		SetABPenDrMd(rp, chunk_node->pen, 0, JAM1);
+	    }
+	    else
+	    {
+		SetDrMd(rp, JAM1);
+	    }
 	    Text(rp,chunk_node->str,strlen(chunk_node->str));
 	    x += chunk_node->cwidth;
 	}
@@ -762,7 +805,19 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 	    }
 	    
 	    Move(rp,x + offx, top);
-	    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
+
+	    if (chunk_node->dripen != -1)
+	    {
+		SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
+	    }
+	    else if (chunk_node->pen != -1)
+	    {
+		SetABPenDrMd(rp, chunk_node->pen, 0, JAM1);
+	    }
+	    else
+	    {
+		SetDrMd(rp, JAM1);
+	    }
 
 	    Text(rp,&chunk_node->str[xpos],1);
 	    return;
@@ -970,6 +1025,7 @@ int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge)
     }
     strcpy(chunk_new->str,&chunk->str[len]);
     chunk_new->dripen = chunk->dripen;
+    chunk_new->pen = chunk->pen;
     chunk_new->style = chunk->style;
     chunk->str[len] = 0; /* set new string end */
 
