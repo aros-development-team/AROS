@@ -7,15 +7,17 @@ Type:	  misc/emu
 New this time:
 - Renamed "openwin" to "demowin".
 - Implemented PROPGADGETS
-- Even more bugfixes
+- Even more bugfixes (librarytest works now :)
 - Many new README's. Developers should have a look at README.porting,
   README.contents, README.CVS and README.jobserv depending on what they
   want to do.
-- Many new function from M. Fleischer
+- Many new function from M. Fleischer (we have now 236 funcions in all)
+- Many new function from I. Templeton (Utility.library)
 - NIL: and RAM: devices from M. Fleischer
-- A Copyright
+- AROS now uses the AFD-COPYRIGHT
 - ***Developers: If you update from 1.7, you *MUST* call "make clean"
   because some headers have changed.
+- New CLI commands: Mount, Assign, MakeDir, Delete
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
@@ -58,3 +60,17 @@ http://ernie.mi.uni-koeln.de/AmigOS
 
 Please note that these pages are not under central control yet and therefore
 may contain quite different contents.
+
+This software is subject to the "Standard Amiga FD-Software Copyright Note".
+It is MAILWARE as defined in paragraph 4s.
+If you like it and use it regularly please send a message to the
+following address:
+
+    Aaron "Optimizer" Digulla
+    Th.-Heuss-Str. 8
+    78467 Konstanz
+    Germany
+
+    EMail: digulla@wi-pc44.fh-konstanz.de
+
+For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
