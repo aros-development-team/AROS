@@ -1351,7 +1351,9 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	    continue;
 	if (_minwidth(child) == _maxwidth(child))
 	    continue;
-	if ((totalBonus * _hweight(child) / (double)data->horiz_weight_sum) >
+/*	if ((totalBonus * _hweight(child) / (double)data->horiz_weight_sum) >
+	    (_maxwidth(child) - _minwidth(child)))*/
+	if ((totalBonus * _hweight(child) / data->horiz_weight_sum) >
 	    (_maxwidth(child) - _minwidth(child)))
 	{
 	    _flags(child) |= MADF_MAXSIZE;
@@ -1473,7 +1475,9 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 	    continue;
 	if (_minheight(child) == _maxheight(child))
 	    continue;
-	if ((totalBonus * _vweight(child) / (double)data->vert_weight_sum) >
+/*	if ((totalBonus * _vweight(child) / (double)data->vert_weight_sum) >
+	    (_maxheight(child) - _minheight(child)))*/
+	if ((totalBonus * _vweight(child) / data->vert_weight_sum) >
 	    (_maxheight(child) - _minheight(child)))
 	{
 	    _flags(child) |= MADF_MAXSIZE;
@@ -1634,8 +1638,8 @@ static void layout_2d_calc_rowcol_dims (struct MUI_GroupData *data,
 	row_infos[i].dim = row_infos[i].min;
 	if (row_infos[i].min != row_infos[i].max)
 	{
-	    bonusHe = ROUND(totBonusHe * row_infos[i].weight
-			    / (double)data->vert_weight_sum);
+//	    bonusHe = ROUND(totBonusHe * row_infos[i].weight / (double)data->vert_weight_sum);
+	    bonusHe = (totBonusHe * row_infos[i].weight + data->vert_weight_sum / 2) / data->vert_weight_sum;
 	    row_infos[i].dim += bonusHe;
 	    row_infos[i].dim = CLAMP(row_infos[i].dim,
 				     row_infos[i].min, row_infos[i].max);
@@ -1651,8 +1655,8 @@ static void layout_2d_calc_rowcol_dims (struct MUI_GroupData *data,
 	col_infos[i].dim = col_infos[i].min;
 	if (col_infos[i].min != col_infos[i].max)
 	{
-	    bonusWi = ROUND(totBonusWi * col_infos[i].weight
-			    / (double)data->horiz_weight_sum);
+//	    bonusWi = ROUND(totBonusWi * col_infos[i].weight / (double)data->horiz_weight_sum);
+	    bonusWi = ((totBonusWi * col_infos[i].weight + data->horiz_weight_sum / 2 ) / data->horiz_weight_sum);
 	    col_infos[i].dim += bonusWi;
 	    col_infos[i].dim = CLAMP(col_infos[i].dim,
 				     col_infos[i].min, col_infos[i].max);

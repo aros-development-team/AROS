@@ -13,6 +13,8 @@
 #ifdef _AROS
 #include <aros/asmcall.h>
 #include <proto/muimaster.h>
+#else
+#include "mui.h"
 #endif
 
 #include "muimaster_intern.h"

@@ -37,6 +37,7 @@
 
 extern struct Library *MUIMasterBase;
 
+#ifdef _AROS
 static char *StrDup(char *x)
 {
     char *dup;
@@ -45,6 +46,7 @@ static char *StrDup(char *x)
     if (dup) CopyMem((x), dup, strlen(x) + 1);
     return dup;
 }
+#endif
 
 typedef enum {
     IST_MUICOLOR, /* one the MUI preset colors, mimic WB colors */

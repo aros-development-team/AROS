@@ -198,6 +198,8 @@ struct MUIMasterBase_intern
 #undef CoolImagesBase
 #define CoolImagesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->coolimagesbase)
 
+char *StrDup(char *x); /* support.c */
+
 /*
 #undef DataTypesBase
 #define DataTypesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->datatypesbase)

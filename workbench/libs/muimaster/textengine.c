@@ -25,9 +25,8 @@
 
 #include "muimaster_intern.h"
 
-/*  # undef DEBUG */
-/*  # define DEBUG 1 */
-/*  # include <aros/debug.h> */
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
