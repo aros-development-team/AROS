@@ -29,7 +29,6 @@ BOOT_TAR_FILES := \
     Classes/DataTypes/text.datatype \
     Classes/DataTypes/picture.datatype \
     Classes/DataTypes/ilbm.datatype \
-    Classes/Gadgets/arospalette.gadget \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
     Devs.info \
     Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
@@ -38,7 +37,7 @@ BOOT_TAR_FILES := \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 Fonts.info \
     Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
     Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
-    Libs/locale.library Libs/mathieeedoubbas.library Libs/mathieeedoubtrans.library \
+    Libs/locale.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale.info \
     Locale/Countries Locale/Languages \
