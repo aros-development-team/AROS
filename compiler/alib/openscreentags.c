@@ -15,6 +15,7 @@ extern struct IntuitionBase * IntuitionBase;
 
     NAME */
 #include <intuition/screens.h>
+#define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/intuition.h>
 
 	struct Screen * OpenScreenTags (

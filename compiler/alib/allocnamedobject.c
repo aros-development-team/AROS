@@ -7,6 +7,7 @@
 */
 #define AROS_TAGRETURNTYPE  struct NamedObject *
 
+#define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/utility.h>
 #undef CallHookPkt
 #include "alib_intern.h"

@@ -10,6 +10,7 @@
 /*****************************************************************************
 
     NAME */
+#define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/intuition.h>
 
 	LONG EasyRequest (

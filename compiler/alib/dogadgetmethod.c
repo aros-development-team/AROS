@@ -10,6 +10,7 @@
 #   include <intuition/classusr.h>
 #endif
 #include "alib_intern.h"
+#define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/alib.h>
 
 extern struct IntuitionBase * IntuitionBase;
