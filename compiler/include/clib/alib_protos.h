@@ -89,6 +89,13 @@ struct Gadget * CreateGadget(	ULONG kind,
 				struct NewGadget * ng,
 				ULONG tag1,
 				...);
+void DrawBevelBox(	struct RastPort * rp,
+			WORD left,
+			WORD top,
+			WORD width,
+			WORD height,
+			ULONG tag1,
+			...);
 void GT_SetGadgetAttrs(	struct Gadget * gad, 
 			struct Window * win, 
 			struct Requester * req,
