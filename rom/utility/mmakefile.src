@@ -63,7 +63,7 @@ EXTRA_DEPLIBS := $(LIBDIR)/libarosc.a
 
 %genromlib
 
-#MM kernel : setup includes linklibs
+#MM kernel : setup includes utility-$(ARCH) linklibs
 kernel : show-flags $(LIB)
 
 #MM setup
