@@ -70,6 +70,7 @@ FILES := \
 	lcong48 \
 	localtime \
 	lrand48 \
+	lseek \
 	malloc \
 	memchr \
 	memcmp \
