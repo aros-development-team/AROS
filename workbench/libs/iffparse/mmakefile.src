@@ -52,7 +52,7 @@ FUNCS := \
 	writechunkbytes \
 	writechunkrecords
 
-#MM workbench-libs-iffparse-include : \
+#MM workbench-libs-iffparse-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-dos-includes \
 #MM     kernel-utility-includes \
