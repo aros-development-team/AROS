@@ -5,6 +5,12 @@
 # ie. $0 iffparse.library 0x080e34b0: SeekStream 0x80e5257
 #
 
+if [ "$#" -eq 0 ]; then
+    echo "$0 module offset sym hit"
+    echo "Example: $0 iffparse.library 0x080e34b0: SeekStream 0x80e5257"
+    exit 0
+fi
+
 path=`dirname $0`
 module="$1"
 symoffset="$2"
@@ -52,7 +58,7 @@ nm "$module" | sort | gawk 'BEGIN { \
     found=0; \
 } \
  { off=hex2int($1); \
-    if (lastoff < hitoffset && off > hitoffset) \
+    if (lastoff <= hitoffset && off > hitoffset) \
     { \
 	printf ("Hit is 0x%x bytes in %s\n", hitoffset-lastoff, symbol); \
 	found=1; \
