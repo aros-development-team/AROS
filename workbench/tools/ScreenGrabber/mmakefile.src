@@ -1,0 +1,17 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := main
+EXEDIR  := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-screengrabber
+#MM workbench-tools-screengrabber : 
+
+%build_prog mmake=workbench-tools-screengrabber \
+    progname=ScreenGrabber targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
+
+%common
+
