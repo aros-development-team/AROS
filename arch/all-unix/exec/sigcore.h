@@ -281,7 +281,10 @@ typedef struct sigcontext sigcontext_t;
 #   define SIGHANDLER_T    __sighandler_t *
 
 #   define SP_TYPE	long
-#   define CPU_NUMREGS	6
+#   define CPU_NUMREGS	7
+
+#   define SC_DISABLE(sc)   (sc->sc_mask = ~0L)
+#   define SC_ENABLE(sc)    (sc->sc_mask = 0L)
 
 #   define SP(sc)       (sc->sc_esp)
 #   define FP(sc)       (sc->sc_ebp)
@@ -293,22 +296,25 @@ typedef struct sigcontext sigcontext_t;
 #   define R3(sc)           (sc->sc_edx)
 #   define R4(sc)           (sc->sc_edi)
 #   define R5(sc)           (sc->sc_esi)
+#   define R6(sc)	    (sc->sc_isp)
 
 #   define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
 							     \
-	static void SIGHANDLER (int sig)                     \
+	static void SIGHANDLER (int sig, int code, struct sigcontext *sc) \
 	{						     \
-	    sighandler( sig, (sigcontext_t*)(&sig+2));       \
+	    sighandler( sig, (sigcontext_t*)sc);       \
 	}
 
 #   define PREPARE_INITIAL_FRAME(sp,pc) \
+	sp -= 128, \
 	_PUSH(sp,pc), \
-	_PUSH(sp,0), /* Frame pointer */ \
+	_PUSH(sp,sp), \
 	sp -= CPU_NUMREGS
-
+	  	  
 #   define SAVEREGS(sp,sc) \
-	sp = (long *)SP(sc), \
+	sp = SP(sc), \
+	sp -= 128, \
 	_PUSH(sp,PC(sc)), \
 	_PUSH(sp,FP(sc)), \
 	_PUSH(sp,R0(sc)), \
@@ -316,9 +322,11 @@ typedef struct sigcontext sigcontext_t;
 	_PUSH(sp,R2(sc)), \
 	_PUSH(sp,R3(sc)), \
 	_PUSH(sp,R4(sc)), \
-	_PUSH(sp,R5(sc))
+	_PUSH(sp,R5(sc)), \
+	_PUSH(sp,R6(sc))
 
 #   define RESTOREREGS(sp,sc) \
+	R6(sc) = _POP(sp), \
 	R5(sc) = _POP(sp), \
 	R4(sc) = _POP(sp), \
 	R3(sc) = _POP(sp), \
@@ -327,7 +335,70 @@ typedef struct sigcontext sigcontext_t;
 	R0(sc) = _POP(sp), \
 	FP(sc) = _POP(sp), \
 	PC(sc) = _POP(sp), \
-	SP(sc) = (long)sp
+	sp += 128, \
+	SP(sc) = sp
+
+#   define NO_FPU
+
+    /*
+	Size of the FPU stackframe in stack units (one stack unit is
+	sizeof(SP_TYPE) bytes).
+    */
+#   ifndef NO_FPU
+#	define FPU_FRAMESIZE	(sizeof (struct _fpstate) / sizeof (SP_TYPE))
+#   else
+#	define FPU_FRAMESIZE	0
+#   endif
+
+    /*
+	This macro return 1 if a FPU is available.
+    */
+#   ifndef NO_FPU
+#	define HAS_FPU(sc)      (sc->fpstate)
+#   else
+#	define HAS_FPU(sc)      0
+#   endif
+
+    /*
+	Save and restore the FPU on/from the stack.
+    */
+#   ifndef NO_FPU
+#	define SAVE_FPU(sp,sc) \
+	    (sp -= FPU_FRAMESIZE), \
+	    HAS_FPU(sc) && \
+		((*((struct _fpstate *)sp) = *(sc->fpstate)), 1)
+
+#	define RESTORE_FPU(sp,sc) \
+	    HAS_FPU(sc) && \
+		((*(sc->fpstate) = *((struct _fpstate *)sp)), 1), \
+	    (sp += FPU_FRAMESIZE)
+#   else
+#	define SAVE_FPU(sp,sc)          (sp -= 0)
+#	define RESTORE_FPU(sp,sc)       (sp += 0)
+#   endif
+
+
+#   define PRINT_SC(sc) \
+	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
+		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
+		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
+	    , SP(sc), FP(sc), PC(sc) \
+	    , HAS_FPU(sc) ? "yes" : "no" \
+	    , R0(sc), R1(sc), R2(sc), R3(sc) \
+	    , R4(sc), R5(sc), R6(sc) \
+	)
+
+#   define PRINT_STACK(sp) \
+	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
+		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
+		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
+	    , (ULONG)(sp+(FPU_FRAMESIZE+CPU_NUMREGS+2)) \
+	    , sp[FPU_FRAMESIZE+CPU_NUMREGS] \
+	    , sp[FPU_FRAMESIZE+CPU_NUMREGS+1] \
+	    , sp[6], sp[5], sp[4], sp[3] \
+	    , sp[2], sp[1], sp[0] \
+	)
+
 #endif /* __FreeBSD__ */
 
 #endif /* _SIGCORE_H */
