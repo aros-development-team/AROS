@@ -16,7 +16,7 @@ SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
 	alib filesys libs devs c
 DIST_FILES = makefile arosshell.c README* make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
-	scripts/genprotos.h AFD-COPYRIGHT BUGS
+	scripts/genprotos.h s/Startup-Sequence AFD-COPYRIGHT BUGS
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
