@@ -13,7 +13,7 @@
 #include <aros/system.h>
 #include <dos/dos.h>
 
-#define dol_OldName dol_Name
+//#define dol_OldName dol_Name
 
 #include <dos/dosextens.h>
 #include <exec/types.h>
