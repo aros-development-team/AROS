@@ -69,7 +69,7 @@ VOID x11task_entry(struct x11task_params *xtp);
 
 static OOP_AttrBase HiddPixFmtAttrBase = 0;
 
-struct OOP_ABDescr abd[] = {
+static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
