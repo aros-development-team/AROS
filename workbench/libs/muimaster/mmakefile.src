@@ -2,21 +2,25 @@
 
 include $(TOP)/config/make.cfg
 
-MAKE_BUILTIN_ABOUTMUI     := no
-MAKE_BUILTIN_BOOPSI       := yes
-MAKE_BUILTIN_COLORADJUST  := yes
-MAKE_BUILTIN_COLORFIELD   := yes
-MAKE_BUILTIN_FRAMEADJUST  := yes
-MAKE_BUILTIN_FRAMEDISPLAY := yes
-MAKE_BUILTIN_GAUGE        := yes
-MAKE_BUILTIN_IMAGEADJUST  := yes
-MAKE_BUILTIN_IMAGEDISPLAY := yes
-MAKE_BUILTIN_PENADJUST    := yes
-MAKE_BUILTIN_PENDISPLAY   := yes
-MAKE_BUILTIN_POPASL       := yes
-MAKE_BUILTIN_POPFRAME     := yes
-MAKE_BUILTIN_POPIMAGE     := yes
-MAKE_BUILTIN_POPPEN       := yes
+MAKE_BUILTIN_ABOUTMUI      := no
+MAKE_BUILTIN_BOOPSI        := yes
+MAKE_BUILTIN_COLORADJUST   := yes
+MAKE_BUILTIN_COLORFIELD    := yes
+MAKE_BUILTIN_FRAMEADJUST   := yes
+MAKE_BUILTIN_FRAMEDISPLAY  := yes
+MAKE_BUILTIN_GAUGE         := yes
+MAKE_BUILTIN_IMAGEADJUST   := yes
+MAKE_BUILTIN_IMAGEDISPLAY  := yes
+MAKE_BUILTIN_PENADJUST     := yes
+MAKE_BUILTIN_PENDISPLAY    := yes
+MAKE_BUILTIN_POPASL        := yes
+MAKE_BUILTIN_POPFRAME      := yes
+MAKE_BUILTIN_POPIMAGE      := yes
+MAKE_BUILTIN_POPPEN        := yes
+MAKE_BUILTIN_SCALE         := yes
+MAKE_BUILTIN_SCROLLGROUP   := yes
+MAKE_BUILTIN_SETTINGSGROUP := yes
+MAKE_BUILTIN_VIRTGROUP     := yes
 
 CLASSES := \
     application \
@@ -45,16 +49,12 @@ CLASSES := \
     radio \
     rectangle \
     register \
-    scale \
     semaphore \
-    settingsgroup \
     scrollbar \
     scrollbutton \
-    scrollgroup \
     slider \
     string \
     text \
-    virtgroup \
     window
 
 FILES := \
@@ -203,6 +203,34 @@ ifeq ($(MAKE_BUILTIN_POPPEN),yes)
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPPEN=1
 else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPPEN=0
+endif
+
+ifeq ($(MAKE_BUILTIN_SCALE),yes)
+    CLASSES     := $(CLASSES) scale
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_SCALE=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_SCALE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_SCROLLGROUP),yes)
+    CLASSES     := $(CLASSES) scrollgroup
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=0
+endif
+
+ifeq ($(MAKE_BUILTIN_SETTINGSGROUP),yes)
+    CLASSES     := $(CLASSES) settingsgroup
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=0
+endif
+
+ifeq ($(MAKE_BUILTIN_VIRTGROUP),yes)
+    CLASSES     := $(CLASSES) virtgroup
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0
 endif
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
