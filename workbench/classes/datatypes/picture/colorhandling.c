@@ -27,7 +27,7 @@
 
 #include "debug.h"
 #include "pictureclass.h"
-#include "colormapping.h"
+#include "colorhandling.h"
 
 static void FreeDestBuffer( struct Picture_Data *pd );
 static void CopySrc2Dest( struct Picture_Data *pd );

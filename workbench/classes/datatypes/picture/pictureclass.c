@@ -59,7 +59,7 @@ I.. BOOL                  Remap;
 #include "debug.h"
 #include "pictureclass.h"
 #include "prefs.h"
-#include "colormapping.h"
+#include "colorhandling.h"
 // #include "colorhandling.h"
 
 #include "methods.h"
