@@ -1,11 +1,12 @@
 /*
-    Copyright 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function truncate()
     Lang: english
 */
 
+#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include "__errno.h"

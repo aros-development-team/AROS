@@ -1,5 +1,5 @@
 /*
-    Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: POSIX function readdir()
@@ -9,6 +9,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+#include <string.h>
 #include <errno.h>
 
 #include "__open.h"

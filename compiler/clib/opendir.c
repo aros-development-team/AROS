@@ -1,5 +1,5 @@
 /*
-    Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: POSIX function opendir()
@@ -10,6 +10,7 @@
 #include <proto/dos.h>
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 

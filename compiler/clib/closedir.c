@@ -1,11 +1,13 @@
 /*
-    Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: POSIX function close()
     Lang: english
 */
 
+#include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 
 /*****************************************************************************
