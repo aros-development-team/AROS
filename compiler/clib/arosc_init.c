@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <setjmp.h>
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "etask.h"
@@ -37,8 +38,11 @@ extern BPTR AROS_SLIB_ENTRY(expunge,arosc)();
 extern int AROS_SLIB_ENTRY(null,arosc)();
 extern const char arosc_end;
 
-struct ExecBase *SysBase = NULL;
+struct ExecBase  *SysBase;
+struct aroscbase *aroscbase;
+
 extern struct DosLibrary *DOSBase;
+
 
 int entry(void)
 {
@@ -62,7 +66,7 @@ const struct Resident resident=
 
 const char name[]="arosc.library";
 
-const char version[]="$VER: arosc.library 41.1 (28.3.96)\n\015";
+const char version[]="$VER: arosc.library 41.1 (" __DATE__ ")\n\015";
 
 const APTR inittabl[4]=
 {
@@ -76,16 +80,19 @@ DECLARESET(INIT);
 DECLARESET(EXIT);
 
 AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
- AROS_UFHA(struct aroscbase *, aroscbase, D0),
+ AROS_UFHA(struct aroscbase *, __aroscbase, D0),
  AROS_UFHA(BPTR,               segList,   A0),
- AROS_UFHA(struct ExecBase *,  sysBase,   A6)
+ AROS_UFHA(struct ExecBase *,  __SysBase,   A6)
 )
 {
     AROS_USERFUNC_INIT
+
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    SysBase = sysBase;
+    aroscbase = __aroscbase;
+    SysBase   = __SysBase;
+
     aroscbase->seglist=segList;
 
     if (set_open_libraries())
@@ -185,9 +192,9 @@ int arosc_internalinit(struct arosc_privdata **privdata_ptr)
 {
     struct arosc_privdata *privdata;
 
-    kprintf("internalinit %p\n", privdata_ptr);
+    D(bug("internalinit %p\n", privdata_ptr));
 
-    privdata = AllocVec(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
+    privdata = AllocMem(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
     if (!privdata)
     {
         SetIoErr(ERROR_NO_FREE_STORE);
@@ -219,7 +226,7 @@ int arosc_internalexit(void)
     /*restore the old value */
     GetIntETask(FindTask(NULL))->iet_acpd = privdata->acpd_oldprivdata;
 
-    FreeVec(privdata);
+    FreeMem(privdata, sizeof(*privdata));
 
     return 0;
 }
