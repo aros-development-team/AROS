@@ -658,6 +658,8 @@ AROS_UFH3(LONG, unitentry,
  AROS_UFHA(ULONG, arglen, D0),
  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+    
     struct Process 	*me;
     LONG 		err = 0L;
     struct IOExtTD 	*iotd;
@@ -767,6 +769,8 @@ AROS_UFH3(LONG, unitentry,
 	WaitPort(&unit->port);
 	
     } /* for(;;) */
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
