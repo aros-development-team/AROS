@@ -492,8 +492,8 @@ endif
 # build, for exampley by putting libraries in the standard library directory, includes
 # in the standard include directory, and so on. You can however override this behaviour.
 
-%define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix=$(CONTRIBDIR) \
-    bindir=$(CONTRIBDIR) libdir=$(LIBDIR) includedir=$(INCDIR) extraoptions= nix=no
+%define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
+    bindir= libdir= includedir= extraoptions= nix=no
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
 
@@ -520,15 +520,26 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(RM) config.cache; \
 	    for AR2 in $(AR); do break; done; \
 	    for RANLIB2 in $(RANLIB); do break; done; \
-	    if [ "%(nix)" = "yes" ]; then nix=-nix; else nix=; fi; \
+	    if [ "%(nix)" = "yes" ]; then nix=-nix; fi; \
+	    nix=; prefix=; bindir=; libdir=; includedir=; \
+	    if [ "%(bindir)" != "" ]; then bindir="--bindir=%(bindir)"; fi; \
+	    if [ "%(includedir)" != "" ]; then includedir="--includedir=%(includedir)"; fi; \
+	    if [ "%(libdir)" != "" ]; then libdir="--libdir=%(libdir)"; fi; \
+	    if [ "%(prefix)" != "" ]; then \
+	        prefix="--prefix=%(prefix)"; \
+	    else \
+	        prefix="--prefix=$(CONTRIBDIR)"; \
+		if [ "$$bindir" = "" ]; then bindir="--bindir=$(CONTRIBDIR)"; fi; \
+		if [ "$$includedir" = "" ]; then includedir="--includedir=$(INCDIR)"; fi; \
+		if [ "$$libdir" = "" ]; then libdir="--libdir=$(LIBDIR)"; fi; \
+	    fi; \
 	    AR=$$AR2 RANLIB=$$RANLIB2 \
 	    CC="$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $$nix" \
 	    CC_FOR_BUILD="$(HOST_CC)" \
-	    %(configure) --prefix=%(prefix) --bindir=%(bindir) --libdir=%(libdir) \
-	    --includedir=%(includedir)  %(extraoptions) \
+	    %(configure) $$prefix $$bindir $$libdir $$includedir %(extraoptions) \
 	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros; \
 	$(ECHO) YES > $@
-
+	
 #MM
 %(mmake)-clean :
 	@if [ -e $(GENDIR)/$(CURDIR)/Makefile ]; then \
