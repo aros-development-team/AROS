@@ -83,7 +83,6 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	struct IBox container;
 	struct Window *win = msg->gpr_GInfo->gi_Window;
 	struct TextExtent te;
-	ULONG textlen, titlelen;
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	
@@ -126,11 +125,14 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	
 	
 	/* Render the titlebar */
-	SetFont(rp, dri->dri_Font);
-	
+	if (NULL != win->Title)
+	{
+	    ULONG textlen, titlelen;
+	    
+	    SetFont(rp, dri->dri_Font);
 
-	titlelen = strlen(win->Title);
-	textlen = TextFit(rp
+	    titlelen = strlen(win->Title);
+	    textlen = TextFit(rp
 		, win->Title
 		, titlelen
 		, &te
@@ -139,9 +141,10 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 		, container.Width
 		, container.Height);
 
-	Move(rp, container.Left + 3, container.Top + dri->dri_Font->tf_Baseline + 3);
+	    Move(rp, container.Left + 3, container.Top + dri->dri_Font->tf_Baseline + 3);
 	
-	Text(rp, win->Title, textlen);
+	    Text(rp, win->Title, textlen);
+	}
 	
     }  /* if (allowed to render) */
     
