@@ -8,6 +8,7 @@
 #include "exec_intern.h"
 #include "semaphores.h"
 #include <exec/semaphores.h>
+#include <aros/atomic.h>
 #include <proto/exec.h>
 
 #define CHECK_INITSEM 1
@@ -133,8 +134,11 @@
 	    waiters list of the semaphore. We were the last to
 	    request, so we must be the last to get the semaphore.
 	*/
-#warning this should be atomic
-	me->tc_SigRecvd &= ~SIGF_SINGLE;
+    	
+	#warning this must be atomic
+    
+    	AROS_ATOMIC_ANDL(me->tc_SigRecvd, ~SIGF_SINGLE);
+
 	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
 
 	/*
