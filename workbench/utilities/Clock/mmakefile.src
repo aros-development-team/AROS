@@ -1,5 +1,7 @@
-#   $Id$
-#   Makefile to make Clock.
+# Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+# $Id$
+#
+# Makefile to make Clock.
 
 include $(TOP)/config/make.cfg
 
@@ -13,11 +15,12 @@ USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 
-#MM workbench-utilities : includes linklibs setup-clock-catalogs
+#MM- workbench-utilities : workbench-utilities-clock 
+#MM workbench-utilities-clock : includes linklibs setup-clock-catalogs
 
-%make_prog_setup mmake=workbench-utilities
+%make_prog_setup mmake=workbench-utilities-clock
 
-workbench-utilities : setup $(EXE)
+workbench-utilities-clock : setup $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
