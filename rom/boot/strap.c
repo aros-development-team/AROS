@@ -1,22 +1,17 @@
-/* 
+/*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Boot AROS native
+    Desc: Boot AROS
     Lang: english
 */
 
 #define DEBUG 1
 
-#include <devices/trackdisk.h>
-#include <dos/dosextens.h>
-#include <dos/filehandler.h>
-#include <exec/alerts.h>
 #include <exec/types.h>
-#include <exec/memory.h>
 #include <exec/resident.h>
-#include <libraries/expansionbase.h>
-#include <devices/newstyle.h>
+#include <exec/alerts.h>
+#include <aros/asmcall.h>
 
 #include <proto/exec.h>
 
@@ -26,10 +21,6 @@
 #include <aros/macros.h>
 
 #define BOOT_CHECK 0
-
-void InitKeyboard(void);
-void putc(char);
-void putstring(char *);
 
 int boot_entry()
 {
@@ -53,27 +44,28 @@ const struct Resident boot_resident =
 	(APTR)&boot_init
 };
 
-AROS_LH2(int, init,
-    AROS_LHA(ULONG, dummy, D0),
-    AROS_LHA(ULONG, seglist, A0),
-    struct ExecBase *, SysBase, 0, boot)
+AROS_UFH3(int, AROS_SLIB_ENTRY(init,boot),
+    AROS_UFHA(ULONG, dummy, D0),
+    AROS_UFHA(ULONG, seglist, A0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
-    
+    AROS_USERFUNC_INIT
+
     struct Resident *DOSResident;
 
     DOSResident = FindResident( "dos.library" );
-					
+
     if( DOSResident == NULL )
     {
         Alert( AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_DOSLib );
     }
-	
+
     InitResident( DOSResident, NULL );
-    				
+
     return 0;
-    
-    AROS_LIBFUNC_EXIT
+
+    AROS_USERFUNC_EXIT
 }
 
 static const char boot_end = 0;
