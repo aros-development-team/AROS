@@ -95,89 +95,6 @@ void close_muimaster(void)
 
 
 /****************************************************************
- ImageClipboard class (MUIC_Popimage)
-*****************************************************************/
-struct ImageClipboardData
-{
-    LONG dummy;
-};
-
-static ULONG ImageClipboard_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
-{
-    IPTR dummy;
-
-    if (msg->obj == obj)
-	return MUIV_DragQuery_Refuse;
-    if (!get(msg->obj, MUIA_Imagedisplay_Spec, &dummy))
-	return MUIV_DragQuery_Refuse;
-    return MUIV_DragQuery_Accept;
-}
-
-static ULONG ImageClipboard_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
-{
-    IPTR spec;
-
-    get(msg->obj, MUIA_Imagedisplay_Spec, &spec);
-    set(obj, MUIA_Imagedisplay_Spec, spec);
-    return 0;
-}
-
-BOOPSI_DISPATCHER(IPTR, ImageClipboard_Dispatcher, cl, obj, msg)
-{
-    switch (msg->MethodID)
-    {
-	case MUIM_DragQuery:
-	    return ImageClipboard_DragQuery(cl, obj, (APTR)msg);
-	case MUIM_DragDrop:
-	    return ImageClipboard_DragDrop(cl, obj, (APTR)msg);
-    }
-    return DoSuperMethodA(cl, obj, msg);
-}
-
-
-/****************************************************************
- FrameClipboard class (MUIC_Popframe)
-*****************************************************************/
-struct FrameClipboardData
-{
-    LONG dummy;
-};
-
-static ULONG FrameClipboard_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
-{
-    struct MUI_FrameSpec *dummy;
-
-    if (msg->obj == obj)
-	return MUIV_DragQuery_Refuse;
-    if (!get(msg->obj, MUIA_Framedisplay_Spec, &dummy))
-	return MUIV_DragQuery_Refuse;
-    return MUIV_DragQuery_Accept;
-}
-
-static ULONG FrameClipboard_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
-{
-    struct MUI_FrameSpec *spec;
-
-    get(msg->obj, MUIA_Framedisplay_Spec, &spec);
-    set(obj, MUIA_Framedisplay_Spec, (IPTR)spec);
-    return 0;
-}
-
-BOOPSI_DISPATCHER(IPTR, FrameClipboard_Dispatcher, cl, obj, msg)
-{
-    switch (msg->MethodID)
-    {
-	case MUIM_DragQuery:
-	    return FrameClipboard_DragQuery(cl, obj, (APTR)msg);
-	case MUIM_DragDrop:
-	    return FrameClipboard_DragDrop(cl, obj, (APTR)msg);
-    }
-    return DoSuperMethodA(cl, obj, msg);
-}
-
-
-
-/****************************************************************
  Open needed libraries
 *****************************************************************/
 int open_libs(void)
@@ -213,30 +130,13 @@ static Object *main_page_group; /* contains the selelected group */
 static Object *main_page_group_displayed; /* The current displayed group */
 static Object *main_page_space; /* a space object */
 
-struct MUI_CustomClass *CL_ImageClipboard = NULL;
-struct MUI_CustomClass *CL_FrameClipboard = NULL;
-
 void close_classes(void)
 {
-    if (CL_ImageClipboard)
-    {
-	MUI_DeleteCustomClass(CL_ImageClipboard);
-    }
-    if (CL_FrameClipboard)
-    {
-	MUI_DeleteCustomClass(CL_FrameClipboard);
-    }
 }
 
 int open_classes(void)
 {
-     CL_ImageClipboard = MUI_CreateCustomClass(NULL, MUIC_Popimage, NULL,
-					      sizeof(struct ImageClipboardData),
-					      ImageClipboard_Dispatcher);
-     CL_FrameClipboard = MUI_CreateCustomClass(NULL, MUIC_Popframe, NULL,
-					      sizeof(struct ImageClipboardData),
-					      FrameClipboard_Dispatcher);
-     if (CL_ImageClipboard && CL_FrameClipboard)
+     if (1)
      {
 	 return 1;
      }
@@ -416,13 +316,11 @@ int init_gui(void)
 			End,
 		    Child, HGroup,
 	                MUIA_Group_SameWidth, TRUE, /* 20030706, until layout bug is fixed */
-			Child, NewObject(CL_FrameClipboard->mcc_Class, NULL,
-					     MUIA_Draggable, TRUE,
+	                Child, MUI_NewObject(MUIC_Popframe,
 					     MUIA_FixHeight, 20,
 					     MUIA_Window_Title, (IPTR)"Frame Clipboard",
 					     TAG_DONE),
-      	                Child, NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					     MUIA_Draggable, TRUE,
+	                Child, MUI_NewObject(MUIC_Popimage,
 					     MUIA_FixHeight, 20,
 					     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
 					     MUIA_Window_Title, (IPTR)"Image Clipboard",

@@ -42,11 +42,10 @@ struct MUI_StringsPData
 
 Object *MakePopupPopimage(CONST_STRPTR title)
 {
-    return NewObject
+    return MUI_NewObject
 	(
-	    CL_ImageClipboard->mcc_Class, NULL,
+	    MUIC_Popimage,
 	    MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-	    MUIA_Draggable, TRUE, 
 	    MUIA_CycleChain, 1,
 	    MUIA_FixWidth, 28,
 	    MUIA_MaxHeight, 28,
@@ -65,10 +64,11 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
-	Child, ColGroup(2),
-	Child, HGroup,
+	MUIA_Group_Horiz, FALSE,
+	Child, (IPTR) ColGroup(2),
+	Child, (IPTR) HGroup,
 	GroupFrameT("String Frame"),
-	Child, d.string_popframe = MakePopframe(),
+	Child, (IPTR) (d.string_popframe = MakePopframe()),
 	End, // String Frame
 	Child, HGroup,
 	GroupFrameT("Special Popup Buttons"),
@@ -118,7 +118,7 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             End,
 	End, // Inactive String Colors
 	End, // ColGroup(2)
-	Child, StringObject,
+	Child, (IPTR) StringObject,
 	StringFrame,
 	MUIA_String_Contents, "Example String Gadget",
 	MUIA_String_Format, MUIV_String_Format_Center,

@@ -53,9 +53,8 @@ Object *MakeCheck (CONST_STRPTR label)
 
 Object *MakeBackgroundPopimage(void)
 {
-    return NewObject(CL_ImageClipboard->mcc_Class, NULL,
+    return MUI_NewObject(MUIC_Popimage,
 		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
-		     MUIA_Draggable, TRUE,
 		     MUIA_CycleChain, 1,
 		     MUIA_Window_Title, (IPTR)"Adjust Background",
 		     TAG_DONE);
@@ -63,8 +62,7 @@ Object *MakeBackgroundPopimage(void)
 
 Object *MakePopframe(void)
 {
-    return NewObject(CL_FrameClipboard->mcc_Class, NULL,
-		     MUIA_Draggable, TRUE,
+    return MUI_NewObject(MUIC_Popframe,
 		     MUIA_CycleChain, 1,
 		     MUIA_Window_Title, (IPTR)"Adjust Frame",
 		     TAG_DONE);
