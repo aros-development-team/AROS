@@ -1,5 +1,5 @@
-#ifndef PREFERENCESWINDOW_H
-#define PREFERENCESWINDOW_H
+#ifndef ZUNE_PREFERENCESWINDOW_H
+#define ZUNE_PREFERENCESWINDOW_H
 
 #define MUIMASTER_YES_INLINE_STDARG
 #include <libraries/mui.h>
@@ -8,7 +8,6 @@
 #define MUIC_PreferencesWindow  "PreferencesWindow.mcc"
 
 /*** Methods ****************************************************************/
-
 #define MUIM_PreferencesWindow_Test     (METHOD_USER|0x00426801)
 #define MUIM_PreferencesWindow_Revert   (METHOD_USER|0x00426802)
 #define MUIM_PreferencesWindow_Save     (METHOD_USER|0x00426803)
@@ -18,4 +17,4 @@
 /*** Macros *****************************************************************/
 #define PreferencesWindowObject MUIOBJMACRO_START(MUIC_PreferencesWindow)
 
-#endif /* PREFERENCESWINDOW_H */
+#endif /* ZUNE_PREFERENCESWINDOW_H */
