@@ -21,13 +21,14 @@ USE_ROMLIB := yes
 USE_AROSLIB := yes
 USE_AMIGALIB := yes
 
-#MM- workbench-devs-complete : workbench-devs workbench-fs
+#MM- workbench-devs-complete : workbench-devs
 #MM workbench-devs : setup includes linklibs
 workbench-devs : $(DEVS) $(AROS_DEVS)/Mountlist
 
 #MM workbench-devs-quick :
 workbench-devs-quick : workbench-devs
 
+#MM- workbench-fs-complete : workbench-fs
 #MM workbench-fs : setup includes linklibs
 workbench-fs : $(FS)
 
