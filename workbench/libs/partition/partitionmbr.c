@@ -509,6 +509,7 @@ LONG PartitionMBRSetPartitionAttrs
                 Remove(&ph->ln);
                 Enqueue(&ph->root->table->list, &ph->ln);
 posbreak:
+            ;
             }
             break;
         case PT_ACTIVE:
