@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES	    := pciclass pci_hw pciutil stubs
 
 %build_module_macro mmake=kernel-pc-i386-pci \
-  modname=pci modtype=hidd \
+  modname=pci modtype=library \
   files=$(FILES) \
   conffile=lib.conf \
   genfunctable=yes
