@@ -9,10 +9,13 @@ TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
 
 all: makedirs $(MMAKE) $(GENMF)
-	$(MMAKE) AROS
+	$(MMAKE) AROS.AROS
 
 docs: $(MMAKE)
 	$(MMAKE) AROS.docs
+
+all-docs: $(MMAKE)
+	$(MMAKE) AROS.all-docs
 
 makedirs:
 	@$(RM) $(TOP)/errors
