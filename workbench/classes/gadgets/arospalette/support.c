@@ -46,82 +46,129 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
     }
 }
 
+/**********************
+**  GetPalettePen()  **
+**********************/
+
+UWORD GetPalettePen(struct PaletteData *data, struct DrawInfo *dri, UWORD idx)
+{
+    UWORD pen;
+    
+    if (data->pd_ColorTable)
+    	pen = data->pd_ColorTable[idx];
+    else
+    	pen = dri->dri_Pens[idx];
+    
+    return (pen);
+}
+
+/*********************
+**  Colors2Depth()  **
+*********************/
+UBYTE Colors2Depth(UWORD numcolors)
+{
+    UBYTE depth = 0;
+    
+    while ((1 << depth) < numcolors)
+    	depth ++;
+    	
+    return (depth);
+}
 
 /********************
 **  InsidePalette  **
 ********************/
 
-BOOL InsidePalette(struct IBox *pbox, WORD x, WORD y)
+BOOL InsidePalette(struct PaletteData *data, WORD x, WORD y)
 {
-    return ((BOOL)(    (x > pbox->Left)
-	      	    && (x < pbox->Left + pbox->Width - 1)
-	      	    && (y > pbox->Top)
-    	      	    && (y < pbox->Top + pbox->Height - 1)
-    	      	    ));
-    	 
+    BOOL inside = FALSE;
+    struct IBox *pbox = &(data->pd_PaletteBox);
+
+    /* Inside palette bounding box ? */
+    
+    if (    (x > pbox->Left)
+	 && (x < pbox->Left + pbox->Width - 1)
+	 && (y > pbox->Top)
+    	 && (y < pbox->Top + pbox->Height - 1)
+    	 )
+    {
+   	/* Must do additional testing, since we might
+   	** not have 2^n number of colors
+   	*/
+   	
+   	if (data->pd_NumColors > ComputeColor(data, x, y))
+   	{
+   	    inside = TRUE;
+   	}
+    }
+    return (inside);
 }
     	
 
 
 /*********************
-**  ClickedColor()  **
+**  ComputeColor()  **
 *********************/
 
-UBYTE ComputeColor(struct PaletteData *data, WORD x, WORD y, struct PaletteBase_intern *AROSPaletteBase)
+UWORD ComputeColor(struct PaletteData *data, WORD x, WORD y)
 {
      UWORD row, col;
      
      UBYTE color;
-     
-     EnterFunc(bug("ComputeColor(data=%p, x=%d, y=%d)\n", data, x, y));
-     
+  
      col = (x - data->pd_PaletteBox.Left)	/ data->pd_ColWidth;
      row = (y - data->pd_PaletteBox.Top)	/ data->pd_RowHeight;
      
      color = data->pd_NumCols * row + col;
      
-     ReturnInt("ComputeColor", UBYTE, color);
+     return (color);
 }
 
 /********************
 **  RenderPalette  **
 ********************/
 
-VOID RenderPalette(struct PaletteData *data,  UWORD *pens,
-		struct RastPort *rp, struct PaletteBase_intern *AROSPaletteBase)
+#define MIN(a, b) (( a < b) ? a : b)
+VOID RenderPalette(struct PaletteData *data, struct DrawInfo *dri,
+	struct RastPort *rp, struct PaletteBase_intern *AROSPaletteBase)
 {
-    UBYTE currentcolor = 0;
+    UWORD currentcolor = data->pd_ColorOffset, colors_left;
     WORD left, top;
     register UWORD col, row;
     struct IBox *pbox = &(data->pd_PaletteBox);
     
-    EnterFunc(bug("RenderPalette(data=%p, pens=%p, rp=%p)\n", data, pens, rp));
+    EnterFunc(bug("RenderPalette(data=%p, dri=%p, rp=%p)\n", data, dri, rp));
 
     top  = pbox->Top;
-    
+
+    colors_left = data->pd_NumColors;    
     SetDrMd(rp, JAM1);
         	
     for (row = data->pd_NumRows; row; row --)
     {
     	left = pbox->Left;
-    	for (col = data->pd_NumCols; col; col --)
+    	for (col = MIN(data->pd_NumCols, colors_left); col; col --)
     	{
-    	    SetAPen(rp, pens[currentcolor]);
+    	    
+    	    SetAPen(rp, GetPalettePen(data, dri, currentcolor));
     	    
     	    RectFill(rp, left, top,
     	    	left + data->pd_ColWidth - VSPACING - 1, 
     	    	top + data->pd_RowHeight - HSPACING - 1 );
-    	    	
 
+    	    D(bug("Rectfilling area (%d, %d, %d, %d)\n with color %d", left, top,
+    	    left + data->pd_ColWidth - VSPACING - 1, top + data->pd_RowHeight - HSPACING,
+    	    currentcolor));
+    	    	
 	    currentcolor ++;
-	    
-    	    D(bug("Rectfilling area (%d, %d, %d, %d)\n ", left, top,
-    	    left + data->pd_ColWidth - VSPACING - 1, top + data->pd_RowHeight - HSPACING));
 
     	    left += data->pd_ColWidth;
     	
     	} /* for (each row) */
     	top += data->pd_RowHeight;
+
+    	colors_left -= data->pd_NumCols;
+    	
     } /* for (each column) */
     
     ReturnVoid("RenderPalette");
@@ -132,7 +179,7 @@ VOID RenderPalette(struct PaletteData *data,  UWORD *pens,
 ************************/
 
 VOID UpdateActiveColor( struct PaletteData	*data, 
-			UWORD 			*pens, 
+			struct DrawInfo		*dri,
 			struct RastPort 	*rp,
 			struct PaletteBase_intern *AROSPaletteBase)
 {
@@ -141,19 +188,20 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     
     struct IBox framebox;
     
-    EnterFunc(bug("UpdateActiveColor(data=%p, pens=%p, rp=%p)\n",
-    			data, pens, rp));
+    EnterFunc(bug("UpdateActiveColor(data=%p, dri=%p, rp=%p)\n",
+    			data, dri, rp));
     
-    SetAPen(rp, pens[BACKGROUNDPEN]);
+    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
     SetDrMd(rp, JAM1);
 
     if (data->pd_OldColor != data->pd_Color)
     {
+    	
     	left = data->pd_PaletteBox.Left + (data->pd_OldColor % data->pd_NumCols) * data->pd_ColWidth;
     	top  = data->pd_PaletteBox.Top  + (data->pd_OldColor / data->pd_NumCols) * data->pd_RowHeight;
     
-    	D(bug("clearing old selected: left=%d, top=%d, oldcolor=%d\n",
-    		left, top, data->pd_OldColor));
+    	D(bug("clearing old selected: (%d, %d, %d, %d) oldcolor=%d\n",
+    		left, top, left + data->pd_ColWidth, top + data->pd_RowHeight, data->pd_OldColor));
 
     	/* Clear area with BACKGROUNDPEN */
     	RectFill(rp, 
@@ -161,30 +209,31 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     	    top - HBORDER,
     	    left + data->pd_ColWidth,
     	    top  + data->pd_RowHeight);
-    
+
     	/* Rerender in original color */
-    	SetAPen(rp, pens[data->pd_OldColor + data->pd_ColorOffset]);
+    	SetAPen(rp, GetPalettePen(data, dri, data->pd_OldColor + data->pd_ColorOffset));
     
     	RectFill(rp, left, top,
-    	    left + data->pd_ColWidth - VSPACING - 1,
-    	    top + data->pd_RowHeight - HSPACING - 1);
+    	    left + data->pd_ColWidth  - VSPACING - 1,
+    	    top  + data->pd_RowHeight - HSPACING - 1);
+    
     }
 
-    /* Render new active entry */
-    D(bug("rendering new selected: left=%d, top=%d, color=%d\n",
-    	left, top, data->pd_Color));
- 
     left  = data->pd_PaletteBox.Left + (data->pd_Color % data->pd_NumCols) * data->pd_ColWidth;
     top   = data->pd_PaletteBox.Top  + (data->pd_Color / data->pd_NumCols) * data->pd_RowHeight;
     
     /* Right & bottom of *colored* area */
     right  = left + data->pd_ColWidth  - VSPACING - 1;
     bottom = top  + data->pd_RowHeight - HSPACING - 1;
+
+    /* Render new active entry */
+    D(bug("rendering new selected: (%d, %d, %d, %d), color=%d\n",
+    	left, top, right, bottom, data->pd_Color));
     
     
     /* Draw some borders */
     
-    SetAPen(rp, pens[BACKGROUNDPEN]);
+    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
     
     /* We draw left & right from top to bottom, but draw top & bottom
     ** so they don't overlap with what's allready drawn
@@ -212,7 +261,7 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     framebox.Width  = data->pd_ColWidth  + VBORDER;
     framebox.Height = data->pd_RowHeight + HBORDER;
     
-    RenderFrame(rp, &framebox, pens, TRUE, AROSPaletteBase);
+    RenderFrame(rp, &framebox, dri->dri_Pens, TRUE, AROSPaletteBase);
     	
     /* The newly update color becomes the new OldColor */
     data->pd_OldColor = data->pd_Color;

@@ -33,7 +33,8 @@ struct PaletteBase_intern;
 
 struct PaletteData
 {
-    UBYTE	pd_Depth;
+    UWORD	pd_NumColors;
+    UBYTE	*pd_ColorTable;
     UBYTE	pd_Color;
     /* For state info, to know what selected entry to delete in GM_RENDER, GREDRAW_UPDATE */
     UBYTE	pd_OldColor; 
@@ -84,19 +85,22 @@ struct PaletteData
 **  Prototypes  **
 *****************/
 
+UWORD GetPalettePen(struct PaletteData *, struct DrawInfo *, UWORD);
+UBYTE Colors2Depth(UWORD);
+
 VOID RenderFrame(struct RastPort *, struct IBox *, UWORD *, BOOL,
 		struct PaletteBase_intern *);
 
-VOID RenderPalette(struct PaletteData *, UWORD *,
+VOID RenderPalette(struct PaletteData *, struct DrawInfo *,
 	struct RastPort *, struct PaletteBase_intern *);
 
 
-VOID UpdateActiveColor( struct PaletteData *, UWORD *,
+VOID UpdateActiveColor( struct PaletteData *, struct DrawInfo *,
  			struct RastPort *, struct PaletteBase_intern *);
 
 VOID GetGadgetIBox(Object *, struct GadgetInfo *, struct IBox *);
-UBYTE ComputeColor(struct PaletteData *, WORD, WORD, struct PaletteBase_intern *);
-BOOL InsidePalette(struct IBox *, WORD, WORD);
+UWORD ComputeColor(struct PaletteData *, WORD, WORD);
+BOOL InsidePalette(struct PaletteData *, WORD, WORD);
 
 void DrawDisabledPattern(struct RastPort *, struct IBox *, UWORD,
 			 struct PaletteBase_intern *);

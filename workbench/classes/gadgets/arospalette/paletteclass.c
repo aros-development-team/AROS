@@ -2,7 +2,7 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: AROS Palette gadget for use in gadtools.
     Lang: english
 */
 
@@ -34,7 +34,8 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     IPTR retval = 0UL;
     struct PaletteData *data = INST_DATA(cl, o);
     
-    BOOL labelplace_set = FALSE;
+    BOOL labelplace_set = FALSE, relayout = FALSE;
+    
     
     EnterFunc(bug("Palette::Set()\n"));
     
@@ -42,27 +43,21 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     {
     	IPTR tidata = tag->ti_Data;
     	
+    	
     	switch (tag->ti_Tag)
     	{
-    	case AROSA_Palette_Depth:		/* [IU] */
-    	    data->pd_Depth = (UBYTE)tidata;
-    	    D(bug("Depth initialized to %d\n", tidata));
+    	case AROSA_Palette_Depth:		/* [ISU] */
+    	    data->pd_NumColors = (1 << ((UBYTE)tidata));
 
-    	    /* Relayout the gadget */
-    	    DoMethod(o, GM_LAYOUT, msg->ops_GInfo, FALSE);
+    	    D(bug("Depth initialized to %d\n", tidata));
+    	    relayout = TRUE;
     	    retval = 1UL;
-    	    
-    	    /* Check if the old selected fits into the new depth */
-    	    if (data->pd_Color > (1 << data->pd_Depth) - 1)
-    	    	data->pd_Color = 0;
     	    
     	    break;
     	    
     	case AROSA_Palette_Color:		/* [IS] */
     	    data->pd_Color = (UBYTE)tidata;
     	    data->pd_OldColor = data->pd_Color;
-    	    retval = 1UL;
-    	    
     	    D(bug("Color set to %d\n", tidata));    	    
     	    retval = 1UL;
     	    break;
@@ -70,7 +65,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	case AROSA_Palette_ColorOffset:		/* [I] */
     	    data->pd_ColorOffset = (UBYTE)tidata;
     	    D(bug("ColorOffset initialized to %d\n", tidata));
-    	    retval = 1;
+    	    retval = 1UL;
     	    break;
     	    
     	case AROSA_Palette_IndicatorWidth:	/* [I] */
@@ -103,16 +98,30 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	    break;
     	    
     	case AROSA_Palette_ColorTable:
-    	    D(bug(" !!!!! ColorTable attribute not implemented (yet) !!!!!\n"));
+    	    data->pd_ColorTable = (UBYTE *)tidata;
     	    break;
     	    
     	case AROSA_Palette_NumColors:
-    	    D(bug(" !!!!! NumColors attribute not implemented (yet) !!!!!\n"));
+    	    data->pd_NumColors = (UWORD)tidata;
+    	    relayout = TRUE;
     	    break;
 
     	} /* switch (tag->ti_Tag) */
     	
     } /* for (each attr in attrlist) */
+    
+    if (relayout)
+    {
+    	/* Check if the old selected fits into the new depth */
+    	if (data->pd_Color > data->pd_NumColors - 1)
+    	{
+    	    data->pd_Color = 0;
+    	    data->pd_OldColor = 0; /* So that UpdateActiveColor() don't get confused */
+    	}
+
+    	/* Relayout the gadget */
+    	DoMethod(o, GM_LAYOUT, msg->ops_GInfo, FALSE);
+    }
     
     ReturnPtr ("Palette::Set", IPTR, retval);
 }
@@ -144,13 +153,15 @@ STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
     	struct PaletteData *data = INST_DATA(cl, o);
     	
     	/* Set some defaults */
-    	data->pd_Depth		= 1;
+    	data->pd_NumColors	= 2;
+    	data->pd_ColorTable	= NULL;
     	data->pd_Color		= 0;
     	data->pd_OldColor	= 0 ; /* = data->pd_OldColor */
     	data->pd_ColorOffset	= 0;
     	data->pd_IndWidth 	= 0;
     	data->pd_IndHeight	= 0;
     	data->pd_LabelPlace	= GV_LabelPlace_Above;
+
     	
     	palette_set(cl, o, msg);
     	
@@ -166,7 +177,7 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct PaletteData *data = INST_DATA(cl, o);
     
-    UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+    struct DrawInfo *dri = msg->gpr_GInfo->gi_DrInfo;
     struct RastPort *rp;
     struct IBox *gbox = &(data->pd_GadgetBox);
     
@@ -179,23 +190,28 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     {
     	case GREDRAW_REDRAW:
     	    D(bug("Doing total redraw\n"));
-    	    RenderPalette(data, pens, rp, AROSPaletteBase);
+    	    RenderPalette(data, dri, rp, AROSPaletteBase);
     	    
     	    /* Render frame aroun ibox */
     	    if (data->pd_IndWidth || data->pd_IndHeight)
     	    {
-    	    	RenderFrame(rp, &(data->pd_IndicatorBox), pens, TRUE, AROSPaletteBase);
+    	    	RenderFrame(rp, &(data->pd_IndicatorBox), dri->dri_Pens, TRUE, AROSPaletteBase);
     	    }
     
     	case GREDRAW_UPDATE:
      	    D(bug("Doing redraw update\n"));
     	    
-    	    UpdateActiveColor(data, pens, rp, AROSPaletteBase);
+    	    UpdateActiveColor(data, dri, rp, AROSPaletteBase);
     	
     	    if (data->pd_IndWidth || data->pd_IndHeight)
     	    {
     	    	struct IBox *ibox = &(data->pd_IndicatorBox);
-    	    	SetAPen(msg->gpr_RPort, pens[data->pd_Color]);
+    	    	SetAPen(rp, GetPalettePen(data, dri, data->pd_Color));
+    	    	
+    	    	D(bug("Drawing indocator at: (%d, %d, %d, %d)\n",
+    	    		ibox->Left, ibox->Top,
+    	    		ibox->Left + ibox->Width, ibox->Top + ibox->Height));
+    	    	
     	    	RectFill(msg->gpr_RPort,
     	    		ibox->Left + VBORDER + VSPACING,
     	    		ibox->Top  + HBORDER + HSPACING,
@@ -210,22 +226,22 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     
     if (EG(o)->Flags & GFLG_DISABLED)
     {
-    	DrawDisabledPattern(rp, gbox, pens[SHADOWPEN], AROSPaletteBase);
+    	DrawDisabledPattern(rp, gbox, dri->dri_Pens[SHADOWPEN], AROSPaletteBase);
     }
     
     /* Render gadget label in correct position */
     RenderLabel((struct Gadget *)o, gbox, rp,
     		data->pd_LabelPlace, AROSPaletteBase);
     		
-    RenderFrame(rp, gbox, pens, FALSE, AROSPaletteBase);
+    RenderFrame(rp, gbox, dri->dri_Pens, FALSE, AROSPaletteBase);
     
     	
     ReturnVoid("Palette::Render");
 }
 
-/***************************
-**  Palette::GadgetHit()  **
-***************************/
+/*************************
+**  Palette::HitTest()  **
+*************************/
 STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 {
 
@@ -241,7 +257,7 @@ STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
     ** of "nowhere". To prevent anything from happening when this area is
     ** clicked, we rule it out here.
     */
-    if (InsidePalette(&(data->pd_PaletteBox), msg->gpht_Mouse.X, msg->gpht_Mouse.Y))
+    if (InsidePalette(data, msg->gpht_Mouse.X, msg->gpht_Mouse.Y))
     	retval = GMR_GADGETHIT;
     	
     ReturnInt ("Palette::HitTest", IPTR, retval);
@@ -269,7 +285,7 @@ STATIC IPTR palette_goactive(Class *cl, Object *o, struct gpInput *msg)
     	    /* Set temporary active to the old active */
     	    data->pd_ColorBackup = data->pd_Color;
     	
-    	    clicked_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, AROSPaletteBase);
+    	    clicked_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);
     	
     	    if (clicked_color != data->pd_Color)
     	    {
@@ -322,7 +338,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 		D(bug("IECLASS_RAWMOUSE: SELECTUP\n"));
 		     
-		if (!InsidePalette(&(data->pd_PaletteBox), msg->gpi_Mouse.X, msg->gpi_Mouse.Y))
+		if (!InsidePalette(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y))
     	    	{
     	    	    struct RastPort *rp;
     	    	     	
@@ -355,10 +371,10 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    
     	    	D(bug("IECLASS_POINTERPOS\n"));
     	    	
-    	    	if (InsidePalette(&(data->pd_PaletteBox), msg->gpi_Mouse.X, msg->gpi_Mouse.Y))
+    	    	if (InsidePalette(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y))
     	    	{
     	    	
-    	    	    over_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, AROSPaletteBase);
+    	    	    over_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);
     	    
     	   	    if (over_color != data->pd_Color)
     	    	    {
@@ -443,9 +459,10 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     	if ((rp = ObtainGIRPort(msg->gpl_GInfo)))
     	{
     	    SetAPen(rp, msg->gpl_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
-    	    
+    	    D(bug("Clearing area (%d, %d, %d, %d)\n",
+    	    	gbox->Left, gbox->Top, gbox->Left + gbox->Width, gbox->Top + gbox->Height));
     	    RectFill(rp, gbox->Left, gbox->Top, 
-    	    	pbox->Left + gbox->Width - 1, gbox->Top + gbox->Height - 1);
+    	    	gbox->Left + gbox->Width - 1, gbox->Top + gbox->Height - 1);
     	}
     }
 
@@ -506,7 +523,7 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     
     smallest_so_far = 0xFFFF;
     
-    factor1 = 1 << data->pd_Depth;
+    factor1 = 1 << Colors2Depth(data->pd_NumColors);
     factor2 = 1;
     
     while (factor1 >= factor2)
@@ -602,7 +619,7 @@ AROS_UFH3(STATIC IPTR, dispatch_paletteclass,
 	     * subclassed, and we have gotten here via DoSuperMethodA().
 	     */
 	    if (    retval
-	    	 && ((msg->MethodID == OM_UPDATE) || (msg->MethodID = OM_SET))
+	    	 && (msg->MethodID == OM_UPDATE)
 	    	 && (cl == OCLASS(o))	)
 	    {
 	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
