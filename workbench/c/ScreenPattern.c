@@ -1,3 +1,10 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: 
+    Lang: English              
+ */
 
 #include <exec/memory.h>
 #include <dos/dos.h>
