@@ -761,6 +761,9 @@ void exec_cinit()
     /* Protect kernel and RO data from beeing allocated by software */
     AllocAbs((ULONG)&_end - 0x000a0000, (APTR)0x000a0000);
 
+    /* Protect bootup stack from being allocated */
+    AllocAbs(0x90000,0x3000);
+
     rkprintf("Kernel protected\n");
 
     rkprintf("Adding \"exec.library\"...");
