@@ -23,6 +23,7 @@
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/commodities.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -207,36 +208,35 @@ static void prefs_init_keys (struct ZunePrefs *prefs)
 {
     int i;
 
-#warning FIXME: muikeys
-#if 0
-    prefs->muikeys[MUIKEY_PRESS].readable_hotkey = g_strdup("Return");
-    prefs->muikeys[MUIKEY_TOGGLE].readable_hotkey = g_strdup("space");
-    prefs->muikeys[MUIKEY_UP].readable_hotkey = g_strdup("Up");
-    prefs->muikeys[MUIKEY_DOWN].readable_hotkey = g_strdup("Down");
-    prefs->muikeys[MUIKEY_PAGEUP].readable_hotkey = g_strdup("Prior");
-    prefs->muikeys[MUIKEY_PAGEDOWN].readable_hotkey = g_strdup("Next");
-    prefs->muikeys[MUIKEY_TOP].readable_hotkey = g_strdup("Home");
-    prefs->muikeys[MUIKEY_BOTTOM].readable_hotkey = g_strdup("End");
-    prefs->muikeys[MUIKEY_LEFT].readable_hotkey = g_strdup("Left");
-    prefs->muikeys[MUIKEY_RIGHT].readable_hotkey = g_strdup("Right");
-    prefs->muikeys[MUIKEY_WORDLEFT].readable_hotkey = g_strdup("Control Left");
-    prefs->muikeys[MUIKEY_WORDRIGHT].readable_hotkey = g_strdup("Control Right");
-    prefs->muikeys[MUIKEY_LINESTART].readable_hotkey = g_strdup("Shift Left");
-    prefs->muikeys[MUIKEY_LINEEND].readable_hotkey = g_strdup("Shift Right");
-    prefs->muikeys[MUIKEY_GADGET_NEXT].readable_hotkey = g_strdup("Tab");
-    prefs->muikeys[MUIKEY_GADGET_PREV].readable_hotkey = g_strdup("Shift Tab");
-    prefs->muikeys[MUIKEY_GADGET_OFF].readable_hotkey = g_strdup("Control Tab");
-    prefs->muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey = g_strdup("Escape");
-    prefs->muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey = g_strdup("Alt Next");
-    prefs->muikeys[MUIKEY_WINDOW_PREV].readable_hotkey = g_strdup("Alt Prior");
-    prefs->muikeys[MUIKEY_HELP].readable_hotkey = g_strdup("Pause");
-    prefs->muikeys[MUIKEY_POPUP].readable_hotkey = g_strdup("Control p");
+    prefs->muikeys[MUIKEY_PRESS].readable_hotkey = g_strdup("-upstroke return");
+    prefs->muikeys[MUIKEY_TOGGLE].readable_hotkey = g_strdup("-repeat space");
+    prefs->muikeys[MUIKEY_UP].readable_hotkey = g_strdup("-repeat up");
+    prefs->muikeys[MUIKEY_DOWN].readable_hotkey = g_strdup("-repeat down");
+    prefs->muikeys[MUIKEY_PAGEUP].readable_hotkey = g_strdup("-repeat shift up");
+    prefs->muikeys[MUIKEY_PAGEDOWN].readable_hotkey = g_strdup("-repeat shift down");
+    prefs->muikeys[MUIKEY_TOP].readable_hotkey = g_strdup("control up");
+    prefs->muikeys[MUIKEY_BOTTOM].readable_hotkey = g_strdup("control down");
+    prefs->muikeys[MUIKEY_LEFT].readable_hotkey = g_strdup("-repeat left");
+    prefs->muikeys[MUIKEY_RIGHT].readable_hotkey = g_strdup("-repeat right");
+    prefs->muikeys[MUIKEY_WORDLEFT].readable_hotkey = g_strdup("-repeat control left");
+    prefs->muikeys[MUIKEY_WORDRIGHT].readable_hotkey = g_strdup("-repeat control right");
+    prefs->muikeys[MUIKEY_LINESTART].readable_hotkey = g_strdup("shift left");
+    prefs->muikeys[MUIKEY_LINEEND].readable_hotkey = g_strdup("shift right");
+    prefs->muikeys[MUIKEY_GADGET_NEXT].readable_hotkey = g_strdup("-repeat tab");
+    prefs->muikeys[MUIKEY_GADGET_PREV].readable_hotkey = g_strdup("-repeat shift tab");
+    prefs->muikeys[MUIKEY_GADGET_OFF].readable_hotkey = g_strdup("control tab");
+    prefs->muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey = g_strdup("esc");
+    prefs->muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey = g_strdup("-repeat alt tab");
+    prefs->muikeys[MUIKEY_WINDOW_PREV].readable_hotkey = g_strdup("-repeat alt shift tab");
+    prefs->muikeys[MUIKEY_HELP].readable_hotkey = g_strdup("help");
+    prefs->muikeys[MUIKEY_POPUP].readable_hotkey = g_strdup("control p");
 
     for (i = 0; i < MUIKEY_COUNT; i++)
     {
-	zune_keyspec_parse(&prefs->muikeys[i]);
+    	if (prefs->muikeys[i].readable_hotkey)
+	    prefs->muikeys[i].ix_well = !ParseIX(prefs->muikeys[i].readable_hotkey, &prefs->muikeys[i].ix);
+	else prefs->muikeys[i].ix_well = 0;
     }
-#endif
 } /* prefs_init_keys */
 
 
@@ -380,11 +380,8 @@ void __zune_prefs_release(struct ZunePrefs *prefs)
     g_free(prefs->dragndrop_left_modifier);
     g_free(prefs->dragndrop_middle_modifier);
 
-#warning FIXME: keys
-#if 0
   for (i = 0; i < MUIKEY_COUNT; i++)
 	g_free(prefs->muikeys[i].readable_hotkey);
-#endif
  
 #if 0
     if (prefs->comments)

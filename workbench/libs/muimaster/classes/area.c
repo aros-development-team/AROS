@@ -318,14 +318,11 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	data->mad_FrameTitle = frame_title;
     }
 
-    if (data->mad_InputMode != MUIV_InputMode_None)
-    {
-	data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-	data->mad_ehn.ehn_Priority = 0;
-	data->mad_ehn.ehn_Flags    = 0;
-	data->mad_ehn.ehn_Object   = obj;
-	data->mad_ehn.ehn_Class    = cl;
-    }
+    data->mad_ehn.ehn_Events = 0; /* Will be filled on demand */
+    data->mad_ehn.ehn_Priority = 0;
+    data->mad_ehn.ehn_Flags    = 0;
+    data->mad_ehn.ehn_Object   = obj;
+    data->mad_ehn.ehn_Class    = cl;
 
     D(bug("muimaster.library/area.c: Area Object created at 0x%lx\n",obj));
 
@@ -973,6 +970,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
+	data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
     }
     setup_control_char (data, obj, cl);
@@ -1028,10 +1026,9 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 //    cleanup_cycle_chain (data, obj);
     cleanup_control_char (data, obj);
 
-    if (data->mad_InputMode != MUIV_InputMode_None)
-    {
+    /* Remove the event handler if it has been added */
+    if (data->mad_ehn.ehn_Events)
 	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-    }
 
     if (data->mad_Flags & MADF_SHOWSELSTATE
 	&& data->mad_InputMode != MUIV_InputMode_None)
@@ -1245,44 +1242,42 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 
     switch (imsg->Code)
     {
-    case SELECTDOWN:
-        if (in)
-        {
-            set(_win(obj), MUIA_Window_ActiveObject, obj);
-            if ((data->mad_InputMode != MUIV_InputMode_Toggle)
-             && (data->mad_Flags & MADF_SELECTED))
-                break;
-            handle_press(cl, obj);
-            if (data->mad_InputMode == MUIV_InputMode_RelVerify)
-            {
-                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-                data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
-                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-            }
-            return MUI_EventHandlerRC_Eat;
-        }
-        break;
+	case	SELECTDOWN:
+		if (in)
+		{
+		    set(_win(obj), MUIA_Window_ActiveObject, obj);
+		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
+			break;
+		    handle_press(cl, obj);
+		    if (data->mad_InputMode == MUIV_InputMode_RelVerify)
+		    {
+			if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+			data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
+	                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+	            }
+		    return MUI_EventHandlerRC_Eat;
+		}
 
-    case SELECTUP:
-        if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
-        {
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-            data->mad_ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE|IDCMP_RAWKEY);
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-            if (!in)
-                nnset(obj, MUIA_Pressed, FALSE);
-            handle_release(cl, obj);
-        }
-        break;
+	case	SELECTUP:
+		if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
+		{
+		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+	            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+		    if (!in) nnset(obj, MUIA_Pressed, FALSE);
+		    handle_release(cl, obj);
+		    return MUI_EventHandlerRC_Eat;
+		}
+		break;
 
-    case MENUDOWN:
-        if (in)
-        {
-            set(_win(obj), MUIA_Window_ActiveObject, obj);
-            handle_popupmenu(cl, obj);
-            return MUI_EventHandlerRC_Eat;
-        }
-        break;
+	case    MENUDOWN:
+		if (in)
+		{
+	            set(_win(obj), MUIA_Window_ActiveObject, obj);
+        	    handle_popupmenu(cl, obj);
+	            return MUI_EventHandlerRC_Eat;
+        	}
+	        break;
     }
 
     return 0;
@@ -1461,31 +1456,32 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
+    if (data->mad_InputMode == MUIV_InputMode_None) return 0;
+
     if (msg->muikey != MUIKEY_NONE)
     {
-	switch(msg->muikey)
+	switch (msg->muikey)
 	{
-	    case MUIKEY_NONE:
-		break;
-	    case MUIKEY_PRESS:
-		if (data->mad_Flags & MADF_SELECTED)
-		    break;
-		handle_press(cl, obj);
+	    case    MUIKEY_PRESS:
+		    if (data->mad_Flags & MADF_SELECTED) break;
+		    handle_press(cl, obj);
+		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+		    data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+		    return MUI_EventHandlerRC_Eat;
 
-/*  	        DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn); */
-/*  		data->mad_ehn.ehn_Events |= GDK_POINTER_MOTION_MASK; */
-/*  		DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn); */
-		return MUI_EventHandlerRC_Eat;
-	    case MUIKEY_TOGGLE:
-		if (data->mad_InputMode == MUIV_InputMode_Toggle)
-		    set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
-		return MUI_EventHandlerRC_Eat;
-	    case MUIKEY_RELEASE: /* fake, after a MUIKEY_PRESS */
-		handle_release(cl, obj);
-		return MUI_EventHandlerRC_Eat;
-	    default :
-		return 0;
+	    case    MUIKEY_TOGGLE:
+		    if (data->mad_InputMode == MUIV_InputMode_Toggle) set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
+		    return MUI_EventHandlerRC_Eat;
+
+	    case    MUIKEY_RELEASE:
+		    handle_release(cl, obj);
+		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+		    return MUI_EventHandlerRC_Eat;
 	}
+	return 0;
     }
 
     if (msg->imsg)
@@ -1496,18 +1492,15 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	    case IDCMP_MOUSEMOVE: return event_motion(cl, obj, msg->imsg);
 	    case IDCMP_RAWKEY:
 	    {
-		if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
-		{
-	            if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-	            {
-			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-			data->mad_ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE|IDCMP_RAWKEY);
-			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-			nnset(obj, MUIA_Pressed, FALSE); /* aborted */
-			handle_release(cl,obj);
-		    }
-		    return MUI_EventHandlerRC_Eat;
+	        if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+	        {
+		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+		    nnset(obj, MUIA_Pressed, FALSE); /* aborted */
+		    handle_release(cl,obj);
 		}
+		return MUI_EventHandlerRC_Eat;
 	    }
 	    break;
 	}

@@ -1,6 +1,10 @@
 #ifndef __ZUNE_PREFS_H__
 #define __ZUNE_PREFS_H__
 
+#ifndef LIBRARIES_COMMODITIES_H
+#include <libraries/commodities.h>
+#endif
+
 typedef enum CycleMenuPosition {
     CYCLE_MENU_POSITION_CENTERED,
     CYCLE_MENU_POSITION_TOP,
@@ -46,6 +50,12 @@ typedef enum ActiveObjectLook {
     ACTIVE_OBJECT_LOOK_FRAME,
     ACTIVE_OBJECT_LOOK_CORNER,
 } ActiveObjectLook;
+
+typedef struct _ZuneKeySpec {
+    STRPTR readable_hotkey;
+    LONG ix_well;
+    IX ix;
+} ZuneKeySpec;
 
 /*
  * User Prefs for interface drawing
@@ -94,7 +104,7 @@ struct ZunePrefs {
     ActiveObjectLook     active_object_look;
     struct MUI_PenSpec   active_object_color;
 
-//    ZuneKeySpec muikeys[MUIKEY_COUNT];
+    ZuneKeySpec muikeys[MUIKEY_COUNT];
 
     /* Scrollbars */
     ScrollbarLook     sb_look;
