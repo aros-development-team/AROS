@@ -27,8 +27,13 @@ Basic Installation of AROS-SOURCES
 	a) MetaMake, short mmake.
 		cd AROS/tools/MetaMake
 		./configure
-		  if configure doesn't work and you're using ADE just copy the
-		  Makefile.amiga to Makefile and config.h.amiga to config.h
+		  (
+		  ./configure -v --prefix=/gg
+		    if you are using ADE/GG on the Amiga --- if configure
+		    doesn't work and you're using ADE just copy the
+		    Makefile.amiga to Makefile and config.h.amiga to
+		    config.h
+		  )
 		make
 		  if make doesn't work just do a "gcc mmake.c -o mmake"
 		make install
@@ -39,7 +44,7 @@ Basic Installation of AROS-SOURCES
 		cp mmake.config.in mmake.config
 		Now edit your mmake.config file to your needs:
 		- uncomment and adjust "top /home/digulla/AROS", if you
-		  want to compile from anywhereelse than the top dir.
+		  want to compile from anywhere else than the top dir.
 
 	b) The Makefile-Generation tool, short genmf.
 		cd AROS/tools/genmf
@@ -55,7 +60,7 @@ Basic Installation of AROS-SOURCES
 		cd AROS/tools/cpak
 		make
 
-4. Run ./configure
+4. Run ./configure in the source root.
 	Use ./configure --help for all possible options.
 	This will examine your system and create the necessary
 	files for the build.
