@@ -71,6 +71,9 @@ class Item:
 		    dir[1].dump (level+1)
 
 def filterMakefile (p, item, tag):
+    '''Filter certain descriptions out of a makefile. The filename is
+    mentioned as the first item in the list of files of the current
+    contents.Item.'''
     filename = os.path.join (p.contents.basedir, item.files[0])
 
     words = string.split (tag.content[0].text, ',')
@@ -107,13 +110,13 @@ def filterMakefile (p, item, tag):
 	paras = string.split (string.rstrip (text), '\n\n')
 
 	for para in paras:
-	    print `para`
+	    #print `para`
 	    if para[:5] == '\\item':
 		pos = string.index (para, '{')
 		pos2 = string.index (para, '}', pos)
 		name = para[pos+1:pos2]
 		para = string.lstrip (para[pos2+1:])
-		print 'item:',name,`para`
+		#print 'item:',name,`para`
 	
 		liElement = xmlsupport.Tag ('li')
 		itemElement = xmlsupport.Tag ('item')
