@@ -12,16 +12,19 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	void WriteChunkyPixels (
+	AROS_LH7(void, WriteChunkyPixels,
 
 /*  SYNOPSIS */
-	struct RastPort * rp,
-	ULONG             xstart,
-	ULONG             ystart,
-	ULONG             xstop,
-	ULONG             ystop,
-	UBYTE           * array,
-	LONG              bytesperrow)
+	AROS_LHA(struct RastPort *, rp, A0),
+	AROS_LHA(ULONG            , xstart, D0),
+	AROS_LHA(ULONG            , ystart, D1),
+	AROS_LHA(ULONG            , xstop, D2),
+	AROS_LHA(ULONG            , ystop, D3),
+	AROS_LHA(UBYTE           *, array, A2),
+	AROS_LHA(LONG             , bytesperrow, D4),
+
+/*  LOCATION */
+	struct GfxBase *, GfxBase, 176, Graphics)
 
 /*  FUNCTION
 
@@ -46,6 +49,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
     driver_WriteChunkyPixels(rp
     	, xstart, ystart
