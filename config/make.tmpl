@@ -526,7 +526,7 @@ endif
 GENFILES_TMP := %(objdir)/%(modname)_start.c %(objdir)/%(modname)_end.c
 
 # Some of the generated files are dependent on the module type.
-ifneq ($(findstring %(modtype),library device resource),)
+ifneq ($(findstring %(modtype),library device resource gadget),)
 GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
                 $(GENINCDIR)/clib/%(modname)_protos.h \
                 $(GENINCDIR)/defines/%(modname).h \
@@ -744,7 +744,7 @@ BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(not
 endif
 BD_REFFILE$(BDID)    := %(reffile)
 
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget),)
 BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
 endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
@@ -819,11 +819,11 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 # What are the files that need to be generated before the .d and .ref files
 # can be generated ?
 BD_REFFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget),)
   BD_REFFILE_DEPS$(BDID) += $(addprefix $(BD_OBJDIR$(BDID))/dummyinc/,$(BD_GENINCS$(BDID)))
 endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget),)
   BD_DFILE_DEPS$(BDID) += $(addprefix $(BD_INCLUDE$(BDID))/,$(BD_GENINCS$(BDID)))
 endif
 
@@ -908,7 +908,7 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h : $(BD_CONFFILE$(BDID))
 		 endobj=$(BD_ENDOBJ$(BDID)) err=$(BD_MODNAME).err uselibs="%(uselibs)"
 
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource gadget),)
 %rule_makedirs dirs="$(addprefix $(BD_INCLUDE$(BDID))/, clib defines pragmas proto)" setuptarget=setup-module$(BDID)
 %rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(BD_INCLUDE$(BDID))/clib/$(BD_MODNAME$(BDID))_protos.h
 %rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/defines/$(BD_MODNAME$(BDID)).h
