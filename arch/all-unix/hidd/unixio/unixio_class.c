@@ -33,12 +33,13 @@
 
 /* Unix includes */
 #define timeval sys_timeval /* We don't want the unix timeval to interfere with the AROS one */
-#include <errno.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <string.h>
+#include <errno.h>
 #undef timeval
 
 #ifdef _AROS
