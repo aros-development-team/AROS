@@ -135,12 +135,12 @@ extern void Exec_Dispatch_FPU();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 
-AROS_UFH5S(void, IntServer,
-    AROS_UFHA(ULONG, intMask, D0),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
+AROS_UFP5S(void, IntServer,
+    AROS_UFPA(ULONG, intMask, D0),
+    AROS_UFPA(struct Custom *, custom, A0),
+    AROS_UFPA(struct List *, intList, A1),
+    AROS_UFPA(APTR, intCode, A5),
+    AROS_UFPA(struct ExecBase *, SysBase, A6));
 
 #undef memcpy
 #define memcpy(_d, _s, _len)                     \
