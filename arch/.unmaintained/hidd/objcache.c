@@ -153,7 +153,7 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
 	
 	ci = &oc->cache[i];
 /* kprintf("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
-*/    	if (ci->obj != NULL) {
+*/    	if (NULL == ci->obj) {
 	    break;
 	} else {
 	    if (FALSE == ci->used) {
