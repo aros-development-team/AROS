@@ -15,6 +15,8 @@
 #include <proto/utility.h>
 
 #ifdef _AROS
+#include <proto/alib.h>
+#include <proto/intuition.h>
 #include <proto/muimaster.h>
 #endif
 
