@@ -205,7 +205,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 	{TAG_DONE                   }
     };
 
-    win_tags[2].ti_Data=fh->screenname;
+    win_tags[2].ti_Data = (IPTR)fh->screenname;
     fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
 
     if (fh->window)
@@ -320,8 +320,20 @@ VOID HandlePendingReads(struct conbase *conbase, struct filehandle *fh)
 
 /****************************************************************************************/
 
-VOID conTaskEntry(struct conTaskParams *param)
+#undef SysBase
+#define SysBase sysbase
+
+AROS_UFH3(VOID, conTaskEntry,
+    AROS_UFHA(STRPTR, argstr, A0),
+    AROS_UFHA(ULONG, arglen, D0),
+    AROS_UFHA(struct ExecBase *, sysbase, A6)
+)
 {
+    struct conTaskParams *param = (struct conTaskParams *)FindTask(NULL)->tc_UserData;
+    
+#undef SysBase
+#define SysBase conbase->sysbase
+
     struct conbase  	*conbase = param->conbase;    
 
     struct filehandle 	*fh;
