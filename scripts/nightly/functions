@@ -50,6 +50,12 @@ execute()
     fi
 }
 
+archive()
+{
+    execute tar cjvf $1 $2
+    execute md5sum $1 >$1.md5
+}
+
 resetl()
 {
     LOG_THIS=/dev/null

@@ -53,7 +53,6 @@ else
     alias make='execute make'
 fi
 
-alias archive='execute tar cjvf'
 alias makedir='execute mkdir -p'
 alias  delete='execute rm -rf'
 alias    copy='execute cp -pR'
