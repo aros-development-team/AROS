@@ -39,19 +39,19 @@ AROS_LH1(BOOL , LateIntuiInit,
          struct IntuitionBase *, IntuitionBase, 150, Intuition)
 
 /*  FUNCTION
-	This function permits late initalization
-	of intuition (After dos and after graphics hidds are setup,
-	but before starup-sequence is run.
-	Can be used to open workbench screen.
+    This function permits late initalization
+    of intuition (After dos and after graphics hidds are setup,
+    but before starup-sequence is run.
+    Can be used to open workbench screen.
  
     INPUTS
-	data - unused for now.
+    data - unused for now.
  
     RESULT
-	success - TRUE if initialization went, FALSE otherwise.
+    success - TRUE if initialization went, FALSE otherwise.
  
     NOTES
-	This function is private and AROS specific.
+    This function is private and AROS specific.
  
     EXAMPLE
  
@@ -62,41 +62,41 @@ AROS_LH1(BOOL , LateIntuiInit,
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
+    29-10-95    digulla automatically created from
+                graphics_lib.fd and clib/graphics_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #if 1
-	/* shut up the compiler */
-	IntuitionBase = IntuitionBase;
-	data = data;
+    /* shut up the compiler */
+    IntuitionBase = IntuitionBase;
+    data = data;
 
-	return TRUE;
+    return TRUE;
 
 #else
 struct Screen *screen;
 
-	/* Let LockPubScreen() open the Workbench screen for us. */
-	screen = LockPubScreen( NULL );
+    /* Let LockPubScreen() open the Workbench screen for us. */
+    screen = LockPubScreen( NULL );
 
-	if( screen )
-	{
+    if( screen )
+    {
 #if !NO_PATTERN
-		MakeWBPattern( screen, IntuitionBase );
+        MakeWBPattern( screen, IntuitionBase );
 #endif
-		UnlockPubScreen( NULL, screen );
+        UnlockPubScreen( NULL, screen );
 
-		return TRUE;
-	}
+        return TRUE;
+    }
 
-	return FALSE;
+    return FALSE;
 #endif
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* LateIntuiInit */
 
 #if !NO_PATTERN
@@ -456,17 +456,17 @@ static ULONG patterndata[] =
 
 static const ULONG patterncoltab[] =
     {
-        (16L << 16) + 0,	/* 16 colors, loaded at index 0 */
+        (16L << 16) + 0,    /* 16 colors, loaded at index 0 */
 
-        0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70	*/
-        0x00000000, 0x00000000, 0x00000000, /* Black	*/
-        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White	*/
+        0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70   */
+        0x00000000, 0x00000000, 0x00000000, /* Black    */
+        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White    */
         0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
 
-        0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue		*/
-        0x00000000, 0xFFFFFFFF, 0x00000000, /* Green	*/
-        0xFFFFFFFF, 0x00000000, 0x00000000, /* Red		*/
-        0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan		*/
+        0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue     */
+        0x00000000, 0xFFFFFFFF, 0x00000000, /* Green    */
+        0xFFFFFFFF, 0x00000000, 0x00000000, /* Red      */
+        0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan     */
 
         0x33333333, 0x33333333, 0x33333333, /* Pattern Col 1 */
         0xcdcdcdcd, 0x6c6c6c6c, 0xc7c7c7c7, /* Pattern Col 2 */
@@ -478,15 +478,15 @@ static const ULONG patterncoltab[] =
         0x55555555, 0x55555555, 0x55555555, /* Pattern Col 7 */
         0x44444444, 0x44444444, 0x44444444, /* Pattern Col 8 */
 
-        0L		/* Termination */
+        0L      /* Termination */
     };
 
 struct LayerHookMsg
 {
-	struct Layer *lay;		/* not valid for layerinfo backfill hook!!! */
-	struct Rectangle bounds;
-	LONG offsetx;
-	LONG offsety;
+    struct Layer *lay;      /* not valid for layerinfo backfill hook!!! */
+    struct Rectangle bounds;
+    LONG offsetx;
+    LONG offsety;
 };
 
 static struct Hook backfillhook;
@@ -496,142 +496,142 @@ extern ULONG HookEntry();
 
 static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp, struct LayerHookMsg *msg)
 {
-	struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)hook->h_Data;
-	struct RastPort myrp;
-	WORD x1,y1,x2,y2,px,py,pw,ph;
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)hook->h_Data;
+    struct RastPort myrp;
+    WORD x1,y1,x2,y2,px,py,pw,ph;
 
-	myrp = *rp;
+    myrp = *rp;
 
-	myrp.Layer = 0;
+    myrp.Layer = 0;
 
-	x1 = msg->bounds.MinX;
-	y1 = msg->bounds.MinY;
-	x2 = msg->bounds.MaxX;
-	y2 = msg->bounds.MaxY;
+    x1 = msg->bounds.MinX;
+    y1 = msg->bounds.MinY;
+    x2 = msg->bounds.MaxX;
+    y2 = msg->bounds.MaxY;
 
-	px = x1 % PATTERN_WIDTH;
+    px = x1 % PATTERN_WIDTH;
 
-	pw = PATTERN_WIDTH - px;
+    pw = PATTERN_WIDTH - px;
 
-	do
-	{
-		y1 = msg->bounds.MinY;
-		py = y1  % PATTERN_HEIGHT;
+    do
+    {
+        y1 = msg->bounds.MinY;
+        py = y1  % PATTERN_HEIGHT;
 
-		ph = PATTERN_HEIGHT - py;
+        ph = PATTERN_HEIGHT - py;
 
-		if (pw > (x2 - x1 + 1)) pw = x2 - x1 + 1;
+        if (pw > (x2 - x1 + 1)) pw = x2 - x1 + 1;
 
-		do
-		{
-			if (ph > (y2 - y1 + 1)) ph = y2 - y1 + 1;
+        do
+        {
+            if (ph > (y2 - y1 + 1)) ph = y2 - y1 + 1;
 
-			BltBitMap(patternbm,
-			          px,
-			          py,
-			          rp->BitMap,
-			          x1,
-			          y1,
-			          pw,
-			          ph,
-			          192,
-			          255,
-			          0);
+            BltBitMap(patternbm,
+                      px,
+                      py,
+                      rp->BitMap,
+                      x1,
+                      y1,
+                      pw,
+                      ph,
+                      192,
+                      255,
+                      0);
 
-			y1 += ph;
+            y1 += ph;
 
-			py = 0;
-			ph = PATTERN_HEIGHT;
+            py = 0;
+            ph = PATTERN_HEIGHT;
 
-		}
-		while (y1 <= y2); /* while(y1 < y2) */
+        }
+        while (y1 <= y2); /* while(y1 < y2) */
 
-		x1 += pw;
+        x1 += pw;
 
-		px = 0;
-		pw = PATTERN_WIDTH;
+        px = 0;
+        pw = PATTERN_WIDTH;
 
-	}
-	while (x1 <= x2); /* while (x1 < x2) */
+    }
+    while (x1 <= x2); /* while (x1 < x2) */
 
 }
 
 static void InitBackfillHook(struct IntuitionBase *IntuitionBase)
 {
-	backfillhook.h_Entry = HookEntry;
-	backfillhook.h_SubEntry = (HOOKFUNC)MyBackfillFunc;
-	backfillhook.h_Data = IntuitionBase;
+    backfillhook.h_Entry = HookEntry;
+    backfillhook.h_SubEntry = (HOOKFUNC)MyBackfillFunc;
+    backfillhook.h_Data = IntuitionBase;
 }
 
 static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
-	static struct BitMap bm;
+    static struct BitMap bm;
 
-	struct Window *tempwin;
-	struct TagItem wintags[] =
-	    {
-		    {
-			    WA_PubScreen	,(IPTR)scr
-		    },
-		    {WA_Left	,0				},
-		    {WA_Top		,0				},
-		    {WA_Width	,scr->Width			},
-		    {WA_Height	,scr->Height			},
-		    {WA_Borderless	,TRUE				},
-		    {WA_Backdrop	,TRUE				},
-		    {WA_BackFill	,(IPTR)LAYERS_NOBACKFILL	},
-		    {TAG_DONE					}
-	    };
-	WORD i;
-
-
-
-	InitBitMap(&bm, PATTERN_DEPTH, PATTERN_WIDTH, PATTERN_HEIGHT);
-	for(i = 0; i < PATTERN_DEPTH; i++)
-	{
-		bm.Planes[i] = (((UBYTE *)patterndata) + (i * PATTERN_PLANESIZE));
-	}
-
-	LoadRGB32(&scr->ViewPort, patterncoltab);
+    struct Window *tempwin;
+    struct TagItem wintags[] =
+        {
+            {
+                WA_PubScreen    ,(IPTR)scr
+            },
+            {WA_Left    ,0              },
+            {WA_Top     ,0              },
+            {WA_Width   ,scr->Width         },
+            {WA_Height  ,scr->Height            },
+            {WA_Borderless  ,TRUE               },
+            {WA_Backdrop    ,TRUE               },
+            {WA_BackFill    ,(IPTR)LAYERS_NOBACKFILL    },
+            {TAG_DONE                   }
+        };
+    WORD i;
 
 
-	/* nlorentz: Allocate a bitmap with the screen bitmap as friend. This
-	   way the HIDD knows how to blit from this bitmap onto the screen.
 
-	*/
-	patternbm = AllocBitMap(PATTERN_WIDTH
-	                        , PATTERN_HEIGHT
-	                        , PATTERN_DEPTH
-	                        , 0
-	                        , scr->RastPort.BitMap
-	                       );
+    InitBitMap(&bm, PATTERN_DEPTH, PATTERN_WIDTH, PATTERN_HEIGHT);
+    for(i = 0; i < PATTERN_DEPTH; i++)
+    {
+        bm.Planes[i] = (((UBYTE *)patterndata) + (i * PATTERN_PLANESIZE));
+    }
 
-	if (NULL != patternbm)
-	{
-		/* Blit the pattern into the allocated bitmap */
-		BltBitMap(&bm
-		          , 0, 0
-		          , patternbm
-		          , 0, 0
-		          , PATTERN_WIDTH, PATTERN_HEIGHT
-		          , 0xC0
-		          , 0xFF
-		          , NULL
-		         );
+    LoadRGB32(&scr->ViewPort, patterncoltab);
 
 
-		InitBackfillHook(IntuitionBase);
-		InstallLayerInfoHook(&scr->LayerInfo, &backfillhook);
-		tempwin = OpenWindowTagList(0,wintags);
-		if (tempwin) CloseWindow(tempwin);
+    /* nlorentz: Allocate a bitmap with the screen bitmap as friend. This
+       way the HIDD knows how to blit from this bitmap onto the screen.
 
-	}
-	else
-	{
-		/* If this doesn't succeed, then there is someting seriously wrong */
-		kprintf("COULD NOT CREATE PATTERN BITMAP in rom/intuition/lateintuiinit.c\n");
-		Alert(AT_DeadEnd);
-	}
+    */
+    patternbm = AllocBitMap(PATTERN_WIDTH
+                            , PATTERN_HEIGHT
+                            , PATTERN_DEPTH
+                            , 0
+                            , scr->RastPort.BitMap
+                           );
+
+    if (NULL != patternbm)
+    {
+        /* Blit the pattern into the allocated bitmap */
+        BltBitMap(&bm
+                  , 0, 0
+                  , patternbm
+                  , 0, 0
+                  , PATTERN_WIDTH, PATTERN_HEIGHT
+                  , 0xC0
+                  , 0xFF
+                  , NULL
+                 );
+
+
+        InitBackfillHook(IntuitionBase);
+        InstallLayerInfoHook(&scr->LayerInfo, &backfillhook);
+        tempwin = OpenWindowTagList(0,wintags);
+        if (tempwin) CloseWindow(tempwin);
+
+    }
+    else
+    {
+        /* If this doesn't succeed, then there is someting seriously wrong */
+        kprintf("COULD NOT CREATE PATTERN BITMAP in rom/intuition/lateintuiinit.c\n");
+        Alert(AT_DeadEnd);
+    }
 }
 
 #endif

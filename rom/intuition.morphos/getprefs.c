@@ -1,9 +1,9 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function GetPrefs()
-	Lang: english
+    Desc: Intuition function GetPrefs()
+    Lang: english
 */
 #include <proto/exec.h>
 #include "intuition_intern.h"
@@ -11,60 +11,60 @@
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH2(struct Preferences *, GetPrefs,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Preferences * , prefbuffer, A0),
-		 AROS_LHA(WORD                 , size, D0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Preferences * , prefbuffer, A0),
+         AROS_LHA(WORD                 , size, D0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 22, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 22, Intuition)
 
 /*  FUNCTION
-	Gets a copy of the current Preferences structure.
+    Gets a copy of the current Preferences structure.
  
-	INPUTS
-	prefbuffer - The buffer which contains your settings for the
-		preferences.
-	size - The number of bytes of the buffer you want to be copied.
+    INPUTS
+    prefbuffer - The buffer which contains your settings for the
+        preferences.
+    size - The number of bytes of the buffer you want to be copied.
  
-	RESULT
-	Returns your parameter buffer.
+    RESULT
+    Returns your parameter buffer.
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	GetDefPrefs(), SetPrefs()
+    SEE ALSO
+    GetDefPrefs(), SetPrefs()
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_GETPREFS(dprintf("GetPrefs: Buffer 0x%lx Size 0x%lx Inform %d\n",
-	                       prefbuffer, size));
+    DEBUG_GETPREFS(dprintf("GetPrefs: Buffer 0x%lx Size 0x%lx Inform %d\n",
+                           prefbuffer, size));
 
-	if(prefbuffer)
-	{
-		ULONG lock = LockIBase(0);
-		CopyMem(GetPrivIBase(IntuitionBase)->ActivePreferences,
-		        prefbuffer,
-		        size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
-		UnlockIBase(lock);
-	}
+    if(prefbuffer)
+    {
+        ULONG lock = LockIBase(0);
+        CopyMem(GetPrivIBase(IntuitionBase)->ActivePreferences,
+                prefbuffer,
+                size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
+        UnlockIBase(lock);
+    }
 
-	return (struct Preferences *)prefbuffer;
+    return (struct Preferences *)prefbuffer;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetPrefs */

@@ -23,15 +23,15 @@ AROS_LH2(UWORD, RemoveGadget,
          struct IntuitionBase *, IntuitionBase, 38, Intuition)
 
 /*  FUNCTION
-	Remove a gadget from the list of gadgets in a window.
+    Remove a gadget from the list of gadgets in a window.
  
     INPUTS
-	window - Remove the gadget from this list.
-	gadget - Remove this gadget.
+    window - Remove the gadget from this list.
+    gadget - Remove this gadget.
  
     RESULT
-	The position of the gadget or 0xFFFF if the gadget doesn't
-	exist or the gadget is the 65535th of the list.
+    The position of the gadget or 0xFFFF if the gadget doesn't
+    exist or the gadget is the 65535th of the list.
  
     NOTES
  
@@ -47,9 +47,9 @@ AROS_LH2(UWORD, RemoveGadget,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	return RemoveGList (window, gadget, 1);
-	AROS_LIBFUNC_EXIT
+    return RemoveGList (window, gadget, 1);
+    AROS_LIBFUNC_EXIT
 } /* RemoveGadget */

@@ -22,15 +22,15 @@ AROS_LH2(void, FreeScreenDrawInfo,
          struct IntuitionBase *, IntuitionBase, 116, Intuition)
 
 /*  FUNCTION
-	Tell intuition that you have finished work with struct DrawInfo
-	returned by GetScreenDrawInfo()
+    Tell intuition that you have finished work with struct DrawInfo
+    returned by GetScreenDrawInfo()
  
     INPUTS
-	screen - The screen you passed to GetScreenDrawInfo()
-	drawInfo - The DrawInfo structure returned by GetScreenDrawInfo()
+    screen - The screen you passed to GetScreenDrawInfo()
+    drawInfo - The DrawInfo structure returned by GetScreenDrawInfo()
  
     RESULT
-	None.
+    None.
  
     NOTES
  
@@ -39,28 +39,28 @@ AROS_LH2(void, FreeScreenDrawInfo,
     BUGS
  
     SEE ALSO
-	GetScreenDrawInfo()
+    GetScreenDrawInfo()
  
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_FREESCREENDRAWINFO(dprintf("FreeScreenDrawInfo: Screen 0x%lx DrawInfo 0x%lx\n",
-	                                 screen, drawInfo));
+    DEBUG_FREESCREENDRAWINFO(dprintf("FreeScreenDrawInfo: Screen 0x%lx DrawInfo 0x%lx\n",
+                                     screen, drawInfo));
 
-	/* shut up the compiler */
-	IntuitionBase = IntuitionBase;
-	drawInfo = drawInfo;
-	screen = screen;
+    /* shut up the compiler */
+    IntuitionBase = IntuitionBase;
+    drawInfo = drawInfo;
+    screen = screen;
 
-	return;
+    return;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeScreenDrawInfo */

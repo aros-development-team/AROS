@@ -1,9 +1,9 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function HideWindow()
-	Lang: english
+    Desc: Intuition function HideWindow()
+    Lang: english
 */
 #include <proto/layers.h>
 #include "showhide.h"
@@ -15,136 +15,136 @@
 #undef ChangeLayerVisibility
 struct HideWindowActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Window *window;
 };
 
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase);
+                           struct IntuitionBase *IntuitionBase);
 #endif
 
 #ifdef ChangeLayerVisibility
 struct HideWindowActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Window *window;
 };
 
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase);
+                           struct IntuitionBase *IntuitionBase);
 #endif
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH1(VOID, HideWindow,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 141, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 141, Intuition)
 
 /*  FUNCTION
-		Make a window invisible.
+        Make a window invisible.
  
-	INPUTS
-	window - The window to affect.
+    INPUTS
+    window - The window to affect.
  
-	RESULT
+    RESULT
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #ifdef CGXSHOWHIDESUPPORT
-	struct HideWindowActionMsg msg;
+    struct HideWindowActionMsg msg;
 
-	DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", (ULONG) window));
+    DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", (ULONG) window));
 
-	SANITY_CHECK(window)
-	if (window->Flags & WFLG_BACKDROP) return;
+    SANITY_CHECK(window)
+    if (window->Flags & WFLG_BACKDROP) return;
 
-	msg.window = window;
-	DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
+    msg.window = window;
+    DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
 #endif
 
 #ifdef ChangeLayerVisibility
-	struct HideWindowActionMsg msg;
+    struct HideWindowActionMsg msg;
 
-	DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", window));
+    DEBUG_HIDEWINDOW(dprintf("HideWindow: Window 0x%lx\n", window));
 
-	msg.window = window;
-	DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
+    msg.window = window;
+    DoASyncAction((APTR)int_hidewindow, &msg.msg, sizeof(msg), IntuitionBase);
 #endif
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* HideWindow */
 
 
 #ifdef CGXSHOWHIDESUPPORT
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase)
+                           struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Library *CGXSystemBase;
+    struct Window *window = msg->window;
+    struct Library *CGXSystemBase;
 
-	if (!window) return;
-	if (window->Flags & WFLG_BACKDROP) return;
+    if (!window) return;
+    if (window->Flags & WFLG_BACKDROP) return;
 
-	if (((struct IntWindow *)(window))->specialflags & SPFLAG_NOICONIFY) return;
+    if (((struct IntWindow *)(window))->specialflags & SPFLAG_NOICONIFY) return;
 
-	if ((CGXSystemBase = OpenLibrary("cgxsystem.library", 0)))
-	{
-		CGXHideWindow(window);
-		((struct IntWindow *)(window))->specialflags |= SPFLAG_ICONIFIED;
-		CloseLibrary(CGXSystemBase);
-	}
+    if ((CGXSystemBase = OpenLibrary("cgxsystem.library", 0)))
+    {
+        CGXHideWindow(window);
+        ((struct IntWindow *)(window))->specialflags |= SPFLAG_ICONIFIED;
+        CloseLibrary(CGXSystemBase);
+    }
 };
 #endif
 
 #ifdef ChangeLayerVisibility
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase)
+                           struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Screen *screen = window->WScreen;
+    struct Window *window = msg->window;
+    struct Screen *screen = window->WScreen;
 
-	if (!IsWindowVisible(window))
-	{
-		struct Requester *req;
+    if (!IsWindowVisible(window))
+    {
+        struct Requester *req;
 
-		LOCK_REFRESH(screen);
+        LOCK_REFRESH(screen);
 
-		if (BLAYER(window))
-		{
-			ChangeLayerVisibility(BLAYER(window), FALSE);
-		}
-		ChangeLayerVisibility(WLAYER(window), FALSE);
+        if (BLAYER(window))
+        {
+            ChangeLayerVisibility(BLAYER(window), FALSE);
+        }
+        ChangeLayerVisibility(WLAYER(window), FALSE);
 
-		for (req = window->FirstRequest; req; req = req->OlderRequest)
-		{
-			ChangeLayerVisibility(req->ReqLayer, FALSE);
-		}
+        for (req = window->FirstRequest; req; req = req->OlderRequest)
+        {
+            ChangeLayerVisibility(req->ReqLayer, FALSE);
+        }
 
-		UNLOCK_REFRESH(screen);
+        UNLOCK_REFRESH(screen);
 
-		CheckLayers(screen, IntuitionBase);
-	}
+        CheckLayers(screen, IntuitionBase);
+    }
 }
 #endif

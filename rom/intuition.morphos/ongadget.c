@@ -1,86 +1,86 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
  
-	Desc:
-	Lang: english
+    Desc:
+    Lang: english
 */
 #include "intuition_intern.h"
 #include <intuition/gadgetclass.h>
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
 AROS_LH3(void, OnGadget,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Gadget    *, gadget, A0),
-		 AROS_LHA(struct Window    *, window, A1),
-		 AROS_LHA(struct Requester *, requester, A2),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Gadget    *, gadget, A0),
+         AROS_LHA(struct Window    *, window, A1),
+         AROS_LHA(struct Requester *, requester, A2),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 31, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 31, Intuition)
 
 /*  FUNCTION
-	Enable a gadget. It will appear normal.
+    Enable a gadget. It will appear normal.
  
-	INPUTS
-	gadget - The gadget to deactivate
-	window - The window, the gadget is in
-	requester - The requester, the gadget is in or NULL if the
-		gadget is in no requester
+    INPUTS
+    gadget - The gadget to deactivate
+    window - The window, the gadget is in
+    requester - The requester, the gadget is in or NULL if the
+        gadget is in no requester
  
-	RESULT
-	None.
+    RESULT
+    None.
  
-	NOTES
-	This function will update the gadget (unlike the original function
-	which would update all gadgets in the window).
+    NOTES
+    This function will update the gadget (unlike the original function
+    which would update all gadgets in the window).
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_ONGADGET(dprintf("OnGadget: gadget 0x%lx window 0x%lx req 0x%lx\n",
-	                       gadget, window, requester));
+    DEBUG_ONGADGET(dprintf("OnGadget: gadget 0x%lx window 0x%lx req 0x%lx\n",
+                           gadget, window, requester));
 
-	SANITY_CHECK(window)
-	SANITY_CHECK(gadget)
+    SANITY_CHECK(window)
+    SANITY_CHECK(gadget)
 
-	if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
-	{
-		struct TagItem set_tags[] =
-		    {
-			    {
-				    GA_Disabled, FALSE
-			    },
-			    {TAG_END	    	}
-		    };
+    if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
+    {
+        struct TagItem set_tags[] =
+            {
+                {
+                    GA_Disabled, FALSE
+                },
+                {TAG_END            }
+            };
 
-		SetGadgetAttrsA(gadget, window, requester, set_tags);
-	}
-	else
-	{
-		Forbid();
-		gadget->Flags &= ~GFLG_DISABLED;
-		Permit();
-	}
+        SetGadgetAttrsA(gadget, window, requester, set_tags);
+    }
+    else
+    {
+        Forbid();
+        gadget->Flags &= ~GFLG_DISABLED;
+        Permit();
+    }
 
-	RefreshGList (gadget, window, requester, 1);
+    RefreshGList (gadget, window, requester, 1);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* OnGadget */

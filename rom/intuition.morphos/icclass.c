@@ -38,7 +38,7 @@
 #include "intuition_intern.h"
 #include "icclass.h"
 
-#define	DEBUG_IC(x)	;
+#define DEBUG_IC(x) ;
 
 /**********************************************************************************************/
 
@@ -54,143 +54,143 @@ AROS_UFH3S(IPTR, dispatch_icclass,
            AROS_UFHA(Msg,      msg, A1)
           )
 {
-	AROS_USERFUNC_INIT
+    AROS_USERFUNC_INIT
 
-	struct IntuiBase *IntuitionBase = (struct IntuiBase *)cl->cl_UserData;
-	struct ICData	*ic = NULL;
-	IPTR		retval = 0UL;
+    struct IntuiBase *IntuitionBase = (struct IntuiBase *)cl->cl_UserData;
+    struct ICData   *ic = NULL;
+    IPTR        retval = 0UL;
 
-	DEBUG_IC(dprintf("dispatch_icclass: Cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
+    DEBUG_IC(dprintf("dispatch_icclass: Cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
 
-	if (msg->MethodID != OM_NEW)
-		ic = INST_DATA(cl, o);
+    if (msg->MethodID != OM_NEW)
+        ic = INST_DATA(cl, o);
 
-	switch(msg->MethodID)
-	{
-	case OM_NEW:
-		DEBUG_IC(dprintf("dispatch_icclass: OM_NEW\n"));
-		retval = DoSuperMethodA(cl, o, msg);
+    switch(msg->MethodID)
+    {
+    case OM_NEW:
+        DEBUG_IC(dprintf("dispatch_icclass: OM_NEW\n"));
+        retval = DoSuperMethodA(cl, o, msg);
 
-		if (!retval)
-			break;
+        if (!retval)
+            break;
 
-		ic = INST_DATA(cl, retval);
+        ic = INST_DATA(cl, retval);
 
-		/* set some defaults */
-		ic->ic_Target	 = NULL;
-		ic->ic_Mapping	 = NULL;
-		ic->ic_CloneTags = NULL;
+        /* set some defaults */
+        ic->ic_Target    = NULL;
+        ic->ic_Mapping   = NULL;
+        ic->ic_CloneTags = NULL;
 
-		/* Handle our special tags - overrides defaults */
-		/* Fall through */
+        /* Handle our special tags - overrides defaults */
+        /* Fall through */
 
-	case OM_SET:
-		{
-			struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
-			struct TagItem *tag;
+    case OM_SET:
+        {
+            struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
+            struct TagItem *tag;
 
-			DEBUG_IC(dprintf("dispatch_icclass: OM_SET\n"));
-			while ((tag = NextTagItem((struct TagItem **)&tstate)))
-			{
-				switch(tag->ti_Tag)
-				{
-				case ICA_MAP:
-					ic->ic_Mapping = (struct TagItem *)tag->ti_Data;
-					break;
+            DEBUG_IC(dprintf("dispatch_icclass: OM_SET\n"));
+            while ((tag = NextTagItem((struct TagItem **)&tstate)))
+            {
+                switch(tag->ti_Tag)
+                {
+                case ICA_MAP:
+                    ic->ic_Mapping = (struct TagItem *)tag->ti_Data;
+                    break;
 
-				case ICA_TARGET:
-					ic->ic_Target = (Object *)tag->ti_Data;
-					break;
-				}
-			}
-			DEBUG_IC(dprintf("dispatch_icclass: OM_SET Map 0x%lx Target 0x%lx\n",ic->ic_Mapping,ic->ic_Target));
-		}
-		break;
+                case ICA_TARGET:
+                    ic->ic_Target = (Object *)tag->ti_Data;
+                    break;
+                }
+            }
+            DEBUG_IC(dprintf("dispatch_icclass: OM_SET Map 0x%lx Target 0x%lx\n",ic->ic_Mapping,ic->ic_Target));
+        }
+        break;
 
-	case OM_UPDATE: /* Maxon HotHelp says so and for example relied upon by modelclass */
-		DEBUG_IC(dprintf("dispatch_icclass: OM_UPDATE\n"));
-	case OM_NOTIFY:
-		/* Send update notification to target
-		*/
-		DEBUG_IC(dprintf("dispatch_icclass: OM_NOTIFY\n"));
-		DEBUG_IC(dprintf("dispatch_icclass: DoNotify\n"));
-		retval = DoNotify(cl, o, INST_DATA(cl, o), (struct opUpdate *)msg);
-		DEBUG_IC(dprintf("dispatch_icclass: DoNotify done\n"));
-		break;
+    case OM_UPDATE: /* Maxon HotHelp says so and for example relied upon by modelclass */
+        DEBUG_IC(dprintf("dispatch_icclass: OM_UPDATE\n"));
+    case OM_NOTIFY:
+        /* Send update notification to target
+        */
+        DEBUG_IC(dprintf("dispatch_icclass: OM_NOTIFY\n"));
+        DEBUG_IC(dprintf("dispatch_icclass: DoNotify\n"));
+        retval = DoNotify(cl, o, INST_DATA(cl, o), (struct opUpdate *)msg);
+        DEBUG_IC(dprintf("dispatch_icclass: DoNotify done\n"));
+        break;
 
-	case OM_DISPOSE:
-		DEBUG_IC(dprintf("dispatch_icclass: OM_DISPOSE\n"));
-		FreeICData(INST_DATA(cl, o));
-		DoSuperMethodA(cl, o, msg);
-		break;
+    case OM_DISPOSE:
+        DEBUG_IC(dprintf("dispatch_icclass: OM_DISPOSE\n"));
+        FreeICData(INST_DATA(cl, o));
+        DoSuperMethodA(cl, o, msg);
+        break;
 
-	case OM_GET:
-		DEBUG_IC(dprintf("dispatch_icclass: OM_GET\n"));
-		switch (((struct opGet *)msg)->opg_AttrID)
-		{
-		case ICA_MAP:
-			*((struct opGet *)msg)->opg_Storage = (ULONG)ic->ic_Mapping;
-			break;
+    case OM_GET:
+        DEBUG_IC(dprintf("dispatch_icclass: OM_GET\n"));
+        switch (((struct opGet *)msg)->opg_AttrID)
+        {
+        case ICA_MAP:
+            *((struct opGet *)msg)->opg_Storage = (ULONG)ic->ic_Mapping;
+            break;
 
-		case ICA_TARGET:
-			*((struct opGet *)msg)->opg_Storage = (ULONG)ic->ic_Target;
-			break;
-		}
+        case ICA_TARGET:
+            *((struct opGet *)msg)->opg_Storage = (ULONG)ic->ic_Target;
+            break;
+        }
 
-		break;
+        break;
 
-		/*
-		    NOTE: I current don't see the purpose of the ICM_* methods
-		    this implementation could be WAY off base...
+        /*
+            NOTE: I current don't see the purpose of the ICM_* methods
+            this implementation could be WAY off base...
 
-		    stegerg: well, it is for example needed by modeclass which is
-		    a superclass of icclass.
+            stegerg: well, it is for example needed by modeclass which is
+            a superclass of icclass.
 
-		    IMPORTANT: ICM_SETLOOP, ICM_CLEARLOOP, ICM_CHECKLOOP are also
-		    handled by gadgetclass: change here <-> change there!
+            IMPORTANT: ICM_SETLOOP, ICM_CLEARLOOP, ICM_CHECKLOOP are also
+            handled by gadgetclass: change here <-> change there!
 
-		*/
+        */
 
-	case  ICM_SETLOOP:	      /* set/increment loop counter    */
-		{
-			struct ICData *ic = INST_DATA(cl, o);
+    case  ICM_SETLOOP:        /* set/increment loop counter    */
+        {
+            struct ICData *ic = INST_DATA(cl, o);
 
-			ic->ic_LoopCounter += 1UL;
-			DEBUG_IC(dprintf("dispatch_icclass: ICM_SETLOOP new LoopCounter %ld\n",ic->ic_LoopCounter));
-		}
+            ic->ic_LoopCounter += 1UL;
+            DEBUG_IC(dprintf("dispatch_icclass: ICM_SETLOOP new LoopCounter %ld\n",ic->ic_LoopCounter));
+        }
 
-		break;
+        break;
 
-	case  ICM_CLEARLOOP:    /* clear/decrement loop counter */
-		{
-			struct ICData *ic = INST_DATA(cl, o);
+    case  ICM_CLEARLOOP:    /* clear/decrement loop counter */
+        {
+            struct ICData *ic = INST_DATA(cl, o);
 
-			ic->ic_LoopCounter -= 1UL;
-			DEBUG_IC(dprintf("dispatch_icclass: ICM_CLEAR new LoopCounter %ld\n",ic->ic_LoopCounter));
-		}
+            ic->ic_LoopCounter -= 1UL;
+            DEBUG_IC(dprintf("dispatch_icclass: ICM_CLEAR new LoopCounter %ld\n",ic->ic_LoopCounter));
+        }
 
-		break;
+        break;
 
-	case  ICM_CHECKLOOP:    /* set/increment loop	 */
-		{
-			struct ICData *ic = INST_DATA(cl, o);
+    case  ICM_CHECKLOOP:    /* set/increment loop    */
+        {
+            struct ICData *ic = INST_DATA(cl, o);
 
-			DEBUG_IC(dprintf("dispatch_icclass: ICM_CHECKLOOP new LoopCounter %ld\n",ic->ic_LoopCounter));
-			retval = (IPTR)ic->ic_LoopCounter;
-		}
+            DEBUG_IC(dprintf("dispatch_icclass: ICM_CHECKLOOP new LoopCounter %ld\n",ic->ic_LoopCounter));
+            retval = (IPTR)ic->ic_LoopCounter;
+        }
 
-		break;
+        break;
 
-	default:
-		retval = DoSuperMethodA(cl, o, msg);
-		break;
+    default:
+        retval = DoSuperMethodA(cl, o, msg);
+        break;
 
-	} /* switch */
+    } /* switch */
 
-	DEBUG_IC(dprintf("dispatch_icclass: retval 0x%lx\n",retval));
-	return retval;
+    DEBUG_IC(dprintf("dispatch_icclass: retval 0x%lx\n",retval));
+    return retval;
 
-	AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }  /* dispatch_icclass */
 
 #undef IntuitionBase
@@ -199,20 +199,20 @@ AROS_UFH3S(IPTR, dispatch_icclass,
 
 struct IClass *InitICClass (struct IntuitionBase *IntuitionBase)
 {
-	struct IClass *cl = NULL;
+    struct IClass *cl = NULL;
 
-	/* This is the code to make the icclass...
-	*/
-	if ( (cl = MakeClass(ICCLASS, ROOTCLASS, NULL, sizeof(struct ICData), 0)) )
-	{
-		cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_icclass);
-		cl->cl_Dispatcher.h_SubEntry = NULL;
-		cl->cl_UserData		     = (IPTR)IntuitionBase;
+    /* This is the code to make the icclass...
+    */
+    if ( (cl = MakeClass(ICCLASS, ROOTCLASS, NULL, sizeof(struct ICData), 0)) )
+    {
+        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_icclass);
+        cl->cl_Dispatcher.h_SubEntry = NULL;
+        cl->cl_UserData          = (IPTR)IntuitionBase;
 
-		AddClass (cl);
-	}
+        AddClass (cl);
+    }
 
-	return (cl);
+    return (cl);
 }
 
 /**********************************************************************************************/

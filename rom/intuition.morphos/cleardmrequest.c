@@ -23,7 +23,7 @@ AROS_LH1(BOOL, ClearDMRequest,
 /*  FUNCTION
  
     INPUTS
-	window - The window from which the DMRequest is to be cleared
+    window - The window from which the DMRequest is to be cleared
  
     RESULT
  
@@ -34,7 +34,7 @@ AROS_LH1(BOOL, ClearDMRequest,
     BUGS
  
     SEE ALSO
-	SetDMRequest(), Request()
+    SetDMRequest(), Request()
  
     INTERNALS
  
@@ -42,10 +42,10 @@ AROS_LH1(BOOL, ClearDMRequest,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	return SetDMRequest(window, NULL);
+    return SetDMRequest(window, NULL);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ClearDMRequest */

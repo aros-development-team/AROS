@@ -1,9 +1,9 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function ShowWindow()
-	Lang: english
+    Desc: Intuition function ShowWindow()
+    Lang: english
 */
 #include <proto/layers.h>
 #include "showhide.h"
@@ -15,134 +15,134 @@
 #undef ChangeLayerVisibility
 struct ShowWindowActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Window *window;
 };
 
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase);
+                           struct IntuitionBase *IntuitionBase);
 #endif
 
 #ifdef ChangeLayerVisibility
 struct ShowWindowActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Window *window;
 };
 
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase);
+                           struct IntuitionBase *IntuitionBase);
 #endif
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH1(VOID, ShowWindow,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 140, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 140, Intuition)
 
 /*  FUNCTION
-		Make a window visible. This function does not bring the
-		window back into the visible area of the screen but rather
-		switches it into visible state.
+        Make a window visible. This function does not bring the
+        window back into the visible area of the screen but rather
+        switches it into visible state.
  
  
-	INPUTS
-	window - The window to affect.
+    INPUTS
+    window - The window to affect.
  
-	RESULT
+    RESULT
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #ifdef CGXSHOWHIDESUPPORT
-	struct ShowWindowActionMsg msg;
+    struct ShowWindowActionMsg msg;
 
-	DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%lx\n", window));
+    DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%lx\n", window));
 
-	SANITY_CHECK(window)
+    SANITY_CHECK(window)
 
-	msg.window = window;
-	DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
+    msg.window = window;
+    DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
 #endif
 
 #ifdef ChangeLayerVisibility
-	struct ShowWindowActionMsg msg;
+    struct ShowWindowActionMsg msg;
 
-	DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%lx\n", window));
+    DEBUG_SHOWWINDOW(dprintf("ShowWindow: Window 0x%lx\n", window));
 
-	msg.window = window;
-	DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
+    msg.window = window;
+    DoASyncAction((APTR)int_showwindow, &msg.msg, sizeof(msg), IntuitionBase);
 #endif
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ShowWindow */
 
 #ifdef CGXSHOWHIDESUPPORT
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase)
+                           struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Library *CGXSystemBase;
+    struct Window *window = msg->window;
+    struct Library *CGXSystemBase;
 
-	SANITY_CHECK(window)
-	if ((CGXSystemBase = OpenLibrary("cgxsystem.library", 0)))
-	{
-		CGXShowWindow(window);
-		((struct IntWindow *)(window))->specialflags &= ~SPFLAG_ICONIFIED;
-		CloseLibrary(CGXSystemBase);
-		ActivateWindow(window);
-	}
+    SANITY_CHECK(window)
+    if ((CGXSystemBase = OpenLibrary("cgxsystem.library", 0)))
+    {
+        CGXShowWindow(window);
+        ((struct IntWindow *)(window))->specialflags &= ~SPFLAG_ICONIFIED;
+        CloseLibrary(CGXSystemBase);
+        ActivateWindow(window);
+    }
 };
 #endif
 
 #ifdef ChangeLayerVisibility
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase)
+                           struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Screen *screen = window->WScreen;
+    struct Window *window = msg->window;
+    struct Screen *screen = window->WScreen;
 
-	if (!IsWindowVisible(window))
-	{
-		struct Requester *req;
+    if (!IsWindowVisible(window))
+    {
+        struct Requester *req;
 
-		LOCK_REFRESH(screen);
+        LOCK_REFRESH(screen);
 
-		if (BLAYER(window))
-		{
-			ChangeLayerVisibility(BLAYER(window), TRUE);
-		}
-		ChangeLayerVisibility(WLAYER(window), TRUE);
+        if (BLAYER(window))
+        {
+            ChangeLayerVisibility(BLAYER(window), TRUE);
+        }
+        ChangeLayerVisibility(WLAYER(window), TRUE);
 
-		for (req = window->FirstRequest; req; req = req->OlderRequest)
-		{
-			ChangeLayerVisibility(req->ReqLayer, TRUE);
-		}
+        for (req = window->FirstRequest; req; req = req->OlderRequest)
+        {
+            ChangeLayerVisibility(req->ReqLayer, TRUE);
+        }
 
-		CheckLayers(screen, IntuitionBase);
+        CheckLayers(screen, IntuitionBase);
 
-		UNLOCK_REFRESH(screen);
-	}
+        UNLOCK_REFRESH(screen);
+    }
 }
 #endif

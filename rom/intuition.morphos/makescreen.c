@@ -1,70 +1,70 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function MakeScreen()
-	Lang: english
+    Desc: Intuition function MakeScreen()
+    Lang: english
 */
 #include <proto/graphics.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH1(LONG, MakeScreen,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Screen *, screen, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Screen *, screen, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 63, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 63, Intuition)
 
 /*  FUNCTION
  
-	INPUTS
-	Pointer to your custom screen.
+    INPUTS
+    Pointer to your custom screen.
  
-	RESULT
-	Zero for success, non-zero for failure.
+    RESULT
+    Zero for success, non-zero for failure.
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	RemakeDisplay(), RethinkDisplay(), graphics.library/MakeVPort(),
+    SEE ALSO
+    RemakeDisplay(), RethinkDisplay(), graphics.library/MakeVPort(),
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	LONG failure = TRUE;
-	ULONG ilock = LockIBase(0);
+    LONG failure = TRUE;
+    ULONG ilock = LockIBase(0);
 
-	if (screen)
-	{
-		if ((screen->ViewPort.Modes ^ IntuitionBase->ViewLord.Modes) & LACE)
-		{
-			failure = RemakeDisplay();
-		}
-		else
-		{
-			failure = MakeVPort(&IntuitionBase->ViewLord, &screen->ViewPort);
-		}
-	}
+    if (screen)
+    {
+        if ((screen->ViewPort.Modes ^ IntuitionBase->ViewLord.Modes) & LACE)
+        {
+            failure = RemakeDisplay();
+        }
+        else
+        {
+            failure = MakeVPort(&IntuitionBase->ViewLord, &screen->ViewPort);
+        }
+    }
 
-	UnlockIBase(ilock);
+    UnlockIBase(ilock);
 
-	return failure;
+    return failure;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* MakeScreen */

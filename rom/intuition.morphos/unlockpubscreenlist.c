@@ -41,23 +41,23 @@ AROS_LH0(VOID, UnlockPubScreenList,
  
     HISTORY
         21-06-98    SDuvan  Implemented
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 #define GPB(x) GetPrivIBase(x)
 
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_UNLOCKPUBSCREENLIST(dprintf("UnLockPubScreenList: <%s>\n",
-	                                  FindTask(NULL)->tc_Node.ln_Name));
+    DEBUG_UNLOCKPUBSCREENLIST(dprintf("UnLockPubScreenList: <%s>\n",
+                                      FindTask(NULL)->tc_Node.ln_Name));
 
-	ReleaseSemaphore(&GPB(IntuitionBase)->PubScrListLock);
+    ReleaseSemaphore(&GPB(IntuitionBase)->PubScrListLock);
 
-	DEBUG_UNLOCKPUBSCREENLIST(dprintf("UnLockPubScreenList: done\n"));
+    DEBUG_UNLOCKPUBSCREENLIST(dprintf("UnLockPubScreenList: done\n"));
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* UnlockPubScreenList */
 

@@ -1,9 +1,9 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function EndRequest()
-	Lang: english
+    Desc: Intuition function EndRequest()
+    Lang: english
 */
 #include <proto/layers.h>
 #include "intuition_intern.h"
@@ -12,125 +12,125 @@
 
 struct EndRequestActionMsg
 {
-	struct IntuiActionMsg msg;
-	struct Requester *requester;
-	struct Window *window;
+    struct IntuiActionMsg msg;
+    struct Requester *requester;
+    struct Window *window;
 };
 
 static VOID int_endrequest(struct EndRequestActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase);
+                           struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH2(void, EndRequest,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Requester *, requester, A0),
-		 AROS_LHA(struct Window *   , window, A1),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Requester *, requester, A0),
+         AROS_LHA(struct Window *   , window, A1),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 20, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 20, Intuition)
 
 /*  FUNCTION
-	Remove a requester from the specified window.
-	Other open requesters of this window stay alive.
+    Remove a requester from the specified window.
+    Other open requesters of this window stay alive.
  
-	INPUTS
-	requester - The requester to be deleted
-	window - The window to which the requester belongs
+    INPUTS
+    requester - The requester to be deleted
+    window - The window to which the requester belongs
  
-	RESULT
-	None.
+    RESULT
+    None.
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	InitRequester(), Request()
+    SEE ALSO
+    InitRequester(), Request()
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct EndRequestActionMsg msg;
+    struct EndRequestActionMsg msg;
 
-	DEBUG_REQUEST(dprintf("EndRequest: req 0x%lx window 0x%lx\n", requester, window));
+    DEBUG_REQUEST(dprintf("EndRequest: req 0x%lx window 0x%lx\n", requester, window));
 
-	SANITY_CHECK(window)
-	SANITY_CHECK(requester)
+    SANITY_CHECK(window)
+    SANITY_CHECK(requester)
 
-	msg.requester = requester;
-	msg.window = window;
+    msg.requester = requester;
+    msg.window = window;
 
-	DoSyncAction((APTR)int_endrequest, &msg.msg, IntuitionBase);
+    DoSyncAction((APTR)int_endrequest, &msg.msg, IntuitionBase);
 
-	DEBUG_REQUEST(dprintf("EndRequest: removed succesfuly\n"));
+    DEBUG_REQUEST(dprintf("EndRequest: removed succesfuly\n"));
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* EndRequest */
 
 
 static VOID int_endrequest(struct EndRequestActionMsg *msg,
-						   struct IntuitionBase *IntuitionBase)
+                           struct IntuitionBase *IntuitionBase)
 {
-	struct Window *window = msg->window;
-	struct Requester *requester = msg->requester;
-	struct Requester *p = window->FirstRequest;
-	// struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-	// int i;
+    struct Window *window = msg->window;
+    struct Requester *requester = msg->requester;
+    struct Requester *p = window->FirstRequest;
+    // struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    // int i;
 
-	//jDc: intuition68k doesn't care (tested)
-	//if (requester->Flags & REQACTIVE)
-	{
-		LOCKWINDOWLAYERS(window);
-		
-		if (p == requester)
-		{
-			window->FirstRequest = requester->OlderRequest;//unliked
-		} else {
-			while (p && (p->OlderRequest != requester))
-				p = p->OlderRequest;
+    //jDc: intuition68k doesn't care (tested)
+    //if (requester->Flags & REQACTIVE)
+    {
+        LOCKWINDOWLAYERS(window);
+        
+        if (p == requester)
+        {
+            window->FirstRequest = requester->OlderRequest;//unliked
+        } else {
+            while (p && (p->OlderRequest != requester))
+                p = p->OlderRequest;
 
-			if (p)
-			{
-				p->OlderRequest = requester->OlderRequest;//unlinked
-			}
-		}
+            if (p)
+            {
+                p->OlderRequest = requester->OlderRequest;//unlinked
+            }
+        }
 
-		if (p)
-		{
-			struct Screen *screen = window->WScreen;
+        if (p)
+        {
+            struct Screen *screen = window->WScreen;
 
-			--window->ReqCount;
-			requester->Flags &= ~REQACTIVE;
+            --window->ReqCount;
+            requester->Flags &= ~REQACTIVE;
 
-			LOCK_REFRESH(screen);
-			if (requester->ReqLayer) DeleteLayer(0, requester->ReqLayer);
-			requester->OlderRequest = 0;
-			requester->ReqLayer = 0; //sanity
-			CheckLayers(screen, IntuitionBase);
-			UNLOCK_REFRESH(screen);
+            LOCK_REFRESH(screen);
+            if (requester->ReqLayer) DeleteLayer(0, requester->ReqLayer);
+            requester->OlderRequest = 0;
+            requester->ReqLayer = 0; //sanity
+            CheckLayers(screen, IntuitionBase);
+            UNLOCK_REFRESH(screen);
 
-			ih_fire_intuimessage(window,
-			                     IDCMP_REQCLEAR,
-			                     0,
-			                     window,
-			                     IntuitionBase);
+            ih_fire_intuimessage(window,
+                                 IDCMP_REQCLEAR,
+                                 0,
+                                 window,
+                                 IntuitionBase);
 
 
-		}
+        }
 
-		UNLOCKWINDOWLAYERS(window);
-	}
+        UNLOCKWINDOWLAYERS(window);
+    }
 }

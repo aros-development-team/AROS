@@ -47,27 +47,27 @@ AROS_LH4(BOOL, TimedDisplayAlert,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
 #ifdef __MORPHOS__
 
-	return int_TimedDisplayAlert(alertnumber, string, height, time, IntuitionBase);
+    return int_TimedDisplayAlert(alertnumber, string, height, time, IntuitionBase);
 
 #else
 
 #warning TODO: Write intuition/TimedDisplayAlert()
-	aros_print_not_implemented ("TimedDisplayAlert");
+    aros_print_not_implemented ("TimedDisplayAlert");
 
-	/* shut up the compiler */
-	IntuitionBase = IntuitionBase;
+    /* shut up the compiler */
+    IntuitionBase = IntuitionBase;
         alertnumber = alertnumber;
         string = string;
         height = height;
         time = time;
 
-	return FALSE;
+    return FALSE;
 
 #endif
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* TimedDisplayAlert */

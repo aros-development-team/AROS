@@ -1,74 +1,74 @@
 /*
-	(C) 1995-96 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-96 AROS - The Amiga Research OS
+    $Id$
  
-	Desc:
-	Lang: english
+    Desc:
+    Lang: english
 */
 #include "intuition_intern.h"
 #include <exec/exec.h>
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH1(struct IntuiMessage *, AllocIntuiMessage,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 148, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 148, Intuition)
 
 /*  FUNCTION
-	Private to AROS: allocate an IntuiMessage. IntuiMessage->Window
-	will be set to window by this function.
+    Private to AROS: allocate an IntuiMessage. IntuiMessage->Window
+    will be set to window by this function.
  
-	INPUTS
-	window - The window to which the IntuiMessage will be sent
+    INPUTS
+    window - The window to which the IntuiMessage will be sent
  
-	RESULT
-	an allocated IntuiMessage structure. Must be freed with FreeIntuiMessage
+    RESULT
+    an allocated IntuiMessage structure. Must be freed with FreeIntuiMessage
  
-	NOTES
+    NOTES
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
+    SEE ALSO
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct IntuiMessage *msg;
+    struct IntuiMessage *msg;
 
-	ASSERT_VALID_PTR(window);
+    ASSERT_VALID_PTR(window);
 
-	SANITY_CHECKR(window,0)
+    SANITY_CHECKR(window,0)
 
-	if ((msg = AllocPooled(GetPrivIBase(IntuitionBase)->IDCMPPool,sizeof(struct IntIntuiMessage))))
-	{
-		memclr(msg,sizeof(struct IntIntuiMessage));
+    if ((msg = AllocPooled(GetPrivIBase(IntuitionBase)->IDCMPPool,sizeof(struct IntIntuiMessage))))
+    {
+        memclr(msg,sizeof(struct IntIntuiMessage));
 
-		msg->ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
-		msg->ExecMessage.mn_Length       = sizeof(struct ExtIntuiMessage);
-		msg->ExecMessage.mn_ReplyPort    = window->WindowPort;
+        msg->ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
+        msg->ExecMessage.mn_Length       = sizeof(struct ExtIntuiMessage);
+        msg->ExecMessage.mn_ReplyPort    = window->WindowPort;
 
-		msg->IDCMPWindow		 = window;
-	}
+        msg->IDCMPWindow         = window;
+    }
 
-	DEBUG_ALLOCINTUIMESSAGE(dprintf("AllocIntuiMessage: Window 0x%lx Port 0x%lx Msg 0x%lx\n",
-	                                window, window->WindowPort, msg));
+    DEBUG_ALLOCINTUIMESSAGE(dprintf("AllocIntuiMessage: Window 0x%lx Port 0x%lx Msg 0x%lx\n",
+                                    window, window->WindowPort, msg));
 
-	return msg;
+    return msg;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }

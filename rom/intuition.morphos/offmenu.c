@@ -22,15 +22,15 @@ AROS_LH2(void, OffMenu,
          struct IntuitionBase *, IntuitionBase, 30, Intuition)
 
 /*  FUNCTION
-	Disable a whole menu, an item or a sub-item depending on
-	the menunumber.
+    Disable a whole menu, an item or a sub-item depending on
+    the menunumber.
  
     INPUTS
-	window - The window, the menu belongs to
-	menunumber - The packed information on what piece of menu to disable
+    window - The window, the menu belongs to
+    menunumber - The packed information on what piece of menu to disable
  
     RESULT
-	None.
+    None.
  
     NOTES
  
@@ -39,7 +39,7 @@ AROS_LH2(void, OffMenu,
     BUGS
  
     SEE ALSO
-	OnMenu(), ResetMenuStrip()
+    OnMenu(), ResetMenuStrip()
  
     INTERNALS
  
@@ -47,56 +47,56 @@ AROS_LH2(void, OffMenu,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	int i;
-	struct Menu * thismenu;
-	struct MenuItem * thisitem;
+    int i;
+    struct Menu * thismenu;
+    struct MenuItem * thisitem;
 
-	DEBUG_OFFMENU(dprintf("OffMenu: Window 0x%lx MenuNumber 0x%lx\n", window, menunumber));
+    DEBUG_OFFMENU(dprintf("OffMenu: Window 0x%lx MenuNumber 0x%lx\n", window, menunumber));
 
-	IntuitionBase = IntuitionBase;  /* shut up the compiler */
+    IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
-	thismenu = window->MenuStrip;
-	if (MENUNUM(menunumber) != NOMENU)
-	{
-		for (i = 0; i < MENUNUM(menunumber) && thismenu; i++)
-		{
-			thismenu = thismenu->NextMenu;
-		}
+    thismenu = window->MenuStrip;
+    if (MENUNUM(menunumber) != NOMENU)
+    {
+        for (i = 0; i < MENUNUM(menunumber) && thismenu; i++)
+        {
+            thismenu = thismenu->NextMenu;
+        }
 
-		if (thismenu)
-		{
-			if (ITEMNUM(menunumber) == NOITEM)
-			{
-				thismenu->Flags &= ~MENUENABLED;
-			}
-			else
-			{
-				thisitem = thismenu->FirstItem;
-				for (i = 0; i < ITEMNUM(menunumber) && thisitem; i++)
-				{
-					thisitem = thisitem->NextItem;
-				}
-				if (thisitem)
-				{
-					if (SUBNUM(menunumber) != NOSUB)
-					{
-						thisitem = thisitem->SubItem;
-						for (i = 0; i < SUBNUM(menunumber) && thisitem; i++)
-						{
-							thisitem = thisitem->NextItem;
-						}
-					}
-				}
-				if (thisitem)
-				{
-					thisitem->Flags &= ~ITEMENABLED;
-				}
-			}
-		}
-	}
+        if (thismenu)
+        {
+            if (ITEMNUM(menunumber) == NOITEM)
+            {
+                thismenu->Flags &= ~MENUENABLED;
+            }
+            else
+            {
+                thisitem = thismenu->FirstItem;
+                for (i = 0; i < ITEMNUM(menunumber) && thisitem; i++)
+                {
+                    thisitem = thisitem->NextItem;
+                }
+                if (thisitem)
+                {
+                    if (SUBNUM(menunumber) != NOSUB)
+                    {
+                        thisitem = thisitem->SubItem;
+                        for (i = 0; i < SUBNUM(menunumber) && thisitem; i++)
+                        {
+                            thisitem = thisitem->NextItem;
+                        }
+                    }
+                }
+                if (thisitem)
+                {
+                    thisitem->Flags &= ~ITEMENABLED;
+                }
+            }
+        }
+    }
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* OffMenu */

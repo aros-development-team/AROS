@@ -47,28 +47,28 @@ AROS_LH1(void, SetDefaultPubScreen,
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	//ignored for defpubscreen patch
-	if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_DEFPUBSCREEN) return;
+    //ignored for defpubscreen patch
+    if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_DEFPUBSCREEN) return;
 
-	if (name)
-	{
-		struct PubScreenNode * psn;
+    if (name)
+    {
+        struct PubScreenNode * psn;
 
-		if ((psn = (struct PubScreenNode *)FindName (LockPubScreenList(), name)))
-			GetPrivIBase(IntuitionBase)->DefaultPubScreen = psn->psn_Screen;
+        if ((psn = (struct PubScreenNode *)FindName (LockPubScreenList(), name)))
+            GetPrivIBase(IntuitionBase)->DefaultPubScreen = psn->psn_Screen;
 
-		UnlockPubScreenList();
-	}
-	else
-		GetPrivIBase(IntuitionBase)->DefaultPubScreen = NULL;
+        UnlockPubScreenList();
+    }
+    else
+        GetPrivIBase(IntuitionBase)->DefaultPubScreen = NULL;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetDefaultPubScreen */

@@ -21,13 +21,13 @@ AROS_LH1(void, ClearPointer,
          struct IntuitionBase *, IntuitionBase, 10, Intuition)
 
 /*  FUNCTION
-	Reset the mousepointer of this window to the default one.
-	If the window is active during this call the pointer will
-	immediately change its shape.
-	Set custom mousepointers with SetPointer().
+    Reset the mousepointer of this window to the default one.
+    If the window is active during this call the pointer will
+    immediately change its shape.
+    Set custom mousepointers with SetPointer().
  
     INPUTS
-	window - The window of which the mousepointer will be cleared
+    window - The window of which the mousepointer will be cleared
  
     RESULT
  
@@ -38,7 +38,7 @@ AROS_LH1(void, ClearPointer,
     BUGS
  
     SEE ALSO
-	SetPointer()
+    SetPointer()
  
     INTERNALS
  
@@ -46,16 +46,16 @@ AROS_LH1(void, ClearPointer,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DEBUG_SETPOINTER(dprintf("ClearPointer: window 0x%lx\n",window));
+    DEBUG_SETPOINTER(dprintf("ClearPointer: window 0x%lx\n",window));
 
-	if( window )
-	{
-		window->Pointer = NULL;
-		SetWindowPointerA(window, NULL);
-	}
+    if( window )
+    {
+        window->Pointer = NULL;
+        SetWindowPointerA(window, NULL);
+    }
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ClearPointer */

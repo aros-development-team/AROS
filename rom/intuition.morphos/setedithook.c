@@ -21,14 +21,14 @@ AROS_LH1(struct Hook *, SetEditHook,
          struct IntuitionBase *, IntuitionBase, 82, Intuition)
 
 /*  FUNCTION
-	Sets the global (default) string editing hook of intuition
-	string gadgets.
+    Sets the global (default) string editing hook of intuition
+    string gadgets.
  
     INPUTS
-    	The stringgagdget editing hook to replace the old one.
+        The stringgagdget editing hook to replace the old one.
  
     RESULT
-    	The old edit hook.
+        The old edit hook.
  
     NOTES
  
@@ -41,19 +41,19 @@ AROS_LH1(struct Hook *, SetEditHook,
     INTERNALS
  
     HISTORY
-	27-11-96    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    27-11-96    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	struct Hook *oldhook = GetPrivIBase(IntuitionBase)->GlobalEditHook;
+    struct Hook *oldhook = GetPrivIBase(IntuitionBase)->GlobalEditHook;
 
-	GetPrivIBase(IntuitionBase)->GlobalEditHook = hook;
+    GetPrivIBase(IntuitionBase)->GlobalEditHook = hook;
 
-	return (oldhook);
+    return (oldhook);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetEditHook */

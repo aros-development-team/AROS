@@ -27,7 +27,7 @@
 
 struct BBox
 {
-	WORD Left, Top, Width, Height;
+    WORD Left, Top, Width, Height;
 };
 
 void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,

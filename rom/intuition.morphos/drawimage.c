@@ -27,15 +27,15 @@ AROS_LH4(void, DrawImage,
          struct IntuitionBase *, IntuitionBase, 19, Intuition)
 
 /*  FUNCTION
-	Draw an image.
+    Draw an image.
  
     INPUTS
-	rp - The RastPort to render into
-	image - The image to render
-	leftOffset, topOffset - Where to place the image.
+    rp - The RastPort to render into
+    image - The image to render
+    leftOffset, topOffset - Where to place the image.
  
     RESULT
-	None.
+    None.
  
     NOTES
  
@@ -48,15 +48,15 @@ AROS_LH4(void, DrawImage,
     INTERNALS
  
     HISTORY
-	29-10-95    digulla automatically created from
-			    intuition_lib.fd and clib/intuition_protos.h
+    29-10-95    digulla automatically created from
+                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	DrawImageState(rp, image, leftOffset, topOffset, IDS_NORMAL, NULL);
+    DrawImageState(rp, image, leftOffset, topOffset, IDS_NORMAL, NULL);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* DrawImage */

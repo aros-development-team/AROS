@@ -17,7 +17,7 @@
 
 #if defined(_AMIGA) && defined(__GNUC__) && !defined(__MORPHOS__)
 #   ifndef NO_INLINE_STDARG
-#	define NO_INLINE_STDARG
+#   define NO_INLINE_STDARG
 #   endif
 #   include "intuition_pinlines.h"
 #else
@@ -33,10 +33,10 @@ AROS_LP1(BOOL, LateIntuiInit,
          struct IntuitionBase *, IntuitionBase, 120, Intuition)
 
 AROS_LP4(IPTR, DoNotify,
-         AROS_LPA(Class *,		cl,	A0),
-         AROS_LPA(Object *,		o,	A1),
-         AROS_LPA(struct ICData *,	ic,	A2),
-         AROS_LPA(struct opUpdate *,	msg,	A3),
+         AROS_LPA(Class *,      cl, A0),
+         AROS_LPA(Object *,     o,  A1),
+         AROS_LPA(struct ICData *,  ic, A2),
+         AROS_LPA(struct opUpdate *,    msg,    A3),
          struct IntuitionBase *, IntuitionBase, 145, Intuition)
 
 AROS_LP1(void, FreeICData,

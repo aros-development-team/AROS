@@ -1,68 +1,68 @@
 /*
-	(C) 1995-99 AROS - The Amiga Research OS
-	$Id$
+    (C) 1995-99 AROS - The Amiga Research OS
+    $Id$
  
-	Desc: Intuition function SetMouseQueue()
-	Lang: english
+    Desc: Intuition function SetMouseQueue()
+    Lang: english
 */
 #include "intuition_intern.h"
 
 /*****************************************************************************
  
-	NAME */
+    NAME */
 #include <proto/intuition.h>
 
 AROS_LH2(LONG, SetMouseQueue,
 
-		 /*  SYNOPSIS */
-		 AROS_LHA(struct Window *, window, A0),
-		 AROS_LHA(UWORD          , queuelength, D0),
+         /*  SYNOPSIS */
+         AROS_LHA(struct Window *, window, A0),
+         AROS_LHA(UWORD          , queuelength, D0),
 
-		 /*  LOCATION */
-		 struct IntuitionBase *, IntuitionBase, 83, Intuition)
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 83, Intuition)
 
 /*  FUNCTION
-	Change the number of mouse messages for your window to be allowed
-	to be outstanding.
+    Change the number of mouse messages for your window to be allowed
+    to be outstanding.
  
-	INPUTS
-	window - the window
-	queuelength - the number of mouse messages to be allowed to be
-		outstanding
+    INPUTS
+    window - the window
+    queuelength - the number of mouse messages to be allowed to be
+        outstanding
  
-	RESULT
-	Returns -1 if the window is unknown otherwise the old value of the
-	queuelength is returned.
+    RESULT
+    Returns -1 if the window is unknown otherwise the old value of the
+    queuelength is returned.
  
-	NOTES
-	There should be a function for changing the repeat key queue limit, too.
+    NOTES
+    There should be a function for changing the repeat key queue limit, too.
  
-	EXAMPLE
+    EXAMPLE
  
-	BUGS
+    BUGS
  
-	SEE ALSO
-	OpenWindow()
+    SEE ALSO
+    OpenWindow()
  
-	INTERNALS
+    INTERNALS
  
-	HISTORY
+    HISTORY
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	LONG result;
+    LONG result;
 
-	IntuitionBase = IntuitionBase;  /* shut up the compiler */
+    IntuitionBase = IntuitionBase;  /* shut up the compiler */
 
-	SANITY_CHECKR(window,-1)
+    SANITY_CHECKR(window,-1)
 
-	result = ((struct IntWindow *)window)->mousequeue;
-	((struct IntWindow *)window)->mousequeue = queuelength;
+    result = ((struct IntWindow *)window)->mousequeue;
+    ((struct IntWindow *)window)->mousequeue = queuelength;
 
-	return result;
+    return result;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetMouseQueue */

@@ -21,9 +21,9 @@
 
 
 AROS_UFP3(ULONG, GlobalEditFunc,
-          AROS_UFPA(struct Hook *,		hook,		A0),
-          AROS_UFPA(struct SGWork *,		sgw,		A2),
-          AROS_UFPA(ULONG *,			command,	A1)
+          AROS_UFPA(struct Hook *,      hook,       A0),
+          AROS_UFPA(struct SGWork *,        sgw,        A2),
+          AROS_UFPA(ULONG *,            command,    A1)
          );
 
 
@@ -31,5 +31,5 @@ VOID RefreshStrGadget(struct Gadget *, struct Window *, struct Requester *,
                       struct IntuitionBase *);
 VOID UpdateStrGadget(struct Gadget *, struct Window *, struct Requester *,
                      struct IntuitionBase *);
-ULONG HandleStrInput(struct Gadget *, struct GadgetInfo	*,
+ULONG HandleStrInput(struct Gadget *, struct GadgetInfo *,
                      struct InputEvent *, UWORD *, struct IntuitionBase *);

@@ -1,11 +1,11 @@
 #ifndef INTUITION_INTERN_H
 #define INTUITION_INTERN_H
 /*
-	Copyright (C) 1995-2001 AROS - The Amiga Research OS
-	$Id$
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
 
-	Desc: Intuitions internal structure
-	Lang: english
+    Desc: Intuitions internal structure
+    Lang: english
 */
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
@@ -88,7 +88,7 @@
 #include <aros/asmcall.h>
 
 #ifdef __MORPHOS__
-void	dprintf(char *, ...) __attribute__ ((format (printf, 1, 2)));
+void    dprintf(char *, ...) __attribute__ ((format (printf, 1, 2)));
 void * memclr(APTR, ULONG);
 #endif
 
@@ -103,14 +103,14 @@ void * memclr(APTR, ULONG);
  * min()/max() without macro side effects.
  */
 #define max(a,b) \
-	({typeof(a) _a = (a); \
-	typeof(b) _b = (b);	\
-	_a > _b ? _a : _b;})
+    ({typeof(a) _a = (a); \
+    typeof(b) _b = (b); \
+    _a > _b ? _a : _b;})
 
 #define min(a,b) \
-	({typeof(a) _a = (a); \
-	typeof(b) _b = (b); \
-	_a > _b ? _b : _a;})
+    ({typeof(a) _a = (a); \
+    typeof(b) _b = (b); \
+    _a > _b ? _b : _a;})
 
 #define EXTENDWORD(x) x = (LONG)((WORD)x);
 #define EXTENDUWORD(x) x = (ULONG)((UWORD)x);
@@ -128,7 +128,7 @@ void * memclr(APTR, ULONG);
 
 /* Options */
 
-#define	MENUS_BACKFILL	TRUE
+#define MENUS_BACKFILL  TRUE
 #define FRAME_SIZE       0 /* 0 = 1:1 thin,  1 = 2:1 medres like AmigaOS,  2 = 1:1 thick */
 
 #define GADTOOLSCOMPATIBLE
@@ -161,12 +161,12 @@ void * memclr(APTR, ULONG);
 #else
 #define LOCKGADGET
 #define UNLOCKGADGET
-#define LOCKWINDOWLAYERS(w) LockLayerInfo(&w->WScreen->LayerInfo);	\
-		if (((struct IntWindow *)(w))->borderlayer) {LockLayer(0,((struct IntWindow *)(w))->borderlayer);};	  \
-		if (((struct IntWindow *)(w))->wlayer) {LockLayer(0,((struct IntWindow *)(w))->wlayer);};
-#define UNLOCKWINDOWLAYERS(w) if (((struct IntWindow *)(w))->wlayer) {UnlockLayer(((struct IntWindow *)(w))->wlayer);};	\
-		if (((struct IntWindow *)(w))->borderlayer) {UnlockLayer(((struct IntWindow *)(w))->borderlayer);}	  \
-		UnlockLayerInfo(&w->WScreen->LayerInfo);
+#define LOCKWINDOWLAYERS(w) LockLayerInfo(&w->WScreen->LayerInfo);  \
+        if (((struct IntWindow *)(w))->borderlayer) {LockLayer(0,((struct IntWindow *)(w))->borderlayer);};   \
+        if (((struct IntWindow *)(w))->wlayer) {LockLayer(0,((struct IntWindow *)(w))->wlayer);};
+#define UNLOCKWINDOWLAYERS(w) if (((struct IntWindow *)(w))->wlayer) {UnlockLayer(((struct IntWindow *)(w))->wlayer);}; \
+        if (((struct IntWindow *)(w))->borderlayer) {UnlockLayer(((struct IntWindow *)(w))->borderlayer);}    \
+        UnlockLayerInfo(&w->WScreen->LayerInfo);
 #endif
 
 #define WLAYER(w) (((struct IntWindow *)(w))->wlayer)
@@ -200,11 +200,11 @@ void * memclr(APTR, ULONG);
 /********************************************************************************/
 /* imageclass.h AROS extensions */
 
-#define SYSIA_WithBorder  IA_FGPen	/* default: TRUE */
-#define SYSIA_Style       IA_BGPen	/* default: SYSISTYLE_NORMAL */
+#define SYSIA_WithBorder  IA_FGPen  /* default: TRUE */
+#define SYSIA_Style       IA_BGPen  /* default: SYSISTYLE_NORMAL */
 
 #define SYSISTYLE_NORMAL   0
-#define SYSISTYLE_GADTOOLS 1		/* to get arrow images in gadtools look */
+#define SYSISTYLE_GADTOOLS 1        /* to get arrow images in gadtools look */
 
 /********************************************************************************/
 /* gadgetclass.h AROS extenstions */
@@ -214,13 +214,13 @@ void * memclr(APTR, ULONG);
 #define GM_DOMAIN 7
 struct gpDomain
 {
-	STACKULONG		MethodID;   /* GM_DOMAIN */
-	struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
-	struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
-	STACKLONG		gpd_Which;  /* see below */
-	struct IBox         gpd_Domain; /* Resulting domain. */
-	struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
-						   yet. */
+    STACKULONG      MethodID;   /* GM_DOMAIN */
+    struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
+    struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
+    STACKLONG       gpd_Which;  /* see below */
+    struct IBox         gpd_Domain; /* Resulting domain. */
+    struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
+                           yet. */
 };
 
 /********************************************************************************/
@@ -248,10 +248,10 @@ is near screen boundaries and offscreen is disabled. msg = gpInput*/
 
 struct LayerContext
 {
-	struct Region		* clipregion;
-	WORD			scroll_x;
-	WORD			scroll_y;
-	WORD			nestcount;
+    struct Region       * clipregion;
+    WORD            scroll_x;
+    WORD            scroll_y;
+    WORD            nestcount;
 };
 
 
@@ -276,201 +276,201 @@ struct LayerContext
 
 struct IScreenModePrefs
 {
-	ULONG smp_DisplayID;
-	UWORD smp_Width;
-	UWORD smp_Height;
-	UWORD smp_Depth;
-	UWORD smp_Control;
+    ULONG smp_DisplayID;
+    UWORD smp_Width;
+    UWORD smp_Height;
+    UWORD smp_Depth;
+    UWORD smp_Control;
 };
 
 struct IIControlPrefs
 {
-	UWORD ic_TimeOut;
-	WORD  ic_MetaDrag;
-	ULONG ic_Flags;
-	UBYTE ic_WBtoFront;
-	UBYTE ic_FrontToBack;
-	UBYTE ic_ReqTrue;
-	UBYTE ic_ReqFalse;
+    UWORD ic_TimeOut;
+    WORD  ic_MetaDrag;
+    ULONG ic_Flags;
+    UBYTE ic_WBtoFront;
+    UBYTE ic_FrontToBack;
+    UBYTE ic_ReqTrue;
+    UBYTE ic_ReqFalse;
 };
 
 struct Color32
 {
-	ULONG red;
-	ULONG green;
-	ULONG blue;
+    ULONG red;
+    ULONG green;
+    ULONG blue;
 };
 
-#define	COLORTABLEENTRIES	32	//8
+#define COLORTABLEENTRIES   32  //8
 
 struct IntScreen;
 
 /* IntuitionBase */
 struct IntIntuitionBase
 {
-	struct IntuitionBase    IBase;
+    struct IntuitionBase    IBase;
 #ifdef __MORPHOS__
-	WORD                   _MinXMouse,_MaxXMouse;	/* Old 1.3 Base entries*/
-	WORD                   _MinYMouse,_MaxYMouse;	/* Old 1.3 Base entries*/
-	ULONG                  _StartSecs,_StartMicros;	/* Old 1.3 Base entries*/
-	char                   *SystemRequestTitle;	/* written by locale as it seems..what a crappy interface*/
-	char                   *WorkbenchTitle;	/* written by locale as it seems..what a crappy interface*/
+    WORD                   _MinXMouse,_MaxXMouse;   /* Old 1.3 Base entries*/
+    WORD                   _MinYMouse,_MaxYMouse;   /* Old 1.3 Base entries*/
+    ULONG                  _StartSecs,_StartMicros; /* Old 1.3 Base entries*/
+    char                   *SystemRequestTitle; /* written by locale as it seems..what a crappy interface*/
+    char                   *WorkbenchTitle; /* written by locale as it seems..what a crappy interface*/
 
-	/*
-	 * savety pad for intuitionbase accesses
-	 * probably needs to be smarter
-	 */
-	UBYTE                   Pad[0x800];
+    /*
+     * savety pad for intuitionbase accesses
+     * probably needs to be smarter
+     */
+    UBYTE                   Pad[0x800];
 #endif
 
-	/* Put local shit here, invisible for the user */
-	struct GfxBase         *GfxBase;
-	struct Library         *LayersBase;
-	struct ExecBase        *SysBase;
-	struct UtilityBase     *UtilBase;
+    /* Put local shit here, invisible for the user */
+    struct GfxBase         *GfxBase;
+    struct Library         *LayersBase;
+    struct ExecBase        *SysBase;
+    struct UtilityBase     *UtilBase;
 #if !INTERNAL_BOOPSI
-	struct Library         *BOOPSIBase;
+    struct Library         *BOOPSIBase;
 #endif
-	struct Library         *KeymapBase;
-	struct Library         *DOSBase;
+    struct Library         *KeymapBase;
+    struct Library         *DOSBase;
 #ifdef __MORPHOS__
-	struct Library         *CyberGfxBase;
-	struct Library         *MUIMasterBase;
+    struct Library         *CyberGfxBase;
+    struct Library         *MUIMasterBase;
 #endif
-	struct Library         *LocaleBase;
+    struct Library         *LocaleBase;
 
-	
-	struct Library         *InputBase;
-	struct Library         *TimerBase;
-	struct MsgPort         *TimerMP;
-	struct timerequest     *TimerIO;
+    
+    struct Library         *InputBase;
+    struct Library         *TimerBase;
+    struct MsgPort         *TimerMP;
+    struct timerequest     *TimerIO;
 
-	struct MsgPort         *WorkBenchMP;
-	struct Screen          *WorkBench;
-	struct SignalSemaphore *IBaseLock;
+    struct MsgPort         *WorkBenchMP;
+    struct Screen          *WorkBench;
+    struct SignalSemaphore *IBaseLock;
 
-	/* Intuition input handlers replyport. This one is set
-	int rom/inputhandler.c/InitIIH()
-	*/
-	struct MsgPort         *IntuiReplyPort;
-	struct MinList         *IntuiActionQueue;
-	struct IOStdReq        *InputIO;
-	struct MsgPort         *InputMP;
-	BOOL                    InputDeviceOpen;
-	struct Interrupt       *InputHandler;
+    /* Intuition input handlers replyport. This one is set
+    int rom/inputhandler.c/InitIIH()
+    */
+    struct MsgPort         *IntuiReplyPort;
+    struct MinList         *IntuiActionQueue;
+    struct IOStdReq        *InputIO;
+    struct MsgPort         *InputMP;
+    BOOL                    InputDeviceOpen;
+    struct Interrupt       *InputHandler;
 
-	struct Hook            *GlobalEditHook;
-	/* The default global edit hook */
-	struct Hook             DefaultEditHook;
+    struct Hook            *GlobalEditHook;
+    /* The default global edit hook */
+    struct Hook             DefaultEditHook;
 
 
-	APTR                    DriverData; /* Pointer which the driver may use */
+    APTR                    DriverData; /* Pointer which the driver may use */
 
-	struct Screen          *DefaultPubScreen;
-	struct SignalSemaphore  PubScrListLock;
-	struct MinList          PubScreenList;
-	UWORD                   pubScrGlobalMode;
+    struct Screen          *DefaultPubScreen;
+    struct SignalSemaphore  PubScrListLock;
+    struct MinList          PubScreenList;
+    UWORD                   pubScrGlobalMode;
 
-	struct SignalSemaphore  GadgetLock;
-	struct SignalSemaphore  MenuLock;
-	struct SignalSemaphore  WindowLock;
-	struct SignalSemaphore  IntuiActionLock;
-	struct SignalSemaphore  InputHandlerLock;
-	struct LayerContext     BackupLayerContext;
+    struct SignalSemaphore  GadgetLock;
+    struct SignalSemaphore  MenuLock;
+    struct SignalSemaphore  WindowLock;
+    struct SignalSemaphore  IntuiActionLock;
+    struct SignalSemaphore  InputHandlerLock;
+    struct LayerContext     BackupLayerContext;
 
-	struct IClass          *dragbarclass;
-	struct IClass          *sizebuttonclass;
-	struct IClass          *propgclass;
+    struct IClass          *dragbarclass;
+    struct IClass          *sizebuttonclass;
+    struct IClass          *propgclass;
 
-	APTR                   *mosmenuclass;
+    APTR                   *mosmenuclass;
 
-	struct Preferences     *DefaultPreferences;
-	struct Preferences     *ActivePreferences;
+    struct Preferences     *DefaultPreferences;
+    struct Preferences     *ActivePreferences;
 
-	struct MsgPort         *MenuHandlerPort;
-	BOOL                    MenusActive;
+    struct MsgPort         *MenuHandlerPort;
+    BOOL                    MenusActive;
 
-	struct TextFont        *ScreenFont;
-	struct TextFont        *TopazFont;
+    struct TextFont        *ScreenFont;
+    struct TextFont        *TopazFont;
 
-	/* Dos function DisplayError() before intuition.library patched it */
-	APTR                    OldDisplayErrorFunc;
+    /* Dos function DisplayError() before intuition.library patched it */
+    APTR                    OldDisplayErrorFunc;
 
 #if INTERNAL_BOOPSI
-	struct SignalSemaphore  ClassListLock;
-	struct MinList          ClassList;
-	struct IClass           RootClass;
+    struct SignalSemaphore  ClassListLock;
+    struct MinList          ClassList;
+    struct IClass           RootClass;
 #endif
 
 #ifdef __MORPHOS__
-	struct ViewExtra       *ViewLordExtra;
-	LONG                    SpriteNum;
+    struct ViewExtra       *ViewLordExtra;
+    LONG                    SpriteNum;
 #endif
 
 #ifdef SKINS
-	ULONG                  *SmallMenuPool;
+    ULONG                  *SmallMenuPool;
 #endif
-	ULONG                  *IDCMPPool;
+    ULONG                  *IDCMPPool;
 
-	struct IScreenModePrefs ScreenModePrefs;
-	struct IIControlPrefs   IControlPrefs;
+    struct IScreenModePrefs ScreenModePrefs;
+    struct IIControlPrefs   IControlPrefs;
 #ifdef SKINS
-	struct IAction         *IControlActions;
-	struct IControlExtensions   IControlExtensions;
-	ULONG                   NumIControlActions;
-	struct InputPrefsExt    InputPrefsExt;
+    struct IAction         *IControlActions;
+    struct IControlExtensions   IControlExtensions;
+    ULONG                   NumIControlActions;
+    struct InputPrefsExt    InputPrefsExt;
 #endif
-	struct IClass          *pointerclass;
-	Object                 *DefaultPointer;
-	Object                 *BusyPointer;
-	UWORD                   DriPens2[NUMDRIPENS];
-	UWORD                   DriPens4[NUMDRIPENS];
-	UWORD                   DriPens8[NUMDRIPENS];
-	struct Color32          Colors[COLORTABLEENTRIES];
-	ULONG                   DMStartSecs;
-	ULONG                   DMStartMicro;
-	struct IntScreen       *MenuVerifyScreen;
-	ULONG                   PointerDelay;
-
-#ifdef SKINS
-	struct SignalSemaphore  DataTypesSem;
-	struct Library         *DataTypesBase; /* should be opened ONLY by int_InitCustomChanges!*/
-#endif
-
-	ULONG                   LastClickSecs;
-	ULONG                   LastClickMicro; /* for doubleclick to front */
-	ULONG                   DoubleClickCounter;
-	ULONG                   DoubleClickButton;
+    struct IClass          *pointerclass;
+    Object                 *DefaultPointer;
+    Object                 *BusyPointer;
+    UWORD                   DriPens2[NUMDRIPENS];
+    UWORD                   DriPens4[NUMDRIPENS];
+    UWORD                   DriPens8[NUMDRIPENS];
+    struct Color32          Colors[COLORTABLEENTRIES];
+    ULONG                   DMStartSecs;
+    ULONG                   DMStartMicro;
+    struct IntScreen       *MenuVerifyScreen;
+    ULONG                   PointerDelay;
 
 #ifdef SKINS
-	struct Hook             transphook; /* hook for windows with intui transp */
-	struct Hook             notransphook; /* hook for windows with no additional transp (borderless,etc) */
+    struct SignalSemaphore  DataTypesSem;
+    struct Library         *DataTypesBase; /* should be opened ONLY by int_InitCustomChanges!*/
 #endif
 
-//#ifdef INTUITION_NOTIFY_SUPPORT	// commented to avoid offset fuckup! - Piru
-	struct Library         *ScreenNotifyBase;
-	struct Library         *NotifyIntuitionBase;
+    ULONG                   LastClickSecs;
+    ULONG                   LastClickMicro; /* for doubleclick to front */
+    ULONG                   DoubleClickCounter;
+    ULONG                   DoubleClickButton;
+
+#ifdef SKINS
+    struct Hook             transphook; /* hook for windows with intui transp */
+    struct Hook             notransphook; /* hook for windows with no additional transp (borderless,etc) */
+#endif
+
+//#ifdef INTUITION_NOTIFY_SUPPORT   // commented to avoid offset fuckup! - Piru
+    struct Library         *ScreenNotifyBase;
+    struct Library         *NotifyIntuitionBase;
 //#endif
 
-	struct RastPort         DoGadgetMethodRP;
-	struct GadgetInfo       DoGadgetMethodGI;
+    struct RastPort         DoGadgetMethodRP;
+    struct GadgetInfo       DoGadgetMethodGI;
 
 #ifdef USEGETIPREFS
-	BOOL                    IPrefsLoaded;
+    BOOL                    IPrefsLoaded;
 #endif
 
 #if USE_NEWDISPLAYBEEP
-	LONG                    BeepingScreens;
+    LONG                    BeepingScreens;
 #endif
 
-	WORD			prop_clickoffset_x, prop_clickoffset_y;
+    WORD            prop_clickoffset_x, prop_clickoffset_y;
 };
 
 struct SharedPointer
 {
-	struct ExtSprite *sprite;
-	WORD xoffset, yoffset;
-	int ref_count;
+    struct ExtSprite *sprite;
+    WORD xoffset, yoffset;
+    int ref_count;
 };
 
 struct SharedPointer *CreateSharedPointer(struct ExtSprite *, int, int, struct IntuitionBase *);
@@ -479,76 +479,76 @@ void ReleaseSharedPointer(struct SharedPointer *, struct IntuitionBase *);
 
 #ifdef INTUITION_NOTIFY_SUPPORT
 void sn_DoNotify(ULONG type,
-				 APTR value,
-				 struct Library *_ScreenNotifyBase);
+                 APTR value,
+                 struct Library *_ScreenNotifyBase);
 #endif
 
 struct IntScreen
 {
-	struct Screen            Screen;
+    struct Screen            Screen;
 
-	/* Private fields */
+    /* Private fields */
 #ifdef SKINS
-	struct IntDrawInfo       DInfo;
+    struct IntDrawInfo       DInfo;
 #else
-	struct DrawInfo          DInfo;
+    struct DrawInfo          DInfo;
 #endif
-	struct TTextAttr         textattr;
-	ULONG                    textattrtags[3];
-	UWORD                    Pens[NUMDRIPENS];
-	struct PubScreenNode    *pubScrNode;
-	Object                  *depthgadget;
-	UWORD                    SpecialFlags;
-	struct Layer            *rootLayer;
-	ULONG                    DisplayBeepColor0[3];
-	struct Window           *DisplayBeepWindow;
-	ULONG                    ModeID;
-	struct MonitorSpec      *Monitor;
-	struct SharedPointer    *Pointer;
-	struct Window           *MenuVerifyActiveWindow;
-	int                      MenuVerifyTimeOut;
-	int                      MenuVerifyMsgCount;
-	ULONG                    MenuVerifySeconds;
-	ULONG                    MenuVerifyMicros;
-	struct BitMap           *AllocatedBitmap;
+    struct TTextAttr         textattr;
+    ULONG                    textattrtags[3];
+    UWORD                    Pens[NUMDRIPENS];
+    struct PubScreenNode    *pubScrNode;
+    Object                  *depthgadget;
+    UWORD                    SpecialFlags;
+    struct Layer            *rootLayer;
+    ULONG                    DisplayBeepColor0[3];
+    struct Window           *DisplayBeepWindow;
+    ULONG                    ModeID;
+    struct MonitorSpec      *Monitor;
+    struct SharedPointer    *Pointer;
+    struct Window           *MenuVerifyActiveWindow;
+    int                      MenuVerifyTimeOut;
+    int                      MenuVerifyMsgCount;
+    ULONG                    MenuVerifySeconds;
+    ULONG                    MenuVerifyMicros;
+    struct BitMap           *AllocatedBitmap;
 
 #ifdef SKINS
-	WORD                     LastClockPos;
-	WORD                     LastClockWidth;
+    WORD                     LastClockPos;
+    WORD                     LastClockWidth;
 #else
-	ULONG                    Reserved;
+    ULONG                    Reserved;
 #endif
 #ifdef SKINS
-	struct SkinInfo          SkinInfo;
-	struct RastPort         *TitlebarBufferRP;
-	struct Window           *TitlebarBufferWin;
-	ULONG                    TitlebarWinWidth;
-	ULONG                    TitlebarWinActive;
+    struct SkinInfo          SkinInfo;
+    struct RastPort         *TitlebarBufferRP;
+    struct Window           *TitlebarBufferWin;
+    ULONG                    TitlebarWinWidth;
+    ULONG                    TitlebarWinActive;
 #endif
 #if USE_NEWDISPLAYBEEP
-	UBYTE                    BeepingCounter;
+    UBYTE                    BeepingCounter;
 #endif
 };
 
-#define GetPrivScreen(s)	((struct IntScreen *)s)
+#define GetPrivScreen(s)    ((struct IntScreen *)s)
 
 /* SpecialFlags */
-#define SF_IsParent	(0x0001)
-#define SF_IsChild	(0x0002)
+#define SF_IsParent (0x0001)
+#define SF_IsChild  (0x0002)
 #define SF_InvisibleBar (0x0004)
 #define SF_AppearingBar (0x0008)
 
 struct IntIntuiMessage
 {
-	struct ExtIntuiMessage  eimsg;
+    struct ExtIntuiMessage  eimsg;
 
-	/*
-	** The following field is needed, because in case of IDCMP_RAWKEY
-	** IntuiMessage->IAddress is a pointer to this data, not the data
-	** itself (which is the case for IDCMP_VANILLAKEY)
-	*/
+    /*
+    ** The following field is needed, because in case of IDCMP_RAWKEY
+    ** IntuiMessage->IAddress is a pointer to this data, not the data
+    ** itself (which is the case for IDCMP_VANILLAKEY)
+    */
 
-	APTR                    prevCodeQuals;
+    APTR                    prevCodeQuals;
 };
 
 #define INT_INTUIMESSAGE(x) ((struct IntIntuiMessage *)(x))
@@ -650,8 +650,8 @@ AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 
 
 /* stegerg: one can have sysgadgets outside of window border! All sysgadgets in window
-			border must have set GACT_???BORDER and, if they are in a gzz window, also
-		GTYP_GZZGADGET */
+            border must have set GACT_???BORDER and, if they are in a gzz window, also
+        GTYP_GZZGADGET */
 
 #define IS_GZZ_GADGET(gad) (((gad)->GadgetType) & GTYP_GZZGADGET)
 
@@ -664,14 +664,14 @@ AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 #define IS_BOOPSI_GADGET(gad) (((gad)->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
 
 /*#define IS_BORDER_GADGET(gad) \
-	(((gad->GadgetType) & GTYP_SYSGADGET) \
-	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER))) */
+    (((gad->GadgetType) & GTYP_SYSGADGET) \
+    || ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER))) */
 
 #define IS_REQ_GADGET(gad) ((gad)->GadgetType & GTYP_REQGADGET)
 
 #define IS_SCREEN_GADGET(gad) ((gad)->GadgetType & GTYP_SCRGADGET)
 
-#define SET_GI_RPORT(gi, w, req, gad)	\
+#define SET_GI_RPORT(gi, w, req, gad)   \
 (gi)->gi_RastPort = (IS_SCREEN_GADGET(gad) ? \
 ((gi)->gi_Screen->BarLayer ? (gi)->gi_Screen->BarLayer->rp : NULL) : \
 (IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : \
@@ -679,22 +679,22 @@ AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 )
 
 
-#define REFRESHGAD_BOOPSI	1	/* boopsi gadgets */
-#define REFRESHGAD_BORDER	2	/* gadgets in window border */
-#define REFRESHGAD_REL		4	/* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM,GFLG_RELWIDTH, GFLG_RELHEIGHT */
-#define REFRESHGAD_RELS		8	/* GFLG_RELSPECIAL gadgets */
-#define REFRESHGAD_TOPBORDER	16	/* used by setwindowtitle */
+#define REFRESHGAD_BOOPSI   1   /* boopsi gadgets */
+#define REFRESHGAD_BORDER   2   /* gadgets in window border */
+#define REFRESHGAD_REL      4   /* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM,GFLG_RELWIDTH, GFLG_RELHEIGHT */
+#define REFRESHGAD_RELS     8   /* GFLG_RELSPECIAL gadgets */
+#define REFRESHGAD_TOPBORDER    16  /* used by setwindowtitle */
 #define REFRESHGAD_NOGADTOOLS   32  /* used in some cases for _mustbe_ */
 
 #define SYSGADGET_ACTIVE (iihdata->ActiveSysGadget != NULL)
 
 VOID int_refreshglist(struct Gadget *gadgets, struct Window *window,
-					  struct Requester *requester, LONG numGad, LONG mustbe, LONG mustnotbe,
-					  struct IntuitionBase *IntuitionBase);
+                      struct Requester *requester, LONG numGad, LONG mustbe, LONG mustnotbe,
+                      struct IntuitionBase *IntuitionBase);
 
 VOID int_RefreshWindowFrame(struct Window *window, LONG mustbe, LONG mustnotbe,
-							LONG mode,
-							struct IntuitionBase *IntuitionBase);
+                            LONG mode,
+                            struct IntuitionBase *IntuitionBase);
 
 #define int_refreshwindowframe(a,b,c,d) int_RefreshWindowFrame(a,b,c,0,d);
 
@@ -702,110 +702,110 @@ VOID int_RefreshWindowFrame(struct Window *window, LONG mustbe, LONG mustnotbe,
  * some programs make bad asumptions about that...
  */
 enum {
-	DEPTHGAD,
-	ZOOMGAD,
-	SIZEGAD,
-	CLOSEGAD,
-	DRAGBAR,
-	ICONIFYGAD,
-	LOCKGAD,
-	MUIGAD,
-	POPUPGAD,
-	SNAPSHOTGAD,
-	JUMPGAD,
-	NUM_SYSGADS
+    DEPTHGAD,
+    ZOOMGAD,
+    SIZEGAD,
+    CLOSEGAD,
+    DRAGBAR,
+    ICONIFYGAD,
+    LOCKGAD,
+    MUIGAD,
+    POPUPGAD,
+    SNAPSHOTGAD,
+    JUMPGAD,
+    NUM_SYSGADS
 };
 
 #define SYSGAD(w, idx) (((struct IntWindow *)(w))->sysgads[idx])
 
 struct IntWindow
 {
-	struct Window           window;
+    struct Window           window;
 
-	Object                 *sysgads[NUM_SYSGADS];
-	struct Image           *AmigaKey;
-	struct Image           *Checkmark;
-	struct Window          *menulendwindow;
+    Object                 *sysgads[NUM_SYSGADS];
+    struct Image           *AmigaKey;
+    struct Image           *Checkmark;
+    struct Window          *menulendwindow;
 
-	/* When the Zoom gadget is pressed the window will have the
-	   dimensions stored here. The old dimensions are backed up here
-	   again. */
-	WORD                    ZipLeftEdge;
-	WORD                    ZipTopEdge;
-	WORD                    ZipWidth;
-	WORD                    ZipHeight;
+    /* When the Zoom gadget is pressed the window will have the
+       dimensions stored here. The old dimensions are backed up here
+       again. */
+    WORD                    ZipLeftEdge;
+    WORD                    ZipTopEdge;
+    WORD                    ZipWidth;
+    WORD                    ZipHeight;
 
-	/* max. number of mousemove events to send to this window */
-	WORD                    mousequeue;
+    /* max. number of mousemove events to send to this window */
+    WORD                    mousequeue;
 
-	/* act. number of mousemove events sent to this window */
-	WORD                    num_mouseevents;
+    /* act. number of mousemove events sent to this window */
+    WORD                    num_mouseevents;
 
-	/* max. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
-	   messages to send to this window */
-	WORD                    repeatqueue;
+    /* max. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
+       messages to send to this window */
+    WORD                    repeatqueue;
 
-	/* act. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
-	   messages sent to this window */
-	WORD                    num_repeatevents;
+    /* act. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
+       messages sent to this window */
+    WORD                    num_repeatevents;
 
-	/* number of unreplied IDCMP_IDCMPUPDATE messages sent to window
-	   used in few hacks :) */
-	WORD                    num_idcmpupdate;
+    /* number of unreplied IDCMP_IDCMPUPDATE messages sent to window
+       used in few hacks :) */
+    WORD                    num_idcmpupdate;
 
-	WORD                    sizeimage_width;
-	WORD                    sizeimage_height;
+    WORD                    sizeimage_width;
+    WORD                    sizeimage_height;
 
-	ULONG                   helpflags;
-	ULONG                   helpgroup;
+    ULONG                   helpflags;
+    ULONG                   helpgroup;
 
-	Object                 *pointer;
-	BOOL                    busy;
-	BOOL                    free_pointer;
-	UWORD                   pointer_delay;
-	ULONG                   extrabuttons;
-	ULONG                   extrabuttonsid; /* replaces ETI_Dummy if apps wishes it */
+    Object                 *pointer;
+    BOOL                    busy;
+    BOOL                    free_pointer;
+    UWORD                   pointer_delay;
+    ULONG                   extrabuttons;
+    ULONG                   extrabuttonsid; /* replaces ETI_Dummy if apps wishes it */
 #ifdef SKINS
-	ULONG                   titlepos; /* used by titlebar pattern fill stuff */
+    ULONG                   titlepos; /* used by titlebar pattern fill stuff */
 #else
-	ULONG                   reserved1;
+    ULONG                   reserved1;
 #endif
-	ULONG                   specialflags;
+    ULONG                   specialflags;
 
 #ifdef SKINS
-	struct Region          *transpregion;
-	struct Hook            *usertransphook;
-	struct Region          *usertranspregion;
+    struct Region          *transpregion;
+    struct Hook            *usertransphook;
+    struct Region          *usertranspregion;
 #endif
 
 #ifdef DAMAGECACHE
-	struct Region          *trashregion;
+    struct Region          *trashregion;
 #endif
-	char                    titlebuffer[TITLEBUFFERLEN+1];
+    char                    titlebuffer[TITLEBUFFERLEN+1];
 
-	struct IntuiMessage    *messagecache; //for idcmpupdate cache
+    struct IntuiMessage    *messagecache; //for idcmpupdate cache
 
-	struct Layer           *wlayer;
-	struct Layer           *borderlayer;
+    struct Layer           *wlayer;
+    struct Layer           *borderlayer;
 
-	struct timeval          lastmsgsent;
-	struct timeval          lastmsgreplied;
+    struct timeval          lastmsgsent;
+    struct timeval          lastmsgreplied;
 
 #ifdef TIMEVALWINDOWACTIVATION
-	struct timeval          activationtime;
+    struct timeval          activationtime;
 #endif
 
 #ifdef SKINS
-	struct Hook             custombackfill;
-	struct HookData         hd;
+    struct Hook             custombackfill;
+    struct HookData         hd;
 #endif
 };
 
-#define SPFLAG_ICONIFIED	1
-#define SPFLAG_NOICONIFY	2
-#define SPFLAG_SKININFO		4
-#define SPFLAG_LAYERREFRESH	8
-#define SPFLAG_TRANSPHOOK	16
+#define SPFLAG_ICONIFIED    1
+#define SPFLAG_NOICONIFY    2
+#define SPFLAG_SKININFO     4
+#define SPFLAG_LAYERREFRESH 8
+#define SPFLAG_TRANSPHOOK   16
 #define SPFLAG_LAYERRESIZED 32
 #define SPFLAG_USERPORT     64
 #define SPFLAG_IAMDEAD      128
@@ -893,12 +893,12 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase);
 struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase);
 struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struct Gadget *gad,
 struct IntuitionBase *IntuitionBase);
-VOID DoGMLayout(struct Gadget		*glist,
-struct Window		*win,
-struct Requester	*req,
-UWORD			numgad,
-BOOL			initial,
-struct IntuitionBase	*IntuitionBase);
+VOID DoGMLayout(struct Gadget       *glist,
+struct Window       *win,
+struct Requester    *req,
+UWORD           numgad,
+BOOL            initial,
+struct IntuitionBase    *IntuitionBase);
 BOOL ih_fire_intuimessage(struct Window * w,
 ULONG Class,
 UWORD Code,
@@ -920,7 +920,7 @@ IPTR Custom_DoMethodA(struct IntuitionBase *, struct Gadget *, Msg);
 #ifdef DoMethodA
 #undef DoMethodA
 #endif
-#define DoMethodA(x, ...)	(REG_A6=(LONG)IntuitionBase, DoMethodA(x, __VA_ARGS__))
+#define DoMethodA(x, ...)   (REG_A6=(LONG)IntuitionBase, DoMethodA(x, __VA_ARGS__))
 #endif
 
 #define Custom_DoMethodA(x, ...) Custom_DoMethodA(IntuitionBase, x, __VA_ARGS__)
@@ -928,12 +928,12 @@ IPTR Custom_DoMethodA(struct IntuitionBase *, struct Gadget *, Msg);
 #define HAS_CHILDREN(w) (NULL != w->firstchild)
 
 #ifdef __MORPHOS__
-#define DeinitRastPort(rp)	((void)0)
+#define DeinitRastPort(rp)  ((void)0)
 #define CreateRastPort()        MyCreateRastPort(IntuitionBase)
 #define CloneRastPort(rp)       MyCloneRastPort(IntuitionBase, rp)
 #define FreeRastPort(rp)        MyFreeRastPort(IntuitionBase, rp)
 #define SetPointerPos(x, y)     MySetPointerPos(IntuitionBase, x, y)
-#define MouseCoordsRelative()	1
+#define MouseCoordsRelative()   1
 #endif
 
 /* Replacement for dos.library/DisplayError() */
@@ -948,95 +948,95 @@ AROS_UFPA(APTR  , args      , A1));
 #define dprintf kprintf
 #endif
 
-#define DEBUG_ACTIVATEGADGET(x)		;
-#define DEBUG_ACTIVATEWINDOW(x)		;
-#define DEBUG_ADDCLASS(x)		;
-#define DEBUG_ADDGADGET(x)		;
-#define DEBUG_ADDGLIST(x)		;
-#define DEBUG_ALLOCINTUIMESSAGE(x)	;
-#define DEBUG_ALLOCSCREENBUFFER(x)	;
-#define DEBUG_ALOHAWORKBENCH(x)		;
-#define DEBUG_CHANGEWINDOWBOX(x)	;
-#define DEBUG_CLOSESCREEN(x)		;
-#define DEBUG_CLOSEWINDOW(x)		;
-#define DEBUG_CLOSEWORKBENCH(x)		;
-#define DEBUG_DISPOSEOBJECT(x)		;
-#define DEBUG_DOGADGETMETHOD(x)		;
-#define DEBUG_DRAWBORDER(x)		;
-#define DEBUG_FINDCLASS(x)		;
-#define DEBUG_FREEICDATA(x)		;
-#define DEBUG_FREEINTUIMESSAGE(x)	;
-#define DEBUG_FREESCREENBUFFER(x)	;
-#define DEBUG_FREESCREENDRAWINFO(x)	;
-#define DEBUG_GADGETMOUSE(x)		;
-#define DEBUG_GETATTR(x)		;
-#define DEBUG_GETDEFAULTPUBSCREEN(x)	;
-#define DEBUG_GETDEFPREFS(x)		;
-#define DEBUG_GETGADGETIBOX(x)		;
-#define DEBUG_GETPREFS(x)		;
-#define DEBUG_GETSCREENDATA(x)		;
-#define DEBUG_GETSCREENDRAWINFO(x)	;
-#define DEBUG_HIDEWINDOW(x)		;
+#define DEBUG_ACTIVATEGADGET(x)     ;
+#define DEBUG_ACTIVATEWINDOW(x)     ;
+#define DEBUG_ADDCLASS(x)       ;
+#define DEBUG_ADDGADGET(x)      ;
+#define DEBUG_ADDGLIST(x)       ;
+#define DEBUG_ALLOCINTUIMESSAGE(x)  ;
+#define DEBUG_ALLOCSCREENBUFFER(x)  ;
+#define DEBUG_ALOHAWORKBENCH(x)     ;
+#define DEBUG_CHANGEWINDOWBOX(x)    ;
+#define DEBUG_CLOSESCREEN(x)        ;
+#define DEBUG_CLOSEWINDOW(x)        ;
+#define DEBUG_CLOSEWORKBENCH(x)     ;
+#define DEBUG_DISPOSEOBJECT(x)      ;
+#define DEBUG_DOGADGETMETHOD(x)     ;
+#define DEBUG_DRAWBORDER(x)     ;
+#define DEBUG_FINDCLASS(x)      ;
+#define DEBUG_FREEICDATA(x)     ;
+#define DEBUG_FREEINTUIMESSAGE(x)   ;
+#define DEBUG_FREESCREENBUFFER(x)   ;
+#define DEBUG_FREESCREENDRAWINFO(x) ;
+#define DEBUG_GADGETMOUSE(x)        ;
+#define DEBUG_GETATTR(x)        ;
+#define DEBUG_GETDEFAULTPUBSCREEN(x)    ;
+#define DEBUG_GETDEFPREFS(x)        ;
+#define DEBUG_GETGADGETIBOX(x)      ;
+#define DEBUG_GETPREFS(x)       ;
+#define DEBUG_GETSCREENDATA(x)      ;
+#define DEBUG_GETSCREENDRAWINFO(x)  ;
+#define DEBUG_HIDEWINDOW(x)     ;
 #ifdef __MORPHOS__
-#define DEBUG_INIT(x)			if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_INIT(x)           if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_INIT(x)			;
+#define DEBUG_INIT(x)           ;
 #endif
-#define	DEBUG_OPEN(x)			;
-#define	DEBUG_CLOSE(x)			;
-#define DEBUG_INPUTEVENT(x)		;
-#define DEBUG_INTREFRESHGLIST(x)	;
-#define DEBUG_INTUITEXTLENGTH(x)	;
-#define DEBUG_LENDMENUS(x)		;
-#define DEBUG_LOCKPUBSCREEN(x)		;
-#define DEBUG_MAKECLASS(x)		;
-#define DEBUG_MODIFYIDCMP(x)		;
-#define DEBUG_NEWOBJECT(x)		;
-#define DEBUG_NEXTOBJECT(x)		;
-#define DEBUG_OBTAINGIRPORT(x)		;
-#define DEBUG_OFFGADGET(x)		;
-#define DEBUG_OFFMENU(x)		;
-#define DEBUG_ONGADGET(x)		;
-#define DEBUG_ONMENU(x)			;
-#define DEBUG_OPENSCREEN(x)		;
-#define DEBUG_OPENSCREENTAGLIST(x)	;
-#define DEBUG_OPENWINDOW(x)		;
-#define DEBUG_OPENWINDOWTAGLIST(x)	;
-#define DEBUG_OPENWORKBENCH(x)		;
-#define DEBUG_POINTER(x)		;
-#define DEBUG_PRINTITEXT(x)		;
-#define DEBUG_QUERYOVERSCAN(x)		;
-#define DEBUG_REFRESH(x)	    ;
-#define DEBUG_RELEASEGIRPORT(x)		;
-#define DEBUG_REMEMBER(x)		;
-#define DEBUG_REMOVEGLIST(x)	    ;
-#define DEBUG_REPORTMOUSE(x)		;
-#define DEBUG_REQUEST(x)	    ;
-#define DEBUG_SCROLLWINDOWRASTER(x)	;
-#define DEBUG_SENDINTUIMESSAGE(x)	;
-#define DEBUG_SETATTRS(x)		;
-#define DEBUG_SETGADGETATTRS(x)		;
-#define DEBUG_SETPOINTER(x)		;
+#define DEBUG_OPEN(x)           ;
+#define DEBUG_CLOSE(x)          ;
+#define DEBUG_INPUTEVENT(x)     ;
+#define DEBUG_INTREFRESHGLIST(x)    ;
+#define DEBUG_INTUITEXTLENGTH(x)    ;
+#define DEBUG_LENDMENUS(x)      ;
+#define DEBUG_LOCKPUBSCREEN(x)      ;
+#define DEBUG_MAKECLASS(x)      ;
+#define DEBUG_MODIFYIDCMP(x)        ;
+#define DEBUG_NEWOBJECT(x)      ;
+#define DEBUG_NEXTOBJECT(x)     ;
+#define DEBUG_OBTAINGIRPORT(x)      ;
+#define DEBUG_OFFGADGET(x)      ;
+#define DEBUG_OFFMENU(x)        ;
+#define DEBUG_ONGADGET(x)       ;
+#define DEBUG_ONMENU(x)         ;
+#define DEBUG_OPENSCREEN(x)     ;
+#define DEBUG_OPENSCREENTAGLIST(x)  ;
+#define DEBUG_OPENWINDOW(x)     ;
+#define DEBUG_OPENWINDOWTAGLIST(x)  ;
+#define DEBUG_OPENWORKBENCH(x)      ;
+#define DEBUG_POINTER(x)        ;
+#define DEBUG_PRINTITEXT(x)     ;
+#define DEBUG_QUERYOVERSCAN(x)      ;
+#define DEBUG_REFRESH(x)        ;
+#define DEBUG_RELEASEGIRPORT(x)     ;
+#define DEBUG_REMEMBER(x)       ;
+#define DEBUG_REMOVEGLIST(x)        ;
+#define DEBUG_REPORTMOUSE(x)        ;
+#define DEBUG_REQUEST(x)        ;
+#define DEBUG_SCROLLWINDOWRASTER(x) ;
+#define DEBUG_SENDINTUIMESSAGE(x)   ;
+#define DEBUG_SETATTRS(x)       ;
+#define DEBUG_SETGADGETATTRS(x)     ;
+#define DEBUG_SETPOINTER(x)     ;
 #ifdef __MORPHOS__
-#define DEBUG_SETIPREFS(x)		if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETIPREFS(x)      if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_SETIPREFS(x)		if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETIPREFS(x)      if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #endif
 #ifdef __MORPHOS__
-#define DEBUG_SETPREFS(x)		if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETPREFS(x)       if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_SETPREFS(x)		if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETPREFS(x)       if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #endif
-#define DEBUG_SHOWWINDOW(x)		;
-#define DEBUG_UNLOCKPUBSCREEN(x)	;
-#define DEBUG_WINDOWLIMITS(x)		;
-#define DEBUG_WINDOWTOBACK(x)		;
-#define DEBUG_WINDOWTOFRONT(x)		;
-#define DEBUG_ZIPWINDOW(x)		;
-#define	DEBUG_VISITOR(x)		;
-#define	DEBUG_WORKBENCH(x)		;
-#define	DEBUG_LOCKPUBSCREENLIST(x)	;
-#define	DEBUG_UNLOCKPUBSCREENLIST(x)	;
-#define	DEBUG_RETHINKDISPLAY(x)		;
+#define DEBUG_SHOWWINDOW(x)     ;
+#define DEBUG_UNLOCKPUBSCREEN(x)    ;
+#define DEBUG_WINDOWLIMITS(x)       ;
+#define DEBUG_WINDOWTOBACK(x)       ;
+#define DEBUG_WINDOWTOFRONT(x)      ;
+#define DEBUG_ZIPWINDOW(x)      ;
+#define DEBUG_VISITOR(x)        ;
+#define DEBUG_WORKBENCH(x)      ;
+#define DEBUG_LOCKPUBSCREENLIST(x)  ;
+#define DEBUG_UNLOCKPUBSCREENLIST(x)    ;
+#define DEBUG_RETHINKDISPLAY(x)     ;
 
 #endif /* INTUITION_INTERN_H */

@@ -21,19 +21,19 @@ AROS_LH1(void, ScreenToBack,
          struct IntuitionBase *, IntuitionBase, 41, Intuition)
 
 /*  FUNCTION
-	Move a screen behind all other screens. If the screen is in a
-	group, the screen will be moved behind all other screens in the
-	group only. If the screen is the parent of a group, the whole
-	group will be moved in the back.
+    Move a screen behind all other screens. If the screen is in a
+    group, the screen will be moved behind all other screens in the
+    group only. If the screen is the parent of a group, the whole
+    group will be moved in the back.
  
     INPUTS
-	screen - Move this screen.
+    screen - Move this screen.
  
     RESULT
-	You will see the screen move behind all other screens. If some
-	screen before this screen occupies the whole display, then it
-	will disappear completely. If all other screens occupy only part
-	of the display, the screen will appear behind the screens.
+    You will see the screen move behind all other screens. If some
+    screen before this screen occupies the whole display, then it
+    will disappear completely. If all other screens occupy only part
+    of the display, the screen will appear behind the screens.
  
     NOTES
  
@@ -42,7 +42,7 @@ AROS_LH1(void, ScreenToBack,
     BUGS
  
     SEE ALSO
-	ScreenToFront(), ScreenDepth()
+    ScreenToFront(), ScreenDepth()
  
     INTERNALS
  
@@ -50,10 +50,10 @@ AROS_LH1(void, ScreenToBack,
  
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	ScreenDepth ( screen, SDEPTH_TOBACK, NULL );
+    ScreenDepth ( screen, SDEPTH_TOBACK, NULL );
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ScreenToBack */
