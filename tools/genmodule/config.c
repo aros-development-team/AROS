@@ -35,8 +35,8 @@ getBanner(struct config* config)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-i genincdir]\n"
-    "       {writefiles|writedummy|writelibdefs} modname modtype\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir]\n"
+    "       {writefiles|writeincludes|writedummy|writelibdefs} modname modtype\n"
 ;
 
 static void readconfig(struct config *);
@@ -84,7 +84,7 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
     
-    while ((c = getopt(argc, argv, ":c:s:d:i:r:")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:r:")) != -1)
     {
 
 	if (c == ':' || *optarg == '-')
@@ -106,11 +106,6 @@ struct config *initconfig(int argc, char **argv)
 	    if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
 	    cfg->gendir = optarg;
 	    break;
-	case 'i':
-	    /* Remove / at the end if present */
-	    if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
-	    cfg->genincdir = optarg;
-	    break;
 	case 'r':
 	    cfg->reffile = optarg;
 	    break;
@@ -128,7 +123,11 @@ struct config *initconfig(int argc, char **argv)
     
     if (strcmp(argv[optind], "writefiles") == 0)
     {
-	cfg->command = NORMAL;
+	cfg->command = FILES;
+    }
+    else if (strcmp(argv[optind], "writeincludes") == 0)
+    {
+	cfg->command = INCLUDES;
     }
     else if (strcmp(argv[optind], "writelibdefs") == 0)
     {
@@ -218,14 +217,6 @@ struct config *initconfig(int argc, char **argv)
 	exit(20);
     }
 
-    if (cfg->command != NORMAL)
-    {
-	if (cfg->genincdir != NULL)
-	    fprintf(stderr, "WARNING ! Option -i ingored for %s\n", argv[optind]);
-
-	if (cfg->reffile != NULL)
-	    fprintf(stderr, "WARNING ! Option -r ingored for %s\n", argv[optind]);
-    }
     
     /* Fill fields with default value if not specified on the command line */
     {
@@ -239,10 +230,13 @@ struct config *initconfig(int argc, char **argv)
 
 	if (cfg->gendir == NULL)
 	    cfg->gendir = ".";
-	if (cfg->genincdir == NULL)
-	    cfg->genincdir = cfg->gendir;
 	
-	if (cfg->command == NORMAL && cfg->reffile == NULL)
+	if (cfg->command != FILES && cfg->command != INCLUDES)
+	{
+	    if (cfg->reffile != NULL)
+		fprintf(stderr, "WARNING ! Option -r ingored for %s\n", argv[optind]);
+	}
+	else if (cfg->command == FILES && cfg->reffile == NULL)
 	{
 	    snprintf(tmpbuf, sizeof(tmpbuf), "%s.ref", cfg->modulename);
 	    cfg->reffile = strdup(tmpbuf);

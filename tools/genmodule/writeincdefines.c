@@ -17,7 +17,7 @@ void writeincdefines(struct config *cfg, struct functions *functions)
     char line[256];
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/defines/%s.h", cfg->genincdir, cfg->modulename);
+    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)

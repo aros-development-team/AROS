@@ -10,7 +10,7 @@
 
 #include "stringlist.h"
 
-enum command { CMD_UNSPECIFIED, DUMMY, NORMAL, LIBDEFS };
+enum command { CMD_UNSPECIFIED, DUMMY, FILES, LIBDEFS, INCLUDES };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, GADGET,
 	       DATATYPE
 };
