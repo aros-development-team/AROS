@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: VGA Inside...
@@ -10,16 +10,25 @@
     NOTE: This file is mostly based on XFree86 vgaWH.c sources
 */
 
+/****************************************************************************************/
+
 #include <proto/exec.h>
 #include <oop/oop.h>
 #include "vgahw.h"
 #include "vgaclass.h"
 #include "bitmap.h"
 
-#ifdef SysBase
+/****************************************************************************************/
+
 #undef SysBase
-#endif
 #define SysBase (*(struct ExecBase **)4UL)
+
+/****************************************************************************************/
+
+#define min(a,b) ((a) < (b) ? (a) : (b))
+#define max(a,b) ((a) > (b) ? (a) : (b))
+
+/****************************************************************************************/
 
 /* Default ANSI (PC's) palette */
 
@@ -91,6 +100,8 @@ unsigned char vgaANSIPalette[]=
      0,  0,  0,    0,  0,  0,    0,  0,  0,    0,  0,  0,
 };
 
+/****************************************************************************************/
+
 /*
 ** Load specified palette, if NULL load default
 */
@@ -107,8 +118,12 @@ void vgaLoadPalette(struct vgaHWRec *regs, unsigned char *pal)
     }
 }
 
+/****************************************************************************************/
+
 #define SS_START	1
 #define SS_FINISH	0
+
+/****************************************************************************************/
 
 /*
 ** vgaHWSaveScreen
@@ -117,10 +132,16 @@ void vgaLoadPalette(struct vgaHWRec *regs, unsigned char *pal)
 void vgaSaveScreen(int start)
 {
     if (start == SS_START)
+    {
 	outw(0x3C4, 0x0100);        /* synchronous reset */
+    }
     else
+    {
 	outw(0x3C4, 0x0300);        /* end reset */
+    }
 }
+
+/****************************************************************************************/
 
 /*
 ** Blank the screen.
@@ -132,19 +153,27 @@ int vgaBlankScreen(int on)
     outb(0x3C4,1);
     scrn = inb(0x3C5);
 
-    if(on) {
+    if(on)
+    {
 	scrn &= 0xDF;			/* enable screen */
-    }else {
+    }
+    else
+    {
 	scrn |= 0x20;			/* blank screen */
     }
 
     vgaSaveScreen(SS_START);
     outw(0x3C4, (scrn << 8) | 0x01); /* change mode */
     vgaSaveScreen(SS_FINISH);
+    
     return TRUE;
 }
 
+/****************************************************************************************/
+
 #define vgaIOBase	0x3d0
+
+/****************************************************************************************/
 
 /*
 ** vgaRestore --
@@ -188,6 +217,8 @@ void vgaRestore(struct vgaHWRec *restore)
     outb(0x3C0, 0x20);
 }
 
+/****************************************************************************************/
+
 /*
 ** vgaSave --
 **      save the current video mode
@@ -219,36 +250,55 @@ void * vgaSave(struct vgaHWRec *save)
 	DACDelay;
     }
 
-    for (i=0; i<25; i++) { outb(vgaIOBase + 4,i);
-			 save->CRTC[i] = inb(vgaIOBase + 5); }
+    for (i=0; i<25; i++)
+    {
+    	outb(vgaIOBase + 4,i);
+	save->CRTC[i] = inb(vgaIOBase + 5);
+    }
 
-    for (i=0; i<21; i++) {
+    for (i=0; i<21; i++)
+    {
 	tmp = inb(vgaIOBase + 0x0A);
 	outb(0x3C0,i);
 	save->Attribute[i] = inb(0x3C1);
     }
 
-    for (i=0; i<9;  i++) { outb(0x3CE,i); save->Graphics[i]  = inb(0x3CF); }
+    for (i=0; i<9;  i++)
+    {
+    	outb(0x3CE,i);
+	save->Graphics[i]  = inb(0x3CF);
+    }
 
-    for (i=0; i<5;  i++) { outb(0x3C4,i); save->Sequencer[i]   = inb(0x3C5); }
+    for (i=0; i<5;  i++)
+    {
+    	outb(0x3C4,i);
+	save->Sequencer[i] = inb(0x3C5);
+    }
 
     tmp = inb(vgaIOBase + 0x0A);
     outb(0x3C0, 0x20);
+    
     return ((void *) save);
 }
+
+/****************************************************************************************/
 
 /*
 ** Init VGA registers for given displaymode
 */
 int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 {
-    unsigned int i;
+    unsigned int    i;
+    int     	    hblankstart;
+    int     	    hblankend;
+    int     	    vblankstart;
+    int     	    vblankend;
     
     /*
 	initialize default colormap for monochrome
     */
-    for (i=0; i<3;   i++) regs->DAC[i] = 0x00;
-    for (i=3; i<768; i++) regs->DAC[i] = 0x3F;
+    for (i = 0; i < 3;   i++) regs->DAC[i] = 0x00;
+    for (i = 3; i < 768; i++) regs->DAC[i] = 0x3F;
 
     /* Initialise overscan register */
     regs->Attribute[17] = 0xFF;
@@ -267,7 +317,7 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 	else if (VDisplay < 480)
 		regs->MiscOutReg = 0x63;	/* -hsync +vsync */
 	else if (VDisplay < 768)
-		regs->MiscOutReg = 0xE7;	/* -hsync -vsync  0xE3 */
+		regs->MiscOutReg = 0xE3;	/* -hsync -vsync  0xE3 */
 	else
 		regs->MiscOutReg = 0x23;	/* +hsync +vsync */
     }
@@ -290,47 +340,93 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     /*
 	CRTC Controller
     */
-    regs->CRTC[0]  = (mode->HTotal >> 3) - 5;
-    regs->CRTC[1]  = (mode->HDisplay >> 3) - 1;
-    regs->CRTC[2]  = (mode->HSyncStart >> 3) -1;
-    regs->CRTC[3]  = ((mode->HSyncEnd >> 3) & 0x1F) | 0x80;
-//    regs->CRTC[2]  = (mode->HDisplay >> 3) +2;
-//    regs->CRTC[3]  = (((mode->HTotal >> 3)-2) & 0x1F) | 0x80;
+    
+    hblankstart = min(mode->HSyncStart, mode->HDisplay);
+    hblankend   = max(mode->HSyncEnd, mode->HTotal);
+    if ((hblankend - hblankstart) >= 63 * 8)
+    {
+    	hblankstart = hblankend - 63 * 8;
+    }
+    
+    vblankstart = min(mode->VSyncStart, mode->VDisplay);
+    vblankend   = max(mode->VSyncEnd, mode->VTotal);
+    if ((vblankend - vblankstart) >= 127)
+    {
+    	vblankstart = vblankend - 127;
+    }
+    
+    regs->CRTC[CRTC_H_TOTAL]  	    = (mode->HTotal / 8) - 5;
+    regs->CRTC[CRTC_H_DISPLAY]      = (mode->HDisplay / 8) - 1;
+    regs->CRTC[CRTC_H_BLANK_START]  = (hblankstart / 8) -1;
+    regs->CRTC[CRTC_H_BLANK_END]    = (((hblankend / 8) - 1) & 0x1F) | 0x80;
+    
     i = (((mode->HSkew << 2) + 0x10) & ~0x1F);
     if (i < 0x80)
-	regs->CRTC[3] |= i;
-    regs->CRTC[4]  = (mode->HSyncStart >> 3);
-    regs->CRTC[5]  = (((mode->HSyncEnd >> 3) & 0x20 ) << 2 )
-	| (((mode->HSyncEnd >> 3)) & 0x1F);
-    regs->CRTC[6]  = (mode->VTotal - 2) & 0xFF;
-    regs->CRTC[7]  = (((mode->VTotal -2) & 0x100) >> 8 )
-	| (((mode->VDisplay -1) & 0x100) >> 7 )
-          | ((mode->VSyncStart & 0x100) >> 6 )
-	    | (((mode->VSyncStart) & 0x100) >> 5 )
-	      | 0x10
-		| (((mode->VTotal -2) & 0x200)   >> 4 )
-	          | (((mode->VDisplay -1) & 0x200) >> 3 )
-		    | ((mode->VSyncStart & 0x200) >> 2 );
-    regs->CRTC[8]  = 0x00;
-    regs->CRTC[9]  = ((mode->VSyncStart & 0x200) >>4) | 0x40;
+    {
+	regs->CRTC[CRTC_H_BLANK_END] |= i;
+    }
+    
+    regs->CRTC[CRTC_H_SYNC_START]   = (mode->HSyncStart / 8);
+    regs->CRTC[CRTC_H_SYNC_END]     = ((((hblankend / 8) - 1) & 0x20 ) << 2 ) |
+	    	    	    	      (((mode->HSyncEnd / 8)) & 0x1F);
+    regs->CRTC[CRTC_V_TOTAL]  	    = (mode->VTotal - 2) & 0xFF;
+    regs->CRTC[CRTC_OVERFLOW]       = (((mode->VTotal -2) & 0x100) >> 8 )   |
+	    	    	    	      (((mode->VDisplay -1) & 0x100) >> 7 ) |
+            	    	    	      ((mode->VSyncStart & 0x100) >> 6 )    |
+	    	    	    	      (((vblankstart - 1) & 0x100) >> 5 )   |
+	      	    	    	      0x10  	    	    	    	    |
+		    	    	      (((mode->VTotal -2) & 0x200)   >> 4 ) |
+	            	    	      (((mode->VDisplay -1) & 0x200) >> 3 ) |
+		    	    	      ((mode->VSyncStart & 0x200) >> 2 );
+    regs->CRTC[CRTC_PRESET_ROW]     = 0x00;
+    regs->CRTC[CRTC_MAX_SCAN]       = (((vblankstart - 1) & 0x200) >>4) | 0x40;
 //    if (mode->Flags & V_DBLSCAN)
 //	new->CRTC[9] |= 0x80;
-    regs->CRTC[10] = 0x00;
-    regs->CRTC[11] = 0x00;
-    regs->CRTC[12] = 0x00;
-    regs->CRTC[13] = 0x00;
-    regs->CRTC[14] = 0x00;
-    regs->CRTC[15] = 0x00;
-    regs->CRTC[16] = mode->VSyncStart & 0xFF;
-    regs->CRTC[17] = (mode->VSyncEnd & 0x0F) | 0x20;
-    regs->CRTC[18] = (mode->VDisplay -1) & 0xFF;
-    regs->CRTC[19] = mode->Width >> (8 - mode->Depth);  /* just a guess */
-    regs->CRTC[20] = 0x00;
-    regs->CRTC[21] = mode->VSyncStart & 0xFF; 
-    regs->CRTC[22] = (mode->VSyncEnd + 1) & 0xFF;
-    regs->CRTC[23] = 0xE3;
-    regs->CRTC[24] = 0xFF;
+    regs->CRTC[CRTC_CURSOR_START]   = 0x00;
+    regs->CRTC[CRTC_CURSOR_END]     = 0x00;
+    regs->CRTC[CRTC_START_HI] 	    = 0x00;
+    regs->CRTC[CRTC_START_LO] 	    = 0x00;
+    regs->CRTC[CRTC_CURSOR_HI]      = 0x00;
+    regs->CRTC[CRTC_CURSOR_LO]      = 0x00;
+    regs->CRTC[CRTC_V_SYNC_START]   = mode->VSyncStart & 0xFF;
+    regs->CRTC[CRTC_V_SYNC_END]     = (mode->VSyncEnd & 0x0F) | 0x20;
+    regs->CRTC[CRTC_V_DISP_END]     = (mode->VDisplay -1) & 0xFF;
+    regs->CRTC[CRTC_OFFSET] 	    = mode->Width >> (8 - mode->Depth);  /* just a guess */
+    regs->CRTC[CRTC_UNDERLINE]      = 0x00;
+    regs->CRTC[CRTC_V_BLANK_START]  = (vblankstart - 1) & 0xFF; 
+    regs->CRTC[CRTC_V_BLANK_END]    = (vblankend - 1) & 0xFF;
+    regs->CRTC[CRTC_MODE]   	    = 0xE3;
+    regs->CRTC[CRTC_LINE_COMPARE]   = 0xFF;
 
+    if ((hblankend / 8) == (mode->HTotal / 8))
+    {
+    	i = (regs->CRTC[CRTC_H_BLANK_END] & 0x1f) | ((regs->CRTC[CRTC_H_SYNC_END] & 0x80) >> 2);
+	if ((i-- > (regs->CRTC[CRTC_H_BLANK_START] & 0x3F)) && 
+	    (hblankend == mode->HTotal))
+	{
+	    i = 0;
+	}
+	
+	regs->CRTC[CRTC_H_BLANK_END] = (regs->CRTC[CRTC_H_BLANK_END] & ~0x1F) | (i & 0x1f);
+	regs->CRTC[CRTC_H_SYNC_END]  = (regs->CRTC[CRTC_H_SYNC_END] & ~0x80) | ((i << 2) & 0x80);
+    }
+    
+    if (vblankend == mode->VTotal)
+    {
+    	i = regs->CRTC[CRTC_V_BLANK_END];
+	if ((i > regs->CRTC[CRTC_V_BLANK_START]) &&
+	    ((i & 0x7F) > (regs->CRTC[CRTC_V_BLANK_START] & 0x7F)) &&
+	    !(regs->CRTC[CRTC_MAX_SCAN] & 0x9f))
+	{
+	    i = 0;
+	}
+	else
+	{
+	    i = (UBYTE)(i - 1);
+	}
+	regs->CRTC[CRTC_V_BLANK_END] = i;
+    }
+    
     /*
 	Graphics Display Controller
     */
@@ -373,15 +469,17 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     return TRUE;
 }
 
+/****************************************************************************************/
+
 void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 {
-    int width, height, FBPitch, left, right, i, j, SRCPitch, phase;
-    register unsigned long m;
-    unsigned char  s1, s2, s3, s4;
-    unsigned long *src, *srcPtr;
-    unsigned char *dst, *dstPtr;
+    int     	    	    width, height, FBPitch, left, right, i, j, SRCPitch, phase;
+    register unsigned long  m;
+    unsigned char   	    s1, s2, s3, s4;
+    unsigned long   	    *src, *srcPtr;
+    unsigned char   	    *dst, *dstPtr;
    
-    FBPitch = bmap->width >> 3;
+    FBPitch  = bmap->width >> 3;
     SRCPitch = bmap->width >> 2;
 
     outw(0x3ce, 0x0005);
@@ -395,10 +493,10 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 
     while(num--)
     {
-        width = (right - left + 1) >> 3;
+        width  = (right - left + 1) >> 3;
         height = pbox->y2 - pbox->y1 + 1;
-        src = (unsigned long*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
-        dst = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
+        src    = (unsigned long*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
+        dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
 
 	if((phase = ((long)dst & 3L)))
 	{
@@ -414,12 +512,14 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 	    srcPtr = src;
 	    i = width;
 	    j = phase;
+	    
 	    while(j--)
 	    {
 		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
  		*dstPtr++ = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
 		srcPtr += 2;
 	    }
+	    
 	    while(i >= 4)
 	    {
 		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
@@ -435,6 +535,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		dstPtr += 4;
 		i -= 4;
 	    }
+	    
 	    while(i--)
 	    {
 		m = (srcPtr[1] & 0x01010101) | ((srcPtr[0] & 0x01010101) << 4);
@@ -447,12 +548,14 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 	    srcPtr = src;
 	    i = width;
 	    j = phase;
+	    
 	    while(j--)
 	    {
 		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
  		*dstPtr++ = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
 		srcPtr += 2;
 	    }
+	    
 	    while(i >= 4)
 	    {
 		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
@@ -468,6 +571,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		dstPtr += 4;
 		i -= 4;
 	    }
+	    
 	    while(i--)
 	    {
 		m = (srcPtr[1] & 0x02020202) | ((srcPtr[0] & 0x02020202) << 4);
@@ -480,12 +584,14 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 	    srcPtr = src;
 	    i = width;
 	    j = phase;
+	    
 	    while(j--)
 	    {
 		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
  		*dstPtr++ = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
 		srcPtr += 2;
 	    }
+	    
 	    while(i >= 4) {
 		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
  		s1 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
@@ -500,6 +606,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		dstPtr += 4;
 		i -= 4;
 	    }
+	    
 	    while(i--)
 	    {
 		m = (srcPtr[1] & 0x04040404) | ((srcPtr[0] & 0x04040404) << 4);
@@ -512,12 +619,14 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 	    srcPtr = src;
 	    i = width;
 	    j = phase;
+	    
 	    while(j--)
 	    {
 		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
  		*dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
 		srcPtr += 2;
 	    }
+	    
 	    while(i >= 4)
 	    {
 		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
@@ -533,16 +642,21 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 		dstPtr += 4;
 		i -= 4;
 	    }
+	    
 	    while(i--)
 	    {
 		m = (srcPtr[1] & 0x08080808) | ((srcPtr[0] & 0x08080808) << 4);
  		*dstPtr++ = (m >> 27) | (m >> 18) | (m >> 9) | m;
 		srcPtr += 2;
 	    }
+	    
             dst += FBPitch;
             src += SRCPitch;
-        }
+	    
+        } /* while(height--) */
         pbox++;
-    }
+	
+    } /* while(num--) */ 
 } 
 
+/****************************************************************************************/
