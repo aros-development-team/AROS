@@ -10,7 +10,6 @@ FILES := processevents support
   modname=input modtype=device \
   initfile=input funcs=$(FUNCS) files=$(FILES) \
   objdir=$(GENDIR)/rom/input \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_INPUT)
+  conffile=lib.conf
   
 %common

@@ -43,7 +43,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 
 %build_module_macro mmake=kernel-dos \
   modname=dos modtype=library \
-  funcs=$(FUNCTIONS) files="$(FILES)" conffile=lib.conf genshlinklib=$(SHARED_DOS)
+  funcs=$(FUNCTIONS) files=$(FILES) \
+  conffile=lib.conf
 
 TESTS := datetostr runprocess strtodate splitname readargs
 TEST_DEPLIBS := arossupport arosc amiga

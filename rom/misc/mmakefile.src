@@ -9,6 +9,6 @@ FUNCS := allocmiscresource freemiscresource
   modname=misc modtype=resource \
   funcs=$(FUNCS) \
   conffile=lib.conf \
-  genshlinklib=$(SHARED_MISC) genincludes=yes
-
+  genincludes=yes
+  
 %common

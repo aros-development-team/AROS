@@ -32,8 +32,7 @@ FUNCS := \
 %build_module_macro mmake=kernel-cgfx \
   modname=cybergraphics modtype=library \
   funcs=$(FUNCS) \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_CGFX)
+  conffile=lib.conf
 
 #MM includes-copy
 

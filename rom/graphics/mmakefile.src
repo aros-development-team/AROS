@@ -219,7 +219,6 @@ FUNCTIONS := \
   modname=graphics modtype=library \
   funcs=$(FUNCTIONS) files=$(FILES) \
   conffile=lib.conf \
-  uselibs=hiddgraphicsstubs \
-  genshlinklib=$(SHARED_GRAPHICS)
+  uselibs=hiddgraphicsstubs
 
 %common

@@ -26,7 +26,6 @@ FUNCS := \
 %build_module_macro mmake=kernel-workbench \
   modname=workbench modtype=library conffile=lib.conf \
   funcs=$(FUNCS) files=$(FILES) \
-  uselibs="amiga rom" usecpak=no \
-  genshlinklib=$(SHARED_WORKBENCH)
+  uselibs="amiga rom"
 
 %common

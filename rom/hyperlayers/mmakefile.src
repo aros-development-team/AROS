@@ -50,7 +50,6 @@ FUNCS := \
   modname=layers modtype=library \
   funcs=$(FUNCS) files=$(FILES) \
   conffile=lib.conf \
-  genshlinklib=$(SHARED_LAYERS) \
   uselibs="amiga rom"
 
 %common

@@ -20,7 +20,6 @@ FUNCTIONS := \
   modname=utility modtype=library \
   funcs=$(FUNCTIONS) files=$(FILES) \
   conffile=lib.conf \
-  uselibs=arosc \
-  genshlinklib=$(SHARED_UTILITY)
+  uselibs=arosc
   
 %common

@@ -20,7 +20,6 @@ FUNCS   := \
 %build_module_macro mmake=kernel-mathffp \
   modname=mathffp modtype=library \
   funcs=$(FUNCS) \
-  conffile=lib.conf \
-  genshlinklib=$(SHARED_MATHFFP)
+  conffile=lib.conf
 
 %common

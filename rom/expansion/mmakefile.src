@@ -16,8 +16,7 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 %build_module_macro mmake=kernel-expansion \
   modname=expansion modtype=library \
   funcs=$(FUNCS) \
-  conffile=lib.conf usecpak=no \
-  uselibs=arosc_shared \
-  genshlinklib=$(SHARED_EXPANSION)
+  conffile=lib.conf \
+  uselibs=arosc_shared
 
 %common
