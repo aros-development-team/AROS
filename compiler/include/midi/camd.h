@@ -240,7 +240,7 @@ enum{
 #define CMEF_RecvOverflow (1L<<CMEB_RecvOverflow)
 #define CMEF_SysExTooBig (1L<<CMEB_SysExTooBig)
 
-#define CMEF_ALL (CMEF_MsgErr|CMEF_BufferFull|CMEF_SysExFull|CMEF_PaseMem|CMEF_RecvErr|CMEF_RecvOverflow|CMEF_SysExTooBig)
+#define CMEF_All (CMEF_MsgErr|CMEF_BufferFull|CMEF_SysExFull|CMEF_PaseMem|CMEF_RecvErr|CMEF_RecvOverflow|CMEF_SysExTooBig)
 
 struct ClusterNotifyNode{ULONG somethinginsideherebutdontusethisone;};
 
