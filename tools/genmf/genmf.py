@@ -293,11 +293,10 @@ else:
     
     for fileno in range(len(filelist)):
         files = filelist[fileno].split()
-        sys.stderr.write(filelist[fileno])
         if len(files) <> 2:
             sys.exit('%s:%d: Syntax error: %s' % (listfile, fileno+1, filelist[fileno]))
 
-        sys.stderr.write('Regenerate file %4d of %4d\r' % (fileno+1, len(filelist)))
+        sys.stderr.write('Regenerating file %4d of %4d\r' % (fileno+1, len(filelist)))
         sys.stderr.flush()
         
         infile = open(files[0], "r")
