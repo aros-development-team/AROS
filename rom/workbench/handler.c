@@ -359,9 +359,10 @@ static void __HandleIntuition_WB
 		break;
             default:
 	        iwbhm = NULL;
+		break;
 	}
         
-        if (iwbhm != NULL)
+        if ((iwbhm != NULL) && (WorkbenchBase->wb_WorkbenchPort != NULL))
         {
             PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *)iwbhm);
 	
