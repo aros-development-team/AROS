@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Use of aros.library/ArosInquireTagList
-    Lang: 
+    Lang:
 */
 
 #include <aros/arosbase.h>
@@ -21,7 +21,8 @@ struct Library *ArosBase;
 int main(int argc, char **argv)
 {
     int rc;
-    ULONG ret;
+    IPTR relMajor, relMinor, version;
+    IPTR kickbase, kicksize, kickver, kickrev;
 
     rc = 0;
 
@@ -40,22 +41,27 @@ int main(int argc, char **argv)
 	return RETURN_FAIL;
     }
 
-    printf("AROS release = %ld.%ld (V%ld)\n",
-	ArosInquire(AI_ArosReleaseMajor),
-	ArosInquire(AI_ArosReleaseMinor),
-	ArosInquire(AI_ArosVersion));
+    ArosInquire
+    (
+	AI_ArosReleaseMajor, &relMajor,
+	AI_ArosReleaseMinor, &relMinor,
+	AI_ArosVersion,      &version,
+	AI_KickstartBase,    &kickbase,
+	AI_KickstartSize,    &kicksize,
+	AI_KickstartVersion, &kickver,
+	AI_KickstartRevision, &kickrev,
+	TAG_END
+    );
 
-    if( (ret = ArosInquire(AI_KickstartBase)))
+    printf("AROS release = %ld.%ld (V%ld)\n", relMajor, relMinor, version);
+
+    if (kickbase)
     {
-	printf("Kickstart base address = $%lx\n", ret);
+	printf("Kickstart base address = $%lx\n", kickbase);
 
-	printf("Kickstart size = $%lx (%ld kB)\n",
-	    ArosInquire(AI_KickstartSize),
-	    ArosInquire(AI_KickstartSize)/1024);
+	printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
 
-	printf("Kickstart version = %ld.%ld\n",
-	    ArosInquire(AI_KickstartVersion),
-	    ArosInquire(AI_KickstartRevision));
+	printf("Kickstart version = %ld.%ld\n", kickver, kickrev);
     }
     else
     {
