@@ -127,13 +127,13 @@ if (IntuitionBase != NULL)
     {
     if (NULL != (scr = OpenScreenTags(NULL,
 			SA_Depth,	4,
-			SA_Pens,	&pens,
+			SA_Pens,	(IPTR) &pens,
 			TAG_END)))
 	{
 #ifdef __AROS__
 	if (NULL != (win = OpenWindowTags(NULL,
 			    WA_RMBTrap,      TRUE,
-			    WA_CustomScreen, scr,
+			    WA_CustomScreen, (IPTR) scr,
 			    WA_IDCMP,	     IDCMP_RAWKEY,
 			    TAG_END)))
 #else
