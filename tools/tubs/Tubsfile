@@ -1,0 +1,25 @@
+MODULES     := AWeb
+AWeb/CFILES := \
+amissl application area arexx asyncio author aweb awebamitcp awebtcp \
+body boopsi break bullet button cabrowse cache checkbox clip cookie \
+copy copydriver copyjs defprefs docext docjs  docsource document editor \
+element event extprog fetch field file filefield filereq form frame \
+framejs frameset hidden hotlist html http imgcopy imgsource info input \
+link local locale map memory miamissl mime name nameserv netstat object \
+parse popup prefs print printwin radio request ruler saveas saveiff scroller \
+search select simplerexx soundcopy soundsource source sourcedriver support \
+table task tcp tcperr text textarea timer tooltip url version whiswin window \
+winhis winrexx xaweb
+
+AWeb/LDFLAGS := amiga_rexxvars.o -s 
+
+AWeb/CFILES/awebamitcp/CPPFLAGS := $(NETINCLUDE)
+AWeb/CFILES/amissl/CPPFLAGS     := $(SSLINCLUDE)
+
+
+
+
+
+
+
+

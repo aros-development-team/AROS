@@ -1,0 +1,192 @@
+INCLUDE    := -I Include -I aweblibs/include
+NETINCLUDE := -I /gg/netinclude
+SSLINCLUDE := -I /gg/amissl-sdk/include
+
+CC       := m68k-amigaos-gcc
+
+
+CFLAGS   := -O2 -fomit-frame-pointer -m68020-60 -Werror-implicit-function-declaration \
+            -Wall
+
+CPPFLAGS := -Dstpbrk=strpbrk $(INCLUDE)
+
+LDFLAGS = -noixemul
+
+RM       = rm -f -R $(1)
+MKDIRS   = for d in $(1); do if  [ ! -d $$d ]; then mkdir -p $$d; fi; done
+ECHO     = echo $(1)
+
+DISTDIR     := distribution/
+BUILDDIR    := build/
+ALL_MODULES :=
+ALL_DEPS    :=
+
+build/module/executable/common/language := C
+
+##################################
+define build/module/executable/common/language/C
+$(1)/OBJS       += $($(1)/CFILES:%=$(BUILDDIR)$(1)/%.o)
+$(1)/OBJS/CDEPS := $($(1)/CFILES:%=$(BUILDDIR)$(1)/%.d)
+
+$(BUILDDIR)$(1)/%.o : $$($(1)/SRCDIR)%.c
+	$(CC) -c $(CFLAGS) $$($(1)/CFILES/CFLAGS) $$($(1)/CFILES/$$*/CFLAGS) \
+            $$($(1)/CFILES/$$*/CPPFLAGS) $$($(1)/CFILES/CPPFLAGS) $(CPPFLAGS) \
+            -I $$($(1)/SRCDIR)include $$< -o $$@
+
+$(BUILDDIR)$(1)/%.d : $$($(1)/SRCDIR)%.c
+	$(CC) -M $$($(1)/CFILES/$$*/CPPFLAGS) $$($(1)/CFILES/CPPFLAGS) $(CPPFLAGS) \
+            -I $$($(1)/SRCDIR)include $$< | sed 's;^.*\.o:;$$(dir $$@)&;' > $$@
+
+ifeq (,$(filter clean distclean $(1)-clean $(1)-distclean $(notdir $(1))-clean $(notdir $(1))-distclean, $(MAKECMDGOALS)))
+
+ifneq (,$(filter $(1) $(notdir $(1)) $(BUILDDIR)$(1)/%.o $(DISTDIR)$(1),$(if $(ALL_DEPS),$(ALL_DEPS),$(1))))
+
+-include $$($(1)/OBJS/CDEPS)
+
+endif
+
+endif
+
+endef
+##################################
+
+##################################
+define build/module/executable/common
+$(1)/OBJS  :=
+
+$$(foreach lang,$(build/module/executable/common/language),$$(eval $$(call build/module/executable/common/language/$$(lang),$(1))))
+endef
+##################################
+
+##################################
+define build/module/executable/application
+$(eval $(call build/module/executable/common,$(1)))
+$(DISTDIR)$(1): $$($(1)/DEPS) $$($(1)/OBJS)
+	$(CC) -o $$@ $$($(1)/OBJS) $(LDFLAGS) $$($(1)/LDFLAGS)
+endef
+##################################
+
+##################################
+define build/module/executable/library/amigashared
+$(1)/LDFLAGS += -lgcc -nostdlib -lamiga -lamigastubs -nostartfiles -noixemul
+$(eval $(call build/module/executable/application,$(1)))
+endef
+##################################
+
+#default module type is executable/application
+build/module/ = $(build/module/executable/application)
+
+##################################
+define build/module
+#FIXME: this is not really good, because these targets might conflict with the $(BUILDDIR)/%
+#ones.
+$(1):           $(DISTDIR)$(1)
+$(1)-clean:     $(DISTDIR)$(1)-clean
+$(1)-distclean: $(DISTDIR)$(1)-distclean
+
+$(notdir $(1)):           $(DISTDIR)$(1)
+$(notdir $(1))-clean:     $(DISTDIR)$(1)-clean
+$(notdir $(1))-distclean: $(DISTDIR)$(1)-distclean
+
+$(DISTDIR)$(1)-clean:
+	$(call RM, $(BUILDDIR)$(1)); \
+        $$(if "$$(wildcard $(dir $(BUILDDIR)$(1))*)",,$(call RM, $(dir $(BUILDDIR)$(1))))
+
+$(DISTDIR)$(1)-distclean: $(DISTDIR)$(1)-clean
+	$(call RM, $(DISTDIR)$(1)); \
+        $$(if "$$(wildcard $(dir $(DISTDIR)$(1))*)",,$(call RM, $(dir $(DISTDIR)$(1))))
+
+.PHONY: $(1) $(1)-clean $(1)-distclean $(notdir $(1)) $(notdir $(1))-clean $(notdir $(1))-distclean
+
+ifeq (,$(filter clean distclean $(1)-clean $(1)-distclean $(notdir (1))-clean $(notdir (1))-distclean, $(MAKECMDGOALS)))
+
+ifneq (,$(filter $(1) $(notdir $(1)) $(BUILDDIR)$(1)/%.o $(DISTDIR)$(1),$(if $(ALL_DEPS),$(ALL_DEPS),$(1))))
+
+__setup_modules__ ::
+	$$(call MKDIRS, $(BUILDDIR)$(1) $(DISTDIR)$(dir $(1)))
+
+endif
+
+endif
+
+$(eval $(call build/module/$($(1)/TYPE),$(1)))
+
+endef
+##################################
+
+##################################
+# 1) include a given makefile
+# 2) add the modules it defines to the global modules list
+# 3) set the SRCDIR variable for each module if it's not defined already
+define add_modules
+include $(1)
+
+ALL_MODULES += $$(MODULES)
+$$(foreach m,$$(MODULES),$$(eval $$(if $$($$(m)/SRCDIR), , $$(m)/SRCDIR := $$(dir $(1)))))
+endef
+########################################################################################
+
+#The real makefile begins --here--
+
+#This is the first target in the makefile. It just redirects to all_modules which
+#does the real job. It's here so that even if the included makefiles define some
+#other targets, all_modules always gets executed first (unless otherwise specified
+#in the command line)
+all: all_modules
+
+#find all makefiles in the tree and invoke add_modules on them.
+#This phase is currently handled by the 'find' utility, however
+#for better portability and performances it would be good
+#to use a custom tool which also mantained a sort of cache
+#to speed things up.
+ALL_MAKEFILES := $(shell find . -name Tubsfile)
+$(foreach mak,$(ALL_MAKEFILES),$(eval $(call add_modules,$(mak))))
+
+#The two functions below work together to calculate the complete list
+#of all dependencies of the modules to build, given on the command line.
+#In case no modules are given by the user then the list will be empty,
+#however the real list should be filled with ALL dependencies of ALL
+#available modules, but we optimize this out so that the build is faster
+define getdeplist_1
+$(foreach m,$(1),$(if $(filter $(m),$(__ALLDEPS__)),,$(eval __ALLDEPS__ += $(m)) \
+$(call getdeplist_1,$($(m)/DEPS))))
+endef
+getdeplist = $(eval __ALLDEPS__ :=) $(call getdeplist_1,$(1)) $(__ALLDEPS__)
+
+ALL_DEPS := $(call getdeplist,$(MAKECMDGOALS))
+
+all_modules: $(ALL_MODULES:%=$(DISTDIR)%)
+
+#invoke build/module on every module
+#build module recursively invokes some other functions which take care
+#of everything on the basis of the module's type.
+$(foreach m,$(ALL_MODULES),$(eval $(call build/module,$(m))))
+
+#little trick to make the __setup__ target be invoked before anything else.
+#
+#It works because there's no "__setup__" file in the directory, thus make
+#tries to generate it, and looks for a "__setup__" target, which is exactly
+#what we provide below. The file is not really generated, so the include directive
+#never succeeds, but this doesn't cause problems because we use "-include",
+#rather than "include".
+#
+#We *MUST* make sure that this is the last include directive in the makefile, because
+#make includes files starting from the last directive. Perhaps this is non-portable
+#but I have no intention to switch to another make implementation anytime soon, so it's
+#no real problem.
+
+-include __setup__
+
+#dummy target in case, for some reasons, no such targets are defined by the modules
+__setup_modules__ ::
+__setup__: __setup_modules__
+
+clean:
+	@$(call RM,$(BUILDDIR))
+
+distclean: clean
+	@$(call RM,$(DISTDIR))
+
+.PHONY: __setup__ all all_modules clean
+
+

@@ -1,0 +1,16 @@
+TUBS - The Ultimate Build System
+
+TUBS is intended to provide a new way to exploit the GNU Make capabilities to 
+implement a new build system which is fast, flexible and easy to mantain.
+
+Future implementations might not use GNU Make anymore, though, but
+compatibility with the "tubsfiles" will most likely be retained.
+
+There's no description of what the system can do and how it can do it as for
+now, I'm just providing here the system's core "Tubsengine" and a sample
+"tubsfile", both used to build the AWeb (http://aweb.sunsite.dk/) executable.
+
+Have a look around, ask questions if you so wish, and wait for me to get more
+time on my hands to write proper documentation and complete the system ;)
+
+Fabio Alemagna <falemagn@studenti.unina.it>
