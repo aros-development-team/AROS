@@ -5,15 +5,24 @@
     Query the current time and/or timezone.
 */
 
-#include <sys/time.h>
 #define timeval aros_timeval
-#include <devices/timer.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/timer.h>
+#include <exec/types.h>
+#include <devices/timer.h>
+#include <aros/symbolsets.h>
 #undef timeval
 
 #include "__time.h"
 
 long __gmtoffset;
+
+#ifndef _CLIB_KERNEL_
+static struct timerequest  __timereq;
+static struct MsgPort      __timeport;
+static struct Device      *TimerBase = NULL;
+#endif
 
 /*****************************************************************************
 
@@ -100,6 +109,8 @@ long __gmtoffset;
 
     if (tv)
     {
+        GETUSER;
+
         GetSysTime(&atv);
         tv->tv_sec  = atv.tv_secs;
         tv->tv_usec = atv.tv_micro;
@@ -117,3 +128,55 @@ long __gmtoffset;
 
     return 0;
 } /* gettimeofday */
+
+static int __init_timerbase(void)
+{
+    GETUSER;
+
+    __timeport.mp_Node.ln_Type   = NT_MSGPORT;
+    __timeport.mp_Node.ln_Pri    = 0;
+    __timeport.mp_Node.ln_Name   = NULL;
+    __timeport.mp_Flags          = PA_IGNORE;
+    __timeport.mp_SigTask        = FindTask(NULL);
+    __timeport.mp_SigBit         = 0;
+    NEWLIST(&__timeport.mp_MsgList);
+
+    __timereq.tr_node.io_Message.mn_Node.ln_Type    = NT_MESSAGE;
+    __timereq.tr_node.io_Message.mn_Node.ln_Pri     = 0;
+    __timereq.tr_node.io_Message.mn_Node.ln_Name    = NULL;
+    __timereq.tr_node.io_Message.mn_ReplyPort       = &__timeport;
+    __timereq.tr_node.io_Message.mn_Length          = sizeof (__timereq);
+
+    if
+    (
+        OpenDevice
+        (
+            "timer.device",
+            UNIT_VBLANK,
+            (struct IORequest *)&__timereq,
+            0
+        )
+        ==
+        0
+    )
+    {
+        TimerBase = (struct Device *)__timereq.tr_node.io_Device;
+        return 0;
+    }
+    else
+    {
+        return 20;
+    }
+}
+
+
+static void __exit_timerbase(void)
+{
+    GETUSER;
+    
+    if (TimerBase != NULL)
+        CloseDevice((struct IORequest *)&__timereq);
+}
+
+ADD2INIT(__init_timerbase, 0);
+ADD2EXIT(__exit_timerbase, 0);

@@ -12,14 +12,11 @@
 #include <sys/types.h>
 #include <time.h>		/* XXX Probably not allowed */
 
-/* This structure describes a specific time. See also <devices/timer.h>. */
-#ifndef DEVICES_TIMER_H
 struct timeval
 {
     time_t	tv_sec;	    /* Seconds passed. */
     suseconds_t	tv_usec;    /* Microseconds passed in the current second. */
 };
-#endif /* DEVICES_TIMER_H */
 
 /* struct itimerval is used by the interval timers getitimer()/setitimer() */
 struct itimerval
