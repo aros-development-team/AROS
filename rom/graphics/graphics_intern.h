@@ -196,7 +196,7 @@ struct GfxBase_intern
 #define CHUNKY8_COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
 				( ( ((LONG)(y)) * (bytes_per_row)) + (x) )
 
-#define XCOORD_TO_MASK(x) 	(1L << (7 - ((x) & 0x07)))
+#define XCOORD_TO_MASK(x)   	(128L >> ((x) & 0x07))
 
 /* For vsprite sorting */
 
