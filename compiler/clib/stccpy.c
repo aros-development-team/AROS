@@ -50,15 +50,15 @@
 {
     char * ptr = dest;
 
-    while (n && (*ptr = *src))
+    while (n && *ptr)
     {
+        *ptr = *src;
 	ptr ++;
 	src ++;
 	n--;
     }
 
-    while (n--)
-	*ptr++ = '\0';
+    *ptr = '\0';
 
     return (ptr-dest);
 } /* stccpy */
