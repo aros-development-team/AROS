@@ -167,9 +167,10 @@ SHARED	:= \
 	lrand48 \
 	lseek \
 	malloc \
+	mkdir \
+        mkstemp \
 	mktemp \
 	mktime \
-	mkdir \
 	mrand48 \
 	nrand48 \
 	on_exit \
