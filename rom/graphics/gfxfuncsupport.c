@@ -1009,7 +1009,7 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 
 /****************************************************************************************/
 
-#define ENABLE_PROFILING   1
+#define ENABLE_PROFILING   0
 #define USE_OLD_MoveRaster 0
 
 #define rdtscll(val) \
@@ -1078,7 +1078,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     else
     {
     	struct ClipRect *SrcCR;
-  
+
 	LockLayerRom(L);
 
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
