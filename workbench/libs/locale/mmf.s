@@ -35,11 +35,11 @@ LIBNAME  := locale
 ULIBNAME := Locale
 
 OSMODULE  := locale.library
-FILES     :=
+FILES     := defaultlocale english initlocale
 FUNCTIONS := \
 	closecatalog closelocale convtolower convtoupper \
 	formatdate formatstring getcatalogstr getlocalestr \
-	isxxxx opencataloga openlocale parsedate prefsnotify \
+	isxxxx opencataloga openlocale parsedate prefsupdate \
 	strconvert strncmp
 
 # BEGIN_DESC{localmakevar}

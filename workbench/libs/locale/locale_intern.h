@@ -28,6 +28,7 @@ struct IntLocaleBase
     struct Library          *lb_IFFParseBase;
     struct Library          *lb_UtilityBase;
 
+    struct IntLocale	    *lb_CurrentLocale;
     struct SignalSemaphore   lb_LocaleLock;
     struct SignalSemaphore   lb_CatalogLock;
     struct MinList           lb_CatalogList;
@@ -42,6 +43,28 @@ struct IntLocale
     APTR                 il_LanguageFunctions[32];
 
     /* Need to put all sorts of crap here later. */
+    UBYTE		PreferredLanguages[10][30];
+    UBYTE		DateTimeFormat[80];
+    UBYTE		DateFormat[40];
+    UBYTE		TimeFormat[40];
+    UBYTE		ShortDateTimeFormat[80];
+    UBYTE		ShortDateFormat[40];
+    UBYTE		ShortTimeFormat[40];
+    UBYTE		DecimalPoint[10];
+    UBYTE		Grouping[10];
+    UBYTE		FracGrouping[10];
+    UBYTE		GroupSeparator[10];
+    UBYTE		FracGroupSeparator[10];
+    UBYTE		MonDecimalPoint[10];
+    UBYTE		MonGroupSeparator[10];
+    UBYTE		MonGrouping[10];
+    UBYTE		MonFracGrouping[10];
+    UBYTE		MonFracGroupSeparator[10];
+    UBYTE		MonCS[10];
+    UBYTE		MonSmallCS[10];
+    UBYTE		MonIntCS[10];
+    UBYTE		MonPositiveSign[10];
+    UBYTE		MonNegativeSign[10];
 };
 
 struct CatStr
@@ -55,7 +78,13 @@ struct IntCatalog
 {
     struct Catalog      ic_Catalog;
     struct CatStr      *ic_First;
+    ULONG		ic_DataSize;
+    UWORD		ic_UseCount;
+    ULONG		ic_Flags;
 };
+
+/* Catalog strings are in order, so we don't have to search them all */
+#define ICF_INORDER	(1L<<0)
 
 /* Shortcuts to the internal structures */
 #define IntLB(lb)      ((struct IntLocaleBase *)(lb))

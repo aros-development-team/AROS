@@ -5,6 +5,8 @@
     Desc: CloseLocale() - Close a locale structure.
     Lang: english
 */
+#include <exec/types.h>
+#include <proto/exec.h>
 #include "locale_intern.h"
 
 extern struct Locale defLocale;

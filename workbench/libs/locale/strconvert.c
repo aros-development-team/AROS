@@ -5,6 +5,8 @@
     Desc: StrConvert - Stub for the Locale StrConvert function.
     Lang: english
 */
+#include <exec/types.h>
+#include <proto/exec.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
@@ -70,11 +72,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Locale *,LocaleBase)
 
-    return AROS_UFC4(ULONG, locale->LanguageFunctions[15],
-	AROS_UCA(STRPTR,    string, A0),
-	AROS_UCA(APTR,      buffer, A1),
-	AROS_UCA(ULONG,     bufferSize, D0),
-	AROS_UCA(ULONG,     type, D1));
+    return AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[15],
+	AROS_UFCA(STRPTR,    string, A0),
+	AROS_UFCA(APTR,      buffer, A1),
+	AROS_UFCA(ULONG,     bufferSize, D0),
+	AROS_UFCA(ULONG,     type, D1));
 
     AROS_LIBFUNC_EXIT
 } /* StrConvert */

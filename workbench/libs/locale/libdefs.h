@@ -11,7 +11,7 @@
 #define REVISION_NUMBER  1
 #define BASENAME         Locale
 #define BASENAME_STRING  "Locale"
-#define VERSION_STRING   "$VER: locale 41.1 (06.08.1998)\r\n"
+#define VERSION_STRING   "$VER: locale 41.1 (25.11.1998)\r\n"
 #define LIBEND           Locale_end
 #define LIBFUNCTABLE     Locale_functable
 #define COPYRIGHT_STRING ""

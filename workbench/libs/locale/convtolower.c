@@ -5,6 +5,7 @@
     Desc: ConvToLower() - Stub for the Language tolower() function.
     Lang: english
 */
+#include <exec/types.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
@@ -13,14 +14,14 @@
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH2(ULONG, ConvToLower,
+    AROS_LH2(ULONG, ConvToLower,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Locale *, locale, A0),
 	AROS_LHA(ULONG          , character, D0),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 8, Locale)
+	struct LocaleBase *, LocaleBase, 8, Locale)
 
 /*  FUNCTION
 	This function determine if the character supplied is upper case,
@@ -48,14 +49,14 @@
 
     HISTORY
 	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
+    		    locale_lib.fd and clib/locale_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_UFC2(ULONG, locale->LanguageFunctions[0],
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[0],
 	AROS_UFCA(ULONG, character, D0),
 	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 

@@ -5,6 +5,8 @@
     Desc: GetLocaleStr() - Get a builtin system string.
     Lang: english
 */
+#include <exec/types.h>
+#include <proto/exec.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
@@ -56,7 +58,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_UFC2(STRPTR, locale->LanguageFunction[3],
+    return AROS_UFC2(STRPTR, IntL(locale)->il_LanguageFunctions[3],
 	AROS_UFHA(ULONG, stringNum, D0),
 	AROS_UFHA(struct LocaleBase *, LocaleBase, A6));
 

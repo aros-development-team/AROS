@@ -5,12 +5,15 @@
     Desc:
     Lang: english
 */
+#include <exec/types.h>
+#include <utility/hooks.h>
+#include <proto/utility.h>
 #include "locale_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/locale_protos.h>
+#include <proto/locale.h>
 
 	AROS_LH4(void, FormatDate,
 
@@ -21,7 +24,7 @@
 	AROS_LHA(struct Hook      *, putCharFunc, A3),
 
 /*  LOCATION */
-	struct Library *, LocaleBase, 10, Locale)
+	struct Locale *, LocaleBase, 10, Locale)
 
 /*  FUNCTION
 

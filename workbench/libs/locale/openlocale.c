@@ -6,11 +6,19 @@
     Lang: english
 */
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <libraries/locale.h>
 #include <libraries/iffparse.h>
+#include <prefs/prefhdr.h>
 #include <prefs/locale.h>
+#include <proto/exec.h>
 #include <proto/iffparse.h>
 #include "locale_intern.h"
+
+extern void InitLocale(
+    struct IntLocale *,
+    struct LocalePrefs *,
+    struct LocaleBase *);
 
 /*****************************************************************************
 
@@ -114,7 +122,6 @@
 		    error = ParseIFF(iff, IFFPARSE_SCAN);
 		    if(error == 0)
 		    {
-			UBYTE buf1[8], buf2[8];
 			cn = CurrentChunk(iff);
 
 			if((cn->cn_ID == ID_LCLE) && (cn->cn_Type == ID_PREF))

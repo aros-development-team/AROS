@@ -5,12 +5,15 @@
     Desc:
     Lang: english
 */
+#include <exec/types.h>
+#include <utility/hooks.h>
+#include <proto/utility.h>
 #include "locale_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/locale_protos.h>
+#include <proto/locale.h>
 
 	AROS_LH4(APTR, FormatString,
 
@@ -50,6 +53,7 @@
     extern void aros_print_not_implemented (char *);
 
     aros_print_not_implemented ("FormatString");
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 } /* FormatString */

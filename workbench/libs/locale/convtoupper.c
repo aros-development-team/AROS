@@ -5,6 +5,8 @@
     Desc: ConvToUpper() - stub for the language toupper() function.
     Lang: english
 */
+
+#include <exec/types.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
@@ -56,7 +58,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_UFC2(ULONG, locale->LanguageFunctions[1],
+    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[1],
 	AROS_UFCA(ULONG, character, D0),
 	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 

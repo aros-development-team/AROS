@@ -22,11 +22,11 @@ const struct Locale defLocale =
     0,                              /* Flags */
 
     0,                              /* CodeSet */
-    'USA\0', 1,                     /* CountryCode, Telephone Code */
+    MAKE_ID('U','S','A',0), 1,      /* CountryCode, Telephone Code */
     0,                              /* GMT Offset */
     MS_AMERICAN,                    /* MeasuringSystem */
     CT_7SUN,                        /* Calendar Type */
-    0, 0,                           /* Reserved */
+    { 0, 0 },                       /* Reserved */
 
     "%A %B %e %Y %Q:%M %p",         /* Date/Time Format */
     "%A %B %e",                     /* Date Format */
@@ -35,13 +35,13 @@ const struct Locale defLocale =
     "%m/%d/%y",                     /* Short Date Format */
     "%Q:%M %p",                     /* Short Time Format */
 
-    ".", ",", "."                   /* Decimal Point, Group Separators */
+    ".", ",", ".",                  /* Decimal Point, Group Separators */
     "\x03\x00", "\x03\x00",
 
-    ".", ",", ","                   /* Monetary Separators (as above) */
+    ".", ",", ",",                  /* Monetary Separators (as above) */
     "\x03\x00", "\x03\x00",         /* Monetary Frac Groupings */
 
-    2, 2, 0, 0,                     /* Num Monetary Frac Digits, Resvd */
+    2, 2, { 0, 0 },                 /* Monetary (Reg/Int) Frac Digits, Resvd */
 
     "$", "¢", "USD",                /* Currency Symbols */
 

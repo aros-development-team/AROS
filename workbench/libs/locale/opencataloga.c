@@ -5,12 +5,14 @@
     Desc:
     Lang: english
 */
+#include <exec/types.h>
+#include <proto/exec.h>
 #include "locale_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/locale_protos.h>
+#include <proto/locale.h>
 
 	AROS_LH3(struct Catalog *, OpenCatalogA,
 
@@ -49,6 +51,7 @@
     extern void aros_print_not_implemented (char *);
 
     aros_print_not_implemented ("OpenCatalogA");
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* OpenCatalogA */

@@ -4,7 +4,7 @@
 
     Desc: english.language description file.
     Lang: english
-*
+*/
 
 #include <exec/types.h>
 #include <libraries/locale.h>
@@ -18,6 +18,22 @@ extern const ULONG __eng_to_lower[];
 extern const ULONG __eng_to_upper[];
 extern const STRPTR __eng_strings[];
 extern const ULONG __eng_collate_tab[];
+extern ULONG AROS_SLIB_ENTRY(null,Locale)();
+
+/* We use these to indicate whether a character is a certain type in the
+   character array. You don't actually have to use these really, you
+   can do whatever you like.
+*/
+#define iAlpha  (1 << 0)    /* Alphabetical characters */
+#define iCntrl  (1 << 1)    /* A control character */
+#define iDigit  (1 << 2)    /* Digit */
+#define iGraph  (1 << 3)    /* Graphical */
+#define iLower  (1 << 4)    /* Lower case alphabetical */
+#define iPrint  (1 << 5)    /* Printable */
+#define iPunct  (1 << 6)    /* Punctuation */
+#define iSpace  (1 << 7)    /* Whitespace */
+#define iUpper  (1 << 8)    /* Upper case */
+#define iXDigit (1 << 9)    /* Hexadecimal digit */
 
 /* ------------------------------------------------------------------ 
     Language Functions
@@ -241,7 +257,7 @@ AROS_LH4(ULONG, strconvert,
     }
     else if((type == SC_COLLATE1) || (type == SC_ASCII))
     {
-	STRPTR collTab;
+	const ULONG *collTab;
 
 	if(type == SC_ASCII)
 	    collTab = __eng_to_upper;
@@ -250,7 +266,7 @@ AROS_LH4(ULONG, strconvert,
 
 	while(--length && *string1)
 	{
-	    *string2++ = collTab[ (UBYTE)*string1 ];
+	    (ULONG)(*string2++) = collTab[ (UBYTE)*string1 ];
 	    count++;
 	}
         *string2 = '\0';
@@ -274,6 +290,14 @@ AROS_LH4(LONG, strcompare,
 {
     AROS_LIBFUNC_INIT
     ULONG a, b;
+
+    const ULONG *colltab;
+
+    /* Determine which collation table to use... */
+    if(type == SC_ASCII)
+	colltab = __eng_to_upper;
+    else
+	colltab = __eng_collate_tab;
 
     if(type == SC_COLLATE2)
     {
@@ -302,14 +326,6 @@ AROS_LH4(LONG, strcompare,
     }
     else if((type == SC_COLLATE1) || (SC_ASCII))
     {
-	ULONG *colltab;
-
-	/* Determine which collation table to use... */
-	if(type == SC_ASCII)
-	    colltab = __eng_to_upper;
-	else
-	    colltab = __eng_collate_tab;
-
 	do
 	{
 	    a = colltab[(UBYTE)*string1++];
@@ -334,7 +350,7 @@ void *const __eng_functable[] =
     /* 0 - 3 */
     &AROS_SLIB_ENTRY(convtolower, english),
     &AROS_SLIB_ENTRY(convtoupper, english),
-    &AROS_SLIB_ENTRY(null, english),
+    &AROS_SLIB_ENTRY(null, Locale),
     &AROS_SLIB_ENTRY(getlangstring, english),
 
     /* 4 - 7 */
@@ -353,10 +369,10 @@ void *const __eng_functable[] =
     &AROS_SLIB_ENTRY(ispunct, english),
     &AROS_SLIB_ENTRY(isupper, english),
     &AROS_SLIB_ENTRY(isxdigit, english),
-    &AROS_SLIB_ENTRY(stringconv, english),
+    &AROS_SLIB_ENTRY(strconvert, english),
 
     /* 16 */
-    &AROS_SLIB_ENTRY(stringcomp, english),
+    &AROS_SLIB_ENTRY(strcompare, english),
 
     (void *)-1
 };
@@ -948,7 +964,7 @@ const ULONG __eng_to_upper[256] =
 
     The basic idea is to have the character which is found in the normal
     ENGLISH alphabet used instead, this will allow for sorting in a
-    list so that "fÛol" would come before full not after it, as would
+    list so that "fÛll" would come before full not after it, as would
     happen by sorting just by ASCII characters.
 */
 const ULONG __eng_collate_tab[256] =
@@ -1046,8 +1062,8 @@ const ULONG __eng_collate_tab[256] =
 	'u',            /* '¥' */        'v',            /* 'µ' */
 	'w',            /* '' */        'x',            /* '…' */
 	'y',            /* '½' */        'z',            /* '¼' */
-	'{',            /* '†' */        '\"'            /* 'ª' */
-	'|',            /* 'º' */        '}',            /* '‡' */
+	'{',            /* '†' */       '\"',           /* 'ª' */
+	'|',		/* 'º' */	 '}',            /* '‡' */
 	'~',            /* 'æ' */        '?',            /* 'ø' */
 	'A',            /* '¿' */        'A',            /* '¡' */
 	'A',            /* '¬' */        'A',            /* 'ˆ' */
@@ -1082,8 +1098,6 @@ const ULONG __eng_collate_tab[256] =
 	'U',            /* '¸' */        'Y',            /* '›' */
 	'P',            /* 'œ' */        'Y',            /* '' */
 };
-
-
 
 /* This is the end of ROMtag marker. */
 const char end=0;

@@ -5,13 +5,15 @@
     Desc: StrnCmp() - Stub for the Locale StrnCmp() function.
     Lang: english
 */
+#include <exec/types.h>
+#include <proto/exec.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/locale_protos.h>
+#include <proto/locale.h>
 
 	AROS_LH5(LONG, StrnCmp,
 
@@ -23,7 +25,7 @@
 	AROS_LHA(ULONG          , type, D1),
 
 /*  LOCATION */
-	struct Library *, LocaleBase, 30, Locale)
+	struct Locale *, LocaleBase, 30, Locale)
 
 /*  FUNCTION
 	StrnCmp() will compare two strings, up to a maximum length
@@ -90,7 +92,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_UFC4(ULONG, locale->LanguageFunctions[16],
+    return AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[16],
 	AROS_UFCA(STRPTR, string1, A0),
 	AROS_UFCA(STRPTR, string2, A1),
 	AROS_UFCA(ULONG, length, D0),
