@@ -1,12 +1,16 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
 EXEDIR      := .
-OBJDIR	    := $(GENDIR)/test/GfxHidd
+OBJDIR      := $(GENDIR)/test/GfxHidd
 
 %define_libs
 
-FILES := BitMapNewDispose 
+FILES	    := \
+	BitMapNewDispose \
+        GCNewDispose     \
+        GCReadWritePixelDirect
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

@@ -14,7 +14,7 @@
 
     SYNOPSIS
 
-        BitMapNewDispose WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S
+        BitMapNewDispose HIDD/K,WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S
 
     LOCATION
 
@@ -26,10 +26,12 @@
         the bitmap.
 
     INPUTS
-        WIDTH  - width of bitmap
-        HEIGHT - height of bitmap
-        DEPTH  - depth of bitmap
-        CHUNKY - create bitmap in chunky-mode(default: planar)
+        HIDD   - name of the hidd to use e.g. "graphics-X11.hidd"
+                 (default: graphics.hidd)
+        WIDTH  - width of bitmap (default: 320)
+        HEIGHT - height of bitmap (default: 200)
+        DEPTH  - depth of bitmap (default: 8)
+        CHUNKY - create bitmap in chunky-mode (default: planar)
 
     RESULT
         RETURN_OK    - hidd works
@@ -86,13 +88,11 @@ struct OpnLibs
 
 struct DosLibrary    *DOSBase;
 struct Library       *OOPBase;
-struct Library       *HiddGraphicsBase;
+struct Library       *HIDDGraphicsBase;
 /***************************************************************/
 
 struct OpnLibs LibsArray[] = {{"dos.library"      , 37, B(&DOSBase)         },
                               {AROSOOP_NAME       ,  0, B(&OOPBase)         },
-                              {"graphics.hidd"    ,  0, B(&HiddGraphicsBase)},
-
                               {NULL,                 0, NULL          }
                              };
 
@@ -165,40 +165,94 @@ ULONG GetAttr(Object *obj, ULONG attrID)
 }
 /***************************************************************/
 
+Object * NewGC(Object *hiddGfx, ULONG gcType, struct TagItem *tagList)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_NewGC p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
+        
+    p.mID      = mid;
+    p.gcType   = gcType;
+    p.attrList = tagList;
+
+    return((Object *) DoMethod(hiddGfx, (Msg) &p));
+}
+/***************************************************************/
+
+void DisposeGC(Object *hiddGfx, Object *gc)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_DisposeGC p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeGC);
+        
+    p.mID    = mid;
+    p.gc     = gc;
+
+    DoMethod(hiddGfx, (Msg) &p);
+}
+/***************************************************************/
+
+Object * NewBitMap(Object *hiddGfx, struct TagItem *tagList)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_NewBitMap p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
+        
+    p.mID      = mid;
+    p.attrList = tagList;
+
+    return((Object *) DoMethod(hiddGfx, (Msg) &p));
+}
+/***************************************************************/
+
+void DisposeBitMap(Object *hiddGfx, Object *bitMap)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_DisposeBitMap p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_DisposeBitMap);
+        
+    p.mID    = mid;
+    p.bitMap = bitMap;
+
+    DoMethod(hiddGfx, (Msg) &p);
+}
+/***************************************************************/
+
 int main(int argc, char **argv)
 {
     ULONG ret = RETURN_FAIL;
 
-    AttrBase HiddGCAttrBase;
     AttrBase HiddGfxAttrBase;
     AttrBase HiddBitMapAttrBase;
 
+    Object   *gfxHidd;
     Object   *bitMap;
 
-    ULONG width  = 320;
-    ULONG height = 200;
-    ULONG depth  = 4;
-    ULONG format = HIDDV_BitMap_Format_Planar;
+    STRPTR hiddName = "graphics.hidd";
+    ULONG  width    = 320;
+    ULONG  height   = 200;
+    ULONG  depth    = 8;
+    ULONG  format   = HIDDV_BitMap_Format_Planar;
 
-    /* ReadArgs() declarations                */
-    /* each entry must have a size of 4 bytes */
     struct Args
     {
-        IPTR  *width;
-        IPTR  *height;
-        IPTR  *depth;
-        BOOL  chunky;
+        STRPTR hiddName;
+        IPTR   *width;
+        IPTR   *height;
+        IPTR   *depth;
+        BOOL   chunky;
     };
 
-    struct Args args = {&width, &height, &depth, 0};
+    struct Args args = {hiddName, &width, &height, &depth, 0};
     struct RDArgs *rda;
-
 
     if(OpenLibs())
     {
-        ret = RETURN_ERROR;
-
-        rda = ReadArgs("WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S", (IPTR *)&args, NULL);
+        rda = ReadArgs("HIDD/K,WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S", (IPTR *)&args, NULL);
         if (rda != NULL)
         {
             if(args.chunky != 0)
@@ -206,36 +260,57 @@ int main(int argc, char **argv)
                 format = HIDDV_BitMap_Format_Chunky;
             }
 
-            HiddBitMapAttrBase = GetAttrBase(IID_Hidd_BitMap);
-    
-            if(TRUE)
+            HIDDGraphicsBase = OpenLibrary(args.hiddName, 0);
+            if(HIDDGraphicsBase)
             {
+                ret = RETURN_ERROR;
 
-                struct TagItem tags[] =
+                HiddGfxAttrBase    = ObtainAttrBase(IID_Hidd_Gfx);
+                HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
+
+                if(HiddGfxAttrBase && HiddBitMapAttrBase)
                 {
-                    {aHidd_BitMap_Width,  (IPTR) *args.width},
-                    {aHidd_BitMap_Height, (IPTR) *args.height},
-                    {aHidd_BitMap_Depth,  (IPTR) *args.depth},
-                    {aHidd_BitMap_Format, (IPTR) format},
-                    {TAG_DONE, 0UL}
-                };
-    
-    
-                bitMap = NewObject(NULL, CLID_Hidd_BitMap, tags);
-                if(bitMap)
-                {
-                    printf("BitMap created:\n");
-                    printf("  width      : %li\n", GetAttr(bitMap, aHidd_BitMap_Width));
-                    printf("  height     : %li\n", GetAttr(bitMap, aHidd_BitMap_Height));
-                    printf("  depth      : %li\n", GetAttr(bitMap, aHidd_BitMap_Depth));
-                    printf("  format     : %li\n", GetAttr(bitMap, aHidd_BitMap_Format));
-                    printf("  displayable: %li\n", GetAttr(bitMap, aHidd_BitMap_Displayable));
+                    gfxHidd = NewObject(NULL, CLID_Hidd_Gfx, NULL);
+                    if(gfxHidd)
+                    {
+                        struct TagItem bm_tags[] =
+                        {
+                            {aHidd_BitMap_Width,  (IPTR) *args.width},
+                            {aHidd_BitMap_Height, (IPTR) *args.height},
+                            {aHidd_BitMap_Depth,  (IPTR) *args.depth},
+                            {aHidd_BitMap_Format, (IPTR) format},
+                            {TAG_DONE, 0UL}
+                        };
+            
+            
+                        bitMap = NewBitMap(gfxHidd, bm_tags);
+                        if(bitMap)
+                        {
+                            printf("BitMap created:\n");
+                            printf("  width      : %li\n", GetAttr(bitMap, aHidd_BitMap_Width));
+                            printf("  height     : %li\n", GetAttr(bitMap, aHidd_BitMap_Height));
+                            printf("  depth      : %li\n", GetAttr(bitMap, aHidd_BitMap_Depth));
+                            printf("  format     : %li\n", GetAttr(bitMap, aHidd_BitMap_Format));
+                            printf("  displayable: %li\n", GetAttr(bitMap, aHidd_BitMap_Displayable));
         
-                    DisposeObject(bitMap);
+                            DisposeBitMap(gfxHidd, bitMap);
+                
+                            ret = RETURN_OK;
+                        }
         
-                    ret = RETURN_OK;
-                }
-            }  /* if(TRUE) */
+        
+                    }  /* if(gfxHidd) */
+
+                    DisposeObject(gfxHidd);
+
+                } /* if(HiddGfxAttrBase && HiddBitMapAttrBase) */
+
+                if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
+                if(HiddGfxAttrBase)    ReleaseAttrBase(IID_Hidd_Gfx);
+
+                CloseLibrary(HIDDGraphicsBase);
+
+            } /* if(HIDDGraphicsBase) */
 
             FreeArgs(rda);
         }

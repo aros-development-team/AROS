@@ -3,3 +3,5 @@
 *.o
 mmakefile
 BitMapNewDispose
+GCNewDispose
+GCReadWritePixelDirect
