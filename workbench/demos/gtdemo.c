@@ -40,20 +40,22 @@ struct Screen * scr;
 struct Window * win;
 struct Gadget * glist;
 
+struct Gadget * button;
+
 #define ID_BUTTON 1
 #define ID_CHECKBOX 2
 
 struct NewGadget buttongad =
 {
     210, 10, 100, 20,
-    "Button (1)", NULL,
+    "Exit (1)", NULL,
     ID_BUTTON, PLACETEXT_IN, NULL, NULL
 };
 
 struct NewGadget checkbox =
 {
     320, 10, 20, 20,
-    "Checkbox (2)", NULL,
+    "Disable (2)", NULL,
     ID_CHECKBOX, PLACETEXT_RIGHT, NULL, NULL
 };
 
@@ -134,15 +136,20 @@ BOOL openwin()
 
 struct Gadget * makegadgets(struct Gadget *gad)
 {
+    struct Gadget *glist = gad;
+
     buttongad.ng_VisualInfo = vi;
     checkbox.ng_VisualInfo = vi;
-    gad = CreateGadget(BUTTON_KIND, gad, &buttongad, TAG_DONE);
+    gad = CreateGadget(BUTTON_KIND, gad, &buttongad,
+		       GA_Immediate, TRUE,
+		       TAG_DONE);
+    button = gad;
     gad = CreateGadget(CHECKBOX_KIND, gad, &checkbox,
 		       GTCB_Checked, FALSE,
 		       GTCB_Scaled, TRUE, TAG_DONE);
     if (!gad)
     {
-        FreeGadgets(gad);
+        FreeGadgets(glist);
         Printf("GTDemo: Error creating gadgets\n", NULL);
     }
     return gad;
@@ -191,11 +198,17 @@ void handlewin()
             case IDCMP_RAWKEY:
                 ready = TRUE;
                 break;
+	    case IDCMP_GADGETDOWN:
+	        printf("Gadget %d pressed",
+		       ((struct Gadget *)msg->IAddress)->GadgetID);
 	    case IDCMP_GADGETUP:
 	        printf("Gadget %d released",
-			((struct Gadget *)msg->IAddress)->GadgetID);
+		       ((struct Gadget *)msg->IAddress)->GadgetID);
 		switch (((struct Gadget *)msg->IAddress)->GadgetID)
 		{
+		case ID_BUTTON:
+		    ready = TRUE;
+		    break;
 		case ID_CHECKBOX: {
 		    IPTR checked;
 		    struct TagItem gettags[] = {{GTCB_Checked, (IPTR)NULL}, {TAG_DONE, 0}};
@@ -208,6 +221,8 @@ void handlewin()
 		        printf(" (checked)");
 		    else
 		        printf(" (not checked)");
+		    GT_SetGadgetAttrs(button, win, NULL,
+                                      GA_Disabled, checked, TAG_DONE);
 		    break; }
 		}
 		printf("\n");
