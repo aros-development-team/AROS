@@ -69,7 +69,7 @@
     assert (node);
 
     /* Look through the list */
-    ForeachNode (list, node)
+    ForeachNode (list, next)
     {
 	/*
 	    Look for the first node with a lower pri as the node
