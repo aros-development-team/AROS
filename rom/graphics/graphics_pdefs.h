@@ -29,4 +29,8 @@
     AROS_LCA(ULONG, modeid, D0), \
     struct GfxBase *, GfxBase, 182, Graphics)
 
+#define MouseCoordsRelative() \
+    AROS_LC0(BOOL, MouseCoordsRelative, \
+    struct GfxBase *, GfxBase, 183, Graphics)
+
 #endif /* _GFX_PDEFS_H */

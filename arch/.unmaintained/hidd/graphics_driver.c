@@ -4490,6 +4490,16 @@ ULONG do_render_func(struct RastPort *rp
 
 }
 
+BOOL driver_MouseCoordsRelative(struct GfxBase *GfxBase)
+{
+    IPTR iswindowed;
+    
+    GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_IsWindowed, &iswindowed);
+    if (iswindowed)
+    	return FALSE;
+	
+    return TRUE;
+}
 /***********************************************/
 /* CYBERGFX CALLS                            ***/
 

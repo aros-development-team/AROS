@@ -141,6 +141,7 @@ FUNCTIONS := \
 	locklayerrom \
 	makevport \
 	modenotavailable \
+	mousecoordsrelative \
 	move \
 	movesprite \
 	mrgcop \

@@ -619,9 +619,20 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		break; /* case MENUDOWN */
 
-	    case IECODE_NOBUTTON: { /* MOUSEMOVE */ 
-		iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
-		iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
+	    	if (MouseCoordsRelative())
+		{
+		    iihdata->DeltaMouseX = ie->ie_X;
+		    iihdata->DeltaMouseY = ie->ie_Y;
+		    
+		    ie->ie_X = iihdata->DeltaMouseX + iihdata->LastMouseX;
+		    ie->ie_Y = iihdata->DeltaMouseY + iihdata->LastMouseY;
+		}
+		else
+		{
+		    iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
+		    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+		}
 		
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;

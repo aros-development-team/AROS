@@ -36,4 +36,7 @@ AROS_LP1(struct BitMap *, AllocScreenBitMap,
     AROS_LPA(ULONG, modeid, D0),
     struct GfxBase *, GfxBase, 182, Graphics)
 
+AROS_LP0(BOOL, MouseCoordsRelative,
+    struct GfxBase *, GfxBase, 183, Graphics)
+
 #endif /* _GRAPHICS_PRIVATE_H */

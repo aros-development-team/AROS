@@ -217,7 +217,7 @@ extern ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase);
 extern ULONG driver_GetVPModeID(struct ViewPort *vp, struct GfxBase *GfxBase);
 extern ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase);
 extern struct BitMap *driver_AllocScreenBitMap(ULONG modeid, struct GfxBase *GfxBase);
-
+extern BOOL driver_MouseCoordsRelative(struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

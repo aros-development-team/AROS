@@ -25,5 +25,9 @@
     LP1( , struct BitMap *, AllocScreenBitMap, \
 	ULONG, modeid, d0, \
 	GFX_BASE_NAME )
+
+#define MouseCoordsRelative() \
+    LP0( , BOOL, MouseCoordsRelative, \
+	GFX_BASE_NAME )
 	
 #endif _GFX_PINLINES_H
