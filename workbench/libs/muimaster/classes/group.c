@@ -1567,6 +1567,30 @@ mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
     return DoMethodA(data->family, (Msg)msg);
 }
 
+/**************************************************************************
+ MUIM_DragQueryExtented
+**************************************************************************/
+static ULONG Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    Object               *found_obj;
+    struct MinList       *ChildList;
+
+    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate =  (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	if (! (_flags(child) & MADF_CANDRAW))
+	    continue;
+
+	if ((found_obj = (Object*)DoMethodA(child, (Msg)msg)))
+	    return (ULONG)found_obj;
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
 #ifndef _AROS
 __asm IPTR Group_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -1578,18 +1602,12 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 {
     switch (msg->MethodID)
     {
-    case OM_NEW:
-	return Group_New(cl, obj, (struct opSet *) msg);
-    case OM_DISPOSE:
-	return Group_Dispose(cl, obj, msg);
-    case OM_SET:
-	return Group_Set(cl, obj, (struct opSet *)msg);
-    case OM_GET:
-	return Group_Get(cl, obj, (struct opGet *)msg);
-    case OM_ADDMEMBER:
-	return Group_AddMember(cl, obj, (APTR)msg);
-    case OM_REMMEMBER:
-	return Group_RemMember(cl, obj, (APTR)msg);
+    case OM_NEW: return Group_New(cl, obj, (struct opSet *) msg);
+    case OM_DISPOSE: return Group_Dispose(cl, obj, msg);
+    case OM_SET: return Group_Set(cl, obj, (struct opSet *)msg);
+    case OM_GET: return Group_Get(cl, obj, (struct opGet *)msg);
+    case OM_ADDMEMBER: return Group_AddMember(cl, obj, (APTR)msg);
+    case OM_REMMEMBER: return Group_RemMember(cl, obj, (APTR)msg);
     case MUIM_AskMinMax :
 	return mAskMinMax(cl, obj, (APTR)msg);
     case MUIM_Group_ExitChange :
@@ -1610,7 +1628,6 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mDraw(cl, obj, (APTR)msg);
 //    case MUIM_Group_FindObject :
 //	return mFindObject(cl, obj, (APTR)msg);
-
     case MUIM_Export :
 	return mExport(cl, obj, (APTR)msg);
     case MUIM_Import :
@@ -1623,6 +1640,8 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mSetUData(cl, obj, (APTR)msg);
     case MUIM_SetUDataOnce :
 	return mSetUDataOnce(cl, obj, (APTR)msg);
+
+    case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }
 
     DoSuperMethodA(cl, obj, msg);

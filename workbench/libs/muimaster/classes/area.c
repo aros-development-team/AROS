@@ -78,7 +78,7 @@ Area.mui/MUIA_ControlChar           done
 Area.mui/MUIA_CycleChain            done
 Area.mui/MUIA_Disabled
 Area.mui/MUIA_Draggable             done
-Area.mui/MUIA_Dropable
+Area.mui/MUIA_Dropable              done
 Area.mui/MUIA_ExportID
 Area.mui/MUIA_FillArea              done
 Area.mui/MUIA_FixHeight             done
@@ -128,7 +128,7 @@ Area.mui/MUIM_DragDrop
 Area.mui/MUIM_DragFinish
 Area.mui/MUIM_DragQuery
 Area.mui/MUIM_DragReport
-Area.mui/MUIM_Draw                  miss frame title
+Area.mui/MUIM_Draw                  done
 Area.mui/MUIM_DrawBackground        done
 Area.mui/MUIM_HandleEvent           done
 Area.mui/MUIM_HandleInput
@@ -152,7 +152,7 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
 //static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 
 
-void _zune_focus_new(Object *obj)
+static void _zune_focus_new(Object *obj, int type)
 {
     Object *parent = _parent(obj);
     struct RastPort *rp = _rp(obj);
@@ -166,7 +166,10 @@ void _zune_focus_new(Object *obj)
     if (!parent || parent == _win(obj)) return;
 
     SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW], JAM2);
-    SetDrPt(rp, 0xCCCC);
+
+    if (!type) SetDrPt(rp, 0xCCCC);
+    else SetDrPt(rp,0x5555);
+
     Move(rp, x1, y1);
     Draw(rp, x2, y1);
     Draw(rp, x2, y2);
@@ -175,7 +178,7 @@ void _zune_focus_new(Object *obj)
     SetDrPt(rp, oldDrPt);
 }
 
-void _zune_focus_destroy(Object *obj)
+static void _zune_focus_destroy(Object *obj)
 {
     Object *parent = _parent(obj);
 
@@ -235,6 +238,9 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Draggable:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
 		break;
+	    case MUIA_Dropable:
+	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
+	        break;
 	    case MUIA_FixHeight:
 		data->mad_Flags |= MADF_FIXHEIGHT;
 		data->mad_HardHeight = tag->ti_Data;
@@ -453,6 +459,13 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_VertWeight:
 		data->mad_VertWeight = tag->ti_Data;
 		break;
+
+	    case MUIA_Draggable:
+		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
+		break;
+	    case MUIA_Dropable:
+	        _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DROPABLE);
+	        break;
 	}
     }
 
@@ -1053,7 +1066,7 @@ static ULONG Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
 
     if (obj == activeobj)
-	_zune_focus_new(obj);
+	_zune_focus_new(obj,0);
 
     return TRUE;
 }
@@ -1102,7 +1115,7 @@ static ULONG Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
     if (!(_flags(obj) & MADF_ACTIVE))
     {
 	if (_flags(obj) & MADF_CANDRAW)
-	    _zune_focus_new(obj);
+	    _zune_focus_new(obj,0);
 
 	_flags(obj) |= MADF_ACTIVE;
     }
@@ -1476,6 +1489,43 @@ static ULONG Area_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_De
     return NULL;
 }
 
+/**************************************************************************
+ MUIM_DragQueryExtended
+**************************************************************************/
+static IPTR Area_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_DragQueryExtended *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    if (data->mad_Flags & MADF_DROPABLE)
+    {
+	if (_left(obj) <= msg->x && msg->x <= _right(obj) && _top(obj) <= msg->y && msg->y <= _bottom(obj))
+	{
+	    if (DoMethod(obj,MUIM_DragQuery,msg->obj) == MUIV_DragQuery_Accept)
+		return (IPTR)obj;
+	}
+    }
+    return NULL;
+}
+
+/**************************************************************************
+ MUIM_DragBegin
+**************************************************************************/
+ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    _zune_focus_new(obj,1);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_DragFinish
+**************************************************************************/
+ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    _zune_focus_destroy(obj);
+    return 0;
+}
+
 
 /*
  * Calculates addleft, addtop, subwidth, subheight from current settings.
@@ -1572,14 +1622,15 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	case MUIM_HandleEvent: return Area_HandleEvent(cl, obj, (APTR)msg);
 	case MUIM_ContextMenuBuild: return Area_ContextMenuBuild(cl, obj, (APTR)msg);
 	case MUIM_Timer: return Area_Timer(cl,obj,msg);
-	case MUIM_DragQuery: return FALSE;
-	case MUIM_DragBegin: return FALSE;
+	case MUIM_DragQuery: return MUIV_DragQuery_Refuse;
+	case MUIM_DragBegin: return Area_DragBegin(cl,obj,(APTR)msg);
 	case MUIM_DragDrop: return FALSE;
-	case MUIM_DragFinish: return FALSE;
-	case MUIM_DragReport: return FALSE;
+	case MUIM_DragFinish: return Area_DragFinish(cl,obj,(APTR)msg);
+	case MUIM_DragReport: return MUIV_DragReport_Continue; /* or MUIV_DragReport_Abort? */
 	case MUIM_DoDrag: return Area_DoDrag(cl, obj, (APTR)msg);
 	case MUIM_CreateDragImage: return Area_CreateDragImage(cl, obj, (APTR)msg);
 	case MUIM_DeleteDragImage: return Area_DeleteDragImage(cl, obj, (APTR)msg);
+	case MUIM_DragQueryExtended: return Area_DragQueryExtended(cl, obj, (APTR)msg);
 
 	case MUIM_Export: return Area_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Area_Import(cl, obj, (APTR)msg);
