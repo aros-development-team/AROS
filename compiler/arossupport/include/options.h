@@ -46,18 +46,19 @@
 #endif
 
 /* If the following is defined, errnos from unix function-calls that could not
-   be interpreted as AROS error number are reached passed back via SetIoErr().
-   The errno is incremented by the value of this define. Note that this value
-   should generate unique error numbers! Note also that Fault() checks, whether
-   an error-number is in fact an errno, by AND'ing this value to the error
-   number! The recommended value is 0x40000000 (ie only the 30th bit set).
+   be interpreted as AROS error numbers (ERROR_* defined in <dos/dos.h> are
+   passed back via SetIoErr(). The errno is incremented by the value of this
+   define. Note that this value should generate unique error numbers! Note
+   also that Fault() checks, whether an error-number is in fact an errno, by
+   AND'ing this value to the error number! The recommended value is 0x40000000
+   (ie only the 30th bit set).
 
    If this is defined to 0, the errno will not be passed through. Instead
    ERROR_UNKNOWN is returned, if the errno could not be interpreted.
 
-   On systems without any Unix emulation (ie every system without underlying
-   POSIX operating system), this should be set to 0 to simplify the resulting
-   code. */
+   On AROS systems without any Unix emulation (ie every system without
+   underlying POSIX-compatible operating system), this should be set to 0 to
+   simplify the resulting code. */
 #ifndef PassThroughErrnos
 #   define PassThroughErrnos	0
 /* #   define PassThroughErrnos	0x40000000 */
