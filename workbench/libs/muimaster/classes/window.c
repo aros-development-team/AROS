@@ -948,14 +948,16 @@ void _zune_window_message(struct IntuiMessage *imsg)
     	    if (data->wd_DropObject)
     	    {
 		struct Window *wnd;
+    	    	WORD mousex = imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge;
+    	    	WORD mousey = imsg->MouseY + iWin->TopEdge  - data->wd_DropWindow->TopEdge;
 
 		wnd = _window(data->wd_DropObject);
 		if
                 (
-                       imsg->MouseX < _left(data->wd_DropObject) 
-                    || imsg->MouseX > _right(data->wd_DropObject) 
-                    || imsg->MouseY < _top(data->wd_DropObject) 
-                    || imsg->MouseY > _bottom(data->wd_DropObject) 
+                       mousex < _left(data->wd_DropObject) 
+                    || mousex > _right(data->wd_DropObject) 
+                    || mousey < _top(data->wd_DropObject) 
+                    || mousey > _bottom(data->wd_DropObject) 
                     || layer != wnd->WLayer
                 )
 		{
