@@ -210,6 +210,7 @@ BOOPSI_DISPATCHER(IPTR, Popframe_Dispatcher, cl, obj, msg)
         default: return DoSuperMethodA(cl, obj, msg);
     }    
 }
+BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Popframe_desc =
 { 

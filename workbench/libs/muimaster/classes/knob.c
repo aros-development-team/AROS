@@ -458,6 +458,7 @@ BOOPSI_DISPATCHER(IPTR, Knob_Dispatcher, cl, obj, msg)
         default:     return DoSuperMethodA(cl, obj, msg);
     }
 }
+BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Knob_desc =
 { 

@@ -1428,6 +1428,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
     
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 struct MUI_IconDrawerData
 {
@@ -1640,6 +1641,7 @@ BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, cl, obj, msg)
 
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 /* sba: taken from SimpleFind3 */
 
@@ -1831,6 +1833,7 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, cl, obj, msg)
     
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 /*
  * Class descriptor.

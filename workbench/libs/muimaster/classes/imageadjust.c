@@ -966,6 +966,7 @@ BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
             return DoSuperMethodA(cl, obj, msg);
     }   
 }
+BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Imageadjust_desc =
 { 

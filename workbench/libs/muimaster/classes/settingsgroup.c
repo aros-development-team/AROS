@@ -79,6 +79,7 @@ BOOPSI_DISPATCHER(IPTR, Settingsgroup_Dispatcher, cl, obj, msg)
             return DoSuperMethodA(cl, obj, msg);
     }
 }
+BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Settingsgroup_desc =
 { 

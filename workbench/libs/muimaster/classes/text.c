@@ -960,6 +960,8 @@ BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
+
 
 
 /*
