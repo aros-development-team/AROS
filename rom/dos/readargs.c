@@ -5,11 +5,28 @@
     Desc:
     Lang: english
 */
+#ifndef TEST
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 #include "dos_intern.h"
+#if 0
+#ifndef TEST
+#include <proto/dos.h>
+#undef ReadArgs
+#undef AROS_LH3
+#define AROS_LH3(t,fn,a1,a2,a3,bt,bn,o,lib)     t fn (a1,a2,a3)
+#undef AROS_LHA
+#define AROS_LHA(t,n,r)                   t n
+#undef AROS_LIBFUNC_INIT
+#define AROS_LIBFUNC_INIT
+#undef AROS_LIBBASE_EXT_DECL
+#define AROS_LIBBASE_EXT_DECL(bt,bn)
+#undef AROS_LIBFUNC_EXIT
+#define AROS_LIBFUNC_EXIT
+#endif
+#endif
 
 /*****************************************************************************
 
@@ -77,6 +94,7 @@
     NOTES
 
     EXAMPLE
+	See below.
 
     SEE ALSO
 	FreeArgs(), Input()
@@ -468,3 +486,51 @@ end:
     }
     AROS_LIBFUNC_EXIT
 } /* ReadArgs */
+#endif /* !TEST */
+
+#ifdef TEST
+#include <dos/dos.h>
+#include <dos/rdargs.h>
+#include <utility/tagitem.h>
+
+#include <proto/dos.h>
+
+char cmlargs[] = "TEST/A";
+
+char usage[] =
+   "This is exthelp for test\n"
+   "Enter something";
+
+#define CML_TEST 0
+#define CML_END  1
+
+LONG cmlvec[CML_END];
+
+int main(int argc, char **argv)
+{
+    struct RDArgs *rdargs;
+
+    if( (rdargs = AllocDosObject(DOS_RDARGS, NULL)))
+    {
+	rdargs->RDA_ExtHelp = usage; /* FIX: why doesn't this work? */
+
+	if(!(ReadArgs(cmlargs, cmlvec, rdargs)))
+	{
+	    PrintFault(IoErr(), "AROS boot");
+	    FreeDosObject(DOS_RDARGS, rdargs);
+	    exit(RETURN_FAIL);
+	}
+    }
+    else
+    {
+	PrintFault(ERROR_NO_FREE_STORE, "AROS boot");
+	exit(RETURN_FAIL);
+    }
+
+    FreeArgs(rdargs);
+    FreeDosObject(DOS_RDARGS, rdargs);
+
+    return 0;
+} /* main */
+
+#endif /* TEST */
