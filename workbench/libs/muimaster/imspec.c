@@ -1782,3 +1782,7 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
     RectFill(mri->mri_RastPort, left, top, left + width - 1, top + height - 1);
 }
 
+void zune_imspec_set_scaled_size (struct MUI_ImageSpec *img, LONG w, LONG h)
+{
+}
+

@@ -311,8 +311,6 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-#warning FIXME: mad_Background
-#if 0
 	    case MUIA_Background:
 		if (data->mad_Background)
 		{
@@ -335,7 +333,6 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /*    		g_print("set img %p for area %p\n", data->mad_Background, obj); */
 		MUI_Redraw(obj, MADF_DRAWOBJECT);
 		break;
-#endif
 
 	    case MUIA_ControlChar:
 		if (_flags(obj) & MADF_SETUP)
@@ -854,7 +851,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 /**************************************************************************
- MUIM_DrawBackgroup
+ MUIM_DrawBackground
 **************************************************************************/
 static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
 {
@@ -862,18 +859,9 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
 	return FALSE;
 
-#warning FIXME: mad_Background
-#if 0
     zune_draw_image(data->mad_RenderInfo, data->mad_Background,
 		    msg->left, msg->top, msg->width, msg->height,
 		    msg->xoffset, msg->yoffset, 0);
-#else
-    RectFill(data->mad_RenderInfo->mri_RastPort,
-		    msg->left,
-		    msg->top,
-		    msg->left + msg->width  - 1,
-		    msg->top  + msg->height - 1);
-#endif
 
     return TRUE;
 }
@@ -967,8 +955,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
-	DoMethod(_win(obj),
-		 MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
     }
     setup_control_char (data, obj, cl);
     setup_cycle_chain (data, obj);
@@ -980,8 +967,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	if (_parent(obj) != NULL) data->mad_Font = _font(_parent(obj));
 	else data->mad_Font = zune_font_get(MUIV_Font_Normal);
     }
-    else
-	data->mad_Font = zune_font_get(data->mad_FontPreset);
+    else data->mad_Font = zune_font_get(data->mad_FontPreset);
 
 /*  g_print("font after = %p\n", data->mad_Font); */
 
@@ -1065,8 +1051,6 @@ static ULONG Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 
 /*      g_print("showing %s\n", zune_area_to_string(obj)); */
 
-#warning FIXME: mad_Background
-#if 0
     zune_imspec_set_scaled_size(data->mad_Background, _width(obj), _height(obj));
     zune_imspec_show(data->mad_Background, obj);
 
@@ -1076,7 +1060,6 @@ static ULONG Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 	zune_imspec_set_scaled_size(data->mad_SelBack, _width(obj), _height(obj));
 	zune_imspec_show(data->mad_SelBack, obj);
     }
-#endif
 
     get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
 
@@ -1098,15 +1081,12 @@ static ULONG Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     if (obj == activeobj)
 	_zune_focus_destroy(obj);
 
-#warning FIXME: mad_Background
-#if 0
     zune_imspec_hide(data->mad_Background);
     if (data->mad_Flags & MADF_SHOWSELSTATE
 	&& data->mad_InputMode != MUIV_InputMode_None)
     {
 	zune_imspec_hide(data->mad_SelBack);
     }
-#endif
 
     _flags(obj) &= ~MADF_CANDRAW;
     return TRUE;
@@ -1254,7 +1234,6 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    set(obj, MUIA_Selected, !(data->mad_Flags & MADF_SELECTED));
 	    break;
     }
-
 }
 
 /* either lmb or release key */
@@ -1312,7 +1291,7 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
             if (data->mad_InputMode == MUIV_InputMode_RelVerify)
             {
                 DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-                data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE | IDCMP_RAWKEY;
                 DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
             }
             return MUI_EventHandlerRC_Eat;
@@ -1323,7 +1302,7 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
         if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
         {
             DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
-            data->mad_ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+            data->mad_ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE|IDCMP_RAWKEY);
             DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
             if (!in)
                 nnset(obj, MUIA_Pressed, FALSE);
@@ -1546,27 +1525,27 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 
     if (msg->imsg)
     {
-#if defined(_AROS) || defined (_AMIGA)
 	switch (msg->imsg->Class)
 	{
-	case IDCMP_MOUSEBUTTONS:
-	  return event_button(cl, obj, msg->imsg);
-	case IDCMP_MOUSEMOVE:
-	  return event_motion(cl, obj, msg->imsg);
+	    case IDCMP_MOUSEBUTTONS: return event_button(cl, obj, msg->imsg);
+	    case IDCMP_MOUSEMOVE: return event_motion(cl, obj, msg->imsg);
+	    case IDCMP_RAWKEY:
+	    {
+	        if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+	        {
+		    if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
+		    {
+			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+			data->mad_ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE|IDCMP_RAWKEY);
+			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+			nnset(obj, MUIA_Pressed, FALSE); /* aborted */
+			handle_release(cl,obj);
+			return MUI_EventHandlerRC_Eat;
+		    }
+		}
+	    }
+	    break;
 	}
-#else
-	switch (msg->imsg->type)
-	{
-	case GDK_BUTTON_PRESS:
-	  return event_button_press(cl, obj, (GdkEventButton *)msg->imsg);
-	case GDK_BUTTON_RELEASE:
-	  return event_button_release(cl, obj, (GdkEventButton *)msg->imsg);
-	case GDK_MOTION_NOTIFY:
-	  return event_motion(cl, obj, (GdkEventMotion *)msg->imsg);
-	default:
-	  return 0;
-       }
-#endif
     }
     return 0;
 }
