@@ -24,6 +24,35 @@ COMPILING:
     multiview README
     execute README
 
+  You also have to add the following macro to GG:include/inline/macros.h,
+  because it is missing in there (-> there does not seem to be any other
+  library function in any other library which takes 5 parameters and one
+  of the parameters is in register A4):
+  
+  #define LP5A4(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3, t4, v4, r4, t5, v5, r5, bt, bn) \
+  ({                                \
+     t1 _##name##_v1 = (v1);                    \
+     t2 _##name##_v2 = (v2);                    \
+     t3 _##name##_v3 = (v3);                    \
+     t4 _##name##_v4 = (v4);                    \
+     t5 _##name##_v5 = (v5);                    \
+     {                                \
+	register rt _##name##_re __asm("d0");            \
+	register struct Library *const _##name##_bn __asm("a6") = (struct Library*)(bn); \
+	register t1 _n1 __asm(#r1) = _##name##_v1;        \
+	register t2 _n2 __asm(#r2) = _##name##_v2;        \
+	register t3 _n3 __asm(#r3) = _##name##_v3;        \
+	register t4 _n4 __asm(#r4) = _##name##_v4;        \
+	register t5 _n5 __asm(#r5) = _##name##_v5;        \
+	__asm volatile ("exg d7,a4\n\tjsr a6@(-"#offs":W)\n\texg d7,a4" \
+	: "=r" (_##name##_re)                    \
+	: "r" (_##name##_bn), "rf"(_n1), "rf"(_n2), "rf"(_n3), "rf"(_n4), "rf"(_n5) \
+	: "d0", "d1", "a0", "a1", "fp0", "fp1", "cc", "memory");    \
+	_##name##_re;                        \
+     }                                \
+  })
+
+
 - Then compile the library
 
     cd /
