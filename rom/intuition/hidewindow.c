@@ -130,7 +130,7 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 
     screen = window->WScreen;
     
-    if (!IsWindowVisible(window))
+    if (IsWindowVisible(window))
     {
         struct Requester *req;
 
