@@ -8,7 +8,6 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include "text_intern.h"
 #include "compilerspecific.h"
 #if defined(__AROS__) && !defined(__MORPHOS__)
 #include LC_LIBDEFS_FILE
