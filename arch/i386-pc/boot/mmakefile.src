@@ -170,7 +170,7 @@ GNUCOMMON=$(AROSDIR)/Development
 GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
 
 #TODO: it depend on all files in workbench dir
-$(OSGENDIR)/boot/aros.iso: 
+$(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/aros-pc-i386.gz
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
 	@mkisofs \
