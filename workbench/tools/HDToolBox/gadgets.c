@@ -152,7 +152,7 @@ struct TagItem stdgadtags[] =
 	stdgadtags[TAG_DrawInfo].ti_Data = (IPTR)dri;
 	stdgadtags[TAG_UserData].ti_Data = 0;
 
-	return makePTGadget(dri, &stdgadtags);
+	return makePTGadget(dri, stdgadtags);
 }
 
 void allocPTGadget(struct Screen *scr, struct Gadget *glist) {
@@ -165,6 +165,7 @@ void allocPTGadget(struct Screen *scr, struct Gadget *glist) {
 		{
 			while (glist->NextGadget)
 				glist = glist->NextGadget;
+			ptgad->NextGadget = NULL;
 			glist->NextGadget = ptgad;
 		}
 	}
