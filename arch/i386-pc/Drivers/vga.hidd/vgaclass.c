@@ -37,11 +37,13 @@
 /* Some attrbases needed as global vars.
   These are write-once read-many */
 
-static OOP_AttrBase HiddBitMapAttrBase 	= 0;  
-static OOP_AttrBase HiddPixFmtAttrBase	= 0;
-static OOP_AttrBase HiddSyncAttrBase	= 0;
-static OOP_AttrBase HiddVGAAB 		= 0;
-static OOP_AttrBase HiddVGABitMapAB 	= 0;
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddBitMapAttrBase;  
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddVGAAB;
+static OOP_AttrBase HiddVGABitMapAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
