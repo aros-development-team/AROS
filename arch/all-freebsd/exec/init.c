@@ -28,7 +28,6 @@ extern const struct Resident
     Exec_resident,
     Utility_resident,
     Aros_resident,
-/*    BOOPSI_resident, */
     OOP_resident,
     HIDD_resident,
     UnixIO_resident,
@@ -50,7 +49,9 @@ extern const struct Resident
     LDDemon_resident,
     emul_handler_resident,
     boot_resident,
-	con_handler_resident; 
+    con_handler_resident,
+    nil_handler_resident,
+    ram_handler_resident;
 
 
 
@@ -61,9 +62,6 @@ static const struct Resident *romtagList[] =
     &Exec_resident,                         /* SingleTask,  105  */
     &Utility_resident,                      /* ColdStart,   103  */
     &Aros_resident,			    /* ColdStart,   102  */
-#if 0
-    &BOOPSI_resident,			    /* ColdStart,   95   */
-#endif
     &OOP_resident,			    /* ColdStart,   ??	 */
     &HIDD_resident,			    /* ColdStart,   92   */
     &UnixIO_resident,			    /* ColdStart,   91   */
@@ -86,6 +84,8 @@ static const struct Resident *romtagList[] =
     &Dos_resident,                          /* None,       -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
     &con_handler_resident,		    /* AfterDOS,   -126  */
+    &nil_handler_resident,		    /* AfterDOS,   -126  */
+    &ram_handler_resident,		    /* AfterDOS,   -126  */
     NULL
 };
 
