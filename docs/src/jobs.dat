@@ -1435,7 +1435,7 @@ prefs00003;0;stegerg;Write IControl prefs program
 prefs00004;0;stegerg;Write Palette prefs program
 prefs00005;0;stegerg;Write Pointer prefs program
 prefs00006;1;chodorowski;Write Screenmode prefs program
-prefs00007;0;stegerg;Write Serial prefs program
+prefs00007;1;bergers;Write Serial prefs program
 prefs00008;0;stegerg;Write Time prefs program
 prefs00009;1;holmen;Write WBPattern prefs program
 prefs00010;0;stegerg;Write Printer prefs program
