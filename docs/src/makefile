@@ -17,6 +17,9 @@ AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 
+SRC2HTML = src2html --html --output=index.html --keywords=keywords.db \
+	    --files=files.db main.src
+
 all : setup src2html autodocs $(DEST)srcs $(DEST)index.html \
 	$(DEST)filesystems.doc \
 	jobserver cgi-scripte dist copy_files link-pics \
@@ -95,9 +98,9 @@ src2html : conv/src2html
 $(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
 	    includes src2html
 	export TOP="$(TOP)" ; \
-	src2html --html --output index.html main.src ; \
-	src2html --html --output index.html main.src ; \
-	src2html --html --output index.html main.src ; \
+	$(SRC2HTML) ; \
+	$(SRC2HTML) ; \
+	$(SRC2HTML)
 	mv index* $(DEST)
 
 jobserver : jobserver-setup \

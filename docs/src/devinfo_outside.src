@@ -64,7 +64,7 @@ cannot use this macro if you want to delete the nodes in the list (ie.
 you must not call |Remove()| inside the block of code following the
 macro).
 
-\begin{example}
+\begin{code}
 /* Iterate through a list with complete nodes and print their names */
 t = 1;
 ForeachNode(list,node)
@@ -82,7 +82,7 @@ if (node->ln_Succ)
     printf ("Not all nodes have been processed\n");
 else
     printf ("The list doesn't contain a node with the name \"end\"\n");
-\end{example}
+\end{code}
 
 \item{INTUITIONNAME}
 Compatible: Yes\nl
@@ -119,9 +119,9 @@ program crashes.
 \item Add the following
 lines to your code. It should be the first thing seen by the compiler:
 
-\begin{example}
+\begin{code}
 #define ENABLE_RT  1
-\end{example}
+\end{code}
 
 If you replace the |1| by |0|, then RT will be silently disabled.
 

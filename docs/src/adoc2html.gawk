@@ -16,6 +16,7 @@ BEGIN {
     LIBS["alib"]="amiga.lib";
     LIBS["devs"]="Devices";
     LIBS["aros"]="AROS";
+    LIBS["arossupport"]="AROS Support";
     LIBS["intuition"]="Intuition";
 
     file=ARGV[1];

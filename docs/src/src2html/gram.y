@@ -18,7 +18,7 @@
     char * string;
 }
 
-%left <string> TEXT CODE EXAMPLE
+%left <string> TEXT SMALLCODE BIGCODE EXAMPLE
 %left CHAPTER SECTION SUBSECTION LINK
 %left BEGIN ITEM END FILENAME FILEINFO
 %left LREF SHELL LABEL BOLD EMAIL ITALICS
@@ -35,8 +35,10 @@ fileparts : filepart
 	;
 
 filepart : command
-	| CODE
-	{ emit (CODE, $1); xfree ($1); }
+	| SMALLCODE
+	{ emit (SMALLCODE, $1); xfree ($1); }
+	| BIGCODE
+	{ emit (BIGCODE, $1); xfree ($1); }
 	| TEXT
 	{ emit (TEXT, $1); xfree ($1); }
 	| ARG

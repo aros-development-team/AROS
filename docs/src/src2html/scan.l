@@ -48,7 +48,7 @@ TEXT	    ([^\\\|{]|\n)+
 }
 "\\begin\{code\}" { vs=createvarstring (NULL); YYBEGIN(code); }
 <code>{
-    "\\end"[ \t\n]*"\{code\}" { yylval->string=tostring(vs); YYBEGIN(INITIAL); return EXAMPLE; }
+    "\\end"[ \t\n]*"\{code\}" { yylval->string=tostring(vs); YYBEGIN(INITIAL); return BIGCODE; }
     "\\end"[ \t\n]*"\{"   { yyerror ("Unexpected \\end{%s}. Expected \\end{code}", getarg(yytext)); }
     "\\end"             { yyerror ("\\end without argument. Expected \\end{code}"); }
     ([^\\]*|\n)*        { appendtovarstring (vs, yytext); }
@@ -130,7 +130,7 @@ TEXT	    ([^\\\|{]|\n)+
 
 \\[a-z]+	{ yyerror ("Unknown command %s", yytext); }
 \\[\\&$@#{}]	{ yylval->string = substr(yytext,1,0); return TEXT; }
-{CODE}		{ yylval->string = substr(yytext,1,1); return CODE; }
+{CODE}		{ yylval->string = substr(yytext,1,1); return SMALLCODE; }
 
 [ \t\n]*\{	{ vs=createvarstring (NULL); YYBEGIN(arg); bracelevel=0; }
 <arg>{

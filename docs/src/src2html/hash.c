@@ -30,7 +30,7 @@ int calchash (const char * key)
 Hash * createhash (void)
 {
     Hash * hash = xmalloc (sizeof (Hash));
-    memset (hash, sizeof(Hash), 0);
+    memset (hash, 0, sizeof(Hash));
     return hash;
 }
 
@@ -39,22 +39,22 @@ void storedata (Hash * hash, const char * key, const void * data)
     int code = calchash (key);
     HashNode * node, * newNode;
 
-    for (node=(HashNode *)&hash->Nodes[code]; node->Next; node=node->Next)
+    for (node=hash->Nodes[code]; node; node=node->Next)
     {
-	if (node->Next->key[0] == *key && !strcmp (node->Next->key, key))
+	if (node->key[0] == *key && !strcmp (node->key, key))
 	{
-	    node->Next->data = data;
+	    node->data = data;
 	    return;
 	}
     }
 
     newNode = xmalloc (sizeof (HashNode));
 
-    newNode->Next = NULL;
+    newNode->Next = hash->Nodes[code];
     newNode->key  = key;
     newNode->data = data;
 
-    node->Next = newNode;
+    hash->Nodes[code] = newNode;
 }
 
 void * retrievedata (Hash * hash, const char * key)

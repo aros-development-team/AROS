@@ -9,6 +9,7 @@
 #include <time.h>
 #include "scan.h"
 #include "util.h"
+#include "db.h"
 
 static void emit_html_string (const unsigned char * str);
 static void emit_html_code (const unsigned char * str);
@@ -438,11 +439,22 @@ void emit_html (int token, va_list args)
 	emit_nl ();
 	break;
 
-    case CODE:
+    case SMALLCODE:
+	{
+	    char * code = va_arg (args, char *);
+
+	    emit_space ();
+	    emit_special ("<TT>");
+	    emit_code (code);
+	    emit_special ("</TT>");
+	}
+	break;
+
+    case BIGCODE:
 	emit_space ();
-	emit_special ("<TT>");
+	emit_special ("<UL><PRE>");
 	emit_code (va_arg (args, char *));
-	emit_special ("</TT>");
+	emit_special ("</PRE></UL>");
 	break;
 
     case SHELL:
@@ -486,10 +498,21 @@ void emit_html (int token, va_list args)
 	break;
 
     case FILENAME:
-	emit_space ();
-	emit_special ("<B><I>");
-	emit_html_string_ws (va_arg (args, char *));
-	emit_special ("</I></B>");
+	{
+	    char * filename = va_arg (args, char *);
+	    const char * file;
+
+	    file = getfile (filename);
+
+	    emit_space ();
+	    emit_special ("<B><I>");
+	    if (file)
+		emit_special ("<A HREF=\"%s\">", file);
+	    emit_html_string_ws (filename);
+	    if (file)
+		emit_special ("</A>");
+	    emit_special ("</I></B>");
+	}
 	break;
 
     case TEXT:
@@ -699,7 +722,96 @@ void emit_text (const unsigned char * str)
 
 void emit_code (const unsigned char * str)
 {
-    emit_html_code (str);
+    char identifier[256], * ptr;
+    const char * file;
+    int comment=0;
+
+    while (*str)
+    {
+	if (*str == '/' && str[1] == '*')
+	    comment = 1;
+	else if (*str == '*' && str[1] == '/')
+	    comment = 0;
+
+	if (!comment)
+	{
+	    if (isalpha (*str) || *str == '_')
+	    {
+		ptr = identifier;
+
+		while (isalnum (*str) || *str == '_')
+		    *ptr ++ = *str ++;
+
+		*ptr = 0;
+
+		file = getkeyword (identifier);
+
+/* printf ("keyword=\"%s\"", identifier);
+if (file) printf (" file=\"%s\"\n", file);
+else printf ("no file\n"); */
+
+		if (file)
+		{
+		    switch (*file)
+		    {
+		    case 'T': emit_special ("<B>"); break;
+		    case 'K': emit_special ("<B><I>"); break;
+		    case 'D': emit_special ("<B>"); break;
+		    default: emit_special ("<I>"); break;
+		    }
+
+		    if (file[1])
+			emit_special ("<A HREF=\"%s\">", file+1);
+		}
+		else
+		    emit_special ("<I>");
+
+		emit_html_string (identifier);
+		if (file)
+		{
+		    if (file[1])
+			emit_special ("</A>");
+
+		    switch (*file)
+		    {
+		    case 'T': emit_special ("</B>"); break;
+		    case 'K': emit_special ("</I></B>"); break;
+		    case 'D': emit_special ("</B>"); break;
+		    default: emit_special ("</I>"); break;
+		    }
+		}
+		else
+		    emit_special ("</I>");
+	    }
+	    else if (*str == '"')
+	    {
+		emit_special ("<B>");
+		emit_html_char_always (*str ++);
+
+		while (*str && *str != '"')
+		{
+		    if (*str == '\\')
+		    {
+			emit_html_char_always (*str ++);
+			emit_html_char_always (*str ++);
+		    }
+		    else
+			emit_html_char_always (*str ++);
+		}
+
+		emit_html_char_always (*str ++);
+		emit_special ("</B>");
+	    }
+	    else
+	    {
+		emit_html_char_always (*str ++);
+	    }
+	}
+	else
+	{
+	    emit_html_char_always (*str++);
+	}
+    }
 }
 
 void emit_html_string (const unsigned char * str)

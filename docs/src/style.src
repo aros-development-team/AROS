@@ -20,17 +20,17 @@ their information. Other comments are ignored but they should explain what
 you thought when you wrote the code. If you really can't think of an
 explanation, then don't write the code a second time like this:
 
-\begin{example}
+\begin{code}
 /* This adds 1 to t */
 t ++;
-\end{example}
+\end{code}
 
 What we think of is this:
 
-\begin{example}
+\begin{code}
 /* Go on with next element */
 t ++;
-\end{example}
+\end{code}
 
 \subsection{Function prototypes and headers}
 
@@ -45,7 +45,7 @@ The function header (ie. the comment before the function) must be of a
 special format because the AutoDocs are generated from it. Here is an
 example for it (from \filename{AROS/exec/addhead.c}):
 
-\begin{example}
+\begin{code}
 /*****************************************************************************
 
     NAME */
@@ -94,7 +94,7 @@ example for it (from \filename{AROS/exec/addhead.c}):
 
 ******************************************************************************/
 {
-\end{example}
+\end{code}
 
 As you can see, comments are used to merge the function prototype and the
 header into one.
@@ -115,20 +115,20 @@ the number of arguments to this macro. Since it has never a base, the field
 LOCATION must be omitted and it's not neccessary to append the "I" to the
 macros name. An example for a callback hook |foo()| would be:
 
-\begin{example}
+\begin{code}
 AROS_UFH3(ULONG, foo,
     AROS_UFHA(struct Hook, hook,  A0),
     AROS_UFHA(APTR,        obj,   A2),
     AROS_UFHA(APTR,        param, A1)
 )
-\end{example}
+\end{code}
 
 (note that the registers need not have a particular order).
 
 If the function is not part of a shared library and it's arguments need not
 be in specific registers, you need no |AROS_*H*()| macros:
 
-\begin{example}
+\begin{code}
 /*****************************************************************************
 
     NAME */
@@ -145,7 +145,7 @@ be in specific registers, you need no |AROS_*H*()| macros:
 	...
 
 *****************************************************************************/
-\end{example}
+\end{code}
 
 \item{SYNOPSIS} This field contains all arguments of the function one by
 one in |AROS_LHA()| macros (Library Header Argument). This macro makes sure
@@ -193,7 +193,7 @@ comment|). Everything from the |//| to the end if the line is the comment.
 If you need more comment, then you can end the comment after the |EXAMPLE|
 and use |#ifdef EXAMPLE| to mask the example out:
 
-\begin{example}
+\begin{code}
     EXAMPLE */
 #ifdef EXAMPLE
 	struct List * list;
@@ -202,7 +202,7 @@ and use |#ifdef EXAMPLE| to mask the example out:
 	/* Insert Node at top of the list */
 	AddHead (list, node);
 #endif
-\end{example}
+\end{code}
 
 Don't use |#ifdef EXAMPLE| if you have a fully featured example (ie. one
 which can be compiled without errors).
@@ -255,7 +255,7 @@ Here is an example of how to format AROS code:
 	    )
 	)
     ||
-	a == 0
+	a <= 0
     )
     {
 	printf ("Something failed\n");
