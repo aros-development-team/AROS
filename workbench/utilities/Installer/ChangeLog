@@ -308,4 +308,10 @@
 - added a GUI function user_confirm(char *) to ask user to proceed or skip
 - added some more preset variables/help texts
 
+0049
+- use (preset) @askstring variable instead of fixed ASKSTRING_HELP,
+  same for asknumber and askchoice
+- partially implemented (delete). Need to implement (optional) and (delopts)
+- gui for (askchoice)
+
 

@@ -41,12 +41,12 @@ void free_parameter( struct ParameterList );
 void traperr( char *, char * );
 
 #define ExecuteCommand()				\
-    if( current->cmd != NULL )				\
+    if ( current->cmd != NULL )				\
     {							\
       execute_script( current->cmd, level + 1 );	\
     }
 #define ExecuteNextCommand()				\
-    if( current->next->cmd != NULL )			\
+    if ( current->next->cmd != NULL )			\
     {							\
       execute_script( current->next->cmd, level + 1 );	\
     }
@@ -74,14 +74,14 @@ void *params;
   /* Assume commands->cmd/arg to be first cmd/arg in parentheses */
 
   /* If first one is a (...)-function execute it */
-  if( current->cmd != NULL )
+  if ( current->cmd != NULL )
   {
     execute_script( current->cmd, level + 1 );
     /* So next ones are (...)-functions, too: execute them */
-    while( current->next != NULL )
+    while ( current->next != NULL )
     {
       current = current->next;
-      if( current->cmd != NULL )
+      if ( current->cmd != NULL )
       {
 	execute_script( current->cmd, level + 1  );
       }
@@ -94,7 +94,7 @@ void *params;
     free( current->parent->arg );
     current->parent->arg = NULL;
     current->parent->intval = current->intval;
-    if( current->arg != NULL )
+    if ( current->arg != NULL )
     {
       current->parent->arg = strdup( current->arg );
       outofmem( current->parent->arg );
@@ -106,7 +106,7 @@ void *params;
     free( current->parent->arg );
     current->parent->arg = NULL;
     current->parent->intval = 0;
-    switch( cmd_type )
+    switch (cmd_type)
     {
       case _UNKNOWN	: /* Unknown command */
 			  error = SCRIPTERROR;
@@ -117,7 +117,7 @@ void *params;
 			  string = collect_strings( current->next, LINEFEED, level );
 			  show_abort( string );
 			  free( string );
-			  if( preferences.transcriptstream != NULL )
+			  if ( preferences.transcriptstream != NULL )
 			  {
 			    Write( preferences.transcriptstream, "Aborting script.\n", 17 );
 			  }
@@ -141,7 +141,7 @@ void *params;
       case _SHIFTLEFT	: /* shift 1st left by 2nd arg bits	*/
       case _SHIFTRGHT	: /* shift 1st right by 2nd arg bits	*/
       case _XOR		: /* logically XOR two arguments	*/
-			  if( current->next != NULL  && current->next->next != NULL )
+			  if ( current->next != NULL  && current->next->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -149,7 +149,7 @@ void *params;
 			    i = getint( current );
 			    current = current->next;
 			    j = getint( current );
-			    switch( cmd_type )
+			    switch (cmd_type)
 			    {
 			      case _AND :
 				current->parent->intval = i && j;
@@ -167,7 +167,7 @@ void *params;
 				current->parent->intval = ( i != j ) ? 1 : 0;
 				break;
 			      case _DIV :
-				if( j == 0 )
+				if ( j == 0 )
 				{
 				  error = BADPARAMETER;
 				  traperr( "Division by zero!\n", NULL );
@@ -220,7 +220,7 @@ void *params;
 			  break;
 
       case _COMPLETE	: /* Display how much we have done in percent */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -236,7 +236,7 @@ void *params;
 
       case _DEBUG	: /* printf() all strings to shell */
 			  string = collect_strings( current->next, 0, level );
-			  if( preferences.debug && preferences.fromcli )
+			  if ( preferences.debug && preferences.fromcli )
 			  {
 			    printf( "%s\n", string );
 			  }
@@ -250,7 +250,7 @@ void *params;
 			  parameter = get_parameters( current->next, level );
 			  string = collect_strings( current->next, LINEFEED, level );
 			  show_exit( string );
-			  if( GetPL( parameter, _QUIET ).intval == 0 )
+			  if ( GetPL( parameter, _QUIET ).intval == 0 )
 			  {
 			    final_report();
 			  }
@@ -264,23 +264,23 @@ void *params;
 			  break;
 
       case _IF		: /* if 1st arg != 0 execute 2nd cmd else execute optional 3rd cmd */
-			  if( current->next != NULL && current->next->next != NULL )
+			  if ( current->next != NULL && current->next->next != NULL )
 			  {
 			    char *stringarg = NULL;
 			    current = current->next;
 			    ExecuteCommand();
 			    i = getint( current );
-			    if( i == 0 )
+			    if ( i == 0 )
 			    {
 			      current = current->next;
 			      stringarg = current->arg;
 			    }
-			    if( current->next != NULL )
+			    if ( current->next != NULL )
 			    {
 			      current = current->next;
 			      ExecuteCommand();
 			      current->parent->intval = current->intval;
-			      if( current->arg != NULL )
+			      if ( current->arg != NULL )
 			      {
 				current->parent->arg = strdup( current->arg );
 				outofmem( current->parent->arg );
@@ -301,14 +301,14 @@ void *params;
 
       case _IN		: /* Return (arg1) bitwise-and with bit numbers given as following args */
 			  /* Get base integer into i */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
 			    i = getint( current );
 			  }
 			  /* Write the corresponding bits of i into parent */
-			  while( current->next != NULL )
+			  while ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -319,7 +319,7 @@ void *params;
 
       case _BITNOT	: /* bitwise invert argument */
       case _NOT		: /* logically invert argument */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -334,7 +334,7 @@ void *params;
 			  break;
 
       case _PLUS	: /* Sum up all arguments and return that value */
-			  while( current->next != NULL )
+			  while ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -348,17 +348,17 @@ void *params;
 			  break;
 
       case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
 			    i = getint( current );
-			    if( i > 0 )
+			    if ( i > 0 )
 			    {
 			      j = 0;
-			      for( ; i > 0 ; i-- )
+			      for ( ; i > 0 ; i-- )
 			      {
-				if( current->next != NULL )
+				if ( current->next != NULL )
 				{
 				  current = current->next;
 				}
@@ -367,10 +367,10 @@ void *params;
 				  j = 1;
 				}
 			      }
-			      if( j == 0 )
+			      if ( j == 0 )
 			      {
 				current->parent->intval = current->intval;
-				if( current->arg != NULL )
+				if ( current->arg != NULL )
 				{
 				  current->parent->arg = strdup( current->arg );
 				  outofmem( current->parent->arg );
@@ -387,23 +387,23 @@ void *params;
 
       case _SYMBOLSET	: /* assign values to variables -- allow strings and commands as variablenames */
 			  /* take odd args as names and even as values */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			  char *clip2;
 			    current = current->next;
-			    while( current != NULL && current->next != NULL )
+			    while ( current != NULL && current->next != NULL )
 			    {
 			      i = current->next->intval;
 			      clip = NULL;
 			      string = NULL;
 			      ExecuteCommand();
-			      if( current->arg == NULL )
+			      if ( current->arg == NULL )
 			      {
 				/* There is no varname */
 				error = BADPARAMETER;
 				traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
 			      }
-			      if( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
+			      if ( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
 			      {
 				/* There is a quoted varname */
 				/* Strip off quotes */
@@ -413,7 +413,7 @@ void *params;
 			      {
 				/* Varname is stored in variable */
 				clip2 = get_var_arg( current->arg );
-				if( clip2 == NULL )
+				if ( clip2 == NULL )
 				{
 				  /* There is no varname */
 				  error = BADPARAMETER;
@@ -423,9 +423,9 @@ void *params;
 				outofmem( string );
 			      }
 			      ExecuteNextCommand();
-			      if( current->next->arg != NULL )
+			      if ( current->next->arg != NULL )
 			      {
-				if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
+				if ( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
 				{
 				  /* Strip off quotes */
 				  clip = strip_quotes( current->next->arg );
@@ -435,7 +435,7 @@ void *params;
 				{
 				  /* value is a variable */
 				  clip2 = get_var_arg( current->next->arg );
-				  if( clip2 == NULL )
+				  if ( clip2 == NULL )
 				  {
 				    clip = NULL;
 				  }
@@ -455,9 +455,9 @@ void *params;
 			    }
 			  }
 			  /* SET returns the value of the of the last assignment */
-			  if( dummy->next->arg != NULL )
+			  if ( dummy->next->arg != NULL )
 			  {
-			    if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
+			    if ( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
 			    {
 			      dummy->parent->arg = strdup( dummy->next->arg );
 			      outofmem( dummy->parent->arg );
@@ -465,7 +465,7 @@ void *params;
 			    else
 			    {
 			      clip = get_var_arg( dummy->next->arg );
-			      if( clip )
+			      if ( clip )
 			      {
 				/* Add surrounding quotes to string */
 				dummy->parent->arg = addquotes( clip );
@@ -480,19 +480,19 @@ void *params;
 			  break;
 
       case _SYMBOLVAL	: /* return values of variables -- allow strings and commands as variablenames */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    string = NULL;
 			    clip = NULL;
 			    current = current->next;
 			    ExecuteCommand();
-			    if( current->arg == NULL )
+			    if ( current->arg == NULL )
 			    {
 			      /* There is no varname */
 			      error = BADPARAMETER;
 			      traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
 			    }
-			    if( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE )
+			    if ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE )
 			    {
 			      /* There is a quoted varname */
 			      /* Strip off quotes */
@@ -517,33 +517,33 @@ void *params;
 
       case _SET		: /* assign values to variables */
 			  /* take odd args as names and even as values */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
-			    while( current != NULL && current->next != NULL )
+			    while ( current != NULL && current->next != NULL )
 			    {
-			      if( current->cmd != NULL )
+			      if ( current->cmd != NULL )
 			      {
 				/* There is a command instead of a varname */
 				error = BADPARAMETER;
 				traperr( "<%s> expected variablename, found function instead!\n", current->parent->cmd->arg );
 			      }
-			      if( current->arg == NULL )
+			      if ( current->arg == NULL )
 			      {
 				/* There is no varname */
 				error = BADPARAMETER;
 				traperr( "Variable name to <%s> is not a string!\n", current->parent->cmd->arg );
 			      }
-			      if( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
+			      if ( current->arg != NULL && ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
 			      {
 				/* There is a quoted varname */
 				error = BADPARAMETER;
 				traperr( "<%s> expected symbol, found quoted string instead!\n", current->parent->cmd->arg );
 			      }
 			      ExecuteNextCommand();
-			      if( current->next->arg != NULL )
+			      if ( current->next->arg != NULL )
 			      {
-				if( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
+				if ( (current->next->arg)[0] == SQUOTE || (current->next->arg)[0] == DQUOTE )
 				{
 				  /* Strip off quotes */
 				  clip = strip_quotes( current->next->arg );
@@ -565,9 +565,9 @@ void *params;
 			    }
 			  }
 			  /* SET returns the value of the of the last assignment */
-			  if( dummy->next->arg != NULL )
+			  if ( dummy->next->arg != NULL )
 			  {
-			    if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
+			    if ( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
 			    {
 			      dummy->parent->arg = strdup(dummy->next->arg);
 			      outofmem( dummy->parent->arg );
@@ -575,7 +575,7 @@ void *params;
 			    else
 			    {
 			      clip = get_var_arg( dummy->next->arg );
-			      if( clip )
+			      if ( clip )
 			      {
 				/* Add surrounding quotes to string */
 				dummy->parent->arg = addquotes( clip );
@@ -590,11 +590,11 @@ void *params;
 			  break;
 
       case _STRLEN	: /* Return the length of the string, 0 for integer argument */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
-			    if( current->arg != NULL )
+			    if ( current->arg != NULL )
 			    {
 			      current->parent->intval = ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE ) ?
 							strlen( current->arg ) - 2 :
@@ -617,13 +617,13 @@ void *params;
 			  mclip = NULL;
 			  i = 0;
 			  j = 0;
-			  while( current->next != NULL )
+			  while ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
-			    if( current->arg != NULL )
+			    if ( current->arg != NULL )
 			    {
-			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
 				/* Strip off quotes */
 				mclip = (char **)realloc( mclip, sizeof(char *) * (j+1) );
@@ -659,9 +659,9 @@ void *params;
 			  string = callbackstring;
 			  /* Free temporary space */
 			  free( clip );
-			  if( mclip )
+			  if ( mclip )
 			  {
-			    while( j > 0 )
+			    while ( j > 0 )
 			    {
 			      free( mclip[--j] );
 			    }
@@ -673,14 +673,14 @@ void *params;
 			  break;
 
       case _SUBSTR	: /* Return the substring of arg1 starting with arg2+1 character up to arg3 or end if !arg3 */
-			  if( current->next != NULL && current->next->next != NULL )
+			  if ( current->next != NULL && current->next->next != NULL )
 			  {
 			    /* Get string */
 			    current = current->next;
 			    ExecuteCommand();
-			    if( current->arg != NULL )
+			    if ( current->arg != NULL )
 			    {
-			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
 				/* Strip off quotes */
 				string = strip_quotes( current->arg );
@@ -688,7 +688,7 @@ void *params;
 			      else
 			      {
 				clip = get_var_arg( current->arg );
-				if( clip != NULL )
+				if ( clip != NULL )
 				{
 				  string = strdup( clip );
 				  outofmem( string );
@@ -711,19 +711,19 @@ void *params;
 			    /* Get offset */
 			    i = getint( current );
 			    slen = strlen( string ) - i;
-			    if( i < 0 )
+			    if ( i < 0 )
 			    {
 			      free( string );
 			      error = BADPARAMETER;
 			      traperr( "Negative argument to <%s>!\n", current->parent->cmd->arg );
 			    }
 			    /* Get number of chars to copy */
-			    if( current->next != NULL )
+			    if ( current->next != NULL )
 			    {
 			      current = current->next;
 			      ExecuteCommand();
 			      j = getint( current );
-			      if( j < 0 )
+			      if ( j < 0 )
 			      {
 				j = 0;
 			      }
@@ -748,13 +748,13 @@ void *params;
 			  break;
 
       case _TIMES	: /* Multiply all arguments and return that value */
-			  if( current->next == NULL )
+			  if ( current->next == NULL )
 			  {
 			    error = SCRIPTERROR;
 			    traperr( "No arguments to <%s>!\n", current->arg );
 			  }
 			  current->parent->intval = 1;
-			  while( current->next != NULL )
+			  while ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -765,7 +765,7 @@ void *params;
 
       case _TRANSCRIPT	: /* concatenate strings into logfile */
 			  string = collect_strings( current->next, 0, level );
-			  if( preferences.transcriptfile != NULL )
+			  if ( preferences.transcriptfile != NULL )
 			  {
 			    Write( preferences.transcriptstream, string, strlen( string ) );
 			    Write( preferences.transcriptstream, "\n", 1 );
@@ -776,17 +776,17 @@ void *params;
 			  break;
 
       case _UNTIL	: /* execute 2nd cmd until 1st arg != 0 */
-			  if( current->next != NULL && current->next->next != NULL )
+			  if ( current->next != NULL && current->next->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->next->cmd == NULL )
+			    if ( current->next->cmd == NULL )
 			    {
 			      /* We don't have a block, so what can we execute ??? */
 			      error = SCRIPTERROR;
 			      traperr( "<%s> has no command-block!\n", current->parent->cmd->arg );
 			    }
 			    i = 0;
-			    while( i == 0 )
+			    while ( i == 0 )
 			    {
 			      /* Execute command */
 			      ExecuteNextCommand();
@@ -796,10 +796,10 @@ void *params;
 			      i = getint( current );
 
 			      /* condition is true -> return values and exit */
-			      if( i != 0 )
+			      if ( i != 0 )
 			      {
 				current->parent->intval = current->next->intval;
-				if( current->next->arg != NULL )
+				if ( current->next->arg != NULL )
 				{
 				  current->parent->arg = strdup( current->next->arg );
 				  outofmem( current->parent->arg );
@@ -815,14 +815,14 @@ void *params;
 			  break;
 
       case _USER	: /* Change the current user-level -- Use only to debug scripts */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
-			    if( current->arg != NULL )
+			    if ( current->arg != NULL )
 			    {
 			      string = NULL;
-			      if( ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
+			      if ( ( current->arg[0] == SQUOTE || current->arg[0] == DQUOTE ) )
 			      {
 				/* Strip off quotes */
 				string = strip_quotes( current->arg );
@@ -832,14 +832,14 @@ void *params;
 			      {
 				clip = get_var_arg( current->arg );
 			      }
-			      if( clip != NULL )
+			      if ( clip != NULL )
 			      {
 				i = atol( clip );
-				if( strcasecmp( clip, "novice" ) == 0 )
+				if ( strcasecmp( clip, "novice" ) == 0 )
 				  i = _NOVICE;
-				if( strcasecmp( clip, "average" ) == 0 )
+				if ( strcasecmp( clip, "average" ) == 0 )
 				  i = _AVERAGE;
-				if( strcasecmp( clip, "expert" ) == 0 )
+				if ( strcasecmp( clip, "expert" ) == 0 )
 				  i = _EXPERT;
 				free( string );
 			      }
@@ -852,7 +852,7 @@ void *params;
 			    {
 			      i = current->intval;
 			    }
-			    if( i < _NOVICE || i > _EXPERT )
+			    if ( i < _NOVICE || i > _EXPERT )
 			    {
 			      error = BADPARAMETER;
 			      traperr( "New user-level not in [Novice|Average|Expert] !\n", NULL );
@@ -881,30 +881,30 @@ void *params;
 			  break;
 
       case _WHILE	: /* while 1st arg != 0 execute 2nd cmd */
-			  if( current->next != NULL && current->next->next != NULL )
+			  if ( current->next != NULL && current->next->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->next->cmd == NULL )
+			    if ( current->next->cmd == NULL )
 			    {
 			      /* We don't have a block, so what can we execute ??? */
 			      error = SCRIPTERROR;
 			      traperr( "<%s> has no command-block!\n", current->parent->cmd->arg );
 			    }
 			    i = 1;
-			    while( i != 0 )
+			    while ( i != 0 )
 			    {
 			      ExecuteCommand();
 
 			      /* Now check condition */
 			      i = getint( current );
-			      if( i != 0 )
+			      if ( i != 0 )
 			      {
 				ExecuteNextCommand();
 			      }
 			      else
 			      {
 				current->parent->intval = current->next->intval;
-				if( current->next->arg != NULL )
+				if ( current->next->arg != NULL )
 				{
 				  current->parent->arg = strdup( current->next->arg );
 				  outofmem( current->parent->arg );
@@ -942,14 +942,14 @@ void *params;
 			  break;
 
       case _DATABASE	: /* Return information on the hardware Installer is running on */
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
 			    clip = strip_quotes( current->arg );
 			    i = database_keyword( clip );
 			    free( clip );
 #warning TODO: compute return values for "database"
-			    switch( i )
+			    switch (i)
 			    {
 			      case _VBLANK :
 				clip = malloc( MAXARGSIZE );
@@ -1040,7 +1040,7 @@ void *params;
 			  current = current->next;
 			  /* reset parent of old onerror statement */
 			  dummy = preferences.onerror.cmd;
-			  while( dummy != NULL )
+			  while ( dummy != NULL )
 			  {
 			    dummy->parent = preferences.onerrorparent;
 			    dummy = dummy->next;
@@ -1050,7 +1050,7 @@ void *params;
 			  preferences.onerrorparent = current;
 			  /* set new parent of new onerror statement */
 			  dummy = current->cmd;
-			  while( dummy != NULL )
+			  while ( dummy != NULL )
 			  {
 			    dummy->parent = &(preferences.onerror);
 			    dummy = dummy->next;
@@ -1058,7 +1058,7 @@ void *params;
 			  break;
 
       case _TRAP	: /* link trap to preferences */
-			  if( current->next != NULL  && current->next->next->cmd != NULL )
+			  if ( current->next != NULL  && current->next->next->cmd != NULL )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
@@ -1066,7 +1066,7 @@ void *params;
 			    current = current->next;
 			    /* reset parent of old trap statement */
 			    dummy = preferences.trap[i].cmd;
-			    while( dummy != NULL )
+			    while ( dummy != NULL )
 			    {
 			      dummy->parent = preferences.trapparent[i];
 			      dummy = dummy->next;
@@ -1076,7 +1076,7 @@ void *params;
 			    preferences.trapparent[i] = current;
 			    /* set new parent of new onerror statement */
 			    dummy = current->cmd;
-			    while( dummy != NULL )
+			    while ( dummy != NULL )
 			    {
 			      dummy->parent = &(preferences.trap[i]);
 			      dummy = dummy->next;
@@ -1090,7 +1090,7 @@ void *params;
 			  break;
 
       case _RENAME	: /* Rename a file or relabel a disk if disk parameter */
-			  if( current->next != NULL && current->next->next != NULL )
+			  if ( current->next != NULL && current->next->next != NULL )
 			  {
 			  int success = DOSFALSE,
 			      usrconfirm = FALSE;
@@ -1098,7 +1098,7 @@ void *params;
 			    current = current->next;
 			    ExecuteCommand();
 			    ExecuteNextCommand();
-			    if( current->arg != NULL && current->next->arg != NULL )
+			    if ( current->arg != NULL && current->next->arg != NULL )
 			    {
 			      string = strip_quotes( current->arg );
 			      clip = strip_quotes( current->next->arg );
@@ -1108,17 +1108,17 @@ void *params;
 			      error = SCRIPTERROR;
 			      traperr( "<%s> requires two strings as arguments!\n", current->parent->cmd->arg );
 			    }
-			    if( current->next->next )
+			    if ( current->next->next )
 			    {
 			      parameter = get_parameters( current->next->next, level );
-			      if( GetPL( parameter, _CONFIRM ).used == 1 )
+			      if ( GetPL( parameter, _CONFIRM ).used == 1 )
 			      {
-				usrconfirm = request_confirm( parameter, _AVERAGE );
+				usrconfirm = request_confirm( parameter );
 			      }
-			      if( GetPL( parameter, _DISK ).used == 1 )
+			      if ( GetPL( parameter, _DISK ).used == 1 )
 			      {
 				/* Relabel disk */
-				if(    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+				if (    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
 				    && usrconfirm
 				  )
 				{
@@ -1128,7 +1128,7 @@ void *params;
 			      else
 			      {
 			        /* Rename file */
-				if(    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+				if (    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
 				    && usrconfirm )
 				{
 				  success = Rename(string,clip);
@@ -1138,12 +1138,20 @@ void *params;
 			    }
 			    else
 			    {
-			      if( preferences.pretend == 0 )
+			      if ( preferences.pretend == 0 )
 			      {
 				success = Rename(string,clip);
 			      }
 			    }
-			    current->parent->intval = (success == DOSTRUE ? 1 : 0);
+			    if ( success == DOSTRUE )
+			    {
+			      current->parent->intval = 1;
+			    }
+			    else
+			    {
+			      current->parent->intval = 0;
+			      set_variable( "@ioerr", NULL, IoErr() );
+			    }
 			    free( string );
 			    free( clip );
 			  }
@@ -1156,20 +1164,20 @@ void *params;
 
       case _RUN		: /* Execute a command line */
 #warning TODO: Check me for correctness
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			  BPTR seg;
 			    parameter = get_parameters( current->next, level );
-			    if( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+			    if ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
 			    {
 			      string = collect_strings( current->next, SPACE, level );
-			      if( string == NULL )
+			      if ( string == NULL )
 			      {
 				error = BADPARAMETER;
 				traperr( "<%s> requires a string parameter!\n", current->parent->cmd->arg );
 			      }
-			      for( i = 0 ; string[i] != 0 && string[i] != SPACE ; i++ );
-			      if( string[i] == SPACE )
+			      for ( i = 0 ; string[i] != 0 && string[i] != SPACE ; i++ );
+			      if ( string[i] == SPACE )
 			      {
 				string[i] = 0;
 				clip = &(string[i+1]);
@@ -1180,9 +1188,9 @@ void *params;
 				clip = NULL;
 				j = 0;
 			      }
-			      if( get_var_int("@user-level") >= GetPL( parameter, _CONFIRM ).intval )
+			      if ( get_var_int("@user-level") >= GetPL( parameter, _CONFIRM ).intval )
 			      {
-				if( ( seg = LoadSeg( string ) ) == NULL )
+				if ( ( seg = LoadSeg( string ) ) == NULL )
 				{
 				  /* Couldn't load file -- set @ioerr and handle trap/onerror */
 				  i = IoErr();
@@ -1193,7 +1201,7 @@ void *params;
 				  error = DOSERROR;
 				  traperr( "Couldn't load binary %s\n", string );
 				}
-				if( preferences.transcriptstream != NULL )
+				if ( preferences.transcriptstream != NULL )
 				{
 				  Write( preferences.transcriptstream, "Started program: \"", 18 );
 				  Write( preferences.transcriptstream, string, strlen( string ) );
@@ -1215,13 +1223,13 @@ void *params;
 			  }
 			  break;
 
-      case _STARTUP	:
+      case _STARTUP	: /* Add a section to S:Startup-Sequence */
 			  ExecuteNextCommand();
-			  if( current->next->arg != NULL )
+			  if ( current->next->arg != NULL )
 			  {
 			    string = strip_quotes( current->next->arg );
 			    parameter = get_parameters( current->next, level );
-			    if( request_confirm( parameter, _AVERAGE ) )
+			    if ( request_confirm( parameter ) )
 			    {
 			      modify_userstartup( string, parameter );
 			    }
@@ -1235,10 +1243,68 @@ void *params;
 			  }
 			  break;
 
+      case _DELETE	: /* Delete file */
+#warning TODO: Implement (optional) and (delopts)
+			  if ( current->next != NULL )
+			  {
+			  int success = -1,
+			      usrconfirm = FALSE;
+
+			    current = current->next;
+			    ExecuteCommand();
+
+			    if ( current->arg != NULL )
+			    {
+			      string = strip_quotes( current->arg );
+			    }
+			    else
+			    {
+			      error = SCRIPTERROR;
+			      traperr( "<%s> requires a file string as argument!\n", current->parent->cmd->arg );
+			    }
+			    if ( current->next )
+			    {
+			      parameter = get_parameters( current->next, level );
+			      if ( GetPL( parameter, _CONFIRM ).used == 1 )
+			      {
+				usrconfirm = request_confirm( parameter );
+			      }
+			      /* Delete file */
+			      if (    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+				    && usrconfirm )
+			      {
+				success = DeleteFile(string);
+			      }
+			      free_parameterlist( parameter );
+			    }
+			    else
+			    {
+			      if ( preferences.pretend == 0 )
+			      {
+				success = DeleteFile(string);
+			      }
+			    }
+			    if ( success == 0 )
+			    {
+			      current->parent->intval = 1;
+			    }
+			    else
+			    {
+			      current->parent->intval = 0;
+			      set_variable( "@ioerr", NULL, IoErr() );
+			    }
+			    free( string );
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires a string argument!\n", current->arg );
+			  }
+			  break;
+
       /* Here are all unimplemented commands */
       case _COPYFILES	:
       case _COPYLIB	:
-      case _DELETE	:
       case _EARLIER	:
       case _EXECUTE	:
       case _EXISTS	:
@@ -1269,13 +1335,13 @@ void *params;
 			  usrproc = find_proc( current->arg );
 			  /* Set argument variables */
 			  i = 0;
-			  while( current->next != NULL && i < usrproc->argnum )
+			  while ( current->next != NULL && i < usrproc->argnum )
 			  {
 			    current = current->next;
 			    ExecuteCommand();
-			    if( current->arg != NULL )
+			    if ( current->arg != NULL )
 			    {
-			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
 				/* Strip off quotes */
 				clip = strip_quotes( current->arg );
@@ -1298,7 +1364,7 @@ void *params;
 			  dummy = usrproc->procbody;
 			  execute_script( dummy->cmd, level + 1 );
 			  current->parent->intval = dummy->intval;
-			  if( dummy->arg != NULL )
+			  if ( dummy->arg != NULL )
 			  {
 			    current->parent->arg = strdup( dummy->arg );
 			    outofmem( current->parent->arg );
@@ -1308,33 +1374,34 @@ void *params;
       /* Here are all tags, first the ones which have to be executed */
       case _DELOPTS	: /* unset copying/deleting options if we are called global */
 			  /* as parameter to a function we have got an ignore=1 before */
-			  if( current->parent->ignore == 0)
+#warning FIXME: (delopts) is only local
+			  if ( current->parent->ignore == 0)
 			  {
 			    /* Read in strings */
 			    parameter = malloc( sizeof( struct ParameterList ) );
 			    outofmem( parameter );
 			    collect_stringargs( current, level, parameter );
 			    /* Store data in preferences */
-			    for( i = 0 ; i < parameter->intval ; i++ )
+			    for ( i = 0 ; i < parameter->intval ; i++ )
 			    {
 			      /* These are mutually exclusive */
 #warning FIXME: How are (fail-)strings interpreted in "delopts" ?
-			      if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "fail" ) == 0 )
 			      {
 			      }
-			      if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
 			      {
 			      }
-			      if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
 			      {
 			      }
 
 			      /* These may be combined in any way */
-			      if( strcasecmp( parameter->arg[i], "force" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "force" ) == 0 )
 			      {
 				preferences.copyflags &= ~COPY_ASKUSER;
 			      }
-			      if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
 			      {
 				preferences.copyflags &= ~COPY_ASKUSER;
 			      }
@@ -1346,38 +1413,39 @@ void *params;
 
       case _OPTIONAL	: /* set copying/deleting options if we are called global */
 			  /* as parameter to a function we have got an ignore=1 before */
-			  if( current->parent->ignore == 0)
+#warning FIXME: (optional) is only local
+			  if ( current->parent->ignore == 0)
 			  {
 			    /* Read in strings */
 			    parameter = malloc( sizeof( struct ParameterList ) );
 			    outofmem( parameter );
 			    collect_stringargs( current, level, parameter );
 			    /* Store data in preferences */
-			    for( i = 0 ; i < parameter->intval ; i++ )
+			    for ( i = 0 ; i < parameter->intval ; i++ )
 			    {
 			      /* These are mutually exclusive */
-			      if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "fail" ) == 0 )
 			      {
 				preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
 				preferences.copyfail |= COPY_FAIL;
 			      }
-			      if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
 			      {
 				preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
 				preferences.copyfail |= COPY_NOFAIL;
 			      }
-			      if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
 			      {
 				preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
 				preferences.copyfail |= COPY_OKNODELETE;
 			      }
 
 			      /* These may be combined in any way */
-			      if( strcasecmp( parameter->arg[i], "force" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "force" ) == 0 )
 			      {
 				preferences.copyflags |= COPY_ASKUSER;
 			      }
-			      if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
+			      if ( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
 			      {
 				preferences.copyflags |= COPY_ASKUSER;
 			      }
@@ -1446,20 +1514,20 @@ int eval_cmd( char * argument )
 {
 int i;
 
-  if( argument[0] == SQUOTE || argument[0] == DQUOTE )
+  if ( argument[0] == SQUOTE || argument[0] == DQUOTE )
   {
     return _STRING;
   }
   else
   {
-    for( i = 0 ; i < _MAXCOMMAND && strcasecmp(internal_commands[i].cmdsymbol, argument ) != 0 ; i++ );
-    if( i != _MAXCOMMAND )
+    for ( i = 0 ; i < _MAXCOMMAND && strcasecmp(internal_commands[i].cmdsymbol, argument ) != 0 ; i++ );
+    if ( i != _MAXCOMMAND )
     {
       return internal_commands[i].cmdnumber;
     }
     else
     {
-      if( find_proc( argument ) != NULL )
+      if ( find_proc( argument ) != NULL )
       {
 	return _USERDEF;
       }
@@ -1480,14 +1548,14 @@ static void callback( char chr, char ** data )
 static int i = 0, j = 1;
 static char * string = NULL;
 
-  if( callbackstring != string )
+  if ( callbackstring != string )
   {
     string = callbackstring;
     i = 0;
     j = 1;
   }
   i++;
-  if( i > MAXARGSIZE )
+  if ( i > MAXARGSIZE )
   {
     j++;
     i = 1;
@@ -1528,9 +1596,9 @@ long int getint( ScriptArg *argument )
 long int i;
 char * clip;
 
-  if( argument->arg != NULL )
+  if ( argument->arg != NULL )
   {
-    if( (argument->arg)[0] == SQUOTE || (argument->arg)[0] == DQUOTE )
+    if ( (argument->arg)[0] == SQUOTE || (argument->arg)[0] == DQUOTE )
     {
       /* Strip off quotes */
       clip = strip_quotes( argument->arg );
@@ -1540,7 +1608,7 @@ char * clip;
     else
     {
       clip = get_var_arg( argument->arg );
-      if( clip != NULL )
+      if ( clip != NULL )
       {
 	i = atol( clip );
       }
@@ -1564,17 +1632,17 @@ return i;
  */
 int database_keyword( char *name )
 {
-  if( strcasecmp( name, "vblank" ) == 0 )
+  if ( strcasecmp( name, "vblank" ) == 0 )
     return _VBLANK;
-  if( strcasecmp( name, "cpu" ) == 0 )
+  if ( strcasecmp( name, "cpu" ) == 0 )
     return _CPU;
-  if( strcasecmp( name, "graphics-mem" ) == 0 )
+  if ( strcasecmp( name, "graphics-mem" ) == 0 )
     return _GRAPHICS_MEM;
-  if( strcasecmp( name, "total-mem" ) == 0 )
+  if ( strcasecmp( name, "total-mem" ) == 0 )
     return _TOTAL_MEM;
-  if( strcasecmp( name, "fpu" ) == 0 )
+  if ( strcasecmp( name, "fpu" ) == 0 )
     return _FPU;
-  if( strcasecmp( name, "chiprev" ) == 0 )
+  if ( strcasecmp( name, "chiprev" ) == 0 )
     return _CHIPREV;
 
 return _UNKNOWN;
@@ -1592,15 +1660,15 @@ char *collect_strings( ScriptArg *current, char separator, int level )
 char *string = NULL, *clip, *dummy;
 int i;
 
-  while( current != NULL )
+  while ( current != NULL )
   {
     ExecuteCommand();
     /* Concatenate string unless it was a parameter which will be ignored */
-    if( current->ignore == 0 )
+    if ( current->ignore == 0 )
     {
-      if( current->arg != NULL )
+      if ( current->arg != NULL )
       {
-	if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+	if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 	{
 	  /* Strip off quotes */
 	  clip = strip_quotes( current->arg );
@@ -1608,7 +1676,7 @@ int i;
 	else
 	{
 	  dummy = get_var_arg( current->arg );
-	  if( dummy != NULL )
+	  if ( dummy != NULL )
 	  {
 	    clip = strdup( dummy );
 	    outofmem( clip );
@@ -1630,7 +1698,7 @@ int i;
       i = ( string == NULL ) ? 0 : strlen( string );
       string = realloc( string, i + strlen( clip ) + 2 );
       outofmem( string );
-      if( i == 0 )
+      if ( i == 0 )
       {
 	string[0] = 0;
       }
@@ -1656,9 +1724,9 @@ void free_parameter(struct ParameterList pl)
 {
 int j;
 
-  if( pl.arg )
+  if ( pl.arg )
   {
-    for( j = 0 ; j < pl.intval ; j++ )
+    for ( j = 0 ; j < pl.intval ; j++ )
     {
       free(pl.arg[j]);
     }
@@ -1675,9 +1743,9 @@ void free_parameterlist(struct ParameterList *pl)
 {
 int i;
 
-  if( pl )
+  if ( pl )
   {
-    for( i = 0 ; i < NUMPARAMS ; i++ )
+    for ( i = 0 ; i < NUMPARAMS ; i++ )
     {
       free_parameter( pl[i] );
     }
@@ -1701,22 +1769,22 @@ char *string, *clip;
 
   pl = calloc( NUMPARAMS, sizeof( struct ParameterList ) );
   outofmem( pl );
-  while( script != NULL )
+  while ( script != NULL )
   {
     /* Check if we have a command as argument */
-    if( script->cmd != NULL )
+    if ( script->cmd != NULL )
     {
       current = script->cmd->next;
       /* Check if we don't have a block as argument */
-      if( script->cmd->arg != NULL )
+      if ( script->cmd->arg != NULL )
       {
 	/* Check if we have a parameter as command */
 	cmd = eval_cmd( script->cmd->arg );
-	if( cmd > _PARAMETER && cmd <= ( _PARAMETER + NUMPARAMS ) )
+	if ( cmd > _PARAMETER && cmd <= ( _PARAMETER + NUMPARAMS ) )
 	{
 	  /* This is a parameter */
 	  GetPL( pl, cmd ).used = 1;
-	  if( cmd > ( _PARAMETER + NUMARGPARAMS ) )
+	  if ( cmd > ( _PARAMETER + NUMARGPARAMS ) )
 	  {
 	    /* This is a boolean parameter */
 	    GetPL( pl, cmd ).intval = 1;
@@ -1724,7 +1792,7 @@ char *string, *clip;
 	  else
 	  {
 	    /* This parameter may have arguments */
-	    switch( cmd )
+	    switch (cmd)
 	    {
 	      /* Parameters with args */
 	      case _APPEND	: /* $ */
@@ -1746,13 +1814,13 @@ char *string, *clip;
 
 	      case _CONFIRM	: /* ($->)# */
 				  i = _EXPERT;
-				  if( current != NULL )
+				  if ( current != NULL )
 				  {
 				    ExecuteCommand();
-				    if( current->arg != NULL )
+				    if ( current->arg != NULL )
 				    {
 				      string = NULL;
-				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+				      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 				      {
 					/* Strip off quotes */
 					string = strip_quotes( current->arg );
@@ -1762,14 +1830,14 @@ char *string, *clip;
 				      {
 					clip = get_var_arg( current->arg );
 				      }
-				      if( clip != NULL )
+				      if ( clip != NULL )
 				      {
 					i = atol( clip );
-					if( strcasecmp( clip, "novice" ) == 0 )
+					if ( strcasecmp( clip, "novice" ) == 0 )
 					  i = _NOVICE;
-					if( strcasecmp( clip, "average" ) == 0 )
+					if ( strcasecmp( clip, "average" ) == 0 )
 					  i = _AVERAGE;
-					if( strcasecmp( clip, "expert" ) == 0 )
+					if ( strcasecmp( clip, "expert" ) == 0 )
 					  i = _EXPERT;
 					free( string );
 				      }
@@ -1783,7 +1851,7 @@ char *string, *clip;
 				      i = current->intval;
 				    }
 				  }
-				  if( i < _NOVICE || i > _EXPERT )
+				  if ( i < _NOVICE || i > _EXPERT )
 				  {
 				    error = BADPARAMETER;
 				    traperr( "Userlevel out of range!\n", NULL );
@@ -1794,12 +1862,12 @@ char *string, *clip;
 	      case _DEFAULT	: /* * */
 				  i = 0;
 				  string = NULL;
-				  if( current != NULL )
+				  if ( current != NULL )
 				  {
 				    ExecuteCommand();
-				    if( current->arg != NULL )
+				    if ( current->arg != NULL )
 				    {
-				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+				      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 				      {
 					/* Strip off quotes */
 					string = strip_quotes( current->arg );
@@ -1807,7 +1875,7 @@ char *string, *clip;
 				      else
 				      {
 					clip = get_var_arg( current->arg );
-					if( clip != NULL )
+					if ( clip != NULL )
 					{
 					  string = strdup( clip );
 					  outofmem( string );
@@ -1823,11 +1891,11 @@ char *string, *clip;
 				      i = current->intval;
 				    }
 				    GetPL( pl, cmd ).intval = i;
-				    if( string != NULL )
+				    if ( string != NULL )
 				    {
 				      /* To avoid problems with multiple definitions of default */
 				      /* take last (this) one as true and clear previous	*/
-				      if( GetPL( pl, cmd ).arg != NULL )
+				      if ( GetPL( pl, cmd ).arg != NULL )
 				      {
 					free( GetPL( pl, cmd ).arg[0] );
 				      }
@@ -1849,7 +1917,7 @@ char *string, *clip;
 	      case _RANGE	: /* # # */
 	      case _SETPOSITION	: /* # # */
 				  i = 0;
-				  if( current != NULL && current->next != NULL )
+				  if ( current != NULL && current->next != NULL )
 				  {
 				    ExecuteCommand();
 				    GetPL( pl, cmd ).intval = getint( current );
@@ -1866,12 +1934,12 @@ char *string, *clip;
 
 	      case _SETSTACK	: /* # */
 				  i = 0;
-				  if( current != NULL )
+				  if ( current != NULL )
 				  {
 				    ExecuteCommand();
-				    if( current->arg != NULL )
+				    if ( current->arg != NULL )
 				    {
-				      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+				      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 				      {
 					/* Strip off quotes */
 					string = strip_quotes( current->arg );
@@ -1881,7 +1949,7 @@ char *string, *clip;
 				      else
 				      {
 					clip = get_var_arg( current->arg );
-					if( clip != NULL )
+					if ( clip != NULL )
 					{
 					  i = atol( clip );
 					}
@@ -1913,7 +1981,7 @@ char *string, *clip;
 	else if ( cmd == _IF )
 	{
 	  /* This parameter is masqueraded */
-	  switch( cmd )
+	  switch (cmd)
 	  {
 	    /* "Allowed" Commands (for compatibility) */
 
@@ -1921,24 +1989,24 @@ char *string, *clip;
 	     * ( command ( if ( = 1 1 ) "blah" ) )
 	     */
 	    case _IF	: /* if 1st arg != 0 get parameter from 2nd cmd else get optional 3rd cmd parameter */
-			if( current != NULL && current->next != NULL )
+			if ( current != NULL && current->next != NULL )
 			{
 			  ExecuteCommand();
 			  i = getint( current );
-			  if( i == 0 )
+			  if ( i == 0 )
 			  {
 			    current = current->next;
 			  }
-			  if( current->next != NULL )
+			  if ( current->next != NULL )
 			  {
 			    current = current->next;
-			    if( current->cmd != NULL )
+			    if ( current->cmd != NULL )
 			    {
 			    struct ParameterList *subpl;
 			      subpl = get_parameters( current, level + 1 );
-			      for( i = 0 ; i < NUMPARAMS ; i++ )
+			      for ( i = 0 ; i < NUMPARAMS ; i++ )
 			      {
-				if( subpl[i].used == 1 )
+				if ( subpl[i].used == 1 )
 				{
 				  free_parameter( pl[i] );
 				  pl[i].arg = subpl[i].arg;
@@ -1980,14 +2048,14 @@ void collect_stringargs( ScriptArg *current, int level, struct ParameterList *pl
 char *string, *clip, **mclip = NULL;
 int j = 0;
 
-  while( current != NULL )
+  while ( current != NULL )
   {
     ExecuteCommand();
     mclip = (char **)realloc( mclip, sizeof(char *) * (j+1) );
     outofmem( mclip );
-    if( current->arg != NULL )
+    if ( current->arg != NULL )
     {
-      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+      if ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
       {
 	/* Strip off quotes */
 	string = strip_quotes( current->arg );
@@ -1995,7 +2063,7 @@ int j = 0;
       else
       {
 	clip = get_var_arg( current->arg );
-	if( clip != NULL )
+	if ( clip != NULL )
 	{
 	  string = strdup( clip );
 	  outofmem( string );
@@ -2043,7 +2111,7 @@ int i=0, cnt;
     cnt = Read( file, buf, 1 );
     i += cnt;
   } while ( cnt && buf[0] != LINEFEED );
-  if( i == 0 )
+  if ( i == 0 )
   {
     return NULL;
   }
@@ -2069,24 +2137,24 @@ int i, changed = 0, cont = 0;
 
   userstartup = Open( "S:User-Startup", MODE_OLDFILE );
   tmpuserstartup = Open( "S:User-Startup.tmp", MODE_NEWFILE );
-  if( !tmpuserstartup )
+  if ( !tmpuserstartup )
   {
 #warning TODO: Complain more smoothly...
     fprintf( stderr, "Could not open S:User-Startup for writing!" );
     exit(-1);
   }
-  if( userstartup )
+  if ( userstartup )
   {
     while ( ( line = get_file_line( userstartup ) ) && !changed )
     {
-      if( strncasecmp( line, ";BEGIN ", 7) == 0 )
+      if ( strncasecmp( line, ";BEGIN ", 7) == 0 )
       {
-	if( strcmp( &(line[7]), string ) == 0 )
+	if ( strcmp( &(line[7]), string ) == 0 )
 	{
 	  changed = 1;
 	}
       }
-      if( !changed )
+      if ( !changed )
       {
 	Write( tmpuserstartup, line, strlen( line ) );
        Write( tmpuserstartup, "\n", 1 );
@@ -2098,7 +2166,7 @@ int i, changed = 0, cont = 0;
   Write( tmpuserstartup, ";BEGIN ", 7 );
   Write( tmpuserstartup, string, strlen( string ) );
   Write( tmpuserstartup, "\n", 1 );
-  for( i = 0 ; i < GetPL( parameter, _COMMAND ).intval ; i++ )
+  for ( i = 0 ; i < GetPL( parameter, _COMMAND ).intval ; i++ )
   {
     Write( tmpuserstartup, GetPL( parameter, _COMMAND).arg[i], strlen( GetPL( parameter, _COMMAND).arg[i] ) );
   }
@@ -2106,15 +2174,15 @@ int i, changed = 0, cont = 0;
   Write( tmpuserstartup, string, strlen( string ) );
   Write( tmpuserstartup, "\n", 1 );
 
-  if( userstartup )
+  if ( userstartup )
   {
     while ( ( line = get_file_line( userstartup ) ) )
     {
-      if( !cont )
+      if ( !cont )
       {
-	if( strncasecmp( line, ";END ", 5) == 0 )
+	if ( strncasecmp( line, ";END ", 5) == 0 )
 	{
-	  if( strcmp( &(line[5]), string ) == 0 )
+	  if ( strcmp( &(line[5]), string ) == 0 )
 	  {
 	    cont = 1;
 	  }
@@ -2139,7 +2207,7 @@ int i, changed = 0, cont = 0;
     Rename() is proven to work as expected
 */
 #if DEBUG
-  if(
+  if (
 #endif /* DEBUG */
       Rename( "S:User-Startup.tmp", "User-Startup" )
 #if !DEBUG
@@ -2162,7 +2230,7 @@ void traperr( char * msg, char * name )
 char *outmsg;
 int i, j;
 
-  if( !doing_abort )
+  if ( !doing_abort )
   {
     doing_abort = TRUE;
 
@@ -2172,7 +2240,7 @@ int i, j;
     sprintf( outmsg, msg, name );
     display_text( outmsg );
 
-    if( preferences.trap[ error - 1 ].cmd != NULL )
+    if ( preferences.trap[ error - 1 ].cmd != NULL )
     {
       /* execute trap */
       execute_script( preferences.trap[ error - 1 ].cmd, -99 );
@@ -2180,7 +2248,7 @@ int i, j;
     else
     {
       /* execute onerrors */
-      if( preferences.onerror.cmd != NULL )
+      if ( preferences.onerror.cmd != NULL )
       {
 	execute_script( preferences.onerror.cmd, -99 );
       }
@@ -2192,7 +2260,7 @@ int i, j;
 #endif /* DEBUG */
 
   cleanup();
-  if( grace_exit == TRUE )
+  if ( grace_exit == TRUE )
   {
     exit(0);
   }

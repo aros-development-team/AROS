@@ -22,7 +22,7 @@ void outofmem( void * );
 
 void free_script( ScriptArg *first )
 {
-  if( first != NULL )
+  if ( first != NULL )
   {
     free_script( first->cmd );
     free_script( first->next );
@@ -33,7 +33,7 @@ void free_script( ScriptArg *first )
 
 void cleanup( )
 {
-  if( preferences.transcriptstream != NULL )
+  if ( preferences.transcriptstream != NULL )
   {
     Close( preferences.transcriptstream );
   }
@@ -55,7 +55,7 @@ void end_malloc( )
 
 void outofmem( void * ptr )
 {
-  if( ptr == NULL )
+  if ( ptr == NULL )
   {
     error = OUTOFMEMORY;
     traperr( "Out of memory!\n", NULL );

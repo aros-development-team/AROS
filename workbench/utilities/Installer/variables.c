@@ -39,7 +39,7 @@ struct VariableList *find_var( char *name )
 int i;
 
   /* Check if variable is in list */
-  for( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
+  for ( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
   return ( i == numvariables ) ?
 	 NULL:
 	 &(variables[i]);
@@ -58,7 +58,7 @@ struct VariableList *entry;
   entry = find_var( name );
 
   /* Return Pointer to value */
-  if( entry != NULL )
+  if ( entry != NULL )
   {
     return ( entry->vartext == NULL ) ?
 	   (void *)(entry->varinteger) :
@@ -112,8 +112,8 @@ void set_variable( char *name, char *text, long int intval )
 int i;
 
   /* Check if variable is in list */
-  for( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
-  if( i == numvariables )
+  for ( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
+  if ( i == numvariables )
   {
     /* Enlarge list for one additional element */
     numvariables++;
@@ -133,14 +133,14 @@ int i;
 
   /* Duplicate variable name if it does not exist yet */
   
-  if( variables[i].varsymbol == NULL )
+  if ( variables[i].varsymbol == NULL )
   {
     variables[i].varsymbol = strdup( name );
     outofmem( variables[i].varsymbol );
   }
 
   /* Duplicate variable text if existent */
-  if( text != NULL )
+  if ( text != NULL )
   {
     variables[i].vartext = strdup( text );
     outofmem( variables[i].vartext );
@@ -159,10 +159,10 @@ void set_preset_variables( int argc )
 {
 char *ttemp;
 
-  if( argc )
+  if (argc)
   { /* Started from Shell */
 #ifdef DEBUG
-    if( args[ARG_APPNAME] )
+    if ( args[ARG_APPNAME] )
     {
 #endif /* DEBUG */
       set_variable( "@app-name", (STRPTR)args[ARG_APPNAME], 0 );
@@ -174,7 +174,7 @@ char *ttemp;
     }
 #endif /* DEBUG */
 
-    if( args[ARG_LANGUAGE] )
+    if ( args[ARG_LANGUAGE] )
     {
       set_variable( "@language", (char *)args[ARG_LANGUAGE], 0 );
     }
@@ -186,7 +186,7 @@ char *ttemp;
   else
   { /* Started from Workbench */
       ttemp = ArgString( tooltypes, "APPNAME", NULL );
-      if( !ttemp )
+      if (!ttemp)
       {
 #ifdef DEBUG
        fprintf( stderr, "No ToolType APPNAME in Icon!\n" );
@@ -203,7 +203,7 @@ char *ttemp;
   set_variable( "@default-dest", DEFAULT_DEST, 0 );
   set_variable( "@installer-version", NULL, ( INSTALLER_VERSION << 16 ) + INSTALLER_REVISION );
   set_variable( "@user-level", NULL, preferences.defusrlevel );
-  if( preferences.welcome == FALSE )
+  if ( preferences.welcome == FALSE )
   {
     request_userlevel( NULL );
   }
@@ -243,7 +243,7 @@ void dump_varlist( )
 int i;
 
   printf( "DUMP of all %d variables:\n", numvariables );
-  for( i = 0 ; i < numvariables ; i++ )
+  for ( i = 0 ; i < numvariables ; i++ )
     printf( "%s = %s | %ld\n", variables[i].varsymbol, variables[i].vartext, variables[i].varinteger );
 
 }
@@ -257,7 +257,7 @@ void free_varlist( )
 {
 int i; 
 
-  for( i = 0 ; i < numvariables ; i++ )
+  for ( i = 0 ; i < numvariables ; i++ )
   {
     free( variables[i].varsymbol );
     free( variables[i].vartext );

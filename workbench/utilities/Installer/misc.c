@@ -22,15 +22,15 @@ int strtostrs ( char * in, char ***outarr )
 int i = 0, j = 0, k = 0;
 char **out = *outarr;
 
-  while( *in )
+  while (*in)
   {
     i++;
     /* malloc space for next string */
     out = realloc( out, ( i + 1 ) * sizeof( char *) );
-    for( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
+    for ( j = 0 ; in[j] && in[j]!=LINEFEED ; j++ );
     out[i-1] = malloc( ( j + 1 ) * sizeof( char ) );
     outofmem( out[i-1] );
-    for( k = 0 ; k < j ; k++ )
+    for ( k = 0 ; k < j ; k++ )
     {
       /* save char to string */
       out[i-1][k] = *in;
@@ -38,7 +38,7 @@ char **out = *outarr;
     }
     /* NULL-terminate string */
     out[i-1][j] = 0;
-    if( *in )
+    if (*in)
       in++;
   }
   /* NULL-terminate array */
@@ -63,7 +63,7 @@ int len = 0, i, j, k;
     len += strlen ( instrs[i] ) + 1;
   }
   retval = malloc ( sizeof( char ) * len );
-  if( retval != NULL )
+  if ( retval != NULL )
   {
     j = 0;
     for ( i = 0 ; i < n ; i++ )
@@ -112,7 +112,7 @@ void freestrlist( STRPTR *array )
 {
 int i=0;
 
-  while(array[i])
+  while (array[i])
   {
     free(array[i]);
     i++;

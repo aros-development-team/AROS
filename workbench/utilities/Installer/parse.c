@@ -30,9 +30,9 @@ int i;
   /* Don't produce a SegFault if pointer is non-NULL */
   if((long int)a > 1000)
   {
-    for(i=0;i<x;i++)
+    for ( i = 0 ; i < x ; i++ )
       printf(" ");
-    printf("%ld: %s , cmd=%ld, next=%ld, parent=%ld\n",(long int)a,a->arg,(long int)a->cmd,(long int)a->next,(long int)a->parent);
+    printf( "%ld: %s , cmd=%ld, next=%ld, parent=%ld\n",(long int)a,a->arg,(long int)a->cmd,(long int)a->next,(long int)a->parent);
     printcode( a->cmd, x+1 );
     printcode( a->next, x );
   }
@@ -63,13 +63,13 @@ char **mclip;
     }
     if( !isspace( buffer[0] ) )
     {
-      switch( buffer[0] )
+      switch (buffer[0])
       {
 	case SEMICOLON : /* A comment, ok - Go on with next line */
 			 do
 			 {
 			   count = Read( inputfile, &buffer[0], 1 );
-			 } while( buffer[0] != LINEFEED && count != 0 );
+			 } while ( buffer[0] != LINEFEED && count != 0 );
 			 line++;
 			 break;
 
@@ -107,7 +107,7 @@ char **mclip;
 			 current = current->parent->cmd;
 			 if( current->next != NULL )
 			 {
-			   while( current->next->next != NULL )
+			   while ( current->next->next != NULL )
 			   {
 			     current = current->next;
 			   }
@@ -133,7 +133,7 @@ char **mclip;
 			   {
 			     if( masquerade == TRUE )
 			     {
-			       switch(buffer[i])
+			       switch (buffer[i])
 			       {
 				 case 'n'	: /* NEWLINE */
 						  buffer[i-1] = 0x0a;
@@ -179,7 +179,7 @@ char **mclip;
 			       exit(-1);
 			     }
 			     count = Read( inputfile, &buffer[i], 1 );
-			   } while( masquerade || ( buffer[i] != buffer[0] && count != 0 ) );
+			   } while ( masquerade || ( buffer[i] != buffer[0] && count != 0 ) );
 			   current->arg = (char *)malloc( sizeof(char)*(i+2) );
 			   if( current->arg == NULL )
 			   {
@@ -194,7 +194,7 @@ char **mclip;
 			   {
 			     i++;
 			     count = Read( inputfile, &buffer[i], 1 );
-			   } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
+			   } while ( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
 			   if( buffer[i] == LINEFEED )
 			   {
 			     line++;
@@ -210,7 +210,7 @@ char **mclip;
 			     do
 			     {
 			       count = Read( inputfile, &buffer[i], 1 );
-			     } while( buffer[i] != LINEFEED && count != 0 );
+			     } while ( buffer[i] != LINEFEED && count != 0 );
 			     line++;
 			   }
 			   if( buffer[i] == LBRACK || buffer[i] == RBRACK )
@@ -218,7 +218,7 @@ char **mclip;
 			     Seek( inputfile, -1 , OFFSET_CURRENT );
 			   }
 			   buffer[i] = 0;
-			   switch( buffer[0] )
+			   switch (buffer[0])
 			   {
 			     case DOLLAR  : /* HEX number */
 					    current->intval = strtol( &buffer[1], NULL, 16 );
@@ -316,10 +316,10 @@ char **mclip;
 						    do
 						    {
 						      count = Read( inputfile, &buffer[0], 1 );
-						    } while( buffer[0] != LINEFEED && count != 0 );
+						    } while ( buffer[0] != LINEFEED && count != 0 );
 						    line++;
 						  }
-						} while( isspace( buffer[0] ) && count != 0 );
+						} while ( isspace( buffer[0] ) && count != 0 );
 						  
 						if( buffer[0] != LBRACK )
 						{
@@ -329,7 +329,7 @@ char **mclip;
 						  {
 						    i++;
 						    count = Read( inputfile, &buffer[i], 1 );
-						  } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
+						  } while ( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
 						  if( i == MAXARGSIZE )
 						  {
 						    show_parseerror( "Argument length overflow!", line );
@@ -369,7 +369,7 @@ char **mclip;
 						  /* Next string is body-command */
 						  finish = TRUE;
 						}
-					      } while( !finish );
+					      } while (!finish);
 					      /* Procedure body */
 					      parse_file( proc->cmd );
 					      finish = FALSE;
@@ -382,13 +382,13 @@ char **mclip;
 						  {
 						    line++;
 						  }
-						} while( isspace(buffer[0]) && count != 0 );
+						} while ( isspace(buffer[0]) && count != 0 );
 						if( buffer[0] == SEMICOLON )
 						{
 						  do
 						  {
 						    count = Read( inputfile, &buffer[0], 1 );
-						  } while( buffer[0] != LINEFEED && count != 0 );
+						  } while ( buffer[0] != LINEFEED && count != 0 );
 						  line++;
 						}
 						else if( buffer[0] == LBRACK )
@@ -484,6 +484,6 @@ char **mclip;
       cleanup();
       exit(-1);
     }
-  } while( !ready );
+  } while (!ready);
 }
 

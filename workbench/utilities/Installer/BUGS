@@ -11,3 +11,13 @@ abort in abort causes some problems. Is this allowed, btw?
 Anyway: an aborted askbool with trap->askbool hangs the system
 (circular dependancy in gadgets)
 
+BUG00004
+Get rid of malloc/realloc/free and use AllocMem/FreeMem instead.
+
+BUG00005
+FileRequester crashes AROS when in expert mode.  Does not happen if any
+program has successfully opened a FileRequester before.
+
+BUG00006
+GUI of askchoice crashes.
+

@@ -28,11 +28,11 @@ void link_function( char *name, long int incarnation )
 {
 int i = 0, j = 0, inc = -1;
 
-  for( ; i < numactiveusrprocs && strcmp( name, activeusrprocs[i]->procname ) != 0 ; i++ );
+  for ( ; i < numactiveusrprocs && strcmp( name, activeusrprocs[i]->procname ) != 0 ; i++ );
 
-  while( j < numusrprocs && inc != incarnation )
+  while ( j < numusrprocs && inc != incarnation )
   {
-    if( strcmp( name, usrprocs[j].procname ) == 0 )
+    if ( strcmp( name, usrprocs[j].procname ) == 0 )
     {
       inc++;
     }
@@ -40,11 +40,11 @@ int i = 0, j = 0, inc = -1;
   }
   j--;
 
-  if( i == numactiveusrprocs )
+  if ( i == numactiveusrprocs )
   {
     numactiveusrprocs++;
     activeusrprocs = realloc( activeusrprocs, sizeof(struct ProcedureList *) * numactiveusrprocs );
-    if( activeusrprocs == NULL )
+    if ( activeusrprocs == NULL )
     {
       end_malloc();
     }
@@ -61,8 +61,8 @@ struct ProcedureList *find_proc( char *name )
 int i;
 
   /* Check if procedure is in list */
-  for( i = 0 ; i < numactiveusrprocs && strcmp( name, activeusrprocs[i]->procname ) != 0 ; i++ );
-  if( i == numactiveusrprocs )
+  for ( i = 0 ; i < numactiveusrprocs && strcmp( name, activeusrprocs[i]->procname ) != 0 ; i++ );
+  if ( i == numactiveusrprocs )
   {
     /* Not in list */
     fprintf( stderr, "<%s> - Procedure not found!\n", name );
@@ -84,8 +84,8 @@ long int incarnation = 0;
 
   name = args[0];
   /* Check if name is in preset list */
-  for( i = 0 ; i < _MAXCOMMAND && strcmp( name, internal_commands[i].cmdsymbol ) != 0 ; i++ );
-  if( i < _MAXCOMMAND )
+  for ( i = 0 ; i < _MAXCOMMAND && strcmp( name, internal_commands[i].cmdsymbol ) != 0 ; i++ );
+  if ( i < _MAXCOMMAND )
   {
     fprintf( stderr, "Procedure name <%s> already defined for internal function!\n", name );
     cleanup();
@@ -93,9 +93,9 @@ long int incarnation = 0;
   }
 
   /* Check if name is in list */
-  for( i = 0 ; i < numusrprocs ; i++ )
+  for ( i = 0 ; i < numusrprocs ; i++ )
   {
-    if( strcmp( name, usrprocs[i].procname ) == 0 )
+    if ( strcmp( name, usrprocs[i].procname ) == 0 )
     {
       incarnation++;
     }
@@ -104,7 +104,7 @@ long int incarnation = 0;
   /* Enlarge list for one additional element */
   numusrprocs++;
   usrprocs = realloc( usrprocs, sizeof(struct ProcedureList) * numusrprocs );
-  if( usrprocs == NULL )
+  if ( usrprocs == NULL )
   {
     end_malloc();
   }
@@ -124,7 +124,7 @@ void free_proclist( )
 {
 int i; 
 
-  for( i = 0 ; i < numusrprocs ; i++ )
+  for ( i = 0 ; i < numusrprocs ; i++ )
   {
     free( usrprocs[i].procname );
   }

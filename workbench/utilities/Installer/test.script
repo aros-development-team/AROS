@@ -54,7 +54,7 @@
 
 ;( run "info >t:fred/result"
 ;	 ( prompt "Running 'info'" ) 
-( run "C:List \"\" SYS:"
+( run "C:List \"\" SYS: >t:fred/result"
 	 ( prompt "Running 'C:List'" )
 	 ( help "This will only work from the CLI!" ) 
 	 ( confirm ) 

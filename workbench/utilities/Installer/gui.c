@@ -55,7 +55,7 @@ char *request_dir( struct ParameterList * );
 char *request_disk( struct ParameterList * );
 char *request_file( struct ParameterList * );
 long int request_options( struct ParameterList * );
-int request_confirm( struct ParameterList *, long int );
+int request_confirm( struct ParameterList * );
 void abort_install( VOID_FUNC );
 void final_report();
 void setgadgetdisable( int );
@@ -277,7 +277,7 @@ struct TagItem ti2[] = {
     exit(-1);
   }
 
-  AslBase = OpenLibrary( "asl.library", 37L );
+  AslBase = OpenLibrary( "asl.library", 39 );
   if (AslBase == NULL)
   {
     cleanup();
@@ -430,10 +430,10 @@ int finish = FALSE;
 #ifdef DEBUG
       printf( "%s\n", msg );
 #endif /* DEBUG */
-    while( !finish )
+    while (!finish)
     {
       WaitPort( GuiWin->UserPort );
-      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
 	class = imsg->Class;
 	code = imsg->Code;
@@ -454,7 +454,7 @@ int finish = FALSE;
 	}
 	GT_ReplyIMsg( imsg );
 
-      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     }
 
   }
@@ -561,7 +561,7 @@ int count = 1, i = -1;
     exit(-1);
   }
   errline--;
-  while( count != 0 && errline > 0 )
+  while ( count != 0 && errline > 0 )
   {
     count = Read( inputfile, buffer, 1 );
     if( buffer[0] == LINEFEED )
@@ -573,7 +573,7 @@ int count = 1, i = -1;
   {
     i++;
     count = Read( inputfile, &buffer[i], 1 );
-  } while( buffer[i] != LINEFEED && count != 0 && i < MAXARGSIZE );
+  } while ( buffer[i] != LINEFEED && count != 0 && i < MAXARGSIZE );
   buffer[i] = 0;
 #ifdef DEBUG
   fprintf( stderr, "%s\n", buffer );
@@ -672,10 +672,10 @@ int finish = FALSE;
     printf( "%s\n", msg );
 #endif /* DEBUG */
 
-    while( !finish )
+    while (!finish)
     {
       WaitPort( GuiWin->UserPort );
-      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
 	class = imsg->Class;
 	code = imsg->Code;
@@ -712,7 +712,7 @@ int finish = FALSE;
 	}
 	GT_ReplyIMsg(imsg);
 	
-      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
   }
@@ -855,10 +855,10 @@ char welcome[1024];
   RefreshGList( mxglist, GuiWin, NULL ,-1 );
   GT_RefreshWindow( GuiWin, NULL );
 
-  while( !finish )
+  while (!finish)
   {
     WaitPort( GuiWin->UserPort );
-    while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+    while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
     {
       class = imsg->Class;
       code = imsg->Code;
@@ -906,7 +906,7 @@ char welcome[1024];
       }
       GT_ReplyIMsg( imsg );
 
-    } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+    } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
   }
 
   RemoveGList( GuiWin, mxglist, -1 );
@@ -955,10 +955,10 @@ char welcome[1024];
     AddGList( GuiWin, mxglist ,-1 ,-1 ,NULL );
     RefreshGList( stdglist ,GuiWin ,NULL ,-1 );
     GT_RefreshWindow( GuiWin ,NULL );
-    while( !finish )
+    while (!finish)
     {
       WaitPort( GuiWin->UserPort );
-      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
 	class = imsg->Class;
 	code = imsg->Code;
@@ -1012,7 +1012,7 @@ char welcome[1024];
 	}
 	GT_ReplyIMsg(imsg);
 	
-      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
     if(!preferences.nopretend)
@@ -1055,10 +1055,10 @@ char welcome[1024];
       GT_RefreshWindow( GuiWin ,NULL );
 
       finish = FALSE;
-      while( !finish )
+      while (!finish)
       {
 	WaitPort( GuiWin->UserPort );
-	while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+	while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
 	{
 	  class = imsg->Class;
 	  code = imsg->Code;
@@ -1107,7 +1107,7 @@ char welcome[1024];
 	  }
 	  GT_ReplyIMsg(imsg);
 	
-	} /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+	} /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
       } /* !finish */
     } /* nopretend */
 
@@ -1214,7 +1214,7 @@ int finish = FALSE;
     do
     {
       WaitPort( GuiWin->UserPort );
-      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
 	class = imsg->Class;
 	code = imsg->Code;
@@ -1235,15 +1235,27 @@ int finish = FALSE;
 		    abort_install( &request_bool_destruct );
 		    break;
 		  case ID_HELPGAD:
-		    for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
+#warning FIXME: What is this help like?
+		    setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		    m = GetPL( pl, _HELP ).intval;
+		    if(m)
 		    {
-		      printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
+#ifdef DEBUG
+		      for( n = 0 ; n < m ; n++ )
+		      {
+			printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		      }
+#endif /* DEBUG */
+		      morenmain( HELP_ON_ASKNUMBER, m, GetPL( pl, _HELP ).arg );
 		    }
-		    if( i == 0 )
+		    else
 		    {
-#warning FIXME: What default help text is used?
+#ifdef DEBUG
 		      printf( "%s\n", get_var_arg( "@asknumber-help" ) );
+#endif /* DEBUG */
+		      moremain( HELP_ON_ASKNUMBER, get_var_arg( "@asknumber-help" ) );
 		    }
+		    setgadgetdisable( SKIPGAD );
 		    break;
 		  default:
 		    break;
@@ -1254,9 +1266,9 @@ int finish = FALSE;
 	}
 	GT_ReplyIMsg(imsg);
 
-      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
 
-    } while( !finish );
+    } while (!finish);
 
     request_bool_destruct();
   }
@@ -1356,10 +1368,10 @@ int finish = FALSE;
     }
 
     finish = FALSE;
-    while( !finish )
+    while (!finish)
     {
       WaitPort( GuiWin->UserPort );
-      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
 	class = imsg->Class;
 	code = imsg->Code;
@@ -1439,7 +1451,7 @@ int finish = FALSE;
 	}
 	GT_ReplyIMsg(imsg);
 
-      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
     request_number_destruct();
@@ -1529,10 +1541,10 @@ int finish = FALSE;
     }
 
     finish = FALSE;
-    while( !finish )
+    while (!finish)
     {
       WaitPort( GuiWin->UserPort );
-      while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
 	class = imsg->Class;
 	code = imsg->Code;
@@ -1549,15 +1561,26 @@ int finish = FALSE;
 		    break;
 		  case ID_HELPGAD:
 #warning FIXME: What is this help like?
+		    setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
 		    m = GetPL( pl, _HELP ).intval;
-		    for( n = 0 ; n < m ; n++ )
+		    if(m)
 		    {
-		      printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+#ifdef DEBUG
+		      for( n = 0 ; n < m ; n++ )
+		      {
+			printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		      }
+#endif /* DEBUG */
+		      morenmain( HELP_ON_ASKSTRING, m, GetPL( pl, _HELP ).arg );
 		    }
-		    if( n == 0 )
+		    else
 		    {
-		      printf( "%s\n", get_var_arg( "@asknumber-help" ) );
+#ifdef DEBUG
+		      printf( "%s\n", get_var_arg( "@askstring-help" ) );
+#endif /* DEBUG */
+		      moremain( HELP_ON_ASKSTRING, get_var_arg( "@askstring-help" ) );
 		    }
+		    setgadgetdisable( SKIPGAD );
 		    break;
 		  default:
 		    break;
@@ -1568,7 +1591,7 @@ int finish = FALSE;
 	}
 	GT_ReplyIMsg(imsg);
 
-      } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
     } /* !finish */
 
     GT_GetGadgetAttrs(stringgad,GuiWin,NULL,GTST_String,&string,TAG_DONE);
@@ -1595,10 +1618,10 @@ void request_choice_destruct()
 }
 long int request_choice( struct ParameterList *pl )
 {
-int i,m,n;
+int i,j,m,n;
 long int retval;
+char **out;
 int max, finish = FALSE;
-char c;
 
   retval = GetPL( pl, _DEFAULT ).intval;
   if( preferences.transcriptstream != NULL )
@@ -1644,67 +1667,97 @@ char c;
 			GTMX_Labels, mxlabels,
 			GTMX_Scaled, TRUE,
 			GTMX_TitlePlace, PLACETEXT_ABOVE,
+			GTMX_Active, retval,
 			GA_Immediate, TRUE,
 			TAG_DONE );
 
-    AddGList(GuiWin,mxglist,-1,-1,NULL);
-    RefreshGList(mxglist,GuiWin,NULL,-1);
-    GT_RefreshWindow(GuiWin,NULL);
+    AddGList( GuiWin, mxglist ,-1 ,-1 ,NULL );
+    RefreshGList( stdglist ,GuiWin ,NULL ,-1 );
+    GT_RefreshWindow( GuiWin ,NULL );
     DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
     DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
-    do
+    j = 0;
+    for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
     {
-      for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
+#ifdef DEBUG
+      printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
+#endif /* DEBUG */
+      out = malloc( sizeof( char * ) );
+      outofmem( out );
+      out[0] = NULL;
+      m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
+      for( n = 0 ; n < m ; n++ )
       {
-	printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
+#ifdef USE_INTUITEXT
+	itext.IText = out[n];
+	PrintIText( rp, &itext, 15, 15*j+7 );
+#else
+	Move( rp, 18, 15*j+22 );
+	Text( rp, out[n], strlen(out[n]) );
+#endif
+	free( out[n] );
+	j++;
       }
-      for( i = 0 ; i < max ; i ++)
+      free( out );
+    }
+
+    finish = FALSE;
+    while (!finish)
+    {
+      WaitPort( GuiWin->UserPort );
+      while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
       {
-	printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval==(i+1) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
-      }
-      printf( " V - Change Value\n P - Proceed\n A - Abort\n H - Help\n" );
-      scanf( "%c", &c );
-      switch( tolower( c ) )
-      {
-	case 'a': /* abort */
-		  abort_install( &request_choice_destruct );
-		  break;
-	case 'p': /* proceed */
-		  if( retval < max )
-		  {
+	class = imsg->Class;
+	code = imsg->Code;
+	switch( class )
+	{
+	  case IDCMP_GADGETUP:
+		switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
+		{
+		  case ID_PROCEEDGAD:
 		    finish = TRUE;
-		  }
-		  break;
-	case 'h': /* help */
-		  setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
-		  m = GetPL( pl, _HELP ).intval;
-		  if(m)
-		  {
-#ifdef DEBUG
-		    for( n = 0 ; n < m ; n++ )
+		    break;
+		  case ID_ABORTGAD:
+		    abort_install( &request_choice_destruct );
+		    break;
+		  case ID_HELPGAD:
+		    setgadgetdisable( PROCEEDGAD|ABORTGAD|SKIPGAD|HELPGAD );
+		    m = GetPL( pl, _HELP ).intval;
+		    if(m)
 		    {
-		      printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
-		    }
-#endif /* DEBUG */
-		    morenmain( HELP_ON_ASKCHOICE, m, GetPL( pl, _HELP ).arg );
-		  }
-		  else
-		  {
 #ifdef DEBUG
-		    printf( "%s\n", get_var_arg( "@askchoice-help" ) );
+		      for( n = 0 ; n < m ; n++ )
+		      {
+			printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
+		      }
 #endif /* DEBUG */
-		    moremain( HELP_ON_ASKCHOICE, ASKCHOICE_HELP );
-		  }
-		  setgadgetdisable( 0 );
-		  break;
-	case 'v': /* change value */
-		  scanf( "%s", buffer );
-		  i = atol( buffer );
-		  retval = ( i < max && i > 0 ) ? i : retval ;
-		  break;
-	default	: break;
-      }
-    } while( !finish );
+		      morenmain( HELP_ON_ASKCHOICE, m, GetPL( pl, _HELP ).arg );
+		    }
+		    else
+		    {
+#ifdef DEBUG
+		      printf( "%s\n", get_var_arg( "@askchoice-help" ) );
+#endif /* DEBUG */
+		      moremain( HELP_ON_ASKCHOICE, get_var_arg( "@askchoice-help" ) );
+		    }
+		    setgadgetdisable( SKIPGAD );
+		    break;
+		  default:
+		    break;
+		}
+		break;
+	  default:
+		break;
+	}
+	GT_ReplyIMsg(imsg);
+
+      } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+    } /* !finish */
+
+    GT_GetGadgetAttrs( mxglist, GuiWin, NULL, GTMX_Active, &retval, TAG_DONE );
+
+    request_choice_destruct();
+
     RemoveGList(GuiWin,mxglist,-1);
     GT_RefreshWindow(GuiWin,NULL);
     FreeGadgets( mxglist );
@@ -1782,15 +1835,16 @@ char *request_file( struct ParameterList *pl )
 char *retval, *string;
 struct TagItem frtags[] =
 {
-    { ASL_Hail,       (ULONG)"Choose a file:" },
-    { ASL_Height,     0 },
-    { ASL_Width,      0 },
-    { ASL_LeftEdge,   320 },
-    { ASL_TopEdge,    40 },
-    { ASL_OKText,     (ULONG)"Okay" },
-    { ASL_CancelText, (ULONG)"Cancel" },
-    { ASL_File,       (ULONG)"asl.library" },
-    { ASL_Dir,	      (ULONG)"libs:" },
+    { ASL_Height,	  0 },
+    { ASL_Width,	  0 },
+    { ASL_LeftEdge,	320 },
+    { ASL_TopEdge,	 40 },
+    { ASLFR_TitleText,		(ULONG)"Choose a file:" },
+    { ASLFR_PositiveText,	(ULONG)"Okay"		},
+    { ASLFR_NegativeText,	(ULONG)"Cancel"		},
+    { ASLFR_InitialFile,	(ULONG)"asl.library"	},
+    { ASLFR_InitialDrawer,	(ULONG)"libs:"		},
+    { ASLFR_PubScreenName,	NULL },
     { TAG_DONE }
 };
 
@@ -1806,8 +1860,10 @@ struct FileRequester *fr;
 #if 1
   if ((fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags)))
   {
-    if (AslRequest(fr, NULL))
+DMSG("A\n");
+    if (AslRequest(fr, NULL) != FALSE)
     {
+DMSG("B\n");
       printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File);
 /*
 	To combine the path and filename, copy the path to a buffer,
@@ -1818,6 +1874,7 @@ struct FileRequester *fr;
   }
   else printf("User Cancelled\n");
 #endif
+DMSG("C\n");
 
   string = GetPL( pl, _DEFAULT ).arg[0];
   retval = addquotes( string );
@@ -1849,13 +1906,13 @@ return retval;
 void request_confirm_destruct()
 {
 }
-int request_confirm( struct ParameterList * pl, long int minuser )
+int request_confirm( struct ParameterList * pl )
 {
 int m, n, i, j, finish = FALSE;
 int retval = 1;
 char **out;
 
-  if( ( get_var_int( "@user-level" ) >= minuser ) || ( get_var_int( "@user-level" ) >= GetPL( pl, _CONFIRM).intval ) )
+  if( get_var_int( "@user-level" ) >= GetPL( pl, _CONFIRM).intval )
   {
 
     setgadgetdisable( (GetPL( pl, _HELP ).used == 1) ? 0 : HELPGAD );
@@ -1901,10 +1958,10 @@ char **out;
     }
 
     finish = FALSE;
-    while( !finish )
+    while (!finish)
     {
 	WaitPort( GuiWin->UserPort );
-	while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+	while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
 	{
 	  class = imsg->Class;
 	  code = imsg->Code;
@@ -1944,7 +2001,7 @@ char **out;
 	  }
 	  GT_ReplyIMsg(imsg);
 	
-	} /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+	} /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
       } /* !finish */
 
   }
@@ -2049,7 +2106,7 @@ int finish = FALSE;
   do
   {
     WaitPort( GuiWin->UserPort );
-    while((imsg = GT_GetIMsg( GuiWin->UserPort )))
+    while ((imsg = GT_GetIMsg( GuiWin->UserPort )))
     {
       class = imsg->Class;
       code = imsg->Code;
@@ -2082,9 +2139,9 @@ int finish = FALSE;
       }
       GT_ReplyIMsg(imsg);
 
-    } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
+    } /* while ((imsg = GT_GetIMsg( GuiWin->UserPort )) */
 
-  } while( !finish );
+  } while (!finish);
 
 return retval;
 }

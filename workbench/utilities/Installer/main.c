@@ -59,12 +59,12 @@ char *ttemp, *tstring;
 ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
-  if(argc!=0)
+  if ( argc != 0 )
   { /* Invoked form Shell */
     preferences.fromcli = TRUE;
     /* evaluate args with RDArgs(); */
     rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
-    if( rda == NULL )
+    if ( rda == NULL )
     {
       PrintFault( IoErr(), INSTALLER_NAME );
       exit(-1);
@@ -74,7 +74,7 @@ int nextarg, endoffile, count;
   { /* Invoked from Workbench */
     preferences.fromcli = FALSE;
     IconBase = (struct IconBase *)OpenLibrary( "icon.library", 0 );
-    if( !IconBase )
+    if (!IconBase)
     {
       fprintf( stderr, "Could not open icon.library!\n" );
       exit(-1);
@@ -84,7 +84,7 @@ int nextarg, endoffile, count;
 
   /* open script file */
 #ifdef DEBUG
-  if( args[ARG_SCRIPT] )
+  if (args[ARG_SCRIPT])
   {
     printf( "Using script %s.\n", (STRPTR)args[ARG_SCRIPT] );
     filename = strdup( (STRPTR)args[ARG_SCRIPT] );
@@ -95,14 +95,14 @@ int nextarg, endoffile, count;
     filename = strdup( "SYS:Utilities/test.script" );
   }
 #else /* DEBUG */
-  if(argc)
+  if (argc)
   {
     filename = strdup( (STRPTR)args[ARG_SCRIPT] );
   }
   else
   {
     ttemp = ArgString( tooltypes, "SCRIPT", NULL );
-    if(ttemp == NULL)
+    if ( ttemp == NULL )
     {
 #ifdef DEBUG
       fprintf( stderr, "No SCRIPT ToolType in Icon!\n" );
@@ -116,7 +116,7 @@ int nextarg, endoffile, count;
 #endif /* DEBUG */
 
   inputfile = Open( filename, MODE_OLDFILE );
-  if( inputfile == NULL )
+  if ( inputfile == NULL )
   {
 #ifdef DEBUG
     PrintFault( IoErr(), INSTALLER_NAME );
@@ -127,10 +127,10 @@ int nextarg, endoffile, count;
   preferences.welcome = FALSE;
   preferences.transcriptstream = NULL;
   preferences.pretend = 0;
-  if(argc)
+  if (argc)
   {
   preferences.debug = TRUE;
-    if( args[ARG_NOLOG] )
+    if (args[ARG_NOLOG])
     {
       preferences.novicelog = FALSE;
     }
@@ -140,14 +140,14 @@ int nextarg, endoffile, count;
     }
     preferences.transcriptfile = strdup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
     preferences.nopretend = (int)args[ARG_NOPRETEND];
-    if( args[ARG_MINUSER] )
+    if (args[ARG_MINUSER])
     {
       preferences.minusrlevel = _NOVICE;
-      if( strcasecmp( "average", (char *)args[ARG_MINUSER] ) == 0 )
+      if ( strcasecmp( "average", (char *)args[ARG_MINUSER] ) == 0 )
       {
 	preferences.minusrlevel = _AVERAGE;
       }
-      else if( strcasecmp( "expert", (char *)args[ARG_MINUSER] ) == 0 )
+      else if ( strcasecmp( "expert", (char *)args[ARG_MINUSER] ) == 0 )
       {
 	preferences.minusrlevel = _EXPERT;
       }
@@ -160,14 +160,14 @@ int nextarg, endoffile, count;
     {
       preferences.minusrlevel = _NOVICE;
     }
-    if( args[ARG_DEFUSER] )
+    if (args[ARG_DEFUSER])
     {
       preferences.defusrlevel = preferences.minusrlevel;
-      if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
+      if ( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
       {
 	preferences.defusrlevel = _AVERAGE;
       }
-      else if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
+      else if ( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
       {
 	preferences.defusrlevel = _EXPERT;
       }
@@ -180,7 +180,7 @@ int nextarg, endoffile, count;
     {
       preferences.defusrlevel = _NOVICE;
     }
-    if( preferences.defusrlevel < preferences.minusrlevel )
+    if ( preferences.defusrlevel < preferences.minusrlevel )
     {
       preferences.defusrlevel = preferences.minusrlevel;
     }
@@ -190,7 +190,7 @@ int nextarg, endoffile, count;
   preferences.debug = FALSE;
 
     /* Create a log file in Novice mode? (TRUE) */
-    if( strcmp( "TRUE", ArgString(tooltypes, "LOG", "TRUE") ) == 0 )
+    if ( strcmp( "TRUE", ArgString(tooltypes, "LOG", "TRUE") ) == 0 )
     {
       preferences.novicelog = TRUE;
     }
@@ -200,7 +200,7 @@ int nextarg, endoffile, count;
     }
 
     /* Is PRETEND possible? */
-    if( strcmp( "TRUE", ArgString(tooltypes, "PRETEND", "TRUE") ) == 0 )
+    if ( strcmp( "TRUE", ArgString(tooltypes, "PRETEND", "TRUE") ) == 0 )
     {
       preferences.nopretend = FALSE;
     }
@@ -212,32 +212,32 @@ int nextarg, endoffile, count;
     ttemp = ArgString( tooltypes, "DEFUSER", "NOVICE" );
     tstring = NULL;
     preferences.minusrlevel = _NOVICE;
-    if( strcasecmp( "average", ttemp ) == 0 )
+    if ( strcasecmp( "average", ttemp ) == 0 )
     {
       preferences.minusrlevel = _AVERAGE;
       tstring = strdup( "AVERAGE" );
     }
-    else if( strcasecmp( "expert", ttemp ) == 0 )
+    else if ( strcasecmp( "expert", ttemp ) == 0 )
     {
       preferences.minusrlevel = _EXPERT;
       tstring = strdup( "EXPERT" );
     }
-    if( tstring == NULL )
+    if ( tstring == NULL )
     {
       tstring = strdup( "NOVICE" );
     }
 
     ttemp = ArgString( tooltypes, "DEFUSER", tstring );
     preferences.defusrlevel = preferences.minusrlevel;
-    if( strcasecmp( "average", ttemp ) == 0 )
+    if ( strcasecmp( "average", ttemp ) == 0 )
     {
       preferences.defusrlevel = _AVERAGE;
     }
-    else if( strcasecmp( "expert", ttemp ) == 0 )
+    else if ( strcasecmp( "expert", ttemp ) == 0 )
     {
       preferences.defusrlevel = _EXPERT;
     }
-    if( preferences.defusrlevel < preferences.minusrlevel )
+    if ( preferences.defusrlevel < preferences.minusrlevel )
     {
       preferences.defusrlevel = preferences.minusrlevel;
     }
@@ -251,7 +251,7 @@ int nextarg, endoffile, count;
   preferences.onerror.next = NULL;
   preferences.onerror.parent = NULL;
   preferences.onerrorparent = NULL;
-  for( count = 0 ; count < NUMERRORS ; count++ )
+  for ( count = 0 ; count < NUMERRORS ; count++ )
   {
     dummy = &(preferences.trap[count]);
     dummy->cmd = NULL;
@@ -279,10 +279,10 @@ int nextarg, endoffile, count;
   do
   {
     /* Allocate space for script cmd and save first one to scriptroot */
-    if( script.cmd == NULL )
+    if ( script.cmd == NULL )
     {
       script.cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
-      if( script.cmd == NULL )
+      if ( script.cmd == NULL )
       {
 	end_malloc();
       }
@@ -292,7 +292,7 @@ int nextarg, endoffile, count;
     else
     {
       currentarg->next = (ScriptArg *)malloc( sizeof(ScriptArg) );
-      if( currentarg->next == NULL )
+      if ( currentarg->next == NULL )
       {
 	end_malloc();
       }
@@ -310,10 +310,10 @@ int nextarg, endoffile, count;
     do
     {
       count = Read( inputfile, &buffer[0], 1 );
-      if( count == 0 )
+      if ( count == 0 )
 	endoffile = TRUE;
 
-      if( !isspace( buffer[0] ) && !endoffile )
+      if ( !isspace( buffer[0] ) && !endoffile )
       {
 	/* This is text, is it valid ? */
 	switch( buffer[0] )
@@ -322,15 +322,15 @@ int nextarg, endoffile, count;
 			    do
 			    {
 			      count = Read( inputfile, &buffer[0], 1 );
-			    } while( buffer[0] != LINEFEED && count != 0 );
+			    } while ( buffer[0] != LINEFEED && count != 0 );
 			    line++;
-			    if( count == 0 )
+			    if ( count == 0 )
 			      endoffile = TRUE;
 			    break;
 
 	  case LBRACK	  : /* A command (...) , parse the content of braces */
 			    currentarg->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
-			    if( currentarg->cmd == NULL )
+			    if ( currentarg->cmd == NULL )
 			    {
 			      end_malloc();
 			    }
@@ -355,19 +355,19 @@ int nextarg, endoffile, count;
       }
       else
       {
-	if( buffer[0] == LINEFEED )
+	if ( buffer[0] == LINEFEED )
 	{
 	  line++;
 	}
       }
-    } while( nextarg != TRUE && !endoffile );
-  } while( !endoffile );
+    } while ( nextarg != TRUE && !endoffile );
+  } while (!endoffile);
 
   /* Okay, we (again) have allocated one ScriptArg too much, so get rid of it */
   currentarg = script.cmd;
-  if( currentarg->next != NULL )
+  if ( currentarg->next != NULL )
   {
-    while( currentarg->next->next != NULL )
+    while ( currentarg->next->next != NULL )
     {
       currentarg = currentarg->next;
     }
@@ -378,11 +378,11 @@ int nextarg, endoffile, count;
   free( filename );
   Close( inputfile );
 
-  if( preferences.transcriptfile != NULL )
+  if ( preferences.transcriptfile != NULL )
   {
     /* open transcript file */
     preferences.transcriptstream = Open( preferences.transcriptfile, MODE_NEWFILE );
-    if( preferences.transcriptstream == NULL )
+    if ( preferences.transcriptstream == NULL )
     {
       PrintFault( IoErr(), INSTALLER_NAME );
       cleanup();
@@ -396,7 +396,7 @@ int nextarg, endoffile, count;
   /* NOTE: Now everything from commandline(ReadArgs)/ToolTypes(Workbench)
 	   will become invalid!
   */
-  if( argc!=0 )
+  if ( argc != 0 )
   { /* Finally free ReadArgs struct (set_preset_variables() needed them) */
     FreeArgs(rda);
   }
@@ -405,9 +405,10 @@ int nextarg, endoffile, count;
     ArgArrayDone();
   }
 
-  if( get_var_int( "@user-level" ) == _NOVICE )
+  /* Don't bother NOVICE */
+  if ( get_var_int( "@user-level" ) == _NOVICE )
   {
-    preferences.copyflags &= ~(COPY_ASKUSER & preferences.copyflags);
+    preferences.copyflags &= ~COPY_ASKUSER;
   }
   else
   {

@@ -16,7 +16,7 @@ extern char *request_dir( struct ParameterList *pl );
 extern char *request_disk( struct ParameterList *pl );
 extern char *request_file( struct ParameterList *pl );
 extern long int request_options( struct ParameterList *pl );
-extern int request_confirm( struct ParameterList * pl, long int minuser );
+extern int request_confirm( struct ParameterList * pl );
 extern void final_report( );
 extern void display_text( char * msg );
 extern int user_confirmation( char * );
