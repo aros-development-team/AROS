@@ -16,14 +16,12 @@ FILES = diskfont_functable af_copyfontstobuffer af_scanfontinfo \
 END_FILE = diskfont_endtag
 
 FUNCTIONS = \
-	opendiskfont        \
-	availfonts          \
+	opendiskfont	    \
+	availfonts	    \
 	newfontcontents     \
 	disposefontcontents \
 	newscaleddiskfont
-	
-	
-	
+
 OBJDIR=$(GENDIR)/workbench/libs/diskfont
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
@@ -70,6 +68,7 @@ $(LIB): $(OBJS)
 	@$(RANLIB) $@
 
 setup :
+	@echo "CFLAGS=$(CFLAGS)"
 	%mkdirs_q $(OBJDIR) $(SLIBDIR)
 
 clean::
