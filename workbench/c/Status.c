@@ -232,7 +232,7 @@ void printProcess(BOOL full, BOOL tcb, struct Process *process)
 
     if(tcb || full)
     {
-	printf("stk %u, pri %u ", (ULONG)cli->cli_DefaultStack,
+	printf("stk %lu, pri %lu ", (ULONG)cli->cli_DefaultStack,
 	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
     }
 

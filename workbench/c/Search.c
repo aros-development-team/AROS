@@ -6,7 +6,7 @@
     Lang: English
 */
 
-/*
+/*****************************************************************************
 
     NAME
 
@@ -61,7 +61,7 @@
     Placed in the public domain by Neil Cafferkey.
     Changes by: Johan 'S.Duvan' Alfredsson
 
-*/
+******************************************************************************/
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -269,6 +269,7 @@ int main()
 				text = (TEXT *)&(anchor->ap_Info.fib_FileName);
 				VPrintf("%s (dir)\n", &text);
 			    }
+
 			    if(args[ARG_ALL] || (anchor->ap_Flags & APF_DODIR))
 			    {
 				anchor->ap_Flags |= APF_DODIR;
