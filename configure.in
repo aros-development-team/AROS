@@ -281,6 +281,10 @@ aros_bochs_hack="0"
 aros_ide_driver="0"
 aros_serial_debug="0"
 
+# Debug stuff
+aros_mungwall_debug="1"
+aros_stack_debug="1"
+
 # Check for some includes
 AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
 
@@ -537,6 +541,22 @@ if test "$serial_debug" = "yes" ; then
 fi
 AC_MSG_RESULT("$serial_debug")
 
+dnl See if the user wants the mungwall debug to be enabled
+AC_MSG_CHECKING([if mungwall debug is enabled])
+AC_ARG_ENABLE(mungwall_debug,[  --enable-mungwall-debug Enable mungwall debug [default=yes]],mungwall_debug="$enableval",mungwall_debug="yes")
+if test "$mungwall_debug" = "no" ; then
+    aros_mungwall_debug="0"
+fi
+AC_MSG_RESULT("$mungwall_debug")
+
+dnl See if the user wants the stack debug to be enabled
+AC_MSG_CHECKING([if stack debug is enabled])
+AC_ARG_ENABLE(stack_debug,[  --enable-stack-debug    Enable stack debug [default=yes]],stack_debug="$enableval",stack_debug="yes")
+if test "$stack_debug" = "no" ; then
+    aros_stack_debug="0"
+fi
+AC_MSG_RESULT("$stack_debug")
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -599,6 +619,10 @@ AC_SUBST(aros_vmware_hack)
 AC_SUBST(aros_bochs_hack)
 AC_SUBST(aros_ide_driver)
 AC_SUBST(aros_serial_debug)
+
+# Debug related
+AC_SUBST(aros_mungwall_debug)
+AC_SUBST(aros_stack_debug)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
