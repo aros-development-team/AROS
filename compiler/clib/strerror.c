@@ -5,6 +5,7 @@
     ANSI C function strerror().
 */
 
+#include <proto/dos.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -167,7 +168,13 @@ static const char * _errstrings[] =
 ******************************************************************************/
 {
     if (n >= MAX_ERRNO)
-	return "Illegal error code";
+    {
+        #define buf (__get_arosc_privdata()->acpd_fault_buf)
+
+	Fault(n - MAX_ERRNO, NULL, buf, sizeof(buf));
+
+	return buf;
+    }
 
     return (char *)_errstrings[n];
 } /* strerror */

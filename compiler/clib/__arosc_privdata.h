@@ -77,6 +77,9 @@ struct arosc_privdata
     
     /* spawn* */
     char *acpd_joined_args;
+    
+    /* strerror */
+    char acpd_fault_buf[100];
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
