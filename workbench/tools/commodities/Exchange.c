@@ -105,7 +105,8 @@ struct ExchangeState
     CxObj          *ec_broker;
     struct MsgPort *ec_msgPort;	     /* Message port for our broker */
     struct Catalog *ec_catalog;	     /* Commodities locale catalog */
-    struct List     ec_brokerList;   /* Current list of brokers */
+    struct List     ec_brokerList;   /* Current list of brokers
+					(struct BrokerCopy nodes */
 
     struct VisualInfo *ec_visualInfo; /* Visualinfo for the gadgets */
     
@@ -132,13 +133,14 @@ struct ExchangeState
 
 
 /* Prototypes */
+struct BrokerCopy *getNth(struct List *list, LONG n);
+
 void    redrawList(struct ExchangeState *ec);
 void    appearExchange(struct ExchangeState *ec);
 void    setText(struct Gadget *gadget, STRPTR text, struct ExchangeState *ec);
 void    setGadgetState(struct Gadget *gadget, BOOL status,
 		       struct ExchangeState *ec);
 void    updateInfo(struct ExchangeState *ec);
-CxObj  *getNth(struct List *list, LONG n);
 void    informBroker(LONG command, struct ExchangeState *ec);
 void    switchActive(struct ExchangeState *ec);
 void    realMain(struct ExchangeState *ec);
@@ -159,7 +161,7 @@ int main(int argc, char **argv)
 	if(Cli() == NULL)
 	{
 	    /* We were called from Workbench */
-	    if(readWBArgs(argc, argv, &ec))
+	    if (readWBArgs(argc, argv, &ec))
 	    {
 		realMain(&ec);
 	    }
@@ -167,8 +169,10 @@ int main(int argc, char **argv)
 	else
 	{
 	    /* We were called from a Shell */
-	    if(readShellArgs(&ec))
+	    if (readShellArgs(&ec))
+	    {
 		realMain(&ec);
+	    }
 	    else
 	    {
 		PrintFault(IoErr(), "Exchange");
@@ -177,7 +181,9 @@ int main(int argc, char **argv)
 	}
     }	
     else
+    {
 	retval = RETURN_FAIL;
+    }
     
     freeResources(&ec);
     
@@ -216,19 +222,29 @@ BOOL readShellArgs(struct ExchangeState *ec)
     rda = ReadArgs("CX_PRIORITY/K/N,CX_POPUP/K/S,CX_POPKEY/K", (IPTR *)args,
 		   NULL);
 
-    if(rda == NULL)
+    if (rda == NULL)
+    {
 	return FALSE;
+    }
 
-    if(args[0] != NULL)
+    if (args[0] != NULL)
+    {
 	ec->ec_cxPri = (LONG)*args[0];
+    }
 
-    if(args[1] != NULL)
+    if (args[1] != NULL)
+    {
 	ec->ec_cxPopup = (BOOL)*args[1];
+    }
 
-    if(args[2] != NULL)
+    if (args[2] != NULL)
+    {
 	ec->ec_cxPopKey = (STRPTR)*args[2];
+    }
     else
+    {
 	ec->ec_cxPopKey = "ctrl alt help";
+    }
 
     FreeArgs(rda);
 
@@ -243,8 +259,10 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
 
     IconBase = OpenLibrary("icon.library", 40);
     
-    if(IconBase == NULL)
+    if (IconBase == NULL)
+    {
 	return FALSE;
+    }
     
     tt = ArgArrayInit(argc, (UBYTE **)argv);
     
@@ -252,8 +270,10 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
     ec->ec_cxPopKey = ArgString(tt, "CX_POPKEY", "ctrl alt help");
     popUp = ArgString(tt, "CX_POPUP", "YES");
 
-    if(Stricmp(popUp, "YES") == 0)
+    if (Stricmp(popUp, "YES") == 0)
+    {
 	ec->ec_cxPopup = TRUE;
+    }
 
     ArgArrayDone();
     CloseLibrary(IconBase);
@@ -286,19 +306,25 @@ BOOL getResources(struct ExchangeState *ec)
     
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 40);
     
-    if(UtilityBase == NULL)
+    if (UtilityBase == NULL)
+    {
 	return FALSE;
+    }
     
     IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",
-						       40);
+							40);
     
-    if(IntuitionBase == NULL)
+    if (IntuitionBase == NULL)
+    {
 	return FALSE;
+    }
     
     CxBase = OpenLibrary("commodities.library", 40);
     
-    if(CxBase == NULL)
+    if (CxBase == NULL)
+    {
 	return FALSE;
+    }
     
 
     //    LocaleBase = OpenLibrary("locale.library", 40);
@@ -308,8 +334,10 @@ BOOL getResources(struct ExchangeState *ec)
     
     GadToolsBase = OpenLibrary("gadtools.library", 40);
     
-    if(GadToolsBase == NULL)
+    if (GadToolsBase == NULL)
+    {
 	return FALSE;
+    }
     
 
     P(kprintf("Libraries opened!"));
@@ -318,8 +346,10 @@ BOOL getResources(struct ExchangeState *ec)
     
     ec->ec_msgPort = CreateMsgPort();
     
-    if(ec->ec_msgPort == NULL)
+    if (ec->ec_msgPort == NULL)
+    {
 	return FALSE;
+    }
 
     // ec->ec_hoykeyPort = CreateMsgPort();
     
@@ -340,8 +370,10 @@ BOOL getResources(struct ExchangeState *ec)
     exBroker.nb_Port = ec->ec_msgPort;
     ec->ec_broker = CxBroker(&exBroker, NULL);
 
-    if(ec->ec_broker == NULL)
+    if (ec->ec_broker == NULL)
+    {
 	return FALSE;
+    }
     
     P(kprintf("Broker: %s Flags: %i\n", ec->ec_broker->co_Ext.co_BExt->bext_Name,
 	      ec->ec_broker->co_Flags));
@@ -349,37 +381,49 @@ BOOL getResources(struct ExchangeState *ec)
 
     // AttachCxObj(ec->ec_broker, Hotkey("ctrl alt help", ec->ec_hotkeyPort));
 
-    if(CxObjError(ec->ec_broker) != 0)
+    if (CxObjError(ec->ec_broker) != 0)
+    {
 	return FALSE;
+    }
 
     /* Start our broker */
     ActivateCxObj(ec->ec_broker, TRUE);
 
     screen = LockPubScreen(NULL);
 
-    if(screen == NULL)
+    if (screen == NULL)
+    {
 	return FALSE;
+    }
 
     ec->ec_visualInfo = GetVisualInfoA(screen, NULL);
 
-    if(ec->ec_visualInfo == NULL)
+    if (ec->ec_visualInfo == NULL)
+    {
 	return FALSE;
+    }
 
     drawInfo = GetScreenDrawInfo(screen);
     fontHeight = drawInfo->dri_Font->tf_YSize;
     topOffset = fontHeight + screen->WBorTop;
     FreeScreenDrawInfo(screen, drawInfo);
 
-    if(!initGadgets(ec, screen, fontHeight))
+    if (!initGadgets(ec, screen, fontHeight))
+    {
 	return FALSE;
+    }
 
     ec->ec_menus = CreateMenusA(nm, NULL);
 
-    if(ec->ec_menus == NULL)
+    if (ec->ec_menus == NULL)
+    {
 	return FALSE;
+    }
 
-    if(!LayoutMenusA(ec->ec_menus, ec->ec_visualInfo, NULL))
+    if (!LayoutMenusA(ec->ec_menus, ec->ec_visualInfo, NULL))
+    {
 	return FALSE;
+    }
 	
     winHeight = BORDERY * 2 + fontHeight + LABELSPACEY +
     	    	(fontHeight + EXTRAHEIGHT) * 4 + 
@@ -406,8 +450,10 @@ BOOL getResources(struct ExchangeState *ec)
 				   WA_SmartRefresh, TRUE,
 				   TAG_DONE);
     
-    if(ec->ec_window == NULL)
+    if (ec->ec_window == NULL)
+    {
 	return FALSE;
+    }
 
     SetMenuStrip(ec->ec_window, ec->ec_menus);
 
@@ -567,60 +613,76 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     textGad2.ng_TopEdge = y + 1 * (h + SPACEY);
     textGad2.ng_Height  = h;
     
-    if(ec->ec_context == NULL)
+    if (ec->ec_context == NULL)
+    {
 	return FALSE;
+    }
 
-    if((ec->ec_listView = CreateGadget(LISTVIEW_KIND, ec->ec_context,
-				       &listView,
-				       GTLV_Labels, NULL,
-				       GTLV_ShowSelected, NULL,
+    if ((ec->ec_listView = CreateGadget(LISTVIEW_KIND, ec->ec_context,
+					&listView,
+					GTLV_Labels, NULL,
+					GTLV_ShowSelected, NULL,
+					TAG_DONE)) == NULL)
+    {
+	return FALSE;
+    }
+    
+    if ((ec->ec_showBut = CreateGadget(BUTTON_KIND, ec->ec_context,
+				       &showBut,
+				       GA_Disabled, TRUE,
 				       TAG_DONE)) == NULL)
+    {
 	return FALSE;
+    }
     
-    if((ec->ec_showBut = CreateGadget(BUTTON_KIND, ec->ec_context,
-				      &showBut,
-				      GA_Disabled, TRUE,
-				      TAG_DONE)) == NULL)
+    if ((ec->ec_hideBut = CreateGadget(BUTTON_KIND, ec->ec_context,
+				       &hideBut,
+				       GA_Disabled, TRUE,
+				       TAG_DONE)) == NULL)
+    {
 	return FALSE;
+    }
     
-    if((ec->ec_hideBut = CreateGadget(BUTTON_KIND, ec->ec_context,
-				      &hideBut,
-				      GA_Disabled, TRUE,
-				      TAG_DONE)) == NULL)
+    if ((ec->ec_killBut = CreateGadget(BUTTON_KIND, ec->ec_context,
+				       &killBut,
+				       GA_Disabled, TRUE,
+				       TAG_DONE)) == NULL)
+    {
 	return FALSE;
+    }
     
-    if((ec->ec_killBut = CreateGadget(BUTTON_KIND, ec->ec_context,
-				      &killBut,
-				      GA_Disabled, TRUE,
-				      TAG_DONE)) == NULL)
+    if ((ec->ec_cycle = CreateGadget(CYCLE_KIND, ec->ec_context,
+				     &cycleBut,
+				     GA_Disabled, TRUE,
+				     GTCY_Labels, strings,  /* Temporary */
+				     TAG_DONE)) == NULL)
+    {
 	return FALSE;
-    
-    if((ec->ec_cycle = CreateGadget(CYCLE_KIND, ec->ec_context,
-				    &cycleBut,
-				    GA_Disabled, TRUE,
-				    GTCY_Labels, strings,  /* Temporary */
-				    TAG_DONE)) == NULL)
-	return FALSE;
+    }
     
     /* NOTE! GadTools bug: The disabled state for cycle gadgets is not
        changed when doing a GT_SetGadgetAttrs() */
 
     /* Information window */
-    if((ec->ec_textGad = CreateGadget(TEXT_KIND, ec->ec_context,
-				      &textGad,
-				      GTTX_Text    , "Exchange",
-				      GTTX_CopyText, TRUE,
-				      GTTX_Border  , TRUE,
-				      TAG_DONE)) == NULL)
-	return FALSE;
-    
-    if((ec->ec_textGad2 = CreateGadget(TEXT_KIND, ec->ec_context,
-				       &textGad2,
-				       GTTX_Text    , "Test message",
+    if ((ec->ec_textGad = CreateGadget(TEXT_KIND, ec->ec_context,
+				       &textGad,
+				       GTTX_Text    , "Exchange",
 				       GTTX_CopyText, TRUE,
 				       GTTX_Border  , TRUE,
 				       TAG_DONE)) == NULL)
+    {
 	return FALSE;
+    }
+    
+    if ((ec->ec_textGad2 = CreateGadget(TEXT_KIND, ec->ec_context,
+					&textGad2,
+					GTTX_Text    , "Test message",
+					GTTX_CopyText, TRUE,
+					GTTX_Border  , TRUE,
+					TAG_DONE)) == NULL)
+    {
+	return FALSE;
+    }
 
     /* NOTE! GadTools bug: If GTTX_CopyText is not set, the gadget will not
              be displayed */
@@ -674,19 +736,19 @@ void realMain(struct ExchangeState *ec)
     ULONG  winSig = 1 << ec->ec_window->UserPort->mp_SigBit;
     ULONG  cxSig  = 1 << ec->ec_msgPort->mp_SigBit;
     
-    while(!quitNow)
+    while (!quitNow)
     {
 	signals = Wait(cxSig | winSig | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_E);
 
-	if(signals & winSig)
+	if (signals & winSig)
 	{
 	    struct IntuiMessage *msg;
 
-	    while((msg = GT_GetIMsg(ec->ec_window->UserPort)) != NULL)
+	    while ((msg = GT_GetIMsg(ec->ec_window->UserPort)) != NULL)
 	    {
 		P(kprintf("Got win signal %i\n", msg->Class));
 
-		switch(msg->Class)
+		switch (msg->Class)
 		{
 		case IDCMP_CLOSEWINDOW:
 		    quitNow = TRUE;
@@ -696,7 +758,7 @@ void realMain(struct ExchangeState *ec)
 		    {		
 			struct Gadget *gadget = (struct Gadget *)msg->IAddress;
 			
-			switch(gadget->GadgetID)
+			switch (gadget->GadgetID)
 			{
 			case ID_listView:
 			    updateInfo(ec);
@@ -729,44 +791,47 @@ void realMain(struct ExchangeState *ec)
 			struct MenuItem *item;
 			UWORD menuNum = msg->Code;
 			
-			while(menuNum != MENUNULL)
+			while (menuNum != MENUNULL)
 			{			
 			    item = ItemAddress(ec->ec_menus, menuNum);
 	
-			    if(item != NULL)
+			    if (item != NULL)
 			    {
 				menuNum = item->NextSelect;
 				
 				P(kprintf("Menu selection: %i",
 					  (int)GTMENUITEM_USERDATA(item)));
 
-				switch((LONG)GTMENUITEM_USERDATA(item))
+				switch ((LONG)GTMENUITEM_USERDATA(item))
 				{
 				case menu_Quit:
 				    quitNow = TRUE;
 				    break;
 				}
 			    }
-			    else 
+			    else
+			    {
 				menuNum = MENUNULL;
+			    }
 			}
 		    }
+
 		    break;
 		} /* switch(msg->Class) */
 	    } /* while(GT_GetIMsg()) */
 	} /* if(signals & winSig) */
 	
-	if(signals & cxSig)
+	if (signals & cxSig)
 	{
 	    CxMsg *cxm;
 	    
-	    while((cxm = (CxMsg *)GetMsg(ec->ec_msgPort)) != NULL)
+	    while ((cxm = (CxMsg *)GetMsg(ec->ec_msgPort)) != NULL)
 	    {
 		P(kprintf("Got cx signal %i\n", CxMsgID(cxm)));
 
-		if(CxMsgType(cxm) == CXM_COMMAND)
+		if (CxMsgType(cxm) == CXM_COMMAND)
 		{
-		    switch(CxMsgID(cxm))
+		    switch (CxMsgID(cxm))
 		    {
 		    case CXCMD_KILL:
 		    case CXCMD_DISAPPEAR:
@@ -800,8 +865,10 @@ void realMain(struct ExchangeState *ec)
 
 
 	/* Abandon ship? */
-	if(signals & SIGBREAKF_CTRL_C || signals & SIGBREAKF_CTRL_E)
+	if (signals & SIGBREAKF_CTRL_C || signals & SIGBREAKF_CTRL_E)
+	{
 	    break;
+	}
     }
 }
 
@@ -814,7 +881,7 @@ void switchActive(struct ExchangeState *ec)
 		      GTCY_Active, &whichCycle,
 		      TAG_DONE);
     
-    if(whichCycle == 0)
+    if (whichCycle == 0)
     {
 	/* Activate */
 	informBroker(CXCMD_ENABLE, ec);
@@ -846,17 +913,17 @@ void informBroker(LONG command, struct ExchangeState *ec)
 }
 
 
-CxObj *getNth(struct List *list, LONG n)
+struct BrokerCopy *getNth(struct List *list, LONG n)
 {
     struct Node *brok = GetHead(list);
 
-    while(n > 0)
+    while (n > 0)
     {
 	brok = GetSucc(brok);
 	n--;
     }
 
-    return (CxObj *)brok;
+    return (struct BrokerCopy *)brok;
 }
 
 
@@ -868,7 +935,7 @@ void updateInfo(struct ExchangeState *ec)
 		      GTLV_Selected, &whichGad,
 		      TAG_DONE);
 		      
-    if(whichGad == ~0ul)
+    if (whichGad == ~0ul)
     {
 	/* Disable the whole "right side". */
 	setGadgetState(ec->ec_showBut, TRUE, ec);
@@ -880,23 +947,21 @@ void updateInfo(struct ExchangeState *ec)
     }
     else
     {
-	CxObj *broker   = getNth(&ec->ec_brokerList, whichGad);
-	BOOL   showHide = (broker->co_Flags & COF_SHOW_HIDE) == 0;
+	struct BrokerCopy *brokerCopy = getNth(&ec->ec_brokerList, whichGad);
+	BOOL   showHide = (brokerCopy->bc_Flags & COF_SHOW_HIDE) == 0;
 
-	P(kprintf("Broker: %s Flags: %i\n", broker->co_Ext.co_BExt->bext_Name,
-		  broker->co_Flags));
+	P(kprintf("Broker: %s Flags: %i\n", brokerCopy->bc_Name,
+		  brokerCopy->bc_Flags));
 
-	setText(ec->ec_textGad,  (STRPTR)&broker->co_Ext.co_BExt->bext_Title,
-		ec);
-	setText(ec->ec_textGad2, (STRPTR)&broker->co_Ext.co_BExt->bext_Descr,
-		ec);
+	setText(ec->ec_textGad,  (STRPTR)&brokerCopy->bc_Title, ec);
+	setText(ec->ec_textGad2, (STRPTR)&brokerCopy->bc_Descr,	ec);
 
 	P(kprintf("%s show/hide gadgets.\n", showHide ? "Disabling" : "Enabling"));
 	setGadgetState(ec->ec_hideBut, showHide, ec);
 	setGadgetState(ec->ec_showBut, showHide, ec);
 
 	GT_SetGadgetAttrs(ec->ec_cycle, ec->ec_window, NULL,
-			  GTCY_Active, (broker->co_Flags & COF_ACTIVE) ? 0 : 1,
+			  GTCY_Active, (brokerCopy->bc_Flags & COF_ACTIVE) ? 0 : 1,
 			  GA_Disabled, FALSE,
 			  TAG_DONE);
 
