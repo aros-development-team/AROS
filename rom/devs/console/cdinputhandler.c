@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: console.device function CDInputHandler()
@@ -90,7 +90,8 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 
 	/* A rawkey event ? */
     	if ((ie->ie_Class == IECLASS_RAWKEY && !(ie->ie_Code & IECODE_UP_PREFIX)) ||
-	    (ie->ie_Class == IECLASS_SIZEWINDOW))
+	    (ie->ie_Class == IECLASS_SIZEWINDOW) ||
+	    (ie->ie_Class == IECLASS_CLOSEWINDOW))
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;

@@ -129,6 +129,13 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 		{
 		    switch(cdihmsg->ie.ie_Class)
 		    {
+		    	case IECLASS_CLOSEWINDOW:
+			#warning this is a hack. It would actually be up to the
+			#warning console.device user (CON: handler for example) to
+			#warning activate CLOSEWINDOW raw events (SET RAW EVENTS cmd)
+			#warning and then look out for this in the input stream (CMD_READ)
+			    /* fall through */
+			    
 		        case IECLASS_RAWKEY:
 			{
 			    #define MAPRAWKEY_BUFSIZE 80
@@ -139,11 +146,22 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 			    ULONG tocopy;
 			    
 	   	  	    /* Convert it to ANSI chars */
-	    		    actual = RawKeyConvert(&cdihmsg->ie
-						   ,inputBuf
-						   ,MAPRAWKEY_BUFSIZE
-						   ,NULL);
-
+	    		    
+			    if (cdihmsg->ie.ie_Class == IECLASS_CLOSEWINDOW)
+			    {
+			    	/* HACK */
+			    	inputBuf[0] = 28; /* CTRL-\ */
+				actual = 1;
+				/* HACK */
+			    }
+			    else
+			    {
+			    	actual = RawKeyConvert(&cdihmsg->ie
+						       ,inputBuf
+						       ,MAPRAWKEY_BUFSIZE
+						       ,NULL);
+    	    	    	    }
+			    
 			    D(bug("RawKeyConvert returned %ld\n", actual));
 
 			
