@@ -11,7 +11,7 @@ int _MoveLayerBehind(struct Layer *l,
 {
   struct Layer * lbackold, *_l, *first;
   struct Region * hide = NewRegion(), show;
-  show.RegionRectangle = NULL; // min. initialization;
+  InitRegion(&show);
 
   first = GetFirstFamilyMember(l);
 
@@ -124,8 +124,9 @@ int _MoveLayerToFront(struct Layer * l,
   struct Layer * lfront, * first, * _l;
   struct Region r, * backupr = NULL;
   int backupr_allocated = FALSE;
-  r.RegionRectangle = NULL;
-  
+
+  InitRegion(&r);
+    
   first = GetFirstFamilyMember(l);
 
   lfront = lbehind->front;

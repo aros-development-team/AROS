@@ -58,7 +58,7 @@
 
   struct Layer * _l, * lparent;
   struct Region r;
-  r.RegionRectangle = NULL;
+  InitRegion(&r);
 
   if (l->visible == visible)
     return TRUE;
@@ -151,16 +151,16 @@
      * Make the layer invisible
      */
     struct Region clearr;
-    clearr.RegionRectangle = NULL; // min. initialization
+    InitRegion(&clearr);
 
     l->Flags &= ~LAYERREFRESH;
     ClearRegion(l->DamageList);
 
     SetRegion(l->VisibleRegion, &r);
-    
+
     SetRegion(l->visibleshape, &clearr);
     _BackupPartsOfLayer(l, &clearr, 0, FALSE, LayersBase);
-    
+
     /*
      * Walk through all the layers behind this layer and
      * make them (more) visible...
@@ -187,7 +187,7 @@
         else
           lparent = lparent->parent;
       }
-      
+
       /*
        * Take the shape of the current layer out of
        * the visible region that will be applied to the
@@ -198,7 +198,7 @@
 
       _l = _l->back;
     }
-  
+
     if (!IS_EMPTYREGION(&clearr))
     {
       if (lparent &&
@@ -206,7 +206,7 @@
         _BackFillRegion(lparent, &clearr, FALSE, LayersBase);
     }
 
-    
+
     ClearRegion(&clearr);
   }
 

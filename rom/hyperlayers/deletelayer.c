@@ -80,7 +80,7 @@
   if (IS_VISIBLE(l))
   { 
     struct Region r;
-    r.RegionRectangle = NULL; // min. initialization
+    InitRegion(&r);
 
     SetRegion(l->VisibleRegion, &r);
     _l = l->back;
