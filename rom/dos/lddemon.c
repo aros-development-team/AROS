@@ -20,7 +20,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <aros/asmcall.h>
-#define DEBUG 1
+/* #define DEBUG 1 */
 #include <aros/debug.h>
 
 #include <proto/exec.h>

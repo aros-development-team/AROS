@@ -12,8 +12,10 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
+/* iaint: Sigh, I'm getting sick of this...
 #undef DEBUG
 #define DEBUG 1
+*/
 #	include <aros/debug.h>
 #include "dos_intern.h"
 

@@ -8,8 +8,10 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
+/* iaint: This is really annoying me...
 #undef DEBUG
 #define DEBUG 1
+*/
 #	include <aros/debug.h>
 #include "dos_intern.h"
 

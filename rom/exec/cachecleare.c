@@ -77,6 +77,10 @@
 
 #warning TODO: Write exec/CacheClearE()
 
+/* iaint: I am sick of this continually printing out... */
+#if DEBUG
+    aros_print_not_implemented("CacheClearE");
+#endif
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 

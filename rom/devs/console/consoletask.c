@@ -17,7 +17,7 @@
 
 #include "console_gcc.h"
 
-#define DEBUG 1
+/* #define DEBUG 1 */
 #include <aros/debug.h>
 
 /* Protos */
