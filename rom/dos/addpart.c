@@ -119,8 +119,8 @@
     /* Otherwise correctly add the subpath on to the end */
     else
     {
-	/* +1 for NULL byte */
-	if((didx + fidx + 1) > size)
+	/* +1 for NULL byte, +1 for '/' */
+	if((didx + fidx + 2) > size)
 	    return DOSFALSE;
 
 	/*
