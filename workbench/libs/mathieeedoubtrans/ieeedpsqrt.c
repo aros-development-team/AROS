@@ -26,7 +26,7 @@
 
 /*  LOCATION */
 
-       struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 16, Mathieeedoubtrans)
+       struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 16, MathIeeeDoubTrans)
 
 /*  FUNCTION
 
@@ -42,9 +42,9 @@
 
 
       flags:
-        zero     : result is zero
-        negative : 0
-        overflow : square root could not be calculated
+	zero	 : result is zero
+	negative : 0
+	overflow : square root could not be calculated
 
     NOTES
 
@@ -56,42 +56,42 @@
 
     INTERNALS
       ALGORITHM:
-        First check for a zero and a negative argument and take
-        appropriate action.
-        fnum = M * 2^E
+	First check for a zero and a negative argument and take
+	appropriate action.
+	fnum = M * 2^E
 
-        Exponent is an odd number:
-        fnum = ( M*2 ) * 2^ (E-1)
-        Now E' = E-1 is an even number and
-           -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
-                         = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-        (with sqrt(M*2)>1)
-                         = sqrt(M)   * sqrt(2)   * 2^(E'/2)
-                                                                                     = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
-                         = sqrt(M/2)             * 2^(1+(E'/2))
-
-
-        Exponent is an even number:
-        -> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
-                      = sqrt(M) * 2^(E/2)
-
-        Now calculate the square root of the mantisse.
-        The following algorithm calculates the square of a number + delta
-        and compares it to the mantisse. If the square of that  number +
-        delta is less than the mantisse then keep that number + delta.
-        Otherwise calculate a lower offset and try again.
-        Start out with number = 0;
+	Exponent is an odd number:
+	fnum = ( M*2 ) * 2^ (E-1)
+	Now E' = E-1 is an even number and
+	   -> sqrt(fnum) = sqrt(M)   * sqrt(2)   * sqrt (2^E')
+			 = sqrt(M)   * sqrt(2)   * 2^(E'/2)
+	(with sqrt(M*2)>1)
+			 = sqrt(M)   * sqrt(2)   * 2^(E'/2)
+										     = sqrt(M)   * 1/sqrt(2) * 2^(1+(E'/2))
+			 = sqrt(M/2)             * 2^(1+(E'/2))
 
 
-        Exponent = -1;
-        Root = 0;
-        repeat
-        {
-          if ( (Root + 2^Exponent)^2 < Mantisse)
-          Root += 2^Exponent
-          Exponent --;
-        }
-        until you`re happy with the accuracy
+	Exponent is an even number:
+	-> sqrt(fnum) = sqrt(M) * sqrt (2^E) =
+		      = sqrt(M) * 2^(E/2)
+
+	Now calculate the square root of the mantisse.
+	The following algorithm calculates the square of a number + delta
+	and compares it to the mantisse. If the square of that	number +
+	delta is less than the mantisse then keep that number + delta.
+	Otherwise calculate a lower offset and try again.
+	Start out with number = 0;
+
+
+	Exponent = -1;
+	Root = 0;
+	repeat
+	{
+	  if ( (Root + 2^Exponent)^2 < Mantisse)
+	  Root += 2^Exponent
+	  Exponent --;
+	}
+	until you`re happy with the accuracy
 
     HISTORY
 
@@ -114,8 +114,8 @@ AROS_LIBFUNC_INIT
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     Set_Value64C(Res, IEEEDPNAN_Hi,
-                      IEEEDPNAN_Lo,
-                      IEEEDPNAN_64);
+		      IEEEDPNAN_Lo,
+		      IEEEDPNAN_64);
     return Res;
   }
 
@@ -123,11 +123,11 @@ AROS_LIBFUNC_INIT
 
   Set_Value64(y2, y);
   AND64QC(y2,  IEEEDPMantisse_Mask_Hi,
-               IEEEDPMantisse_Mask_Lo,
-               IEEEDPMantisse_Mask_64 );
+	       IEEEDPMantisse_Mask_Lo,
+	       IEEEDPMantisse_Mask_64 );
   OR64QC(y2, 0x00100000,
-             0x00000000,
-             0x0010000000000000ULL);
+	     0x00000000,
+	     0x0010000000000000ULL);
   SHL64(TargetMantisse, y2, 11);
 
   Exponent = (Get_High32of64(y) >> 1) & IEEEDPExponent_Mask_Hi;
@@ -154,21 +154,21 @@ AROS_LIBFUNC_INIT
   {
     QUAD Restmp, Deltatmp;
     Set_Value64C(Delta, 0x80000000,
-                        0x00000000,
-                        0x8000000000000000ULL);
+			0x00000000,
+			0x8000000000000000ULL);
     SHRU64(Delta, Delta, z); /* Delta >> = z */
 
     /* X = (Res+Delta)^2 =
-    **= Res^2      + 2*Res*Delta + Delta^2
+    **= Res^2	   + 2*Res*Delta + Delta^2
     */
     SHRU64(Restmp, Res, z);     /* Restmp   = Res   >> z */
     z++;
     SHRU64(Deltatmp, Delta, z); /* Deltatmp = Delta >> (z+1) */
 
     /* X = ResSquared + (Res >> z)  + (Delta >> ++z); */
-                Set_Value64(X, ResSquared);
-                ADD64Q(X, Restmp);
-                ADD64Q(X, Deltatmp);
+		Set_Value64(X, ResSquared);
+		ADD64Q(X, Restmp);
+		ADD64Q(X, Deltatmp);
 
     if (is_leq(X, TargetMantisse)) /* X <= TargetMantisse */
     {
@@ -181,8 +181,8 @@ AROS_LIBFUNC_INIT
 
   SHRU64(Res, Res, 11);
   AND64QC(Res, IEEEDPMantisse_Mask_Hi,
-               IEEEDPMantisse_Mask_Lo,
-               IEEEDPMantisse_Mask_64);
+	       IEEEDPMantisse_Mask_Lo,
+	       IEEEDPMantisse_Mask_64);
   SHL32(tmp, Exponent, 32);
   OR64Q(Res, tmp);
 
