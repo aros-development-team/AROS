@@ -1,0 +1,33 @@
+#   $Id$
+#
+#   Makefile for AROS Test
+
+include $(TOP)/config/make.cfg
+
+
+FILES := vartest
+
+EXEDIR := $(AROSDIR)/test/rexx
+EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+USER_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
+
+USE_CLIB_SHARED := yes
+USE_AMIGALIB := yes
+
+#MM- test : test-rexx
+
+%make_prog_setup mmake=test-rexx
+
+#MM
+test-rexx : setup $(EXES) $(EXEDIR)/vartest.rexx
+
+setup ::
+	%mkdir_q $(EXEDIR)
+
+$(EXEDIR)/vartest.rexx: vartest.rexx
+	@$(CP) $< $@
+
+%make_prog_single dir=$(EXEDIR)
+
+%common
+%include_deps

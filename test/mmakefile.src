@@ -33,6 +33,7 @@ FILES := amiga2date \
     unixio \
     librarytest \
 	partition \
+	pipe \
 	scantest \
 	semaphoretest \
 	showvisregion \
@@ -56,7 +57,9 @@ FILES := amiga2date \
 	rawtest \
 	camdtree \
 	mktime \
-	rexxsyslibtest
+	rexxsyslibtest \
+	portsend \
+	portreceive
 
 EXEDIR := $(AROSDIR)/test
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
