@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+
 struct Picture_Data
 {
  ULONG                 Precision;
@@ -25,8 +27,18 @@ struct Picture_Data
  struct BitMap        *ClassBM;
  UWORD                 NumSparse;
  UBYTE                 SparseTable[256];
+ LONG                  PixelFormat;                  
  /*
   *  private entries
   */
  UBYTE                *ChunkyBuffer;
+ UWORD                PixelSize;
+ UWORD                pad;
+ ULONG                CBWidth;
+ ULONG                CBWidthBytes;
+ ULONG                CBHeight;
+ BOOL                 TrueColorSrc;
+ BOOL                 TrueColorDest;
+ BOOL                 BitmapMode;
+ BOOL                 Remapped
 };

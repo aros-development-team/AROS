@@ -32,6 +32,7 @@ struct Library          *LayersBase;
 struct Library          *DiskfontBase;
 struct Library          *DataTypesBase;
 struct Library          *IFFParseBase;
+struct Library          *CyberGfxBase;
 
 /* inside pictureclass.c */
 struct IClass *DT_MakeClass(struct Library *picturebase);
@@ -74,13 +75,16 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 			    {
 				if((IFFParseBase = OpenLibrary("iffparse.library", 37)))
 				{
-				    if((dt_class = DT_MakeClass(libbase)))
+				    if((CyberGfxBase = OpenLibrary("cybergraphics.library", 37)))
 				    {
-					AddClass(dt_class);
+					if((dt_class = DT_MakeClass(libbase)))
+					{
+					    AddClass(dt_class);
 					
-					D(bug("picture.datatype/__UserLibInit: Returning success\n"));
+					    D(bug("picture.datatype/__UserLibInit: Returning success\n"));
 
-					return 0;
+					    return 0;
+					}
 				    }
 				}
 			    }
@@ -113,6 +117,7 @@ ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
 
     D(bug("picture.datatype/__UserLibCleanup: Closing Libraries\n"));
     
+    if(CyberGfxBase) CloseLibrary(CyberGfxBase);
     if(IFFParseBase) CloseLibrary(IFFParseBase);
     if(DataTypesBase) CloseLibrary(DataTypesBase);
     if(UtilityBase) CloseLibrary((struct Library *)UtilityBase);
