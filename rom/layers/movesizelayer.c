@@ -278,7 +278,58 @@
       } 
     }
 
-
+    /* if it's a simple refresh layer then some parts of the layer might 
+    ** need to be refreshed. Therefore determine the damage list.
+     */
+#if 1
+    /* !!! this part causes a memory leak!!! */
+    if (0 != (l_tmp->Flags & LAYERSIMPLE))
+    {
+      struct ClipRect * _CR;
+      struct Region * R = NewRegion();
+      /* Walk through all the old layers cliprects and check whether they
+         were visible. If a part was not visible then add it to the 
+         new layers damagelist */
+      _CR = l_tmp->ClipRect;
+      while (NULL != _CR)
+      {
+        if (NULL != _CR->lobs)
+        {
+          /* this part was hidden! 
+             !!!!  The porblem just is that it still might be
+             hidden and therefore should not really be in the damagelist at all. 
+             A comparison with the new layer could eliminate those cliprects.*/
+          OrRectRegion(l->DamageList, &_CR->bounds);
+        } 
+        _CR = _CR->Next;
+      }
+      /* a necessary adjustment to the Damagelist's base coordinates! */
+      l->DamageList->bounds.MinX += dx;
+      l->DamageList->bounds.MinY += dy;
+      l->DamageList->bounds.MaxX += dx;
+      l->DamageList->bounds.MaxY += dy;
+      l->Flags |= LAYERREFRESH;
+      
+      /* Comparison with layer at new position is absolutely necessary!! */
+      _CR = l->ClipRect;
+      while (NULL != _CR)
+      {
+        /* is it visible at the new location? */
+        if (NULL == _CR->lobs)
+        {
+          /* this part was hidden! 
+             !!!!  The porblem just is that it still might be
+             hidden and therefore should not really be in the damagelist at all. 
+             A comparison with the new layer could eliminate those cliprects.*/
+          OrRectRegion(R, &_CR->bounds);
+        } 
+        _CR = _CR->Next;
+      }
+      /* Determine the vlaid parts */
+      AndRegionRegion(R, l->DamageList);
+      DisposeRegion(R);
+    }
+#endif
     /* 
       The layer that was moved is totally visible now at its new position
       and also at its old position. I delete it now from its old position.

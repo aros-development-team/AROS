@@ -208,17 +208,16 @@
       l_tmp->back->front = l_tmp;
 
     /* copy important data to the temporary layer. this list might be 
-       shrinkable
-       depending on what data deletelayer() needs later on */
+       shrinkable depending on what data deletelayer() needs later on */
     l_tmp->ClipRect   = l->ClipRect;
     l_tmp->rp         = RP;
     l_tmp->bounds     = l->bounds;
     l_tmp->Flags      = l->Flags;
     l_tmp->LayerInfo  = LI;
-    l_tmp->DamageList = l->DamageList;
     l_tmp->SuperBitMap= l->SuperBitMap;
     l_tmp->Scroll_X   = l->Scroll_X;
     l_tmp->Scroll_Y   = l->Scroll_Y;
+    l_tmp->DamageList = l->DamageList;
 
     /* further init the rastport structure of the temporary layer */
     RP -> Layer  = l_tmp;
@@ -257,7 +256,7 @@
     l->ClipRect = CR;
 
     l->DamageList = NewRegion();
-
+ 
     /* Copy the bounds */
     CR->bounds = l->bounds;
     /* 
@@ -306,8 +305,60 @@
                         Rect.MaxY - Rect.MinY + 1,
                         0x0c0 /* copy */
                         );
+      FreeBitMap(SimpleBackupBM);
     }
-    
+
+
+    if (0 != (l_tmp->Flags & LAYERSIMPLE))
+    {
+      struct ClipRect * _CR;
+      struct Region * R = NewRegion();
+      /* Walk through all the old layer's cliprects and check whether they
+         were in(!)visible. If a part was not visible then add it to the 
+         new layers damagelist 
+      */
+      _CR = l_tmp->ClipRect;
+      while (NULL != _CR)
+      {
+        if (NULL != _CR->lobs)
+        {
+          /* this part was hidden! */ 
+          OrRectRegion(l->DamageList, &_CR->bounds);
+        } 
+        _CR = _CR->Next;
+      }
+      /* a necessary adjustment to the Damagelist's base coordinates! */
+      l->DamageList->bounds.MinX += dx;
+      l->DamageList->bounds.MinY += dy;
+      l->DamageList->bounds.MaxX += dx;
+      l->DamageList->bounds.MaxY += dy;
+      l->Flags |= LAYERREFRESH;
+      
+      /* Comparison with layer at new position is absolutely necessary!! 
+      **  Collect all visible(!) cliprects in the new layer and make
+      **  a logical AND with both areas. The result will be the areas
+      **  that need to be update in the new layer.
+      */
+      _CR = l->ClipRect;
+      while (NULL != _CR)
+      {
+        /* is it visible at the new location? */
+        if (NULL == _CR->lobs)
+        {
+          /* this part is visible! Collect it! */
+          OrRectRegion(R, &_CR->bounds);
+        }
+        _CR = _CR->Next;
+      }
+      /* Determine the valid parts */
+      AndRegionRegion(R, l->DamageList);
+      DisposeRegion(R);
+
+      /* If I was certain that the damasglist in the old layer is correct
+      ** I wouldn't have to do all of the above!! This just be tried later.
+      */
+    }
+
     /* 
       The layer that was moved is totally visible now at its new position
       and also at its old position. I delete it now from its old position.

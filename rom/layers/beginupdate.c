@@ -66,6 +66,8 @@
   struct ClipRect * FirstCR = NULL;
   struct RegionRectangle * RR;
 
+  LockLayer(0, l);
+
   if (NULL != R)
   {
     RR = R->RegionRectangle;
@@ -95,6 +97,7 @@
           _FreeClipRect(CR, l);
           CR = FirstCR;
 	}
+	UnlockLayer(l);
         return FALSE;
       } /* else */
 
@@ -112,8 +115,6 @@
     EndUpdate(.., TRUE) is called and then free it. 
    */
 
-  LockLayer(0, l);
-  
   l->_cliprects = l->ClipRect;
   l->ClipRect   = FirstCR;
   return TRUE;
