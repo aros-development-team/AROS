@@ -106,7 +106,7 @@ struct AROS_cpu_context
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
 #define GetCpuContext(task)     ((struct AROS_cpu_context *)\
 				(GetIntETask(task)->iet_Context))
-#define GetSP(task)             ((SP_TYPE*)(task->tc_SPReg))
+#define GetSP(task)             (*(SP_TYPE **)&task->tc_SPReg)
 
 /*
     Macros to access the stack pointer, frame pointer and program
@@ -114,16 +114,16 @@ struct AROS_cpu_context
     and local variables of a function and PC is the current address
     in the program code.
 */
-#define SP(sc)           (sc->esp)
-#define FP(sc)           (sc->ebp)
-#define PC(sc)           (sc->eip)
+#define SP(sc)           ((sc)->esp)
+#define FP(sc)           ((sc)->ebp)
+#define PC(sc)           ((sc)->eip)
 
 /*
     Macros to enable or disable all signals after the signal handler
     has returned and the normal execution commences.
 */
-#define SC_DISABLE(sc)   (sc->oldmask = ~0L)
-#define SC_ENABLE(sc)    (sc->oldmask = 0L)
+#define SC_DISABLE(sc)   ((sc)->oldmask = ~0L)
+#define SC_ENABLE(sc)    ((sc)->oldmask = 0L)
 
 /*
     The names of the general purpose registers which are to be saved.
@@ -132,45 +132,56 @@ struct AROS_cpu_context
     modified by the task (ie. data and address registers) and which are
     not saved by the CPU when an interrupt happens.
 */
-#define R0(sc)           (sc->eax)
-#define R1(sc)           (sc->ebx)
-#define R2(sc)           (sc->ecx)
-#define R3(sc)           (sc->edx)
-#define R4(sc)           (sc->edi)
-#define R5(sc)           (sc->esi)
-#define R6(sc)           (sc->eflags)
+#define R0(sc)           ((sc)->eax)
+#define R1(sc)           ((sc)->ebx)
+#define R2(sc)           ((sc)->ecx)
+#define R3(sc)           ((sc)->edx)
+#define R4(sc)           ((sc)->edi)
+#define R5(sc)           ((sc)->esi)
+#define R6(sc)           ((sc)->eflags)
 
 /*
     Save and restore the CPU GPRs in the CPU context
 */
-#define SAVE_CPU(task,sc) \
-	(GetCpuContext(task)->regs[0] = R0(sc)), \
-	(GetCpuContext(task)->regs[1] = R1(sc)), \
-	(GetCpuContext(task)->regs[2] = R2(sc)), \
-	(GetCpuContext(task)->regs[3] = R3(sc)), \
-	(GetCpuContext(task)->regs[4] = R4(sc)), \
-	(GetCpuContext(task)->regs[5] = R5(sc)), \
-        (GetCpuContext(task)->regs[6] = R6(sc)), \
-	(GetCpuContext(task)->regs[7] = FP(sc)), \
-	(GetCpuContext(task)->regs[8] = PC(sc))
+#define SAVE_CPU(cc,sc)          \
+    do                           \
+    {                            \
+         (cc)->regs[0] = R0(sc); \
+         (cc)->regs[1] = R1(sc); \
+         (cc)->regs[2] = R2(sc); \
+         (cc)->regs[3] = R3(sc); \
+         (cc)->regs[4] = R4(sc); \
+         (cc)->regs[5] = R5(sc); \
+         (cc)->regs[6] = R6(sc); \
+         (cc)->regs[7] = FP(sc); \
+         (cc)->regs[8] = PC(sc); \
+    } while (0)
+         
+#define RESTORE_CPU(cc,sc)       \
+    do                           \
+    {                            \
+         R0(sc) = (cc)->regs[0]; \
+         R1(sc) = (cc)->regs[1]; \
+         R2(sc) = (cc)->regs[2]; \
+         R3(sc) = (cc)->regs[3]; \
+         R4(sc) = (cc)->regs[4]; \
+         R5(sc) = (cc)->regs[5]; \
+         R6(sc) = (cc)->regs[6]; \
+         FP(sc) = (cc)->regs[7]; \
+         PC(sc) = (cc)->regs[8]; \
+    } while (0)
 
-
-#define RESTORE_CPU(task,sc) \
-	(R0(sc) = GetCpuContext(task)->regs[0]), \
-	(R1(sc) = GetCpuContext(task)->regs[1]), \
-	(R2(sc) = GetCpuContext(task)->regs[2]), \
-	(R3(sc) = GetCpuContext(task)->regs[3]), \
-	(R4(sc) = GetCpuContext(task)->regs[4]), \
-	(R5(sc) = GetCpuContext(task)->regs[5]), \
-        (R6(sc) = GetCpuContext(task)->regs[6]), \
-	(FP(sc) = GetCpuContext(task)->regs[7]), \
-	(PC(sc) = GetCpuContext(task)->regs[8])
-
-#define SAVE_ERRNO(task) \
-	(GetCpuContext(task)->errno_backup = errno)
+#define SAVE_ERRNO(cc) \
+    do                 \
+    {                  \
+        (cc)->errno_backup = errno; \
+    } while (0) 
 	
-#define RESTORE_ERRNO(task) \
-	(errno = GetCpuContext(task)->errno_backup)
+#define RESTORE_ERRNO(cc) \
+    do                    \
+    {                     \
+        errno = (cc)->errno_backup; \
+    } while (0)
 
 /*
     It's not possible to save the FPU under linux because linux
@@ -210,13 +221,19 @@ struct AROS_cpu_context
 #   define HAS_FPU(sc)      0
 #endif
 
-#define SAVE_FPU(task,sc) \
-    	HAS_FPU(sc) && \
-	    ((GetCpuContext(task)->fpstate = *sc->fpstate), 1)
+#define SAVE_FPU(cc,sc)                         \
+        do                                      \
+	{                                       \
+    	    if (HAS_FPU(sc))                    \
+	        (cc)->fpstate = *(sc)->fpstate; \
+	} while (0)
 
-#define RESTORE_FPU(task,sc) \
-    	HAS_FPU(sc) && \
-	    ((*sc->fpstate = GetCpuContext(task)->fpstate), 1)
+#define RESTORE_FPU(cc,sc)                      \
+        do                                      \
+	{                                       \
+    	    if (HAS_FPU(sc))                    \
+	        *(sc)->fpstate = (cc)->fpstate; \
+	} while (0)
 
 /*
     Prepare the stack. This macro is used on the stack before a new
@@ -263,9 +280,12 @@ struct AROS_cpu_context
 
 */
 
-#   define PREPARE_INITIAL_FRAME(sp,pc) \
-	(GetCpuContext(task)->regs[7] = 0), \
-	(GetCpuContext(task)->regs[8] = pc)
+#   define PREPARE_INITIAL_FRAME(sp,pc)       \
+        do                                    \
+	{                                     \
+	    GetCpuContext(task)->regs[7] = 0; \
+	    GetCpuContext(task)->regs[8] = (ULONG)pc; \
+	} while (0)
 
 
 /*
@@ -295,11 +315,15 @@ struct AROS_cpu_context
     RESTOREREGS() below to restore this context.
 */
 
-#define SAVEREGS(task,sc) \
-	((GetSP(task) = (long *)SP(sc)), \
-	SAVE_FPU(task,sc), \
-	SAVE_CPU(task,sc), \
-	SAVE_ERRNO(task))
+#define SAVEREGS(task,sc)                                  \
+    do                                                     \
+    {                                                      \
+        struct AROS_cpu_context *cc = GetCpuContext(task); \
+	GetSP(task) = (SP_TYPE *)SP(sc); \
+	SAVE_FPU(cc,sc);                 \
+	SAVE_CPU(cc,sc);                 \
+	SAVE_ERRNO(cc);                  \
+    } while (0)
 
 /*
     This macro does the opposite to SAVEREGS(). It restores all
@@ -309,10 +333,14 @@ struct AROS_cpu_context
 */
 
 #   define RESTOREREGS(task,sc) \
-	(RESTORE_ERRNO(task), \
-	RESTORE_CPU(task,sc), \
-	RESTORE_FPU(task,sc), \
-	(SP(sc) = (long)(GetSP(task))))
+    do                                                     \
+    {                                                      \
+        struct AROS_cpu_context *cc = GetCpuContext(task); \
+	RESTORE_ERRNO(cc);    \
+	RESTORE_FPU(cc,sc);   \
+	RESTORE_CPU(cc,sc);   \
+	SP(sc) = (typeof(SP(sc)))GetSP(task); \
+    } while (0)
 
 
     /* This macro prints the current signals' context */
