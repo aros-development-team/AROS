@@ -287,6 +287,7 @@ DataType/ilbm;0;;Implement ilbm.datatype
 DataType/picture;0;;Implement picture.datatype
 DataType/sound;0;;Implement sound.datatype
 DataType/text;2;sebauer;Implement text.datatype
+DataType/binary;2;stegerg;Implement binary.datatype
 DevCMD00001;0;;Write ADCMD_ALLOCATE
 DevCMD00002;0;;Write ADCMD_FINISH
 DevCMD00003;0;;Write ADCMD_FREE
