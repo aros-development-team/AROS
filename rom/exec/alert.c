@@ -7,10 +7,10 @@
 */
 #include <exec/execbase.h>
 #include <aros/libcall.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <exec/alerts.h>
 #include <proto/exec.h>
+
+void kprintf(const char *, ...);
 
 /*****************************************************************************
 
@@ -192,111 +192,89 @@
     task = FindTask (NULL);
 
     /* since this is an emulation, we just show the bug in the console */
-    fprintf (stderr
-	, "GURU Meditation %04lx %04lx\n"
+    kprintf ( "GURU Meditation %04lx %04lx\n"
 	, alertNum >> 16
 	, alertNum & 0xFFFF
     );
 
     if (alertNum & 0x80000000)
-	fprintf (stderr
-	    , "Deadend/"
-	);
+	kprintf ( "Deadend/" );
     else
-	fprintf (stderr
-	    , "Recoverable/"
-	);
+	kprintf( "Recoverable/" );
 
     switch (GetSubSysId (alertNum))
     {
     case 0: /* CPU/OS/App */
 	if (GetGenError (alertNum) == 0)
 	{
-	    fprintf (stderr
-		, "CPU/"
-	    );
+	    kprintf( "CPU/" );
 
 	    if (GetSpecError (alertNum) >= 2 && GetSpecError (alertNum) <= 0x1F)
-		fprintf (stderr
-		    , "%s"
+		kprintf ("%s"
 		    , CPUStrings[GetSpecError (alertNum) - 2]
 		);
 	    else
-		fprintf (stderr
-		    , "*unknown*"
-		);
+		kprintf ("*unknown*");
 	}
 	else if (GetGenError (alertNum) <= 0x0B)
 	{
-	    fprintf (stderr
-		, "%s/"
+	    kprintf ("%s/"
 		, GenPurposeStrings[GetGenError (alertNum) - 1]
 	    );
 
 	    if (GetSpecError (alertNum) >= 0x8001
 		&& GetSpecError (alertNum) <= 0x8035)
 	    {
-		fprintf (stderr
-		    , "%s"
+		kprintf ("%s"
 		    , AlertObjects[GetSpecError (alertNum) - 0x8001]
 		);
 	    }
 	    else
-		fprintf (stderr
-		    , "*unknown*"
-		);
+		kprintf ("*unknown*");
 	}
 
 	break;
 
     case 1: /* Exec */
-	fprintf (stderr
-	    , "Exec/"
-	);
+	kprintf ("Exec/");
 
 	if (!GetGenError (alertNum)
 	    && GetSpecError (alertNum) >= 0x0001
 	    && GetSpecError (alertNum) <= 0x0010)
 	{
-	    fprintf (stderr
-		, "%s"
+	    kprintf ("%s"
 		, ExecStrings[GetSpecError (alertNum) - 0x0001]
 	    );
 	}
 	else
 	{
-	    fprintf (stderr
-		, "*unknown*"
-	    );
+	    kprintf ("*unknown*");
 	}
 
 	break;
 
     case 2: /* Graphics */
-	fprintf (stderr
-	    , "Graphics/*unknown*"
-	);
+	kprintf ("Graphics/*unknown*");
 
 	break;
 
     default:
-	fprintf (stderr
-	    , "*unknown*/*unknown*"
-	);
+	kprintf ("*unknown*/*unknown*");
     }
 
-    fprintf (stderr
-	, "\nTask: %p (%s)\n"
+    kprintf ("\nTask: %p (%s)\n"
 	, task
 	, (task && task->tc_Node.ln_Name) ?
 	    task->tc_Node.ln_Name
 	    : "-- unknown task --"
     );
-    fflush (stderr);
 
     if (alertNum & AT_DeadEnd)
-	exit (20);
-
+    {
+	/* Um, we have to do something here in order to prevent the 
+	    computer from continuing... */
+	ColdReboot();
+    }
     AROS_LIBFUNC_EXIT
 } /* Alert */
 
