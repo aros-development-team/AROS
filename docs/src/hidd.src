@@ -490,7 +490,7 @@ is calculated by the macro |HIDDQ_Keyboard_GetNumKeys(msg)|.
 
 \subsection{Graphics HIDD}
 
-A graphics HIDD allows to
+A graphics HIDD allows to create bitmaps, display them and draw in them.
 
 The graphics HIDD supports the following methods:
 
