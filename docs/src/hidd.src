@@ -41,21 +41,20 @@ information in the global list of all available HIDDs.
 \item Some application asks for a list with the informations about
 all HIDDs or a specific type of HIDD.
 
-\item The application loads the HIDD and the config plugin.
-This makes the HIDD initialize some internal data structures but
-not always the hardware. A HIDD might be the driver for several kinds
-of different hardwares which are all available.
+\item The application loads the HIDD and the config plugin. This makes the
+HIDD initialize some internal data structures but not always the hardware
+because a HIDD might be the driver for several kinds of different hardwares
+which are all available. Thus it must be configured first.
 
 \item The application asks for the current config of the HIDD. If the
 config plugin has its own GUI, the application displays it. Otherwise,
 the application displays the information in an own window. For this,
 the application queries the config plugin for all available modes.
 
-\item Whenever the user changes something in the applications window,
-the application changes the HIDD and queries the config plugin for
-the current config plus the new list of available modes. This allows
-to have modes where certain other modes are not available (eg.
-24bit depth with more than 800x600).
+\item The app reads the config from the config plugin, then reads the list
+of available modes for this config (ie. what can be changed in the current
+config) and displays this. Then the user can select some mode, the app
+changes the config and starts over.
 
 \item When the user presses ok, the application or config plugin closes
 the window/GUI. The Ok or Apply button must be ghosted as long as
@@ -91,26 +90,31 @@ HIDDs are BOOPSI objects which support the Exec Device API.
 \item{LONG OM_SET (struct TagItem * AttrList)}
 Change some attributes of a HIDD.
 
-The return type is device specific but should be 0 in case of success
-and non-zero in case of an error. A good practice is either to return
-an error code or the number of an offending tag in the taglist.
+The return code is 0 in case of success or != 0 in case of an error.
+If the return code is > 0, then it's the number of the offending tag in the
+list, if it's < 0, then it's an error code.
+You can use |HIDDM_ValueToString()| with the special tag |HIDDA_ErrorCode|
+to convert this error code into a string.
 
 \item{LONG OM_GET (Tag AttrID, IPTR * Storage)} Query a single attribute
 from the HIDD in general (eg. its name and version) and the current status.
 You can only query attributes which are gettable.
 
-The return type is device specific but should be 0 in case of success
-and non-zero in case of an error.
+The return code is 0 in case of success or < 0 in case of an error.
+You can use |HIDDM_ValueToString()| with the special tag |HIDDA_ErrorCode|
+to convert the error code into a string.
 
-\item{LONG OM_MGET (struct TagItem * AttrList)} Query a single attribute
+\item{LONG OM_MGET (struct TagItem * AttrList)} Query one or more attributes
 from the HIDD in general (eg. its name and version) and the current status.
 You can only query attributes which are gettable. The |ti_Data| fields of
 |AttrList| must be pointers of the type which is expected for the
 respective attribute.
 
-The return type is device specific but should be 0 in case of success
-and non-zero in case of an error. A good practice is either to return
-an error code or the number of an offending tag in the taglist.
+The return code is 0 in case of success or != 0 in case of an error.
+If the return code is > 0, then it's the number of the offending tag in the
+list, if it's < 0, then it's an error code.
+You can use |HIDDM_ValueToString()| with the special tag |HIDDA_ErrorCode|
+to convert this error code into a string.
 
 \item{LONG HIDDM_BeginIO (struct IORequest *)} Initiate a device operation.
 See the Exec Device API for details.
@@ -131,9 +135,11 @@ specific data. For details, look into the manual for the HIDD.
 \item{LONG OM_SET (struct TagItem * AttrList)}
 Change some attributes of a HIDD Config Plugin (HIDD CP).
 
-The return type is device specific but should be 0 in case of success
-and non-zero in case of an error. A good practice is either to return
-an error code or the number of an offending tag in the taglist.
+The return code is 0 in case of success or != 0 in case of an error.
+If the return code is > 0, then it's the number of the offending tag in the
+list, if it's < 0, then it's an error code.
+You can use |HIDDM_ValueToString()| with the special tag |HIDDA_ErrorCode|
+to convert this error code into a string.
 
 Note that changing attributes changes only the HIDD CP, never the HIDD
 itself. When the HIDD CP tells you that the current config works, then
@@ -142,29 +148,45 @@ you can copy the config to the HIDD.
 \item{LONG OM_GET (Tag AttrID, IPTR * Storage)} Query a single attribute
 from the HIDD CP. You can only query attributes which are gettable.
 
-The return type is HIDD CP specific but should be 0 in case of success
-and non-zero in case of an error.
+The return code is 0 in case of success or < 0 in case of an error.
+You can use |HIDDM_ValueToString()| with the special tag |HIDDA_ErrorCode|
+to convert the error code into a string.
 
-\item{LONG OM_MGET (struct TagItem * AttrList)} Query a single attribute
+\item{LONG OM_MGET (struct TagItem * AttrList)} Query one or more attributes
 from the HIDD CP. You can only query attributes which are gettable. The
 |ti_Data| fields of |AttrList| must be pointers of the type which is
 expected for the respective attribute.
 
-The return type is HIDD CP specific but should be 0 in case of success
-and non-zero in case of an error. A good practice is either to return
-an error code or the number of an offending tag in the taglist.
+The return code is 0 in case of success or != 0 in case of an error.
+If the return code is > 0, then it's the number of the offending tag in the
+list, if it's < 0, then it's an error code.
+You can use |HIDDM_ValueToString()| with the special tag |HIDDA_ErrorCode|
+to convert this error code into a string.
 
-\item{void HIDDM_QueryConfig (struct TagItem ** AttrList)}
-Ask the HIDD CP for the current configuration of the HIDD. The AttrList
+\item{struct TagItem * AttrList HIDDM_QueryConfig (void)}
+Ask the HIDD CP about its current configuration. The AttrList
 should be built in such a way that one can go back to the current config by
-either loading the device for the first time or disabling it and use
-|OM_SET| with this AttrList. Some applications will save this list to a
-file and load it again later to configure the HIDD.
+loading the device for the first time and use |OM_SET| with this AttrList
+or by disabling it and use |OM_SET|. A typical use of this will be to save
+this list to a file and load it next time when one needs to configure the
+HIDD.
+
+The current configuration of the HIDD CP is a copy of the HIDDs current
+configuration when the HIDD CP is created. Then you can change it and the
+HIDD CP will act as if the HIDD itself had changed. When you are done, you
+can apply the changes to the HIDD itself (aka Ok or Apply) or just forget
+about them (aka Cancel).
+
+Tip: If you write a HIDD, then you can use the power of BOOPSI and
+TagItem lists to create this list. Pass this method to the superclass
+first and then attach your local taglist with |TAG_MORE|. Or you can filter
+the taglist of the superclass and build your own taglist (and dispose
+the taglist of the superclass by |HIDDM_FreeConfig()|).
 
 \item{void HIDDM_FreeConfig (struct TagItem * AttrList)}
 Dispose the list of attributes which you got by |HIDDM_QueryConfig()|.
 
-\item{ULONG HIDDM_QueryModes (struct TagItem ** tagList)}
+\item{struct TagItem * HIDDM_QueryModeList (void)}
 Ask the HIDD CP about the currently available modes.
 
 The taglist consists of tags which have the types |BOOL|,
@@ -176,6 +198,9 @@ passed as a bitfield).
 HIDD CPs which supply their own GUI don't need to support this
 tag (but most will because you need something like this internally
 anyway).
+
+\item{void HIDDM_FreeModeList (struct TagItem * AttrList)}
+Dispose the list of attributes which you got by |HIDDM_QueryModeList()|.
 
 \item{ULONG HIDDM_Apply (void)} Apply the current config to the HIDD.
 If you dispose the HIDD CP, then all changes will be lost.
@@ -212,8 +237,9 @@ application will use this to generate its GUI.
 \subsection{Common tags for all HIDDs}
 
 \begin{taglist}
-\item{HIDDA_Type,ULONG,G} This is the basic type of the HIDD (eg. serial, parallel,
-graphics).
+\item{HIDDA_Type,ULONG,G} This is the basic type of the HIDD (eg.
+|HIDDV_Type_Serial| for serial HIDDs, |HIDDV_Type_Parallel| for parallel
+HIDDs or |HIDDV_Type_Graphics| for graphical HIDDs).
 
 \item{HIDDA_SubType,ULONG,G} This is a more specific type. If |HIDDA_Type| is
 |HIDDV_Type_Serial|, then this is a bitfield with one or more bits
@@ -230,11 +256,39 @@ you must initialize some HIDDs before you can query this attribute
 because some HIDDs work with more than one type of hardware.
 
 \item{HIDDA_Active,BOOL,ISG} Tells if the device is active or
-(de-)actives it when set.
+(de-)activates it when set.
 
 \item{HIDDA_Status,ULONG,G} The current status of a HIDD. This is a
 set of bits which show if the init of the hardware was successful,
 if the device is active or if the device is ready to be activated.
+
+\item{HIDDA_ErrorCode,LONG,G} In case of an error, you can ask
+for the error code and use this code in |HIDDM_ValueToString()|
+to get a string with the meaning of the error. This is mostly used
+when the HIDD tells you that it doesn't like a certain tag in a
+taglist. When this happens, you can query this code to find out
+what the HIDD doesn't like about the tag.
+
+\end{taglist}
+
+\subsection{Common tags for all HIDD CPs}
+
+\begin{taglist}
+\item{HIDDA_HasOwnGUI,BOOL,G} Ask the HIDD CP if it has its own GUI
+for configuration.
+
+\item{HIDDA_ShowGUI,BOOL,ISG} Make the GUI of the HIDD CP visible
+or hide it or ask if it's visible right now. If you hide the GUI
+and dispose the HIDD CP, then the changes the user made will be
+lost.
+
+\item[HIDDA_UseScreen,struct Screen *,ISG} Tell the HIDD CP to open the
+GUI on this screen.
+
+\item{HIDDA_AppMsgPort,struct MsgPort *,ISG} When the HIDD CP has its own
+GUI, this GUI runs independend of the application. You can supply a message
+port to synchronise your application with the GUI of the HIDD CP. Some HIDD
+CPs will also use this to talk to the application.
 
 \end{taglist}
 
@@ -242,8 +296,9 @@ if the device is active or if the device is ready to be activated.
 
 \begin{taglist}
 \item{HIDDA_Shared,ULONG,ISG} Allow to share a HIDD with other
-applications or lock it for single use. This might be used
-in a sound HIDD or a serial HIDD or a graphics HIDD.
+applications or lock it for single use. This might be used in HIDDs like
+sound HIDDs, serial HIDDs, graphics HIDDs, etc. Not all HIDDs need to
+supported shared access (see below).
 
 Values for |HIDDA_Shared| are:
 
@@ -256,10 +311,12 @@ this will fail.
 apps. This will fail if someone else has already locked the
 HIDD exclusively.
 
-\item{|HIDDV_Shared_NonExclusive|} Use this mode if it doesn't
-matter if you can't get it. This might be used for apps which
-want to play sounds in the background when someone inserts a disk
-into the drive or similar.
+\item{|HIDDV_Shared_NonExclusive|} Use this mode if it doesn't matter if
+you can't get it. This might be used for apps which want to play sounds in
+the background when someone inserts a disk into the drive or similar. HIDDs
+accessed with this value set might loose access permissions while locked.
+Nevertheless applications without access permission may still perform
+methods on this object. These methods are discarded.
 
 \item{|HIDDV_Shared_NotAvailable|} This can only read back. If the
 attribute contains this value, the HIDD doesn't support sharing.
@@ -279,12 +336,26 @@ Subtypes of serial HIDDs are |HIDDV_RS232| and |HIDDV_RS488|, for
 example.
 
 \begin{taglist}
-\item{HIDDA_Serial_BaudRate,ULONG,ISG} The baud rate in baud (bits
-per second) or a logical baudrate (1: 300baud, 2: 600baud,
+\item{HIDDA_Serial_BPSRate,ULONG,ISG} The bits
+per second or a logical BPS rate (1: 300baud, 2: 600baud,
 3: 1200baud, 4: 2400baud, 5: 4800, 6: 9600, 7: 19200, 8: 38400,
 9: 57600, 10: 64000, 11: 76800, 12: 112000(?), 13: 200kbaud,
 14: 400kbaud, 15: 1Mbaud, 16: 2MBaud, 17: 4MBaud, 18: 10MBaud,
-19: 20MBaud, 20: 40MBaud, 21: 100MBaud, etc).
+19: 20MBaud, 20: 40MBaud, 21: 100MBaud, etc, upto 50).
+
+When you query the list of available modes, you will get an |HIDDT_Limit|
+for this attribute. If the maximum of the limit is 50 of less, it means
+that the device supports only fixed BPS rates. If the maximum is above
+this, this means that the device supports variable BPS rates. If you use
+a logical BPS rate, you must make sure that you don't exceed the maximum.
+For example, some device might support any BPS rate between 5000bps and
+100000bps. This means that only the logical BPS rates between 6 and 11
+(including both) are available.
+
+Also note that a HIDD might not support every BPS rate in the range. There
+might be arbitrary steps, so you must set the BPS rate and then read it
+back to see what the HIDD can do. The HIDD should always select a BPS
+rate which is next to the one the user wants.
 
 \item{HIDDA_Serial_DataLength,ULONG,ISG} The number of data bits. Most
 HIDDs support only 7 or 8 bits but you should expect at least anything
@@ -356,22 +427,6 @@ o Some thoughts about the sound.hidd:
       the internal pc-speaker)
     o HIDDV_Sound_Music
     o HIDDV_Sound_Speech
-
-  o An attribute HIDDA_Sound_Shared [IS.], which could take the following
-    values:
-    o HIDDV_Sound_NonExclusiveLocked - allow other application to make
-      instances (i.e. objects) of the same sound-unit
-    o HIDDV_Sound_NonExclusiveNotLocked - as above, but allow the
-      sound-system to temporarily disable access to the unit for that
-      application. This happens, if another application wants to overtake
-      the sound-system in an exclusive mode. This mode makes sense if an
-      application wants to play sound-effects of an informational
-      character, which are not important for program execution
-
-    o HIDDV_Sound_Exclusive - May be used, if an application wants to play
-      music, which shouldn't be disturbed by sound-effects. Of course it's
-      no problem to access other sound-units/-devices, while one is locked
-      exclusively.
 
   o Possibly attributes HIDDA_Sound_ActivateHook, ..._InactivateHook [ISG]
     These attributes could be used by an application to provide hooks, which
