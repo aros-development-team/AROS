@@ -81,7 +81,6 @@
 
     /* show what's in the superbitmap */
     CopySBitMap(l);
-    return;
   }
   else
   {

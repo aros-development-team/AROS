@@ -58,11 +58,13 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
  
-  struct Layer * l = li->top_layer;
+  struct Layer * l;
 
   D(bug("LockLayers(li @ $%lx)\n", li));
 
   LockLayerInfo(li);
+
+  l = li->top_layer;
   
   while (NULL != l)
   {

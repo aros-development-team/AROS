@@ -62,13 +62,17 @@
   struct Layer *l;
 
   D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
+  
+  LockLayerInfo(li);
 
   for(l = li->top_layer; l != NULL; l = l->back)
     if(x >= l->bounds.MinX && x <= l->bounds.MaxX &&
        y >= l->bounds.MinY && y <= l->bounds.MaxY)
-       return l;
+       break;
 
-  return NULL;
+  UnlockLayerInfo(li);
+
+  return l;
 
   AROS_LIBFUNC_EXIT
 } /* WhichLayer */
