@@ -1,11 +1,12 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function getcwd()
     Lang: english
 */
 
+#include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
 #include <proto/exec.h>

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function fclose()
@@ -8,8 +8,9 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <errno.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
 #include "__errno.h"
 #include "__stdio.h"
 

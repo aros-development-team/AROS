@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function getenv()
@@ -9,6 +9,7 @@
 #include <proto/dos.h>
 #include <dos/var.h>
 
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
