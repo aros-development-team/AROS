@@ -4,5 +4,3 @@ battclock/	- Directory containing a Unix |ReadBattClock()|
 dos/		- Unix specific dos.library functions.
 
 exec/		- Unix specific exec.library functions.
-
-makefile.src	- Makefile for the config/unix directory.
