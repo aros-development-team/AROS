@@ -59,54 +59,75 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Region * OldRegion = l->ClipRegion;
-
-  /* is there a clipregion currently installed? */
-  if (NULL != OldRegion)
-  { 
-    /*
-     *  Copy the contents of the region cliprects to the regular
-     *  cliprects if layer is a SMARTLAYER. Also free the list of 
-     *  region cliprects.
-     */
-    if (NULL != l->ClipRect)
-    {
-      if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)))
-        CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
-      else
-        _FreeClipRectListBM(l, l->ClipRect);
-    }
+  struct Region * OldRegion;
+  BOOL updating = FALSE;
+  
+  LockLayer(0, l);
     
-    /* restore the regular ClipRects */
-    l->ClipRect = l->_cliprects;
+  OldRegion = l->ClipRegion;
 
-    /* if there's no new region then leave after cleaning up */
+  if ((OldRegion != NULL) || (region != NULL))
+  {
+    if (l->Flags & LAYERUPDATING)
+    {
+      /* InstallClipRegion does not work if the layer is in update state (BeginUpdate) */
+
+      updating = TRUE;
+      EndUpdate(l, FALSE); 
+    }
+
+    /* is there a clipregion currently installed? */
+    if (NULL != OldRegion)
+    { 
+      /*
+       *  Copy the contents of the region cliprects to the regular
+       *  cliprects if layer is a SMARTLAYER. Also free the list of 
+       *  region cliprects.
+       */
+      if (NULL != l->ClipRect)
+      {
+	if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)))
+          CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
+	else
+          _FreeClipRectListBM(l, l->ClipRect);
+      }
+
+      /* restore the regular ClipRects */
+      l->ClipRect = l->_cliprects;    
+
+    }
+
+    /* at this point the regular cliprects are in l->ClipRect in any case !*/
+
+    /* if there's no new region to install then there's not much to do */
     if (NULL == region)
     {
       l->_cliprects = NULL;
       l->ClipRegion = NULL;
-      return OldRegion;
     }
-    
-  }
+    else
+    {
 
-  /* at this point the regular cliprects are in l->ClipRect in any case !*/
+      /* install the new clipregion */
+      l->ClipRegion = region;
 
-  /* if there's no new region to install then there's nothing else to do */
-  if (NULL == region)
-    return OldRegion;
+      /* convert the region to a list of ClipRects */
+      /* backup the old cliprects */
+      l->_cliprects = l->ClipRect;
+
+      l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, region);  
+
+      /* right now I am assuming that everything went alright */
+    }
   
-  /* install the new clipregion */
-  l->ClipRegion = region;
-    
-  /* convert the region to a list of ClipRects */
-  /* backup the old cliprects */
-  l->_cliprects = l->ClipRect;
-
-  l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, region);  
-
-  /* right now I am assuming that everything went alright */
-
+    if (updating)
+    {
+      BeginUpdate(l);
+    }
+  } /* if ((OldRegion != NULL) || (region != NULL)) */
+  
+  UnlockLayer(l);
+  
   return OldRegion;
 
   AROS_LIBFUNC_EXIT
