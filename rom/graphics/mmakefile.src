@@ -63,6 +63,7 @@ FUNCTIONS := \
 	closefont \
 	cbump \
 	cmove \
+	copysbitmap \
 	createrastport \
 	cwait \
 	deinitrastport \
@@ -137,6 +138,7 @@ FUNCTIONS := \
 	setwritemask \
 	sortglist \
 	stripfont \
+	syncsbitmap \
 	text \
 	textextent \
 	textfit \
