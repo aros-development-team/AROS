@@ -163,6 +163,10 @@
 
 void Cleanup(STRPTR msg);
 
+/* patches.c */
+
+void Install_RawDoFmtPatch(void);
+
 /*********************************************************************************************/
 
 #endif /* GLOBAL_H */

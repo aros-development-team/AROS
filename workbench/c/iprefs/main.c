@@ -24,19 +24,20 @@ static struct libinfo
     APTR        var;
     STRPTR      name;
     WORD        version;
+    BOOL    	nocloseafterpatch;
 }
 libtable[] =
 {
-    {&IntuitionBase     , "intuition.library"           , 39    },
-    {&GfxBase           , "graphics.library"            , 39    },
-    {&UtilityBase       , "utility.library"             , 39    },
-    {&IFFParseBase  	, "iffparse.library"	    	, 39	},
-    {&LocaleBase    	, "locale.library"  	    	, 39	},
-    {&KeymapBase        , "keymap.library"              , 39    },
-    {&LayersBase        , "layers.library"              , 39    },
-    {&DataTypesBase     , "datatypes.library"           , 39    },
-    {&DiskfontBase      , "diskfont.library"            , 39    },
-    {NULL                                                       }
+    {&IntuitionBase     , "intuition.library"           , 39, FALSE },
+    {&GfxBase           , "graphics.library"            , 39, FALSE },
+    {&UtilityBase       , "utility.library"             , 39, FALSE },
+    {&IFFParseBase  	, "iffparse.library"	    	, 39, FALSE },
+    {&LocaleBase    	, "locale.library"  	    	, 39, TRUE  },
+    {&KeymapBase        , "keymap.library"              , 39, FALSE },
+    {&LayersBase        , "layers.library"              , 39, FALSE },
+    {&DataTypesBase     , "datatypes.library"           , 39, FALSE },
+    {&DiskfontBase      , "diskfont.library"            , 39, FALSE },
+    {NULL   	    	    	    	    	    	    	    }
 };
 
 /*********************************************************************************************/
@@ -136,7 +137,10 @@ static void CloseLibs(void)
     
     for(li = libtable; li->var; li++)
     {
-	if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
+    	if (!patches_installed || !li->nocloseafterpatch)
+	{
+	    if (*(struct Library **)li->var) CloseLibrary((*(struct Library **)li->var));
+	}
     }
 }
 
@@ -251,11 +255,21 @@ static void HandleAll(void)
 
 /*********************************************************************************************/
 
+static void InstallPatches(void)
+{
+    Install_RawDoFmtPatch();
+    
+    patches_installed = TRUE;
+}
+
+/*********************************************************************************************/
+
 int main(void)
 {
     OpenLibs();
     GetENVName();
     StartNotifications();
+    InstallPatches();
     HandleAll();
     Cleanup(NULL);
     
