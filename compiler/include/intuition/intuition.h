@@ -39,6 +39,9 @@
 #ifndef DEVICES_INPUTEVENT_H
 #   include <devices/inputevent.h>
 #endif
+#ifndef INTUITION_PREFERENCES_H
+#   include <intuition/preferences.h>
+#endif
 
 #ifdef AROS_ALMOST_COMPATIBLE
 #define INTUITIONNAME "intuition.library"
