@@ -103,110 +103,111 @@ AROS_LH3(struct Preferences *, SetPrefs,
                     req.tr_node.io_Message.mn_ReplyPort = port;
 
 #endif
-                DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptDelay %ld secs micros %ld\n",
-                                       GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_secs,
-                                       GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_micro));
+                    DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptDelay %ld secs micros %ld\n",
+                                           GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_secs,
+                                           GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay.tv_micro));
+                    req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+                    req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+                    req.tr_node.io_Command = IND_SETTHRESH;
+                    req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay;
+                    DoIO(&req.tr_node);
+
+#ifndef __MORPHOS__
+                    DeleteMsgPort(port);
+                }
+#endif
+            }
+    
+            if (size > offsetof(struct Preferences, KeyRptSpeed))
+            {
+#ifdef __MORPHOS__
+                /* No need to setup a reply port, this command is guaranteed to support
+                 * quick I/O.
+                 */
+#else
+                struct MsgPort *port = CreateMsgPort();
+    
+                if (port)
+                {
+                    req.tr_node.io_Message.mn_ReplyPort = port;
+#endif
+
+                DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptSpeed secs %ld micros %ld\n",
+                                       GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_secs,
+                                       GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_micro));
+    
                 req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
                 req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-                req.tr_node.io_Command = IND_SETTHRESH;
-                req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptDelay;
+                req.tr_node.io_Command = IND_SETPERIOD;
+                req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed;
                 DoIO(&req.tr_node);
-
+    
 #ifndef __MORPHOS__
                 DeleteMsgPort(port);
-            }
+                }
 #endif
+            }
+        } 
+        else 
+        {
+            DEBUG_SETPREFS(dprintf("SetPrefs: no InputIO..don't set Key prefs\n"));
         }
 
-        if (size > offsetof(struct Preferences, KeyRptSpeed))
+        //#ifndef __MORPHOS__
+        if (size > offsetof(struct Preferences, PointerMatrix) && changepointer)
         {
-#ifdef __MORPHOS__
-            /* No need to setup a reply port, this command is guaranteed to support
-             * quick I/O.
-             */
-#else
-struct MsgPort *port = CreateMsgPort();
-
+            Object *pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
+            if (pointer)
+            {
+                InstallPointer(IntuitionBase, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
+            }
+        }
+        //#endif
+    
+        /*
+        ** If inform == TRUE then notify all windows that want to know about
+        ** an update on the preferences.
+        ** Do that by creating an inputevent, that will be handled by our
+        ** handler and converted to idcmp messages, as well as by all other
+        ** input handlers (not sure it should be that way, but that shouldn't
+        ** do any harm).
+        */
+    
+        if (inform)
+        {
+            struct MsgPort *port = CreateMsgPort();
+    
+            DEBUG_SETPREFS(dprintf("SetPrefs: Send NEWPREFS event\n"));
+    
             if (port)
             {
-                req.tr_node.io_Message.mn_ReplyPort = port;
-#endif
-
-            DEBUG_SETPREFS(dprintf("SetPrefs: KeyRptSpeed secs %ld micros %ld\n",
-                                   GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_secs,
-                                   GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed.tv_micro));
-
-            req.tr_node.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-            req.tr_node.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-            req.tr_node.io_Command = IND_SETPERIOD;
-            req.tr_time = GetPrivIBase(IntuitionBase)->ActivePreferences->KeyRptSpeed;
-            DoIO(&req.tr_node);
-
-#ifndef __MORPHOS__
-            DeleteMsgPort(port);
+                struct InputEvent ie;
+                struct IOStdReq req;
+    
+                ie.ie_NextEvent = NULL;
+                ie.ie_Class = IECLASS_NEWPREFS;
+                ie.ie_SubClass = 0;
+                ie.ie_Code = 0;
+                ie.ie_Qualifier = 0;
+                ie.ie_EventAddress = NULL;
+    
+                req.io_Message.mn_ReplyPort = port;
+                req.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
+                req.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
+                req.io_Command = IND_WRITEEVENT;
+                req.io_Length = sizeof(ie);
+                req.io_Data = &ie;
+    
+                DoIO((struct IORequest *)&req);
+    
+                DeleteMsgPort(port);
             }
-#endif
-        }
-    } else {
-        DEBUG_SETPREFS(dprintf("SetPrefs: no InputIO..don't set Key prefs\n"));
-    }
-
-    //#ifndef __MORPHOS__
-    if (size > offsetof(struct Preferences, PointerMatrix) && changepointer)
-    {
-        Object *pointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
-        if (pointer)
-        {
-            InstallPointer(IntuitionBase, &GetPrivIBase(IntuitionBase)->DefaultPointer, pointer);
         }
     }
-    //#endif
 
-    /*
-    ** If inform == TRUE then notify all windows that want to know about
-    ** an update on the preferences.
-    ** Do that by creating an inputevent, that will be handled by our
-    ** handler and converted to idcmp messages, as well as by all other
-    ** input handlers (not sure it should be that way, but that shouldn't
-    ** do any harm).
-    */
+    #warning Is there any further immediate action to be taken when the prefences are updated?
 
-    if (inform)
-    {
-        struct MsgPort *port = CreateMsgPort();
+    return (struct Preferences *) prefbuffer;
 
-        DEBUG_SETPREFS(dprintf("SetPrefs: Send NEWPREFS event\n"));
-
-        if (port)
-        {
-            struct InputEvent ie;
-            struct IOStdReq req;
-
-            ie.ie_NextEvent = NULL;
-            ie.ie_Class = IECLASS_NEWPREFS;
-            ie.ie_SubClass = 0;
-            ie.ie_Code = 0;
-            ie.ie_Qualifier = 0;
-            ie.ie_EventAddress = NULL;
-
-            req.io_Message.mn_ReplyPort = port;
-            req.io_Device = GetPrivIBase(IntuitionBase)->InputIO->io_Device;
-            req.io_Unit = GetPrivIBase(IntuitionBase)->InputIO->io_Unit;
-            req.io_Command = IND_WRITEEVENT;
-            req.io_Length = sizeof(ie);
-            req.io_Data = &ie;
-
-            DoIO((struct IORequest *)&req);
-
-            DeleteMsgPort(port);
-        }
-    }
-}
-
-#warning Is there any further immediate action to be taken when the prefences are updated?
-
-return (struct Preferences *) prefbuffer;
-
-       AROS_LIBFUNC_EXIT
-
-       } /* SetPrefs */
+    AROS_LIBFUNC_EXIT
+} /* SetPrefs() */
