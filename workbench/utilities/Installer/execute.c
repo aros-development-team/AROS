@@ -1307,6 +1307,66 @@ void *params;
 			  }
 			  break;
 
+      case _MAKEDIR	: /* Create directory */
+			  if ( current->next != NULL )
+			  {
+			  int success = 0,
+			      usrconfirm = FALSE;
+
+			    current = current->next;
+			    ExecuteCommand();
+
+			    if ( current->arg != NULL )
+			    {
+			      string = strip_quotes( current->arg );
+			    }
+			    else
+			    {
+			      error = SCRIPTERROR;
+			      traperr( "<%s> requires a file string as argument!\n", current->parent->cmd->arg );
+			    }
+			    if ( current->next )
+			    {
+			      parameter = get_parameters( current->next, level );
+			      if ( GetPL( parameter, _CONFIRM ).used == 1 )
+			      {
+				usrconfirm = request_confirm( parameter );
+			      }
+			      /* Create directory */
+			      if (    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
+				    && usrconfirm )
+			      {
+				success = CreateDir(string);
+			      }
+			      free_parameterlist( parameter );
+			    }
+			    else
+			    {
+			      if ( preferences.pretend == 0 )
+			      {
+				success = CreateDir(string);
+			      }
+			    }
+			    /* return value of CreateDir() is a lock or 0 */
+			    if ( success != 0 )
+			    {
+			      UnLock(success);
+			      current->parent->intval = 1;
+			    }
+			    else
+			    {
+			      current->parent->intval = 0;
+			      set_variable( "@ioerr", NULL, IoErr() );
+			    }
+			    free( string );
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires a string argument!\n", current->arg );
+			  }
+			  break;
+
       /* Here are all unimplemented commands */
       case _COPYFILES	:
       case _COPYLIB	:
@@ -1325,7 +1385,6 @@ void *params;
       case _GETVERSION	:
       case _ICONINFO	:
       case _MAKEASSIGN	:
-      case _MAKEDIR	:
       case _PATHONLY	:
       case _PATMATCH	:
       case _PROTECT	:

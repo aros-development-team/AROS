@@ -352,6 +352,7 @@ Arguments in [...] are optional.
    -> "AA" "ECS" "AGNUS" "VGA"
  Return-type is always a string except for free RAM size.
 
+
 ( onerror (...) )
  Use this function to define code to be executed after an error occurred.
  This can be used to delete installed stuff if an error occurs or user
@@ -371,6 +372,7 @@ Arguments in [...] are optional.
    4 := DOS error (more infos in @ioerr , see below )
    5 := Bad parameter data
 
+
 ( startup <name-string>
       [(prompt <string>... )]
       [(help <string>... )]
@@ -387,6 +389,34 @@ into S:User-Startup. If a section with this name already exists the section
 will be replaced by this new one.
 The commands between the markers are given in (command ...).
 The user will only be prompted to confirm this action if in Expert mode.
+
+
+( delete <filename>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(optional <option>... )]
+      [(delopts <option>... )]
+      [(delopts)]
+      [(safe)]
+)
+Delete a file. (only plain deletion is implemented by now!)
+options are:
+  force   - unprotect file
+  askuser - ask user if file should be unprotected,
+            in novice the automatic answer is "no"
+
+
+( makedir <name>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(infos)]
+      [(confirm)]
+      [(safe)]
+)
+Create a directory.
+(infos) creates also an icon for the new directory (not yet implemented).
+
 
 ( rename <oldname> <newname>
       [(prompt <string>... )]
@@ -408,7 +438,6 @@ This function returns 1 on success and 0 on failure.
 /* Unimplemented commands */
 ( copyfiles )
 ( copylib )
-( delete )
 ( earlier )
 ( execute )
 ( exists )
@@ -423,7 +452,6 @@ This function returns 1 on success and 0 on failure.
 ( getsum )
 ( getversion )
 ( makeassign )
-( makedir )
 ( pathonly )
 ( patmatch )
 ( protect )
