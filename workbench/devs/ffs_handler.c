@@ -2,9 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.1  1996/11/14 08:53:30  aros
-    First attempt for a real fastfilesystem
-    (only directoryscans for now)
+    Revision 1.2  1996/11/22 12:29:01  aros
+    More complete filesystem: Readonly and makedir.
 
     Desc:
     Lang:
@@ -77,7 +76,7 @@ struct filesysblock
     ULONG fb_hashtable[122];	/* blocknumbers of blocksize/4-56 blocks */
 #define    fb_data		/* data for data blocks, data block numbers else */ fb_hashtable
 #define    fb_validated		/* ~0: disk is validated */	fb_hashtable[HASHSIZE]
-#define    fb_bam		/* 26 block allocation map blocks */ fb_hashtable+HASHSIZE+1
+#define    fb_bam		/* 25 block allocation map blocks */ fb_hashtable+HASHSIZE+1
 #define    fb_bam_extend	/* first bam extend block */	fb_hashtable[HASHSIZE+26]
 #define    fb_days		/* modification date... */	fb_hashtable[HASHSIZE+27]
 #define    fb_mins		/* ...and time... */		fb_hashtable[HASHSIZE+28]
@@ -142,8 +141,7 @@ struct cinfo
     ULONG lastacc;		/* time index for LRU cache */
     ULONG num;			/* blocknumber of this block (-1: invalid) */
     struct filesysblock *data;	/* Pointer to block */
-    WORD synced;		/* 0: needs to be written */
-    WORD summed;		/* 0: checksum not checked */
+    LONG synced;		/* 0: needs to be written */
 };
 
 /* Device node: one mounted drive */
@@ -167,7 +165,10 @@ struct dev
     ULONG bsize;		/* size of the blocks */
     ULONG rnum;			/* number of the root block */
     ULONG hashsize;		/* number of hashtable entries */
-    struct fh *fh;	/* Device handle */
+    struct fh *fh;		/* Device handle */
+
+    ULONG bmext;		/* current bitmap extend block */
+    ULONG fblock;		/* first free block */
 };
 
 /* Volume node: one mounted disk */
@@ -177,14 +178,14 @@ struct vol
     struct dev *dev;		/* drive where the disk is inserted or NULL */
     struct MinList files;	/* All filehandles for this disk */
     struct MinList dirs;	/* All directory handles */
-    
+
     /* Describing the partition */
     ULONG psize;		/* See above */
     ULONG reserved;
     ULONG bsize;
     ULONG rnum;
     struct DosList *dlist;	/* pointer to dos list entry */
-    
+
     ULONG cdays, cmins, cticks;
     ULONG vdays, vmins, vticks;
     
@@ -465,8 +466,7 @@ AROS_LH1(LONG, abortio,
 }
 
 #define touch_read(dev,cinfo) ((cinfo)->lastacc=((dev)->accindex)++)
-#define touch_write(dev,cinfo) \
-((cinfo)->lastacc=((dev)->accindex)++,(cinfo)->synced=(cinfo)->summed=0)
+#define touch_write(dev,cinfo) ((cinfo)->lastacc=((dev)->accindex)++,(cinfo)->synced=0)
 
 static LONG write_block(struct ffsbase *ffsbase, struct dev *dev, struct cinfo *cinfo)
 {
@@ -514,7 +514,6 @@ LONG get_block(struct ffsbase *ffsbase, struct dev *dev, struct cinfo **cinfo, U
         return ret;
     (*cinfo)->num=~0;
     (*cinfo)->synced=0;
-    (*cinfo)->summed=0;
     dev->iotd->iotd_Req.io_Command=CMD_READ;
     dev->iotd->iotd_Req.io_Data   =(*cinfo)->data;
     dev->iotd->iotd_Req.io_Offset =(dev->poffset+num)*dev->bsize;
@@ -530,7 +529,7 @@ LONG get_block(struct ffsbase *ffsbase, struct dev *dev, struct cinfo **cinfo, U
 ULONG checksum(struct dev *dev, struct cinfo *cinfo)
 {
     ULONG i;
-#if BIG_ENDIAN
+#if AROS_BIG_ENDIAN
     ULONG *p=(ULONG *)cinfo->data, sum=0;
     for(i=0;i<dev->bsize/4;i++)
 	sum+=*p++;
@@ -550,12 +549,143 @@ LONG read_block_chk(struct ffsbase *ffsbase, struct dev *dev, struct cinfo **cin
     ret=get_block(ffsbase,dev,cinfo,num);
     if(ret)
         return ret;
-    if(!(*cinfo)->summed)
+    if(checksum(dev,*cinfo))
+    {KPrintF("%s\n",(*cinfo)->data->fb_name);
+	return ERROR_BAD_NUMBER; /* Checksum error */}
+    return 0;
+}
+
+void dump(struct ffsbase *ffsbase, struct cinfo *block)
+{
+    int i;
+    for(i=0;i<128;i++)
+        KPrintF("%lx ",EC(((ULONG *)block->data)[i]));
+    KPrintF("\n");
+}
+
+static LONG alloc_block(struct ffsbase *ffsbase, struct dev *dev, ULONG *newblk)
+{
+    struct cinfo *block;
+    ULONG a, b;
+    ULONG i, imax, k, kmax, kmax2;
+    ULONG bpb, bblock, btotal, next;
+    LONG error;
+    
+    bpb=8*(dev->bsize-4);
+    bblock=dev->fblock/bpb;
+    btotal=(dev->psize-dev->reserved+bpb-1)/bpb;
+    k=1+(dev->fblock%bpb)/32;
+    for(;;)
     {
-        if(checksum(dev,*cinfo))
-	    return ERROR_BAD_NUMBER; /* Checksum error */
-        (*cinfo)->summed=1;
+	if(bblock<25)
+	{
+	    i=7+HASHSIZE+bblock;
+	    imax=7+25+HASHSIZE;
+	}else
+	{
+	    i=(bblock-25)%(dev->bsize/4-1);
+	    imax=dev->bsize/4-1;
+	}
+	for(;i<imax;i++)
+	{
+	    if(bblock>=btotal)
+	        return ERROR_DISK_FULL;
+	    if(bblock<25)
+	        error=read_block_chk(ffsbase,dev,&block,dev->bmext);
+	    else
+	        error=get_block(ffsbase,dev,&block,dev->bmext);
+	    if(error)
+	        return error;
+	    next=EC(((ULONG *)block->data)[imax]);
+	    touch_read(dev,block);
+	    error=read_block_chk(ffsbase,dev,&block,EC(((ULONG *)block->data)[i]));
+	    if(error)
+	        return error;
+	    kmax=dev->bsize/4;
+	    kmax2=1+(dev->psize-dev->reserved-bblock*bpb+31)/32;
+	    if(kmax>kmax2)
+	        kmax=kmax2;
+	    touch_read(dev,block);
+	    for(;k<kmax;k++)
+	        if(((ULONG *)block->data)[k])
+	        {
+	            a=EC(((ULONG *)block->data)[k]);
+	            b=a&-a;
+	            a&=~b;
+	            b=(b&0xffff0000?16:0)+(b&0xff00ff00?8:0)+(b&0xf0f0f0f0?4:0)+
+	              (b&0xcccccccc?2:0) +(b&0xaaaaaaaa?1:0);
+	            dev->fblock=bblock*bpb+(k-1)*32+b;
+	            if(dev->fblock+dev->reserved>=dev->psize)
+	                return ERROR_DISK_FULL;
+	            *newblk=dev->fblock+dev->reserved;
+	            ((ULONG *)block->data)[k]=EC(a);
+	            *(ULONG *)block->data=0;
+	            a=checksum(dev,block);
+	            *(ULONG *)block->data=EC(a);
+	            touch_write(dev,block);
+	            return 0;
+	        }
+	    bblock++;
+	    dev->fblock=bblock*bpb;
+	    k=1;
+	}
+	dev->bmext=next;
     }
+}
+
+static LONG free_block(struct ffsbase *ffsbase, struct dev *dev, ULONG blk)
+{
+    struct cinfo *block;
+    ULONG a, k, old, oldbblock, bpb, bblock, btotal, next;
+    LONG error;
+
+    bpb=8*(dev->bsize-4);
+    oldbblock=dev->fblock/bpb;
+    btotal=(dev->psize-dev->reserved+bpb-1)/bpb;
+    bblock=blk/bpb;
+    k=blk%bpb;
+    if(bblock<oldbblock)
+    {
+        dev->bmext=dev->rnum;
+        if(bblock>25)
+        {
+	    error=read_block_chk(ffsbase,dev,&block,dev->bmext);
+            if(error)
+                return error;
+            dev->bmext=EC(((ULONG *)block->data)[7+25+HASHSIZE]);
+            touch_read(dev,block);
+            old=(old-25)/(dev->bsize/4-1);
+            while(old--)
+            {
+	        error=get_block(ffsbase,dev,&block,dev->bmext);
+                if(error)
+                    return error;
+	        dev->bmext=EC(((ULONG *)block->data)[dev->bsize/4-1]);
+	        touch_read(dev,block);
+            }
+        }
+    }
+    if(dev->fblock>blk)
+        dev->fblock=blk;
+    if(bblock<25)
+    {
+	error=read_block_chk(ffsbase,dev,&block,dev->bmext);
+	next=EC(((ULONG *)block->data)[7+HASHSIZE+bblock]);
+    }else
+    {
+    	error=get_block(ffsbase,dev,&block,dev->bmext);
+	next=EC(((ULONG *)block->data)[(bblock-25)%(dev->bsize/4-1)]);
+    }
+    if(error)
+        return error;
+    touch_read(dev,block);
+    error=read_block_chk(ffsbase,dev,&block,next);
+    if(error)
+        return error;
+    a=EC(((ULONG *)block->data)[k/32+1]);
+    a|=1<<(k&31);
+    ((ULONG *)block->data)[k/32+1]=EC(a);
+    touch_write(dev,block);
     return 0;
 }
 
@@ -626,15 +756,7 @@ void flush(struct dev *dev)
         dev->cinfos[i].synced=1;
     }
 }
-#if 0
-void dump(struct ffsbase *ffsbase, struct cinfo *block)
-{
-    int i;
-    for(i=0;i<128;i++)
-        KPrintF("%lx ",EC(((ULONG *)block->data)[i]));
-    KPrintF("\n");
-}
-#endif
+
 LONG disk_change(struct ffsbase *ffsbase, struct dev *dev)
 {
     struct cinfo *root, *boot;
@@ -701,6 +823,8 @@ LONG disk_change(struct ffsbase *ffsbase, struct dev *dev)
                     vol->dlist->dol_Unit=(struct Unit *)fh;
                     dev->vol=vol;
                     vol->dev=dev;
+                    dev->bmext=dev->rnum;
+                    dev->fblock=0;
                     AddTail((struct List *)&ffsbase->inserted,(struct Node *)vol);
                     ffsbase->dlflag=1;
                     return 0;
@@ -747,12 +871,13 @@ static void setname(struct dev *dev, struct cinfo *block, STRPTR name)
 
 static ULONG hash(struct dev *dev, STRPTR name)
 {
-    ULONG h=0;
+    ULONG l, h=0;
     STRPTR s2=name;
     while(*s2&&*s2!='/')
         s2++;
-    h=s2-name;
-    while(name!=s2)
+    l=s2-name>30?30:s2-name;
+    h=l;
+    while(l--)
     {
         h=(h*13+toupper_ffs(*name))&0x7ff;
         name++;
@@ -779,15 +904,17 @@ static LONG findname(struct ffsbase *ffsbase, struct fh *fh, STRPTR *name, struc
     if(error)
 	return error;
 
-    for(;;)
+    while(*rest)
     {
-	if(!*rest)
-	    break;
 	touch_read(dev,cur);
 	if(*rest=='/')
 	{
 	    if(cur->data->fb_sectype==EC(ST_ROOT))
+	    {
+	        *name=rest;
+	        *dir=cur;
 		return ERROR_OBJECT_NOT_FOUND;
+	    }
 	    error=read_block_chk(ffsbase,dev,&cur,EC(cur->data->fb_parent));
 	    if(error)
 	        return error;
@@ -795,24 +922,29 @@ static LONG findname(struct ffsbase *ffsbase, struct fh *fh, STRPTR *name, struc
 	{
 	    if(cur->data->fb_sectype!=EC(ST_USERDIR)&&
 	       cur->data->fb_sectype!=EC(ST_ROOT))
+	    {
+	        *name=rest;
+	        *dir=cur;
 		return ERROR_DIR_NOT_FOUND;
+	    }
 	    *dir=cur;
-	    error=read_block_chk(ffsbase,dev,&cur,EC(cur->data->fb_hashtable[hash(dev,rest)]));
-	    if(error)
-	        return error;
+	    block=hash(dev,rest);
+	    block=EC(cur->data->fb_hashtable[block]);
 	    for(;;)
 	    {
+    	        if(!block)
+		{
+		    *name=rest;
+		    *dir=cur;
+		    return ERROR_OBJECT_NOT_FOUND;
+		}
+    	        error=read_block_chk(ffsbase,dev,&cur,block);
+    	        if(error)
+    	            return error;
 		touch_read(dev,cur);
 		if(!namechk(dev,cur,rest))
 		    break;
-		if(!cur->data->fb_nexthash)
-		{
-		    *name=rest;
-		    return ERROR_OBJECT_NOT_FOUND;
-		}
-		error=read_block_chk(ffsbase,dev,&cur,EC(cur->data->fb_nexthash));
-		if(error)
-		    return error;
+		block=EC(cur->data->fb_nexthash);
 	    }
 	}
 	while(*rest)
@@ -877,50 +1009,58 @@ static LONG open(struct ffsbase *ffsbase, struct fh **fh, STRPTR name, ULONG mod
         error=ERROR_NO_FREE_STORE;
     return error;
 }
-#if 0
-static LONG create_file
-(struct ffsbase *ffsbase, struct fh *fh, struct cinfo *cur, ULONG *block, STRPTR name, ULONG protect)
+
+static LONG create_object
+(struct ffsbase *ffsbase, struct dev *dev, ULONG *blocknr,
+ struct cinfo *block, STRPTR name, ULONG protect, ULONG type)
 {
-    ULONG dirblock, hashnum, nexthash;
+    STRPTR s2;
+    ULONG hashnr, pnum, next, a;
     LONG error;
-    struct dev *dev;
-    dev=fh->block?fh->vol->dev:(struct dev *)fh->vol;
-    dirblock=cur->num;
-    hashnum=hash(dev,name);
-    nexthash=cur->data->fb_hashtable[hashnum];
-#if 0    
-    error=alloc_block(ffsbase,dev,block);
-    if(error)
-	return error;
-#endif
-    error=get_buffer(ffsbase,dev,&cur);
-    if(error)
-	return error;
-    cur->num=*block;
-    zerofill((UBYTE *)cur->data,dev->bsize);
-    cur->data->fb_type    =EC(BT_STRUCT);
-    cur->data->fb_own     =EC(*block);
-    cur->data->fb_hashsize=EC(HASHSIZE);
-/*  cur->data->fb_owner */
-    cur->data->fb_protect =EC(protect^0xf);
-/*  cur->data->fb_days
-    cur->data->fb_mins
-    cur->data->fb_ticks */
-    setname(dev,cur,name);
-    cur->data->fb_nexthash=nexthash;
-    cur->data->fb_parent  =EC(dirblock);
-    cur->data->fb_sectype =EC(ST_FILE);
-    cur->data->fb_chksum  =EC(checksum(dev,cur));
-    touch_write(dev,cur);
-    cur->summed=1;
-    error=read_block_chk(ffsbase,dev,&cur,dirblock);
-    if(error)
-        return error;
-    cur->data->fb_hashtable[hashnum]=EC(*block);
-    touch_write(dev,cur);
-    return 0;
+
+    s2=name;
+    while(*s2)
+        if(*s2++=='/')
+            return ERROR_DIR_NOT_FOUND;
+    pnum=block->num;
+    hashnr=hash(dev,name);
+    next=block->data->fb_hashtable[hashnr];
+    error=alloc_block(ffsbase,dev,blocknr);
+    if(!error)
+    {
+        error=get_buffer(ffsbase,dev,&block);
+        if(!error)
+        {
+            block->num=*blocknr;
+            zerofill((STRPTR)block->data,dev->bsize);
+            block->data->fb_type    =EC(BT_STRUCT);
+            block->data->fb_own     =EC(*blocknr);
+            block->data->fb_protect =EC(protect^0xf);
+            /* TODO: set creation date */
+            block->data->fb_nexthash=next;
+            block->data->fb_parent  =EC(pnum);
+            block->data->fb_sectype =EC(type);
+            setname(dev,block,name);
+            block->data->fb_chksum  =0;
+            a=checksum(dev,block);
+            block->data->fb_chksum  =EC(a);
+            touch_write(dev,block);
+            error=read_block_chk(ffsbase,dev,&block,pnum);
+            if(!error)
+            {
+                block->data->fb_hashtable[hashnr]=EC(*blocknr);
+                block->data->fb_chksum=0;
+                a=checksum(dev,block);
+                block->data->fb_chksum=EC(a);
+                touch_write(dev,block);
+                return 0;
+            }
+        }
+        (void)free_block(ffsbase,dev,*blocknr);
+    }
+    return error;
 }
-#endif
+
 static LONG open_file(struct ffsbase *ffsbase, struct fh **fh, STRPTR name, ULONG mode, ULONG protect)
 {
     struct cinfo *dir;
@@ -935,47 +1075,24 @@ static LONG open_file(struct ffsbase *ffsbase, struct fh **fh, STRPTR name, ULON
     {
         error=findname(ffsbase,*fh,&name,&dir);
         if((mode&FMF_CREATE)&&error==ERROR_OBJECT_NOT_FOUND)
-        {
-            return ERROR_WRITE_PROTECTED;
-#if 0
-            char *s=name;
-            while(*s)
-                if(*s++=='/')
-                    break;
-            if(!*s)
-            {
-                error=create_file(ffsbase,*fh,dir,&fh->block,name,protect);
-                if(!error)
-                {
-                    new->vol  =dev->vol;
-		    new->block=dir->num;
-      		    if(mode&FMF_LOCK)
-       		        new->locked=1;
-               	    AddHead((struct List *)&dev->vol->files,(struct Node *)new);
-                    *fh=new;
-                    return 0;
-                }
-            }
-#endif
-        }else if(!error)
+            error=create_object(ffsbase,dev,&new->block,dir,name,protect,ST_FILE);
+        else if(!error)
         {
             touch_read(dev,dir);
             if(dir->data->fb_sectype!=EC((ULONG)ST_FILE))
                 error=ERROR_OBJECT_WRONG_TYPE;
             else
-            {
                 error=lock(dev,dir,mode);
-                if(!error)
-                {
-                    new->vol  =dev->vol;
-		    new->block=dir->num;
-		    if(mode&FMF_LOCK)
-		        new->locked=1;
-        	    AddHead((struct List *)&dev->vol->files,(struct Node *)new);
-                    *fh=new;
-                    return 0;
-                }
-            }
+        }
+        if(!error)
+        {
+            new->vol  =dev->vol;
+	    new->block=dir->num;
+	    if(mode&FMF_LOCK)
+		new->locked=1;
+  	    AddHead((struct List *)&dev->vol->files,(struct Node *)new);
+            *fh=new;
+            return 0;
         }
         FreeMem(new,sizeof(struct fh));
     }
@@ -994,12 +1111,12 @@ static LONG read(struct ffsbase *ffsbase, struct fh *fh, APTR buf, ULONG *numbyt
     error=read_block_chk(ffsbase,dev,&block,fh->block);
     if(error)
         return error;
-    bpb=fh->vol->id==ID_DOS_DISK?fh->vol->bsize-20:fh->vol->bsize;
+    bpb=fh->vol->id==ID_DOS_DISK?fh->vol->bsize-24:fh->vol->bsize;
     total=EC(block->data->fb_size);
     touch_read(dev,block);
     pos=fh->blocknr*bpb+fh->index;
     rest=total>pos?total-pos:0;
-    num=num>rest?rest:num;KPrintF("total:%ld pos:%ld rest:%ld num:%ld\n",total,pos,rest,num);
+    num=num>rest?rest:num;
     size=bpb-fh->index;
     while(num)
     {
@@ -1011,31 +1128,31 @@ static LONG read(struct ffsbase *ffsbase, struct fh *fh, APTR buf, ULONG *numbyt
             rest=fh->blocknr;
             while(rest--)
             {
-                error=read_block_chk(ffsbase,dev,&block,fh->current);KPrintF("error:%ld\n");
+                error=read_block_chk(ffsbase,dev,&block,fh->current);
                 if(error)
                     return error;
                 fh->current=EC(block->data->fb_extend);
                 touch_read(dev,block);
-            }KPrintF("current %ld\n",fh->current);
+            }
         }
         error=read_block_chk(ffsbase,dev,&block,fh->current);
         if(error)
             return error;
         touch_read(dev,block);
         if(fh->vol->id==ID_DOS_DISK)
-        {KPrintF("chk\n");
-            error=read_block_chk(ffsbase,dev,&block,EC(block->data->fb_data[fh->blocknr%(HASHSIZE)]));
-/*            if(error)
-                return error;*/
-            CopyMem((STRPTR)(block->data->fb_data)+fh->index,buffer,size);KPrintF("3\n");
+        {
+            error=read_block_chk(ffsbase,dev,&block,EC(block->data->fb_data[HASHSIZE-1-fh->blocknr%(HASHSIZE)]));
+            if(error)
+                return error;
+            CopyMem((STRPTR)(block->data->fb_data)+fh->index,buffer,size);
         }else
-        {KPrintF("nochk\n");
+        {
             error=get_block(ffsbase,dev,&block,EC(block->data->fb_data[fh->blocknr%(HASHSIZE)]));
             if(error)
                 return error;
             CopyMem((STRPTR)(block->data)+fh->index,buffer,size);
-        }KPrintF("4\n");
-        touch_read(dev,block);KPrintF("read: %ld\n",size);
+        }
+        touch_read(dev,block);
         buffer+=size;
         num-=size;
         fh->index+=size;
@@ -1054,7 +1171,7 @@ static LONG read(struct ffsbase *ffsbase, struct fh *fh, APTR buf, ULONG *numbyt
         }
         size=bpb;
     }
-    *numbytes=buffer-(STRPTR)buf;KPrintF("numbytes: %ld\n",*numbytes);
+    *numbytes=buffer-(STRPTR)buf;
     return 0;
 }
 
@@ -1064,6 +1181,37 @@ static LONG free_lock(struct ffsbase *ffsbase, struct fh *fh)
     FreeMem(fh,sizeof(struct fh));
     /* TODO: Dismount removed and unused disk */
     return 0;
+}
+
+static LONG create_dir(struct ffsbase *ffsbase, struct fh **fh, STRPTR name, ULONG protect)
+{
+    struct cinfo *block;
+    struct dev *dev;
+    struct fh *new;
+    LONG error;
+    
+    dev=(*fh)->block?(*fh)->vol->dev:(struct dev *)(*fh)->vol;
+
+    error=findname(ffsbase,*fh,&name,&block);
+    if(!error)
+        return ERROR_OBJECT_EXISTS;
+    if(error!=ERROR_OBJECT_NOT_FOUND)
+        return error;
+    new=AllocMem(sizeof(struct fh),MEMF_CLEAR);
+    if(new!=NULL)
+    {
+        error=create_object(ffsbase,dev,&new->block,block,name,protect,ST_USERDIR);
+        if(!error)
+        {
+            new->vol=dev->vol;
+            new->locked=1;
+            AddHead((struct List *)&dev->vol->dirs,(struct Node *)new);
+            *fh=new;
+            return 0;
+        }
+        FreeMem(new,sizeof(struct fh));
+    }
+    return error;
 }
 
 static const ULONG sizes[]=
@@ -1246,6 +1394,10 @@ void deventry(struct ffsbase *ffsbase)
 		    break;
 		case FSA_CLOSE:
 		    error=free_lock(ffsbase,(struct fh *)iofs->IOFS.io_Unit);
+		    break;
+		case FSA_CREATE_DIR:
+		    error=create_dir(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
+		    		(STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
 		    break;
 		case FSA_EXAMINE:
 		    error=examine(ffsbase,(struct fh *)iofs->IOFS.io_Unit,
