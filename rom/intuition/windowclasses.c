@@ -57,11 +57,13 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
     /* We will let the AROS gadgetclass test if it is safe to render */
     if ( DoSuperMethodA(cl, o, (Msg)msg) != 0)
     {
-      
-        UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+	struct DrawInfo *dri = msg->gpr_GInfo->gi_DrInfo;
+        UWORD *pens = dri->dri_Pens;
 	struct RastPort *rp = msg->gpr_RPort;
 	struct IBox container;
 	struct Window *win = msg->gpr_GInfo->gi_Window;
+	struct TextExtent te;
+	ULONG textlen, titlelen;
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	
@@ -102,9 +104,24 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 		, container.Top  + container.Height - 1
 		, IntuitionBase);
 	
-	    
+	
+	/* Render the titlebar */
+	SetFont(rp, dri->dri_Font);
 	
 
+	titlelen = strlen(win->Title);
+	textlen = TextFit(rp
+		, win->Title
+		, titlelen
+		, &te
+		, NULL
+		, 1
+		, container.Width
+		, container.Height);
+
+	Move(rp, container.Left + 3, container.Top + dri->dri_Font->tf_Baseline + 3);
+	
+	Text(rp, win->Title, textlen);
 	
     }  /* if (allowed to render) */
     
