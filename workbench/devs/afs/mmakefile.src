@@ -1,8 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-EXEDIR := $(DEVSDIR)
-EXE := $(EXEDIR)/afs.handler
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+AFSHANDLER := $(DEVSDIR)/afs.handler
 FILES :=	arosdevice \
 			main \
 			volumes \
@@ -17,11 +18,40 @@ FILES :=	arosdevice \
 			checksums \
 			misc
 
-#MM afshandler:
-afshandler: $(EXE)
+OBJS := $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+LIB := $(LIBDIR)/libafs.a
 
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+#MM
+workbench-devs: workbench-devs-afshandler
+#MM
+workbench-devs-quick: workbench-devs-afshandler
+#MM workbench-devs-afshandler:
+workbench-devs-afshandler: $(AFSHANDLER)
+
+#MM
+kernel-devs-native-i386 : $(LIB)
+	@$(NOP)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+#MM
+clean ::
+	$(RM) $(OBJS) $(LIB) $(OSGENDIR)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR)
+
+$(AFSHANDLER) : $(OBJS)
+	%link_q from=$(OBJS) startup=
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS)"
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q
 
 %common
-%include_deps
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 
