@@ -1,22 +1,13 @@
-Short: AROS - Amiga Replacement OS
+Short: AROS - Amiga Replacement OS (Beta release)
 Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
 Uploader: Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de)
-Version:  1.10
+Version:  1.11b
 Type:	  misc/emu
+
+!! THIS IS A BETA !!
 
 New this time:
 - Bugfixes
-- Worked on docs
-- Many (50+) new functions in c.lib and amiga.lib
-- Big endian IO functions in aros.library
-- Amiga native and Linux/m68k versions. Amiga is still alpha.
-- A *pre* alpha of VBCC with i386 support. This is only loosely
-	connected to AROS. See the README in the directory
-	\filename{AROS/compiler/vbcc/}.
-- iffparse.library completed
-- Exec 90% completed, DOS 50% completed, Graphics 15%, Intuition 25%.
-    All in all 30% of the whole work is completed.
-- Uses now shares libs on Unix to make it smaller
 
 HOW TO USE THIS
 ---------------
@@ -60,9 +51,10 @@ Look at these pages on WorldWideWait:
 
     http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
     http://aros.fh-konstanz.de/~digulla/ (German Mirror)
+    http://home.worldonline.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
-from
+(quite smaller than lha) from
 
     ftp://aros.fh-konstanz.de/pub/aros/
 
