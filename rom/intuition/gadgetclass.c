@@ -43,12 +43,21 @@
 #include "gadgets.h"
 #endif
 
+#include "notify.h"
+
+struct GadgetData
+{
+    struct ExtGadget	EG;
+    struct ICData       IC;
+};
+
 /****************************************************************************/
 
 /* Some handy transparent base class object casting defines.
  */
 #define G(o)  ((struct Gadget *)o)
 #define EG(o) ((struct ExtGadget *)o)
+#define GD(o) ((struct GadgetData *)o)
 #define IM(o) ((struct Image *)o)
 
 /****************************************************************************/
@@ -269,6 +278,15 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	case GA_UserData:
 	    EG(o)->UserData = (APTR)tidata;
 	    break;
+	    
+	case ICA_TARGET:
+	    GD(o)->IC.ic_Target = (Object *)tidata;
+	    break;
+	     
+	case ICA_MAP:
+	    GD(o)->IC.ic_Mapping = (struct TagItem *)tidata;
+	    break;
+	    
 	}
     }
 
@@ -312,7 +330,7 @@ static ULONG get_gadgetclass(Class *cl, Object *o, struct opGet *msg)
     case GA_Disabled:
 	*msg->opg_Storage = (ULONG)((BOOL)(EG(o)->Flags & GFLG_DISABLED));
 	break;
-
+	
     default:
 	*msg->opg_Storage = (ULONG)NULL;
 	retval = 0UL;
@@ -380,7 +398,7 @@ AROS_UFH3(static IPTR, dispatch_gadgetclass,
 	if (retval)
 	{
 	    /* set some defaults */
-	    memset (EG(retval), 0, sizeof(struct ExtGadget));
+	    memset (EG(retval), 0, sizeof(struct GadgetData));
 	    EG(retval)->Flags      = GFLG_EXTENDED;
 	    EG(retval)->GadgetType = GTYP_CUSTOMGADGET;
 
@@ -398,6 +416,14 @@ AROS_UFH3(static IPTR, dispatch_gadgetclass,
     case OM_GET:
 	retval = (IPTR)get_gadgetclass(cl, o, (struct opGet *)msg);
 	break;
+	
+    case OM_NOTIFY:
+    	DoNotification(cl, o, &(GD(o)->IC), (struct opUpdate *)msg);
+    	break;
+    	
+    case OM_DISPOSE:
+    	FreeICStuff(&(GD(o)->IC), IntuitionBase);
+    	break;    	
 
     default:
 	retval = DoSuperMethodA(cl, o, msg);
@@ -419,7 +445,7 @@ struct IClass *InitGadgetClass (struct IntuitionBase * IntuitionBase)
 
     /* This is the code to make the gadgetclass...
      */
-    if ((cl = MakeClass(GADGETCLASS, ROOTCLASS, NULL, sizeof(struct ExtGadget), 0)))
+    if ((cl = MakeClass(GADGETCLASS, ROOTCLASS, NULL, sizeof(struct GadgetData), 0)))
     {
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_gadgetclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
