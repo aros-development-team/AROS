@@ -8,6 +8,11 @@ BEGIN {
 	    print "\n"file >> "/dev/stderr";
 	fflush("/dev/stderr");
 
+	LIBS["alib"]="amiga.lib";
+	LIBS["devs"]="Devices";
+	LIBS["aros"]="AROS";
+	LIBS["intuition"]="Intuition";
+
 	out="";
 	mode="head";
 
@@ -18,7 +23,11 @@ BEGIN {
 		if (match($0,/^.\*\*\*\*\*+$/))
 		{
 		    fname="";
-		    lib="";
+		    lib=file;
+		    gsub(/\/[^/]+$/,"",lib);
+		    gsub(/^.*\//,"",lib);
+		    location=0;
+
 		    out="../html/autodocs/" bn ".html";
 		    print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Replacement OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
 		    print "<CENTER><P>(C) 1996 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
@@ -70,10 +79,17 @@ BEGIN {
 		{
 		    if (fname!="")
 		    {
-			if (lib=="")
-			    lib = "Utility functions";
-
-			print out":"fname":"lib;
+			if (!location)
+			{
+			    if (!(lib in LIBS) )
+			    {
+				print "Unknown lib: "lib" in file "file >> "/dev/stderr";
+			    }
+			    else
+				print out":"fname":"LIBS[lib];
+			}
+			else
+			    print out":"fname":"lib;
 		    }
 		    mode="footer";
 		}
@@ -86,13 +102,25 @@ BEGIN {
 
 		    if (field=="NAME")
 		    {
-			if (match(line,/AROS_LH/))
+			if (match(line,/[(]/))
 			{
 			    gsub(/,[ \t]/,",",line);
-			    split(line,a,",");
-			    gsub(/AROS_LH.*[(]/,"",a[1]);
-			    print prefix a[1] " " a[2] "()<BR>" >> out;
-			    fname=a[2];
+			    if (split(line,a,",")==3)
+			    {
+				gsub(/AROS_(L|UF)H.*[(]/,"",a[1]);
+				gsub(/[ \t]*[(][ \t]*/,"",a[1]);
+				print prefix a[1] " " a[2] "()<BR>" >> out;
+				fname=a[2];
+			    }
+			    else
+			    {
+				fname=line;
+				gsub(/[ \t]*[(][ \t]*$/,"",fname);
+				type=fname;
+				gsub(/^.*[ \t]+/,"",fname);
+				gsub(/[ \t]+[^ \t]+$/,"",type);
+				print prefix type " " fname "()<BR>" >> out;
+			    }
 			}
 			else if (match(line,"#include"))
 			{
@@ -110,8 +138,8 @@ BEGIN {
 		    }
 		    else if (field=="SYNOPSIS")
 		    {
-			gsub(/AROS_LHA[(]/,"",line);
-			gsub(/[)],/,"",line);
+			gsub(/AROS_(L|UF)HA[(]/,"",line);
+			gsub(/[)][ \t]*,?/,"",line);
 			gsub(/,[ \t]/,",",line);
 
 			split(line,a,",");
@@ -127,6 +155,7 @@ BEGIN {
 			    split(line,a,",");
 			    print "In " a[2] " at offset " a[3] >> out;
 			    lib=a[2];
+			    location=1;
 			}
 		    }
 		    else if (field=="INPUTS")
@@ -240,7 +269,7 @@ BEGIN {
 		    }
 		    else if (field=="HISTORY")
 		    {
-			if (match(line,/^[ \t]+[0-3][0-9]-[01][0-9]-[0-9][0-9][ \t]+/))
+			if (match(line,/^[ \t]+[0-3][0-9][-.][01][0-9][-.][0-9][0-9][ \t]+/))
 			{
 			    date=substr(line,RSTART,RLENGTH);
 			    line=substr(line,RSTART+RLENGTH);
