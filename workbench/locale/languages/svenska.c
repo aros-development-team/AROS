@@ -3,7 +3,7 @@
     $Id$
 
     Desc: svenska.language description file.
-    Lang: english
+    Lang: English
 */
 
 /*  Language file for the svenska language. */
@@ -31,7 +31,7 @@ STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for Italian character type/conversion */
+/* Arrays for Swedish character type/conversion */
 extern const STRPTR __svenska_strings[];
 
 /* -------------------------------------------------------------------------
@@ -124,6 +124,7 @@ AROS_LH2(struct Language *, init,
     AROS_LIBFUNC_EXIT
 }
 
+
 #define SysBase language->sysbase
 
 AROS_LH1(struct Language *, open,
@@ -139,6 +140,7 @@ AROS_LH1(struct Language *, open,
 
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0(BPTR, close, struct Language *, language, 2, language)
 {
@@ -156,6 +158,7 @@ AROS_LH0(BPTR, close, struct Language *, language, 2, language)
     return NULL;
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
 {
@@ -179,6 +182,7 @@ AROS_LH0(BPTR, expunge, struct Language *, language, 3, language)
 
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0I(int, null, struct Language *, language, 4, language)
 {
@@ -308,8 +312,8 @@ static const STRPTR __svenska_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Igår", "Idag", "Imorgen", "Framtid"
+    "Igår", "Idag", "Imorgon", "Framtid"
 };
 
 /* This is the end of ROMtag marker. */
-const char end=0;
+const char end = 0;
