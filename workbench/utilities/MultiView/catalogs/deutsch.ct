@@ -83,3 +83,9 @@ Einstellungen
 MSG_MEN_SETTINGS_SAVEDEF
 D\0Als Vorgabe speichern
 ;
+MSG_ASL_OPEN_TITLE
+Eingabedatei auswählen
+;
+MSG_ASL_SAVE_TITLE
+Ausgabedatei auswählen
+;

@@ -80,3 +80,9 @@ Settings
 MSG_MEN_SETTINGS_SAVEDEF (//)
 D\0Save As Defaults
 ;
+MSG_ASL_OPEN_TITLE (//)
+Select File to Open
+;
+MSG_ASL_SAVE_TITLE (//)
+Select File to Save to
+;

@@ -150,7 +150,10 @@ static void GetArguments(void)
 	Cleanup(s);
     }
     
-    if (!args[ARG_FILE]) Cleanup(NULL);
+    filename = (STRPTR)args[ARG_FILE];
+    if (!filename) filename = GetFile();
+    
+    if (!filename) Cleanup(NULL);
 }
 
 /*********************************************************************************************/
@@ -290,6 +293,7 @@ static void MakeGadgets(void)
 	    GA_ID		, GAD_UPARROW								,
 	    GA_RightBorder	, TRUE									,
 	    GA_Immediate	, TRUE									,
+	    GA_RelVerify	, TRUE						,
 	    TAG_DONE);
 
     gad[GAD_DOWNARROW] = NewObject(NULL, BUTTONGCLASS,
@@ -300,6 +304,7 @@ static void MakeGadgets(void)
 	    GA_RightBorder	, TRUE						,
 	    GA_Previous		, gad[GAD_UPARROW]				,
 	    GA_Immediate	, TRUE						,
+	    GA_RelVerify	, TRUE						,
 	    TAG_DONE);
 
     gad[GAD_VERTSCROLL] = NewObject(NULL, PROPGCLASS,
@@ -327,6 +332,7 @@ static void MakeGadgets(void)
 	    GA_BottomBorder	, TRUE						,
 	    GA_Previous		, gad[GAD_VERTSCROLL]				,
 	    GA_Immediate	, TRUE						,
+	    GA_RelVerify	, TRUE						,
 	    TAG_DONE);
 
     gad[GAD_LEFTARROW] = NewObject(NULL, BUTTONGCLASS,
@@ -337,6 +343,7 @@ static void MakeGadgets(void)
 	    GA_BottomBorder	, TRUE									,
 	    GA_Previous		, gad[GAD_RIGHTARROW]							,
 	    GA_Immediate	, TRUE									,
+	    GA_RelVerify	, TRUE									,
 	    TAG_DONE);
 
     gad[GAD_HORIZSCROLL] = NewObject(NULL,PROPGCLASS,
@@ -389,27 +396,57 @@ static void KillGadgets(void)
 
 /*********************************************************************************************/
 
+static void AddDTOToWin(void)
+{
+    EraseRect(win->RPort, win->BorderLeft,
+    			  win->BorderTop,
+			  win->Width - 1 - win->BorderRight,
+			  win->Height - 1 - win->BorderBottom);
+			  
+    SetDTAttrs (dto, NULL, NULL, GA_Left	, win->BorderLeft + 2				,
+				 GA_Top		, win->BorderTop + 2				,
+				 GA_RelWidth	, - win->BorderLeft - win->BorderRight - 4	,
+				 GA_RelHeight	, - win->BorderTop - win->BorderBottom - 4	,
+				 TAG_DONE);
+
+    AddDTObject(win, NULL, dto, -1);
+    RefreshDTObjects(dto, win, NULL, NULL);
+
+}
+
+/*********************************************************************************************/
+
 static void OpenDTO(void)
 {
     old_dto = dto;
-    dto = NewDTObject((STRPTR)args[ARG_FILE], ICA_TARGET, (IPTR)model_obj,
-    					      GA_ID	, 1000		 ,
-    					      TAG_DONE);
+    dto = NewDTObject(filename, ICA_TARGET, (IPTR)model_obj,
+    				GA_ID	  , 1000	   ,
+    				TAG_DONE);
 
     if (!dto)
     {
         ULONG errnum = IoErr();
 	
 	if (errnum >= DTERROR_UNKNOWN_DATATYPE)
-	    sprintf(s, GetDTString(errnum), (STRPTR)args[ARG_FILE]);
+	    sprintf(s, GetDTString(errnum), filename);
 	else
 	    Fault(errnum, 0, s, 256);
 	
-	Cleanup(s);
+	if (!old_dto) Cleanup(s);
+	dto = old_dto;
+	return;
     }
     
     SetAttrs(vert_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
     SetAttrs(horiz_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
+    
+    if (old_dto)
+    {
+        if (win) RemoveDTObject(win, old_dto);
+	DisposeDTObject(old_dto);
+
+	if (win) AddDTOToWin();
+    }
 }
 
 /*********************************************************************************************/
@@ -455,20 +492,14 @@ static void MakeWindow(void)
 						  IDCMP_VANILLAKEY  |						  
 						  IDCMP_RAWKEY	    |
 						  IDCMP_IDCMPUPDATE |
-						  IDCMP_MENUPICK	,
+						  IDCMP_MENUPICK    |
+						  IDCMP_INTUITICKS	,
 			    TAG_DONE);
 
     if (!win) Cleanup(MSG(MSG_CANT_CREATE_WIN));			    
 
-    SetDTAttrs (dto, NULL, NULL, GA_Left	, win->BorderLeft + 2				,
-				 GA_Top		, win->BorderTop + 2				,
-				 GA_RelWidth	, - win->BorderLeft - win->BorderRight - 4	,
-				 GA_RelHeight	, - win->BorderTop - win->BorderBottom - 4	,
-				 TAG_DONE);
-
-    AddDTObject(win, NULL, dto, -1);
-    RefreshDTObjects(dto, win, NULL, NULL);
-    
+    AddDTOToWin();
+        
     SetMenuStrip(win, menus);
 }
 
@@ -487,11 +518,67 @@ static void KillWindow(void)
 
 /*********************************************************************************************/
 
+static void ScrollTo(UWORD dir, UWORD quali)
+{
+    IPTR val;
+    LONG oldtop, top, total, visible;
+    BOOL horiz;
+    BOOL inc;
+    
+    if ((dir == CURSORUP) || (dir == CURSORDOWN))
+    {
+        horiz = FALSE;
+        if (dir == CURSORUP) inc = FALSE; else inc = TRUE;
+	
+        GetDTAttrs(dto, DTA_TopVert, &val, TAG_DONE);top = (LONG)val;
+	GetDTAttrs(dto, DTA_TotalVert, &val, TAG_DONE);total = (LONG)val;
+	GetDTAttrs(dto, DTA_VisibleVert, &val, TAG_DONE);visible = (LONG)val;
+    } else {
+        horiz = TRUE;
+	if (dir == CURSORLEFT) inc = FALSE; else inc = TRUE;
+	
+        GetDTAttrs(dto, DTA_TopHoriz, &val, TAG_DONE);top = (LONG)val;
+	GetDTAttrs(dto, DTA_TotalHoriz, &val, TAG_DONE);total = (LONG)val;
+	GetDTAttrs(dto, DTA_VisibleHoriz, &val, TAG_DONE);visible = (LONG)val;
+
+    }
+    
+    oldtop = top;
+    if (quali & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL))
+    {
+        if (inc) top = total; else top = 0;
+    } else if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) {
+        if (inc) top += visible - 1; else top -= visible - 1;
+    } else {
+        if (inc) top++; else top--;
+    }
+    
+    if (top + visible > total) top = total - visible;
+    if (top < 0) top = 0;
+    
+    if (top != oldtop)
+    {
+        if (horiz)
+	{
+            SetGadgetAttrs((struct Gadget *)gad[GAD_HORIZSCROLL], win, NULL, PGA_Top, top,
+	    						      		     TAG_DONE);
+	} else {
+            SetGadgetAttrs((struct Gadget *)gad[GAD_VERTSCROLL], win, NULL, PGA_Top, top,
+	    						      		    TAG_DONE);
+	}
+    } /* if (top != oldtop) */
+    
+}
+
+/*********************************************************************************************/
+
 static void HandleAll(void)
 {
     struct IntuiMessage *msg;
     struct TagItem	*tstate, *tags, *tag;
     struct MenuItem	*item;
+    struct Gadget	*activearrowgad = NULL;
+    WORD		arrowticker, activearrowkind = 0;
     IPTR		tidata;
     UWORD		men;
     BOOL 		quitme = FALSE;
@@ -516,6 +603,70 @@ static void HandleAll(void)
 		    }
 		    break;
 		
+		case IDCMP_RAWKEY:
+		    switch(msg->Code)
+		    {
+		        case CURSORUP:
+			case CURSORDOWN:
+			case CURSORRIGHT:
+			case CURSORLEFT:
+			    ScrollTo(msg->Code, msg->Qualifier);
+			    break;
+			    
+		    } /* switch(msg->Code) */
+		    break;
+		
+		case IDCMP_GADGETDOWN:
+		    arrowticker = 3;
+		    activearrowgad = (struct Gadget *)msg->IAddress;
+		    switch(activearrowgad->GadgetID)
+		    {
+		        case GAD_UPARROW:
+			    activearrowkind = CURSORUP;
+			    ScrollTo(CURSORUP, 0);
+			    break;
+			    
+			case GAD_DOWNARROW:
+			    activearrowkind = CURSORDOWN;
+			    ScrollTo(CURSORDOWN, 0);
+			    break;
+			    
+			case GAD_LEFTARROW:
+			    activearrowkind = CURSORLEFT;
+			    ScrollTo(CURSORLEFT, 0);
+			    break;
+
+			case GAD_RIGHTARROW:
+			    activearrowkind = CURSORRIGHT;
+			    ScrollTo(CURSORRIGHT, 0);
+			    break;
+		    }
+		    break;
+		
+		case IDCMP_INTUITICKS:
+		    if (activearrowkind)
+		    {
+		        if (arrowticker)
+			{
+			    arrowticker--;
+			} else if (activearrowgad->Flags & GFLG_SELECTED) {
+			    ScrollTo(activearrowkind, 0);
+			}
+		    }
+		    break;
+		    
+		case IDCMP_GADGETUP:
+		    switch(((struct Gadget *)msg->IAddress)->GadgetID)
+		    {
+		        case GAD_UPARROW:
+			case GAD_DOWNARROW:
+			case GAD_LEFTARROW:
+			case GAD_RIGHTARROW:
+			    activearrowkind = 0;
+			    break;
+		    }
+		    break;
+		        
 		case IDCMP_MENUPICK:
 		    men = msg->Code;		
 		    while(men != MENUNULL)
@@ -526,6 +677,11 @@ static void HandleAll(void)
 			    {
 			        case MSG_MEN_PROJECT_QUIT:
 				    quitme = TRUE;
+				    break;
+				
+				case MSG_MEN_PROJECT_OPEN:
+				    filename = GetFile();
+				    if (filename) OpenDTO();
 				    break;
 				    
 			    } /* switch(GTMENUITEM_USERDATA(item)) */

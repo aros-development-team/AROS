@@ -75,6 +75,10 @@
 #include <libraries/gadtools.h>
 #endif
 
+#ifndef LIBRARIES_ASL_H
+#include <libraries/asl.h>
+#endif
+
 #ifndef UTILITY_UTILITY_H
 #include <utility/utility.h>
 #endif
@@ -145,6 +149,10 @@
 #include <proto/gadtools.h>
 #endif
 
+#ifndef PROTO_ASL_H
+#include <proto/asl.h>
+#endif
+
 /*********************************************************************************************/
 
 enum
@@ -190,6 +198,8 @@ void Cleanup(STRPTR msg);
 void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
+
+STRPTR GetFile(void);
 
 /*********************************************************************************************/
 

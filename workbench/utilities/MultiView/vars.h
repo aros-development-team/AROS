@@ -25,6 +25,7 @@ VAR struct Screen		*scr;
 VAR struct Window		*win;
 VAR struct DrawInfo		*dri;
 VAR struct Menu			*menus;
+VAR STRPTR			filename;
 VAR APTR			vi;
 VAR struct Catalog		*catalog;
 VAR Object			*dto;

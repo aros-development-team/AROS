@@ -10,6 +10,8 @@
 
 #include "global.h"
 
+#include <string.h>
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -90,6 +92,42 @@ void KillMenus(void)
     if (menus) FreeMenus(menus);
     
     menus = NULL;
+}
+
+/*********************************************************************************************/
+
+STRPTR GetFile(void)
+{
+    static UBYTE	 filebuffer[300];
+    struct FileRequester *req;
+    STRPTR 		 retval = NULL;
+    
+    AslBase = OpenLibrary("asl.library", 39);
+    if (AslBase)
+    {
+        req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
+						   ASLFR_DoPatterns, TRUE			  ,
+						   TAG_DONE);
+	if (req)
+	{
+	    if (AslRequest(req, NULL))
+	    {
+	        strcpy(filebuffer, req->fr_Drawer);
+		AddPart(filebuffer, req->fr_File, 299);
+		
+		retval = filebuffer;
+		
+	    } /* if (AslRequest(req, NULL) */
+	    
+	    FreeAslRequest(req);
+	    
+	} /* if (req) */
+	
+	CloseLibrary(AslBase);
+	
+    } /* if (AslBase) */
+    
+    return retval;
 }
 
 /*********************************************************************************************/
