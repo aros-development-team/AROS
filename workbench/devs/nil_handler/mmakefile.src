@@ -1,0 +1,22 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+MODNAME := nil
+MODTYPE := handler
+
+INIT_FILE := nil_handler
+FILES :=
+FUNCS :=
+
+USE_ROMLIB := yes
+USE_AMIGALIB := yes
+USE_LIBDEFS := no
+USER_CFLAGS := -DDEBUG=0
+
+#MM- workbench-fs-complete : workbench-fs-nil
+#MM- workbench-fs-nil : setup includes linklibs workbench-fs-nil-module
+%make_module_setup mmake=workbench-fs-nil
+%make_module mmake=workbench-fs-nil
+
+%common
+%include_deps
