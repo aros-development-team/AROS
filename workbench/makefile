@@ -3,7 +3,7 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=c demos
+SUBDIRS=c demos devs libs
 
 all: $(SDIR)/Startup-Sequence
 	@for dir in $(SUBDIRS) ; do \
