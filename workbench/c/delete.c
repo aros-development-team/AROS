@@ -3,32 +3,54 @@
     $Id$
 
     Desc: Delete CLI Command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
 
     NAME
-	Delete
+
+    Delete
 
     SYNOPSIS
-	Delete <files> [ALL] [FORCE] [QUIET]
-
-	FILE/M/A,ALL/S,QUIET/S,FORCE/S
+    
+    Delete { (name | pattern) } [ALL] [QUIET] [FORCE]
 
     LOCATION
+
 	Workbench/c
 
     FUNCTION
-	Deletes files and directories
+
+    Deletes files and directories. You may delete several files and directories
+    by listing them separately or by using wildcards. To abort a multiple
+    delete, press CTRL-C. Delete will notify the user of which files it
+    weren't able to delete.
+        Delete cannot delete directories which are not empty unless the
+    ALL option is used. To suppresss file and directory names from being
+    printed while deleted use the QUIET option. If the 'd' protection bit
+    is cleared for a file or directory, it may not be deleted unless the
+    FORCE option is used.
 
     INPUTS
+
+    FILE/M/A  --  files or directories to delete (may contain patterns)
+    ALL/S     --  recursively delete dirctories
+    QUIET/S   --  don't print which files/directories were deleted
+    FORCE/S   --  delete files/directories even if they are protected from
+                  deletion
 
     RESULT
 
     NOTES
 
     EXAMPLE
+
+    Delete RAM:T/#? ALL FORCE
+
+    Deletes all directories and files recursively in the directory RAM:T
+    even if they are protected from deletion.
+
 
     BUGS
 
@@ -37,6 +59,8 @@
     INTERNALS
 
     HISTORY
+
+    25.11.2000  SDuvan  --  (Re)Implemented (the old version didn't no much)
 
 ******************************************************************************/
 
@@ -47,103 +71,168 @@
 #include <dos/dosasl.h>
 #include <exec/memory.h>
 
+#include <stdio.h>
+
+
 #define ARG_TEMPLATE    "FILE/M/A,ALL/S,QUIET/S,FORCE/S"
-#define ARG_FILE	0
-#define ARG_ALL		1
-#define ARG_QUIET	2
-#define ARG_FORCE	3
-#define TOTAL_ARGS      4
 
-/* To define whether a command line switch was set or not.
- */
-#define NOT_SET         0
+enum 
+{
+    ARG_FILE = 0,
+    ARG_ALL,
+    ARG_QUIET,
+    ARG_FORCE,
+    NOOFARGS
+};
 
-/* Maximum file path length.
- */
+
+/* Maximum file path length */
 #define MAX_PATH_LEN    512
 
 static const char version[] = "$VER: delete 41.2 (6.1.2000)\n";
-static /*const*/ char cmdname[] = "Delete";
+static char cmdname[] = "Delete";
 
 
-int Do_Delete(struct AnchorPath *a, STRPTR *files, BOOL all, BOOL quiet, BOOL force);
-
+int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
+	     BOOL force);
 
 int main(int argc, char *argv[])
 {
-	struct RDArgs		* rda;
-	struct AnchorPath	* apath;
-	LONG			args[TOTAL_ARGS] = {};
-	int			Return_Value;
+    struct RDArgs      *rda;
+    struct AnchorPath  *ap;
+    IPTR                args[NOOFARGS] = { NULL,
+					   (IPTR)FALSE,
+					   (IPTR)FALSE,
+					   (IPTR)FALSE };
+    int	 retval = RETURN_OK;
 
-	Return_Value = RETURN_OK;
+    ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
+		  MEMF_ANY | MEMF_CLEAR);
 
-	apath = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_ANY | MEMF_CLEAR);
-	if (apath)
+    if (ap != NULL)
+    {
+	ap->ap_Strlen = MAX_PATH_LEN;
+	
+	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+
+	if (rda != NULL)
 	{
-		/* This is ap_Strlen under AmigaOS. */
-		apath->ap_Strlen = MAX_PATH_LEN;
+	    /* Convert arguments into (less complex) variables */
+	    STRPTR *files = (STRPTR *)args[ARG_FILE];
+	    BOOL    all = (BOOL)args[ARG_ALL];
+	    BOOL    quiet = (BOOL)args[ARG_QUIET];
+	    BOOL    force = (BOOL)args[ARG_FORCE];
 
-		if ((rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL)))
+	    retval = doDelete(ap, files, all, quiet, force);
+	    
+	    FreeArgs(rda);
+	}
+	else
+	{
+	    PrintFault(IoErr(), cmdname);
+	    retval = RETURN_FAIL;
+	}	
+    }
+    else
+    {
+	retval = RETURN_FAIL;
+    }
+    
+    FreeVec(ap);
+    
+    return retval;
+} /* main */
+
+
+#define isDirectory(fib) ((fib)->fib_DirEntryType >= 0)
+
+#define isDeletable(fib) (!((fib)->fib_Protection & FIBF_DELETE))
+
+int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
+	     BOOL force)
+{
+    LONG  match;
+    int   i;
+
+    for (i = 0; files[i] != NULL; i++)
+    {
+	for (match = MatchFirst(files[i], ap); match == 0;
+	     match = MatchNext(ap))
+	{
+	    /* If this is a directory, we enter it regardless if the ALL
+	       switch is set. */
+	    if (isDirectory(&ap->ap_Info))
+	    {
+		/* This is a directory. It's important to check if we just left
+		   the directory or is about to enter it. This is because we
+		   cannot delete a directory until we have deleted all the
+		   files in it. */
+		if (ap->ap_Flags & APF_DIDDIR)
 		{
-			Return_Value = Do_Delete(apath,
-				(STRPTR *)args[ARG_FILE],
-				(BOOL)args[ARG_ALL],
-				(BOOL)args[ARG_QUIET],
-				(BOOL)args[ARG_FORCE]);
+		    /* If we get here, we are in ALL mode and have deleted
+		       all the files inside the dir (if none were protected
+		       and such). */
 
-			FreeArgs(rda);
+		    ap->ap_Flags &= ~APF_DIDDIR;
+
+		    /* Now go on and delete the directory */
 		}
 		else
 		{
-			PrintFault(IoErr(), cmdname);
-			Return_Value = RETURN_FAIL;
+		    /* We stumbled upon a directory */
+
+		    if(all)
+		    {
+			ap->ap_Flags |= APF_DODIR;
+
+			/* We don't want to delete a directory before deleting
+			   possible files inside it. Thus, match next file */
+			continue;
+		    }
+
+		    /* If all is not set, DeleteFile() will return an error
+		       in case the directory was not empty. */
 		}
+	    }
 
-	}
-	else
-		Return_Value = RETURN_FAIL;
-
-	FreeVec(apath);
-
-	return Return_Value;
-
-} /* main */
-
-/* Defines whether MathFirst(), etc has matched a file.
- */
-#define MATCHED_FILE 0
-
-int Do_Delete(struct AnchorPath *a, STRPTR *files, BOOL all, BOOL quiet, BOOL force)
-{
-	LONG Result;
-	int  Return_Value;
-
-	Return_Value = RETURN_OK;
-
-	while (*files != NULL)
-	{
-		Result = MatchFirst(*files, a);
-
-		do
+	    /* Check permissions */
+	    if (!force)
+	    {
+		if (!isDeletable(&ap->ap_Info))
 		{
-			if (Result == MATCHED_FILE)
-			{
-				if (!DeleteFile(a->ap_Buf))
-					Return_Value = RETURN_FAIL;
-			}
-			else
-			{
-				PrintFault(IoErr(), cmdname);
-				Return_Value = RETURN_FAIL;
-			}
-		} while (((Result = MatchNext(a)) == MATCHED_FILE) && Return_Value == RETURN_OK);
+		    printf("%s  Not Deleted", ap->ap_Buf);
+		    PrintFault(ERROR_DELETE_PROTECTED, "");
 
-		MatchEnd(a);
+		    if(!all)
+		    {
+			MatchEnd(ap);
 
-		files++;
+			return RETURN_FAIL;
+		    }
+		}
+	    }
+
+	    /* Try to delete the file or directory */
+	    if (!DeleteFile(ap->ap_Buf))
+	    {
+		printf("%s  Not Deleted", ap->ap_Buf);
+		PrintFault(IoErr(), "");
+		
+		/* If ALL is given as a parameter, we continue */
+		if(!all)
+		{
+		    MatchEnd(ap);
+		    
+		    return RETURN_FAIL;
+		}
+	    }
+	    
+	    if (!quiet)
+	    {
+		printf("%s  Deleted\n", ap->ap_Buf);
+	    }
 	}
-
-	return Return_Value;
-
-} /* Do_Delete */
+    }
+    
+    return RETURN_OK;
+}
