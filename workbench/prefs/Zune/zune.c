@@ -49,6 +49,8 @@ int open_muimaster(void)
     MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
+    MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
+    MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
     __zune_prefs_init(&__zprefs);
     InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     return 1;
