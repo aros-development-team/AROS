@@ -6,3 +6,5 @@ CFG_PACKAGES=( sources )
 # Possible are: hosted, i386-pc or none.
 CFG_CONTRIB_TYPE=none       
 
+# Which C compiler to use.
+CFG_CC=gcc
