@@ -181,12 +181,14 @@ AROS_LH3(void, open,
 {
     AROS_LIBFUNC_INIT
 
-    if (tr->tr_node.io_Message.mn_Length < sizeof(struct timerequest))
-    {
-        D(bug("timer.device/open: IORequest structure passed to OpenDevice is too small!\n"));
-        tr->tr_node.io_Error = IOERR_OPENFAIL;
-	return;
-    }
+    /*
+        Normally, we should check the length of the message and other
+        such things, however the RKM documents an example where the
+        length of the timerrequest isn't set, so we must not check
+        this.
+
+        This fixes bug SF# 741580
+    */
 
     TimerBase->tb_Device.dd_Library.lib_OpenCnt++;
     TimerBase->tb_Device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
@@ -240,13 +242,13 @@ AROS_LH0(BPTR, expunge, struct TimerBase *, TimerBase, 3, Timer)
 
     BPTR ret;
 
-    RemIntServer(INTB_VERTB, &TimerBase->tb_VBlankInt);
-
     if (TimerBase->tb_Device.dd_Library.lib_OpenCnt)
     {
 	TimerBase->tb_Device.dd_Library.lib_Flags |= LIBF_DELEXP;
+        return 0;
     }
 
+    RemIntServer(INTB_VERTB, &TimerBase->tb_VBlankInt);
     Remove(&TimerBase->tb_Device.dd_Library.lib_Node);
 
     ret = TimerBase->tb_SegList;
