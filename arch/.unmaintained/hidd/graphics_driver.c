@@ -399,7 +399,7 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	}	
 	else if (drmd & COMPLEMENT)
 	{
-	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_Invert;
+	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_XOR;
 	}
 	else if ((drmd & (~INVERSVID)) == JAM1)
 	{
@@ -486,7 +486,7 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     }	
     else if (mode & COMPLEMENT)
     {
-	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_Invert;
+	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_XOR;
     }
     else if ((mode & (~INVERSVID)) == JAM1)
     {
@@ -1667,7 +1667,7 @@ void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
     };
     
     EnterFunc(bug("blit_glyph_fast(%d, %d, %d, %d, %d)\n"
-    	, xsrc, destx, desty, width, heiht));
+    	, xsrc, destx, desty, width, height));
 	
 	
     if (!CorrectDriverData(rp, GfxBase))
@@ -2849,22 +2849,10 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    {
 		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
 		D(bug("bitmap object: %p\n", bm_obj));
-		
-		
 
 		if (bm_obj)
 		{
-		   /* 	It is possible that the HIDD had to allocate
-		   	a larger depth than that supplied, so
-		   	we should get back the correct depth.
-		   	This is because layers.library might
-		   	want to allocate offscreen bimaps to
-		   	store obscured areas, and then those
-		   	offscreen bitmaps should be of the same depth as
-		   	the onscreen ones.
-		   */
-		    GetAttr(bm_obj, aHidd_BitMap_Depth, &depth);
-	    	    
+	    
 		    /* Store it in plane array */
 		    BM_OBJ(nbm) = bm_obj;
 		    nbm->Rows   = sizey;
@@ -3094,6 +3082,7 @@ LOCK_PIXBUF
 	
 	/* Put it to the HIDD */
 	D(bug("Putting box\n"));
+
 
 	HIDD_BM_PutImage(hidd_bm
 		, pixel_buf
@@ -4189,7 +4178,7 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	, ULONG *buf)
 {
 
-    /* x_src, y_src is the coordinates int the layer. */
+    /* x_src and y_src are the coordinates in the layer. */
     LONG y;
     struct RastPort *rp = pi->rp;
     ULONG apen = GetAPen(rp);
@@ -4200,10 +4189,9 @@ static VOID pattern_to_buf(struct pattern_info *pi
     
     if (pi->mask)
     {
-    	pattern_x = x_src - pi->orig_xmin + pi->mask_xmin;
-	pattern_y = y_src - pi->orig_ymin + pi->mask_ymin;
+    	pattern_x = /*x_src - pi->orig_xmin +*/ pi->mask_xmin;
+	pattern_y = /*y_src - pi->orig_ymin +*/ pi->mask_ymin;
     }
-    
 
     EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %d, %d, %p)\n"
     			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize, buf ));
@@ -4211,7 +4199,6 @@ static VOID pattern_to_buf(struct pattern_info *pi
 
     HIDD_BM_GetImage(pi->destbm, buf, x_dest, y_dest, xsize, ysize);
 
-    
     for (y = 0; y < ysize; y ++)
     {
         LONG x;
@@ -4294,8 +4281,6 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     	, xMin, yMin, xMax, yMax, byteCnt));
 	
 
-kprintf("Entering %s\n",__FUNCTION__);
-	
     if (!CorrectDriverData(rp, GfxBase))
     	ReturnVoid("driver_BltPattern");
 
@@ -4303,9 +4288,6 @@ kprintf("Entering %s\n",__FUNCTION__);
     pi.rp	= rp;
     pi.gfxbase	= GfxBase;
     pi.mask_bpr = byteCnt;
-    pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
-    pi.destbm	= BM_OBJ(bm);
-    
 	
     dd = GetDriverData(rp);
     
@@ -4328,6 +4310,9 @@ LOCK_HIDD(bm);
 
 	pi.orig_xmin = 0;
 	pi.orig_ymin = 0;
+
+        pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+        pi.destbm	= BM_OBJ(bm);
 	
 	amiga2hidd_fast( (APTR) &pi
 		, 0, 0
@@ -4373,7 +4358,9 @@ LOCK_HIDD(bm);
 		
 	        if (NULL == CR->lobs)
 		{
-		
+		    /*
+		    ** This is a visible cliprect.
+		    */
 		    
 		    pi.mask_xmin = intersect.MinX - toblit.MinX;
 		    pi.mask_ymin = intersect.MinY - toblit.MinY;
@@ -4381,15 +4368,24 @@ LOCK_HIDD(bm);
 		    pi.orig_xmin = xMin;
 		    pi.orig_ymin = yMin;
 
+                    /*
+                    ** These two must always be set in this loop as it might
+                    ** get changed for hidden cliprects.
+                    */
+                    pi.dest_depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+                    pi.destbm	  = BM_OBJ(bm);
+
+/*
 kprintf("VISIBLE!\n");
 kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
 kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
                                      intersect.MaxX, intersect.MaxY);		
 
-kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);
-
+kprintf("source coords: %d/%d\n",intersect.MinX-xrel, intersect.MinY-yrel);
+kprintf("destin coords: %d/%d\n\n",intersect.MinX,intersect.MinY);
+*/
 		    amiga2hidd_fast( (APTR) &pi
-		        , intersect.MinX - xrel
+		        , intersect.MinX - xrel 
 		        , intersect.MinY - yrel
 			, BM_OBJ(bm)
 			, intersect.MinX
@@ -4401,27 +4397,48 @@ kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);
 		}
 		else
 		{
+		    /*
+		    ** A hidden cliprect.
+		    */
+
 		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
-		    else if (L->Flags & LAYERSUPER)
-		    	kprintf("driver_BltPattern(): Superbitmap not handled yet\n");
+
+		    pi.mask_xmin = intersect.MinX - toblit.MinX;
+		    pi.mask_ymin = intersect.MinY - toblit.MinY;
+		    
+		    pi.orig_xmin = xMin;
+		    pi.orig_ymin = yMin;
+	
+                    /*
+                    ** These two must always be set in this loop as it might
+                    ** get changed for hidden cliprects.
+                    */
+	            pi.destbm = BM_OBJ(CR->BitMap);
+                    pi.dest_depth = GetBitMapAttr(CR->BitMap, BMA_DEPTH);
+		    
+		    if (L->Flags & LAYERSUPER)
+		      kprintf("driver_BltPattern(): Superbitmap not handled yet\n");
 		    else
 		    {
 
 LOCK_HIDD(CR->BitMap);		
 
 			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
-
+/*
 kprintf("INVISIBLE! CR->BitMap = %x\n",CR->BitMap);
 kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
 kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
                                      intersect.MaxX, intersect.MaxY);
+kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);
+kprintf("destin coords: %d/%d\n\n",intersect.MinX-CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),intersect.MinY-CR->bounds.MinY);
+*/
 
 		    	amiga2hidd_fast( (APTR) &pi
 				, intersect.MinX - xrel
 				, intersect.MinY - yrel
 				, BM_OBJ(CR->BitMap)
-				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinX - CR->bounds.MinX  + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
@@ -4439,7 +4456,8 @@ ULOCK_HIDD(CR->BitMap);
 				, intersect.MaxY - intersect.MinY + 1
 				, GfxBase
 		        );
-*/			
+*/
+			
 		    }
 
 		}
