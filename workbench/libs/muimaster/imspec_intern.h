@@ -83,6 +83,7 @@ struct MUI_ImageSpec_intern /* _intern */
 	} cfg;
 	struct {
             UBYTE orientation;
+            WORD x1, y1, x2, y2;
             ULONG start_rgb[3];
             ULONG end_rgb[3];
 	} gradient;
