@@ -207,8 +207,6 @@ struct DiskObject *copyDiskObject(struct DiskObject *diskObj,
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

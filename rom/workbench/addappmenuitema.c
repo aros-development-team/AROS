@@ -81,8 +81,6 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT

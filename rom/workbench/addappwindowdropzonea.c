@@ -121,8 +121,6 @@
     message should be sent! Question is if there is a backwards compatible
     solution.
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
