@@ -385,19 +385,16 @@ struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li)
  * Allocate memory for a ClipRect.
  */
 
-struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
+struct ClipRect * _AllocClipRect(struct Layer * L)
 {
   struct ClipRect * CR;
   
-  
-  ObtainSemaphore(&LI->Lock);
-  CR =  LI->FreeClipRects;
+  CR =  L->SuperSaveClipRects;
 
   if (NULL != CR)
   {
    /* I want to access the list of free ClipRects alone */
-    LI->FreeClipRects = CR->Next;
-    ReleaseSemaphore(&LI->Lock);
+    L->SuperSaveClipRects = CR->Next;
 
     CR->Flags  = 0;
     CR->Next   = NULL; 
@@ -406,7 +403,6 @@ struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
     return CR;
   }
   
-  ReleaseSemaphore(&LI->Lock);
   CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
   return CR;
 }
@@ -416,17 +412,11 @@ struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
  */
 
 void _FreeClipRect(struct ClipRect   * CR,
-                   struct Layer_Info * LI)
+                   struct Layer      * L)
 {
-  /* I want to access the list of ClipRects alone */
-  ObtainSemaphore(&LI->Lock);
-  
-  /* Add the ClipRect to the list */
-  CR -> Next = LI -> FreeClipRects;
-  LI -> FreeClipRects = CR; 
-
-  /* I am done, anybody else may get a ClipRect now */
-  ReleaseSemaphore(&LI->Lock);
+  /* Add the ClipRect to the front of the list */
+  CR -> Next = L -> SuperSaveClipRects;
+  L -> SuperSaveClipRects = CR; 
 }
 
 /*

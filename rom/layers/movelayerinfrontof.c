@@ -587,7 +587,7 @@ if (NULL == CR_tmp)
 		   /* a simple bitmap. It's already take care of above... */
 		 }
 
-                 _FreeClipRect(CR_del, LI);
+                 _FreeClipRect(CR_del, L_tmp);
                  /* 
                     Do not procede to the Next ClipRect as we
                     changed the next entry by deleting CR_del from the list!!! 

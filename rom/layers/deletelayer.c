@@ -101,7 +101,7 @@
   */
   
   struct Layer_Info * LI = LD->LayerInfo;
-  struct ClipRect * CR;
+  struct ClipRect * CR, * _CR;
   struct Region * R;
   struct RegionRectangle * RR;
 
@@ -189,7 +189,11 @@
 	);           
       }
     }
-    _FreeClipRect(CR, LI);      
+    /* 
+       Is there still another layer connected to LI that might need 
+       preallocated cliprects??
+    */
+    FreeMem(CR, sizeof(struct ClipRect));
     CR = _CR;
   }
   /* 
@@ -290,19 +294,6 @@
 	                     &CR->bounds,
 	                     CR->bounds.MinX,
 	                     CR->bounds.MinY);
-/*
-	      BltBitMap(L_behind->rp->BitMap,
-	                0,
-	                0,
-	                L_behind->rp->BitMap,
-	                CR->bounds.MinX,
-	                CR->bounds.MinY,
-	                CR->bounds.MaxX - CR->bounds.MinX + 1,
-	                CR->bounds.MaxY - CR->bounds.MinY + 1,
-	                0x000,
-	                0xff,
-	                NULL);
-*/
 	    }
             /* 
                clear the lobs entry and BitMap entry 
@@ -360,35 +351,41 @@
                    &RR->bounds,
                    RR->bounds.MinX,
                    RR->bounds.MinY);
-/*
-    BltBitMap(
-      LD->rp->BitMap, // don't need a source but mustn't give NULL!!!
-      0,
-      0,
-      LD->rp->BitMap,
-      RR->bounds.MinX + R->bounds.MinX,
-      RR->bounds.MinY + R->bounds.MinY,
-      RR->bounds.MaxX - RR->bounds.MinX + 1,
-      RR->bounds.MaxY - RR->bounds.MinY + 1,
-      0x000, // clear destination 
-      0xff,
-      NULL
-    );      
-*/
+
     RR = RR->Next;
   } /* while */
   
   /*
      Free 
      - rastport
-     - damagelist 
+     - damagelist
+     - preallocated cliprects 
      - layer structure itself
+     
    */
 
   FreeMem(LD->rp, sizeof(struct RastPort));
   DisposeRegion(LD->DamageList);
-  FreeMem(LD, sizeof(struct Layer));
+
+  /* 
+     Does the Layer structure have any preallocated cliprects? If yes then free
+     all allocated ClipRect structures here.
+  */
   
+  if (NULL != (CR = LD->SuperSaveClipRects))
+  {
+
+    /* Free the list of allocated ClipRects */
+    while (NULL != CR)
+    {
+      _CR = CR->Next;
+      FreeMem(CR, sizeof(struct ClipRect));
+      CR = _CR;
+    }
+  }
+
+  FreeMem(LD, sizeof(struct Layer));
+
   /* ok, I'm done */
   UnlockLayers(LI);
   return TRUE;

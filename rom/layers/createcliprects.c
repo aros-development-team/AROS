@@ -51,7 +51,6 @@ void CreateClipRectsSelf(struct Layer * L, BOOL notdisplayed)
   if (li->top_layer == L)
     return;
 
-//  SetLayerPriorities(li);
   while (NULL != L_other)
   {
     /* The Layer L is split by all other Layers */
@@ -71,7 +70,6 @@ void CreateClipRectsTop(struct Layer_Info * li, BOOL notdisplayed)
   struct Layer * L = li->top_layer;
   struct Layer * L_other = L->back;
 
-//  SetLayerPriorities(li);
   while (NULL != L_other)
   {
     /* The Layer L is split by all other Layers */
@@ -91,7 +89,6 @@ void CreateClipRectsOther(struct Layer * L)
   struct Layer_Info * li = L->LayerInfo;
   struct Layer * L_other = li -> top_layer;
 
-//  SetLayerPriorities(li);
   while (NULL != L_other)
   {
     /* The Layer L is split by all other Layers */
@@ -165,9 +162,6 @@ void LayerSplitsLayer(struct Layer * L_active,
                  	(void *)&Case_14,
                  	(void *)&Case_15};
 
-/*  
-kprintf("LSL: Splitting Layer at %x(%d) with Layer at %x(%d)\n",L_passive,L_passive->priority,L_active,L_active->priority);
-*/
   /* first check whether L_active overlaps L_passive at all */
 
   if (x0 > L_passive -> bounds.MaxX ||
@@ -254,14 +248,12 @@ kprintf("LSL: Splitting Layer at %x(%d) with Layer at %x(%d)\n",L_passive,L_pass
         else
           CR->Flags = 0; /* I had a problem when I din't do this, so I do this now*/
 
-//kprintf("Calling case %d\n",OverlapIndex);
         CR = (struct ClipRect *)
             FunctionArray[OverlapIndex](&L_active->bounds, 
                                         CR, 
                                         bm, 
                                         L_active, 
                                         L_passive);
-//kprintf("returned Calling case %d\n",OverlapIndex);
 
         CR->Flags &= ~CR_NEEDS_NO_LAYERBLIT_DAMAGE;
         /* 
@@ -305,8 +297,6 @@ void ClipRectSplitsLayer(struct ClipRect * CR_active, struct Layer * L_passive)
                  	(void *)&Case_13,
                  	(void *)&Case_14,
                  	(void *)&Case_15};
-
-//kprintf("In function ClipRectsplitLayer!\n");
 
   /* first check whether CR_active overlaps L_passive at all */
   if (x0 > L_passive -> bounds.MaxX ||

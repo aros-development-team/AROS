@@ -103,7 +103,7 @@
     return NULL;
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = _AllocClipRect(li);
+  CR = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
   RP = (struct RastPort *) AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
 
   /* is everything there that I need?  */
@@ -238,22 +238,6 @@
                          &CR->bounds,
                          0,
                          0);
-/*
-          BltBitMap(
-            bm, // Source Bitmap - we don't need one for clearing, but this
-                // one will also do :-) 
-            0,
-            0,
-            bm, // Destination Bitmap
-            CR->bounds.MinX,
-            CR->bounds.MinY,
-            CR->bounds.MaxX-CR->bounds.MinX+1,
-            CR->bounds.MaxY-CR->bounds.MinY+1,
-            0x000, // supposed to clear the destination
-            0xff,
-            NULL
-          );
-*/
 	}
         else
 	{
@@ -282,7 +266,7 @@
   {
     if (NULL != L ) FreeMem(L , sizeof(struct Layer));
     if (NULL != RP) FreeMem(RP, sizeof(struct RastPort));
-    if (NULL != CR) _FreeClipRect(CR, li);
+    if (NULL != CR) FreeMem(CR, sizeof(struct ClipRect));
     L = NULL;
   }
 

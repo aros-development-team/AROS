@@ -90,7 +90,7 @@
    */
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)  , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = _AllocClipRect(LI);
+  CR = _AllocClipRect(l);
   RP = (struct RastPort *)AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
 
   if (NULL != l_tmp && NULL != CR && NULL != RP)
@@ -202,7 +202,7 @@
   } 
   else /* not enough memory */
   {
-    if (NULL != CR   ) _FreeClipRect(CR, l_tmp->LayerInfo);
+    if (NULL != CR   ) _FreeClipRect(CR, l);
     if (NULL != RP   ) FreeMem(RP, sizeof(struct RastPort));
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
   }

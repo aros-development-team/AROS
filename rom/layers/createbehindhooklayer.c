@@ -100,7 +100,7 @@
 
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = _AllocClipRect(li);
+  CR = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
   RP = (struct RastPort *) AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
 
   /* is everything there that I need?  */
@@ -328,7 +328,7 @@
   {
     if (NULL != L ) FreeMem(L , sizeof(struct Layer));
     if (NULL != RP) FreeMem(RP, sizeof(struct RastPort));
-    if (NULL != CR) _FreeClipRect(CR, li);
+    if (NULL != CR) FreeMem(CR, sizeof(struct ClipRect));
     L = NULL;
   }
 

@@ -112,7 +112,7 @@
   LI->top_layer = L;
       
   /* get a new cliprect structure */
-  L->ClipRect = _AllocClipRect(LI);
+  L->ClipRect = _AllocClipRect(L);
 
   /* and initilize it with the layer's bounds */
   L->ClipRect->bounds = L->bounds;
@@ -185,7 +185,7 @@
         L->Flags |= LAYERREFRESH;
       }
     }
-    _FreeClipRect(CR_old, LI);
+    _FreeClipRect(CR_old, L);
     CR_old = _CR_old;
   } /* while () */    
 

@@ -93,8 +93,8 @@ BOOL AddLayersResource(struct Layer_Info * li,
 
 struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li);
 
-struct ClipRect * _AllocClipRect(struct Layer_Info * li);
-void _FreeClipRect(struct ClipRect * CR, struct Layer_Info * li);
+struct ClipRect * _AllocClipRect(struct Layer * L);
+void _FreeClipRect(struct ClipRect * CR, struct Layer * L);
 
 
 void FreeCRBitMap(struct ClipRect *   cr);

@@ -62,7 +62,6 @@
 
   /* Convert the list of regionrectangles to a cliprect list */
   struct Region * R = l -> DamageList;
-  struct Layer_Info * LI = l->LayerInfo;
   struct ClipRect * CR;
   struct ClipRect * FirstCR = NULL;
   struct RegionRectangle * RR;
@@ -73,7 +72,7 @@
     /* process all region rectangles */
     while (NULL != RR)
     {
-      CR = _AllocClipRect(l->LayerInfo);
+      CR = _AllocClipRect(l);
       /* was allocation successful? */
       if (NULL != CR)
       {
@@ -93,7 +92,7 @@
         while (NULL != CR)
 	{
           FirstCR = CR->Next;
-          _FreeClipRect(CR, LI);
+          _FreeClipRect(CR, l);
           CR = FirstCR;
 	}
         return FALSE;

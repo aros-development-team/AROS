@@ -56,13 +56,6 @@
 
     _FreeExtLayerInfo(li);
 
-    /* Free the list of allocated ClipRects */
-    while (FALSE == IsListEmpty(li->FreeClipRects))
-    {
-      FreeMem((void *)RemHead((struct List *)&li->FreeClipRects),
-              sizeof(struct ClipRect));
-    }
-
     FreeMem(li, sizeof(struct Layer_Info));
 
     AROS_LIBFUNC_EXIT

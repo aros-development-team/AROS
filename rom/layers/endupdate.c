@@ -76,7 +76,7 @@
   while (NULL != CR)
   {
     FirstCR = CR->Next;
-    _FreeClipRect(CR, l->LayerInfo);
+    _FreeClipRect(CR, l);
     CR = FirstCR;
   }
   
