@@ -2,12 +2,12 @@
 #define PARTITION_INTERN_H
 
 /*
-   (C) 2001 AROS - The Amiga Research OS
-   $Id$
+    Copyright © 2001-2004, The AROS Development Team. All rights reserved.
+    $Id$
 
-   Desc: Internal definitions for partition.library
-   Lang: english
+    Internal definitions for partition.library.
 */
+
 #ifdef __AMIGAOS__
 #define SysBase (((struct LibHeader *)PartitionBase)->lh_SysBase)
 #else
