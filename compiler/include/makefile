@@ -17,10 +17,11 @@ $(INCDIR)/%.h: %.h
 	$(CP) $< $@
 
 setup:
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+#	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
 	@if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros ; else true ; fi
 	@if [ ! -d $(INCDIR)/clib ]; then $(MKDIR) $(INCDIR)/clib ; else true ; fi
+	@if [ ! -d $(INCDIR)/defines ]; then $(MKDIR) $(INCDIR)/defines ; else true ; fi
 	@if [ ! -d $(INCDIR)/dos ]; then $(MKDIR) $(INCDIR)/dos ; else true ; fi
 	@if [ ! -d $(INCDIR)/exec ]; then $(MKDIR) $(INCDIR)/exec ; else true ; fi
 	@if [ ! -d $(INCDIR)/graphics ]; then $(MKDIR) $(INCDIR)/graphics ; else true ; fi
