@@ -86,7 +86,9 @@ int vkprintf (const UBYTE * fmt, va_list args)
     char       * fill;
     ULONG	 val;
     LONG	 lval;
-
+#ifdef CREATE_ROM
+    struct ExecBase * SysBase = *(struct ExecBase **)0x04;
+#endif
     if (!fmt)
     {
 	RawPutChars ("(null)", 6);

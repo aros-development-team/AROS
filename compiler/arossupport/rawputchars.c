@@ -49,6 +49,9 @@
 
 ******************************************************************************/
 {
+#ifdef CREATE_ROM
+    struct ExecBase * SysBase = *(struct ExecBase **)0x04;
+#endif
     while (*str && len --)
 	RawPutChar (*str ++);
 } /* RawPutChars */
