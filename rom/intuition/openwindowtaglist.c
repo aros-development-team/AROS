@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.14  2000/08/12 23:55:00  bernie
+    Add semicolons behind ASSERT#?() macro invokations
+
     Revision 1.13  2000/08/03 20:36:32  stegerg
     screen depth gadget should be usable now + src cleanup + small fixes
 
@@ -111,14 +114,16 @@
 
     if (newWindow)
     {
-	ASSERT_VALID_PTR(newWindow)
+	ASSERT_VALID_PTR(newWindow);
 	CopyMem (newWindow, &nw, (newWindow->Flags & WFLG_NW_EXTENDED) ? sizeof (struct ExtNewWindow) :
 									 sizeof (struct NewWindow));
     }
 
     if (tagList)
     {
-	/* ASSERT_VALID_PTR(tagList); */
+	/* valid taglists allocated in code segment lead to spurious assertion failures
+	 * ASSERT_VALID_PTR(tagList);
+	 */
     	nw.Extension = tagList;
     	nw.Flags |= WFLG_NW_EXTENDED;
     }

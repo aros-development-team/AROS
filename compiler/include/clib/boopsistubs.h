@@ -60,7 +60,7 @@
 		(REG(a0, Class *), REG(a2, Object *), REG(a1, APTR));
 
 	#define _CALL_DISPATCHER(entry, cl, o, msg) \
-		((HookPtr)(entry)) (cl, o, msg)
+		((HookPtr)(entry))(cl, o, msg)
 
 #endif /* _AROS */
 
@@ -74,16 +74,16 @@
 
 	INLINE ULONG CoerceMethodA(Class *cl, Object *o, Msg msg)
 	{
-		ASSERT_VALID_PTR(cl)
-		ASSERT_VALID_PTR_OR_NULL(o)
+		ASSERT_VALID_PTR(cl);
+		ASSERT_VALID_PTR_OR_NULL(o);
 
 		return _CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, msg);
 	}
 
 	INLINE ULONG DoSuperMethodA(Class *cl, Object *o, Msg msg)
 	{
-		ASSERT_VALID_PTR(cl)
-		ASSERT_VALID_PTR_OR_NULL(o)
+		ASSERT_VALID_PTR(cl);
+		ASSERT_VALID_PTR_OR_NULL(o);
 
 		cl = cl->cl_Super;
 		return _CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, msg);
@@ -92,25 +92,25 @@
 	INLINE ULONG DoMethodA(Object *o, Msg msg)
 	{
 		Class *cl;
-		ASSERT_VALID_PTR(o)
+		ASSERT_VALID_PTR(o);
 		cl = OCLASS (o);
-		ASSERT_VALID_PTR(cl)
+		ASSERT_VALID_PTR(cl);
 
 		return _CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, msg);
 	}
 
 	INLINE ULONG CoerceMethod(Class *cl, Object *o, ULONG MethodID, ...)
 	{
-		ASSERT_VALID_PTR(cl)
-		ASSERT_VALID_PTR_OR_NULL(o)
+		ASSERT_VALID_PTR(cl);
+		ASSERT_VALID_PTR_OR_NULL(o);
 
 		return ((HookPtr)cl->cl_Dispatcher.h_Entry) ((APTR)cl, (APTR)o, (APTR)&MethodID);
 	}
 
 	INLINE ULONG DoSuperMethod(Class *cl, Object *o, ULONG MethodID, ...)
 	{
-		ASSERT_VALID_PTR(cl)
-		ASSERT_VALID_PTR_OR_NULL(o)
+		ASSERT_VALID_PTR(cl);
+		ASSERT_VALID_PTR_OR_NULL(o);
 
 		cl = cl->cl_Super;
 		return ((HookPtr)cl->cl_Dispatcher.h_Entry) ((APTR)cl, (APTR)o, (APTR)&MethodID);
@@ -120,9 +120,9 @@
 	{
 		Class *cl;
 
-		ASSERT_VALID_PTR(o)
+		ASSERT_VALID_PTR(o);
 		cl = OCLASS (o);
-		ASSERT_VALID_PTR(cl)
+		ASSERT_VALID_PTR(cl);
 
 		return ((HookPtr)cl->cl_Dispatcher.h_Entry) ((APTR)cl, (APTR)o, (APTR)&MethodID);
 	}
@@ -130,8 +130,8 @@
 	/* varargs stub for the OM_NOTIFY method */
 	INLINE void NotifyAttrs(Object *o, struct GadgetInfo *gi, ULONG flags, Tag attr1, ...)
 	{
-		ASSERT_VALID_PTR(o)
-		ASSERT_VALID_PTR_OR_NULL(gi)
+		ASSERT_VALID_PTR(o);
+		ASSERT_VALID_PTR_OR_NULL(gi);
 
 		DoMethod(o, OM_NOTIFY, &attr1, gi, flags);
 	}
@@ -139,8 +139,8 @@
 	/* varargs stub for the OM_UPDATE method */
 	INLINE void UpdateAttrs(Object *o, struct GadgetInfo *gi, ULONG flags, Tag attr1, ...)
 	{
-		ASSERT_VALID_PTR(o)
-		ASSERT_VALID_PTR_OR_NULL(gi)
+		ASSERT_VALID_PTR(o);
+		ASSERT_VALID_PTR_OR_NULL(gi);
 
 		DoMethod(o, OM_UPDATE, &attr1, gi, flags);
 	}
@@ -150,8 +150,8 @@
 	 */
 	INLINE void SetAttrsGI(Object *o, struct GadgetInfo *gi, ULONG flags, Tag attr1, ...)
 	{
-		ASSERT_VALID_PTR(o)
-		ASSERT_VALID_PTR_OR_NULL(gi)
+		ASSERT_VALID_PTR(o);
+		ASSERT_VALID_PTR_OR_NULL(gi);
 
 		DoMethod(o, OM_SET, &attr1, gi, flags);
 	}
@@ -160,35 +160,35 @@
 
 	#define CoerceMethodA(cl, o, msg) \
 	({ \
-		ASSERT_VALID_PTR(cl) \
-		ASSERT_VALID_PTR_OR_NULL(o) \
+		ASSERT_VALID_PTR(cl); \
+		ASSERT_VALID_PTR_OR_NULL(o); \
 		_CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, msg); \
 	})
 
 	#define DoSuperMethodA(cl, o, msg) \
 	({ \
 		Class *_cl; \
-		ASSERT_VALID_PTR(cl) \
-		ASSERT_VALID_PTR_OR_NULL(o) \
+		ASSERT_VALID_PTR(cl); \
+		ASSERT_VALID_PTR_OR_NULL(o); \
 		_cl = cl->cl_Super; \
-		ASSERT_VALID_PTR(_cl) \
+		ASSERT_VALID_PTR(_cl); \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
 	})
 
 	#define DoMethodA(o, msg) \
 	({ \
 		Class *_cl; \
-		ASSERT_VALID_PTR(o) \
+		ASSERT_VALID_PTR(o); \
 		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR(_cl) \
+		ASSERT_VALID_PTR(_cl); \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
 	})
 
 	#define CoerceMethod(cl, o, msg...) \
 	({ \
 		IPTR _msg[] = { msg }; \
-		ASSERT_VALID_PTR(cl) \
-		ASSERT_VALID_PTR_OR_NULL(o) \
+		ASSERT_VALID_PTR(cl); \
+		ASSERT_VALID_PTR_OR_NULL(o); \
 		_CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, _msg); \
 	})
 
@@ -196,10 +196,10 @@
 	({ \
 		Class *_cl; \
 		IPTR _msg[] = { msg }; \
-		ASSERT_VALID_PTR(cl) \
-		ASSERT_VALID_PTR_OR_NULL(o) \
+		ASSERT_VALID_PTR(cl); \
+		ASSERT_VALID_PTR_OR_NULL(o); \
 		_cl = cl->cl_Super; \
-		ASSERT_VALID_PTR(_cl) \
+		ASSERT_VALID_PTR(_cl); \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
 	})
 
@@ -207,9 +207,9 @@
 	({ \
 		Class *_cl; \
 		IPTR _msg[] = { msg }; \
-		ASSERT_VALID_PTR(o) \
+		ASSERT_VALID_PTR(o); \
 		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR_OR_NULL(_cl) \
+		ASSERT_VALID_PTR_OR_NULL(_cl); \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
 	})
 
@@ -219,10 +219,10 @@
 		Class *_cl; \
 		IPTR _attrs[] = { attrs }; \
 		IPTR _msg[] = { OM_NOTIFY, (IPTR)_attrs, (IPTR)gi, flags }; \
-		ASSERT_VALID_PTR(o) \
+		ASSERT_VALID_PTR(o); \
 		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR(_cl) \
-		ASSERT_VALID_PTR_OR_NULL(gi) \
+		ASSERT_VALID_PTR(_cl); \
+		ASSERT_VALID_PTR_OR_NULL(gi); \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
 	})
 
@@ -232,10 +232,10 @@
 		Class *_cl; \
 		IPTR _attrs[] = { attrs }; \
 		IPTR _msg[] = { OM_UPDATE, (IPTR)_attrs, (IPTR)gi, flags }; \
-		ASSERT_VALID_PTR(o) \
+		ASSERT_VALID_PTR(o); \
 		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR(_cl) \
-		ASSERT_VALID_PTR_OR_NULL(gi) \
+		ASSERT_VALID_PTR(_cl); \
+		ASSERT_VALID_PTR_OR_NULL(gi); \
 		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
 	})
 #endif

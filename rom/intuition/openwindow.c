@@ -98,7 +98,7 @@
     BOOL driver_init_done = FALSE, have_helpgroup = FALSE;
 
 
-    ASSERT_VALID_PTR(newWindow)
+    ASSERT_VALID_PTR(newWindow);
 
     D(bug("OpenWindow (%p = { Left=%d Top=%d Width=%d Height=%d })\n"
 	, newWindow
