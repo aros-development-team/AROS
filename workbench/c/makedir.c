@@ -35,6 +35,7 @@ static const char version[] = "$VER: makedir 41.4 (12.11.2000)\n";
 
     INPUTS
 
+        NAME  --  names of the directories that should be created
 
     RESULT
 
@@ -56,7 +57,7 @@ static const char version[] = "$VER: makedir 41.4 (12.11.2000)\n";
                                    rewrote to live up to AmigaDOS
 				   semantics 
 
-*******************************************************************************/
+******************************************************************************/
 
 
 enum
