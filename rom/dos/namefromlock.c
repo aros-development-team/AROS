@@ -111,7 +111,7 @@
     LONG error;
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
+    struct FileHandle *fh=(struct FileHandle *)BADDR(DupLock(lock));
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -119,6 +119,8 @@
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys io,*iofs=&io;
 
+    if (fh == 0)
+	return DOSFALSE;
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
