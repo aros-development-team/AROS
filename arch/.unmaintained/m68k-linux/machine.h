@@ -385,18 +385,7 @@ extern void _aros_not_implemented (char *X);
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
-    __ASM_PREFIX(n,s)\
-    __ASM_ARG(a10)\
-    __ASM_ARG(a9)\
-    __ASM_ARG(a8)\
-    __ASM_ARG(a7)\
-    __ASM_ARG(a6)\
-    __ASM_ARG(a5)\
-    __ASM_ARG(a4)\
-    __ASM_ARG(a3)\
-    __ASM_ARG(a2)\
-    __ASM_ARG(a1)\
-    __ASM_POSTFIX(t,n,s,10)\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -408,21 +397,8 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a9),\
     __AROS_LHA(a10),\
     __AROS_LH_BASE(bt,bn))
-
 #define AROS_LH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
-    __ASM_PREFIX(n,s)\
-    __ASM_ARG(a11)\
-    __ASM_ARG(a10)\
-    __ASM_ARG(a9)\
-    __ASM_ARG(a8)\
-    __ASM_ARG(a7)\
-    __ASM_ARG(a6)\
-    __ASM_ARG(a5)\
-    __ASM_ARG(a4)\
-    __ASM_ARG(a3)\
-    __ASM_ARG(a2)\
-    __ASM_ARG(a1)\
-    __ASM_POSTFIX(t,n,s,11)\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -435,22 +411,8 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a10),\
     __AROS_LHA(a11),\
     __AROS_LH_BASE(bt,bn))
-
 #define AROS_LH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
-    __ASM_PREFIX(n,s)\
-    __ASM_ARG(a12)\
-    __ASM_ARG(a11)\
-    __ASM_ARG(a10)\
-    __ASM_ARG(a9)\
-    __ASM_ARG(a8)\
-    __ASM_ARG(a7)\
-    __ASM_ARG(a6)\
-    __ASM_ARG(a5)\
-    __ASM_ARG(a4)\
-    __ASM_ARG(a3)\
-    __ASM_ARG(a2)\
-    __ASM_ARG(a1)\
-    __ASM_POSTFIX(t,n,s,12)\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -464,23 +426,8 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a11),\
     __AROS_LHA(a12),\
     __AROS_LH_BASE(bt,bn))
-
 #define AROS_LH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
-    __ASM_PREFIX(n,s)\
-    __ASM_ARG(a13)\
-    __ASM_ARG(a12)\
-    __ASM_ARG(a11)\
-    __ASM_ARG(a10)\
-    __ASM_ARG(a9)\
-    __ASM_ARG(a8)\
-    __ASM_ARG(a7)\
-    __ASM_ARG(a6)\
-    __ASM_ARG(a5)\
-    __ASM_ARG(a4)\
-    __ASM_ARG(a3)\
-    __ASM_ARG(a2)\
-    __ASM_ARG(a1)\
-    __ASM_POSTFIX(t,n,s,13)\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -495,24 +442,8 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a12),\
     __AROS_LHA(a13),\
     __AROS_LH_BASE(bt,bn))
-
 #define AROS_LH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
-    __ASM_PREFIX(n,s)\
-    __ASM_ARG(a14)\
-    __ASM_ARG(a13)\
-    __ASM_ARG(a12)\
-    __ASM_ARG(a11)\
-    __ASM_ARG(a10)\
-    __ASM_ARG(a9)\
-    __ASM_ARG(a8)\
-    __ASM_ARG(a7)\
-    __ASM_ARG(a6)\
-    __ASM_ARG(a5)\
-    __ASM_ARG(a4)\
-    __ASM_ARG(a3)\
-    __ASM_ARG(a2)\
-    __ASM_ARG(a1)\
-    __ASM_POSTFIX(t,n,s,14)\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -528,25 +459,8 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a13),\
     __AROS_LHA(a14),\
     __AROS_LH_BASE(bt,bn))
-
 #define AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
-    __ASM_PREFIX(n,s)\
-    __ASM_ARG(a15)\
-    __ASM_ARG(a14)\
-    __ASM_ARG(a13)\
-    __ASM_ARG(a12)\
-    __ASM_ARG(a11)\
-    __ASM_ARG(a10)\
-    __ASM_ARG(a9)\
-    __ASM_ARG(a8)\
-    __ASM_ARG(a7)\
-    __ASM_ARG(a6)\
-    __ASM_ARG(a5)\
-    __ASM_ARG(a4)\
-    __ASM_ARG(a3)\
-    __ASM_ARG(a2)\
-    __ASM_ARG(a1)\
-    __ASM_POSTFIX(t,n,s,15)\
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
     __AROS_LHA(a1),\
     __AROS_LHA(a2),\
     __AROS_LHA(a3),\
@@ -563,6 +477,7 @@ extern void _aros_not_implemented (char *X);
     __AROS_LHA(a14),\
     __AROS_LHA(a15),\
     __AROS_LH_BASE(bt,bn))
+
 
 /* Library functions which don't need the libbase */
 #define AROS_LH0I(t,n,bt,bn,o,s) \
@@ -1149,6 +1064,45 @@ extern void _aros_not_implemented (char *X);
             :A0,A1,D0,D1,"memory","cc");            \
     }                                               \
 })
+
+#define __LC10(t,name,t1,n1,r1,t2,n2,r2,t3,n3,r3,t4,n4,r4,t5,n5,r5,t6,n6,r6,t7,n7,r7,t8,n8,r8,t9,n9,r9,t10,n10,r10,bt,bn,o,s) \
+({                                                  \
+    t1 _##name##_n1 = (n1);                         \
+    t2 _##name##_n2 = (n2);                         \
+    t3 _##name##_n3 = (n3);                         \
+    t4 _##name##_n4 = (n4);                         \
+    t5 _##name##_n5 = (n5);                         \
+    t6 _##name##_n6 = (n6);                         \
+    t7 _##name##_n7 = (n7);                         \
+    t8 _##name##_n8 = (n8);                         \
+    t9 _##name##_n9 = (n9);                         \
+    t10 _##name##_n10 = (n10);                      \
+    {                                               \
+        register t1 _n1 __asm(r1) = _##name##_n1;   \
+        register t2 _n2 __asm(r2) = _##name##_n2;   \
+        register t3 _n3 __asm(r3) = _##name##_n3;   \
+        register t4 _n4 __asm(r4) = _##name##_n4;   \
+        register t5 _n5 __asm(r5) = _##name##_n5;   \
+        register t6 _n6 __asm(r6) = _##name##_n6;   \
+        register t7 _n7 __asm(r7) = _##name##_n7;   \
+        register t8 _n8 __asm(r8) = _##name##_n8;   \
+        register t9 _n9 __asm(r9) = _##name##_n9;   \
+        register t10 _n10 __asm(r10) = _##name##_n10; \
+        __asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
+	    "move.l %10,%%a6\n\t"		    \
+	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
+	    "move.l (%%sp)+,%%a6"		    \
+            : /* no output */                       \
+            :"r"(_n1),"r"(_n2),"r"(_n3),            \
+             "r"(_n4),"r"(_n5),"r"(_n6),            \
+             "r"(_n7),"r"(_n8),"r"(_n9),            \
+             "r"(_n10),                             \
+             "g"(bn)				    \
+            :A0,A1,D0,D1,"memory","cc");            \
+    }                                               \
+})
+
+
 /****************************************************/
 
 #define __LCQUAD1(t,n,t1,n1,r11,r12,bt,bn,o,s)      \
@@ -1221,6 +1175,64 @@ extern void _aros_not_implemented (char *X);
 	__LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
 #define AROS_LC9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
 	__LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
+
+/* AROS_LC10 and higher just don't work with gcc. gcc complains
+   about too many registers being used. So we have to fall back
+   to stack passing for these kind of calls 
+ */
+
+#define AROS_LC10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    __AROS_LCA(a8),\
+    __AROS_LCA(a9),\
+    __AROS_LCA(a10),\
+    __AROS_LC_BASE(bt,bn)))
+#define AROS_LC11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LPA(a11),\
+    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    __AROS_LCA(a8),\
+    __AROS_LCA(a9),\
+    __AROS_LCA(a10),\
+    __AROS_LCA(a11),\
+    __AROS_LC_BASE(bt,bn)))
+
+
 
 #define AROS_LVO_CALL0(returntype,basetype,basename,offset,system) \
 __LC0(returntype,,basetype,basename,offset,system)
