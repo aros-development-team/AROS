@@ -54,13 +54,13 @@
     {
     	LONG len = IoErr();
 
-	var = __env_getvar(name, len + 1); /* size == len + null-byte. */
+	var = __env_getvar(name, len+1); /* size == len + null-byte. */
 
 	if (var)
 	{
 	    /*This should not fail, unless someone stealt our variable*/
 #warning FIXME: maybe this function should be atomic
-    	    GetVar((char *)name, var->value, len, GVF_BINARY_VAR);
+    	    GetVar((char *)name, var->value, len+1, GVF_BINARY_VAR);
 	}
     }
 
