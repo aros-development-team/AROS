@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Window *   , window, A0),
-	AROS_LHA(struct Requester *, dmrequest, A0),
+	AROS_LHA(struct Requester *, dmrequest, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 43, Intuition)
