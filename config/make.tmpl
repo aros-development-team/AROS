@@ -580,147 +580,6 @@ BDID := $(BDTARGETID)
 #############################################################################
 
 #------------------------------------------------------------------------------
-# Build an imported source tree which uses the configure script from the
-# autoconf package.  This rule will try to "integrate" the produced files as
-# much as possible in the AROS build, for exampley by putting libraries in the
-# standard library directory, includes in the standard include directory, and
-# so on. You can however override this behaviour.
-#
-# As a special "bonus" for you, the PROGDIR environment variable is defined to
-# be %(bindir) (or its deduced value) when running "make install", and
-# "PROGDIR:" when running "make" alone; you can use this feature to pass the
-# configure script some more parameters whose value depends upon the PROGDIR
-# env var, so that the program gets all its stuff installed in the proper place
-# when building it, but when running it from inside AROS it can also find that
-# stuff by simply opening PROGDIR:, which it will do automatically if it uses
-# the configuration parameters set when running ./configure
-#
-# *NOTICE*: DO NOT put a trailing '/' (slash) after $PROGDIR, as the variable
-# already contains either a '/' (slash) or a ':' (colon), thus simply attach it
-# to the name which has to follow it.
-
-%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
-    aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
-    install_target=install postinstall=
-
-ifeq (%(nix),yes)
-    %(mmake)-nix := -nix
-endif
-ifneq (%(bindir),)
-    %(mmake)-bindir := --bindir=%(bindir)
-    %(mmake)-PROGDIR := %(bindir)
-endif
-ifneq (%(includedir),)
-    %(mmake)-includedir := --includedir=%(includedir)
-endif
-ifneq (%(libdir),)
-    %(mmake)-libdir := --libdir=%(libdir)
-endif
-ifneq (%(prefix),)
-    %(mmake)-install_prefix      := prefix=%(prefix)
-    %(mmake)-install_exec-prefix := exec_prefix=%(prefix)
-else
-    %(mmake)-install_prefix      := prefix=$(CONTRIBDIR)
-    %(mmake)-install_exec-prefix := exec_prefix=$(CONTRIBDIR)
-    
-    ifeq ($(%(mmake)-bindir),)
-        %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
-        %(mmake)-PROGDIR := $(CONTRIBDIR)
-    endif
-    ifeq ($(%(mmake)-libdir),)
-        %(mmake)-libdir := --libdir=$(LIBDIR)
-    endif
-    ifeq ($(%(mmake)-includedir),)
-        %(mmake)-includedir := --includedir=$(AROS_INCLUDES)
-    endif
-endif
-
-ifneq (%(aros_prefix),)
-    %(mmake)-compile_prefix := --prefix=%(aros_prefix)
-else
-    %(mmake)-compile_prefix := --$(%(mmake)-install_prefix)
-endif
-
-ifeq ($(%(mmake)-PROGDIR),)
-    %(mmake)-PROGDIR := %(prefix)/bin
-endif
-
-.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-build_and_install-quick
-
-#MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
-
-ifneq (%(install_target),)
-    %(mmake)-install_command := \
-    if ! test -e $(GENDIR)/$(CURDIR)/.installed; then \
-        $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
-        $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) %(install_target); \
-        $(TOUCH) $(GENDIR)/$(CURDIR)/.installed; \
-    fi
-
-    %(mmake)-uninstall_command := \
-    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
-    $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) uninstall; \
-    $(RM) $(GENDIR)/$(CURDIR)/.installed
-else
-    %(mmake)-install_command   := $(TRUE)
-    %(mmake)-uninstall_command := $(TRUE)
-endif
-
-#MM- %(mmake)-quick : %(mmake)-build_and_install-quick %(postinstall)
-
-#MM
-%(mmake)-build_and_install-quick : $(GENDIR)/$(CURDIR)/.configured
-	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
-            $(RM) $(GENDIR)/$(CURDIR)/.installed; \
-	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
-	    ret=$$?; \
-	    if [ $$ret -ne 0 ]; then \
-	        exit $$ret; \
-	    fi; \
-	fi; \
-	$(%(mmake)-install_command)
-
-%(srcdir)/.files-touched:
-	find %(srcdir) -exec $(TOUCH) -r %(srcdir)/configure '{}' \; && \
-	$(TOUCH) $@
-
-#MM
-%(mmake)-uninstall :
-	$(%(mmake)-uninstall_command)
-
-ifneq ($(DEBUG),yes)
-    %(mmake)-s_flag = -s
-endif
-
-ifeq (%(host),yes)
-$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@
-	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR) && \
-	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(HOST_CC)" \
-	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions) && \
-	    $(TOUCH) $@
-else
-$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
-	$(RM) $@
-	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR) && \
-	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
-	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	    $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros \
-	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls && \
-	    $(TOUCH) $@
-endif
-	
-#MM
-%(mmake)-clean : %(mmake)-uninstall
-	@$(RM) $(GENDIR)/$(CURDIR)
-%end
-
-#------------------------------------------------------------------------------
 # Build a program
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
@@ -1765,6 +1624,148 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %end
       
+#------------------------------------------------------------------------------
+# Build an imported source tree which uses the configure script from the
+# autoconf package.  This rule will try to "integrate" the produced files as
+# much as possible in the AROS build, for exampley by putting libraries in the
+# standard library directory, includes in the standard include directory, and
+# so on. You can however override this behaviour.
+#
+# As a special "bonus" for you, the PROGDIR environment variable is defined to
+# be %(bindir) (or its deduced value) when running "make install", and
+# "PROGDIR:" when running "make" alone; you can use this feature to pass the
+# configure script some more parameters whose value depends upon the PROGDIR
+# env var, so that the program gets all its stuff installed in the proper place
+# when building it, but when running it from inside AROS it can also find that
+# stuff by simply opening PROGDIR:, which it will do automatically if it uses
+# the configuration parameters set when running ./configure
+#
+# *NOTICE*: DO NOT put a trailing '/' (slash) after $PROGDIR, as the variable
+# already contains either a '/' (slash) or a ':' (colon), thus simply attach it
+# to the name which has to follow it.
+
+%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
+    aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
+    install_target=install postconfigure= postinstall=
+
+ifeq (%(nix),yes)
+    %(mmake)-nix := -nix
+endif
+ifneq (%(bindir),)
+    %(mmake)-bindir := --bindir=%(bindir)
+    %(mmake)-PROGDIR := %(bindir)
+endif
+ifneq (%(includedir),)
+    %(mmake)-includedir := --includedir=%(includedir)
+endif
+ifneq (%(libdir),)
+    %(mmake)-libdir := --libdir=%(libdir)
+endif
+ifneq (%(prefix),)
+    %(mmake)-install_prefix      := prefix=%(prefix)
+    %(mmake)-install_exec-prefix := exec_prefix=%(prefix)
+else
+    %(mmake)-install_prefix      := prefix=$(CONTRIBDIR)
+    %(mmake)-install_exec-prefix := exec_prefix=$(CONTRIBDIR)
+    
+    ifeq ($(%(mmake)-bindir),)
+        %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
+        %(mmake)-PROGDIR := $(CONTRIBDIR)
+    endif
+    ifeq ($(%(mmake)-libdir),)
+        %(mmake)-libdir := --libdir=$(LIBDIR)
+    endif
+    ifeq ($(%(mmake)-includedir),)
+        %(mmake)-includedir := --includedir=$(AROS_INCLUDES)
+    endif
+endif
+
+ifneq (%(aros_prefix),)
+    %(mmake)-compile_prefix := --prefix=%(aros_prefix)
+else
+    %(mmake)-compile_prefix := --$(%(mmake)-install_prefix)
+endif
+
+ifeq ($(%(mmake)-PROGDIR),)
+    %(mmake)-PROGDIR := %(prefix)/bin
+endif
+
+.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-build_and_install-quick
+
+#MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
+
+ifneq (%(install_target),)
+    %(mmake)-install_command := \
+    if ! test -e $(GENDIR)/$(CURDIR)/.installed; then \
+        $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
+        $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) %(install_target); \
+        $(TOUCH) $(GENDIR)/$(CURDIR)/.installed; \
+    fi
+
+    %(mmake)-uninstall_command := \
+    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
+    $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) uninstall; \
+    $(RM) $(GENDIR)/$(CURDIR)/.installed
+else
+    %(mmake)-install_command   := $(TRUE)
+    %(mmake)-uninstall_command := $(TRUE)
+endif
+
+#MM- %(mmake)-quick : %(mmake)-build_and_install-quick %(postinstall)
+
+#MM
+%(mmake)-build_and_install-quick : $(GENDIR)/$(CURDIR)/.configured
+	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
+            $(RM) $(GENDIR)/$(CURDIR)/.installed; \
+	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
+	    ret=$$?; \
+	    if [ $$ret -ne 0 ]; then \
+	        exit $$ret; \
+	    fi; \
+	fi; \
+	$(%(mmake)-install_command)
+
+%(srcdir)/.files-touched:
+	find %(srcdir) -exec $(TOUCH) -r %(srcdir)/configure '{}' \; && \
+	$(TOUCH) $@
+
+#MM
+%(mmake)-uninstall :
+	$(%(mmake)-uninstall_command)
+
+ifneq ($(DEBUG),yes)
+    %(mmake)-s_flag = -s
+endif
+
+ifeq (%(host),yes)
+$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	$(RM) $@
+	%mkdirs_q $(GENDIR)/$(CURDIR)
+	cd $(GENDIR)/$(CURDIR) && \
+	find . -name config.cache -exec $(RM) '{}' \; && \
+	CC="$(HOST_CC)" \
+	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    $(%(mmake)-includedir) %(extraoptions) && \
+	    $(TOUCH) $@
+else
+$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	$(RM) $@
+	%mkdirs_q $(GENDIR)/$(CURDIR)
+	cd $(GENDIR)/$(CURDIR) && \
+	find . -name config.cache -exec $(RM) '{}' \; && \
+	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" CC_FOR_BUILD="$(HOST_CC)" \
+	    %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros \
+	    --target=$(AROS_TARGET_CPU)-aros --build=local --disable-nls --without-x \
+            --without-pic --disable-shared && \
+	    $(TOUCH) $@
+endif
+	
+#MM
+%(mmake)-clean : %(mmake)-uninstall
+	@$(RM) $(GENDIR)/$(CURDIR)
+%end
+
 #############################################################################
 #############################################################################
 ##                                                                         ##
@@ -1853,7 +1854,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
-    aros_prefix=/GNU extraoptions= postinstall= 
+    aros_prefix=/GNU extraoptions= postconfigure= postinstall= 
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -1900,17 +1901,20 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 
 %build_with_configure mmake=%(mmake)-%(subpackage) \
      srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
-     nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix=%(aros_prefix) \
-     postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" extraoptions="%(extraoptions)"
+     nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix="%(aros_prefix)" \
+     postconfigure="%(postconfigure)" postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" \
+     extraoptions="%(extraoptions)"
 
 #MM %(mmake)-%(subpackage)-make-package : %(mmake)-%(subpackage)-quick
 %(mmake)-%(subpackage)-make-package :
 	@$(ECHO) "Building \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" && \
 	cd $(%(mmake)-%(subpackage)-package-dir) && \
-	tar --remove-files -cvf $(%(mmake)-%(subpackage)-package-basename).tar * && \
-        mkdir -p "%(prefix)" && \
-        tar -xf $(%(mmake)-%(subpackage)-package-basename).tar -C "%(prefix)"/ && \
-        bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar && \
+	if test $(GENDIR)/$(CURDIR)/.installed -nt $(%(mmake)-%(subpackage)-package-basename).tar.bz2; then \
+            tar --remove-files -cvf $(%(mmake)-%(subpackage)-package-basename).tar * && \
+            mkdir -p "%(prefix)" && \
+            tar -xf $(%(mmake)-%(subpackage)-package-basename).tar -C "%(prefix)"/ && \
+            bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar; \
+        fi && \
         cd .. && $(RM) $(%(mmake)-%(subpackage)-archbase)
 
 %end
@@ -1928,7 +1932,7 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 
 %define fetch_and_build_gnu_development package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
-    aros_prefix=/Development postinstall=  extraoptions= 
+    aros_prefix=/Development postconfigure= postinstall=  extraoptions= 
 
 #MM- development : development-%(package)
 
@@ -1936,6 +1940,7 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 %fetch_and_build_gnu mmake=development-%(package) package=%(package) subpackage="%(subpackage)" \
    version=%(version) suffixes="%(suffixes)" srcdir="%(srcdir)" destination=%(destination) \
    package_repo="%(package_repo)" patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
-   aros_prefix=%(aros_prefix) postinstall=%(postinstall) extraoptions="%(extraoptions)"
+   aros_prefix=%(aros_prefix) postconfigure="%(postconfigure)" postinstall=%(postinstall) \
+   extraoptions="%(extraoptions)"
     
 %end
