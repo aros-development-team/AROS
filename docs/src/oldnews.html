@@ -15,6 +15,75 @@ Old News
 <HR WIDTH="100%">
 <TABLE>
 
+<TR><TD VALIGN=TOP>31.01.2001</TD><TD>
+Georg Steger improved CreateNewProc() and implemented the
+"open options" for console windows (AUTO/INACTIVE/NOSIZE/etc).
+He also fixed a bug in the LD-Demon and some bugs related
+to DefaultPubScreen handling. There is now C:SetDefaultFont
+with which you can set the default font for the system (AROS
+uses a much nicer font now than the default Topaz/8). The code
+in Intuition has been improved to use this font. Also, AROS
+will not open the boot shell anymore if the Startup-Sequence
+doesn't print anything. SetLocale now opens the specified prefs
+file plus some a lot of bugfixes in locale.library. Lastly,
+he added a lot of font-sensitive code in various places.<P>
+
+Notification is implemented but there is no filesystem
+which supports it, yet. I sure hope that we get the SFS
+sources, soon !<P>
+
+Kjetil Svalastog Matheussen finished the port for PlayMF
+(compiles now without error) and fixed a couple of typos
+on the MIDI include files. Next, he ported Fireworks,
+a tool by Christian Buchner that displays the MIDI data
+processed by camd nicely.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>27.01.2001</TD><TD>
+Georg Steger improved the default stack size handling and
+fixed a couple of refresh related bugs in Intuition.
+He made user specified fonts work correctly with ASL
+requesters, various gadgets and MultiView. He also
+fixed Ctrl-C/D/E/F breaking in CON: windows.<P>
+
+Stefan Berger added code which allows to scale a layer (ie.
+zoom into it :-). Check the winshape and roundshape demo
+(use +/- to zoom it; it's slow, though).<P>
+
+Johan Alfredsson finished realtime.library and committed
+a demo for the library to test it.<P>
+
+Kjetil Svalastog Matheussen committed a MIDI player (PlayMF
+from Aminet) which allows to test the camd.library. He
+also fixed some bugs in realtime.library.<P>
+
+Joerg Dietrich backported MultiView to the Amiga and began
+working on V44 datatypes and improved his picture.datatype.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>21.01.2001</TD><TD>
+Kjetil Svalastog Matheussen fixed a couple of bugs in the
+new camd.library and wrote an example MIDI driver for it.
+Johan Alfredsson began work on the last datatypes.library function
+(LaunchToolA()).<P>
+
+Georg Steger fixed a really very old bug in the task switching
+core of AROS (FPU context wasn't correctly saved).
+</TD></TR>
+
+<TR><TD VALIGN=TOP>17.01.2001</TD><TD>
+Johan Alfredsson completed C:Run and Kjetil Svalastog Matheussen
+commited a first version of a camd.library (MIDI) and fixed
+a few bugs in realtime.library.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>15.01.2001</TD><TD>
+Georg Steger fixed a bug (moving&sizing a window at the same time)
+in the new layers.library and improved font copying by the build
+process. Johan Alfredsson improved C:Run. Henning Kiel fixed a
+couple of bugs in his games. 
+</TD></TR>
+
 <TR><TD VALIGN=TOP>12.01.2001</TD><TD>
 Adam Chodorowski made C:Ping compile (it would work if there
 were a TCP/IP stack :-). Also, the About window of LoadWB shows
