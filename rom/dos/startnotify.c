@@ -76,8 +76,8 @@
     }
     else
     {
-	dir = CurrentDir(NULL);
-	CurrentDir(dir);		/* Set back the current dir */
+	dir = BADDR(CurrentDir(NULL));
+	CurrentDir(MKBADDR(dir));		/* Set back the current dir */
 	
 	if (dir == NULL)
 	{
