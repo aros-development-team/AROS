@@ -25,7 +25,17 @@
 #   include <utility/utility.h>
 #endif
 
-/****************************************************************************************/
+#include <utility/tagitem.h>
+
+#include <aros/debug.h>
+
+/*** POSIX includes **********************************************************/
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+
+/*****************************************************************************/
 
 struct SocketBase {
     struct Library       library;
@@ -35,7 +45,7 @@ struct SocketBase {
     struct UtilityBase  *sb_UtilityBase;
 };
 
-/****************************************************************************************/
+/*****************************************************************************/
 
 #undef BSDSB
 #define BSDSB(b)    ((struct SocketBase *)b)
