@@ -184,13 +184,13 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
         stdgadtags[TAG_Width].ti_Data = MX_WIDTH;
     switch (stdgadtags[TAG_LabelPlace].ti_Data & 0x1f)
     {
-    case PLACETEXT_LEFT:
+    case GV_LabelPlace_Left:
         tags[5].ti_Data = GV_LabelPlace_Left;
         break;
-    case PLACETEXT_ABOVE:
+    case GV_LabelPlace_Above:
         tags[5].ti_Data = GV_LabelPlace_Above;
         break;
-    case PLACETEXT_BELOW:
+    case GV_LabelPlace_Below:
         tags[5].ti_Data = GV_LabelPlace_Below;
         break;
     }
