@@ -423,8 +423,11 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     {
 	case IECLASS_RAWMOUSE:
     	    if (ievent->ie_Code == SELECTDOWN)
+	    {
     		command = SGH_CLICK;
-    	    D(bug("hsi: RAWMOUSE event\n"));    	    
+		sgw.Actions = SGA_USE | SGA_REDISPLAY;
+    	    	D(bug("hsi: RAWMOUSE event\n"));
+	    }   	    
     	    break;
 
 	case IECLASS_RAWKEY:
@@ -432,6 +435,7 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
 	        UBYTE buf;
 		
     		command = SGH_KEY;
+		sgw.Actions = SGA_USE;
 		if (1 == MapRawKey(sgw.IEvent, &buf, 1, strinfo->AltKeyMap))
 		{
 		    sgw.Code = (UWORD)buf;
