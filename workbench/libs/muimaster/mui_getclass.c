@@ -13,6 +13,7 @@
 
 #include "muimaster_intern.h"
 #include "support.h"
+#include <stdio.h>
 
 /*****************************************************************************
 
@@ -80,6 +81,41 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 
 	cl = CreateBuiltinClass(classname, MUIMasterBase);
 
+#if 1
+#warning "check this!"
+    	if (!cl)
+	{
+    	    struct Library *mcclib;
+	    struct MUI_CustomClass *mcc;
+	    UBYTE s[64];
+	    
+	    sprintf(s, "Zune/%s", classname);
+    	    if ((mcclib = OpenLibrary(s, 0)))
+	    {
+	    	/* call MCC_Query(0) */
+
+#ifdef _AROS		
+	    	mcc = AROS_LVO_CALL1(struct MUI_CustomClass *,
+		    	AROS_LCA(LONG, 0, D0),
+			struct Library *, mcclib, 5, lib);
+#else
+#warning "You need to make MCC_Query() call here!!!!!!!!!!!!!!!!!!!"
+    	    	mcc = 0
+#endif			
+	    	if (mcc)
+		{
+		    cl = mcc->mcc_Class;
+		    if (cl)
+		    {
+		    	mcc->mcc_Module = mcclib;
+		    }
+		}
+		
+		if (!cl) CloseLibrary(mcclib);
+	    }
+	}
+#endif
+	
 /*	if (!cl)
 	{
 	    cl = _zune_class_load(className);
