@@ -1310,8 +1310,8 @@ lowlevel00008;0;digulla;Write RemTimerInt
 lowlevel00009;0;digulla;Write StopTimerInt
 lowlevel00010;0;digulla;Write StartTimerInt
 lowlevel00011;0;digulla;Write ElapsedTime
-lowlevel00012;1;SDuvan;Write AddVBlankInt
-lowlevel00013;1;SDuvan;Write RemVBlankInt
+lowlevel00012;2;SDuvan;Write AddVBlankInt
+lowlevel00013;2;SDuvan;Write RemVBlankInt
 lowlevel00014;0;digulla;Write SetJoyPortAttrsA
 mathffp00000;2;bergers;Write SPFix
 mathffp00001;2;bergers;Write SPFlt
