@@ -27,7 +27,7 @@
 	Adds a program segment to the system resident list. You can later
 	use these segments to run programs.
 
-	The name field should refer to a NULL terminated strings, which 
+	The name field should refer to a NULL terminated strings, which
 	will be copied. The type field determines the type of resident
 	program. Normal programs should have type >= 0, system segments
 	should have type == CMD_SYSTEM.
@@ -67,20 +67,16 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct Segment *sptr;
-    int namelen = strlen(name);
+    int namelen = strlen(name)+1;
 
-    /* Make sure type is valid */
-    if(type < -1)
-	return FALSE;
-    
     sptr = AllocVec(sizeof(struct Segment) + namelen - 3,
 		    MEMF_CLEAR | MEMF_PUBLIC);
-    
+
     if( sptr != NULL )
     {
 	sptr->seg_UC = type;
 	sptr->seg_Seg = seg;
-	
+
 #ifdef AROS_FAST_BSTR
 	CopyMem(name, sptr->seg_Name, namelen);
 #else
