@@ -3,9 +3,8 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Time Locale Serial Presets Input IControl Font ReqTools Wanderer \
-             Zune
-ICONDIR   := $(AROSDIR)/Prefs
+ICONS     := Sashimi
+ICONDIR   := $(AROSDIR)/Tools/Debug
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
 #MM
