@@ -3,22 +3,23 @@ TOP=../../..
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_AFLAGS = -I../
-CLIBDIR=$(GENDIR)/clib
-OBJDIR=$(OSGENDIR)/exec
+SPECIAL_AFLAGS := -I../
+CLIBDIR        := $(GENDIR)/clib
+OBJDIR         := $(OSGENDIR)/exec
 
-FILES = disable forbid getcc \
-	cacheclearu cachepredma cachepostdma coldreboot
+FILES := disable forbid getcc cacheclearu cachepredma cachepostdma coldreboot
 
-TESTS =
+TESTS :=
 
-all: setup $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
+#MM
+exec-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
 
 #MM
 setup-exec-amiga-m68k :
 	%mkdirs_q $(OBJDIR) $(OSGENDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
+	@echo exec-amiga-m68k: $(FILES)
 
 #MM
 clean::
