@@ -383,8 +383,8 @@ static void MakeGadgets(void)
     
     SetAttrs(gad[GAD_VERTSCROLL] , ICA_TARGET, (IPTR)vert_to_dto_ic_obj, TAG_DONE);
     SetAttrs(gad[GAD_HORIZSCROLL], ICA_TARGET, (IPTR)horiz_to_dto_ic_obj, TAG_DONE);
-    SetAttrs(dto_to_vert_ic_obj  , ICA_TARGET, (IPTR)gad[GAD_VERTSCROLL]);
-    SetAttrs(dto_to_horiz_ic_obj , ICA_TARGET, (IPTR)gad[GAD_HORIZSCROLL]);
+    SetAttrs(dto_to_vert_ic_obj  , ICA_TARGET, (IPTR)gad[GAD_VERTSCROLL], TAG_DONE);
+    SetAttrs(dto_to_horiz_ic_obj , ICA_TARGET, (IPTR)gad[GAD_HORIZSCROLL], TAG_DONE);
 }
 
 /*********************************************************************************************/
