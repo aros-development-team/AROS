@@ -188,7 +188,7 @@ AROS_UFH3(LIBBASETYPEPTR, ata_init,
 	a pool, so that we avoid memory fragmentation.
     */
     LIBBASE->ata_SysBase = SysBase;
-    LIBBASE->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
+    LIBBASE->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
 
     D(bug("[ATA] ata.device initialization\n"));
 
