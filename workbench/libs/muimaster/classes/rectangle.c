@@ -199,8 +199,9 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     ** now add the values specific to our object. note that we
     ** indeed need to *add* these values, not just set them!
     */
-    msg->MinMaxInfo->MinWidth  += 2;
-    msg->MinMaxInfo->MinHeight += 2;
+    /* not adding 1 pixel will fubar zune prefs and possibly others */
+    msg->MinMaxInfo->MinWidth  += 1;
+    msg->MinMaxInfo->MinHeight += 1;
 
     if (!data->BarTitle)
     {
@@ -228,8 +229,8 @@ static ULONG Rectangle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 	}
     }
 
-    msg->MinMaxInfo->DefWidth  = msg->MinMaxInfo->MinWidth + 8;
-    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight + 8;
+    msg->MinMaxInfo->DefWidth  = msg->MinMaxInfo->MinWidth;
+    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 
     msg->MinMaxInfo->MaxWidth  = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
