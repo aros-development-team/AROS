@@ -54,7 +54,7 @@ extern const struct Resident
     Keymap_resident,
     Input_resident,
     Intuition_resident,
-    X11Hidd_resident,
+    X11Hidd_resident, 
     Cybergraphics_resident,
     Console_resident,
     Mathffp_resident,
@@ -64,7 +64,9 @@ extern const struct Resident
     LDDemon_resident,
     emul_handler_resident,
     boot_resident,
-    con_handler_resident;
+    con_handler_resident,
+    nil_handler_resident,
+    ram_handler_resident;
 
 
 
@@ -99,14 +101,16 @@ static const struct Resident *romtagList[] =
     &Mathffp_resident,			    /* ColdStart,  -120  */
 
     /*
-	NOTE: You must not put anything between these two; the code 
-        which initialized boot_resident will directly call 
+	NOTE: You must not put anything between these two; the code
+        which initialized boot_resident will directly call
         Dos_resident and anything between the two will be skipped.
     */
     &boot_resident,			    /* ColdStart,  -50	 */
     &Dos_resident,			    /* None,	   -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
     &con_handler_resident,		    /* AfterDOS,   -126  */
+    &nil_handler_resident,		    /* AfterDOS,   -127	 */
+    &ram_handler_resident,		    /* AfterDOS,   -128	 */
 
     NULL
 };
