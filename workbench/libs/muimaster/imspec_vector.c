@@ -8,8 +8,8 @@
 #include <intuition/imageclass.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
-#include <aros/debug.h>
 
+#include "debug.h"
 #include "mui.h"
 #include "imspec_intern.h"
 #include "support.h"
