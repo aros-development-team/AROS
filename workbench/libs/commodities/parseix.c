@@ -13,8 +13,14 @@
 #include "cxintern.h"
 #include <libraries/commodities.h>
 #include <proto/commodities.h>
+#ifdef __MORPHOS__
+#define __NOLIBBASE__
+#endif
 #include <proto/utility.h>
 #include <proto/keymap.h>
+#ifdef __MORPHOS__
+#undef __NOLIBBASE__
+#endif
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include <string.h>

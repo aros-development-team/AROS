@@ -13,9 +13,11 @@
 #ifndef  DEBUG
 #define  DEBUG 1
 #endif
-#include <aros/debug.h>
 
 #include "cxintern.h"
+
+#include <aros/debug.h>
+
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <libraries/commodities.h>

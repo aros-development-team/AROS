@@ -1,11 +1,10 @@
 /* This used QUICK reg layout
  */
+#ifdef __MORPHOS__
 #define EMUL_QUICKMODE
 #include <exec/types.h>
 #include <emul/emulinterface.h>
 #include <emul/emulregs.h>
-
-#define	DEBUG(x)	;
 
 char	*_PPCCallM68k_RawDoFmt(char		MyChar,
                                char*		(*PutChProc)(char*,char),
@@ -22,3 +21,4 @@ struct EmulCaos	MyCaos;
 
   return(REG_A3);
 }
+#endif

@@ -5,14 +5,14 @@ USER_INCLUDES := -I.
 
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
-FORCE_DEPLIBS 	:=
+FORCE_DEPLIBS 	:= 
 FORCE_LIBS 		:= /ade/morphos/lib/libc.a /ade/morphos/lib/libsyscall.a
 endif
 
 MODNAME := locale
 MODTYPE := library
 
-FILES := defaultlocale english initlocale catalog_funcs patches
+FILES := defaultlocale english initlocale catalog_funcs patches rawdofmtsupport
 FUNCS := \
 	closecatalog closelocale convtolower convtoupper \
 	formatdate formatstring getcatalogstr getlocalestr \

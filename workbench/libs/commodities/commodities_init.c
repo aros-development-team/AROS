@@ -12,10 +12,10 @@
 #define  DEBUG 0
 #endif
 
-#include <aros/debug.h>
-
 #include <utility/utility.h>
 #include "cxintern.h"	/* Must be included after utility.h */ 
+
+#include <aros/debug.h>
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -23,7 +23,9 @@
 #include <devices/timer.h>
 #include <aros/libcall.h>
 
+#ifndef __MORPHOS__
 #include "initstruct.h"
+#endif
 #include <stddef.h>
 
 #include <exec/libraries.h>
@@ -143,6 +145,7 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase);
 #ifdef __MORPHOS__
 struct CommoditiesBase *LIB_init(struct CommoditiesBase *CxBase, BPTR segList,
 				 struct ExecBase *sysBase)
+{
 #else
 AROS_LH2(struct CommoditiesBase *, init,
  AROS_LHA(struct CommoditiesBase *, CxBase, D0),
