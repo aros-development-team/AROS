@@ -14,7 +14,7 @@
 
 #include "iconwindow.h"
 
-extern CONST_STRPTR rootBG, dirsBG;
+extern STRPTR rootBG, dirsBG;
 
 
 /*** Instance Data **********************************************************/

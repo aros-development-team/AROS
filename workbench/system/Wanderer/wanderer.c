@@ -44,6 +44,7 @@ char *GetScreenTitle(void)
     sprintf(title,"Wanderer  %ld graphics mem  %ld other mem",AvailMem(MEMF_CHIP),AvailMem(MEMF_FAST));
     return title;
 }
+
 enum
 {
     MEN_WANDERER = 1,
