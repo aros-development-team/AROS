@@ -1,35 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:36:33  ldp
-    Polish
 
-    Revision 1.6  1996/12/09 13:53:47  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.5  1996/11/21 10:49:47  aros
-    Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
-    problems.
-
-The #includes
-    makedepend will ignore them (GCC works, though).
-
-    Removed a couple of Logs
-
-    Revision 1.4  1996/10/24 15:50:37  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 13:52:52  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:58  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Convert a string into a long
     Lang: english
 */
 
@@ -48,14 +21,21 @@ The #includes
 	struct DosLibrary *, DOSBase, 136, Dos)
 
 /*  FUNCTION
+	Convert a string to a long number.
 
     INPUTS
+	string - The value to convert
+	value - The result is returned here
 
     RESULT
+	How many characters in the string were considered when it was
+	converted or -1 if no valid number could be found.
 
     NOTES
+	The routine doesn't check if the number if too large.
 
     EXAMPLE
+	// Valid number are: 5, -1, +3, +0007, etc.
 
     BUGS
 
@@ -64,8 +44,6 @@ The #includes
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
