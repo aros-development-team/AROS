@@ -54,7 +54,7 @@
     {
     	LONG len = IoErr();
 
-	var = __env_getvar(name, len);
+	var = __env_getvar(name, len + 1); /* size == len + null-byte. */
 
 	if (var)
 	{
