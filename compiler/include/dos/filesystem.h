@@ -137,9 +137,9 @@ struct IFS_IS_INTERACTIVE
 #define FSA_SAME_LOCK 10
 struct IFS_SAME_LOCK
 {
-    void * io_Lock[2]; /* The two locks to compare. */
-    LONG   io_Same;    /* This set to one of LOCK_DIFFERENT or LOCK_SAME (see
-                          <dos/dos.h> by the filehandler. */
+    APTR io_Lock[2]; /* The two locks to compare. */
+    LONG io_Same;    /* This set to one of LOCK_DIFFERENT or LOCK_SAME (see
+                        <dos/dos.h>). */
 };
 
 /* Examines a filehandle, giving various information about it. */
@@ -195,7 +195,7 @@ struct IFS_CREATE_DIR
 struct IFS_CREATE_HARDLINK
 {
     STRPTR   io_Filename; /* The filename of the link to create. */
-    void   * io_OldFile;  /* Filehandle of the file to link to. */
+    APTR     io_OldFile;  /* Filehandle of the file to link to. */
 };
 
 /* Creates a soft link (ie a file is created, which references another by its

@@ -238,7 +238,8 @@ struct InfoData
 
 /* Miscellaneous errors. */
 #define ERROR_BAD_STREAM_NAME		206
-  /* The given object is too large for the operation to be made. */
+  /* The given object is too large for the operation to be made. Object is
+     this context are for example components of path-names. */
 #define ERROR_OBJECT_TOO_LARGE		207
   /* This is usually used to indicate that a filesystem does not support a
      certain action, but may generally also be used by functions. */
