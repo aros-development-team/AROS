@@ -184,8 +184,8 @@
           CR->bounds.MinX,
           CR->bounds.MinY,
           LD->SuperBitMap,  /* storage area */
-          CR->bounds.MinX - LD->bounds.MinX + LD->Scroll_X,
-          CR->bounds.MinY - LD->bounds.MinY + LD->Scroll_Y,
+          CR->bounds.MinX - LD->bounds.MinX - LD->Scroll_X,
+          CR->bounds.MinY - LD->bounds.MinY - LD->Scroll_Y,
           CR->bounds.MaxX - CR->bounds.MinX + 1,
           CR->bounds.MaxY - CR->bounds.MinY + 1,
           0x0c0, /* copy */
@@ -273,8 +273,8 @@
                 /* with SuperBitMap */
                 BltBitMap(
                   CR->BitMap,
-                  CR->bounds.MinX - L_behind->bounds.MinX + L_behind->Scroll_X,
-                  CR->bounds.MinY - L_behind->bounds.MinY + L_behind->Scroll_Y,
+                  CR->bounds.MinX - L_behind->bounds.MinX - L_behind->Scroll_X,
+                  CR->bounds.MinY - L_behind->bounds.MinY - L_behind->Scroll_Y,
                   LD->rp->BitMap,
                   CR->bounds.MinX,
                   CR->bounds.MinY,

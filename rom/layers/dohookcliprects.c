@@ -145,17 +145,17 @@
             if (NULL != CR->lobs && 0 == (L->Flags & LAYERSIMPLE))
 	    {
               /* calculate the offsets before making changes to bounds!! */
-              offsetX = bounds.MinX - L->bounds.MinX + L->Scroll_X; 
-              offsetY = bounds.MinY - L->bounds.MinY + L->Scroll_Y;
+              offsetX = bounds.MinX - L->bounds.MinX - L->Scroll_X; 
+              offsetY = bounds.MinY - L->bounds.MinY - L->Scroll_Y;
               bm = rport->BitMap;
 
               if (0 != (L->Flags & LAYERSUPER))
 	      {
                 /* it's a superbitmap layer */
-                bounds.MinX -= ( L->bounds.MinX - L->Scroll_X );
-                bounds.MinY -= ( L->bounds.MinY - L->Scroll_Y );
-                bounds.MaxX -= ( L->bounds.MinX - L->Scroll_X );
-                bounds.MaxY -= ( L->bounds.MinY - L->Scroll_Y );
+                bounds.MinX -= ( L->bounds.MinX + L->Scroll_X );
+                bounds.MinY -= ( L->bounds.MinY + L->Scroll_Y );
+                bounds.MaxX -= ( L->bounds.MinX + L->Scroll_X );
+                bounds.MaxY -= ( L->bounds.MinY + L->Scroll_Y );
                 rport->BitMap = L->SuperBitMap;
 	      }
               else

@@ -171,9 +171,9 @@ struct ClipRect * Case_0(struct Rectangle * R,
         {
           /* it has a superbitmap */
           DestX  = CR->bounds.MinX - 
-                       passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                       passivelayer->bounds.MinX - passivelayer->Scroll_X;
           DestY  = CR->bounds.MinY -
-                       passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                       passivelayer->bounds.MinY - passivelayer->Scroll_Y;
           DestBM = passivelayer->SuperBitMap;
           CR -> BitMap = DestBM;
 
@@ -343,9 +343,9 @@ struct ClipRect * Case_1(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -526,9 +526,9 @@ struct ClipRect * Case_2(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
           }
@@ -715,9 +715,9 @@ struct ClipRect * Case_3(struct Rectangle * R,
 	  {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -898,9 +898,9 @@ struct ClipRect * Case_4(struct Rectangle * R,
 	  {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -1089,9 +1089,9 @@ struct ClipRect * Case_5(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -1279,9 +1279,9 @@ struct ClipRect * Case_6(struct Rectangle * R,
 	  {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -1479,9 +1479,9 @@ struct ClipRect * Case_7(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = CR->bounds.MinX - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -1658,9 +1658,9 @@ struct ClipRect * Case_8(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
           }
@@ -1848,9 +1848,9 @@ struct ClipRect * Case_9(struct Rectangle * R,
  	  {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -2038,9 +2038,9 @@ struct ClipRect * Case_10(struct Rectangle * R,
 	  {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -2238,9 +2238,9 @@ struct ClipRect * Case_11(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = CR->bounds.MinY -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -2429,9 +2429,9 @@ struct ClipRect * Case_12(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -2633,9 +2633,9 @@ struct ClipRect * Case_13(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -2835,9 +2835,9 @@ struct ClipRect * Case_14(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
 	  }
@@ -3058,9 +3058,9 @@ struct ClipRect * Case_15(struct Rectangle * R,
           {
             /* it has a superbitmap */
             DestX  = DEF_X0 - 
-                         passivelayer->bounds.MinX + passivelayer->Scroll_X;
+                         passivelayer->bounds.MinX - passivelayer->Scroll_X;
             DestY  = DEF_Y0 -
-                         passivelayer->bounds.MinY + passivelayer->Scroll_Y;
+                         passivelayer->bounds.MinY - passivelayer->Scroll_Y;
             DestBM = passivelayer->SuperBitMap;
             CR -> BitMap = DestBM;
          }

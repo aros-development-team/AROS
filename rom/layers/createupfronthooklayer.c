@@ -247,8 +247,8 @@
           /* with superbitmap */
           BltBitMap(
             bm2 /* Source Bitmap = superbitmap  */,
-            CR->bounds.MinX - L->bounds.MinX /* + L->Scroll_X = 0! */,
-            CR->bounds.MinY - L->bounds.MinY /* + L->Scroll_Y = 0! */,
+            CR->bounds.MinX - L->bounds.MinX /* - L->Scroll_X = 0! */,
+            CR->bounds.MinY - L->bounds.MinY /* - L->Scroll_Y = 0! */,
             bm, /* Destination Bitmap - */
             CR->bounds.MinX,
             CR->bounds.MinY,

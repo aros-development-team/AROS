@@ -76,8 +76,8 @@
     /* store the visible "stuff" to the superbitmap */
     SyncSBitMap(l);
     
-    l->Scroll_X += dx;
-    l->Scroll_Y += dy;
+    l->Scroll_X -= dx;
+    l->Scroll_Y -= dy;
 
     /* show what's in the superbitmap */
     CopySBitMap(l);
@@ -85,8 +85,8 @@
   }
   else
   {
-    l->Scroll_X += dx;
-    l->Scroll_Y += dy;
+    l->Scroll_X -= dx;
+    l->Scroll_Y -= dy;
   }
   
   UnlockLayer(l);

@@ -67,8 +67,8 @@
       /* I have to backup this part into the SuperBitMap! I find the
          data in the bitmap of the rastport of this layer */
       BltBitMap(l->SuperBitMap,
-                CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+                CR->bounds.MinX - l->bounds.MinX - l->Scroll_X,
+                CR->bounds.MinY - l->bounds.MinY - l->Scroll_Y,
                 l->rp->BitMap,
                 CR->bounds.MinX,
                 CR->bounds.MinY,

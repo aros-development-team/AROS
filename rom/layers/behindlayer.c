@@ -272,8 +272,8 @@
                         CR->bounds.MinX,
                         CR->bounds.MinY,
                         CR->BitMap,
-                        CR->bounds.MinX - L->bounds.MinX + L->Scroll_X,
-                        CR->bounds.MinY - L->bounds.MinY + L->Scroll_Y,
+                        CR->bounds.MinX - L->bounds.MinX - L->Scroll_X,
+                        CR->bounds.MinY - L->bounds.MinY - L->Scroll_Y,
                         CR->bounds.MaxX - CR->bounds.MinX + 1,
                         CR->bounds.MaxY - CR->bounds.MinY + 1,
                         0x0c0,
@@ -324,8 +324,8 @@
                 {
                   /* the part to become visible belongs to a superbitmap layer */
                   BltBitMap(_L->SuperBitMap,
-                            _CR->bounds.MinX - _L->bounds.MinX + _L->Scroll_X,
-                            _CR->bounds.MinY - _L->bounds.MinY + _L->Scroll_Y,
+                            _CR->bounds.MinX - _L->bounds.MinX - _L->Scroll_X,
+                            _CR->bounds.MinY - _L->bounds.MinY - _L->Scroll_Y,
                             _L->rp->BitMap,
                             _CR->bounds.MinX,
                             _CR->bounds.MinY,
@@ -485,8 +485,8 @@
                             CR2->bounds.MinX,
                             CR2->bounds.MinY,
                             CR2->BitMap,
-                            CR2->bounds.MinX - L->bounds.MinX + L->Scroll_X,
-                            CR2->bounds.MinY - L->bounds.MinY + L->Scroll_Y,
+                            CR2->bounds.MinX - L->bounds.MinX - L->Scroll_X,
+                            CR2->bounds.MinY - L->bounds.MinY - L->Scroll_Y,
                             CR2->bounds.MaxX - CR2->bounds.MinX + 1,
                             CR2->bounds.MaxY - CR2->bounds.MinY + 1,
                             0x0c0,
@@ -541,8 +541,8 @@
             {
               /* the part to become visible belongs to a superbitmap layer */
               BltBitMap(_L->SuperBitMap,
-                        _CR->bounds.MinX - _L->bounds.MinX + _L->Scroll_X,
-                        _CR->bounds.MinY - _L->bounds.MinY + _L->Scroll_Y,
+                        _CR->bounds.MinX - _L->bounds.MinX - _L->Scroll_X,
+                        _CR->bounds.MinY - _L->bounds.MinY - _L->Scroll_Y,
                         _L->rp->BitMap,
                         _CR->bounds.MinX,
                         _CR->bounds.MinY,

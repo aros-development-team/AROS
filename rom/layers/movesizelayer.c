@@ -435,8 +435,8 @@
               SrcX,
               CR->bounds.MinY,
               l->SuperBitMap, /* Destination Bitmap = SuperBitMap */
-              SrcX            - l_tmp->bounds.MinX + l->Scroll_X,
-              CR->bounds.MinY - l_tmp->bounds.MinY + l->Scroll_Y,
+              SrcX            - l_tmp->bounds.MinX - l->Scroll_X,
+              CR->bounds.MinY - l_tmp->bounds.MinY - l->Scroll_Y,
               CR->bounds.MaxX - SrcX            + 1,
               CR->bounds.MaxY - CR->bounds.MinY + 1,
               0x0c0, /* copy */
@@ -457,8 +457,8 @@
               CR->bounds.MinX,
               SrcY,
               l->SuperBitMap, /* Destination Bitmap = SuperBitMap */
-              CR->bounds.MinX - l_tmp->bounds.MinX + l->Scroll_X,
-              SrcY            - l_tmp->bounds.MinY + l->Scroll_Y,
+              CR->bounds.MinX - l_tmp->bounds.MinX - l->Scroll_X,
+              SrcY            - l_tmp->bounds.MinY - l->Scroll_Y,
               CR->bounds.MaxX - CR->bounds.MinX + 1,
               CR->bounds.MaxY - SrcY            + 1,
               0x0c0, /* copy */
@@ -629,8 +629,8 @@
                              l->rp,
                              l,
                              &bounds,
-                             bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                             bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+                             bounds.MinX - l->bounds.MinX - l->Scroll_X,
+                             bounds.MinY - l->bounds.MinY - l->Scroll_Y);
 
               OrRectRegion(l->DamageList,&CR->bounds);
               l->Flags |= LAYERREFRESH;
@@ -640,8 +640,8 @@
               /* with superbitmap */
               BltBitMap(
                 l->SuperBitMap /* Source Bitmap = superbitmap*/,
-                DestX           - l->bounds.MinX + l->Scroll_X,
-                CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
+                DestX           - l->bounds.MinX - l->Scroll_X,
+                CR->bounds.MinY - l->bounds.MinY - l->Scroll_Y,
                 bm             /* Destination Bitmap - */,
                 DestX,
                 CR->bounds.MinY,
@@ -673,8 +673,8 @@
                              l->rp,
                              l,
                              &bounds,
-                             bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                             bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+                             bounds.MinX - l->bounds.MinX - l->Scroll_X,
+                             bounds.MinY - l->bounds.MinY - l->Scroll_Y);
 
               OrRectRegion(l->DamageList,&CR->bounds);
               l->Flags |= LAYERREFRESH;
@@ -683,8 +683,8 @@
 	    {
               BltBitMap(
                 l->SuperBitMap /* Source Bitmap = superbitmap */,
-                CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                DestY           - l->bounds.MinY + l->Scroll_Y,
+                CR->bounds.MinX - l->bounds.MinX - l->Scroll_X,
+                DestY           - l->bounds.MinY - l->Scroll_Y,
                 bm /* Destination Bitmap - */,
                 CR->bounds.MinX,
                 DestY,
@@ -723,8 +723,8 @@
                            l->rp,
                            l,
                            &bounds,
-                           CR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                           CR->bounds.MinY - l->bounds.MinY + l->Scroll_Y);
+                           CR->bounds.MinX - l->bounds.MinX - l->Scroll_X,
+                           CR->bounds.MinY - l->bounds.MinY - l->Scroll_Y);
             l->rp->BitMap = bm;
           }
         }

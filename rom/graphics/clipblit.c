@@ -360,14 +360,14 @@ void internal_ClipBlit(struct RastPort * srcRP,
 	      {
                 /* with superbitmap */
                 if (xSrc >= crX0)
-                  bltSrcX = xSrc + srcLayer->Scroll_X;
+                  bltSrcX = xSrc - srcLayer->Scroll_X;
                 else
-                  bltSrcX = crX0 + srcLayer->Scroll_X;
+                  bltSrcX = crX0 - srcLayer->Scroll_X;
             
                 if (ySrc >= crY0)
-                  bltSrcY   = ySrc + srcLayer->Scroll_Y;
+                  bltSrcY   = ySrc - srcLayer->Scroll_Y;
                 else
-                  bltSrcY   = crY0 + srcLayer->Scroll_Y;
+                  bltSrcY   = crY0 - srcLayer->Scroll_Y;
 
                 srcBM     = srcCR->BitMap;
 	      }
@@ -494,9 +494,9 @@ void internal_ClipBlit(struct RastPort * srcRP,
 	      {
                 /* with superbitmap */
                 destBM      = destLayer->SuperBitMap;
-                DestOffsetX = destCR->bounds.MinX - destLayer->bounds.MinX +
+                DestOffsetX = destCR->bounds.MinX - destLayer->bounds.MinX -
                                                     destLayer->Scroll_X;
-                DestOffsetY = destCR->bounds.MinY - destLayer->bounds.MinY +
+                DestOffsetY = destCR->bounds.MinY - destLayer->bounds.MinY -
                                                     destLayer->Scroll_Y;;
 	      }
             }

@@ -227,8 +227,8 @@
                              CR_tmp->bounds.MinX,
                              CR_tmp->bounds.MinY,
                              CR_tmp->BitMap,
-                             CR_tmp->bounds.MinX - L_tmp->bounds.MinX + L_tmp->Scroll_X,
-                             CR_tmp->bounds.MinY - L_tmp->bounds.MinY + L_tmp->Scroll_Y,
+                             CR_tmp->bounds.MinX - L_tmp->bounds.MinX - L_tmp->Scroll_X,
+                             CR_tmp->bounds.MinY - L_tmp->bounds.MinY - L_tmp->Scroll_Y,
                              CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
                              CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
                              0x0c0,
@@ -283,9 +283,9 @@
              {
                /* it's a superbitmap layer */
                BltBitMap(CR->BitMap,
-                         CR->bounds.MinX - layer_to_move->bounds.MinX +
+                         CR->bounds.MinX - layer_to_move->bounds.MinX -
                                            layer_to_move->Scroll_X,
-                         CR->bounds.MinY - layer_to_move->bounds.MinY +
+                         CR->bounds.MinY - layer_to_move->bounds.MinY -
                                            layer_to_move->Scroll_Y,
                          layer_to_move->rp->BitMap,
                          CR->bounds.MinX,
@@ -456,8 +456,8 @@
 	                  CR->bounds.MinX,
 	                  CR->bounds.MinY,
 	                  CR->BitMap,
-	                  CR->bounds.MinX - layer_to_move->bounds.MinX + layer_to_move->Scroll_X,
-	                  CR->bounds.MinY - layer_to_move->bounds.MinY + layer_to_move->Scroll_Y,
+	                  CR->bounds.MinX - layer_to_move->bounds.MinX - layer_to_move->Scroll_X,
+	                  CR->bounds.MinY - layer_to_move->bounds.MinY - layer_to_move->Scroll_Y,
 	                  CR->bounds.MaxX - CR->bounds.MinX + 1,
 	                  CR->bounds.MaxY - CR->bounds.MinY + 1,
 	                  0x0c0,
@@ -513,8 +513,8 @@
 	            ** The part to become visible belongs to a superbitmap layer
 	            */
 	            BltBitMap(_L->SuperBitMap,
-	                      _CR->bounds.MinX - _L->bounds.MinX + _L->Scroll_X,
-	                      _CR->bounds.MinY - _L->bounds.MinY + _L->Scroll_Y,
+	                      _CR->bounds.MinX - _L->bounds.MinX - _L->Scroll_X,
+	                      _CR->bounds.MinY - _L->bounds.MinY - _L->Scroll_Y,
 	                      _L->rp->BitMap,
 	                      _CR->bounds.MinX,
 	                      _CR->bounds.MinY,
@@ -676,8 +676,8 @@
 	                      CR2->bounds.MinX,
 	                      CR2->bounds.MinY,
 	                      CR2->BitMap,
-	                      CR2->bounds.MinX - layer_to_move->bounds.MinX + layer_to_move->Scroll_X,
-	                      CR2->bounds.MinY - layer_to_move->bounds.MinY + layer_to_move->Scroll_Y,
+	                      CR2->bounds.MinX - layer_to_move->bounds.MinX - layer_to_move->Scroll_X,
+	                      CR2->bounds.MinY - layer_to_move->bounds.MinY - layer_to_move->Scroll_Y,
 	                      CR2->bounds.MaxX - CR2->bounds.MinX + 1,
 	                      CR2->bounds.MaxY - CR2->bounds.MinY + 1,
 	                      0x0c0,
@@ -732,8 +732,8 @@
 	      {
 	        /* the part to become visible belongs to a superbitmap layer */
 	        BltBitMap(_L->SuperBitMap,
-	                  _CR->bounds.MinX - _L->bounds.MinX + _L->Scroll_X,
-	                  _CR->bounds.MinY - _L->bounds.MinY + _L->Scroll_Y,
+	                  _CR->bounds.MinX - _L->bounds.MinX - _L->Scroll_X,
+	                  _CR->bounds.MinY - _L->bounds.MinY - _L->Scroll_Y,
 	                  _L->rp->BitMap,
 	                  _CR->bounds.MinX,
 	                  _CR->bounds.MinY,

@@ -174,8 +174,8 @@
           /* with superbitmap */
           BltBitMap(
             L->SuperBitMap,
-            CR_old->bounds.MinX - L->bounds.MinX + L->Scroll_X,
-            CR_old->bounds.MinY - L->bounds.MinY + L->Scroll_Y,
+            CR_old->bounds.MinX - L->bounds.MinX - L->Scroll_X,
+            CR_old->bounds.MinY - L->bounds.MinY - L->Scroll_Y,
             L->rp->BitMap,
             CR_old->bounds.MinX,
             CR_old->bounds.MinY, 
