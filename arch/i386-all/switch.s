@@ -1,10 +1,13 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.7  1996/09/11 16:54:30  digulla
+#    Revision 1.8  1996/10/23 08:04:26  aros
+#    Use generated offsets which makes porting much easier
+#
+#    Revision 1.7  1996/09/11 16:54:30	digulla
 #    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-#    	some systems name an external symbol "x" as "_x" and others as "x".
-#    	(The problem arises with assembler symbols which might differ)
+#	some systems name an external symbol "x" as "_x" and others as "x".
+#	(The problem arises with assembler symbols which might differ)
 #
 #    Revision 1.6  1996/09/11 14:41:17	digulla
 #    Removed tick which made problems with CPP
@@ -65,15 +68,7 @@
 #
 #******************************************************************************
 
-	Dispatch    =	-35
-	Enqueue     =	-225
-	ThisTask    =	284
-	TaskReady   =	428
-	tc_Flags    =	16
-	tc_State    =	17
-	TS_RUN	    =	2
-	TS_READY    =	3
-	TF_EXCEPT   =	32
+	.include "machine.i"
 
 	.text
 	.balign 16

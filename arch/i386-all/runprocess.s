@@ -1,10 +1,13 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.5  1996/09/11 16:54:28  digulla
+#    Revision 1.6  1996/10/23 08:04:25  aros
+#    Use generated offsets which makes porting much easier
+#
+#    Revision 1.5  1996/09/11 16:54:28	digulla
 #    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-#    	some systems name an external symbol "x" as "_x" and others as "x".
-#    	(The problem arises with assembler symbols which might differ)
+#	some systems name an external symbol "x" as "_x" and others as "x".
+#	(The problem arises with assembler symbols which might differ)
 #
 #    Revision 1.4  1996/08/23 16:49:21	digulla
 #    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
@@ -19,8 +22,7 @@
 #    Desc:
 #    Lang:
 
-	dl_SysBase	= 112
-	StackSwap	= -610
+	.include "machine.i"
 
 	.text
 	.balign 16

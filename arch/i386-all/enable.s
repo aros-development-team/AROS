@@ -1,7 +1,10 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.8  1996/10/18 07:24:42  aros
+#    Revision 1.9  1996/10/23 08:04:25  aros
+#    Use generated offsets which makes porting much easier
+#
+#    Revision 1.8  1996/10/18 07:24:42	aros
 #    Just removed my test-code :-)
 #
 #    Revision 1.7  1996/10/18 01:12:52	aros
@@ -59,10 +62,7 @@
 #define sigprocmask _sigprocmask
 #endif
 
-	IDNestCnt   =	302
-	AttnResched =	306
-	TDNestCnt   =	303
-	Switch	    =	-30
+	.include "machine.i"
 
 	.text
 	.balign 16

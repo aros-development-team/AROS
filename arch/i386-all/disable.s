@@ -36,7 +36,7 @@
 #define sigprocmask _sigprocmask
 #endif
 
-	IDNestCnt   =	302
+	.include "machine.i"
 
 	.text
 	.balign 16

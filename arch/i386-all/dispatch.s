@@ -1,13 +1,16 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.6  1996/10/10 13:24:47  digulla
+#    Revision 1.7  1996/10/23 08:04:24  aros
+#    Use generated offsets which makes porting much easier
+#
+#    Revision 1.6  1996/10/10 13:24:47	digulla
 #    Make timer work (Fleischer)
 #
-#    Revision 1.5  1996/09/11 16:54:26  digulla
+#    Revision 1.5  1996/09/11 16:54:26	digulla
 #    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-#    	some systems name an external symbol "x" as "_x" and others as "x".
-#    	(The problem arises with assembler symbols which might differ)
+#	some systems name an external symbol "x" as "_x" and others as "x".
+#	(The problem arises with assembler symbols which might differ)
 #
 #    Revision 1.4  1996/08/23 16:49:20	digulla
 #    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
@@ -49,21 +52,8 @@
 #   HISTORY
 #
 #******************************************************************************
-	Exception   =	-40
-	Disable     =	-100
-	Enable	    =	-105
-	ThisTask    =	284
-	IDNestCnt   =	302
-	TaskReady   =	428
-	tc_Flags    =	16
-	tc_State    =	17
-	tc_IDNestCnt=	18
-	tc_SPReg    =	56
-	tc_Switch   =	68
-	tc_Launch   =	72
-	TF_EXCEPT   =	32
-	TF_SWITCH   =	64
-	TS_RUN	    =	2
+
+	.include "machine.i"
 
 	.text
 	.balign 16
@@ -152,3 +142,4 @@ noexpt: popl	%ebp
 	popl	%ebx
 	popl	%eax
 	ret
+
