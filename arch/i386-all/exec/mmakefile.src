@@ -10,12 +10,13 @@ AFLAGS2 	:= $(AFLAGS) -I..
 TESTS		:=
 
 #MM
-exec-linux : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+exec-linux-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+
 #MM
 exec-freebsd : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
 
 #MM
-setup-exec-i386 :
+setup-exec-linux-i386 :
 	%mkdirs_q $(OBJDIR)
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 
