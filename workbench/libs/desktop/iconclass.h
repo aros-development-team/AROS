@@ -44,29 +44,29 @@
 
 struct IconClassData
 {
-	struct DiskObject *diskObject;
-	UBYTE *label, *directory;
-	Object *imagePart;
-	Object *labelPart;
-	BOOL selected;
-	ULONG lastClickSecs, lastClickMicros;
-	UBYTE *comment;
-	BOOL script, pure, archived, readable, writeable, executable, deleteable;
-	UBYTE viewMode;
-	struct MUI_EventHandlerNode ehn;
-	Object *sizePart, *typePart, *lastModifiedPart;
-	ULONG size;
-	struct DateStamp lastChanged;
-	LONG type;
-	Object *desktop;
-	BYTE whyRedraw;
+    struct DiskObject *diskObject;
+    UBYTE *label, *directory;
+    Object *imagePart;
+    Object *labelPart;
+    BOOL selected;
+    ULONG lastClickSecs, lastClickMicros;
+    UBYTE *comment;
+    BOOL script, pure, archived, readable, writeable, executable, deleteable;
+    UBYTE viewMode;
+    struct MUI_EventHandlerNode ehn;
+    Object *sizePart, *typePart, *lastModifiedPart;
+    ULONG size;
+    struct DateStamp lastChanged;
+    LONG type;
+    Object *desktop;
+    BYTE whyRedraw;
 };
 
 struct __dummyIconData__
 {
     struct MUI_NotifyData mnd;
-	struct MUI_AreaData   mad;
-	struct IconClassData icd;
+    struct MUI_AreaData   mad;
+    struct IconClassData icd;
 };
 
 #define iconData(obj) (&(((struct __dummyIconData__ *)(obj))->icd))

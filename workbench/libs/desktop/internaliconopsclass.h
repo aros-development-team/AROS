@@ -10,7 +10,7 @@
 
 struct InternalIconOpsClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

@@ -5,24 +5,24 @@
 
 struct DesktopInternMsg
 {
-	struct Message di_Message;
-	ULONG di_Command; /* see below */
+    struct Message di_Message;
+    ULONG di_Command; /* see below */
 };
 
 struct HandlerScanRequest
 {
-	struct DesktopInternMsg hsr_Message;
-	BPTR hsr_DirLock;
-	Object *hsr_CallBack;
-	Object *hsr_Application;
+    struct DesktopInternMsg hsr_Message;
+    BPTR hsr_DirLock;
+    Object *hsr_CallBack;
+    Object *hsr_Application;
 };
 
 struct HandlerTopLevelRequest
 {
-	struct DesktopInternMsg htl_Message;
-	ULONG htl_Types;
-	Object *htl_CallBack;
-	Object *htl_Application;
+    struct DesktopInternMsg htl_Message;
+    ULONG htl_Types;
+    Object *htl_CallBack;
+    Object *htl_Application;
 };
 
 #define DIMC_ADDUSER        10
@@ -32,10 +32,10 @@ struct HandlerTopLevelRequest
 
 struct WorkingMessageNode
 {
-	struct MinNode wm_Node;
-	struct DesktopInternMsg *wm_Working;
-	ULONG wm_ID;
-	struct MsgPort *wm_Port;
+    struct MinNode wm_Node;
+    struct DesktopInternMsg *wm_Working;
+    ULONG wm_ID;
+    struct MsgPort *wm_Port;
 };
 
 /* Kinds for CreateDesktopObjectA */

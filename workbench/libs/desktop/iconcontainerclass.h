@@ -28,73 +28,73 @@
 
 struct MemberNode
 {
-	struct MinNode m_Node;
-	Object *m_Object;
+    struct MinNode m_Node;
+    Object *m_Object;
 };
 
 struct opGetColumn
 {
-	ULONG methodID;
-	Tag colType;
+    ULONG methodID;
+    Tag colType;
 };
 
 struct opUpdateSelectList
 {
-	ULONG methodID;
-	Object *target;
-	ULONG selectState;
+    ULONG methodID;
+    Object *target;
+    ULONG selectState;
 };
 
 struct DetailColumn
 {
-	Tag dc_Content;
-	ULONG dc_X, dc_Width;
+    Tag dc_Content;
+    ULONG dc_X, dc_Width;
 };
 
 struct IconContainerClassData
 {
-	// icons are ordered in the order they were added to the
-	// container... the layouter will lay icons in columns
-	// and will start a new column when there is no room
-	// left (for icon view)
-	struct MinList memberList;
-	ULONG memberCount;
+    // icons are ordered in the order they were added to the
+    // container... the layouter will lay icons in columns
+    // and will start a new column when there is no room
+    // left (for icon view)
+    struct MinList memberList;
+    ULONG memberCount;
 
-	// list of selected icons
-	struct MinList selectedList;
+    // list of selected icons
+    struct MinList selectedList;
 
-	// this is true if the user hasn't moved any icons about
-	// enables us to use a more optimized icon layouter if
-	// we know where everything is.. otherwise it will search
-	// for gaps
-	BOOL perfectLayout;
+    // this is true if the user hasn't moved any icons about
+    // enables us to use a more optimized icon layouter if
+    // we know where everything is.. otherwise it will search
+    // for gaps
+    BOOL perfectLayout;
 
-	// only valid when perfectLayout is TRUE.. the current
-	// width & height of the
-	ULONG thisColumnWidth, thisColumnHeight;
+    // only valid when perfectLayout is TRUE.. the current
+    // width & height of the
+    ULONG thisColumnWidth, thisColumnHeight;
 
-	Object *vertProp, *horizProp;
-	LONG xView, yView;
-	LONG lastXView, lastYView;
+    Object *vertProp, *horizProp;
+    LONG xView, yView;
+    LONG lastXView, lastYView;
 
-	// one of these is set to true after a scroll
-	BOOL horizScroll, vertScroll;
+    // one of these is set to true after a scroll
+    BOOL horizScroll, vertScroll;
 
-	// visible size of the iconcontainer - same as _mwidth()/_mheight()
-	ULONG visibleWidth, visibleHeight;
-	// total size of the iconcontainer
-	ULONG virtualWidth, virtualHeight;
+    // visible size of the iconcontainer - same as _mwidth()/_mheight()
+    ULONG visibleWidth, visibleHeight;
+    // total size of the iconcontainer
+    ULONG virtualWidth, virtualHeight;
 
-	LONG heightAdjusted, widthAdjusted;
-	BOOL iconSelected;
-	BOOL justSelected;
-	BOOL open;
-	struct MUI_EventHandlerNode ehn;
-	BYTE viewMode;
-	struct DetailColumn *columns;
-	ULONG numColumns;
-	Object *desktop;
-	Object *last;
+    LONG heightAdjusted, widthAdjusted;
+    BOOL iconSelected;
+    BOOL justSelected;
+    BOOL open;
+    struct MUI_EventHandlerNode ehn;
+    BYTE viewMode;
+    struct DetailColumn *columns;
+    ULONG numColumns;
+    Object *desktop;
+    Object *last;
 };
 
 #define ICONSPACINGX 10

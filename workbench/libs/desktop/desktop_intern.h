@@ -20,14 +20,14 @@
 
 struct DesktopOperation
 {
-	struct Node do_Node;
-	ULONG do_Number;
-	ULONG do_Code;
-	UBYTE *do_Name;
-	ULONG do_MutualExclude;
-	ULONG do_Flags;
-	struct List do_SubItems;
-	struct MUI_CustomClass *do_Impl;
+    struct Node do_Node;
+    ULONG do_Number;
+    ULONG do_Code;
+    UBYTE *do_Name;
+    ULONG do_MutualExclude;
+    ULONG do_Flags;
+    struct List do_SubItems;
+    struct MUI_CustomClass *do_Impl;
 };
 
 #define DOF_CHECKED        0x00000001
@@ -40,56 +40,56 @@ struct DesktopBase
 {
     struct Library db_Library;
 
-	BPTR db_SegList;
+    BPTR db_SegList;
 
-	struct ExecBase *db_SysBase;
-	struct Library *db_DOSBase;
-	struct IntuitionBase *db_IntuitionBase;
-	struct Library *db_GfxBase;
-	struct Library *db_LayersBase;
-	struct Library *db_UtilityBase;
-	struct Library *db_MUIMasterBase;
-	struct Library *db_IconBase;
+    struct ExecBase *db_SysBase;
+    struct Library *db_DOSBase;
+    struct IntuitionBase *db_IntuitionBase;
+    struct Library *db_GfxBase;
+    struct Library *db_LayersBase;
+    struct Library *db_UtilityBase;
+    struct Library *db_MUIMasterBase;
+    struct Library *db_IconBase;
 
-	struct Library *db_InputBase;
-	struct IORequest *db_InputIO;
+    struct Library *db_InputBase;
+    struct IORequest *db_InputIO;
 
-	struct MUI_CustomClass *db_Observer;
-	struct MUI_CustomClass *db_Presentation;
-	struct MUI_CustomClass *db_IconContainer;
-	struct MUI_CustomClass *db_IconContainerObserver;
-	struct MUI_CustomClass *db_Icon;
-	struct MUI_CustomClass *db_DiskIcon;
-	struct MUI_CustomClass *db_DrawerIcon;
-	struct MUI_CustomClass *db_TrashcanIcon;
-	struct MUI_CustomClass *db_ToolIcon;
-	struct MUI_CustomClass *db_ProjectIcon;
-	struct MUI_CustomClass *db_IconObserver;
-	struct MUI_CustomClass *db_ContainerIconObserver;
-	struct MUI_CustomClass *db_DiskIconObserver;
-	struct MUI_CustomClass *db_DrawerIconObserver;
-	struct MUI_CustomClass *db_ToolIconObserver;
-	struct MUI_CustomClass *db_ProjectIconObserver;
-	struct MUI_CustomClass *db_TrashcanIconObserver;
-	struct MUI_CustomClass *db_DesktopObserver;
-	struct MUI_CustomClass *db_Desktop;
+    struct MUI_CustomClass *db_Observer;
+    struct MUI_CustomClass *db_Presentation;
+    struct MUI_CustomClass *db_IconContainer;
+    struct MUI_CustomClass *db_IconContainerObserver;
+    struct MUI_CustomClass *db_Icon;
+    struct MUI_CustomClass *db_DiskIcon;
+    struct MUI_CustomClass *db_DrawerIcon;
+    struct MUI_CustomClass *db_TrashcanIcon;
+    struct MUI_CustomClass *db_ToolIcon;
+    struct MUI_CustomClass *db_ProjectIcon;
+    struct MUI_CustomClass *db_IconObserver;
+    struct MUI_CustomClass *db_ContainerIconObserver;
+    struct MUI_CustomClass *db_DiskIconObserver;
+    struct MUI_CustomClass *db_DrawerIconObserver;
+    struct MUI_CustomClass *db_ToolIconObserver;
+    struct MUI_CustomClass *db_ProjectIconObserver;
+    struct MUI_CustomClass *db_TrashcanIconObserver;
+    struct MUI_CustomClass *db_DesktopObserver;
+    struct MUI_CustomClass *db_Desktop;
 
-	/* these will be moved into a new desktop context area */
-	struct Class           *db_DefaultWindow;
-	struct TagItem         *db_DefaultWindowArguments;
+    /* these will be moved into a new desktop context area */
+    struct Class           *db_DefaultWindow;
+    struct TagItem         *db_DefaultWindowArguments;
 
-	struct SignalSemaphore  db_BaseMutex;
-	struct SignalSemaphore  db_HandlerSafety;
+    struct SignalSemaphore  db_BaseMutex;
+    struct SignalSemaphore  db_HandlerSafety;
 
-	struct MsgPort *db_HandlerPort;
+    struct MsgPort *db_HandlerPort;
 
-	BOOL db_libsOpen;
+    BOOL db_libsOpen;
 
-	// TEMPORARY!
-	struct List db_OperationList;
-	struct MUI_CustomClass *db_Operation;
+    // TEMPORARY!
+    struct List db_OperationList;
+    struct MUI_CustomClass *db_Operation;
 
-	// END TEMPORARY!
+    // END TEMPORARY!
 };
 
 extern struct DesktopBase *DesktopBase;

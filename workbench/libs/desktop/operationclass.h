@@ -10,14 +10,14 @@
 
 struct OperationClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 struct opExecute
 {
-	ULONG MethodID;
-	Object *target;
-	ULONG operationCode;
+    ULONG MethodID;
+    Object *target;
+    ULONG operationCode;
 };
 
 #endif

@@ -10,7 +10,7 @@
 
 struct InternalDesktopOpsClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 

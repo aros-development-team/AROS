@@ -12,15 +12,15 @@
 
 struct PresentationClassData
 {
-	Object *observer;
+    Object *observer;
 };
 
 
 struct __dummyPresentationData__
 {
     struct MUI_NotifyData mnd;
-	struct MUI_AreaData   mad;
-	struct PresentationClassData pcd;
+    struct MUI_AreaData   mad;
+    struct PresentationClassData pcd;
 };
 
 #define presentationData(obj) (&(((struct __dummyPresentationData__ *)(obj))->pcd))

@@ -8,7 +8,7 @@
 
 struct ContainerIconObserverClassData
 {
-	ULONG dummy;
+    ULONG dummy;
 };
 
 
