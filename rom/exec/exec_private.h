@@ -1,6 +1,14 @@
 #ifndef _EXEC_PRIVATE_H
 #define _EXEC_PRIVATE_H
 
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Private prototypes for exec.library
+    Lang: english
+*/
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
