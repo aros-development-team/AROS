@@ -29,18 +29,18 @@ const UWORD defaultpens[] =
 
 char KeyFromStr(char *string, char underchar)
 {
-    char c;
+    char c, ret = 0;
     
     while ((c = *string++))
     {
         if (c == underchar)
 	{
-	    c = ToUpper(c);
+	    ret = ToUpper(*string);
 	    break;
 	}
     }
     
-    return c;
+    return ret;
 }
 
 /****************************************************************************************/
@@ -99,7 +99,7 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
 	    
 	    if (c == *underscore)
 	    {
-	        WORD underwidth = TextLength(&temprp, underscore, 1);
+		pixellen -= TextLength(&temprp, underscore, 1);
 		
 	        if (do_lod)
 		{
@@ -108,9 +108,8 @@ ULONG myTextLength(char *str, struct TextAttr *attr, UBYTE *underscore,
 		    lod->lod_RestLen = len - underoff - 1;	/* store len of remaining string */
 		    lod->lod_UnderY = temprp.TxBaseline + 2;    /* Y position of underscore */
 
-		    lod->lod_UnderWidth = underwidth;
+		    lod->lod_UnderWidth = TextLength(&temprp, str2, 1);
 		}
-		pixellen -= underwidth;
 	        break;
 	    }
 	}
@@ -155,19 +154,18 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
  	    retval = DoSuperMethodA(cl, (Object *)im, msg);
  	    if (retval)
 	    {
-	        UBYTE underscorestr[2];
+	        UBYTE underscorechar;
 		
  	        im = (struct Image *)retval;
 		
 		data = INST_DATA(cl, im);
 		data->lod_IData = *(struct InitData *)im->ImageData;
 		
-		underscorestr[0] = data->lod_IData.idata_Underscore;
-		underscorestr[1] = '\0';
+		underscorechar = (UBYTE)data->lod_IData.idata_Underscore;
 			
  		im->Width = myTextLength(data->lod_IData.idata_Label,
 					 data->lod_IData.idata_TextAttr,
-					 underscorestr, /* AROS FIXME: correct ? */
+					 &underscorechar,
 					 im,
 					 cl->cl_InstOffset	/* for C Routines its not really more than a flag */
 					 );

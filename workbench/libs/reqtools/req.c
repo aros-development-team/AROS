@@ -400,7 +400,9 @@ ULONG ASM SAVEDS GetString (
 
 	for (i = 0; i < gadlines; i++)
 	{
-	    gadlenptr[i] = myTextLength (glob->gadstrbuff[i], fontattr, (UBYTE *)&underscore + 3, NULL, 0) + 24;
+	    UBYTE underscorechar = (UBYTE)underscore;
+	    
+	    gadlenptr[i] = myTextLength (glob->gadstrbuff[i], fontattr, &underscorechar, NULL, 0) + 24;
 	    gadlen += gadlenptr[i];
 	}
 	

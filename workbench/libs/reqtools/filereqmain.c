@@ -177,7 +177,7 @@ ULONG ASM SAVEDS PropReqHandler (
 		{
 		    NameFromLock (appmsg->am_ArgList->wa_Lock, fdir, 256);
 		    my_SetStringGadget (glob->reqwin, glob->filegad,
-					    appmsg->am_ArgList->wa_Name);
+					appmsg->am_ArgList->wa_Name);
 		    NewDir (glob);
 		}
 		ReplyMsg ((struct Message *)appmsg);
@@ -883,8 +883,28 @@ skipfile:
 		    {
 			if ((gad = glob->checkboxgad[checkbox]))
 			{
+			    IPTR checked;
+			    struct TagItem get_tags[] =
+			    {
+			    	{GTCB_Checked, (IPTR)&checked},
+				{TAG_DONE   	    	     }
+			    };
+			    
+    	    	    	#ifdef _AROS
+			    /* the other way (checking GFLG_SELECTED) does
+			       not work with AROS gadtools.library, and in
+			       general not with boopsi gadgets. Only with
+			       non-boopsi bool gadgets it works (but not
+			       yet in AROS) */
+			    
+			    GT_GetGadgetAttrsA(gad, glob->reqwin, NULL, get_tags);
+			    myGT_SetGadgetAttrs (gad, glob->reqwin, NULL,
+					         GTCB_Checked, !checked, TAG_END);
+			    
+			#else
 			    myGT_SetGadgetAttrs (gad, glob->reqwin, NULL,
 					         GTCB_Checked, !(gad->Flags & GFLG_SELECTED), TAG_END);
+    	    	    	#endif
 			    goto fakegadgetup;
 			}
 		    }
@@ -974,18 +994,17 @@ checkdoubleclick:
 				    strcpy (filename, str);
 				    StrCat (filename, DOTFONTSTR);
 				    my_SetStringGadget (glob->reqwin,
-											    glob->filegad, filename);
+							glob->filegad, filename);
 				    if (doubleclick)
 					return (LeaveReq (glob, filename));
 
 				    fontreq->Attr.ta_YSize = entry->re_Size;
 				    fontreq->Attr.ta_Flags = entry->re_Flags;
 				    fontreq->Attr.ta_Style = entry->re_Style;
-				    fontreq->Attr.ta_Style
-										    &= ~(FSF_ITALIC|FSF_BOLD|FSF_UNDERLINED);
+				    fontreq->Attr.ta_Style &= ~(FSF_ITALIC|FSF_BOLD|FSF_UNDERLINED);
 				    fontreq->Attr.ta_Style |= glob->fontstyle;
 				    my_SetIntegerGadget (glob->reqwin,
-											    glob->drawergad, entry->re_Size);
+							 glob->drawergad, entry->re_Size);
 				    ShowFontSample (glob, FALSE, TRUE);
 rememberclicked:
 				    glob->lastclicked = clicked;
@@ -1015,21 +1034,93 @@ rememberclicked:
 			    break;
 				
 			case ITALIC:
-			    if (glob->checkboxgad[CHECKBOX_ITALIC]->Flags & GFLG_SELECTED)
+			#ifdef _AROS
+			    {
+			    	IPTR checked;
+				struct TagItem get_tags[] =
+				{
+			    	    {GTCB_Checked, (IPTR)&checked},
+				    {TAG_DONE   	    	 }
+				};
+				
+				GT_GetGadgetAttrsA(glob->checkboxgad[CHECKBOX_ITALIC], glob->reqwin, NULL, get_tags);
+				if (checked) 
+    	    	    	    	{
+				    glob->fontstyle |= FSF_ITALIC;
+				}
+				else
+				{
+				    glob->fontstyle &= ~FSF_ITALIC;
+				}
+			    }
+			    
+			#else
+			
+			    if (glob->checkboxgad[CHECKBOX_ITALIC]->Flags & GFLG_SELECTED)			
 				glob->fontstyle |= FSF_ITALIC;
 			    else glob->fontstyle &= ~FSF_ITALIC;
+			    
+    	    	    	#endif
+			
 			    goto updatestyle;
 				
 			case UNDERLINE:
+			#ifdef _AROS
+			    {
+			    	IPTR checked;
+				struct TagItem get_tags[] =
+				{
+			    	    {GTCB_Checked, (IPTR)&checked},
+				    {TAG_DONE   	    	 }
+				};
+				
+				GT_GetGadgetAttrsA(glob->checkboxgad[CHECKBOX_UNDERLINE], glob->reqwin, NULL, get_tags);
+				if (checked) 
+    	    	    	    	{
+				    glob->fontstyle |= FSF_UNDERLINED;
+				}
+				else
+				{
+				    glob->fontstyle &= ~FSF_UNDERLINED;
+				}
+			    }
+			    
+			#else
+			
 			    if (glob->checkboxgad[CHECKBOX_UNDERLINE]->Flags & GFLG_SELECTED)
 				glob->fontstyle |= FSF_UNDERLINED;
 			    else glob->fontstyle &= ~FSF_UNDERLINED;
+			#endif
+			
 			    goto updatestyle;
 				
 			case BOLD:
+			#ifdef _AROS
+			    {
+			    	IPTR checked;
+				struct TagItem get_tags[] =
+				{
+			    	    {GTCB_Checked, (IPTR)&checked},
+				    {TAG_DONE   	    	 }
+				};
+				
+				GT_GetGadgetAttrsA(glob->checkboxgad[CHECKBOX_BOLD], glob->reqwin, NULL, get_tags);
+				if (checked) 
+    	    	    	    	{
+				    glob->fontstyle |= FSF_BOLD;
+				}
+				else
+				{
+				    glob->fontstyle &= ~FSF_BOLD;
+				}
+			    }
+			    
+			#else
+			
 			    if (glob->checkboxgad[CHECKBOX_BOLD]->Flags & GFLG_SELECTED)
 				    glob->fontstyle |= FSF_BOLD;
 			    else glob->fontstyle &= ~FSF_BOLD;
+			#endif
 updatestyle:
 			    ShowFontSample (glob, FALSE, TRUE);
 			    break;
@@ -1100,8 +1191,7 @@ refreshlist:
 				    
 				    strcpy (fdir, glob->drawerstr);
 				    val = (glob->volumerequest && !*fdir);
-				    my_SelectGadget (!val ? glob->okgad : glob->cancelgad,
-																		    glob->reqwin);
+				    my_SelectGadget (!val ? glob->okgad : glob->cancelgad, glob->reqwin);
 				    ShortDelay();
 				    
 				    if (val) goto docancel;
@@ -1147,7 +1237,7 @@ refreshlist:
 				if (*str == '/') {
 					strcpy (tempstr, str + 1);
 					my_SetStringGadget (glob->reqwin, glob->filegad,
-																				tempstr);
+							    tempstr);
 					goto parentdir;
 					}
 
@@ -1282,7 +1372,7 @@ parentdir:
 				    MIN (glob->diminfo.MaxRasterWidth, glob->maxwidth));
 			    glob->usedefwidth = (glob->width == glob->defwidth);
 			    myGT_SetGadgetAttrs (glob->defwgad, glob->reqwin, NULL,
-									    GTCB_Checked, glob->usedefwidth, TAG_END);
+						 GTCB_Checked, glob->usedefwidth, TAG_END);
 			    glob->activegadget = glob->mainstrgad;
 			    break;
 				
@@ -1403,10 +1493,16 @@ iterate:
 
     if (doactgad)
     {
-#ifndef _AROS
+/*
+#ifdef _AROS
 #warning Disabled this gadget activation here, as in Intuition this functions is slow (why? ask stegerg)
+#else
+*/
 	ActivateGadget (glob->activegadget, glob->reqwin, NULL);
+
+/*
 #endif
+*/
 	if (!(glob->reqwin->IDCMPFlags & IDCMP_RAWKEY))
 	{
 	    /* Add RAWKEY IDCMP only after initialzing and refreshing the window */

@@ -182,10 +182,14 @@ StrEditHookEntry (
 	rawcode = sgw->IEvent->ie_Code;
 	qual = sgw->IEvent->ie_Qualifier;
 
+//kprintf("sgsg: editop = %d code = %x  quali = %x\n", sgw->EditOp, rawcode, qual);
+
 	if( ( sgw->EditOp == EO_INSERTCHAR ) ||
 	    ( sgw->EditOp == EO_REPLACECHAR ) ||
+	    ( sgw->EditOp == EO_SPECIAL ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
 	    ( sgw->EditOp == EO_BADFORMAT ) )
 	{
+//kprintf("sgsg2\n");
 	    if( ( qual & IEQUALIFIER_RCOMMAND ) || ( sgw->Code == 27 ) )
 	    {
 		sgw->Actions &= ~( SGA_USE | SGA_BEEP | SGA_REDISPLAY );
