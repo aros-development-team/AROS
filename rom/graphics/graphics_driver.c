@@ -978,6 +978,42 @@ static ULONG wpaa_render(APTR wpaar_data
     return width * height;
 }
 
+struct bta_render_data
+{
+    UBYTE *array;
+    ULONG  modulo;
+    UBYTE  invertalpha;
+};
+
+static ULONG bta_render(APTR bta_data
+	, LONG srcx, LONG srcy
+	, OOP_Object *dstbm_obj
+	, OOP_Object *dst_gc
+	, LONG x1, LONG y1, LONG x2, LONG y2
+	, struct GfxBase *GfxBase)
+{
+    struct bta_render_data *btard;
+    ULONG   	    	    width, height;
+    UBYTE   	    	   *array;
+    
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+    
+    btard = (struct bta_render_data *)bta_data;
+    
+    array = btard->array + btard->modulo * srcy + srcx;
+    
+    HIDD_BM_PutAlphaTemplate(dstbm_obj
+    	, dst_gc, array
+	, btard->modulo
+	, x1, y1
+	, width, height
+	, btard->invertalpha
+    );
+    
+    return width * height;
+}
+
 struct rpa_render_data {
     UBYTE *array;
     HIDDT_StdPixFmt pixfmt;
@@ -1427,10 +1463,7 @@ LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
 	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
 	, UWORD width, UWORD height, ULONG globalalpha, struct Library *CyberGfxBase)
 {
-     
-    OOP_Object      	    *pf;
-    HIDDT_StdPixFmt 	    srcfmt_hidd = 0;
-    ULONG   	    	    start_offset, bppix;    
+    ULONG   	    	    start_offset;    
     LONG    	    	    pixwritten = 0;    
     struct wpaa_render_data wpaard;
     struct Rectangle 	    rr;
@@ -2038,6 +2071,36 @@ VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Librar
 	HIDD_BM_ReleaseDirectAccess((OOP_Object *)handle);
     }
 }
+
+void driver_BltTemplateAlpha(UBYTE *src, LONG srcx, LONG srcmod
+    	, struct RastPort *rp, LONG destx, LONG desty, LONG width, LONG height
+	, struct Library *CyberGfxBase)
+{
+    struct bta_render_data  btard;
+    struct Rectangle 	    rr;
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in BltTemplateAlpha() !!!\n"));
+    	return 0;
+    }
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return 0;
+	
+    /* Compute the start of the array */
+
+    btard.array  = src + srcx;
+    btard.modulo = srcmod;
+    btard.invertalpha = (rp->DrawMode & INVERSVID) ? TRUE : FALSE;
+    rr.MinX = destx;
+    rr.MinY = desty;
+    rr.MaxX = destx + width  - 1;
+    rr.MaxY = desty + height - 1;
+    
+    do_render_func(rp, NULL, &rr, bta_render, &btard, FALSE, GfxBase);
+}
+
 /******************************************/
 /* Support stuff for cybergfx             */
 /******************************************/
