@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 	    res = strcmp(CountryArray[j].ca_Name, argv[i]);
 	    if(res == 0)
 	    {
-		UBYTE buffer[80];
+		UBYTE buffer[1024];
 		strcpy(buffer, argv[1]);
 		strcat(buffer, argv[i]);
 		strcat(buffer, ".country");
