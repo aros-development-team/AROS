@@ -620,9 +620,14 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
 		CR->lobs));
 		
+	
+		
 	    /* Does this cliprect intersect with area to blit ? */
 	    if (andrectrect(&CR->bounds, &toblit, &intersect))
 	    {
+	        ULONG xoffset = intersect.MinX - toblit.MinX;
+		ULONG yoffset = intersect.MinY - toblit.MinY;
+		
 	        if (NULL == CR->lobs)
 		{
 		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
@@ -634,7 +639,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 		    
 		    /* Cliprect not obscured, so we may render directly into the display */
 		    BltBitMap(srcBitMap
-		    	, xSrc, ySrc
+		    	, xSrc + xoffset, ySrc + yoffset
 			, bm
 		    	, intersect.MinX
 			, intersect.MinY
@@ -647,7 +652,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 		{
 		    /* Render into offscreen cliprect bitmap */
 		    BltBitMap(srcBitMap
-		    	, xSrc, ySrc
+		    	, xSrc + xoffset, ySrc + yoffset
 			, CR->BitMap
 		    	, intersect.MinX - CR->bounds.MinX
 			, intersect.MinY - CR->bounds.MinY
@@ -981,7 +986,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 	  
 	  if (bm->Flags & BMF_AROS_DISPLAYED)
 	  {
-	    return HIDD_BM_GetPixel(dd->dd_GC, x + XRel, y + YRel);
+	    return HIDD_BM_GetPixel(BM_OBJ(bm), x + XRel, y + YRel);
 	  }
         } 
         else
@@ -1029,7 +1034,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   { /* this is probably a screen */
 
     if (bm->Flags & BMF_AROS_DISPLAYED)
-        return HIDD_BM_GetPixel(dd->dd_GC, x, y);
+        return HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
     
     i = y * Width + (x >> 3);
     Mask = (1 << (7-(x & 0x07)));
@@ -1827,11 +1832,6 @@ static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xs
 	| ((minterm & 0x20) << 1)	\
 	| ((minterm & 0x10) << 3) )  >> 4 )
 
-#define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
-#define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-	( ((y) * (bytes_per_row)) + ((x) >> 3) )
-
-#define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07)))
 
 static VOID setbitmappixel(struct BitMap *bm
 	, LONG x, LONG y
@@ -3867,4 +3867,274 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 
 }
 
+
+/*********** BltMaskBitMapRastPort() ***************************/
+
+struct bltmask_info
+{
+    PLANEPTR mask;
+    LONG mask_xmin;
+    LONG mask_ymin;
+    ULONG mask_bpr;
+    struct BitMap *srcbm;
+    Object *destbm;
+    struct GfxBase *GfxBase;
+};
+
+
+static VOID bltmask_to_buf(struct bltmask_info *bmi
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, ULONG *buf)
+{	
+    /* x_src, y_src is the coordinates int the layer. */
+    LONG y;
+    UBYTE src_depth;
+
+    EnterFunc(bug("bltmask_to_buf(%p, %d, %d, %d, %d, %p)\n"
+    			, bmi, x_src, y_src, xsize, ysize, buf ));
+
+    src_depth = GetBitMapAttr(bmi->srcbm, BMA_DEPTH);
+    
+    /* We must get the data from the destination bitmap */
+    HIDD_BM_GetImage(bmi->destbm, buf, x_dest, y_dest, xsize, ysize);
+			
+    
+    for (y = 0; y < ysize; y ++)
+    {
+        LONG x;
+	
+	for (x = 0; x < xsize; x ++)
+	{
+	    ULONG set_pixel;
+	    
+	    ULONG idx, mask;
+	    idx = COORD_TO_BYTEIDX(x + bmi->mask_xmin, y + bmi->mask_ymin, bmi->mask_bpr);
+	    mask = XCOORD_TO_MASK(x + bmi->mask_xmin);
+		 
+	    set_pixel = bmi->mask[idx] & mask;
+		
+	    if (set_pixel)
+	    {
+		  *buf = getbitmappixel(bmi->srcbm
+		  	, x + x_src
+			, y + y_src
+			, src_depth
+			, 0xFF
+		   );
+	    }
+	    
+	    buf ++;
+	    
+	} /* for (each column) */
+	
+    } /* for (each row) */
+
+    
+    ReturnVoid("bltmask_to_buf");
+}
+
+
+#define APPLY_MINTERM(pen, src, dest, minterm) \
+	pen = 0;	\
+	if ((minterm) & 0x0010)	pen = (~(src) & ~(dest));	\
+	if ((minterm) & 0x0020)	pen = (~(src) &  (dest));	\
+	if ((minterm) & 0x0040)	pen = ( (src) & ~(dest));	\
+	if ((minterm) & 0x0080)	pen = ( (src) &  (dest));
+	
+static VOID bltmask_amiga(struct bltmask_info *bmi
+	, LONG x_src, LONG y_src
+	, struct BitMap *destbm
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, ULONG minterm )
+{
+    /* x_src, y_src is the coordinates int the layer. */
+    LONG y;
+    UBYTE src_depth, dest_depth;
+    
+
+    EnterFunc(bug("bltmask_amiga(%p, %d, %d, %d, %d, %d, %d, %p)\n"
+    			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize));
+
+    src_depth  = GetBitMapAttr(bmi->srcbm, BMA_DEPTH);
+    dest_depth = GetBitMapAttr(destbm,     BMA_DEPTH);
+    
+    
+    for (y = 0; y < ysize; y ++)
+    {
+        LONG x;
+	
+	for (x = 0; x < xsize; x ++)
+	{
+	    ULONG set_pixel;
+	    
+	    ULONG idx, mask;
+	    idx = COORD_TO_BYTEIDX(x + bmi->mask_xmin, y + bmi->mask_ymin, bmi->mask_bpr);
+	    mask = XCOORD_TO_MASK(x + bmi->mask_xmin);
+		 
+	    set_pixel = bmi->mask[idx] & mask;
+		
+	    if (set_pixel)
+	    {
+	        ULONG srcpen, destpen, pixval;
+		srcpen = getbitmappixel(bmi->srcbm
+		  	, x + x_src
+			, y + y_src
+			, src_depth
+			, 0xFF
+		);
+		
+/* Could optimize plain copy (0x00C0) here. (does not nead to get dest)
+ and clear (0x0000) (needs neither src or dest)*/
+		
+		destpen = getbitmappixel(destbm
+		  	, x + x_dest
+			, y + y_dest
+			, dest_depth
+			, 0xFF
+		);
+		
+		APPLY_MINTERM(pixval, srcpen, destpen, minterm);
+		setbitmappixel(destbm
+		  	, x + x_dest
+			, y + y_dest
+			, pixval
+			, dest_depth
+			, 0xFF
+		);
+		
+	    }
+	    
+	    
+	} /* for (each column) */
+	
+    } /* for (each row) */
+    
+    ReturnVoid("bltmask_amiga");
+    
+}
+
+VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
+    		, LONG xSrc, LONG ySrc
+		, struct RastPort *destRP
+		, LONG xDest, LONG yDest
+		, ULONG xSize, ULONG ySize
+		, ULONG minterm
+		, PLANEPTR bltMask
+		, struct GfxBase *GfxBase )
+{
+    ULONG width, height;
+    struct Layer *L = destRP->Layer;
+    struct BitMap *bm = destRP->BitMap;
+    struct bltmask_info bmi;
+    
+    struct TagItem bm_tags[] =
+    {
+	{ aHidd_BitMap_DrawMode, 0UL },
+	{ TAG_DONE, 0UL }
+    };
+    
+    
+    EnterFunc(bug("driver_BltMaskBitMapRastPort(%d, %d, %d, %d, %d, %d)\n"
+    		, xSrc, ySrc, xDest, yDest, xSize, ySize));
+
+    if (!CorrectDriverData(destRP, GfxBase))
+    	ReturnVoid("driver_BltMaskBitMapRastPort");
+    
+    bm_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+    SetAttrs(BM_OBJ(bm), bm_tags);
+
+    bmi.mask	= bltMask;
+    bmi.srcbm	= srcBitMap;
+    bmi.destbm	= BM_OBJ(bm);
+    bmi.GfxBase	= GfxBase;
+    
+    bmi.mask_bpr = WIDTH_TO_WORDS(xSize);
+    
+    /* Set minterm bitmap object */
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen */
+	
+	bmi.mask_xmin = 0;
+	bmi.mask_ymin = 0;
+	
+	amiga2hidd_fast( (APTR) &bmi
+		, xSrc, ySrc
+		, BM_OBJ(bm)
+		, xDest, yDest
+		, xSize
+		, ySize
+		, bltmask_to_buf
+	);
+	
+    }
+    else
+    {
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle toblit, intersect;
+	
+	toblit.MinX = xDest + xrel;
+	toblit.MinY = yDest + yrel;
+	toblit.MaxX = (xDest + xSize - 1) + xrel;
+	toblit.MaxY = (yDest + ySize - 1) + yrel;
+	
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ? */
+	    if (andrectrect(&CR->bounds, &toblit, &intersect))
+	    {
+	        ULONG xoffset = intersect.MinX - toblit.MinX;
+		ULONG yoffset = intersect.MinY - toblit.MinY;
+		
+		bmi.mask_xmin = xoffset;
+		bmi.mask_ymin = yoffset;
+	    
+	        if (NULL == CR->lobs)
+		{
+		    
+		    /* Cliprect not obscured, so we may render directly into the display */
+		    amiga2hidd_fast( (APTR) &bmi
+			, xSrc + xoffset, ySrc + yoffset
+			, BM_OBJ(bm)
+			, intersect.MinX, intersect.MinY
+			, width
+			, height
+			, bltmask_to_buf
+		     );
+		}
+		else
+		{
+		    /* Render into offscreen cliprect bitmap */
+		    bltmask_amiga( &bmi
+		    	, xSrc + xoffset, ySrc + yoffset
+			, CR->BitMap
+		    	, intersect.MinX - CR->bounds.MinX
+			, intersect.MinY - CR->bounds.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, minterm
+		    );
+		    
+		    
+		}
+	    }
+	    CR = CR->Next;
+	}
+	
+    }
+	
+
+    ReturnVoid("driver_BltMaskBitMapRastPort");
+}
 
