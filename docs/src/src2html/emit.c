@@ -41,6 +41,8 @@ static const char * listmodename[] =
     "enumeration",
     "emph",
     "new",
+    "methods",
+    "taglist",
     NULL
 };
 

@@ -583,6 +583,8 @@ void emit_html (int token, va_list args)
 	{
 	case lm_new: /* doesn't happen */
 	case lm_none: break;
+	case lm_methods:
+	case lm_tags:
 	case lm_description: emit_special ("<DL>"); break;
 	case lm_itemize:     emit_special ("<UL>"); break;
 	case lm_enumeration: emit_special ("<OL TYPE=1>"); break;
@@ -602,6 +604,16 @@ void emit_html (int token, va_list args)
 
 	    case lm_new:
 		yyerror ("Unexpected \\item in \\begin{new}");
+		break;
+
+	    case lm_methods:
+	    case lm_tags:
+		if (!text) yyerror ("Missing argument for \\item in description");
+		emit_special ("<P>\n\n<DT><TT>");
+		emit_html_string_ws (text);
+		emit_special ("</TT><DD>");
+		emit_char ('\n');
+
 		break;
 
 	    case lm_description:
@@ -632,6 +644,8 @@ void emit_html (int token, va_list args)
 	{
 	case lm_none: break;
 	case lm_new:	     emit_special ("</FONT>"); break;
+	case lm_methods:
+	case lm_tags:
 	case lm_description: emit_nl (); emit_special ("</DL>"); break;
 	case lm_itemize:     emit_nl (); emit_special ("</UL>"); break;
 	case lm_enumeration: emit_nl (); emit_special ("</OL>"); break;

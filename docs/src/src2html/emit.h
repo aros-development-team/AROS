@@ -28,6 +28,8 @@ enum listmode
     lm_enumeration,
     lm_emph,
     lm_new,
+    lm_methods,
+    lm_tags,
 };
 
 enum lastemittype
