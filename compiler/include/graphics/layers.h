@@ -55,4 +55,8 @@ struct Layer_Info
 #define LAYERS_BACKFILL   ((struct Hook *)0)
 #define LAYERS_NOBACKFILL ((struct Hook *)1)
 
+/* LayerInfo Flag */
+
+#define LIFLG_SUPPORTS_OFFSCREEN_LAYERS     (1 << 8)	/* Same flag as AmigaOS hack PowerWindowsNG */
+
 #endif /* GRAPHICS_LAYERS_H */
