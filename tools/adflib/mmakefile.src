@@ -25,11 +25,12 @@ FILES := \
 	adf_util \
 	Generic/adf_nativ
 
+endif
+
 USER_INCLUDES := -I. -IGeneric
 
 %build_linklib mmake=linklibs-adf libname=adf files=$(FILES)
 
-endif
 
 #MM
 includes-copy : $(INCDIR)/adflib.h \
