@@ -30,12 +30,12 @@ BEGIN {
     indir="compiler/include"
     outdir=indir;
 
-    basename_lp=indir "/clib/" tolower(lib) "_protos."
-    basename_lc=indir "/defines/" tolower(lib) "."
-    infile_lp=basename_lp "h"
-    infile_lc=basename_lc "h"
-    out_lp=basename_lp "new"
-    out_lc=basename_lc "new"
+    basename_lp=indir "/clib/" tolower(lib) "_protos.h"
+    basename_lc=indir "/defines/" tolower(lib) ".h"
+    infile_lp=basename_lp
+    infile_lc=basename_lc
+    out_lp=basename_lp ".new"
+    out_lc=basename_lc ".new"
 
     todo=2;
 
@@ -155,9 +155,4 @@ END {
     close (out_lc);
     close (infile_lp);
     close (out_lp);
-
-    system ("mv " basename_lc "h " basename_lc "bak");
-    system ("mv " basename_lc "new " basename_lc "h");
-    system ("mv " basename_lp "h " basename_lp "bak");
-    system ("mv " basename_lp "new " basename_lp "h");
 }
