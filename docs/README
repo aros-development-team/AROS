@@ -1,10 +1,12 @@
 Short: AROS - Amiga Replacement OS
-Author:   Aaron "Optimizer" Digulla (digulla@fh-konstanz.de) and many others
-Uploader: Aaron "Optimizer" Digulla (digulla@fh-konstanz.de)
+Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
+Uploader: Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de)
 Version:  1.10
 Type:	  misc/emu
 
 New this time:
+- Docs, docs, docs
+- Some bugfixes
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
