@@ -27,7 +27,7 @@
    --------------------------------------------------------------------- */
 
 /* The name of the topmost HIDD class */
-#define HIDDCLASS		"hiddclass"
+#define HIDDCLASS "hiddclass"
 
 #ifndef __typedef_HIDD
 #   define __typedef_HIDD
@@ -35,20 +35,21 @@
 #endif
 
 /*
-    Tags for the root HIDD class "hiddclass".
+    Attributes for the root HIDD class "hiddclass".
     See the HIDD documentation for information on their use.
  */
-
-#define HIDDA_Base		(TAG_USER + 0x800000)
-#define HIDDA_Type		(HIDDA_Base + 1)    /* --G-- UWORD */
-#define HIDDA_SubType		(HIDDA_Base + 2)    /* --G-- UWORD */
-#define HIDDA_Producer		(HIDDA_Base + 3)    /* --G-- ULONG */
-#define HIDDA_Name		(HIDDA_Base + 4)    /* --G-- STRPTR */
-#define HIDDA_HardwareName	(HIDDA_Base + 5)    /* --G-- STRPTR */
-#define HIDDA_Active		(HIDDA_Base + 6)    /* ISGNU BOOL */
-#define HIDDA_Status		(HIDDA_Base + 7)    /* --GNU ULONG */
-#define HIDDA_ErrorCode 	(HIDDA_Base + 8)    /* --G-- ULONG */
-#define HIDDA_Locking		(HIDDA_Base + 9)    /* --G-- ULONG */
+enum {
+    HIDDA_Base = (TAG_USER + 0x800000),
+    HIDDA_Type,			/* [..G] (UWORD) Major type of HIDD */
+    HIDDA_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
+    HIDDA_Producer,		/* [..G] (ULONG) Product Developer */
+    HIDDA_Name,			/* [..G] (STRPTR) Name of HIDD */
+    HIDDA_HardwareName,		/* [..G] (STRPTR) Hardware description */
+    HIDDA_Active,		/* [ISG] (BOOL) Current active status */
+    HIDDA_Status,		/* [..G] (ULONG) Status change */
+    HIDDA_ErrorCode,		/* [..G] (ULONG) Error code */
+    HIDDA_Locking		/* [..G] (UBYTE) Type of locking supported */
+};
 
 /*
     This flag is set on private attributes which external code should just
@@ -78,18 +79,28 @@
 /* Values for HIDDA_Status tag */
 #define HIDDV_StatusUnknown	-1
 
-/* Methods for all HIDD's */
-#define HIDDM_Base		0x80000
-#define HIDDM_Class_Get 	(HIDDM_Base + 1) /* LONG M (struct opGet *)      */
-#define HIDDM_Class_MGet	(HIDDM_Base + 2) /* LONG M (struct op??? *)      */
-#define HIDDM_BeginIO		(HIDDM_Base + 3) /* LONG M ( hmIO *)             */
-#define HIDDM_AbortIO		(HIDDM_Base + 4) /* LONG M ( hmIO *)             */
+/* Error codes defined for the HIDD */
+enum {
+    HIDDE_NotInList,		/* HIDD wasn't in a list */
+};
+
+enum {
+    HIDDM_Base = 0x80000,
+    HIDDM_Class_Get,		/* Get a value from a Class */
+    HIDDM_Class_MGet,		/* Get a number of values from a Class */
+    HIDDM_BeginIO,		/* Send a device like command */
+    HIDDM_AbortIO,		/* Abort a device like command */
+
+    HIDDM_Lock,			/* Lock a HIDD */
+    HIDDM_UnLock,		/* UnLock a HIDD */
+    HIDDM_AddHidd,		/* Add a subclass HIDD */
+    HIDDM_RemoveHidd,		/* Remove a subclass HIDD */
+    HIDDM_FindHidd		/* Find a suitable HIDD */
+};
+
+#if 0
 #define HIDDM_LoadConfigPlugin	(HIDDM_Base + 5) /* HIDDT_Config M ( hmPlugin *) */
-#define HIDDM_Lock		(HIDDM_Base + 6) /* IPTR M ( hmLock *)           */
-#define HIDDM_Unlock		(HIDDM_Base + 7) /* void M ( hmLock *)           */
-#define HIDDM_AddHIDD		(HIDDM_Base + 8) /* BOOL M ( hmAdd *)            */
-#define HIDDM_RemoveHIDD	(HIDDM_Base + 9) /* void M ( hmAdd *)            */
-#define HIDDM_FindHIDD		(HIDDM_Base +10) /* HIDD *M ( hmFind *)          */ 
+#endif
 
 /*
     This flag is set on uncommon methods. Uncommon methods are methods
@@ -113,12 +124,14 @@ typedef struct hmIO
     struct IORequest   *hmi_ioRequest;
 } hmIO;
 
+#if 0
 /* Used for HIDDM_LoadConfigPlugin */
 typedef struct hmPlugin
 {
     STACKULONG		MethodID;
     STACKIPTR		hmp_PluginData;
 } hmPlugin;
+#endif
 
 /* Combined structure for HIDDM_Lock, HIDDM_Unlock */
 typedef struct hmLock
@@ -128,10 +141,11 @@ typedef struct hmLock
     STACKIPTR		hml_LockData;
 } hmLock;
 
+/* Used for HIDDM_AddHidd, HIDDM_RemoveHidd */
 typedef struct hmAdd
 {
     STACKULONG		MethodID;
-    Class	       *hma_Class;
+    struct MinList	*hma_List;	/* Private to classes */
 } hmAdd;
 
 /* Used for HIDDM_FindHIDD */
