@@ -1473,9 +1473,10 @@ reqtools00018;2;SDuvan;rtUnlockPrefs
 reqtools00019;2;SDuvan;rtCloseWindowSafely
 reqtools00020;2;SDuvan;rtLockWindow
 reqtools00021;2;SDuvan;rtUnlockWindow
-rexxsyslib00000;0;digulla;Write CreateArgstring
-rexxsyslib00001;0;digulla;Write DeleteArgstring
-rexxsyslib00002;0;digulla;Write LengthArgstring
+rexxmast00001;0;verhaegs;Write RexxMast whith the "REXX" port
+rexxsyslib00000;1;digulla;Write CreateArgstring
+rexxsyslib00001;1;digulla;Write DeleteArgstring
+rexxsyslib00002;1;digulla;Write LengthArgstring
 rexxsyslib00003;0;digulla;Write CreateRexxMsg
 rexxsyslib00004;0;digulla;Write DeleteRexxMsg
 rexxsyslib00005;0;digulla;Write ClearRexxMsg
