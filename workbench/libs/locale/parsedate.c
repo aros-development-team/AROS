@@ -106,8 +106,7 @@ BOOL _getnum(LONG numchars,
     ULONG c;
     LONG day = 0, month = 0, hour = 0, min = 0, sec = 0;
     LONG year = 1978;
-    BOOL ampm = FALSE, checkEOF = TRUE;
-
+    BOOL leap, ampm = FALSE, checkEOF = TRUE;
     if (   (fmtTemplate == NULL)
 	|| (getCharFunc == NULL)
 	|| (locale == NULL)
@@ -526,24 +525,25 @@ BOOL _getnum(LONG numchars,
     if (checkEOF)
 	if ((GetChar() != 0)) return FALSE;
 
-    /* Sanity check - Piru */
-    if (month && day >= monthday[month - 1])
-	return FALSE;
+    /* Is this year a leap year ? */
+    leap = (((year % 400) == 0) ||
+	(((year % 4) == 0) && !((year % 100) == 0)));
 
+    /* Sanity check - Piru */
+    if (month && day >=
+    	(monthday[month - 1] + ((leap && (month == 2)) ? 1 : 0)))
+    {
+	return FALSE;
+    }
+    
     if (date)
     {
-    	BOOL leap;
-
 #if 1
     	/* stegerg: based on dos.library/strtodate */
 
 	/* First year must be 1978 */
 	if (year < 1978)
 	    return FALSE;
-
-	/* Is this year a leap year ? */
-	leap = (((year % 400) == 0) ||
-	    (((year % 4) == 0) && !((year % 100) == 0)));
 
 	/* Add the days for all years (without leap years) */
 	day += (year - 1978) * 365;
