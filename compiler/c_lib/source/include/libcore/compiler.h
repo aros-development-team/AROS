@@ -110,6 +110,8 @@ Therefore ASM must be used. */
 #	    define STDARGS	__stdargs
 #	    define ALIGNED	__aligned
 
+#           define TEXT_SECTION __attribute__((section(".text")))
+
 #	else /* __AROS__ */
 
 #	    define REG(r)
@@ -136,6 +138,10 @@ Therefore ASM must be used. */
 #   endif /* __STORM__ */
 # endif /* __MAXON__ */
 #endif /* __SASC */
+
+#ifndef TEXT_SECTION
+#define TEXT_SECTION
+#endif
 
 #ifdef __AROS__
 #   include <aros/libcall.h>
