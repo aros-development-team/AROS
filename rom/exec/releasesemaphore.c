@@ -193,7 +193,7 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
     {
 	/*
 	    This can't happen. It means that somebody has released
-	    omre times than they have obtained.
+	    more times than they have obtained.
 	*/
 	Alert( AN_SemCorrupt );
     }
