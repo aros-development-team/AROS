@@ -8,34 +8,25 @@
 
 /****************************************************************************************/
 
+#include "diskfont_intern.h"
+
 #include <diskfont/diskfont.h>
 #include <utility/tagitem.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <string.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
-#include "diskfont_intern.h"
 
 /****************************************************************************************/
 
-/* Test */
-#define  GetByte(x)  ((x)[0])
-#define  GetWord(x)  ((x)[1] | ((x)[0] << 8))
-#define  GetPtr(x)   (((x)[0] << 24) | ((x)[1] << 16) | ((x)[2] << 8) | ((x)[3]))
-
-struct AmiTagItem
-{
-    ULONG ti_Tag;
-    ULONG ti_Data;
-};
 
 /****************************************************************************************/
 
 VOID  CopyContents(struct List *list, APTR mem);
 VOID  FreeBuffers(struct List *list);
-struct AmiTagItem *AmiNextTagItem(struct AmiTagItem **ti);
 
 /****************************************************************************************/
 
@@ -124,7 +115,10 @@ struct contentsBuffer
     suffix = strrchr(name, '.');
 
     if(suffix == NULL || strcmp(suffix, ".font") != 0)
+    {
+	CurrentDir(oldDir);
 	return NULL;
+    }
 
     strcpy(suffix, ".otag");
 
@@ -156,7 +150,7 @@ struct contentsBuffer
 	while(ExNext(lock, fib))
 	{
 	    BPTR  fontSeg;
-	    UBYTE                 *fileDfh;  /* struct DiskFontHeader */ 
+	    struct DiskFontHeader *dfh = NULL;
 	    struct contentsBuffer *cNode;
 	    
 	    /* Skip directories */
@@ -169,21 +163,25 @@ struct contentsBuffer
 		continue;
 	    
 	    /* Skip NextSegment and ReturnCode */
-	    fileDfh = ((UBYTE *)BADDR(fontSeg)) + 8;
-
-	    if(GetWord(fileDfh + 14) != DFH_ID) /* dfh_FileID */
-	    {
-		UnLoadSeg(fontSeg);
-		continue;
-	    }
+	    dfh = ConvDiskFont(fontSeg, "test", (struct DiskfontBase_intern *)DiskfontBase);
+	    UnLoadSeg(fontSeg);
 	    
+	    if(dfh == NULL)
+	    {
+		FreeBuffers((struct List *)&contentsList);
+		UnLock(lock);
+		FreeDosObject(DOS_FIB, fib);
+		CurrentDir(oldDir);
+		return NULL;
+	    }
+
 	    cNode = AllocVec(sizeof(struct contentsBuffer),
 			     MEMF_PUBLIC | MEMF_CLEAR);
 	    
 	    if(cNode == NULL)
 	    {
+		DisposeConvDiskFont(dfh, DiskfontBase);
 		FreeBuffers((struct List *)&contentsList);
-		UnLoadSeg(fontSeg);
 		UnLock(lock);
 		FreeDosObject(DOS_FIB, fib);
 		CurrentDir(oldDir);
@@ -200,33 +198,33 @@ struct contentsBuffer
 	             tags and make it a function... */
 
 	    /* Embedded tags? */
-	    if(GetByte(fileDfh+14+2+2+4+32+20+2) & FSF_TAGGED) /* dfh_TF.tf_Style */
+	    if(dfh->dfh_TF.tf_Style & FSF_TAGGED)
 	    {
-		struct AmiTagItem *ti = (struct AmiTagItem *)(*(ULONG *)(fileDfh+14+2+2)); /* dfh_TagList */
-		struct AmiTagItem *tPtr;
-	 	struct AmiTagItem *item;
+		struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
+		struct TagItem *tPtr;
+	 	struct TagItem *item;
 		WORD   nTags = 0;
 		WORD   i;	        /* Loop variable */
 		
-		/* We cannot use the standard function here as the
-		   TagItems saved on disk may not correspond very
-		   well to those on this particular architecture. */
-		while(AmiNextTagItem(&ti) != NULL)
+		while(ti->ti_Tag != TAG_DONE)
+		{
+		    ti++;
 		    nTags++;
+		}
 		nTags++;	/* Include TAG_DONE */
 		
 		TFC(cNode)->tfc_TagCount = nTags;
 		fch.fch_FileID = TFCH_ID;
 		
-		tPtr = (struct AmiTagItem *)((IPTR)&(TFC(cNode)->tfc_TagCount) + 2 - nTags*sizeof(struct AmiTagItem));
+		tPtr = (struct TagItem *)((IPTR)&(TFC(cNode)->tfc_TagCount) + 2 - nTags*sizeof(struct TagItem));
 		
-		ti = (struct AmiTagItem *)(*(ULONG *)(fileDfh+14+2+2)); /* dfh_TagList */
+		ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
 		
 		i = 0;
-		while((item = AmiNextTagItem(&ti)) != NULL)
+		while((item = NextTagItem(&ti)) != NULL)
 		{
-		    tPtr[i].ti_Tag  = AROS_LONG2BE(item->ti_Tag);
-		    tPtr[i].ti_Data = AROS_LONG2BE(item->ti_Data);
+		    tPtr[i].ti_Tag  = item->ti_Tag;
+		    tPtr[i].ti_Data = item->ti_Data;
 		    i++;
 		}
 		/* Add TAG_DONE tag, but no data (to avoid writing over the
@@ -236,9 +234,9 @@ struct contentsBuffer
 
 	    } /* if(this was a tagged font) */
 	    
-	    cNode->fc.fc_YSize = GetWord(fileDfh+14+2+2+4+32+20);  /* dfh_TF.tf_YSize */
-	    cNode->fc.fc_Style = GetByte(fileDfh+14+2+2+4+32+20+2); /* dfh_TF.tf_Style */
-	    cNode->fc.fc_Flags = GetByte(fileDfh+14+2+2+4+32+20+2+1); /* dfh_TF.tf_Flags */
+	    cNode->fc.fc_YSize = dfh->dfh_TF.tf_YSize;
+	    cNode->fc.fc_Style = dfh->dfh_TF.tf_Style;
+	    cNode->fc.fc_Flags = dfh->dfh_TF.tf_Flags;
 
     	    cNode->fc.fc_Flags &= ~FPF_REMOVED;
 	    cNode->fc.fc_Flags &= ~FPF_ROMFONT;
@@ -246,8 +244,7 @@ struct contentsBuffer
 	    
 	    fch.fch_NumEntries++;
 	    
-	    UnLoadSeg(fontSeg);
-	    
+	    DisposeConvDiskFont(dfh, DiskfontBase);
 	} /* while(there are files left in the directory) */
 	
 	if(IoErr() == ERROR_NO_MORE_ENTRIES)
@@ -303,16 +300,6 @@ VOID CopyContents(struct List *list, APTR mem)
 	CopyMem(&temp->fc, mem, sizeof(struct FontContents));
 	mem += sizeof(struct FontContents);
     }
-}
-
-/****************************************************************************************/
-
-struct AmiTagItem *AmiNextTagItem(struct AmiTagItem **ti)
-{
-    if((*ti)->ti_Tag == TAG_DONE)
-	return NULL;
-
-    return (*ti)++;
 }
 
 /****************************************************************************************/
