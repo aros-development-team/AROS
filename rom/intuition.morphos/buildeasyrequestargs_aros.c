@@ -545,7 +545,6 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 	struct TagItem frame_tags[] =
         {
             {IA_FrameType	, FRAME_BUTTON	    	    	    	},
-            {IA_EdgesOnly	, TRUE 	    	    	    	    	},
             {IA_Width   	, dims->gadgetwidth 	    	    	},
             {IA_Height  	, dims->fontheight + BUTTONBORDER_Y * 2 },
             {TAG_DONE   	    	    	    	    	    	}
@@ -587,13 +586,17 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 			    {GA_Top	 , dims->height -
 			     scr->WBorBottom - dims->fontheight -
 			     OUTERSPACING_Y - BUTTONBORDER_Y * 2		},
-			    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]		},
 			    {GA_Image	 , (IPTR)gadgetframe				},
 			    {GA_RelVerify, TRUE						},
 			    {GA_DrawInfo , (IPTR)dri					},
 			    {TAG_DONE							}
 		    };
-
+    	    	struct TagItem gad2_tags[] =
+		{
+    			    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]		},
+		    	    {TAG_DONE	    	    	    	    	    	    	}
+		};
+		
 		thisgadget = NewObjectA(NULL, FRBUTTONCLASS, gad_tags);
 
 		if (currentgadget == 0)
@@ -604,6 +607,8 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 			intrequest_freegadgets(gadgetlist, IntuitionBase);
 			return NULL;
 		}
+
+    		SetAttrsA(thisgadget, gad2_tags);
 
 		xoffset += spacing;
 	}
