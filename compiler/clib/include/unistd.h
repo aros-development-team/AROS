@@ -201,7 +201,6 @@ int         execl(const char *path, const char *arg, ...);
 /* NOTIMPL int         execve(const char *path, char *const argv[]); */
 int         execvp(const char *path, char *const argv[]);
 void        _exit(int) __noreturn;
-pid_t       fork(void);
 /* NOTIMPL long        fpathconf(int fd, int name); */
 char        *getcwd(char *buf, size_t size);
 gid_t       getegid(void);

@@ -145,7 +145,6 @@ SHARED	:= \
 	fgets \
 	fileno \
 	fopen \
-	fork \
 	fprintf \
 	fscanf \
 	fsync \
@@ -184,6 +183,7 @@ SHARED	:= \
 	getloadavg \
     gmtime \
 	isatty \
+    ioctl \
 	jrand48 \
         kill \
 	labs \
