@@ -283,6 +283,11 @@
     else
       _SetRegion(li->check_lp->shape, l->VisibleRegion);
 
+    if (parent)
+      l->nesting = parent->nesting+1;
+    else
+      l->nesting = 0;
+
     if (IS_VISIBLE(l))
     {
       /*
