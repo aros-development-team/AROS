@@ -24,7 +24,7 @@ struct MUI_PropData
     ULONG entries;
     ULONG first;
     ULONG visible;
-
+    LONG deltafactor;
     LONG gadgetid;
 
     int horiz;
@@ -47,6 +47,8 @@ static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
+    data->deltafactor = 1;
+    
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -68,6 +70,10 @@ static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 	    case    MUIA_Prop_Visible:
 		    data->visible = tag->ti_Data;
+		    break;
+		    
+	    case    MUIA_Prop_DeltaFactor:
+	    	    data->deltafactor = tag->ti_Data;
 		    break;
 	}
     }
@@ -127,6 +133,10 @@ static ULONG Prop_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case    MUIA_Prop_OnlyTrigger:
 		    only_trigger = tag->ti_Data;
+		    break;
+		    
+	    case    MUIA_Prop_DeltaFactor:
+	    	    data->deltafactor = tag->ti_Data;
 		    break;
 	}
     }
@@ -376,7 +386,7 @@ static ULONG Prop_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 static ULONG Prop_Increase(struct IClass *cl, Object *obj, struct MUIP_Prop_Increase *msg)
 {
     struct MUI_PropData *data = INST_DATA(cl, obj);
-    LONG newfirst = data->first + msg->amount;
+    LONG newfirst = data->first + msg->amount * data->deltafactor;
     if (newfirst + data->visible > data->entries) newfirst = data->entries - data->visible;
     if (newfirst != data->first) set(obj,MUIA_Prop_First,newfirst);
     return 1;
@@ -392,8 +402,8 @@ static ULONG Prop_Decrease(struct IClass *cl, Object *obj, struct MUIP_Prop_Decr
     /* We cannot decrease if if are on the top */
     if (!data->first) return 1;
 
-    if (data->first < msg->amount && data->first != 0) set(obj,MUIA_Prop_First,0);
-    else set(obj,MUIA_Prop_First,data->first - msg->amount);
+    if (data->first < msg->amount * data->deltafactor  && data->first != 0) set(obj,MUIA_Prop_First,0);
+    else set(obj,MUIA_Prop_First,data->first - msg->amount * data->deltafactor);
     return 1;
 }
 
