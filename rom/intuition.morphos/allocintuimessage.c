@@ -49,9 +49,12 @@ AROS_LH1(struct IntuiMessage *, AllocIntuiMessage,
 
     struct IntuiMessage *msg;
 
+#ifdef __MORPHOS__
     ASSERT_VALID_PTR(window);
     SANITY_CHECKR(window,0)
-
+#else
+    ASSERT_VALID_PTR_OR_NULL(window);
+#endif
     if ((msg = AllocPooled(GetPrivIBase(IntuitionBase)->IDCMPPool,sizeof(struct IntIntuiMessage))))
     {
         memclr(msg,sizeof(struct IntIntuiMessage));
