@@ -146,7 +146,6 @@ static OOP_Object *pcidevice_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	struct TagItem *tags, *tag;
 	tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl, o);
 	OOP_Object *driver = NULL;
-	struct DriverNode *dn;
 	
 	tags=msg->attrList;
 
@@ -189,13 +188,6 @@ static OOP_Object *pcidevice_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	{
 	    UBYTE ht;
 	    
-	    /* HACK: look for the driver within private data of all pci classes */
-	    ForeachNode(&(PSD(cl)->drivers), (struct Node *)dn)
-	    {
-		if (driver == dn->driverObject)
-		    break;
-	    }
-
 	    /*
 		Get the header type in order to determine whether it is a 
 		device or bridge
@@ -204,32 +196,8 @@ static OOP_Object *pcidevice_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	    dev->isBridge = 0;
 	    if (ht == PCIHT_BRIDGE)
 	    {
-		/*  
-		    It it a bridge. Get the subbus information and fix the
-		    driver data in static PCI data. Sigh! should be replaced
-		    with following code in base pci class:
-
-		    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, (struct TagItem *)&devtags);
-		    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
-		    if (bridge)
-		    {
-			OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
-			if (subbus > dev->highBus)
-			    dev->highBus = subbus;
-		    }
-
-		    BUT! The above code called for each device created would be
-		    slightly slower (however more elegant). The pcidevice class
-		    *Should* be completely independant on the pci class 
-		    implementation.
-		*/  
-		
 		dev->isBridge = 1;
 		dev->subbus = getByte(cl, o, PCIBR_SUBBUS);
-		
-		/* Here comes ugly hack */
-		if (dev->subbus > dn->highBus)
-		    dn->highBus = dev->subbus;
 	    }
 	    
 	    /* Get all constant ID's */
