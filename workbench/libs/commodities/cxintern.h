@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -159,6 +159,7 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase);
 #define TimerBase ((struct CommoditiesBase *)CxBase)->cx_TimerBase
 
 #define ROUTECxMsg(msg, obj)    msg->cxm_Routing = obj
+#define CXOBJType(co)           (co->co_Node.ln_Type)
 
 #define GPB(x) ((struct CommoditiesBase *)x)
 
