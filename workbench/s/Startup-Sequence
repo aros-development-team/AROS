@@ -10,21 +10,25 @@ SetClock LOAD
 
 Mount RAM:
 Mount NIL:
+Mount PIPEFS:
 
 Version >NIL:
 FailAt 21
 
 MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys
 
-Assign ENV: RAM:ENV
-Assign T: RAM:T
-Assign CLIPS: RAM:Clipboards
-;Assign PRINTERS: DEVS:Printers
+Assign ENV:     RAM:ENV
+Assign T:       RAM:T
+Assign CLIPS:   RAM:Clipboards
 Assign KEYMAPS: DEVS:Keymaps
-Assign LOCALE: SYS:Locale
-Assign LIBS: SYS:Classes ADD
-Assign FONTS: SYS:Fonts
-Assign HELP: LOCALE:Help DEFER
+Assign LOCALE:  SYS:Locale
+Assign LIBS:    SYS:Classes ADD
+Assign FONTS:   SYS:Fonts
+Assign HELP:    LOCALE:Help DEFER
+;Assign PRINTERS: DEVS:Printers
+
+touch PIPEFS:systempipe
+Assign PIPE:    PIPEFS:systempipe
 
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
