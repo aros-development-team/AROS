@@ -6,12 +6,13 @@
     Lang: English
 */
 
+#include <proto/exec.h>
+#include "realtime_intern.h"
+
 /*****************************************************************************
 
     NAME */
-
-#include <proto/exec.h>
-#include "realtime_intern.h"
+#include <libraries/realtime.h>
 
     AROS_LH1(VOID, UnlockRealTime,
 

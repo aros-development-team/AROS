@@ -5,14 +5,6 @@
     Desc:
     Lang: English
 */
-
-/*****************************************************************************
-
-    NAME */
-
-struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
-				  struct Library *RealTimeBase);
-
 # define  DEBUG 1
 # include <aros/debug.h>
 
@@ -21,8 +13,15 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 #include <proto/utility.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <libraries/realtime.h>
 #include "realtime_intern.h"
+
+struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
+				  struct Library *RealTimeBase);
+
+/*****************************************************************************
+
+    NAME */
+#include <libraries/realtime.h>
 
     AROS_LH1(struct Player *, CreatePlayerA,
 

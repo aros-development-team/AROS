@@ -5,16 +5,17 @@
     Desc:
     Lang: English
 */
+#include <proto/exec.h>
+#include <proto/realtime.h>
+#include <proto/utility.h>
+#include "realtime_intern.h"
 
 /*****************************************************************************
 
     NAME */
 
-#include <proto/exec.h>
-#include <proto/realtime.h>
-#include <proto/utility.h>
-#include <libraries/realtime.h>
 #include <utility/tagitem.h>
+#include <libraries/realtime.h>
 
     AROS_LH2(BOOL, GetPlayerAttrsA,
 

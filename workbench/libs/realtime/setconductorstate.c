@@ -6,17 +6,17 @@
     Lang: English
 */
 
+#include <proto/exec.h>
+#include <proto/alib.h>
+#include <proto/utility.h>
+#include <proto/realtime.h>
+#include <exec/lists.h>
+#include "realtime_intern.h"
+
 /*****************************************************************************
 
     NAME */
-
-#ifndef AROS_ALMOST_COMPATIBLE
-#endif
-
-#include <proto/exec.h>
-#include <proto/alib.h>
 #include <libraries/realtime.h>
-#include <exec/lists.h>
 
     AROS_LH3(LONG, SetConductorState,
 
