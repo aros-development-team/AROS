@@ -226,7 +226,7 @@ enum{
 	CMEB_MsgErr,
 	CMEB_BufferFull,
 	CMEB_SysExFull,
-	CMEB_PaseMem,
+	CMEB_ParseMem,
 	CMEB_RecvErr,
 	CMEB_RecvOverflow,
 	CMEB_SysExTooBig
@@ -235,12 +235,12 @@ enum{
 #define CMEF_MsgErr (1L<<CMEB_MsgErr)
 #define CMEF_BufferFull (1L<<CMEB_BufferFull)
 #define CMEF_SysExFull (1L<<CMEB_SysExFull)
-#define CMEF_PaseMem (1L<<CMEB_PaseMem)
+#define CMEF_ParseMem (1L<<CMEB_ParseMem)
 #define CMEF_RecvErr (1L<<CMEB_RecvErr)
 #define CMEF_RecvOverflow (1L<<CMEB_RecvOverflow)
 #define CMEF_SysExTooBig (1L<<CMEB_SysExTooBig)
 
-#define CMEF_All (CMEF_MsgErr|CMEF_BufferFull|CMEF_SysExFull|CMEF_PaseMem|CMEF_RecvErr|CMEF_RecvOverflow|CMEF_SysExTooBig)
+#define CMEF_All (CMEF_MsgErr|CMEF_BufferFull|CMEF_SysExFull|CMEF_ParseMem|CMEF_RecvErr|CMEF_RecvOverflow|CMEF_SysExTooBig)
 
 struct ClusterNotifyNode{ULONG somethinginsideherebutdontusethisone;};
 
