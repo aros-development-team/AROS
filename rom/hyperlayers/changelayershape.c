@@ -90,7 +90,8 @@
     {
       /*
        * call the callback to the user to give me a new shape
-       * give me a shape.
+       * The user can manipulate the cliprects of the layer
+       * l and can have a look at the current shape.
        */
       l->shaperegion = AROS_UFC4(struct Region *, callback,
                         AROS_UFCA(struct Region *   , newshape  , A0),
@@ -116,7 +117,8 @@
     
     if (l->shaperegion)
       AndRegionRegion(l->shaperegion, l->shape);
-      
+
+    _TranslateRect(&layer->shape->bounds, l->bounds.MinX, l->bounds.MinY);      
       
     _SetRegion(l->shape, &cutnewshape);
     AndRegionRegion(l->parent->shape, &cutnewshape);
