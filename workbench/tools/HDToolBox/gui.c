@@ -205,11 +205,15 @@ AROS_UFH3(void, hexidedit_function,
 	AROS_UFHA(struct SGWork *, sgwork, A2),
 	AROS_UFHA(ULONG *, msg, A1))
 {
+    AROS_USERFUNC_INIT
+
 kprintf("key press\n");
 	if (*msg == SGH_KEY)
 	{
 kprintf("key press\n");
 	}
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(void, display_function,
@@ -217,6 +221,8 @@ AROS_UFH3(void, display_function,
 	AROS_UFHA(char **, strings, A2),
 	AROS_UFHA(struct ListNode *, entry, A1))
 {
+    AROS_USERFUNC_INIT
+
 static char buf[16];
 static char bu2[64];
 
@@ -242,6 +248,8 @@ static char bu2[64];
 		strings[0] = MSG(WORD_Changed);
 		strings[1] = MSG(WORD_Name);
 	}
+
+    AROS_USERFUNC_EXIT
 }
 
 void setTypeString(struct PartitionType *type, Object *strgad) {
@@ -315,6 +323,8 @@ AROS_UFH3(void, buttons_function,
 	AROS_UFHA(Object *, object, A2),
 	AROS_UFHA(ULONG *, arg, A1))
 {
+    AROS_USERFUNC_INIT
+
 LONG active;
 struct ListNode *iln;
 int i;
@@ -1122,6 +1132,8 @@ int i;
 			break;
 		}
 	}
+
+    AROS_USERFUNC_EXIT
 }
 
 /************************* general List functions ***************************/
@@ -1214,6 +1226,8 @@ AROS_UFH3(void, lv_doubleclick,
 	AROS_UFHA(Object *, object, A2),
 	AROS_UFHA(void *, arg, A1))
 {
+    AROS_USERFUNC_INIT
+
 LONG active;
 LONG type=-1;
 struct ListNode *iln;
@@ -1290,6 +1304,8 @@ struct ListNode *iln;
 			break;
 		}
 	}
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH3(void, lv_click,
@@ -1297,6 +1313,8 @@ AROS_UFH3(void, lv_click,
 	AROS_UFHA(Object *, object, A2),
 	AROS_UFHA(void *, arg, A1))
 {
+    AROS_USERFUNC_INIT
+
 LONG active;
 struct ListNode *iln;
 char str[64];
@@ -1405,6 +1423,8 @@ char sizestr[16];
 			break;
 		}
 	}
+
+    AROS_USERFUNC_EXIT
 }
 
 /**************************************** Main ******************************/
