@@ -3,6 +3,7 @@
 
 #include <exec/devices.h>
 #include <dos/filesystem.h>
+#include <devices/timer.h>
 
 struct afsbase
 {
@@ -14,6 +15,7 @@ struct afsbase
 	struct MsgPort port;			/* MsgPort of the handler */
 	struct MsgPort rport;		/* replyport of the handler */
 	struct IOFileSys *iofs;		/* to be aborted iofs or NULL */
+	struct List device_list;	/* list of mounted devices (struct Volume) */
 };
 
 #define expunge() AROS_LC0(BPTR, expunge, struct afsbase *, afsbase, 3, afs)
