@@ -29,7 +29,6 @@ done
 
 cvs_update() {
     cd "$1"
-    rm -rf contrib/gnu
     nice cvs upd -dP > ~/cvs_update-long.log 2>&1
     grep -v "^cvs server: Updating " ~/cvs_update-long.log > ~/cvs_update.log
     if [[ -s ~/cvs_update.log ]]; then
