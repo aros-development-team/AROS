@@ -1,7 +1,5 @@
 #   $Id$
 #
-#
-#
 include $(TOP)/config/make.cfg
 
 LIB :=	coolimages
@@ -35,7 +33,6 @@ USER_CFLAGS := -Iinclude
 %copy_includes path=linklibs
 
 %make_linklib_setup mmake=linklibs-coolimages
-%make_vpath
 %make_linklib
 
 %common
