@@ -57,6 +57,8 @@
     
     EnterFunc(bug("DisposeObject(classID=%s)\n",
     		OCLASS(obj)->ClassNode.ln_Name));
+		
+    if (obj == NULL) return;
 
 
 
