@@ -6,7 +6,8 @@ AROS-amiga :
 	@$(NOP)
 
 # hidd-graphics target removed from below line because of missing lib.conf file
-#MM kernel-amiga : kernel-hidd kernel-exec kernel-aros kernel-utility
+#MM kernel-amiga : kernel-hidd kernel-exec-module kernel-aros 
+#MM kernel-amiga : kernel-utility-module
 #MM kernel-amiga : kernel-alerthook-module kernel-boopsi-module
 #MM kernel-amiga : kernel-devs kernel-expansion-module kernel-keymap-module
 kernel-amiga :
