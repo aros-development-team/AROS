@@ -1,5 +1,7 @@
 #! @PYTHON@
 
+# Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+
 import sys, re
 
 
@@ -7,15 +9,34 @@ if not len(sys.argv) in [2, 4] :
     print "Usage:",sys.argv[0],"tmplfile [inputfile outputfile]"
     print "Usage:",sys.argv[0],"tmplfile --listfile filename"
 
+# A regular expression for the start of a template instantiation (ex. %build_module)
 re_tmplinst = re.compile('%([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:\s|$))')
+# A regular expression for the argument specification during template instantiation
+# (ex. cflags=$(CFLAGS) or uselibs="amiga arosc")
 re_arg = re.compile('([a-zA-Z0-9][a-zA-Z0-9_]*)=([^\s"]+|".*?")?')
 
+##################################
+# Class and function definitions #
+##################################
+
+# Exception used throughout this program
 class GenmfException:
     def __init__(self, s):
         self.s = s
     def __str__(self):
         return self.s
 
+
+# Scan the given lines for template instantiations
+# Input params:
+# - lines: an array of strings
+# - templates: an assosiative array of objects of class template
+#
+# Returns:
+# - templrefs: an array of tuples with two elems. First element is the lineno
+#   in the lines array, second is the results of the search for that line with
+#   re_tmplinst. Only templates which name are present in the templates argument
+#   will be added to this array.
 def generate_templrefs(lines, templates):
     templrefs = []
     
@@ -30,6 +51,16 @@ def generate_templrefs(lines, templates):
 
     return templrefs
 
+
+# Write out the lines to a file with instantiating the templates present in the file
+# Input params:
+# - lines: The lines to write out
+# - templrefs: the instantiated templates present in these lines
+# - templates: the template definitions
+# - outfile: the file to write to
+#
+# This function does not return anything but raises a GenmfException when there are
+# problems
 def writelines(lines, templrefs, templates, outfile):
     start = 0
     for lineno, m in templrefs:
@@ -52,10 +83,25 @@ def writelines(lines, templrefs, templates, outfile):
         
     if start < len(lines):
         outfile.writelines(lines[start:len(lines)])
-
-class arg:
-    re_mode = re.compile('/(A|M)')
     
+
+# arg is q class that stores the specification of an argument in the template header
+# The of the arg is not stored in this class but this class is supposed to be
+# stored in an assosiative array with the names of the arg as indices. E.g
+# arg['cflags'] gives back an object of this class.
+# It has the following members:
+# - ismain: boolean to indicate if it has the /M definition
+# - isneeded: boolean to indicate if it has the /A definition
+# - used: boolean to indicate if a value is used in the body of a template
+# - default: default value when the argument is not given during a template
+#   instantiation
+# - value: The value this argument has during a template instantiation is stored
+#   here
+class arg:
+    # Specification can end with /A or /M
+    re_mode = re.compile('/(A|M)')
+
+    # You create this object with giving it the default value 
     def __init__(self, default=None):
         self.ismain = 0
         self.isneeded = 0
@@ -81,10 +127,28 @@ class arg:
         # The value field will get the value passed to the argument when the tmeplate is used
         self.value = None
 
+
+# template is a class to store the whole definition of a genmf template
+# Members:
+# - name: name of the template
+# - args: an assosiative of the arguments of this template
+# - body: an array of strings with the body of the template
+# - mainarg: contains the arg with /M if it is present
+# - used: Is this template already used; used to check for recursive calling
+#   of a template
+# - linerefs: an array to indicate the genmf variables used in the body of the
+#   template. This is generated with the generate_linerefs method of this class
+# - templrefs: an array to indicate the templates used in the body of the template.
+#   This is generated with the generate_templrefs function of this class.
 class template:
     re_arginst = re.compile('%\(([a-zA-Z0-9][a-zA-Z0-9_]*)\)')
     hascommon = 0
-    
+
+    # Generate a template
+    # Input params:
+    # - name: name of the template
+    # - args: an assosiative array of the arguments defined for this template
+    # - body: an array of the template with the bodylines of the template
     def __init__(self, name, args, body):
         self.name = name
         self.args = args
@@ -100,6 +164,11 @@ class template:
                     sys.exit('A template can have only one main (/M) argument')
                 self.mainarg = argbody
 
+    # Generate the references for the genmf variable used in this template
+    # This function will return an assositive array of tuples with linerefs[lineno]
+    # an array of tuples named argrefs with the tuple of the form (argbody, start, stop)
+    # with argbody an object of class arg, start and stop the start and end of this variable
+    # in the string of this line.
     def generate_linerefs(self):
         lineno = 0
         linerefs = {}
@@ -121,6 +190,8 @@ class template:
             if not argbody.used:
                 sys.stderr.write("Warning: template '%s': unused argument '%s'\n" % (self.name, argname))
 
+
+    # Write out the body of the template
     def write(self, outfile, name, line, templates):
         if self.used:
             raise GenmfException("Template '%s' called recursively" % name)
@@ -185,6 +256,10 @@ class template:
             argbody.value = None
         self.used = 0
 
+
+
+# Read in the definition of the genmf templates from the given filename
+# Return an assosiative array of the templates present in this file.
 def read_templates(filename):
     try:
         infile = open(filename)
@@ -241,6 +316,10 @@ def read_templates(filename):
     return templates
 
 
+################
+# Main program #
+################
+
 argv = []
 i = 0
 listfile = None
@@ -257,6 +336,7 @@ templates = read_templates(argv[1])
 #sys.stderr.write("Read %d templates\n" % len(templates))
 
 if listfile == None:
+    # Read on input file and write out one outputfile
     if len(sys.argv) == 2:
         lines = sys.stdin.readlines()
     else:
@@ -279,6 +359,7 @@ if listfile == None:
             s = sys.argv[3]+":"+s
             sys.exit(s+"\n")
 
+    # If %common was not present in the file write it out at the end of the file
     if not template.hascommon:
         outfile.write("\n")
         if templates.has_key("common"):
@@ -287,6 +368,9 @@ if listfile == None:
     if closeout:
         outfile.close()
 else:
+    # When a listfile is specified each line in this listfile is of the form
+    # inputfile outputfile
+    # and apply the instantiation of the templates to all these files listed there
     infile = open(listfile, "r")
     filelist = infile.readlines()
     infile.close()
