@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/09/17 16:17:02  digulla
+    Moved CreateNewProc() in front of start of timer, because of crashes if
+    	the timer is enabled. But that's not enough yet :(
+
     Revision 1.9  1996/09/13 17:57:08  digulla
     Use IPTR
 
@@ -39,8 +43,8 @@
     Revision 1.2  1996/08/01 17:41:25  digulla
     Added standard header for all files
 
-    Desc:
-    Lang:
+    Desc: startup code for AROS (main())
+    Lang: english
 */
 #include <stdlib.h>
 #include <signal.h>
@@ -351,6 +355,8 @@ int main(int argc,char *argv[])
 	/* AROSBase.StdOut = MKBADDR(fh_stdout); */
 	AROSBase.StdOut = stderr;
 
+	CreateNewProc(bootprocess);
+
 #if ENABLE_TIMER
 	{
 	    struct itimerval interval;
@@ -365,8 +371,6 @@ int main(int argc,char *argv[])
 	    rc = setitimer (ITIMER_REAL, &interval, NULL);
 	}
 #endif
-
-	CreateNewProc(bootprocess);
     }
 
     RemTask(NULL); /* get rid of Boot task */
