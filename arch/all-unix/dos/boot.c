@@ -24,7 +24,7 @@
 /* Require this for the stdout defn */
 #include <stdio.h>
 
-extern struct AROSSupportBase AROSSupportBase;
+extern void AROSSupportBase_SetStdOut (void *);
 extern int submain(int argc, char **argv);
 
 struct emulbase
@@ -104,7 +104,7 @@ AROS_UFH3(void, boot,
     SelectOutput(MKBADDR(fh_stdout));
     ((struct Process *)FindTask(NULL))->pr_CES = MKBADDR(fh_stdout);
  
-    AROSSupportBase.StdOut = stderr;    
+    AROSSupportBase_SetStdOut (stderr);
  
     submain(0, NULL);
 
