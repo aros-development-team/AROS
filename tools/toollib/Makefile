@@ -22,8 +22,8 @@ MECHO ?= echo
 TOOLLIB ?= $(TOOLDIR)/libtool.a
 HOST_CFLAGS := $(HOST_CFLAGS) -Wall -g -DHAVE_VSNPRINTF -I.. -O
 
-OBJDIR	= $(TOOLDIR)/obj
-DEPFILE = $(TOOLDIR)/depend
+OBJDIR := $(TOOLDIR)/obj
+DEPS   := $(foreach f,$(SRC),$(OBJDIR)/$(f).d)
 
 all : depend $(OBJDIR) $(TOOLLIB)
 
@@ -34,6 +34,11 @@ $(TOOLLIB) : $(foreach f,$(SRC),$(OBJDIR)/$(f).o)
 $(OBJDIR)/%.o : %.c
 	@$(MECHO) "Compiling toollib/$(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
+
+$(OBJDIR)/%.d : %.c
+	@$(MECHO) Finding dependencies for $<...
+	@$(MKDIR) -p $(dir $@)
+	@$(HOST_CC) $(HOST_CFLAGS) -M $< > $@
 
 $(OBJDIR) : 
 	@$(MKDIR) $(OBJDIR)
@@ -49,10 +54,7 @@ clean :
 	@mv -f Makefile.tmp Makefile
 	-@$(RM) Makefile.bak
 
-depend : $(DEPFILE)
-	@$(NOP)
+depend : $(DEPS)
 
-$(DEPFILE) : 
-	@makedepend -f- -- $(HOST_CFLAGS) -- *.c > $(DEPFILE)
-
--include $(DEPFILE)
+-include $(DEPS)
+# DO NOT DELETE
