@@ -62,7 +62,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 
 		CopyMem(name, volname, s1 - name - 1);
 		volname[s1 - name - 1] = '\0';
-		pathname = s1;
+		// pathname = s1;
 		break;
 	    }
 	}
