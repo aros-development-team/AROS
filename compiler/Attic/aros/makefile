@@ -22,7 +22,8 @@ FILES = calcchecksum kprintf nastyfreemem \
 	writelong \
 	writestring \
 	writestruct \
-	writeword
+	writeword \
+	strrncasecmp
 
 INCLUDE_FILES = $(wildcard include/*.h)
 DEST_INCLUDE_FILES = $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
