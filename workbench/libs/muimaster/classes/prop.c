@@ -249,7 +249,7 @@ static ULONG Prop_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     {
 	DoMethod(_win(obj),MUIM_Window_FreeGadgetID,data->gadgetid);
     }
-    DoMethod(_win(obj),MUIM_Window_RemEventHandler,&data->ehn);
+    DoMethod(_win(obj),MUIM_Window_RemEventHandler,(IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 

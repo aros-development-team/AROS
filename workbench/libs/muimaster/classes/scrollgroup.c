@@ -188,7 +188,7 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ScrollgroupData *data;
-    struct TagItem *tags,*tag;
+    //struct TagItem *tags,*tag;
     Object *contents = (Object*)GetTagData(MUIA_Scrollgroup_Contents, NULL, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
 
@@ -225,10 +225,10 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->layout_hook = layout_hook;
     layout_hook->h_Data = data;
 
-    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 1, MUIV_TriggerValue);
-    DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 2, MUIV_TriggerValue);
-    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 3, MUIV_TriggerValue);
-    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 4, MUIV_TriggerValue);
+    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 1, MUIV_TriggerValue);
+    DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 2, MUIV_TriggerValue);
+    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 3, MUIV_TriggerValue);
+    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
 
     return (ULONG)obj;
 }

@@ -59,7 +59,7 @@ static IPTR Settingsgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Settingsgroup_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
-    struct MUI_Settingsgroup *data = INST_DATA(cl, obj);
+    //struct MUI_Settingsgroup *data = INST_DATA(cl, obj);
     return 0;
 }
 
@@ -68,7 +68,7 @@ static IPTR Settingsgroup_ConfigToGadgets(struct IClass *cl, Object *obj, struct
 **************************************************************************/
 static IPTR Settingsgroup_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
-    struct MUI_Settingsgroup *data = INST_DATA(cl, obj);
+    //struct MUI_Settingsgroup *data = INST_DATA(cl, obj);
     return 0;
 }
 

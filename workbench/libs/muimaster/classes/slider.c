@@ -140,7 +140,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     data->knob_width  = width + 2 * data->knob_frame->xthickness + 2;
     data->knob_height = _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
 
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     return TRUE;
 }
 
@@ -151,7 +151,7 @@ static ULONG Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
-    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -257,9 +257,9 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 			    _between(data->knob_top,  msg->imsg->MouseY, data->knob_top  + data->knob_height - 1)
 			)
 			{
-			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			    data->state = 1;
 			    MUI_Redraw(obj,MADF_DRAWUPDATE);
 			}
@@ -284,9 +284,9 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
    	        {
 		    if (data->state)
 		    {
-			DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			data->state = 0;
 			MUI_Redraw(obj,MADF_DRAWUPDATE);
 	  	    }

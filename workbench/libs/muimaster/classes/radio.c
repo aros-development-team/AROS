@@ -52,7 +52,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -93,7 +93,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	state = (entries_active == i) ? TRUE : FALSE;
 	grouptags[j].ti_Tag = MUIA_Group_Child;
-	buttons[i] = (IPTR)ImageObject,
+	buttons[i] = ImageObject,
 	    MUIA_Image_Spec, MUII_RadioButton,
 	    MUIA_ShowSelState, FALSE,
 	    MUIA_Frame, MUIV_Frame_None,
@@ -107,7 +107,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	grouptags[j].ti_Data = (IPTR)TextObject,
 	    MUIA_Text_Contents, entries[i],
 	    MUIA_FramePhantomHoriz, TRUE,
-	    MUIA_Text_PreParse, "\33l",
+	    MUIA_Text_PreParse, (IPTR)"\33l",
 	    End;
 	j++;
     }
@@ -159,7 +159,7 @@ static IPTR Radio_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{

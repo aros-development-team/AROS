@@ -637,7 +637,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		{
 		    /* We have left the object */
 		    UndrawDragNDrop(data->wd_dnd);
-		    DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
+		    DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
 		    data->wd_DropObject = NULL;
 		}
 	    }
@@ -678,12 +678,12 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 		    if (root)
 		    {
-			if ((data->wd_DropObject = (Object*)DoMethod(root,MUIM_DragQueryExtended,data->wd_DragObject,
+			if ((data->wd_DropObject = (Object*)DoMethod(root,MUIM_DragQueryExtended,(IPTR)data->wd_DragObject,
 		    			imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
 		    			imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge)))
 		    	{
 			    UndrawDragNDrop(data->wd_dnd);
-			    DoMethod(data->wd_DropObject, MUIM_DragBegin,data->wd_DragObject);
+			    DoMethod(data->wd_DropObject, MUIM_DragBegin,(IPTR)data->wd_DragObject);
 		        }
 		    }
 		}
@@ -695,14 +695,14 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	LONG i;
 	    	for (i=0;i<2;i++)
 	    	{
-		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,data->wd_DragObject,
+		    LONG res = DoMethod(data->wd_DropObject,MUIM_DragReport,(IPTR)data->wd_DragObject,
 						imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
 						imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge,update);
 		    switch (res)
 		    {
 			case    MUIV_DragReport_Abort:
 				UndrawDragNDrop(data->wd_dnd);
-				DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
+				DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
 				data->wd_DropObject = NULL;
 				i = 1;
 				break;
@@ -726,8 +726,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    	if (imsg->Code == SELECTUP && data->wd_DropObject)
 	    	{
 		    UndrawDragNDrop(data->wd_dnd);
-		    DoMethod(data->wd_DropObject, MUIM_DragFinish, data->wd_DragObject);
-		    DoMethod(data->wd_DropObject, MUIM_DragDrop, data->wd_DragObject,
+		    DoMethod(data->wd_DropObject, MUIM_DragFinish, (IPTR)data->wd_DragObject);
+		    DoMethod(data->wd_DropObject, MUIM_DragDrop, (IPTR)data->wd_DragObject,
 		    		imsg->MouseX + iWin->LeftEdge - data->wd_DropWindow->LeftEdge,
 		    		imsg->MouseY + iWin->TopEdge - data->wd_DropWindow->TopEdge);
 		    data->wd_DropObject = NULL;
@@ -743,11 +743,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    UndrawDragNDrop(data->wd_dnd);
 	    if (data->wd_DropObject)
 	    {
-		DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
+		DoMethod(data->wd_DropObject, MUIM_DragFinish,(IPTR)data->wd_DragObject);
 		data->wd_DropObject = NULL;
 	    }
 	    DeleteDragNDrop(data->wd_dnd);
-	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, data->wd_DragImage);
+	    DoMethod(data->wd_DragObject,MUIM_DeleteDragImage, (IPTR)data->wd_DragImage);
 	    muiAreaData(data->wd_DragObject)->mad_Flags &= ~MADF_DRAGGING;
 	    data->wd_DragImage = NULL;
 	    data->wd_DragObject = NULL;
@@ -808,7 +808,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	case	IDCMP_REFRESHWINDOW:
 		if (data->wd_Flags & MUIWF_RESIZING)
 		{
-		    LONG left,top,right,bottom;
+		    //LONG left,top,right,bottom;
 		    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
 		    {
 			MUI_EndRefresh(&data->wd_RenderInfo, 0);
@@ -2016,7 +2016,7 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     if (!SetupRenderInfo(obj, data, &data->wd_RenderInfo))
 	return FALSE;
 
-    DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, &background_spec);
+    DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, (IPTR)&background_spec);
     if (!background_spec) background_spec = "0:128"; /* MUII_BACKGROUND */
 
     data->wd_Background = zune_image_spec_to_structure((IPTR)background_spec,NULL);
@@ -2110,7 +2110,7 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
 	}
 	if (!di->bm)
 	{
-	    DoMethod(msg->obj,MUIM_DeleteDragImage, di);
+	    DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
 	    DeleteDragNDrop(dnd);
 	    return 0;
 	}
@@ -2123,7 +2123,7 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
 		GUI_Height, di->height,
 		TAG_DONE)))
 	{
-	    DoMethod(msg->obj,MUIM_DeleteDragImage, di);
+	    DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
 	    DeleteDragNDrop(dnd);
 	    return 0;
 	}
@@ -2132,7 +2132,7 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
 
 	if (!PrepareDragNDrop(dnd, data->wd_RenderInfo.mri_Screen))
 	{
-	    DoMethod(msg->obj,MUIM_DeleteDragImage, di);
+	    DoMethod(msg->obj,MUIM_DeleteDragImage, (IPTR)di);
 	    DeleteDragNDrop(dnd);
 	    return 0;
 	}
@@ -2150,7 +2150,7 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
 /**************************************************************************
 
 **************************************************************************/
-static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadegtID *msg)
+static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadgetID *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct IDNode *newnode = mui_alloc_struct(struct IDNode);
@@ -2236,6 +2236,8 @@ static IPTR Window_SetMenuCheck(struct IClass *cl, Object *obj, struct MUIP_Wind
     return 0;
 }
 
+#if 0 /* unused? */
+
 /**************************************************************************
  MUIM_Window_GetMenuState
 **************************************************************************/
@@ -2266,6 +2268,8 @@ static IPTR Window_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Wind
     set(item,MUIA_Menuitem_Enabled,msg->stat);
     return 0;
 }
+
+#endif /* unused? */
 
 /**************************************************************************
  MUIM_Window_DrawBackground

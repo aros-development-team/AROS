@@ -115,7 +115,7 @@ static ULONG Scrollbutton_Setup(struct IClass * cl, Object * o, Msg msg)
     data->ehn.ehn_Object   = o;
     data->ehn.ehn_Class    = cl;
 
-    DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
     return TRUE;
 }
@@ -123,7 +123,7 @@ static ULONG Scrollbutton_Setup(struct IClass * cl, Object * o, Msg msg)
 static ULONG Scrollbutton_Cleanup(struct IClass * cl, Object * o, Msg msg)
 {
     struct Scrollbutton_Data *data = (struct Scrollbutton_Data *) INST_DATA(cl, o);
-    DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     DoSuperMethodA(cl, o, msg);
     return 0;
 }
@@ -140,9 +140,9 @@ static ULONG Scrollbutton_HandleEvent(struct IClass * cl, Object * o, struct MUI
 		    {
 			if (msg->imsg->MouseX >= _left(o) && msg->imsg->MouseX <= _right(o) && msg->imsg->MouseY >= _top(o) && msg->imsg->MouseY <= _bottom(o))
 			{
-			    DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
 			    set(o,MUIA_Selected, TRUE);
 			    data->mx = msg->imsg->MouseX;
@@ -153,9 +153,9 @@ static ULONG Scrollbutton_HandleEvent(struct IClass * cl, Object * o, struct MUI
 		    {
 		    	if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
 		    	{
-			    DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			    DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
 			    set(o,MUIA_Selected, FALSE);
 			}
