@@ -50,6 +50,8 @@
     AROS_LIBFUNC_INIT
 
     ULONG low,high;
+    const ULONG *src = source;
+    ULONG *dst = dest;
 
     /* Calculate number of ULONGs to copy */
     size/=sizeof(ULONG);
@@ -64,7 +66,7 @@
     /* Then copy for both parts */
     if(low)
 	do
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
+	    *dst++=*src++;
 	while(--low);
 
     /*
@@ -74,14 +76,14 @@
     if(high)
 	do
 	{
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
-	    *((ULONG *)dest)++=*((ULONG *)source)++;
+	    *dst++=*src++;
+	    *dst++=*src++;
+	    *dst++=*src++;
+	    *dst++=*src++;
+	    *dst++=*src++;
+	    *dst++=*src++;
+	    *dst++=*src++;
+	    *dst++=*src++;
 	}while(--high);
     AROS_LIBFUNC_EXIT
 } /* CopyMemQuick */
