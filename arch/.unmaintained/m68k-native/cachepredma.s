@@ -56,6 +56,11 @@
  
 ******************************************************************************/
 
+/*
+   XDEF AROS_SLIB_ENTRY(CachePreDMA,Exec)   	; for 68000/10/20/30
+   XDEF AROS_SLIB_ENTRY(CachePreDMA_40,Exec)	; for 68040+
+*/
+
 	#include "machine.i"
 
 	.text
@@ -63,6 +68,21 @@
 	.globl	AROS_SLIB_ENTRY(CachePreDMA,Exec)
 	.type	AROS_SLIB_ENTRY(CachePreDMA,Exec),@function
 AROS_SLIB_ENTRY(CachePreDMA,Exec):
-	# Simple 68000s have no chaches
+	move.l	a0,d0	/* return input address */
 	rts
 
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(CachePreDMA_40,Exec)
+	.type	AROS_SLIB_ENTRY(CachePreDMA_40,Exec),@function
+AROS_SLIB_ENTRY(CachePreDMA_40,Exec):
+	move.l	a5,a1		/* save a5 */
+	lea.l	cachepredmasup_40(pc),a5
+	jmp	Supervisor(a6)
+
+cachepredmasup_40:
+	cpusha	dc	/* Push dirty data cache lines to memory and invalidate cache */
+	cinva	dc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
+			   bit of CACR. Force an invalidation with CINV. */
+	move.l	a0,d0	/* return input address */
+	rte

@@ -50,6 +50,12 @@
  
 ******************************************************************************/
 
+/*
+   XDEF AROS_SLIB_ENTRY(CachePostDMA,Exec)   	; for 68000/10/20
+   XDEF AROS_SLIB_ENTRY(CachePostDMA_30,Exec)	; for 68030+
+   XDEF AROS_SLIB_ENTRY(CachePostDMA_40,Exec)	; for 68040/68060
+*/
+
 	#include "machine.i"
 
 	.text
@@ -57,6 +63,47 @@
 	.globl	AROS_SLIB_ENTRY(CachePostDMA,Exec)
 	.type	AROS_SLIB_ENTRY(CachePostDMA,Exec),@function
 AROS_SLIB_ENTRY(CachePostDMA,Exec):
-	# Simple 68000s have no chaches
 	rts
 
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(CachePostDMA_30,Exec)
+	.type	AROS_SLIB_ENTRY(CachePostDMA_30,Exec),@function
+AROS_SLIB_ENTRY(CachePostDMA_30,Exec):
+	btst.l	#DMAB_NoModify,d0	/* Has DMA modified data in mem? */
+	bne.s	cpd_30_end		/* nope, just exit */
+	move.l	a5,a1			/* save a5 */
+	lea.l	cachepostdmasup_30(pc),a5
+	jmp	Supervisor(a6)
+
+cpd_30_end:
+	rts
+
+cachepostdmasup_30:
+	/* A DMA device has changed data in main memory. We have to clear
+	   the data cache, so we get the chance to see this new data. */
+	or.w	#0x0700,sr	/* Disable interrupts */
+	movec	cacr,d0
+	bset.l	#11,d0		/* Set CD Clear Data cache bit */
+	movec	d0,cacr
+	rte
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(CachePostDMA_40,Exec)
+	.type	AROS_SLIB_ENTRY(CachePostDMA_40,Exec),@function
+AROS_SLIB_ENTRY(CachePostDMA_40,Exec):
+	btst.l	#DMAB_NoModify,d0	/* Has DMA modified data in mem? */
+	bne.s	cpd_40_end		/* nope, just exit */
+	move.l	a5,a1			/* save a5 */
+	lea.l	cachepostdmasup_40(pc),a5
+	jmp	Supervisor(a6)
+
+cpd_40_end:
+	rts
+
+cachepostdmasup_40:
+	/* A DMA device has changed data in main memory. We have to invalidate
+	   the data cache, so we get the chance to see this new data. */
+	cinva	dc
+	rte
