@@ -106,7 +106,7 @@ echo
 echo "You have installed all necessary tools to compile AROS now."
 echo "Now run './configure' (with option '--help' for more information)"
 echo
-echo "Then type '$MMAKE AROS' to start building the tree."
+echo "Then type 'make' to start building the tree."
 echo
 
 exit 0
