@@ -18,9 +18,10 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 
-
 #include <stdio.h>
 #include <string.h>
+
+#define MUIM_Test_Dummy (TAG_USER | 0x42)
 
 /*** Instance data **********************************************************/
 struct Test_DATA
@@ -34,7 +35,7 @@ struct Test_DATA
 /*** Methods ****************************************************************/
 IPTR Test$OM_NEW
 (
-    struct IClass *CLASS, Object *self, struct opSet *message 
+    Class *CLASS, Object *self, struct opSet *message 
 )
 {
     struct Test_DATA *data = NULL;
@@ -55,14 +56,31 @@ error:
     return NULL;
 }
 
+IPTR Test$MUIM_Test_Dummy
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct Test_DATA *data = INST_DATA(CLASS, self);
+    
+    /* 
+        Need to do *something* so that the compiler doesn't optimize away
+        this function call completely...
+    */
+    data->td_Dummy1 += data->td_Dummy2; 
+    
+    return TRUE;
+}
+
 
 /*** Dispatcher *************************************************************/
 BOOPSI_DISPATCHER(IPTR, Test_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW: return Test$OM_NEW(CLASS, self, (struct opSet *) message);
-        default:     return DoSuperMethodA(CLASS, self, message);
+        case OM_NEW:          return Test$OM_NEW(CLASS, self, (struct opSet *) message);
+        case MUIM_Test_Dummy: return Test$MUIM_Test_Dummy(CLASS, self, message);
+        default:              return DoSuperMethodA(CLASS, self, message);
     }
     
     return NULL;
@@ -105,6 +123,8 @@ int main()
     
     if (!Test_Initialize()) goto error;
     
+    /** Object allocation benchmark */
+    
     gettimeofday(&tv_start, NULL);
     
     for(i = 0; i < count; i++)
@@ -126,6 +146,34 @@ int main()
         "Seconds per object: %f\n",
         elapsed, count, (double) count / elapsed, (double) elapsed / count
     );
+    
+    /** Method call benchmark */
+    printf("****************************\n");
+    object  = NewObject(Test_CLASS->mcc_Class, NULL, NULL);
+    count  *= 20;
+    gettimeofday(&tv_start, NULL);
+    
+    for(i = 0; i < count; i++)
+    {    
+        DoMethod(object, MUIM_Test_Dummy);        
+    }
+    
+    gettimeofday(&tv_end, NULL);
+    
+    DisposeObject(object);
+    
+    elapsed = ((double)(((tv_end.tv_sec * 1000000) + tv_end.tv_usec) 
+            - ((tv_start.tv_sec * 1000000) + tv_start.tv_usec)))/1000000.;
+    
+    printf
+    (
+        "Elapsed time:       %f seconds\n"
+        "Number of calls:    %d\n"
+        "Calls per second:   %f\n"
+        "Seconds per call:   %f\n",
+        elapsed, count, (double) count / elapsed, (double) elapsed / count
+    );
+    
     
     return 0;
     
