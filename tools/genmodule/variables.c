@@ -22,6 +22,7 @@ char *conffile, *gendir, *genincdir, *reffile;
 /* global variables that store the configuration of the module */
 enum modtype modtype = UNSPECIFIED;
 enum libcall libcall = STACK;
+int options = 0;
 
 char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, 
      *libbase = NULL, *libbasetype = NULL, *libbasetypeextern = NULL, 

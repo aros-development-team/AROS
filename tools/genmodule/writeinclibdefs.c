@@ -76,8 +76,7 @@ void writeinclibdefs(void)
         "#define LC_NO_CLOSELIB\n"
         "#define LC_NO_EXPUNGELIB\n"
         "#define LC_RESIDENTFLAGS %s\n"
-	"#define LC_RESIDENTPRI   %d\n"
-        "#endif /* _%s_LIBDEFS_H */\n",
+	"#define LC_RESIDENTPRI   %d\n",
         modulename, suffix,
         basename, basename,
         libbase, libbasetype, libbasetype, libbasetype,
@@ -85,10 +84,22 @@ void writeinclibdefs(void)
         basename, basename,
         modulename, majorversion, minorversion, datestring,
         modulename, modulename,
-        residentflags, residentpri,
-        modulenameupper
+        residentflags, residentpri
     );
 
+    if (options & OPTION_NOAUTOLIB)
+	fputs("#define AROS_LC_SET_NOLIBS\n", out);
+    
+    if (options & OPTION_NOEXPUNGE)
+	fputs("#define NOEXPUNGE\n", out);
+    
+    fprintf
+    (
+        out,
+        "#endif /* _%s_LIBDEFS_H */\n",
+        modulenameupper
+    );
+    
     for (linelistit = cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
     

@@ -23,6 +23,7 @@ struct functionlist {
     unsigned int argcount;
     struct arglist *arguments;
     unsigned int lvo;
+    int novararg;
 };
 
 struct forcelist {
@@ -59,6 +60,10 @@ enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP };
 extern enum modtype modtype;
 enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 extern enum libcall libcall;
+
+enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE };
+enum optionflags { OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB, OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE };
+extern int options;
 
 extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, 
             *libbasetypeextern, *datestring, *superclass;
