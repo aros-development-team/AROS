@@ -240,7 +240,7 @@ struct ClipRect * Case_1(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
 
   /* 
      If the ClipRect with the o's already had some backed up pixels
@@ -415,7 +415,7 @@ struct ClipRect * Case_2(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -586,8 +586,8 @@ struct ClipRect * Case_3(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
 
   /* If the ClipRect with the o's already had some backed up pixels
      in a bitmap-structure, then we have to split up the info found
@@ -774,7 +774,7 @@ struct ClipRect * Case_4(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
 
   /* If the ClipRect with the o's already had some backed up pixels
      in a bitmap-structure, then we have to split up the info found
@@ -941,8 +941,8 @@ struct ClipRect * Case_5(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -1120,8 +1120,8 @@ struct ClipRect * Case_6(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -1298,9 +1298,9 @@ struct ClipRect * Case_7(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New3 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
+  CR_New3 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -1490,7 +1490,7 @@ struct ClipRect * Case_8(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
 
   /* If the ClipRect with the o's already had some backed up pixels
      in a bitmap-structure, then we have to split up the info found
@@ -1656,8 +1656,8 @@ struct ClipRect * Case_9(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -1834,8 +1834,8 @@ struct ClipRect * Case_10(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -2014,9 +2014,9 @@ struct ClipRect * Case_11(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New3 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
+  CR_New3 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -2205,8 +2205,8 @@ struct ClipRect * Case_12(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -2385,9 +2385,9 @@ struct ClipRect * Case_13(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New3 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
+  CR_New3 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -2578,9 +2578,9 @@ struct ClipRect * Case_14(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New3 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
+  CR_New3 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
@@ -2771,10 +2771,10 @@ struct ClipRect * Case_15(struct Rectangle * R,
   struct BitMap   * bm_old;
 
   /* Get a new structure for a 2nd and 3rd ClipRect */
-  CR_New1 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New2 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New3 = _AllocClipRect(newlayer->LayerInfo);
-  CR_New4 = _AllocClipRect(newlayer->LayerInfo);
+  CR_New1 = _AllocClipRect(newlayer);
+  CR_New2 = _AllocClipRect(newlayer);
+  CR_New3 = _AllocClipRect(newlayer);
+  CR_New4 = _AllocClipRect(newlayer);
 
 
   /* If the ClipRect with the o's already had some backed up pixels
