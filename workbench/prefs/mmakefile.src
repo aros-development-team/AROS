@@ -12,7 +12,7 @@ workbench-prefs:
 
 #MM
 setup :
-	%mkdirs_q $(PREFSDIR) $(PREFSDIR)/Env-Archive $(PREFSDIR)/Env-Archive/Sys
+	%mkdirs_q $(PREFSDIR) $(PREFSDIR)/Presets $(PREFSDIR)/Env-Archive $(PREFSDIR)/Env-Archive/Sys
 
 #MM
 copyfiles : setup
