@@ -25,6 +25,7 @@ enum {
 
    aoHidd_Mouse_IrqHandler,
    aoHidd_Mouse_IrqHandlerData,
+	aoHidd_Mouse_State,
 
    num_Hidd_Mouse_Attrs
    
@@ -34,6 +35,7 @@ enum {
 
 #define aHidd_Mouse_IrqHandler		(aoHidd_Mouse_IrqHandler     + HiddMouseAB)
 #define aHidd_Mouse_IrqHandlerData	(aoHidd_Mouse_IrqHandlerData + HiddMouseAB)
+#define aHidd_Mouse_State				(aoHidd_Mouse_State          + HiddMouseAB)  
 
 #define IS_HIDDMOUSE_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddMouseAB, num_Hidd_Mouse_Attrs)
 
