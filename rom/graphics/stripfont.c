@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function StripFont()
@@ -60,6 +60,8 @@
 	return;
 		
     /* Does the font have an extension ? */
+
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
     
     hn = tfe_hashlookup(font, GfxBase);
     if (NULL != hn)
@@ -82,6 +84,8 @@
 	}
 		
     }
+    
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     return;	
 
