@@ -163,6 +163,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 	return NULL;
     }
 
+    __apathbuf = old_upath;
     upath = ++old_upath;
     apath = old_apath;
 
@@ -236,7 +237,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     }
 
     upath[0] = '\0';
-    return __apathbuf = old_upath;
+    return old_upath;
 }
 
 
