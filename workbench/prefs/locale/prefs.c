@@ -11,7 +11,7 @@
 #include "global.h"
 #include <aros/macros.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <stdio.h>
@@ -30,7 +30,7 @@ struct FilePrefHeader
 /*********************************************************************************************/
 
 static struct LocalePrefs   restore_prefs;
-static APTR 	    	     mempool;
+static APTR 	    	    mempool;
 
 /*********************************************************************************************/
 
