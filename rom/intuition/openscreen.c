@@ -15,6 +15,8 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
+#include <graphics/modeid.h>
+
 
 #ifndef DEBUG_OpenScreen
 #   define DEBUG_OpenScreen 0
@@ -106,6 +108,15 @@ static const ULONG coltab[] = {
     UWORD	     *customdripens = NULL;
     ULONG	     *colors32 = NULL;
     BOOL	      ok = TRUE, rp_inited = FALSE;
+    
+    struct TagItem   modetags[] = {
+    	{ BIDTAG_Depth,		0UL },
+	{ BIDTAG_DesiredWidth,		0UL },
+	{ BIDTAG_DesiredHeight,	0UL },
+	{ TAG_DONE, 0UL }
+    };
+    
+    ULONG modeid = INVALID_ID;
     
     ASSERT_VALID_PTR(newScreen);
 
@@ -278,6 +289,9 @@ static const ULONG coltab[] = {
 		break;
 		
 	    case SA_DisplayID:
+	    	modeid = tag->ti_Data;
+		break;
+		
 	    case SA_DClip:
 	    case SA_Overscan:
 	    case SA_Behind:
@@ -304,6 +318,19 @@ static const ULONG coltab[] = {
     } /* if (tagList) */
 
     /* First Init the RastPort then get the BitPlanes!! */
+    
+    modetags[0].ti_Data  = ns.Depth;
+    modetags[1].ti_Data = ns.Width;
+    modetags[2].ti_Data = ns.Height;
+    
+    if (INVALID_ID == modeid) {
+	modeid = BestModeIDA(modetags);
+	if (INVALID_ID == modeid) {
+    	    kprintf("!!! OpenScreen(): Could not find valid modeid !!!\n");
+    	   return NULL;
+	}
+    }
+	
     
     if ((success = InitRastPort (&screen->Screen.RastPort))) rp_inited = TRUE;
         
@@ -348,6 +375,7 @@ static const ULONG coltab[] = {
 	if (NULL != (screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)))
 	{
             /* I should probably also call AttachPalExtra */
+	    screen->Screen.ViewPort.ColorMap->VPModeID = modeid;
             if (0 != AttachPalExtra(screen->Screen.ViewPort.ColorMap,
                                     &screen->Screen.ViewPort))
                 ok = FALSE;
