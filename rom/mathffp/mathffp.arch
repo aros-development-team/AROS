@@ -1,13 +1,6 @@
 /*
     (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1998/09/22 19:24:54  hkiel
-    Further improvements for ArchTool
-
-    Revision 1.1  1998/09/21 20:49:14  hkiel
-    Started converting to new archtool
-
 
     Desc: Archive of Mathffp Functions
     Lang: english
