@@ -284,9 +284,10 @@ void hidd_demo()
 		{WA_MaxHeight,                  480},
 		{WA_Title,  (ULONG)"AROS !ext"     },
 		{WA_Activate,			  1},
+		{WA_CloseGadget,               TRUE},
 		{WA_SizeGadget,                TRUE},
 		{WA_DepthGadget,               TRUE},
-		{WA_IDCMP, IDCMP_MOUSEMOVE | IDCMP_RAWKEY},
+		{WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_MOUSEMOVE | IDCMP_RAWKEY},
 		{WA_ReportMouse,	       TRUE},
 		{TAG_DONE,			 0}};
 	      win2 = OpenWindowTagList(0, tags);
@@ -334,19 +335,26 @@ void hidd_demo()
 
 			  char s[20];
 
-			  sprintf(s, "Mouse: %ld, %ld", mx, my);
+			  sprintf(s, "Mouse: %4ld, %4ld", mx, my);
 
 			  WhitePrint(win2->RPort, s, 80);
-			  
+#if 0			  
 			  mx &= 511;
 			  my &= 255;
 			  
 			  SetAPen(&win2->WScreen->RastPort, 1);
 			  SetDrMd(&win2->WScreen->RastPort, JAM2);
 			  WritePixel(&win2->WScreen->RastPort, mx, my);
+#endif
 			}
 			break;
-		      
+			
+		      case IDCMP_CLOSEWINDOW:
+		        {
+			  quitme = TRUE;
+			}
+			break;
+					      
 		    }
 		    ReplyMsg((struct Message *)msg);
 		  }
