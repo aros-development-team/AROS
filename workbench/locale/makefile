@@ -3,7 +3,7 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=Countries Languages
+SUBDIRS=countries
 LOCALEDIR=$(BINDIR)/Locale
 
 all: setup
