@@ -60,8 +60,8 @@ int submain(struct DosLibrary *DOSBase)
 
 			/* Restore original input/output */
 			tmp = me->pr_CES; me->pr_CES = ces; ces = tmp;
-			SelectOutput(cos);
-			SelectInput(cis);
+			cos = SelectOutput(cos);
+			cis = SelectInput(cis);
 		}
 		else
 		{
