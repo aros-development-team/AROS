@@ -29,6 +29,7 @@ CLASSES := \
     imagedisplay \
     list \
     listview \
+    mccprefs \
     menuitem \
     notify \
     numeric \
