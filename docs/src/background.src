@@ -79,7 +79,7 @@ ask or say, contact coordinator \email{digulla@aros.fh-konstanz.de}.
 \begin{new}{9.10.1997}
 \subsection{AROS on m68k Status}
 
-Here is a list of programs which have been tries on Amiga-Linux/m68k:
+Here is a list of programs which have been tried on Amiga-Linux/m68k:
 
 \begin{itemize}
 \item \filename{C:Date},
@@ -90,9 +90,27 @@ Here is a list of programs which have been tries on Amiga-Linux/m68k:
 \filename{C:Status} and
 \filename{C:SetPatch} (It doesn't install any patches, though :-) ). All
 of them work, others don't, yet.
-\item zoo (packer) works, LhA and LZX not yet.
+\item zoo (packer) works, gzip V 1.1.2 (only packing though :-/ ) , LhA and LZX not yet.
+\item UUxT (uuencoder/-decoder by Asher Feldman)
 \item TeX: bibtex and bm2font work.
 \item OMA2.0 assembler works. Linker hasn't been tried yet.
+\item ira V1.02, a disassembler from Aminet
+\item From the 3.1 Amiga Developer Update:
+\filename{liblist}, 
+\filename{portlist},
+\filename{tasklist},
+\filename{fontlist},
+\filename{devlist},
+\filename{modlist},
+\filename{showgfxbase},
+\filename{memmon},
+\filename{taskpri}
+\filename{settaskname},
+\filename{lvo},
+\filename{charset},
+\filename{ktest},
+\filename{searchfile},
+\filename{tstat}
 \end{itemize}
 \end{new}
 
