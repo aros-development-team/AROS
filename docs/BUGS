@@ -59,6 +59,9 @@ is available and no error is printed.
 BUG000006
 klaus21@t-online.de
 "dir :" does nothing.
+The problem is that DoName() does not support a lock to the root directory of
+a device. This is due to the fact that this functionality is missing in the
+filehandler system.
 
 BUG000007 partial fix (doesn't crash anymore)
 digulla@wi-pc44.fh-konstanz.de
@@ -94,3 +97,7 @@ BUG000012
 digulla@aros.fh-konstanz.de
 TestExampleLib creates corrupt memory. Maybe library is freed twice ?
 
+BUG000013
+srittau@aros.org
+Moria3D segfaults with a fp exception while "Loading Fading..." on an
+i486 with internal fpu.
