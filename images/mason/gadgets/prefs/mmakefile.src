@@ -1,11 +1,6 @@
 include $(TOP)/config/make.cfg
 
-FILES := \
-    Test.png \
-    Revert.png \
-    Save.png \
-    Use.png \
-    Cancel.png
+FILES := Test Revert Save Use Cancel
 
 #MM- themes-mason-images-gadgets : themes-mason-images-gadgets-preferences
 #MM themes-mason-images-gadgets-preferences : setup
