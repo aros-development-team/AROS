@@ -27,14 +27,22 @@ IPTR presentationNew(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval=0;
     struct PresentationClassData *data;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
     Object *observer=NULL;
 
-    tag=FindTagItem(PA_Observer, msg->ops_AttrList);
-    if(tag)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        tag->ti_Tag=TAG_IGNORE;
-        observer=(Object*)tag->ti_Data;
+        switch (tag->ti_Tag)
+        {
+            case PA_Observer:
+                observer = (Object*) tag->ti_Data;
+                break;
+            
+            default:
+                continue; /* Don't supress non-processed tags */
+        }
+        
+        tag->ti_Tag = TAG_IGNORE;              
     }
 
     retval=DoSuperMethodA(cl, obj, (Msg)msg);
