@@ -426,3 +426,17 @@ When having multiple windows and one of them includes an active string gadget,
 activating another window will make the string gadget clone itself to the
 activated window.
 
+BUG000062
+hkiel@aros.org
+When you are in a five-character-directory and produce an "Object not found"
+error by calling a non-existant command, the second call to a non-existant
+command will produce a segmentation fault if this "command" consists of
+exactly three characters.
+
+BUG000063
+hkiel@aros.org
+Contrib/DDemo7 does not work with current mathlib (produces trashy gfx, and
+segfaults after some time). Must be a bug in mlib, because it used to work
+with my own sin/cos routines (taylor series with arg folded to [0,Pi/2]),
+before the Sun routines have been added.
+
