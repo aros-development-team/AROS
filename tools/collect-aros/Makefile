@@ -12,14 +12,17 @@ MECHO	     ?= echo
 HOST_CFLAGS  ?= $(USER_CFLAGS)
 COLLECT-AROS ?= collect-aros
 RM           ?= rm
-MV           ?= mv
+COLLECT-AROS-BACKEND   ?= backend-generic.c
+COLLECT-AROS-DOCOMMAND ?= docommand-exec.c
 
 all : $(COLLECT-AROS)
 
-$(COLLECT-AROS) : collect-aros.c gensets.c ldscript.h 
+COLLECT-AROS-FILES := collect-aros.c gensets.c misc.c $(COLLECT-AROS-BACKEND) \
+                      $(COLLECT-AROS-DOCOMMAND)
+$(COLLECT-AROS) : misc.h ldscript.h gensets.h docommand.h backend.h
+$(COLLECT-AROS) : $(COLLECT-AROS-FILES)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) collect-aros.c gensets.c -o $@  -DMVPATH="\"$(MV)\""
-	@$(HOST_STRIP) $(COLLECT-AROS)
+	@$(HOST_CC) $(HOST_CFLAGS) $(COLLECT-AROS-FILES) -o $@ -liberty
 
 
 clean :
