@@ -24,8 +24,10 @@ int main(int argc, char **av)
 	FPuts(Output(), "Locale opened\n");
 	if(new)
 	{
-	    PrefsUpdate(new);
+	    struct Locale *old = NULL;
+	    old = PrefsUpdate(new);
 	    FPuts(Output(), "Locale set\n");
+	    CloseLocale(old);
 	    CloseLocale(new);
 	}
 	else
