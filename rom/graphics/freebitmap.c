@@ -49,6 +49,9 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+
+    if (!bm) return;
+    
     ASSERT_VALID_PTR(bm);
 
     if (bm->Pad != 0 || (bm->Flags & BMF_AROS_HIDD))
