@@ -29,7 +29,7 @@ VOID DoGMLayout(struct Gadget		*glist,
     while (glist && numgad)
     {
     	/* Is this a BOOPSI gad with special relativity ? */
-    	if ((glist->GadgetType & GTYP_CUSTOMGADGET) &&
+    	if (((glist->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) &&
 	    (glist->Flags & (GFLG_RELSPECIAL | GFLG_RELRIGHT | GFLG_RELBOTTOM |
 	                     GFLG_RELWIDTH | GFLG_RELHEIGHT)))
     	{
@@ -37,8 +37,9 @@ VOID DoGMLayout(struct Gadget		*glist,
     	    lmsg.MethodID    = GM_LAYOUT;
     	    lmsg.gpl_GInfo   = NULL;
     	    lmsg.gpl_Initial = initial;
+
     	    DoGadgetMethodA(glist, win, req, (Msg)&(lmsg));
-    	    
+
     	}
     	
         glist = glist->NextGadget;
