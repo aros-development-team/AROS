@@ -46,6 +46,7 @@ void main(void)
     	    	Child, HGroup,
     	    	    Child, quit_button = TextObject,
 			ButtonFrame,
+			MUIA_Background, MUII_ButtonBack,
 			MUIA_Text_PreParse, "\33c",
 			MUIA_Text_Contents, "Quit",
 			MUIA_InputMode, MUIV_InputMode_RelVerify,

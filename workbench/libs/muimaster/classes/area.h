@@ -29,11 +29,8 @@ struct MUI_AreaData
     STRPTR             mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
-#warning FIXME: mad_Background
-#if 0
     struct MUI_ImageSpec *mad_Background;  /* bg setting */
     struct MUI_ImageSpec *mad_SelBack;     /* selected state background */
-#endif
     WORD               mad_HardILeft;      /* hardcoded inner values */
     WORD               mad_HardIRight;
     WORD               mad_HardITop;

@@ -31,6 +31,7 @@ extern struct Library *MUIMasterBase;
 
 #include "muimaster_intern.h"
 #include "mui.h"
+#include "imspec.h"
 
 #define g_strdup strdup
 #define g_free free
@@ -143,101 +144,50 @@ static void prefs_init_frames (struct ZunePrefs *prefs)
 } /* prefs_init_frames */
 
 
-static void
-prefs_init_images (struct ZunePrefs *prefs)
+static void prefs_init_images (struct ZunePrefs *prefs)
 {
-/* images */
-#warning FIXME: images
-#if 0
-    prefs->images[MUII_WindowBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_RequesterBack] =
-	zune_imspec_link_new(zune_get_pattern_spec(MUII_SHINEBACK));
-
-    prefs->images[MUII_ButtonBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ListBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TextBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PropBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PopupBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_SelectedBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_FILL));
-    prefs->images[MUII_ListCursor] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ListSelect] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ListSelCur] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_RegisterBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapePlayBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_GroupBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_SliderBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_SliderKnob] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PageBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ReadListBack] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-/*
- * Need real images here
- */
-    prefs->images[MUII_CheckMark] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_RadioButton] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Cycle] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PopUp] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PopFile] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PopDrawer] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ArrowUp] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ArrowDown] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ArrowLeft] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_ArrowRight] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_PropKnob] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Drawer] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_HardDisk] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Disk] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Chip] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Volume] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Network] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_Assign] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapePlay] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapePause] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapeStop] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapeRecord] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapeUp] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-    prefs->images[MUII_TapeDown] =
-	zune_imspec_link_new(zune_get_muipen_spec(MPEN_BACKGROUND));
-#endif
+    prefs->images[MUII_WindowBack] = zune_image_spec_to_structure((IPTR)"0:128"); /* MUII_BACKGROUND */
+    prefs->images[MUII_RequesterBack] =  zune_image_spec_to_structure((IPTR)"0:132"); /* MUII_SHINEBACK */
+    prefs->images[MUII_ButtonBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ListBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TextBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PropBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PopupBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_SelectedBack] = zune_image_spec_to_structure((IPTR)"0:131");
+    prefs->images[MUII_ListCursor] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ListSelect] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ListSelCur] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ArrowUp] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ArrowDown] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ArrowLeft] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ArrowRight] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_CheckMark] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_RadioButton] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Cycle] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PopUp] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PopFile] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PopDrawer] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PropKnob] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Drawer] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_HardDisk] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Disk] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Chip] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Volume] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_RegisterBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Network] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_Assign] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapePlay] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapePlayBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapePause] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapeStop] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapeRecord] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_GroupBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_SliderBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_SliderKnob] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapeUp] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_TapeDown] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_PageBack] = zune_image_spec_to_structure((IPTR)"0:128");
+    prefs->images[MUII_ReadListBack] = zune_image_spec_to_structure((IPTR)"0:128");
 } /* prefs_init_images */
 
 
@@ -389,11 +339,8 @@ void __zune_prefs_release(struct ZunePrefs *prefs)
 {
     int i;
 
-#warning FIXME: images
-#if 0
     for (i = MUII_WindowBack; i < MUII_Count; i++)
-	zune_imspec_free(prefs->images[i]);
-#endif
+	zune_imspec_free(prefs->images[i]); /* NULL is ok */
 
     g_free(prefs->textbutton_font);
     g_free(prefs->group_title_font);
