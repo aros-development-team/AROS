@@ -12,7 +12,7 @@
 #ifndef __palmos__
 #include <string.h>
 #endif
-#include <limits.h>
+//#include <limits.h>
 #include <ctype.h>
 #include "__math.h"
 #include <math.h>
@@ -39,7 +39,7 @@
 		}while(0)
 
 #warning DBL_DIG is unknown?!
-//#define MINFLOATSIZE (DBL_DIG+1) /* Why not 1 more - it's 97% reliable */
+#define MINFLOATSIZE (DBL_DIG+1) /* Why not 1 more - it's 97% reliable */
 #define MINFLOATSIZE (8+1) /* Why not 1 more - it's 97% reliable */
 #define MININTSIZE (sizeof(unsigned long)*BITSPERBYTE/3+1)
 #define MINPOINTSIZE (sizeof(void *)*BITSPERBYTE/4+1)

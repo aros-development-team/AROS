@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES		:= setjmp longjmp __vcformat
+FILES		:= setjmp longjmp __vcformat __vcscan strtol strtoul strtod
 CLIBDIR 	:= $(GENDIR)/compiler/clib
 SPECIAL_CFLAGS	:= -I$(TOP)/compiler/clib -I..
 CFLAGS2 	:= $(CFLAGS)
