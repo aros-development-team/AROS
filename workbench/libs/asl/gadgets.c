@@ -241,6 +241,8 @@ void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *list
 	{ICA_MAP	, (IPTR)prop_to_lv	},
 	{TAG_DONE				}
     };
+
+#warning This would not work in AmigaOS, because there gadgetclass is really lame and does not check for notifying loops
     
     SetAttrsA(scrollergad->prop, ic_tags);
     

@@ -53,6 +53,8 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *, struct AslBase_intern *AslBa
 
 #define ID_NAMELISTVIEW	1
 #define ID_SIZELISTVIEW 2
+#define ID_NAMESTRING  	3
+#define ID_SIZESTRING	4
 
 #undef NUMBUTS
 #define NUMBUTS 2L
@@ -82,7 +84,112 @@ AROS_UFH3(VOID, FOTagHook,
 	IPTR tidata = tag->ti_Data;
 	
 	switch (tag->ti_Tag)
-	{		
+	{
+    	    case ASLFO_InitialName:
+	    	if (tidata)
+		    iforeq->ifo_TextAttr.ta_Name = (STRPTR)tidata;
+		break;
+	
+	    case ASLFO_InitialSize:
+	    	iforeq->ifo_TextAttr.ta_YSize = (UWORD)tidata;
+		break;
+	
+	    case ASLFO_InitialStyle:
+	    	iforeq->ifo_TextAttr.ta_Style = (UBYTE)tidata;
+		break;
+		
+	    case ASLFO_InitialFlags:
+	    	iforeq->ifo_TextAttr.ta_Flags = (UBYTE)tidata;
+		break;
+	
+	    case ASLFO_InitialFrontPen:
+	    	iforeq->ifo_FrontPen = (UBYTE)tidata;
+		break;
+		
+	    case ASLFO_InitialBackPen:
+	    	iforeq->ifo_BackPen = (UBYTE)tidata;
+		break;
+	
+	    case ASLFO_InitialDrawMode:
+	    	iforeq->ifo_DrawMode = (UBYTE)tidata;
+		break;
+	
+	    case ASLFO_Flags:
+	    	iforeq->ifo_Flags = (UBYTE)tidata;
+		break;
+		
+	    case ASLFO_DoFrontPen:
+	    	if (tidata)
+		    iforeq->ifo_Flags |= FOF_DOFRONTPEN;
+		else
+		    iforeq->ifo_Flags &= ~FOF_DOFRONTPEN;
+	    	break;
+
+	    case ASLFO_DoBackPen:
+	    	if (tidata)
+		    iforeq->ifo_Flags |= FOF_DOBACKPEN;
+		else
+		    iforeq->ifo_Flags &= ~FOF_DOBACKPEN;
+	    	break;
+	
+	    case ASLFO_DoStyle:
+	    	if (tidata)
+		    iforeq->ifo_Flags |= FOF_DOSTYLE;
+		else
+		    iforeq->ifo_Flags &= ~FOF_DOSTYLE;
+	    	break;
+
+	    case ASLFO_DoDrawMode:
+	    	if (tidata)
+		    iforeq->ifo_Flags |= FOF_DODRAWMODE;
+		else
+		    iforeq->ifo_Flags &= ~FOF_DODRAWMODE;
+	    	break;
+	    
+	    case ASLFO_FixedWidthOnly:
+	    	if (tidata)
+		    iforeq->ifo_Flags |= FOF_FIXEDWIDTHONLY;
+		else
+		    iforeq->ifo_Flags &= ~FOF_FIXEDWIDTHONLY;
+	    	break;
+	    
+	    case ASLFO_MinHeight:
+	    	iforeq->ifo_MinHeight = (UWORD)tidata;
+		break;
+		
+	    case ASLFO_MaxHeight:
+	    	iforeq->ifo_MaxHeight = (UWORD)tidata;
+		break;
+	    
+	    case ASLFO_FilterFunc:
+	    	iforeq->ifo_FilterFunc = (struct Hook *)tidata;
+		break;
+	
+	    case ASLFO_HookFunc:
+	    	iforeq->ifo_HookFunc = (ULONG (*)(ULONG, APTR, struct FontRequester *))tidata;
+		break;
+	
+	    case ASLFO_MaxFrontPen:
+	    	iforeq->ifo_MaxFrontPen = (UBYTE)tidata;
+		break;
+		
+	    case ASLFO_MaxBackPen:
+	    	iforeq->ifo_MaxBackPen = (UBYTE)tidata;
+		break;
+	    
+	    case ASLFO_ModeList:
+    	    	iforeq->ifo_ModeList = (STRPTR *)tidata;
+		break;
+	    
+	    case ASLFO_FrontPens:
+	    	iforeq->ifo_FrontPens = (UBYTE *)tidata;
+		break;
+		
+	    case ASLFO_BackPens:
+	    	iforeq->ifo_BackPens = (UBYTE *)tidata;
+		break;
+		
+		
 	    default:
 		break;
 		
@@ -205,7 +312,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     udata->ButHeight = BUTTONEXTRAHEIGHT + ld->ld_Font->tf_YSize;
 #endif
     
-    gadrows = 1; /* button row  */
+    gadrows = 2; /* button row  */
 //    if (iforeq->ifo_Flags & ISMF_DOOVERSCAN) gadrows++;
 //    if (iforeq->ifo_Flags & ISMF_DOWIDTH) gadrows++;
 //    if (iforeq->ifo_Flags & ISMF_DOHEIGHT) gadrows++;
@@ -219,7 +326,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ld->ld_MinHeight = OUTERSPACINGY * 2 +
 		       (GADGETSPACINGY + udata->ButHeight) * gadrows +
 		       BORDERLVSPACINGY * 2 +
-		       (ld->ld_Font->tf_YSize + BORDERLVITEMSPACINGY * 2) * FOREQ_MIN_VISIBLELINES;
+		       (ld->ld_Font->tf_YSize + BORDERLVITEMSPACINGY * 2) * FOREQ_MIN_VISIBLELINES -
+		       GADGETSPACINGY; /* because the string gadgets are attached to listview gadgets */
 
     /* make listview gadgets */
     
@@ -306,6 +414,50 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     connectscrollerandlistview(&udata->NameScrollGad, udata->NameListview, AslBase);
     connectscrollerandlistview(&udata->SizeScrollGad, udata->SizeListview, AslBase);
+    
+    /* make string gadgets */
+
+    x = ld->ld_WBorLeft + OUTERSPACINGX;
+    y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
+    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1 -
+	GADGETSPACINGY; /* to have them vertically attached to the listviews */
+	
+    w = -ld->ld_WBorRight - ld->ld_WBorLeft - OUTERSPACINGX * 2 - GADGETSPACINGX - sizelvwidth;
+    
+    {
+    	struct TagItem string_tags[] =
+	{
+	    {GA_Left	    	, x 	    	    	    	    },
+	    {GA_RelBottom   	, y 	    	    	    	    },
+	    {GA_RelWidth    	, w 	    	    	    	    },
+	    {GA_Height	    	, udata->ButHeight  	    	    },
+	    {GA_Previous    	, (IPTR)gad 	    	    	    },
+	    {STRINGA_TextVal	, (IPTR)iforeq->ifo_TextAttr.ta_Name},
+	    {STRINGA_MaxChars	, 200	    	    	    	    },
+	    {GA_ID  	    	, ID_NAMESTRING     	    	    },
+	    {GA_RelVerify   	, TRUE	    	    	    	    },
+	    {GA_UserData    	, (IPTR)ld  	    	    	    },
+	    {GA_TabCycle    	, TRUE	    	    	    	    },
+	    {TAG_DONE	    	    	    	    	    	    }
+	};
+	
+	udata->NameString = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
+	if (!gad) goto failure;
+	
+   	string_tags[0].ti_Tag  = GA_RelRight;
+	string_tags[0].ti_Data = -ld->ld_WBorRight - OUTERSPACINGX - sizelvwidth + 1;
+	string_tags[2].ti_Tag  = GA_Width;
+	string_tags[2].ti_Data = sizelvwidth;
+	string_tags[4].ti_Data = (IPTR)gad;
+	string_tags[5].ti_Tag  = STRINGA_LongVal;
+	string_tags[5].ti_Data = iforeq->ifo_TextAttr.ta_YSize;
+	string_tags[6].ti_Data = 6;
+	string_tags[7].ti_Data = ID_SIZESTRING;
+
+	udata->SizeString = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
+	if (!gad) goto failure;
+	
+    }
     
     /* make button row */
     

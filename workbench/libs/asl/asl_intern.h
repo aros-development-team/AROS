@@ -181,7 +181,7 @@ struct IntFontReq
     UWORD		ifo_MinHeight;
     UWORD		ifo_MaxHeight;
     struct Hook		*ifo_FilterFunc;
-    struct Hook		*ifo_HookFunc;
+    ULONG		(*ifo_HookFunc)(ULONG, APTR, struct FontRequester *);
     UBYTE		ifo_MaxFrontPen;
     UBYTE		ifo_MaxBackPen;
 

@@ -338,15 +338,15 @@ const struct IntFontReq def_fontreq =
 	-1, -1,				/* --> center on screen */
 	300, 300			/* Width/Height		*/
     },
-    {"topaz", 8, 0, 0}, 		/* Default textattr 	*/
-    TEXTPEN,				/* FrontPen		*/
-    BACKGROUNDPEN,			/* BackPen		*/
+    {"topaz", 8, FS_NORMAL,FPF_ROMFONT},/* Default textattr 	*/
+    1,				    	/* FrontPen		*/
+    0,			    	    	/* BackPen		*/
     JAM1,				/* DrawMode		*/
     0,					/* Flags		*/
 
-    2,					/* Minheight		*/
-    100,				/* MaxHeight		*/
-    NULL,				/* FilterFunc		*/
+    5,					/* Minheight		*/
+    24,				    	/* MaxHeight		*/
+    NULL,			    	/* FilterFunc		*/
     NULL,				/* HookFunc		*/
     32, 				/* MaxFrontPen		*/
     32, 				/* MaxBackPen		*/
