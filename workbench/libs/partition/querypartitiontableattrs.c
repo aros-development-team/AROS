@@ -20,13 +20,13 @@
    struct Library *, PartitionBase, 17, Partition)
 
 /*  FUNCTION
-	query partition table attributes
+    query partition table attributes
 
     INPUTS
-	ph      - PartitionHandle of a partition table
+    ph      - PartitionHandle of a partition table
 
     RESULT
-	list of NULL-terminated ULONGs with attributes
+    list of NULL-terminated ULONGs with attributes
 
     NOTES
 
@@ -39,19 +39,19 @@
     INTERNALS
 
     HISTORY
-	21-02-02    first version
+    21-02-02    first version
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	if (table->table)
-	{
-	struct PTFunctionTable *handler = table->table->handler;
+    if (table->table)
+    {
+    struct PTFunctionTable *handler = table->table->handler;
 
-		if (handler->queryPartitionTableAttrs)
-			return handler->queryPartitionTableAttrs(PartitionBase);
-	}
-	return 0;
-	AROS_LIBFUNC_EXIT
+        if (handler->queryPartitionTableAttrs)
+            return handler->queryPartitionTableAttrs(PartitionBase);
+    }
+    return 0;
+    AROS_LIBFUNC_EXIT
 }

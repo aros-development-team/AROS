@@ -24,11 +24,11 @@
    struct Library *, PartitionBase, 8, Partition)
 
 /*  FUNCTION
-	close a partition table (and discard all changes)
-	all partitions and subpartitions in root->list will be removed recursivly
+    close a partition table (and discard all changes)
+    all partitions and subpartitions in root->list will be removed recursivly
 
     INPUTS
-	root - partition table to close
+    root - partition table to close
 
     RESULT
 
@@ -43,22 +43,22 @@
     INTERNALS
 
     HISTORY
-	21-02-02    first version
+    21-02-02    first version
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	if (root->table)
-	{
-	struct PTFunctionTable *handler = root->table->handler;
+    if (root->table)
+    {
+    struct PTFunctionTable *handler = root->table->handler;
 
-		if (handler->closePartitionTable)
-			handler->closePartitionTable(PartitionBase, root);
-		FreeMem(root->table, sizeof(struct PartitionTableHandler));
-		root->table = 0;
-	}
+        if (handler->closePartitionTable)
+            handler->closePartitionTable(PartitionBase, root);
+        FreeMem(root->table, sizeof(struct PartitionTableHandler));
+        root->table = 0;
+    }
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 

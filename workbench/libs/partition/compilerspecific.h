@@ -2,26 +2,26 @@
 #define IPTR ULONG
 #endif
 
-#undef 	REGARGS
-#undef 	STDARGS
+#undef  REGARGS
+#undef  STDARGS
 #undef  ALIGNED
-#undef	CHIP
-#undef 	ASM
-#undef	SAVEDS
+#undef  CHIP
+#undef  ASM
+#undef  SAVEDS
 
 #ifdef __GNUC__
 
 /* GCC */
 
 #undef USE_ASM_FUNCS
-#define USE_ASM_FUNCS 	    	    	0
+#define USE_ASM_FUNCS                   0
 
 #undef USE_OPTASM_FUNCS
-#define USE_OPTASM_FUNCS    	    	0
+#define USE_OPTASM_FUNCS                0
 
-#define REGPARAM(reg,type,name)     	register type name asm(#reg)
-#define ASM_REGPARAM(reg,type,name) 	type name
-#define OPT_REGPARAM(reg,type,name) 	type name
+#define REGPARAM(reg,type,name)         register type name asm(#reg)
+#define ASM_REGPARAM(reg,type,name)     type name
+#define OPT_REGPARAM(reg,type,name)     type name
 
 #define REGARGS
 #define STDARGS
@@ -42,25 +42,25 @@
 
 /* SAS C */
 
-#define REGPARAM(reg,type,name)     	register __ ## reg type name
+#define REGPARAM(reg,type,name)         register __ ## reg type name
 
 #if USE_ASM_FUNCS
-#   define ASM_REGPARAM(reg,type,name) 	register __ ## reg type name
+#   define ASM_REGPARAM(reg,type,name)  register __ ## reg type name
 #else
-#   define ASM_REGPARAM(reg,type,name) 	type name
+#   define ASM_REGPARAM(reg,type,name)  type name
 #endif
 
 #if USE_OPTASM_FUNCS
-#   define OPT_REGPARAM(reg,type,name) 	register __ ## reg type name
+#   define OPT_REGPARAM(reg,type,name)  register __ ## reg type name
 #else
-#   define OPT_REGPARAM(reg,type,name) 	type name
+#   define OPT_REGPARAM(reg,type,name)  type name
 #endif
 
-#define REGARGS     	    	    	__regargs
-#define STDARGS     	    	    	__stdargs
-#define ALIGNED     	    	    	__aligned
-#define CHIP	    	    	    	__chip
-#define ASM 	    	    	    	__asm
-#define SAVEDS	    	    	    	__saveds
+#define REGARGS                         __regargs
+#define STDARGS                         __stdargs
+#define ALIGNED                         __aligned
+#define CHIP                            __chip
+#define ASM                             __asm
+#define SAVEDS                          __saveds
 
 #endif

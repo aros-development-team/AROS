@@ -3,8 +3,8 @@
 
 #ifdef __AMIGAOS__
 #if DEBUG
-#	define D(x) x
-#	define bug kprintf
+#   define D(x) x
+#   define bug kprintf
 #endif
 #define kprintf(x)
 #else

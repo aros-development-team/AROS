@@ -37,7 +37,7 @@ extern const char libend;
 /****************************************************************************************/
 
 int entry(void) {
-	return -1;
+    return -1;
 }
 
 /****************************************************************************************/
@@ -72,63 +72,63 @@ const APTR inittable[4] =
 /****************************************************************************************/
 
 struct PartitionBase * SAVEDS ASM libinit
-	(
-		REGPARAM(d0, struct PartitionBase *, PartitionBase),
-		REGPARAM(a0, BPTR, segList)
-	)
+    (
+        REGPARAM(d0, struct PartitionBase *, PartitionBase),
+        REGPARAM(a0, BPTR, segList)
+    )
 {
 
-	PartitionBase->lh.lh_SysBase = *(struct ExecBase **)4L;
-	PartitionBase->lh.lh_SegList = segList;
-	PartitionBase->lh.lh_LibNode.lib_Node.ln_Type  = NT_LIBRARY;
-	PartitionBase->lh.lh_LibNode.lib_Node.ln_Name  = (char *)name;
-	PartitionBase->lh.lh_LibNode.lib_Flags         = LIBF_SUMUSED|LIBF_CHANGED;
-	PartitionBase->lh.lh_LibNode.lib_Version       = VERSION;
-	PartitionBase->lh.lh_LibNode.lib_Revision      = REVISION;
-	PartitionBase->lh.lh_LibNode.lib_IdString      = (char *)&version[6];
-	PartitionBase->tables = (struct PartitionTableInfo **)PartitionSupport;
-	return PartitionBase;
+    PartitionBase->lh.lh_SysBase = *(struct ExecBase **)4L;
+    PartitionBase->lh.lh_SegList = segList;
+    PartitionBase->lh.lh_LibNode.lib_Node.ln_Type  = NT_LIBRARY;
+    PartitionBase->lh.lh_LibNode.lib_Node.ln_Name  = (char *)name;
+    PartitionBase->lh.lh_LibNode.lib_Flags         = LIBF_SUMUSED|LIBF_CHANGED;
+    PartitionBase->lh.lh_LibNode.lib_Version       = VERSION;
+    PartitionBase->lh.lh_LibNode.lib_Revision      = REVISION;
+    PartitionBase->lh.lh_LibNode.lib_IdString      = (char *)&version[6];
+    PartitionBase->tables = (struct PartitionTableInfo **)PartitionSupport;
+    return PartitionBase;
 }
 
 SAVEDS ASM BPTR libExpunge(REGPARAM(a6, struct PartitionBase *, PartitionBase)) {
 BPTR retval;
 
-	if (PartitionBase->lh.lh_LibNode.lib_OpenCnt != 0)
-	{
-		PartitionBase->lh.lh_LibNode.lib_Flags |= LIBF_DELEXP;
-		return NULL;
-	}
-	Remove(&PartitionBase->lh.lh_LibNode.lib_Node);
-	retval = PartitionBase->lh.lh_SegList;
-	FreeMem
-	(
-		(char *)PartitionBase - PartitionBase->lh.lh_LibNode.lib_NegSize,
-		PartitionBase->lh.lh_LibNode.lib_NegSize + PartitionBase->lh.lh_LibNode.lib_PosSize
-	);
-	return retval;
+    if (PartitionBase->lh.lh_LibNode.lib_OpenCnt != 0)
+    {
+        PartitionBase->lh.lh_LibNode.lib_Flags |= LIBF_DELEXP;
+        return NULL;
+    }
+    Remove(&PartitionBase->lh.lh_LibNode.lib_Node);
+    retval = PartitionBase->lh.lh_SegList;
+    FreeMem
+    (
+        (char *)PartitionBase - PartitionBase->lh.lh_LibNode.lib_NegSize,
+        PartitionBase->lh.lh_LibNode.lib_NegSize + PartitionBase->lh.lh_LibNode.lib_PosSize
+    );
+    return retval;
 }
 
 SAVEDS ASM struct PartitionBase *libOpen
-	(
-		REGPARAM(a6, struct PartitionBase *, PartitionBase),
-		REGPARAM(d0, ULONG, version)
-	)
+    (
+        REGPARAM(a6, struct PartitionBase *, PartitionBase),
+        REGPARAM(d0, ULONG, version)
+    )
 {
-	PartitionBase->lh.lh_LibNode.lib_Flags &= ~LIBF_DELEXP;
-	PartitionBase->lh.lh_LibNode.lib_OpenCnt++;
-	return PartitionBase;
+    PartitionBase->lh.lh_LibNode.lib_Flags &= ~LIBF_DELEXP;
+    PartitionBase->lh.lh_LibNode.lib_OpenCnt++;
+    return PartitionBase;
 }
 
 SAVEDS ASM BPTR libClose(REGPARAM(a6, struct PartitionBase *, PartitionBase)) {
 
-	PartitionBase->lh.lh_LibNode.lib_OpenCnt--;
-	if ((PartitionBase->lh.lh_LibNode.lib_Flags & LIBF_DELEXP) != 0)
-	{
-		if (PartitionBase->lh.lh_LibNode.lib_OpenCnt == 0)
-			return libExpunge(PartitionBase);
-		PartitionBase->lh.lh_LibNode.lib_Flags &= ~LIBF_DELEXP;
-	}
-	return NULL;
+    PartitionBase->lh.lh_LibNode.lib_OpenCnt--;
+    if ((PartitionBase->lh.lh_LibNode.lib_Flags & LIBF_DELEXP) != 0)
+    {
+        if (PartitionBase->lh.lh_LibNode.lib_OpenCnt == 0)
+            return libExpunge(PartitionBase);
+        PartitionBase->lh.lh_LibNode.lib_Flags &= ~LIBF_DELEXP;
+    }
+    return NULL;
 }
 
 SAVEDS ASM int libNull(REGPARAM(a6, struct PartitionBase *, PartitionBase)) {
@@ -154,26 +154,26 @@ extern void Partition_DestroyPartitionTable(void);
 
 void *const functable[]=
 {
-	libOpen,
-	libClose,
-	libExpunge,
-	libNull,
-	Partition_OpenRootPartition,     /* 5 */
-	Partition_CloseRootPartition,
-	Partition_OpenPartitionTable,
-	Partition_ClosePartitionTable,
-	Partition_WritePartitionTable,
-	Partition_CreatePartitionTable, /* 10 */
-	Partition_AddPartition,
-	Partition_DeletePartition,
-	Partition_GetPartitionTableAttrs,
-	Partition_SetPartitionTableAttrs,
-	Partition_GetPartitionAttrs,    /* 15 */
-	Partition_SetPartitionAttrs,
-	Partition_QueryPartitionTableAttrs,
-	Partition_QueryPartitionAttrs,
-	Partition_DestroyPartitionTable,
-	(void *)-1L
+    libOpen,
+    libClose,
+    libExpunge,
+    libNull,
+    Partition_OpenRootPartition,     /* 5 */
+    Partition_CloseRootPartition,
+    Partition_OpenPartitionTable,
+    Partition_ClosePartitionTable,
+    Partition_WritePartitionTable,
+    Partition_CreatePartitionTable, /* 10 */
+    Partition_AddPartition,
+    Partition_DeletePartition,
+    Partition_GetPartitionTableAttrs,
+    Partition_SetPartitionTableAttrs,
+    Partition_GetPartitionAttrs,    /* 15 */
+    Partition_SetPartitionAttrs,
+    Partition_QueryPartitionTableAttrs,
+    Partition_QueryPartitionAttrs,
+    Partition_DestroyPartitionTable,
+    (void *)-1L
 };
 
 const char libend = 0;
