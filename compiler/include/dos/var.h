@@ -33,8 +33,9 @@ struct LocalVar {
 #define LVB_IGNORE 7
 #define LVF_IGNORE (1L<<LVB_IGNORE)
 
-/* The following flags may be or'ed into lv_Node.ln_Type, but may also be
-   used as flags for the dos variable functions. */
+/* The following flags are used as flags for the dos variable functions. 
+    GVB_BINARY_VAR and GVB_DONT_NULL_TERM are also saved in lv_Flags.	
+*/
   /* The variable is not to be used locally. */
 #define GVB_GLOBAL_ONLY    8
   /* The variable is not to be used globally. */
