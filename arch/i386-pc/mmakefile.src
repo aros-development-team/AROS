@@ -36,7 +36,8 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM	    kernel-workbench-linklib \
 #MM         kernel-intuition-native \
 #MM	    kernel-misc-linklib kernel-misc-native-i386 \
-#MM	    kernel-graphics-linux kernel-graphics-native-i386
+#MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-native-i386 \
+#MM	    kernel-cgfx-linklib
 
 # Setup
 #MM- setup-native : setup-exec-native-$(CPU) \
@@ -123,6 +124,10 @@ kernel-battclock-native-i386 :
 #MM kernel-misc-native-i386 :
 kernel-misc-native-i386 :
 	%add_objects rom/boot/libmisc
+
+#MM kernel-cgfx-native-i386 :
+kernel-cgfx-native-i386 :
+	%add_objects rom/boot/libcybergraphics
 
 #MM kernel-graphics-native-i386 :
 kernel-graphics-native-i386 :
