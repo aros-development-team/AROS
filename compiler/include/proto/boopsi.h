@@ -9,6 +9,8 @@
 #include <aros/system.h>
 #endif
 
+#define BOOPSINAME  "boopsi.library" /* TODO */
+
 #include <clib/boopsi_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
