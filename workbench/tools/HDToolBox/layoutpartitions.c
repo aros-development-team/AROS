@@ -197,7 +197,7 @@ struct creategadget pcpgadgets[] =
 	{
 		TEXT_KIND,
 		{
-			400, 90, 150, 15,
+			400, 90, 180, 15,
 			"FileSystem:", NULL,
 			ID_PCP_FILESYSTEM, PLACETEXT_ABOVE, NULL, NULL
 		},
@@ -206,7 +206,7 @@ struct creategadget pcpgadgets[] =
 	{
 		BUTTON_KIND,
 		{
-			400,108,150,20,
+			400,108,180,20,
 			"Update FileSystems", NULL,
 			ID_PCP_UPDATE_FS, PLACETEXT_IN, NULL, NULL
 		},
@@ -215,7 +215,7 @@ struct creategadget pcpgadgets[] =
 	{
 		BUTTON_KIND,
 		{
-			400,136,150,20,
+			400,136,180,20,
 			"Edit", NULL,
 			ID_PCP_EDIT_PARTITION, PLACETEXT_IN, NULL, NULL
 		},
