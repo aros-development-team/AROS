@@ -84,6 +84,11 @@ DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so
 else
 DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
 endif
+ifeq ("$(SHARED_WORKBENCH)","yes")
+DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so
+else
+DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.a
+endif
 ifeq ("$(SHARED_HIDDCLASS)","yes")
 DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.so
 else
@@ -159,7 +164,7 @@ LIBS=-L$(LIBDIR) \
 	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-lamiga -larossupport -linput -lkeymap -loop -lx11cl \
-	-lhiddgraphicsstubs -lkeyboard -lgameport
+	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which

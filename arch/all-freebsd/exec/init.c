@@ -44,6 +44,7 @@ extern const struct Resident
     X11Hidd_resident,
     Console_resident,
     Mathffp_resident,
+    Workbench_resident,
     Dos_resident,
     LDDemon_resident,
     emul_handler_resident,
@@ -76,10 +77,11 @@ static const struct Resident *romtagList[] =
     &Console_resident,                      /* ColdStart,   5    */
     &emul_handler_resident,                 /* ColdStart,   0    */
     &boot_resident,			    /* ColdStart,  -50   */
+    &Workbench_resident,		    /* ColdStart,  -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
     &Dos_resident,                          /* None,       -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
-    &con_handler_resident,		    /* AfterDOS,   -126 */
+    &con_handler_resident,		    /* AfterDOS,   -126  */
     NULL
 };
 
