@@ -12,7 +12,7 @@ FILESDIR := \
       aros/releaseinfoa \
       base/ftbase \
       base/ftinit \
-      base/ftsystem \
+      ../config/aros/ftsystem \
       base/ftdebug \
       base/ftglyph \
       base/ftbbox \
@@ -42,6 +42,8 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
 #MM contrib-freetype-linklib : contrib-freetype-includes
 #MM contrib-freetype-module : contrib-freetype-includes
+
+%rule_compile basename=../config/aros/ftsystem targetdir=$(GENDIR)/$(CURDIR)
 
 %build_linklib mmake=contrib-freetype-linklib libname=freetype2 \
     files=$(FILESDIR)
