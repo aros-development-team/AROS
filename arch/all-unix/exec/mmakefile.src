@@ -10,7 +10,7 @@ USER_INCLUDES   := -I$(GENINCDIR) -I$(TOP)/rom/exec -I..
   arch=unix compiler=host \
   files=$(FILES)
 
-#MM kernel-exec-unix : kernel-$(ARCH)-sigcore
+#MM- kernel-exec-includes-unix : kernel-$(ARCH)-sigcore
 
 TESTS		:= stackswap coretest
 
