@@ -59,6 +59,7 @@ AC_PROG_CC
 dnl Check what programs we have available, also look for X
 AC_PATH_X
 AC_PROG_AWK
+AC_PROG_MMAKE
 
 dnl Do the defaults for the substituted variables.
 aros_cc="$CC"
@@ -304,7 +305,7 @@ if test ! -d bin/${aros_arch}-${aros_cpu}/AROS/include/aros ; then
     ${MKDIR} bin/${aros_arch}-${aros_cpu}/AROS/include/aros
 fi
 
-AC_OUTPUT(config/config.h config/host.cfg)
+AC_OUTPUT(Makefile config/config.h config/host.cfg)
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags

@@ -1,0 +1,6 @@
+dnl Search MetaMake
+AC_DEFUN(AC_PROG_MMAKE,[
+  MMAKE=
+  AC_CHECK_PROGS(MMAKE, mmake)
+  AC_SUBST(MMAKE)
+])

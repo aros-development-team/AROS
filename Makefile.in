@@ -1,0 +1,20 @@
+# Main makefile for AROS
+# Copyright (C) 1998 AROS - The Amiga Replacement OS
+#
+# $Id$
+
+MMAKE = @MMAKE@
+
+ifeq ($(MMAKE),)
+all: mmake genmf
+else
+all: genmf
+endif
+	$(MMAKE)
+
+mmake:
+	make -C tools/mmake
+	cp tools/mmake/mmake .
+
+genmf:
+	make -C tools/genmf
