@@ -44,6 +44,7 @@
 struct ExecBase      *SysBase;
 struct Library       *MUIMasterBase;
 struct IntuitionBase *IntuitionBase;
+struct Library	     *DataTypesBase;
 
 struct ExecBase **SysBasePtr = &SysBase;
 struct Library  **MUIMasterBasePtr = &MUIMasterBase;
@@ -99,10 +100,16 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     if (!GadToolsBase)
     	return FALSE;
 
-    KeymapBase = OpenLibrary("keymap.library", 37);
+    if (!KeymapBase)
+    	KeymapBase = OpenLibrary("keymap.library", 37);
     if (!KeymapBase)
     	return FALSE;
 
+    if (!DataTypesBase)
+    	DataTypesBase = OpenLibrary("datatypes.library", 37);
+    if (!DataTypesBase)
+    	return FALSE;
+    
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
     InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -157,13 +164,14 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     CloseLibrary(CxBase);
     CxBase = NULL;
 
-#ifdef _AROS
     CloseLibrary(GadToolsBase);
     GadToolsBase = NULL;
-#endif
 
     CloseLibrary(KeymapBase);
     KeymapBase = NULL;
+    
+    CloseLibrary(DataTypesBase);
+    DataTypesBase = NULL;
 }
 
 /****************************************************************************************/
