@@ -149,9 +149,7 @@ void getstringtest(struct Locale * locale)
     int i = 0;
     while (i < 65535)
     { 
-      char * str = GetCatalogStr(cat,
-                                 i,
-                                 NULL);
+      CONST_STRPTR str = GetCatalogStr(cat, i, NULL);
       if (str)
         printf("ID: %d - string : %s\n",i,str);
 
