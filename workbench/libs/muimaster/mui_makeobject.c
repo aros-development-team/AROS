@@ -7,12 +7,77 @@
 */
 
 #include <intuition/classusr.h>
+#include <libraries/gadtools.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
 
 #include "muimaster_intern.h"
 #include "mui.h"
+
+STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Library *MUIMasterBase)
+{
+    int i = 0;
+    Object *menustrip = MenuitemObject,End;
+    Object *menu = NULL;
+    Object *menuitem = NULL;
+
+    if (!menustrip) return NULL;
+
+    for (;newmenu[i].nm_Type != NM_END;i++)
+    {
+    	if (newmenu[i].nm_Type == NM_TITLE)
+    	{
+	    menu = MenuitemObject, MUIA_Menuitem_Title, newmenu[i].nm_Label, End;
+	    if (menu) DoMethod(menustrip, MUIM_Family_AddTail, menu);
+	    menuitem = NULL;
+	} else
+	{
+	    char *label = newmenu[i].nm_Label;
+	    char *commkey;
+
+	    if (flags & MUIO_MenustripNM_CommandKeyCheck)
+	    {
+	    	if ((label != (char*)NM_BARLABEL) && !label[1])
+	    	{
+	    	    label+=2;
+	    	    commkey = label;
+	    	}
+	    	else commkey = newmenu[i].nm_CommKey;
+	    } else commkey = newmenu[i].nm_CommKey;
+
+	    if (newmenu[i].nm_Type == NM_ITEM)
+    	    {
+	        menuitem = MenuitemObject,
+	            MUIA_Menuitem_Title, label,
+	            MUIA_Menuitem_Shortcut, commkey,
+	            MUIA_Menuitem_Checkit, !!(newmenu[i].nm_Flags & CHECKIT),
+		    MUIA_Menuitem_Checked, !!(newmenu[i].nm_Flags & CHECKED),
+	            MUIA_Menuitem_Exclude, newmenu[i].nm_MutualExclude,
+		    MUIA_Menuitem_CommandString, !!(newmenu[i].nm_Flags & NM_COMMANDSTRING),
+		    MUIA_Menuitem_Toggle, !!(newmenu[i].nm_Flags & MENUTOGGLE),
+		    MUIA_UserData, newmenu[i].nm_UserData,
+	            End;
+	        if (menuitem) DoMethod(menu, MUIM_Family_AddTail, menuitem);
+	    } else
+	    if (newmenu[i].nm_Type == NM_SUB)
+	    {
+		Object *subitem = MenuitemObject,
+	            MUIA_Menuitem_Title, label,
+	            MUIA_Menuitem_Shortcut, commkey,
+	            MUIA_Menuitem_Checkit, !!(newmenu[i].nm_Flags & CHECKIT),
+	            MUIA_Menuitem_Checked, !!(newmenu[i].nm_Flags & CHECKED),
+	            MUIA_Menuitem_Exclude, newmenu[i].nm_MutualExclude,
+		    MUIA_Menuitem_CommandString, !!(newmenu[i].nm_Flags & NM_COMMANDSTRING),
+		    MUIA_Menuitem_Toggle, !!(newmenu[i].nm_Flags & MENUTOGGLE),
+		    MUIA_UserData, newmenu[i].nm_UserData,
+	            End;
+		if (subitem) DoMethod(menuitem, MUIM_Family_AddTail, subitem);
+	    }
+	}
+    }
+    return menustrip;
+}
 
 /*****************************************************************************
 
@@ -52,7 +117,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *,MUIMasterBase)
 
     switch (type)
     {
@@ -209,10 +274,9 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 		MUIA_FixWidth, params[0],
 		TAG_DONE);
 	    break;
-#if 0
+
 	case MUIO_MenustripNM: /* struct NewMenu *nm, ULONG flags */
-	    break;
-#endif
+	    return CreateMenuString((struct NewMenu *)params[0],params[1],MUIMasterBase);
 
 	case MUIO_Menuitem: /* STRPTR label, STRPTR shortcut, ULONG flags, ULONG data  */
 	    return MUI_NewObject( MUIC_Menuitem,
