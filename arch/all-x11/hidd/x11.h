@@ -199,7 +199,7 @@ VOID get_bitmap_info(struct x11_staticdata *xsd
 	, ULONG *bpl
 );
 
-BOOL set_pixelformat(Object *bm
+BOOL set_pixelformat(struct TagItem *pftags
 	, struct x11_staticdata *xsd
 	, Drawable d
 );

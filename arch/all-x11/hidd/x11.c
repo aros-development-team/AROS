@@ -237,12 +237,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     struct MinList xwindowlist;
     
     struct x11task_params xtp;
-    
-    
-    /* We must copy the parameter struct because they are allocated
-     on the parent's stack */
-     
-
 
 #if NOUNIXIO
     struct Interrupt myint;
@@ -256,6 +250,8 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     
 #endif
 
+    /* We must copy the parameter struct because they are allocated
+     on the parent's stack */
     xtp = *xtpparam;
     xsd = xtp.xsd;
 
@@ -412,7 +408,9 @@ D(bug("Got input from unixio\n"));
 		
 		case NOTY_MAPWINDOW: {
 		    /* BOOL found = FALSE; */
+#if 0
 		    struct xwinnode *node;
+#endif
 		    
 	            XMapRaised (nmsg->xdisplay, nmsg->xwindow);
 

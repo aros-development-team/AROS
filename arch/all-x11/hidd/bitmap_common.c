@@ -10,20 +10,16 @@
 
 static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-//#warning Does not deallocate previously allocated colors
-    
-    
     struct bitmap_data *data = INST_DATA(cl, o);
     HIDDT_PixelFormat *pf;
     
     ULONG xc_i, col_i;
     
-    XColor xc;
     
     pf = BM_PIXFMT(o);
     
-    if (    vHidd_GT_StaticPalette == HIDD_PF_GRAPHTYPE(pf)
-    	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf)) {
+    if (    vHidd_ColorModel_StaticPalette == HIDD_PF_COLMODEL(pf)
+    	 || vHidd_ColorModel_TrueColor == HIDD_PF_COLMODEL(pf) ) {
 	 
 	 /* Superclass takes care of this case */
 	 
@@ -57,8 +53,8 @@ LX11
 UX11	
     } /* if (data->flags & BMDF_COLORMAP_ALLOCED) */
     
+
     return TRUE;
-       
 }
 /*********  BitMap::PutPixel()  ***************************/
 
@@ -339,10 +335,12 @@ static void getimage_xshm(Class *cl, Object *o
     LONG ysize;
     LONG current_y;
     LONG maxlines;
-
+    Object *pf;
 	
     data = INST_DATA(cl, o);
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
+    
+    GetAttr(o,  aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -537,7 +535,7 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
     
     
     switch (msg->pixFmt) {
-    case vHidd_PixFmt_Native:
+    case vHidd_StdPixFmt_Native:
     	if (!use_modulo) {
 	    memcpy(image->data, buf, msg->modulo * msg->height);
 	} else {
@@ -558,7 +556,7 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 	}
 	break;
 	
-    case vHidd_PixFmt_Native32:
+    case vHidd_StdPixFmt_Native32:
 /* kprintf("Native32 format, bits_per_pixel=%d\n", image->bits_per_pixel);
 */    	switch (image->bits_per_pixel) {
 	
@@ -636,12 +634,14 @@ UX11
 	
      default: {
      
-	Object *srcpf, *dstpf;
+	Object *srcpf, *dstpf, *gfxhidd;
 	
 	kprintf("DEFAULT PIXEL CONVERSION\n");
 	
-	srcpf = HIDD_BM_GetPixelFormat(bm, msg->pixFmt);
-	dstpf = HIDD_BM_GetPixelFormat(bm, vHidd_PixFmt_Native);
+	GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+	srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+	
+	GetAttr(dstpf, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
 	
 	kprintf("CALLING ConvertPixels()\n");
 	
@@ -733,10 +733,12 @@ static void putimage_xshm(Class *cl, Object *o, Object *gc
     LONG ysize;
     LONG current_y;
     LONG maxlines;
+    Object *pf;
 
 	
     data = INST_DATA(cl, o);
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
+    GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -988,20 +990,6 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
     bg = GC_BG(msg->gc);
     cemd = GC_COLEXP(msg->gc);
 
-/*
-#define PF ((HIDDT_PixelFormat *)BM_PIXFMT(o))
-
-    kprintf("fg: (%x, %x, %x)\n"
-    	, RED_COMP(fg, PF)
-    	, GREEN_COMP(fg, PF)
-    	, BLUE_COMP(fg, PF)
-    );
-    kprintf("bg: (%x, %x, %x)\n", bg
-    	, RED_COMP(bg, PF)
-    	, GREEN_COMP(bg, PF)
-    	, BLUE_COMP(bg, PF)
-    );
-*/    
     if (0 != d)
     {
 
@@ -1010,8 +998,7 @@ LX11
     	if (cemd & vHidd_GC_ColExp_Opaque)  
 	{
 
-/* kprintf("XCP, fg=%p, bg=%p\n", fg, bg);
-*/	    XSetBackground(data->display, data->gc, bg);
+	    XSetBackground(data->display, data->gc, bg);
 	    XSetFunction(data->display, data->gc, GXcopy);
 	    
 	    XCopyPlane(data->display
@@ -1031,10 +1018,6 @@ LX11
 	    val.ts_y_origin	= msg->destY - msg->srcY;
 	    val.fill_style	= FillStippled;
 	    
-
-
-/*	    kprintf(" XSS\n");
-*/
 	    XChangeGC(data->display
 	    	, data->gc
 		, GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle

@@ -70,16 +70,12 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     BOOL ok = TRUE;
     
-    EnterFunc(bug("X11Gfx.BitMap::New()\n"));
+    EnterFunc(bug("X11Gfx.OnBitMap::New()\n"));
     
     o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
     if (o)
     {
     	struct bitmap_data *data;
-	struct TagItem depth_tags[] = {
-	    { aHidd_BitMap_Depth, 0 },
-	    { TAG_DONE, 0 }
-	};
 	Window rootwin;
 	
         IPTR width, height, depth;
@@ -123,8 +119,8 @@ UX11
 	/* Get attr values */
 	GetAttr(o, aHidd_BitMap_Width,		&width);
 	GetAttr(o, aHidd_BitMap_Height, 	&height);
-	GetAttr(o, aHidd_BitMap_Depth,		&depth);
-	
+
+
 	/* Open an X window to be used for viewing */
 	    
 	D(bug("Displayable bitmap\n"));
@@ -155,10 +151,6 @@ LX11
 	rootwin = DefaultRootWindow (GetSysDisplay());
 	D(bug("Creating XWindow: root win=%p\n", rootwin));
 	depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
-	
-	/* Update the depth to the one we use */
-	depth_tags[0].ti_Data = depth;
-	SetAttrs(o, depth_tags);
 	
 /* stegerg */
 	valuemask = CWBackingStore
@@ -288,17 +280,9 @@ LX11
 
 UX11		
 	    	if (data->gc)
-	    	{
-		    	/* Set the bitmap pixel format in the superclass */
-
-		    	if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
-			    ok = FALSE;
-			}
-		    
-	    	} else {
+		    ok = TRUE;		    
+		else
 		    ok = FALSE;
-		} /* if (gc created) */
-		
 		
 	    } else {
 	    	ok = FALSE;
@@ -327,7 +311,7 @@ UX11
 
     } /* if (object allocated by superclass) */
 
-    ReturnPtr("X11Gfx.BitMap::New()", Object *, o);
+    ReturnPtr("X11Gfx.OnBitMap::New()", Object *, o);
 }
 
 

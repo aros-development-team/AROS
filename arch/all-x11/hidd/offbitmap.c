@@ -70,25 +70,97 @@ static struct ABDescr attrbases[] =
 
 /*********** BitMap::New() *************************************/
 
+#define AO(x) (aoHidd_BitMap_ ## x)
+#define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
+
 static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     BOOL ok = TRUE;
+    Object *friend = NULL, *pixfmt;
+    Drawable friend_drawable = 0, d = 0;
+    Display *display;
+    ULONG width, height, depth;
+    IPTR attrs[num_Hidd_BitMap_Attrs];
+    int screen;
     
-    EnterFunc(bug("X11Gfx.BitMap::New()\n"));
+    DECLARE_ATTRCHECK(bitmap);
+    
+    /* Parse the attributes */
+    if (0 != ParseAttrs(msg->attrList
+    	, attrs
+	, num_Hidd_BitMap_Attrs
+	, &ATTRCHECK(bitmap)
+	, HiddBitMapAttrBase)
+    ) {
+    	kprintf("!!! X11Gfx::OffBitMap() FAILED TO PARSE ATTRS !!!\n");
+	return NULL;
+    }
+    
+    if (GOT_BM_ATTR(Friend))
+    	friend = (Object *)attrs[AO(Friend)];
+    else 
+    	friend = NULL;
+	
+    width  = attrs[AO(Width)];
+    height = attrs[AO(Height)];
+    pixfmt = attrs[AO(PixFmt)];
+    
+    GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+    
+    /* Get the X11 window from the friend bitmap */
+    if (NULL != friend) {
+	GetAttr(friend, aHidd_X11BitMap_Drawable, &friend_drawable);
+    } else {
+	friend_drawable = XSD(cl)->dummy_window_for_creating_pixmaps;
+    }
+	
+    if (0 == friend_drawable) {
+	kprintf("ALERT!!! FRIEND BITMAP HAS NO DRAWABLE in config/x11/hidd/offbitmap.c\n");
+	Alert(AT_DeadEnd);
+    }
+	
+    display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
+    screen  =            GetTagData(aHidd_X11Gfx_SysScreen,  0, msg->attrList);
+
+    /*  We must only create depths that are supported by the friend drawable
+	Currently we only support the default depth, and depth 1
+    */
+    if (depth != 1) {
+LX11	
+	depth = DefaultDepth(display, screen);
+UX11
+    }
+
+    D(bug("Creating X Pixmap, %p, %d, %d, %d\n"
+	, friend_drawable
+	, width
+	, height
+	, depth
+   ));
+	
+LX11	
+    d = XCreatePixmap( display
+	, friend_drawable
+	, width
+	, height
+	, depth
+    );
+
+	
+    XFlush(display);
+UX11
+
+    if (0 == d)
+    	return NULL;
+
     
     o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
-    if (o)
-    {
+    if (NULL == o) {
+    	/* Delete the drawable */
+	goto dispose_pixmap;
+    } else {
     	struct bitmap_data *data;
-	struct TagItem depth_tags[] = {
-	    { aHidd_BitMap_Depth, 0 },
-	    { TAG_DONE, 0 }
-	};
-	
-        IPTR width, height, depth;
-	
-	Object *friend;
-	Drawable friend_drawable;
+	XGCValues gcval;
 	
         data = INST_DATA(cl, o);
 	
@@ -96,127 +168,54 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
         memset(data, 0, sizeof(struct bitmap_data));
 	
 	/* Get some info passed to us by the x11gfxhidd class */
-	data->display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
-	data->screen  =            GetTagData(aHidd_X11Gfx_SysScreen,  0, msg->attrList);
+	DRAWABLE(data) = d;
+	data->display = display;
+	data->screen  = screen;
 	data->cursor  = (Cursor)   GetTagData(aHidd_X11Gfx_SysCursor,  0, msg->attrList);
 	data->colmap  = (Colormap) GetTagData(aHidd_X11Gfx_ColorMap,   0, msg->attrList);
-		
-	
-	/* Get attr values */
-	GetAttr(o, aHidd_BitMap_Width,		&width);
-	GetAttr(o, aHidd_BitMap_Height, 	&height);
-	GetAttr(o, aHidd_BitMap_Depth,		&depth);
-	
-	/* Get the friend bitmap. This should be a displayable bitmap */
-	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
-	
-	/* Get the X11 window from the friend bitmap */
-	if (NULL != friend) {
-		GetAttr(friend, aHidd_X11BitMap_Drawable, &friend_drawable);
-	} else {
-		friend_drawable = XSD(cl)->dummy_window_for_creating_pixmaps;
-	}
-	
-	if (0 == friend_drawable) {
-		kprintf("ALERT!!! FRIEND BITMAP HAS NO DRAWABLE in config/x11/hidd/offbitmap.c\n");
-		Alert(AT_DeadEnd);
-	}
-	
-	    
-	D(bug("Creating X Pixmap, %p, %d, %d, %d\n"
-		, friend_drawable
-		, width
-		, height
-		, depth
-	));
-	
-	assert (width != 0 && height != 0 && depth != 0);
-	
-	/* We must only create depths that are supported by the friend drawable
-	   Currently we only support the default depth, and depth 1
-	*/
-	
-	if (depth != 1)
-	{
-LX11	
-	    depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
-UX11
-	}
-	
-	/* Update the depth to the one we use */
-	depth_tags[0].ti_Data = depth;
-	SetAttrs(o, depth_tags);
-	
-	
-LX11	
-	DRAWABLE(data) = XCreatePixmap( data->display
-		, friend_drawable
-		, width
-		, height
-		, depth
-	);
-
-	
-	XFlush(data->display);
-UX11	    
-	D(bug("X Pixmap : %p\n", DRAWABLE(data) ));
-	if (DRAWABLE(data))
-	{
-	
-	    XGCValues gcval;
-		    
 
 	    /* Create X11 GC */
-	    D(bug("Creating GC\n"));
+	D(bug("Creating GC\n"));
 	 
-	    gcval.plane_mask = AllPlanes;
-	    gcval.graphics_exposures = False;
+	gcval.plane_mask = AllPlanes;
+	gcval.graphics_exposures = False;
 	 
 LX11	    
-	    data->gc = XCreateGC( data->display
-	 		, DRAWABLE(data)
-			, GCPlaneMask | GCGraphicsExposures
-			, &gcval
+	data->gc = XCreateGC( data->display
+	 	, DRAWABLE(data)
+		, GCPlaneMask | GCGraphicsExposures
+		, &gcval
 		    );
 
-
 UX11		
-	    if (data->gc)
-	    {
-		/* Set the bitmap pixel format in the superclass */
-/* kprintf("SETTING PIXEL FORMAT FOR PIXMAP\n");
-*/		if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
-		    ok = FALSE;
-		} else {
-	    
+	if (data->gc) {
 LX11	    
-		    XFlush(data->display);
-UX11		}
-	    }
-	    else
-	    {
-	    	ok = FALSE;
-	    }
-	
-	}
-	else
-	{
+	    XFlush(data->display);
+UX11
+	} else {
 	    ok = FALSE;
-	} /* if (Xwindow created) */
-		
-    	if (!ok)
-    	{
-    
-            MethodID disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
-    	    CoerceMethod(cl, o, (Msg) &disp_mid);
+	}
 	
+		
+    	if (!ok) {
+	    MethodID disp_mid = GetMethodID(IID_Root, moRoot_Dispose);
+    	    CoerceMethod(cl, o, (Msg) &disp_mid);
 	    o = NULL;
     	}
 
 
     } /* if (object allocated by superclass) */
     
-    ReturnPtr("X11Gfx.BitMap::New()", Object *, o);
+    
+    ReturnPtr("X11Gfx.OffBitMap::New()", Object *, o);
+
+dispose_pixmap:    
+LX11
+	XFreePixmap(display, d);
+	XFlush(display);
+UX11
+    ReturnPtr("X11Gfx.OffBitMap::New()", Object *, NULL);
+    
 }
 
 
@@ -227,15 +226,13 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
     struct bitmap_data *data = INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
     
-    if (data->gc)
-    {
+    if (data->gc) {
 LX11
     	XFreeGC(data->display, data->gc);
 UX11	
     }
     
-    if (DRAWABLE(data))
-    {
+    if (DRAWABLE(data)){
 LX11	
     	XFreePixmap( GetSysDisplay(), DRAWABLE(data));
 	XFlush( GetSysDisplay() );

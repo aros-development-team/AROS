@@ -32,7 +32,7 @@
 
 #include "x11gfx_intern.h"
 #include "x11.h"
-
+#include "bitmap.h"
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -47,15 +47,19 @@
 
 static AttrBase HiddBitMapAttrBase	= 0;  
 static AttrBase HiddX11GfxAB		= 0;
-static AttrBase HiddGfxModeAttrBase	= 0;
+static AttrBase HiddX11BitMapAB		= 0;
+static AttrBase HiddSyncAttrBase	= 0;
+static AttrBase HiddPixFmtAttrBase	= 0;
 static AttrBase HiddGfxAttrBase		= 0;
 
 static struct ABDescr attrbases[] =
 {
-    { IID_Hidd_BitMap,  &HiddBitMapAttrBase	},
-    { IID_Hidd_X11Gfx,  &HiddX11GfxAB		},
-    { IID_Hidd_GfxMode, &HiddGfxModeAttrBase	},
-    { IID_Hidd_Gfx,	&HiddGfxAttrBase	},
+    { IID_Hidd_BitMap,  	&HiddBitMapAttrBase	},
+    { IID_Hidd_X11Gfx,  	&HiddX11GfxAB		},
+    { IID_Hidd_X11BitMap,	&HiddX11BitMapAB	},
+    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
+    { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
     { NULL, NULL }
 };
 
@@ -72,8 +76,8 @@ struct gfx_data
 };
 
 
-static VOID cleanupx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
-static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
+static VOID cleanupx11stuff(struct x11_staticdata *xsd);
+static BOOL initx11stuff(struct x11_staticdata *xsd);
 
 /*********************
 **  GfxHidd::New()  **
@@ -93,118 +97,153 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_GreenMask,	0	}, /* 5 */
 	{ aHidd_PixFmt_BlueMask,	0	}, /* 6 */
 	{ aHidd_PixFmt_AlphaMask,	0	}, /* 7 */
-	{ aHidd_PixFmt_GraphType,	0	}, /* 8 */
+	{ aHidd_PixFmt_ColorModel,	0	}, /* 8 */
 	{ aHidd_PixFmt_Depth,		0	}, /* 9 */
 	{ aHidd_PixFmt_BytesPerPixel,	0	}, /* 10 */
 	{ aHidd_PixFmt_BitsPerPixel,	0	}, /* 11 */
 	{ aHidd_PixFmt_StdPixFmt,	0	}, /* 12 */
 	{ aHidd_PixFmt_CLUTShift,	0	}, /* 13 */
-	{ aHidd_PixFmt_CLUTMask,	0	}, /* 14 */    
+	{ aHidd_PixFmt_CLUTMask,	0	}, /* 14 */ 
+	{ aHidd_PixFmt_BitMapType,	0	}, /* 15 */   
 	{ TAG_DONE, 0UL }
     };
         
     struct TagItem tags_320_240[] = {
-    	{ aHidd_GfxMode_Width,		320	},
-	{ aHidd_GfxMode_Height,		240	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+    	{ aHidd_Sync_HDisp,		320	},
+	{ aHidd_Sync_VDisp,		240	},
 	{ TAG_DONE, 0UL }
     };
 
     struct TagItem tags_512_384[] = {
-    	{ aHidd_GfxMode_Width,		512	},
-	{ aHidd_GfxMode_Height,		384	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+    	{ aHidd_Sync_HDisp,		512	},
+	{ aHidd_Sync_VDisp,		384	},
 	{ TAG_DONE, 0UL }
     };
 
     struct TagItem tags_640_480[] = {
-    	{ aHidd_GfxMode_Width,		640	},
-	{ aHidd_GfxMode_Height,		480	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+    	{ aHidd_Sync_HDisp,		640	},
+	{ aHidd_Sync_VDisp,		480	},
 	{ TAG_DONE, 0UL }
     };
 
     struct TagItem tags_800_600[] = {
-    	{ aHidd_GfxMode_Width,		800	},
-	{ aHidd_GfxMode_Height,		600	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+    	{ aHidd_Sync_HDisp,		800	},
+	{ aHidd_Sync_VDisp,		600	},
 	{ TAG_DONE, 0UL }
     };
 
     struct TagItem tags_1024_768[] = {
-    	{ aHidd_GfxMode_Width,		1024	},
-	{ aHidd_GfxMode_Height,		768	},
-	{ aHidd_GfxMode_PixFmtTags,	(IPTR)pftags	},
+    	{ aHidd_Sync_HDisp,		1024	},
+	{ aHidd_Sync_VDisp,		768	},
 	{ TAG_DONE, 0UL }
     };
     
-    struct TagItem *mode_tags[] = {
-	tags_320_240, tags_512_384, tags_640_480, tags_800_600, tags_1024_768, NULL
+    struct TagItem mode_tags[] = {
+	{ aHidd_Gfx_PixFmtTags, (IPTR)pftags		},
+	
+	/* Default values for the sync attributes */
+	{ aHidd_Sync_PixelClock, 	100000000	}, /* Oh boy,  this X11 pixelclock is fast ;-) */
+	{ aHidd_Sync_LeftMargin,	0		},
+	{ aHidd_Sync_RightMargin,	0		},
+	{ aHidd_Sync_HSyncLength,	0		},
+	{ aHidd_Sync_UpperMargin,	0		},
+	{ aHidd_Sync_LowerMargin,	0		},
+	{ aHidd_Sync_VSyncLength,	0		},
+	
+	/* The different syncmodes. The default attribute values above 
+	    will be applied to each of these. Note that
+	    you can alter the defaults between the tags bewlow 
+	*/
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_320_240	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_512_384	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_640_480	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_800_600	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1024_768	},
+	{ TAG_DONE, 0UL }
     };
+    
+    struct TagItem mytags[] = {
+	{ aHidd_Gfx_ModeTags,	(IPTR)mode_tags		},
+	{ TAG_MORE, (IPTR)msg->attrList }
+    };
+    struct pRoot_New mymsg = { msg->mID, mytags };
+    struct x11_staticdata *xsd = NULL;
 
     EnterFunc(bug("X11Gfx::New()\n"));
-    
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
-    if (o)
-    {
-    
-	MethodID dispose_mid;
-	struct gfx_data *data = INST_DATA(cl, o);
+
+	/* Do GfxHidd initalization here */
+    if (!initx11stuff(XSD(cl))) {
+	kprintf("!!! initx11stuff() FAILED IN X11Gfx::New() !!!\n");
+	ReturnPtr("X11Gfx::New()", Object *, NULL);
+    }
 	
-	D(bug("Got object from super\n"));
+    /* Register gfxmodes */
+    pftags[0].ti_Data = XSD(cl)->red_shift;
+    pftags[1].ti_Data = XSD(cl)->green_shift;
+    pftags[2].ti_Data = XSD(cl)->blue_shift;
+    pftags[3].ti_Data = 0;
+	    
+    pftags[4].ti_Data = XSD(cl)->vi.red_mask;
+    pftags[5].ti_Data = XSD(cl)->vi.green_mask;
+    pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
+    pftags[7].ti_Data = 0x00000000;
+	    
+    if (XSD(cl)->vi.class == TrueColor) {
+        pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
+    } else if (XSD(cl)->vi.class == PseudoColor) {
+	pftags[8].ti_Data = vHidd_ColorModel_Palette;
+        pftags[13].ti_Data = XSD(cl)->clut_shift;
+	pftags[14].ti_Data = XSD(cl)->clut_mask;		
+    } else {
+	kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
+	cleanupx11stuff(xsd);
+	ReturnPtr("X11Gfx::New", Object *, NULL);
+    }
+	    
+    pftags[9].ti_Data = XSD(cl)->size;
+    pftags[10].ti_Data = XSD(cl)->bytes_per_pixel;
+    pftags[11].ti_Data = XSD(cl)->size;
+    pftags[12].ti_Data = vHidd_StdPixFmt_Native;
+    
+#warning Do better than this
+    /* We assume chunky */
+    pftags[15].ti_Data = vHidd_BitMapType_Chunky;
+    
+    o = (Object *)DoSuperMethod(cl, o, (Msg)&mymsg);
+    if (NULL != o) {
+	XColor bg, fg;
+	struct gfx_data *data = INST_DATA(cl, o);
+LX11
+	data->display	= XSD(cl)->display;
+	data->screen	= DefaultScreen( data->display );
+	data->depth	= DisplayPlanes( data->display, data->screen );
+	data->colmap	= DefaultColormap( data->display, data->screen );
+	/* Create cursor */
+        data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
+
+	fg.pixel = BlackPixel(data->display, data->screen);
+	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
+	fg.flags = (DoRed | DoGreen | DoBlue);
+	bg.pixel = WhitePixel(data->display, data->screen);
+	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
+	bg.flags = (DoRed | DoGreen | DoBlue);
+
+	XRecolorCursor( data->display
+   	   , data->cursor
+   	   , &fg, &bg
+	);
+UX11
+	
+	D(bug("X11Gfx::New(): Got object from super\n"));
 ObtainSemaphore(&XSD(cl)->sema);
 	XSD(cl)->activecallback = (VOID (*)())GetTagData(aHidd_Gfx_ActiveBMCallBack, (IPTR)NULL, msg->attrList);
 	XSD(cl)->callbackdata = (APTR)GetTagData(aHidd_Gfx_ActiveBMCallBackData, (IPTR)NULL, msg->attrList);
 ReleaseSemaphore(&XSD(cl)->sema);
 	
 	data->display = XSD(cl)->display;
-	D(bug("Initing misc X11 stuff\n"));
 	
-	/* Do GfxHidd initalization here */
-	if (initx11stuff(data, XSD(cl)));
-	{
-	
-	    /* Register gfxmodes */
-	    pftags[0].ti_Data = XSD(cl)->red_shift;
-	    pftags[1].ti_Data = XSD(cl)->green_shift;
-	    pftags[2].ti_Data = XSD(cl)->blue_shift;
-	    pftags[3].ti_Data = 0;
-	    
-	    pftags[4].ti_Data = XSD(cl)->vi.red_mask;
-	    pftags[5].ti_Data = XSD(cl)->vi.green_mask;
-	    pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
-	    pftags[7].ti_Data = 0x00000000;
-	    
-	    /* stegerg */
-	    if (XSD(cl)->vi.class == TrueColor)
-	    {
-	        pftags[8].ti_Data = vHidd_GT_TrueColor;
-	    }
-	    else if (XSD(cl)->vi.class == PseudoColor)
-	    {
-	        pftags[8].ti_Data = vHidd_GT_Palette;
-		pftags[13].ti_Data = XSD(cl)->clut_shift;
-		pftags[14].ti_Data = XSD(cl)->clut_mask;		
-	    }
-	    /* end stegerg */
-	    
-	    pftags[9].ti_Data = XSD(cl)->size;
-	    pftags[10].ti_Data = XSD(cl)->bytes_per_pixel;
-	    pftags[11].ti_Data = XSD(cl)->size;
-	    pftags[12].ti_Data = vHidd_PixFmt_Native;
-	    
-	    if (HIDD_Gfx_RegisterGfxModes(o, mode_tags)) {
-
-		ReturnPtr("X11Gfx::New", Object *, o);
-	    }
-	}
-	
-	D(bug("Disposing obj\n"));
-	
-	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
-	CoerceMethod(cl, o, (Msg)&dispose_mid);
     }
-    ReturnPtr("X11Gfx::New", Object *, NULL);
+    ReturnPtr("X11Gfx::New", Object *, o);
 }
 
 /********** GfxHidd::Dispose()  ******************************/
@@ -214,7 +253,7 @@ static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
     EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
     data = INST_DATA(cl, o);
     
-    cleanupx11stuff(data, XSD(cl));
+    cleanupx11stuff(XSD(cl));
     D(bug("X11Gfx::Dispose: calling super\n"));
     
     DoSuperMethod(cl, o, msg);
@@ -231,15 +270,15 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     struct pHidd_Gfx_NewBitMap p;
     
     struct gfx_data *data;
-    HIDDT_StdPixFmt stdpf;
     struct TagItem tags[] =
     {
-    	{ aHidd_X11Gfx_SysDisplay,	(IPTR) NULL},
-	{ aHidd_X11Gfx_SysScreen,	0UL },
-	{ aHidd_X11Gfx_SysCursor,	0UL},
-	{ aHidd_X11Gfx_ColorMap,	0UL},
-	{ aHidd_X11Gfx_VisualClass,	0UL},
-	{ TAG_MORE, (IPTR) NULL }
+    	{ aHidd_X11Gfx_SysDisplay,	(IPTR) NULL	},	/* 0 */
+	{ aHidd_X11Gfx_SysScreen,	0UL 		},	/* 1 */	
+	{ aHidd_X11Gfx_SysCursor,	0UL		},	/* 2 */
+	{ aHidd_X11Gfx_ColorMap,	0UL		},	/* 3 */
+	{ aHidd_X11Gfx_VisualClass,	0UL		},	/* 4 */
+	{ TAG_IGNORE,			0UL		},	/* 5 */
+	{ TAG_MORE, (IPTR) NULL }				/* 6 */
     };
     
     EnterFunc(bug("X11Gfx::NewBitMap()\n"));
@@ -251,28 +290,60 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     tags[2].ti_Data = (IPTR)data->cursor;
     tags[3].ti_Data = data->colmap;
     tags[4].ti_Data = XSD(cl)->vi.class;
-    tags[5].ti_Data = (IPTR)msg->attrList;
+    tags[6].ti_Data = (IPTR)msg->attrList;
     
-    /* Displayeable bitmap ? */
-    
-    
-    stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_PixFmt_Unknown, msg->attrList);
-    
+    /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     if (displayable) {
-    	p.classPtr = XSD(cl)->onbmclass;
+    	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
+	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
     } else {
-    
-	if (vHidd_PixFmt_Unknown == stdpf) {
-	    p.classPtr = XSD(cl)->offbmclass;
+    	/* When do we create an x11 offscreen bitmap ?
+	    - For 1-plane bitmaps.
+	    - Bitmaps that have a friend that is an X11 bitmap
+	      and there is no standard pixfmt supplied
+	    - If the user supplied a modeid.
+	*/
+	Object *friend;
+	BOOL usex11 = FALSE;
+    	HIDDT_StdPixFmt stdpf;
+
+	friend = (Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+	stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
+	if (NULL != friend) {
+	    if (vHidd_StdPixFmt_Unknown == stdpf) {
+	    	Drawable d;
+	    	/* Is the friend ann X11 bitmap ? */
+	    	d = (Drawable)GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
+	    	if (0 != d) {
+	    	    usex11 = TRUE;
+		}
+	    }
+	}
+	if (!usex11) {
+	    if (vHidd_StdPixFmt_Plane == stdpf) {
+	    	usex11 = TRUE;
+	    } else {
+	    	HIDDT_ModeID modeid;
+	    	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+		if (vHidd_ModeID_Invalid != modeid) {
+		    usex11 = TRUE;
+		}
+	    }
+	}
+	
+	if (usex11) {
+	    tags[5].ti_Tag  = aHidd_BitMap_ClassPtr;
+	    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
+	    
 	} else {
-	    /* Let the superclass allocate if it is a standard pixelformat */
-	    p.classPtr = NULL;
+	    /* Let the superclass allocate if it is a standard pixelformat thus do nothing */
+	    kprintf("!!! COULD NOT CREATE OFSCREEN X11 BITMAP FOR SUPPLIED ATTRS !!!\n");
+	    *((ULONG *)0) = 0;
 	}
     }
     
     /* !!! IMPORTANT !!! */
-    p.classID = NULL;
     
     p.mID = msg->mID;
     p.attrList = tags;
@@ -435,7 +506,7 @@ static ULONG mask_to_shift(ULONG mask)
 
 /*
    Inits sysdisplay, sysscreen, colormap, etc.. */
-static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
+static BOOL initx11stuff(struct x11_staticdata *xsd)
 {
 /*    XColor fg, bg; */
     BOOL ok = TRUE;
@@ -446,7 +517,6 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
     int numvisuals;
 
 
-    XColor bg, fg;
     
     XImage *testimage;
 
@@ -456,17 +526,11 @@ static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
 
 LX11	
 
-    data->screen = DefaultScreen( data->display );
-
-    data->depth  = DisplayPlanes( data->display, data->screen );
-    data->colmap = DefaultColormap( data->display, data->screen );
-
-
     /* Get some info on the display */
-    template.visualid = XVisualIDFromVisual(DefaultVisual(data->display, data->screen));
+    template.visualid = XVisualIDFromVisual(DefaultVisual(xsd->display, DefaultScreen(xsd->display)));
     template_mask = VisualIDMask;
 
-    visinfo = XGetVisualInfo(data->display, template_mask, &template, &numvisuals);
+    visinfo = XGetVisualInfo(xsd->display, template_mask, &template, &numvisuals);
 
     if (numvisuals > 1)
     {
@@ -485,16 +549,6 @@ LX11
     else
     {
 	/* Store the visual info structure */
-#if 0
-	kprintf("Using visualid %d:\n", (int)(visinfo->visualid));
-	kprintf("	screen %d\n", visinfo->screen);
-	kprintf("	red_mask 0x%x\n", (int)(visinfo->red_mask));
-	kprintf("	green_mask 0x%x\n", (int)(visinfo->green_mask));
-	kprintf("	blue_mask 0x%x\n", (int)(visinfo->blue_mask));
-	kprintf("	colormap_size %d\n", visinfo->colormap_size);
-	kprintf("	bits_per_rgb %d\n", visinfo->bits_per_rgb);
-	kill(getpid(), SIGSTOP);
-#endif	
 
 	memcpy(&xsd->vi, visinfo, sizeof (XVisualInfo));
 	
@@ -532,18 +586,15 @@ LX11
 
 	/* Create a dummy X image to get bits per pixel */
 	testimage = XGetImage(xsd->display
-		, RootWindow(xsd->display, data->screen)
+		, RootWindow(xsd->display, DefaultScreen(xsd->display))
 		, 0, 0, 1, 1
 		, AllPlanes, ZPixmap
 	);
 	
-	if (NULL != testimage)
-	{
+	if (NULL != testimage)	{
 	    xsd->size = testimage->bits_per_pixel;
 	    XDestroyImage(testimage);
-	}
-	else
-	{
+	} else {
 	    kprintf("!!! X11gfx could not get bits per pixel\n");
 	    kill(getpid(), SIGSTOP);
 	}
@@ -554,49 +605,18 @@ LX11
 	    xsd->clut_mask  = (1L << xsd->size) - 1;
 	    xsd->clut_shift = 0;
 	}
-
-#if 0	
-kprintf("Red:   mask: %p, shift: %d\n", xsd->vi.red_mask,   xsd->red_shift);
-kprintf("Green: mask: %p, shift: %d\n", xsd->vi.green_mask, xsd->green_shift);
-kprintf("Blue:  mask: %p, shift: %d\n", xsd->vi.blue_mask,  xsd->blue_shift);
-
-kill(getpid(), SIGSTOP);
-#endif
-	
-	
     }
 
-
-
-
-/*	data->maxpen = NUM_COLORS; */
-	
-	/* Create cursor */
-    data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
-
-    fg.pixel = BlackPixel(data->display, data->screen);
-    fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
-    fg.flags = (DoRed | DoGreen | DoBlue);
-    bg.pixel = WhitePixel(data->display, data->screen);
-    bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
-    bg.flags = (DoRed | DoGreen | DoBlue);
-
-    XRecolorCursor( data->display
-   	   , data->cursor
-   	   , &fg, &bg
-    );
-
- 
     /* Create a dummy window for pixmaps */
 
     xsd->dummy_window_for_creating_pixmaps = XCreateSimpleWindow(
-   	     data->display
-   	   , DefaultRootWindow(data->display)
+   	     xsd->display
+   	   , DefaultRootWindow(xsd->display)
    	   , 0, 0
    	   , 100, 100
    	   , 0
-   	   , BlackPixel(data->display, data->screen)
-   	   , BlackPixel(data->display, data->screen)
+   	   , BlackPixel(xsd->display, DefaultScreen(xsd->display))
+   	   , BlackPixel(xsd->display, DefaultScreen(xsd->display))
     );
 
 kprintf("\n1\n");
@@ -608,7 +628,7 @@ kprintf("\n2 ----\n");
 #if USE_XSHM
     	    
     /* Do we have Xshm support ? */
-    xsd->xshm_info = init_shared_mem(data->display);
+    xsd->xshm_info = init_shared_mem(xsd->display);
     if (NULL == xsd->xshm_info)
     {
 kprintf("\n3\n");
@@ -631,17 +651,17 @@ UX11
 
 }
 
-static VOID cleanupx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
+static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 {
 LX11
     /* Do nothing for now */
     if (0 != xsd->dummy_window_for_creating_pixmaps)
     {
-    	XDestroyWindow(data->display, xsd->dummy_window_for_creating_pixmaps);
+    	XDestroyWindow(xsd->display, xsd->dummy_window_for_creating_pixmaps);
     }
     
 #if USE_XSHM
-	cleanup_shared_mem(data->display, xsd->xshm_info);
+	cleanup_shared_mem(xsd->display, xsd->xshm_info);
 #endif    
 UX11
     return;
