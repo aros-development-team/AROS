@@ -434,9 +434,9 @@ AROS_LH4(LONG, strcompare,
             return 0;
 
         while ( length--
-        &&      ! (a= ( collTab[(UBYTE)*(string1++)]
+        &&      ! (a= ( collTab[(UBYTE)*string1]
                       - collTab[(UBYTE)*(string2++)]))
-        &&      *s );
+        &&      *string1++ );
         return a; }
 
     else
