@@ -47,14 +47,14 @@
 #ifndef UTILITY_UTILITY_H
 #include <utility/utility.h>
 #endif
+#ifndef PROTO_ALIB_H
+#include <proto/alib.h>
+#endif
 #ifndef PROTO_EXEC_H
 #include <proto/exec.h>
 #endif
 #ifndef PROTO_UTILITY_H
 #include <proto/utility.h>
-#endif
-#ifndef PROTO_ALIB_H
-#include <proto/alib.h>
 #endif
 
 /* Definition of a utility namespace, needed here for the library base. */
