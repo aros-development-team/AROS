@@ -273,7 +273,14 @@
 
     l->ClipRect = CR;
 
-    l->DamageList = NewRegion();
+    /*
+    ** Keep the damage list, but change it in such a way that
+    ** rectangles with screen coordinates can be or'ed to it.
+    */
+    l->DamageList->bounds.MinX += l->bounds.MinX;
+    l->DamageList->bounds.MinY += l->bounds.MinY;
+    l->DamageList->bounds.MaxX += l->bounds.MinX;
+    l->DamageList->bounds.MaxY += l->bounds.MinY;
 
     /* Copy the bounds */
     CR->bounds = l->bounds;
@@ -498,8 +505,10 @@
 	         Build the DamageList relative to the screen, 
 	         fix it later 
 	      */
+/***************
 	      if (0 != (l->Flags & LAYERSIMPLE))
-                OrRectRegion(l->DamageList, &CR->bounds);
+***************/
+              OrRectRegion(l->DamageList, &CR->bounds);
 
               l->Flags |= LAYERREFRESH;
 	    }
@@ -550,8 +559,10 @@
 	         Build the DamageList relative to the screen, 
 	         fix it later 
 	      */
+/******************
               if (0 != (l->Flags & LAYERSIMPLE))
-                OrRectRegion(l->DamageList, &CR->bounds);
+******************/
+              OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
             else
