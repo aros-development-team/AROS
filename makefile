@@ -11,7 +11,7 @@
 #
 # \item{CURDIR} is the path from $(TOP) to the current directory.
 #
-# END_DESC{localmakevar}
+# END_DESC{makevar}
 TOP=.
 CURDIR=.
 
