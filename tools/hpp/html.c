@@ -30,6 +30,7 @@ typedef struct
     Node   node;
     List   args; /* HTMLOptArg */
     String body;
+    int    expanding;
 }
 HTMLMacro;
 
@@ -38,8 +39,13 @@ typedef struct
     Node   node;
     List   args; /* HTMLOptArg */
     String body;
+    int    expanding;
 }
 HTMLBlock;
+
+#define MAX_ENVSP   32
+static const char * ENVEnd[MAX_ENVSP];
+static int	    ENVEndSP = MAX_ENVSP;
 
 /* Definitions:
 
@@ -57,6 +63,7 @@ static List BDefs;  /* Blocks */
 static List EDefs;  /* Environments */
 
 static int HTML_IF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+static int HTML_ENV	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 static int HTML_DEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 static int HTML_BDEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 static int HTML_EDEF	 PARAMS ((HTMLTag * tag));
@@ -71,12 +78,14 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     int 	   condvalue;
     char	 * elseptr;
     char	 * str;
+    int 	   line = Str_GetLine (in);
 
     body = HTML_ReadBody (in, data, "IF", 1);
 
     if (!body)
     {
-	PushError ("Can't find body to IF");
+	Str_SetLine (in, line);
+	Str_PushError (in, "Can't find body to IF");
 	return 0;
     }
 
@@ -84,7 +93,8 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (!condarg)
     {
-	PushError ("Can't find condition for IF");
+	Str_SetLine (in, line);
+	Str_PushError (in, "Can't find condition for IF");
 	return 0;
     }
 
@@ -98,7 +108,8 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	if (!condstr)
 	{
-	    PushError ("Can't expand condition for IF");
+	    Str_SetLine (in, line);
+	    Str_PushError (in, "Can't expand condition for IF");
 	    return 0;
 	}
 
@@ -178,7 +189,8 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	if (!vstr)
 	{
-	    PushError ("Error expanding IF body");
+	    Str_SetLine (in, line);
+	    Str_PushError (in, "Error expanding IF body");
 	    return T_ERROR;
 	}
 
@@ -192,6 +204,77 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	StrStr_Delete (ss);
 	VS_Delete (vstr);
+
+	return rc;
+    }
+
+    return T_OK;
+}
+
+static int
+HTML_ENV (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
+{
+    HTMLEnv    * env;
+    HTMLTagArg * name;
+    const char * str = NULL;
+    int 	 endtag;
+
+    endtag = (tag->node.name[0] == '/');
+
+    if (!endtag)
+    {
+	name = (HTMLTagArg *) FindNodeNC (&tag->args, "NAME");
+
+	if (!name)
+	{
+	    Str_PushError (in, "Missing argument NAME in ENV");
+	    return T_ERROR;
+	}
+
+	if (!name->value)
+	{
+	    Str_PushError (in, "Missing value for argument NAME in ENV");
+	    return T_ERROR;
+	}
+
+	env = (HTMLEnv *) FindNodeNC (&EDefs, name->value);
+
+	if (!env)
+	{
+	    Str_PushError (in, "Unknown environment %s", name->value);
+	    return T_ERROR;
+	}
+
+	if (!ENVEndSP)
+	{
+	    Str_PushError (in, "ENVs nested too deep");
+	    return T_ERROR;
+	}
+
+	ENVEnd[--ENVEndSP] = env->end;
+
+	str = env->begin;
+    }
+    else
+    {
+	if (ENVEndSP == MAX_ENVSP)
+	{
+	    Str_PushError (in, "</ENV> without <ENV>");
+	    return T_ERROR;
+	}
+
+	str = ENVEnd[ENVEndSP++];
+    }
+
+    if (str)
+    {
+	int rc;
+
+	StringStream * ss = StrStr_New (str);
+
+	rc = HTML_Parse ((MyStream *)ss, out, data);
+
+	StrStr_Delete (ss);
 
 	return rc;
     }
@@ -230,7 +313,7 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (FindNode (&BDefs, tag->node.name))
     {
-	PushError ("There is already a block with the same name %s", tag->node.name);
+	Str_PushError (in, "There is already a block with the same name %s", tag->node.name);
 	return 0;
     }
 
@@ -248,13 +331,13 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (!name)
     {
-	PushError ("HTML tag DEF: Missing argument NAME");
+	Str_PushError (in, "HTML tag DEF: Missing argument NAME");
 	return 0;
     }
 
     if (!name->value)
     {
-	PushError ("HTML tag DEF: Missing value for argument NAME");
+	Str_PushError (in, "HTML tag DEF: Missing value for argument NAME");
 	return 0;
     }
 
@@ -263,6 +346,7 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     macro->node.name = xstrdup (name->value);
     strupper (macro->node.name);
     NewList (&macro->args);
+    macro->expanding = 0;
 
     option = NULL;
 
@@ -272,7 +356,7 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	{
 	    if (!arg->value)
 	    {
-		PushError ("HTML tag DEF: Missing value for argument OPTION");
+		Str_PushError (in, "HTML tag DEF: Missing value for argument OPTION");
 		return 0;
 	    }
 
@@ -287,13 +371,13 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	{
 	    if (!arg->value)
 	    {
-		PushError ("HTML tag DEF: Missing value for argument DEFAULT");
+		Str_PushError (in, "HTML tag DEF: Missing value for argument DEFAULT");
 		return 0;
 	    }
 
 	    if (!option)
 	    {
-		PushError ("HTML tag DEF: Missing OPTION for DEFAULT");
+		Str_PushError (in, "HTML tag DEF: Missing OPTION for DEFAULT");
 		return 0;
 	    }
 
@@ -348,7 +432,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (FindNode (&Defs, tag->node.name))
     {
-	PushError ("There is already a macro with the same name %s", tag->node.name);
+	Str_PushError (in, "There is already a macro with the same name %s", tag->node.name);
 	return 0;
     }
 
@@ -366,13 +450,13 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (!name)
     {
-	PushError ("HTML tag DEF: Missing argument NAME");
+	Str_PushError (in, "HTML tag DEF: Missing argument NAME");
 	return 0;
     }
 
     if (!name->value)
     {
-	PushError ("HTML tag DEF: Missing value for argument NAME");
+	Str_PushError (in, "HTML tag DEF: Missing value for argument NAME");
 	return 0;
     }
 
@@ -381,6 +465,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     block->node.name = xstrdup (name->value);
     strupper (block->node.name);
     NewList (&block->args);
+    block->expanding = 0;
 
     option = NULL;
 
@@ -390,7 +475,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	{
 	    if (!arg->value)
 	    {
-		PushError ("HTML tag DEF: Missing value for argument OPTION");
+		Str_PushError (in, "HTML tag DEF: Missing value for argument OPTION");
 		return 0;
 	    }
 
@@ -405,13 +490,13 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	{
 	    if (!arg->value)
 	    {
-		PushError ("HTML tag DEF: Missing value for argument DEFAULT");
+		Str_PushError (in, "HTML tag DEF: Missing value for argument DEFAULT");
 		return 0;
 	    }
 
 	    if (!option)
 	    {
-		PushError ("HTML tag DEF: Missing OPTION for DEFAULT");
+		Str_PushError (in, "HTML tag DEF: Missing OPTION for DEFAULT");
 		return 0;
 	    }
 
@@ -562,6 +647,12 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     }
     else if (macro)
     {
+	if (macro->expanding)
+	{
+	    Str_PushError (in, "Loop in expansion of macro %s found", macro->node.name);
+	    return T_ERROR;
+	}
+
 	if (macro->body->buffer)
 	{
 	    StringStream * ss;
@@ -590,7 +681,14 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	    ss = StrStr_New (macro->body->buffer);
 
+	    macro->expanding = 1;
 	    rc = HTML_Parse ((MyStream *)ss, out, data);
+	    macro->expanding = 0;
+
+	    if (rc != T_OK)
+	    {
+		Str_PushError (in, "Error in expanding macro %s", macro->node.name);
+	    }
 
 	    StrStr_Delete (ss);
 
@@ -602,16 +700,66 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     }
     else if (block)
     {
-	String body;
+	if (block->expanding)
+	{
+	    Str_PushError (in, "Loop in expansion of block %s found", block->node.name);
+	    return T_ERROR;
+	}
 
-	body = HTML_ReadBody (in, data, block->node.name, 1);
+	if (block->body->buffer)
+	{
+	    StringStream * ss;
+	    String body;
+	    HTMLOptArg * oarg;
 
+	    Var_PushLevel ();
+
+	    body = HTML_ReadBody (in, data, block->node.name, 1);
+
+	    Var_SetConst ("@body", body->buffer);
+
+	    ForeachNode (&block->args, oarg)
+	    {
+		arg = (HTMLTagArg *) FindNodeNC (&tag->args, oarg->node.name);
+
+		if (!arg)
+		{
+		    if (!oarg->defvalue)
+			Warn ("Missing value for BDEF argument %s\n", oarg->node.name);
+		    else
+		    {
+			Var_Set (oarg->node.name, oarg->defvalue);
+		    }
+		}
+		else
+		{
+		    Var_Set (oarg->node.name, arg->value);
+		}
+	    }
+
+#if 0
 printf ("Found as BDEF.Def=%s\nBody=%s\n",
 	block->body->buffer,
 	body->buffer
 );
+#endif
 
-	VS_Delete (body);
+	    ss = StrStr_New (block->body->buffer);
+
+	    block->expanding = 1;
+	    rc = HTML_Parse ((MyStream *)ss, out, data);
+	    block->expanding = 0;
+
+	    if (rc != T_OK)
+	    {
+		Str_PushError (in, "Error in expanding block %s", block->node.name);
+	    }
+
+	    StrStr_Delete (ss);
+
+	    Var_FreeLevel (Var_PopLevel ());
+	    VS_Delete (body);
+	}
     }
     else
     {
@@ -650,11 +798,16 @@ HTML_Init (void)
 void
 HTML_Exit (void)
 {
+    if (ENVEndSP != MAX_ENVSP)
+    {
+	Error ("Some <ENV>'s were not closed");
+    }
 }
 
 int
 HTML_Parse (MyStream * in, MyStream * out, CBD data)
 {
+    int    line;
     int    token;
     String str;
 
@@ -663,6 +816,8 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
     while ((token = HTML_ScanText (str, in, NULL)) != EOF)
     {
 	/* printf ("%d: %s\n", token, str->buffer); */
+
+	line = Str_GetLine (in);
 
 	switch (token)
 	{
@@ -685,7 +840,8 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		{
 		    if (!HTML_DEF (tag, in, out, data))
 		    {
-			PushError ("HTML_Parse() failed in DEF");
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in DEF");
 			return T_ERROR;
 		    }
 		}
@@ -693,7 +849,8 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		{
 		    if (!HTML_BDEF (tag, in, out, data))
 		    {
-			PushError ("HTML_Parse() failed in BDEF");
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in BDEF");
 			return T_ERROR;
 		    }
 		}
@@ -701,7 +858,8 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		{
 		    if (HTML_IF (tag, in, out, data) != T_OK)
 		    {
-			PushError ("HTML_Parse() failed in IF");
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in IF");
 			return T_ERROR;
 		    }
 		}
@@ -709,7 +867,27 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		{
 		    if (!HTML_EDEF (tag))
 		    {
-			PushError ("HTML_Parse() failed in EDEF");
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in EDEF");
+			return T_ERROR;
+		    }
+		}
+		else if (!strcmp (tag->node.name, "FILTER"))
+		{
+		    if (HTML_Filter (tag, in, out, data) != T_OK)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in FILTER");
+			return T_ERROR;
+		    }
+		}
+		else if (!strcmp (tag->node.name, "ENV")
+		    || !strcmp (tag->node.name, "/ENV"))
+		{
+		    if (HTML_ENV (tag, in, out, data) != T_OK)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in ENV");
 			return T_ERROR;
 		    }
 		}
@@ -722,13 +900,13 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 
 		    if (!name)
 		    {
-			PushError ("Missing argument NAME in LINK");
+			Str_PushError (in, "Missing argument NAME in LINK");
 			return T_ERROR;
 		    }
 
 		    if (!ref)
 		    {
-			PushError ("Missing argument REF in LINK");
+			Str_PushError (in, "Missing argument REF in LINK");
 			return T_ERROR;
 		    }
 
@@ -740,9 +918,10 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		}
 		else
 		{
-		    if (!HTML_OtherTag (tag, in, out, data))
+		    if (HTML_OtherTag (tag, in, out, data) != T_OK)
 		    {
-			PushError ("HTML_Parse() failed in %s", tag->node.name);
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in %s", tag->node.name);
 			return T_ERROR;
 		    }
 		}
@@ -753,11 +932,13 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 	    break;
 
 	case T_ERROR:
-	    PushError ("HTML_Parse() failed");
+	    Str_SetLine (in, line);
+	    Str_PushError (in, "HTML_Parse() failed");
 	    return T_ERROR;
 
 	default:
-	    PushError ("HTML_Parse(): Unknown token %d\n", token);
+	    Str_SetLine (in, line);
+	    Str_PushError (in, "HTML_Parse(): Unknown token %d\n", token);
 	    return T_ERROR;
 	}
     } /* while */
