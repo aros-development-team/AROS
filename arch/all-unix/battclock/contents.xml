@@ -1,0 +1,14 @@
+<contents>
+<item>
+    <file>makefile.src</file>
+    A Makefile for creating the Unix section of the
+		  battclock.resource. Also serves as an example
+		  of the ``AROS Build Configuration''.
+
+</item>
+
+<item>
+    <file>readbattclock.c</file>
+    The Unix version of the |ReadBattClock()| function.
+</item>
+</contents>
