@@ -1579,10 +1579,29 @@ static VOID bitmap_getimage(OOP_Class *cl, OOP_Object *o,
 		    
 		    switch (bpp)
 		    {
-	    		case 1: *((UBYTE *)pixarray)++ = pix; break;
-			case 2: *((UWORD *)pixarray)++ = pix; break;
-			case 3: D(bug("GETIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n")); break;
-			case 4: *((ULONG *)pixarray)++ = pix; break;
+	    		case 1:
+			    *((UBYTE *)pixarray)++ = pix;
+			    break;
+			    
+			case 2:
+			    *((UWORD *)pixarray)++ = pix;
+			    break;
+			    
+			case 3:
+			#if AROS_BIG_ENDIAN
+			    *((UBYTE *)pixarray)++ = (pix >> 16) & 0xFF;
+			    *((UBYTE *)pixarray)++ = (pix >> 8) & 0xFF;
+			    *((UBYTE *)pixarray)++ =  pix & 0xFF;
+			#else
+			    *((UBYTE *)pixarray)++ =  pix & 0xFF;
+			    *((UBYTE *)pixarray)++ = (pix >> 8) & 0xFF;
+			    *((UBYTE *)pixarray)++ = (pix >> 16) & 0xFF;
+			#endif
+			    break;
+			    
+			case 4:
+			    *((ULONG *)pixarray)++ = pix;
+			    break;
 		    }
 		    
 		}
@@ -1677,17 +1696,26 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o,
 		    switch (bpp)
 		    {
 	    		case 1:
-			    pix = *((UBYTE *)pixarray) & 0x000000FF;
+			    pix = *((UBYTE *)pixarray);
 			    pixarray ++;
 			    break;
 			    
 			case 2:
-			    pix = *((UWORD *)pixarray) & 0x0000FFFF;
+			    pix = *((UWORD *)pixarray);
 			    pixarray += 2;
 			    break;
 			    
 			case 3:
-			    D(bug("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n"));
+			#if AROS_BIG_ENDIAN
+			    pix = ((UBYTE *)pixarray)[0] << 16;
+			    pix |= ((UBYTE *)pixarray)[1] << 8;
+			    pix |= ((UBYTE *)pixarray)[2];			    
+			#else
+			    pix = ((UBYTE *)pixarray)[2] << 16;
+			    pix |= ((UBYTE *)pixarray)[1] << 8;
+			    pix |= ((UBYTE *)pixarray)[0];			    			
+			#endif
+			    pixarray += 3;
 			    break;
 			    
 			case 4:
