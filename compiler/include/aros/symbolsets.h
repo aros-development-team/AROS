@@ -77,6 +77,8 @@ const ULONG bname##_version = ver
 #define LIBSET_ASL_PRI           10
 #define LIBSET_GADTOOLS_PRI 	 11
 #define LIBSET_REALTIME_PRI 	 12
+#define LIBSET_ICON_PRI 	 13
+#define LIBSET_WORKBENCH_PRI 	 14
 
 #define LIBSET_AROSC_PRI         20
 

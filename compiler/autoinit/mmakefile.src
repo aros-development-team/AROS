@@ -21,13 +21,15 @@ FILES	:= \
 	functions \
 	gadtools \
 	graphics \
+	icon \
 	iffparse \
 	intuition \
 	layers \
 	libraries \
 	locale \
 	realtime \
-	utility
+	utility \
+	workbench
 
 
 
