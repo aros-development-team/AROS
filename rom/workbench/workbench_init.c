@@ -27,7 +27,6 @@
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
 #define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
 
-#define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 #define LC_STATIC_INITLIB
 
