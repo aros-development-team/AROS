@@ -215,6 +215,9 @@ AROS_UFH3S(IPTR, dispatch_buttonclass,
 #define TEXTF_BORDER	(1 << 1)
 #define TEXTF_COPYTEXT	(1 << 2)
 struct TextData {
+    struct DrawInfo *dri;
+    Object *frame;
+    
     STRPTR format;
     IPTR toprint;
     UBYTE frontpen;
@@ -360,8 +363,7 @@ Object *text_new(Class * cl, Object * o, struct opSet *msg)
     {
     	struct TextData *data = INST_DATA(cl, o);
     	struct TextAttr *tattr, def_tattr;
-    	struct DrawInfo *dri;
-    	
+   	
    	/* Set some defaults */
     	data->format	= "%ld";
     	data->flags 	= 0;
@@ -376,10 +378,10 @@ Object *text_new(Class * cl, Object * o, struct opSet *msg)
     	/* Open font to use for gadget */
     	
     	/* We will *ALWAYS* have a valid DrawInfo struct */
-    	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+    	data->dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
 
-    	def_tattr.ta_Name  = dri->dri_Font->tf_Message.mn_Node.ln_Name;
-    	def_tattr.ta_YSize = dri->dri_Font->tf_YSize;
+    	def_tattr.ta_Name  = data->dri->dri_Font->tf_Message.mn_Node.ln_Name;
+    	def_tattr.ta_YSize = data->dri->dri_Font->tf_YSize;
     	def_tattr.ta_Style = 0;
     	def_tattr.ta_Flags = 0;
 
@@ -419,6 +421,22 @@ Object *text_new(Class * cl, Object * o, struct opSet *msg)
 
     	D(bug("calling text_set\n"));
     	text_set(cl, o, msg);
+	
+	if (data->flags & TEXTF_BORDER)
+	{
+	    struct TagItem frame_tags[] =
+	    {
+		{IA_Width	, GetTagData(GA_Width, 0, msg->ops_AttrList)				},
+		{IA_Height	, GetTagData(GA_Height, 0, msg->ops_AttrList)				},
+		{IA_Resolution	, (data->dri->dri_Resolution.X << 16) + data->dri->dri_Resolution.Y	},
+		{IA_FrameType	, FRAME_BUTTON								},
+		{IA_Recessed	, TRUE									},
+		{TAG_DONE	, 0UL									}
+	    };
+
+	    data->frame = NewObjectA(NULL, FRAMEICLASS, frame_tags);
+	}
+	
     }
     ReturnPtr ("Text::New", Object *, o);
     
@@ -434,33 +452,6 @@ error:
 #define VBORDER 2
 
 #undef GadToolsBase
-
-VOID renderframe(struct RastPort *rp, struct Gadget *gad, UWORD *pens,
-		struct GadToolsBase_intern *GadToolsBase)
-{
-    WORD left, top, right, bottom;
-
-    left = gad->LeftEdge; top = gad->TopEdge;
-    right = left + gad->Width - 1; bottom = top + gad->Height - 1;
-    
-    /* Left */
-    SetAPen(rp, pens[SHADOWPEN]);
-    RectFill(rp, left, top, left + HBORDER - 1, bottom);
-    
-    /* Right */
-    SetAPen(rp, pens[SHINEPEN]);
-    RectFill(rp, right - HBORDER + 1, top, right, bottom);
-
-    /* Top */
-    SetAPen(rp, pens[SHADOWPEN]);    		
-    RectFill(rp, left + HBORDER, top, right - 1, top + HBORDER - 1);
-    
-    /* Bottom */
-    SetAPen(rp, pens[SHINEPEN]);
-    RectFill(rp, left + 1, bottom - HBORDER + 1, right, bottom);
-
-    return;
-}
 
 AROS_UFH2 (void, puttostr,
 	AROS_UFHA(UBYTE, chr, D0),
@@ -488,8 +479,23 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     
     EnterFunc(bug("Text::Render()\n"));
 
+    left   = G(o)->LeftEdge;
+    top    = G(o)->TopEdge;
+    width  = G(o)->Width;
+    height = G(o)->Height;
+
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
     {
+        if (data->frame)
+	{
+	    DrawImageState(msg->gpr_RPort,
+		    (struct Image *)data->frame,
+		    left,
+		    top,
+		    IDS_NORMAL,
+		    msg->gpr_GInfo->gi_DrInfo);
+	}
+	
 	renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
     }
     
@@ -507,17 +513,8 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
 	D(bug("Text formatted into: %s\n", textbuf));
 	numchars = strlen(textbuf);
 
-	left   = G(o)->LeftEdge;
-	top    = G(o)->TopEdge;
-	width  = G(o)->Width;
-	height = G(o)->Height;
-
 	if (data->flags & TEXTF_BORDER)
 	{
-    	    /* Render the border */
-    	    D(bug("Rendering frame\n"));
-    	    renderframe(rp, (struct Gadget *)o, pens, GadToolsBase);
-
     	    left += VBORDER + 1;
     	    top  += HBORDER + 1;
     	    width  = G(o)->Width -  (VBORDER + 1) * 2;
@@ -2958,278 +2955,367 @@ Class *makebuttonclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->buttonclass)
-	return GadToolsBase->buttonclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    cl = MakeClass(NULL, FRBUTTONCLASS, NULL, sizeof(struct ButtonData), 0UL);
+    cl = GadToolsBase->buttonclass;
     if (!cl)
-	return NULL;
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_buttonclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {	
+	cl = MakeClass(NULL, FRBUTTONCLASS, NULL, sizeof(struct ButtonData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_buttonclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->buttonclass = cl;
+	    GadToolsBase->buttonclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
 
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *maketextclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->textclass)
-	return GadToolsBase->textclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct TextData), 0UL);
+    cl = GadToolsBase->textclass;
     if (!cl)
-	return NULL;
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_textclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct TextData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_textclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->textclass = cl;
+	    GadToolsBase->textclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
 
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *makesliderclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->sliderclass)
-	return GadToolsBase->sliderclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    cl = MakeClass(NULL, PROPGCLASS, NULL, sizeof(struct SliderData), 0UL);
+    cl = GadToolsBase->sliderclass;
     if (!cl)
-	return NULL;
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_sliderclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	cl = MakeClass(NULL, PROPGCLASS, NULL, sizeof(struct SliderData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_sliderclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->sliderclass = cl;
+	    GadToolsBase->sliderclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
 
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *makescrollerclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->scrollerclass)
-	return GadToolsBase->scrollerclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    cl = MakeClass(NULL, PROPGCLASS, NULL, sizeof(struct ScrollerData), 0UL);
+    cl = GadToolsBase->scrollerclass;
     if (!cl)
-	return NULL;
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_scrollerclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	cl = MakeClass(NULL, PROPGCLASS, NULL, sizeof(struct ScrollerData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_scrollerclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->scrollerclass = cl;
+	    GadToolsBase->scrollerclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
 
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *makearrowclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->arrowclass)
-	return GadToolsBase->arrowclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    cl = MakeClass(NULL, FRBUTTONCLASS, NULL, sizeof(struct ArrowData), 0UL);
+    cl = GadToolsBase->arrowclass;
     if (!cl)
-	return NULL;
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_arrowclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	cl = MakeClass(NULL, FRBUTTONCLASS, NULL, sizeof(struct ArrowData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_arrowclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->arrowclass = cl;
+	    GadToolsBase->arrowclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
 
     return cl;
 }
 
+/***************************************************************************************************/
 
 Class *makestringclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->stringclass)
-	return GadToolsBase->stringclass;
-
-    cl = MakeClass(NULL, STRGCLASS, NULL, sizeof(struct StringData), 0UL);
+    ObtainSemaphore(&GadToolsBase->classsema);
+    
+    cl = GadToolsBase->stringclass;
     if (!cl)
-	return NULL;
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_stringclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	cl = MakeClass(NULL, STRGCLASS, NULL, sizeof(struct StringData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_stringclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->stringclass = cl;
+	    GadToolsBase->stringclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
 
     return cl;
 }
 
+/***************************************************************************************************/
 
 Class *makelistviewclass(struct GadToolsBase_intern * GadToolsBase)
 {
-    struct StaticLVData *ls;
+    Class *cl;
+    
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    if (GadToolsBase->listviewclass)
-	return GadToolsBase->listviewclass;
-	
-    ls = AllocMem(sizeof (struct StaticLVData), MEMF_ANY);
-    if (ls)
+    cl = GadToolsBase->listviewclass;
+    if (!cl)
     {
-   	Class *cl;
-   	
-   	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct LVData), 0UL);
-   	if (cl)
-   	{
-    	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_listviewclass);
-    	    cl->cl_Dispatcher.h_SubEntry = NULL;
-    	    
-    	    /* Initalize ststic hook */
-    	    ls->ls_GadToolsBase = GadToolsBase;
-    	    ls->ls_RenderHook.h_Entry = (APTR) AROS_ASMSYMNAME(RenderHook);
-    	    ls->ls_RenderHook.h_SubEntry = NULL;
-    	    ls->ls_RenderHook.h_Data = (APTR)GadToolsBase;
+        struct StaticLVData *ls;
+	
+	ls = AllocMem(sizeof (struct StaticLVData), MEMF_ANY);
+	if (ls)
+	{
+   	    cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct LVData), 0UL);
+   	    if (cl)
+   	    {
+    		cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_listviewclass);
+    		cl->cl_Dispatcher.h_SubEntry = NULL;
 
-    	    cl->cl_UserData = (IPTR) ls;
+    		/* Initalize ststic hook */
+    		ls->ls_GadToolsBase = GadToolsBase;
+    		ls->ls_RenderHook.h_Entry = (APTR) AROS_ASMSYMNAME(RenderHook);
+    		ls->ls_RenderHook.h_SubEntry = NULL;
+    		ls->ls_RenderHook.h_Data = (APTR)GadToolsBase;
 
-    	    GadToolsBase->listviewclass = cl;
-    	    return (cl);
-    	}
-    	
-    	FreeMem(ls, sizeof (struct StaticLVData));
+    		cl->cl_UserData = (IPTR) ls;
+
+    		GadToolsBase->listviewclass = cl;
+    	    } else {
+    	        FreeMem(ls, sizeof (struct StaticLVData));
+	    }
+	}
     }
-
-    return (NULL);
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
+    
+    return cl;
 }
 
 VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase)
 {
     FreeMem((APTR)cl->cl_UserData, sizeof (struct StaticLVData));
     FreeClass(cl);
-    
-    return;
 }
+
+/***************************************************************************************************/
 
 Class *makecheckboxclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->checkboxclass)
-	return GadToolsBase->checkboxclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    if (!GadToolsBase->aroscbbase)
-        GadToolsBase->aroscbbase = OpenLibrary(AROSCHECKBOXNAME, 0);
-    if (!GadToolsBase->aroscbbase)
-        return NULL;
-	
-    cl = MakeClass(NULL, AROSCHECKBOXCLASS, NULL, sizeof(struct CheckBoxData), 0UL);
+    cl = GadToolsBase->checkboxclass;
     if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_checkboxclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	if (!GadToolsBase->aroscbbase)
+            GadToolsBase->aroscbbase = OpenLibrary(AROSCHECKBOXNAME, 0);
 
-    GadToolsBase->checkboxclass = cl;
+	if (GadToolsBase->aroscbbase)
+        {
+	    cl = MakeClass(NULL, AROSCHECKBOXCLASS, NULL, sizeof(struct CheckBoxData), 0UL);
+	    if (cl)
+	    {
+		cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_checkboxclass);
+		cl->cl_Dispatcher.h_SubEntry = NULL;
+		cl->cl_UserData = (IPTR) GadToolsBase;
+
+		GadToolsBase->checkboxclass = cl;
+	    }
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
   
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *makecycleclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->cycleclass)
-	return GadToolsBase->cycleclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    if (!GadToolsBase->aroscybase)
-        GadToolsBase->aroscybase = OpenLibrary(AROSCYCLENAME, 0);
-    if (!GadToolsBase->aroscybase)
-        return NULL;
-	
-    cl = MakeClass(NULL, AROSCYCLECLASS, NULL, sizeof(struct CycleData), 0UL);
+    cl = GadToolsBase->cycleclass;
     if (!cl)
-	return NULL;
+    {
+	if (!GadToolsBase->aroscybase)
+            GadToolsBase->aroscybase = OpenLibrary(AROSCYCLENAME, 0);
 	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_cycleclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+	if (GadToolsBase->aroscybase)
+	{
+	    cl = MakeClass(NULL, AROSCYCLECLASS, NULL, sizeof(struct CycleData), 0UL);
+	    if (cl)
+	    {
+		cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_cycleclass);
+		cl->cl_Dispatcher.h_SubEntry = NULL;
+		cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->cycleclass = cl;
+		GadToolsBase->cycleclass = cl;
+	    }
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
   
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *makemxclass(struct GadToolsBase_intern * GadToolsBase)
 {
     Class *cl;
 
-    if (GadToolsBase->mxclass)
-	return GadToolsBase->mxclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    if (!GadToolsBase->arosmxbase)
-        GadToolsBase->arosmxbase = OpenLibrary(AROSMXNAME, 0);
-    if (!GadToolsBase->arosmxbase)
-        return NULL;
-	
-    cl = MakeClass(NULL, AROSMXCLASS, NULL, sizeof(struct MXData), 0UL);
+    cl = GadToolsBase->mxclass;
     if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_mxclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	if (!GadToolsBase->arosmxbase)
+            GadToolsBase->arosmxbase = OpenLibrary(AROSMXNAME, 0);
 
-    GadToolsBase->mxclass = cl;
+	if (GadToolsBase->arosmxbase)
+	{
+	    cl = MakeClass(NULL, AROSMXCLASS, NULL, sizeof(struct MXData), 0UL);
+	    if (cl)
+	    {
+		cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_mxclass);
+		cl->cl_Dispatcher.h_SubEntry = NULL;
+		cl->cl_UserData = (IPTR) GadToolsBase;
+
+		GadToolsBase->mxclass = cl;
+	    }
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
   
     return cl;
 }
 
+/***************************************************************************************************/
+
 Class *makepaletteclass(struct GadToolsBase_intern * GadToolsBase)
 {
-    Class *cl = NULL;
+    Class *cl;
 
-    if (GadToolsBase->paletteclass)
-	return GadToolsBase->paletteclass;
+    ObtainSemaphore(&GadToolsBase->classsema);
 
-    if (!GadToolsBase->arospabase)
-        GadToolsBase->arospabase = OpenLibrary(AROSPALETTENAME, 0);
-    if (!GadToolsBase->arospabase)
-        return NULL;
-	
-    cl = MakeClass(NULL, AROSPALETTECLASS, NULL, sizeof(struct PaletteData), 0UL);
+    cl = GadToolsBase->paletteclass;
     if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_paletteclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	if (!GadToolsBase->arospabase)
+            GadToolsBase->arospabase = OpenLibrary(AROSPALETTENAME, 0);
 
-    GadToolsBase->paletteclass = cl;
+	if (GadToolsBase->arospabase)
+	{
+	    cl = MakeClass(NULL, AROSPALETTECLASS, NULL, sizeof(struct PaletteData), 0UL);
+	    if (cl)
+	    {
+		cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_paletteclass);
+		cl->cl_Dispatcher.h_SubEntry = NULL;
+		cl->cl_UserData = (IPTR) GadToolsBase;
 
+		GadToolsBase->paletteclass = cl;
+	    }
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
+    
     return cl;
 }
+
+/***************************************************************************************************/
 
 Class *makebarlabelclass(struct GadToolsBase_intern * GadToolsBase)
 {
-    Class *cl = NULL;
+    Class *cl;
 
-    if (GadToolsBase->barlabelclass)
-	return GadToolsBase->barlabelclass;
-
-   cl = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct BarLabelData), 0UL);
+    ObtainSemaphore(&GadToolsBase->classsema);
+    
+    cl = GadToolsBase->barlabelclass;
     if (!cl)
-	return NULL;
-	
-    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_barlabelclass);
-    cl->cl_Dispatcher.h_SubEntry = NULL;
-    cl->cl_UserData = (IPTR) GadToolsBase;
+    {
+	cl = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct BarLabelData), 0UL);
+	if (cl)
+	{
+	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_barlabelclass);
+	    cl->cl_Dispatcher.h_SubEntry = NULL;
+	    cl->cl_UserData = (IPTR) GadToolsBase;
 
-    GadToolsBase->barlabelclass = cl;
-
+	    GadToolsBase->barlabelclass = cl;
+	}
+    }
+    
+    ReleaseSemaphore(&GadToolsBase->classsema);
+    
     return cl;
 }
+
+/***************************************************************************************************/
