@@ -225,7 +225,7 @@ struct  MUIP_Window_AllocGadgetID { ULONG MethodID; }; /* Custom Class - returns
 struct  MUIP_Window_DrawBackground { ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 struct  MUIP_Window_DragObject { ULONG MethodID; Object *obj; LONG touchx; LONG touchy; ULONG flags; };
 struct  MUIP_Window_FreeGadgetID { ULONG MethodID; LONG gadgetid; }; /* Custom Class */
-struct  MUIP_Window_RecalcDisplay  { ULONG MethodID; };
+struct  MUIP_Window_RecalcDisplay  { ULONG MethodID; Object *originator; };
 struct  MUIP_Window_RemControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
 
 
