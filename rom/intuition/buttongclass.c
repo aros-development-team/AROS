@@ -53,6 +53,22 @@
 
 /****************************************************************************/
 
+VOID notifypressed(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags)
+{			
+
+    struct TagItem ntags[] =
+    {
+    	{GA_ID,  0UL},
+    	{TAG_DONE,}
+    };
+    
+    ntags[0].ti_Data = ((EG(o)->Flags & GFLG_SELECTED) ? EG(o)->GadgetID : - EG(o)->GadgetID);
+    
+    DoSuperMethod(cl, o, OM_NOTIFY, ntags, ginfo, flags);
+    
+    return;
+}
+
 void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 {
     /* We will let the AROS gadgetclass test if it is safe to render */
@@ -179,6 +195,8 @@ IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 		}
 		else
 		    retval = GMR_NOREUSE;
+		    
+		notifypressed(cl, o, gi, 0);
 		break;
 
 	    case IECODE_NOBUTTON:
@@ -238,13 +256,7 @@ IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 	    break;
 
 	case IECLASS_TIMER:
-	    if (EG(o)->Flags & GFLG_SELECTED)
-	    {
-	        /* MUST pass tags for notification to work */
-	        struct TagItem ntags = {TAG_DONE, 0UL};
-	        
-		DoMethod(o, OM_NOTIFY, &ntags, gi, OPUF_INTERIM);
-	    }
+	    notifypressed(cl, o, msg->gpi_GInfo, OPUF_INTERIM);
 	    break;
 	}
     }
@@ -295,7 +307,7 @@ AROS_UFH3(static IPTR, dispatch_buttongclass,
 		    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
 		    ReleaseGIRPort(rp);
 
-		    DoMethod(o, OM_NOTIFY, gi, NULL, OPUF_INTERIM);
+		    notifypressed(cl, o, gi, OPUF_INTERIM);
 
 		    retval = GMR_MEACTIVE;
 		}
