@@ -304,15 +304,13 @@ VOID x11task_entry(struct x11task_params *xtpparam)
 	
 	struct notify_msg *nmsg;
 	
-	
 	ULONG notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
 	ULONG sigs;
-	
+
 #if NOUNIXIO
 
 	sigs = Wait(SIGBREAKF_CTRL_D | notifysig  |  xtp.kill_signal );
 	
-
 #else	
 
 
@@ -380,8 +378,8 @@ D(bug("Got input from unixio\n"));
 	if (sigs & xtp.kill_signal)
 	    goto failexit;
 	
-	
 	if (sigs & notifysig) {
+
 	    while ((nmsg = (struct notify_msg *)GetMsg(xsd->x11task_notify_port))) {
 		/* Add the messages to an internal list */
 		
@@ -462,10 +460,9 @@ UX11
 		 } /* switch() */
 	    } /* while () */
 	    
-	    continue;
+	    //continue;
 	    
 	} /* if (message from notify port) */
-
 
 
  	for (;;)	    
@@ -500,6 +497,7 @@ UX11
 LX11
 	    XNextEvent(xsd->display, &event);
 UX11
+
 #endif
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
@@ -649,7 +647,7 @@ UX11
 		    BOOL found = FALSE;
 		    
 		    me = (XMapEvent *)&event;
-		    
+
 		    ForeachNodeSafe(&nmsg_list, nmsg, safe) {
 		    	if (me->window == nmsg->xwindow
 			    && nmsg->notify_type == NOTY_MAPWINDOW) {
@@ -659,7 +657,6 @@ UX11
 		 	     found = TRUE;
 			     Remove((struct Node *)nmsg);
 			     ReplyMsg((struct Message *)nmsg);
-
 			}
 		    }
 		    
