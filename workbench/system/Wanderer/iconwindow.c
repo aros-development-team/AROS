@@ -12,6 +12,8 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
+#include "wanderer.h"
+#include "wandererprefs.h"
 #include "iconwindow.h"
 
 /*** Instance Data **********************************************************/
@@ -32,25 +34,20 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     struct Hook *action_hook;
     int is_root, is_backdrop;
     Object *iconlist;
-    CONST_STRPTR background;
     
     /* More than one GetTagData is not really efficient but since this is called very unoften... */
     is_backdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
     is_root = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
     action_hook = (struct Hook*) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
-    background = (CONST_STRPTR) GetTagData(MUIA_IconWindow_Background, 0, message->ops_AttrList);
     
     if (is_root)
     {
-        iconlist = IconVolumeListObject,
-            MUIA_Background, (IPTR) background,
-        End;
+        iconlist = IconVolumeListObject, End;
     }
     else
     {
         STRPTR drw = (STRPTR) GetTagData(MUIA_IconWindow_Drawer,(IPTR)NULL,message->ops_AttrList);
         iconlist = IconDrawerListObject,
-            MUIA_Background,            (IPTR) background,
             MUIA_IconDrawerList_Drawer, (IPTR) drw, 
         End;
     }
@@ -122,10 +119,6 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_IconWindow_Background:
-                SET(data->iconlist, MUIA_Background, tag->ti_Data);
-                break;
-                
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->is_backdrop)
                 {
@@ -178,10 +171,6 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     
     switch (message->opg_AttrID)
     {
-        case MUIA_IconWindow_Background:
-            *store = XGET(data->iconlist, MUIA_Background);
-            break;
-            
         case MUIA_IconWindow_Drawer:
             *store = !data->is_root
                 ? XGET(data->iconlist, MUIA_IconDrawerList_Drawer)
@@ -197,6 +186,50 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     }
     
     return rv;
+}
+
+IPTR IconWindow__MUIM_Window_Setup
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    Object *prefs;
+    ULONG   attribute = data->is_root 
+                      ? MUIA_WandererPrefs_WorkbenchBackground
+                      : MUIA_WandererPrefs_DrawerBackground;
+    
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
+    
+    prefs = (Object *) XGET(_app(self), MUIA_Wanderer_Prefs);
+    
+    SET(data->iconlist, MUIA_Background, XGET(prefs, attribute));
+    DoMethod
+    (
+        prefs, MUIM_Notify, attribute, MUIV_EveryTime,
+        (IPTR) data->iconlist, 3, MUIM_Set, MUIA_Background, MUIV_TriggerValue
+    );
+    
+    return TRUE;
+}
+
+IPTR IconWindow__MUIM_Window_Cleanup
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    ULONG attribute = data->is_root 
+                    ? MUIA_WandererPrefs_WorkbenchBackground
+                    : MUIA_WandererPrefs_DrawerBackground;
+    
+    DoMethod
+    (
+        (Object *) XGET(_app(self), MUIA_Wanderer_Prefs),
+        MUIM_KillNotifyObj, attribute, (IPTR) self
+    );
+    
+    return DoSuperMethodA(CLASS, self, message);
 }
 
 IPTR IconWindow__MUIM_IconWindow_DoubleClicked
@@ -286,12 +319,14 @@ IPTR IconWindow__MUIM_IconWindow_UnselectAll
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_8
+ZUNE_CUSTOMCLASS_10
 (
     IconWindow, NULL, MUIC_Window, NULL,
     OM_NEW,                        struct opSet *,
     OM_SET,                        struct opSet *,
     OM_GET,                        struct opGet *,
+    MUIM_Window_Setup,             Msg,
+    MUIM_Window_Cleanup,           Msg,
     MUIM_IconWindow_Open,          Msg,
     MUIM_IconWindow_UnselectAll,   Msg,
     MUIM_IconWindow_DoubleClicked, Msg,
