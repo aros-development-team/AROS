@@ -26,13 +26,12 @@
 
 #include <sys/mman.h>
 #include <unistd.h>
-
-#include <memory.h>	/* From $(TOP)/rom/exec */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/termios.h>
+
+#include "../../../rom/exec/memory.h"	/* From $(TOP)/rom/exec */
 
 extern const struct Resident
     Expansion_resident,
