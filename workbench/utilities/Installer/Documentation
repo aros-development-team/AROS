@@ -413,6 +413,15 @@ options are:
             in novice the automatic answer is "no"
 
 
+( exists <name>
+      [(noreq)]
+)
+Checks if a <name> exists.
+Returns 0 if non-existant, 1 for a file or 2 for a directory.
+If (noreq) is specified, then no requester will pop up if
+<name> should be on a not-mounted volume.
+
+
 ( makedir <name>
       [(prompt <string>... )]
       [(help <string>... )]
@@ -445,7 +454,6 @@ This function returns 1 on success and 0 on failure.
 ( copyfiles )
 ( copylib )
 ( earlier )
-( exists )
 ( expandpath )
 ( fileonly )
 ( foreach )

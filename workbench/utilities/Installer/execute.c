@@ -10,6 +10,7 @@
 #include "cmdlist.h"
 #include "misc.h"
 #include "gui.h"
+#include <sys/stat.h>
 
 /* External variables */
 extern InstallerPrefs preferences;
@@ -1431,11 +1432,68 @@ void *params;
 			  }
 			  break;
 
+      case _EXISTS	:
+#warning TODO: Implement (noreq)
+			  if ( current->next != NULL )
+			  {
+			  struct stat sb;
+
+			    current = current->next;
+			    ExecuteCommand();
+
+			    if ( current->arg != NULL )
+			    {
+			      string = strip_quotes( current->arg );
+			    }
+			    else
+			    {
+			      error = SCRIPTERROR;
+			      traperr( "<%s> requires a file string as argument!\n", current->parent->cmd->arg );
+			    }
+			    parameter = NULL;
+			    if ( current->next )
+			    {
+			      parameter = get_parameters( current->next, level );
+			    }
+			    if ( parameter )
+			    {
+			      free_parameterlist( parameter );
+			    }
+			    if(stat(string, &sb) == -1)
+			    {
+			      current->parent->intval = 0;
+			    }
+			    else
+			    {
+			      if(sb.st_mode & S_IFDIR)
+			      {
+				/* Directory */
+				current->parent->intval = 2;
+			      }
+			      else if(sb.st_mode & S_IFREG)
+			      {
+				/* File */
+				current->parent->intval = 1;
+			      }
+			      else
+			      {
+				current->parent->intval = 0;
+			      }
+			    }
+			    free( string );
+			  }
+			  else
+			  {
+			    error = SCRIPTERROR;
+			    traperr( "<%s> requires a string argument!\n", current->arg );
+			  }
+			  break;
+
+
       /* Here are all unimplemented commands */
       case _COPYFILES	:
       case _COPYLIB	:
       case _EARLIER	:
-      case _EXISTS	:
       case _EXPANDPATH	:
       case _FILEONLY	:
       case _FOREACH	:
