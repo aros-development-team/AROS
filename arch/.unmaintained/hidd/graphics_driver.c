@@ -5,6 +5,9 @@
     Desc: Driver for using gfxhidd for gfx output
     Lang: english
 */
+
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,6 +38,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/* Default font for the HIDD driver */
+#include "default_font.c"
 
 #define PEN_BITS    4
 #define NUM_COLORS  (1L << PEN_BITS)
@@ -192,6 +197,24 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     ReturnBool("CorrectDriverData", retval);
 }
 
+BOOL init_romfonts(struct GfxBase *GfxBase)
+{
+    struct TextFont *tf;
+    
+    
+    tf = AllocMem( sizeof (struct TextFont), MEMF_ANY);
+    if (tf)
+    {
+    	/* Copy the const font struct into allocated mem */
+	CopyMem((APTR)&topaz8_tf, tf, sizeof (struct TextFont));
+	
+	AddFont(tf);
+	GfxBase->DefaultFont = tf;
+	
+	return TRUE;
+    }
+    return FALSE;
+}
 
 int driver_init (struct GfxBase * GfxBase)
 {
@@ -212,8 +235,11 @@ int driver_init (struct GfxBase * GfxBase)
 	    	HiddGCAttrBase 	= ObtainAttrBase(IID_Hidd_GC);
 	    	if (HiddGCAttrBase)
 		{
-	    
-	    	   ReturnInt("driver_init", int, TRUE);
+	           /* Init the driver's defaultfont */
+		   if (init_romfonts(GfxBase))
+	    	   	ReturnInt("driver_init", int, TRUE);
+			
+		   ReleaseAttrBase(IID_Hidd_GC);
 		}
 		
 		ReleaseAttrBase(IID_Hidd_BitMap);
@@ -415,17 +441,159 @@ void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
     CorrectDriverData (rp, GfxBase);
 }
 
+#define NUMCHARS(tf) ((tf->tf_HiChar - tf->tf_LoChar) + 2)
+#define CTF(x) ((struct ColorTextFont *)x)
+
 void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+
+#warning Does not handle color textfonts nor drawingmodes
+    UWORD numchars;
+    WORD  start_y;
+    struct TextFont *tf;
+    WORD current_x;
+    if (!CorrectDriverData (rp, GfxBase))
+    	return;
+	
+    
+    tf = rp->Font;
+
+    /* Render along font's baseline */
+    start_y = rp->cp_y - tf->tf_Baseline;
+    current_x = rp->cp_x;
+    
+    numchars = NUMCHARS(tf);
+    while ( len -- )
+    {
+	UWORD row, bitno, width;
+	ULONG charloc;
+	UBYTE idx; /* index into font tables */
+	WORD glyph_y;
+	UWORD modulo;
+	WORD next_x;
+	
+
+	
+	if ( *string < tf->tf_LoChar || *string > tf->tf_HiChar)
+	{
+	    idx = numchars - 1; /* Last glyph is the default glyph */
+	}
+	else
+	{
+	    idx = *string - tf->tf_LoChar;
+	}
+	
+	charloc = ((ULONG *)tf->tf_CharLoc)[idx];
+	modulo = 0;
+	
+	if (tf->tf_Flags & FPF_PROPORTIONAL)
+	{
+	    /* Use kerning values to advance correctly */ 
+	    /* !!!! Depending on drawmmode one might have to render into
+	       the area between the old and new current_x */
+	    next_x += ((WORD *)tf->tf_CharKern)[idx];
+	}
+	else
+	    next_x = current_x; /* monospace */
+	
+	/* These nested loops render the glyph using WritePixel().
+	   They may/should later be replaced with BltMitMap() or similar
+	*/
+	for (glyph_y = start_y, row = 0; row < tf->tf_YSize; row ++, glyph_y ++)
+	{
+	    WORD glyph_x;
+	    bitno = charloc >> 16;
+	    width = charloc & 0xFFFF;
+	    
+	    for (glyph_x = current_x; width --; glyph_x ++)
+	    {
+	        /* This iftest can be moved out of the for-loops for speed
+		  (speed/code size tradeoff) */
+		  
+	        if (tf->tf_Style & FSF_COLORFONT)
+		{
+		    UWORD plane;
+		    for (plane = 0; plane < CTF(tf)->ctf_Depth; plane ++)
+		    {
+		    	UBYTE *charptr = (UBYTE *)CTF(tf)->ctf_CharData[plane];
+			ULONG pen = 0;
+		    	charptr += modulo;
+		    
+	    	    	if ( charptr[bitno >> 3] & (1 << ((~bitno) & 0x07)) )
+		    	{
+			    /* Do something clever here */
+		    	}
+		        
+		    }
+		    
+		    /* SetAPen(rp, something); */
+		    /* SetBPen(rp, something); */
+		    /* WritePixel(rp, glyph_x, glyph_y); */
+		    
+		}
+		else
+		{
+		    UBYTE *charptr = (UBYTE *)tf->tf_CharData;
+		    charptr += modulo;
+		    
+	    	    if ( charptr[bitno >> 3] & (1 << ((~bitno) & 0x07)) )
+		    {
+		    	WritePixel(rp, glyph_x, glyph_y);
+		    }
+		}
+		bitno ++;
+		
+	    } /* for (each x) */
+	    modulo += tf->tf_Modulo;
+	    
+	} /* for (each y) */
+	
+	if (tf->tf_Flags & FPF_PROPORTIONAL)
+	    current_x += ((WORD *)tf->tf_CharSpace)[idx];
+	else
+	    current_x += tf->tf_XSize; /* Add glyph width */
+	
+	string ++;
+    } /* for (each character to render) */
+    
+    Move(rp, current_x, rp->cp_y);
+    return;
+
 }
 
 WORD driver_TextLength (struct RastPort * rp, STRPTR string, ULONG len,
 		    struct GfxBase * GfxBase)
 {
-
-    return 10;
+    struct TextFont *tf = rp->Font;
+    WORD strlen = 0;
+    
+    while (len --)
+    {
+	
+	if (tf->tf_Flags & FPF_PROPORTIONAL)
+	{
+	    WORD idx;
+	
+	    if ( *string < tf->tf_LoChar || *string > tf->tf_HiChar)
+	    {
+		idx = NUMCHARS(tf) - 1; /* Last glyph is the default glyph */
+	    }
+	    else
+	    {
+		idx = *string - tf->tf_LoChar;
+	    }
+	    strlen += ((WORD *)tf->tf_CharSpace)[idx];
+	}
+	else
+	{
+	    strlen += tf->tf_XSize;
+	}
+	
+	string ++;
+	
+    }
+    return strlen;
 }
 
 void driver_Move (struct RastPort * rp, LONG x, LONG y,
@@ -686,7 +854,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
   }
 
-  /* nlorentz: For now don't mind writing into bitmap planes,
+  /* nlorentz: For now don't bother writing into bitmap planes,
      as HIDD bitmap object is stored in bm->Planes[0];
   */
   
@@ -784,20 +952,110 @@ void driver_SetFont (struct RastPort * rp, struct TextFont * font,
 struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	struct GfxBase * GfxBase)
 {
-    struct ETextFont * tf;
-
+    struct TextFont *tf, *best_so_far = NULL;
+    WORD bestmatch = 0;
+   
+    
     if (!ta->ta_Name)
 	return NULL;
+	
+    /* Search for font in the fontlist */
+    Forbid();
+    ForeachNode(&GfxBase->TextFonts, tf)
+    {
+	if (0 == strcmp(tf->tf_Message.mn_Node.ln_Name, ta->ta_Name))
+	{
+	    UWORD match;
+	    struct TagItem *tags = NULL;
+	    struct TextAttr match_ta =
+	    {
+	    	tf->tf_Message.mn_Node.ln_Name,
+		tf->tf_YSize,
+		tf->tf_Style,
+		tf->tf_Flags
+	    };
+	    
+	    if (ExtendFont(tf, NULL))
+	    {
+	        tags = ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags;
+	    }
+	    else
+	    	tags = NULL;
+	    
+	    match = WeighTAMatch(ta, &match_ta, tags);
+	    if (match > bestmatch)
+	    {
+	    	bestmatch = match;
+		best_so_far = tf;
+	    }
+	}
+    }
+    Permit();
+	
 
-    if (!(tf = AllocMem (sizeof (struct ETextFont), MEMF_ANY)) )
-	return NULL;
-
-    return (struct TextFont *)tf;
+    return best_so_far;
 }
 
 void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
 {
+    /* None using the fint anymore ? */
+    if (    tf->tf_Accessors == 0
+         && (tf->tf_Flags & FPF_ROMFONT) == 0) /* Don't free ROM fonts */
+    {
+        Forbid();
+	
+	Remove((struct Node *)tf);
+	
+	Permit();
+	
+	/* Free font data */
+	
+	/* !!! NOTE. FreeXXX functions has to match AllocXXX in
+	   workbench/libs/diskfont/diskfont_io.c
+	*/
+	if (tf->tf_Style & FSF_COLORFONT)
+	{
+	    UWORD i;
+	    struct ColorFontColors *cfc;
+			
+	    for (i = 0; i < 8; i ++)
+	    {
+		if (CTF(tf)->ctf_CharData[i])
+		    FreeVec(CTF(tf)->ctf_CharData[i]);
+	    }
+	    
+	    cfc = CTF(tf)->ctf_ColorFontColors;
+	    if (cfc)
+	    {
+		if (cfc->cfc_ColorTable)
+		    FreeVec(cfc->cfc_ColorTable);
+				
+		FreeVec(cfc);
+	    }
 
+	}
+	else
+	{
+	    /* Not a colortextfont, only one plane */
+	    FreeVec(tf->tf_CharData);
+	}
+
+	StripFont(tf);
+	
+	if (tf->tf_CharSpace)
+	    FreeVec(tf->tf_CharSpace);
+	    
+	if (tf->tf_CharKern)
+	    FreeVec(tf->tf_CharKern);
+	    
+	/* All fonts have a tf_CharLoc allocated */    
+	FreeVec(tf->tf_CharLoc); 
+	
+	FreeVec(tf->tf_Message.mn_Node.ln_Name);
+	FreeVec(tf);
+	
+    }
+    return;
 }
 
 
@@ -1007,6 +1265,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     LONG planecnt = 0;
     
     EnterFunc(bug("driver_BltBitMap()\n"));
+    
+    
 
     ReturnInt("driver_BltBitMap", LONG, planecnt);
 }
