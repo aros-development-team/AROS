@@ -301,8 +301,8 @@ ULONG Boopsi__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     struct TagItem *tag;
     BOOL completely_visible = TRUE;
 
-kprintf("boopsi_show: obj coord %d,%d - %d,%d\n",
-_mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+D(bug("boopsi_show: obj coord %d,%d - %d,%d\n",
+_mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)));
     
     if (_flags(obj) & MADF_INVIRTUALGROUP)
     {
@@ -323,8 +323,8 @@ _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 		    (_mbottom(obj) > _mbottom(parent)))
 		{
 		    completely_visible = FALSE;
-		    kprintf("=== boopsi object: completely visible FALSE for obj %x at %d,%d - %d,%d\n",
-		    	     obj, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+		    D(bug("=== boopsi object: completely visible FALSE for obj %x at %d,%d - %d,%d\n",
+		    	     obj, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)));
 		    break;
 		}
 	    }
