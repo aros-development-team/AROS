@@ -9,7 +9,7 @@
 #include <hardware/intbits.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/asmcall.h>
 #include <signal.h>
 #include <sys/time.h>
