@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Implementation of vfprintf()
+    Desc: Function to format a string like printf().
     Lang: english
 */
 /* Original source from libnix */
@@ -53,7 +53,8 @@ unsigned char *__decimalpoint = ".";
 	va_list      args)
 
 /*  FUNCTION
-	Format a list of arguments and print them on the specified stream.
+	Format a list of arguments and call a function for each char
+	to print.
 
     INPUTS
 	data - This is passed to the usercallback uc
