@@ -20,7 +20,7 @@ ifeq ($(FLAVOUR),native)
 
 FILES := font2c gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
 	 mxgads oopdemo readicon regiontest shadowborder sift strtest \
-	 ooplib consoledemo x11gfxhidd serialtest
+	 ooplib consoledemo x11gfxhidd serialtest window
 	 
 
 else
