@@ -1,4 +1,4 @@
-/********************************************************************** 
+/**********************************************************************
  text.datatype - (c) 2000 by Sebastian Bauer
 
  This module provides some support functions
@@ -6,29 +6,16 @@
 
 #include <string.h>
 
+#include <graphics/clip.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
+#include <proto/layers.h>
 
-#ifndef _AROS
-#ifdef __SASC
-
-/* sprintf replacements for SAS C (shorter code, currently not used
-   anywhere in the code) */
-#ifdef UNUSED
-STATIC VOID SR_CopyFunc(VOID)
-{
-    __emit(0x16c0);		/* MOVE.B  D0,(A3)+ */
-}
-
-int sprintf(char *buf, const char *fmt,...)
-{
-    RawDoFmt((STRPTR) fmt, (STRPTR *) & fmt + 1, (void (*)()) SR_CopyFunc, buf);
-    return 1;
-}
-#endif /* UNUSED */
-#endif /* __SASC */
-#endif /* _AROS */
+/* Define the following to enable the debug version */
+//#define MYDEBUG
+#include "debug.h"
 
 /**************************************************************************************************/
 
@@ -38,7 +25,7 @@ struct MinNode *Node_Next(APTR node)
     if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
     if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
 	return NULL;
-	    
+
     return ((struct MinNode*)node)->mln_Succ;
 }
 
@@ -186,7 +173,7 @@ struct IFFHandle *PrepareClipboard(void)
 	}
 	FreeIFF(iff);
     }
-    
+
     return NULL;
 }
 
@@ -200,5 +187,27 @@ VOID FreeClipboard(struct IFFHandle *iff)
     CloseIFF(iff);
     CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
     FreeIFF(iff);
+}
+
+/**************************************************************************
+ Install a clip region
+**************************************************************************/
+struct Region *installclipregion (struct Layer *l, struct Region *r)
+{
+    BOOL update;
+    struct Region *or;
+
+    if (l->Flags & LAYERUPDATING)
+    {
+	EndUpdate(l,FALSE);
+	update = TRUE;
+    } else update = FALSE;
+
+    or = InstallClipRegion (l, r);
+
+    if (update)
+	BeginUpdate(l);
+
+    return or;
 }
 

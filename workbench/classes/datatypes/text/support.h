@@ -12,4 +12,4 @@ LONG 			GetFileSize( BPTR fileh );
 struct IFFHandle *	PrepareClipboard(void);
 VOID 			FreeClipboard(struct IFFHandle *iff);
 
-
+struct Region *installclipregion (struct Layer *l, struct Region *r);

@@ -6,7 +6,12 @@
 #ifdef _AROS
 
 #undef DEBUG
+
+#ifdef MYDEBUG
+#define DEBUG 1
+#else
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #else /* _AROS */
