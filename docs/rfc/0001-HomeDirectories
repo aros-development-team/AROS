@@ -1,0 +1,168 @@
+<html>
+<head>
+</head>
+<body>
+	<h2>Home Directories in AROS</h2>
+	<hr>
+	<code>$VER: homedirs.html 1.2 (27.10.2001)</code>
+	<p>Authors: Daniel Holmen and Peter Eriksson, the AROS Development Team</p>
+
+	<p>We'd like the AROS system to support several users much like what other operating platforms do (like MacOS and WindowsXP). Before we say anything more though, we'd like to stress that this is considered as AROS "extras"; your AROS setup doesn't necessarily need all this. If you're are the only one using your box, then some of this won't make much sense to you. Every system however - no matter how many users actually use it - should have a <code>HOME:</code> assign present.</p>
+
+	<p>With this in mind, here's what we'd like to see:</p>
+
+	<p><b>1:</b> A system running AROS recognizes different users with different preferences. Every user gets his or her own homedirectory, known as "<code>HOME:</code>". This assign points to a subdirectory within the <code>SYS:Home/</code> directory (the default name). Every user with access to the system will be given one of these directories. One name is reserved for system use ("<code>System</code>").</p>
+
+	<table cols="3" cellpadding="0" cellspacing="0" border="0">
+		<tr>
+			<td colspan="3"><code>SYS:</code></td>
+		</tr>
+		<tr>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="2"><code>Home/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>lys/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>petah/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>Mom/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>Dad/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>[ ... more users ... ]</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>System/ [ reserved ]</code></td>
+	</table>
+	
+	<p>2: Every home directory are free to use at the user's own personal discretion. However, there are some standard subdirectories: <code>HOME:S/</code>, <code>HOME:EnvArc/</code>, <code>HOME:T/</code>, <code>HOME:Trashcan/</code> and <code>HOME:Settings/</code>.</p>
+
+	<table cols="4" cellpadding="0" cellspacing="0" border="0">
+		<tr>
+			<td colspan="4"><code>HOME:</code></td>
+		</tr>
+		<tr>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="3"><code>Settings/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="2"><code>Programs/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>SnoopDOS/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>XDME/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td><code>[ ... more programs ... ]</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="2"><code>UI/ [ reserved ]</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td align="right"><img src="../gfx/file.gif"></td>
+			<td><code>HDToolBox.prui/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td align="right"><img src="../gfx/file.gif"></td>
+			<td><code>Calculator.prui/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td align="right"><img src="../gfx/file.gif"></td>
+			<td><code>[ ... more prui files ... ]</code></td>
+		</tr>
+		<tr>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="3"><code>S/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td align="right"><img src="../gfx/file.gif"></td>
+			<td colspan="2"><code>User-Startup</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="2"><code>[ ... more scripts ... ]</code></td>
+		</tr>
+		<tr>
+			<td><img src="../gfx/directory.gif"></td>
+			<td colspan="3"><code>EnvArc/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><img src="../gfx/directory.gif"></td>
+			<td><code>Sys/</code></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td>&nbsp;</td>
+			<td align="right"><img src="../gfx/file.gif"></td>
+			<td><code>User.prefs</code></td>
+		</tr>
+		<tr>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td colspan="3"><code>T/</code></td>
+		</tr>
+		<tr>
+			<td><img src="../gfx/directory_c.gif"></td>
+			<td colspan="3"><code>Trashcan/</code></td>
+		</tr>
+	</table>
+
+	<p>The subdirectories carry user preferences. The preferences programs and "<code>IPrefs</code>" will have to know about this - and so will AROS applications, which will store non-variable data in <code>HOME:Settings/Programs/&lt;ProgramName&gt;</code>.</p>
+	 
+	<p>The "<code>HOME:Settings/UI/</code>" subdirectory is reserved for system use. This directory stores information about application User Interface ("UI"). We've defined a new IFF standard for this purpose - "<code>IFF-PRUI</code>" ("Persistant User Interface"). Read more about this in <a href="../formats/iff-prui.html">IFF-PRUI</a>.</p>
+	 
+	<p>"<code>HOME:EnvArc/Sys/User.prefs</code>" holds information about the user him/herself. Although this IFF-format is yet to be determined, it will contain data such as the user's real name and e-mail address.</p>
+	 
+	<p>(Permanent) shell variables will be stored in "<code>HOME:EnvArc/</code>". Every user gets his or her own personal trashcan ("<code>HOME:Trashcan/</code>"). Also note that all users have their own "<code>User-Startup</code>" script (stored in <code>HOME:S/</code>) and a directory for temporary data (<code>HOME:T/</code>).</p>
+	 
+	<p>The "<code>System</code>" home directory (<code>SYS:Home/System/</code>) is used by the AROS system itself, mainly for system defaults and system "global" settings (such as user passwords). If an application fails finding some given settings in the <code>HOME:</code> directory, the <code>System</code> directory should be searched for the system default settings.</p>
+	 
+	<p><b>3:</b> The "<code>HOME:</code>" assign will be given by the AROS Login Manager, once the user has authorized him/herself. When AROS is being installed on a new system, the Installer will ask the user whether he'd like AROS Login Manager to show up or not. Although the Login Manager will launch a GUI by default, this can be overridden by passing USER and PASSWORD <code>ReadArgs()</code> style arguments. In this case, the user will have exclusive access to the AROS system.<br> 
+	When the user logs out, the <code>HOME:</code> directory assign will reset to <code>SYS:Home/System/</code>.</p>
+	 
+	<p>A long term goal should be <code>dos.library</code> support for multiple assign targets in case AROS will support several users logged on the same system simultanously (eg. thru ssh/nfs/samba access).</p>
+	 
+	<p><b>4:</b> Of course, this system needs to have filesystem support for security reasons. Users should not be forced to share anything they don't want to with other users. We feel filesystem support is another issue right now however, which is why we won't go into any details in this document.</p>
+</table>
+</body>
+</html>
