@@ -73,9 +73,10 @@ int     main ( void )
 {
     struct      CPUBase             *CPUResBase;
     struct      CPU_Definition      *CPUList, *FoundCPUs;
+    struct      CPUFam_Definition   *FamilyList, *FoundFamilies;
     struct      RDArgs              *rda;
-    struct      MinNode             *CPUNode;
-    int                             cpu_count;
+    struct      MinNode             *CPUNode, *FamilyNode;
+    int                             cpu_count, family_count, currentFamily;
     int                             result;
     int                             error = RETURN_OK;
     IPTR                            args[NOOFARGS] = { (IPTR)FALSE, };
@@ -97,8 +98,15 @@ int     main ( void )
 
     if ( CPUResBase = OpenResource( "cpu.resource" ) )
     {
-        cpu_count = 0;  /* Initialise the list counter */
+        cpu_count = 0;  /* Initialise the cpu list counter */
         CPUList = (struct CPU_Definition *)CPUResBase->CPUB_Processors;
+
+        family_count = 0;  /* Initialise the family list counter */
+        FamilyList = (struct CPUFam_Definition *)CPUResBase->CPUB_ProcFamilies;
+        FoundFamilies = FamilyList;
+
+        printf( "CPUBase->CPUB_ProcFamilies contains Family list @ %p\n\n", FamilyList );
+
         FoundCPUs = (struct CPU_Definition *)CPUList->CPU_CPUList.mlh_Head;
 
         printf( "CPUBase->CPUB_Processors contains CPU list @ %p\n\n", CPUList );
@@ -109,50 +117,74 @@ int     main ( void )
         printf( "present in this system.\n\n" );
 
     /* . Main loop . */
-        CPUNode = (struct MinNode *)&CPUList->CPU_CPUList.mlh_Head;
-        while ( isLastNode( CPUNode ) == FALSE )
+        FamilyNode = (struct MinNode *)&FamilyList->CPUF_FamilyList.mlh_Head;
+        do
         {
-            printf( "Processor ID : %u [PhysicalID = %u] @ %p ", FoundCPUs->CPU_ID, FoundCPUs->CPU_Physical, FoundCPUs );
-            if ( FoundCPUs->CPU_BootCPU == TRUE) printf( "[BOOT PROCESSOR]" );
+            FoundCPUs = (struct CPU_Definition *)CPUList->CPU_CPUList.mlh_Head;
 
-            if ( FoundCPUs->CPU_IsOnline == TRUE) printf(" (online)\n");
-            else  printf( " (offline)\n" );
+            printf( "Processor Family ID  : %d\n", FoundFamilies->CPUF_FamilyID );
+            printf( "Processor Family Name: %s\nn", FoundFamilies->CPUF_Name );
+            printf( "Processor Handler    @ %p\nn", FoundFamilies->CPUF_Resource );
 
-            printf( "Processor Family : [%p]\n", FoundCPUs->CPU_Family );
-            printf( "Processor Model  : [%p]\n", FoundCPUs->CPU_Model );
+            currentFamily = FoundFamilies->CPUF_FamilyID;
 
-            if (VERBOSE)                                                                     /* Perform a thorough CPU list? */
-            {
+            /* . Main loop . */
+                CPUNode = (struct MinNode *)&CPUList->CPU_CPUList.mlh_Head;
+                do
+                {
+                    if ( currentFamily == FoundCPUs->CPU_Family )
+                    {
+                        printf( "  Processor ID : %u [PhysicalID = %u] @ %p ", FoundCPUs->CPU_ID, FoundCPUs->CPU_Physical, FoundCPUs );
+                        if ( FoundCPUs->CPU_BootCPU == TRUE) printf( "[BOOT PROCESSOR]" );
 
-                if (FoundCPUs->CPU_Family == CPU_Family_i386) parse_i386((struct i386_compat_intern *)FoundCPUs->CPU_Private1,FoundCPUs->CPU_ID);
+                        if ( FoundCPUs->CPU_IsOnline == TRUE) printf(" (online)\n");
+                        else  printf( " (offline)\n" );
 
-            }
+                        printf( "  Processor Family : [%p]\n", FoundCPUs->CPU_Family );
+                        printf( "  Processor Model  : [%p]\n", FoundCPUs->CPU_Model );
 
-            if (FoundCPUs->CPU_SMPGroup)
-            {
-                struct  SMP_Definition          *CPUsSMPGrp;
+                        if ( VERBOSE )                                                              /* Perform a thorough CPU list? */
+                        {
 
-                CPUsSMPGrp   = FoundCPUs->CPU_SMPGroup;
-                
-                /* . This CPU is a member of an SMP group .. */
-                printf("  Member of SMP Group @ %p\n", CPUsSMPGrp);
-                printf("  SMP Group Member No. %d of %d\n", FoundCPUs->CPU_Physical + 1, CPUsSMPGrp->SMP_CPUCount);
-            }
+                            if ( FoundCPUs->CPU_Family == CPU_Family_i386 ) parse_i386((struct i386_compat_intern *)FoundCPUs->CPU_Private1,FoundCPUs->CPU_ID);
+
+                        }
+
+                        if ( FoundCPUs->CPU_SMPGroup )
+                        {
+                            struct  SMP_Definition          *CPUsSMPGrp;
+
+                            CPUsSMPGrp   = FoundCPUs->CPU_SMPGroup;
+                            
+                            /* . This CPU is a member of an SMP group .. */
+                            printf("  Member of SMP Group @ %p\n", CPUsSMPGrp);
+                            printf("  SMP Group Member No. %d of %d\n", FoundCPUs->CPU_Physical + 1, CPUsSMPGrp->SMP_CPUCount);
+                        }
+
+                        printf("\n");
+                    }
+                    cpu_count++;                                                                    /* . All done with this CPU .. */
+
+                    CPUNode = (struct MinNode *)&FoundCPUs->CPU_CPUList.mlh_Head;
+                    FoundCPUs = (struct CPU_Definition *)CPUNode->mln_Succ;                         /* get the next cpu in the list .. */
+
+                    //if ( cpu_count > MAX_CPU )
+                    //{ 
+                        //printf("WARNING: Number of CPUs in list exceeds MAX no of CPUS [%d]\n", MAX_CPU);
+                        //error = RETURN_FAIL; 
+                        //break;
+                    //}
+                } while  ( isLastNode( CPUNode ) == FALSE );
 
             printf("\n");
-            cpu_count++;                                                                    /* . All done with this CPU .. */
+            family_count++;                                                                         /* . All done with this CPU .. */
 
-            CPUNode = (struct MinNode *)&FoundCPUs->CPU_CPUList.mlh_Head;
-            FoundCPUs = (struct CPU_Definition *)CPUNode->mln_Succ;                         /* get the next cpu in the list .. */
+            FamilyNode = (struct MinNode *)&FoundFamilies->CPUF_FamilyList.mlh_Head;
+            FoundFamilies = (struct CPUFam_Definition *)FamilyNode->mln_Succ;                       /* get the next cpu in the list .. */
 
-            if ( cpu_count > MAX_CPU )
-            { 
-                 printf("WARNING: Number of CPUs in list exceeds MAX no of CPUS [%d]\n", MAX_CPU);
-                 error = RETURN_FAIL; 
-                 break;
-            }
-        }
-    /* .. */     
+        } while  ( isLastNode( FamilyNode ) == FALSE );
+
+        /* .. */     
         printf("Processor List Complete..\n");
 
         if (cpu_count != (CPUList->CPU_Physical))
