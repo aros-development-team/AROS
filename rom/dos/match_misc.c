@@ -48,7 +48,7 @@ static void RemoveTrailingSlash(STRPTR s)
     if (len >= 2)
     {
 	if ((s[len - 1] == '/') &&
-	    (s[len - 2] != '/'))
+	    ((s[len - 2] != '/') && (s[len - 2] != ':')))
 	{
 	    s[len - 1] = '\0';
 	}
