@@ -25,6 +25,10 @@
 
 #include "muimaster_intern.h"
 
+/*  # undef DEBUG */
+/*  # define DEBUG 1 */
+/*  # include <aros/debug.h> */
+
 extern struct Library *MUIMasterBase;
 
 static struct MinNode *Node_Next(APTR node)
@@ -80,18 +84,6 @@ static struct MinNode *List_Last(APTR list)
  * Italic is looking ugly, no ?
  */
 
-#if 0
-
-typedef struct ZTextLine {
-    struct MinNode node; /* embedded node */
-    UBYTE  align;
-    struct MinList chunklist;
-    WORD   lwidth;
-    WORD   lheight;
-} ZTextLine;
-
-#endif
-
 #define ZTL_LEFT    1
 #define ZTL_CENTER  2
 #define ZTL_RIGHT   3
@@ -99,26 +91,6 @@ typedef struct ZTextLine {
 #define DEFAULT_TEXT_ALIGN ZTL_LEFT
 
 /*-------------*/
-
-#if 0
-
-typedef struct ZTextChunk {
-    struct MinNode node; /* embedded node */
-    char                 *str;
-//    struct MUI_ImageSpec *image;
-    LONG                  dripen;
-    UBYTE                 style;
-
-    UBYTE                 longer_underline;
-
-    WORD                  deltabearing; /* width bearing - right bearing */
-    WORD                  cwidth;
-    WORD                  cheight;
-    WORD                  lbearing;
-    WORD                  lbear2;
-} ZTextChunk;
-
-#endif
 
 #define ZTC_STYLE_BOLD      (1<<0)
 #define ZTC_STYLE_ITALIC    (1<<1)
@@ -184,30 +156,6 @@ static ZTextLine *zune_text_parse_line (STRPTR *s, struct zune_context *zc,
 
 
 /************************/
-
-#if 0
-static void
-destroy_memchunk (void)
-{
-    if (textMemChunk)
-    {
-	g_mem_chunk_destroy(textMemChunk);
-	textMemChunk = NULL;
-    }
-
-    if (lineMemChunk)
-    {
-	g_mem_chunk_destroy(lineMemChunk);
-	lineMemChunk = NULL;
-    }
-
-    if (chunkMemChunk)
-    {
-	g_mem_chunk_destroy(chunkMemChunk);
-	chunkMemChunk = NULL;
-    }
-}
-#endif
 
 struct zune_context
 {
@@ -424,75 +372,6 @@ static STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, STRPTR
     return zc->text;
 }
 
-
-
-#if 0
-	    default:
-		if (*argtype == ZTEXT_ARG_HICHAR && arg == *s)
-		{
-		    /* underline this char */
-		    int styleback = *current_style;
-
-		    if (ztc) *current_style = ztc->style | ZTC_STYLE_UNDERLINE;
-		    else *current_style |= ZTC_STYLE_UNDERLINE;
-		    *current_style &= ~ZTC_STYLE_NORMAL;
-
-		    if ((ztc = zune_text_chunk_new (*current_style, pen)))
-		    {
-			AddTail((struct List*)&ztl->chunklist,(struct Node*)ztc);
-
-		    g_string_append_c (ztc->str, *s);
-		    ztc = NULL;
-		    *current_style = styleback;
-		    *argtype = ZTEXT_ARG_NONE;
-		    break;
-		}
-		else if (*argtype == ZTEXT_ARG_HICHARIDX && arg == *s)
-		{
-		    /* underline next char */
-		    s++;
-		    if (*s)
-		    {
-			int styleback = *current_style;
-			if (ztc)
-			{
-			    styleback = ztc->style;
-			    *current_style = ztc->style | ZTC_STYLE_UNDERLINE;
-			}
-			else
-			    *current_style |= ZTC_STYLE_UNDERLINE;
-			*current_style &= ~ZTC_STYLE_NORMAL;
-			ztc = zune_text_chunk_new (*current_style, pen);
-			ztl->chunks = g_list_append(ztl->chunks, ztc);
-			g_string_append_c (ztc->str, *s);
-			ztc = NULL;
-			*current_style = styleback;			
-		    }
-		    *argtype = ZTEXT_ARG_NONE;
-		    break;
-		}
-
-		if (!ztc)
-		{
-		    ztc = zune_text_chunk_new (*current_style, pen);
-		    ztl->chunks = g_list_append(ztl->chunks, ztc);
-		}
-		g_string_append_c (ztc->str, *s);
-
-		if (ztc->style & ZTC_STYLE_BOLD)
-		{
-/* bold chunks have an additional width, so we must have a chunk
- * for each character to avoid eating character interspacing
- * when writing a bold word.
- */
-/*  		    g_print("single bold chunk <%c>\n", *s); */
-		    ztc = NULL;
-		}
-		break;
-	} /* switch */
-#endif
-
-
 /**************************************************************************
  Parse a text line, and create text chunks.
  Whenever an escape code is encountered, the current chunk
@@ -575,162 +454,6 @@ static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, 
 /* Bounds */
 /************************************************************/
 
-/* Oh boy... why does TextExtent() require a RastPort
- * when it only needs the TextFont? */
-
-#if 0
-
-#if defined(_AROS) || defined(_AMIGA)
-void myTextExtent(struct TextFont *tf, STRPTR string, ULONG count,
-                  struct TextExtent *te)
-{
-    WORD len;
-
-    if (tf->tf_Flags & FPF_PROPORTIONAL)
-    {
-    	WORD  idx;
-	WORD  defaultidx = ((tf->tf_HiChar - tf->tf_LoChar) + 1); /* Last glyph is the default glyph */
-	UBYTE c;
-	
-	for (len = 0; count; count--)
-	{
-	    c = *string++;
-	    
-	    if ( c < tf->tf_LoChar || c > tf->tf_HiChar)
-	    {
-		idx = defaultidx;
-	    }
-	    else
-	    {
-		idx = c - tf->tf_LoChar;
-	    }
-	    	    
-   	    len += ((WORD *)tf->tf_CharKern)[idx];
-	    len += ((WORD *)tf->tf_CharSpace)[idx];
-	}
-    }
-    else
-    {
-    	len = count * tf->tf_XSize;
-    }
-
-    te->te_Width  = len;
-    te->te_Height = tf->tf_YSize;
-    te->te_Extent.MinX = 0;
-    te->te_Extent.MinY = -tf->tf_Baseline;
-    te->te_Extent.MaxX = te->te_Width  - 1;
-    te->te_Extent.MaxY = te->te_Height - 1 - tf->tf_Baseline;
-}
-#endif /* _AROS */
-
-
-/* trailing spaces are not correctly handled, thus the hack which
- * adds a final dot for the calculation  .
- */
-static void calculate_chunk_bounds (gpointer ch, gpointer udata)
-{
-    struct chunk_bounds_datas *cbd = (struct chunk_bounds_datas *)udata;
-    ZTextChunk *chunk = (ZTextChunk *)ch;
-    struct TextExtent te;
-    int lbearing;
-    int rbearing;
-    int width;
-
-    chunk->cwidth = 0;
-    chunk->cheight = 0;
-    if (chunk->str)
-    {
-        GList *next;
-	GList *prev;
-        GList *me = g_list_find(cbd->line->chunks, chunk);
-        g_return_if_fail(me != NULL);
-        next = g_list_next(me);
-	prev = g_list_previous(me);
-
-	cbd->lbd->text->style = chunk->style;
-/*  	g_print("chunk <%s>\n", chunk->str->str); */
-
-#ifndef _AROS
-	chunk->cheight += font->ascent + font->descent;
-
-	gdk_text_extents (font,
-			  chunk->str->str, chunk->str->len,
-			  &lbearing, &rbearing, &width, NULL, NULL);
-#else
-kprintf(">>> calculate_chunk_bounds: TextExtent(...)\n");
-kprintf(" >>  obj=%lx font=%lx\n", cbd->lbd->obj, _font(cbd->lbd->obj));
-	myTextExtent(_font(cbd->lbd->obj),
-		chunk->str->str, chunk->str->len, &te);
-
-	chunk->cheight += te.te_Height;
-	lbearing = te.te_Extent.MinX;
-	rbearing = te.te_Extent.MaxX;
-	width    = te.te_Width;
-#endif
-
-	chunk->lbear2 = lbearing;
-
-	if (!next) /* last chunk of a line */
-	{
-	    chunk->cwidth += rbearing;
-	    if (cbd->lbd->text->style & ZTC_STYLE_ITALIC)
-		chunk->cwidth += chunk->cheight / ITALIC_RATIO;
-	}
-	else
-	{
-	    chunk->cwidth += width;
-	}
-
-	if (cbd->lbd->text->style & ZTC_STYLE_BOLD)
-	    chunk->cwidth += 1;
-
-	if (cbd->lbd->text->style & ZTC_STYLE_UNDERLINE)
-	{
-	    chunk->deltabearing = width - rbearing;
-	    if (next)
-	    {
-		if (((ZTextChunk *)next->data)->style != ZTC_STYLE_NORMAL
-		    && (((ZTextChunk *)next->data)->style == 0
-			|| ((ZTextChunk *)next->data)->style & ZTC_STYLE_UNDERLINE))
-		    chunk->longer_underline = TRUE;
-	    }
-	}
-
-
-	if (!prev && lbearing > 0) /* get rid extra space on line beginning */
-	{
-	    chunk->cwidth -= lbearing;
-	    chunk->lbearing = lbearing;
-	}
-    }
-#ifndef _AROS
-    else if (chunk->image)
-    {
-    }
-#endif
-
-    cbd->line->lheight = MAX(cbd->line->lheight, chunk->cheight);
-    cbd->line->lwidth += chunk->cwidth;
-}
-
-static void calculate_line_bounds (gpointer l, gpointer udata)
-{
-    struct chunk_bounds_datas data;
-
-    struct line_bounds_datas *lbd = (struct line_bounds_datas *)udata;
-    ZTextLine *line = (ZTextLine *)l;
-
-    line->lwidth = 0;
-    line->lheight = 0;
-    data.line = line;
-    data.lbd = lbd;
-
-    g_list_foreach(line->chunks, calculate_chunk_bounds, &data);
-    lbd->text->height += line->lheight;
-    lbd->text->width = MAX(lbd->text->width, line->lwidth);
-}
-#endif
-
 void zune_text_get_bounds (ZText *text, Object *obj)
 {
     struct RastPort rp;
@@ -750,7 +473,7 @@ void zune_text_get_bounds (ZText *text, Object *obj)
 
     font = _font(obj);
     InitRastPort(&rp);
-    rp.Font = font;
+    SetFont(&rp, font);
 
     for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
     {
@@ -760,7 +483,10 @@ void zune_text_get_bounds (ZText *text, Object *obj)
 	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
 	{
 	    if (chunk_node->str)
+	    {
 	        chunk_node->cwidth = TextLength(&rp,chunk_node->str,strlen(chunk_node->str));
+		D(bug("zune_text_get_bounds(%s,%x) => cwidth=%d\n", chunk_node->str, obj, chunk_node->cwidth));
+	    }
 	    line_node->lwidth += chunk_node->cwidth;
 	}
 
@@ -769,129 +495,9 @@ void zune_text_get_bounds (ZText *text, Object *obj)
     }
 }
 
-#if 0
-static void draw_text_string (struct chunk_draw_datas *cdd, ZTextChunk *chunk)
-{
-    Object *obj = cdd->ldd->obj;
-    struct RastPort *rp = _rp(obj);
-    int xtext = cdd->ldd->left + cdd->xoffset - chunk->lbearing;
-    int ytext = cdd->ldd->top + cdd->ldd->yoffset + _font(obj)->tf_Baseline;
-
-    cdd->ldd->text->style = chunk->style;
-    if (chunk->dripen != -1)
-    {
-	cdd->ldd->text->dripen = chunk->dripen;
-	SetAPen(gc, _dri(obj)->dri_Pens[cdd->ldd->text->dripen]);
-    }
-
-#ifndef _AROS
-    if (cdd->ldd->text->style & ZTC_STYLE_ITALIC)
-    {
-	xback = xtext;
-	xtext = 0;
-	yback = ytext;
-	ytext = _font(obj)->ascent;
-
-	if (chunk->im)
-	{
-	    draw_italic (drawable, gc, cdd, obj, chunk, xback);
-	    return;
-	}
-	prepare_italic_pixmap(&drawable, &gc, obj, chunk);
-    }
-
-    gdk_draw_text(drawable, _font(obj), gc,
-		  xtext,
-		  ytext,
-		  chunk->str->str, chunk->str->len);
-
-    if (cdd->ldd->text->style & ZTC_STYLE_UNDERLINE)
-    {
-	int endu = xtext + chunk->lbear2
-	    + MIN(chunk->cwidth, chunk->cwidth - chunk->deltabearing) - 1;
-
-	if (chunk->longer_underline)
-	    endu = xtext + chunk->lbear2 + chunk->cwidth;
-
-	gdk_draw_line(drawable, gc, xtext + chunk->lbear2,
-		      ytext + MIN(_font(obj)->descent - 1, 1),
-		      endu, ytext + MIN(_font(obj)->descent - 1, 1));
-    }
-    if (cdd->ldd->text->style & ZTC_STYLE_BOLD)
-    {
-	gdk_draw_text(drawable, _font(obj), gc, xtext + 1, ytext,
-		      chunk->str->str, chunk->str->len);
-    }
-
-    if (cdd->ldd->text->style & ZTC_STYLE_ITALIC)
-    {
-	draw_italic (drawable, gc, cdd, obj, chunk, xback);
-    }
-#else
-#warning FIXME: set appropriate style using SetSoftStyle()
-    SetDrMd(_rp(obj), JAM1);
-    Move(_rp(obj), xtext, ytext);
-    Text(_rp(obj), chunk->str->str, chunk->str->len);
-#endif
-}
-
-
-/* 
- * first, you have to hide the real graphic environment, to draw
- * either on the real place, or in a new pixmap if doing italic.
- * Means hiding gc, drawable and origin behind new variables.
- * How is done italic ?
- * the normal text is rendered to a pixmap with
- * a special background color (which will be 'transparent').
- * The pixmap is converted to an imlib image. This image is sheared
- * (lines are scrolled right according to their y-coordinate)
- * Then image is pasted to the window.
- */
-static void draw_text_chunk (gpointer ch, gpointer d)
-{
-    struct chunk_draw_datas *cdd = (struct chunk_draw_datas *)d;
-    ZTextChunk *chunk = (ZTextChunk *)ch;
-
-    if (chunk->str)
-    {
-	draw_text_string(cdd, chunk);
-    }
-#ifndef _AROS
-    else if (chunk->image)
-    {
-    }
-#endif
-
-    cdd->xoffset += chunk->cwidth;
-}
-
-
-static void draw_text_line (gpointer l, gpointer d)
-{
-    struct line_draw_datas *ldd = (struct line_draw_datas *)d;
-    ZTextLine *line = (ZTextLine *)l;
-    struct chunk_draw_datas data;
-
-    data.line = line;
-    data.xoffset = 0;
-    data.ldd = ldd;
-
-    if ((ldd->right - ldd->left + 1) < line->lwidth)
-	g_warning("draw_text_line: allocated space is smaller than needed space");
-
-    if (line->align > 0)
-	ldd->text->align = line->align;
-
-    if (ldd->text->align == ZTL_CENTER)
-        data.xoffset = ((ldd->right - ldd->left + 1) - line->lwidth) / 2;
-    else if (ldd->text->align == ZTL_RIGHT)
-        data.xoffset = (ldd->right - ldd->left + 1) - line->lwidth;
-
-    g_list_foreach(line->chunks, draw_text_chunk, &data);    
-    ldd->yoffset += line->lheight;
-}
-
-#endif
+/************************************************************/
+/* Drawing                                                  */
+/************************************************************/
 
 void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 {
@@ -913,10 +519,10 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
     {
 	LONG x;
 
-	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
-	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	if (line_node->align == ZTL_CENTER) x = (left + right + 1 - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth + 1;
 	else x = left;
-
+	D(bug("zune_text_draw(%x,%d,%d,%d, align=%d) : x = %d\n", obj, left, right, line_node->lwidth, line_node->align, x));
 	x += text->xscroll;
 
 	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
@@ -964,8 +570,8 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
     {
 	LONG x;
 
-	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
-	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	if (line_node->align == ZTL_CENTER) x = (left + right + 1 - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth + 1;
 	else x = left;
 
 	x += text->xscroll;
@@ -1040,8 +646,8 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
     {
 	LONG x;
 
-	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
-	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	if (line_node->align == ZTL_CENTER) x = (left + right + 1 - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth + 1;
 	else x = left;
 
 	x += text->xscroll;
@@ -1115,7 +721,7 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
 
     if (!line->node.mln_Succ) return 0;
     *line_ptr = line;
-    *chunk_ptr = NULL;
+    if (chunk_ptr) *chunk_ptr = NULL;
     *offset_ptr = 0;
     *len_ptr = 0;
 
@@ -1135,7 +741,7 @@ int zune_text_get_char_pos(ZText *text, Object *obj, LONG x, LONG y, struct ZTex
     if (chunk->node.mln_Succ)
     {
 	struct RastPort rp;
-	*chunk_ptr = chunk;
+	if (chunk_ptr) *chunk_ptr = chunk;
 	InitRastPort(&rp);
 	SetFont(&rp,_font(obj));
 	*len_ptr = x;
@@ -1225,8 +831,8 @@ int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursor
     {
 	LONG x;
 
-	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
-	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	if (line_node->align == ZTL_CENTER) x = (left + right + 1 - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth + 1;
 	else x = left;
 
 	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
@@ -1288,6 +894,7 @@ int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge)
     }
     strcpy(chunk_new->str,&chunk->str[len]);
     chunk_new->dripen = chunk->dripen;
+    chunk_new->style = chunk->style;
     chunk->str[len] = 0; /* set new string end */
 
     NewList((struct List*)&store);
