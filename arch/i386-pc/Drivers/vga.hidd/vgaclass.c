@@ -38,13 +38,15 @@ static AttrBase HiddBitMapAttrBase 	= 0;
 static AttrBase HiddPixFmtAttrBase	= 0;
 static AttrBase HiddSyncAttrBase	= 0;
 static AttrBase HiddVGAAB 		= 0;
+static AttrBase HiddVGABitMapAB 	= 0;
 
 static struct ABDescr attrbases[] =
 {
-    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
-    { IID_Hidd_VGAgfx,	&HiddVGAAB		},
-    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
-    { IID_Hidd_Sync,	&HiddSyncAttrBase	},
+    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
+    { IID_Hidd_VGABitMap,	&HiddVGABitMapAB	},
+    { IID_Hidd_VGAgfx,		&HiddVGAAB		},
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
+    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
     { NULL, NULL }
 };
 
@@ -243,7 +245,20 @@ static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
 
 static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 {
-    DoSuperMethod(cl, o, (Msg)msg);
+    ULONG idx;
+    BOOL found = FALSE;
+    if (IS_GFX_ATTR(msg->attrID, idx)) {
+    	switch (idx) {
+	     case aoHidd_Gfx_SupportsHWCursor:
+	     	*msg->storage = (IPTR)TRUE;
+		found = TRUE;
+		break;
+	}
+    }
+    
+    if (!found)
+	DoSuperMethod(cl, o, (Msg)msg);
+	
     return;
 }
 
@@ -405,13 +420,208 @@ static VOID gfxhidd_showhide(Class *cl, Object *o, struct pHidd_Gfx_ShowHide *ms
 }
 
 
+/*********  GfxHidd::CopyBox()  ***************************/
+
+static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
+{
+    ULONG mode;
+    unsigned char *src, *dest;
+    struct Box box = {0, 0, 0, 0};
+
+    mode = GC_DRMD(msg->gc);
+
+    EnterFunc(bug("VGAGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
+    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+	
+    GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
+    GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
+    
+    if (0 == dest || 0 == src)
+    {
+	/* The source and/or destination object is no VGA bitmap, onscreen nor offscreen.
+	   Let the superclass do the copying in a more general way
+	*/
+	DoSuperMethod(cl, o, (Msg)msg);
+	return;
+	
+    }
+	
+
+    {
+    	struct bitmap_data *data = INST_DATA(OCLASS(msg->src), msg->src);
+        struct bitmap_data *ddata = INST_DATA(OCLASS(msg->dest), msg->dest);
+        int i, width, phase, j;
+
+        // start of Source data
+        unsigned char *s_start = data->VideoData +
+                                 msg->srcX + (msg->srcY * data->width);
+        // adder for each line
+        ULONG s_add = data->width - msg->width;
+        ULONG cnt = msg->height;
+
+        unsigned char *d_start = ddata->VideoData +
+                                 msg->destX + (msg->destY * ddata->width);
+        ULONG d_add = ddata->width - msg->width;
+
+	width = msg->width;
+
+	if ((phase = (long)s_start & 3L))
+	{
+	    phase = 4 - phase;
+	    if (phase > width) phase = width;
+	    width -= phase;
+	}
+
+        switch(mode)
+	{
+	    case vHidd_GC_DrawMode_Copy:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = *((unsigned long*)s_start);
+		        d_start += 4;
+		        s_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+                    }
+                    d_start += d_add;
+                    s_start += s_add;
+                }
+		break;
+		
+	    case vHidd_GC_DrawMode_And:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ &= *(unsigned char*)s_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) &= *((unsigned long*)s_start);
+		        d_start += 4;
+		        s_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ &= *(unsigned char*)s_start++;
+                    }
+                    d_start += d_add;
+                    s_start += s_add;
+                }
+		break;
+
+	    case vHidd_GC_DrawMode_Xor:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ ^= *(unsigned char*)s_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
+		        d_start += 4;
+		        s_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ ^= *(unsigned char*)s_start++;
+                    }
+                    d_start += d_add;
+                    s_start += s_add;
+                }
+		break;
+	    	
+	    case vHidd_GC_DrawMode_Clear:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start++ = 0;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = 0;
+		        d_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start++ = 0;
+                    }
+                    d_start += d_add;
+                }
+		break;
+	    	
+	    case vHidd_GC_DrawMode_Invert:
+                while (cnt--)
+    	        {
+	            i = width;
+	            j = phase;
+                    while (j--)
+                    {
+                        *(unsigned char*)d_start = ~*(unsigned char*)d_start;
+			d_start++;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		        d_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *(unsigned char*)d_start = ~*(unsigned char*)d_start;
+                    }
+                    d_start += d_add;
+                }
+		break;
+	}
+	
+	if (ddata->disp)
+	{
+    	    box.x1 = msg->destX;
+    	    box.y1 = msg->destY;
+    	    box.x2 = box.x1 + msg->width;
+    	    box.y2 = box.y1 + msg->height;
+            ObtainSemaphore(&XSD(cl)->HW_acc);
+    	    vgaRefreshArea(ddata, 1, &box);
+            ReleaseSemaphore(&XSD(cl)->HW_acc);
+
+	    if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
+		 ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
+		draw_mouse(XSD(cl));
+	}
+    }
+    ReturnVoid("VGAGfx.BitMap::CopyBox");
+}
+
 #undef XSD
 #define XSD(cl) xsd
 
 /********************  init_vgaclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VGA_METHODS 4
+#define NUM_VGA_METHODS 5
 
 Class *init_vgaclass (struct vga_staticdata *xsd)
 {
@@ -431,6 +641,7 @@ Class *init_vgaclass (struct vga_staticdata *xsd)
 	{(IPTR (*)())gfxhidd_setmouseshape,	moHidd_Gfx_SetMouseShape},
 	{(IPTR (*)())gfxhidd_setmousexy,	moHidd_Gfx_SetMouseXY},
 	{(IPTR (*)())gfxhidd_showhide,		moHidd_Gfx_ShowHide},
+	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
 	{NULL, 0UL}
     };
     
@@ -497,41 +708,6 @@ VOID free_vgaclass(struct vga_staticdata *xsd)
     ReturnVoid("free_vgaclass");
 }
 
-#if 0
-    /* nlorentz: This function is no longer necessary */
-BOOL set_pixelformat(Object *bm)
-{
-    
-    struct TagItem pf_tags[] = {
-    	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
-	{ aHidd_PixFmt_GreenShift,	0	}, /* 1 */
-	{ aHidd_PixFmt_BlueShift,  	0	}, /* 2 */
-	{ aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
-	{ aHidd_PixFmt_RedMask,		0x00003f}, /* 4 */
-	{ aHidd_PixFmt_GreenMask,	0x003f00}, /* 5 */
-	{ aHidd_PixFmt_BlueMask,	0x3f0000}, /* 6 */
-	{ aHidd_PixFmt_AlphaMask,	0	}, /* 7 */
-	{ aHidd_PixFmt_GraphType,	vHidd_GT_Palette	}, /* 8 */
-	{ aHidd_PixFmt_Depth,		4			}, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel,	1			}, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel,	4			}, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt,	vHidd_PixFmt_Native	}, /* 12 */
-	{ aHidd_PixFmt_CLUTShift,	0x00	}, /* 13 */
-	{ aHidd_PixFmt_CLUTMask,	0x0f	}, /* 13 */
-	{ TAG_DONE, 0UL }
-    };
-    
-    Object *pf;
-    
-    pf = HIDD_BM_SetPixelFormat(bm, pf_tags);
-    if (NULL == pf) {
-	return FALSE;
-    }
-    
-    return TRUE;
-}
-
-#endif
 
 void draw_mouse(struct vga_staticdata *xsd)
 {

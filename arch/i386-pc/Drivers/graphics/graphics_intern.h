@@ -17,116 +17,6 @@
 #endif
 #include <dos/dos.h>
 
-#if 0
-
-/* Instance data of GfxMode objects. We have it defined here so we can
-   access GfxMode objects' instance data directly (like BOOPSI gadgets)
-   in GraphicsClass
-*/
-struct gfxmode_data {
-    ULONG width;
-    ULONG height;
-    
-    Object **pfarray;
-    ULONG numpfs;
-    
-    Object *gfxhidd;
-    
-    
-};
-
-
-/* This is the pixfmts DB. */
-#warning Find a way to optimize searching in the pixfmt database
-
-/* Organize the pf db in some other way that makes it quixker to find a certain PF */
-
-struct pfnode {
-    struct MinNode node;
-    Object *pixfmt;
-    ULONG   refcount;
-};
-
-/* This is used as an alias for both pfnode and ModeNode */
-struct objectnode {
-   struct MinNode node;
-   Object *object;
-   ULONG refcount;
-};
-
-/* Private GfxMode attrs */
-enum {
-	aoHidd_GfxMode_GfxHidd = num_Hidd_GfxMode_Attrs,
-	
-	num_Total_GfxMode_Attrs
-};
-
-#define aHidd_GfxMode_GfxHidd	(HiddGfxModeAttrBase + aoHidd_GfxMode_GfxHidd)
-
-struct HIDDGraphicsData
-{
-	struct SignalSemaphore modesema;
-	struct MinList modelist;
-
-	
-	/* Pixel format "database" */
-	struct SignalSemaphore pfsema;
-	struct MinList pflist;
-};
-
-/* Private gfxhidd methods */
-enum {
-    moHidd_Gfx_RegisterPixFmt = num_Hidd_Gfx_Methods,
-    moHidd_Gfx_ReleasePixFmt
-};
-
-struct pHidd_Gfx_RegisterPixFmt {
-    MethodID mID;
-    struct TagItem *pixFmtTags;
-    
-};
-
-struct pHidd_Gfx_ReleasePixFmt {
-    MethodID mID;
-    Object *pixFmt;
-};
-
-
-Object *HIDD_Gfx_RegisterPixFmt(Object *o, struct TagItem *pixFmtTags);
-VOID HIDD_Gfx_ReleasePixFmt(Object *o, Object *pixFmt);
-
-struct HIDDBitMapData
-{
-    struct _hidd_bitmap_protected prot;
-    
-    ULONG width;         /* width of the bitmap in pixel  */
-    ULONG height;        /* height of the bitmap in pixel */
-    ULONG reqdepth;	 /* Depth as requested by user */
-    BOOL  displayable;   /* bitmap displayable?           */
-    ULONG flags;         /* see hidd/graphic.h 'flags for */
-                         /* HIDD_Graphics_CreateBitMap'   */
-    Object *bitMap;
-    /* WARNING: structure could be extented in the future                */
-    
-    Object *friend;	/* Friend bitmap */
-    
-    Object *gfxhidd;
-    
-    Object *colmap;
-
-
-};
-
-/* Private bitmap attrs */
-
-enum {
-    aoHidd_BitMap_Dummy = num_Hidd_BitMap_Attrs,
-    
-    num_Total_BitMap_Attrs
-    
-};
-
-#endif
 
 
 
@@ -139,19 +29,6 @@ struct class_static_data
     Class                *gfxhiddclass; /* graphics hidd class    */
     Class                *bitmapclass;  /* bitmap class           */
 
-#if 0
-    Class                *gcclass;      /* graphics context class */
-    Class		 *colormapclass; /* colormap class	  */
-    
-    Class		 *gfxmodeclass;
-    Class		 *pixfmtclass;
-    
-    
-    Class		 *planarbmclass;
-    Class		 *chunkybmclass;
-    
-    Object		*std_pixfmts[num_Hidd_StdPixFmt];
-#endif
 
 };
 
@@ -179,43 +56,5 @@ struct IntHIDDGraphicsBase
 #undef OOPBase
 #define OOPBase (CSD(cl)->oopbase)
 
-#if 0
 
-
-/* pre declarations */
-
-Class *init_gfxhiddclass(struct class_static_data *csd);
-void   free_gfxhiddclass(struct class_static_data *csd);
-
-Class *init_bitmapclass(struct class_static_data *csd);
-void   free_bitmapclass(struct class_static_data *csd);
-
-Class *init_gcclass(struct class_static_data *csd);
-void   free_gcclass(struct class_static_data *csd);
-
-Class *init_gfxmodeclass(struct class_static_data *csd);
-void   free_gfxmodeclass(struct class_static_data *csd);
-
-Class *init_pixfmtclass(struct class_static_data *csd);
-void   free_pixfmtclass(struct class_static_data *csd);
-
-Class *init_colormapclass(struct class_static_data *csd);
-void free_colormapclass(struct class_static_data *csd);
-
-
-VOID  bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg);
-ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg);
-VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixels *msg);
-
-
-Class *init_planarbmclass(struct class_static_data *csd);
-void   free_planarbmclass(struct class_static_data *csd);
-
-Class *init_chunkybmclass(struct class_static_data *csd);
-void   free_chunkybmclass(struct class_static_data *csd);
-
-inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf);
-
-
-#endif
 #endif /* GRAPHICS_HIDD_INTERN_H */

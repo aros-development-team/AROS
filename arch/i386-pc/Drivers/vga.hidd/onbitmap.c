@@ -163,18 +163,6 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 		    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-#if 0
-    /* nlorentz: No longer necessary nor possible */
-		    set_pixelformat(o);
-#endif
-
-#if 0
-    /* nlorentz: Should only be needed for HIDDs built on top of
-       window environments
-    */
-		    if (XSD(cl)->activecallback)
-			XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
-#endif
 
 		    XSD(cl)->visible = data;	/* Set created object as visible */
 
@@ -220,7 +208,7 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 12
+#define NUM_BITMAP_METHODS 11
 
 Class *init_onbmclass(struct vga_staticdata *xsd)
 {
@@ -243,7 +231,6 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
     	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
     	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
     	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
