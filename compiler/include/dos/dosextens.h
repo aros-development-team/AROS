@@ -283,9 +283,13 @@ struct CommandLineInterface
       /* Default stack size as set by the command "Stack". */
     LONG cli_DefaultStack;
       /* Standard/Default output file. (struct FileLock *) */
-    BPTR cli_StandardOutput;   
+    BPTR cli_StandardOutput;
       /* SegList of currently loaded command. */
     BPTR cli_Module;
+
+       /* Here begins the aros specific part */
+      /* Standard/Default Error file. (struct FileLock *) */
+    BPTR cli_StandardError;
 };
 
 /* CLI_DEFAULTSTACK_UNIT * cli_DefaultStack = stack in bytes */
