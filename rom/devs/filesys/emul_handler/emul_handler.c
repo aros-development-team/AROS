@@ -13,7 +13,10 @@
    Please always update the version-string below, if you modify the code!
 */
 
+/*********************************************************************************************/
+
 /* AROS includes */
+
 #include <aros/system.h>
 #include <aros/options.h>
 #include <aros/libcall.h>
@@ -59,12 +62,18 @@
 
 #undef DOSBase
 
+#define malloc you_must_change_malloc_to__emul_malloc
+#define free you_must_change_free_to__emul_free
+
+/*********************************************************************************************/
 
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const functable[];
 static const UBYTE datatable;
+
+/*********************************************************************************************/
 
 struct emulbase * AROS_SLIB_ENTRY(init,emul_handler) ();
 void AROS_SLIB_ENTRY(open,emul_handler) ();
@@ -74,14 +83,19 @@ int AROS_SLIB_ENTRY(null,emul_handler) ();
 void AROS_SLIB_ENTRY(beginio,emul_handler) ();
 LONG AROS_SLIB_ENTRY(abortio,emul_handler) ();
 
+/*********************************************************************************************/
+
 static const char end;
 
+/*********************************************************************************************/
 
 int emul_handler_entry(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
 }
+
+/*********************************************************************************************/
 
 const struct Resident emul_handler_resident=
 {
@@ -120,6 +134,8 @@ static void *const functable[]=
     (void *)-1
 };
 
+/*********************************************************************************************/
+
 static const UBYTE datatable=0;
 
 /*********************************** Support *******************************/
@@ -146,6 +162,47 @@ static LONG u2a[][2]=
   { 0, ERROR_UNKNOWN }
 };
 
+/*********************************************************************************************/
+
+static APTR emul_malloc(struct emulbase *emulbase, ULONG size)
+{
+    ULONG *res;
+    
+    // kprintf("** emul_malloc: size = %d **\n",size);
+    ObtainSemaphore(&emulbase->memsem);
+    
+    size += sizeof(ULONG);
+    res = AllocPooled(emulbase->mempool, size);
+    if (res) *res++ = size;
+    
+    ReleaseSemaphore(&emulbase->memsem);
+
+    // kprintf("** emul_malloc: size = %d  result = %x **\n",size-sizeof(ULONG),res);
+    
+    return res;
+}
+
+/*********************************************************************************************/
+
+static void emul_free(struct emulbase *emulbase, APTR mem)
+{    
+    if (!mem)
+    {
+        kprintf("*** emul_handler: tried to free NULL mem ***\n");
+    } else {
+        ULONG *m = (ULONG *)mem;
+        ULONG size = *--m;
+
+        // kprintf("** emul_free: size = %d  memory = %x **\n",size-sizeof(ULONG),mem);
+	
+	ObtainSemaphore(&emulbase->memsem);
+	FreePooled(emulbase->mempool, m, size);
+	ReleaseSemaphore(&emulbase->memsem);
+    }
+}
+
+/*********************************************************************************************/
+
 static LONG err_u2a(void)
 {
     ULONG i;
@@ -159,6 +216,7 @@ static LONG err_u2a(void)
 #endif
 }
 
+/*********************************************************************************************/
 
 /* Create a plain path out of the supplied filename.
    Eg 'path1/path2//path3/' becomes 'path1/path3'.
@@ -195,6 +253,8 @@ void shrink(struct emulbase *emulbase, char *filename)
 	
 }
 
+/*********************************************************************************************/
+
 /* Allocate a buffer, in which the filename is appended to the pathname. */
 static LONG makefilename(struct emulbase *emulbase,
 			 char **dest, STRPTR dirname, STRPTR filename)
@@ -203,7 +263,7 @@ static LONG makefilename(struct emulbase *emulbase,
     int len, dirlen;
     dirlen = strlen(dirname) + 1;
     len = strlen(filename) + dirlen + 1;
-    *dest=(char *)malloc(len);
+    *dest=(char *)emul_malloc(emulbase, len);
     if ((*dest))
     {
 	CopyMem(dirname, *dest, dirlen);
@@ -211,7 +271,7 @@ static LONG makefilename(struct emulbase *emulbase,
 	{
 	  shrink(emulbase, *dest);
 	} else {
-	    free(*dest);
+	    emul_free(emulbase, *dest);
 	    *dest = NULL;
 	    ret = ERROR_OBJECT_TOO_LARGE;
 	}
@@ -221,6 +281,7 @@ static LONG makefilename(struct emulbase *emulbase,
     return ret;
 }
 
+/*********************************************************************************************/
 
 /* Make unix protection bits out of AROS protection bits. */
 mode_t prot_a2u(ULONG protect)
@@ -252,6 +313,8 @@ mode_t prot_a2u(ULONG protect)
     return uprot;
 }
 
+/*********************************************************************************************/
+
 /* Make AROS protection bits out of unix protection bits. */
 ULONG prot_u2a(mode_t protect)
 {
@@ -282,6 +345,7 @@ ULONG prot_u2a(mode_t protect)
     return aprot;
 }
 
+/*********************************************************************************************/
 
 /* Free a filehandle */
 static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
@@ -293,11 +357,11 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 	       current->fd!=STDERR_FILENO)
 	    {
 		close(current->fd);
-		free(current->name);
+		emul_free(emulbase, current->name);
 
 		if (current->pathname)
 		{
-		  free(current->pathname);
+		  emul_free(emulbase, current->pathname);
 		}
 
 		if (current->DIR)
@@ -313,13 +377,14 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 	    }
 	    
 	    if (current->name)
-	        free(current->name);
+	        emul_free(emulbase, current->name);
 	    break;
     }
     FreeMem(current, sizeof(struct filehandle));
     return 0;
 }
 
+/*********************************************************************************************/
 
 static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode)
 {
@@ -389,6 +454,8 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     return ret;
 }
 
+/*********************************************************************************************/
+
 static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode,LONG protect)
 {
     LONG ret=ERROR_NO_FREE_STORE;
@@ -431,12 +498,14 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
 		return 0;
 	    }
 	    ret=err_u2a();
-	    free(fh->name);
+	    emul_free(emulbase, fh->name);
 	}
 	FreeMem(fh, sizeof(struct filehandle));
     }
     return ret;
 }
+
+/*********************************************************************************************/
 
 static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 		       STRPTR filename, IPTR protect)
@@ -474,6 +543,8 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
     return ret;
 }
 
+/*********************************************************************************************/
+
 static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 			  STRPTR file)
 {
@@ -498,12 +569,13 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 	    }
 	} else
 	    ret = err_u2a();
-	free(filename);
+	emul_free(emulbase, filename);
     }
 
     return ret;
 }
 
+/*********************************************************************************************/
 
 static LONG startup(struct emulbase *emulbase)
 {
@@ -616,16 +688,20 @@ static LONG startup(struct emulbase *emulbase)
     return ret;
 }
 
+/*********************************************************************************************/
+
 static const ULONG sizes[]=
 { 0, offsetof(struct ExAllData,ed_Type), offsetof(struct ExAllData,ed_Size),
   offsetof(struct ExAllData,ed_Prot), offsetof(struct ExAllData,ed_Days),
   offsetof(struct ExAllData,ed_Comment), offsetof(struct ExAllData,ed_OwnerUID),
   sizeof(struct ExAllData) };
 
-/* Returns a malloc()'ed buffer, containing a pathname, stripped by the
+/*********************************************************************************************/
+
+/* Returns a emul_malloc()'ed buffer, containing a pathname, stripped by the
    filename.
 */
-char * pathname_from_name (char * name)
+char * pathname_from_name (struct emulbase *emulbase, char * name)
 {
   long len = strlen(name);
   long i = len;
@@ -636,7 +712,7 @@ char * pathname_from_name (char * name)
     
   if (0 != i)
   {
-    result = (char *)malloc(i+1);
+    result = (char *)emul_malloc(emulbase, i+1);
     if(!result)
       return NULL;
     strncpy(result, name, i);
@@ -645,8 +721,10 @@ char * pathname_from_name (char * name)
   return result;
 }
 
-/* Returns a malloc()'ed buffer, containing the filename without its path. */
-char * filename_from_name(char * name)
+/*********************************************************************************************/
+
+/* Returns a emul_malloc()'ed buffer, containing the filename without its path. */
+char * filename_from_name(struct emulbase *emulbase, char * name)
 {
   long len = strlen(name);
   long i = len;
@@ -657,7 +735,7 @@ char * filename_from_name(char * name)
  
   if (0 != i)
   {
-    result = (char *)malloc(len-i);
+    result = (char *)emul_malloc(emulbase, len-i);
     if(!result)
       return NULL;
     strncpy(result, &name[i+1], len-i);
@@ -666,8 +744,10 @@ char * filename_from_name(char * name)
   return result;  
 } 
 
+/*********************************************************************************************/
 
-static LONG examine(struct filehandle *fh,
+static LONG examine(struct emulbase *emulbase,
+		    struct filehandle *fh,
                     struct ExAllData *ead,
                     ULONG  size,
                     ULONG  type,
@@ -700,17 +780,17 @@ static LONG examine(struct filehandle *fh,
       {
         struct dirent * dirEnt;
         char * filename;
-        fh->pathname = pathname_from_name(fh->name);
-        filename     = filename_from_name(fh->name);
+        fh->pathname = pathname_from_name(emulbase, fh->name);
+        filename     = filename_from_name(emulbase, fh->name);
         if(!fh->pathname || !filename)
         {
-          free(filename);
+          emul_free(emulbase, filename);
           return ERROR_NO_FREE_STORE;
         }
         fh->DIR      = opendir(fh->pathname);
         if(!fh->DIR)
         {
-          free(filename);
+          emul_free(emulbase, filename);
           return err_u2a();
         }
         do 
@@ -720,7 +800,7 @@ static LONG examine(struct filehandle *fh,
         }
         while (NULL != dirEnt &&
                0    != strcmp(dirEnt->d_name, filename));
-        free(filename);
+        emul_free(emulbase, filename);
         if(!dirEnt)
         {
           if(!errno)
@@ -782,7 +862,10 @@ static LONG examine(struct filehandle *fh,
     }
 }
 
-static LONG examine_next(struct filehandle *fh,
+/*********************************************************************************************/
+
+static LONG examine_next(struct emulbase *emulbase, 
+			 struct filehandle *fh,
                          struct FileInfoBlock *FIB)
 {
   int		i;
@@ -823,7 +906,7 @@ static LONG examine_next(struct filehandle *fh,
           0 == strcmp(dir->d_name,"..")     ); 
 
   
-  name = (STRPTR)malloc(strlen(pathname)+strlen(dir->d_name)+2);
+  name = (STRPTR)emul_malloc(emulbase, strlen(pathname)+strlen(dir->d_name)+2);
   
   if (NULL == name)
     return ERROR_NO_FREE_STORE;
@@ -835,10 +918,10 @@ static LONG examine_next(struct filehandle *fh,
 
   if (stat(name,&st))
   {
-    free(name);
+    emul_free(emulbase, name);
     return err_u2a();
   }
-    free(name);
+    emul_free(emulbase, name);
 
   
   FIB->fib_OwnerUID		= st.st_uid;
@@ -866,7 +949,10 @@ static LONG examine_next(struct filehandle *fh,
   return 0;				    
 }
 
-static LONG examine_all(struct filehandle *fh,
+/*********************************************************************************************/
+
+static LONG examine_all(struct emulbase *emulbase,
+			struct filehandle *fh,
                         struct ExAllData *ead,
                         ULONG  size,
                         ULONG  type)
@@ -895,7 +981,7 @@ static LONG examine_all(struct filehandle *fh,
 	}
 	if(dir->d_name[0]=='.'&&(!dir->d_name[1]||(dir->d_name[1]=='.'&&!dir->d_name[2])))
 	    continue;
-	name=(STRPTR)malloc(strlen(fh->name)+strlen(dir->d_name)+2);
+	name=(STRPTR)emul_malloc(emulbase, strlen(fh->name)+strlen(dir->d_name)+2);
 	if(name==NULL)
 	{
 	    error=ERROR_NO_FREE_STORE;
@@ -907,9 +993,9 @@ static LONG examine_all(struct filehandle *fh,
 	strcat(name,dir->d_name);
 	old=fh->name;
 	fh->name=name;
-	error=examine(fh,ead,end-(STRPTR)ead,type,&dummy);
+	error=examine(emulbase,fh,ead,end-(STRPTR)ead,type,&dummy);
 	fh->name=old;
-	free(name);
+	emul_free(emulbase, name);
 	if(error)
 	    break;
 	last=ead;
@@ -927,6 +1013,7 @@ static LONG examine_all(struct filehandle *fh,
     return error;
 }
 
+/*********************************************************************************************/
 
 static LONG create_hardlink(struct emulbase *emulbase,
 			    struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
@@ -957,6 +1044,7 @@ static LONG create_hardlink(struct emulbase *emulbase,
     return error;
 }
 
+/*********************************************************************************************/
 
 static LONG create_softlink(struct emulbase * emulbase,
                             struct filehandle **handle, STRPTR name, STRPTR ref)
@@ -987,6 +1075,7 @@ static LONG create_softlink(struct emulbase * emulbase,
     return error;
 }
 
+/*********************************************************************************************/
 
 static LONG read_softlink(struct emulbase *emulbase,
                           struct filehandle *fh,
@@ -999,21 +1088,26 @@ static LONG read_softlink(struct emulbase *emulbase,
     return 0L;
 }
 
+/*********************************************************************************************/
 
-ULONG parent_dir(struct filehandle *fh,
+ULONG parent_dir(struct emulbase *emulbase,
+		 struct filehandle *fh,
 	         char ** DirName)
 {
-  *DirName = pathname_from_name(fh->name);
+  *DirName = pathname_from_name(emulbase, fh->name);
   return 0;
 }
 
-void parent_dir_post(char ** DirName)
+/*********************************************************************************************/
+
+void parent_dir_post(struct emulbase *emulbase, char ** DirName)
 {
   /* free the previously allocated memory */
-  free(*DirName);
+  emul_free(emulbase, *DirName);
   **DirName = 0;
 }
 
+/*********************************************************************************************/
 
 /************************ Library entry points ************************/
 
@@ -1031,17 +1125,24 @@ AROS_LH2(struct emulbase *, init,
     emulbase->device.dd_Library.lib_OpenCnt=1;
     
     InitSemaphore(&emulbase->sem);
+    InitSemaphore(&emulbase->memsem);
+    
+    emulbase->mempool = CreatePool(MEMF_ANY, 4096, 2000);
+    if (!emulbase->mempool) return NULL;
     
     OOPBase = OpenLibrary ("oop.library",0);
 
     if (!OOPBase)
+    {
+        DeletePool(emulbase->mempool);
 	return NULL;
-
+    }
     emulbase->unixio = NewObject (NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
 
     if (!emulbase->unixio)
     {
 	CloseLibrary (OOPBase);
+        DeletePool(emulbase->mempool);
 	return NULL;
     }
 
@@ -1050,10 +1151,14 @@ AROS_LH2(struct emulbase *, init,
 
     DisposeObject (emulbase->unixio);
     CloseLibrary (OOPBase);
+    DeletePool(emulbase->mempool);
 
     return NULL;
+    
     AROS_LIBFUNC_EXIT
 }
+
+/*********************************************************************************************/
 
 AROS_LH3(void, open,
  AROS_LHA(struct IOFileSys *, iofs, A1),
@@ -1088,6 +1193,8 @@ AROS_LH3(void, open,
     AROS_LIBFUNC_EXIT
 }
 
+/*********************************************************************************************/
+
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 2, emul_handler)
@@ -1100,6 +1207,8 @@ AROS_LH1(BPTR, close,
     AROS_LIBFUNC_EXIT
 }
 
+/*********************************************************************************************/
+
 AROS_LH0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
 {
     AROS_LIBFUNC_INIT
@@ -1110,12 +1219,16 @@ AROS_LH0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
     AROS_LIBFUNC_EXIT
 }
 
+/*********************************************************************************************/
+
 AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
 {
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/*********************************************************************************************/
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
@@ -1253,7 +1366,8 @@ AROS_LH1(void, beginio,
 	}
 
 	case FSA_EXAMINE:
-	    error=examine((struct filehandle *)iofs->IOFS.io_Unit,
+	    error=examine(emulbase,
+	    		  (struct filehandle *)iofs->IOFS.io_Unit,
 			  iofs->io_Union.io_EXAMINE.io_ead,
 			  iofs->io_Union.io_EXAMINE.io_Size,
 			  iofs->io_Union.io_EXAMINE.io_Mode,
@@ -1261,12 +1375,14 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_EXAMINE_NEXT:
-	    error=examine_next((struct filehandle *)iofs->IOFS.io_Unit,
+	    error=examine_next(emulbase,
+	    		       (struct filehandle *)iofs->IOFS.io_Unit,
 	    		       iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	    break;
 
 	case FSA_EXAMINE_ALL:
-	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
+	    error=examine_all(emulbase,
+	    		      (struct filehandle *)iofs->IOFS.io_Unit,
 			      iofs->io_Union.io_EXAMINE_ALL.io_ead,
 			      iofs->io_Union.io_EXAMINE_ALL.io_Size,
 			      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
@@ -1325,7 +1441,8 @@ AROS_LH1(void, beginio,
 
 	case FSA_PARENT_DIR:
 	    /* error will always be 0 */
-	    error = parent_dir((struct filehandle *)iofs->IOFS.io_Unit,
+	    error = parent_dir(emulbase,
+	    		       (struct filehandle *)iofs->IOFS.io_Unit,
 	                       &(iofs->io_Union.io_PARENT_DIR.io_DirName)
 	                       );
             break;
@@ -1333,7 +1450,7 @@ AROS_LH1(void, beginio,
         case FSA_PARENT_DIR_POST:
             /* error will always be 0 */
             error = 0;
-            parent_dir_post(&(iofs->io_Union.io_PARENT_DIR.io_DirName));
+            parent_dir_post(emulbase, &(iofs->io_Union.io_PARENT_DIR.io_DirName));
             break;    
             
 	case FSA_IS_FILESYSTEM:
@@ -1369,6 +1486,8 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_EXIT
 }
 
+/*********************************************************************************************/
+
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 6, emul_handler)
@@ -1379,4 +1498,8 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
+/*********************************************************************************************/
+
 static const char end=0;
+
+/*********************************************************************************************/
