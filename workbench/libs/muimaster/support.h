@@ -63,5 +63,7 @@ struct MUI_RenderInfo;
 #endif
 
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
+APTR AllocVecPooled (APTR pool, ULONG memsize);
+void FreeVecPooled (APTR pool, APTR mem);
 
 #endif
