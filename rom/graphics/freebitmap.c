@@ -85,7 +85,8 @@
 	    }
 	}
 
-	FreeMem (bm, sizeof (struct BitMap));
+	FreeMem (bm, sizeof(struct BitMap) +
+	    	     ((bm->Depth > 8) ? (bm->Depth - 8) * sizeof(PLANEPTR) : 0));
     }
 
     AROS_LIBFUNC_EXIT
