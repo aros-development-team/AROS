@@ -15,7 +15,7 @@ typedef	struct _Line
 {
 	struct _Line *next,*prev;	/* linked list */
 	ULONG size, max;				/* actual size and max before overflow */
-	UBYTE *stream;					/* Start of buffer */
+	STRPTR stream;					/* Start of buffer */
 	UBYTE flags;					/* See below */
 }	LINE;
 
