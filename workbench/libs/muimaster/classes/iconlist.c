@@ -123,7 +123,7 @@ struct MUI_IconData
 
  TODO: Should also take the label dimensions into account
 **************************************************************************/
-static int IconList_CouldPlaceIcon(struct MUI_IconData *data, int atx, int aty, int width, int height)
+static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, int atx, int aty, int width, int height)
 {
     struct IconEntry *icon;
 
@@ -136,6 +136,9 @@ static int IconList_CouldPlaceIcon(struct MUI_IconData *data, int atx, int aty, 
 	    int icon_bottom = icon->y + icon->height - 1;
 	    int at_right = atx + width - 1;
 	    int at_bottom = aty + height - 1;
+
+	    /* also add the height of the icon's label */
+	    icon_bottom += _font(obj)->tf_YSize + 2;
 
 	    if (!(atx >= icon_right || at_right <= icon->x || aty >= icon_bottom || at_bottom <= icon->y))
 		return 0;
@@ -340,7 +343,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    int cur_y = data->view_y;
 	    int loops = 0;
 
-	    while (!IconList_CouldPlaceIcon(data, cur_x, cur_y, icon->width, icon->height) && loops < 5000)
+	    while (!IconList_CouldPlaceIcon(obj, data, cur_x, cur_y, icon->width, icon->height) && loops < 5000)
 	    {
 		cur_y += 10;
 		if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
@@ -363,14 +366,24 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     {
 	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
 	{
+	    LONG tx,ty;
+	    LONG txwidth,txheight;
 	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 
 #ifndef _AROS
-	    DrawIconState(_rp(obj),icon->dob,icon->label,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+	    DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
 #else
-	    DrawIconStateA(_rp(obj),icon->dob,icon->label,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+	    DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
 #endif
 
+	    if (icon->label)
+	    {
+		txwidth = TextLength(_rp(obj),icon->label,strlen(icon->label));
+		tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
+		ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
+		Move(_rp(obj),tx,ty);
+		Text(_rp(obj),icon->label,strlen(icon->label));
+	    }
 	}
 	icon = Node_Next(icon);
     }
@@ -425,7 +438,13 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     
 #ifndef _AROS
     if (!(dob = GetIconTagList(msg->filename,TAG_DONE)))
-	return 0;
+    {
+	if (!Stricmp(FilePart(msg->filename),"Disk"))
+	    dob = GetDefDiskObject(WBDISK);
+
+	if (!dob)
+	    return 0;
+    }
 #else
     if (!(dob = GetDiskObjectNew(msg->filename)))
     {

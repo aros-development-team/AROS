@@ -316,6 +316,7 @@ void main(void)
     MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
     MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
     MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
+    MUIMasterBase_instance.iconbase = OpenLibrary("icon.library",44);
     InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
 
 #ifdef __MAXON__
