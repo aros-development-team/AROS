@@ -9,12 +9,13 @@ include $(TOP)/config/make.cfg
 FILES = graphics_driver intuition_driver
 
 DEPS = $(OSGENDIR)/graphics/graphics_driver.d \
-       $(OSGENDIR)/intuition/intuition_driver.d 
+       $(OSGENDIR)/intuition/intuition_driver.d
 
 all: setup $(OSGENDIR)/graphics/graphics_driver.o \
 	   $(OSGENDIR)/intuition/intuition_driver.o
 
 setup:
+	@echo "CFLAGS=$(CFLAGS)"
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/graphics $(OSGENDIR)/intuition
 	%add_objects rom/graphics/graphics_driver rom/intuition/intuition_driver
 
@@ -30,10 +31,10 @@ $(OSGENDIR)/intuition/%.o: %.c
 	%compile_q opt=$(CFLAGS2)
 
 $(OSGENDIR)/graphics/%.d: %.c
-	%mkdepend_q opt=$(CFLAGS2)
+	%mkdepend_q $(CFLAGS2)
 
 $(OSGENDIR)/intuition/%.d: %.c
-	%mkdepend_q opt=$(CFLAGS2)
+	%mkdepend_q $(CFLAGS2)
 
 %include_deps
 %common
