@@ -190,7 +190,7 @@ AROS_LH3(void, open,
         PU->pu_Unit  = HIDD_Parallel_NewUnit(ParallelDevice->ParallelObject, unitnum);
         if (NULL != PU->pu_Unit)
         {
-          HIDD_ParallelUnit_Init(PU->pu_Unit, RBF_InterruptHandler, NULL);
+          HIDD_ParallelUnit_Init(PU->pu_Unit, RBF_InterruptHandler, NULL, NULL, NULL);
           ioreq->io_Device = (struct Device *)ParallelDevice;
           ioreq->io_Unit   = (struct Unit *)PU;  
           ParallelDevice->device.dd_Library.lib_OpenCnt ++;

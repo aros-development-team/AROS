@@ -31,6 +31,19 @@
 
 /**** Graphics definitions ****************************************************/
 
+extern AttrBase HiddParallelUnitAB;
+
+enum {
+    aoHidd_ParallelUnit_Unit,
+    
+    num_Hidd_ParallelUnit_Attrs
+    
+};
+
+#define aHidd_ParallelUnit_Unit		(HiddParallelUnitAB + aoHidd_ParallelUnit_Unit)
+
+#define IS_HIDDPARALLELUNIT_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddParallelUnitAB, num_Hidd_ParallelUnit_Attrs)
+
 enum
 {
     moHidd_Parallel_NewUnit = 0,       
@@ -73,7 +86,9 @@ struct pHidd_ParallelUnit_Init
 {
     MethodID	mID;
     VOID	*DataReceived;
+    VOID	*DataReceivedUserData;
     VOID	*WriteData;
+    VOID	*WriteDataUserData;
 };
 
 struct pHidd_ParallelUnit_Write
@@ -88,7 +103,7 @@ struct pHidd_ParallelUnit_Write
 Object * HIDD_Parallel_NewUnit		(Object *obj, ULONG unitnum);
 VOID     HIDD_Parallel_DisposeUnit	(Object *obj, Object *unit);
 
-BOOL     HIDD_ParallelUnit_Init		(Object *obj, VOID * DataReceived, VOID * WriteData);
+BOOL     HIDD_ParallelUnit_Init		(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData);
 ULONG    HIDD_ParallelUnit_Write	(Object *obj, UBYTE * data, ULONG length);
 
 

@@ -44,8 +44,10 @@ struct class_static_data
 
 struct HIDDParallelUnitData
 {
-    VOID (*DataWriteCallBack)	(ULONG unitnum);
-    VOID (*DataReceivedCallBack)(UBYTE *buffer, ULONG len, ULONG unitnum);
+    VOID (*DataWriteCallBack)	(ULONG unitnum, APTR userdata);
+    VOID (*DataReceivedCallBack)(UBYTE *buffer, ULONG len, ULONG unitnum, APTR userdata);
+    VOID		*DataWriteUserData;
+    VOID		*DataReceivedUserData;
     
     ULONG 		unitnum;
     int			filedescriptor;

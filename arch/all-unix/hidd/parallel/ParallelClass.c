@@ -26,7 +26,16 @@
 
 /*static AttrBase HiddGCAttrBase;*/
 
+static AttrBase HiddParallelUnitAB;
+
+static struct ABDescr attrbases[] =
+{
+    { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
+    { NULL,	NULL }
+};
+
 /*** HIDDParallel::NewUnit() *********************************************************/
+
 
 static Object *hiddparallel_newunit(Class *cl, Object *obj, struct pHidd_Parallel_NewUnit *msg)
 {
@@ -65,7 +74,12 @@ static Object *hiddparallel_newunit(Class *cl, Object *obj, struct pHidd_Paralle
 
   if (unitnum >= 0 && unitnum < PAR_MAX_UNITS)
   {
-    su = NewObject(NULL, CLID_Hidd_ParallelUnit, (APTR)&msg->unitnum);
+    struct TagItem tags[] =
+    {
+        {aHidd_ParallelUnit_Unit, unitnum},
+	{TAG_DONE		       }
+    };
+    su = NewObject(NULL, CLID_Hidd_ParallelUnit, tags);
     data->ParallelUnits[unitnum] = su;
     /*
     ** Mark it as used
@@ -165,9 +179,12 @@ Class *init_parallelhiddclass (struct class_static_data *csd)
 
         if(csd->parallelunitclass)
         {
-            D(bug("ParallelUnitClass ok\n"));
+ 	    if (ObtainAttrBases(attrbases))
+	    {
+        	D(bug("ParallelUnitClass ok\n"));
 
-            ok = TRUE;
+        	ok = TRUE;
+	    }
         }
     }
 

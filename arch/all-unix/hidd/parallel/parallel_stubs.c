@@ -80,16 +80,18 @@ VOID HIDD_Parallel_DisposeUnit(Object *obj, Object *unit)
 
 /********************** Stubs for parallel unit **********************/
 
-BOOL HIDD_ParallelUnit_Init(Object *obj, VOID * DataReceived, VOID * WriteData)
+BOOL HIDD_ParallelUnit_Init(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
     static MethodID mid = 0;
     struct pHidd_ParallelUnit_Init p;
     
     if(!mid) mid = GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Init);
         
-    p.mID      = mid;
-    p.DataReceived = DataReceived;
-    p.WriteData    = WriteData;
+    p.mID      		   = mid;
+    p.DataReceived 	   = DataReceived;
+    p.DataReceivedUserData = DataReceivedUserData;
+    p.WriteData    	   = WriteData;
+    p.WriteDataUserData	   = WriteDataUserData;
 
     return((BOOL) DoMethod(obj, (Msg) &p));
 }

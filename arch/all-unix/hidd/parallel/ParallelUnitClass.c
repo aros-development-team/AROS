@@ -54,14 +54,42 @@ char * unitname[] =
 
 /*************************** Classes *****************************/
 
+static AttrBase HiddParallelUnitAB;
+
+static struct ABDescr attrbases[] =
+{
+    { IID_Hidd_ParallelUnit, &HiddParallelUnitAB },
+    { NULL,	NULL }
+};
+
 /******* ParallelUnit::New() ***********************************/
-static Object *parallelunit_new(Class *cl, Object *obj, ULONG *msg)
+static Object *parallelunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
   struct HIDDParallelUnitData * data;
   static const struct TagItem tags[] = {{ TAG_END, 0}};
+  struct TagItem *tag, *tstate;
+  ULONG unitnum = 0;
   
   EnterFunc(bug("ParallelUnit::New()\n"));
-  D(bug("!!!!Request for unit number %d\n",*msg));
+
+  tstate = msg->attrList;
+  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+  {
+      ULONG idx;
+
+      if (IS_HIDDPARALLELUNIT_ATTR(tag->ti_Tag, idx))
+      {
+	  switch (idx)
+	  {
+	      case aoHidd_ParallelUnit_Unit:
+		  unitnum = (ULONG)tag->ti_Data;
+		  break;
+	  }
+      }
+
+  } /* while (tags to process) */
+    
+  D(bug("!!!!Request for unit number %d\n",unitnum));
 
   obj = (Object *)DoSuperMethod(cl, obj, (Msg)msg);
 
@@ -69,7 +97,7 @@ static Object *parallelunit_new(Class *cl, Object *obj, ULONG *msg)
   {
     data = INST_DATA(cl, obj);
     
-    data->unitnum = *msg;
+    data->unitnum = unitnum;
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
@@ -164,7 +192,7 @@ exit:
 }
 
 /******* ParallelUnit::Dispose() ***********************************/
-static Object *parallelunit_dispose(Class *cl, Object *obj, struct pRoot_New *msg)
+static Object *parallelunit_dispose(Class *cl, Object *obj, Msg msg)
 {
   struct HIDDParallelUnitData * data;
   EnterFunc(bug("ParallelUnit::Dispose()\n"));
@@ -191,7 +219,7 @@ static Object *parallelunit_dispose(Class *cl, Object *obj, struct pRoot_New *ms
     DisposeObject(data->unixio_write);
   }
   DoSuperMethod(cl, obj, (Msg)msg);
-  ReturnPtr("SerialUnit::Dispose()", Object *, obj);
+  ReturnPtr("ParallelUnit::Dispose()", Object *, obj);
 }
 
 
@@ -203,7 +231,9 @@ BOOL parallelunit_init(Class *cl, Object *o, struct pHidd_ParallelUnit_Init *msg
   
   EnterFunc(bug("ParallelUnit::Init()\n"));
   data->DataReceivedCallBack = msg->DataReceived;
+  data->DataReceivedUserData = msg->DataReceivedUserData;
   data->DataWriteCallBack    = msg->WriteData;
+  data->DataWriteUserData    = msg->WriteDataUserData;
 
   ReturnBool("ParallelUnit::Init()", TRUE);
 }
@@ -276,7 +306,7 @@ AROS_UFH3(void, parallelunit_receive_data,
   */
 
   if (NULL != data->DataReceivedCallBack)
-    data->DataReceivedCallBack(buffer, len, data->unitnum);
+    data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
   /*
   ** I want to be notified when the next data are coming in.
@@ -308,7 +338,7 @@ AROS_UFH3(void, parallelunit_write_more_data,
   D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
 
   if (NULL != data->DataWriteCallBack)
-    data->DataWriteCallBack(data->unitnum);
+    data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
 }
 
 
@@ -369,10 +399,16 @@ Class *init_parallelunitclass (struct class_static_data *csd)
     D(bug("Class=%p\n", cl));
     if(cl)
     {
-        D(bug("ParallelUnit Class ok\n"));
-        cl->UserData = (APTR)csd;
+	if (ObtainAttrBases(attrbases))
+	{
+            D(bug("ParallelUnit Class ok\n"));
+            cl->UserData = (APTR)csd;
 
-        AddClass(cl);
+            AddClass(cl);
+	} else {
+	    free_parallelunitclass(csd);
+	    cl = NULL;
+	}
     }
 
     ReturnPtr("init_parallelunitclass", Class *, cl);

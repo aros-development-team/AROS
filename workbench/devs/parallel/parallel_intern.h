@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.2  2000/09/21 16:44:56  stegerg
+    same fixes as in serial routines.
+
     Revision 1.1  2000/01/12 18:15:36  bergers
     Pretty much a cut & paste job from serial device. Untested.
 
@@ -53,7 +56,7 @@ struct ParallelUnit * findUnit(struct parallelbase * ParallelDevice,
                              ULONG unitnum);
 
 
-ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
+ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
 
 extern struct ExecBase * SysBase;
 
