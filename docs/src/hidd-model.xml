@@ -53,7 +53,35 @@ requires the interface.  This idea forms the first part of the
 hiearchy structure - and from where the name HIDD comes. These
 interfaces provide a hardware independant method of access devices.</p>
 
-<img src="hidd-model-class-1.png" alt="HIDD Class Tree Structure" />
+<!-- img src="hidd-model-class-1.png" alt="HIDD Class Tree Structure" /-->
+<tree><item title="hidd">
+    <tree>
+	<item title="disk">
+	    <tree>
+		<item title="floppy"/>
+		<item title="ide"/>
+		<item title="ram"/>
+		<item title="scsi"/>
+		<item title="virtual"/>
+	    </tree>
+	</item>
+	<item title="graphics">
+	    <!-- only for tests
+	    <tree>
+		<item title="a"/>
+		<item title="b">
+		    <tree>
+			<item title="a"/>
+		    </tree>
+		</item>
+		<item title="c"/>
+	    </tree>
+	    -->
+	</item>
+	<item title="parallel"/>
+	<item title="serial"/>
+    </tree>
+</item></tree>
 
 <p>If we examine the image above we can see the class tree starts with the
 <class>hidd</class> class. This is the base class that all HIDD
@@ -98,7 +126,22 @@ programs.</p>
 <p>There are however a number of different SCSI controllers available, so
 there is more specialisation of classes here.</p>
 
-<img src="hidd-model-class-2.png" alt="HIDD Class Tree Structure" />
+<!-- img src="hidd-model-class-2.png" alt="HIDD Class Tree Structure" /-->
+<tree><item title="hidd">
+    <tree>
+	<item title="disk">
+	</item>
+	<item title="graphics">
+	</item>
+	<item title="parallel"/>
+	<item title="scsi">
+	    <tree>
+		<item title="..."/>
+	    </tree>
+	</item>
+	<item title="serial"/>
+    </tree>
+</item></tree>
 
 <p>The above picture adds more devices into the class hierarchy. We see
 now that there is a <class>hidd.scsi</class> subtree containing a
@@ -112,7 +155,34 @@ have different ways of interfacing with the computer, and may even
 have different controllers for different hardware platforms. This
 introduces another layer of the tree structure.</p>
 
-<img src="hidd-model-class-3.png" alt="XXX" />
+<!--img src="hidd-model-class-3.png" alt="XXX" /-->
+<tree><item title="hidd">
+    <tree>
+	<item title="disk">
+	    <tree>
+		<item title="..."/>
+		<item title="scsi"/>
+		<item title="..."/>
+	    </tree>
+	</item>
+	<item title="graphics">
+	</item>
+	<item title="parallel"/>
+	<item title="scsi">
+	    <tree>
+		<item title="aha"/>
+		<item title="cont">
+		    <tree>
+			<item title="isa"/>
+			<item title="pci"/>
+			<item title="zorroii"/>
+		    </tree>
+		</item>
+	    </tree>
+	</item>
+	<item title="serial"/>
+    </tree>
+</item></tree>
 
 <p>We now see that there are more classes with
 <class>hidd.scsi.aha</class> as the parent. These provide different
@@ -170,7 +240,32 @@ connected to some kind of bus -- for example PCI. Finally the PCI bus
 is connected to some central point of the system that is the parent of
 all available devices. This is shown more clearly in a diagram.</p>
 
-<img src="hidd-model-obj-1.png" alt="Connection of SCSI disk" />
+<!-- img src="hidd-model-obj-1.png" alt="Connection of SCSI disk" /-->
+<tree><item title="hidd">
+    <tree>
+	<item title="disk">
+	    <tree>
+		<item title="..."/>
+		<item title="scsi"/>
+		<item title="..."/>
+	    </tree>
+	</item>
+	<item title="..."/>
+	<item title="scsi">
+	    <tree>
+		<item title="aha"/>
+		<item title="cont">
+		    <tree>
+			<item title="isa"/>
+			<item title="pci"/>
+			<item title="zorroii"/>
+		    </tree>
+		</item>
+	    </tree>
+	</item>
+	<item title="..."/>
+    </tree>
+</item></tree>
 
 <p>It is important here to realise that the connection diagram shown
 above does not have anything to do with class hierarchies. If we
