@@ -9,6 +9,8 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -67,6 +69,8 @@
 	    if( (((struct Resident *)*list)->rt_Version >= (UBYTE)version)
 	     && (((struct Resident *)*list)->rt_Flags & (UBYTE)startClass) )
 	    {
+		D(bug("calling InitResident(\"%s\", NULL)\n", 
+			(struct Resident *)*list->rt_Name));
 		InitResident((struct Resident *)*list, NULL);
 	    }
 

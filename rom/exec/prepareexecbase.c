@@ -1,0 +1,114 @@
+/*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Sets up the ExecBase a bit. (Mostly clearing).
+    Lang:
+*/
+
+#define AROS_ALMOST_COMPATIBLE
+
+#include <exec/types.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <exec/resident.h>
+#include <exec/execbase.h>
+#include <aros/arossupportbase.h>
+#include <string.h>
+
+#include <proto/exec.h>
+
+#include "libdefs.h"
+#include "memory.h"
+
+#define EXEC_NUMVECT    135
+
+extern void *ExecFunctions[];
+extern struct ExecBase *SysBase; /* Get rid of this */
+extern void kprintf(const char *, ...);
+extern struct AROSSupportBase AROSSupportBase;
+extern struct Resident Exec_resident; /* Need this for lib_IdString */
+
+static APTR allocmem(struct MemHeader *mh, ULONG size)
+{
+    UBYTE *ret;
+
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+    ret = (UBYTE *)mh->mh_First;
+
+    mh->mh_First = (struct MemChunk *)(ret + size);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_Free = mh->mh_First->mc_Bytes
+	= ((struct MemChunk *)ret)->mc_Bytes - size;
+
+    return ret;
+}
+
+/*
+    PrepareExecBase() will initialize the ExecBase to default values,
+    and not add anything yet (except for the MemHeader).
+*/
+struct ExecBase *PrepareExecBase(struct MemHeader *mh)
+{
+    ULONG neg, i;
+
+    neg = AROS_ALIGN(LIB_VECTSIZE * EXEC_NUMVECT);
+
+    SysBase = (struct ExecBase *)
+	    ((UBYTE *)allocmem(mh, neg + sizeof(struct ExecBase)) + neg);
+
+#ifdef DEBUG
+    kprintf("SysBase = %p\n", SysBase);
+#endif
+
+    /* Zero out the memory. Makes below a bit smaller. */
+    memset(SysBase, 0, sizeof(struct ExecBase));
+
+    for(i=1; i <= EXEC_NUMVECT; i++)
+    {
+	__AROS_INITVEC(SysBase, i);
+	__AROS_SETVECADDR(SysBase, i, ExecFunctions[i-1]);
+    }
+
+    SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
+    SysBase->LibNode.lib_Node.ln_Pri  = -100;
+    SysBase->LibNode.lib_Node.ln_Name = "exec.library";
+    SysBase->LibNode.lib_IdString = Exec_resident.rt_Version;
+    SysBase->LibNode.lib_Version = LIBVERSION;
+    SysBase->LibNode.lib_Revision = LIBREVISION;
+    SysBase->LibNode.lib_OpenCnt = 1;
+    SysBase->LibNode.lib_NegSize = neg;
+    SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
+    SysBase->LibNode.lib_Flags = 0;
+
+    NEWLIST(&SysBase->MemList);
+    AddHead(&SysBase->MemList, &mh->mh_Node);
+    NEWLIST(&SysBase->ResourceList);
+    NEWLIST(&SysBase->DeviceList);
+    NEWLIST(&SysBase->LibList);
+    AddHead(&SysBase->LibList, SysBase);
+    NEWLIST(&SysBase->PortList);
+    NEWLIST(&SysBase->TaskReady);
+    NEWLIST(&SysBase->TaskWait);
+    NEWLIST(&SysBase->SemaphoreList);
+    NEWLIST(&SysBase->ex_MemHandlers);
+
+    for(i=0; i<5; i++)
+	NEWLIST(&SysBase->SoftInts[i].sh_List);
+
+    SysBase->SoftVer = LIBVERSION;
+    SysBase->ColdCapture = SysBase->CoolCapture
+	= SysBase->WarmCapture = NULL;
+
+    SysBase->SysStkUpper = (APTR)0xFFFFFFFF;
+    SysBase->SysStkLower = (APTR)0x00000000;
+
+    SysBase->MaxLocMem = (ULONG)mh->mh_Upper;
+
+    SysBase->Quantum = 4;
+
+    SysBase->DebugData = &AROSSupportBase;
+    AROSSupportBase.kprintf = (void *)kprintf;
+
+    return SysBase;
+}
