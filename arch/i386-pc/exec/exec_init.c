@@ -122,8 +122,6 @@ extern void Exec_Dispatch_FPU();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 
-extern void hidd_demo();
-
 AROS_UFH5S(void, IntServer,
     AROS_UFHA(ULONG, intMask, D0),
     AROS_UFHA(struct Custom *, custom, A0),
@@ -1011,12 +1009,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         void (*p)() = ExecBase->WarmCapture;
         (*p)();
     }
-
-    Debug(0);
-
-    rkprintf("Ehm? forever loop...\n");
-
-    hidd_demo();
 
     do { Debug(0); } while(1);
 }
