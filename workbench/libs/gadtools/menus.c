@@ -1,10 +1,12 @@
 /*
-   (C) 1997-2000 AROS - The Amiga Research OS
+   Copyright (C) 1997-2001 AROS - The Amiga Research OS
    $Id$
 
    Desc: GadTools menu creation functions
    Lang: English
 */
+
+/**************************************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
@@ -303,7 +305,9 @@ static WORD MyIntuiTextLength(struct VisualInfo *vi, struct IntuiText *it,
         width = IntuiTextLength(it);
 	it->NextText = it_next;
 
-    } else {
+    }
+    else
+    {
         width = TextLength(&vi->vi_screen->RastPort, it->IText, strlen(it->IText)); 
     }
     
@@ -312,16 +316,19 @@ static WORD MyIntuiTextLength(struct VisualInfo *vi, struct IntuiText *it,
 
 /**************************************************************************************************/
 
-static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage,
-			   struct VisualInfo *vi, struct GadToolsBase_intern * GadToolsBase)
+static ULONG EqualizeItems(struct MenuItem *firstitem, struct MenuItem *lastitem,
+    	    	    	   struct Image *amikeyimage, struct VisualInfo *vi,
+			   struct GadToolsBase_intern * GadToolsBase)
 {
     struct MenuItem *item;
-    WORD minx = 0, maxwidth = 0, maxrightstuffwidth = 0;
+    WORD    	    minx = 0, maxwidth = 0, maxrightstuffwidth = 0;
+    
+    if (!firstitem) return 0;
     
     /* Calc. the max. width of item text/image (+ checkmark image)
        Calc. the min. item->LeftEdge */
 
-    for(item = firstitem; item; item = item->NextItem)
+    for(item = firstitem; item && (item != lastitem); item = item->NextItem)
     {
         if (item->LeftEdge < minx) minx = item->LeftEdge;
 	if (item->Width > maxwidth) maxwidth = item->Width;
@@ -329,7 +336,7 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
     
     /* Calc. the max. width of AmigaKey/CommandString/">>" */
     
-    for(item = firstitem; item; item = item->NextItem)
+    for(item = firstitem; item && (item != lastitem); item = item->NextItem)
     {
         WORD width = 0;
 	
@@ -339,7 +346,7 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
 
 	    if (item->Flags & ITEMTEXT)
 	    {
-        	struct TextFont *font;
+        	struct TextFont  *font;
 		struct IntuiText *it = (struct IntuiText *)item->ItemFill;
 
 		if (it->ITextFont)
@@ -386,7 +393,7 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
     {
         maxwidth += maxrightstuffwidth + TEXT_AMIGAKEY_SPACING;
 	
-	for(item = firstitem; item; item = item->NextItem)
+	for(item = firstitem; item && (item != lastitem); item = item->NextItem)
 	{
 	    struct MenuItem *subitem;
 	    
@@ -413,7 +420,7 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
     /* Make all items have the same width and set also the width and the
        drawinfo of barlabel images */
     
-    for(item = firstitem; item; item = item->NextItem)
+    for(item = firstitem; item && (item != lastitem); item = item->NextItem)
     {
         item->Width = maxwidth;
 	
@@ -425,9 +432,9 @@ static ULONG EqualizeItems(struct MenuItem *firstitem, struct Image *amikeyimage
 	    {
 		struct TagItem image_tags [] =
 		{
-		    {IA_Width	, maxwidth - ITEXT_EXTRA_LEFT - ITEXT_EXTRA_RIGHT	},
-		    {SYSIA_DrawInfo	, (IPTR)vi->vi_dri					},
-		    {TAG_DONE								}
+		    {IA_Width	    , maxwidth - ITEXT_EXTRA_LEFT - ITEXT_EXTRA_RIGHT	},
+		    {SYSIA_DrawInfo , (IPTR)vi->vi_dri					},
+		    {TAG_DONE			    	    	    	    	    	}
 		};
 
 		SetAttrsA(im, image_tags);
@@ -562,7 +569,6 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
         	else
         	    return FALSE; 
 	    }
-	    curY += menuitem->Height;
 	  
 	} /* if (0 != (menuitem->Flags & ITEMTEXT)) */
 	else
@@ -572,40 +578,44 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 	    */
 	    struct Image * im = (struct Image *)menuitem->ItemFill;
 
-	    if (NULL == im)
-        	return FALSE;
+	    if (NULL == im) return FALSE;
 
 	    if (is_menubarlabelclass_image(im, GadToolsBase))
 	    {
 
         	menuitem->Height = 7;
 
-	    } else {
+	    }
+	    else
+	    {
 
 		menuitem->Width  = im->Width + addwidth + IMAGE_EXTRA_LEFT + IMAGE_EXTRA_RIGHT;
 		menuitem->Height = im->Height + IMAGE_EXTRA_TOP + IMAGE_EXTRA_BOTTOM;
 		im->LeftEdge = IMAGE_EXTRA_LEFT + addleft;
 		im->TopEdge = IMAGE_EXTRA_TOP;
 	    }
-
-	    curY += menuitem->Height;
 	  
 	} /* if (0 != (menuitem->Flags & ITEMTEXT)) else ... */
+
+        curY += menuitem->Height;
 
 	/*
 	** In case this menu becomes too high it will have more columns.
 	*/
+
 	if (curY > vi->vi_screen->Height)
 	{
 	    ULONG width;
 
-	    width = EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
-	    equalizeitem = menuitem->NextItem;
+	    width = EqualizeItems(equalizeitem, menuitem, amikeyimage, vi, GadToolsBase);
+	    equalizeitem = menuitem;
 
 	    curY = 0;
 	    curX += width + MENU_COLUMN_SPACING;
 	    menuitem->LeftEdge = curX;
 	    menuitem->TopEdge  = curY;
+	    
+	    curY += menuitem->Height;
 	}
 
 	/*
@@ -615,7 +625,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
       
     } /* while (NULL != menuitem) */
 
-    EqualizeItems(equalizeitem, amikeyimage, vi, GadToolsBase);
+    EqualizeItems(equalizeitem, NULL, amikeyimage, vi, GadToolsBase);
 
     return TRUE;
 }
@@ -633,3 +643,5 @@ BOOL layoutsubitems(struct MenuItem * motheritem,
 
     return TRUE;
 }
+
+/**************************************************************************************************/
