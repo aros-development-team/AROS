@@ -123,10 +123,13 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* Unblock signals if necessary */
 	cmpb	$0,tc_IDNestCnt(%edx)
 	jge	.noen
+
+#if 0 /* This function is *always* called from a signal handler */
 	/* If called from the signal handler don't do it. */
 	cmpb	$0,AROS_CSYMNAME(supervisor)
 	jne	.noen
 	call	os_enable
+#endif
 
 .noen:
 	/* Except bit set? */
@@ -135,12 +138,13 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 
 	/* Raise task exception in Disable()d state */
 	pushl	%ecx
-	leal	Disable(%ecx),%eax
-	call	*%eax
+
+	/* leal    Disable(%ecx),%eax
+	call	*%eax */
 	leal	Exception(%ecx),%eax
 	call	*%eax
-	movl	(%esp),%ecx
-	leal	Enable(%ecx),%eax
+	/* movl    (%esp),%ecx
+	leal	Enable(%ecx),%eax */
 	call	*%eax
 	addl	$4,%esp
 
