@@ -33,9 +33,9 @@ static int _vsscanf_unget (int c, char ** str)
 	int vsscanf (
 
 /*  SYNOPSIS */
-	char	   * str,
-	const char * format,
-	va_list      args)
+	const char *str,
+	const char *format,
+	va_list     args)
 
 /*  FUNCTION
 	Scan a string and convert it into the arguments as specified
@@ -74,8 +74,6 @@ static int _vsscanf_unget (int c, char ** str)
 	    format,
 	    args
     );
-
-    *str = 0;
 
     return rc;
 } /* vsscanf */
