@@ -78,11 +78,11 @@ AROS_LH4(BOOL, SetNVProtection,
     BOOL result;
 
     if(appName == NULL || itemName == NULL)
-	return NULL;
+	return FALSE;
 
     if(strpbrk(appName, ":/") != NULL ||
        strpbrk(itemName, ":/") != NULL)
-	return NULL;
+	return FALSE;
 
     if(killRequesters)
 	me->pr_WindowPtr = (APTR)-1;
