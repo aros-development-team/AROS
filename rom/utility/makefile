@@ -50,6 +50,7 @@ ASM_PATH := $(TOP)/config/$(KERNEL)
 
 ASM_FILES_TRY := $(foreach f,$(FUNCTIONS),$(ASM_PATH)/$(f).s)
 ASM_FILES_EXIST := $(wildcard $(ASM_FILES_TRY))
+ASM_FILES := $(basename $(notdir $(ASM_FILES_EXIST)))
 
 # Black magic: First create a negative list of the files (ie. only the
 # ones which do *not* have a special assembler version for this CPU
@@ -59,8 +60,28 @@ ASM_FILES_EXIST := $(wildcard $(ASM_FILES_TRY))
 FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(ASM_FILES_TRY))
 FUNCTIONS := $(basename $(notdir $(FUNCTIONS)))
 
+ifeq ($(FLAVOUR),native)
+LIBS = -L$(LIBDIR) -larosc
+
+all: setup \
+	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+	$(OSMODDIR)/utility.library
+
+$(OSMODDIR)/utility.library: $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+			     $(foreach f,$(FUNCTIONS) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+			     $(foreach f,$(ASM_FILES),$(OSGENDIR)/$(f).o)
+	$(CC) $(ILDFLAGS) \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(ASM_FILES),$(OSGENDIR)/$(f).o) \
+	$(LIBS) -o $@ 2>&1|tee utilitylib.err
+	@if test ! -s utilitylib.err; then rm utilitylib.err ; else true ; fi
+	@strip $@
+else
 all: setup \
 	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o)
+endif
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
