@@ -20,6 +20,8 @@ BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase);
 struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase);
 BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBase);
 
+CONST_STRPTR GetDefaultIconName(LONG type);
+
 VOID GetDefIconName (LONG def_type, UBYTE * deficonname);
 LONG CalcIconHash(struct DiskObject *dobj);
 VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase);

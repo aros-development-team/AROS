@@ -132,24 +132,14 @@
 
 	if (icon == NULL && defaultType != -1)
 	{
-            static const char * const defaultNames[] =
-            {
-                "Disk",         /* WBDISK    (1) */ 
-                "Drawer",       /* WBDRAWER  (2) */
-                "Tool",         /* WBTOOL    (3) */
-                "Project",      /* WBPROJECT (4) */
-                "Trashcan",     /* WBGARBAGE (5) */
-                "Device",       /* WBDEVICE  (6) */
-                "Kick",         /* WBKICK    (7) */
-                "AppIcon"       /* WBAPPICON (8) */
-            };
+            CONST_STRPTR defaultIconName = GetDefaultIconName(defaultType);
             
-            if (defaultType >= 1 && defaultType <= 8)
+            if (defaultIconName != NULL)
             {
                 icon = GetIconTags
                 (
                     NULL,
-                    ICONGETA_GetDefaultName, (IPTR) defaultNames[defaultType - 1],
+                    ICONGETA_GetDefaultName, (IPTR) defaultIconName,
                     TAG_MORE,                (IPTR) tags
                 );
                 
