@@ -1,9 +1,8 @@
 ;
-; by Marcin Orîowski <carlos@felix.univ.szczecin.pl>
-;
 ## version $VER: reqtools.catalog 38.2 (21.11.95)
 ## codeset 0
 ## language polski
+## charset ISO 8859-2
 ;
 MSG_OK
  _Ok
@@ -44,10 +43,10 @@ MSG_MIN_MAX_FMT
  Min: %ld, Maks: %ld
 ;  Min: %ld, Max: %ld ;
 MSG_TOO_SMALL
-Za maîo!
+Za ma³o!
 ; Too small!;
 MSG_TOO_BIG
-Za duûo!
+Za du¿o!
 ; Too big!;
 ;
 ;
@@ -72,10 +71,10 @@ MSG_COPY
 Sko_piuj
 ; Cop_y;
 MSG_SWAP
-Z_amieï
+Z_amieñ
 ; _Swap;
 MSG_SPREAD
-Ro_zîóû
+Ro_z³ó¿
 ; Spr_ead;
 MSG_UNDO
 An_uluj
@@ -87,10 +86,10 @@ MSG_COPY_TITLE
 Skopiuj do...
 ;
 MSG_SWAP_TITLE
-Zamieï z...
+Zamieñ z...
 ;
 MSG_SPREAD_TITLE
-Rozîóû do...
+Roz³ó¿ do...
 ;
 ;
 ;
@@ -101,10 +100,10 @@ Rozîóû do...
 ;
 MSG_CREATE_DRAWER
 Katalog "%s"\n\
-nie istnieje. Czy mam go stworzyê?
+nie istnieje. Czy mam go utworzyæ?
 ; Drawer '%s' does\nnot exist. Create it?;
 MSG_DIR_ERROR
-Bîëdna nazwa katalogu!
+B³êdna nazwa katalogu!
 ; Directory error!;
 MSG_MATCH_WINTITLE
 Zaznacz...
@@ -128,7 +127,7 @@ MSG_VOLUMES
 _Wolumeny
 ; _Volumes;
 MSG_PARENT
-_Nadrzëdny
+_Nadrzêdny
 ; _Parent;
 MSG_PATTERN
 Fil_tr:
@@ -143,7 +142,7 @@ MSG_SELECTED
 Zaznaczonych:
 ; Selected:;
 MSG_FULL
-%ld%% zajëte
+%ld%% zajête
 ; %ld%% full;
 ;
 ;
@@ -154,7 +153,7 @@ MSG_FULL
 ;
 ;
 MSG_COULDNT_OPEN_FONT
-Nie mogë znaleúê czcionki!
+Nie mogê znale¼æ kroju czcionki!
 ; Couldn't open font!;
 MSG_BOLD
 Pogru_biona
@@ -163,7 +162,7 @@ MSG_ITALIC
 Pochy_lona
 ; _Italic;
 MSG_UNDERLINE
-Po_dkreôlona
+Po_dkre¶lona
 ; _Underline;
 ;
 ;
@@ -183,25 +182,25 @@ MSG_DASH_EHB
 -EHB
 ; -EHB;
 MSG_REGULAR_SIZE
-Wielkoôê Normalna
+Wielko¶æ normalna
 ; Regular Size;
 MSG_TEXT_SIZE
-Rozmiar Tekstu
+Rozmiar tekstu
 ; Text Size;
 MSG_GFX_SIZE
-Rozmiar Grafiki
+Rozmiar grafiki
 ; Graphics Size;
 MSG_MAX_SIZE
-Maksymalna Wielkoôê
+Maksymalna wielko¶æ
 ; Maximum Size;
 MSG_OVERSCAN
 O_verscan:
 ; O_verscan:;
 MSG_WIDTH
-_Szerokoôê:
+_Szeroko¶æ:
 ; _Width:;
 MSG_HEIGHT
-_Wysokoôê:
+_Wysoko¶æ:
 ; _Height:;
 MSG_DEFAULT
 Standard

@@ -12,7 +12,7 @@
 #include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
-/* polska.country: Przemyslaw Szczygielski qus@come.to */
+/* polska.country: Przemyslaw Szczygielski qus@go2.pl */
 struct CountryPrefs polskaPrefs =
 {
     /* Reserved */
