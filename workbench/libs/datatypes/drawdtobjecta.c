@@ -80,11 +80,16 @@
 
     HISTORY
 
+    29.7.99  SDuvan  implemented
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     struct dtDraw draw;
+
+    if(rp == NULL)
+	return 0;
 
     draw.MethodID     = DTM_DRAW;
     draw.dtd_RPort    = rp;

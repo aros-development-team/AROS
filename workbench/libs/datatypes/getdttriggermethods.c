@@ -33,10 +33,14 @@
 
     RESULT
 
-    A pointer to a NULL terminated DTMethod list. This list in only valid
+    A pointer to a STM_DONE terminated DTMethod list. This list in only valid
     until the object is disposed of.
 
     NOTES
+
+    Some trigger methods requires an argument (calling these with a NULL
+    argument is wrong). Use GetDTTriggerMethodDataFlags() to obtain the
+    type of the requested argument.
 
     EXAMPLE
 
@@ -61,6 +65,9 @@
     struct DTMethods *dtm = NULL;
     struct opGet      opGet;
     
+    if(object == NULL)
+	return NULL;
+
     opGet.MethodID    = OM_GET;
     opGet.opg_AttrID  = DTA_TriggerMethods;
     opGet.opg_Storage = (ULONG *)&dtm;

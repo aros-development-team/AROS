@@ -32,9 +32,10 @@
 
     INPUTS
     
-    win  --  window the object should be added to
+    win  --  window the object should be added to; may be NULL in which case
+             nothing is done
     req  --  requester the object should be added to
-    obj  --  the object to add
+    obj  --  the object to add; may be NULL in which case nothing is done
     pos  --  the position of the object in the list
 
 
@@ -65,7 +66,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DTBase)
 
+    if(obj == NULL || win == NULL)
+	return -1;
+
     return AddGList(win, (struct Gadget *)obj, pos, 1, req);
 
     AROS_LIBFUNC_EXIT
 } /* AddDTObject */
+

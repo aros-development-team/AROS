@@ -20,6 +20,7 @@
 #include <datatypes/datatypes.h>
 #include "datatypes_intern.h"
 
+/* #include <devices/printer.h>  --  No printer stuff yet... */
 
 /*****************************************************************************/
 
@@ -303,7 +304,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 			strcpy(newdto->dto_Name, (UBYTE *)nametag->ti_Data);
 			
 			if(!(newdto->dto_DataType = (struct DataType *)GetTagData(DTA_DataType, NULL, attrs)))
-			    Success=TRUE;
+			    Success = TRUE;
 			else
 			{
 			    switch(newdto->dto_SourceType)
@@ -411,7 +412,8 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	    case DTA_TotalPHoriz:   *store = dto->dto_TotalPHoriz;  break;
 	    case DTA_NominalVert:   *store = dto->dto_NominalVert;  break;
 	    case DTA_NominalHoriz:  *store = dto->dto_NominalHoriz; break;
-		
+	    case DTA_Data:          *store = (IPTR)object;          break;
+
 	    default:
 		retval = DoSuperMethodA(class, object, msg);
 		break;
@@ -428,7 +430,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	    dtsi->si_HorizUnit*dtsi->si_TotHoriz : dto->dto_Domain.Width;
 	
 	dto->dto_TotalPVert  = (dtsi->si_VertUnit ) ?
-	    dtsi->si_VertUnit*dtsi->si_TotVert  : dto->dto_Domain.Height;
+	    dtsi->si_VertUnit*dtsi->si_TotVert : dto->dto_Domain.Height;
 	
 	/* fall through */
 	
@@ -737,6 +739,17 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	} /* case GM_GOINACTIVE */
 	break;
 	
+    case GM_DOMAIN:
+	if(object == NULL)
+	    break;
+
+	if(dtsi != NULL)
+	{
+	    ; /* TODO */
+	}
+
+	break;
+
     case GM_LAYOUT:
     case DTM_PROCLAYOUT:
 	{
@@ -797,7 +810,20 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	Permit();
 	
 	break;
+
+    case DTM_PRINT:
+	/*	retval = PDERR_CANCEL;  --  No printer stuff yet... */
+	SetIoErr(ERROR_NOT_IMPLEMENTED);
+	break;
 	
+    case DTM_REMOVEDTOBJECT:	/* TODO... */
+	break;
+
+    case DTM_WRITE:
+	retval = 0;
+	SetIoErr(ERROR_NOT_IMPLEMENTED);
+	break;
+
     case OM_DISPOSE:
 	retval = IoErr();
 	

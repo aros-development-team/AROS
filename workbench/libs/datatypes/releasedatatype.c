@@ -8,6 +8,7 @@
 
 #include "datatypes_intern.h"
 #include <proto/exec.h>
+#include <exec/alerts.h>
 
 /*****************************************************************************
 
@@ -57,6 +58,8 @@
     {
 	if(((struct CompoundDatatype *)dt)->OpenCount)
 	    ((struct CompoundDatatype*)dt)->OpenCount--;
+	else
+	    Alert(AN_Unknown);
     }
     
     ReleaseSemaphore(&(GPB(DTBase)->dtb_DTList)->dtl_Lock);

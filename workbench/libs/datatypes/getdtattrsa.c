@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-99 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -12,7 +12,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/datatypes_protos.h>
+#include <proto/datatypes.h>
 
         AROS_LH2(ULONG, GetDTAttrsA,
 
@@ -29,10 +29,10 @@
 
     INPUTS
 
-    o      --  pointer to a data type object
+    o      --  pointer to a data type object; may be NULL
     attrs  --  the attributes to get terminated with TAG_DONE; each Tag's
                data element should contain the address of the respective
-	       storage element.
+	       storage element; may be NULL
 
     RESULT
 
@@ -60,6 +60,9 @@
     struct TagItem *tstate = attrs;
     struct TagItem *tag;
     struct opGet    opGet;
+
+    if(o == NULL || attrs == NULL)
+	return 0;
    
     opGet.MethodID = OM_GET;
    

@@ -34,7 +34,8 @@
 
     INPUTS
 
-    o      --  pointer to the data type object to obtain the drawinfo for
+    o      --  pointer to the data type object to obtain the drawinfo for;
+               may be NULL in which case nothing is done
     attrs  --  additional attributes
 
     RESULT
@@ -68,6 +69,9 @@
     AROS_LIBFUNC_INIT
 
     struct opSet ops;
+
+    if(o == NULL)
+	return NULL;
 
     ops.MethodID     = DTM_OBTAINDRAWINFO;
     ops.ops_AttrList = attrs;

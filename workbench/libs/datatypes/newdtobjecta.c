@@ -115,7 +115,6 @@
     
     if(!(SourceType = GetTagData(DTA_SourceType, DTST_FILE, attrs)))
 	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-
     else
     {
 	DataType = (struct DataType *)GetTagData(DTA_DataType, NULL, attrs);

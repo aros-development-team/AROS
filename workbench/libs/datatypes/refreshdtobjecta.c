@@ -31,8 +31,8 @@
 
     INPUTS
 
-    object   --  pointer to the data type object to refresh
-    window   --  pointer to the window
+    object   --  pointer to the data type object to refresh; may be NULL
+    window   --  pointer to the window; may be NULL
     req      --  must be NULL
     attrs    --  additional attributes (currently none defined)
 
@@ -55,6 +55,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    if(object == NULL || window == NULL)
+	return;
 
     RefreshGList((struct Gadget *)object, window, req, 1);
 

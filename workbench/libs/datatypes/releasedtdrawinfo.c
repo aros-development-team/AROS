@@ -31,7 +31,7 @@
     INPUTS
 
     o       --  pointer to the data type object the drawinfo of which to
-                release
+                release; may be NULL
     handle  --  handle got from ObtainDTDrawInfoA()
 
     RESULT
@@ -65,6 +65,9 @@
     AROS_LIBFUNC_INIT
 
     struct dtReleaseDrawInfo rdi;
+
+    if(o == NULL)
+	return;
 
     rdi.MethodID   = DTM_RELEASEDRAWINFO;
     rdi.dtr_Handle = handle;

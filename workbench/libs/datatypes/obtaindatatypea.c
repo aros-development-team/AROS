@@ -91,7 +91,7 @@
 	    
 	    cbh = (struct ClipboardHandle *)((struct IFFHandle *)handle)->iff_Stream;
 	    
-	    cbh->cbh_Req.io_ClipID = 0;           /* TODO??? */
+	    cbh->cbh_Req.io_ClipID = 0;
 	    cbh->cbh_Req.io_Error = 0;
 	    cbh->cbh_Req.io_Offset = 0;
 	    cbh->cbh_Req.io_Command = CMD_READ;

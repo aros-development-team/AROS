@@ -135,7 +135,7 @@ void AsyncLayouter(void)
     AROS_LIBFUNC_INIT
 
     ULONG retval = FALSE;
-    struct DTSpecialInfo *dtsi=((struct Gadget*)object)->SpecialInfo;
+    struct DTSpecialInfo *dtsi=((struct Gadget *)object)->SpecialInfo;
     struct Process *LayoutProc;
     
     ObtainSemaphore(&(GPB(DTBase)->dtb_Semaphores[SEM_ASYNC]));

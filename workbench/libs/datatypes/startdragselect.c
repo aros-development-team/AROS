@@ -32,7 +32,11 @@
 
     RESULT
 
-    TRUE if all went OK, FALSE otherwise.
+    TRUE if all went OK, FALSE otherwise. If FALSE, IoErr() gives further
+    information:
+
+    ERROR_ACTION_NOT_KNOWN   --  the object doesn't support DTM_SELECT
+    ERROR_OBJECT_IN_USE      --  the object is currently occupied
 
     NOTES
 
@@ -62,12 +66,18 @@
 
     /* Doesn't support drag selection? */
     if(FindMethod(GetDTMethods(o), DTM_SELECT) == NULL)
+    {
+	SetIoErr(ERROR_ACTION_NOT_KNOWN);
 	return FALSE;
+    }
     
     ObtainSemaphore(&dtsi->si_Lock);
 
     if(dtsi->si_Flags & DTSIF_LAYOUTPROC)
+    {
 	retval = FALSE;
+	SetIoErr(ERROR_OBJECT_IN_USE);
+    }
     else
 	dtsi->si_Flags |= DTSIF_DRAGSELECT;
 
