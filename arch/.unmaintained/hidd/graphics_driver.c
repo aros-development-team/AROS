@@ -350,8 +350,6 @@ int driver_init(struct GfxBase * GfxBase)
     SDD(GfxBase) = (struct shared_driverdata *)AllocMem(sizeof (struct shared_driverdata), MEMF_ANY|MEMF_CLEAR);
     if ( SDD(GfxBase) )
     {
-	NEWLIST(&SDD(GfxBase)->dispinfo_db);
-
         /* Open the OOP library */
 	SDD(GfxBase)->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	if ( SDD(GfxBase)->oopbase )
@@ -4396,9 +4394,9 @@ ULONG do_pixel_func(struct RastPort *rp
 	bm_obj = OBTAIN_HIDD_BM(bm);
 	if (NULL == bm_obj)
 	    return -1;
-	    
-	OOP_GetAttr(bm_obj, aoHidd_BitMap_Width,  &width);
-	OOP_GetAttr(bm_obj, aoHidd_BitMap_Height, &height);
+	
+	OOP_GetAttr(bm_obj, aHidd_BitMap_Width,  &width);
+	OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
 
 	/* Check whether we it is inside the rastport */
 	if (	x <  0
