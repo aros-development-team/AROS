@@ -2,8 +2,8 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.1  1997/09/27 22:04:41  bergers
-    new filename
+    Revision 1.2  1997/09/28 11:31:46  bergers
+    updated version - again
 
     Revision 1.1  1997/06/25 21:36:46  bergers
     *** empty log message ***
@@ -43,16 +43,15 @@
     Library, and use the mathieeespbas.library functions to get information.
 */
 
+extern struct ExecBase * SysBase;
+
+
 struct MathIeeeSingBasBase
 {
     struct Library   library;
     BPTR	     seglist;
 };
 
-extern struct ExecBase * SysBase;
-
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct Library *, MathieeesingbasBase, 3, Mathieeespbas)
 
 
 #define IEEESPMantisse_Mask 0x007FFFFF /* 23 bit for the mantisse  */
