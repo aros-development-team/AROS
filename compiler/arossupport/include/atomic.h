@@ -59,7 +59,7 @@
 
 #endif
 
-#define __AROS_ATOMIC(__instr__, var)                        \
+#define __AROS_ATOMIC(__instr__, var, args...)               \
 do                                                           \
 {                                                            \
     struct atomic_size                                       \
@@ -73,18 +73,18 @@ do                                                           \
     };                                                       \
                                                              \
     if (sizeof(var) == sizeof(BYTE))                         \
-        AROS_ATOMIC_ ## __instr__ ## B(var);                 \
+        AROS_ATOMIC_ ## __instr__ ## B((var) , ## args);       \
     else                                                     \
     if (sizeof(var) == sizeof(WORD))                         \
-        AROS_ATOMIC_ ## __instr__ ## W(var);                 \
+        AROS_ATOMIC_ ## __instr__ ## W((var) , ## args);       \
     else                                                     \
     if (sizeof(var) == sizeof(LONG))                         \
-        AROS_ATOMIC_ ## __instr__ ## L(var);                 \
+        AROS_ATOMIC_ ## __instr__ ## L((var) , ## args);       \
 } while (0)
 
-#define AROS_ATOMIC_INC(var) __AROS_ATOMIC(INC, (var))
-#define AROS_ATOMIC_DEC(var) __AROS_ATOMIC(DEC, (var))
-#define AROS_ATOMIC_AND(var) __AROS_ATOMIC(AND, (var))
-#define AROS_ATOMIC_OR(var)  __AROS_ATOMIC(OR,  (var))
+#define AROS_ATOMIC_INC(var)       __AROS_ATOMIC(INC, (var))
+#define AROS_ATOMIC_DEC(var)       __AROS_ATOMIC(DEC, (var))
+#define AROS_ATOMIC_AND(var, mask) __AROS_ATOMIC(AND, (var), (mask))
+#define AROS_ATOMIC_OR(var,  mask) __AROS_ATOMIC(OR,  (var), (mask))
 
 #endif /* AROS_ATOMIC_H */
