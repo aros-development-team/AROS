@@ -17,7 +17,7 @@
 #   define AROS_WORD2BE(w)     (w)
 #   define AROS_LONG2BE(l)     (l)
 #else
-#   define AROS_WORD2BE(w)     ((((w) >> 8) & 0x00FF) | (((w) 0x00FF) << 8))
+#   define AROS_WORD2BE(w)     ((((w) >> 8) & 0x00FF) | (((w) & 0x00FF) << 8))
 #   define AROS_LONG2BE(l)     \
 	(                                  \
 	    ((((unsigned long)l) >> 24) & 0x000000FFUL) | \
