@@ -22,6 +22,7 @@
 	    fi ; \
 	else \
 	    $(ECHO) "Compile failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
 %end
