@@ -41,7 +41,7 @@
 static const UBYTE name[];
 static const UBYTE version[];
 extern const char LIBEND;
-struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
+struct ExecBase *GM_UNIQUENAME(init)();
 
 const struct Resident Exec_resident =
 {
@@ -54,7 +54,7 @@ const struct Resident Exec_resident =
     105,
     (STRPTR)name,
     (STRPTR)&version[6],
-    &AROS_SLIB_ENTRY(init,BASENAME)
+    &GM_UNIQUENAME(init)
 };
 
 static const UBYTE name[] = NAME_STRING;
@@ -215,7 +215,7 @@ extern ULONG SoftIntDispatch();
 #	define sysBase SysBase
 #endif
 
-AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Exec),
+AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
     AROS_UFHA(struct ExecBase *, sysBase, A6)
