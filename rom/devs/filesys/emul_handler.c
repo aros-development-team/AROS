@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/09/13 04:23:23  aros
+    Define FreeBSD should have been __FreeBSD__ (sorry my fault).
+
     Revision 1.8  1996/09/11 16:54:24  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
     	some systems name an external symbol "x" as "_x" and others as "x".
@@ -46,7 +49,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#if defined(FreeBSD)
+#if defined(__FreeBSD__)
 #define timeval _timeval
 #include <sys/stat.h>
 #define tv_sec tv_secs
