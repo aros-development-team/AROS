@@ -93,7 +93,11 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
     intreq  = reqnode->rn_IntReq;
     reqinfo = &(ASLB(AslBase)->ReqInfo[intreq->ir_ReqType]);
     
-    StripRequester(requester, intreq->ir_ReqType, ASLB(AslBase));
+/*  stegerg: this must be done when the Requester is terminated 
+**           before setting the new output variables in the Requester struct.
+**
+**    StripRequester(requester, intreq->ir_ReqType, ASLB(AslBase));
+*/
 	
     /* Parse new tags if supplied */
     if (tagList)
@@ -126,19 +130,34 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	if (CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase)))
 	{
 	    struct NewWindow nw;
-    	    struct TagItem wintags[4];
+    	    struct TagItem wintags[] =
+	    {
+	        {WA_CustomScreen	, (IPTR)ld->ld_Screen	}, /* stegerg: requesters should not use WA_PubScreen */
+		{WA_InnerWidth		, 0			},
+		{WA_InnerHeight		, 0			},
+		{WA_AutoAdjust		, TRUE			},
+		{TAG_DONE					}
+	    };
 
 			
 	    memset(&nw, 0L, sizeof (struct NewWindow));
 			
-	    nw.LeftEdge	= intreq->ir_LeftEdge;
-	    nw.TopEdge	= intreq->ir_TopEdge;
 	    nw.Width	= (intreq->ir_Width > ld->ld_MinWidth) ? intreq->ir_Width : ld->ld_MinWidth;
 	    nw.Height	= (intreq->ir_Height > ld->ld_MinHeight) ? intreq->ir_Height : ld->ld_MinHeight;
 
-/*	    nw.MinWidth	= ld->ld_MinWidth;
-	    nw.MinHeight= ld->ld_MinHeight;
-*/			
+	    if (intreq->ir_LeftEdge >= 0)
+	    {
+	        nw.LeftEdge = intreq->ir_LeftEdge;
+	    } else {
+	        nw.LeftEdge = (ld->ld_Screen->Width - (nw.Width + ld->ld_WBorLeft + ld->ld_WBorRight)) / 2;
+	    }
+	    if (intreq->ir_TopEdge >= 0)
+	    {
+	        nw.TopEdge = intreq->ir_TopEdge;
+	    } else {
+	        nw.TopEdge = (ld->ld_Screen->Height - (nw.Height + ld->ld_WBorTop + ld->ld_WBorBottom)) / 2;
+	    }
+
 	    D(bug("MinWidth: %d, MinHeight: %d\n", ld->ld_MinWidth, ld->ld_MinHeight));
 			
 	    nw.Title		= intreq->ir_TitleText;
@@ -146,19 +165,16 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	    
 /*	    nw.FirstGadget	= ld->ld_GList; 
 */
-	    nw.Flags	=  WFLG_DRAGBAR|WFLG_DEPTHGADGET|WFLG_CLOSEGADGET|
-			  WFLG_SIZEGADGET|WFLG_SIZEBBOTTOM|WFLG_SIMPLE_REFRESH;
+	    nw.Flags	=  WFLG_DRAGBAR    | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET    |
+			   WFLG_SIZEGADGET | WFLG_SIZEBBOTTOM | WFLG_SIMPLE_REFRESH |
+			   WFLG_ACTIVATE;
 	    
-	    nw.IDCMPFlags= IDCMP_CLOSEWINDOW|IDCMP_GADGETUP|IDCMP_MOUSEMOVE|
-			  IDCMP_NEWSIZE|IDCMP_REFRESHWINDOW|IDCMP_GADGETDOWN;
+	    nw.IDCMPFlags= IDCMP_CLOSEWINDOW | IDCMP_GADGETUP      | IDCMP_MOUSEMOVE  |
+			   IDCMP_NEWSIZE     | IDCMP_REFRESHWINDOW | IDCMP_GADGETDOWN |
+			   IDCMP_MENUPICK;
 			
-	    wintags[0].ti_Tag	= WA_PubScreen;
-	    wintags[0].ti_Data	= (IPTR)ld->ld_Screen;
-	    wintags[1].ti_Tag	= WA_InnerWidth;
-	    wintags[1].ti_Data	= ld->ld_MinWidth;
-	    wintags[2].ti_Tag	= WA_InnerHeight;
-	    wintags[2].ti_Data	= ld->ld_MinHeight;
-	    wintags[3].ti_Tag	= TAG_DONE;
+	    wintags[1].ti_Data	= nw.Width;
+	    wintags[2].ti_Data	= nw.Height;
 						
 	    win = OpenWindowTagList(&nw,wintags);
 	    if (win)
@@ -179,7 +195,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 
 		/* Constraint the window minsize */
 		
-/*		WindowLimits
+		WindowLimits
 		(
 		    win,
 		    ld->ld_MinWidth + win->BorderLeft + win->BorderRight,
@@ -187,7 +203,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		    ~0,
 		    ~0
 		);
-*/		
+		
 		D(bug("Window limits set\n"));
 				
 				
@@ -207,7 +223,8 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 			D(bug("Gadgetlist refreshed\n"));
 		    }
 		    
-		    
+		    if (ld->ld_Menu) SetMenuStrip(win, ld->ld_Menu);
+			
 		    /* Wait for the user to do something */	
 		    success = HandleEvents(ld, reqinfo, ASLB(AslBase));
 		
@@ -216,11 +233,17 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		
 		    ld->ld_Command = LDCMD_CLEANUP;
 		    CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase));
-		}
-	    }
-	}
+		    
+		} /* if (CallHookPkt(&(reqinfo->GadgetryHook), ld, ASLB(AslBase))) */
+		
+		/* win is closed in FreeCommon */
+		
+	    } /* if (win) */
+	    
+	} /* if (CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase))) */
 		
 	FreeCommon(ld, ASLB(AslBase));
+
     } /* if (ld) */
     ReturnBool ("AslRequest", success);
 
