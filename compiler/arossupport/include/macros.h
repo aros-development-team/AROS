@@ -10,7 +10,7 @@
 */
 
 #ifndef AROS_SYSTEM_H
-//#   include <aros/system.h>
+#   include <aros/system.h>
 #endif
 
 /* Reverse the bits in a byte */
