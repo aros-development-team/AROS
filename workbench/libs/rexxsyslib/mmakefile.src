@@ -16,7 +16,7 @@ FUNCS := \
 #MM- workbench-libs-rexxsyslib-includes : kernel-exec-includes includes-copy
 #MM- workbench-libs-rexxsyslib : includes linklibs
 
-TODO: At the moment sprintf needs the mat library
+# TODO: At the moment sprintf needs the mat library
 %build_module mmake=workbench-libs-rexxsyslib \
   modname=rexxsyslib modtype=library \
   files=$(FUNCS) uselibs="arossupport amiga rom m"
