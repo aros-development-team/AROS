@@ -102,6 +102,10 @@
 	LP4(0xa2, BOOL, ParseDate, struct Locale *, locale, a0, struct DateStamp *, date, a1, STRPTR, fmtTemplate, a2, struct Hook *, getCharFunc, a3, \
 	, LOCALE_BASE_NAME)
 
+#define PrefsUpdate(newLocale) \
+	LP1(0xa8, struct Locale *, PrefsUpdate, struct Locale *, newLocale, a0, \
+	, LOCALE_BASE_NAME)
+
 #define StrConvert(locale, string, buffer, bufferSize, type) \
 	LP5(0xae, ULONG, StrConvert, struct Locale *, locale, a0, STRPTR, string, a1, APTR, buffer, a2, unsigned long, bufferSize, d0, unsigned long, type, d1, \
 	, LOCALE_BASE_NAME)
