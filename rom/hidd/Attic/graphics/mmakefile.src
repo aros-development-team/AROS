@@ -1,0 +1,76 @@
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES	:= -I..
+
+TOPINC          := $(TOP)/compiler/include
+LIBNAME 	:= gfxhidd
+ULIBNAME	:= GfxHidd
+FILES		:= $(LIBNAME)_functable GfxHiddClass BM_BitMapClass GC_GCClass
+FUNCTIONS	:= \
+        testspeed \
+        BM_CreateBitMap BM_DeleteBitMap GC_CreateGC GC_DeleteGC \
+        GC_WritePixelDirect GC_WritePixelDirect_Q \
+        GC_WritePixel GC_WritePixel_Q \
+        GC_ReadPixelDirect GC_ReadPixelDirect_Q \
+        GC_ReadPixel_Q \
+        GC_DrawLine_Q
+
+ALL_FUNCTIONS := $(FUNCTIONS)
+%prepare_replace rom/hidd/graphics
+%filter_replace FILES
+%filter_replace FUNCTIONS
+
+%define_libs prelibs=-l$(LIBNAME)
+
+%genlib_old
+
+# %genlibincludes
+
+#MM hidd-graphics : setup includes linklibs hidd-graphics-$(ARCH)
+hidd-graphics : show-flags $(SLIB)
+
+#MM
+includes-copy : $(foreach f, $(wildcard include/*.h), \
+                $(INCDIR)/hidd/$(notdir $(f)) $(GENINCDIR)/hidd/$(notdir $(f)))
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+
+#MM clean
+#MM setup
+
+includes-quick: generate-inline
+	cd $(TOPINC); make -f mmakefile includes-copy-quick
+
+generate-inline : $(TOPINC)/fd/$(LIBNAME)_lib.fd $(TOPINC)/clib/$(LIBNAME)_protos.h
+	fd2inline $(TOPINC)/fd/$(LIBNAME)_lib.fd \
+                  $(TOPINC)/clib/$(LIBNAME)_protos.h \
+                  -o $(TOPINC)/inline/$(LIBNAME).h 
+
+#MM hidd-graphics-quick: hidd-graphics-$(ARCH)
+hidd-graphics-quick : hidd-graphics
+	$(NOP)
+
+Test : TestLib TestClass TestHiddClass TestSpeedExe
+
+TestLib : TestLib.c
+	gcc $(CFLAGS) $< -o $@ 
+
+TestClass : TestClass.c
+	gcc $(CFLAGS) $< -o $@
+
+TestHiddClass : TestHiddClass.c
+	gcc $(CFLAGS) $< -o $@
+
+TestSpeedExe : TestSpeedExe.c
+	gcc $(CFLAGS) $< -o $@
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
