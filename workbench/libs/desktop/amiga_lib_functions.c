@@ -32,11 +32,6 @@
 static ULONG dbgDoMethodCount     = 0;
 static ULONG dbgDoMethodNULLCount = 0;
 
-void NewList(struct List *list)
-{
-    NEWLIST(list);
-}
-
 IPTR DoMethodA(Object * obj, Msg message)
 {
     dbgDoMethodCount++;
