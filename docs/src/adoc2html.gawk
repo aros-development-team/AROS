@@ -2,7 +2,10 @@ BEGIN {
     for(t=1; t<ARGC; t++)
     {
 	file=ARGV[t];
-	printf ("%3d%% %-60s", t*100/ARGC, basename(file)) >> "/dev/stderr";
+	bn=basename(file);
+	printf ("%3d%% %-60s\r", t*100/ARGC, bn) >> "/dev/stderr";
+	if (substr(bn,1,1)=="6")
+	    print "\n"file >> "/dev/stderr";
 	fflush("/dev/stderr");
 
 	out="";
@@ -14,7 +17,7 @@ BEGIN {
 	    {
 		if (match($0,/^.\*\*\*\*\*+$/))
 		{
-		    out="../html/autodocs/" basename(file) ".html";
+		    out="../html/autodocs/" bn ".html";
 		    print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Replacement OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
 		    print "<CENTER><P>(C) 1996 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
 		    mode="field";
@@ -44,11 +47,15 @@ BEGIN {
 		    if (lastfield!="")
 			print "</DL>\n" >> out;
 
-		    print "<DL>\n<DT>"newfield"\n<DD>\n" >> out;
 		    mode="field";
 		    lastfield=newfield;
 		    first=1;
 		    field=newfield;
+
+		    if (newfield=="SEE")
+			print "<DL>\n<DT>SEE ALSO\n<DD>\n" >> out;
+		    else
+			print "<DL>\n<DT>"newfield"\n<DD>\n" >> out;
 
 		    if (field=="EXAMPLE")
 			print "<PRE>" >> out;
@@ -68,56 +75,36 @@ BEGIN {
 
 		    if (field=="NAME")
 		    {
-			if (first)
-			{
-			    first=0;
-			    prefix="";
-			}
-			else
-			{
-			    prefix="<P>";
-			}
-
 			if (match(line,/AROS_LH/))
 			{
 			    gsub(/,[ \t]/,",",line);
 			    split(line,a,",");
-			    print prefix a[2] >> out;
+			    gsub(/AROS_LH.*[(]/,"",a[1]);
+			    print prefix a[1] " " a[2] "()<BR>" >> out;
 			    print a[2];
 			}
 			else if (match(line,"#include"))
 			{
 			    match (line,/<.*>/);
 			    hfile=substr(line,RSTART+1,RLENGTH-2);
-			    link="../../include/" hfile;
+			    link="srcs/include/" hfile;
 
-			    err=getline < link;
-
-			    if (err > 0)
-			    {
-				close (link);
-
-				line="<A HREF=\"../"link"\">"hfile"</A>";
-			    }
+			    if (exists("../html/" link))
+				line="<A HREF=\""link"\">"hfile"</A>";
 			    else
 				line=hfile;
 
-			    print prefix "#include &lt;"line"&gt;" >> out;
+			    print prefix "#include &lt;"line"&gt;<BR>" >> out;
 			}
 		    }
 		    else if (field=="SYNOPSIS")
 		    {
-			if (first)
-			    first=0;
-			else
-			    line="<P>" line;
-
 			gsub(/AROS_LHA[(]/,"",line);
 			gsub(/[)],/,"",line);
 			gsub(/,[ \t]/,",",line);
 
 			split(line,a,",");
-			print "<TT>"a[1]" "a[2]"</TT>" >> out;
+			print "<TT>"a[1]" "a[2]"</TT><BR>" >> out;
 		    }
 		    else if (field=="LOCATION")
 		    {
@@ -140,12 +127,12 @@ BEGIN {
 			else
 			    print line >> out;
 
-			if (line=="" && !first)
-			    print "<P>\n" >> out;
-			else
-			    print line >> out;
-
-			first=0;
+			#if (line=="" && !first)
+			#    print "<P>\n" >> out;
+			#else
+			#    print line >> out;
+			#
+			#first=0;
 		    }
 		    else if (field=="FUNCTION" || field=="RESULT" ||
 			field=="NOTES" || field=="BUGS" || field=="INTERNALS")
@@ -156,6 +143,49 @@ BEGIN {
 			    print line >> out;
 
 			first=0;
+		    }
+		    else if (field=="SEE")
+		    {
+			if (line!="")
+			{
+			    rest=line;
+			    line="";
+
+			    while (rest!="")
+			    {
+				if (match(rest,/^[ \t]+/))
+				{
+				    line=line substr(rest,RSTART,RLENGTH);
+				    rest=substr(rest,RSTART+RLENGTH);
+				}
+
+				if (match(rest,/^[^(]+[(][)],?/))
+				{
+				    entry=substr(rest,RSTART,RLENGTH);
+				    rest=substr(rest,RSTART+RLENGTH);
+				    link=gensub(/(.*)[(][)],?/,"\\1",1,entry);
+
+				    lfile="../html/autodocs/" tolower(link) ".html";
+
+				    if (!exists(lfile))
+					line=line "("lfile") " entry;
+				    else
+				    {
+					if (match(entry,/,/))
+					    line=line "<A HREF=\""tolower(link)".html\">"link"()</A>,";
+					else
+					    line=line "<A HREF=\""tolower(link)".html\">"link"()</A>";
+				    }
+				}
+				else
+				{
+				    line=line rest;
+				    rest="";
+				}
+			    }
+
+			    print line >> out;
+			}
 		    }
 		    else
 			print line >> out;
@@ -171,13 +201,24 @@ BEGIN {
 
 	close (out);
 	close (file);
-
-	printf ("\r", t*100/ARGC) >> "/dev/stderr";
     }
 
-    print "\n" >> "/dev/stderr";
+    printf ("\n") >> "/dev/stderr";
 }
 
 function basename(file) {
-    return gensub(/.*\/([a-z]+)(\.[a-z]+)?$/,"\\1",1,file);
+    return gensub(/.*\/([a-zA-Z0-9_]+)(\.[a-zA-Z0-9_]+)?$/,"\\1",1,file) "";
+}
+
+function exists(file        ,err) {
+    err=getline < file;
+
+    if (err > 0)
+    {
+	close (link);
+
+	return 1;
+    }
+
+    return 0;
 }
