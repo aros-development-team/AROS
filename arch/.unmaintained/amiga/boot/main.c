@@ -53,6 +53,7 @@ char usage[] =
     " -c -- force to chipmem\n"
     " -f -- force to fastmem\n"
     " -k -- force to kickmem\n"
+    " -l -- force to localmem\n"
     " -x -- clear reset vectors before installing new modules\n"
     " -X -- only clear reset vectors\n"
     " -d -- output debug information\n"
@@ -80,11 +81,16 @@ int main(int argc, char **argv)
 
     /*
 	The memory type MEMF_KICK has been added in V39 exec. Fall back to
-	MEMF_CHIP if we are on an earlier version.
+	MEMF_LOCAL if we are on an earlier version.
+
+	It used to fallback to MEMF_CHIP in versions < 41.3. It didn't know
+	about "ranger" memory. Programs like "FastExec" can make the fastmem
+	of type MEMF_LOCAL, thereby automatically loading AROS modules into
+	fastmem if run on kick < V39 and FastExec systems.
     */
     if(SysBase->LibNode.lib_Version < 39)
     {
-	memtype = MEMF_CHIP;
+	memtype = MEMF_LOCAL;
     } else
     {
 	memtype = MEMF_KICK;
@@ -112,6 +118,9 @@ int main(int argc, char **argv)
 		break;
 	    case 'k':
 		memtype = MEMF_KICK;
+		break;
+	    case 'l':
+		memtype = MEMF_LOCAL;
 		break;
 	    case 'x':
 		PutStr("Clearing reset vectors.\n");
@@ -177,7 +186,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-	    node = 0; /* on normal exit, this points to the last module processed */
+	    node = NULL; /* on normal exit, this points to the last module processed */
 	    break;
 	}
     }
@@ -292,6 +301,7 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	{
 	    modarray[i] = (ULONG)mod->m_Resident;
 	}
+
 	/*
 	    Terminate the module array.
 	*/
@@ -430,6 +440,11 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 	Update: this didn't help. I still have to run boot twice to get AROSfA
 	loaded for the first time. If AROSfA is already loaded, I can just clear
 	the vectors and load boot again, and it will load correctly. Strange.
+
+	Update: It was MCP. I updated it to 1.22b4 and it now works the first
+	time. Then there was another problem: the "SSP to fastmem" option
+	flushed AROS out of memory after the first reset (reset, run AROS,
+	reset again, AROS gone). I disabled that option.
     */
     CacheClearU();
 
