@@ -1023,8 +1023,6 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
     struct gpHitTest gpht;
     int gx, gy;
 
-    D(bug("FindGaget(window=%s, x=%d, y=%d, gi=%p)\n",
-	window->Title, x, y, gi));
 
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
@@ -1052,7 +1050,7 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 	}
     }
 
-    ReturnPtr ("FindGadget", struct Gadget *, gadget);
+    return (gadget);
 } /* FindGadget */
 
 
@@ -1083,16 +1081,10 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
     struct GadgetInfo stackgi, *gi = &stackgi;
     BOOL reuse_event = FALSE;
 
-    D(bug("IntuiInputHandler(oldchain=%p, iihdata=%p, w=%s)\n",
-	oldchain, iihdata, w->Title));
-
     for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
     {
 	reuse_event = FALSE;
 	ptr = NULL;
-
-
-	D(bug("iih: reuse_event = %d\n", reuse_event));
 
 	/* If the last InnputEvent was swallowed, we can reuse the IntuiMessage */
 	if (!im)
@@ -1101,6 +1093,7 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	}
 
 	im->Class	= 0L;
+	im->IAddress	= NULL;
 	im->MouseX	= mpos_x;
 	im->MouseY	= mpos_y;
 	im->IDCMPWindow = w;
@@ -1122,7 +1115,6 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	    ptr       = "REFRESHWINDOW";
 	    im->Class = IDCMP_REFRESHWINDOW;
 
-	    D(bug("ipe:Refreshwindow\n"));
 	    RefreshGadgets (w->FirstGadget, w, NULL);
 	    break;
 
@@ -1140,7 +1132,6 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	    im->MouseY	= ie->ie_Y;
 
 	    ptr = "RAWMOUSE";
-	    D(bug("iih: Rawmouse\n"));
 
 	    switch (ie->ie_Code)
 	    {
@@ -1152,12 +1143,10 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 		if (!gadget)
 		{
-		    D(bug("No gadget currently active\n"));
 		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi);
 		    if (gadget)
 		    {
 			new_gadget = TRUE;
-			D(bug("iih: Got new acive gadget\n"));
 		    }
 		}
 
@@ -1223,8 +1212,6 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
-
-			D(bug("iih: Processing custom gadget SELECTDOWN\n"));
 
 			if (retval != GMR_MEACTIVE)
 			{
@@ -1324,7 +1311,6 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
 
-			D(bug("iih: Processing custom gadget SELECTUP\n"));
 
 			if (retval != GMR_MEACTIVE)
 			{
@@ -1782,5 +1768,5 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	}
     }
 
-    ReturnPtr ("IntuiInputHandler", struct InputEvent *, oldchain);
+    return (oldchain);
 }
