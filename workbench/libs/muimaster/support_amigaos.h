@@ -14,6 +14,8 @@ char *StrDup(char *x);
 int snprintf(char *buf, int size, const char *fmt, ...);
 int strlcat(char *buf, char *src, int len);
 
+#define DeinitRastPort(rp)      /* doesn't exist on AmigaOS */
+
 /*** Miscellanous compiler supprot ******************************************/
 #ifdef __MAXON__
 #   define __asm
