@@ -87,10 +87,10 @@ MSG_GAD_DATABITS
 Databitar
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Inkommande bufferstorlek
+Buffertstorlek för indata
 ;
 MSG_GAD_OUTPUTBUFFERSIZE 
-Utgående bufferstorlek
+Buffertstorlek för utdata
 ;
 MSG_PARITY_NONE 
 Ingen
