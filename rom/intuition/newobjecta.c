@@ -103,7 +103,7 @@
     D(bug("classPtr: %p\n", classPtr));
 
     /* Try to create a new object. This will also increase cl_ObjectCount in rootclass */
-    object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW, tagList, NULL);
+    object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW, (IPTR)tagList, TAG_DONE);
     
     /* Now we can undo what we did here [1] */
     
