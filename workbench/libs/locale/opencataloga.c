@@ -1,15 +1,20 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
+
 #include <exec/types.h>
+#include <exec/memory.h>
+#include <exec/lists.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <libraries/iffparse.h>
 #include <proto/iffparse.h>
+#include <proto/utility.h>
 #include <string.h>
 #include <aros/macros.h>
 #include <aros/debug.h>

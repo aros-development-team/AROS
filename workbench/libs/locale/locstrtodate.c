@@ -10,7 +10,9 @@
 */
 
 #include <exec/types.h>
+#include <dos/datetime.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/locale.h>
 #include "locale_intern.h"
 #include <aros/asmcall.h>

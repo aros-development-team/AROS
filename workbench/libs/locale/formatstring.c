@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -10,6 +10,7 @@
 #include <utility/hooks.h>
 #include <proto/utility.h>
 #include <libraries/locale.h>
+#include <aros/asmcall.h>
 #include "locale_intern.h"
 
 #include <aros/debug.h>

@@ -1,14 +1,16 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
-#include "locale_intern.h"
+#include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/stdio.h>
 #include <proto/dos.h>
+#include <aros/asmcall.h>
+#include "locale_intern.h"
 
 UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
