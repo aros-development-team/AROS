@@ -13,6 +13,7 @@ FUNCTIONS = \
 	addclass \
 	addgadget \
 	addglist \
+	allocremember \
 	autorequest \
 	beginrefresh \
 	changewindowbox \
@@ -29,6 +30,7 @@ FUNCTIONS = \
 	endrefresh \
 	eraseimage \
 	freeclass \
+	freeremember \
 	freescreendrawinfo \
 	getattr \
 	getdefaultpubscreen \
@@ -44,6 +46,8 @@ FUNCTIONS = \
 	newmodifyprop \
 	newobjecta \
 	obtaingirport \
+	offgadget \
+	ongadget \
 	openscreen \
 	openscreentaglist \
 	openwindow \

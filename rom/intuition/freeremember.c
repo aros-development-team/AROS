@@ -1,0 +1,68 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc:
+    Lang: english
+*/
+#include "intuition_intern.h"
+#include <exec/memory.h>
+#include <proto/exec.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <intuition/intuition.h>
+#include <proto/intuition.h>
+
+	AROS_LH2(void, FreeRemember,
+
+/*  SYNOPSIS */
+	AROS_LHA(struct Remember **, rememberKey, A0),
+	AROS_LHA(LONG              , reallyForget, D0),
+
+/*  LOCATION */
+	struct IntuitionBase *, IntuitionBase, 68, Intuition)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	27-11-96    digulla automatically created from
+			    intuition_lib.fd and clib/intuition_protos.h
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    struct Remember * next, * key;
+
+    for (next=*rememberKey; (key=next); )
+    {
+	next = key->NextRemember;
+
+	if (key->RememberSize)
+	    FreeMem (key->Memory, key->RememberSize);
+
+	if (reallyForget)
+	    FreeMem (key, sizeof (struct Remember));
+    }
+
+    if (reallyForget)
+	*rememberKey = NULL;
+
+    AROS_LIBFUNC_EXIT
+} /* FreeRemember */
