@@ -1482,8 +1482,8 @@ rexxsyslib00004;2;verhaegs;Write DeleteRexxMsg
 rexxsyslib00005;2;verhaegs;Write ClearRexxMsg
 rexxsyslib00006;2;verhaegs;Write FillRexxMsg
 rexxsyslib00007;2;verhaegs;Write IsRexxMsg
-rexxsyslib00008;0;digulla;Write LockRexxBase
-rexxsyslib00009;0;digulla;Write UnlockRexxBase
+rexxsyslib00008;2;verhaegs;Write LockRexxBase
+rexxsyslib00009;2;verhaags;Write UnlockRexxBase
 rexxsyslib00010;0;verhaegs;Write CurrentEnv
 rexxsyslib00011;0;verhaegs;Write SetValue
 rexxsyslib00012;0;verhaegs;Write FetchValue
