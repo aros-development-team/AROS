@@ -137,7 +137,7 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
     o = NewDTObject((APTR)filename,
 	DTA_GroupID          , GID_PICTURE,
 	OBP_Precision        , PRECISION_EXACT,
-	PDTA_Screen          , scr,
+	PDTA_Screen          , (IPTR)scr,
 	PDTA_FreeSourceBitMap, TRUE,
 	PDTA_DestMode        , PMODE_V43,
 	PDTA_UseFriendBitMap , TRUE,
@@ -207,7 +207,7 @@ struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
 	    if ((node->o = LoadPicture(filename,scr)))
 	    {
 		struct BitMapHeader *bmhd;
-		GetDTAttrs(node->o,PDTA_BitMapHeader, &bmhd, TAG_DONE);
+		GetDTAttrs(node->o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
 		D(bug("picture %lx\n", node->o));
 
 		if (bmhd)
@@ -263,23 +263,33 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y)
     Object *o;
 
     o = node->o;
-    if (!o) return;
+    if (NULL == o)
+	return;
 
-    GetDTAttrs(o,PDTA_DestBitMap,&bitmap,TAG_DONE);
-    if (!bitmap) GetDTAttrs(o,PDTA_BitMap,&bitmap,TAG_DONE);
+    GetDTAttrs(o, PDTA_DestBitMap, (IPTR)&bitmap, TAG_DONE);
+    if (NULL == bitmap)
+	GetDTAttrs(o, PDTA_BitMap, (IPTR)&bitmap, TAG_DONE);
+
     if (bitmap)
     {
 	APTR mask = NULL;
 
-	GetDTAttrs(o,PDTA_MaskPlane,&mask,TAG_DONE);
+	GetDTAttrs(o, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
 	if (mask)
 	{
 	#ifndef __AROS__
-	    MyBltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe0,(PLANEPTR)mask);
+	    MyBltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
+				    dt_width(node), dt_height(node), 0xe0,
+				    (PLANEPTR)mask);
 	#else
-	    BltMaskBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xe0,(PLANEPTR)mask);	
+	    BltMaskBitMapRastPort(bitmap, 0, 0, rp, x, y,
+				  dt_width(node), dt_height(node), 0xe0,
+				  (PLANEPTR)mask);	
 	#endif
-	} else BltBitMapRastPort(bitmap,0,0,rp,x,y,dt_width(node),dt_height(node),0xc0);
+	}
+	else
+	    BltBitMapRastPort(bitmap, 0, 0, rp, x, y,
+			      dt_width(node), dt_height(node), 0xc0);
     }
 }
 
@@ -416,9 +426,11 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
     o = node->o;
     if (!o) return;
 
-    GetDTAttrs(o,PDTA_DestBitMap,&bitmap,TAG_DONE);
-    if (!bitmap) GetDTAttrs(o,PDTA_BitMap,&bitmap,TAG_DONE);
-    if (!bitmap) return;
+    GetDTAttrs(o, PDTA_DestBitMap, (IPTR)&bitmap, TAG_DONE);
+    if (NULL == bitmap)
+	GetDTAttrs(o, PDTA_BitMap, (IPTR)&bitmap, TAG_DONE);
+    if (NULL == bitmap)
+	return;
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
