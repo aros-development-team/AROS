@@ -57,15 +57,9 @@ STRPTR def_daylabels[] =
 IPTR Calendar$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data;
-    struct TagItem       *ti, tags[] =
-    {
-        {TAG_MORE, (IPTR) msg->ops_AttrList }
-    };
-    
-    msg->ops_AttrList = tags;
+    struct TagItem       *ti;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-	
     if (!obj) return 0;
     
     data = INST_DATA(cl, obj);

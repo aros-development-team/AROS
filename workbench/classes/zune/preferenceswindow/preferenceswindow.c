@@ -64,14 +64,7 @@ IPTR PreferencesWindow$OM_NEW
     Object         *contents   = NULL;
     Object         *testButton, *revertButton, 
                    *saveButton, *useButton, *cancelButton;
-    
-    struct TagItem tags[] =
-    {
-        { MUIA_Window_CloseGadget,        FALSE                 },
-        { WindowContents,                 NULL                  },
-        { TAG_MORE,                (IPTR) message->ops_AttrList }
-    };
-    
+       
     catalog = OpenCatalogA(NULL, "System/Classes/Zune/PreferencesWindow.catalog", NULL);
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
@@ -81,39 +74,43 @@ IPTR PreferencesWindow$OM_NEW
         contents    = (Object *) tag->ti_Data;
     }
     
-    tags[1].ti_Data = (IPTR) VGroup,
-        Child, contents,
-        Child, RectangleObject, 
-            MUIA_Rectangle_HBar, TRUE, 
-            MUIA_FixHeight, 2, 
-        End,
-        Child, HGroup,
-            Child, HGroup,
-                MUIA_Group_SameWidth, TRUE,
-                MUIA_Weight,             0,
-                
-                Child, testButton   = ImageButton(MSG(MSG_TEST), "THEME:Images/Gadgets/Preferences/Test.png"),
-                Child, revertButton = ImageButton(MSG(MSG_REVERT), "THEME:Images/Gadgets/Preferences/Revert.png"),
-            End,
-            Child, RectangleObject,
-                MUIA_Weight, 50,
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
+    
+        MUIA_Window_CloseGadget, FALSE,
+        
+        WindowContents, VGroup,
+            Child, contents,
+            Child, RectangleObject, 
+                MUIA_Rectangle_HBar, TRUE, 
+                MUIA_FixHeight, 2, 
             End,
             Child, HGroup,
-                MUIA_Group_SameWidth, TRUE,
-                MUIA_Weight,             0,
-                
-                Child, saveButton   = ImageButton(MSG(MSG_SAVE), "THEME:Images/Gadgets/Preferences/Save.png"),
-                Child, useButton    = ImageButton(MSG(MSG_USE), "THEME:Images/Gadgets/Preferences/Use.png"),
-                Child, cancelButton = ImageButton(MSG(MSG_CANCEL), "THEME:Images/Gadgets/Preferences/Cancel.png"),
+                Child, HGroup,
+                    MUIA_Group_SameWidth, TRUE,
+                    MUIA_Weight,             0,
+                    
+                    Child, testButton   = ImageButton(MSG(MSG_TEST), "THEME:Images/Gadgets/Preferences/Test.png"),
+                    Child, revertButton = ImageButton(MSG(MSG_REVERT), "THEME:Images/Gadgets/Preferences/Revert.png"),
+                End,
+                Child, RectangleObject,
+                    MUIA_Weight, 50,
+                End,
+                Child, HGroup,
+                    MUIA_Group_SameWidth, TRUE,
+                    MUIA_Weight,             0,
+                    
+                    Child, saveButton   = ImageButton(MSG(MSG_SAVE), "THEME:Images/Gadgets/Preferences/Save.png"),
+                    Child, useButton    = ImageButton(MSG(MSG_USE), "THEME:Images/Gadgets/Preferences/Use.png"),
+                    Child, cancelButton = ImageButton(MSG(MSG_CANCEL), "THEME:Images/Gadgets/Preferences/Cancel.png"),
+                End,
             End,
         End,
-    End;
-    
-    if (tags[1].ti_Data == NULL) goto error;
-    
-    message->ops_AttrList = tags;
-          
-    self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
+        
+        TAG_MORE, (IPTR) message->ops_AttrList
+    );
+
     if (self == NULL) goto error;
     
     data = INST_DATA(CLASS, self);
