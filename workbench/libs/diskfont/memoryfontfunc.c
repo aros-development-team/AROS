@@ -11,7 +11,7 @@
 #include <graphics/gfxbase.h>
 #include "diskfont_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* Userdata needed by the MemoryFontHook */
