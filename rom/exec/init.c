@@ -5,11 +5,16 @@
     Desc: startup code for AROS (main())
     Lang: english
 */
+#include <aros/system.h>
 #include <stdlib.h>
 #include <signal.h>
+#ifndef _AMIGA
 #define timeval     linux_timeval
 #include <sys/time.h>
 #undef timeval
+#else
+#include <sys/time.h>
+#endif
 #include <unistd.h>
 #include <stdio.h>
 #include <exec/execbase.h>
