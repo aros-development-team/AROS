@@ -762,7 +762,7 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad,
 
 struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD direction)
 {
-    struct Gadget *g, *gg, *prev;
+    struct Gadget *g = NULL, *gg, *prev;
     
     D(bug("FindCycleGadget: win = %x  gad = %x  direction = %d\n", win, gad, direction));
     

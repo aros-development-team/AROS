@@ -108,7 +108,7 @@ static const ULONG coltab[] = {
     UWORD	     *customdripens = NULL;
     ULONG	     *colors32 = NULL;
     WORD    	      sysfont = -1;
-    UWORD	      numcolormapcols;
+    UWORD	      numcolormapcols = 0;
     BOOL	      ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE;
     BOOL	      frontbm_set = FALSE;
     struct BitMap    *old_front_bm = NULL;

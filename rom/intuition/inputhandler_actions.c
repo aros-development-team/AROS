@@ -349,7 +349,6 @@ static void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD NewTopEdge,
 			     WORD NewWidth, WORD NewHeight, struct IntuitionBase *IntuitionBase)
 {
-    struct IntWindow 	*w 	     = (struct IntWindow *)targetwindow;
     struct Layer	*targetlayer = targetwindow->WLayer, *L;
     WORD		OldLeftEdge  = targetwindow->LeftEdge;
     WORD		OldTopEdge   = targetwindow->TopEdge;
@@ -474,7 +473,7 @@ void HandleIntuiActions(struct IIHData *iihdata,
     {
         struct Window * targetwindow = am->Window;
 	struct Screen * targetscreen = targetwindow ? targetwindow->WScreen : NULL;
-        struct Layer  * L, *targetlayer = targetwindow ? targetwindow->WLayer : NULL;
+        struct Layer  * L = NULL, *targetlayer = targetwindow ? targetwindow->WLayer : NULL;
         BOOL CheckLayersBehind = FALSE;
         BOOL CheckLayersInFront = FALSE;
 	BOOL remove_am = TRUE;

@@ -477,11 +477,11 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
 {
     struct Gadget 	*gad;
-    struct Region	*old_clipregion;
+    struct Region	*old_clipregion = NULL;
     struct RastPort	*rp, *rp2;
     struct Layer	*lay;
     struct IBox 	box;
-    WORD 		old_scroll_x, old_scroll_y, i, num_loops;
+    WORD 		old_scroll_x = 0, old_scroll_y = 0, i, num_loops;
     
     rp  = win->RPort;
     rp2 = win->BorderRPort;

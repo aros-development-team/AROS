@@ -94,7 +94,7 @@
     WORD    	    	mousequeue = DEFAULTMOUSEQUEUE;
     WORD    	    	repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
     ULONG   	    	moreFlags = 0;
-    ULONG   	    	helpgroup;
+    ULONG   	    	helpgroup = 0;
     
     ULONG   	    	lock;
     ULONG               windowvisible = TRUE;
