@@ -44,6 +44,9 @@
 #ifndef AROS_LIBCALL_H
 #include <aros/libcall.h>
 #endif
+#ifndef AROS_DEBUG_H
+#include <aros/debug.h>
+#endif
 #ifndef UTILITY_UTILITY_H
 #include <utility/utility.h>
 #endif
