@@ -15,6 +15,7 @@
 
 *****************************************************************************/
 
+#include <aros/config.h>
 #include <exec/types.h>
 #include <exec/nodes.h>
 #include <exec/memory.h>
@@ -223,8 +224,12 @@ void DetectCPU()
     char *vendor=(char*)0x00000030;
     int i;
     char *p=NULL;
-    
+
+#if AROS_BOCHS_HACK
+    CPUSpeed=100; /* Bochs does not like the "outb(0xb0, 0x43)" in CalcCPUSpeed() */
+#else    
     CPUSpeed=CalcCPUSpeed();
+#endif
 
     if (!strcmp(vendor, "GenuineIntel"))
 	CPUVendor = CPUV_INTEL;
