@@ -100,7 +100,6 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Rectangle_desc,
     &_MUI_Group_desc,
 //    &_MUI_Image_desc,
-    &_MUI_Dataspace_desc,
 //    &_MUI_Configdata_desc,
     &_MUI_Text_desc,
     &_MUI_Numeric_desc,
@@ -114,6 +113,9 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Virtgroup_desc,
     &_MUI_Scrollgroup_desc,
     &_MUI_Scrollbutton_desc,
+    &_MUI_Semaphore_desc,
+    &_MUI_Dataspace_desc
+
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)

@@ -50,6 +50,7 @@ CLASSESOBJS= \
   objs/classes/prop.o \
   objs/classes/rectangle.o \
   objs/classes/register.o \
+  objs/classes/semaphore.o \
   objs/classes/scrollbar.o \
   objs/classes/scrollbutton.o \
   objs/classes/scrollgroup.o \
@@ -212,6 +213,9 @@ objs/classes/group.o: classes/group.c
 
 objs/classes/virtgroup.o: classes/virtgroup.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/virtgroup.c objname=$@
+
+objs/classes/semaphore.o: classes/semaphore.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/semaphore.c objname=$@
 
 objs/classes/scrollbar.o: classes/scrollbar.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/scrollbar.c objname=$@
