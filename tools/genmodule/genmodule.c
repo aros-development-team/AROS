@@ -13,7 +13,11 @@ int main(int argc, char **argv)
     struct config *cfg = initconfig(argc, argv, NORMAL);
 
     readref(cfg, functions);
-    if (cfg->modtype == LIBRARY || cfg->modtype == DEVICE || cfg->modtype == RESOURCE)
+    if (cfg->modtype == LIBRARY
+	|| cfg->modtype == DEVICE
+	|| cfg->modtype == RESOURCE
+	|| cfg->modtype == GADGET
+    )
     {
         writeincproto(cfg);
         writeincclib(cfg, functions);
