@@ -3,8 +3,9 @@
     $Id$
 
     Desc: Create a new process (in an old way).
-    Lang: english
+    Lang: English
 */
+
 #include "dos_intern.h"
 #include <dos/dostags.h>
 
@@ -17,9 +18,9 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name, D1),
-	AROS_LHA(LONG  , pri, D2),
-	AROS_LHA(BPTR  , segList, D3),
-	AROS_LHA(LONG  , stackSize, D4),
+	AROS_LHA(LONG, pri, D2),
+	AROS_LHA(BPTR, segList, D3),
+	AROS_LHA(LONG, stackSize, D4),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 23, Dos)
@@ -36,10 +37,10 @@
 	as it is much more flexible.
 
     INPUTS
-	name        -   Name of the new process.
-	pri         -   Starting priority.
-	segList     -   BCPL pointer to a seglist.
-	stackSize   -   The size of the initial process stack.
+	name        --   Name of the new process.
+	pri         --   Starting priority.
+	segList     --   BCPL pointer to a seglist.
+	stackSize   --   The size of the initial process stack.
 
     RESULT
 	Pointer to the pr_MsgPort in the Process structure. Will
@@ -71,34 +72,49 @@
 	Basically passes this call to CreateNewProc().
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Process *pr;
+    struct Process *pr;	      /* The process to create */
+    struct Process *parent = (struct Process *)FindTask(NULL);
+    APTR            windowPtr = NULL;
 
-    /* Don't forget to find out some extra defaults here */
-    struct TagItem procTags[6] =
+    /* If the caller is a process, inherit its window pointer */
+    if (__is_process(parent))
     {
-	{ NP_Seglist	, (IPTR)segList },
-	{ NP_FreeSeglist, FALSE     	},
-	{ NP_StackSize	, stackSize 	},
-	{ NP_Name   	, (IPTR)name 	},
-	{ NP_Priority	, pri	     	},
-	{ TAG_DONE  	, 0 	    	}
-    };
-
-    if((pr = CreateNewProc(procTags)))
-    {
-	return (struct MsgPort *)&pr->pr_MsgPort;
+	windowPtr = parent->pr_WindowPtr;
     }
-    else
+
     {
-	return NULL;
+	/* Don't forget to find out some extra defaults here */
+	struct TagItem procTags[] =
+	{
+	    { NP_Seglist	, (IPTR)segList },
+	    { NP_FreeSeglist    , FALSE     	},
+	    { NP_StackSize	, stackSize 	},
+	    { NP_Name   	, (IPTR)name    },
+	    { NP_Priority	, pri	     	},
+	    { NP_WindowPtr	, windowPtr     },
+	    { NP_CurrentDir	, 0		},
+	    { NP_HomeDir	, 0	  	},
+	    { NP_Input	        , 0		},
+	    { NP_Output	        , 0		},
+	    { NP_CloseInput	, FALSE		},
+	    { NP_CloseOutput    , FALSE		},
+	    { TAG_DONE  	, NULL 	    	}
+	};
+	
+	if ((pr = CreateNewProc(procTags)))
+	{
+	    return (struct MsgPort *)&pr->pr_MsgPort;
+	}
+	else
+	{
+	    return NULL;
+	}
     }
 
     AROS_LIBFUNC_EXIT
