@@ -71,7 +71,7 @@
 
 #include "etask.h"
 #include "exec_util.h"
-
+#include "traps.h"
 
 /* As long as we don't have CPU detection routine, assume FPU to be present */
 
@@ -97,6 +97,10 @@ int     exec_check_base();
 void    exec_DefaultTrap();
 void    exec_DefaultTaskExit();
 void    exec_GetCPU();
+int 	exec_RamCheck_fast();
+int 	exec_RamCheck_dma();
+
+
 asmlinkage void Exec_SystemCall(struct pt_regs);
 ULONG   **exec_RomTagScanner();
 void    irqSetup(void);
@@ -113,6 +117,10 @@ extern void Exec_SerialRawPutChar(UBYTE chr);
 extern void Exec_Switch_FPU();
 extern void Exec_PrepareContext_FPU();
 extern void Exec_Dispatch_FPU();
+
+extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
+
+extern void hidd_demo();
 
 AROS_UFH5S(void, IntServer,
     AROS_UFHA(ULONG, intMask, D0),
