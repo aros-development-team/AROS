@@ -108,10 +108,10 @@ static void prefs_init_frames (struct ZunePrefs *prefs)
 	frame->innerTop = frame->innerBottom = 2;
 /* scrollbar container */
     frame = &prefs->frames[MUIV_Frame_Prop];
-    frame->type = FST_THIN_BORDER;
+    frame->type = FST_BEVEL;
     frame->state = 0;
     frame->innerLeft = frame->innerRight =
-	frame->innerTop = frame->innerBottom = 0;
+	frame->innerTop = frame->innerBottom = 2;
 
 /* gauge */
     frame = &prefs->frames[MUIV_Frame_Gauge];
@@ -139,7 +139,7 @@ static void prefs_init_frames (struct ZunePrefs *prefs)
 	frame->innerTop = frame->innerBottom = 2;
 /* slider container */
     frame = &prefs->frames[MUIV_Frame_Slider];
-    frame->type = FST_THIN_BORDER;
+    frame->type = FST_THICK_BORDER;
     frame->state = 0;
     frame->innerLeft = frame->innerRight =
 	frame->innerTop = frame->innerBottom = 0;

@@ -44,6 +44,7 @@ CLASSESOBJS= \
   objs/classes/group.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
+  objs/classes/prop.o \
   objs/classes/rectangle.o \
   objs/classes/string.o \
   objs/classes/slider.o \
@@ -200,6 +201,9 @@ objs/classes/text.o: classes/text.c
 
 objs/classes/rectangle.o: classes/rectangle.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/rectangle.c objname=$@
+
+objs/classes/prop.o: classes/prop.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/prop.c objname=$@
 
 objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
