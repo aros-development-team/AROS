@@ -48,6 +48,7 @@ AROS_UFP3(static ULONG, rootDispatcher,
 
 /* There has to be a better way... */
 struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase);
+struct IClass *InitFrameIClass (struct IntuitionBase * IntuitionBase);
 
 int Intuition_entry(void)
 {
@@ -137,7 +138,8 @@ AROS_LH2(struct IntuitionBase *, init,
     AddClass (&rootclass);
 
     /* Add all other classes */
-    InitImageClass (IntuitionBase);
+    InitImageClass (IntuitionBase); /* After ROOTCLASS */
+    InitFrameIClass (IntuitionBase); /* After IMAGECLASS */
 
     /* TODO Create input.device. This is a bad hack. */
     inputTask[0].ti_Data = (IPTR)IntuitionBase;
