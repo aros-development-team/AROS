@@ -11,6 +11,7 @@
 #if defined(AROS_64BIT_TYPE) || defined(__GNUC__)
 #    define Get_High32of64(val)       ((val) >> 32L )
 #    define Get_Low32of64(val)        ((val) & 0xFFFFFFFF)
+#    define ConvertTo64(HI,LO)        ((((QUAD)(HI)) << 32L) | LO)
 #else
 #    define Get_High32of64(val)       ((val).high)
 #    define Set_High32of64(Dest,Src)  ((Dest).high) = Src
@@ -20,7 +21,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define QuadData(Const64_Hi, Const64_Lo, Const64) \
-     Const64
+     ConvertTo64(Const64_Hi, Const64_Lo)
 #else
 #define QuadData(Const64_Hi, Const64_Lo, Const64) \
      {Const64_Hi, Const64_Lo}  
@@ -31,10 +32,10 @@
 /* XOR */
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define XOR64C(Dest64, Var1_64, Const64_Hi, Const64_Lo, Const64) \
-     Dest64 = Var1_64 ^ Const64 ;
+#define XOR64C(Dest64, Var1_64, Const64_Hi, Const64_Lo) \
+     Dest64 = Var1_64 ^ ConvertTo64(Const64_Hi, Const64_Lo)
 #else
-#define XOR64C(Dest64, Var1_64, Const64_Hi, Const64_Lo, Const64) \
+#define XOR64C(Dest64, Var1_64, Const64_Hi, Const64_Lo) \
   { \
      Set_High32of64(Dest64, Get_High32of64(Var1_64) ^ Const64_Hi); \
      Set_Low32of64( Dest64, Get_Low32of64(Var1_64)  ^ Const64_Lo); \
@@ -42,10 +43,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define XOR64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
-     Dest64 ^= Const64 ;
+#define XOR64QC(Dest64, Const64_Hi, Const64_Lo) \
+     Dest64 ^= ConvertTo64(Const64_Hi, Const64_Lo)
 #else
-#define XOR64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
+#define XOR64QC(Dest64, Const64_Hi, Const64_Lo) \
   { \
      Set_High32of64(Dest64, Get_High32of64(Dest64) ^ Const64_Hi); \
      Set_Low32of64( Dest64, Get_Low32of64(Dest64)  ^ Const64_Lo); \
@@ -91,10 +92,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define OR64C(Dest64, Var64, Const64_Hi, Const64_Lo, Const64) \
-  Dest64 = Var64 | Const64;
+#define OR64C(Dest64, Var64, Const64_Hi, Const64_Lo) \
+  Dest64 = Var64 | ConvertTo64(Const64_Hi, Const64_Lo);
 #else
-#define OR64C(Dest64, Var64, Const64_Hi, Const64_Lo, Const64) \
+#define OR64C(Dest64, Var64, Const64_Hi, Const64_Lo) \
   { \
     Set_High32of64(Dest64, Get_High32of64(Var64) | Const64_Hi); \
     Set_Low32of64( Dest64, Get_Low32of64(Var64)  | Const64_Lo); \
@@ -102,10 +103,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define OR64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
-  Dest64 |= Const64;
+#define OR64QC(Dest64, Const64_Hi, Const64_Lo) \
+  Dest64 |= ConvertTo64(Const64_Hi, Const64_Lo);
 #else
-#define OR64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
+#define OR64QC(Dest64, Const64_Hi, Const64_Lo) \
   { \
     Set_High32of64(Dest64, Get_High32of64(Dest64) | Const64_Hi); \
     Set_Low32of64( Dest64, Get_Low32of64(Dest64)  | Const64_Lo); \
@@ -115,10 +116,10 @@
 /* AND */
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define AND64C(Dest64, Var64, Const64_Hi, Const64_Lo, Const64) \
-  Dest64 = Var64 & Const64 ;
+#define AND64C(Dest64, Var64, Const64_Hi, Const64_Lo) \
+  Dest64 = Var64 & ConvertTo64(Const64_Hi, Const64_Lo) ;
 #else
-#define AND64C(Dest64, Var64, Const64_Hi, Const64_Lo, Const64) \
+#define AND64C(Dest64, Var64, Const64_Hi, Const64_Lo) \
   { \
     Set_High32of64(Dest64, Get_High32of64(Var64) & Const64_Hi); \
     Set_Low32of64( Dest64, Get_Low32of64(Var64)  & Const64_Lo); \
@@ -137,10 +138,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define AND64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
-  Dest64 &= Const64 ;
+#define AND64QC(Dest64, Const64_Hi, Const64_Lo) \
+  Dest64 &= ConvertTo64(Const64_Hi, Const64_Lo) ;
 #else
-#define AND64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
+#define AND64QC(Dest64, Const64_Hi, Const64_Lo) \
   { \
     Set_High32of64(Dest64, Get_High32of64(Dest64) & Const64_Hi); \
     Set_Low32of64( Dest64, Get_Low32of64(Dest64)  & Const64_Lo); \
@@ -284,7 +285,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define Set_Value64(Dest64, Var64) \
-  Dest64 = Var64;
+  Dest64 = Var64
 #else
 #define Set_Value64(Dest64, Var64) \
   { \
@@ -294,10 +295,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define Set_Value64C(Dest64, Const64_Hi, Const64_Lo, Const64) \
-  Dest64 = Const64;
+#define Set_Value64C(Dest64, Const64_Hi, Const64_Lo) \
+  Dest64 = ConvertTo64(Const64_Hi, Const64_Lo)
 #else
-#define Set_Value64C(Dest64, Const64_Hi, Const64_Lo, Const64) \
+#define Set_Value64C(Dest64, Const64_Hi, Const64_Lo) \
   { \
     Set_High32of64(Dest64, Const64_Hi);\
     Set_Low32of64 (Dest64, Const64_Lo);\
@@ -306,7 +307,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define Set_Value64from32(Dest64, Var32) \
-  Dest64 = (QUAD)Var32;
+  Dest64 = (QUAD)Var32
 #else
 #define Set_Value64from32(Dest64, Var32) \
   { \
@@ -328,10 +329,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_eqC(Var1_64, Const64_Hi, Const64_Lo, Const64) \
-  (Var1_64 == Const64)
+#define is_eqC(Var1_64, Const64_Hi, Const64_Lo) \
+  (Var1_64 == ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_eqC(Var64, Const64_Hi, Const64_Lo, Const64) \
+#define is_eqC(Var64, Const64_Hi, Const64_Lo) \
     (Get_Low32of64(Var64)  == Const64_Lo  && \
      Get_High32of64(Var64) == Const64_Hi )
 #endif
@@ -346,10 +347,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_neqC(Var1_64, Const64_Hi, Const64_Lo, Const64) \
-  (Var1_64 != Const64)
+#define is_neqC(Var64, Const64_Hi, Const64_Lo) \
+  (Var64 != ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_neqC(Var64, Const64_Hi, Const64_Lo, Const64) \
+#define is_neqC(Var64, Const64_Hi, Const64_Lo) \
     (Get_Low32of64(Var64)  != Const64_Lo  || \
      Get_High32of64(Var64) != Const64_Hi )
 #endif
@@ -365,10 +366,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_greaterC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  (Var1_64 > Const64)
+#define is_greaterC(Var1_64, Const64_Hi, Const64_Lo ) \
+  (Var1_64 > ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_greaterC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
+#define is_greaterC(Var1_64, Const64_Hi, Const64_Lo ) \
   ( (Get_High32of64(Var1_64) >  Const64_Hi) || \
     (Get_High32of64(Var1_64) == Const64_Hi &&  \
      Get_Low32of64 (Var1_64) >  Const64_Hi) )
@@ -385,10 +386,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_geqC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  (Var1_64 > Const64)
+#define is_geqC(Var1_64, Const64_Hi, Const64_Lo ) \
+  (Var1_64 > ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_geqC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
+#define is_geqC(Var1_64, Const64_Hi, Const64_Lo ) \
   ( (Get_High32of64(Var1_64) >=  Const64_Hi) || \
     (Get_High32of64(Var1_64) ==  Const64_Hi  &&  \
      Get_Low32of64(Var1_64)  >=  Const64_Lo)  )
@@ -405,20 +406,20 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_lessC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  ((UQUAD)Var1_64 < (UQUAD)Const64)
+#define is_lessC(Var1_64, Const64_Hi, Const64_Lo ) \
+  ((UQUAD)Var1_64 < (UQUAD)ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_lessC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
+#define is_lessC(Var1_64, Const64_Hi, Const64_Lo ) \
   ( ((ULONG)Get_High32of64(Var1_64) <  (ULONG)Const64_Hi)  || \
     ((ULONG)Get_High32of64(Var1_64) == (ULONG)Const64_Hi   &&  \
      (ULONG)Get_Low32of64(Var1_64)  <  (ULONG)Const64_Lo) )
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_lessSC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  ((QUAD)Var1_64 < (QUAD)Const64 )
+#define is_lessSC(Var1_64, Const64_Hi, Const64_Lo ) \
+  ((QUAD)Var1_64 < (QUAD)ConvertTo64(Const64_Hi, Const64_Lo) )
 #else
-#define is_lessSC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
+#define is_lessSC(Var1_64, Const64_Hi, Const64_Lo ) \
   ( ((LONG)Get_High32of64(Var1_64) <  (LONG)Const64_Hi)  || \
     ((LONG)Get_High32of64(Var1_64) == (LONG)Const64_Hi   &&  \
      (LONG)Get_Low32of64(Var1_64)  <  (LONG)Const64_Lo) )
@@ -436,10 +437,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_leqC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  ((UQUAD)Var1_64 <= (UQUAD)Const64)
+#define is_leqC(Var1_64, Const64_Hi, Const64_Lo ) \
+  ((UQUAD)Var1_64 <= (UQUAD)ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_leqC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
+#define is_leqC(Var1_64, Const64_Hi, Const64_Lo ) \
   /* first comparison has to be a "<" !!! */ \
   ( ((ULONG)Get_High32of64(Var1_64) <  (ULONG)Const64_Hi) || \
     ((ULONG)Get_High32of64(Var1_64) == (ULONG)Const64_Hi  &&  \
@@ -447,10 +448,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define is_leqSC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  ((QUAD)Var1_64 <= (QUAD)Const64)
+#define is_leqSC(Var1_64, Const64_Hi, Const64_Lo ) \
+  ((QUAD)Var1_64 <= (QUAD)ConvertTo64(Const64_Hi, Const64_Lo))
 #else
-#define is_leqSC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
+#define is_leqSC(Var1_64, Const64_Hi, Const64_Lo ) \
   /* first comparison has to be a "<" !!! */ \
   ( (( LONG)Get_High32of64(Var1_64) <  ( LONG)Const64_Hi) || \
     (( LONG)Get_High32of64(Var1_64) == ( LONG)Const64_Hi  &&  \
@@ -516,10 +517,10 @@
 #endif
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
-#define ADD64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
-   Dest64 += Const64;
+#define ADD64QC(Dest64, Const64_Hi, Const64_Lo ) \
+   Dest64 += ConvertTo64(Const64_Hi, Const64_Lo);
 #else
-#define ADD64QC(Dest64, Const64_Hi, Const64_Lo, Const64) \
+#define ADD64QC(Dest64, Const64_Hi, Const64_Lo ) \
    if ((LONG) Get_Low32of64(Dest64) < 0  && \
        (LONG) Const64_Lo  < 0  )  \
    { \
