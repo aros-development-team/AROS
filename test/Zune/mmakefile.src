@@ -9,13 +9,14 @@ FILES  := test      	    \
 	  gradient  	    \
 	  volumelist	    \
 	  dirlist   	    \
+          disable           \
 	  string            \
 	  numericbutton     \
 	  poplist   	    \
 	  popscreen 	    \
 	  crawling	    \
 	  levelmeter	    \
-	  knob
+	  knob 
 
 EXEDIR := $(AROS_TESTS)/Zune
 
