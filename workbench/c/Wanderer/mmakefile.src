@@ -4,12 +4,11 @@ include $(TOP)/config/make.cfg
 
 FILES  := wanderer
 
-EXEDIR := $(AROS_C)
+#MM- workbench-c : workbench-c-wanderer
+#MM workbench-c-wanderer : includes linklibs
 
-#MM workbench-c : includes linklibs
-
-%build_prog mmake=workbench-c \
-    progname=LoadWB targetdir=$(EXEDIR) \
+%build_prog mmake=workbench-c-wanderer \
+    progname=LoadWB targetdir=$(AROS_C) \
     files=$(FILES) uselibs="mui arossupport amiga rom m" \
     detach=yes
 
