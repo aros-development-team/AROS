@@ -9,7 +9,7 @@ FILES := main support
 EXEDIR := $(AROSDIR)/Tools/Commodities
 EXE := $(EXEDIR)/StartMenu
 
-USE_CLIB := yes
+USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 
