@@ -54,6 +54,7 @@ struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitGadgetClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitPropGClass (struct LIBBASETYPE * LIBBASE);
 
 int Intuition_entry(void)
 {
@@ -149,6 +150,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitGadgetClass (LIBBASE); /* After ROOTCLASS */
     InitButtonGClass (LIBBASE); /* After GADGETCLASS */
     InitFrButtonClass (LIBBASE); /* After BUTTONGCLASS */
+    InitPropGClass (LIBBASE);    /* After GADGETCLASS */
 
     /* You would return NULL if the init failed */
     return LIBBASE;
