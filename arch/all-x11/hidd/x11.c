@@ -496,7 +496,17 @@ UX11
 		    continue;
 	    }
 	    
-	    
+#if ADJUST_XWIN_SIZE
+	    /* Must check this here, because below only the inner
+	       window events are recognized */
+	       
+	    if ((event.type == ClientMessage) &&
+	        (event.xclient.data.l[0] == xsd->delete_win_atom))
+	    {
+		kill(getpid(), SIGINT);
+	    }
+#endif	    
+
 	    ForeachNode( &xwindowlist, node)
 	    {
 	        if (node->xwindow == event.xany.window)
@@ -652,12 +662,14 @@ UX11
 		     
 		    break; }
 
+#if !ADJUST_XWIN_SIZE
          	case ClientMessage:
             	    if (event.xclient.data.l[0] == xsd->delete_win_atom)
 		    {
 		        kill(getpid(), SIGINT);
 		    }
 		    break;
+#endif
 
 	        } /* switch (X11 event type) */
 		
