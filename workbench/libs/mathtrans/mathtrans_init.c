@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Init of mathtrans.library
@@ -16,13 +16,13 @@
 #include <aros/debug.h>
 #undef kprintf
 
-struct MathBase * MathBase;
+struct Library * MathBase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT;
     
-    MathBase = (struct MathBase *)OpenLibrary ("mathffp.library", 0);
+    MathBase = OpenLibrary ("mathffp.library", 0);
     if (!MathBase)
 	return FALSE;
 

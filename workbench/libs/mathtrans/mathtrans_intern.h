@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -37,13 +37,6 @@
 
 #include <proto/mathtrans.h>
 #include <libraries/mathffp.h>
-
-extern struct MathBase * MathBase;
-/*
-    This is the MathTransBase structure. It is documented here because it is
-    completely private. Applications should treat it as a struct Library, and
-    use the mathtrans.library functions to get information.
-*/
 
 /* internal prototypes */
 
