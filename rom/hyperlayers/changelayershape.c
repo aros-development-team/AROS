@@ -28,14 +28,32 @@
 	struct LayersBase *, LayersBase, 41, Layers)
 
 /*  FUNCTION
-       Changes the shape of the layer. 
-       When the shape of a layer is changed the pixel content
+       Changes the shape of the layer on the fly.
+       When the shape of a layer is changed the current pixel content
        is copied into its ClipRects so no information is lost.
+       The user can provide a callback function that will be 
+       called when the current layer's information is all backed up
+       in ClipRects. The signature of the callback should look as follows:
+           AROS_UFC4(struct Region *, callback,
+               AROS_UFCA(struct Region *   , newshape  , A0),
+               AROS_UFCA(struct Layer  *  , l          , A1),
+               AROS_UFCA(struct ClipRect *, l->ClipRect, A2),
+               AROS_UFCA(struct Region *  , l->shape   , A3));
+       
+       THe first parameter contains the shape as passed to this function,
+       which may be NULL in this case. The second parameter is the current
+       layer, the third is the list of cliprects of the current layer and
+       the fourth one is the currently still install shape of the layer
+       that is supposed to be exchanged.
+       It is expected that this function returns the region to be installed
+       for the layer.
 
     INPUTS
        L        - pointer to layer 
        newshape - pointer to a region that comprises the new shape
-                  of the layer. 
+                  of the layer. May be NULL if callback is provided. 
+       callback - pointer to a callback function. May be NULL if newshape
+                  is given.
 
     RESULT
        Pointer to the previously installed region.
@@ -118,7 +136,7 @@
     if (l->shaperegion)
       AndRegionRegion(l->shaperegion, l->shape);
 
-    _TranslateRect(&layer->shape->bounds, l->bounds.MinX, l->bounds.MinY);      
+    _TranslateRect(&l->shape->bounds, l->bounds.MinX, l->bounds.MinY);      
       
     _SetRegion(l->shape, &cutnewshape);
     AndRegionRegion(l->parent->shape, &cutnewshape);
