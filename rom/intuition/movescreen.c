@@ -1,9 +1,9 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function MoveScreen()
-    Lang: english
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -38,7 +38,7 @@
     NOTES
 	Depending on other restrictions, the screen may not move as far
 	as specified. It will move as far as possible and you can check
-	LeftEdge and TopEdge of the sceen to see how far it got.
+	LeftEdge and TopEdge of the screen to see how far it got.
 
     EXAMPLE
 
@@ -58,9 +58,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    /* Don't move screens by now */
-#warning TODO: Write intuition/MoveScreen()
-    aros_print_not_implemented ("MoveScreen");
+    ScreenPosition(screen, SPOS_RELATIVE, dx, dy, 0, 0);
 
     AROS_LIBFUNC_EXIT
 } /* MoveScreen */
