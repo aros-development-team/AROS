@@ -22,6 +22,7 @@
 #include <aros/arossupportbase.h>
 #include <aros/machine.h>
 #include <aros/asmcall.h>
+#include <aros/config.h>
 
 #include <aros/debug.h>
 
@@ -162,6 +163,10 @@ AROS_UFH4(int, Dispatcher,
 
     AROS_USERFUNC_INIT
 
+#if AROS_NESTING_SUPERVISOR
+    Disable();
+#endif
+    
     if( SysBase->TaskReady.lh_Head->ln_Succ != NULL &&
         ((BYTE)SysBase->ThisTask->tc_Node.ln_Pri <=
 	 (BYTE)((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
@@ -183,6 +188,10 @@ AROS_UFH4(int, Dispatcher,
 	    SysBase->AttnResched |= 0x80;
     }
 
+#if AROS_NESTING_SUPERVISOR
+    Enable();
+#endif
+    
     /* This make the int handler continue with the rest of the ints. */
     return 0;
 
