@@ -100,7 +100,7 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    while ((tag = NextTagItem(&taglist))) {
+    while ((tag = NextTagItem((const struct TagItem **)&taglist))) {
 	switch (tag->ti_Tag) {
         case GA_Disabled:
             retval = TRUE;
