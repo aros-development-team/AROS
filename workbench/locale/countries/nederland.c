@@ -74,5 +74,5 @@ struct CountryPrefs nederlandPrefs =
     "-", SS_SPACE, SP_SUCC_CURR, CSP_PRECEDES,
 
     /* Calendar type */
-    CT_7MON
+    CT_7SUN
 };

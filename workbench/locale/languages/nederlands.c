@@ -271,21 +271,21 @@ static const STRPTR __dutch_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Maandag", "Dinsdag", "Woensdag", "Donerdag", "Vrijdag",
-    "Zaterdag", "Zondag",
+    "Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag",
+    "Vrijdag", "Zaterdag",
 
     /* Abbreviated days of the week */
-    "Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo",
+    "Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za",
 
     /* Months of the year */
-    "Januar", "Februari", "Maart",
+    "Januari", "Februari", "Maart",
     "April", "Mei", "Juni",
     "Juli", "Augustus", "September",
     "Oktober", "November", "December",
 
     /* Abbreviated months of the year */
     "Jan", "Feb", "Maa", "Apr", "Mei", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jul", "Aug", "Sep", "Okt", "Nov", "Dec",
 
     "Ja", /* Yes, affirmative response */
     "Nee", /* No/negative response */
@@ -305,7 +305,7 @@ static const STRPTR __dutch_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Yesterday", "Today", "Tomorrow", "Future"
+    "Gisteren", "Vandaag", "Morgen", "Toekomst"
 };
 
 /* This is the end of ROMtag marker. */
