@@ -54,10 +54,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    struct ExtSprite *sprite;
+    
 #warning TODO: Write graphics/AllocSpriteDataA()
     aros_print_not_implemented ("AllocSpriteDataA");
 
-    return NULL;
+    sprite = AllocVec(sizeof(*sprite), MEMF_PUBLIC | MEMF_CLEAR);
+    
+    return sprite;
 
     AROS_LIBFUNC_EXIT
 } /* AllocSpriteDataA */

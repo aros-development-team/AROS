@@ -49,5 +49,7 @@
 #warning TODO: Write graphics/FreeSpriteData()
     aros_print_not_implemented ("FreeSpriteData");
 
+    if (extsp) FreeVec(extsp);
+    
     AROS_LIBFUNC_EXIT
 } /* FreeSpriteData */
