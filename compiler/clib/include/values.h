@@ -1,5 +1,5 @@
-#ifndef _VALUES_H
-#define _VALUES_H
+#ifndef _VALUES_H_
+#define _VALUES_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -20,4 +20,4 @@
 #define MININT (1 << (((sizeof(int) * BITSPERBYTE) - 1))
 #define MAXINT (~MININT)
 
-#endif /* _VALUES_H */
+#endif /* _VALUES_H_ */
