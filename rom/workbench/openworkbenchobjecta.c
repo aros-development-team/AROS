@@ -413,7 +413,14 @@ BOOL __WB_BuildArguments
                 break;
                 
             case WBOPENA_ArgName:
-                if (lastLock != NULL) numArgs++;
+                /*
+                    Filter out args where both lock AND name are NULL, since 
+                    they are completely worthless to the application.
+                */
+                if (lastLock != NULL || tag->ti_Data != NULL)
+                {
+                    numArgs++;
+                }
                 break;
         }
     }
@@ -446,6 +453,11 @@ BOOL __WB_BuildArguments
                     break;
                     
                 case WBOPENA_ArgName:
+                    /*
+                        Filter out args where both lock AND name are NULL, 
+                        since they are completely worthless to the application.
+                    */
+                    if (lastLock != NULL || tag->ti_Data != NULL)
                     {
                         STRPTR name = (STRPTR) tag->ti_Data;
                         
