@@ -138,7 +138,7 @@ struct config *initconfig(int argc, char **argv, int command)
 	cfg->firstlvo = 1;
 	break;
     case GADGET:
-	cfg->firstlvo = 6;
+	cfg->firstlvo = 5;
 	cfg->boopsimprefix = gadgetmprefix;
 	break;
     default:
