@@ -529,7 +529,7 @@ int listfile(STRPTR filename,
   memset(&ap, 0x0, sizeof(struct AnchorPath));
   error = MatchFirst(filename, &ap);
 
-  if (0 == strcmp(ap.ap_Info.fib_FileName, filename))
+  if (0 == strcasecmp(ap.ap_Info.fib_FileName, filename))
   {
     if (ap.ap_Info.fib_DirEntryType >= 0)
     {
