@@ -237,6 +237,14 @@ AROS_LH1(BPTR, close,
 
     /* Let any following attemps to use the device crash hard. */
     ioreq->io_Device=(struct Device *)-1;
+
+    InputDevice->device.dd_Library.lib_OpenCnt--;
+
+#if 0
+    if (InputDevice->device.dd_Library.lib_OpenCnt == 0)
+	expunge();
+#endif    
+
     return 0;
     AROS_LIBFUNC_EXIT
 }
