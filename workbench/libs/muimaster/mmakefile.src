@@ -122,18 +122,22 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
 %make_lib_includes
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
-INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
+INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h $(AROS_INCLUDES)/libraries/MUI/mccheader.c
 
 #MM includes-generate
 includes-generate :: includes-mui-setup $(INCLUDEFILES)
 	@$(NOP)
 
-includes-mui-setup : $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries
+includes-mui-setup : $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries $(AROS_INCLUDES)/libraries/MUI
 
-$(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries :
+$(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries $(AROS_INCLUDES)/libraries/MUI :
 	%mkdir_q $@
 	
 $(AROS_INCLUDES)/libraries/mui.h : $(GENINCDIR)/libraries/mui.h
+	@$(ECHO) Copying $< to $@
+	@$(CP) $< $@
+
+$(AROS_INCLUDES)/libraries/MUI/mccheader.c : mccheader.c
 	@$(ECHO) Copying $< to $@
 	@$(CP) $< $@
 
