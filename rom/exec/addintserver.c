@@ -2,11 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Add interrupt client to chain of interrupt server
     Lang:
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#include <hardware/custom.h>
+#include <hardware/intbits.h>
+#endif
+
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #ifdef _AMIGA
@@ -33,6 +40,8 @@
     RESULT
 
     NOTES
+	This function also enables the corresponding chipset interrupt if
+	run on a native Amiga.
 
     EXAMPLE
 
@@ -47,20 +56,22 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#ifdef _AMIGA
-    struct Custom *custom = (struct Custom *)((void **)0xdff000);
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    struct Custom *custom = (struct Custom *)(void **)0xdff000;
 #endif
 
-    Disable ();
+    Disable();
 
-    Enqueue ((struct List *)SysBase->IntVects[intNumber].iv_Data,
-	(struct Node *)interrupt);
+    Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, (struct Node *)interrupt);
 
-#ifdef _AMIGA
-    custom->intena = (UWORD)(INTF_SETCLR|(1<<intNumber));
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    /*
+	Enable the chipset interrupt if run on a native Amiga.
+    */
+    custom->intena = (UWORD)(INTF_SETCLR|(1L<<intNumber));
 #endif
 
-    Enable ();
+    Enable();
 
     AROS_LIBFUNC_EXIT
 } /* AddIntServer */

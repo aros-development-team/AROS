@@ -5,13 +5,17 @@
     Desc:
     Lang:
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#include <hardware/custom.h>
+#include <hardware/intbits.h>
+#endif
+
 #include <proto/exec.h>
 #include <aros/libcall.h>
-#ifdef _AMIGA
-#include <hardware/custom.h>
-#endif
 
 /*****************************************************************************
 
@@ -48,24 +52,25 @@
 {
     AROS_LIBFUNC_INIT
     struct List *list;
-#ifdef _AMIGA
-    struct Custom *custom = (struct Custom *)((void **)0xdff000);
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    struct Custom *custom = (struct Custom *)(void **)0xdff000;
 #endif
 
     list = (struct List *)SysBase->IntVects[intNumber].iv_Data;
 
-    Disable ();
-    Remove ((struct Node *)interrupt);
+    Disable();
 
-    if (list->lh_TailPred == (struct Node *)list)
+    Remove((struct Node *)interrupt);
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    if(list->lh_TailPred == (struct Node *)list)
     {
-	/* disable interrupts if there are no more nodes on the list */
-#ifdef _AMIGA
-	custom->intena = (UWORD)(1<<intNumber);
-#endif
+        /* disable interrupts if there are no more nodes on the list */
+        custom->intena = (UWORD)((1<<intNumber));
     }
+#endif
 
-    Enable ();
+    Enable();
 
     AROS_LIBFUNC_EXIT
 } /* RemIntServer */
