@@ -397,7 +397,7 @@ disk00005;0;digulla;Write ReadUnitID
 diskfont00000;1;nlorentz;Write OpenDiskFont
 diskfont00001;1;nlorentz;Write AvailFonts
 diskfont00002;1;SDuvan;Write NewFontContents
-diskfont00003;1;SDuvan;Write DisposeFontContents
+diskfont00003;2;SDuvan;Write DisposeFontContents
 diskfont00004;0;digulla;Write NewScaledDiskFont
 Doc;0;digulla;Convert docs to HTML
 dos00000;2;matthias;Write Open
@@ -1076,7 +1076,7 @@ intuition00106;2;digulla;Write MakeClass
 intuition00107;2;digulla;Write AddClass
 intuition00108;2;nlorentz;Write GetScreenDrawInfo
 intuition00109;2;nlorentz;Write FreeScreenDrawInfo
-intuition00110;1;SDuvan;Write ResetMenuStrip
+intuition00110;2;stegerg;Write ResetMenuStrip
 intuition00111;2;digulla;Write RemoveClass
 intuition00112;2;digulla;Write FreeClass
 intuition00113;0;;Write AllocScreenBuffer
@@ -1282,9 +1282,9 @@ realtime00006;1;SDuvan;Write ExternalSync
 realtime00007;1;SDuvan;Write NextConductor
 realtime00008;1;SDuvan;Write FindConductor
 realtime00009;1;SDuvan;Write GetPlayerAttrsA
-reqtools00000;1;digulla;Write rtAllocRequestA
-reqtools00001;1;digulla;Write rtFreeRequest
-reqtools00002;1;digulla;Write rtFreeReqBuffer
+reqtools00000;1;SDuvan;Write rtAllocRequestA
+reqtools00001;1;SDuvan;Write rtFreeRequest
+reqtools00002;1;SDuvan;Write rtFreeReqBuffer
 reqtools00003;0;digulla;Write rtChangeReqAttrA
 reqtools00004;0;digulla;Write rtFileRequestA
 reqtools00005;2;SDuvan;Write rtFreeFileList
