@@ -6,7 +6,7 @@
 #endif
 
 #define AROSPALETTECLASS "palette.aros"
-#define AROSPALETTECLASSPATH "SYS:Classes/Gadgets/arospalette.gadget"
+#define AROSPALETTENAME "arospalette.gadget"
 
 /* [IS] (UBYTE) The number of colors to show specified by depth.
    Palette will show 2^depth colors */
