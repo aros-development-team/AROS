@@ -132,10 +132,10 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[5];
-	STRPTR filename = (STRPTR)GetTagData(MUIA_FontBitmap_Filename, NULL, msg->ops_AttrList);
+	STRPTR filename = (STRPTR)GetTagData(MUIA_FontBitmap_Filename, (IPTR) NULL, msg->ops_AttrList);
 	STRPTR string = (STRPTR)GetTagData(MUIA_FontBitmap_String, (ULONG) "?", msg->ops_AttrList);
 	struct TagItem *otags = (struct TagItem *)GetTagData(MUIA_FontBitmap_OTags,
-			NULL, msg->ops_AttrList);
+			(IPTR) NULL, msg->ops_AttrList);
 	struct
 	{
 		struct GlyphMap *glyph;
@@ -698,8 +698,8 @@ ULONG fiNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[3];
-	STRPTR filename = (STRPTR)GetTagData(MUIA_FontInfo_Filename, NULL, msg->ops_AttrList);
-	FT_Face face = (FT_Face)GetTagData(MUIA_FontInfo_Face, NULL, msg->ops_AttrList);
+	STRPTR filename = (STRPTR)GetTagData(MUIA_FontInfo_Filename, (IPTR) NULL, msg->ops_AttrList);
+	FT_Face face = (FT_Face)GetTagData(MUIA_FontInfo_Face, (IPTR) NULL, msg->ops_AttrList);
 	TT_Postscript *postscript;
 	TT_OS2 *os2;
 	Object *name, *attached_file, *size_factor_low, *size_factor_high;
@@ -1507,7 +1507,7 @@ ULONG fwNew(Class *cl, Object *o, struct opSet *msg)
 {
 	struct opSet method;
 	struct TagItem tags[4];
-	STRPTR filename = (STRPTR)GetTagData(MUIA_FontWindow_Filename, NULL, msg->ops_AttrList);
+	STRPTR filename = (STRPTR)GetTagData(MUIA_FontWindow_Filename, (IPTR) NULL, msg->ops_AttrList);
 	FT_Face face;
 	FT_Error error;
 	Object *install, *close, *info, *app;
