@@ -47,11 +47,11 @@
     switch (infoType)
     {
 	case BL_Video:
-	    if (BootLoaderBase->Flags && MB_FLAGS_GFX)
+	    if (BootLoaderBase->Flags & MB_FLAGS_GFX)
 		return (APTR)&(BootLoaderBase->Vesa);
 	    break;
 	case BL_Args:
-	    if (BootLoaderBase->Flags && MB_FLAGS_CMDLINE)
+	    if (BootLoaderBase->Flags & MB_FLAGS_CMDLINE)
 		return (APTR)&(BootLoaderBase->Args);
 	    break;
     }
