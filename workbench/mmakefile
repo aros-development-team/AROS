@@ -5,14 +5,16 @@ include $(TOP)/config/make.cfg
 # The workbench target points back to config/$(ARCH)/mmakefile:
 #MM- workbench : workbench-$(ARCH)
 
-#MM- workbench-complete : workbench-c \
+#MM- workbench-complete : \
 #MM	    workbench-hidds \
 #MM	    workbench-devs \
 #MM	    workbench-devs-keymaps \
-#MM	    workbench-libs-complete \
-#MM	    workbench-classes-complete \
+#MM	    workbench-libs \
 #MM	    workbench-s	\
 #MM	    workbench-locale \
 #MM	    workbench-fonts \
 #MM	    workbench-system \
-#MM	    tools
+#MM	    workbench-utilities \
+#MM	    workbench-tools
+
+#MM- clean : clean-workbench

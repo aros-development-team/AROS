@@ -25,11 +25,12 @@ endif
 
 %genwblib
 
-#MM workbench-classes-aroslistview : setup includes
+#MM workbench-classes-aroslistview : workbench-classes-setup includes
 workbench-classes-aroslistview : show-flags $(SLIB)
 	@$(NOP)
 
-#MM setup
+#MM workbench-classes-setup
+workbench-classes-setup : setup
 #MM clean
 
 

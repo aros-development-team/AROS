@@ -1,7 +1,6 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-
 CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
 
 #OS_INCLUDES := -I$(GENINCDIR)
@@ -46,14 +45,16 @@ LIBS := -lhiddgraphicsstubs
 
 # Allways generate module in Sys:Hidds/
 
+#MM- workbench-complete : workbench-hidds
 #MM- workbench-hidds : hidd-graphics-module
+#MM workbench-hidd-setup :
+workbench-hidd-setup : setup
 
-	
-#MM hidd-graphics-linklib : setup includes hidd-graphics-$(ARCH)-$(CPU)
-hidd-graphics-linklib : show-flags $(LIB) $(STUB_FILE) setup
+#MM hidd-graphics-linklib : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
+hidd-graphics-linklib : show-flags $(LIB) $(STUB_FILE)
 	@$(NOP)
 
-#MM hidd-graphics-module : setup includes hidd-graphics-$(ARCH)-$(CPU)
+#MM hidd-graphics-module : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
 hidd-graphics-module : show-flags $(SLIB) $(STUB_FILE)
 
 # --- QUICK HACKS BEGIN --- 

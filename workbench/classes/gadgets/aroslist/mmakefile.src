@@ -12,12 +12,13 @@ FILES	:= listclass helpfuncs
 
 %genwblib
 
-#MM workbench-classes-aroslist : setup includes
+#MM workbench-classes-aroslist : workbench-classes-setup includes
 workbench-classes-aroslist : show-flags $(SLIB)
 	@$(NOP)
 
 
-#MM setup
+#MM workbench-classes-setup
+workbench-classes-setup : setup
 #MM clean
 
 %common

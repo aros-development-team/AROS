@@ -12,11 +12,12 @@ DESTDIR := $(GADGETDIR)
 
 %genwblib
 
-#MM workbench-classes-arosmutualexclude : setup includes
+#MM workbench-classes-arosmutualexclude : workbench-classes-setup includes
 workbench-classes-arosmutualexclude : show-flags $(SLIB)
 	@$(NOP)
 
-#MM setup
+#MM workbench-classes-setup
+workbench-classes-setup : setup
 #MM clean
 
 

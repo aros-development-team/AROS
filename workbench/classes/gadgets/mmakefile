@@ -12,3 +12,4 @@
 #MM	    workbench-classes-aroscycle \
 #MM	    workbench-classes-arospalette
 
+#MM- workbench-complete : workbench-classes-complete

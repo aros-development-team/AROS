@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
 #CC	     :=$(PURIFY) $(SYS_CC)
-OBJDIR	    := $(GENDIR)/workbench/c
+OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 %define_libs
 
@@ -68,10 +68,8 @@ FILES	    := \
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-#MM workbench-c : setup includes
-workbench-c : show-flags $(EXES)
-	@$(NOP)
-
+#MM- workbench-complete : workbench-c
+#MM- workbench-c : setup-workbench-c includes workbench-c-quick
 #MM workbench-c-quick :
 workbench-c-quick : show-flags $(EXES)
 	@$(NOP)
@@ -82,11 +80,11 @@ show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 #MM
-setup :
+setup-workbench-c :
 	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
 #MM
-clean ::
+clean-workbench ::
 	-$(RM) $(EXES)
 
 $(EXEDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
