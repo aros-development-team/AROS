@@ -3,11 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-FILES   := main
+FILES   := main locale
 EXEDIR  := $(AROS_TOOLS)
 
 #MM- workbench-tools : workbench-tools-screengrabber
-#MM workbench-tools-screengrabber : 
+#MM  workbench-tools-screengrabber : includes linklibs \
+#MM  workbench-tools-screengrabber-catalogs
 
 %build_prog mmake=workbench-tools-screengrabber \
     progname=ScreenGrabber targetdir=$(EXEDIR) \

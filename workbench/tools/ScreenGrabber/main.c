@@ -15,8 +15,10 @@
 #include <proto/intuition.h>
 #include <proto/cybergraphics.h>
 #include <proto/muimaster.h>
+#include <proto/graphics.h>
 
 #include <stdio.h>
+#include "locale.h"
 
 #define APPNAME "ScreenGrabber"
 #define VERSION "ScreenGrabber 0.1 (02.12.2004)"
@@ -107,8 +109,8 @@ AROS_UFH3(void, select_function,
 	DoMethod(object, MUIM_List_GetEntry, active, (IPTR)&psn);
 	screen=psn->psn_Screen;
 
-	snprintf(buff, sizeof(buff)-1, "%d x %d, depth=%d",
-	    screen->Width, screen->Height, screen->RastPort.BitMap->Depth);
+	snprintf(buff, sizeof(buff)-1, _(MSG_SCREEN_PARM),
+	    screen->Width, screen->Height, GetBitMapAttr(screen->RastPort.BitMap,BMA_DEPTH));
 	set(Size, MUIA_Text_Contents, buff);
 	set(Title, MUIA_Text_Contents, screen->Title);
 	set(DefTitle, MUIA_Text_Contents, screen->DefaultTitle);
@@ -269,7 +271,7 @@ BOOL GUIInit()
 	    // MUIA_Application_Description, ...,
 
 	    SubWindow, MainWindow = WindowObject,
-		MUIA_Window_Title, "Screen Grabber",
+		MUIA_Window_Title, _(MSG_WINDOW_TITLE),
 		WindowContents, HGroup,
 		    MUIA_Group_SameWidth, FALSE,
 		    Child, VGroup,
@@ -281,7 +283,7 @@ BOOL GUIInit()
 				MUIA_List_DisplayHook, &display_hook,
 				End,
 			    End,
-			Child, RefreshButton = MUI_MakeObject(MUIO_Button, "Refresh List"),
+			Child, RefreshButton = MUI_MakeObject(MUIO_Button, _(MSG_REFRESH)),
 		        End,    // VGroup
 		    Child, VGroup,
 			MUIA_Weight, 200,
@@ -289,9 +291,9 @@ BOOL GUIInit()
 			    TextFrame,
 			    MUIA_Background, MUII_PageBack,
 			    InnerSpacing(5,5),
-			    Child, VGroup, GroupFrameT("Screen info"),
+			    Child, VGroup, GroupFrameT(_(MSG_SCREEN_INFO)),
 				Child, ColGroup(2),
-				    Child, Label("Size"),
+				    Child, Label(_(MSG_SIZE)),
 				    Child, Size = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -299,7 +301,7 @@ BOOL GUIInit()
 				    End,
 				End,
 				Child, ColGroup(2),
-				    Child, Label("Title"),
+				    Child, Label(_(MSG_TITLE)),
 				    Child, Title = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -307,7 +309,7 @@ BOOL GUIInit()
 				    End,
 				End,
 				Child, ColGroup(2),
-				    Child, Label("DefaultTitle"),
+				    Child, Label(_(MSG_DEFAULT_TITLE)),
 				    Child, DefTitle = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -315,9 +317,9 @@ BOOL GUIInit()
 				    End,
 				End,
 			    End,
-			    Child, VGroup, GroupFrameT("Grabbing options"),
+			    Child, VGroup, GroupFrameT(_(MSG_GRABBING_OPTIONS)),
 				Child, ColGroup(2),
-				    Child, Label("Delay (s)"),
+				    Child, Label(_(MSG_DELAY)),
 				    Child, Delay = SliderObject,
 					MUIA_Slider_Min, 0,
 					MUIA_Slider_Max, 30,
@@ -326,17 +328,17 @@ BOOL GUIInit()
 				End,
 				Child, HGroup,
 				    Child, HVSpace,
-				    Child, Label("Hide the grabber window"),
+				    Child, Label(_(MSG_HIDE)),
 				    Child, Hide = MUI_MakeObject(MUIO_Checkmark, "aaaa"),
 				End,
 			    End,
-			    Child, VGroup, GroupFrameT("Save options"),
+			    Child, VGroup, GroupFrameT(_(MSG_SAVE_OPTIONS)),
 				Child, PopaslObject,
 				    ASLFR_DoSaveMode, TRUE,
 				    MUIA_Popstring_String, FilenameString = MUI_MakeObject(MUIO_String, NULL, 200),
 				    MUIA_Popstring_Button, PopButton(MUII_PopFile),
 				End,
-				Child, SaveButton = MUI_MakeObject(MUIO_Button, "Save file"),
+				Child, SaveButton = MUI_MakeObject(MUIO_Button, _(MSG_SAVE_FILE)),
 			    End,
 //			End,
 		    Child, Progress = GaugeObject,
@@ -346,7 +348,7 @@ BOOL GUIInit()
 			MUIA_Gauge_Current, 0,
 		    End, End,
 		    
-		    Child, GrabButton = MUI_MakeObject(MUIO_Button, "Screenshot"),
+		    Child, GrabButton = MUI_MakeObject(MUIO_Button, _(MSG_SCREENSHOT)),
 		    End,
 		End, // WindowContents
 	    End, // WindowObject
@@ -399,7 +401,7 @@ int main()
     select_hook.h_Entry = (APTR)select_function;
     grab_hook.h_Entry = (APTR)grab_function;
     save_hook.h_Entry = (APTR)save_function;
-
+    Locale_Initialize();
     if (GUIInit())
     {
 	set(MainWindow, MUIA_Window_Open, TRUE);
@@ -413,4 +415,5 @@ int main()
 	if (DTImage) DisposeDTObject(DTImage);
 	DTImage = NULL;
     }
+    Locale_Deinitialize();
 }
