@@ -63,8 +63,8 @@ on screen.
 #   define OPAQUESIZE 0
 #endif
 
-#define DELAYEDDRAG
-#define DELAYEDSIZE
+//#define DELAYEDDRAG
+//#define DELAYEDSIZE
 
 /***********************************************************************************/
 
