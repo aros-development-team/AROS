@@ -18,10 +18,12 @@ typedef struct
 }
 HTMLStream;
 
-extern void HTML_Init  PARAMS ((void));
-extern void HTML_Exit  PARAMS ((void));
-extern int  HTML_Parse PARAMS ((MyStream * in, MyStream * out, CBD data));
+extern void HTML_Init	PARAMS ((void));
+extern void HTML_Exit	PARAMS ((void));
+extern int  HTML_Parse	PARAMS ((MyStream * in, MyStream * out, CBD data));
 
-extern int HTMLOutCB PARAMS ((HTMLStream * str, int dummy, CBD data));
+extern int  HTML_Filter   PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+extern int  HTML_Include  PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+extern int  HTML_Verbatim PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 
 #endif /* HTML_H */
