@@ -1,21 +1,45 @@
+; $VER: AROS Startup-Sequence 0.0 (22.02.2001)
+
+;SetPatch QUIET
+
 SetClock LOAD
 
 Mount RAM:
 Mount NIL:
 
-Makedir RAM:T RAM:ENV RAM:Clipboards
+Version >NIL:
+FailAt 21
 
-Assign T: RAM:T
+MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys
+
 Assign ENV: RAM:ENV
+Assign T: RAM:T
 Assign CLIPS: RAM:Clipboards
+;Assign PRINTERS: DEVS:Printers
+Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE: SYS:Locale
 Assign LIBS: SYS:Classes ADD
 Assign FONTS: SYS:Fonts
-Assign HELP: SYS:Help
+Assign HELP: LOCALE:Help DEFER
 
-AddDatatypes REFRESH
+;Copy ENVARC: ENV: ALL QUITE CLONE NOREQ
 
-Path SYS:Utilities SYS:System SYS:Prefs SYS:Tools SYS:Tools/Commodities SYS:Demos ADD QUIET
+;Mount DEVS:DOSDrivers/~(#?.info)
+
+; Activate selected gfx.hidd(s)
+
+SetEnv Workbench $Workbench
+SetEnv Kickstart $Kickstart
+
+AddDatatypes REFRESH QUIET
+;IPrefs
+;ConClip
+
+Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
+
+
+
+; -- BEGIN "AROS under construction" section -------------------------
 
 ; Call FixFonts if it was never called before
 If NOT EXISTS SYS:Fonts/_fixfonts_called
@@ -30,7 +54,7 @@ SetDefaultFont arial 13 SCREEN
 ; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
 
 ;Prompt "%N.%S> "
-Prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
+;Prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
 
 ; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
 ; to /dev/fd0 (you'll need access rights on the device later -
@@ -46,3 +70,18 @@ Assign FDSK: SYS:DiskImages
 ; Install a Workbench screen background pattern.
 run >NIL: screenpattern
 
+PATH SYS:Demos ADD QUIET
+
+; -- END "AROS under construction" section ---------------------------
+
+
+
+If EXISTS S:User-Startup
+  Execute S:User-Startup
+EndIf
+
+;LoadWB
+NewShell CON:0/30/640/300/AROS-Shell/CLOSE
+NewShell CON:160/300/640/300/AROS-Shell/CLOSE
+
+;EndCLI
