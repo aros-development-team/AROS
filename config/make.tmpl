@@ -1753,3 +1753,47 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %end
       
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Misciellanous macros. Everying that doesn't fin above should be put     ##
+## here.                                                                   ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+#----------------------------------------------------------------------------------
+# Given an archive name, patches names and locations where to find them, fetch
+# the archive and the patches from any of those locations, unpack the archive
+# and then apply the patches.
+#
+# Locations currently supported are http and ftp sites, plus local filesystem
+# directories. Supported archives are .tar.bz2 and .tar.gz. To modify this,
+# the fetch.sh script needs to be modified, since this macro relies on that script.
+#
+# Arguments:
+#
+#     - archive_origins = list of locations where to find the archive. They are tried
+#                         in sequence, until the archive is found and fetching it 
+#                         succeeded. If not specified, the current directory is assumed.
+#     - archive         = the archive name. Mandatory.
+#     - destination     = the local directory where to put the archive and patches.
+#                         If not specified, the current directory is assumed.
+#     - patches_origins = list of locations where to find the patches. They are tried
+#                         in sequence, until a patch is found and fetching it 
+#                         succeeded. If not specified, the current directory is assumed.
+#     - patches_specs   = list of "patch specs". A patch spec is of the form
+#                         patch_name[:[patch_subdir][:patch_opt]].
+#			  
+#			      - patch_name   = the name of the patch file
+#			      - patch_subdir = the directory within \destination\ where to
+#			                       apply the patch.
+#			      - patch_opt    = any options to pass to the `patch' command
+#			                       when applying the patch.
+#                         
+#                         The patch_subdir and patch_opt fields are optional.
+
+%define fetch archive_origins=. archive=/A destination=. patches_origins=. patches_specs=::
+	$(FETCH) -ao %(archive_origins) -a %(archive) -d %(destination) -po %(patches_origins) \
+	         -p %(patches_specs)
+%end
