@@ -42,6 +42,7 @@ CLASSESOBJS= \
   objs/classes/boopsi.o \
   objs/classes/family.o \
   objs/classes/group.o \
+  objs/classes/menuitem.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
   objs/classes/prop.o \
@@ -182,6 +183,9 @@ objs/classes/family.o: classes/family.c
 
 objs/classes/notify.o: classes/notify.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
+
+objs/classes/menuitem.o: classes/menuitem.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/menuitem.c objname=$@
 
 objs/classes/numeric.o: classes/numeric.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/numeric.c objname=$@
