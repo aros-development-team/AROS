@@ -10,6 +10,7 @@
 */
 
 #include <signal.h>
+#include <errno.h>
 #include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
@@ -79,6 +80,7 @@ struct AROS_cpu_context
 {
     ULONG regs[9];  	     /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
     struct _fpstate fpstate; /* FPU state */
+    int	errno_backup;
 };
 
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
@@ -143,6 +145,12 @@ struct AROS_cpu_context
         (R6(sc) = GetCpuContext(task)->regs[6]), \
 	(FP(sc) = GetCpuContext(task)->regs[7]), \
 	(PC(sc) = GetCpuContext(task)->regs[8])
+
+#define SAVE_ERRNO(task) \
+	(GetCpuContext(task)->errno_backup = errno)
+	
+#define RESTORE_ERRNO(task) \
+	(errno = GetCpuContext(task)->errno_backup)
 
 /*
     It's not possible to save the FPU under linux because linux
@@ -270,7 +278,8 @@ struct AROS_cpu_context
 #define SAVEREGS(task,sc) \
 	((GetSP(task) = (long *)SP(sc)), \
 	SAVE_FPU(task,sc), \
-	SAVE_CPU(task,sc))
+	SAVE_CPU(task,sc), \
+	SAVE_ERRNO(task))
 
 /*
     This macro does the opposite to SAVEREGS(). It restores all
@@ -280,7 +289,8 @@ struct AROS_cpu_context
 */
 
 #   define RESTOREREGS(task,sc) \
-	(RESTORE_CPU(task,sc), \
+	(RESTORE_ERRNO(task), \
+	RESTORE_CPU(task,sc), \
 	RESTORE_FPU(task,sc), \
 	(SP(sc) = (long)(GetSP(task))))
 
