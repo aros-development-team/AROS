@@ -1,6 +1,7 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
+
 */
 
 #include <proto/exec.h>
@@ -16,8 +17,8 @@
    AROS_LH2(struct PartitionHandle *, OpenRootPartition,
 
 /*  SYNOPSIS */
-   AROS_LHA(CONST_STRPTR, Device, A1),
-   AROS_LHA(LONG,         Unit, D1),
+   AROS_LHA(STRPTR, Device, A1),
+   AROS_LHA(LONG,     Unit, D1),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 5, Partition)
@@ -41,6 +42,9 @@
     SEE ALSO
 
     INTERNALS
+
+    HISTORY
+    21-02-02    first version
 
 *****************************************************************************/
 {
