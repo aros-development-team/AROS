@@ -6,6 +6,8 @@ OS_INCLUDES := -I$(SYS_INCLUDES) -I$(GENINCDIR)
 #MM- kernel-filesys-unix : kernel-fs-emul
 #MM- kernel-fs-emul : setup includes linklibs kernel-fs-emul-intern-linklib
 
+TARGET_CC := $(HOST_CC)
+
 %build_module_macro mmake=kernel-fs-emul-intern \
   modname=emul modtype=handler \
   initfile=emul_handler
