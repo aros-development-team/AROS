@@ -1,27 +1,18 @@
 ##rem $Id$
 ##stringtype C
 ##shortstrings
-/****************************************************************
-   This file was created automatically by `%fv'
-   from "%f0".
 
-   Do NOT edit by hand!
-****************************************************************/
+#include <exec/types.h>
 
-/****************************************************************
-    This file uses the auto initialization possibilities of
-    Dice, gcc and SAS/C, respectively.
+struct StringCollection /* name ??? */
+{
+  ULONG	  id;
+  UWORD   size;
+  char    string[];  // this is not possible...
+};
 
-    Dice does this by using the keywords __autoinit and
-    __autoexit, SAS uses names beginning with _STI or
-    _STD, respectively. gcc uses the asm() instruction,
-    to emulate C++ constructors and destructors.
-
-    Using this file you don't have *all* possibilities of
-    the locale.library. (No Locale or Language arguments are
-    supported when opening the catalog. However, these are
-    *very* rarely used, so this should be sufficient for most
-    applications.
-****************************************************************/
-
-
+struct StringCollection SC[]
+{
+  {%i, sizeof(%s), %s},
+  {0,0,""}
+};
