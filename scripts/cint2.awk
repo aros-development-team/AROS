@@ -1,5 +1,13 @@
 BEGIN {
-    date="29-10-95";
+    date="27-11-96";
+
+    RTYPES["long"]="LONG";
+    RTYPES["unsigned long"]="ULONG";
+    RTYPES["short"]="WORD";
+    RTYPES["unsigned short"]="UWORD";
+    RTYPES["char"]="BYTE";
+    RTYPES["unsigned char"]="UBYTE";
+
     TYPES["ULONG"]=1;
     TYPES["LONG"]=1;
     TYPES["UBYTE"]=1;
@@ -67,10 +75,11 @@ BEGIN {
 
 print "Working on " part_name "..."
 
-	dir=part_name "/";
-	system("mkdir " part_name);
+	dir="amiga/" part_name;
+	system("mkdir " dir);
     print dir;
-	INPUT="include/fd/" part_name "_lib.fd"
+	dir=dir"/";
+	INPUT="amiga/include/fd/" part_name "_lib.fd"
     print INPUT
 
 	# Read LVO
@@ -115,7 +124,7 @@ print "Working on " part_name "..."
 	    }
 	}
 
-	INPUT="include/clib/" part_name "_protos.h"
+	INPUT="amiga/include/clib/" part_name "_protos.h"
     #print INPUT
 	getline line < INPUT
 	yyinit(line);
@@ -234,9 +243,9 @@ print "Working on " part_name "..."
 		    {
 			if (npar==1 && par_type[1]=="void" && par_ptr[1] == "" &&
 			    par_name[1]=="")
-			    print "\t__AROS_LH0("ret", "fname",\n" >>file
+			    print "\tAROS_LH0("ret", "fname",\n" >>file
 			else
-			    print "\t__AROS_LH"npar"("ret", "fname",\n" >>file
+			    print "\tAROS_LH"npar"("ret", "fname",\n" >>file
 			print "/*  SYNOPSIS */" >>file
 
 			if (npar==1 && par_type[1]=="void" && par_ptr[1] == "" &&
@@ -263,7 +272,7 @@ print "Working on " part_name "..."
 				len=length(par_type[t]);
 				len2=length(par_ptr[t]);
 
-				printf("\t__AROS_LHA(%s", par_type[t])>>file;
+				printf("\tAROS_LHA(%s", par_type[t])>>file;
 				printf("%s", substr(spaces,1,maxlen-len-len2))>>file;
 				printf("%s, %s, %s),\n",par_ptr[t],par_name[t],
 				    substr(regs,1,2))>>file;
@@ -320,10 +329,10 @@ print "Working on " part_name "..."
 		    print "\t\t\t    "part_name"_lib.fd and clib/"part_name"_protos.h\n">>file;
 		    print "*****************************************************************************/" > file
 		    print "{">>file;
-		    print "    __AROS_FUNC_INIT">>file;
+		    print "    AROS_LIBFUNC_INIT">>file;
 		    if (Base!="")
-			print "    __AROS_BASE_EXT_DECL(struct "struct_name" *,"Base")">>file;
-		    print "    __AROS_FUNC_EXIT">>file;
+			print "    AROS_LIBBASE_EXT_DECL(struct "struct_name" *,"Base")">>file;
+		    print "    AROS_LIBFUNC_EXIT">>file;
 		    print "} /* " fname " */">>file;
 		    fclose (file);
 		} # found "("
@@ -352,6 +361,8 @@ function read_type(pretoken     ,token) {
     }
     rt_type=substr(rt_type,2);
 #print "type " rt_type
+    if (rt_type in RTYPES)
+	rt_type = RTYPES[rt_type];
 
     rt_ptr="";
     while (token=="*" || token=="(")
