@@ -561,7 +561,7 @@ int main (int argc, char ** argv)
 	, TAG_END
     );
 
-    gadget = NewObject (NULL, BUTTONGCLASS
+    gadget = NewObject (NULL, FRBUTTONCLASS
 	, GA_Left,	BORDER*2+GAD_WID
 	, GA_RelBottom, -(GAD_HEI+BORDER)
 	, GA_Width,	GAD_WID
