@@ -7,6 +7,7 @@
 #define _SIGCORE_H
 
 #include <signal.h>
+#include <errno.h>
 #include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
@@ -39,6 +40,7 @@ struct AROS_cpu_context
 {
     ULONG regs[7];	/* eax, ebx, ecx, edx, edi, esi, isp */
     ULONG pc,fp;	/* store these on the stack to avoid sighandlers */
+    int	errno_backup;
 };
 
 #define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
@@ -72,6 +74,12 @@ struct AROS_cpu_context
 	(R5(sc) = GetCpuContext(task)->regs[5]), \
 	(R6(sc) = GetCpuContext(task)->regs[6]))
 
+#define SAVE_ERRNO(task) \
+	(GetCpuContext(task)->errno_backup = errno)
+	
+#define RESTORE_ERRNO(task) \
+	(errno = GetCpuContext(task)->errno_backup)
+
 #define HAS_FPU		0
 #define SAVE_FPU(task,sc)	/* nop */
 #define RESTORE_FPU(task,sc)	/* nop */
@@ -87,10 +95,12 @@ struct AROS_cpu_context
 	(GetCpuContext(task)->pc = PC(sc)), \
 	(GetCpuContext(task)->fp = FP(sc)), \
 	/* SAVE_FPU(task, sc), */ \
-	SAVE_CPU(task, sc))
+	SAVE_CPU(task, sc), \
+	SAVE_ERRNO(task))
 
 #define RESTOREREGS(task,sc) \
-	(RESTORE_CPU(task,sc), \
+	(RESTORE_ERRNO(task), \
+	RESTORE_CPU(task,sc), \
 	/* RESTORE_FPU(task, sc), */ \
 	(FP(sc) = GetCpuContext(task)->fp), \
 	(PC(sc) = GetCpuContext(task)->pc)), \
