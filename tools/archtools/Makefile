@@ -1,8 +1,5 @@
-#   Copyright (C) 2000 AROS - The Amiga Research OS
-#   $Id$
-#
-#   Desc: Makefile for archtool
-#
+# Copyright © 2000-2003, The AROS Development Team. All rights reserved.
+# $Id$
 
 -include $(TOP)/config/make.cfg
 
