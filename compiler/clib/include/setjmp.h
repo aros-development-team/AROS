@@ -15,6 +15,9 @@
 #elif i386
 #define _JMPLEN 7
 
+#elif ppc
+#define _JMPLEN 58
+
 #endif
 
 typedef struct jmp_buf
