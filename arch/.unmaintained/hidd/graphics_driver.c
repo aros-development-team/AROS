@@ -363,7 +363,7 @@ int driver_init(struct GfxBase * GfxBase)
 	{
 	    /* Init the needed attrbases */
 #warning Activate me again!
-//	    if (OOP_ObtainAttrBases(attrbases))
+	    if (OOP_ObtainAttrBases(attrbases))
 	    {
 		/* Init the driver's defaultfont */
 		if (init_romfonts(GfxBase))
