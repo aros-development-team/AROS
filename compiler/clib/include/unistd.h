@@ -203,7 +203,7 @@ void        _exit(int) __noreturn;
 /* NOTIMPL pid_t       fork(void); */
 /* NOTIMPL long        fpathconf(int fd, int name); */
 char        *getcwd(char *buf, size_t size);
-/* NOTIMPL gid_t       getegid(void); */
+gid_t       getegid(void);
 uid_t       geteuid(void);
 gid_t       getgid(void);
 /* NOTIMPL int         getgroups(int gidsetlen, gid_t *gidset); */
