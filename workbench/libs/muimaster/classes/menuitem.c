@@ -129,6 +129,7 @@ static ULONG Menuitem_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_COMMANDSTRING);
 		  break;
 
+	    case  MUIA_Menu_Enabled:
 	    case  MUIA_Menuitem_Enabled:
 		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_ENABLED);
 		  break;
@@ -145,6 +146,7 @@ static ULONG Menuitem_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		  data->shortcut = (char*)tag->ti_Data;
 		  break;
 
+	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
 		  data->title = (char*)tag->ti_Data;
 		  break;
@@ -180,8 +182,10 @@ STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_COMMANDSTRING);
 		  break;
 
+	    case  MUIA_Menu_Enabled:
 	    case  MUIA_Menuitem_Enabled:
 		  _handle_bool_tag(data->flags, tag->ti_Data, MENUF_ENABLED);
+		  tag->ti_Tag = TAG_IGNORE;
 		  break;
 
 	    case  MUIA_Menuitem_Toggle:
@@ -196,8 +200,10 @@ STATIC ULONG Menuitem_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		  data->shortcut = (char*)tag->ti_Data;
 		  break;
 
+	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
 		  data->title = (char*)tag->ti_Data;
+		  tag->ti_Tag = TAG_IGNORE;
 		  break;
 
 	    case  MUIA_Menuitem_Trigger:
@@ -231,6 +237,7 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	     STORE = ((data->flags & MENUF_COMMANDSTRING) != 0);
 	     return 1;
 
+	case MUIA_Menu_Enabled:
 	case MUIA_Menuitem_Enabled:
 	     STORE = ((data->flags & MENUF_ENABLED) != 0);
 	     return 1;
@@ -247,6 +254,7 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	     STORE = (ULONG)data->shortcut;
 	     return 1;
 
+	case MUIA_Menu_Title:
 	case MUIA_Menuitem_Title:
 	     STORE = (ULONG)data->title;
 	     return 1;
@@ -291,6 +299,26 @@ AROS_UFH3S(IPTR,Menuitem_Dispatcher,
  */
 const struct __MUIBuiltinClass _MUI_Menuitem_desc = { 
     MUIC_Menuitem, 
+    MUIC_Family, 
+    sizeof(struct MUI_MenuitemData), 
+    (void*)Menuitem_Dispatcher 
+};
+
+/*
+ * Class descriptor.- this class is the same like menuitem
+ */
+const struct __MUIBuiltinClass _MUI_Menu_desc = { 
+    MUIC_Menu, 
+    MUIC_Family, 
+    sizeof(struct MUI_MenuitemData), 
+    (void*)Menuitem_Dispatcher 
+};
+
+/*
+ * Class descriptor.- this class is the same like menuitem
+ */
+const struct __MUIBuiltinClass _MUI_Menustrip_desc = { 
+    MUIC_Menustrip, 
     MUIC_Family, 
     sizeof(struct MUI_MenuitemData), 
     (void*)Menuitem_Dispatcher 

@@ -100,5 +100,6 @@ extern char MUIC_Popasl[];
 
 extern const struct __MUIBuiltinClass _MUI_Popstring_desc;
 extern const struct __MUIBuiltinClass _MUI_Popasl_desc;
+extern const struct __MUIBuiltinClass _MUI_Popobject_desc;
 
 #endif

@@ -68,6 +68,9 @@ extern char MUIC_Menuitem[];
 #define MUIV_Menuitem_Shortcut_Check -1
 
 extern const struct __MUIBuiltinClass _MUI_Menuitem_desc;
+extern const struct __MUIBuiltinClass _MUI_Menu_desc;
+extern const struct __MUIBuiltinClass _MUI_Menustrip_desc;
+
 
 #endif
 

@@ -113,6 +113,8 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Scrollbar_desc,
     &_MUI_Register_desc,
     &_MUI_Menuitem_desc,
+    &_MUI_Menu_desc,
+    &_MUI_Menustrip_desc,
     &_MUI_Virtgroup_desc,
     &_MUI_Scrollgroup_desc,
     &_MUI_Scrollbutton_desc,
@@ -126,6 +128,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Listview_desc,
     &_MUI_List_desc,
     &_MUI_Popasl_desc,
+    &_MUI_Popobject_desc,
     &_MUI_Gauge_desc
 };
 

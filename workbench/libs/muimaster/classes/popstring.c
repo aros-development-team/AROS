@@ -76,7 +76,6 @@ const struct __MUIBuiltinClass _MUI_Popstring_desc = {
     (void*)Popstring_Dispatcher 
 };
 
-
 /********** Popasl ***********/
 
 struct MUI_PopaslData
@@ -132,8 +131,69 @@ AROS_UFH3S(IPTR,Popasl_Dispatcher,
  * Class descriptor.
  */
 const struct __MUIBuiltinClass _MUI_Popasl_desc = { 
-    MUIC_Popasl, 
-    MUIC_Group, 
+    MUIC_Popasl,
+    MUIC_Popstring, 
     sizeof(struct MUI_PopaslData), 
     (void*)Popasl_Dispatcher 
+};
+
+/********** Popobject ***********/
+
+struct MUI_PopobjectData
+{
+    int dummy;
+};
+
+/**************************************************************************
+ OM_NEW
+**************************************************************************/
+static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_PopobjectData   *data;
+    struct TagItem  	    *tag, *tags;
+    
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    if (!obj) return FALSE;
+    
+    data = INST_DATA(cl, obj);
+
+    /* parse initial taglist */
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+	switch (tag->ti_Tag)
+	{
+    	}
+    }
+    
+    return (IPTR)obj;
+}
+
+#ifndef _AROS
+__asm IPTR Popobject_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+#else
+AROS_UFH3S(IPTR,Popobject_Dispatcher,
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, obj, A2),
+	AROS_UFHA(Msg     , msg, A1))
+#endif
+{
+    switch (msg->MethodID)
+    {
+	case OM_NEW:
+	    return Popobject_New(cl, obj, (struct opSet *)msg);
+	    
+    }
+    
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/*
+ * Class descriptor.
+ */
+const struct __MUIBuiltinClass _MUI_Popobject_desc = { 
+    MUIC_Popobject, 
+    MUIC_Popstring, 
+    sizeof(struct MUI_PopobjectData), 
+    (void*)Popobject_Dispatcher 
 };
