@@ -7,3 +7,12 @@ get_ssp:
 	rts
 
 
+	/*
+ 	 * Leave this!
+	 */
+	.text
+	.balign 16
+	.globl end_marker
+
+end_marker:
+	rts
