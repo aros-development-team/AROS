@@ -1,35 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR := $(OSGENDIR)/dos
-
-#Why do we need this at all?!
-#OS_INCLUDES := -I$(GENINCDIR)
-
-CFLAGS2 := $(CFLAGS) -I.. -I$(TOP)/rom/dos
-AFLAGS2 :=
-TESTS :=
-
-FILES := boot aros inithidds
-
-#MM
-dos-pc-i386 : $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
-	@$(NOP)
-
-#MM
-setup-dos-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/dos/$(f))
-	%exclude_files $(foreach f, $(FILES), rom/dos/$(f))
-
-#MM
-clean ::
-	-$(RM) $(TESTS)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS2) -Dmain=submain"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+USER_INCLUDES := -I.. -I$(TOP)/rom/dos
+USER_CFLAGS := -Dmain=submain
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos \
+  arch=pc-i386 \
+  files="boot aros inithidds"
 
 %common

@@ -1,56 +1,24 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-REP_FILES   := alert cause disable enable preparecontext stackswap switch \
-		rawioinit rawputchar rawmaygetchar idletask
-FILES	    := kernel $(REP_FILES)
-OBJDIR	    := $(OSGENDIR)/exec
-ADD_OBJS    := $(foreach f,$(FILES),rom/exec/$(f))
-OBJS	    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-
-# You don't need to change anything after here unless you add new
-# directories to the above.
+FILES := kernel alert cause disable enable preparecontext stackswap switch \
+      	 rawioinit rawputchar rawmaygetchar idletask
 
 OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
-CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
-CFILES		:= $(foreach f,$(FILES),$(f).c)
-DEPS		:= $(patsubst %.c,$(OBJDIR)/%.d,$(CFILES))
+USER_INCLUDES   := -I$(TOP)/rom/exec -I..
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec \
+  arch=unix compiler=host \
+  files=$(FILES)
+
+#MM kernel-exec-unix : setup-exec-$(ARCH)
+
 TESTS		:= stackswap coretest
-
-#MM exec-unix : setup-exec-unix
-exec-unix : print-flags $(OBJS)
-	@$(NOP)
-
-print-flags :
-	@echo "CFLAGS=$(CFLAGS)"
-	@echo "CFLAGS2=$(CFLAGS2)"
-
-#MM setup-exec-unix : setup-exec-$(ARCH)
-setup-exec-unix :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(ADD_OBJS)
-	%exclude_files	$(foreach f,$(REP_FILES),rom/exec/$(f))
-
-#MM
-clean ::
-	$(RM) $(TESTS) $(OBJS) $(OBJDIR) *.err
 
 #MM
 check-exec-unix : $(TESTS)
-	@$(NOP)
 
 % : %.c
 	$(CC) -DTEST $(CFLAGS) $< -o $@
 
-$(OBJDIR)/%.o : %.s
-	%assemble_q
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2) cmd=$(HOST_CC)
-
-$(OBJDIR)/%.d : %.c $(MACHINE_H)
-	%mkdepend_q
-
 %common
-%include_deps
