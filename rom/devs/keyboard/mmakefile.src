@@ -37,7 +37,7 @@ $(DEVSDIR)/keyboard.device : $(OSGENDIR)/keyboard.o
 	%link_q startup=
 
 $(OSGENDIR)/%.o : %.c
-	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
+	%compile_q opt="$(CFLAGS)"
 
 $(OSGENDIR)/%.d : %.c
 	%mkdepend_q
