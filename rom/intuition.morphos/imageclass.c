@@ -42,7 +42,6 @@
 
 #ifndef __MORPHOS__
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #endif /* !__MORPHOS__ */

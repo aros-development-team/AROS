@@ -24,7 +24,6 @@
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 
 #define OUTERSPACING_X		4
 #define OUTERSPACING_Y		4

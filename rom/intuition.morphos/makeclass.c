@@ -17,8 +17,6 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH5(struct IClass *, MakeClass,
 
          /*  SYNOPSIS */
@@ -80,16 +78,10 @@ AROS_LH5(struct IClass *, MakeClass,
  
     INTERNALS
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     Class * iclass = NULL;
 
@@ -167,13 +159,5 @@ AROS_LH5(struct IClass *, MakeClass,
 #endif
     return (iclass);
 
-#else
-
-/* Actually call boopsi.library function */
-    return MakeClass(classID, superClassID, superClassPtr, instanceSize, flags);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
-} /* MakeClass */
+} /* MakeClass() */

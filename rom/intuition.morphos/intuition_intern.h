@@ -228,7 +228,6 @@ void * memclr(APTR, ULONG);
 
 #define PROP_RENDER_OPTIMIZATION 0
 
-#define INTERNAL_BOOPSI  1
 #define SINGLE_SETPOINTERPOS_PER_EVENTLOOP 1
 
 #ifndef LIFLG_SUPPORTS_OFFSCREEN_LAYERS
@@ -390,9 +389,6 @@ struct IntIntuitionBase
     struct Library         *LayersBase;
     struct ExecBase        *SysBase;
     struct UtilityBase     *UtilBase;
-#if !INTERNAL_BOOPSI
-    struct Library         *BOOPSIBase;
-#endif
     struct Library         *KeymapBase;
     struct Library         *DOSBase;
 #ifdef __MORPHOS__
@@ -458,11 +454,9 @@ struct IntIntuitionBase
     /* Dos function DisplayError() before intuition.library patched it */
     APTR                    OldDisplayErrorFunc;
 
-#if INTERNAL_BOOPSI
     struct SignalSemaphore  ClassListLock;
     struct MinList          ClassList;
     struct IClass           RootClass;
-#endif
 
 #ifdef __MORPHOS__
     struct ViewExtra       *ViewLordExtra;
@@ -693,20 +687,6 @@ struct IntIntuiMessage
 #undef TimerIO
 #endif
 #define TimerIO (GetPrivIBase(IntuitionBase)->TimerIO)
-
-#if INTERNAL_BOOPSI
-
-#define BOOPSIBase BOOPSIBase_accessed_although_may_not_use
-
-#else
-
-#ifdef BOOPSIBase
-#undef BOOPSIBase
-#endif
-#define BOOPSIBase (GetPrivIBase(IntuitionBase)->BOOPSIBase)
-
-#endif
-
 
 #ifdef DOSBase
 #undef DOSBase

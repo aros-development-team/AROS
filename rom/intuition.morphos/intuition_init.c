@@ -81,15 +81,11 @@ extern const char LIBEND;
 
 /* There has to be a better way... */
 
-#if INTERNAL_BOOPSI
-
 AROS_UFP3(ULONG, rootDispatcher,
           AROS_UFPA(Class *,  cl,  A0),
           AROS_UFPA(Object *, obj, A2),
           AROS_UFPA(Msg,      msg, A1)
          );
-
-#endif
 
 struct IClass *InitICClass (LIBBASETYPEPTR LIBBASE);
 struct IClass *InitModelClass (LIBBASETYPEPTR LIBBASE);
@@ -183,15 +179,6 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         so it shouldn't fail...
         */
 
-#if !INTERNAL_BOOPSI
-        if (!(BOOPSIBase = OpenLibrary("boopsi.library", 0)))
-        {
-            /* Intuition couldn't open unknown library */
-            Alert(AT_DeadEnd | AN_Intuition | AG_OpenLib | AO_Unknown);
-            return NULL;
-        }
-#endif
-
         /* Create semaphore and initialize it */
         GetPrivIBase(LIBBASE)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
 
@@ -256,7 +243,6 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
 
 #endif
 
-#if INTERNAL_BOOPSI
         InitSemaphore(&GetPrivIBase(LIBBASE)->ClassListLock);
         NEWLIST(&GetPrivIBase(LIBBASE)->ClassList);
 
@@ -267,16 +253,14 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
         GetPrivIBase(LIBBASE)->RootClass.cl_UserData           = (IPTR)LIBBASE;
         DEBUG_INIT(dprintf("LIB_Init: create rootclass\n"));
         AddClass(&(GetPrivIBase(LIBBASE)->RootClass));
-#endif
 
         /* Add all other classes */
 
-#if INTERNAL_BOOPSI
         DEBUG_INIT(dprintf("LIB_Init: create icclass\n"));
         InitICClass (LIBBASE);      /* After ROOTCLASS  */
         DEBUG_INIT(dprintf("LIB_Init: create modelclass\n"));
         InitModelClass (LIBBASE);       /* After ICCLASS    */
-#endif
+        
         DEBUG_INIT(dprintf("LIB_Init: create imageclass\n"));
         InitImageClass (LIBBASE);       /* After ROOTCLASS  */
         DEBUG_INIT(dprintf("LIB_Init: create frameiclass\n"));

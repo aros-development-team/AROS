@@ -17,8 +17,6 @@
  
     NAME */
 
-#include "maybe_boopsi.h"
-
 AROS_LH1(void, FreeICData,
 
          /*  SYNOPSIS */
@@ -49,14 +47,10 @@ AROS_LH1(void, FreeICData,
  
     INTERNALS
  
-    HISTORY
- 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *, IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     DEBUG_FREEICDATA(dprintf("FreeICData(icdata 0x%lx)\n",icdata));
 
@@ -70,13 +64,6 @@ AROS_LH1(void, FreeICData,
         icdata->ic_CloneTags = NULL;
     }
 
-#else
-
-    /* call boopsi.library function */
-    FreeICData(icdata);
-
-#endif
-
     AROS_LIBFUNC_EXIT
 
-} /* FreeICData */
+} /* FreeICData() */

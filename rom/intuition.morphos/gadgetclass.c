@@ -35,7 +35,6 @@
 #ifndef __MORPHOS__
 struct ICData;
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "gadgets.h"

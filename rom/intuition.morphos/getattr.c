@@ -13,8 +13,6 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH3(ULONG, GetAttr,
 
          /*  SYNOPSIS */
@@ -59,16 +57,10 @@ AROS_LH3(ULONG, GetAttr,
  
     INTERNALS
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     struct opGet get;
     ULONG result = 0;
@@ -90,13 +82,5 @@ AROS_LH3(ULONG, GetAttr,
 
     return result;
 
-#else
-
-/* Really call boopsi.library */
-    return GetAttr(attrID, object, storagePtr);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
-} /* GetAttr */
+} /* GetAttr() */

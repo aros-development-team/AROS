@@ -33,7 +33,6 @@
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #endif /* !__MORPHOS__ */
 
 #ifdef IntuitionBase

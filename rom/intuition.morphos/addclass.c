@@ -15,8 +15,6 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH1(void, AddClass,
 
          /*  SYNOPSIS */
@@ -50,11 +48,7 @@ AROS_LH1(void, AddClass,
     Programming System for Intuition" and "boopsi Class Reference"
  
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -65,21 +59,11 @@ AROS_LH1(void, AddClass,
 
     SANITY_CHECK(classPtr)
 
-#if INTERNAL_BOOPSI
-
     ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
     AddTail (   (struct List *)&GetPrivIBase(IntuitionBase)->ClassList,
               (struct Node *)classPtr );
     classPtr->cl_Flags |= CLF_INLIST;
     ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
-#else
-
-/* call boopsi.library function */
-    AddClass(classPtr);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
-} /* AddClass */
+} /* AddClass() */

@@ -15,8 +15,6 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH1(BOOL, FreeClass,
 
          /*  SYNOPSIS */
@@ -87,8 +85,6 @@ AROS_LH1(BOOL, FreeClass,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#if INTERNAL_BOOPSI
-
     BOOL retval = FALSE;
     
     SANITY_CHECKR(classPtr,FALSE)
@@ -113,13 +109,6 @@ AROS_LH1(BOOL, FreeClass,
     ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
     
     return retval;
-#else
-
-/* call boopsi.library function */
-    return FreeClass(classPtr);
-
-#endif
 
     AROS_LIBFUNC_EXIT
-
-} /* FreeClass */
+} /* FreeClass() */

@@ -13,8 +13,6 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-#include "maybe_boopsi.h"
-
 AROS_LH1(void, RemoveClass,
 
          /*  SYNOPSIS */
@@ -47,16 +45,10 @@ AROS_LH1(void, RemoveClass,
  
     INTERNALS
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-#if INTERNAL_BOOPSI
 
     ObtainSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
 
@@ -69,13 +61,5 @@ AROS_LH1(void, RemoveClass,
 
     ReleaseSemaphore( &GetPrivIBase(IntuitionBase)->ClassListLock );
 
-#else
-
-    /* Pass to boopsi.library */
-    RemoveClass(classPtr);
-
-#endif
-
     AROS_LIBFUNC_EXIT
-
-} /* RemoveClass */
+} /* RemoveClass() */

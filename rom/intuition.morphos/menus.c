@@ -24,7 +24,6 @@
 #include "inputhandler.h"
 
 #include "intuition_intern.h"
-#include "maybe_boopsi.h"
 #include "menus.h"
 
 #define DEBUG_FINDMENUSHORTCUT(x)   ;
