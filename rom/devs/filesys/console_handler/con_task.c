@@ -67,7 +67,7 @@ static const struct NewWindow default_nw =
     300,			/* Height */
     1,				/* DetailPen */
     0,				/* BlockPen */
-    IDCMP_CLOSEWINDOW,		/* IDCMP */
+    0,		    	    	/* IDCMP */
     WFLG_DEPTHGADGET |
     WFLG_SIZEGADGET |
     WFLG_DRAGBAR |
