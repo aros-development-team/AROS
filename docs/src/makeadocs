@@ -37,7 +37,7 @@ for src in $* ; do
 	    cvs log "$src" | gawk -f "$CURDIR/cvslog2html.gawk" > "$log"
 	fi
 	echo "Regenerating $html"
-	gawk -f "$CURDIR/adoc2html.gawk" --assign "CURDIR=$CURDIR" "$src" "$html"
+	gawk -f "$CURDIR/adoc2html.gawk" --assign "CURDIR=$CURDIR" "$src" "$log"
     else
 	echo -n "."
 	dot=1
