@@ -250,6 +250,8 @@ int main(int argc, char *argv[])
     if (thereare)
     	remove(output);
 
+    chmod(output, 0766);
+    
     return thereare;
 }
 
