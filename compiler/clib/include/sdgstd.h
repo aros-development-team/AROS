@@ -4,4 +4,4 @@
 char * strlwr(char *);
 char * strupr(char *);
 
-#endif
+#endif /* SDGSTD_H */
