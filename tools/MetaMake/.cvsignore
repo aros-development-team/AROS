@@ -8,5 +8,6 @@ stamp-h
 config.cache
 config.log
 config.status
+aclocal.m4
 .deps
 .pure

@@ -10,3 +10,4 @@ mmake
 mmake.cache
 mmake.config
 debug.opts
+errors
