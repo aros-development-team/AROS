@@ -55,7 +55,7 @@ AROS_SLIB_ENTRY(SetSR,Exec):
 	move.l  %d7,-(%sp)
 	move.l  #4,%d7     // #4 => call _sys_trap1_SetSR
 	trap    #1
-	move.l  (%sp)+,%d7
+	move.l  (%sp)+,%d7 // d0 holds old value of SR.
 	rts
 
 	.globl _sys_trap1_SetSR
@@ -69,9 +69,10 @@ _sys_trap1_SetSR:
 	move.l	%d2,-(%sp)
 	and.w	%d1,%d0     // isolate the flags to be changed
 	not.w	%d1         // invert the mask
-	move.w	4(%sp),%d2  // target for sp is register d2
+	move.w	4(%sp),%d2  // target for sr is register d2
 	and.w	%d1,%d2     // isolate the flags to remain untouched
 	or.w	%d0,%d2     // generate new sr
+	move.w	4(%sp),%d0  // old value of sr goes into d0
 	move.w	%d2,4(%sp)  // save the modified target
 	not.w	%d1         // revert the change
 	move.l	(%sp)+,%d2
