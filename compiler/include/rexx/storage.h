@@ -67,4 +67,13 @@ struct RexxMsg
 #define RXFF_TOKEN	(1<<RXFB_TOKEN)
 #define RXFF_NONRET	(1<<RXFB_NONRET)
 
+struct RexxArg
+{
+        LONG  ra_Size;
+        UWORD ra_Length;
+        UBYTE ra_Depricated1; /* Was ra_Flags but not used anymore */
+        UBYTE ra_Depricated2; /* Was ra_Hash but not used anymore */
+        BYTE  ra_Buff[8];
+};
+
 #endif /* REXX_STORAGE_H */
