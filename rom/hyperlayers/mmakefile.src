@@ -1,40 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-include $(TOP)/config/layers.cfg
-
-#MM
-layershyper-touch :
-	@$(RM) $(GENDIR)/$(CURDIR)/*.[odc]
-	@$(TOUCH) $(GENDIR)/$(CURDIR)/headers.stamp
-	@$(RM) $(GENINCDIR)/clib/layers_protos.h
-	@$(RM) $(GENINCDIR)/defines/layers.h
-	@$(RM) $(AROS_INCLUDES)/clib/layers_protos.h
-	@$(RM) $(AROS_INCLUDES)/defines/layers.h
-	
-ifneq ($(WHICHLAYERS), "HYPER")
-
-#MM
-includes-generate :
-	@$(NOP)
-#MM
-kernel-layers-linklib :
-	@$(NOP)
-
-#MM
-kernel-layers-linklib-quick :
-	@$(NOP)
-
-#MM
-kernel-layers-module :
-	@$(NOP)
-
-#MM
-kernel-layers-module-quick :
-	@$(NOP)	
-	
-else
-
 # BEGIN_DESC{makefile}
 # This is the mmakefile for layers.library. Use it if you want to compile
 # only this part of AROS.
@@ -184,4 +150,3 @@ kernel-layers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 %common
 %include_deps $(foreach f, $(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
 
-endif
