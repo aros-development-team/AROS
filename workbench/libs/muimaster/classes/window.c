@@ -96,9 +96,9 @@ struct MUI_WindowData
     struct DragNDrop *wd_dnd;
     struct MUI_DragImage *wd_DragImage;
 
-		Object *      wd_Menustrip; /* The menustrip object which is actually is used (eighter apps or windows or NULL) */
-		Object *      wd_ChildMenustrip; /* If window has an own Menustrip */
-		struct Menu  *wd_Menu; /* the intuition menustrip */
+    Object *      wd_Menustrip; /* The menustrip object which is actually is used (eighter apps or windows or NULL) */
+    Object *      wd_ChildMenustrip; /* If window has an own Menustrip */
+    struct Menu  *wd_Menu; /* the intuition menustrip */
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -1867,6 +1867,21 @@ static IPTR Window_SetMenuState(struct IClass *cl, Object *obj, struct MUIP_Wind
     return 0;
 }
 
+/**************************************************************************
+ MUIM_Window_DrawBackground
+**************************************************************************/
+static IPTR Window_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Window_DrawBackground *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
+	return FALSE;
+
+    zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
+		    msg->left, msg->top, msg->width, msg->height,
+		    msg->xoffset, msg->yoffset, 0);
+    return 0;
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -1904,6 +1919,7 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_SetMenuCheck: return Window_SetMenuCheck(cl, obj, (APTR)msg);
 	case MUIM_Window_GetMenuState: return Window_GetMenuCheck(cl, obj, (APTR)msg);
 	case MUIM_Window_SetMenuState: return Window_SetMenuCheck(cl, obj, (APTR)msg);
+	case MUIM_Window_DrawBackground: return Window_DrawBackground(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

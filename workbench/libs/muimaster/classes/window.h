@@ -189,12 +189,14 @@ struct MUI_EventHandlerNode
 /* The folloing stuff is new for Zune, Private stuff might be changed in the future */
 #define MUIM_Window_AddControlCharHandler  (METHOD_USER|0x1042c34d) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_AllocGadgetID          (METHOD_USER|0x1042c350) /* Zune: V1 - allocate a GadgetID for BOOPSI gadgets */
+#define MUIM_Window_DrawBackground         (METHOD_USER|0x1042c352) /* Zune: V1 - like MUIM_DrawBackground but PRIV */
 #define MUIM_Window_DragObject             (METHOD_USER|0x1042c34f) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_FreeGadgetID           (METHOD_USER|0x1042c351) /* Zune: V1 - free the GadgetID for BOOPSI gadgets */
 #define MUIM_Window_RecalcDisplay          (METHOD_USER|0x10429abc) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_RemControlCharHandler  (METHOD_USER|0x1042c34e) /* Zune: V1, PRIV don't use it! */
 struct  MUIP_Window_AddControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
 struct  MUIP_Window_AllocGadgetID { ULONG MethodID; }; /* Custom Class - returns the Gadget ID */
+struct  MUIP_Window_DrawBackground { ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 struct  MUIP_Window_DragObject { ULONG MethodID; Object *obj; LONG touchx; LONG touchy; ULONG flags; };
 struct  MUIP_Window_FreeGadgetID { ULONG MethodID; LONG gadgetid; }; /* Custom Class */
 struct  MUIP_Window_RecalcDisplay  { ULONG MethodID; };

@@ -771,15 +771,25 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	if (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE)) background = data->mad_Background;
 	else background = data->mad_SelBack;
 
+	if (!background)
+	{
+	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
+	    DoMethod(obj,MUIM_DrawBackground, _left(obj), _top(obj), _width(obj), _height(obj),
+			    _left(obj), _top(obj), 0);
+	}
+
 	/* RECHECK: sba: Orginally there was muiRenderInfo(obj)->mri_ClipRect.XXX used
         ** but this didn't worked, if there are some background problems recheck this
 	*/
 
 	if (data->mad_TitleText)
 	{
-	    zune_draw_image(data->mad_RenderInfo, background,
+	    if (background)
+	    {
+		zune_draw_image(data->mad_RenderInfo, background,
 			    _left(obj), _top(obj), _width(obj), _height(obj),
 			    _left(obj), _top(obj), 0);
+	    }
 
 /*	    int y = MAX(muiRenderInfo(obj)->mri_ClipRect.MinY,
 			_top(obj) + zframe->ythickness
@@ -932,6 +942,15 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
 	return FALSE;
+
+    if (!data->mad_Background)
+    {
+    	Object *parent;
+    	get(obj,MUIA_Parent,&parent);
+    	if (parent) DoMethodA(parent,(Msg)msg);
+    	else DoMethod(_win(obj),MUIM_Window_DrawBackground, msg->left, msg->top, msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+    	return TRUE;
+    }
 
     zune_draw_image(data->mad_RenderInfo, data->mad_Background,
 		    msg->left, msg->top, msg->width, msg->height,
