@@ -66,6 +66,7 @@ struct Layer
     struct Region * VisibleRegion;
     struct Region * shape;
     struct Region * shaperegion;
+    struct Region * visibleshape;
     unsigned int nesting;
 #else
     ULONG reserved1;
