@@ -29,7 +29,8 @@ FILES := \
       bdf \
       pcf \
       pfr \
-      winfnt
+      winfnt \
+      ftgzip
 
 USER_INCLUDES := -I../include
 
@@ -147,6 +148,12 @@ $(OBJDIR)/%.o : winfonts/%.c
 	%compile_q opt="$(CFLAGS) -Iwinfonts"
 
 $(OBJDIR)/%.d : winfonts/%.c
+	%mkdepend_q flags="$(CFLAGS) -Iwinfonts"
+
+$(OBJDIR)/%.o : gzip/%.c
+	%compile_q opt="$(CFLAGS) -Iwinfonts"
+
+$(OBJDIR)/%.d : gzip/%.c
 	%mkdepend_q flags="$(CFLAGS) -Iwinfonts"
 
 %make_linklib mmake=contrib-freetype-linklib
