@@ -4,7 +4,7 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 
-int __nocommandline(void) __attribute__((weak, alias("__initcommandline")));
+int __nocommandline __attribute__((weak)) = 0;
 
 extern void *WBenchMsg;
 extern char *__argstr;
