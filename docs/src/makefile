@@ -117,7 +117,7 @@ $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	chmod a+r $@
 
 $(DEST)background.html: background.src stathtml.gawk src2html.gawk \
-	    devitemfilt.gawk
+	    devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
 	touch background.src
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
