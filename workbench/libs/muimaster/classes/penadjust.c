@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-/*  #define MYDEBUG 1 */
+#define MYDEBUG 1
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -51,6 +51,9 @@ static void UpdateState(Object *obj, struct Penadjust_DATA *data)
     	case PST_RGB:
 	    set(data->coloradjobj, MUIA_Coloradjust_RGB, (IPTR) &data->intpenspec.p_rgb);
 	    set(obj, MUIA_Group_ActivePage, 2);
+	    break;
+
+	case PST_SYS:
 	    break;
     }  
 }
