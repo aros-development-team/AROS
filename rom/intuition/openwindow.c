@@ -328,11 +328,6 @@
     if (nw.DetailPen == 0xFF) nw.DetailPen = 1;
     if (nw.BlockPen  == 0xFF) nw.BlockPen = 0;
 
-    w->MinWidth  = nw.MinWidth;
-    w->MinHeight = nw.MinHeight;
-    w->MaxWidth  = nw.MaxWidth;
-    w->MaxHeight = nw.MaxHeight;
-
     if (nw.Type == PUBLICSCREEN)
 	w->WScreen = IntuitionBase->ActiveScreen;
     else if (nw.Type == CUSTOMSCREEN)
@@ -428,6 +423,12 @@
 	if ((w->TopEdge + w->Height) > w->WScreen->Height)
 	    w->TopEdge = w->WScreen->Height - w->Height;
     }
+
+    w->MinWidth  = (nw.MinWidth  != 0) ? nw.MinWidth  : w->Width;
+    w->MinHeight = (nw.MinHeight != 0) ? nw.MinHeight : w->Height;
+    w->MaxWidth  = (nw.MaxWidth  != 0) ? nw.MaxWidth  : w->Width;
+    w->MaxHeight = (nw.MaxHeight != 0) ? nw.MaxHeight : w->Height;
+
     if (zoomrectangle)
     {
 	((struct IntWindow *)w)->ZipLeftEdge = zoomrectangle->MinX;
