@@ -1,0 +1,111 @@
+
+#include "be_val"
+
+typedef long uae_ptr;
+
+template<class T> // big endian pointer
+class be_ptr
+{
+  public:
+    typedef be_ptr<T> my_type;
+    typedef T value_type;
+    typedef T* pointer_type;
+
+    be_ptr (const pointer_type p) : ptr (reinterpret_cast<uae_ptr> (p))
+    {}
+    be_ptr ()
+    {}
+    operator pointer_type ()
+    {
+      return reinterpret_cast<pointer_type> (static_cast<uae_ptr> (ptr));
+    }
+    value_type& operator* ()
+    {
+      return *(static_cast<pointer_type> (*this));
+    }
+    pointer_type operator-> ()
+    {
+      return static_cast<pointer_type> (*this);
+    }
+    const my_type& operator= (const pointer_type p)
+    {
+      *this = my_type (p);
+    }
+    value_type& operator[] (size_t dist)
+    {
+      return *(*this + dist);
+    }
+    const my_type& operator++ () // pre increment operator
+    {
+      ptr ++;
+      return *this;
+    }
+    const my_type operator++ (int) // post increment operator
+    {
+      my_type tmp = *this;
+      (*this)++;
+      return tmp;
+    }
+    const my_type& operator-- () // pre increment operator
+    {
+      ptr --;
+      return *this;
+    }
+    const my_type operator-- (int) // post increment operator
+    {
+      my_type tmp = *this;
+      (*this)--;
+      return tmp;
+    }
+    const my_type& operator+= (const size_t dist)
+    {
+      ptr += dist;
+    }
+    const my_type& operator-= (const size_t dist)
+    {
+      ptr -= dist;
+    }
+    my_type operator+ (const size_t dist)
+    {
+      my_type tmp = *this;
+      tmp += dist;
+      return tmp;
+    }
+    my_type operator- (const size_t dist)
+    {
+      my_type tmp = *this;
+      tmp -= dist;
+      return tmp;
+    }
+  protected:
+    be_val<uae_ptr> ptr;
+};
+
+template<> // specialization for void pointer
+class be_ptr<void>
+{
+  public:
+    typedef be_ptr<void> my_type;
+    typedef void* pointer_type;
+
+    be_ptr (const pointer_type p) : ptr (reinterpret_cast<uae_ptr> (p))
+    {}
+    be_ptr ()
+    {}
+    operator pointer_type ()
+    {
+      return reinterpret_cast<pointer_type> (static_cast<uae_ptr> (ptr));
+    }
+    const my_type& operator= (const pointer_type p)
+    {
+      *this = my_type (p);
+    }
+  protected:
+    be_val<uae_ptr> ptr;
+};
+
+template<class T>
+inline size_t operator- (const be_ptr<T>& a, const be_ptr<T>& b)
+{
+  return static_cast<T*> (a) - static_cast<T*> (b);
+}

@@ -1,0 +1,217 @@
+#include <map>
+#include <netinet/in.h>
+
+using namespace std;
+
+template<class C>
+C ne2be (C value) // native endian to big endian (htonl ())
+{
+  return static_cast<C> (htonl (static_cast<long> (value)));
+}
+
+template<>
+short ne2be (short value) // specialization for short (htons ())
+{
+  return static_cast<short> (htons (static_cast<long> (value)));
+}
+
+template<class C>
+C be2ne (C value) // big endian to native endian (ntohl ())
+{
+  return static_cast<C> (ntohl (static_cast<long> (value)));
+}
+
+template<>
+short be2ne (short value) // specialization for short (ntohs ())
+{
+  return static_cast<short> (ntohs (static_cast<long> (value)));
+}
+
+template<class T> // big endian value
+class be_val
+{
+  public:
+    typedef T value_type;
+    typedef be_val<value_type> my_type;
+
+    be_val (value_type d) : data (ne2be (d))
+    {}
+    be_val (const my_type& other)
+    {
+      data = other.data;
+    }
+    be_val ()
+    {}
+    operator value_type () const
+    {
+      return static_cast<value_type> (be2ne (data));
+    }
+    // const my_type& operator= (const my_type& other)
+    // {
+    //   data = other.data;
+    // }
+    const my_type& operator= (const value_type d)
+    {
+      *this = my_type (d);
+    }
+    const my_type& operator++ () // pre increment operator
+    {
+      value_type tmp = static_cast<value_type> (*this);
+      return *this = my_type (++tmp);
+    }
+    const my_type operator++ (int) // post increment operator
+    {
+      my_type tmp = *this;
+      (*this)++;
+      return tmp;
+    }
+    const my_type& operator-- () // pre increment operator
+    {
+      value_type tmp = static_cast<value_type> (*this);
+      return *this = my_type (--tmp);
+    }
+    const my_type operator-- (int) // post increment operator
+    {
+      my_type tmp = *this;
+      (*this)--;
+      return tmp;
+    }
+    const my_type& operator+= (const my_type& other)
+    {
+      *this = *this + other;
+    }
+    const my_type& operator-= (const my_type& other)
+    {
+      *this = *this - other;
+    }
+    const my_type& operator*= (const my_type& other)
+    {
+      *this = *this * other;
+    }
+    const my_type& operator/= (const my_type& other)
+    {
+      *this = *this / other;
+    }
+    const my_type& operator&= (const my_type& other)
+    {
+      *this = *this & other;
+    }
+    const my_type& operator|= (const my_type& other)
+    {
+      *this = *this | other;
+    }
+    const my_type& operator%= (const my_type& other)
+    {
+      *this = *this % other;
+    }
+    const my_type& operator^= (const my_type& other)
+    {
+      *this = *this ^ other;
+    }
+    const my_type& operator<<= (const my_type& other)
+    {
+      *this = *this << other;
+    }
+    const my_type& operator>>= (const my_type& other)
+    {
+      *this = *this >> other;
+    }
+  protected:
+    value_type data;
+};
+
+template<class C> 
+inline const be_val<C> operator+ (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) + static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator- (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) - static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator* (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) * static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator/ (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) / static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator% (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) % static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator^ (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) ^ static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator& (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) & static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator| (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) | static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator<< (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) << static_cast<C> (b));
+}
+
+template<class C> 
+inline const be_val<C> operator>> (const be_val<C>& a, const be_val<C>& b)
+{
+  return be_val<C>(static_cast<C> (a) >> static_cast<C> (b));
+}
+
+template<class C> 
+inline bool operator< (const be_val<C>& a, const be_val<C>& b)
+{
+  return static_cast<C> (a) < static_cast<C> (b);
+}
+
+template<class C> 
+inline bool operator> (const be_val<C>& a, const be_val<C>& b)
+{
+  return static_cast<C> (a) > static_cast<C> (b);
+}
+
+template<class C> 
+inline bool operator<= (const be_val<C>& a, const be_val<C>& b)
+{
+  return static_cast<C> (a) <= static_cast<C> (b);
+}
+
+template<class C> 
+inline bool operator>= (const be_val<C>& a, const be_val<C>& b)
+{
+  return static_cast<C> (a) >= static_cast<C> (b);
+}
+
+template<class C> 
+inline bool operator== (const be_val<C>& a, const be_val<C>& b)
+{
+  return static_cast<C> (a) == static_cast<C> (b);
+}
+
+template<class C> 
+inline bool operator!= (const be_val<C>& a, const be_val<C>& b)
+{
+  return static_cast<C> (a) != static_cast<C> (b);
+}
