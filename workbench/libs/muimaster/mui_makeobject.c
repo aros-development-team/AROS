@@ -318,6 +318,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_Cycle: /* STRPTR label, STRPTR *entries */
 		return MUI_NewObject(MUIC_Cycle,
+		    ButtonFrame,
 		    MUIA_Cycle_Entries, params[1],
 		    TAG_DONE);
 	    break;
