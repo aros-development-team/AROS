@@ -331,11 +331,10 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	    } /* if */
 
 	    RectFill(msg->imp_RPort,
-		IM(o)->LeftEdge + loffset,
-		IM(o)->TopEdge  + toffset,
-		IM(o)->LeftEdge + IM(o)->Width  - (loffset+loffset),
-		IM(o)->TopEdge  + IM(o)->Height - (toffset+toffset)
-	    );
+		left + loffset,
+		top  + toffset,
+		left + IM(o)->Width  - loffset - 1,
+		top  + IM(o)->Height - toffset - 1);
 	} /* if */
 
 	retval = 1UL;
