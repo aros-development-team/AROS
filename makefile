@@ -12,7 +12,7 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
-SUBDIRS = $(KERNEL) aros exec dos utility filesys libs
+SUBDIRS = $(KERNEL) aros exec dos utility filesys libs c
 DIST_FILES = makefile arosshell.c README.CVS gendef.awk make.cfg \
 	configure
 
@@ -28,7 +28,7 @@ TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/filetest
 
 all : setup subdirs $(LIBDIR)/libAmigaOS.a \
-	    $(BINDIR)/s/Startup-Sequence $(BINDIR)/arosshell apps
+	    $(BINDIR)/s/Startup-Sequence $(BINDIR)/arosshell
 
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
