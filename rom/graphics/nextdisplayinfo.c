@@ -57,7 +57,7 @@
     HIDDT_ModeID hiddmode;
     ULONG id;
     
-    hiddmode = AMIGA_TO_HIDD_MODEID(last_ID);
+    hiddmode = (HIDDT_ModeID)AMIGA_TO_HIDD_MODEID(last_ID);
     
     /* Get the next modeid */
     hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt);

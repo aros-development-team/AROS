@@ -172,12 +172,12 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	    ySize = destBitMap->Rows - yDest;
 	}
 
-	if (xSrc + xSize >= wSrc)
+	if ((ULONG)(xSrc + xSize) >= wSrc)
 	{
 	    xSize = wSrc - xSrc;
 	}
 
-	if (xDest + xSize >= wDest)
+	if ((ULONG)(xDest + xSize) >= wDest)
 	{
     	    xSize = wDest - xDest;
 	}
@@ -262,12 +262,12 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	    ySize = destBitMap->Rows - yDest;
         }
 
-	if (xSrc + xSize >= wSrc)
+	if ((ULONG)(xSrc + xSize) >= wSrc)
 	{
 	    xSize = wSrc - xSrc;
         }
         
-	if (xDest + xSize >= wDest)
+	if ((ULONG)(xDest + xSize) >= wDest)
 	{
 	    xSize = wDest - xDest;
         }
@@ -292,7 +292,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 
 		    planecnt ++; /* count it */
 
-		    for (y=0; y<ySize; y++)
+		    for (y=0; y<(ULONG)ySize; y++)
 		    {
 			src  =  srcBitMap->Planes[plane] + (y+ySrc) * srcBitMap->BytesPerRow;
 			dest = destBitMap->Planes[plane] + (y+yDest)*destBitMap->BytesPerRow;
@@ -318,12 +318,12 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 
 			    memmove (temp, src, srcBitMap->BytesPerRow);
 
-			    for (x=0; x<xSize; x++)
+			    for (x=0; x<(ULONG)xSize; x++)
 				copyonepixel (temp, x+xSrc, dest, x+xDest, minterm);
 			}
 			else
 			{
-			    for (x=0; x<xSize; x++)
+			    for (x=0; x<(ULONG)xSize; x++)
 				copyonepixel (src, x+xSrc, dest, x+xDest, minterm);
 			}
 

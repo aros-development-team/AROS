@@ -87,7 +87,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 
     if (NULL == handle)
     {
-	if (INVALID_ID != ID)
+	if ((ULONG)INVALID_ID != ID)
 	{
 	    /* Check that ID is a valid modeid */
 	    handle = FindDisplayInfo(ID);
@@ -106,7 +106,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
     }
     
     modeid = (ULONG)handle;
-    hiddmode = AMIGA_TO_HIDD_MODEID(modeid);
+    hiddmode = (HIDDT_ModeID)AMIGA_TO_HIDD_MODEID(modeid);
     
     /* Get mode info from the HIDD */
     if (!HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf))

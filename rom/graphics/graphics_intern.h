@@ -248,10 +248,10 @@ struct GfxBase_intern
 
 /* Defines for flags in areainfo->FlagPtr */
 
-#define AREAINFOFLAG_MOVE   	0x0
-#define AREAINFOFLAG_DRAW   	0x03
+#define AREAINFOFLAG_MOVE   	0x00
+#define AREAINFOFLAG_DRAW   	0x01
 #define AREAINFOFLAG_CLOSEDRAW	0x02
-#define AREAINFOFLAG_ELLIPSE	0x83
+#define AREAINFOFLAG_ELLIPSE	0x03
 
 /* Forward declaration */
 struct ViewPort;
@@ -307,13 +307,13 @@ BOOL areafillpolygon(struct RastPort  * rp,
                      struct Rectangle * bounds,
                      UWORD              first_idx,
                      UWORD              last_idx,
-                     UWORD              bytesperrow,
+                     ULONG              bytesperrow,
                      struct GfxBase   * GfxBase);
 
 void areafillellipse(struct RastPort   * rp,
 		     struct Rectangle  * bounds,
-                     UWORD              * CurVctr,
-                     UWORD               BytesPerRow,
+                     UWORD             * CurVctr,
+                     ULONG               BytesPerRow,
                      struct GfxBase    * GfxBase);
 
 void areaclosepolygon(struct AreaInfo *areainfo);
@@ -429,6 +429,3 @@ void __DisposeRegionRectangleExtChunk
 );
 
 #endif /* GRAPHICS_INTERN_H */
-
-
-

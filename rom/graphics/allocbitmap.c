@@ -381,7 +381,7 @@
 
 	if (nbm)
 	{
-	    int plane;
+	    ULONG plane;
 
 	    nbm->BytesPerRow = ((sizex + 15) >> 4) * 2;
 	    nbm->Rows	     = sizey;

@@ -63,7 +63,7 @@
     FIX_GFXCOORD(xstop);
     FIX_GFXCOORD(ystop);
     
-    if ((xstart > xstop) || (ystart > ystop)) return 0;
+    if ((xstart > xstop) || (ystart > ystop)) return;
 
     if (!pixlut.pixels)
     {

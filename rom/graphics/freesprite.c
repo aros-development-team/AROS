@@ -51,16 +51,11 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  UBYTE Mask;
-
-  if (pick >= 8)
-  /* user doens't play with the rules */
-    return;
-
-  Mask = (0x01 << pick) ^ -1;
-  Disable();
-  GfxBase->SpriteReserved &= Mask;
-  Enable();
-
+  if (pick < 8) {
+    UBYTE Mask = (0x01 << pick) ^ 0xff;
+    Disable();
+    GfxBase->SpriteReserved &= Mask;
+    Enable();
+  }
   AROS_LIBFUNC_EXIT
 } /* FreeSprite */

@@ -113,7 +113,7 @@
 		newminx = (minx < textExtent->te_Extent.MinX) ? minx : textExtent->te_Extent.MinX;
 		newmaxx = (maxx > textExtent->te_Extent.MaxX) ? maxx : textExtent->te_Extent.MaxX;
 		
-		if (newmaxx - newminx + 1 > constrainingBitWidth) break;
+		if ((ULONG)(newmaxx - newminx + 1) > constrainingBitWidth) break;
 		
 		if (constrainingExtent)
 		{

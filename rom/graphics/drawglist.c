@@ -52,12 +52,6 @@
 	int              followdrawpath;
 	struct VSprite * PrevVSprite = NULL;
 
-#ifndef BLTBITMAPRASTPORT_EXISTS
-	struct RastPort  rp_bm;
-    
-	InitRastPort(&rp_bm);
-#endif
-
 	/*
 	 * CurVSprite is not a valid VSprite but the "boundary vsprite"
 	 * Should I follow the DrawPath?
