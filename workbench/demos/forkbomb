@@ -1,2 +1,2 @@
-run c:shell <c:forkbomb
-run c:shell <c:forkbomb
+run c:shell <Sys:Demos/forkbomb
+run c:shell <Sys:Demos/forkbomb
