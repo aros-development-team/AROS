@@ -17,5 +17,7 @@
     Prototypes
 */
 
+AROS_LP0(UWORD, PeekQualifier,
+	struct Device *, InputBase, 7, Input)
 
 #endif /* CLIB_INPUT_PROTOS_H */
