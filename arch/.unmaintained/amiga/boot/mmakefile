@@ -89,8 +89,10 @@ $(TOOLGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
-# Don't try to include dependency files if we're cleaning up.
+# Don't try to include dependency files if we're cleaning or setting up.
 ifneq ("$(TARGET)","clean")
+ifneq ("$(TARGET)","setup")
 include $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).d)
 include $(foreach f,$(TOOLZ),$(TOOLGENDIR)/$(f).d)
+endif
 endif
