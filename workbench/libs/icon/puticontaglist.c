@@ -121,7 +121,7 @@
         {
             success = PutIconTags
             (
-                NULL,
+                NULL, icon,
                 ICONPUTA_PutDefaultName, (IPTR) defaultIconName,
                 TAG_MORE,                (IPTR) tags
             );
