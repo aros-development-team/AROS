@@ -33,6 +33,8 @@ extern jmp_buf __startup_jmp_buf;
 	None. This function does not return.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 	if (fatal_error)

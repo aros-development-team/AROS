@@ -34,6 +34,9 @@
 
 	This is the same as open (pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
 
+        This function must not be used in a shared library or
+        in a threaded application.
+
     EXAMPLE
 
     BUGS

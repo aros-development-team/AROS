@@ -27,6 +27,8 @@
 	!= 0, if the stream is at the end of the file, 0 otherwise.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 

@@ -32,6 +32,8 @@ extern void __copy_x_to_buffer();
         None
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 

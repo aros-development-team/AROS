@@ -31,6 +31,8 @@ extern unsigned char __Xrand[8];
         Random number
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 

@@ -33,6 +33,8 @@ long __gmtoffset;
 	The number of seconds.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 	time_t tt1, tt2;

@@ -30,6 +30,8 @@ extern void __calc_seed(unsigned short int xsubi[3]);
         Double precision floating point number between [0.0, 1.0).
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 

@@ -62,6 +62,8 @@
 	is returned, then errno is set to indicate the error.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 

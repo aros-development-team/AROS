@@ -28,6 +28,8 @@ static unsigned int a = 1;
 	A pseudo-random integer between 0 and RAND_MAX.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 
@@ -65,6 +67,8 @@ static unsigned int a = 1;
 	None.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 

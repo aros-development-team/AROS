@@ -68,6 +68,10 @@
 	If the filesystem doesn't allow to specify different access modes
 	for users, groups and others, then the user modes are used.
 
+        This function must not be used in a shared library or
+        in a threaded application.
+
+
     EXAMPLE
 
     BUGS

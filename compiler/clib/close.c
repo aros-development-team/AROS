@@ -33,6 +33,8 @@
 	-1 for error or zero on success.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application.
 
     EXAMPLE
 
