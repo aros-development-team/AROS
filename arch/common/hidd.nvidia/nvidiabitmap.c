@@ -58,6 +58,8 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
 	OOP_Object *pf;
 
+	InitSemaphore(&bm->bmLock);
+
 	D(bug("[NVBitMap] Super called. o=%p\n", o));
 
 	bm->onbm = TRUE;
@@ -230,6 +232,8 @@ static OOP_Object *offbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 	OOP_Object *pf;
 
+	InitSemaphore(&bm->bmLock);
+
 	bm->onbm = FALSE;
 
 	OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
@@ -313,6 +317,7 @@ static VOID bm__del(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
 
+    LOCK_BITMAP
     LOCK_HW
     NVDmaKickoff(&sd->Card);
     NVSync(sd);
@@ -333,6 +338,7 @@ static VOID bm__del(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     bm->state = NULL;
 
     UNLOCK_HW
+    UNLOCK_BITMAP
 
     OOP_DoSuperMethod(cl, o, msg);
 }
@@ -366,13 +372,16 @@ static void bm__get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 static VOID bm__clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
-    bm->usecount++;
+    
+    LOCK_BITMAP
 
     D(bug("[NVBitMap] Clear()\n"));
 
     if (bm->fbgfx)
     {
 	LOCK_HW
+
+	bm->usecount++;
 
 	sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 
@@ -436,14 +445,18 @@ static VOID bm__clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *m
 	} while(--i);
 	
     }
+
+    UNLOCK_BITMAP
 }
 
 
 static VOID bm__putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
+    
+    LOCK_BITMAP
+
     UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer + bm->bpp * msg->x + bm->pitch * msg->y);
-    bm->usecount++;
 
     if (bm->fbgfx)
     {
@@ -468,15 +481,19 @@ static VOID bm__putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPi
 	    *(ULONG*)ptr = msg->pixel;
 	    break;
     }
+
+    UNLOCK_BITMAP
 }
 
 static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     HIDDT_Pixel pixel=0;
     nvBitMap *bm = OOP_INST_DATA(cl, o);
+    
+    LOCK_BITMAP
+    
     UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer + bm->bpp * msg->x + bm->pitch * msg->y);
-    bm->usecount++;
- 
+
     if (bm->fbgfx)
     {
 	ptr += (IPTR)sd->Card.FrameBuffer;
@@ -501,6 +518,8 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 	    break;
     }
 
+    UNLOCK_BITMAP
+
     /* Get pen number from colortab */
     return pixel;
 }
@@ -508,7 +527,8 @@ static HIDDT_Pixel bm__getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 static VOID bm__fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
-    bm->usecount++;
+
+    LOCK_BITMAP
 
     D(bug("[NVBitMap] FillRect(%p,%d,%d,%d,%d)\n",
 	bm->framebuffer, msg->minX, msg->minY, msg->maxX, msg->maxY));
@@ -516,6 +536,8 @@ static VOID bm__fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
     if (bm->fbgfx)
     {
 	LOCK_HW
+
+	bm->usecount++;
 
 	sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 	sd->gpu_busy = TRUE;
@@ -545,8 +567,8 @@ static VOID bm__fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 
 	NVDmaKickoff(&sd->Card);
 	
-	if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
-	    NVSync(sd);
+//	if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
+//	    NVSync(sd);
 	
 	UNLOCK_HW
     }
@@ -554,12 +576,13 @@ static VOID bm__fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
     {
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
+
+    UNLOCK_BITMAP
 }
 
 static ULONG bm__bpl(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BytesPerLine *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
-    bm->usecount++;
 
     return (bm->bpp * msg->width + 63) & ~63;
 }
@@ -568,9 +591,9 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
 {
     OOP_Object *gc = msg->gc;
     nvBitMap *bm = OOP_INST_DATA(cl, o);
-    
-    bm->usecount++;
-
+  
+    LOCK_BITMAP
+  
     D(bug("[NVBitmap] DrawLine(%p, %d, %d, %d, %d)\n",
 	bm->framebuffer, msg->x1, msg->y1, msg->x2, msg->y2));
 
@@ -581,7 +604,10 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
     else
     {
 	LOCK_HW
-	
+    
+	bm->usecount++;
+
+
 	sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 	sd->gpu_busy = TRUE;
 	
@@ -623,19 +649,19 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
 	
 	UNLOCK_HW
     }
+
+    UNLOCK_BITMAP
 }
 
 static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
-    if (cl == sd->offbmclass)
-    {
-	D(bug("offbmclass: "));
-    }
-
     D(bug("[NVBitMap] PutImageLUT(%p, %d, %d:%d, %d:%d, %p)\n",
     msg->pixels, msg->modulo, msg->x, msg->y, msg->width, msg->height, msg->pixlut));
 
     nvBitMap *bm = OOP_INST_DATA(cl, o);
+    
+    LOCK_BITMAP 
+    
     ULONG *ptr = (ULONG*)sd->scratch_buffer;
 
     WORD                    x, y;
@@ -644,13 +670,14 @@ static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     HIDDT_Pixel             *lut = pixlut ? pixlut->pixels : NULL;
     OOP_Object              *gc = msg->gc;
    
-    bm->usecount++;
-
     if ((ptr != (ULONG*)0xffffffff) && bm->fbgfx)
     {
 	ULONG *cpuptr = (ULONG*)((IPTR)ptr + sd->Card.FrameBuffer);
     
 	LOCK_HW
+    
+	bm->usecount++;
+
 
 	sd->gpu_busy = TRUE;
 
@@ -721,12 +748,16 @@ static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 	UNLOCK_HW
     }
     else OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    UNLOCK_BITMAP
 }
 
 static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o, 
 		struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
+    
+    LOCK_BITMAP
     
     if ((OOP_OCLASS(msg->srcBitMap) == sd->planarbmclass) && bm->fbgfx)
     {
@@ -745,6 +776,8 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 	ULONG x = msg->destX, y = msg->destY, w = msg->width, h = msg->height;
 	
 	LOCK_HW
+
+	bm->usecount++;
 
 	sd->gpu_busy = TRUE;
 
@@ -827,6 +860,7 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
     else
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
+    UNLOCK_BITMAP
 }
 
 static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
@@ -835,10 +869,10 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
     nvBitMap *bm = OOP_INST_DATA(cl, o);
     UWORD addX, addY;
 
+    LOCK_BITMAP
+
     D(bug("[NVBitmap] DrawRect(%p, %d, %d, %d, %d)\n",
 	bm->framebuffer, msg->minX, msg->minY, msg->maxX, msg->maxY));
-
-    bm->usecount++;
 
     if (msg->minX == msg->maxX) addX = 1; else addX = 0;
     if (msg->minY == msg->maxY) addY = 1; else addY = 0;
@@ -852,6 +886,8 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 	LOCK_HW
 
 	sd->gpu_busy = TRUE;
+        bm->usecount++;
+
 
         sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 
@@ -901,6 +937,8 @@ static VOID bm__drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawR
 
 	UNLOCK_HW
     }
+
+    UNLOCK_BITMAP
 }
 
 static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPolygon *msg)
@@ -909,8 +947,8 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
     nvBitMap *bm = OOP_INST_DATA(cl, o);
     ULONG i;
 
-    bm->usecount++;
-
+    LOCK_BITMAP
+    
     if ((GC_LINEPAT(gc) != (UWORD)~0) || !bm->fbgfx)
     {
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -918,6 +956,9 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
     else
     {
 	LOCK_HW
+    
+	bm->usecount++;
+
 
         sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
 	sd->gpu_busy = TRUE;
@@ -961,11 +1002,16 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
 
 	UNLOCK_HW
     }
+
+    UNLOCK_BITMAP
 }
 
 static VOID bm__putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
+
+    LOCK_BITMAP
+
     IPTR VideoData = bm->framebuffer;
 
     if (bm->fbgfx)
@@ -1113,11 +1159,16 @@ static VOID bm__putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIm
 	    break;
 	    
     } /* switch(msg->pixFmt) */
+
+    UNLOCK_BITMAP
 }
 
 static VOID bm__getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     nvBitMap *bm = OOP_INST_DATA(cl, o);
+
+    LOCK_BITMAP
+    
     IPTR VideoData = bm->framebuffer;
 
     if (bm->fbgfx)
@@ -1267,6 +1318,8 @@ static VOID bm__getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIm
 	    break;
 	    
     } /* switch(msg->pixFmt) */
+
+    UNLOCK_BITMAP
 	    
 }
 

@@ -240,6 +240,8 @@ struct staticdata {
 };
 
 typedef struct __bm {
+    struct SignalSemaphore bmLock;
+
     OOP_Object	*BitMap;	// BitMap OOP Object
     IPTR	framebuffer;	// Points to pixel data
     ULONG	width;		// Bitmap width
@@ -270,8 +272,10 @@ struct planarbm_data
 };
 
 #define LOCK_HW		{ ObtainSemaphore(&sd->HWLock); }
-
 #define UNLOCK_HW	{ ReleaseSemaphore(&sd->HWLock); }
+
+#define LOCK_BITMAP	{ ObtainSemaphore(&bm->bmLock); }
+#define UNLOCK_BITMAP	{ ReleaseSemaphore(&bm->bmLock); }
 
 LIBBASETYPE {
     struct Library	LibNode;
