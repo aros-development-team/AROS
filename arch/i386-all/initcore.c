@@ -4,18 +4,24 @@
 #include <proto/exec.h>
 #include <aros/asmcall.h>
 #include <signal.h>
+#include <stdio.h>
 #define timeval     sys_timeval
 #include <sys/time.h>
 #undef timeval
 
 void disable(void);
 static int sig2inttabl[NSIG];
-char supervisor;
+int supervisor;
 
 static void signals(int sig)
 {
     struct IntVector *iv;
     supervisor++;
+    if (supervisor != 1)
+    {
+	fprintf (stderr, "Illegal supervisor %d\n", supervisor);
+	fflush (stderr);
+    }
     iv=&SysBase->IntVects[sig2inttabl[sig]];
     if (iv->iv_Code)
     {
@@ -24,7 +30,7 @@ static void signals(int sig)
 	    AROS_UFCA(struct ExecBase *,SysBase,A6)
 	);
     }
-    AROS_ASMSYMNAME(disable)();
+    disable ();
     supervisor--;
     if(SysBase->AttnResched&0x8000)
     {
@@ -41,7 +47,7 @@ void InitCore(void)
     };
     struct itimerval interval;
     int i;
-    struct sigaction sa={ signals, ~0ul, 0, NULL };
+    struct sigaction sa={ signals, ~0ul, SA_RESTART, NULL };
 
     for(i=0;i<sizeof(sig2int)/sizeof(sig2int[0]);i++)
     {
@@ -50,7 +56,7 @@ void InitCore(void)
     }
 
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
-    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
+    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/5;
 
     setitimer (ITIMER_REAL, &interval, NULL);
 }
