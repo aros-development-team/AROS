@@ -36,7 +36,6 @@
 #undef LocaleBase
 #undef DTList
 
-
 /******************************** STRUCTURES *********************************/
 
 /* same as datatypes/datatypes.h/struct DataTypeHeader, but always big endian
@@ -99,8 +98,6 @@ struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 LONG ReadFunc(struct StackVars *sv, UBYTE *buffer, ULONG length);
 UBYTE *AllocFunc(ULONG size, ULONG flags);
 void FreeFunc(UBYTE *memory, ULONG size);
-struct NamedObject *allocnamedobject(struct StackVars *sv, STRPTR name, 
-				     Tag FirstTag, ...);
 
 
 /********************************* CONSTANTS *********************************/
@@ -154,6 +151,7 @@ struct StackVars
     UBYTE           *HookBuffer;
     ULONG            HookBufSize;
     ULONG            HookPosition;
+    BOOL    	     DidCreateDTList;
 };
 
 #undef  SysBase
@@ -163,7 +161,7 @@ struct StackVars
 #define HookBuffer        sv->HookBuffer
 #define HookBufSize       sv->HookBufSize
 #define HookPosition      sv->HookPosition
-
+#define DidCreateDTList   sv->DidCreateDTList
 
 /****** AddDatatypes/main *****************************************************
 *
@@ -233,7 +231,7 @@ int main(void)
 	    {
 		if(AA.aa_Refresh)
 		{
-		    if(DateScan(sv))
+		    if(DidCreateDTList || DateScan(sv))
 		    {
 			ScanDirectory(sv, "DEVS:DataTypes");
 		    }
@@ -438,11 +436,15 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
     
     if(!dtl)
     {
-	if((no = allocnamedobject(sv, DATATYPESLIST,
-				  ANO_NameSpace, TRUE,
-				  ANO_UserSpace, sizeof(struct DataTypesList),
-				  ANO_Flags    , NSF_NODUPS | NSF_CASE,
-				  TAG_DONE)))
+    	struct TagItem tags[] =
+	{
+	    {ANO_NameSpace  , TRUE  	    	    	    },
+	    {ANO_UserSpace  , sizeof(struct DataTypesList)  },
+	    {ANO_Flags	    , NSF_NODUPS | NSF_CASE 	    },
+	    {TAG_DONE	    	    	    	    	    }
+	};
+	
+	if((no = AllocNamedObjectA(DATATYPESLIST, tags)))
 	    {
 		if(!(dtl = (struct DataTypesList*)no->no_Object))
 		{
@@ -454,6 +456,8 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 	if(dtl)
 	{
 	    InitSemaphore(&dtl->dtl_Lock);
+	    
+	    DidCreateDTList = TRUE;
 	    
 	    NewList(&dtl->dtl_SortedList);
 	    NewList(&dtl->dtl_BinaryList);
