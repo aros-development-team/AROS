@@ -13,8 +13,8 @@ FILES		:= \
 	forbid getcc permit setsr stackswap \
 	supervisor switch debug addintserver addtask \
 	alloctrap cause freetrap preparecontext \
-	rawputchar remintserver alert initresident
-
+	rawputchar remintserver alert initresident idletask
+	
 COREFILES	:= \
 	andimask intserver irq orimask restorefpu restorecpu \
 	storefpu storecpu init semaphores cpu

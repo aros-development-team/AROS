@@ -39,7 +39,7 @@
 static const UBYTE name[];
 static const UBYTE version[];
 extern const char LIBEND;
-static struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
+struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
 extern void idleTask(void);
 
 const struct Resident Exec_resident =
@@ -59,8 +59,7 @@ const struct Resident Exec_resident =
 static const UBYTE name[] = NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
 
-struct AROSSupportBase AROSSupportBase;
-struct ExecBase *SysBase;
+static struct AROSSupportBase AROSSupportBase;
 
 /*
     We temporarily redefine kprintf() so we use the real version in case
@@ -68,13 +67,30 @@ struct ExecBase *SysBase;
 */
 
 #undef kprintf
+#undef rkprintf
+struct Library * PrepareAROSSupportBase (void)
+{
+    AROSSupportBase.kprintf = (void *)kprintf;
+    AROSSupportBase.rkprintf = (void *)rkprintf;
+    
+#warning FIXME Add code to read in the debug options
+
+    return &AROSSupportBase;
+}
+
+void AROSSupportBase_SetStdOut (void * stdout)
+{
+    AROSSupportBase.StdOut = stdout;
+}
+         
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
 	    abs(*(WORD *)((&X)[-1]-2)),
 	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
-#define kprintf (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
+#define kprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
+#define rkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
 
 AROS_UFH4(int, Dispatcher,
     AROS_UFHA(struct Custom *, custom, A0),
@@ -171,6 +187,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 	NEWLIST(&t->tc_MemEntry);
 	NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
+	NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
+
 	AddHead(&t->tc_MemEntry,&ml->ml_Node);
 
 	t->tc_Node.ln_Name = "Boot Task";

@@ -265,6 +265,33 @@ int main()
     /* Enter SAD */
     Debug(0);
 
+    #define ioStd(x) ((struct IOStdReq *)x)
+
+    /* Small kbdhidd test */
+    {
+	struct IORequest *io;
+	struct MsgPort *mp;
+
+	kprintf("Opening kbd.hidd\n");
+	kprintf("Got: %08.8lx\n",OpenLibrary("kbd.hidd",0));
+	mp=CreateMsgPort();
+	io=CreateIORequest(mp,sizeof(struct IOStdReq));
+	kprintf("Result of opening device %d\n",
+	    OpenDevice("keyboard.device",0,io,0));
+	kprintf("Doing CMD_HIDDINIT...\n");
+	{
+	    UBYTE *data;
+	    data = AllocMem(100, MEMF_PUBLIC);
+	    strcpy(data, "hidd.kbd.hw");
+	    ioStd(io)->io_Command=32000;
+	    ioStd(io)->io_Data=data;
+	    ioStd(io)->io_Length=strlen(data);
+	    DoIO(io);
+	    kprintf("Got io_ERROR=%d",io->io_Error);
+	    kprintf("Doing kbd reads...\n");
+	}
+    }
+
 #if 1
 
     kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
@@ -315,8 +342,6 @@ int main()
 	}
     }
 
-    #define ioStd(x) ((struct IOStdReq *)x)
-
     {
 	struct IORequest *io;
 	struct MsgPort *mp;
@@ -353,7 +378,8 @@ int main()
 		{WA_Height,			240},
 		{WA_Left,			100},
 		{WA_Top,			100},
-		{WA_Title,	       (ULONG)text0},
+		{WA_Title,  (ULONG)"AROS Dream :-)"},
+		{WA_Activate,			  1},
 		{WA_SizeGadget,                TRUE},
 		{WA_DepthGadget,               TRUE},
 		{TAG_DONE,			  0}};
@@ -398,31 +424,6 @@ int main()
     }
     
 #endif
-
-    /* Small kbdhidd test */
-    {
-	struct IORequest *io;
-	struct MsgPort *mp;
-
-	kprintf("Opening kbd.hidd\n");
-	kprintf("Got: %08.8lx\n",OpenLibrary("kbd.hidd",0));
-	mp=CreateMsgPort();
-	io=CreateIORequest(mp,sizeof(struct IOStdReq));
-	kprintf("Result of opening device %d\n",
-	    OpenDevice("keyboard.device",0,io,0));
-	kprintf("Doing CMD_HIDDINIT...\n");
-	{
-	    UBYTE *data;
-	    data = AllocMem(100, MEMF_PUBLIC);
-	    strcpy(data, "hidd.kbd.hw");
-	    ioStd(io)->io_Command=32000;
-	    ioStd(io)->io_Data=data;
-	    ioStd(io)->io_Length=strlen(data);
-	    DoIO(io);
-	    kprintf("Got io_ERROR=%d",io->io_Error);
-	    kprintf("Doing kbd reads...\n");
-	}
-    }
 
     /*
 	All done. In normal cases CPU should never reach this instuctions
