@@ -53,6 +53,9 @@ extern const struct Resident
     LinuxHidd_resident,
     Cybergraphics_ROMTag,
     Console_resident,
+#if ENABLE_DBUS == 1
+    Dbus_ROMTag,
+#endif
     Mathffp_ROMTag,
     Mathieeesingbas_ROMTag,
     Workbench_ROMTag,
@@ -95,6 +98,9 @@ static const struct Resident *romtagList[] =
     &LinuxHidd_resident,			    /* ColdStart,   9	 */
     &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
     &Console_resident,			    /* ColdStart,   5	 */
+#if ENABLE_DBUS == 1
+    &Dbus_ROMTag,			    /* ColdStart,   0	 */
+#endif
     &emul_handler_resident,		    /* ColdStart,   0	 */
     &hiddserial_resident,   	    	    /* ColdStart,   0    */
     &hiddparallel_resident,   	    	    /* ColdStart,   0    */

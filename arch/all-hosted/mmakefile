@@ -17,6 +17,9 @@ ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
 endif
 KRSRCS  := battclock
+ifeq ($(ENABLE_DBUS),1)
+KLIBS	+= dbus
+endif
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
       	 $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
@@ -38,7 +41,7 @@ LIBS :=	-L$(LIBDIR) \
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
 	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \
-		$(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(KERNEL_LDFLAGS)
+		$(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)
 
 $(GENDIR)/aros.o : aros.c
 	$(HOST_CC) $(CFLAGS) -Dmain=submain $< -c -o $@

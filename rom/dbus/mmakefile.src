@@ -1,0 +1,61 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM kernel-dbus : includes kernel-dbus-$(ARCH)-$(CPU)
+#MM kernel-dbus-linklib : includes kernel-dbus-$(ARCH)-$(CPU)
+
+#USER_CFLAGS := -DDBUS_API_SUBJECT_TO_CHANGE
+
+%build_module_macro mmake=kernel-dbus \
+  modname=dbus modtype=library \
+  conffile="lib.conf" \
+  files="dbus_init amiga_threads" \
+  genincludes=no \
+  genfunctable=no
+
+SFDC_OPTS   := --target=$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-aros --gateprefix=__
+
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/dbus/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/dbus/$(notdir $f))
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC) clib-dbus_protos.h defines-dbus.h proto-dbus.h
+	$(CP) clib-dbus_protos.h $(AROS_INCLUDES)/clib/dbus_protos.h
+	$(CP) defines-dbus.h $(AROS_INCLUDES)/defines/dbus.h
+	$(CP) proto-dbus.h $(AROS_INCLUDES)/proto/dbus.h
+	$(CP) clib-dbus_protos.h $(GENINCDIR)/clib/dbus_protos.h
+	$(CP) defines-dbus.h $(GENINCDIR)/defines/dbus.h
+	$(CP) proto-dbus.h $(GENINCDIR)/proto/dbus.h
+#	@$(NOP)
+
+$(AROS_INCLUDES)/dbus/%.h : include/%.h
+	@$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/dbus/%.h : include/%.h
+	@$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes : clib-dbus_protos.h defines-dbus.h proto-dbus.h
+	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/dbus $(AROS_INCLUDES)/dbus
+
+#MM
+kernel-dbus-setup : functable.h gateproto.h
+
+functable.h:	dbus.sfd
+	$(SFDC) $(SFDC_OPTS) --mode=functable $< --output=$@
+
+gateproto.h:	dbus.sfd
+	$(SFDC) $(SFDC_OPTS) --mode=gateproto $< --output=$@
+
+
+clib-dbus_protos.h:	dbus.sfd
+	$(SFDC) $(SFDC_OPTS) --mode=clib $< --output=$@
+
+defines-dbus.h:		dbus.sfd
+	$(SFDC) $(SFDC_OPTS) --mode=macros $< --output=$@
+
+proto-dbus.h:		dbus.sfd
+	$(SFDC) $(SFDC_OPTS) --mode=proto $< --output=$@
+
+%common

@@ -15,6 +15,7 @@
 #MM	    kernel-hidd-kobj \
 #MM	    kernel-timer-kobj \
 #MM	    kernel-battclock-kobj \
+#MM	    @KERNEL_DBUS_KOBJ@ \
 #MM	    kernel-oop-kobj \
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
@@ -36,5 +37,6 @@
 #MM      kernel-workbench-includes \
 #MM      kernel-cgfx-includes \
 #MM      kernel-timer-includes \
+#MM      @KERNEL_DBUS_INCLUDES@ \
 #MM      kernel-oop-includes \
 #MM      kernel-battclock-includes

@@ -8,6 +8,7 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-exec arch=linux alias=unix
 %rule_archalias mainmmake=kernel-dos arch=linux alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=linux alias=unix
+%rule_archalias mainmmake=kernel-dbus arch=linux alias=unix
 
 MM- check : check-exec-unix
 

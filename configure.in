@@ -1024,6 +1024,23 @@ else
   DO_XSHM_SUPPORT="0"
 fi
 
+
+
+dnl See if the user wants dbus.library
+AC_MSG_CHECKING([if building of dbus.library is enabled])
+AC_ARG_ENABLE(dbus,[  --enable-dbus           Enable DBUS support via dbus.library (default=no)],dbus="yes",dbus="no")
+if test "$dbus" = "yes" ; then
+    ENABLE_DBUS=1
+    DBUS_CFLAGS=`pkg-config --cflags dbus-1`
+    DBUS_LIBFLAGS=`pkg-config --libs dbus-1`
+    KERNEL_DBUS_KOBJ=kernel-dbus-kobj
+    KERNEL_DBUS_INCLUDES=kernel-dbus-includes
+else
+    ENABLE_DBUS=0
+fi
+AC_MSG_RESULT($dbus)
+
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -1103,6 +1120,13 @@ AC_SUBST(aros_palm_debug_hack)
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)
+
+# DBUS related
+AC_SUBST(ENABLE_DBUS)
+AC_SUBST(DBUS_CFLAGS)
+AC_SUBST(DBUS_LIBFLAGS)
+AC_SUBST(KERNEL_DBUS_KOBJ)
+AC_SUBST(KERNEL_DBUS_INCLUDES)
 
 # Debug related
 AC_SUBST(aros_debug)
@@ -1249,6 +1273,7 @@ AC_CONFIG_COMMANDS([adflib/myaros.conf_executable],
 
 AC_CONFIG_FILES(
     Makefile
+    rom/mmakefile
     ${aros_inc_dir}/config.h:config/config.h.in
     ${aros_geninc_dir}/config.h:config/config.h.in
     ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in

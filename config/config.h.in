@@ -31,4 +31,6 @@
 #define AROS_MODULES_DEBUG		@aros_modules_debug@
 #define USE_XSHM	    	    	@DO_XSHM_SUPPORT@
 
+#define ENABLE_DBUS			@ENABLE_DBUS@
+
 #endif /* AROS_CONFIG_H */
