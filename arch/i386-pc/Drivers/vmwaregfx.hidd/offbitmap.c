@@ -23,7 +23,6 @@
 #include "offbitmap.h"
 #include "bitmap.h"
 #include "vmwaregfxclass.h"
-#include "vmwaregfx_support.h"
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 

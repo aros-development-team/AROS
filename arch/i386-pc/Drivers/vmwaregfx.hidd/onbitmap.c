@@ -23,7 +23,6 @@
 #include "onbitmap.h"
 #include "bitmap.h"
 #include "vmwaregfxclass.h"
-#include "vmwaregfx_support.h"
 
 /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
 
