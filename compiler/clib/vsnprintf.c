@@ -17,7 +17,6 @@ struct data
 
 static int _vsnprintf_uc (int c, struct data * data)
 {
-printf ("data.n=%d c=%c\n", data->n, c);
     if (data->n)
     {
 	*(data->str) ++ = c;
