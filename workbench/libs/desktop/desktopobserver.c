@@ -140,7 +140,7 @@ IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 
 	for(i=0; i<msg->wsr_Results; i++)
 	{
-		iconTags=AllocVec(3*sizeof(struct TagItem), MEMF_ANY);
+		iconTags=AllocVec(4*sizeof(struct TagItem), MEMF_ANY);
 		iconTags[0].ti_Tag=IA_DiskObject;
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
 		iconTags[1].ti_Tag=IA_Label;

@@ -45,6 +45,8 @@ struct SingleResult
 {
 	UBYTE *sr_Name;
 	struct DiskObject *sr_DiskObject;
+	UBYTE *sr_Comment;
+	BOOL sr_Script, sr_Pure, sr_Archive, sr_Read, sr_Write, sr_Execute, sr_Delete;
 };
 
 struct WorkerScanRequest

@@ -56,6 +56,7 @@ struct DesktopBase
 	struct MUI_CustomClass *db_ToolIcon;
 	struct MUI_CustomClass *db_ProjectIcon;
 	struct MUI_CustomClass *db_IconObserver;
+	struct MUI_CustomClass *db_ContainerIconObserver;
 	struct MUI_CustomClass *db_DiskIconObserver;
 	struct MUI_CustomClass *db_DrawerIconObserver;
 	struct MUI_CustomClass *db_ToolIconObserver;

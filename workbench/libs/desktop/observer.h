@@ -6,10 +6,15 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
-#define OA_InTree                 TAG_USER+101
-#define OA_Presentation           TAG_USER+102
+#define OA_Base                   TAG_USER+4200
 
-#define OM_FreeList_Add           TAG_USER+6501
+#define OA_InTree                 OA_Base+1
+#define OA_Presentation           OA_Base+2
+#define OA_Parent                 OA_Base+3
+#define OA_Disused                OA_Base+4
+
+#define OM_FreeList_Add           OA_Base+5
+#define OM_Delete                 OA_Base+6
 
 struct FreeNode
 {
@@ -20,7 +25,9 @@ struct FreeNode
 struct ObserverClassData
 {
 	Object *presentation;
+	Object *parent;
 	struct MinList freeList;
+	BOOL inTree;
 };
 
 struct __dummyObserverData__
@@ -35,9 +42,16 @@ struct ObsFreeListAddMsg
 	APTR free;
 };
 
+struct ObsDeleteMsg
+{
+	Msg methodID;
+	Object *obj;
+};
+
 #define observerData(obj) (&(((struct __dummyObserverData__ *)(obj))->ocd))
 
 #define _presentation(obj)    (observerData(obj)->presentation)
+#define _o_parent(obj)    (observerData(obj)->parent)
 
 
 #endif

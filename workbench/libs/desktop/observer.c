@@ -30,7 +30,7 @@ IPTR observerNew(Class *cl, Object *obj, struct opSet *msg)
 	IPTR retval=0;
 	struct ObserverClassData *data;
 	struct TagItem *tag;
-	Object *presentation;
+	Object *presentation=NULL, *parent=NULL;
 
 	tag=FindTagItem(OA_Presentation, msg->ops_AttrList);
 	if(tag)
@@ -39,13 +39,22 @@ IPTR observerNew(Class *cl, Object *obj, struct opSet *msg)
 		presentation=(Object*)tag->ti_Data;
 	}
 
+	tag=FindTagItem(OA_Parent, msg->ops_AttrList);
+	if(tag)
+	{
+		tag->ti_Tag=TAG_IGNORE;
+		parent=(Object*)tag->ti_Data;
+	}
+
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
 	if(retval)
 	{
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
 		data->presentation=presentation;
+		data->parent=parent;
 		NewList((struct List*)&data->freeList);
+		data->inTree=FALSE;
 
 		DoMethod(presentation, MUIM_Notify, PA_InTree, MUIV_EveryTime, obj, 3, MUIM_Set, OA_InTree, TRUE);
 	}
@@ -65,6 +74,28 @@ IPTR observerSet(Class *cl, Object *obj, struct opSet *msg)
 	{
 		switch(tag->ti_Tag)
 		{
+			case OA_InTree:
+			{
+				Object *pparent=NULL;
+
+				data->inTree=tag->ti_Data;
+				GetAttr(MUIA_Parent, data->presentation, &pparent);
+				// something has to be at the top of the tree...
+				// the top object won't have a parent
+				if(data->parent)
+				{
+					data->parent=_observer(pparent);
+					if(data->parent)
+						DoMethod(obj, MUIM_Notify, OA_Disused, TRUE, MUIV_EveryTime, data->parent, 2, OM_Delete, obj);
+				}
+				DoMethod(data->presentation, MUIM_Notify, PA_Disused, TRUE, MUIV_EveryTime, obj, 3, MUIM_Set, OA_Disused, TRUE);
+				break;
+			}
+			case OA_Parent:
+				data->parent=tag->ti_Data;
+				if(data->inTree)
+					DoMethod(obj, MUIM_Notify, OA_Disused, TRUE, MUIV_EveryTime, data->parent, 2, OM_Delete, obj);
+				break;
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -127,6 +158,18 @@ IPTR observerFreeListAdd(Class *cl, Object *obj, struct ObsFreeListAddMsg *msg)
 	return retval;
 }
 
+IPTR observerDelete(Class *cl, Object *obj, struct ObsDeleteMsg *msg)
+{
+	IPTR retval=0;
+	struct ObserverClassData *data;
+
+	data=(struct ObserverClassData*)INST_DATA(cl, obj);
+
+	DisposeObject(msg->obj);
+
+	return retval;
+}
+
 AROS_UFH3(IPTR, observerDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
@@ -150,6 +193,9 @@ AROS_UFH3(IPTR, observerDispatcher,
 			break;
 		case OM_FreeList_Add:
 			retval=observerFreeListAdd(cl, obj, (struct ObsFreeListAddMsg*)msg);
+			break;
+		case OM_Delete:
+			retval=observerDelete(cl, obj, (struct ObsDeleteMsg*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

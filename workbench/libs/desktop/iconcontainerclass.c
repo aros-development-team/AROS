@@ -61,6 +61,7 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 	struct IconContainerClassData *data;
 	struct TagItem *tag;
 	Object *vert=NULL, *horiz=NULL;
+	Object *desktop=NULL;
 
 	tag=FindTagItem(ICA_VertScroller, ops->ops_AttrList);
 	if(tag)
@@ -73,6 +74,12 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 	{
 		tag->ti_Tag=TAG_IGNORE;
 		horiz=(Object*)tag->ti_Data;
+	}
+	tag=FindTagItem(ICA_Desktop, ops->ops_AttrList);
+	if(tag)
+	{
+		tag->ti_Tag=TAG_IGNORE;
+		desktop=(Object*)tag->ti_Data;
 	}
 
 	retval=DoSuperMethodA(cl, obj, (Msg)ops);
@@ -99,6 +106,7 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		data->vertProp=vert;
 		data->iconSelected=FALSE;
 		data->justSelected=FALSE;
+		data->open=TRUE;
 		NewList((struct List*)&data->selectedList);
 	}
 
@@ -129,7 +137,6 @@ IPTR iconConSetup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 		DoSetupMethod(data->vertProp, msg->RenderInfo);
 
 	MUI_RequestIDCMP(obj, IDCMP_MOUSEBUTTONS);
-
 
 	return retval;
 }
@@ -682,6 +689,10 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 				data->justSelected=tag->ti_Data;
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
+			case ICA_Open:
+				data->open=tag->ti_Data;
+				SetAttrs(_win(obj), MUIA_Window_Open, FALSE, TAG_END);
+				break;
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -702,6 +713,9 @@ IPTR iconConGet(Class *cl, Object *obj, struct opGet *msg)
 	{
 		case ICA_SelectedIcons:
 			*msg->opg_Storage=(ULONG)&data->selectedList;
+			break;
+		case ICA_Open:
+			*msg->opg_Storage=(ULONG)data->open;
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);
@@ -730,8 +744,6 @@ IPTR iconConConnectParent(Class *cl, Object *obj, struct MUIP_ConnectParent *msg
 		muiNotifyData(data->vertProp)->mnd_ParentObject=obj;
 		DoMethod(data->vertProp, MUIM_ConnectParent, obj);
 	}
-
-	SetAttrs(obj, PA_InTree, TRUE, TAG_END);
 
 	return retval;
 }
@@ -798,18 +810,26 @@ IPTR iconConUpdateSelectList(Class *cl, Object *obj, struct opUpdateSelectList *
 
 	if(msg->selectState==TRUE)
 	{
-		kprintf("adding to list..\n");
 		data->justSelected=TRUE;
 		AddTail((struct List*)&(data->selectedList), (struct Node *)_OBJECT(msg->target));
 	}
 	else if(msg->selectState==FALSE)
-	{
-		kprintf("removing from list..\n");
 		Remove((struct Node *)_OBJECT(msg->target));
-	}
 
 	return retval;
 }
+
+IPTR iconConDispose(Class *cl, Object *obj, Msg msg)
+{
+	IPTR retval;
+
+	SetAttrs(obj, ICA_DeleteMe, TRUE, TAG_END);
+
+	retval=DoSuperMethodA(cl, obj, msg);
+
+	return retval;
+}
+
 
 AROS_UFH3(IPTR, iconContainerDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
@@ -860,6 +880,9 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 			break;
 		case ICM_UpdateSelectList:
 			retval=iconConUpdateSelectList(cl, obj, (struct opUpdateSelectList*)msg);
+			break;
+		case OM_DISPOSE:
+			retval=iconConDispose(cl, obj, msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

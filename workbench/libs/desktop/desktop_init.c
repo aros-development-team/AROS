@@ -38,7 +38,10 @@
 #include "desktopobserver.h"
 #include "operationclass.h"
 #include "internaliconopsclass.h"
+#include "internalwindowopsclass.h"
+#include "internaldesktopopsclass.h"
 #include "desktopclass.h"
+#include "containericonobserver.h"
 
 #include "desktop_intern_protos.h"
 
@@ -245,11 +248,15 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_IconObserver)
 			return NULL;
 
-		DesktopBase->db_DiskIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct DiskIconObserverClassData), diskIconObserverDispatcher);
+		DesktopBase->db_ContainerIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct ContainerIconObserverClassData), containerIconObserverDispatcher);
+		if(!DesktopBase->db_ContainerIconObserver)
+			return NULL;
+
+		DesktopBase->db_DiskIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_ContainerIconObserver, sizeof(struct DiskIconObserverClassData), diskIconObserverDispatcher);
 		if(!DesktopBase->db_DiskIconObserver)
 			return NULL;
 
-		DesktopBase->db_DrawerIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver, sizeof(struct DrawerIconObserverClassData), drawerIconObserverDispatcher);
+		DesktopBase->db_DrawerIconObserver=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_ContainerIconObserver, sizeof(struct DrawerIconObserverClassData), drawerIconObserverDispatcher);
 		if(!DesktopBase->db_DrawerIconObserver)
 			return NULL;
 
@@ -310,6 +317,18 @@ AROS_LH1(struct DesktopBase *, open,
 		dob->do_Code=(DOC_ICONOP | 1);
 		dob->do_Name="Open...";
 		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalIconOpsClassData), internalIconOpsDispatcher);
+		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
+
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_WINDOWOP | 1);
+		dob->do_Name="Close";
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalWindowOpsClassData), internalWindowOpsDispatcher);
+		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
+
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_DESKTOPOP | 1);
+		dob->do_Name="Quit";
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalDesktopOpsClassData), internalDesktopOpsDispatcher);
 		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
 		// END TEMPORARY!
 
@@ -412,6 +431,8 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
 		MUI_DeleteCustomClass(DesktopBase->db_DesktopObserver);
 	if(DesktopBase->db_IconContainerObserver)
 		MUI_DeleteCustomClass(DesktopBase->db_IconContainerObserver);
+	if(DesktopBase->db_ContainerIconObserver)
+		MUI_DeleteCustomClass(DesktopBase->db_ContainerIconObserver);
 	if(DesktopBase->db_Observer)
 		MUI_DeleteCustomClass(DesktopBase->db_Observer);
 	if(DesktopBase->db_ToolIcon)

@@ -23,6 +23,7 @@ struct IconContainerObserverClassData
 	// sent to the handler. The lock will be unlocked when
 	// the handler deems that scanning is complete.
 	BPTR dirLock;
+	Object *desktop;
 };
 
 struct icoAddIcon
