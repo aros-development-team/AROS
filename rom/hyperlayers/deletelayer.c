@@ -127,8 +127,7 @@
     if (!IS_EMPTYREGION(l->shape))
     {
 	D(bug("[Layers] DeleteLayer: lparent: %p, l->parent: %p\n",lparent,l->parent));
-      if (lparent && 
-          (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
+      if (lparent && IS_ROOTLAYER(lparent))
         _BackFillRegion(lparent, l->shape, FALSE, LayersBase);
     }
     else

@@ -595,19 +595,26 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
             if (TRUE == addtodamagelist)
             {
               struct Rectangle rect = intersect;
-            
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
             
+              // FIXME (if possible)
+              // !!! Also areas where a child disappears beyond the
+              // boundaries of its parent are added here!
               OrRectRegion(l->DamageList, &rect);
 #if 0
 kprintf("_cr->BitMap: %p ,_cr->lobs: %d\n",_cr->BitMap,_cr->lobs);
-kprintf("%s: Adding %d/%d-%d/%d to damagelist!\t",
+#endif
+#if 0
+kprintf("%s: Adding %d/%d-%d/%d to damagelist of l=%p!\t",
         __FUNCTION__,
         rect.MinX,
         rect.MinY,
         rect.MaxX,
-        rect.MaxY
+        rect.MaxY,
+        l
         );
+#endif
+#if 0
 kprintf("%s: Layer: %d/%d-%d/%d!\n",
         __FUNCTION__,
         l->bounds.MinX,
@@ -630,6 +637,8 @@ kprintf("%s: _cr: %d/%d-%d/%d!\n\n",
         _cr->bounds.MaxY
         );
 #endif
+            } else {
+//kprintf("Not adding to damage list for l=%p!\n",l);
             }
           }
           else
@@ -1260,6 +1269,8 @@ void _BackFillRegion(struct Layer * l,
 
   RR = r->RegionRectangle;
   if (NULL == RR) return;
+  
+  AndRegionRegion(l->visibleshape, r);
   
   if (TRUE == addtodamagelist)
   {
