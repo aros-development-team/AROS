@@ -316,7 +316,7 @@ static const ULONG coltab[] = {
 	screen->Screen.Flags = ns.Type;
 
         /* Mark the bitmap of the screen as an AROS-displayed BitMap */
-	screen->Screen.RastPort.BitMap->Flags |= BMF_AROS_DISPLAYED;
+	screen->Screen.RastPort.BitMap->Flags |= BMF_AROS_HIDD;
         /* 
            Copy the data from the rastport's bitmap 
            to the screen's bitmap structure 
