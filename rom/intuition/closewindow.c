@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  1998/12/31 21:43:18  nlorentz
+    Bugfix: CloseWindow should no longer free win->RPort as that is done in intui_CloseWindow()
+
     Revision 1.12  1998/10/20 16:45:53  hkiel
     Amiga Research OS
 
@@ -144,13 +147,12 @@
 
     UnlockIBase (lock);
 
-    /* Let the driver clean up */
-    intui_CloseWindow (window, IntuitionBase);
 
     /* Free resources */
     CloseFont (window->RPort->Font);
 
-    FreeRastPort (window->RPort);
+    /* Let the driver clean up. Driver wil dealloc window's rastport */
+    intui_CloseWindow (window, IntuitionBase);
 
     if (window->UserPort)
     {
