@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <pwd.h>
 
 struct passwd *getpwent()
 {
-    #warning Implement getpwent()
-    
+#   warning Implement getpwent()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return NULL;
 }

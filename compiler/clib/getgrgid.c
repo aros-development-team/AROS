@@ -3,11 +3,14 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <grp.h>
 
 struct group *getgrgid(gid_t gid)
 {
-    #warning Implement getgrgid()
-    
+#   warning Implement getgrgid()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     return NULL;
 }

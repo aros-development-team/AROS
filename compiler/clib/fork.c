@@ -3,12 +3,16 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <unistd.h>
 #include <errno.h>
 
 pid_t fork()
 {
-    #warning Implement fork()
+#   warning Implement fork()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     errno = EPERM;
     return -1;
 }

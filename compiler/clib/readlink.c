@@ -5,6 +5,8 @@
     ANSI C function getcwd().
 */
 
+#include <aros/debug.h>
+
 #include <errno.h>
 
 /*****************************************************************************
@@ -34,7 +36,9 @@
 	global variable errno.
 */
 {
-    #warning TODO: implement readlink
+#   warning Implement readlink()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+
     errno = ENOSYS;
     return -1;
 }	

@@ -2,9 +2,10 @@
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fchmod()
-    Lang: English
+    ANSI C function fchmod().
 */
+
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -38,9 +39,9 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement fchmod()
-
-    return -1; /* return failure */
-
+#   warning Implement fchmod()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    
+    return -1;
 } /* fchmod */
 

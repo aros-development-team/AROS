@@ -5,6 +5,8 @@
     ANSI C function sigpending().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -34,8 +36,8 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement sigpending()
-
-    return -1; /* return failure */
-
+#   warning Implement sigpending()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    
+    return -1;
 } /* sigpending */

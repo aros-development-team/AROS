@@ -5,6 +5,8 @@
     ANSI C function sigaction().
 */
 
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -35,8 +37,8 @@
 
 ******************************************************************************/
 {
-#warning TODO: implement sigaction()
-
-    return -1; /* return failure */
-
+#   warning Implement sigaction()
+    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    
+    return -1;
 } /* sigaction */
