@@ -433,7 +433,7 @@ static VOID gfxhidd_showhide(Class *cl, Object *o, struct pHidd_Gfx_ShowHide *ms
 static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     ULONG mode;
-    unsigned char *src, *dest;
+    unsigned char *src = 0, *dest = 0;
     struct Box box = {0, 0, 0, 0};
 
     mode = GC_DRMD(msg->gc);
@@ -443,7 +443,7 @@ static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
 	
     GetAttr(msg->src,  aHidd_VGABitMap_Drawable, (IPTR *)&src);
     GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
-    
+
     if (0 == dest || 0 == src)
     {
 	/* The source and/or destination object is no VGA bitmap, onscreen nor offscreen.
@@ -453,7 +453,6 @@ static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
 	return;
 	
     }
-	
 
     {
     	struct bitmap_data *data = INST_DATA(OCLASS(msg->src), msg->src);
