@@ -2,7 +2,7 @@
 #define INTUITION_CLASSUSR_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: BOOPSI users
@@ -16,9 +16,9 @@
 #   include <utility/tagitem.h>
 #endif
 
-#ifdef AROS_USE_OOP
+/*#ifdef AROS_USE_OOP
 #    include <oop/oop.h>
-#endif
+#endif*/
 
 /*#ifndef AROS_USE_OOP*/
 #    ifndef __typedef_Object
