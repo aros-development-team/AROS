@@ -78,10 +78,10 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    Child, ColGroup(2),
 		GroupFrameT("Background"),
-		Child, MakeLabel("Window"),
 		Child, d.background_window_popimage = PopimageObject, End,
-		Child, MakeLabel("Requester"),
 		Child, d.background_requester_popimage = PopimageObject, End,
+		Child, MakeLabel("Window"),
+		Child, MakeLabel("Requester"),
 		End,
 	    End,
     	TAG_MORE, msg->ops_AttrList);
