@@ -10,7 +10,9 @@ $Id$
 #MM    kernel-pc-i386-serial-kobj \
 #MM    kernel-pc-i386-vesa-kobj \
 #MM    kernel-pc-i386-vga-kobj \
-#MM    kernel-pc-i386-vmwaregfx-kobj
+#MM    kernel-pci-kobj \
+#MM    kernel-pci-pcipc-kobj \
+#MM    kernel-hidd-nvidia-kobj
 
 # Disabled kernel-pc-i386-driver
 ##MM    kernel-pc-i386-usb-kobj \
