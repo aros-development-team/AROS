@@ -8,7 +8,9 @@
 #ifndef MUI_PENSPEC_H
 #define MUI_PENSPEC_H
 
+#ifndef LIBRARIES_MUI_H
 #include "mui.h"
+#endif
 
 struct MUI_PenSpec_intern
 {
