@@ -612,6 +612,9 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 exit:
     FreeVec(filtered.CS_Buffer);
 
+    Flush(Output());
+    Flush(Error());
+    
     return result;
 }
 
