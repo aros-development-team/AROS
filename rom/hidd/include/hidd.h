@@ -24,6 +24,15 @@
 #define CLID_Hidd "hiddclass"
 #define IID_Hidd "I_Hidd"
 
+/* Meta class for the HIDDs */
+
+/* Just set it to the mimetaclass for now */
+#define CLID_HiddMeta	"simetaclass"
+
+#define HiddAttrBase __IHidd
+
+extern ULONG HiddAttrBase;
+
 #ifndef __typedef_HIDD
 #   define __typedef_HIDD
     typedef APTR HIDD;
@@ -34,48 +43,48 @@
     See the HIDD documentation for information on their use.
  */
 enum {
-    HIDDAO_Type = 0, 		/* [..G] (UWORD) Major type of HIDD */
-    HIDDAO_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
-    HIDDAO_Producer,		/* [..G] (ULONG) Product Developer */
-    HIDDAO_Name, 		/* [..G] (STRPTR) Name of HIDD */
-    HIDDAO_HardwareName, 	/* [..G] (STRPTR) Hardware description */
-    HIDDAO_Active,		/* [ISG] (BOOL) Current active status */
-    HIDDAO_Status,		/* [..G] (ULONG) Status change */
-    HIDDAO_ErrorCode,		/* [..G] (ULONG) Error code */
-    HIDDAO_Locking,		/* [..G] (UBYTE) Type of locking supported */
+    aoHidd_Type = 0, 		/* [..G] (UWORD) Major type of HIDD */
+    aoHidd_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
+    aoHidd_Producer,		/* [..G] (ULONG) Product Developer */
+    aoHidd_Name, 		/* [..G] (STRPTR) Name of HIDD */
+    aoHidd_HardwareName, 	/* [..G] (STRPTR) Hardware description */
+    aoHidd_Active,		/* [ISG] (BOOL) Current active status */
+    aoHidd_Status,		/* [..G] (ULONG) Status change */
+    aoHidd_ErrorCode,		/* [..G] (ULONG) Error code */
+    aoHidd_Locking,		/* [..G] (UBYTE) Type of locking supported */
     
-    NUM_A_HIDD
+    num_Hidd_Attrs
 };
 
-#define HIDDA_Type		(__HIDD_AttrBase + HIDDAO_Type	)
-#define HIDDA_SubType		(__HIDD_AttrBase + HIDDAO_SubType	)
-#define HIDDA_Producer		(__HIDD_AttrBase + HIDDAO_Producer	)
-#define HIDDA_Name		(__HIDD_AttrBase + HIDDAO_Name	)
-#define HIDDA_HardwareName	(__HIDD_AttrBase + HIDDAO_HardwareName)
-#define HIDDA_Active		(__HIDD_AttrBase + HIDDAO_Active	)
-#define HIDDA_Status		(__HIDD_AttrBase + HIDDAO_Status	)
-#define HIDDA_ErrorCode		(__HIDD_AttrBase + HIDDAO_ErrorCode	)
-#define HIDDA_Locking		(__HIDD_AttrBase + HIDDAO_Locking	)
+#define aHidd_Type		(HiddAttrBase + aoHidd_Type	)
+#define aHidd_SubType		(HiddAttrBase + aoHidd_SubType	)
+#define aHidd_Producer		(HiddAttrBase + aoHidd_Producer	)
+#define aHidd_Name		(HiddAttrBase + aoHidd_Name	)
+#define aHidd_HardwareName	(HiddAttrBase + aoHidd_HardwareName)
+#define aHidd_Active		(HiddAttrBase + aoHidd_Active	)
+#define aHidd_Status		(HiddAttrBase + aoHidd_Status	)
+#define aHidd_ErrorCode		(HiddAttrBase + aoHidd_ErrorCode	)
+#define aHidd_Locking		(HiddAttrBase + aoHidd_Locking	)
 
 
 /* Values for the HIDD_Type Tag */
-#define HIDDV_Type_Any		-1	/* match any type */
+#define vHidd_Type_Any		-1	/* match any type */
 
-#define HIDDV_Type_Root 	0	/* hiddclass */
-#define HIDDV_Type_Config	1	/* configuration plugins */
-#define HIDDV_Type_Timer	2	/* clocks and alarms */
+#define vHidd_Type_Root 	0	/* hiddclass */
+#define vHidd_Type_Config	1	/* configuration plugins */
+#define vHidd_Type_Timer	2	/* clocks and alarms */
 
-/* Values for the HIDDA_Subtype Tag */
-#define HIDDV_Subtype_Any	-1	/* match any subtype */
-#define HIDDV_Subtype_Root	0	/* main class of a type */
+/* Values for the aHidd_Subtype Tag */
+#define vHidd_Subtype_Any	-1	/* match any subtype */
+#define vHidd_Subtype_Root	0	/* main class of a type */
 
-/* Values for the HIDDA_Locking tag */
-#define HIDDV_LockShared	0
-#define HIDDV_LockExclusive	1
-#define HIDDV_Try		0x80	/* Flag */
+/* Values for the aHidd_Locking tag */
+#define vHidd_LockShared	0
+#define vHidd_LockExclusive	1
+#define vHidd_Try		0x80	/* Flag */
 
-/* Values for HIDDA_Status tag */
-#define HIDDV_StatusUnknown	-1
+/* Values for aHidd_Status tag */
+#define vHidd_StatusUnknown	-1
 
 /* Error codes defined for the HIDD */
 enum {
@@ -83,32 +92,18 @@ enum {
 };
 
 enum {
-    HIDDMO_Class_Get,		/* Get a value from a Class */
-    HIDDMO_Class_MGet,		/* Get a number of values from a Class */
-    HIDDMO_BeginIO,		/* Send a device like command */
-    HIDDMO_AbortIO,		/* Abort a device like command */
+    moHidd_Class_Get,		/* Get a value from a Class */
+    moHidd_Class_MGet,		/* Get a number of values from a Class */
+    moHidd_BeginIO,		/* Send a device like command */
+    moHidd_AbortIO,		/* Abort a device like command */
 
-    HIDDMO_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
-    HIDDMO_Lock, 		/* Lock a HIDD */
-    HIDDMO_Unlock,		/* UnLock a HIDD */
-    HIDDMO_AddHIDD,		/* Add a subclass HIDD */
-    HIDDMO_RemoveHIDD,	/* Remove a subclass HIDD */
-    HIDDMO_FindHIDD		/* Find a suitable HIDD */
+    moHidd_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
+    moHidd_Lock, 		/* Lock a HIDD */
+    moHidd_Unlock,		/* UnLock a HIDD */
+    moHidd_AddHIDD,		/* Add a subclass HIDD */
+    moHidd_RemoveHIDD,	/* Remove a subclass HIDD */
+    moHidd_FindHIDD		/* Find a suitable HIDD */
 };
-
-/*
-    This flag is set on uncommon methods. Uncommon methods are methods
-    which are really uncommon, ie. which are used by a specific HIDD.
-    Any method which is shared by a set of HIDDs should not have this
-    flag set (unless the method is really uncommon). Examples might be
-    methods which access a unique feature of the hardware which are not
-    available anywhere else (eg. CopperLists on the Amiga). Something
-    like 3D methods (ie. methods which are introduced by new hardware
-    but which seem to be common in the future) shouldn't have this
-    flag set.
-*/
-#define HIDDV_UncommonMethod	    0x80000000
-#define HIDDM_UncommonMethodBase    (HIDDM_Base | HIDDV_UncommonMethod)
 
 
 /* Used for HIDDM_BeginIO, HIDDM_AbortIO */
@@ -146,8 +141,8 @@ typedef struct hmAdd
 typedef struct hmFind
 {
     STACKULONG		MethodID;
-    STACKUWORD		hmf_Type;	/* Use HIDDV_Type_Any to match all */
-    STACKUWORD		hmf_Subtype;	/* Use HIDDV_Subtype_Any to match all */
+    STACKUWORD		hmf_Type;	/* Use vHidd_Type_Any to match all */
+    STACKUWORD		hmf_Subtype;	/* Use vHidd_Subtype_Any to match all */
 } hmFind;
 
 #endif /* HIDD_HIDD_H */

@@ -7,110 +7,68 @@
 */
 
 #include <proto/exec.h>
-#include <proto/alib.h>
 #include <proto/utility.h>
-#include <proto/gfxhidd.h>
-
+#include <proto/oop.h>
 #include <exec/libraries.h>
 
-#include <intuition/classes.h>
-#include <intuition/classusr.h>
-#include <intuition/intuition.h>
 
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
 
 #include "gfxhidd_intern.h"
 
-#include <proto/intuition.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
 
-#undef GfxHiddBase
-#define GfxHiddBase ((struct GfxHiddBase_intern *)(cl->cl_UserData))
-
-/* macros for easier access to obj, msg */
-#define BM(obj) ((struct hGfx_BitMap *)(obj))
-#define OPS(x) ((struct opSet *)(x))
-#define OPG(x) ((struct opGet *)(x))
 
 
-AROS_UFH3(static IPTR, dispatch_gfxhiddbitmapclass,
-          AROS_UFHA(Class *, cl, A0),
-          AROS_UFHA(Object *, obj, A2),
-          AROS_UFHA(Msg, msg, A1)
-)
+/********************
+**  BitMap::New()  **
+********************/
+static Object *bitmap_new(Class *cl, Object *obj, struct P_Root_New *msg)
 {
-    IPTR   retval = 0UL;
-    struct TagItem *tag;
-    struct GfxHiddBitMapData *data;
-    ULONG  width = 0, height = 0, depth = 0, flags = 0;
+    EnterFunc(bug("BM_BitMapClass - OM_NEW:\n"));
 
-    switch(msg->MethodID)
+    obj  = (Object *) DoSuperMethodA(cl, obj, msg);
+    data = INST_DATA(cl, obj);
+
+    if(obj)
     {
-        case OM_NEW:
-            D(bug("BM_BitMapClass - OM_NEW:\n"));
+	while((tag = NextTagItem(&OPS(msg)->ops_AttrList)))
+	{
+	    switch(tag->ti_Tag)
+	    {
+		case aHidd_BitMap_Width      : width    = tag->ti_Data; break;
+		case aHidd_BitMap_Height     : height   = tag->ti_Data; break;
+		case aHidd_BitMap_Depth      : depth    = tag->ti_Data; break;
+		case aHidd_BitMap_Displayable: if(tag->ti_Data) flags = flags | HIDD_Graphics_BitMap_Flags_Displayable; break;
 
-            obj  = (Object *) DoSuperMethodA(cl, obj, msg);
-            data = INST_DATA(cl, obj);
+		default: D(bug("  unknown attribute %li\n", tag->ti_Data)); break;
+	    } /* switch tag */
+	} /* while tag  */
 
-            if(obj)
-            {
-                while((tag = NextTagItem(&OPS(msg)->ops_AttrList)))
-                {
-                    switch(tag->ti_Tag)
-                    {
-                        case HIDDA_BitMap_Width      : width    = tag->ti_Data; break;
-                        case HIDDA_BitMap_Height     : height   = tag->ti_Data; break;
-                        case HIDDA_BitMap_Depth      : depth    = tag->ti_Data; break;
-                        case HIDDA_BitMap_Displayable: if(tag->ti_Data) flags = flags | HIDD_Graphics_BitMap_Flags_Displayable; break;
-
-                        default: D(bug("  unknown attribute %li\n", tag->ti_Data)); break;
-                    } /* switch tag */
-                } /* while tag  */
-
-                data->bitMap = HIDD_Graphics_CreateBitMap(width, height, depth,
+	data->bitMap = HIDD_Graphics_CreateBitMap(width, height, depth,
                                                          flags, NULL, NULL);
-                if(!data->bitMap)
-                {
-                    DisposeObject(obj);
-                    obj = NULL;
-                }
-            }
+	if(!data->bitMap)
+	{
+	     DisposeObject(obj);
+	    obj = NULL;
+	}
+    }
 
             retval = (IPTR) obj;
-            break;
 
+}
 
-        case OM_DISPOSE:
-            D(bug("BM_BitMapClass - OM_DISPOSE:\n"));
-
-            data = INST_DATA(cl, obj);
-
-            HIDD_Graphics_DeleteBitMap(data->bitMap, NULL); /* NULL Ptr is allowded */
-
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-
-
-        case OM_UPDATE:
-        case OM_SET:
-            D(bug("BM_BitMapClass - OM_UPDATE/OM_SET:\n"));
-            D(bug("  sorry, not implemented yet\n"));
-
-            retval = NULL;
-            break;
-    
-    
-        case OM_GET:
-            D(bug("BM_BitMapClass - OM_GET:\n"));
-            /*D(bug("  sorry, not implemented yet\n"));*/
+/*static VOID bitmap_get(Class *cl, Object *o, struct P_Root_Get *msg)
+{
+    struct hGfx
 
             data = INST_DATA(cl, obj);
             switch(OPG(msg)->opg_AttrID)
             {
-                case HIDDA_BitMap_BitMap:
+                case aHidd_BitMap_BitMap:
                     *(OPG(msg)->opg_Storage) = (ULONG) data->bitMap;
                     retval = TRUE;
                     break;
@@ -120,15 +78,8 @@ AROS_UFH3(static IPTR, dispatch_gfxhiddbitmapclass,
             }
             break;
 
-
-        default:
-            retval = DoSuperMethodA(cl, obj, msg);
-            break;
-    }
-
-    return retval;
 }
-
+*/
 /*************************** Classes *****************************/
 
 #undef GfxHiddBase

@@ -16,9 +16,6 @@
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <oop/oop.h>
-#include <oop/root.h>
-#include <oop/meta.h>
-#include <oop/hiddmeta.h>
 #include <hidd/hidd.h>
 
 #include <proto/exec.h>
@@ -63,9 +60,9 @@ static const UBYTE version[] = "hiddclass 41.1 (23.10.1997)\r\n";
 static const char unknown[] = "--unknown device--";
 
 
-static ULONG __HIDD_AttrBase;
+static AttrBase HiddAttrBase;
 
-#define ISHIDDATTR(attr, idx) ((idx = attr - __HIDD_AttrBase) < NUM_A_HIDD)
+#define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
 
 /************************************************************************/
 
@@ -95,13 +92,13 @@ struct HCD
 #define UtilityBase	(((struct HCD *)cl->UserData)->UtilityBase)
 
 /* Implementation of root HIDD class methods. */
-static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg);
+static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg);
 
 
 /******************
 **  HIDD::New()  **
 ******************/
-static Object *hidd_new(Class *cl, Object *o, struct P_Root_New *msg)
+static Object *hidd_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("HIDD::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
@@ -109,8 +106,8 @@ static Object *hidd_new(Class *cl, Object *o, struct P_Root_New *msg)
     if(o)
     {
     	struct HIDDData *hd;
-        struct TagItem *list = msg->AttrList;
-	struct P_Root_Set set_msg;
+        struct TagItem *list = msg->attrList;
+	struct pRoot_Set set_msg;
 	
 	hd = INST_DATA(cl, o);
 
@@ -125,23 +122,23 @@ static Object *hidd_new(Class *cl, Object *o, struct P_Root_New *msg)
 	    these values.
 	*/
 
-	hd->hd_Type 	= GetTagData(HIDDA_Type, 	0, list);
-	hd->hd_SubType 	= GetTagData(HIDDA_SubType, 	0, list);
-	hd->hd_Producer = GetTagData(HIDDA_Producer, 	0, list);
+	hd->hd_Type 	= GetTagData(aHidd_Type, 	0, list);
+	hd->hd_SubType 	= GetTagData(aHidd_SubType, 	0, list);
+	hd->hd_Producer = GetTagData(aHidd_Producer, 	0, list);
 	
-	hd->hd_Name 	= (STRPTR)GetTagData(HIDDA_Name, 	(IPTR)unknown,	list);
-	hd->hd_HWName 	= (STRPTR)GetTagData(HIDDA_HardwareName,(IPTR)unknown,	list);
+	hd->hd_Name 	= (STRPTR)GetTagData(aHidd_Name, 	(IPTR)unknown,	list);
+	hd->hd_HWName 	= (STRPTR)GetTagData(aHidd_HardwareName,(IPTR)unknown,	list);
 	
-	hd->hd_Status 	= GetTagData(HIDDA_Status, 	HIDDV_StatusUnknown, 	list);
-	hd->hd_Locking 	= GetTagData(HIDDA_Locking, 	HIDDV_LockShared, 	list);
-	hd->hd_ErrorCode= GetTagData(HIDDA_ErrorCode, 	0, list);
+	hd->hd_Status 	= GetTagData(aHidd_Status, 	vHidd_StatusUnknown, 	list);
+	hd->hd_Locking 	= GetTagData(aHidd_Locking, 	vHidd_LockShared, 	list);
+	hd->hd_ErrorCode= GetTagData(aHidd_ErrorCode, 	0, list);
 
 	hd->hd_Active 	= TRUE; /* Set default, GetTagData() comes later */
 	
 	/* Use OM_SET to set the rest */
 
 
-	set_msg.AttrList = msg->AttrList;
+	set_msg.attrList = msg->attrList;
 	hidd_set(cl, o, &set_msg);
 	
 	
@@ -155,10 +152,10 @@ static Object *hidd_new(Class *cl, Object *o, struct P_Root_New *msg)
 **  HIDD::Set()  **
 ******************/
 
-static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg)
+static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg)
 {
 
-    struct TagItem *tstate = msg->AttrList;
+    struct TagItem *tstate = msg->attrList;
     struct TagItem *tag;
     struct HIDDData *hd = INST_DATA(cl, o);
 
@@ -166,11 +163,11 @@ static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg)
     {
     	ULONG idx;
 	
-    	if (ISHIDDATTR(tag->ti_Tag, idx))
+    	if (IS_HIDD_ATTR(tag->ti_Tag, idx))
 	{
 	    switch(idx)
 	    {
-		case HIDDAO_Active:
+		case aoHidd_Active:
 	    	    hd->hd_Active = tag->ti_Data;
 	    	    break;
 		    
@@ -183,50 +180,50 @@ static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg)
 /******************
 **  HIDD::Get()  **
 ******************/
-static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
+static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
 {
     struct HIDDData *hd = INST_DATA(cl, o);
     ULONG idx;
     
 
-    if (ISHIDDATTR(msg->AttrID, idx))
+    if (IS_HIDD_ATTR(msg->attrID, idx))
     {
     	switch (idx)
 	{
-	case HIDDAO_Type:
-	    *msg->Storage = hd->hd_Type;
+	case aoHidd_Type:
+	    *msg->storage = hd->hd_Type;
 	    break;
 
-	case HIDDAO_SubType:
-	    *msg->Storage = hd->hd_SubType;
+	case aoHidd_SubType:
+	    *msg->storage = hd->hd_SubType;
 	    break;
 
-	case HIDDAO_Producer:
-	    *msg->Storage = hd->hd_Producer;
+	case aoHidd_Producer:
+	    *msg->storage = hd->hd_Producer;
 	    break;
 
-	case HIDDAO_Name:
-	    *msg->Storage = (IPTR)hd->hd_Name;
+	case aoHidd_Name:
+	    *msg->storage = (IPTR)hd->hd_Name;
 	    break;
 
-	case HIDDAO_HardwareName:
-	    *msg->Storage = (IPTR)hd->hd_HWName;
+	case aoHidd_HardwareName:
+	    *msg->storage = (IPTR)hd->hd_HWName;
 	    break;
 
-	case HIDDAO_Active:
-	    *msg->Storage = hd->hd_Active;
+	case aoHidd_Active:
+	    *msg->storage = hd->hd_Active;
 	    break;
 
-	case HIDDAO_Status:
-	    *msg->Storage = hd->hd_Status;
+	case aoHidd_Status:
+	    *msg->storage = hd->hd_Status;
 	    break;
 
-	case HIDDAO_ErrorCode:
-	    *msg->Storage = hd->hd_ErrorCode;
+	case aoHidd_ErrorCode:
+	    *msg->storage = hd->hd_ErrorCode;
 	    break;
 
-	case HIDDAO_Locking:
-	    *msg->Storage = hd->hd_Locking;
+	case aoHidd_Locking:
+	    *msg->storage = hd->hd_Locking;
 	    break;
 	
 	}
@@ -256,15 +253,15 @@ static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
 	if( hd != NULL)
 	{
 	    struct TagItem *list = ((struct opSet *)msg)->ops_AttrList;
-	    hd->hd_Type = GetTagData(HIDDA_Type, 0, list);
-	    hd->hd_SubType = GetTagData(HIDDA_SubType, 0, list);
-	    hd->hd_Producer = GetTagData(HIDDA_Producer, 0, list);
-	    hd->hd_Name = (STRPTR)GetTagData(HIDDA_Name, (IPTR)unknown, list);
-	    hd->hd_HWName = (STRPTR)GetTagData(HIDDA_HardwareName, (IPTR)unknown, list);
+	    hd->hd_Type = GetTagData(aHidd_Type, 0, list);
+	    hd->hd_SubType = GetTagData(aHidd_SubType, 0, list);
+	    hd->hd_Producer = GetTagData(aHidd_Producer, 0, list);
+	    hd->hd_Name = (STRPTR)GetTagData(aHidd_Name, (IPTR)unknown, list);
+	    hd->hd_HWName = (STRPTR)GetTagData(aHidd_HardwareName, (IPTR)unknown, list);
 	    hd->hd_Active = TRUE; 
-	    hd->hd_Status = GetTagData(HIDDA_Status, HIDDV_StatusUnknown, list);
-	    hd->hd_ErrorCode = GetTagData(HIDDA_ErrorCode, 0, list);
-	    hd->hd_Locking = GetTagData(HIDDA_Locking, HIDDV_LockShared, list);
+	    hd->hd_Status = GetTagData(aHidd_Status, HIDDV_StatusUnknown, list);
+	    hd->hd_ErrorCode = GetTagData(aHidd_ErrorCode, 0, list);
+	    hd->hd_Locking = GetTagData(aHidd_Locking, HIDDV_LockShared, list);
 	}
 
     case OM_SET:
@@ -276,7 +273,7 @@ static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
 	{
 	    switch(tag->ti_Tag)
 	    {
-	    case HIDDA_Active:
+	    case aHidd_Active:
 		hd->hd_Active = tag->ti_Data;
 		break;
 	    }
@@ -289,39 +286,39 @@ static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
     {
 	switch(((struct opGet *)msg)->opg_AttrID)
 	{
-	case HIDDA_Type:
+	case aHidd_Type:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Type;
 	    break;
 
-	case HIDDA_SubType:
+	case aHidd_SubType:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_SubType;
 	    break;
 
-	case HIDDA_Producer:
+	case aHidd_Producer:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Producer;
 	    break;
 
-	case HIDDA_Name:
+	case aHidd_Name:
 	    *((struct opGet *)msg)->opg_Storage = (IPTR)hd->hd_Name;
 	    break;
 
-	case HIDDA_HardwareName:
+	case aHidd_HardwareName:
 	    *((struct opGet *)msg)->opg_Storage = (IPTR)hd->hd_HWName;
 	    break;
 
-	case HIDDA_Active:
+	case aHidd_Active:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Active;
 	    break;
 
-	case HIDDA_Status:
+	case aHidd_Status:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Status;
 	    break;
 
-	case HIDDA_ErrorCode:
+	case aHidd_ErrorCode:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_ErrorCode;
 	    break;
 
-	case HIDDA_Locking:
+	case aHidd_Locking:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Locking;
 	    break;
 	}
@@ -421,9 +418,9 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-    	{ (IPTR (*)())hidd_new,		MO_Root_New		},
-    	{ (IPTR (*)())hidd_set,		MO_Root_Set		},
-    	{ (IPTR (*)())hidd_get,		MO_Root_Get		},
+    	{ (IPTR (*)())hidd_new,		moRoot_New		},
+    	{ (IPTR (*)())hidd_set,		moRoot_Set		},
+    	{ (IPTR (*)())hidd_get,		moRoot_Get		},
     	{ NULL, 0UL }
     };
 
@@ -479,17 +476,17 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
 
     /* Create the class structure for the "hiddclass" */
     {
-        ULONG __OOPI_Meta = GetAttrBase(IID_Meta);
+        AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
         struct TagItem tags[] =
     	{
-            {A_Meta_SuperID,		(IPTR)CLID_Root},
-	    {A_Meta_InterfaceDescr,	(IPTR)ifdescr},
-	    {A_Meta_ID,			(IPTR)CLID_Hidd},
-	    {A_Meta_InstSize,		(IPTR)sizeof (struct HIDDData) },
+            {aMeta_SuperID,		(IPTR)CLID_Root},
+	    {aMeta_InterfaceDescr,	(IPTR)ifdescr},
+	    {aMeta_ID,			(IPTR)CLID_Hidd},
+	    {aMeta_InstSize,		(IPTR)sizeof (struct HIDDData) },
 	    {TAG_DONE, 0UL}
     	};
     
-	cl = NewObject(NULL, CLID_HIDDMeta, tags);
+	cl = NewObject(NULL, CLID_HiddMeta, tags);
 	if (cl == NULL)
 	{
 	    CloseLibrary(hcd->UtilityBase);
@@ -502,7 +499,7 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     }
     
     cl->UserData = hcd;
-    __HIDD_AttrBase = GetAttrBase(IID_Hidd);
+    HiddAttrBase = GetAttrBase(IID_Hidd);
 
     AddClass(cl);
 

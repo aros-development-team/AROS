@@ -1,38 +1,68 @@
+# $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I..
+OBJDIR		:= $(GENDIR)/$(CURDIR)
+LIB		:= $(LIBDIR)/libhiddgraphicscl.a
+OS_INCLUDES	:= -I$(GENINCDIR)
 
-TOPINC          := $(TOP)/compiler/include
-LIBNAME 	:= gfxhidd
-ULIBNAME	:= GfxHidd
-FILES		:= $(LIBNAME)_functable GfxHiddClass BM_BitMapClass GC_GCClass
-FUNCTIONS	:= \
-        testspeed \
-        BM_CreateBitMap BM_DeleteBitMap GC_CreateGC GC_DeleteGC \
-        GC_WritePixelDirect GC_WritePixelDirect_Q \
-        GC_WritePixel GC_WritePixel_Q \
-        GC_ReadPixelDirect GC_ReadPixelDirect_Q \
-        GC_ReadPixel_Q \
-        GC_DrawLine_Q
+MY_INCLS := $(wildcard include/*.h)
+DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
-ALL_FUNCTIONS := $(FUNCTIONS)
-%prepare_replace rom/hidd/graphics
+INIT_FILE := gfxhidd_init
+END_FILE  := hiddgraphics_end
+
+FILES	  := GfxHiddClass GC_GCClass
+
+# Replacement is probably of limited use in this directory, but I'll
+# support it nonetheless.
+ALL_FILES := $(FILES)
+%prepare_replace rom/hidd
 %filter_replace FILES
-%filter_replace FUNCTIONS
 
-%define_libs prelibs=-l$(LIBNAME)
+%prepare_shlib hiddgraphicscl $(SHARED_HIDDCLASS)
 
-%genlib_old
+# ***** NATIVE SECTION *****
+ifeq ($(FLAVOUR),native)
 
-# %genlibincludes
+# Note this bit hasn't been written yet...
 
-#MM hidd-graphics : setup includes linklibs hidd-graphics-$(ARCH)
-hidd-graphics : show-flags $(SLIB)
+LIBS := -L$(LIBDIR) -lhiddgraphicscl
+LIBLIST := hiddgraphicscl hiddcl amiga
+LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+$(OSMODDIR)/hiddgraphics.class: $(OBJS)
+	@$(ECHO) "Building $(notdir $@)..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(ENDFUNC) $(LIBS) \
+	    -o $@ 2>&1 |tee hiddgraphicscl.map
+	@$(IF) $(TEST) ! -s hiddgraphicscl.map; then $(RM) hiddgraphicscl.map; else true; fi
+	@$(STRIP) $@
+
+else
+
+OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+# ****** END Not-Native
+endif
+
+#MM kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd:
 	@$(NOP)
 
 #MM
-includes-copy : $(foreach f, $(wildcard include/*.h), \
-                $(INCDIR)/hidd/$(notdir $(f)) $(GENINCDIR)/hidd/$(notdir $(f)))
+kernel-hidd-linklib : show-flags $(LIB)
+	@$(NOP)
+
+DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+
+$(LIB): $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
 	@$(NOP)
 
 $(INCDIR)/hidd/%.h : include/%.h
@@ -45,35 +75,24 @@ $(GENINCDIR)/hidd/%.h : include/%.h
 setup-includes :
 	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
-#MM clean
-#MM setup
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
-includes-quick: generate-inline
-	cd $(TOPINC); make -f mmakefile includes-copy-quick
+$(OBJDIR)/%.o : %.c
+	%compile_q 
 
-generate-inline : $(TOPINC)/fd/$(LIBNAME)_lib.fd $(TOPINC)/clib/$(LIBNAME)_protos.h
-	fd2inline $(TOPINC)/fd/$(LIBNAME)_lib.fd \
-                  $(TOPINC)/clib/$(LIBNAME)_protos.h \
-                  -o $(TOPINC)/inline/$(LIBNAME).h 
+%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
 
-#MM hidd-graphics-quick: hidd-graphics-$(ARCH)
-hidd-graphics-quick : hidd-graphics
-	$(NOP)
+%ctoasm_q
 
-Test : TestLib TestClass TestHiddClass TestSpeedExe
-	@$(NOP)
+%additional_objs_rule
 
-TestLib : TestLib.c
-	gcc $(CFLAGS) $< -o $@ 
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
 
-TestClass : TestClass.c
-	gcc $(CFLAGS) $< -o $@
-
-TestHiddClass : TestHiddClass.c
-	gcc $(CFLAGS) $< -o $@
-
-TestSpeedExe : TestSpeedExe.c
-	gcc $(CFLAGS) $< -o $@
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps

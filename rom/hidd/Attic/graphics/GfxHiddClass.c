@@ -8,141 +8,116 @@
 
 #include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/alib.h>
-
+#include <proto/oop.h>
 #include <exec/libraries.h>
-
-#include <intuition/classes.h>
-#include <intuition/classusr.h>
-#include <intuition/intuition.h>
 
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
 
+
 #include "gfxhidd_intern.h"
 
-#include <proto/intuition.h>
-
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
-#undef GfxHiddBase
-#define GfxHiddBase ((struct GfxHiddBase_intern *)(cl->cl_UserData))
 
-
-AROS_UFH3(static IPTR, dispatch_gfxhiddclass,
-          AROS_UFHA(Class *, cl, A0),
-          AROS_UFHA(Object *, obj, A2),
-          AROS_UFHA(Msg, msg, A1)
-)
+struct GfxHiddData
 {
-    IPTR retval = 0UL;
-    struct GfxHiddData *data;
-    UWORD  cmdLen; /* length of a command */
-    ULONG  *ulPtr; /* pointer to ULONG for "parsing" commands */
-    UWORD  *uwPtr; /* pointer to UWORD for "parsing" commands */
+    Class *bitmap;  /* bitmap class     */
+    Class *gc;      /* graphics context */
+};
 
-    switch (msg->MethodID) {
-    case OM_NEW:
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+static AttrBase HiddGCAttrBase;
 
-    case OM_DISPOSE:
-        data = INST_DATA(cl, obj);
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
-
-    case OM_UPDATE:
-    case OM_SET:
-        break;
-
-    case HIDDM_Graphics_Cmd:
-        /* IPTR HIDDM_Graphics_Cmd,UWORD Length,UWORD Command,...) */
-        D(bug("GfxHiddClass - HIDDM_Graphics_Cmd:\n"));
-
-        ulPtr  = (ULONG *) msg;
-        ulPtr  = ulPtr + 1; /* skip MessageID */
-        cmdLen = *ulPtr++;
-
-        switch(*ulPtr++)
-        {
-            case HIDDV_Graphics_Cmd_CreateBitMap:
-                /* HIDDT_BitMap HIDDV_Graphics_Cmd_CreateBitMap (Tag tag, ...) */
-                D(bug("HIDDV_Graphics_Cmd_CreateBitMap:\n"));
-
-                /*
-                   The paramters are tags, so only the pointer to
-                   the first tag must passed.
-                */
-                retval = (IPTR) NewObjectA(NULL,
-                                           GRAPHICSHIDDBITMAP,
-                                           (struct TagItem *) ulPtr
-                                          );
-                break;
-
-            case HIDDV_Graphics_Cmd_DeleteBitMap:
-                /* void HIDDV_Graphics_Cmd_DeleteBitMap (HIDDT_BitMap bm) */
-                D(bug("HIDDV_Graphics_Cmd_DeleteBitMap:\n"));
-
-                /*
-                   The first parameter is the objectpointer just dispose
-                   the object.
-                */
-                DisposeObject((struct Object *) ulPtr);
-                retval = 0;
-                break;
-
-            default:
-                D(bug("Error: unknown command\n"));
-                break;
-        }
-        break;
-
-    case HIDDM_SpeedTest:
-        data = INST_DATA(cl, obj);
-        D(bug("Speedtest method:\n"));
-        D(bug("Val1: %x\n", ((struct hGfx_SpeeTest *)msg)->val1));
-        D(bug("Val2: %x\n", ((struct hGfx_SpeeTest *)msg)->val2));
-        D(bug("Val3: %x\n", ((struct hGfx_SpeeTest *)msg)->val3));
-        break;
-
-
-#define OPG(x) ((struct opGet *)(x))
-    case OM_GET:
-        data = INST_DATA(cl, obj);
-        break;
-
-
-    default:
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+/**************************
+**  GfxHIDD::CreateGC()  **
+**************************/
+static Object *gfxhidd_creategc(Class *cl, Object *o, struct pHidd_Gfx_CreateGC *msg)
+{
+    Object *gc = NULL;
+    struct TagItem tags[] =
+    {
+        {aHidd_GC_BitMap,	(IPTR)msg->bitMap},
+	{TAG_DONE,		0}
+    };
+    
+    
+    switch (msg->gcType)
+    {
+        case  GCTYPE_QUICK:
+	    /* The Quick GC must come from a subclass     */
+	    gc = NULL;
+	    break;
+	    
+	case GCTYPE_CLIPPING:
+	    gc = NewObject(NULL, CLID_Hidd_ClipGC, tags);
+	    break;
+	    
+	
     }
-
-    return retval;
+    return gc;
 }
 
+/**************************
+**  GfxHIDD::DeleteGC()  **
+**************************/
+static VOID gfxhidd_deletegc(Class *cl, Object *o, struct pHidd_Gfx_DeleteGC *msg)
+{
+    DisposeObject(msg->gc);
+    
+}
 /*************************** Classes *****************************/
 
-#undef GfxHiddBase
+#undef OOPBase
+#undef SysBase
 
-struct IClass *InitGfxHiddClass (struct GfxHiddBase_intern * GfxHiddBase)
+
+#define NUM_GFXHIDD_METHODS 2
+#define OOPBase (csd->oopbase)
+#define SysBase (csd->sysbase)
+Class *init_gfxhiddclass (struct class_static_data *csd)
 {
     Class *cl = NULL;
 
-    D(bug("GfxHiddClass init3\n"));
+    
+    struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
+    {
+    	{(IPTR (*)())gfxhidd_creategc,	moHidd_Gfx_CreateGC},
+    	{(IPTR (*)())gfxhidd_deletegc,	moHidd_Gfx_DeleteGC},
+	{NULL, 0UL}
+    };
+    
+    
+    struct InterfaceDescr ifdescr[] =
+    {
+    	{gfxhidd_descr, IID_Hidd_Gfx, NUM_GFXHIDD_METHODS},
+	{NULL, NULL, 0}
+    };
+    
+    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+	
+    struct TagItem tags[] =
+    {
+	{ aMeta_SuperID,		(IPTR)CLID_Hidd},
+	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
+	{ aMeta_ID,			(IPTR)CLID_Hidd_Gfx},
+	{ aMeta_InstSize,		(IPTR)sizeof (struct GfxHiddData) },
+	{TAG_DONE, 0UL}
+    };
+    
 
-    cl = MakeClass(GRAPHICSHIDD, ROOTCLASS, NULL, sizeof(struct GfxHiddData), 0);
-    if (cl) {
-    D(bug("GfxHiddClass ok\n"));
+    EnterFunc(bug("init_gfxhiddclass(csd=%p)\n", csd));
 
-        cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_gfxhiddclass);
-        cl->cl_Dispatcher.h_SubEntry = NULL;
-        cl->cl_UserData              = (IPTR)GfxHiddBase;
+    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    D(bug("Class=%p\n", cl));
+    if(cl)
+    {
+	D(bug("GfxHiddClass ok\n"));
+	cl->UserData = (APTR)csd;
+	
+	HiddGCAttrBase = GetAttrBase(IID_Hidd_GC);
 
-        AddClass (cl);
+	AddClass(cl);
     }
-
-    D(bug("GfxHiddClass init - exit\n"));
-
-    return (cl);
+    ReturnPtr("init_gfxhiddclass", Class *, cl);
 }

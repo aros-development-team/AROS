@@ -5,47 +5,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
-#ifndef EXEC_SEMAPHORES_H
-#   include <exec/semaphores.h>
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
 #endif
-#ifndef DOS_DOS_H
-#   include <dos/dos.h>
-#endif
-#ifndef PROTO_GRAPHICS_H
-#   include <proto/graphics.h>
-#endif
-#ifndef GRAPHICS_GFXBASE_H
-#   include <graphics/gfxbase.h>
-#endif
-#ifndef GRAPHICS_GFX_H
-#   include <graphics/gfx.h>
-#endif
-#ifndef GRAPHICS_RASTPORT_H
-#   include <graphics/rastport.h>
-#endif
-#ifndef PROTO_INTUITION_H
-#   include <proto/intuition.h>
-#endif
-#ifndef INTUITION_CLASSES_H
-#   include <intuition/classes.h>
-#endif
-#ifndef INTUITION_INTUITIONBASE_H
-#   include <intuition/intuitionbase.h>
-#endif
-#ifndef INTUITION_SCREENS_H
-#   include <intuition/screens.h>
-#endif
-#ifndef PROTO_UTILITY_H
-#   include <proto/utility.h>
-#endif
-
-/* Use intuition boopsi on amigaos systems */
-#ifndef __amigaos__
-#ifndef PROTO_BOOPSI_H
-#   include <proto/boopsi.h>
-#endif
-#endif
-
 
 
 
@@ -95,11 +57,6 @@ struct GfxHidd
 
 
 /* GfxHiddClass definitions */
-struct GfxHiddData
-{
-    Class *bitmap;  /* bitmap class     */
-    Class *gc;      /* graphics context */
-};
 
 
 /* GfxHiddBitMapClass definitions */
@@ -116,48 +73,33 @@ struct GfxHiddGCData
 };
 
 
-struct GfxHiddBase_intern
+struct class_static_data
 {
-    struct Library    library;
     struct ExecBase * sysbase;
-    BPTR              seglist;
-
-    struct IntuitionBase * intuibase;
-    struct Library       * dosbase;
-    struct GfxBase       * gfxbase;
     struct Library       * utilitybase;
-    struct Library       * boopsibase;
+    struct Library       * oopbase;
 
-    Class                *classptr;       /* graphics hidd class    */
-    Class                *bitMapClassptr; /* bitmap class           */
-    Class                *gcClassptr;     /* graphics context class */
+    Class                *gfxhiddclass;       /* graphics hidd class    */
+    Class                *bitmapclass; /* bitmap class           */
+    Class                *gcclass;     /* graphics context class */
 };
 
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers  and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct IntuitionBase IntuiBase;
-typedef struct GfxBase GraphicsBase;
 
-#define GTB(gtb)        ((struct GfxHiddBase_intern *)gtb)
-/*
+#define CSD(x) ((struct class_static_data *)x)
+
+
 #undef SysBase
-#define SysBase (GTB(GfxHiddBase)->sysbase)
-*/
-extern struct ExecBase * SysBase;
-#undef IntuitionBase
-#define IntuitionBase (GTB(GfxHiddBase)->intuibase)
-#undef DOSBase
-#define DOSBase (GTB(GfxHiddBase)->dosbase)
-#undef GfxBase
-#define GfxBase (GTB(GfxHiddBase)->gfxbase)
-#undef UtilityBase
-#define UtilityBase (GTB(GfxHiddBase)->utilitybase)
-#undef BOOPSIBase
-#define BOOPSIBase (GTB(GfxHiddBase)->boopsibase)
+#define SysBase (CSD(cl->UserData)->sysbase)
 
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct GfxHiddBase_intern *, GfxHiddBase, 3, GfxHidd)
+#undef UtilityBase
+#define UtilityBase (CSD(cl->UserData)->utilitybase)
+
+
+#undef OOPBase
+#define OOPBase (CSD(cl->UserData)->oopbase)
+
+Class *init_gfxhiddclass(struct class_static_data *);
+Class *init_bitmapclass(struct class_static_data *);
+Class *init_gcclass(struct class_static_data *);
 
 #endif /* GRAPHICS_HIDD_INTERN_H */
