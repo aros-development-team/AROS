@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
@@ -53,6 +53,7 @@ struct MUIP_Window_ToFront          {ULONG MethodID;};
 #define MUIA_Window_DepthGadget             (TAG_USER|0x00421923) /* MUI: V4  i.. BOOL                */
 #define MUIA_Window_DisableKeys             (TAG_USER|0x00424c36) /* MUI: V15 isg ULONG               */ /* undoc */
 #define MUIA_Window_DragBar                 (TAG_USER|0x0042045d) /* MUI: V4  i.. BOOL                */
+#define MUIA_Window_EraseArea               (TAG_USER|0x0042123a) /* Zune only i.. BOOL (default: TRUE) */
 #define MUIA_Window_FancyDrawing            (TAG_USER|0x0042bd0e) /* MUI: V8  isg BOOL                */
 #define MUIA_Window_Height                  (TAG_USER|0x00425846) /* MUI: V4  i.g LONG                */
 #define MUIA_Window_ID                      (TAG_USER|0x004201bd) /* MUI: V4  isg ULONG               */

@@ -152,6 +152,7 @@ struct MUI_WindowData
 #define MUIWF_DONTACTIVATE    (1<<7) /* do not activate the window when opening */
 #define MUIWF_USERIGHTSCROLLER (1<<8) /* window should have a right scroller */
 #define MUIWF_USEBOTTOMSCROLLER (1<<9) /* windiw should have a bottom scroller */
+#define MUIWF_ERASEAREA       (1<<10) /* Erase area after a window resize */
 
 struct __dummyXFC3__
 {
@@ -832,9 +833,12 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
 			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-			zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
-				 left, top, width, height, left, top, 0);
-		    }
+			if(data->wd_Flags & MUIWF_ERASEAREA)
+			{
+				zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
+					 left, top, width, height, left, top, 0);
+			}
+			}
 
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 		} else
@@ -1779,32 +1783,32 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 	data->wd_innerTop    = muiGlobalInfo(obj)->mgi_Prefs->window_inner_top;
 	data->wd_innerBottom = muiGlobalInfo(obj)->mgi_Prefs->window_inner_bottom;
     }
-    
+
 #if ROOTOBJ_OCCUPIES_FULL_AREA
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERLEFT))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERLEFT;
     	muiAreaData(data->wd_RootObject)->mad_HardILeft = data->wd_innerLeft;
     }
-    
+
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERTOP))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERTOP;
     	muiAreaData(data->wd_RootObject)->mad_HardITop = data->wd_innerTop;
     }
-    
+
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERRIGHT))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERRIGHT;
     	muiAreaData(data->wd_RootObject)->mad_HardIRight = data->wd_innerRight;
     }
-    
+
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERBOTTOM))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERBOTTOM;
     	muiAreaData(data->wd_RootObject)->mad_HardIBottom = data->wd_innerBottom;
     }
-    
+
 #endif
 
     /* inquire about sizes */
