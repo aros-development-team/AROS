@@ -11,6 +11,7 @@
 #include <intuition/intuition.h>
 #include <graphics/rastport.h>
 #include <aros/asmcall.h>
+#include <string.h>
 
 #include "console_gcc.h"
 #include "consoleif.h"
