@@ -417,7 +417,10 @@ struct IFS_RELABEL
 				 would block */
 #define FMF_APPEND   (1L<<8)  /* Every write will happen always at the end of the file */
 
-#define FMF_AMIGADOS (1L<<9) /* Identifies the old AmigaDOS modes */
+#define FMF_AMIGADOS (1L<<9 | 1L<<31) /* Identifies the old AmigaDOS modes:
+					 - bit 9 is the first bit set in the MODE_#? modes
+					 - bit 31 is the first bit set in ACCESS_#? modes
+				      */
 #define FMF_MODE_OLDFILE   (FMF_AMIGADOS | FMF_WRITE | FMF_READ)
 #define FMF_MODE_READWRITE (FMF_MODE_OLDFILE | FMF_CREATE)
 #define FMF_MODE_NEWFILE   (FMF_MODE_READWRITE | FMF_LOCK | FMF_CLEAR)
