@@ -178,11 +178,13 @@ static int putline(struct file *f, ULONG offset, UBYTE *buf, ULONG num)
     return 0;
 }
 
-void hexdumpfile(struct file *in, struct file *out)
+LONG hexdumpfile(struct file *in, struct file *out)
 {
     UBYTE buf[16];
     UBYTE *b;
     LONG offset=0, n, c, tty;
+    LONG retval = RETURN_OK;
+    
     tty=IsInteractive(out->fd);
     for(;;)
     {
@@ -199,7 +201,9 @@ void hexdumpfile(struct file *in, struct file *out)
 	    {
 		c=getc(in);
 		if(c<0)
+		{
 		    break;
+		}
 		b[n]=c;
 	    }
 	}
@@ -209,20 +213,35 @@ void hexdumpfile(struct file *in, struct file *out)
 		putlinequick(out,offset,b);
 	    else
 		if(putline(out,offset,b,n))
-		    return;
+		{
+		    retval = RETURN_ERROR;
+		    break;
+		}
 	}else
 	{
 	    if(n)
 		putline(out,offset,b,n);
 	    if(out->cur!=out->buf)
 		put(out);
-	    return;
+	    break;
 	}
 	if(tty)
 	    if(put(out))
-		return;
+	    {
+	    	retval = RETURN_ERROR;
+		break;
+	    }
 	offset+=n;
+	
+	if (CheckSignal(SIGBREAKF_CTRL_C))
+	{
+	    retval = RETURN_WARN;
+	    break;
+	}
     }
+    
+    return retval;
+    
 }
 
 void putlinenumber(struct file * out, unsigned short line)
@@ -251,6 +270,7 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
 {
     LONG c, lastc = 0;
     unsigned short line = 0;
+    LONG retval = RETURN_OK;
     
     if (showline)
       putlinenumber(out, ++line);
@@ -266,7 +286,7 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
 	          putc(out, '\n');
 
                 put(out);
-		return 0;
+		break;
             }
 
 	    if (lastc==0x0a && showline)
@@ -278,11 +298,19 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
 	          putc(out, '\n');
 
 	        put(out);
-		return 1;
+		retval = RETURN_ERROR;
+		break;
 	    }
 	
+	    if ((c == '\n') && CheckSignal(SIGBREAKF_CTRL_C))
+	    {
+	    	retval = RETURN_WARN;
+		break;
+	    }
 	    lastc = c;
 	}
+	
+    return retval;
 }
 
 int __nocommandline;
@@ -293,7 +321,8 @@ int main (void)
     struct RDArgs *rda;
     struct file *in, *out;
     STRPTR *names;
-
+    int retcode = RETURN_OK;
+    
     rda=ReadArgs("FROM/A/M,TO/K,OPT/K,HEX/S,NUMBER/S",args,NULL);
     if(rda==NULL)
     {
@@ -317,21 +346,30 @@ int main (void)
 	    {
 		in->cnt=0;
 		if(args[3] || (args[2] && (!strcmp((const char *)args[2], "h"))))
-		    hexdumpfile(in,out);
+		    retcode = hexdumpfile(in,out);
 		else if (args[4] || (args[2] && (!strcmp((const char *)args[2], "n"))))
-		    dumpfile(in,out,TRUE);
+		    retcode = dumpfile(in,out,TRUE);
 		else
-		    dumpfile(in,out,FALSE);
+		    retcode = dumpfile(in,out,FALSE);
 		Close(in->fd);
+		
+		if (retcode == RETURN_WARN)
+		{
+		    PrintFault(ERROR_BREAK, NULL);
+		}
 	    }else
 	    {
 		PrintFault(IoErr(),"Type");
+		retcode = RETURN_ERROR;
 		break;
 	    }
 	    names++;
 	}
     }else
+    {
 	PrintFault(ERROR_NO_FREE_STORE,"Type");
+	retcode = RETURN_ERROR;
+    }
 
     if(in!=NULL)
 	FreeMem(in,sizeof(struct file));
@@ -339,5 +377,6 @@ int main (void)
 	FreeMem(out,sizeof(struct file));
     if(rda!=NULL)
 	FreeArgs(rda);
-    return 0;
+	
+    return retcode;
 }
