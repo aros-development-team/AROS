@@ -57,9 +57,10 @@ archive()
     oldpwd=$(pwd)
     
     execute mkdir -p $archdir
-    execute tar cjvf $1 $2
+    execute tar cjvf $1 --exclude=CVS $2
     cd      $archdir
-    execute md5sum $archname >$archname.md5
+    echo    ">>> md5sum $archname >$archname.md5"
+    md5sum  $archname >$archname.md5
     cd      $oldpwd
 }
 

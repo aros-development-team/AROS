@@ -57,7 +57,6 @@ alias makedir='execute mkdir -p'
 alias  delete='execute rm -rf'
 alias    copy='execute cp -pR'
 alias    move='execute mv -f'
-alias   prune='execute find . -name CVS -prune -exec rm -rf "{}" ";"'
 
 export CC=$CFG_CC
 

@@ -7,43 +7,33 @@ setl   sources.log
 ARCHIVE_BASE=$ARCHIVE_BASE/Sources
 
 printi "Creating source packages..."
+cd      $SOURCE_ROOT
 
 printi "Creating AROS source package..."
 PACKAGE=$BASENAME-source
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
-copy    $SOURCE_AROS $BUILD_BASE/$PACKAGE
-copy    $SOURCE_NECESSARY $BUILD_BASE/$PACKAGE/contrib
-cd      $BUILD_BASE/$PACKAGE
-prune   
-cd      $BUILD_BASE
+move    $SOURCE_AROS $PACKAGE
+move    $SOURCE_NECESSARY $PACKAGE/contrib
 archive $ARCHIVE $PACKAGE
-cd      $ROOT
-delete  $BUILD_BASE/$PACKAGE
+move    $PACKAGE/contrib $SOURCE_NECESSARY
+move    $PACKAGE $SOURCE_AROS
 
 printi "Creating contrib source package..."
 PACKAGE=$BASENAME-contrib-source
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
-copy    $SOURCE_CONTRIB $BUILD_BASE/$PACKAGE
-cd      $BUILD_BASE/$PACKAGE
-prune
-cd      $BUILD_BASE
+move    $SOURCE_CONTRIB $PACKAGE
 archive $ARCHIVE $PACKAGE
-cd      $ROOT
-delete  $BUILD_BASE/$PACKAGE
+move    $PACKAGE $SOURCE_CONTRIB
 
 printi "Creating documentation source package..."
 PACKAGE=$BASENAME-docs-source
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
-copy    $SOURCE_DOCS $BUILD_BASE/$PACKAGE
-cd      $BUILD_BASE/$PACKAGE
-prune
-cd      $BUILD_BASE
+move    $SOURCE_DOCS $PACKAGE
 archive $ARCHIVE $PACKAGE
-cd      $ROOT
-delete  $BUILD_BASE/$PACKAGE
+move    $PACKAGE $SOURCE_DOCS
 
 cd      $ROOT
 resetl
