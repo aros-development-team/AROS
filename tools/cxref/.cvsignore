@@ -7,3 +7,6 @@ cxref
 cxref-inst
 latex-style.c
 y.tab.h
+parse-lex.c
+parse-yacc.c
+parse-yacc.h
