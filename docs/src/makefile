@@ -26,8 +26,13 @@ SRCS = $(foreach f,$(FILES),$(f).src)
 HTML = $(foreach f,$(FILES),$(DEST)$(f).html) $(DEST)index.html
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
-	jobserver cgi-scripte dist \
+	jobserver cgi-scripte dist copy_files \
 	access-rights
+
+copy_files: $(DEST)rtdemo.log
+
+$(DEST)rtdemo.log: rtdemo.log
+	cp $< $@
 
 dist : $(DEST)dist.src $(DEST)cgi-bin/dist.src $(JOBDEST)dist.src \
 	$(JOBDEST)cgi-bin/dist.src \
