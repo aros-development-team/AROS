@@ -97,6 +97,7 @@ extern const struct Resident
     vgaHidd_resident,
     hiddserial_resident,
     pciHidd_resident,
+    mouseHidd_resident,
     Console_resident,
     TrackDisk_resident,
     ide_resident,
@@ -128,6 +129,7 @@ static const struct Resident *romtagList[] =
     &hiddgraphics_resident,	    /* ColdStart,   9    */
     &kbdHidd_resident,              /* ColdStart,   9    */
     &vgaHidd_resident,		    /* ColdStart,   9    */
+    &mouseHidd_resident,	    /* ColdStart,   9    */
     &hiddserial_resident,	    /* ColdStart,   9    */
     &pciHidd_resident,              /* ColdStart,   9    */
     &Console_resident,              /* ColdStart,   5	 */
