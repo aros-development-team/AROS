@@ -2,7 +2,7 @@
 #define GADGETS_AROSLIST_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS listview class.
@@ -19,7 +19,7 @@
 #define AROSLISTCLASS	"list.aros"
 #define AROSLISTNAME	"Gadgets/aroslist.class"
 
-#define AROSLIST_TAGBASE 10000L
+#define AROSLIST_TAGBASE (TAG_USER + 0x05110000)
 
 /* Attribute IDs */
 #define AROSA_List_SourceArray		AROSLIST_TAGBASE + 1

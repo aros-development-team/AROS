@@ -2,7 +2,7 @@
 #define GADGETS_AROSMX_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS mutualexclude class.
@@ -29,7 +29,8 @@
 #define AROSMXNAME	"Gadgets/arosmutualexclude.gadget"
 
 /* Tags to be passed to AROSMXCLASS. */
-#define AROSMX_Dummy 30000L
+#define AROSMX_Dummy (TAG_USER + 0x05130000)
+
   /* [ISG] (UWORD) Active tick. The count starts with 0, which is also the
      default. */
 #define AROSMX_Active GTMX_Active
