@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Mount CLI command
-    Lang: English
+    Mount CLI command.
 */
 
 #include <exec/memory.h>
@@ -269,7 +268,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 
 	    vec->de_TableSize      = (IPTR)19;
 	    vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
-	    vec->de_SegOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
+	    vec->de_SecOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
 	    vec->de_Surfaces       = args[4]  ? (IPTR)*args[4]  : (IPTR)2;
 	    vec->de_SectorPerBlock = 1;
 	    vec->de_BlocksPerTrack = args[5]  ? (IPTR)*args[5]  : (IPTR)11;

@@ -148,7 +148,7 @@ struct ExAllControl {
 struct DosEnvec {
 	IPTR de_TableSize;
 	IPTR de_SizeBlock;
-	IPTR de_SegOrg;
+	IPTR de_SecOrg;
 	IPTR de_Surfaces;
 	IPTR de_SectorPerBlock;
 	IPTR de_BlocksPerTrack;
