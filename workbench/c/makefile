@@ -36,7 +36,8 @@ FILES = \
 	tasklist \
 	type \
 	version \
-	wait
+	wait \
+	why
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
