@@ -1423,6 +1423,7 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	sd->mid_PutMem32Image16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
 	sd->mid_GetMem32Image8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
 	sd->mid_GetMem32Image16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
+	sd->mid_Clear		= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_Clear);
 
 	if (cl)
 	{

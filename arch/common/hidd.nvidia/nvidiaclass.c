@@ -175,6 +175,18 @@ static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     MAKE_SYNC(1024x768_60, 65000,	//78654=60kHz, 75Hz. 65000=50kHz,62Hz
         1024, 1048, 1184, 1344,
          768,  771,  777,  806);
+	 
+    MAKE_SYNC(1152x864_60, 80000,
+	1152, 1216, 1328, 1456,
+	 864,  870,  875,  916);
+
+    MAKE_SYNC(1280x1024_60, 107991,
+	1280, 1328, 1440, 1688,
+	1024, 1025, 1028, 1066);    
+    
+    MAKE_SYNC(1600x1200_60, 155982,
+	1600, 1632, 1792, 2048,
+	1200, 1210, 1218, 1270);
 
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
@@ -183,6 +195,9 @@ static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640x480_60	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800x600_56	},
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1024x768_60	},
+	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1152x864_60  },
+	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1280x1024_60 },
+	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1600x1200_60 },
 	
 	{ TAG_DONE, 0UL }
     };
