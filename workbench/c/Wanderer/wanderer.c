@@ -5,6 +5,8 @@
     $Id$
 */
 
+#define INTUITION_NO_INLINE_STDARG
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <stdlib.h>
