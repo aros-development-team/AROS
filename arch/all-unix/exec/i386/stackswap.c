@@ -21,6 +21,7 @@ static jmp_buf env;
 #endif
 
 #define DEBUG 0
+#define STACKSNOOP
 
 #ifdef TEST
 /*******************************************************
@@ -170,6 +171,20 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
 	newSP -= t; /* Make room for 20 elements */
 
+    #ifdef STACKSNOOP
+        
+	{
+	    UBYTE *startfill = sss->stk_Lower;
+	    UBYTE *endfill = ((UBYTE *)newSP) - 16;
+	    
+	    while(startfill <= endfill)
+	    {
+	        *startfill++ = 0xE1;
+	    }
+	}
+	
+    #endif
+    
 	/*
 	    Move the contents of the old stack on the new stack.
 	    We will copy local variables, the frame pointer, the
