@@ -25,6 +25,15 @@
 
 extern struct GfxBase * GfxBase;
 
+/* Internal GFXBase struct */
+struct GfxBase_intern
+{
+    struct GfxBase 	 gfxbase;
+    
+    /* Driver data shared betwwe all rastports (allocated once) */
+    APTR		*shared_driverdata;
+};
+
 /* Macros */
 #define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
 

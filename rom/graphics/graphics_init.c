@@ -58,7 +58,13 @@ static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct LIBBASETYPE),
+
+    /* !!!!! Hack warning: The below was sizeof (struct LIBBASETYPE),
+       but if I set libbasetype to GfxBase_intern in lib.conf
+       much gets broken. Should maybe be 'publibbasetype'
+       and 'privlibbasetype' in lib.conf
+    */
+    (APTR)sizeof(struct GfxBase_intern),
     (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
