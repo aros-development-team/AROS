@@ -41,7 +41,7 @@ static struct OOP_ABDescr attrbases[] =
     { NULL, NULL }
 };
 
-void vgaRestore(struct vgaHWRec *);
+void vgaRestore(struct vgaHWRec *, BOOL onlyDAC);
 void * vgaSave(struct vgaHWRec *);
 int vgaInitMode(struct vgaModeDesc *, struct vgaHWRec *);
 void vgaLoadPalette(struct vgaHWRec *, unsigned char *);
@@ -159,7 +159,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		       bitmap immediately
 		    */
 		
-		    vgaRestore(data->Regs);
+		    vgaRestore(data->Regs, FALSE);
 		    vgaRefreshArea(data, 1, &box);
 
 		    ReleaseSemaphore(&XSD(cl)->HW_acc);
