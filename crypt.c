@@ -1,16 +1,36 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1996/08/16 14:01:40  digulla
-    The salt may be specified now
 
-    Revision 1.2  1996/08/01 17:40:38  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Utility for crypt(3).
+    Lang: english
 */
+/*
+    This is the sourcecode for crypt. It is a small program which makes
+    it more convenient to create Unix passwords with crypt(3).
+
+    To compile:
+
+	cc crypt.c -o crypt
+
+    If you get an error during link which says that "crypt" is an
+    unknown symbol, try this:
+
+	cc crypt.c -o crypt -lcrypt
+
+    Then run this with your password as the first argument. If you
+    want to test if it really works, try it like this:
+
+	crypt test xx
+
+    which must print:
+
+	Encrypting test: xx1LtbDbOY4
+
+    If it prints something else, then you version of crypt(3) is not
+    compatible.
+*/
+
 #include <unistd.h>
 #include <stdio.h>
 
