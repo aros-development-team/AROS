@@ -122,23 +122,11 @@ of them work, others don't, yet.
 
 \section{Snapshots}
 
-\largepic{A snapshot of the window of demowin}{pics/demowin.gif}
+A snapshot of the workbench screen, taken 12th Feb 200.
+(\largepic{45K GIF}{other/workbench.gif} or 
+\largepic{30K PNG}{other/workbench.png}).
 
-This window is opened with the \shell{demowin} demo program.  It opens a
-window and renders some graphics in it.  You can click on the gadgets and
-the program will tell you which gadget has been pressed.  If you press the
-gadget with the label "Complement", the sizes for the PropGadgets will
-change.  You can press a key and the program will show you the string
-which is associated with that key.  You can press the left, middle and
-right mouse button to draw lines in the window.  To exit the demo, press
-the Escape key or click on one of the "Exit" gadgets at the bottom.
-
-\largepic{A snapshot of readicon}{pics/readicon.gif}
-
-This shows the output of readicon.  In the big window, you can see
-debugging and informational output of the program.  The small window shows
-the normal and selected state of an icon and contains a gadget which has
-the icons' images for its normal and selected images.
+It shows the boot shell and two programs using \shell{gadtools.library}.
 
 \link{Here}{other/screenshots.html} are more Screenshots and
 pictures related to AROS.
