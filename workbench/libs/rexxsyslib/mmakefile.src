@@ -1,11 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.
-
-MODNAME	    := rexxsyslib
-MODTYPE	    := library
-
 FUNCS := \
       	 clearrexxmsg \
 	 createargstring \
@@ -18,20 +13,11 @@ FUNCS := \
 	 lockrexxbase \
 	 unlockrexxbase
 
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
-USE_AROSLIB := yes
+#MM- workbench-libs-rexxsyslib : setup includes linklibs
+
 #TODO: At the moment sprintf needs the mat library
-USE_MLIB := yes
-
-#MM- workbench-libs-rexxsyslib : setup includes linklibs workbench-libs-rexxsyslib-module
-#MM
-workbench-libs-rexxsyslib-quick : setup workbench-libs-rexxsyslib-module
-
-%make_module_setup mmake=workbench-libs-rexxsyslib
-%make_module_cpak
-%make_module mmake=workbench-libs-rexxsyslib
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-rexxsyslib modname=rexxsyslib \
+  modtype=library funcs=$(FUNCS) uselibs="arossupport amiga rom m" \
+  conffile=lib.conf
 
 %common
-%include_deps

@@ -1,11 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME	    := diskfont
-MODTYPE	    := library
-
-USER_INCLUDES	:= -I. -I..
-
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 MOSLIB			:= /ade/morphos/lib
@@ -26,16 +21,10 @@ FUNCS	:=  opendiskfont	\
 	    disposefontcontents \
 	    newscaleddiskfont
 
-USE_AMIGALIB := yes
-USE_ROMLIB := yes
-USE_MLIB := yes
-USE_AROSLIB := yes
+#MM- workbench-libs-diskfont : setup includes linklibs
 
-#MM- workbench-libs-diskfont : setup includes linklibs workbench-libs-diskfont-module
-%make_module_setup mmake=workbench-libs-diskfont
-%make_module_cpak
-%make_module mmake=workbench-libs-diskfont
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-diskfont modname=diskfont \
+  modtype=library funcs=$(FUNCS) files=$(FILES) \
+  uselibs="arossupport amiga rom m" conffile=lib.conf
 
 %common
-%include_deps

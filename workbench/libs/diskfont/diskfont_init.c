@@ -22,7 +22,7 @@
 #include <stddef.h>
 
 #include "initstruct.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "diskfont_intern.h"
 
 /****************************************************************************************/

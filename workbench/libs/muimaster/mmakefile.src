@@ -2,9 +2,6 @@
 
 include $(TOP)/config/make.cfg
 
-MODNAME := muimaster
-MODTYPE := library
-
 CLASSES := \
     aboutmui \
     application \
@@ -104,22 +101,13 @@ FUNCS := \
     mui_requestidcmp \
     mui_seterror
 
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_CLIB_STATIC := yes
-USE_MLIB        := yes
-
-USER_INCLUDES := -I.
 USER_CFLAGS := -DHAVE_COOLIMAGES
 
-#MM- workbench-libs-muimaster : setup includes linklibs \
-#MM	workbench-libs-muimaster-module
+#MM- workbench-libs-muimaster : setup includes linklibs
 
-%make_module_setup mmake=workbench-libs-muimaster
-
-%make_module_cpak
-%make_module mmake=workbench-libs-muimaster
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-muimaster modname=muimaster \
+  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui amiga arosc m" \
+  conffile=lib.conf
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
@@ -146,4 +134,3 @@ $(BUILDINCTOOL) : buildincludes.c
 	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
 
 %common
-%include_deps

@@ -27,7 +27,7 @@
 #include <aros/debug.h>
 #endif
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 
 /* Predeclaration */

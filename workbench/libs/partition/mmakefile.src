@@ -1,11 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := partition
-MODTYPE := library
-
-USER_INCLUDES := -I.
-
 FILES := \
 	partition_support \
 	partitionmbr \
@@ -28,12 +23,10 @@ FUNCS := \
 	querypartitionattrs \
 	destroypartitiontable
 
-#MM- workbench-libs-partition : setup includes linklibs workbench-libs-partition-module
-%make_module_setup mmake=workbench-libs-partition
-%make_module_cpak
-%make_module mmake=workbench-libs-partition
-%make_lib_includes
+#MM- workbench-libs-partition : setup includes linklibs
+
+%build_module_macro mmake=workbench-libs-partition modname=partition \
+  modtype=library funcs=$(FUNCS) files=$(FILES) conffile=lib.conf
 
 %common
-%include_deps
 

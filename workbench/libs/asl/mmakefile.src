@@ -1,8 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I. -I..
-
 ifeq ($(TARGET_ARCH),morphos)
 OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
 FORCE_DEPLIBS 	:=
@@ -10,9 +8,6 @@ FORCE_LIBS 		:= /ade/morphos/lib/libsyscall.a /ade/morphos/lib/libstringio.a /ad
 TARGET_CFLAGS	:= -O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__
 USE_CPAK		:= no
 endif
-
-MODNAME 	:= asl
-MODTYPE		:= library
 
 FILES := basicfuncs specialreq \
 	 filereqhooks filereqsupport \
@@ -33,16 +28,9 @@ FUNCS := allocfilerequest	\
 	 abortaslrequest    	\
 	 activateaslrequest 	\
 
-USE_ROMLIB := yes
-USE_MLIB := yes
-USE_AMIGALIB := yes
+#MM- workbench-libs-asl : setup includes linklibs setup-asl-catalogs
 
-#MM- workbench-libs-asl : setup includes linklibs setup-asl-catalogs \
-#MM	workbench-libs-asl-module
-%make_module_setup mmake=workbench-libs-asl
-%make_module_cpak
-%make_module mmake=workbench-libs-asl
-%make_lib_includes
+%build_module_macro mmake=workbench-libs-asl modname=asl modtype=library \
+  funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom m" conffile=lib.conf
 
 %common
-%include_deps

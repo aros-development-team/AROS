@@ -1,12 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-
-MODNAME	:= bsdsocket
-MODTYPE := library
-
-FUNCS :=
 FUNCS := \
     accept \
     bind \
@@ -55,11 +49,9 @@ FUNCS := \
     vsyslog \
     waitselect
 
-#MM- workbench-libs-bsdsocket : setup includes linklibs workbench-libs-bsdsocket-module
-%make_module_setup mmake=workbench-libs-bsdsocket
-%make_module_cpak
-%make_module mmake=workbench-libs-bsdsocket
-%make_lib_includes
+#MM- workbench-libs-bsdsocket : setup includes linklibs
+
+%build_module_macro mmake=workbench-libs-bsdsocket modname=bsdsocket \
+  modtype=library funcs=$(FUNCS) conffile=lib.conf
 
 %common
-%include_deps

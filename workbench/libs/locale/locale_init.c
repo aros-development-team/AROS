@@ -18,7 +18,7 @@
 #include <proto/exec.h>
 
 #include "locale_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 /*
     Why don't I use C_Lib, simple, it doesn't seem to be able to do

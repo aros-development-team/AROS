@@ -16,7 +16,7 @@
 #include <proto/alib.h>
 
 #include "rexxsyslib_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #undef SysBase
 
