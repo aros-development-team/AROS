@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-    ldargs = xmalloc(sizeof(char *) * (argc+2 + 2*(incremental == 0)));
+    ldargs = xmalloc(sizeof(char *) * (argc+2 + 2*(incremental != 1)));
 
     ldargs[0] = "ld";
     ldargs[1] = "-r";
@@ -107,7 +107,6 @@ int main(int argc, char *argv[])
     if (incremental != 1)
     {
         atexit(exitfunc);
-
 	if
 	(
 	    !(tempoutput   = make_temp_file(NULL))     ||
@@ -124,7 +123,7 @@ int main(int argc, char *argv[])
     }
 
     ldargs[cnt+1] = NULL;
-
+              
     docommandvp("ld", ldargs);
 
     if (incremental == 1)
