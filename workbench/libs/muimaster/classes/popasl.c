@@ -210,7 +210,8 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 	if (data->stop_hook)
 	{
 	    CallHookPkt(data->stop_hook,obj,data->asl_req);
-	} else
+	}
+	else
 	{
 	    if (data->type == ASL_FileRequest)
 	    {
@@ -221,34 +222,42 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 		char *buf = (char*)AllocVec(len,MEMF_CLEAR);
 		if (buf)
 		{
-		    strcpy(buf,drawer);
-		    AddPart(buf,file,len);
-		    set(string,MUIA_String_Contents,buf);
+		    IPTR contents;
+
+		    strcpy(buf, drawer);
+		    AddPart(buf, file, len);
+		    set(string, MUIA_String_Contents, buf);
+		    get(string, MUIA_String_Contents, &contents);
+		    /* trigger string notification */
+		    set(string, MUIA_String_Acknowledge, contents);
 		    FreeVec(buf);
 		}
-	    }   else
+	    }
+	    else if (data->type == ASL_FontRequest)
 	    {
-	    	if (data->type == ASL_FontRequest)
-	    	{
-		    struct FontRequester *font_req = (struct FontRequester*)data->asl_req;
-		    char *name = font_req->fo_Attr.ta_Name;
-		    LONG size = font_req->fo_Attr.ta_YSize;
-		    int len = strlen(name)+20;
-		    char *buf = (char*)AllocVec(len,MEMF_CLEAR);
-		    if (buf)
-		    {
-		    	char num_buf[20];
-		    	char *font_ext;
-		        strcpy(buf,name);
+		struct FontRequester *font_req = (struct FontRequester*)data->asl_req;
+		char *name = font_req->fo_Attr.ta_Name;
+		LONG size = font_req->fo_Attr.ta_YSize;
+		int len = strlen(name)+20;
+		char *buf = (char*)AllocVec(len,MEMF_CLEAR);
+		if (buf)
+		{
+		    char num_buf[20];
+		    char *font_ext;
+		    IPTR contents;
 
-		        /* Remove the .font extension */
-		        if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
-		        snprintf(num_buf, 20, "%ld", size);
-		        AddPart(buf,num_buf,len);
-		        set(string,MUIA_String_Contents,buf);
-		        FreeVec(buf);
-		    }
-	    	}
+		    strcpy(buf,name);
+
+		    /* Remove the .font extension */
+		    if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
+		    snprintf(num_buf, 20, "%ld", size);
+		    AddPart(buf,num_buf,len);
+		    set(string,MUIA_String_Contents,buf);
+		    get(string, MUIA_String_Contents, &contents);
+		    /* trigger string notification */
+		    set(string, MUIA_String_Acknowledge, contents);
+		    FreeVec(buf);
+		}
 	    }
 	}
     }
