@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999 - 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ReqTools initialization code.
