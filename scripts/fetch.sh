@@ -9,11 +9,22 @@ usage()
     error "Usage: $1 -a archive [-as archive_suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
+sf_mirrors="mesh"
+
 fetch_sf()
 {
     local origin="$1" file="$2" destination="$3"
+    local full_path
     
-    fetch "http://prdownloads.sourceforge.net/$origin" "${file}?use_mirror=mesh" "$destination"
+    for mirror in $sf_mirrors; do
+        echo "Checking SourceForge mirror \`$mirror'..."
+        fetch "http://prdownloads.sourceforge.net/$origin" "${file}?use_mirror=${mirror}" "$destination" \
+            2>/dev/null && \
+            full_path=`awk '/<META[ \t\n]+HTTP-EQUIV.+/ { match($4, /=.+"/); print substr($4, RSTART+1, RLENGTH-2) }' "${file}?use_mirror=${mirror}"` && \
+            rm "${file}?use_mirror=mesh" && \
+            fetch "`dirname $full_path`" "$file" "$destination" && \
+            break
+    done
 }
 
 fetch()
