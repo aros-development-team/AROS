@@ -48,6 +48,7 @@ void Refresh (struct RastPort * rp)
     int len;
     int t, tend, pen;
     int x, y;
+    WORD xy[8];
 
     SetAPen (rp, 1);
     SetDrMd (rp, JAM2);
@@ -59,37 +60,44 @@ void Refresh (struct RastPort * rp)
     Draw (rp, 0, 300);
 
     SetDrPt (rp, 0xF0F0);
-    len = 100;
+    len = 150;
     x = 340;
     y = 150;
-    Move (rp, x, y);
-    Draw (rp, x, y+len);
-    Draw (rp, x+len, y+len);
-    Draw (rp, x, y);
+    xy[0] = x; xy[1] = y;
+    xy[2] = x; xy[3] = y+len;
+    xy[4] = x+len; xy[5] = y+len;
+    xy[6] = x; xy[7] = y;
+    PolyDraw (rp, 4, xy);
 
     SetDrPt (rp, 0xAAAA);
     x += 10;
-    len -= 10;
-    Move (rp, x, y);
-    Draw (rp, x, y+len);
-    Draw (rp, x+len, y+len);
-    Draw (rp, x, y);
+    y += 20;
+    len -= 30;
+    xy[0] = x; xy[1] = y;
+    xy[2] = x; xy[3] = y+len;
+    xy[4] = x+len; xy[5] = y+len;
+    xy[6] = x; xy[7] = y;
+    PolyDraw (rp, 4, xy);
 
     SetDrPt (rp, 0x3333);
     x += 10;
-    len -= 10;
-    Move (rp, x, y);
-    Draw (rp, x, y+len);
-    Draw (rp, x+len, y+len);
-    Draw (rp, x, y);
+    y += 20;
+    len -= 30;
+    xy[0] = x; xy[1] = y;
+    xy[2] = x; xy[3] = y+len;
+    xy[4] = x+len; xy[5] = y+len;
+    xy[6] = x; xy[7] = y;
+    PolyDraw (rp, 4, xy);
 
     SetDrPt (rp, 0xF731);
     x += 10;
-    len -= 10;
-    Move (rp, x, y);
-    Draw (rp, x, y+len);
-    Draw (rp, x+len, y+len);
-    Draw (rp, x, y);
+    y += 20;
+    len -= 30;
+    xy[0] = x; xy[1] = y;
+    xy[2] = x; xy[3] = y+len;
+    xy[4] = x+len; xy[5] = y+len;
+    xy[6] = x; xy[7] = y;
+    PolyDraw (rp, 4, xy);
 
     SetDrPt (rp, ~0);
 
