@@ -50,6 +50,7 @@ FILES	:= \
     readicon \
     regiontest \
     rtdemo \
+    rtfile \
     rtscreen \
     rtstring \
     rtpalette \
