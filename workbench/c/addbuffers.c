@@ -32,8 +32,10 @@ int main (int argc, char ** argv)
         bufsptr = (ULONG *)args[ARG_BUFFERS];
         if (bufsptr != NULL) buffers = *bufsptr;
         result = AddBuffers((char *)args[ARG_DRIVE], buffers);
-        if (result != 0)
+        if (result == -1)
             Printf("%s has %ld buffers\n", (LONG)(char *)args[ARG_DRIVE], IoErr());
+        else if(result > 0)
+            Printf("%s has %ld buffers\n", (LONG)(char *)args[ARG_DRIVE], (LONG)result);
         else
 	{
             PrintFault(IoErr(), "AddBuffers");
