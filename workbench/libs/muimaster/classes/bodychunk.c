@@ -172,10 +172,8 @@ static BOOL make_bitmap(struct IClass *cl, Object *obj)
 	}
     }
     
-#ifdef __AROS__
     DeinitRastPort(&temprp);
     DeinitRastPort(&bmrp);
-#endif
     
     if (temprp.BitMap)
     {

@@ -134,9 +134,7 @@ static IPTR Scale_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	data->label_minwidth = TextLength(&rp,minlabel,strlen(minlabel));
 	data->label_height = _font(obj)->tf_YSize;
 
-#ifdef __AROS__
 	DeinitRastPort(&rp);
-#endif
     }
 
     return 1;

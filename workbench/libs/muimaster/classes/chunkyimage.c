@@ -89,9 +89,7 @@ static BOOL make_bitmap(struct IClass *cl, Object *obj)
 		      data->pixels,
 		      data->modulo);
     
-#ifdef __AROS__
     DeinitRastPort(&temprp);
-#endif
     
     return TRUE;
 }
