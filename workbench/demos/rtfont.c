@@ -30,7 +30,8 @@ static void action(void)
     
     struct TagItem tags[] =
     {
-    	{TAG_DONE	    		}
+    	{RTFO_Flags, FREQF_STYLE|FREQF_COLORFONTS   },
+    	{TAG_DONE	    		    	    }
     };
     
     if ((req = rtAllocRequestA(RT_FONTREQ, tags)))
