@@ -1,0 +1,76 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I..
+
+# This should maube be set in $(TOP)/config/make.cfg instead
+GADGETDIR=$(BINDIR)/Classes/Gadgets
+
+# Main function for aroscycle.gadget. Need this apart as an anchor for the link:
+INIT_FILE = aroscycle_init
+
+FILES = aroscycle_functable cycleclass support
+
+# Guarantee that this will go at the end of the file:
+END_FILE    := aroscycle_endtag
+FUNCTIONS   :=
+OBJDIR	    := $(GENDIR)/$(CURDIR)
+OBJS	    := $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
+INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC     := $(OBJDIR)/$(END_FILE).o
+
+CLASS	    := $(GADGETDIR)/aroscycle.gadget
+
+#MM workbench-classes-aroscycle : setup includes
+workbench-classes-aroscycle : show-flags $(CLASS)
+
+%define_libs prelibs=-laroscycle
+
+# The filename of the linklib
+LIB := $(LIBDIR)/libaroscycle.a
+
+$(CLASS) : $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) aroscyclelib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroscyclelib.err
+	%checkuds
+	@$(IF) $(TEST) ! -s aroscyclelib.err; then $(RM) aroscyclelib.err ; else $(NOP) ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB) : $(OBJS)
+	@$(ECHO) "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(GADGETDIR)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+aroscycle_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q AROSCycle
+
+aroscycle_endtag.c : $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q AROSCycle
+
+$(OBJDIR)/aroscycle_init.o : libdefs.h
+
+%libdefs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

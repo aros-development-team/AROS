@@ -1,0 +1,6 @@
+aroscycle_functable.c
+aroscycle_endtag.c
+libdefs.h
+mmakefile
+*.err
+*.map

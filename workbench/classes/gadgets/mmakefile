@@ -9,6 +9,7 @@ workbench-classes :
 # machine, and you want to save yourself some typing.
 #MM workbench-classes-complete : workbench-classes-aroscheckbox workbench-classes-aroslist
 #MM workbench-classes-complete : workbench-classes-aroslistview workbench-classes-arosmutualexclude
+#MM workbench-classes-complete : workbench-classes-aroscycle
 workbench-classes-complete :
 	@$(NOP)
 
