@@ -13,7 +13,7 @@ FUNCS := \
 	 lockrexxbase \
 	 unlockrexxbase
 
-#MM- workbench-libs-rexxsyslib-includes : includes linklibs
+#MM- workbench-libs-rexxsyslib-includes : kernel-exec-includes includes-copy
 #MM- workbench-libs-rexxsyslib : includes linklibs
 
 TODO: At the moment sprintf needs the mat library
