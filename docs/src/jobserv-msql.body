@@ -1,6 +1,6 @@
 Enter the mSQL command below:
 
-<FORM ACTION="/~digulla/jobserver/cgi-bin/jobserv-msql.cgi" METHOD="GET">
+<FORM ACTION="/aros/jobserver/cgi-bin/jobserv-msql.cgi" METHOD="GET">
 <TEXTAREA NAME="msql" ROWS="10" COLS="80"></TEXTAREA><P>
 <INPUT TYPE="submit" VALUE="Go">
 <INPUT TYPE="reset" VALUE="Clear">
