@@ -46,8 +46,8 @@ FILES	    := \
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-#MM apps : setup includes
-apps : show-flags $(EXES)
+#MM workbench : setup includes
+workbench : show-flags $(EXES)
 
 show-flags :
 	@echo "OBJDIR=$(OBJDIR)"
