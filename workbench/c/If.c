@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 		if(i != 2)	/* ...there must be exactly two of them. */
 		{
 		    FreeArgs(rda);
-		    PrintFault(ERROR_NUMBER_OF_ARGUMENTS, "If");
+		    PrintFault(ERROR_TOO_MANY_ARGS, "If");
 
 		    return RETURN_ERROR;
 		}
