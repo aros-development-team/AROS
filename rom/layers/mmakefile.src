@@ -40,6 +40,7 @@ FILES	  := cliprectfunctions createcliprectsbehindlayer helpfunctions
 FUNCTIONS := \
 	createupfronthooklayer		\
 	createupfrontlayer		\
+	fattenlayerinfo			\
 	initlayers			\
 	locklayer			\
 	locklayerinfo			\
@@ -47,6 +48,7 @@ FUNCTIONS := \
 	movelayer			\
 	movelayerinfrontof		\
 	movesizelayer			\
+	thinlayerinfo			\
 	unlocklayer			\
 	unlocklayerinfo 		\
 	unlocklayers			\
