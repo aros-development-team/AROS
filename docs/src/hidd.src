@@ -517,13 +517,17 @@ of the command (including both |Command| and |Length|).
 The result of |HIDDM_Graphics_Cmd()| depends on the command
 which is to be executed.
 
-\item{IPTR HIDDM_Graphics_MCmd,UWORD length,UWORD length1, UWORD cmd1,
+\item{void HIDDM_Graphics_MCmd,UWORD length,UWORD length1, UWORD cmd1,
 ...)} This is like |HIDDM_Graphics_Cmd()| but executes more than one
 command at once. |length| is the size of all commands plus all parameters.
 The format of the separate commands is the same as in
 |HIDDM_Graphics_Cmd()|.
 
-\item{IPTR HIDDM_Graphics_MQCmd,UWORD length,UWORD length1, UWORD cmd1,
+You can't use commands which return values with |HIDDM_Graphics_MCmd()|.
+If you use such commands with |HIDDM_Graphics_MCmd()|, the returned
+values will be lost.
+
+\item{void HIDDM_Graphics_MQCmd,UWORD length,UWORD length1, UWORD cmd1,
 ...)} This is like |HIDDM_Graphics_QCmd()| but executes more than one
 command at once. |length| is the size of all commands plus all parameters.
 The format of the separate commands is the same as in
@@ -532,9 +536,34 @@ The format of the separate commands is the same as in
 \end{methods}
 
 \begin{methods}
+\item{void HIDDV_Graphics_Cmd_WaitTOF (void)} Wait for the vertical
+blank. This is a short time span during which updates of the screen
+are invisible because the hardware of the monitor moves the ray
+from the bottom right to the top left corner. This will block until
+the next time this happens. If you use this command in
+|HIDDM_Graphics_MCmd()| or |HIDDM_Graphics_MQCmd()|, the drawing
+command after the |HIDDV_Graphics_Cmd_WaitTOF()| will be executed
+exactly right after the system has been signalled that the vblank
+is happening. If several processes try to do this, they will be
+executed in first-come-first-served order.
+
+\item{BOOL HIDDV_Graphics_Cmd_CheckTOF (void)} Query whether a vertical
+blank is happening right now. This isn't really useful because you can't
+use it to draw because in a multitasking system, you might loose the
+CPU just after |HIDDV_Graphics_Cmd_CheckTOF()| told you that a
+vblank is happening right now.
+
 \item{HIDDT_BitMap HIDDV_Graphics_Cmd_CreateBitMap (UWORD width, UWORD
 height, UWORD depth)} Create a drawing area with the specified size
 and number of colors.
+
+\item{ULONG HIDDV_Graphics_Cmd_ShowBitMap (HIDDT_BitMap bm, BOOL wait)}
+Make a bitmap visible. Some systems allow to show more than one bitmap at a
+time. On these systems, the specified bitmap appears before all other
+bitmaps. If |wait| is |TRUE|, then the call will block until the bitmap
+is made visible (ie. at the next |HIDDV_Graphics_Cmd_WaitTOF|).
+The call return whether bitmap is visible or not if |wait| is
+|FALSE| or |TRUE| otherwise.
 
 \item{void HIDDV_Graphics_Cmd_DeleteBitMap (HIDDT_BitMap bm)}
 Return a drawing area for reuse. You can also dispose it with
