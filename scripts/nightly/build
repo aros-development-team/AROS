@@ -20,6 +20,8 @@ if [ $? != 0 ]; then
     mail_send "-a $LOG_BASE/update.log"
     
     mail_stop
+    
+    exit 5
 fi
 
 # Build packages.
