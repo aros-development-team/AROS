@@ -5,13 +5,15 @@
 include $(TOP)/config/make.cfg
 
 FILES := main vars patches misc \
-    	 localeprefs fontprefs serialprefs inputprefs icontrolprefs wbpatternprefs
+	 localeprefs fontprefs screenmodeprefs serialprefs inputprefs \
+	 icontrolprefs wbpatternprefs
 
 EXEDIR := $(AROS_C)
 
-#MM workbench-c : includes linklibs
+#MM workbench-c-iprefs : includes linklibs
+#MM- workbench-c : workbench-c-iprefs
 
-%build_prog mmake=workbench-c \
+%build_prog mmake=workbench-c-iprefs \
     progname=IPrefs targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="arossupport amiga arosc m" \
     detach=yes

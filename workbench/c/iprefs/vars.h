@@ -42,6 +42,7 @@ VAR UBYTE   	    	    	localeprefsname[256];
 VAR UBYTE   	    	    	paletteprefsname[256];
 VAR UBYTE   	    	    	patternprefsname[256];
 VAR UBYTE   	    	    	icontrolprefsname[256];
+VAR UBYTE   	    	    	screenmodeprefsname[256];
 VAR UBYTE   	    	    	serialprefsname[256];
 VAR UBYTE   	    	    	printerprefsname[256];
 VAR UBYTE   	    	    	pointerprefsname[256];
