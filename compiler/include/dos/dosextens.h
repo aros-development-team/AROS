@@ -61,13 +61,13 @@ struct DosLibrary
 
     /* The following fields are PRIVATE! */
     struct ErrorString	 * dl_Errors;
-    struct Device	 * dl_TimerBase;	
+    struct Device	 * dl_TimerBase;
     struct Library	 * dl_UtilityBase;
     struct Library	 * dl_IntuitionBase;
 
     /* These are AROS specific extensions. They are all PRIVATE! */
     struct timerequest	   dl_TimerIO;
-    
+
     struct SignalSemaphore dl_DosListLock;
     struct DosList	 * dl_DevInfo;
     struct ExecBase	 * dl_SysBase;
@@ -75,7 +75,8 @@ struct DosLibrary
     struct Device	 * dl_NulHandler;
     struct Unit 	 * dl_NulLock;
 
-    struct SignalSemaphore dl_LDSigSem;
+    struct SignalSemaphore dl_LDObjectsListSigSem;
+    struct List            dl_LDObjectsList;
     struct Interrupt	   dl_LDHandler;
     struct MsgPort	 * dl_LDDemonPort;
     struct Process	 * dl_LDDemonTask;
