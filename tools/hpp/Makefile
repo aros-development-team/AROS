@@ -5,9 +5,9 @@ CFLAGS	 = -g -Wall -O -I.. -DHAVE_VSNPRINT
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
-OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o expr.o
+OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o expr.o func.o
 
-FOBJS	 = format.o db.o var.o expr.o
+FOBJS	 = format.o db.o var.o
 
 all : hpp format
 
