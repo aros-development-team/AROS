@@ -31,7 +31,7 @@ void writeincclib(void)
 	    "\n"
 	    "#include <aros/libcall.h>\n",
 	    modulenameupper, modulenameupper);
-    for (linelistit = cliblines; linelistit!=NULL; linelistit = linelistit->next)
+    for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
     for (funclistit = funclist, start = 5;
 	 funclistit!=NULL;
