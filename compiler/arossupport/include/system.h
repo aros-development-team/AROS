@@ -9,12 +9,6 @@
     Lang: english
 */
 
-#ifndef _AROS
-#   define _AROS
-#endif
-#ifndef __AROS__
-#   define __AROS__
-#endif
 #ifndef AROS_MACHINE_H
 #   include <aros/machine.h>
 #endif
@@ -26,6 +20,13 @@
 #if defined(_AMIGA) || defined(AMIGA)
 #   ifndef _AMIGA /* One define for each system */
 #	define _AMIGA
+#   endif
+#else
+#   ifndef _AROS
+#       define _AROS
+#   endif
+#   ifndef __AROS__
+#       define __AROS__
 #   endif
 #endif
 
