@@ -43,7 +43,7 @@ $(LIB) : $(OBJS) $(DEPLIBS)
 
 libheader.o : $(LIBHEADER_SRC) libdefs.h
 	@echo "Compiling $< with -DLC_NO_OPENLIB..."
-	@$(CC) $(CFLAGS) -DLC_NO_OPENLIB -c $< -o $@
+	@$(CC) $(CFLAGS) -DLC_NO_OPENLIB -DLC_NO_CLOSELIB -c $< -o $@
 
 libtail.o : $(LIBTAIL_SRC) libdefs.h
 	@echo "Compiling $<..."

@@ -59,6 +59,13 @@
 /* Include the file with the #defines for this library */
 #include LC_LIBDEFS_FILE
 
+/* -----------------------------------------------------------------------
+    entry:
+
+    If someone tries to start a library as an executable, it must return
+    (LONG) -1 as result. That's what we are doing here.
+----------------------------------------------------------------------- */
+
 LONG ASM LC_BUILDNAME(entry) (void)
 {
     return(-1);
@@ -83,6 +90,20 @@ extern AROS_LH0 (BPTR, LC_BUILDNAME(ExpungeLib),
     LC_LIBHEADERTYPEPTR, lh, 3, LibHeader
 );
 
+/* -------------------------------------------------------------------------
+    ROMTag and Library inilitalization structure:
+
+    Below you find the ROMTag, which is the most important "magic" part of
+    a library (as for any other resident module). You should not need to
+    modify any of the structures directly, since all the data is referenced
+    from constants from somewhere else.
+
+    You may place the ROMTag directly after the LibStart (-> StartUp.c)
+    function as well.
+
+    EndResident can be placed somewhere else - but it must follow the
+    ROMTag and it must not be placed in a different SECTION.
+------------------------------------------------------------------------- */
 struct Resident const ALIGNED LC_RESIDENTNAME =
 {
     RTC_MATCHWORD,			    /* This is a romtag */
@@ -157,6 +178,22 @@ void  SAVEDS STDARGS L_CloseLib (LC_LIBHEADERTYPEPTR lh);
 #   undef L_CloseLib
 #   define L_CloseLib(x)        /* eps */
 #endif
+#ifndef LC_NO_EXPUNGELIB
+void  SAVEDS STDARGS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh);
+#else
+#   undef L_ExpungeLib
+#   define L_ExpungeLib(x)        /* eps */
+#endif
+
+/* -----------------------------------------------------------------------
+    InitLib:
+
+    This one is single-threaded by the Ramlib process. Theoretically you
+    can do, what you like here, since you have full exclusive control over
+    all the library code and data. But due to some bugs in Ramlib V37-40,
+    you can easily cause a deadlock when opening certain libraries here
+    (which open other libraries, that open other libraries, that...)
+----------------------------------------------------------------------- */
 
 AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
@@ -171,7 +208,7 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     if (L_InitLib (lh))
 	return (lh);
 
-    L_CloseLib (lh);
+    L_ExpungeLib (lh);
 
     {
 	ULONG negsize, possize, fullsize;
@@ -191,6 +228,18 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 #endif /* LC_NO_INITLIB */
 }
 
+/* -----------------------------------------------------------------------
+    OpenLib:
+
+    This one is enclosed within a Forbid/Permit pair by Exec V37-40. Since
+    a Wait() call would break this Forbid/Permit(), you are not allowed to
+    start any operations that may cause a Wait() during their processing.
+    It's possible, that future OS versions won't turn the multi-tasking
+    off, but instead use semaphore protection for this function.
+
+    Currently you only can bypass this restriction by supplying your own
+    semaphore mechanism.
+----------------------------------------------------------------------- */
 AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     AROS_LHA (ULONG, version, D0),
     LC_LIBHEADERTYPEPTR, lh, 1, LibHeader
@@ -215,12 +264,27 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     return(lh);
 }
 
+
+/* -----------------------------------------------------------------------
+    CloseLib:
+
+    This one is enclosed within a Forbid/Permit pair by Exec V37-40. Since
+    a Wait() call would break this Forbid/Permit(), you are not allowed to
+    start any operations that may cause a Wait() during their processing.
+    It's possible, that future OS versions won't turn the multi-tasking
+    off, but instead use semaphore protection for this function.
+
+    Currently you only can bypass this restriction by supplying your own
+    semaphore mechanism.
+----------------------------------------------------------------------- */
 AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
     LC_LIBHEADERTYPEPTR, lh, 2, LibHeader
 )
 {
 #ifndef NOEXPUNGE
     LC_LIB_FIELD(lh).lib_OpenCnt--;
+
+    L_CloseLib (lh);
 
     if(!LC_LIB_FIELD(lh).lib_OpenCnt)
     {
@@ -234,6 +298,19 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
     return (NULL);
 }
 
+/* -----------------------------------------------------------------------
+    ExpungeLib:
+
+    This one is enclosed within a Forbid/Permit pair by Exec V37-40. Since
+    a Wait() call would break this Forbid/Permit(), you are not allowed to
+    start any operations that may cause a Wait() during their processing.
+    It's possible, that future OS versions won't turn the multi-tasking
+    off, but instead use semaphore protection for this function.
+
+    Currently you only can bypass this restriction by supplying your own
+    semaphore mechanism but since expunging can't be done twice, one should
+    avoid it here.
+----------------------------------------------------------------------- */
 AROS_LH0 (BPTR, LC_BUILDNAME(ExpungeLib),
     LC_LIBHEADERTYPEPTR, lh, 3, LibHeader
 )
@@ -250,7 +327,7 @@ AROS_LH0 (BPTR, LC_BUILDNAME(ExpungeLib),
 
 	Remove((struct Node *)lh);
 
-	L_CloseLib (lh);
+	L_ExpungeLib (lh);
 
 	negsize  = LC_LIB_FIELD(lh).lib_NegSize;
 	possize  = LC_LIB_FIELD(lh).lib_PosSize;
@@ -272,6 +349,11 @@ AROS_LH0 (BPTR, LC_BUILDNAME(ExpungeLib),
     return (NULL);
 }
 
+/* -----------------------------------------------------------------------
+    ExtFunct:
+
+    This is a function which is reserved for later extension.
+----------------------------------------------------------------------- */
 AROS_LH0 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(ExtFuncLib),
     LC_LIBHEADERTYPEPTR, lh, 4, LibHeader
 )
@@ -280,6 +362,11 @@ AROS_LH0 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(ExtFuncLib),
 }
 
 #ifdef __SASC
+
+/*
+    This is only for SAS/C - its intention is to turn off internal CTRL-C
+    handling for standard C function and to avoid calls to exit() et al.
+*/
 
 #ifdef ARK_OLD_STDIO_FIX
 
