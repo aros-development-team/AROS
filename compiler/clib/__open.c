@@ -117,6 +117,13 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     pathname = __path_u2a(pathname);
     if (!pathname) return -1;
 
+    if (__doupath && pathname[0] == '\0')
+    {
+        /* On *nix "" is not really a valid file name.  */
+        errno = ENOENT;
+	return -1;
+    }
+    
     D(bug("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode));
 
     if (openmode == -1)
