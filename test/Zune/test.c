@@ -114,7 +114,7 @@ AROS_UFH3(void, display_function,
     static char buf[100];
     if (entry)
     {
-    	sprintf(buf,"%ld",*(strings-1));
+    	sprintf(buf,"%ld", (LONG) *(strings-1));
         strings[0] = buf;
         strings[1] = entry->column1;
         strings[2] = entry->column2;
@@ -134,7 +134,7 @@ AROS_UFH3(void, display2_function,
     static char buf[100];
     if (entry)
     {
-    	sprintf(buf,"line num: %ld  id: %ld",*(strings-1),entry);
+    	sprintf(buf,"line num: %ld  id: %p", (LONG) *(strings-1), entry);
         strings[0] = buf;
     } else
     {
@@ -186,7 +186,6 @@ void volume_doubleclicked(void)
 
 void drawer_doubleclicked(void)
 {
-    static char buf[1024];
     struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 
     DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
@@ -258,10 +257,9 @@ AROS_UFH3(void, hook_func_standard,
     AROS_UFHA(void *, dummy, A2),
     AROS_UFHA(void **, funcptr, A1))
 {
-	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+    void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
 
-	if (func)
-		func(funcptr + 1);
+    if (func) func((ULONG *) funcptr + 1);
 }
 
 int main(void)
