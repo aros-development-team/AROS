@@ -1,10 +1,91 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: English
 */
+
+/******************************************************************************
+
+
+    NAME
+
+        NewShell
+
+    SYNOPSIS
+
+        WINDOW,FROM
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Create a new shell in a new console window. This window will become
+        the active one. The new shell inherits most attributes of the parent
+        shell like the current directory, stack size, prompt and so on.
+        However, it is completely independent of the parent shell.
+	    The window belonging to the new shell may be specified by
+        using the WINDOW keyword. 
+
+    INPUTS
+
+        WINDOW  --  Specification of the shell window
+
+	            X         --  number of pixels from the left edge of 
+		                  the screen
+		    Y         --  number of pixels from the top edge of 
+		                  the screen
+		    WIDTH     --  width of the shell window in pixels
+		    HEIGHT    --  height of the shell window in pixels
+		    TITLE     --  text to appear in the shell window's 
+		                  title bar
+		    AUTO      --  the window automatically appears when the
+		                  program needs input or output
+		    ALT       --  the window appears in the specified size
+		                  and position when the zoom gadget is clicked
+		    BACKDROP  --  the window is a backdrop window
+		    CLOSE     --  include a close gadget
+		    INACTIVE  --  the window is not made active when opened
+		    NOBORDER  --  the window is borderless, only the size,
+		                  depth and zoom gadgets are available
+		    NOCLOSE   --  the window has no close gadget
+		    NODEPTH   --  the window has no depth gadget
+		    NODRAG    --  the window cannot be drag; implies NOCLOSE
+		    NOSIZE    --  the window has no size gadget
+		    SCREEN    --  name of a public screen to open the window on
+		    SIMPLE    --  if the window is enlarged the text expands to
+		                  fill the available space
+		    SMART     --  if the window is enlarged the text will not
+                                  expand
+		    WAIT      --  the window can only be closed by selecting
+                                  the close gadget is selected or entering
+				  CTRL-\.
+		    
+
+        FROM    --  File to execute before resorting to normal shell
+	            operations. If nothing is specified S:Shell-Startup
+		    is used.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        NewShell "CON:10/10/640/480/My own shell/CLOSE"
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -17,54 +98,78 @@ static const char version[] = "$VER: newshell 41.1 (14.3.1997)\n";
 
 int main (int argc, char ** argv)
 {
-    STRPTR args[2] = { "CON:10/10/640/480/AROS-Shell/CLOSE", "S:Shell-Startup" };
+    IPTR args[2] = { (IPTR)"CON:10/10/640/480/AROS-Shell/CLOSE",
+		     (IPTR)"S:Shell-Startup" };
+
     struct RDArgs  *rda;
-    BPTR            in, out, shell, lock;
-    STRPTR          s1, s2, s3, buf;
     struct Process *process;
-    LONG            error = RETURN_ERROR;
+    
+    BPTR    in, out, shell, lock;
+    STRPTR  s1, s2, s3, buf;
+    LONG    error = RETURN_ERROR;
+    
+    rda = ReadArgs("WINDOW,FROM", args, NULL);
 
-    PutStr("newshell\n");
-
-    rda = ReadArgs("WINDOW,FROM", (IPTR *)args, NULL);
-    if(rda != NULL)
+    if (rda != NULL)
     {
-	s1 = s2 = (STRPTR)args[1];
-	while(*s2++)
-	    ;
-	buf = (STRPTR)AllocVec(6 + 2*(s2 - s1), MEMF_ANY);
-	if(buf != NULL)
+	int length;
+
+	s1 = (STRPTR)args[1];
+	length = strlen(s1);
+
+	buf = (STRPTR)AllocVec(6 + 2*length, MEMF_ANY);
+
+	if (buf != NULL)
 	{
-	    CopyMem("FROM ", buf, 5);
-	    s3 = buf + 5;
-	    s2 = s1;
-	    *s3++ = '\"';
-	    while(*s1)
+	    CopyMem("FROM \"", buf, 6);
+
+	    s3 = buf + 6;
+
+	    while (*s1 != 0)
 	    {
-		if(*s1 == '*' || *s1== '\"' || *s1 == '\n')
+		switch(*s1)
+		{
+		case '\n':
 		    *s3++ = '*';
-		if(*s1 == '\n')
 		    *s3++ = 'n';
-		else
+		    break;
+
+		case '\"':
+		    *s3++ = '*';
+		    break;
+
+		case '*':
+		    *s3++ = '*';
+		    *s3++ = '*';
+		    break;
+		    
+		default:
 		    *s3++ = *s1;
+		}
+
 		s1++;
 	    }
+
 	    *s3++ = '\"';
-	    *s3 = 0;
+	    *s3   = 0;
 
 	    shell = LoadSeg("c:shell");
-	    if(shell)
+	    
+	    if(shell != NULL)
 	    {
 		out = Open(args[0], MODE_READWRITE);
-		if(out)
+
+		if(out != NULL)
 		{
 		    /* Clone output filehandle */
 		    
-		    lock=DupLockFromFH(out);
-		    if(lock)
+		    lock = DupLockFromFH(out);
+
+		    if(lock != NULL)
 		    {
-			in=OpenFromLock(lock);
-			if(in)
+			in = OpenFromLock(lock);
+
+			if(in != NULL)
 			{
 			    struct TagItem tags[]=
 			    {
@@ -85,29 +190,40 @@ int main (int argc, char ** argv)
 
 			    process = CreateNewProc(tags);
 
-			    if(process != NULL)
+			    if (process != NULL)
 			    {
 				out = in = shell = NULL;
 				error = 0;
 			    }
+
 			    Close(in);
 			}
 			else
+			{
 			    UnLock(lock);
+			}
 		    }
+
 		    Close(out);
 		}
+
 		UnLoadSeg(shell);
 	    }
+
 	    FreeVec(buf);
 	}
+
 	FreeArgs(rda);
     }
     else
+    {
 	error = RETURN_FAIL;
+    }
 
-    if(error)
+    if(error != 0)
+    {
 	PrintFault(IoErr(), "NewShell");
+    }
 
     return error;
 }
