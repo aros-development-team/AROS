@@ -1,6 +1,9 @@
-/* $Id$
+/* 
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
-	Desc: Boot AROS native
+    Desc: Boot AROS native
+    Lang: english
 */
 
 #define DEBUG 1
