@@ -375,7 +375,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	data->mad_Flags &= ~MADF_SELECTED;
     }
 
-    if ((data->mad_Frame != 0) && (data->mad_FrameTitle))
+    if (data->mad_FrameTitle != NULL)
     {
     	data->mad_FrameTitle = StrDup(data->mad_FrameTitle);
     }
@@ -403,7 +403,7 @@ static ULONG Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
-    if ((data->mad_Frame > 0) && (data->mad_FrameTitle))
+    if (data->mad_FrameTitle != NULL)
     {
 	FreeVec((APTR)data->mad_FrameTitle);
     }
@@ -471,6 +471,12 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_FillArea:
 		    _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
 		    break;
+
+	    case MUIA_Frame:
+		/* this is not documented in MUI but it is possible,
+		   and needed to suppress frame for external images */
+		data->mad_Frame = tag->ti_Data;
+		break;
 
 	    case MUIA_ControlChar:
 		if (_flags(obj) & MADF_SETUP)
