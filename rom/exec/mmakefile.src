@@ -7,6 +7,30 @@ OS_INCLUDES := -I. -I$(GENINCDIR)
 LIBNAME  := exec
 ULIBNAME := Exec
 
+ALL_FUNCTIONS	:= \
+	abortio adddevice addhead addintserver addlibrary addmemhandler \
+	addmemlist addport addresource addsemaphore addtail addtask alert \
+	allocabs allocate allocentry allocmem allocpooled allocsignal \
+	alloctrap allocvec attemptsemaphore attemptsemaphoreshared availmem \
+	cachecleare cacheclearu cachecontrol cachepostdma cachepredma cause \
+	checkio childfree childorphan childstatus childwait closedevice \
+	closelibrary coldreboot copymem copymemquick createiorequest \
+	createmsgport createpool deallocate debug deleteiorequest \
+	deletemsgport deletepool disable dispatch doio enable enqueue \
+	exception findname findport findresident findsemaphore findtask \
+	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
+	getmsg initcode initresident initsemaphore initstruct insert \
+	makefunctions makelibrary obtainquickvector obtainsemaphore \
+	obtainsemaphorelist obtainsemaphoreshared oldopenlibrary opendevice \
+	openlibrary openresource permit preparecontext procure putmsg rawdofmt \
+	rawioinit rawmaygetchar rawputchar releasesemaphore \
+	releasesemaphorelist remdevice remhead remintserver remlibrary \
+	remmemhandler remove remport remresource remsemaphore remtail remtask \
+	replymsg reschedule sendio setexcept setfunction setintvector \
+	setsignal setsr settaskpri signal stackswap sumkickdata sumlibrary \
+	superstate supervisor switch taggedopenlibrary typeofmem userstate \
+	vacate wait waitio waitport
+
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
@@ -43,29 +67,8 @@ INIT_FILE   := $(LIBNAME)_init
 SYS_FILES   := execfunctions prepareexecbase
 FILES	    := traphandler exec_util idletask
 
-FUNCTIONS   := \
-	abortio adddevice addhead addintserver addlibrary addmemhandler \
-	addmemlist addport addresource addsemaphore addtail addtask alert \
-	allocabs allocate allocentry allocmem allocpooled allocsignal \
-	alloctrap allocvec attemptsemaphore attemptsemaphoreshared availmem \
-	cachecleare cacheclearu cachecontrol cachepostdma cachepredma cause \
-	checkio childfree childorphan childstatus childwait closedevice \
-	closelibrary coldreboot copymem copymemquick createiorequest \
-	createmsgport createpool deallocate debug deleteiorequest \
-	deletemsgport deletepool disable dispatch doio enable enqueue \
-	exception findname findport findresident findsemaphore findtask \
-	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
-	getmsg initcode initresident initsemaphore initstruct insert \
-	makefunctions makelibrary obtainquickvector obtainsemaphore \
-	obtainsemaphorelist obtainsemaphoreshared oldopenlibrary opendevice \
-	openlibrary openresource permit preparecontext procure putmsg rawdofmt \
-	rawioinit rawmaygetchar rawputchar releasesemaphore \
-	releasesemaphorelist remdevice remhead remintserver remlibrary \
-	remmemhandler remove remport remresource remsemaphore remtail remtask \
-	replymsg reschedule sendio setexcept setfunction setintvector \
-	setsignal setsr settaskpri signal stackswap sumkickdata sumlibrary \
-	superstate supervisor switch taggedopenlibrary typeofmem userstate \
-	vacate wait waitio waitport
+FUNCTIONS   := $(ALL_FUNCTIONS)
+
 # ***** END ***************
 endif
 
@@ -77,7 +80,6 @@ endif
 # Do the magic required for function replacement.
 # Keep this value for later
 ALL_FILES	:= $(FILES)
-ALL_FUNCTIONS	:= $(FUNCTIONS)
 FUNCTABLE_SRCS	:= $(foreach f,$(FUNCTIONS),$(f).c)
 
 %prepare_replace rom/exec
