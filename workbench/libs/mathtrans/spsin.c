@@ -55,55 +55,55 @@ AROS_LH1(float, SPSin,
 )
 {
     AROS_LIBFUNC_INIT
-
-  LONG z,Res,ysquared,yabs,tmp;
-  yabs = fnum1 & (FFPMantisse_Mask + FFPExponent_Mask);
-
-  if (FFP_Pinfty == yabs)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return FFP_NAN;
-  }
-
-  z = SPFloor(SPDiv(pi, yabs));
-  tmp  = SPMul(z,pi);
-  tmp |= FFPSign_Mask; /* tmp = -tmp; */
-  yabs = SPAdd(yabs, tmp);
-
-  if ( (char)yabs > (char)pio2  &&  (yabs & FFPMantisse_Mask) > (pio2 & FFPMantisse_Mask) )
-  {
-    yabs |= FFPSign_Mask;
-    yabs  = SPAdd(pi, yabs);
-  }
-  ysquared = SPMul(yabs,yabs);
-  Res = SPMul(yabs,
-        SPAdd(sinf1,
-        SPMul(ysquared,
-        SPAdd(sinf2,
-        SPMul(ysquared,
-        SPAdd(sinf3,
-        SPMul(ysquared,
-        SPAdd(sinf4,
-        SPMul(ysquared,
-        SPAdd(sinf5,
-        SPMul(ysquared, sinf6)))))))))));
-
-  if ((char)fnum1 < 0 )
-    Res ^= FFPSign_Mask;
-
-  if (TRUE == intern_SPisodd(z))
-    Res ^= FFPSign_Mask;
-
-  if (0 == Res)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  if ((char)Res < 0)
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-
-  return Res;
+    
+    LONG z,Res,ysquared,yabs,tmp;
+    yabs = fnum1 & (FFPMantisse_Mask + FFPExponent_Mask);
+    
+    if (FFP_Pinfty == yabs)
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return FFP_NAN;
+    }
+    
+    z = SPFloor(SPDiv(pi, yabs));
+    tmp  = SPMul(z,pi);
+    tmp |= FFPSign_Mask; /* tmp = -tmp; */
+    yabs = SPAdd(yabs, tmp);
+    
+    if ( (char)yabs > (char)pio2  &&  (yabs & FFPMantisse_Mask) > (pio2 & FFPMantisse_Mask) )
+    {
+        yabs |= FFPSign_Mask;
+        yabs  = SPAdd(pi, yabs);
+    }
+    ysquared = SPMul(yabs,yabs);
+    Res = SPMul(yabs,
+          SPAdd(sinf1,
+          SPMul(ysquared,
+          SPAdd(sinf2,
+          SPMul(ysquared,
+          SPAdd(sinf3,
+          SPMul(ysquared,
+          SPAdd(sinf4,
+          SPMul(ysquared,
+          SPAdd(sinf5,
+          SPMul(ysquared, sinf6)))))))))));
+    
+    if ((char)fnum1 < 0 ) Res ^= FFPSign_Mask;
+    
+    if (TRUE == intern_SPisodd(z)) Res ^= FFPSign_Mask;
+    
+    if (0 == Res)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+    
+    if ((char)Res < 0)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    
+    return Res;
 
     AROS_LIBFUNC_EXIT
 }
