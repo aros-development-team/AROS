@@ -1,10 +1,10 @@
 #include <hardware/intbits.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/asmcall.h>
 #include <signal.h>
-#define timeval     linux_timeval
+#define timeval     sys_timeval
 #include <sys/time.h>
 #undef timeval
 
