@@ -1,5 +1,8 @@
 ----------------------------------------------------------------------------
-Files for AmigaOS only (not used by AROS):
+Files for AmigaOS only (not used by AROS). This are mostly files used
+by the original reqtools.library build based on SAS C/Dice. The new AmigaOS
+reqtools.library >= V39.0 build based on GCC does not use most of this files
+anymore!
 ----------------------------------------------------------------------------
 
 DMakeFile
@@ -19,14 +22,18 @@ reqtools_rev.i
 compilerspecific.h
 
 ----------------------------------------------------------------------------
-NEW Files for AmigaOS only (not used by AROS):
+NEW Files for AmigaOS only (not used by AROS). This files are the new ones
+which were introduced for the GCC based build of AmigaOS reqtools.library
+>= V39.0, which does not use any asm functions anymore.
 ----------------------------------------------------------------------------
 
 reqtoolsami_init.c
 Makefile.gcc
 
 ----------------------------------------------------------------------------
-New .c and .h files containing ASM functions converted to C for AROS:
+New .c and .h files containing ASM functions converted to C for AROS. This
+functions are also used by the new GCC based build of the AmigaOS reqtools
+library >= V39.0, which as well does not use any asm functions anymore.
 ----------------------------------------------------------------------------
 
 boopsi.c (converted from boopsi.asm)
@@ -44,7 +51,7 @@ libdefs.h
 endtag.c
 
 ----------------------------------------------------------------------------
-Files for AROS only
+Files for AROS only:
 ----------------------------------------------------------------------------
 
 AROS Makefile:
@@ -71,6 +78,8 @@ rtfreerequest.c
 rtgetlonga.c
 rtgetstringa.c
 rtgetvscreensize.c
+rtinternalgetpassword.c
+rtinternalenterpassword.c
 rtlockprefs.c
 rtlockwindow.c
 rtpaletterequesta.c
