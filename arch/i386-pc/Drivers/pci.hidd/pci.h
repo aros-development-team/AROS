@@ -176,12 +176,16 @@ struct pci_staticdata
 
 typedef struct
 {
-	struct Node			node;
+	struct Node		node;
 	HIDDT_PCI_Device	dev;
 } Noded_PCI_Device;
 
 OOP_Class *init_pciclass  ( struct pci_staticdata * );
 VOID free_pciclass  ( struct pci_staticdata * );
+void scanPCIBuses  ( struct pci_staticdata *, struct ExecBase * );
+void getPCIClassDesc  ( UBYTE, UBYTE, UBYTE, STRPTR *, STRPTR *, STRPTR * );
+ULONG readPCIConfigLong  ( UBYTE, UBYTE, UBYTE, UBYTE );
+void writePCIConfigLong  ( UBYTE, UBYTE, UBYTE, UBYTE, ULONG );
 
 #define PSD(cl) ((struct pci_staticdata *)cl->UserData)
 
