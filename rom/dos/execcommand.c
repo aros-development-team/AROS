@@ -37,7 +37,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     struct TagItem tags[] = { { NP_Seglist    , NULL        },        /* 0 */
 			      { NP_FreeSeglist, (IPTR)TRUE  },        /* 1 */
 			      { NP_Priority   , me->pr_Task.tc_Node.ln_Pri }, /* 2 */
-			      { NP_StackSize  , 4096        },        /* 3 */
+			      { NP_StackSize  , AROS_STACKSIZE },     /* 3 */
 			      { NP_Path       , NULL        },        /* 4 */
 			      { NP_Name       , (IPTR)"Background CLI" }, /*5*/
 			      { NP_Input      , NULL        },        /* 6 */
