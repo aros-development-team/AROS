@@ -46,8 +46,9 @@ struct HIDDBitMapData
     UWORD linePat;   /* LinePattern                                      */
     APTR  planeMask; /* Pointer to a shape bitMap                        */
     Object *gc;
-    Object *bitmap;
+    Object *bitMap;
     /* WARNING: structure could be extented in the future                */
+    ULONG colExp;	/* Color expansion mode	*/
 
 };
 
@@ -64,6 +65,7 @@ struct HIDDGCData
     UWORD linePat;   /* LinePattern                                      */
     APTR  planeMask; /* Pointer to a shape bitMap                        */
     APTR  userData;  /* pointer to own data                              */
+    ULONG colExp;
     /* WARNING: structure could be extented in the future                */
 };
 

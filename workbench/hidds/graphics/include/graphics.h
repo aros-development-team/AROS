@@ -20,6 +20,7 @@
 
 #include <utility/utility.h>
 
+
 #define CLID_Hidd_Gfx           "hidd.graphics.base.graphics"
 #define CLID_Hidd_BitMap        "hidd.graphics.base.bitmap"
 #define CLID_Hidd_GC		"hidd.graphics.base.gc"
@@ -129,6 +130,7 @@ enum
     moHidd_BitMap_FillText,
     moHidd_BitMap_FillSpan,
     moHidd_BitMap_Clear,
+    moHidd_BitMap_BlitColExp,
     moHidd_BitMap_PrivateSet
 };
 
@@ -160,8 +162,8 @@ enum {
     aoHidd_BitMap_LinePattern,         /* [.SG] Pattern for line drawing          */
     aoHidd_BitMap_PlaneMask,           /* [.SG] Shape bitmap                       */
 
-    aoHidd_BitMap_GC,           /* [ISG]  bitmap's GC                       */
-
+    aoHidd_BitMap_GC,           /* [ISG]  bitmaps GC                       */
+    aoHidd_BitMap_ColExpMode,	/* [ISG] Mode for color expansion operations */
     
     num_Hidd_BitMap_Attrs
 };    
@@ -191,6 +193,7 @@ enum {
 #define aHidd_BitMap_LinePattern (HiddBitMapAttrBase + aoHidd_BitMap_LinePattern)
 #define aHidd_BitMap_PlaneMask   (HiddBitMapAttrBase + aoHidd_BitMap_PlaneMask)
 #define aHidd_BitMap_GC		 (HiddBitMapAttrBase + aoHidd_BitMap_GC)
+#define aHidd_BitMap_ColExpMode	 (HiddBitMapAttrBase + aoHidd_BitMap_ColExpMode)
 
 
 
@@ -302,6 +305,17 @@ struct pHidd_BitMap_Clear
     MethodID    mID;
 };
 
+struct pHidd_BitMap_BlitColExp
+{
+    MethodID mID;
+    Object	*srcBitMap;
+    WORD	srcX;
+    WORD	srcY;
+    WORD	destX;
+    WORD	destY;
+    UWORD	width;
+    UWORD	height;
+};
 
 
 /**** Graphics context definitions ********************************************/
@@ -327,6 +341,7 @@ enum
                                    /*       changing                           */
     aoHidd_GC_LinePattern,         /* [.SG] Pattern for line drawing          */
     aoHidd_GC_PlaneMask,           /* [.SG] Shape bitmap                       */
+    aoHidd_GC_ColExpMode,	   /* [.SG] Mode for color expansion */
     
     num_Hidd_GC_Attrs
 };
@@ -340,6 +355,7 @@ enum
 #define aHidd_GC_ColorMask   (HiddGCAttrBase + aoHidd_GC_ColorMask)
 #define aHidd_GC_LinePattern (HiddGCAttrBase + aoHidd_GC_LinePattern)
 #define aHidd_GC_PlaneMask   (HiddGCAttrBase + aoHidd_GC_PlaneMask)
+#define aHidd_GC_ColExpMode  (HiddGCAttrBase + aoHidd_GC_ColExpMode)
 
 
 /* Drawmodes for a graphics context */
@@ -352,6 +368,8 @@ enum
 #define HIDDV_GC_DrawMode_XOR  0x06 /* XOR                                  */
 
 
+#define vHidd_GC_ColExp_Transparent	(1 << 0)
+#define vHidd_GC_ColExp_Opaque		(1 << 1)
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
@@ -386,6 +404,5 @@ VOID     HIDD_BM_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWOR
 VOID     HIDD_BM_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
 VOID     HIDD_BM_FillSpan        (Object *obj);
 VOID     HIDD_BM_Clear           (Object *obj);
-
-
+VOID	 HIDD_BM_BlitColExp	 (Object *destObj, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
 #endif /* HIDD_GRAPHICS_H */

@@ -388,3 +388,24 @@ VOID     HIDD_BM_PutBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width
 
     DoMethod(obj, (Msg) &p);
 }
+
+/***************************************************************/
+
+VOID	 HIDD_BM_BlitColExp	 (Object *obj, Object *srcBitMap, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_BlitColExp p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_BlitColExp);
+        
+    p.mID	= mid;
+    p.srcBitMap	= srcBitMap;
+    p.srcX	= srcX;
+    p.srcY	= srcY;
+    p.destX 	= destX;
+    p.destY	= destY;
+    p.width	= width;
+    p.height	= height;
+
+    DoMethod(obj, (Msg) &p);
+}

@@ -48,9 +48,6 @@
 #undef UtilityBase
 #define UtilityBase (X11GfxBase->utilitybase)
 
-#define PEN_BITS    4
-#define NUM_COLORS  (1L << PEN_BITS)
-#define PEN_MASK    (NUM_COLORS - 1)
 
 
 #define GetSysDisplay() (data->display)
@@ -59,69 +56,36 @@
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 static AttrBase HiddBitMapAttrBase = 0;
+static AttrBase HiddX11GfxAB = 0;
+static AttrBase HiddX11OsbmAB = 0;
+
+static struct abdescr attrbases[] = 
+{
+    { IID_Hidd_BitMap,	&HiddBitMapAttrBase },
+    /* Private bases */
+    { IID_Hidd_X11Gfx,	&HiddX11GfxAB	},
+    { IID_Hidd_X11Osbm,	&HiddX11OsbmAB },
+    { NULL, NULL }
+};
 
 /*********** BitMap::New() *************************************/
-
-/*
-   Inits sysdisplay, sysscreen, colormap, etc.. */
-static BOOL initx11stuff(struct bitmap_data *data)
+struct bitmap_data
 {
-/*    XColor fg, bg; */
-    BOOL ok = TRUE;
-    char *displayname;
-
-    /* Try to get the display */
-    if (!(displayname = getenv("DISPLAY")))
-	displayname =":0.0";
-
-
-    data->display = XOpenDisplay(displayname);
-    if (!data->display)
-    	ok = FALSE;
-    else
-    {
-    	data->screen = DefaultScreen( GetSysDisplay() );
-	
-	data->depth  = DisplayPlanes( GetSysDisplay(), GetSysScreen() );
-	data->colmap = DefaultColormap( GetSysDisplay(), GetSysScreen() );
-	
-	
-	data->maxpen = NUM_COLORS;
-	
-	/* Create cursor */
-/*	data->syscursor = XCreateFontCursor( GetSysDisplay(), XC_top_left_arrow);
-	XRecolorCursor( GetSysDisplay(), GetSysCursor(), &fg, &bg);
-*/
-    } /* if (Could get sysdisplay) */
+    Window 	xwindow;
+    Cursor	cursor;
+    long 	maxpen;
+    unsigned long sysplanemask;
+    Colormap	colmap;
+    int		depth;
+    long	*hidd2x11cmap;
+    GC 		gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
+    Display	*display;
+    int		screen;
     
-    return ok;
+};
 
-}
 
-static VOID cleanupx11stuff(struct bitmap_data *data)
-{
-    /* Do nothing for now */
-    return;
-}
 
-static ULONG map_x11_to_hidd(struct bitmap_data *data, ULONG x11pixel)
-{
-    ULONG hidd_pen = 0;
-    BOOL pix_found = FALSE;
-    for (hidd_pen = 0; hidd_pen < 256; hidd_pen ++)
-    {
-    	if (x11pixel == data->hidd2x11cmap[hidd_pen])
-	{
-	    pix_found = TRUE;
-	    break;
-	}
-    }
-    if (!pix_found)
-    	hidd_pen = 0UL;
-	
-    return hidd_pen;	
-    
-}
 
 
 static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
@@ -135,55 +99,52 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
     {
     	struct bitmap_data *data;
 	
-        IPTR width, height, depth, displayable;
+        IPTR width, height, depth;
+	XSetWindowAttributes winattr;
 	
         data = INST_DATA(cl, o);
 	
 	/* clear all data  */
         memset(data, 0, sizeof(struct bitmap_data));
-
-	if (displayable)
-	{
-	    if (!initx11stuff(data))
-	    	ok = FALSE;
-	    else
-	    {
-	    	XSetWindowAttributes winattr;
-		
-		D(bug("Got sysdisplay\n"));
+	
+	/* Get some info passed to us by the x11gfxhidd class */
+	data->display = (Display *)GetTagData(aHidd_X11Gfx_SysDisplay, 0, msg->attrList);
+	data->screen  = GetTagData(aHidd_X11Gfx_SysScreen, 0, msg->attrList);
+	data->hidd2x11cmap = (long *)GetTagData(aHidd_X11Gfx_Hidd2X11CMap, 0, msg->attrList);
+	data->cursor = (Cursor)GetTagData(aHidd_X11Gfx_SysCursor, 0, msg->attrList);
+	data->colmap = (Colormap)GetTagData(aHidd_X11Gfx_ColorMap, 0, msg->attrList);
 		
 	
-	    	/* Get attr values */
-	    	GetAttr(o, aHidd_BitMap_Width,		&width);
-	    	GetAttr(o, aHidd_BitMap_Height, 	&height);
-	    	GetAttr(o, aHidd_BitMap_Depth,		&depth);
-	    	GetAttr(o, aHidd_BitMap_Displayable,	&displayable);
+	/* Get attr values */
+	GetAttr(o, aHidd_BitMap_Width,		&width);
+	GetAttr(o, aHidd_BitMap_Height, 	&height);
+	GetAttr(o, aHidd_BitMap_Depth,		&depth);
 	
-	    	/* Open an X window to be used for viewing */
+	/* Open an X window to be used for viewing */
 	    
-	   	D(bug("Displayable bitmap\n"));
+	D(bug("Displayable bitmap\n"));
 	    
-	    	/* Listen for all sorts of events */
-	    	winattr.event_mask = 0;
-	    	/* Mouse buttons .. */
-	    	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
-	   	/* Mouse movement .. */
-	   	winattr.event_mask |= PointerMotionMask;
-	    	/* Key press & release .. */
-	    	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
+	/* Listen for all sorts of events */
+	winattr.event_mask = 0;
+	/* Mouse buttons .. */
+	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
+	/* Mouse movement .. */
+	winattr.event_mask |= PointerMotionMask;
+	/* Key press & release .. */
+	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
 	    
-		/* We must allways have this one */
-		winattr.event_mask |= StructureNotifyMask;
+	/* We must allways have this one */
+	winattr.event_mask |= StructureNotifyMask;
 	    
-	    	/* Use backing store for now. (Uses lots of mem) */
-	    	winattr.backing_store = Always;
+	/* Use backing store for now. (Uses lots of mem) */
+	winattr.backing_store = Always;
 	    
-	    	winattr.cursor = GetSysCursor();
-	    	winattr.save_under = True;
-	    	winattr.background_pixel = WhitePixel(GetSysDisplay(), GetSysScreen());
+	winattr.cursor = GetSysCursor();
+	winattr.save_under = True;
+	winattr.background_pixel = WhitePixel(GetSysDisplay(), GetSysScreen());
 	    
-	    	D(bug("Creating XWindow\n"));
-	    	data->xwindow = XCreateWindow( GetSysDisplay()
+	D(bug("Creating XWindow\n"));
+	data->xwindow = XCreateWindow( GetSysDisplay()
 	    		, DefaultRootWindow (GetSysDisplay())
 			, 0	/* leftedge 	*/
 			, 0	/* topedge	*/
@@ -201,56 +162,48 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 			, &winattr
 	   	 );
 	    
-	    	D(bug("Xwindow : %p\n", data->xwindow));
-	   	if (data->xwindow)
-	    	{
-	 	    XGCValues gcval;
+	D(bug("Xwindow : %p\n", data->xwindow));
+	if (data->xwindow)
+	{
+	    XGCValues gcval;
 		    
-	            D(bug("Calling XMapRaised\n"));
-	    	    XMapRaised (GetSysDisplay(), data->xwindow);
+	    D(bug("Calling XMapRaised\n"));
+	    XMapRaised (GetSysDisplay(), data->xwindow);
 
-		    /* Wait for MapNotify (ie. for window to be displayed) */
-		    for (;;)
-		    {
-		        XEvent e;
-			XNextEvent(data->display, &e);
-			if (e.type == MapNotify)
-			    break;
-		    }
+	    /* Wait for MapNotify (ie. for window to be displayed) */
+	    for (;;)
+	    {
+		XEvent e;
+		XNextEvent(data->display, &e);
+		if (e.type == MapNotify)
+		    break;
+	    }
 		
 		
-	 	    /* Create X11 GC */
+	    /* Create X11 GC */
 	 
-	 	    gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
-	 	    gcval.graphics_exposures = True;
+	    gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
+	    gcval.graphics_exposures = True;
 	 
-	 	    data->gc = XCreateGC( data->display
+	    data->gc = XCreateGC( data->display
 	 		, DefaultRootWindow( data->display )
 			, GCPlaneMask | GCGraphicsExposures
 			, &gcval
 		    );
-		    if (data->gc)
-		    {
-		    }
-		    else
-		    {
-			ok = FALSE;
-		    }
+	    if (data->gc)
+	    {
+	    }
+	    else
+	    {
+		ok = FALSE;
+	    }
 	
-	    	}
-	    	else
-	    	{
-	             ok = FALSE;
-	    	} /* if (Xwindow created) */
-		
-	    
-	    } /* if (Could get sysdisplay) */
 	}
 	else
 	{
-	    /* Do nothing, as this is an offscreen bitmap handled by superclass */
-	}
-
+	    ok = FALSE;
+	} /* if (Xwindow created) */
+		
     	if (!ok)
     	{
     
@@ -283,7 +236,6 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
 	XFlush( GetSysDisplay() );
     }
     
-    cleanupx11stuff(data);
     
     
     DoSuperMethod(cl, o, msg);
@@ -479,7 +431,7 @@ static VOID bitmap_fillrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
 	        ULONG dest;
 		ULONG val = 0UL;
 		
-		dest = map_x11_to_hidd(data, XGetPixel(image, x, y));
+		dest = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(image, x, y));
 		    
 		/* Apply drawmodes to pixel */
 	   	if(mode & 1) val = ( src &  dest);
@@ -582,8 +534,8 @@ static VOID bitmap_copybox(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
 		ULONG dest;
 		ULONG val = 0;
 		
-		src  = map_x11_to_hidd(data, XGetPixel(src_image, x, y));
-		dest = map_x11_to_hidd(data, XGetPixel(dst_image, x, y));
+		src  = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(src_image, x, y));
+		dest = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(dst_image, x, y));
 		    
 		/* Apply drawmodes to pixel */
 	   	if(mode & 1) val = ( src &  dest);
@@ -676,7 +628,7 @@ static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
     {
 	for (x = 0; x < msg->width; x ++)
 	{
-	    *pixarray ++ = map_x11_to_hidd(data, XGetPixel(image, x, y));
+	    *pixarray ++ = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(image, x, y));
 	}
 	
     }
@@ -740,7 +692,7 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
 		ULONG val = 0;
 
 		src  = *pixarray ++;
-		dest = map_x11_to_hidd(data, XGetPixel(image, x, y));
+		dest = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(image, x, y));
 		    
 		/* Apply drawmodes to hidd pen */
 	   	if(mode & 1) val = ( src &  dest);
@@ -772,14 +724,84 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
 
 
 
+/*** BitMap::BlitColExp() **********************************************/
+static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColExp *msg)
+{
+    ULONG cemd;
+    XImage *src_im, *dest_im;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    ULONG fg, bg, fg_pixel, bg_pixel;
+    LONG x, y;
+    
+    
+    /* Get the color expansion mode */
+    GetAttr(o, aHidd_BitMap_ColExpMode, &cemd);
+    
+    dest_im = XGetImage(data->display
+    	, data->xwindow
+	, msg->destX, msg->destY
+	, msg->width, msg->height
+	, AllPlanes
+	, ZPixmap);
+    	
+    
+    if (!dest_im)
+    	return;
 
+    GetAttr(o, aHidd_BitMap_Foreground, &fg);
+    GetAttr(o, aHidd_BitMap_Background, &bg);
+    
+    fg_pixel = data->hidd2x11cmap[fg];
+    bg_pixel = data->hidd2x11cmap[bg];
+    
+
+    /* Get XImage from offscreen HIDD bitmap */
+    GetAttr(msg->srcBitMap, aHidd_X11Osbm_XImage, (IPTR *)&src_im);
+
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+	{
+	    ULONG is_set;
+	    
+	    is_set = XGetPixel(src_im, x + msg->srcX, y + msg->srcY);
+	    
+	    if (is_set)
+	    {
+	    	XPutPixel(dest_im, x + msg->destX, y + msg->destY, fg_pixel);
+	    }
+	    else
+	    {
+		if (cemd & vHidd_GC_ColExp_Opaque)
+		{
+		    XPutPixel(dest_im, x + msg->destX, y + msg->destY, bg_pixel);
+		}
+	    }
+	} /* for (each x) */
+	    
+    } /* for (each y) */
+    
+    
+    /* Put image back into display */
+    XPutImage(data->display
+    	, data->xwindow
+	, data->gc
+	, dest_im
+	, 0, 0
+	, msg->destX, msg->destY
+	, msg->width, msg->height
+    );
+    
+    XDestroyImage(dest_im);
+}
 
 /*** init_bitmapclass *********************************************************/
 
 #undef X11GfxBase
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 9
+#define NUM_BITMAP_METHODS 10
 
 
 Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
@@ -803,6 +825,7 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
     	{(IPTR (*)())bitmap_copybox,		moHidd_BitMap_CopyBox},
     	{(IPTR (*)())bitmap_getbox,		moHidd_BitMap_GetBox},
     	{(IPTR (*)())bitmap_putbox,		moHidd_BitMap_PutBox},
+    	{(IPTR (*)())bitmap_blitcolexp,		moHidd_BitMap_BlitColExp},
         {NULL, 0UL}
     };
     
@@ -837,8 +860,7 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
             cl->UserData     = (APTR) X11GfxBase;
            
             /* Get attrbase for the BitMap interface */
-            HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-            if(HiddBitMapAttrBase)
+	    if (obtainattrbases(attrbases, OOPBase))
             {
                 AddClass(cl);
             }
@@ -869,8 +891,7 @@ void free_bitmapclass(struct x11gfxbase *X11GfxBase)
         if(X11GfxBase->bitmapclass) DisposeObject((Object *) X11GfxBase->bitmapclass);
         X11GfxBase->bitmapclass = NULL;
 	
-        if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-	HiddBitMapAttrBase = 0;
+	releaseattrbases(attrbases, OOPBase);
 	
     }
 

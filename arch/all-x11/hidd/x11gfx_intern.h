@@ -22,22 +22,6 @@
 #endif
 
 #include <X11/Xlib.h>
-struct bitmap_data
-{
-    Window 	xwindow;
-    Cursor	cursor;
-    long 	maxpen;
-    unsigned long sysplanemask;
-    Colormap	colmap;
-    int		depth;
-    long	hidd2x11cmap[256];
-    GC 		gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
-    Display	*display;
-    int		screen;
-    
-};
-
-
 
 /* Library stuff */
 struct x11gfxbase
@@ -52,17 +36,72 @@ struct x11gfxbase
     Class		*gfxclass;
     Class		*gcclass;
     Class		*bitmapclass;
+    Class		*osbitmapclass;
 	
 };
 
 
-Class *init_gfxclass   ( struct x11gfxbase *x11gfxbase );
-Class *init_gcclass    ( struct x11gfxbase *X11GfxBase );
-Class *init_bitmapclass( struct x11gfxbase *X11GfxBase );
+Class *init_gfxclass   		( struct x11gfxbase *x11gfxbase );
+Class *init_osbitmapclass    	( struct x11gfxbase *X11GfxBase );
+Class *init_bitmapclass		( struct x11gfxbase *X11GfxBase );
 
-VOID free_gcclass	( struct x11gfxbase *X11GfxBase );
+VOID free_osbitmapclass	( struct x11gfxbase *X11GfxBase );
 VOID free_bitmapclass	( struct x11gfxbase *X11GfxBase );
 VOID free_gfxclass	( struct x11gfxbase *X11GfxBase );
+
+ULONG map_x11_to_hidd(long *penarray, ULONG x11pixel);
+XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBYTE height);
+VOID free_ximage(XImage *image);
+
+
+struct abdescr
+{
+    STRPTR interfaceid;
+    AttrBase *attrbase;
+};
+
+BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase);
+VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
+
+/* Private Attrs and methods for the X11Gfx Hidd */
+
+#define IID_Hidd_X11Gfx "hidd.graphics.x11gfx"
+#define IID_Hidd_X11Osbm "hidd.graphics.x11osbm"
+
+
+#define HiddX11GfxAB  __abHidd_X11Gfx
+#define HiddX11OsbmAB __abHidd_X11Osbm
+extern AttrBase HiddX11GfxAB;
+extern AttrBase HiddX11OsbmAB;
+
+enum {
+    aoHidd_X11Gfx_SysDisplay,
+    aoHidd_X11Gfx_SysScreen,
+    aoHidd_X11Gfx_Hidd2X11CMap,
+    aoHidd_X11Gfx_SysCursor,
+    aoHidd_X11Gfx_ColorMap,
+    
+    num_Hidd_X11Gfx_Attrs
+    
+};
+
+#define aHidd_X11Gfx_SysDisplay		(HiddX11GfxAB + aoHidd_X11Gfx_SysDisplay)
+#define aHidd_X11Gfx_SysScreen		(HiddX11GfxAB + aoHidd_X11Gfx_SysScreen)
+#define aHidd_X11Gfx_Hidd2X11CMap	(HiddX11GfxAB + aoHidd_X11Gfx_Hidd2X11CMap)
+#define aHidd_X11Gfx_SysCursor		(HiddX11GfxAB + aoHidd_X11Gfx_SysCursor)
+#define aHidd_X11Gfx_ColorMap		(HiddX11GfxAB + aoHidd_X11Gfx_ColorMap)
+
+enum {
+    aoHidd_X11Osbm_XImage,
+    
+    num_Hidd_X11Osbm_Attrs
+};
+
+#define aHidd_X11Osbm_XImage		(HiddX11OsbmAB + aoHidd_X11Osbm_XImage)
+
+#define PEN_BITS    4
+#define NUM_COLORS  (1L << PEN_BITS)
+#define PEN_MASK    (NUM_COLORS - 1)
 
 
 #define expunge() \

@@ -9,8 +9,10 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <X11/Xlib.h>
+#include <X11/cursorfont.h>
 
 #include <exec/libraries.h>
 #include <exec/types.h>
@@ -26,8 +28,8 @@
 
 #include "x11gfx_intern.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -42,24 +44,93 @@
 
 #define X11GfxBase ((struct x11gfxbase *)cl->UserData)
 
+#define IS_X11GFX_ATTR(attr, idx) ( ( (idx) = (attr) - HiddX11GfxAB) < num_Hidd_X11Gfx_Attrs)
+
 
 /* Some attrbases needed as global vars.
   These are write-once read-many */
-  
-  AttrBase HiddBitMapAttrBase;
-  AttrBase HiddGCAttrBase;
 
+static AttrBase HiddBitMapAttrBase = 0;  
+static AttrBase HiddX11GfxAB = 0;
+
+struct abdescr attrbases[] =
+{
+    { IID_Hidd_BitMap, &HiddBitMapAttrBase },
+    { IID_Hidd_X11Gfx, &HiddX11GfxAB },
+    { NULL, NULL }
+};
 
 
 /* Private instance data for Gfx hidd class */
 struct gfx_data
 {
-    ULONG dummy;
+    Display	*display;
+    int		screen;
+    int		depth;
+    long hidd2x11cmap[256];
+    Colormap	colmap;
+    Cursor	cursor;
 };
 
 /*********************
 **  GfxHidd::New()  **
 *********************/
+
+
+/*
+   Inits sysdisplay, sysscreen, colormap, etc.. */
+static BOOL initx11stuff(struct gfx_data *data)
+{
+/*    XColor fg, bg; */
+    BOOL ok = TRUE;
+    char *displayname;
+
+    /* Try to get the display */
+    if (!(displayname = getenv("DISPLAY")))
+	displayname =":0.0";
+
+
+    data->display = XOpenDisplay(displayname);
+    if (!data->display)
+    	ok = FALSE;
+    else
+    {
+        XColor bg, fg;
+    	data->screen = DefaultScreen( data->display );
+	
+	data->depth  = DisplayPlanes( data->display, data->screen );
+	data->colmap = DefaultColormap( data->display, data->screen );
+	
+	
+/*	data->maxpen = NUM_COLORS; */
+	
+	/* Create cursor */
+	
+	data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
+	fg.pixel = BlackPixel(data->display, data->screen);
+	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
+	fg.flags = (DoRed | DoGreen | DoBlue);
+	bg.pixel = WhitePixel(data->display, data->screen);
+	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
+	bg.flags = (DoRed | DoGreen | DoBlue);
+	
+	
+	XRecolorCursor( data->display
+		, data->cursor
+		, &fg, &bg
+	);
+
+    } /* if (Could get sysdisplay) */
+    
+    return ok;
+
+}
+
+static VOID cleanupx11stuff(struct gfx_data *data)
+{
+    /* Do nothing for now */
+    return;
+}
 
 static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 {
@@ -86,69 +157,118 @@ static int MySysErrorHandler (Display * display)
     return 0;
 }
 
+
 static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
 
     EnterFunc(bug("X11Gfx::New()\n"));
 
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    if (o)
     {
-    	if (o)
+    
+	MethodID dispose_mid;
+	struct gfx_data *data = INST_DATA(cl, o);
+	
+	/* Do GfxHidd initalization here */
+	if (initx11stuff(data));
 	{
-	    /* Do GfxHidd initalization here */
 	    XSetErrorHandler (MyErrorHandler);
 	    XSetIOErrorHandler (MySysErrorHandler);
-	
+
+    	    ReturnPtr("X11Gfx::New", Object *, o);
 	}
+	
+	dispose_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	CoerceMethod(cl, o, (Msg)&dispose_mid);
     }
-    ReturnPtr("X11Gfx::New", Object *, o);
+    ReturnPtr("X11Gfx::New", Object *, NULL);
+}
+
+/********** GfxHidd::Dispose()  ******************************/
+static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
+{
+    struct gfx_data *data = INST_DATA(cl, o);
+    
+    cleanupx11stuff(data);
+    
+    DoSuperMethod(cl, o, msg);
 }
 
 /********** GfxHidd::NewBitMap()  ****************************/
 static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
+
+    BOOL displayable;
+    Class *bm_cl;
+    struct gfx_data *data;
+    struct TagItem tags[] =
+    {
+    	{ aHidd_X11Gfx_SysDisplay,	(IPTR) NULL},
+	{ aHidd_X11Gfx_SysScreen,	0UL },
+	{ aHidd_X11Gfx_Hidd2X11CMap,	(IPTR) NULL},
+	{ aHidd_X11Gfx_SysCursor,	0UL},
+	{ aHidd_X11Gfx_ColorMap,	0UL},
+	{ TAG_MORE, (IPTR) NULL }
+    };
+    
     EnterFunc(bug("X11Gfx::NewBitMap()\n"));
     
-    ReturnPtr("X11Gfx::NewBitMap", Object *, NewObject(X11GfxBase->bitmapclass, NULL, msg->attrList));
+    data = INST_DATA(cl, o);
+    
+    tags[0].ti_Data = (IPTR)data->display;
+    tags[1].ti_Data = data->screen;
+    tags[2].ti_Data = (IPTR)data->hidd2x11cmap;
+    tags[3].ti_Data = (IPTR)data->cursor;
+    tags[4].ti_Data = data->colmap;
+    tags[5].ti_Data = (IPTR)msg->attrList;
+    
+
+    /* Displayeable bitmap ? */
+    
+    displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+    if (displayable)
+    	bm_cl = X11GfxBase->bitmapclass;
+    else
+	bm_cl = X11GfxBase->osbitmapclass;
+    
+    
+    
+    ReturnPtr("X11Gfx::NewBitMap", Object *, NewObject(bm_cl, NULL, tags));
 }
 
-/*
-static VOID gfxhidd_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_DisposeBitMap *msg)
+/******* X11Gfx::Set()  ********************************************/
+static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 {
-    EnterFunc(bug("X11Gfx::DisposeBitMap()\n"));
-    
-    DisposeObject(msg->bitMap);
-    ReturnVoid("X11Gfx::DisposeBitMap");
-}
-*/
-/**********  GfxHidd::CreateGC()  ****************************/
-/*
-static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
-{
-
-    Object *gc = NULL;
-    
-    switch (msg->gcType)
+    struct gfx_data *data = INST_DATA(cl, o);
+    ULONG idx;
+    if (IS_X11GFX_ATTR(msg->attrID, idx))
     {
-        case  vHIDD_Gfx_GCType_Quick:
-	    gc = NewObject( X11GfxBase->gcclass, NULL, msg->attrList);
-	    break;
+	switch (idx)
+	{
+	    case aoHidd_X11Gfx_SysDisplay:
+	    	*msg->storage = (IPTR)data->display;
+		break;
+		
+	    case aoHidd_X11Gfx_SysScreen:
+	    	*msg->storage = (IPTR)data->screen;
+		break;
 	    
-	default:
-	    gc = (Object *)DoSuperMethod(cl, o, (Msg)msg);
-	    break;
-	
+	    default:
+	    	DoSuperMethod(cl, o, (Msg)msg);
+		break;
+	}
     }
-    return gc;
+    
+    return;
 }
 
-*/
 #undef X11GfxBase
 
 /********************  init_gfxclass()  *********************************/
 
-#define NUM_ROOT_METHODS 1
-#define NUM_GFXHIDD_METHODS 2
+#define NUM_ROOT_METHODS 3
+#define NUM_GFXHIDD_METHODS 1
 
 Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 {
@@ -156,7 +276,9 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{(IPTR (*)())gfx_new,	moRoot_New},
+    	{(IPTR (*)())gfx_new,		moRoot_New},
+    	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
+    	{(IPTR (*)())gfx_get,		moRoot_Get},
 	{NULL, 0UL}
     };
     
@@ -193,10 +315,17 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
     
     	if(cl)
     	{
-	    D(bug("GfxHiddClass ok\n"));
-	    cl->UserData = (APTR)X11GfxBase;
-
-	    AddClass(cl);
+	    if (obtainattrbases(attrbases, OOPBase))
+	    {
+		D(bug("GfxHiddClass ok\n"));
+		cl->UserData = (APTR)X11GfxBase;
+	    	AddClass(cl);
+	    }
+	    else
+	    {
+	    	free_gfxclass(X11GfxBase);
+		cl = NULL;
+	    }
 	}
 	
 	/* Don't need this anymore */
@@ -220,9 +349,13 @@ VOID free_gfxclass(struct x11gfxbase *X11GfxBase)
 	
         if(X11GfxBase->gfxclass) DisposeObject((Object *) X11GfxBase->gfxclass);
         X11GfxBase->gfxclass = NULL;
+	
+	releaseattrbases(attrbases, OOPBase);
 
     }
 
     ReturnVoid("free_gfxclass");
 }
+
+
 

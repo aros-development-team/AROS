@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I/usr/include -I.
 
-FILES	   := x11gfx bitmap functable endtag x11gfx_init
+FILES	   := x11gfx bitmap functable endtag x11gfx_init offscreenbm support
 
 FUNCTIONS  := getclass
 

@@ -48,7 +48,7 @@ static AttrBase HiddGCAttrBase = 0;
 */    
 
 # warning This may be too slow, could find better solution
-/* In the splution used below, subclasses should NOT
+/* In the solution used below, subclasses should NOT
    handle aHidd_GC_DrawMode themselves, as they
    will receive a pRoot_Set message for the corresponing
    aHidd_BitMap_xxx attr. Docs should state this.
@@ -74,6 +74,7 @@ static VOID update_from_gc(Class *cl, Object *me, Object *gc)
 	    { aHidd_BitMap_ColorMask,   0UL },
 	    { aHidd_BitMap_LinePattern, 0UL },
 	    { aHidd_BitMap_PlaneMask, 	0UL },
+	    { aHidd_BitMap_ColExpMode, 	0UL },
 	    { TAG_DONE, 0UL}
     };
 
@@ -85,6 +86,7 @@ static VOID update_from_gc(Class *cl, Object *me, Object *gc)
     GetAttr(gc, aHidd_GC_ColorMask,	&(tags[4].ti_Data));
     GetAttr(gc,	aHidd_GC_LinePattern,	&(tags[5].ti_Data));
     GetAttr(gc, aHidd_GC_PlaneMask, 	&(tags[6].ti_Data));
+    GetAttr(gc, aHidd_GC_ColExpMode, 	&(tags[7].ti_Data));
 
     SetAttrs(me, tags);
     
@@ -296,6 +298,7 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_ColorMask   : *msg->storage = data->colMask; break;
 	    case aoHidd_BitMap_PlaneMask   : *msg->storage = (IPTR) data->planeMask; break;
 	    case aoHidd_BitMap_Font	   : *msg->storage = (IPTR) data->font; break;
+	    case aoHidd_BitMap_ColExpMode  : *msg->storage = data->colExp; break;
 	    
     
             default: DoSuperMethod(cl, obj, (Msg) msg);
@@ -1352,6 +1355,7 @@ static VOID bitmap_clear(Class *cl, Object *obj, struct pHidd_BitMap_Clear *msg)
     ReturnVoid("BitMap::Clear");
 }
 
+#warning To save space, msg->pixels could be VOID * and size of each pixel would depend on depth. (Ie. depth 8: msg->pixels is UBYTE[])
 static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
 {
     WORD x, y;
@@ -1394,8 +1398,70 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
     SetAttrs(o, fg_tags);
     return;
 }
+/*** BitMap::BlitColExp() **********************************************/
+static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColExp *msg)
+{
 
-/*** BitMap::PrivateSet() *****************************************************/
+    ULONG cemd;
+    ULONG fg, bg;
+    LONG x, y;
+    
+    struct TagItem fg_tags[] =
+    {
+	{ aHidd_BitMap_Foreground, 0UL },
+	{ TAG_DONE, 0UL }
+    };
+    
+    GetAttr(o, aHidd_BitMap_ColExpMode, &cemd);
+    GetAttr(o, aHidd_BitMap_Foreground, &fg);
+    GetAttr(o, aHidd_BitMap_Background, &bg);
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+	{
+	    ULONG is_set;
+	    
+	    /* Pixel value is either 0 or 1 for BM of depth 1 */
+	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+	    
+	    if (cemd & vHidd_GC_ColExp_Transparent)
+	    {
+	    	/* Only use apen if pixel is set */
+		if (is_set)
+		{
+		    HIDD_BM_DrawPixel(o, x + msg->destX, y + msg->destY);
+		}
+		    
+	    }
+	    else if (cemd & vHidd_GC_ColExp_Opaque)
+	    {
+	    	/* Use apen if pixel is et, bpen otherwise */
+		if (is_set)
+		    HIDD_BM_DrawPixel(o, x + msg->destX, y + msg->destY);
+		else
+		{
+		    /* Write bixel with BG pen */
+		    fg_tags[0].ti_Data = bg;
+		    SetAttrs(o, fg_tags);
+		    HIDD_BM_DrawPixel(o, x + msg->destX, y + msg->destY);
+		    /* Reset to FG pen */
+		    fg_tags[0].ti_Data = fg;
+		    SetAttrs(o, fg_tags);
+		    
+		}   
+		
+	    } /* if () */
+	    
+	} /* for (each x) */
+	
+    } /* for ( each y ) */
+    
+    return;
+    
+}
+
+/*** BitMap::Set() *****************************************************/
 
 /*
 
@@ -1429,7 +1495,7 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
                 case aoHidd_BitMap_BytesPerPixel : data->bytesPerPixel = tag->ti_Data; break;
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
                 case aoHidd_BitMap_BaseAddress   : data->buffer        = (APTR) tag->ti_Data; break;
-		case aoHidd_BitMap_BitMap	 : data->bitmap	       = (Object *)tag->ti_Data;
+		case aoHidd_BitMap_BitMap	 : data->bitMap	       = (Object *)tag->ti_Data;
 
 		case aoHidd_BitMap_GC  		: update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
 		case aoHidd_BitMap_Foreground  	: data->fg		= tag->ti_Data; break;
@@ -1438,7 +1504,8 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 		case aoHidd_BitMap_LinePattern 	: data->linePat		= tag->ti_Data; break;
 		case aoHidd_BitMap_ColorMask   	: data->colMask		= tag->ti_Data; break;
 		case aoHidd_BitMap_PlaneMask	: (APTR)data->planeMask	= tag->ti_Data; break;
-		case aoHidd_BitMap_Font	   	: (APTR)data->font		= tag->ti_Data; break;
+		case aoHidd_BitMap_Font	   	: (APTR)data->font	= tag->ti_Data; break;
+		case aoHidd_BitMap_ColExpMode	: data->colExp		= tag->ti_Data; break;
             }
         }
     }
@@ -1456,7 +1523,7 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 18
+#define NUM_BITMAP_METHODS 19
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -1489,6 +1556,7 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		},
         {(IPTR (*)())bitmap_putbox		, moHidd_BitMap_GetBox		},
         {(IPTR (*)())bitmap_getbox		, moHidd_BitMap_PutBox		},
+        {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColExp	},
         {NULL, 0UL}
     };
     
