@@ -71,6 +71,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, lh)
     DeletePool(LB(lh)->ib_MemoryPool);
     
     if (PNGBase) CloseLibrary(PNGBase);
+    
+    return TRUE;
 }
 
 

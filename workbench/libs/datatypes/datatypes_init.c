@@ -102,7 +102,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     TryRemoveClass((struct Library *)DataTypesBase);
 #endif
 
-    return 0;
+    return TRUE;
 }
 
 ADD2INITLIB(Init, 0);
