@@ -36,11 +36,13 @@ struct Hook hook_standard;
 struct Hook hook_action;
 
 
-char *GetScreenTitle(void)
+STRPTR GetScreenTitle(VOID)
 {
-    static char title[256];
+    STATIC TEXT title[256];
+    
     /* AROS probably don't have graphics mem but without it look so empty */
     sprintf(title,"Wanderer  %ld graphics mem  %ld other mem",AvailMem(MEMF_CHIP),AvailMem(MEMF_FAST));
+    
     return title;
 }
 
@@ -786,10 +788,10 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
                         }
                     }
                     
-                    DoMethod(
+                    DoMethod
+                    (
                         app, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf
                     );
-                    
                 }
                 break;
         } /* switch */
@@ -852,8 +854,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
         if (!isWorkbenchWindow) drw = (STRPTR) XGET(window, MUIA_IconWindow_Drawer);
         else                    drw = "RAM:";
         
-        /* We simply close the window here in case somebody like to to this...
-         * the memory is not freed until wb is closed however */
+        /* FIXME: should remove + dispose the window (memleak!) */
         DoMethod
         (
             window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
