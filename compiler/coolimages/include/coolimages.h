@@ -74,6 +74,7 @@ extern const struct CoolImage cool_clockimage;
 extern const struct CoolImage cool_flagimage;
 extern const struct CoolImage cool_headimage;
 extern const struct CoolImage cool_windowimage;
+extern const struct CoolImage cool_kbdimage;
 
 extern struct IClass * cool_buttonclass;
 extern struct IClass * cool_imageclass;
