@@ -28,7 +28,7 @@
 	AROS_LHA(ClassID,	classID, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 147, Intuition)
+	struct IntuitionBase *, IntuitionBase, 112, Intuition)
 
 /*  FUNCTION
 

@@ -19,7 +19,7 @@
 	AROS_LHA(struct IntuiMessage *, imsg, A1),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 121, Intuition)
+	struct IntuitionBase *, IntuitionBase, 151, Intuition)
 
 /*  FUNCTION
 	Private: send an IntuiMessage to an Intuition window
