@@ -25,6 +25,7 @@ VAR struct Library              *AslBase;
 VAR struct Library              *GadToolsBase;
 VAR struct Library  	    	*IFFParseBase;
 VAR struct Library  	    	*CyberGfxBase;
+VAR struct Library  	    	*DataTypesBase;
 
 VAR struct Screen               *scr;
 VAR struct Window               *win;

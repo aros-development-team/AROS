@@ -88,17 +88,6 @@ void KillMenus(void)
 
 /*********************************************************************************************/
 
-void SetMenuFlags(void)
-{
-    struct MenuItem *item;
-    
-    if (win) ClearMenuStrip(win);
-    
-    if (win) ResetMenuStrip(win, menus);
-}
-
-/*********************************************************************************************/
-
 STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode)
 {
     static UBYTE         filebuffer[300];

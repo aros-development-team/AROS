@@ -104,6 +104,12 @@
 #include <datatypes/datatypesclass.h>
 #endif
 
+#define DT_V44_SUPPORT
+
+#ifndef DATATYPES_PICTURECLASS_H
+#include <datatypes/pictureclass.h>
+#endif
+
 #ifndef PREFS_LOCALE_H
 #include <prefs/locale.h>
 #endif
@@ -156,6 +162,10 @@
 
 #ifndef PROTO_CYBERGRAPHICS_H
 #include <proto/cybergraphics.h>
+#endif
+
+#ifndef PROTO_DATATYPES_H
+#include <proto/datatypes.h>
 #endif
 
 /*********************************************************************************************/
@@ -215,6 +225,11 @@ struct ListviewEntry
 struct CountryEntry
 {
     struct ListviewEntry lve;
+    Object  	    	 *dto;
+    struct BitMap   	 *flagbm;
+    WORD    	    	 flagw;
+    WORD    	    	 flagh;
+    
 };
 
 struct LanguageEntry
