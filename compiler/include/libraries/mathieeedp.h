@@ -65,7 +65,7 @@
 #endif
 
 #ifndef PROTO_MATHIEEEDOUBTRANS_H
-#include <proto(mathieeedoubtrans.h>
+#include <proto/mathieeedoubtrans.h>
 #endif
 
 #endif  /* LIBRARIES_MATHIEEEDP_H */

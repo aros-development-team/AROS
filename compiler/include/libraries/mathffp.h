@@ -60,7 +60,7 @@
 #endif
 
 #ifndef PROTO_MATHFFP_H
-#include <proto(mathieeedoubtrans.h>
+#include <proto/mathieeedoubtrans.h>
 #endif
 
 

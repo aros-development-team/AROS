@@ -65,7 +65,7 @@
 #endif
 
 #ifndef PROTO_MATHIEEESINGTRANS_H
-#include <proto(mathieeesingtrans.h>
+#include <proto/mathieeesingtrans.h>
 #endif
 
 #endif  /* LIBRARIES_MATHIEEESP_H */
