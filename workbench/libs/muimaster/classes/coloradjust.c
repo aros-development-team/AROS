@@ -76,8 +76,6 @@ static void NotifyGun(Object *obj, struct MUI_ColoradjustData *data, LONG gun)
 
 static void NotifyAll(Object *obj, struct MUI_ColoradjustData *data)
 {
-    struct IClass *cl = OCLASS(obj)->cl_Super->cl_Super;
-    
     struct TagItem tags[] =
     {
     	{MUIA_Coloradjust_Red  , 0 },
@@ -90,7 +88,7 @@ static void NotifyAll(Object *obj, struct MUI_ColoradjustData *data)
     tags[1].ti_Data = data->rgb[1];
     tags[2].ti_Data = data->rgb[2];
     tags[3].ti_Data = (IPTR)data->rgb;
-    CoerceMethod(cl, obj, OM_SET, (IPTR)tags, NULL);
+    CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR)tags, NULL);
 }
 
 static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
@@ -339,6 +337,8 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	ConvertRGBToHSB(&cw, &hsb);
 
     	nnset(wheel, WHEEL_HSB, (IPTR)&hsb);
+	/* just to be sure - colorwheel seems to have some problems */
+	nnset(wheel, WHEEL_Saturation, hsb.cw_Saturation);
 	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
 	nnset(data->grad, GRAD_PenArray, data->gradpenarray);
     }
@@ -424,8 +424,6 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-    
     if (newcol)
     {
     	nnset(data->rslider, MUIA_Numeric_Value, data->rgb[0] >> 24);
@@ -447,6 +445,7 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
     	    ConvertRGBToHSB(&cw, &hsb);
     	    nnset(data->wheel, WHEEL_HSB, (IPTR)&hsb);
+	    nnset(data->wheel, WHEEL_Saturation, hsb.cw_Saturation);
 	    nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
 	    
 	    if ((_flags(obj) & MADF_SETUP) && (data->gradpen != -1))
@@ -464,7 +463,7 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
     
-    return retval;
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /**************************************************************************
@@ -479,25 +478,22 @@ static ULONG  Coloradjust_Get(struct IClass *cl, Object * obj, struct opGet *msg
     {
     	case MUIA_Coloradjust_Red:
 	    *store = data->rgb[0];
-	    break;
+	    return TRUE;
 	    
 	case MUIA_Coloradjust_Green:
 	    *store = data->rgb[1];
-	    break;
+	    return TRUE;
 	    
 	case MUIA_Coloradjust_Blue:
 	    *store = data->rgb[2];
-	    break;
+	    return TRUE;
 	    
 	case MUIA_Coloradjust_RGB:
-	    *(ULONG **)store = data->rgb;
-	    break;
-	    
-    	default:
-	    return DoSuperMethodA(cl, obj, (Msg)msg);
+	    *(IPTR **)store = data->rgb;
+	    return TRUE;
     }
 
-    return TRUE;
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /**************************************************************************
@@ -514,12 +510,10 @@ static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
     	struct ColorWheelHSB hsb;
 	struct ColorWheelRGB rgb;
 	
-	hsb.cw_Hue        = xget(data->wheel, WHEEL_Hue);
-	hsb.cw_Saturation = xget(data->wheel, WHEEL_Saturation);
-	hsb.cw_Brightness = 0xFFFFFFFF;
+	rgb.cw_Red   = data->rgb[0];
+	rgb.cw_Green = data->rgb[1];
+	rgb.cw_Blue  = data->rgb[2];
 
-    	ConvertHSBToRGB(&hsb, &rgb);
-	
 	data->gradpenarray[0] = _pens(obj)[MPEN_SHINE];
 	data->gradpenarray[1] = _pens(obj)[MPEN_SHADOW];
 	data->gradpenarray[2] = (UWORD)~0;
@@ -535,9 +529,16 @@ static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
 	{
     	    data->gradpenarray[0] = data->gradpen;
 	}
-	
+
+	ConvertRGBToHSB(&rgb, &hsb);
+	/* setting this will force wheel to properly set its display */
+	nnset(data->wheel, WHEEL_Saturation, hsb.cw_Saturation);
+
+	hsb.cw_Brightness = 0xFFFFFFFF;
+	ConvertHSBToRGB(&hsb, &rgb);
+	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, rgb.cw_Red, rgb.cw_Green, rgb.cw_Blue);
+
 	data->truecolor = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH) >= 15;
-	
     }
     
     return 1;
@@ -559,34 +560,6 @@ static IPTR Coloradjust_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clea
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/*************************************************************************
- MUIM_Show
-**************************************************************************/
-static IPTR Coloradjust_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
-{
-    struct MUI_ColoradjustData *data = INST_DATA(cl,obj);
-
-    DoSuperMethodA(cl, obj, (Msg)msg);
-
-    if ((data->wheel) && (data->gradpen != -1))
-    {
-    	struct ColorWheelHSB hsb;
-	struct ColorWheelRGB cw;
-	
-	cw.cw_Red   = data->rgb[0];
-	cw.cw_Green = data->rgb[1];
-	cw.cw_Blue  = data->rgb[2];
-
-	ConvertRGBToHSB(&cw, &hsb);
-	nnset(data->wheel, WHEEL_HSB, (IPTR)&hsb);
-	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));   
-
-	D(bug("Coloradjust_Show: SetRGB32 %lx, %lx, %lx\n", cw.cw_Red, cw.cw_Green, cw.cw_Blue));
-	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
-    }
-    return 0;
-}
-
 BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -597,7 +570,6 @@ BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 	case OM_GET: return Coloradjust_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Setup: return Coloradjust_Setup(cl, obj, (struct MUIP_Setup *)msg);
 	case MUIM_Cleanup: return Coloradjust_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
-	case MUIM_Show: return Coloradjust_Show(cl, obj, (struct MUIP_Show *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
