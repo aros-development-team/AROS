@@ -2,14 +2,22 @@
 include $(TOP)/config/make.cfg
 
 FILES	:=	vga vga-modes font_acorn_8x8 aros-logo
-OBJDIR	:=	$(OSGENDIR)/boot
+OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
-#MM Drivers-native-vga :
-Drivers-native-vga : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+#MM Drivers-native :
+Drivers-native : $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/vga_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/vga_driver.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/vga_driver.o
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err
 
 $(OBJDIR)/%.o : %.S
 	%assemble_q
