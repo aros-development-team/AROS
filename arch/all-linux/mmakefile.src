@@ -101,7 +101,7 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- kernel-intuition-linux : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 
-#MM- kernel-hidd-linux : kernel-hidd-linklib kernel-hidd-unix
+#MM- kernel-hidd-linux : kernel-hidd-linklib kernel-hidd-unix hidd-linux
 
 #MM- kernel-utility-linux : kernel-utility-linklib
 
