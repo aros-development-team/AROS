@@ -30,6 +30,8 @@ LIBOBJS = \
 
 CLASSESOBJS= \
   objs/classes/area.o \
+  objs/classes/family.o \
+  objs/classes/group.o \
   objs/classes/notify.o \
   objs/classes/window.o
 
@@ -128,11 +130,17 @@ objs/mui_seterror.o: mui_seterror.c
 objs/classes/area.o: classes/area.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/area.c objname=$@
 
+objs/classes/family.o: classes/family.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/family.c objname=$@
+
 objs/classes/notify.o: classes/notify.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
 
 objs/classes/window.o: classes/window.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/window.c objname=$@
+
+objs/classes/group.o: classes/group.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
 
 
 
