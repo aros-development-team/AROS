@@ -1,5 +1,9 @@
-#include <graphics/text.h>
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
+#include <graphics/text.h>
 
 const UWORD topaz8_chardata[] =
 {

@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct BitMap *dest
 	, LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize, struct RastPort *rp, struct GfxBase *GfxBase)
