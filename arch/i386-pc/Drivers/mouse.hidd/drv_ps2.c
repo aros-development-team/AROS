@@ -160,19 +160,21 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct mouse_data           *data =(struct mouse_data *)irq->h_Data;
     struct pHidd_Mouse_Event    *e = &data->u.ps2.event;
 
+    unsigned int work = 10000;
+    
     info = kbd_read_status();
 
     while ((info & KBD_STATUS_OBF))             /* data from information port */
     {
-        if ((info & KBD_STATUS_MOUSE_OBF))       /* If bit 5 set data from mouse. */
+        if ((info & KBD_STATUS_MOUSE_OBF) && !(info & (KBD_STATUS_GTO | KBD_STATUS_PERR)))       /* If bit 5 set data from mouse. */
         {
             UBYTE *mouse_data=data->u.ps2.mouse_data;
             
             UBYTE mousecode = kbd_read_input();
 //            if (0xfa == mousecode)
-	    if ((0xfa == mousecode) && (data->u.ps2.expected_mouse_acks))
+//	    if ((0xfa == mousecode) && (data->u.ps2.expected_mouse_acks))
             /* Check whether we are excepting ACK */
-//            if (data->u.ps2.expected_mouse_acks)
+            if (data->u.ps2.expected_mouse_acks)
             {
                 if (mousecode == AUX_ACK)
                 {
@@ -181,7 +183,7 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 }
                 else data->u.ps2.expected_mouse_acks = 0;
             }
-#if 0
+#if 1
             else if (mousecode == AUX_RECONNECT)
             {
                 data->u.ps2.mouse_collected_bytes = 0;
@@ -274,6 +276,13 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             }                                       
         }
         info = kbd_read_status();
+
+      /* Protect as from forever loop */
+      if (!--work)
+      {
+          D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
+          break;
+      }	
     } /* while data can be read */
 }
 
@@ -290,7 +299,7 @@ int mouse_ps2reset(struct mouse_data *data)
 
     kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
     aux_write(KBD_OUTCMD_SET_RATE);
-    aux_write(80);
+    aux_write(200);
     aux_write(KBD_OUTCMD_SET_RES);
     aux_write(3);
     aux_write(KBD_OUTCMD_SET_SCALE11);
