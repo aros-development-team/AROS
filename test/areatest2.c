@@ -1,6 +1,7 @@
 #include <intuition/intuition.h>
 #include <graphics/gfxmacros.h>
 #include <graphics/gfx.h>
+#include <devices/rawkeycodes.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -220,6 +221,121 @@ static WORD pointundermouse(LONG x, LONG y)
     }
 
     return (best_dist < 200) ? best_i : -1;
+}
+
+static void savepoly(WORD n)
+{
+    char s[200];
+    BPTR fh;
+    BOOL ok = FALSE;
+    LONG err;
+    
+    snprintf(s, sizeof(s), "PROGDIR:polygon%d.dat", n);
+    
+    if ((fh = Open(s, MODE_NEWFILE)))
+    {
+    	WORD i = numpoints;
+	
+	if (Write(fh, &i, sizeof(i)) == sizeof(i))
+	{
+	    for(n = 0; n < numpoints; n++)
+	    {
+	    	i = points[n][0];		
+		if (Write(fh, &i, sizeof(i)) != sizeof(i)) break;
+		
+		i = points[n][1];
+		if (Write(fh, &i, sizeof(i)) != sizeof(i)) break;
+		
+	    }
+	    
+	    if (n == numpoints) ok = TRUE;
+	}
+	
+	err = IoErr();
+	
+    	Close(fh);
+    }
+    else
+    {
+    	err = IoErr();
+    }
+    
+    if (!ok) 
+    {
+    	Fault(err, "Saving failed", s, sizeof(s));
+    }
+    else
+    {
+    	strcpy(s, "Saved polygon");
+    }
+
+    SetWindowTitles(win, s, (char *)~0);
+    Delay(75);
+    updatetitle();
+
+}
+
+static BOOL loadpoly(WORD n)
+{
+    char s[200];
+    BPTR fh;
+    BOOL ok = FALSE;
+    LONG err;
+    WORD *temppoints;
+    
+    snprintf(s, sizeof(s), "PROGDIR:polygon%d.dat", n);
+    
+    if ((fh = Open(s, MODE_OLDFILE)))
+    {
+    	WORD i;
+	
+	if (Read(fh, &i, sizeof(i)) == sizeof(i))
+	{
+	    if ((temppoints = malloc(sizeof(WORD) * 2 * i)))
+	    {	    
+		for(n = 0; n < i; n++)
+		{
+		    if (Read(fh, &temppoints[n * 2], sizeof(WORD)) != sizeof(WORD)) break;
+		    if (Read(fh, &temppoints[n * 2 + 1], sizeof(WORD)) != sizeof(WORD)) break;
+
+		}
+
+		if (n == i)
+		{
+		    numpoints = i;
+		    for(i = 0; i < n; i++)
+		    {
+		    	points[i][0] = temppoints[i * 2];
+		    	points[i][1] = temppoints[i * 2 + 1];
+		    }
+		    
+		    ok = TRUE;
+		}
+		
+		free(temppoints);
+	    }
+	    
+	}
+	
+	err = IoErr();
+	
+    	Close(fh);
+    }
+    else
+    {
+    	err = IoErr();
+    }
+    
+    if (!ok) 
+    {
+    	Fault(err, "Loading failed", s, sizeof(s));
+    	SetWindowTitles(win, s, (char *)~0);
+    	Delay(75);
+    	updatetitle();
+    }
+  
+    return ok;
+
 }
 
 static void handleall(void)
@@ -467,6 +583,62 @@ static void handleall(void)
 				if (changed) paint();
 				
 			    } /* if (!lmbdown && hipoint >= 0) */
+			    else
+			    {
+			    	switch(msg->Code)
+				{
+				    case RAWKEY_F1:
+				    case RAWKEY_F2:
+				    case RAWKEY_F3:
+				    case RAWKEY_F4:
+				    case RAWKEY_F5:
+				    case RAWKEY_F6:
+				    case RAWKEY_F7:
+				    case RAWKEY_F8:
+				    case RAWKEY_F9:
+				    case RAWKEY_F10:
+				    	if (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+					{
+				    	    savepoly(msg->Code - RAWKEY_F1 + 1);
+					}
+					else
+					{
+					    loadpoly(msg->Code - RAWKEY_F1 + 1);
+					    hipoint = -1;
+					    paint();
+					}
+					break;
+				    
+				}
+			    }
+			    break;
+			    			    
+			case MODE_ADDPOINTS:
+			    switch(msg->Code)
+			    {
+				    case RAWKEY_F1:
+				    case RAWKEY_F2:
+				    case RAWKEY_F3:
+				    case RAWKEY_F4:
+				    case RAWKEY_F5:
+				    case RAWKEY_F6:
+				    case RAWKEY_F7:
+				    case RAWKEY_F8:
+				    case RAWKEY_F9:
+				    case RAWKEY_F10:
+				    	if (!(msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+					{
+					    if (loadpoly(msg->Code - RAWKEY_F1 + 1))
+					    {
+					    	hipoint = -1;
+						actpoint = -1;
+						mode = MODE_MOVEPOINTS;
+					    	paint();
+					    }
+					}
+					break;
+			    }
+			    break;
 			    
 		    } /* switch(mode) */
 		    break;
