@@ -177,6 +177,23 @@ class Parser:
 
 	self.argNameEndPattern = re.compile ('\s+|' + re.escape (self.end) + '|=')
 
+    def setDelimiters (self, begin, end):
+	"""Call this to change the BEGIN and END delimiters after the
+	parser has been instantiated."""
+	self.begin, self.end = begin, end
+
+	self.beginRE = re.compile ('(' + re.escape (self.begin) + ')', re.IGNORECASE)
+	self.endRE = re.compile ('(' + re.escape (self.end) + ')', re.IGNORECASE)
+
+    def setStringDelimiters (self, strdelims):
+	"""Call this to change the string delimiters after the
+	parser has been instantiated."""
+	self.stringdelimiters = strdelims
+	self.strDelimPattern = re.compile ('(' 
+	    + string.join (self.stringdelimiters, '|')
+	    + ')'
+	)
+
     def run (self):
 	"""Read the stream and execute for commands in it."""
 	while 1:
