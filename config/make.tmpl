@@ -94,7 +94,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 
 %define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err functions=$(FUNCTIONS) deplibs="$(DEPLIBS)"
 	@$(ECHO) "Creating library %(to)..."
-	@%(ar) %(to) %(from) %(deplibs)
+	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
 	@$(RM) $(RMLIB)
 
