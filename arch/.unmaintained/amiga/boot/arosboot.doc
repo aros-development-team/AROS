@@ -1,0 +1,250 @@
+$VER: arosboot.doc 41.6 (21.3.97)
+
+*****************************************************************************
+                              AROS Boot Program
+
+                                 Part of the
+                         Amiga Replacement OS (AROS)
+
+                                 Written by
+                  Lennard voor den Dag <ldp@worldonline.nl>
+
+                        Last revised: March 22, 1997
+*****************************************************************************
+
+
+=============================================================================
+0. Contents
+-----------------------------------------------------------------------------
+
+0. Contents
+1. Introduction
+2. Requirements
+3. Installation
+4. Usage
+5. Config File Usage
+6. Technical Information
+7. WhoWhatWhere
+8. Legalese
+9. History
+
+
+=============================================================================
+1. Introduction
+-----------------------------------------------------------------------------
+
+This document describes arosboot, the program used to load and install
+AROS modules on the Native Amiga.
+
+=============================================================================
+2. Requirements
+-----------------------------------------------------------------------------
+
+Arosboot requires a 68020 or better processor and Kickstart V37 (Release 2.04)
+or better.
+
+There is no 68000 version at the moment, because AROS itself is only compiled
+for 68020 or better processors. This way you can never inadvertently install
+AROS modules on systems with a 68000/68010. 68000 support will be added in the
+future.
+
+
+=============================================================================
+3. Installation
+-----------------------------------------------------------------------------
+
+If you have unpacked the archive, you will have a directory "AROS" where
+everything you need can be found.
+
+  AROS/
+  AROS/arosboot
+  AROS/arosboot.config
+  AROS/os/               <== main AROS modules live here
+
+CD into this directory and you're ready to run "arosboot".
+
+
+=============================================================================
+4. Usage
+-----------------------------------------------------------------------------
+
+arosboot CONFIGFILE,CHIP/S,FAST/S,KICK/S,LOCAL/S,CLEAR/S,CO=CLEARONLY/S,
+         RESET/S,DEBUG/S,SIM=SIMULATE/S,FORCE/S,QUIET/S
+
+  Configfile
+
+    Config file to use, default is "arosboot.config".
+
+  Chip/Fast/Kick/Local
+
+    Force the modules to a particular type of memory. If your original
+    Kickstart is V37 (Release 2), the default if chip memory. If you have
+    fast memory on your motherboard, you can specify the option "fast" to
+    force the modules to that fastmem. On Kickstart V39/V40 (Release 3/3.1)
+    the default is "kick" memory. If you specify more than one memory
+    specifier, the order of precedence is kick->local->fast->chip.
+
+  Clear
+
+    Clear the reset vectors before installing new modules. Use this if you
+    have already loaded AROS and want to load new modules, or else there will
+    be 2 copies of AROS modules in memory.
+
+  Clearonly  : only clear reset vectors and exit
+
+    Only clear the reset vectors and exit. Use this so AROS will not come up
+    during the next reset. Use it together with "reset" to reset the machine
+    right now.
+
+  Reset
+
+    Reset the machine after installing new modules.
+
+  Debug
+
+    Output debugging information. Include this debug output in a bug report,
+    if you suspect there are problems with arosboot. This setting will
+    override the quiet setting.
+
+  Simulate
+
+    Simulate loading, do not actually install modules. This will read the
+    config file and load the modules into memory, but will immediately
+    unload them. You can use this to test your installation.
+
+  Force
+
+    Normally, arosboot will not install modules if it finds that AROS modules
+    have already been installed in the system. Use force to override this so
+    new modules will be loaded. Don't forget to specify "clear" to delete the
+    old modules from memory.
+
+  Quiet
+
+    Be quiet.
+
+
+=============================================================================
+5. Config File Usage
+-----------------------------------------------------------------------------
+
+Example config file:
+
+  ;
+  ; AROS boot config file
+  ;
+  ;
+  MODULE os/exec.strap
+  MODULE os/alert.hook
+  MODULE os/utility.library
+  ;
+  FUNCTION -72	os/exec.strap	ON	; InitCode
+  FUNCTION -84	os/exec.strap	ON	; MakeLibrary
+  FUNCTION -90	os/exec.strap	OFF	; MakeFunctions
+
+MODULE lines
+
+  Template: MODULE/K/A
+
+  These lines contain the names (including (relative) paths) of the modules
+  to install.
+
+  The MODULE keyword is compulsory.
+
+FUNCTION lines
+
+  Template: FUNCTION/N/K/A,MODULE/A,ON/S,OFF/S
+
+  With these lines you can specify which functions in a module should be
+  turned on or off. Currently this is only possible for the "exec.strap"
+  module. If you turn a function off, the original AmigaOS function will
+  be used instead. You can use this to selectively disable certain functions,
+  to aid in debugging and more specialised bug reports.
+
+  The FUNCTION keyword is compulsory. The MODULE keyword can be omitted.
+  Both arguments must be specified.
+
+  If you don't specify ON or OFF, the function will be turned on. If you
+  specify both ON and OFF, the function will be turned on.
+
+COMMENTS
+
+  Start comment lines with a ; character.
+
+
+=============================================================================
+6. Technical Information
+-----------------------------------------------------------------------------
+
+This section under revision.
+
+
+=============================================================================
+7. WhoWhatWhere
+-----------------------------------------------------------------------------
+
+Look at these pages on WorldWideWait:
+
+    http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
+    http://aros.fh-konstanz.de/~digulla/ (German Mirror)
+    http://home.worldonline.nl/~ldp/aros/ (AROS for Amiga)
+
+If you have FTP, you can also get the most recent version as tar.gz files
+(quite smaller than lha) from
+
+    ftp://aros.fh-konstanz.de/pub/aros/
+
+You can use these EMail addresses to send bug reports:
+
+    aros-bugs@aros.fh-konstanz.de
+    aros-linux-bugs@aros.fh-konstanz.de
+    aros-amiga-bugs@aros.fh-konstanz.de
+
+
+=============================================================================
+8. Legalese
+-----------------------------------------------------------------------------
+
+This software is subject to the "Standard Amiga FD-Software Copyright Note".
+It is MAILWARE as defined in paragraph 4s.
+
+If you like it and use it regularly please send a message to the
+following address:
+
+    Aaron "Optimizer" Digulla
+    Th.-Heuss-Str. 8
+    78467 Konstanz
+    Germany
+
+    EMail: digulla@aros.fh-konstanz.de
+
+For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
+
+
+=============================================================================
+9. History
+-----------------------------------------------------------------------------
+
+41.6
+- Major overhaul.
+- New command line options.
+- Extended config file format.
+- Renamed to "arosboot".
+- Docs.
+
+41.5
+- Back out 41.4 change of falling back to MEMF_LOCAL. It turned out to worsen
+  the situation when using FastExec with the "local" option. Still have the
+  "-l" option in boot to force AROS to MEMF_LOCAL.
+
+41.4
+- No longer fall back to MEMF_CHIP on kick V37, but to MEMF_LOCAL. This
+  may also benefit FastExec users.
+
+41.3
+- First public release.
+- Fail if option not recognized (e.g. "boot 0x" instead of "boot -x").
+
+=============================================================================
+                                     END
+=============================================================================
