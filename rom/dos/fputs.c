@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/11/25 15:50:34  aros
+    Polished
+
     Revision 1.4  1996/10/24 15:50:30  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -15,7 +18,6 @@
     Desc:
     Lang: english
 */
-#include <clib/exec_protos.h>
 #include <dos/dosextens.h>
 #include "dos_intern.h"
 
@@ -63,12 +65,12 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    
+
     while(*string)
-        if(FPutC(file,*string++)<0)
-            return EOF;
-            
+	if(FPutC(file,*string++)<0)
+	    return EOF;
+
     return 0;
-    
+
     AROS_LIBFUNC_EXIT
 } /* FPuts */

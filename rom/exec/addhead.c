@@ -1,22 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1996/10/24 15:50:41  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.6  1996/10/21 20:46:11  aros
-    Changed struct SysBase to struct ExecBase
-
-    Revision 1.5  1996/08/13 13:55:55  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.4  1996/08/01 17:41:01  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Exec function AddHead()
     Lang: english
 */
 #include "exec_intern.h"
@@ -44,6 +30,7 @@
 	node - This node is to be inserted
 
     RESULT
+	None.
 
     NOTES
 
@@ -57,6 +44,8 @@
     BUGS
 
     SEE ALSO
+	NewList(), AddTail(), Insert(), Remove(), RemHead(), RemTail(),
+	Enqueue()
 
     INTERNALS
 
