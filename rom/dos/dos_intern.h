@@ -39,8 +39,9 @@ AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 struct DAList
 {
     STRPTR *ArgBuf;
-    UBYTE *StrBuf;
+    UBYTE  *StrBuf;
     STRPTR *MultVec;
+    BOOL    FreeRDA;
 };
 
 struct EString
@@ -210,5 +211,8 @@ struct markerarray
    the pointer of the catalog to use */
    
 #define dl_Errors   	    	do_not_use_is_reserved_for_locale_dosgetstring_replacement
+
+#define  __is_task(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_TASK)
+#define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)
 
 #endif /* DOS_INTERN_H */
