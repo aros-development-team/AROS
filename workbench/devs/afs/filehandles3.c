@@ -12,6 +12,7 @@
 #include <dos/dosasl.h>
 
 #include <aros/debug.h>
+#include <aros/macros.h>
 #include <stddef.h>
 
 #include "filehandles3.h"
