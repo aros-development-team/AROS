@@ -6,6 +6,12 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
+#define CYCLIC_HISTORY_WALK 0
+
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE 1
 
 #include <proto/exec.h>
@@ -35,6 +41,7 @@
 
 #include "con_handler_intern.h"
 #include "support.h"
+
 /******************************************************************************************/
 
 static UBYTE up_seq[] 			= {'A'};
@@ -92,7 +99,8 @@ static struct csimatch
     UBYTE *seq;
     WORD len;
     WORD inp;
-} csimatchtable[] =
+}
+csimatchtable[] =
 {
     {up_seq		, 1, INP_CURSORUP		},
     {down_seq		, 1, INP_CURSORDOWN		},
@@ -148,10 +156,10 @@ static struct csimatch
 
 struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 {
-    struct Task *task;
-    struct MemList *memlist;
-    UBYTE *mem;
-    APTR stack;
+    struct Task     *task;
+    struct MemList  *memlist;
+    UBYTE   	    *mem;
+    APTR    	    stack;
     
     #define TASKMEM_SIZE (sizeof(struct Task) + CONTASK_STACKSIZE)
 
@@ -178,13 +186,13 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 	    task->tc_SPLower=stack;
 	    task->tc_SPUpper=(BYTE *)stack + CONTASK_STACKSIZE;
 
-#if AROS_STACK_GROWS_DOWNWARDS
+    	#if AROS_STACK_GROWS_DOWNWARDS
 	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
 	    ((APTR *)task->tc_SPUpper)[-1] = taskparams;
-#else
+    	#else
 	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
 	    *(APTR *)task->tc_SPLower = taskparams;
-#endif
+    	#endif
 
 	    if(AddTask(task, conTaskEntry, NULL) != NULL)
 	    {
@@ -204,11 +212,11 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 void parse_filename(struct conbase *conbase, struct filehandle *fh,
 		    struct IOFileSys *iofs, struct NewWindow *nw)
 {
-    UBYTE *filename;
-    UBYTE *param, c;
-    WORD paramid = 1;
-    LONG paramval = 0;
-    BOOL done = FALSE, paramok = FALSE;
+    UBYTE   *filename;
+    UBYTE   *param, c;
+    WORD    paramid = 1;
+    LONG    paramval = 0;
+    BOOL    done = FALSE, paramok = FALSE;
 
     ASSERT_VALID_PTR(conbase);
     ASSERT_VALID_PTR(fh);
@@ -270,93 +278,102 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 		    UWORD paramlen = filename - param - 1;
 
 		    switch(paramid)
-		      {
-		      case 1:
-			nw->LeftEdge = paramval;
-			break;
-		      case 2:
-			nw->TopEdge = paramval;
-			break;
-		      case 3:
-			nw->Width = paramval;
-			break;
-		      case 4:
-			nw->Height = paramval;
-			break;
-		      case 5:
-			if ((fh->wintitle = AllocVec(paramlen + 1, MEMF_PUBLIC)))
-			  {
-			    CopyMem(param, fh->wintitle, paramlen);
-			    fh->wintitle[paramlen] = '\0';
-			    nw->Title = fh->wintitle;
-			  }
-			break;
-		      default:
-			if (!strnicmp(param, "WAIT", paramlen))
-			  {
-			    fh->flags |= FHFLG_WAIT;
-			  }
-			else if (!strnicmp(param, "CLOSE", paramlen))
-			  {
-			    nw->Flags |= WFLG_CLOSEGADGET;
-			  }
-			else if (!strnicmp(param, "NOCLOSE", paramlen))
-			  {
-			    nw->Flags &= ~WFLG_CLOSEGADGET;
-			  }
-			else if (!strnicmp(param, "AUTO", paramlen))
-			  {
-			    fh->flags |= FHFLG_AUTO;
-			  }
-			else if (!strnicmp(param, "INACTIVE", paramlen))
-			  {
-			    nw->Flags &= ~WFLG_ACTIVATE;
-			  }
-			else if (!strnicmp(param, "NODEPTH", paramlen))
-			  {
-			    nw->Flags &= ~WFLG_DEPTHGADGET;
-			  }
-			else if (!strnicmp(param, "NOSIZE", paramlen))
-			  {
-			    nw->Flags &= ~WFLG_SIZEGADGET;
-			  }
-			else if (!strnicmp(param, "NODRAG", paramlen))
-			  {
-			    nw->Flags &= ~WFLG_DRAGBAR;
-			  }
-			else if (!strnicmp(param, "NOBORDER", paramlen))
-			  {
-			    nw->Flags |= WFLG_BORDERLESS;
-			  }
-			else if (!strnicmp(param, "BACKDROP", paramlen))
-			  {
-			    nw->Flags |= WFLG_BACKDROP;
-			    nw->Flags &= ~(WFLG_DRAGBAR | WFLG_SIZEGADGET);
-			  }
-			else if (!strnicmp(param, "SIMPLE", paramlen))
-			  {
-			    /* TODO */
-			  }
-			else if (!strnicmp(param, "SMART", paramlen))
-			  {
-			    /* TODO */
-			  }
-			else if (!strnicmp(param, "ALT", paramlen))
-			  {
-			    /* TODO: style "ALT30/30/200/200" */
-			  }
-			else if (!strnicmp(param, "SCREEN", 6))
-			  {
-			    if ((fh->screenname = AllocVec(paramlen - 5, MEMF_PUBLIC)))
-			      {
-				CopyMem(param+6, fh->screenname, paramlen-6);
-				fh->screenname[paramlen-6] = '\0';
-			      }
-			  }
-		      }
+		    {
+			case 1:
+			    nw->LeftEdge = paramval;
+			    break;
+			    
+			case 2:
+			    nw->TopEdge = paramval;
+			    break;
+			    
+			case 3:
+			    nw->Width = paramval;
+			    break;
+			    
+			case 4:
+			    nw->Height = paramval;
+			    break;
+			    
+			case 5:			
+			    if ((fh->wintitle = AllocVec(paramlen + 1, MEMF_PUBLIC)))
+			    {
+				CopyMem(param, fh->wintitle, paramlen);
+				fh->wintitle[paramlen] = '\0';
+				nw->Title = fh->wintitle;
+			    }
+			    break;
+			    
+			default:
+			    if (!strnicmp(param, "WAIT", paramlen))
+			    {
+				fh->flags |= FHFLG_WAIT;
+			    }
+			    else if (!strnicmp(param, "CLOSE", paramlen))
+			    {
+				nw->Flags |= WFLG_CLOSEGADGET;
+			    }
+			    else if (!strnicmp(param, "NOCLOSE", paramlen))
+			    {
+				nw->Flags &= ~WFLG_CLOSEGADGET;
+			    }
+			    else if (!strnicmp(param, "AUTO", paramlen))
+			    {
+				fh->flags |= FHFLG_AUTO;
+			    }
+			    else if (!strnicmp(param, "INACTIVE", paramlen))
+			    {
+				nw->Flags &= ~WFLG_ACTIVATE;
+			    }
+			    else if (!strnicmp(param, "NODEPTH", paramlen))
+			    {
+				nw->Flags &= ~WFLG_DEPTHGADGET;
+			    }
+			    else if (!strnicmp(param, "NOSIZE", paramlen))
+			    {
+				nw->Flags &= ~WFLG_SIZEGADGET;
+			    }
+			    else if (!strnicmp(param, "NODRAG", paramlen))
+			    {
+				nw->Flags &= ~WFLG_DRAGBAR;
+			    }
+			    else if (!strnicmp(param, "NOBORDER", paramlen))
+			    {
+				nw->Flags |= WFLG_BORDERLESS;
+			    }
+			    else if (!strnicmp(param, "BACKDROP", paramlen))
+			    {
+				nw->Flags |= WFLG_BACKDROP;
+				nw->Flags &= ~(WFLG_DRAGBAR | WFLG_SIZEGADGET);
+			    }
+			    else if (!strnicmp(param, "SIMPLE", paramlen))
+			    {
+				/* TODO */
+			    }
+			    else if (!strnicmp(param, "SMART", paramlen))
+			    {
+				/* TODO */
+			    }
+			    else if (!strnicmp(param, "ALT", paramlen))
+			    {
+				/* TODO: style "ALT30/30/200/200" */
+			    }
+			    else if (!strnicmp(param, "SCREEN", 6))
+			    {
+				if ((fh->screenname = AllocVec(paramlen - 5, MEMF_PUBLIC)))
+				{
+				    CopyMem(param + 6, fh->screenname, paramlen - 6);
+				    fh->screenname[paramlen - 6] = '\0';
+				}
+			    }
+		    	    break;
+			  
+		    } /* switch(paramid) */
 		    
 		    paramok = FALSE;
-		}
+		    
+		} /* if (paramok) */
+		
 		paramval = 0;
 		paramid++;
 		param = filename;
@@ -667,11 +684,16 @@ void add_to_history(struct conbase *conbase, struct filehandle *fh)
     BOOL add_to_history = FALSE;
     
     fh->inputbuffer[fh->inputsize] = '\0';
+    
+    /* Don't add emptry strings */
+    if (fh->inputbuffer[fh->inputstart] == '\0') return;
     		    
     if (fh->historysize == 0)
     {
 	add_to_history = TRUE;
-    } else {
+    }
+    else
+    {
         WORD old_historypos;
 	
 	old_historypos = fh->historypos - 1;	
@@ -704,6 +726,9 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 {
     if (fh->historysize)
     {
+    #if !CYCLIC_HISTORY_WALK
+    	BOOL walk_to_empty_string = FALSE;
+    #endif
 	WORD len;
 
         switch(inp)
@@ -717,13 +742,37 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 		break;
 		
 	    case INP_CURSORUP:
+    	    #if CYCLIC_HISTORY_WALK
 	    	fh->historyviewpos--;
 		if (fh->historyviewpos < 0) fh->historyviewpos = fh->historysize - 1;
+    	    #else
+    	    	if (fh->historyviewpos > 0)
+		{
+		    fh->historyviewpos--;
+		}
+		else
+		{
+		    if (fh->historyviewpos == 0) fh->historyviewpos = -1;
+		    walk_to_empty_string = TRUE;
+		}
+    	    #endif
 		break;
 		
 	    case INP_CURSORDOWN:
+	    #if CYCLIC_HISTORY_WALK
 	    	fh->historyviewpos++;
 		if (fh->historyviewpos >= fh->historysize) fh->historyviewpos = 0;
+	    #else
+	    	if (fh->historyviewpos < fh->historysize - 1)
+		{
+		    fh->historyviewpos++;
+		}
+		else
+		{
+		    if (fh->historyviewpos == fh->historysize - 1) fh->historyviewpos = fh->historysize;
+		    walk_to_empty_string = TRUE;
+		}
+	    #endif
 		break;
 	}
 
@@ -737,28 +786,33 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 	fh->inputsize = fh->inputstart;
 	fh->inputpos = fh->inputstart;
 
-	len = strlen(fh->historybuffer[fh->historyviewpos]);
-	if (len > (INPUTBUFFER_SIZE - fh->inputstart))
+    #if !CYCLIC_HISTORY_WALK
+    	if (!walk_to_empty_string)
 	{
-	    len = INPUTBUFFER_SIZE - fh->inputstart;
-	}
+    #endif
+	    len = strlen(fh->historybuffer[fh->historyviewpos]);
+	    if (len > (INPUTBUFFER_SIZE - fh->inputstart))
+	    {
+		len = INPUTBUFFER_SIZE - fh->inputstart;
+	    }
 
-	if (len > 0)
-	{
-	    CopyMem(fh->historybuffer[fh->historyviewpos],
-		    &fh->inputbuffer[fh->inputstart],
-		    len);
+	    if (len > 0)
+	    {
+		CopyMem(fh->historybuffer[fh->historyviewpos],
+			&fh->inputbuffer[fh->inputstart],
+			len);
 
-	    fh->inputsize += len;
-	    fh->inputpos += len;
+		fh->inputsize += len;
+		fh->inputpos  += len;
 
-	    do_write(conbase, fh, &fh->inputbuffer[fh->inputstart], len);
-	}
-	
+		do_write(conbase, fh, &fh->inputbuffer[fh->inputstart], len);
+	    }
+
+    #if !CYCLIC_HISTORY_WALK
+    	} /* if (!walk_to_empty_string) */
+    #endif
+    
     } /* if (fh->historysize) */
 }
 
-/******************************************************************************************/
-/******************************************************************************************/
-/******************************************************************************************/
 /******************************************************************************************/
