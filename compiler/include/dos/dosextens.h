@@ -38,20 +38,21 @@ struct DosLibrary
     ULONG dl_Flags;
 };
 
-#define RNF_WILDSTAR 0x1000000
+/* dl_Flags values */
+#define RNF_WILDSTAR 0x1000000	/* Activate '*' as wildcard character */
 
 struct CommandLineInterface
 {
     LONG cli_Result2;
-    BSTR cli_SetName;
+    BPTR cli_SetName;
     BPTR cli_CommandDir;
     LONG cli_ReturnCode;
-    BSTR cli_CommandName;
+    BPTR cli_CommandName;
     LONG cli_FailLevel;
-    BSTR cli_Prompt;
+    BPTR cli_Prompt;
     BPTR cli_StandardInput;
     BPTR cli_CurrentInput;
-    BSTR cli_CommandFile;
+    BPTR cli_CommandFile;
     LONG cli_Interactive;
     LONG cli_Background;
     BPTR cli_CurrentOutput;
@@ -92,35 +93,36 @@ struct Process
 
 /* pr_Flags (all private) */
 #define	PRB_FREESEGLIST	0
-#define	PRF_FREESEGLIST	1
 #define	PRB_FREECURRDIR	1
-#define	PRF_FREECURRDIR	2
 #define	PRB_FREECLI	2
-#define	PRF_FREECLI	4
 #define	PRB_CLOSEINPUT	3
-#define	PRF_CLOSEINPUT	8
 #define	PRB_CLOSEOUTPUT	4
-#define	PRF_CLOSEOUTPUT	16
 #define	PRB_FREEARGS	5
-#define	PRF_FREEARGS	32
 #define PRB_CLOSEERROR	6
-#define PRF_CLOSEERROR	64
+#define	PRF_FREESEGLIST	0x1
+#define	PRF_FREECURRDIR	0x2
+#define	PRF_FREECLI	0x4
+#define	PRF_CLOSEINPUT	0x8
+#define	PRF_CLOSEOUTPUT	0x10
+#define	PRF_FREEARGS	0x20
+#define PRF_CLOSEERROR	0x40
 
+/* Dos list scanning and locking modes */
 #define LDB_READ	0
-#define LDF_READ	1
 #define LDB_WRITE	1
-#define LDF_WRITE	2
 #define LDB_DEVICES	2
-#define LDF_DEVICES	4
 #define LDB_VOLUMES	3
-#define LDF_VOLUMES	8
 #define LDB_ASSIGNS	4
-#define LDF_ASSIGNS	16
 #define LDB_ENTRY	5
-#define LDF_ENTRY	32
 #define LDB_DELETE	6
-#define LDF_DELETE	64
-#define LDF_ALL		(LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)
+#define LDF_READ	0x1
+#define LDF_WRITE	0x2
+#define LDF_DEVICES	0x4
+#define LDF_VOLUMES	0x8
+#define LDF_ASSIGNS	0x10
+#define LDF_ENTRY	0x20
+#define LDF_DELETE	0x40
+#define LDF_ALL		0x1c
 
 struct FileHandle
 {
@@ -137,35 +139,47 @@ struct FileHandle
     LONG fh_Dummy4;
 };
 
+/* Private fh_Flags values */
 #define FHF_WRITE	(~0ul/2+1)
 #define FHF_BUF		1
 
 struct DosList
 {
-    struct DosList *dol_Next;
-    LONG dol_Type;
+    struct DosList *dol_Next;	/* Private pointer to next entry */
+    LONG dol_Type;		/* Node types (see below) */
     APTR dol_Dummy1;
-    LONG dol_Dummy2;
-    LONG dol_Dummy3[6];
-    BSTR dol_OldName;		/* Compatibility */
-    STRPTR dol_Name;
+    LONG dol_Dummy2[7];
+
+    /*
+	This field once was named dol_Name. It is now named dol_OldName
+	to give you a hint that something has changed. Additionally to the
+	old nasty BSTR there is now a new clean	STRPTR for the same purpose.
+	You may want to:
+	1. Change your sources to reflect this change thus getting rid of
+	   all BCPL stuff or
+	2. just define dol_OldName to dol_Name before including this file
+	   to stay downwards compatible.
+    */
+    BPTR dol_OldName;		/* Old field */
+    STRPTR dol_DevName;	/* New field (in fact pointing to the same string) */
     struct Device *dol_Device;
     struct Unit *dol_Unit;
 };
 
-/* dl_Type type values */
-#define DLT_DEVICE	0
-#define DLT_DIRECTORY	1
-#define DLT_VOLUME	2
-#define DLT_LATE	3 /* Not yet */
-#define DLT_NONBINDING	4 /* Not yet */
+/* dol_Type type values. Given to MakeDosEntry(). */
+#define DLT_DEVICE	0	/* A real filesystem (or similar) */
+#define DLT_DIRECTORY	1	/* Just a simple assign */
+#define DLT_VOLUME	2	/* Volume node (for removable media) */
+#define DLT_LATE	3	/* Late binding assign (not yet) */
+#define DLT_NONBINDING	4	/* Nonbinding assign (not yet) */
 
-#define ST_ROOT		1
-#define ST_USERDIR	2
-#define ST_SOFTLINK	3
-#define ST_LINKDIR	4
-#define ST_FILE		-3
-#define ST_LINKFILE	-4
-#define ST_PIPEFILE	-5
+/* Directory entry types */
+#define ST_ROOT		1	/* Root directory of filesystem */
+#define ST_USERDIR	2	/* Normal directory */
+#define ST_SOFTLINK	3	/* Soft link */
+#define ST_LINKDIR	4	/* Hard link to a directory */
+#define ST_FILE		-3	/* Normal file */
+#define ST_LINKFILE	-4	/* Hard link to a file */
+#define ST_PIPEFILE	-5	/* Special file */
 
 #endif
