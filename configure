@@ -136,58 +136,58 @@ case "$1" in
     echo "# DO NOT EDIT" >> $2
     echo "# Edit \$(TOP)/configure instead and delete this file" >> $2
     echo >> $2
-    echo "SYS_CC = $CC" >> $2
-    echo "COMMON_CFLAGS = $COMMON_CFLAGS" >> $2
-    echo "ILDFLAGS = \$(CFLAGS) $ILDFLAGS" >> $2
-    echo "RANLIB = $RANLIB" >> $2
-    echo "ARCH = $ARCH" >> $2
-    echo "CPU = $CPU" >> $2
-    echo "CONFIG_MODS = $CONFIG_MODS" >> $2
-    echo "FLAVOUR = $FLAVOUR" >> $2
+    echo "SYS_CC := $CC" >> $2
+    echo "COMMON_CFLAGS := $COMMON_CFLAGS" >> $2
+    echo "ILDFLAGS := \$(CFLAGS) $ILDFLAGS" >> $2
+    echo "RANLIB := $RANLIB" >> $2
+    echo "ARCH := $ARCH" >> $2
+    echo "CPU := $CPU" >> $2
+    echo "CONFIG_MODS := $CONFIG_MODS" >> $2
+    echo "FLAVOUR := $FLAVOUR" >> $2
 
     if [ -z "$AS" ]; then
-	echo "SYS_AS = $CC" >> $2
+	echo "SYS_AS := $CC" >> $2
     else
-	echo "SYS_AS = $AS" >> $2
+	echo "SYS_AS := $AS" >> $2
     fi
     if [ -z "$COMMON_AFLAGS" ]; then
-	echo "COMMON_AFLAGS = $COMMON_CFLAGS" >> $2
+	echo "COMMON_AFLAGS := $COMMON_CFLAGS" >> $2
     else
-	echo "COMMON_AFLAGS = $COMMON_AFLAGS" >> $2
+	echo "COMMON_AFLAGS := $COMMON_AFLAGS" >> $2
     fi
 
     if [ -z "$APP_CFLAGS" ]; then
-	echo "APP_CFLAGS = $COMMON_CFLAGS" >> $2
+	echo "APP_CFLAGS := $COMMON_CFLAGS" >> $2
     else
-	echo "APP_CFLAGS = $APP_CFLAGS" >> $2
+	echo "APP_CFLAGS := $APP_CFLAGS" >> $2
     fi
 
     if [ -n "$GUI_BASEDIR" ]; then
-	GUI_LIBDIR=$GUI_BASEDIR/lib
-	GUI_INCDIR=$GUI_BASEDIR/include
+	GUI_LIBDIR := $GUI_BASEDIR/lib
+	GUI_INCDIR := $GUI_BASEDIR/include
     fi
 
     if [ -n "$GUI_LIBDIR" ]; then
-	echo "GUI_LIBDIR = $GUI_LIBDIR" >> $2
-	echo "GUI_LDFLAGS = -L$GUI_LIBDIR" >> $2
+	echo "GUI_LIBDIR := $GUI_LIBDIR" >> $2
+	echo "GUI_LDFLAGS := -L$GUI_LIBDIR" >> $2
     else
-	echo "GUI_LIBDIR = /usr/lib" >> $2
-	echo "GUI_LDFLAGS =" >> $2
+	echo "GUI_LIBDIR := /usr/lib" >> $2
+	echo "GUI_LDFLAGS :=" >> $2
     fi
     if [ -n "$GUI_INCDIR" ]; then
-	echo "GUI_INCDIR = $GUI_INCDIR" >> $2
-	echo "GUI_CCFLAGS = -I$GUI_INCDIR" >> $2
+	echo "GUI_INCDIR := $GUI_INCDIR" >> $2
+	echo "GUI_CCFLAGS := -I$GUI_INCDIR" >> $2
     else
-	echo "GUI_INCDIR = /usr/include" >> $2
-	echo "GUI_CCFLAGS =" >> $2
+	echo "GUI_INCDIR := /usr/include" >> $2
+	echo "GUI_CCFLAGS :=" >> $2
     fi
 
-    echo "GUI_LIBFLAGS = $GUI_LIBFLAGS" >> $2
-    echo "MKDEPEND = $MKDEPEND" >> $2
+    echo "GUI_LIBFLAGS := $GUI_LIBFLAGS" >> $2
+    echo "MKDEPEND := $MKDEPEND" >> $2
 
     if [ -n "$SHARED_CFLAGS" ]; then
-	echo "SHARED_CFLAGS = $SHARED_CFLAGS" >> $2
-	echo "SHARED_AR = $SHARED_AR" >> $2
+	echo "SHARED_CFLAGS := $SHARED_CFLAGS" >> $2
+	echo "SHARED_AR := $SHARED_AR" >> $2
     fi
     ;;
 "-h" )
