@@ -14,6 +14,7 @@
 #include <intuition/intuition.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/input.h>
 #include <devices/conunit.h>
 
 #define SDEBUG 0
@@ -405,7 +406,12 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 		break;
 		
 	    case 8:
-	        result = INP_BACKSPACE;
+	    	if (PeekQualifier() & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+		{
+		    result = INP_SHIFT_BACKSPACE;
+		} else {
+	           result = INP_BACKSPACE;
+		}
 		break;
 	
 	    case 9:
@@ -421,7 +427,12 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 		break;
 		
 	    case 127:
-	    	result = INP_DELETE;
+	    	if (PeekQualifier() & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+		{
+		   result = INP_SHIFT_DELETE;
+		} else {
+	           result = INP_DELETE;
+		}
 		break;
 	
 	    case 24:
