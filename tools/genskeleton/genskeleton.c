@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <sys/errno.h>
+#include <errno.h>
 
 /* Fool the CVS server not to replace empty cvs version tags in printfs */
 #define TAG	" $"
@@ -36,7 +36,11 @@
 #define TYPE_MIN	TYPE_LIBRARY
 #define TYPE_MAX	TYPE_DATATYPE
 
+# define mkdir(name, mode) ((mkdir) (name))
 /****************************************************************************************/
+
+
+
 
 struct TypeInfo
 {
