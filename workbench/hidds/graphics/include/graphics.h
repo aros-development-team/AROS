@@ -414,7 +414,7 @@ enum
 
 #define SHIFT_DOWN_PIX(pix) ((pix) >> MAP_SHIFT)
 #define GET_COLCOMP(comp, pix, pixfmt) \
-	SHIFT_DOWN_PIX( ( (pix) & (pixfmt)-> ## comp ## _mask) << pixfmt-> ## comp ## _shift )
+	SHIFT_DOWN_PIX( ( (pix) & (pixfmt)-> comp ## _mask) << pixfmt-> comp ## _shift )
 
 #define RED_COMP(pix, pixfmt)	GET_COLCOMP(red,   pix, pixfmt)
 #define GREEN_COMP(pix, pixfmt)	GET_COLCOMP(green, pix, pixfmt)
