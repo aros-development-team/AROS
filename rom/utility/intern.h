@@ -1,32 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.9  1997/01/27 15:22:20  ldp
-    Include proto instead of clib
 
-    Revision 1.8  1997/01/08 03:36:14  iaint
-    A few more utility.lib functions
-
-    Revision 1.7  1996/12/18 01:27:36  iaint
-    NamedObjects
-
-    Revision 1.6  1996/10/24 15:51:39  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.5  1996/09/13 17:10:55  aros
-    Don't use the TOLOWER() and TOUPPER() macros directly.
-
-    Revision 1.4  1996/09/12 14:52:47  digulla
-    Better way to separate public and private parts of the library base
-
-    Revision 1.3  1996/08/31 12:58:14  aros
-    Merged in/modified for FreeBSD.
-
-    Revision 1.2  1996/08/01 17:41:42  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Internal information for utility.library.
     Lang:
 */
 #ifndef UTILITY_INTERN_H
@@ -90,22 +66,15 @@ struct IntUtilityBase
     struct UtilityBase UBase;
 
     /*
-       This is where the private data starts.
+	This is where the private data starts.
+	These are in the same order as the Commodore UtilityBase data,
+	this is allow for me to SetFunction() during testing.
     */
     struct ExecBase     *ub_SysBase;
+    BPTR                 ub_SegList;
+    struct NamedObject  *ub_GlobalNameSpace;
     ULONG                ub_LastID;
 
-    struct NamedObject  *ub_GlobalNameSpace;
-
-    /*
-        This should always be at the end, and it is only valid when the
-        library is loaded from disk, eg testing...
-
-        The reference is still in here of course, it just means that
-        when I change the library base I will have to recompile most of
-        the files, oh well...
-    */
-    BPTR                 ub_SegList;
 };
 
 /* digulla again... Needed for close() */
@@ -150,7 +119,6 @@ struct IntNamedObject
 
 #define GetIntNamedObject(no)   ((struct IntNamedObject *)(no))
 #define GetNamedObject(no)      (&GetIntNamedObject(no)->no)
-
 
 /* Internal function prototypes */
 struct NameSpace *GetNameSpace(struct NamedObject *, struct UtilityBase *);

@@ -1,18 +1,16 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang: english
-*/
+    Desc: Find a NamedObject in a NameSpace.
+    Lang: English
 
-/*
+    --------------------------------------------------------------------
+
     This function will start searching through a sublist of NamedObjects
     looking for the node which has the correct name (case insensitive).
     Case sensitive searches are done with FindName().
 
-    The reason for the Utility_ prefixing the call is so that I can
-    use a define IntFindNamedObj() that handles UtilityBase.
 */
 
 #include "utility_intern.h"
@@ -39,12 +37,23 @@ IntFindNamedObj(struct NameSpace *ns,
 	{
 	    if(!Stricmp(name, start->ln_Name))
 	    {
-		/* We have found the node we are after. */
-		return GetIntNamedObject(start);
+		/*
+		    We have found the node we are after.
+		    Note, we actually get the correct address
+		    later.
+		*/
+		no = (struct IntNamedObject *)start;
 	    }
 	    start = start->ln_Succ;
 	}
     }
 
-    return NULL;
+    /*
+	This is safe, since the Node occurs just after the public
+	part of the NamedObject, which is what we return.
+    */
+    if(no)
+	return (struct IntNamedObject *)((struct NamedObject *)no - 1);
+    else
+	return NULL;
 }

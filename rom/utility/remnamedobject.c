@@ -1,14 +1,6 @@
 /*
+    (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 13:17:14  digulla
-    Added #include <proto/exec.h>
-
-    Revision 1.2  1997/01/27 00:32:32  ldp
-    Polish
-
-    Revision 1.1  1996/12/18 01:27:36  iaint
-    NamedObjects
 
     Desc: RemNamedObject() - Remove a NamedObject from a NameSpace.
     Lang: english
@@ -19,7 +11,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/utility.h>
+#include <utility/name.h>
+#include <proto/utility.h>
 
 	AROS_LH2(void, RemNamedObject,
 
@@ -31,19 +24,23 @@
 	struct UtilityBase *, UtilityBase, 44, Utility)
 
 /*  FUNCTION
-	Removes a NamedObject from a NameSpace. If the NamedObject cannot
-	be removed at the time of this call, then the call will return
-	without removing the NamedObject. However it will mark the
-	NamedObject as "waiting for removal", and when the number of users
-	of a NamedObject = 0, it will ReplyMsg() the message which is
-	supplied as a parameter. When the message is replied it will have
-	either the address of the object if it was removed, or NULL if it
-	was not removed, or removed by another method stored in the
-	message->mn_Node.ln_Name field of the message structure.
+	Remove a NamedObject from a namespace.
+
+	If the NamedObject cannot be removed at the time of this call, then
+	the call will return without removing the NamedObject. It will
+	mark the NamedObject as "waiting for removal".
+
+	When the NamedObject is ready to be freed, the supplied message
+	will be ReplyMsg()'d with the message->mn_Node.ln_Name field
+	containing either:
+	    - the address of the NamedObject that was removed. In this case
+	      you can free the NamedObject yourself.
+	    - NULL. In this case, another Task has freed the NamedObject,
+	      and you should not do so.
 
     INPUTS
-	object	    -	The NamedObject to attempt to remove.
-	message     -	The message to send. This message is a standard
+	object      -   The NamedObject to attempt to remove.
+	message     -   The message to send. This message is a standard
 			Exec Message, which MUST have the mn_ReplyPort
 			field correctly set. The mn_Node.ln_Name field
 			will contain the address of the NamedObject or NULL
@@ -62,68 +59,76 @@
     BUGS
 
     SEE ALSO
-	utility/name.h, AttemptRemNamedObject(), AddNamedObject()
+	AttemptRemNamedObject(), AddNamedObject()
 
     INTERNALS
 	AttemptRemNamedObject() calls this function with a NULL message,
 	expecting that we remove the object if possible, or just return.
 
+	ReleaseNamedObject() also calls this with a NULL message.
+
     HISTORY
 	29-10-95    digulla automatically created from
 			    utility_lib.fd and clib/utility_protos.h
 	11-08-96    iaint   Adapted for AROS for stuff I did earlier.
+	09-02-1997  iaint   Improved Message handling.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct NameSpace	   *ns;
+    struct NameSpace       *ns;
     struct IntNamedObject *no;
 
     if(object)
     {
-	Forbid();
-
 	no = GetIntNamedObject( object );
 	ns = no->no_ParentSpace;
 
 	/* If ns == 0, then this node hasn't been added to anywhere */
 	if( ns )
 	{
-	    /* If the UseCount > 1, then we can't remove at the moment.
-	       It must be greater than 1, since the user should have
-	       called FindNamedObject() on this object first.
+	    /* Whether we free now, or later, the message handling is
+	       the same. So we use the same code.
+
+	       The Forbid() is to prevent two tasks from trying to
+	       attach a message at the same time.
 	    */
-	    if( no->no_UseCount > 1)
-	    {
-		/* If we have a message, attach it, otherwise return */
-		if( message )
-		{
-		    message->mn_Node.ln_Name = (STRPTR)object;
-		    no->no_FreeMessage = message;
-		}
-
-		Permit();
-		return;
-	    }
-
-	    /* Ok, so we can remove the NamedObject */
-	    ObtainSemaphore( &ns->ns_Lock );
-
-	    Remove( (struct Node *)no );
-	    no->no_UseCount = 0;
+	    Forbid();
 
 	    if( message )
 	    {
-		message->mn_Node.ln_Name = (STRPTR)object;
-		no->no_FreeMessage = message;
-		ReplyMsg( message );
+		if( no->no_FreeMessage == NULL)
+		{
+		    /* This is the message, mark for later */
+		    message->mn_Node.ln_Name = (STRPTR)object;
+		    no->no_FreeMessage = message;
+		}
+		else
+		{
+		    /* This message is not it, return NULL name. */
+		    message->mn_Node.ln_Name = NULL;
+		    ReplyMsg(message);
+		}
 	    }
-	    ReleaseSemaphore( &ns->ns_Lock );
+
+	    Permit();
+
+	    if(no->no_UseCount == 0)
+	    {
+		/* Ok, so we can remove the NamedObject */
+		ObtainSemaphore( &ns->ns_Lock );
+
+		Remove( (struct Node *)&no->no_Node );
+
+		if(no->no_FreeMessage)
+		{
+		    ReplyMsg( no->no_FreeMessage );
+		}
+		ReleaseSemaphore( &ns->ns_Lock );
+	    }
 
 	} /* if ( ns ) */
-
-	Permit();
 
     } /* if( object ) */
 
