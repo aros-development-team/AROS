@@ -1,25 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:36:24  ldp
-    Polish
 
-    Revision 1.4  1996/12/09 13:53:33  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.3  1996/10/24 15:50:32  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/09/21 14:14:23  digulla
-    Hand DOSBase to DoName()
-
-    Revision 1.1  1996/09/11 12:54:46  digulla
-    A couple of new DOS functions from M. Fleischer
-
-    Desc:
+    Desc: Locks a file or directory.
     Lang: english
 */
 #include <proto/exec.h>
@@ -119,7 +102,7 @@
 	}
 	FreeDosObject(DOS_FILEHANDLE,ret);
     }else
-	me->pr_Result2=ERROR_NO_FREE_STORE;
+	SetIoErr(ERROR_NO_FREE_STORE);
     return 0;
     AROS_LIBFUNC_EXIT
 } /* Lock */
