@@ -124,6 +124,7 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     /* Keep compiler happy */
     version=0;
 
+    GadToolsBase->buttonclass = NULL;
     GadToolsBase->checkclass = NULL;
 
     if (!IntuitionBase)
@@ -169,6 +170,8 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
       {
         if (GadToolsBase->checkclass)
 	    FreeClass(GadToolsBase->checkclass);
+        if (GadToolsBase->buttonclass)
+            FreeClass(GadToolsBase->buttonclass);
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
 	if (GfxBase)

@@ -106,16 +106,18 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 }
 
 
+UWORD disabledpattern[2] = {0x4444, 0x1111};
+
 /* draws a disabled pattern */
 void drawdisabledpattern(struct GadToolsBase_intern *GadToolsBase,
 			 struct RastPort *rport, UWORD pen,
 			 WORD left, WORD top, UWORD width, UWORD height)
 {
-    int x, y;
-
-    SetAPen(rport, pen);
-    SetDrMd(rport, JAM1);
-    for (y=0; y<(height-1); y++)
+    SetABPenDrMd(rport, pen, 0, JAM1);
+    rport->AreaPtrn = disabledpattern;
+    rport->AreaPtSz = 1;
+    RectFill(rport, left, top, left+width-1, top+height-1);
+    /*    for (y=0; y<(height-1); y++)
     {
         for (x=0; x<(width-1); x++)
 	{
@@ -135,7 +137,7 @@ void drawdisabledpattern(struct GadToolsBase_intern *GadToolsBase,
 		}
             }
 	}
-    }
+    } */
 }
 
 

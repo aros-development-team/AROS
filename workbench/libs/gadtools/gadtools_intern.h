@@ -51,6 +51,7 @@ void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
                       WORD left, WORD top, WORD width, WORD height,
                       struct TagItem *taglist);
 
+Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makecheckclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
@@ -73,6 +74,7 @@ struct GadToolsBase_intern
     struct GfxBase       * gfxbase;
     struct Library       * utilitybase;
 
+    Class * buttonclass;
     Class * checkclass;
 };
 
