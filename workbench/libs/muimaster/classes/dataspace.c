@@ -242,18 +242,14 @@ static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Datas
     while (iter)
     {
 	ULONG len = iter->len+8;
-#ifdef __AROS__
 	/* Data is stored in big-endian whatever your machine.
 	 * Be sure sure to convert data to big endian.
 	 */
 	iter->id = AROS_LONG2BE(iter->id);
 	iter->len = AROS_LONG2BE(iter->len);
-#endif
     	rc = WriteChunkBytes(msg->handle, &iter->id, len); /* ID - LEN - DATA */
-#ifdef __AROS__
 	iter->id = AROS_LONG2BE(iter->id);
 	iter->len = AROS_LONG2BE(iter->len);
-#endif
     	if (rc < 0)
 	{
 	    return rc;
