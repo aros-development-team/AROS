@@ -141,7 +141,7 @@ HIDDT_IRQ_Id translation_table[] = {
 	vHidd_IRQ_Timer,
 	vHidd_IRQ_Keyboard,
 /* 2 */	-1,
-	vHidd_IRQ_Serial2,
+	-1, 
 	vHidd_IRQ_Serial1,
 /* 5 */	-1,
 	-1, //vHidd_IRQ_Floppy,
@@ -150,7 +150,7 @@ HIDDT_IRQ_Id translation_table[] = {
 /* 9 */	-1,
 	-1,
 	-1,
-	-1, //vHidd_IRQ_Mouse,
+	vHidd_IRQ_Touchscreen,
 /* 13 */-1,
 	-1, //vHidd_IRQ_HDD1,
 	-1  //vHidd_IRQ_HDD2
