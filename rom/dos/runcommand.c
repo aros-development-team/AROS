@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Execute a loaded command synchonously
@@ -99,7 +99,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	return -1;
 
     sss.stk_Lower=stack;
-    sss.stk_Upper=(IPTR)stack+stacksize;
+    sss.stk_Upper=stack+stacksize;
 
     oldresult=me->pr_Result2;
     if(me->pr_CIS)
@@ -108,6 +108,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	Flush(me->pr_COS);
     if(me->pr_CES)
 	Flush(me->pr_CES);
+	
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
@@ -118,15 +119,20 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;
+    
     if(me->pr_CIS)
 	Flush(me->pr_CIS);
     if(me->pr_COS)
 	Flush(me->pr_COS);
     if(me->pr_CES)
 	Flush(me->pr_CES);
+    
     me->pr_Result2=oldresult;
 
     FreeMem(stack,stacksize);
+    
     return ret;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* RunCommand */
