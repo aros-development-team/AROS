@@ -298,8 +298,10 @@ for it will fail.
 \begin{new}{24.1.2000}
 Here are a few things that I saved as emails that could be done later.
 Some of them are quite old, and some well, aren't... iaint.
+\end{new}
 
 \item
+\begin{new}{24.1.2000}
 By: Aaron Digulla
 Date: Fri, 23 Oct 1998
 Subject: [aros-dev] Shared libs/objects idea
@@ -330,8 +332,10 @@ This way, we could separate the amiga-specific parts of AROS
 much better from the portable parts. Also, it would be possible
 to create different interfaces much better. And the interface
 wouldn't be intermixed with the portable code as it is now.
+\end{new}
 
 \item
+\begin{new}{24.1.2000}
 By: Aaron Digulla
 Date: Wed, 3 Mar 1999 10:25:09 +0100
 Subject: [aros-dev] Idea: Configuration Database
@@ -347,6 +351,6 @@ It would also answer the question "why did I disable that" ?
 
 And with tags, you can name stable states of the config and
 switch between them.
-
 \end{new}
+
 \end{itemize}
