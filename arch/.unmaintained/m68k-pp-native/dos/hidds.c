@@ -28,6 +28,7 @@
 #include <hidd/serial.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include <clib/arossupport_protos.h>
 
