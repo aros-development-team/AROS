@@ -40,4 +40,5 @@ $(OBJDIR)/%.d: %.c
 
 ifneq ($(TARGET),clean)
 include $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d
+include $(OBJDIR)/ffs_handler.d $(OBJDIR)/fdsk_device.d
 endif
