@@ -174,27 +174,31 @@ finddirnode (DirNode * topnode, const char * path)
     return subdir;
 }
 
+
 int
 scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 {
     struct stat st;
     DIR * dirh;
     struct dirent * dirent;
+
     int mfnamelen = strlen(mfname), scanned = 0;
     
     if (stat(".", &st) != 0)
     {
-	error("scandirnode(): scanning %s\n",
-	      strlen(node->node.name)==0 ? "topdir" : node->node.name
-	);
-	exit(20);
+		error("scandirnode(): scanning %s\n",
+            strlen(node->node.name) == 0
+                ? "topdir"
+                : node->node.name);
+
+        exit(20);
     }
 
     if (st.st_mtime > node->time)
     {
-	List newdirs, newmakefiles;
-	DirNode * subdir = NULL, * subdir2;
-	Makefile * makefile;
+    	List newdirs, newmakefiles;
+    	DirNode * subdir = NULL, * subdir2;
+    	Makefile * makefile;
 	
 	if (debug)
 	    printf("scandirnode(): scanning %s\n",
@@ -299,6 +303,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 		}
 	    }
 	}
+
 	closedir (dirh);
 	
 	ForeachNodeSafe (&node->subdirs, subdir, subdir2)
@@ -315,6 +320,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 	    
 	    freelist (&makefile->targets);
 	}
+
 	freelist (&node->makefiles);
 	
 	AssignList (&node->makefiles, &newmakefiles);
@@ -329,6 +335,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
     
     return scanned;
 }
+
 
 int
 scanmakefiles (DirNode * node, List * vars)
@@ -506,7 +513,7 @@ printf ("found #MM in %s\n", makefile->name);
 				mftarget->virtualtarget = 0;
 			}
 			else
-			    printf ("Warning: Can't find metatarget in %s:%d\n", makefile->node.name, lineno);
+			    printf ("Warning: Can't find metatarget in %s:%d (%s)\n", makefile->node.name, lineno, buildpath(node));
 		    }
 		    else
 		    {
@@ -575,6 +582,7 @@ printf ("Read %d lines\n", lineno);
 
     return reread;
 }
+
 
 Makefile *
 addmakefile (DirNode * node, const char * filename)
@@ -655,6 +663,7 @@ addmakefile (DirNode * node, const char * filename)
     return makefile;
 }
 
+
 Makefile *
 findmakefile (DirNode * node, const char *filename)
 {
@@ -676,6 +685,7 @@ findmakefile (DirNode * node, const char *filename)
 	if (ptr[len] == '/')
 	{
 	    subnode = FindNode (&node->subdirs, name);
+
 	    if (subnode == NULL)
 	    {
 		xfree(name);
@@ -704,6 +714,7 @@ typedef struct {
     DirNode * dirnode;
 }
 DirNodeRef;
+
 
 const char *
 buildpath (DirNode * node)
@@ -812,6 +823,7 @@ readmakefile (FILE * fh)
     return makefile;
 }
 
+
 int
 writemakefile (FILE * fh, Makefile * makefile)
 {
@@ -879,6 +891,7 @@ writemakefile (FILE * fh, Makefile * makefile)
     
     return 1;
 }
+
 
 DirNode *
 readcachedir (FILE * fh)
