@@ -3,7 +3,7 @@ TOP=../../..
 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I. -I./machines/$(KERNEL)
+USER_INCLUDES = -I. -I./machines/$(KERNEL) -I$(TOP)/apps/compiler/clib/include
 
 OBJDIR = $(GENDIR)/apps/compiler/vbcc
 LIBS = -L$(LIBDIR) -larosc -lamiga -laros
@@ -26,10 +26,10 @@ $(EXEDIR)/vc : vc.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(EXEDIR)/vbcc : $(CC_OBJS) $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CC_OBJS) -o $@ $(LIBS) -lm
+	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CC_OBJS) -o $@ $(LIBS) #-lm
 
 $(EXEDIR)/vbccs : $(CCS_OBJS) $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CCS_OBJS) -o $@ $(LIBS) -lm
+	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CCS_OBJS) -o $@ $(LIBS) #-lm
 
 setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR); else true ; fi
