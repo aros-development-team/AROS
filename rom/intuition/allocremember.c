@@ -26,7 +26,7 @@
 	struct IntuitionBase *, IntuitionBase, 66, Intuition)
 
 /*  FUNCTION
-	Allocate some memory and remeber it in the Remeber-List.
+	Allocate some memory and remeber it in the Remember-List.
 
     INPUTS
 	rememberKey - Store information in this list
