@@ -73,25 +73,36 @@
 
 ******************************************************************************/
 
-#include <proto/arossupport.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
 
 #include <dos/dos.h>
 #include <dos/dosasl.h>
 #include <dos/dosextens.h>
+#include <dos/exall.h>
 #include <dos/rdargs.h>
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <utility/utility.h>
 
+#include <proto/arossupport.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+
 #include <ctype.h>
+
+#define CTRL_C         (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
 #define Bit_Mask(bit)           (1L << bit)
 #define Bit_Clear(name, bit)    name &= ~Bit_Mask(bit)
 #define Bit_Set(name, bit)      name |= Bit_Mask(bit)
 
 #define ARG_TEMPLATE    "FILE/A,FLAGS,ADD/S,SUB/S,ALL/S,QUIET/S"
+
+#ifndef FIBB_HOLD
+#define FIBB_HOLD 7
+#endif
+#ifndef FIBF_HOLD
+#define FIBF_HOLD (1<<FIBB_HOLD)
+#endif
 
 enum 
 {
@@ -163,7 +174,18 @@ int main(void)
 
 	    if (flags != NULL)
 	    {
-	        while (*flags != 0)
+                if (*flags == '+')
+                {
+                        add = TRUE;
+                        flags++;
+                }
+                if (*flags == '-')
+                {
+                        sub = TRUE;
+                        flags++;
+                }
+
+	        while (*flags != 0 && retval == RETURN_OK)
 		{
 		    switch (toupper(*flags))
 		    {
@@ -197,14 +219,24 @@ int main(void)
 			    flagValues |= FIBF_PURE;
 			    break;
 
+    	    	    	case 'H':
+			    flagValues |= FIBF_HOLD;
+			    break;
+			    
 			default:
-			    Printf("Invalid flags - must be one of SPARWED\n");
+			    Printf("Invalid flags - must be one of HSPARWED\n");
 			    retval = RETURN_FAIL;
 		    }
 
 		    flags++;
 		} /* while (*flags != 0) */
 	    }
+
+            if (add && sub)
+            {
+                Printf("ADD and SUB are mutually exclusive\n");
+                retval = RETURN_FAIL;
+            }
 
 	    if (retval == RETURN_OK)
 	    {
@@ -265,27 +297,29 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
     int   i;			/* Loop variable */
     BOOL  error;
 
-    for (match = MatchFirst(file, ap); match == 0 && retval == RETURN_OK;
+    for (match = MatchFirst(file, ap);
+    	 match == 0 && retval == RETURN_OK && !CTRL_C;
 	 match = MatchNext(ap))
     {
 	if (isDir(&ap->ap_Info))
 	{
-	    if (all)
-	    {
-		ap->ap_Flags |= APF_DODIR;
-		indent++;
-	    }
-
 	    if (ap->ap_Flags & APF_DIDDIR)
 	    {
 		indent--;
 		ap->ap_Flags &= ~APF_DIDDIR; /* Should not be necessary */
 		continue;
 	    }
+	    else if (all)
+	    {
+		ap->ap_Flags |= APF_DODIR;
+		indent++;
+	    }
+
+
 	}
 
-	error = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flagsSet,
-			      flags, add, sub);
+	error = setProtection(ap->ap_Buf, ap->ap_Info.fib_Protection, flags,
+			      flagsSet, add, sub);
 
 	/* Fix indentation level */
 	for (i = 0; i < indent; i++)
@@ -312,10 +346,10 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 }
 
 #define  ALL_OFF  (FIBF_READ | FIBF_WRITE | FIBF_DELETE | FIBF_EXECUTE)
-#define  addFlags(new, old)  (((old & ~new) & ALL_OFF) | \
+#define addFlags(new, old)  ((~(~old | ~new) & ALL_OFF) | \
 			      ((old | new) & ~ALL_OFF))
      
-#define  subFlags(new, old)  (((old | new) & ALL_OFF) | \
+#define  subFlags(new, old)  (((old | ~new) & ALL_OFF) | \
 			      ((old & ~new) & ~ALL_OFF))
      
 BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet, 
@@ -323,7 +357,7 @@ BOOL setProtection(STRPTR file, LONG oldFlags, LONG flags, BOOL flagsSet,
 {
     LONG  newFlags;
     
-    if (flagsSet)
+    if (flags != ALL_OFF)
     {
 	if (add)
 	{
@@ -542,6 +576,10 @@ void AddBitMask(struct AnchorPath *a, STRPTR f, LONG *b, BOOL copy)
 
         switch (f[LoopCount])
         {
+	    case 'h':	/* Hold */
+	    	Bit_Set(*b, FIBB_HOLD);
+		break;
+		
             case 's':   /* Script */
                 Bit_Set(*b, FIBB_SCRIPT);
                 break;
@@ -598,6 +636,10 @@ void SubBitMask(struct AnchorPath *a, STRPTR f, LONG *b, BOOL copy)
 
         switch (f[LoopCount])
         {
+	    case 'h':	/* Hold */
+	    	Bit_Clear(*b, FIBB_HOLD);
+		break;
+		
             case 's':   /* Script */
                 Bit_Clear(*b, FIBB_SCRIPT);
                 break;
@@ -638,7 +680,7 @@ void NewBitMask(struct AnchorPath *a, STRPTR f, LONG *b)
 
     LoopCount = 0;
 
-    SubBitMask(a, "sparwed", b, TRUE);
+    SubBitMask(a, "hsparwed", b, TRUE);
     AddBitMask(a, f, b, FALSE);
 } /* NewBitMask */
 
