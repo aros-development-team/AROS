@@ -129,7 +129,7 @@ kprintf("%s %d\n",__FUNCTION__,__LINE__);
     {
 kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
       if (lparent && 
-          (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
+          (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
         _BackFillRegion(lparent, l->shape, FALSE);
     }
     else

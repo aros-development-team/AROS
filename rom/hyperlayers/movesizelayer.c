@@ -284,11 +284,11 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
       else
         OrRegionRegion(r, _l->VisibleRegion);
 
-      if (IS_VISIBLE(_l) || (_l == _l->LayerInfo->check_lp))
+      if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
         AndRegionRegion(_l->VisibleRegion, oldshape);
 
 #if 0
-      if (_l == _l->LayerInfo->check_lp)
+      if (IS_ROOTLAYER(_l))
         kprintf("root reached! %p\n",_l);
 #endif
       
@@ -314,7 +314,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     if (!IS_EMPTYREGION(oldshape))
     {
       if (lparent &&
-          (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
+          (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
         _BackFillRegion(l->parent, oldshape, FALSE);
     }
   }
