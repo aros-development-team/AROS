@@ -118,6 +118,7 @@ tryagain:
     }
 
     ChunkE = GetHead(&Pool->ChunkList);
+#warning Remove this check when the bug is surely gone away
     if (!ChunkE)
     {
         kprintf("\007%s (%s): Argh! ChunkE is NULL, but this should NEVER happen. NumChunkFree = %ld\n", __FILE__, __FUNCTION__, Pool->NumChunkFree);
@@ -129,7 +130,12 @@ tryagain:
             about it is that it has to have something to do with the fact that
             Forbid()/Permit() are not atomic... One should fix that to see whether I'm right.
             In the meantime this hack seems to work well.
+
+            ****
+
+            Ok, It seems I fixed that, but I leave this check here anyway, in case it happens again
         */
+
         Pool->NumChunkFree = 0;
         goto tryagain;
     }
@@ -159,13 +165,15 @@ void __DisposeRegionRectangleExtChunk
 
     ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
 
+    REMOVE(Pool);
+
     if (++Pool->NumChunkFree == SIZECHUNKBUF)
     {
-        REMOVE(Pool);
         FreeMem(Pool, sizeof(struct ChunkPool));
     }
     else
     {
+	ADDHEAD(&PrivGBase(GfxBase)->ChunkPoolList, Pool);
         ADDTAIL(&Pool->ChunkList, Chunk);
     }
 
@@ -255,14 +263,17 @@ void _DisposeRegionRectangleList
         RR->Prev->Next = NULL;
     }
 
+    /* Is this the first rectangle in the chunk? */
     if (!Counter(RR))
     {
+	/* If so then this chunk has to be deleted too */
         NextChunk = Chunk(RR);
     }
     else
     {
-	RR = &Chunk(RR)->Rects[SIZERECTBUF - 1].RR;
-        NextChunk = (struct RegionRectangleExtChunk *)RR->Next;
+	/* otherwise dispose all the chunks starting from the one after this one */
+        RR = &Chunk(RR)->Rects[SIZERECTBUF - 1].RR;
+        NextChunk = Chunk(RR->Next);
         RR->Next = NULL;
     }
 
@@ -270,7 +281,7 @@ void _DisposeRegionRectangleList
     {
         struct RegionRectangleExtChunk *OldChunk = NextChunk;
 
-        NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next;
+        NextChunk = Chunk(NextChunk->Rects[SIZERECTBUF - 1].RR.Next);
 
         _DisposeRegionRectangleExtChunk(OldChunk);
     }
@@ -1092,17 +1103,22 @@ BOOL _AndRectRegion
         {
 	    /* The region is not completely contained in the rectangle */
 
-            struct RegionRectangle *rr, *PtrToFirst, *LastRect;
+            struct RegionRectangle *rr, *PtrToFirst;
             struct RegionRectangleExt RRE;
             struct Rectangle Rect2;
             LONG OffX, OffY;
 
-            PtrToFirst   = &RRE.RR;
-            RRE.Counter = 0;
+            PtrToFirst  = &RRE.RR;
+
+            /*
+               Set the counter to its maximum value so that
+                  Chunk(rr->Prev)->Rects[SIZERECTBUF-1].RR.Next = NextRR
+               can actually work out well.
+            */
+            RRE.Counter = SIZERECTBUF - 1;
 
             PtrToFirst->Next = Reg->RegionRectangle;
             Reg->RegionRectangle->Prev = PtrToFirst;
-	    LastRect = PtrToFirst;
 
             Rect2.MinX = Rect->MinX - OldBounds.MinX;
             Rect2.MinY = Rect->MinY - OldBounds.MinY;
@@ -1138,13 +1154,7 @@ BOOL _AndRectRegion
                        The way we handle RegionRectangles doesn't let us just free it,
                        we can just adjust the pointers of the previous and successive rectangles
                        to point to each other.
-
-                       In case this RegionRectangle is the last one left in its chunk then delete the
-                       chunk. In this case a bug might arise. Read the explanation in the comment for the
-                       function _NewRegionRectangleExtChunk()
  		    */
-
-                    struct RegionRectangleExtChunk *NextChunk = NULL;
 
 		    /* There's always a previous rectangle. Just fix its next pointer */
                     rr->Prev->Next = NextRR;
@@ -1152,24 +1162,18 @@ BOOL _AndRectRegion
 		    /* Fix the Next rectangle's Prev pointer */
                     if (NextRR)
     		    {
-        		NextChunk = Chunk(NextRR);
         		NextRR->Prev = rr->Prev;
     		    }
 
 		    /* Is this RegionRectangle the last one in its chunk? */
-                    if (Chunk(rr->Prev) != Chunk(rr) && NextChunk != Chunk(rr))
+                    if (Chunk(rr->Prev) != Chunk(rr) && Chunk(NextRR) != Chunk(rr))
     		    {
 			/*
                            If so then update the previous chunk's pointer to the next chunk
-                           to point to the correct chunk
+                           to point to the correct chunk's rectangle.
                         */
                         Chunk(rr->Prev)->Rects[SIZERECTBUF-1].RR.Next = NextRR;
-
-                        /*
-                           And dispose this chunk.
-                           Have a look at the previous comment for an explanation of a
-                           bug related to this function
-                        */
+			/* And dispose this chunk. */
 	       		_DisposeRegionRectangleExtChunk(Chunk(rr));
     		    }
                 }
