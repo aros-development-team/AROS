@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/mount.h>
+#include <sys/wait.h>
 
 #include <signal.h>
 #include <assert.h>
