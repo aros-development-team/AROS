@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -27,9 +27,17 @@
 
 /*  FUNCTION
 
+    Check if a string matches a pattern. The pattern must be a pattern as
+    output by ParsePattern(). Note that this routine is case sensitive.
+
     INPUTS
 
+    pat   --   Pattern string (as returned by ParsePattern())
+    str   --   The string to match against the pattern 'pat'
+
     RESULT
+
+    Boolean telling whether the string matched the pattern.
 
     NOTES
 
@@ -39,11 +47,11 @@
 
     SEE ALSO
 
+    ParsePattern(), MatchPatternNoCase(), MatchFirst(), MatchNext()
+
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
