@@ -102,10 +102,10 @@ static UBYTE hikeymaptypes[] =
     V,	/* 49 */
     V,	/* 4A */
     V, 	/* 4B */
-    S, 		/* 4C */
-    S, 		/* 4D */
-    S, 		/* 4E */
-    S, 	/* 4F */
+    NOP, 		/* 4C CURSORUP*/
+    NOP, 		/* 4D CURSORDOWN */
+    NOP, 		/* 4E CURSORRIGHT */
+    NOP, 		/* 4F CURSORLEFT */
     V|ST, 		/* 50 */
     S, 		/* 51 */
     S, 		/* 52 */
