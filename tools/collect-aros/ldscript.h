@@ -15,6 +15,7 @@
 "  .text 0 :\n"\
 "  {\n"\
 "    *(.text)\n"\
+"    *(.text.*)\n"\
 "    *(.stub)\n"\
 "    /* .gnu.warning sections are handled specially by elf32.em.  */\n"\
 "    *(.gnu.warning)\n"\
