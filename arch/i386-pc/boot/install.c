@@ -291,7 +291,7 @@ void installStageFiles(struct Volume *volume) {
 unsigned int block,retval;
 
 	retval=findFile(volume, "/boot/grub/stage2", stage2_firstblock);
-	if (retval == 0)
+	if ( retval == 0 )
 	{
 		block = AROS_BE2LONG(stage2_firstblock[1]);
 		/* read first data block */
