@@ -48,6 +48,8 @@ struct HIDDBitMapData
     Object *bitMap;
     /* WARNING: structure could be extented in the future                */
     ULONG colExp;	/* Color expansion mode	*/
+    
+    Object *friend;	/* Friend bitmap */
 
 };
 
