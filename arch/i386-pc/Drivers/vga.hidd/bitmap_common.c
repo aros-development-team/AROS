@@ -295,10 +295,6 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct Box      	box = {0, 0, 0, 0};
-    UBYTE   	       *buff = data->VideoData + msg->x + (msg->y * data->width);
-    ULONG   	    	add = data->width - msg->width;
-    ULONG   	    	cnt = msg->height;
-    UBYTE   	       *s_start = (UBYTE *)msg->pixels;
     BOOL    	    	done_by_superclass = FALSE;
     int     	    	i;
     
@@ -308,37 +304,29 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
-	    while (cnt > 0)
-	    {
-    		UBYTE *p = s_start;
-
-        	i = msg->width;
-        	while (i)
-        	{
-        	    *buff++ = *p++;
-        	    i--;
-        	}
-        	buff += add;
-		s_start += msg->modulo;
-        	cnt--;
-	    }
+	    HIDD_BM_CopyMemBox8(o,
+		    	    	msg->pixels,
+				0,
+				0,
+				data->VideoData,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height,
+				msg->modulo,
+				data->width);
 	    break;
 	    
-    	case vHidd_StdPixFmt_Native32:
-	    while (cnt > 0)
-	    {
-    		HIDDT_Pixel *p = (HIDDT_Pixel *)s_start;
-
-        	i = msg->width;
-        	while (i)
-        	{
-        	    *buff++ = (UBYTE)*p++;
-        	    i--;
-        	}
-        	buff += add;
-		s_start += msg->modulo;
-        	cnt--;
-	    }
+   	case vHidd_StdPixFmt_Native32:
+	    HIDD_BM_PutMem32Image8(o,
+		    	    	   msg->pixels,
+				   data->VideoData,
+				   msg->x,
+				   msg->y,
+				   msg->width,
+				   msg->height,
+				   msg->modulo,
+				   data->width);
 	    break;
 	    
 	default:
@@ -377,47 +365,35 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-    UBYTE   	    	*buff = data->VideoData + msg->x + (msg->y * data->width);
-    ULONG   	    	 add = data->width - msg->width;
-    ULONG   	    	 cnt = msg->height;
-    UBYTE      	    	*s_start = (UBYTE *)msg->pixels;
     int     	    	 i;
 
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
-	    while (cnt > 0)
-	    {
-	    	UBYTE *p = s_start;
-		
-        	i = msg->width;
-        	while (i)
-        	{
-		    *p++ = *buff++;
-        	    i--;
-        	}
-        	buff += add;
-		s_start += msg->modulo;
-        	cnt--;
-	    }
+	    HIDD_BM_CopyMemBox8(o,
+		    	    	data->VideoData,
+				msg->x,
+				msg->y,
+				msg->pixels,
+				0,
+				0,
+				msg->width,
+				msg->height,
+				data->width,
+				msg->modulo);
 	    break;
 	    
     	case vHidd_StdPixFmt_Native32:
-	    while (cnt > 0)
-	    {
-	    	HIDDT_Pixel *p = (HIDDT_Pixel *)s_start;
-
-        	i = msg->width;
-        	while (i)
-        	{
-		    *p++ = (HIDDT_Pixel)*buff++;
-        	    i--;
-        	}
-        	buff += add;
-		s_start += msg->modulo;
-        	cnt--;
-	    }
-	    break;
+	    HIDD_BM_GetMem32Image8(o,
+		    	    	   data->VideoData,
+				   msg->x,
+				   msg->y,
+				   msg->pixels,
+				   msg->width,
+				   msg->height,
+				   data->width,
+				   msg->modulo);
+    	    break;
 	    
 	    
     	default:
@@ -435,32 +411,21 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
 
-    int i;
-
-    // start of Source data
-    unsigned char *buff = data->VideoData +
-                                 msg->x + (msg->y * data->width);
-    // adder for each line
-    ULONG add = data->width - msg->width;
-    ULONG cnt = msg->height;
-
-    unsigned char *s_start = msg->pixels;
-
     EnterFunc(bug("VGAGfx.BitMap::PutImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 
-    while (cnt > 0)
-    {
-        i = msg->width;
-        while (i)
-        {
-            *buff++ = *s_start++;
-            i--;
-        }
-        buff += add;
-	s_start += (msg->modulo - msg->width);
-        cnt--;
-    }
+    HIDD_BM_CopyMemBox8(o,
+		    	msg->pixels,
+			0,
+			0,
+			data->VideoData,
+			msg->x,
+			msg->y,
+			msg->width,
+			msg->height,
+			msg->modulo,
+			data->width);
+    
     if (data->disp)
     {
         box.x1 = msg->x;
