@@ -324,13 +324,25 @@ void REGARGS my_FreeGadgets (struct Gadget *glist)
     struct Gadget *gad;
     struct Image  *im;
 
+#ifdef USE_FORBID
     Forbid();
+#else
+    /* FIXME: Any reason for locking here?
+       As far as I can tell all use of this function are reentrant and the
+       glist is never attached to Window when called.
+       If locking is needed for other reasons, semaphore would be better
+       than Forbid(). -Piru */
+#endif
     for (gad = glist; gad; gad = gad->NextGadget)
     {
 	if ((im = IsButtonGad (gad))) DisposeObject (im);
     }
     FreeGadgets (glist);
+#ifdef USE_FORBID
     Permit();
+#else
+    /* unlock */
+#endif
 }
 
 /****************************************************************************************/
