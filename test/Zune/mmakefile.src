@@ -13,7 +13,8 @@ FILES  := test      	    \
 	  numericbutton     \
 	  poplist   	    \
 	  popscreen 	    \
-	  crawling
+	  crawling	    \
+	  levelmeter
 
 EXEDIR := $(AROSDIR)/test/Zune
 
