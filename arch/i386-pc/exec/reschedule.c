@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 
 void Exec_Permit_Supervisor();
 
@@ -64,13 +65,13 @@ void Exec_Permit_Supervisor();
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE flag = SysBase->AttnResched;	/* Save state of scheduling attention */
+    UBYTE flag = SysBase->AttnResched;	    	/* Save state of scheduling attention */
     
-    SysBase->AttnResched |= 0x80;	/* Set scheduling attention */
+    AROS_ATOMIC_ORW(SysBase->AttnResched, 0x80);/* Set scheduling attention */
     
-    if (SysBase->TDNestCnt < 0)		/* If task switching enabled */
+    if (SysBase->TDNestCnt < 0)		    	/* If task switching enabled */
     {
-	if (SysBase->IDNestCnt < 0)	/* And interrupts enabled */
+	if (SysBase->IDNestCnt < 0)	    	/* And interrupts enabled */
 	{
 	    Supervisor(Exec_Permit_Supervisor);
 	}
