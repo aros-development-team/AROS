@@ -70,7 +70,7 @@
 	RTTO_WindowToBack,
     };
 
-    BEGIN_EXTERN
+    __BEGIN_DECLS
     void RT_IntInitB (void);
     void RT_IntInitE (void);
     void RT_IntExitB (void);
@@ -81,7 +81,7 @@
     void RT_IntEnter (const char * functionname, const char * filename, int line);
     void RT_IntTrack (int rtt, const char * file, int line, APTR res, ...);
     void RT_Leave    (void);
-    END_EXTERN
+    __END_DECLS
 
 #	ifndef RT_INTERNAL
 #	    define RT_Add(rtt, args...)       RT_IntAdd (rtt, __FILE__, __LINE__, ##args)
@@ -103,8 +103,10 @@
 #		include <proto/exec.h>
 #	    endif
 
-	    EXTERN void RT_InitExec (void);
-	    EXTERN void RT_ExitExec (void);
+	    __BEGIN_DECLS
+	    void RT_InitExec (void);
+	    void RT_ExitExec (void);
+	    __END_DECLS
 
 #	    define RT_INITEXEC		    RT_InitExec(),
 #	    define RT_EXITEXEC		    RT_ExitExec(),
@@ -146,8 +148,10 @@
 #		include <proto/dos.h>
 #	    endif
 
-	    EXTERN void RT_InitDos (void);
-	    EXTERN void RT_ExitDos (void);
+	    __BEGIN_DECLS
+	    void RT_InitDos (void);
+	    void RT_ExitDos (void);
+	    __END_DECLS
 
 #	    define RT_INITDOS		    RT_InitDos(),
 #	    define RT_EXITDOS		    RT_ExitDos(),
@@ -173,8 +177,10 @@
 #		include <proto/intuition.h>
 #	    endif
 
-	    EXTERN void RT_InitIntuition (void);
-	    EXTERN void RT_ExitIntuition (void);
+	    __BEGIN_DECLS
+	    void RT_InitIntuition (void);
+	    void RT_ExitIntuition (void);
+	    __END_DECLS
 
 #	    define RT_INITINTUITION	    RT_InitIntuition(),
 #	    define RT_EXITINTUITION	    RT_ExitIntuition(),
