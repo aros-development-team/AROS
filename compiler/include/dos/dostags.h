@@ -2,7 +2,7 @@
 #define DOS_DOSTAGS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Tags for DOS routines
@@ -19,11 +19,9 @@
 /* Tags for CreateNewProc(). All tags, where no default is stated, the default
    is inherited from the parent process. Additionally you may use tags for
    AllocDosObject(DOS_CLI, ...). */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#   define NP_Dummy        (TAG_USER + 1000)
-#else
-#   define NP_Dummy	   (DOS_TAGBASE + 1000)
-#endif
+
+#define NP_Dummy        (TAG_USER + 1000)
+
 /* Exactly one of NP_Seglist or NP_Entry must be specified. */
   /* (BPTR) Seglist of code for process. */
 #define NP_Seglist	(NP_Dummy + 1)
@@ -93,11 +91,9 @@
 
 /* Tags for SystemTagList(). Additionally you may use all the tags for
    CreateNewProc(). */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#   define SYS_Dummy       (TAG_USER + 32)
-#else
-#   define SYS_Dummy	   (DOS_TAGBASE)
-#endif
+
+#define SYS_Dummy       (TAG_USER + 32)
+
 /* The supplied filehandles are automatically closed, when the new process
    exits, if SYS_Asynch is TRUE. If it is false, they remain opened. */
   /* (BPTR/struct FileHandle *) Input filehandle. This must be a different
@@ -122,11 +118,8 @@
  **********************************************************************/
 
 /* Tags for AllocDosObject(). */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-#   define ADO_Dummy	   (TAG_USER + 2000)
-#else
-#   define ADO_Dummy	   (DOS_TAGBASE + 2000)
-#endif
+
+#define ADO_Dummy	(TAG_USER + 2000)
 
 /* Tags for DOS_FILEHANDLE only. */
   /* Sets up the filehandle for the specified mode. Definitions are in
