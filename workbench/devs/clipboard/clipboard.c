@@ -180,9 +180,8 @@ AROS_UFH3(struct ClipboardBase *,  AROS_SLIB_ENTRY(init,Clipboard),
     NEWLIST(&CBBase->cb_HookList);
 
     return CBBase;
-#ifndef __MORPHOS__
+
     AROS_USERFUNC_EXIT
-#endif
 }
 
 /****************************************************************************************/
