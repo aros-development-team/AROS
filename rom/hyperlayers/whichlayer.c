@@ -66,7 +66,8 @@
   LockLayers(li);
 
   for(l = li->top_layer; l != NULL; l = l->back)
-    if(x >= l->shape->bounds.MinX && x <= l->shape->bounds.MaxX &&
+    if(IS_VISIBLE(l) &&
+       x >= l->shape->bounds.MinX && x <= l->shape->bounds.MaxX &&
        y >= l->shape->bounds.MinY && y <= l->shape->bounds.MaxY)
     {
        struct RegionRectangle * rr = l->shape->RegionRectangle;
