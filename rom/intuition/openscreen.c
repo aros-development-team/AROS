@@ -93,7 +93,7 @@ static const ULONG coltab[] = {
     struct TagItem   *tag, *tagList;
     struct IntScreen *screen;
     int               success;
-    struct Hook      *layer_info_hook;
+    struct Hook      *layer_info_hook = NULL;
     ULONG            *errorPtr;	  /* Store error at user specified location */
 
 #define COPY(x)     screen->Screen.x = ns.x
