@@ -162,11 +162,6 @@ dist-src : .FORCE
 # END_DESC{internaltarget}
 setup :
 	@$(RM) $(TOP)/errors
-	@if [ ! -d amiga/include ]; then \
-	    echo "Missing AmigaOS includes. Please get a copy and put" ; \
-	    echo "them into amiga/include." ; \
-	    exit 10 ; \
-	else true ; fi
 	@if [ ! -d bin ]; then $(MKDIR) bin ; else true ; fi
 	@if [ ! -d $(ARCHDIR) ]; then $(MKDIR) $(ARCHDIR) ; else true ; fi
 	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
