@@ -23,6 +23,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "prefs.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -34,6 +35,9 @@ extern struct Library *MUIMasterBase;
 #define REGISTERTAB_EXTRA_HEIGHT 7
 #define REGISTER_FRAMEX 4
 #define REGISTER_FRAMEY 4
+
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
 
 struct RegisterTabItem
 {
@@ -412,30 +416,51 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     WORD minwidth;
+    WORD defwidth;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
-    
+    D(bug("Register_AskMinMax1 : %ld, %ld, %ld\n",
+	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth));
+   
     data->total_hspacing = (data->numitems + 1) * INTERTAB - 2;
 /*      D(bug("Register_AskMinMax : data->total_hspacing = %d\n", data->total_hspacing)); */
 
-    minwidth = data->total_hspacing;
-    if (minwidth > msg->MinMaxInfo->MinWidth)
-    	msg->MinMaxInfo->MinWidth = minwidth;
-	
-    if (minwidth > msg->MinMaxInfo->MaxWidth)
-    	msg->MinMaxInfo->MaxWidth = minwidth;
-	
-    if (minwidth > msg->MinMaxInfo->DefWidth)
-    	msg->MinMaxInfo->DefWidth = minwidth;
-	
-    msg->MinMaxInfo->DefWidth += minwidth;
-      D(bug("Register_AskMinMax : spacings = %d, minw=%d, defw=%d\n",
-	    data->total_hspacing, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth));
+    minwidth = data->total_hspacing * 3;
+    defwidth = data->total_hspacing;
+
+    if (!(muiGlobalInfo(obj)->mgi_Prefs->register_truncate_titles))
+    {
+	struct RastPort temprp;
+	int i;
+	WORD textpixmax;
+
+	InitRastPort(&temprp);
+	SetFont(&temprp, _font(obj));
+
+	textpixmax = 0;
+	for(i = 0; i < data->numitems; i++)
+	{
+	    WORD textpix = TextLength(&temprp, data->items[i].text, data->items[i].textlen);
+	    textpixmax = MAX(textpix, textpixmax);
+	}
+	defwidth += (textpixmax + TEXTSPACING + 1) * data->numitems;
+	defwidth = MAX(minwidth, defwidth);
+    }
+
+    D(bug("Register_AskMinMax : spacings = %d, minw=%d, defw=%d, mymin=%d, mydef=%d\n",
+	  data->total_hspacing, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth,
+	  minwidth, defwidth));
+
+    msg->MinMaxInfo->MinWidth = MAX(msg->MinMaxInfo->MinWidth, minwidth);
+    msg->MinMaxInfo->MaxWidth = MAX(msg->MinMaxInfo->MaxWidth, defwidth);
+    msg->MinMaxInfo->DefWidth = MAX(msg->MinMaxInfo->DefWidth, defwidth);
 
     msg->MinMaxInfo->MinHeight += data->tab_height;
     msg->MinMaxInfo->MaxHeight += data->tab_height;
     msg->MinMaxInfo->DefHeight += data->tab_height;
 
+    D(bug("Register_AskMinMax2 : %ld, %ld, %ld\n",
+	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->MaxWidth));
     return TRUE;
 }
 
@@ -476,8 +501,8 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 
     item_width = (_width(obj) - data->total_hspacing) / data->numitems;
     extra_space = (_width(obj) - data->total_hspacing) % data->numitems;
-    D(bug("Register_Show : width = %d, mwidth = %d, max item width = %d, remainder = %d\n",
-	  _width(obj), _mwidth(obj), item_width, extra_space));
+    D(bug("Register_Show(%lx) : width = %d, mwidth = %d, max item width = %d, remainder = %d\n",
+	  obj, _width(obj), _mwidth(obj), item_width, extra_space));
 
 /*      D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj))); */
     x = INTERTAB - 1;
@@ -532,11 +557,11 @@ static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 	    x = msg->imsg->MouseX - data->left;
 	    y = msg->imsg->MouseY - data->top;
 
-	    D(bug("Register_HandleEvent : %d,%d,%d -- %d,%d,%d\n", 0, x, _width(obj), 0, y, data->tab_height));
+/*  	    D(bug("Register_HandleEvent : %d,%d,%d -- %d,%d,%d\n", 0, x, _width(obj), 0, y, data->tab_height)); */
 	    if (_between(0, x, _width(obj)) &&
 		_between(0, y, data->tab_height))
 	    {
-		D(bug("Register_HandleEvent : in tab, %d,%d\n", x, y));
+/*  		D(bug("Register_HandleEvent : in tab, %d,%d\n", x, y)); */
 		for(i = 0; i < data->numitems; i++)
 		{
 		    if (_between(data->items[i].x1, x, data->items[i].x2) &&
