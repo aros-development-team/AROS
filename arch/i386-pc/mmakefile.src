@@ -214,11 +214,5 @@ install-pc-i386 :
 clean ::
 	-$(RM) $(TESTS)
 
-machine.i: geninc.c $(MACHINE_H)
-	@echo "CFLAGS=$(CFLAGS)"
-	@echo "Creating geninc..."
-	@$(HOST_CC) $(CFLAGS) -o geninc $<
-	./geninc > machine.i
-
 # %include_deps
 %common

@@ -1,6 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+GENINC	:= $(TOOLDIR)/geninc-i386-native$(HOST_EXE_SUFFIX)
 _INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))             \
             $(foreach f,$(shell ls aros/*.[hi]), $(f))    \
             $(foreach f,$(shell ls asm/*.[hi]), $(f))      \
@@ -30,7 +31,7 @@ setup-includes :
 
 #MM
 clean ::
-	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc$(HOST_EXE_SUFFIX)
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
 $(INCDIR)/% : %
 	$(CP) $< $@
@@ -38,12 +39,12 @@ $(INCDIR)/% : %
 $(GENINCDIR)/% : %
 	$(CP) $< $@
 
-geninc$(HOST_EXE_SUFFIX) : geninc.c
+$(GENINC) : geninc.c
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
 	@$(HOST_CC) $(CFLAGS) -o $@ $<
 
-machine.i : geninc$(HOST_EXE_SUFFIX) $(MACHINE_H)
-	./geninc$(HOST_EXE_SUFFIX) > machine.i
+machine.i : $(GENINC) $(MACHINE_H)
+	$(GENINC) > machine.i
 
 %common

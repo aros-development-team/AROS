@@ -3,6 +3,7 @@ TOP=../..
 CURDIR=config/m68k-emul
 
 include $(TOP)/config/make.cfg
+GENINC		:= $(TOOLDIR)/geninc-m68k-emul$(HOST_EXE_SUFFIX)
 
 SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec
 CLIBDIR = $(GENDIR)/compiler/clib
@@ -30,13 +31,15 @@ $(MACHINE_H): machine.h
 	cp $< $@
 
 clean::
-	-@$(RM) $(MACHINE_H) machine.i geninc $(TESTS)
+	-@$(RM) $(MACHINE_H) machine.i $(GENINC) $(TESTS)
 
-machine.i: geninc.c $(MACHINE_H)
+machine.i: $(GENINC) $(MACHINE_H)
+	$(GENINC) > machine.i
+
+$(GENINC) : geninc.c
 	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
-	@$(CC) $(CFLAGS) -o geninc $<
-	./geninc > machine.i
+	@$(CC) $(CFLAGS) -o $@ $<
 
 subdirs:
 	%subdirs_q target=all
