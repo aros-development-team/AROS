@@ -22,9 +22,15 @@ static void draw_thick_line(struct RastPort *rp,int x1, int y1, int x2, int y2)
     Draw(rp,x2+1,y2);
 }
 
-#define SPACING 1
-#define HSPACING 1
-#define VSPACING 1
+//#define SPACING 1
+#define HSPACING 0
+#define VSPACING 0
+
+#define ARROW_SPACING 1
+#define ARROW_VSPACING ARROW_SPACING
+#define ARROW_HSPACING ARROW_SPACING
+#define VERTARROW_VSPACING ARROW_VSPACING
+#define HORIZARROW_HSPACING ARROW_HSPACING
 
 void arrowup_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
@@ -35,15 +41,20 @@ void arrowup_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, L
 
     cx = width / 2;
 
-    Move(rport, left + HSPACING + 1, top + height - 1 - VSPACING);
-    Draw(rport, left + width - cx, top + VSPACING);
-    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + width - cx - 1, top + VSPACING);
-
-    Move(rport, left + width - 1 - HSPACING - 1, top + height - 1 - VSPACING);
-    Draw(rport, left + cx - 1, top + VSPACING);
-    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + cx, top + VSPACING);
+    if ((width > 8 + ARROW_SPACING) && (height > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + ARROW_HSPACING + 1, top + height - 1 - VERTARROW_VSPACING);
+	Draw(rport, left + width - cx, top + VERTARROW_VSPACING);
+    }
+    Move(rport, left + ARROW_HSPACING, top + height - 1 - VERTARROW_VSPACING);
+    Draw(rport, left + width - cx - 1, top + VERTARROW_VSPACING);
+    if ((width > 8 + ARROW_SPACING) && (height > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + width - 1 - ARROW_HSPACING - 1, top + height - 1 - VERTARROW_VSPACING);
+	Draw(rport, left + cx - 1, top + VERTARROW_VSPACING);
+    }
+    Move(rport, left + width - 1 - ARROW_HSPACING, top + height - 1 - VERTARROW_VSPACING);
+    Draw(rport, left + cx, top + VERTARROW_VSPACING);
 }
 
 void arrowdown_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -55,15 +66,20 @@ void arrowdown_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
 
     cx = width / 2;
 
-    Move(rport, left + HSPACING + 1, top + VSPACING);
-    Draw(rport, left + width - cx, top + height - 1 - VSPACING);
-    Move(rport, left + HSPACING, top + VSPACING);
-    Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
-
-    Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
-    Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-    Draw(rport, left + cx, top + height - 1 - VSPACING);
+    if ((width > 8 + ARROW_SPACING) && (height > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + ARROW_HSPACING + 1, top + VERTARROW_VSPACING);
+	Draw(rport, left + width - cx, top + height - 1 - VERTARROW_VSPACING);
+    }
+    Move(rport, left + ARROW_HSPACING, top + VERTARROW_VSPACING);
+    Draw(rport, left + width - cx - 1, top + height - 1 - VERTARROW_VSPACING);
+    if ((width > 8 + ARROW_SPACING) && (height > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + width - 1 - ARROW_HSPACING - 1, top + VERTARROW_VSPACING);
+	Draw(rport, left + cx - 1, top + height - 1 - VERTARROW_VSPACING);
+    }
+    Move(rport, left + width - 1 - ARROW_HSPACING, top + VERTARROW_VSPACING);
+    Draw(rport, left + cx, top + height - 1 - VERTARROW_VSPACING);
 }
 
 void arrowleft_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -75,15 +91,20 @@ void arrowleft_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
 
     cy = height / 2;
 
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING + 1);
-    Draw(rport, left + HSPACING, top + height - cy);
-    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-    Draw(rport, left + HSPACING, top + height - cy - 1);
-
-    Move(rport, left + width - 1 - HSPACING, top + height - 1- VSPACING - 1);
-    Draw(rport, left + HSPACING, top + cy - 1);
-    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + HSPACING, top + cy);
+    if ((height > 8 + ARROW_SPACING) && (width > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + width - 1 - HORIZARROW_HSPACING, top + ARROW_VSPACING + 1);
+	Draw(rport, left + HORIZARROW_HSPACING, top + height - cy);
+    }
+    Move(rport, left + width - 1 - HORIZARROW_HSPACING, top + ARROW_VSPACING);
+    Draw(rport, left + HORIZARROW_HSPACING, top + height - cy - 1);
+    if ((height > 8 + ARROW_SPACING) && (width > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + width - 1 - HORIZARROW_HSPACING, top + height - 1 - ARROW_VSPACING - 1);
+	Draw(rport, left + HORIZARROW_HSPACING, top + cy - 1);
+    }
+    Move(rport, left + width - 1 - HORIZARROW_HSPACING, top + height - 1 - ARROW_VSPACING);
+    Draw(rport, left + HORIZARROW_HSPACING, top + cy);
 }
 
 void arrowright_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -95,15 +116,20 @@ void arrowright_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width
 
     cy = height / 2;
 
-    Move(rport, left + HSPACING, top + VSPACING + 1);
-    Draw(rport, left + width - 1 - HSPACING, top + height - cy);
-    Move(rport, left + HSPACING, top + VSPACING);
-    Draw(rport, left + width - 1 - HSPACING, top + height - cy - 1);
-
-    Move(rport, left + HSPACING, top + height - 1- VSPACING - 1);
-    Draw(rport, left + width - 1 - HSPACING, top + cy - 1);
-    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
-    Draw(rport, left + width - 1 - HSPACING, top + cy);
+    if ((height > 8 + ARROW_SPACING) && (width > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + HORIZARROW_HSPACING, top + ARROW_VSPACING + 1);
+	Draw(rport, left + width - 1 - HORIZARROW_HSPACING, top + height - cy);
+    }
+    Move(rport, left + HORIZARROW_HSPACING, top + ARROW_VSPACING);
+    Draw(rport, left + width - 1 - HORIZARROW_HSPACING, top + height - cy - 1);
+    if ((height > 8 + ARROW_SPACING) && (width > 8 + ARROW_SPACING))
+    {
+	Move(rport, left + HORIZARROW_HSPACING, top + height - 1- ARROW_VSPACING - 1);
+	Draw(rport, left + width - 1 - HORIZARROW_HSPACING, top + cy - 1);
+    }
+    Move(rport, left + HORIZARROW_HSPACING, top + height - 1 - ARROW_VSPACING);
+    Draw(rport, left + width - 1 - HORIZARROW_HSPACING, top + cy);
 }
 
 void checkbox_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -362,16 +388,16 @@ struct vector_image
 
 static struct vector_image vector_table[] =
 {
-    {10,8,arrowup_draw},
-    {10,8,arrowdown_draw},
-    {8,10,arrowleft_draw},
-    {8,10,arrowright_draw},
-    {16,10,checkbox_draw},
-    {10,10,mx_draw},
-    {15,8,cycle_draw},
-    {10,11,popup_draw},
-    {10,11,popfile_draw},
-    {10,11,popdrawer_draw},
+    { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowup_draw },
+    { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowdown_draw },
+    { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowleft_draw },
+    { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowright_draw },
+    { 16,10,checkbox_draw },
+    { 10,10,mx_draw },
+    { 15,8,cycle_draw },
+    { 10,11,popup_draw },
+    { 10,11,popfile_draw },
+    { 10,11,popdrawer_draw },
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
