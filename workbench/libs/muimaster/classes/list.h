@@ -183,9 +183,9 @@ enum
 #define MUIA_List_VertProp_Entries  MUIA_List_Prop_Entries  /* PRIV */
 #define MUIA_List_VertProp_Visible  MUIA_List_Prop_Visible  /* PRIV */
 #define MUIA_List_VertProp_First    MUIA_List_Prop_First    /* PRIV */
-#define MUIA_List_HorizProp_Entries  (MUIB_MUI|0x10429df4) /* PRIV */
-#define MUIA_List_HorizProp_Visible  (MUIB_MUI|0x80429df5) /* PRIV */
-#define MUIA_List_HorizProp_First    (MUIB_MUI|0x80429df6) /* PRIV */
+#define MUIA_List_HorizProp_Entries  (MUIB_MUI|0x10429df4) /* ... LONG  PRIV */
+#define MUIA_List_HorizProp_Visible  (MUIB_MUI|0x80429df5) /* ... LONG  PRIV */
+#define MUIA_List_HorizProp_First    (MUIB_MUI|0x80429df6) /* ... LONG  PRIV */
 
 #define MUIM_List_Construct           (MUIB_MUI|0x1d5100A1) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_Destruct            (MUIB_MUI|0x1d5100A2) /* Zune: V1 same like NList, PRIV for now! */
