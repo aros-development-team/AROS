@@ -7,7 +7,7 @@ void fatalerror(int doexit)
 {
     if (doexit)
     {
-        if (errno) perror("Internal error");
+        if (errno) perror("getlinkername: Internal error");
         exit(1);
     }
 }
