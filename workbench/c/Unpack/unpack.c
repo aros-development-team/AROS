@@ -8,33 +8,43 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#define SH_GLOBAL_DOSBASE 1
+#define SH_GLOBAL_SYSBASE 1
+
+#include <aros/shcommands.h>
+
 #include "modes.h"
 #include "package.h"
 #include "gui.h"
 
-#define TEMPLATE "FILE/A,TO/A"
+struct IntuitionBase *IntuitionBase;
+struct GfxBase *GfxBase;
 
-STRPTR argFile = NULL;
-STRPTR argTo   = NULL;
-
-int main()
+AROS_SH2
+(
+    Unpack, 1.0,
+    AROS_SHA( STRPTR, , FILE, /A, NULL ),
+    AROS_SHA( STRPTR, , TO,   /A, NULL )
+)
 {
-    IPTR args[]           = { NULL, (IPTR) "RAM:" };
-    struct RDArgs *rdargs = ReadArgs( TEMPLATE, args, NULL );
+    AROS_SHCOMMAND_INIT
+    
     BPTR oldDir           = NULL, 
          newDir           = NULL;
     APTR pkg              = NULL;
     
-    if( rdargs == NULL ) goto cleanup;
-    argFile = args[0]; if( argFile == NULL ) goto cleanup;
-    argTo   = args[1]; if( argTo   == NULL ) goto cleanup;
+    if( SHArg(FILE) == NULL ) goto cleanup;
+    if( SHArg(TO) == NULL ) goto cleanup;
+
+    IntuitionBase = OpenLibrary( "intuition.library", 0 );
+    GfxBase = OpenLibrary( "graphics.library", 0 );
     
-    //Printf( "%s, %s\n", argFile, argTo );
+    //Printf( "%s, %s\n", SHArg(FILE), SHArg(TO) );
     
-    pkg = PKG_Open( argFile, MODE_READ );
+    pkg = PKG_Open( SHArg(FILE), MODE_READ );
     if( pkg == NULL ) goto cleanup;
     
-    newDir = Lock( argTo, SHARED_LOCK );
+    newDir = Lock( SHArg(TO), SHARED_LOCK );
     if( newDir == NULL ) goto cleanup;
     oldDir = CurrentDir( newDir );
     
@@ -45,11 +55,15 @@ int main()
 cleanup:
     GUI_Close();
     
-    if( rdargs != NULL ) FreeArgs( rdargs );
     if( oldDir != NULL ) CurrentDir( oldDir );
     if( newDir != NULL ) UnLock( newDir );
     if( pkg != NULL ) PKG_Close( pkg );
     
+    if( IntuitionBase != NULL ) CloseLibrary( (struct Library *) IntuitionBase );
+    if( GfxBase != NULL ) CloseLibrary( (struct Library *) GfxBase );
+    
     return 0;
+
+    AROS_SHCOMMAND_EXIT
 }
 
