@@ -51,19 +51,6 @@ static CONST_STRPTR gadget_type_labels[] =
     NULL,
 };
 
-static char *arrangement_labels[] =
-{
-    "Top",
-    "Middle",
-    "Bottom",
-    NULL,
-};
-
-/*  static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...) */
-/*  { */
-/*      return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL)); */
-/*  } */
-
 #define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 
 Object *MakeArrowPopimage (CONST_STRPTR wintitle)
@@ -72,8 +59,8 @@ Object *MakeArrowPopimage (CONST_STRPTR wintitle)
 		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
 		     MUIA_Draggable, TRUE, 
 		     MUIA_CycleChain, 1,
-		     MUIA_MaxWidth, 28,
-		     MUIA_MaxHeight, 28,
+		     MUIA_MaxWidth, 30,
+		     MUIA_MaxHeight, 30,
 		     MUIA_Imagedisplay_FreeHoriz, FALSE,
 		     MUIA_Imagedisplay_FreeVert, FALSE,
 		     MUIA_Window_Title, (IPTR)wintitle,
@@ -92,83 +79,112 @@ Object *MakeSingleRadio (void)
 	End;
 }
 
+Object *MakeScrollbar(IPTR type)
+{
+    return ScrollbarObject,
+	MUIA_Scrollbar_Type, type,
+	MUIA_Prop_Entries, 10,
+	MUIA_Prop_Visible, 4,
+	MUIA_Prop_First, 3,
+	End;
+}
+
+Object *MakeSpacer(void)
+{
+    return RectangleObject, MUIA_FixWidth, 0, MUIA_FixHeight, 0, MUIA_Weight, 1, End;
+}
+
 static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ScrollbarsPData *data;
     struct MUI_ScrollbarsPData d;
-    
+
+    Object * radiochilds[] = {
+	MakeScrollbar(MUIV_Scrollbar_Type_Top),
+	MakeScrollbar(MUIV_Scrollbar_Type_Sym),
+	MakeScrollbar(MUIV_Scrollbar_Type_Bottom),
+	NULL,
+    };
+
     obj = (Object *)DoSuperNew(cl, obj,
-			       MUIA_Group_Horiz, TRUE,
-			       Child, VGroup,
-			       Child, VGroup,
-			       GroupFrameT("Arrows"),
-  			       Child, HVSpace,
-			       Child, ColGroup(6),
-			       Child, HVSpace,
-			       Child, FreeLabel("up"),
-			       Child, d.arrow_up_popimage = MakeArrowPopimage("Arrow up"),
-			       Child, d.arrow_down_popimage = MakeArrowPopimage("Arrow down"),
-			       Child, FreeLLabel("down"),
-			       Child, HVSpace,
-			       Child, HVSpace,
-			       Child, FreeLabel("left"),
-			       Child, d.arrow_left_popimage = MakeArrowPopimage("Arrow left"),
-			       Child, d.arrow_right_popimage = MakeArrowPopimage("Arrow right"),
-			       Child, FreeLLabel("right"),
-			       Child, HVSpace,
-			       End, /* ColGroup(4) */
-			       Child, HVSpace,
-			       End, /* Arrows */
-			       Child, VGroup,
-			       GroupFrameT("Bar"),
-			       Child, HGroup,
-			       Child, MakeLabel("Gadget Type:"),
-			       Child, d.gadget_type_cycle =
-			       MUI_MakeObject(MUIO_Cycle, "Gadget Type:",
-					      gadget_type_labels),
-			       End, /* HGroup Gadget Type */
-			       Child, HGroup,
-			       MUIA_Group_SameWidth, TRUE,
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 1,
-			       Child, d.knob_popimage =
-			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					 MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
-					 MUIA_Draggable, TRUE, 
-					 MUIA_CycleChain, 1,
-					 MUIA_Imagedisplay_FreeHoriz, FALSE,
-					 MUIA_Imagedisplay_FreeVert, FALSE,
-					 MUIA_Window_Title, (IPTR)"Knob",
-					 TAG_DONE),
-			       Child, CLabel("Knob"),
-			       End, /* VGroup Knob */
-			       Child, VGroup,
-			       MUIA_Group_VertSpacing, 1,
-			       Child, d.background_popimage = MakeBackgroundPopimage(),
-			       Child, CLabel("Background"),
-			       End, /* VGroup Background */
-			       End, /* HGroup Images */
-			       End, /* Bar VGroup*/	     
-			       End, /* VGroup left */
-			       Child, VGroup,
-			       Child, VGroup,
-			       GroupFrameT("Frame"),
-			       Child, d.popframe = MakePopframe(),
-			       End, /* Frame VGroup*/
-			       Child, ColGroup(3),
+	MUIA_Group_Horiz, TRUE,
+	Child, VGroup, /* left */
+	
+	    Child, VGroup,
+	        GroupFrameT("Arrows"),
+	        MUIA_Group_Spacing, 0,
+  	        Child, MakeSpacer(),
+	        Child, HGroup,
+	            MUIA_Group_Spacing, 0,
+  	            Child, MakeSpacer(),
+	            Child, ColGroup(4),
+	                MUIA_Group_SameHeight, TRUE,
+	                Child, FreeLabel("up"),
+	                Child, d.arrow_up_popimage = MakeArrowPopimage("Arrow up"),
+	                Child, d.arrow_down_popimage = MakeArrowPopimage("Arrow down"),
+	                Child, FreeLLabel("down"),
+	                Child, FreeLabel("left"),
+	                Child, d.arrow_left_popimage = MakeArrowPopimage("Arrow left"),
+	                Child, d.arrow_right_popimage = MakeArrowPopimage("Arrow right"),
+	                Child, FreeLLabel("right"),
+	                End, /* ColGroup(6) */
+  	            Child, MakeSpacer(),
+	            End, /* HGroup */
+	        Child, MakeSpacer(),
+	        End, /* Arrows */
+	
+	    Child, VGroup,
+	        GroupFrameT("Bar"),
+	        Child, HGroup,
+	            Child, Label("Gadget Type:"),
+	            Child, d.gadget_type_cycle = MakeCycle("Gadget Type:", gadget_type_labels),
+	            End, /* HGroup Gadget Type */
+	        Child, HGroup,
+	            MUIA_Group_SameWidth, TRUE,
+	            Child, VGroup,
+	                MUIA_Group_VertSpacing, 1,
+	                Child, d.knob_popimage =
+	                     NewObject(CL_ImageClipboard->mcc_Class, NULL,
+			         MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
+			         MUIA_Draggable, TRUE, 
+			         MUIA_CycleChain, 1,
+			         MUIA_Imagedisplay_FreeHoriz, FALSE,
+			         MUIA_Imagedisplay_FreeVert, FALSE,
+			         MUIA_Window_Title, (IPTR)"Scroller",
+			         TAG_DONE),
+	                Child, CLabel("Knob"),
+	                End, /* VGroup Knob */
+	            Child, VGroup,
+	                MUIA_Group_VertSpacing, 1,
+	                Child, d.background_popimage = MakeBackgroundPopimage(),
+	                Child, CLabel("Background"),
+	                End, /* VGroup Background */
+	            End, /* HGroup Images */
+	        End, /* Bar VGroup*/	     
+	    End, /* VGroup left */
+	Child, VGroup,
+	    Child, VGroup,
+	        GroupFrameT("Frame"),
+	        Child, d.popframe = MakePopframe(),
+	        End, /* Frame VGroup*/
+#if 0
+	    Child, ColGroup(3),
+	        GroupFrameT("Arrangement"),
+	        Child, d.pos_radios[0] = MakeSingleRadio(),
+	        Child, d.pos_radios[1] = MakeSingleRadio(),
+	        Child, d.pos_radios[2] = MakeSingleRadio(),
+	        Child, MakeScrollbar(MUIV_Scrollbar_Type_Top),
+	        Child, MakeScrollbar(MUIV_Scrollbar_Type_Sym),
+	        Child, MakeScrollbar(MUIV_Scrollbar_Type_Bottom),
+	        End, /* Arrangement */
+#endif
+			       Child, RadioObject,
 			       GroupFrameT("Arrangement"),
-			       /* Child, d.arrangement_radio = RadioObject,
-				  MUIA_Radio_Entries, arrangement_labels, End, */
-			       /*  Child, ColGroup(3), */
-			       Child, d.pos_radios[0] = MakeSingleRadio(),
-			       Child, d.pos_radios[1] = MakeSingleRadio(),
-			       Child, d.pos_radios[2] = MakeSingleRadio(),
-			       Child, ScrollbarObject, MUIA_Scrollbar_Type, MUIV_Scrollbar_Type_Top, End,
-			       Child, ScrollbarObject, MUIA_Scrollbar_Type, MUIV_Scrollbar_Type_Sym, End,
-			       Child, ScrollbarObject, MUIA_Scrollbar_Type, MUIV_Scrollbar_Type_Bottom, End,
-			       /*  End, */ /* ColGroup 3 */
-			       End, /* Arrangement */
-			       End, /* VGroup right */
+			       MUIA_CycleChain, 1,
+			       MUIA_Group_Horiz, TRUE,
+			       MUIA_Radio_CustomChilds, (IPTR)radiochilds,
+			       End,
+	    End, /* VGroup right */
     	TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;

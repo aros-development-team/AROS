@@ -85,7 +85,7 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
 			       MUIA_Group_Horiz, FALSE,
 			       Child, HGroup,
-			       MUIA_VertWeight, 400,
+			       MUIA_VertWeight, 800,
 			       Child, HGroup,
 			       GroupFrameT("Container Design"),
 			       Child, HGroup,
@@ -93,14 +93,12 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.container_background_popimage = MakeBackgroundPopimage(),
-			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Background",
-						     MUIO_Label_Centered),
+			       Child, CLabel("Background"),
 			       End, /* VGroup BG */
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.container_popframe = MakePopframe(),
-			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Frame",
-						     MUIO_Label_Centered),
+			       Child, CLabel("Frame"),
 			       End, /* VGroup Frame */
 			       End, /* HGroup Frame/BG */
 			       End, /* HGroup Container Design */
@@ -111,14 +109,12 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.knob_background_popimage = MakeBackgroundPopimage(),
-			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Background",
-						     MUIO_Label_Centered),
+			       Child, CLabel("Background"),
 			       End, /* VGroup BG */
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.knob_popframe = MakePopframe(),
-			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Frame",
-						     MUIO_Label_Centered),
+			       Child, CLabel("Frame"),
 			       End, /* VGroup Frame */
 			       End, /* HGroup Frame/BG */
 
@@ -186,7 +182,7 @@ static IPTR SlidersP_ConfigToGadgets(struct IClass *cl, Object *obj,
     set(data->knob_background_popimage,MUIA_Imagedisplay_Spec, (IPTR)spec);
 
 /* Fonts */
-    setstring(data->knob_font_string, FindFont(MUICFG_Font_Knob));
+    setstring(data->knob_font_string, (IPTR)FindFont(MUICFG_Font_Knob));
 
     return 1;
 }
