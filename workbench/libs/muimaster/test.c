@@ -1,6 +1,9 @@
 #include <stdio.h>
 
 #include <clib/alib_protos.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/icclass.h>
+#include <gadgets/colorwheel.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
@@ -29,7 +32,7 @@ struct MUIMasterBase_intern MUIMasterBase_instance;
 #endif
 
 struct Library *MUIMasterBase;
-
+struct Library *ColorWheelBase;
 
 
 __saveds void repeat_function(void)
@@ -82,6 +85,7 @@ void main(void)
     Object *open_button;
     Object *quit_button;
     Object *repeat_button;
+    Object *wheel;
 
     struct Hook hook;
 
@@ -106,6 +110,7 @@ void main(void)
 
     /* should check the result in a real program! */
     CL_DropText = MUI_CreateCustomClass(NULL,MUIC_Text,NULL,sizeof(struct DropText_Data), dispatcher);
+    ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget",0);
 
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
@@ -161,6 +166,26 @@ void main(void)
 			MUIA_Text_Contents, "Quit",
 			End,
     	    	    End,
+
+		Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
+		    GroupFrame,
+		    MUIA_Boopsi_ClassID  , "colorwheel.gadget",
+		    MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
+		    MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
+		    MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
+		    MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
+		    MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
+		    WHEEL_Screen         , NULL,         /* the screen pointer  */
+		    GA_Left     , 0,
+		    GA_Top      , 0, /* MUI will automatically     */
+		    GA_Width    , 0, /* fill in the correct values */
+		    GA_Height   , 0,
+		    ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
+		    WHEEL_Saturation, 0, /* start in the center */
+		    MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
+					     for boopsi gadgets but the colorwheel
+					     doesnt bother about redrawing its backgorund */
+		    End,
     	        End,
     	    End,
     	SubWindow, second_wnd = WindowObject,
@@ -196,6 +221,7 @@ void main(void)
 
 	MUI_DisposeObject(app);
     }
+    CloseLibrary(ColorWheelBase);
     MUI_DeleteCustomClass(CL_DropText);
 
 #ifdef COMPILE_WITH_MUI
