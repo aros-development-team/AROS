@@ -3907,6 +3907,7 @@ struct bltmask_info
     LONG mask_ymin;
     ULONG mask_bpr;
     struct BitMap *srcbm;
+    OOP_Object *srcbmobj;
     struct GfxBase *GfxBase;
 };
 
@@ -3955,16 +3956,20 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
 		
 	    if (set_pixel)
 	    {
-		  UBYTE pen;
+		  ULONG pen;
 		  
+#if 1
+    	    	  pen = HIDD_BM_GetPixel(bmi->srcbmobj, x + x_src, y + y_src);    	    	
+#else
 		  pen = getbitmappixel(bmi->srcbm
 		  	, x + x_src
 			, y + y_src
 			, src_depth
 			, 0xFF
 		   );
+#endif
 		   
-		  *buf = (coltab != NULL) ? coltab[pen] : pen;
+		  *buf = pen; // (coltab != NULL) ? coltab[pen] : pen;
 	    }
 	    
 	    buf ++;
@@ -4023,11 +4028,16 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
     OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
     OOP_SetAttrs(gc, gc_tags);
 
-    bmi.mask	= bltMask;
-    bmi.srcbm	= srcBitMap;
-    bmi.GfxBase	= GfxBase;
+    bmi.mask	 = bltMask;
+    bmi.srcbm	 = srcBitMap;
+    bmi.srcbmobj = OBTAIN_HIDD_BM(srcBitMap);
+    bmi.GfxBase	 = GfxBase;
     
-    bmi.mask_bpr = WIDTH_TO_WORDS(xSize);
+    if (!bmi.srcbmobj) return;
+    
+    /* The mask has always the same size as the source bitmap */
+    
+    bmi.mask_bpr = 2 * WIDTH_TO_WORDS(GetBitMapAttr(srcBitMap, BMA_WIDTH));
     
     /* Set minterm bitmap object */
     
@@ -4080,6 +4090,9 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 	        ULONG xoffset = intersect.MinX - toblit.MinX;
 		ULONG yoffset = intersect.MinY - toblit.MinY;
 		
+		width  = intersect.MaxX - intersect.MinX + 1;
+		height = intersect.MaxY - intersect.MinY + 1;
+
 		bmi.mask_xmin = xoffset;
 		bmi.mask_ymin = yoffset;
 	    
@@ -4127,6 +4140,8 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 	UnlockLayerRom( L );
 	
     }
+    
+    RELEASE_HIDD_BM(bmi.srcbmobj, bmi.srcbm);
     
     /* Reset to told drawmode value */
     gc_tags[0].ti_Data = (IPTR)old_drmd;
