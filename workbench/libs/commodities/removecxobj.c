@@ -57,27 +57,35 @@ VOID RemoveHandler(struct CommoditiesBase *CxBase);
 {
     AROS_LIBFUNC_INIT
 
-    if(co == NULL)
+    if (co == NULL)
+    {
 	return;
+    }
 
-    if((co->co_Flags & COF_VALID) == 0)
+    if ((co->co_Flags & COF_VALID) == 0)
+    {
 	return;
+    }
 
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
     Remove(&co->co_Node);
     co->co_Flags &= ~COF_VALID;
-
-    ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
-    if(co->co_Node.ln_Type == CX_BROKER)
+    if (CXOBJType(co) == CX_BROKER)
     {
-	if(IsListEmpty(&GPB(CxBase)->cx_BrokerList))
+	if (IsListEmpty(&GPB(CxBase)->cx_BrokerList))
+	{
 	    RemoveHandler(GPB(CxBase));
+	}
 	else
+	{
 	    /* Tell Exchange what happened */
 	    CxNotify(NULL, CXCMD_LIST_CHG);
+	}
     }
+
+    ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
     AROS_LIBFUNC_EXIT
 } /* RemoveCxObj */
@@ -85,8 +93,10 @@ VOID RemoveHandler(struct CommoditiesBase *CxBase);
 
 VOID RemoveHandler(struct CommoditiesBase *CxBase)
 {
-    if(CxBase->cx_IORequest.io_Device == NULL)
+    if (CxBase->cx_IORequest.io_Device == NULL)
+    {
 	return;
+    }
     
     CxBase->cx_InputMP.mp_SigTask = FindTask(NULL);
     CxBase->cx_IORequest.io_Command = IND_REMHANDLER;
