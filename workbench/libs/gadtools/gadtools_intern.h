@@ -277,4 +277,7 @@ struct VisualInfo
 #define TAG_UserData	9
 #define TAG_Num        10
 
+#define BORDERPROPSPACINGX 4
+#define BORDERPROPSPACINGY 4
+
 #endif /* GADTOOLS_INTERN_H */

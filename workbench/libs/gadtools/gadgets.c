@@ -31,6 +31,8 @@
 
 #include "gadtools_intern.h"
 
+#define EG(x) ((struct ExtGadget *)(x))
+
 /*******************
 **  makebutton()  **
 *******************/
@@ -437,6 +439,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 {
 
     struct TagItem *tag;
+    struct IBox bbox;
     
     struct TagItem stags[] =
     {
@@ -447,6 +450,9 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	{GTSL_Max,	15},
     	{GTSL_Level,	0},
     	{PGA_Freedom,	FREEHORIZ},
+	{PGA_Borderless,TRUE},
+	{PGA_NewLook,	TRUE},
+	{GA_Bounds,	(IPTR)&bbox},
     	{TAG_MORE,	(IPTR)NULL}
     };
     
@@ -515,8 +521,25 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	    
     } /* while (iterate taglist) */
     
+    /* if there is a bounding box the label position
+       will be calculated based on this box and not
+       the gadget coords */
+       
+    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
+    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
+    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
+    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+
+    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
+       thanks to creategadgeta.c! */
+      
+    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERPROPSPACINGX;
+    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERPROPSPACINGY;
+    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERPROPSPACINGX * 2;
+    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERPROPSPACINGY * 2;
+
     /* Create slider gadget */
-    stags[7].ti_Data = (IPTR)stdgadtags;
+    stags[10].ti_Data = (IPTR)stdgadtags;
     slidergad = NewObjectA(slidercl, NULL, stags);
     if (!slidergad)
     	return (NULL);
@@ -571,20 +594,20 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	switch (lplace)
     	{
     	    case PLACETEXT_LEFT:
-            	x = slidergad->LeftEdge - lmaxpixellen - 4;
+            	x = slidergad->LeftEdge - BORDERPROPSPACINGX - lmaxpixellen - 4;
             	y = slidergad->TopEdge + (slidergad->Height - ysize) / 2 + 1;
     	    	break;
     	    case PLACETEXT_RIGHT:
-            	x = slidergad->LeftEdge + slidergad->Width + 5;
+            	x = slidergad->LeftEdge + slidergad->Width + BORDERPROPSPACINGX + 5;
             	y = slidergad->TopEdge  + (slidergad->Height - ysize) / 2 + 1;
     	    	break;
     	    case PLACETEXT_ABOVE:
             	x = slidergad->LeftEdge - (lmaxpixellen - slidergad->Width) / 2;
-            	y = slidergad->TopEdge  - ysize - 2;
+            	y = slidergad->TopEdge  - BORDERPROPSPACINGY - ysize - 2;
     	    	break;
     	    case PLACETEXT_BELOW:
             	x = slidergad->LeftEdge - (lmaxpixellen - slidergad->Width) / 2;
-            	y = slidergad->TopEdge  + slidergad->Height + 3;
+            	y = slidergad->TopEdge  + slidergad->Height + BORDERPROPSPACINGY + 3;
  	    	break;
     	}
 
@@ -660,6 +683,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     struct Gadget *scroller = NULL,
     		  *arrow_dec = NULL,
     		  *arrow_inc = NULL ;
+    struct IBox bbox;
     Class *cl;
 
     struct TagItem *tag, stags[] =
@@ -672,10 +696,15 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	{GA_RelVerify,	TRUE},		/* Georg S.: was false */
     	{GA_Immediate,	TRUE},		/* Georg S.: was false */
 	{GTA_GadgetKind, SCROLLER_KIND},
+	{PGA_Borderless,TRUE},
+	{PGA_NewLook,	TRUE},
+	{GA_Bounds,	(IPTR) &bbox},
 	{TAG_MORE, (IPTR) NULL}
     };
     
     struct TagItem *scr_dim_tagitem;
+    
+ 
     
     UWORD freedom = stags[3].ti_Data; /* default */
     WORD arrowdim, arrowkind = SCROLLER_KIND;
@@ -711,8 +740,17 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	}
     	
     } /* while (iterate taglist) */
+    
+    /* if there is a bounding box the label position
+       will be calculated based on this box and not
+       the gadget coords */
+       
+    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
+    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
+    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
+    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
 
-    stags[8].ti_Data = (IPTR)stdgadtags;
+    stags[11].ti_Data = (IPTR)stdgadtags;
     
     /* Substract the arrow's total size from the sroller's size */
     scr_dim_tag = ((freedom == FREEVERT) ? GA_Height : GA_Width);
@@ -723,6 +761,15 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     cl = makescrollerclass(GadToolsBase);
     if (!cl)
     	return (NULL);
+
+    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
+       thanks to creategadgeta.c! */
+      
+    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERPROPSPACINGX;
+    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERPROPSPACINGY;
+    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERPROPSPACINGX * 2;
+    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERPROPSPACINGY * 2;
+
     scroller = (struct Gadget *) NewObjectA(cl, NULL, stags);
 
     if (!scroller)
@@ -775,9 +822,9 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	if (freedom == FREEVERT)
     	{
     	    D(bug("Freedom=FREEVERT\n"));
-    	    atags[0].ti_Data = scroller->LeftEdge;
-    	    atags[1].ti_Data = scroller->TopEdge + scroller->Height;
-    	    atags[2].ti_Data = scroller->Width;
+    	    atags[0].ti_Data = scroller->LeftEdge - BORDERPROPSPACINGX;
+    	    atags[1].ti_Data = scroller->TopEdge + BORDERPROPSPACINGY + scroller->Height;
+    	    atags[2].ti_Data = scroller->Width + BORDERPROPSPACINGX * 2;
     	    atags[3].ti_Data = arrowdim;
     	    atags[4].ti_Data = UPIMAGE;
     	    
@@ -798,10 +845,10 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	{
     	    D(bug("Freedom=FREEHORIZ\n"));
 
-    	    atags[0].ti_Data = scroller->LeftEdge + scroller->Width;;
-    	    atags[1].ti_Data = scroller->TopEdge;
+    	    atags[0].ti_Data = scroller->LeftEdge + scroller->Width + BORDERPROPSPACINGX;
+    	    atags[1].ti_Data = scroller->TopEdge - BORDERPROPSPACINGY;
     	    atags[2].ti_Data = arrowdim;
-    	    atags[3].ti_Data = scroller->Height;
+    	    atags[3].ti_Data = scroller->Height + BORDERPROPSPACINGY * 2;
     	    atags[4].ti_Data = LEFTIMAGE;
     	    
     	    arrow_dec = NewObjectA(arrowcl, NULL, atags);
@@ -865,7 +912,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     	{GA_Immediate,		FALSE},
     	{GA_TabCycle,		FALSE},
     	{GTST_String,		(IPTR)NULL},
-    	{GTST_MaxChars,		0UL},
+    	{GTST_MaxChars,		64UL},		/* Georg Steger: Maxon Hothelp says so */ 
     	{GTST_EditHook,		(IPTR)NULL},
     	{STRINGA_ExitHelp,	FALSE},
     	{STRINGA_Justification,	GACT_STRINGLEFT},
@@ -997,6 +1044,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem *taglist)
 {
     struct Gadget *lvgad = NULL,  *showselgad = NULL, *scrollergad; /* important to set these to NULL */
+    struct IBox bbox;
     Class *cl;
 
 
@@ -1021,6 +1069,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	{LAYOUTA_Spacing,	0L},    	
     	{GA_TextAttr,		(IPTR)NULL},
 	{GA_RelVerify,		TRUE},
+	{GA_Bounds,		(IPTR)&bbox},
 	{TAG_MORE, 	(IPTR)NULL}
     };
     
@@ -1049,6 +1098,15 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	}
     	
     } /* while (iterate taglist) */
+
+    /* if there is a bounding box the label position
+       will be calculated based on this box and not
+       the gadget coords */
+       
+    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
+    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
+    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
+    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
 
     /* Callback supplied ? */
     if (!lvtags[6].ti_Data)
@@ -1110,7 +1168,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     lv_height_tag->ti_Data = (IPTR)lv_height;
     
     
-    lvtags[12].ti_Data = (IPTR)stdgadtags;
+    lvtags[13].ti_Data = (IPTR)stdgadtags;
     
     cl = makelistviewclass(GadToolsBase);
     if (cl)

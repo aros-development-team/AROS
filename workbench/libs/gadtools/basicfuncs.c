@@ -21,7 +21,7 @@
 #include <aros/debug.h>
 #include "gadtools_intern.h"
 
-
+#define EG(x) ((struct ExtGadget *)(x))
 
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
                struct IntuiText *itext)
@@ -142,7 +142,21 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
     STRPTR text;
     int len = 0, x, y;
     UWORD width, height;
-
+    WORD gadleft, gadtop, gadwidth, gadheight;
+    
+    if (EG(gad)->MoreFlags & GMORE_BOUNDS)
+    {
+    	gadleft   = EG(gad)->BoundsLeftEdge;
+	gadtop    = EG(gad)->BoundsTopEdge;
+	gadwidth  = EG(gad)->BoundsWidth;
+	gadheight = EG(gad)->BoundsHeight;
+    } else {
+    	gadleft   = gad->LeftEdge;
+	gadtop    = gad->TopEdge;
+	gadwidth  = gad->Width;
+	gadheight = gad->Height;
+    }
+    
     if (gad->GadgetText)
     {
         /* Calculate offsets. */
@@ -174,24 +188,24 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 
         if (labelplace == GV_LabelPlace_Right)
         {
-            x = gad->LeftEdge + gad->Width + 5;
-            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
+            x = gadleft + gadwidth + 5;
+            y = gadtop + (gadheight - height) / 2 + 1;
         } else if (labelplace == GV_LabelPlace_Above)
         {
-            x = gad->LeftEdge + (gad->Width - width) / 2;
-            y = gad->TopEdge - height - 2;
+            x = gadleft + (gadwidth - width) / 2;
+            y = gadtop - height - 2;
         } else if (labelplace == GV_LabelPlace_Below)
         {
-            x = gad->LeftEdge + (gad->Width - width) / 2;
-            y = gad->TopEdge + gad->Height + 3;
+            x = gadleft + (gadwidth - width) / 2;
+            y = gadtop + gadheight + 3;
         } else if (labelplace == GV_LabelPlace_In)
         {
-            x = gad->LeftEdge + (gad->Width - width) / 2;
-            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
+            x = gadleft + (gadwidth - width) / 2;
+            y = gadtop + (gadheight - height) / 2 + 1;
         } else /* GV_LabelPlace_Left */
         {
-            x = gad->LeftEdge - width - 4;
-            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
+            x = gadleft - width - 4;
+            y = gadtop + (gadheight - height) / 2 + 1;
         }
 
         if (gad->Flags & GFLG_LABELSTRING)
@@ -202,7 +216,7 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
         } else if (gad->Flags & GFLG_LABELIMAGE)
             DrawImage(rport, (struct Image *)gad->GadgetText, x, y);
         else
-        {
+        { 
             PrintIText(rport, gad->GadgetText, x, y);
             closefont(GadToolsBase, rport, font, oldfont);
         }

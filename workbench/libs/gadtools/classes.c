@@ -38,6 +38,7 @@
 #include "gadtools_intern.h"
 
 #define G(x) ((struct Gadget *)(x))
+#define EG(X) ((struct ExtGadget *)(x))
 
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
@@ -121,6 +122,32 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
     return retval;
 }
 
+IPTR button_render(Class * cl, Object * obj, struct gpRender * msg)
+{
+    IPTR retval = 0UL;
+    UWORD old_gadgetflags;
+    struct IntuiText *old_gadgettext;
+    
+    /* Georg Steger: Hack, because IntuiTexts are not centered
+       by button gadget class */
+       
+    old_gadgetflags = G(obj)->Flags;
+    old_gadgettext = G(obj)->GadgetText;
+    
+    G(obj)->Flags &= ~GFLG_LABELMASK;
+    G(obj)->Flags |= GFLG_LABELITEXT;
+    G(obj)->GadgetText = 0;
+    
+    retval = DoSuperMethodA(cl, obj, (Msg)msg);
+ 
+    G(obj)->GadgetText  = old_gadgettext;
+    G(obj)->Flags = old_gadgetflags;
+ 
+    renderlabel(GadToolsBase, (struct Gadget *)obj, msg->gpr_RPort, GV_LabelPlace_In);
+
+   
+    return retval;
+}
 
 AROS_UFH3S(IPTR, dispatch_buttonclass,
 	  AROS_UFHA(Class *, cl, A0),
@@ -168,6 +195,10 @@ AROS_UFH3S(IPTR, dispatch_buttonclass,
 	}
 	break;
 
+    case GM_RENDER:
+    	retval = button_render(cl, obj, (struct gpRender *) msg);
+	break;
+	
     default:
 	retval = DoSuperMethodA(cl, obj, msg);
 	break;
@@ -587,6 +618,7 @@ AROS_UFH3S(IPTR, dispatch_textclass,
 /*************************** SLIDER_KIND *****************************/
 
 struct SliderData {
+    Object *frame;
     WORD   min;
     WORD   max;
     WORD   level;
@@ -685,6 +717,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
 ********************/
 STATIC Object *slider_new(Class * cl, Object * o, struct opSet *msg)
 {
+    struct DrawInfo *dri;
     WORD min, max, level;
     
     struct TagItem tags[] =
@@ -694,7 +727,15 @@ STATIC Object *slider_new(Class * cl, Object * o, struct opSet *msg)
      	{PGA_Top,	0},
      	{TAG_MORE,	(IPTR)NULL}
     };
-
+   struct TagItem fitags[] =
+    {
+	{IA_Width, 0UL},
+	{IA_Height, 0UL},
+	{IA_Resolution, 0UL},
+	{IA_FrameType, FRAME_BUTTON},
+	{TAG_DONE, 0UL}
+    };
+    
     EnterFunc(bug("Slider::New()\n"));
 
     min   = GetTagData(GTSL_Min,   0,  msg->ops_AttrList);
@@ -709,12 +750,26 @@ STATIC Object *slider_new(Class * cl, Object * o, struct opSet *msg)
     if (o)
     {
     	struct SliderData *data = INST_DATA(cl, o);
-    	
-	data->min   = min;
-	data->max   = max;
-	data->level = level;
-	data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
+  
+	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
 	
+	fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
+	fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;
+	fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+
+	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+	if (data->frame)
+	{
+	    scroller_set(cl, o, msg);
+	    
+	    data->min   = min;
+	    data->max   = max;
+	    data->level = level;
+	    data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
+	} else {
+	    CoerceMethod(cl, o, OM_DISPOSE);
+	    o = NULL;
+	}
     }
     ReturnPtr("Slider::New", Object *, o);
     
@@ -819,17 +874,54 @@ STATIC IPTR slider_handleinput(Class *cl, Object *o, struct gpInput *msg)
     ReturnInt("Slider::HandleInput", IPTR, retval);
 }
 
+
+/****************************
+**  Slider::Render()       **
+****************************/
+STATIC IPTR slider_render(Class *cl, Object *o, struct gpRender *msg)
+{
+    struct SliderData *data;
+    IPTR retval;
+    
+    data = INST_DATA(cl, o);
+    
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+    {
+	DrawImageState(msg->gpr_RPort,
+		(struct Image *)data->frame,
+		G(o)->LeftEdge - BORDERPROPSPACINGX,
+		G(o)->TopEdge  - BORDERPROPSPACINGY,
+		IDS_NORMAL,
+		msg->gpr_GInfo->gi_DrInfo);
+   
+    }
+    
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+
+    renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+
+    ReturnInt("Slider::Render", IPTR, retval);
+}
+
+
 AROS_UFH3S(IPTR, dispatch_sliderclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    struct SliderData *data;
     IPTR retval = 0UL;
 
     switch (msg->MethodID) {
     case OM_NEW:
 	retval = (IPTR) slider_new(cl, o, (struct opSet *) msg);
+	break;
+
+    case OM_DISPOSE:
+	data = INST_DATA(cl, o);
+	DisposeObject(data->frame);
+	retval = DoSuperMethodA(cl, o, msg);
 	break;
 
     case OM_SET:
@@ -848,14 +940,10 @@ AROS_UFH3S(IPTR, dispatch_sliderclass,
     	retval = slider_handleinput(cl, o, (struct gpInput *)msg);
     	break;
     	
-    case GM_RENDER: {
-    	struct SliderData *data = INST_DATA(cl, o);
-    	
-    	DoSuperMethodA(cl, o, msg);
-    	renderlabel(GadToolsBase, (struct Gadget *)o,
-    		((struct gpRender *)msg)->gpr_RPort, data->labelplace);
-   	} break;
-
+    case GM_RENDER:
+    	retval = slider_render(cl, o, (struct gpRender *)msg);
+	break;
+	
     default:
 	retval = DoSuperMethodA(cl, o, msg);
 	break;
@@ -1080,6 +1168,7 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
 
 struct ScrollerData
 {
+    Object *frame;
     WORD gadgetkind;
 };
 
@@ -1098,6 +1187,7 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     	{PGA_Visible,	0},
     	{TAG_MORE,	(IPTR)NULL}
     };
+
     struct ScrollerData *data;
 
     tags[3].ti_Data = (IPTR)msg->ops_AttrList;
@@ -1226,12 +1316,38 @@ IPTR scroller_get(Class * cl, Object * o, struct opGet *msg)
 **********************/
 Object *scroller_new(Class * cl, Object * o, struct opSet *msg)
 {
+    struct ScrollerData *data;
+    struct DrawInfo *dri;
+    struct TagItem fitags[] =
+    {
+	{IA_Width, 0UL},
+	{IA_Height, 0UL},
+	{IA_Resolution, 0UL},
+	{IA_FrameType, FRAME_BUTTON},
+	{TAG_DONE, 0UL}
+    };
+    
     EnterFunc(bug("Scroller::New()\n"));
     
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-    	scroller_set(cl, o, msg);
+    	data = INST_DATA(cl, o);
+	
+	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+	
+	fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
+	fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;
+	fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+
+	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+	if (data->frame)
+	{
+	    scroller_set(cl, o, msg);
+	} else {
+	    CoerceMethod(cl, o, OM_DISPOSE);
+	    o = NULL;
+	}
     }
     ReturnPtr("Scroller::New", Object *, o);
     
@@ -1275,18 +1391,53 @@ STATIC IPTR scroller_handleinput(Class *cl, Object *o, struct gpInput *msg)
     ReturnInt("Scroller::HandleInput", IPTR, retval);
 }
 
+
+/****************************
+**  Scroller::Render()     **
+****************************/
+STATIC IPTR scroller_render(Class *cl, Object *o, struct gpRender *msg)
+{
+    struct ScrollerData *data;
+    IPTR retval;
+    
+    data = INST_DATA(cl, o);
+    
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+    {
+	DrawImageState(msg->gpr_RPort,
+		(struct Image *)data->frame,
+		G(o)->LeftEdge - BORDERPROPSPACINGX,
+		G(o)->TopEdge  - BORDERPROPSPACINGY,
+		IDS_NORMAL,
+		msg->gpr_GInfo->gi_DrInfo);
+   
+    }
+    
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    
+    ReturnInt("Scroller::Render", IPTR, retval);
+}
+
+
+
 AROS_UFH3S(IPTR, dispatch_scrollerclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
-
+    struct ScrollerData *data;
     IPTR retval = 0UL;
 
     switch (msg->MethodID) {
     case OM_NEW:
 	retval = (IPTR) scroller_new(cl, o, (struct opSet *) msg);
+	break;
+
+    case OM_DISPOSE:
+	data = INST_DATA(cl, o);
+	DisposeObject(data->frame);
+	retval = DoSuperMethodA(cl, o, msg);
 	break;
 
     case OM_UPDATE:
@@ -1319,7 +1470,11 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
     case GM_HANDLEINPUT:
     	retval = scroller_handleinput(cl, o, (struct gpInput *)msg);
     	break;
-    
+
+    case GM_RENDER:
+    	retval = scroller_render(cl, o, (struct gpRender *)msg);
+	break;
+	    
     default:
 	retval = DoSuperMethodA(cl, o, msg);
 	break;
