@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define  AROS_ALMOST_COMPATIBLE
 #include <proto/exec.h>
 #include <proto/commodities.h>
 #include <proto/intuition.h>

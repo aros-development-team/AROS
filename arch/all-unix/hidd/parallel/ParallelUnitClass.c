@@ -13,7 +13,6 @@
 
 #include "unix_funcs.h"
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 /* the rest are Amiga includes */
 #define timeval aros_timeval

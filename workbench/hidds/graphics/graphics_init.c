@@ -5,7 +5,6 @@
     Desc: Graphics hidd initialization code.
     Lang: English.
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <exec/types.h>
 

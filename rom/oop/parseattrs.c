@@ -5,7 +5,6 @@
     Desc: Parse a set of attributes in a single interface
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include "intern.h"

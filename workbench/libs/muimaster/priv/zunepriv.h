@@ -3,7 +3,6 @@
 
 #ifdef _AROS
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <libdefs.h>
 #include <exec/memory.h>

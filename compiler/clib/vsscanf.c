@@ -6,7 +6,6 @@
     Lang: english
 */
 /* Original source from libnix */
-#define AROS_ALMOST_COMPATIBLE
 #include <stdio.h>
 
 static int _vsscanf_get (char ** str)

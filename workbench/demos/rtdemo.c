@@ -5,7 +5,6 @@
     Desc: Show the use or Ressource Tracking (RT)
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE /* Enable small enhancements */
 #define ENABLE_RT   1 /* Enable RT */
 
 #include <stdio.h>

@@ -5,7 +5,6 @@
     Desc: Release a lock obtained with Procure().
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>

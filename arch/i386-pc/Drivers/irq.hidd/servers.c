@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE
 #include <oop/oop.h>
 #include <aros/asmcall.h>
 #include <exec/types.h>

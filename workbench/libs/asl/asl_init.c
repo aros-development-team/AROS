@@ -6,7 +6,6 @@
     Lang: English.
 */
 
-#define AROS_ALMOST_COMPATIBLE /* For NEWLIST() macro */
 
 #include <stddef.h>
 #include <exec/libraries.h>

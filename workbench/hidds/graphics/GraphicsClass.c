@@ -8,7 +8,6 @@
 
 /****************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE 1
 #include <aros/config.h>
 #include <exec/lists.h>
 

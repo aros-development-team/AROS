@@ -5,7 +5,6 @@
     Desc: Get an attribute of an object.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include "intern.h"

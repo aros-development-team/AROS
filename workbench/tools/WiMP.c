@@ -35,7 +35,6 @@
 
 static const char version[] = "$VER: WiMP 0.8 (1.5.2001)";
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <ctype.h>
 #include <time.h>

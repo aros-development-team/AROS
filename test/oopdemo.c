@@ -6,7 +6,6 @@
    Lang: english
  */
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 /* Prevent inclusion of <intuition/classes.h>,
  * which is referenced in the amiga inline macros

@@ -5,7 +5,6 @@
     Desc: Set attributes of an object.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include <aros/debug.h>

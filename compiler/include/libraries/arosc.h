@@ -9,7 +9,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <dos/dos.h>
 #include <exec/types.h>

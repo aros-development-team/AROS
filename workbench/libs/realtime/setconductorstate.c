@@ -11,7 +11,6 @@
     NAME */
 
 #ifndef AROS_ALMOST_COMPATIBLE
-#define AROS_ALMOST_COMPATIBLE
 #endif
 
 #include <proto/exec.h>

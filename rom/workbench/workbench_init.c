@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE
 #include "workbench_intern.h"
 #include "libdefs.h"
 #include "handler.h"

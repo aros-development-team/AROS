@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_ALMOST_COMPATIBLE /* NEWLIST */
 
 #include <exec/types.h>
 #include <exec/resident.h>

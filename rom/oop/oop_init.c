@@ -8,7 +8,6 @@
 
 #define NUM_IDS 10
 
-#define AROS_ALMOST_COMPATIBLE
 #include <utility/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>

@@ -5,7 +5,6 @@
     Desc: Add a class to the list of puvlic classes
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include "intern.h"

@@ -5,7 +5,6 @@
     Desc: Create a new process
     Lang: English
 */
-#define AROS_ALMOST_COMPATIBLE 1
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <proto/exec.h>

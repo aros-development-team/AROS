@@ -5,9 +5,6 @@
     Desc: Miscellaneous functions for dealing with DOS rootnode.
     Lang:
 */
-#ifndef AROS_ALMOST_COMPATIBLE
-    #define AROS_ALMOST_COMPATIBLE
-#endif
 
 #include <aros/debug.h>
 

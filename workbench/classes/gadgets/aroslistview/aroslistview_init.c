@@ -5,7 +5,6 @@
     Desc: AROSListview initialization code.
     Lang: English.
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>

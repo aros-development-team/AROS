@@ -18,7 +18,6 @@
 enum { CX_OBJECT, CX_MESSAGE, CX_INPUTEVENT };
 enum { CXM_SINGLE, CXM_DOUBLE };
 
-#define  AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 
 #include <exec/types.h>

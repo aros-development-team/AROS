@@ -8,7 +8,6 @@
 
 #define OWN_INPUT_HANDLING 1
 
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include <proto/exec.h>
 #include <proto/dos.h>

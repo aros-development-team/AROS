@@ -5,7 +5,6 @@
     Desc: Expansion Resident and initialization.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
 #include <exec/lists.h>

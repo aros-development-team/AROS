@@ -11,7 +11,6 @@
 
 /*********************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE /* ForeachNode macros */
 
 #ifndef DOS_DOS_H
 #include <dos/dos.h>

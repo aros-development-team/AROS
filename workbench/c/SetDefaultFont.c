@@ -50,7 +50,6 @@
 
 ******************************************************************************/
 
-#define  AROS_ALMOST_COMPATIBLE 1
 
 #include <exec/exec.h>
 #include <dos/dos.h>

@@ -6,7 +6,6 @@
     Lang: C
 */
 
-#define AROS_ALMOST_COMPATIBLE /* For GetHead/GetSucc macros */
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>

@@ -5,9 +5,7 @@
     Desc: Add a task.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1
 #include <exec/lists.h>
-#undef AROS_ALMOST_COMPATIBLE
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <aros/libcall.h>

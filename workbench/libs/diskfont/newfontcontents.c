@@ -8,7 +8,6 @@
 
 /****************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE
 #include <diskfont/diskfont.h>
 #include <utility/tagitem.h>
 #include <dos/dos.h>

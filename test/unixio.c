@@ -1,4 +1,3 @@
-#define AROS_ALMOST_COMPATIBLE
 #include <hidd/unixio.h>
 #include <proto/exec.h>
 #include <proto/dos.h>

@@ -5,7 +5,6 @@
     Desc: Search for a node by name.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <string.h>
 
 /*****************************************************************************

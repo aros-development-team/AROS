@@ -5,7 +5,6 @@
     Desc: exec.library resident and initialization.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
 #include <exec/lists.h>

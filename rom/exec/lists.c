@@ -20,7 +20,6 @@ give some example programs and explain how lists work.<p>
 </chapter>
 
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <string.h>
 #include <exec/lists.h> /*#ALL*/
 #include <proto/exec.h> /*#ALL*/

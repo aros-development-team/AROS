@@ -7,7 +7,6 @@
 */
 
 #define AROS_USE_OOP
-#define AROS_ALMOST_COMPATIBLE 1
 
 #include <intuition/intuition.h>
 

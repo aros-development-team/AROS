@@ -5,7 +5,6 @@
     Desc: AllocNamedObject() - allocate a NamedObject.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include "intern.h"
 #include <proto/exec.h>
 #include <string.h>

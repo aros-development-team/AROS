@@ -7,7 +7,6 @@
 */
 /* Original source from libnix */
 
-#define AROS_ALMOST_COMPATIBLE
 
 #include <proto/dos.h>
 #include <errno.h>

@@ -46,9 +46,7 @@
 #   include <intuition/screens.h>
 #endif
 
-#ifdef AROS_ALMOST_COMPATIBLE
 #define INTUITIONNAME "intuition.library"
-#endif
 
 		       /***** Intuition Message *****/
 

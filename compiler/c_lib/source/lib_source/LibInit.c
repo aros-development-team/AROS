@@ -33,7 +33,6 @@ struct GfxBase	     * GfxBase	     = NULL;
 #ifndef _AROS
 #   define INTUITIONNAME "intuition.library" /* AROS defines this */
 #else
-#   define AROS_ALMOST_COMPATIBLE /* INTUITIONNAME */
 #   include <intuition/intuitionbase.h> /* INTUITIONNAME */
 #endif
 
