@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Wait CLI Command
-    Lang: English
+    Wait CLI Command.
 */
 
 /******************************************************************************
@@ -29,7 +28,7 @@
     INPUTS
 
         TIME      --  the number of time units to wait (default is seconds)
-	SEC=SEVS  --  set the time unit to seconds
+	SEC=SECS  --  set the time unit to seconds
 	MIN=MINS  --  set the time unit to minutes
 	UNTIL     --  wait until the specified time is reached. The time
                       is given in the format HH:MM.
@@ -45,8 +44,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 
