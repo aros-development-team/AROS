@@ -74,7 +74,7 @@ idle task gets corrupted. Might be connected to BUG000007.
 BUG000009
 digulla@aros.fh-konstanz.de
 demowin doesn't refresh correctly anymore since Moria3D bug has been
-fixed.
+fixed. The initial REFRESH is not sent to the window.
 
 BUG000010
 digulla@aros.fh-konstanz.de
