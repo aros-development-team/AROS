@@ -99,12 +99,13 @@ static void makegads(void)
 					 
     if (!gradgad) cleanup("Can't create gradientslider gadget!");
     
-    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left, 20,
-    								  GA_Top, 20,
-								  GA_RelWidth, -80,
-								  GA_RelHeight, -40,
-								  WHEEL_Screen, scr,
-								  GA_Previous, gradgad,
+    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left	, 20,
+    								  GA_Top	, 20,
+								  GA_RelWidth	, -80,
+								  GA_RelHeight	, -40,
+								  WHEEL_Screen	, scr,
+								  WHEEL_BevelBox, TRUE,
+								  GA_Previous	, gradgad,
 								  TAG_DONE);
 								  
     if (!wheelgad) cleanup("Can't create colorwheel gadget!");
@@ -118,7 +119,7 @@ static void makewin(void)
     win = OpenWindowTags(0, WA_PubScreen	, scr,
     			    WA_Left		, 10,
 			    WA_Top		, 20,
-			    WA_Width		, 200,
+			    WA_Width		, 240,
 			    WA_Height		, 200,
 			    WA_MinWidth		, 50,
 			    WA_MinHeight	, 50,
@@ -132,7 +133,8 @@ static void makewin(void)
 			    WA_SizeGadget	, TRUE,
 			    WA_SizeBBottom	, TRUE,
 			    WA_Activate		, TRUE,
-			    WA_IDCMP		, IDCMP_CLOSEWINDOW,
+			    WA_ReportMouse	, TRUE,
+			    WA_IDCMP		, IDCMP_CLOSEWINDOW | IDCMP_MOUSEMOVE,
 			    WA_Gadgets		, gradgad,
 			    TAG_DONE);
 			    
@@ -145,6 +147,8 @@ static void makewin(void)
 static void handleall(void)
 {
     struct IntuiMessage *msg;
+    WORD		x;
+    ULONG		hue;
     BOOL		quitme = FALSE;
     
     while(!quitme)
@@ -157,6 +161,14 @@ static void handleall(void)
 	    {
 	        case IDCMP_CLOSEWINDOW:
 		    quitme = TRUE;
+		    break;
+		
+		case IDCMP_MOUSEMOVE:
+		    x = scr->MouseX;
+		    if (x < 0) x = 0; else if (x >= scr->Width) x = scr->Width - 1;
+		    hue = x * ((ULONG)0xFFFFFFFF / scr->Width - 1);
+		    
+		    SetGadgetAttrs(wheelgad, win, 0, WHEEL_Hue, hue, TAG_DONE);
 		    break;
 		    
 	    } /* switch(msg->Class) */
