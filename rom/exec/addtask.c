@@ -125,6 +125,9 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
 	if (!task->tc_UnionETask.tc_ETask)
 	    return NULL;
+
+	/* I'm the parent task */
+	GetETask(task)->et_Parent = FindTask(NULL);
     }
 
     /* Get new stackpointer. */
