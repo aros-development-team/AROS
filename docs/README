@@ -5,50 +5,61 @@ Version:  1.10
 Type:	  misc/emu
 
 New this time:
-- Docs, docs, docs
-- Some bugfixes
+- Bugfixes
+- Worked on docs
+- Many (50+) new functions in c.lib and amiga.lib
+- Big endian IO functions in aros.library
+- Amiga native and Linux/m68k versions. Amiga is still alpha.
+- A *pre* alpha of VBCC with i386 support. This is only loosely
+	connected to AROS. See the README in the directory
+	\filename{AROS/compiler/vbcc/}.
+- iffparse.library completed
+- Exec 90% completed, DOS 50% completed, Graphics 15%, Intuition 25%.
+    All in all 30% of the whole work is completed.
+- Uses now shares libs on Unix to make it smaller
 
-This project's goal is to provide a public available AmigaOS which
-is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
-other hardware than the Amiga (but on the Amiga also). The current
-memberlist:
+HOW TO USE THIS
+---------------
 
-	Aaron "Optimizer" Digulla (coordination)
-	Matthias Fleischer (coding, ie. he's the one who works ;-) )
-	Peter Boeckmann (port to Alpha and Sparc)
-	Martin Steigerwald (coding some small functions)
-	Iain Templeton (FreeBSD port and utility.library)
-	Lennard voor den Dag (Amiga port - at last :-)
+There are two archives:
 
-and some 300 others (which are not mentioned here since they have not
-written a line of code yet).
+    AROSdev-$x.$y.lha
+    AROS-$a-$b-$x.$y.lha
 
-!!! IMPORTANT: TO USE AROS IN THE CURRENT FORM, YOU MUST HAVE LINUX ON A
-PC WITH INTEL CPU (eg. 386, 486, Pentium) AND X11R6 !!!
+$x is the major and $y is the minor release, $a is the system and $b is
+the CPU this archive is for, ie.
 
-There are two archives which contain different things:
+    AROS-linux-i386-1.10b.lha
 
-    AROSdev##.lha
-    AROSbin##.lha
+Is the binary archive for linux with Intel CPU (386 and above). The version is
+1.10 and it's a beta.
 
-where ## is the version-number. The dev archive contains all files
-neccessary to create bin and dev archives and to build/port the
-complete tree. The bin Archive right now contains everything to test
-AROS on Linux, ie. it contains an executable which simulates an Amiga
-and some binaries to test it (Dir, List, Echo, LibraryTest and OpenWin).
-Sorry, no Amiga port at this time.
+If you are not involved with developing AROS but want to try it out or
+(even better) want to write apps for AROS, get the binary archive. It
+contains a ready-to-use copy of all binaries for AROS (not that there
+were many, yet ... :-). Unpack the archive, cd into AROS and run
+the arosshell (NOTE: For some systeme, there are shared versions of the
+libs to save disk space. On these systems, you must tell the loader to
+look into AROS/lib for additional libs. On linux, do "export
+LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH" (without the "")).
 
-If you want to contribute, read README.CVS. Right now, you need access
-to a Unix site to do this (or a friend you trust) to generate a password.
+Now you will get a prompt reading "Workbench:> ". Now type "dir all" and
+press return and doesn't it look familiar (There will be lots of debugging
+output which you can savely ignore. It will go away in the next versions) ?
+Try "demowin" to see what our intuition.library and graphics.library can
+do. Have you tried "sift" ? This is the AROS version of sift.c which is in
+the RKRMs. We just copied and compiled it and it works ! If you want to try
+it, copy any IFF file into the AROS directory and call sift with the
+name of that file. It will print you the contents of the file using
+iffparse.library !
 
-Where to find more infos ? Look at these pages on WorldWideWait:
+WHERE TO FIND MORE INFOS ?
+--------------------------
 
-    http://www.lysator.liu.se/amiga/aros/ (official site)
-    http://colombo.telis-sc.fr/AmigOS/ (AOS (_not_ AROS) site)
-    http://ernie.mi.uni-koeln.de/AmigOS (AOS mirror)
+Look at these pages on WorldWideWait:
 
-Please note that these pages are not under central control yet and therefore
-may contain quite different contents.
+    http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
+    http://aros.fh-konstanz.de/~digulla/ (German Mirror)
 
 If you have FTP, you can also get the most recent version as tar.gz files
 from
