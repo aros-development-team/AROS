@@ -21,6 +21,7 @@ GNU General Public License, as specified in the file "LICENSE.GPL":
 + System/About [workbench/system/AboutAROS]
 + Prefs/Wanderer [workbench/prefs/wanderer]
 + Tools/Edit [workbench/tools/Edit]
++ C/LoadResource [workbench/c/LoadResource]
 + [workbench/prefs/Editor]
 + [tools/fd2inline]
 + [tools/FlexCat]
