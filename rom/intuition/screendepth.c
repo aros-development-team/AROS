@@ -385,13 +385,6 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
         }
     }
 
-    /* set mouse bounds to equal new active screen size */
-    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    iihd->MouseBoundsLeft = IntuitionBase->ActiveScreen->LeftEdge;
-    iihd->MouseBoundsRight = IntuitionBase->ActiveScreen->LeftEdge + IntuitionBase->ActiveScreen->Width;
-    iihd->MouseBoundsTop = IntuitionBase->ActiveScreen->TopEdge;
-    iihd->MouseBoundsBottom = IntuitionBase->ActiveScreen->TopEdge + IntuitionBase->ActiveScreen->Height;
-
     UnlockIBase(ilock);
 
     if (win)
