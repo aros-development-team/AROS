@@ -72,8 +72,8 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
     	    /* Get key info from high keymap */
     	    ki->Key_MapType = km->km_HiKeyMapTypes[code];
     	    ki->Key_Mapping = km->km_HiKeyMap[code];
-    	    capsable    = GetBitProperty(km->km_LoCapsable,   code);
-    	    repeatable  = GetBitProperty(km->km_LoRepeatable, code);
+    	    capsable    = GetBitProperty(km->km_HiCapsable,   code);
+    	    repeatable  = GetBitProperty(km->km_HiRepeatable, code);
     	}
 
     	D(bug("mrk: capsable=%d\n", capsable));
@@ -82,8 +82,10 @@ BOOL GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km)
     	    ki->KCFQual |= KCF_SHIFT;
 
     	if ((qual & IEQUALIFIER_REPEAT) && (!repeatable))
-    	    valid = FALSE; /* Repeating not supported for key, skip keypress */
-
+	{
+	    valid = FALSE; /* Repeating not supported for key, skip keypress */
+        }
+	
     	D(bug("mrk:repeat test passed\n"));
 
    	D(bug("mrk: key mapping: %04x\n", ki->Key_Mapping));
