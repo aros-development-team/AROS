@@ -135,9 +135,10 @@
     {
       /* 
          This ClipRect of the layer is hidden. So we can simply 
-         free the bitmap data there, if it's not a superbitmap.
+         free the bitmap data there, if it's not a superbitmap and
+         not a simple layer.
        */
-      if (0 == (LD->Flags & LAYERSUPER))
+      if (0 == (LD->Flags & (LAYERSUPER|LAYERSIMPLE)))
         FreeBitMap(CR->BitMap);
     }
     else
@@ -230,7 +231,7 @@
             {
               /* ... restore the bitmap stuff found there */
               if (0 == (L_behind->Flags & LAYERSUPER))
-	      { 
+	      {
                 /* no SuperBitMap */
                 BltBitMap(
                   CR->BitMap,

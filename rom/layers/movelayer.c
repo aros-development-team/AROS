@@ -68,7 +68,7 @@
   struct RastPort * RP;
   struct Layer_Info * LI = l->LayerInfo;
 
-  /* Check coordinates as there's no suport for layers outside the displayed
+  /* Check coordinates as there's no support for layers outside the displayed
      bitmap. I might add this feature later. */
   if (l->bounds.MinX+dx < 0 ||
       l->bounds.MinY+dy < 0 ||
@@ -204,8 +204,6 @@
     if (NULL != RP   ) FreeMem(RP, sizeof(struct RastPort));
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
   }
-
-
 
   return FALSE;
 

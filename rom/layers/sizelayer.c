@@ -175,9 +175,7 @@
                job correctly if you want to create a layer somewhere
                behind other layers.
     */
-
     CreateClipRects(LI, l); 
-
     /*
        Ok, all other layers were visited and pixels are backed up.
        Now we can draw the new layer by copying all parts of the
@@ -199,7 +197,6 @@
     else
       height = l_tmp->bounds.MaxY - l_tmp->bounds.MinY + 1;
 
-    
     ClipBlit(l_tmp->rp,
              0,
              0,
@@ -236,7 +233,6 @@
               SrcX = CR->bounds.MinX;
             else
               SrcX = l_tmp->bounds.MinX + width;
-
             BltBitMap(
               bm,             /* Source Bitmap = rastport's bitmap */
               SrcX,
@@ -258,7 +254,6 @@
               SrcY = CR->bounds.MinY;
             else
               SrcY = l_tmp->bounds.MinY + height;
-
             BltBitMap(
               bm,             /* Source Bitmap = rastport's bitmap */
               CR->bounds.MinX,

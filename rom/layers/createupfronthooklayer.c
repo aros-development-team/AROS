@@ -46,9 +46,6 @@
     EXAMPLE
 
     BUGS
-      No support of backdrop layers.
-      No support of simple layers. (the easier part :-)) )
-      No support of superbitmaps.
 
     SEE ALSO
 
@@ -136,7 +133,6 @@
       }
       /* make the new layer the top layer.*/
       li->top_layer     = L;
-//kprintf("cuhl: Inserting layer as very first one!\n");
     }
     else
     {
@@ -144,7 +140,6 @@
       while ( L_behind->back != NULL &&
              (L_behind->back->Flags & LAYERBACKDROP) == 0)
         L_behind = L_behind->back;
-//kprintf("BACKDROP layer inserted after non-BACKDROP layers!\n");
       /* 
          L_behind now points to the layer that the new layer has
          to go behind. 

@@ -261,6 +261,7 @@ kprintf("LSL: Splitting Layer at %x(%d) with Layer at %x(%d)\n",L_passive,L_pass
                                         bm, 
                                         L_active, 
                                         L_passive);
+//kprintf("returned Calling case %d\n",OverlapIndex);
 
         CR->Flags &= ~CR_NEEDS_NO_LAYERBLIT_DAMAGE;
         /* 
@@ -304,6 +305,8 @@ void ClipRectSplitsLayer(struct ClipRect * CR_active, struct Layer * L_passive)
                  	(void *)&Case_13,
                  	(void *)&Case_14,
                  	(void *)&Case_15};
+
+//kprintf("In function ClipRectsplitLayer!\n");
 
   /* first check whether CR_active overlaps L_passive at all */
   if (x0 > L_passive -> bounds.MaxX ||
