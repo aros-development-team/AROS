@@ -2,9 +2,14 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.10  1996/09/17 16:17:02  digulla
+    Revision 1.11  1996/09/17 18:41:18  digulla
+    This file now contains a DOSBase for internal use in the OS only (and
+    	if you can, don't use it but open the dos.library on your own). I'll try
+    	to remove again, later.
+
+    Revision 1.10  1996/09/17 16:17:02	digulla
     Moved CreateNewProc() in front of start of timer, because of crashes if
-    	the timer is enabled. But that's not enough yet :(
+	the timer is enabled. But that's not enough yet :(
 
     Revision 1.9  1996/09/13 17:57:08  digulla
     Use IPTR
@@ -90,7 +95,7 @@ UBYTE * memory;
 #define NUMVECT 131
 
 struct ExecBase *SysBase;
-struct DosBase * DOSBase;
+struct DosLibrary *DOSBase;
 
 #define STACKSIZE 4096
 
@@ -287,7 +292,11 @@ int main(int argc,char *argv[])
     Permit();
 
     AddLibrary((struct Library *)InitResident((struct Resident *)&Utility_resident,0));
-    AddLibrary((struct Library *)InitResident((struct Resident *)&Dos_resident,0));
+
+    DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
+
+    AddLibrary((struct Library *)DOSBase);
+
     AddLibrary((struct Library *)InitResident((struct Resident *)&Graphics_resident,0));
     AddLibrary((struct Library *)InitResident((struct Resident *)&Intuition_resident,0));
 
@@ -303,7 +312,7 @@ int main(int argc,char *argv[])
 	AddDevice (&conbase->device);
     }
 
-    DOSBase = (struct DosBase *) OpenLibrary (DOSNAME, 39);
+    DOSBase = (struct DosLibrary *)OpenLibrary (DOSNAME, 39);
 
     if (!DOSBase)
     {
