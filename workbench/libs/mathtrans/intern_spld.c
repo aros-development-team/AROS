@@ -11,7 +11,7 @@
 #include <exec/types.h>
 #include "mathtrans_intern.h"
 
-LONG intern_SPLd(struct MathTransBase * MathTransBase, ULONG fnum)
+LONG intern_SPLd(ULONG fnum)
 {
     ULONG i = 0, Res = 0, c;
     ULONG Mask = 0x80000000;

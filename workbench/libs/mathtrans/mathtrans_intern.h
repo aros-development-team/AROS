@@ -46,23 +46,10 @@ extern struct MathBase * MathBase;
     use the mathtrans.library functions to get information.
 */
 
-struct MathTransBase
-{
-    struct Library     LibNode;
-    BPTR               mtb_SegList;
-
-    struct ExecBase *  mtb_SysBase;
-};
-
 /* internal prototypes */
 
-LONG intern_SPLd(struct MathTransBase * MathTransBase, ULONG fnum);
+LONG intern_SPLd(ULONG fnum);
 LONG intern_SPisodd(ULONG fnum);
-
-/*
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct MathTransBase *, MathTransBase, 3, MathTrans)
-*/
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent */

@@ -23,10 +23,15 @@ FUNCS := \
     sptanh \
     sptieee
 
-#MM- workbench-libs-mathtrans : includes linklibs
+#MM workbench-libs-mathtrans-includes : \
+#MM    kernel-exec-includes \
+#MM    kernel-mathffp-includes \
+#MM    includes-copy
+#MM- workbench-libs-mathtrans : linklibs
 
-%build_module_macro mmake=workbench-libs-mathtrans \
- modname=mathtrans modtype=library files=$(FILES) funcs=$(FUNCS) \
- conffile=lib.conf uselibs=rom
+%build_module mmake=workbench-libs-mathtrans \
+    modname=mathtrans modtype=library \
+    files="mathtrans_init $(FILES) $(FUNCS)" \
+    uselibs=rom
 
 %common
