@@ -971,6 +971,7 @@ kprintf("Skip\n");
 		}
 		WaitCTRL(sigs);
 	    }
+	    FreeVec(string);
 	    get(st, MUIA_String_Contents, (IPTR *)&str);
 	    string = StrDup(str);
 
