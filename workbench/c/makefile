@@ -41,7 +41,7 @@ $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
 	$(CC) $(CFLAGS) -I $(TOP)/libs -c $< -o $@
 
-$(EXEDIR)/%: %.o
+$(EXEDIR)/%: $(OBJDIR)/%.o
 	$(CC) $(ILDFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: %.c
