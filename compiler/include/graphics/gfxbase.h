@@ -167,7 +167,7 @@ struct GfxBase
 #define GFXB_HR_AGNUS      0
 #define GFXF_HR_AGNUS  (1<<0)
 #define GFXB_HR_DENISE     1
-#define GFXF_HR_DENIS  (1<<1)
+#define GFXF_HR_DENISE (1<<1)
 #define GFXB_AA_ALICE      2
 #define GFXF_AA_ALICE  (1<<2)
 #define GFXB_AA_LISA       3
