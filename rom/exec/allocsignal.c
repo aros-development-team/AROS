@@ -61,7 +61,7 @@
     /* Protect signal mask against possible task exceptions. */
     Forbid();
 
-    ThisTask = SysBase->ThisTask;
+    ThisTask = FindTask(NULL);
 
     /* Get pointer to mask of allocated signal */
     mask=&ThisTask->tc_SigAlloc;
