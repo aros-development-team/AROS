@@ -47,45 +47,46 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct VSprite * Head;
-  struct VSprite * Current;
+    struct VSprite * Head;
+    struct VSprite * Current;
 
-  /* unlink this VSprite */
-  vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
-  vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
+    /* unlink this VSprite */
+    vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
+    vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
 
-  /* look for the head of this list of gels*/
-  Head = vs;
-  while (NULL != Head -> PrevVSprite )
-    Head = Head -> PrevVSprite;
+    /* look for the head of this list of gels*/
+    Head = vs;
+    while (NULL != Head -> PrevVSprite )
+        Head = Head -> PrevVSprite;
 
-  /* take this VSprite out of the DrawPath and ClearPath */
-  Current = Head;
-  while (Current != NULL)
-  {
-    if (Current -> DrawPath == vs)
+    /* take this VSprite out of the DrawPath and ClearPath */
+    Current = Head;
+    while (Current != NULL)
     {
-      Current -> DrawPath = Current -> DrawPath -> DrawPath;
-      break;
+	if (Current -> DrawPath == vs)
+	{
+	    Current -> DrawPath = Current -> DrawPath -> DrawPath;
+	    break;
+	}
+	else
+	    Current = Current -> DrawPath;
     }
-    else
-      Current = Current -> DrawPath;
-  }
 
-  Current = Head;
-  while (Current != NULL)
-  {
-    if (Current -> ClearPath == vs)
+    Current = Head;
+    while (Current != NULL)
     {
-      Current -> ClearPath = Current -> ClearPath -> ClearPath;
-      break;
+	if (Current -> ClearPath == vs)
+	{
+	    Current -> ClearPath = Current -> ClearPath -> ClearPath;
+	    break;
+	}
+	else
+	    Current = Current -> ClearPath;
     }
-    else
-      Current = Current -> ClearPath;
-  }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* RemVSprite */
