@@ -105,101 +105,6 @@ static ULONG dd_to_flags(struct DiskObject *dobj)
 
 /****************************************************************************************/
 
-STATIC VOID DetectIconType(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
-{
-    struct FileInfoBlock *fib;
-    BPTR    	    	  lock, dirlock;
-    LONG    	    	  dir_type;
-    
-    D(bug("Detect PNG Icon Type\n"));
-
-    if ((lock = DupLockFromFH(file)))
-    {
-    	if ((dirlock = ParentDir(lock)))
-	{
-	    if ((fib = AllocDosObject(DOS_FIB, NULL)))
-	    {
-	    	if (Examine(dirlock, fib))
-		{
-    	    	    dir_type = fib->fib_DirEntryType;
-
-    	    	    D(bug("Detect PNG Icon Type. Parent dir type %d\n", dir_type));
-		    		
-	    	    if (Examine(lock, fib))
-		    {
-			LONG len = strlen(fib->fib_FileName);
-
-    	    	    	D(bug("Detect PNG Icon Type. Name %s\n", fib->fib_FileName));
-
-			if ((len >= 5) && (strcasecmp(fib->fib_FileName + len - 5, ".info") == 0))
-			{
-                            BPTR oldcd;
-                            
-		    	    *(fib->fib_FileName + len - 5) = '\0';
-
-			    UnLock(lock);
-
-    	    	    	    D(bug("Detect PNG Icon Type. Trying to examine %s ...\n", fib->fib_FileName));
-                            
-                            oldcd = CurrentDir(dirlock);
-                            lock = Lock(fib->fib_FileName, SHARED_LOCK);
-                            CurrentDir(oldcd);
-                            
-			    if (lock)
-			    {
-			    	if (Examine(lock, fib))
-				{
-			    	    LONG file_type = fib->fib_DirEntryType;
-
-    	    	    	    	    D(bug("Detect PNG Icon Type. Parent object type %d\n", file_type));
-
-				    if (file_type > 0)
-				    {
-			    		if ((dir_type == ST_ROOT) &&
-				    	    (strcasecmp(fib->fib_FileName, "Trashcan") == 0))
-					{
-					    dobj->do_Type = WBGARBAGE;
-    	    	    	    		}
-					else
-					{
-				    	    dobj->do_Type = WBDRAWER;
-					}				  
-				    }
-				    else if ((fib->fib_Protection & FIBF_EXECUTE) == 0)
-				    {
-					dobj->do_Type = WBTOOL;
-				    }
-				}
-			    }
-			    else if (strcasecmp(fib->fib_FileName, "Disk") == 0)
-			    {
-				if (dir_type == ST_ROOT)
-    	    	    	    	{
-				    dobj->do_Type = WBDISK;
-				}
-			    }
-			}
-
-		    } /* if (Examine(lock, fib)) */
-	    
-	    	} /* if (Examine(dirlock, fib)) */
-	    	FreeDosObject(DOS_FIB, fib);
-		
-	    } /* if ((fib = AllocDosObject(DOS_FIB, NULL))) */
-	    
-	    UnLock(dirlock);
-	    
-	} /* if ((dirlock = ParentDir(lock))) */
-	
-    	if (lock) UnLock(lock);
-	
-    } /* if ((lock = DupLockFromFH(file))) */
-    
-    D(bug("Detect PNG Icon Type: %d\n", dobj->do_Type));
-}
-
-/****************************************************************************************/
-
 STATIC BOOL MakePlanarImage(struct NativeIcon *icon, struct Image **img,
     	    	    	    UBYTE *src, struct IconBase *IconBase)
 {
@@ -584,8 +489,6 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	} /* if (chunkpointer[0]) */
 
 	#undef DO
-	
-	DetectIconType(file, &icon->dobj, IconBase);
 	
 	if (icon->dobj.do_DrawerData &&
 	    (icon->dobj.do_Type != WBDISK) &&
