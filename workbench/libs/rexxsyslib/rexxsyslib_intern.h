@@ -32,6 +32,9 @@
 #ifndef REXX_STORAGE_H
 #   include <rexx/storage.h>
 #endif
+#ifndef REXX_RXSLIB_H
+#   include <rexx/rxslib.h>
+#endif
 #ifndef LIBCORE_BASE_H
 #   include <libcore/base.h>
 #endif
@@ -49,12 +52,13 @@ struct RexxSysBase_intern; /* prereference */
 
 struct RexxSysBase_intern
 {
-    struct LibHeader library;
-    char *           rexxmsgid;
+    struct RxsLib          library;
+    char *                 rexxmsgid;
+    struct SignalSemaphore semaphore;
 };
 
 #undef SysBase
-#define SysBase (((struct LibHeader*)RexxSysBase)->lh_SysBase)
+#define SysBase (((struct RxsLib *)RexxSysBase)->rl_SysBase)
 
 #define RSBI(base) ((struct RexxSysBase_intern *)base)
 
