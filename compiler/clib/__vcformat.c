@@ -43,8 +43,6 @@ unsigned char *__decimalpoint = ".";
 /*****************************************************************************
 
     NAME */
-#include <stdio.h>
-#include <stdarg.h>
 
 	int __vcformat (
 

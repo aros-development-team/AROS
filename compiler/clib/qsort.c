@@ -62,7 +62,6 @@ med3(const char *a, const char *b, const char *c, int (*cmp)(const void *, const
 /*****************************************************************************
 
     NAME */
-#include <stdlib.h>
 
 	void qsort (
 
