@@ -1,5 +1,6 @@
 GENMODULE_SRCS := \
     genmodule.c \
+    boopsisupport.c \
     config.c \
     fileread.c \
     functionhead.c \

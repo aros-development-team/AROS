@@ -2,19 +2,26 @@
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
-    Function to write modulename_start.c. Part of genmodule.
+    Print the library magic and init code in the file modname_start.c.
+    This code is partly based on code in CLib37x.lha from Andreas R. Kleinert
 */
 #include "genmodule.h"
+
+static void writedecl(FILE *, struct config *);
+static void writedeclsets(FILE *, struct config *);
+static void writeresident(FILE *, struct config *);
+static void writeinitlib(FILE *, struct config *);
+static void writeopenlib(FILE *, struct config *);
+static void writecloselib(FILE *, struct config *);
+static void writeexpungelib(FILE *, struct config *);
+static void writeextfunclib(FILE *, struct config *);
+static void writefunctable(FILE *, struct config *, struct functions *);
+static void writesets(FILE *, struct config *);
 
 void writestart(struct config *cfg, struct functions *functions)
 {
     FILE *out;
     char line[256];
-    struct functionhead *funclistit;
-    struct functionarg *arglistit;
-    struct stringlist *linelistit;
-    unsigned int lvo;
-    int i;
     
     snprintf(line, 255, "%s/%s_start.c", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
@@ -26,9 +33,44 @@ void writestart(struct config *cfg, struct functions *functions)
     fprintf(out,
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
-	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
+	    "    Copyright © 1995-2005, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
     );
+
+    writedecl(out, cfg);
+    if (!(cfg->options & OPTION_NORESIDENT))
+    {
+	writeresident(out, cfg);
+	writedeclsets(out, cfg);
+	writeinitlib(out, cfg);
+	if (cfg->modtype != RESOURCE)
+	{
+	    writeopenlib(out, cfg);
+	    writecloselib(out, cfg);
+	    writeexpungelib(out, cfg);
+	    writeextfunclib(out, cfg);
+	}
+	writesets(out, cfg);
+    }
+    writefunctable(out, cfg, functions);
+    
+    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+    {
+        writemccinit(out, cfg, functions);
+        writemccquery(out, cfg);
+    }
+    else if (cfg->modtype == GADGET)
+    {
+	writeclassinit(out, cfg, functions);
+    }
+    
+    fclose(out);
+}
+
+
+static void writedecl(FILE *out, struct config *cfg)
+{
+    struct stringlist *linelistit;
 
     if (cfg->modtype == DEVICE)
     {
@@ -59,469 +101,500 @@ void writestart(struct config *cfg, struct functions *functions)
 	    "#include <proto/exec.h>\n"
 	    "\n"
     );
-    if (!(cfg->options & OPTION_NORESIDENT))
-    {
-	/* Print the library magic and init code. Partly based on code in CLib37x.lha
-	 * from Andreas R. Kleinert
-	 */
-	fprintf(out,
-		"#include <exec/initializers.h>\n"
-		"#define INITPTR(offset,ptr) 0x80,(UBYTE)offset,(ULONG)ptr\n"
-		"\n"
-		"extern const int GM_UNIQUENAME(End);\n"
-		"extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
-		"static const struct InitTable GM_UNIQUENAME(InitTable);\n"
-		"static const struct DataTable GM_UNIQUENAME(DataTable);\n"
-		"\n"
-		"extern const char GM_UNIQUENAME(LibName)[];\n"
-		"extern const char GM_UNIQUENAME(LibID)[];\n"
-		"extern const char GM_UNIQUENAME(Copyright)[];\n"
-		"\n"
-	);
+}
 
-	fprintf(out,
-		"#define __freebase(lh)\\\n"
-		"do {\\\n"
-		"    UWORD negsize, possize;\\\n"
-		"    UBYTE *negptr = (UBYTE *)lh;\\\n"
-		"    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
-		"    negptr -= negsize;\\\n"
-		"    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
-		"    FreeMem (negptr, negsize+possize);\\\n"
-		"} while(0)\n"
-		"\n"
-	);
+
+static void writedeclsets(FILE *out, struct config *cfg)
+{
+    fprintf(out,
+	    "THIS_PROGRAM_HANDLES_SYMBOLSETS\n"
+	    "DECLARESET(INIT)\n"
+	    "DECLARESET(EXIT)\n"
+	    "DECLARESET(CTORS)\n"
+	    "DECLARESET(DTORS)\n"
+	    "DECLARESET(INITLIB)\n"
+	    "DECLARESET(EXPUNGELIB)\n"
+	    "DECLARESET(OPENLIB)\n"
+	    "DECLARESET(CLOSELIB)\n"
+	    "DECLARESET(OPENDEV)\n"
+	    "DECLARESET(CLOSEDEV)\n"
+	    "\n"
+    );
+}
+
+
+static void writeresident(FILE *out, struct config *cfg)
+{
+    fprintf(out,
+	    "#include <exec/initializers.h>\n"
+	    "#define INITPTR(offset,ptr) 0x80,(UBYTE)offset,(ULONG)ptr\n"
+	    "\n"
+	    "extern const int GM_UNIQUENAME(End);\n"
+	    "extern const APTR GM_UNIQUENAME(FuncTable)[];\n"
+	    "static const struct InitTable GM_UNIQUENAME(InitTable);\n"
+	    "static const struct DataTable GM_UNIQUENAME(DataTable);\n"
+	    "\n"
+	    "extern const char GM_UNIQUENAME(LibName)[];\n"
+	    "extern const char GM_UNIQUENAME(LibID)[];\n"
+	    "extern const char GM_UNIQUENAME(Copyright)[];\n"
+	    "\n"
+    );
+
+    fprintf(out,
+	    "#define __freebase(lh)\\\n"
+	    "do {\\\n"
+	    "    UWORD negsize, possize;\\\n"
+	    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
+	    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+	    "    negptr -= negsize;\\\n"
+	    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
+	    "    FreeMem (negptr, negsize+possize);\\\n"
+	    "} while(0)\n"
+	    "\n"
+    );
 	
+    fprintf(out,
+	    "AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
+	    "    AROS_UFPA(LIBBASETYPEPTR, lh, D0),\n"
+	    "    AROS_UFPA(BPTR, segList, A0),\n"
+	    "    AROS_UFPA(struct ExecBase *, sysBase, A6)\n"
+	    ");\n"
+    );
+    if (cfg->modtype != RESOURCE)
+    {
 	fprintf(out,
-		"AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
-		"    AROS_UFPA(LIBBASETYPEPTR, lh, D0),\n"
-		"    AROS_UFPA(BPTR, segList, A0),\n"
-		"    AROS_UFPA(struct ExecBase *, sysBase, A6)\n"
+		"AROS_LP1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
+		"    AROS_LPA(LIBBASETYPEPTR, lh, D0),\n"
+		"    struct ExecBase *, sysBase, 3, %s\n"
 		");\n"
+		"\n",
+		cfg->basename
 	);
-	if (cfg->modtype != RESOURCE)
-	{
-	    fprintf(out,
-		    "AROS_LP1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-		    "    AROS_LPA(LIBBASETYPEPTR, lh, D0),\n"
-		    "    struct ExecBase *, sysBase, 3, %s\n"
-		    ");\n"
-		    "\n",
-		    cfg->basename
-	    );
-	}
+    }
+    fprintf(out,
+	    "struct Resident const GM_UNIQUENAME(ROMTag) =\n"
+	    "{\n"
+	    "    RTC_MATCHWORD,\n"
+	    "    (struct Resident *)&GM_UNIQUENAME(ROMTag),\n"
+	    "    (APTR)&GM_UNIQUENAME(End),\n"
+	    "    RESIDENTFLAGS,\n"
+	    "    VERSION_NUMBER,\n"
+    );
+    switch (cfg->modtype)
+    {
+    case LIBRARY:
+    case MUI:
+    case MCC:
+    case MCP:
+    case GADGET:
+	fprintf(out, "    NT_LIBRARY,\n");
+	break;
+    case DEVICE:
+	fprintf(out, "    NT_DEVICE,\n");
+	break;
+    case RESOURCE:
+	fprintf(out, "    NT_RESOURCE,\n");
+	break;
+    default:
+	fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
+	exit(20);
+	break;
+    }
+    fprintf(out,
+	    "    RESIDENTPRI,\n"
+	    "    (char *)&GM_UNIQUENAME(LibName)[0],\n"
+	    "    (char *)&GM_UNIQUENAME(LibID)[6],\n"
+	    "    (APTR)&GM_UNIQUENAME(InitTable)\n"
+	    "};\n"
+	    "\n"
+	    "static struct InitTable\n"
+	    "{\n"
+	    "    ULONG                   Size;\n"
+	    "    const APTR             *FuncTable;\n"
+	    "    const struct DataTable *DataTable;\n"
+	    "    APTR                    InitLibTable;\n"
+	    "}\n"
+	    "const GM_UNIQUENAME(InitTable) =\n"
+	    "{\n"
+	    "    sizeof(LIBBASETYPE),\n"
+	    "    &GM_UNIQUENAME(FuncTable)[0],\n"
+	    "    &GM_UNIQUENAME(DataTable),\n"
+	    "    (APTR)GM_UNIQUENAME(InitLib)\n"
+	    "};\n"
+	    "\n"
+	    "static struct DataTable\n"
+	    "{\n"
+	    "    UWORD ln_Type_Init; UWORD ln_Type_Offset; UWORD ln_Type_Content;\n"
+	    "    UBYTE ln_Name_Init; UBYTE ln_Name_Offset; ULONG ln_Name_Content;\n"
+	    "    UWORD lib_Flags_Init; UWORD lib_Flags_Offset; UWORD lib_Flags_Content;\n"
+	    "    UWORD lib_Version_Init; UWORD lib_Version_Offset; UWORD lib_Version_Content;\n"
+	    "    UWORD lib_Revision_Init; UWORD lib_Revision_Offset; UWORD lib_Revision_Content;\n"
+	    "    UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; ULONG lib_IdString_Content;\n"
+	    "    ULONG ENDMARK;\n"
+	    "}\n"
+	    "const GM_UNIQUENAME(DataTable) =\n"
+	    "{\n"
+    );
+    switch (cfg->modtype)
+    {
+    case LIBRARY:
+    case MUI:
+    case MCC:
+    case MCP:
+    case GADGET:
+	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_LIBRARY),\n");
+	break;
+    case DEVICE:
+	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_DEVICE),\n");
+	break;
+    case RESOURCE:
+	fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_RESOURCE),\n");
+	break;
+    default:
+	fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
+	exit(20);
+	break;
+    }
+    fprintf(out,
+	    "    INITPTR(OFFSET(Node, ln_Name), (ULONG) &GM_UNIQUENAME(LibName)[0]),\n"
+    );
+    if (cfg->modtype != RESOURCE)
+    {
 	fprintf(out,
-		"struct Resident const GM_UNIQUENAME(ROMTag) =\n"
-		"{\n"
-		"    RTC_MATCHWORD,\n"
-		"    (struct Resident *)&GM_UNIQUENAME(ROMTag),\n"
-		"    (APTR)&GM_UNIQUENAME(End),\n"
-		"    RESIDENTFLAGS,\n"
-		"    VERSION_NUMBER,\n"
+		"    INITBYTE(OFFSET(Library, lib_Flags), LIBF_SUMUSED|LIBF_CHANGED),\n"
+		"    INITWORD(OFFSET(Library, lib_Version), VERSION_NUMBER),\n"
+		"    INITWORD(OFFSET(Library, lib_Revision), REVISION_NUMBER),\n"
+		"    INITPTR(OFFSET(Library, lib_IdString), (ULONG) &GM_UNIQUENAME(LibID)[0]),\n"
 	);
-	switch (cfg->modtype)
-	{
-	case LIBRARY:
-	case MUI:
-	case MCC:
-	case MCP:
-	    fprintf(out, "    NT_LIBRARY,\n");
-	    break;
-	case DEVICE:
-	    fprintf(out, "    NT_DEVICE,\n");
-	    break;
-	case RESOURCE:
-	    fprintf(out, "    NT_RESOURCE,\n");
-	    break;
-	default:
-	    fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
-	}
+    }
+    fprintf(out,
+	    "    (ULONG) 0\n"
+	    "};\n"
+	    "\n"
+	    "const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
+	    "const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
+	    "const char GM_UNIQUENAME(Copyright)[] = COPYRIGHT_STRING;\n"
+	    "\n"
+    );
+}
+
+static void writeinitlib(FILE *out, struct config *cfg)
+{
+    fprintf(out,
+	    "#ifdef SysBase\n"
+	    "#undef SysBase\n"
+	    "#endif\n"
+	    "#define SysBase (GM_SYSBASE_FIELD(lh))\n"
+	    "\n"
+	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
+	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
+	    "    AROS_UFHA(BPTR, segList, A0),\n"
+	    "    AROS_UFHA(struct ExecBase *, sysBase, A6)\n"
+	    ")\n"
+	    "{\n"
+	    "    AROS_USERFUNC_INIT\n"
+	    "\n"
+	    "    int ok;\n"
+	    "\n"
+	    "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+    );
+    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
+	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
+    if (cfg->options & OPTION_DUPBASE)
+	fprintf(out, "    GM_ROOTBASE_FIELD(lh) = (LIBBASETYPEPTR)lh;\n");
+    fprintf(out, "    if ( ");
+    if (!(cfg->options & OPTION_NOAUTOLIB))
+	fprintf(out, "set_open_libraries() && ");
+    fprintf(out,
+	    "set_call_funcs(SETNAME(INIT), 1, 1) )\n"
+	    "    {\n"
+	    "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
+	    "\n"
+	    "        ok = set_call_libfuncs(SETNAME(INITLIB),1,lh);\n"
+	    "    }\n"
+	    "    else\n"
+	    "        ok = 0;\n"
+	    "\n"
+	    "    if (!ok)\n"
+	    "    {\n"
+	    "        set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);\n"
+	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
+	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
+    );
+    if (!(cfg->options & OPTION_NOAUTOLIB))
+	fprintf(out, "        set_close_libraries();\n");
+    fprintf(out,
+	    "\n"
+	    "        __freebase(lh);\n"
+	    "        return NULL;\n"
+	    "    }\n"
+	    "    else\n"
+	    "        return  lh;\n"
+	    "\n"
+	    "    AROS_USERFUNC_EXIT\n"
+	    "}\n"
+	    "\n"
+    );
+}
+
+
+static void writeopenlib(FILE *out, struct config *cfg)
+{
+    switch (cfg->modtype)
+    {
+    case RESOURCE:
+	fprintf(stderr, "Internal error: writeopenlib called for a resource\n");
+	break;
+    case DEVICE:
 	fprintf(out,
-		"    RESIDENTPRI,\n"
-		"    (char *)&GM_UNIQUENAME(LibName)[0],\n"
-		"    (char *)&GM_UNIQUENAME(LibID)[6],\n"
-		"    (APTR)&GM_UNIQUENAME(InitTable)\n"
-		"};\n"
-		"\n"
-		"static struct InitTable\n"
-		"{\n"
-		"    ULONG                   Size;\n"
-		"    const APTR             *FuncTable;\n"
-		"    const struct DataTable *DataTable;\n"
-		"    APTR                    InitLibTable;\n"
-		"}\n"
-		"const GM_UNIQUENAME(InitTable) =\n"
-		"{\n"
-		"    sizeof(LIBBASETYPE),\n"
-		"    &GM_UNIQUENAME(FuncTable)[0],\n"
-		"    &GM_UNIQUENAME(DataTable),\n"
-		"    (APTR)GM_UNIQUENAME(InitLib)\n"
-		"};\n"
-		"\n"
-		"static struct DataTable\n"
-		"{\n"
-		"    UWORD ln_Type_Init; UWORD ln_Type_Offset; UWORD ln_Type_Content;\n"
-		"    UBYTE ln_Name_Init; UBYTE ln_Name_Offset; ULONG ln_Name_Content;\n"
-		"    UWORD lib_Flags_Init; UWORD lib_Flags_Offset; UWORD lib_Flags_Content;\n"
-		"    UWORD lib_Version_Init; UWORD lib_Version_Offset; UWORD lib_Version_Content;\n"
-		"    UWORD lib_Revision_Init; UWORD lib_Revision_Offset; UWORD lib_Revision_Content;\n"
-		"    UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; ULONG lib_IdString_Content;\n"
-		"    ULONG ENDMARK;\n"
-		"}\n"
-		"const GM_UNIQUENAME(DataTable) =\n"
-		"{\n"
+		"AROS_LH3 (void, GM_UNIQUENAME(OpenLib),\n"
+		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		"    AROS_LHA(ULONG, unitnum, D0),\n"
+		"    AROS_LHA(ULONG, flags, D1),\n"
+		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		")\n",
+		cfg->basename
 	);
-	switch (cfg->modtype)
-	{
-	case LIBRARY:
-	case MUI:
-	case MCC:
-	case MCP:
-	    fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_LIBRARY),\n");
-	    break;
-	case DEVICE:
-	    fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_DEVICE),\n");
-	    break;
-	case RESOURCE:
-	    fprintf(out, "    INITBYTE(OFFSET(Node, ln_Type), NT_RESOURCE),\n");
-	    break;
-	default:
-	    fprintf(stderr, "Internal error: unsupported modtype for NT_...\n");
-	}
 	fprintf(out,
-		"    INITPTR(OFFSET(Node, ln_Name), (ULONG) &GM_UNIQUENAME(LibName)[0]),\n"
-	);
-	if (cfg->modtype != RESOURCE)
-	{
-	    fprintf(out,
-		    "    INITBYTE(OFFSET(Library, lib_Flags), LIBF_SUMUSED|LIBF_CHANGED),\n"
-		    "    INITWORD(OFFSET(Library, lib_Version), VERSION_NUMBER),\n"
-		    "    INITWORD(OFFSET(Library, lib_Revision), REVISION_NUMBER),\n"
-		    "    INITPTR(OFFSET(Library, lib_IdString), (ULONG) &GM_UNIQUENAME(LibID)[0]),\n"
-	    );
-	}
-	fprintf(out,
-		"    (ULONG) 0\n"
-		"};\n"
-		"\n"
-		"const char GM_UNIQUENAME(LibName)[] = MOD_NAME_STRING;\n"
-		"const char GM_UNIQUENAME(LibID)[] = VERSION_STRING;\n"
-		"const char GM_UNIQUENAME(Copyright)[] = COPYRIGHT_STRING;\n"
-		"\n"
-		"THIS_PROGRAM_HANDLES_SYMBOLSETS\n"
-		"DECLARESET(INIT)\n"
-		"DECLARESET(EXIT)\n"
-		"DECLARESET(CTORS)\n"
-		"DECLARESET(DTORS)\n"
-		"DECLARESET(INITLIB)\n"
-		"DECLARESET(EXPUNGELIB)\n"
-		"DECLARESET(OPENLIB)\n"
-		"DECLARESET(CLOSELIB)\n"
-		"DECLARESET(OPENDEV)\n"
-		"DECLARESET(CLOSEDEV)\n"
-		"\n"
-		"#ifdef SysBase\n"
-		"#undef SysBase\n"
-		"#endif\n"
-		"#define SysBase (GM_SYSBASE_FIELD(lh))\n"
-		"\n"
-		"AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
-		"    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
-		"    AROS_UFHA(BPTR, segList, A0),\n"
-		"    AROS_UFHA(struct ExecBase *, sysBase, A6)\n"
-		")\n"
 		"{\n"
-		"    AROS_USERFUNC_INIT\n"
+		"    AROS_LIBFUNC_INIT\n"
 		"\n"
-		"    int ok;\n"
-		"\n"
-		"    GM_SYSBASE_FIELD(lh) = sysBase;\n"
-	);
-	if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
-	    fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
-	if (cfg->options & OPTION_DUPBASE)
-	    fprintf(out, "    GM_ROOTBASE_FIELD(lh) = (LIBBASETYPEPTR)lh;\n");
-	fprintf(out, "    if ( ");
-	if (!(cfg->options & OPTION_NOAUTOLIB))
-	    fprintf(out, "set_open_libraries() && ");
-	fprintf(out,
-		"set_call_funcs(SETNAME(INIT), 1, 1) )\n"
+		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh)\n"
+		"         && set_call_devfuncs(SETNAME(OPENDEV), 1, ioreq, unitnum, flags, lh)\n"
+		"    )\n"
 		"    {\n"
-		"        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
+		"        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
 		"\n"
-		"        ok = set_call_libfuncs(SETNAME(INITLIB),1,lh);\n"
+		"        ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;\n"
 		"    }\n"
 		"    else\n"
-		"        ok = 0;\n"
-		"\n"
-		"    if (!ok)\n"
 		"    {\n"
+		"        if (ioreq->io_Error >= 0)\n"
+		"            ioreq->io_Error = IOERR_OPENFAIL;\n"
+		"    }\n"
+		"\n"
+		"    return;\n"
+		"\n"
+		"    AROS_LIBFUNC_EXIT\n"
+		"}\n"
+		"\n"
+	);
+	break;
+    default:
+	fprintf(out,
+		"AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
+		"    AROS_LHA (ULONG, version, D0),\n"
+		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		")\n",
+		cfg->basename
+	);
+	fprintf(out,
+		"{\n"
+		"    AROS_LIBFUNC_INIT\n"
+		"\n"
+	);
+	fprintf(out,
+		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh) )\n"
+		"    {\n"
+	);
+	if (!(cfg->options & OPTION_DUPBASE))
+	{
+	    fprintf(out,
+		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+	    );
+	}
+	else
+	{
+	    fprintf(out,
+		    "        struct Library *newlib;\n"
+		    "        UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
+		    "\n"
+		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "\n"
+		    "        newlib = MakeLibrary(GM_UNIQUENAME(InitTable).FuncTable,\n"
+		    "                             GM_UNIQUENAME(InitTable).DataTable,\n"
+		    "                             NULL,\n"
+		    "                             GM_UNIQUENAME(InitTable).Size,\n"
+		    "                             (BPTR)NULL\n"
+		    "        );\n"
+		    "        if (newlib == NULL)\n"
+		    "            return 0;\n"
+		    "\n"
+		    "        CopyMem(lh, newlib, possize);\n"
+		    "        lh = (LIBBASETYPEPTR)newlib;\n"
+	    );
+	}
+	fprintf(out,
+		"\n"
+		"        return lh;\n"
+		"    }\n"
+		"\n"
+		"    return NULL;\n"
+		"\n"
+		"    AROS_LIBFUNC_EXIT\n"
+		"}\n"
+		"\n"
+	);
+    }
+}
+
+
+static void writecloselib(FILE *out, struct config *cfg)
+{
+    if (cfg->modtype != DEVICE)
+	fprintf(out,
+		"AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
+		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		")\n",
+		cfg->basename
+	);
+    else
+	fprintf(out,
+		"AROS_LH1(BPTR, GM_UNIQUENAME(CloseLib),\n"
+		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		")\n",
+		cfg->basename
+	);
+	
+    fprintf(out,
+	    "{\n"
+	    "    AROS_LIBFUNC_INIT\n"
+	    "\n"
+    );
+    if (!(cfg->options & OPTION_DUPBASE))
+    {
+	fprintf(out,
+		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
+		"    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
+	);
+    }
+    else
+    {
+	fprintf(out,
+		"    if (lh != GM_ROOTBASE_FIELD(lh))\n"
+		"    {\n"
+		"        LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
+		"        __freebase(lh);\n"
+		"        set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
+		"        lh = rootbase;\n"
+		"    }\n"
+		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
+		"\n"
+	);
+    }
+    if (cfg->modtype == DEVICE)
+	fprintf(out,
+		"    set_call_devfuncs(SETNAME(CLOSEDEV),-1,ioreq,0,0,lh);\n"
+	);
+    if (!(cfg->options & OPTION_NOEXPUNGE))
+	fprintf(out,
+		"    if\n"
+		"    (\n"
+		"        (((struct Library *)lh)->lib_OpenCnt == 0)\n"
+		"        && (((struct Library *)lh)->lib_Flags & LIBF_DELEXP)\n"
+		"    )\n"
+		"    {\n"
+		"        return AROS_LC1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
+		"                   AROS_LCA(LIBBASETYPEPTR, lh, D0),\n"
+		"                   struct ExecBase *, SysBase, 3, %s\n"
+		"        );\n"
+		"    }\n",
+		cfg->basename
+	);
+    fprintf(out,
+	    "\n"
+	    "    return NULL;\n"
+	    "\n"
+	    "    AROS_LIBFUNC_EXIT\n"
+	    "}\n"
+	    "\n"
+    );
+}
+
+
+static void writeexpungelib(FILE *out, struct config *cfg)
+{
+    fprintf(out,
+	    "AROS_LH1 (BPTR, GM_UNIQUENAME(ExpungeLib),\n"
+	    "    AROS_LHA(LIBBASETYPEPTR, lh, D0),\n"
+	    "    struct ExecBase *, sysBase, 3, %s\n"
+	    ")\n",
+	    cfg->basename
+    );
+    fprintf(out,
+	    "{\n"
+	    "    AROS_LIBFUNC_INIT\n"
+	    "\n"
+    );
+    if (!(cfg->options & OPTION_NOEXPUNGE))
+    {
+	fprintf(out,
+		"\n"
+		"    if ( ((struct Library *)lh)->lib_OpenCnt == 0 )\n"
+		"    {\n"
+		"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
+		"\n"
+		"        Remove((struct Node *)lh);\n"
+		"\n"
 		"        set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);\n"
 		"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-		"        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
+		"        set_call_funcs(SETNAME(EXIT),-1,0);\n"
 	);
 	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "        set_close_libraries();\n");
 	fprintf(out,
 		"\n"
 		"        __freebase(lh);\n"
-		"        return NULL;\n"
+		"\n"
+		"        return seglist;\n"
 		"    }\n"
-		"    else\n"
-		"        return  lh;\n"
 		"\n"
-		"    AROS_USERFUNC_EXIT\n"
-		"}\n"
-		"\n"
-	);
-
-	switch (cfg->modtype)
-	{
-	case RESOURCE:
-	    break;
-	case DEVICE:
-	    fprintf(out,
-		    "AROS_LH3 (void, GM_UNIQUENAME(OpenLib),\n"
-		    "    AROS_LHA(struct IORequest *, ioreq, A1),\n"
-		    "    AROS_LHA(ULONG, unitnum, D0),\n"
-		    "    AROS_LHA(ULONG, flags, D1),\n"
-		    "    LIBBASETYPEPTR, lh, 1, %s\n"
-		    ")\n",
-		    cfg->basename
-	    );
-	    fprintf(out,
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n"
-		    "\n"
-		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh)\n"
-		    "         && set_call_devfuncs(SETNAME(OPENDEV), 1, ioreq, unitnum, flags, lh)\n"
-		    "    )\n"
-		    "    {\n"
-		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
-		    "\n"
-		    "        ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;\n"
-		    "    }\n"
-		    "    else\n"
-		    "    {\n"
-		    "        if (ioreq->io_Error >= 0)\n"
-		    "            ioreq->io_Error = IOERR_OPENFAIL;\n"
-		    "    }\n"
-		    "\n"
-		    "    return;\n"
-		    "\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n"
-		    "\n"
-	    );
-	    break;
-	default:
-	    fprintf(out,
-		    "AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
-		    "    AROS_LHA (ULONG, version, D0),\n"
-		    "    LIBBASETYPEPTR, lh, 1, %s\n"
-		    ")\n",
-		    cfg->basename
-	    );
-	    fprintf(out,
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n"
-		    "\n"
-	    );
-	    fprintf(out,
-		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh) )\n"
-		    "    {\n"
-	    );
-	    if (!(cfg->options & OPTION_DUPBASE))
-	    {
-		fprintf(out,
-			"        ((struct Library *)lh)->lib_OpenCnt++;\n"
-			"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
-	        );
-	    }
-	    else
-	    {
-		fprintf(out,
-			"        struct Library *newlib;\n"
-			"        UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
-			"\n"
-			"        ((struct Library *)lh)->lib_OpenCnt++;\n"
-			"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
-			"\n"
-			"        newlib = MakeLibrary(GM_UNIQUENAME(InitTable).FuncTable,\n"
-			"                             GM_UNIQUENAME(InitTable).DataTable,\n"
-			"                             NULL,\n"
-			"                             GM_UNIQUENAME(InitTable).Size,\n"
-			"                             (BPTR)NULL\n"
-			"        );\n"
-			"        if (newlib == NULL)\n"
-			"            return 0;\n"
-			"\n"
-			"        CopyMem(lh, newlib, possize);\n"
-			"        lh = (LIBBASETYPEPTR)newlib;\n"
-		);
-	    }
-	    fprintf(out,
-		    "\n"
-		    "        return lh;\n"
-		    "    }\n"
-		    "\n"
-		    "    return NULL;\n"
-		    "\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n"
-		    "\n"
-	     );
-	}
-
-	if (cfg->modtype != RESOURCE)
-	{
-	    if (cfg->modtype != DEVICE)
-		fprintf(out,
-			"AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
-			"    LIBBASETYPEPTR, lh, 2, %s\n"
-			")\n",
-			cfg->basename
-		);
-	    else
-		fprintf(out,
-			"AROS_LH1(BPTR, GM_UNIQUENAME(CloseLib),\n"
-			"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
-			"    LIBBASETYPEPTR, lh, 2, %s\n"
-			")\n",
-			cfg->basename
-		);
-	
-	    fprintf(out,
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n"
-		    "\n"
-	    );
-	    if (!(cfg->options & OPTION_DUPBASE))
-	    {
-		fprintf(out,
-			"    ((struct Library *)lh)->lib_OpenCnt--;\n"
-			"    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
-		);
-	    }
-	    else
-	    {
-		fprintf(out,
-			"    if (lh != GM_ROOTBASE_FIELD(lh))\n"
-			"    {\n"
-			"        LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
-			"        __freebase(lh);\n"
-			"        set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
-			"        lh = rootbase;\n"
-			"    }\n"
-			"    ((struct Library *)lh)->lib_OpenCnt--;\n"
-			"\n"
-		);
-	    }
-	    if (cfg->modtype == DEVICE)
-		fprintf(out,
-			"    set_call_devfuncs(SETNAME(CLOSEDEV),-1,ioreq,0,0,lh);\n"
-		);
-	    if (!(cfg->options & OPTION_NOEXPUNGE))
-		fprintf(out,
-			"    if\n"
-			"    (\n"
-			"        (((struct Library *)lh)->lib_OpenCnt == 0)\n"
-			"        && (((struct Library *)lh)->lib_Flags & LIBF_DELEXP)\n"
-			"    )\n"
-			"    {\n"
-			"        return AROS_LC1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-			"                   AROS_LCA(LIBBASETYPEPTR, lh, D0),\n"
-			"                   struct ExecBase *, SysBase, 3, %s\n"
-			"        );\n"
-			"    }\n",
-			cfg->basename
-		);
-	    fprintf(out,
-		    "\n"
-		    "    return NULL;\n"
-		    "\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n"
-		    "\n"
-	    );
-	
-	    fprintf(out,
-		    "AROS_LH1 (BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-		    "    AROS_LHA(LIBBASETYPEPTR, lh, D0),\n"
-		    "    struct ExecBase *, sysBase, 3, %s\n"
-		    ")\n",
-		    cfg->basename
-	    );
-	    fprintf(out,
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n"
-		    "\n"
-	    );
-	    if (!(cfg->options & OPTION_NOEXPUNGE))
-	    {
-		fprintf(out,
-			"\n"
-			"    if ( ((struct Library *)lh)->lib_OpenCnt == 0 )\n"
-			"    {\n"
-			"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
-			"\n"
-			"        Remove((struct Node *)lh);\n"
-			"\n"
-			"        set_call_libfuncs(SETNAME(EXPUNGELIB),-1,lh);\n"
-			"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
-			"        set_call_funcs(SETNAME(EXIT),-1,0);\n"
-		);
-		if (!(cfg->options & OPTION_NOAUTOLIB))
-		    fprintf(out, "        set_close_libraries();\n");
-		fprintf(out,
-			"\n"
-			"        __freebase(lh);\n"
-			"\n"
-			"        return seglist;\n"
-			"    }\n"
-			"\n"
-			"    ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
-		);
-	    }
-	    fprintf(out,
-		    "\n"
-		    "    return NULL;\n"
-		    "\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n"
-		    "\n"
-	    );
-	
-	    fprintf(out,
-		    "AROS_LH0 (LIBBASETYPEPTR, GM_UNIQUENAME(ExtFuncLib),\n"
-		    "    LIBBASETYPEPTR, lh, 4, %s\n"
-		    ")\n"
-		    "{\n"
-		    "    AROS_LIBFUNC_INIT\n"
-		    "    return NULL;\n"
-		    "    AROS_LIBFUNC_EXIT\n"
-		    "}\n"
-		    "\n",
-		    cfg->basename
-	    );
-	}
-	
-	fprintf(out,
-		"DEFINESET(INIT)\n"
-		"DEFINESET(EXIT)\n"
-		"DEFINESET(CTORS)\n"
-		"DEFINESET(DTORS)\n"
-		"DEFINESET(INITLIB)\n"
-		"DEFINESET(EXPUNGELIB)\n"
-		"DEFINESET(OPENLIB)\n"
-		"DEFINESET(CLOSELIB)\n"
-		"DEFINESET(OPENDEV)\n"
-		"DEFINESET(CLOSEDEV)\n"
-		"\n"
+		"    ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
 	);
     }
-    
+    fprintf(out,
+	    "\n"
+	    "    return NULL;\n"
+	    "\n"
+	    "    AROS_LIBFUNC_EXIT\n"
+	    "}\n"
+	    "\n"
+    );
+}
+
+
+static void writeextfunclib(FILE *out, struct config *cfg)
+{
+    fprintf(out,
+	    "AROS_LH0 (LIBBASETYPEPTR, GM_UNIQUENAME(ExtFuncLib),\n"
+	    "    LIBBASETYPEPTR, lh, 4, %s\n"
+	    ")\n"
+	    "{\n"
+	    "    AROS_LIBFUNC_INIT\n"
+	    "    return NULL;\n"
+	    "    AROS_LIBFUNC_EXIT\n"
+	    "}\n"
+	    "\n",
+	    cfg->basename
+    );
+}
+
+
+static void
+writefunctable(FILE *out,
+	       struct config *cfg,
+	       struct functions *functions
+)
+{
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
+    unsigned int lvo;
+    int i;
+
     for (funclistit = functions->funclist; funclistit != NULL; funclistit = funclistit->next)
     {
 	switch (funclistit->libcall)
@@ -579,7 +652,25 @@ void writestart(struct config *cfg, struct functions *functions)
 	    break;
 	    
 	case REGISTERMACRO:
-	    fprintf(out, "int GM_UNIQUENAME(%s)();\n", funclistit->name);
+	    fprintf(out,
+		    "AROS_LD%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		fprintf(out,
+			"         AROS_LDA(%s, %s, %s),\n",
+			arglistit->type, arglistit->name, arglistit->reg
+		);
+	    }
+	    fprintf(out,
+		    "         %s, %s, %u, %s\n"
+		    ");\n",
+		    cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
+	    );
 	    break;
 
 	default:
@@ -719,5 +810,22 @@ void writestart(struct config *cfg, struct functions *functions)
     }
 
     fprintf(out, "    (void *)-1\n};\n");
-    fclose(out);
+}
+
+	
+static void writesets(FILE *out, struct config *cfg)
+{
+    fprintf(out,
+	    "DEFINESET(INIT)\n"
+	    "DEFINESET(EXIT)\n"
+	    "DEFINESET(CTORS)\n"
+	    "DEFINESET(DTORS)\n"
+	    "DEFINESET(INITLIB)\n"
+	    "DEFINESET(EXPUNGELIB)\n"
+	    "DEFINESET(OPENLIB)\n"
+	    "DEFINESET(CLOSELIB)\n"
+	    "DEFINESET(OPENDEV)\n"
+	    "DEFINESET(CLOSEDEV)\n"
+	    "\n"
+    );
 }

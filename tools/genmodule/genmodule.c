@@ -21,11 +21,6 @@ int main(int argc, char **argv)
     }
     if (cfg->modtype == LIBRARY)
         writeautoinit(cfg);
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
-    {
-        writemccinit(cfg, functions);
-        writemccquery(cfg);
-    }
     writestart(cfg, functions);
     writeend(cfg);
     writestubs(cfg, functions);

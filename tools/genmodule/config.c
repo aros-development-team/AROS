@@ -15,6 +15,26 @@
 static void readconfig(struct config *);
 static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo);
 
+
+/* the method prefices for the supported classes */
+static const char *muimprefix[] =
+{
+    "__OM_",
+    "__MUIM_",
+    NULL
+};
+static const char *gadgetmprefix[] =
+{
+    "__OM_",
+    "__GM_",
+    "__AROSM_",
+    NULL
+};
+
+
+/* Create a config struct. Initialize with the values from the programs command
+ * line arguments and the contents of the modules .conf file
+ */
 struct config *initconfig(int argc, char **argv, int command)
 {
     struct config *cfg;
@@ -86,6 +106,10 @@ struct config *initconfig(int argc, char **argv, int command)
     {
 	cfg->modtype = RESOURCE;
     }
+    else if (strcmp(*argvit, "gadget")==0)
+    {
+	cfg->modtype = GADGET;
+    }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
@@ -95,6 +119,7 @@ struct config *initconfig(int argc, char **argv, int command)
 	cfg->suffix = *argvit;
     argvit++;
 
+    cfg->boopsimprefix = NULL;
     switch (cfg->modtype)
     {
     case LIBRARY:
@@ -107,9 +132,14 @@ struct config *initconfig(int argc, char **argv, int command)
     case MUI:
     case MCP:
         cfg->firstlvo = 6;
+	cfg->boopsimprefix = muimprefix;
 	break;
     case RESOURCE:
 	cfg->firstlvo = 1;
+	break;
+    case GADGET:
+	cfg->firstlvo = 6;
+	cfg->boopsimprefix = gadgetmprefix;
 	break;
     default:
 	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
@@ -252,7 +282,7 @@ static void readsectionconfig(struct config *cfg)
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
                 "version", "date", "libcall", "forcebase", "superclass",
 		"residentpri", "options", "sysbase_field", "seglist_field",
-		"rootbase_field"
+		"rootbase_field", "classptr_field", "classname", "classdatatype"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -396,6 +426,29 @@ static void readsectionconfig(struct config *cfg)
 	    case 14: /* rootbase_field */
 		cfg->rootbase_field = strdup(s);
 		break;
+		
+	    case 15: /* classptr_field */
+		if (cfg->boopsimprefix == NULL)
+		{
+		    exitfileerror
+		    (
+		        20,
+		        "classptr_field specified for a module that is not a BOOPSI class\n"
+		    );
+		}
+		cfg->classptr_field = strdup(s);
+		break;
+		
+	    case 16: /* classname */
+		if (cfg->modtype != GADGET)
+		    exitfileerror(20, "classname specified when not a BOOPSI class\n");
+		cfg->classname = strdup(s);
+		break;
+		
+	    case 17: /* classdatatype */
+		if (cfg->boopsimprefix == NULL)
+		    exitfileerror(20, "classdatatype specified when not a BOOPSI class\n");
+		cfg->classdatatype = strdup(s);
 	    }
 	}
 	else /* Line starts with ## */
@@ -438,6 +491,16 @@ static void readsectionconfig(struct config *cfg)
     if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
+    if (cfg->modtype == GADGET)
+    {
+	if (cfg->classname == NULL)
+	{
+	    char s[256];
+	    sprintf(s, "%sclass", cfg->modulename);
+	    cfg->classname = strdup(s);
+	}
+    }
+
     if (libbasetypeextern==NULL)
     {
 	switch (cfg->modtype)
@@ -452,10 +515,11 @@ static void readsectionconfig(struct config *cfg)
 	case MUI:
 	case MCP:
 	case MCC:
+	case GADGET:
 	    cfg->libbasetypeptrextern = "struct Library *";
 	    break;
 	default:
-	    fprintf(stderr, "Internal error: Unsupport modtype for libbasetypeptrextern\n");
+	    fprintf(stderr, "Internal error: Unsupported modtype for libbasetypeptrextern\n");
 	    exit(20);
 	}
     }
@@ -465,6 +529,24 @@ static void readsectionconfig(struct config *cfg)
 	strcpy(cfg->libbasetypeptrextern, libbasetypeextern);
 	strcat(cfg->libbasetypeptrextern, " *");
 	free(libbasetypeextern);
+    }
+    
+    /* Givw default value to superclass if it is not specified */
+    if (cfg->superclass == NULL)
+    {
+	switch (cfg->modtype)
+	{
+	case MUI:
+	case MCP:
+	case MCC:
+	    cfg->superclass = "Area.mui";
+	    break;
+	case GADGET:
+	    cfg->superclass = "gadgetclass";
+	    break;
+	default:
+	    break;
+	}
     }
 }
 

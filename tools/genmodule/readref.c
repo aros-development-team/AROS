@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to read in the function reference file. Part of genmodule.
@@ -17,10 +17,10 @@ struct _parseinfo
 };
 
 /* Prototypes of static functions */
-static int parsemuimethodname(char *name,
-			      struct _parseinfo *parseinfo,
-			      struct config *cfg,
-			      struct functions *functions
+static int parsemethodname(char *name,
+			   struct _parseinfo *parseinfo,
+			   struct config *cfg,
+			   struct functions *functions
 );
 static int parsemacroname(char *name,
 			  struct _parseinfo *parseinfo,
@@ -44,7 +44,7 @@ void readref(struct config *cfg, struct functions *functions)
     
     if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
     {
-        struct functionhead *function = newfunctionhead("MCC_Query", REGISTER);
+        struct functionhead *function = newfunctionhead("MCC_Query", REGISTERMACRO);
 	function->lvo = cfg->firstlvo - 1;
 	funcaddarg(function, "LONG", "what", "D0");
 
@@ -124,7 +124,7 @@ void readref(struct config *cfg, struct functions *functions)
 		
 		parseinfo.infunction =
 		(
-		       parsemuimethodname(begin, &parseinfo, cfg, functions)
+		       parsemethodname(begin, &parseinfo, cfg, functions)
 		    || parsemacroname(begin, &parseinfo, cfg, functions)
 		    || parsefunctionname(begin, &parseinfo, cfg, functions)
 		);
@@ -241,6 +241,7 @@ void readref(struct config *cfg, struct functions *functions)
 		    begin++;
 		    while (isspace(*begin)) begin++;
 		    end = begin+strlen(begin)-funcnamelength;
+		    while (isspace(*(end-1))) end--;
 		    *end = '\0';
 		    parseinfo.currentfunc->type = strdup(begin);
 		}
@@ -292,19 +293,20 @@ void readref(struct config *cfg, struct functions *functions)
 }
 
 
-static int parsemuimethodname(char *name,
-			      struct _parseinfo *parseinfo,
-			      struct config *cfg,
-			      struct functions *functions
+static int parsemethodname(char *name,
+			   struct _parseinfo *parseinfo,
+			   struct config *cfg,
+			   struct functions *functions
 )
 {
     int ok = 0;
-    
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+
+    if (cfg->boopsimprefix != NULL)
     {
-	char *sep;
+	char *sep = NULL;
+	const char **prefixptr = cfg->boopsimprefix;
 	
-	/* For a MUI class a custom dispatcher has the name
+	/* For a BOOPSI class a custom dispatcher has the name
 	 * 'modulename_Dispatcher'
 	 */
 	if
@@ -313,14 +315,17 @@ static int parsemuimethodname(char *name,
 	    && strcmp(name+strlen(cfg->modulename), "_Dispatcher") == 0
 	)
 	    cfg->customdispatcher = 1;	
-	    
-	sep = strstr(name, "__OM_");
-	if (sep == NULL) sep = strstr(name, "__MUIM_");
+
+	while (*prefixptr != NULL && sep == NULL)
+	{
+	    sep = strstr(name, *prefixptr);
+	    prefixptr++;
+	}
                 
 	if 
 	(
 	       sep != NULL
-	    && strncmp(cfg->modulename, name, sep - name) == 0
+	    && strncmp(cfg->basename, name, sep - name) == 0
 	)
 	{
 	    struct functionhead *method, *it;
