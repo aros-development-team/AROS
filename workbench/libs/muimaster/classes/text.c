@@ -34,8 +34,8 @@ extern struct Library *MUIMasterBase;
 struct MUI_TextData {
     ULONG  mtd_Flags;
     STRPTR contents;
-    STRPTR preparse;
-    STRPTR accept; /* MUIA_String_Accept */
+    CONST_STRPTR preparse;
+    CONST_STRPTR accept; /* MUIA_String_Accept */
     TEXT   hichar;
     ZText *ztext;
     LONG xpixel; /* needed for cursor up/down movements, can be -1 */
@@ -127,7 +127,7 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_String_Accept:
-		    data->accept = (char*)tag->ti_Data;
+		    data->accept = (CONST_STRPTR)tag->ti_Data;
 		    break;
 
 	    case    MUIA_String_Integer:
@@ -166,7 +166,7 @@ static ULONG Text_Dispose(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
     if (data->contents) FreeVec(data->contents);
-    if (data->preparse) FreeVec(data->preparse);
+    if (data->preparse) FreeVec((APTR)data->preparse);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -203,6 +203,10 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }
 		    break;
 
+	    case    MUIA_String_Accept:
+		    data->accept = (CONST_STRPTR)tag->ti_Data;
+		    break;
+
 	    case    MUIA_String_Integer:
 		    {
 			char buf[20];
@@ -221,7 +225,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 				zune_text_destroy(data->ztext);
 				data->ztext = NULL;
 			    }
-			    if (data->preparse) FreeVec(data->preparse);
+			    if (data->preparse) FreeVec((APTR)data->preparse);
 			    data->preparse = new_preparse;
 			    if (_flags(obj) & MADF_SETUP) setup_text(data, obj);
 			    MUI_Redraw(obj,MADF_DRAWOBJECT); /* should be opimized */
@@ -276,6 +280,10 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		    }
 		}
 		return 0;
+
+	case	MUIA_String_Accept:
+		STORE = (ULONG)data->accept;
+		return 1;
 
 	case	MUIA_Text_PreParse:
 		STORE = (ULONG)data->preparse;
