@@ -1972,6 +1972,7 @@ static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xs
     	x_start, y_start, xsize, ysize, pen);
 */	
 
+// return;
     pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
     post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
     
@@ -2336,7 +2337,7 @@ static VOID amiga2hidd_fast(APTR src_info
 	, VOID (*fillbuf_hook)()
 )
 {
-#define NUMPIX 1000 /* We can chunky2bitmap-convert 2000 pixels before writing pixarray */
+#define NUMPIX 2000 /* We can chunky2bitmap-convert 2000 pixels before writing pixarray */
 #define DEPTH 8
     
     
@@ -2504,94 +2505,6 @@ static VOID hidd2amiga_fast(Object *hidd_bm
 }
 
 
-static VOID clearbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize)
-{
-    LONG modulo;
-    LONG num_whole;
-    UBYTE plane;
-    UBYTE i;
-    UBYTE pre_pixels_to_clear,
-    	  post_pixels_to_clear; /* pixels to clear in pre and post byte */
- 
-    UBYTE prebyte_mask, postbyte_mask;
-    
-    pre_pixels_to_clear  = 7 - (x_start & 0x07);
-    post_pixels_to_clear = (x_start + xsize - 1) & 0x07;
-    num_whole = xsize - pre_pixels_to_clear - post_pixels_to_clear;
-
-    num_whole >>= 3; /* number of bytes */
-
-    modulo = bm->BytesPerRow - num_whole;
-    
-    if (pre_pixels_to_clear == 0)
-    {
-        num_whole --;
-	prebyte_mask = 0xFF;
-    }
-    else
-    {
-	/* Say we want to clear two pixels in last byte. We want the mask
-	MSB 11111100 LSB
-	*/
-	prebyte_mask = 0;
-	for (i = 0; i < pre_pixels_to_clear; i ++ )
-	{
-	    prebyte_mask <<= 1;
-    	    prebyte_mask |=  1;
-    	}
-	modulo ++;
-    }
-    prebyte_mask = ~prebyte_mask; /* We want to clear  */
-    
-    if (post_pixels_to_clear == 0)
-    {
-        num_whole --;
-	prebyte_mask = 0xFF;
-    }
-    else
-    {
-	/* Say we want to clear two pixels in last byte. We want the mask
-	MSB 00111111 LSB
-	*/
-	postbyte_mask = 0;
-	for (i = 0; i < post_pixels_to_clear; i ++ )
-	{
-	    postbyte_mask <<= 1;
-    	    postbyte_mask |=  1;
-	}
-    	postbyte_mask <<= (7 - post_pixels_to_clear);
-	modulo ++;
-    }
-    
-    postbyte_mask = ~postbyte_mask; /* We want to clear */
-    
-    for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
-    {
-        LONG y;
-    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + (x_start >> 3);
-	
-	for (y = y_start; y < ysize; y ++)
-	{
-	    LONG x;
-	    /* Clear the first nonwhole byte */
-	    *curbyte ++ &= prebyte_mask;
-	    
-	    for (x = 0; x < num_whole; x ++)
-	    {
-	        *curbyte ++ = 0;
-	    }
-	    /* Clear the last nonwhole byte */
-	    *curbyte++ &= postbyte_mask;
-	    
-	    curbyte += modulo;
-	}
-	
-    }
-    return;
-    
-}
-
-
 LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	LONG ySrc, struct BitMap * destBitMap, LONG xDest,
 	LONG yDest, LONG xSize, LONG ySize, ULONG minterm,
@@ -2744,7 +2657,7 @@ ULOCK_HIDD(destBitMap);
 	    {
 	        case 0: /* Clear Amiga bitmap */
 /* kprintf("clear amiga bitmap\n");
-*/		    clearbitmapfast(destBitMap, xDest, yDest, xSize, ySize);
+*/		    setbitmapfast(destBitMap, xDest, yDest, xSize, ySize, 0);
 		    
 		    break;
 		    
@@ -4050,10 +3963,11 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 	}
 	else
 	{
-	    clearbitmapfast(rp->BitMap
+	    setbitmapfast(rp->BitMap
 	    	, msg->MinX, msg->MinY
 		, msg->MaxX - msg->MinX + 1
 		, msg->MaxY - msg->MinY + 1
+		, 0
 	    );
 	}
     }
