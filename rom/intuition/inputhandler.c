@@ -1357,12 +1357,20 @@ D(bug("Window: %p\n", w));
                        struct Layer * L = rp->Layer;
                        struct ClipRect * cr = NULL;
                        struct Region * oldclipregion;
+                       WORD ScrollX;
+                       WORD ScrollY;
                        /* 
                        ** In case a clip region is installed then I have to 
                        ** install the regular cliprects of the layer
                        ** first. Otherwise the frame might not get cleared correctly.
                        */
+                       LockLayer(0, L);
                        oldclipregion = InstallClipRegion(L, NULL);
+                       ScrollX = L->Scroll_X;
+                       ScrollY = L->Scroll_Y;
+                       L->Scroll_X = 0;
+                       L->Scroll_Y = 0;
+                       UnlockLayer(L);
 
                        SetAPen(rp, 0);
                        if (msg->dy > 0)
@@ -1386,7 +1394,14 @@ D(bug("Window: %p\n", w));
                        ** Reinstall the clipregions rectangles if there are any.
                        */
                        if (NULL != oldclipregion)
+                       {
+                         LockLayer(0, L);
                          InstallClipRegion(L, oldclipregion);
+                         UnlockLayer(L);
+                       }
+                       L->Scroll_X = ScrollX;
+                       L->Scroll_Y = ScrollY;
+
                      }
                      
                      /* I first resize the outer window if a GZZ window */
