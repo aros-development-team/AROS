@@ -124,7 +124,7 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
 
             D( kprintf("ImageClass OM_SET\n") );
 
-            while ((tag = NextTagItem((struct TagItem **)&tstate)))
+            while ((tag = NextTagItem(&tstate)))
             {
                 tidata = tag->ti_Data;
 
