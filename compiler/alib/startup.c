@@ -9,12 +9,11 @@
 #include <setjmp.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
+#include <workbench/startup.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
-#if 1
-#   include <aros/debug.h>
-#endif
+#include <aros/debug.h>
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 asm("
@@ -27,6 +26,7 @@ asm("
 
 /* Don't define symbols before the entry point. */
 extern struct ExecBase * SysBase;
+extern struct WBStartup *WBenchMsg;
 extern int main (int argc, char ** argv);
 extern APTR __startup_mempool; /* malloc() and free() */
 extern jmp_buf __startup_jmp_buf;
@@ -43,7 +43,6 @@ extern LONG __startup_error;
 
 */
 #warning TODO: reset and initialize the FPU
-#warning TODO: handle WBStartup message
 #warning TODO: resident startup
 AROS_UFH3(LONG, entry,
     AROS_UFHA(char *,argstr,A0),
@@ -51,154 +50,169 @@ AROS_UFH3(LONG, entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
-    char * args,
+    char * args = NULL,
 	** argv,
 	 * ptr;
     int    argc,
 	   argmax;
     LONG   namlen = 64;
     int    done = 0;
+    struct Process *myproc;
+
+
     __startup_error = RETURN_FAIL;
 
-    SysBase=sysbase;
+    SysBase = sysbase;
 
-    if (argsize)
+    if (!(DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39)))
+	return -1;
+
+    myproc = (struct Process *)FindTask(NULL);
+
+    /* Do we have a CLI structure? */
+    if (myproc->pr_CLI)
     {
-	/* Copy args into buffer */
-	if (!(args = AllocMem (argsize+1, MEMF_ANY)) )
+	/* Yes, started from the CLI */
+
+	if (argsize)
 	{
-	    argv = NULL;
-	    goto error;
-	}
-
-	ptr = args;
-
-	while ((*ptr++ = *argstr++));
-
-	/* Find out how many arguments we have */
-	for (argmax=1,ptr=args; *ptr; )
-	{
-	    if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
+	    /* Copy args into buffer */
+	    if (!(args = AllocMem(argsize+1, MEMF_ANY)))
 	    {
-		/* Skip whitespace */
-		while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-		    ptr ++;
-	    }
-
-	    if (*ptr == '"')
-	    {
-		/* "..." argument ? */
-		argmax ++;
-
-		ptr ++;
-
-		/* Skip until next " */
-		while (*ptr && *ptr != '"')
-		    ptr ++;
-
-		if (*ptr)
-		    ptr ++;
-	    }
-	    else if (*ptr)
-	    {
-		argmax ++;
-
-		while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
-		    ptr ++;
-	    }
-	}
-
-	if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_CLEAR)) )
-	{
-	    goto error;
-	}
-
-	/* create argv */
-	for (argc=1,ptr=args; *ptr; )
-	{
-	    if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
-	    {
-		/* Skip whitespace */
-		while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-		    ptr ++;
-	    }
-
-	    if (*ptr == '"')
-	    {
-		/* "..." argument ? */
-		ptr ++;
-		argv[argc++] = ptr;
-
-		/* Skip until next " */
-		while (*ptr && *ptr != '"')
-		    ptr ++;
-
-		/* Terminate argument */
-		if (*ptr)
-		    *ptr ++ = 0;
-	    }
-	    else if (*ptr)
-	    {
-		argv[argc++] = ptr;
-
-		while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
-		    ptr ++;
-
-		/* Not at end of string ? Terminate arg */
-		if (*ptr)
-		    *ptr ++ = 0;
-	    }
-	}
-    }
-    else
-    {
-	argv = &args;
-	argc = 0;
-    }
-
-    DOSBase = (struct DosLibrary *)OpenLibrary (DOSNAME, 39);
-
-    /*
-     * get program name
-     */
-    do {
-	if (!(argv[0] = AllocVec(namlen, MEMF_ANY)))
-	    goto error;
-      
-        if (!(GetProgramName(argv[0], namlen)))
-	{
-	    if (IoErr() == ERROR_LINE_TOO_LONG)
-	    {
-		namlen *= 2;
-		FreeVec(argv[0]);
-	    }
-	    else
-	    {
+		argv = NULL;
 		goto error;
+	    }
+
+	    ptr = args;
+	    while ((*ptr++ = *argstr++)) {}
+
+	    /* Find out how many arguments we have */
+	    for (argmax=1,ptr=args; *ptr; )
+	    {
+		if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
+		{
+		    /* Skip whitespace */
+		    while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
+			ptr ++;
+		}
+
+		if (*ptr == '"')
+		{
+		    /* "..." argument ? */
+		    argmax ++;
+		    ptr ++;
+
+		    /* Skip until next " */
+		    while (*ptr && *ptr != '"')
+			ptr ++;
+
+		    if (*ptr)
+			ptr ++;
+		}
+		else if (*ptr)
+		{
+		    argmax ++;
+
+		    while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
+			ptr ++;
+		}
+	    }
+
+	    if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_CLEAR)) )
+		goto error;
+
+	    /* create argv */
+	    for (argc=1,ptr=args; *ptr; )
+	    {
+		if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
+		{
+		    /* Skip whitespace */
+		    while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
+			ptr ++;
+		}
+
+		if (*ptr == '"')
+		{
+		    /* "..." argument ? */
+		    ptr ++;
+		    argv[argc++] = ptr;
+
+		    /* Skip until next " */
+		    while (*ptr && *ptr != '"')
+			ptr ++;
+
+		    /* Terminate argument */
+		    if (*ptr)
+			*ptr ++ = 0;
+		}
+		else if (*ptr)
+		{
+		    argv[argc++] = ptr;
+
+			while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
+			    ptr ++;
+
+		    /* Not at end of string ? Terminate arg */
+		    if (*ptr)
+			*ptr ++ = 0;
+		}
 	    }
 	}
 	else
 	{
-	    done = 1;
+	    argmax = 1;
+	    argc = 1;
+	    if (!(argv = AllocMem (sizeof (char *), MEMF_ANY)))
+		goto error;
 	}
-    } while (!done);
 
-#if 0
-kprintf ("arg(%d)=\"%s\", argmax=%d, argc=%d\n", argsize, argstr, argmax, argc);
-{
-int t;
-for (t=0; t<argc; t++)
-    kprintf ("argv[%d] = \"%s\"\n", t, argv[t]);
-}
+	/*
+	 * get program name
+	 */
+	do {
+	    if (!(argv[0] = AllocVec(namlen, MEMF_ANY)))
+		goto error;
+      
+	    if (!(GetProgramName(argv[0], namlen)))
+	    {
+		if (IoErr() == ERROR_LINE_TOO_LONG)
+		{
+		    namlen *= 2;
+		    FreeVec(argv[0]);
+		}
+		else
+		    goto error;
+	    }
+	    else
+		done = 1;
+	} while (!done);
+
+#if 0 /* Debug argument parsing */
+
+	kprintf("arg(%d)=\"%s\", argmax=%d, argc=%d\n", argsize, argstr, argmax, argc);
+	{
+	    int t;
+	    for (t=0; t<argc; t++)
+		kprintf("argv[%d] = \"%s\"\n", t, argv[t]);
+	}
+
 #endif
 
-    if (DOSBase != NULL)
-    {
-	if (!setjmp (__startup_jmp_buf))
-	    __startup_error = main (argc, argv);
-
-	CloseLibrary((struct Library *)DOSBase);
     }
+    else
+    {
+	/* Workbench startup. Get WBenchMsg and pass it to main() */
+
+	WaitPort(&myproc->pr_MsgPort);
+	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
+	argv = (char **)WBenchMsg;
+	argsize = 0;
+	argc = 0;
+    }
+
+    /* Invoke main() */
+    if (!setjmp(__startup_jmp_buf))
+	__startup_error = main (argc, argv);
 
 error:
     if (argsize)
@@ -206,21 +220,24 @@ error:
 	if (argv) {
 	    if (argv[0])
 		FreeVec(argv[0]);
-	    FreeMem (argv, sizeof (char *) * argmax);
+	    FreeMem(argv, sizeof (char *) * argmax);
 	}
 
 	if (args)
-	    FreeMem (args, argsize+1);
+	    FreeMem(args, argsize+1);
     }
 
     if (__startup_mempool)
-	DeletePool (__startup_mempool);
+	DeletePool(__startup_mempool);
+
+    CloseLibrary((struct Library *)DOSBase);
 
     return __startup_error;
 } /* entry */
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
+struct WBStartup *WBenchMsg;
 
 APTR __startup_mempool = NULL;
 jmp_buf __startup_jmp_buf;
