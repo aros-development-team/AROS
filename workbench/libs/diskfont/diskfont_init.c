@@ -88,21 +88,24 @@ const struct inittable datatable=
 };
 
 
-#undef O
-#undef SysBase
+struct ExecBase * SysBase;
+/* #undef O
+#undef SysBase */
 
 AROS_LH2(struct DiskfontBase_intern *, init,
     AROS_LHA(struct DiskfontBase_intern *, LIBBASE, D0),
     AROS_LHA(BPTR,               segList,   A0),
-    struct ExecBase *, SysBase, 0, BASENAME)
+    struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
-    D(bug("Inside initfunc"));
+    /* DO NOT CALL ANY FUNCTIONS BEFORE SysBase HAS BEEN SET !!! */
 
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    LIBBASE->sysbase=SysBase;
+    SysBase=sysBase;
+
+    D(bug("Inside initfunc\n"));
     LIBBASE->seglist=segList;
 
     /* You would return NULL here if the init failed. */
@@ -110,12 +113,12 @@ AROS_LH2(struct DiskfontBase_intern *, init,
     AROS_LIBFUNC_EXIT
 }
 
-/* Use This from now on */
-#define SysBase LIBBASE->sysbase
+/* Use This from now on * /
+#define SysBase LIBBASE->sysbase */
 
 AROS_LH1(struct DiskfontBase_intern *, open,
- AROS_LHA(ULONG, version, D0),
-     struct DiskfontBase_intern *, LIBBASE, 1, BASENAME)
+    AROS_LHA(ULONG, version, D0),
+    struct DiskfontBase_intern *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -136,7 +139,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     /* Keep compiler happy */
     version=0;
 
-	D(bug("Inside openfunc"));
+    D(bug("Inside openfunc\n"));
 
     if (!DOSBase)
 	DOSBase = OpenLibrary("dos.library", 37);
@@ -153,12 +156,12 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     if (!UtilityBase)
 		return(NULL);
 
-	/* Insert the fonthooks into the DiskfontBase */
+    /* Insert the fonthooks into the DiskfontBase */
 
-	for (idx = 0; idx < NUMFONTHOOKS; idx ++)
-	{
-		LIBBASE->hdescr[idx] = hdescrdef[idx];
-	}
+    for (idx = 0; idx < NUMFONTHOOKS; idx ++)
+    {
+	LIBBASE->hdescr[idx] = hdescrdef[idx];
+    }
 
     LIBBASE->dsh.h_Entry = (void *)dosstreamhook;
     LIBBASE->dsh.h_Data = DOSBase;

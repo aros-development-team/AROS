@@ -20,8 +20,8 @@
 #ifndef   PROTO_ALIB_H
 #	include  <proto/alib.h>
 #endif
-#ifndef		PROTO_AROSSUPPORT_H
-#	include	<proto/arossupport.h>
+#ifndef 	PROTO_AROSSUPPORT_H
+#	include <proto/arossupport.h>
 #endif
 #ifndef   GRAPHICS_TEXT_H
 #	include  <graphics/text.h>
@@ -41,19 +41,19 @@
 #ifndef   STRING_H
 #	include  <string.h>
 #endif
-#ifndef		AROS_LIBCALL_H
-#	include	<aros/libcall.h>
+#ifndef 	AROS_LIBCALL_H
+#	include <aros/libcall.h>
 #endif
-#ifndef		AROS_ASMCALL_H
-#	include	<aros/asmcall.h>
+#ifndef 	AROS_ASMCALL_H
+#	include <aros/asmcall.h>
 #endif
 
 
 
 /**************/
-/*            */
+/*	      */
 /* AVAILFONTS */
-/*            */
+/*	      */
 /**************/
 
 
@@ -67,33 +67,33 @@
 /* Flags for the FontInfoNode->Flags field */
 
 
-#define FDF_REUSENAME   (1 << 0)
-#define FDF_REUSETAGS   (1 << 1)
-#define FDF_USEDEFTAGS  (1 << 2)
+#define FDF_REUSENAME	(1 << 0)
+#define FDF_REUSETAGS	(1 << 1)
+#define FDF_USEDEFTAGS	(1 << 2)
 
 /* Possible returnvalues for AvailFonts hooks
 ( or an or'ed combination of these )
 */
 
-#define FH_SUCCESS      (1 << 0)
+#define FH_SUCCESS	(1 << 0)
 #define FH_SCANFINISHED (1 << 1)
 
-#define FH_REUSENAME    (1 << 2)
-#define FH_REUSETAGS    (1 << 3)
+#define FH_REUSENAME	(1 << 2)
+#define FH_REUSETAGS	(1 << 3)
 
 /* Non-fatal error */
-#define FH_SINGLEERROR  (1 << 4)
+#define FH_SINGLEERROR	(1 << 4)
 
 /* Some states in the ScanFontInfo routine */
 #define SFI_NEWDESCRNODE  0
-#define SFI_READDESCR     1
+#define SFI_READDESCR	  1
 
 /* The different AvailFonts hook commands */
 
-#define FHC_INIT          0
+#define FHC_INIT	  0
 #define FHC_READFONTINFO  1
-#define FHC_CLEANUP       2
-#define FHC_GETDATE       3
+#define FHC_CLEANUP	  2
+#define FHC_GETDATE	  3
 
 
 /* ID for cache-file */
@@ -106,12 +106,12 @@
 
 struct FontNameNode
 {
-    
+
     struct MinNode NodeHeader;
     STRPTR FontName;
     STRPTR FontNameInBuf; /* points to the same fontname inside the buf */
 };
-  
+
 /* Structure for storing taglists into a linked list */
 struct FontTagsNode
 {
@@ -124,12 +124,12 @@ struct FontTagsNode
 struct FontInfoNode
 {
     struct MinNode NodeHeader;
-  
-    struct TAvailFonts  TAF;
-    
+
+    struct TAvailFonts	TAF;
+
     /* ored combo of FDF_REUSENAME, FDF_REUSETAGS and FDF_USEDEFAULTTAGS */
     UBYTE   Flags;
-  
+
     /* Pointer to this font's name and eventual tags.
     */
     struct FontNameNode *FontName;
@@ -147,39 +147,39 @@ struct AFHookDescr
     /* Flags that must match the flags input to AvailFonts
     for this hook to be executed. (AFF_MEMORY, AFF_DISK, etc..)
     */
-    
-    ULONG         ahd_Flags;
+
+    ULONG	  ahd_Flags;
     struct Hook   ahd_Hook;
 };
 
 
 
-/* Hook structure message structure for sending data to 
+/* Hook structure message structure for sending data to
 the font description reading routines */
 
 struct FontHookCommand
 {
-    ULONG                 fhc_Command;
-    ULONG                 fhc_Flags;
+    ULONG		  fhc_Command;
+    ULONG		  fhc_Flags;
     struct FontInfoNode   *fhc_FINode;
 
     /* This field can be filled out by the hook. It will not be changed outside the hook */
-    APTR                  fhc_UserData;
+    APTR		  fhc_UserData;
 };
 
 /* The .font files are loaded into these. */
 
 struct FontDescr
 {
-    STRPTR          FontName;
-    UWORD           NumTags;
+    STRPTR	    FontName;
+    UWORD	    NumTags;
     struct TagItem  *Tags;
-    
-    UWORD           YSize;
-    UBYTE           Style;
-    UBYTE           Flags;        
+
+    UWORD	    YSize;
+    UBYTE	    Style;
+    UBYTE	    Flags;
 };
-    
+
 struct FontDescrHeader
 {
     UWORD   NumEntries;
@@ -200,17 +200,17 @@ struct MemoryFontHook_Data
 
 struct DiskFontHook_Data
 {
-    BPTR                    dfhd_DirLock;
-    BPTR                    dfhd_OldDirLock;
+    BPTR		    dfhd_DirLock;
+    BPTR		    dfhd_OldDirLock;
     struct FontDescrHeader  *dfhd_CurrentFDH;
     /* Index into the current FontDescr-array */
-    UWORD                   dfhd_FontDescrIndex;
+    UWORD		    dfhd_FontDescrIndex;
 
     struct FileInfoBlock    *dfhd_CurrentFIB;
     /* Specifies if we should use ExNext instead of Examine */
-    BOOL                    dfhd_UseExNext;
-    
-    
+    BOOL		    dfhd_UseExNext;
+
+
 };
 
 
@@ -227,25 +227,25 @@ struct DiskFontHook_Data
 
 struct AF_Lists
 {
-    struct MinList      FontInfoList;
-    struct MinList      FontNameList;
-    struct MinList      FontTagsList;
-  
-    /* What node was currently being written when buffer was full ? */
-    struct MinNode      *BufferFullNode;
-    
-    /* What state were we in when the buffer was full ? */
-    UWORD               BufferFullState;
-    
-    /* Pointer into where we should start simulating copying into the buffer
-    for reading bytes needed 
-    */
-    APTR                BufferFullPtr;
-    
-    struct TagItem      *DefTagsInBuf;
+    struct MinList	FontInfoList;
+    struct MinList	FontNameList;
+    struct MinList	FontTagsList;
 
-    
-    APTR                CurrentBufPtr;
+    /* What node was currently being written when buffer was full ? */
+    struct MinNode	*BufferFullNode;
+
+    /* What state were we in when the buffer was full ? */
+    UWORD		BufferFullState;
+
+    /* Pointer into where we should start simulating copying into the buffer
+    for reading bytes needed
+    */
+    APTR		BufferFullPtr;
+
+    struct TagItem	*DefTagsInBuf;
+
+
+    APTR		CurrentBufPtr;
 };
 
 
@@ -259,30 +259,30 @@ struct AF_Lists
 struct DiskfontBase_intern; /* prerefrence */
 
 AROS_UFP3(LONG, MemoryFontFunc,
-    AROS_UFPA(struct Hook *,				h, 				A0),
-    AROS_UFPA(struct FontHookCommand *,		fhc,			A2),
-    AROS_UFPA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
+    AROS_UFPA(struct Hook *,                            h,                              A0),
+    AROS_UFPA(struct FontHookCommand *,         fhc,                    A2),
+    AROS_UFPA(struct DiskfontBase_intern *,     DiskfontBase,   A1)
 );
 
 AROS_UFP3(LONG, DiskFontFunc,
-    AROS_UFPA(struct Hook *,				h, 				A0),
-    AROS_UFPA(struct FontHookCommand *,		fhc,			A2),
-    AROS_UFPA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
+    AROS_UFPA(struct Hook *,                            h,                              A0),
+    AROS_UFPA(struct FontHookCommand *,         fhc,                    A2),
+    AROS_UFPA(struct DiskfontBase_intern *,     DiskfontBase,   A1)
 );
 
 BOOL  ScanFontInfo(ULONG, struct MinList *, struct MinList *, struct MinList *, struct DiskfontBase_intern *);
 
-struct FontNameNode *AllocFontNameNode( STRPTR,          	struct DiskfontBase_intern *);
-struct FontTagsNode *AllocFontTagsNode( struct TagItem *,	struct DiskfontBase_intern *);
+struct FontNameNode *AllocFontNameNode( STRPTR,                 struct DiskfontBase_intern *);
+struct FontTagsNode *AllocFontTagsNode( struct TagItem *,       struct DiskfontBase_intern *);
 
 BOOL  CopyDescrToBuffer (UBYTE *, ULONG, ULONG, struct AF_Lists *, struct DiskfontBase_intern *);
-ULONG CountBytesNeeded  (UBYTE *, ULONG, struct AF_Lists *, struct DiskfontBase_intern *);
-VOID  UpdatePointers    (UBYTE *, ULONG, struct AF_Lists *, struct DiskfontBase_intern *);
+ULONG CountBytesNeeded	(UBYTE *, ULONG, struct AF_Lists *, struct DiskfontBase_intern *);
+VOID  UpdatePointers	(UBYTE *, ULONG, struct AF_Lists *, struct DiskfontBase_intern *);
 
 /* Functions for .font file I/O */
 
-struct FontDescrHeader *ReadFontDescr(BPTR,		struct DiskfontBase_intern *);
-VOID FreeFontDescr(struct FontDescrHeader *,	struct DiskfontBase_intern *);
+struct FontDescrHeader *ReadFontDescr(BPTR,             struct DiskfontBase_intern *);
+VOID FreeFontDescr(struct FontDescrHeader *,    struct DiskfontBase_intern *);
 
 ULONG NumTags(struct TagItem *, struct DiskfontBase_intern *);
 ULONG CopyTagItems(struct TagItem *, struct TagItem *, struct DiskfontBase_intern *);
@@ -307,7 +307,7 @@ AROS_UFP3(LONG, dosstreamhook,
 /* Some nice macros */
 /********************/
 
-#undef	AFH 
+#undef	AFH
 #define AFH(p)  ((struct AvailFontsHeader *)p)
 
 #undef	AVF
@@ -332,7 +332,7 @@ AROS_UFP3(LONG, dosstreamhook,
 #define UB(p)   ((UBYTE                   *)p)
 
 #undef	TFE
-#define	TFE(t)	((struct TextFontExtension*)t)
+#define TFE(t)  ((struct TextFontExtension*)t)
 
 /* Some external stuff (diskfont_init.c) */
 
@@ -342,27 +342,27 @@ AROS_UFP3(LONG, dosstreamhook,
 struct DiskfontBase_intern
 {
     struct Library    library;
-    struct ExecBase * sysbase;
-    BPTR              seglist;
+    /* struct ExecBase * sysbase; */
+    BPTR	      seglist;
 
-    struct Library       * dosbase;
-    struct GfxBase       * gfxbase;
-    struct Library       * utilitybase;
-    
+    struct Library	 * dosbase;
+    struct GfxBase	 * gfxbase;
+    struct Library	 * utilitybase;
+
     /* dosstreamhandler hook neede for endian io funcs */
-    struct Hook		dsh;
+    struct Hook 	dsh;
     struct AFHookDescr hdescr[NUMFONTHOOKS];
 };
 
 /* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers  and the corresponding
+   variables storing the library base pointers	and the corresponding
    structs are equal.
    This is a hack, of course. */
 typedef struct GfxBase GraphicsBase;
 
 #define DFB(dfb)        ((struct DiskfontBase_intern *)dfb)
-#undef SysBase
-#define SysBase (DFB(DiskfontBase)->sysbase)
+/* #undef SysBase
+#define SysBase (DFB(DiskfontBase)->sysbase) */
 #undef DOSBase
 #define DOSBase (DFB(DiskfontBase)->dosbase)
 #undef GfxBase
