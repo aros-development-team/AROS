@@ -1,0 +1,46 @@
+#!/bin/sh
+# $0 from to filter
+
+from="$1"
+to="$2"
+if [ -z "$3" ]; then
+    tfilter="*"
+else
+    tfilter="$3"
+fi
+
+function regexptowildcard() {
+    gawk 'BEGIN { \
+	str=ARGV[1]; \
+	gsub (/\./, "\\.", str); \
+	gsub(/\*/,".*",str); \
+	print str; \
+    }' "$1"
+}
+
+filter="`regexptowildcard "$tfilter"`"
+
+echo -n "Creating links from $from/ to $to/ "
+
+noglob=1
+echo "$tfilter"
+unset noglob
+
+for direntry in $from/* ; do
+    entry="`basename $direntry`"
+    if [ -d $direntry ]; then
+	if [ "$entry" != "CVS" ]; then
+	    if [ ! -d "$to/$entry" ]; then
+		mkdir "$to/$entry"
+	    fi
+	    $0 "$direntry" "$to/$entry" "$tfilter"
+	fi
+    else
+	if echo "$entry" | grep -q -e "$filter"; then
+	    echo "Link $from/$entry to $to/$entry"
+	    rm -f $to/$entry
+	    ln -s $from/$entry $to/$entry
+	fi
+    fi
+done
+
