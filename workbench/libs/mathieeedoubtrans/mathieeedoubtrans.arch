@@ -1506,11 +1506,10 @@ LONG Exponent;
 
 
 #Function double IEEEDPSincos
-#Options QUAD
 #Parameter double * z A0
       Pointer to an IEEE double precision floating point number
 #/Parameter
-#Parameter double y D0/D1
+#Parameter double y D0
     IEEE double precision floating point number
 #/Parameter
 #LibOffset 9
