@@ -965,6 +965,7 @@ int main(void)
 
     app = WandererObject,
 	MUIA_Application_Title, "Wanderer",
+	MUIA_Application_Base, "WANDERER",
 	MUIA_Application_Version, "$VER: Wanderer 0.1 (10.12.02)",
 	MUIA_Application_Description, "The AROS filesystem GUI",
     	SubWindow, root_iconwnd = IconWindowObject,
