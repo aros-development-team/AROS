@@ -195,10 +195,22 @@ enum
 #define MUIM_List_Destruct            (METHOD_USER|0x1d5100A2) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_Compare             (METHOD_USER|0x1d5100A3) /* Zune: v1 same like NList, PRIV for now! */
 #define MUIM_List_Display             (METHOD_USER|0x1d5100A4) /* Zune: V1 same like NList, PRIV for now! */
+#define MUIM_List_InsertSingleAsTree  (METHOD_USER|0x1d5100A6) /* Zune: V1 */
 struct MUIP_List_Construct            {ULONG MethodID; APTR entry; APTR pool;};
 struct MUIP_List_Destruct             {ULONG MethodID; APTR entry; APTR pool;};
 struct MUIP_List_Compare              {ULONG MethodID; APTR entry1; APTR entry2; LONG sort_type1; LONG sort_type2;};
 struct MUIP_List_Display              {ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses;};
+struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; LONG rel_entry_pos; ULONG flags;};
+
+#define MUIV_List_InsertSingleAsTree_Root  (-1)
+
+#define MUIV_List_InsertSingleAsTree_Top      (0)
+#define MUIV_List_InsertSingleAsTree_Active   (-1)
+#define MUIV_List_InsertSingleAsTree_Sorted   (-2)
+#define MUIV_List_InsertSingleAsTree_Bottom   (-3)
+
+#define MUIV_List_InsertSingleAsTree_List    (1<<0)
+#define MUIV_List_InsertSingleAsTree_Closed  (1<<1)
 
 extern const struct __MUIBuiltinClass _MUI_List_desc; /* PRIV */
 

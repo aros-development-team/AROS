@@ -1228,6 +1228,7 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 		    set(obj,MUIA_List_Entries,data->confirm_entries_num);
 		return ~0;
 	    }
+	    lentry->parents = 0;
 
 	    data->entries[pos] = lentry;
 	    data->confirm_entries_num++;
@@ -1273,6 +1274,90 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 STATIC ULONG List_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingle *msg)
 {
     return DoMethod(obj,MUIM_List_Insert, &msg->entry, 1, msg->pos);
+}
+
+/**************************************************************************
+ MUIM_List_InsertSingleAsTree
+**************************************************************************/
+STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingleAsTree *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct ListEntry *lentry;
+    int pos;
+
+    switch (msg->rel_entry_pos)
+    {
+
+	case    MUIV_List_InsertSingleAsTree_Top:
+		pos = 0;
+		break;
+
+	case    MUIV_List_InsertSingleAsTree_Active:
+		pos = 0;
+		break;
+
+	case    MUIV_List_InsertSingleAsTree_Sorted:
+		pos = 0;
+		break;
+
+	case    MUIV_List_InsertSingleAsTree_Bottom:
+		pos = 0;
+		break;
+    }
+
+    pos += msg->parent + 1;
+
+    if (pos < 0 || pos > data->entries_num)
+	return ~0;
+
+    if (!(SetListSize(data,data->entries_num + 1)))
+	return ~0;
+
+    if (!(PrepareInsertListEntries(data, pos, 1)))
+	return ~0;
+
+    if (!(lentry = AllocListEntry(data)))
+	return ~0;
+
+    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, msg->entry, data->pool);
+    if (!lentry->data)
+    {
+    	FreeListEntry(data,lentry);
+	return ~0;
+    }
+
+    if (msg->parent == MUIV_List_InsertSingleAsTree_Root)
+	lentry->parents = 0;
+    else
+    {
+    	lentry->parents = data->entries[msg->parent]->parents + 1;
+    }
+
+    data->entries[pos] = lentry;
+    data->confirm_entries_num++;
+
+    if (_flags(obj) & MADF_SETUP)
+    {
+    	/* We have to calulate the with and height of the newly inserted entry, this
+    	** has to be done after inserting the element into the list */
+    	CalcDimsOfEntry(cl,obj,pos);
+
+	CalcVertVisible(cl,obj); /* Recalculate the number of visible entries */
+    }
+
+    if (data->entries_num != data->confirm_entries_num)
+    {
+	SetAttrs(obj,
+	    MUIA_List_Entries, data->confirm_entries_num,
+	    MUIA_List_Visible, data->entries_visible,
+	    TAG_DONE);
+    }
+
+    data->update = 1;
+    MUI_Redraw(obj,MADF_DRAWUPDATE);
+
+    data->insert_position = pos;
+    return (ULONG)pos;
 }
 
 /**************************************************************************
@@ -1396,6 +1481,7 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 	case MUIM_List_Destruct: return List_Destruct(cl,obj,(APTR)msg);
 	case MUIM_List_Compare: return List_Compare(cl,obj,(APTR)msg);
 	case MUIM_List_Display: return List_Display(cl,obj,(APTR)msg);
+	case MUIM_List_InsertSingleAsTree: return List_InsertSingleAsTree(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
