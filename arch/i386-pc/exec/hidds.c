@@ -386,23 +386,3 @@ void WhitePrint(struct RastPort *RPort, char *String, UWORD height)
         Move(RPort,20,height);
         Text(RPort, String, strlen(String));
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

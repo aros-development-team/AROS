@@ -44,6 +44,8 @@ void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 void kbd_updateleds();
 int kbd_reset(void);
+int poll_data(void);
+
 
 #ifdef MOUSE_ACTIVE
 int mouse_reset(void);
@@ -307,15 +309,20 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
    * It only works when they are here. I don't know why, but
    * I'll find a way to avoid them...
    */
+
+#if 0
   Sound(400,100000000);
   D(bug("reseting keyboard!\n"));
   kbd_reset();
+#endif
 
 #warning There is an endless loop here for testing purposes.
+#if 0
   while (1)
   {
 
   }
+#endif
     }
     ReturnPtr("Kbd::New", OOP_Object *, o);
 }
@@ -373,7 +380,7 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
+
     struct TagItem tags[] =
     {
         { aMeta_SuperID,                (IPTR)CLID_Hidd },
@@ -392,11 +399,11 @@ OOP_Class *init_kbdclass (struct kbd_staticdata *xsd)
         {
             cl->UserData = (APTR)xsd;
             xsd->kbdclass = cl;
-	    
+    
             if (obtainattrbases(attrbases, OOPBase))
             {
                 D(bug("KbdHiddClass ok\n"));
-		
+
                 OOP_AddClass(cl);
             }
             else
@@ -419,10 +426,10 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
     if(xsd)
     {
         OOP_RemoveClass(xsd->kbdclass);
-	
+
         if(xsd->kbdclass) OOP_DisposeObject((OOP_Object *) xsd->kbdclass);
         xsd->kbdclass = NULL;
-	
+
         releaseattrbases(attrbases, OOPBase);
     }
     ReturnVoid("free_kbdclass");
@@ -431,34 +438,33 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 /************************* Keyboard Interrupt ****************************/
 
 #define inb(port) \
-    ({	char __value;	\
-	__asm__ __volatile__ ("inb $" #port ",%%al":"=a"(__value));	\
-	__value;	})
+    ({  char __value;   \
+    __asm__ __volatile__ ("inb $" #port ",%%al":"=a"(__value)); \
+    __value;    })
 
-#define outb(val,port) \
-    ({	char __value=(val);	\
-	__asm__ __volatile__ ("outb %%al,$" #port::"a"(__value)); })
+#define outb(val,port)      \
+    ({  char __value=(val); \
+    __asm__ __volatile__ ("outb %%al,$" #port::"a"(__value)); })
 
-#define WaitForInput			\
-	({ int i = 0,dummy;		\
-	   do				\
-	    {				\
-		info=inb(0x64);		\
-	    } while((info & 0x01)); 	\
-	   while (i < 1000000)		\
-	   {				\
-	     dummy = i*i;		\
-	     i++;			\
-	   }})
-	
+#define WaitForInput        \
+    ({ int i = 0,dummy;     \
+       do                   \
+       {                    \
+        info=inb(0x64);     \
+       } while((info & 0x01)); \
+       while (i < 1000000)     \
+       {                \
+         dummy = i*i;   \
+         i++;           \
+       }})
 
-#define WaitForOutput			\
-	({  do				\
-	    {				\
-		info=inb(0x64);		\
-	    } while(info & 0x02); 	\
-	    inb(0x60);			\
-	})
+#define WaitForOutput   \
+    ({  do              \
+        {               \
+            info=inb(0x64);     \
+        } while(info & 0x02);   \
+        inb(0x60);              \
+    })
 
 
 ULONG kbd_keystate=0;
@@ -502,47 +508,39 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     static UWORD le;        /* Last event used to prevent from some reps */    
     info = inb(0x64);
 
-    while ((info & 0x01))     /* data from information port */
+    while ((info & 0x01))               /* data from information port */
     {
-      if (!(info & 0x20))	/* If bit 5 set data from mouse. Otherwise keyboard */
+      if (!(info & 0x20))               /* If bit 5 set data from mouse. Otherwise keyboard */
       {
-        keycode=inb(0x60);
-        if (keycode==0xe0)	/* Special key */
+        keycode=poll_data();
+        if (keycode==0xe0)              /* Special key */
         {
-            WaitForInput;
-            keycode=inb(0x60);
-            if (keycode==0x2a)	/* Shift modifier - we can skip it */
+            keycode=poll_data();
+            if (keycode==0x2a)          /* Shift modifier - we can skip it */
             {
-                WaitForInput;
-                keycode=inb(0x60);	/* This one HAS to be 0xe0 */
-                WaitForInput;
-                keycode=inb(0x60);	/* This is our key :-) */
+                keycode=poll_data();
+                keycode=poll_data();
             }
-            event=0x4000|keycode;	/* set event to send */
-            if (event==0x40aa)		/* If you get something like this... */
+            event=0x4000|keycode;   /* set event to send */
+            if (event==0x40aa)      /* If you get something like this... */
             {                       /* Special Shift up.... */
-                //return -1;		/* Treat it as NoKey and don't let */
+                //return -1;        /* Treat it as NoKey and don't let */
                 info = inb(0x64);
                 continue;
-            }				/* Other interrupts see it */
+            }                       /* Other interrupts see it */
         }
-        else if (keycode==0xe1)	/* Pause key */
+        else if (keycode==0xe1)     /* Pause key */
         {
-            WaitForInput;		/* Read next 5 bytes from keyboard */
-            keycode=inb(0x60);		/* This is hack, but I know there is */
-            WaitForInput;		/* Only one key which starts with */
-            keycode=inb(0x60);		/* 0xe1 code */
-            WaitForInput;
-            keycode=inb(0x60);
-            WaitForInput;
-            keycode=inb(0x60);
-            WaitForInput;
-            keycode=inb(0x60);
+            keycode=poll_data();    /* Read next 5 bytes from keyboard */
+            keycode=poll_data();    /* This is hack, but I know there is */
+            keycode=poll_data();    /* Only one key which starts with */
+            keycode=poll_data();    /* 0xe1 code */
+            keycode=poll_data();
             event=K_Pause;
         }
         else if (keycode==0xfa)
         {
-	        //return -1;		/* Treat it as NoKey */
+            //return -1;		/* Treat it as NoKey */
             D(bug("!!! Got Keyboard ACK!!!\n"));
             info = inb(0x64);
             continue;
@@ -731,6 +729,25 @@ long pckey2hidd (ULONG event)
 
 #warning This should go somewhere higher but D(bug()) is not possible there
 
+int poll_data(void)
+{
+    int i;
+    unsigned char stat;
+
+    for(i = 100000; i; i--)
+    {
+        stat = inb(0x64);
+        if(stat & 0x01)
+        {
+            unsigned char c;
+
+            TimeDelay(0,0,8);   /* !!! I don't really know if this alib function has any effect on native-i386 yet */
+            c = inb(0x60);
+            return(c);
+        }
+    }
+    return(-1);
+}
 
 /*
  * Please leave this routine as is for now.
@@ -740,20 +757,16 @@ int kbd_reset(void)
 {
     UBYTE retval, status;
     UBYTE key,info;
-    do {
-        inb(0x60);		/* Empty keys queue */
-        info=inb(0x64);
-    } while (info & 0x01);
-    kbd_keystate=0;
 
+    poll_data();		/* Empty keys queue */
 
-    WaitForOutput;	/* Disable mouse interface */
+    WaitForOutput;		/* Disable mouse interface */
     outb(0xa7, 0x64);
 
     WaitForOutput;
     outb(0xaa,0x64);	/* Initialize and test keyboard */
-    WaitForInput;
-    retval = inb(0x60);
+
+    retval = (UBYTE)poll_data();
     if (retval != 0x55)
     {
       D(bug("Error! Got reset return value %x.\n",retval));

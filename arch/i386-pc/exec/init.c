@@ -298,7 +298,7 @@ int main()
     hidd_demo();
 
     /*
-	All done. In normal cases CPU should never reach this instuctions
+	All done. In normal cases CPU should never reach this instructions
     */
 
 	kprintf(text2);
