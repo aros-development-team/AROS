@@ -818,7 +818,7 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
     rp = _rp(obj);
     SetFont(rp,_font(obj));
 
-    top += _font(obj)->tf_Baseline;
+    top += _font(obj)->tf_Baseline + text->yscroll;
 
     for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
     {
@@ -827,6 +827,8 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
 	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
 	else x = left;
+
+	x += text->xscroll;
 
 	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
 	{
@@ -866,7 +868,7 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
     rp = _rp(obj);
     SetFont(rp,_font(obj));
 
-    top += _font(obj)->tf_Baseline;
+    top += _font(obj)->tf_Baseline + text->yscroll;
 
     for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
     {
@@ -875,6 +877,8 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
 	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
 	else x = left;
+
+	x += text->xscroll;
 
 	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
 	{
@@ -981,3 +985,62 @@ int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
     }
     return len;
 }
+
+void zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom)
+{
+    struct RastPort rp;
+
+    ZTextLine *line_node;
+    ZTextChunk *chunk_node;
+
+    if (!text || !obj) return;
+
+    InitRastPort(&rp);
+    SetFont(&rp,_font(obj));
+
+    top += _font(obj)->tf_Baseline;
+
+    for (line_node = (ZTextLine *)text->lines.mlh_Head; line_node->node.mln_Succ ; line_node = (ZTextLine*)line_node->node.mln_Succ)
+    {
+	LONG x;
+
+	if (line_node->align == ZTL_CENTER) x = (left + right - line_node->lwidth) / 2;
+	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth;
+	else x = left;
+
+	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
+	{
+	    char *str = chunk_node->str;
+	    if (!str) str = "";
+
+	    if (!cursory && (cursorx <= strlen(str) && cursorx >= 0))
+	    {
+	    	int offx = TextLength(&rp,str,cursorx);
+	    	int cursor_width;
+
+		if (str[cursorx]) cursor_width = TextLength(&rp,&str[cursorx],1);
+		else cursor_width = _font(obj)->tf_XSize;
+
+		if ((x + offx + text->xscroll) < left) text->xscroll = left - x - offx;
+		else if ((x + offx + cursor_width - 1 + text->xscroll) > right) text->xscroll = right - x - offx - cursor_width + 1;
+
+		cursorx = -1;
+	    }
+	    
+	    x += chunk_node->cwidth;
+	}
+
+	if (!cursory && cursorx != -1)
+	{
+	    int cursor_width = _font(obj)->tf_XSize;
+	    /* Cursor has not been drawn yet */
+
+	    if ((x  + text->xscroll) < left) text->xscroll = left - x;
+	    else if ((x + cursor_width - 1 + text->xscroll) > right) text->xscroll = right - x - cursor_width + 1;
+	}
+
+	top += line_node->lheight;
+	cursory--;
+    }
+}
+

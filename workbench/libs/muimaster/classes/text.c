@@ -486,6 +486,7 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    {
 	    	/* delete char of previous node ... */
 	    }
+	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
     	}
 	return 1;
     }
@@ -549,6 +550,8 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    char_width = TextLength(_rp(obj),&code,1);
 	    chunk->cwidth += char_width;
 	    line->lwidth += char_width;
+
+	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
         }
     }
     return 1;
@@ -602,6 +605,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 				    {
 					data->xpos--;
 					update = 1;
+					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
 				    }
 				    retval = MUI_EventHandlerRC_Eat;
 				    break;
@@ -611,6 +615,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 				    {
 					data->xpos++;
 					update = 1;
+					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
 				    }
 				    retval = MUI_EventHandlerRC_Eat;
 				    break;
