@@ -18,9 +18,11 @@
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
 
+#include <devices/inputevent.h>
+
 #include "x11.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 
@@ -28,7 +30,7 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
 struct x11kbd_data
 {
-    VOID (*kbd_callback)(APTR, UWORD, ULONG);
+    VOID (*kbd_callback)(APTR, UWORD);
     APTR callbackdata;
 };
 
@@ -214,15 +216,13 @@ static VOID x11kbd_handleevent(Class *cl, Object *o, struct pHidd_X11Kbd_HandleE
     if (msg->event->type == KeyPress)
     {
 	data->kbd_callback(data->callbackdata
-		, (UWORD)xkey2hidd(xk, XSD(cl))
-		, vHidd_Kbd_Press );
+		, (UWORD)xkey2hidd(xk, XSD(cl)));
 		
     }
     else if (msg->event->type == KeyRelease)
     {
 	data->kbd_callback(data->callbackdata
-		, (UWORD)xkey2hidd(xk, XSD(cl))
-		, vHidd_Kbd_Release );
+		, (UWORD)xkey2hidd(xk, XSD(cl)) | IECODE_UP_PREFIX);
     }
 
     
@@ -397,6 +397,3 @@ VOID free_kbdclass(struct x11_staticdata *xsd)
 
     ReturnVoid("free_kbdclass");
 }
-
-
-
