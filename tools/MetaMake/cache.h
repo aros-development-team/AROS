@@ -45,8 +45,6 @@ Target;
 
 /* The public part of the Cache structure */
 typedef struct {
-    DirNode * topdir;
-
     List targets;
 } Cache;
 

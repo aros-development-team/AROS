@@ -50,6 +50,8 @@ typedef struct {
     
     Project * project;
 
+    DirNode * topdir;
+
     int buildmflist;
     int buildtargetlist;
 
@@ -147,9 +149,9 @@ readcache (Cache_priv * cache)
 
     if (fh)
     {
-	cache->publicpart.topdir = readcachedir (fh);
+	cache->topdir = readcachedir (fh);
 
-	if (!cache->publicpart.topdir)
+	if (!cache->topdir)
 	{
 	    fclose (fh);
 	    fh = NULL;
@@ -158,13 +160,13 @@ readcache (Cache_priv * cache)
 
     if (!fh)
     {
-	cache->publicpart.topdir = new (DirNode);
-	NewList(&cache->publicpart.topdir->subdirs);
-	cache->publicpart.topdir->node.name = xstrdup ("");
-	cache->publicpart.topdir->parent = NULL;
+	cache->topdir = new (DirNode);
+	NewList(&cache->topdir->subdirs);
+	cache->topdir->node.name = xstrdup ("");
+	cache->topdir->parent = NULL;
 
 	/* Force a check the first time */
-	cache->publicpart.topdir->time = 0;
+	cache->topdir->time = 0;
     }
 
     if (fh)
@@ -172,7 +174,7 @@ readcache (Cache_priv * cache)
 
 #if 0
     printf ("readcache()\n");
-    printdirnode (cache->publicpart.topdir);
+    printdirnode (cache->topdir);
 #endif
 }
 
@@ -184,7 +186,7 @@ writecache (Cache_priv * cache)
     int ret;
     long id;
 
-    if (!cache->publicpart.topdir)
+    if (!cache->topdir)
 	return;
 
     strcpy (path, cache->project->top);
@@ -199,7 +201,7 @@ writecache (Cache_priv * cache)
     id = ID;
     fwrite (&id, sizeof (id), 1, fh);
 
-    ret = writecachedir (fh, cache->publicpart.topdir);
+    ret = writecachedir (fh, cache->topdir);
 
     fclose (fh);
 
@@ -377,7 +379,7 @@ buildmflist (Cache_priv * cache, List * regeneratefiles)
     printf ("Entering \"%s\"\n", path);
 #endif
 
-	dnode = finddirnode (cache->publicpart.topdir, path);
+	dnode = finddirnode (cache->topdir, path);
 
 	if (dnode)
 	{
@@ -392,7 +394,7 @@ buildmflist (Cache_priv * cache, List * regeneratefiles)
     printf ("Updating cache in %s\n", path);
 #endif
 	    if (!dnode)
-		dnode = adddirnode (cache->publicpart.topdir, path);
+		dnode = adddirnode (cache->topdir, path);
 
 	    dnode->time = st.st_mtime;
 
@@ -484,7 +486,7 @@ buildmflist (Cache_priv * cache, List * regeneratefiles)
 #if 0
     printf ("Removing %s from cache (%s)\n", path, subdir->node.name);
     printf ("top=%s\n", cache->project->top);
-    printdirnode (cache->publicpart.topdir, 1);
+    printdirnode (cache->topdir, 1);
 #endif
 		    Remove (subdir);
 		    freecachenodes (subdir);
