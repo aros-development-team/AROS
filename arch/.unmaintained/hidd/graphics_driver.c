@@ -1779,7 +1779,7 @@ static ULONG bgf_render(APTR bgfr_data
     HIDD_BM_BlitColorExpansion( dstbm_obj
     	, dst_gc
 	, bgfrd->fbm
-	, srcx + bgfrd->fbm_xsrc, 0
+	, srcx + bgfrd->fbm_xsrc, srcy /* stegerg: instead of srcy there was a 0 */
 	, x1, y1
 	, width, height
      );
