@@ -60,18 +60,20 @@
     struct IOFileSys io;
 
     error = DevName(oldName, &olddev, DOSBase);
-    if (error)
+    if(error)
     {
 	SetIoErr(error);
 	return DOSFALSE;
     }
+
     error = DevName(newName, &newdev, DOSBase);
-    if (error)
+    if(error)
     {
 	SetIoErr(error);
 	return DOSFALSE;
     }
-    if (olddev != newdev)
+
+    if(olddev != newdev)
     {
 	SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
 	return DOSFALSE;
@@ -82,24 +84,22 @@
     io.IOFS.io_Message.mn_ReplyPort = &me->pr_MsgPort;
     io.IOFS.io_Message.mn_Length = sizeof(struct IOFileSys);
     io.IOFS.io_Device = olddev;
-#if 0
-    io.IOFS.io_Unit = ;
-#endif
+    io.IOFS.io_Unit = NULL;	/* No unit needed as all information is in the
+				   io_RENAME struct. */
     io.IOFS.io_Flags = 0;
     io.IOFS.io_Command = FSA_RENAME;
     io.io_Union.io_RENAME.io_Filename = oldName;
     io.io_Union.io_RENAME.io_NewName = newName;
 
-#if 0
     error = DoIO(&io.IOFS);
-#endif
-    error = ERROR_NOT_IMPLEMENTED;
 
-    if (error)
+    if(error)
     {
         SetIoErr(error);
 	return DOSFALSE;
     }
+
     return DOSTRUE;
+
     AROS_LIBFUNC_EXIT
 } /* Rename */
