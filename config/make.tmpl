@@ -311,15 +311,21 @@ endif
 #------------------------------------------------------------------------------
 # Link %(objs) to %(prog) using the libraries in %(uselibs)
 %define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= \
-    usehostlibs= usestartup=yes detach=no
+    usehostlibs= usestartup=yes detach=no nix=no
+
+ifeq (%(nix),yes)
+    NIX := $(AROS_LIB)/nixmain.o
+else
+    NIX :=
+endif
 
 ifeq (%(usestartup),no)
 %(prog) : STARTUP :=
 else
 ifeq (%(detach),yes)
-%(prog) : STARTUP := $(AROS_LIB)/detach.o $(AROS_LIB)/startup.o
+%(prog) : STARTUP := $(AROS_LIB)/detach.o $(AROS_LIB)/startup.o $(NIX)
 else
-%(prog) : STARTUP := $(AROS_LIB)/startup.o
+%(prog) : STARTUP := $(AROS_LIB)/startup.o $(NIX)
 endif
 endif
 
@@ -485,7 +491,7 @@ endif
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
-    aflags=$(AFLAFS) uselibs= usehostlibs= usestartup=yes detach=no
+    aflags=$(AFLAFS) uselibs= usehostlibs= usestartup=yes detach=no nix=no
 
 .PHONY : %(mmake) %(mmake)-setup
 
@@ -525,7 +531,7 @@ ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
 %rule_link_prog prog=$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) \
     objs=$(BD_OBJS$(BDID)) ldflags=$(BD_LDFLAGS$(BDID)) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
-    usestartup="%(usestartup)" detach="%(detach)"
+    usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)"
 
 endif
 
