@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #/Header
 
-#Function LHA float SPSquare
-#Parameter float fnum1 D0
+#Function LHA f l o a t SPSquare
+#Parameter f l o a t fnum1 D0
 #LibOffset 99
 
 #AutoDoc

@@ -1,0 +1,96 @@
+Documentation for ArchTool
+--------------------------
+
+[Note: All names are case-sensitive.]
+
+Structure of archive file
+-------------------------
+An archive in embraced by '#Archive' and '#/Archive'.
+It usually contains a common header embraced with '#Header' and '#/Header'.
+
+This header is code -- usually common #includes -- which is prepended to
+generated source files.
+After the header definition of functions follow:
+
+A function is defined by '#Function FType ReturnType FunctionName' and
+closed by '#/Function'. FType is the function type e.g. LHA (which will
+expand to AROS_LHn(AROS_LHA(),...) ).
+[Note: by now this is not checked, but provided for future use]
+The ReturnType is the type of the return value of the function.
+FunctionName just does what it means ;-)
+
+Parameter definitions -- if any -- have to follow after this line.
+This is a single line option with syntax '#Parameter Type Name Register'
+
+The offset of the function is specified with '#LibOffset number'.
+
+Now we have the block for the AutoDocs embraced with '#AutoDoc' and
+'#/AutoDoc'. The substructure is not well-defined yet, but should look
+like '#Function' '#/Function' for the description, '#Inputs' '#/Inputs',
+'#Result' '#/Result, etc.
+
+Finally we have the code block for the function: '#Code' '#/Code'
+
+Integrated programs
+-------------------
+
+Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c] <parameter>
+
+  -h help
+
+  -e extractfiles
+     Usage: archtool -e <destdir> <archfile>
+  -a genautodocs
+     Usage: archtool -a <destdir> <archfile>
+  -t genfunctable
+     Usage: archtool -t <archfile>
+  -s gensource
+     Usage: archtool -s <archfile> <sourcefile>
+  -m mergearch
+     Usage: archtool -m <arch1> <arch2> <archout>
+  -M mergearchs
+     Usage: archtool -M <outarch> <inarch>...
+  -c genlibdefs
+     Usage: archtool -c [lib.conf]
+
+ 1) Extract Files
+This module extracts all functions in the <archfile> archive to their
+own *.c files in the <destdir> directory.
+The name of the .c file is the lowercase function name.
+
+ 2) Generate AutoDocs
+This module generates the AutoDocs of the <archfile> archive to <destdir>
+directory.
+[Note: This module is not fully functionally - It' is just a demo!]
+
+ 3) Generate functable.c
+This module generates functable.c in the current dir from the <archfile>
+archive.
+[Note: By now no(!) aliases for function names are allowed! However,
+ aliases are only used in rom/dos. Therefore this lib can't be converted
+ by now.]
+
+ 4) Generate source file
+This module generates the compilable <sourcefile> sources out of the
+<archfile> archive.
+
+ 5) Merge two Archives
+This module merges two archives <arch1> and <arch2> to the new archive
+<archout>. Headers 1 and 2 are appended (in this order), existing functions
+in both files will be replaced by 2nd arch's function. Functions which
+occurr only once will always be preserved.
+
+ 6) Merge multiple Archives
+This module uses module 5 and merges one archive after the other from
+list <inarch>... to <outarch>. So all headers are appended in order and
+reoccurring functions will be relaced by last occurrence.
+[Internal: this uses a temporary archive file "__tmp.arch"]
+
+ 7) Generate libdefs.h
+This module generates "libdefs.h" file out of "lib.conf" file.
+If an argument is specified this name will be taken as config file.
+
+[Compiling Notes: this program has to be built before(!) starting mmake,
+ because mmake will try to compile it with AROS includes/libs.
+ Hope this can be fixed.]
+

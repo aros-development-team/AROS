@@ -1,62 +1,44 @@
-DEBUG = 
+DEBUG =
 CFLAGS = -Wall -Wunused -O2
 CC = gcc
 STRIP = strip
 ECHO = echo
 
-EXES = genfunctable genautodocs extractfiles mergearch gensource
+EXE = archtool
 
 ARCHIVE = spbase.arch
 SPECIAL = spenhanced.arch
 MERGE = spmerged.arch
+MMERGE = sp.arch
 
 GENSRC = spadd.c spdiv.c spmul.c spneg.c spsub.c spsquare.c
 CSRC = spbase.c
 
-all   : $(EXES)
+all   : $(EXE)
 
-genfunctable : line.o genfunctable.o
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
-	@$(STRIP) $@
-
-gensource : line.o gensource.o
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
-	@$(STRIP) $@
-
-genautodocs : line.o genautodocs.o
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
-	@$(STRIP) $@
-
-extractfiles : line.o extractfiles.o
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
-	@$(STRIP) $@
-
-mergearch : line.o mergearch.o
-	@$(ECHO) "Linking $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) $? -o $@
-	@$(STRIP) $@
-
-%.o : %.c
+$(EXE) : archtool.c
 	@$(ECHO) "Compiling $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) -c $< -o $@
+	@$(CC) $(CFLAGS) $(DEBUG) $< -o $@
+	@$(STRIP) $@
+
 
 clean :
-	rm -f $(EXES) *.o functable.c *.adoc $(MERGE) $(GENSRC) $(CSRC)
+	rm -f $(EXE) *.o functable.c *.adoc $(MERGE) $(GENSRC) $(CSRC) $(MMERGE) libdefs.h
 
 
-test : $(EXES)
+test : $(EXE)
 	@$(ECHO) "Extracting all functions from $(ARCHIVE)..."
-	@extractfiles . $(ARCHIVE)
+	@$(EXE) -e . $(ARCHIVE)
 	@$(ECHO) "Generating AutoDocs of all functions from $(ARCHIVE)..."
-	@genautodocs . $(ARCHIVE)
+	@$(EXE) -a . $(ARCHIVE)
 	@$(ECHO) "Generating functable.c from $(ARCHIVE)..."
-	@genfunctable MathFFP $(ARCHIVE)
+	@$(EXE) -t MathFFP $(ARCHIVE)
 	@$(ECHO) "Merging $(ARCHIVE) and $(SPECIAL) to $(MERGE)..."
-	@mergearch $(ARCHIVE) $(SPECIAL) $(MERGE)
+	@$(EXE) -m $(ARCHIVE) $(SPECIAL) $(MERGE)
 	@$(ECHO) "Extracting source from $(ARCHIVE) to $(CSRC)..."
-	@gensource $(ARCHIVE) $(CSRC)
+	@$(EXE) -s $(ARCHIVE) $(CSRC)
+	@$(ECHO) "Merging multiple files..."
+	@$(EXE) -M $(MMERGE) $(MERGE) $(SPECIAL) $(ARCHIVE)
+	@$(ECHO) "Generating libdefs.h from lib.conf..."
+	@$(EXE) -c
 

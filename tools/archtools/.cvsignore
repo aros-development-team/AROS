@@ -1,12 +1,8 @@
-extractfiles
-genfunctable
-genautodocs
-gensource
-mergearch
-*.o
+archivetool
 *.adoc
 functable.c
 spmerged.arch
+sp.arch
 spadd.c
 spdiv.c
 spmul.c
