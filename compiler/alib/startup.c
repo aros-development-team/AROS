@@ -119,8 +119,9 @@ AROS_UFH3(LONG, entry,
 /* if the programmer hasn't defined a symbol with the name __nocommandline
    then the code to handle the commandline will be included from the autoinit.lib
 */
-extern void __nocommandline(void);
-static void *__importcommandline = &__nocommandline;
+//extern void __nocommandline(void);
+extern int __nocommandline;
+static void *__importcommandline __attribute__((unused)) = &__nocommandline;
 
 /* pass these values to the command line handling function */
 char *__argstr;
