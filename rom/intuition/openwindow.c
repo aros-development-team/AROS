@@ -522,32 +522,41 @@
     w->RelLeftEdge = nw.LeftEdge;
     w->RelTopEdge  = nw.TopEdge;
     
+    {
+    	LONG parentwidth;
+	LONG parentheight;
+	
+	parentwidth  = parentwin ? parentwin->Width : w->WScreen->Width;
+	parentheight = parentwin ? parentwin->Height : w->WScreen->Height;
+    
+	w->Width   = (nw.Width  != ~0) ? nw.Width  : parentwidth - w->RelLeftEdge;
+	w->Height  = (nw.Height != ~0) ? nw.Height : parentheight - w->RelTopEdge;
+	
+	if (autoAdjust)
+	{
+
+    	    if (w->Width  > parentwidth)  w->Width  = parentwidth;
+	    if (w->Height > parentheight) w->Height = parentheight;
+
+	    if (w->RelLeftEdge < 0) w->RelLeftEdge = 0;
+	    if (w->RelTopEdge < 0) w->RelTopEdge = 0;
+
+	    if ((w->RelLeftEdge + w->Width) > parentwidth)
+		w->RelLeftEdge = parentwidth - w->Width;
+	    if ((w->RelTopEdge + w->Height) > parentheight)
+		w->RelTopEdge = parentheight - w->Height;
+	}
+    }
+    
     if (NULL == parentwin)
     {
-      w->LeftEdge    = nw.LeftEdge;
-      w->TopEdge     = nw.TopEdge;
+	w->LeftEdge    = w->RelLeftEdge;
+	w->TopEdge     = w->RelTopEdge;
     }
     else
     {
-      w->LeftEdge    = nw.LeftEdge + parentwin->LeftEdge;
-      w->TopEdge     = nw.TopEdge  + parentwin->TopEdge;
-    }
-
-    w->Width	   = (nw.Width  != ~0) ? nw.Width  : w->WScreen->Width - w->LeftEdge;
-    w->Height	   = (nw.Height != ~0) ? nw.Height : w->WScreen->Height - w->TopEdge;
-
-    if (autoAdjust)
-    {
-    	if (w->Width  > w->WScreen->Width)  w->Width  = w->WScreen->Width;
-	if (w->Height > w->WScreen->Height) w->Height = w->WScreen->Height;
-
-	if (w->LeftEdge < 0) w->LeftEdge = 0;
-	if (w->TopEdge < 0) w->TopEdge = 0;
-	
-	if ((w->LeftEdge + w->Width) > w->WScreen->Width)
-	    w->LeftEdge = w->WScreen->Width - w->Width;
-	if ((w->TopEdge + w->Height) > w->WScreen->Height)
-	    w->TopEdge = w->WScreen->Height - w->Height;
+	w->LeftEdge    = w->RelLeftEdge + parentwin->LeftEdge;
+	w->TopEdge     = w->RelTopEdge  + parentwin->TopEdge;
     }
 
     w->MinWidth  = (nw.MinWidth  != 0) ? nw.MinWidth  : w->Width;
