@@ -9,7 +9,7 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
 
 BOOT_FILES := \
     C/Shell \
-    S/Startup-Sequence S/hidd.prefs \
+    S/Startup-Sequence \
     contrib/aminet/untgz \
     boot/grub/stage1 boot/grub/stage2 \
     boot/grub/menu.lst
