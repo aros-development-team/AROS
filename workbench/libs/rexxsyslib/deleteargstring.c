@@ -7,6 +7,8 @@
 */
 #include "rexxsyslib_intern.h"
 
+#include <stddef.h>
+
 /*****************************************************************************
 
     NAME */
@@ -46,11 +48,10 @@
 {
     AROS_LIBFUNC_INIT
  
-    static struct RexxArg dummy;
     struct RexxArg *ra;
   
-    ra = (struct RexxArg *)(argstring - ((void *)dummy.ra_Buff - (void *)&dummy));
-    FreeMem(ra, ra->ra_Size + sizeof(struct RexxArg) - 8);
+    ra = (struct RexxArg *)(argstring - offsetof(struct RexxArg, ra_Buff));
+    FreeMem(ra, ra->ra_Size);
   
     ReturnVoid("DeleteArgstring");
     AROS_LIBFUNC_EXIT
