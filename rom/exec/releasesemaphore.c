@@ -10,6 +10,8 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
+#define CHECK_INITSEM 1
+
 /*****************************************************************************/
 #ifndef UseExecstubs
 
@@ -59,6 +61,14 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
+
+#if CHECK_INITSEM
+    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
+    {
+        kprintf("\n\nReleaseSemaphore called on an unintialized semaphore!!! "
+	        "sem = %x  task = %x (%s)\n\n", sigSem, FindTask(0), FindTask(0)->tc_Node.ln_Name);
+    }
+#endif
 
     /* Protect the semaphore srtucture from multiple access. */
     Forbid();
