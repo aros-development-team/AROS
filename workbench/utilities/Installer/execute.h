@@ -230,9 +230,7 @@ struct CommandList internal_commands[] =
   {"in",		_IN		},
   {"not",		_NOT		},
   {"or",		_OR		},
-  {"xor",		_XOR		},
-
-  {"",			0		}
+  {"xor",		_XOR		}
 };
 
 

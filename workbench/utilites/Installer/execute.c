@@ -2,6 +2,7 @@
 /* #define SDEBUG 1 */
 #include "Installer.h"
 #include "execute.h"
+#include "texts.h"
 
 extern InstallerPrefs preferences;
 extern ScriptArg script;
@@ -90,6 +91,11 @@ int quiet;
 #endif			  
                           break;
 
+      case _SET		: /* */
+#ifdef DEBUG
+#endif			  
+			  break;
+
       case _TRANSCRIPT	: /* */
 #ifdef DEBUG
 			  while( current->next != NULL )
@@ -125,7 +131,10 @@ int quiet;
     }
   }
 
-#else /* print the structure of the script */
+#else /* Test things ;-) */
+
+#ifdef DOTHIS
+/* print the structure of the script */
 
 int i;
 current = commands;
@@ -165,6 +174,16 @@ current = commands;
     execute_script( current->next , level );
   else
   printf("\n");
+#endif
+
+#define DOTHIS
+#ifdef DOTHIS
+#undef DOTHIS
+/* test variable list */
+
+printf("APPNAME is %s\n", (char *)get_variable( "app-name" ) );
+
+#endif
 
 #endif /* !SDEBUG */
 

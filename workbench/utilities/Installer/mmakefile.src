@@ -6,7 +6,7 @@ DEPLIBS := $(STARTUP) $(LIBDIR)/libarosc.a \
 	    $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
 CFLAGS	:= $(USER_DEFINES) -O0 -Wunused -Wall $(SPECIAL_CFLAGS) $(INCLUDES)
 OBJDIR	:= $(GENDIR)/$(CURDIR)
-DESTDIR := $(BINDIR)/tools
+DESTDIR := $(BINDIR)/Utilities
 
 FILES := main parse execute cleanup
 SRCS := $(foreach f, $(FILES), $(f).c)
@@ -17,11 +17,11 @@ SCRIPT := test.script
 
 .PHONY : all clean
 
-#MM tools : setup-tools
-tools : $(OBJS) $(EXE) $(DESTDIR)/$(SCRIPT)
+#MM utilities : setup-utilities
+utilities : $(OBJS) $(EXE) $(DESTDIR)/$(SCRIPT)
 
 #MM
-setup-tools :
+setup-utilities :
 	%mkdirs_q $(DESTDIR) $(OBJDIR)
 
 $(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
@@ -34,7 +34,7 @@ $(DESTDIR)/$(SCRIPT) :
 	cp $(SCRIPT) $(DESTDIR)
 
 #MM
-clean-tools :
+clean-utilities :
 	@$(RM) $(OBJDIR) $(DESTDIR)
 
 $(OBJDIR)/%.o : %.c

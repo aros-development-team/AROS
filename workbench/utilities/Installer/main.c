@@ -21,6 +21,9 @@ int error = 0;
 extern void parse_file( ScriptArg * );
 extern void execute_script( ScriptArg * , int );
 extern void free_script(ScriptArg * );
+extern void set_preset_variables();
+extern void *get_variable( char *name );
+extern void set_variable( char *name, char *text, int intval );
 
 InstallerPrefs preferences;
 ScriptArg script;
@@ -41,6 +44,8 @@ char *filename;
   filename = malloc( 12 * sizeof(char) );
   strcpy( filename, "test.script" );
 
+  /* Set variables which are not constant */
+  set_preset_variables();
 
   /* open script file */
   inputfile = fopen( filename, "r" );

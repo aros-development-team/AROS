@@ -35,3 +35,7 @@
   (for testing issues only - will go away soon)
 - added preliminary code for some functions (abort,exit,transcript)
 
+0010
+- changed installation dir to SYS:Utilities and metatarget to utilities
+- added support for variable storage and restorage (untested!!!)
+- added first test code for variable lists

@@ -38,6 +38,13 @@ typedef struct InstallerPrefs
   char * transcriptfile;
 } InstallerPrefs;
 
+struct VariableList
+{
+  char * varsymbol;
+  char * vartext;
+  int varinteger;
+};
+
 #define SEMICOLON	0x3B
 #define LINEFEED	0x0A
 #define BACKSLASH	0x5C
