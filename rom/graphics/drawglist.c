@@ -41,45 +41,43 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct VSprite * CurVSprite = rp->GelsInfo->gelHead;
-  struct BitMap * bm = AllocMem(sizeof(struct BitMap), MEMF_ANY);
+    struct VSprite * CurVSprite = rp->GelsInfo->gelHead;
+    struct BitMap * bm = AllocMem(sizeof(struct BitMap), MEMF_ANY|MEMF_CLEAR);
 
-  bm->Flags       = 0;
-  
-  while (NULL != CurVSprite)
-  {
-    ULONG i = 0;
-    UBYTE * imagedata = (UBYTE *)CurVSprite->ImageData;
-    
-    bm->BytesPerRow = CurVSprite->Width << 1;
-    bm->Rows        = CurVSprite->Height;
-    bm->Depth       = CurVSprite->Depth;
-    
-    while (i < bm->Depth && i < 8)
+    while (NULL != CurVSprite)
     {
-      bm->Planes[i++] = imagedata;
-      imagedata += bm->Rows * bm->BytesPerRow;
+	ULONG i = 0;
+	UBYTE * imagedata = (UBYTE *)CurVSprite->ImageData;
+
+	InitBitMap(bm, CurVSprite->Depth,
+		       CurVSprite->Width * 16,
+		       CurVSprite->Height);
+		       
+	while (i < bm->Depth && i < 8)
+	{
+	    bm->Planes[i++] = imagedata;
+	    imagedata += bm->Rows * bm->BytesPerRow;
+	}
+
+	BltBitMapRastPort(bm,
+                	  0,
+                	  0,
+                	  rp,
+                	  CurVSprite->X,
+                	  CurVSprite->Y,
+                	  CurVSprite->Width *16,
+                	  CurVSprite->Height,
+                	  0x0c0);
+
+	CurVSprite = CurVSprite->NextVSprite;
     }
-    
-    BltBitMapRastPort(bm,
-                      0,
-                      0,
-                      rp,
-                      CurVSprite->X,
-                      CurVSprite->Y,
-                      CurVSprite->Width  << 4,
-                      CurVSprite->Height,
-                      0x0c0);
-    
-    CurVSprite = CurVSprite->NextVSprite;
-  }
 
-  FreeMem(bm, sizeof(struct BitMap));
+    FreeMem(bm, sizeof(struct BitMap));
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* DrawGList */
 
 
