@@ -1,3 +1,10 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc:
+    Lang: english
+*/
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/nodes.h>

@@ -1,3 +1,11 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Exec functions declared as extern
+    Lang: english
+*/
+
 extern void AROS_SLIB_ENTRY(Supervisor,Exec)();
 extern void AROS_SLIB_ENTRY(ExitIntr,Exec)();
 extern void AROS_SLIB_ENTRY(Schedule,Exec)();
