@@ -23,6 +23,6 @@ ULONG sizeStrToUL(STRPTR);
 LONG GetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
 LONG SetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
 LONG GetPartitionTableAttrsA(struct PartitionHandle *, LONG, ...);
-BOOL existsAttr(ULONG *, ULONG);
+ULONG getAttrInfo(struct PartitionAttribute *, ULONG);
 UBYTE getBitNum(ULONG);
 #endif

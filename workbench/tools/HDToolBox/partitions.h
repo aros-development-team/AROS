@@ -16,6 +16,7 @@ struct HDTBPartition {
 	struct ListNode listnode;
 	struct HDTBPartition *root;
 	struct PartitionHandle *ph;
+	struct DriveGeometry dg;
 	struct DosEnvec de;
 	struct PartitionType type;
 	struct PartitionTable *table;

@@ -1035,7 +1035,7 @@ int i;
 				{
 					struct HDTBPartition *partition;
 					partition = (struct HDTBPartition *)iln;
-					if (existsAttr(partition->root->table->pattrlist, PTA_NAME))
+					if (getAttrInfo(partition->root->table->pattrlist, PTA_NAME) & PLAM_READ)
 					{
 						renamegadgets.iln = iln;
 						set(renamegadgets.name, MUIA_String_Contents, iln->ln.ln_Name);
@@ -1053,7 +1053,7 @@ int i;
 				{
 					struct HDTBPartition *partition;
 					partition = (struct HDTBPartition *)iln;
-					if (existsAttr(partition->root->table->pattrlist, PTA_DOSENVEC))
+					if (getAttrInfo(partition->root->table->pattrlist, PTA_DOSENVEC) & PLAM_READ)
 					{
 						char str[32];
 						dosenvecgadgets.iln = iln;
@@ -1088,16 +1088,16 @@ int i;
 					BOOL automount;
 					BOOL bootable;
 					partition = (struct HDTBPartition *)iln;
-					active = existsAttr(partition->root->table->pattrlist, PTA_ACTIVE);
-					automount = existsAttr(partition->root->table->pattrlist, PTA_AUTOMOUNT);
-					bootable = existsAttr(partition->root->table->pattrlist, PTA_BOOTABLE);
-					if (active || automount || bootable)
+					active = getAttrInfo(partition->root->table->pattrlist, PTA_ACTIVE);
+					automount = getAttrInfo(partition->root->table->pattrlist, PTA_AUTOMOUNT);
+					bootable = getAttrInfo(partition->root->table->pattrlist, PTA_BOOTABLE);
+					if ((active | automount | bootable) & PLAM_READ)
 					{
 						mountbootgadgets.iln = iln;
-						set(mountbootgadgets.active, MUIA_Disabled, !active);
-						set(mountbootgadgets.automount, MUIA_Disabled, !automount);
-						set(mountbootgadgets.bootable, MUIA_Disabled, !bootable);
-						set(mountbootgadgets.bootpri, MUIA_Disabled, !bootable);
+						set(mountbootgadgets.active, MUIA_Disabled, !(active & PLAM_READ));
+						set(mountbootgadgets.automount, MUIA_Disabled, !(automount & PLAM_READ));
+						set(mountbootgadgets.bootable, MUIA_Disabled, !(bootable & PLAM_READ));
+						set(mountbootgadgets.bootpri, MUIA_Disabled, !(bootable & PLAM_READ));
 						set(mountbootgadgets.active, MUIA_Selected, (partition->flags & PNF_ACTIVE) ? TRUE : FALSE);
 						set(mountbootgadgets.automount, MUIA_Selected, (partition->flags & PNF_AUTOMOUNT) ? TRUE : FALSE);
 						if (partition->flags & PNF_BOOTABLE)

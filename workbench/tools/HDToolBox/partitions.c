@@ -70,6 +70,7 @@ struct PartitionHandle *ph;
 struct HDTBPartition *pn;
 LONG flag;
 
+kprintf("search for partitions\n");
 	for
 		(
 			ph = (struct PartitionHandle *)partition->ph->table->list.lh_Head;
@@ -77,39 +78,45 @@ LONG flag;
 			ph = (struct PartitionHandle *)ph->ln.ln_Succ
 		)
 	{
+kprintf("found a partition\n");
 		pn = newPartition(parent, partition);
 		if (pn != NULL)
 		{
 			pn->ph = ph;
-			GetPartitionAttrsA(pn->ph, PT_DOSENVEC, &pn->de, TAG_DONE);
-			if (existsAttr(pn->root->table->pattrlist, PTA_TYPE))
+			GetPartitionAttrsA
+			(
+				pn->ph, PT_GEOMETRY, &pn->dg,
+				pn->ph, PT_DOSENVEC, &pn->de,
+				TAG_DONE
+			);
+			if (getAttrInfo(pn->root->table->pattrlist, PTA_TYPE) & PLAM_READ)
 				GetPartitionAttrsA(pn->ph, PT_TYPE, &pn->type, TAG_DONE);
 			else
 			{
 				pn->type.id[0] = 0;
 				pn->type.id_len = 0;
 			}
-			if (existsAttr(pn->root->table->pattrlist, PTA_POSITION))
+			if (getAttrInfo(pn->root->table->pattrlist, PTA_POSITION) & PLAM_READ)
 				GetPartitionAttrsA(pn->ph, PT_POSITION, &pn->pos, TAG_DONE);
 			else
 				pn->pos = -1L;
-			if (existsAttr(pn->root->table->pattrlist, PTA_NAME))
+			if (getAttrInfo(pn->root->table->pattrlist, PTA_NAME) & PLAM_READ)
 				GetPartitionAttrsA(pn->ph, PT_NAME, pn->listnode.ln.ln_Name, TAG_DONE);
 			else
 				setPartitionName(pn);
-			if (existsAttr(pn->root->table->pattrlist, PTA_BOOTABLE))
+			if (getAttrInfo(pn->root->table->pattrlist, PTA_BOOTABLE) & PLAM_READ)
 			{
 				GetPartitionAttrsA(pn->ph, PT_BOOTABLE, &flag, TAG_DONE);
 				if (flag)
 					pn->flags |= PNF_BOOTABLE;
 			}
-			if (existsAttr(pn->root->table->pattrlist, PTA_AUTOMOUNT))
+			if (getAttrInfo(pn->root->table->pattrlist, PTA_AUTOMOUNT) & PLAM_READ)
 			{
 				GetPartitionAttrsA(pn->ph, PT_AUTOMOUNT, &flag, TAG_DONE);
 				if (flag)
 					pn->flags |= PNF_AUTOMOUNT;
 			}
-			if (existsAttr(pn->root->table->pattrlist, PTA_ACTIVE))
+			if (getAttrInfo(pn->root->table->pattrlist, PTA_ACTIVE) & PLAM_READ)
 			{
 				GetPartitionAttrsA(pn->ph, PT_ACTIVE, &flag, TAG_DONE);
 				if (flag)
@@ -129,6 +136,7 @@ LONG flag;
 			}
 		}
 	}
+kprintf("done searching for partitions\n");
 }
 
 void freePartitionNode(struct HDTBPartition *node) {
@@ -172,8 +180,8 @@ ULONG spc;
 
 	if (value<table->table->reserved)
 		return FALSE;
-	spc = table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
-	if (value>=((table->table->de.de_HighCyl+1)*spc))
+	spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
+	if (value>=(table->dg.dg_Cylinders*spc))
 		return FALSE;
 	pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
 	while (pn->listnode.ln.ln_Succ)
@@ -250,7 +258,7 @@ struct TableTypeNode *ttn;
 		CopyMem(de, &partition->de, sizeof(struct DosEnvec));
 		ttn = findTableTypeNode(table->table->type);
 		CopyMem(&ttn->defaulttype, &partition->type, sizeof(struct PartitionType));
-		if (existsAttr(table->table->pattrlist, PTA_NAME))
+		if (getAttrInfo(table->table->pattrlist, PTA_NAME) & PLAM_WRITE)
 			strcpy(partition->listnode.ln.ln_Name, "DH0");
 		else
 			setPartitionName(partition);

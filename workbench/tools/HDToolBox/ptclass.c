@@ -333,7 +333,11 @@ ULONG first=0;
 ULONG last=0xFFFFFFFF;
 
 	/* inherit */
-	CopyMem(&table->table->de, de, sizeof(struct DosEnvec));
+	CopyMem(&table->de, de, sizeof(struct DosEnvec));
+	de->de_SizeBlock = table->dg.dg_SectorSize>>2;
+	de->de_Surfaces = table->dg.dg_Heads;
+	de->de_BlocksPerTrack = table->dg.dg_TrackSectors;
+	de->de_BufMemType = table->dg.dg_BufMemType;
 	pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
 	while (pn->listnode.ln.ln_Succ)
 	{
@@ -355,13 +359,13 @@ ULONG last=0xFFFFFFFF;
 		}
 		pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
 	}
-	spc = table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
+	spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
 	if (first == 0)
 		first = table->table->reserved;
 	first /= spc;
 	last = ((last+1)/spc)-1;
-	if (last>table->table->de.de_HighCyl)
-		last=table->table->de.de_HighCyl;
+	if (last>=table->dg.dg_Cylinders)
+		last=table->dg.dg_Cylinders-1;
 	de->de_LowCyl = first;
 	de->de_HighCyl = last;
 	return de;
@@ -433,9 +437,9 @@ ULONG skipcyl;
 		table->table->de_Surfaces*
 		table->table->de_BlocksPerTrack;
 #else
-	blocks = table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
+	blocks = table->dg.dg_Heads*table->dg.dg_TrackSectors;
 	skipcyl = table->table->reserved/blocks;
-	cyls = table->table->de.de_HighCyl-skipcyl;
+	cyls = (table->dg.dg_Cylinders-1)-skipcyl;
 #endif
 	spc = pn->de_Surfaces*pn->de_BlocksPerTrack;
 #if 0
@@ -445,8 +449,8 @@ ULONG skipcyl;
 	start = pn->de_LowCyl;
 	end = pn->de_HighCyl;
 	if (
-			(pn->de_Surfaces!=table->table->de.de_Surfaces) ||
-			(pn->de_BlocksPerTrack!=table->table->de.de_BlocksPerTrack)
+			(pn->de_Surfaces!=table->dg.dg_Heads) ||
+			(pn->de_BlocksPerTrack!=table->dg.dg_TrackSectors)
 		)
 	{
 		start = start*spc/blocks;
@@ -492,8 +496,8 @@ ULONG block;
     	
 	if ((WORD)mousex < 0) mousex = 0;
 	
-	block = mousex*table->table->de.de_HighCyl/width;
-	block *= table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
+	block = mousex*(table->dg.dg_Cylinders-1)/width;
+	block *= table->dg.dg_Heads*table->dg.dg_TrackSectors;
 	block += table->table->reserved;
 	return block;
 }
@@ -680,10 +684,10 @@ ULONG size;
 			return 0;
 		return getBetterDiff(table, current, diff);
 	}
-	spc = table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
-	if (block>=((table->table->de.de_HighCyl+1)*spc))
+	spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
+	if (block>=((table->dg.dg_Cylinders)*spc))
 	{
-		diff = (((table->table->de.de_HighCyl+1)*spc)-1)-oldblock;
+		diff = (((table->dg.dg_Cylinders)*spc)-1)-oldblock;
 		if (diff == 0)
 			return 0;
 		return getBetterDiff(table, current, diff);
