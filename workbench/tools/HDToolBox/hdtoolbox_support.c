@@ -18,6 +18,7 @@
 
 #include "hdtoolbox_support.h"
 #include "gadgets.h"
+#include "platform.h"
 
 struct Node *getNumNode(struct List *list, int num) {
 struct Node *node;
@@ -66,7 +67,7 @@ struct Gadget *glist;
 struct TagItem donetags[] = {{TAG_DONE, NULL}};
 struct TagItem lvtags[] =
 {
-	{GTLV_Labels, (ULONG)list},
+	{GTLV_Labels, (STACKIPTR)list},
    {GTLV_MakeVisible, 0},
    {GTLV_Selected, ~0},
    {GTLV_ShowSelected, 0},
@@ -119,9 +120,7 @@ struct IntuiMessage *msg;
 				WA_Title, "Choose",
 				WA_IDCMP,
 					BUTTONIDCMP |
-					SLIDERIDCMP |
-					SCROLLERIDCMP |
-					ARROWIDCMP|
+					LISTVIEWIDCMP |
 					IDCMP_REFRESHWINDOW,
 				WA_Gadgets, glist,
 				WA_DragBar, TRUE,
@@ -131,6 +130,7 @@ struct IntuiMessage *msg;
 			);
 		if (win)
 		{
+			GT_RefreshWindow(win, NULL);
 			retval = 0;
 			*result = 0;
 			while (retval == 0)
