@@ -171,9 +171,9 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 # Add section with all necessary libs and dependencies for linking
 %define define_libs prelibs=$(PRELIBS) postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm -lautoinit %(postlibs) $(COMPILER_LIBS)
+LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -lm -lautoinit %(postlibs) $(COMPILER_LIBS)
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
-	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a $(LIBDIR)/libautoinit.a %(deplibs)
+	$(LIBDIR)/libarosc.a $(LIBDIR)/libm.a $(LIBDIR)/libautoinit.a %(deplibs)
 %end
 
 #------------------------------------------------------------------------------
@@ -1566,8 +1566,8 @@ ifdef USE_AMIGALIB
 %(deps) := $(%(deps)) $(LIBDIR)/libamiga.a
 endif
 ifdef USE_ZLIB
-%(libs) := $(%(libs)) -larosz
-%(deps) := $(%(deps)) $(LIBDIR)/libarosz.a
+%(libs) := $(%(libs)) -lz
+%(deps) := $(%(deps)) $(LIBDIR)/libz.a
 endif
 ifdef USE_EXPATLIB
 %(libs) := $(%(libs)) -lexpat
@@ -1641,8 +1641,8 @@ endif
 
 # m.lib MUST come after c.lib in it's various incarnations.
 ifdef USE_MLIB
-%(libs) := $(%(libs)) -larosm
-%(deps) := $(%(deps)) $(LIBDIR)/libarosm.a
+%(libs) := $(%(libs)) -lm
+%(deps) := $(%(deps)) $(LIBDIR)/libm.a
 endif
 
 # These must always be linked if we are NOT building a module,
