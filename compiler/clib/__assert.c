@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: assert()
@@ -50,6 +50,8 @@
 ******************************************************************************/
 void __assert (const char * expr, const char * file, unsigned int line)
 {
+    GETUSER;
+
     fprintf (stderr, "Assertion (%s) failed in %s:%u\n", expr, file, line);
     exit (10);
 } /* assert */
