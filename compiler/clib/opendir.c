@@ -1,3 +1,11 @@
+/*
+    Copyright 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: POSIX function opendir()
+    Lang: english
+*/
+
 #include <dos/dos.h>
 #include <proto/dos.h>
 
@@ -8,9 +16,40 @@
 #include "__open.h"
 #include "__errno.h"
 
+/*****************************************************************************
+
+    NAME */
 #include <dirent.h>
 
-DIR *opendir(const char *name)
+	DIR *opendir(
+
+/*  SYNOPSIS */
+	const char *name)
+
+/*  FUNCTION
+	Opens a directory
+
+    INPUTS
+	pathname - Path and filename of the directory you want to open.
+
+    RESULT
+	NULL for error or a directory stream
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+ 	open(), readdir(), closedir(), rewinddir(), seekdir(),
+	telldir(), scandir()
+
+    INTERNALS
+
+    HISTORY
+	09.06.2001 falemagn created
+******************************************************************************/
 {
     DIR *dir;
     int fd;
