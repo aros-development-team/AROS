@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     if (!STRIPPATH)
     {
         fprintf(stderr, "%s: AROS_TARGET_STRIPPATH variable not set, using default value /usr/bin/strip\n", argv[0]);
-        NMPATH = "/usr/bin/strip";
+        STRIPPATH = "/usr/bin/strip";
     }
 
     atexit(exitfunc);
