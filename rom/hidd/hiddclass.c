@@ -31,7 +31,6 @@
 #include <aros/debug.h>
 
 static const char unknown[]  = "--unknown device--";
-static OOP_AttrBase HiddAttrBase = 0;
 
 #define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
 
@@ -456,10 +455,10 @@ VOID free_hiddclass(struct IntHIDDClassBase *lh)
         if(csd->hiddclass)
         {
             OOP_RemoveClass(csd->hiddclass);
-            if(HiddAttrBase)
+            if(csd->hiddAttrBase)
             {
                 OOP_ReleaseAttrBase(IID_Hidd);
-                HiddAttrBase = 0;
+                csd->hiddAttrBase = 0;
             }
 
             OOP_DisposeObject((OOP_Object *) csd->hiddclass);
