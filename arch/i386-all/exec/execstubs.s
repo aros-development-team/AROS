@@ -95,16 +95,18 @@ cname:				    ; \
 #if 0
 	STUB0(AROS_CDEFNAME(os_disable),AROS_CSYMNAME(_os_disable))
 	STUB0(AROS_CDEFNAME(os_enable),AROS_CSYMNAME(_os_enable))
-
-	STUB1(AROS_SLIB_ENTRY(Forbid,Exec),AROS_CSYMNAME(_Forbid))
-	STUB1(AROS_SLIB_ENTRY(Permit,Exec),AROS_CSYMNAME(_Permit))
-	STUB1(AROS_SLIB_ENTRY(Disable,Exec),AROS_CSYMNAME(_Disable))
-	STUB1(AROS_SLIB_ENTRY(Enable,Exec),AROS_CSYMNAME(_Enable))
 #endif
 
-	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec),AROS_CSYMNAME(_ObtainSemaphore))
-	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_ReleaseSemaphore))
-	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),AROS_CSYMNAME(_ObtainSemaphoreShared))
+#ifdef  UseExecstubs
+	STUB1(AROS_SLIB_ENTRY(Forbid,Exec),AROS_CSYMNAME(_Exec_Forbid))
+	STUB1(AROS_SLIB_ENTRY(Permit,Exec),AROS_CSYMNAME(_Exec_Permit))
+	STUB1(AROS_SLIB_ENTRY(Disable,Exec),AROS_CSYMNAME(_Exec_Disable))
+	STUB1(AROS_SLIB_ENTRY(Enable,Exec),AROS_CSYMNAME(_Exec_Enable))
+
+	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec),AROS_CSYMNAME(_Exec_ObtainSemaphore))
+	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_Exec_ReleaseSemaphore))
+	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),AROS_CSYMNAME(_Exec_ObtainSemaphoreShared))
+#endif
 
 #if 0
 	.globl	AROS_SLIB_ENTRY(Switch,Exec)
