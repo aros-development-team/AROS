@@ -61,7 +61,7 @@
 	@$(ECHO) "Linking %(to)..."
 	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(path)%(from): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
+		$(ECHO) "%(to): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
 		true ; \
