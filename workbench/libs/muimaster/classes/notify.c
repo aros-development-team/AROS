@@ -21,14 +21,18 @@
 #include <string.h>
 
 #include <exec/types.h>
+#include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
 #include "muimaster_intern.h"
+#include "mui.h"
 #include "support.h"
 
 #include "notify.h"
+
+extern struct Library *MUIMasterBase;
 
 /*
  * Notify class is superclass of all other MUI classes.
@@ -205,7 +209,7 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag, BOOL no
 		destobj = obj;
 		break;
 	    case MUIV_Notify_Window:
-		destobj = _win(obj);
+//		destobj = _win(obj);
 		break;
 	    default:
 		destobj = nnode->nn_DestObj;
@@ -351,7 +355,11 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 static ULONG mCallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
 {
     if (msg->Hook->h_Entry)
+#ifndef _AROS
+	return CallHookPkt(msg->Hook,obj, &msg->param1);
+#else
 	return (ULONG)(*(msg->Hook->h_Entry))(msg->Hook, obj, &msg->param1);
+#endif
     else return FALSE;
 }
 
@@ -409,7 +417,7 @@ static ULONG mKillNotify(struct IClass *cl, Object *obj, struct MUIP_KillNotify 
     struct MinNode        *node;
     struct NotifyNode     *nnode;
 
-    if (!data->mnd_Notify_List) return 0;
+    if (!data->mnd_NotifyList) return 0;
 
     for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ; node = node->mln_Succ)
     {
@@ -435,7 +443,7 @@ static ULONG mKillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_KillNoti
     struct MinNode        *node;
     struct NotifyNode     *nnode;
 
-    if (!data->mnd_Notify_List) return 0;
+    if (!data->mnd_NotifyList) return 0;
 
     for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ; node = node->mln_Succ)
     {
@@ -566,10 +574,14 @@ static ULONG mWriteString(struct IClass *cl, Object *obj, struct MUIP_WriteStrin
 /*
  * The class dispatcher
  */
+#ifndef __AROS
+static __asm IPTR MyDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+#else
 AROS_UFH3S(IPTR, MyDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
+#endif
 {
     switch (msg->MethodID)
     {

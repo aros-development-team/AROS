@@ -24,6 +24,9 @@
 #define AROS_LIBFUNC_INIT
 #define AROS_LIBBASE_EXT_DECL(a,b) extern a b;
 #define AROS_LIBFUNC_EXIT
+
+typedef  unsigned long IPTR;
+
 #endif
 
 #ifndef DOS_DOS_H
