@@ -692,7 +692,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(RM) config.cache; \
 	    CC="$(HOST_CC)" \
 	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	        $(%(mmake)-includedir) %(extraoptions) &&
+	        $(%(mmake)-includedir) %(extraoptions) && \
 	        $(TOUCH) $@
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
