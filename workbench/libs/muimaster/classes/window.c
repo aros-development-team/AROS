@@ -13,6 +13,7 @@
 
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
+#include <intuition/gadgetclass.h>
 #include <clib/alib_protos.h>
 #include <graphics/gfxmacros.h>
 #include <proto/exec.h>
