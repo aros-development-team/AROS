@@ -89,7 +89,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 				/* Do some tests to check that we have got a correct mididevicedata.
 				   Its not failproof, but the chance for this to fail should be small.
 				*/
-				mididevicedata->Magic==MDD_Magic /*		//Hopefully, this one should only succeed once.
+				mididevicedata->Magic==MDD_Magic && 		//Hopefully, this one should only succeed once.
 				mididevicedata->Name!=NULL &&
 				mididevicedata->Init!=NULL &&
 				mididevicedata->Expunge!=NULL &&
@@ -109,7 +109,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 					mididevicedata->IDString==NULL ||
 					isPointerInSeglist(mididevicedata->Name,seglist)
 				)
-				*/
+				
 			){
 				driver=AllocMem(sizeof(struct Drivers),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
 				if(driver==NULL){
