@@ -550,9 +550,16 @@ static void OpenDTO(void)
      *  Add 4 Pixels for border around DataType-Object
      *  See AddDTOToWin() for details
      */
-    winwidth += 4;
-    winheight += 4;
-    
+    if(winwidth)
+    {
+     winwidth += 4;
+    }
+
+    if(winheight)
+    {
+     winheight += 4;
+    }
+
     GetDTAttrs(dto, DTA_ObjName, &objname, TAG_DONE);    
     strncpy(objnamebuffer, objname ? objname : filenamebuffer, 299);
     
