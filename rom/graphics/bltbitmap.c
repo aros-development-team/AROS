@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy a rectangle in a bitmap to another place or another bitmap.

@@ -1,7 +1,7 @@
 #ifndef _GFX_PDEFS_H
 #define _GFX_PDEFS_H
 /*
-    Copyright (C) 1997-1998 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id
 
     Desc: Private function definitions for Gfx
