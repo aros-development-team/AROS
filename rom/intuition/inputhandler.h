@@ -5,14 +5,20 @@
 #   include <aros/asmcall.h>
 #endif
 
+#ifndef INTUITION_CGHOOKS_H
+#   include <intuition/cghooks.h>
+#endif
+
 struct IIHData
 {
     struct IntuitionBase	*IntuitionBase;
     struct MsgPort		*IntuiReplyPort;
     struct MsgPort		*IntuiDeferedActionPort;
     struct Gadget		*ActiveGadget;
+    struct GadgetInfo		GadgetInfo;
     WORD			LastMouseX;
     WORD			LastMouseY;
+    UWORD			ActQualifier;
 };
 
 struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase);
