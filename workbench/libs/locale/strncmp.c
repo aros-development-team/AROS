@@ -100,3 +100,4 @@
 
     AROS_LIBFUNC_EXIT
 } /* StrnCmp */
+
