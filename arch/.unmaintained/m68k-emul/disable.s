@@ -61,7 +61,7 @@ AROS_CDEFNAME(disable):
 	move.l	#-1,-(%sp)
 	clr.l	-(%sp)
 	pea	4(%sp)
-	clr.l	-(%sp)
+	move.l	#SIG_BLOCK,-(%sp)
 	jbsr	AROS_CSYMNAME(sigprocmask)
 	addq.w	#8,%sp
 	addq.w	#8,%sp
