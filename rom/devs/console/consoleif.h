@@ -11,7 +11,9 @@
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif
-
+#ifndef PROTO_INTUITION_H
+#   include <proto/intuition.h>
+#endif
 
 enum
 {
