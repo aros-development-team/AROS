@@ -13,10 +13,17 @@
 static const char *__path_devstuff_u2a(const char *path);
 static void  __path_normalstuff_u2a(const char *path, char *buf);
 
+#ifdef BUILD_TEST
+    static int  __doupath = 1;
+    static char *__apathbuf;
+#   define realloc_nocopy realloc
+#endif
+
 /*****************************************************************************
 
     NAME */
 #include "__upath.h"
+
 
 	const char *__path_u2a(
 
@@ -33,21 +40,15 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         A pointer to a string containing the AmigaDOS-style path, or NULL in 
         case of error.
 
+	The pointer is valid only until next call to this function, so if
+	you need to call this function recursively, you must save the string
+	pointed to by the pointer before calling this function again.
+
     NOTES
         This function is for private usage by system code. Do not use it
         elsewhere.
 
-        This function, as it is designed at the moment, is not reentrant.
-        Do not use it in multithreaded applications.
-
     INTERNALS
-        This function uses an internal dynamically allocated buffer, whose
-        pointer is kept in a static variable. This buffer is then enlarged
-        or shrinked as needed. That also means that this function is not
-        reentrant, and therefore must not be used in multithreaded code.
-
-        When libpthread will get implemented this function will have to be
-        reworked.
 
     SEE ALSO
 
@@ -129,66 +130,148 @@ static const char *__path_devstuff_u2a(const char *path)
     return NULL;
 }
 
+typedef enum
+{
+    S_START0,
+    S_START,
+    S_DOT1,
+    S_DOT2,
+    S_SLASH,
+    S_COLUMN
+} path_state;
+
 static void __path_normalstuff_u2a(const char *path, char *buf)
 {
-    register int  makevol   = 0;
-    register char prec_char = '\0';
+    register char       dir_sep = '\0';
+    register int        makevol = 0;
+    register path_state state   = S_START0;
 
-    if (path[0] == '/')
+    int run = 1;
+
+    while (path[0] == '/')
     {
 	path++;
-        prec_char = '/';
-	makevol   = 1;
+	makevol = 1;
     }
 
-    for (; path[0]; prec_char = path[0], path++)
+    while (run)
     {
-        if (path[0] == '/')
-        {
-            if (path[1] == '/' || prec_char == '/')
-	    continue;
+        register char ch = path[0];
 
-            if (makevol)
-	    {
-	        buf++[0] = ':';
-	        makevol = 0;
-	    }
-	    else
-	    {
-	        buf++[0] = '/';
-	    }
-        }
-        else
-        if
-        (
-            (path[0]   == '.' && path[1]   == '.')  &&
-	    (path[2]   == '/' || path[2]   == '\0') &&
-	    (prec_char == '/' || prec_char == '\0')
-        )
-        {
-            buf++[0] = '/';
-	    path += 1 + (path[2] == '/');
-        }
-        else
-        if
-        (
-            (path[0]   == '.')                      &&
-	    (path[1]   == '/' || path[1]   == '\0') &&
-	    (prec_char == '/' || prec_char == '\0')
-        )
-        {
-            path += (path[1] == '/');
-        }
-        else
-        {
-            buf++[0] = path[0];
-        }
+	switch (state)
+	{
+	    case S_START0:
+	        if (ch == ':')
+		    state = S_COLUMN;
+		else
+	    case S_START:
+	        if (ch == '/')
+		{
+		    dir_sep = '/';
+		    state = S_SLASH;
+		}
+		else
+	        if (ch == '.')
+		    state = S_DOT1;
+		else
+		if (ch == '\0')
+		    run = 0;
+		else
+		    buf++[0] = ch;
+
+		break;
+
+	    case S_DOT1:
+	        if (ch == '\0')
+		    run = 0;
+		else
+	        if (ch == '.')
+		    state = S_DOT2;
+		else
+		if (ch == '/')
+		{
+		    dir_sep = '\0';
+		    state = S_SLASH;
+		}
+		else
+		{
+		    buf[0] = '.';
+		    buf[1] = ch;
+		    buf += 2;
+
+		    state = S_START;
+		}
+
+		break;
+
+	    case S_DOT2:
+	        if (ch == '\0')
+		{
+		    buf++[0] = '/';
+		    run = 0;
+		}
+		else
+	        if (ch == '/')
+		{
+		    dir_sep = '/';
+		    state = S_SLASH;
+		}
+		else
+		{
+		    buf[0] = '.';
+		    buf[1] = '.';
+		    buf[2] = ch;
+		    buf += 3;
+
+		    state = S_START;
+		}
+
+		break;
+
+	    case S_SLASH:
+	        if (ch != '/')
+		{
+		    if (makevol)
+		    {
+		        makevol = 0;
+		        dir_sep = ':';
+		    }
+
+		    if (dir_sep != '\0')
+		        buf++[0] = dir_sep;
+
+		    state = S_START;
+
+		    continue;
+		}
+
+		break;
+
+	    case S_COLUMN:
+	        dir_sep = ':';
+		state = S_SLASH;
+
+		continue;
+	}
+
+	path++;
     }
 
     if (makevol)
-    {
         buf++[0] = ':';
-    }
-
+	
     buf[0] = '\0';
 }
+
+#ifdef BUILD_TEST
+
+#include <stdio.h>
+int main(int argc, char *argv[])
+{
+    if (argc != 2)
+        return 20;
+
+    return printf("%s\n", __path_u2a(argv[1]));
+}
+#endif
+
