@@ -82,6 +82,10 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
 
+
+/* Cli dependent SetProgramName() for use in CreateNewProc() */
+BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name);
+
 /*
 BOOL writeFullPath(struct AnchorPath * AP);
 LONG followpattern(struct AnchorPath * AP, 
