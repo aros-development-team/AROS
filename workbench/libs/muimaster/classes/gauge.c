@@ -176,7 +176,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		        tag->ti_Tag = TAG_IGNORE;
 		    }
 		    break;
-	    case    MUIA_Gauge_InfoText:
+		case    MUIA_Gauge_InfoText:
 	    	    if (strcmp(data->info, (STRPTR)tag->ti_Data))
 		    {
 		        if (data->dupinfo)
@@ -238,29 +238,36 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG  Gauge_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct MUI_GaugeData *data = INST_DATA(cl, obj);
-    ULONG *store = msg->opg_Storage;
-    ULONG    tag = msg->opg_AttrID;
+    ULONG *store               = msg->opg_Storage;
+    ULONG    tag               = msg->opg_AttrID;
 
     switch (tag)
     {
-    case MUIA_Gauge_Current:
-	*store = data->current;
-	return TRUE;
-    case MUIA_Gauge_Divide:
-	*store = data->divide;
-	return TRUE;
-    case MUIA_Gauge_InfoText:
-	*store = (ULONG)data->info;
-	return TRUE;
-    case MUIA_Gauge_Max:
-	*store = data->max;
-	return TRUE;
-    case MUIA_Gauge_DupInfoText:
-	*store = (ULONG)data->dupinfo;
-	return TRUE;
+        case MUIA_Gauge_Current:
+	    *store = data->current;
+	    break;
+
+	case MUIA_Gauge_Divide:
+	    *store = data->divide;
+	    break;
+
+	case MUIA_Gauge_InfoText:
+	    *store = (ULONG)data->info;
+	    break;
+
+	case MUIA_Gauge_Max:
+	    *store = data->max;
+	    break;
+
+	case MUIA_Gauge_DupInfoText:
+	    *store = (ULONG)data->dupinfo;
+	    break;
+
+    	default:
+	    return DoSuperMethodA(cl, obj, (Msg)msg);
     }
 
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return TRUE;
 }
 
 
@@ -287,11 +294,11 @@ static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	if (data->horiz)
 	{
 	    data->info_width = 0;
-	    data->info_height = 6;
+	    data->info_height = 0;
 	}
 	else
 	{
-	    data->info_width = 6;
+	    data->info_width = 0;
 	    data->info_height = 0;
 	}
     }
@@ -314,7 +321,11 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	msg->MinMaxInfo->DefWidth  += data->info_width + 10;
 	msg->MinMaxInfo->DefHeight += data->info_height + 2;
 	msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
-	msg->MinMaxInfo->MaxHeight += data->info_height + 2;
+	if (data->info)
+	    msg->MinMaxInfo->MaxHeight += data->info_height + 2;
+	else
+	    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+
     }
     else
     {
@@ -322,7 +333,11 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	msg->MinMaxInfo->MinHeight += data->info_height;
 	msg->MinMaxInfo->DefWidth  += data->info_width + 2;
 	msg->MinMaxInfo->DefHeight += data->info_height + 10;
-	msg->MinMaxInfo->MaxWidth  += data->info_width + 2;
+	if (data->info)
+	    msg->MinMaxInfo->MaxWidth += data->info_width + 2;
+	else
+	    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+
 	msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
     }
     return 0;
