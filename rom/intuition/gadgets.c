@@ -60,7 +60,8 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
 	case GFLG_LABELITEXT:
             /* ITexts must not to be centered! */
 
-            PrintIText(rp, EG(o)->GadgetText, container.Left,container.Top);
+    	    /* frbuttonclass sets fg/bg/drawmode attributes */
+            int_PrintIText(rp, EG(o)->GadgetText, container.Left,container.Top, TRUE, IntuitionBase);
             break;
 
 	case GFLG_LABELSTRING:
