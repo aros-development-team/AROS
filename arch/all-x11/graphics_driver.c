@@ -189,17 +189,19 @@ void SetXWindow (struct RastPort * rp, int win)
 {
     if (rp->BitMap)
     {
-	int width, height, depth;
+	int width, height, depth, dummy;
+	Window dummywin;
 
-	XGetGeometry (sysDisplay, win, NULL, NULL, NULL
+	XGetGeometry (sysDisplay, win, &dummywin, &dummy, &dummy
 	    , &width, &height
-	    , NULL
+	    , &dummy
 	    , &depth
 	);
 
 	rp->BitMap->BytesPerRow = ((width+15) >> 4)*2;
 	rp->BitMap->Rows = height;
 	rp->BitMap->Depth = depth;
+printf ("Depth = %d\n", depth);
 	rp->BitMap->Flags = 0;
 	rp->BitMap->Pad = BMT_XWINDOW;
 	rp->BitMap->Planes[0] = (PLANEPTR)win;
@@ -827,7 +829,7 @@ void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
     for (t=0,sysPlaneMask=0; t<maxPen; t++)
 	sysPlaneMask |= sysCMap[t];
 
-} /* driver_LoadRGB4 */
+} /* driver_LoadRGB32 */
 
 struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	ULONG flags, struct BitMap * friend, struct GfxBase * GfxBase)
@@ -1000,3 +1002,161 @@ void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
     }
 }
 
+void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
+	    ULONG red, ULONG green, ULONG blue,
+	    struct GfxBase * GfxBase)
+{
+    int t;
+    XColor xc;
+    Colormap cm;
+
+    if (color >= 256)
+	return;
+
+    cm = DefaultColormap (sysDisplay, sysScreen);
+
+    /* Return color */
+    if (color < maxPen)
+	XFreeColors (sysDisplay, cm, &sysCMap[color], 1, 0L);
+
+    /* Allocate new color */
+    xc.flags = DoRed | DoGreen | DoBlue;
+    xc.red   = red >> 16;
+    xc.green = green >> 16;
+    xc.blue  = blue >> 16;
+
+    if (!XAllocColor (sysDisplay, cm, &xc))
+    {
+	fprintf (stderr, "Couldn't allocate color %s\n",
+		sysColName[t]);
+	sysCMap[t] = !(t & 1) ?
+		WhitePixel(sysDisplay, sysScreen) :
+		BlackPixel(sysDisplay, sysScreen);
+    }
+    else
+	sysCMap[color] = xc.pixel;
+
+    XSync (sysDisplay, False);
+
+    if (color > maxPen)
+	maxPen = color;
+
+/* printf ("maxPen = %d\n", maxPen); */
+
+    for (t=0,sysPlaneMask=0; t<maxPen; t++)
+	sysPlaneMask |= sysCMap[t];
+
+} /* driver_SetRGB32 */
+
+int highbit (int mask)
+{
+    int bit;
+
+    for (bit=0; mask; bit++)
+	mask >>= 1;
+
+    return bit;
+}
+
+LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
+	    ULONG ystart, ULONG xstop, ULONG ystop, UBYTE * array,
+	    struct RastPort * temprp, struct GfxBase * GfxBase)
+{
+    GC gc;
+    Window win;
+    int width, x, y;
+    XImage *xim;
+    Visual * theVisual;
+
+    width = xstop - xstart + 1;
+
+    gc = GetGC(rp);
+    win = GetXWindow(rp);
+
+#if 1
+    theVisual = DefaultVisual (GetSysDisplay (), GetSysScreen ());
+
+    if (theVisual->class == TrueColor || theVisual->class == DirectColor)
+    {
+	/************************************************************************/
+	/* Non-ColorMapped Visuals:  TrueColor, DirectColor			*/
+	/************************************************************************/
+	int	      bperpix, bperline;
+	UBYTE	     *imagedata, *ip;
+	int	      height, border;
+
+	height = ystop - ystart + 1;
+
+	xim = XCreateImage (GetSysDisplay ()
+	    , theVisual
+	    , DefaultDepth (GetSysDisplay (), GetSysScreen ())
+	    , ZPixmap
+	    , 0
+	    , NULL
+	    , width
+	    , height
+	    , 32
+	    , 0
+	);
+
+	if (!xim)
+	    return 0;
+
+	bperline = xim->bytes_per_line;
+	bperpix  = xim->bits_per_pixel;
+	border	 = xim->byte_order;
+
+	imagedata = malloc((size_t) (height * bperline));
+
+	if (!imagedata)
+	    return 0;
+
+	xim->data = (char *) imagedata;
+
+	if (bperpix != 16)
+	{
+	    fprintf(stderr, "Sorry, no code written to handle %d-bit %s",
+	      bperpix, "TrueColor/DirectColor displays!");
+	    return 0;
+	}
+
+	switch (bperpix)
+	{
+	case 16:
+	    for (y=0; y<height; y++, imagedata+=bperline)
+	    {
+		for (x=0, ip=imagedata; x<width; x++)
+		{
+		    *((UWORD *)ip)++ = sysCMap[*array++];
+		}
+	    }
+	    break;
+	}
+
+	XPutImage (sysDisplay
+	    , win
+	    , gc
+	    , xim
+	    , 0
+	    , 0
+	    , 0
+	    , 0
+	    , width
+	    , height
+	);
+
+	XDestroyImage (xim);
+    }
+#else
+    for (y=ystart; y<=ystop; y++)
+    {
+	for (x=xstart; x<=xstop; x++)
+	{
+	    XSetForeground (sysDisplay, gc, sysCMap[array[y*width+x]]);
+	    XDrawPoint (sysDisplay, win, gc, x, y);
+	}
+    }
+#endif
+
+    return width*(ystop - ystart + 1);
+} /* driver_WritePixelArray8 */
