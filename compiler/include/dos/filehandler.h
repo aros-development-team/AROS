@@ -1,6 +1,13 @@
 #ifndef DOS_FILEHANDLER_H
 #define DOS_FILEHANDLER_H
 
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Constants for filehandlers
+    Lang: english
+*/
 #define DE_TABLESIZE	0
 #define DE_SIZEBLOCK	1	/* LONGs per block. */
 #define DE_BLOCKSIZE	2	/* Bytes per block. */
@@ -14,11 +21,11 @@
 #define DE_NUMBUFFERS	11
 #define DE_BUFMEMTYPE	12
 #define DE_MAXTRANSFER	13
-#define DE_MASK		14
+#define DE_MASK 	14
 #define DE_BOOTPRI	15
 #define DE_DOSTYPE	16
-#define DE_BAUD		17
+#define DE_BAUD 	17
 #define DE_CONTROL	18
 #define DE_BOOTBLOCKS	19
 
-#endif
+#endif /* DOS_FILEHANDLER_H */

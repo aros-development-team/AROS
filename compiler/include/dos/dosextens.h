@@ -1,41 +1,60 @@
 #ifndef _DOS_DOSEXTENS_H_
 #define _DOS_DOSEXTENS_H_
 
-#include <exec/tasks.h>
-#include <exec/ports.h>
-#include <exec/libraries.h>
-#include <exec/semaphores.h>
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: LibBase and some important structures
+    Lang: english
+*/
+#ifndef EXEC_TASKS_H
+#   include <exec/tasks.h>
+#endif
+#ifndef EXEC_PORTS_H
+#   include <exec/ports.h>
+#endif
+#ifndef EXEC_LIBRARIES_H
+#   include <exec/libraries.h>
+#endif
+#ifndef EXEC_SEMAPHORES
+#   include <exec/semaphores.h>
+#endif
 #include <devices/timer.h>
-#include <exec/interrupts.h>
-#include <dos/dos.h>
+#ifndef EXEC_INTERRUPTS_H
+#   include <exec/interrupts.h>
+#endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 
 struct DosLibrary
 {
     /* No public fields in there */
-    struct Library dl_lib;
-    struct ErrorString *dl_Errors;
-    struct timerequest *dl_TimeReq;
-    struct Library *dl_UtilityBase;
-    struct Library *dl_IntuitionBase;
+    struct Library	   dl_lib;
+    struct ErrorString	 * dl_Errors;
+    struct timerequest	 * dl_TimeReq;
+    struct Library	 * dl_UtilityBase;
+    struct Library	 * dl_IntuitionBase;
     struct SignalSemaphore dl_DosListLock;
-    struct DosList *dl_DevInfo;
-    struct ExecBase *dl_SysBase;
-    BPTR dl_SegList;
-    struct Device *dl_NulHandler;
-    struct Unit *dl_NulLock;
+    struct DosList	 * dl_DevInfo;
+    struct ExecBase	 * dl_SysBase;
+    BPTR		   dl_SegList;
+    struct Device	 * dl_NulHandler;
+    struct Unit 	 * dl_NulLock;
 
     struct SignalSemaphore dl_LDSigSem;
-    struct Interrupt dl_LDHandler;
-    APTR dl_LDOpenLibrary;
-    APTR dl_LDOpenDevice;
-    struct Process *dl_LDDemon;
-    STRPTR dl_LDName;
-    struct Process *dl_LDCaller;
-    APTR dl_LDPtr;
-    LONG dl_LDReturn;
+    struct Interrupt	   dl_LDHandler;
+    APTR		   dl_LDOpenLibrary;
+    APTR		   dl_LDOpenDevice;
+    struct Process	 * dl_LDDemon;
+    STRPTR		   dl_LDName;
+    struct Process	 * dl_LDCaller;
+    APTR		   dl_LDPtr;
+    LONG		   dl_LDReturn;
 
-    ULONG dl_ProcCnt;
-    ULONG dl_Flags;
+    ULONG		   dl_ProcCnt;
+    ULONG		   dl_Flags;
 };
 
 /* dl_Flags values */
@@ -63,80 +82,80 @@ struct CommandLineInterface
 
 struct Process
 {
-    struct Task pr_Task;
-    struct MsgPort pr_MsgPort;
-    WORD pr_Pad;
-    BPTR pr_SegList;
-    LONG pr_StackSize;
-    APTR pr_GlobVec;
-    LONG pr_TaskNum;
-    BPTR pr_StackBase;
-    LONG pr_Result2;
-    BPTR pr_CurrentDir;
-    BPTR pr_CIS;
-    BPTR pr_COS;
-    APTR pr_ConsoleTask;
-    APTR pr_FileSystemTask;
-    BPTR pr_CLI;
-    APTR pr_ReturnAddr;
-    APTR pr_PktWait;
-    APTR pr_WindowPtr;
-    BPTR pr_HomeDir;
-    LONG pr_Flags;
-    void (*pr_ExitCode)();
-    LONG pr_ExitData;
-    STRPTR pr_Arguments;
-    struct MinList pr_LocalVars;
-    ULONG pr_ShellPrivate;
-    BPTR pr_CES;
+    struct Task     pr_Task;
+    struct MsgPort  pr_MsgPort;
+    WORD	    pr_Pad;
+    BPTR	    pr_SegList;
+    LONG	    pr_StackSize;
+    APTR	    pr_GlobVec;
+    LONG	    pr_TaskNum;
+    BPTR	    pr_StackBase;
+    LONG	    pr_Result2;
+    BPTR	    pr_CurrentDir;
+    BPTR	    pr_CIS;
+    BPTR	    pr_COS;
+    APTR	    pr_ConsoleTask;
+    APTR	    pr_FileSystemTask;
+    BPTR	    pr_CLI;
+    APTR	    pr_ReturnAddr;
+    APTR	    pr_PktWait;
+    APTR	    pr_WindowPtr;
+    BPTR	    pr_HomeDir;
+    LONG	    pr_Flags;
+    void	 (* pr_ExitCode)();
+    LONG	    pr_ExitData;
+    STRPTR	    pr_Arguments;
+    struct MinList  pr_LocalVars;
+    ULONG	    pr_ShellPrivate;
+    BPTR	    pr_CES;
 };
 
 /* pr_Flags (all private) */
-#define PRB_FREESEGLIST 0
-#define PRB_FREECURRDIR 1
-#define PRB_FREECLI	2
-#define PRB_CLOSEINPUT	3
-#define PRB_CLOSEOUTPUT 4
-#define PRB_FREEARGS	5
-#define PRB_CLOSEERROR	6
-#define PRF_FREESEGLIST 0x1
-#define PRF_FREECURRDIR 0x2
-#define PRF_FREECLI	0x4
-#define PRF_CLOSEINPUT	0x8
-#define PRF_CLOSEOUTPUT 0x10
-#define PRF_FREEARGS	0x20
-#define PRF_CLOSEERROR	0x40
+#define PRB_FREESEGLIST     0
+#define PRB_FREECURRDIR     1
+#define PRB_FREECLI	    2
+#define PRB_CLOSEINPUT	    3
+#define PRB_CLOSEOUTPUT     4
+#define PRB_FREEARGS	    5
+#define PRB_CLOSEERROR	    6
+#define PRF_FREESEGLIST     0x01
+#define PRF_FREECURRDIR     0x02
+#define PRF_FREECLI	    0x04
+#define PRF_CLOSEINPUT	    0x08
+#define PRF_CLOSEOUTPUT     0x10
+#define PRF_FREEARGS	    0x20
+#define PRF_CLOSEERROR	    0x40
 
 /* Dos list scanning and locking modes */
-#define LDB_READ	0
-#define LDB_WRITE	1
-#define LDB_DEVICES	2
-#define LDB_VOLUMES	3
-#define LDB_ASSIGNS	4
-#define LDB_ENTRY	5
-#define LDB_DELETE	6
-#define LDF_READ	0x1
-#define LDF_WRITE	0x2
-#define LDF_DEVICES	0x4
-#define LDF_VOLUMES	0x8
-#define LDF_ASSIGNS	0x10
-#define LDF_ENTRY	0x20
-#define LDF_DELETE	0x40
-#define LDF_ALL 	0x1c
+#define LDB_READ	    0
+#define LDB_WRITE	    1
+#define LDB_DEVICES	    2
+#define LDB_VOLUMES	    3
+#define LDB_ASSIGNS	    4
+#define LDB_ENTRY	    5
+#define LDB_DELETE	    6
+#define LDF_READ	    0x01
+#define LDF_WRITE	    0x02
+#define LDF_DEVICES	    0x04
+#define LDF_VOLUMES	    0x08
+#define LDF_ASSIGNS	    0x10
+#define LDF_ENTRY	    0x20
+#define LDF_DELETE	    0x40
+#define LDF_ALL 	    0x1c
 
 struct FileHandle
 {
-    APTR fh_Dummy1;
-    APTR fh_Dummy2;
-    APTR fh_Dummy3;
-    UBYTE *fh_Buf;
-    UBYTE *fh_Pos;
-    UBYTE *fh_End;
-    ULONG fh_Size;
-    ULONG fh_Flags;
-    struct Device *fh_Device;
-    struct Unit *fh_Unit;
-    LONG fh_Dummy4;
+    APTR	    fh_Dummy1;
+    APTR	    fh_Dummy2;
+    APTR	    fh_Dummy3;
+    UBYTE	  * fh_Buf;
+    UBYTE	  * fh_Pos;
+    UBYTE	  * fh_End;
+    ULONG	    fh_Size;
+    ULONG	    fh_Flags;
+    struct Device * fh_Device;
+    struct Unit   * fh_Unit;
+    LONG	    fh_Dummy4;
 };
 
 /* Private fh_Flags values */
@@ -145,10 +164,10 @@ struct FileHandle
 
 struct DosList
 {
-    struct DosList *dol_Next;	/* Private pointer to next entry */
-    LONG dol_Type;		/* Node types (see below) */
-    APTR dol_Dummy1;
-    LONG dol_Dummy2[7];
+    struct DosList * dol_Next;	 /* Private pointer to next entry */
+    LONG	     dol_Type;	 /* Node types (see below) */
+    APTR	     dol_Dummy1;
+    LONG	     dol_Dummy2[7];
 
     /*
 	This field once was named dol_Name. It is now named dol_OldName
@@ -160,10 +179,10 @@ struct DosList
 	2. just define dol_OldName to dol_Name before including this file
 	   to stay downwards compatible.
     */
-    BPTR dol_OldName;		/* Old field */
-    STRPTR dol_DevName; /* New field (in fact pointing to the same string) */
-    struct Device *dol_Device;
-    struct Unit *dol_Unit;
+    BPTR	    dol_OldName; /* Old field */
+    STRPTR	    dol_DevName; /* New field (in fact pointing to the same string) */
+    struct Device * dol_Device;
+    struct Unit   * dol_Unit;
 };
 
 /* dol_Type type values. Given to MakeDosEntry(). */
@@ -178,29 +197,30 @@ struct DosList
 #define ST_USERDIR	2	/* Normal directory */
 #define ST_SOFTLINK	3	/* Soft link */
 #define ST_LINKDIR	4	/* Hard link to a directory */
-#define ST_FILE 	-3	/* Normal file */
-#define ST_LINKFILE	-4	/* Hard link to a file */
-#define ST_PIPEFILE	-5	/* Special file */
+#define ST_FILE        -3	/* Normal file */
+#define ST_LINKFILE    -4	/* Hard link to a file */
+#define ST_PIPEFILE    -5	/* Special file */
 
-struct DosPacket {
-   struct Message *dp_Link;
-   struct MsgPort *dp_Port;
-   LONG dp_Type;
-   LONG dp_Res1;
-   LONG dp_Res2;
-   LONG dp_Arg1;
-   LONG dp_Arg2;
-   LONG dp_Arg3;
-   LONG dp_Arg4;
-   LONG dp_Arg5;
-   LONG dp_Arg6;
-   LONG dp_Arg7;
+struct DosPacket
+{
+   struct Message * dp_Link;
+   struct MsgPort * dp_Port;
+   LONG 	    dp_Type;
+   LONG 	    dp_Res1;
+   LONG 	    dp_Res2;
+   LONG 	    dp_Arg1;
+   LONG 	    dp_Arg2;
+   LONG 	    dp_Arg3;
+   LONG 	    dp_Arg4;
+   LONG 	    dp_Arg5;
+   LONG 	    dp_Arg6;
+   LONG 	    dp_Arg7;
 }; /* DosPacket */
 
-#define dp_Action  dp_Type
-#define dp_Status  dp_Res1
-#define dp_Status2 dp_Res2
-#define dp_BufAddr dp_Arg1
+#define dp_Action   dp_Type
+#define dp_Status   dp_Res1
+#define dp_Status2  dp_Res2
+#define dp_BufAddr  dp_Arg1
 
 /*
     Structure of the Dos resident list. Do NOT allocate it, use
@@ -209,9 +229,9 @@ struct DosPacket {
 
 struct Segment
 {
-    BPTR seg_Next;
-    LONG seg_UC;
-    BPTR seg_Seg;
+    BPTR  seg_Next;
+    LONG  seg_UC;
+    BPTR  seg_Seg;
     UBYTE seg_Name[4]; /* actually the first 4 chars of BSTR name */
 };
 
@@ -219,11 +239,12 @@ struct Segment
 #define CMD_INTERNAL	-2
 #define CMD_DISABLED	-999
 
-struct DevProc {
-    struct MsgPort *dvp_Port;
-    BPTR dvp_Lock;
-    ULONG dvp_Flags;
-    struct DosList *dvp_DevNode;
+struct DevProc
+{
+    struct MsgPort * dvp_Port;
+    BPTR	     dvp_Lock;
+    ULONG	     dvp_Flags;
+    struct DosList * dvp_DevNode;
 };
 
-#endif
+#endif /* DOS_DOSEXTENS_H */

@@ -3,13 +3,11 @@
 
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
-
     $Id$
 
     Desc: Tags for DOS routines
     Lang: english
 */
-
 #ifndef UTILITY_TAGITEM_H
 #   include "utility/tagitem.h"
 #endif

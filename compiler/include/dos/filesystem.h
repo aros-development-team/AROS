@@ -1,13 +1,25 @@
 #ifndef DOS_FILESYSTEM_H
 #define DOS_FILESYSTEM_H
-#include <exec/io.h>
-#include <dos/filehandler.h>
+
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Structures and constants for filesystems
+    Lang: english
+*/
+#ifndef EXEC_IO_H
+#   include <exec/io.h>
+#endif
+#ifndef DOS_FILEHANDLER_H
+#   include <dos/filehandler.h>
+#endif
 
 struct IOFileSys
 {
-    struct IORequest IOFS; /* Standard I/O request */
-    LONG io_DosError;	/* Dos error code */
-    IPTR io_Args[4];	/* Array of Arguments (Ints and Pointers) */
+    struct IORequest IOFS;	   /* Standard I/O request */
+    LONG	     io_DosError;  /* Dos error code */
+    IPTR	     io_Args[4];   /* Array of Arguments (Ints and Pointers) */
 };
 
 /*
@@ -25,7 +37,7 @@ struct IOFileSys
 #define FSA_IS_INTERACTIVE	9
 #define FSA_SAME_LOCK		10
 #define FSA_EXAMINE		11
-#define FSA_EXAMINE_ALL		12
+#define FSA_EXAMINE_ALL 	12
 #define FSA_EXAMINE_ALL_END	13
 #define FSA_OPEN_FILE		14
 #define FSA_CREATE_DIR		15
@@ -34,8 +46,8 @@ struct IOFileSys
 #define FSA_RENAME		18
 #define FSA_READ_SOFTLINK	19
 #define FSA_DELETE_OBJECT	20
-#define FSA_SET_COMMENT		21
-#define FSA_SET_PROTECT		22
+#define FSA_SET_COMMENT 	21
+#define FSA_SET_PROTECT 	22
 #define FSA_SET_OWNER		23
 #define FSA_SET_DATE		24
 #define FSA_IS_FILESYSTEM	25
@@ -47,12 +59,12 @@ struct IOFileSys
 #define FSA_FLUSH		30
 #define FSA_INHIBIT		31
 #define FSA_WRITE_PROTECT	32
-#define FSA_DISK_CHANGE		33
+#define FSA_DISK_CHANGE 	33
 #define FSA_ADD_NOTIFY		34
 #define FSA_REMOVE_NOTIFY	35
 #define FSA_DISK_INFO		36
 #define FSA_CHANGE_SIGNAL	37
-#define FSA_LOCK_RECORD		38
+#define FSA_LOCK_RECORD 	38
 #define FSA_UNLOCK_RECORD	39
 #endif
 
@@ -73,4 +85,4 @@ struct IOFileSys
 #define MMF_OFFLINE	16 /* Filesystem doesn't use the device currently */
 #define MMF_LOCKED	32 /* Mount mode is password protected */
 
-#endif
+#endif /* DOS_FILESYSTEM_H */

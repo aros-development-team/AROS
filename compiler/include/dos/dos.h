@@ -1,6 +1,13 @@
 #ifndef DOS_DOS_H
 #define DOS_DOS_H
 
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Basic structures and constants
+    Lang: english
+*/
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -46,22 +53,22 @@ struct DateStamp
 
 struct FileInfoBlock
 {
-    LONG fib_DiskKey;
-    LONG fib_DirEntryType;
-    UBYTE fib_FileName[108];
-    LONG fib_Protection;
-    LONG fib_EntryType;
-    LONG fib_Size;
-    LONG fib_NumBlocks;
+    LONG	     fib_DiskKey;
+    LONG	     fib_DirEntryType;
+    UBYTE	     fib_FileName[108];
+    LONG	     fib_Protection;
+    LONG	     fib_EntryType;
+    LONG	     fib_Size;
+    LONG	     fib_NumBlocks;
     struct DateStamp fib_Date;
-    UBYTE fib_Comment[80];
-    UWORD fib_OwnerUID;
-    UWORD fib_OwnerGID;
-    UBYTE fib_Reserved[32];
+    UBYTE	     fib_Comment[80];
+    UWORD	     fib_OwnerUID;
+    UWORD	     fib_OwnerGID;
+    UBYTE	     fib_Reserved[32];
 };
 
 #define DOSTRUE 		(-1L)
-#define DOSFALSE		(0L)
+#define DOSFALSE		( 0L)
 
 #define MODE_OLDFILE		1005
 #define MODE_NEWFILE		1006
@@ -86,7 +93,7 @@ struct FileInfoBlock
 #   define MININT		0x80000000
 #endif
 
-#define OFFSET_BEGINNING	-1
+#define OFFSET_BEGINNING       -1
 #define OFFSET_CURRENT		0
 #define OFFSET_END		1
 
@@ -104,8 +111,8 @@ struct FileInfoBlock
 #define SIGBREAKF_CTRL_E	0x4000L
 #define SIGBREAKF_CTRL_F	0x8000L
 
-#define ITEM_EQUAL		-2
-#define ITEM_ERROR		-1
+#define ITEM_EQUAL	       -2
+#define ITEM_ERROR	       -1
 #define ITEM_NOTHING		0
 #define ITEM_UNQUOTED		1
 #define ITEM_QUOTED		2
@@ -134,17 +141,17 @@ struct FileInfoBlock
 #define FIBB_OTR_EXECUTE	13
 #define FIBB_OTR_WRITE		14
 #define FIBB_OTR_READ		15
-#define FIBF_DELETE		0x1
-#define FIBF_EXECUTE		0x2
-#define FIBF_WRITE		0x4
-#define FIBF_READ		0x8
-#define FIBF_ARCHIVE		0x10
-#define FIBF_PURE		0x20
-#define FIBF_SCRIPT		0x40
-#define FIBF_GRP_DELETE 	0x100
-#define FIBF_GRP_EXECUTE	0x200
-#define FIBF_GRP_WRITE		0x400
-#define FIBF_GRP_READ		0x800
+#define FIBF_DELETE		0x0001
+#define FIBF_EXECUTE		0x0002
+#define FIBF_WRITE		0x0004
+#define FIBF_READ		0x0008
+#define FIBF_ARCHIVE		0x0010
+#define FIBF_PURE		0x0020
+#define FIBF_SCRIPT		0x0040
+#define FIBF_GRP_DELETE 	0x0100
+#define FIBF_GRP_EXECUTE	0x0200
+#define FIBF_GRP_WRITE		0x0400
+#define FIBF_GRP_READ		0x0800
 #define FIBF_OTR_DELETE 	0x1000
 #define FIBF_OTR_EXECUTE	0x2000
 #define FIBF_OTR_WRITE		0x4000
@@ -228,7 +235,7 @@ struct InfoData
 #define ID_KICKSTART_DISK	(0x4B49434BL)   /* 'KICK'  */
 #define ID_MSDOS_DISK		(0x4d534400L)   /* 'MSD\0' */
 
-#define LOCK_DIFFERENT		-1
+#define LOCK_DIFFERENT	       -1
 #define LOCK_SAME		0
 #define LOCK_SAME_VOLUME	1
 
@@ -238,6 +245,4 @@ struct InfoData
 #define LINK_HARD		0
 #define LINK_SOFT		1
 
-
-
-#endif
+#endif /* DOS_DOS_H */
