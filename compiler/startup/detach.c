@@ -58,7 +58,7 @@
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE & defined __mc68000__)
 asm
 (
     ".text\n"
@@ -79,6 +79,8 @@ AROS_UFHA(char *,argstr,A0),
 AROS_UFHA(ULONG,argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
 {
+    AROS_USERFUNC_INIT
+
     struct DosLibrary           *DOSBase;
     struct CommandLineInterface *cli;
     struct Process              *newproc;
@@ -124,6 +126,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     __detacher_process = NULL;
 
     return newproc ? RETURN_OK : RETURN_FAIL;
+    
+    AROS_USERFUNC_EXIT
 }
 
 LONG            __detacher_must_wait_for_signal __attribute__((weak)) = 0;
