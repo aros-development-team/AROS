@@ -11,6 +11,7 @@
 #MM     workbench-libs-commodities \
 #MM     workbench-libs-camd \
 #MM     workbench-libs-datatypes \
+#MM     workbench-libs-desktop \
 #MM     workbench-libs-diskfont \
 #MM     workbench-libs-gadtools \
 #MM     workbench-libs-icon \
