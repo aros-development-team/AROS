@@ -43,7 +43,7 @@ struct GfxBase	     * GfxBase	     = NULL;
     when expunging !
  */
 
-ULONG SAVEDS STDARGS L_OpenLibs (LIBBASETYPEPTR LIBBASE)
+ULONG SAVEDS STDARGS L_InitLib (LIBBASETYPEPTR LIBBASE)
 {
     SysBase = LIBBASE->exb_LibHeader.lh_SysBase;
 
@@ -61,7 +61,7 @@ ULONG SAVEDS STDARGS L_OpenLibs (LIBBASETYPEPTR LIBBASE)
     return (TRUE);
 }
 
-void SAVEDS STDARGS L_CloseLibs (LIBBASETYPEPTR exb)
+void SAVEDS STDARGS L_CloseLib (LIBBASETYPEPTR exb)
 {
     if (GfxBase)       CloseLibrary ((struct Library *) GfxBase);
     if (IntuitionBase) CloseLibrary ((struct Library *) IntuitionBase);
