@@ -432,7 +432,11 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	nnset(data->rslider, MUIA_Numeric_Value, data->rgb[0] >> 24);
 	nnset(data->gslider, MUIA_Numeric_Value, data->rgb[1] >> 24);
 	nnset(data->bslider, MUIA_Numeric_Value, data->rgb[2] >> 24);
-	
+	D(bug("coloradjust: sliders set to %ld, %ld, %ld\n", data->rgb[0] >> 24,
+	      data->rgb[1] >> 24, data->rgb[2] >> 24));
+
+	nnset(data->colfield, MUIA_Colorfield_RGB, data->rgb);
+
 	if (data->wheel)
 	{
     	    struct ColorWheelRGB cw;
@@ -452,15 +456,13 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	    	ConvertHSBToRGB(&hsb, &cw);
 	
 	    	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
-	    	if (data->truecolor) MUI_Redraw(data->grad, MADF_DRAWOBJECT);
+	    	if (data->truecolor)
+		{
+		    MUI_Redraw(data->grad, MADF_DRAWOBJECT);
+		}
 	    }
 	    
     	}
-	
-	if (_flags(obj) & MADF_SETUP)
-	{
-	    MUI_Redraw(data->colfield, MADF_DRAWUPDATE);
-	}
     }
     
     return retval;
@@ -558,6 +560,34 @@ static IPTR Coloradjust_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clea
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/*************************************************************************
+ MUIM_Show
+**************************************************************************/
+static IPTR Coloradjust_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_ColoradjustData *data = INST_DATA(cl,obj);
+
+    DoSuperMethodA(cl, obj, (Msg)msg);
+
+    if ((data->wheel) && (data->gradpen != -1))
+    {
+    	struct ColorWheelHSB hsb;
+	struct ColorWheelRGB cw;
+	
+	cw.cw_Red   = data->rgb[0];
+	cw.cw_Green = data->rgb[1];
+	cw.cw_Blue  = data->rgb[2];
+
+	ConvertRGBToHSB(&cw, &hsb);
+	nnset(data->wheel, WHEEL_HSB, (IPTR)&hsb);
+	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));   
+
+	D(bug("Coloradjust_Show: SetRGB32 %lx, %lx, %lx\n", cw.cw_Red, cw.cw_Green, cw.cw_Blue));
+	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
+    }
+    return 0;
+}
+
 BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -568,6 +598,7 @@ BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 	case OM_GET: return Coloradjust_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Setup: return Coloradjust_Setup(cl, obj, (struct MUIP_Setup *)msg);
 	case MUIM_Cleanup: return Coloradjust_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+	case MUIM_Show: return Coloradjust_Show(cl, obj, (struct MUIP_Show *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
