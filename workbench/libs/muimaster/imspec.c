@@ -556,6 +556,8 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
     switch (spec->type)
     {
 	case IST_PATTERN:
+        case IST_GRADIENT:
+	case IST_COLOR:
 	    minmax->MinWidth = 3;
 	    minmax->MinHeight = 3;
 	    minmax->DefWidth = 8;
@@ -566,16 +568,6 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
 
 	case IST_VECTOR:
 	    return zune_imspec_vector_get_minmax(spec, minmax);
-	    break;
-
-        case IST_GRADIENT:
-	case IST_COLOR:
-	    minmax->MinWidth = 3;
-	    minmax->MinHeight = 3;
-	    minmax->DefWidth = 8;
-	    minmax->DefHeight = 8;
-	    minmax->MaxWidth = MUI_MAXMAX;
-	    minmax->MaxHeight = MUI_MAXMAX;
 	    break;
 
 	case IST_BOOPSI:
