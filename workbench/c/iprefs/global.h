@@ -212,6 +212,11 @@ void InputPrefs_Handler(STRPTR filename);
 
 void IControlPrefs_Handler(STRPTR filename);
 
+/* wbpatternprefs.c */
+
+void WBPatternPrefs_Handler(STRPTR filename);
+void RootPatternCleanup (void);
+
 
 /*********************************************************************************************/
 

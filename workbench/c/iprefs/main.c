@@ -54,18 +54,18 @@ static struct prefinfo
 }
 preftable[] =
 {
-    {"input"	    , inputprefsname    , InputPrefs_Handler  	},
-    {"font" 	    , fontprefsname     , FontPrefs_Handler   	},
-    {"screenmode"   , screenprefsname	, NULL	    	    	},
-    {"locale"	    , localeprefsname	, LocalePrefs_Handler	},
-    {"palette"	    , paletteprefsname  , NULL	    	    	},
-    {"wbpattern"    , patternprefsname  , NULL	    	    	},
-    {"icontrol"     , icontrolprefsname , IControlPrefs_Handler	},
-    {"serial"	    , serialprefsname	, SerialPrefs_Handler 	},
-    {"printer"	    , printerprefsname	, NULL	    	    	},
-    {"pointer"	    , pointerprefsname  , NULL	    	    	},
-    {"overscan"     , overscanprefsname , NULL	    	    	},
-    {NULL   	    	    	    	      	    	    	}
+    {"input"	    , inputprefsname    , InputPrefs_Handler     },
+    {"font" 	    , fontprefsname     , FontPrefs_Handler      },
+    {"screenmode"   , screenprefsname	, NULL                   },
+    {"locale"	    , localeprefsname	, LocalePrefs_Handler    },
+    {"palette"	    , paletteprefsname  , NULL                   },
+    {"wbpattern"    , patternprefsname  , WBPatternPrefs_Handler },
+    {"icontrol"     , icontrolprefsname , IControlPrefs_Handler  },
+    {"serial"	    , serialprefsname	, SerialPrefs_Handler    },
+    {"printer"	    , printerprefsname	, NULL                   },
+    {"pointer"	    , pointerprefsname  , NULL                   },
+    {"overscan"     , overscanprefsname , NULL                   },
+    {NULL   	    	    	    	      	    	    	 }
 
 };
 
@@ -119,6 +119,7 @@ void Cleanup(STRPTR msg)
 
 
     KillNotifications();
+    RootPatternCleanup();
     CloseLibs();
     DoDetach();
 
@@ -188,11 +189,17 @@ static void StartNotifications(void)
     
     for(i = 0; preftable[i].filename; i++)
     {
-    	strcpy(preftable[i].filenamebuffer, envname);
+    	strncpy(preftable[i].filenamebuffer, envname, 256);
 	AddPart(preftable[i].filenamebuffer, "Sys", 256);
 	AddPart(preftable[i].filenamebuffer, preftable[i].filename, 256);
-	strcat(preftable[i].filenamebuffer, ".prefs");
-	
+	if (strlen(preftable[i].filenamebuffer) < 250)
+	    strcat(preftable[i].filenamebuffer, ".prefs");
+	else
+	{
+	    D(bug("Filename too long for %s prefs\n", preftable[i].filename));
+	    Cleanup("Prefs filename too long!\n");
+	}
+
 	preftable[i].nr.nr_Name     	    	= preftable[i].filenamebuffer;
 	preftable[i].nr.nr_UserData 	    	= i;
 	preftable[i].nr.nr_Flags    	    	= NRF_SEND_MESSAGE | NRF_NOTIFY_INITIAL;
