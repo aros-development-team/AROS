@@ -7,20 +7,19 @@ FONTSDIR	:= $(BINDIR)/Fonts
 FONTS		:= fixed arial stop ttcourier
 FONTFILES	:= $(foreach f, $(FONTS), $(foreach s, $(filter-out $(f)/CVS, $(wildcard $(f)/*)), $(FONTSDIR)/$(s)))
 
-#MM workbench-fonts : setup
-workbench-fonts: $(FONTFILES)
-	@$(NOP)
+DIRS            := $(FONTSDIR) $(addprefix $(FONTSDIR)/,$(FONTS))
 
-#MM workbench-fonts-quick : 
+#MM workbench-fonts : workbench-fonts-setup
+workbench-fonts: $(FONTFILES)
+
+#MM
 workbench-fonts-quick: $(FONTFILES)
-	@$(NOP)
 
 $(FONTSDIR)/% : %
 	@$(CP) $< $@
 
 #MM
-setup :
-	@$(IF) $(TEST) ! -d $(FONTSDIR) ; then $(MKDIR) $(FONTSDIR) ; else $(NOP) ; fi
-	@$(FOR) dir in $(FONTS) ; do \
-	$(IF) $(TEST) ! -d $(FONTSDIR)/$$dir ; then $(MKDIR) $(FONTSDIR)/$$dir ; else $(NOP) ; fi; \
-	done
+workbench-fonts-setup : $(DIRS)
+
+$(DIRS):
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi

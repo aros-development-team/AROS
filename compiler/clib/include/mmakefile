@@ -4,19 +4,20 @@ include $(TOP)/config/make.cfg
 INCDIR		:= $(AROSDIR)/Include
 INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+DIRS            := $(INCDIR) $(INCDIR)/sys
 
-#MM
+#MM compiler-clib-includes : compiler-clib-includes-setup
 compiler-clib-includes : includes-copy
 
-#MM includes-copy :
+#MM includes-copy : 
 includes-copy : setup $(DEST_INCLUDES)
 	@$(NOP)
 
 #MM
-setup :
-	@$(FOR) dir in $(INCDIR) $(INCDIR)/sys ; do \
-	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else $(NOP) ; fi ; \
-	done
+compiler-clib-includes-setup : $(DIRS)
+
+$(DIRS):
+	$(IF) $(TEST) ! -d "$@" ; then $(MKDIR) "$@" ; else $(NOP) ; fi
 
 $(INCDIR)/%.h : %.h
 	@$(CP) $< $@

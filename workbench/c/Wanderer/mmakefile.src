@@ -13,17 +13,16 @@ USE_MUILIB      := yes
 USE_AROSLIB     := yes
 USE_DETACH      := yes
 
-#MM workbench-c : includes linklibs
+#MM workbench-c : includes linklibs workbench-c-setup
 
 %make_prog_setup mmake=workbench-c
 
-workbench-c : setup $(EXE)
+workbench-c : $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE) 
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM workbench-c-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-c-setup
 
 %common
 %include_deps

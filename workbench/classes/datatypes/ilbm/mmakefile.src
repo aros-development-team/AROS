@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := ilbmclass libfunc
 FUNCS := obtainengine
 
-#MM workbench-datatypes-ilbm : setup includes linklibs
+#MM workbench-datatypes-ilbm : includes linklibs
 
 USER_CFLAGS   := -DMYDEBUG
 

@@ -8,7 +8,7 @@ FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP JPEG PNG ELF ELF_EXE
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
 #MM- workbench-devs-complete : workbench-devs-datatypes
-#MM workbench-devs-datatypes : setup
+#MM workbench-devs-datatypes : workbench-devs-datatypes-setup
 
 #MM
 workbench-devs-datatypes : $(DTFILES)
@@ -16,9 +16,8 @@ workbench-devs-datatypes : $(DTFILES)
 #MM
 workbench-devs-datatypes-quick : workbench-devs-datatypes
 
-#MM
-setup :
-	%mkdirs_q $(DTDIR)
+#MM workbench-devs-datatypes-setup :
+%rule_makedirs dirs=$(DTDIR) setuptarget=workbench-devs-datatypes-setup
 
 $(DTDIR)/% : %.dtd
 	cd $(DTDIR) && $(CREATEDTDESC) $(TOP)/$(CURDIR)/$<

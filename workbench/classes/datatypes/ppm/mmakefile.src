@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := ppmclass libfunc
 FUNCS := obtainengine
 
-#MM workbench-datatypes-ppm : setup includes linklibs
+#MM workbench-datatypes-ppm : includes linklibs
 
 USER_CFLAGS   := -DMYDEBUG
 

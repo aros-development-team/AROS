@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := bmpclass libfunc
 FUNCS := obtainengine
 
-#MM workbench-datatypes-bmp : setup includes linklibs
+#MM workbench-datatypes-bmp : includes linklibs
 
 USER_CFLAGS   := -DMYDEBUG
 

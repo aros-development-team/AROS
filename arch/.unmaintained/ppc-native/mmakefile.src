@@ -7,7 +7,7 @@ MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(INCDIR)/aros/machine.h \
 	   
-#MM- AROS-amiga : setup setup-amiga includes compiler kernel
+#MM- AROS-amiga : setup-amiga includes compiler kernel
 
 # Kernel
 #MM- kernel-amiga : kernel-exec-amiga \

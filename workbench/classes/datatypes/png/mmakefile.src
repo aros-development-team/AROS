@@ -5,7 +5,7 @@ FILES := pngclass libfunc
 FUNCS := obtainengine
 
 #MM- workbench-datatypes-complete: workbench-datatypes-png
-#MM workbench-datatypes-png : setup includes linklibs linklibs-png
+#MM workbench-datatypes-png : includes linklibs linklibs-png
 
 USER_CFLAGS   := -DMYDEBUG
 

@@ -22,8 +22,6 @@ FILES := \
 
 %build_linklib mmake=linklibs-c_iff libname=c_iff files=$(FILES)
 
-#MM- setup : includes-copy
-
 #MM
 includes-copy : $(INCDIR)/c_iff.h
 

@@ -12,9 +12,6 @@ include $(TOP)/config/make.cfg
 AROS : checkerr
 	@$(NOP)
 
-#MM
-setup :
-
 #MM- install : install-$(ARCH)-$(CPU)
 
 

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-complete : workbench-devs-clipboard
-#MM workbench-devs-clipboard : setup includes linklibs
+#MM workbench-devs-clipboard : includes linklibs
 
 %build_module_macro mmake=workbench-devs-clipboard modname=clipboard \
   modtype=device initfile=clipboard funcs= files= uselibs=amiga

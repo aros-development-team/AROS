@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
   funcs=getbootinfo \
   conffile=lib.conf genincludes=yes
 
-#MM kernel-bootloader-pc-i386 : setup includes
-#MM kernel-bootloader-pc-i386-kobj : setup includes
+#MM kernel-bootloader-pc-i386 : includes
+#MM kernel-bootloader-pc-i386-kobj : includes
 
 %common

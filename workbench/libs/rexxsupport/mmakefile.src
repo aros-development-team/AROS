@@ -5,7 +5,7 @@ FILES := allocmem freemem openport closeport waitpkt getarg getpkt \
          portcleanup reply showdir showlist statef
 FUNCS := arexxdispatch closeportrsrc
 
-#MM- workbench-libs-rexxsupport : setup includes linklibs
+#MM- workbench-libs-rexxsupport : includes linklibs
 
 %build_module_macro mmake=workbench-libs-rexxsupport modname=rexxsupport \
   modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \

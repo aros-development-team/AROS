@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-fs-complete : workbench-fs-ram
-#MM- workbench-fs-ram : setup includes linklibs
+#MM- workbench-fs-ram : includes linklibs
 
 USER_CFLAGS := -DDEBUG=0
 

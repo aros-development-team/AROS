@@ -65,11 +65,11 @@ else
 	@strip -x $@
 endif
 
-#MM hidd-graphics-amiga-intui-linklib : setup includes 
+#MM hidd-graphics-amiga-intui-linklib : includes 
 hidd-graphics-amiga-intui-linklib : show-flags $(LIB)
 	@$(NOP)
 
-#MM hidd-graphics-amiga-intui-module : setup includes
+#MM hidd-graphics-amiga-intui-module : includes
 hidd-graphics-amiga-intui-module : show-flags $(LIB) $(HIDDSDIR)/$(OSMODULE)
 
 # --- QUICK HACKS BEGIN --- 

@@ -52,7 +52,7 @@ FUNCS := \
 	writechunkbytes \
 	writechunkrecords
 
-#MM- workbench-libs-iffparse : setup includes linklibs
+#MM- workbench-libs-iffparse : includes linklibs
 
 %build_module_macro mmake=workbench-libs-iffparse modname=iffparse modtype=library funcs=$(FUNCS) \
   files=$(FILES) uselibs="amiga arosc" conffile=lib.conf

@@ -212,7 +212,7 @@ FUNCTIONS := \
 	xorregionregion \
 	xorregionregionnd
 
-#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)-$(CPU) \
+#MM kernel-graphics-linklib : includes kernel-graphics-$(ARCH)-$(CPU) \
 #MM   hidd-graphics-linklib
 
 %build_module_macro mmake=kernel-graphics \

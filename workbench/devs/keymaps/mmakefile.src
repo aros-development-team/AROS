@@ -5,7 +5,7 @@ KEYMAPS := pc104_us pc105_d pc105_e pc105_i pc105_s pc105_n pc105_gb pc105_f \
            pc105_po sun_usa
 
 #MM- workbench-devs-complete : workbench-devs-keymaps
-#MM workbench-devs-keymaps : setup includes
+#MM workbench-devs-keymaps : workbench-devs-keymaps-setup includes
 workbench-devs-keymaps : $(foreach f,$(KEYMAPS),$(AROS_DEVS)/Keymaps/$(f))
 
 #MM
@@ -21,9 +21,8 @@ $(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
 $(OBJDIR)/%.o : %.c
 	%compile_q cmd=$(TARGET_CC)
 
-#MM
-setup ::
-	%mkdirs_q $(AROS_DEVS)/Keymaps $(OBJDIR)
+#MM workbench-devs-keymaps-setup
+%rule_makedirs dirs="$(AROS_DEVS)/Keymaps $(OBJDIR)" setuptarget=workbench-devs-keymaps-setup
 
 #MM
 clean ::

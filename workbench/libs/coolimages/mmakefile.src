@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-libs-coolimages : setup includes linklibs
+#MM- workbench-libs-coolimages : includes linklibs
 
 %build_module_macro mmake=workbench-libs-coolimages modname=coolimages \
   modtype=library funcs=cool_obtainimagea \

@@ -9,7 +9,7 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM- AROS-solaris-sparc : AROS-solaris
 #MM- setup-solaris-sparc : setup-solaris
 
-#MM- AROS-solaris : setup setup-solaris includes compiler kernel workbench \
+#MM- AROS-solaris : setup-solaris includes compiler kernel workbench \
 #MM 	demos games shell
 
 #MM- kernel-solaris : \

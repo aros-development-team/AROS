@@ -20,13 +20,13 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 workbench-libs-freetype-demos-quick : workbench-libs-freetype-demos
 	@$(NOP)
 	
-#MM workbench-libs-freetype-demos : setup includes linklibs workbench-libs-freetype-linklib workbench-libs-freetype-graph
+#MM workbench-libs-freetype-demos : workbench-libs-freetype-demos-setup \
+#MM     includes linklibs workbench-libs-freetype-linklib workbench-libs-freetype-graph
 workbench-libs-freetype-demos : $(EXES)
-	@$(NOP)
 
-#MM
-setup :
-	%mkdirs_q $(EXEDIR) $(OBJDIR)
+#MM workbench-libs-freetype-demos-setup
+%rule_makedirs dirs="$(EXEDIR) $(OBJDIR)" \
+    setuptarget=workbench-libs-freetype-demos-setup
 
 #MM
 clean ::

@@ -28,7 +28,7 @@ FUNCS := allocfilerequest	\
 	 abortaslrequest    	\
 	 activateaslrequest 	\
 
-#MM- workbench-libs-asl : setup includes linklibs workbench-libs-asl-catalogs
+#MM- workbench-libs-asl : includes linklibs workbench-libs-asl-catalogs
 
 %build_module_macro mmake=workbench-libs-asl modname=asl modtype=library \
   funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom m" conffile=lib.conf

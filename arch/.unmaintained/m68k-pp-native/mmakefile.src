@@ -7,7 +7,7 @@ OS_INCLUDES   := -I$(GENINCDIR)
 #MM	kernel-pp-m68k                        \
 #MM	rom-pp-m68k
 
-#MM- general-setup-pp-m68k: setup setup-pp-m68k includes includes-pp-m68k compiler-nofpu
+#MM- general-setup-pp-m68k: setup-pp-m68k includes includes-pp-m68k compiler-nofpu
 
 #Instead of the target 'compiler' I need to make the target compiler-nofpu
 #MM- compiler-nofpu : setup includes \

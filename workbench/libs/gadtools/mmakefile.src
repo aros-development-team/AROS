@@ -33,7 +33,7 @@ FUNCS	:=  createcontext \
 	    layoutmenuitemsa \
 	    layoutmenusa
 
-#MM- workbench-libs-gadtools : setup includes linklibs
+#MM- workbench-libs-gadtools : includes linklibs
 
 %build_module_macro mmake=workbench-libs-gadtools modname=gadtools modtype=library \
   funcs=$(FUNCS) files=$(FILES) conffile=lib.conf uselibs="rom amiga"

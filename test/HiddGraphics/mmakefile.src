@@ -26,7 +26,7 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES) $(TOOL),$(OBJDIR)/$(f).d)
 
-#MM test-hidd-graphics : setup includes
+#MM test-hidd-graphics : test-hidd-graphics-setup includes
 test-hidd-graphics : $(EXES)
 	@$(NOP)
 
@@ -35,7 +35,7 @@ test-hidd-graphics-quick : $(EXES)
 	@$(NOP)
 
 #MM
-setup :
+test-hidd-graphics-setup :
 	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
 #MM

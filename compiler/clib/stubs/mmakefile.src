@@ -7,7 +7,7 @@ FILES		:= $(foreach f,$(FILES), $(STUBSDIR)/$(f))
 OBJS		:= $(foreach f,$(FILES), $(f).o)
 GENSTUBS	:= genstubs
 
-#MM clib-stubs : setup
+#MM clib-stubs : clib-stubs-setup
 clib-stubs : $(OBJS)
 
 #MM
@@ -17,9 +17,8 @@ clib-stubs-clean : clean
 clean ::
 	-$(RM) $(STUBSDIR)
 
-#MM
-setup :
-	%mkdirs_q $(STUBSDIR)
+#MM clib-stubs-setup
+%rule_makedirs dirs=$(STUBSDIR) setuptarget=clib-stubs-setup
 
 $(STUBSDIR)/%.o : $(STUBSDIR)/%.S
 	%assemble_q

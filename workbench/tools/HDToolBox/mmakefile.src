@@ -24,7 +24,8 @@ USE_AMIGALIB := yes
 
 USER_CFLAGS := -Wunused -Wall -DHAVE_COOLIMAGES #-Werror
 
-#MM workbench-tools: workbench-tools-hdtoolbox-catalogs
+#MM workbench-tools: workbench-tools-setup \
+#MM   workbench-tools-hdtoolbox-catalogs
 #MM workbench-tools-quick: workbench-tools-hdtoolbox-catalogs
 
 %make_prog_setup mmake=workbench-tools
@@ -34,9 +35,12 @@ workbench-tools-quick: setup $(EXE) copyfiles
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
+#MM workbench-tools-setup
+%rule_makedirs dirs=$(BINDIR)/Prefs/Env-Archive \
+  setuptarget=workbench-tools-setup
+
 #MM
 copyfiles : setup $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
-	@$(NOP)
 
 $(BINDIR)/Prefs/Env-Archive/% : env-archive/%
 	@$(CP) $< $@

@@ -9,7 +9,7 @@ FUNCS := deletenv \
 	 setnvprotection \
 	 storenv	     
 
-#MM- workbench-libs-nonvolatile : setup includes linklibs
+#MM- workbench-libs-nonvolatile : includes linklibs
 
 %build_module_macro mmake=workbench-libs-nonvolatile modname=nonvolatile \
   modtype=library funcs=$(FUNCS) uselibs=rom conffile=lib.conf

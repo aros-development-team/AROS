@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := parallel_support parallel_interrupthandlers
 
 #MM- workbench-devs-complete : workbench-devs-parallel
-#MM- workbench-devs-parallel : setup includes linklibs
+#MM- workbench-devs-parallel : includes linklibs
 
 %build_module_macro mmake=workbench-devs-parallel modname=parallel \
   modtype=device funcs= files=$(FILES) uselibs="hiddstubs rom"

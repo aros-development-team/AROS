@@ -3,8 +3,8 @@ include $(TOP)/config/make.cfg
 
 OS_INCLUDES := -I$(SYS_INCLUDES) -I$(GENINCDIR)
 
-#MM- kernel-fs-emul-linklib : setup includes linklibs
-#MM- kernel-fs-emul-kobj : setup includes linklibs
+#MM- kernel-fs-emul-linklib : includes linklibs
+#MM- kernel-fs-emul-kobj : includes linklibs
 
 %build_module_macro mmake=kernel-fs-emul \
   modname=emul modtype=handler \

@@ -11,7 +11,7 @@ USER_INCLUDES := -I$(SYS_INCLUDES)
   genfunctable=yes
 
 # Install Linux specific hidd.prefs file
-#MM workbench-s-hiddprefs-linux-$(CPU) :
+#MM workbench-s-hiddprefs-linux-$(CPU) : workbench-s-setup
 workbench-s-hiddprefs-linux-$(CPU) : $(SDIR)/hidd.prefs
 	
 $(SDIR)/hidd.prefs : hidd.prefs

@@ -33,7 +33,7 @@ FUNCS := \
     rtunlockprefs \
     rtunlockwindow 
 
-#MM- workbench-libs-reqtools : setup includes linklibs
+#MM- workbench-libs-reqtools : includes linklibs
 #MM- workbench-libs-reqtools : workbench-libs-reqtools-catalogs
 
 %build_module_macro mmake=workbench-libs-reqtools modname=reqtools \

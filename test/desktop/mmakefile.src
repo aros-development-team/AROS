@@ -12,17 +12,16 @@ USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes
 
-#MM test-desktop : includes linklibs
+#MM test-desktop : test-desktop-setup includes linklibs
 
 %make_prog_setup mmake=test-desktop
 
-test-desktop : setup $(EXE)
+test-desktop : $(EXE)
 
 %make_prog_single dir=$(EXEDIR)
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM test-desktop-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=test-desktop-setup
 
 %common
 %include_deps

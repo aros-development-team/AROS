@@ -18,7 +18,7 @@ USE_AMIGALIB := yes
 USE_MUILIB   := yes
 USE_AROSLIB  := yes
 
-#MM workbench-demos-zune : includes linklibs  
+#MM workbench-demos-zune : workbench-demos-zune-setup includes linklibs  
 
 %make_prog_setup mmake=workbench-demos-zune
 
@@ -26,9 +26,8 @@ workbench-demos-zune : setup $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM workbench-demos-zune-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-demos-zune-setup
 
 %common
 %include_deps

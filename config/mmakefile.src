@@ -1,19 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CONFIG_H := $(INCDIR)/aros/config.h
-GENCONFIG_H := $(GENINCDIR)/aros/config.h
-
-#MM setup : setup-$(ARCH)-$(CPU)
-setup : make-dirs
-
-make-dirs :
-	%mkdirs_q $(INCDIR)/aros $(GENINCDIR)/aros
-
 #MM
 clean ::
 	-$(RM) ./machine
-	$(RM) $(CONFIG_H) $(GENCONFIG_H) $(INCDIR)/aros $(GENINCDIR)/aros
 
 #MM
 machine :

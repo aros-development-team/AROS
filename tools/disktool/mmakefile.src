@@ -10,7 +10,7 @@ PRELIBS := $(PRELIBS) -ladf
 
 %make_prog_setup mmake=build-tools-createhdfile
 
-#MM build-tools-createhdfile : setup linklibs
+#MM build-tools-createhdfile : linklibs
 build-tools-createhdfile : setup $(EXES)
 
 %make_prog_single dir=$(AROSDIR)/Build/Tools

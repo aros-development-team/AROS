@@ -21,20 +21,20 @@ USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes
 
-#MM workbench-libs-muimaster-examples : includes linklibs
-#MM workbench-libs-muimaster-examples-quick :
+#MM workbench-libs-muimaster-examples : \
+#MM   workbench-libs-muimaster-examples-setup includes linklibs
 
 %make_prog_setup mmake=workbench-libs-muimaster-examples
 
-workbench-libs-muimaster-examples : setup $(EXES)
+workbench-libs-muimaster-examples : $(EXES)
 
+#MM
 workbench-libs-muimaster-examples-quick : $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
 
-#MM setup
-setup ::
-	%mkdirs_q $(EXEDIR)
+#MM workbench-libs-muimaster-examples-setup
+%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-libs-muimaster-examples-setup
 
 %common
 %include_deps

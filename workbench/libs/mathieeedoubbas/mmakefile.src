@@ -19,7 +19,7 @@ FUNCS := \
     ieeedptst
 
 
-#MM- workbench-libs-mathieeedoubbas : setup includes
+#MM- workbench-libs-mathieeedoubbas : includes
 
 USER_LDFLAGS:=--verbose
 

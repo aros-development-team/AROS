@@ -1,74 +1,59 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Unfortunately I can't use one of the fancy make templates because we have
-# two different forms of device here.
-
-MODULES := \
-	ffs.handler \
-	pipefs.handler \
-	fdsk.device \
-	ramdrive.device \
-	zero.handler
-
-#	rootfs.handler
-#	ram.handler
-#	nil.handler 
-
-DEVS := $(foreach f,$(filter %.device,$(MODULES)),$(AROS_DEVS)/$(f))
-FS := $(foreach f,$(filter %.handler,$(MODULES)),$(AROS_DEVS)/$(f))
-DEPS :=	$(foreach f,$(MODULES),$(f:.=_).d)
-
-USE_ROMLIB := yes
-USE_AROSLIB := yes
-USE_AMIGALIB := yes
-
 #MM- workbench-devs-complete : workbench-devs
-#MM workbench-devs : setup includes linklibs
-workbench-devs : $(DEVS) $(AROS_DEVS)/Mountlist
-
-#MM workbench-devs-quick :
-workbench-devs-quick : workbench-devs
+#MM- workbench-devs : \
+#MM    workbench-devs-fdsk \
+#MM    workbench-devs-ramdrive \
+#MM    workbench-devs-mountlist
+#MM- workbench-devs-quick : \
+#MM    workbench-devs-fdsk-quick \
+#MM    workbench-devs-ramdrive-quick \
+#MM    workbench-devs-mountlist
 
 #MM- workbench-fs-complete : workbench-fs
-#MM workbench-fs : setup includes linklibs
-workbench-fs : $(FS)
+#MM- workbench-fs : \
+#MM    workbench-fs-ffs \
+#MM    workbench-fs-pipefs \
+#MM    workbench-fs-fdsk \
+#MM    workbench-fs-zero
+#MM- workbench-fs-quick : \
+#MM    workbench-fs-ffs-quick \
+#MM    workbench-fs-pipefs-quick \
+#MM    workbench-fs-fdsk-quick \
+#MM    workbench-fs-zero-quick
 
-#MM workbench-fs-quick :
-workbench-fs-quick : workbench-fs
+# DISABLED: rootfs.handler
 
-%make_common_setup
-%make_use_linklibs
+%build_module_macro mmake=workbench-devs-fdsk \
+  modname=fdsk modtype=device \
+  initfile=fdsk_device \
+  uselibs="arossupport amiga rom"
 
-CFLAGS := $(USER_CFLAGS) $(TARGET_CFLAGS) $(INCLUDES) -I$(AROS_INCLUDES)
-LDFLAGS := $(USER_LDFLAGS) $(TARGET_LDFLAGS)
+%build_module_macro mmake=workbench-devs-ramdrive \
+  modname=ramdrive modtype=device \
+  initfile=ramdrive_device \
+  uselibs="arossupport amiga rom"
+
+%build_module_macro mmake=workbench-fs-ffs \
+  modname=ffs modtype=handler \
+  initfile=ffs_handler \
+  uselibs="arossupport amiga rom"
+
+%build_module_macro mmake=workbench-fs-pipefs \
+  modname=pipefs modtype=handler \
+  initfile=pipefs_handler \
+  uselibs="arossupport amiga rom"
+
+%build_module_macro mmake=workbench-fs-zero \
+  modname=zero modtype=handler \
+  initfile=zero_handler \
+  uselibs="arossupport amiga rom"
+
+#MM
+workbench-devs-mountlist : $(AROS_DEVS)/Mountlist
 
 $(AROS_DEVS)/Mountlist : Mountlist
 	@$(CP) $< $@
 
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
-
-$(AROS_FS)/%.handler : $(OBJDIR)/%_handler.o
-	%link_module_q objs=$<
-
-$(AROS_DEVS)/%.device : $(OBJDIR)/%_device.o
-	%link_module_q objs=$<
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-# Force the modules to depend upon the linklibraries as well.
-$(AROS_DEVS)/%.device : $(DEPLIBS)
-$(AROS_FS)/%.handler : $(DEPLIBS)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(AROS_DEVS) $(AROS_FS) $(AROSDIR)/DiskImages
-
-#MM
-clean ::
-	-$(RM) $(DEVSDIR) *.err
-
 %common
-%include_deps

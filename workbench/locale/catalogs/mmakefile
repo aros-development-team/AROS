@@ -1,26 +1,12 @@
-####################################################################
-####################################################################
-############# THIS IS A GENERATED FILE ! DO NOT EDIT ###############
-####################################################################
-####################################################################
 # $Id$
-CURDIR=workbench/Locale/catalogs
-
 include $(TOP)/config/make.cfg
 
-LOCALEDIR=$(BINDIR)/Locale
-CATALOGDIR=$(LOCALEDIR)/Catalogs
+DIRS := $(BINDIR)/Locale $(BINDIR)/Locale/Catalogs
 
-#MM workbench-locale : setup
-workbench-locale:
-	@$(NOP)
+#MM- workbench-locale : workbench-locale-setup
 
 #MM
-setup :
-	@$(FOR) dir in $(LOCALEDIR) $(CATALOGDIR) ; do \
-	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
-	done
+workbench-locale-setup : $(DIRS)
 
-clean ::
-	$(RM) mmakefile mmakefile.bak
-
+$(DIRS):
+	@$(IF) $(TEST) ! -d $@ ; then ; $(MKDIR) $@) ; else $(NOP) ; fi

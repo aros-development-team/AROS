@@ -23,7 +23,7 @@ FUNCS := \
     sptanh \
     sptieee
 
-#MM- workbench-libs-mathtrans : setup includes linklibs
+#MM- workbench-libs-mathtrans : includes linklibs
 
 %build_module_macro mmake=workbench-libs-mathtrans \
  modname=mathtrans modtype=library files=$(FILES) funcs=$(FUNCS) \
