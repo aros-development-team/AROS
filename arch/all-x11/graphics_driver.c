@@ -518,11 +518,6 @@ void driver_SetFont (struct RastPort * rp, struct TextFont * font,
 {
     if (GetGC(rp))
 	XSetFont (sysDisplay, GetGC(rp), ETF(font)->etf_XFS.fid);
-
-    rp->Font	   = font;
-    rp->TxWidth    = ETF(font)->etf_Font.tf_XSize;
-    rp->TxHeight   = ETF(font)->etf_Font.tf_YSize;
-    rp->TxBaseline = ETF(font)->etf_Font.tf_Baseline;
 }
 
 struct TextFont * driver_OpenFont (struct TextAttr * ta,
