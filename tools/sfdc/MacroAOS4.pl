@@ -13,6 +13,7 @@ BEGIN {
 	my $sfd    = $self->{SFD};
 	bless ($self, $class);
 	
+	$self->{savetype} = '';
 	$self->{CALLBASE} = "I$sfd->{BaseName}";
 	return $self;
     }
@@ -23,11 +24,13 @@ BEGIN {
 	my $prototype = $params{'prototype'};
 	my $sfd       = $self->{SFD};
 
+	$self->{savetype} = $prototype->{type};
+	
 	if ($prototype->{type} eq 'function'  ||
 	    $prototype->{type} eq 'cfunction' ||
 	    $prototype->{type} eq 'varargs') {
 	    printf "	(((struct $sfd->{BaseName}IFace *)(___base))->$prototype->{funcname})(";
-	    #$prototype->{type} = 'cfunction';
+	    $prototype->{type} = 'cfunction';
 	}
 	else {
 	    $self->SUPER::function_start (@_);
@@ -40,6 +43,7 @@ BEGIN {
 	my $prototype = $params{'prototype'};
 	my $sfd       = $self->{SFD};
 
+	$prototype->{type} = $self->{savetype};
 	
 	if ($prototype->{type} eq 'function'  ||
 	    $prototype->{type} eq 'cfunction' ||
