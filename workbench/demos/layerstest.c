@@ -359,7 +359,7 @@ void scrolllayer(void)
 
   printf("delta x: ");
   scanf("%d",&dx);
-  printf("delta x: ");
+  printf("delta y: ");
   scanf("%d",&dy);
 
   if (0 == (layers[i]->Flags & LAYERSUPER))
