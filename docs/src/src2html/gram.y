@@ -23,7 +23,7 @@
 %left BEGIN BEGIN_NEW ITEM END FILENAME FILEINFO
 %left LREF SHELL LABEL BOLD EMAIL ITALICS
 %left SMALLPIC LARGEPIC TOC APPENDIX
-%left DEBUG PAR NL
+%left DEBUG PAR NL INDEX THEINDEX
 %left <string> ARG
 %left IF
 %type <string> optarg
@@ -88,6 +88,8 @@ command : CHAPTER ARG
 	{ emit (LARGEPIC, $2, $3); xfree ($2); xfree ($3); }
 	| TOC
 	{ emit (TOC); }
+	| THEINDEX
+	{ emit (THEINDEX); }
 	| APPENDIX
 	{ emit (APPENDIX); }
 	| IF ARG ARG optarg
@@ -98,6 +100,8 @@ command : CHAPTER ARG
 	{ emit (PAR); }
 	| NL
 	{ emit (NL); }
+	| INDEX ARG
+	{ emit (INDEX, $2); xfree ($2); }
 	;
 
 optarg	: /* eps */ { $$=NULL; }

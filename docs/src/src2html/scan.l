@@ -70,11 +70,13 @@ TEXT	    ([^\\\|{]|\n)+
 "\\smallpic"      { return SMALLPIC; }
 "\\largepic"      { return LARGEPIC; }
 "\\toc"           { return TOC; }
+"\\theindex"      { return THEINDEX; }
 "\\appendix"      { return APPENDIX; }
 "\\if"            { return IF; }
 "\\debug"         { return DEBUG; }
 "\\par"           { return PAR; }
 "\\nl"            { return NL; }
+"\\index"         { return INDEX; }
 
 "\\echo"{ARG}     { char * str = getarg(yytext); fputs (str, stdout); putchar ('\n'); free (str); }
 
