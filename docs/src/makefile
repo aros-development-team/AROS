@@ -22,7 +22,13 @@ HTML = $(DEST)index.html $(foreach f,$(FILES),$(DEST)$(f).html)
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
 	$(DEST)cgi-bin/search.cgi \
-	$(DEST)cgi-bin/counter.cgi
+	$(DEST)cgi-bin/counter.cgi \
+	access-rights
+
+access-rights:
+	cd $(DEST) ; \
+	    chmod -R ug=rwX,o=rwX . ; \
+	    chmod o+w cgi-bin/counter.txt
 
 index :
 	cd $(DEST) ; glimpseindex -H . -o .
