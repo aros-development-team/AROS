@@ -4,9 +4,28 @@ include $(TOP)/make.cfg
 
 FILES = graphics_init graphics_functable driver_x11
 FUNCTIONS = \
-	closefont draw getapen getbpen getdrmd initrastport move \
-	openfont rectfill scrollraster setapen setbpen setdrmd \
-	setfont setrast text textlength writepixel
+	closefont \
+	draw \
+	drawellipse \
+	eraserect \
+	getapen \
+	getbpen \
+	getdrmd \
+	getoutlinepen \
+	initrastport \
+	move \
+	openfont \
+	rectfill \
+	scrollraster \
+	setapen \
+	setbpen \
+	setdrmd \
+	setfont \
+	setoutlinepen \
+	setrast \
+	text \
+	textlength \
+	writepixel
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \

@@ -28,6 +28,38 @@ __AROS_LP3(void, Draw,
     __AROS_LCA(long             , y, D1), \
     struct GfxBase *, GfxBase, 41, Graphics)
 
+__AROS_LP5(void, DrawEllipse,
+    __AROS_LPA(struct RastPort *, rp, A1),
+    __AROS_LPA(long             , xCenter, D0),
+    __AROS_LPA(long             , yCenter, D1),
+    __AROS_LPA(long             , a, D2),
+    __AROS_LPA(long             , b, D3),
+    struct GfxBase *, GfxBase, 30, Graphics)
+#define DrawEllipse(rp, xCenter, yCenter, a, b) \
+    __AROS_LC5(void, DrawEllipse, \
+    __AROS_LCA(struct RastPort *, rp, A1), \
+    __AROS_LCA(long             , xCenter, D0), \
+    __AROS_LCA(long             , yCenter, D1), \
+    __AROS_LCA(long             , a, D2), \
+    __AROS_LCA(long             , b, D3), \
+    struct GfxBase *, GfxBase, 30, Graphics)
+
+__AROS_LP5(void, EraseRect,
+    __AROS_LPA(struct RastPort *, rp, A1),
+    __AROS_LPA(long             , xMin, D0),
+    __AROS_LPA(long             , yMin, D1),
+    __AROS_LPA(long             , xMax, D2),
+    __AROS_LPA(long             , yMax, D3),
+    struct GfxBase *, GfxBase, 135, Graphics)
+#define EraseRect(rp, xMin, yMin, xMax, yMax) \
+    __AROS_LC5(void, EraseRect, \
+    __AROS_LCA(struct RastPort *, rp, A1), \
+    __AROS_LCA(long             , xMin, D0), \
+    __AROS_LCA(long             , yMin, D1), \
+    __AROS_LCA(long             , xMax, D2), \
+    __AROS_LCA(long             , yMax, D3), \
+    struct GfxBase *, GfxBase, 135, Graphics)
+
 __AROS_LP1(ULONG, GetAPen,
     __AROS_LPA(struct RastPort *, rp, A0),
     struct GfxBase *, GfxBase, 143, Graphics)
@@ -51,6 +83,14 @@ __AROS_LP1(ULONG, GetDrMd,
     __AROS_LC1(ULONG, GetDrMd, \
     __AROS_LCA(struct RastPort *, rp, A0), \
     struct GfxBase *, GfxBase, 145, Graphics)
+
+__AROS_LP1(ULONG, GetOutlinePen,
+    __AROS_LPA(struct RastPort *, rp, A0),
+    struct GfxBase *, GfxBase, 146, Graphics)
+#define GetOutlinePen(rp) \
+    __AROS_LC1(ULONG, GetOutlinePen, \
+    __AROS_LCA(struct RastPort *, rp, A0), \
+    struct GfxBase *, GfxBase, 146, Graphics)
 
 __AROS_LP1(void, InitRastPort,
     __AROS_LPA(struct RastPort *, rp, A1),
@@ -79,6 +119,30 @@ __AROS_LP1(struct TextFont *, OpenFont,
     __AROS_LC1(struct TextFont *, OpenFont, \
     __AROS_LCA(struct TextAttr *, textAttr, A0), \
     struct GfxBase *, GfxBase, 12, Graphics)
+
+__AROS_LP3(void, PolyDraw,
+    __AROS_LPA(struct RastPort *, rp, A1),
+    __AROS_LPA(long             , count, D0),
+    __AROS_LPA(WORD            *, polyTable, A0),
+    struct GfxBase *, GfxBase, 56, Graphics)
+#define PolyDraw(rp, count, polyTable) \
+    __AROS_LC3(void, PolyDraw, \
+    __AROS_LCA(struct RastPort *, rp, A1), \
+    __AROS_LCA(long             , count, D0), \
+    __AROS_LCA(WORD            *, polyTable, A0), \
+    struct GfxBase *, GfxBase, 56, Graphics)
+
+__AROS_LP3(ULONG, ReadPixel,
+    __AROS_LPA(struct RastPort *, rp, A1),
+    __AROS_LPA(long             , x, D0),
+    __AROS_LPA(long             , y, D1),
+    struct GfxBase *, GfxBase, 53, Graphics)
+#define ReadPixel(rp, x, y) \
+    __AROS_LC3(ULONG, ReadPixel, \
+    __AROS_LCA(struct RastPort *, rp, A1), \
+    __AROS_LCA(long             , x, D0), \
+    __AROS_LCA(long             , y, D1), \
+    struct GfxBase *, GfxBase, 53, Graphics)
 
 __AROS_LP5(void, RectFill,
     __AROS_LPA(struct RastPort *, rp, A1),
@@ -155,6 +219,16 @@ __AROS_LP2(LONG, SetFont,
     __AROS_LCA(struct RastPort *, rp, A1), \
     __AROS_LCA(struct TextFont *, textFont, A0), \
     struct GfxBase *, GfxBase, 11, Graphics)
+
+__AROS_LP2(ULONG, SetOutlinePen,
+    __AROS_LPA(struct RastPort *, rp, A0),
+    __AROS_LPA(ULONG,             pen, D0),
+    struct GfxBase *, GfxBase, 163, Graphics)
+#define SetOutlinePen(rp, pen) \
+    __AROS_LC2(ULONG, SetOutlinePen, \
+    __AROS_LCA(struct RastPort *, rp, A0), \
+    __AROS_LCA(ULONG,             pen, D0), \
+    struct GfxBase *, GfxBase, 163, Graphics)
 
 __AROS_LP2(void, SetRast,
     __AROS_LPA(struct RastPort *, rp, A1),
