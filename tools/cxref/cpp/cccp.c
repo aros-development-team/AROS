@@ -69,6 +69,7 @@ typedef unsigned char U_CHAR;
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <signal.h>
