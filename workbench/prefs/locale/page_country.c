@@ -47,7 +47,7 @@ static LONG country_init(void)
 	{
 	    IPTR val;
 	    
-	    DoMethod(entry->dto, DTM_PROCLAYOUT, NULL, 1);
+	    DoMethod(entry->dto, DTM_PROCLAYOUT, (IPTR) NULL, 1);
 	    
 	    GetDTAttrs(entry->dto, PDTA_DestBitMap, (IPTR) &entry->flagbm, TAG_DONE);
 	    if (!entry->flagbm)
@@ -203,7 +203,7 @@ static LONG country_makegadgets(void)
     lvhook.h_SubEntry = LVRenderHook;
     
     gad = countrygad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels    	, (IPTR)&country_list,
-    	    	    	    	    	    	    	     GTLV_ShowSelected	, NULL	    	     ,
+    	    	    	    	    	    	    	     GTLV_ShowSelected	, (IPTR) NULL	    	     ,
 							     GTLV_Selected    	, active_country     ,
 							     GTLV_MakeVisible	, active_country     ,
 							     GTLV_ItemHeight    , itemheight  	     ,

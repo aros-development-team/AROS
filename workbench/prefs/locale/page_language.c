@@ -105,10 +105,10 @@ static void empty_listviews(void)
     {
 	struct Window *winparam = page_active ? win : NULL;
 
-	GT_SetGadgetAttrs(availgad, winparam, NULL, GTLV_Labels, NULL,
+	GT_SetGadgetAttrs(availgad, winparam, NULL, GTLV_Labels, (IPTR) NULL,
 		    	    	    	    	    TAG_DONE);
 
-	GT_SetGadgetAttrs(prefgad, winparam, NULL, GTLV_Labels, NULL,
+	GT_SetGadgetAttrs(prefgad, winparam, NULL, GTLV_Labels, (IPTR) NULL,
 		    	    	    		   TAG_DONE);
     }
 }

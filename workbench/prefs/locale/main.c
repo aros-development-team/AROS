@@ -116,7 +116,7 @@ static void KillGadgets(void);
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
 {
     struct EasyStruct es;
     
@@ -131,7 +131,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 
 /*********************************************************************************************/
 
-void Cleanup(STRPTR msg)
+void Cleanup(CONST_STRPTR msg)
 {
     if (msg)
     {

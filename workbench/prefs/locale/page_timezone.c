@@ -271,7 +271,7 @@ static void RepaintEarthmap(void)
 {
     if (page_active)
     {
-    	STRPTR fmt;
+    	CONST_STRPTR fmt;
 	WORD   minoffset;
 	
 	minoffset = timezone_table[active_timezone].minoffset;
