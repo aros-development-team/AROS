@@ -200,6 +200,12 @@ BEGIN {
 
 		yytext="<B>"yytext"</B>";
 	    }
+	    else if (yytext=="italics")
+	    {
+		getarg();
+
+		yytext="<I>"yytext"</I>";
+	    }
 	    else if (yytext=="shell")
 	    {
 		getarg();
