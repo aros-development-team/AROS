@@ -4,6 +4,7 @@
 #include <X11/keysym.h>
 
 #undef CurrentTime /* Defined by X.h */
+#define XCurrentTime 0L
 
 #define DEBUG_FreeMem 1
 
@@ -16,6 +17,8 @@
 #include <clib/intuition_protos.h>
 #include <clib/graphics_protos.h>
 #include <clib/aros_protos.h>
+
+static struct IntuitionBase * IntuiBase;
 
 static struct MsgPort * intuiReplyPort;
 
@@ -31,6 +34,9 @@ int	  GetSysScreen (void);
 extern void SetGC (struct RastPort * rp, GC gc);
 extern GC GetGC (struct RastPort * rp);
 extern void SetXWindow (struct RastPort * rp, int win);
+
+static int MyErrorHandler (Display *, XErrorEvent *);
+static int MySysErrorHandler (Display *);
 
 #define DEBUG			0
 #define DEBUG_OpenWindow	0
@@ -73,42 +79,44 @@ struct IntWindow
 struct _keytable
 {
     KeySym keysym;
-    WORD amiga;
-    UWORD amiga_qual;
-    char * normal, * shifted;
-    ULONG keycode;
-} keytable[] =
+    WORD   amiga;
+    UWORD  amiga_qual;
+    char * normal,
+	 * shifted;
+    ULONG  keycode;
+}
+keytable[] =
 {
-    {XK_Return, 0x44, 0, "\012", "\012", 0 },
-    {XK_Right, 0x4e, 0, "\233C", "\233 A", 0 },
-    {XK_Up, 0x4c, 0, "\233A", "\233T",0 },
-    {XK_Left, 0x4f, 0, "\233D", "\233 @",0 },
-    {XK_Down, 0x4d, 0, "\233B", "\233S",0 },
-    {XK_Help, 0x5f, 0, "\233?~", "\233?~",0 },
-    {XK_KP_Enter, 0x43, IEQUALIFIER_NUMERICPAD, "\015", "\015",0 },
-    {XK_KP_Separator, 0x3c, IEQUALIFIER_NUMERICPAD, ".", ".",0 },
-    {XK_KP_Subtract, 0x4a, IEQUALIFIER_NUMERICPAD, "-", "-",0 },
-    {XK_KP_Decimal, 0x3c, IEQUALIFIER_NUMERICPAD, ".", ".",0 },
-    {XK_KP_0, 0x0f, IEQUALIFIER_NUMERICPAD, "0", "0",0 },
-    {XK_KP_1, 0x1d, IEQUALIFIER_NUMERICPAD, "1", "1",0 },
-    {XK_KP_2, 0x1e, IEQUALIFIER_NUMERICPAD, "2", "2",0 },
-    {XK_KP_3, 0x1f, IEQUALIFIER_NUMERICPAD, "3", "3",0 },
-    {XK_KP_4, 0x2d, IEQUALIFIER_NUMERICPAD, "4", "4",0 },
-    {XK_KP_5, 0x2e, IEQUALIFIER_NUMERICPAD, "5", "5",0 },
-    {XK_KP_6, 0x2f, IEQUALIFIER_NUMERICPAD, "6", "6",0 },
-    {XK_KP_7, 0x3d, IEQUALIFIER_NUMERICPAD, "7", "7",0 },
-    {XK_KP_8, 0x3e, IEQUALIFIER_NUMERICPAD, "8", "8",0 },
-    {XK_KP_9, 0x3f, IEQUALIFIER_NUMERICPAD, "9", "9",0 },
-    {XK_F1, 0x50, 0, "\2330~", "\23310~",0 },
-    {XK_F2, 0x51, 0, "\2331~", "\23311~",0 },
-    {XK_F3, 0x52, 0, "\2332~", "\23312~",0 },
-    {XK_F4, 0x53, 0, "\2333~", "\23313~",0 },
-    {XK_F5, 0x54, 0, "\2334~", "\23314~",0 },
-    {XK_F6, 0x55, 0, "\2335~", "\23315~",0 },
-    {XK_F7, 0x56, 0, "\2336~", "\23316~",0 },
-    {XK_F8, 0x57, 0, "\2337~", "\23317~",0 },
-    {XK_F9, 0x58, 0, "\2338~", "\23318~",0 },
-    {XK_F10, 0x59, 0, "\2339~", "\23319~",0 },
+    {XK_Return, 	0x44, 0,		      "\012",   "\012", 0 },
+    {XK_Right,		0x4e, 0,		      "\233C",  "\233 A", 0 },
+    {XK_Up,		0x4c, 0,		      "\233A",  "\233T",0 },
+    {XK_Left,		0x4f, 0,		      "\233D",  "\233 @",0 },
+    {XK_Down,		0x4d, 0,		      "\233B",  "\233S",0 },
+    {XK_Help,		0x5f, 0,		      "\233?~", "\233?~",0 },
+    {XK_KP_Enter,	0x43, IEQUALIFIER_NUMERICPAD, "\015",   "\015",0 },
+    {XK_KP_Separator,	0x3c, IEQUALIFIER_NUMERICPAD, ".",      ".",0 },
+    {XK_KP_Subtract,	0x4a, IEQUALIFIER_NUMERICPAD, "-",      "-",0 },
+    {XK_KP_Decimal,	0x3c, IEQUALIFIER_NUMERICPAD, ".",      ".",0 },
+    {XK_KP_0,		0x0f, IEQUALIFIER_NUMERICPAD, "0",      "0",0 },
+    {XK_KP_1,		0x1d, IEQUALIFIER_NUMERICPAD, "1",      "1",0 },
+    {XK_KP_2,		0x1e, IEQUALIFIER_NUMERICPAD, "2",      "2",0 },
+    {XK_KP_3,		0x1f, IEQUALIFIER_NUMERICPAD, "3",      "3",0 },
+    {XK_KP_4,		0x2d, IEQUALIFIER_NUMERICPAD, "4",      "4",0 },
+    {XK_KP_5,		0x2e, IEQUALIFIER_NUMERICPAD, "5",      "5",0 },
+    {XK_KP_6,		0x2f, IEQUALIFIER_NUMERICPAD, "6",      "6",0 },
+    {XK_KP_7,		0x3d, IEQUALIFIER_NUMERICPAD, "7",      "7",0 },
+    {XK_KP_8,		0x3e, IEQUALIFIER_NUMERICPAD, "8",      "8",0 },
+    {XK_KP_9,		0x3f, IEQUALIFIER_NUMERICPAD, "9",      "9",0 },
+    {XK_F1,		0x50, 0,		      "\2330~", "\23310~",0 },
+    {XK_F2,		0x51, 0,		      "\2331~", "\23311~",0 },
+    {XK_F3,		0x52, 0,		      "\2332~", "\23312~",0 },
+    {XK_F4,		0x53, 0,		      "\2333~", "\23313~",0 },
+    {XK_F5,		0x54, 0,		      "\2334~", "\23314~",0 },
+    {XK_F6,		0x55, 0,		      "\2335~", "\23315~",0 },
+    {XK_F7,		0x56, 0,		      "\2336~", "\23316~",0 },
+    {XK_F8,		0x57, 0,		      "\2337~", "\23317~",0 },
+    {XK_F9,		0x58, 0,		      "\2338~", "\23318~",0 },
+    {XK_F10,		0x59, 0,		      "\2339~", "\23319~",0 },
     {0, -1, 0, },
 };
 
@@ -117,6 +125,32 @@ struct _keytable
 #define CTRL	IEQUALIFIER_CONTROL
 #define CAPS	IEQUALIFIER_CAPSLOCK
 
+
+static int MyErrorHandler (Display * display, XErrorEvent * errevent)
+{
+    char buffer[256];
+
+    XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
+
+    fprintf (stderr
+	, "XError %d (Major=%d, Minor=%d)\n%s\n"
+	, errevent->error_code
+	, errevent->request_code
+	, errevent->minor_code
+	, buffer
+    );
+    fflush (stderr);
+
+    exit (10);
+}
+
+static int MySysErrorHandler (Display * display)
+{
+    perror ("X11-Error");
+    fflush (stderr);
+
+    exit (10);
+}
 
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
@@ -134,6 +168,11 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 		keytable[t].keysym);
 
     intuiReplyPort = CreateMsgPort ();
+
+    XSetErrorHandler (MyErrorHandler);
+    XSetIOErrorHandler (MySysErrorHandler);
+
+    IntuiBase = IntuitionBase;
 
     return True;
 }
@@ -167,10 +206,181 @@ void intui_SetWindowTitles (struct Window * win, char * text, char * screen)
     hints.flags  = PPosition | PSize;
 
     if (screen == (char *)-1)
-	screen = "Amiga";
+	screen = "Workbench 3.1";
 
     XSetStandardProperties (sysDisplay, w->iw_XWindow, text, screen,
 	    None, NULL, 0, &hints);
+}
+
+void RenderGadget (struct Window * window, struct Gadget * gadget,
+	struct IntuitionBase * IntuitionBase)
+{
+    APTR render;
+
+    switch (gadget->Flags & GFLG_GADGHIGHBITS)
+    {
+    case GFLG_GADGHCOMP: {
+	UBYTE DrawMode;
+	ULONG apen;
+
+	DrawMode = GetDrMd (window->RPort);
+	apen = GetAPen (window->RPort);
+
+	SetDrMd (window->RPort, JAM1);
+	SetAPen (window->RPort, 0);
+
+	RectFill (window->RPort
+	    , gadget->LeftEdge
+	    , gadget->TopEdge
+	    , gadget->LeftEdge + gadget->Width - 1
+	    , gadget->TopEdge + gadget->Height - 1
+	);
+
+	render = gadget->GadgetRender;
+
+	if (render)
+	{
+	    if (gadget->Flags & GFLG_GADGIMAGE)
+	    {
+		DrawImage (window->RPort
+		    , (struct Image *)render
+		    , gadget->LeftEdge
+		    , gadget->TopEdge
+		);
+	    }
+	    else
+	    {
+		DrawBorder (window->RPort
+		    , (struct Border *)render
+		    , gadget->LeftEdge
+		    , gadget->TopEdge
+		);
+	    }
+	}
+
+	if (gadget->Flags & GFLG_SELECTED)
+	{
+	    SetDrMd (window->RPort, COMPLEMENT);
+
+	    RectFill (window->RPort
+		, gadget->LeftEdge
+		, gadget->TopEdge
+		, gadget->LeftEdge + gadget->Width - 1
+		, gadget->TopEdge + gadget->Height - 1
+	    );
+	}
+
+	SetDrMd (window->RPort, DrawMode);
+
+	break; }
+
+    case GFLG_GADGHIMAGE:
+	render = (gadget->Flags & GFLG_SELECTED) ?
+		    gadget->SelectRender : gadget->GadgetRender;
+
+	if (render)
+	{
+	    if (gadget->Flags & GFLG_GADGIMAGE)
+	    {
+		DrawImage (window->RPort
+		    , (struct Image *)render
+		    , gadget->LeftEdge
+		    , gadget->TopEdge
+		);
+	    }
+	    else
+	    {
+		DrawBorder (window->RPort
+		    , (struct Border *)render
+		    , gadget->LeftEdge
+		    , gadget->TopEdge
+		);
+	    }
+	}
+
+	break;
+
+    case GFLG_GADGHNONE:
+	render = gadget->SelectRender;
+
+	if (render)
+	{
+	    if (gadget->Flags & GFLG_GADGIMAGE)
+	    {
+		DrawImage (window->RPort
+		    , (struct Image *)render
+		    , gadget->LeftEdge
+		    , gadget->TopEdge
+		);
+	    }
+	    else
+	    {
+		DrawBorder (window->RPort
+		    , (struct Border *)render
+		    , gadget->LeftEdge
+		    , gadget->TopEdge
+		);
+	    }
+	}
+
+	break;
+
+    case GFLG_GADGHBOX:
+	/* TODO */
+	break;
+
+    } /* switch GadgetHighlightMethod */
+
+    if (gadget->GadgetText)
+    {
+	switch (gadget->Flags & GFLG_LABELMASK)
+	{
+	case GFLG_LABELITEXT:
+	    PrintIText (window->RPort
+		, gadget->GadgetText
+		, gadget->LeftEdge
+		, gadget->TopEdge
+	    );
+	    break;
+
+	case GFLG_LABELSTRING: {
+	    STRPTR text = (STRPTR) gadget->GadgetText;
+	    int len, width, height;
+	    UBYTE apen;
+	    UBYTE drmd;
+
+	    len = strlen (text);
+
+	    width = TextLength (window->RPort, text, len);
+	    height = window->RPort->Font->tf_YSize;
+
+	    drmd = GetDrMd (window->RPort);
+	    apen = GetAPen (window->RPort);
+
+	    SetAPen (window->RPort, 1);
+	    SetDrMd (window->RPort, JAM1);
+
+	    Move (window->RPort
+		, gadget->LeftEdge + gadget->Width/2 - width/2
+		, gadget->TopEdge + gadget->Height/2 - height/2
+		    + window->RPort->Font->tf_Baseline
+	    );
+	    Text (window->RPort, text, len);
+
+	    SetAPen (window->RPort, apen);
+	    SetDrMd (window->RPort, drmd);
+
+	    break; }
+
+	case GFLG_LABELIMAGE:
+	    DrawImage (window->RPort
+		, (struct Image *)gadget->GadgetText
+		, gadget->LeftEdge
+		, gadget->TopEdge
+	    );
+	    break;
+	}
+    }
 }
 
 struct Window * intui_OpenWindow (struct NewWindow * nw,
@@ -181,6 +391,7 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
     struct RastPort * rp;
     XGCValues gcval;
     GC gc;
+    struct Gadget * gadget;
 
     iw = AllocMem (sizeof (struct IntWindow), MEMF_CLEAR);
     rp = AllocMem (sizeof (struct RastPort), MEMF_CLEAR);
@@ -214,6 +425,7 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
     w->Height = nw->Height;
     w->RPort = rp;
     w->IDCMPFlags = nw->IDCMPFlags;
+    w->FirstGadget = nw->FirstGadget;
 
     if (nw->DetailPen == 0xff) nw->DetailPen = 1;
     if (nw->BlockPen == 0xff) nw->BlockPen = 0;
@@ -281,6 +493,9 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
     XMapRaised (sysDisplay, iw->iw_XWindow);
 
     XSync (sysDisplay, FALSE);
+
+    for (gadget=w->FirstGadget; gadget; gadget=gadget->NextGadget)
+	RenderGadget (w, gadget, IntuitionBase);
 
     Diow(bug("Opening Window %08lx (X=%ld)\n", w, iw->iw_XWindow));
 
@@ -430,253 +645,88 @@ long XKeyToAmigaCode (XKeyEvent * xk)
     return (result);
 }
 
-#undef SysBase /* The next function needs the global SysBase */
-extern struct ExecBase * SysBase;
-
-void intui_ProcessXEvents (void)
+void intui_SizeWindow (struct Window * win, long dx, long dy)
 {
-    struct IntuiMessage * im;
-    struct Window * w;
-    struct IntWindow * iw;
-    char * ptr;
-    static int mpos_x, mpos_y;
-    XEvent event;
-
-    if (!intuiReplyPort || !WB.FirstWindow) /* NOP if no intuition.library */
-	return;
-
-    /* Empty port */
-    while ((im = (struct IntuiMessage *)GetMsg (intuiReplyPort)))
-	FreeMem (im, sizeof (struct IntuiMessage));
-
-    im = NULL;
-    w = NULL;
-
-    while (XPending (sysDisplay))
-    {
-	XNextEvent (sysDisplay, &event);
-
-	Dipxe(bug("Got Event for X=%d\n", event.xany.window));
-
-	if (event.type == MappingNotify)
-	{
-	    XRefreshKeyboardMapping ((XMappingEvent*)&event);
-	    continue;
-	}
-
-	for (w=WB.FirstWindow; w; w=w->NextWindow)
-	{
-	    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
-		break;
-	}
-
-	if (w)
-	{
-	    Dipxe(bug("X=%d is asocciated with Window %08lx\n",
-		event.xany.window,
-		(ULONG)w));
-	}
-	else
-	    Dipxe(bug("X=%d is not asocciated with a Window\n",
-		event.xany.window));
-
-	if (!w)
-	    continue;
-
-	iw = (struct IntWindow *)w;
-
-	if (!im)
-	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
-
-	im->Class	= 0L;
-	im->IDCMPWindow = w;
-	im->MouseX	= mpos_x;
-	im->MouseY	= mpos_y;
-
-	switch (event.type)
-	{
-	case GraphicsExpose:
-	case Expose: {
-	    XRectangle rect;
-	    UWORD      count;
-
-	    if (event.type == Expose)
-	    {
-		rect.x	    = event.xexpose.x;
-		rect.y	    = event.xexpose.y;
-		rect.width  = event.xexpose.width;
-		rect.height = event.xexpose.height;
-		count	    = event.xexpose.count;
-	    }
-	    else
-	    {
-		rect.x	    = event.xgraphicsexpose.x;
-		rect.y	    = event.xgraphicsexpose.y;
-		rect.width  = event.xgraphicsexpose.width;
-		rect.height = event.xgraphicsexpose.height;
-		count	    = event.xgraphicsexpose.count;
-	    }
-
-	    XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
-
-	    if (count != 0)
-		break;
-
-	    im->Class = IDCMP_REFRESHWINDOW;
-	    ptr       = "REFRESHWINDOW";
-	} break;
-
-	case ConfigureNotify:
-	    if (w->Width != event.xconfigure.width ||
-		    w->Height != event.xconfigure.height)
-	    {
-		w->Width  = event.xconfigure.width;
-		w->Height = event.xconfigure.height;
-
-		im->Class = NEWSIZE;
-		ptr	  = "NEWSIZE";
-	    }
-
-	    break;
-
-	case ButtonPress: {
-	    XButtonEvent * xb = &event.xbutton;
-
-	    im->Class = MOUSEBUTTONS;
-	    im->Qualifier = StateToQualifier (xb->state);
-	    im->MouseX = xb->x;
-	    im->MouseY = xb->y;
-
-	    switch (xb->button)
-	    {
-	    case Button1:
-		im->Code = SELECTDOWN;
-		break;
-
-	    case Button2:
-		im->Code = MIDDLEDOWN;
-		break;
-
-	    case Button3:
-		im->Code = MENUDOWN;
-		break;
-	    }
-
-	    ptr = "MOUSEBUTTONS";
-	} break;
-
-	case ButtonRelease: {
-	    XButtonEvent * xb = &event.xbutton;
-
-	    im->Class = MOUSEBUTTONS;
-	    im->Qualifier = StateToQualifier (xb->state);
-	    im->MouseX = xb->x;
-	    im->MouseY = xb->y;
-
-	    switch (xb->button)
-	    {
-	    case Button1:
-		im->Code = SELECTUP;
-		break;
-
-	    case Button2:
-		im->Code = MIDDLEUP;
-		break;
-
-	    case Button3:
-		im->Code = MENUUP;
-		break;
-	    }
-
-	    ptr = "MOUSEBUTTONS";
-	} break;
-
-	case KeyPress: {
-	    XKeyEvent * xk = &event.xkey;
-	    ULONG result;
-
-	    im->Class = RAWKEY;
-	    result = XKeyToAmigaCode(xk);
-	    im->Code = xk->keycode;
-	    im->Qualifier = result >> 16;
-
-	    ptr = NULL;
-	} break;
-
-	case KeyRelease: {
-	    XKeyEvent * xk = &event.xkey;
-	    ULONG result;
-
-	    im->Class = RAWKEY;
-	    result = XKeyToAmigaCode(xk);
-	    im->Code = xk->keycode | 0x8000;
-	    im->Qualifier = result >> 16;
-
-	    ptr = NULL;
-	} break;
-
-	case MotionNotify: {
-	    XMotionEvent * xm = &event.xmotion;
-
-	    im->Code = IECODE_NOBUTTON;
-	    im->Class = MOUSEMOVE;
-	    im->Qualifier = StateToQualifier (xm->state);
-	    im->MouseX = xm->x;
-	    im->MouseY = xm->y;
-
-	    ptr = "MOUSEMOVE";
-	} break;
-
-	case EnterNotify: {
-	    XCrossingEvent * xc = &event.xcrossing;
-
-	    im->Class = ACTIVEWINDOW;
-	    im->MouseX = xc->x;
-	    im->MouseY = xc->y;
-
-	    ptr = "ACTIVEWINDOW";
-	} break;
-
-	case LeaveNotify: {
-	    XCrossingEvent * xc = &event.xcrossing;
-
-	    im->Class = ACTIVEWINDOW;
-	    im->MouseX = xc->x;
-	    im->MouseY = xc->y;
-
-	    ptr = "INACTIVEWINDOW";
-	} break;
-
-	default:
-	    ptr = NULL;
-	break;
-	} /* switch */
-
-	mpos_x = im->MouseX;
-	mpos_y = im->MouseY;
-
-	if (ptr)
-	    Dipxe(bug("Msg=%s\n", ptr));
-
-	if (im->Class)
-	{
-	    if ((im->Class & w->IDCMPFlags) && w->UserPort)
-	    {
-		im->ExecMessage.mn_ReplyPort = intuiReplyPort;
-
-		PutMsg (w->UserPort, (struct Message *)im);
-		im = NULL;
-	    }
-	    else
-		im->Class = 0;
-	}
-   }
-
-   if (im)
-   {
-      FreeMem (im, sizeof (struct IntuiMessage));
-   }
+    XResizeWindow (sysDisplay
+	, ((struct IntWindow *)win)->iw_XWindow
+	, win->Width + dx
+	, win->Height + dy
+    );
 }
+
+void intui_ActivateWindow (struct IntWindow * win)
+{
+    XSetInputFocus (sysDisplay, win->iw_XWindow, RevertToNone, XCurrentTime);
+}
+
+LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
+	LONG size, struct KeyMap * km)
+{
+    XKeyEvent xk;
+    char * ptr;
+    int t;
+
+    ie->ie_Code &= 0x7fff;
+
+    for (t=0; keytable[t].amiga != -1; t++)
+    {
+	if (ie->ie_Code == keytable[t].keycode)
+	{
+	    if (ie->ie_Qualifier & SHIFT)
+		ptr = keytable[t].shifted;
+	    else
+		ptr = keytable[t].normal;
+
+	    t = strlen(ptr);
+	    if (t > size)
+		t = size;
+
+	    strncpy (buf, ptr, t);
+
+	    goto ende;
+	}
+    }
+
+    xk.keycode = ie->ie_Code;
+    xk.display = sysDisplay;
+    xk.state = 0;
+
+    if (ie->ie_Qualifier & SHIFT)
+	xk.state |= ShiftMask;
+
+    if (ie->ie_Qualifier & CTRL)
+	xk.state |= ControlMask;
+
+    if (ie->ie_Qualifier & CAPS)
+	xk.state |= LockMask;
+
+    if (ie->ie_Qualifier & ALT)
+	xk.state |= Mod1Mask;
+
+    if (ie->ie_Qualifier & AMIGAKEYS)
+	xk.state |= Mod2Mask;
+
+    if (ie->ie_Qualifier & IEQUALIFIER_LEFTBUTTON)
+	xk.state |= Button1Mask;
+
+    if (ie->ie_Qualifier & IEQUALIFIER_MIDBUTTON)
+	xk.state |= Button2Mask;
+
+    if (ie->ie_Qualifier & IEQUALIFIER_RBUTTON)
+	xk.state |= Button3Mask;
+
+    t = XLookupString (&xk, buf, size, NULL, NULL);
+
+    if (!*buf && t == 1) t = 0;
+    if (!t) *buf = 0;
+
+ende:	/*printf ("RawKeyConvert: In %02x %04x %04x Out : %d cs %02x '%c'\n",
+	    ie->ie_Code, ie->ie_Qualifier, xk.state, t, (ubyte)*buf,
+	    (ubyte)*buf);*/
+
+    return (t);
+}
+
 
 #ifdef TODO
 void RefreshWindowFrame (w)
@@ -691,26 +741,10 @@ struct IntuiText * itext;
     return (100);
 }
 
-void SizeWindow (win, dx, dy)
-WIN * win;
-int dx, dy;
-{
-    XResizeWindow (sysDisplay, win->xwindow, win->Width+dx,
-	    win->Height + dy);
-}
-
 void ClearMenuStrip (win)
 WIN * win;
 {
     return;
-}
-
-void ActivateWindow (win)
-WIN * win;
-{
-    XSetInputFocus (sysDisplay, win->xwindow, RevertToNone, CurrentTime);
-
-    IntuitionBase->ActiveWindow = (struct Window *)win;
 }
 
 void BeginRefresh (win)
@@ -776,75 +810,338 @@ long size, type;
     }
 }
 
-int RawKeyConvert (ie, buf, size, km)
-IEV * ie;
-char * buf;
-long size;
-struct KeyMap * km;
+#endif
+
+struct Gadget * FindGadget (struct Window * window, int x, int y)
 {
-    XKeyEvent xk;
-    char * ptr;
-    int t;
+    struct Gadget * gadget;
 
-    ie->ie_Code &= 0x7fff;
-
-    for (t=0; keytable[t].amiga != -1; t++)
+    for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
     {
-	if (ie->ie_Code == keytable[t].keycode)
-	{
-	    if (ie->ie_Qualifier & SHIFT)
-		ptr = keytable[t].shifted;
-	    else
-		ptr = keytable[t].normal;
-
-	    t = strlen(ptr);
-	    if (t > size)
-		t = size;
-
-	    strncpy (buf, ptr, t);
-
-	    goto ende;
-	}
+	if (x >= gadget->LeftEdge
+	    && y >= gadget->TopEdge
+	    && x < gadget->LeftEdge + gadget->Width
+	    && y < gadget->TopEdge + gadget->Height
+	)
+	    break;
     }
 
-    xk.keycode = ie->ie_Code;
-    xk.display = sysDisplay;
-    xk.state = 0;
+    return gadget;
+} /* FindGadget */
 
-    if (ie->ie_Qualifier & SHIFT)
-	xk.state |= ShiftMask;
+#undef SysBase /* The next function needs the global SysBase */
+extern struct ExecBase * SysBase;
+/* Use local copy of IntuitionBase */
+#define IntuitionBase IntuiBase
 
-    if (ie->ie_Qualifier & CTRL)
-	xk.state |= ControlMask;
+void intui_ProcessXEvents (void)
+{
+    struct IntuiMessage * im;
+    struct Window * w;
+    struct IntWindow * iw;
+    char * ptr;
+    static int mpos_x, mpos_y;
+    XEvent event;
+    static struct Gadget * gadget;
 
-    if (ie->ie_Qualifier & CAPS)
-	xk.state |= LockMask;
+    if (!intuiReplyPort || !WB.FirstWindow) /* NOP if no intuition.library */
+	return;
 
-    if (ie->ie_Qualifier & ALT)
-	xk.state |= Mod1Mask;
+    /* Empty port */
+    while ((im = (struct IntuiMessage *)GetMsg (intuiReplyPort)))
+	FreeMem (im, sizeof (struct IntuiMessage));
 
-    if (ie->ie_Qualifier & AMIGAKEYS)
-	xk.state |= Mod2Mask;
+    im = NULL;
+    w = NULL;
 
-    if (ie->ie_Qualifier & IEQUALIFIER_LEFTBUTTON)
-	xk.state |= Button1Mask;
+    while (XPending (sysDisplay))
+    {
+	XNextEvent (sysDisplay, &event);
 
-    if (ie->ie_Qualifier & IEQUALIFIER_MIDBUTTON)
-	xk.state |= Button2Mask;
+	Dipxe(bug("Got Event for X=%d\n", event.xany.window));
 
-    if (ie->ie_Qualifier & IEQUALIFIER_RBUTTON)
-	xk.state |= Button3Mask;
+	if (event.type == MappingNotify)
+	{
+	    XRefreshKeyboardMapping ((XMappingEvent*)&event);
+	    continue;
+	}
 
-    t = XLookupString(&xk, buf, size, NULL, NULL);
+	for (w=WB.FirstWindow; w; w=w->NextWindow)
+	{
+	    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
+		break;
+	}
 
-    if (!*buf && t == 1) t = 0;
-    if (!t) *buf = 0;
+	if (w)
+	{
+	    Dipxe(bug("X=%d is asocciated with Window %08lx\n",
+		event.xany.window,
+		(ULONG)w));
+	}
+	else
+	    Dipxe(bug("X=%d is not asocciated with a Window\n",
+		event.xany.window));
 
-ende:	/*printf ("RawKeyConvert: In %02x %04x %04x Out : %d cs %02x '%c'\n",
-	    ie->ie_Code, ie->ie_Qualifier, xk.state, t, (ubyte)*buf,
-	    (ubyte)*buf);*/
+	if (!w)
+	    continue;
 
-    return (t);
+	iw = (struct IntWindow *)w;
+
+	if (!im)
+	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
+
+	im->Class	= 0L;
+	im->IDCMPWindow = w;
+	im->MouseX	= mpos_x;
+	im->MouseY	= mpos_y;
+
+	switch (event.type)
+	{
+	case GraphicsExpose:
+	case Expose: {
+	    XRectangle rect;
+	    UWORD      count;
+	    struct Gadget * gad;
+
+	    if (event.type == Expose)
+	    {
+		rect.x	    = event.xexpose.x;
+		rect.y	    = event.xexpose.y;
+		rect.width  = event.xexpose.width;
+		rect.height = event.xexpose.height;
+		count	    = event.xexpose.count;
+	    }
+	    else
+	    {
+		rect.x	    = event.xgraphicsexpose.x;
+		rect.y	    = event.xgraphicsexpose.y;
+		rect.width  = event.xgraphicsexpose.width;
+		rect.height = event.xgraphicsexpose.height;
+		count	    = event.xgraphicsexpose.count;
+	    }
+
+	    XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
+
+	    if (count != 0)
+		break;
+
+	    for (gad=w->FirstGadget; gad; gad=gad->NextGadget)
+		RenderGadget (w, gad, IntuitionBase);
+
+	    im->Class = IDCMP_REFRESHWINDOW;
+	    ptr       = "REFRESHWINDOW";
+	} break;
+
+	case ConfigureNotify:
+	    if (w->Width != event.xconfigure.width ||
+		    w->Height != event.xconfigure.height)
+	    {
+		w->Width  = event.xconfigure.width;
+		w->Height = event.xconfigure.height;
+
+		im->Class = NEWSIZE;
+		ptr	  = "NEWSIZE";
+	    }
+
+	    break;
+
+	case ButtonPress: {
+	    XButtonEvent * xb = &event.xbutton;
+
+	    im->Class = MOUSEBUTTONS;
+	    im->Qualifier = StateToQualifier (xb->state);
+	    im->MouseX = xb->x;
+	    im->MouseY = xb->y;
+
+	    switch (xb->button)
+	    {
+	    case Button1:
+		im->Code = SELECTDOWN;
+
+		gadget = FindGadget (w, xb->x, xb->y);
+
+		if (gadget)
+		{
+		    if (gadget->Activation & GACT_IMMEDIATE)
+		    {
+			im->Class = GADGETDOWN;
+			im->IAddress = gadget;
+			ptr	  = "GADGETDOWN";
+		    }
+
+		    gadget->Flags |= GFLG_SELECTED;
+
+		    RenderGadget (w, gadget, IntuitionBase);
+		}
+
+		break;
+
+	    case Button2:
+		im->Code = MIDDLEDOWN;
+		break;
+
+	    case Button3:
+		im->Code = MENUDOWN;
+		break;
+	    }
+
+	    if (im->Class == MOUSEBUTTONS)
+		ptr = "MOUSEBUTTONS";
+	} break;
+
+	case ButtonRelease: {
+	    XButtonEvent * xb = &event.xbutton;
+
+	    im->Class = MOUSEBUTTONS;
+	    im->Qualifier = StateToQualifier (xb->state);
+	    im->MouseX = xb->x;
+	    im->MouseY = xb->y;
+
+	    switch (xb->button)
+	    {
+	    case Button1:
+		im->Code = SELECTUP;
+
+		if (gadget)
+		{
+		    int inside = (xb->x >= gadget->LeftEdge
+			    && xb->y >= gadget->TopEdge
+			    && xb->x < gadget->LeftEdge + gadget->Width
+			    && xb->y < gadget->TopEdge + gadget->Height
+			);
+		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+
+		    if (inside && (gadget->Activation & GACT_RELVERIFY))
+		    {
+			im->Class = GADGETUP;
+			im->IAddress = gadget;
+			ptr	  = "GADGETDOWN";
+		    }
+
+		    gadget->Flags &= ~GFLG_SELECTED;
+
+		    if (selected)
+			RenderGadget (w, gadget, IntuitionBase);
+
+		    gadget = NULL;
+		}
+
+		break;
+
+	    case Button2:
+		im->Code = MIDDLEUP;
+		break;
+
+	    case Button3:
+		im->Code = MENUUP;
+		break;
+	    }
+
+	    ptr = "MOUSEBUTTONS";
+	} break;
+
+	case KeyPress: {
+	    XKeyEvent * xk = &event.xkey;
+	    ULONG result;
+
+	    im->Class = RAWKEY;
+	    result = XKeyToAmigaCode(xk);
+	    im->Code = xk->keycode;
+	    im->Qualifier = result >> 16;
+
+	    ptr = NULL;
+	} break;
+
+	case KeyRelease: {
+	    XKeyEvent * xk = &event.xkey;
+	    ULONG result;
+
+	    im->Class = RAWKEY;
+	    result = XKeyToAmigaCode(xk);
+	    im->Code = xk->keycode | 0x8000;
+	    im->Qualifier = result >> 16;
+
+	    ptr = NULL;
+	} break;
+
+	case MotionNotify: {
+	    XMotionEvent * xm = &event.xmotion;
+
+	    im->Code = IECODE_NOBUTTON;
+	    im->Class = MOUSEMOVE;
+	    im->Qualifier = StateToQualifier (xm->state);
+	    im->MouseX = xm->x;
+	    im->MouseY = xm->y;
+
+	    if (gadget)
+	    {
+		int inside = (xm->x >= gadget->LeftEdge
+			&& xm->y >= gadget->TopEdge
+			&& xm->x < gadget->LeftEdge + gadget->Width
+			&& xm->y < gadget->TopEdge + gadget->Height
+		    );
+		int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+
+		if (inside != selected)
+		{
+		    gadget->Flags ^= GFLG_SELECTED;
+
+		    RenderGadget (w, gadget, IntuitionBase);
+		}
+	    }
+
+	    ptr = "MOUSEMOVE";
+	} break;
+
+	case EnterNotify: {
+	    XCrossingEvent * xc = &event.xcrossing;
+
+	    im->Class = ACTIVEWINDOW;
+	    im->MouseX = xc->x;
+	    im->MouseY = xc->y;
+
+	    ptr = "ACTIVEWINDOW";
+	} break;
+
+	case LeaveNotify: {
+	    XCrossingEvent * xc = &event.xcrossing;
+
+	    im->Class = ACTIVEWINDOW;
+	    im->MouseX = xc->x;
+	    im->MouseY = xc->y;
+
+	    ptr = "INACTIVEWINDOW";
+	} break;
+
+	default:
+	    ptr = NULL;
+	break;
+	} /* switch */
+
+	mpos_x = im->MouseX;
+	mpos_y = im->MouseY;
+
+	if (ptr)
+	    Dipxe(bug("Msg=%s\n", ptr));
+
+	if (im->Class)
+	{
+	    if ((im->Class & w->IDCMPFlags) && w->UserPort)
+	    {
+		im->ExecMessage.mn_ReplyPort = intuiReplyPort;
+
+		PutMsg (w->UserPort, (struct Message *)im);
+		im = NULL;
+	    }
+	    else
+		im->Class = 0;
+	}
+   }
+
+   if (im)
+   {
+      FreeMem (im, sizeof (struct IntuiMessage));
+   }
 }
 
-#endif
+
