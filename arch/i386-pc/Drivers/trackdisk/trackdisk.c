@@ -175,11 +175,22 @@ ULONG *pp;
     /* Get installed drives info */
 
     asm volatile (
+    /*
+     * This does not work on all machines for some reason...
+     */
+/******************************
     	"inb $0x70,%%al		\n\t"
     	"andb $0xc0,%%al	\n\t"
     	"orb $0x10,%%al		\n\t"
+******************************/
+    /* 
+     * ... therefore I added the mov command and then it works fine.
+     * 0x10 + 0x80 : $0x10 = disk drive info (like the orb $0x10 above)
+     *               $0x80 = mask the NMI bit. Otherwise keys reapeat themselves.
+     */
+    	"movb $0x90,%%al	\n\t"
     	"outb %%al,$0x70	\n\t"
-    	"inb $0x71,%%al		\n\t"
+   	"inb $0x71,%%al		\n\t"
     	"rorb $4,%%al		\n\t"
     	"andl $0xff,%%eax"
     	:"=a"(drives)
