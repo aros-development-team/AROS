@@ -78,12 +78,12 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 
 	rc = RunCommand(ShellSeg, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, argstr, argsize);
 
-        CloseLibrary(DOSBase);
+        CloseLibrary((struct Library *)DOSBase);
     }
 
     if (!Asynch)
     {
-        csm->csm_ReturnCode = me->cli_ReturnCode;
+        csm->csm_ReturnCode = Cli()->cli_ReturnCode;
 	ReplyMsg((struct Message *)csm);
     }
 
