@@ -426,7 +426,7 @@ struct ClipRect * _AllocClipRect(struct Layer * L)
 void _FreeClipRect(struct ClipRect   * CR,
                    struct Layer      * L)
 {
-  if (MAXSUPERSAVECLIPRECTS < L->SuperSaveClipRectCounter)
+  if (L->SuperSaveClipRectCounter < MAXSUPERSAVECLIPRECTS)
   {
     /* Add the ClipRect to the front of the list */
     CR -> Next = L -> SuperSaveClipRects;
