@@ -80,7 +80,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
     STRPTR          	    	 s;
     ULONG                        old_sig;
-    APTR                         old_userdata;
 
     /* TODO: NP_CommandName, NP_ConsoleTask, NP_NotifyOnDeath */
 
@@ -408,10 +407,12 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_ShellPrivate = 0;
 
     
-    old_sig                 = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
-    old_userdata            = me->pr_Task.tc_UserData;
-
-    me->pr_Task.tc_UserData = (APTR)0;
+    if (defaults[19].ti_Data)
+    {
+        me->pr_Flags |= PRF_WAITINGFORCHILD;
+	
+        old_sig = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
+    }
     
     if
     (
@@ -505,8 +506,8 @@ error:
 
 end:
 
-    SetSignal(SIGF_SINGLE, old_sig); 
-    me->pr_Task.tc_UserData = old_userdata;
+    if (defaults[19].ti_Data)
+        SetSignal(SIGF_SINGLE, old_sig); 
 
     return process;
 
@@ -536,19 +537,20 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase)
 {
-    while (task->tc_UserData == (APTR)0) Wait(SIGF_SINGLE);
+    while (((struct Process *)task)->pr_Flags & PRF_WAITINGFORCHILD)
+        Wait(SIGF_SINGLE);
 }
 
 
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase)
 {
-    struct Task *task   = (struct Task *)tid;
-    struct Task *parent = (struct Task *)(GetETask(task)->et_Parent);
+    struct Task    *task   = (struct Task *)tid;
+    struct Process *parent = (struct Process *)(GetETask(task)->et_Parent);
 
     D(bug("Awakening the parent task %p (called %s)\n", parent, parent->tc_Node.ln_Name));
 
-    parent->tc_UserData = (APTR)1;
-    Signal(parent, SIGF_SINGLE);
+    parent->pr_Flags &= ~PRF_WAITINGFORCHILD;
+    Signal(&parent->pr_Task, SIGF_SINGLE);
 }
 
 
