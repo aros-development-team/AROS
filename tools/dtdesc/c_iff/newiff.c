@@ -23,7 +23,7 @@
 *   SYNOPSIS
 *       TheHandle = NewIFF( Name,IFFType )
 *
-*       struct IFFHandle *NewIFF( char *,CARD32 )
+*       struct IFFHandle *NewIFF( char *,uint32_t )
 *
 *   FUNCTION
 *       This is your function, if you want to write an IFF-file.
@@ -52,10 +52,10 @@
 *       Private notes:
 */
 
-struct IFFHandle *NewIFF(char *Name, CARD32 IFFType)
+struct IFFHandle *NewIFF(char *Name, uint32_t IFFType)
 {
  struct IFFHandle *Ret;
- CARD32 Buffer[3];
+ uint32_t Buffer[3];
 
  if(!Name)
  {
@@ -79,7 +79,7 @@ struct IFFHandle *NewIFF(char *Name, CARD32 IFFType)
  Ret->ChunkID=INVALID_ID;
  Ret->BytesLeftInChunk=0;
  Ret->NewIFF=TRUE;
- Ret->IFFSize=sizeof(CARD32);
+ Ret->IFFSize=sizeof(uint32_t);
  Ret->LastNode=NULL;
 
  Buffer[0]=ID_FORM;
@@ -90,7 +90,7 @@ struct IFFHandle *NewIFF(char *Name, CARD32 IFFType)
  Buffer[1]=Swap32IfLE(Buffer[1]);
  Buffer[2]=Swap32IfLE(Buffer[2]);
 
- if(!(fwrite((void *) Buffer, sizeof(CARD32), 3, Ret->TheFile)==3))
+ if(!(fwrite((void *) Buffer, sizeof(uint32_t), 3, Ret->TheFile)==3))
  {
   fclose(Ret->TheFile);
   free((void *) Ret);

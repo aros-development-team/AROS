@@ -50,7 +50,7 @@
 
 void EndChunk(struct IFFHandle *TheHandle)
 {
- CARD32 Buffer;
+ uint32_t Buffer;
  long CurPos;
  struct ChunkNode *CN, *PN;
 
@@ -79,7 +79,7 @@ void EndChunk(struct IFFHandle *TheHandle)
   return;
  }
 
- if(!(fwrite((void *) &Buffer, sizeof(CARD32), 1, TheHandle->TheFile)==1))
+ if(!(fwrite((void *) &Buffer, sizeof(uint32_t), 1, TheHandle->TheFile)==1))
  {
   return;
  }
