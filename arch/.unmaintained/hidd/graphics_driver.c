@@ -31,6 +31,8 @@
 #include <utility/tagitem.h>
 #include <aros/asmcall.h>
 
+#include <intuition/intuition.h>
+
 #include <hidd/graphics.h>
 
 #include "graphics_intern.h"
@@ -1265,6 +1267,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 	{TAG_DONE,	0UL}
   };
   
+
   if(!CorrectDriverData (rp, GfxBase))
 	return  -1L;
 	
@@ -1341,6 +1344,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         LONG Offset;
         if (NULL == CR->lobs)
         {
+
           /* this ClipRect is not hidden! */
           i = (y + YRel) * Width + 
              ((x + XRel) >> 3);
@@ -1360,6 +1364,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
              will be shown once the layer moves... 
            */
 	   
+
 	  found_offscreen = TRUE;
 	  
           bm = CR -> BitMap;
@@ -3842,6 +3847,7 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 
     if(h == LAYERS_BACKFILL)
     {
+
         /* Use default backfill */
 	if (bm->Flags & BMF_AROS_DISPLAYED)
 	{
@@ -3855,6 +3861,8 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 	     SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    /* Cliprect not obscured, so we may render directly into the display */
+
+
 	     HIDD_BM_FillRect(BM_OBJ(bm)
 		, msg->MinX, msg->MinY
 		, msg->MaxX, msg->MaxY
@@ -3930,6 +3938,8 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	struct Rectangle toerase, intersect;
 	struct layerhookmsg msg;
 	
+	struct RastPort *fakeRP = NULL;
+	
 	LockLayerRom( L );
 	
 	CR = L->ClipRect;
@@ -3947,7 +3957,6 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 /* What should these be ? */	
 	msg.OffsetX = 0;
 	msg.OffsetY = 0;
-	
 	
 	while (NULL != CR)
 	{
@@ -3972,15 +3981,22 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    msg.MinY = intersect.MinY;
 		    msg.MaxX = intersect.MaxX;
 		    msg.MaxY = intersect.MaxY;
-		    
+
+
 		    calllayerhook(L->BackFill, rp, &msg);
 		}
 		else
 		{
+		    fakeRP = CreateRastPort();
+		    if (!fakeRP)
+		    	continue;
+		    
+		    rp->BitMap = CR->BitMap;
+		    
 		    msg.MinX = intersect.MinX - CR->bounds.MinX;
 		    msg.MinY = intersect.MinY - CR->bounds.MinY;
-		    msg.MaxX = intersect.MaxX - CR->bounds.MaxX;
-		    msg.MaxY = intersect.MaxY - CR->bounds.MaxY;
+		    msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
+		    msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
 		    
 		    calllayerhook(L->BackFill, rp, &msg);
 
@@ -3988,6 +4004,9 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 
 	    }
 	    CR = CR->Next;
+	    
+	    if (fakeRP)
+	    	FreeRastPort(fakeRP);
 	}
 	UnlockLayerRom( L );
 	
