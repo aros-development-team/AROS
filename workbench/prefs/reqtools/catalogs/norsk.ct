@@ -11,20 +11,20 @@
 ## language norsk
 ;
 ; av Kim Roar Utsi
-;
+; (updated by Daniel Holmen)
 ; *** Misc ***
 ;
 MSG_WINDOW_TITLE
-ReqTools Innstillinger
+ReqTools-Innstillinger
 ;
 MSG_GENERAL
-Generell
+Generelt
 ;
 MSG_FILEREQUESTER
-Fil Forespørsel
+Fil-forespørsel
 ;
 MSG_SIZE
-Størrelse (% Av synlig høyde):
+Størrelse (% av synlig høyde):
 ;
 MSG_SET
 Sett...
@@ -52,7 +52,7 @@ MSG_OK
 ; * 2.7 *
 ;
 MSG_INFORMATION
-Information
+Informasjon
 ;Information
 ;
 ; *** Menus ***
@@ -93,16 +93,16 @@ I\0Lage ikoner?
 ; *** Switches ***
 ;
 MSG_POPSCREEN
-Roter Skjerm Til Front
+Roter skjerm til front
 ;
 MSG_IMMEDIATESORT
-Sorter Umiddelbart
+Sorter umiddelbart
 ;
 MSG_DRAWERSFIRST
-Vis Skuffer Først
+Vis skuffer først
 ;
 MSG_DRAWERSMIXED
-Bland Filer Og Skuffer
+Bland filer og skuffer
 ;
 MSG_LED
 LED
@@ -113,31 +113,31 @@ Standard systemskrift
 ; ** 2.3 **
 ;
 MSG_FKEYS
-Bruk Funksjons Taster
+Bruk funksjonstaster
 ;
 ; ** 2.5 **
 ;
 MSG_DOWHEEL
-Farge Hjul
+Fargehjul
 ;
 ; ** 2.7 **
 ;
 MSG_WHEEL_NONE
-No color wheel
+Ingen fargehjul
 ;No color wheel
 ;
 MSG_WHEEL_SIMPLE
-Simple color wheel
+Enkelt fargehjul
 ;Simple color wheel
 ;
 MSG_WHEEL_FANCY
-Fancy color wheel
+Fancy fargehjul
 ;Fancy color wheel
 ;
 ; ** 2.8 **
 ;
 MSG_MMB_PARENT
-MMB gives parent
+MMB nivå opp
 ;MMB gives parent
 ;
 ; *** Requester Type ***
@@ -146,22 +146,22 @@ MSG_REQUESTER
 Standardverdier For
 ;
 MSG_FILEREQ
-Fil Forespørsel
+Filforespørsel
 ;
 MSG_FONTREQ
-Skrifttype Forespørsel
+Skrifttype-forespørsel
 ;
 MSG_PALETTEREQ
-Palett Forespørsel
+Palett-forespørsel
 ;
 MSG_SCRMODEREQ
-Skjermmodus Forespørsel
+Skjermmodus-forespørsel
 ;
 MSG_VOLUMEREQ
-Enhet Forespørsel
+Enhets-forespørsel
 ;
 MSG_OTHERREQ
-Andre Forespørsler
+Andre forespørsler
 ;
 ; *** Position ***
 ;
@@ -169,19 +169,19 @@ MSG_POSITION
 Posisjon:
 ;
 MSG_POINTER
-Mus Peker
+Muspeker
 ;
 MSG_CENTERWIN
-Sentrér I Vindu
+Sentrér i vindu
 ;
 MSG_CENTERSCR
-Sentrér På Skjerm
+Sentrér på skjerm
 ;
 MSG_TOPLEFTWIN
-Øverst Til Venstre i Vindu
+Øverst til venstre i vindu
 ;
 MSG_TOPLEFTSCR
-Øverst Til Venstre På Skjerm
+Øverst til venstre på skjerm
 ;
 MSG_OFFSET
 Offset:
@@ -189,13 +189,13 @@ Offset:
 ; *** Entries ***
 ;
 MSG_NR_OF_ENTRIES
-Antall Synlige Poster:
+Antall synlige poster:
 ;
 MSG_MIN
 Minimum
 ;
 MSG_MAX
-Maximum
+Maksimum
 ;
 ; *** Errors ***
 ;
@@ -208,7 +208,7 @@ Den versjonen av reqtools.library du har\nstøtter ikke Innstillinger!
 MSG_ALL_PREFS_NOT_SUPPORTED
 ADVARSEL: Denne versjonen av ReqTools Innstillinger\n\
 støtter ikke alle innstillingene til den versjonen\n\
-av reqtools.library som du har installert!
+av reqtools.library du har installert!
 ;
 MSG_NO_WB_LIB
 Klarte ikke å åpne workbench.library!
@@ -243,16 +243,16 @@ Feil ved lagring av innstillinger!
 ; * 2.7 *
 ;
 MSG_ERROR_ARGS
-Argument error
+Feil i argument
 ;Argument error
 ;
 MSG_ERROR_LIBRARY
-Couldn't open %s\n\
-version %ld or higher!
+Klarte ikke å åpne %s\n\
+versjon %ld eller høyere!
 ;Couldn't open %s\n\
 ;version %ld or higher!
 ;
 MSG_ERROR_MENUS
-Couldn't create menus!
+Klarte ikke å lage menyer!
 ;Couldn't create menus!
 ;
