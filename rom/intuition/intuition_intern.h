@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/21 15:53:28  digulla
+    IntScree structure to store private fields in a screen
+
     Revision 1.5  1996/09/21 14:18:59  digulla
     Use intuition_debug.h
 
@@ -48,6 +51,18 @@ struct IntIntuitionBase
     struct UtilityBase * UtilBase;
     struct MinList	 ClassList;
     struct Screen      * WorkBench;
+
+/*    struct MinList	   PublicScreenList;
+    struct Screen      * DefaultPublicScreen; */
+};
+
+struct IntScreen
+{
+    struct Screen Screen;
+
+    /* Private fields */
+    struct DrawInfo DInfo;
+    UWORD  Pens[NUMDRIPENS];
 };
 
 extern struct IntuitionBase * IntuitionBase;
