@@ -28,6 +28,7 @@
 
 /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
 
+#if 0
 static OOP_AttrBase HiddBitMapAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
@@ -46,6 +47,7 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_DisplayBitMap,	&HiddDisplayBitMapAB },
     { NULL, NULL }
 };
+#endif
 
 void DisplayRestore(struct DisplayHWRec *, BOOL onlyDAC);
 void * DisplaySave(struct DisplayHWRec *);
@@ -98,13 +100,13 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 		/* clear all data  */
         memset(data, 0, sizeof(struct bitmap_data));
-	
+#define xsd XSD(cl)
 		/* Get attr values */
 		OOP_GetAttr(o, aHidd_BitMap_Width,		&width);
 		OOP_GetAttr(o, aHidd_BitMap_Height, 	&height);
 		OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
 		OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
-	
+#undef xsd	
 		assert (width != 0 && height != 0 && depth != 0);
 	
 		/* 
@@ -138,8 +140,9 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 				ULONG pixelc;
 				
 				/* We should be able to get modeID from the bitmap */
+#define xsd XSD(cl)
 				OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-				
+#undef xsd				
 				if (modeid != vHidd_ModeID_Invalid)
 				{
 					struct Box box = {0, 0, width-1, height-1};
@@ -150,6 +153,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 					mode.Width 	= width;
 					mode.Height = height;
 					mode.Depth 	= depth;
+#define xsd XSD(cl)
 					OOP_GetAttr(sync, aHidd_Sync_PixelClock, &pixelc);
 
 					mode.clock	= (pixelc > 26000000) ? 1 : 0;
@@ -163,7 +167,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 					OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,		&mode.VSyncEnd);
 					OOP_GetAttr(sync, aHidd_Sync_HTotal,		&mode.HTotal);
 					OOP_GetAttr(sync, aHidd_Sync_VTotal,		&mode.VTotal);
-				    
+#undef xsd    
 				    ObtainSemaphore(&XSD(cl)->HW_acc);
 
 				    /* Now, when the best display mode is chosen, we can build it */
@@ -288,8 +292,20 @@ OOP_Class *init_onbmclass(struct display_staticdata *xsd)
             xsd->onbmclass = cl;
             cl->UserData     = (APTR) xsd;
            
+            __IHidd_BitMap = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+            __IHidd_PixFmt = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
+            __IHidd_Gfx    = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+            __IHidd_Sync   = OOP_ObtainAttrBase(IID_Hidd_Sync);
+            __IHidd_DisplayGfx    = OOP_ObtainAttrBase(IID_Hidd_Displaygfx);
+            __IHidd_DisplayBitMap = OOP_ObtainAttrBase(IID_Hidd_DisplayBitMap);
+           
             /* Get attrbase for the BitMap interface */
-	    if (OOP_ObtainAttrBases(attrbases))
+	    if (NULL != __IHidd_BitMap &&
+	        NULL != __IHidd_PixFmt &&
+	        NULL != __IHidd_Gfx    &&
+	        NULL != __IHidd_Sync   &&
+	        NULL != __IHidd_DisplayGfx &&
+	        NULL != __IHidd_DisplayBitMap)
             {
                 OOP_AddClass(cl);
             }
@@ -318,8 +334,9 @@ void free_onbmclass(struct display_staticdata *xsd)
         OOP_RemoveClass(xsd->onbmclass);
         if(xsd->onbmclass) OOP_DisposeObject((OOP_Object *) xsd->onbmclass);
         xsd->onbmclass = NULL;
-	
-	OOP_ReleaseAttrBases(attrbases);
+
+#warning Change this!
+//	OOP_ReleaseAttrBases(attrbases);
     }
 
     ReturnVoid("free_onbmclass");

@@ -39,6 +39,7 @@ struct display_staticdata
     struct Library	*oopbase;
     struct Library	*utilitybase;
     struct ExecBase	*sysbase;
+    struct displaybase  *displaybase;
     struct List		modelist;	/* List of modes supported */
     struct bitmap_data	*visible;	/* Point to visible bitmap */
 
@@ -49,20 +50,31 @@ struct display_staticdata
 
     VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	callbackdata;
+    
+    OOP_AttrBase  hiddPixFmtAttrBase;
+    OOP_AttrBase  hiddBitMapAttrBase;
+    OOP_AttrBase  hiddDisplayBitMapAB;
+    OOP_AttrBase  hiddDisplayAB;
+    OOP_AttrBase  hiddSyncAttrBase;
+    OOP_AttrBase  hiddGfxAttrBase;
 };
 
+#define __IHidd_PixFmt	(xsd->hiddPixFmtAttrBase)
+#define __IHidd_BitMap  (xsd->hiddBitMapAttrBase)
+#define __IHidd_DisplayBitMap (xsd->hiddDisplayBitMapAB)
+#define __IHidd_DisplayGfx (xsd->hiddDisplayAB)
+#define __IHidd_Sync       (xsd->hiddSyncAttrBase)
+#define __IHidd_Gfx        (xsd->hiddGfxAttrBase)
+
+#define HiddDisplayBitMapAB  (xsd->hiddDisplayBitMapAB)
+
 OOP_Class *init_displayclass  ( struct display_staticdata * );
-OOP_Class *init_onbmclass  ( struct display_staticdata * );
-OOP_Class *init_offbmclass  ( struct display_staticdata * );
+OOP_Class *init_onbmclass     ( struct display_staticdata * );
+OOP_Class *init_offbmclass    ( struct display_staticdata * );
 
 VOID free_displayclass  ( struct display_staticdata * );
-VOID free_onbmclass  ( struct display_staticdata * );
-VOID free_offbmclass  ( struct display_staticdata * );
-
-OOP_Class *init_mouseclass (struct display_staticdata * );
-VOID free_mouseclass ( struct display_staticdata * );
-
-void draw_mouse (struct display_staticdata *);
+VOID free_onbmclass     ( struct display_staticdata * );
+VOID free_offbmclass    ( struct display_staticdata * );
 
 #define XSD(cl) ((struct display_staticdata *)cl->UserData)
 

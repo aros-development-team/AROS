@@ -60,12 +60,14 @@ extern struct DisplayModeDesc DisplayDefMode[];
 
 #define OOPBase xsd->oopbase
 
-static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
+//static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;
 
+#if 0
 static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
+#endif
 
 static VOID freeclasses(struct display_staticdata *xsd);
 
@@ -75,9 +77,13 @@ static BOOL initclasses(struct display_staticdata *xsd)
     /* Get some attrbases */
 *(ULONG *)0xc0de8765=0;
 
+    __IHidd_PixFmt = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
+
+#if 0
 #ifndef AROS_CREATE_ROM_BUG
     if (!OOP_ObtainAttrBases(abd))
     	goto failure;
+#endif
 #endif
 
     xsd->displayclass = init_displayclass(xsd);
@@ -131,6 +137,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     if (xsd)
     {
         xsd->sysbase = SysBase;
+        xsd->displaybase = lh;
 	
 	InitSemaphore(&xsd->sema);
 	InitSemaphore(&xsd->HW_acc);
@@ -151,6 +158,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	
         xsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	if (xsd->oopbase)
+
 	{
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)

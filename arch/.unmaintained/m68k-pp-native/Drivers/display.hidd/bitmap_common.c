@@ -21,10 +21,10 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
     struct Box box = {0, 0, 0, 0};
     
     /* Get width & height from bitmap superclass */
-
+#define xsd XSD(cl)
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
-
+#undef xsd
     box.x2 = width - 1;
     box.y2 = height - 1;
 
@@ -661,6 +661,7 @@ static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
+#define xsd XSD(cl)
     if (IS_DisplayBM_ATTR(msg->attrID, idx))
     {
 	switch (idx)
@@ -678,7 +679,6 @@ static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
-
+#undef xsd
     return;
 }
-
