@@ -73,7 +73,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
     SysBase->LibNode.lib_Node.ln_Name = "exec.library";
-    SysBase->LibNode.lib_IdString = Exec_resident.rt_Version;
+    SysBase->LibNode.lib_IdString = Exec_resident.rt_IdString;
     SysBase->LibNode.lib_Version = LIBVERSION;
     SysBase->LibNode.lib_Revision = LIBREVISION;
     SysBase->LibNode.lib_OpenCnt = 1;
@@ -82,19 +82,30 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->LibNode.lib_Flags = 0;
 
     NEWLIST(&SysBase->MemList);
+    SysBase->MemList.lh_Type = NT_MEMORY;
     AddHead(&SysBase->MemList, &mh->mh_Node);
     NEWLIST(&SysBase->ResourceList);
+    SysBase->ResourceList.lh_Type = NT_RESOURCE;
     NEWLIST(&SysBase->DeviceList);
+    SysBase->DeviceList.lh_Type = NT_DEVICE;
     NEWLIST(&SysBase->LibList);
-    AddHead(&SysBase->LibList, SysBase);
+    SysBase->LibList.lh_Type = NT_LIBRARY;
+    AddHead(&SysBase->LibList, &SysBase->LibNode.lib_Node);
     NEWLIST(&SysBase->PortList);
+    SysBase->PortList.lh_Type = NT_MSGPORT;
     NEWLIST(&SysBase->TaskReady);
+    SysBase->TaskReady.lh_Type = NT_TASK;
     NEWLIST(&SysBase->TaskWait);
+    SysBase->TaskWait.lh_Type = NT_TASK;
     NEWLIST(&SysBase->SemaphoreList);
+    SysBase->TaskWait.lh_Type = NT_SEMAPHORE;
     NEWLIST(&SysBase->ex_MemHandlers);
 
     for(i=0; i<5; i++)
+    {
 	NEWLIST(&SysBase->SoftInts[i].sh_List);
+	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
+    }
 
     SysBase->SoftVer = LIBVERSION;
     SysBase->ColdCapture = SysBase->CoolCapture
