@@ -75,6 +75,7 @@ FUNCTIONS = \
 	removegadget \
 	removeglist \
 	reportmouse \
+	screentoback \
 	screentofront \
 	setattrsa \
 	setdefaultpubscreen \
