@@ -91,7 +91,6 @@
 #    undef  kprintf
 #    define kprintf(format, x...) printf(format, ##x)
 
-#    endif
 #endif
 
 inline struct RegionRectangle *_NewRegionRectangle
