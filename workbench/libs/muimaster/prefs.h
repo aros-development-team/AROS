@@ -134,8 +134,8 @@ struct ZunePrefsNew
     WORD     radiobutton_vspacing;
 
     /* Cycles */
-    CycleMenuPosition cycle_menu_position; /* yet unused, remove this comment when handled */
-    WORD     cycle_menu_min_entries; /* yet unused, remove this comment when handled */
+    CycleMenuPosition cycle_menu_position;
+    WORD     cycle_menu_min_entries;
     WORD     cycle_menu_speed; /* yet unused, remove this comment when handled */
     BOOL     cycle_menu_recessed_entries; /* yet unused, remove this comment when handled */
 
