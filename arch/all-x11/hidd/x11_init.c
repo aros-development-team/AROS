@@ -191,8 +191,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)
 	    {
+#if X11_LOAD_KEYMAPTABLE
 	        xsd->dosbase = OpenLibrary(DOSNAME, 37);
 		if (xsd->dosbase)
+#endif
 		{
 	            STRPTR displayname;
 
@@ -240,7 +242,9 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 			XCloseDisplay(xsd->display);
 
 		    }
+#if X11_LOAD_KEYMAPTABLE
 		    CloseLibrary(xsd->dosbase);
+#endif
 		}
 		CloseLibrary(xsd->utilitybase);
 	    }
