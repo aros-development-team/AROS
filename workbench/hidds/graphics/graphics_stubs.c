@@ -1558,6 +1558,190 @@ VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_PutMemPattern8	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemPattern8 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.pattern = pattern;
+    p.patternsrcx = patternsrcx;
+    p.patternsrcy = patternsrcy;
+    p.patternheight = patternheight;
+    p.patterndepth = patterndepth;
+    p.patternlut = patternlut;
+    p.invertpattern = invertpattern;
+    p.mask = mask;
+    p.maskmodulo = maskmodulo;
+    p.masksrcx = masksrcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);    
+}
+				 
+VOID	HIDD_BM_PutMemPattern16	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemPattern16 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.pattern = pattern;
+    p.patternsrcx = patternsrcx;
+    p.patternsrcy = patternsrcy;
+    p.patternheight = patternheight;
+    p.patterndepth = patterndepth;
+    p.patternlut = patternlut;
+    p.invertpattern = invertpattern;
+    p.mask = mask;
+    p.maskmodulo = maskmodulo;
+    p.masksrcx = masksrcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);    
+}
+
+VOID	HIDD_BM_PutMemPattern24	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemPattern24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern24);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.pattern = pattern;
+    p.patternsrcx = patternsrcx;
+    p.patternsrcy = patternsrcy;
+    p.patternheight = patternheight;
+    p.patterndepth = patterndepth;
+    p.patternlut = patternlut;
+    p.invertpattern = invertpattern;
+    p.mask = mask;
+    p.maskmodulo = maskmodulo;
+    p.masksrcx = masksrcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);    
+}
+	
+VOID	HIDD_BM_PutMemPattern32	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *pattern,
+				 WORD patternsrcx,
+				 WORD patternsrcy,
+				 WORD patternheight,
+				 WORD patterndepth,
+				 HIDDT_PixelLUT *patternlut,
+				 BOOL invertpattern,
+				 UBYTE *mask,
+				 ULONG maskmodulo,
+				 WORD masksrcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemPattern32 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.pattern = pattern;
+    p.patternsrcx = patternsrcx;
+    p.patternsrcy = patternsrcy;
+    p.patternheight = patternheight;
+    p.patterndepth = patterndepth;
+    p.patternlut = patternlut;
+    p.invertpattern = invertpattern;
+    p.mask = mask;
+    p.maskmodulo = maskmodulo;
+    p.masksrcx = masksrcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);    
+}
+			
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap)
 {
     STATIC_MID;

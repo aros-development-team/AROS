@@ -2565,22 +2565,27 @@ static VOID bitmap_putpattern(OOP_Class *cl, OOP_Object *o,
     if (msg->width <= 0 || msg->height <= 0)
 	return;
 
-    if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+    if (msg->patterndepth > 1)
     {
-    	type = 0;
-    }
-    else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
-    {
-    	type = 2;
+    	type = 6;
     }
     else
     {
-    	type = 4;
+	if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
+	{
+    	    type = 0;
+	}
+	else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
+	{
+    	    type = 2;
+	}
+	else
+	{
+    	    type = 4;
+	}
+
+	if (msg->invertpattern) type++;
     }
-    
-    if (msg->patterndepth > 1) type = 6;
-    
-    if (msg->invertpattern) type++;
     
     patarray = msg->pattern;
     patmask = 0x8000 >> (msg->patternsrcx & 0xF);
@@ -3468,7 +3473,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 
 #define NUM_ROOT_METHODS    4
 
-#define NUM_BITMAP_METHODS  53
+#define NUM_BITMAP_METHODS  57
 
 /****************************************************************************************/
 
@@ -3531,6 +3536,10 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
 	{(IPTR (*)())bitmap_putmemtemplate16 	, moHidd_BitMap_PutMemTemplate16    },
 	{(IPTR (*)())bitmap_putmemtemplate24 	, moHidd_BitMap_PutMemTemplate24    },
 	{(IPTR (*)())bitmap_putmemtemplate32 	, moHidd_BitMap_PutMemTemplate32    },	
+	{(IPTR (*)())bitmap_putmempattern8 	, moHidd_BitMap_PutMemPattern8      },
+	{(IPTR (*)())bitmap_putmempattern16 	, moHidd_BitMap_PutMemPattern16     },
+	{(IPTR (*)())bitmap_putmempattern24 	, moHidd_BitMap_PutMemPattern24     },
+	{(IPTR (*)())bitmap_putmempattern32 	, moHidd_BitMap_PutMemPattern32     },	
 	{(IPTR (*)())bitmap_setcolormap		, moHidd_BitMap_SetColorMap	    },
 	{(IPTR (*)())bitmap_mapcolor		, moHidd_BitMap_MapColor	    },
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	    },
