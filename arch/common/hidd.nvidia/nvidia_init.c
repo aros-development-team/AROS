@@ -192,12 +192,6 @@ static BOOL GenericInit(struct staticdata *sd)
 	    break;
     }
 
-#warning TODO: Add SecondCRTC handling
-/*    sd->Card.PCIO = sd->Card.PCIO0;
-    sd->Card.PCRTC = sd->Card.PCRTC0;
-    sd->Card.PRAMDAC = sd->Card.PRAMDAC0;
-    sd->Card.PDIO = sd->Card.PDIO0;
-*/
     if (sd->Card.Architecture == NV_ARCH_04)
 	nv4GetConfig(sd);
     else

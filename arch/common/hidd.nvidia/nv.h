@@ -238,6 +238,7 @@ struct staticdata {
     OOP_MethodID	    mid_GetMem32Image8;
     OOP_MethodID	    mid_GetMem32Image16;
     OOP_MethodID	    mid_GetImage;
+    OOP_MethodID	    mid_Clear;
     
     BOOL		    gpu_busy;
 
