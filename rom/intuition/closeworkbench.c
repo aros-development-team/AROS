@@ -73,7 +73,7 @@
         imsg.Code  = WBENCHCLOSE;
 
         /* Sends it to the handler and wait for the reply */
-        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct IntuiMessage *) (&imsg) );
+        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
         WaitPort( &replymp );
 
         /* After leaving this block imsg and repymp will be automagically freed,

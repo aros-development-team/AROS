@@ -107,14 +107,14 @@
         imsg.Code  = WBENCHOPEN;
 
         /* Sends it to the handler and wait for the reply. */
-        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct IntuiMessage *) (&imsg) );
+        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
         WaitPort( &replymp );
 
         /* After leaving this block imsg and repymp will be automagically freed,
          * so we don't have to deallocate them ourselves. */
     }
 
-    return GetPrivIBase(IntuitionBase)->WorkBench;
+    return (ULONG) GetPrivIBase(IntuitionBase)->WorkBench;
 
     AROS_LIBFUNC_EXIT
 } /* OpenWorkBench */
