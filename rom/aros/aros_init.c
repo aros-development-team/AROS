@@ -77,9 +77,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     D(bug("aros.library starting...\n"));
 
-    if(!(LIBBASE->aros_utilityBase = OpenLibrary("utility.library", 37)))
-	return NULL;
-
     /* You would return NULL if the init failed */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
@@ -94,6 +91,12 @@ AROS_LH1(struct LIBBASETYPE *, open,
     /* I have one more opener. */
     LIBBASE->aros_LibNode.lib_OpenCnt++;
     LIBBASE->aros_LibNode.lib_Flags&=~LIBF_DELEXP;
+
+    if(!(LIBBASE->aros_utilityBase))
+    {
+	if(!(LIBBASE->aros_utilityBase = OpenLibrary("utility.library", 37)))
+	    return NULL;
+    }
 
     /* You would return NULL if the open failed. */
     return LIBBASE;
