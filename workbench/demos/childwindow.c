@@ -166,18 +166,21 @@ static void handleall(struct Window * w)
 
 int main(int argc, char **argv)
 {
-    STRPTR args[1] = {(STRPTR)TRUE};
+    STRPTR args[1] = {(STRPTR)FALSE};
     struct RDArgs * rda;
     struct Window * w;
+    ULONG visible = TRUE;
     
     rda = ReadArgs("INVISIBLE/S", (IPTR *)args, NULL);
-    printf("%d\n",(ULONG)args[0]);
+
+    if (TRUE == (ULONG)args[0])
+      visible = FALSE;
     if (rda)
     {
       openlibs();
       getvisual();
       makeshape();
-      w = makeparentwin((ULONG)args[0]);
+      w = makeparentwin(visible);
       if (w)
       {
         makewin(w);
