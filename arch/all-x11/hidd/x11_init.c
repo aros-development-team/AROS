@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <exec/types.h>
 
@@ -201,6 +202,12 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 		    if (!(displayname = (STRPTR)getenv("DISPLAY")))
 			displayname =":0.0";
 
+    	    	    if ((strncmp(displayname, ":", 1) == 0) ||
+		        (strncmp(displayname, "unix:", 5) == 0))
+		    {
+		    	xsd->local_display = TRUE;
+		    }
+		    
 		    /* Do not need to singlethead this
 		       since no other tasks are using X currently
 		    */

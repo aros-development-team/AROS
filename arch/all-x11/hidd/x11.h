@@ -45,7 +45,8 @@
 
 extern OOP_AttrBase HiddX11AB;
 
-enum {
+enum
+{
    aoHidd_X11_SysDisplay,
    
    num_Hidd_X11_Attrs
@@ -88,8 +89,8 @@ enum
 
 struct pHidd_X11Kbd_HandleEvent
 {
-    OOP_MethodID mID;
-    XEvent *event;
+    OOP_MethodID     mID;
+    XEvent  	    *event;
 };
 
 VOID Hidd_X11Kbd_HandleEvent(OOP_Object *o, XEvent *event);
@@ -100,120 +101,112 @@ VOID Hidd_X11Kbd_HandleEvent(OOP_Object *o, XEvent *event);
 
 struct x11task_params
 {
-    struct Task *parent;
-    ULONG ok_signal;
-    ULONG fail_signal;
-    ULONG kill_signal;
-    struct x11_staticdata *xsd;
+    struct Task     	    *parent;
+    ULONG   	     	     ok_signal;
+    ULONG   	     	     fail_signal;
+    ULONG   	     	     kill_signal;
+    struct x11_staticdata   *xsd;
 };
 
 struct xwinnode
 {
-    struct MinNode node;
-    Window	xwindow;
-    OOP_Object	*bmobj;
-    
-    BOOL window_mapped;
+    struct MinNode   node;
+    Window	     xwindow;
+    OOP_Object	    *bmobj; 
+    BOOL    	     window_mapped;
 };
 
 
 /* Message used for getting info on when a window has been mapped */
 
-enum {
+enum
+{
 	NOTY_MAPWINDOW,
 	NOTY_WINCREATE,
 	NOTY_WINDISPOSE,
 	NOTY_RESIZEWINDOW
-
 };
 
 
-struct notify_msg {
-     struct Message execmsg;
-     
-     ULONG notify_type; /* NOTY_xxxx */
-     Display *xdisplay;     
-     Window xwindow;
-     Window masterxwindow;
-     OOP_Object *bmobj;
-     
+struct notify_msg
+{
+     struct Message  execmsg;     
+     ULONG  	     notify_type; /* NOTY_xxxx */
+     Display 	    *xdisplay;     
+     Window 	     xwindow;
+     Window 	     masterxwindow;
+     OOP_Object     *bmobj;     
      /* Only for NOTY_RESIZEWINDOW */
-     ULONG width;
-     ULONG height;
+     ULONG  	     width;
+     ULONG  	     height;
 };
 
 
 struct x11_staticdata
 {
-    struct SignalSemaphore sema; /* Protecting this whole struct */
-    struct SignalSemaphore x11sema;
+    struct SignalSemaphore   sema; /* Protecting this whole struct */
+    struct SignalSemaphore   x11sema;
     
     /* This port is used for asking the x11 task for notifications
        on when some event occurs, for example MapNotify
     */
-    struct MsgPort *x11task_notify_port;
+    struct MsgPort  	    *x11task_notify_port;
     
-    struct Library *oopbase;
-    struct Library *utilitybase;
-    struct ExecBase *sysbase;
-    struct Library *dosbase;
+    struct Library  	    *oopbase;
+    struct Library  	    *utilitybase;
+    struct ExecBase 	    *sysbase;
+    struct Library  	    *dosbase;
     
-    Display *display;
+    Display 	    	    *display;
+    BOOL    	    	     local_display;
     
-    ULONG refcount;
+    ULONG   	    	     refcount;
 
-    OOP_Class *x11class;    
-    OOP_Class *gfxclass;
-    OOP_Class *onbmclass;
-    OOP_Class *offbmclass;
-    OOP_Class *mouseclass;
-    OOP_Class *kbdclass;
+    OOP_Class 	    	    *x11class;    
+    OOP_Class 	    	    *gfxclass;
+    OOP_Class 	    	    *onbmclass;
+    OOP_Class 	    	    *offbmclass;
+    OOP_Class 	    	    *mouseclass;
+    OOP_Class 	    	    *kbdclass;
     
-    OOP_Object *gfxhidd;
-    OOP_Object *mousehidd;
-    OOP_Object *kbdhidd;
+    OOP_Object      	    *gfxhidd;
+    OOP_Object      	    *mousehidd;
+    OOP_Object      	    *kbdhidd;
 
 #if USE_XSHM
-    struct SignalSemaphore shm_sema;	/* singlethread access to shared mem */
-    BOOL use_xshm;			/* May we use Xshm ?	*/
-    void *xshm_info;
+    struct SignalSemaphore   shm_sema;	/* singlethread access to shared mem */
+    BOOL    	    	     use_xshm;	/* May we use Xshm ?	*/
+    void    	    	    *xshm_info;
 #endif    
     
     /* This window is used as a frien drawable for pixmaps. The window is
        never mapped, ie. it is never shown onscreen.
     */
-    Window dummy_window_for_creating_pixmaps;
+    Window  	    	     dummy_window_for_creating_pixmaps;
     
-    XVisualInfo vi;
-    ULONG red_shift;
-    ULONG green_shift;
-    ULONG blue_shift;
+    XVisualInfo     	     vi;
+    ULONG   	    	     red_shift;
+    ULONG   	    	     green_shift;
+    ULONG   	    	     blue_shift;
 
-    ULONG depth; /* Size of pixel in bits */ /* stegerg: was called "size" */
-    ULONG bytes_per_pixel;
+    ULONG   	    	     depth; /* Size of pixel in bits */ /* stegerg: was called "size" */
+    ULONG   	    	     bytes_per_pixel;
     
-    ULONG clut_shift;
-    ULONG clut_mask;
+    ULONG   	    	     clut_shift;
+    ULONG   	    	     clut_mask;
     
-    Atom delete_win_atom;
+    Atom    	    	     delete_win_atom;
 
 #if 0
-    VOID	(*activecallback)(APTR, OOP_Object *, BOOL);
-    APTR	callbackdata;
+    VOID	    	     (*activecallback)(APTR, OOP_Object *, BOOL);
+    APTR	    	     callbackdata;
 #endif    
 };
 
 
-VOID get_bitmap_info(struct x11_staticdata *xsd
-	, Drawable d
-	, ULONG *sz
-	, ULONG *bpl
-);
+VOID get_bitmap_info(struct x11_staticdata *xsd, Drawable d, ULONG *sz, ULONG *bpl);
 
-BOOL set_pixelformat(struct TagItem *pftags
-	, struct x11_staticdata *xsd
-	, Drawable d
-);
+BOOL set_pixelformat(struct TagItem *pftags, struct x11_staticdata *xsd, Drawable d);
 
 
 OOP_Class *init_gfxclass	( struct x11_staticdata * );
@@ -232,7 +225,7 @@ VOID free_mouseclass	( struct x11_staticdata * );
 VOID free_x11class	( struct x11_staticdata * );
 
 
-#define XSD(cl) ((struct x11_staticdata *)cl->UserData)
+#define XSD(cl)     	((struct x11_staticdata *)cl->UserData)
 
 #define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
@@ -245,6 +238,7 @@ VOID free_x11class	( struct x11_staticdata * );
 - In the bitmap class, protecting the bimtap X GC from changes
 from other tasks
 */
+
 #define LX11 ObtainSemaphore (&XSD(cl)->x11sema);
 #define UX11 ReleaseSemaphore(&XSD(cl)->x11sema);
 
