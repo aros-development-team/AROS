@@ -37,7 +37,8 @@
 #include <linux/a.out.h>
 #include <linux/config.h>
 #include <errno.h>
-#include <asm/boot.h>
+/* Not found on Linux/i386 2.0.36 ? */
+/* #include <asm/boot.h> */
 
 #define MINIX_HEADER 32
 
