@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
