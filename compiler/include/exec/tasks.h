@@ -72,6 +72,12 @@ struct Task
 	    ((struct ETask *)(((struct Task *)t)->tc_UnionETask.tc_ETask)) \
 	    : NULL \
 	)
+#define GetETaskID(t) \
+	(   (((struct Task *)(t))->tc_Flags & TF_ETASK) \
+	    ? (((struct ETask *) \
+		(((struct Task *)(t))->tc_UnionETask.tc_ETask))->et_UniqueID) \
+	    : 0UL \
+	)
 
 
 /* Stack swap structure as passed to StackSwap() */
@@ -143,6 +149,6 @@ struct ETask
 #define CHILD_NOTNEW   1 /* Function not called from a new style task */
 #define CHILD_NOTFOUND 2 /* Child not found */
 #define CHILD_EXITED   3 /* Child has exited */
-#define CHILD_ACTIVE   4 /* ??? */
+#define CHILD_ACTIVE   4 /* Child is currently active and running */
 
 #endif /* EXEC_TASKS_H */
