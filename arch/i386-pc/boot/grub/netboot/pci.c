@@ -22,7 +22,7 @@
 #include "pci.h"
 
 /*#define	DEBUG	1*/
-static unsigned int pci_ioaddr = 0;
+#define DEBUG	0
 
 #ifdef	CONFIG_PCI_DIRECT
 #define  PCIBIOS_SUCCESSFUL                0x00
@@ -33,47 +33,47 @@ static unsigned int pci_ioaddr = 0;
 
 #define CONFIG_CMD(bus, device_fn, where)   (0x80000000 | (bus << 16) | (device_fn << 8) | (where & ~3))
 
-int pcibios_read_config_byte(unsigned char bus, unsigned char device_fn,
-			       unsigned char where, unsigned char *value)
+int pcibios_read_config_byte(unsigned int bus, unsigned int device_fn,
+			       unsigned int where, unsigned char *value)
 {
     outl(CONFIG_CMD(bus,device_fn,where), 0xCF8);
     *value = inb(0xCFC + (where&3));
     return PCIBIOS_SUCCESSFUL;
 }
 
-int pcibios_read_config_word (unsigned char bus,
-    unsigned char device_fn, unsigned char where, unsigned short *value)
+int pcibios_read_config_word (unsigned int bus,
+    unsigned int device_fn, unsigned int where, unsigned short *value)
 {
     outl(CONFIG_CMD(bus,device_fn,where), 0xCF8);
     *value = inw(0xCFC + (where&2));
     return PCIBIOS_SUCCESSFUL;
 }
 
-static int pcibios_read_config_dword (unsigned char bus, unsigned char device_fn,
-				 unsigned char where, unsigned int *value)
+int pcibios_read_config_dword (unsigned int bus, unsigned int device_fn,
+				 unsigned int where, unsigned int *value)
 {
     outl(CONFIG_CMD(bus,device_fn,where), 0xCF8);
     *value = inl(0xCFC);
     return PCIBIOS_SUCCESSFUL;
 }
 
-int pcibios_write_config_byte (unsigned char bus, unsigned char device_fn,
-				 unsigned char where, unsigned char value)
+int pcibios_write_config_byte (unsigned int bus, unsigned int device_fn,
+				 unsigned int where, unsigned char value)
 {
     outl(CONFIG_CMD(bus,device_fn,where), 0xCF8);
     outb(value, 0xCFC + (where&3));
     return PCIBIOS_SUCCESSFUL;
 }
 
-int pcibios_write_config_word (unsigned char bus, unsigned char device_fn,
-				 unsigned char where, unsigned short value)
+int pcibios_write_config_word (unsigned int bus, unsigned int device_fn,
+				 unsigned int where, unsigned short value)
 {
     outl(CONFIG_CMD(bus,device_fn,where), 0xCF8);
     outw(value, 0xCFC + (where&2));
     return PCIBIOS_SUCCESSFUL;
 }
 
-int pcibios_write_config_dword (unsigned char bus, unsigned char device_fn, unsigned char where, unsigned int value)
+int pcibios_write_config_dword (unsigned int bus, unsigned int device_fn, unsigned int where, unsigned int value)
 {
     outl(CONFIG_CMD(bus,device_fn,where), 0xCF8);
     outl(value, 0xCFC);
@@ -84,13 +84,12 @@ int pcibios_write_config_dword (unsigned char bus, unsigned char device_fn, unsi
 
 #else	 /* CONFIG_PCI_DIRECT  not defined */
 
-static unsigned long bios32_entry = 0;
 static struct {
 	unsigned long address;
 	unsigned short segment;
 } bios32_indirect = { 0, KERN_CODE_SEG };
 
-static long pcibios_entry = 0;
+static long pcibios_entry;
 static struct {
 	unsigned long address;
 	unsigned short segment;
@@ -106,10 +105,10 @@ static unsigned long bios32_service(unsigned long service)
 
 	save_flags(flags);
 	__asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%edi)"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%edi)"
+#else
+		"lcall *(%%edi)"
 #endif
 		: "=a" (return_code),
 		  "=b" (address),
@@ -127,14 +126,14 @@ static unsigned long bios32_service(unsigned long service)
 			printf("bios32_service(%d) : not present\n", service);
 			return 0;
 		default: /* Shouldn't happen */
-			printf("bios32_service(%d) : returned 0x%x, mail drew@colorado.edu\n",
+			printf("bios32_service(%d) : returned %#X, mail drew@colorado.edu\n",
 				service, return_code);
 			return 0;
 	}
 }
 
-int pcibios_read_config_byte(unsigned char bus,
-        unsigned char device_fn, unsigned char where, unsigned char *value)
+int pcibios_read_config_byte(unsigned int bus,
+        unsigned int device_fn, unsigned int where, unsigned char *value)
 {
         unsigned long ret;
         unsigned long bx = (bus << 8) | device_fn;
@@ -142,10 +141,10 @@ int pcibios_read_config_byte(unsigned char bus,
 
         save_flags(flags);
         __asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%esi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%esi)\n\t"
+#else
+		"lcall *(%%esi)\n\t"
 #endif
                 "jc 1f\n\t"
                 "xor %%ah, %%ah\n"
@@ -160,8 +159,8 @@ int pcibios_read_config_byte(unsigned char bus,
         return (int) (ret & 0xff00) >> 8;
 }
 
-int pcibios_read_config_word(unsigned char bus,
-        unsigned char device_fn, unsigned char where, unsigned short *value)
+int pcibios_read_config_word(unsigned int bus,
+        unsigned int device_fn, unsigned int where, unsigned short *value)
 {
         unsigned long ret;
         unsigned long bx = (bus << 8) | device_fn;
@@ -169,10 +168,10 @@ int pcibios_read_config_word(unsigned char bus,
 
         save_flags(flags);
         __asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%esi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%esi)\n\t"
+#else
+		"lcall *(%%esi)\n\t"
 #endif
                 "jc 1f\n\t"
                 "xor %%ah, %%ah\n"
@@ -187,8 +186,8 @@ int pcibios_read_config_word(unsigned char bus,
         return (int) (ret & 0xff00) >> 8;
 }
 
-static int pcibios_read_config_dword(unsigned char bus,
-        unsigned char device_fn, unsigned char where, unsigned int *value)
+int pcibios_read_config_dword(unsigned int bus,
+        unsigned int device_fn, unsigned int where, unsigned int *value)
 {
         unsigned long ret;
         unsigned long bx = (bus << 8) | device_fn;
@@ -196,10 +195,10 @@ static int pcibios_read_config_dword(unsigned char bus,
 
         save_flags(flags);
         __asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%esi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%esi)\n\t"
+#else
+		"lcall *(%%esi)\n\t"
 #endif
                 "jc 1f\n\t"
                 "xor %%ah, %%ah\n"
@@ -214,8 +213,8 @@ static int pcibios_read_config_dword(unsigned char bus,
         return (int) (ret & 0xff00) >> 8;
 }
 
-int pcibios_write_config_byte (unsigned char bus,
-	unsigned char device_fn, unsigned char where, unsigned char value)
+int pcibios_write_config_byte (unsigned int bus,
+	unsigned int device_fn, unsigned int where, unsigned char value)
 {
 	unsigned long ret;
 	unsigned long bx = (bus << 8) | device_fn;
@@ -223,10 +222,10 @@ int pcibios_write_config_byte (unsigned char bus,
 
 	save_flags(flags); cli();
 	__asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%esi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%esi)\n\t"
+#else
+		"lcall *(%%esi)\n\t"
 #endif
 		"jc 1f\n\t"
 		"xor %%ah, %%ah\n"
@@ -241,8 +240,8 @@ int pcibios_write_config_byte (unsigned char bus,
 	return (int) (ret & 0xff00) >> 8;
 }
 
-int pcibios_write_config_word (unsigned char bus,
-	unsigned char device_fn, unsigned char where, unsigned short value)
+int pcibios_write_config_word (unsigned int bus,
+	unsigned int device_fn, unsigned int where, unsigned short value)
 {
 	unsigned long ret;
 	unsigned long bx = (bus << 8) | device_fn;
@@ -250,10 +249,10 @@ int pcibios_write_config_word (unsigned char bus,
 
 	save_flags(flags); cli();
 	__asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%esi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%esi)\n\t"
+#else
+		"lcall *(%%esi)\n\t"
 #endif
 		"jc 1f\n\t"
 		"xor %%ah, %%ah\n"
@@ -268,8 +267,8 @@ int pcibios_write_config_word (unsigned char bus,
 	return (int) (ret & 0xff00) >> 8;
 }
 
-int pcibios_write_config_dword (unsigned char bus,
-	unsigned char device_fn, unsigned char where, unsigned int value)
+int pcibios_write_config_dword (unsigned int bus,
+	unsigned int device_fn, unsigned int where, unsigned int value)
 {
 	unsigned long ret;
 	unsigned long bx = (bus << 8) | device_fn;
@@ -277,10 +276,10 @@ int pcibios_write_config_dword (unsigned char bus,
 
 	save_flags(flags); cli();
 	__asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-		"lcall *(%%esi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 		"lcall (%%esi)\n\t"
+#else
+		"lcall *(%%esi)\n\t"
 #endif
 		"jc 1f\n\t"
 		"xor %%ah, %%ah\n"
@@ -309,10 +308,10 @@ static void check_pcibios(void)
 
 		save_flags(flags);
 		__asm__(
-#ifndef ABSOLUTE_WITHOUT_ASTERISK
-			"lcall *(%%edi)\n\t"
-#else
+#ifdef ABSOLUTE_WITHOUT_ASTERISK
 			"lcall (%%edi)\n\t"
+#else
+			"lcall *(%%edi)\n\t"
 #endif
 			"jc 1f\n\t"
 			"xor %%ah, %%ah\n"
@@ -335,8 +334,8 @@ static void check_pcibios(void)
 		}
 #if	DEBUG
 		if (pcibios_entry) {
-			printf ("pcibios_init : PCI BIOS revision %b.%b"
-				" entry at 0x%X\n", major_revision,
+			printf ("pcibios_init : PCI BIOS revision %hhX.%hhX"
+				" entry at %#X\n", major_revision,
 				minor_revision, pcibios_entry);
 		}
 #endif
@@ -348,6 +347,7 @@ static void pcibios_init(void)
 	union bios32 *check;
 	unsigned char sum;
 	int i, length;
+	unsigned long bios32_entry = 0;
 
 	/*
 	 * Follow the standard procedure for locating the BIOS32 Service
@@ -368,13 +368,13 @@ static void pcibios_init(void)
 		if (sum != 0)
 			continue;
 		if (check->fields.revision != 0) {
-			printf("pcibios_init : unsupported revision %d at 0x%X, mail drew@colorado.edu\n",
+			printf("pcibios_init : unsupported revision %d at %#X, mail drew@colorado.edu\n",
 				check->fields.revision, check);
 			continue;
 		}
 #if	DEBUG
 		printf("pcibios_init : BIOS32 Service Directory "
-			"structure at 0x%X\n", check);
+			"structure at %#X\n", check);
 #endif
 		if (!bios32_entry) {
 			if (check->fields.entry >= 0x100000) {
@@ -385,7 +385,7 @@ static void pcibios_init(void)
 				bios32_entry = check->fields.entry;
 #if	DEBUG
 				printf("pcibios_init : BIOS32 Service Directory"
-					" entry at 0x%X\n", bios32_entry);
+					" entry at %#X\n", bios32_entry);
 #endif
 				bios32_indirect.address = bios32_entry;
 			}
@@ -402,11 +402,16 @@ static void scan_bus(struct pci_device *pcidev)
 	unsigned char hdr_type = 0;
 	unsigned short vendor, device;
 	unsigned int membase, ioaddr, romaddr;
-	unsigned char class, subclass;
 	int i, reg;
+	unsigned int pci_ioaddr = 0;
 
-	pci_ioaddr = 0;
-	buses=1;
+	/* Scan all PCI buses, until we find our card.
+	 * We could be smart only scan the required busses but that
+	 * is error prone, and tricky.
+	 * By scanning all possible pci busses in order we should find
+	 * our card eventually. 
+	 */
+	buses=256;
 	for (bus = 0; bus < buses; ++bus) {
 		for (devfn = 0; devfn < 0xff; ++devfn) {
 			if (PCI_FUNC (devfn) == 0)
@@ -422,20 +427,16 @@ static void scan_bus(struct pci_device *pcidev)
 			vendor = l & 0xffff;
 			device = (l >> 16) & 0xffff;
 
-			/* check for pci-pci bridge devices!! - more buses when found */
-			pcibios_read_config_byte(bus, devfn, PCI_CLASS_CODE, &class);
-			pcibios_read_config_byte(bus, devfn, PCI_SUBCLASS_CODE, &subclass);
-			if (class == 0x06 && subclass == 0x04)
-				buses++;
-
 #if	DEBUG
-			printf("bus %x, function %x, vendor %x, device %x\n",
+			printf("bus %hhX, function %hhX, vendor %hX, device %hX\n",
 				bus, devfn, vendor, device);
 #endif
 			for (i = 0; pcidev[i].vendor != 0; i++) {
 				if (vendor != pcidev[i].vendor
 				    || device != pcidev[i].dev_id)
 					continue;
+				pcidev[i].devfn = devfn;
+				pcidev[i].bus = bus;
 				for (reg = PCI_BASE_ADDRESS_0; reg <= PCI_BASE_ADDRESS_5; reg += 4) {
 					pcibios_read_config_dword(bus, devfn, reg, &ioaddr);
 
@@ -449,14 +450,12 @@ static void scan_bus(struct pci_device *pcidev)
 					/* Get the ROM base address */
 					pcibios_read_config_dword(bus, devfn, PCI_ROM_ADDRESS, &romaddr);
 					romaddr >>= 10;
-					printf("Found %s at 0x%x, ROM address 0x%X\n",
+					printf("Found %s at %#hx, ROM address %#hx\n",
 						pcidev[i].name, ioaddr, romaddr);
 					/* Take the first one or the one that matches in boot ROM address */
 					if (pci_ioaddr == 0 || romaddr == ((unsigned long) rom.rom_segment << 4)) {
 						pcidev[i].membase = membase;
 						pcidev[i].ioaddr = ioaddr;
-						pcidev[i].devfn = devfn;
-
 						return;
 					}
 				}
@@ -476,4 +475,27 @@ void eth_pci_init(struct pci_device *pcidev)
 #endif
 	scan_bus(pcidev);
 	/* return values are in pcidev structures */
+}
+
+/*
+ *	Set device to be a busmaster in case BIOS neglected to do so.
+ *	Also adjust PCI latency timer to a reasonable value, 32.
+ */
+void adjust_pci_device(struct pci_device *p)
+{
+	unsigned short	new_command, pci_command;
+	unsigned char	pci_latency;
+
+	pcibios_read_config_word(p->bus, p->devfn, PCI_COMMAND, &pci_command);
+	new_command = pci_command | PCI_COMMAND_MASTER|PCI_COMMAND_IO;
+	if (pci_command != new_command) {
+		printf("The PCI BIOS has not enabled this device!\nUpdating PCI command %hX->%hX. pci_bus %hhX pci_device_fn %hhX\n",
+			   pci_command, new_command, p->bus, p->devfn);
+		pcibios_write_config_word(p->bus, p->devfn, PCI_COMMAND, new_command);
+	}
+	pcibios_read_config_byte(p->bus, p->devfn, PCI_LATENCY_TIMER, &pci_latency);
+	if (pci_latency < 32) {
+		printf("PCI latency timer (CFLT) is unreasonably low at %d. Setting to 32 clocks.\n", pci_latency);
+		pcibios_write_config_byte(p->bus, p->devfn, PCI_LATENCY_TIMER, 32);
+	}
 }

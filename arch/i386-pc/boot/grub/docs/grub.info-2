@@ -1,4 +1,4 @@
-This is grub.info, produced by makeinfo version 4.0 from grub.texi.
+This is grub.info, produced by makeinfo version 4.1 from grub.texi.
 
 INFO-DIR-SECTION Kernel
 START-INFO-DIR-ENTRY
@@ -6,11 +6,13 @@ START-INFO-DIR-ENTRY
 * grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
 * grub-md5-crypt: (grub)Invoking grub-md5-crypt.        Encrypt a password
                                                         in MD5 format
+* grub-terminfo: (grub)Invoking grub-terminfo.  Generate a terminfo
+                                                command from a
+                                                terminfo name
 * mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
 END-INFO-DIR-ENTRY
 
-   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000, 2001 Free
-Software Foundation, Inc.
+   Copyright (C) 1999,2000,2001,2002 Free Software Foundation, Inc.
 
    Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -24,6 +26,81 @@ of a permission notice identical to this one.
    Permission is granted to copy and distribute translations of this
 manual into another language, under the above conditions for modified
 versions.
+
+
+File: grub.info,  Node: Images,  Next: Filesystem,  Prev: Security,  Up: Top
+
+GRUB image files
+****************
+
+   GRUB consists of several images: two essential stages, optional
+stages called "Stage 1.5", and two network boot images. Here is a short
+overview of them. *Note Internals::, for more details.
+
+`stage1'
+     This is an essential image used for booting up GRUB. Usually, this
+     is embedded in a MBR or the boot sector of a partition. Because a
+     PC boot sector is 512 bytes, the size of this image is exactly 512
+     bytes.
+
+     All `stage1' must do is to load Stage 2 or Stage 1.5 from a local
+     disk. Because of the size restriction, `stage1' encodes the
+     location of Stage 2 (or Stage 1.5) in a block list format, so it
+     never understand any filesystem structure.
+
+`stage2'
+     This is the core image of GRUB. This does all things but booting up
+     itself. Usually, this is put in a filesystem, but that is not
+     required.
+
+`e2fs_stage1_5'
+`fat_stage1_5'
+`ffs_stage1_5'
+`jfs_stage1_5'
+`minix_stage1_5'
+`reiserfs_stage1_5'
+`vstafs_stage1_5'
+`xfs_stage1_5'
+     These are called "Stage 1.5", because the purpose is a bridge
+     between `stage1' and `stage2', that is to say, Stage 1.5 is loaded
+     by Stage 1 and Stage 1.5 loads Stage 2. The difference between
+     `stage1' and `*_stage1_5' is that the former doesn't understand
+     any filesystem but the latter does an filesystem (e.g.
+     `e2fs_stage1_5' understands ext2fs). So you can move the location
+     of Stage 2 to another safely, even after GRUB has been installed.
+
+     While Stage 2 cannot generally be embedded in a fixed area as the
+     size is so large, Stage 1.5 can be installed into the area right
+     after a MBR, or the boot loader area of a ReiserFS or a FFS.
+
+`nbgrub'
+     This is a network boot image for the Network Image Proposal used
+     by some network boot loaders, such as Etherboot. This is mostly
+     the same as Stage 2, but this also sets up a network and loads a
+     configuration file from the network.
+
+`pxegrub'
+     This is another network boot image for the Preboot Execution
+     Environment used by several Netboot ROMs. This is identical to
+     `nbgrub', except for the format.
+
+
+File: grub.info,  Node: Filesystem,  Next: Interface,  Prev: Images,  Up: Top
+
+Filesystem syntax and semantics
+*******************************
+
+   GRUB uses a special syntax for specifying disk drives which can be
+accessed by BIOS. Because of BIOS limitations, GRUB cannot distinguish
+between IDE, ESDI, SCSI, or others. You must know yourself which BIOS
+device is equivalent to which OS device. Normally, that will be clear if
+you see the files in a device or use the command `find' (*note find::).
+
+* Menu:
+
+* Device syntax::               How to specify devices
+* File name syntax::            How to specify files
+* Block list syntax::           How to specify block lists
 
 
 File: grub.info,  Node: Device syntax,  Next: File name syntax,  Up: Filesystem
@@ -398,6 +475,7 @@ The list of general commands
 * dhcp::                        Initialize a network device via DHCP
 * hide::                        Hide a partition
 * ifconfig::                    Configure a network device manually
+* pager::                       Change the state of the internal pager
 * partnew::                     Make a primary partition
 * parttype::                    Change the type of a partition
 * password::                    Set a password for the menu interface
@@ -405,6 +483,7 @@ The list of general commands
 * serial::                      Set up a serial device
 * setkey::                      Configure the key map
 * terminal::                    Choose a terminal
+* terminfo::                    Define escape sequences for a terminal
 * tftpserver::                  Specify a TFTP server
 * unhide::                      Unhide a partition
 
@@ -534,7 +613,7 @@ hide
      also *Note DOS/Windows::.
 
 
-File: grub.info,  Node: ifconfig,  Next: partnew,  Prev: hide,  Up: General commands
+File: grub.info,  Node: ifconfig,  Next: pager,  Prev: hide,  Up: General commands
 
 ifconfig
 --------
@@ -548,7 +627,18 @@ ifconfig
      if no option is specified. See also *Note Network::.
 
 
-File: grub.info,  Node: partnew,  Next: parttype,  Prev: ifconfig,  Up: General commands
+File: grub.info,  Node: pager,  Next: partnew,  Prev: ifconfig,  Up: General commands
+
+pager
+-----
+
+ - Command: pager [flag]
+     Toggle or set the state of the internal pager. If FLAG is `on',
+     the internal pager is enabled. If FLAG is `off', it is disabled.
+     If no argument is given, the state is toggled.
+
+
+File: grub.info,  Node: partnew,  Next: parttype,  Prev: pager,  Up: General commands
 
 partnew
 -------
@@ -754,12 +844,13 @@ setkey
           ` '
 
 
-File: grub.info,  Node: terminal,  Next: tftpserver,  Prev: setkey,  Up: General commands
+File: grub.info,  Node: terminal,  Next: terminfo,  Prev: setkey,  Up: General commands
 
 terminal
 --------
 
- - Command: terminal [`--dumb'] [`--timeout=secs'] [`console']
+ - Command: terminal [`--dumb'] [`--no-echo'] [`--no-edit']
+          [`--timeout=secs'] [`--lines=lines'] [`--silent'] [`console']
           [`serial'] [`hercules']
      Select a terminal for user interaction. The terminal is assumed to
      be VT100-compatible unless `--dumb' is specified. If both
@@ -774,8 +865,39 @@ terminal
      console, and the usage is quite similar to that for serial
      terminals: specify `hercules' as the argument.
 
+     The option `--lines' defines the number of lines in your terminal,
+     and it is used for the internal pager function. If you don't
+     specify this option, the number is assumed as 24.
+
+     The option `--silent' suppresses the message to prompt you to hit
+     any key. This might be useful if your system has no terminal
+     device.
+
+     The option `--no-echo' has GRUB not to echo back input characters.
+     This implies the option `--no-edit'.
+
+     The option `--no-edit' disables the BASH-like editing feature.
+
 
-File: grub.info,  Node: tftpserver,  Next: unhide,  Prev: terminal,  Up: General commands
+File: grub.info,  Node: terminfo,  Next: tftpserver,  Prev: terminal,  Up: General commands
+
+terminfo
+--------
+
+ - Command: terminfo `--name=name' `--cursor-address=seq'
+          [`--clear-screen=seq'] [`--enter-standout-mode=seq']
+          [`--exit-standout-mode=seq']
+     Define the capabilities of your terminal. Use this command to
+     define escape sequences, if it is not vt100-compatible. You may
+     use `\e' for <ESC> and `^X' for a control character.
+
+     You can use the utility `grub-terminfo' to generate appropriate
+     arguments to this command. *Note Invoking grub-terminfo::.
+
+     If no option is specified, the current settings are printed.
+
+
+File: grub.info,  Node: tftpserver,  Next: unhide,  Prev: terminfo,  Up: General commands
 
 tftpserver
 ----------
@@ -1042,12 +1164,15 @@ File: grub.info,  Node: help,  Next: impsprobe,  Prev: halt,  Up: Command-line a
 help
 ----
 
- - Command: help [pattern ...]
+ - Command: help `--all' [pattern ...]
      Display helpful information about builtin commands. If you do not
-     specify PATTERN, this command shows short descriptions of all
-     available commands.  If you specify any PATTERNS, it displays
-     longer information about each of the commands which match those
-     PATTERNS.
+     specify PATTERN, this command shows short descriptions of most of
+     available commands. If you specify the option `--all' to this
+     command, short descriptions of rarely used commands (such as *Note
+     testload::) are displayed as well.
+
+     If you specify any PATTERNS, it displays longer information about
+     each of the commands which match those PATTERNS.
 
 
 File: grub.info,  Node: impsprobe,  Next: initrd,  Prev: help,  Up: Command-line and menu entry commands
@@ -1378,121 +1503,4 @@ setup
 
      The options `--force-lba' and `--stage2' are just passed to
      `install' if specified. *Note install::, for more information.
-
-
-File: grub.info,  Node: testload,  Next: testvbe,  Prev: setup,  Up: Command-line and menu entry commands
-
-testload
---------
-
- - Command: testload file
-     Read the entire contents of FILE in several different ways and
-     compares them, to test the filesystem code. The output is somewhat
-     cryptic, but if no errors are reported and the final `i=X,
-     filepos=Y' reading has X and Y equal, then it is definitely
-     consistent, and very likely works correctly subject to a
-     consistent offset error. If this test succeeds, then a good next
-     step is to try loading a kernel.
-
-
-File: grub.info,  Node: testvbe,  Next: uppermem,  Prev: testload,  Up: Command-line and menu entry commands
-
-testvbe
--------
-
- - Command: testvbe mode
-     Test the VESA BIOS EXTENSION mode MODE. This command will switch
-     your video card to the graphics mode, and show an endless
-     animation. Hit any key to return. See also *Note vbeprobe::.
-
-
-File: grub.info,  Node: uppermem,  Next: vbeprobe,  Prev: testvbe,  Up: Command-line and menu entry commands
-
-uppermem
---------
-
- - Command: uppermem kbytes
-     Force GRUB to assume that only KBYTES kilobytes of upper memory
-     are installed. Any system address range maps are discarded.
-
-     *Caution:* This should be used with great caution, and should only
-     be necessary on some old machines. GRUB's BIOS probe can pick up
-     all RAM on all new machines the author has ever heard of. It can
-     also be used for debugging purposes to lie to an OS.
-
-
-File: grub.info,  Node: vbeprobe,  Prev: uppermem,  Up: Command-line and menu entry commands
-
-vbeprobe
---------
-
- - Command: vbeprobe [mode]
-     Probe VESA BIOS EXTENSION information. If the mode MODE is
-     specified, show only the information about MODE. Otherwise, this
-     command lists up available VBE modes on the screen. See also *Note
-     testvbe::.
-
-
-File: grub.info,  Node: Troubleshooting,  Next: Invoking the grub shell,  Prev: Commands,  Up: Top
-
-Error messages reported by GRUB
-*******************************
-
-   This chapter describes error messages reported by GRUB when you
-encounter trouble. *Note Invoking the grub shell::, if your problem is
-specific to the grub shell.
-
-* Menu:
-
-* Stage1 errors::               Errors reported by the Stage 1
-* Stage1.5 errors::             Errors reported by the Stage 1.5
-* Stage2 errors::               Errors reported by the Stage 2
-
-
-File: grub.info,  Node: Stage1 errors,  Next: Stage1.5 errors,  Up: Troubleshooting
-
-Errors reported by the Stage 1
-==============================
-
-   The general way that the Stage 1 handles errors is to print an error
-string and then halt. Pressing `<CTRL>-<ALT>-<DEL>' will reboot.
-
-   The following is a comprehensive list of error messages for the
-Stage 1:
-
-Hard Disk Error
-     The stage2 or stage1.5 is being read from a hard disk, and the
-     attempt to determine the size and geometry of the hard disk failed.
-
-Floppy Error
-     The stage2 or stage1.5 is being read from a floppy disk, and the
-     attempt to determine the size and geometry of the floppy disk
-     failed. It's listed as a separate error since the probe sequence
-     is different than for hard disks.
-
-Read Error
-     A disk read error happened while trying to read the stage2 or
-     stage1.5.
-
-Geom Error
-     The location of the stage2 or stage1.5 is not in the portion of
-     the disk supported directly by the BIOS read calls.  This could
-     occur because the BIOS translated geometry has been changed by the
-     user or the disk is moved to another machine or controller after
-     installation, or GRUB was not installed using itself (if it was,
-     the Stage 2 version of this error would have been seen during that
-     process and it would not have completed the install).
-
-
-File: grub.info,  Node: Stage1.5 errors,  Next: Stage2 errors,  Prev: Stage1 errors,  Up: Troubleshooting
-
-Errors reported by the Stage 1.5
-================================
-
-   The general way that the Stage 1.5 handles errors is to print an
-error number in the form `Error NUM' and then halt. Pressing
-`<CTRL>-<ALT>-<DEL>' will reboot.
-
-   The error numbers correspond to the errors reported by Stage 2.
-*Note Stage2 errors::.
 

@@ -87,7 +87,7 @@ host_vendor = @host_vendor@
 install_sh = @install_sh@
 
 bin_PROGRAMS = mbchk
-sbin_SCRIPTS = grub-install grub-md5-crypt
+sbin_SCRIPTS = grub-install grub-md5-crypt grub-terminfo
 noinst_SCRIPTS = grub-image
 #noinst_DATA = menu.lst
 
@@ -101,7 +101,8 @@ mbchk_LDADD = ../lib/libcommon.a
 subdir = util
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES = grub-image grub-install grub-md5-crypt
+CONFIG_CLEAN_FILES = grub-image grub-install grub-md5-crypt \
+	grub-terminfo
 bin_PROGRAMS = mbchk$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 
@@ -126,7 +127,7 @@ LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 CFLAGS = @CFLAGS@
 DIST_SOURCES = $(mbchk_SOURCES)
 DIST_COMMON = Makefile.am Makefile.in grub-image.in grub-install.in \
-	grub-md5-crypt.in
+	grub-md5-crypt.in grub-terminfo.in
 SOURCES = $(mbchk_SOURCES)
 
 all: all-am
@@ -145,6 +146,8 @@ grub-image: $(top_builddir)/config.status grub-image.in
 grub-install: $(top_builddir)/config.status grub-install.in
 	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
 grub-md5-crypt: $(top_builddir)/config.status grub-md5-crypt.in
+	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
+grub-terminfo: $(top_builddir)/config.status grub-terminfo.in
 	cd $(top_builddir) && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)

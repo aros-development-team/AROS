@@ -688,12 +688,12 @@ rhine_init_ring (struct nic *nic)
 
 	tp->rx_ring[i].buf_addr_1 = virt_to_bus (tp->rx_buffs[i]);
 	tp->rx_ring[i].buf_addr_2 = virt_to_bus (&tp->rx_ring[i + 1]);
-	/* printf("[%d]buf1=%x,buf2=%x",i,tp->rx_ring[i].buf_addr_1,tp->rx_ring[i].buf_addr_2); */
+	/* printf("[%d]buf1=%hX,buf2=%hX",i,tp->rx_ring[i].buf_addr_1,tp->rx_ring[i].buf_addr_2); */
     }
     /* Mark the last entry as wrapping the ring. */
     /* tp->rx_ring[i-1].rx_ctrl.bits.rx_buf_size =1518; */
     tp->rx_ring[i - 1].buf_addr_2 = virt_to_bus (&tp->rx_ring[0]);
-    /*printf("[%d]buf1=%x,buf2=%x",i-1,tp->rx_ring[i-1].buf_addr_1,tp->rx_ring[i-1].buf_addr_2); */
+    /*printf("[%d]buf1=%hX,buf2=%hX",i-1,tp->rx_ring[i-1].buf_addr_1,tp->rx_ring[i-1].buf_addr_2); */
 
     /* The Tx buffer descriptor is filled in as needed, but we
        do need to clear the ownership bit. */
@@ -705,11 +705,11 @@ rhine_init_ring (struct nic *nic)
 	tp->tx_ring[i].tx_ctrl.lw = 0x00e08000;
 	tp->tx_ring[i].buf_addr_1 = virt_to_bus (tp->tx_buffs[i]);
 	tp->tx_ring[i].buf_addr_2 = virt_to_bus (&tp->tx_ring[i + 1]);
-	/* printf("[%d]buf1=%x,buf2=%x",i,tp->tx_ring[i].buf_addr_1,tp->tx_ring[i].buf_addr_2); */
+	/* printf("[%d]buf1=%hX,buf2=%hX",i,tp->tx_ring[i].buf_addr_1,tp->tx_ring[i].buf_addr_2); */
     }
 
     tp->tx_ring[i - 1].buf_addr_2 = virt_to_bus (&tp->tx_ring[0]);
-    /* printf("[%d]buf1=%x,buf2=%x",i,tp->tx_ring[i-1].buf_addr_1,tp->tx_ring[i-1].buf_addr_2); */
+    /* printf("[%d]buf1=%hX,buf2=%hX",i,tp->tx_ring[i-1].buf_addr_1,tp->tx_ring[i-1].buf_addr_2); */
 }
 
 int
@@ -717,33 +717,24 @@ QueryAuto (int ioaddr)
 {
     int byMIIIndex;
     int MIIReturn;
-    int FDXFlag;
-    byMIIIndex = 0x06;
-    MIIReturn = ReadMII (byMIIIndex, ioaddr);
-    if ((MIIReturn & 0x01) == 0)
-    {
-	FDXFlag = 0;
-	return FDXFlag;
-    }
 
-    byMIIIndex = 0x05;
-    MIIReturn = ReadMII (byMIIIndex, ioaddr);
-    if ((MIIReturn & 0x0140) == 0)
-    {
-	FDXFlag = 0;
-	return FDXFlag;
-    }
+	int advertising,mii_reg5;
+	int negociated;
 
     byMIIIndex = 0x04;
     MIIReturn = ReadMII (byMIIIndex, ioaddr);
-    if ((MIIReturn & 0x0140) == 0)
-    {
-	FDXFlag = 0;
-	return FDXFlag;
-    }
+	advertising=MIIReturn;
 
-    FDXFlag = 1;
-    return FDXFlag;
+    byMIIIndex = 0x05;
+    MIIReturn = ReadMII (byMIIIndex, ioaddr);
+	mii_reg5=MIIReturn;
+
+	negociated=mii_reg5 & advertising;
+
+	if ( (negociated & 0x100) || (negociated & 0x1C0) == 0x40 )
+		return 1;
+	else
+		return 0;
 
 }
 
@@ -867,35 +858,12 @@ struct nic *
 rhine_probe (struct nic *nic, unsigned short *probeaddrs,
 	       struct pci_device *pci)
 {
-    unsigned char pci_latency;
-    unsigned short pci_command;
-
     if (!pci->ioaddr)
 	return NULL;
     nic = rhine_probe1 (nic, pci->ioaddr, 0, -1);
 
     if (nic)
-    {
-	/* Get and check the bus-master and latency values. */
-	pcibios_read_config_word (0, pci->devfn, PCI_COMMAND, &pci_command);
-	if (!(pci_command & PCI_COMMAND_MASTER))
-	{
-	    printf ("  PCI Master Bit has not been set! Setting...\n");
-	    pci_command |= PCI_COMMAND_MASTER;
-	    pcibios_write_config_word (0, pci->devfn, PCI_COMMAND,
-				       pci_command);
-	}
-	pcibios_read_config_byte (0, pci->devfn, PCI_LATENCY_TIMER,
-				  &pci_latency);
-	if (pci_latency < 10)
-	{
-	    printf ("  PCI latency timer (CFLT) is unreasonably low "
-		    "at %d.  Setting to 64 clocks.\n", pci_latency);
-	    pcibios_write_config_byte (0, pci->devfn, PCI_LATENCY_TIMER, 64);
-	}
-	else if (rhine_debug > 1)
-	    printf ("  PCI latency timer (CFLT) is %#x.\n", pci_latency);
-    }
+	adjust_pci_device(pci);
     nic->poll = rhine_poll;
     nic->transmit = rhine_transmit;
     nic->reset = rhine_reset;
@@ -917,14 +885,10 @@ rhine_probe1 (struct nic *nic, int ioaddr, int chip_id, int options)
 
     if (rhine_debug > 0 && did_version++ == 0)
 	printf (version);
-    printf ("IO adress %x ", ioaddr);
     /* Perhaps this should be read from the EEPROM? */
-    for (i = 0; i < 6; i++)
+    for (i = 0; i < ETH_ALEN; i++)
 	nic->node_addr[i] = inb (byPAR0 + i);
-    printf ("Ethernet Address: ");
-    for (i = 0; i < 5; i++)
-	printf ("0x%b:", nic->node_addr[i]);
-    printf ("0x%b\n", nic->node_addr[i]);
+    printf ("IO address %hX Ethernet Address: %!\n", ioaddr, nic->node_addr);
 
     /* restart MII auto-negotiation */
     WriteMII (0, 9, 1, ioaddr);
@@ -939,10 +903,27 @@ rhine_probe1 (struct nic *nic, int ioaddr, int chip_id, int options)
 	    break;
     }
     printf ("OK\n");
+
+#if	0
+	/* JJM : for Debug */
+	printf("MII : Address %hhX ",inb(ioaddr+0x6c));
+	{
+	 unsigned char st1,st2,adv1,adv2,l1,l2;
+	
+	 st1=ReadMII(1,ioaddr)>>8;
+	 st2=ReadMII(1,ioaddr)&0xFF;
+	 adv1=ReadMII(4,ioaddr)>>8;
+	 adv2=ReadMII(4,ioaddr)&0xFF;
+	 l1=ReadMII(5,ioaddr)>>8;
+	 l2=ReadMII(5,ioaddr)&0xFF;
+	 printf(" status 0x%hhX%hhX, advertising 0x%hhX%hhX, link 0x%hhX%hhX\n", st1,st2,adv1,adv2,l1,l2);
+	}
+#endif
+
     /* query MII to know LineSpeed,duplex mode */
     byMIIvalue = inb (ioaddr + 0x6d);
     LineSpeed = byMIIvalue & MIISR_SPEED;
-    if (LineSpeed == 1)
+    if (LineSpeed != 0)						//JJM
     {
 	printf ("Linespeed=10Mbs");
     }
@@ -950,6 +931,7 @@ rhine_probe1 (struct nic *nic, int ioaddr, int chip_id, int options)
     {
 	printf ("Linespeed=100Mbs");
     }
+	
     FDXFlag = QueryAuto (ioaddr);
     if (FDXFlag == 1)
     {
@@ -960,6 +942,7 @@ rhine_probe1 (struct nic *nic, int ioaddr, int chip_id, int options)
     {
 	printf (" Halfduplex\n");
     }
+
 
     /* set MII 10 FULL ON */
     WriteMII (17, 1, 1, ioaddr);
@@ -994,8 +977,14 @@ rhine_probe1 (struct nic *nic, int ioaddr, int chip_id, int options)
 static void
 rhine_disable (struct nic *nic)
 {
+    struct rhine_private *tp = (struct rhine_private *) nic->priv_data;
+    int ioaddr = tp->ioaddr;
+
     printf ("rhine disable\n");
-    /* nothing for the moment */
+    /* Switch to loopback mode to avoid hardware races. */
+    writeb(0x60 | 0x01, byTCR);
+    /* Stop the chip's Tx and Rx processes. */
+    writew(CR_STOP, byCR0);
 }
 
 /**************************************************************************
@@ -1013,7 +1002,7 @@ rhine_reset (struct nic *nic)
     int rx_bufs_tmp, rx_bufs_tmp1;
     int tx_bufs_tmp, tx_bufs_tmp1;
 
-#ifndef	USE_INTERNAL_BUFFER
+#ifdef	USE_LOWMEM_BUFFER
 #define buf1 (0x10000 - (RX_RING_SIZE * PKT_BUF_SZ + 32))
 #define buf2 (buf1 - (RX_RING_SIZE * PKT_BUF_SZ + 32))
 #define desc1 (buf2 - (TX_RING_SIZE * sizeof (struct rhine_tx_desc) + 32))
@@ -1043,32 +1032,36 @@ rhine_reset (struct nic *nic)
     tx_ring_tmp1 = (int) virt_to_bus ((char *) tx_ring_tmp);
     j = (tx_ring_tmp1 + 32) & (~0x1f);
     tp->tx_ring = (struct rhine_tx_desc *) bus_to_virt (j);
-    /* printf ("rxring[%x]", j); */
+    /* printf ("rxring[%X]", j); */
 
 
     tx_bufs_tmp1 = (int) virt_to_bus ((char *) tx_bufs_tmp);
     j = (int) (tx_bufs_tmp1 + 32) & (~0x1f);
     tx_bufs_tmp = (int) bus_to_virt (j);
-    /* printf ("txb[%x]", j); */
+    /* printf ("txb[%X]", j); */
 
     rx_bufs_tmp1 = (int) virt_to_bus ((char *) rx_bufs_tmp);
     j = (int) (rx_bufs_tmp1 + 32) & (~0x1f);
     rx_bufs_tmp = (int) bus_to_virt (j);
-    /* printf ("rxb[%x][%x]", rx_bufs_tmp1, j); */
+    /* printf ("rxb[%X][%X]", rx_bufs_tmp1, j); */
 
     for (i = 0; i < RX_RING_SIZE; i++)
     {
 	tp->rx_buffs[i] = (char *) rx_bufs_tmp;
-	/* printf("r[%x]",tp->rx_buffs[i]); */
+	/* printf("r[%X]",tp->rx_buffs[i]); */
 	rx_bufs_tmp += 1536;
     }
 
     for (i = 0; i < TX_RING_SIZE; i++)
     {
 	tp->tx_buffs[i] = (char *) tx_bufs_tmp;
-	/* printf("t[%x]",tp->tx_buffs[i]);  */
+	/* printf("t[%X]",tp->tx_buffs[i]);  */
 	tx_bufs_tmp += 1536;
     }
+
+    /* software reset */
+    outb (CR1_SFRST, byCR1);
+    MIIDelay ();
 
     /* printf ("init ring"); */
     rhine_init_ring (nic);
@@ -1079,9 +1072,6 @@ rhine_reset (struct nic *nic)
     /* close IMR */
     outw (0x0000, byIMR0);
 
-    /* software reset */
-    outb (CR1_SFRST, byCR1);
-    MIIDelay ();
     /* set TCR RCR threshold */
     outb (0x06, byBCR0);
     outb (0x00, byBCR1);
@@ -1119,7 +1109,7 @@ rhine_poll (struct nic *nic)
 	}
 	else if (rxstatus & (RSR_ABNORMAL))
 	{
-	    printf ("rxerr[%x]\n", rxstatus);
+	    printf ("rxerr[%X]\n", rxstatus);
 	}
 	else
 	    good = 1;
@@ -1153,16 +1143,16 @@ rhine_transmit (struct nic *nic,
     /* Calculate the next Tx descriptor entry. */
     entry = tp->cur_tx % TX_RING_SIZE;
 
-    memcpy ((void *) tp->tx_buffs[entry], d, ETHER_ADDR_SIZE);	/* dst */
-    memcpy ((void *) tp->tx_buffs[entry] + ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE);	/* src */
+    memcpy (tp->tx_buffs[entry], d, ETH_ALEN);	/* dst */
+    memcpy (tp->tx_buffs[entry] + ETH_ALEN, nic->node_addr, ETH_ALEN);	/* src */
     *((char *) tp->tx_buffs[entry] + 12) = t >> 8;	/* type */
     *((char *) tp->tx_buffs[entry] + 13) = t;
-    memcpy ((void *) tp->tx_buffs[entry] + ETHER_HDR_SIZE, p, s);
-    s += ETHER_HDR_SIZE;
-    while (s < ETH_MIN_PACKET)
-	*((char *) tp->tx_buffs[entry] + ETHER_HDR_SIZE + (s++)) = 0;
+    memcpy (tp->tx_buffs[entry] + ETH_HLEN, p, s);
+    s += ETH_HLEN;
+    while (s < ETH_ZLEN)
+	*((char *) tp->tx_buffs[entry] + ETH_HLEN + (s++)) = 0;
 
-    tp->tx_ring[entry].tx_ctrl.bits.tx_buf_size = ETHER_HDR_SIZE + s;
+    tp->tx_ring[entry].tx_ctrl.bits.tx_buf_size = ETH_HLEN + s;
 
     tp->tx_ring[entry].tx_status.bits.own_bit = 1;
 
@@ -1170,14 +1160,14 @@ rhine_transmit (struct nic *nic,
     CR1bak = inb (byCR1);
 
     CR1bak = CR1bak | CR1_TDMD1;
-    /*printf("tdsw=[%x]",tp->tx_ring[entry].tx_status.lw); */
-    /*printf("tdcw=[%x]",tp->tx_ring[entry].tx_ctrl.lw); */
-    /*printf("tdbuf1=[%x]",tp->tx_ring[entry].buf_addr_1); */
-    /*printf("tdbuf2=[%x]",tp->tx_ring[entry].buf_addr_2); */
-    /*printf("td1=[%x]",inl(dwCurrentTDSE0)); */
-    /*printf("td2=[%x]",inl(dwCurrentTDSE1)); */
-    /*printf("td3=[%x]",inl(dwCurrentTDSE2)); */
-    /*printf("td4=[%x]",inl(dwCurrentTDSE3)); */
+    /*printf("tdsw=[%X]",tp->tx_ring[entry].tx_status.lw); */
+    /*printf("tdcw=[%X]",tp->tx_ring[entry].tx_ctrl.lw); */
+    /*printf("tdbuf1=[%X]",tp->tx_ring[entry].buf_addr_1); */
+    /*printf("tdbuf2=[%X]",tp->tx_ring[entry].buf_addr_2); */
+    /*printf("td1=[%X]",inl(dwCurrentTDSE0)); */
+    /*printf("td2=[%X]",inl(dwCurrentTDSE1)); */
+    /*printf("td3=[%X]",inl(dwCurrentTDSE2)); */
+    /*printf("td4=[%X]",inl(dwCurrentTDSE3)); */
 
     outb (CR1bak, byCR1);
     tp->cur_tx++;

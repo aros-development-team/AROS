@@ -1,8 +1,7 @@
 /* disk_io.c - implement abstract BIOS disk input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,9 +19,13 @@
  */
 
 
-#include "shared.h"
+#include <shared.h>
+#include <filesys.h>
 
-#include "filesys.h"
+#ifdef SUPPORT_NETBOOT
+# define GRUB	1
+# include <etherboot.h>
+#endif
 
 #ifdef GRUB_UTIL
 # include <device.h>
@@ -72,6 +75,7 @@ struct fsys_entry fsys_table[NUM_FSYS + 1] =
 # ifdef FSYS_AFFS
   {"aFFS", affs_mount, affs_read, affs_dir, 0, 0},
 # endif
+
   /* XX FFS should come last as it's superblock is commonly crossing tracks
      on floppies from track 1 to 2, while others only use 1.  */
 # ifdef FSYS_FFS
@@ -89,8 +93,7 @@ unsigned long current_partition;
 #ifndef STAGE1_5
 /* The register ESI should contain the address of the partition to be
    used for loading a chain-loader when chain-loading the loader.  */
-unsigned long boot_part_addr;
-unsigned long boot_part_offset;
+unsigned long boot_part_addr = 0;
 #endif
 
 /*
@@ -149,6 +152,13 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	  buf_track = -1;
 	}
 
+      /* Make sure that SECTOR is valid.  */
+      if (sector < 0 || sector >= buf_geom.total_sectors)
+	{
+	  errnum = ERR_GEOM;
+	  return 0;
+	}
+      
       /*  Get first sector of track  */
       soff = sector % buf_geom.sectors;
       track = sector - soff;
@@ -382,8 +392,9 @@ static void
 attempt_mount (void)
 {
 #ifndef STAGE1_5
-  for (fsys_type = 0; fsys_type < NUM_FSYS
-       && (*(fsys_table[fsys_type].mount_func)) () != 1; fsys_type++);
+  for (fsys_type = 0; fsys_type < NUM_FSYS; fsys_type++)
+    if ((fsys_table[fsys_type].mount_func) ())
+      break;
 
   if (fsys_type == NUM_FSYS && errnum == ERR_NONE)
     errnum = ERR_FSYS_MOUNT;
@@ -464,30 +475,49 @@ make_saved_active (void)
 int
 set_partition_hidden_flag (int hidden)
 {
+  unsigned long part = 0xFFFFFF;
+  unsigned long start, len, offset, ext_offset;
+  int entry, type;
   char mbr[512];
   
-  if (current_drive & 0x80)
+  /* The drive must be a hard disk.  */
+  if (! (current_drive & 0x80))
     {
-      int part = current_partition >> 16;
-
-      if (part > 3)
-	{
-          errnum = ERR_NO_PART;
-          return 0;
-        }
-
-      if (! rawread (current_drive, 0, 0, SECTOR_SIZE, mbr))
-        return 0;
-
-      if (hidden)
-	PC_SLICE_TYPE (mbr, part) |= PC_SLICE_TYPE_HIDDEN_FLAG;
-      else
-	PC_SLICE_TYPE (mbr, part) &= ~PC_SLICE_TYPE_HIDDEN_FLAG;
-      
-      if (! rawwrite (current_drive, 0, mbr))
-	return 0;
+      errnum = ERR_BAD_ARGUMENT;
+      return 1;
     }
-
+  
+  /* The partition must be a PC slice.  */
+  if ((current_partition >> 16) == 0xFF
+      || (current_partition & 0xFFFF) != 0xFFFF)
+    {
+      errnum = ERR_BAD_ARGUMENT;
+      return 1;
+    }
+  
+  /* Look for the partition.  */
+  while (next_partition (current_drive, 0xFFFFFF, &part, &type,           
+			 &start, &len, &offset, &entry,
+			 &ext_offset, mbr))
+    {                                                                       
+      if (part == current_partition)
+	{
+	  /* Found.  */
+	  if (hidden)
+	    PC_SLICE_TYPE (mbr, entry) |= PC_SLICE_TYPE_HIDDEN_FLAG;
+	  else
+	    PC_SLICE_TYPE (mbr, entry) &= ~PC_SLICE_TYPE_HIDDEN_FLAG;       
+	  
+	  /* Write back the MBR to the disk.  */
+	  buf_track = -1;
+	  if (! rawwrite (current_drive, offset, mbr))
+	    return 1;
+	  
+	  /* Succeed.  */
+	  return 0;
+	}
+    }
+  
   return 1;
 }
 
@@ -923,9 +953,9 @@ set_device (char *device)
 	{
 	  char ch = *device;
 
-	  if (*device == 'f' || *device == 'h')
+	  if (*device == 'f' || *device == 'h' || *device == 'n')
 	    {
-	      /* user has given '([fh]', check for resp. add 'd' and
+	      /* user has given '([fhn]', check for resp. add 'd' and
 		 let disk_choice handle what disks we have */
 	      if (!*(device + 1))
 		{
@@ -1053,9 +1083,32 @@ set_bootdev (int hdbias)
 {
   int i, j;
 
-  /* Save the boot partition for chain-loading.  */
-  boot_part_offset = cur_part_offset;
-  boot_part_addr = cur_part_addr;
+  /* Copy the boot partition information to 0x7be-0x7fd for chain-loading.  */
+  if ((saved_drive & 0x80) && cur_part_addr)
+    {
+      if (rawread (saved_drive, cur_part_offset,
+		   0, SECTOR_SIZE, (char *) SCRATCHADDR))
+	{
+	  char *dst, *src;
+      
+	  /* Need only the partition table.
+	     XXX: We cannot use grub_memmove because BOOT_PART_TABLE
+	     (0x07be) is less than 0x1000.  */
+	  dst = (char *) BOOT_PART_TABLE;
+	  src = (char *) SCRATCHADDR + BOOTSEC_PART_OFFSET;
+	  while (dst < (char *) BOOT_PART_TABLE + BOOTSEC_PART_LENGTH)
+	    *dst++ = *src++;
+	  
+	  /* Set the active flag of the booted partition.  */
+	  for (i = 0; i < 4; i++)
+	    PC_SLICE_FLAG (BOOT_PART_TABLE, i) = 0;
+	  
+	  *((unsigned char *) cur_part_addr) = PC_SLICE_FLAG_BOOTABLE;
+	  boot_part_addr = cur_part_addr;
+	}
+      else
+	return 0;
+    }
   
   /*
    *  Set BSD boot device.
@@ -1294,6 +1347,11 @@ print_completions (int is_filename, int is_completion)
 			}
 		    }
 		}
+
+# ifdef SUPPORT_NETBOOT
+	      if (network_ready)
+		print_a_completion ("nd");
+# endif /* SUPPORT_NETBOOT */
 
 	      if (is_completion && *unique_string)
 		{

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ Author: Martin Renters
 
 #include <filesys.h>
 
+#define GRUB	1
 #include <etherboot.h>
 #include <nic.h>
 
@@ -56,13 +57,15 @@ buf_fill (int abort)
   while (! buf_eof && (buf_read + packetsize <= FSYS_BUFLEN))
     {
       struct tftp_t *tr;
-  
+      long timeout;
+
 #ifdef CONGESTED
-      if (! await_reply (AWAIT_TFTP, iport, NULL,
-			 block ? TFTP_REXMT : TIMEOUT))
+      timeout = rfc2131_sleep_interval (block ? TFTP_REXMT : TIMEOUT, retry);
 #else
-      if (! await_reply (AWAIT_TFTP, iport, NULL, TIMEOUT))
+      timeout = rfc2131_sleep_interval (TIMEOUT, retry);
 #endif
+  
+      if (! await_reply (AWAIT_TFTP, iport, NULL, timeout))
 	{
 	  if (ip_abort)
 	    return 0;
@@ -73,7 +76,6 @@ buf_fill (int abort)
 #ifdef TFTP_DEBUG
 	      grub_printf ("Maybe initial request was lost.\n");
 #endif
-	      rfc951_sleep (retry);
 	      if (! udp_transmit (arptable[ARP_SERVER].ipaddr.s_addr,
 				  ++iport, TFTP_PORT, len, &tp))
 		return 0;
@@ -98,7 +100,7 @@ buf_fill (int abort)
 	  return 0;
 	}
 
-      tr = (struct tftp_t *) &nic.packet[ETHER_HDR_SIZE];
+      tr = (struct tftp_t *) &nic.packet[ETH_HLEN];
       if (tr->opcode == ntohs (TFTP_ERROR))
 	{
 	  grub_printf ("TFTP error %d (%s)\n",
@@ -161,7 +163,9 @@ buf_fill (int abort)
 		  tp.u.err.errcode = 8;
 		  len = (grub_sprintf ((char *) tp.u.err.errmsg,
 				       "RFC1782 error")
-			 + TFTP_MIN_PACKET + 1);
+			 + sizeof (tp.ip) + sizeof (tp.udp)
+			 + sizeof (tp.opcode) + sizeof (tp.u.err.errcode)
+			 + 1);
 		  udp_transmit (arptable[ARP_SERVER].ipaddr.s_addr,
 				iport, ntohs (tr->udp.src),
 				len, &tp);
@@ -385,7 +389,7 @@ tftp_read (char *addr, int size)
 	}
 
       /* Read the data.  */
-      if (! buf_fill (0))
+      if (size > 0 && ! buf_fill (0))
 	{
 	  errnum = ERR_READ;
 	  return 0;
@@ -413,7 +417,7 @@ tftp_dir (char *dirname)
   grub_printf ("tftp_dir (%s)\n", dirname);
 #endif
   
-  /* In TFTP, there is no way to know what files exis.  */
+  /* In TFTP, there is no way to know what files exist.  */
   if (print_possibilities)
     return 1;
 
@@ -429,7 +433,7 @@ tftp_dir (char *dirname)
   len = (grub_sprintf ((char *) tp.u.rrq,
 		       "%s%coctet%cblksize%c%d%ctsize%c0",
 		       dirname, 0, 0, 0, TFTP_MAX_PACKET, 0, 0)
-	 + sizeof (struct iphdr) + sizeof (struct udphdr) + 2 + 1);
+	 + sizeof (tp.ip) + sizeof (tp.udp) + sizeof (tp.opcode) + 1);
   /* Restore the original DIRNAME.  */
   dirname[grub_strlen (dirname)] = ch;
   /* Save the TFTP packet so that we can reopen the file later.  */

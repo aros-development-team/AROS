@@ -1,7 +1,7 @@
 /* serial.h - serial device interface */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,38 +68,26 @@
 
 /* Function prototypes.  */
 
-/* The serial part of grub_putchar.  */
-void serial_putchar (int c);
+/* Fetch a key.  */
+int serial_hw_fetch (void);
 
-/* The serial part of getkey.  */
-int serial_getkey (void);
+/* Put a character.  */
+void serial_hw_put (int c);
 
-/* The serial part of checkkey.  */
-int serial_checkkey (void);
-
-/* The serial part of cls.  */
-void serial_cls (void);
-
-/* The serial part of getxy.  */
-int serial_getxy (void);
-
-/* The serial part of gotoxy.  */
-void serial_gotoxy (int x, int y);
+/* Insert a delay.  */
+void serial_hw_delay (void);
 
 /* Return the port number for the UNITth serial device.  */
-unsigned short serial_get_port (int unit);
+unsigned short serial_hw_get_port (int unit);
 
 /* Initialize a serial device.  */
-int serial_init (unsigned short port, unsigned int speed,
-		 int word_len, int parity, int stop_bit_len);
-
-/* Check if a serial port is set up.  */
-int serial_exists (void);
+int serial_hw_init (unsigned short port, unsigned int speed,
+		    int word_len, int parity, int stop_bit_len);
 
 #ifdef GRUB_UTIL
 /* Set the file name of a serial device (or a pty device). This is a
    function specific to the grub shell.  */
-void set_serial_device (const char *device);
+void serial_set_device (const char *device);
 #endif /* GRUB_UTIL */
 
 #endif /* ! GRUB_SERIAL_HEADER */

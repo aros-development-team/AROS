@@ -5,6 +5,7 @@
 #include "etherboot.h"
 #include "nic.h"
 #include "cards.h"
+#include "timer.h"
 #include "epic100.h"
 
 #undef	virt_to_bus
@@ -14,8 +15,6 @@
 #define RX_RING_SIZE	2
 
 #define PKT_BUF_SZ	1536	/* Size of each temporary Tx/Rx buffer.*/
-
-#define TIME_OUT	1000000
 
 /*
 #define DEBUG_RX
@@ -83,7 +82,7 @@ static unsigned short	eeprom[64];
 static signed char	phys[4];		/* MII device addresses. */
 static struct epic_rx_desc	rx_ring[RX_RING_SIZE];
 static struct epic_tx_desc	tx_ring[TX_RING_SIZE];
-#ifndef	USE_INTERNAL_BUFFER
+#ifdef	USE_LOWMEM_BUFFER
 #define rx_packet ((char *)0x10000 - PKT_BUF_SZ * RX_RING_SIZE)
 #define tx_packet ((char *)0x10000 - PKT_BUF_SZ * RX_RING_SIZE - PKT_BUF_SZ * TX_RING_SIZE)
 #else
@@ -170,7 +169,7 @@ epic100_probe(struct nic *nic, unsigned short *probeaddrs)
 #if	(EPIC_DEBUG > 1)
     printf("EEPROM contents\n");
     for (i = 0; i < 64; i++) {
-	printf(" %02x%s", eeprom[i], i % 16 == 15 ? "\n" : "");
+	printf(" %hhX%s", eeprom[i], i % 16 == 15 ? "\n" : "");
     }
 #endif
 #endif
@@ -180,10 +179,7 @@ epic100_probe(struct nic *nic, unsigned short *probeaddrs)
     for (i = 0; i < 3; i++)
 	*ap++ = inw(lan0 + i*4);
 
-    printf(" I/O %x ", ioaddr);
-
-    for (i = 0; i < 6; i++)
-	printf ("%b%c", nic->node_addr[i] , i < 5 ?':':' ');
+    printf(" I/O %#hX %! ", ioaddr, nic->node_addr);
 
     /* Find the connected MII xcvrs. */
     for (phy = 0, phy_idx = 0; phy < 32 && phy_idx < sizeof(phys); phy++) {
@@ -215,7 +211,7 @@ epic100_probe(struct nic *nic, unsigned short *probeaddrs)
 }
 
     static void
-epic100_open()
+epic100_open(void)
 {
     int mii_reg5;
     int full_duplex = 0;
@@ -253,7 +249,7 @@ epic100_open()
 
 /* Initialize the Rx and Tx rings. */
     static void
-epic100_init_ring()
+epic100_init_ring(void)
 {
     int i;
     char* p;
@@ -300,16 +296,14 @@ epic100_transmit(struct nic *nic, const char *destaddr, unsigned int type,
 		 unsigned int len, const char *data)
 {
     unsigned short nstype;
-    unsigned short status;
     char* txp;
-    int to;
     int entry;
 
     /* Calculate the next Tx descriptor entry. */
     entry = cur_tx % TX_RING_SIZE;
 
     if ((tx_ring[entry].status & TRING_OWN) == TRING_OWN) {
-	printf("eth_transmit: Unable to transmit. status=%x. Resetting...\n",
+	printf("eth_transmit: Unable to transmit. status=%hX. Resetting...\n",
 	       tx_ring[entry].status);
 
 	epic100_open();
@@ -318,13 +312,13 @@ epic100_transmit(struct nic *nic, const char *destaddr, unsigned int type,
 
     txp = (char*)tx_ring[entry].bufaddr;
 
-    memcpy(txp, destaddr, ETHER_ADDR_SIZE);
-    memcpy(txp + ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE);
+    memcpy(txp, destaddr, ETH_ALEN);
+    memcpy(txp + ETH_ALEN, nic->node_addr, ETH_ALEN);
     nstype = htons(type);
     memcpy(txp + 12, (char*)&nstype, 2);
-    memcpy(txp + ETHER_HDR_SIZE, data, len);
+    memcpy(txp + ETH_HLEN, data, len);
 
-    len += ETHER_HDR_SIZE;
+    len += ETH_HLEN;
 
     /*
      * Caution: the write order is important here,
@@ -340,25 +334,13 @@ epic100_transmit(struct nic *nic, const char *destaddr, unsigned int type,
     /* Trigger an immediate transmit demand. */
     outl(CR_QUEUE_TX, command);
 
-    to = TIME_OUT;
-    status = tx_ring[entry].status;
+    load_timer2(10*TICKS_PER_MS);         /* timeout 10 ms for transmit */
+    while ((tx_ring[entry].status & TRING_OWN) && timer2_running())
+	/* Wait */;
 
-    while ( (status & TRING_OWN) && --to) {
-	status = tx_ring[entry].status;
-    }
-
-    if ((status & TRING_OWN) == 0) {
-#ifdef	DEBUG_TX
-	printf("tx done after %d loop(s), status %x\n",
-	       TIME_OUT-to, tx_ring[entry].status );
-#endif
-	return;
-    }
-
-    if (to == 0) {
-	printf("OOPS, Something wrong with transmitter. status=%x\n",
-	       tx_ring[entry].status);
-    }
+    if ((tx_ring[entry].status & TRING_OWN) != 0)
+	printf("Oops, transmitter timeout, status=%hX\n",
+	    tx_ring[entry].status);
 }
 
 /* function: epic100_poll / eth_poll
@@ -376,35 +358,22 @@ epic100_transmit(struct nic *nic, const char *destaddr, unsigned int type,
     static int
 epic100_poll(struct nic *nic)
 {
-    int to;
     int entry;
     int status;
     int retcode;
 
     entry = cur_rx % RX_RING_SIZE;
-    cur_rx++;
-    to = TIME_OUT;
 
-    status = rx_ring[entry].status;
-    while ( (status & RRING_OWN) == RRING_OWN && --to) {
-	status = rx_ring[entry].status;
-    }
-
-    if (to == 0) {
-#ifdef	DEBUG_RX
-	printf("epic_poll: time out! status %x\n", status);
-#endif
-	/* Restart Receiver */
-	outl(CR_START_RX | CR_QUEUE_RX, command);
-	return 0;
-    }
+    if ((status = rx_ring[entry].status & RRING_OWN) == RRING_OWN)
+	return (0);
 
     /* We own the next entry, it's a new packet. Send it up. */
 
 #if	(EPIC_DEBUG > 4)
-    printf("epic_poll: entry %d status %8x\n", entry, status);
+    printf("epic_poll: entry %d status %hX\n", entry, status);
 #endif
 
+    cur_rx++;
     if (status & 0x2000) {
 	printf("epic_poll: Giant packet\n");
 	retcode = 0;

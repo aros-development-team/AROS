@@ -587,7 +587,7 @@ reiserfs_mount (void)
 	  || ! devread (superblock, 0, sizeof (struct reiserfs_super_block), 
 			(char *) &super))
 	return 0;
-      
+
       if (substring (REISER2FS_SUPER_MAGIC_STRING, super.s_magic) > 0
 	  && substring (REISERFS_SUPER_MAGIC_STRING, super.s_magic) > 0)
 	{
@@ -601,7 +601,7 @@ reiserfs_mount (void)
 	  super.s_version = 0;
 	}
     }
-  
+
   /* check the version number.  */
   if (super.s_version > REISERFS_MAX_SUPPORTED_VERSION)
     return 0;
@@ -612,7 +612,7 @@ reiserfs_mount (void)
   INFO->blocksize_shift = INFO->fullblocksize_shift - SECTOR_BITS;
   INFO->cached_slots = 
     (FSYSREISER_CACHE_SIZE >> INFO->fullblocksize_shift) - 1;
-  
+
   if (super.s_blocksize < FSYSREISER_MIN_BLOCKSIZE
       || super.s_blocksize > FSYSREISER_MAX_BLOCKSIZE
       || (SECTOR_SIZE << INFO->blocksize_shift) != super.s_blocksize)
@@ -643,7 +643,7 @@ reiserfs_mount (void)
   printf ("root read_in: block=%d, depth=%d\n", 
 	  super.s_root_block, INFO->tree_depth);
 #endif /* REISERDEBUG */
-  
+
   if (INFO->tree_depth >= MAX_HEIGHT)
     return 0;
   if (INFO->tree_depth == DISK_LEAF_NODE_LEVEL)

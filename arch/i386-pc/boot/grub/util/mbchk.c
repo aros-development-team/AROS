@@ -1,6 +1,6 @@
 /* mbchk - a simple checker for the format of a Multiboot kernel */
 /*
- *  Copyright (C) 1999  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <config.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 #include <multiboot.h>
 
@@ -39,15 +40,14 @@ usage (int status)
   if (status)
     fprintf (stderr, "Try ``mbchk --help'' for more information.\n");
   else
-    printf ("Usage: mbchk [OPTION]... [FILE]...
-Check if the format of FILE complies with the Multiboot Specification.
-
-  -q, --quiet                suppress all normal output
-  -h, --help                 display this help and exit
-  -v, --version              output version information and exit.
-
-Report bugs to <bug-grub@gnu.org>.
-");
+    printf ("Usage: mbchk [OPTION]... [FILE]...\n"
+	    "Check if the format of FILE complies with the Multiboot Specification.\n"
+	    "\n"
+	    "-q, --quiet                suppress all normal output\n"
+	    "-h, --help                 display this help and exit\n"
+	    "-v, --version              output version information and exit.\n"
+	    "\n"
+	    "Report bugs to <bug-grub@gnu.org>.\n");
 
   exit (status);
 }
@@ -126,7 +126,7 @@ check_multiboot (const char *filename, FILE *fp)
 	  return 0;
 	}
 
-      if (mbh->load_addr >= mbh->load_end_addr)
+      if (mbh->load_end_addr && mbh->load_addr >= mbh->load_end_addr)
 	{
 	  fprintf (stderr,
 		   "%s: load_addr is not less than load_end_addr"
@@ -135,7 +135,7 @@ check_multiboot (const char *filename, FILE *fp)
 	  return 0;
 	}
 
-      if (mbh->load_end_addr > mbh->bss_end_addr)
+      if (mbh->bss_end_addr && mbh->load_end_addr > mbh->bss_end_addr)
 	{
 	  fprintf (stderr,
 		   "%s: load_end_addr is greater than bss_end_addr"
@@ -153,7 +153,9 @@ check_multiboot (const char *filename, FILE *fp)
 	  return 0;
 	}
 
-      if (mbh->load_end_addr <= mbh->entry_addr)
+      /* FIXME: It is better to check if the entry address is within the
+	 file, especially when the load end address is zero.  */
+      if (mbh->load_end_addr && mbh->load_end_addr <= mbh->entry_addr)
 	{
 	  fprintf (stderr,
 		   "%s: load_end_addr is not less than entry_addr"

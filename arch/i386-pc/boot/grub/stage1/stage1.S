@@ -1,8 +1,7 @@
 /* -*-Asm-*- */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1996   Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999,2000   Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001   Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -149,6 +148,13 @@ real_start:
 	movw	$0x55aa, %bx
 	int	$0x13
 
+	/* 
+	 *  %dl may have been clobbered by INT 13, AH=41H.
+	 *  This happens, for example, with AST BIOS 1.04.
+	 */
+	popw	%dx
+	pushw	%dx
+
 	/* use CHS if fails */
 	jc	chs_mode
 	cmpw	$0xaa55, %bx
@@ -157,21 +163,10 @@ real_start:
 	/* check if AH=0x42 is supported if FORCE_LBA is zero */
 	MOV_MEM_TO_AL(ABS(force_lba))	/* movb	ABS(force_lba), %al */
 	testb	%al, %al
-	jnz	skip_lba_bitmap_check
+	jnz	lba_mode
 	andw	$1, %cx
 	jz	chs_mode
 	
-skip_lba_bitmap_check:
-	
-	/* get the geometry (limited to 2TB!) */
-	movb	$0x48, %ah
-	movw	$STAGE1_DRP_ADDR, %si
-	movw	$STAGE1_DRP_SIZE, (%si)
-	int	$0x13
-
-	/* use CHS if fails */
-	jc	chs_mode
-
 lba_mode:
 	/* save the total number of sectors */
 	movl	0x10(%si), %ecx
@@ -184,12 +179,6 @@ lba_mode:
 	
 	movl	ABS(stage2_sector), %ebx
 
-	/* check for the geometry */
-#ifdef NO_BUGGY_BIOS_IN_THE_WORLD
-	cmpl	%ecx, %ebx
-	jge	geometry_error
-#endif /* NO_BUGGY_BIOS_IN_THE_WORLD */
-	
 	/* the size and the reserved byte */
 	movw	$0x0010, (%si)
 

@@ -252,9 +252,9 @@ static void ns8390_reset(struct nic *nic)
 #endif
 		outb(D8390_COMMAND_PS1 |
 			D8390_COMMAND_RD2 | D8390_COMMAND_STP, eth_nic_base+D8390_P0_COMMAND);
-	for (i=0; i<ETHER_ADDR_SIZE; i++)
+	for (i=0; i<ETH_ALEN; i++)
 		outb(nic->node_addr[i], eth_nic_base+D8390_P1_PAR0+i);
-	for (i=0; i<ETHER_ADDR_SIZE; i++)
+	for (i=0; i<ETH_ALEN; i++)
 		outb(0xFF, eth_nic_base+D8390_P1_MAR0+i);
 	outb(eth_rx_start, eth_nic_base+D8390_P1_CURR);
 #ifdef	INCLUDE_WD
@@ -273,10 +273,10 @@ static void ns8390_reset(struct nic *nic)
         /*
          * No way to tell whether or not we're supposed to use
          * the 3Com's transceiver unless the user tells us.
-         * 'aui' should have some compile time default value
+         * 'flags' should have some compile time default value
          * which can be changed from the command menu.
          */
-	t503_output = (nic->aui) ? 0 : _3COM_CR_XSEL;
+	t503_output = (nic->flags) ? 0 : _3COM_CR_XSEL;
 	outb(t503_output, eth_asic_base + _3COM_CR);
 #endif
 }
@@ -344,31 +344,15 @@ static void ns8390_transmit(
 	unsigned int s,			/* size */
 	const char *p)			/* Packet */
 {
-	int c;				/* used in ETHERBOOT16 */
-
 #ifdef	INCLUDE_3C503
         if (!(eth_flags & FLAG_PIO)) {
-#ifdef	ETHERBOOT32
-                memcpy((void *)eth_bmem, d, ETHER_ADDR_SIZE);	/* dst */
-                memcpy((void *)eth_bmem+ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE); /* src */
+                memcpy((char *)eth_bmem, d, ETH_ALEN);	/* dst */
+                memcpy((char *)eth_bmem+ETH_ALEN, nic->node_addr, ETH_ALEN); /* src */
                 *((char *)eth_bmem+12) = t>>8;		/* type */
                 *((char *)eth_bmem+13) = t;
-                memcpy((void *)eth_bmem+ETHER_HDR_SIZE, p, s);
-                s += ETHER_HDR_SIZE;
-                while (s < ETH_MIN_PACKET) *((char *)eth_bmem+(s++)) = 0;
-#endif
-#ifdef	ETHERBOOT16
-		memcpyf(eth_bmem, d, ETHER_ADDR_SIZE);
-		memcpyf(eth_bmem+ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE);
-		c = t >> 8;
-		memcpyf(eth_bmem+12, &c, 1);
-		c = t;
-		memcpyf(eth_bmem+13, &c, 1);
-		memcpyf((Address)(eth_bmem+ETHER_HDR_SIZE), p, s);
-		s += ETHER_HDR_SIZE;
-		if (s < ETH_MIN_PACKET)
-			bzerof(eth_bmem+s, ETH_MIN_PACKET-s), s = ETH_MIN_PACKET;
-#endif
+                memcpy((char *)eth_bmem+ETH_HLEN, p, s);
+                s += ETH_HLEN;
+                while (s < ETH_ZLEN) *((char *)eth_bmem+(s++)) = 0;
         }
 #endif
 
@@ -383,28 +367,13 @@ static void ns8390_transmit(
 		inb(0x84);
 	}
 	inb(0x84);
-#ifdef	ETHERBOOT32
-	memcpy((void *)eth_bmem, d, ETHER_ADDR_SIZE);	/* dst */
-	memcpy((void *)eth_bmem+ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE); /* src */
+	memcpy((char *)eth_bmem, d, ETH_ALEN);	/* dst */
+	memcpy((char *)eth_bmem+ETH_ALEN, nic->node_addr, ETH_ALEN); /* src */
 	*((char *)eth_bmem+12) = t>>8;		/* type */
 	*((char *)eth_bmem+13) = t;
-	memcpy((void *)eth_bmem+ETHER_HDR_SIZE, p, s);
-	s += ETHER_HDR_SIZE;
-	while (s < ETH_MIN_PACKET) *((char *)eth_bmem+(s++)) = 0;
-#endif
-#ifdef	ETHERBOOT16
-	memcpyf(eth_bmem, d, ETHER_ADDR_SIZE);
-	memcpyf(eth_bmem+ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE);
-	c = t >> 8;
-	/* bcc generates worse code without (const+const) below */
-	memcpyf(eth_bmem+(ETHER_ADDR_SIZE+ETHER_ADDR_SIZE), &c, 1);
-	c = t;
-	memcpyf(eth_bmem+(ETHER_ADDR_SIZE+ETHER_ADDR_SIZE+1), &c, 1);
-	memcpyf((Address)(eth_bmem+ETHER_HDR_SIZE), p, s);
-	s += ETHER_HDR_SIZE;
-	if (s < ETH_MIN_PACKET)
-		bzerof(eth_bmem+s, ETH_MIN_PACKET-s), s = ETH_MIN_PACKET;
-#endif
+	memcpy((char *)eth_bmem+ETH_HLEN, p, s);
+	s += ETH_HLEN;
+	while (s < ETH_ZLEN) *((char *)eth_bmem+(s++)) = 0;
 	if (eth_flags & FLAG_790) {
 		outb(0, eth_asic_base + WD_MSR);
 		inb(0x84);
@@ -422,13 +391,13 @@ static void ns8390_transmit(
 		/* Programmed I/O */
 		unsigned short type;
 		type = (t >> 8) | (t << 8);
-		eth_pio_write(d, eth_tx_start<<8, ETHER_ADDR_SIZE);
-		eth_pio_write(nic->node_addr, (eth_tx_start<<8)+ETHER_ADDR_SIZE, ETHER_ADDR_SIZE);
+		eth_pio_write(d, eth_tx_start<<8, ETH_ALEN);
+		eth_pio_write(nic->node_addr, (eth_tx_start<<8)+ETH_ALEN, ETH_ALEN);
 		/* bcc generates worse code without (const+const) below */
-		eth_pio_write((unsigned char *)&type, (eth_tx_start<<8)+(ETHER_ADDR_SIZE+ETHER_ADDR_SIZE), 2);
-		eth_pio_write(p, (eth_tx_start<<8)+ETHER_HDR_SIZE, s);
-		s += ETHER_HDR_SIZE;
-		if (s < ETH_MIN_PACKET) s = ETH_MIN_PACKET;
+		eth_pio_write((unsigned char *)&type, (eth_tx_start<<8)+(ETH_ALEN+ETH_ALEN), 2);
+		eth_pio_write(p, (eth_tx_start<<8)+ETH_HLEN, s);
+		s += ETH_HLEN;
+		if (s < ETH_ZLEN) s = ETH_ZLEN;
 #endif
 #if	defined(INCLUDE_3C503)
 	}
@@ -499,15 +468,12 @@ static int ns8390_poll(struct nic *nic)
 	if (eth_flags & FLAG_PIO)
 		eth_pio_read(pktoff, (char *)&pkthdr, 4);
 	else
-#ifdef	ETHERBOOT32
-		memcpy(&pkthdr, (void *)eth_rmem + pktoff, 4);
-#endif
-#ifdef	ETHERBOOT16
-		fmemcpy(&pkthdr, eth_rmem + pktoff, 4);
-#endif
+		memcpy(&pkthdr, (char *)eth_rmem + pktoff, 4);
 	pktoff += sizeof(pkthdr);
-	len = pkthdr.len - 4; /* sub CRC */
-	if ((pkthdr.status & D8390_RSTAT_PRX) == 0 || pkthdr.len < ETH_MIN_PACKET) {
+	/* incoming length includes FCS so must sub 4 */
+	len = pkthdr.len - 4;
+	if ((pkthdr.status & D8390_RSTAT_PRX) == 0 || len < ETH_ZLEN
+		|| len > ETH_FRAME_LEN) {
 		printf("Bogus packet, ignoring\n");
 		return (0);
 	}
@@ -520,12 +486,7 @@ static int ns8390_poll(struct nic *nic)
 			if (eth_flags & FLAG_PIO)
 				eth_pio_read(pktoff, p, frag);
 			else
-#ifdef	ETHERBOOT32
-				memcpy(p, (void *)eth_rmem + pktoff, frag);
-#endif
-#ifdef	ETHERBOOT16
-				fmemcpy(p, eth_rmem + pktoff, frag);
-#endif
+				memcpy(p, (char *)eth_rmem + pktoff, frag);
 			pktoff = eth_rx_start << 8;
 			p += frag;
 			len -= frag;
@@ -534,12 +495,7 @@ static int ns8390_poll(struct nic *nic)
 		if (eth_flags & FLAG_PIO)
 			eth_pio_read(pktoff, p, len);
 		else
-#ifdef	ETHERBOOT32
-			memcpy(p, (void *)eth_rmem + pktoff, len);
-#endif
-#ifdef	ETHERBOOT16
-			fmemcpy(p, eth_rmem + pktoff, len);
-#endif
+			memcpy(p, (char *)eth_rmem + pktoff, len);
 		ret = 1;
 	}
 #ifdef	INCLUDE_WD
@@ -581,9 +537,6 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
 	struct wd_board *brd;
 	unsigned short chksum;
 	unsigned char c;
-#if	defined(INCLUDE_WD) && defined(ETHERBOOT16)
-	unsigned char	bmem13, bmem11;
-#endif
 	eth_vendor = VENDOR_NONE;
 	eth_drain_receiver = 0;
 
@@ -611,7 +564,7 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
 	for (brd = wd_boards; brd->name; brd++)
 		if (brd->id == c) break;
 	if (!brd->name) {
-		printf("Unknown WD/SMC NIC type %x\n", c);
+		printf("Unknown WD/SMC NIC type %hhX\n", c);
 		return (0);	/* Unknown type */
 	}
 	eth_flags = brd->flags;
@@ -624,23 +577,10 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
 			eth_memsize = MEM_16384;
 	}
 	if ((c & WD_SOFTCONFIG) && (!(eth_flags & FLAG_790))) {
-#ifdef	ETHERBOOT32
 		eth_bmem = (0x80000 |
 		 ((inb(eth_asic_base + WD_MSR) & 0x3F) << 13));
-#endif
-#ifdef	ETHERBOOT16
-		eth_bmem = inb(eth_asic_base + WD_MSR) & 0x3F;
-		eth_bmem <<= 13;
-		eth_bmem |= 0x80000;
-#endif
 	} else
 		eth_bmem = WD_DEFAULT_MEM;
-#ifdef	ETHERBOOT16
-	/* cast is to force evaluation in long precision */
-	bmem13 = (Address)eth_bmem >> 13;
-	bmem11 = (Address)eth_bmem >> 11;
-#endif
-#ifdef	ETHERBOOT32
 	if (brd->id == TYPE_SMC8216T || brd->id == TYPE_SMC8216C) {
 		*((unsigned int *)(eth_bmem + 8192)) = (unsigned int)0;
 		if (*((unsigned int *)(eth_bmem + 8192))) {
@@ -648,48 +588,23 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
 			eth_memsize = brd->memsize;
 		}
 	}
-#endif
-#ifdef	ETHERBOOT16
-	if (brd->id == TYPE_SMC8216T || brd->id == TYPE_SMC8216C) {
-		i = 0;
-		memcpyf(eth_bmem + 8192, &i, sizeof(i));
-		if (!fbsame(eth_bmem + 8192, 0, sizeof(i))) {
-			brd += 2;
-			eth_memsize = brd->memsize;
-		}
-	}
-#endif
 	outb(0x80, eth_asic_base + WD_MSR);	/* Reset */
-	printf("\n%s base 0x%x, memory 0x%X, addr ",
-		brd->name, eth_asic_base, eth_bmem);
-	for (i=0; i<ETHER_ADDR_SIZE; i++) {
-		printf("%b",(int)(nic->node_addr[i] =
-			inb(i+eth_asic_base+WD_LAR)));
-			if (i < ETHER_ADDR_SIZE-1) printf (":");
+	for (i=0; i<ETH_ALEN; i++) {
+		nic->node_addr[i] = inb(i+eth_asic_base+WD_LAR);
 	}
+	printf("\n%s base %#hx, memory %#hx, addr %!\n",
+		brd->name, eth_asic_base, eth_bmem, nic->node_addr);
 	if (eth_flags & FLAG_790) {
 		outb(WD_MSR_MENB, eth_asic_base+WD_MSR);
 		outb((inb(eth_asic_base+0x04) |
 			0x80), eth_asic_base+0x04);
-#ifdef	ETHERBOOT32
 		outb((((unsigned)eth_bmem >> 13) & 0x0F) |
 			(((unsigned)eth_bmem >> 11) & 0x40) |
 			(inb(eth_asic_base+0x0B) & 0xB0), eth_asic_base+0x0B);
-#endif
-#ifdef	ETHERBOOT16
-		outb((bmem13 & 0x0F) |
-			(bmem11 & 0x40) |
-			(inb(eth_asic_base+0x0B) & 0xB0), eth_asic_base+0x0B);
-#endif
 		outb((inb(eth_asic_base+0x04) &
 			~0x80), eth_asic_base+0x04);
 	} else {
-#ifdef	ETHERBOOT32
 		outb((((unsigned)eth_bmem >> 13) & 0x3F) | 0x40, eth_asic_base+WD_MSR);
-#endif
-#ifdef	ETHERBOOT16
-		outb((bmem13 & 0x3F) | 0x40, eth_asic_base+WD_MSR);
-#endif
 	}
 	if (eth_flags & FLAG_16BIT) {
 		if (eth_flags & FLAG_790) {
@@ -709,7 +624,6 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
 		}
 		inb(0x84);
 	}
-	putchar('\n');
 #endif
 #ifdef	INCLUDE_3C503
         /******************************************************************
@@ -794,17 +708,16 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
         /* Get our ethernet address */
 
                 outb(_3COM_CR_EALO | _3COM_CR_XSEL, eth_asic_base + _3COM_CR);
-                printf("\n3Com 3c503 base 0x%x, ", eth_nic_base);
+                printf("\n3Com 3c503 base %#hx, ", eth_nic_base);
                 if (eth_flags & FLAG_PIO)
 			printf("PIO mode");
                 else
-			printf("memory 0x%X", eth_bmem);
-                printf(", %s, addr ", nic->aui ? "AUI" : "internal xcvr");
-                for (i=0; i<ETHER_ADDR_SIZE; i++) {
-                        printf("%b",(int)(nic->node_addr[i] =
-			inb(eth_nic_base+i)));
-                        if (i < ETHER_ADDR_SIZE-1) printf (":");
+			printf("memory %#hx", eth_bmem);
+                for (i=0; i<ETH_ALEN; i++) {
+                        nic->node_addr[i] = inb(eth_nic_base+i);
                 }
+                printf(", %s, addr %!\n", nic->flags ? "AUI" : "internal xcvr",
+			nic->node_addr);
                 outb(_3COM_CR_XSEL, eth_asic_base + _3COM_CR);
         /*
          * Initialize GA configuration register. Set bank and enable shared
@@ -821,30 +734,18 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
          */
 
 		if (!(eth_flags & FLAG_PIO)) {
-#ifdef	ETHERBOOT32
 			memset((char *)eth_bmem, 0, 0x2000);
 			for(i = 0; i < 0x2000; ++i)
 				if (*(((char *)eth_bmem)+i)) {
 					printf ("Failed to clear 3c503 shared mem.\n");
 					return (0);
 				}
-#endif
-#ifdef	ETHERBOOT16
-			bzerof(eth_bmem, 0x2000);
-			if (!fbsame(eth_bmem, 0, 0x2000)) {
-				printf ("Failed to clear 3c503 shared mem.\n");
-				return (0);
-			}
-#endif
 		}
         /*
          * Initialize GA page/start/stop registers.
          */
                 outb(eth_tx_start, eth_asic_base + _3COM_PSTR);
                 outb(eth_memsize, eth_asic_base + _3COM_PSPR);
-
-                printf ("\n");
-
         }
 #endif
 #if	defined(INCLUDE_NE) || defined(INCLUDE_NS8390)
@@ -906,14 +807,12 @@ struct nic *eth_probe(struct nic *nic, unsigned short *probe_addrs)
 			eth_flags |= FLAG_16BIT;
 		eth_vendor = VENDOR_NOVELL;
 		eth_pio_read(0, romdata, sizeof(romdata));
-		printf("\nNE%c000 base 0x%x, addr ",
-			(eth_flags & FLAG_16BIT) ? '2' : '1', eth_nic_base);
-		for (i=0; i<ETHER_ADDR_SIZE; i++) {
-			printf("%b",(int)(nic->node_addr[i] = romdata[i
-				+ ((eth_flags & FLAG_16BIT) ? i : 0)]));
-			if (i < ETHER_ADDR_SIZE-1) printf (":");
+		for (i=0; i<ETH_ALEN; i++) {
+			nic->node_addr[i] = romdata[i + ((eth_flags & FLAG_16BIT) ? i : 0)];
 		}
-		putchar('\n');
+		printf("\nNE%c000 base %#hx, addr %!\n",
+			(eth_flags & FLAG_16BIT) ? '2' : '1', eth_nic_base,
+			nic->node_addr);
 	}
 #endif
 	if (eth_vendor == VENDOR_NONE)

@@ -2,7 +2,7 @@
 # grub-image - Create a GRUB boot filesystem image and tarball
 # Gordon Matzigkeit <gord@fig.org>, 2000-07-25
 #
-#   Copyright (C) 2000 Free Software Foundation, Inc.
+#   Copyright (C) 2000, 2002 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ test "X$thisdir" = "X$0" && thisdir=.
 
 # See if we were invoked from within the build directory, and if so,
 # use the built files rather than the installed ones.
-if test -f $thisdir/../stage2/stage2.c; then
+if test -f $thisdir/../stage2/stage2; then
   grub_shell="$thisdir/../grub/grub"
   stage1dir="$thisdir/../stage1"
   stage2dir="$thisdir/../stage2"

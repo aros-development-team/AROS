@@ -1,3 +1,1135 @@
+2002-12-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (embed_func): When checking if the disk can
+	store Stage 1.5, check every partition, if it isn't empty.
+
+2002-12-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/stage2.c (print_entry): Put a right arrow, if the entry
+	is longer than 71 characters. Reported by Pavel Roskin.
+
+2002-12-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/disk_io.c (set_device): If '(n' is given, add 'd' into
+	DEVICE. Reported by Pavel Roskin.
+
+2002-12-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Change the terminal structure a bit, to turn the cursor state
+	explicitly. Suggested by Pavel Roskin.
+	
+	* stage2/term.h (struct term_entry): Remove the member
+	`nocursor' and add `setcursor'.
+	[!STAGE1_5] (console_setcursor): New prototype.
+	[SUPPORT_HERCULES] (hercules_setcursor): Likewise.
+	[!STAGE1_5] (console_nocursor): Removed.
+	[SUPPORT_HERCULES] (hercules_nocursor): Likewise.
+
+	* stage2/stage2.c (run_menu): Call setcursor instead of
+	nocursor.
+	Call setcursor with 1 before starting a boot entry.
+
+	* stage2/shared.h (nocursor): Removed.
+	(setcursor): New prototype.
+
+	* stage2/hercules.c (herc_cursor_state): New variable.
+	(herc_turn_cursor): Removed.
+	(hercules_nocursor): Likewise.
+	(hercules_setcursor): New function.
+
+	* stage2/char_io.c (get_cmdline): Turn on the cursor at the
+	beginning, and restore it before returning.
+	(nocursor): Removed.
+	(setcursor): New function.
+
+	* stage2/asm.S (console_cursor_state): New variable.
+	(console_cursor_shape): Likewise.
+	(console_setcursor): New function.
+	(console_nocursor): Removed.
+
+	* grub/asmstub.c (console_setcursor): New function.
+	(hercules_setcursor): Likewise.
+	(console_nocursor): Removed.
+	(hercules_nocursor): Likewise.
+
+2002-12-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (terminfo): Fix a misleading English sentence.
+	Reported by Pavel Roskin.
+	* stage2/builtins.c (builtin_terminfo): Likewise.
+
+2002-12-01  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Alexander Langer <alex@big.endian.de>:
+	* stage2/freebsd.h (RB_GDB): New macro.
+	(RB_MUTE): Likewise.
+	(RB_MULTIPLE): Likewise.
+
+	* stage2/boot.c (bsd_boot): Set the bits of RB_MULTIPLE, RB_GDB
+	and RB_MUTE when "-D", "-g" and "-m" are specified,
+	respectively.
+
+2002-12-01  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (Reporting bugs): Specify the project page of
+	the BTS instead of the BTS itself.
+
+2002-11-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/Makefile.am (man_MANS): Added grub-terminfo.8.
+	($(srcdir)/grub_terminfo.8): New target.
+	* utils/grub-terminfo.in: New file.
+	* util/Makefile.am (sbin_SCRIPTS): Added grub-terminfo.
+	* configure.in (AC_OUTPUT): Added util/grub-terminfo.
+
+	* docs/grub.texi (terminfo): New subsection.
+	(Invoking grub-terminfo): New chapter.
+
+	From Tilmann Bubeck <t.bubeck@reinform.de>:
+	* stage2/Makefile.am (noinst_HEADERS): Added terminfo.h and
+	tparm.h.
+	(libgrub_a_SOURCES): Added terminfo.c and tparm.c.
+	(pre_stage2_exe_SOURCES): Likewise.
+	* stage2/terminfo.c: New file.
+	* stage2/terminfo.h: Likewise.
+	* stage2/tparm.c: Likewise.
+	* stage2/tparm.h: Likewise.
+	* stage2/stage2.c (get_line_from_config): Fix handling of
+	backslashes.
+	* stage2/char_io.c (grub_putstr): New function.
+	(grub_printf): Use grub_putstr.
+	(substring): Add const into both arguments.
+	* stage2/builtins.c [SUPPORT_SERIAL]: Include terminfo.h.
+	[SUPPORT_SERIAL] (terminfo_func): New function.
+	[SUPPORT_SERIAL] (builtin_terminfo): New variable.
+	 (builtin_table) [SUPPORT_SERIAL]: Added a pointer to
+	BUILTIN_TERMINFO.
+	* stage2/serial.c (serial_gotoxy): Use ti_cursor_address.
+	(serial_cls): Use ti_clear_screen.
+	(serial_highlight): use ti_enter_standout_mode and
+	ti_exit_standout_mode.
+
+2002-11-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/disk_io.c (rawread): Make sure that SECTOR is valid.
+	If not, set ERRNUM to ERR_GEOM and return zero. This check is
+	critical when a partition table is corrupted.
+
+2002-11-28  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/asm.S (console_cls): Write spaces to the entire screen
+	instead of getting/setting the video mode, because this flickers
+	the screen and is quite annoying, if using a LCD.
+
+2002-11-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (QNX): New subsection. Reported by
+	Marian-Nicolae V. ION <marian_ion@noos.fr>.
+
+2002-10-28  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* grub/asmstub.c (console_translate_key): Deal with KEY_PPAGE
+	and KEY_NPAGE.
+	* stage2/serial.c (serial_translate_key_sequence): Added two new
+	codes for Page Up and Page Down.
+	* stage2/asm.S (translation_table): Added entries for KEY_PPAGE
+	and KEY_NPAGE.
+	* stage2/stage2.c (run_menu): Deal with Page Up and Page Down.
+	Also recognize the right key for the selection of a boot entry.
+	Suggested by Adam Lackorzynski <adam@os.inf.tu-dresden.de>.
+
+2002-10-10  Jason Thomas  <jason@topic.com.au>
+
+	* stage2/builtins.c (setup_func): Added missing space to --force-lba
+	option. Reported by Kenneth Crudup <kenny@panix.com>
+
+2002-10-06  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/asm.S (gateA20): Output a dummy command (0xff), as a
+	workaround for USB keyboard hanging problem. Suggested by
+	Hidetoshi Nishimaki <nishimaki@mxs.nes.nec.co.jp>.
+
+2002-10-06  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* configure.in (falign_loop_flag): New variable. Set to if GCC
+	supports `-falign-*'. If true, use `-falign-jumps',
+	`-falign-loops' and `-falign-functions' instead of
+	`-malign-jumps', `-malign-loops' and `-malign-functions',
+	because `-malign-*' are obsolete in GCC 3.x. Reported by Jeremy
+	Katz.
+
+2002-09-13  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/serial.c (fill_input_buf): Take a new argument NOWAIT.
+	If NOWAIT is true, don't loop.
+	All callers are changed.
+
+2002-09-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* configure.in (--disable-serial): Fix a typo in the
+	description.
+
+2002-08-20  Jason Thomas <jason@topic.com.au>
+
+	Changed highlight state code for hercules, console and serial.
+	The state was 0 - normal or 1 - highlight.
+	The state is now defined using an enum called color_state.
+
+	* stage2/term.h (color_state): New enum.
+	(COLOR_STATE_STANDARD): Standard color to use when not using
+	user defined.
+	(COLOR_STATE_NORMAL): User defined normal color.
+	(COLOR_STATE_HIGHLIGHT): User defined highlight color.
+	(console_highlight): Renamed to console_setcolorstate.
+	(serial_highlight): Renamed to serial_setcolorstate.
+	(hercules_highlight): Renamed to hercules_setcolorstate.
+	* stage2/hercules.c (herc_highlight_state): Removed.
+	(herc_standard_color): New variable.
+	(herc_color_state): Likewise.
+	(herc_highlight): Renamed to herc_setcolorstate.
+	(herc_setcolorstate): Added switch to handle new states.
+	* stage2/console.c (console_highlight_state): Removed.
+	(console_standard_color): New variable.
+	(console_color_state): Likewise.
+	(console_highlight): Renamed to console_setcolorstate.
+	(console_setcolorstate): Added switch to handle new states.
+	* stage2/serial.c (serial_highlight): Renamed to
+	serial_setcolorstate.
+	(serial_setcolorstate): Adjusted 'if' to suit new states.
+	* grub/asmstub.c (console_highlight): Renamed to
+	console_setcolorstate.
+	(console_setcolorstate): Adjusted 'if' to suit new states.
+	* stage2/stage2.c (print_entry): Set color states using new
+	states.
+	(print_border): Likewise.
+	* stage2/stage2.c (run_menu): Reverse if (!) to if () for
+	uniformitty.
+
+2002-07-12  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/boot.c (load_image): Rewrite the Linux booting support
+	radically. Now it should work even on a machine having, say,
+	only 128KB, theoretically. Of course, GRUB itself doesn't work
+	on such a system, though.
+	(load_initrd): Initialize LH based on CUR_ADDR, because the
+	location becomes dynamic.
+	* stage2/shared.h (LINUX_MAX_SETUP_SECTS): Set to 64.
+	(LINUX_HEAP_END_OFFSET): Set to (0x9000 - 0x200).
+	(LINUX_STAGING_AREA): Removed.
+	(LINUX_SETUP): Likewise.
+	(LINUX_KERNEL): Likewise.
+	(LINUX_KERNEL_MAXLEN): Likewise.
+	(LINUX_SETUP_SEG): Likewise.
+	(LINUX_INIT_SEG): Likewise.
+	(LINUX_SETUP_STACK): Set to 0x9000.
+	(LINUX_BZIMAGE_ADDR): New macro.
+	(LINUX_ZIMAGE_ADDR): Likewise.
+	(LINUX_OLD_REAL_MODE_ADDR): Likewise.
+	(CL_MY_LOCATION): Removed.
+	(CL_MY_END_ADDR): Likewise.
+	(CL_BASE_ADDR): Likewise.
+	(CL_MAGIC): Renamed to ...
+	(LINUX_CL_MAGIC): ... this.
+	(LINUX_CL_OFFSET): New macro.
+	(LINUX_CL_END_OFFSET): Likewise.
+	(LINUX_SETUP_MOVE_SIZE): Likewise.
+	(struct linux_kernel_header): Change the type of the member
+	"cmd_line_ptr" to char *.
+	(linux_data_tmp_addr): Declared.
+	(linux_data_real_addr): Likewise.
+	* stage2/asm.S [!STAGE1_5] (linux_data_tmp_addr): New variable.
+	[!STAGE1_5] (linux_data_real_addr): Likewise.
+	[!STAGE1_5] (big_linux_boot): Copy the real mode part from
+	LINUX_DATA_TMP_ADDR to LINUX_DATA_REAL_ADDR.
+	* grub/asmstub.c (linux_data_tmp_addr): New variable.
+	(linux_data_real_addr): Likewise.
+
+2002-07-09  Yoshinori K. Okuji  <okuji@enbug.org>
+	
+	From Mark Kettenis <kettenis@chello.nl>:
+	* stage2/boot.c (load_image): Recognize newer FreeBSD kernels.
+	* stage2/i386-elf.h (EI_OSABI): New macro.
+	(EI_ABIVERSION): Likewise.
+	(ELFOSABI_FREEBSD): Likewise.
+	(EI_PAD): Set to 9.
+
+2002-07-06  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/shared.h (boot_part_offset): Removed.
+	
+	* stage2/disk_io.c (set_bootdev): Copy the partition information
+	here. Now this function can call rawread, so it can fail.
+	(boot_part_offset): Removed.
+
+	* stage2/builtins.c (boot_func): Don't copy the partition
+	information here.
+	(real_root_func): Check ERRNUM after calling set_bootdev.
+
+2002-07-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (Reporting bugs): Use the group name (i.e.
+	grub) instead of the group id (i.e. 68) for the URL of the BTS.
+
+2002-07-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/serial.c [!GRUB_UTIL] (inb): Added a delay into this
+	function itself.
+	[!GRUB_UTIL] (outb): Likewise.
+	[!GRUB_UTIL] (serial_hw_put): Increase the timeout value, and
+	don't call serial_hw_delay explicitly any longer.
+	(fill_input_buf): Increase the maximum number of retries, reset
+	the counter to zero after getting a valid character, and don't
+	call serial_hw_delay explicitly any longer.
+
+2002-07-03  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/serial.c [!GRUB_UTIL] (serial_hw_fetch): Fixed a typo.
+	Reported by Ilguiz Latypov.
+
+2002-07-01  Yoshinori K. Okuji <okuji@enbug.org>
+
+	* Makefile.am (AUTOMAKE_OPTIONS): New variable. Specify the
+	required Automake version explicitly.
+	
+2002-06-30  Yoshinori K. Okuji <okuji@enbug.org>
+
+	* stage2/builtins.c [SUPPORT_SERIAL || SUPPORT_HERCULES]
+	(terminal_func): Set CURRENT_TERM to each of selected terminals
+	before calling grub_printf, and restore CURRENT_TERM after it.
+	Reported by Ilguiz Latypov.
+	Prepend a carriage return to the prompting message, because it
+	is ugly that the same messages fulfill the whole screen.
+
+2002-06-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/serial.c [!GRUB_UTIL] (serial_hw_fetch): Fixed the
+	conditional statement. Reported by Ilguiz Latypov.
+	
+2002-06-24  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* MAINTENANCE: New file.
+	
+2002-06-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/disk_io.c [SUPPORT_NETBOOT] (GRUB): Defined.
+	[SUPPORT_NETBOOT]: Include etherboot.h.
+	[!STAGE1_5] (print_completions) [SUPPORT_NETBOOT]: When
+	completing a disk name, if NETWORK_READY is true, add "nd" as a
+	completion.
+	
+2002-06-15  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/fsys_xfs.c (le32): Don't use bswap, but use xchgb and
+	roll, because 386 doesn't have bswap. Reported by Frode Vatvedt
+	Fjeld <frodef@acm.org>.
+	
+2002-06-12  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* netboot/main.c (ifconfig): If GW is specified, clear out the
+	ARP entry for the gateway. If SVR is specified, clear out the
+	ARP entry for the server. Reported by Uwe Dannowski
+	<ud3@ira.uka.de>.
+	
+2002-06-12  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/grub-md5-crypt.in: Prompt to retype a password, and check
+	if the passwords matches. Suggested by Matt Perry
+	<matt@primefactor.com>.
+	Also, don't use Perl any longer, because *BSD's sh and GNU
+	support ``read -r'', and GRUB doesn't support any other
+	operating system anyway.
+	
+2002-06-12  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	The terminal handling code is rewritten radically.
+	
+	* stage2/console.c: New file.
+	* stage2/term.h: Likewise.
+	
+	* stage2/Makefile.am (noinst_HEADERS): Added term.h.
+	(libgrub_a_SOURCES): Added serial.c.
+	(pre_stage2_exec_SOURCES): Added console.c.
+
+	* stage2/asm.S (console_putchar): Rewritten from scratch.
+	[!STAGE1_5] (translation_table): New variable.
+	[!STAGE1_5] (translate_keycode): New function.
+	[!STAGE1_5] (console_getkey): Call translate_keycode.
+	[!STAGE1_5] (console_checkkey): Likewise.
+	[!STAGE1_5] (nocursor): Renamed to ...
+	[!STAGE1_5] (console_nocursor): ... this.
+	[!STAGE1_5] (console_set_attrib): Removed.
+
+	* stage2/builtins.c: Include term.h.
+	(terminal): Removed.
+	(normal_color): Likewise.
+	(highlight_color): Likewise.
+	(cat_func): Display a question mark when a non-printable
+	character was read.
+	(terminal_func): Rewritten almost from scratch.
+
+	* stage2/char_io.c: Include term.h.
+	[!STAGE1_5] (auto_fill): Removed.
+	[!STAGE1_5] (term_table): New variable.
+	[!STAGE1_5] (current_term): Likewise.
+	[!STAGE1_5] (real_get_cmdline): New function. The code was
+	stolen from the previous version of get_cmdline.
+	[!STAGE1_5] (get_cmdline): Rewritten from scratch.
+	[!STAGE1_5] (translate_keycode): Removed.
+	[!STAGE1_5] (getkey): Rewritten from scratch.
+	[!STAGE1_5] (checkkey): Likewise.
+	(grub_putchar): Likewise.
+	[!STAGE1_5] (gotoxy): Likewise.
+	[!STAGE1_5] (getxy): Likewise.
+	[!STAGE1_5] (cls): Likewise.
+	[!STAGE1_5] (nocursor): New function.
+	[SUPPORT_SERIAL] (serial_getxy): Removed.
+	[SUPPORT_SERIAL] (serial_gotoxy): Likewise.
+	[SUPPORT_SERIAL] (serial_cls): Likewise.
+	[SUPPORT_SERIAL] (serial_getxy): Likewise.
+	[!STAGE1_5] (set_attrib): Likewise.
+
+	* stage2/cmdline.c (init_cmdline): Set COUNT_LINES to -1.
+
+	* stage2/common.c [!STAGE1_5] (err_list): Removed
+	ERR_NEED_SERIAL and added ERR_DEV_NEED_INIT.
+
+	* stage2/hercules.c: Rewritten almost from scratch.
+	* stage2/hercules.h (herc_putchar): Removed.
+	(herc_cls): Likewise.
+	(herc_getxy): Likewise.
+	(herc_gotoxy): Likewise.
+	(herc_set_attrib): Likewise.
+
+	* stage2/serial.c: Rewritten almost from scratch.
+	* stage2/serial.h: Likewise.
+
+	* stage2/shared.h [GRUB_UTIL] (DISP_UL): Set to the same value
+	as VGA's.
+	[GRUB_UTIL] (DISP_UR): Likewise.
+	[GRUB_UTIL] (DISP_LL): Likewise.
+	[GRUB_UTIL] (DISP_LR): Likewise.
+	[GRUB_UTIL] (DISP_HORIZ): Likewise.
+	[GRUB_UTIL] (DISP_VERT): Likewise.
+	[GRUB_UTIL] (DISP_LEFT): Likewise.
+	[GRUB_UTIL] (DISP_RIGHT): Likewise.
+	[GRUB_UTIL] (DISP_UP): Likewise.
+	[GRUB_UTIL] (DISP_DOWN): Likewise.
+	(grub_error_t): Removed ERR_NEED_SERIAL.
+	Added ERR_DEV_NEED_INIT.
+	(normal_color): Removed.
+	(highlight_color): Likewise.
+	(console_cls): Removed, because this is declared in term.h.
+	(console_getxy): Likewise.
+	(console_gotoxy): Likewise.
+	(console_putchar): Likewise.
+	(console_getkey): Likewise.
+	(console_checkkey): Likewise.
+	(console_set_attrib): Removed.
+	(set_attrib): Likewise.
+	[GRUB_UTIL] (nocursor): Declared.
+	(auto_fill): Removed.
+	(terminal): Likewise.
+	(TERMINAL_CONSOLE): Likewise.
+	(TERMINAL_SERIAL): Likewise.
+	(TERMINAL_HERCULES): Likewise.
+	(TERMINAL_DUMB): Likewise.
+	(translate_keycode): Likewise.
+
+	* stage2/stage2.c: Include term.h.
+	(print_entry): Rewritten from scratch.
+	(print_entries): Likewise.
+	(print_border): Likewise.
+	(set_line): Removed.
+	(set_line_normal): Likewise.
+	(set_line_highlight): Likewise.
+	
+	* grub/Makefile.am (AM_CFLAGS): Added -DSUPPORT_HERCULES=1.
+	
+	* grub/asmstub.c: Don't include hercules.h. Include term.h.
+	(console_current_color): New variable.
+	(console_translate_key): New function.
+	(console_checkkey): Rewritten from scratch.
+	(console_getkey): Likewise.
+	(console_putchar): Likewise.
+	(console_set_attrib): Removed.
+	(console_highlight): New function.
+	(console_setcolor): Likewise.
+	(console_nocursor): Likewise.
+	(serial_getkey): Removed.
+	(serial_checkkey): Likewise.
+	(serial_putchar): Likewise.
+	(serial_exists): Likewise.
+	(serial_get_port): Likewise.
+	(serial_init): Likewise.
+	(serial_hw_fetch): New function.
+	(serial_hw_put): Likewise.
+	(serial_hw_delay): Likewise.
+	(serial_hw_get_port): Likewise.
+	(serial_hw_init): Likewise.
+	(set_serial_device): Renamed to ...
+	(serial_set_device): ... this.
+	(herc_putchar): Renamed to ...
+	(hercules_putchar): ... this.
+	(herc_cls): Renamed to ...
+	(hercules_cls): ... this.
+	(herc_getxy): Renamed to ...
+	(hercules_getxy): ... this.
+	(herc_gotoxy): Renamed to ...
+	(hercules_gotoxy): ... this.
+	(hercules_highlight): New function.
+	(hercules_setcolor): Likewise.
+	(hercules_nocursor): Likewise.
+	(herc_set_attrib): Removed.
+
+	* grub/main.c: Include term.h.
+	(main): If USE_CURSES is false, set CURRENT_TERM->FLAGS to
+	TERM_NO_EDIT | TERM_DUMB. TERMINAL is not used any longer.
+	
+2002-06-01  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (FAQ): Removed. See the GNU GRUB FAQ on the web
+	instead.
+	
+2002-05-31  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (Reporting bugs): Recommend using the BTS on
+	Savannah rather than the list bug-grub.
+	
+2002-05-25  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (boot_func): Load the boot partition
+	information, only if the address of the boot partition entry is
+	set appropriately.
+	(real_root_func): If ATTEMPT_MOUNT is false, call open_partition
+	and if successful, call set_bootdev, to set the offset of the
+	boot partition and the address of the boot paetition entry.
+	IF ATTEMPT_MOUNT is false, don't set BOOTDEV. The BSD evil hack
+	is useless with the command "rootnoverify" anyway.
+	* stage2/disk_io.c (boot_part_addr): Initialized with zero
+	explicitly, to emphasize that it is invalid.
+	
+2002-05-24  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (real_root_func): New function.
+	(root_func): Just call real_root_func.
+	(rootnoverify_func): Likewise.
+	
+2002-05-23  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* configure.in (AM_INIT_AUTOMAKE): Changed the version number to
+	0.93.
+	
+2002-05-23  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Define the behavior of the boot loader when the load end address
+	and the bss end address are zero in the Multiboot Specification,
+	and add the support into GRUB. I've modified a patch from Yuri
+	Zaporogets <yuriz@ukr.net>.
+	
+	* stage2/boot.c (load_image): In the case of Multiboot a.out
+	kludge, set the load end address to the load address plus the
+	size of the OS image file, if it is zero. Similarly, set the bss
+	end address to the load end address, if it is zero.
+	
+	* util/mbchk.c (check_multiboot): Don't check if the load
+	address is greater than or equal to the load end address, if the
+	load end address is zero. Don't check if the load end address is
+	greater than the bss end address, if the bss end address is
+	zero. And, don't check if the load end address is less than or
+	equal to the entry address, if the load end address is zero.
+	
+	* docs/multiboot.texi (The address fields of Multiboot header):
+	Added descriptions about the behavior of the boot loader when
+	LOAD_END_ADDR is zero and BSS_END_ADDR is zero.
+	
+2002-05-22  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (boot_func): If DEBUG is true, print
+	BOOT_DRIVE and BOOT_PART_OFFSET.
+	Don't set ERRNUM after rawread failed, because rawread should
+	set ERRNUM itself.
+	
+2002-05-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* lib/device.c (read_device_map): Show an error message and exit
+	abnormally, if MAP[DRIVE] has already been filled.
+	* util/grub-install.in: If there is any dulicated entry, print
+	an error message and exit abnormally.
+	
+2002-05-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* lib/device.c: Don't include linux/hdreg.h, linux/major.h,
+	or linux/kdev_t.h.
+	[__linux__] (HDIO_GETGEO): Defined.
+	[__linux__] (hd_geometry): Likewise.
+	[__linux__] (FLOPPY_MAJOR): Likewise.
+	[__linux__] (MINORBITS): Likewise.
+	[__linux__] (MAJOR): Likewise.
+	
+2002-05-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* netboot/fsys_tftp.c (tftp_read): Don't call buf_fill unless
+	SIZE is positive.
+	
+2002-05-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* netboot/etherboot.h (ETH_MAX_MTU): Because some DHCP/BOOTP
+	servers don't treat the maximum length the same as Etherboot,
+	subtract the size of an IP header and that of an UDP header.
+	
+2002-04-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Jean-Jacques Michel <jjmichel@linbox.com>:
+	* stage2/boot.c (load_image): For Linux, check if DATA_LEN is
+	greater than MULTIBOOT_SEARCH. If that's true, read the rest
+	after copying data already read in BUFFER.
+	
+2002-04-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/boot.c (load_image): For Linux, don't check if the
+	length of protected mode code is greater than or equal to the
+	expected length minus 16. Instead, just check if no error
+	occurred. That was problematic, because memdisk has no protected
+	mode code. Also, I don't see what the magic number 16 was for.
+	
+2002-04-29  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c [SUPPORT_SERIAL] (terminal_func): Added a
+	new option ``--silent''. This suppresses messages, if specified.
+	
+2002-04-29  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* config.guess: New upstream version.
+	* config.sub: Likewise.
+	
+2002-04-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* netboot/config.c (PCI_NIC) [INCLUDE_DAVICOM]: Fix typos.
+	Reported by Julien Perrot <julien.perrot@iie.cnam.fr>.
+	
+2002-04-17  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c [SUPPORT_SERIAL] (terminal_func): Set
+	COUNT_LINES to -1, to disable the pager.
+	
+2002-04-16  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (Obtaining and Building GRUB): Update the link
+	to the binutils site.
+
+2002-04-06  Pavel Roskin  <proski@gnu.org>
+
+	* util/grub-install.in: Fix hardcoded /dev/hda1.
+
+2002-04-06  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c [GRUB_UTIL] (dump_func): New function.
+	[GRUB_UTIL] (builtin_dump): New variable.
+	(builtin_table) [GRUB_UTIL]: Added a pointer to BUILTIN_DUMP.
+	* util/grub-install.in: Make sure that GRUB reads the same
+	images as the host operating system by comparing the result of
+	running the command "dump" with the contents of the OS file.
+	
+2002-04-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (setup_func): Don't embed a drive number, if
+	unnecessary.
+	
+2002-03-29  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (General commands): Added ``pager'' into the
+	menu.
+	(pager): New subsection.
+	(terminal): Added a description about the option
+	``--lines=LINES''.
+
+	* configure.in (AC_INIT_AUTOMAKE): Set the version number to
+	0.92.
+	
+2002-03-26  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* netboot/eepro100.c (eepro100_probe): Increase the delay at the
+	initialization.
+	
+2002-03-26  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/boot.c (linux_mem_size): New variable.
+	(load_image): Check a mem= option and set LINUX_MEM_SIZE to the
+	specified memory size, if any. Otherwise, to zero. When an
+	overflow is detected, use LINUX_INITRD_MAX_ADDRESS instead.
+	(load_initrd): If LINUX_MEM_SIZE is non-zero, use it instead of
+	the actual memory size.
+	* stage2/char_io.c (safe_parse_maxint): Use ERR_NUMBER_OVERFLOW
+	instead of ERR_NUMBER_PARSING, when an overflow occurs.
+	* stage2/common.c [!STAGE1_5] (err_list): Added
+	ERR_NUMBER_OVERFLOW.
+	* stage2/shared.h (ERR_NUMBER_OVERFLOW): New constant.
+	
+2002-03-24  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/stage2.c (run_menu): Call cls outside the loop to run
+	scripts.
+	* stage2/cmdline.c (run_script): Prompt a user's intervention,
+	only when FALLBACK_ENTRY is negative.
+	
+2002-02-11  Pavel Roskin  <proski@gnu.org>
+
+	* util/grub-install.in (find_device): New function - find block
+	device for given file or directory.  Resolve symlinks to fix
+	problem on Linux with devfs and old device names in /etc/fstab.
+	Use find_device() for root_device, bootdir_device and
+	grubdir_device.
+
+2002-02-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* grub/main.c (OPT_NO_PAGER): New macro.
+	(longopts): Added an entry for "--no-pager".
+	(usage): Added a description about "--no-pager".
+	(main): In case of OPT_NO_PAGER, set USE_PAGER to zero. The same
+	thing is done with OPT_BATCH, because the pager is just harmful
+	in batch mode.
+	
+2002-02-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (help_func): Show all the commands runnable
+	with the command-line interface, if "--all" is specified.
+	
+2002-02-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	An internal pager is implemented.
+	
+	* stage2/builtins.c (pager_func): New function.
+	(builtin_pager): New variable.
+	(terminal_func): New option, "--lines=LINES" is added. If this
+	option is specified, set MAX_LINES to the value. Otherwise, set
+	MAX_LINES to 24.
+	(vbeprobe_func): Remove the pager code specific to this
+	function.
+	(builtin_table): Added a pointer to BUILTIN_PAGER.
+	* stage2/char_io.c (max_lines) [!STAGE1_5]: New variable.
+	(count_lines) [!STAGE1_5]: Likewise.
+	(use_pager) [!STAGE1_5]: Likewise.
+	(grub_putchar) [!STAGE1_5]: if C is a newline and COUNT_LINES is
+	not -1, count up the number of lines. If it exceeds the maximum
+	number of lines minus 2, show a message and wait for input of
+	return key. "minus 2" is to reserve space for the message
+	printed by this internal pager.
+	* stage2/cmdline.c (enter_cmdline): If USE_PAGER is true, set
+	COUNT_LINES to zero, before running a command, and reset
+	COUNT_LINES to -1 after that.
+	* stage2/shared.h (max_lines) [!STAGE1_5]: Declared.
+	(count_lines) [!STAGE1_5]: Likewise.
+	(use_pager) [!STAGE1_5]: Likewise.
+	
+2002-02-08  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/fsys_jfs.c (jfs_read) [STAGE1_5]: Set and reset
+	DISK_READ_FUNC even in Stage 1.5.
+	* stage2/fsys_xfs.c (xfs_read) [STAGE1_5]: Likewise.
+
+	* stage2/stage1_5.c (saved_sector): Initialized with -1.
+	(cmain): Check if SAVED_SECTOR was set appropriately after
+	reading the second sector of Stage 2. If SAVED_SECTOR is not
+	set (i.e. it is equal to -1), print an error and stop.
+	
+2002-02-05  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (setup_func): Add a VSTa fs entry into
+	STAGE1_5_MAP.
+	
+2002-02-05  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/shared.h (BUILTIN_HELP_LIST): New macro. Used for
+	commands whose help messages are listed when no argument is
+	specified to the command "help".
+	* stage2/builtins.c (builtin_blocklist): Added the attribute
+	BUILTIN_HELP_LIST.
+	(builtin_boot): Likewise.
+	(builtin_bootp): Likewise.
+	(builtin_cat): Likewise.
+	(builtin_chainloader): Likewise.
+	(builtin_color): Likewise.
+	(builtin_configfile): Likewise.
+	(builtin_device): Likewise.
+	(builtin_dhcp): Likewise.
+	(builtin_displayapm): Likewise.
+	(builtin_displaymem): Likewise.
+	(builtin_find): Likewise.
+	(builtin_geometry): Likewise.
+	(builtin_halt): Likewise.
+	(builtin_help): Likewise.
+	(builtin_hide): Likewise.
+	(builtin_ifconfig): Likewise.
+	(builtin_initrd): Likewise.
+	(builtin_kernel): Likewise.
+	(builtin_makeactive): Likewise.
+	(builtin_map): Likewise.
+	(builtin_md5crypt): Likewise.
+	(builtin_module): Likewise.
+	(builtin_modulenounzip): Likewise.
+	(builtin_partnew): Likewise.
+	(builtin_parttype): Likewise.
+	(builtin_quit): Likewise.
+	(builtin_rarp): Likewise.
+	(builtin_reboot): Likewise.
+	(builtin_root): Likewise.
+	(builtin_rootnoverify): Likewise.
+	(builtin_serial): Likewise.
+	(builtin_setkey): Likewise.
+	(builtin_setup): Likewise.
+	(builtin_terminal): Likewise.
+	(builtin_testvbe): Likewise.
+	(builtin_tftpserver): Likewise.
+	(builtin_unhide): Likewise.
+	(builtin_uppermem): Likewise.
+	(builtin_vbeprobe): Likewise.
+
+	(help_func): When no argument is specified, if the last entry
+	was at the left column, print an extra newline.
+	
+2002-02-05  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/shared.h (BUILTIN_HIDDEN): Renamed to ...
+	(BUILTIN_NO_ECHO): ... this. The old name was too difficult to
+	see _what_ was hidden.
+	
+2002-02-05  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* netboot/misc.c (twiddle): Go back to the bar progress, copied
+	from etherboot-5.0.5/src/misc.c. Execute the code only if DEBUG
+	is true.
+	
+2002-02-05  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/builtins.c (displaymem_func): Use hex digits to display
+	for consistency.
+	
+2002-02-04  Jason Thomas  <jason@topic.com.ah>
+
+	From Denis Kitzman  <dkitzman@blue.weeg.uiowa.edu>:
+	* stage2/Makefile.am (libgrub_a_CFLAGS): Fixed a typo.
+	FSYS_XFS, USE_MD5_PASSWORDS, SUPPORT_SERIAL, and
+	SUPPORT_HERCULES did not get defined.
+
+2002-01-20  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* util/grub-image.in: Check stage2 instead of stage2.c to
+	determine where the script is invoked, because srcdir may not
+	be used for the compilation.
+	
+2002-01-20  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* grub/asmstub.c (console_putchar): When not using curses,
+	ignore a carriage return, because a newline in Unix is only a
+	line feed.
+	
+2002-01-18  Klaus Reichl  <Klaus.Reichl@alcatel.at>
+
+	* stage2/fsys_minix.c (minix_dir): Fixed bug getting filenames
+	with MAXNAMELEN right.
+
+	* stage2/char_io.c (get_cmdline, cl_refresh): If TERMINAL_DUMB
+	section is always 0.
+	Line is only cleared if !TERMINAL_DUMB.
+
+	* grub/main.c (use_curses): Initialize to 0 if !HAVE_LIBCURSES
+	(main): Check for curses use and set terminal to dumb if we
+	don't use it (helps for --batch and variants of non-curses
+	setup).
+
+2002-01-15  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* configure.in (AM_INIT_AUTOMAKE): The version number is
+	upgraded to 0.91.
+	
+2002-01-15  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* docs/grub.texi (Preset Menu): New chapter.
+	
+2002-01-15  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* docs/grub.texi: Added some text about JFS and XFS.
+	
+2002-01-08  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* grub/main.c (use_preset_menu): New variable.
+	(OPT_PRESET_MENU): New macro.
+	(longopts): Added an entry for "--preset-menu".
+	(usage): Added a description for "--preset-menu". Also, change
+	the first character of the description for "--device-map" to
+	lower case for consistency.
+	(main): Set USE_PRESET_MENU to 1 in the case of OPT_PRESET_MENU.
+	* stage2/shared.h (use_preset_menu): Declared.
+	* stage2/stage2.c [PRESET_MENU_STRING || SUPPORT_DISKLESS]
+	(open_preset_menu) [GRUB_UTIL]: If USE_PRESET_MENU is false,
+	return zero immediately.
+
+2002-01-08  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/common.c [SUPPORT_DISKLESS]
+	(setup_diskless_environment): Removed. The feature is moved to
+	the preset menu.
+	* stage2/stage2.c [SUPPORT_DISKLESS] (preset_menu): Set to the
+	string "bootp\n".
+	[SUPPORT_DISKLESS] (preset_menu_offset): Defined, as if
+	PRESET_MENU_STRING is defined.
+	[SUPPORT_DISKLESS] (open_preset_menu): Likewise.
+	[SUPPORT_DISKLESS] (read_from_preset_menu): Likewise.
+	[SUPPORT_DISKLESS] (close_preset_menu): Likewise.
+	
+2002-01-06  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	The preset menu has a priority over the configuration file.
+	Suggested by Christoph Plattner.
+	
+	* stage2/stage2.c [PRESET_MENU_STRING] (open_preset_menu):
+	Check if PRESET_MENU is not NULL.
+	[PRESET_MENU_STRING] (close_preset_menu): Set PRESET_MENU to
+	NULL.
+	(cmain): New internal function, reset. This function resets
+	AUTO_FILL, CONFIG_LEN, MENU_LEN, NUM_ENTRIES, CONFIG_ENTRIES,
+	MENU_ENTRIES and call init_config.
+	Try to open the preset menu first, and try to open the
+	configuration file, only if that failed.
+	Even if the preset menu was read, try to open the configuration
+	file. This time, opening the preset menu never succeed, because
+	close_preset_menu ensures that the preset menu is available at
+	most once.
+	
+2002-01-06  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* netboot/misc.c (inet_aton): Don't check if *P is an asterisk,
+	if I is 3. Reported by Rick (his real name and address are
+	unknown).
+	
+2002-01-03  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	Update the netboot stuff to Etherboot-5.0.5.
+	
+	* configure.in (--enable-3c590): Removed. This was a mistake.
+	(--enable-davicom): New option.
+	(--enable-eepro): Likewise.
+	(--enable-natsemi): Likewise.
+	(--enable-ni5010): Likewise.
+	(--enable-sis900): Likewise.
+	(--enable-w89c840): Likewise.
+	(--enable-3c509-hack): Removed.
+	(--enable-ns8390-force-16bit): Likewise.
+
+	* netboot/Makefile.am (libdrivers_a_SOURCES): Added timer.c and
+	timer.h.
+	(EXTRA_libdrivers_a_SOURCES): Added davicom.c, eepro.c, fa311.c,
+	natsemi.c, ni5010.c, sis900.c, sis900.h, tlan.c and w89c840.c.
+	(EXTRA_DIST): Added sis900.txt.
+	(3c595_drivers): Remove 3c590.o from this.
+	(davicom_drivers): New variable.
+	(eepro_drivers): Likewise.
+	(natsemi_drivers): Likewise.
+	(ni5010_drivers): Likewise.
+	(sis900_drivers): Likewise.
+	(w89c840_drivers): Likewise.
+	(3c590_o_CFLAGS): Removed.
+	(davicom_o_CFLAGS): New variable.
+	(eepro_o_CFLAGS): Likewise.
+	(natsemi_o_CFLAGS): Likewise.
+	(ni5010_o_CFLAGS): Likewise.
+	(sis900_o_CFLAGS): Likewise.
+	(w89c840_o_CFLAGS): Likewise.
+
+	* netboot/davicom.c: New file, from Etherboot-5.0.5.
+	* netboot/eepro.c: Likewise.
+	* netboot/natsemi.c: Likewise.
+	* netboot/ni5010.c: Likewise.
+	* netboot/sis900.c: Likewise.
+	* netboot/sis900.h: Likewise.
+	* netboot/sis900.txt: Likewise.
+	* netboot/timer.c: Likewise.
+	* netboot/timer.h: Likewise.
+	* netboot/w89c840.c: Likewise.
+	* netboot/fa311.c: Likewise.
+	* netboot/tlan.c: Likewise.
+	
+	* netboot/3c509.c: Copied from Etherboot-5.0.5.
+	* netboot/3c509.h: Likewise.
+	* netboot/3c595.c: Likewise.
+	* netboot/3c90x.c: Likewise.
+	* netboot/3c90x.txt: Likewise.
+	* netboot/cards.h: Likewise.
+	* netboot/cs89x0.c: Likewise.
+	* netboot/depca.c: Likewise.
+	* netboot/eepro100.c: Likewise.
+	* netboot/epic100.c: Likewise.
+	* netboot/i82586.c: Likewise.
+	* netboot/lance.c: Likewise.
+	* netboot/linux-asm-string.h: Likewise.
+	* netboot/nic.h: Likewise.
+	* netboot/ns8390.c: Likewise.
+	* netboot/ns8390.h: Likewise.
+	* netboot/otulip.c: Likewise.
+	* netboot/pci.h: Likewise.
+	* netboot/rtl8139.c: Likewise.
+	* netboot/sk_g16.c: Likewise.
+	* netboot/smc9000.c: Likewise.
+	* netboot/tiara.c: Likewise.
+	* netboot/tulip.c: Likewise.
+	* netboot/via-rhine.c: Likewise.
+	
+	* netboot/config.c: Applied a diff between Etherboot-4.6.4 and
+	Etherboot-5.0.5 manually.
+	* netboot/main.c: Likewise.
+	* netboot/pci.c: Likewise.
+	* netboot/etherboot.h: Rewritten mostly from scratch, based on
+	the same file in Etherboot-5.0.5.
+	* netboot/misc.c: Likewise.
+	* netboot/osdep.h: Likewise.
+	* netboot/fsys_tftp.c (GRUB): Defined.
+	(buf_fill): Use rfc2131_sleep_interval instead of rfc951_sleep.
+
+	* stage2/builtins.c [SUPPORT_NETBOOT] (GRUB): Defined.
+	(boot_func) [SUPPORT_NETBOOT]: Call cleanup_net.
+	* stage2/cmdline.c [SUPPORT_DISKLESS] (GRUB): Defined.
+	* stage2/common.c [SUPPORT_DISKLESS] (GRUB): Likewise.
+	
+2002-01-02  Jeremy Katz  <katzj@redhat.com>
+	
+	* util/grub-install.in: Support using mktemp as well as tempfile
+	for secure temporary file creation.
+
+2002-01-02  Jeremy Katz  <katzj@redhat.com>
+	
+	* stage2/md5.c (md5_password): Ensure the password exists before
+	trying to check against the md5 crypted version.
+
+2001-12-30  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage1/stage1.S: Don't call INT 13, AH=48H, because it is
+	difficult to call this function with the workaround implemented
+	in the previous change due to the size limit of Stage 1.
+	
+	(lba_mode) [NO_BUGGY_BIOS_IN_THE_WORLD]: Don't check the
+	geometry explicitly. This shouldn't be harmful, as INT 13,
+	AH=42H should take care of it, and if you cannot read Stage 2
+	even with LBA because of a geometry problem, you can never read
+	it.
+
+	* stage2/start.S (lba_mode) [NO_BUGGY_BIOS_IN_THE_WORLD]:
+	Likewise.
+	
+2001-12-30  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/bios.c (get_diskinfo): Clear out the structure DRP
+	before calling get_diskinfo_int13_extensions, because the Ralf
+	Brown's Interrupt List says that Dell machines using PhoenixBIOS
+	4.0 Release 6.0 fail, if DRP.FLAGS is not zero. Setting the
+	entire structure to zero may be overkill, but it should be safe.
+	
+	* stage2/char_io.c [STAGE1_5] (grub_memset): Defined.
+	
+2001-12-30  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	From John Goerzen <jgoerzen@complete.org>:
+	* util/grub-install.in (convert): Added NetBSD support.
+	
+2001-12-30  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* util/grub-install.in: Set GRUB_PREFIX and BOOTDIR to "/grub"
+	and "${rootdir}" respectively in NetBSD.
+	
+2001-12-30  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/builtins.c (builtin_geometry): Add extra space
+	characters into the long description.
+	(builtin_kernel): Likewise.
+	(builtin_vbeprobe): Likewise.
+	
+2001-12-19  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	From Michael Sullivan <mike@trdlnk.com>:
+	* stage1/stage1.S (real_start): Added a workaround for AST BIOS,
+	because it clobbers %dl with INT 13, AH=41H.
+
+2001-12-19  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/fsys_fat.c (fat_read): Fix the contradictory comment.
+	Reported by Filip Van Raemdonck <mechanix@digibel.org>.
+	
+2001-12-11  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/builtins.c (displayapm_func): Don't use multi-line
+	string literals but string concatenation instead, to suppress
+	warnings from gcc-3.0.x.
+	* stage2/cmdline.c (print_cmdline_message): Likewise.
+	* util/mbchk.c (usage): Likewise.
+	
+	* stage2/smp-imps.c (imps_read_config_table): Add a break
+	statement after the label ``default''.
+	
+	* util/mbchk.c: Include <stdlib.h> for the prototype of exit.
+
+	* stage2/serial.c (serial_port): Initialize with 0 instead of
+	-1, as an invalid value, because SERIAL_PORT is unsigned. This
+	change shouldn't affect anything.
+	(serial_exists): For the above change, check SERIAL_PORT with 0
+	instead of -1.
+	
+2001-12-10  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/shared.h (ERR_NO_DISK_SPACE): New constant.
+	* stage2/common.c (err_list): Added an entry for
+	ERR_NO_DISK_SPACE.
+	* docs/grub.texi (Stage2 errors): Added the description.
+	* stage2/builtins.c (embed_func): Use ERR_NO_DISK_SPACE instead
+	of ERR_DEV_VALUES when the spare space is too small. Suggested
+	by Eric Mumpower <nocturne@permabit.com>.
+	
+2001-12-10  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* grub/asmstub.c: Include <signal.h>.
+	(grub_stage2) [HAVE_LIBCURSES]: If USE_CURSES is true, ignore
+	the signal SIGWINCH. Reported by Christian Hudon
+	<chrish@debian.org>.
+
+2001-11-29  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	From Jason Thomas:
+	* stage2/disk_io.c (set_partition_hidden_flag): Complete rewrite
+	of this function which now supports logical partitions.
+	
+2001-11-12  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* docs/grub.texi: The copyright of this file is only held by
+	Free Software Foundation, Inc., as Erich Boleyn has assigned his
+	copyright to the FSF.
+	* stage1/stage1.S: Likewise.
+	* stage2/asm.S: Likewise.
+	* stage2/boot.c: Likewise.
+	* stage2/builtins.c: Likewise.
+	* stage2/char_io.c: Likewise.
+	* stage2/cmdline.c: Likewise.
+	* stage2/common.c: Likewise.
+	* stage2/disk_io.c: Likewise.
+	* stage2/fat.h: Likewise.
+	* stage2/filesys.h: Likewise.
+	* stage2/freebsd.h: Likewise.
+	* stage2/fsys_ext2fs.c: Likewise.
+	* stage2/fsys_fat.c: Likewise.
+	* stage2/fsys_ffs.c: Likewise.
+	* stage2/gunzip.c: Likewise.
+	* stage2/i386-elf.h: Likewise.
+	* stage2/mb_header.h: Likewise.
+	* stage2/mb_info.h: Likewise.
+	* stage2/pc_slice.h: Likewise.
+	* stage2/shared.h: Likewise.
+	* stage2/stage1_5.c: Likewise.
+	* stage2/stage2.c: Likewise.
+	* stage2/start.S: Likewise.
+	
+2001-11-07  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/builtins.c (terminal_func) [!SUPPORT_SERIAL]: Disable
+	the wait code, as it is usable only when serial support is on.
+	Reported by Karl Hammar <karl@kalle.csb.ki.se>.
+	
 2001-10-27  Yoshinori K. Okuji  <okuji@gnu.org>
 
 	JFS and XFS support is added.

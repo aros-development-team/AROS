@@ -24,14 +24,16 @@
 * grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
 * grub-md5-crypt: (grub)Invoking grub-md5-crypt.        Encrypt a password
                                                         in MD5 format
+* grub-terminfo: (grub)Invoking grub-terminfo.  Generate a terminfo
+                                                command from a
+                                                terminfo name
 * mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
 @end direntry
 
 @setchapternewpage off
 
 @ifinfo
-Copyright @copyright{} 1996 Erich Boleyn
-Copyright @copyright{} 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright @copyright{} 1999,2000,2001,2002 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -59,12 +61,11 @@ into another language, under the above conditions for modified versions.
 @title the GRUB manual
 @subtitle The GRand Unified Bootloader, version @value{VERSION}, @value{UPDATED}.
 @author Gordon Matzigkeit
-@author OKUJI Yoshinori
+@author Yoshinori K. Okuji
 @c The following two commands start the copyright page.
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1996 Erich Boleyn
-Copyright @copyright{} 1999, 2000, 2001 Free Software Foundation, Inc.
+Copyright @copyright{} 1999,2000,2001,2002 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -101,6 +102,7 @@ This edition documents version @value{VERSION}.
 * Configuration::               Writing your own configuration file
 * Network::                     Downloading OS images from a network
 * Serial terminal::             Using GRUB via a serial line
+* Preset Menu::                 Embedding a configuration file into GRUB
 * Security::                    Improving the security
 * Images::                      GRUB image files
 * Filesystem::                  Filesystem syntax and semantics
@@ -110,8 +112,8 @@ This edition documents version @value{VERSION}.
 * Invoking the grub shell::     How to use the grub shell
 * Invoking grub-install::       How to use the GRUB installer
 * Invoking grub-md5-crypt::     How to generate a cryptic password
+* Invoking grub-terminfo::      How to generate a terminfo command
 * Invoking mbchk::              How to use the Multiboot checker
-* FAQ::                         Frequently asked questions
 * Obtaining and Building GRUB:: How to obtain and build GRUB
 * Reporting bugs::              Where you should send a bug report
 * Future::                      Some future plans on GRUB
@@ -136,9 +138,9 @@ This edition documents version @value{VERSION}.
 
 Briefly, a @dfn{boot loader} is the first software program that runs when
 a computer starts.  It is responsible for loading and transferring
-control to an operating system @dfn{kernel} software (such as the Linux
-or GNU Hurd kernel).  The kernel, in turn, initializes the rest of the
-operating system (e.g. a GNU system).
+control to an operating system @dfn{kernel} software (such as Linux or
+GNU Mach).  The kernel, in turn, initializes the rest of the operating
+system (e.g. a GNU system).
 
 GNU GRUB is a very powerful boot loader, which can load a wide variety
 of free operating systems, as well as proprietary operating systems with
@@ -187,10 +189,10 @@ FreeBSD boot loader, and so GRUB was born.
 
 Erich added many features to GRUB, but other priorities prevented him
 from keeping up with the demands of its quickly-expanding user base. In
-1999, Gordon Matzigkeit and OKUJI Yoshinori adopted GRUB as an official
-GNU package, and opened its development by making the latest sources
-available via anonymous CVS. @xref{Obtaining and Building GRUB}, for
-more information.
+1999, Gordon Matzigkeit and Yoshinori K. Okuji adopted GRUB as an
+official GNU package, and opened its development by making the latest
+sources available via anonymous CVS. @xref{Obtaining and Building
+GRUB}, for more information.
 
 
 @node Features
@@ -268,8 +270,8 @@ devices, partitions, and files in a directory depending on context.
 Support multiple filesystem types transparently, plus a useful explicit
 blocklist notation. The currently supported filesystem types are
 @dfn{BSD FFS}, @dfn{DOS FAT16 and FAT32}, @dfn{Minix fs}, @dfn{Linux
-ext2fs}, @dfn{ReiserFS}, and @dfn{VSTa fs}. @xref{Filesystem}, for more
-information.
+ext2fs}, @dfn{ReiserFS}, @dfn{JFS}, @dfn{XFS}, and @dfn{VSTa
+fs}. @xref{Filesystem}, for more information.
 
 @item Support automatic decompression
 Can decompress files which were compressed by @command{gzip}. This
@@ -583,7 +585,7 @@ install GRUB into the MBR of the first IDE disk under Linux:
 # @kbd{grub-install /dev/hda}
 @end example
 
-Likewise, under Hurd, this has the same effect:
+Likewise, under GNU/Hurd, this has the same effect:
 
 @example
 # @kbd{grub-install /dev/hd0}
@@ -761,6 +763,7 @@ Here, we describe some caveats on several operating systems.
 * OpenBSD::
 * DOS/Windows::
 * SCO UnixWare::
+* QNX::
 @end menu
 
 
@@ -962,6 +965,21 @@ grub> @kbd{boot}
 @end example
 
 
+@node QNX
+@subsection QNX
+
+QNX seems to use a bigger boot loader, so you need to boot it up, like
+this:
+
+@example
+@group
+grub> @kbd{rootnoverify (hd1,1)}
+grub> @kbd{chainloader +4}
+grub> @kbd{boot}
+@end group
+@end example
+
+
 @node Configuration
 @chapter Configuration
 
@@ -1037,7 +1055,7 @@ displays the argument as is, you can write basically anything in there.
 
 @example
 @group
-# For booting the GNU Hurd
+# For booting GNU/Hurd
 title  GNU/Hurd
 root   (hd0,0)
 kernel /boot/gnumach.gz root=hd0s1
@@ -1049,7 +1067,7 @@ This boots GNU/Hurd from the first hard disk.
 
 @example
 @group
-# For booting Linux
+# For booting GNU/Linux
 title  GNU/Linux
 kernel (hd1,0)/vmlinuz root=/dev/hdb1
 @end group
@@ -1244,9 +1262,14 @@ example about a BOOTP configuration:
 foo:ht=1:ha=63655d0334a7:ip=145.71.35.127:\
         :bf=/nbgrub:\
         :tc=.allhost:\
-        :T150="/tftpboot/menu.lst.foo":
+        :T150="(nd)/tftpboot/menu.lst.foo":
 @end group
 @end example
+
+Note that you should specify the drive name @code{(nd)} in the name of
+the configuration file. That is because you can change the root drive
+before downloading the configuration from the TFTP server, when the
+preset menu feature is used (@pxref{Preset Menu}).
 
 See the manual about your BOOTP/DHCP server, for more information. The
 exact syntax should differ from the example, more or less.
@@ -1299,10 +1322,69 @@ compatible with VT100 by default. This is true for most terminal
 emulators nowadays, but you should pass the option @option{--dumb} to
 the command, if your terminal emulator is not VT100-compatible or
 implements few VT100 escape sequences. If you specify the option, then
-GRUB doesn't provide you with the menu interface, because the menu
-requires several fancy features for your terminal. Instead, GRUB only
-gives you the hidden menu interface and the command-line interface
-(@pxref{Interface}).
+GRUB provides you with an alternative menu interface, because the normal
+menu requires several fancy features for your terminal.
+
+
+@node Preset Menu
+@chapter Embedding a configuration file into GRUB
+
+GRUB supports @dfn{preset menu} which is always loaded before starting.
+The preset menu feature is useful, for example, when your computer has
+no console but a serial cable. In this case, it is critical to set up
+the serial terminal as soon as possible, since you cannot see any
+message until the serial terminal begins to work. So it is nice to run
+the commands @command{serial} (@pxref{serial}) and @command{terminal}
+(@pxref{terminal}) sooner than anything else at the start-up time.
+
+It is slightly complicated how the preset menu works:
+
+@enumerate
+@item
+GRUB checks if the preset menu feature is used, and loads the preset
+menu, if available. This includes running commands and reading boot
+entries, like an ordinary configuration file.
+
+@item
+GRUB checks if the configuration file is available. Note that this check
+is performed @strong{regardless of the existence of the preset
+menu}. The configuration file is loaded, even after the preset menu was
+loaded.
+
+@item
+When the preset menu includes any boot entries, they are cleared when
+the configuration file is loaded. It doesn't matter whether the
+configuration file has any entries or no entry. The boot entries in the
+preset menu are used only when GRUB fails in loading the configuration
+file.
+@end enumerate
+
+To enable the preset menu feature, you must specify a file to the
+configure script with the option @option{--enable-preset-menu}. The file
+has the same semantics as normal configuration files
+(@pxref{Configuration}).
+
+Another point you should take care is that the diskless support
+(@pxref{Diskless}) diverts the preset menu. Diskless images embed a
+preset menu to execute the command @command{bootp} (@pxref{bootp})
+automatically, unless you specify your own preset menu to the configure
+script. This means that you must put commands to initialize a network in
+the preset menu yourself, because diskless images don't set it up
+implicitly, when you use the preset menu explicitly.
+
+Therefore, a typical preset menu used with diskless support would be
+like this:
+
+@example
+@group
+# Set up the serial terminal, first of all.
+serial --unit=0 --speed=19200
+terminal --timeout=0 serial
+
+# Initialize the network.
+dhcp
+@end group
+@end example
 
 
 @node Security
@@ -1411,11 +1493,13 @@ This is the core image of GRUB. This does all things but booting up
 itself. Usually, this is put in a filesystem, but that is not required.
 
 @item e2fs_stage1_5
-@itemx ffs_stage1_5
-@itemx reiserfs_stage1_5
 @itemx fat_stage1_5
+@itemx ffs_stage1_5
+@itemx jfs_stage1_5
 @itemx minix_stage1_5
+@itemx reiserfs_stage1_5
 @itemx vstafs_stage1_5
+@itemx xfs_stage1_5
 
 These are called @dfn{Stage 1.5}, because the purpose is a bridge
 between @file{stage1} and @file{stage2}, that is to say, Stage 1.5 is
@@ -1820,6 +1904,7 @@ Commands usable both in the menu and in the command-line.
 * dhcp::                        Initialize a network device via DHCP
 * hide::                        Hide a partition
 * ifconfig::                    Configure a network device manually
+* pager::                       Change the state of the internal pager
 * partnew::                     Make a primary partition
 * parttype::                    Change the type of a partition
 * password::                    Set a password for the menu interface
@@ -1827,6 +1912,7 @@ Commands usable both in the menu and in the command-line.
 * serial::                      Set up a serial device
 * setkey::                      Configure the key map
 * terminal::                    Choose a terminal
+* terminfo::                    Define escape sequences for a terminal
 * tftpserver::                  Specify a TFTP server
 * unhide::                      Unhide a partition
 @end menu
@@ -1987,6 +2073,16 @@ address of a network device manually. The values must be in dotted
 decimal format, like @samp{192.168.11.178}. The order of the options is
 not important. This command shows current network configuration, if no
 option is specified. See also @ref{Network}.
+@end deffn
+
+
+@node pager
+@subsection pager
+
+@deffn Command pager [flag]
+Toggle or set the state of the internal pager. If @var{flag} is
+@samp{on}, the internal pager is enabled. If @var{flag} is @samp{off},
+it is disabled. If no argument is given, the state is toggled.
 @end deffn
 
 
@@ -2198,7 +2294,7 @@ character each of the symbols corresponds:
 @node terminal
 @subsection terminal
 
-@deffn Command terminal [@option{--dumb}] [@option{--timeout=secs}] [@option{console}] [@option{serial}] [@option{hercules}]
+@deffn Command terminal [@option{--dumb}] [@option{--no-echo}] [@option{--no-edit}] [@option{--timeout=secs}] [@option{--lines=lines}] [@option{--silent}] [@option{console}] [@option{serial}] [@option{hercules}]
 Select a terminal for user interaction. The terminal is assumed to be
 VT100-compatible unless @option{--dumb} is specified. If both
 @option{console} and @option{serial} are specified, then GRUB will use
@@ -2211,6 +2307,34 @@ This may not make sense for most users, but GRUB supports Hercules
 console as well. Hercules console is usable like the ordinary console,
 and the usage is quite similar to that for serial terminals: specify
 @option{hercules} as the argument.
+
+The option @option{--lines} defines the number of lines in your
+terminal, and it is used for the internal pager function. If you don't
+specify this option, the number is assumed as 24.
+
+The option @option{--silent} suppresses the message to prompt you to
+hit any key. This might be useful if your system has no terminal
+device.
+
+The option @option{--no-echo} has GRUB not to echo back input
+characters. This implies the option @option{--no-edit}.
+
+The option @option{--no-edit} disables the BASH-like editing feature.
+@end deffn
+
+
+@node terminfo
+@subsection terminfo
+
+@deffn Command terminfo @option{--name=name} @option{--cursor-address=seq} [@option{--clear-screen=seq}] [@option{--enter-standout-mode=seq}] [@option{--exit-standout-mode=seq}]
+Define the capabilities of your terminal. Use this command to define
+escape sequences, if it is not vt100-compatible. You may use @samp{\e}
+for @key{ESC} and @samp{^X} for a control character.
+
+You can use the utility @command{grub-terminfo} to generate
+appropriate arguments to this command. @xref{Invoking grub-terminfo}.
+
+If no option is specified, the current settings are printed.
 @end deffn
 
 
@@ -2463,12 +2587,15 @@ is shut down using APM.
 @node help
 @subsection help
 
-@deffn Command help [pattern @dots{}]
+@deffn Command help @option{--all} [pattern @dots{}]
 Display helpful information about builtin commands. If you do not
-specify @var{pattern}, this command shows short descriptions of all
-available commands.  If you specify any @var{patterns}, it displays
-longer information about each of the commands which match those
-@var{patterns}.
+specify @var{pattern}, this command shows short descriptions of most of
+available commands. If you specify the option @option{--all} to this
+command, short descriptions of rarely used commands (such as
+@ref{testload}) are displayed as well.
+
+If you specify any @var{patterns}, it displays longer information
+about each of the commands which match those @var{patterns}.
 @end deffn
 
 
@@ -3058,6 +3185,12 @@ enter a correct password before running such an entry.
 @item 33 : Serial device not configured
 This error is returned if you try to change your terminal to a serial
 one before initializing any serial device.
+
+@item 34 : No spare sectors on the disk
+This error is returned if a disk doesn't have enough spare space. This
+happens when you try to embed Stage 1.5 into the unused sectors after
+the MBR, but the first partition starts right after the MBR or they are
+used by EZ-BIOS.
 @end table
 
 
@@ -3300,6 +3433,32 @@ Use @var{file} as the grub shell.
 @end table
 
 
+@node Invoking grub-terminfo
+@chapter Invoking grub-md5-crypt
+
+The program @command{grub-terminfo} generates a terminfo command from
+a terminfo name (@pxref{terminfo}). The result can be used in the
+configuration file, to define escape sequences. Because GRUB assumes
+that your terminal is vt100-compatible by default, this would be
+useful only if your terminal is uncommon (such as vt52).
+
+@command{grub-terminfo} accepts the following options:
+
+@table @option
+@item --help
+Print a summary of the command-line options and exit.
+
+@item --version
+Print the version information and exit.
+@end table
+
+You must specify one argument to this command. For example:
+
+@example
+@kbd{grub-terminfo vt52}
+@end example
+
+
 @node Invoking mbchk
 @chapter Invoking mbchk
 
@@ -3321,221 +3480,6 @@ Suppress all normal output.
 @end table
 
 
-@node FAQ
-@appendix Frequently asked questions
-
-@table @asis
-@item How does GNU GRUB differ from Erich's original GRUB?
-
-GNU GRUB is the successor of Erich's great GRUB. He couldn't work on
-GRUB because of some other tasks, so the current maintainers OKUJI
-Yoshinori and Gordon Matzigkeit took over the maintainership, and opened
-the development in order for everybody to participate it.
-
-Technically speaking, GNU GRUB has many features that are not seen in
-the original GRUB. For example, GNU GRUB can be installed on UNIX-like
-operating system (such as GNU/Hurd) via the grub shell
-@file{/sbin/grub} (or @file{/usr/sbin/grub} on older systems), it
-supports Logical Block Address (LBA) mode that solves the 1024 cylinders
-problem, and @kbd{@key{TAB}} completes a file name when it's unique. Of
-course, many bug fixes are done as well, so it is recommended to use GNU
-GRUB.
-
-@item Can GRUB boot my operating system from over 8GB hard disks?
-
-That depends on your BIOS and your operating system. You must make
-sure that your drive is accessible in LBA mode. Generally, that is
-configurable in BIOS setting utility. Read the manual for your BIOS
-for more information.
-
-Furthermore, some operating systems (i.e. DOS) cannot access any large
-disk, so the problem is not solved by any kind of boot loader. GNU/Hurd
-and GNU/Linux can surely boot from such a large disk.
-
-@item Can I put Stage2 into a partition which is over 1024 cylinders?
-
-Yes, if your BIOS supports the LBA mode.
-
-@item How to create a GRUB boot floppy with the menu interface?
-
-The easiest way is:
-
-@enumerate
-@item
-Create filesystem in your floppy disk. For example:
-
-@example
-$ mke2fs /dev/fd0
-@end example
-
-@item
-Mount it on somewhere, say, @file{/mnt}.
-
-@item
-Copy the GRUB images to @file{/mnt/boot/grub}. Only @file{stage1},
-@file{stage2} and @file{menu.lst} are necessary. You may not copy
-@dfn{stage1.5}s.
-
-@item
-Run the following command (substitute @file{/usr/sbin/grub} for
-@file{/sbin/grub} if you are using an older system):
-
-@example
-@group
-$ /sbin/grub --batch <<EOT
-root (fd0)
-setup (fd0)
-quit
-EOT
-@end group
-@end example
-@end enumerate
-
-@item How to specify a partition?
-
-@xref{Device syntax}.
-
-@item GRUB does not recognize my GNU/Hurd partition.
-
-I don't know why, but the authors of FDISK programs have assigned the
-partition type @samp{0x63} to GNU Hurd incorrectly. A partition type
-should mean what format is used in the partition, such as filesystem and
-BSD slices, and should not be used to represent what operating system
-owns the partition. So use @samp{0x83} if the partition contains ext2fs
-filesystem, and use @samp{0xA5} if the partition contains ffs
-filesystem, whether the partition owner is Hurd or not. We will use
-@samp{0x63} for GNU Hurd filesystem that has not been implemented yet.
-
-@item I've installed a recent version of binutils, but GRUB still crashes.
-
-Please check for the version of your binutils by this command:
-
-@example
-@kbd{ld -v}
-@end example
-
-This will show two versions, but only the latter is important. If the
-version is identical with what you have installed, the installation was
-not bad.
-
-Well, please try:
-
-@example
-@kbd{gcc -Wl,-v 2>&1 | grep "GNU ld"}
-@end example
-
-If this is not identical with the result above, you should specify the
-directory where you have installed binutils for the script configure,
-like this:
-
-@example
-@kbd{./configure --with-binutils=/usr/local/bin}
-@end example
-
-If you follow the instructions above but GRUB still crashes, probably
-there is a serious bug in GRUB. @xref{Reporting bugs}.
-
-@item GRUB hangs up when accessing my SCSI disk.
-
-Check if you have turned on the support for INT 13 extension (LBA). If
-so, disable the support and see if GRUB can now access your SCSI
-disk. This will make it clear that your SCSI BIOS sucks.
-
-For now, we know the following doesn't provide working LBA mode:
-
-@table @asis
-@item
-Adaptec AIC-7880
-@end table
-
-In the case where you have such a SCSI controller unfortunately, you
-cannot use the LBA mode, though GRUB still works fine in the CHS mode
-(so the well-known 1024 cylinders problem comes again to you).
-
-@strong{Caution:} Actually it has not been verified yet if this bug is
-due to the SCSI BIOS or GRUB itself, frankly speaking. Because the
-developers haven't seen it by their own eyes. This is why it is
-desirable that you investigate the cause seriously if you have the
-skill.
-
-@item How can I specify an arbitrary memory size to Linux?
-
-Pass a @samp{mem=} option to your Linux kernel, like this:
-
-@example
-grub> @kbd{kernel /vmlinuz mem=128M}
-@end example
-
-You may pass other options in the same way. See @xref{GNU/Linux}, for
-more details.
-
-@item I have a separate boot partition and GRUB doesn't recognize it.
-
-This is often reported as a @dfn{bug}, but this is not a bug
-really. This is a feature.
-
-Because GRUB is a boot loader and it normally runs under no operating
-system, it doesn't know where a partition is mounted under your
-operating systems. So, if you have the partition @file{/boot} and you
-install GRUB images into the directory @file{/boot/grub}, GRUB
-recognizes that the images lies under the directory @file{/grub} but not
-@file{/boot/grub}. That's fine, since there is no guarantee that all of
-your operating systems mount the same partition as @file{/boot}.
-
-There are several solutions for this situation.
-
-@enumerate
-@item
-Install GRUB into the directory @file{/boot/boot/grub} instead of
-@file{/boot/grub}. This may sound ugly but should work fine.
-
-@item
-Create a symbolic link before installing GRUB, like @samp{cd /boot && ln
--s . boot}. This works only if the filesystem of the boot partition
-supports symbolic links and GRUB supports the feature as well.
-
-@item
-Install GRUB with the command @command{install}, to specify the paths of
-GRUB images explicitly. Here is an example:
-
-@example
-@group
-grub> @kbd{root (hd0,1)}
-grub> @kbd{install /grub/stage1 d (hd0) /grub/stage2 p /grub/menu.lst}
-@end group
-@end example
-@end enumerate
-
-@item How to uninstall GRUB from my hard disk drive?
-
-There is no concept @dfn{uninstall} in boot loaders, because if you
-@dfn{uninstall} a boot loader, an unbootable machine would simply
-remain. So all you need to do is overwrite another boot loader you like
-to your disk, that is, install the boot loader without uninstalling
-GRUB.
-
-For example, if you want to install the boot loader for Windows, just
-run @code{FDISK /MBR} on Windows. If you want to install LILO@footnote{I
-can't imagine why you want to do such a thing, though}, run
-@code{/sbin/lilo} on GNU/Linux.
-
-@item GRUB hangs when accessing my large IDE disk.
-
-If your disk is bigger than 32GB, probably updating your mainboard BIOS
-will solve your problem. This bug is well-known and most vendors should
-provide fixed versions. For example, if you have ASUS-P3BF, upgrading
-the BIOS to V1007beta1 or later can fix it. Please ask your vendor, for
-more information.
-
-@item Why don't Linux, FreeBSD, NetBSD, etc. become Multiboot-compliant?
-
-Please ask the relevant maintainers. If all free kernels were
-Multiboot-compliant (@pxref{Top, Multiboot Specification, Motivation,
-multiboot, The Multiboot Specification}), the world would be an
-utopia@dots{}
-@end table
-
-
 @node Obtaining and Building GRUB
 @appendix How to obtain and build GRUB
 
@@ -3543,7 +3487,7 @@ utopia@dots{}
 @strong{Caution:} GRUB requires binutils-2.9.1.0.23 or later because the
 GNU assembler has been changed so that it can produce real 16bits
 machine code between 2.9.1 and 2.9.1.0.x. See
-@uref{http://sourceware.cygnus.com/binutils/}, to obtain information on
+@uref{http://sources.redhat.com/binutils/}, to obtain information on
 how to get the latest version.
 @end quotation
 
@@ -3600,12 +3544,12 @@ The password for anoncvs is empty. So the instruction is:
 @appendix Reporting bugs
 
 This is the guideline of how to report bugs. Take a look at this list
-below before you send e-mail to @email{bug-grub@@gnu.org}:
+below before you submit bugs:
 
 @enumerate
 @item
-Before unsettled, read this manual through and through, in particular
-@xref{FAQ}.
+Before unsettled, read this manual through and through. Also, see the
+@uref{http://www.gnu.org/software/grub/grub-faq.html, GNU GRUB FAQ}.
 
 @item
 Always mention the information on your GRUB. The version number and the
@@ -3653,8 +3597,13 @@ Reporting too many things is quite better than omitting an important
 thing.
 @end enumerate
 
-If you realize the guideline above, send e-mail to
-@email{bug-grub@@gnu.org}, and we will try to fix the bugs.
+If you realize the guideline above, submit a report to the
+@uref{http://bugcomm.enbug.org/?project=grub&mode=project, Bug Tracking System}.
+Alternatively, you can submit a report via electronic mail to
+@email{bug-grub@@gnu.org}, but we strongly recommend that you use the
+Bug Tracking System, because e-mail can be passed over easily.
+
+Once we get your report, we will try to fix the bugs.
 
 
 @node Future

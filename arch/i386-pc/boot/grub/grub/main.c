@@ -1,7 +1,7 @@
 /* main.c - experimental GRUB stage2 that runs under Unix */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,11 +30,17 @@ int grub_stage2 (void);
 #include <setjmp.h>
 
 #define WITHOUT_LIBC_STUBS 1
-#include "shared.h"
+#include <shared.h>
+#include <term.h>
 
 char *program_name = 0;
 int use_config_file = 1;
+int use_preset_menu = 0;
+#ifdef HAVE_LIBCURSES
 int use_curses = 1;
+#else
+int use_curses = 0;
+#endif
 int verbose = 0;
 int read_only = 0;
 int floppy_disks = 1;
@@ -43,20 +49,22 @@ static int default_boot_drive;
 static int default_install_partition;
 static char *default_config_file;
 
-#define OPT_HELP -2
-#define OPT_VERSION -3
-#define OPT_HOLD -4
-#define OPT_CONFIG_FILE -5
-#define OPT_INSTALL_PARTITION -6
-#define OPT_BOOT_DRIVE -7
-#define OPT_NO_CONFIG_FILE -8
-#define OPT_NO_CURSES -9
-#define OPT_BATCH -10
-#define OPT_VERBOSE -11
-#define OPT_READ_ONLY -12
-#define OPT_PROBE_SECOND_FLOPPY -13
-#define OPT_NO_FLOPPY -14
-#define OPT_DEVICE_MAP -15
+#define OPT_HELP		-2
+#define OPT_VERSION		-3
+#define OPT_HOLD		-4
+#define OPT_CONFIG_FILE		-5
+#define OPT_INSTALL_PARTITION	-6
+#define OPT_BOOT_DRIVE		-7
+#define OPT_NO_CONFIG_FILE	-8
+#define OPT_NO_CURSES		-9
+#define OPT_BATCH		-10
+#define OPT_VERBOSE		-11
+#define OPT_READ_ONLY		-12
+#define OPT_PROBE_SECOND_FLOPPY	-13
+#define OPT_NO_FLOPPY		-14
+#define OPT_DEVICE_MAP		-15
+#define OPT_PRESET_MENU		-16
+#define OPT_NO_PAGER		-17
 #define OPTSTRING ""
 
 static struct option longopts[] =
@@ -71,6 +79,8 @@ static struct option longopts[] =
   {"no-config-file", no_argument, 0, OPT_NO_CONFIG_FILE},
   {"no-curses", no_argument, 0, OPT_NO_CURSES},
   {"no-floppy", no_argument, 0, OPT_NO_FLOPPY},
+  {"no-pager", no_argument, 0, OPT_NO_PAGER},
+  {"preset-menu", no_argument, 0, OPT_PRESET_MENU},
   {"probe-second-floppy", no_argument, 0, OPT_PROBE_SECOND_FLOPPY},
   {"read-only", no_argument, 0, OPT_READ_ONLY},
   {"verbose", no_argument, 0, OPT_VERBOSE},
@@ -93,13 +103,15 @@ Enter the GRand Unified Bootloader command shell.\n\
     --batch                  turn on batch mode for non-interactive use\n\
     --boot-drive=DRIVE       specify stage2 boot_drive [default=0x%x]\n\
     --config-file=FILE       specify stage2 config_file [default=%s]\n\
-    --device-map=FILE        Use the device map file FILE\n\
+    --device-map=FILE        use the device map file FILE\n\
     --help                   display this message and exit\n\
     --hold                   wait until a debugger will attach\n\
     --install-partition=PAR  specify stage2 install_partition [default=0x%x]\n\
     --no-config-file         do not use the config file\n\
     --no-curses              do not use curses\n\
     --no-floppy              do not probe any floppy drive\n\
+    --no-pager               do not use internal pager\n\
+    --preset-menu            use the preset menu\n\
     --probe-second-floppy    probe the second floppy drive\n\
     --read-only              do not write anything to devices\n\
     --verbose                print verbose messages\n\
@@ -190,10 +202,15 @@ main (int argc, char **argv)
 	  use_curses = 0;
 	  break;
 
+	case OPT_NO_PAGER:
+	  use_pager = 0;
+	  break;
+
 	case OPT_BATCH:
-	  /* This is the same as "--no-config-file --no-curses".  */
+	  /* This is the same as "--no-config-file --no-curses --no-pager".  */
 	  use_config_file = 0;
 	  use_curses = 0;
+	  use_pager = 0;
 	  break;
 
 	case OPT_READ_ONLY:
@@ -215,6 +232,10 @@ main (int argc, char **argv)
 	case OPT_DEVICE_MAP:
 	  device_map_file = strdup (optarg);
 	  break;
+
+	case OPT_PRESET_MENU:
+	  use_preset_menu = 1;
+	  break;
 	  
 	default:
 	  usage (1);
@@ -233,6 +254,11 @@ main (int argc, char **argv)
       
       sleep (1);
     }
+
+  /* If we don't have curses (!HAVE_LIBCURSES or --no-curses or
+     --batch) put terminal to dumb for better handling of line i/o */
+  if (! use_curses)
+    current_term->flags = TERM_NO_EDIT | TERM_DUMB;
 
   /* Transfer control to the stage2 simulator. */
   exit (grub_stage2 ());

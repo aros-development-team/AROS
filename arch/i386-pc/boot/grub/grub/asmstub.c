@@ -1,7 +1,7 @@
 /* asmstub.c - a version of shared_src/asm.S that works under Unix */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ int grub_stage2 (void);
 #include <setjmp.h>
 #include <sys/time.h>
 #include <termios.h>
+#include <signal.h>
 
 #ifdef __linux__
 # include <sys/ioctl.h>		/* ioctl */
@@ -60,7 +61,7 @@ int grub_stage2 (void);
 #include <shared.h>
 #include <device.h>
 #include <serial.h>
-#include <hercules.h>
+#include <term.h>
 
 /* Simulated memory sizes. */
 #define EXTENDED_MEMSIZE (3 * 1024 * 1024)	/* 3MB */
@@ -72,6 +73,8 @@ int saved_entryno = 0;
 char version_string[] = VERSION;
 char config_file[128] = "/boot/grub/menu.lst"; /* FIXME: arbitrary */
 unsigned long linux_text_len = 0;
+char *linux_data_tmp_addr = 0;
+char *linux_data_real_addr = 0;
 unsigned short io_map[IO_MAP_SIZE];
 struct apm_info apm_bios_info;
 
@@ -85,6 +88,9 @@ char **device_map = 0;
 
 /* The jump buffer for exiting correctly.  */
 static jmp_buf env_for_exit;
+
+/* The current color for console.  */
+static int console_current_color = A_NORMAL;
 
 /* The file descriptor for a serial device.  */
 static int serial_fd = -1;
@@ -168,6 +174,7 @@ grub_stage2 (void)
       scrollok (stdscr, TRUE);
       keypad (stdscr, TRUE);
       wtimeout (stdscr, 100);
+      signal (SIGWINCH, SIG_IGN);
     }
 #endif
 
@@ -505,46 +512,48 @@ currticks (void)
   return ticks_per_csec + ticks_per_usec;
 }
 
-/* low-level character I/O */
-void
-console_cls (void)
-{
-#ifdef HAVE_LIBCURSES
-  if (use_curses)
-    clear ();
-#endif
-}
-
-
-/* returns packed values, LSB+1 is x, LSB is y */
-int
-console_getxy (void)
-{
-  int y, x;
-#ifdef HAVE_LIBCURSES
-  if (use_curses)
-    getyx (stdscr, y, x);
-  else
-#endif
-  y = x = 0;
-  return (x << 8) | (y & 0xff);
-}
-
-
-void
-console_gotoxy (int x, int y)
-{
-#ifdef HAVE_LIBCURSES
-  if (use_curses)
-    move (y, x);
-#endif
-}
-
 /* displays an ASCII character.  IBM displays will translate some
    characters to special graphical ones */
 void
 console_putchar (int c)
 {
+  /* Curses doesn't have VGA fonts.  */
+  switch (c)
+    {
+    case DISP_UL:
+      c = ACS_ULCORNER;
+      break;
+    case DISP_UR:
+      c = ACS_URCORNER;
+      break;
+    case DISP_LL:
+      c = ACS_LLCORNER;
+      break;
+    case DISP_LR:
+      c = ACS_LRCORNER;
+      break;
+    case DISP_HORIZ:
+      c = ACS_HLINE;
+      break;
+    case DISP_VERT:
+      c = ACS_VLINE;
+      break;
+    case DISP_LEFT:
+      c = ACS_LARROW;
+      break;
+    case DISP_RIGHT:
+      c = ACS_RARROW;
+      break;
+    case DISP_UP:
+      c = ACS_UARROW;
+      break;
+    case DISP_DOWN:
+      c = ACS_DARROW;
+      break;
+    default:
+      break;
+    }
+
 #ifdef HAVE_LIBCURSES
   if (use_curses)
     {
@@ -560,19 +569,35 @@ console_putchar (int c)
 	  else
 	    move (y + 1, x);
 	}
+      else if (isprint (c))
+	{
+	  int x, y;
+
+	  getyx (stdscr, y, x);
+	  if (x + 1 == COLS)
+	    {
+	      console_putchar ('\r');
+	      console_putchar ('\n');
+	    }
+	  addch (c | console_current_color);
+	}
       else
 	{
 	  addch (c);
-#ifdef REFRESH_IMMEDIATELY
-	  refresh ();
-#endif
 	}
+      
+#ifdef REFRESH_IMMEDIATELY
+      refresh ();
+#endif
     }
   else
 #endif
-  putchar (c);
+    {
+      /* CR is not used in Unix.  */
+      if (c != '\r')
+	putchar (c);
+    }
 }
-
 
 /* The store for ungetch simulation. This is necessary, because
    ncurses-1.9.9g is still used in the world and its ungetch is
@@ -581,37 +606,37 @@ console_putchar (int c)
 static int save_char = ERR;
 #endif
 
-/* returns packed BIOS/ASCII code */
-int
-console_getkey (void)
+static int
+console_translate_key (int c)
 {
-  int c;
-
-#ifdef HAVE_LIBCURSES
-  if (use_curses)
+  switch (c)
     {
-      /* If checkkey has already got a character, then return it.  */
-      if (save_char != ERR)
-	{
-	  c = save_char;
-	  save_char = ERR;
-	  return c;
-	}
-
-      wtimeout (stdscr, -1);
-      c = getch ();
-      wtimeout (stdscr, 100);
+    case KEY_LEFT:
+      return 2;
+    case KEY_RIGHT:
+      return 6;
+    case KEY_UP:
+      return 16;
+    case KEY_DOWN:
+      return 14;
+    case KEY_DC:
+      return 4;
+    case KEY_BACKSPACE:
+      return 8;
+    case KEY_HOME:
+      return 1;
+    case KEY_END:
+      return 5;
+    case KEY_PPAGE:
+      return 7;
+    case KEY_NPAGE:
+      return 3;
+    default:
+      break;
     }
-  else
-#endif
-    c = getchar ();
 
-  /* Quit if we get EOF. */
-  if (c == -1)
-    stop ();
   return c;
 }
-
 
 /* like 'getkey', but doesn't wait, returns -1 if nothing available */
 int
@@ -631,7 +656,7 @@ console_checkkey (void)
       /* If C is not ERR, then put it back in the input queue.  */
       if (c != ERR)
 	save_char = c;
-      return c;
+      return console_translate_key (c);
     }
 #endif
 
@@ -640,23 +665,88 @@ console_checkkey (void)
   return ' ';
 }
 
-
-/* sets text mode character attribute at the cursor position */
-void
-console_set_attrib (int attr)
+/* returns packed BIOS/ASCII code */
+int
+console_getkey (void)
 {
+  int c;
+
 #ifdef HAVE_LIBCURSES
   if (use_curses)
     {
-      /* FIXME: I don't know why, but chgat doesn't work as expected, so
-	 use this dirty way... - okuji  */
-      chtype ch = inch ();
-      addch ((ch & A_CHARTEXT) | attr);
-# if 0
-      chgat (1, attr, 0, NULL);
-# endif
+      /* If checkkey has already got a character, then return it.  */
+      if (save_char != ERR)
+	{
+	  c = save_char;
+	  save_char = ERR;
+	  return console_translate_key (c);
+	}
+
+      wtimeout (stdscr, -1);
+      c = getch ();
+      wtimeout (stdscr, 100);
     }
+  else
 #endif
+    c = getchar ();
+
+  /* Quit if we get EOF. */
+  if (c == -1)
+    stop ();
+  
+  return console_translate_key (c);
+}
+
+/* returns packed values, LSB+1 is x, LSB is y */
+int
+console_getxy (void)
+{
+  int y, x;
+#ifdef HAVE_LIBCURSES
+  if (use_curses)
+    getyx (stdscr, y, x);
+  else
+#endif
+  y = x = 0;
+  return (x << 8) | (y & 0xff);
+}
+
+void
+console_gotoxy (int x, int y)
+{
+#ifdef HAVE_LIBCURSES
+  if (use_curses)
+    move (y, x);
+#endif
+}
+
+/* low-level character I/O */
+void
+console_cls (void)
+{
+#ifdef HAVE_LIBCURSES
+  if (use_curses)
+    clear ();
+#endif
+}
+
+void
+console_setcolorstate (color_state state)
+{
+  console_current_color = 
+    (state == COLOR_STATE_HIGHLIGHT) ? A_REVERSE : A_NORMAL;
+}
+
+void
+console_setcolor (int normal_color, int highlight_color)
+{
+  /* Nothing to do.  */
+}
+
+int
+console_setcursor (int on)
+{
+  return 1;
 }
 
 /* Low-level disk I/O.  Our stubbed version just returns a file
@@ -917,71 +1007,50 @@ stop_floppy (void)
   /* NOTUSED */
 }
 
-/* The serial version of getkey.  */
+/* Fetch a key from a serial device.  */
 int
-serial_getkey (void)
-{
-  char c;
-#ifdef SIMULATE_SLOWNESS_OF_SERIAL
-  struct timeval otv, tv;
-
-  gettimeofday (&otv, 0);
-#endif /* SIMULATE_SLOWNESS_OF_SERIAL */
-  
-  if (nread (serial_fd, &c, 1) != 1)
-    stop ();
-
-#ifdef SIMULATE_SLOWNESS_OF_SERIAL
-  while (1)
-    {
-      long delta;
-      
-      gettimeofday (&tv, 0);
-      delta = tv.tv_usec - otv.tv_usec;
-      if (delta < 0)
-	delta += 1000000;
-      
-      if (delta >= 1000000 / (serial_speed >> 3))
-	break;
-    }
-#endif /* SIMULATE_SLOWNESS_OF_SERIAL */
-  
-  return c;
-}
-
-/* The serial version of checkkey.  */
-int
-serial_checkkey (void)
+serial_hw_fetch (void)
 {
   fd_set fds;
   struct timeval to;
+  char c;
 
   /* Wait only for the serial device.  */
   FD_ZERO (&fds);
   FD_SET (serial_fd, &fds);
 
-  /* Set the timeout to 100ms.  */
   to.tv_sec = 0;
-  to.tv_usec = 100000;
+  to.tv_usec = 0;
   
-  return select (serial_fd + 1, &fds, 0, 0, &to) > 0 ? : -1;
+  if (select (serial_fd + 1, &fds, 0, 0, &to) > 0)
+    {
+      if (nread (serial_fd, &c, 1) != 1)
+	stop ();
+
+      return c;
+    }
+  
+  return -1;
 }
 
-/* The serial version of grub_putchar.  */
+/* Put a character to a serial device.  */
 void
-serial_putchar (int c)
+serial_hw_put (int c)
 {
   char ch = (char) c;
-#ifdef SIMULATE_SLOWNESS_OF_SERIAL
-  struct timeval otv, tv;
-  
-  gettimeofday (&otv, 0);
-#endif /* SIMULATE_SLOWNESS_OF_SERIAL */
   
   if (nwrite (serial_fd, &ch, 1) != 1)
     stop ();
-  
+}
+
+void
+serial_hw_delay (void)
+{
 #ifdef SIMULATE_SLOWNESS_OF_SERIAL
+  struct timeval otv, tv;
+
+  gettimeofday (&otv, 0);
+
   while (1)
     {
       long delta;
@@ -1021,25 +1090,19 @@ get_termios_speed (int speed)
 /* Get the port number of the unit UNIT. In the grub shell, this doesn't
    make sense.  */
 unsigned short
-serial_get_port (int unit)
+serial_hw_get_port (int unit)
 {
   return 0;
 }
 
-/* Check if a serial port is set up.  */
-int
-serial_exists (void)
-{
-  return serial_fd >= 0;
-}
-
 /* Initialize a serial device. In the grub shell, PORT is unused.  */
 int
-serial_init (unsigned short port, unsigned int speed,
-	     int word_len, int parity, int stop_bit_len)
+serial_hw_init (unsigned short port, unsigned int speed,
+		int word_len, int parity, int stop_bit_len)
 {
   struct termios termios;
   speed_t termios_speed;
+  int i;
   
   /* Check if the file name is specified.  */
   if (! serial_device)
@@ -1136,6 +1199,16 @@ serial_init (unsigned short port, unsigned int speed,
 #ifdef SIMULATE_SLOWNESS_OF_SERIAL
   serial_speed = speed;
 #endif /* SIMUATE_SLOWNESS_OF_SERIAL */
+
+  /* Get rid of the flag TERM_NEED_INIT from the serial terminal.  */
+  for (i = 0; term_table[i].name; i++)
+    {
+      if (strcmp (term_table[i].name, "serial") == 0)
+	{
+	  term_table[i].flags &= ~(TERM_NEED_INIT);
+	  break;
+	}
+    }
   
   return 1;
 
@@ -1148,7 +1221,7 @@ serial_init (unsigned short port, unsigned int speed,
 /* Set the file name of a serial device (or a pty device). This is a
    function specific to the grub shell.  */
 void
-set_serial_device (const char *device)
+serial_set_device (const char *device)
 {
   if (serial_device)
     free (serial_device);
@@ -1158,31 +1231,43 @@ set_serial_device (const char *device)
 
 /* There is no difference between console and hercules in the grub shell.  */
 void
-herc_cls (void)
+hercules_putchar (int c)
 {
-  console_cls ();
+  console_putchar (c);
 }
 
 int
-herc_getxy (void)
+hercules_getxy (void)
 {
   return console_getxy ();
 }
 
 void
-herc_gotoxy (int x, int y)
+hercules_gotoxy (int x, int y)
 {
   console_gotoxy (x, y);
 }
 
 void
-herc_putchar (int c)
+hercules_cls (void)
 {
-  console_putchar (c);
+  console_cls ();
 }
 
 void
-herc_set_attrib (int attr)
+hercules_setcolorstate (color_state state)
 {
-  console_set_attrib (attr);
+  console_setcolorstate (state);
+}
+
+void
+hercules_setcolor (int normal_color, int highlight_color)
+{
+  console_setcolor (normal_color, highlight_color);
+}
+
+int
+hercules_setcursor (int on)
+{
+  return 1;
 }

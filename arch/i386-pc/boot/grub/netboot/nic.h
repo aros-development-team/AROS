@@ -20,7 +20,8 @@ struct nic
 	void		(*transmit)P((struct nic *, const char *d,
 				unsigned int t, unsigned int s, const char *p));
 	void		(*disable)P((struct nic *));
-	char		aui;
+	int		flags;	/* driver specific flags */
+	struct rom_info	*rom_info;	/* -> rom_info from main */
 	unsigned char	*node_addr;
 	char		*packet;
 	unsigned int	packetlen;

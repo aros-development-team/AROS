@@ -28,8 +28,8 @@
 #include "nic.h"
 #include "pci.h"
 #include "3c595.h"
+#include "timer.h"
 
-static unsigned char	eth_vendor, eth_flags, eth_laar;
 static unsigned short	eth_nic_base, eth_asic_base;
 static unsigned short	vx_connector, vx_connectors;
 
@@ -57,34 +57,7 @@ static struct connector_entry {
 static void vxgetlink(void);
 static void vxsetlink(void);
 
-static void safetwiddle()
-{
-	static int count=0;
-	static int count2=0;
-	static char tiddles[]="-\\|/";
-	putchar(tiddles[(count2++)&0xfff?count&3:(count++)&3]);
-	putchar('\b');
-}
-
-/* a surrogate */
-
-static void DELAY(int val)
-{
-	int c;
-
-	for(c=0; c<val; c+=20) {
-		twiddle();
-	}
-}
-
-static void SAFEDELAY(int val) 
-{
-	int c;
-	
-	for (c=0; c<val; c+=20) {
-		safetwiddle();
-	}
-}
+#define	udelay(n)	waiton_timer2(((n)*TICKS_PER_MS)/1000)
 
 /**************************************************************************
 ETH_RESET - Reset adapter
@@ -103,7 +76,7 @@ static void t595_reset(struct nic *nic)
 	VX_BUSY_WAIT;
 	outw(TX_DISABLE, BASE + VX_COMMAND);
 	outw(STOP_TRANSCEIVER, BASE + VX_COMMAND);
-	DELAY(8000);
+	udelay(8000);
 	outw(RX_RESET, BASE + VX_COMMAND);
 	VX_BUSY_WAIT;
 	outw(TX_RESET, BASE + VX_COMMAND);
@@ -132,7 +105,7 @@ static void t595_reset(struct nic *nic)
 	GO_WINDOW(2);
 
 	/* Reload the ether_addr. */
-	for (i = 0; i < ETHER_ADDR_SIZE; i++)
+	for (i = 0; i < ETH_ALEN; i++)
 		outb(nic->node_addr[i], BASE + VX_W2_ADDR_0 + i);
 
 	outw(RX_RESET, BASE + VX_COMMAND);
@@ -193,26 +166,26 @@ unsigned int t,			/* Type */
 unsigned int s,			/* size */
 const char *p)			/* Packet */
 {
-	register unsigned int len;
+	register int len;
 	int pad;
 	int status;
 
 #ifdef EDEBUG
-	printf("{l=%d,t=%x}",s+ETHER_HDR_SIZE,t);
+	printf("{l=%d,t=%hX}",s+ETH_HLEN,t);
 #endif
 
 	/* swap bytes of type */
 	t= htons(t);
 
-	len=s+ETHER_HDR_SIZE; /* actual length of packet */
+	len=s+ETH_HLEN; /* actual length of packet */
 	pad = padmap[len & 3];
 
 	/*
-	* The 3c509 automatically pads short packets to minimum ethernet length,
+	* The 3c595 automatically pads short packets to minimum ethernet length,
 	* but we drop packets that are too large. Perhaps we should truncate
 	* them instead?
 	*/
-	if (len + pad > ETH_MAX_PACKET) {
+	if (len + pad > ETH_FRAME_LEN) {
 		return;
 	}
 
@@ -234,8 +207,8 @@ const char *p)			/* Packet */
 	outw(0x0, BASE + VX_W1_TX_PIO_WR_1);	/* Second dword meaningless */
 
 	/* write packet */
-	outsw(BASE + VX_W1_TX_PIO_WR_1, d, ETHER_ADDR_SIZE/2);
-	outsw(BASE + VX_W1_TX_PIO_WR_1, nic->node_addr, ETHER_ADDR_SIZE/2);
+	outsw(BASE + VX_W1_TX_PIO_WR_1, d, ETH_ALEN/2);
+	outsw(BASE + VX_W1_TX_PIO_WR_1, nic->node_addr, ETH_ALEN/2);
 	outw(t, BASE + VX_W1_TX_PIO_WR_1);
 	outsw(BASE + VX_W1_TX_PIO_WR_1, p, s / 2);
 	if (s & 1)
@@ -244,8 +217,9 @@ const char *p)			/* Packet */
 	while (pad--)
 		outb(0, BASE + VX_W1_TX_PIO_WR_1);	/* Padding */
 
-	/* timeout after sending */
-	DELAY(1000);
+        /* wait for Tx complete */
+        while((inw(BASE + VX_STATUS) & S_COMMAND_IN_PROGRESS) != 0)
+                ;
 }
 
 /**************************************************************************
@@ -255,7 +229,7 @@ static int t595_poll(struct nic *nic)
 {
 	/* common variables */
 	unsigned short type = 0;	/* used by EDEBUG */
-	/* variables for 3C509 */
+	/* variables for 3C595 */
 	short status, cst;
 	register short rx_fifo;
 
@@ -263,7 +237,7 @@ static int t595_poll(struct nic *nic)
 
 #ifdef EDEBUG
 	if(cst & 0x1FFF)
-		printf("-%x-",cst);
+		printf("-%hX-",cst);
 #endif
 
 	if( (cst & S_RX_COMPLETE)==0 ) {
@@ -276,7 +250,7 @@ static int t595_poll(struct nic *nic)
 
 	status = inw(BASE + VX_W1_RX_STATUS);
 #ifdef EDEBUG
-	printf("*%x*",status);
+	printf("*%hX*",status);
 #endif
 
 	if (status & ERR_RX) {
@@ -300,7 +274,7 @@ static int t595_poll(struct nic *nic)
 	while(1) {
 		status = inw(BASE + VX_W1_RX_STATUS);
 #ifdef EDEBUG
-		printf("*%x*",status);
+		printf("*%hX*",status);
 #endif
 		rx_fifo = status & RX_BYTES_MASK;
 
@@ -313,15 +287,13 @@ static int t595_poll(struct nic *nic)
 			printf("+%d",rx_fifo);
 #endif
 		}
-
 		if(( status & RX_INCOMPLETE )==0) {
 #ifdef EDEBUG
 			printf("=%d",nic->packetlen);
 #endif
 			break;
 		}
-
-		DELAY(1000);
+		udelay(1000);
 	}
 
 	/* acknowledge reception of packet */
@@ -330,17 +302,17 @@ static int t595_poll(struct nic *nic)
 #ifdef EDEBUG
 	type = (nic->packet[12]<<8) | nic->packet[13];
 	if(nic->packet[0]+nic->packet[1]+nic->packet[2]+nic->packet[3]+nic->packet[4]+
-	    nic->packet[5] == 0xFF*ETHER_ADDR_SIZE)
-		printf(",t=0x%x,b]",type);
+	    nic->packet[5] == 0xFF*ETH_ALEN)
+		printf(",t=%hX,b]",type);
 	else
-		printf(",t=0x%x]",type);
+		printf(",t=%hX]",type);
 #endif
 	return 1;
 }
 
 
 /*************************************************************************
-	3Com 509 - specific routines
+	3Com 595 - specific routines
 **************************************************************************/
 
 static int
@@ -349,9 +321,9 @@ eeprom_rdy()
 	int i;
 
 	for (i = 0; is_eeprom_busy(BASE) && i < MAX_EEPROMBUSY; i++)
-		DELAY(1000);
+		udelay(1000);
 	if (i >= MAX_EEPROMBUSY) {
-	        /* printf("3c509: eeprom failed to come ready.\n"); */
+	        /* printf("3c595: eeprom failed to come ready.\n"); */
 		printf("3c595: eeprom is busy.\n"); /* memory in EPROM is tight */
 		return (0);
 	}
@@ -441,7 +413,7 @@ vxsetlink(void)
 
     /* First, disable all. */
     outw(STOP_TRANSCEIVER, BASE + VX_COMMAND);
-    DELAY(8000);
+    udelay(8000);
     GO_WINDOW(4);
     outw(0, BASE + VX_W4_MEDIA_TYPE);
 
@@ -453,7 +425,7 @@ vxsetlink(void)
         break;
       case CONNECTOR_BNC:
         outw(START_TRANSCEIVER,BASE + VX_COMMAND);
-        DELAY(8000);
+        udelay(8000);
         break;
       case CONNECTOR_TX:
       case CONNECTOR_FX:
@@ -469,7 +441,7 @@ vxsetlink(void)
 static void t595_disable(struct nic *nic)
 {
     outw(STOP_TRANSCEIVER, BASE + VX_COMMAND);
-    DELAY(8000);
+    udelay(8000);
     GO_WINDOW(4);
     outw(0, BASE + VX_W4_MEDIA_TYPE);
     GO_WINDOW(1);
@@ -497,7 +469,7 @@ struct nic *t595_probe(struct nic *nic, unsigned short *probeaddrs, struct pci_d
 /*
 	printf("\nEEPROM:");
 	for (i = 0; i < (EEPROMSIZE/2); i++) {
-	  printf("%x:", get_e(i));
+	  printf("%hX:", get_e(i));
 	}
 	printf("\n");
 */
@@ -512,11 +484,7 @@ struct nic *t595_probe(struct nic *nic, unsigned short *probeaddrs, struct pci_d
 		outw(ntohs(p[i]), BASE + VX_W2_ADDR_0 + (i * 2));
 	}
 
-	printf("Ethernet address: ");
-	for(i=0; i<5; i++) {
-		printf("%b:",nic->node_addr[i]);
-	}
-	printf("%b\n",nic->node_addr[i]);
+	printf("Ethernet address: %!\n", nic->node_addr);
 
 	t595_reset(nic);
 	nic->reset = t595_reset;

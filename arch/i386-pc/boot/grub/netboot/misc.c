@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,324 +17,250 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* Based on "src/misc.c" in etherboot-4.5.8.  */
+/* Based on "src/misc.c" in etherboot-5.0.5.  */
 
-/**************************************************************************
-MISC Support Routines
-**************************************************************************/
+#define GRUB	1
+#include <etherboot.h>
 
-#include "etherboot.h"
-
-/**************************************************************************
-SLEEP
-**************************************************************************/
-void sleep(int secs)
+void
+sleep (int secs)
 {
-	unsigned long tmo;
+  unsigned long tmo = currticks () + secs;
 
-	for (tmo = currticks()+secs*TICKS_PER_SEC; currticks() < tmo; )
-		/* Nothing */;
+  while (currticks () < tmo)
+    ;
 }
 
-/**************************************************************************
-TWIDDLE
-**************************************************************************/
-void twiddle()
+void
+twiddle (void)
 {
-	static unsigned long lastticks = 0;
-	static int count=0;
-	static char tiddles[]="-\\|/";
-	unsigned long ticks;
-	if ((ticks = currticks()) == lastticks)
-		return;
-	lastticks = ticks;
-	putchar(tiddles[(count++)&3]);
-	putchar('\b');
+  static unsigned long lastticks = 0;
+  static int count = 0;
+  static const char tiddles[]="-\\|/";
+  unsigned long ticks;
+
+  if (debug)
+    {
+      if ((ticks = currticks ()) == lastticks)
+	return;
+      
+      lastticks = ticks;
+      grub_putchar (tiddles[(count++) & 3]);
+      grub_putchar ('\b');
+    }
 }
 
-#ifndef GRUB
-/**************************************************************************
-STRCASECMP (not entirely correct, but this will do for our purposes)
-**************************************************************************/
-int strcasecmp(a,b)
-	char *a, *b;
-{
-	while (*a && *b && (*a & ~0x20) == (*b & ~0x20)) {a++; b++; }
-	return((*a & ~0x20) - (*b & ~0x20));
-}
-
+/* Because Etherboot uses its own formats for the printf family,
+   define separate definitions from GRUB.  */
 /**************************************************************************
 PRINTF and friends
 
 	Formats:
-		%X	- 4 byte ASCII (8 hex digits)
-		%x	- 2 byte ASCII (4 hex digits)
-		%b	- 1 byte ASCII (2 hex digits)
-		%d	- decimal (also %i)
-		%c	- ASCII char
-		%s	- ASCII string
-		%I	- Internet address in x.x.x.x notation
+		%[#]x	- 4 bytes long (8 hex digits, lower case)
+		%[#]X	- 4 bytes long (8 hex digits, upper case)
+		%[#]hx	- 2 bytes int (4 hex digits, lower case)
+		%[#]hX	- 2 bytes int (4 hex digits, upper case)
+		%[#]hhx	- 1 byte int (2 hex digits, lower case)
+		%[#]hhX	- 1 byte int (2 hex digits, upper case)
+			- optional # prefixes 0x or 0X
+		%d	- decimal int
+		%c	- char
+		%s	- string
+		%@	- Internet address in ddd.ddd.ddd.ddd notation
+		%!	- Ethernet address in xx:xx:xx:xx:xx:xx notation
+	Note: width specification not supported
 **************************************************************************/
-static char hex[]="0123456789ABCDEF";
-static char *do_printf(char *buf, const char *fmt, const int *dp)
+static int
+etherboot_vsprintf (char *buf, const char *fmt, const int *dp)
 {
-	register char *p;
-	char tmp[16];
-	while (*fmt) {
-		if (*fmt == '%') {	/* switch() uses more space */
-			fmt++;
-
-			if (*fmt == 'X') {
-				const long *lp = (const long *)dp;
-				register long h = *lp++;
-				dp = (const int *)lp;
-				*(buf++) = hex[(h>>28)& 0x0F];
-				*(buf++) = hex[(h>>24)& 0x0F];
-				*(buf++) = hex[(h>>20)& 0x0F];
-				*(buf++) = hex[(h>>16)& 0x0F];
-				*(buf++) = hex[(h>>12)& 0x0F];
-				*(buf++) = hex[(h>>8)& 0x0F];
-				*(buf++) = hex[(h>>4)& 0x0F];
-				*(buf++) = hex[h& 0x0F];
-			}
-			if (*fmt == 'x') {
-				register int h = *(dp++);
-				*(buf++) = hex[(h>>12)& 0x0F];
-				*(buf++) = hex[(h>>8)& 0x0F];
-				*(buf++) = hex[(h>>4)& 0x0F];
-				*(buf++) = hex[h& 0x0F];
-			}
-			if (*fmt == 'b') {
-				register int h = *(dp++);
-				*(buf++) = hex[(h>>4)& 0x0F];
-				*(buf++) = hex[h& 0x0F];
-			}
-			if ((*fmt == 'd') || (*fmt == 'i')) {
-				register int dec = *(dp++);
-				p = tmp;
-				if (dec < 0) {
-					*(buf++) = '-';
-					dec = -dec;
-				}
-				do {
-					*(p++) = '0' + (dec%10);
-					dec = dec/10;
-				} while(dec);
-				while ((--p) >= tmp) *(buf++) = *p;
-			}
-			if (*fmt == 'I') {
-				union {
-					long		l;
-					unsigned char	c[4];
-				} u;
-				const long *lp = (const long *)dp;
-				u.l = *lp++;
-				dp = (const int *)lp;
-				buf = sprintf(buf,"%d.%d.%d.%d",
-					u.c[0], u.c[1], u.c[2], u.c[3]);
-			}
-			if (*fmt == 'c')
-				*(buf++) = *(dp++);
-			if (*fmt == 's') {
-				p = (char *)*dp++;
-				while (*p) *(buf++) = *p++;
-			}
-		} else *(buf++) = *fmt;
-		fmt++;
+  char *p, *s;
+  
+  s = buf;
+  for ( ; *fmt != '\0'; ++fmt)
+    {
+      if (*fmt != '%')
+	{
+	  buf ? *s++ = *fmt : grub_putchar (*fmt);
+	  continue;
 	}
-	*buf = 0;
-	return(buf);
-}
-
-char *sprintf(char *buf, const char *fmt, ...)
-{
-	return do_printf(buf, fmt, ((const int *)&fmt)+1);
-}
-
-void printf(const char *fmt, ...)
-{
-	char buf[120],*p;
-
-	p = buf;
-	do_printf(buf, fmt, ((const int *)&fmt)+1);
-	while (*p) putchar(*p++);
-}
-#endif /* ! GRUB */
-
-#if	defined(IMAGE_MENU) || defined(GRUB)
-/**************************************************************************
-INET_ATON - Convert an ascii x.x.x.x to binary form
-**************************************************************************/
-int inet_aton(char *p, in_addr *i)
-{
-	unsigned long ip = 0;
-	int val;
-	if (((val = getdec(&p)) < 0) || (val > 255)) return(0);
-	if (*p != '.') return(0);
-	p++;
-	ip = val;
-	if (((val = getdec(&p)) < 0) || (val > 255)) return(0);
-	if (*p != '.') return(0);
-	p++;
-	ip = (ip << 8) | val;
-	if (((val = getdec(&p)) < 0) || (val > 255)) return(0);
-	if (*p != '.') return(0);
-	p++;
-	ip = (ip << 8) | val;
-	if (((val = getdec(&p)) < 0) || (val > 255)) return(0);
-	i->s_addr = htonl((ip << 8) | val);
-	return(1);
-}
-#endif	/* IMAGE_MENU || GRUB */
-
-int getdec(char **ptr)
-{
-	char *p = *ptr;
-	int ret=0;
-	if ((*p < '0') || (*p > '9')) return(-1);
-	while ((*p >= '0') && (*p <= '9')) {
-		ret = ret*10 + (*p - '0');
-		p++;
+      
+      if (*++fmt == 's')
+	{
+	  for (p = (char *) *dp++; *p != '\0'; p++)
+	    buf ? *s++ = *p : grub_putchar (*p);
 	}
-	*ptr = p;
-	return(ret);
+      else
+	{
+	  /* Length of item is bounded */
+	  char tmp[20], *q = tmp;
+	  int alt = 0;
+	  int shift = 28;
+	  
+	  if (*fmt == '#')
+	    {
+	      alt = 1;
+	      fmt++;
+	    }
+	  
+	  if (*fmt == 'h')
+	    {
+	      shift = 12;
+	      fmt++;
+	    }
+	  
+	  if (*fmt == 'h')
+	    {
+	      shift = 4;
+	      fmt++;
+	    }
+	  
+	  /*
+	   * Before each format q points to tmp buffer
+	   * After each format q points past end of item
+	   */
+	  if ((*fmt | 0x20) == 'x')
+	    {
+	      /* With x86 gcc, sizeof(long) == sizeof(int) */
+	      const long *lp = (const long *) dp;
+	      long h = *lp++;
+	      int ncase = (*fmt & 0x20);
+	      
+	      dp = (const int *) lp;
+	      if (alt)
+		{
+		  *q++ = '0';
+		  *q++ = 'X' | ncase;
+		}
+	      for (; shift >= 0; shift -= 4)
+		*q++ = "0123456789ABCDEF"[(h >> shift) & 0xF] | ncase;
+	    }
+	  else if (*fmt == 'd')
+	    {
+	      int i = *dp++;
+	      char *r;
+	      
+	      if (i < 0)
+		{
+		  *q++ = '-';
+		  i = -i;
+		}
+	      
+	      p = q;		/* save beginning of digits */
+	      do
+		{
+		  *q++ = '0' + (i % 10);
+		  i /= 10;
+		}
+	      while (i);
+	      
+	      /* reverse digits, stop in middle */
+	      r = q;		/* don't alter q */
+	      while (--r > p)
+		{
+		  i = *r;
+		  *r = *p;
+		  *p++ = i;
+		}
+	    }
+	  else if (*fmt == '@')
+	    {
+	      unsigned char *r;
+	      union
+	      {
+		long		l;
+		unsigned char	c[4];
+	      }
+	      u;
+	      const long *lp = (const long *) dp;
+	      
+	      u.l = *lp++;
+	      dp = (const int *) lp;
+	      
+	      for (r = &u.c[0]; r < &u.c[4]; ++r)
+		q += etherboot_sprintf (q, "%d.", *r);
+	      
+	      --q;
+	    }
+	  else if (*fmt == '!')
+	    {
+	      char *r;
+	      p = (char *) *dp++;
+	      
+	      for (r = p + ETH_ALEN; p < r; ++p)
+		q += etherboot_sprintf (q, "%hhX:", *p);
+	      
+	      --q;
+	    }
+	  else if (*fmt == 'c')
+	    *q++ = *dp++;
+	  else
+	    *q++ = *fmt;
+	  
+	  /* now output the saved string */
+	  for (p = tmp; p < q; ++p)
+	    buf ? *s++ = *p : grub_putchar (*p);
+	}
+    }
+  
+  if (buf)
+    *s = '\0';
+  
+  return (s - buf);
 }
 
-#ifndef GRUB
-#define K_RDWR		0x60		/* keyboard data & cmds (read/write) */
-#define K_STATUS	0x64		/* keyboard status */
-#define K_CMD		0x64		/* keybd ctlr command (write-only) */
-
-#define K_OBUF_FUL	0x01		/* output buffer full */
-#define K_IBUF_FUL	0x02		/* input buffer full */
-
-#define KC_CMD_WIN	0xd0		/* read  output port */
-#define KC_CMD_WOUT	0xd1		/* write output port */
-#define KB_SET_A20	0xdf		/* enable A20,
-					   enable output buffer full interrupt
-					   enable data line
-					   disable clock line */
-#define KB_UNSET_A20	0xdd		/* enable A20,
-					   enable output buffer full interrupt
-					   enable data line
-					   disable clock line */
-#ifndef	IBM_L40
-static void empty_8042(void)
+int
+etherboot_sprintf (char *buf, const char *fmt, ...)
 {
-	unsigned long time;
-	char st;
-
-	slowdownio();
-	time = currticks() + TICKS_PER_SEC;	/* max wait of 1 second */
-	while ((((st = inb(K_CMD)) & K_OBUF_FUL) ||
-	       (st & K_IBUF_FUL)) &&
-	       currticks() < time)
-		inb(K_RDWR);
-}
-#endif	IBM_L40
-
-/*
- * Gate A20 for high memory
- */
-void gateA20_set(void)
-{
-#ifdef	IBM_L40
-	outb(0x2, 0x92);
-#else	/* IBM_L40 */
-	empty_8042();
-	outb(KC_CMD_WOUT, K_CMD);
-	empty_8042();
-	outb(KB_SET_A20, K_RDWR);
-	empty_8042();
-#endif	/* IBM_L40 */
+  return etherboot_vsprintf (buf, fmt, ((const int *) &fmt) + 1);
 }
 
-#ifdef	TAGGED_IMAGE
-/*
- * Unset Gate A20 for high memory - some operating systems (mainly old 16 bit
- * ones) don't expect it to be set by the boot loader.
- */
-void gateA20_unset(void)
-{
-#ifdef	IBM_L40
-	outb(0x0, 0x92);
-#else	/* IBM_L40 */
-	empty_8042();
-	outb(KC_CMD_WOUT, K_CMD);
-	empty_8042();
-	outb(KB_UNSET_A20, K_RDWR);
-	empty_8042();
-#endif	/* IBM_L40 */
-}
-#endif
-
-#ifdef	ETHERBOOT32
-/* Serial console is only implemented in ETHERBOOT32 for now */
 void
-putchar(int c)
+etherboot_printf (const char *fmt, ...)
 {
-#ifndef	ANSIESC
-	if (c == '\n')
-		putchar('\r');
-#endif
-
-#ifdef	CONSOLE_CRT
-#ifdef	ANSIESC
-	handleansi(c);
-#else
-	putc(c);
-#endif
-#endif
-#ifdef	CONSOLE_SERIAL
-#ifdef	ANSIESC
-	if (c == '\n')
-		serial_putc('\r');
-#endif
-	serial_putc(c);
-#endif
-}
-
-/**************************************************************************
-GETCHAR - Read the next character from the console WITHOUT ECHO
-**************************************************************************/
-int
-getchar(void)
-{
-	int c = 256;
-
-	do {
-#ifdef	CONSOLE_CRT
-		if (ischar())
-			c = getc();
-#endif
-#ifdef	CONSOLE_SERIAL
-		if (serial_ischar())
-			c = serial_getc();
-#endif
-	} while (c==256);
-	if (c == '\r')
-		c = '\n';
-	return c;
+  (void) etherboot_vsprintf (0, fmt, ((const int *) &fmt) + 1);
 }
 
 int
-iskey(void)
+inet_aton (char *p, in_addr *addr)
 {
-#ifdef	CONSOLE_CRT
-	if (ischar())
-		return 1;
-#endif
-#ifdef	CONSOLE_SERIAL
-	if (serial_ischar())
-		return 1;
-#endif
+  unsigned long ip = 0;
+  int val;
+  int i;
+  
+  for (i = 0; i < 4; i++)
+    {
+      val = getdec (&p);
+      
+      if (val < 0 || val > 255)
 	return 0;
-}
-#endif	/* ETHERBOOT32 */
-#endif /* ! GRUB */
+      
+      if (i != 3 && *p++ != '.')
+	return 0;
+      
+      ip = (ip << 8) | val;
+    }
 
-/*
- * Local variables:
- *  c-basic-offset: 8
- * End:
- */
+  addr->s_addr = htonl (ip);
+
+  return 1;
+}
+
+int
+getdec (char **ptr)
+{
+  char *p = *ptr;
+  int ret = 0;
+  
+  if (*p < '0' || *p > '9')
+    return -1;
+  
+  while (*p >= '0' && *p <= '9')
+    {
+      ret = ret * 10 + (*p - '0');
+      p++;
+    }
+  
+  *ptr = p;
+  
+  return ret;
+}

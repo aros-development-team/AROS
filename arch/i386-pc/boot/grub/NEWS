@@ -1,9 +1,81 @@
 NEWS - list of user-visible changes between releases of GRUB
 
-New in 0.91:
+New in 0.93 - 2002-12-08:
+* Define the behavior of the boot loader when the load end address is
+  zero and the bss end address is zero in the Multiboot Specification.
+  Also, add the support into GRUB.
+* Finally, we have a Bug Tracking System! Now the preferable way to
+  report bugs is to use the BTS rather than sending e-mail to bug-grub.
+  See <http://bugcomm.enbug.org/?project=grub&mode=project>, for more
+  details.
+* The appendix "FAQ" in the manual is removed. See the GNU GRUB FAQ on
+  the web <http://www.gnu.org/software/grub/grub-faq.html> instead.
+* The terminal handling code is rewritten radically, and many bugfixes
+  are made at the same time.
+* The command "color" is effective even in the command-line.
+* The command "terminal" takes two new options, ``--no-echo'' and
+  ``--no-edit''. If you specify ``--no-echo'', GRUB won't echo back
+  input characters. If you specify ``--no-edit'', GRUB will disable the
+  BASH-like editing feature. These options are useful when using an
+  intelligent terminal (such as the comint mode in GNU Emacs).
+* The utility ``grub-md5-crypt'' prompts to retype a password and checks
+  if the passwords match.
+* Support for booting Linux is rewritten, so GRUB now supports
+  large-EBDA systems.
+* The menu interfaces supports Page Up, Page Down, and Right Key.
+* New command "terminfo", for vt100-incompatible terminals.
+* New options, ``-D'', ``-g'' and ``-m'' are supported for FreeBSD.
+
+New in 0.92 - 2002-04-30:
+* The command "displaymem" uses only hex digits for consistency.
+* The netboot code goes back to the progress bars instead of dots, for
+  the notation of data transfers. And, that is displayed only in debug
+  mode, that is to say, nothing is displayed by default. Remember that
+  you can turn on debug mode via the command "debug".
+* The command "help" doesn't show all the available commands by default,
+  when no argument is specified. Rarely used commands (such as
+  "testload") and useless commands in interactive use (such as
+  "savedefault") are hidden. If you want to see help messages for those
+  commands, specify the new option "--all".
+* A built-in, `more'-like pager is added. When a command prints too many
+  lines to fit the screen, GRUB waits until you hit return key. This
+  feature can be turned off by the new command "pager".
+* The command "terminal" accepts a new option, "--lines=LINES". You can
+  set the maximum number of lines arbitrarily with this option. If you
+  don't specify it, the maximum number will be 24.
+* The command "terminal" accepts another new option, "--silent". You can
+  suppress the "Press any key to continue" message with this option.
+* The mem= option for Linux is recognized and used to limit the maximum
+  address of initrd.
+* A fallback entry is executed immediately after a default entry,
+  without prompting a user's intervention, as the manual has ever been
+  saying.
+* The utility ``grub-install'' makes sure that GRUB images have been
+  written to a physical disk completely. To assist this feature, a new
+  command "dump" is added.
+
+New in 0.91 - 2002-01-21:
 * Support for Linux DAC960 is added.
 * JFS and XFS support is added.
-* Important bugfixes are made for ReiserFS, APM, TFTP, etc.
+* The commands "hide" and "unhide" support logical partitions.
+* The utility ``grub-install'' supports NetBSD.
+* The network support is updated to Etherboot-5.0.5.
+* The manner of handling the preset menu changes. In the previous
+  implementation, the preset menu is used only when opening the
+  configuration file failed. Now try to use the preset menu first. And,
+  if the configuration file is available, it is read after readoing the
+  preset menu. In this case, menu entries in the preset menu (if any)
+  are overrided by the configuration file.
+* Diskless support is a bit changed. In the previous, GRUB set up a
+  network automatically via a special function. In the current, the
+  function is gone and the preset menu feature is used (i.e. just
+  execute the command "bootp" as if you specified it in the preset
+  menu). This has no impact against most users, but you should take care
+  if using the preset menu for your own purpose, because GRUB doesn't
+  call "bootp" implicitly when the preset menu is used explicitly. In
+  this case, you would probably need to insert commands to initialize a
+  network into your preset menu.
+* Important bugfixes are made for ReiserFS, APM, TFTP, LBA, etc.
 
 New in 0.90 - 2001-07-11:
 * The command "setkey" resets key mappings, when no argument is

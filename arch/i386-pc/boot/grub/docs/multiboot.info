@@ -1,4 +1,4 @@
-This is multiboot.info, produced by makeinfo version 4.0 from
+This is multiboot.info, produced by makeinfo version 4.1 from
 multiboot.texi.
 
 INFO-DIR-SECTION Kernel
@@ -7,8 +7,8 @@ START-INFO-DIR-ENTRY
 END-INFO-DIR-ENTRY
 
    Copyright (C) 1995, 96 Bryan Ford <baford@cs.utah.edu> Copyright (C)
-1995, 96 Erich Stefan Boleyn <erich@uruk.org> Copyright (C) 1999, 2000
-Free Software Foundation, Inc.
+1995, 96 Erich Stefan Boleyn <erich@uruk.org> Copyright (C) 1999, 2000,
+2001, 2002 Free Software Foundation, Inc.
 
    Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -24,7 +24,7 @@ manual into another language, under the above conditions for modified
 versions.
 
 
-File: multiboot.info,  Node: Top,  Next: Overview,  Prev: (dir),  Up: (dir)
+File: multiboot.info,  Node: Top,  Next: Overview,  Up: (dir)
 
 Multiboot Specification
 ***********************
@@ -61,7 +61,7 @@ Specification. Note that this is not a part of the specification itself.
 * Boot modules::
 
 
-File: multiboot.info,  Node: Motivation,  Next: Architecture,  Prev: Overview,  Up: Overview
+File: multiboot.info,  Node: Motivation,  Next: Architecture,  Up: Overview
 
 The background of Multiboot Specification
 =========================================
@@ -264,15 +264,15 @@ The definitions of terms used through the specification
 
 "u16"
      The type of unsigned 16-bit data. Because the target architecture
-     is little-endian, WORD is coded in little-endian.
+     is little-endian, u16 is coded in little-endian.
 
 "u32"
      The type of unsigned 32-bit data. Because the target architecture
-     is little-endian, DWORD is coded in little-endian.
+     is little-endian, u32 is coded in little-endian.
 
 "u64"
      The type of unsigned 64-bit data. Because the target architecture
-     is little-endian, QWORD is coded in little-endian.
+     is little-endian, u64 is coded in little-endian.
 
 
 File: multiboot.info,  Node: Specification,  Next: Examples,  Prev: Terminology,  Up: Top
@@ -297,7 +297,7 @@ The exact definitions of Multiboot Specification
 * Boot information format::
 
 
-File: multiboot.info,  Node: OS image format,  Next: Machine state,  Prev: Specification,  Up: Specification
+File: multiboot.info,  Node: OS image format,  Next: Machine state,  Up: Specification
 
 OS image format
 ===============
@@ -323,7 +323,7 @@ the beginning of the text segment after the _real_ executable header.
 * Header graphics fields::
 
 
-File: multiboot.info,  Node: Header layout,  Next: Header magic fields,  Prev: OS image format,  Up: OS image format
+File: multiboot.info,  Node: Header layout,  Next: Header magic fields,  Up: OS image format
 
 The layout of Multiboot header
 ------------------------------
@@ -433,13 +433,16 @@ addresses.  The meaning of each is as follows:
      Contains the physical address of the end of the data segment.
      (load_end_addr - load_addr) specifies how much data to load.  This
      implies that the text and data segments must be consecutive in the
-     OS image; this is true for existing a.out executable formats.
+     OS image; this is true for existing a.out executable formats.  If
+     this field is zero, the boot loader assumes that the text and data
+     segments occupy the whole OS image file.
 
 `bss_end_addr'
      Contains the physical address of the end of the bss segment. The
      boot loader initializes this area to zero, and reserves the memory
      it occupies to avoid placing boot modules and other data relevant
-     to the operating system in that area.
+     to the operating system in that area. If this field is zero, the
+     boot loader assumes that no bss segment is present.
 
 `entry_addr'
      The physical address to which the boot loader should jump in order
@@ -451,25 +454,34 @@ File: multiboot.info,  Node: Header graphics fields,  Prev: Header address field
 The graphics fields of Multiboot header
 ---------------------------------------
 
-   Also, information about a preferred default mode can be specified in
-the `mode_type', `width', `height' and `depth' fields. This is only a
-_recommended_ mode by the kernel. If the mode exists, the boot loader
-should set it if the user hasn't specified a mode. If not, it should
-fall back to a similar mode, if available.
+   All of the graphics fields are enabled by flag bit 2. They specify
+the preferred graphics mode. Note that that is only a _recommended_
+mode by the OS image. If the mode exists, the boot loader should set
+it, when the user doesn't specify a mode explicitly. Otherwise, the
+boot loader should fall back to a similar mode, if available.
 
-   Valid numbers for `mode_type' is 0 for linear graphics mode and 1
-for EGA-standard text mode. Everything else is reserved for future
-expansion. Please note that even if you set this field to indicate that
-you want a graphics mode, you might get a text mode.
+   The meaning of each is as follows:
 
-   `width' and `height' is specified in pixels, if graphics mode, or
-characters in EGA text mode. `depth' is given in bits per pixel for
-graphics, or zero for EGA text modes.
+`mode_type'
+     Contains `0' for linear graphics mode or `1' for EGA-standard text
+     mode. Everything else is reserved for future expansion. Note that
+     the boot loader may set a text mode, even if this field contains
+     `0'.
 
-   Any, some or all of those three fields may be set to zero,
-indicating to the boot loader that no preference is given. This makes
-it possible for a kernel to just say it wants a 32-bit resolution, for
-example.
+`width'
+     Contains the number of the columns. This is specified in pixels in
+     a graphics mode, and in characters in a text mode. The value zero
+     indicates that the OS image has no preference.
+
+`height'
+     Contains the number of the lines. This is specified in pixels in a
+     graphics mode, and in characters in a text mode. The value zero
+     indicates that the OS image has no preference.
+
+`depth'
+     Contains the number of bits per pixel in a graphics mode, and zero
+     in a text mode. The value zero indicates that the OS image has no
+     preference.
 
 
 File: multiboot.info,  Node: Machine state,  Next: Boot information format,  Prev: OS image format,  Up: Specification
@@ -477,48 +489,58 @@ File: multiboot.info,  Node: Machine state,  Next: Boot information format,  Pre
 Machine state
 =============
 
-   FIXME: Use a table like the chapter "Header layout".
-
    When the boot loader invokes the 32-bit operating system, the machine
 must have the following state:
 
-   * `CS' must be a 32-bit read/execute code segment with an offset of 0
-     and a limit of 0xFFFFFFFF.
-
-   * `DS', `ES', `FS', `GS', and `SS' must be a 32-bit read/write data
-     segment with an offset of 0 and a limit of 0xFFFFFFFF.
-
-   * The address 20 line must be usable for standard linear 32-bit
-     addressing of memory (in standard PC hardware, it is wired to 0 at
-     bootup, forcing addresses in the 1-2 MB range to be mapped to the
-     0-1 MB range, 3-4 is mapped to 2-3, etc.).
-
-   * Paging must be turned off.
-
-   * The processor interrupt flag must be turned off.
-
-   * `EAX' must contain the magic value 0x2BADB002; the presence of this
+`EAX'
+     Must contain the magic value `0x2BADB002'; the presence of this
      value indicates to the operating system that it was loaded by a
-     Multiboot-compliant boot loader (e.g. as opposed to another type
-     of boot loader that the operating system can also be loaded from).
+     Multiboot-compliant boot loader (e.g. as opposed to another type of
+     boot loader that the operating system can also be loaded from).
 
-   * `EBX' must contain the 32-bit physical address of the Multiboot
+`EBX'
+     Must contain the 32-bit physical address of the Multiboot
      information structure provided by the boot loader (*note Boot
      information format::).
+
+`CS'
+     Must be a 32-bit read/execute code segment with an offset of `0'
+     and a limit of `0xFFFFFFFF'. The exact value is undefined.
+
+`DS'
+`ES'
+`FS'
+`GS'
+`SS'
+     Must be a 32-bit read/write data segment with an offset of `0' and
+     a limit of `0xFFFFFFFF'. The exact values are all undefined.
+
+`A20 gate'
+     Must be enabled.
+
+`CR0'
+     Bit 31 (PG) must be cleared. Bit 0 (PE) must be set. Other bits are
+     all undefined.
+
+`EFLAGS'
+     Bit 17 (VM) must be cleared. Bit 9 (IF) must be cleared. Other bits
+     are all undefined.
 
    All other processor registers and flag bits are undefined. This
 includes, in particular:
 
-   * `ESP': the 32-bit operating system must create its own stack as
-     soon as it needs one.
+`ESP'
+     The OS image must create its own stack as soon as it needs one.
 
-   * `GDTR': Even though the segment registers are set up as described
-     above, the `GDTR' may be invalid, so the operating system must not
-     load any segment registers (even just reloading the same values!)
-     until it sets up its own `GDT'.
+`GDTR'
+     Even though the segment registers are set up as described above,
+     the `GDTR' may be invalid, so the OS image must not load any
+     segment registers (even just reloading the same values!) until it
+     sets up its own `GDT'.
 
-   * `IDTR': The operating system must leave interrupts disabled until
-     it sets up its own `IDT'.
+`IDTR'
+     The OS image must leave interrupts disabled until it sets up its
+     own `IDT'.
 
    However, other machine state should be left by the boot loader in
 "normal working order", i.e. as initialized by the BIOS (or DOS, if
@@ -875,7 +897,7 @@ loader writers.
 * Example boot loader code::
 
 
-File: multiboot.info,  Node: Notes on PC,  Next: BIOS device mapping techniques,  Prev: Examples,  Up: Examples
+File: multiboot.info,  Node: Notes on PC,  Next: BIOS device mapping techniques,  Up: Examples
 
 Notes on PC
 ===========
@@ -932,7 +954,7 @@ drivers.
 * I/O restriction technique::
 
 
-File: multiboot.info,  Node: Data comparison technique,  Next: I/O restriction technique,  Prev: BIOS device mapping techniques,  Up: BIOS device mapping techniques
+File: multiboot.info,  Node: Data comparison technique,  Next: I/O restriction technique,  Up: BIOS device mapping techniques
 
 Data comparison technique
 -------------------------
@@ -1023,7 +1045,7 @@ Multiboot information structure.
 * Other Multiboot kernels::
 
 
-File: multiboot.info,  Node: multiboot.h,  Next: boot.S,  Prev: Example OS code,  Up: Example OS code
+File: multiboot.info,  Node: multiboot.h,  Next: boot.S,  Up: Example OS code
 
 multiboot.h
 -----------
@@ -1554,7 +1576,7 @@ Multiboot-compliant boot loader, supporting all required and optional
 features present in this specification. A public release has not been
 made, but the test release is available from:
 
-   <ftp://alpha.gnu.org/gnu/hurd/src/>
+   <ftp://alpha.gnu.org/gnu/grub>
 
    See the webpage <http://www.gnu.org/software/grub/grub.html>, for
 more information.
@@ -1604,36 +1626,36 @@ Index
 
 
 Tag Table:
-Node: Top956
-Node: Overview1309
-Node: Motivation1776
-Node: Architecture3186
-Node: Operating systems3714
-Node: Boot sources4503
-Node: Boot-time configuration5468
-Node: Convenience to operating systems6071
-Node: Boot modules8297
-Node: Terminology9441
-Node: Specification11821
-Node: OS image format12383
-Node: Header layout13458
-Node: Header magic fields14641
-Node: Header address fields17490
-Node: Header graphics fields19122
-Node: Machine state20286
-Node: Boot information format22675
-Node: Examples38041
-Node: Notes on PC38413
-Node: BIOS device mapping techniques39991
-Node: Data comparison technique40896
-Node: I/O restriction technique41788
-Node: Example OS code42996
-Node: multiboot.h44533
-Node: boot.S48462
-Node: kernel.c51157
-Node: Other Multiboot kernels60124
-Node: Example boot loader code60546
-Node: History61072
-Node: Index61989
+Node: Top968
+Node: Overview1307
+Node: Motivation1774
+Node: Architecture3167
+Node: Operating systems3695
+Node: Boot sources4484
+Node: Boot-time configuration5449
+Node: Convenience to operating systems6052
+Node: Boot modules8278
+Node: Terminology9422
+Node: Specification11797
+Node: OS image format12359
+Node: Header layout13412
+Node: Header magic fields14571
+Node: Header address fields17420
+Node: Header graphics fields19258
+Node: Machine state20635
+Node: Boot information format22890
+Node: Examples38256
+Node: Notes on PC38628
+Node: BIOS device mapping techniques40189
+Node: Data comparison technique41094
+Node: I/O restriction technique41947
+Node: Example OS code43155
+Node: multiboot.h44692
+Node: boot.S48597
+Node: kernel.c51292
+Node: Other Multiboot kernels60259
+Node: Example boot loader code60681
+Node: History61202
+Node: Index62119
 
 End Tag Table

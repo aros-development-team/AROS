@@ -351,59 +351,6 @@
 #define TMD3_LCAR    0x0800	/* Loss of CARrier */
 #define TMD3_RTRY    0x0400	/* ReTRY error */
 
-/* 
-** EISA configuration Register (CNFG) bit definitions 
-*/
- 
-#define TIMEO       	0x0100	/* 0:2.5 mins, 1: 30 secs */
-#define REMOTE      	0x0080  /* Remote Boot Enable -> 1 */
-#define IRQ11       	0x0040  /* Enable -> 1 */
-#define IRQ10    	0x0020	/* Enable -> 1 */
-#define IRQ9    	0x0010	/* Enable -> 1 */
-#define IRQ5      	0x0008  /* Enable -> 1 */
-#define BUFF     	0x0004	/* 0: 64kB or 128kB, 1: 32kB */
-#define PADR16   	0x0002	/* RAM on 64kB boundary */
-#define PADR17    	0x0001	/* RAM on 128kB boundary */
-
-/*
-** Miscellaneous
-*/
-#define HASH_TABLE_LEN   64           /* Bits */
-#define HASH_BITS        0x003f       /* 6 LS bits */
-
-#define MASK_INTERRUPTS   1
-#define UNMASK_INTERRUPTS 0
-
-#define EISA_EN         0x0001        /* Enable EISA bus buffers */
-#define EISA_ID         iobase+0x0080 /* ID long word for EISA card */
-#define EISA_CTRL       iobase+0x0084 /* Control word for EISA card */
-
-/* 
-** Recognised commands for the driver 
-*/
-#define DEPCA_GET_HWADDR	0x01 /* Get the hardware address */
-#define DEPCA_SET_HWADDR	0x02 /* Get the hardware address */
-#define DEPCA_SET_PROM  	0x03 /* Set Promiscuous Mode */
-#define DEPCA_CLR_PROM  	0x04 /* Clear Promiscuous Mode */
-#define DEPCA_SAY_BOO	        0x05 /* Say "Boo!" to the kernel log file */
-#define DEPCA_GET_MCA   	0x06 /* Get a multicast address */
-#define DEPCA_SET_MCA   	0x07 /* Set a multicast address */
-#define DEPCA_CLR_MCA    	0x08 /* Clear a multicast address */
-#define DEPCA_MCA_EN    	0x09 /* Enable a multicast address group */
-#define DEPCA_GET_STATS  	0x0a /* Get the driver statistics */
-#define DEPCA_CLR_STATS 	0x0b /* Zero out the driver statistics */
-#define DEPCA_GET_REG   	0x0c /* Get the Register contents */
-#define DEPCA_SET_REG   	0x0d /* Set the Register contents */
-#define DEPCA_DUMP              0x0f /* Dump the DEPCA Status */
-
-#ifdef DEPCA_DEBUG
-static int depca_debug = DEPCA_DEBUG;
-#else
-static int depca_debug = 1;
-#endif
-
-#define DEPCA_NDA 0xffe0            /* No Device Address */
-
 /*
 ** Ethernet PROM defines
 */
@@ -416,13 +363,10 @@ static int depca_debug = 1;
 **
 ** total_memory = NUM_RX_DESC*(8+RX_BUFF_SZ) + NUM_TX_DESC*(8+TX_BUFF_SZ)
 */
-#define NUM_RX_DESC     8               /* Number of RX descriptors */
-#define NUM_TX_DESC     8               /* Number of TX descriptors */
+#define NUM_RX_DESC     2               /* Number of RX descriptors */
+#define NUM_TX_DESC     2               /* Number of TX descriptors */
 #define RX_BUFF_SZ	1536            /* Buffer size for each Rx buffer */
 #define TX_BUFF_SZ	1536            /* Buffer size for each Tx buffer */
-
-#define CRC_POLYNOMIAL_BE 0x04c11db7UL  /* Ethernet CRC, big endian */
-#define CRC_POLYNOMIAL_LE 0xedb88320UL  /* Ethernet CRC, little endian */
 
 /*
 ** ISA Bus defines
@@ -494,25 +438,31 @@ struct depca_tx_desc {
 */
 struct depca_init {
     u16 mode;	                /* Mode register */
-    u8  phys_addr[ETHER_ADDR_SIZE];	/* Physical ethernet address */
+    u8  phys_addr[ETH_ALEN];	/* Physical ethernet address */
     u8  mcast_table[8];	        /* Multicast Hash Table. */
     u32 rx_ring;     	        /* Rx ring base pointer & ring length */
     u32 tx_ring;	        /* Tx ring base pointer & ring length */
 };
 
-/*
-** The transmit ring full condition is described by the tx_old and tx_new
-** pointers by:
-**    tx_old            = tx_new    Empty ring
-**    tx_old            = tx_new+1  Full ring
-**    tx_old+txRingMask = tx_new    Full ring  (wrapped condition)
-*/
-#define TX_BUFFS_AVAIL ((lp->tx_old<=lp->tx_new)?\
-			 lp->tx_old+lp->txRingMask-lp->tx_new:\
-                         lp->tx_old               -lp->tx_new-1)
+struct depca_private {
+	struct depca_rx_desc	*rx_ring;
+	struct depca_tx_desc	*tx_ring;
+	struct depca_init	init_block;	/* Shadow init block */
+	char			*rx_memcpy[NUM_RX_DESC];
+	char			*tx_memcpy[NUM_TX_DESC];
+	u32			bus_offset;	/* ISA bus address offset */
+	u32			sh_mem;		/* address of shared mem */
+	u32			dma_buffs;	/* Rx & Tx buffer start */
+	int			rx_cur, tx_cur;	/* Next free ring entry */
+	int			txRingMask, rxRingMask;
+	s32			rx_rlen, tx_rlen;
+	/* log2([rt]xRingMask+1) for the descriptors */
+};
 
 static Address		mem_start = DEPCA_RAM_BASE;
+static Address		mem_len, offset;
 static unsigned short	ioaddr = 0;
+static struct depca_private	lp;
 
 /*
 ** Miscellaneous defines...
@@ -521,7 +471,64 @@ static unsigned short	ioaddr = 0;
     outw(CSR0, DEPCA_ADDR);\
     outw(STOP, DEPCA_DATA)
 
-
+/* Initialize the lance Rx and Tx descriptor rings. */
+static void depca_init_ring(struct nic *nic)
+{
+	int	i;
+	u32	p;
+
+	lp.rx_cur = lp.tx_cur = 0;
+	/* Initialize the base addresses and length of each buffer in the ring */
+	for (i = 0; i <= lp.rxRingMask; i++) {
+		writel((p = lp.dma_buffs + i * RX_BUFF_SZ) | R_OWN, &lp.rx_ring[i].base);
+		writew(-RX_BUFF_SZ, &lp.rx_ring[i].buf_length);
+		lp.rx_memcpy[i] = (char *) (p + lp.bus_offset);
+	}
+	for (i = 0; i <= lp.txRingMask; i++) {
+		writel((p = lp.dma_buffs + (i + lp.txRingMask + 1) * TX_BUFF_SZ) & 0x00ffffff, &lp.tx_ring[i].base);
+		lp.tx_memcpy[i] = (char *) (p + lp.bus_offset);
+	}
+
+	/* Set up the initialization block */
+	lp.init_block.rx_ring = ((u32) ((u32) lp.rx_ring) & LA_MASK) | lp.rx_rlen;
+	lp.init_block.tx_ring = ((u32) ((u32) lp.tx_ring) & LA_MASK) | lp.tx_rlen;
+	for (i = 0; i < ETH_ALEN; i++)
+		lp.init_block.phys_addr[i] = nic->node_addr[i];
+	lp.init_block.mode = 0x0000;	/* Enable the Tx and Rx */
+	memset(lp.init_block.mcast_table, 0, sizeof(lp.init_block.mcast_table));
+}
+
+static void LoadCSRs(void)
+{
+	outw(CSR1, DEPCA_ADDR);	/* initialisation block address LSW */
+	outw((u16) (lp.sh_mem & LA_MASK), DEPCA_DATA);
+	outw(CSR2, DEPCA_ADDR);	/* initialisation block address MSW */
+	outw((u16) ((lp.sh_mem & LA_MASK) >> 16), DEPCA_DATA);
+	outw(CSR3, DEPCA_ADDR);	/* ALE control */
+	outw(ACON, DEPCA_DATA);
+	outw(CSR0, DEPCA_ADDR);	/* Point back to CSR0 */
+}
+
+static int InitRestartDepca(void)
+{
+	int		i;
+
+	/* Copy the shadow init_block to shared memory */
+	memcpy_toio((char *)lp.sh_mem, &lp.init_block, sizeof(struct depca_init));
+	outw(CSR0, DEPCA_ADDR);		/* point back to CSR0 */
+	outw(INIT, DEPCA_DATA);		/* initialise DEPCA */
+
+	for (i = 0; i < 100 && !(inw(DEPCA_DATA) & IDON); i++)
+		;
+	if (i < 100) {
+		/* clear IDON by writing a 1, and start LANCE */
+		outw(IDON | STRT, DEPCA_DATA);
+	} else {
+		printf("DEPCA not initialised\n");
+		return (1);
+	}
+	return (0);
+}
 
 /**************************************************************************
 RESET - Reset adapter
@@ -529,15 +536,50 @@ RESET - Reset adapter
 static void depca_reset(struct nic *nic)
 {
 	s16	nicsr;
-	int	status = 0;
+	int	i, j;
 
 	STOP_DEPCA;
 	nicsr = inb(DEPCA_NICSR);
+	nicsr = ((nicsr & ~SHE & ~RBE & ~IEN) | IM);
+	outb(nicsr, DEPCA_NICSR);
+	if (inw(DEPCA_DATA) != STOP)
+	{
+		printf("depca: Cannot stop NIC\n");
+		return;
+	}
 
-	/* non-DEPCA need this */
-	if (adapter != DEPCA)
-		outb(nicsr | SHE, DEPCA_NICSR);
+	/* Initialisation block */
+	lp.sh_mem = mem_start;
+	mem_start += sizeof(struct depca_init);
+	/* Tx & Rx descriptors (aligned to a quadword boundary) */
+	mem_start = (mem_start + ALIGN) & ~ALIGN;
+	lp.rx_ring = (struct depca_rx_desc *) mem_start;
+	mem_start += (sizeof(struct depca_rx_desc) * NUM_RX_DESC);
+	lp.tx_ring = (struct depca_tx_desc *) mem_start;
+	mem_start += (sizeof(struct depca_tx_desc) * NUM_TX_DESC);
 
+	lp.bus_offset = mem_start & 0x00ff0000;
+	/* LANCE re-mapped start address */
+	lp.dma_buffs = mem_start & LA_MASK;
+
+	/* Finish initialising the ring information. */
+	lp.rxRingMask = NUM_RX_DESC - 1;
+	lp.txRingMask = NUM_TX_DESC - 1;
+
+	/* Calculate Tx/Rx RLEN size for the descriptors. */
+	for (i = 0, j = lp.rxRingMask; j > 0; i++) {
+		j >>= 1;
+	}
+	lp.rx_rlen = (s32) (i << 29);
+	for (i = 0, j = lp.txRingMask; j > 0; i++) {
+		j >>= 1;
+	}
+	lp.tx_rlen = (s32) (i << 29);
+
+	/* Load the initialisation block */
+	depca_init_ring(nic);
+	LoadCSRs();
+	InitRestartDepca();
 }
 
 /**************************************************************************
@@ -545,10 +587,16 @@ POLL - Wait for a frame
 ***************************************************************************/
 static int depca_poll(struct nic *nic)
 {
-	/* return true if there's an ethernet packet ready to read */
-	/* nic->packet should contain data on return */
-	/* nic->packetlen should contain length of data */
-	return 0;
+	int		entry;
+	u32		status;
+
+	entry = lp.rx_cur;
+	if ((status = readl(&lp.rx_ring[entry].base) & R_OWN))
+		return (0);
+	memcpy(nic->packet, lp.rx_memcpy[entry], nic->packetlen = lp.rx_ring[entry].msg_length);
+	lp.rx_ring[entry].base |= R_OWN;
+	lp.rx_cur = (++lp.rx_cur) & lp.rxRingMask;
+	return (1);
 }
 
 /**************************************************************************
@@ -561,7 +609,33 @@ static void depca_transmit(
 	unsigned int s,			/* size */
 	const char *p)			/* Packet */
 {
+	int		entry, len;
+	char		*mem;
+
 	/* send the packet to destination */
+	/*
+	** Caution: the right order is important here... dont
+	** setup the ownership rights until all the other
+	** information is in place
+	*/
+	mem = lp.tx_memcpy[entry = lp.tx_cur];
+	memcpy_toio(mem, d, ETH_ALEN);
+	memcpy_toio(mem + ETH_ALEN, nic->node_addr, ETH_ALEN);
+	mem[ETH_ALEN * 2] = t >> 8;
+	mem[ETH_ALEN * 2 + 1] = t;
+	memcpy_toio(mem + ETH_HLEN, p, s);
+	s += ETH_HLEN;
+	len = (s < ETH_ZLEN ? ETH_ZLEN : s);
+	/* clean out flags */
+	writel(readl(&lp.tx_ring[entry].base) & ~T_FLAGS, &lp.tx_ring[entry].base);
+	/* clears other error flags */
+	writew(0x0000, &lp.tx_ring[entry].misc);
+	/* packet length in buffer */
+	writew(-len, &lp.tx_ring[entry].length);
+	/* start and end of packet, ownership */
+	writel(readl(&lp.tx_ring[entry].base) | (T_STP|T_ENP|T_OWN), &lp.tx_ring[entry].base);
+	/* update current pointers */
+	lp.tx_cur = (++lp.tx_cur) & lp.txRingMask;
 }
 
 /**************************************************************************
@@ -569,6 +643,7 @@ DISABLE - Turn off ethernet interface
 ***************************************************************************/
 static void depca_disable(struct nic *nic)
 {
+	STOP_DEPCA;
 }
 
 /*
@@ -594,7 +669,6 @@ static int depca_probe1(struct nic *nic)
 	u8	sig[] = { 0xFF, 0x00, 0x55, 0xAA, 0xFF, 0x00, 0x55, 0xAA };
 	int	i, j;
 	long	sum, chksum;
-	Address	mem_len, offset;
 
 	data = inb(DEPCA_PROM);		/* clear counter on DEPCA */
 	data = inb(DEPCA_PROM);		/* read data */
@@ -641,18 +715,14 @@ static int depca_probe1(struct nic *nic)
 		nicsr &= ~BS;
 		mem_len -= (32 << 10);
 	}
-	if (adapter != DEPCA)
+	if (adapter != DEPCA)	/* enable shadow RAM */
 		outb(nicsr |= SHE, DEPCA_NICSR);
-	printf("%s base 0x%x, memory [0x%X-0x%X], addr ", adapter_name[adapter],
-		ioaddr, mem_start, mem_start + mem_len);
-	for (i = 0; i < ETHER_ADDR_SIZE; i++) {
-		if (i != 0)
-			putchar(':');
-		printf("%b", nic->node_addr[i]);
-	}
+	printf("%s base %#hX, memory [%#hX-%#hX], addr %!",
+		adapter_name[adapter], ioaddr, mem_start, mem_start + mem_len,
+		nic->node_addr);
 	if (sum != chksum)
 		printf(" (bad checksum)");
-	printf("\n");
+	putchar('\n');
 	return (1);
 }
 
@@ -664,21 +734,19 @@ struct nic *depca_probe(struct nic *nic, unsigned short *probe_addrs)
 	static unsigned short	base[] = DEPCA_IO_PORTS;
 	int			i;
 
-	printf("DEPCA driver not fully functional, only probe working...\n");
 	if (probe_addrs == 0 || probe_addrs[0] == 0)
 		probe_addrs = base;	/* Use defaults */
 	for (i = 0; (ioaddr = base[i]) != 0; ++i) {
 		if (depca_probe1(nic))
 			break;
 	}
-	if (ioaddr != 0) {
-		depca_reset(nic);
-		/* point to NIC specific routines */
-		nic->reset = depca_reset;
-		nic->poll = depca_poll;
-		nic->transmit = depca_transmit;
-		nic->disable = depca_disable;
-		return nic;
-	}
-	return 0;
+	if (ioaddr == 0)
+		return (0);
+	depca_reset(nic);
+	/* point to NIC specific routines */
+	nic->reset = depca_reset;
+	nic->poll = depca_poll;
+	nic->transmit = depca_transmit;
+	nic->disable = depca_disable;
+	return (nic);
 }

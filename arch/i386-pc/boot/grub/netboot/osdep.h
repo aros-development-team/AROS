@@ -8,14 +8,51 @@
  * your option) any later version.
  */
 
-#if	defined(__linux__) || defined(__FreeBSD__) || defined(GRUB)
-#define	ETHERBOOT32
-#define ntohl(x) swap32(x)
-#define htonl(x) swap32(x)
-#define ntohs(x) swap16(x)
-#define htons(x) swap16(x)
+#define	__LITTLE_ENDIAN		/* x86 */
 
-static inline unsigned long int swap32(unsigned long int x)
+/* Taken from /usr/include/linux/hfs_sysdep.h */
+#if defined(__BIG_ENDIAN)
+#	if !defined(__constant_htonl)
+#		define __constant_htonl(x) (x)
+#	endif
+#	if !defined(__constant_htons)
+#		define __constant_htons(x) (x)
+#	endif
+#elif defined(__LITTLE_ENDIAN)
+#	if !defined(__constant_htonl)
+#		define __constant_htonl(x) \
+        ((unsigned long int)((((unsigned long int)(x) & 0x000000ffU) << 24) | \
+                             (((unsigned long int)(x) & 0x0000ff00U) <<  8) | \
+                             (((unsigned long int)(x) & 0x00ff0000U) >>  8) | \
+                             (((unsigned long int)(x) & 0xff000000U) >> 24)))
+#	endif
+#	if !defined(__constant_htons)
+#		define __constant_htons(x) \
+        ((unsigned short int)((((unsigned short int)(x) & 0x00ff) << 8) | \
+                              (((unsigned short int)(x) & 0xff00) >> 8)))
+#	endif
+#else
+#	error "Don't know if bytes are big- or little-endian!"
+#endif
+
+#define ntohl(x) \
+(__builtin_constant_p(x) ? \
+ __constant_htonl((x)) : \
+ __swap32(x))
+#define htonl(x) \
+(__builtin_constant_p(x) ? \
+ __constant_htonl((x)) : \
+ __swap32(x))
+#define ntohs(x) \
+(__builtin_constant_p(x) ? \
+ __constant_htons((x)) : \
+ __swap16(x))
+#define htons(x) \
+(__builtin_constant_p(x) ? \
+ __constant_htons((x)) : \
+ __swap16(x))
+
+static inline unsigned long int __swap32(unsigned long int x)
 {
 	__asm__("xchgb %b0,%h0\n\t"
 		"rorl $16,%0\n\t"
@@ -25,7 +62,7 @@ static inline unsigned long int swap32(unsigned long int x)
 	return x;
 }
 
-static inline unsigned short int swap16(unsigned short int x)
+static inline unsigned short int __swap16(unsigned short int x)
 {
 	__asm__("xchgb %b0,%h0"
 		: "=q" (x)
@@ -33,38 +70,11 @@ static inline unsigned short int swap16(unsigned short int x)
 	return x;
 }
 
-#ifndef GRUB
-# include "linux-asm-string.h"
-#endif /* ! GRUB */
+/* Make routines available to all */
+#define	swap32(x)	__swap32(x)
+#define	swap16(x)	__swap16(x)
+
 #include "linux-asm-io.h"
-#ifndef GRUB
-#define	_edata	edata			/* ELF does not prepend a _ */
-#define	_end	end
-#endif /* ! GRUB */
-#endif
-
-#ifdef	__BCC__
-#define	ETHERBOOT16
-#define	inline
-#define	const
-#define	volatile
-#define	setjmp	_setjmp		/* they are that way in libc.a */
-#define	longjmp	_longjmp
-
-/* BCC include files are missing these. */
-typedef unsigned char u_char;
-typedef unsigned short u_short;
-typedef unsigned int u_int;
-typedef unsigned long u_long;
-#endif
-
-#if	!defined(ETHERBOOT16) && !defined(ETHERBOOT32)
-Error, neither ETHERBOOT16 nor ETHERBOOT32 defined
-#endif
-
-#if	defined(ETHERBOOT16) && defined(ETHERBOOT32)
-Error, both ETHERBOOT16 and ETHERBOOT32 defined
-#endif
 
 typedef	unsigned long Address;
 

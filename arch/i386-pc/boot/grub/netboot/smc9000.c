@@ -134,7 +134,7 @@ static int smc_probe( int ioaddr )
 
    if (ioaddr != (base_address_register >> 3 & 0x3E0))  {
 #ifdef	SMC9000_VERBOSE
-      printf("SMC9000: IOADDR %x doesn't match configuration (%x)."
+      printf("SMC9000: IOADDR %hX doesn't match configuration (%hX)."
 	     "Probably not a SMC chip\n",
 	     ioaddr, base_address_register >> 3 & 0x3E0);
 #endif
@@ -152,8 +152,8 @@ static int smc_probe( int ioaddr )
    if (!chip_ids[(revision_register >> 4) & 0xF]) {
       /* I don't recognize this chip, so... */
 #ifdef	SMC9000_VERBOSE
-      printf("SMC9000: IO %x: Unrecognized revision register:"
-	     " %x, Contact author.\n", ioaddr, revision_register);
+      printf("SMC9000: IO %hX: Unrecognized revision register:"
+	     " %hX, Contact author.\n", ioaddr, revision_register);
 #endif
       return -1;
    }
@@ -192,7 +192,7 @@ static void smc9000_transmit(
    int i;
 
    /* We dont pad here since we can have the hardware doing it for us */
-   length = (s + ETHER_HDR_SIZE + 1)&~1;
+   length = (s + ETH_HLEN + 1)&~1;
 
    /* convert to MMU pages */
    numPages = length / 256;
@@ -245,7 +245,7 @@ static void smc9000_transmit(
    _outw(PTR_AUTOINC, smc9000_base + POINTER);
 
 #if	SMC9000_DEBUG > 2
-   printf("Trying to xmit packet of length %x\n", length );
+   printf("Trying to xmit packet of length %hX\n", length );
 #endif
 
    /* send the packet length ( +6 for status, length and ctl byte )
@@ -259,8 +259,8 @@ static void smc9000_transmit(
    /* Write the contents of the packet */
 
    /* The ethernet header first... */
-   outsw(smc9000_base + DATA_1, d, ETHER_ADDR_SIZE >> 1);
-   outsw(smc9000_base + DATA_1, nic->node_addr, ETHER_ADDR_SIZE >> 1);
+   outsw(smc9000_base + DATA_1, d, ETH_ALEN >> 1);
+   outsw(smc9000_base + DATA_1, nic->node_addr, ETH_ALEN >> 1);
    _outw(htons(t), smc9000_base + DATA_1);
 
    /* ... the data ... */
@@ -300,7 +300,7 @@ static void smc9000_transmit(
 
 	 if (0 == (tx_status & TS_SUCCESS)) {
 #ifdef	SMC9000_VERBOSE
-	    printf("SMC9000: TX FAIL STATUS: %x \n", tx_status);
+	    printf("SMC9000: TX FAIL STATUS: %hX \n", tx_status);
 #endif
 	    /* re-enable transmit */
 	    SMC_SELECT_BANK(smc9000_base, 0);
@@ -476,16 +476,13 @@ struct nic *smc9000_probe(struct nic *nic, unsigned short *probe_addrs)
    /* now, reset the chip, and put it into a known state */
    smc_reset(smc9000_base);
 
-   printf("%s rev:%d I/O port:%x Interface:%s RAM:%d bytes \n",
+   printf("%s rev:%d I/O port:%hX Interface:%s RAM:%d bytes \n",
 	  version_string, revision & 0xF,
 	  smc9000_base, if_string, memory );
    /*
     * Print the Ethernet address
     */
-   printf("Ethernet MAC address: ");
-   for (i = 0; i < 5; i++)
-     printf("%b:", nic->node_addr[i]);
-   printf("%b\n", nic->node_addr[5]);
+   printf("Ethernet MAC address: %!\n", nic->node_addr);
 
    SMC_SELECT_BANK(smc9000_base, 0);
 

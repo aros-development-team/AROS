@@ -43,7 +43,7 @@ static struct txdesc txd;
 #define NRXD 4
 static struct rxdesc rxd[NRXD];
 static int rxd_tail = 0;
-#ifndef	USE_INTERNAL_BUFFER
+#ifdef	USE_LOWMEM_BUFFER
 #define rxb ((char *)0x10000 - NRXD * BUFLEN)
 #define txb ((char *)0x10000 - NRXD * BUFLEN - BUFLEN)
 #else
@@ -51,7 +51,7 @@ static unsigned char rxb[NRXD * BUFLEN];
 static unsigned char txb[BUFLEN];
 #endif
 
-static unsigned char ehdr[ETHER_HDR_SIZE];    /* buffer for ethernet header */
+static unsigned char ehdr[ETH_HLEN];    /* buffer for ethernet header */
 
 enum tulip_offsets {
         CSR0=0,    CSR1=0x08, CSR2=0x10, CSR3=0x18, CSR4=0x20, CSR5=0x28,
@@ -270,17 +270,17 @@ static void tulip_transmit(struct nic *nic, const char *d, unsigned int t, unsig
 
         /* setup ethernet header */
 
-	memcpy(ehdr, d, ETHER_ADDR_SIZE);
-	memcpy(&ehdr[ETHER_ADDR_SIZE], nic->node_addr, ETHER_ADDR_SIZE);
-        ehdr[ETHER_ADDR_SIZE*2] = (t >> 8) & 0xff;
-        ehdr[ETHER_ADDR_SIZE*2+1] = t & 0xff;
+	memcpy(ehdr, d, ETH_ALEN);
+	memcpy(&ehdr[ETH_ALEN], nic->node_addr, ETH_ALEN);
+        ehdr[ETH_ALEN*2] = (t >> 8) & 0xff;
+        ehdr[ETH_ALEN*2+1] = t & 0xff;
 
         /* setup the transmit descriptor */
 
         memset(&txd, 0, sizeof(struct txdesc));
 
         txd.buf1addr = &ehdr[0];        /* ethernet header */
-        txd.buf1sz   = ETHER_HDR_SIZE;
+        txd.buf1sz   = ETH_HLEN;
 
         txd.buf2addr = p;               /* packet to transmit */
         txd.buf2sz   = s;
@@ -350,7 +350,7 @@ struct nic *otulip_probe(struct nic *nic, unsigned short *io_addrs, struct pci_d
 	membase = (unsigned int *)pci->membase;
 
         /* wakeup chip */
-        pcibios_write_config_dword(0,pci->devfn,0x40,0x00000000);
+        pcibios_write_config_dword(pci->bus,pci->devfn,0x40,0x00000000);
 
         /* Stop the chip's Tx and Rx processes. */
         /* outl(inl(ioaddr + CSR6) & ~0x2002, ioaddr + CSR6); */
@@ -359,12 +359,10 @@ struct nic *otulip_probe(struct nic *nic, unsigned short *io_addrs, struct pci_d
 
         srom_read();
 
-	for (i=0; i < 6; i++)
+	for (i=0; i < ETH_ALEN; i++)
 		nic->node_addr[i] = srom[20+i];
 
-        printf("Tulip %b:%b:%b:%b:%b:%b at ioaddr 0x%x\n",
-                srom[20],srom[21],srom[22],srom[23],srom[24],srom[25],
-                ioaddr);
+        printf("Tulip %! at ioaddr %#hX\n", nic->node_addr, ioaddr);
 
         tulip_reset(nic);
 

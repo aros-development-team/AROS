@@ -95,9 +95,10 @@ noinst_SCRIPTS = $(TESTS)
 
 # For dist target.
 noinst_HEADERS = apic.h defs.h dir.h disk_inode.h disk_inode_ffs.h \
-        fat.h filesys.h freebsd.h fs.h hercules.h i386-elf.h \
-	imgact_aout.h jfs.h mb_header.h mb_info.h md5.h pc_slice.h \
-	serial.h shared.h smp-imps.h nbi.h vstafs.h xfs.h
+	fat.h filesys.h freebsd.h fs.h hercules.h i386-elf.h \
+	imgact_aout.h jfs.h mb_header.h mb_info.h md5.h nbi.h \
+	pc_slice.h serial.h shared.h smp-imps.h term.h terminfo.h \
+	tparm.h nbi.h vstafs.h xfs.h
 
 EXTRA_DIST = setjmp.S apm.S $(noinst_SCRIPTS)
 
@@ -106,14 +107,16 @@ INCLUDES = -I$(top_srcdir)/stage1
 
 # The library for /sbin/grub.
 noinst_LIBRARIES = libgrub.a
-libgrub_a_SOURCES = boot.c builtins.c common.c char_io.c cmdline.c \
-	disk_io.c gunzip.c fsys_ffs.c fsys_ext2fs.c fsys_fat.c \
-	fsys_jfs.c fsys_minix.c fsys_reiserfs.c fsys_vstafs.c \
-	fsys_xfs.c fsys_affs.c stage2.c md5.c
+libgrub_a_SOURCES = boot.c builtins.c char_io.c cmdline.c common.c \
+	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_jfs.c \
+	fsys_minix.c fsys_reiserfs.c fsys_vstafs.c fsys_xfs.c fsys_affs.c \
+	gunzip.c md5.c serial.c stage2.c terminfo.c tparm.c
 
 libgrub_a_CFLAGS = $(GRUB_CFLAGS) -I$(top_srcdir)/lib \
 	-DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 -DFSYS_FFS=1 \
-	-DFSYS_JFS=1 -DFSYS_MINIX=1 -DFSYS_REISERFS=1 -DFSYS_VSTAFS=1
+	-DFSYS_JFS=1 -DFSYS_MINIX=1 -DFSYS_REISERFS=1 -DFSYS_VSTAFS=1 \
+	-DFSYS_XFS=1 -DUSE_MD5_PASSWORDS=1 \
+	-DSUPPORT_SERIAL=1 -DSUPPORT_HERCULES=1 -fwritable-strings
 
 
 EXTRA_PROGRAMS = nbloader.exec pxeloader.exec diskless.exec
@@ -163,11 +166,11 @@ STAGE1_5_LINK = -nostdlib -Wl,-N -Wl,-Ttext -Wl,2000
 STAGE1_5_COMPILE = $(STAGE2_COMPILE) -DNO_DECOMPRESSION=1 -DSTAGE1_5=1
 
 # For stage2 target.
-pre_stage2_exec_SOURCES = asm.S bios.c boot.c builtins.c common.c \
-	char_io.c cmdline.c disk_io.c gunzip.c fsys_ext2fs.c \
+pre_stage2_exec_SOURCES = asm.S bios.c boot.c builtins.c char_io.c \
+	cmdline.c common.c console.c disk_io.c fsys_ext2fs.c \
 	fsys_fat.c fsys_ffs.c fsys_jfs.c fsys_minix.c fsys_reiserfs.c \
-	fsys_vstafs.c fsys_xfs.c fsys_affs.c hercules.c serial.c smp-imps.c \
-	stage2.c md5.c
+	fsys_vstafs.c fsys_xfs.c fsys_affs.c gunzip.c hercules.c md5.c \
+	serial.c smp-imps.c stage2.c terminfo.c tparm.c
 
 pre_stage2_exec_CFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
 pre_stage2_exec_ASFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
@@ -309,16 +312,17 @@ LIBRARIES = $(noinst_LIBRARIES)
 libgrub_a_AR = $(AR) cru
 libgrub_a_LIBADD =
 am_libgrub_a_OBJECTS = libgrub_a-boot.$(OBJEXT) \
-	libgrub_a-builtins.$(OBJEXT) libgrub_a-common.$(OBJEXT) \
-	libgrub_a-char_io.$(OBJEXT) libgrub_a-cmdline.$(OBJEXT) \
-	libgrub_a-disk_io.$(OBJEXT) libgrub_a-gunzip.$(OBJEXT) \
-	libgrub_a-fsys_ffs.$(OBJEXT) libgrub_a-fsys_ext2fs.$(OBJEXT) \
-	libgrub_a-fsys_fat.$(OBJEXT) libgrub_a-fsys_jfs.$(OBJEXT) \
-	libgrub_a-fsys_minix.$(OBJEXT) \
+	libgrub_a-builtins.$(OBJEXT) libgrub_a-char_io.$(OBJEXT) \
+	libgrub_a-cmdline.$(OBJEXT) libgrub_a-common.$(OBJEXT) \
+	libgrub_a-disk_io.$(OBJEXT) libgrub_a-fsys_ext2fs.$(OBJEXT) \
+	libgrub_a-fsys_fat.$(OBJEXT) libgrub_a-fsys_ffs.$(OBJEXT) \
+	libgrub_a-fsys_jfs.$(OBJEXT) libgrub_a-fsys_minix.$(OBJEXT) \
 	libgrub_a-fsys_reiserfs.$(OBJEXT) \
 	libgrub_a-fsys_vstafs.$(OBJEXT) libgrub_a-fsys_xfs.$(OBJEXT) \
 	libgrub_a-fsys_affs.$(OBJEXT) \
-	libgrub_a-stage2.$(OBJEXT) libgrub_a-md5.$(OBJEXT)
+	libgrub_a-gunzip.$(OBJEXT) libgrub_a-md5.$(OBJEXT) \
+	libgrub_a-serial.$(OBJEXT) libgrub_a-stage2.$(OBJEXT) \
+	libgrub_a-terminfo.$(OBJEXT) libgrub_a-tparm.$(OBJEXT)
 libgrub_a_OBJECTS = $(am_libgrub_a_OBJECTS)
 EXTRA_PROGRAMS = nbloader.exec$(EXEEXT) pxeloader.exec$(EXEEXT) \
 	diskless.exec$(EXEEXT)
@@ -349,9 +353,10 @@ PROGRAMS = $(noinst_PROGRAMS)
 
 am_diskless_exec_OBJECTS = diskless_exec-asm.$(OBJEXT) \
 	diskless_exec-bios.$(OBJEXT) diskless_exec-boot.$(OBJEXT) \
-	diskless_exec-builtins.$(OBJEXT) diskless_exec-common.$(OBJEXT) \
+	diskless_exec-builtins.$(OBJEXT) \
 	diskless_exec-char_io.$(OBJEXT) diskless_exec-cmdline.$(OBJEXT) \
-	diskless_exec-disk_io.$(OBJEXT) diskless_exec-gunzip.$(OBJEXT) \
+	diskless_exec-common.$(OBJEXT) diskless_exec-console.$(OBJEXT) \
+	diskless_exec-disk_io.$(OBJEXT) \
 	diskless_exec-fsys_ext2fs.$(OBJEXT) \
 	diskless_exec-fsys_fat.$(OBJEXT) \
 	diskless_exec-fsys_ffs.$(OBJEXT) \
@@ -359,11 +364,12 @@ am_diskless_exec_OBJECTS = diskless_exec-asm.$(OBJEXT) \
 	diskless_exec-fsys_minix.$(OBJEXT) \
 	diskless_exec-fsys_reiserfs.$(OBJEXT) \
 	diskless_exec-fsys_vstafs.$(OBJEXT) \
-	diskless_exec-fsys_xfs.$(OBJEXT) \
+	diskless_exec-fsys_xfs.$(OBJEXT) diskless_exec-gunzip.$(OBJEXT) \
 	diskless_exec-fsys_affs.$(OBJEXT) \
-	diskless_exec-hercules.$(OBJEXT) diskless_exec-serial.$(OBJEXT) \
-	diskless_exec-smp-imps.$(OBJEXT) diskless_exec-stage2.$(OBJEXT) \
-	diskless_exec-md5.$(OBJEXT)
+	diskless_exec-hercules.$(OBJEXT) diskless_exec-md5.$(OBJEXT) \
+	diskless_exec-serial.$(OBJEXT) diskless_exec-smp-imps.$(OBJEXT) \
+	diskless_exec-stage2.$(OBJEXT) diskless_exec-terminfo.$(OBJEXT) \
+	diskless_exec-tparm.$(OBJEXT)
 diskless_exec_OBJECTS = $(am_diskless_exec_OBJECTS)
 diskless_exec_DEPENDENCIES = ../netboot/libdrivers.a
 am_e2fs_stage1_5_exec_OBJECTS = e2fs_stage1_5_exec-start.$(OBJEXT) \
@@ -428,11 +434,11 @@ nbloader_exec_DEPENDENCIES =
 am_pre_stage2_exec_OBJECTS = pre_stage2_exec-asm.$(OBJEXT) \
 	pre_stage2_exec-bios.$(OBJEXT) pre_stage2_exec-boot.$(OBJEXT) \
 	pre_stage2_exec-builtins.$(OBJEXT) \
-	pre_stage2_exec-common.$(OBJEXT) \
 	pre_stage2_exec-char_io.$(OBJEXT) \
 	pre_stage2_exec-cmdline.$(OBJEXT) \
+	pre_stage2_exec-common.$(OBJEXT) \
+	pre_stage2_exec-console.$(OBJEXT) \
 	pre_stage2_exec-disk_io.$(OBJEXT) \
-	pre_stage2_exec-gunzip.$(OBJEXT) \
 	pre_stage2_exec-fsys_ext2fs.$(OBJEXT) \
 	pre_stage2_exec-fsys_fat.$(OBJEXT) \
 	pre_stage2_exec-fsys_ffs.$(OBJEXT) \
@@ -442,10 +448,13 @@ am_pre_stage2_exec_OBJECTS = pre_stage2_exec-asm.$(OBJEXT) \
 	pre_stage2_exec-fsys_vstafs.$(OBJEXT) \
 	pre_stage2_exec-fsys_xfs.$(OBJEXT) \
 	pre_stage2_exec-fsys_affs.$(OBJEXT) \
+	pre_stage2_exec-gunzip.$(OBJEXT) \
 	pre_stage2_exec-hercules.$(OBJEXT) \
-	pre_stage2_exec-serial.$(OBJEXT) \
+	pre_stage2_exec-md5.$(OBJEXT) pre_stage2_exec-serial.$(OBJEXT) \
 	pre_stage2_exec-smp-imps.$(OBJEXT) \
-	pre_stage2_exec-stage2.$(OBJEXT) pre_stage2_exec-md5.$(OBJEXT)
+	pre_stage2_exec-stage2.$(OBJEXT) \
+	pre_stage2_exec-terminfo.$(OBJEXT) \
+	pre_stage2_exec-tparm.$(OBJEXT)
 pre_stage2_exec_OBJECTS = $(am_pre_stage2_exec_OBJECTS)
 @NETBOOT_SUPPORT_TRUE@pre_stage2_exec_DEPENDENCIES = \
 @NETBOOT_SUPPORT_TRUE@	../netboot/libdrivers.a
@@ -507,6 +516,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-char_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-cmdline.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-common.Po \
+@AMDEP_TRUE@	$(DEPDIR)/diskless_exec-console.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-disk_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-fsys_ext2fs.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-fsys_fat.Po \
@@ -523,6 +533,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-serial.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-smp-imps.Po \
 @AMDEP_TRUE@	$(DEPDIR)/diskless_exec-stage2.Po \
+@AMDEP_TRUE@	$(DEPDIR)/diskless_exec-terminfo.Po \
+@AMDEP_TRUE@	$(DEPDIR)/diskless_exec-tparm.Po \
 @AMDEP_TRUE@	$(DEPDIR)/e2fs_stage1_5_exec-bios.Po \
 @AMDEP_TRUE@	$(DEPDIR)/e2fs_stage1_5_exec-char_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/e2fs_stage1_5_exec-common.Po \
@@ -564,7 +576,10 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 @AMDEP_TRUE@	$(DEPDIR)/libgrub_a-fsys_affs.Po \
 @AMDEP_TRUE@	$(DEPDIR)/libgrub_a-gunzip.Po \
 @AMDEP_TRUE@	$(DEPDIR)/libgrub_a-md5.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libgrub_a-serial.Po \
 @AMDEP_TRUE@	$(DEPDIR)/libgrub_a-stage2.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libgrub_a-terminfo.Po \
+@AMDEP_TRUE@	$(DEPDIR)/libgrub_a-tparm.Po \
 @AMDEP_TRUE@	$(DEPDIR)/minix_stage1_5_exec-bios.Po \
 @AMDEP_TRUE@	$(DEPDIR)/minix_stage1_5_exec-char_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/minix_stage1_5_exec-common.Po \
@@ -577,6 +592,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-char_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-cmdline.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-common.Po \
+@AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-console.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-disk_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-fsys_ext2fs.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-fsys_fat.Po \
@@ -593,6 +609,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-serial.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-smp-imps.Po \
 @AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-stage2.Po \
+@AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-terminfo.Po \
+@AMDEP_TRUE@	$(DEPDIR)/pre_stage2_exec-tparm.Po \
 @AMDEP_TRUE@	$(DEPDIR)/reiserfs_stage1_5_exec-bios.Po \
 @AMDEP_TRUE@	$(DEPDIR)/reiserfs_stage1_5_exec-char_io.Po \
 @AMDEP_TRUE@	$(DEPDIR)/reiserfs_stage1_5_exec-common.Po \
@@ -650,22 +668,25 @@ clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
 libgrub_a-boot.$(OBJEXT): boot.c
 libgrub_a-builtins.$(OBJEXT): builtins.c
-libgrub_a-common.$(OBJEXT): common.c
 libgrub_a-char_io.$(OBJEXT): char_io.c
 libgrub_a-cmdline.$(OBJEXT): cmdline.c
+libgrub_a-common.$(OBJEXT): common.c
 libgrub_a-disk_io.$(OBJEXT): disk_io.c
-libgrub_a-gunzip.$(OBJEXT): gunzip.c
-libgrub_a-fsys_ffs.$(OBJEXT): fsys_ffs.c
 libgrub_a-fsys_ext2fs.$(OBJEXT): fsys_ext2fs.c
 libgrub_a-fsys_fat.$(OBJEXT): fsys_fat.c
+libgrub_a-fsys_ffs.$(OBJEXT): fsys_ffs.c
 libgrub_a-fsys_jfs.$(OBJEXT): fsys_jfs.c
 libgrub_a-fsys_minix.$(OBJEXT): fsys_minix.c
 libgrub_a-fsys_reiserfs.$(OBJEXT): fsys_reiserfs.c
 libgrub_a-fsys_vstafs.$(OBJEXT): fsys_vstafs.c
 libgrub_a-fsys_xfs.$(OBJEXT): fsys_xfs.c
 libgrub_a-fsys_affs.$(OBJEXT): fsys_affs.c
-libgrub_a-stage2.$(OBJEXT): stage2.c
+libgrub_a-gunzip.$(OBJEXT): gunzip.c
 libgrub_a-md5.$(OBJEXT): md5.c
+libgrub_a-serial.$(OBJEXT): serial.c
+libgrub_a-stage2.$(OBJEXT): stage2.c
+libgrub_a-terminfo.$(OBJEXT): terminfo.c
+libgrub_a-tparm.$(OBJEXT): tparm.c
 libgrub.a: $(libgrub_a_OBJECTS) $(libgrub_a_DEPENDENCIES) 
 	-rm -f libgrub.a
 	$(libgrub_a_AR) libgrub.a $(libgrub_a_OBJECTS) $(libgrub_a_LIBADD)
@@ -677,11 +698,11 @@ diskless_exec-asm.$(OBJEXT): asm.S
 diskless_exec-bios.$(OBJEXT): bios.c
 diskless_exec-boot.$(OBJEXT): boot.c
 diskless_exec-builtins.$(OBJEXT): builtins.c
-diskless_exec-common.$(OBJEXT): common.c
 diskless_exec-char_io.$(OBJEXT): char_io.c
 diskless_exec-cmdline.$(OBJEXT): cmdline.c
+diskless_exec-common.$(OBJEXT): common.c
+diskless_exec-console.$(OBJEXT): console.c
 diskless_exec-disk_io.$(OBJEXT): disk_io.c
-diskless_exec-gunzip.$(OBJEXT): gunzip.c
 diskless_exec-fsys_ext2fs.$(OBJEXT): fsys_ext2fs.c
 diskless_exec-fsys_fat.$(OBJEXT): fsys_fat.c
 diskless_exec-fsys_ffs.$(OBJEXT): fsys_ffs.c
@@ -691,11 +712,14 @@ diskless_exec-fsys_reiserfs.$(OBJEXT): fsys_reiserfs.c
 diskless_exec-fsys_vstafs.$(OBJEXT): fsys_vstafs.c
 diskless_exec-fsys_xfs.$(OBJEXT): fsys_xfs.c
 diskless_exec-fsys_affs.$(OBJEXT): fsys_affs.c
+diskless_exec-gunzip.$(OBJEXT): gunzip.c
 diskless_exec-hercules.$(OBJEXT): hercules.c
+diskless_exec-md5.$(OBJEXT): md5.c
 diskless_exec-serial.$(OBJEXT): serial.c
 diskless_exec-smp-imps.$(OBJEXT): smp-imps.c
 diskless_exec-stage2.$(OBJEXT): stage2.c
-diskless_exec-md5.$(OBJEXT): md5.c
+diskless_exec-terminfo.$(OBJEXT): terminfo.c
+diskless_exec-tparm.$(OBJEXT): tparm.c
 diskless.exec$(EXEEXT): $(diskless_exec_OBJECTS) $(diskless_exec_DEPENDENCIES) 
 	@rm -f diskless.exec$(EXEEXT)
 	$(LINK) $(diskless_exec_LDFLAGS) $(diskless_exec_OBJECTS) $(diskless_exec_LDADD) $(LIBS)
@@ -762,11 +786,11 @@ pre_stage2_exec-asm.$(OBJEXT): asm.S
 pre_stage2_exec-bios.$(OBJEXT): bios.c
 pre_stage2_exec-boot.$(OBJEXT): boot.c
 pre_stage2_exec-builtins.$(OBJEXT): builtins.c
-pre_stage2_exec-common.$(OBJEXT): common.c
 pre_stage2_exec-char_io.$(OBJEXT): char_io.c
 pre_stage2_exec-cmdline.$(OBJEXT): cmdline.c
+pre_stage2_exec-common.$(OBJEXT): common.c
+pre_stage2_exec-console.$(OBJEXT): console.c
 pre_stage2_exec-disk_io.$(OBJEXT): disk_io.c
-pre_stage2_exec-gunzip.$(OBJEXT): gunzip.c
 pre_stage2_exec-fsys_ext2fs.$(OBJEXT): fsys_ext2fs.c
 pre_stage2_exec-fsys_fat.$(OBJEXT): fsys_fat.c
 pre_stage2_exec-fsys_ffs.$(OBJEXT): fsys_ffs.c
@@ -776,11 +800,14 @@ pre_stage2_exec-fsys_reiserfs.$(OBJEXT): fsys_reiserfs.c
 pre_stage2_exec-fsys_vstafs.$(OBJEXT): fsys_vstafs.c
 pre_stage2_exec-fsys_xfs.$(OBJEXT): fsys_xfs.c
 pre_stage2_exec-fsys_affs.$(OBJEXT): fsys_affs.c
+pre_stage2_exec-gunzip.$(OBJEXT): gunzip.c
 pre_stage2_exec-hercules.$(OBJEXT): hercules.c
+pre_stage2_exec-md5.$(OBJEXT): md5.c
 pre_stage2_exec-serial.$(OBJEXT): serial.c
 pre_stage2_exec-smp-imps.$(OBJEXT): smp-imps.c
 pre_stage2_exec-stage2.$(OBJEXT): stage2.c
-pre_stage2_exec-md5.$(OBJEXT): md5.c
+pre_stage2_exec-terminfo.$(OBJEXT): terminfo.c
+pre_stage2_exec-tparm.$(OBJEXT): tparm.c
 pre_stage2.exec$(EXEEXT): $(pre_stage2_exec_OBJECTS) $(pre_stage2_exec_DEPENDENCIES) 
 	@rm -f pre_stage2.exec$(EXEEXT)
 	$(LINK) $(pre_stage2_exec_LDFLAGS) $(pre_stage2_exec_OBJECTS) $(pre_stage2_exec_LDADD) $(LIBS)
@@ -838,6 +865,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-cmdline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-console.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-disk_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-fsys_ext2fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-fsys_fat.Po@am__quote@
@@ -854,6 +882,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-serial.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-smp-imps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-stage2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-terminfo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/diskless_exec-tparm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/e2fs_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/e2fs_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/e2fs_stage1_5_exec-common.Po@am__quote@
@@ -895,7 +925,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-fsys_affs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-gunzip.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-md5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-serial.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-stage2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-terminfo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/libgrub_a-tparm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/minix_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/minix_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/minix_stage1_5_exec-common.Po@am__quote@
@@ -908,6 +941,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-cmdline.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-console.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-disk_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-fsys_ext2fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-fsys_fat.Po@am__quote@
@@ -924,6 +958,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-serial.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-smp-imps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-stage2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-terminfo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/pre_stage2_exec-tparm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/reiserfs_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/reiserfs_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/reiserfs_stage1_5_exec-common.Po@am__quote@
@@ -1114,18 +1150,6 @@ libgrub_a-builtins.obj: builtins.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-builtins.obj `cygpath -w builtins.c`
 
-libgrub_a-common.o: common.c
-@AMDEP_TRUE@	source='common.c' object='libgrub_a-common.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-common.Po' tmpdepfile='$(DEPDIR)/libgrub_a-common.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-common.o `test -f common.c || echo '$(srcdir)/'`common.c
-
-libgrub_a-common.obj: common.c
-@AMDEP_TRUE@	source='common.c' object='libgrub_a-common.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-common.Po' tmpdepfile='$(DEPDIR)/libgrub_a-common.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-common.obj `cygpath -w common.c`
-
 libgrub_a-char_io.o: char_io.c
 @AMDEP_TRUE@	source='char_io.c' object='libgrub_a-char_io.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-char_io.Po' tmpdepfile='$(DEPDIR)/libgrub_a-char_io.TPo' @AMDEPBACKSLASH@
@@ -1150,6 +1174,18 @@ libgrub_a-cmdline.obj: cmdline.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-cmdline.obj `cygpath -w cmdline.c`
 
+libgrub_a-common.o: common.c
+@AMDEP_TRUE@	source='common.c' object='libgrub_a-common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-common.Po' tmpdepfile='$(DEPDIR)/libgrub_a-common.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-common.o `test -f common.c || echo '$(srcdir)/'`common.c
+
+libgrub_a-common.obj: common.c
+@AMDEP_TRUE@	source='common.c' object='libgrub_a-common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-common.Po' tmpdepfile='$(DEPDIR)/libgrub_a-common.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-common.obj `cygpath -w common.c`
+
 libgrub_a-disk_io.o: disk_io.c
 @AMDEP_TRUE@	source='disk_io.c' object='libgrub_a-disk_io.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-disk_io.Po' tmpdepfile='$(DEPDIR)/libgrub_a-disk_io.TPo' @AMDEPBACKSLASH@
@@ -1161,30 +1197,6 @@ libgrub_a-disk_io.obj: disk_io.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-disk_io.Po' tmpdepfile='$(DEPDIR)/libgrub_a-disk_io.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-disk_io.obj `cygpath -w disk_io.c`
-
-libgrub_a-gunzip.o: gunzip.c
-@AMDEP_TRUE@	source='gunzip.c' object='libgrub_a-gunzip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-gunzip.Po' tmpdepfile='$(DEPDIR)/libgrub_a-gunzip.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-gunzip.o `test -f gunzip.c || echo '$(srcdir)/'`gunzip.c
-
-libgrub_a-gunzip.obj: gunzip.c
-@AMDEP_TRUE@	source='gunzip.c' object='libgrub_a-gunzip.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-gunzip.Po' tmpdepfile='$(DEPDIR)/libgrub_a-gunzip.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-gunzip.obj `cygpath -w gunzip.c`
-
-libgrub_a-fsys_ffs.o: fsys_ffs.c
-@AMDEP_TRUE@	source='fsys_ffs.c' object='libgrub_a-fsys_ffs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_ffs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_ffs.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_ffs.o `test -f fsys_ffs.c || echo '$(srcdir)/'`fsys_ffs.c
-
-libgrub_a-fsys_ffs.obj: fsys_ffs.c
-@AMDEP_TRUE@	source='fsys_ffs.c' object='libgrub_a-fsys_ffs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_ffs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_ffs.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_ffs.obj `cygpath -w fsys_ffs.c`
 
 libgrub_a-fsys_ext2fs.o: fsys_ext2fs.c
 @AMDEP_TRUE@	source='fsys_ext2fs.c' object='libgrub_a-fsys_ext2fs.o' libtool=no @AMDEPBACKSLASH@
@@ -1209,6 +1221,18 @@ libgrub_a-fsys_fat.obj: fsys_fat.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_fat.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_fat.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_fat.obj `cygpath -w fsys_fat.c`
+
+libgrub_a-fsys_ffs.o: fsys_ffs.c
+@AMDEP_TRUE@	source='fsys_ffs.c' object='libgrub_a-fsys_ffs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_ffs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_ffs.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_ffs.o `test -f fsys_ffs.c || echo '$(srcdir)/'`fsys_ffs.c
+
+libgrub_a-fsys_ffs.obj: fsys_ffs.c
+@AMDEP_TRUE@	source='fsys_ffs.c' object='libgrub_a-fsys_ffs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_ffs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_ffs.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_ffs.obj `cygpath -w fsys_ffs.c`
 
 libgrub_a-fsys_jfs.o: fsys_jfs.c
 @AMDEP_TRUE@	source='fsys_jfs.c' object='libgrub_a-fsys_jfs.o' libtool=no @AMDEPBACKSLASH@
@@ -1264,12 +1288,6 @@ libgrub_a-fsys_xfs.o: fsys_xfs.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_xfs.o `test -f fsys_xfs.c || echo '$(srcdir)/'`fsys_xfs.c
 
-libgrub_a-fsys_xfs.obj: fsys_xfs.c
-@AMDEP_TRUE@	source='fsys_xfs.c' object='libgrub_a-fsys_xfs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_xfs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_xfs.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_xfs.obj `cygpath -w fsys_xfs.c`
-
 libgrub_a-fsys_affs.o: fsys_affs.c
 @AMDEP_TRUE@	source='fsys_affs.c' object='libgrub_a-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_affs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_affs.TPo' @AMDEPBACKSLASH@
@@ -1281,6 +1299,48 @@ libgrub_a-fsys_affs.obj: fsys_affs.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_affs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_affs.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_affs.o `cygpath -w fsys_affs.c`
+
+libgrub_a-fsys_xfs.obj: fsys_xfs.c
+@AMDEP_TRUE@	source='fsys_xfs.c' object='libgrub_a-fsys_xfs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-fsys_xfs.Po' tmpdepfile='$(DEPDIR)/libgrub_a-fsys_xfs.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-fsys_xfs.obj `cygpath -w fsys_xfs.c`
+
+libgrub_a-gunzip.o: gunzip.c
+@AMDEP_TRUE@	source='gunzip.c' object='libgrub_a-gunzip.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-gunzip.Po' tmpdepfile='$(DEPDIR)/libgrub_a-gunzip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-gunzip.o `test -f gunzip.c || echo '$(srcdir)/'`gunzip.c
+
+libgrub_a-gunzip.obj: gunzip.c
+@AMDEP_TRUE@	source='gunzip.c' object='libgrub_a-gunzip.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-gunzip.Po' tmpdepfile='$(DEPDIR)/libgrub_a-gunzip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-gunzip.obj `cygpath -w gunzip.c`
+
+libgrub_a-md5.o: md5.c
+@AMDEP_TRUE@	source='md5.c' object='libgrub_a-md5.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-md5.Po' tmpdepfile='$(DEPDIR)/libgrub_a-md5.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-md5.o `test -f md5.c || echo '$(srcdir)/'`md5.c
+
+libgrub_a-md5.obj: md5.c
+@AMDEP_TRUE@	source='md5.c' object='libgrub_a-md5.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-md5.Po' tmpdepfile='$(DEPDIR)/libgrub_a-md5.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-md5.obj `cygpath -w md5.c`
+
+libgrub_a-serial.o: serial.c
+@AMDEP_TRUE@	source='serial.c' object='libgrub_a-serial.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-serial.Po' tmpdepfile='$(DEPDIR)/libgrub_a-serial.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-serial.o `test -f serial.c || echo '$(srcdir)/'`serial.c
+
+libgrub_a-serial.obj: serial.c
+@AMDEP_TRUE@	source='serial.c' object='libgrub_a-serial.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-serial.Po' tmpdepfile='$(DEPDIR)/libgrub_a-serial.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-serial.obj `cygpath -w serial.c`
 
 libgrub_a-stage2.o: stage2.c
 @AMDEP_TRUE@	source='stage2.c' object='libgrub_a-stage2.o' libtool=no @AMDEPBACKSLASH@
@@ -1294,17 +1354,29 @@ libgrub_a-stage2.obj: stage2.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-stage2.obj `cygpath -w stage2.c`
 
-libgrub_a-md5.o: md5.c
-@AMDEP_TRUE@	source='md5.c' object='libgrub_a-md5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-md5.Po' tmpdepfile='$(DEPDIR)/libgrub_a-md5.TPo' @AMDEPBACKSLASH@
+libgrub_a-terminfo.o: terminfo.c
+@AMDEP_TRUE@	source='terminfo.c' object='libgrub_a-terminfo.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-terminfo.Po' tmpdepfile='$(DEPDIR)/libgrub_a-terminfo.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-md5.o `test -f md5.c || echo '$(srcdir)/'`md5.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-terminfo.o `test -f terminfo.c || echo '$(srcdir)/'`terminfo.c
 
-libgrub_a-md5.obj: md5.c
-@AMDEP_TRUE@	source='md5.c' object='libgrub_a-md5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-md5.Po' tmpdepfile='$(DEPDIR)/libgrub_a-md5.TPo' @AMDEPBACKSLASH@
+libgrub_a-terminfo.obj: terminfo.c
+@AMDEP_TRUE@	source='terminfo.c' object='libgrub_a-terminfo.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-terminfo.Po' tmpdepfile='$(DEPDIR)/libgrub_a-terminfo.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-md5.obj `cygpath -w md5.c`
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-terminfo.obj `cygpath -w terminfo.c`
+
+libgrub_a-tparm.o: tparm.c
+@AMDEP_TRUE@	source='tparm.c' object='libgrub_a-tparm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-tparm.Po' tmpdepfile='$(DEPDIR)/libgrub_a-tparm.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-tparm.o `test -f tparm.c || echo '$(srcdir)/'`tparm.c
+
+libgrub_a-tparm.obj: tparm.c
+@AMDEP_TRUE@	source='tparm.c' object='libgrub_a-tparm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/libgrub_a-tparm.Po' tmpdepfile='$(DEPDIR)/libgrub_a-tparm.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-tparm.obj `cygpath -w tparm.c`
 
 diskless_exec-bios.o: bios.c
 @AMDEP_TRUE@	source='bios.c' object='diskless_exec-bios.o' libtool=no @AMDEPBACKSLASH@
@@ -1342,18 +1414,6 @@ diskless_exec-builtins.obj: builtins.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-builtins.obj `cygpath -w builtins.c`
 
-diskless_exec-common.o: common.c
-@AMDEP_TRUE@	source='common.c' object='diskless_exec-common.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-common.Po' tmpdepfile='$(DEPDIR)/diskless_exec-common.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-common.o `test -f common.c || echo '$(srcdir)/'`common.c
-
-diskless_exec-common.obj: common.c
-@AMDEP_TRUE@	source='common.c' object='diskless_exec-common.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-common.Po' tmpdepfile='$(DEPDIR)/diskless_exec-common.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-common.obj `cygpath -w common.c`
-
 diskless_exec-char_io.o: char_io.c
 @AMDEP_TRUE@	source='char_io.c' object='diskless_exec-char_io.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-char_io.Po' tmpdepfile='$(DEPDIR)/diskless_exec-char_io.TPo' @AMDEPBACKSLASH@
@@ -1378,6 +1438,30 @@ diskless_exec-cmdline.obj: cmdline.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-cmdline.obj `cygpath -w cmdline.c`
 
+diskless_exec-common.o: common.c
+@AMDEP_TRUE@	source='common.c' object='diskless_exec-common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-common.Po' tmpdepfile='$(DEPDIR)/diskless_exec-common.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-common.o `test -f common.c || echo '$(srcdir)/'`common.c
+
+diskless_exec-common.obj: common.c
+@AMDEP_TRUE@	source='common.c' object='diskless_exec-common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-common.Po' tmpdepfile='$(DEPDIR)/diskless_exec-common.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-common.obj `cygpath -w common.c`
+
+diskless_exec-console.o: console.c
+@AMDEP_TRUE@	source='console.c' object='diskless_exec-console.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-console.Po' tmpdepfile='$(DEPDIR)/diskless_exec-console.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-console.o `test -f console.c || echo '$(srcdir)/'`console.c
+
+diskless_exec-console.obj: console.c
+@AMDEP_TRUE@	source='console.c' object='diskless_exec-console.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-console.Po' tmpdepfile='$(DEPDIR)/diskless_exec-console.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-console.obj `cygpath -w console.c`
+
 diskless_exec-disk_io.o: disk_io.c
 @AMDEP_TRUE@	source='disk_io.c' object='diskless_exec-disk_io.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-disk_io.Po' tmpdepfile='$(DEPDIR)/diskless_exec-disk_io.TPo' @AMDEPBACKSLASH@
@@ -1389,18 +1473,6 @@ diskless_exec-disk_io.obj: disk_io.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-disk_io.Po' tmpdepfile='$(DEPDIR)/diskless_exec-disk_io.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-disk_io.obj `cygpath -w disk_io.c`
-
-diskless_exec-gunzip.o: gunzip.c
-@AMDEP_TRUE@	source='gunzip.c' object='diskless_exec-gunzip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/diskless_exec-gunzip.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-gunzip.o `test -f gunzip.c || echo '$(srcdir)/'`gunzip.c
-
-diskless_exec-gunzip.obj: gunzip.c
-@AMDEP_TRUE@	source='gunzip.c' object='diskless_exec-gunzip.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/diskless_exec-gunzip.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-gunzip.obj `cygpath -w gunzip.c`
 
 diskless_exec-fsys_ext2fs.o: fsys_ext2fs.c
 @AMDEP_TRUE@	source='fsys_ext2fs.c' object='diskless_exec-fsys_ext2fs.o' libtool=no @AMDEPBACKSLASH@
@@ -1510,6 +1582,18 @@ diskless_exec-fsys_affs.obj: fsys_affs.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.o `cygpath -w fsys_affs.c`
 
+diskless_exec-gunzip.o: gunzip.c
+@AMDEP_TRUE@	source='gunzip.c' object='diskless_exec-gunzip.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/diskless_exec-gunzip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-gunzip.o `test -f gunzip.c || echo '$(srcdir)/'`gunzip.c
+
+diskless_exec-gunzip.obj: gunzip.c
+@AMDEP_TRUE@	source='gunzip.c' object='diskless_exec-gunzip.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/diskless_exec-gunzip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-gunzip.obj `cygpath -w gunzip.c`
+
 diskless_exec-hercules.o: hercules.c
 @AMDEP_TRUE@	source='hercules.c' object='diskless_exec-hercules.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-hercules.Po' tmpdepfile='$(DEPDIR)/diskless_exec-hercules.TPo' @AMDEPBACKSLASH@
@@ -1521,6 +1605,18 @@ diskless_exec-hercules.obj: hercules.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-hercules.Po' tmpdepfile='$(DEPDIR)/diskless_exec-hercules.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-hercules.obj `cygpath -w hercules.c`
+
+diskless_exec-md5.o: md5.c
+@AMDEP_TRUE@	source='md5.c' object='diskless_exec-md5.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-md5.Po' tmpdepfile='$(DEPDIR)/diskless_exec-md5.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-md5.o `test -f md5.c || echo '$(srcdir)/'`md5.c
+
+diskless_exec-md5.obj: md5.c
+@AMDEP_TRUE@	source='md5.c' object='diskless_exec-md5.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-md5.Po' tmpdepfile='$(DEPDIR)/diskless_exec-md5.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-md5.obj `cygpath -w md5.c`
 
 diskless_exec-serial.o: serial.c
 @AMDEP_TRUE@	source='serial.c' object='diskless_exec-serial.o' libtool=no @AMDEPBACKSLASH@
@@ -1558,17 +1654,29 @@ diskless_exec-stage2.obj: stage2.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-stage2.obj `cygpath -w stage2.c`
 
-diskless_exec-md5.o: md5.c
-@AMDEP_TRUE@	source='md5.c' object='diskless_exec-md5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-md5.Po' tmpdepfile='$(DEPDIR)/diskless_exec-md5.TPo' @AMDEPBACKSLASH@
+diskless_exec-terminfo.o: terminfo.c
+@AMDEP_TRUE@	source='terminfo.c' object='diskless_exec-terminfo.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-terminfo.Po' tmpdepfile='$(DEPDIR)/diskless_exec-terminfo.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-md5.o `test -f md5.c || echo '$(srcdir)/'`md5.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-terminfo.o `test -f terminfo.c || echo '$(srcdir)/'`terminfo.c
 
-diskless_exec-md5.obj: md5.c
-@AMDEP_TRUE@	source='md5.c' object='diskless_exec-md5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-md5.Po' tmpdepfile='$(DEPDIR)/diskless_exec-md5.TPo' @AMDEPBACKSLASH@
+diskless_exec-terminfo.obj: terminfo.c
+@AMDEP_TRUE@	source='terminfo.c' object='diskless_exec-terminfo.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-terminfo.Po' tmpdepfile='$(DEPDIR)/diskless_exec-terminfo.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-md5.obj `cygpath -w md5.c`
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-terminfo.obj `cygpath -w terminfo.c`
+
+diskless_exec-tparm.o: tparm.c
+@AMDEP_TRUE@	source='tparm.c' object='diskless_exec-tparm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-tparm.Po' tmpdepfile='$(DEPDIR)/diskless_exec-tparm.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-tparm.o `test -f tparm.c || echo '$(srcdir)/'`tparm.c
+
+diskless_exec-tparm.obj: tparm.c
+@AMDEP_TRUE@	source='tparm.c' object='diskless_exec-tparm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-tparm.Po' tmpdepfile='$(DEPDIR)/diskless_exec-tparm.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-tparm.obj `cygpath -w tparm.c`
 
 e2fs_stage1_5_exec-common.o: common.c
 @AMDEP_TRUE@	source='common.c' object='e2fs_stage1_5_exec-common.o' libtool=no @AMDEPBACKSLASH@
@@ -1966,18 +2074,6 @@ pre_stage2_exec-builtins.obj: builtins.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-builtins.obj `cygpath -w builtins.c`
 
-pre_stage2_exec-common.o: common.c
-@AMDEP_TRUE@	source='common.c' object='pre_stage2_exec-common.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-common.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-common.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-common.o `test -f common.c || echo '$(srcdir)/'`common.c
-
-pre_stage2_exec-common.obj: common.c
-@AMDEP_TRUE@	source='common.c' object='pre_stage2_exec-common.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-common.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-common.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-common.obj `cygpath -w common.c`
-
 pre_stage2_exec-char_io.o: char_io.c
 @AMDEP_TRUE@	source='char_io.c' object='pre_stage2_exec-char_io.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-char_io.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-char_io.TPo' @AMDEPBACKSLASH@
@@ -2002,6 +2098,30 @@ pre_stage2_exec-cmdline.obj: cmdline.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-cmdline.obj `cygpath -w cmdline.c`
 
+pre_stage2_exec-common.o: common.c
+@AMDEP_TRUE@	source='common.c' object='pre_stage2_exec-common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-common.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-common.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-common.o `test -f common.c || echo '$(srcdir)/'`common.c
+
+pre_stage2_exec-common.obj: common.c
+@AMDEP_TRUE@	source='common.c' object='pre_stage2_exec-common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-common.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-common.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-common.obj `cygpath -w common.c`
+
+pre_stage2_exec-console.o: console.c
+@AMDEP_TRUE@	source='console.c' object='pre_stage2_exec-console.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-console.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-console.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-console.o `test -f console.c || echo '$(srcdir)/'`console.c
+
+pre_stage2_exec-console.obj: console.c
+@AMDEP_TRUE@	source='console.c' object='pre_stage2_exec-console.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-console.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-console.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-console.obj `cygpath -w console.c`
+
 pre_stage2_exec-disk_io.o: disk_io.c
 @AMDEP_TRUE@	source='disk_io.c' object='pre_stage2_exec-disk_io.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-disk_io.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-disk_io.TPo' @AMDEPBACKSLASH@
@@ -2013,18 +2133,6 @@ pre_stage2_exec-disk_io.obj: disk_io.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-disk_io.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-disk_io.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-disk_io.obj `cygpath -w disk_io.c`
-
-pre_stage2_exec-gunzip.o: gunzip.c
-@AMDEP_TRUE@	source='gunzip.c' object='pre_stage2_exec-gunzip.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-gunzip.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-gunzip.o `test -f gunzip.c || echo '$(srcdir)/'`gunzip.c
-
-pre_stage2_exec-gunzip.obj: gunzip.c
-@AMDEP_TRUE@	source='gunzip.c' object='pre_stage2_exec-gunzip.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-gunzip.TPo' @AMDEPBACKSLASH@
-@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-gunzip.obj `cygpath -w gunzip.c`
 
 pre_stage2_exec-fsys_ext2fs.o: fsys_ext2fs.c
 @AMDEP_TRUE@	source='fsys_ext2fs.c' object='pre_stage2_exec-fsys_ext2fs.o' libtool=no @AMDEPBACKSLASH@
@@ -2122,17 +2230,29 @@ pre_stage2_exec-fsys_xfs.obj: fsys_xfs.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_xfs.obj `cygpath -w fsys_xfs.c`
 
-pre_stage2_exec-fsys_affs.o: fsys_affs.c
-@AMDEP_TRUE@	source='fsys_affs.c' object='pre_stage2_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-fsys_affs.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-fsys_affs.TPo' @AMDEPBACKSLASH@
+diskless_exec-fsys_affs.o: fsys_affs.c
+@AMDEP_TRUE@	source='fsys_affs.c' object='diskless_exec-fsys_affs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-fsys_affs.Po' tmpdepfile='$(DEPDIR)/diskless_exec-fsys_affs.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_affs.o `test -f fsys_affs.c || echo '$(srcdir)/'`fsys_affs.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.o `test -f fsys_affs.c || echo '$(srcdir)/'`fsys_affs.c
 
-pre_stage2_exec-fsys_affs.obj: fsys_affs.c
-@AMDEP_TRUE@	source='fsys_affs.c' object='pre_stage2_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-fsys_affs.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-fsys_affs.TPo' @AMDEPBACKSLASH@
+diskless_exec-fsys_affs.obj: fsys_affs.c
+@AMDEP_TRUE@	source='fsys_affs.c' object='diskless_exec-fsys_affs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/diskless_exec-fsys_affs.Po' tmpdepfile='$(DEPDIR)/diskless_exec-fsys_affs.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-fsys_affs.obj `cygpath -w fsys_affs.c`
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-fsys_affs.o `cygpath -w fsys_affs.c`
+
+pre_stage2_exec-gunzip.o: gunzip.c
+@AMDEP_TRUE@	source='gunzip.c' object='pre_stage2_exec-gunzip.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-gunzip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-gunzip.o `test -f gunzip.c || echo '$(srcdir)/'`gunzip.c
+
+pre_stage2_exec-gunzip.obj: gunzip.c
+@AMDEP_TRUE@	source='gunzip.c' object='pre_stage2_exec-gunzip.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-gunzip.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-gunzip.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-gunzip.obj `cygpath -w gunzip.c`
 
 pre_stage2_exec-hercules.o: hercules.c
 @AMDEP_TRUE@	source='hercules.c' object='pre_stage2_exec-hercules.o' libtool=no @AMDEPBACKSLASH@
@@ -2145,6 +2265,18 @@ pre_stage2_exec-hercules.obj: hercules.c
 @AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-hercules.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-hercules.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-hercules.obj `cygpath -w hercules.c`
+
+pre_stage2_exec-md5.o: md5.c
+@AMDEP_TRUE@	source='md5.c' object='pre_stage2_exec-md5.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-md5.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-md5.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-md5.o `test -f md5.c || echo '$(srcdir)/'`md5.c
+
+pre_stage2_exec-md5.obj: md5.c
+@AMDEP_TRUE@	source='md5.c' object='pre_stage2_exec-md5.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-md5.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-md5.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-md5.obj `cygpath -w md5.c`
 
 pre_stage2_exec-serial.o: serial.c
 @AMDEP_TRUE@	source='serial.c' object='pre_stage2_exec-serial.o' libtool=no @AMDEPBACKSLASH@
@@ -2182,17 +2314,29 @@ pre_stage2_exec-stage2.obj: stage2.c
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-stage2.obj `cygpath -w stage2.c`
 
-pre_stage2_exec-md5.o: md5.c
-@AMDEP_TRUE@	source='md5.c' object='pre_stage2_exec-md5.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-md5.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-md5.TPo' @AMDEPBACKSLASH@
+pre_stage2_exec-terminfo.o: terminfo.c
+@AMDEP_TRUE@	source='terminfo.c' object='pre_stage2_exec-terminfo.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-terminfo.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-terminfo.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-md5.o `test -f md5.c || echo '$(srcdir)/'`md5.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-terminfo.o `test -f terminfo.c || echo '$(srcdir)/'`terminfo.c
 
-pre_stage2_exec-md5.obj: md5.c
-@AMDEP_TRUE@	source='md5.c' object='pre_stage2_exec-md5.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-md5.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-md5.TPo' @AMDEPBACKSLASH@
+pre_stage2_exec-terminfo.obj: terminfo.c
+@AMDEP_TRUE@	source='terminfo.c' object='pre_stage2_exec-terminfo.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-terminfo.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-terminfo.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-md5.obj `cygpath -w md5.c`
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-terminfo.obj `cygpath -w terminfo.c`
+
+pre_stage2_exec-tparm.o: tparm.c
+@AMDEP_TRUE@	source='tparm.c' object='pre_stage2_exec-tparm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-tparm.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-tparm.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-tparm.o `test -f tparm.c || echo '$(srcdir)/'`tparm.c
+
+pre_stage2_exec-tparm.obj: tparm.c
+@AMDEP_TRUE@	source='tparm.c' object='pre_stage2_exec-tparm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/pre_stage2_exec-tparm.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-tparm.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-tparm.obj `cygpath -w tparm.c`
 
 reiserfs_stage1_5_exec-common.o: common.c
 @AMDEP_TRUE@	source='common.c' object='reiserfs_stage1_5_exec-common.o' libtool=no @AMDEPBACKSLASH@
@@ -2620,8 +2764,6 @@ uninstall-am: uninstall-info-am uninstall-pkgdataDATA
 	mostlyclean mostlyclean-compile mostlyclean-generic tags \
 	uninstall uninstall-am uninstall-info-am uninstall-pkgdataDATA
 
-	-DFSYS_XFS=1 -DUSE_MD5_PASSWORDS=1 \
-	-DSUPPORT_SERIAL=1 -DSUPPORT_HERCULES=1 -fwritable-strings
 
 stage2_size.h: pre_stage2
 	-rm -f stage2_size.h

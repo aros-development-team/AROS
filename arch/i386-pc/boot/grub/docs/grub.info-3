@@ -1,4 +1,4 @@
-This is grub.info, produced by makeinfo version 4.0 from grub.texi.
+This is grub.info, produced by makeinfo version 4.1 from grub.texi.
 
 INFO-DIR-SECTION Kernel
 START-INFO-DIR-ENTRY
@@ -6,11 +6,13 @@ START-INFO-DIR-ENTRY
 * grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
 * grub-md5-crypt: (grub)Invoking grub-md5-crypt.        Encrypt a password
                                                         in MD5 format
+* grub-terminfo: (grub)Invoking grub-terminfo.  Generate a terminfo
+                                                command from a
+                                                terminfo name
 * mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
 END-INFO-DIR-ENTRY
 
-   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000, 2001 Free
-Software Foundation, Inc.
+   Copyright (C) 1999,2000,2001,2002 Free Software Foundation, Inc.
 
    Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -24,6 +26,123 @@ of a permission notice identical to this one.
    Permission is granted to copy and distribute translations of this
 manual into another language, under the above conditions for modified
 versions.
+
+
+File: grub.info,  Node: testload,  Next: testvbe,  Prev: setup,  Up: Command-line and menu entry commands
+
+testload
+--------
+
+ - Command: testload file
+     Read the entire contents of FILE in several different ways and
+     compares them, to test the filesystem code. The output is somewhat
+     cryptic, but if no errors are reported and the final `i=X,
+     filepos=Y' reading has X and Y equal, then it is definitely
+     consistent, and very likely works correctly subject to a
+     consistent offset error. If this test succeeds, then a good next
+     step is to try loading a kernel.
+
+
+File: grub.info,  Node: testvbe,  Next: uppermem,  Prev: testload,  Up: Command-line and menu entry commands
+
+testvbe
+-------
+
+ - Command: testvbe mode
+     Test the VESA BIOS EXTENSION mode MODE. This command will switch
+     your video card to the graphics mode, and show an endless
+     animation. Hit any key to return. See also *Note vbeprobe::.
+
+
+File: grub.info,  Node: uppermem,  Next: vbeprobe,  Prev: testvbe,  Up: Command-line and menu entry commands
+
+uppermem
+--------
+
+ - Command: uppermem kbytes
+     Force GRUB to assume that only KBYTES kilobytes of upper memory
+     are installed. Any system address range maps are discarded.
+
+     *Caution:* This should be used with great caution, and should only
+     be necessary on some old machines. GRUB's BIOS probe can pick up
+     all RAM on all new machines the author has ever heard of. It can
+     also be used for debugging purposes to lie to an OS.
+
+
+File: grub.info,  Node: vbeprobe,  Prev: uppermem,  Up: Command-line and menu entry commands
+
+vbeprobe
+--------
+
+ - Command: vbeprobe [mode]
+     Probe VESA BIOS EXTENSION information. If the mode MODE is
+     specified, show only the information about MODE. Otherwise, this
+     command lists up available VBE modes on the screen. See also *Note
+     testvbe::.
+
+
+File: grub.info,  Node: Troubleshooting,  Next: Invoking the grub shell,  Prev: Commands,  Up: Top
+
+Error messages reported by GRUB
+*******************************
+
+   This chapter describes error messages reported by GRUB when you
+encounter trouble. *Note Invoking the grub shell::, if your problem is
+specific to the grub shell.
+
+* Menu:
+
+* Stage1 errors::               Errors reported by the Stage 1
+* Stage1.5 errors::             Errors reported by the Stage 1.5
+* Stage2 errors::               Errors reported by the Stage 2
+
+
+File: grub.info,  Node: Stage1 errors,  Next: Stage1.5 errors,  Up: Troubleshooting
+
+Errors reported by the Stage 1
+==============================
+
+   The general way that the Stage 1 handles errors is to print an error
+string and then halt. Pressing `<CTRL>-<ALT>-<DEL>' will reboot.
+
+   The following is a comprehensive list of error messages for the
+Stage 1:
+
+Hard Disk Error
+     The stage2 or stage1.5 is being read from a hard disk, and the
+     attempt to determine the size and geometry of the hard disk failed.
+
+Floppy Error
+     The stage2 or stage1.5 is being read from a floppy disk, and the
+     attempt to determine the size and geometry of the floppy disk
+     failed. It's listed as a separate error since the probe sequence
+     is different than for hard disks.
+
+Read Error
+     A disk read error happened while trying to read the stage2 or
+     stage1.5.
+
+Geom Error
+     The location of the stage2 or stage1.5 is not in the portion of
+     the disk supported directly by the BIOS read calls.  This could
+     occur because the BIOS translated geometry has been changed by the
+     user or the disk is moved to another machine or controller after
+     installation, or GRUB was not installed using itself (if it was,
+     the Stage 2 version of this error would have been seen during that
+     process and it would not have completed the install).
+
+
+File: grub.info,  Node: Stage1.5 errors,  Next: Stage2 errors,  Prev: Stage1 errors,  Up: Troubleshooting
+
+Errors reported by the Stage 1.5
+================================
+
+   The general way that the Stage 1.5 handles errors is to print an
+error number in the form `Error NUM' and then halt. Pressing
+`<CTRL>-<ALT>-<DEL>' will reboot.
+
+   The error numbers correspond to the errors reported by Stage 2.
+*Note Stage2 errors::.
 
 
 File: grub.info,  Node: Stage2 errors,  Prev: Stage1.5 errors,  Up: Troubleshooting
@@ -195,6 +314,12 @@ each description):
 33 : Serial device not configured
      This error is returned if you try to change your terminal to a
      serial one before initializing any serial device.
+
+34 : No spare sectors on the disk
+     This error is returned if a disk doesn't have enough spare space.
+     This happens when you try to embed Stage 1.5 into the unused
+     sectors after the MBR, but the first partition starts right after
+     the MBR or they are used by EZ-BIOS.
 
 
 File: grub.info,  Node: Invoking the grub shell,  Next: Invoking grub-install,  Prev: Troubleshooting,  Up: Top
@@ -404,7 +529,7 @@ name.
      into/from your computer.
 
 
-File: grub.info,  Node: Invoking grub-md5-crypt,  Next: Invoking mbchk,  Prev: Invoking grub-install,  Up: Top
+File: grub.info,  Node: Invoking grub-md5-crypt,  Next: Invoking grub-terminfo,  Prev: Invoking grub-install,  Up: Top
 
 Invoking grub-md5-crypt
 ***********************
@@ -426,7 +551,31 @@ command `password' (*note password::).
      Use FILE as the grub shell.
 
 
-File: grub.info,  Node: Invoking mbchk,  Next: FAQ,  Prev: Invoking grub-md5-crypt,  Up: Top
+File: grub.info,  Node: Invoking grub-terminfo,  Next: Invoking mbchk,  Prev: Invoking grub-md5-crypt,  Up: Top
+
+Invoking grub-md5-crypt
+***********************
+
+   The program `grub-terminfo' generates a terminfo command from a
+terminfo name (*note terminfo::). The result can be used in the
+configuration file, to define escape sequences. Because GRUB assumes
+that your terminal is vt100-compatible by default, this would be useful
+only if your terminal is uncommon (such as vt52).
+
+   `grub-terminfo' accepts the following options:
+
+`--help'
+     Print a summary of the command-line options and exit.
+
+`--version'
+     Print the version information and exit.
+
+   You must specify one argument to this command. For example:
+
+     grub-terminfo vt52
+
+
+File: grub.info,  Node: Invoking mbchk,  Next: Obtaining and Building GRUB,  Prev: Invoking grub-terminfo,  Up: Top
 
 Invoking mbchk
 **************
@@ -446,187 +595,7 @@ recommend using this program before booting your own kernel by GRUB.
      Suppress all normal output.
 
 
-File: grub.info,  Node: FAQ,  Next: Obtaining and Building GRUB,  Prev: Invoking mbchk,  Up: Top
-
-Frequently asked questions
-**************************
-
-How does GNU GRUB differ from Erich's original GRUB?
-     GNU GRUB is the successor of Erich's great GRUB. He couldn't work
-     on GRUB because of some other tasks, so the current maintainers
-     OKUJI Yoshinori and Gordon Matzigkeit took over the
-     maintainership, and opened the development in order for everybody
-     to participate it.
-
-     Technically speaking, GNU GRUB has many features that are not seen
-     in the original GRUB. For example, GNU GRUB can be installed on
-     UNIX-like operating system (such as GNU/Hurd) via the grub shell
-     `/sbin/grub' (or `/usr/sbin/grub' on older systems), it supports
-     Logical Block Address (LBA) mode that solves the 1024 cylinders
-     problem, and `<TAB>' completes a file name when it's unique. Of
-     course, many bug fixes are done as well, so it is recommended to
-     use GNU GRUB.
-
-Can GRUB boot my operating system from over 8GB hard disks?
-     That depends on your BIOS and your operating system. You must make
-     sure that your drive is accessible in LBA mode. Generally, that is
-     configurable in BIOS setting utility. Read the manual for your BIOS
-     for more information.
-
-     Furthermore, some operating systems (i.e. DOS) cannot access any
-     large disk, so the problem is not solved by any kind of boot
-     loader. GNU/Hurd and GNU/Linux can surely boot from such a large
-     disk.
-
-Can I put Stage2 into a partition which is over 1024 cylinders?
-     Yes, if your BIOS supports the LBA mode.
-
-How to create a GRUB boot floppy with the menu interface?
-     The easiest way is:
-
-       1. Create filesystem in your floppy disk. For example:
-
-               $ mke2fs /dev/fd0
-
-       2. Mount it on somewhere, say, `/mnt'.
-
-       3. Copy the GRUB images to `/mnt/boot/grub'. Only `stage1',
-          `stage2' and `menu.lst' are necessary. You may not copy
-          "stage1.5"s.
-
-       4. Run the following command (substitute `/usr/sbin/grub' for
-          `/sbin/grub' if you are using an older system):
-
-               $ /sbin/grub --batch <<EOT
-               root (fd0)
-               setup (fd0)
-               quit
-               EOT
-
-How to specify a partition?
-     *Note Device syntax::.
-
-GRUB does not recognize my GNU/Hurd partition.
-     I don't know why, but the authors of FDISK programs have assigned
-     the partition type `0x63' to GNU Hurd incorrectly. A partition type
-     should mean what format is used in the partition, such as
-     filesystem and BSD slices, and should not be used to represent
-     what operating system owns the partition. So use `0x83' if the
-     partition contains ext2fs filesystem, and use `0xA5' if the
-     partition contains ffs filesystem, whether the partition owner is
-     Hurd or not. We will use `0x63' for GNU Hurd filesystem that has
-     not been implemented yet.
-
-I've installed a recent version of binutils, but GRUB still crashes.
-     Please check for the version of your binutils by this command:
-
-          ld -v
-
-     This will show two versions, but only the latter is important. If
-     the version is identical with what you have installed, the
-     installation was not bad.
-
-     Well, please try:
-
-          gcc -Wl,-v 2>&1 | grep "GNU ld"
-
-     If this is not identical with the result above, you should specify
-     the directory where you have installed binutils for the script
-     configure, like this:
-
-          ./configure --with-binutils=/usr/local/bin
-
-     If you follow the instructions above but GRUB still crashes,
-     probably there is a serious bug in GRUB. *Note Reporting bugs::.
-
-GRUB hangs up when accessing my SCSI disk.
-     Check if you have turned on the support for INT 13 extension
-     (LBA). If so, disable the support and see if GRUB can now access
-     your SCSI disk. This will make it clear that your SCSI BIOS sucks.
-
-     For now, we know the following doesn't provide working LBA mode:
-
-
-          Adaptec AIC-7880
-
-     In the case where you have such a SCSI controller unfortunately,
-     you cannot use the LBA mode, though GRUB still works fine in the
-     CHS mode (so the well-known 1024 cylinders problem comes again to
-     you).
-
-     *Caution:* Actually it has not been verified yet if this bug is
-     due to the SCSI BIOS or GRUB itself, frankly speaking. Because the
-     developers haven't seen it by their own eyes. This is why it is
-     desirable that you investigate the cause seriously if you have the
-     skill.
-
-How can I specify an arbitrary memory size to Linux?
-     Pass a `mem=' option to your Linux kernel, like this:
-
-          grub> kernel /vmlinuz mem=128M
-
-     You may pass other options in the same way. See *Note GNU/Linux::,
-     for more details.
-
-I have a separate boot partition and GRUB doesn't recognize it.
-     This is often reported as a "bug", but this is not a bug really.
-     This is a feature.
-
-     Because GRUB is a boot loader and it normally runs under no
-     operating system, it doesn't know where a partition is mounted
-     under your operating systems. So, if you have the partition
-     `/boot' and you install GRUB images into the directory
-     `/boot/grub', GRUB recognizes that the images lies under the
-     directory `/grub' but not `/boot/grub'. That's fine, since there
-     is no guarantee that all of your operating systems mount the same
-     partition as `/boot'.
-
-     There are several solutions for this situation.
-
-       1. Install GRUB into the directory `/boot/boot/grub' instead of
-          `/boot/grub'. This may sound ugly but should work fine.
-
-       2. Create a symbolic link before installing GRUB, like `cd /boot
-          && ln -s . boot'. This works only if the filesystem of the
-          boot partition supports symbolic links and GRUB supports the
-          feature as well.
-
-       3. Install GRUB with the command `install', to specify the paths
-          of GRUB images explicitly. Here is an example:
-
-               grub> root (hd0,1)
-               grub> install /grub/stage1 d (hd0) /grub/stage2 p /grub/menu.lst
-
-How to uninstall GRUB from my hard disk drive?
-     There is no concept "uninstall" in boot loaders, because if you
-     "uninstall" a boot loader, an unbootable machine would simply
-     remain. So all you need to do is overwrite another boot loader you
-     like to your disk, that is, install the boot loader without
-     uninstalling GRUB.
-
-     For example, if you want to install the boot loader for Windows,
-     just run `FDISK /MBR' on Windows. If you want to install LILO(1)
-     (*note FAQ-Footnote-1::), run `/sbin/lilo' on GNU/Linux.
-
-GRUB hangs when accessing my large IDE disk.
-     If your disk is bigger than 32GB, probably updating your mainboard
-     BIOS will solve your problem. This bug is well-known and most
-     vendors should provide fixed versions. For example, if you have
-     ASUS-P3BF, upgrading the BIOS to V1007beta1 or later can fix it.
-     Please ask your vendor, for more information.
-
-Why don't Linux, FreeBSD, NetBSD, etc. become Multiboot-compliant?
-     Please ask the relevant maintainers. If all free kernels were
-     Multiboot-compliant (*note Multiboot Specification:
-     (multiboot)Top.), the world would be an utopia...
-
-
-File: grub.info,  Node: FAQ-Footnotes,  Up: FAQ
-
-   (1) I can't imagine why you want to do such a thing, though
-
-
-File: grub.info,  Node: Obtaining and Building GRUB,  Next: Reporting bugs,  Prev: FAQ,  Up: Top
+File: grub.info,  Node: Obtaining and Building GRUB,  Next: Reporting bugs,  Prev: Invoking mbchk,  Up: Top
 
 How to obtain and build GRUB
 ****************************
@@ -634,25 +603,25 @@ How to obtain and build GRUB
      *Caution:* GRUB requires binutils-2.9.1.0.23 or later because the
      GNU assembler has been changed so that it can produce real 16bits
      machine code between 2.9.1 and 2.9.1.0.x. See
-     `http://sourceware.cygnus.com/binutils/', to obtain information on
+     `http://sources.redhat.com/binutils/', to obtain information on
      how to get the latest version.
 
    GRUB is available from the GNU alpha archive site
 `ftp://alpha.gnu.org/gnu/grub' or any of its mirrors. The file will be
-named grub-version.tar.gz. The current version is 0.90, so the file you
+named grub-version.tar.gz. The current version is 0.93, so the file you
 should grab is:
 
-   `ftp://alpha.gnu.org/gnu/grub/grub-0.90.tar.gz'
+   `ftp://alpha.gnu.org/gnu/grub/grub-0.93.tar.gz'
 
    To unbundle GRUB use the instruction:
 
-     zcat grub-0.90.tar.gz | tar xvf -
+     zcat grub-0.93.tar.gz | tar xvf -
 
-   which will create a directory called `grub-0.90' with all the
+   which will create a directory called `grub-0.93' with all the
 sources. You can look at the file `INSTALL' for detailed instructions
 on how to build and install GRUB, but you should be able to just do:
 
-     cd grub-0.90
+     cd grub-0.93
      ./configure
      make install
 
@@ -682,10 +651,10 @@ Reporting bugs
 **************
 
    This is the guideline of how to report bugs. Take a look at this list
-below before you send e-mail to <bug-grub@gnu.org>:
+below before you submit bugs:
 
-  1. Before unsettled, read this manual through and through, in
-     particular *Note FAQ::.
+  1. Before unsettled, read this manual through and through. Also, see
+     the GNU GRUB FAQ (http://www.gnu.org/software/grub/grub-faq.html).
 
   2. Always mention the information on your GRUB. The version number
      and the configuration are quite important. If you build it
@@ -726,8 +695,13 @@ below before you send e-mail to <bug-grub@gnu.org>:
      state a fact or leave it out, state it!  Reporting too many things
      is quite better than omitting an important thing.
 
-   If you realize the guideline above, send e-mail to
-<bug-grub@gnu.org>, and we will try to fix the bugs.
+   If you realize the guideline above, submit a report to the Bug
+Tracking System (http://bugcomm.enbug.org/?project=grub&mode=project).
+Alternatively, you can submit a report via electronic mail to
+<bug-grub@gnu.org>, but we strongly recommend that you use the Bug
+Tracking System, because e-mail can be passed over easily.
+
+   Once we get your report, we will try to fix the bugs.
 
 
 File: grub.info,  Node: Future,  Next: Internals,  Prev: Reporting bugs,  Up: Top
@@ -1221,6 +1195,7 @@ Index
 * md5crypt:                              md5crypt.
 * module:                                module.
 * modulenounzip:                         modulenounzip.
+* pager:                                 pager.
 * part_length:                           Filesystem interface.
 * part_start:                            Filesystem interface.
 * partnew:                               partnew.
@@ -1242,6 +1217,7 @@ Index
 * setkey:                                setkey.
 * setup:                                 setup.
 * terminal:                              terminal.
+* terminfo:                              terminfo.
 * testload:                              testload.
 * testvbe:                               testvbe.
 * tftpserver:                            tftpserver.

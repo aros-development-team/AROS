@@ -14,6 +14,9 @@ Ken Yap, January 1998
 #include "etherboot.h"
 #include "nic.h"
 #include "cards.h"
+#include "timer.h"
+
+#define	udelay(n)	waiton_timer2(((n)*TICKS_PER_MS)/1000)
 
 /* Sources of information:
 
@@ -273,12 +276,7 @@ static void setup_rx_buffers(struct nic *nic)
 		rx_cmd[2] = cur_rx_buf + RX_BUF_SIZE;
 		rx_cmd[3] = cur_rx_buf + 22;
 		rx_cmd[13] = cur_rx_buf + 0x20 + scb_base;
-#ifdef	ETHERBOOT32
 		memcpy((char *)write_ptr, (char *)rx_cmd, sizeof(rx_cmd));
-#endif
-#ifdef	ETHERBOOT16
-		memcpyf(write_ptr, (char *)rx_cmd, sizeof(rx_cmd));
-#endif
 		rx_tail = cur_rx_buf;
 		cur_rx_buf += RX_BUF_SIZE;
 	} while (cur_rx_buf <= RX_BUF_END - RX_BUF_SIZE);
@@ -287,27 +285,14 @@ static void setup_rx_buffers(struct nic *nic)
 	write_ptr = mem_start + rx_tail;
 	rx_cmd[1] = 0xC000;
 	rx_cmd[2] = rx_head;
-#ifdef	ETHERBOOT32
 	memcpy((char *)write_ptr, (char *)rx_cmd, sizeof(unsigned short) * 3);
-#endif
-#ifdef	ETHERBOOT16
-	memcpyf(write_ptr, (char *)rx_cmd, sizeof(unsigned short) * 3);
-#endif
 }
 
 static void ack_status(void)
 {
 	unsigned short	cmd, status;
-#ifdef	ETHERBOOT32
 	unsigned short	*shmem = (short *)mem_start;
-#endif
-#ifdef	ETHERBOOT16
-	unsigned short	shmem[CONFIG_CMD>>1];
-#endif
 
-#ifdef	ETHERBOOT16
-	read_mem(mem_start, shmem);
-#endif
 	cmd = (status = shmem[iSCB_STATUS>>1]) & 0xf000;
 	if (status & 0x100)		/* CU suspended? */
 		cmd |= CUC_RESUME;
@@ -320,11 +305,8 @@ static void ack_status(void)
 	if (cmd == 0)			/* Nothing to do */
 		return;
 	shmem[iSCB_CMD>>1] = cmd;
-#ifdef	ETHERBOOT16
-	memcpyf(mem_start, shmem, sizeof(shmem));
-#endif
 #if	defined(DEBUG)
-	printf("Status %x Command %x\n", status, cmd);
+	printf("Status %hX Command %hX\n", status, cmd);
 #endif
 	outb(0, ioaddr + I82586_ATTN);
 }
@@ -336,12 +318,7 @@ RESET - Reset adapter
 static void i82586_reset(struct nic *nic)
 {
 	unsigned long	time;
-#ifdef	ETHERBOOT32
 	unsigned short	*shmem = (short *)mem_start;
-#endif
-#ifdef	ETHERBOOT16
-	unsigned short	shmem[CONFIG_CMD>>1];
-#endif
 
 	/* put the card in its initial state */
 
@@ -358,16 +335,9 @@ static void i82586_reset(struct nic *nic)
 	/* Write the words at 0xfff6. */
 	/* Write the words at 0x0000. */
 	/* Fill in the station address. */
-#ifdef	ETHERBOOT32
 	memcpy((char *)(mem_end - 10), (char *)init_words, 10);
 	memcpy((char *)mem_start, (char *)&init_words[5], sizeof(init_words) - 10);
-	memcpy((char *)mem_start + SA_OFFSET, nic->node_addr, ETHER_ADDR_SIZE);
-#endif
-#ifdef	ETHERBOOT16
-	memcpyf(mem_end - 10, (char *)init_words, 10);
-	memcpyf(mem_start, (char *)&init_words[5], sizeof(init_words) - 10);
-	memcpyf(mem_start + SA_OFFSET, nic->node_addr, ETHER_ADDR_SIZE);
-#endif
+	memcpy((char *)mem_start + SA_OFFSET, nic->node_addr, ETH_ALEN);
 	setup_rx_buffers(nic);
 
 #ifdef	INCLUDE_3C507
@@ -380,14 +350,11 @@ static void i82586_reset(struct nic *nic)
 	outb(0, ioaddr + I82586_ATTN);
 	time = currticks() + TICKS_PER_SEC;	/* allow 1 second to init */
 	while (
-#ifdef	ETHERBOOT16
-			read_mem(mem_start, shmem),
-#endif
 			shmem[iSCB_STATUS>>1] == 0)
 	{
 		if (currticks() > time)
 		{
-			printf("i82586 initialisation timed out with status %x, cmd %x\n",
+			printf("i82586 initialisation timed out with status %hX, cmd %hX\n",
 					shmem[iSCB_STATUS>>1], shmem[iSCB_CMD>>1]);
 			break;
 		}
@@ -400,10 +367,7 @@ static void i82586_reset(struct nic *nic)
 	outb(0x80, ioaddr + MISC_CTRL);
 #endif
 #if	defined(DEBUG)
-#ifdef	ETHERBOOT16
-	read_mem(mem_start, shmem);
-#endif
-	printf("i82586 status %x, cmd %x\n",
+	printf("i82586 status %hX, cmd %hX\n",
 			shmem[iSCB_STATUS>>1], shmem[iSCB_CMD>>1]);
 #endif
 }
@@ -416,18 +380,10 @@ static int i82586_poll(struct nic *nic)
 	int		status;
 	unsigned short	rfd_cmd, next_rx_frame, data_buffer_addr,
 	frame_status, pkt_len;
-#ifdef	ETHERBOOT32
 	unsigned short	*shmem = (short *)mem_start + rx_head;
-#endif
-#ifdef	ETHERBOOT16
-	unsigned short	shmem[16];
-#endif
 
 	/* return true if there's an ethernet packet ready to read */
 	if (
-#ifdef	ETHERBOOT16
-			read_mem(mem_start + rx_head, shmem),
-#endif
 			((frame_status = shmem[0]) & 0x8000) == 0)
 		return (0);		/* nope */
 	rfd_cmd = shmem[1];
@@ -444,14 +400,9 @@ static int i82586_poll(struct nic *nic)
 	{
 		/* We have a frame, copy it to our buffer */
 		pkt_len &= 0x3FFF;
-#ifdef	ETHERBOOT32
 		memcpy(nic->packet, (char *)mem_start + rx_head + 0x20, pkt_len);
-#endif
-#ifdef	ETHERBOOT16
-		fmemcpy(nic->packet, mem_start + rx_head + 0x20, pkt_len);
-#endif
 		/* Only packets not from ourself */
-		if (memcmp(nic->packet + ETHER_ADDR_SIZE, nic->node_addr, ETHER_ADDR_SIZE) != 0)
+		if (memcmp(nic->packet + ETH_ALEN, nic->node_addr, ETH_ALEN) != 0)
 		{
 			nic->packetlen = pkt_len;
 			status = 1;
@@ -460,14 +411,7 @@ static int i82586_poll(struct nic *nic)
 	/* Clear the status word and set EOL on Rx frame */
 	shmem[0] = 0;
 	shmem[1] = 0xC000;
-#ifdef	ETHERBOOT16
-	memcpyf(mem_start + rx_head, shmem, sizeof(unsigned short) * 2);
-	/* Clear the EOL on previous RFD */
-	memcpyf(mem_start + rx_tail + 2, shmem, sizeof(unsigned short));
-#endif
-#ifdef	ETHERBOOT32
 	*(short *)(mem_start + rx_tail + 2) = 0;
-#endif
 	rx_tail = rx_head;
 	rx_head = next_rx_frame;
 	ack_status();
@@ -499,66 +443,35 @@ static void i82586_transmit(
 		CmdNOp,			/* Nop command */
 		TX_BUF_START+16		/* Next is myself */
 	};
-#ifdef	ETHERBOOT32
 	unsigned short	*shmem = (short *)mem_start + TX_BUF_START;
-#endif
-#ifdef	ETHERBOOT16
-	unsigned short	shmem[11];
-#endif
 
 	/* send the packet to destination */
 	/* adjust some contents */
 	type = htons(t);
-	if (s < ETH_MIN_PACKET)
-		s = ETH_MIN_PACKET;
-	tx_cmd[4] = (s + ETHER_HDR_SIZE) | 0x8000;
+	if (s < ETH_ZLEN)
+		s = ETH_ZLEN;
+	tx_cmd[4] = (s + ETH_HLEN) | 0x8000;
 	tx_cmd[6] = TX_BUF_START + 22 + scb_base;
 	bptr = mem_start + TX_BUF_START;
-#ifdef	ETHERBOOT32
 	memcpy((char *)bptr, (char *)tx_cmd, sizeof(tx_cmd));
 	bptr += sizeof(tx_cmd);
-	memcpy((char *)bptr, d, ETHER_ADDR_SIZE);
-	bptr += ETHER_ADDR_SIZE;
-	memcpy((char *)bptr, nic->node_addr, ETHER_ADDR_SIZE);
-	bptr += ETHER_ADDR_SIZE;
+	memcpy((char *)bptr, d, ETH_ALEN);
+	bptr += ETH_ALEN;
+	memcpy((char *)bptr, nic->node_addr, ETH_ALEN);
+	bptr += ETH_ALEN;
 	memcpy((char *)bptr, (char *)&type, sizeof(type));
 	bptr += sizeof(type);
 	memcpy((char *)bptr, p, s);
 	/* Change the offset in the IDLELOOP */
 	*(unsigned short *)(mem_start + IDLELOOP + 4) = TX_BUF_START;
-#endif
-#ifdef	ETHERBOOT16
-	memcpyf(bptr, (char *)tx_cmd, sizeof(tx_cmd));
-	bptr += sizeof(tx_cmd);
-	memcpyf(bptr, d, ETHER_ADDR_SIZE);
-	bptr += ETHER_ADDR_SIZE;
-	memcpyf(bptr, nic->node_addr, ETHER_ADDR_SIZE);
-	bptr += ETHER_ADDR_SIZE;
-	memcpyf(bptr, (char *)&type, sizeof(type));
-	bptr += sizeof(type);
-	memcpyf(bptr, p, s);
-	/* Change the offset in the IDLELOOP */
-	z = TX_BUF_START;
-	memcpyf(mem_start + IDLELOOP + 4, (char *)&z, sizeof(z));
-#endif
 	/* Wait for transmit completion */
 	while (
-#ifdef	ETHERBOOT16
-			read_mem(mem_start + TX_BUF_START, shmem),
-#endif
 			(shmem[0] & 0x2000) == 0)
 		;
 	/* Change the offset in the IDLELOOP back and
 	   change the final loop to point here */
-#ifdef	ETHERBOOT32
 	*(unsigned short *)(mem_start + IDLELOOP + 4) = IDLELOOP;
 	*(unsigned short *)(mem_start + TX_BUF_START + 20) = IDLELOOP;
-#endif
-#ifdef	ETHERBOOT16
-	z = IDLELOOP;
-	memcpyf(mem_start + IDLELOOP + 4, (char *)&z, sizeof(z));
-	memcpyf(mem_start + TX_BUF_START + 20, (char *)&z, sizeof(z));
-#endif
 	ack_status();
 }
 
@@ -567,22 +480,11 @@ static void i82586_transmit(
  ***************************************************************************/
 static void i82586_disable(struct nic *nic)
 {
-#ifdef	ETHERBOOT32
 	unsigned short	*shmem = (short *)mem_start;
-#endif
-#ifdef	ETHERBOOT16
-	unsigned short	shmem[CONFIG_CMD>>1];
-#endif
 
 #if	0
 	/* Flush the Tx and disable Rx. */
-#ifdef	ETHERBOOT16
-	read_mem(mem_start, shmem);
-#endif
 	shmem[iSCB_CMD>>1] = RX_SUSPEND | CUC_SUSPEND;
-#ifdef	ETHERBOOT16
-	memcpyf(mem_start, shmem, sizeof(shmem));
-#endif
 	outb(0, ioaddr + I82586_ATTN);
 #ifdef	INCLUDE_NI5210
 	outb(0, ioaddr + NI52_RESET);
@@ -618,17 +520,14 @@ static int t507_probe1(struct nic *nic, unsigned short ioaddr)
 	mem_end = mem_start + size;
 	scb_base = 65536L - size;
 	if_port = inb(ioaddr + ROM_CONFIG) & 0x80;
-	printf("\n3c507 ioaddr 0x%x, IRQ %d, mem [0x%X-0x%X], %sternal xcvr, addr ",
-		ioaddr, irq, mem_start, mem_end, if_port ? "in" : "ex");
 	/* Get station address */
 	outb(0x01, ioaddr + MISC_CTRL);
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
+	for (i = 0; i < ETH_ALEN; ++i)
 	{
-		printf("%b", nic->node_addr[i] = inb(ioaddr+i));
-		if (i < ETHER_ADDR_SIZE -1)
-			printf(":");
+		nic->node_addr[i] = inb(ioaddr+i);
 	}
-	putchar('\n');
+	printf("\n3c507 ioaddr %#hX, IRQ %d, mem [%#X-%#X], %sternal xcvr, addr %!\n",
+		ioaddr, irq, mem_start, mem_end, if_port ? "in" : "ex", nic->node_addr);
 	return (1);
 }
 
@@ -695,46 +594,28 @@ static int ni5210_probe2(void)
 
 	/* Write the words at 0xfff6. */
 	/* Write the words at 0x0000. */
-#ifdef	ETHERBOOT32
 	memcpy((char *)(mem_end - 10), (char *)init_words, 10);
 	memcpy((char *)mem_start, (char *)&init_words[5], sizeof(init_words) - 10);
 	if (*(unsigned short *)mem_start != 1)
 		return (0);
-#endif
-#ifdef	ETHERBOOT16
-	memcpyf(mem_end - 10, (char *)init_words, 10);
-	memcpyf(mem_start, (char *)&init_words[5], sizeof(init_words) - 10);
-	fmemcpy((char *)&i, mem_start, sizeof(unsigned short));
-	if (i != 1)
-		return (0);
-#endif
 	outb(0, ioaddr + NI52_RESET);
 	outb(0, ioaddr + I82586_ATTN);
+	udelay(32);
 	i = 50;
 	while (
-#ifdef	ETHERBOOT16
-		read_mem(mem_start, shmem),
-#endif
 		shmem[iSCB_STATUS>>1] == 0)
 	{
 		if (--i == 0)
 		{
-			printf("i82586 initialisation timed out with status %x, cmd %x\n",
+			printf("i82586 initialisation timed out with status %hX, cmd %hX\n",
 				shmem[iSCB_STATUS>>1], shmem[iSCB_CMD>>1]);
 			break;
 		}
 	}
 	/* Issue channel-attn -- the 82586 won't start. */
 	outb(0, ioaddr + I82586_ATTN);
-#ifdef	ETHERBOOT32
 	if (*(unsigned short *)mem_start != 0)
 		return (0);
-#endif
-#ifdef	ETHERBOOT16
-	fmemcpy((char *)&i, mem_start, sizeof(unsigned short));
-	if (i != 0)
-		return (0);
-#endif
 	return (1);
 }
 
@@ -756,16 +637,13 @@ static int ni5210_probe1(struct nic *nic)
 			break;
 	if (mem_start == 0)
 		return (0);
-	printf("\nNI5210 ioaddr 0x%x, mem [0x%X-0x%X], addr ",
-		ioaddr, mem_start, mem_end);
 	/* Get station address */
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
+	for (i = 0; i < ETH_ALEN; ++i)
 	{
-		printf("%b", nic->node_addr[i] = inb(ioaddr+i));
-		if (i < ETHER_ADDR_SIZE -1)
-			printf(":");
+		nic->node_addr[i] = inb(ioaddr+i);
 	}
-	putchar('\n');
+	printf("\nNI5210 ioaddr %#hX, mem [%#X-%#X], addr %!\n",
+		ioaddr, mem_start, mem_end, nic->node_addr);
 	return (1);
 }
 
@@ -865,46 +743,27 @@ static int exos205_probe2(void)
 
 	/* Write the words at 0xfff6. */
 	/* Write the words at 0x0000. */
-#ifdef	ETHERBOOT32
 	memcpy((char *)(mem_end - 10), (char *)init_words, 10);
 	memcpy((char *)mem_start, (char *)&init_words[5], sizeof(init_words) - 10);
 	if (*(unsigned short *)mem_start != 1)
 		return (0);
-#endif
-#ifdef	ETHERBOOT16
-	memcpyf(mem_end - 10, (char *)init_words, 10);
-	memcpyf(mem_start, (char *)&init_words[5], sizeof(init_words) - 10);
-	fmemcpy((char *)&i, mem_start, sizeof(unsigned short));
-	if (i != 1)
-		return (0);
-#endif
 	outb(0, ioaddr + EXOS205_RESET);
 	outb(0, ioaddr + I82586_ATTN);
 	i = 50;
 	while (
-#ifdef	ETHERBOOT16
-		read_mem(mem_start, shmem),
-#endif
 		shmem[iSCB_STATUS>>1] == 0)
 	{
 		if (--i == 0)
 		{
-			printf("i82586 initialisation timed out with status %x, cmd %x\n",
+			printf("i82586 initialisation timed out with status %hX, cmd %hX\n",
 				shmem[iSCB_STATUS>>1], shmem[iSCB_CMD>>1]);
 			break;
 		}
 	}
 	/* Issue channel-attn -- the 82586 won't start. */
 	outb(0, ioaddr + I82586_ATTN);
-#ifdef	ETHERBOOT32
 	if (*(unsigned short *)mem_start != 0)
 		return (0);
-#endif
-#ifdef	ETHERBOOT16
-	fmemcpy((char *)&i, mem_start, sizeof(unsigned short));
-	if (i != 0)
-		return (0);
-#endif
 	return (1);
 }
 
@@ -922,16 +781,13 @@ static int exos205_probe1(struct nic *nic)
 			break;
 	if (mem_start == 0)
 		return (0);
-	printf("\nEXOS205 ioaddr 0x%x, mem [0x%X-0x%X], addr ",
-		ioaddr, mem_start, mem_end);
 	/* Get station address */
-	for (i = 0; i < ETHER_ADDR_SIZE; ++i)
+	for (i = 0; i < ETH_ALEN; ++i)
 	{
-		printf("%b", nic->node_addr[i] = inb(ioaddr+i));
-		if (i < ETHER_ADDR_SIZE -1)
-			printf(":");
+		nic->node_addr[i] = inb(ioaddr+i);
 	}
-	putchar('\n');
+	printf("\nEXOS205 ioaddr %#hX, mem [%#X-%#X], addr %!\n",
+		ioaddr, mem_start, mem_end, nic->node_addr);
 	return (1);
 }
 

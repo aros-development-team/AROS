@@ -434,6 +434,7 @@ imps_read_config_table (unsigned start, int count)
 	  break;
 #endif
 	default:
+	  break;
 	}
       start += 8;
     }
