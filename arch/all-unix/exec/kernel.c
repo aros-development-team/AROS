@@ -25,6 +25,11 @@
 #include <proto/exec.h>
 #include <exec_pdefs.h>
 
+#define DEBUG_TT    0
+#if DEBUG_TT
+static struct Task * lastTask;
+#endif
+
 /* Don't do any debugging. At 50Hz its far too quick to read anyway :-) */
 #define NOISY	0
 
@@ -63,7 +68,7 @@ static void sighandler(int sig, sigcontext_t * sc)
     /* Map the Unix signal to an Amiga signal. */
     iv = &SysBase->IntVects[sig2tab[sig]];
 
-    if( iv->iv_Code )
+    if (iv->iv_Code)
     {
 	/*  Call it. I call with all these parameters for a reason.
 
@@ -91,7 +96,7 @@ static void sighandler(int sig, sigcontext_t * sc)
     }
 
     /* Has an interrupt told us to dispatch when leaving */
-    if( SysBase->AttnResched & 0x8000 )
+    if (SysBase->AttnResched & 0x8000)
     {
 	SysBase->AttnResched &= ~0x8000;
 
@@ -108,7 +113,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	/* Make sure that the state of the interrupts is what the task
 	   expects.
 	*/
-	if( SysBase->IDNestCnt < 0 )
+	if (SysBase->IDNestCnt < 0)
 	    SC_ENABLE(sc);
 	else
 	    SC_DISABLE(sc);
@@ -116,12 +121,20 @@ static void sighandler(int sig, sigcontext_t * sc)
 	/* Ok, the next step is to either drop back to the new task, or
 	    give it its Exception() if it wants one... */
 
-	if(SysBase->ThisTask->tc_Flags & TF_EXCEPT)
+	if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
 	{
 	    Disable();
 	    Exception();
 	    Enable();
 	}
+
+#if DEBUG_TT
+	if (lastTask != SysBase->ThisTask)
+	{
+	    fprintf (stderr, "TT %s\n", SysBase->ThisTask->tc_Node.ln_Name);
+	    lastTask = SysBase->ThisTask;
+	}
+#endif
     }
 
     /* Leave the interrupt. */
