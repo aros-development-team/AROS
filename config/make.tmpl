@@ -645,8 +645,8 @@ $(OBJDIR)/%.d : %.c
 
 #------------------------------------------------------------------------------
 %define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
-#MM includes-generate :
-includes-generate :: includes-setup $(OBJDIR)/headers.stamp \
+#MM includes-generate : setup-clib
+includes-generate :: setup includes-setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/clib/%(name)_protos.h \
             $(INCDIR)/defines/%(name).h
 	@$(NOP)
@@ -678,8 +678,8 @@ $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
 
 #------------------------------------------------------------------------------
 %define genlibincludes_arch name=$(LIBNAME) archive=$(ARCHIVE)
-#MM includes-generate :
-includes-generate :: includes-setup $(OBJDIR)/headers.stamp \
+#MM includes-generate : setup-clib
+includes-generate :: setup includes-setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/pragmas/%(name)_pragmas.h \
             $(INCDIR)/clib/%(name)_protos.h \
             $(INCDIR)/defines/%(name).h \
@@ -731,12 +731,21 @@ $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 #------------------------------------------------------------------------------
 %define genlibincludesinline name=$(LIBNAME) functions=$(ALL_FUNCTIONS) hasrt=
 #MM includes-generate : setup-clib
-includes-generate :: setup $(OBJDIR)/headers.stamp \
+includes-generate :: setup includes-setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/clib/%(name)_protos.h \
             $(INCDIR)/defines/%(name).h \
             $(INCDIR)/inline/%(name).h \
             $(INCDIR)/proto/%(name).h
 	@$(NOP)
+
+_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
+                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
+
+includes-setup : $(_MOD_INCL_DIRS)
+
+$(_MOD_INCL_DIRS) :
+	%mkdir_q $@
+
 
 FSRCS := $(foreach f,%(functions),$(f).c)
 
@@ -1150,7 +1159,7 @@ BD_STARTFILE$(BDID)  := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start
 BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
 BD_OBJS$(BDID)       := $(addsuffix .o,$(BD_STARTFILE$(BDID)) $(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
-BD_GENINCS$(BDID)    := proto/$(BD_MODNAME$(BDID)).h clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h
+BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
 BD_REFFILE$(BDID)    := %(reffile)
@@ -1239,9 +1248,20 @@ $(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)) $(BD_DEPLIBS$(BDID))
 	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) \
 	    objs=$(BD_OBJS$(BDID)) libs=$(BD_LIBS$(BDID))
 
-$(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) : $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID)))
-	@cd $(subst $(AROS_INCLUDES),$(GENINCDIR),$(dir $@)); \
-	    $(CP) $(notdir $@) $@
+$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h : $(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
+	@$(CP) $< $@
+
+$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h
+	@$(CP) $< $@
+
+$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h
+	@$(CP) $< $@
+
+$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
+	@$(CP) $< $@
+
+$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h : $(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h
+	@$(CP) $< $@
 
 ifeq ($(BD_MODTYPE$(BDID)),library)
 $(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
