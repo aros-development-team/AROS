@@ -208,7 +208,7 @@
 
 /* main.c */
 
-void Cleanup(STRPTR msg);
+void Cleanup(CONST_STRPTR msg);
 void TellGUI(LONG cmd);
 
 /* misc.c */
@@ -221,14 +221,14 @@ void SetMenuFlags(void);
 struct Node *FindListNode(struct List *list, WORD which);
 void SortInNode(struct List *list, struct Node *node);
 
-STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode);
+STRPTR GetFile(CONST_STRPTR title, CONST_STRPTR dir, BOOL savemode);
 
 /* locale.c */
 
 void InitLocale(STRPTR catname, ULONG version);
 void CleanupLocale(void);
-STRPTR MSG(ULONG id);
-VOID LocalizeLabels( STRPTR * labels);
+CONST_STRPTR MSG(ULONG id);
+VOID LocalizeLabels(CONST_STRPTR * labels);
 
 /* prefs.c */
 
