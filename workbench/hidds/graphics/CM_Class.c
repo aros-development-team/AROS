@@ -239,10 +239,8 @@ inline HIDDT_Pixel int_map_truecolor(HIDDT_Color *color, HIDDT_PixelFormat *pf)
 	#warning "int_map_truecolor assuming that SwapPixelBytes flag only set for 2-byte/16-bit pixel formats"
 
     	HIDDT_Pixel pixel = MAP_RGB(red, green, blue, pf);
-	
-	SWAPBYTES_WORD(pixel);
-	
-	color->pixval = pixel;
+			
+	color->pixval = SWAPBYTES_WORD(pixel);;
     }
     else
     {
