@@ -48,8 +48,8 @@ extern struct Library *MUIMasterBase;
 static const int __version = 1;
 static const int __revision = 1;
 
-static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg, LONG dosuper);
-static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg, LONG dosuper);
+static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg);
+static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg);
 
 /******************************************************************************/
 /******************************************************************************/
@@ -94,11 +94,11 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 
     if (newpage != data->active_page)
     {
-	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL,0);
+	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
 	data->active_page = newpage;
     	if (_flags(obj) & MADF_CANDRAW)
     	{
-	    Group_Show(cl,obj,NULL,0);
+	    Group_Show(cl,obj,NULL);
 	    MUI_Redraw(obj, MADF_DRAWOBJECT);
 	}
     }
@@ -1476,14 +1476,15 @@ mLayout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
     return 0;
 }
 
-static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg, LONG dosuper)
+static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
     struct MinList       *ChildList;
 
-    DoSuperMethodA(cl,obj,(Msg)msg);
+    /* If msg is NULL, we won't want that the super method actually gets this call */
+    if (msg) DoSuperMethodA(cl,obj,(Msg)msg);
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
@@ -1508,7 +1509,7 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg, L
     return TRUE;
 }
 
-static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg, LONG dosuper)
+static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
@@ -1535,7 +1536,10 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg, L
 	while ((child = NextObject(&cstate)))
 	    DoMethod(child, MUIM_Hide);
     }
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+
+    /* If msg is NULL, we won't want that the super method actually gets this call */
+    if (msg) return DoSuperMethodA(cl,obj,(Msg)msg);
+    return 1;
 }
 
 /*
@@ -1717,8 +1721,8 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mSetUData(cl, obj, (APTR)msg);
     case MUIM_SetUDataOnce :
 	return mSetUDataOnce(cl, obj, (APTR)msg);
-    case MUIM_Show: return Group_Show(cl, obj, (APTR)msg, 1);
-    case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg, 1);
+    case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
+    case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }

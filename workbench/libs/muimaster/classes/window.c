@@ -563,6 +563,8 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 {
     ULONG res;
 
+    if (!(_flags(ehn->ehn_Object) & MADF_CANDRAW)) return 0;
+
     if (ehn->ehn_Class)
 	res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
     else
@@ -755,7 +757,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 			else muikey = MUIKEY_RELEASE;
 		    }
 
-		    if (muikey != MUIKEY_NONE)
+		    if (muikey != MUIKEY_NONE && (_flags(ehn->ehn_Object) & MADF_CANDRAW))
 		    {
 			res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
 			if (res & MUI_EventHandlerRC_Eat) return;
