@@ -51,6 +51,7 @@ FILES	:= \
     regiontest \
     rtdemo \
     rtezrequest \
+    rtfont \
     rtlong \
     rtfile \
     rtscreen \
