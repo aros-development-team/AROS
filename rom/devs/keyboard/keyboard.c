@@ -34,7 +34,7 @@
 #include "keyboard_gcc.h"
 #endif
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 
@@ -297,8 +297,10 @@ AROS_LH1(void, beginio,
 					room for in memory pointed to by io_Data */
     struct InputEvent *event;        /* Temporary variable */
     
+    BOOL request_queued = FALSE;
     
-    D(bug("id: beginio(ioreq=%p)\n", ioreq));
+    
+    D(bug("kbd: beginio(ioreq=%p, cmd=%d)\n", ioreq, ioreq->io_Command));
     
     /* WaitIO will look into this */
     ioreq->io_Message.mn_Node.ln_Type = NT_MESSAGE;
@@ -358,6 +360,7 @@ AROS_LH1(void, beginio,
 	/* Hmm... (int) */
 	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
 	{
+	    D(bug("kbd: Bad address\n"));
 	    ioreq->io_Error = IOERR_BADADDRESS;
 	    break;
 	}
@@ -367,6 +370,7 @@ AROS_LH1(void, beginio,
 	if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
 	{
 	    ioreq->io_Error = IOERR_BADLENGTH;
+	    D(bug("kbd: Bad length\n"));
 	    break;
 	}
 	else
@@ -377,6 +381,8 @@ AROS_LH1(void, beginio,
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
+	    request_queued = TRUE;
+	    D(bug("kbd: No keypresses, putting request in queue\n"));
 /* nlorentz: This is accesed from a software interrupt, so ObtainSemaphore()
    cannot be used
 
@@ -392,6 +398,7 @@ AROS_LH1(void, beginio,
 	    Enable();
 	    break;
 	}
+	D(bug("kbd: Events ready\n"));
 	
 	event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
 	
@@ -421,6 +428,8 @@ AROS_LH1(void, beginio,
 		    }
 		}
 	    }
+	    
+	    D(bug("kbd: Adding event of code %d\n", code));
 	    
 	    event->ie_Class = IECLASS_RAWKEY;
 	    event->ie_SubClass = 0;
@@ -489,7 +498,7 @@ AROS_LH1(void, beginio,
     }
     
     /* If the quick bit is not set, send the message to the port */
-    if(!(ioreq->io_Flags & IOF_QUICK))
+    if(!(ioreq->io_Flags & IOF_QUICK) && !request_queued)
 	ReplyMsg(&ioreq->io_Message);
     
     AROS_LIBFUNC_EXIT
@@ -629,12 +638,15 @@ AROS_UFH3(VOID, sendQueuedEvents,
     /* Broadcast keys */
     struct IORequest *ioreq;
     struct List *pendingList = (struct List *)&KBBase->kb_PendingQueue;
+    
+    D(bug("Inside software irq\n"));
 
 /* nlorentz: no use since we're inside an interrupt
     ObtainSemaphore(&KBBase->kb_QueueLock);
 */
     ForeachNode(pendingList, ioreq)
     {
+        D(bug("Replying msg\n"));
  	ReplyMsg((struct Message *)&ioreq->io_Message);
 	Remove((struct Node *)ioreq);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
