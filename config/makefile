@@ -4,37 +4,33 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=$(KERNEL) $(ARCH)
+SUBDIRS=$(ARCH) $(KERNEL)
 
-all: setup $(TOP)/compiler/include/aros/config.h
+CONFIG_H = $(INCDIR)/aros/config.h
+
+all: setup
+	make subdirs TARGET=all
+
+config: setup
+	make subdirs TARGET=config
+
+setup : make-dirs $(CONFIG_H)
+	make subdirs TARGET=setup
+
+make-dirs:
+	@if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros; else true; fi
+
+subdirs :
 	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    echo "Making $(TARGET) in $(CURDIR)/$$dir..." ; \
 	    if ( cd $$dir ; \
 		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		all ) ; \
-	    then echo -n ; else exit 1 ; fi ; \
+		TARGET=$(TARGET) $(TARGET) ) ; \
+	    then true ; else exit 1 ; fi ; \
 	done
 
-config: setup $(TOP)/compiler/include/aros/config.h
-	@for dir in $(SUBDIRS) ; do \
-	    echo "Configuring in $(CURDIR)/$$dir..." ; \
-	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		config ) ; \
-	    then echo -n ; else exit 1 ; fi ; \
-	done
-
-setup:
-	@for dir in $(SUBDIRS) ; do \
-	    echo "Setting up in $(CURDIR)/$$dir..." ; \
-	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		setup ) ; \
-	    then echo -n ; else exit 1 ; fi ; \
-	done
-
-$(TOP)/compiler/include/aros/config.h: $(TOP)/configure
-	sh $(TOP)/configure -h $(TOP)/compiler/include/aros/config.h
+$(CONFIG_H): setup $(TOP)/configure
+	sh $(TOP)/configure -h $@
 
 clean:
 	-$(RM) ./machine
@@ -44,9 +40,12 @@ clean:
 	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
 		TARGET=clean clean ; \
 	done
-	$(RM) host.cfg config.h
+	$(RM) host.cfg $(CONFIG_H) $(INCDIR)/aros
 
 machine:
-	$(CC) -I$(TOP)/compiler/include -o machine machine.c
+	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/aros/include -o machine machine.c
 	./machine
 
+ifeq ("$(TARGET)","clean")
+include $(TOP)/config/host.cfg
+endif
