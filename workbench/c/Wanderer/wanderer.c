@@ -466,9 +466,9 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* The second one is a timer handler */
     data->timer_ihn.ihn_Flags = MUIIHNF_TIMER;
     /* called every second (this is only for timer input handlers) */
-    data->timer_ihn.ihn_Millis = 1000;
+    data->timer_ihn.ihn_Millis = 3000;
     /* The following method of the given should be called if the
-     * event happens (one second has passed) */
+     * event happens */
     data->timer_ihn.ihn_Object = obj;
     data->timer_ihn.ihn_Method = MUIM_Wanderer_HandleTimer;
 
