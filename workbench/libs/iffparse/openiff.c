@@ -76,7 +76,6 @@
 	    /* Valid IFF header ? */
 	    if (!err)
 	    {
-
 		/* We have now entried the chunk */
 		GetIntIH(iff)->iff_CurrentState = IFFSTATE_COMPOSITE;
 
