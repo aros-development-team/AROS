@@ -15,6 +15,7 @@ typedef struct
 {
     Node   node;
     char * value;
+    int    freevalue;
 }
 Var;
 
@@ -36,6 +37,7 @@ VarLevel;
 extern void   Var_Init PARAMS ((void));
 extern void   Var_Exit PARAMS ((void));
 extern void   Var_Set  PARAMS ((const char * name, const char * value));
+extern void   Var_SetConst PARAMS ((const char * name, const char * value));
 extern char * Var_Get  PARAMS ((const char * name));
 extern void   Var_UnSet PARAMS ((const char * name));
 extern Var  * Var_Find PARAMS ((const char * name));

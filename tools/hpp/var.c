@@ -43,7 +43,9 @@ Var_FreeLevel (VarLevel * level)
 void
 Var_Free (Var * var)
 {
-    cfree (var->value);
+    if (var->freevalue)
+	cfree (var->value);
+
     xfree (var->node.name);
     xfree (var);
 }
@@ -76,6 +78,41 @@ Var_Set (const char * name, const char * value)
 
 	var->node.name = xstrdup (name);
 	var->value     = cstrdup (value);
+	var->freevalue = 0;
+
+	AddTail (&level->vars, var);
+    }
+}
+
+void
+Var_SetConst (const char * name, const char * value)
+{
+    Var * var;
+
+#if DEBUG_SET
+    printf ("Set %s=%s\n", name, value?value:"");
+#endif
+
+    if ((var = Var_Find (name)))
+    {
+	setstr (var->value, value);
+    }
+    else
+    {
+	VarLevel * level = GetHead (&globals);
+
+	if (!level)
+	{
+	    Var_PushLevel ();
+
+	    level = GetHead (&globals);
+	}
+
+	var = new (Var);
+
+	var->node.name = xstrdup (name);
+	var->value     = (char *)value;
+	var->freevalue = 0;
 
 	AddTail (&level->vars, var);
     }
