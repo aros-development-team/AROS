@@ -100,21 +100,22 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_SYMBOL (skipping)\n"));
           while(!read_block(fh, &count, sizeof(count), funcarray, DOSBase) && count)
           {
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
             count = SWAP(count) ;
-#endif
+    	#endif
             if (Seek(fh, (count+1)*4, OFFSET_CURRENT) < 0)
               goto end;
           }
       break;
 
       case HUNK_UNIT:
+
         if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
-#if !AROS_BIG_ENDIAN
+    #if !AROS_BIG_ENDIAN
         count = SWAP(count) ;
-#endif
+    #endif
 
         count *= 4;
         if (read_block(fh, name_buf, count, funcarray, DOSBase))
@@ -131,9 +132,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           if (count == 0L)
             break;
 
-#if !AROS_BIG_ENDIAN
+    #if !AROS_BIG_ENDIAN
           count = SWAP(count) ;
-#endif
+    #endif
           count *= 4;
           if (read_block(fh, name_buf, count, funcarray, DOSBase))
             goto end;
@@ -141,9 +142,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         }
         if (read_block(fh, &numhunks, sizeof(numhunks), funcarray, DOSBase))
           goto end;
-#if !AROS_BIG_ENDIAN
+    #if !AROS_BIG_ENDIAN
         numhunks = SWAP(numhunks) ;
-#endif
+    #endif
         D(bug("\tHunk count: %ld\n", numhunks));
 
         hunktab = (struct hunk *)AllocVec(sizeof(struct hunk) * numhunks,
@@ -152,25 +153,25 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           ERROR(ERROR_NO_FREE_STORE);
         if (read_block(fh, &first, sizeof(first), funcarray, DOSBase))
           goto end;
-#if !AROS_BIG_ENDIAN
+    #if !AROS_BIG_ENDIAN
         first = SWAP(first) ;
-#endif
+    #endif
         D(bug("\tFirst hunk: %ld\n", first));
         curhunk = 0 /* first */;
         if (read_block(fh, &last, sizeof(last), funcarray, DOSBase))
           goto end;
-#if !AROS_BIG_ENDIAN
+    #if !AROS_BIG_ENDIAN
         last = SWAP(last);
-#endif
+    #endif
         D(bug("\tLast hunk: %ld\n", last));
         for (i = 0 /* first */; i < numhunks /* last */; i++)
         {
           if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
             goto end;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
           count = SWAP(count);
-#endif
+    	#endif
           tmp = count & 0xFF000000;
           count &= 0xFFFFFF;
           D(bug("\tHunk %d size: 0x%06lx bytes in ", i, count*4));
@@ -193,9 +194,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
                 goto end;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
               req = SWAP(req);
-#endif
+    	#endif
             break;
 
             default:
@@ -241,9 +242,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
           count = SWAP(count);
-#endif
+    	#endif
         D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
           segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
 
@@ -264,9 +265,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
               goto end;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
             req = SWAP(req);
-#endif
+    	#endif
           break;
 
           default:
@@ -277,8 +278,11 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
         D(bug(" memory\n"));
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
+	{
           if (read_block(fh, hunktab[curhunk].memory, count*4, funcarray, DOSBase))
             goto end;
+
+    	}
       break;
 
       case HUNK_RELOC32:
@@ -292,82 +296,90 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           if (count == 0L)
             break;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
           count = SWAP(count);
-#endif
+    	#endif
           i = count;
           if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
             goto end;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
           count = SWAP(count);
-#endif
+    	#endif
           D(bug("\tHunk #%ld:\n", count));
           while (i > 0)
           {
             if (read_block(fh, &offset, sizeof(offset), funcarray, DOSBase))
               goto end;
 
-#if !AROS_BIG_ENDIAN
+    	#if !AROS_BIG_ENDIAN
             offset = SWAP(offset);
-#endif
+    	#endif
             D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(hunktab[curhunk].memory + offset);
-#if AROS_BIG_ENDIAN
+    	#if AROS_BIG_ENDIAN
             *addr += (ULONG)(hunktab[count].memory);
-#else
-            *addr += SWAP((ULONG)(hunktab[count].memory));
-#endif
+    	#else
+            *addr = SWAP(*addr) + (ULONG)(hunktab[count].memory);
+    	#endif
             --i;
           }
         }
       break;
 
+      case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
         {
           ULONG Wordcount = 0;
+
           while (1)
           {
             ULONG *addr;
-
-            if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
+    	    UWORD word;
+	    
+	    Wordcount++;
+	    
+            if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
               goto end;
-            if (count == 0L)
+            if (word == 0L)
               break;
 
-#if !AROS_BIG_ENDIAN
-            count = SWAP(count);
-#endif
-            i = count;
-            if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
+    	#if !AROS_BIG_ENDIAN
+            word = SWAP(word);
+    	#endif
+            i = word;
+	    Wordcount++;
+            if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
               goto end;
 
-#if !AROS_BIG_ENDIAN
-            count = SWAP(count);
-#endif
+    	#if !AROS_BIG_ENDIAN
+            word = SWAP_WORD(word);
+    	#endif
+    	    count = word;
             D(bug("\tHunk #%ld:\n", count));
             while (i > 0)
             {
               Wordcount++;
               /* read a 16bit number (2 bytes) */
-              if (read_block(fh, &offset, 2, funcarray, DOSBase))
+              if (read_block(fh, &word, sizeof(word), funcarray, DOSBase))
                 goto end;
 
-#if !AROS_BIG_ENDIAN
-              offset = SWAP_WORD(offset);
-#endif
+    	    #if !AROS_BIG_ENDIAN
+              word = SWAP_WORD(word);
+    	    #endif
+    	      offset = word;
               /* offset now contains the byte offset in it`s 16 highest bits.
                  These 16 highest bits have to become the 16 lowest bits so
                  we get the word we need.  */
-              (ULONG)offset >>= ((sizeof(offset)-2)*8);
-              D(bug("\t\t0x%06lx\n", offset));
+              //(ULONG)offset >>= ((sizeof(offset)-2)*8);
+              //D(bug("\t\t0x%06lx\n", offset));
               addr = (ULONG *)(hunktab[curhunk].memory + offset);
 
-#if AROS_BIG_ENDIAN
+    	    #if AROS_BIG_ENDIAN
               *addr += (ULONG)(hunktab[count].memory);
-#else
-              *addr += SWAP((ULONG)(hunktab[count].memory));
-#endif
+    	    #else
+              *addr = SWAP(*addr) + (ULONG)(hunktab[count].memory);
+    	    #endif
               --i;
             } /* while (i > 0)*/
           } /* while (1) */
@@ -404,9 +416,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
           goto end;
 
-#if !AROS_BIG_ENDIAN
+    #if !AROS_BIG_ENDIAN
         count = SWAP(count);
-#endif
+    #endif
         D(bug("HUNK_DEBUG (%x Bytes)\n",count));
         if (Seek(fh, count * 4, OFFSET_CURRENT ) < 0 )
           goto end;
