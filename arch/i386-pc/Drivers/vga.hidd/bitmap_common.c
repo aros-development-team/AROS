@@ -162,9 +162,9 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
-    HIDDT_Pixel fg;
+    HIDDT_Pixel fg, val=0, writeMask, dest;
     unsigned char *ptr;
-    ULONG drmd;
+    HIDDT_DrawMode drmd;
 
 #ifdef OnBitmap
     int pix;
@@ -179,28 +179,21 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
     
     // handle different DrawModes
     
-    switch (drmd)
+    if (vHidd_GC_DrawMode_Copy == drmd && GC_COLMASK(msg->gc) == ~OUL)
     {
-	case vHidd_GC_DrawMode_Clear:	// Clear bitmap.
-	    fg = 0;
-	    break.;
+    } else
+    {
+	dest = *ptr;
+	writeMask = ~GC_COLMASK(msg->gc) & dest;
 	
-	case vHidd_GC_DrawMode_And:	// src AND dst
-	    fg &= *ptr;
-	    break;
+	if(drmd & 1) val = ( fg &  dest);
+	if(drmd & 2) val = ( fg & ~dest) | val;
+	if(drmd & 4) val = (~fg &  dest) | val;
+	if(drmd & 8) val = (~fg & ~dest) | val;
 	
-	case vHidd_GC_DrawMode_Xor:	// src XOR dst
-	    fg ^= *ptr;
-	    break;
-	
-	case vHidd_GC_DrawMode_Invert:	// NOT dst
-	    fg = (~fg) & 0x0f;
-	    break;
-	
-	case vHidd_GC_DrawMode_Copy:
-	default:			// no modification - put dst
+	fg = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
     }
-    	                
+    
     *ptr = (char) fg;
 
 #ifdef OnBitmap
