@@ -1573,6 +1573,34 @@ setup ::
 
 %end
 
+#----------------------------------------------------------------------------------
+# Copy an entire directory hierarchy to another place
+#
+# src: the source directory whose content will be copied
+# dst: the directory where to copy src's content. If not existing, it will be made.
+
+%define copy_dir_hier mmake=/A src=. dst=/A
+
+%(mmake)_FILES := $(shell find %(src) -path '*/CVS' -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
+%(mmake)_DIRS  := $(sort $(foreach f,$(%(mmake)_FILES),$(dir $(f))))
+
+define %(mmake)_mkdir
+$(1):
+	$(MKDIR) $$@
+endef
+
+define %(mmake)_copy
+$(2)/$(1): $(1) | $(2)/$(dir $(1))
+	$(CP) $(1) $$@
+endef
+
+#MM
+%(mmake): $(addprefix %(dst)/,$(%(mmake)_FILES))
+
+$(foreach d,$(%(mmake)_DIRS),$(eval $(call %(mmake)_mkdir,%(dst)/$d)))
+$(foreach f,$(%(mmake)_FILES),$(eval $(call %(mmake)_copy,$f,%(dst))))
+
+%end
 
 #------------------------------------------------------------------------------
 #   Copy include files into the includes directories. There are currently
