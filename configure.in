@@ -971,7 +971,7 @@ if test "$aros_target_cc_includes" = "" ; then
 	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
 		                                sed -n "s,^.*/include\(/.\+\)\+,\1,p")
 		! test -d $dir && mkdir -p $dir
-		! test -f $dir/$h && { cp $d $dir; chmod o+w $dir/$h; }
+		! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
 	    done
 	done	    
     fi
