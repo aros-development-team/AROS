@@ -93,7 +93,7 @@ StdStr_New (const char * path, const char * mode)
 	ss->closein = 0;
     }
 
-    if (strchr (mode, 'w'))
+    if (strchr (mode, 'w') || strchr (mode, 'a'))
     {
 	if (strcmp (path, "-"))
 	{
