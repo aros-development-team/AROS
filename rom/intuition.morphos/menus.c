@@ -105,14 +105,6 @@ void MH2Int_MakeMenusInactive(struct Window *win, UWORD menupick, struct Intuiti
 /**************************************************************************************************/
 /**************************************************************************************************/
 
-#if 1 /* use <clib/macros.h> MAX/MIN macros */
-#define min(a,b) MIN(a,b)
-#define max(a,b) MAX(a,b)
-#else
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#endif
-
 void GetMenuBox(struct Window *win, struct MenuItem *item,
                 WORD *xmin, WORD *ymin, WORD *xmax, WORD *ymax)
 {
