@@ -225,7 +225,7 @@ const struct Resident resident=
 
 const char name[]="ffs.handler";
 
-const char version[]="$VER: ffs-handler 41.2 (9.10.97)\n\015";
+const char version[]="$VER: ffs-handler 41.2 (9.10.97)\r\n";
 
 const APTR inittabl[4]=
 {

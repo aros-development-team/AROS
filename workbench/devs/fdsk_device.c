@@ -60,7 +60,7 @@ const struct Resident resident=
 
 const char name[]="fdsk.device";
 
-const char version[]="$VER: file-disk device 41.1 (10.9.96)\n\015";
+const char version[]="$VER: file-disk device 41.1 (10.9.96)\r\n";
 
 const APTR inittabl[4]=
 {

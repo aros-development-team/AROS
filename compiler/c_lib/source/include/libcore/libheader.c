@@ -115,7 +115,7 @@ struct Resident const ALIGNED LC_RESIDENTNAME =
     NT_TYPE,
     LC_RESIDENTPRI,
     (char *) &LC_BUILDNAME(LibName)[0],
-    (char *) &LC_BUILDNAME(LibID)[0],
+    (char *) &LC_BUILDNAME(LibID)[6],
     (APTR) &LC_BUILDNAME(InitTab)
 };
 

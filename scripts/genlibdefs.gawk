@@ -88,7 +88,7 @@ END {
     print "#define LIBVERSION     "version
     print "#define LIBREVISION    "revision
     print "#define BASENAME       "basename
-    print "#define VERSION        \"$VER: "libname" "version"."revision" ("date")\\n\\r\""
+    print "#define VERSION        \"$VER: "libname" "version"."revision" ("date")\\r\\n\""
     print "#define END            "basename"_end"
     print "#define FUNCTABLE      "basename"_functable"
 }

@@ -92,7 +92,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.2 (14.7.1997)\n\015";
+static const char version[]="$VER: emul_handler 41.2 (14.7.1997)\r\n";
 
 static const APTR inittabl[4]=
 {

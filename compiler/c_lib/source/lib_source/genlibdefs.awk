@@ -186,7 +186,7 @@ END {
     print "#define REVISION_NUMBER  "revision
     print "#define BASENAME         "basename
     print "#define BASENAME_STRING  \""basename"\""
-    print "#define VERSION_STRING   \"$VER: "libname" "version"."revision" ("date")\\n\\r\""
+    print "#define VERSION_STRING   \"$VER: "libname" "version"."revision" ("date")\\r\\n\""
     print "#define LIBEND           "basename"_end"
     print "#define LIBFUNCTABLE     "basename"_functable"
     print "#define COPYRIGHT_STRING \""copyright"\""

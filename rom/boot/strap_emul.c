@@ -35,7 +35,7 @@ const struct Resident boot_resident =
     NT_PROCESS,
     -50,
     "Boot_Strap",
-    "AROS Boot Strap (Emulated) 41.1 (24.8.1997)",
+    "AROS Boot Strap (Emulated) 41.1 (24.8.1997)\r\n",
     (APTR)&boot_init
 };
 

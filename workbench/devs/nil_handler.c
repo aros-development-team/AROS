@@ -53,7 +53,7 @@ const struct Resident nil_handler_resident=
 
 static const char name[]="nil.handler";
 
-static const char version[]="$VER: nil-handler 41.1 (8.6.96)\n\015";
+static const char version[]="$VER: nil-handler 41.1 (8.6.96)\r\n";
 
 static const APTR inittabl[4]=
 {

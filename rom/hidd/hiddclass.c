@@ -53,7 +53,7 @@ const struct Resident HIDD_resident =
 };
 
 static const UBYTE name[] = "hiddclass";
-static const UBYTE version[] = "hiddclass 41.1 (23.10.1997)";
+static const UBYTE version[] = "hiddclass 41.1 (23.10.1997)\r\n";
 
 static const char unknown[] = "--unknown device--";
 
