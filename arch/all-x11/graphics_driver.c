@@ -12,8 +12,8 @@
 #include <graphics/rastport.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
-#include <clib/graphics_protos.h>
-#include <clib/aros_protos.h>
+#include <proto/graphics.h>
+#include <proto/aros.h>
 #include "graphics_intern.h"
 
 #define static	/* nothing */

@@ -16,11 +16,11 @@
 #include <utility/tagitem.h>
 #include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
-#include <clib/exec_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/aros_protos.h>
-#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/aros.h>
+#include <proto/alib.h>
 #include "intuition_intern.h"
 #include "gadgets.h"
 #include "propgadgets.h"
