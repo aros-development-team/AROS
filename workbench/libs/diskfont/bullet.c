@@ -28,6 +28,13 @@
 
 /****************************************************************************************/
 
+/* bold -> {OT_EmboldenX, 0xE75}, {OT_EmboldenY, 0x99E} */
+/* italic -> {OT_ShearSin, 0x4690}, {OT_ShearCos, 0xF615} */
+
+/* only if OT_InhibitAlgoStyle has corresponding bit cleared! */
+
+/****************************************************************************************/
+
 STRPTR OTAG_MakeFileName(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
     STRPTR  retval;
@@ -158,21 +165,21 @@ UBYTE OTAG_GetFontStyle(struct OTagList *otaglist, struct DiskfontBase_intern *D
 {
     UBYTE style = 0;
 
-    /* A font gets FSF_BOLD if OT_StemWeight >= 0x90 */
+    /* A font becomes FSF_BOLD if OT_StemWeight >= 0x90 */
     
     if (GetTagData(OT_StemWeight, 0, otaglist->tags) >= 0x90)
     {
     	style |= FSF_BOLD;
     }
 
-    /* A font gets FSF_ITALIC if OT_SlantStyle != OTS_Upright */
+    /* A font becomes FSF_ITALIC if OT_SlantStyle != OTS_Upright */
     
     if (GetTagData(OT_SlantStyle, OTS_Upright, otaglist->tags) != OTS_Upright)
     {
     	style |= FSF_ITALIC;
     }
 
-    /* A font gets FSF_EXTENDED if OT_HorizStyle >= 0xA0 */
+    /* A font becomes FSF_EXTENDED if OT_HorizStyle >= 0xA0 */
     
     if (GetTagData(OT_HorizStyle, 0, otaglist->tags) >= 0xA0)
     {
@@ -180,6 +187,28 @@ UBYTE OTAG_GetFontStyle(struct OTagList *otaglist, struct DiskfontBase_intern *D
     }
     
     return style;
+}
+
+/****************************************************************************************/
+
+UBYTE OTAG_GetSupportedStyles(struct OTagList *otaglist,
+    	    	    	      struct DiskfontBase_intern *DiskfontBase)
+{
+    UBYTE inhibit, supported;
+    
+    #define STYLES (FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED)
+    
+    /*
+    ** If a style bit is set in OT_InhibitAlgoStyle, then this
+    ** style cannot be handled/calculated/created by the font engine.
+    **   
+    ** If it is, then the font engine can handle/calculate/create it
+    */
+       
+    inhibit = GetTagData(OT_InhibitAlgoStyle, 0, otaglist->tags);
+    supported = (inhibit & STYLES) ^ STYLES;
+    
+    return supported;
 }
 
 /****************************************************************************************/
@@ -652,6 +681,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     
     LONG    	    	    gfxwidth, spacewidth, xdpi, ydpi;
     WORD    	    	    lochar, hichar, baseline;
+    UBYTE   	    	    fontstyle, supportedstyle;
     
     enginename = (STRPTR)GetTagData(OT_Engine, NULL, otag->tags);
     if (!enginename) return NULL;
@@ -679,6 +709,39 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     	CloseEngine(ge);
     	CloseLibrary(BulletBase);
     	return NULL;
+    }
+    
+    fontstyle = OTAG_GetFontStyle(otag, DiskfontBase);
+    supportedstyle = OTAG_GetSupportedStyles(otag, DiskfontBase);
+    
+    if ((reqattr->tta_Style & FSF_BOLD) && !(fontstyle & FSF_BOLD) && (supportedstyle & FSF_BOLD))
+    {
+    	struct TagItem bold_tags[] =
+	{
+	    {OT_EmboldenX, 0xE75},
+	    {OT_EmboldenY, 0x99E},
+	    {TAG_DONE	    	}
+	};
+	
+	if (SetInfoA(ge, bold_tags) == OTERR_Success)
+	{
+	    fontstyle |= FSF_BOLD;
+	}
+    }
+    
+    if ((reqattr->tta_Style & FSF_ITALIC) && !(fontstyle & FSF_ITALIC) && (supportedstyle & FSF_ITALIC))
+    {
+    	struct TagItem italic_tags[] =
+	{
+	    {OT_ShearSin, 0x4690},
+	    {OT_ShearCos, 0xF615},
+	    {TAG_DONE	    	}
+	};
+	
+	if (SetInfoA(ge, italic_tags) == OTERR_Success)
+	{
+	    fontstyle |= FSF_ITALIC;
+	}
     }
     
     gm = (struct GlyphMap **)AllocVec(sizeof(struct GlyhpMap *) * 257, MEMF_ANY | MEMF_CLEAR);
@@ -731,7 +794,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     #warning maybe should do 64 bit calculations (long long)
     spacewidth = spacewidth * attr->tta_YSize / 250 * xdpi / 2540;
 
-    dfh->dfh_TF.tf_Style    = OTAG_GetFontStyle(otag, DiskfontBase);
+    dfh->dfh_TF.tf_Style    = fontstyle;
     dfh->dfh_TF.tf_Flags    = OTAG_GetFontFlags(otag, DiskfontBase) & ~FPF_ROMFONT;
     dfh->dfh_TF.tf_LoChar   = lochar;
     dfh->dfh_TF.tf_HiChar   = hichar;

@@ -506,37 +506,47 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    {
 	    	retval = FH_SCANFINISHED;
 
-	    	/* In case of an outline font, return a perfect
-		   matching (for what fontheight is concerned)
-		   outline entry, unless a bitmap/font entry
-		   of the same size already exists. */
+	    	/*
+		** In case of an outline font, return also a perfect
+		** matching outline entry.
+		*/
 		   
 	    	if ((index == fdh->NumEntries) && 
 		    (fdh->ContentsID == OFCH_ID) &&
 		    (fdh->OTagList))
 		{
-		    UWORD i;
+		    UBYTE supportedstyles;
 		    
-		    for(i = 0; i < fdh->NumEntries; i++)
+		    fhc->fhc_DestTAttr.tta_Name  = fdh->OTagList->filename;
+		    fhc->fhc_DestTAttr.tta_YSize = fhc->fhc_ReqAttr->tta_YSize;
+		    fhc->fhc_DestTAttr.tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
+		    fhc->fhc_DestTAttr.tta_Style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
+		    fhc->fhc_DestTAttr.tta_Tags  = NULL;
+
+    	    	    if (fhc->fhc_ReqAttr->tta_Style & FSF_TAGGED)
 		    {
-		    	if (fdh->TAttrArray[i].tta_YSize == fhc->fhc_ReqAttr->tta_YSize)
-			{
-			    break;
-			}
+		    	fhc->fhc_DestTAttr.tta_Style |= FSF_TAGGED;
+			fhc->fhc_DestTAttr.tta_Tags  = fhc->fhc_ReqAttr->tta_Tags;
 		    }
 		    
-		    if (i == fdh->NumEntries)
+		    supportedstyles = OTAG_GetSupportedStyles(fdh->OTagList, DiskfontBase);
+
+		    if ((fhc->fhc_ReqAttr->tta_Style & FSF_BOLD) &&
+		        !(fhc->fhc_DestTAttr.tta_Style & FSF_BOLD) &&
+			(supportedstyles & FSF_BOLD))
 		    {
-		    	fhc->fhc_DestTAttr.tta_Name  = fdh->OTagList->filename;
-		    	fhc->fhc_DestTAttr.tta_YSize = fhc->fhc_ReqAttr->tta_YSize;
-			fhc->fhc_DestTAttr.tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
-			fhc->fhc_DestTAttr.tta_Style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
-			fhc->fhc_DestTAttr.tta_Tags  = NULL;
-			
-			retval = FH_SUCCESS;
-			index++;
+		    	fhc->fhc_DestTAttr.tta_Style |= FSF_BOLD;
 		    }
 		    
+		    if ((fhc->fhc_ReqAttr->tta_Style & FSF_ITALIC) &&
+		        !(fhc->fhc_DestTAttr.tta_Style & FSF_ITALIC) &&
+			(supportedstyles & FSF_ITALIC))
+		    {
+		    	fhc->fhc_DestTAttr.tta_Style |= FSF_ITALIC;
+		    }
+		    
+		    retval = FH_SUCCESS;
+		    index++;
 		}
 		
     	    } /* if (index >= fdh->NumEntries) */

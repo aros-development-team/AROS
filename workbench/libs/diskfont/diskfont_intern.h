@@ -259,6 +259,7 @@ VOID OTAG_FreeFileName(STRPTR, struct DiskfontBase_intern *);
 struct OTagList *OTAG_GetFile(STRPTR, struct DiskfontBase_intern *);
 VOID OTAG_KillFile(struct OTagList *, struct DiskfontBase_intern *);
 UBYTE OTAG_GetFontStyle(struct OTagList *, struct DiskfontBase_intern *);
+UBYTE OTAG_GetSupportedStyles(struct OTagList *, struct DiskfontBase_intern *);
 UBYTE OTAG_GetFontFlags(struct OTagList *, struct DiskfontBase_intern *);
 struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, struct OTagList *, struct DiskfontBase_intern *);
 
