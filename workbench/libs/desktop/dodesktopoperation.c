@@ -29,7 +29,7 @@
 
         #include <proto/desktop.h>
 
-        AROS_LH2(ULONG, DoDesktopOperation,
+        AROS_LH2(ULONG, DoDesktopOperationA,
      /*
         SYNOPSIS 
       */
@@ -125,4 +125,4 @@
     return result;
 
     AROS_LIBFUNC_EXIT
-} /* DoDesktopOperation */
+} /* DoDesktopOperationA */
