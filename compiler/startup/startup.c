@@ -20,6 +20,8 @@
 
 #include "etask.h"
 
+THIS_PROGRAM_HANDLES_SYMBOLSETS
+
 /* Don't define symbols before the entry point. */
 extern struct ExecBase  *SysBase;
 extern struct WBStartup *WBenchMsg;

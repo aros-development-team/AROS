@@ -27,6 +27,8 @@
 #include "__arosc_privdata.h"
 #include "arosc_init.h"
 
+THIS_PROGRAM_HANDLES_SYMBOLSETS
+
 extern const char name[];
 extern const char version[];
 extern const APTR inittabl[4];
