@@ -35,6 +35,7 @@ void __showerror(int code, char *title, char *format, ...)
 	{
 	    PutStr(title);
 	    PutStr(": ");
+#warning This next line might break on bizarre architectures.
 	    VPrintf(format, args);
 	    PutStr("\n");
         }
