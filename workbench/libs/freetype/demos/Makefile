@@ -2,28 +2,39 @@ all: exes
 
 ####################################################################
 #
-# TOP is the directory where the main FreeType source is found,
+# The `space' variable is used to avoid trailing spaces in defining the
+# `T' variable later.
+#
+empty :=
+space := $(empty) $(empty)
+
+
+####################################################################
+#
+# TOP_DIR is the directory where the main FreeType source is found,
 # as well as the 'config.mk' file
 #
-# TOP2 is the directory is the top of the demonstration
+# TOP_DIR_2 is the directory is the top of the demonstration
 # programs directory
 #
 
-ifndef TOP
-  TOP := ..
+ifndef TOP_DIR
+  TOP_DIR := ../freetype2
 endif
 
-ifndef TOP2
-  TOP2 := $(TOP)/demos
+ifndef TOP_DIR_2
+  TOP_DIR_2 := .
 endif
+
 
 ######################################################################
 #
 # MY_CONFIG_MK points to the current "config.mk" to use. It is
-# defined by default as $(TOP)/config.mk
+# defined by default as $(TOP_DIR)/config.mk
 #
 ifndef CONFIG_MK
-  CONFIG_MK := $(TOP)/config.mk
+  PROJECT   := freetype
+  CONFIG_MK := $(TOP_DIR)/config.mk
 endif
 
 ####################################################################
@@ -39,7 +50,7 @@ ifdef no_config_mk
   exes:
 	  @echo Please compile the library before the demo programs!
   clean distclean:
-	  @echo "I need \`$(TOP)/config.mk' to do that!"
+	  @echo "I need \`$(TOP_DIR)/config.mk' to do that!"
 else
 
   ####################################################################
@@ -54,36 +65,65 @@ else
   #
   # Define a few important variables now
   #
-  TOP_  := $(TOP)$(SEP)
-  TOP2_ := $(TOP2)$(SEP)
-  SRC_  := $(TOP)$(SEP)src$(SEP)
+  ifeq ($(PLATFORM),unix)
+    # without absolute paths libtool fails
+    TOP_DIR   := $(shell cd $(TOP_DIR); pwd)
+    TOP_DIR_2 := $(shell cd $(TOP_DIR_2); pwd)
+    BIN_      := $(TOP_DIR_2)$(SEP)bin$(SEP)
+    OBJ_      := $(TOP_DIR_2)$(SEP)obj$(SEP)
+  else
+    BIN_ := bin$(SEP)
+    OBJ_ := obj$(SEP)
+  endif
 
-  BIN_ := bin$(SEP)
-  OBJ_ := obj$(SEP)
+  TOP_DIR_   := $(TOP_DIR)$(SEP)
+  TOP_DIR_2_ := $(TOP_DIR_2)$(SEP)
+  SRC_       := $(TOP_DIR)$(SEP)src$(SEP)
 
   GRAPH_DIR := graph
 
-  ifeq ($(TOP),..)
+  ifeq ($(TOP_DIR),..)
     SRC_DIR := src
   else
-    SRC_DIR := $(TOP2_)src
+    SRC_DIR := $(TOP_DIR_2_)src
   endif
 
   SRC_DIR_ := $(SRC_DIR)$(SEP)
 
-  FT_INCLUDES := $(BUILD) $(TOP_)config $(TOP_)include $(SRC_)base $(SRC_DIR)
-  TT_INCLUDES := $(SRC_)shared $(SRC_)truetype
-  T1_INCLUDES := $(SRC_)shared $(SRC_)type1
+  FT_INCLUDES := $(BUILD) $(TOP_DIR_)include $(SRC_) $(SRC_DIR)
 
-  COMPILE    = $(CC) $(CFLAGS) $(INCLUDES:%=$I%)
-  FTLIB     := $(TOP_)$(LIB_DIR)$(SEP)$(LIBRARY).$A
+  COMPILE = $(CC) $(CFLAGS) $(INCLUDES:%=$I%)
+
+  FTLIB := $(LIB_DIR)$(SEP)$(LIBRARY).$A
+
+  # "-lm" is required to compile on some Unix systems
+  #
+  ifeq ($(PLATFORM),unix)
+    MATH := -lm
+  endif
+
+  ifeq ($(PLATFORM),unixdev)
+    MATH := -lm
+  endif
 
   # the default commands used to link the executables. These can
-  # be re-defined for platform-specific stuff..
+  # be re-defined for platform-specific stuff.
   #
-  LINK = $(CC) $T$@ $< $(FTLIB) $(EFENCE) $(LDFLAGS)
+  ifeq ($(PLATFORM),unix)
+    CC   = $(CCraw)
+    LINK = $(BUILD)/libtool --mode=link $(CC) $T$@ $< \
+           $(LDFLAGS) $(FTLIB) $(EFENCE)
+  else
+    ifeq ($(PLATFORM),unixdev)
+      LINK = $(CC) $T$@ $< $(FTLIB) $(EFENCE) -lm $(LDFLAGS)
+    else
+      LINK = $(CC) $T$@ $< $(FTLIB) $(EFENCE) $(LDFLAGS)
+    endif
+  endif
+  
   COMMON_LINK = $(LINK) $(COMMON_OBJ)
   GRAPH_LINK  = $(COMMON_LINK) $(GRAPH_LIB)
+  GRAPH_LINK2 = $(GRAPH_LINK) $(EXTRA_GRAPH_OBJS)
 
   .PHONY: exes clean distclean
 
@@ -113,8 +153,8 @@ else
   ifdef DOSLIKE
 
     clean_demo:
-	    -del obj\*.$O 2> nul
-	    -del $(subst /,\,$(TOP2))\src\*.bak 2> nul
+	    -del obj\*.$(SO) 2> nul
+	    -del $(subst /,\,$(TOP_DIR_2))\src\*.bak 2> nul
 
     distclean_demo: clean_demo
 	    -del obj\*.lib 2> nul
@@ -123,13 +163,17 @@ else
   else
 
     clean_demo:
-	    -$(DELETE) $(OBJ_)*.$O
+	    -$(DELETE) $(OBJ_)*.$(SO)
 	    -$(DELETE) $(SRC_)*.bak graph$(SEP)*.bak
 	    -$(DELETE) $(SRC_)*~ graph$(SEP)*~
 
     distclean_demo: clean_demo
 	    -$(DELETE) $(EXES:%=$(BIN_)%$E)
 	    -$(DELETE) $(GRAPH_LIB)
+    ifeq ($(PLATFORM),unix)
+	      -$(DELETE) $(BIN_).libs/*
+	      -$(DELDIR) $(BIN_).libs
+    endif
 
   endif
 
@@ -151,11 +195,17 @@ else
   #
   # The list of demonstration programs to build.
   #
-  EXES := ftlint ftview fttimer compos ftstring
+  EXES := ftlint ftmemchk ftdump testnames fttimer ftbench
 
-  ifneq ($(findstring $(PLATFORM),os2 unix win32),)
-    EXES += ttdebug
-  endif
+  # Comment out the next line if you don't have a graphics subsystem.
+  EXES += ftview ftmulti ftstring
+
+  # Only uncomment the following lines if the truetype driver was
+  # compiled with TT_CONFIG_OPTION_BYTECODE_INTERPRETER defined.
+  #
+  #  ifneq ($(findstring $(PLATFORM),os2 unix win32),)
+  #    EXES += ttdebug
+  #  endif
 
   exes: $(EXES:%=$(BIN_)%$E)
 
@@ -166,7 +216,7 @@ else
   #
   # Rules for compiling object files for text-only demos
   #
-  COMMON_OBJ := $(OBJ_)common.$O
+  COMMON_OBJ := $(OBJ_)common.$(SO)
   $(COMMON_OBJ): $(SRC_DIR_)common.c
   ifdef DOSLIKE
 	  $(COMPILE) $T$@ $< $DEXPAND_WILDCARDS 
@@ -175,45 +225,46 @@ else
   endif
 
 
-  $(OBJ_)%.$O: $(SRC_DIR_)%.c $(FTLIB)
+  $(OBJ_)%.$(SO): $(SRC_DIR_)%.c $(FTLIB)
 	  $(COMPILE) $T$@ $<
 
-  $(OBJ_)ftlint.$O: $(SRC_DIR_)ftlint.c
+  $(OBJ_)ftlint.$(SO): $(SRC_DIR_)ftlint.c
 	  $(COMPILE) $T$@ $<
 
-  $(OBJ_)compos.$O: $(SRC_DIR_)compos.c
+  $(OBJ_)ftbench.$(SO): $(SRC_DIR_)ftbench.c
+	  $(COMPILE) $T$@ $< $(EXTRAFLAGS)
+
+  $(OBJ_)compos.$(SO): $(SRC_DIR_)compos.c
 	  $(COMPILE) $T$@ $<
 
-  $(OBJ_)ftgrays2.$O: $(SRC_DIR_)ftgrays2.c
+  $(OBJ_)ftmemchk.$(SO): $(SRC_DIR_)ftmemchk.c
 	  $(COMPILE) $T$@ $<
 
-  $(OBJ_)ftrast.$O: $(SRC_DIR_)ftrast.c
+  $(OBJ_)fttry.$(SO): $(SRC_DIR_)fttry.c
 	  $(COMPILE) $T$@ $<
 
-  $(OBJ_)ftrast2.$O: $(SRC_DIR_)ftrast2.c
+  $(OBJ_)ftdump.$(SO): $(SRC_DIR_)ftdump.c
 	  $(COMPILE) $T$@ $<
 
-  $(OBJ_)fttry.$O: $(SRC_DIR_)fttry.c
+  $(OBJ_)testnames.$(SO): $(SRC_DIR_)testnames.c
 	  $(COMPILE) $T$@ $<
 
 
-  $(OBJ_)ftview.$O: $(SRC_DIR_)ftview.c $(GRAPH_LIB)
+  $(OBJ_)ftview.$(SO): $(SRC_DIR_)ftview.c $(GRAPH_LIB) $(SRC_DIR_)ftcommon.i
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) $T$@ $<
 
-  $(OBJ_)ftstring.$O: $(SRC_DIR_)ftstring.c $(GRAPH_LIB)
+  $(OBJ_)ftmulti.$(SO): $(SRC_DIR_)ftmulti.c $(GRAPH_LIB) $(SRC_DIR_)ftcommon.i
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) $T$@ $<
 
-  $(OBJ_)try.$O: $(SRC_DIR_)try.c $(GRAPH_LIB)
+  $(OBJ_)ftstring.$(SO): $(SRC_DIR_)ftstring.c $(GRAPH_LIB) $(SRC_DIR_)ftcommon.i
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) $T$@ $<
 
-  $(OBJ_)fttimer.$O: $(SRC_DIR_)fttimer.c $(GRAPH_LIB)
-	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) $T$@ $<
-
-  $(OBJ_)fttimer2.$O: $(SRC_DIR_)fttimer2.c $(GRAPH_LIB)
+  $(OBJ_)fttimer.$(SO): $(SRC_DIR_)fttimer.c $(GRAPH_LIB)
 	  $(COMPILE) $(GRAPH_INCLUDES:%=$I%) $T$@ $<
 
 
-# $(OBJ_)ftsbit.$O: $(SRC_DIR)/ftsbit.c $(GRAPH_LIB)
+
+# $(OBJ_)ftsbit.$(SO): $(SRC_DIR)/ftsbit.c $(GRAPH_LIB)
 #	 $(COMPILE) $T$@ $<
 
 
@@ -222,8 +273,8 @@ else
   # Special rule to compile the `t1dump' program as it includes
   # the Type1 source path
   #
-  $(OBJ_)t1dump.$O: $(SRC_DIR)/t1dump.c
-	  $(COMPILE) $(T1_INCLUDES:%=$I%) $T$@ $<
+  $(OBJ_)t1dump.$(SO): $(SRC_DIR)/t1dump.c
+	  $(COMPILE) $T$@ $<
 
 
   ####################################################################
@@ -239,8 +290,9 @@ else
     EXTRAFLAGS = $DUNIX $DHAVE_POSIX_TERMIOS
   endif
 
-  $(OBJ_)ttdebug.$O: $(SRC_DIR)/ttdebug.c
-	    $(COMPILE) $(TT_INCLUDES:%=$I%) $T$@ $< $(EXTRAFLAGS)
+  $(OBJ_)ttdebug.$(SO): $(SRC_DIR)/ttdebug.c
+	    $(COMPILE) $I$(TOP_DIR)$(SEP)src$(SEP)truetype \
+                       $(TT_INCLUDES:%=$I%) $T$@ $< $(EXTRAFLAGS)
 
 
   ####################################################################
@@ -248,40 +300,48 @@ else
   # Rules used to link the executables. Note that they could be
   # over-ridden by system-specific things..
   #
-  $(BIN_)ftlint$E: $(OBJ_)ftlint.$O $(FTLIB) $(COMMON_OBJ)
+  $(BIN_)ftlint$E: $(OBJ_)ftlint.$(SO) $(FTLIB) $(COMMON_OBJ)
 	  $(COMMON_LINK)
 
-  $(BIN_)compos$E: $(OBJ_)compos.$O $(FTLIB) $(COMMON_OBJ)
+  $(BIN_)ftbench$E: $(OBJ_)ftbench.$(SO) $(FTLIB) $(COMMON_OBJ)
 	  $(COMMON_LINK)
 
-  $(BIN_)fttry$E: $(OBJ_)fttry.$O $(FTLIB)
+  $(BIN_)ftmemchk$E: $(OBJ_)ftmemchk.$(SO) $(FTLIB) $(COMMON_OBJ)
+	  $(COMMON_LINK)
+
+  $(BIN_)compos$E: $(OBJ_)compos.$(SO) $(FTLIB) $(COMMON_OBJ)
+	  $(COMMON_LINK)
+
+  $(BIN_)ftdump$E: $(OBJ_)ftdump.$(SO) $(FTLIB)
+	  $(COMMON_LINK)
+
+  $(BIN_)fttry$E: $(OBJ_)fttry.$(SO) $(FTLIB)
 	  $(LINK)
 
-  $(BIN_)ftsbit$E: $(OBJ_)ftsbit.$O $(FTLIB)
+  $(BIN_)ftsbit$E: $(OBJ_)ftsbit.$(SO) $(FTLIB)
 	  $(LINK)
 
-  $(BIN_)t1dump$E: $(OBJ_)t1dump.$O $(FTLIB)
+  $(BIN_)t1dump$E: $(OBJ_)t1dump.$(SO) $(FTLIB)
 	  $(LINK)
 
-  $(BIN_)ttdebug$E: $(OBJ_)ttdebug.$O $(FTLIB)
+  $(BIN_)ttdebug$E: $(OBJ_)ttdebug.$(SO) $(FTLIB)
+	  $(LINK)
+
+  $(BIN_)testnames$E: $(OBJ_)testnames.$(SO) $(FTLIB)
 	  $(LINK)
 
 
-  $(BIN_)ftview$E: $(OBJ_)ftview.$O $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ) $(OBJ_)ftrast2.$O
-	  $(GRAPH_LINK) $(OBJ_)ftrast2.$O
-
-  $(BIN_)ftstring$E: $(OBJ_)ftstring.$O $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ)
+  $(BIN_)ftview$E: $(OBJ_)ftview.$(SO) $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ)
 	  $(GRAPH_LINK)
 
-
-  $(BIN_)try$E: $(OBJ_)try.$O $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ) $(OBJ_)ftgrays2.$O
-	  $(GRAPH_LINK) $(OBJ_)ftgrays2.$O
-
-  $(BIN_)fttimer$E: $(OBJ_)fttimer.$O $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ)
+  $(BIN_)ftmulti$E: $(OBJ_)ftmulti.$(SO) $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ)
 	  $(GRAPH_LINK)
 
-  $(BIN_)fttimer2$E: $(OBJ_)fttimer2.$O $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ) $(OBJ_)ftgrays2.$O
-	  $(GRAPH_LINK) $(OBJ_)ftgrays2.$O
+  $(BIN_)ftstring$E: $(OBJ_)ftstring.$(SO) $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ)
+	  $(GRAPH_LINK) $(MATH)
+
+  $(BIN_)fttimer$E: $(OBJ_)fttimer.$(SO) $(FTLIB) $(GRAPH_LIB) $(COMMON_OBJ)
+	  $(GRAPH_LINK)
 
 
 endif

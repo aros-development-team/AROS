@@ -22,19 +22,19 @@
   *
   ********************************************************************/
 
-  char*  grAlloc( long size )
+  unsigned char*  grAlloc( long size )
   {
-    char*  p;
-     
-    p = (char*)malloc(size);
+    unsigned char*  p;
+
+    p = (unsigned char*)malloc(size);
     if (!p && size > 0)
     {
-      grError = gr_err_memory; 
+      grError = gr_err_memory;
     }
-    
+
     if (p)
       memset( p, 0, size );
-    
+
     return p;
   }
 
@@ -56,11 +56,11 @@
   *
   ********************************************************************/
 
-  char*  grRealloc( const char*  block, long size )
+  unsigned char*  grRealloc( const unsigned char*  block, long size )
   {
-    char*  p;
-    
-    p = realloc( (char*)block, size );
+    unsigned char*  p;
+
+    p = (unsigned char *)realloc( (void*)block, size );
     if (!p && size > 0)
     {
       grError = gr_err_memory;
@@ -85,7 +85,7 @@
   void  grFree( const void*  block )
   {
     if (block)
-      free( (char*)block );
+      free( (void *)block );
   }
 
 
@@ -97,9 +97,9 @@
     if ( pixel_mode <= gr_pixel_mode_none ||
          pixel_mode >= gr_pixel_mode_max  )
       goto Fail;
-   
-    if ( pixel_mode != gr_pixel_mode_gray      ||
-         ( num_grays >= 2 && num_grays < 256 ) )
+
+    if ( pixel_mode != gr_pixel_mode_gray       ||
+         ( num_grays >= 2 && num_grays <= 256 ) )
       return 0;
 
   Fail:
@@ -114,7 +114,7 @@
   *    grNewBitmap
   *
   * <Description>
-  *    creates a new bitmap    
+  *    creates a new bitmap
   *
   * <Input>
   *    pixel_mode   :: the target surface's pixel_mode
@@ -160,28 +160,28 @@
     {
       case gr_pixel_mode_mono  : pitch = (width+7) >> 3; break;
       case gr_pixel_mode_pal4  : pitch = (width+3) >> 2; break;
-      
+
       case gr_pixel_mode_pal8  :
       case gr_pixel_mode_gray  : pitch = width; break;
-      
+
       case gr_pixel_mode_rgb555:
       case gr_pixel_mode_rgb565: pitch = width*2; break;
-      
+
       case gr_pixel_mode_rgb24 : pitch = width*3; break;
-      
+
       case gr_pixel_mode_rgb32 : pitch = width*4; break;
-      
+
       default:
         grError = gr_err_bad_target_depth;
         return 0;
     }
-    
+
     bit->pitch  = pitch;
     bit->buffer = grAlloc( (long)bit->pitch * bit->rows );
     if (!bit->buffer) goto Fail;
-    
+
     return 0;
-    
+
   Fail:
     return grError;
   }
@@ -192,7 +192,7 @@
   *    grDoneBitmap
   *
   * <Description>
-  *    destroys a bitmap    
+  *    destroys a bitmap
   *
   * <Input>
   *    bitmap :: handle to bitmap descriptor

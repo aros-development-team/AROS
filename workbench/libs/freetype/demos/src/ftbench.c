@@ -44,16 +44,16 @@ typedef struct charmap_t_
 #define CACHE_SIZE 1024
 #define BENCH_TIME 2.0f
 
-FT_Library      lib;
-FT_Face         face;
-FTC_Manager     cache_man;
-FTC_CMapCache   cmap_cache;
-FTC_CMapDescRec cmap_desc;
-FTC_Image_Cache image_cache;
-FTC_SBitCache   sbit_cache;
-FTC_ImageDesc   font_desc;
-charmap_t*      cmap = NULL;
-double          bench_time = BENCH_TIME;
+FT_Library        lib;
+FT_Face           face;
+FTC_Manager       cache_man;
+FTC_CMapCache     cmap_cache;
+FTC_CMapDescRec   cmap_desc;
+FTC_Image_Cache   image_cache;
+FTC_SBitCache     sbit_cache;
+FTC_ImageTypeRec  font_type;
+charmap_t*        cmap = NULL;
+double            bench_time = BENCH_TIME;
 
 
 /*
@@ -110,7 +110,11 @@ get_cmap(void)
   {
     i = 0;
     charcode = FT_Get_First_Char(face, &gindex);
-    while (gindex)
+
+    /* certain fonts contain a broken charmap that will map character codes */
+    /* to out-of-bounds glyph indices. Take care of that here !!            */
+    /*                                                                      */
+    while ( gindex && i < face->num_glyphs )
     {
       cmap[i].index = gindex;
       cmap[i].charcode = charcode;
@@ -231,7 +235,7 @@ image_cache_test(FT_UInt idx,
 
   FT_UNUSED( charcode );
 
-  return FTC_ImageCache_Lookup(image_cache, &font_desc, idx, &glyph, NULL);
+  return FTC_ImageCache_Lookup(image_cache, &font_type, idx, &glyph, NULL);
 }
 
 
@@ -243,7 +247,7 @@ sbit_cache_test(FT_UInt idx,
 
   FT_UNUSED( charcode );
 
-  return FTC_SBitCache_Lookup(sbit_cache, &font_desc, idx, &glyph, NULL);
+  return FTC_SBitCache_Lookup(sbit_cache, &font_type, idx, &glyph, NULL);
 }
 
 
@@ -253,21 +257,26 @@ sbit_cache_test(FT_UInt idx,
 
 void usage(void)
 {
-  fprintf(stderr, "ftbench: bench some common FreeType paths\n");
-  fprintf(stderr, "-----------------------------------------\n\n");
-  fprintf(stderr, "Usage: ftbench [options] fontname\n\n");
-  fprintf(stderr, "options:\n");
-  fprintf(stderr, "   -m : cache size max in KB (default is %d)\n", CACHE_SIZE);
-  fprintf(stderr, "   -t : max time per bench in seconds (default is %.0f)\n", BENCH_TIME);
-  fprintf(stderr, "   -b tests : perform choosen tests (default is all)\n");
-  fprintf(stderr, "      a : Load\n");
-  fprintf(stderr, "      b : Load + Get_Glyph\n");
-  fprintf(stderr, "      c : Load + Get_Glyph + Get_CBox\n");
-  fprintf(stderr, "      d : Get_Char_Index\n");
-  fprintf(stderr, "      e : CMap cache\n");
-  fprintf(stderr, "      f : Outline cache\n");
-  fprintf(stderr, "      g : Bitmap cache\n");
-  fprintf(stderr, "      h : SBit cache\n");
+  fprintf( stderr,
+    "ftbench: bench some common FreeType paths\n"
+    "-----------------------------------------\n\n"
+    "Usage: ftbench [options] fontname\n\n"
+    "options:\n" );
+  fprintf( stderr,
+  "   -m : max cache size in kByte (default is %d)\n", CACHE_SIZE );
+  fprintf( stderr,
+  "   -t : max time per bench in seconds (default is %.0f)\n", BENCH_TIME );
+  fprintf( stderr,
+  "   -p : preload font file in memory\n"
+  "   -b tests : perform choosen tests (default is all)\n"
+  "      a : Load\n"
+  "      b : Load + Get_Glyph\n"
+  "      c : Load + Get_Glyph + Get_CBox\n"
+  "      d : Get_Char_Index\n"
+  "      e : CMap cache\n"
+  "      f : Outline cache\n"
+  "      g : Bitmap cache\n"
+  "      h : SBit cache\n" );
 
   exit( 1 );
 }
@@ -283,6 +292,9 @@ main(int argc,
   FT_ULong max_bytes = CACHE_SIZE * 1024;
   char* tests = NULL;
   int size;
+  int preload = 0;
+  FT_Byte*  memory_file = NULL;
+  long      memory_size;
 
   while (argc > 1 && argv[1][0] == '-')
   {
@@ -295,6 +307,10 @@ main(int argc,
           sscanf(argv[1], "%ld", &max_bytes) != 1)
         usage();
       max_bytes *= 1024;
+      break;
+
+    case 'p':
+      preload = 1;
       break;
 
     case 't':
@@ -326,10 +342,41 @@ main(int argc,
   if ( argc != 2 )
     usage();
 
-  if (FT_Init_FreeType(&lib) ||
-      FT_New_Face(lib, argv[1], 0, &face))
+  if (FT_Init_FreeType(&lib))
   {
-    printf("couldn't load font ressource\n");
+    fprintf( stderr, "could not initialize font library\n" );
+    return 1;
+  }
+
+  if ( preload )
+  {
+    FILE*  file = fopen( argv[1], "rb" );
+    if ( file == NULL )
+    {
+      fprintf( stderr, "couldn't find or open `%s'\n", argv[1] );
+      return 1;
+    }
+    fseek( file, 0, SEEK_END );
+    memory_size = ftell( file );
+    fseek( file, 0, SEEK_SET );
+
+    memory_file = malloc( memory_size );
+    if ( memory_file == NULL )
+    {
+      fprintf( stderr, "couldn't allocate memory to pre-load font file\n" );
+      return 1;
+    }
+
+    fread( memory_file, 1, memory_size, file );
+    if ( FT_New_Memory_Face( lib, memory_file, memory_size, 0, &face ) )
+    {
+      fprintf( stderr, "couldn't load font resource\n" );
+      return 1;
+    }
+  }
+  else if ( FT_New_Face(lib, argv[1], 0, &face) )
+  {
+    fprintf( stderr, "couldn't load font resource\n");
     return 1;
   }
 
@@ -364,22 +411,22 @@ main(int argc,
       bench( cmap_cache_test,  "CMap cache", 0);
     }
 
-    font_desc.font.face_id    = (void*)1;
-    font_desc.font.pix_width  = (short) size;
-    font_desc.font.pix_height = (short) size;
+    font_type.font.face_id    = (void*)1;
+    font_type.font.pix_width  = (short) size;
+    font_type.font.pix_height = (short) size;
 
-    if (!FTC_Image_Cache_New(cache_man, &image_cache))
+    if (!FTC_ImageCache_New(cache_man, &image_cache))
     {
       if (TEST('f'))
       {
-        font_desc.type = ftc_image_format_outline;
+        font_type.flags = FT_LOAD_NO_BITMAP;
         bench( image_cache_test,  "Outline cache (1st run)", 1);
         bench( image_cache_test,  "Outline cache", 0);
       }
 
       if (TEST('g'))
       {
-        font_desc.type = ftc_image_format_bitmap;
+        font_type.flags = FT_LOAD_RENDER;
         bench( image_cache_test,  "Bitmap cache (1st run)", 1);
         bench( image_cache_test,  "Bitmap cache", 0);
       }
@@ -388,7 +435,7 @@ main(int argc,
     if (TEST('h') &&
         !FTC_SBitCache_New(cache_man, &sbit_cache))
     {
-      font_desc.type = ftc_image_format_bitmap;
+      font_type.flags = FT_LOAD_DEFAULT;
       bench( sbit_cache_test,  "SBit cache (1st run)", 1);
       bench( sbit_cache_test,  "SBit cache", 0);
     }

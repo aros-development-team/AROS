@@ -3,13 +3,13 @@
 /*  ttload.h                                                               */
 /*                                                                         */
 /*    Load the basic TrueType tables, i.e., tables that can be either in   */
-/*    TTF or OTF font (specification).                                     */
+/*    TTF or OTF fonts (specification).                                    */
 /*                                                                         */
-/*  Copyright 1996-1999 by                                                 */
+/*  Copyright 1996-2001, 2002 by                                           */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
-/*  This file is part of the FreeType project, and may only be used        */
-/*  modified and distributed under the terms of the FreeType project       */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
 /*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
 /*  this file you indicate that you have read the license and              */
 /*  understand and accept it fully.                                        */
@@ -17,112 +17,121 @@
 /***************************************************************************/
 
 
-#ifndef TTLOAD_H
-#define TTLOAD_H
+#ifndef __TTLOAD_H__
+#define __TTLOAD_H__
 
 
-#include <ftstream.h>
-#include <tttypes.h>
-/*
-#include <ttobjs.h>
-*/
-
-#ifdef __cplusplus
-  extern "C" {
-#endif
+#include <ft2build.h>
+#include FT_INTERNAL_STREAM_H
+#include FT_INTERNAL_TRUETYPE_TYPES_H
 
 
-  EXPORT_DEF
-  TT_Table*  TT_LookUp_Table( TT_Face   face,
-                              TT_ULong  tag );
-
-  LOCAL_DEF
-  TT_Error   TT_Goto_Table( TT_Face    face,
-                            TT_ULong   tag,
-                            FT_Stream  stream,
-                            TT_ULong  *length );
+FT_BEGIN_HEADER
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_Format_Tag( TT_Face    face,
-                                FT_Stream  stream,
-                                TT_Long    faceIndex,
-                                TT_ULong  *format_tag );
+  FT_LOCAL( TT_Table  )
+  tt_face_lookup_table( TT_Face   face,
+                        FT_ULong  tag );
 
-  LOCAL_DEF
-  TT_Error  TT_Load_Directory( TT_Face    face,
+  FT_LOCAL( FT_Error )
+  tt_face_goto_table( TT_Face    face,
+                      FT_ULong   tag,
+                      FT_Stream  stream,
+                      FT_ULong*  length );
+
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_sfnt_header( TT_Face      face,
+                            FT_Stream    stream,
+                            FT_Long      face_index,
+                            SFNT_Header  sfnt );
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_directory( TT_Face      face,
+                          FT_Stream    stream,
+                          SFNT_Header  sfnt );
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_any( TT_Face    face,
+                    FT_ULong   tag,
+                    FT_Long    offset,
+                    FT_Byte*   buffer,
+                    FT_ULong*  length );
+
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_header( TT_Face    face,
+                       FT_Stream  stream );
+
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_metrics_header( TT_Face    face,
                                FT_Stream  stream,
-                               TT_Long    faceIndex );
+                               FT_Bool    vertical );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_Any( TT_Face   face,
-                         TT_ULong  tag,
-                         TT_Long   offset,
-                         void*     buffer,
-                         TT_Long*  length );
+  FT_LOCAL( FT_Error )
+  tt_face_load_cmap( TT_Face    face,
+                     FT_Stream  stream );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_Header( TT_Face    face,
+  FT_LOCAL( FT_Error )
+  tt_face_load_max_profile( TT_Face    face,
                             FT_Stream  stream );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_Metrics_Header( TT_Face    face,
-                                    FT_Stream  stream,
-                                    TT_Bool    vertical );
+  FT_LOCAL( FT_Error )
+  tt_face_load_names( TT_Face    face,
+                      FT_Stream  stream );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_CMap( TT_Face    face,
-                          FT_Stream  stream );
+  FT_LOCAL( FT_Error )
+  tt_face_load_os2( TT_Face    face,
+                    FT_Stream  stream );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_MaxProfile( TT_Face    face,
-                                FT_Stream  stream );
-
-
-  LOCAL_DEF
-  TT_Error  TT_Load_Names( TT_Face    face,
+  FT_LOCAL( FT_Error )
+  tt_face_load_postscript( TT_Face    face,
                            FT_Stream  stream );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_OS2( TT_Face    face,
-                         FT_Stream  stream );
+  FT_LOCAL( FT_Error )
+  tt_face_load_hdmx( TT_Face    face,
+                     FT_Stream  stream );
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_pclt( TT_Face    face,
+                     FT_Stream  stream );
+
+  FT_LOCAL( void )
+  tt_face_free_names( TT_Face  face );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_PostScript( TT_Face    face,
-                                FT_Stream  stream );
+  FT_LOCAL( void )
+  tt_face_free_hdmx ( TT_Face  face );
 
 
-  LOCAL_DEF
-  TT_Error  TT_Load_Hdmx( TT_Face    face,
-                          FT_Stream  stream );
+  FT_LOCAL( FT_Error )
+  tt_face_load_kern( TT_Face    face,
+                     FT_Stream  stream );
 
 
-  LOCAL_DEF
-  void  TT_Free_Names( TT_Face  face );
+  FT_LOCAL( FT_Error )
+  tt_face_load_gasp( TT_Face    face,
+                     FT_Stream  stream );
+
+#ifdef TT_CONFIG_OPTION_EMBEDDED_BITMAPS
+
+  FT_LOCAL( FT_Error )
+  tt_face_load_bitmap_header( TT_Face    face,
+                              FT_Stream  stream );
+
+#endif /* TT_CONFIG_OPTION_EMBEDDED_BITMAPS */
 
 
-  LOCAL_DEF
-  void  TT_Free_Hdmx ( TT_Face  face );
+FT_END_HEADER
 
-
-  LOCAL_DEF
-  TT_Error  TT_Load_Kern( TT_Face    face,
-                          FT_Stream  stream );
-
-
-  LOCAL_DEF
-  TT_Error  TT_Load_Gasp( TT_Face    face,
-                          FT_Stream  stream );
-
-
-#endif /* TTLOAD_H */
+#endif /* __TTLOAD_H__ */
 
 
 /* END */

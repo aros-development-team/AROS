@@ -45,11 +45,11 @@
 #
 #
 
-GRAPH_INCLUDES := $(TOP2_)graph
-GRAPH_LIB      := $(OBJ_)graph.$A
+GRAPH_INCLUDES := $(TOP_DIR_2_)graph
+GRAPH_LIB      := $(OBJ_)graph.$(SA)
 #GRAPH_LINK     := $(GRAPH_LIB)
 
-GRAPH_ := $(TOP2_)graph$(SEP)
+GRAPH_ := $(TOP_DIR_2_)graph$(SEP)
 
 GRAPH_H := $(GRAPH_)graph.h    \
            $(GRAPH_)grtypes.h  \
@@ -58,11 +58,11 @@ GRAPH_H := $(GRAPH_)graph.h    \
            $(GRAPH_)grblit.h
 
 
-GRAPH_OBJS := $(OBJ_)grblit.$O   \
-              $(OBJ_)grobjs.$O   \
-              $(OBJ_)grfont.$O   \
-              $(OBJ_)grdevice.$O \
-              $(OBJ_)grinit.$O
+GRAPH_OBJS := $(OBJ_)grblit.$(SO)   \
+              $(OBJ_)grobjs.$(SO)   \
+              $(OBJ_)grfont.$(SO)   \
+              $(OBJ_)grdevice.$(SO) \
+              $(OBJ_)grinit.$(SO)
 
 
 # Default value for COMPILE_GRAPH_LIB
@@ -73,7 +73,7 @@ COMPILE_GRAPH_LIB = ar -r $@ $(GRAPH_OBJS)
 # Add the rules used to detect and compile graphics driver depending
 # on the current platform..
 #
-include $(wildcard $(TOP2)/graph/*/rules.mk)
+include $(wildcard $(TOP_DIR_2)/graph/*/rules.mk)
 
 #########################################################################
 #
@@ -90,15 +90,14 @@ $(GRAPH_LIB): $(GRAPH_OBJS)
 
 # pattern rule for normal sources
 #
-$(OBJ_)%.$O: $(GRAPH_)%.c $(GRAPH_H)
+$(OBJ_)%.$(SO): $(GRAPH_)%.c $(GRAPH_H)
 	$(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%) $T$@ $<
 
 
 # a special rule is used for 'grinit.o' as it needs the definition
 # of some macros like "-DDEVICE_X11" or "-DDEVICE_OS2_PM"
 #
-$(OBJ_)grinit.$O: $(GRAPH_)grinit.c $(GRAPH_H)
+$(OBJ_)grinit.$(SO): $(GRAPH_)grinit.c $(GRAPH_H)
 	$(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%)  \
-                    $(DEVICE_INCLUDES:%=$I%) \
                     $(DEVICES:%=$DDEVICE_%) $T$@ $<
 

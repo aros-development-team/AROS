@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    High-level SFNT driver interface (specification).                    */
 /*                                                                         */
-/*  Copyright 1996-1999 by                                                 */
+/*  Copyright 1996-2001 by                                                 */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -16,16 +16,23 @@
 /***************************************************************************/
 
 
-#ifndef SFDRIVER_H
-#define SFDRIVER_H
+#ifndef __SFDRIVER_H__
+#define __SFDRIVER_H__
 
-#include <freetype.h>
-#include <ftdriver.h>
 
-  EXPORT_DEF
-  const FT_DriverInterface  sfnt_driver_interface;
+#include <ft2build.h>
+#include FT_MODULE_H
 
-#endif /* SFDRIVER_H */
+
+FT_BEGIN_HEADER
+
+
+  FT_EXPORT_VAR( const FT_Module_Class )  sfnt_module_class;
+
+
+FT_END_HEADER
+
+#endif /* __SFDRIVER_H__ */
 
 
 /* END */

@@ -20,7 +20,6 @@ GRAPH_LINK     += $(GR_OS2_)gros2pm.def
 GRAPH_OBJS += $(OBJ_)gros2pm.$O
 
 DEVICES         += OS2_PM
-DEVICE_INCLUDES += $(GR_OS2)
 
 # the rule used to compile the graphics driver
 #
@@ -28,5 +27,3 @@ $(OBJ_)gros2pm.$O: $(GR_OS2_)gros2pm.c $(GR_OS2_)gros2pm.h
 	$(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%) $I$(GR_OS2) $T$@ $<
 
 endif
-
-

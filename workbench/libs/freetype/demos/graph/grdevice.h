@@ -108,19 +108,21 @@
   {
     int          surface_objsize;
     const char*  device_name;  /* name of device                 */
-  
+
     grDeviceInitFunc        init;
     grDeviceDoneFunc        done;
 
     grDeviceInitSurfaceFunc init_surface;
 
     int                     num_pixel_modes;
-    grPixelMode*            pixel_modes; 
+    grPixelMode*            pixel_modes;
   };
 
 
-  extern grDeviceChain   gr_device_chain[];
-  extern int             gr_num_devices;
+  extern grDevice*      gr_devices[];
+  extern grDeviceChain  gr_device_chain[];
+  extern int            gr_num_devices;
+  extern int            gr_max_devices;
 
 
 #endif /* GRDEVICE_H */

@@ -1,1476 +1,1791 @@
-#include <ftconfig.h>
-#include <ftdebug.h>
+/***************************************************************************/
+/*                                                                         */
+/*  t1load.c                                                               */
+/*                                                                         */
+/*    Type 1 font loader (body).                                           */
+/*                                                                         */
+/*  Copyright 1996-2001, 2002 by                                           */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
-#include <t1types.h>
-#include <t1tokens.h>
-#include <t1parse.h>
 
-#include <stdio.h>
+  /*************************************************************************/
+  /*                                                                       */
+  /* This is the new and improved Type 1 data loader for FreeType 2.  The  */
+  /* old loader has several problems: it is slow, complex, difficult to    */
+  /* maintain, and contains incredible hacks to make it accept some        */
+  /* ill-formed Type 1 fonts without hiccup-ing.  Moreover, about 5% of    */
+  /* the Type 1 fonts on my machine still aren't loaded correctly by it.   */
+  /*                                                                       */
+  /* This version is much simpler, much faster and also easier to read and */
+  /* maintain by a great order of magnitude.  The idea behind it is to     */
+  /* _not_ try to read the Type 1 token stream with a state machine (i.e.  */
+  /* a Postscript-like interpreter) but rather to perform simple pattern   */
+  /* matching.                                                             */
+  /*                                                                       */
+  /* Indeed, nearly all data definitions follow a simple pattern like      */
+  /*                                                                       */
+  /*  ... /Field <data> ...                                                */
+  /*                                                                       */
+  /* where <data> can be a number, a boolean, a string, or an array of     */
+  /* numbers.  There are a few exceptions, namely the encoding, font name, */
+  /* charstrings, and subrs; they are handled with a special pattern       */
+  /* matching routine.                                                     */
+  /*                                                                       */
+  /* All other common cases are handled very simply.  The matching rules   */
+  /* are defined in the file `t1tokens.h' through the use of several       */
+  /* macros calls PARSE_XXX.                                               */
+  /*                                                                       */
+  /* This file is included twice here; the first time to generate parsing  */
+  /* callback functions, the second to generate a table of keywords (with  */
+  /* pointers to the associated callback).                                 */
+  /*                                                                       */
+  /* The function `parse_dict' simply scans *linearly* a given dictionary  */
+  /* (either the top-level or private one) and calls the appropriate       */
+  /* callback when it encounters an immediate keyword.                     */
+  /*                                                                       */
+  /* This is by far the fastest way one can find to parse and read all     */
+  /* data.                                                                 */
+  /*                                                                       */
+  /* This led to tremendous code size reduction.  Note that later, the     */
+  /* glyph loader will also be _greatly_ simplified, and the automatic     */
+  /* hinter will replace the clumsy `t1hinter'.                            */
+  /*                                                                       */
+  /*************************************************************************/
 
+
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+#include FT_CONFIG_CONFIG_H
+#include FT_MULTIPLE_MASTERS_H
+#include FT_INTERNAL_TYPE1_TYPES_H
+
+#include "t1load.h"
+#include "t1errors.h"
+
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
 #undef  FT_COMPONENT
 #define FT_COMPONENT  trace_t1load
 
-  typedef  T1_Error  (*T1_Parse_Func)( T1_Parser*  parser );
+
+#ifndef T1_CONFIG_OPTION_NO_MM_SUPPORT
 
 
-/*************************************************************************/
-/*                                                                       */
-/* <Function> Init_T1_Parser                                             */
-/*                                                                       */
-/* <Description>                                                         */
-/*    Initialise a given parser object to build a given T1_Face          */
-/*                                                                       */
-/* <Input>                                                               */
-/*    parser  :: handle to the newly built parser object                 */
-/*    face    :: handle to target T1 face object                         */
-/*                                                                       */
-  LOCAL_FUNC
-  void  Init_T1_Parser( T1_Parser*    parser,
-                        T1_Face       face,
-                        T1_Tokenizer  tokenizer )
+  /*************************************************************************/
+  /*************************************************************************/
+  /*****                                                               *****/
+  /*****                    MULTIPLE MASTERS SUPPORT                   *****/
+  /*****                                                               *****/
+  /*************************************************************************/
+  /*************************************************************************/
+
+  static FT_Error
+  t1_allocate_blend( T1_Face  face,
+                     FT_UInt  num_designs,
+                     FT_UInt  num_axis )
   {
-    parser->error     = 0;
-    parser->face      = face;
-    parser->tokenizer = tokenizer;
-    parser->top       = parser->stack;
-    parser->limit     = parser->stack + T1_MAX_STACK_DEPTH;
+    PS_Blend   blend;
+    FT_Memory  memory = face->root.memory;
+    FT_Error   error  = 0;
 
-    parser->state_index    = 0;
-    parser->state_stack[0] = dict_none;
 
-	parser->encoding_type    = t1_encoding_none;
-    parser->encoding_names   = 0;
-    parser->encoding_offsets = 0;
-    parser->encoding_lengths = 0;
+    blend = face->blend;
+    if ( !blend )
+    {
+      if ( FT_NEW( blend ) )
+        goto Exit;
 
-    parser->dump_tokens      = 0;
-    face->type1.private_dict.lenIV        = 4;  /* XXX : is it sure ?? */
+      face->blend = blend;
+    }
+
+    /* allocate design data if needed */
+    if ( num_designs > 0 )
+    {
+      if ( blend->num_designs == 0 )
+      {
+        FT_UInt  nn;
+
+
+        /* allocate the blend `private' and `font_info' dictionaries */
+        if ( FT_NEW_ARRAY( blend->font_infos[1], num_designs     ) ||
+             FT_NEW_ARRAY( blend->privates[1], num_designs       ) ||
+             FT_NEW_ARRAY( blend->bboxes[1], num_designs         ) ||
+             FT_NEW_ARRAY( blend->weight_vector, num_designs * 2 ) )
+          goto Exit;
+
+        blend->default_weight_vector = blend->weight_vector + num_designs;
+
+        blend->font_infos[0] = &face->type1.font_info;
+        blend->privates  [0] = &face->type1.private_dict;
+        blend->bboxes    [0] = &face->type1.font_bbox;
+
+        for ( nn = 2; nn <= num_designs; nn++ )
+        {
+          blend->privates[nn]   = blend->privates  [nn - 1] + 1;
+          blend->font_infos[nn] = blend->font_infos[nn - 1] + 1;
+          blend->bboxes[nn]     = blend->bboxes    [nn - 1] + 1;
+        }
+
+        blend->num_designs   = num_designs;
+      }
+      else if ( blend->num_designs != num_designs )
+        goto Fail;
+    }
+
+    /* allocate axis data if needed */
+    if ( num_axis > 0 )
+    {
+      if ( blend->num_axis != 0 && blend->num_axis != num_axis )
+        goto Fail;
+
+      blend->num_axis = num_axis;
+    }
+
+    /* allocate the blend design pos table if needed */
+    num_designs = blend->num_designs;
+    num_axis    = blend->num_axis;
+    if ( num_designs && num_axis && blend->design_pos[0] == 0 )
+    {
+      FT_UInt  n;
+
+
+      if ( FT_NEW_ARRAY( blend->design_pos[0], num_designs * num_axis ) )
+        goto Exit;
+
+      for ( n = 1; n < num_designs; n++ )
+        blend->design_pos[n] = blend->design_pos[0] + num_axis * n;
+    }
+
+  Exit:
+    return error;
+
+  Fail:
+    error = -1;
+    goto Exit;
   }
 
 
-
-/*************************************************************************/
-/*                                                                       */
-/* <Function> Next_T1_Token                                              */
-/*                                                                       */
-/* <Description>                                                         */
-/*    grabs the next significant token from a parser's input stream.     */
-/*    this function ignores a number of tokens, and translates           */
-/*    alternate forms into their common ones..                           */
-/*                                                                       */
-/* <Input>                                                               */
-/*    parser  :: handle to source parser                                 */
-/*                                                                       */
-/* <Output>                                                              */
-/*    token   :: the extracted token descriptor                          */
-/*                                                                       */
-/* <Return>                                                              */
-/*    Error code. 0 means success                                        */
-/*                                                                       */
-  LOCAL_FUNC
-  T1_Error  Next_T1_Token( T1_Parser*  parser,
-                           T1_Token*   token )
+  FT_LOCAL_DEF( FT_Error )
+  T1_Get_Multi_Master( T1_Face           face,
+                       FT_Multi_Master*  master )
   {
-    T1_Error      error;
-    T1_Tokenizer  tokzer = parser->tokenizer;
+    PS_Blend  blend = face->blend;
+    FT_UInt   n;
+    FT_Error  error;
 
-  L1:
-    error = Read_Token( tokzer );
-    if (error) return error;
 
-    /* We now must ignore a number of tokens like "dup", "executeonly", */
-    /* "readonly", etc...                                               */
-    *token = tokzer->token;
-    if ( token->kind == tok_keyword )
-      switch( token->kind2 )
+    error = T1_Err_Invalid_Argument;
+
+    if ( blend )
+    {
+      master->num_axis    = blend->num_axis;
+      master->num_designs = blend->num_designs;
+
+      for ( n = 0; n < blend->num_axis; n++ )
       {
-        case key_dup:
-        case key_execonly:
-        case key_readonly:
-        case key_noaccess:
-        case key_userdict:
-          /* do nothing - loop */
-          goto L1;
+        FT_MM_Axis*   axis = master->axis + n;
+        PS_DesignMap  map = blend->design_map + n;
 
-        /* We also translate some other keywords from their alternative */
-        /* to their "normal" form..                                     */
 
-        case key_NP_alternate:
-          token->kind2 = key_NP;
-          break;
+        axis->name    = blend->axis_names[n];
+        axis->minimum = map->design_points[0];
+        axis->maximum = map->design_points[map->num_points - 1];
+      }
+      error = 0;
+    }
+    return error;
+  }
 
-        case key_RD_alternate:
-          token->kind2 = key_RD;
-          break;
 
-        case key_ND_alternate:
-          token->kind2 = key_ND;
-          break;
+  FT_LOCAL_DEF( FT_Error )
+  T1_Set_MM_Blend( T1_Face    face,
+                   FT_UInt    num_coords,
+                   FT_Fixed*  coords )
+  {
+    PS_Blend  blend = face->blend;
+    FT_Error  error;
+    FT_UInt   n, m;
 
-        default:
-          ;
+
+    error = T1_Err_Invalid_Argument;
+
+    if ( blend && blend->num_axis == num_coords )
+    {
+      /* recompute the weight vector from the blend coordinates */
+      error = T1_Err_Ok;
+
+      for ( n = 0; n < blend->num_designs; n++ )
+      {
+        FT_Fixed  result = 0x10000L;  /* 1.0 fixed */
+
+
+        for ( m = 0; m < blend->num_axis; m++ )
+        {
+          FT_Fixed  factor;
+
+
+          /* get current blend axis position */
+          factor = coords[m];
+          if ( factor < 0 )        factor = 0;
+          if ( factor > 0x10000L ) factor = 0x10000L;
+
+          if ( ( n & ( 1 << m ) ) == 0 )
+            factor = 0x10000L - factor;
+
+          result = FT_MulFix( result, factor );
+        }
+        blend->weight_vector[n] = result;
       }
 
-    /* Dump the token when requested. This feature is only available */
-    /* in the 'error' and 'trace' debug levels..                     */
-#if defined( FT_DEBUG_LEVEL_ERROR ) || defined( FT_DEBUG_LEVEL_TRACE )
-    if ( parser->dump_tokens )
-    {
-      T1_String  temp_string[128];
-      T1_Int     len;
-
-      len = token->len;
-      if ( len > 127 ) len = 127;
-      strncpy( temp_string,
-               (T1_String*)tokzer->base + token->start,
-               len );
-      temp_string[len] = '\0';
-      FT_ERROR(( "%s\n", temp_string ));
+      error = T1_Err_Ok;
     }
-#endif
-
-    return T1_Err_Ok;
-  }
-
-
-
-  static
-  T1_Error  Expect_Keyword( T1_Parser*    parser,
-                            T1_TokenType  keyword )
-  {
-    T1_Token  token;
-    T1_Error  error;
-
-    error = Next_T1_Token( parser, &token );
-    if (error) goto Exit;
-
-    if ( token.kind  != tok_keyword ||
-         token.kind2 != keyword     )
-    {
-      error = T1_Err_Syntax_Error;
-      FT_ERROR(( "T1.Parse: keyword '%s' expected.\n",
-               t1_keywords[ keyword - key_first_ ] ));
-    }
-
-  Exit:
     return error;
   }
 
 
-
-  static
-  T1_Error  Expect_Keyword2( T1_Parser*    parser,
-                             T1_TokenType  keyword1,
-                             T1_TokenType  keyword2 )
+  FT_LOCAL_DEF( FT_Error )
+  T1_Set_MM_Design( T1_Face   face,
+                    FT_UInt   num_coords,
+                    FT_Long*  coords )
   {
-    T1_Token  token;
-    T1_Error  error;
+    PS_Blend  blend = face->blend;
+    FT_Error  error;
+    FT_UInt   n, p;
 
-    error = Next_T1_Token( parser, &token );
-    if (error) goto Exit;
 
-    if ( token.kind  != tok_keyword  ||
-         ( token.kind2 != keyword1 &&
-           token.kind2 != keyword2 ) )
+    error = T1_Err_Invalid_Argument;
+    if ( blend && blend->num_axis == num_coords )
     {
-      error = T1_Err_Syntax_Error;
-      FT_ERROR(( "T1.Parse: keyword '%s' or '%s' expected.\n",
-               t1_keywords[ keyword1 - key_first_ ],
-               t1_keywords[ keyword2 - key_first_ ] ));
-    }
-
-  Exit:
-    return error;
-  }
+      /* compute the blend coordinates through the blend design map */
+      FT_Fixed  final_blends[T1_MAX_MM_DESIGNS];
 
 
-
-  static
-  void  Parse_Encoding( T1_Parser*  parser )
-  {
-	T1_Token*     token  = parser->top+1;
-	FT_Memory     memory = parser->face->root.memory;
-	T1_Encoding*  encode = &parser->face->type1.encoding;
-	T1_Error      error  = 0;
-
-	if (token->kind  == tok_keyword &&
-        (token->kind2 == key_StandardEncoding ||
-         token->kind2 == key_ExpertEncoding   )  )
-	{
-	  encode->num_chars  = 256;
-	  encode->code_first = 32;
-	  encode->code_last  = 255;
-
-	  if ( ALLOC_ARRAY( encode->char_index, 256, T1_Short ) )
-		goto Exit;
-
-	  encode->char_name = 0;  /* no need to store glyph names */
-
-	  /* Now copy the encoding */
-	  switch (token->kind2)
-	  {
-		  case key_ExpertEncoding : parser->encoding_type = t1_encoding_expert;
-		  default                 : parser->encoding_type = t1_encoding_standard; break;
-	  }
-    }
-	else
-	{
-	  FT_ERROR(( "T1.Parse_Encoding: invalid encoding type\n" ));
-	  error = T1_Err_Syntax_Error;
-    }
-
-  Exit:
-    parser->error = error;
-  }
+      for ( n = 0; n < blend->num_axis; n++ )
+      {
+        FT_Long       design  = coords[n];
+        FT_Fixed      the_blend;
+        PS_DesignMap  map     = blend->design_map + n;
+        FT_Fixed*     designs = map->design_points;
+        FT_Fixed*     blends  = map->blend_points;
+        FT_Int        before  = -1, after = -1;
 
 
-
-
-
-
-
-  /**********************************************************************/
-  /*                                                                    */
-  /*                                                                    */
-  /*        IMPLEMENTATION OF THE "DEF" KEYWORD DEPENDING ON            */
-  /*                     CURRENT DICTIONARY STATE                       */
-  /*                                                                    */
-  /*                                                                    */
-  /**********************************************************************/
-
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_Def_Font                                                 */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function performs a 'def' when in the Font dictionary          */
-/*    Its purpose is to build the T1_Face attributes directly from        */
-/*    the stream..                                                        */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_Def_Font( T1_Parser*  parser )
-  {
-    T1_Token*  top   = parser->top;
-    T1_Face    face  = parser->face;
-    T1_Font*   type1 = &face->type1;
-
-    switch ( top[0].kind2 )
-    {
-      case imm_FontName:
-        /* in some cases, the /FontName is an immediate like  */
-        /* /TimesNewRoman. In this case, we simply copy the   */
-        /* token string (without the /)..                     */
-        if (top[1].kind == tok_immediate)
+        for ( p = 0; p < (FT_UInt)map->num_points; p++ )
         {
-          FT_Memory  memory = parser->tokenizer->memory;
-          T1_Error   error;
-          T1_Int     len = top[1].len;
+          FT_Fixed  p_design = designs[p];
 
-          if ( ALLOC( type1->font_name, len+1 ) )
+
+          /* exact match ? */
+          if ( design == p_design )
           {
-            parser->error = error;
-            return error;
+            the_blend = blends[p];
+            goto Found;
           }
 
-          MEM_Copy( type1->font_name,
-                    parser->tokenizer->base + top[1].start,
-                    len );
-          type1->font_name[len] = '\0';
+          if ( design < p_design )
+          {
+            after = p;
+            break;
+          }
+
+          before = p;
         }
+
+        /* now, interpolate if needed */
+        if ( before < 0 )
+          the_blend = blends[0];
+
+        else if ( after < 0 )
+          the_blend = blends[map->num_points - 1];
+
         else
-          type1->font_name = CopyString( parser );
-        break;
-
-      case imm_Encoding:
-        Parse_Encoding( parser );
-        break;
-
-      case imm_PaintType:
-        type1->paint_type = (T1_Byte)CopyInteger( parser );
-        break;
-
-      case imm_FontType:
-        type1->font_type = (T1_Byte)CopyInteger( parser );
-        break;
-
-      case imm_FontMatrix:
-        CopyMatrix( parser, &type1->font_matrix );
-        break;
-
-      case imm_FontBBox:
-        CopyBBox( parser, &type1->font_bbox );
-        break;
-
-      case imm_UniqueID:
-        type1->private_dict.unique_id = CopyInteger( parser );
-        break;
-
-      case imm_StrokeWidth:
-        type1->stroke_width = CopyInteger( parser );
-        break;
-
-      case imm_FontID:
-        type1->font_id = CopyInteger( parser );
-        break;
-
-      default:
-        /* ignore all other things */
-        parser->error = T1_Err_Ok;
-    }
-    return parser->error;
-  }
-
-
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_Def_FontInfo                                             */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function performs a 'def' when in the FontInfo dictionary      */
-/*    Its purpose is to build the T1_FontInfo structure directly from     */
-/*    the stream..                                                        */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_Def_FontInfo( T1_Parser*  parser )
-  {
-    T1_Token*    top   = parser->top;
-    T1_FontInfo* info  = &parser->face->type1.font_info;
-
-    switch ( top[0].kind2 )
-    {
-      case imm_version:
-        info->version = CopyString( parser );
-        break;
-
-      case imm_Notice:
-        info->notice = CopyString( parser );
-        break;
-
-      case imm_FullName:
-        info->full_name = CopyString( parser );
-        break;
-
-      case imm_FamilyName:
-        info->family_name = CopyString( parser );
-        break;
-
-      case imm_Weight:
-        info->weight = CopyString( parser );
-        break;
-
-      case imm_ItalicAngle:
-        info->italic_angle = CopyInteger( parser );
-        break;
-
-      case imm_isFixedPitch:
-        info->is_fixed_pitch = CopyBoolean( parser );
-        break;
-
-      case imm_UnderlinePosition:
-        info->underline_position = (T1_Short)CopyInteger( parser );
-        break;
-
-      case imm_UnderlineThickness:
-        info->underline_thickness = (T1_Short)CopyInteger( parser );
-        break;
-
-      default:
-        /* ignore all other things */
-        parser->error = T1_Err_Ok;
-    }
-    return parser->error;
-  }
-
-
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_Def_Private                                              */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function performs a 'def' when in the Private dictionary       */
-/*    Its purpose is to build the T1_Private structure directly from      */
-/*    the stream..                                                        */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_Def_Private( T1_Parser*  parser )
-  {
-    T1_Token*   top   = parser->top;
-    T1_Private* priv  = &parser->face->type1.private_dict;
-
-    switch ( top[0].kind2 )
-    {
-      case imm_RD: case imm_RD_alternate:    /* Ignore the definitions  */
-      case imm_ND: case imm_ND_alternate:    /* of RD, NP, ND and their */
-      case imm_NP: case imm_NP_alternate:    /* alternate forms ...     */
-        parser->error = T1_Err_Ok;
-        break;
-
-
-      case imm_BlueValues:
-        CopyArray( parser, &priv->num_blues,
-                   priv->blue_values, 14 );
-        break;
-
-
-      case imm_OtherBlues:
-        CopyArray( parser, &priv->num_other_blues,
-                   priv->other_blues, 10 );
-        break;
-
-
-      case imm_FamilyBlues:
-        CopyArray( parser, &priv->num_family_blues,
-                   priv->family_blues, 14 );
-        break;
-
-
-      case imm_FamilyOtherBlues:
-        CopyArray( parser, &priv->num_family_other_blues,
-                   priv->family_other_blues, 10 );
-        break;
-
-
-      case imm_BlueScale:
-        priv->blue_scale = CopyFloat( parser, 0x10000 );
-        break;
-
-
-      case imm_BlueShift:
-        priv->blue_shift = CopyInteger( parser );
-        break;
-
-
-      case imm_BlueFuzz:
-        priv->blue_fuzz = CopyInteger( parser );
-        break;
-
-
-      case imm_StdHW:
-        CopyArray( parser, 0, (T1_Short*)&priv->standard_width, 1 );
-        break;
-
-
-      case imm_StdVW:
-        CopyArray( parser, 0, (T1_Short*)&priv->standard_height, 1 );
-        break;
-
-
-      case imm_StemSnapH:
-        CopyArray( parser, &priv->num_snap_widths,
-                   priv->stem_snap_widths, 12 );
-        break;
-
-
-      case imm_StemSnapV:
-        CopyArray( parser, &priv->num_snap_heights,
-                   priv->stem_snap_heights, 12 );
-        break;
-
-
-      case imm_ForceBold:
-        priv->force_bold = CopyBoolean( parser );
-        break;
-
-
-      case imm_LanguageGroup:
-        priv->language_group = CopyInteger( parser );
-        break;
-
-
-      case imm_password:
-        priv->password = CopyInteger( parser );
-        break;
-
-
-      case imm_UniqueID:
-        priv->unique_id = CopyInteger( parser );
-        break;
-
-
-      case imm_lenIV:
-        priv->lenIV = CopyInteger( parser );
-        break;
-
-
-      case imm_MinFeature:
-        CopyArray( parser, 0, priv->min_feature, 2 );
-        break;
-
-
-      default:
-        /* ignore all other things */
-        parser->error = T1_Err_Ok;
-    }
-    return parser->error;
-  }
-
-
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_Def_Error                                                */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function returns a simple syntax error when invoked. It is     */
-/*    ued for the "def" keyword when in the "encoding", "subrs",          */
-/*    "othersubrs" and "charstrings" dictionary states..                  */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_Def_Error( T1_Parser*  parser )
-  {
-    FT_ERROR(( "T1.Load : 'def' keyword encountered in bad dictionary/array\n" ));
-    parser->error = T1_Err_Syntax_Error;
-    return parser->error;
-  }
-
-
-  static
-  T1_Error  Do_Def_Ignore( T1_Parser*  parser )
-  {
-    (void)parser;
-    return T1_Err_Ok;
-  }
-
-  static
-  T1_Parse_Func   def_funcs[ dict_max ] =
-  {
-    Do_Def_Error,
-    Do_Def_Font,
-    Do_Def_FontInfo,
-    Do_Def_Ignore,
-    Do_Def_Private,
-    Do_Def_Ignore,
-    Do_Def_Ignore,
-    Do_Def_Ignore,
-    Do_Def_Ignore,
-    Do_Def_Ignore,
-    Do_Def_Ignore,
-  };
-
-
-  /**********************************************************************/
-  /*                                                                    */
-  /*                                                                    */
-  /*        IMPLEMENTATION OF THE "PUT" KEYWORD DEPENDING ON            */
-  /*                     CURRENT DICTIONARY STATE                       */
-  /*                                                                    */
-  /*                                                                    */
-  /**********************************************************************/
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_Put_Encoding                                             */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function performs a 'put' when in the Encoding array           */
-/*    The glyph name is copied into the T1 recorder, and the charcode     */
-/*    and glyph name pointer are written into the face object encoding    */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_Put_Encoding( T1_Parser*  parser )
-  {
-    T1_Error      error  = T1_Err_Ok;
-    T1_Face       face   = parser->face;
-    T1_Token*     top    = parser->top;
-    T1_Encoding*  encode = &face->type1.encoding;
-    T1_Int        index;
-
-    /* record and check the character code */
-    if ( top[0].kind != tok_number )
-    {
-      FT_TRACE4(( "T1.Parse.put: number expected\n" ));
-      goto Syntax_Error;
-    }
-    index = (T1_Int)CopyInteger( parser );
-    if (parser->error) return parser->error;
-
-    if ( index < 0 || index >= encode->num_chars )
-    {
-      FT_TRACE4(( "T1.Parse.put: invalid character code\n" ));
-      goto Syntax_Error;
-    }
-
-    /* record the immediate name */
-    if ( top[1].kind != tok_immediate )
-    {
-      FT_TRACE4(( "T1.Parse.put: immediate name expected\n" ));
-      goto Syntax_Error;
-    }
-
-    /* if the glyph name is '.notdef', store a NULL char name */
-    /* otherwise, record the glyph name..                     */
-    if ( top[1].kind == imm_notdef )
-    {
-      parser->table.elements[ index ] = 0;
-      parser->table.lengths [ index ] = 0;
-    }
-    else
-    {
-      T1_String  temp_name[128];
-      T1_Token*  token = top+1;
-      T1_Int     len   = token->len-1;
-
-      /* copy immediate name */
-      if (len > 127) len = 127;
-      MEM_Copy( temp_name, parser->tokenizer->base + token->start+1, len );
-      temp_name[len] = '\0';
-
-      error = T1_Add_Table( &parser->table, index, (T1_Byte*)temp_name, len+1 );
-
-	  /* adjust code_first and code_last */
-	  if ( index < encode->code_first )  encode->code_first = index;
-	  if ( index > encode->code_last  )  encode->code_last  = index;
-    }
-    return error;
-
-  Syntax_Error:
-    /* ignore the error, and simply clear the stack */
-    FT_TRACE4(( "T1.Put.Encoding: invalid syntax encountered\n" ));
-    parser->top = parser->stack;
-    return T1_Err_Ok;
-  }
-
-  /**********************************************************************/
-  /*                                                                    */
-  /*                                                                    */
-  /*        IMPLEMENTATION OF THE "RD" KEYWORD DEPENDING ON             */
-  /*                     CURRENT DICTIONARY STATE                       */
-  /*                                                                    */
-  /*                                                                    */
-  /**********************************************************************/
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_RD_Subrs                                                 */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function performs a 'RD' when in the Subrs dictionary          */
-/*    It simply records the array of bytecodes/charstrings corresponding  */
-/*    to the sub-routine..                                                */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_RD_Subrs( T1_Parser*  parser )
-  {
-    T1_Error      error  = T1_Err_Ok;
-    T1_Face       face   = parser->face;
-    T1_Token*     top    = parser->top;
-    T1_Tokenizer  tokzer = parser->tokenizer;
-    T1_Int        index, count;
-
-    /* record and check the character code */
-    if ( top[0].kind != tok_number ||
-         top[1].kind != tok_number )
-    {
-      FT_ERROR(( "T1.Parse.put: number expected\n" ));
-      goto Syntax_Error;
-    }
-    index = (T1_Int)CopyInteger( parser );
-    error = parser->error; if (error) goto Exit;
-
-    count = (T1_Int)CopyInteger( parser );
-    error = parser->error; if (error) goto Exit;
-
-    if ( index < 0 || index >= face->type1.num_subrs )
-    {
-      FT_ERROR(( "T1.Parse.put: invalid character code\n" ));
-      goto Syntax_Error;
-    }
-
-    /* decrypt charstring and skip them */
-    {
-      T1_Byte*  base = tokzer->base + tokzer->cursor;
-
-      t1_decrypt( base, count, 4330 );
-      tokzer->cursor += count;
-
-      base  += face->type1.private_dict.lenIV;
-      count -= face->type1.private_dict.lenIV;
-
-      error = T1_Add_Table( &parser->table, index, base, count );
-    }
-
-    /* consume the closing NP or 'put' */
-    error = Expect_Keyword2( parser, key_NP, key_put );
-
-  Exit:
-    return error;
-
-  Syntax_Error:
-    return T1_Err_Syntax_Error;
-  }
-
-
-/**************************************************************************/
-/*                                                                        */
-/* <Function> Do_RD_CharStrings                                           */
-/*                                                                        */
-/* <Description>                                                          */
-/*    This function performs a 'RD' when in the CharStrings dictionary    */
-/*    It simply records the array of bytecodes/charstrings corresponding  */
-/*    to the glyph program string.                                        */
-/*                                                                        */
-/* <Input>                                                                */
-/*    parser :: handle to current parser.                                 */
-/*                                                                        */
-/* <Return>                                                               */
-/*    Error code. 0 means success                                         */
-/*                                                                        */
-  static
-  T1_Error  Do_RD_Charstrings( T1_Parser*  parser )
-  {
-    T1_Error      error = T1_Err_Ok;
-    T1_Face       face  = parser->face;
-    T1_Token*     top   = parser->top;
-    T1_Tokenizer  tokzer = parser->tokenizer;
-    T1_Int        index, count;
-
-    /* check the character name argument */
-    if ( top[0].kind != tok_immediate )
-    {
-      FT_ERROR(( "T1.Parse.RD: immediate character name expected\n" ));
-      goto Syntax_Error;
-    }
-
-    /* check the count argument */
-    if ( top[1].kind != tok_number )
-    {
-      FT_ERROR(( "T1.Parse.put: number expected\n" ));
-      goto Syntax_Error;
-    }
-	parser->args++;
-    count = (T1_Int)CopyInteger( parser );
-    error = parser->error; if (error) goto Exit;
-
-    /* record the glyph name and get the corresponding glyph index */
-    if ( top[0].kind2 == imm_notdef )
-      index = 0;
-    else
-    {
-      T1_String  temp_name[128];
-      T1_Token*  token = top;
-      T1_Int     len   = token->len-1;
-
-      /* copy immediate name */
-      if (len > 127) len = 127;
-      MEM_Copy( temp_name, parser->tokenizer->base + token->start+1, len );
-      temp_name[len] = '\0';
-
-      index = parser->cur_name++;
-      error = T1_Add_Table( &parser->table, index*2, (T1_Byte*)temp_name, len+1 );
-      if (error) goto Exit;
-    }
-
-    /* decrypt and record charstring, then skip them */
-    {
-      T1_Byte*  base = tokzer->base + tokzer->cursor;
-
-      t1_decrypt( base, count, 4330 );
-      tokzer->cursor += count;  /* skip */
-
-      base  += face->type1.private_dict.lenIV;
-      count -= face->type1.private_dict.lenIV;
-
-      error = T1_Add_Table( &parser->table, index*2+1, base, count );
-    }
-
-    /* consume the closing ND */
-    if (!error)
-      error = Expect_Keyword( parser, key_ND );
-
-  Exit:
-    return error;
-
-  Syntax_Error:
-    return T1_Err_Syntax_Error;
-  }
-
-
-
-
-
-
-  static
-  T1_Error  Expect_Dict_Arguments( T1_Parser*    parser,
-                                   T1_Int        num_args,
-                                   T1_TokenType  immediate,
-                                   T1_DictState  new_state,
-                                   T1_Int       *count )
-  {
-    /* check that we have enough arguments in the stack, including */
-    /* the 'dict' keyword..                                        */
-    if ( parser->top - parser->stack < num_args )
-    {
-      FT_ERROR(( "T1.Parse.Dict : expecting at least %d arguments",
-               num_args ));
-      goto Syntax_Error;
-    }
-
-    /* check that we have the correct immediate, if needed */
-    if ( num_args == 2 )
-    {
-      if ( parser->top[-2].kind  != tok_immediate ||
-           parser->top[-2].kind2 != immediate     )
-      {
-        FT_ERROR(( "T1.Parse.Dict : expecting '/%s' dictionary\n",
-                 t1_immediates[ immediate - imm_first_ ] ));
-        goto Syntax_Error;
+          the_blend = FT_MulDiv( design         - designs[before],
+                                 blends [after] - blends [before],
+                                 designs[after] - designs[before] );
+
+      Found:
+        final_blends[n] = the_blend;
       }
+
+      error = T1_Set_MM_Blend( face, num_coords, final_blends );
     }
 
-	parser->args = parser->top-1;
-
-    /* check that the count argument is a number */
-    if ( parser->args->kind != tok_number )
-    {
-      FT_ERROR(( "T1.Parse.Dict : expecting numerical count argument for 'dict'\n" ));
-      goto Syntax_Error;
-    }
-    if (count)
-    {
-      *count = CopyInteger( parser );
-      if (parser->error) return parser->error;
-    }
-
-    /* save the dictionary state */
-    parser->state_stack[ ++parser->state_index ] = new_state;
-
-    /* consume the 'begin' keyword, and clear the stack */
-    parser->top -= num_args;
-    return Expect_Keyword( parser, key_begin );
-
-  Syntax_Error:
-    return T1_Err_Syntax_Error;
+    return error;
   }
 
 
-
-
-
-  static
-  T1_Error  Expect_Array_Arguments( T1_Parser*  parser )
+  FT_LOCAL_DEF( void )
+  T1_Done_Blend( T1_Face  face )
   {
-    T1_Token*     top   = parser->top;
-    T1_Error      error = T1_Err_Ok;
-    T1_DictState  new_state;
-    T1_Int        count;
-    T1_Face       face   = parser->face;
-    FT_Memory     memory = face->root.memory;
+    FT_Memory  memory = face->root.memory;
+    PS_Blend   blend  = face->blend;
 
-    /* Check arguments format */
-    if ( top - parser->stack < 2 )
+
+    if ( blend )
     {
-      FT_ERROR(( "T1.Parse.array: two arguments expected\n" ));
-      error = T1_Err_Stack_Underflow;
+      FT_UInt  num_designs = blend->num_designs;
+      FT_UInt  num_axis    = blend->num_axis;
+      FT_UInt  n;
+
+
+      /* release design pos table */
+      FT_FREE( blend->design_pos[0] );
+      for ( n = 1; n < num_designs; n++ )
+        blend->design_pos[n] = 0;
+
+      /* release blend `private' and `font info' dictionaries */
+      FT_FREE( blend->privates[1] );
+      FT_FREE( blend->font_infos[1] );
+      FT_FREE( blend->bboxes[1] );
+
+      for ( n = 0; n < num_designs; n++ )
+      {
+        blend->privates  [n] = 0;
+        blend->font_infos[n] = 0;
+        blend->bboxes    [n] = 0;
+      }
+
+      /* release weight vectors */
+      FT_FREE( blend->weight_vector );
+      blend->default_weight_vector = 0;
+
+      /* release axis names */
+      for ( n = 0; n < num_axis; n++ )
+        FT_FREE( blend->axis_names[n] );
+
+      /* release design map */
+      for ( n = 0; n < num_axis; n++ )
+      {
+        PS_DesignMap  dmap = blend->design_map + n;
+
+
+        FT_FREE( dmap->design_points );
+        dmap->num_points = 0;
+      }
+
+      FT_FREE( face->blend );
+    }
+  }
+
+
+  static void
+  parse_blend_axis_types( T1_Face    face,
+                          T1_Loader  loader )
+  {
+    T1_TokenRec  axis_tokens[ T1_MAX_MM_AXIS ];
+    FT_Int       n, num_axis;
+    FT_Error     error = 0;
+    PS_Blend     blend;
+    FT_Memory    memory;
+
+
+    /* take an array of objects */
+    T1_ToTokenArray( &loader->parser, axis_tokens,
+                     T1_MAX_MM_AXIS, &num_axis );
+    if ( num_axis <= 0 || num_axis > T1_MAX_MM_AXIS )
+    {
+      FT_ERROR(( "parse_blend_axis_types: incorrect number of axes: %d\n",
+                 num_axis ));
+      error = T1_Err_Invalid_File_Format;
       goto Exit;
     }
 
-    parser->top -= 2;
-    top         -= 2;
-	parser->args = top + 1;
+    /* allocate blend if necessary */
+    error = t1_allocate_blend( face, 0, (FT_UInt)num_axis );
+    if ( error )
+      goto Exit;
 
-    if ( top[0].kind != tok_immediate )
+    blend  = face->blend;
+    memory = face->root.memory;
+
+    /* each token is an immediate containing the name of the axis */
+    for ( n = 0; n < num_axis; n++ )
     {
-      FT_ERROR(( "T1.Parse.array: first argument must be an immediate name\n" ));
-      goto Syntax_Error;
+      T1_Token    token = axis_tokens + n;
+      FT_Byte*    name;
+      FT_PtrDist  len;
+
+
+      /* skip first slash, if any */
+      if ( token->start[0] == '/' )
+        token->start++;
+
+      len = token->limit - token->start;
+      if ( len <= 0 )
+      {
+        error = T1_Err_Invalid_File_Format;
+        goto Exit;
+      }
+
+      if ( FT_ALLOC( blend->axis_names[n], len + 1 ) )
+        goto Exit;
+
+      name = (FT_Byte*)blend->axis_names[n];
+      FT_MEM_COPY( name, token->start, len );
+      name[len] = 0;
     }
 
-    if ( top[1].kind != tok_number )
-    {
-      FT_ERROR(( "T1.Parse.array: second argument must be a number\n" ));
-      goto Syntax_Error;
-    }
-    count = (T1_Int)CopyInteger( parser );
+  Exit:
+    loader->parser.root.error = error;
+  }
 
-    /* Is this an array we know about ?? */
-    switch ( top[0].kind2 )
+
+  static void
+  parse_blend_design_positions( T1_Face    face,
+                                T1_Loader  loader )
+  {
+    T1_TokenRec  design_tokens[ T1_MAX_MM_DESIGNS ];
+    FT_Int       num_designs;
+    FT_Int       num_axis;
+    T1_Parser    parser = &loader->parser;
+
+    FT_Error     error = 0;
+    PS_Blend     blend;
+
+
+    /* get the array of design tokens - compute number of designs */
+    T1_ToTokenArray( parser, design_tokens, T1_MAX_MM_DESIGNS, &num_designs );
+    if ( num_designs <= 0 || num_designs > T1_MAX_MM_DESIGNS )
     {
-      case imm_Encoding:
+      FT_ERROR(( "parse_blend_design_positions:" ));
+      FT_ERROR(( " incorrect number of designs: %d\n",
+                 num_designs ));
+      error = T1_Err_Invalid_File_Format;
+      goto Exit;
+    }
+
+    {
+      FT_Byte*  old_cursor = parser->root.cursor;
+      FT_Byte*  old_limit  = parser->root.limit;
+      FT_UInt   n;
+
+
+      blend    = face->blend;
+      num_axis = 0;  /* make compiler happy */
+
+      for ( n = 0; n < (FT_UInt)num_designs; n++ )
+      {
+        T1_TokenRec  axis_tokens[ T1_MAX_MM_DESIGNS ];
+        T1_Token     token;
+        FT_Int       axis, n_axis;
+
+
+        /* read axis/coordinates tokens */
+        token = design_tokens + n;
+        parser->root.cursor = token->start - 1;
+        parser->root.limit  = token->limit + 1;
+        T1_ToTokenArray( parser, axis_tokens, T1_MAX_MM_AXIS, &n_axis );
+
+        if ( n == 0 )
         {
-          T1_Encoding*  encode = &face->type1.encoding;
-
-          new_state = dict_encoding;
-
-          encode->code_first = count;
-          encode->code_last  = 0;
-          encode->num_chars  = count;
-
-          /* allocate the table of character indexes. The table of */
-          /* character names is allocated through init_t1_recorder */
-          if ( ALLOC_ARRAY( encode->char_index, count, T1_Short   ) )
-            return error;
-
-          error = T1_New_Table( &parser->table, count, memory );
-          if (error) goto Exit;
-
-		  parser->encoding_type = t1_encoding_array;
+          num_axis = n_axis;
+          error = t1_allocate_blend( face, num_designs, num_axis );
+          if ( error )
+            goto Exit;
+          blend = face->blend;
         }
-        break;
-
-
-      case imm_Subrs:
+        else if ( n_axis != num_axis )
         {
-          new_state             = dict_subrs;
-          face->type1.num_subrs = count;
-
-          error = T1_New_Table( &parser->table, count, memory );
-          if (error) goto Exit;
+          FT_ERROR(( "parse_blend_design_positions: incorrect table\n" ));
+          error = T1_Err_Invalid_File_Format;
+          goto Exit;
         }
-        break;
+
+        /* now, read each axis token into the design position */
+        for ( axis = 0; axis < n_axis; axis++ )
+        {
+          T1_Token  token2 = axis_tokens + axis;
 
 
-      case imm_CharStrings:
-        new_state        = dict_charstrings;
-        break;
+          parser->root.cursor = token2->start;
+          parser->root.limit  = token2->limit;
+          blend->design_pos[n][axis] = T1_ToFixed( parser, 0 );
+        }
+      }
 
-
-      default:
-        new_state = dict_unknown_array;
+      loader->parser.root.cursor = old_cursor;
+      loader->parser.root.limit  = old_limit;
     }
-    parser->state_stack[ ++parser->state_index ] = new_state;
+
+  Exit:
+    loader->parser.root.error = error;
+  }
+
+
+  static void
+  parse_blend_design_map( T1_Face    face,
+                          T1_Loader  loader )
+  {
+    FT_Error     error  = 0;
+    T1_Parser    parser = &loader->parser;
+    PS_Blend     blend;
+    T1_TokenRec  axis_tokens[T1_MAX_MM_AXIS];
+    FT_Int       n, num_axis;
+    FT_Byte*     old_cursor;
+    FT_Byte*     old_limit;
+    FT_Memory    memory = face->root.memory;
+
+
+    T1_ToTokenArray( parser, axis_tokens, T1_MAX_MM_AXIS, &num_axis );
+    if ( num_axis <= 0 || num_axis > T1_MAX_MM_AXIS )
+    {
+      FT_ERROR(( "parse_blend_design_map: incorrect number of axes: %d\n",
+                 num_axis ));
+      error = T1_Err_Invalid_File_Format;
+      goto Exit;
+    }
+    old_cursor = parser->root.cursor;
+    old_limit  = parser->root.limit;
+
+    error = t1_allocate_blend( face, 0, num_axis );
+    if ( error )
+      goto Exit;
+    blend = face->blend;
+
+    /* now, read each axis design map */
+    for ( n = 0; n < num_axis; n++ )
+    {
+      PS_DesignMap  map = blend->design_map + n;
+      T1_Token      token;
+      FT_Int        p, num_points;
+
+
+      token = axis_tokens + n;
+      parser->root.cursor = token->start;
+      parser->root.limit  = token->limit;
+
+      /* count the number of map points */
+      {
+        FT_Byte*  ptr   = token->start;
+        FT_Byte*  limit = token->limit;
+
+
+        num_points = 0;
+        for ( ; ptr < limit; ptr++ )
+          if ( ptr[0] == '[' )
+            num_points++;
+      }
+      if ( num_points <= 0 || num_points > T1_MAX_MM_MAP_POINTS )
+      {
+        FT_ERROR(( "parse_blend_design_map: incorrect table\n" ));
+        error = T1_Err_Invalid_File_Format;
+        goto Exit;
+      }
+
+      /* allocate design map data */
+      if ( FT_NEW_ARRAY( map->design_points, num_points * 2 ) )
+        goto Exit;
+      map->blend_points = map->design_points + num_points;
+      map->num_points   = (FT_Byte)num_points;
+
+      for ( p = 0; p < num_points; p++ )
+      {
+        map->design_points[p] = T1_ToInt( parser );
+        map->blend_points [p] = T1_ToFixed( parser, 0 );
+      }
+    }
+
+    parser->root.cursor = old_cursor;
+    parser->root.limit  = old_limit;
+
+  Exit:
+    parser->root.error = error;
+  }
+
+
+  static void
+  parse_weight_vector( T1_Face    face,
+                       T1_Loader  loader )
+  {
+    FT_Error     error  = 0;
+    T1_Parser    parser = &loader->parser;
+    PS_Blend     blend  = face->blend;
+    T1_TokenRec  master;
+    FT_UInt      n;
+    FT_Byte*     old_cursor;
+    FT_Byte*     old_limit;
+
+
+    if ( !blend || blend->num_designs == 0 )
+    {
+      FT_ERROR(( "parse_weight_vector: too early!\n" ));
+      error = T1_Err_Invalid_File_Format;
+      goto Exit;
+    }
+
+    T1_ToToken( parser, &master );
+    if ( master.type != T1_TOKEN_TYPE_ARRAY )
+    {
+      FT_ERROR(( "parse_weight_vector: incorrect format!\n" ));
+      error = T1_Err_Invalid_File_Format;
+      goto Exit;
+    }
+
+    old_cursor = parser->root.cursor;
+    old_limit  = parser->root.limit;
+
+    parser->root.cursor = master.start;
+    parser->root.limit  = master.limit;
+
+    for ( n = 0; n < blend->num_designs; n++ )
+    {
+      blend->default_weight_vector[n] =
+      blend->weight_vector[n]         = T1_ToFixed( parser, 0 );
+    }
+
+    parser->root.cursor = old_cursor;
+    parser->root.limit  = old_limit;
+
+  Exit:
+    parser->root.error = error;
+  }
+
+
+  /* the keyword `/shareddict' appears in some multiple master fonts   */
+  /* with a lot of Postscript garbage behind it (that's completely out */
+  /* of spec!); we detect it and terminate the parsing                 */
+  /*                                                                   */
+  static void
+  parse_shared_dict( T1_Face    face,
+                     T1_Loader  loader )
+  {
+    T1_Parser  parser = &loader->parser;
+
+    FT_UNUSED( face );
+
+
+    parser->root.cursor = parser->root.limit;
+    parser->root.error  = 0;
+  }
+
+#endif /* T1_CONFIG_OPTION_NO_MM_SUPPORT */
+
+
+  /*************************************************************************/
+  /*************************************************************************/
+  /*****                                                               *****/
+  /*****                      TYPE 1 SYMBOL PARSING                    *****/
+  /*****                                                               *****/
+  /*************************************************************************/
+  /*************************************************************************/
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* First of all, define the token field static variables.  This is a set */
+  /* of T1_FieldRec variables used later.                                  */
+  /*                                                                       */
+  /*************************************************************************/
+
+
+  static FT_Error
+  t1_load_keyword( T1_Face    face,
+                   T1_Loader  loader,
+                   T1_Field   field )
+  {
+    FT_Error  error;
+    void*     dummy_object;
+    void**    objects;
+    FT_UInt   max_objects;
+    PS_Blend  blend = face->blend;
+
+
+    /* if the keyword has a dedicated callback, call it */
+    if ( field->type == T1_FIELD_TYPE_CALLBACK )
+    {
+      field->reader( (FT_Face)face, loader );
+      error = loader->parser.root.error;
+      goto Exit;
+    }
+
+    /* now, the keyword is either a simple field, or a table of fields; */
+    /* we are now going to take care of it                              */
+    switch ( field->location )
+    {
+    case T1_FIELD_LOCATION_FONT_INFO:
+      dummy_object = &face->type1.font_info;
+      objects      = &dummy_object;
+      max_objects  = 0;
+
+      if ( blend )
+      {
+        objects     = (void**)blend->font_infos;
+        max_objects = blend->num_designs;
+      }
+      break;
+
+    case T1_FIELD_LOCATION_PRIVATE:
+      dummy_object = &face->type1.private_dict;
+      objects      = &dummy_object;
+      max_objects  = 0;
+
+      if ( blend )
+      {
+        objects     = (void**)blend->privates;
+        max_objects = blend->num_designs;
+      }
+      break;
+
+    case T1_FIELD_LOCATION_BBOX:
+      dummy_object = &face->type1.font_bbox;
+      objects      = &dummy_object;
+      max_objects  = 0;
+
+      if ( blend )
+      {
+        objects     = (void**)blend->bboxes;
+        max_objects = blend->num_designs;
+      }
+      break;
+
+    default:
+      dummy_object = &face->type1;
+      objects      = &dummy_object;
+      max_objects  = 0;
+    }
+
+    if ( field->type == T1_FIELD_TYPE_INTEGER_ARRAY ||
+         field->type == T1_FIELD_TYPE_FIXED_ARRAY   )
+      error = T1_Load_Field_Table( &loader->parser, field,
+                                   objects, max_objects, 0 );
+    else
+      error = T1_Load_Field( &loader->parser, field,
+                             objects, max_objects, 0 );
 
   Exit:
     return error;
-
-  Syntax_Error:
-    return T1_Err_Syntax_Error;
   }
 
 
-
-
-  static
-  T1_Error  Finalise_Parsing( T1_Parser*  parser )
+  static int
+  is_space( FT_Byte  c )
   {
-    T1_Face    face       = parser->face;
-    T1_Font*   type1      = &face->type1;
-    FT_Memory  memory     = face->root.memory;
-    T1_Table*  strings    = &parser->table;
-    PSNames_Interface*  psnames    = (PSNames_Interface*)face->psnames;
-	T1_Int     num_glyphs;
-	T1_Int     n;
-	T1_Error   error;
-
-    num_glyphs = type1->num_glyphs = parser->cur_name;
-
-	/* allocate glyph names and charstrings arrays */
-	if ( ALLOC_ARRAY( type1->glyph_names    , num_glyphs, T1_String* ) ||
-		 ALLOC_ARRAY( type1->charstrings    , num_glyphs, T1_Byte* )   ||
-	     ALLOC_ARRAY( type1->charstrings_len, num_glyphs, T1_Int*  )   )
-	  return error;
-
-	/* copy glyph names and charstrings offsets and lengths */
-    type1->charstrings_block = strings->block;
-	for ( n = 0; n < num_glyphs; n++ )
-	{
-      type1->glyph_names[n]     = (T1_String*)strings->elements[2*n];
-      type1->charstrings[n]     = strings->elements[2*n+1];
-      type1->charstrings_len[n] = strings->lengths [2*n+1];
-    }
-
-	/* now free the old tables */
-	FREE( strings->elements );
-	FREE( strings->lengths );
-
-    if (!psnames)
-    {
-      FT_ERROR(( "T1.Parse.Finalise : PSNames module missing !!\n" ));
-      return T1_Err_Unimplemented_Feature;
-    }
-
-	/* Compute encoding if required. */
-	if (parser->encoding_type == t1_encoding_none)
-    {
-	  FT_ERROR(( "T1.Parse.Finalise : no encoding specified in font file\n" ));
-	  return T1_Err_Syntax_Error;
-    }
-
-	{
-	  T1_Int        n;
-	  T1_Encoding*  encode = &type1->encoding;
-
-	  encode->code_first = encode->num_chars-1;
-	  encode->code_last  = 0;
-
-	  for ( n = 0; n < encode->num_chars; n++ )
-	  {
-		T1_String** names;
-		T1_Int      index;
-		T1_Int      m;
-
-		switch (parser->encoding_type)
-		{
-		  case t1_encoding_standard:
-			  index = psnames->adobe_std_encoding[n];
-			  names = 0;
-			  break;
-
-		  case t1_encoding_expert:
-			  index = psnames->adobe_expert_encoding[n];
-			  names = 0;
-			  break;
-
-		  default:
-		      index = n;
-			  names = (T1_String**)parser->encoding_offsets;
-		}
-		encode->char_index[n] = 0;
-		if (index)
-		{
-		  T1_String*  name;
-
-          if (names)
-            name = names[index];
-          else
-            name = (T1_String*)psnames->adobe_std_strings(index);
-
-		  if ( name )
-		  {
-            T1_Int  len = strlen(name);
-
-            /* lookup glyph index from name */
-            for ( m = 0; m < num_glyphs; m++ )
-   		    {
-		  	  if ( strncmp( type1->glyph_names[m], name, len ) == 0 )
-			  {
-			    encode->char_index[n] = m;
-			    break;
-		      }
-		    }
-
-		    if ( n < encode->code_first ) encode->code_first = n;
-		    if ( n > encode->code_last  ) encode->code_last  = n;
-	      }
-	    }
-	  }
-
-	  parser->encoding_type = t1_encoding_none;
-	  FREE( parser->encoding_names );
-	  FREE( parser->encoding_lengths );
-	  FREE( parser->encoding_offsets );
-    }
-
-    return T1_Err_Ok;
+    return ( c == ' ' || c == '\t' || c == '\r' || c == '\n' );
   }
 
 
-
-
-
-  LOCAL_FUNC
-  T1_Error  Parse_T1_FontProgram( T1_Parser*  parser )
+  static int
+  is_alpha( FT_Byte  c )
   {
-    T1_Error  error;
-    T1_Font*  type1 = &parser->face->type1;
+    /* Note: we must accept "+" as a valid character, as it is used in */
+    /*       embedded type1 fonts in PDF documents.                    */
+    /*                                                                 */
+    return ( ft_isalnum( c ) ||
+             c == '.'        ||
+             c == '_'        ||
+             c == '-'        ||
+             c == '+'        );
+  }
+
+
+  static int
+  read_binary_data( T1_Parser  parser,
+                    FT_Long*   size,
+                    FT_Byte**  base )
+  {
+    FT_Byte*  cur;
+    FT_Byte*  limit = parser->root.limit;
+
+
+    /* the binary data has the following format */
+    /*                                          */
+    /* `size' [white*] RD white ....... ND      */
+    /*                                          */
+
+    T1_Skip_Spaces( parser );
+    cur = parser->root.cursor;
+
+    if ( cur < limit && (FT_Byte)( *cur - '0' ) < 10 )
+    {
+      *size = T1_ToInt( parser );
+
+      T1_Skip_Spaces( parser );
+      T1_Skip_Alpha ( parser );  /* `RD' or `-|' or something else */
+
+      /* there is only one whitespace char after the */
+      /* `RD' or `-|' token                          */
+      *base = parser->root.cursor + 1;
+
+      parser->root.cursor += *size + 1;
+      return 1;
+    }
+
+    FT_ERROR(( "read_binary_data: invalid size field\n" ));
+    parser->root.error = T1_Err_Invalid_File_Format;
+    return 0;
+  }
+
+
+  /* we will now define the routines used to handle */
+  /* the `/Encoding', `/Subrs', and `/CharStrings'  */
+  /* dictionaries                                   */
+
+  static void
+  parse_font_name( T1_Face    face,
+                   T1_Loader  loader )
+  {
+    T1_Parser   parser = &loader->parser;
+    FT_Error    error;
+    FT_Memory   memory = parser->root.memory;
+    FT_PtrDist  len;
+    FT_Byte*    cur;
+    FT_Byte*    cur2;
+    FT_Byte*    limit;
+
+
+    if ( face->type1.font_name )
+      /*  with synthetic fonts, it's possible we get here twice  */
+      return;
+
+    T1_Skip_Spaces( parser );
+
+    cur   = parser->root.cursor;
+    limit = parser->root.limit;
+
+    if ( cur >= limit - 1 || *cur != '/' )
+      return;
+
+    cur++;
+    cur2 = cur;
+    while ( cur2 < limit && is_alpha( *cur2 ) )
+      cur2++;
+
+    len = cur2 - cur;
+    if ( len > 0 )
+    {
+      if ( FT_ALLOC( face->type1.font_name, len + 1 ) )
+      {
+        parser->root.error = error;
+        return;
+      }
+
+      FT_MEM_COPY( face->type1.font_name, cur, len );
+      face->type1.font_name[len] = '\0';
+    }
+    parser->root.cursor = cur2;
+  }
+
+
+#if 0
+  static void
+  parse_font_bbox( T1_Face    face,
+                   T1_Loader  loader )
+  {
+    T1_Parser  parser = &loader->parser;
+    FT_Fixed   temp[4];
+    FT_BBox*   bbox   = &face->type1.font_bbox;
+
+
+    (void)T1_ToFixedArray( parser, 4, temp, 0 );
+    bbox->xMin = FT_RoundFix( temp[0] );
+    bbox->yMin = FT_RoundFix( temp[1] );
+    bbox->xMax = FT_RoundFix( temp[2] );
+    bbox->yMax = FT_RoundFix( temp[3] );
+  }
+#endif
+
+
+  static void
+  parse_font_matrix( T1_Face    face,
+                     T1_Loader  loader )
+  {
+    T1_Parser   parser = &loader->parser;
+    FT_Matrix*  matrix = &face->type1.font_matrix;
+    FT_Vector*  offset = &face->type1.font_offset;
+    FT_Face     root   = (FT_Face)&face->root;
+    FT_Fixed    temp[6];
+    FT_Fixed    temp_scale;
+
+
+    if ( matrix->xx || matrix->yx )
+      /* with synthetic fonts, it's possible we get here twice  */
+      return;
+
+    (void)T1_ToFixedArray( parser, 6, temp, 3 );
+
+    temp_scale = ABS( temp[3] );
+
+    /* Set Units per EM based on FontMatrix values.  We set the value to */
+    /* 1000 / temp_scale, because temp_scale was already multiplied by   */
+    /* 1000 (in t1_tofixed, from psobjs.c).                              */
+
+    root->units_per_EM = (FT_UShort)( FT_DivFix( 1000 * 0x10000L,
+                                                 temp_scale ) >> 16 );
+
+    /* we need to scale the values by 1.0/temp_scale */
+    if ( temp_scale != 0x10000L )
+    {
+      temp[0] = FT_DivFix( temp[0], temp_scale );
+      temp[1] = FT_DivFix( temp[1], temp_scale );
+      temp[2] = FT_DivFix( temp[2], temp_scale );
+      temp[4] = FT_DivFix( temp[4], temp_scale );
+      temp[5] = FT_DivFix( temp[5], temp_scale );
+      temp[3] = 0x10000L;
+    }
+
+    matrix->xx = temp[0];
+    matrix->yx = temp[1];
+    matrix->xy = temp[2];
+    matrix->yy = temp[3];
+
+    /* note that the offsets must be expressed in integer font units */
+    offset->x  = temp[4] >> 16;
+    offset->y  = temp[5] >> 16;
+  }
+
+
+  static void
+  parse_encoding( T1_Face    face,
+                  T1_Loader  loader )
+  {
+    T1_Parser      parser = &loader->parser;
+    FT_Byte*       cur    = parser->root.cursor;
+    FT_Byte*       limit  = parser->root.limit;
+
+    PSAux_Service  psaux  = (PSAux_Service)face->psaux;
+
+
+    /* skip whitespace */
+    while ( is_space( *cur ) )
+    {
+      cur++;
+      if ( cur >= limit )
+      {
+        FT_ERROR(( "parse_encoding: out of bounds!\n" ));
+        parser->root.error = T1_Err_Invalid_File_Format;
+        return;
+      }
+    }
+
+    /* if we have a number, then the encoding is an array, */
+    /* and we must load it now                             */
+    if ( (FT_Byte)( *cur - '0' ) < 10 )
+    {
+      T1_Encoding  encode     = &face->type1.encoding;
+      FT_Int       count, n;
+      PS_Table     char_table = &loader->encoding_table;
+      FT_Memory    memory     = parser->root.memory;
+      FT_Error     error;
+
+
+      if ( encode->char_index )
+        /*  with synthetic fonts, it's possible we get here twice  */
+        return;
+
+      /* read the number of entries in the encoding, should be 256 */
+      count = (FT_Int)T1_ToInt( parser );
+      if ( parser->root.error )
+        return;
+
+      /* we use a T1_Table to store our charnames */
+      loader->num_chars = encode->num_chars = count;
+      if ( FT_NEW_ARRAY( encode->char_index, count ) ||
+           FT_NEW_ARRAY( encode->char_name,  count ) ||
+           FT_SET_ERROR( psaux->ps_table_funcs->init(
+                           char_table, count, memory ) ) )
+      {
+        parser->root.error = error;
+        return;
+      }
+
+      /* We need to `zero' out encoding_table.elements */
+      for ( n = 0; n < count; n++ )
+      {
+        char*  notdef = (char *)".notdef";
+
+
+        T1_Add_Table( char_table, n, notdef, 8 );
+      }
+
+      /* Now, we will need to read a record of the form         */
+      /* ... charcode /charname ... for each entry in our table */
+      /*                                                        */
+      /* We simply look for a number followed by an immediate   */
+      /* name.  Note that this ignores correctly the sequence   */
+      /* that is often seen in type1 fonts:                     */
+      /*                                                        */
+      /*   0 1 255 { 1 index exch /.notdef put } for dup        */
+      /*                                                        */
+      /* used to clean the encoding array before anything else. */
+      /*                                                        */
+      /* We stop when we encounter a `def'.                     */
+
+      cur   = parser->root.cursor;
+      limit = parser->root.limit;
+      n     = 0;
+
+      for ( ; cur < limit; )
+      {
+        FT_Byte  c;
+
+
+        c = *cur;
+
+        /* we stop when we encounter a `def' */
+        if ( c == 'd' && cur + 3 < limit )
+        {
+          if ( cur[1] == 'e'       &&
+               cur[2] == 'f'       &&
+               is_space( cur[-1] ) &&
+               is_space( cur[3] )  )
+          {
+            FT_TRACE6(( "encoding end\n" ));
+            break;
+          }
+        }
+
+        /* otherwise, we must find a number before anything else */
+        if ( (FT_Byte)( c - '0' ) < 10 )
+        {
+          FT_Int  charcode;
+
+
+          parser->root.cursor = cur;
+          charcode = (FT_Int)T1_ToInt( parser );
+          cur      = parser->root.cursor;
+
+          /* skip whitespace */
+          while ( cur < limit && is_space( *cur ) )
+            cur++;
+
+          if ( cur < limit && *cur == '/' )
+          {
+            /* bingo, we have an immediate name -- it must be a */
+            /* character name                                   */
+            FT_Byte*    cur2 = cur + 1;
+            FT_PtrDist  len;
+
+
+            while ( cur2 < limit && is_alpha( *cur2 ) )
+              cur2++;
+
+            len = cur2 - cur - 1;
+
+            parser->root.error = T1_Add_Table( char_table, charcode,
+                                               cur + 1, len + 1 );
+            char_table->elements[charcode][len] = '\0';
+            if ( parser->root.error )
+              return;
+
+            cur = cur2;
+          }
+        }
+        else
+          cur++;
+      }
+
+      face->type1.encoding_type = T1_ENCODING_TYPE_ARRAY;
+      parser->root.cursor       = cur;
+    }
+    /* Otherwise, we should have either `StandardEncoding', */
+    /* `ExpertEncoding', or `ISOLatin1Encoding'             */
+    else
+    {
+      if ( cur + 17 < limit                                            &&
+           ft_strncmp( (const char*)cur, "StandardEncoding", 16 ) == 0 )
+        face->type1.encoding_type = T1_ENCODING_TYPE_STANDARD;
+
+      else if ( cur + 15 < limit                                          &&
+                ft_strncmp( (const char*)cur, "ExpertEncoding", 14 ) == 0 )
+        face->type1.encoding_type = T1_ENCODING_TYPE_EXPERT;
+
+      else if ( cur + 18 < limit                                             &&
+                ft_strncmp( (const char*)cur, "ISOLatin1Encoding", 17 ) == 0 )
+        face->type1.encoding_type = T1_ENCODING_TYPE_ISOLATIN1;
+
+      else
+      {
+        FT_ERROR(( "parse_encoding: invalid token!\n" ));
+        parser->root.error = T1_Err_Invalid_File_Format;
+      }
+    }
+  }
+
+
+  static void
+  parse_subrs( T1_Face    face,
+               T1_Loader  loader )
+  {
+    T1_Parser      parser = &loader->parser;
+    PS_Table       table  = &loader->subrs;
+    FT_Memory      memory = parser->root.memory;
+    FT_Error       error;
+    FT_Int         n;
+
+    PSAux_Service  psaux  = (PSAux_Service)face->psaux;
+
+
+    if ( loader->num_subrs )
+      /*  with synthetic fonts, it's possible we get here twice  */
+      return;
+
+    loader->num_subrs = (FT_Int)T1_ToInt( parser );
+    if ( parser->root.error )
+      return;
+
+    /* position the parser right before the `dup' of the first subr */
+    T1_Skip_Spaces( parser );
+    T1_Skip_Alpha( parser );      /* `array' */
+    T1_Skip_Spaces( parser );
+
+    /* initialize subrs array */
+    error = psaux->ps_table_funcs->init( table, loader->num_subrs, memory );
+    if ( error )
+      goto Fail;
+
+    /* the format is simple:                                 */
+    /*                                                       */
+    /*   `index' + binary data                               */
+    /*                                                       */
+    for ( n = 0; n < loader->num_subrs; n++ )
+    {
+      FT_Long   idx, size;
+      FT_Byte*  base;
+
+
+      /* If the next token isn't `dup', we are also done.  This */
+      /* happens when there are `holes' in the Subrs array.     */
+      if ( ft_strncmp( (char*)parser->root.cursor, "dup", 3 ) != 0 )
+        break;
+
+      idx = T1_ToInt( parser );
+
+      if ( !read_binary_data( parser, &size, &base ) )
+        return;
+
+      /* The binary string is followed by one token, e.g. `NP' */
+      /* (bound to `noaccess put') or by two separate tokens:  */
+      /* `noaccess' & `put'.  We position the parser right     */
+      /* before the next `dup', if any.                        */
+      T1_Skip_Spaces( parser );
+      T1_Skip_Alpha( parser );    /* `NP' or `I' or `noaccess' */
+      T1_Skip_Spaces( parser );
+
+      if ( ft_strncmp( (char*)parser->root.cursor, "put", 3 ) == 0 )
+      {
+        T1_Skip_Alpha( parser );  /* skip `put' */
+        T1_Skip_Spaces( parser );
+      }
+
+      /* some fonts use a value of -1 for lenIV to indicate that */
+      /* the charstrings are unencoded                           */
+      /*                                                         */
+      /* thanks to Tom Kacvinsky for pointing this out           */
+      /*                                                         */
+      if ( face->type1.private_dict.lenIV >= 0 )
+      {
+        FT_Byte*  temp;
+
+
+        /* t1_decrypt() shouldn't write to base -- make temporary copy */
+        if ( FT_ALLOC( temp, size ) )
+          goto Fail;
+        FT_MEM_COPY( temp, base, size );
+        psaux->t1_decrypt( temp, size, 4330 );
+        size -= face->type1.private_dict.lenIV;
+        error = T1_Add_Table( table, idx,
+                              temp + face->type1.private_dict.lenIV, size );
+        FT_FREE( temp );
+      }
+      else
+        error = T1_Add_Table( table, idx, base, size );
+      if ( error )
+        goto Fail;
+    }
+    return;
+
+  Fail:
+    parser->root.error = error;
+  }
+
+
+  static void
+  parse_charstrings( T1_Face    face,
+                     T1_Loader  loader )
+  {
+    T1_Parser      parser       = &loader->parser;
+    PS_Table       code_table   = &loader->charstrings;
+    PS_Table       name_table   = &loader->glyph_names;
+    PS_Table       swap_table   = &loader->swap_table;
+    FT_Memory      memory       = parser->root.memory;
+    FT_Error       error;
+
+    PSAux_Service  psaux        = (PSAux_Service)face->psaux;
+
+    FT_Byte*       cur;
+    FT_Byte*       limit        = parser->root.limit;
+    FT_Int         n;
+    FT_UInt        notdef_index = 0;
+    FT_Byte        notdef_found = 0;
+
+
+    if ( loader->num_glyphs )
+      /*  with synthetic fonts, it's possible we get here twice  */
+      return;
+
+    loader->num_glyphs = (FT_Int)T1_ToInt( parser );
+    if ( parser->root.error )
+      return;
+
+    /* initialize tables (leaving room for addition of .notdef, */
+    /* if necessary).                                           */
+
+    error = psaux->ps_table_funcs->init( code_table,
+                                         loader->num_glyphs + 1,
+                                         memory );
+    if ( error )
+      goto Fail;
+
+    error = psaux->ps_table_funcs->init( name_table,
+                                         loader->num_glyphs + 1,
+                                         memory );
+    if ( error )
+      goto Fail;
+
+    /* Initialize table for swapping index notdef_index and */
+    /* index 0 names and codes (if necessary).              */
+
+    error = psaux->ps_table_funcs->init( swap_table, 4, memory );
+
+    if ( error )
+      goto Fail;
+
+    n = 0;
 
     for (;;)
     {
-      T1_Token      token;
-      T1_Token*     top;
-      T1_DictState  dict_state;
-      T1_Int        dict_index;
+      FT_Long   size;
+      FT_Byte*  base;
 
-      error      = Next_T1_Token( parser, &token );
-      top        = parser->top;
-      dict_index = parser->state_index;
-      dict_state = parser->state_stack[ dict_index ];
 
-      switch ( token.kind )
+      /* the format is simple:                    */
+      /*   `/glyphname' + binary data             */
+      /*                                          */
+      /* note that we stop when we find a `def'   */
+      /*                                          */
+      T1_Skip_Spaces( parser );
+
+      cur = parser->root.cursor;
+      if ( cur >= limit )
+        break;
+
+      /* we stop when we find a `def' or `end' keyword */
+      if ( *cur   == 'd'   &&
+           cur + 3 < limit &&
+           cur[1] == 'e'   &&
+           cur[2] == 'f'   )
+        break;
+
+      if ( *cur   == 'e'   &&
+           cur + 3 < limit &&
+           cur[1] == 'n'   &&
+           cur[2] == 'd'   )
+        break;
+
+      if ( *cur != '/' )
+        T1_Skip_Alpha( parser );
+      else
       {
-        /* A keyword was detected */
-        case tok_keyword:
-          switch (token.kind2)
-          {
-            case key_dict:
-
-              switch (dict_state)
-              {
-                case dict_none:
-                   /* All right, we're beggining the font dictionary    */
-                   /* check that we only have one number argument, then */
-                   /* consume the 'begin' and change to 'dict_font'     */
-                   /* state..                                           */
-                   error = Expect_Dict_Arguments( parser, 1, tok_error,
-                                                  dict_font, 0 );
-                   if (error) goto Exit;
-                   
-                   /* clear stack from all the previous content. This   */
-                   /* could be some stupid Postscript code ...          */
-                   parser->top = parser->stack;
-                   break;
+        FT_Byte*    cur2 = cur + 1;
+        FT_PtrDist  len;
 
 
-                case dict_font:
-                   /* This must be the /FontInfo dictionary, so check */
-                   /* That we have at least two arguments, that they  */
-                   /* are "/FontInfo" and a number, then change the   */
-                   /* dictionary state..                              */
-                   error = Expect_Dict_Arguments( parser, 2, imm_FontInfo,
-                                                  dict_fontinfo, 0 );
-                   if (error) goto Exit;
-                   break;
+        while ( cur2 < limit && is_alpha( *cur2 ) )
+          cur2++;
+        len = cur2 - cur - 1;
+
+        error = T1_Add_Table( name_table, n, cur + 1, len + 1 );
+        if ( error )
+          goto Fail;
+
+        /* add a trailing zero to the name table */
+        name_table->elements[n][len] = '\0';
+
+        /* record index of /.notdef              */
+        if ( ft_strcmp( (const char*)".notdef",
+                        (const char*)(name_table->elements[n]) ) == 0 )
+        {
+          notdef_index = n;
+          notdef_found = 1;
+        }
+
+        parser->root.cursor = cur2;
+        if ( !read_binary_data( parser, &size, &base ) )
+          return;
+
+        if ( face->type1.private_dict.lenIV >= 0 )
+        {
+          FT_Byte*  temp;
 
 
-                case dict_none2:
-                   error = Expect_Dict_Arguments( parser, 2, imm_Private,
-                                                  dict_private, 0 );
-                   if (error) goto Exit;
-                   break;
+          /* t1_decrypt() shouldn't write to base -- make temporary copy */
+          if ( FT_ALLOC( temp, size ) )
+            goto Fail;
+          FT_MEM_COPY( temp, base, size );
+          psaux->t1_decrypt( temp, size, 4330 );
+          size -= face->type1.private_dict.lenIV;
+          error = T1_Add_Table( code_table, n,
+                                temp + face->type1.private_dict.lenIV, size );
+          FT_FREE( temp );
+        }
+        else
+          error = T1_Add_Table( code_table, n, base, size );
+        if ( error )
+          goto Fail;
 
-
-                case dict_private:
-                  {
-                    T1_Face  face = parser->face;
-                    T1_Int   count;
-
-                    error = Expect_Dict_Arguments( parser, 2, imm_CharStrings,
-                                                   dict_charstrings, &count );
-                    if (error) goto Exit;
-
-                    type1->num_glyphs = count;
-                    error = T1_New_Table( &parser->table, count*2, face->root.memory );
-                    if (error) goto Exit;
-
-                    /* record '.notdef' as the first glyph in the font */
-                    error = T1_Add_Table( &parser->table, 0, (T1_Byte*)".notdef", 8 );
-                    parser->cur_name = 1;
-                    /* XXXXX : DO SOMETHING HERE */
-                  }
-                  break;
-
-                default:
-                   /* All other uses are invalid */
-                   FT_ERROR(( "T1.Parse: invalid use of the 'dict' keyword\n" ));
-                   goto Syntax_Error;
-              }
-              break;
-
-
-            case key_array:
-              /* Are we in an array yet ? Is so, raise an error */
-              switch (dict_state)
-              {
-                case dict_encoding:   case dict_subrs:
-                case dict_othersubrs: case dict_charstrings:
-                case dict_unknown_array:
-                  FT_ERROR(( "T1.Parse.array: nested array definitions\n" ));
-                  goto Syntax_Error;
-
-                default:
-                  ;
-              }
-              error = Expect_Array_Arguments( parser );
-              if (error) goto Exit;
-              break;
-
-
-            case key_ND:
-            case key_NP:
-            case key_def:
-              /* Are we in an array ? If so, finalise it.. */
-              switch ( dict_state )
-              {
-                case dict_encoding:    /* finish encoding array */
-                  {
-                    /* copy table names to the face object */
-                    T1_Done_Table( &parser->table );
-
-                    parser->encoding_names   = parser->table.block;
-                    parser->encoding_lengths = parser->table.lengths;
-                    parser->encoding_offsets = parser->table.elements;
-
-                    parser->state_index--;
-                  }
-                  break;
-
-
-                case dict_subrs:
-                  {
-                    /* copy recorder sub-routines */
-                    T1_Done_Table( &parser->table );
-
-                    parser->subrs    = parser->table.block;
-                    type1->subrs     = parser->table.elements;
-                    type1->subrs_len = parser->table.lengths;
-
-                    parser->state_index--;
-                  }
-                  break;
-
-                case dict_charstrings:
-                case dict_othersubrs:
-                case dict_unknown_array:
-                  FT_ERROR(( "T1.Parser.def: unsupported array\n" ));
-                  goto Syntax_Error;
-                  break;
-
-                default:   /* normal 'def' processing */
-                  {
-                    /* Check that we have sufficient operands in the stack */
-                    if ( top >= parser->stack+2 )
-                    {
-                      /* Now check that the first operand is an immediate */
-                      /* If so, call the appropriate "def" routine based  */
-                      /* on the current parser state..                    */
-                      if ( top[-2].kind == tok_immediate )
-                      {
-                        parser->top -= 2;
-						parser->args = parser->top + 1;
-                        error = def_funcs[dict_state](parser);
-                      }
-                      else
-                      {
-                        /* This is an error, but some fonts contain some */
-                        /* stupid Postscript code. We simply ignore      */
-                        /* an invalid 'def' by clearing the stack        */
-#if 0
-                        FT_ERROR(( "T1.Parse.def: immediate expected\n" ));
-                        goto Syntax_Error;
-#else
-                        parser->top = parser->stack;
-#endif
-                      }
-                    }
-                    else
-                    {
-                      FT_ERROR(( "T1.Parse.def: not enough arguments\n" ));
-                      goto Stack_Underflow;
-                    }
-                  }
-              }
-              break;
-
-
-
-            case key_index:
-              if ( top <= parser->stack )
-              {
-                FT_ERROR(( "T1.Parse.index: not enough arguments\n" ));
-                goto Stack_Underflow;
-              }
-
-              /* simply ignore ?? */
-              parser->top --;
-              break;
-
-
-            case key_put:
-              /* Check that we have sufficient operands in stack */
-              if ( top < parser->stack+2 )
-              {
-                FT_ERROR(( "T1.Parse.put: not enough arguments\n" ));
-                goto Stack_Underflow;
-              }
-
-              parser->top -= 2;
-			  parser->args = parser->top;
-              switch (dict_state)
-              {
-                case dict_encoding:
-                  error = Do_Put_Encoding( parser );
-                  if (error) goto Exit;
-                  break;
-
-                case dict_unknown_array:   /* ignore the put */
-                  break;
-
-                default:
-#if 0
-                  FT_ERROR(( "T1.Parse.put: invalid context\n" ));
-                  goto Syntax_Error;
-#else
-                  /* invalid context, simply ignore the put and */
-                  /* clear the stack (stupid Postscript code..) */
-                  FT_TRACE4(( "T1.Parse.put: invalid context. ignored.\n" ));
-                  parser->top = parser->stack;
-#endif
-              }
-              break;
-
-
-
-            case key_RD:
-              /* Check that we have sufficient operands in stack */
-              if ( top < parser->stack+2 )
-              {
-                FT_ERROR(( "T1.Parse.RD: not enough arguments\n" ));
-                goto Stack_Underflow;
-              }
-
-              parser->top -= 2;
-			  parser->args = parser->top;
-              switch (dict_state)
-              {
-                case dict_subrs:
-                  error = Do_RD_Subrs( parser );
-                  if (error) goto Exit;
-                  break;
-
-                case dict_charstrings:
-                  error = Do_RD_Charstrings( parser );
-                  if (error) goto Exit;
-                  break;
-
-                default:
-                  FT_ERROR(( "T1.Parse.RD: invalid context\n" ));
-                  goto Syntax_Error;
-              }
-              break;
-
-
-
-            case key_end:
-              /* Were we in a dictionary or in an array ? */
-              if ( dict_index <= 0 )
-              {
-                FT_ERROR(( "T1.Parse.end: no dictionary defined\n" ));
-                goto Syntax_Error;
-              }
-
-              switch (dict_state)
-              {
-                /* Jump to the private dictionary if we're closing the */
-                /* /Font dictionary..                                  */
-                case dict_font:
-                  goto Open_Private;
-
-                /* Exit the parser when closing the CharStrings dictionary */
-                case dict_charstrings:
-                  return Finalise_Parsing( parser );
-
-                default:
-                  /* Pop the current dictionary state and return to previous */
-                  /* one. Consume the "def"..                                */
-
-                  /* Because some buggy fonts (BitStream) have incorrect     */
-                  /* syntax, we never escape from the private dictionary     */
-                  if (dict_state != dict_private)
-                    parser->state_index--;
-               
-                  /* many fonts use a NP instead of def or put, so */
-                  /* we simply ignore the nest token..             */
-#if 0
-                  error = Expect_Keyword2( parser, key_def, key_put );
-                  if (error) goto Exit;
-#else
-                  (void)Expect_Keyword2( parser, key_def, key_put );
-#endif
-              }
-              break;
-
-
-
-            case key_for:
-              /* check that we have four arguments, and simply */
-              /* ignore them..                                 */
-              if ( top - parser->stack < 4 )
-              {
-                FT_ERROR(( "T1.Parse.for: not enough arguments\n" ));
-                goto Stack_Underflow;
-              }
-
-              parser->top -= 4;
-              break;
-
-
-
-            case key_currentdict:
-
-          Open_Private:
-               parser->state_index    = 0;
-               parser->state_stack[0] = dict_none2;
-               error = Open_PrivateDict( parser->tokenizer );
-               if (error) goto Exit;
-               break;
-
-
-            case key_true:
-            case key_false:
-			case key_StandardEncoding:
-			case key_ExpertEncoding:
-              goto Push_Element;
-
-
-            default:
-			  FT_ERROR(( "T1.Parser: invalid keyword in context\n" ));
-              error = T1_Err_Syntax_Error;
-          }
+        n++;
+        if ( n >= loader->num_glyphs )
           break;
-
-        /* A number was detected */
-        case tok_string:
-        case tok_program:
-        case tok_immediate:
-        case tok_array:
-        case tok_hexarray:
-        case tok_any:
-        case tok_number:                        /* push number on stack */
-
-     Push_Element:
-          if ( top >= parser->limit )
-          {
-            error = T1_Err_Stack_Overflow;
-            goto Exit;
-          }
-          else
-            *parser->top++ = token;
-          break;
-
-        /* anything else is an error per se the spec, but we     */
-        /* frequently encountre stupid postscript code in fonts, */
-        /* so just ignore them..                                 */
-        default:
-          error = T1_Err_Ok;  /* ignore token */
       }
-
-      if (error)
-        return error;
     }
-  Exit:
-    return error;
 
-  Syntax_Error:
-    return T1_Err_Syntax_Error;
+    loader->num_glyphs = n;
 
-  Stack_Underflow:
-    return T1_Err_Stack_Underflow;
+    /* if /.notdef is found but does not occupy index 0, do our magic.      */
+    if ( ft_strcmp( (const char*)".notdef",
+                    (const char*)name_table->elements[0] ) &&
+         notdef_found                                      )
+    {
+      /* Swap glyph in index 0 with /.notdef glyph.  First, add index 0    */
+      /* name and code entries to swap_table. Then place notdef_index name */
+      /* and code entries into swap_table.  Then swap name and code        */
+      /* entries at indices notdef_index and 0 using values stored in      */
+      /* swap_table.                                                       */
+
+      /* Index 0 name */
+      error = T1_Add_Table( swap_table, 0,
+                            name_table->elements[0],
+                            name_table->lengths [0] );
+      if ( error )
+        goto Fail;
+
+      /* Index 0 code */
+      error = T1_Add_Table( swap_table, 1,
+                            code_table->elements[0],
+                            code_table->lengths [0] );
+      if ( error )
+        goto Fail;
+
+      /* Index notdef_index name */
+      error = T1_Add_Table( swap_table, 2,
+                            name_table->elements[notdef_index],
+                            name_table->lengths [notdef_index] );
+      if ( error )
+        goto Fail;
+
+      /* Index notdef_index code */
+      error = T1_Add_Table( swap_table, 3,
+                            code_table->elements[notdef_index],
+                            code_table->lengths [notdef_index] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( name_table, notdef_index,
+                            swap_table->elements[0],
+                            swap_table->lengths [0] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( code_table, notdef_index,
+                            swap_table->elements[1],
+                            swap_table->lengths [1] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( name_table, 0,
+                            swap_table->elements[2],
+                            swap_table->lengths [2] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( code_table, 0,
+                            swap_table->elements[3],
+                            swap_table->lengths [3] );
+      if ( error )
+        goto Fail;
+
+    }
+    else if ( !notdef_found )
+    {
+      /* notdef_index is already 0, or /.notdef is undefined in   */
+      /* charstrings dictionary.  Worry about /.notdef undefined. */
+      /* We take index 0 and add it to the end of the table(s)    */
+      /* and add our own /.notdef glyph to index 0.               */
+
+      /* 0 333 hsbw endchar                                      */
+      FT_Byte  notdef_glyph[] = {0x8B, 0xF7, 0xE1, 0x0D, 0x0E};
+      char*    notdef_name    = (char *)".notdef";
+
+
+      error = T1_Add_Table( swap_table, 0,
+                            name_table->elements[0],
+                            name_table->lengths [0] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( swap_table, 1,
+                            code_table->elements[0],
+                            code_table->lengths [0] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( name_table, 0, notdef_name, 8 );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( code_table, 0, notdef_glyph, 5 );
+
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( name_table, n,
+                            swap_table->elements[0],
+                            swap_table->lengths [0] );
+      if ( error )
+        goto Fail;
+
+      error = T1_Add_Table( code_table, n,
+                            swap_table->elements[1],
+                            swap_table->lengths [1] );
+      if ( error )
+        goto Fail;
+
+      /* we added a glyph. */
+      loader->num_glyphs = n + 1;
+    }
+
+    return;
+
+  Fail:
+    parser->root.error = error;
   }
 
+
+  static
+  const T1_FieldRec  t1_keywords[] =
+  {
+
+#include "t1tokens.h"
+
+    /* now add the special functions... */
+    T1_FIELD_CALLBACK( "FontName", parse_font_name )
+#if 0    
+    T1_FIELD_CALLBACK( "FontBBox", parse_font_bbox )
+#endif    
+    T1_FIELD_CALLBACK( "FontMatrix", parse_font_matrix )
+    T1_FIELD_CALLBACK( "Encoding", parse_encoding )
+    T1_FIELD_CALLBACK( "Subrs", parse_subrs )
+    T1_FIELD_CALLBACK( "CharStrings", parse_charstrings )
+
+#ifndef T1_CONFIG_OPTION_NO_MM_SUPPORT
+    T1_FIELD_CALLBACK( "BlendDesignPositions", parse_blend_design_positions )
+    T1_FIELD_CALLBACK( "BlendDesignMap", parse_blend_design_map )
+    T1_FIELD_CALLBACK( "BlendAxisTypes", parse_blend_axis_types )
+    T1_FIELD_CALLBACK( "WeightVector", parse_weight_vector )
+    T1_FIELD_CALLBACK( "shareddict", parse_shared_dict )
+#endif
+
+    { 0, T1_FIELD_LOCATION_CID_INFO, T1_FIELD_TYPE_NONE, 0, 0, 0, 0, 0 }
+  };
+
+
+  static FT_Error
+  parse_dict( T1_Face    face,
+              T1_Loader  loader,
+              FT_Byte*   base,
+              FT_Long    size )
+  {
+    T1_Parser  parser = &loader->parser;
+
+
+    parser->root.cursor = base;
+    parser->root.limit  = base + size;
+    parser->root.error  = 0;
+
+    {
+      FT_Byte*  cur   = base;
+      FT_Byte*  limit = cur + size;
+
+
+      for ( ; cur < limit; cur++ )
+      {
+        /* look for `FontDirectory', which causes problems on some fonts */
+        if ( *cur == 'F' && cur + 25 < limit                    &&
+             ft_strncmp( (char*)cur, "FontDirectory", 13 ) == 0 )
+        {
+          FT_Byte*  cur2;
+
+
+          /* skip the `FontDirectory' keyword */
+          cur += 13;
+          cur2 = cur;
+
+          /* lookup the `known' keyword */
+          while ( cur < limit && *cur != 'k'           &&
+                  ft_strncmp( (char*)cur, "known", 5 ) )
+            cur++;
+
+          if ( cur < limit )
+          {
+            T1_TokenRec  token;
+
+
+            /* skip the `known' keyword and the token following it */
+            cur += 5;
+            loader->parser.root.cursor = cur;
+            T1_ToToken( &loader->parser, &token );
+
+            /* if the last token was an array, skip it! */
+            if ( token.type == T1_TOKEN_TYPE_ARRAY )
+              cur2 = parser->root.cursor;
+          }
+          cur = cur2;
+        }
+        /* look for immediates */
+        else if ( *cur == '/' && cur + 2 < limit )
+        {
+          FT_Byte*    cur2;
+          FT_PtrDist  len;
+
+
+          cur++;
+          cur2 = cur;
+          while ( cur2 < limit && is_alpha( *cur2 ) )
+            cur2++;
+
+          len = cur2 - cur;
+          if ( len > 0 && len < 22 )
+          {
+            {
+              /* now, compare the immediate name to the keyword table */
+              T1_Field  keyword = (T1_Field)t1_keywords;
+
+
+              for (;;)
+              {
+                FT_Byte*  name;
+
+
+                name = (FT_Byte*)keyword->ident;
+                if ( !name )
+                  break;
+
+                if ( cur[0] == name[0]                     &&
+                     len == ft_strlen( (const char*)name ) )
+                {
+                  FT_PtrDist  n;
+
+
+                  for ( n = 1; n < len; n++ )
+                    if ( cur[n] != name[n] )
+                      break;
+
+                  if ( n >= len )
+                  {
+                    /* we found it -- run the parsing callback! */
+                    parser->root.cursor = cur2;
+                    T1_Skip_Spaces( parser );
+                    parser->root.error = t1_load_keyword( face,
+                                                          loader,
+                                                          keyword );
+                    if ( parser->root.error )
+                      return parser->root.error;
+
+                    cur = parser->root.cursor;
+                    break;
+                  }
+                }
+                keyword++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return parser->root.error;
+  }
+
+
+  static void
+  t1_init_loader( T1_Loader  loader,
+                  T1_Face    face )
+  {
+    FT_UNUSED( face );
+
+    FT_MEM_ZERO( loader, sizeof ( *loader ) );
+    loader->num_glyphs = 0;
+    loader->num_chars  = 0;
+
+    /* initialize the tables -- simply set their `init' field to 0 */
+    loader->encoding_table.init = 0;
+    loader->charstrings.init    = 0;
+    loader->glyph_names.init    = 0;
+    loader->subrs.init          = 0;
+    loader->swap_table.init     = 0;
+    loader->fontdata            = 0;
+  }
+
+
+  static void
+  t1_done_loader( T1_Loader  loader )
+  {
+    T1_Parser  parser = &loader->parser;
+
+
+    /* finalize tables */
+    T1_Release_Table( &loader->encoding_table );
+    T1_Release_Table( &loader->charstrings );
+    T1_Release_Table( &loader->glyph_names );
+    T1_Release_Table( &loader->swap_table );
+    T1_Release_Table( &loader->subrs );
+
+    /* finalize parser */
+    T1_Finalize_Parser( parser );
+  }
+
+
+  FT_LOCAL_DEF( FT_Error )
+  T1_Open_Face( T1_Face  face )
+  {
+    T1_LoaderRec   loader;
+    T1_Parser      parser;
+    T1_Font        type1 = &face->type1;
+    FT_Error       error;
+
+    PSAux_Service  psaux = (PSAux_Service)face->psaux;
+
+
+    t1_init_loader( &loader, face );
+
+    /* default lenIV */
+    type1->private_dict.lenIV = 4;
+
+    /* default blue fuzz, we put it there since 0 is a valid value */
+    type1->private_dict.blue_fuzz = 1;
+
+    parser = &loader.parser;
+    error  = T1_New_Parser( parser,
+                            face->root.stream,
+                            face->root.memory,
+                            psaux );
+    if ( error )
+      goto Exit;
+
+    error = parse_dict( face, &loader, parser->base_dict, parser->base_len );
+    if ( error )
+      goto Exit;
+
+    error = T1_Get_Private_Dict( parser, psaux );
+    if ( error )
+      goto Exit;
+
+    error = parse_dict( face, &loader, parser->private_dict,
+                        parser->private_len );
+    if ( error )
+      goto Exit;
+
+    /* now, propagate the subrs, charstrings, and glyphnames tables */
+    /* to the Type1 data                                            */
+    type1->num_glyphs = loader.num_glyphs;
+
+    if ( loader.subrs.init )
+    {
+      loader.subrs.init  = 0;
+      type1->num_subrs   = loader.num_subrs;
+      type1->subrs_block = loader.subrs.block;
+      type1->subrs       = loader.subrs.elements;
+      type1->subrs_len   = loader.subrs.lengths;
+    }
+
+#ifdef FT_CONFIG_OPTION_INCREMENTAL
+    if ( !face->root.internal->incremental_interface )
+#endif
+      if ( !loader.charstrings.init )
+      {
+        FT_ERROR(( "T1_Open_Face: no charstrings array in face!\n" ));
+        error = T1_Err_Invalid_File_Format;
+      }
+
+    loader.charstrings.init  = 0;
+    type1->charstrings_block = loader.charstrings.block;
+    type1->charstrings       = loader.charstrings.elements;
+    type1->charstrings_len   = loader.charstrings.lengths;
+
+    /* we copy the glyph names `block' and `elements' fields; */
+    /* the `lengths' field must be released later             */
+    type1->glyph_names_block    = loader.glyph_names.block;
+    type1->glyph_names          = (FT_String**)loader.glyph_names.elements;
+    loader.glyph_names.block    = 0;
+    loader.glyph_names.elements = 0;
+
+    /* we must now build type1.encoding when we have a custom array */
+    if ( type1->encoding_type == T1_ENCODING_TYPE_ARRAY )
+    {
+      FT_Int    charcode, idx, min_char, max_char;
+      FT_Byte*  char_name;
+      FT_Byte*  glyph_name;
+
+
+      /* OK, we do the following: for each element in the encoding  */
+      /* table, look up the index of the glyph having the same name */
+      /* the index is then stored in type1.encoding.char_index, and */
+      /* a the name to type1.encoding.char_name                     */
+
+      min_char = +32000;
+      max_char = -32000;
+
+      charcode = 0;
+      for ( ; charcode < loader.encoding_table.max_elems; charcode++ )
+      {
+        type1->encoding.char_index[charcode] = 0;
+        type1->encoding.char_name [charcode] = (char *)".notdef";
+
+        char_name = loader.encoding_table.elements[charcode];
+        if ( char_name )
+          for ( idx = 0; idx < type1->num_glyphs; idx++ )
+          {
+            glyph_name = (FT_Byte*)type1->glyph_names[idx];
+            if ( ft_strcmp( (const char*)char_name,
+                            (const char*)glyph_name ) == 0 )
+            {
+              type1->encoding.char_index[charcode] = (FT_UShort)idx;
+              type1->encoding.char_name [charcode] = (char*)glyph_name;
+
+              /* Change min/max encoded char only if glyph name is */
+              /* not /.notdef                                      */
+              if ( ft_strcmp( (const char*)".notdef",
+                              (const char*)glyph_name ) != 0 )
+              {
+                if ( charcode < min_char ) min_char = charcode;
+                if ( charcode > max_char ) max_char = charcode;
+              }
+              break;
+            }
+          }
+      }
+      type1->encoding.code_first = min_char;
+      type1->encoding.code_last  = max_char;
+      type1->encoding.num_chars  = loader.num_chars;
+    }
+
+  Exit:
+    t1_done_loader( &loader );
+    return error;
+  }
+
+
+/* END */

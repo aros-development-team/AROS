@@ -15,14 +15,19 @@ int original_main( int  argc, char**  argv );
 
 #include <SIOUX.h>
 #include "getargv.h"
+#ifndef USING_CARBON
 #include <Windows.h>
 #include <Dialogs.h>
 #include <Fonts.h>
 #include <TextEdit.h>
+#else
+#include <Carbon.h>
+#endif
 
 static void
 init_toolbox()
 {
+#ifndef USING_CARBON
 	InitGraf(&qd.thePort);
 	InitFonts();
 	InitWindows();
@@ -30,6 +35,8 @@ init_toolbox()
 	InitDialogs((long)0);
 	InitMenus();
 	InitCursor();
+#endif
+
 	SIOUXSettings.asktosaveonclose = 0;
 }
 

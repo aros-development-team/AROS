@@ -17,7 +17,7 @@ if $(UNIX)
   CCDEFS += UNIX ;
 }
 
-PROGRAMS = ftbench ftlint ftdump ftmemchk fttimer fttry testnames ;
+PROGRAMS = ftbench ftlint ftdump fttimer ftcheckfixedwidth ;
 GRAPHIC_PROGRAMS = ftview ftmulti ftstring ;
 {
   local  t ;

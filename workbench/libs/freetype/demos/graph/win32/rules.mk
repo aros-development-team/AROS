@@ -17,7 +17,6 @@ GR_WIN32_ := $(GR_WIN32)$(SEP)
 GRAPH_OBJS += $(OBJ_)grwin32.$O
 
 DEVICES         += WIN32
-DEVICE_INCLUDES += $(GR_WIN32)
 
 # the rule used to compile the graphics driver
 #
@@ -26,7 +25,7 @@ $(OBJ_)grwin32.$O: $(GR_WIN32_)grwin32.c $(GR_WIN32_)grwin32.h
 
 # Now update COMPILE_GRAPH_LIB according to the compiler used on Win32
 #
-ifeq ($(CC),gcc)   # test for GCC
+ifeq ($(firstword $(CC)),gcc)   # test for GCC
 LINK              = $(CC) $T$@ $< $(FTLIB)
 COMMON_LINK       = $(LINK) $(COMMON_OBJ)
 GRAPH_LINK        = $(COMMON_LINK) $(GRAPH_LIB) -luser32 -lgdi32
@@ -46,6 +45,7 @@ LINK_ROOT         = lcclnk -o $(subst /,\\,$@) $(subst /,\\,$<)
 LINK              = $(LINK_ROOT) $(subst /,\\,$(FTLIB))
 COMMON_LINK       = $(LINK_ROOT) $(subst /,\\,$(COMMON_OBJ)) $(subst /,\\,$(FTLIB))
 GRAPH_LINK        = $(LINK_ROOT) $(subst /,\\,$(COMMON_OBJ)) $(subst /,\\,$(GRAPH_LIB)) $(subst /,\\,$(FTLIB))
+GRAPH_LINK2       = $(GRAPH_LINK) $(subst /,\\,$(EXTRA_GRAPH_OBJS))
 endif
 endif
 

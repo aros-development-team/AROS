@@ -12,6 +12,12 @@
 
 /* Note that by default, both functions are implemented in common.c */
 
+#ifdef VMS
+#define getopt local_getopt
+#define optind local_optind
+#define opterr local_opterr
+#endif
+
 #ifdef __cplusplus
   extern "C" {
 #endif

@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2000 by                                                  */
+/*  Copyright 1996-2000, 2001, 2002 by                                      */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -62,7 +62,7 @@
   char*  new_header = 0;
 
   const unsigned char*  Text = (unsigned char*)
-    "The quick brown fox jumped over the lazy dog 0123456789 "
+    "The quick brown fox jumps over the lazy dog 0123456789 "
     "\342\352\356\373\364\344\353\357\366\374\377\340\371\351\350\347 "
     "&#~\"\'(-`_^@)=+\260 ABCDEFGHIJKLMNOPQRSTUVWXYZ "
     "$\243^\250*\265\371%!\247:/;.,?<>";
@@ -70,13 +70,13 @@
   grSurface*  surface;      /* current display surface */
   grBitmap    bit;          /* current display bitmap  */
 
-  static grColor  fore_color = { 255 };
+  static grColor  fore_color = { 0 };
 
   int  Fail;
 
   int  graph_init  = 0;
 
-  int  render_mode = 1;
+  int  render_mode = 0;
   int  debug       = 0;
   int  trace_level = 0;
 
@@ -128,7 +128,7 @@
 
     if ( image_size < 0 )
       image_size = -image_size;
-    memset( bit.buffer, 0, image_size );
+    memset( bit.buffer, 255, image_size );
   }
 
 
@@ -138,7 +138,7 @@
   {
     grInitDevices();
 
-    bit.mode  = gr_pixel_mode_gray;
+    bit.mode  = gr_pixel_mode_rgb24;
     bit.width = DIM_X;
     bit.rows  = DIM_Y;
     bit.grays = 256;
@@ -173,7 +173,7 @@
   FT_Size         size;          /* the font size                   */
   FT_GlyphSlot    glyph;         /* the glyph slot                  */
 
-  FTC_ImageDesc   current_font;
+  FTC_ImageTypeRec  current_font;
 
   int  dump_cache_stats = 0;  /* do we need to dump cache statistics? */
   int  use_sbits_cache  = 1;
@@ -188,6 +188,7 @@
   int  use_sbits = 1;         /* do we use embedded bitmaps? */
   int  low_prec  = 0;         /* force low precision         */
   int  autohint  = 0;         /* force auto-hinting          */
+  int  lcd_mode  = 0;         /* 0 - 4                       */
   int  Num;                   /* current first index         */
 
   int  res = 72;
@@ -443,16 +444,24 @@
   static void
   set_current_image_type( void )
   {
-    current_font.type = antialias ? ftc_image_grays : ftc_image_mono;
+    current_font.flags = antialias ? FT_LOAD_DEFAULT : FT_LOAD_TARGET_MONO;
 
     if ( !hinted )
-      current_font.type |= ftc_image_flag_unhinted;
+      current_font.flags |= FT_LOAD_NO_HINTING;
 
     if ( autohint )
-      current_font.type |= ftc_image_flag_autohinted;
+      current_font.flags |= FT_LOAD_FORCE_AUTOHINT;
 
     if ( !use_sbits )
-      current_font.type |= ftc_image_flag_no_sbits;
+      current_font.flags |= FT_LOAD_NO_BITMAP;
+
+    if ( antialias && lcd_mode > 0 )
+    {
+      if ( lcd_mode == 1 || lcd_mode == 3 )
+        current_font.flags |= FT_LOAD_TARGET_LCD;
+      else
+        current_font.flags |= FT_LOAD_TARGET_LCD_V;
+    }
   }
 
 
@@ -525,13 +534,23 @@
 
         switch ( sbit->format )
         {
-        case ft_pixel_mode_mono:
+        case FT_PIXEL_MODE_MONO:
           target->mode = gr_pixel_mode_mono;
           break;
 
-        case ft_pixel_mode_grays:
+        case FT_PIXEL_MODE_GRAY:
           target->mode  = gr_pixel_mode_gray;
-          target->grays = sbit->num_grays;
+          target->grays = sbit->max_grays + 1;
+          break;
+
+        case FT_PIXEL_MODE_LCD:
+          target->mode  = gr_pixel_mode_lcd;
+          target->grays = sbit->max_grays + 1;
+          break;
+
+        case FT_PIXEL_MODE_LCD_V:
+          target->mode  = gr_pixel_mode_lcdv;
+          target->grays = sbit->max_grays + 1;
           break;
 
         default:
@@ -551,20 +570,12 @@
     /* them on demand. we can thus support very large sizes easily..     */
     {
       FT_Glyph   glyf;
-      FT_UInt32  type;
-
-
-      type              = current_font.type;
-      current_font.type = ( type & ~ftc_image_format_mask ) |
-                          ftc_image_format_outline;
 
       error = FTC_ImageCache_Lookup( image_cache,
                                      &current_font,
                                      Index,
                                      &glyf,
                                      NULL );
-
-      current_font.type = type;
 
       if ( !error )
       {
@@ -576,8 +587,8 @@
         {
           /* render the glyph to a bitmap, don't destroy original */
           error = FT_Glyph_To_Bitmap( &glyf,
-                                      antialias ? ft_render_mode_normal
-                                                : ft_render_mode_mono,
+                                      antialias ? FT_RENDER_MODE_NORMAL
+                                                : FT_RENDER_MODE_MONO,
                                       NULL, 0 );
           if ( error )
             goto Exit;
@@ -585,7 +596,7 @@
           *aglyf = glyf;
         }
 
-        if ( glyf->format != ft_glyph_format_bitmap )
+        if ( glyf->format != FT_GLYPH_FORMAT_BITMAP )
           PanicZ( "invalid glyph format returned!" );
 
         bitmap = (FT_BitmapGlyph)glyf;
@@ -598,12 +609,22 @@
 
         switch ( source->pixel_mode )
         {
-        case ft_pixel_mode_mono:
+        case FT_PIXEL_MODE_MONO:
           target->mode = gr_pixel_mode_mono;
           break;
 
-        case ft_pixel_mode_grays:
+        case FT_PIXEL_MODE_GRAY:
           target->mode  = gr_pixel_mode_gray;
+          target->grays = source->num_grays;
+          break;
+
+        case FT_PIXEL_MODE_LCD:
+          target->mode  = gr_pixel_mode_lcd;
+          target->grays = source->num_grays;
+          break;
+
+        case FT_PIXEL_MODE_LCD_V:
+          target->mode  = gr_pixel_mode_lcdv;
           target->grays = source->num_grays;
           break;
 

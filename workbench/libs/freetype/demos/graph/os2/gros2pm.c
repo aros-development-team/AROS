@@ -1,4 +1,4 @@
-#include "gros2pm.h"
+#include "grobjs.h"
 #include "grdevice.h"
 
 #define INCL_DOS
@@ -35,9 +35,9 @@
   {
     ULONG   os2key;
     grKey   grkey;
-    
+
   } Translator;
-  
+
 
   static
   Translator  key_translators[] =
@@ -120,9 +120,6 @@
   /* a lot more simple..                                           */
   static  grPMSurface*  the_surface;
 
-  static  int window_created = 0;
-
-
   static
   void  enable_os2_iostreams( void )
   {
@@ -187,12 +184,8 @@
   }
 
 
-
-
-
-#define LOCK(x)    DosRequestMutexSem( x, SEM_INDEFINITE_WAIT );
+#define LOCK(x)    DosRequestMutexSem( x, SEM_INDEFINITE_WAIT )
 #define UNLOCK(x)  DosReleaseMutexSem( x )
-
 
   static
   const int  pixel_mode_bit_count[] =
@@ -201,7 +194,7 @@
     1,   /* mono  */
     4,   /* pal4  */
     8,   /* pal8  */
-	8,   /* grays */
+    8,   /* grays */
     15,  /* rgb15 */
     16,  /* rgb16 */
     24,  /* rgb24 */
@@ -284,19 +277,19 @@
     /*
     convert_rectangle( surface, x, y, w, h );
     */
-    DosRequestMutexSem( surface->image_lock, SEM_INDEFINITE_WAIT );
+    LOCK( surface->image_lock );
     GpiSetBitmapBits( surface->image_ps,
                       0,
                       surface->root.bitmap.rows,
                       surface->root.bitmap.buffer,
                       surface->bitmap_header );
-    DosReleaseMutexSem( surface->image_lock );
+    UNLOCK( surface->image_lock );
 
     WinInvalidateRect( surface->client_window, NULL, FALSE );
     WinUpdateWindow( surface->frame_window );
   }
 
-  
+
   static
   void  set_title( grPMSurface* surface,
                    const char*  title )
@@ -309,17 +302,15 @@
 #endif
     LOG(( "      -- frame         = %08lx\n",
           (long)surface->frame_window ));
-
     LOG(( "      -- client parent = %08lx\n",
           (long)WinQueryWindow( surface->client_window, QW_PARENT ) ));
-
     rc = WinSetWindowText( surface->client_window, (PSZ)title );
     LOG(( "      -- returned rc = %ld\n",rc ));
   }
 
 
 
-  static  
+  static
   void  listen_event( grPMSurface* surface,
                       int          event_mask,
                       grEvent*     grevent )
@@ -345,7 +336,6 @@
     PBITMAPINFO2  bit;
     SIZEL         sizl = { 0, 0 };
     LONG          palette[256];
-
     LOG(( "Os2PM: init_surface( %08lx, %08lx )\n",
           (long)surface, (long)bitmap ));
 
@@ -359,8 +349,8 @@
     /* handles all conversions automatically..                    */
     if ( grNewBitmap( bitmap->mode,
                       bitmap->grays,
-					  bitmap->width,
-					  bitmap->rows,
+                      bitmap->width,
+                      bitmap->rows,
                       bitmap ) )
       return 0;
 
@@ -473,8 +463,6 @@
     surface->blit_points[1].y = surface->root.bitmap.rows;
     surface->blit_points[3]   = surface->blit_points[1];
 
-    window_created = 0;
-
     /* Finally, create the event handling thread for the surface's window */
     DosCreateThread( &surface->message_thread,
                      (PFNTHREAD) RunPMWindow,
@@ -483,7 +471,8 @@
                      32920 );
 
     /* wait for the window creation */
-    for ( ; window_created == 0; )
+    LOCK(surface->image_lock);
+    UNLOCK(surface->image_lock);
 
     surface->root.done         = (grDoneSurfaceFunc) done_surface;
     surface->root.refresh_rect = (grRefreshRectFunc) refresh_rectangle;
@@ -516,8 +505,11 @@
     /* window procedure the first time is is called..                     */
     the_surface = surface;
 
+    /* try to prevent the program from going on without the setup of thread 2 */
+    LOCK( surface->image_lock );
+
     LOG(( "Os2PM: RunPMWindow( %08lx )\n", (long)surface ));
-     
+
     /* create an anchor to allow this thread to use PM */
     surface->anchor = WinInitialize(0);
     if (!surface->anchor)
@@ -530,7 +522,7 @@
     queue = WinCreateMsgQueue( surface->anchor, 0 );
     if (!queue)
     {
-      printf( "Error doing >inCreateMsgQueue()\n" );
+      printf( "Error doing WinCreateMsgQueue()\n" );
       return;
     }
 
@@ -546,8 +538,8 @@
     }
 
     /* create the PM window */
-    class_flags = FCF_TITLEBAR | FCF_MINBUTTON | FCF_DLGBORDER | 
-                  FCF_TASKLIST | FCF_SYSMENU; 
+    class_flags = FCF_TITLEBAR | FCF_MINBUTTON | FCF_DLGBORDER |
+                  FCF_TASKLIST | FCF_SYSMENU;
 
     LOG(( "Os2PM: RunPMWindow: Creating window\n" ));
     surface->frame_window = WinCreateStdWindow(
@@ -594,7 +586,8 @@
     WinSetWindowPtr( surface->client_window,QWL_USER, surface );
 #endif
 
-    window_created = 1;
+    /* Announcing window_created */
+    UNLOCK(surface->image_lock);
 
     /* run the message queue till the end */
     while ( WinGetMsg( surface->anchor, &message, (HWND)NULL, 0, 0 ) )
@@ -664,12 +657,18 @@
       /* take the input focus */
       WinFocusChange( HWND_DESKTOP, handle, 0L );
       LOG(( "screen_dc and screen_ps have been created\n" ));
+
+      /* To permit F9, F10 and others to pass through to the application */
+      if (TRUE != WinSetAccelTable (surface->anchor, 0, surface->frame_window))
+      {
+        printf( "Error - failed to clear accel table\n");
+      }
       break;
 
     case WM_MINMAXFRAME:
       /* to update minimized if changed */
       swp = *((PSWP) parm1);
-      if ( swp.fl & SWP_MINIMIZE ) 
+      if ( swp.fl & SWP_MINIMIZE )
         minimized = TRUE;
       if ( swp.fl & SWP_RESTORE )
         minimized = FALSE;
@@ -677,11 +676,11 @@
       break;
 
     case WM_ERASEBACKGROUND:
-    case WM_PAINT:  
+    case WM_PAINT:
       /* copy the memory image of the screen out to the real screen */
-      DosRequestMutexSem( surface->image_lock, SEM_INDEFINITE_WAIT );
+      LOCK( surface->image_lock );
       WinBeginPaint( handle, screen_ps, NULL );
-      
+
       /* main image and magnified picture */
       GpiBitBlt( screen_ps,
                  surface->image_ps,
@@ -690,7 +689,7 @@
                  ROP_SRCCOPY, BBO_AND );
 
       WinEndPaint( screen_ps );
-      DosReleaseMutexSem( surface->image_lock );   
+      UNLOCK( surface->image_lock );
       break;
 
     case WM_HELP:  /* this really is a F1 Keypress !! */
@@ -740,15 +739,15 @@
   {
     sizeof( grPMSurface ),
     "os2pm",
-    
+
     init_device,
     done_device,
-    
+
     (grDeviceInitSurfaceFunc) init_surface,
-    
+
     0,
     0
-    
+
   };
 
 

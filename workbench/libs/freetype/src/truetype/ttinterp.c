@@ -2,13 +2,13 @@
 /*                                                                         */
 /*  ttinterp.c                                                             */
 /*                                                                         */
-/*    TrueType bytecode intepreter (body).                                 */
+/*    TrueType bytecode interpreter (body).                                */
 /*                                                                         */
-/*  Copyright 1996-1999 by                                                 */
+/*  Copyright 1996-2001, 2002 by                                           */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
-/*  This file is part of the FreeType project, and may only be used        */
-/*  modified and distributed under the terms of the FreeType project       */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
 /*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
 /*  this file you indicate that you have read the license and              */
 /*  understand and accept it fully.                                        */
@@ -16,42 +16,50 @@
 /***************************************************************************/
 
 
-#include <ftdebug.h>
-#include <ftsystem.h>
-#include <ftcalc.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+#include FT_INTERNAL_CALC_H
+#include FT_TRIGONOMETRY_H
+#include FT_SYSTEM_H
 
-#include <ttobjs.h>
-#include <ttinterp.h>
+#include "ttinterp.h"
+
+#include "tterrors.h"
+
 
 #ifdef TT_CONFIG_OPTION_BYTECODE_INTERPRETER
 
 
-#define TT_MULFIX   FT_MulFix
-#define TT_MULDIV   FT_MulDiv
-
-#define TT_INT64    FT_Int64
-
-/* required by the tracing mode */
-#undef  FT_COMPONENT
-#define FT_COMPONENT      trace_ttinterp
-
-#undef  NO_APPLE_PATENT
-#define APPLE_THRESHOLD  0x4000000
+#define TT_MULFIX  FT_MulFix
+#define TT_MULDIV  FT_MulDiv
+#define TT_INT64   FT_Int64
 
   /*************************************************************************/
   /*                                                                       */
-  /* In order to detect infinite loops in the code, we set-up a counter    */
-  /* within the run loop. a single stroke of interpretation is now limited */
-  /* to a maximum number of opcodes defined below.                         */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
   /*                                                                       */
-#define MAX_RUNNABLE_OPCODES  1000000
+#undef  FT_COMPONENT
+#define FT_COMPONENT  trace_ttinterp
+
+#undef  NO_APPLE_PATENT
+#define APPLE_THRESHOLD  0x4000000L
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* In order to detect infinite loops in the code, we set up a counter    */
+  /* within the run loop.  A single stroke of interpretation is now        */
+  /* limitet to a maximal number of opcodes defined below.                 */
+  /*                                                                       */
+#define MAX_RUNNABLE_OPCODES  1000000L
 
 
   /*************************************************************************/
   /*                                                                       */
   /* There are two kinds of implementations:                               */
   /*                                                                       */
-  /* a. static implementation:                                             */
+  /* a. static implementation                                              */
   /*                                                                       */
   /*    The current execution context is a static variable, which fields   */
   /*    are accessed directly by the interpreter during execution.  The    */
@@ -59,7 +67,7 @@
   /*                                                                       */
   /*    This version is non-reentrant, of course.                          */
   /*                                                                       */
-  /* b. indirect implementation:                                           */
+  /* b. indirect implementation                                            */
   /*                                                                       */
   /*    The current execution context is passed to _each_ function as its  */
   /*    first argument, and each field is thus accessed indirectly.        */
@@ -84,13 +92,13 @@
   /*************************************************************************/
 
 
-#ifndef TT_CONFIG_OPTION_STATIC_INTERPRETER      /* indirect implementation */
+#ifndef TT_CONFIG_OPTION_STATIC_INTERPRETER     /* indirect implementation */
 
-#define CUR (*exc)                 /* see ttobjs.h */
+#define CUR  (*exc)                             /* see ttobjs.h */
 
-#else                              /* static implementation */
+#else                                           /* static implementation */
 
-#define CUR cur
+#define CUR  cur
 
   static
   TT_ExecContextRec  cur;   /* static exec. context variable */
@@ -104,11 +112,9 @@
 
   /*************************************************************************/
   /*                                                                       */
-  /* Most of FreeType builds don't use engine compensations.  We thus      */
-  /* introduce a macro, FT_CONFIG_OPTION_INTERPRETER_QUICK, which controls */
-  /* the use of these values.                                              */
+  /* The instruction argument stack.                                       */
   /*                                                                       */
-#define INS_ARG  EXEC_OP_ TT_Long*  args  /* see ttobjs.h for EXEC_OP_ */
+#define INS_ARG  EXEC_OP_ FT_Long*  args    /* see ttobjs.h for EXEC_OP_ */
 
 
   /*************************************************************************/
@@ -116,7 +122,7 @@
   /* This macro is used whenever `exec' is unused in a function, to avoid  */
   /* stupid warnings from pedantic compilers.                              */
   /*                                                                       */
-#define UNUSED_EXEC  (void)CUR
+#define FT_UNUSED_EXEC  FT_UNUSED( CUR )
 
 
   /*************************************************************************/
@@ -124,13 +130,13 @@
   /* This macro is used whenever `args' is unused in a function, to avoid  */
   /* stupid warnings from pedantic compilers.                              */
   /*                                                                       */
-#define UNUSED_ARG  UNUSED_EXEC; (void)args;
+#define FT_UNUSED_ARG  FT_UNUSED_EXEC; FT_UNUSED( args )
 
 
   /*************************************************************************/
   /*                                                                       */
   /* The following macros hide the use of EXEC_ARG and EXEC_ARG_ to        */
-  /* increase readabiltyof the code.                                       */
+  /* increase readabilty of the code.                                      */
   /*                                                                       */
   /*************************************************************************/
 
@@ -186,9 +192,6 @@
 #define CUR_Ppem() \
           Cur_PPEM( EXEC_ARG )
 
-#define CALC_Length() \
-          Calc_Length( EXEC_ARG )
-
 #define INS_SxVTL( a, b, c, d ) \
           Ins_SxVTL( EXEC_ARG_ a, b, c, d )
 
@@ -205,7 +208,6 @@
           Move_Zp2_Point( EXEC_ARG_ a, b, c, t )
 
 
-
   /*************************************************************************/
   /*                                                                       */
   /* Instruction dispatch function, as used by the interpreter.            */
@@ -217,14 +219,14 @@
   /*                                                                       */
   /* A simple bounds-checking macro.                                       */
   /*                                                                       */
-#define BOUNDS( x, n )  ((TT_UInt)(x) >= (TT_UInt)(n))
+#define BOUNDS( x, n )  ( (FT_UInt)(x) >= (FT_UInt)(n) )
 
 
-#undef   SUCCESS
-#define  SUCCESS   0
+#undef  SUCCESS
+#define SUCCESS  0
 
-#undef    FAILURE
-#define   FAILURE 1
+#undef  FAILURE
+#define FAILURE  1
 
 
   /*************************************************************************/
@@ -245,33 +247,34 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    range :: The new execution code range.                             */
-  /*    IP    :: The  new IP in the new code range.                        */
+  /*                                                                       */
+  /*    IP    :: The new IP in the new code range.                         */
   /*                                                                       */
   /* <InOut>                                                               */
   /*    exec  :: The target execution context.                             */
   /*                                                                       */
   /* <Return>                                                              */
-  /*   TrueType error code.  0 means success.                              */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Goto_CodeRange( TT_ExecContext  exec,
-                               TT_Int          range,
-                               TT_Long         IP )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Goto_CodeRange( TT_ExecContext  exec,
+                     FT_Int          range,
+                     FT_Long         IP )
   {
     TT_CodeRange*  coderange;
 
 
-    FT_Assert( range >= 1 && range <= 3 );
+    FT_ASSERT( range >= 1 && range <= 3 );
 
     coderange = &exec->codeRangeTable[range - 1];
 
-    FT_Assert( coderange->base != NULL );
+    FT_ASSERT( coderange->base != NULL );
 
     /* NOTE: Because the last instruction of a program may be a CALL */
     /*       which will return to the first byte *after* the code    */
-    /*       range, we test for IP <= Size, instead of IP < Size.    */
+    /*       range, we test for IP <= Size instead of IP < Size.     */
     /*                                                               */
-    FT_Assert( (TT_ULong)IP <= coderange->size );
+    FT_ASSERT( (FT_ULong)IP <= coderange->size );
 
     exec->code     = coderange->base;
     exec->codeSize = coderange->size;
@@ -292,24 +295,26 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    range  :: The code range index.                                    */
+  /*                                                                       */
   /*    base   :: The new code base.                                       */
+  /*                                                                       */
   /*    length :: The range size in bytes.                                 */
   /*                                                                       */
   /* <InOut>                                                               */
   /*    exec   :: The target execution context.                            */
   /*                                                                       */
   /* <Return>                                                              */
-  /*   TrueType error code.  0 means success.                              */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Set_CodeRange( TT_ExecContext  exec,
-                              TT_Int          range,
-                              void*           base,
-                              TT_Long         length )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Set_CodeRange( TT_ExecContext  exec,
+                    FT_Int          range,
+                    void*           base,
+                    FT_Long         length )
   {
-    FT_Assert( range >= 1 && range <= 3 );
+    FT_ASSERT( range >= 1 && range <= 3 );
 
-    exec->codeRangeTable[range - 1].base = (TT_Byte*)base;
+    exec->codeRangeTable[range - 1].base = (FT_Byte*)base;
     exec->codeRangeTable[range - 1].size = length;
 
     return TT_Err_Ok;
@@ -331,16 +336,16 @@
   /*    exec  :: The target execution context.                             */
   /*                                                                       */
   /* <Return>                                                              */
-  /*   TrueType error code.  0 means success.                              */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
   /* <Note>                                                                */
   /*    Does not set the Error variable.                                   */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Clear_CodeRange( TT_ExecContext  exec,
-                                TT_Int          range )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Clear_CodeRange( TT_ExecContext  exec,
+                      FT_Int          range )
   {
-    FT_Assert( range >= 1 && range <= 3 );
+    FT_ASSERT( range >= 1 && range <= 3 );
 
     exec->codeRangeTable[range - 1].base = NULL;
     exec->codeRangeTable[range - 1].size = 0;
@@ -366,20 +371,21 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    exec   :: A handle to the target execution context.                */
-  /*    system :: A handle to the parent system object.                    */
+  /*                                                                       */
+  /*    memory :: A handle to the parent memory object.                    */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
   /* <Note>                                                                */
   /*    Only the glyph loader and debugger should call this function.      */
   /*                                                                       */
-  LOCAL_FUNC
-  TT_Error  TT_Destroy_Context( TT_ExecContext  exec,
-                                FT_Memory       memory )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Destroy_Context( TT_ExecContext  exec,
+                      FT_Memory       memory )
   {
     /* free composite load stack */
-    FREE( exec->loadStack );
+    FT_FREE( exec->loadStack );
     exec->loadSize = 0;
 
     /* points zone */
@@ -387,22 +393,22 @@
     exec->maxContours = 0;
 
     /* free stack */
-    FREE( exec->stack );
+    FT_FREE( exec->stack );
     exec->stackSize = 0;
 
     /* free call stack */
-    FREE( exec->callStack );
+    FT_FREE( exec->callStack );
     exec->callSize = 0;
     exec->callTop  = 0;
 
     /* free glyph code range */
-    FREE( exec->glyphIns );
+    FT_FREE( exec->glyphIns );
     exec->glyphSize = 0;
 
     exec->size = NULL;
     exec->face = NULL;
 
-    FREE( exec );
+    FT_FREE( exec );
     return TT_Err_Ok;
   }
 
@@ -424,26 +430,23 @@
   /*    exec   :: A handle to the target execution context.                */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  static
-  TT_Error  Init_Context( TT_ExecContext  exec,
-                          TT_Face         face,
-                          FT_Memory       memory )
+  static FT_Error
+  Init_Context( TT_ExecContext  exec,
+                TT_Face         face,
+                FT_Memory       memory )
   {
-    TT_Error  error;
+    FT_Error  error;
 
 
-    FT_TRACE1(( "TT.Create_Create: new object at 0x%08lx, parent = 0x%08lx\n",
-              (long)exec, (long)face ));
-
-    /* XXX: We don't reserve arrays anymore, this is done automatically */
-    /*      during a call to Context_Load().                            */
+    FT_TRACE1(( "Init_Context: new object at 0x%08p, parent = 0x%08p\n",
+                exec, face ));
 
     exec->memory   = memory;
     exec->callSize = 32;
 
-    if ( ALLOC_ARRAY( exec->callStack, exec->callSize, TT_CallRec ) )
+    if ( FT_NEW_ARRAY( exec->callStack, exec->callSize ) )
       goto Fail_Memory;
 
     /* all values in the context are set to 0 already, but this is */
@@ -465,8 +468,8 @@
     return TT_Err_Ok;
 
   Fail_Memory:
-    FT_ERROR(( "TT.Context_Create: not enough memory for 0x%08lx\n",
-             (long)exec ));
+    FT_ERROR(( "Init_Context: not enough memory for 0x%08lx\n",
+               (FT_Long)exec ));
     TT_Destroy_Context( exec, memory );
 
     return error;
@@ -482,6 +485,8 @@
   /*    Checks the size of a buffer and reallocates it if necessary.       */
   /*                                                                       */
   /* <Input>                                                               */
+  /*    memory     :: A handle to the parent memory object.                */
+  /*                                                                       */
   /*    multiplier :: The size in bytes of each element in the buffer.     */
   /*                                                                       */
   /*    new_max    :: The new capacity (size) of the buffer.               */
@@ -493,29 +498,28 @@
   /*    buff       :: The address of the buffer base pointer.              */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  static
-  TT_Error  Update_Max( FT_Memory  memory,
-                        TT_ULong*  size,
-                        TT_Long    multiplier,
-                        void**     buff,
-                        TT_ULong   new_max )
+  static FT_Error
+  Update_Max( FT_Memory  memory,
+              FT_ULong*  size,
+              FT_Long    multiplier,
+              void**     buff,
+              FT_ULong   new_max )
   {
-    TT_Error  error;
+    FT_Error  error;
 
 
     if ( *size < new_max )
     {
-      FREE( *buff );
-      if ( ALLOC( *buff, new_max * multiplier ) )
+      FT_FREE( *buff );
+      if ( FT_ALLOC( *buff, new_max * multiplier ) )
         return error;
       *size = new_max;
     }
 
     return TT_Err_Ok;
   }
-
 
 
   /*************************************************************************/
@@ -528,26 +532,28 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    face :: A handle to the source face object.                        */
+  /*                                                                       */
   /*    size :: A handle to the source size object.                        */
   /*                                                                       */
   /* <InOut>                                                               */
   /*    exec :: A handle to the target execution context.                  */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
   /* <Note>                                                                */
   /*    Only the glyph loader and debugger should call this function.      */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Load_Context( TT_ExecContext  exec,
-                             TT_Face         face,
-                             TT_Size         size )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Load_Context( TT_ExecContext  exec,
+                   TT_Face         face,
+                   TT_Size         size )
   {
-    TT_Int          i;
-    TT_ULong        tmp;
+    FT_Int          i;
+    FT_ULong        tmp;
     TT_MaxProfile*  maxp;
-    TT_Error        error;
+    FT_Error        error;
+
 
     exec->face = face;
     maxp       = &face->max_profile;
@@ -595,20 +601,20 @@
     tmp = exec->stackSize;
     error = Update_Max( exec->memory,
                         &tmp,
-                        sizeof ( TT_F26Dot6 ),
+                        sizeof ( FT_F26Dot6 ),
                         (void**)&exec->stack,
                         maxp->maxStackElements + 32 );
-    exec->stackSize = (TT_UInt)tmp;
+    exec->stackSize = (FT_UInt)tmp;
     if ( error )
       return error;
 
     tmp = exec->glyphSize;
     error = Update_Max( exec->memory,
                         &tmp,
-                        sizeof ( TT_Byte ),
+                        sizeof ( FT_Byte ),
                         (void**)&exec->glyphIns,
                         maxp->maxSizeOfInstructions );
-    exec->glyphSize = (TT_UShort)tmp;
+    exec->glyphSize = (FT_UShort)tmp;
     if ( error )
       return error;
 
@@ -632,20 +638,21 @@
   /* <Input>                                                               */
   /*    exec :: A handle to the source execution context.                  */
   /*                                                                       */
-  /* <Output>                                                              */
-  /*    ins  :: A handle to the target size object.                        */
+  /* <InOut>                                                               */
+  /*    size :: A handle to the target size object.                        */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
   /* <Note>                                                                */
   /*    Only the glyph loader and debugger should call this function.      */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Save_Context( TT_ExecContext  exec,
-                             TT_Size         size )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Save_Context( TT_ExecContext  exec,
+                   TT_Size         size )
   {
-    TT_Int  i;
+    FT_Int  i;
+
 
     /* XXXX: Will probably disappear soon with all the code range */
     /*       management, which is now rather obsolete.            */
@@ -676,6 +683,8 @@
   /*             variables and returns immediately, otherwise TT_RunIns()  */
   /*             is called.                                                */
   /*                                                                       */
+  /*             This is commented out currently.                          */
+  /*                                                                       */
   /* <Input>                                                               */
   /*    exec  :: A handle to the target execution context.                 */
   /*                                                                       */
@@ -685,13 +694,14 @@
   /* <Note>                                                                */
   /*    Only the glyph loader and debugger should call this function.      */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Run_Context( TT_ExecContext  exec,
-                            TT_Bool         debug )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Run_Context( TT_ExecContext  exec,
+                  FT_Bool         debug )
   {
-    TT_Error  error;
+    FT_Error  error;
 
-    if ( (error = TT_Goto_CodeRange( exec, tt_coderange_glyph, 0 ))
+
+    if ( ( error = TT_Goto_CodeRange( exec, tt_coderange_glyph, 0  ) )
            != TT_Err_Ok )
       return error;
 
@@ -718,7 +728,8 @@
     exec->callTop = 0;
 
 #if 1
-    (void)debug;
+    FT_UNUSED( debug );
+
     return exec->face->interpreter( exec );
 #else
     if ( !debug )
@@ -729,7 +740,6 @@
   }
 
 
-  LOCAL_FUNC
   const TT_GraphicsState  tt_default_graphics_state =
   {
     0, 0, 0,
@@ -742,42 +752,31 @@
   };
 
 
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Function>                                                            */
-  /*    TT_New_Context                                                     */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    Queries the face context for a given font.  Note that there is     */
-  /*    now a _single_ execution context in the TrueType driver which is   */
-  /*    shared among faces.                                                */
-  /*                                                                       */
-  /* <Input>                                                               */
-  /*    face :: A handle to the source face object.                        */
-  /*                                                                       */
-  /* <Return>                                                              */
-  /*    A handle to the execution context.  Initialized for `face'.        */
-  /*                                                                       */
-  /* <Note>                                                                */
-  /*    Only the glyph loader and debugger should call this function.      */
-  /*                                                                       */
-  EXPORT_FUNC
-  TT_ExecContext  TT_New_Context( TT_Face  face )
+  /* documentation is in ttinterp.h */
+
+  FT_EXPORT_DEF( TT_ExecContext )
+  TT_New_Context( TT_Face  face )
   {
-    TT_Driver       driver = (TT_Driver)face->root.driver;
+    TT_Driver       driver;
     TT_ExecContext  exec;
-    FT_Memory       memory = driver->root.memory;
+    FT_Memory       memory;
 
 
-    exec = driver->context;
+    if ( !face )
+      return 0;
+
+    driver = (TT_Driver)face->root.driver;
+
+    memory = driver->root.root.memory;
+    exec   = driver->context;
 
     if ( !driver->context )
     {
-      TT_Error   error;
+      FT_Error  error;
 
 
       /* allocate object */
-      if ( ALLOC( exec, sizeof ( *exec ) ) )
+      if ( FT_NEW( exec ) )
         goto Exit;
 
       /* initialize it */
@@ -793,7 +792,7 @@
     return driver->context;
 
   Fail:
-    FREE( exec );
+    FT_FREE( exec );
 
     return 0;
   }
@@ -811,35 +810,20 @@
   /*    exec :: A handle to the target execution context.                  */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
   /* <Note>                                                                */
   /*    Only the glyph loader and debugger should call this function.      */
   /*                                                                       */
-  EXPORT_FUNC
-  TT_Error  TT_Done_Context( TT_ExecContext  exec )
+  FT_LOCAL_DEF( FT_Error )
+  TT_Done_Context( TT_ExecContext  exec )
   {
     /* Nothing at all for now */
-    UNUSED( exec );
+    FT_UNUSED( exec );
 
     return TT_Err_Ok;
   }
 
-
-#ifdef FT_CONFIG_OPTION_OLD_CALCS
-
-  static TT_F26Dot6  Norm( TT_F26Dot6  X, TT_F26Dot6  Y )
-  {
-    FT_Int64       T1, T2;
-
-    MUL_64( X, X, T1 );
-    MUL_64( Y, Y, T2 );
-
-    ADD_64( T1, T2, T1 );
-
-    return (TT_F26Dot6)SQRT_64( T1 );
-  }
-#endif
 
 
   /*************************************************************************/
@@ -866,11 +850,11 @@
 
 
 #undef  PACK
-#define PACK( x, y )  ((x << 4) | y)
+#define PACK( x, y )  ( ( x << 4 ) | y )
 
 
   static
-  const TT_Byte  Pop_Push_Count[256] =
+  const FT_Byte  Pop_Push_Count[256] =
   {
     /* opcodes are gathered in groups of 16 */
     /* please keep the spaces as they are   */
@@ -1150,7 +1134,7 @@
 
 
   static
-  const TT_Char  opcode_length[256] =
+  const FT_Char  opcode_length[256] =
   {
     1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,
     1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,
@@ -1174,14 +1158,175 @@
   };
 
   static
-  const TT_Vector  Null_Vector = {0,0};
+  const FT_Vector  Null_Vector = {0,0};
 
 
-#undef  PACK
+#undef PACK
 
 
 #undef  NULL_Vector
-#define NULL_Vector (TT_Vector*)&Null_Vector
+#define NULL_Vector  (FT_Vector*)&Null_Vector
+
+
+  /* compute (a*b)/2^14 with maximal accuracy and rounding */
+  static FT_Int32
+  TT_MulFix14( FT_Int32  a,
+               FT_Int    b )
+  {
+    FT_Int32   m, s, hi;
+    FT_UInt32  l, lo;
+
+
+    /* compute ax*bx as 64-bit value */
+    l  = (FT_UInt32)( ( a & 0xFFFFU ) * b );
+    m  = ( a >> 16 ) * b;
+
+    lo = l + (FT_UInt32)( m << 16 );
+    hi = ( m >> 16 ) + ( (FT_Int32)l >> 31 ) + ( lo < l );
+
+    /* divide the result by 2^14 with rounding */
+    s   = hi >> 31;
+    l   = lo + (FT_UInt32)s;
+    hi += s + ( l < lo );
+    lo  = l;
+
+    l   = lo + 0x2000U;
+    hi += (l < lo);
+
+    return ( hi << 18 ) | ( l >> 14 );
+  }
+
+
+  /* compute (ax*bx+ay*by)/2^14 with maximal accuracy and rounding */
+  static FT_Int32
+  TT_DotFix14( FT_Int32  ax,
+               FT_Int32  ay,
+               FT_Int    bx,
+               FT_Int    by )
+  {
+    FT_Int32   m, s, hi1, hi2, hi;
+    FT_UInt32  l, lo1, lo2, lo;
+
+
+    /* compute ax*bx as 64-bit value */
+    l = (FT_UInt32)( ( ax & 0xFFFFU ) * bx );
+    m = ( ax >> 16 ) * bx;
+
+    lo1 = l + (FT_UInt32)( m << 16 );
+    hi1 = ( m >> 16 ) + ( (FT_Int32)l >> 31 ) + ( lo1 < l );
+
+    /* compute ay*by as 64-bit value */
+    l = (FT_UInt32)( ( ay & 0xFFFFU ) * by );
+    m = ( ay >> 16 ) * by;
+
+    lo2 = l + (FT_UInt32)( m << 16 );
+    hi2 = ( m >> 16 ) + ( (FT_Int32)l >> 31 ) + ( lo2 < l );
+
+    /* add them */
+    lo = lo1 + lo2;
+    hi = hi1 + hi2 + ( lo < lo1 );
+
+    /* divide the result by 2^14 with rounding */
+    s   = hi >> 31;
+    l   = lo + (FT_UInt32)s;
+    hi += s + ( l < lo );
+    lo  = l;
+
+    l   = lo + 0x2000U;
+    hi += ( l < lo );
+
+    return ( hi << 18 ) | ( l >> 14 );
+  }
+
+
+  /* return length of given vector */
+
+#if 0
+
+  static FT_Int32
+  TT_VecLen( FT_Int32  x,
+             FT_Int32  y )
+  {
+    FT_Int32   m, hi1, hi2, hi;
+    FT_UInt32  l, lo1, lo2, lo;
+
+
+    /* compute x*x as 64-bit value */
+    lo = (FT_UInt32)( x & 0xFFFFU );
+    hi = x >> 16;
+
+    l  = lo * lo;
+    m  = hi * lo;
+    hi = hi * hi;
+
+    lo1 = l + (FT_UInt32)( m << 17 );
+    hi1 = hi + ( m >> 15 ) + ( lo1 < l );
+
+    /* compute y*y as 64-bit value */
+    lo = (FT_UInt32)( y & 0xFFFFU );
+    hi = y >> 16;
+
+    l  = lo * lo;
+    m  = hi * lo;
+    hi = hi * hi;
+
+    lo2 = l + (FT_UInt32)( m << 17 );
+    hi2 = hi + ( m >> 15 ) + ( lo2 < l );
+
+    /* add them to get 'x*x+y*y' as 64-bit value */
+    lo = lo1 + lo2;
+    hi = hi1 + hi2 + ( lo < lo1 );
+
+    /* compute the square root of this value */
+    {
+      FT_UInt32  root, rem, test_div;
+      FT_Int     count;
+
+
+      root = 0;
+
+      {
+        rem   = 0;
+        count = 32;
+        do
+        {
+          rem      = ( rem << 2 ) | ( (FT_UInt32)hi >> 30 );
+          hi       = (  hi << 2 ) | (            lo >> 30 );
+          lo     <<= 2;
+          root   <<= 1;
+          test_div = ( root << 1 ) + 1;
+
+          if ( rem >= test_div )
+          {
+            rem  -= test_div;
+            root += 1;
+          }
+        } while ( --count );
+      }
+
+      return (FT_Int32)root;
+    }
+  }
+
+#else
+
+  /* this version uses FT_Vector_Length which computes the same value */
+  /* much, much faster..                                              */
+  /*                                                                  */
+  static FT_F26Dot6
+  TT_VecLen( FT_F26Dot6  X,
+             FT_F26Dot6  Y )
+  {
+    FT_Vector  v;
+
+
+    v.x = X;
+    v.y = Y;
+
+    return FT_Vector_Length( &v );
+  }
+
+#endif
 
 
   /*************************************************************************/
@@ -1196,8 +1341,8 @@
   /* <Return>                                                              */
   /*    The aspect ratio in 16.16 format, always <= 1.0 .                  */
   /*                                                                       */
-  static
-  TT_Long  Current_Ratio( EXEC_OP )
+  static FT_Long
+  Current_Ratio( EXEC_OP )
   {
     if ( CUR.tt_metrics.ratio )
       return CUR.tt_metrics.ratio;
@@ -1210,24 +1355,19 @@
 
     else
     {
-      TT_Long  x, y;
-#ifdef FT_CONFIG_OPTION_OLD_CALCS
+      FT_Long  x, y;
+
       x = TT_MULDIV( CUR.GS.projVector.x, CUR.tt_metrics.x_ratio, 0x4000 );
       y = TT_MULDIV( CUR.GS.projVector.y, CUR.tt_metrics.y_ratio, 0x4000 );
-      CUR.tt_metrics.ratio = Norm( x, y );
-#else
-      x = TT_MULDIV( CUR.GS.projVector.x, CUR.tt_metrics.x_ratio, 0x8000 );
-      y = TT_MULDIV( CUR.GS.projVector.y, CUR.tt_metrics.y_ratio, 0x8000 );
-      CUR.tt_metrics.ratio = FT_Sqrt32( x*x+y*y ) << 1;
-#endif
+      CUR.tt_metrics.ratio = TT_VecLen( x, y );
     }
 
     return CUR.tt_metrics.ratio;
   }
 
 
-  static
-  TT_Long  Current_Ppem( EXEC_OP )
+  static FT_Long
+  Current_Ppem( EXEC_OP )
   {
     return TT_MULFIX( CUR.tt_metrics.ppem, CURRENT_Ratio() );
   }
@@ -1240,48 +1380,49 @@
   /*************************************************************************/
 
 
-  static
-  TT_F26Dot6  Read_CVT( EXEC_OP_ TT_ULong  index )
+  FT_CALLBACK_DEF( FT_F26Dot6 )
+  Read_CVT( EXEC_OP_ FT_ULong  idx )
   {
-    return CUR.cvt[index];
+    return CUR.cvt[idx];
   }
 
 
-  static
-  TT_F26Dot6  Read_CVT_Stretched( EXEC_OP_ TT_ULong  index )
+  FT_CALLBACK_DEF( FT_F26Dot6 )
+  Read_CVT_Stretched( EXEC_OP_ FT_ULong  idx )
   {
-    return TT_MULFIX( CUR.cvt[index], CURRENT_Ratio() );
+    return TT_MULFIX( CUR.cvt[idx], CURRENT_Ratio() );
   }
 
 
-  static
-  void  Write_CVT( EXEC_OP_ TT_ULong    index,
-                            TT_F26Dot6  value )
+  FT_CALLBACK_DEF( void )
+  Write_CVT( EXEC_OP_ FT_ULong    idx,
+                      FT_F26Dot6  value )
   {
-    CUR.cvt[index] = value;
-  }
-
-  static
-  void  Write_CVT_Stretched( EXEC_OP_ TT_ULong    index,
-                                      TT_F26Dot6  value )
-  {
-    CUR.cvt[index] = FT_DivFix( value, CURRENT_Ratio() );
+    CUR.cvt[idx] = value;
   }
 
 
-  static
-  void  Move_CVT( EXEC_OP_ TT_ULong    index,
-                           TT_F26Dot6  value )
+  FT_CALLBACK_DEF( void )
+  Write_CVT_Stretched( EXEC_OP_ FT_ULong    idx,
+                                FT_F26Dot6  value )
   {
-    CUR.cvt[index] += value;
+    CUR.cvt[idx] = FT_DivFix( value, CURRENT_Ratio() );
   }
 
 
-  static
-  void  Move_CVT_Stretched( EXEC_OP_ TT_ULong    index,
-                                     TT_F26Dot6  value )
+  FT_CALLBACK_DEF( void )
+  Move_CVT( EXEC_OP_ FT_ULong    idx,
+                     FT_F26Dot6  value )
   {
-    CUR.cvt[index] += FT_DivFix( value, CURRENT_Ratio() );
+    CUR.cvt[idx] += value;
+  }
+
+
+  FT_CALLBACK_DEF( void )
+  Move_CVT_Stretched( EXEC_OP_ FT_ULong    idx,
+                               FT_F26Dot6  value )
+  {
+    CUR.cvt[idx] += FT_DivFix( value, CURRENT_Ratio() );
   }
 
 
@@ -1300,11 +1441,13 @@
   /* <Note>                                                                */
   /*    This one could become a macro.                                     */
   /*                                                                       */
-  static TT_Short  GetShortIns( EXEC_OP )
+  static FT_Short
+  GetShortIns( EXEC_OP )
   {
     /* Reading a byte stream so there is no endianess (DaveP) */
     CUR.IP += 2;
-    return (TT_Short)((CUR.code[CUR.IP - 2] << 8) + CUR.code[CUR.IP - 1]);
+    return (FT_Short)( ( CUR.code[CUR.IP - 2] << 8 ) +
+                         CUR.code[CUR.IP - 1]      );
   }
 
 
@@ -1324,9 +1467,9 @@
   /* <Return>                                                              */
   /*    SUCCESS or FAILURE.                                                */
   /*                                                                       */
-  static
-  TT_Bool  Ins_Goto_CodeRange( EXEC_OP_ TT_Int    aRange,
-                                        TT_ULong  aIP )
+  static FT_Bool
+  Ins_Goto_CodeRange( EXEC_OP_ FT_Int    aRange,
+                               FT_ULong  aIP )
   {
     TT_CodeRange*  range;
 
@@ -1375,47 +1518,60 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    point    :: The index of the point to move.                        */
+  /*                                                                       */
   /*    distance :: The distance to apply.                                 */
   /*                                                                       */
   /* <InOut>                                                               */
   /*    zone     :: The affected glyph zone.                               */
   /*                                                                       */
-  static
-  void  Direct_Move( EXEC_OP_ FT_GlyphZone*  zone,
-                              TT_UShort      point,
-                              TT_F26Dot6     distance )
+  static void
+  Direct_Move( EXEC_OP_ TT_GlyphZone  zone,
+                        FT_UShort     point,
+                        FT_F26Dot6    distance )
   {
-    TT_F26Dot6 v;
+    FT_F26Dot6  v;
 
 
     v = CUR.GS.freeVector.x;
 
     if ( v != 0 )
     {
+
 #ifdef NO_APPLE_PATENT
-      if ( ABS(CUR.F_dot_P) > APPLE_THRESHOLD )
+
+      if ( ABS( CUR.F_dot_P ) > APPLE_THRESHOLD )
         zone->cur[point].x += distance;
+
 #else
+
       zone->cur[point].x += TT_MULDIV( distance,
                                        v * 0x10000L,
                                        CUR.F_dot_P );
+
 #endif
-      zone->tags[point] |= FT_Curve_Tag_Touch_X;
+
+      zone->tags[point] |= FT_CURVE_TAG_TOUCH_X;
     }
 
     v = CUR.GS.freeVector.y;
 
     if ( v != 0 )
     {
+
 #ifdef NO_APPLE_PATENT
-      if ( ABS(CUR.F_dot_P) > APPLE_THRESHOLD )
+
+      if ( ABS( CUR.F_dot_P ) > APPLE_THRESHOLD )
         zone->cur[point].y += distance;
+
 #else
+
       zone->cur[point].y += TT_MULDIV( distance,
                                        v * 0x10000L,
                                        CUR.F_dot_P );
+
 #endif
-      zone->tags[point] |= FT_Curve_Tag_Touch_Y;
+
+      zone->tags[point] |= FT_CURVE_TAG_TOUCH_Y;
     }
   }
 
@@ -1425,31 +1581,32 @@
   /* Special versions of Direct_Move()                                     */
   /*                                                                       */
   /*   The following versions are used whenever both vectors are both      */
-  /*   along one of the coordinate unit vectors, i.e. in 90% cases.        */
+  /*   along one of the coordinate unit vectors, i.e. in 90% of the cases. */
   /*                                                                       */
   /*************************************************************************/
 
-  static
-  void  Direct_Move_X( EXEC_OP_ FT_GlyphZone*  zone,
-                                TT_UShort      point,
-                                TT_F26Dot6     distance )
+
+  static void
+  Direct_Move_X( EXEC_OP_ TT_GlyphZone  zone,
+                          FT_UShort     point,
+                          FT_F26Dot6    distance )
   {
-    UNUSED_EXEC;
+    FT_UNUSED_EXEC;
 
     zone->cur[point].x += distance;
-    zone->tags[point] |= FT_Curve_Tag_Touch_X;
+    zone->tags[point]  |= FT_CURVE_TAG_TOUCH_X;
   }
 
 
-  static
-  void  Direct_Move_Y( EXEC_OP_ FT_GlyphZone*  zone,
-                                TT_UShort      point,
-                                TT_F26Dot6     distance )
+  static void
+  Direct_Move_Y( EXEC_OP_ TT_GlyphZone  zone,
+                          FT_UShort     point,
+                          FT_F26Dot6    distance )
   {
-    UNUSED_EXEC;
+    FT_UNUSED_EXEC;
 
     zone->cur[point].y += distance;
-    zone->tags[point] |= FT_Curve_Tag_Touch_Y;
+    zone->tags[point]  |= FT_CURVE_TAG_TOUCH_Y;
   }
 
 
@@ -1463,6 +1620,7 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance (not) to round.                       */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
@@ -1474,14 +1632,14 @@
   /*    the description of super round that we should add the compensation */
   /*    before rounding.                                                   */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_None( EXEC_OP_ TT_F26Dot6  distance,
-                                   TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_None( EXEC_OP_ FT_F26Dot6  distance,
+                       FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
+    FT_UNUSED_EXEC;
 
-    UNUSED_EXEC;
 
     if ( distance >= 0 )
     {
@@ -1508,19 +1666,20 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
   /*    Rounded distance.                                                  */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_To_Grid( EXEC_OP_ TT_F26Dot6  distance,
-                                      TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_To_Grid( EXEC_OP_ FT_F26Dot6  distance,
+                          FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
+    FT_UNUSED_EXEC;
 
-    UNUSED_EXEC;
 
     if ( distance >= 0 )
     {
@@ -1532,10 +1691,11 @@
     }
     else
     {
-      val = -( (compensation - distance + 32) & (-64) );
+      val = -( ( compensation - distance + 32 ) & -64 );
       if ( val > 0 )
         val = 0;
     }
+
     return  val;
   }
 
@@ -1550,32 +1710,34 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
   /*    Rounded distance.                                                  */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_To_Half_Grid( EXEC_OP_ TT_F26Dot6  distance,
-                                           TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_To_Half_Grid( EXEC_OP_ FT_F26Dot6  distance,
+                               FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
- 
-   UNUSED_EXEC;
+    FT_UNUSED_EXEC;
+
 
     if ( distance >= 0 )
     {
-      val = ((distance + compensation) & (-64)) + 32;
+      val = ( ( distance + compensation ) & -64 ) + 32;
       if ( val < 0 )
         val = 0;
     }
     else
     {
-      val = -( ((compensation - distance) & (-64)) + 32 );
+      val = -( ( (compensation - distance) & -64 ) + 32 );
       if ( val > 0 )
         val = 0;
     }
+
     return val;
   }
 
@@ -1590,19 +1752,20 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
   /*    Rounded distance.                                                  */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_Down_To_Grid( EXEC_OP_ TT_F26Dot6  distance,
-                                           TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_Down_To_Grid( EXEC_OP_ FT_F26Dot6  distance,
+                               FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
+    FT_UNUSED_EXEC;
 
-    UNUSED_EXEC;
 
     if ( distance >= 0 )
     {
@@ -1614,10 +1777,11 @@
     }
     else
     {
-      val = -( (compensation - distance) & (-64) );
+      val = -( ( compensation - distance ) & -64 );
       if ( val > 0 )
         val = 0;
     }
+
     return val;
   }
 
@@ -1632,19 +1796,20 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
   /*    Rounded distance.                                                  */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_Up_To_Grid( EXEC_OP_ TT_F26Dot6  distance,
-                                         TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_Up_To_Grid( EXEC_OP_ FT_F26Dot6  distance,
+                             FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
 
-    UNUSED_EXEC;
+    FT_UNUSED_EXEC;
 
     if ( distance >= 0 )
     {
@@ -1656,10 +1821,11 @@
     }
     else
     {
-      val = -( (compensation - distance + 63) & (-64) );
+      val = -( ( compensation - distance + 63 ) & -64 );
       if ( val > 0 )
         val = 0;
     }
+
     return val;
   }
 
@@ -1674,18 +1840,20 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
   /*    Rounded distance.                                                  */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_To_Double_Grid( EXEC_OP_ TT_F26Dot6  distance,
-                                             TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_To_Double_Grid( EXEC_OP_ FT_F26Dot6  distance,
+                                 FT_F26Dot6  compensation )
   {
-    TT_F26Dot6 val;
+    FT_F26Dot6 val;
 
-    UNUSED_EXEC;
+    FT_UNUSED_EXEC;
+
 
     if ( distance >= 0 )
     {
@@ -1697,10 +1865,11 @@
     }
     else
     {
-      val = -( (compensation - distance + 16) & (-32) );
+      val = -( ( compensation - distance + 16 ) & -32 );
       if ( val > 0 )
         val = 0;
     }
+
     return val;
   }
 
@@ -1715,6 +1884,7 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
@@ -1726,29 +1896,30 @@
   /*    the description of super round that we should add the compensation */
   /*    before rounding.                                                   */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_Super( EXEC_OP_ TT_F26Dot6  distance,
-                                    TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_Super( EXEC_OP_ FT_F26Dot6  distance,
+                        FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
 
     if ( distance >= 0 )
     {
-      val = (distance - CUR.phase + CUR.threshold + compensation) &
-              (-CUR.period);
+      val = ( distance - CUR.phase + CUR.threshold + compensation ) &
+              -CUR.period;
       if ( val < 0 )
         val = 0;
       val += CUR.phase;
     }
     else
     {
-      val = -( (CUR.threshold - CUR.phase - distance + compensation) &
-               (-CUR.period) );
+      val = -( ( CUR.threshold - CUR.phase - distance + compensation ) &
+               -CUR.period );
       if ( val > 0 )
         val = 0;
       val -= CUR.phase;
     }
+
     return val;
   }
 
@@ -1763,6 +1934,7 @@
   /*                                                                       */
   /* <Input>                                                               */
   /*    distance     :: The distance to round.                             */
+  /*                                                                       */
   /*    compensation :: The engine compensation.                           */
   /*                                                                       */
   /* <Return>                                                              */
@@ -1772,16 +1944,16 @@
   /*    There is a separate function for Round_Super_45() as we may need   */
   /*    greater precision.                                                 */
   /*                                                                       */
-  static
-  TT_F26Dot6  Round_Super_45( EXEC_OP_ TT_F26Dot6  distance,
-                                       TT_F26Dot6  compensation )
+  static FT_F26Dot6
+  Round_Super_45( EXEC_OP_ FT_F26Dot6  distance,
+                           FT_F26Dot6  compensation )
   {
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
 
     if ( distance >= 0 )
     {
-      val = ( (distance - CUR.phase + CUR.threshold + compensation) /
+      val = ( ( distance - CUR.phase + CUR.threshold + compensation ) /
                 CUR.period ) * CUR.period;
       if ( val < 0 )
         val = 0;
@@ -1789,7 +1961,7 @@
     }
     else
     {
-      val = -( ( (CUR.threshold - CUR.phase - distance + compensation) /
+      val = -( ( ( CUR.threshold - CUR.phase - distance + compensation ) /
                    CUR.period ) * CUR.period );
       if ( val > 0 )
         val = 0;
@@ -1811,8 +1983,8 @@
   /* <Input>                                                               */
   /*    round_mode :: The rounding mode to be used.                        */
   /*                                                                       */
-  static
-  void  Compute_Round( EXEC_OP_ TT_Byte  round_mode )
+  static void
+  Compute_Round( EXEC_OP_ FT_Byte  round_mode )
   {
     switch ( round_mode )
     {
@@ -1863,11 +2035,11 @@
   /*    GridPeriod :: Grid period                                          */
   /*    selector   :: SROUND opcode                                        */
   /*                                                                       */
-  static
-  void  SetSuperRound( EXEC_OP_ TT_F26Dot6  GridPeriod,
-                                TT_Long     selector )
+  static void
+  SetSuperRound( EXEC_OP_ FT_F26Dot6  GridPeriod,
+                          FT_Long     selector )
   {
-    switch ( (TT_Int)(selector & 0xC0) )
+    switch ( (FT_Int)( selector & 0xC0 ) )
     {
       case 0:
         CUR.period = GridPeriod / 2;
@@ -1888,7 +2060,7 @@
         break;
     }
 
-    switch ( (TT_Int)(selector & 0x30) )
+    switch ( (FT_Int)( selector & 0x30 ) )
     {
     case 0:
       CUR.phase = 0;
@@ -1910,7 +2082,7 @@
     if ( (selector & 0x0F) == 0 )
       CUR.threshold = CUR.period - 1;
     else
-      CUR.threshold = ( (TT_Int)(selector & 0x0F) - 4 ) * CUR.period / 8;
+      CUR.threshold = ( (FT_Int)( selector & 0x0F ) - 4 ) * CUR.period / 8;
 
     CUR.period    /= 256;
     CUR.phase     /= 256;
@@ -1934,12 +2106,14 @@
   /* <Return>                                                              */
   /*    The distance in F26dot6 format.                                    */
   /*                                                                       */
-  static
-  TT_F26Dot6  Project( EXEC_OP_ TT_Vector*  v1,
-                                TT_Vector*  v2 )
+  static FT_F26Dot6
+  Project( EXEC_OP_ FT_Vector*  v1,
+                    FT_Vector*  v2 )
   {
-    return TT_MULDIV( v1->x - v2->x, CUR.GS.projVector.x, 0x4000 ) +
-           TT_MULDIV( v1->y - v2->y, CUR.GS.projVector.y, 0x4000 );
+    return TT_DotFix14( v1->x - v2->x,
+                        v1->y - v2->y,
+                        CUR.GS.projVector.x,
+                        CUR.GS.projVector.y );
   }
 
 
@@ -1959,12 +2133,14 @@
   /* <Return>                                                              */
   /*    The distance in F26dot6 format.                                    */
   /*                                                                       */
-  static
-  TT_F26Dot6  Dual_Project( EXEC_OP_ TT_Vector*  v1,
-                                     TT_Vector*  v2 )
+  static FT_F26Dot6
+  Dual_Project( EXEC_OP_ FT_Vector*  v1,
+                         FT_Vector*  v2 )
   {
-    return TT_MULDIV( v1->x - v2->x, CUR.GS.dualVector.x, 0x4000 ) +
-           TT_MULDIV( v1->y - v2->y, CUR.GS.dualVector.y, 0x4000 );
+    return TT_DotFix14( v1->x - v2->x,
+                        v1->y - v2->y,
+                        CUR.GS.dualVector.x,
+                        CUR.GS.dualVector.y );
   }
 
 
@@ -1984,12 +2160,14 @@
   /* <Return>                                                              */
   /*    The distance in F26dot6 format.                                    */
   /*                                                                       */
-  static
-  TT_F26Dot6  Free_Project( EXEC_OP_ TT_Vector*  v1,
-                                     TT_Vector*  v2 )
+  static FT_F26Dot6
+  Free_Project( EXEC_OP_ FT_Vector*  v1,
+                         FT_Vector*  v2 )
   {
-    return TT_MULDIV( v1->x - v2->x, CUR.GS.freeVector.x, 0x4000 ) +
-           TT_MULDIV( v1->y - v2->y, CUR.GS.freeVector.y, 0x4000 );
+    return TT_DotFix14( v1->x - v2->x,
+                        v1->y - v2->y,
+                        CUR.GS.freeVector.x,
+                        CUR.GS.freeVector.y );
   }
 
 
@@ -2009,13 +2187,13 @@
   /* <Return>                                                              */
   /*    The distance in F26dot6 format.                                    */
   /*                                                                       */
-  static
-  TT_F26Dot6  Project_x( EXEC_OP_ TT_Vector*  v1,
-                                  TT_Vector*  v2 )
+  static FT_F26Dot6
+  Project_x( EXEC_OP_ FT_Vector*  v1,
+                      FT_Vector*  v2 )
   {
-    UNUSED_EXEC;
+    FT_UNUSED_EXEC;
 
-    return (v1->x - v2->x);
+    return ( v1->x - v2->x );
   }
 
 
@@ -2035,13 +2213,13 @@
   /* <Return>                                                              */
   /*    The distance in F26dot6 format.                                    */
   /*                                                                       */
-  static
-  TT_F26Dot6  Project_y( EXEC_OP_ TT_Vector*  v1,
-                                  TT_Vector*  v2 )
+  static FT_F26Dot6
+  Project_y( EXEC_OP_ FT_Vector*  v1,
+                      FT_Vector*  v2 )
   {
-    UNUSED_EXEC;
- 
-   return (v1->y - v2->y);
+    FT_UNUSED_EXEC;
+
+   return ( v1->y - v2->y );
   }
 
 
@@ -2054,8 +2232,8 @@
   /*    Computes the projection and movement function pointers according   */
   /*    to the current graphics state.                                     */
   /*                                                                       */
-  static
-  void  Compute_Funcs( EXEC_OP )
+  static void
+  Compute_Funcs( EXEC_OP )
   {
     if ( CUR.GS.freeVector.x == 0x4000 )
     {
@@ -2072,8 +2250,8 @@
       else
       {
         CUR.func_freeProj = (TT_Project_Func)Free_Project;
-        CUR.F_dot_P = (TT_Long)CUR.GS.projVector.x * CUR.GS.freeVector.x * 4 +
-                      (TT_Long)CUR.GS.projVector.y * CUR.GS.freeVector.y * 4;
+        CUR.F_dot_P = (FT_Long)CUR.GS.projVector.x * CUR.GS.freeVector.x * 4 +
+                      (FT_Long)CUR.GS.projVector.y * CUR.GS.freeVector.y * 4;
       }
     }
 
@@ -2144,37 +2322,39 @@
   /*    R is undefined.                                                    */
   /*                                                                       */
 
-#ifdef FT_CONFIG_OPTION_OLD_CALCS
-  static TT_Bool  Normalize( EXEC_OP_ TT_F26Dot6      Vx,
-                                      TT_F26Dot6      Vy,
-                                      TT_UnitVector*  R )
-  {
-    TT_F26Dot6  W;
-    TT_Bool     S1, S2;
 
-    UNUSED_EXEC;
-    
+  static FT_Bool
+  Normalize( EXEC_OP_ FT_F26Dot6      Vx,
+                      FT_F26Dot6      Vy,
+                      FT_UnitVector*  R )
+  {
+    FT_F26Dot6  W;
+    FT_Bool     S1, S2;
+
+    FT_UNUSED_EXEC;
+
+
     if ( ABS( Vx ) < 0x10000L && ABS( Vy ) < 0x10000L )
     {
       Vx *= 0x100;
       Vy *= 0x100;
 
-      W = Norm( Vx, Vy );
+      W = TT_VecLen( Vx, Vy );
 
       if ( W == 0 )
       {
-        /* XXX : UNDOCUMENTED! It seems that it's possible to try  */
-        /*       to normalize the vector (0,0). Return immediately */
+        /* XXX: UNDOCUMENTED! It seems that it is possible to try   */
+        /*      to normalize the vector (0,0).  Return immediately. */
         return SUCCESS;
       }
 
-      R->x = (TT_F2Dot14)FT_MulDiv( Vx, 0x4000L, W );
-      R->y = (TT_F2Dot14)FT_MulDiv( Vy, 0x4000L, W );
+      R->x = (FT_F2Dot14)FT_MulDiv( Vx, 0x4000L, W );
+      R->y = (FT_F2Dot14)FT_MulDiv( Vy, 0x4000L, W );
 
       return SUCCESS;
     }
 
-    W = Norm( Vx, Vy );
+    W = TT_VecLen( Vx, Vy );
 
     Vx = FT_MulDiv( Vx, 0x4000L, W );
     Vy = FT_MulDiv( Vy, 0x4000L, W );
@@ -2202,7 +2382,7 @@
 
     while ( W < 0x1000000L )
     {
-      /* We need to increase W, by a minimal amount */
+      /* We need to increase W by a minimal amount */
       if ( Vx < Vy )
         Vx++;
       else
@@ -2213,7 +2393,7 @@
 
     while ( W >= 0x1004000L )
     {
-      /* We need to decrease W, by a minimal amount */
+      /* We need to decrease W by a minimal amount */
       if ( Vx < Vy )
         Vx--;
       else
@@ -2231,125 +2411,12 @@
     if ( S2 )
       Vy = -Vy;
 
-    R->x = (TT_F2Dot14)Vx;   /* Type conversion */
-    R->y = (TT_F2Dot14)Vy;   /* Type conversion */
+    R->x = (FT_F2Dot14)Vx;   /* Type conversion */
+    R->y = (FT_F2Dot14)Vy;   /* Type conversion */
 
     return SUCCESS;
   }
-#else  
-  static
-  TT_Bool  Normalize( EXEC_OP_ TT_F26Dot6      Vx,
-                               TT_F26Dot6      Vy,
-                               TT_UnitVector*  R )
-  {
-    TT_F26Dot6  u, v, d;
-    TT_Int      shift;
-    TT_ULong    H, L, L2, hi, lo, med;
 
-    u = ABS(Vx);
-    v = ABS(Vy);
-
-    if (u < v)
-    {
-      d = u;
-      u = v;
-      v = d;
-    }
-
-    R->x = 0;
-    R->y = 0;
-    
-    /* check that we're not trying to normalise zero !! */
-    if (u==0) return SUCCESS;
-
-    /* compute (u*u+v*v) on 64 bits with two 32-bit registers [H:L] */
-    hi  = (TT_ULong)u >> 16;
-    lo  = (TT_ULong)u & 0xFFFF;
-    med = hi*lo;
-    
-    H     = hi*hi + (med >> 15);
-    med <<= 17;
-    L     = lo*lo + med;
-    if (L < med) H++;
-    
-    hi  = (TT_ULong)v >> 16;
-    lo  = (TT_ULong)v & 0xFFFF;
-    med = hi*lo;
-    
-    H    += hi*hi + (med >> 15);
-    med <<= 17;
-    L2    = lo*lo + med;
-    if (L2 < med) H++;
-    
-    L += L2;
-    if (L < L2) H++;
-
-    /* if the value is smaller than 32-bits */
-    if (H == 0)
-    {
-      shift = 0;
-      while ((L & 0xC0000000) == 0)
-      {
-        L <<= 2;
-        shift++;
-      }
-      
-      d = FT_Sqrt32(L);
-      R->x = (TT_F2Dot14)TT_MULDIV( Vx << shift, 0x4000, d );
-      R->y = (TT_F2Dot14)TT_MULDIV( Vy << shift, 0x4000, d );
-    }
-    /* if the value is greater than 64-bits */
-    else
-    {
-      shift = 0;
-      while (H)
-      {
-        L   = (L >> 2) | (H << 30);
-        H >>= 2;
-        shift++;
-      }
-      
-      d = FT_Sqrt32(L);
-      R->x = (TT_F2Dot14)TT_MULDIV( Vx >> shift, 0x4000, d );
-      R->y = (TT_F2Dot14)TT_MULDIV( Vy >> shift, 0x4000, d );
-    }
-
-    {
-      TT_ULong  x, y, w;
-      TT_Int    sx, sy;
-
-      sx = ( R->x >= 0 ? 1 : -1 );
-      sy = ( R->y >= 0 ? 1 : -1 );
-      x  = (TT_ULong)sx*R->x;
-      y  = (TT_ULong)sy*R->y;
-      
-      w = x*x+y*y;
-
-      /* we now want to adjust (x,y) in order to have sqrt(w) == 0x4000 */
-      /* which means 0x1000000 <= w < 0x1004000                         */
-      while ( w <= 0x10000000L )
-      {
-        /* increment the smallest coordinate */
-        if ( x < y )  x++;
-                 else y++;
-                 
-        w = x*x+y*y;
-      }
-      
-      while ( w >= 0x10040000L )
-      {
-        /* decrement the smallest coordinate */
-        if ( x < y )  x--;
-                 else y--;
-        w = x*x+y*y;
-      }
-
-      R->x = sx*x;
-      R->y = sy*y;
-    }
-    return SUCCESS;
-  }
-#endif
 
   /*************************************************************************/
   /*                                                                       */
@@ -2358,15 +2425,15 @@
   /*************************************************************************/
 
 
-  static
-  TT_Bool  Ins_SxVTL( EXEC_OP_ TT_UShort       aIdx1,
-                               TT_UShort       aIdx2,
-                               TT_Int          aOpc,
-                               TT_UnitVector*  Vec )
+  static FT_Bool
+  Ins_SxVTL( EXEC_OP_ FT_UShort       aIdx1,
+                      FT_UShort       aIdx2,
+                      FT_Int          aOpc,
+                      FT_UnitVector*  Vec )
   {
-    TT_Long     A, B, C;
-    TT_Vector*  p1;
-    TT_Vector*  p2;
+    FT_Long     A, B, C;
+    FT_Vector*  p1;
+    FT_Vector*  p2;
 
 
     if ( BOUNDS( aIdx1, CUR.zp2.n_points ) ||
@@ -2383,9 +2450,9 @@
     A = p1->x - p2->x;
     B = p1->y - p2->y;
 
-    if ( (aOpc & 1) != 0 )
+    if ( ( aOpc & 1 ) != 0 )
     {
-      C =  B;   /* CounterClockwise rotation */
+      C =  B;   /* counter clockwise rotation */
       B =  A;
       A = -C;
     }
@@ -2400,77 +2467,77 @@
   /* call table defined later below in this source.  Each opcode must */
   /* thus have a corresponding function, even trivial ones.           */
   /*                                                                  */
-  /* They're all defined there.                                       */
+  /* They are all defined there.                                      */
 
-#define DO_SVTCA                          \
-  {                                       \
-    TT_Short  A, B;                       \
-                                          \
-                                          \
-    A = (TT_Short)(CUR.opcode & 1) << 14; \
-    B = A ^ (TT_Short)0x4000;             \
-                                          \
-    CUR.GS.freeVector.x = A;              \
-    CUR.GS.projVector.x = A;              \
-    CUR.GS.dualVector.x = A;              \
-                                          \
-    CUR.GS.freeVector.y = B;              \
-    CUR.GS.projVector.y = B;              \
-    CUR.GS.dualVector.y = B;              \
-                                          \
-    COMPUTE_Funcs();                      \
+#define DO_SVTCA                            \
+  {                                         \
+    FT_Short  A, B;                         \
+                                            \
+                                            \
+    A = (FT_Short)( CUR.opcode & 1 ) << 14; \
+    B = A ^ (FT_Short)0x4000;               \
+                                            \
+    CUR.GS.freeVector.x = A;                \
+    CUR.GS.projVector.x = A;                \
+    CUR.GS.dualVector.x = A;                \
+                                            \
+    CUR.GS.freeVector.y = B;                \
+    CUR.GS.projVector.y = B;                \
+    CUR.GS.dualVector.y = B;                \
+                                            \
+    COMPUTE_Funcs();                        \
   }
 
 
-#define DO_SPVTCA                         \
-  {                                       \
-    TT_Short  A, B;                       \
-                                          \
-                                          \
-    A = (TT_Short)(CUR.opcode & 1) << 14; \
-    B = A ^ (TT_Short)0x4000;             \
-                                          \
-    CUR.GS.projVector.x = A;              \
-    CUR.GS.dualVector.x = A;              \
-                                          \
-    CUR.GS.projVector.y = B;              \
-    CUR.GS.dualVector.y = B;              \
-                                          \
-    COMPUTE_Funcs();                      \
+#define DO_SPVTCA                           \
+  {                                         \
+    FT_Short  A, B;                         \
+                                            \
+                                            \
+    A = (FT_Short)( CUR.opcode & 1 ) << 14; \
+    B = A ^ (FT_Short)0x4000;               \
+                                            \
+    CUR.GS.projVector.x = A;                \
+    CUR.GS.dualVector.x = A;                \
+                                            \
+    CUR.GS.projVector.y = B;                \
+    CUR.GS.dualVector.y = B;                \
+                                            \
+    COMPUTE_Funcs();                        \
   }
 
 
-#define DO_SFVTCA                         \
-  {                                       \
-    TT_Short  A, B;                       \
-                                          \
-                                          \
-    A = (TT_Short)(CUR.opcode & 1) << 14; \
-    B = A ^ (TT_Short)0x4000;             \
-                                          \
-    CUR.GS.freeVector.x = A;              \
-    CUR.GS.freeVector.y = B;              \
-                                          \
-    COMPUTE_Funcs();                      \
+#define DO_SFVTCA                           \
+  {                                         \
+    FT_Short  A, B;                         \
+                                            \
+                                            \
+    A = (FT_Short)( CUR.opcode & 1 ) << 14; \
+    B = A ^ (FT_Short)0x4000;               \
+                                            \
+    CUR.GS.freeVector.x = A;                \
+    CUR.GS.freeVector.y = B;                \
+                                            \
+    COMPUTE_Funcs();                        \
   }
 
 
-#define DO_SPVTL                                     \
-    if ( INS_SxVTL( (TT_UShort)args[1],              \
-                    (TT_UShort)args[0],              \
-                    CUR.opcode,                      \
-                    &CUR.GS.projVector) == SUCCESS ) \
-    {                                                \
-      CUR.GS.dualVector = CUR.GS.projVector;         \
-      COMPUTE_Funcs();                               \
+#define DO_SPVTL                                      \
+    if ( INS_SxVTL( (FT_UShort)args[1],               \
+                    (FT_UShort)args[0],               \
+                    CUR.opcode,                       \
+                    &CUR.GS.projVector ) == SUCCESS ) \
+    {                                                 \
+      CUR.GS.dualVector = CUR.GS.projVector;          \
+      COMPUTE_Funcs();                                \
     }
 
 
-#define DO_SFVTL                                     \
-    if ( INS_SxVTL( (TT_UShort)(args[1]),            \
-                    (TT_UShort)(args[0]),            \
-                    CUR.opcode,                      \
-                    &CUR.GS.freeVector) == SUCCESS ) \
+#define DO_SFVTL                                      \
+    if ( INS_SxVTL( (FT_UShort)args[1],               \
+                    (FT_UShort)args[0],               \
+                    CUR.opcode,                       \
+                    &CUR.GS.freeVector ) == SUCCESS ) \
       COMPUTE_Funcs();
 
 
@@ -2481,15 +2548,15 @@
 
 #define DO_SPVFS                                \
   {                                             \
-    TT_Short  S;                                \
-    TT_Long   X, Y;                             \
+    FT_Short  S;                                \
+    FT_Long   X, Y;                             \
                                                 \
                                                 \
     /* Only use low 16bits, then sign extend */ \
-    S = (TT_Short)args[1];                      \
-    Y = (TT_Long)S;                             \
-    S = (TT_Short)args[0];                      \
-    X = (TT_Long)S;                             \
+    S = (FT_Short)args[1];                      \
+    Y = (FT_Long)S;                             \
+    S = (FT_Short)args[0];                      \
+    X = (FT_Long)S;                             \
                                                 \
     NORMalize( X, Y, &CUR.GS.projVector );      \
                                                 \
@@ -2500,14 +2567,14 @@
 
 #define DO_SFVFS                                \
   {                                             \
-    TT_Short  S;                                \
-    TT_Long   X, Y;                             \
+    FT_Short  S;                                \
+    FT_Long   X, Y;                             \
                                                 \
                                                 \
     /* Only use low 16bits, then sign extend */ \
-    S = (TT_Short)args[1];                      \
-    Y = (TT_Long)S;                             \
-    S = (TT_Short)args[0];                      \
+    S = (FT_Short)args[1];                      \
+    Y = (FT_Long)S;                             \
+    S = (FT_Short)args[0];                      \
     X = S;                                      \
                                                 \
     NORMalize( X, Y, &CUR.GS.freeVector );      \
@@ -2525,16 +2592,16 @@
     args[1] = CUR.GS.freeVector.y;
 
 
-#define DO_SRP0                        \
-    CUR.GS.rp0 = (TT_UShort)(args[0]);
+#define DO_SRP0                      \
+    CUR.GS.rp0 = (FT_UShort)args[0];
 
 
-#define DO_SRP1                        \
-    CUR.GS.rp1 = (TT_UShort)(args[0]);
+#define DO_SRP1                      \
+    CUR.GS.rp1 = (FT_UShort)args[0];
 
 
-#define DO_SRP2                        \
-    CUR.GS.rp2 = (TT_UShort)(args[0]);
+#define DO_SRP2                      \
+    CUR.GS.rp2 = (FT_UShort)args[0];
 
 
 #define DO_RTHG                                         \
@@ -2591,21 +2658,21 @@
 
 
 #define DO_SCVTCI                                     \
-    CUR.GS.control_value_cutin = (TT_F26Dot6)args[0];
+    CUR.GS.control_value_cutin = (FT_F26Dot6)args[0];
 
 
 #define DO_SSWCI                                     \
-    CUR.GS.single_width_cutin = (TT_F26Dot6)args[0];
+    CUR.GS.single_width_cutin = (FT_F26Dot6)args[0];
 
 
     /* XXX: UNDOCUMENTED! or bug in the Windows engine? */
     /*                                                  */
     /* It seems that the value that is read here is     */
     /* expressed in 16.16 format rather than in font    */
-    /* units..    .                                     */
+    /* units.                                           */
     /*                                                  */
-#define DO_SSW                                               \
-    CUR.GS.single_width_value = (TT_F26Dot6)(args[0] >> 10);
+#define DO_SSW                                                 \
+    CUR.GS.single_width_value = (FT_F26Dot6)( args[0] >> 10 );
 
 
 #define DO_FLIPON            \
@@ -2617,11 +2684,11 @@
 
 
 #define DO_SDB                             \
-    CUR.GS.delta_base = (TT_Short)args[0];
+    CUR.GS.delta_base = (FT_Short)args[0];
 
 
 #define DO_SDS                              \
-    CUR.GS.delta_shift = (TT_Short)args[0];
+    CUR.GS.delta_shift = (FT_Short)args[0];
 
 
 #define DO_MD  /* nothing */
@@ -2631,15 +2698,20 @@
     args[0] = CURRENT_Ppem();
 
 
-/* Note: the pointSize should be irrelevant in a given font program */
-/*       we thus decide to return only the ppem                     */
+  /* Note: The pointSize should be irrelevant in a given font program; */
+  /*       we thus decide to return only the ppem.                     */
 #if 0
+
 #define DO_MPS                       \
     args[0] = CUR.metrics.pointSize;
+
 #else
-#define DO_MPS                       \
+
+#define DO_MPS                \
     args[0] = CURRENT_Ppem();
-#endif
+
+#endif /* 0 */
+
 
 #define DO_DUP         \
     args[1] = args[0];
@@ -2651,7 +2723,8 @@
 
 #define DO_SWAP        \
   {                    \
-    TT_Long  L;        \
+    FT_Long  L;        \
+                       \
                        \
     L       = args[0]; \
     args[0] = args[1]; \
@@ -2665,7 +2738,7 @@
 
 #define DO_CINDEX                           \
   {                                         \
-    TT_Long  L;                             \
+    FT_Long  L;                             \
                                             \
                                             \
     L = args[0];                            \
@@ -2698,36 +2771,36 @@
     }
 
 
-#define DO_LT                      \
-    args[0] = (args[0] < args[1]);
+#define DO_LT                        \
+    args[0] = ( args[0] < args[1] );
 
 
-#define DO_LTEQ                     \
-    args[0] = (args[0] <= args[1]);
+#define DO_LTEQ                       \
+    args[0] = ( args[0] <= args[1] );
 
 
-#define DO_GT                      \
-    args[0] = (args[0] > args[1]);
+#define DO_GT                        \
+    args[0] = ( args[0] > args[1] );
 
 
-#define DO_GTEQ                     \
-    args[0] = (args[0] >= args[1]);
+#define DO_GTEQ                       \
+    args[0] = ( args[0] >= args[1] );
 
 
-#define DO_EQ                       \
-    args[0] = (args[0] == args[1]);
+#define DO_EQ                         \
+    args[0] = ( args[0] == args[1] );
 
 
-#define DO_NEQ                      \
-    args[0] = (args[0] != args[1]);
+#define DO_NEQ                        \
+    args[0] = ( args[0] != args[1] );
 
 
-#define DO_ODD                                                \
-    args[0] = ( (CUR_Func_round( args[0], 0 ) & 127) == 64 );
+#define DO_ODD                                                  \
+    args[0] = ( ( CUR_Func_round( args[0], 0 ) & 127 ) == 64 );
 
 
-#define DO_EVEN                                              \
-    args[0] = ( (CUR_Func_round( args[0], 0 ) & 127) == 0 );
+#define DO_EVEN                                                \
+    args[0] = ( ( CUR_Func_round( args[0], 0 ) & 127 ) == 0 );
 
 
 #define DO_AND                        \
@@ -2774,12 +2847,12 @@
 
 
 #define DO_CEILING                    \
-    args[0] = (args[0] + 63) & (-64);
+    args[0] = ( args[0] + 63 ) & -64;
 
 
 #define DO_RS                          \
    {                                   \
-     TT_ULong  I = (TT_ULong)args[0];  \
+     FT_ULong  I = (FT_ULong)args[0];  \
                                        \
                                        \
      if ( BOUNDS( I, CUR.storeSize ) ) \
@@ -2798,7 +2871,7 @@
 
 #define DO_WS                          \
    {                                   \
-     TT_ULong  I = (TT_ULong)args[0];  \
+     FT_ULong  I = (FT_ULong)args[0];  \
                                        \
                                        \
      if ( BOUNDS( I, CUR.storeSize ) ) \
@@ -2813,28 +2886,28 @@
    }
 
 
-#define DO_RCVT                        \
-   {                                   \
-     TT_ULong  I = (TT_ULong)args[0];  \
-                                       \
-                                       \
-     if ( BOUNDS( I, CUR.cvtSize ) )   \
-     {                                 \
-       if ( CUR.pedantic_hinting )     \
-       {                               \
-         ARRAY_BOUND_ERROR;            \
-       }                               \
-       else                            \
-         args[0] = 0;                  \
-     }                                 \
-     else                              \
-       args[0] = CUR_Func_read_cvt(I); \
+#define DO_RCVT                          \
+   {                                     \
+     FT_ULong  I = (FT_ULong)args[0];    \
+                                         \
+                                         \
+     if ( BOUNDS( I, CUR.cvtSize ) )     \
+     {                                   \
+       if ( CUR.pedantic_hinting )       \
+       {                                 \
+         ARRAY_BOUND_ERROR;              \
+       }                                 \
+       else                              \
+         args[0] = 0;                    \
+     }                                   \
+     else                                \
+       args[0] = CUR_Func_read_cvt( I ); \
    }
 
 
 #define DO_WCVTP                         \
    {                                     \
-     TT_ULong  I = (TT_ULong)args[0];    \
+     FT_ULong  I = (FT_ULong)args[0];    \
                                          \
                                          \
      if ( BOUNDS( I, CUR.cvtSize ) )     \
@@ -2851,7 +2924,7 @@
 
 #define DO_WCVTF                                                \
    {                                                            \
-     TT_ULong  I = (TT_ULong)args[0];                           \
+     FT_ULong  I = (FT_ULong)args[0];                           \
                                                                 \
                                                                 \
      if ( BOUNDS( I, CUR.cvtSize ) )                            \
@@ -2895,11 +2968,11 @@
 
 
 #undef  ARRAY_BOUND_ERROR
-#define ARRAY_BOUND_ERROR                    \
-     {                                       \
-       CUR.error = TT_Err_Invalid_Reference; \
-       return;                               \
-     }
+#define ARRAY_BOUND_ERROR                   \
+    {                                       \
+      CUR.error = TT_Err_Invalid_Reference; \
+      return;                               \
+    }
 
 
   /*************************************************************************/
@@ -2908,8 +2981,8 @@
   /* Opcode range: 0x00-0x01                                               */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_SVTCA( INS_ARG )
+  static void
+  Ins_SVTCA( INS_ARG )
   {
     DO_SVTCA
   }
@@ -2921,8 +2994,8 @@
   /* Opcode range: 0x02-0x03                                               */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_SPVTCA( INS_ARG )
+  static void
+  Ins_SPVTCA( INS_ARG )
   {
     DO_SPVTCA
   }
@@ -2934,8 +3007,8 @@
   /* Opcode range: 0x04-0x05                                               */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_SFVTCA( INS_ARG )
+  static void
+  Ins_SFVTCA( INS_ARG )
   {
     DO_SFVTCA
   }
@@ -2947,8 +3020,8 @@
   /* Opcode range: 0x06-0x07                                               */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_SPVTL( INS_ARG )
+  static void
+  Ins_SPVTL( INS_ARG )
   {
     DO_SPVTL
   }
@@ -2960,8 +3033,8 @@
   /* Opcode range: 0x08-0x09                                               */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_SFVTL( INS_ARG )
+  static void
+  Ins_SFVTL( INS_ARG )
   {
     DO_SFVTL
   }
@@ -2973,8 +3046,8 @@
   /* Opcode range: 0x0E                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_SFVTPV( INS_ARG )
+  static void
+  Ins_SFVTPV( INS_ARG )
   {
     DO_SFVTPV
   }
@@ -2986,8 +3059,8 @@
   /* Opcode range: 0x0A                                                    */
   /* Stack:        f2.14 f2.14 -->                                         */
   /*                                                                       */
-  static
-  void  Ins_SPVFS( INS_ARG )
+  static void
+  Ins_SPVFS( INS_ARG )
   {
     DO_SPVFS
   }
@@ -2999,8 +3072,8 @@
   /* Opcode range: 0x0B                                                    */
   /* Stack:        f2.14 f2.14 -->                                         */
   /*                                                                       */
-  static
-  void  Ins_SFVFS( INS_ARG )
+  static void
+  Ins_SFVFS( INS_ARG )
   {
     DO_SFVFS
   }
@@ -3012,8 +3085,8 @@
   /* Opcode range: 0x0C                                                    */
   /* Stack:        ef2.14 --> ef2.14                                       */
   /*                                                                       */
-  static
-  void  Ins_GPV( INS_ARG )
+  static void
+  Ins_GPV( INS_ARG )
   {
     DO_GPV
   }
@@ -3024,8 +3097,8 @@
   /* Opcode range: 0x0D                                                    */
   /* Stack:        ef2.14 --> ef2.14                                       */
   /*                                                                       */
-  static
-  void  Ins_GFV( INS_ARG )
+  static void
+  Ins_GFV( INS_ARG )
   {
     DO_GFV
   }
@@ -3037,8 +3110,8 @@
   /* Opcode range: 0x10                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SRP0( INS_ARG )
+  static void
+  Ins_SRP0( INS_ARG )
   {
     DO_SRP0
   }
@@ -3050,8 +3123,8 @@
   /* Opcode range: 0x11                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SRP1( INS_ARG )
+  static void
+  Ins_SRP1( INS_ARG )
   {
     DO_SRP1
   }
@@ -3063,8 +3136,8 @@
   /* Opcode range: 0x12                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SRP2( INS_ARG )
+  static void
+  Ins_SRP2( INS_ARG )
   {
     DO_SRP2
   }
@@ -3076,8 +3149,8 @@
   /* Opcode range: 0x19                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_RTHG( INS_ARG )
+  static void
+  Ins_RTHG( INS_ARG )
   {
     DO_RTHG
   }
@@ -3089,8 +3162,8 @@
   /* Opcode range: 0x18                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_RTG( INS_ARG )
+  static void
+  Ins_RTG( INS_ARG )
   {
     DO_RTG
   }
@@ -3101,8 +3174,8 @@
   /* Opcode range: 0x3D                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_RTDG( INS_ARG )
+  static void
+  Ins_RTDG( INS_ARG )
   {
     DO_RTDG
   }
@@ -3113,8 +3186,8 @@
   /* Opcode range: 0x7C                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_RUTG( INS_ARG )
+  static void
+  Ins_RUTG( INS_ARG )
   {
     DO_RUTG
   }
@@ -3126,8 +3199,8 @@
   /* Opcode range: 0x7D                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_RDTG( INS_ARG )
+  static void
+  Ins_RDTG( INS_ARG )
   {
     DO_RDTG
   }
@@ -3139,8 +3212,8 @@
   /* Opcode range: 0x7A                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_ROFF( INS_ARG )
+  static void
+  Ins_ROFF( INS_ARG )
   {
     DO_ROFF
   }
@@ -3152,8 +3225,8 @@
   /* Opcode range: 0x76                                                    */
   /* Stack:        Eint8 -->                                               */
   /*                                                                       */
-  static
-  void  Ins_SROUND( INS_ARG )
+  static void
+  Ins_SROUND( INS_ARG )
   {
     DO_SROUND
   }
@@ -3165,8 +3238,8 @@
   /* Opcode range: 0x77                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_S45ROUND( INS_ARG )
+  static void
+  Ins_S45ROUND( INS_ARG )
   {
     DO_S45ROUND
   }
@@ -3178,8 +3251,8 @@
   /* Opcode range: 0x17                                                    */
   /* Stack:        int32? -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SLOOP( INS_ARG )
+  static void
+  Ins_SLOOP( INS_ARG )
   {
     DO_SLOOP
   }
@@ -3191,8 +3264,8 @@
   /* Opcode range: 0x1A                                                    */
   /* Stack:        f26.6 -->                                               */
   /*                                                                       */
-  static
-  void  Ins_SMD( INS_ARG )
+  static void
+  Ins_SMD( INS_ARG )
   {
     DO_SMD
   }
@@ -3204,8 +3277,8 @@
   /* Opcode range: 0x1D                                                    */
   /* Stack:        f26.6 -->                                               */
   /*                                                                       */
-  static
-  void  Ins_SCVTCI( INS_ARG )
+  static void
+  Ins_SCVTCI( INS_ARG )
   {
     DO_SCVTCI
   }
@@ -3217,8 +3290,8 @@
   /* Opcode range: 0x1E                                                    */
   /* Stack:        f26.6 -->                                               */
   /*                                                                       */
-  static
-  void  Ins_SSWCI( INS_ARG )
+  static void
+  Ins_SSWCI( INS_ARG )
   {
     DO_SSWCI
   }
@@ -3230,8 +3303,8 @@
   /* Opcode range: 0x1F                                                    */
   /* Stack:        int32? -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SSW( INS_ARG )
+  static void
+  Ins_SSW( INS_ARG )
   {
     DO_SSW
   }
@@ -3243,8 +3316,8 @@
   /* Opcode range: 0x4D                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_FLIPON( INS_ARG )
+  static void
+  Ins_FLIPON( INS_ARG )
   {
     DO_FLIPON
   }
@@ -3256,8 +3329,8 @@
   /* Opcode range: 0x4E                                                    */
   /* Stack: -->                                                            */
   /*                                                                       */
-  static
-  void  Ins_FLIPOFF( INS_ARG )
+  static void
+  Ins_FLIPOFF( INS_ARG )
   {
     DO_FLIPOFF
   }
@@ -3269,8 +3342,8 @@
   /* Opcode range: 0x7E                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SANGW( INS_ARG )
+  static void
+  Ins_SANGW( INS_ARG )
   {
     /* instruction not supported anymore */
   }
@@ -3282,8 +3355,8 @@
   /* Opcode range: 0x5E                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SDB( INS_ARG )
+  static void
+  Ins_SDB( INS_ARG )
   {
     DO_SDB
   }
@@ -3295,8 +3368,8 @@
   /* Opcode range: 0x5F                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SDS( INS_ARG )
+  static void
+  Ins_SDS( INS_ARG )
   {
     DO_SDS
   }
@@ -3308,8 +3381,8 @@
   /* Opcode range: 0x4B                                                    */
   /* Stack:        --> Euint16                                             */
   /*                                                                       */
-  static
-  void  Ins_MPPEM( INS_ARG )
+  static void
+  Ins_MPPEM( INS_ARG )
   {
     DO_MPPEM
   }
@@ -3321,8 +3394,8 @@
   /* Opcode range: 0x4C                                                    */
   /* Stack:        --> Euint16                                             */
   /*                                                                       */
-  static
-  void  Ins_MPS( INS_ARG )
+  static void
+  Ins_MPS( INS_ARG )
   {
     DO_MPS
   }
@@ -3330,12 +3403,12 @@
 
   /*************************************************************************/
   /*                                                                       */
-  /* DUP[]:        DUPlicate top stack element                             */
+  /* DUP[]:        DUPlicate the top stack's element                       */
   /* Opcode range: 0x20                                                    */
   /* Stack:        StkElt --> StkElt StkElt                                */
   /*                                                                       */
-  static
-  void  Ins_DUP( INS_ARG )
+  static void
+  Ins_DUP( INS_ARG )
   {
     DO_DUP
   }
@@ -3343,12 +3416,12 @@
 
   /*************************************************************************/
   /*                                                                       */
-  /* POP[]:        POP the stack's top elt                                 */
+  /* POP[]:        POP the stack's top element                             */
   /* Opcode range: 0x21                                                    */
   /* Stack:        StkElt -->                                              */
   /*                                                                       */
-  static
-  void  Ins_POP( INS_ARG )
+  static void
+  Ins_POP( INS_ARG )
   {
     /* nothing to do */
   }
@@ -3360,8 +3433,8 @@
   /* Opcode range: 0x22                                                    */
   /* Stack:        StkElt... -->                                           */
   /*                                                                       */
-  static
-  void  Ins_CLEAR( INS_ARG )
+  static void
+  Ins_CLEAR( INS_ARG )
   {
     DO_CLEAR
   }
@@ -3369,12 +3442,12 @@
 
   /*************************************************************************/
   /*                                                                       */
-  /* SWAP[]:       SWAP the top two elements                               */
+  /* SWAP[]:       SWAP the stack's top two elements                       */
   /* Opcode range: 0x23                                                    */
   /* Stack:        2 * StkElt --> 2 * StkElt                               */
   /*                                                                       */
-  static
-  void  Ins_SWAP( INS_ARG )
+  static void
+  Ins_SWAP( INS_ARG )
   {
     DO_SWAP
   }
@@ -3386,8 +3459,8 @@
   /* Opcode range: 0x24                                                    */
   /* Stack:        --> uint32                                              */
   /*                                                                       */
-  static
-  void  Ins_DEPTH( INS_ARG )
+  static void
+  Ins_DEPTH( INS_ARG )
   {
     DO_DEPTH
   }
@@ -3399,8 +3472,8 @@
   /* Opcode range: 0x25                                                    */
   /* Stack:        int32 --> StkElt                                        */
   /*                                                                       */
-  static
-  void  Ins_CINDEX( INS_ARG )
+  static void
+  Ins_CINDEX( INS_ARG )
   {
     DO_CINDEX
   }
@@ -3412,8 +3485,8 @@
   /* Opcode range: 0x59                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_EIF( INS_ARG )
+  static void
+  Ins_EIF( INS_ARG )
   {
     /* nothing to do */
   }
@@ -3425,8 +3498,8 @@
   /* Opcode range: 0x78                                                    */
   /* Stack:        StkElt int32 -->                                        */
   /*                                                                       */
-  static
-  void  Ins_JROT( INS_ARG )
+  static void
+  Ins_JROT( INS_ARG )
   {
     DO_JROT
   }
@@ -3438,8 +3511,8 @@
   /* Opcode range: 0x1C                                                    */
   /* Stack:        int32 -->                                               */
   /*                                                                       */
-  static
-  void  Ins_JMPR( INS_ARG )
+  static void
+  Ins_JMPR( INS_ARG )
   {
     DO_JMPR
   }
@@ -3451,8 +3524,8 @@
   /* Opcode range: 0x79                                                    */
   /* Stack:        StkElt int32 -->                                        */
   /*                                                                       */
-  static
-  void  Ins_JROF( INS_ARG )
+  static void
+  Ins_JROF( INS_ARG )
   {
     DO_JROF
   }
@@ -3464,8 +3537,8 @@
   /* Opcode range: 0x50                                                    */
   /* Stack:        int32? int32? --> bool                                  */
   /*                                                                       */
-  static
-  void  Ins_LT( INS_ARG )
+  static void
+  Ins_LT( INS_ARG )
   {
     DO_LT
   }
@@ -3477,8 +3550,8 @@
   /* Opcode range: 0x51                                                    */
   /* Stack:        int32? int32? --> bool                                  */
   /*                                                                       */
-  static
-  void  Ins_LTEQ( INS_ARG )
+  static void
+  Ins_LTEQ( INS_ARG )
   {
     DO_LTEQ
   }
@@ -3490,8 +3563,8 @@
   /* Opcode range: 0x52                                                    */
   /* Stack:        int32? int32? --> bool                                  */
   /*                                                                       */
-  static
-  void  Ins_GT( INS_ARG )
+  static void
+  Ins_GT( INS_ARG )
   {
     DO_GT
   }
@@ -3503,8 +3576,8 @@
   /* Opcode range: 0x53                                                    */
   /* Stack:        int32? int32? --> bool                                  */
   /*                                                                       */
-  static
-  void  Ins_GTEQ( INS_ARG )
+  static void
+  Ins_GTEQ( INS_ARG )
   {
     DO_GTEQ
   }
@@ -3516,8 +3589,8 @@
   /* Opcode range: 0x54                                                    */
   /* Stack:        StkElt StkElt --> bool                                  */
   /*                                                                       */
-  static
-  void  Ins_EQ( INS_ARG )
+  static void
+  Ins_EQ( INS_ARG )
   {
     DO_EQ
   }
@@ -3529,8 +3602,8 @@
   /* Opcode range: 0x55                                                    */
   /* Stack:        StkElt StkElt --> bool                                  */
   /*                                                                       */
-  static
-  void  Ins_NEQ( INS_ARG )
+  static void
+  Ins_NEQ( INS_ARG )
   {
     DO_NEQ
   }
@@ -3542,8 +3615,8 @@
   /* Opcode range: 0x56                                                    */
   /* Stack:        f26.6 --> bool                                          */
   /*                                                                       */
-  static
-  void  Ins_ODD( INS_ARG )
+  static void
+  Ins_ODD( INS_ARG )
   {
     DO_ODD
   }
@@ -3555,8 +3628,8 @@
   /* Opcode range: 0x57                                                    */
   /* Stack:        f26.6 --> bool                                          */
   /*                                                                       */
-  static
-  void  Ins_EVEN( INS_ARG )
+  static void
+  Ins_EVEN( INS_ARG )
   {
     DO_EVEN
   }
@@ -3568,8 +3641,8 @@
   /* Opcode range: 0x5A                                                    */
   /* Stack:        uint32 uint32 --> uint32                                */
   /*                                                                       */
-  static
-  void  Ins_AND( INS_ARG )
+  static void
+  Ins_AND( INS_ARG )
   {
     DO_AND
   }
@@ -3581,8 +3654,8 @@
   /* Opcode range: 0x5B                                                    */
   /* Stack:        uint32 uint32 --> uint32                                */
   /*                                                                       */
-  static
-  void  Ins_OR( INS_ARG )
+  static void
+  Ins_OR( INS_ARG )
   {
     DO_OR
   }
@@ -3594,8 +3667,8 @@
   /* Opcode range: 0x5C                                                    */
   /* Stack:        StkElt --> uint32                                       */
   /*                                                                       */
-  static
-  void  Ins_NOT( INS_ARG )
+  static void
+  Ins_NOT( INS_ARG )
   {
     DO_NOT
   }
@@ -3607,8 +3680,8 @@
   /* Opcode range: 0x60                                                    */
   /* Stack:        f26.6 f26.6 --> f26.6                                   */
   /*                                                                       */
-  static
-  void  Ins_ADD( INS_ARG )
+  static void
+  Ins_ADD( INS_ARG )
   {
     DO_ADD
   }
@@ -3620,8 +3693,8 @@
   /* Opcode range: 0x61                                                    */
   /* Stack:        f26.6 f26.6 --> f26.6                                   */
   /*                                                                       */
-  static
-  void  Ins_SUB( INS_ARG )
+  static void
+  Ins_SUB( INS_ARG )
   {
     DO_SUB
   }
@@ -3633,8 +3706,8 @@
   /* Opcode range: 0x62                                                    */
   /* Stack:        f26.6 f26.6 --> f26.6                                   */
   /*                                                                       */
-  static
-  void  Ins_DIV( INS_ARG )
+  static void
+  Ins_DIV( INS_ARG )
   {
     DO_DIV
   }
@@ -3646,8 +3719,8 @@
   /* Opcode range: 0x63                                                    */
   /* Stack:        f26.6 f26.6 --> f26.6                                   */
   /*                                                                       */
-  static
-  void  Ins_MUL( INS_ARG )
+  static void
+  Ins_MUL( INS_ARG )
   {
     DO_MUL
   }
@@ -3659,8 +3732,8 @@
   /* Opcode range: 0x64                                                    */
   /* Stack:        f26.6 --> f26.6                                         */
   /*                                                                       */
-  static
-  void  Ins_ABS( INS_ARG )
+  static void
+  Ins_ABS( INS_ARG )
   {
     DO_ABS
   }
@@ -3672,8 +3745,8 @@
   /* Opcode range: 0x65                                                    */
   /* Stack: f26.6 --> f26.6                                                */
   /*                                                                       */
-  static
-  void  Ins_NEG( INS_ARG )
+  static void
+  Ins_NEG( INS_ARG )
   {
     DO_NEG
   }
@@ -3685,8 +3758,8 @@
   /* Opcode range: 0x66                                                    */
   /* Stack:        f26.6 --> f26.6                                         */
   /*                                                                       */
-  static
-  void  Ins_FLOOR( INS_ARG )
+  static void
+  Ins_FLOOR( INS_ARG )
   {
     DO_FLOOR
   }
@@ -3698,8 +3771,8 @@
   /* Opcode range: 0x67                                                    */
   /* Stack:        f26.6 --> f26.6                                         */
   /*                                                                       */
-  static
-  void  Ins_CEILING( INS_ARG )
+  static void
+  Ins_CEILING( INS_ARG )
   {
     DO_CEILING
   }
@@ -3711,8 +3784,8 @@
   /* Opcode range: 0x43                                                    */
   /* Stack:        uint32 --> uint32                                       */
   /*                                                                       */
-  static
-  void  Ins_RS( INS_ARG )
+  static void
+  Ins_RS( INS_ARG )
   {
     DO_RS
   }
@@ -3724,8 +3797,8 @@
   /* Opcode range: 0x42                                                    */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_WS( INS_ARG )
+  static void
+  Ins_WS( INS_ARG )
   {
     DO_WS
   }
@@ -3737,8 +3810,8 @@
   /* Opcode range: 0x44                                                    */
   /* Stack:        f26.6 uint32 -->                                        */
   /*                                                                       */
-  static
-  void  Ins_WCVTP( INS_ARG )
+  static void
+  Ins_WCVTP( INS_ARG )
   {
     DO_WCVTP
   }
@@ -3750,8 +3823,8 @@
   /* Opcode range: 0x70                                                    */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_WCVTF( INS_ARG )
+  static void
+  Ins_WCVTF( INS_ARG )
   {
     DO_WCVTF
   }
@@ -3763,8 +3836,8 @@
   /* Opcode range: 0x45                                                    */
   /* Stack:        uint32 --> f26.6                                        */
   /*                                                                       */
-  static
-  void  Ins_RCVT( INS_ARG )
+  static void
+  Ins_RCVT( INS_ARG )
   {
     DO_RCVT
   }
@@ -3776,23 +3849,23 @@
   /* Opcode range: 0x7F                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_AA( INS_ARG )
+  static void
+  Ins_AA( INS_ARG )
   {
-    /* Intentional - no longer supported */
+    /* intentionally no longer supported */
   }
 
 
   /*************************************************************************/
   /*                                                                       */
-  /* DEBUG[]:      DEBUG.  Unsupported                                     */
+  /* DEBUG[]:      DEBUG.  Unsupported.                                    */
   /* Opcode range: 0x4F                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  /* Note: The original instruction pops a value from the stack            */
+  /* Note: The original instruction pops a value from the stack.           */
   /*                                                                       */
-  static
-  void  Ins_DEBUG( INS_ARG )
+  static void
+  Ins_DEBUG( INS_ARG )
   {
     DO_DEBUG
   }
@@ -3804,8 +3877,8 @@
   /* Opcode range: 0x68-0x6B                                               */
   /* Stack:        f26.6 --> f26.6                                         */
   /*                                                                       */
-  static
-  void  Ins_ROUND( INS_ARG )
+  static void
+  Ins_ROUND( INS_ARG )
   {
     DO_ROUND
   }
@@ -3817,8 +3890,8 @@
   /* Opcode range: 0x6C-0x6F                                               */
   /* Stack:        f26.6 --> f26.6                                         */
   /*                                                                       */
-  static
-  void  Ins_NROUND( INS_ARG )
+  static void
+  Ins_NROUND( INS_ARG )
   {
     DO_NROUND
   }
@@ -3830,8 +3903,8 @@
   /* Opcode range: 0x68                                                    */
   /* Stack:        int32? int32? --> int32                                 */
   /*                                                                       */
-  static
-  void  Ins_MAX( INS_ARG )
+  static void
+  Ins_MAX( INS_ARG )
   {
     DO_MAX
   }
@@ -3843,8 +3916,8 @@
   /* Opcode range: 0x69                                                    */
   /* Stack:        int32? int32? --> int32                                 */
   /*                                                                       */
-  static
-  void  Ins_MIN( INS_ARG )
+  static void
+  Ins_MIN( INS_ARG )
   {
     DO_MIN
   }
@@ -3866,10 +3939,10 @@
   /* Opcode range: 0x26                                                    */
   /* Stack:        int32? --> StkElt                                       */
   /*                                                                       */
-  static
-  void  Ins_MINDEX( INS_ARG )
+  static void
+  Ins_MINDEX( INS_ARG )
   {
-    TT_Long  L, K;
+    FT_Long  L, K;
 
 
     L = args[0];
@@ -3882,9 +3955,9 @@
 
     K = CUR.stack[CUR.args - L];
 
-    MEM_Move( (&CUR.stack[CUR.args - L    ]),
-              (&CUR.stack[CUR.args - L + 1]),
-              (L - 1) * sizeof ( TT_Long ) );
+    FT_MEM_MOVE( &CUR.stack[CUR.args - L    ],
+                 &CUR.stack[CUR.args - L + 1],
+                 ( L - 1 ) * sizeof ( FT_Long ) );
 
     CUR.stack[CUR.args - 1] = K;
   }
@@ -3896,13 +3969,13 @@
   /* Opcode range: 0x8A                                                    */
   /* Stack:        3 * StkElt --> 3 * StkElt                               */
   /*                                                                       */
-  static
-  void  Ins_ROLL( INS_ARG )
+  static void
+  Ins_ROLL( INS_ARG )
   {
-    TT_Long  A, B, C;
+    FT_Long  A, B, C;
 
+    FT_UNUSED_EXEC;
 
-    UNUSED_EXEC;
 
     A = args[2];
     B = args[1];
@@ -3918,13 +3991,13 @@
   /*                                                                       */
   /* MANAGING THE FLOW OF CONTROL                                          */
   /*                                                                       */
-  /*  Instructions appear in the specs' order.                             */
+  /*   Instructions appear in the specification's order.                   */
   /*                                                                       */
   /*************************************************************************/
 
 
-  static
-  TT_Bool  SkipCode( EXEC_OP )
+  static FT_Bool
+  SkipCode( EXEC_OP )
   {
     CUR.IP += CUR.length;
 
@@ -3956,11 +4029,11 @@
   /* Opcode range: 0x58                                                    */
   /* Stack:        StkElt -->                                              */
   /*                                                                       */
-  static
-  void  Ins_IF( INS_ARG )
+  static void
+  Ins_IF( INS_ARG )
   {
-    TT_Int   nIfs;
-    TT_Bool  Out;
+    FT_Int   nIfs;
+    FT_Bool  Out;
 
 
     if ( args[0] != 0 )
@@ -3981,12 +4054,12 @@
         break;
 
       case 0x1B:      /* ELSE */
-        Out = (nIfs == 1);
+        Out = FT_BOOL( nIfs == 1 );
         break;
 
       case 0x59:      /* EIF */
         nIfs--;
-        Out = (nIfs == 0);
+        Out = FT_BOOL( nIfs == 0 );
         break;
       }
     } while ( Out == 0 );
@@ -3999,13 +4072,13 @@
   /* Opcode range: 0x1B                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_ELSE( INS_ARG )
+  static void
+  Ins_ELSE( INS_ARG )
   {
-    TT_Int  nIfs;
+    FT_Int  nIfs;
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     nIfs = 1;
 
@@ -4032,7 +4105,7 @@
   /*                                                                       */
   /* DEFINING AND USING FUNCTIONS AND INSTRUCTIONS                         */
   /*                                                                       */
-  /*  Instructions appear in the specs' order.                             */
+  /*   Instructions appear in the specification's order.                   */
   /*                                                                       */
   /*************************************************************************/
 
@@ -4043,25 +4116,27 @@
   /* Opcode range: 0x2C                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_FDEF( INS_ARG )
+  static void
+  Ins_FDEF( INS_ARG )
   {
-    TT_ULong       n;
+    FT_ULong       n;
     TT_DefRecord*  rec;
     TT_DefRecord*  limit;
 
+
     /* some font programs are broken enough to redefine functions! */
-    /* We will then parse the current table..                      */
+    /* We will then parse the current table.                       */
+
     rec   = CUR.FDefs;
     limit = rec + CUR.numFDefs;
     n     = args[0];
-    
+
     for ( ; rec < limit; rec++ )
     {
-      if (rec->opc == n)
+      if ( rec->opc == n )
         break;
     }
-    
+
     if ( rec == limit )
     {
       /* check that there is enough room for new functions */
@@ -4072,15 +4147,15 @@
       }
       CUR.numFDefs++;
     }
-    
+
     rec->range  = CUR.curRange;
     rec->opc    = n;
-    rec->start  = CUR.IP+1;
+    rec->start  = CUR.IP + 1;
     rec->active = TRUE;
-    
+
     if ( n > CUR.maxFunc )
       CUR.maxFunc = n;
-    
+
     /* Now skip the whole function definition. */
     /* We don't allow nested IDEFS & FDEFs.    */
 
@@ -4106,13 +4181,13 @@
   /* Opcode range: 0x2D                                                    */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_ENDF( INS_ARG )
+  static void
+  Ins_ENDF( INS_ARG )
   {
     TT_CallRec*  pRec;
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     if ( CUR.callTop <= 0 )     /* We encountered an ENDF without a call */
     {
@@ -4138,13 +4213,13 @@
       INS_Goto_CodeRange( pRec->Caller_Range,
                           pRec->Caller_IP );
 
-    /* Exit the current call frame.                       */
+    /* Exit the current call frame.                      */
 
-    /* NOTE: When the last intruction of a program        */
-    /*       is a CALL or LOOPCALL, the return address    */
-    /*       is always out of the code range.  This is    */
-    /*       a valid address, and it's why we do not test */
-    /*       the result of Ins_Goto_CodeRange() here!     */
+    /* NOTE: If the last intruction of a program is a    */
+    /*       CALL or LOOPCALL, the return address is     */
+    /*       always out of the code range.  This is a    */
+    /*       valid address, and it is why we do not test */
+    /*       the result of Ins_Goto_CodeRange() here!    */
   }
 
 
@@ -4154,19 +4229,22 @@
   /* Opcode range: 0x2B                                                    */
   /* Stack:        uint32? -->                                             */
   /*                                                                       */
-  static
-  void  Ins_CALL( INS_ARG )
+  static void
+  Ins_CALL( INS_ARG )
   {
-    TT_ULong       F;
+    FT_ULong       F;
     TT_CallRec*    pCrec;
     TT_DefRecord*  def;
 
+
     /* first of all, check the index */
+
     F = args[0];
-    if ( BOUNDS( F, CUR.maxFunc+1 ) ) goto Fail;
-    
+    if ( BOUNDS( F, CUR.maxFunc + 1 ) )
+      goto Fail;
+
     /* Except for some old Apple fonts, all functions in a TrueType */
-    /* font are defined in increasing order, starting from 0. This  */
+    /* font are defined in increasing order, starting from 0.  This */
     /* means that we normally have                                  */
     /*                                                              */
     /*    CUR.maxFunc+1 == CUR.numFDefs                             */
@@ -4175,24 +4253,26 @@
     /* If this isn't true, we need to look up the function table.   */
 
     def = CUR.FDefs + F;
-    if ( CUR.maxFunc+1 != CUR.numFDefs  || def->opc != F )
+    if ( CUR.maxFunc + 1 != CUR.numFDefs || def->opc != F )
     {
       /* look up the FDefs table */
       TT_DefRecord*  limit;
-      
+
+
       def   = CUR.FDefs;
       limit = def + CUR.numFDefs;
-      
-      while (def < limit && def->opc != F)
+
+      while ( def < limit && def->opc != F )
         def++;
-        
-      if (def == limit) goto Fail;
+
+      if ( def == limit )
+        goto Fail;
     }
-    
+
     /* check that the function is active */
-    if (!def->active)
+    if ( !def->active )
       goto Fail;
-      
+
     /* check the call stack */
     if ( CUR.callTop >= CUR.callSize )
     {
@@ -4211,10 +4291,10 @@
 
     INS_Goto_CodeRange( def->range,
                         def->start );
-                        
+
     CUR.step_ins = FALSE;
     return;
-    
+
   Fail:
     CUR.error = TT_Err_Invalid_Reference;
   }
@@ -4226,19 +4306,21 @@
   /* Opcode range: 0x2A                                                    */
   /* Stack:        uint32? Eint16? -->                                     */
   /*                                                                       */
-  static
-  void  Ins_LOOPCALL( INS_ARG )
+  static void
+  Ins_LOOPCALL( INS_ARG )
   {
-    TT_ULong       F;
+    FT_ULong       F;
     TT_CallRec*    pCrec;
     TT_DefRecord*  def;
 
+
     /* first of all, check the index */
     F = args[1];
-    if ( BOUNDS( F, CUR.maxFunc+1 ) ) goto Fail;
-    
+    if ( BOUNDS( F, CUR.maxFunc + 1 ) )
+      goto Fail;
+
     /* Except for some old Apple fonts, all functions in a TrueType */
-    /* font are defined in increasing order, starting from 0. This  */
+    /* font are defined in increasing order, starting from 0.  This */
     /* means that we normally have                                  */
     /*                                                              */
     /*    CUR.maxFunc+1 == CUR.numFDefs                             */
@@ -4247,25 +4329,27 @@
     /* If this isn't true, we need to look up the function table.   */
 
     def = CUR.FDefs + F;
-    if ( CUR.maxFunc+1 != CUR.numFDefs  || def->opc != F )
+    if ( CUR.maxFunc + 1 != CUR.numFDefs || def->opc != F )
     {
       /* look up the FDefs table */
       TT_DefRecord*  limit;
-      
+
+
       def   = CUR.FDefs;
       limit = def + CUR.numFDefs;
-      
-      while (def < limit && def->opc != F)
+
+      while ( def < limit && def->opc != F )
         def++;
-        
-      if (def == limit) goto Fail;
+
+      if ( def == limit )
+        goto Fail;
     }
-    
+
     /* check that the function is active */
-    if (!def->active)
+    if ( !def->active )
       goto Fail;
 
-    /* check stack */      
+    /* check stack */
     if ( CUR.callTop >= CUR.callSize )
     {
       CUR.error = TT_Err_Stack_Overflow;
@@ -4278,7 +4362,7 @@
 
       pCrec->Caller_Range = CUR.curRange;
       pCrec->Caller_IP    = CUR.IP + 1;
-      pCrec->Cur_Count    = (TT_Int)(args[0]);
+      pCrec->Cur_Count    = (FT_Int)args[0];
       pCrec->Cur_Restart  = def->start;
 
       CUR.callTop++;
@@ -4300,19 +4384,22 @@
   /* Opcode range: 0x89                                                    */
   /* Stack:        Eint8 -->                                               */
   /*                                                                       */
-  static
-  void Ins_IDEF( INS_ARG )
+  static void
+  Ins_IDEF( INS_ARG )
   {
     TT_DefRecord*  def;
     TT_DefRecord*  limit;
 
+
     /*  First of all, look for the same function in our table */
+
     def   = CUR.IDefs;
     limit = def + CUR.numIDefs;
+
     for ( ; def < limit; def++ )
-      if (def->opc == (TT_ULong)args[0] )
+      if ( def->opc == (FT_ULong)args[0] )
         break;
-        
+
     if ( def == limit )
     {
       /* check that there is enough room for a new instruction */
@@ -4323,15 +4410,15 @@
       }
       CUR.numIDefs++;
     }
-    
+
     def->opc    = args[0];
     def->start  = CUR.IP+1;
     def->range  = CUR.curRange;
     def->active = TRUE;
-    
-    if ( (TT_ULong)args[0] > CUR.maxIns )
+
+    if ( (FT_ULong)args[0] > CUR.maxIns )
       CUR.maxIns = args[0];
-    
+
     /* Now skip the whole function definition. */
     /* We don't allow nested IDEFs & FDEFs.    */
 
@@ -4354,7 +4441,7 @@
   /*                                                                       */
   /* PUSHING DATA ONTO THE INTERPRETER STACK                               */
   /*                                                                       */
-  /*  Instructions appear in the specs' order.                             */
+  /*   Instructions appear in the specification's order.                   */
   /*                                                                       */
   /*************************************************************************/
 
@@ -4365,13 +4452,13 @@
   /* Opcode range: 0x40                                                    */
   /* Stack:        --> uint32...                                           */
   /*                                                                       */
-  static
-  void  Ins_NPUSHB( INS_ARG )
+  static void
+  Ins_NPUSHB( INS_ARG )
   {
-    TT_UShort  L, K;
+    FT_UShort  L, K;
 
 
-    L = (TT_UShort)CUR.code[CUR.IP + 1];
+    L = (FT_UShort)CUR.code[CUR.IP + 1];
 
     if ( BOUNDS( L, CUR.stackSize + 1 - CUR.top ) )
     {
@@ -4392,13 +4479,13 @@
   /* Opcode range: 0x41                                                    */
   /* Stack:        --> int32...                                            */
   /*                                                                       */
-  static
-  void  Ins_NPUSHW( INS_ARG )
+  static void
+  Ins_NPUSHW( INS_ARG )
   {
-    TT_UShort  L, K;
+    FT_UShort  L, K;
 
 
-    L = (TT_UShort)CUR.code[CUR.IP + 1];
+    L = (FT_UShort)CUR.code[CUR.IP + 1];
 
     if ( BOUNDS( L, CUR.stackSize + 1 - CUR.top ) )
     {
@@ -4422,13 +4509,13 @@
   /* Opcode range: 0xB0-0xB7                                               */
   /* Stack:        --> uint32...                                           */
   /*                                                                       */
-  static
-  void  Ins_PUSHB( INS_ARG )
+  static void
+  Ins_PUSHB( INS_ARG )
   {
-    TT_UShort  L, K;
+    FT_UShort  L, K;
 
 
-    L = (TT_UShort)CUR.opcode - 0xB0 + 1;
+    L = (FT_UShort)(CUR.opcode - 0xB0 + 1);
 
     if ( BOUNDS( L, CUR.stackSize + 1 - CUR.top ) )
     {
@@ -4447,13 +4534,13 @@
   /* Opcode range: 0xB8-0xBF                                               */
   /* Stack:        --> int32...                                            */
   /*                                                                       */
-  static
-  void  Ins_PUSHW( INS_ARG )
+  static void
+  Ins_PUSHW( INS_ARG )
   {
-    TT_UShort  L, K;
+    FT_UShort  L, K;
 
 
-    L = (TT_UShort)CUR.opcode - 0xB8 + 1;
+    L = (FT_UShort)(CUR.opcode - 0xB8 + 1);
 
     if ( BOUNDS( L, CUR.stackSize + 1 - CUR.top ) )
     {
@@ -4488,13 +4575,14 @@
   /* BULLSHIT: Measures from the original glyph must be taken along the    */
   /*           dual projection vector!                                     */
   /*                                                                       */
-  static void  Ins_GC( INS_ARG )
+  static void
+  Ins_GC( INS_ARG )
   {
-    TT_ULong    L;
-    TT_F26Dot6  R;
+    FT_ULong    L;
+    FT_F26Dot6  R;
 
 
-    L = (TT_ULong)args[0];
+    L = (FT_ULong)args[0];
 
     if ( BOUNDS( L, CUR.zp2.n_points ) )
     {
@@ -4528,14 +4616,14 @@
   /*                                                                       */
   /*   OA := OA + ( value - OA.p )/( f.p ) * f                             */
   /*                                                                       */
-  static
-  void  Ins_SCFS( INS_ARG )
+  static void
+  Ins_SCFS( INS_ARG )
   {
-    TT_Long    K;
-    TT_UShort  L;
+    FT_Long    K;
+    FT_UShort  L;
 
 
-    L = (TT_UShort)args[0];
+    L = (FT_UShort)args[0];
 
     if ( BOUNDS( L, CUR.zp2.n_points ) )
     {
@@ -4570,15 +4658,15 @@
   /*                                                                       */
   /* Third one: `zp0 - zp1', and not `zp2 - zp1!                           */
   /*                                                                       */
-  static
-  void  Ins_MD( INS_ARG )
+  static void
+  Ins_MD( INS_ARG )
   {
-    TT_UShort   K, L;
-    TT_F26Dot6  D;
+    FT_UShort   K, L;
+    FT_F26Dot6  D;
 
 
-    K = (TT_UShort)args[1];
-    L = (TT_UShort)args[0];
+    K = (FT_UShort)args[1];
+    L = (FT_UShort)args[0];
 
     if( BOUNDS( L, CUR.zp0.n_points ) ||
         BOUNDS( K, CUR.zp1.n_points ) )
@@ -4608,15 +4696,15 @@
   /* Opcode range: 0x86-0x87                                               */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_SDPVTL( INS_ARG )
+  static void
+  Ins_SDPVTL( INS_ARG )
   {
-    TT_Long    A, B, C;
-    TT_UShort  p1, p2;   /* was TT_Int in pas type ERROR */
+    FT_Long    A, B, C;
+    FT_UShort  p1, p2;   /* was FT_Int in pas type ERROR */
 
 
-    p1 = (TT_UShort)args[1];
-    p2 = (TT_UShort)args[0];
+    p1 = (FT_UShort)args[1];
+    p2 = (FT_UShort)args[0];
 
     if ( BOUNDS( p2, CUR.zp1.n_points ) ||
          BOUNDS( p1, CUR.zp2.n_points ) )
@@ -4627,17 +4715,17 @@
     }
 
     {
-      TT_Vector* v1 = CUR.zp1.org + p2;
-      TT_Vector* v2 = CUR.zp2.org + p1;
+      FT_Vector* v1 = CUR.zp1.org + p2;
+      FT_Vector* v2 = CUR.zp2.org + p1;
 
 
       A = v1->x - v2->x;
       B = v1->y - v2->y;
     }
 
-    if ( (CUR.opcode & 1) != 0 )
+    if ( ( CUR.opcode & 1 ) != 0 )
     {
-      C =  B;   /* CounterClockwise rotation */
+      C =  B;   /* counter clockwise rotation */
       B =  A;
       A = -C;
     }
@@ -4645,17 +4733,17 @@
     NORMalize( A, B, &CUR.GS.dualVector );
 
     {
-      TT_Vector*  v1 = CUR.zp1.cur + p2;
-      TT_Vector*  v2 = CUR.zp2.cur + p1;
+      FT_Vector*  v1 = CUR.zp1.cur + p2;
+      FT_Vector*  v2 = CUR.zp2.cur + p1;
 
 
       A = v1->x - v2->x;
       B = v1->y - v2->y;
     }
 
-    if ( (CUR.opcode & 1) != 0 )
+    if ( ( CUR.opcode & 1 ) != 0 )
     {
-      C =  B;   /* CounterClockwise rotation */
+      C =  B;   /* counter clockwise rotation */
       B =  A;
       A = -C;
     }
@@ -4672,10 +4760,10 @@
   /* Opcode range: 0x13                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SZP0( INS_ARG )
+  static void
+  Ins_SZP0( INS_ARG )
   {
-    switch ( (TT_Int)args[0] )
+    switch ( (FT_Int)args[0] )
     {
     case 0:
       CUR.zp0 = CUR.twilight;
@@ -4691,7 +4779,7 @@
       return;
     }
 
-    CUR.GS.gep0 = (TT_UShort)(args[0]);
+    CUR.GS.gep0 = (FT_UShort)args[0];
   }
 
 
@@ -4701,10 +4789,10 @@
   /* Opcode range: 0x14                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SZP1( INS_ARG )
+  static void
+  Ins_SZP1( INS_ARG )
   {
-    switch ( (TT_Int)args[0] )
+    switch ( (FT_Int)args[0] )
     {
     case 0:
       CUR.zp1 = CUR.twilight;
@@ -4720,7 +4808,7 @@
       return;
     }
 
-    CUR.GS.gep1 = (TT_UShort)(args[0]);
+    CUR.GS.gep1 = (FT_UShort)args[0];
   }
 
 
@@ -4730,10 +4818,10 @@
   /* Opcode range: 0x15                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SZP2( INS_ARG )
+  static void
+  Ins_SZP2( INS_ARG )
   {
-    switch ( (TT_Int)args[0] )
+    switch ( (FT_Int)args[0] )
     {
     case 0:
       CUR.zp2 = CUR.twilight;
@@ -4749,7 +4837,7 @@
       return;
     }
 
-    CUR.GS.gep2 = (TT_UShort)(args[0]);
+    CUR.GS.gep2 = (FT_UShort)args[0];
   }
 
 
@@ -4759,10 +4847,10 @@
   /* Opcode range: 0x16                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SZPS( INS_ARG )
+  static void
+  Ins_SZPS( INS_ARG )
   {
-    switch ( (TT_Int)args[0] )
+    switch ( (FT_Int)args[0] )
     {
     case 0:
       CUR.zp0 = CUR.twilight;
@@ -4781,9 +4869,9 @@
     CUR.zp1 = CUR.zp0;
     CUR.zp2 = CUR.zp0;
 
-    CUR.GS.gep0 = (TT_UShort)(args[0]);
-    CUR.GS.gep1 = (TT_UShort)(args[0]);
-    CUR.GS.gep2 = (TT_UShort)(args[0]);
+    CUR.GS.gep0 = (FT_UShort)args[0];
+    CUR.GS.gep1 = (FT_UShort)args[0];
+    CUR.GS.gep2 = (FT_UShort)args[0];
   }
 
 
@@ -4793,10 +4881,10 @@
   /* Opcode range: 0x8e                                                    */
   /* Stack:        int32 int32 -->                                         */
   /*                                                                       */
-  static
-  void  Ins_INSTCTRL( INS_ARG )
+  static void
+  Ins_INSTCTRL( INS_ARG )
   {
-    TT_Long  K, L;
+    FT_Long  K, L;
 
 
     K = args[1];
@@ -4812,8 +4900,8 @@
     if ( L != 0 )
         L = K;
 
-    CUR.GS.instruct_control =
-      (TT_Byte)( CUR.GS.instruct_control & ~(TT_Byte)K ) | (TT_Byte)L;
+    CUR.GS.instruct_control = FT_BOOL(
+      ( (FT_Byte)CUR.GS.instruct_control & ~(FT_Byte)K ) | (FT_Byte)L );
   }
 
 
@@ -4823,14 +4911,14 @@
   /* Opcode range: 0x85                                                    */
   /* Stack:        uint32? -->                                             */
   /*                                                                       */
-  static
-  void  Ins_SCANCTRL( INS_ARG )
+  static void
+  Ins_SCANCTRL( INS_ARG )
   {
-    TT_Int  A;
+    FT_Int  A;
 
 
     /* Get Threshold */
-    A = (TT_Int)(args[0] & 0xFF);
+    A = (FT_Int)( args[0] & 0xFF );
 
     if ( A == 0xFF )
     {
@@ -4845,10 +4933,10 @@
 
     A *= 64;
 
-    /*
+#if 0
     if ( (args[0] & 0x100) != 0 && CUR.metrics.pointSize <= A )
       CUR.GS.scan_control = TRUE;
-    */
+#endif
 
     if ( (args[0] & 0x200) != 0 && CUR.tt_metrics.rotated )
       CUR.GS.scan_control = TRUE;
@@ -4856,17 +4944,17 @@
     if ( (args[0] & 0x400) != 0 && CUR.tt_metrics.stretched )
       CUR.GS.scan_control = TRUE;
 
-    /*
+#if 0
     if ( (args[0] & 0x800) != 0 && CUR.metrics.pointSize > A )
       CUR.GS.scan_control = FALSE;
-    */
+#endif
 
     if ( (args[0] & 0x1000) != 0 && CUR.tt_metrics.rotated )
       CUR.GS.scan_control = FALSE;
 
     if ( (args[0] & 0x2000) != 0 && CUR.tt_metrics.stretched )
       CUR.GS.scan_control = FALSE;
-}
+  }
 
 
   /*************************************************************************/
@@ -4875,10 +4963,10 @@
   /* Opcode range: 0x8D                                                    */
   /* Stack:        uint32? -->                                             */
   /*                                                                       */
-  static
-  void  Ins_SCANTYPE( INS_ARG )
+  static void
+  Ins_SCANTYPE( INS_ARG )
   {
-    /* For compatibility with future enhancements, */
+    /* for compatibility with future enhancements, */
     /* we must ignore new modes                    */
 
     if ( args[0] >= 0 && args[0] <= 5 )
@@ -4886,7 +4974,7 @@
       if ( args[0] == 3 )
         args[0] = 2;
 
-      CUR.GS.scan_type = (TT_Int)args[0];
+      CUR.GS.scan_type = (FT_Int)args[0];
     }
   }
 
@@ -4895,7 +4983,7 @@
   /*                                                                       */
   /* MANAGING OUTLINES                                                     */
   /*                                                                       */
-  /*  Instructions appear in the specs' order.                             */
+  /*   Instructions appear in the specification's order.                   */
   /*                                                                       */
   /*************************************************************************/
 
@@ -4906,13 +4994,13 @@
   /* Opcode range: 0x80                                                    */
   /* Stack:        uint32... -->                                           */
   /*                                                                       */
-  static
-  void  Ins_FLIPPT( INS_ARG )
+  static void
+  Ins_FLIPPT( INS_ARG )
   {
-    TT_UShort  point;
+    FT_UShort  point;
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     if ( CUR.top < CUR.GS.loop )
     {
@@ -4924,7 +5012,7 @@
     {
       CUR.args--;
 
-      point = (TT_UShort)CUR.stack[CUR.args];
+      point = (FT_UShort)CUR.stack[CUR.args];
 
       if ( BOUNDS( point, CUR.pts.n_points ) )
       {
@@ -4935,7 +5023,7 @@
         }
       }
       else
-        CUR.pts.tags[point] ^= FT_Curve_Tag_On;
+        CUR.pts.tags[point] ^= FT_CURVE_TAG_ON;
 
       CUR.GS.loop--;
     }
@@ -4951,14 +5039,14 @@
   /* Opcode range: 0x81                                                    */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_FLIPRGON( INS_ARG )
+  static void
+  Ins_FLIPRGON( INS_ARG )
   {
-    TT_UShort  I, K, L;
+    FT_UShort  I, K, L;
 
 
-    K = (TT_UShort)args[1];
-    L = (TT_UShort)args[0];
+    K = (FT_UShort)args[1];
+    L = (FT_UShort)args[0];
 
     if ( BOUNDS( K, CUR.pts.n_points ) ||
          BOUNDS( L, CUR.pts.n_points ) )
@@ -4969,7 +5057,7 @@
     }
 
     for ( I = L; I <= K; I++ )
-      CUR.pts.tags[I] |= FT_Curve_Tag_On;
+      CUR.pts.tags[I] |= FT_CURVE_TAG_ON;
   }
 
 
@@ -4979,14 +5067,14 @@
   /* Opcode range: 0x82                                                    */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_FLIPRGOFF( INS_ARG )
+  static void
+  Ins_FLIPRGOFF( INS_ARG )
   {
-    TT_UShort  I, K, L;
+    FT_UShort  I, K, L;
 
 
-    K = (TT_UShort)args[1];
-    L = (TT_UShort)args[0];
+    K = (FT_UShort)args[1];
+    L = (FT_UShort)args[0];
 
     if ( BOUNDS( K, CUR.pts.n_points ) ||
          BOUNDS( L, CUR.pts.n_points ) )
@@ -4997,19 +5085,19 @@
     }
 
     for ( I = L; I <= K; I++ )
-      CUR.pts.tags[I] &= ~FT_Curve_Tag_On;
+      CUR.pts.tags[I] &= ~FT_CURVE_TAG_ON;
   }
 
 
-  static
-  TT_Bool  Compute_Point_Displacement( EXEC_OP_ TT_F26Dot6*    x,
-                                                TT_F26Dot6*    y,
-                                                FT_GlyphZone*  zone,
-                                                TT_UShort*     refp )
+  static FT_Bool
+  Compute_Point_Displacement( EXEC_OP_ FT_F26Dot6*   x,
+                                       FT_F26Dot6*   y,
+                                       TT_GlyphZone  zone,
+                                       FT_UShort*    refp )
   {
-    FT_GlyphZone  zp;
-    TT_UShort     p;
-    TT_F26Dot6    d;
+    TT_GlyphZoneRec  zp;
+    FT_UShort        p;
+    FT_F26Dot6       d;
 
 
     if ( CUR.opcode & 1 )
@@ -5036,38 +5124,43 @@
     d = CUR_Func_project( zp.cur + p, zp.org + p );
 
 #ifdef NO_APPLE_PATENT
-    *x = TT_MULDIV( d, CUR.GS.freeVector.x, 0x4000 );
-    *y = TT_MULDIV( d, CUR.GS.freeVector.y, 0x4000 );
+
+    *x = TT_MulFix14( d, CUR.GS.freeVector.x );
+    *y = TT_MulFix14( d, CUR.GS.freeVector.y );
+
 #else
+
     *x = TT_MULDIV( d,
-                    (TT_Long)CUR.GS.freeVector.x * 0x10000L,
+                    (FT_Long)CUR.GS.freeVector.x * 0x10000L,
                     CUR.F_dot_P );
     *y = TT_MULDIV( d,
-                    (TT_Long)CUR.GS.freeVector.y * 0x10000L,
+                    (FT_Long)CUR.GS.freeVector.y * 0x10000L,
                     CUR.F_dot_P );
-#endif
+
+#endif /* NO_APPLE_PATENT */
+
     return SUCCESS;
   }
 
 
-  static
-  void  Move_Zp2_Point( EXEC_OP_ TT_UShort   point,
-                                 TT_F26Dot6  dx,
-                                 TT_F26Dot6  dy,
-                                 TT_Bool     touch )
+  static void
+  Move_Zp2_Point( EXEC_OP_ FT_UShort   point,
+                           FT_F26Dot6  dx,
+                           FT_F26Dot6  dy,
+                           FT_Bool     touch )
   {
     if ( CUR.GS.freeVector.x != 0 )
     {
       CUR.zp2.cur[point].x += dx;
       if ( touch )
-        CUR.zp2.tags[point] |= FT_Curve_Tag_Touch_X;
+        CUR.zp2.tags[point] |= FT_CURVE_TAG_TOUCH_X;
     }
 
     if ( CUR.GS.freeVector.y != 0 )
     {
       CUR.zp2.cur[point].y += dy;
       if ( touch )
-        CUR.zp2.tags[point] |= FT_Curve_Tag_Touch_Y;
+        CUR.zp2.tags[point] |= FT_CURVE_TAG_TOUCH_Y;
     }
   }
 
@@ -5078,18 +5171,18 @@
   /* Opcode range: 0x32-0x33                                               */
   /* Stack:        uint32... -->                                           */
   /*                                                                       */
-  static
-  void  Ins_SHP( INS_ARG )
+  static void
+  Ins_SHP( INS_ARG )
   {
-    FT_GlyphZone  zp;
-    TT_UShort     refp;
+    TT_GlyphZoneRec  zp;
+    FT_UShort        refp;
 
-    TT_F26Dot6    dx,
-                  dy;
-    TT_UShort     point;
+    FT_F26Dot6       dx,
+                     dy;
+    FT_UShort        point;
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     if ( CUR.top < CUR.GS.loop )
     {
@@ -5103,7 +5196,7 @@
     while ( CUR.GS.loop > 0 )
     {
       CUR.args--;
-      point = (TT_UShort)CUR.stack[CUR.args];
+      point = (FT_UShort)CUR.stack[CUR.args];
 
       if ( BOUNDS( point, CUR.zp2.n_points ) )
       {
@@ -5131,19 +5224,19 @@
   /* Opcode range: 0x34-35                                                 */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SHC( INS_ARG )
+  static void
+  Ins_SHC( INS_ARG )
   {
-    FT_GlyphZone zp;
-    TT_UShort    refp;
-    TT_F26Dot6   dx,
-                 dy;
+    TT_GlyphZoneRec zp;
+    FT_UShort       refp;
+    FT_F26Dot6      dx,
+                    dy;
 
-    TT_Short     contour;
-    TT_UShort    first_point, last_point, i;
+    FT_Short        contour;
+    FT_UShort       first_point, last_point, i;
 
 
-    contour = (TT_UShort)args[0];
+    contour = (FT_UShort)args[0];
 
     if ( BOUNDS( contour, CUR.pts.n_contours ) )
     {
@@ -5158,7 +5251,7 @@
     if ( contour == 0 )
       first_point = 0;
     else
-      first_point = CUR.pts.contours[contour - 1] + 1;
+      first_point = (FT_UShort)(CUR.pts.contours[contour - 1] + 1);
 
     last_point = CUR.pts.contours[contour];
 
@@ -5167,7 +5260,7 @@
     if ( last_point > CUR.zp2.n_points )
     {
       if ( CUR.zp2.n_points > 0 )
-        last_point = CUR.zp2.n_points - 1;
+        last_point = (FT_UShort)(CUR.zp2.n_points - 1);
       else
         last_point = 0;
     }
@@ -5187,15 +5280,15 @@
   /* Opcode range: 0x36-37                                                 */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_SHZ( INS_ARG )
+  static void
+  Ins_SHZ( INS_ARG )
   {
-    FT_GlyphZone zp;
-    TT_UShort    refp;
-    TT_F26Dot6   dx,
-                 dy;
+    TT_GlyphZoneRec zp;
+    FT_UShort       refp;
+    FT_F26Dot6      dx,
+                    dy;
 
-    TT_UShort  last_point, i;
+    FT_UShort       last_point, i;
 
 
     if ( BOUNDS( args[0], 2 ) )
@@ -5209,7 +5302,7 @@
       return;
 
     if ( CUR.zp2.n_points > 0 )
-      last_point = CUR.zp2.n_points - 1;
+      last_point = (FT_UShort)(CUR.zp2.n_points - 1);
     else
       last_point = 0;
 
@@ -5228,11 +5321,11 @@
   /* Opcode range: 0x38                                                    */
   /* Stack:        f26.6 uint32... -->                                     */
   /*                                                                       */
-  static
-  void  Ins_SHPIX( INS_ARG )
+  static void
+  Ins_SHPIX( INS_ARG )
   {
-    TT_F26Dot6  dx, dy;
-    TT_UShort   point;
+    FT_F26Dot6  dx, dy;
+    FT_UShort   point;
 
 
     if ( CUR.top < CUR.GS.loop + 1 )
@@ -5241,18 +5334,14 @@
       return;
     }
 
-    dx = TT_MULDIV( args[0],
-                    (TT_Long)CUR.GS.freeVector.x,
-                    0x4000 );
-    dy = TT_MULDIV( args[0],
-                    (TT_Long)CUR.GS.freeVector.y,
-                    0x4000 );
+    dx = TT_MulFix14( args[0], CUR.GS.freeVector.x );
+    dy = TT_MulFix14( args[0], CUR.GS.freeVector.y );
 
     while ( CUR.GS.loop > 0 )
     {
       CUR.args--;
 
-      point = (TT_UShort)CUR.stack[CUR.args];
+      point = (FT_UShort)CUR.stack[CUR.args];
 
       if ( BOUNDS( point, CUR.zp2.n_points ) )
       {
@@ -5279,14 +5368,14 @@
   /* Opcode range: 0x3A-0x3B                                               */
   /* Stack:        f26.6 uint32 -->                                        */
   /*                                                                       */
-  static
-  void  Ins_MSIRP( INS_ARG )
+  static void
+  Ins_MSIRP( INS_ARG )
   {
-    TT_UShort      point;
-    TT_F26Dot6  distance;
+    FT_UShort   point;
+    FT_F26Dot6  distance;
 
 
-    point = (TT_UShort)args[0];
+    point = (FT_UShort)args[0];
 
     if ( BOUNDS( point,      CUR.zp1.n_points ) ||
          BOUNDS( CUR.GS.rp0, CUR.zp0.n_points ) )
@@ -5322,15 +5411,15 @@
   /* Opcode range: 0x2E-0x2F                                               */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_MDAP( INS_ARG )
+  static void
+  Ins_MDAP( INS_ARG )
   {
-    TT_UShort   point;
-    TT_F26Dot6  cur_dist,
+    FT_UShort   point;
+    FT_F26Dot6  cur_dist,
                 distance;
 
 
-    point = (TT_UShort)args[0];
+    point = (FT_UShort)args[0];
 
     if ( BOUNDS( point, CUR.zp0.n_points ) )
     {
@@ -5341,7 +5430,7 @@
 
     /* XXX: Is there some undocumented feature while in the */
     /*      twilight zone? ?                                */
-    if ( (CUR.opcode & 1) != 0 )
+    if ( ( CUR.opcode & 1 ) != 0 )
     {
       cur_dist = CUR_Func_project( CUR.zp0.cur + point, NULL_Vector );
       distance = CUR_Func_round( cur_dist,
@@ -5363,17 +5452,17 @@
   /* Opcode range: 0x3E-0x3F                                               */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_MIAP( INS_ARG )
+  static void
+  Ins_MIAP( INS_ARG )
   {
-    TT_ULong    cvtEntry;
-    TT_UShort   point;
-    TT_F26Dot6  distance,
+    FT_ULong    cvtEntry;
+    FT_UShort   point;
+    FT_F26Dot6  distance,
                 org_dist;
 
 
-    cvtEntry = (TT_ULong)args[1];
-    point    = (TT_UShort)args[0];
+    cvtEntry = (FT_ULong)args[1];
+    point    = (FT_UShort)args[0];
 
     if ( BOUNDS( point,    CUR.zp0.n_points ) ||
          BOUNDS( cvtEntry, CUR.cvtSize )      )
@@ -5399,7 +5488,7 @@
     /* some key font heights.  It allows the use of the  */
     /* IP instruction in the twilight zone, which        */
     /* otherwise would be `illegal' according to the     */
-    /* specs :)                                          */
+    /* specification.                                    */
     /*                                                   */
     /* We implement it with a special sequence for the   */
     /* twilight zone.  This is a bad hack, but it seems  */
@@ -5409,16 +5498,14 @@
 
     if ( CUR.GS.gep0 == 0 )   /* If in twilight zone */
     {
-      CUR.zp0.org[point].x = TT_MULDIV( CUR.GS.freeVector.x,
-                                        distance, 0x4000 );
-      CUR.zp0.org[point].y = TT_MULDIV( CUR.GS.freeVector.y,
-                                        distance, 0x4000 );
-      CUR.zp0.cur[point] = CUR.zp0.org[point];
+      CUR.zp0.org[point].x = TT_MulFix14( distance, CUR.GS.freeVector.x );
+      CUR.zp0.org[point].y = TT_MulFix14( distance, CUR.GS.freeVector.y ),
+      CUR.zp0.cur[point]   = CUR.zp0.org[point];
     }
 
     org_dist = CUR_Func_project( CUR.zp0.cur + point, NULL_Vector );
 
-    if ( (CUR.opcode & 1) != 0 )   /* rounding and control cutin flag */
+    if ( ( CUR.opcode & 1 ) != 0 )   /* rounding and control cutin flag */
     {
       if ( ABS( distance - org_dist ) > CUR.GS.control_value_cutin )
         distance = org_dist;
@@ -5439,14 +5526,14 @@
   /* Opcode range: 0xC0-0xDF                                               */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_MDRP( INS_ARG )
+  static void
+  Ins_MDRP( INS_ARG )
   {
-    TT_UShort   point;
-    TT_F26Dot6  org_dist, distance;
+    FT_UShort   point;
+    FT_F26Dot6  org_dist, distance;
 
 
-    point = (TT_UShort)args[0];
+    point = (FT_UShort)args[0];
 
     if ( BOUNDS( point,      CUR.zp1.n_points ) ||
          BOUNDS( CUR.GS.rp0, CUR.zp0.n_points ) )
@@ -5474,16 +5561,18 @@
 
     /* round flag */
 
-    if ( (CUR.opcode & 4) != 0 )
-      distance = CUR_Func_round( org_dist,
-                                 CUR.tt_metrics.compensations[CUR.opcode & 3] );
+    if ( ( CUR.opcode & 4 ) != 0 )
+      distance = CUR_Func_round(
+                   org_dist,
+                   CUR.tt_metrics.compensations[CUR.opcode & 3] );
     else
-      distance = ROUND_None( org_dist,
-                             CUR.tt_metrics.compensations[CUR.opcode & 3]  );
+      distance = ROUND_None(
+                   org_dist,
+                   CUR.tt_metrics.compensations[CUR.opcode & 3] );
 
     /* minimum distance flag */
 
-    if ( (CUR.opcode & 8) != 0 )
+    if ( ( CUR.opcode & 8 ) != 0 )
     {
       if ( org_dist >= 0 )
       {
@@ -5507,7 +5596,7 @@
     CUR.GS.rp1 = CUR.GS.rp0;
     CUR.GS.rp2 = point;
 
-    if ( (CUR.opcode & 16) != 0 )
+    if ( ( CUR.opcode & 16 ) != 0 )
       CUR.GS.rp0 = point;
   }
 
@@ -5518,20 +5607,20 @@
   /* Opcode range: 0xE0-0xFF                                               */
   /* Stack:        int32? uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_MIRP( INS_ARG )
+  static void
+  Ins_MIRP( INS_ARG )
   {
-    TT_UShort   point;
-    TT_ULong    cvtEntry;
+    FT_UShort   point;
+    FT_ULong    cvtEntry;
 
-    TT_F26Dot6  cvt_dist,
+    FT_F26Dot6  cvt_dist,
                 distance,
                 cur_dist,
                 org_dist;
 
 
-    point    = (TT_UShort)args[0];
-    cvtEntry = (TT_ULong)(args[1] + 1);
+    point    = (FT_UShort)args[0];
+    cvtEntry = (FT_ULong)( args[1] + 1 );
 
     /* XXX: UNDOCUMENTED! cvt[-1] = 0 always */
 
@@ -5564,14 +5653,10 @@
     if ( CUR.GS.gep1 == 0 )
     {
       CUR.zp1.org[point].x = CUR.zp0.org[CUR.GS.rp0].x +
-                             TT_MULDIV( cvt_dist,
-                                        CUR.GS.freeVector.x,
-                                        0x4000 );
+                             TT_MulFix14( cvt_dist, CUR.GS.freeVector.x );
 
       CUR.zp1.org[point].y = CUR.zp0.org[CUR.GS.rp0].y +
-                             TT_MULDIV( cvt_dist,
-                                        CUR.GS.freeVector.y,
-                                        0x4000 );
+                             TT_MulFix14( cvt_dist, CUR.GS.freeVector.y );
 
       CUR.zp1.cur[point] = CUR.zp1.org[point];
     }
@@ -5586,13 +5671,13 @@
 
     if ( CUR.GS.auto_flip )
     {
-      if ( (org_dist ^ cvt_dist) < 0 )
+      if ( ( org_dist ^ cvt_dist ) < 0 )
         cvt_dist = -cvt_dist;
     }
 
     /* control value cutin and round */
 
-    if ( (CUR.opcode & 4) != 0 )
+    if ( ( CUR.opcode & 4 ) != 0 )
     {
       /* XXX: UNDOCUMENTED!  Only perform cut-in test when both points */
       /*      refer to the same zone.                                  */
@@ -5601,16 +5686,18 @@
         if ( ABS( cvt_dist - org_dist ) >= CUR.GS.control_value_cutin )
           cvt_dist = org_dist;
 
-      distance = CUR_Func_round( cvt_dist,
-                                 CUR.tt_metrics.compensations[CUR.opcode & 3] );
+      distance = CUR_Func_round(
+                   cvt_dist,
+                   CUR.tt_metrics.compensations[CUR.opcode & 3] );
     }
     else
-      distance = ROUND_None( cvt_dist,
-                             CUR.tt_metrics.compensations[CUR.opcode & 3] );
+      distance = ROUND_None(
+                   cvt_dist,
+                   CUR.tt_metrics.compensations[CUR.opcode & 3] );
 
     /* minimum distance test */
 
-    if ( (CUR.opcode & 8) != 0 )
+    if ( ( CUR.opcode & 8 ) != 0 )
     {
       if ( org_dist >= 0 )
       {
@@ -5628,7 +5715,7 @@
 
     CUR.GS.rp1 = CUR.GS.rp0;
 
-    if ( (CUR.opcode & 16) != 0 )
+    if ( ( CUR.opcode & 16 ) != 0 )
       CUR.GS.rp0 = point;
 
     /* XXX: UNDOCUMENTED! */
@@ -5643,14 +5730,14 @@
   /* Opcode range: 0x3C                                                    */
   /* Stack:        uint32 uint32... -->                                    */
   /*                                                                       */
-  static
-  void  Ins_ALIGNRP( INS_ARG )
+  static void
+  Ins_ALIGNRP( INS_ARG )
   {
-    TT_UShort   point;
-    TT_F26Dot6  distance;
+    FT_UShort   point;
+    FT_F26Dot6  distance;
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     if ( CUR.top < CUR.GS.loop ||
          BOUNDS( CUR.GS.rp0, CUR.zp0.n_points ) )
@@ -5664,7 +5751,7 @@
     {
       CUR.args--;
 
-      point = (TT_UShort)CUR.stack[CUR.args];
+      point = (FT_UShort)CUR.stack[CUR.args];
 
       if ( BOUNDS( point, CUR.zp1.n_points ) )
       {
@@ -5696,30 +5783,30 @@
   /* Opcode range: 0x0F                                                    */
   /* Stack:        5 * uint32 -->                                          */
   /*                                                                       */
-  static
-  void  Ins_ISECT( INS_ARG )
+  static void
+  Ins_ISECT( INS_ARG )
   {
-    TT_UShort   point,
+    FT_UShort   point,
                 a0, a1,
                 b0, b1;
 
-    TT_F26Dot6  discriminant;
+    FT_F26Dot6  discriminant;
 
-    TT_F26Dot6  dx,  dy,
+    FT_F26Dot6  dx,  dy,
                 dax, day,
                 dbx, dby;
 
-    TT_F26Dot6  val;
+    FT_F26Dot6  val;
 
-    TT_Vector   R;
+    FT_Vector   R;
 
 
-    point = (TT_UShort)args[0];
+    point = (FT_UShort)args[0];
 
-    a0 = (TT_UShort)args[1];
-    a1 = (TT_UShort)args[2];
-    b0 = (TT_UShort)args[3];
-    b1 = (TT_UShort)args[4];
+    a0 = (FT_UShort)args[1];
+    a1 = (FT_UShort)args[2];
+    b0 = (FT_UShort)args[3];
+    b1 = (FT_UShort)args[4];
 
     if ( BOUNDS( b0, CUR.zp0.n_points )  ||
          BOUNDS( b1, CUR.zp0.n_points )  ||
@@ -5741,7 +5828,7 @@
     dx = CUR.zp0.cur[b0].x - CUR.zp1.cur[a0].x;
     dy = CUR.zp0.cur[b0].y - CUR.zp1.cur[a0].y;
 
-    CUR.zp2.tags[point] |= FT_Curve_Tag_Touch_Both;
+    CUR.zp2.tags[point] |= FT_CURVE_TAG_TOUCH_BOTH;
 
     discriminant = TT_MULDIV( dax, -dby, 0x40 ) +
                    TT_MULDIV( day, dbx, 0x40 );
@@ -5778,15 +5865,15 @@
   /* Opcode range: 0x27                                                    */
   /* Stack:        uint32 uint32 -->                                       */
   /*                                                                       */
-  static
-  void  Ins_ALIGNPTS( INS_ARG )
+  static void
+  Ins_ALIGNPTS( INS_ARG )
   {
-    TT_UShort   p1, p2;
-    TT_F26Dot6  distance;
+    FT_UShort   p1, p2;
+    FT_F26Dot6  distance;
 
 
-    p1 = (TT_UShort)args[0];
-    p2 = (TT_UShort)args[1];
+    p1 = (FT_UShort)args[0];
+    p2 = (FT_UShort)args[1];
 
     if ( BOUNDS( args[0], CUR.zp1.n_points ) ||
          BOUNDS( args[1], CUR.zp0.n_points ) )
@@ -5810,16 +5897,16 @@
   /* Opcode range: 0x39                                                    */
   /* Stack:        uint32... -->                                           */
   /*                                                                       */
-  static
-  void  Ins_IP( INS_ARG )
+  static void
+  Ins_IP( INS_ARG )
   {
-    TT_F26Dot6  org_a, org_b, org_x,
+    FT_F26Dot6  org_a, org_b, org_x,
                 cur_a, cur_b, cur_x,
                 distance;
-    TT_UShort   point;
+    FT_UShort   point;
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     if ( CUR.top < CUR.GS.loop )
     {
@@ -5827,7 +5914,7 @@
       return;
     }
 
-    /* XXX: there are some glyphs in some braindead but popular  */
+    /* XXX: There are some glyphs in some braindead but popular  */
     /*      fonts out there (e.g. [aeu]grave in monotype.ttf)    */
     /*      calling IP[] with bad values of rp[12].              */
     /*      Do something sane when this odd thing happens.       */
@@ -5851,7 +5938,7 @@
     {
       CUR.args--;
 
-      point = (TT_UShort)CUR.stack[CUR.args];
+      point = (FT_UShort)CUR.stack[CUR.args];
       if ( BOUNDS( point, CUR.zp2.n_points ) )
       {
         if ( CUR.pedantic_hinting )
@@ -5900,14 +5987,14 @@
   /* Opcode range: 0x29                                                    */
   /* Stack:        uint32 -->                                              */
   /*                                                                       */
-  static
-  void  Ins_UTP( INS_ARG )
+  static void
+  Ins_UTP( INS_ARG )
   {
-    TT_UShort  point;
-    TT_Byte    mask;
+    FT_UShort  point;
+    FT_Byte    mask;
 
 
-    point = (TT_UShort)args[0];
+    point = (FT_UShort)args[0];
 
     if ( BOUNDS( point, CUR.zp0.n_points ) )
     {
@@ -5919,30 +6006,32 @@
     mask = 0xFF;
 
     if ( CUR.GS.freeVector.x != 0 )
-      mask &= ~FT_Curve_Tag_Touch_X;
+      mask &= ~FT_CURVE_TAG_TOUCH_X;
 
     if ( CUR.GS.freeVector.y != 0 )
-      mask &= ~FT_Curve_Tag_Touch_Y;
+      mask &= ~FT_CURVE_TAG_TOUCH_Y;
 
     CUR.zp0.tags[point] &= mask;
   }
 
 
   /* Local variables for Ins_IUP: */
-  struct LOC_Ins_IUP
+  struct  LOC_Ins_IUP
   {
-    TT_Vector*  orgs;   /* original and current coordinate */
-    TT_Vector*  curs;   /* arrays                          */
+    FT_Vector*  orgs;   /* original and current coordinate */
+    FT_Vector*  curs;   /* arrays                          */
   };
 
 
-  static void  Shift( TT_UInt              p1,
-                      TT_UInt              p2,
-                      TT_UInt              p,
-                      struct LOC_Ins_IUP*  LINK )
+  static void
+  Shift( FT_UInt              p1,
+         FT_UInt              p2,
+         FT_UInt              p,
+         struct LOC_Ins_IUP*  LINK )
   {
-    TT_UInt     i;
-    TT_F26Dot6  x;
+    FT_UInt     i;
+    FT_F26Dot6  x;
+
 
     x = LINK->curs[p].x - LINK->orgs[p].x;
 
@@ -5954,14 +6043,16 @@
   }
 
 
-  static void  Interp( TT_UInt              p1,
-                       TT_UInt              p2,
-                       TT_UInt              ref1,
-                       TT_UInt              ref2,
-                       struct LOC_Ins_IUP*  LINK )
+  static void
+  Interp( FT_UInt              p1,
+          FT_UInt              p2,
+          FT_UInt              ref1,
+          FT_UInt              ref2,
+          struct LOC_Ins_IUP*  LINK )
   {
-    TT_UInt     i;
-    TT_F26Dot6  x, x1, x2, d1, d2;
+    FT_UInt     i;
+    FT_F26Dot6  x, x1, x2, d1, d2;
+
 
     if ( p1 > p2 )
       return;
@@ -6038,35 +6129,35 @@
   /* Opcode range: 0x30-0x31                                               */
   /* Stack:        -->                                                     */
   /*                                                                       */
-  static
-  void  Ins_IUP( INS_ARG )
+  static void
+  Ins_IUP( INS_ARG )
   {
     struct LOC_Ins_IUP  V;
-    TT_Byte             mask;
+    FT_Byte             mask;
 
-    TT_UInt   first_point;   /* first point of contour        */
-    TT_UInt   end_point;     /* end point (last+1) of contour */
+    FT_UInt   first_point;   /* first point of contour        */
+    FT_UInt   end_point;     /* end point (last+1) of contour */
 
-    TT_UInt   first_touched; /* first touched point in contour   */
-    TT_UInt   cur_touched;   /* current touched point in contour */
+    FT_UInt   first_touched; /* first touched point in contour   */
+    FT_UInt   cur_touched;   /* current touched point in contour */
 
-    TT_UInt   point;         /* current point   */
-    TT_Short  contour;       /* current contour */
+    FT_UInt   point;         /* current point   */
+    FT_Short  contour;       /* current contour */
 
+    FT_UNUSED_ARG;
 
-    UNUSED_ARG;
 
     if ( CUR.opcode & 1 )
     {
-      mask   = FT_Curve_Tag_Touch_X;
+      mask   = FT_CURVE_TAG_TOUCH_X;
       V.orgs = CUR.pts.org;
       V.curs = CUR.pts.cur;
     }
     else
     {
-      mask   = FT_Curve_Tag_Touch_Y;
-      V.orgs = (TT_Vector*)( ((TT_F26Dot6*)CUR.pts.org) + 1 );
-      V.curs = (TT_Vector*)( ((TT_F26Dot6*)CUR.pts.cur) + 1 );
+      mask   = FT_CURVE_TAG_TOUCH_Y;
+      V.orgs = (FT_Vector*)( (FT_Pos*)CUR.pts.org + 1 );
+      V.curs = (FT_Vector*)( (FT_Pos*)CUR.pts.cur + 1 );
     }
 
     contour = 0;
@@ -6089,7 +6180,7 @@
 
         while ( point <= end_point )
         {
-          if ( (CUR.pts.tags[point] & mask) != 0 )
+          if ( ( CUR.pts.tags[point] & mask ) != 0 )
           {
             if ( point > 0 )
               Interp( cur_touched + 1,
@@ -6107,7 +6198,7 @@
           Shift( first_point, end_point, cur_touched, &V );
         else
         {
-          Interp( (TT_UShort)(cur_touched + 1),
+          Interp( (FT_UShort)( cur_touched + 1 ),
                   end_point,
                   cur_touched,
                   first_touched,
@@ -6132,16 +6223,16 @@
   /* Opcode range: 0x5D,0x71,0x72                                          */
   /* Stack:        uint32 (2 * uint32)... -->                              */
   /*                                                                       */
-  static
-  void  Ins_DELTAP( INS_ARG )
+  static void
+  Ins_DELTAP( INS_ARG )
   {
-    TT_ULong   k, nump;
-    TT_UShort  A;
-    TT_ULong   C;
-    TT_Long    B;
+    FT_ULong   k, nump;
+    FT_UShort  A;
+    FT_ULong   C;
+    FT_Long    B;
 
 
-    nump = (TT_ULong)args[0];   /* some points theoretically may occur more
+    nump = (FT_ULong)args[0];   /* some points theoretically may occur more
                                    than once, thus UShort isn't enough */
 
     for ( k = 1; k <= nump; k++ )
@@ -6154,18 +6245,18 @@
 
       CUR.args -= 2;
 
-      A = (TT_UShort)CUR.stack[CUR.args + 1];
+      A = (FT_UShort)CUR.stack[CUR.args + 1];
       B = CUR.stack[CUR.args];
 
-      /* XXX : because some popular fonts contain some invalid DeltaP */
-      /*       instructions, we simply ignore them when the stacked   */
-      /*       point reference is off limit, rather than returning an */
-      /*       error. As a delta instruction doesn't change a glyph   */
-      /*       in great ways, this shouldn't be a problem..           */
+      /* XXX: Because some popular fonts contain some invalid DeltaP */
+      /*      instructions, we simply ignore them when the stacked   */
+      /*      point reference is off limit, rather than returning an */
+      /*      error.  As a delta instruction doesn't change a glyph  */
+      /*      in great ways, this shouldn't be a problem.            */
 
       if ( !BOUNDS( A, CUR.zp0.n_points ) )
       {
-        C = ((TT_ULong)B & 0xF0) >> 4;
+        C = ( (FT_ULong)B & 0xF0 ) >> 4;
 
         switch ( CUR.opcode )
         {
@@ -6183,12 +6274,12 @@
 
         C += CUR.GS.delta_base;
 
-        if ( CURRENT_Ppem() == (TT_Long)C )
+        if ( CURRENT_Ppem() == (FT_Long)C )
         {
-          B = ((TT_ULong)B & 0xF) - 8;
+          B = ( (FT_ULong)B & 0xF ) - 8;
           if ( B >= 0 )
             B++;
-          B = B * 64 / (1L << CUR.GS.delta_shift);
+          B = B * 64 / ( 1L << CUR.GS.delta_shift );
 
           CUR_Func_move( &CUR.zp0, A, B );
         }
@@ -6208,15 +6299,15 @@
   /* Opcode range: 0x73,0x74,0x75                                          */
   /* Stack:        uint32 (2 * uint32)... -->                              */
   /*                                                                       */
-  static
-  void  Ins_DELTAC( INS_ARG )
+  static void
+  Ins_DELTAC( INS_ARG )
   {
-    TT_ULong  nump, k;
-    TT_ULong  A, C;
-    TT_Long   B;
+    FT_ULong  nump, k;
+    FT_ULong  A, C;
+    FT_Long   B;
 
 
-    nump = (TT_ULong)args[0];
+    nump = (FT_ULong)args[0];
 
     for ( k = 1; k <= nump; k++ )
     {
@@ -6228,12 +6319,12 @@
 
       CUR.args -= 2;
 
-      A = (TT_ULong)CUR.stack[CUR.args + 1];
+      A = (FT_ULong)CUR.stack[CUR.args + 1];
       B = CUR.stack[CUR.args];
 
       if ( BOUNDS( A, CUR.cvtSize ) )
       {
-        if (CUR.pedantic_hinting)
+        if ( CUR.pedantic_hinting )
         {
           CUR.error = TT_Err_Invalid_Reference;
           return;
@@ -6241,7 +6332,7 @@
       }
       else
       {
-        C = ((TT_ULong)B & 0xF0) >> 4;
+        C = ( (FT_ULong)B & 0xF0 ) >> 4;
 
         switch ( CUR.opcode )
         {
@@ -6259,12 +6350,12 @@
 
         C += CUR.GS.delta_base;
 
-        if ( CURRENT_Ppem() == (TT_Long)C )
+        if ( CURRENT_Ppem() == (FT_Long)C )
         {
-          B = ((TT_ULong)B & 0xF) - 8;
+          B = ( (FT_ULong)B & 0xF ) - 8;
           if ( B >= 0 )
             B++;
-          B = B * 64 / (1L << CUR.GS.delta_shift);
+          B = B * 64 / ( 1L << CUR.GS.delta_shift );
 
           CUR_Func_move_cvt( A, B );
         }
@@ -6290,17 +6381,17 @@
   /*                                                                       */
   /* XXX: According to Apple specs, bits 1 & 2 of the argument ought to be */
   /*      consulted before rotated/stretched info is returned.             */
-  static
-  void  Ins_GETINFO( INS_ARG )
+  static void
+  Ins_GETINFO( INS_ARG )
   {
-    TT_Long  K;
+    FT_Long  K;
 
 
     K = 0;
 
     /* We return then Windows 3.1 version number */
     /* for the font scaler                       */
-    if ( (args[0] & 1) != 0 )
+    if ( ( args[0] & 1 ) != 0 )
       K = 3;
 
     /* Has the glyph been rotated ? */
@@ -6315,35 +6406,37 @@
   }
 
 
-  static
-  void  Ins_UNKNOWN( INS_ARG )
+  static void
+  Ins_UNKNOWN( INS_ARG )
   {
     TT_DefRecord*  def   = CUR.IDefs;
     TT_DefRecord*  limit = def + CUR.numIDefs;
-    
-    UNUSED_ARG;
- 
+
+    FT_UNUSED_ARG;
+
+
     for ( ; def < limit; def++ )
     {
-      if (def->opc == CUR.opcode && def->active )
+      if ( (FT_Byte)def->opc == CUR.opcode && def->active )
       {
         TT_CallRec*  call;
-        
+
+
         if ( CUR.callTop >= CUR.callSize )
         {
           CUR.error = TT_Err_Stack_Overflow;
           return;
         }
-        
+
         call = CUR.callStack + CUR.callTop++;
 
         call->Caller_Range = CUR.curRange;
         call->Caller_IP    = CUR.IP+1;
         call->Cur_Count    = 1;
         call->Cur_Restart  = def->start;
-        
+
         INS_Goto_CodeRange( def->range, def->start );
-        
+
         CUR.step_ins = FALSE;
         return;
       }
@@ -6354,6 +6447,8 @@
 
 
 #ifndef TT_CONFIG_OPTION_INTERPRETER_SWITCH
+
+
   static
   TInstruction_Function  Instruct_Dispatch[256] =
   {
@@ -6632,6 +6727,8 @@
     /*  MIRP[30]  */  Ins_MIRP,
     /*  MIRP[31]  */  Ins_MIRP
   };
+
+
 #endif /* !TT_CONFIG_OPTION_INTERPRETER_SWITCH */
 
 
@@ -6656,25 +6753,24 @@
   /*                                                                       */
   /*                                                                       */
   /*  Note: The documented DEBUG opcode pops a value from the stack.  This */
-  /*        behaviour is unsupported, here a DEBUG opcode is always an     */
+  /*        behaviour is unsupported; here a DEBUG opcode is always an     */
   /*        error.                                                         */
   /*                                                                       */
   /*                                                                       */
   /* THIS IS THE INTERPRETER'S MAIN LOOP.                                  */
   /*                                                                       */
-  /*  Instructions appear in the specs' order.                             */
+  /*  Instructions appear in the specification's order.                    */
   /*                                                                       */
   /*************************************************************************/
 
 
-  EXPORT_FUNC
-#ifndef DEBUG_INTERPRETER
-  TT_Error  TT_RunIns( TT_ExecContext  exc )
-#else
-  TT_Error  TT_RunIns2( TT_ExecContext  exc )
-#endif
+  /* documentation is in ttinterp.h */
+
+  FT_EXPORT_DEF( FT_Error )
+  TT_RunIns( TT_ExecContext  exc )
   {
-    TT_Long    ins_counter = 0;  /* executed instructions counter */
+    FT_Long  ins_counter = 0;  /* executed instructions counter */
+
 
 #ifdef TT_CONFIG_OPTION_STATIC_RASTER
     cur = *exc;
@@ -6698,7 +6794,7 @@
     }
 
     COMPUTE_Funcs();
-    COMPUTE_Round( (TT_Byte)exc->GS.round_state );
+    COMPUTE_Round( (FT_Byte)exc->GS.round_state );
 
     do
     {
@@ -6716,7 +6812,7 @@
         goto LErrorCodeOverflow_;
 
       /* First, let's check for empty stack and overflow */
-      CUR.args = CUR.top - (Pop_Push_Count[CUR.opcode] >> 4);
+      CUR.args = CUR.top - ( Pop_Push_Count[CUR.opcode] >> 4 );
 
       /* `args' is the top of the stack once arguments have been popped. */
       /* One can also interpret it as the index of the last argument.    */
@@ -6726,7 +6822,7 @@
         goto LErrorLabel_;
       }
 
-      CUR.new_top = CUR.args + (Pop_Push_Count[CUR.opcode] & 15);
+      CUR.new_top = CUR.args + ( Pop_Push_Count[CUR.opcode] & 15 );
 
       /* `new_top' is the new top of the stack, after the instruction's */
       /* execution.  `top' will be set to `new_top' after the `switch'  */
@@ -6741,13 +6837,14 @@
       CUR.error    = TT_Err_Ok;
 
 #ifdef TT_CONFIG_OPTION_INTERPRETER_SWITCH
+
       {
-        TT_Long*  args   = CUR.stack + CUR.args;
-        TT_Byte   opcode = CUR.opcode;
+        FT_Long*  args   = CUR.stack + CUR.args;
+        FT_Byte   opcode = CUR.opcode;
 
 
-#undef   ARRAY_BOUND_ERROR
-#define  ARRAY_BOUND_ERROR   goto Set_Invalid_Ref
+#undef  ARRAY_BOUND_ERROR
+#define ARRAY_BOUND_ERROR  goto Set_Invalid_Ref
 
 
         switch ( opcode )
@@ -6759,11 +6856,11 @@
         case 0x04:  /* SFvTCA y */
         case 0x05:  /* SFvTCA x */
           {
-            TT_Short AA, BB;
+            FT_Short AA, BB;
 
 
-            AA = (TT_Short)(opcode & 1) << 14;
-            BB = AA ^ (TT_Short)0x4000;
+            AA = (FT_Short)( ( opcode & 1 ) << 14 );
+            BB = (FT_Short)( AA ^ 0x4000 );
 
             if ( opcode < 4 )
             {
@@ -6774,7 +6871,7 @@
               CUR.GS.dualVector.y = BB;
             }
 
-            if ( (opcode & 2) == 0 )
+            if ( ( opcode & 2 ) == 0 )
             {
               CUR.GS.freeVector.x = AA;
               CUR.GS.freeVector.y = BB;
@@ -6815,7 +6912,7 @@
           break;
 
         case 0x0F:  /* ISECT  */
-          Ins_ISECT( EXEC_ARG_  args );
+          Ins_ISECT( EXEC_ARG_ args );
           break;
 
         case 0x10:  /* SRP0 */
@@ -6831,19 +6928,19 @@
           break;
 
         case 0x13:  /* SZP0 */
-          Ins_SZP0( EXEC_ARG_  args );
+          Ins_SZP0( EXEC_ARG_ args );
           break;
 
         case 0x14:  /* SZP1 */
-          Ins_SZP1( EXEC_ARG_  args );
+          Ins_SZP1( EXEC_ARG_ args );
           break;
 
         case 0x15:  /* SZP2 */
-          Ins_SZP2( EXEC_ARG_  args );
+          Ins_SZP2( EXEC_ARG_ args );
           break;
 
         case 0x16:  /* SZPS */
-          Ins_SZPS( EXEC_ARG_  args );
+          Ins_SZPS( EXEC_ARG_ args );
           break;
 
         case 0x17:  /* SLOOP */
@@ -6863,7 +6960,7 @@
           break;
 
         case 0x1B:  /* ELSE */
-          Ins_ELSE( EXEC_ARG_  args );
+          Ins_ELSE( EXEC_ARG_ args );
           break;
 
         case 0x1C:  /* JMPR */
@@ -6887,7 +6984,7 @@
           break;
 
         case 0x21:  /* POP */
-          /* nothing :-) ! */
+          /* nothing :-) */
           break;
 
         case 0x22:  /* CLEAR */
@@ -6907,78 +7004,78 @@
           break;
 
         case 0x26:  /* MINDEX */
-          Ins_MINDEX( EXEC_ARG_  args );
+          Ins_MINDEX( EXEC_ARG_ args );
           break;
 
         case 0x27:  /* ALIGNPTS */
-          Ins_ALIGNPTS( EXEC_ARG_  args );
+          Ins_ALIGNPTS( EXEC_ARG_ args );
           break;
 
         case 0x28:  /* ???? */
-          Ins_UNKNOWN( EXEC_ARG_  args );
+          Ins_UNKNOWN( EXEC_ARG_ args );
           break;
 
         case 0x29:  /* UTP */
-          Ins_UTP( EXEC_ARG_  args );
+          Ins_UTP( EXEC_ARG_ args );
           break;
 
         case 0x2A:  /* LOOPCALL */
-          Ins_LOOPCALL( EXEC_ARG_  args );
+          Ins_LOOPCALL( EXEC_ARG_ args );
           break;
 
         case 0x2B:  /* CALL */
-          Ins_CALL( EXEC_ARG_  args );
+          Ins_CALL( EXEC_ARG_ args );
           break;
 
         case 0x2C:  /* FDEF */
-          Ins_FDEF( EXEC_ARG_  args );
+          Ins_FDEF( EXEC_ARG_ args );
           break;
 
         case 0x2D:  /* ENDF */
-          Ins_ENDF( EXEC_ARG_  args );
+          Ins_ENDF( EXEC_ARG_ args );
           break;
 
         case 0x2E:  /* MDAP */
         case 0x2F:  /* MDAP */
-          Ins_MDAP( EXEC_ARG_  args );
+          Ins_MDAP( EXEC_ARG_ args );
           break;
 
 
         case 0x30:  /* IUP */
         case 0x31:  /* IUP */
-          Ins_IUP( EXEC_ARG_  args );
+          Ins_IUP( EXEC_ARG_ args );
           break;
 
         case 0x32:  /* SHP */
         case 0x33:  /* SHP */
-          Ins_SHP( EXEC_ARG_  args );
+          Ins_SHP( EXEC_ARG_ args );
           break;
 
         case 0x34:  /* SHC */
         case 0x35:  /* SHC */
-          Ins_SHC( EXEC_ARG_  args );
+          Ins_SHC( EXEC_ARG_ args );
           break;
 
         case 0x36:  /* SHZ */
         case 0x37:  /* SHZ */
-          Ins_SHZ( EXEC_ARG_  args );
+          Ins_SHZ( EXEC_ARG_ args );
           break;
 
         case 0x38:  /* SHPIX */
-          Ins_SHPIX( EXEC_ARG_  args );
+          Ins_SHPIX( EXEC_ARG_ args );
           break;
 
         case 0x39:  /* IP    */
-          Ins_IP( EXEC_ARG_  args );
+          Ins_IP( EXEC_ARG_ args );
           break;
 
         case 0x3A:  /* MSIRP */
         case 0x3B:  /* MSIRP */
-          Ins_MSIRP( EXEC_ARG_  args );
+          Ins_MSIRP( EXEC_ARG_ args );
           break;
 
         case 0x3C:  /* AlignRP */
-          Ins_ALIGNRP( EXEC_ARG_  args );
+          Ins_ALIGNRP( EXEC_ARG_ args );
           break;
 
         case 0x3D:  /* RTDG */
@@ -6987,22 +7084,22 @@
 
         case 0x3E:  /* MIAP */
         case 0x3F:  /* MIAP */
-          Ins_MIAP( EXEC_ARG_  args );
+          Ins_MIAP( EXEC_ARG_ args );
           break;
 
         case 0x40:  /* NPUSHB */
-          Ins_NPUSHB( EXEC_ARG_  args );
+          Ins_NPUSHB( EXEC_ARG_ args );
           break;
 
         case 0x41:  /* NPUSHW */
-          Ins_NPUSHW( EXEC_ARG_  args );
+          Ins_NPUSHW( EXEC_ARG_ args );
           break;
 
         case 0x42:  /* WS */
           DO_WS
           break;
 
-    Set_Invalid_Ref:
+      Set_Invalid_Ref:
             CUR.error = TT_Err_Invalid_Reference;
           break;
 
@@ -7020,16 +7117,16 @@
 
         case 0x46:  /* GC */
         case 0x47:  /* GC */
-          Ins_GC( EXEC_ARG_  args );
+          Ins_GC( EXEC_ARG_ args );
           break;
 
         case 0x48:  /* SCFS */
-          Ins_SCFS( EXEC_ARG_  args );
+          Ins_SCFS( EXEC_ARG_ args );
           break;
 
         case 0x49:  /* MD */
         case 0x4A:  /* MD */
-          Ins_MD( EXEC_ARG_  args );
+          Ins_MD( EXEC_ARG_ args );
           break;
 
         case 0x4B:  /* MPPEM */
@@ -7085,7 +7182,7 @@
           break;
 
         case 0x58:  /* IF */
-          Ins_IF( EXEC_ARG_  args );
+          Ins_IF( EXEC_ARG_ args );
           break;
 
         case 0x59:  /* EIF */
@@ -7105,7 +7202,7 @@
           break;
 
         case 0x5D:  /* DELTAP1 */
-          Ins_DELTAP( EXEC_ARG_  args );
+          Ins_DELTAP( EXEC_ARG_ args );
           break;
 
         case 0x5E:  /* SDB */
@@ -7168,13 +7265,13 @@
 
         case 0x71:  /* DELTAP2 */
         case 0x72:  /* DELTAP3 */
-          Ins_DELTAP( EXEC_ARG_  args );
+          Ins_DELTAP( EXEC_ARG_ args );
           break;
 
         case 0x73:  /* DELTAC0 */
         case 0x74:  /* DELTAC1 */
         case 0x75:  /* DELTAC2 */
-          Ins_DELTAC( EXEC_ARG_  args );
+          Ins_DELTAC( EXEC_ARG_ args );
           break;
 
         case 0x76:  /* SROUND */
@@ -7198,7 +7295,7 @@
           break;
 
         case 0x7B:  /* ???? */
-          Ins_UNKNOWN( EXEC_ARG_  args );
+          Ins_UNKNOWN( EXEC_ARG_ args );
           break;
 
         case 0x7C:  /* RUTG */
@@ -7215,41 +7312,41 @@
           break;
 
         case 0x80:  /* FLIPPT */
-          Ins_FLIPPT( EXEC_ARG_  args );
+          Ins_FLIPPT( EXEC_ARG_ args );
           break;
 
         case 0x81:  /* FLIPRGON */
-          Ins_FLIPRGON( EXEC_ARG_  args );
+          Ins_FLIPRGON( EXEC_ARG_ args );
           break;
 
         case 0x82:  /* FLIPRGOFF */
-          Ins_FLIPRGOFF( EXEC_ARG_  args );
+          Ins_FLIPRGOFF( EXEC_ARG_ args );
           break;
 
         case 0x83:  /* UNKNOWN */
         case 0x84:  /* UNKNOWN */
-          Ins_UNKNOWN( EXEC_ARG_  args );
+          Ins_UNKNOWN( EXEC_ARG_ args );
           break;
 
         case 0x85:  /* SCANCTRL */
-          Ins_SCANCTRL( EXEC_ARG_  args );
+          Ins_SCANCTRL( EXEC_ARG_ args );
           break;
 
         case 0x86:  /* SDPVTL */
         case 0x87:  /* SDPVTL */
-          Ins_SDPVTL( EXEC_ARG_  args );
+          Ins_SDPVTL( EXEC_ARG_ args );
           break;
 
         case 0x88:  /* GETINFO */
-          Ins_GETINFO( EXEC_ARG_  args );
+          Ins_GETINFO( EXEC_ARG_ args );
           break;
 
         case 0x89:  /* IDEF */
-          Ins_IDEF( EXEC_ARG_  args );
+          Ins_IDEF( EXEC_ARG_ args );
           break;
 
         case 0x8A:  /* ROLL */
-          Ins_ROLL( EXEC_ARG_  args );
+          Ins_ROLL( EXEC_ARG_ args );
           break;
 
         case 0x8B:  /* MAX */
@@ -7261,34 +7358,38 @@
           break;
 
         case 0x8D:  /* SCANTYPE */
-          Ins_SCANTYPE( EXEC_ARG_  args );
+          Ins_SCANTYPE( EXEC_ARG_ args );
           break;
 
         case 0x8E:  /* INSTCTRL */
-          Ins_INSTCTRL( EXEC_ARG_  args );
+          Ins_INSTCTRL( EXEC_ARG_ args );
           break;
 
         case 0x8F:
-          Ins_UNKNOWN( EXEC_ARG_  args );
+          Ins_UNKNOWN( EXEC_ARG_ args );
           break;
 
         default:
           if ( opcode >= 0xE0 )
-            Ins_MIRP( EXEC_ARG_  args );
+            Ins_MIRP( EXEC_ARG_ args );
           else if ( opcode >= 0xC0 )
-            Ins_MDRP( EXEC_ARG_  args );
+            Ins_MDRP( EXEC_ARG_ args );
           else if ( opcode >= 0xB8 )
-            Ins_PUSHW( EXEC_ARG_  args );
+            Ins_PUSHW( EXEC_ARG_ args );
           else if ( opcode >= 0xB0 )
-            Ins_PUSHB( EXEC_ARG_  args );
+            Ins_PUSHB( EXEC_ARG_ args );
           else
-            Ins_UNKNOWN( EXEC_ARG_  args );
+            Ins_UNKNOWN( EXEC_ARG_ args );
         }
 
       }
+
 #else
+
       Instruct_Dispatch[CUR.opcode]( EXEC_ARG_ &CUR.stack[CUR.args] );
-#endif
+
+#endif /* TT_CONFIG_OPTION_INTERPRETER_SWITCH */
+
       if ( CUR.error != TT_Err_Ok )
       {
         switch ( CUR.error )
@@ -7297,29 +7398,31 @@
           {
             TT_DefRecord*  def   = CUR.IDefs;
             TT_DefRecord*  limit = def + CUR.numIDefs;
-            
+
+
             for ( ; def < limit; def++ )
             {
-              if ( def->active && CUR.opcode == def->opc )
+              if ( def->active && CUR.opcode == (FT_Byte)def->opc )
               {
                 TT_CallRec*  callrec;
-    
+
+
                 if ( CUR.callTop >= CUR.callSize )
                 {
                   CUR.error = TT_Err_Invalid_Reference;
                   goto LErrorLabel_;
                 }
-    
+
                 callrec = &CUR.callStack[CUR.callTop];
-    
+
                 callrec->Caller_Range = CUR.curRange;
                 callrec->Caller_IP    = CUR.IP + 1;
                 callrec->Cur_Count    = 1;
                 callrec->Cur_Restart  = def->start;
-    
+
                 if ( INS_Goto_CodeRange( def->range, def->start ) == FAILURE )
                   goto LErrorLabel_;
-    
+
                 goto LSuiteLabel_;
               }
             }
@@ -7327,12 +7430,19 @@
 
           CUR.error = TT_Err_Invalid_Opcode;
           goto LErrorLabel_;
-/*        break;   Unreachable code warning suppress.  Leave in case a later
-                   change to remind the editor to consider break; */
+
+#if 0
+          break;   /* Unreachable code warning suppression.             */
+                   /* Leave to remind in case a later change the editor */
+                   /* to consider break;                                */
+#endif
 
         default:
           goto LErrorLabel_;
-/*        break; */
+
+#if 0
+        break;
+#endif
         }
       }
 
@@ -7341,12 +7451,12 @@
       if ( CUR.step_ins )
         CUR.IP += CUR.length;
 
-      /* increment instruction counter and check if we didn't   */
-      /* run this program for too long ?? (e.g. infinite loops) */
+      /* increment instruction counter and check if we didn't */
+      /* run this program for too long (e.g. infinite loops). */
       if ( ++ins_counter > MAX_RUNNABLE_OPCODES )
         return TT_Err_Execution_Too_Long;
 
-  LSuiteLabel_:
+    LSuiteLabel_:
       if ( CUR.IP >= CUR.codeSize )
       {
         if ( CUR.callTop > 0 )
@@ -7360,695 +7470,27 @@
     } while ( !CUR.instruction_trap );
 
   LNo_Error_:
+
 #ifdef TT_CONFIG_OPTION_STATIC_RASTER
     *exc = cur;
 #endif
+
     return TT_Err_Ok;
 
   LErrorCodeOverflow_:
     CUR.error = TT_Err_Code_Overflow;
 
   LErrorLabel_:
+
 #ifdef TT_CONFIG_OPTION_STATIC_RASTER
     *exc = cur;
 #endif
+
     return CUR.error;
   }
 
 
-#if 0
-
-  /* This function must be declared by the debugger front end */
-  /* in order to specify which code range to debug.           */
-
-  int  debug_coderange = tt_coderange_glyph;
-
-  static char  tempStr[128];
-
-  static const char*  OpStr[256] =
-  {
-    "SVTCA y",       /* Set vectors to coordinate axis y    */
-    "SVTCA x",       /* Set vectors to coordinate axis x    */
-    "SPvTCA y",      /* Set Proj. vec. to coord. axis y     */
-    "SPvTCA x",      /* Set Proj. vec. to coord. axis x     */
-    "SFvTCA y",      /* Set Free. vec. to coord. axis y     */
-    "SFvTCA x",      /* Set Free. vec. to coord. axis x     */
-    "SPvTL //",      /* Set Proj. vec. parallel to segment  */
-    "SPvTL +",       /* Set Proj. vec. normal to segment    */
-    "SFvTL //",      /* Set Free. vec. parallel to segment  */
-    "SFvTL +",       /* Set Free. vec. normal to segment    */
-    "SPvFS",         /* Set Proj. vec. from stack           */
-    "SFvFS",         /* Set Free. vec. from stack           */
-    "GPV",           /* Get projection vector               */
-    "GFV",           /* Get freedom vector                  */
-    "SFvTPv",        /* Set free. vec. to proj. vec.        */
-    "ISECT",         /* compute intersection                */
-
-    "SRP0",          /* Set reference point 0               */
-    "SRP1",          /* Set reference point 1               */
-    "SRP2",          /* Set reference point 2               */
-    "SZP0",          /* Set Zone Pointer 0                  */
-    "SZP1",          /* Set Zone Pointer 1                  */
-    "SZP2",          /* Set Zone Pointer 2                  */
-    "SZPS",          /* Set all zone pointers               */
-    "SLOOP",         /* Set loop counter                    */
-    "RTG",           /* Round to Grid                       */
-    "RTHG",          /* Round to Half-Grid                  */
-    "SMD",           /* Set Minimum Distance                */
-    "ELSE",          /* Else                                */
-    "JMPR",          /* Jump Relative                       */
-    "SCvTCi",        /* Set CVT                             */
-    "SSwCi",         /*                                     */
-    "SSW",           /*                                     */
-
-    "DUP",
-    "POP",
-    "CLEAR",
-    "SWAP",
-    "DEPTH",
-    "CINDEX",
-    "MINDEX",
-    "AlignPTS",
-    "INS_$28",
-    "UTP",
-    "LOOPCALL",
-    "CALL",
-    "FDEF",
-    "ENDF",
-    "MDAP[-]",
-    "MDAP[r]",
-
-    "IUP[y]",
-    "IUP[x]",
-    "SHP[0]",
-    "SHP[1]",
-    "SHC[0]",
-    "SHC[1]",
-    "SHZ[0]",
-    "SHZ[1]",
-    "SHPIX",
-    "IP",
-    "MSIRP[0]",
-    "MSIRP[1]",
-    "AlignRP",
-    "RTDG",
-    "MIAP[-]",
-    "MIAP[r]",
-
-    "NPushB",
-    "NPushW",
-    "WS",
-    "RS",
-    "WCvtP",
-    "RCvt",
-    "GC[0]",
-    "GC[1]",
-    "SCFS",
-    "MD[0]",
-    "MD[1]",
-    "MPPEM",
-    "MPS",
-    "FlipON",
-    "FlipOFF",
-    "DEBUG",
-
-    "LT",
-    "LTEQ",
-    "GT",
-    "GTEQ",
-    "EQ",
-    "NEQ",
-    "ODD",
-    "EVEN",
-    "IF",
-    "EIF",
-    "AND",
-    "OR",
-    "NOT",
-    "DeltaP1",
-    "SDB",
-    "SDS",
-
-    "ADD",
-    "SUB",
-    "DIV",
-    "MUL",
-    "ABS",
-    "NEG",
-    "FLOOR",
-    "CEILING",
-    "ROUND[G]",
-    "ROUND[B]",
-    "ROUND[W]",
-    "ROUND[?]",
-    "NROUND[G]",
-    "NROUND[B]",
-    "NROUND[W]",
-    "NROUND[?]",
-
-    "WCvtF",
-    "DeltaP2",
-    "DeltaP3",
-    "DeltaC1",
-    "DeltaC2",
-    "DeltaC3",
-    "SROUND",
-    "S45Round",
-    "JROT",
-    "JROF",
-    "ROFF",
-    "INS_$7B",
-    "RUTG",
-    "RDTG",
-    "SANGW",
-    "AA",
-
-    "FlipPT",
-    "FlipRgON",
-    "FlipRgOFF",
-    "INS_$83",
-    "INS_$84",
-    "ScanCTRL",
-    "SDPVTL[0]",
-    "SDPVTL[1]",
-    "GetINFO",
-    "IDEF",
-    "ROLL",
-    "MAX",
-    "MIN",
-    "ScanTYPE",
-    "IntCTRL",
-    "INS_$8F",
-
-    "INS_$90",
-    "INS_$91",
-    "INS_$92",
-    "INS_$93",
-    "INS_$94",
-    "INS_$95",
-    "INS_$96",
-    "INS_$97",
-    "INS_$98",
-    "INS_$99",
-    "INS_$9A",
-    "INS_$9B",
-    "INS_$9C",
-    "INS_$9D",
-    "INS_$9E",
-    "INS_$9F",
-
-    "INS_$A0",
-    "INS_$A1",
-    "INS_$A2",
-    "INS_$A3",
-    "INS_$A4",
-    "INS_$A5",
-    "INS_$A6",
-    "INS_$A7",
-    "INS_$A8",
-    "INS_$A9",
-    "INS_$AA",
-    "INS_$AB",
-    "INS_$AC",
-    "INS_$AD",
-    "INS_$AE",
-    "INS_$AF",
-
-    "PushB[0]",
-    "PushB[1]",
-    "PushB[2]",
-    "PushB[3]",
-    "PushB[4]",
-    "PushB[5]",
-    "PushB[6]",
-    "PushB[7]",
-    "PushW[0]",
-    "PushW[1]",
-    "PushW[2]",
-    "PushW[3]",
-    "PushW[4]",
-    "PushW[5]",
-    "PushW[6]",
-    "PushW[7]",
-
-    "MDRP[G]",
-    "MDRP[B]",
-    "MDRP[W]",
-    "MDRP[?]",
-    "MDRP[rG]",
-    "MDRP[rB]",
-    "MDRP[rW]",
-    "MDRP[r?]",
-    "MDRP[mG]",
-    "MDRP[mB]",
-    "MDRP[mW]",
-    "MDRP[m?]",
-    "MDRP[mrG]",
-    "MDRP[mrB]",
-    "MDRP[mrW]",
-    "MDRP[mr?]",
-    "MDRP[pG]",
-    "MDRP[pB]",
-
-    "MDRP[pW]",
-    "MDRP[p?]",
-    "MDRP[prG]",
-    "MDRP[prB]",
-    "MDRP[prW]",
-    "MDRP[pr?]",
-    "MDRP[pmG]",
-    "MDRP[pmB]",
-    "MDRP[pmW]",
-    "MDRP[pm?]",
-    "MDRP[pmrG]",
-    "MDRP[pmrB]",
-    "MDRP[pmrW]",
-    "MDRP[pmr?]",
-
-    "MIRP[G]",
-    "MIRP[B]",
-    "MIRP[W]",
-    "MIRP[?]",
-    "MIRP[rG]",
-    "MIRP[rB]",
-    "MIRP[rW]",
-    "MIRP[r?]",
-    "MIRP[mG]",
-    "MIRP[mB]",
-    "MIRP[mW]",
-    "MIRP[m?]",
-    "MIRP[mrG]",
-    "MIRP[mrB]",
-    "MIRP[mrW]",
-    "MIRP[mr?]",
-    "MIRP[pG]",
-    "MIRP[pB]",
-
-    "MIRP[pW]",
-    "MIRP[p?]",
-    "MIRP[prG]",
-    "MIRP[prB]",
-    "MIRP[prW]",
-    "MIRP[pr?]",
-    "MIRP[pmG]",
-    "MIRP[pmB]",
-    "MIRP[pmW]",
-    "MIRP[pm?]",
-    "MIRP[pmrG]",
-    "MIRP[pmrB]",
-    "MIRP[pmrW]",
-    "MIRP[pmr?]"
-  };
-
-
-  const char* Cur_U_Line( TT_ExecContext exec )
-  {
-    char  s[32];
-
-    int  op, i, n;
-
-    op = exec->code[exec->IP];
-
-    sprintf( tempStr, "%s", OpStr[op] );
-
-    if ( op == 0x40 )
-    {
-      n = exec->code[exec->IP + 1];
-      sprintf( s, "(%d)", n );
-      strncat( tempStr, s, 8 );
-
-      if ( n > 20 ) n = 20; /* limit output */
-
-      for ( i = 0; i < n; i++ )
-      {
-        sprintf( s, " $%02hx", exec->code[exec->IP + i + 2] );
-        strncat( tempStr, s, 8 );
-      }
-    }
-    else if ( op == 0x41 )
-    {
-      n = exec->code[exec->IP + 1];
-      sprintf( s, "(%d)", n );
-      strncat( tempStr, s, 8 );
-
-      if ( n > 20 ) n = 20; /* limit output */
-
-      for ( i = 0; i < n; i++ )
-      {
-        sprintf( s, " $%02hx%02hx", exec->code[exec->IP + i*2 + 2],
-                                    exec->code[exec->IP + i*2 + 3] );
-        strncat( tempStr, s, 8 );
-      }
-    }
-    else if ( (op & 0xF8) == 0xB0 )
-    {
-      n = op - 0xB0;
-
-      for ( i = 0; i <= n; i++ )
-      {
-        sprintf( s, " $%02hx", exec->code[exec->IP + i + 1] );
-        strncat( tempStr, s, 8 );
-      }
-    }
-    else if ( (op & 0xF8) == 0xB8 )
-    {
-      n = op-0xB8;
-
-      for ( i = 0; i <= n; i++ )
-      {
-        sprintf( s, " $%02hx%02hx", exec->code[exec->IP + i*2 + 1],
-                                    exec->code[exec->IP + i*2 + 2] );
-        strncat( tempStr, s, 8 );
-      }
-    }
-
-    return (char*)tempStr;
-  }
-
-
-  EXPORT_FUNC
-  TT_Error  TT_RunIns( TT_ExecContext  exc )
-  {
-    TT_Int    A, diff;
-    TT_ULong  next_IP;
-    TT_Char   ch, oldch;
-    char     *temp;
-    int       key;
-    FT_Memory memory;
-
-    TT_Error  error = 0;
-
-    FT_GlyphZone  save;
-    FT_GlyphZone  pts;
-
-#define TT_Round_Off             5
-#define TT_Round_To_Half_Grid    0
-#define TT_Round_To_Grid         1
-#define TT_Round_To_Double_Grid  2
-#define TT_Round_Up_To_Grid      4
-#define TT_Round_Down_To_Grid    3
-#define TT_Round_Super           6
-#define TT_Round_Super_45        7
-
-    const char*  round_str[8] =
-    {
-      "to half-grid",
-      "to grid",
-      "to double grid",
-      "down to grid",
-      "up to grid",
-      "off",
-      "super",
-      "super 45"
-    };
-
-    /* Check that we're running the code range that is effectively */
-    /* asked by the debugger front end.                            */
-    if ( exc->curRange != debug_coderange )
-      return TT_RunIns2( exc );
-
-    pts = exc->pts;
-
-    memory = exc->face->root.memory;
-
-    save.n_points   = pts.n_points;
-    save.n_contours = pts.n_contours;
-
-    MEM_Alloc( save.org, sizeof ( TT_Vector ) * save.n_points );
-    MEM_Alloc( save.cur, sizeof ( TT_Vector ) * save.n_points );
-    MEM_Alloc( save.tags, sizeof ( TT_Byte ) * save.n_points );
-
-    exc->instruction_trap = 1;
-
-    oldch = '\0';
-
-    do
-    {
-      if ( exc->IP < exc->codeSize )
-      {
-#ifdef TT_CONFIG_OPTION_STATIC_INTERPRETER
-        cur = *exc;
-#endif
-        if ( ( CUR.length = opcode_length[CUR.opcode] ) < 0 )
-        {
-          if ( CUR.IP + 1 > CUR.codeSize )
-            goto LErrorCodeOverflow_;
-
-          CUR.length = CUR.code[CUR.IP + 1] + 2;
-        }
-
-        exc->args = exc->top - (Pop_Push_Count[exc->opcode] >> 4);
-
-        /* `args' is the top of the stack once arguments have been popped. */
-        /* One can also interpret it as the index of the last argument.    */
-
-        /* Print the current line.  We use a 80-columns console with the   */
-        /* following formatting:                                           */
-        /*                                                                 */
-        /* [loc]:[addr] [opcode]  [disassemby]          [a][b]|[c][d]      */
-        /*                                                                 */
-
-        {
-          char      temp[80];
-          int       n, col, pop;
-          int       args = CUR.args;
-
-
-          sprintf( temp, "%78c\n", ' ' );
-
-          /* first letter of location */
-          switch ( CUR.curRange )
-          {
-          case tt_coderange_glyph:
-            temp[0] = 'g';
-            break;
-          case tt_coderange_cvt:
-            temp[0] = 'c';
-            break;
-          default:
-            temp[0] = 'f';
-          }
-
-          /* current IP */
-          sprintf( temp+1, "%04lx: %02x  %-36.36s",
-                   CUR.IP,
-                   CUR.opcode,
-                   Cur_U_Line(&CUR) );
-
-          strncpy( temp+46, " (", 2 );
-
-          args = CUR.top - 1;
-          pop  = Pop_Push_Count[CUR.opcode] >> 4;
-          col  = 48;
-          for ( n = 6; n > 0; n-- )
-          {
-            if ( pop == 0 )
-              temp[col-1] = (temp[col-1] == '(' ? ' ' : ')' );
-
-            if ( args < CUR.top && args >= 0 )
-              sprintf( temp+col, "%04lx", CUR.stack[args] );
-            else
-              sprintf( temp+col, "    " );
-
-            temp[col+4] = ' ';
-            col += 5;
-            pop--;
-            args--;
-          }
-          temp[78] = '\n';
-          temp[79] = '\0';
-          FT_TRACE0(( temp ));
-        }
-
-        /* First, check for empty stack and overflow */
-        if ( CUR.args < 0 )
-        {
-          FT_TRACE0(( "ERROR : Too few arguments\n" ));
-          exc->error = TT_Err_Too_Few_Arguments;
-          goto LErrorLabel_;
-        }
-
-        CUR.new_top = CUR.args + (Pop_Push_Count[CUR.opcode] & 15);
-
-      /* new_top  is the new top of the stack, after the instruction's */
-      /* execution. top will be set to new_top after the 'case'        */
-
-        if ( CUR.new_top > CUR.stackSize )
-        {
-          FT_TRACE0(( "ERROR : Stack overflow\n" ));
-          exc->error = TT_Err_Stack_Overflow;
-          goto LErrorLabel_;
-        }
-      }
-      else
-        FT_TRACE0(( "End of program reached.\n" ));
-
-      key = 0;
-      do
-      {
-       /* read keyboard */
-
-        ch = getch();
-
-        switch ( ch )
-        {
-        /* Help - show keybindings */
-        case '?':
-          FT_TRACE0(( "FDebug Help\n\n" ));
-          FT_TRACE0(( "?   Show this page\n" ));
-          FT_TRACE0(( "q   Quit debugger\n" ));
-          FT_TRACE0(( "n   Skip to next instruction\n" ));
-          FT_TRACE0(( "s   Step into\n" ));
-          FT_TRACE0(( "v   Show vector info\n" ));
-          FT_TRACE0(( "g   Show graphics state\n" ));
-          FT_TRACE0(( "p   Show points zone\n\n" ));
-          break;
-
-        /* Show vectors */
-        case 'v':
-          FT_TRACE0(( "freedom    (%04hx,%04hx)\n", exc->GS.freeVector.x,
-                                                  exc->GS.freeVector.y ));
-          FT_TRACE0(( "projection (%04hx,%04hx)\n", exc->GS.projVector.x,
-                                                  exc->GS.projVector.y ));
-          FT_TRACE0(( "dual       (%04hx,%04hx)\n\n", exc->GS.dualVector.x,
-                                                    exc->GS.dualVector.y ));
-          break;
-
-        /* Show graphics state */
-        case 'g':
-          FT_TRACE0(( "rounding   %s\n", round_str[exc->GS.round_state] ));
-          FT_TRACE0(( "min dist   %04lx\n", exc->GS.minimum_distance ));
-          FT_TRACE0(( "cvt_cutin  %04lx\n", exc->GS.control_value_cutin ));
-          break;
-
-        /* Show points table */
-        case 'p':
-          for ( A = 0; A < exc->pts.n_points; A++ )
-          {
-            FT_TRACE0(( "%02hx  ", A ));
-            FT_TRACE0(( "%08lx,%08lx - ", pts.org[A].x, pts.org[A].y ));
-            FT_TRACE0(( "%08lx,%08lx\n",  pts.cur[A].x, pts.cur[A].y ));
-          }
-          FT_TRACE0(( "\n" ));
-          break;
-
-        default:
-          key = 1;
-        }
-      } while ( !key );
-
-      MEM_Copy( save.org,   pts.org, pts.n_points * sizeof ( TT_Vector ) );
-      MEM_Copy( save.cur,   pts.cur, pts.n_points * sizeof ( TT_Vector ) );
-      MEM_Copy( save.tags, pts.tags, pts.n_points );
-
-      /* a return indicate the last command */
-      if (ch == '\r')
-        ch = oldch;
-
-      switch ( ch )
-      {
-      /* Quit debugger */
-      case 'q':
-        goto LErrorLabel_;
-
-      /* Step over */
-      case 'n':
-        if ( exc->IP < exc->codeSize )
-        {
-          /* `step over' is equivalent to `step into' except if  */
-          /* the current opcode is a CALL or LOOPCALL            */
-          if ( CUR.opcode != 0x2a && CUR.opcode != 0x2b )
-            goto Step_into;
-
-          /* otherwise, loop execution until we reach the next opcode */
-          next_IP = CUR.IP + CUR.length;
-          while ( exc->IP != next_IP )
-          {
-            if ( ( error = TT_RunIns2( exc ) ) )
-              goto LErrorLabel_;
-          }
-        }
-        oldch = ch;
-        break;
-
-      /* Step into */
-      case 's':
-        if ( exc->IP < exc->codeSize )
-
-      Step_into:
-          if ( ( error = TT_RunIns2( exc ) ) )
-            goto LErrorLabel_;
-        oldch = ch;
-        break;
-
-      default:
-        FT_TRACE0(( "unknown command. Press ? for help\n" ));
-        oldch = '\0';
-      }
-
-      for ( A = 0; A < pts.n_points; A++ )
-      {
-        diff = 0;
-        if ( save.org[A].x != pts.org[A].x ) diff |= 1;
-        if ( save.org[A].y != pts.org[A].y ) diff |= 2;
-        if ( save.cur[A].x != pts.cur[A].x ) diff |= 4;
-        if ( save.cur[A].y != pts.cur[A].y ) diff |= 8;
-        if ( save.tags[A] != pts.tags[A] ) diff |= 16;
-
-        if ( diff )
-        {
-          FT_TRACE0(( "%02hx  ", A ));
-
-          if ( diff & 16 ) temp = "(%01hx)"; else temp = " %01hx ";
-          FT_TRACE0(( temp, save.tags[A] & 7 ));
-
-          if ( diff & 1 ) temp = "(%08lx)"; else temp = " %08lx ";
-          FT_TRACE0(( temp, save.org[A].x ));
-
-          if ( diff & 2 ) temp = "(%08lx)"; else temp = " %08lx ";
-          FT_TRACE0(( temp, save.org[A].y ));
-
-          if ( diff & 4 ) temp = "(%08lx)"; else temp = " %08lx ";
-          FT_TRACE0(( temp, save.cur[A].x ));
-
-          if ( diff & 8 ) temp = "(%08lx)"; else temp = " %08lx ";
-          FT_TRACE0(( temp, save.cur[A].y ));
-
-          FT_TRACE0(( "\n" ));
-
-          FT_TRACE0(( "%02hx  ", A ));
-
-          if ( diff & 16 ) temp = "[%01hx]"; else temp = " %01hx ";
-          FT_TRACE0(( temp, pts.tags[A] & 7 ));
-
-          if ( diff & 1 ) temp = "[%08lx]"; else temp = " %08lx ";
-          FT_TRACE0(( temp, pts.org[A].x ));
-
-          if ( diff & 2 ) temp = "[%08lx]"; else temp = " %08lx ";
-          FT_TRACE0(( temp, pts.org[A].y ));
-
-          if ( diff & 4 ) temp = "[%08lx]"; else temp = " %08lx ";
-          FT_TRACE0(( temp, pts.cur[A].x ));
-
-          if ( diff & 8 ) temp = "[%08lx]"; else temp = " %08lx ";
-          FT_TRACE0(( temp, pts.cur[A].y ));
-
-          FT_TRACE0(( "\n\n" ));
-        }
-      }
-    } while ( TRUE );
-
-  LErrorLabel_:
-
-    return error;
-
-  LErrorCodeOverflow_:
-    error = TT_Err_Code_Overflow;
-    return error;
-  }
-
-#endif /* DEBUG_INTERPRETER */
-
 #endif /* TT_CONFIG_OPTION_BYTECODE_INTERPRETER */
+
 
 /* END */

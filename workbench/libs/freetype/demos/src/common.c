@@ -9,14 +9,6 @@
  *  10 October 1997
  */
 
-#ifndef lint
-#ifdef __GNUC__
-  static char rcsid[] __attribute__ ((unused)) = "$Id$";
-#else
-  static char rcsid[] = "$Id$";
-#endif
-#endif
-
 #include "common.h"
 
 #include <stdio.h>
@@ -209,7 +201,7 @@
     current = name;
 
     c = *current;
-  
+
     while ( c )
     {
 #ifndef macintosh

@@ -9,25 +9,44 @@
 #
 # Try to detect an X11 setup.
 #
-# We simply try to detect a `X11R6/bin', `X11R5/bin' or `X11/bin' in
-# the current path.
+# We try to detect the following directories (in that order) in the current
+# path:
 #
-ifneq ($(findstring X11R6$(SEP)bin,$(PATH)),)
-  xversion := X11R6
-else
-  ifneq ($(findstring X11R5$(SEP)bin,$(PATH)),)
-    xversion := X11R5
+#   X11   (usually a symlink to the current release)
+#   X11R6
+#   X11R5
+#
+# Additionally, we directly check the following directories:
+#
+#   /usr/X11R6
+#   /usr/local/X11R6
+#
+# If the variable X11_PATH is set (to specify unusual locations of X11), no
+# other directory is searched.  More than one directory must be separated
+# with spaces.  Example:
+#
+#   make X11_PATH="/usr/openwin /usr/local/X11R6"
+#
+ifndef X11_PATH
+  ifneq ($(findstring X11$(SEP)bin,$(PATH)),)
+    xversion := X11
   else
-    ifneq ($(findstring X11$(SEP)bin,$(PATH)),)
-      xversion := X11
+    ifneq ($(findstring X11R6$(SEP)bin,$(PATH)),)
+      xversion := X11R6
+    else
+      ifneq ($(findstring X11R5$(SEP)bin,$(PATH)),)
+        xversion := X11R5
+      endif
     endif
   endif
-endif
 
-ifdef xversion
-  X11_PATH := $(subst ;, ,$(PATH)) $(subst :, ,$(PATH))
-  X11_PATH := $(filter %$(xversion)$(SEP)bin,$(X11_PATH))
-  X11_PATH := $(X11_PATH:%$(SEP)bin=%)
+  ifdef xversion
+    X11_PATH := $(subst ;, ,$(PATH)) $(subst :, ,$(PATH))
+    X11_PATH := $(filter %$(xversion)$(SEP)bin,$(X11_PATH))
+    X11_PATH := $(X11_PATH:%$(SEP)bin=%)
+  else
+    X11_PATH = $(strip $(wildcard /usr/X11R6) $(wildcard /usr/local/X11R6))
+  endif
 endif
 
 ##########################################################################
@@ -57,18 +76,17 @@ ifneq ($(X11_PATH),)
 
   # add the X11 driver object file to the graphics library
   #
-  GRAPH_OBJS += $(OBJ_)grx11.$O
+  GRAPH_OBJS += $(OBJ_)grx11.$(SO)
 
 
   GR_X11  := $(GRAPH_)x11
   GR_X11_ := $(GR_X11)$(SEP)
 
   DEVICES         += X11
-  DEVICE_INCLUDES += $(GR_X11)
 
   # the rule used to compile the X11 driver
   #
-  $(OBJ_)grx11.$O: $(GR_X11_)grx11.c $(GR_X11_)grx11.h
+  $(OBJ_)grx11.$(SO): $(GR_X11_)grx11.c $(GR_X11_)grx11.h
 	  $(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%) $I$(GR_X11) \
                 $(X11_INCLUDE:%=$I%) $T$@ $<
 endif

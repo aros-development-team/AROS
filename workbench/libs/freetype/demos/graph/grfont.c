@@ -1,3 +1,4 @@
+
 #include "grfont.h"
 #include <string.h>
 
@@ -269,8 +270,8 @@
   {
     8,                    /* rows  */
     8,                    /* width */
-    gr_pixel_mode_mono,   /* mode  */
     1,                    /* pitch */
+    gr_pixel_mode_mono,   /* mode  */
     0,                    /* grays */
     0                     /* buffer */
   };
@@ -283,12 +284,12 @@
   {
     if (charcode < 0 || charcode > 255)
       return;
-      
-    gr_charcell.buffer = (char*)font_8x8 + 8*charcode;
-    grBlitGlyphToBitmap( target, &gr_charcell, x, y, color );
+
+    gr_charcell.buffer = (unsigned char*)font_8x8 + 8 * charcode;
+    grBlitGlyphToBitmap( 0, target, &gr_charcell, x, y, color );
   }
-  
-  
+
+
   void  grWriteCellString( grBitmap*   target,
                            int         x,
                            int         y,
@@ -297,12 +298,13 @@
   {
     while (*string)
     {
-      gr_charcell.buffer = (char*)font_8x8 + 8*(int)(unsigned char)*string++;
-      grBlitGlyphToBitmap( target, &gr_charcell, x, y, color );
+      gr_charcell.buffer = (unsigned char *)font_8x8 +
+                             8 * (int)(unsigned char)*string++;
+      grBlitGlyphToBitmap( 0, target, &gr_charcell, x, y, color );
       x += 8;
     }
   }
-  
+
   static int        gr_cursor_x     = 0;
   static int        gr_cursor_y     = 0;
   static grBitmap*  gr_text_bitmap  = 0;
@@ -313,19 +315,19 @@
   {
     gr_text_bitmap = bitmap;
   }
-  
+
   extern void grSetMargin( int right, int top )
   {
     gr_margin_top   = top << 3;
     gr_margin_right = right << 3;
   }
- 
+
   extern void grGotoxy ( int x, int y )
   {
     gr_cursor_x = x;
     gr_cursor_y = y;
   }
- 
+
   extern void grWrite  ( const char*  string )
   {
     if (string)
@@ -338,12 +340,12 @@
                          gr_margin_top   + (gr_cursor_y << 3),
                          string,
                          color );
- 
+
       gr_cursor_x += strlen(string);
     }
   }
-  
-  extern void grLn()
+
+  extern void grLn( void )
   {
     gr_cursor_y ++;
     gr_cursor_x = 0;
@@ -355,4 +357,4 @@
     grLn();
   }
 
-  
+
