@@ -575,7 +575,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    for AR2 in $(AR); do break; done; \
 	    for RANLIB2 in $(RANLIB); do break; done; \
 	    PATH=$(TOOLDIR):$$PATH; \
-	    AR=$$AR2 RANLIB=$$RANLIB2 \
+	    AR=$$AR2 RANLIB=$$RANLIB2 STRIP="$(STRIP)" OBJCOPY="$(OBJCOPY)" \
 	    CC="$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $(%(mmake)-nix)" \
 	    CC_FOR_BUILD="$(HOST_CC)" \
 	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
