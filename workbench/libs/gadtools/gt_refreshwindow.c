@@ -51,8 +51,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    GT_BeginRefresh(win);
-    GT_EndRefresh(win, TRUE);
-
+    /* Don't do anything here, see autodoc. No GT_BeginRefresh/GT_EndRefresh
+       either!!
+       
+       This func is just there because in AmigaOS the gadtools gadgets
+       aren't boopsi gadgets and half the stuff there is handled by
+       app task and not Intuition.
+       
+    */
+       
     AROS_LIBFUNC_EXIT
 } /* GT_RefreshWindow */
