@@ -67,8 +67,7 @@ int main (int argc, char **argv)
     Object *app;
     Object *mainWin;
 
-    MUIMasterBase = OpenLibrary("muimaster.library", 0);
-    if (MUIMasterBase == NULL) return 20;
+    if (!openmuimaster()) return 0;
 
     /*
      * This big call uses macros from mui.h
@@ -182,7 +181,7 @@ int main (int argc, char **argv)
 error:
 
     CloseLibrary(IntuitionBase);
-    CloseLibrary(MUIMasterBase);
+    closemuimaster();
 
     return 0;
 }
