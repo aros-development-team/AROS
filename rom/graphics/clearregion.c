@@ -52,8 +52,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct RegionRectangleExtChunk *NextChunk;
-
     ASSERT_VALID_PTR(region);
 
     _DisposeRegionRectangleList(region->RegionRectangle, GfxBase);

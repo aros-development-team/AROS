@@ -54,11 +54,30 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region *Res = NewRegion();
+    struct Region *Res;
 
-    if (Res)
+    if
+    (
+        !Reg->RegionRectangle        ||
+        !overlap(*Rect, Reg->bounds)
+    )
     {
+        return CopyRegion(Reg);
+    }
 
+    Res = NewRegion();
+
+    if
+    (
+        Res &&
+        (
+            Rect->MinX > MinX(Reg) ||
+            Rect->MinY > MinY(Reg) ||
+            Rect->MaxX < MaxX(Reg) ||
+            Rect->MaxY < MaxY(Reg)
+        )
+    )
+    {
         struct RegionRectangle rr;
 
         rr.bounds = *Rect;
@@ -82,16 +101,16 @@
             )
         )
         {
-
             _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
-
-            return Res;
         }
-
-        DisposeRegion(Res);
+	else
+        {
+            DisposeRegion(Res);
+            Res = NULL;
+        }
     }
 
-    return NULL;
+    return Res;
 
     AROS_LIBFUNC_EXIT
 } /* AndRectRegion */

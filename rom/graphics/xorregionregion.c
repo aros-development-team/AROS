@@ -63,10 +63,10 @@
 
     LONG res;
 
-    InitRegion(&R3);
-
     if (!overlap(R1->bounds, R2->bounds))
         return OrRegionRegion(R1, R2);
+
+    InitRegion(&R3);
 
     res = _DoOperationBandBand
     (

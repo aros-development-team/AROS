@@ -54,6 +54,21 @@
 
     struct Region R3;
 
+    if (!R1->RegionRectangle)
+        return TRUE;
+
+    if (!R2->RegionRectangle)
+    {
+        if (_LinkRegionRectangleList(R1->RegionRectangle, &R2->RegionRectangle, GfxBase))
+        {
+            R2->RegionRectangle = &Chunk(R2->RegionRectangle)->FirstChunk->Rects[0].RR;
+            R2->bounds = R1->bounds;
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
     InitRegion(&R3);
 
     if
