@@ -31,7 +31,7 @@ GLOBAL_SIGNAL_INIT
 struct ExecBase _SysBase, * SysBase = &_SysBase;
 
 /* Some tasks */
-struct Task Task1, Task2, Task3, TaskMain;
+struct Task Task1, Task2, Task3, Task4, TaskMain;
 
 /* List functions */
 void AddTail (struct List * list, struct Node * node)
@@ -188,6 +188,7 @@ void Reschedule (struct Task * task)
 
 /* Switch to a new task if the current task is not running and no
     exception has been raised. */
+ULONG Wait (ULONG sigmask);
 void Switch (void)
 {
     struct Task * task = THISTASK;
@@ -283,6 +284,7 @@ void Main2 (void)
 }
 
 #define DEBUG_STACK	0
+#define STACKOFFSET	0
 
 /*
     The signal handler. It will store the current tasks context and
@@ -290,48 +292,41 @@ void Main2 (void)
 */
 static void sighandler (int sig, sigcontext_t * sc)
 {
-    SP_TYPE * sp;
-
     cnt ++;
 
     /* Are task switches allowed ? */
     if (SysBase->TDNestCnt < 0)
     {
 	/* Save all registers and the stack pointer */
-	SAVEREGS(sp,sc);
 
+	SAVEREGS(THISTASK,sc);
+	
 #if DEBUG_STACK
 	PRINT_SC(sc);
 	PRINT_STACK(sp);
 #endif
 
-	THISTASK->tc_SPReg = sp;
-
 	/* Find a new task to run */
 	Dispatch ();
-
 	/* Restore signal mask */
 	if (SysBase->IDNestCnt < 0)
 	    SC_ENABLE(sc);
 	else
 	    SC_DISABLE(sc);
 
-	/* Restore stack pointer and registers of new task */
-	sp = THISTASK->tc_SPReg;
-
 #if DEBUG_STACK
-	PRINT_STACK(SP);
+	PRINT_STACK(sp);
 	printf ("\n");
 #endif
 
-	RESTOREREGS(sp,sc);
+	RESTOREREGS(THISTASK,sc);
+	
     }
     else
     {
 	/* Set flag: switch tasks as soon as switches are allowed again */
 	SysBase->SysFlags |= SF_SAR;
     }
-
 } /* sighandler */
 
 /* Find another task which is allowed to run and modify SysBase accordingly */
@@ -352,7 +347,7 @@ void Dispatch (void)
     if ((task = GetHead (&SysBase->TaskReady)))
     {
 #if 1
-printf ("Dispatch: Old = %s (Stack = %ld), new = %s\n",
+printf ("Dispatch: Old = %s (Stack = %x), new = %s\n",
     this->tc_Node.ln_Name,
     (IPTR)this->tc_SPUpper - (IPTR)this->tc_SPReg,
     task->tc_Node.ln_Name);
@@ -379,6 +374,7 @@ printf ("Dispatch: Old = %s (Stack = %ld), new = %s\n",
 	this->tc_State = TS_READY;
 	task->tc_State = TS_RUN;
     }
+printf("leaving dispatch!\n");
 } /* Dispatch */
 
 /*
@@ -401,7 +397,7 @@ void InitCore(void)
     sigaction (SIGALRM, &sa, NULL);
 
     /* Set 50Hz intervall for ALARM signal */
-    interval.it_interval.tv_sec  = interval.it_value.tv_sec  = 0;
+    interval.it_interval.tv_sec  = interval.it_value.tv_sec  = 1;
     interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
 
     setitimer (ITIMER_REAL, &interval, NULL);
@@ -442,8 +438,14 @@ void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
 	Let the sigcore do it's magic. Create a frame from which an
 	initial task context can be restored from.
     */
-    PREPARE_INITIAL_FRAME(sp,pc);
+ 
+    GetIntETask(task) = malloc(sizeof(struct IntETask));
+    task->tc_Flags |= TF_ETASK;
+    GetCpuContext(task) = malloc(SIZEOF_ALL_REGISTERS);
 
+    PREPARE_INITIAL_FRAME(sp,pc); 
+    PREPARE_INITIAL_CONTEXT(task);
+		
     /* Save new stack pointer */
     task->tc_SPReg = sp;
 
@@ -491,6 +493,10 @@ int main (int argc, char ** argv)
     TaskMain.tc_SPLower = 0;
     TaskMain.tc_SPUpper = &argc;
 
+    TaskMain.tc_UnionETask.tc_ETask = malloc(sizeof(struct IntETask));
+    TaskMain.tc_Flags |= TF_ETASK;
+    ((struct IntETask *)TaskMain.tc_UnionETask.tc_ETask)->iet_Context = malloc(SIZEOF_ALL_REGISTERS);
+
     /* The currently running task is me, myself and I */
     THISTASK = &TaskMain;
 
@@ -500,7 +506,7 @@ int main (int argc, char ** argv)
     Permit ();
 
     /* Wait for 10000 signals */
-    while (cnt < 10000)
+    while (cnt < 20)
     {
 	printf ("%6ld\n", cnt);
 
