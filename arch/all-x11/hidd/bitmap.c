@@ -430,7 +430,7 @@ static ULONG bitmap_drawpixel(Class *cl, Object *o, struct pHidd_BitMap_DrawPixe
        call to WritePixelDirect may owerwrite th GC's pen  */
 LX11       
     XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
-    XFlush(data->display);
+/*    XFlush(data->display); */
 UX11    
     return 0;
 
@@ -449,7 +449,7 @@ static VOID bitmap_fillrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     D(bug("Drawmode: %d\n", mode));
     
     
-    if (mode == vHIDD_GC_DrawMode_Copy)
+    if (mode == vHidd_GC_DrawMode_Copy)
     {
 LX11    
 	XFillRectangle(data->display
@@ -472,6 +472,11 @@ UX11
 	width  = msg->maxX - msg->minX + 1;
 	height = msg->maxY - msg->minY + 1;
     	/* Special drawmode */
+	
+
+/*	kprintf("Getting image (%d, %d, %d, %d)\n", msg->minX, msg->minY
+		, width, height);
+*/
 LX11	
 	image = XGetImage(data->display
 		, data->xwindow
@@ -484,14 +489,19 @@ UX11
 	if (!image)
 	    ReturnVoid("X11Gfx.BitMap::FillRect(Couldn't get XImage)");
 	    
-	for (y = 0; y < width; y ++)
+	for (y = 0; y < height; y ++)
 	{
-	    for (x = 0; x < height; x ++)
+	    for (x = 0; x < width; x ++)
 	    {
 	        ULONG dest;
 		ULONG val = 0UL;
+		ULONG pixel;
 		
-		dest = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(image, x, y));
+//		kprintf("image: %p (%d, %d)\n", image, x, y);
+		pixel = XGetPixel(image, x, y);
+		
+		
+		dest = map_x11_to_hidd(data->hidd2x11cmap,  pixel /* XGetPixel(image, x, y) */);
 		    
 		/* Apply drawmodes to pixel */
 	   	if(mode & 1) val = ( src &  dest);
@@ -546,7 +556,7 @@ static VOID bitmap_copybox(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
 
 #warning Does not handle copying between different windows.
 
-    if (mode == vHIDD_GC_DrawMode_Copy) /* Optimize this drawmode */
+    if (mode == vHidd_GC_DrawMode_Copy) /* Optimize this drawmode */
     {
 
 LX11
@@ -741,7 +751,7 @@ UX11
     	ReturnVoid("X11Gfx.BitMap::PutImage(couldn't get XImage)");
     	
     D(bug("drawmode: %d\n", mode));
-    if (mode == vHIDD_GC_DrawMode_Copy)
+    if (mode == vHidd_GC_DrawMode_Copy)
     {
         D(bug("Drawmode COPY\n"));
     	/* Do plain copy, optimized */
