@@ -16,9 +16,9 @@ COLLECT-AROS ?= collect-aros
 
 all : $(COLLECT-AROS)
 
-$(COLLECT-AROS) : collect-aros.c gensets.c
+$(COLLECT-AROS) : collect-aros.c gensets.c ldscript.h 
 	@$(MECHO) "Compiling $(notdir $@)..."
-	$(HOST_CC) $(HOST_CFLAGS) $^ -o $@ -DLINKERPATH=\"/usr/bin/ld\" \
+	$(HOST_CC) $(HOST_CFLAGS) collect-aros.c gensets.c -o $@ -DLINKERPATH=\"/usr/bin/ld\" \
 	-DNMPATH="\"$(NM_PLAIN)\"" -DGCCPATH="\"$(TARGET_CC)\"" -DMVPATH="\"$(MV)\"" \
 	-DOBJDUMPPATH="\"$(OBJDUMP)\""
 	@$(HOST_STRIP) $(COLLECT-AROS)
