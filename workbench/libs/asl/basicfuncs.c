@@ -149,6 +149,15 @@ VOID ParseCommonTags
 		    intreq->ir_Flags &= ~IF_POPTOFRONT;
 		break;
 
+    	    case ASLFR_Activate:
+/*	    case ASLFO_Activate:
+	    case ASLSM_Activate: */
+	    	if (tidata)
+		    intreq->ir_Flags &= ~IF_OPENINACTIVE;
+		else
+		    intreq->ir_Flags |= IF_OPENINACTIVE;
+		break;
+		
 	    case ASLFR_TextAttr:
 /*	    case ASLFO_TextAttr:
 	    case ASLSM_TextAttr: */
@@ -248,6 +257,12 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	if (ld->ld_Window)
     	{
+	    if (ld->ld_IntReq->ir_Flags & IF_POPPEDTOFRONT)
+	    {
+	    	ld->ld_IntReq->ir_Flags &= ~IF_POPPEDTOFRONT;
+		ScreenToBack(ld->ld_Window->WScreen);
+	    }
+	    
 	    if ((ld->ld_IntReq->ir_Flags & IF_PRIVATEIDCMP) || (!ld->ld_IntReq->ir_Window))
 	    {
 	    	CloseWindow(ld->ld_Window);
