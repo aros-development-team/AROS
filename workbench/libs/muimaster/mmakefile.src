@@ -16,7 +16,9 @@ CLASSES := \
     family \
     gauge \
     group \
+    image \
     list \
+    listview \
     menuitem \
     notify \
     numeric \
