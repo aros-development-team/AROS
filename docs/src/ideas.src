@@ -8,10 +8,11 @@ go into AROS V2.x, when compatibility with AmigaOS is still important but
 where new things can be done.
 
 \begin{itemize}
-\item All lists and public structures must be protected by semaphore. A
+\item By Nils Henrik Lorentzen: All lists and public structures must be protected by semaphore. A
 system like the hierarchical semaphores in pOS would be best.
 
-\item lddaemon should be able to load more than one library at a time thus
+\item By Claus Herrmann and Iain Templeton:
+lddaemon should be able to load more than one library at a time thus
 allowing to open a library which has to be loaded from disk which opens a
 library in |libOpen()| which has also to be loaded from disk.
 
