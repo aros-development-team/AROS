@@ -85,7 +85,7 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
 
 
-#define PIXELBUF_SIZE 20000
+#define PIXELBUF_SIZE 2000000
 
 #define NUMPIX PIXELBUF_SIZE
 
@@ -131,7 +131,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
     {
         D(bug("Got bitmap\n"));
         /* Displayable ? (== rastport of a screen) */
-	if (rp->BitMap->Flags & BMF_AROS_DISPLAYED)
+	if (rp->BitMap->Flags & BMF_AROS_HIDD)
 	{
             D(bug("Has HIDD bitmap (displayable)\n"));
 
@@ -1710,7 +1710,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 
           i = COORD_TO_BYTEIDX(x + XRel, y + YRel, Width);
           Mask = XCOORD_TO_MASK(x + XRel);
-	  if (bm->Flags & BMF_AROS_DISPLAYED)
+	  if (bm->Flags & BMF_AROS_HIDD)
 	  {
 	    penno = HIDD_BM_GetPixel(BM_OBJ(bm), x + XRel, y + YRel);
 	    goto exit;
@@ -1766,7 +1766,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   else /* NULL == L */
   { /* this is probably a screen, it doesn't have layer!!! */
 
-    if (bm->Flags & BMF_AROS_DISPLAYED)
+    if (bm->Flags & BMF_AROS_HIDD)
     {
         /* no need to unlock the layer!!!! */
         return HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
@@ -1914,7 +1914,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
           /* and let the driver set the pixel to the X-Window also,
              but this Pixel has a relative position!! */
-          if (bm->Flags & BMF_AROS_DISPLAYED)
+          if (bm->Flags & BMF_AROS_HIDD)
 	  {
 LOCK_HIDD(bm);	  
 	    SetAttrs( BM_OBJ(bm), bm_tags);
@@ -1978,7 +1978,7 @@ ULOCK_HIDD(bm);
     Mask = XCOORD_TO_MASK( x );
 
     /* and let the driver set the pixel to the X-Window also */
-    if (bm->Flags & BMF_AROS_DISPLAYED)
+    if (bm->Flags & BMF_AROS_HIDD)
     {
 LOCK_HIDD(bm);	  
       SetAttrs( BM_OBJ(bm), bm_tags );
@@ -2442,12 +2442,14 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	
 	    struct TagItem bm_tags[] =
 	    {
-		{aHidd_BitMap_Width,	0	},
-		{aHidd_BitMap_Height,	0	},
-		{aHidd_BitMap_Depth,	0	},
-		{aHidd_BitMap_Displayable,	0	},
-		{TAG_DONE,	0	}
+		{ aHidd_BitMap_Width,		0	},
+		{ aHidd_BitMap_Height,		0	},
+		{ aHidd_BitMap_Depth,		0	},
+		{ aHidd_BitMap_Displayable,	0	},
+		{ aHidd_BitMap_Friend,		0	},
+		{ TAG_DONE, 0 }
 	    };
+	    
 	    InitSemaphore(BM_LOCK(nbm));
 	    
 	
@@ -2458,6 +2460,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    bm_tags[1].ti_Data = sizey;
 	    bm_tags[2].ti_Data = depth;
 	    bm_tags[3].ti_Data = ((flags & BMF_DISPLAYABLE) ? TRUE : FALSE);
+	    bm_tags[4].ti_Data = friend;
 
 	
 	    gfxhidd  = SDD(GfxBase)->gfxhidd;
@@ -2477,7 +2480,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    nbm->Rows   = sizey;
 		    nbm->BytesPerRow = ((sizex - 1) >> 3) + 1;
 		    nbm->Depth  = depth;
-		    nbm->Flags  = flags;
+		    nbm->Flags  = flags | BMF_AROS_HIDD;
 	    
 	    
 		    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
@@ -3135,11 +3138,11 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
     */
     	
     
-    if (srcBitMap->Flags & BMF_AROS_DISPLAYED)
+    if (srcBitMap->Flags & BMF_AROS_HIDD)
     {
         Object *src_bm = (Object *)BM_OBJ(srcBitMap);
 	
-    	if (destBitMap->Flags & BMF_AROS_DISPLAYED)
+    	if (destBitMap->Flags & BMF_AROS_HIDD)
 	{
 	    Object *dst_bm = (Object *)BM_OBJ(destBitMap);
 	    
@@ -3943,7 +3946,7 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     
     /* Create an offscreen HIDD bitmap of depth 1 to use in color expansion */
-    template_bm = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
+    template_bm = NewObject(NULL, CLID_Hidd_PlanarBM, bm_tags);
     if (!template_bm)
     	ReturnVoid("driver_BltTemplate");
 	
@@ -4484,7 +4487,7 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
     {
 
         /* Use default backfill */
-	if (bm->Flags & BMF_AROS_DISPLAYED)
+	if (bm->Flags & BMF_AROS_HIDD)
 	{
 	     struct TagItem bm_tags[] =
 	     {
@@ -4493,6 +4496,7 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 		{TAG_DONE, 0UL}
 	     };
 
+LOCK_HIDD(bm);
 	     SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    /* Cliprect not obscured, so we may render directly into the display */
@@ -4502,6 +4506,7 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 		, msg->MinX, msg->MinY
 		, msg->MaxX, msg->MaxY
 	     );
+ULOCK_HIDD(bm);	     
 	}
 	else
 	{
