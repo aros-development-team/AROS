@@ -51,7 +51,7 @@
 ******************************************************************************/
 {
     int c;
-    fdesc *fdesc = __getfdesc(stream);
+    fdesc *fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)
     {
@@ -61,7 +61,6 @@
     }
 
     c = FGetC ((BPTR)(fdesc->fh));
-
     if (c == EOF)
     {
 	c = IoErr ();
