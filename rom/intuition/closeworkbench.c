@@ -5,19 +5,22 @@
     Desc: Intuition function CloseWorkBench()
     Lang: english
 */
+
 #include "intuition_intern.h"
+
+#include <intuition/intuition.h>
+#include <proto/intuition.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/intuition.h>
 
-	AROS_LH0(LONG, CloseWorkBench,
+    AROS_LH0(LONG, CloseWorkBench,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 13, Intuition)
+    struct IntuitionBase *, IntuitionBase, 13, Intuition)
 
 /*  FUNCTION
 	Attempt to close the Workbench screen:
@@ -50,35 +53,42 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#if 0
-struct IntuiMessage imsg;
+    /* If there is a Workbench process running, tell it to close it's windows. */
+    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL ) {
+        struct MsgPort      replymp;
+        struct IntuiMessage imsg;
 
-    if( /* there are open app-windows */ )
-    {
-	return FALSE;
+        /* Setup our reply port. By doing this manually, we can use SIGB_SINGLE
+         * and thus avoid allocating a signal (which may fail). */
+        memset( &replymp, 0, sizeof( replymp ) );
+
+        replymp.mp_Node.ln_Type = NT_MSGPORT;
+        replymp.mp_Flags        = PA_SIGNAL;
+        replymp.mp_SigBit       = SIGB_SINGLE;
+        replymp.mp_SigTask      = FindTask( NULL );
+        NEWLIST( &replymp.mp_MsgList );
+
+        /* Setup our message */
+        imsg.Class = IDCMP_WBENCHMESSAGE;
+        imsg.Code  = WBENCHCLOSE;
+
+        /* Sends it to the handler and wait for the reply */
+        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct IntuiMessage *) (&imsg) );
+        WaitPort( &replymp );
+
+        /* After leaving this block imsg and repymp will be automagically freed,
+         * so we don't have to deallocate them ourselves. */
     }
-    /* Clean up special buffers */
 
-    /* Send msg to WorkBench telling it to close its windows */
-    imsg.Class = WBENCHMESSAGE;
-    imsg.Code = WBENCHCLOSE;
-    PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *)(&imsg) );
-    
-    /* Close the Workbench screen, maybe this is done by the WB-app itself */
-    CloseScreen( GetPrivIBase(IntuitionBase)->WorkBench );
-
-    /* Make Workbench task inactive */
-
-    return TRUE;
-
-#else
-
-#warning TODO: Write intuition/CloseWorkBench()
-    aros_print_not_implemented ("CloseWorkBench");
+    /* Try to close the Workbench screen, if there is any. */
+    if( GetPrivIBase(IntuitionBase)->WorkBench != NULL ) {
+        if( CloseScreen( GetPrivIBase(IntuitionBase)->WorkBench ) == TRUE ) {
+            GetPrivIBase(IntuitionBase)->WorkBench = NULL;
+            return TRUE;
+        }
+    }
 
     return FALSE;
-
-#endif
 
     AROS_LIBFUNC_EXIT
 } /* CloseWorkBench */

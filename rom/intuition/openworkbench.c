@@ -5,19 +5,22 @@
     Desc: Intuition function OpenWorkBench()
     Lang: english
 */
+
 #include "intuition_intern.h"
+
+#include <intuition/intuition.h>
+#include <proto/intuition.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/intuition.h>
 
-	AROS_LH0(ULONG, OpenWorkBench,
+    AROS_LH0(ULONG, OpenWorkBench,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 35, Intuition)
+    struct IntuitionBase *, IntuitionBase, 35, Intuition)
 
 /*  FUNCTION
 	Attempt to open the Workbench screen.
@@ -50,31 +53,68 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-struct Screen *wbscreen = NULL;
+    /* Open the Workbench screen if we don't have one. */
+    if( GetPrivIBase(IntuitionBase)->WorkBench == NULL ) {
+        UWORD pens[] = { ~0 };
 
-#if 0
-struct IntuiMessage imsg;
+        struct Screen *screen = NULL;
 
-    /* Do we have a running WorkBench app ? */
-    if ( GetPrivIBase(IntuitionBase)->WorkBenchMP == NULL )
-    {
-	return NULL;
+        struct TagItem screenTags[] = {
+            { SA_Depth      , AROS_DEFAULT_WBDEPTH  },
+            { SA_Type       , WBENCHSCREEN          },
+            { SA_Title      , (IPTR)"Workbench"     },
+            { SA_Width      , AROS_DEFAULT_WBWIDTH  },
+            { SA_Height     , AROS_DEFAULT_WBHEIGHT },
+            { SA_PubName    , (IPTR)"Workbench"     },
+            { SA_Pens       , (IPTR) pens           },
+            { SA_SharePens  , TRUE                  },
+            { TAG_END       , 0                     }
+        };
+
+        screen = OpenScreenTagList( NULL, screenTags );
+
+        if( screen ) {
+            GetPrivIBase(IntuitionBase)->WorkBench = screen;
+
+            /* Make the screen public. */
+            PubScreenStatus( screen, 0 );
+
+            /* Make the screen the default one. */
+            SetDefaultPubScreen( NULL );
+        } else {
+            /* Maybe we should have a Alert() here? */
+            return NULL;
+        }
     }
 
-    imsg.Class = WBENCHMESSAGE;
-    imsg.Code = WBENCHOPEN;
-    PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct IntuiMessage *)(&imsg) );
-    /* Who opens the new Screen? If the WB-app does it, how do we get the
-       new (struct Screen *wbscreen)? */
+    /* Tell the Workbench process to open it's windows, if there is one. */
+    if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL ) {
+        struct MsgPort      replymp;
+        struct IntuiMessage imsg;
 
-#else
+        /* Setup our reply port. By doing this manually, we can use SIGB_SINGLE
+         * and thus avoid allocating a signal (which may fail).*/
+        memset( &replymp, 0, sizeof( replymp ) );
 
-#warning TODO: Write intuition/OpenWorkBench()
-    aros_print_not_implemented ("OpenWorkBench");
+        replymp.mp_Node.ln_Type = NT_MSGPORT;
+        replymp.mp_Flags        = PA_SIGNAL;
+        replymp.mp_SigBit       = SIGB_SINGLE;
+        replymp.mp_SigTask      = FindTask( NULL );
+        NEWLIST( &replymp.mp_MsgList );
 
-#endif
+        /* Setup our message. */
+        imsg.Class = IDCMP_WBENCHMESSAGE;
+        imsg.Code  = WBENCHOPEN;
 
-    return (ULONG)wbscreen;
+        /* Sends it to the handler and wait for the reply. */
+        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct IntuiMessage *) (&imsg) );
+        WaitPort( &replymp );
+
+        /* After leaving this block imsg and repymp will be automagically freed,
+         * so we don't have to deallocate them ourselves. */
+    }
+
+    return GetPrivIBase(IntuitionBase)->WorkBench;
 
     AROS_LIBFUNC_EXIT
 } /* OpenWorkBench */
