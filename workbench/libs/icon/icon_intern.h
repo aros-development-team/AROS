@@ -107,6 +107,7 @@ struct NativeIcon
     struct MinNode    node;
     APTR    	      pool;
     struct DiskObject dobj;
+    ULONG   	      readstruct_state;
     struct Icon35     icon35;
     struct IconPNG    iconPNG;
     APTR    	      iconbase;
@@ -119,6 +120,13 @@ struct NativeIcon
     WORD    	      iconbmheight;
     WORD    	      iconbmdepth;    
 };
+
+#define RSS_OLDDRAWERDATA_READ  (1 << 0)
+#define RSS_GADGETIMAGE_READ	(1 << 1)
+#define RSS_SELECTIMAGE_READ	(1 << 2)
+#define RSS_DEFAULTTOOL_READ	(1 << 3)
+#define RSS_TOOLWINDOW_READ	(1 << 4)
+#define RSS_TOOLTYPES_READ	(1 << 5)
 
 #define NATIVEICON(icon) ((struct NativeIcon *)((UBYTE *)(icon) - offsetof(struct NativeIcon, dobj)))
 
