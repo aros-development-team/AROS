@@ -30,7 +30,7 @@ extern void _aros_not_implemented(void);
 
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
-    _aros_not_implemented();
+    fprintf(stderr, "intuition driver init function goes here\n");
     return FALSE;
 }
 

@@ -19,7 +19,7 @@ extern void _aros_not_implemented(void);
 
 int driver_init (struct GfxBase * GfxBase)
 {
-    _aros_not_implemented();
+    fprintf(stderr, "gfx driver init function goes here\n");
     return FALSE;
 }
 
