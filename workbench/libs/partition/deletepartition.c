@@ -20,10 +20,10 @@
    struct Library *, PartitionBase, 12, Partition)
 
 /*  FUNCTION
-	delete a partition with it's subpartitions
+    delete a partition with it's subpartitions
 
     INPUTS
-	ph - PartitionHandle to delete
+    ph - PartitionHandle to delete
 
     RESULT
 
@@ -38,18 +38,18 @@
     INTERNALS
 
     HISTORY
-	21-02-02    first version
+    21-02-02    first version
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	if (ph->root)
-	{
-	struct PTFunctionTable *handler = ph->root->table->handler;
+    if (ph->root)
+    {
+    struct PTFunctionTable *handler = ph->root->table->handler;
 
-		if (handler->deletePartition)
-			return handler->deletePartition(PartitionBase, ph);
-	}
-	AROS_LIBFUNC_EXIT
+        if (handler->deletePartition)
+            return handler->deletePartition(PartitionBase, ph);
+    }
+    AROS_LIBFUNC_EXIT
 }

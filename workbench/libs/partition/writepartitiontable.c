@@ -22,14 +22,14 @@
    struct Library *, PartitionBase, 9, Partition)
 
 /*  FUNCTION
-	write a partition table; writing this partition table doesn't affect
-	subpartition tables
+    write a partition table; writing this partition table doesn't affect
+    subpartition tables
 
     INPUTS
-	root - partition table to write
+    root - partition table to write
 
     RESULT
-	0 for success; an error code otherwise
+    0 for success; an error code otherwise
 
     NOTES
 
@@ -42,19 +42,19 @@
     INTERNALS
 
     HISTORY
-	21-02-02    first version
+    21-02-02    first version
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	if (root->table)
-	{
-	struct PTFunctionTable *handler = root->table->handler;
+    if (root->table)
+    {
+    struct PTFunctionTable *handler = root->table->handler;
 
-		if (handler->writePartitionTable)
-			return handler->writePartitionTable(PartitionBase, root);
-	}
-	return 1;
-	AROS_LIBFUNC_EXIT
+        if (handler->writePartitionTable)
+            return handler->writePartitionTable(PartitionBase, root);
+    }
+    return 1;
+    AROS_LIBFUNC_EXIT
 }

@@ -29,7 +29,7 @@
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-	PartitionBase->tables = (struct PartitionTableInfo **)PartitionSupport;
+    PartitionBase->tables = (struct PartitionTableInfo **)PartitionSupport;
    return TRUE;
 }
 

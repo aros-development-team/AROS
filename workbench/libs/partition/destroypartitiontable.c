@@ -23,18 +23,18 @@
    struct Library *, PartitionBase, 19, Partition)
 
 /*  FUNCTION
-	Destroy a partition table by immediatly overwriting table data on disk.
+    Destroy a partition table by immediatly overwriting table data on disk.
 
     INPUTS
-	root - partition table to destroy
+    root - partition table to destroy
 
     RESULT
-	0 on success; an error code otherwise
+    0 on success; an error code otherwise
 
     NOTES
-	After calling this function the state of the PartitionHandle will be the
-	same as before calling OpenPartitionTable(). Therefore do not reference
-	any children PartitionHandles anymore.
+    After calling this function the state of the PartitionHandle will be the
+    same as before calling OpenPartitionTable(). Therefore do not reference
+    any children PartitionHandles anymore.
 
     EXAMPLE
 
@@ -46,21 +46,21 @@
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
-	LONG retval=1;
+    AROS_LIBFUNC_INIT
+    LONG retval=1;
 
-	if (root->table)
-	{
-	struct PTFunctionTable *handler = root->table->handler;
+    if (root->table)
+    {
+    struct PTFunctionTable *handler = root->table->handler;
 
 #undef DestroyPartitionTable
-		if (handler->destroyPartitionTable)
-		{
-			retval = handler->destroyPartitionTable(PartitionBase, root);
-			if (retval == 0)
-				ClosePartitionTable(root);
-		}
-	}
-	return retval;
-	AROS_LIBFUNC_EXIT
+        if (handler->destroyPartitionTable)
+        {
+            retval = handler->destroyPartitionTable(PartitionBase, root);
+            if (retval == 0)
+                ClosePartitionTable(root);
+        }
+    }
+    return retval;
+    AROS_LIBFUNC_EXIT
 }

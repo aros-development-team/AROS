@@ -24,10 +24,10 @@
    struct Library *, PartitionBase, 6, Partition)
 
 /*  FUNCTION
-	close root handle allocated by OpenRootPartition()
+    close root handle allocated by OpenRootPartition()
 
     INPUTS
-	ph - root handle created by OpenRootPartition()
+    ph - root handle created by OpenRootPartition()
 
     RESULT
 
@@ -42,23 +42,23 @@
     INTERNALS
 
     HISTORY
-	21-02-02    first version
+    21-02-02    first version
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	if (ph->table)
-	{
-	struct PTFunctionTable *handler = ph->table->handler;
+    if (ph->table)
+    {
+    struct PTFunctionTable *handler = ph->table->handler;
 
-		if (handler->closePartitionTable)
-			handler->closePartitionTable(PartitionBase, ph);
-	}
-	DeleteIORequest((struct IORequest *)ph->bd->ioreq);
-	DeleteMsgPort(ph->bd->port);
-	FreeMem(ph->bd, sizeof(struct PartitionBlockDevice));
-	FreeMem(ph, sizeof(struct PartitionHandle));
+        if (handler->closePartitionTable)
+            handler->closePartitionTable(PartitionBase, ph);
+    }
+    DeleteIORequest((struct IORequest *)ph->bd->ioreq);
+    DeleteMsgPort(ph->bd->port);
+    FreeMem(ph->bd, sizeof(struct PartitionBlockDevice));
+    FreeMem(ph, sizeof(struct PartitionHandle));
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }

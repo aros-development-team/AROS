@@ -21,7 +21,7 @@
 #  include <libcore/base.h>
 #endif
 #ifndef PARTITION_H
-#	include <libraries/partition.h>
+#   include <libraries/partition.h>
 #endif
 
 #include <aros/libcall.h>
@@ -35,7 +35,7 @@ LIBBASETYPE;
 LIBBASETYPE
 {
    struct LibHeader lh;
-	struct PartitionTableInfo **tables;
+    struct PartitionTableInfo **tables;
 };
 #endif
 #endif /* PARTITION_INTERN_H */
