@@ -7,51 +7,6 @@
 /* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
 #define NO_MALLOC 1
 
-#if 0 
-/**************  BitMap::Set()  *********************************/
-static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
-{
-    struct bitmap_data *data = INST_DATA(cl, o);
-    struct TagItem *tag, *tstate;
-    ULONG idx;
-    
-    tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
-    {
-        if(IS_BM_ATTR(tag->ti_Tag, idx))
-        {
-            switch(idx)
-            {
-                case aoHidd_BitMap_Foreground :
-		    /* Set X GC color */
-LX11
-		    XSetForeground(data->display, data->gc, tag->ti_Data);
-UX11
-		    break;
-		    
-                case aoHidd_BitMap_Background :
-LX11
-		    XSetBackground(data->display, data->gc, tag->ti_Data);
-UX11		    
-		    break;
-		    
-		case aoHidd_BitMap_DrawMode :		    
-LX11
-		    XSetFunction(data->display, data->gc, tag->ti_Data);
-UX11		    
-		    break;
-            }
-        }
-    }
-    
-    /* Let supermethod take care of other attrs */
-    DoSuperMethod(cl, o, (Msg)msg);
-    
-    return;
-}
-
-#endif
-
 
 static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
