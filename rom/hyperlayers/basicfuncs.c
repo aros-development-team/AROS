@@ -1481,8 +1481,7 @@ int _SetRegion(struct Region * src, struct Region * dest)
      */
     if (NULL == rrd)
     {
-      rrd = (struct RegionRectangle *)AllocMem(sizeof(struct RegionRectangle),
-                                               MEMF_ANY);
+      rrd = NewRegionRectangle();
     
       if (NULL == rrd)
         return FALSE;
@@ -1532,7 +1531,7 @@ int _SetRegion(struct Region * src, struct Region * dest)
   while (NULL != rrd)
   {
     struct Region * _rr = rrd->Next;
-    FreeMem(rrd, sizeof(struct RegionRectangle));
+    DisposeRegionRectangle(rrd);
     rrd = _rr;
   }
   
