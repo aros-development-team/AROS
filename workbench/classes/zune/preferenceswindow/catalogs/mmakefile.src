@@ -2,9 +2,9 @@ include $(TOP)/config/make.cfg
 
 DESTDIR   := $(BINDIR)/Locale/Catalogs
 
-CATALOGS  := svenska 
+CATALOGS  := svenska français
 CATDESC   := preferenceswindow
-CATSUBDIR := SYS/Zune
+CATSUBDIR := Sys/Zune
 CATNAME   := PreferencesWindow
 INCLUDE   := ../strings
 
