@@ -9,6 +9,7 @@ LIB	:= autoinit
 FILES	:= \
 	asl \
 	arosc \
+	commandline \
 	cybergraphics \
 	diskfont \
 	dos \
