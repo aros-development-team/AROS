@@ -162,13 +162,18 @@ endif
 # files and source files.
 %define rule_genmodule modname=\A modtype=\A objdir=\A conffile=\A reffile=\A
 
-GENFILES_TMP := %(objdir)/%(modname)_start.c %(objdir)/%(modname)_end.c \
-$(GENINCDIR)/clib/%(modname)_protos.h $(GENINCDIR)/defines/%(modname).h \
-$(GENINCDIR)/proto/%(modname).h
+GENFILES_TMP := %(objdir)/%(modname)_start.c %(objdir)/%(modname)_end.c
 
 # Some of the generated files are dependent on the module type.
 ifeq (%(modtype),library)
-GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c
+GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
+                $(GENINCDIR)/clib/%(modname)_protos.h \
+                $(GENINCDIR)/defines/%(modname).h \
+                $(GENINCDIR)/proto/%(modname).h
+endif
+
+ifeq (%(modtype),mcc)
+GENFILES_TMP += %(objdir)/%(modname)_stubs.c
 endif
 
 $(GENFILES_TMP) : %(conffile) $(GENMODULE) %(reffile)
@@ -228,7 +233,9 @@ BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID
 BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(BD_FILES$(BDID)))))
 BD_REFFILE$(BDID)    := %(reffile)
 
+ifeq ($(BD_MODTYPE$(BDID)),library)
 BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
+endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 
 BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs)) -llibinit -lautoinit
@@ -251,23 +258,35 @@ endif
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 
 # Add additional files depending the module type
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
+    $(error unhandled MODTYPE X %(modtype))
+endif
+
 ifeq ($(BD_MODTYPE$(BDID)),library)
   BD_MODDIR$(BDID)       := $(AROS_LIBS)
-  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c \
-			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c 
   BD_EXTRAOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
-  	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o \
-			    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
-  BD_EXTRADEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_EXTRAOBJS$(BDID))) 
+  	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o 
   BD_EXTRAGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit \
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+endif
+
+ifeq ($(BD_MODTYPE$(BDID)),mcc)
+  BD_MODDIR$(BDID)       := $(AROS_CLASSES)/Zune
+  BD_EXTRAFILES$(BDID)   := 
+  BD_EXTRAOBJS$(BDID)    := 
+  BD_EXTRAGENFILES$(BDID):= 
+endif
+
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
+  BD_EXTRAFILES$(BDID)   += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_EXTRAOBJS$(BDID)    += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
+  BD_EXTRADEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_EXTRAOBJS$(BDID))) 
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs \
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-else
-$(error unhandled MODTYPE %(modtype))
 endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
@@ -319,11 +338,13 @@ $(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID)
 	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) \
 	    objs="$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID))" libs=$(BD_LIBS$(BDID))
 
+ifeq ($(BD_MODTYPE$(BDID)),library)
 %rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
 %rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
 %rule_copy from=$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h
 %rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
 %rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
+endif
 
 # For a shared library also build a static link lib
 ifeq ($(BD_MODTYPE$(BDID)),library)
