@@ -8,11 +8,40 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <clib/exec_protos.h>
-#include <string.h>
 
 static const struct RastPort defaultRastPort =
 {
-    0,
+    NULL, /* Layer */
+    NULL, /* BitMap */
+    NULL, /* AreaPtrn */
+    NULL, /* TmpRas */
+    NULL, /* AreaInfo */
+    NULL, /* GelsInfo */
+    ~0, /* Mask */
+    1, /* FgPen */
+    0, /* BgPen */
+    0, /* AOlPen */
+    JAM1, /* DrawMode */
+    0, /* AreaPtSz */
+    0, /* linpatcnt */
+    0, /* dummy */
+    0, /* Flags */
+    ~0, /* LinePtrn */
+    0,0, /* cp_x, cp_y */
+    { 0,0,0,0, 0,0,0,0 }, /* minterms[] */
+    0, /* PenWidth */
+    0, /* PenHeight */
+    NULL, /* Font */
+    0, /* AlgoStyle */
+    0, /* TxFlags */
+    0, /* TxHeight */
+    0, /* TxWidth */
+    0, /* TxBaseline */
+    0, /* TxSpacing */
+    NULL, /* RP_User */
+    { 0,0 }, /* longreserved */
+    { 0,0,0,0, 0,0,0 }, /* wordreserved */
+    { 0,0,0,0, 0,0,0,0 }, /* reserved */
 };
 
 /*****************************************************************************
@@ -20,7 +49,7 @@ static const struct RastPort defaultRastPort =
     NAME */
 	#include <clib/graphics_protos.h>
 
-	AROS_LH1(void, InitRastPort,
+	AROS_LH1(BOOL, InitRastPort,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -29,19 +58,20 @@ static const struct RastPort defaultRastPort =
 	struct GfxBase *, GfxBase, 33, Graphics)
 
 /*  FUNCTION
-	OBSOLETE - DO NOT USE THIS FUNCTION.
-
 	Initializes a RastPort structure.
 
     INPUTS
 	rp - The RastPort to initialize.
 
     RESULT
-	None.
+	TRUE if the RastPort was successfuly initialized and FALSE
+	otherwise.
 
     NOTES
-	Due to RTG, this function should not be used. If you do, you might
-	experience memory loss.
+	You must call DeinitRastPort() before you free the structure.
+
+	AROS defines this function with a return value which you should
+	check.
 
     EXAMPLE
 
@@ -62,7 +92,9 @@ static const struct RastPort defaultRastPort =
 
     CopyMem ((UBYTE *)&defaultRastPort, rp, sizeof (struct RastPort));
 
-    driver_InitRastPort (rp, GfxBase);
+    SetFont (rp, GfxBase->DefaultFont);
+
+    return driver_InitRastPort (rp, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* InitRastPort */
