@@ -137,6 +137,11 @@
 #define EDEADLOCK	EDEADLK
 
 #include <sys/arosc.h>
-#define errno (__get_arosc_userdata()->acud_errno)
+__pure static __inline__ int *__get_errno_ptr(void);
+__pure static __inline__ int *__get_errno_ptr(void)
+{
+    return &__get_arosc_userdata()->acud_errno;
+}
+#define errno (*__get_errno_ptr())
 
 #endif /* _ERRNO_H_ */
