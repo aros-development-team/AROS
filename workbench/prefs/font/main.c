@@ -50,7 +50,7 @@ void quitApp(STRPTR errorMsg, UBYTE errorCode)
 
 BOOL Initialize(void)
 {
-    if (!Locale_Initialize()) goto error;
+    Locale_Initialize();
     if (!FP_Initialize()) goto error;
     if (!FPWindow_Initialize()) goto error;
 
