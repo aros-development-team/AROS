@@ -5,6 +5,10 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -44,10 +48,26 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
+    struct CommandLineInterface *cli = NULL;
+    STRPTR s;
+    ULONG namelen;
 
-    aros_print_not_implemented ("SetPrompt");
+    if ((cli = Cli()) == NULL)
+        return DOSFALSE;
 
-    return DOSFALSE;
+    s = name;
+    while(*s++)
+        ;
+    namelen = s - name - 1;
+
+    if (namelen > 255)
+        return DOSFALSE;
+
+    s = AROS_BSTR_ADDR(cli->cli_Prompt);
+
+    AROS_BSTR_setstrlen(cli->cli_Prompt, namelen);
+    CopyMem((APTR)name, s, namelen);
+
+    return DOSTRUE;
     AROS_LIBFUNC_EXIT
 } /* SetPrompt */

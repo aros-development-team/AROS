@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -45,9 +46,16 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("MatchEnd");
+    struct AChain *curr = anchor->ap_Base;
 
+    while (anchor->ap_Base != NULL)
+    {
+	curr = anchor->ap_Base;
+	if (curr->an_Lock != NULL)
+	    UnLock(curr->an_Lock);
+	anchor->ap_Base = curr->an_Child;
+	FreeVec(curr);
+    }
     AROS_LIBFUNC_EXIT
 } /* MatchEnd */

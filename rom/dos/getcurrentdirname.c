@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
+#include <dos/dos.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -40,15 +42,38 @@
     HISTORY
 	27-11-96    digulla automatically created from
 			    dos_lib.fd and clib/dos_protos.h
+	29-09-97    turrican implemented
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("GetCurrentDirName");
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+    STRPTR cname;
+    ULONG clen;
+    BOOL ret = DOSTRUE;
 
-    return DOSFALSE;
+    if (cli == NULL)
+    {
+	if (len >= 1)
+	    buf[0] = '\0';
+	me->pr_Result2 = ERROR_OBJECT_WRONG_TYPE;
+	return DOSFALSE;
+    }
+
+    cname = AROS_BSTR_ADDR(cli->cli_SetName);
+    clen = (ULONG)AROS_BSTR_strlen(cli->cli_SetName);
+    if (clen >= (len-1))
+    {
+	clen = len-1;
+	me->pr_Result2 = ERROR_OBJECT_TOO_LARGE;
+	ret = DOSFALSE;
+    }
+    CopyMem(cname, buf, clen);
+    buf[clen+1] = '\0';
+
+    return ret;
     AROS_LIBFUNC_EXIT
 } /* GetCurrentDirName */

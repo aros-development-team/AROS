@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
+#include <dos/dos.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -45,10 +47,25 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("GetProgramName");
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+    STRPTR cname;
+    ULONG clen;
 
-    return DOSFALSE;
+    if (cli == NULL)
+    {
+	*buf = '\0';
+	me->pr_Result2 = ERROR_OBJECT_WRONG_TYPE;
+	return DOSFALSE;
+    }
+
+    cname = AROS_BSTR_ADDR(cli->cli_CommandName);
+    clen = (ULONG)AROS_BSTR_strlen(cli->cli_CommandName);
+    clen = (clen >= (len-1)?len-1:clen);
+    CopyMem(cname, buf, clen);
+    buf[clen+1] = '\0';
+
+    return DOSTRUE;
     AROS_LIBFUNC_EXIT
 } /* GetProgramName */
