@@ -43,12 +43,15 @@ CLASSESOBJS= \
   objs/classes/bitmap.o \
   objs/classes/bodychunk.o \
   objs/classes/boopsi.o \
+  objs/classes/cycle.o \
   objs/classes/dataspace.o \
   objs/classes/family.o \
   objs/classes/group.o \
+  objs/classes/list.o \
   objs/classes/menuitem.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
+  objs/classes/popstring.o \
   objs/classes/prop.o \
   objs/classes/rectangle.o \
   objs/classes/register.o \
@@ -195,11 +198,20 @@ objs/classes/bodychunk.o: classes/bodychunk.c
 objs/classes/boopsi.o: classes/boopsi.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/boopsi.c objname=$@
 
+objs/classes/cycle.o: classes/cycle.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/cycle.c objname=$@
+
 objs/classes/dataspace.o: classes/dataspace.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/dataspace.c objname=$@
 
 objs/classes/family.o: classes/family.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/family.c objname=$@
+
+objs/classes/group.o: classes/group.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
+
+objs/classes/list.o: classes/list.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/list.c objname=$@
 
 objs/classes/notify.o: classes/notify.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
@@ -210,17 +222,11 @@ objs/classes/menuitem.o: classes/menuitem.c
 objs/classes/numeric.o: classes/numeric.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/numeric.c objname=$@
 
+objs/classes/popstring.o: classes/popstring.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popstring.c objname=$@
+
 objs/classes/slider.o: classes/slider.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/slider.c objname=$@
-
-objs/classes/window.o: classes/window.c
-  sc $(CFLAGS) $(CLASSESDIRS) classes/window.c objname=$@
-
-objs/classes/group.o: classes/group.c
-  sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
-
-objs/classes/virtgroup.o: classes/virtgroup.c
-  sc $(CFLAGS) $(CLASSESDIRS) classes/virtgroup.c objname=$@
 
 objs/classes/semaphore.o: classes/semaphore.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/semaphore.c objname=$@
@@ -239,6 +245,12 @@ objs/classes/string.o: classes/string.c
 
 objs/classes/text.o: classes/text.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/text.c objname=$@
+
+objs/classes/virtgroup.o: classes/virtgroup.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/virtgroup.c objname=$@
+
+objs/classes/window.o: classes/window.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/window.c objname=$@
 
 objs/classes/rectangle.o: classes/rectangle.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/rectangle.c objname=$@
