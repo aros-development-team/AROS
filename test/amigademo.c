@@ -67,10 +67,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef TOPAZ_EIGHTY
-#  define TOPAZ_EIGHTY 80
-#endif
+#include <aros/oldprograms.h>
 #define register
+/* #define USE_RAST to enable ClipBlit() test and writing to screens */
+#undef USE_RAST
 
 #include <exec/memory.h>      /* Need for AllocMem */
 
@@ -97,7 +97,9 @@
 struct GfxBase       *GfxBase;
 struct IntuitionBase *IntuitionBase;
 
-/* WORD  *t_rast;*/      /* Temporary raster from AllocMem   */
+#ifdef USE_RAST
+WORD  *t_rast;      /* Temporary raster from AllocMem   */
+#endif
 WORD   *area_buf;   /* Area used for AreaInfo   */
 
 /****    Variables Initialized by init_generic()  **********/
@@ -135,19 +137,20 @@ init_generic();
 
 printf("Doing point test in a full-screen window\n");
 point_test(pRp);     /* First try with the 'window' rastport   */
-/*
+#ifdef USE_RAST
 printf("Now doing point test directly to screen rastport\n");
-point_test(&Screen->RastPort);*/ /* Next try the 'screen' rastport   */
+point_test(&Screen->RastPort); /* Next try the 'screen' rastport   */
+#endif
 
 
 clear_test();     /* Does block clear of 32Kbytes  */
 
 printf("Block test in a full-screen window\n");
 block_test(pRp);
-/*
+#ifdef USE_RAST
 printf("Block test directly to screen rastport\n");
 block_test(&Screen->RastPort);
-*/
+#endif
 printf("Line test in window\n");
 line_test(pRp);
 
@@ -306,16 +309,16 @@ register int i;
 
    CurrentTime(&finish1.seconds,&finish1.micros);
 
-/*
+#ifdef USE_RAST
    for ( i=0; i<500; i++)
 
       ClipBlit(rastport,0,0,rastport,0,0,WDTH,HGHT,COPY);
-*/
+#endif
    CurrentTime(&finish2.seconds,&finish2.micros);
-/*
+#ifdef USE_RAST
    for ( i=0; i<500; i++)
       ClipBlit(rastport,0,0,rastport,0,0,WDTH,HGHT,COPY);
-*/
+#endif
    CurrentTime(&finish3.seconds,&finish3.micros);
 
    printf("Set 32K "); delta(&finish1,&start1);
@@ -352,7 +355,9 @@ register int i,j;
    for ( i = 0; i < 499 ; i++)
 
       BltClear(mem_ptr,32000,0); /* flags are 'Don't Wait'  */
-/*   WaitBlit();*/    /* Wait for the above to finish...  */
+#ifdef USE_RAST
+   WaitBlit();    /* Wait for the above to finish...  */
+#endif
 
    CurrentTime(&finish1.seconds,&finish1.micros);
 
@@ -529,9 +534,16 @@ void init_generic()
    pVp = (struct ViewPort *)ViewPortAddress(Window);
 
    /* Allocate major buffer entries */
+#ifdef USE_RAST
+   t_rast   = (WORD *) AllocMem(RASSIZE(WDTH,HGHT), VID);
+#endif
    area_buf = (WORD *) AllocMem(2000,VID);
 
-   if ( /*! t_rast ||*/ ! area_buf ) {
+#ifdef USE_RAST
+   if ( ! t_rast || ! area_buf ) {
+#else
+   if ( ! area_buf ) {
+#endif
       printf("Out of memory\n");
       exit(103);
       }
@@ -540,9 +552,10 @@ void init_generic()
    InitArea(&area_info,area_buf,AREA_ENTS);
 
    pRp->AreaInfo = &area_info;
-/*
+#ifdef USE_RAST
    tmp_ras.RasPtr = (BYTE *)t_rast;
-*/
+   tmp_ras.Size = RASSIZE(WDTH,HGHT);
+#endif
    pRp->TmpRas = &tmp_ras;
 }
 
@@ -554,11 +567,15 @@ void init_generic()
 *************************************************/
 void close_generic()
 {
+#ifdef USE_RAST
+   FreeMem(t_rast,RASSIZE(WDTH,HGHT));
+#endif
    FreeMem(area_buf,2000);
 
    CloseWindow(Window);
    CloseScreen(Screen);
 
+   exit(0);
 }
 
 
