@@ -546,7 +546,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 		    	if (recalc)
 		    	{
-			    DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+			    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, _parent(obj));
 			}
 		    }
 		}
