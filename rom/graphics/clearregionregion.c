@@ -57,9 +57,6 @@
     return _ClearRegionRegion(region1, region2, GfxBase);
 
 #else
-
-    struct Region *bak = CopyRegion(region2);
-
     ASSERT_VALID_PTR(region1);
     ASSERT_VALID_PTR(region2);
 
