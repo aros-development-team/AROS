@@ -13,7 +13,7 @@ FORCE_LIBS    := $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a \
                  $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
 endif
 
-FILES := support support_builtin diskobjio diskobj35io identify
+FILES := support support_builtin diskobjio diskobj35io diskobjPNGio identify
 
 FUNCS := \
     addfreelist \

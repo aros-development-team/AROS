@@ -213,6 +213,28 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	    mem->icon35.img2.palette = mem->icon35.img1.palette;
 	}
 	
+	/* Clone PNGIcon data */
+	
+	mem->iconPNG = srcnativeicon->iconPNG;
+	
+	if (srcnativeicon->iconPNG.img1)
+	{
+	    mem->iconPNG.img1 = MemDupPooled(pool,
+	    	    	    	    	     srcnativeicon->iconPNG.img1,
+					     srcnativeicon->iconPNG.width * srcnativeicon->iconPNG.height * sizeof(ULONG));
+					     
+    	    if (!mem->iconPNG.img1) goto fail;
+	}
+	
+	if (srcnativeicon->iconPNG.img2)
+	{
+	    mem->iconPNG.img2 = MemDupPooled(pool,
+	    	    	    	    	     srcnativeicon->iconPNG.img2,
+					     srcnativeicon->iconPNG.width * srcnativeicon->iconPNG.height * sizeof(ULONG));
+					     
+    	    if (!mem->iconPNG.img2) goto fail;
+	}
+	
     } /* if (GetTagData(ICONDUPA_JustLoadedFromDisk, FALSE, tags) != FALSE) */
    
 #ifdef OUTPUT_DATA

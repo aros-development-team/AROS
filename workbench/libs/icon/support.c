@@ -129,6 +129,31 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
     // FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
     if (temp != NULL) FreeStruct(temp, IconDesc);
     
+    if (!icon)
+    {
+kprintf("readiconwb: trying png 1\n");
+    	if (!PNGBase) PNGBase = OpenLibrary("datatypes/png.datatype", 0);
+kprintf("readiconwb: trying png 2 %x\n", PNGBase);
+	
+    	if (PNGBase && ReadIconPNG(&temp, file, IconBase))
+	{
+            /*
+        	Duplicate the disk object so it can be freed with 
+        	FreeDiskObject(). 
+            */
+            // FIXME: is there any way to avoid this?
+            icon = DupDiskObject
+            (
+        	temp,
+        	ICONDUPA_JustLoadedFromDisk, TRUE,
+        	TAG_DONE
+            );
+	    
+	    FreeIconPNG(temp, IconBase);
+	}
+	
+    }
+    
     return icon;
 }
 

@@ -39,6 +39,12 @@ AROS_UFP3S(ULONG, ProcessClearMem,
     AROS_UFPA(struct SDData *, data, A1)
 );
 
+AROS_UFP3S(ULONG, ProcessCheckFileType,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
+);
+
 AROS_UFP3S(ULONG, ProcessOldDrawerData,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
@@ -96,6 +102,10 @@ AROS_UFP3S(ULONG, ProcessIcon35,
 static const struct Hook ProcessClearMemHook =
 {
     { NULL, NULL}, AROS_ASMSYMNAME(ProcessClearMem), NULL, NULL
+},
+ProcessCheckFileTypeHook =
+{
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessCheckFileType), NULL, NULL
 },
 ProcessOldDrawerDataHook =
 {
@@ -216,6 +226,7 @@ const IPTR IconDesc[] =
     sizeof (struct NativeIcon),
     SDM_SPECIAL(0,&ProcessClearMemHook),
     SDM_STRUCT(0,DiskObjectDesc),
+    SDM_SPECIAL(0,&ProcessCheckFileTypeHook),
     SDM_SPECIAL(0,&ProcessOldDrawerDataHook),
     SDM_SPECIAL(0,&ProcessGadgetRenderHook),
     SDM_SPECIAL(0,&ProcessSelectRenderHook),
@@ -343,6 +354,31 @@ AROS_UFH3S(ULONG, ProcessClearMem,
     AROS_USERFUNC_EXIT
     
 }
+
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessCheckFileType,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
+    AROS_UFHA(struct SDData *, data, A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    if (data->sdd_Mode == SDV_SPECIALMODE_READ)
+    {
+    	if ((DO(data->sdd_Dest)->do_Magic != WB_DISKMAGIC))
+	{
+	    return FALSE;
+	}
+    }
+    
+    return TRUE;
+    
+    AROS_USERFUNC_EXIT
+    
+}
+
 /****************************************************************************************/
 
 AROS_UFH3S(ULONG, ProcessOldDrawerData,
