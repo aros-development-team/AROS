@@ -403,6 +403,22 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 	    RefreshPropGadgetKnob (gadget, NULL, &kbox, window, IntuitionBase);
 	}
 	
+	if (gadget->Flags & GFLG_DISABLED)
+	{
+	    CalcBBox (window, gadget, &bbox);
+
+	    if ((rp = ObtainGIRPort(&gi)))
+	    {
+		RenderDisabledPattern(rp, bbox.Left,
+	    				  bbox.Top,
+					  bbox.Left + bbox.Width - 1,
+					  bbox.Top + bbox.Height - 1,
+					  IntuitionBase);
+					  
+	        ReleaseGIRPort(rp);
+	    }
+	}
+	
 	FreeScreenDrawInfo(window->WScreen, dri);
 	
     } /* if ((dri = GetScreenDrawInfo(window->WScreen))) */
@@ -667,6 +683,20 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 			       IDS_NORMAL,
 			       dri);
 	    }
+	    
+	    if (gadget->Flags & GFLG_DISABLED)
+	    {
+	        struct BBox bbox;
+		
+		CalcBBox (window, gadget, &bbox);
+ 
+		RenderDisabledPattern(rp, bbox.Left,
+	    				  bbox.Top,
+					  bbox.Left + bbox.Width - 1,
+					  bbox.Top + bbox.Height - 1,
+					  IntuitionBase);	    
+	    }
+	    
 	    ReleaseGIRPort(rp);
 	    
 	} /* if ((rp = ObtainGIRPort(&gi))) */
