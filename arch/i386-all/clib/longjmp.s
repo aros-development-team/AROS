@@ -1,0 +1,111 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: ANSI C function longjmp()
+    Lang: english
+*/
+
+/******************************************************************************
+
+    NAME
+#include <setjmp.h>
+
+	void longjmp (jmp_buf env, int val);
+
+    FUNCTION
+	Save the current context so that you can return to it later.
+
+    INPUTS
+	env - The context/environment to restore
+	val - This value is returned by setjmp() when you return to the
+		saved context. You cannot return 0. If val is 0, then
+		setjmp() returns with 1.
+
+    RESULT
+	This function doesn't return.
+
+    NOTES
+
+    EXAMPLE
+	jmp_buf env;
+
+	... some code ...
+
+	if (!setjmp (env))
+	{
+	    ... this code is executed after setjmp() returns ...
+
+	    // This is no good example on how to use this function
+	    // You should not do that
+	    if (error)
+		longjmp (env, 5);
+
+	    ... some code ...
+	}
+	else
+	{
+	    ... this code is executed if you call longjmp(env) ...
+	}
+
+    BUGS
+
+    SEE ALSO
+	setjmp()
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
+
+	.text
+	.balign 16
+	.globl	AROS_CDEFNAME(longjmp)
+	.type	AROS_CDEFNAME(longjmp),@function
+
+	.set	FirstArg, 4 /* Skip Return-Adress */
+	.set	env, FirstArg
+	.set	val, env+4
+	.set	retaddr, 0
+
+AROS_CDEFNAME(longjmp):
+	/* Fetch the address of the env-structure off the stack.
+	    The address is stored in %eax which is not preserved
+	    because it's contents are overwritten anyway by the
+	    return code */
+	movl env(%esp),%eax
+
+	/* Read return value into %ebx and make sure it's not 0 */
+	movl val(%esp),%ebx
+	cmpl 0,%ebx
+	jne  .cont
+
+	movl 1,%ebx
+.cont:
+	/* Restore stack pointer and all registers from env */
+	movl (%eax),%ecx
+	movl %ecx,retaddr(%esp) /* Restore return address */
+	addl 4,%eax
+
+	pushl %ebx /* Save return value on new stack */
+
+	/* Restore all registers */
+	movl (%eax),%ebx /* %ebx */
+	addl 4,%eax
+	movl (%eax),%ecx /* %ecx */
+	addl 4,%eax
+	movl (%eax),%edx /* %edx */
+	addl 4,%eax
+	movl (%eax),%esi /* %esi */
+	addl 4,%eax
+	movl (%eax),%edi /* %edi */
+	addl 4,%eax
+	movl (%eax),%ebp /* %ebp */
+	addl 4,%eax
+	movl (%eax),%esp /* %esp */
+
+	popl %eax /* Fetch return value */
+	ret

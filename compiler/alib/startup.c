@@ -5,13 +5,18 @@
     Desc: Common startup code
     Lang: english
 */
+#include <setjmp.h>
 #include <dos/dos.h>
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
+#include <aros/asmcall.h>
 
 /* Don't define symbols before the entry point. */
+extern struct ExecBase * SysBase;
 extern int main (int argc, char ** argv);
 extern APTR __startup_mempool; /* malloc() and free() */
+extern jmp_buf __startup_jmp_buf;
+extern LONG __startup_error;
 
 /*
     TODO: This won't work for normal AmigaOS for two reasons:
@@ -21,13 +26,15 @@ extern APTR __startup_mempool; /* malloc() and free() */
        all gccs emit strings for a certain function _before_ the
        code the program will crash immediately.
 */
-AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
+AROS_UFH1(LONG, entry,
+    AROS_UFHA(struct ExecBase *,sysbase,A6)
+)
 {
-    AROS_LIBFUNC_INIT
-    LONG error=RETURN_FAIL;
+    __startup_error = RETURN_FAIL;
 
     SysBase=sysbase;
     DOSBase=(struct DosLibrary *)OpenLibrary(DOSNAME,39);
+
     if(DOSBase!=NULL)
     {
 	char * argv[2];
@@ -35,7 +42,8 @@ AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
 	argv[0] = "dummy";
 	argv[1] = NULL;
 
-	error = main (1, argv);
+	if (!setjmp (__startup_jmp_buf))
+	    __startup_error = main (1, argv);
 
 	CloseLibrary((struct Library *)DOSBase);
     }
@@ -43,14 +51,15 @@ AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
     if (__startup_mempool)
 	DeletePool (__startup_mempool);
 
-    return error;
-    AROS_LIBFUNC_EXIT
-}
+    return __startup_error;
+} /* entry */
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
 APTR __startup_mempool = NULL;
+jmp_buf __startup_jmp_buf;
+LONG __startup_error;
 
 /*	Stub function for GCC __main().
 

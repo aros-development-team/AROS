@@ -28,6 +28,7 @@ FILES = \
 	close \
 	creat \
 	errno \
+	exit \
 	feof \
 	fflush \
 	fgetc \
@@ -77,6 +78,8 @@ FILES = \
 	vsprintf \
 	write
 
+ASMFILES = setjmp longjmp
+
 all: setup update-includes $(LIBDIR)/libarosc.a
 
 setup:
@@ -101,7 +104,8 @@ $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(LIBDIR)/libarosc.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+$(LIBDIR)/libarosc.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	    $(foreach f,$(ASMFILES),$(OBJDIR)/$(f).o)
 	$(AR) $@ $?
 	$(RANLIB) $@
 

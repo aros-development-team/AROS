@@ -12,6 +12,8 @@
 #   include <sys/types.h>
 #endif
 
+void __attribute__ ((noreturn)) exit (int code);
+
 int abs (int j);
 long labs (long j);
 int atoi (const char * str);

@@ -4,6 +4,7 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
+CLIBDIR=$(GENDIR)/clib
 
 FILES = \
 	supervisor \
@@ -30,11 +31,15 @@ FILES = \
 	runprocess \
 	initcore
 
+CFILES = setjmp longjmp
+
 all: setup $(TOP)/apps/compiler/include/aros/machine.h machine.i \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(CFILES),$(CLIBDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(CLIBDIR) ]; then $(MKDIR) $(CLIBDIR) ; else true ; fi
 
 $(TOP)/apps/compiler/include/aros/machine.h: machine.h
 	cp machine.h $(TOP)/apps/compiler/include/aros
@@ -48,6 +53,10 @@ config:
 machine.i: geninc.c
 	$(CC) $(CFLAGS) -o geninc geninc.c
 	./geninc > machine.i
+
+$(CLIBDIR)/%.o: %.s machine.i
+	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.o: %.s machine.i
 	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
@@ -65,4 +74,3 @@ $(OSGENDIR)/%.d: %.c $(TOP)/apps/compiler/include/aros/machine.h
 
 include $(OSGENDIR)/geninc.d
 include $(OSGENDIR)/preparecontext.d
-
