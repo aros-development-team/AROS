@@ -364,8 +364,9 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
        }
    }
 
-   /* Now to some serious fun
-    * We still might now have the proper stuff here even after the heavy guessworking above.
+   /* Now to some serious fun.
+    * We still might not have the proper geometry
+    * here even after the heavy guessworking above.
     */
    if (unit->au_Blocks < MAXCapacity)
    {
