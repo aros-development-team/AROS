@@ -263,7 +263,7 @@ We seem to have a serious memory leak problem with just about all programs.
 
 BUG000039
 nlorentz@online.no
-Some events are lost, especially when there ies rendering going
+Some events are lost, especially when there is rendering going
 on.
 
 BUG000040
@@ -276,3 +276,10 @@ nlorentz@online.no
 Cause() does not work from inside keyboard.device, so input.device
 never gets keyboard events.
 
+BUD000042
+nlorentz@online.no
+There are race conditions between the intuition input handler
+and CloseWindow(). When the closebutton is hit many times
+fast, it segfaults. This has been "solved" using some flags
+(EWFLG_DELAYCLOSE and EWFLG_CLOSEWINDOW), but it should be
+redone using semaphores
