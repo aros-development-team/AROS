@@ -28,6 +28,7 @@ FILES	    := \
 	rename \
 	run \
 	shell \
+	setclock \
 	setlocale \
 	tasklist \
 	type \
@@ -41,7 +42,6 @@ FILES	    := \
 	Protect \
 	RequestChoice \
 	Set \
-	SetClock \
 	Setenv \
 	Unalias \
 	Version
