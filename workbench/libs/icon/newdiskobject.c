@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <workbench/icon.h>
 #include <proto/icon.h>
