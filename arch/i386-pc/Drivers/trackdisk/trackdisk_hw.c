@@ -12,7 +12,7 @@
 #include "trackdisk_device.h"
 #include "trackdisk_hw.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef kprintf
@@ -116,7 +116,7 @@ int td_sendcommand(struct TrackDiskBase *TDBase)
     {
 	int i;
 
-	D(bug("TD: Resending command\n"));
+	kprintf("[Floppy] Resending command\n"));
 	err = 0;
 	td_dinit(TDBase);
 	// Resend command
