@@ -17,8 +17,8 @@ machine :
 
 #MM- AROS : workbench demos contrib
 #MM- workbench : workbench-$(ARCH)-$(CPU) kernel-objs
-#MM- demos : workbench
-#MM- contrib : workbench
+#MM- demos : includes linklibs
+#MM- contrib : includes linklibs
 
 %common
 %include_deps $(TOP)/bin/$(AROS_TARGET_ARCH)-$(TARGET_CPU)/gen/config/host.cfg
