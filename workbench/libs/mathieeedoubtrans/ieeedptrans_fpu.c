@@ -30,11 +30,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAtan,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=atan(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=atan(y);
+    return * Res;
 #else
-  return atan(y);
+    return atan(y);
 #endif
 } /* FPU_IEEEDPAtan */
 
@@ -44,11 +44,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSin,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=sin(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=sin(y);
+    return * Res;
 #else
-  return sin(y);
+    return sin(y);
 #endif
 } /* FPU_IEEEDPSin */
 
@@ -58,11 +58,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCos,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=cos(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=cos(y);
+    return * Res;
 #else
-  return cos(y);
+    return cos(y);
 #endif
 } /* FPU_IEEEDPCos */
 
@@ -72,11 +72,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTan,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=tan(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=tan(y);
+    return * Res;
 #else
-  return tan(y);
+    return tan(y);
 #endif
 } /* FPU_IEEEDPTan */
 
@@ -87,13 +87,13 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPSincos,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  *pf2 = cos(y);
-  y=sin(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    *pf2 = cos(y);
+    y=sin(y);
+    return * Res;
 #else
-  *pf2 = cos(y);
-  return sin(y);
+    *pf2 = cos(y);
+    return sin(y);
 #endif
 } /* FPU_IEEEDPSincos */
 
@@ -103,11 +103,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSinh,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=sinh(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=sinh(y);
+    return * Res;
 #else
-  return sinh(y);
+    return sinh(y);
 #endif
 } /* FPU_IEEEDPSinh */
 
@@ -117,11 +117,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCosh,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=cosh(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=cosh(y);
+    return * Res;
 #else
-  return cosh(y);
+    return cosh(y);
 #endif
 } /* FPU_IEEEDPCosh */
 
@@ -131,11 +131,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTanh,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=tanh(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=tanh(y);
+    return * Res;
 #else
-  return tanh(y);
+    return tanh(y);
 #endif
 } /* FPU_IEEEDPTanh */
 
@@ -145,11 +145,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPExp,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=exp(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=exp(y);
+    return * Res;
 #else
-  return exp(y);
+    return exp(y);
 #endif
 } /* FPU_IEEEDPExp */
 
@@ -159,11 +159,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPLog,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=log(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=log(y);
+    return * Res;
 #else
-  return log(y);
+    return log(y);
 #endif
 } /* FPU_IEEEDPLog */
 
@@ -174,11 +174,11 @@ AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPPow,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=pow(y,z);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=pow(y,z);
+    return * Res;
 #else
-  return pow(y,z);
+    return pow(y,z);
 #endif
 } /* FPU_IEEEDPPow */
 
@@ -188,11 +188,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPSqrt,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=sqrt(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=sqrt(y);
+    return * Res;
 #else
-  return sqrt(y);
+    return sqrt(y);
 #endif
 } /* FPU_IEEEDPSqrt */
 
@@ -202,10 +202,10 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPTieee,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    return * Res;
 #else
-  return y;
+    return y;
 #endif
 } /* FPU_IEEEDPTieee */
 
@@ -215,10 +215,10 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFieee,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    return * Res;
 #else
-  return y;
+    return y;
 #endif
 } /* FPU_IEEEDPFieee */
 
@@ -228,11 +228,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAsin,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=asin(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=asin(y);
+    return * Res;
 #else
-  return asin(y);
+    return asin(y);
 #endif
 } /* FPU_IEEEDPAsin */
 
@@ -242,11 +242,11 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAcos,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=acos(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=acos(y);
+    return * Res;
 #else
-  return acos(y);
+    return acos(y);
 #endif
 } /* FPU_IEEEDPAcos */
 
@@ -256,10 +256,10 @@ AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPLog10,
 )
 {
 #if UseRegisterArgs
-  QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
-  y=log10(y);
-  return * Res;
+    QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
+    y=log10(y);
+    return * Res;
 #else
-  return log10(y);
+    return log10(y);
 #endif
 } /* FPU_IEEEDPLog10 */
