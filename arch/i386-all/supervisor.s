@@ -9,7 +9,7 @@
 /******************************************************************************
 
     NAME
-	AROS_LH0(void, Switch,
+	AROS_LH0(void, Supervisor,
 
     LOCATION
 	struct ExecBase *, SysBase, 6, Exec)
