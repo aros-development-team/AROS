@@ -212,13 +212,31 @@ FUNCTIONS := \
 	xorregionregion \
 	xorregionregionnd
 
-#MM kernel-graphics-linklib : includes kernel-graphics-$(ARCH)-$(CPU) \
+#MM kernel-graphics-linklib : kernel-graphics-$(ARCH)-$(CPU) \
+#MM   hidd-graphics-linklib
+#MM kernel-graphics-kobj : kernel-graphics-$(ARCH)-$(CPU) \
 #MM   hidd-graphics-linklib
 
-%build_module_macro mmake=kernel-graphics \
+#MM kernel-graphics-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-oop-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-cgfx-includes \
+#MM     includes-copy
+
+%build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
-  funcs=$(FUNCTIONS) files=$(FILES) \
-  conffile=lib.conf \
+  files="graphics_init $(FUNCTIONS) $(FILES)" \
   uselibs=hiddgraphicsstubs
 
-%common
+# Generate dummy includes for the layer library to solve a circular include
+# dependency problem.
+
+OBJDIR   := $(GENDIR)/$(CURDIR)
+DUMMYDIR := $(OBJDIR)/dummyinc
+REFFILES := $(addprefix $(OBJDIR)/, $(addsuffix .ref, graphics_init $(FUNCTIONS) $(FILES)))
+
+%rule_genmodule_dummy modname=layers modtype=library \
+    targetdir=$(DUMMYDIR) conffile=../hyperlayers/layers.conf
+    
+$(REFFILES) : $(DUMMYDIR)/proto/layers.h

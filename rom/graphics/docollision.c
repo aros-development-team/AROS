@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function DoCollision()
     Lang: english
 */
 #include <graphics/rastport.h>
+#include <graphics/gels.h>
 
 /*****************************************************************************
 
