@@ -29,3 +29,5 @@ hpp/ - Very simple tool to preprocess HTML files.
 toollib/ - Functions used by several tools in this directory.
 
 xil/ - Enhanced HTML/XML preprocessor.
+
+gensets/ - Tool to handle symbol sets 
