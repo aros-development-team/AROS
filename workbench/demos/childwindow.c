@@ -20,11 +20,11 @@ struct Window	    	*win;
 struct RastPort     	*rp;
 struct Region	    	*shape;
 
-static void cleanup(char *msg)
+static void cleanup(char *msg, struct Window *w)
 {
     if(msg) printf("winshape: %s\n", msg);
     
-    if (win) CloseWindow(win);
+    if (w) CloseWindow(w);
     
     if (shape) DisposeRegion(shape);
     
@@ -41,48 +41,48 @@ static void openlibs(void)
 {
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39)))
     {
-    	cleanup("Can't open intuition.library!");
+    	cleanup("Can't open intuition.library!", NULL);
     }
 
     if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
     {
-    	cleanup("Can't open graphics.library!");
+    	cleanup("Can't open graphics.library!", NULL);
     }
    
 }
 
 static void getvisual(void)
 {
-    if (!(scr = LockPubScreen(0))) cleanup("Can't lock pub screen!");
-    if (!(dri = GetScreenDrawInfo(scr))) cleanup("Can't get drawinfo!");
+    if (!(scr = LockPubScreen(0))) cleanup("Can't lock pub screen!", NULL);
+    if (!(dri = GetScreenDrawInfo(scr))) cleanup("Can't get drawinfo!", NULL);
 }
 
 static void makeshape(void)
 {
     struct Rectangle rect;
     
-    if (!(shape = NewRegion())) cleanup("Can't create region!\n");
+    if (!(shape = NewRegion())) cleanup("Can't create region!\n", NULL);
     
     rect.MinX = 0;
     rect.MinY = 0;
     rect.MaxX = WINWIDTH - 1;
     rect.MaxY = scr->WBorTop + scr->Font->ta_YSize + 1 - 1;
     
-    if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n");
+    if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n", NULL);
     
     rect.MinX = WINCX - 20;
     rect.MinY = 20;
     rect.MaxX = WINCX + 20;
     rect.MaxY = WINHEIGHT - 1 - 20;
     
-    if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n");
+    if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n", NULL);
     
     rect.MinX = 20;
     rect.MinY = WINCY - 20;
     rect.MaxX = WINWIDTH - 1 - 20;
     rect.MaxY = WINCY + 20;
     
-    if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n");
+    if (!(OrRectRegion(shape, &rect))) cleanup("Can't create region!\n", NULL);
 
 }
 
@@ -127,7 +127,7 @@ static void makewin(struct Window * parent)
     
     win = OpenWindowTagList(0, win_tags);
     if (win) shape = 0;
-    if (!win) cleanup("Can't create window!");    
+    if (!win) cleanup("Can't create window!", NULL);    
     
     rp = win->RPort;
     SetAPen(rp, dri->dri_Pens[FILLPEN]);
@@ -171,7 +171,7 @@ int main(void)
     {
       makewin(w);
       handleall(w);
-      cleanup(0);
     }
+    cleanup(0,w);
     return 0;
 }
