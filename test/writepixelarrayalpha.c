@@ -8,7 +8,6 @@
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/intuition.h>
-#include <aros/machine.h>
 
 #include <math.h>
 #include <stdio.h>
