@@ -114,7 +114,7 @@ static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 #define SET_HOMEDIR 1
 
 #define  P(x)		/* Debug macro */
-#define  P2(x)		/* Debug macro */
+#define  P2(x) 		/* Debug macro */
 
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
@@ -665,7 +665,8 @@ LONG interact(STRPTR script)
 {
     ULONG cliNumber = PROCESS(FindTask(NULL))->pr_TaskNum;
     LONG  error = 0;
-
+    BOOL  moreLeft = FALSE;
+    
     if (stricmp(script, "S:Startup-Sequence") != 0)
     	printFlush("New Shell process %ld\n", &cliNumber);
     
@@ -688,7 +689,7 @@ LONG interact(STRPTR script)
 
     P(kprintf("Input now comes from the terminal.\n"));
     
-    while(TRUE)
+    do
     {
 	struct CommandLine cl = { NULL, 0, 0 };
 	struct Redirection rd;
@@ -697,14 +698,14 @@ LONG interact(STRPTR script)
 	{     
 	    printPrompt();
 
-	    readLine(&cl, Input());
-	    
+	    moreLeft = readLine(&cl, Input());	    
 	    error = checkLine(&rd, &cl);
 	    
 	    Redirection_release(&rd);
 	    FreeVec(cl.line);
 	}
-    }
+	
+    } while(moreLeft);
 
     printFlush("Process %ld ending\n", &cliNumber);
 
@@ -1206,14 +1207,14 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
     {
 	letter = FGetC(inputStream);
 
-	P2(kprintf("Read character %c\n", letter));
+	P2(kprintf("Read character %c (%d)\n", letter, letter));
 
 	/* -2 to skip test for boundary for terminating '\n\0' */
 	if(cl->position > (cl->size - 2))
 	{
 	    STRPTR newString = AllocVec(cl->size + __extendSize, MEMF_ANY);
 
-	    P(kprintf("Allocated new buffer %p\n", newString));
+	    P2(kprintf("Allocated new buffer %p\n", newString));
 
 	    if(cl->line  != NULL)
 		CopyMem(cl->line, newString, cl->size);
@@ -1225,7 +1226,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
 
 	if(letter == '\n' || letter == EOF)
 	{
-	    P(kprintf("Found end of line\n"));
+	    P2(kprintf("Found end of line\n"));
 	    break;
 	}
 
@@ -1236,7 +1237,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
     cl->line[cl->position++] = '\n';
     cl->line[cl->position++] = '\0';
 
-    P(kprintf("commandline: %s\n", cl->line));
+    P2(kprintf("commandline: %s\n", cl->line));
 
     if(letter == EOF)
 	return FALSE;
