@@ -60,22 +60,6 @@ struct IconEntry
     int selected;
 };
 
-static void *Node_Next(APTR node)
-{
-    if(node == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
-	return NULL;
-    return ((struct MinNode*)node)->mln_Succ;
-}
-
-static void *List_First(APTR list)
-{
-    if( !((struct MinList*)list)->mlh_Head) return NULL;
-    if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
-    return ((struct MinList*)list)->mlh_Head;
-}
-
 struct MUI_IconData
 {
     APTR pool; /* Pool to allocate data from */
@@ -493,6 +477,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     {
     	/* We don't use the predefined MUI background because workbench has own */
 	EraseRect(_rp(obj),_mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
+	/*  DoMethod(obj, MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj)); */
     }
 
     /* At we see if there any Icons without proper position, this is the wrong place here,
