@@ -151,6 +151,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Balance_desc,
     &_MUI_Colorfield_desc,
     &_MUI_Coloradjust_desc,
+    &_MUI_Imagedisplay_desc,
     &_MUI_Pendisplay_desc
 };
 
@@ -285,7 +286,7 @@ ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
 {
     /* MUI set the correct render info *before* it calls MUIM_Setup so please only use this function instead of DoMethodA() */
     muiRenderInfo(obj) = info;
-    return DoMethod(obj, MUIM_Setup, info);
+    return DoMethod(obj, MUIM_Setup, (IPTR)info);
 }
 
 APTR AllocVecPooled (APTR pool, ULONG memsize)
@@ -337,3 +338,20 @@ char *StrDup(char *x)
     return dup;
 }
 #endif
+
+void *Node_Next(APTR node)
+{
+    if(node == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
+		return NULL;
+    return ((struct MinNode*)node)->mln_Succ;
+}
+
+void *List_First(APTR list)
+{
+    if( !((struct MinList*)list)->mlh_Head) return NULL;
+    if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
+    return ((struct MinList*)list)->mlh_Head;
+}
+
