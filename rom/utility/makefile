@@ -32,7 +32,7 @@ FUNCTIONS := \
 	remnamedobject freenamedobject \
 	packstructuretags unpackstructuretags checkdate \
 	filtertagitems filtertagchanges \
-	smult32 umult32 smult64 umult64
+	smult32 umult32 smult64 umult64 sdivmod32 udivmod32
 
 # BEGIN_DESC{localmakevar}
 # \item{ASM_PATH} The path to the assembler sources

@@ -1,22 +1,8 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:32:32  ldp
-    Polish
 
-    Revision 1.4  1996/12/10 14:00:15  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 22:51:46  aros
-    Use proper Amiga datatypes (eg: ULONG not unsigned long)
-
-    Revision 1.2  1996/10/24 15:51:36  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/31 12:58:13  aros
-    Merged in/modified for FreeBSD.
-
-    Desc:
+    Desc: Signed 32 bit multiplication function.
     Lang: english
 */
 #include "utility_intern.h"
@@ -24,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <proto/utility_protos.h>
 
         AROS_LH2(LONG, SMult32,
 
@@ -50,6 +36,14 @@
         native instructions (if they exist), or in software using a
         simple algorithm based on expanding algebraic products.
 
+        The utility.library math functions are unlike all other utility
+        functions in that they don't require the library base to be
+        loaded in register A6, and they also save the values of the
+        address registers A0/A1.
+
+        This function is mainly to support assembly programers, and is
+        probably of limited use to higher-level language programmers.
+
     EXAMPLE
 
         LONG a = 352543;
@@ -58,20 +52,24 @@
         c == -1315946768
 
     BUGS
+        Of limited use to C programmers.
 
     SEE ALSO
-        utility/UMult32(), utility/UMult64(), utility/SMult64()
+        UMult32(), UMult64(), SMult64()
 
     INTERNALS
-        We are performing the operation:
+        May be handled by code in config/$(KERNEL), may not be...
+        It is for m68k-native.
 
+        For emulation we are performing the operation:
 
             (2^16 * a + b) * (2^16 * c + d)
           = 2^32 * ab + 2^16 * ad + 2^16 * bc + bd
           = 2^32 * ab + 2^16 ( ad + bc ) + bd
 
         Now since the result is a 32-bit number, the 2^32 term will have
-        no effect. (Since 2^32 > max (32-bit number).
+        no effect. (Since 2^32 > max (32-bit number)), as will the
+        high part of ad + bc.
 
         Therefore:
         product = 2^16( ad + bc ) + bd
@@ -85,35 +83,23 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef HAS_32BITMULS
+    /* If we have native support for 32 * 32 -> 32, use that. */
+
     return arg1 * arg2;
-#else
+
+#if 0
+    /* This is effectively what the emulation does, see also
+        config/m68k-native/sumult32.s
+    */
 
     UWORD a1, b1, a0, b0;
-    BOOL neg;
-
-    /* Fix everything up so that -ve signs don't vanish */
-    if(arg1 < 0)
-    {
-        neg = 1; arg1 = -arg1;
-    }
-    else
-        neg = 0;
-
-    if(arg2 <= 0)
-    {
-        neg ^= 1; arg2 = -arg2; 
-    }
-
-    /* The compiler should optimize these div/mults by 65536. */
 
     a1 = (arg1 >> 16) & 0xffff;
     a0 = arg1 & 0xffff;
     b1 = (arg2 >> 16) & 0xffff;
     b0 = arg2 & 0xffff;
 
-    arg1 = (((a0 * b1) + (a1 * b0)) <<16) + (b0 * a0);
-    return (neg ? -arg1 : arg1);
+    return ((a0 * b1) + (a1 * b0)) << 16 + (b0 * a0);
 #endif
 
     AROS_LIBFUNC_EXIT

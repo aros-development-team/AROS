@@ -1,13 +1,8 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/01/27 00:32:32  ldp
-    Polish
 
-    Revision 1.1  1997/01/08 03:36:13  iaint
-    A few more utility.lib functions
-
-    Desc:
+    Desc: Pack a TagList into a structure.
     Lang: english
 */
 #include "utility_intern.h"
@@ -15,7 +10,9 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <utility/tagitem.h>
+#include <utility/pack.h>
+#include <proto/utility_protos.h>
 
         AROS_LH3(ULONG, PackStructureTags,
 
@@ -50,7 +47,7 @@
     BUGS
 
     SEE ALSO
-        UnpackStructureTags
+        UnpackStructureTags()
 
     INTERNALS
 
@@ -99,9 +96,14 @@
 
             XXX: Have to see what happens when the Tag doesn't exist.
         */
-        if(*packTable & (PKCTRL_BIT|PSTF_EXISTS))
+        if((*packTable & (PKCTRL_BIT|PSTF_EXISTS)) == (PKCTRL_BIT|PSTF_EXISTS))
         {
-            *(UBYTE *)&((UBYTE *)pack)[memOff] |= (1 << bitOff);
+            /* If the PSTF_SIGNED bit is 1, then this is actually FLIPBIT */
+            if(*packTable & PSTF_SIGNED)
+                *(UBYTE *)&((UBYTE *)pack)[memOff] &= ~(1 << bitOff);
+            else
+                *(UBYTE *)&((UBYTE *)pack)[memOff] |= (1 << bitOff);
+
             count++;
             continue;
         }
@@ -127,27 +129,27 @@
         switch((*packTable >> 24) & 0x98)
         {
             case (PKCTRL_ULONG >> 24):
-                *(ULONG *)&((UBYTE *)pack)[memOff] = (ULONG)ti->ti_Data;
+                *(ULONG *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
                 break;
 
             case (PKCTRL_UWORD >> 24):
-                *(UWORD *)&((UBYTE *)pack)[memOff] = (ULONG)ti->ti_Data;
+                *(UWORD *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
                 break;
 
             case (PKCTRL_UBYTE >> 24):
-                *(UBYTE *)&((UBYTE *)pack)[memOff] = (ULONG)ti->ti_Data;
+                *(UBYTE *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
                 break;
 
             case (PKCTRL_LONG >> 24):
-                *(LONG *)&((UBYTE *)pack)[memOff] = (LONG)ti->ti_Data;
+                *(LONG *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
                 break;
 
             case (PKCTRL_WORD >> 24):
-                *(WORD *)&((UBYTE *)pack)[memOff] = (LONG)ti->ti_Data;
+                *(WORD *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
                 break;
 
             case (PKCTRL_BYTE >> 24):
-                *(BYTE *)&((UBYTE *)pack)[memOff] = (LONG)ti->ti_Data;
+                *(BYTE *)&((UBYTE *)pack)[memOff] = ti->ti_Data;
                 break;
 
             case (PKCTRL_BIT >> 24):

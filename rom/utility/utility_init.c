@@ -1,48 +1,36 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:32:33  ldp
-    Polish
 
-    Revision 1.6  1996/10/24 15:49:28  aros
-    Use the new "AROS" macros
-
-    Fixed severe bug: The size of the library was "struct UtilityBase" instead
-    of "struct IntUtilityBase" which caused a MemCorrupt-Alert.
-
-    Use GetIntUtilityBase() to access the private fields.
-
-    Revision 1.5  1996/09/11 16:54:31  digulla
-    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.4  1996/09/11 14:03:56  digulla
-    Quick hack to make it work again.
-
-    Revision 1.3  1996/08/13 14:11:54  digulla
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:42  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Utility Resident and initialization.
+    Lang: english
 */
-#include <exec/resident.h>
-#include <proto/exec.h>
+#include <exec/types.h>
+#include <aros/system.h>
 #include <aros/libcall.h>
+#include <exec/alerts.h>
+#include <exec/libraries.h>
+#include <exec/resident.h>
+#include <exec/execbase.h>
 #include <dos/dos.h>
-#include "utility_intern.h"
-/* #include <utility/utility.h> */
+#include <proto/exec_protos.h>
+#include <proto/utility_protos.h>
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const Utility_functable[];
-struct UtilityBase *AROS_SLIB_ENTRY(init,Utility) ();
+#include "utility_intern.h"
+
+extern const UBYTE name[];
+extern const UBYTE version[];
+extern const APTR inittabl[4];
+extern void *const Utility_functable[];
+struct UtilityBase *AROS_SLIB_ENTRY(init,Utility)();
 extern const char Utility_end;
+
+extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility)();
+extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility)();
+extern ULONG AROS_SLIB_ENTRY(SMult64_020,Utility)();
+extern ULONG AROS_SLIB_ENTRY(UMult64_020,Utility)();
+extern ULONG AROS_SLIB_ENTRY(SDivMod32_020,Utility)();
+extern ULONG AROS_SLIB_ENTRY(UDivMod32_020,Utility)();
 
 int Utility_entry(void)
 {
@@ -55,20 +43,20 @@ const struct Resident Utility_resident=
     RTC_MATCHWORD,
     (struct Resident *)&Utility_resident,
     (APTR)&Utility_end,
-    RTF_AUTOINIT,
-    39,
+    RTF_AUTOINIT|RTF_COLDSTART,
+    41,
     NT_LIBRARY,
-    0,
-    (char *)name,
-    (char *)&version[6],
+    103,
+    (STRPTR)name,
+    (STRPTR)&version[6],
     (ULONG *)inittabl
 };
 
-static const char name[]=UTILITYNAME;
+const UBYTE name[]="utility.library";
 
-static const char version[]="$VER: utility 39.0 (5.6.96)\n\015";
+const UBYTE version[]="$VER: utility 41.9 (2.2.97)\r\n";
 
-static const APTR inittabl[4]=
+const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IntUtilityBase),
     (APTR)Utility_functable,
@@ -76,21 +64,85 @@ static const APTR inittabl[4]=
     &AROS_SLIB_ENTRY(init,Utility)
 };
 
+static struct TagItem nstags[] =
+{
+    { ANO_NameSpace, TRUE },
+    { ANO_Flags, NSF_NODUPS },
+    { TAG_DONE, 0 }
+};
+
 #ifdef SysBase
 #undef SysBase
 #endif
+
+/* iaint:
+    Sigh, I require this to compile this with DICE, I will
+    remove it at a later date...or at least change it :)
+*/
+
+#ifdef __GNUC__
 #define SysBase GetIntUtilityBase(UtilityBase)->ub_SysBase
+#else
+struct ExecBase *SysBase = 0L;
+#endif
+
+#define SetFunc(a,b) SetFunction((struct Library *)UtilityBase, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
 
 AROS_LH2(struct UtilityBase *, init,
- AROS_LHA(struct UtilityBase *, UtilityBase, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, Utility)
+    AROS_LHA(struct UtilityBase *, UtilityBase, D0),
+    AROS_LHA(BPTR,               segList,   A0),
+    struct ExecBase *, sysBase, 0, Utility)
 {
     AROS_LIBFUNC_INIT
 
     /* Store arguments */
     GetIntUtilityBase(UtilityBase)->ub_SysBase=sysBase;
     GetIntUtilityBase(UtilityBase)->ub_SegList=segList;
+#ifdef _DCC
+    SysBase = sysBase;
+#endif
+
+    /* Set up UtilityBase */
+    UtilityBase->ub_LibNode.lib_Node.ln_Pri = 0;
+    UtilityBase->ub_LibNode.lib_Node.ln_Type = NT_LIBRARY;
+    (const)UtilityBase->ub_LibNode.lib_Node.ln_Name = name;
+    UtilityBase->ub_LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
+    UtilityBase->ub_LibNode.lib_Version = 41;
+    UtilityBase->ub_LibNode.lib_Revision = 8;
+    (const)UtilityBase->ub_LibNode.lib_IdString = &version[6];
+
+    GetIntUtilityBase(UtilityBase)->ub_LastID = 0;
+
+    GetIntUtilityBase(UtilityBase)->ub_GlobalNameSpace =
+        AllocNamedObjectA("utility global name space", nstags);
+
+    if(GetIntUtilityBase(UtilityBase)->ub_GlobalNameSpace == NULL)
+    {
+        Alert(AG_NoMemory | AO_UtilityLib);
+    }
+
+#if defined(__mc68000__)
+    /* Are we running on a m68020 or higher?
+       If so we should setfunction all the relevant functions to use
+       native code.
+    */
+    if(SysBase->AttnFlags & AFF_68020)
+    {
+        SetFunc(23, SMult32_020);
+        SetFunc(24, UMult32_020);
+        SetFunc(25, SDivMod32_020);
+        SetFunc(26, UDivMod32_020);
+
+#if 0
+        /* The 060 doesn't have some of the instructions I use... */
+        if((SysBase->AttnFlags & AFF_68060) == 0)
+        {
+            SetFunc(33, SMult64_020);
+            SetFunc(34, UMult64_020);
+        }
+#endif
+    }
+#endif
 
     /* You would return NULL if the init failed */
     return UtilityBase;
@@ -99,7 +151,7 @@ AROS_LH2(struct UtilityBase *, init,
 
 AROS_LH1(struct UtilityBase *, open,
  AROS_LHA(ULONG, version, D0),
-	   struct UtilityBase *, UtilityBase, 1, Utility)
+           struct UtilityBase *, UtilityBase, 1, Utility)
 {
     AROS_LIBFUNC_INIT
 
@@ -116,24 +168,26 @@ AROS_LH1(struct UtilityBase *, open,
 }
 
 AROS_LH0(BPTR, close,
-	   struct UtilityBase *, UtilityBase, 2, Utility)
+           struct UtilityBase *, UtilityBase, 2, Utility)
 {
     AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
     if(!--UtilityBase->ub_LibNode.lib_OpenCnt)
     {
-	/* Delayed expunge pending? */
-	if(UtilityBase->ub_LibNode.lib_Flags&LIBF_DELEXP)
-	    /* Then expunge the library */
-	    return expunge();
+#ifdef DISK_BASED
+        /* Delayed expunge pending? */
+        if(UtilityBase->ub_LibNode.lib_Flags&LIBF_DELEXP)
+            /* Then expunge the library */
+            return expunge();
+#endif
     }
     return 0;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0(BPTR, expunge,
-	   struct UtilityBase *, UtilityBase, 3, Utility)
+           struct UtilityBase *, UtilityBase, 3, Utility)
 {
     AROS_LIBFUNC_INIT
 
@@ -142,10 +196,12 @@ AROS_LH0(BPTR, expunge,
     /* Test for openers. */
     if(UtilityBase->ub_LibNode.lib_OpenCnt)
     {
-	/* Set the delayed expunge flag and return. */
-	UtilityBase->ub_LibNode.lib_Flags|=LIBF_DELEXP;
-	return 0;
+        /* Set the delayed expunge flag and return. */
+        UtilityBase->ub_LibNode.lib_Flags|=LIBF_DELEXP;
+        return 0;
     }
+#ifdef DISK_BASED
+    FreeNamedObject(GetIntUtilityBase(UtilityBase)->ub_GlobalNameSpace);
 
     /* Get rid of the library. Remove it from the list. */
     Remove(&UtilityBase->ub_LibNode.lib_Node);
@@ -155,14 +211,17 @@ AROS_LH0(BPTR, expunge,
 
     /* Free the memory. */
     FreeMem((char *)UtilityBase-UtilityBase->ub_LibNode.lib_NegSize,
-	    UtilityBase->ub_LibNode.lib_NegSize+UtilityBase->ub_LibNode.lib_PosSize);
+            UtilityBase->ub_LibNode.lib_NegSize+UtilityBase->ub_LibNode.lib_PosSize);
+#else
+    ret = 0;
+#endif
 
     return ret;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0I(int, null,
-	    struct UtilityBase *, UtilityBase, 4, Utility)
+            struct UtilityBase *, UtilityBase, 4, Utility)
 {
     AROS_LIBFUNC_INIT
     return 0;

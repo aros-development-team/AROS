@@ -1,22 +1,8 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:32:29  ldp
-    Polish
 
-    Revision 1.4  1996/12/10 14:00:12  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 22:51:46  aros
-    Use proper Amiga datatypes (eg: ULONG not unsigned long)
-
-    Revision 1.2  1996/10/24 15:51:34  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/31 12:58:11  aros
-    Merged in/modified for FreeBSD.
-
-    Desc:
+    Desc: Convert the date from machine to human form.
     Lang: english
 */
 #include "utility_intern.h"
@@ -24,7 +10,8 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <utility/date.h>
+#include <proto/utility_protos.h>
 
         AROS_LH2(void, Amiga2Date,
 
@@ -77,53 +64,95 @@
         19-05-96    iaint   Wrote, with a little help from a Perl package.
         11-08-96    iaint   Updated for the new AROS format.
         17-08-96    iaint   Removed calls to unimplemented UDivMod32/UMult32
+        24-02-97    iaint   Reimplemented, actually works now :)
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     static const ULONG dim[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-    ULONG days, temp, leap;
+    ULONG days;
+    UWORD leap, temp, year;
 
     days = seconds / 86400;
     result->wday = days % 7;
-
-    /*
-        using the number of days since 1.1.76 makes leap year calculations
-        simpler.
-    */
-
-    days += 731;
 
     result->sec = seconds % 60;
     seconds /= 60;
     result->min = seconds % 60;
     seconds /= 60;
-    result->hour= seconds % 24;
+    result->hour = seconds % 24;
 
-    /* Number of sets of four years since 1976 */
-    temp = days / 1461;
+    /*  Calculate the current year.
 
-    /* days since the beginning of the last leap year  */
-    days %= 1461;
+        Firstly, if the year is less than 1980, then the leap year
+        handling is not required...
 
-    temp = 1976 + (temp << 2);
-
-    leap = (days <= 365);
-    if(!leap) /* not a leap year */
+    */
+    if(days < 1096)
     {
-        temp++;
-        days -= 366;
-        result->year = temp + (days / 365);
-        days %= 365;
+        result->year = 1978;
+
+        if(days > 729)
+            leap = TRUE;
+        else
+            leap = FALSE;
+
+        year = (days / 365);
+        days = days - (year * 365);
     }
+    else
+    {
+        /*
+            We need to get into a year that follows a leap year, there
+            are two cases, >2100 and <=2100
+
+            If the year is after 2100, which is not a leap year, then
+            start point is 2101.
+
+            The first day in year 2101 is ...
+        */
+        if(days > 44925)
+        {
+            days -= 44926;
+            result->year = 2101;
+        }
+        /*
+            Otherwise, we just set everything up so that we are relative
+            to 1981.
+        */
+        else
+        {
+            result->year = 1981;
+            days -= 1096;
+        }
+
+        /*
+            From here, we know that every remaining set of 4 years
+            has 1 leap year...
+        */
+        year = days / 1461;
+        days -= year * 1461;
+        result->year += year * 4;
+
+        if(days > 1095)
+            leap = TRUE;
+        else
+            leap = FALSE;
+
+        year = days / 365;
+        days -= year * 365;
+
+        /* Now days is the number of days in the current year... */
+    } /* (not less than 1981) */
 
     /* days now contains the days since the beginning of the current year */
     for(temp = 0; (temp == 1) ? (days >= 28 + leap) : (days >= dim[temp]); temp++)
         days -= (temp == 1) ? (28 + leap) : dim[temp];
 
-    result->month = temp;
+    result->month = temp + 1;
     result->mday = days + 1;
+    result->year += year;
 
     AROS_LIBFUNC_EXIT
 

@@ -1,11 +1,6 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/01/27 00:32:33  ldp
-    Polish
-
-    Revision 1.1  1997/01/08 03:36:13  iaint
-    A few more utility.lib functions
 
     Desc: UnpackStructureTags - unpack structure to values in TagList.
     Lang: english
@@ -15,7 +10,9 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <utility/tagitem.h>
+#include <utility/pack.h>
+#include <proto/utility_protos.h>
 
         AROS_LH3(ULONG, UnpackStructureTags,
 
@@ -46,6 +43,7 @@
         The number of Tags unpacked.
 
     NOTES
+        PSTF_EXISTS has no effect on this function.
 
     EXAMPLE
 
@@ -94,8 +92,6 @@
 
         memOff = *packTable & 0x1FFF;
         bitOff = (*packTable & 0xE000) >> 13;
-
-        /* XXX: Don't know what to do with the PSTF_EXISTS flags here. */
 
         /*
             I need this rather interesting casting because the offset

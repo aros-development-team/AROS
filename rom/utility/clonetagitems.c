@@ -1,22 +1,6 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:32:30  ldp
-    Polish
-
-    Revision 1.4  1996/12/10 14:00:13  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 15:51:35  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/10/23 14:08:28  aros
-    Formatted
-
-    Added parens to all assignments which are used truth expressions
-
-    Revision 1.1  1996/10/22 04:45:59  aros
-    Some more utility.library functions.
 
     Desc: CloneTagItems()
     Lang: english
@@ -27,95 +11,102 @@
 
     NAME */
 #include <utility/tagitem.h>
-#include <proto/utility.h>
+#include <proto/utility_protos.h>
 
-	AROS_LH1(struct TagItem *, CloneTagItems,
+        AROS_LH1(struct TagItem *, CloneTagItems,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, tagList, A0),
+        AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
-	struct UtilityBase *, UtilityBase, 12, Utility)
+        struct UtilityBase *, UtilityBase, 12, Utility)
 
 /*  FUNCTION
-	Duplicates a TagList
+        Duplicates a TagList. The input TagList can be NULL, in which
+        case an empty TagList will be returned.
 
     INPUTS
-	tagList     -	The TagList that you want to clone
+        tagList     -   The TagList that you want to clone
 
     RESULT
-	A TagList which contains a copy of the TagItems contained in the
-	original list. The list is cloned so that calling FindTagItem()
-	on a tag in the clone will return the same value as that in the
-	original list (assuming the original has not been modified).
+        A TagList which contains a copy of the TagItems contained in the
+        original list. The list is cloned so that calling FindTagItem()
+        on a tag in the clone will return the same value as that in the
+        original list (assuming the original has not been modified).
 
     NOTES
-	If the original TagList is NULL, then no cloning will take place.
 
     EXAMPLE
-	struct TagItem *tagList, *tagListClone;
+        struct TagItem *tagList, *tagListClone;
 
-	\* Set up the original taglist tagList *\
+        \* Set up the original taglist tagList *\
 
-	tagListClone = CloneTagItems( tagList );
+        tagListClone = CloneTagItems( tagList );
 
-	\* Do what you want with your TagList here *\
+        \* Do what you want with your TagList here *\
 
-	FreeTagItems( tagListClone );
+        FreeTagItems( tagListClone );
 
     BUGS
 
     SEE ALSO
-	<utility/tagitem.h>, AllocateTagItems(), FreeTagItems(),
-	RefreshTagItemClones()
+        AllocateTagItems(), FreeTagItems(), RefreshTagItemClones()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    utility_lib.fd and clib/utility_protos.h
-	11-08-96    iaint   Implemented as AROS function.
-	01-09-96    iaint   Updated the docs to give the same warnings
-			    as the autodocs.
-	05-09-96    iaint   Bit of optimisation (one variable :( )
+        29-10-95    digulla automatically created from
+                            utility_lib.fd and clib/utility_protos.h
+        11-08-96    iaint   Implemented as AROS function.
+        01-09-96    iaint   Updated the docs to give the same warnings
+                            as the autodocs.
+        05-09-96    iaint   Bit of optimisation (one variable :( )
+        23-01-97    iaint   Corrected NULL TagList handling.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *newList,
-		   *ti;
+    struct TagItem *newList;
     LONG numTags = 1;
 
-    /* Make sure we actually have some valid input here... */
-    if (!tagList)
-	return NULL;
+    /*
+        This is rather strange, if we have a NULL input, then we still
+        have to allocate a list. This is to circumvent a bug in SID v2,
+        which for some unknown reason is the only program I have seen
+        that has this problem.
+
+        Had to alter RefreshTagItemClones as well.
+        However, that is also what the autodoc says...
+    */
+    if (tagList)
+    {
+        /*
+            We start the counter at 1 since this count will not include the
+            TAG_DONE TagItem
+
+            newList is used here to save a variable. We don't need to do
+            anything to the value of newList afterwards, since AllocateTagitems()
+            will take care of setting it to NULL if the allocation fails.
+        */
+        newList = tagList;
+        while (NextTagItem (&newList) != NULL)
+            numTags++;
+    }
 
     /*
-	We start the counter at 1 since this count will not include the
-	TAG_DONE TagItem
+        Then we shall allocate the TagList.
+        If we can actually allocate a clone tag list, then we shall copy
+        the tag values from one tag to another, the function
+        "RefreshTagItemClones()" is used here to help re-use code.
 
-	newList is used here to save a variable. We don't need to do
-	anything to the value of newList afterwards, since AllocateTagitems()
-	will take care of setting it to NULL if the allocation fails.
-    */
-    newList = tagList;
-    while ((ti = NextTagItem (&newList)))
-	numTags++;
-
-    /*
-	Then we shall allocate the TagList.
-	If we can actually allocate a clone tag list, then we shall copy
-	the tag values from one tag to another, the function
-	"RefreshTagItemClones()" is used here to help re-use code.
-
-	Of course we don't have to worry about the if statement, since
-	the original is guaranteed to have not been changed since
-	CloneTagItems() :)
+        Of course we don't have to worry about the if and only if
+        statement, since the original is guaranteed to have not
+        been changed since CloneTagItems() :)
     */
 
-    if ((newList = AllocateTagItems (numTags)))
-	RefreshTagItemClones (newList, tagList);
+    if ((newList = AllocateTagItems(numTags)))
+        RefreshTagItemClones (newList, tagList);
 
     /* newList == 0 when allocation failed - AllocateTagItems handles this*/
     return newList;

@@ -1,20 +1,6 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:32:32  ldp
-    Polish
-
-    Revision 1.4  1996/12/10 14:00:15  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 22:51:46  aros
-    Use proper Amiga datatypes (eg: ULONG not unsigned long)
-
-    Revision 1.2  1996/10/24 15:51:38  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/31 12:58:13  aros
-    Merged in/modified for FreeBSD.
 
     Desc: Signed 64 bit multiplication function.
     Lang: english
@@ -24,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <proto/utility_protos.h>
 
         AROS_LH2(QUAD, SMult64,
 
@@ -45,22 +31,32 @@
         arg1 * arg2
 
     NOTES
+        For m68k assembly programmers, QUADs are returned in D0:D1 (with
+        the high 32 bits in D0).
+
+        The utility.library math functions are unlike all other utility
+        functions in that they don't require the library base to be
+        loaded in register A6, and they also save the values of the
+        address registers A0/A1.
+
+        This function is mainly to support assembly programers, and is
+        probably of limited use to higher-level language programmers.
 
     EXAMPLE
 
     BUGS
-        There is a problem under the current system in that it is very
-        hard to return a 64-bit value.
 
     SEE ALSO
         utility/SMult32(), utility/UMult32(), utility/UMult64()
 
     INTERNALS
-        This is essentially SMult32(), but without the code to calculate
+        Actually handled in config/$(KERNEL)/utility_math.s
+
+        This is essentially SMult32(), but with the code to calculate
         the product of the high 32 bits of the multiplicands.
 
         In fact all that is added is the 2^32 * ac term (see docs for
-            SMult32().
+            SMult32().)
 
     HISTORY
         29-10-95    digulla automatically created from
@@ -71,12 +67,25 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef HAS_64BITMULS
+    /* If we have native support for 32 * 32 -> 64, use that.
+       The compiler will complain if it cannot support QUAD's
+       natively (GNU C can)
+     */
+
     return arg1 * arg2;
-#else
+
+#if 0
+    /* This is partially the algoritm that is used, however for a
+       more complete version see config/m68k-native/smult64.s
+
+       This version has problems with:
+        - adding the partial products together
+        - setting the value of QUADs
+    */
 
     QUAD product;
     WORD a0, a1, b0, b1;
+    LONG part_prod;
     BOOL neg;
 
     /* Fix everything up so that -ve signs don't vanish */
@@ -98,15 +107,17 @@
     b0 = arg2 & 0xFFFF;
     b1 = (arg2 >> 16) & 0xFFFF;
 
-    /* In case numbers are small */
+    part_prod = (a0 * b1) + (a1 * b0);
+
+    /* In case numbers are small - note, does NOT compile */
     if(a1 && b1)
-        product = (QUAD)(a1 * b1) << 32;
+        SET_HIGH32OF64(product, a1 * b1 + (part_prod >> 16));
     else
-        product = 0;
+        SET_HIGH32OF64(product, (part_prod >> 16));
 
-    product += (((a1 * b0) + (a0 * b1)) << 16) + (a0 * b0);
+    SET_LOW32OF64(product, (part_prod & 0xFFFF) + (a0 * b0));
 
-    return (neg ? -product : product);
+    return (neg ? NEG64(product) : product);
 #endif
 
     AROS_LIBFUNC_EXIT

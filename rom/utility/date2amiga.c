@@ -1,19 +1,8 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:32:30  ldp
-    Polish
 
-    Revision 1.3  1996/12/10 14:00:13  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:35  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/31 12:58:12  aros
-    Merged in/modified for FreeBSD.
-
-    Desc:
+    Desc: Convert a human understandable date to a machine form.
     Lang: english
 */
 #include "utility_intern.h"
@@ -21,7 +10,8 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <utility/date.h>
+#include <proto/utility_protos.h>
 
         AROS_LH1(ULONG, Date2Amiga,
 
@@ -48,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        utility/Amiga2Date(), utility/CheckData()
+        Amiga2Date(), CheckData()
 
     INTERNALS
         Bit of a hack in the leap year handling.
@@ -67,36 +57,42 @@
     static const UWORD dayspermonth[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
     ULONG time;
-    UWORD year;
+    UWORD year, leaps;
+
+    year = date->year - 1978;
 
     time = date->sec + (date->min * 60) + (date->hour * 3600);
-    time += (date->mday - 1)* 86400;
-    time += dayspermonth[date->month-1] * 86400;
-    time += (date->year - 1978) * 86400 * 365;
+    time += ((date->mday - 1) + dayspermonth[date->month - 1]) * 86400;
+    time += year * 31536000;
 
-    /* Now comes the hard bit, how do we work out the extra day for a leap
-        year. I do it by subtracting lots of four to start with, then
-        by considering the remaining few years.
+    /* How do we calculate leap years? That is a very good question.
+       The year 1978 is NOT a leap year, but 1980 is...
 
-        For every group of four years which we have to subtract, we can
-        add one leap year. eg 1982 - 1978= 4, so we add one leap year (1980)
+       I want to arrange it so that the last year of any four year group
+       is a leap year. So the first year I can really deal with is either
+       1977 or 1981. So I choose 1977 (the year I was born in :)
 
-        1989 - 1978 = 11 (two lots of four subtracted), (1980, 1984, 1988).
-        However in this case, the 1988 is handled by the code after the
-        while loop.
+        Then, to get the number of leap years I divide by 4.
+        However, if year is a year which is a leap year, then this year
+        will not be counted, so I have to check for this.
 
-        Is there an easier way perhaps?
+        If year % 4 == 3, then we are in a leap year, and if the month
+        is after February, then I can add a leap year.
     */
-    year = date->year - 1978;
-    while( year > 3 )
-    {
-        if(year > 4 )   time += 86400;
-        year -= 4;
-    }
 
+    year++;
+    leaps = year / 4;
+    if( (year % 4 == 3) && (date->month > 2))
+        leaps++;
 
-    if( (year > 2) || ((year == 2) && (date->month > 2)))
-        time += 86400;
+    /* If the year is greater than the year 2100, or it is the
+       year 2100 and after February, then we also have to subtract
+       a leap year, as the year 2100 is NOT a leap year.
+    */
+    if( ( year > 123) || ((year == 123) && (date->month > 2)) )
+        leaps--;
+
+    time += leaps * 86400;
 
     return time;
 

@@ -1,22 +1,8 @@
 /*
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:32:33  ldp
-    Polish
 
-    Revision 1.4  1996/12/10 14:00:16  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/24 22:51:47  aros
-    Use proper Amiga datatypes (eg: ULONG not unsigned long)
-
-    Revision 1.2  1996/10/24 15:51:39  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/31 12:58:13  aros
-    Merged in/modified for FreeBSD.
-
-    Desc:
+    Desc: Unsigned 32 bit multiplication function.
     Lang: english
 */
 #include "utility_intern.h"
@@ -24,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/utility.h>
+#include <proto/utility_protos.h>
 
         AROS_LH2(ULONG, UMult32,
 
@@ -51,6 +37,14 @@
         simple algorithm (three multiplications, two shifts and
         an addition.
 
+        The utility.library math functions are unlike all other utility
+        functions in that they don't require the library base to be
+        loaded in register A6, and they also save the values of the
+        address registers A0/A1.
+
+        This function is mainly to support assembly programers, and is
+        probably of limited use to higher-level language programmers.
+
     EXAMPLE
 
         LONG a = 352543;
@@ -64,8 +58,11 @@
         utility/SMult32(), utility/UMult64(), utility/SMult64()
 
     INTERNALS
-        We are performing the operation:
+        May be handled by code in config/$(KERNEL), may not be...
 
+        It is for m68k-native...
+
+        To emulate this operation we are performing the operation:
 
             (2^16 * a + b) * (2^16 * c + d)
           = 2^32 * ab + 2^16 * ad + 2^16 * bc + bd
@@ -86,10 +83,14 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef HAS_32BITMULU
-    return arg1 * arg2;
-#else
+    /* If we have native support for 32 * 32 -> 32, use that. */
 
+    return arg1 * arg2;
+
+#if 0
+    /* This is the equivalent to the emulating code,
+        see also config/m68k-native/sumult32.s
+    */
     UWORD a0, a1, b0, b1;
 
     a1 = (arg1 >> 16) & 0xffff;
