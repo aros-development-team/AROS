@@ -107,6 +107,7 @@ struct MUI_ApplicationData
     struct timerequest *app_TimerReq;
     ULONG	   app_TimerOutstanding;
     Object        *app_Menustrip;
+    ULONG          app_MenuAction; /* Remember last action */
 };
 
 /*****************************/

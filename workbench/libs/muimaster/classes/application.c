@@ -73,9 +73,9 @@ MUIA_Application_ForceQuit [..G]          not triggered yet
 MUIA_Application_HelpFile [ISG]           unused/dummy
 MUIA_Application_Iconified [.SG]          todo (wm interaction ?)
 MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
-MUIA_Application_MenuAction [..G]         todo (will certainly be a hack)
+MUIA_Application_MenuAction [..G]         done
 MUIA_Application_MenuHelp [..G]           todo (ditto)
-MUIA_Application_Menustrip [I..]          todo (ditto)
+MUIA_Application_Menustrip [I..]          done
 MUIA_Application_RexxHook [ISG]           needs Arexx
 MUIA_Application_RexxMsg [..G]            needs Arexx
 MUIA_Application_RexxString [.S.]         needs Arexx
@@ -380,7 +380,7 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
-static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
+static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ApplicationData *data  = INST_DATA(cl, obj);
     struct TagItem             *tags  = msg->ops_AttrList;
@@ -394,27 +394,30 @@ static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_Application_HelpFile:
-	    data->app_HelpFile = (STRPTR)tag->ti_Data;
-	    break;
-	case MUIA_Application_Iconified:
-	    data->app_Iconified = (ULONG)tag->ti_Data;
-	    break;
-	case MUIA_Application_Sleep:
-	    if (tag->ti_Data)
-		data->app_SleepCount++;
-	    else
-		data->app_SleepCount--;
+	    case    MUIA_Application_HelpFile:
+		    data->app_HelpFile = (STRPTR)tag->ti_Data;
+		    break;
 
-	    if (data->app_SleepCount < 0)
-		data->app_SleepCount = 0;
-	    else
-	    {
-		/*
-		 * todo SC == 0 (wakeup), SC == 1 (sleep)
-		 */
-	    }
-	    break;
+	    case    MUIA_Application_Iconified:
+		    data->app_Iconified = (ULONG)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Application_Sleep:
+		    if (tag->ti_Data) data->app_SleepCount++;
+		    else data->app_SleepCount--;
+		    if (data->app_SleepCount < 0)
+			data->app_SleepCount = 0;
+		    else
+		    {
+			/*
+			 * todo SC == 0 (wakeup), SC == 1 (sleep)
+			 */
+		    }
+		    break;
+
+	    case    MUIA_Application_MenuAction:
+		    data->app_MenuAction = tag->ti_Data;
+		    break;
 	}
     }
 
@@ -475,6 +478,9 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 	return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
     case MUIA_Application_Menustrip:
 	STORE = (ULONG)data->app_Menustrip;
+	return 1;
+    case MUIA_Application_MenuAction:
+	STORE = (ULONG)data->app_MenuAction;
 	return 1;
     }
 
@@ -837,8 +843,7 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
 	*/
     case OM_NEW: return Application_New(cl, obj, (struct opSet *) msg);
     case OM_DISPOSE: return Application_Dispose(cl, obj, msg);
-    case OM_SET:
-	return(mSet(cl, obj, (struct opSet *)msg));
+    case OM_SET: return Application_Set(cl, obj, (struct opSet *)msg);
     case OM_GET:
 	return(mGet(cl, obj, (struct opGet *)msg));
     case OM_ADDMEMBER: return Application_AddMember(cl, obj, (APTR)msg);
