@@ -1848,6 +1848,84 @@ static VOID bitmap_putimagelut(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+static VOID bitmap_getimagelut(OOP_Class *cl, OOP_Object *o,
+    	    	    	    struct pHidd_BitMap_GetImageLUT *msg)
+{
+    WORD    	    	    x, y;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    HIDDT_PixelLUT  	    *pixlut = msg->pixlut;
+    HIDDT_Pixel     	    *lut = pixlut ? pixlut->pixels : NULL;
+    HIDDT_Pixel     	    *linebuf;
+    struct HIDDBitMapData   *data;  
+    
+    data = OOP_INST_DATA(cl, o);
+    
+    EnterFunc(bug("BitMap::GetImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+    
+    linebuf = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
+    
+    for(y = 0; y < msg->height; y++)
+    {
+    	if (linebuf)
+	{
+	    HIDD_BM_GetImage(o,
+	    	    	    (UBYTE *)linebuf,
+			    0,
+			    msg->x,
+			    msg->y + y,
+			    msg->width,
+			    1,
+			    vHidd_StdPixFmt_Native32);
+    	    if (lut)
+	    {
+	    	#warning "This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway"
+    		for(x = 0; x < msg->width; x++)
+		{
+    	    	    pixarray[x] = (UBYTE)linebuf[x];
+		}
+	    }
+	    else
+	    {
+    		for(x = 0; x < msg->width; x++)
+		{
+    	    	    pixarray[x] = (UBYTE)linebuf[x];
+		}
+	    }
+	    pixarray += msg->modulo;
+	    	    
+	} /* if (linebuf) */
+	else
+	{
+    	    if (lut)
+	    {
+	    	#warning "This is wrong, but HIDD_BM_GetImageLUT on hi/truecolor screens does not really make sense anyway"
+    		for(x = 0; x < msg->width; x++)
+		{
+		    pixarray[x] = (UBYTE)HIDD_BM_GetPixel(o, msg->x + x, msg->y + y);
+		}
+	    }
+	    else
+	    {
+    		for(x = 0; x < msg->width; x++)
+		{
+		    pixarray[x] = (UBYTE)HIDD_BM_GetPixel(o, msg->x + x, msg->y + y);
+		}
+	    }
+	    
+	    pixarray += msg->modulo;
+	    
+	} /* if (linebuf) else ... */
+	
+    } /* for(y = 0; y < msg->height; y++) */
+    
+    if (linebuf) FreeVec(linebuf);
+    
+    ReturnVoid("BitMap::GetImageLUT");
+}
+
+/****************************************************************************************/
+
 static VOID bitmap_blitcolexp(OOP_Class *cl, OOP_Object *o,
     	    	    	      struct pHidd_BitMap_BlitColorExpansion *msg)
 {
@@ -2257,7 +2335,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o,
 #define SysBase     	    (csd->sysbase)
 
 #define NUM_ROOT_METHODS    4
-#define NUM_BITMAP_METHODS  26
+#define NUM_BITMAP_METHODS  27
 
 /****************************************************************************************/
 
@@ -2290,6 +2368,7 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_putimage		, moHidd_BitMap_PutImage	    },
 	{(IPTR (*)())bitmap_putimagelut     	, moHidd_BitMap_PutImageLUT 	    },
         {(IPTR (*)())bitmap_getimage		, moHidd_BitMap_GetImage	    },
+        {(IPTR (*)())bitmap_getimagelut		, moHidd_BitMap_GetImageLUT	    },
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColorExpansion  },
         {(IPTR (*)())bitmap_bytesperline	, moHidd_BitMap_BytesPerLine	    },
 	{(IPTR (*)())bitmap_convertpixels	, moHidd_BitMap_ConvertPixels	    },
