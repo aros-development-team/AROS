@@ -602,31 +602,6 @@ BDID := $(BDTARGETID)
     aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
     install_target=install
 
-.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
-
-#MM- %(mmake) : setup includes linklibs %(mmake)-quick
-
-ifneq (%(install_target),)
-    %(mmake)-install_command := \
-    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-exec-prefix) \
-    $(%(mmake)-prefix) -C $(GENDIR)/$(CURDIR) %(install_target)
-endif
-
-#MM
-%(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
-	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
-	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
-	    ret=$$?; \
-	    if [ $$ret -ne 0 ] ; then \
-	        exit $$ret; \
-	    fi; \
-	    $(%(mmake)-install_command); \
-	fi
-
-$(TOP)/$(CURDIR)/.files-touched:
-	@find . -print0 | xargs -0 $(TOUCH) -r configure; \
-	$(ECHO) YES > $@
-
 ifeq (%(nix),yes)
     %(mmake)-nix := -nix
 endif
@@ -641,11 +616,11 @@ ifneq (%(libdir),)
     %(mmake)-libdir := --libdir=%(libdir)
 endif
 ifneq (%(prefix),)
-    %(mmake)-prefix      := --prefix=%(prefix)
-    %(mmake)-exec-prefix := --exec-prefix=%(prefix)
+    %(mmake)-install_prefix      := prefix=%(prefix)
+    %(mmake)-install_exec-prefix := exec_prefix=%(prefix)
 else
-    %(mmake)-prefix      := --prefix=$(CONTRIBDIR)
-    %(mmake)-exec-prefix := --exec-prefix=$(CONTRIBDIR)
+    %(mmake)-install_prefix      := prefix=$(CONTRIBDIR)
+    %(mmake)-install_exec-prefix := exec_prefix=$(CONTRIBDIR)
     
     ifeq ($(%(mmake)-bindir),)
         %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
@@ -660,14 +635,42 @@ else
 endif
 
 ifneq (%(aros_prefix),)
-    %(mmake)-aros_prefix := --prefix=%(aros_prefix)
+    %(mmake)-compile_prefix := --prefix=%(aros_prefix)
 else
-    %(mmake)-aros_prefix := $(%(mmake)-prefix)
+    %(mmake)-compile_prefix := --$(%(mmake)-install_prefix)
 endif
 
 ifeq ($(%(mmake)-PROGDIR),)
     %(mmake)-PROGDIR := %(prefix)/bin
 endif
+
+.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
+
+#MM- %(mmake) : setup includes linklibs %(mmake)-quick
+
+ifneq (%(install_target),)
+    %(mmake)-install_command := \
+    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_exec-prefix) \
+    $(%(mmake)-install_prefix) -C $(GENDIR)/$(CURDIR) %(install_target)
+else
+    %(mmake)-install_command := $(TRUE)
+endif
+
+#MM
+%(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
+	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
+	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
+	    ret=$$?; \
+	    if [ $$ret -ne 0 ]; then \
+	        exit $$ret; \
+	    fi; \
+	    $(%(mmake)-install_command); \
+	fi; \
+
+$(TOP)/$(CURDIR)/.files-touched:
+	@find . -print0 | xargs -0 $(TOUCH) -r configure; \
+	$(ECHO) YES > $@
+
 
 
 ifeq (%(host),yes)
@@ -676,19 +679,19 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
 	    CC="$(HOST_CC)" \
-	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions); \
-	$(ECHO) YES > $@
+	$(TOUCH) $@
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
 	    CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
-	    %(configure) $(%(mmake)-aros_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    %(configure) $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions) \
 	    --host=$(AROS_TARGET_CPU)-aros; \
-	$(ECHO) YES > $@
+	$(TOUCH) $@
 endif
 	
 #MM
