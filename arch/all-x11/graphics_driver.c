@@ -1,6 +1,8 @@
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 
+#define DEBUG_FreeMem 1
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <exec/memory.h>
@@ -396,4 +398,7 @@ void driver_CloseFont (struct ETextFont * tf, struct GfxBase * GfxBase)
     }
 }
 
+void driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+}
 
