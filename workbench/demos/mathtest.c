@@ -1,10 +1,17 @@
 #include <proto/exec.h>
 #include <proto/aros.h>
 #include <proto/dos.h>
+#include <stdio.h>
+
+
+double X_Mul(double x, double y)
+{
+  if (x==x) return x*y;
+  return x*y;
+}
 
 /* to avoid casts these two lines are absolutely necessary!!*/
 #define float LONG
-#define double QUAD
 
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
@@ -24,6 +31,8 @@ struct Library * MathIeeeSingTransBase;
 struct Library * MathIeeeDoubBasBase;
 struct Library * MathIeeeDoubTransBase;
 
+
+
 int main(int argc, char ** argv)
 {
     float FFPOne, FFPTwo, FFPOnehalf, FFPMinusOne, FFPNull;
@@ -32,8 +41,14 @@ int main(int argc, char ** argv)
     LONG * float_resptr = (LONG *)&float_res;
     LONG * ptr;
     LONG wanted;
-    double double_res;
+    double double_res, double_res2;
+    double * Darg1, * Darg2;
     QUAD * double_resptr = (QUAD *)&double_res;
+    QUAD * double_resptr2 = (QUAD *)&double_res2;
+    QUAD QArg1, QArg2;
+
+    Darg1 = (double *)&QArg1;
+    Darg2 = (double *)&QArg2;
 
     #define DEF_FFPOne		0x80000041UL
     #define DEF_FFPTwo		0x80000042UL
@@ -49,6 +64,8 @@ int main(int argc, char ** argv)
     #define DEF_DPMinusOne	0xbff0000000000000ULL
     #define DEF_DPTwo		0x4000000000000000ULL
     #define DEF_DPThree		0x4008000000000000ULL
+    #define DEF_DPFour          0x4010000000000000ULL
+    #define DEF_DPTwenty        0x4034000000000000ULL     
     
     ptr = (LONG *)&FFPOne; 	*ptr = DEF_FFPOne;
     ptr = (LONG *)&FFPTwo; 	*ptr = DEF_FFPTwo;
@@ -65,19 +82,90 @@ printf("two: %x <-> %x \n",*ptr,SPTwo);
 printf("two: %x <-> %x \n",SPTwo,*ptr);
 */
 
-#define CHECK(func, args, cres) \
-    float_res = func args; \
-    if (*float_resptr != cres) \
-	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=0x%08lx)\n", __LINE__, *float_resptr, cres); \
-    else \
+#define CHECK(func, args, cres)                                                          \
+    float_res = func args;                                                               \
+    if (*float_resptr != cres)                                                           \
+	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=0x%08lx)\n", \
+                 __LINE__, *float_resptr, cres);                                         \
+    else                                                                                 \
 	printf ("OK  : " #func " " #args "\n");
 
-#define CHECK_DOUBLE(func, args, cres) \
-    double_res = func args; \
-    if (*double_resptr != cres) \
-	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", __LINE__, (LONG)(((QUAD)*double_resptr)>>32),*(((LONG *)double_resptr)+1), (LONG)(((QUAD)cres)>>32),(LONG)cres); \
-    else \
-	printf ("OK  : " #func " " #args "\n");
+/*
+  When using doubles or QUADs it is important to pay attention to the Endianess of the processor,
+  otherwise you'll never see what you want to see.
+ */
+
+#define CHECK_DOUBLE1A(func, arg1, cres)                                                           \
+    double_res = func (arg1);                                                                      \
+    if (*double_resptr != cres)                                                                    \
+    {                                                                                              \
+      if (0 != AROS_BIG_ENDIAN)                                                                    \
+      {                                                                                            \
+	printf ("FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 (LONG)(((QUAD)*double_resptr)>>32),*(((LONG *)double_resptr)+1),                  \
+                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+      }                                                                                            \
+      else                                                                                         \
+      {                                                                                            \
+	printf ("(little endian) FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 *(((LONG *)double_resptr)+1),*(((LONG *)double_resptr)),                          \
+                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+      }                                                                                            \
+    }                                                                                              \
+    else                                                                                           \
+      printf ("OK  : " #func " " #arg1 "\n");                                                      
+    
+#define CHECK_DOUBLE1B(func, arg1, cres)                                                           \
+    QArg1 = arg1;                                                                                  \
+    double_res = func (*Darg1);                                                                    \
+    if (*double_resptr != cres)                                                                    \
+    {                                                                                              \
+      if (0 != AROS_BIG_ENDIAN)                                                                    \
+      {                                                                                            \
+	printf ("FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 (LONG)(((QUAD)*double_resptr)>>32),*(((LONG *)double_resptr)+1),                  \
+                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+      }                                                                                            \
+      else                                                                                         \
+      {                                                                                            \
+	printf ("(little endian) FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 *(((LONG *)double_resptr)+1),*(((LONG *)double_resptr)),                          \
+                 (LONG)(((QUAD)cres)>>32),(LONG)cres);                                             \
+      }                                                                                            \
+    }                                                                                              \
+    else                                                                                           \
+      printf ("OK  : " #func " " #arg1 "\n");                                                      
+
+#define CHECK_DOUBLE2A(func, arg1, arg2, cres)                                                     \
+    double_res = func (arg1, arg2);                                                                \
+    double_res2 = cres;                                                                            \
+    if (double_res != double_res2)                                                                 \
+    {                                                                                              \
+      if (0 != AROS_BIG_ENDIAN)                                                                    \
+      {                                                                                            \
+	printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 (LONG)(((QUAD)*double_resptr )>>32),*(((LONG *)double_resptr )+1),                \
+                 (LONG)(((QUAD)*double_resptr2)>>32),*(((LONG *)double_resptr2)+1) );              \
+      }                                                                                            \
+      else                                                                                         \
+      {                                                                                            \
+	printf ("(little endian) FAIL: " #func " (" #arg1 "," #arg2 ") in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 *(((LONG *)double_resptr )+1),*(((LONG *)double_resptr)),                         \
+                 *(((LONG *)double_resptr2)+1),*(((LONG *)double_resptr2)) );                      \
+      }                                                                                            \
+    }                                                                                              \
+    else                                                                                           \
+      printf ("OK  : " #func " ( " #arg1 "," #arg2 " ) \n");                                                      
+
+
+
+
 
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
@@ -158,29 +246,21 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return (0);
     }
     
-#undef double
-    {
-      QUAD *Q;
-      double d;
-      d = 20.0 * 20.0;
-      Q = (QUAD *)&d;
-      printf ("20:= 0x%08lx%08lx\n", (LONG)(((QUAD)*Q)>>32),*(((LONG *)Q)+1) ); \
-    }
-#define double QUAD
 
-    CHECK_DOUBLE(IEEEDPFlt, (1), DEF_DPOne);
-    CHECK_DOUBLE(IEEEDPFlt, (2), DEF_DPTwo);
-    CHECK_DOUBLE(IEEEDPFlt, (20), DEF_DPThree);
-    CHECK_DOUBLE(IEEEDPAbs, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
-    CHECK_DOUBLE(IEEEDPNeg, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
-    CHECK_DOUBLE(IEEEDPAdd, ((QUAD)DEF_DPOne,  (QUAD)DEF_DPOne), (QUAD)DEF_DPTwo);
-    CHECK_DOUBLE(IEEEDPAdd, (IEEEDPFlt(123456), IEEEDPFlt(654321)), IEEEDPFlt(777777));
-    CHECK_DOUBLE(IEEEDPSub, (IEEEDPFlt(123456), IEEEDPFlt(654321)), IEEEDPFlt(-530865));
-    CHECK_DOUBLE(IEEEDPMul, (IEEEDPFlt(123456), IEEEDPFlt(321)), IEEEDPFlt(39629376));
-    CHECK_DOUBLE(IEEEDPMul, (IEEEDPFlt(2), IEEEDPFlt(2)), IEEEDPFlt(4));
-    CHECK_DOUBLE(IEEEDPMul, (IEEEDPFlt(20), IEEEDPFlt(20)), IEEEDPFlt(400));
+
+    CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)1), DEF_DPOne);
+    CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)2), DEF_DPTwo);
+    CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)3), DEF_DPThree);
+    CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)20), DEF_DPTwenty);
+    CHECK_DOUBLE1B(IEEEDPAbs, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
+    CHECK_DOUBLE1B(IEEEDPNeg, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
+    CHECK_DOUBLE2A(IEEEDPAdd, IEEEDPFlt(1),      IEEEDPFlt(1),      IEEEDPFlt(2));
+    CHECK_DOUBLE2A(IEEEDPAdd, IEEEDPFlt(123456), IEEEDPFlt(654321), IEEEDPFlt(777777));
+    CHECK_DOUBLE2A(IEEEDPSub, IEEEDPFlt(123456), IEEEDPFlt(654321), IEEEDPFlt(-530865));
+    CHECK_DOUBLE2A(IEEEDPMul, IEEEDPFlt(321),    IEEEDPFlt(123456), IEEEDPFlt(39629376));
+    CHECK_DOUBLE2A(IEEEDPMul, IEEEDPFlt(2),      IEEEDPFlt(2),      IEEEDPFlt(4));
+    CHECK_DOUBLE2A(IEEEDPMul, IEEEDPFlt(20),     IEEEDPFlt(20),     IEEEDPFlt(400));
     
-    CloseLibrary(MathIeeeDoubBasBase);
 
     if (!(MathIeeeDoubTransBase = OpenLibrary("mathieeedoubtrans.library", 0L)))
     {
@@ -188,15 +268,13 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 	return (0);
     }
 
-    CHECK_DOUBLE(IEEEDPSqrt, (IEEEDPFlt(4)), DEF_DPTwo);
-    CHECK_DOUBLE(IEEEDPSqrt, (IEEEDPFlt(9)), IEEEDPFlt(3));
-    CHECK_DOUBLE(IEEEDPCos, (IEEEDPFlt(1)), 0x3fe14a280fb5068b);
-    CHECK_DOUBLE(IEEEDPSin, (IEEEDPFlt(1)), 0x3feaed548f090cee);
+    CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(4)), DEF_DPTwo);
+    CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(9)), DEF_DPThree);
+    CHECK_DOUBLE1A(IEEEDPCos,  ((double)IEEEDPFlt(1)), 0x3fe14a280fb5068bULL);
+    CHECK_DOUBLE1A(IEEEDPSin,  ((double)IEEEDPFlt(1)), 0x3feaed548f090ceeULL);
     
-
-
     CloseLibrary(MathIeeeDoubTransBase);
-
+    CloseLibrary(MathIeeeDoubBasBase);
 
     return (0);
 }
