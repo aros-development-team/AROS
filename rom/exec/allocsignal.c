@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/01/10 04:05:51  ldp
+    Also clear alloc'ed bit from tc_SigExcept and tc_SigWait.
+
+    Cache ThisTask in a local variable.
+
     Revision 1.7  1997/01/01 03:46:05  ldp
     Committed Amiga native (support) code
 
@@ -73,14 +78,17 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Task *ThisTask;
     ULONG *mask;
     ULONG mask1;
 
     /* Protect signal mask against possible task exceptions. */
     Forbid();
 
+    ThisTask = SysBase->ThisTask;
+
     /* Get pointer to mask of allocated signal */
-    mask=&SysBase->ThisTask->tc_SigAlloc;
+    mask=&ThisTask->tc_SigAlloc;
 
     /* Get signal */
     if(signalNum<0)
@@ -105,7 +113,9 @@
 	{
 	    /* Allocate and reset the bit */
 	    *mask|=mask1;
-	    SysBase->ThisTask->tc_SigRecvd&=~mask1;
+	    ThisTask->tc_SigRecvd  &= ~mask1;
+	    ThisTask->tc_SigExcept &= ~mask1;
+	    ThisTask->tc_SigWait   &= ~mask1;
 
 	    /* And get the bit number */
 	    signalNum=(mask1&0xffff0000?16:0)+(mask1&0xff00ff00?8:0)+
@@ -125,7 +135,9 @@
 	{
 	    /* It is free. Allocate and reset it. */
 	    *mask|=mask1;
-	    SysBase->ThisTask->tc_SigRecvd&=~mask1;
+	    ThisTask->tc_SigRecvd  &= ~mask1;
+	    ThisTask->tc_SigExcept &= ~mask1;
+	    ThisTask->tc_SigWait   &= ~mask1;
 	}
     }
 
