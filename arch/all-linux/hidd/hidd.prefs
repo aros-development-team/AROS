@@ -1,4 +1,4 @@
-#Generic X11 Hidd.Prefs
+#Linux/X11 Hidd.Prefs
 library SYS:Hidds/graphics.hidd
 library x11cl.library
 gfx	hidd.gfx.x11

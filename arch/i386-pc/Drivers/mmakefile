@@ -1,0 +1,6 @@
+#Install i386-native specific S:hidd.prefs file
+
+#MM
+workbench-s-hiddprefs-native-i386 :
+	@$(CP) hidd.prefs $(SDIR)
+

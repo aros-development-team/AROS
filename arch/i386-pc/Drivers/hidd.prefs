@@ -1,0 +1,8 @@
+#i386-native Hidd.Prefs
+library mouse.hidd
+library keyboard.hidd
+library graphics.hidd
+library vga.hidd
+gfx hidd.gfx.vga
+mouse hidd.bus.mouse
+kbd hidd.kbd.hw
