@@ -47,4 +47,6 @@ extern void __AROS_InitExecBase (void);
 #define ARB_AttnDispatch   15   /* Delayed Dispatch() pending */
 #define ARF_AttnDispatch    (1L<<15)
 
+ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)(struct ExecBase *, UWORD *ranges[]);
+
 #endif /* __EXEC_INTERN_H__ */
