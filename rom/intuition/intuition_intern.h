@@ -235,7 +235,8 @@ struct IntWindow
     WORD ZipLeftEdge;
     WORD ZipTopEdge;
     WORD ZipWidth;
-    WORD ZipHeight; 
+    WORD ZipHeight;
+    struct Layer * GZZLayer; 
 };
 
 
