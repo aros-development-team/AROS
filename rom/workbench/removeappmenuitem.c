@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Remove a menuitem from Workbench's list of AppMenuItems.
-    Lang: english
+    Lang: English
 */
 
 #include "workbench_intern.h"
@@ -15,7 +15,7 @@
 
         #include <proto/workbench.h>
 
-        AROS_LH1(BOOL	, RemoveAppMenuItem,
+        AROS_LH1(BOOL, RemoveAppMenuItem,
 /*  SYNOPSIS */
 
         AROS_LHA(struct AppMenuItem *, appMenuItem, A0),
@@ -25,17 +25,29 @@
 
 /*  FUNCTION
 
+    Try to remove an AppMenuItem from workbench.library's list of AppMenuItems.
+
     INPUTS
+
+    Pointer to an AppMenuItem structure as returned by AddAppMenuItem().
 
     RESULT
 
+    TRUE if the menu item could be removed, FALSE otherwise.
+
     NOTES
+
+    You have to do a final check for messages on your AppMenuItem message
+    port as messages may have arrived between the last time you checked this
+    and the call to this function.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+    AddAppMenuItem()
 
     INTERNALS
 
@@ -46,17 +58,23 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    if( appMenuItem ) {
-        Remove( (struct Node *) appMenuItem );
-        FreeVec( appMenuItem );
-
-        /* TODO: Notify Workbench Apps about the change. */
-
-        return TRUE;
+    if (appMenuItem == NULL)
+    {
+	return FALSE;
     }
 
-    return FALSE;
+    LockWorkbench();
+    Remove((struct Node *)appMenuItem);
+    UnlockWorkbench();
+
+    FreeVec(appMenuItem);
+
+    /* NotifyWorkbench(WBNOTIFY_Delete, WBNOTIFY_AppMenuItem, WorkbenchBase);
+     */
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* RemoveAppMenuItem */
+
 
