@@ -58,7 +58,6 @@ AROS_UFH3
     {
         if (iim->iim_FIB->fib_DirEntryType == ST_ROOT)
         {
-            // FIXME: not a very good way to detect it...
             /* It's a disk/volume/root -------------------------------------*/
             TEXT device[MAXFILENAMELENGTH];
             
@@ -123,8 +122,41 @@ AROS_UFH3
         else if (iim->iim_FIB->fib_DirEntryType > 0)
         {
             /* It's a directory --------------------------------------------*/
-            // FIXME: detect trashcan
-            icon = GetDefaultIconFromType(WBDRAWER, iim->iim_Tags);
+            /* Check if it is a trashcan directory */
+            if (iim->iim_ParentLock != NULL)
+            {
+                /* Is iim_ParentLock a root? */
+                BPTR root = ParentDir(iim->iim_ParentLock);
+                
+                if (root == NULL)
+                {
+                    /* Yes, it's a root. See if it contains our trashcan. */
+                    BPTR cd   = CurrentDir(iim->iim_ParentLock);
+                    BPTR lock = Lock("Trashcan", ACCESS_READ);
+                    
+                    if (lock != NULL)
+                    {
+                        if (SameLock(iim->iim_FileLock, lock) == LOCK_SAME)
+                        {
+                            icon = GetDefaultIconFromType(WBGARBAGE, iim->iim_Tags);
+                        }
+                    
+                        UnLock(lock);
+                    }
+                    
+                    CurrentDir(cd);
+                }
+                else
+                {
+                    UnLock(root);
+                }
+            }
+            
+            /* Fall back to generic drawer icon */
+            if (icon == NULL)
+            {
+                icon = GetDefaultIconFromType(WBDRAWER, iim->iim_Tags);
+            }
             
             if (icon != NULL)
             {
