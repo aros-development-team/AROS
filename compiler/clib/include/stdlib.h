@@ -55,7 +55,7 @@ void * calloc (size_t count, size_t size);
 void * realloc (void * oldmem, size_t newsize);
 void free (void * memory);
 
-
-
+char *getenv ( const char * name);
+char *mktemp ( char * buf);
 
 #endif /* _STDLIB_H */

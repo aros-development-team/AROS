@@ -54,6 +54,7 @@ FILES := \
 	fseek \
 	ftell \
 	fwrite \
+	getenv \
 	gettimeofday \
 	gmtime \
 	isinf \
@@ -68,6 +69,7 @@ FILES := \
 	memcpy \
 	memmove \
 	memset \
+	mktemp \
 	mrand48 \
 	nrand48 \
 	open \
