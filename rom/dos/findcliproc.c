@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Find a CLI process by number
@@ -63,6 +63,20 @@
 
     ObtainSemaphoreShared(&root->rn_RootLock);
 
+#if 1
+    {
+    	struct CLIInfo *node;
+	
+	ForeachNode(&root->rn_CliList, node)
+	{
+	    if (node->ci_Process->pr_TaskNum == num)
+	    {
+	    	cliProc = node->ci_Process;
+		break;
+	    }
+	}
+    }
+#else
     /* This is quite ugly, I know, but the structure of the rn_TaskArray
        is just brain damaged! We just pick the 'num':th process of the
        array and return it in case 'num' _might_ exist */
@@ -70,6 +84,7 @@
     {
 	cliProc = ((struct Process **)BADDR(root->rn_TaskArray))[num];
     }
+#endif
 
     ReleaseSemaphore(&root->rn_RootLock);
 
