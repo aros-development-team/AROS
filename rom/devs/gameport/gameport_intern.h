@@ -53,6 +53,7 @@ struct GameportBase
     
     UBYTE   			gp_cTypes[GP_NUNITS];
 
+    BOOL    	    	    	gp_RelativeMouse;
     OOP_AttrBase                HiddMouseAB_;
 };
 
