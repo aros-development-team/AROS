@@ -9,6 +9,7 @@
 #include <datatypes/datatypesclass.h>
 #include <utility/tagitem.h>
 #include <dos/dostags.h>
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -124,7 +125,6 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 
 		ret = SystemTagList(tBuffer, tags);
 
-		
 		/* Error? */
 		if (ret == -1)
 		{
@@ -142,10 +142,15 @@ void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,
 	break;
 
     case TF_WORKBENCH:
-#warning Workbench library not finished	
-	/*	OpenWorkbenchObject(tool->tn_Program, WBOPENA_ArgName, project,
-		                    TAG_DONE);
+#warning WBlib not finished
+	/*
+	if (!OpenWorkbenchObject(tool->tn_Program, WBOPENA_ArgName, project,
+	                         TAG_DONE))
 	*/
+	{
+	    return 0;
+	}
+	
 	break;
 
     case TF_RX:
