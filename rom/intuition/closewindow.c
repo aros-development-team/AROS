@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.17  1999/04/02 19:29:32  nlorentz
+    CloseWindow() now waits for intuition to close window before it returns
+
     Revision 1.16  1999/03/26 10:39:29  nlorentz
     Call int_activatewindow() instead of ActivateWindow()
 
@@ -117,7 +120,12 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
 #define IW(x) ((struct IntWindow *)x)    
-    struct IntuiMessage * im;
+    struct closeMessage *msg;
+    
+    
+    
+    struct MsgPort *userport;
+    
 
     D(bug("CloseWindow (%p)\n", window));
     
@@ -126,32 +134,47 @@
        We just send it a msg about closing the window
     */
 
-    im = IW(window)->closeMessage;
-    im->Class    = IDCMP_WBENCHMESSAGE;
-    im->Code     = IMCODE_CLOSEWINDOW;
-    im->IAddress = window;
+    msg = IW(window)->closeMessage;
     
-    PutMsg(window->WindowPort, (struct Message *)im);
+    msg->Class    	= IDCMP_WBENCHMESSAGE;
+    msg->Code     	= IMCODE_CLOSEWINDOW;
+    msg->Window	  	= window;
+    msg->closeTask	= FindTask(NULL);
     
+    /* We must save this here, because after we have returned from
+       the Wait() the window is gone  */
+    userport = window->UserPort;
 
+    PutMsg(window->WindowPort, (struct Message *)msg);
+    
 
     /* Obviously this should be done on the application's context.
        (DeleteMsgPort() calls FreeSignal()
     */
-
-    if (window->UserPort)
+    
+    
+    /* We must use a bit hacky way to wait for intuition
+      to close thw window. Since there may be no userport
+      at this point, we can't wait for a message so we must wait for a
+      system signal instead
+    */
+    
+    Wait(SIGF_INTUITION);
+    
+    /* As of now intuition has removed us from th list of
+       windows, and we will recieve no more messages
+    */
+    
+    if (userport)
     {
-	/* Delete all pending messages */
-	Forbid ();
+	struct IntuiMessage *im;
 	
-
-	while ((im = (struct IntuiMessage *) GetMsg (window->UserPort)))
+    	while ((im = (struct IntuiMessage *) GetMsg (userport)))
 	    ReplyMsg ((struct Message *)im);
 	    
-	Permit ();
 
 	/* Delete message port */
-	DeleteMsgPort (window->UserPort);
+	DeleteMsgPort (userport);
     }
     
 
@@ -162,12 +185,15 @@
 
 
 /* This is called from the intuition input handler */
-VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
+VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBase)
 {
 #define IW(x) ((struct IntWindow *)x)    
 
     /* Free everything except the applications messageport */
     ULONG lock;
+    
+    struct Window *window = msg->Window;
+
 
     D(bug("CloseWindow (%p)\n", window));
 
@@ -175,6 +201,7 @@ VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
     
     if (window == IntuitionBase->ActiveWindow)
 	IntuitionBase->ActiveWindow = NULL;
+
 
     /* Remove window from the chain and find next active window */
     if (window->Descendant)
@@ -206,11 +233,14 @@ VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
     intui_CloseWindow (window, IntuitionBase);
 
     if (IW(window)->closeMessage)
-	free_intuimessage(IW(window)->closeMessage, IntuitionBase);
+	FreeMem(IW(window)->closeMessage, sizeof (struct closeMessage));
 
     
     /* Free memory for the window */
     FreeMem (window, intui_GetWindowSize ());
+    
+    /* All done. signal caller task that it may proceed */
+    Signal(msg->closeTask, SIGF_INTUITION);
     
     return;
     

@@ -213,9 +213,22 @@ inline VOID free_intuimessage(struct IntuiMessage *imsg, struct IntuitionBase *I
 inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBase);
 
 
+struct closeMessage
+{
+    struct Message ExecMessage;
+    ULONG Class;
+    UWORD Code;
+    struct Window *Window;
+    /* Task calling CloseWindow() */
+    struct Task *closeTask;
+    
+};
+
 /* Called by intuition to free a window */
-VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBase);
 VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase);
+
+
 
 struct IntWindow
 {
@@ -227,7 +240,7 @@ struct IntWindow
        since CloseWindow() may not fail.
     */
        
-    struct IntuiMessage *closeMessage;
+    struct closeMessage *closeMessage;
     
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here

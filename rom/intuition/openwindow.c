@@ -109,7 +109,7 @@
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
 	goto failexit;
 	
-    IW(w)->closeMessage = alloc_intuimessage(IntuitionBase);
+    IW(w)->closeMessage = AllocMem(sizeof (struct closeMessage), MEMF_PUBLIC);
     if (NULL == IW(w)->closeMessage)
     	goto failexit;
 
@@ -243,7 +243,7 @@ failexit:
 */
 
 	if (IW(w)->closeMessage)
-	    free_intuimessage(IW(w)->closeMessage, IntuitionBase);
+	    FreeMem(IW(w)->closeMessage, sizeof (struct closeMessage));
 
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);

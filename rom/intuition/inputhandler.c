@@ -989,12 +989,14 @@ D(bug("Window: %p\n", w));
 	    
 	    switch (im->Code)
 	    {
-		case IMCODE_CLOSEWINDOW:
-		    L = ((struct Window *)im->IAddress)->WLayer->back;
+		case IMCODE_CLOSEWINDOW: {
+		    struct closeMessage *cmsg = (struct closeMessage *)im;
+		    
+		    L = cmsg->Window->WLayer->back;
 		    if (NULL != L)
 		      CheckLayersBehind = TRUE;
-		    int_closewindow((struct Window *)im->IAddress, IntuitionBase);
-		break;
+		    int_closewindow(cmsg, IntuitionBase);
+		break; }
 		 
 		case IMCODE_WINDOWTOFRONT: {
 		    L = msg->Window->WLayer;
@@ -1214,7 +1216,6 @@ kprintf("Moving window (%d, %d)\n", msg->dx, msg->dy);
 	      }
 	    }
 	}
-
 	else
 	{
 	    free_intuimessage(im, IntuitionBase);
