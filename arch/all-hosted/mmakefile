@@ -10,6 +10,9 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap mathffp \
 KDEVS   := timer input keyboard console gameport
 KHNDLRS := con emul nil ram
 KHIDDS  := hiddclass graphics unixio x11gfx
+ifeq ("$(AROS_HOST_ARCH)","linux")
+KHIDDS  += linux
+endif
 KRSRCS  := battclock
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
@@ -23,17 +26,10 @@ DEP_LIBS := \
 	$(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libhiddgraphicsstubs.a
 
-ifeq ("$(AROS_HOST_ARCH)","linux")
-DEP_LIBS := $(DEP_LIBS) $(LIBDIR)/liblinux.a
-endif
 
 
 LIBS :=	-L$(LIBDIR) \
 	-larossupport -lhiddgraphicsstubs -lamiga
-
-ifeq ("$(AROS_HOST_ARCH)","linux")
-LIBS := $(LIBS) -llinux
-endif
 
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
 	$(HOST_CC) $(CFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \

@@ -1,68 +1,21 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# This library contains only one function,
-# which is private (no protos should be generated).
-# and there doesn't seem to be a template for handling thiscase
-# so I write the file manually.
+FILES	   := gfxclass bmclass kbdclass mouseclass inputtask
 
-ifeq ("$(ARCH)","freebsd")
-USER_INCLUDES := -I. -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
-else
-USER_INCLUDES := -I. -I$(SYS_INCLUDES)
-endif
-
-OBJDIR := $(GENDIR)/$(CURDIR)
-FILES	   := linux_init gfxclass bmclass kbdclass mouseclass inputtask functable
-FUNCTIONS  := 
-END_FILE := $(OBJDIR)/endtag
-ENDFUNC := $(END_FILE).o
-OBJS	:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o) $(ENDFUNC)
-LIB	:= $(LIBDIR)/liblinux.a
-
-
-#MM hidd-graphics-linklib-quick
-hidd-graphics-linklib-quick : $(LIB)
-	@$(NOP)
+USER_INCLUDES := -I$(SYS_INCLUDES)
+%build_module_macro mmake=kernel-hidd-linux \
+  modname=linux modtype=hidd \
+  files=$(FILES) \
+  conffile=lib.conf \
+  genfunctable=yes
 
 # Install Linux specific hidd.prefs file
 #MM workbench-s-hiddprefs-linux-$(CPU) :
 workbench-s-hiddprefs-linux-$(CPU) : $(SDIR)/hidd.prefs
-	@$(NOP)
 	
 $(SDIR)/hidd.prefs : hidd.prefs
 	@$(CP) $< $@
 
-#MM
-hidd-linux : $(LIB) setup
-	@$(NOP)
-
-$(OBJDIR)/linux_init.o : libdefs.h
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-#MM
-clean ::
-	$(RM) $(LIB) $(OBJDIR) libdefs.h *.err
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-	
-%libdefs_rule
-	
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
-	
-%mkfunctable_arch
-
-%mkendtag_q
-
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
+
