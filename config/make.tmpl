@@ -1580,7 +1580,7 @@ setup ::
 # src: the source directory whose content will be copied
 # dst: the directory where to copy src's content. If not existing, it will be made.
 
-%define copy_dir_recursive mmake=/A src=. dst=/A
+%define copy_dir_recursive mmake=/A src=$(TOP)/$(CURDIR) dst=/A
 
 %(mmake)_FILES := $(shell cd %(src); find . -path '*/CVS' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
 %(mmake)_DIRS  := $(sort $(foreach f,$(%(mmake)_FILES),$(dir $(f))))
@@ -1595,11 +1595,24 @@ $(3)/$(1): $(2)/$(1) | $(dir $(3)/$(1))
 	$(CP) $$< $$@
 endef
 
-#MM
-%(mmake): $(addprefix %(dst)/,$(%(mmake)_FILES))
+.PHONY : %(mmake)
 
-$(foreach d,$(%(mmake)_DIRS),$(eval $(call %(mmake)_mkdir,%(dst)/$d)))
-$(foreach f,$(%(mmake)_FILES),$(eval $(call %(mmake)_copy,$f,%(src),%(dst))))
+#MM
+%(mmake): $(GENDIR)/$(CURDIR)
+	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";        \
+	$(ECHO) "all: $(addprefix %(dst)/,$(%(mmake)_FILES))" > $$m 
+	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";    \
+	for d in $(%(mmake)_DIRS); do                      \
+	    $(ECHO) "%(dst)/$$d: ; $(MKDIR) \$$@" >> $$m;  \
+	done
+	@m="$(GENDIR)/$(CURDIR)/%(mmake)-auxiliary.mak";                           \
+	for f in $(%(mmake)_FILES); do                                            \
+	    echo -e "%(dst)/$$f: %(src)/$$f | \$$\$$(@D); $(CP) \$$< \$$@" >> $$m; \
+	done;  \
+	$(MAKE) -f $$m all
+
+$(GENDIR)/$(CURDIR):
+	$(MKDIR) $@
 
 %end
 
