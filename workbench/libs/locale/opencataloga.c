@@ -115,7 +115,7 @@ struct header
     ** don't need to load anything.
     */
     app_language = (char *)GetTagData(OC_BuiltInLanguage,
-                                      def_language,
+                                      (IPTR)def_language,
                                       tags);
 
     if (NULL != app_language && 0 == strcmp(app_language, language))
