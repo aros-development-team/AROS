@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <aros/debug.h>
-
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <workbench/workbench.h>
@@ -105,8 +103,6 @@ LONG __FindType_WB(BPTR lock, struct Library *IconBase)
         
         FreeDosObject(DOS_FIB, fib);
     }
-    
-    bug("FindType: return %d (WBTOOL=%d, WBPROJ=%d)\n", type, WBTOOL, WBPROJECT);
     
     return type;
 }
