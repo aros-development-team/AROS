@@ -202,7 +202,7 @@ struct MUIP_List_Compare              {ULONG MethodID; APTR entry1; APTR entry2;
 struct MUIP_List_Display              {ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses;};
 struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; LONG rel_entry_pos; ULONG flags;};
 
-#define MUIV_List_InsertSingleAsTree_Root  (-1)
+#define MUIV_List_InsertSingleAsTree_Root     (-1)
 
 #define MUIV_List_InsertSingleAsTree_Top      (0)
 #define MUIV_List_InsertSingleAsTree_Active   (-1)
