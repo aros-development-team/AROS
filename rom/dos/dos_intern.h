@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Internal types and stuff for dos
-    Lang: english
+    Lang: English
 */
 #ifndef DOS_INTERN_H
 #define DOS_INTERN_H
@@ -133,4 +133,17 @@ struct markerarray
 #define MP_DASH 	0x8d /* [ad_-g_] */
 #define MP_SET_END	0x8e /* [ad-g_]_ */
 
-#endif
+
+/* DosGetString additional codes (printf style parametrized) */
+
+#define  STRING_INSERT_VOLUME   -4000
+#define  STRING_VOLUME_FULL     -4001
+#define  STRING_NO_DISK         -4002
+#define  STRING_NO_DOS_DISK     -4003
+#define  STRING_MUST_REPLACE    -4004
+
+#define  STRING_RETRY           -5000
+#define  STRING_CANCEL          -5001
+#define  STRING_REQUESTTITLE    -5002
+
+#endif /* DOS_INTERN_H */
