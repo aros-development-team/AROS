@@ -95,6 +95,12 @@ typedef struct cx_Message
 } CxMsg;
 
 
+struct GeneratedInputEvent
+{
+    struct InputEvent ie;
+    struct MinNode    node;
+};
+
 struct CommoditiesBase
 {
     struct Library          cx_LibNode;
@@ -111,6 +117,7 @@ struct CommoditiesBase
     struct MsgPort          cx_InputMP;       /* Reply port for input.device */
     struct List             cx_BrokerList;
     struct List             cx_MessageList;
+    struct List		    cx_GeneratedInputEvents;
     struct SignalSemaphore  cx_SignalSemaphore;
     struct InputEvent      *cx_IEvents;
     struct InputEvent     **cx_EventExtra;    /* Only for bookkeeping
