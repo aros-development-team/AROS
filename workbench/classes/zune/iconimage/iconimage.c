@@ -91,11 +91,14 @@ IPTR IconImage$MUIM_Draw
 {
     struct IconImage_DATA *data = INST_DATA(CLASS, self); 
     IPTR                   rc   = DoSuperMethodA(CLASS, self, (Msg) message);
+    BOOL                   selected;
+    
+    get(self, MUIA_Selected, &selected);
     
     DrawIconState
     (
         _rp(self), data->iid_DiskObject, NULL, 
-        _left(self), _top(self), IDS_NORMAL, 
+        _left(self), _top(self), selected ? IDS_SELECTED : IDS_NORMAL, 
         
         ICONDRAWA_Frameless,       TRUE,
         ICONDRAWA_Borderless,      TRUE,
