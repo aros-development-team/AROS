@@ -58,7 +58,7 @@ static LONG skip_line(const char *buffer, LONG size, LONG pos)
 static LONG copy_until_eol(STRPTR m, ULONG msize, LONG pos, STRPTR buf,
 			   ULONG bufsize)
 {
-    int j = 0;
+    LONG j = 0;
 
     m += pos;
     while ((pos < msize) && (j < bufsize - 1) && (*m != '\n'))
@@ -104,6 +104,84 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
     }
     vi_number = j - 1;
     return TRUE;
+}
+
+static LONG getVendorIndex(UWORD vendorID)
+{
+    LONG lower = 0;
+    LONG upper = vi_number;
+
+    if (!mem || !vendor_index)
+	return -1;
+
+    while (upper != lower)
+    {
+	UWORD vid;
+
+	vid = vendor_index[(upper + lower) / 2].vendorID;
+	if (vid == vendorID)
+	    return vendor_index[(upper + lower) / 2].offset;
+	if (vendorID > vid)
+	    lower = (upper + lower) / 2;
+	else
+	    upper = (upper + lower) / 2;
+    }
+    return -1;
+}
+
+static LONG getDeviceIndex(LONG vendorIndex, UWORD deviceID)
+{
+    LONG i = vendorIndex;
+
+    if (i < 0)
+	return i;
+
+    i = skip_line(mem, memsize, i); // skip vendor
+    while ((i < memsize) && ((mem[i] == '\t') || (mem[i] == '#')))
+    {
+	UWORD did;
+
+	if (mem[i] != '#')
+	{
+	    if ((i + 6 < memsize) && (mem[i + 5] == ' ')
+		&& (sscanf(mem + i + 1, "%hx", &did) == 1) && (did == deviceID))
+	    {
+		return i;
+	    }
+	}
+	i = skip_line(mem, memsize, i);
+    }
+    return -1;
+}
+
+static LONG getSubDeviceIndex(LONG deviceIndex, UWORD subVendorID, UWORD subDeviceID)
+{
+    LONG i = deviceIndex;
+
+    if (i < 0)
+	return i;
+
+    i = skip_line(mem, memsize, i);
+    while ((i < memsize) && ((mem[i] == '\t') || (mem[i] == '#')))
+    {
+	UWORD subvid, subdid;
+
+	if ((mem[i] != '#') && (i + 1 < memsize) && (mem[i+1] == '\t'))
+	{
+	    if ((i + 11 < memsize)
+		&& (mem[i + 6] == ' ')
+		&& (sscanf(mem + i, "%hx", &subvid) == 1)
+		&& (subvid == subVendorID)
+		&& (mem[i + 11] == ' ')
+		&& (sscanf(mem + i + 7, "%hx", &subdid) == 1)
+		&& (subdid == subDeviceID))
+	    {
+		return i;
+	    }
+	}
+	i = skip_line(mem, memsize, i);
+    }
+    return -1;
 }
 
 void pciids_Open(void)
@@ -162,40 +240,16 @@ void pciids_Close(void)
     }
 }
 
-static LONG getVendorIndex(UWORD vendorID)
-{
-    LONG lower = 0;
-    LONG upper = vi_number;
-
-    if (!mem || !vendor_index)
-	return -1;
-
-    while (upper != lower)
-    {
-	UWORD vid;
-
-	vid = vendor_index[(upper + lower) / 2].vendorID;
-	if (vid == vendorID)
-	    return vendor_index[(upper + lower) / 2].offset;
-	if (vendorID > vid)
-	    lower = (upper + lower) / 2;
-	else
-	    upper = (upper + lower) / 2;
-    }
-    return -1;
-}
-
 STRPTR pciids_GetVendorName(UWORD vendorID, STRPTR buf, ULONG bufsize)
 {
     LONG i = getVendorIndex(vendorID);
 
-    if (i >= 0)
-    {
-	i += 6;
-	copy_until_eol(mem, memsize, i, buf, bufsize);
-    }
-    else
-	buf[0] = 0;
+    buf[0] = 0;
+    if (i < 0)
+	return buf;
+
+    copy_until_eol(mem, memsize, i + 6, buf, bufsize);
+
     return buf;
 }
 
@@ -203,40 +257,60 @@ STRPTR pciids_GetDeviceName(UWORD vendorID, UWORD deviceID, STRPTR buf,
 			    ULONG bufsize)
 {
     LONG i = getVendorIndex(vendorID);
-    if (i < 0)
-    {
-	buf[0] = 0;
-	return buf;
-    }
-    i = skip_line(mem, memsize, i);
-    while ((i < memsize) && ((mem[i] == '\t') || (mem[i] == '#')))
-    {
-	UWORD did;
 
-	i++;
-	if ((i + 4 < memsize) && (mem[i + 4] == ' ')
-	    && (sscanf(mem + i, "%hx", &did) == 1) && (did == deviceID))
-	{
-	    i += 6;
-	    copy_until_eol(mem, memsize, i, buf, bufsize);
-	    return buf;
-	}
-	i = skip_line(mem, memsize, i);
-    }
+    buf[0] = 0;
+    if (i < 0) // unknown vendor
+	return buf;
+
+    i = getDeviceIndex(i, deviceID);
+    if (i < 0) // unknown device
+	return buf;
+
+    copy_until_eol(mem, memsize, i + 7, buf, bufsize);
     return buf;
 }
 
 STRPTR pciids_GetSubDeviceName(UWORD vendorID, UWORD deviceID, UWORD subVendorID,
 			       UWORD subDeviceID, STRPTR buf, ULONG bufsize)
 {
-    LONG i = getVendorIndex(vendorID);
-    if (i < 0)
-    {
-	buf[0] = 0;
+    LONG i;
+    LONG j;
+    LONG copied;
+
+    buf[0] = 0;
+
+    if ((0 == subVendorID) && (0 == subDeviceID))
 	return buf;
+
+    i = getVendorIndex(vendorID);
+    if (i < 0) // unknown vendor
+	return buf;
+
+    i = getDeviceIndex(i, deviceID);
+    if (i < 0) // unknown device
+	return buf;
+
+    j = getVendorIndex(subVendorID);
+    if (j < 0) // unknown subvendor
+	return buf;
+
+    copied = copy_until_eol(mem, memsize, j + 6, buf, bufsize);
+
+    if (copied + 4 < bufsize)
+    {
+	strcpy(buf + copied, " : ");
+
+	i = getSubDeviceIndex(i, subVendorID, subDeviceID);
+	if (i < 0) // unknown subdevice
+	{
+	    if (bufsize - copied - 3 > 6)
+		sprintf(buf + copied + 3, "0x%04x", subDeviceID);
+	    return buf;
+	}
+
+	copy_until_eol(mem, memsize, i + 13, buf + copied + 3,
+		       bufsize - copied - 3);
     }
 
     return buf;
 }
-
-

@@ -118,7 +118,7 @@ Object *DriverList;
 Object *StrDriverName, *StrDriverHWName, *StrDriverDirect;
 
 Object *StrDescription, *VendorID, *ProductID, *RevisionID;
-Object *VendorName, *ProductName;
+Object *VendorName, *ProductName, *SubsystemName;
 Object *Interface, *_Class, *SubClass, *IRQLine;
 Object *ROMBase, *ROMSize;
 Object *RangeList;
@@ -191,7 +191,7 @@ AROS_UFH3(void, select_function,
     ULONG active;
     OOP_Object *obj, *drv;
     STRPTR class, subclass, interface, str;
-    UWORD vendor;
+    UWORD vendor, product, subvendor, subdevice;
 
     active = xget(object, MUIA_List_Active);
     if (active != MUIV_List_Active_Off)
@@ -225,8 +225,18 @@ AROS_UFH3(void, select_function,
 	OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(ProductID, MUIA_Text_Contents, buf);
-	set(ProductName, MUIA_Text_Contents, pciids_GetDeviceName(vendor, val, buf, 79));
- 
+	set(ProductName, MUIA_Text_Contents,
+	    pciids_GetDeviceName(vendor, val, buf, 79));
+	product = val;
+
+	OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemVendorID, (APTR)&val);
+	subvendor = val;
+	OOP_GetAttr(obj, aHidd_PCIDevice_SubsystemID, (APTR)&val);
+	subdevice = val;
+	set(SubsystemName, MUIA_Text_Contents,
+	    pciids_GetSubDeviceName(vendor, product, subvendor, subdevice,
+				    buf, 79));
+
 	OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(RevisionID, MUIA_Text_Contents, buf);
@@ -456,7 +466,7 @@ BOOL GUIinit()
 			End, // HGroup
 			Child, VGroup, GroupFrameT(_(MSG_PCI_DEVICE_INFO)),
 			    Child, ColGroup(2),
-				Child, Label("Description:"),
+				Child, Label(_(MSG_DEVICE_DESCRIPTION)),
 				Child, StrDescription = TextObject,
 				    StringFrame,
 				    MUIA_Text_SetMax, FALSE,
@@ -474,6 +484,14 @@ BOOL GUIinit()
 			    Child, ColGroup(2),
 				Child, Label(_(MSG_PRODUCTNAME)),
 				Child, ProductName = TextObject,
+				    StringFrame,
+				    MUIA_Text_SetMax, FALSE,
+				    MUIA_Text_Contents, "",
+				End,
+			    End,
+			    Child, ColGroup(2),
+				Child, Label(_(MSG_SUBSYSTEM)),
+				Child, SubsystemName = TextObject,
 				    StringFrame,
 				    MUIA_Text_SetMax, FALSE,
 				    MUIA_Text_Contents, "",
