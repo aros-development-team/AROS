@@ -91,11 +91,10 @@
 #endif
 
 /* 4. Makros for debugging and development */
-#if defined(TEST) || defined(DEBUG)
-#   include <assert.h>
-#else
-#   define assert(x)        /* empty */
+#if !defined(TEST) && !defined(DEBUG)
+#   define NDEBUG
 #endif
+#include <assert.h>
 
 /* 5. Sytem-specific files */
 #ifdef _AMIGA
