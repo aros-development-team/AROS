@@ -54,7 +54,11 @@
 #   include "emul_handler_gcc.h"
 #endif
 
+#include <aros/debug.h>
+#include <string.h>
+
 #undef DOSBase
+
 
 static const char name[];
 static const char version[];
@@ -159,10 +163,15 @@ static LONG err_u2a(void)
 /* Create a plain path out of the supplied filename.
    Eg 'path1/path2//path3/' becomes 'path1/path3'.
 */
-void shrink(char *filename)
+void shrink(struct emulbase *emulbase, char *filename)
 {
     char *s1,*s2;
     unsigned long len;
+    
+    unsigned char before_filename[8];
+    
+    memcpy(before_filename, filename - 8, 8);
+    
     for(;;)
     {
 	/* strip all leading slashes */
@@ -183,6 +192,7 @@ void shrink(char *filename)
     len=strlen(filename);
     if(len&&filename[len-1]=='/')
 	filename[len-1]=0;
+	
 }
 
 /* Allocate a buffer, in which the filename is appended to the pathname. */
@@ -198,8 +208,9 @@ static LONG makefilename(struct emulbase *emulbase,
     {
 	CopyMem(dirname, *dest, dirlen);
 	if (AddPart(*dest, filename, len))
-	    shrink(*dest);
-	else {
+	{
+	  shrink(emulbase, *dest);
+	} else {
 	    free(*dest);
 	    *dest = NULL;
 	    ret = ERROR_OBJECT_TOO_LARGE;
@@ -800,7 +811,7 @@ static LONG examine_next(struct filehandle *fh,
      Amiga progs wouldn't know how to treat '.' and '..', i.e. they
      might want to scan recursively the directory and end up scanning
      ./././ etc. */
-#undef kprintf
+/*#undef kprintf*/
   do
   {
     dir = readdir(ReadDIR);
@@ -1018,7 +1029,9 @@ AROS_LH2(struct emulbase *, init,
     emulbase->sysbase=sysBase;
     emulbase->seglist=segList;
     emulbase->device.dd_Library.lib_OpenCnt=1;
-
+    
+    InitSemaphore(&emulbase->sem);
+    
     OOPBase = OpenLibrary ("oop.library",0);
 
     if (!OOPBase)
@@ -1113,7 +1126,10 @@ AROS_LH1(void, beginio,
 
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
-    Disable();
+    
+    /* Disable(); */
+    ObtainSemaphore(&emulbase->sem);
+    
     /*
 	Do everything quick no matter what. This is possible
 	because I never need to Wait().
@@ -1335,7 +1351,8 @@ AROS_LH1(void, beginio,
 	    break;
     }
 
-    Enable();
+    /*Enable();*/
+    ReleaseSemaphore(&emulbase->sem);
 
     /* Set error code */
     iofs->io_DosError=error;
