@@ -1,4 +1,4 @@
-C:path C: ADD QUIET
+path SYS:Demos ADD QUIET
 assign DEVS: devs
 assign LIBS: libs
 assign S: s
