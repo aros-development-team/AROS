@@ -68,6 +68,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+  BOOL hasClipRegion = FALSE;
   /* 
      This function will simply call ScrollRaster() and fill the empty
      space with calls to RectFill
@@ -85,6 +86,9 @@
       xMax = (L->bounds.MaxX - L->bounds.MinX) ;
     if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
       yMax = (L->bounds.MaxY - L->bounds.MinY) ;
+      
+    if (NULL != L->ClipRegion)
+      hasClipRegion = TRUE;
   }
   else
   {
@@ -98,7 +102,8 @@
       yMax = height;
   }
 
-  if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, 
+  if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
+                                 hasClipRegion,
                                  GfxBase))
     return;
 

@@ -169,6 +169,7 @@
                           (xSrc > xDest) ? xSrc : xDest,
                           (ySrc > yDest) ? ySrc : yDest,
                           FALSE,
+                          FALSE,
                           GfxBase);
       }
       else
