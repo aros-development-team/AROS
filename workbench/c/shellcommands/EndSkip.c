@@ -47,7 +47,7 @@
 #include <dos/dosextens.h>
 #include <dos_commanderrors.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH0(EndSkip,41.1)
 {

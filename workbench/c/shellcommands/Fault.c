@@ -45,7 +45,7 @@
 #include <string.h>
 #include <utility/tagitem.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1H(Fault, 41.1,                   "Display the meaning of a DOS error code",
 AROS_SHAH(ULONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))

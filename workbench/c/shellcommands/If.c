@@ -94,7 +94,7 @@
 #include <proto/exec.h>
 #include <dos_commanderrors.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH10(If, 41.1,
 AROS_SHA(BOOL, ,NOT,/S, FALSE),

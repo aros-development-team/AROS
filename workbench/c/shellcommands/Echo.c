@@ -14,7 +14,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <string.h>
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 
 AROS_SH5(Echo, 41.1,

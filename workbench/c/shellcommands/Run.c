@@ -58,7 +58,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1(Run, 41.2,
 AROS_SHA(STRPTR, ,COMMAND,/F,NULL))

@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 /******************************************************************************
 

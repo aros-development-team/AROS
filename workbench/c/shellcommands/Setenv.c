@@ -80,7 +80,7 @@
 #include <utility/tagitem.h>
 #include <stdio.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH2(Setenv, 41.1,
 AROS_SHA(STRPTR, ,NAME,     , NULL),

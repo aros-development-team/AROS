@@ -96,7 +96,7 @@
 #include <aros/asmcall.h>
 #include <string.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH2(NewShell, 41.1,
 AROS_SHA(STRPTR, ,WINDOW, ,"CON:10/10/640/480/AROS-Shell/CLOSE"),

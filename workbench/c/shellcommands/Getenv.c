@@ -62,7 +62,7 @@
 #include <dos/var.h>
 #include <exec/types.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 #define BUFFER_SIZE     256
 

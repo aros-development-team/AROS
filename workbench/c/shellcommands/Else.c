@@ -59,7 +59,7 @@
 #include <proto/dos.h>
 #include <dos_commanderrors.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH0(Else,41.1)
 {
