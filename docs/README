@@ -1,7 +1,7 @@
 Short: AROS - Amiga Replacement OS (Beta release)
 Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
 Uploader: Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de)
-Version:  1.11b
+Version:  1.11
 Type:	  misc/emu
 
 !! THIS IS A BETA !!
@@ -15,10 +15,12 @@ New this time:
 - Much faster linking on Unix
 - Makefiles are generated from templates
 - AROS has Resource Tracking now :-)
-- AROS uses almost no assembler code anymore
 - Added a small mini kernel to ease porting
 - New libs: math*, diskfont, gadtools
 - New logo by Mike Williams
+- New unix kernel with only one simple assembler file left
+- New technique which allows the hardware dependend part of AROS
+  replace›files in other parts of AROS
 
 HOW TO USE THIS
 ---------------
