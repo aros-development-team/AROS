@@ -383,7 +383,12 @@ static int relocate
         const struct pheader *fromreloc   = &ph[(rel++)->segment];
         const ULONG           addr_to_add = fromreloc->paddr - fromreloc->vaddr;
         const ULONG           num_relocs  = (rel++)->num_entries;
-        
+
+        /* 
+           Use the Duff's device to the relocations, in order to improve
+           performances. More infos here: http://www.lysator.liu.se/c/duffs-device.html
+        */ 
+         
         register unsigned long j = (num_relocs + 7) / 8;
             
         switch (num_relocs % 8)
