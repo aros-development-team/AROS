@@ -4,6 +4,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/15 13:21:56  digulla
+    BIG_ENDIAN is already defined in some system header file.
+    New #define: SIZEOFULONG is the number of bytes in an ULONG (ie. the
+    	result of sizeof(ULONG)
+
     Revision 1.3  1996/08/13 15:36:21  digulla
     machine.h is now local for each $(ARCH)
     Removed m68k-Code and i386-#ifdef's
@@ -18,7 +23,11 @@
 
 #define SP_OFFSET 0
 #define STACK_GROWS_DOWNWARDS 1
+#ifndef BIG_ENDIAN
 #define BIG_ENDIAN 0
+#endif
+#define SIZEOFULONG	4
+
 struct JumpVec
 {
     UBYTE jmp;
