@@ -92,8 +92,7 @@ LIBS=-L$(LIBDIR) \
 # END_DESC{internaltarget}
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 	$(CC) $(CFLAGS) -Dmain=submain $< \
-	    $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ \
-	    -Xlinker -rpath -Xlinker ./lib
+	    $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(SHELL_LDFLAGS)
 
 # BEGIN_DESC{internaltarget}
 # \item{checkerr} Checks if any error has been occurred during compile
