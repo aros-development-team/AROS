@@ -8,9 +8,7 @@
 #include <dos/dos.h>
 #include <aros/asmcall.h>
 #include "exec_intern.h"
-#include <exec/resident.h>
 #include <exec/devices.h>
-#include <proto/exec.h>
 
 #include "exec_debug.h"
 #ifndef DEBUG_InitResident

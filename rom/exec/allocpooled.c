@@ -9,8 +9,6 @@
 #include <aros/libcall.h>
 #include <aros/machine.h>
 #include "memory.h"
-#include <exec/memory.h>
-#include <proto/exec.h>
 
 #include "exec_debug.h"
 #ifndef DEBUG_AllocPooled

@@ -11,8 +11,6 @@
 #include <clib/alib_protos.h>
 #include <aros/machine.h>
 #include "memory.h"
-#include <exec/memory.h>
-#include <proto/exec.h>
 
 /*****************************************************************************
 
