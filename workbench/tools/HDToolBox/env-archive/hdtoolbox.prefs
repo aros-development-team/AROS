@@ -55,6 +55,7 @@ IDLen = 1
 "\145" = "Novell Netware 3.xx"
 "\160" = "DiskSecure Mult"
 "\165" = "PC/IX"
+"\166" = "Amithlon Virtual Harddisk"
 "\200" = "Old Minix"
 "\201" = "Minix / old Linux"
 "\202" = "Linux swap"
