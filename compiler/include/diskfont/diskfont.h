@@ -2,11 +2,8 @@
 #define DISKFONT_DISKFONT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 
 #ifndef EXEC_NODES_H
@@ -56,7 +53,7 @@ struct DiskFontHeader
 	struct Node dfh_DF;
 	UWORD	dfh_FileID;
 	UWORD	dfh_Revision;
-	LONG	dfh_Segment;
+	BPTR	dfh_Segment;
 	char	dfh_Name[MAXFONTNAME];
 	struct TextFont dfh_TF;
 };
