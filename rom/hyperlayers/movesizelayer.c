@@ -69,7 +69,7 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * first, *_l, *lparent;
-  struct Region * newshape = NewRegion(), * oldshape, r, rtmp, cutnewshape;
+  struct Region * newshape, * oldshape, r, rtmp, cutnewshape;
   struct Region *clipregion;
   struct Rectangle rectw, recth;
 
@@ -93,6 +93,37 @@
                            0, 
                            l->bounds.MaxX - l->bounds.MinX + dw, 
                            l->bounds.MaxY - l->bounds.MinY + dh);
+  if (IL(l)->shapehook)
+  {
+    struct ShapeHookMsg msg;
+    
+    if ((dx || dy) && (dw || dh))
+    {
+    	msg.Action = SHAPEHOOKACTION_MOVESIZELAYER;
+    }
+    else if (dx || dy)
+    {
+    	msg.Action = SHAPEHOOKACTION_MOVELAYER;
+    }
+    else
+    {
+    	msg.Action = SHAPEHOOKACTION_SIZELAYER;
+    }
+    
+    msg.Layer  = l;
+    msg.ActualShape = l->shaperegion;
+    msg.NewBounds.MinX = l->bounds.MinX + dx;
+    msg.NewBounds.MinY = l->bounds.MinY + dy;
+    msg.NewBounds.MaxX = l->bounds.MaxX + dx + dw;
+    msg.NewBounds.MaxY = l->bounds.MaxY + dy + dh;
+    msg.OldBounds.MinX = l->bounds.MinX;
+    msg.OldBounds.MinY = l->bounds.MinY;
+    msg.OldBounds.MaxX = l->bounds.MaxX;
+    msg.OldBounds.MaxY = l->bounds.MaxY;
+    
+    l->shaperegion = (struct Region *)CallHookPkt(IL(l)->shapehook, l, &msg);
+  }
+  
   if (l->shaperegion)
     AndRegionRegion(l->shaperegion, newshape);
   
