@@ -28,7 +28,7 @@ void writeincdefines(int dummy)
 	    "    *** Automatically generated file. Do not edit ***\n"
 	    "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
 	    "\n"
-	    "    Desc: Prototype for %s\n"
+	    "    Desc: Defines for %s\n"
 	    "*/\n"
 	    "\n"
 	    "#include <aros/libcall.h>\n"
@@ -37,19 +37,19 @@ void writeincdefines(int dummy)
 	    modulenameupper, modulenameupper, modulename);
     if (!dummy)
     {
+	char isvararg, *varargname;
+	
 	for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
 	{
 	    fprintf(out,
 		    "\n"
-		    "#define %s(",
-		    funclistit->name);
+		    "#define __%s_WB(__%s",
+		    funclistit->name, libbase);
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
 		 arglistit = arglistit->next)
 	    {
-		if (arglistit != funclistit->arguments)
-		    fprintf(out, ", ");
-		fprintf(out, "%s", arglistit->name);
+		fprintf(out, ", __%s", arglistit->name);
 	    }
 	    fprintf(out,
 		    ") \\\n"
@@ -58,10 +58,121 @@ void writeincdefines(int dummy)
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
 		 arglistit = arglistit->next)
-		fprintf(out, "                  AROS_LCA(%s,%s,%s), \\\n",
+		fprintf(out, "                  AROS_LCA(%s,(__%s),%s), \\\n",
 			arglistit->type, arglistit->name, arglistit->reg);
-	    fprintf(out, "        %s *, %s, %u, %s)\n", libbasetypeextern, libbase,
+	    fprintf(out, "        %s *, (__%s), %u, %s)\n\n", libbasetypeextern, libbase,
 		    funclistit->lvo, basename);
+	    
+	    fprintf(out, "#define %s(", funclistit->name);
+	    for (arglistit = funclistit->arguments;
+		 arglistit != NULL;
+		 arglistit = arglistit->next)
+	    {
+		if (arglistit != funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s", arglistit->name);
+	    }
+	    fprintf(out, ") \\\n    __%s_WB(%s", funclistit->name, libbase);
+	    for (arglistit = funclistit->arguments;
+		 arglistit != NULL;
+		 arglistit = arglistit->next)
+		fprintf(out, ", (%s)", arglistit->name);
+	    fprintf(out, ")\n");
+
+	    /* Output a vararg macro if the function matches the prototype */
+
+	    /* Go to last argument */
+	    arglistit = funclistit->arguments;
+	    if (arglistit == NULL)
+		continue;
+	    
+	    while (arglistit->next != NULL) arglistit = arglistit->next;
+
+	    isvararg = 0;
+	
+	    if (*(funclistit->name + strlen(funclistit->name) - 1) == 'A')
+	    {
+		isvararg = 1;
+		varargname = strdup(funclistit->name);
+		varargname[strlen(funclistit->name)-1] = '\0';
+	    }
+	    else if (strcmp(funclistit->name + strlen(funclistit->name) - 7, "TagList") == 0)
+	    {
+		isvararg = 1;
+		/* TagList has to be changed in Tags at the end of the functionname */
+		varargname = strdup(funclistit->name);
+		varargname[strlen(funclistit->name)-4] = 's';
+		varargname[strlen(funclistit->name)-3] = '\0';
+	    }
+	    else if (strcmp(funclistit->name + strlen(funclistit->name) - 4, "Args") == 0
+		     && (strcasecmp(arglistit->name, "args") == 0 || strcasecmp(arglistit->name, "argist") == 0)
+		     )
+	    {
+		isvararg = 1;
+		varargname = strdup(funclistit->name);
+		varargname[strlen(funclistit->name)-4] = '\0';
+	    }
+	    else
+	    {
+		char *p;
+	    
+		if (strncmp(arglistit->type, "struct", 6)==0)
+		{
+		    p = arglistit->type + 6;
+		    while (isspace(*p)) p++;
+		    if (strncmp(p, "TagItem", 7) == 0)
+		    {
+			p += 7;
+			while (isspace(*p)) p++;
+			
+			if (*p == '*')
+			{
+			    isvararg = 1;
+			    varargname = malloc(strlen(funclistit->name) + 5);
+			    strcpy(varargname, funclistit->name);
+			    strcat(varargname, "Tags");
+			}
+		    }
+		}
+	    }
+	    if (isvararg)
+	    {
+		fprintf(out,
+			"\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
+			"#define %s(",
+			modulenameupper, varargname);
+		for (arglistit = funclistit->arguments;
+		     arglistit != NULL && arglistit->next != NULL;
+		     arglistit = arglistit->next)
+		{
+		    fprintf(out, "%s, ", arglistit->name);
+		}
+		fprintf(out,
+			"args...) \\\n"
+			"({ \\\n"
+			"    IPTR __args[] = { args }; \\\n"
+			"    %s(",
+			funclistit->name);
+		for (arglistit = funclistit->arguments;
+		     arglistit != NULL;
+		     arglistit = arglistit->next)
+		{
+		    if (arglistit != funclistit->arguments)
+			fprintf(out, ", ");
+		    
+		    if (arglistit->next == NULL)
+			fprintf(out, "(%s)__args", arglistit->type);
+		    else
+			fprintf(out, "(%s)", arglistit->name);
+		}
+		fprintf(out,
+			"); \\\n"
+			"})\n"
+			"#endif /* !NO_INLINE_STDARG */\n"
+			);
+	    
+		free(varargname);
+	    }
 	}
     }
     fprintf(out,

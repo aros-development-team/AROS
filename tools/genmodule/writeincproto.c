@@ -29,19 +29,25 @@ void writeincproto(int dummy)
 	    "\n"
 	    "#include <aros/system.h>\n"
 	    "\n"
+	    "#include <clib/%s_protos.h>\n"
+	    "\n"
+	    "#if !defined(%s) && !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
 	    "extern %s *%s;\n"
+	    "#endif\n"
 	    "\n",
 	    modulenameupper, modulenameupper,
+	    modulename,
+	    libbase, modulenameupper,
 	    libbasetypeextern, libbase);
     for (linelistit = protolines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
+    
     fprintf(out,
-	    "#include <clib/%s_protos.h>\n"
 	    "#if !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
 	    "#   include <defines/%s.h>\n"
 	    "#endif\n"
 	    "\n"
 	    "#endif /* PROTO_%s_H */\n",
-	    modulename, modulenameupper, modulename, modulenameupper);
+	    modulenameupper, modulename, modulenameupper);
     fclose(out);
 }

@@ -28,6 +28,10 @@ void writestubs(void)
         "    Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
         "*/\n"
         "#define NOLIBDEFINES\n"
+        "/* Be sure that the libbases are included in the stubs file */\n"
+        "#undef __NOLIBBASE__\n"
+        "#undef __%s_NOLIBBASE__\n",
+        modulenameupper
     );
     
     if (modtype != MCC && modtype != MUI && modtype != MCP)
