@@ -4,7 +4,7 @@ CURDIR=config/m68k-emul
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
+SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec
 CLIBDIR = $(GENDIR)/compiler/clib
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
 AFLAGS2 = $(AFLAGS) -I..
