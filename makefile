@@ -59,7 +59,7 @@ $(BINDIR)/arosshell: obj/arosshell.o $(LIBS)
 
 apps:
 	@cd c; make \
-	    TOP=".." CURDIR="$(CURDIR)/c" BINDIR="$(BINDIR)" \
+	    TOP=".." CURDIR="$(CURDIR)/c" BINDIR="../$(BINDIR)/c" \
 	    CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
 	    all
 
