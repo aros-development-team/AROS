@@ -66,19 +66,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct Gadget *gad = NULL, *gad2;
-    struct TagItem stdgadtags[] = {
-        {GA_Left, 0L},
-	{GA_Top, 0L},
-	{GA_Width, 0L},
-	{GA_Height, 0L},
-	{GA_IntuiText, (IPTR)NULL},
-        {GA_LabelPlace, (IPTR)GV_LabelPlace_In},
-	{GA_Previous, (IPTR)NULL},
-	{GA_ID, 0L},
-	{GA_DrawInfo, (IPTR)NULL},
-	{GA_UserData, (IPTR)NULL},
-	{TAG_END, 0L}
+    struct Gadget 	*gad = NULL, *gad2;
+    struct TagItem 	stdgadtags[] =
+    {
+        {GA_Left	, 0L			},
+	{GA_Top		, 0L			},
+	{GA_Width	, 0L			},
+	{GA_Height	, 0L			},
+	{GA_IntuiText	, (IPTR)NULL		},
+        {GA_LabelPlace	, (IPTR)GV_LabelPlace_In},
+	{GA_Previous	, (IPTR)NULL		},
+	{GA_ID		, 0L			},
+	{GA_DrawInfo	, (IPTR)NULL		},
+	{GA_UserData	, (IPTR)NULL		},
+	{TAG_DONE				}
     };
 
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
@@ -97,6 +98,7 @@
     stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
     stdgadtags[TAG_Width].ti_Data = ng->ng_Width;
     stdgadtags[TAG_Height].ti_Data = ng->ng_Height;
+
     if (ng->ng_GadgetText)
     {
     	stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext(GTB(GadToolsBase), ng);
@@ -105,6 +107,7 @@
     } else {
     	stdgadtags[TAG_IText].ti_Tag = TAG_IGNORE;
     }
+
     stdgadtags[TAG_Previous].ti_Data = (IPTR)previous;
     stdgadtags[TAG_ID].ti_Data = ng->ng_GadgetID;
     stdgadtags[TAG_DrawInfo].ti_Data = (IPTR)(VI(ng->ng_VisualInfo)->vi_dri);
@@ -122,97 +125,98 @@
 
     switch(kind)
     {
-    case BUTTON_KIND:
-        gad = makebutton(GTB(GadToolsBase), 
-                         stdgadtags,
-                         VI(ng->ng_VisualInfo),
-                         taglist);
-        break;
+	case BUTTON_KIND:
+            gad = makebutton(GTB(GadToolsBase), 
+                             stdgadtags,
+                             VI(ng->ng_VisualInfo),
+                             taglist);
+            break;
 
-    case CHECKBOX_KIND:
-        gad = makecheckbox(GTB(GadToolsBase),
-                           stdgadtags,
-                           VI(ng->ng_VisualInfo),
-                           taglist);
-        break;
+	case CHECKBOX_KIND:
+            gad = makecheckbox(GTB(GadToolsBase),
+                               stdgadtags,
+                               VI(ng->ng_VisualInfo),
+                               taglist);
+            break;
 
-    case CYCLE_KIND:
-        gad = makecycle(GTB(GadToolsBase),
-                        stdgadtags,
-                        VI(ng->ng_VisualInfo),
-                        taglist);
-        break;
+	case CYCLE_KIND:
+            gad = makecycle(GTB(GadToolsBase),
+                            stdgadtags,
+                            VI(ng->ng_VisualInfo),
+                            taglist);
+            break;
 
-    case MX_KIND:
-        gad = makemx(GTB(GadToolsBase),
-                     stdgadtags,
-                     VI(ng->ng_VisualInfo),
-                     taglist);
-        break;
+	case MX_KIND:
+            gad = makemx(GTB(GadToolsBase),
+                	 stdgadtags,
+                	 VI(ng->ng_VisualInfo),
+                	 taglist);
+            break;
 
-    case PALETTE_KIND:
-        gad = makepalette(GTB(GadToolsBase),
-                          stdgadtags,
-                          VI(ng->ng_VisualInfo),
-                          taglist);
-        break;
+	case PALETTE_KIND:
+            gad = makepalette(GTB(GadToolsBase),
+                              stdgadtags,
+                              VI(ng->ng_VisualInfo),
+                              taglist);
+            break;
 
-    case TEXT_KIND:
-        gad = maketext(GTB(GadToolsBase),
-                       stdgadtags,
-                       VI(ng->ng_VisualInfo),
-                       ng->ng_TextAttr,
-                       taglist);
-        break;
+	case TEXT_KIND:
+            gad = maketext(GTB(GadToolsBase),
+                	   stdgadtags,
+                	   VI(ng->ng_VisualInfo),
+                	   ng->ng_TextAttr,
+                	   taglist);
+            break;
 
-    case NUMBER_KIND:
-        gad = makenumber(GTB(GadToolsBase),
-                         stdgadtags,
-                         VI(ng->ng_VisualInfo),
-                         ng->ng_TextAttr,
-                         taglist);
-        break;
+	case NUMBER_KIND:
+            gad = makenumber(GTB(GadToolsBase),
+                             stdgadtags,
+                             VI(ng->ng_VisualInfo),
+                             ng->ng_TextAttr,
+                             taglist);
+            break;
 
-    case SLIDER_KIND:
-        gad = makeslider(GTB(GadToolsBase),
-                         stdgadtags,
-                         VI(ng->ng_VisualInfo),
-                         ng->ng_TextAttr,
-                         taglist);
+	case SLIDER_KIND:
+            gad = makeslider(GTB(GadToolsBase),
+                             stdgadtags,
+                             VI(ng->ng_VisualInfo),
+                             ng->ng_TextAttr,
+                             taglist);
 
-        break;
+            break;
 
-    case SCROLLER_KIND:
-        gad = makescroller(GTB(GadToolsBase),
-                           stdgadtags,
-                           VI(ng->ng_VisualInfo),
-                           taglist);
-	break;
+	case SCROLLER_KIND:
+            gad = makescroller(GTB(GadToolsBase),
+                               stdgadtags,
+                               VI(ng->ng_VisualInfo),
+                               taglist);
+	    break;
 
-    case STRING_KIND:
-        gad = makestring(GTB(GadToolsBase),
-                         stdgadtags,
-                         VI(ng->ng_VisualInfo),
-                         ng->ng_TextAttr,
-                         taglist);
-	break;
-	
-    case INTEGER_KIND:
-        gad = makeinteger(GTB(GadToolsBase),
-                          stdgadtags,
-                          VI(ng->ng_VisualInfo),
-                          ng->ng_TextAttr,
-                          taglist);
-	break;
+	case STRING_KIND:
+            gad = makestring(GTB(GadToolsBase),
+                             stdgadtags,
+                             VI(ng->ng_VisualInfo),
+                             ng->ng_TextAttr,
+                             taglist);
+	    break;
 
-    case LISTVIEW_KIND:
-        gad = makelistview(GTB(GadToolsBase),
-                           stdgadtags,
-                           VI(ng->ng_VisualInfo),
-                           ng->ng_TextAttr,
-                           taglist);
-	break;
-    }
+	case INTEGER_KIND:
+            gad = makeinteger(GTB(GadToolsBase),
+                              stdgadtags,
+                              VI(ng->ng_VisualInfo),
+                              ng->ng_TextAttr,
+                              taglist);
+	    break;
+
+	case LISTVIEW_KIND:
+            gad = makelistview(GTB(GadToolsBase),
+                               stdgadtags,
+                               VI(ng->ng_VisualInfo),
+                               ng->ng_TextAttr,
+                               taglist);
+	    break;
+	    
+    } /* switch(kind) */
 
     if (gad)
     {
@@ -225,6 +229,7 @@
     }
     else
     {
+    	previous->NextGadget = 0;
         FreeVec((APTR)stdgadtags[TAG_IText].ti_Data);
     }
     

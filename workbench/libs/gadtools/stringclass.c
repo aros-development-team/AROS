@@ -56,11 +56,11 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem 	*tag, *tstate, tags[] =
     {
-    	{TAG_IGNORE,	0UL},  /* 0 STRINGA_TextVal  */
-	{TAG_IGNORE,	0UL},  /* 1 STRINGA_LongVal  */
-    	{TAG_IGNORE,	0UL},  /* 2 STRINGA_MaxChars */
-    	{TAG_IGNORE,	0UL},  /* 3 STRINGA_EditHook */
-    	{TAG_MORE,	0UL}
+    	{TAG_IGNORE	, 0UL	},  /* 0 STRINGA_TextVal  */
+	{TAG_IGNORE	, 0UL	},  /* 1 STRINGA_LongVal  */
+    	{TAG_IGNORE	, 0UL	},  /* 2 STRINGA_MaxChars */
+    	{TAG_IGNORE	, 0UL	},  /* 3 STRINGA_EditHook */
+    	{TAG_MORE	, 0UL	}
     };
     
     LONG 		labelplace = GV_LabelPlace_Left;
@@ -84,7 +84,7 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 	        break;
 	    
     	    case GTST_String:
-	    	tags[0].ti_Tag = STRINGA_TextVal;
+	    	tags[0].ti_Tag = STRINGA_TextVal;		
 	    	tags[0].ti_Data = tidata;
 		break;
 		

@@ -48,8 +48,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct Gadget *lastgad = NULL, *nextgad = NULL;
-    BOOL context_gadget_found = FALSE;
+    struct Gadget 	*lastgad = NULL, *nextgad = NULL;
+    BOOL 		context_gadget_found = FALSE;
 
     if (!glist)
 	return;
@@ -66,7 +66,7 @@
 		FreeMem(glist,sizeof(struct GT_ContextGadget));
 	    }
 	    else
-	    {
+	    {		
 	        /* must check this, because arrowclass uses GA_LabelImage! */
 		if ((glist->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT)
 		{		

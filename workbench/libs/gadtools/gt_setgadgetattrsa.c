@@ -59,7 +59,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    SetGadgetAttrsA(gad, win, req, tagList);
-
+    if (win || req)
+    {
+        SetGadgetAttrsA(gad, win, req, tagList);
+    } else {
+        SetAttrsA((Object *)gad, tagList);
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* GT_SetGadgetAttrsA */

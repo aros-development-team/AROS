@@ -24,6 +24,7 @@
 #include <devices/inputevent.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
+#include <proto/gadtools.h>
 
 #include <string.h> /* memset() */
 
@@ -50,6 +51,7 @@ struct LVData
     struct TextFont 	*ld_Font;
     Object		*ld_Frame;
     Object		*ld_Scroller;
+    struct Gadget	*ld_ShowSelected;
     WORD		ld_Top;
     WORD		ld_Selected;
     WORD		ld_Spacing;
@@ -400,6 +402,39 @@ STATIC VOID ScrollEntries(Object *o, struct LVData *data, WORD old_top, WORD new
 
 /**********************************************************************************************/
 
+STATIC VOID DoShowSelected(struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
+{
+    if (data->ld_ShowSelected && (data->ld_ShowSelected != (struct Gadget *)~0))
+    {
+        struct TagItem set_tags[] =
+	{
+	    {GTST_String, (IPTR)""	},
+	    {TAG_DONE			}
+	};
+	
+	if ((data->ld_Selected >= 0) && (data->ld_Selected < data->ld_NumEntries))
+	{
+            struct Node	*node;
+	    WORD 	i = 0;
+	    
+	    ForeachNode(data->ld_Labels, node)
+	    {
+	        if (i++ == data->ld_Selected)
+		{
+		    set_tags[0].ti_Data = (IPTR)node->ln_Name;
+		    break;
+		}
+	    }
+	
+	}
+	
+	GT_SetGadgetAttrsA(data->ld_ShowSelected, gi ? gi->gi_Window : NULL, NULL, set_tags);
+	
+    } /* if (data->ld_ShowSelected && (data->ld_ShowSelected != (struct Gadget *)~0)) */
+}
+
+/**********************************************************************************************/
+
 #define lvS(x) ((struct StaticLVData *)x)
 #define GadToolsBase ((struct GadToolsBase_intern *)lvS(cl->cl_UserData)->ls_GadToolsBase)
 
@@ -413,7 +448,6 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     struct LVData 	*data = INST_DATA(cl, o);
     struct RastPort 	*rp;
     
-    BOOL 		labels_set = FALSE;
     BOOL 		update_scroller = FALSE;
     BOOL 		scroll_entries = FALSE;
     BOOL 		refresh_all = FALSE;
@@ -494,8 +528,28 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		
 	    case GTLV_Labels:	/* [IS] */
 	    	data->ld_Labels = (struct List *)tidata;
+		data->ld_Selected = ~0;
+		data->ld_Top = 0;
+		
+		{
+    		    struct Node *n;
+
+    		    data->ld_NumEntries = 0;
+
+		    if (data->ld_Labels)
+		    {
+    			/* Update the labelcount */
+    			ForeachNode(data->ld_Labels, n)
+    			{
+    			    data->ld_NumEntries ++;
+    			}
+		    }
+    		    D(bug("Number of items added: %d\n", data->ld_NumEntries));
+		}
+
+		DoShowSelected(data, msg->ops_GInfo, GadToolsBase);
+		
 	    	retval = 1UL;
-	    	labels_set = TRUE;
     		update_scroller = TRUE;
 		refresh_all = TRUE;
 	    	break;
@@ -547,6 +601,8 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 			    
 			} /* if ((rp = ObtainGIRPort(msg->ops_GInfo))) */
 			
+			DoShowSelected(data, msg->ops_GInfo, GadToolsBase);
+			
 		    } /* if (old_selected != data->ld_Selected) */
 		    
 		}
@@ -573,23 +629,6 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
     } /* while (more tags to iterate) */
     
-    if (labels_set)
-    {
-    	struct Node *n;
-    	
-    	data->ld_NumEntries = 0;
-
-	if (data->ld_Labels)
-	{
-    	    /* Update the labelcount */
-    	    ForeachNode(data->ld_Labels, n)
-    	    {
-    		data->ld_NumEntries ++;
-    	    }
-	}
-    	D(bug("Number of items added: %d\n", data->ld_NumEntries));
-    }
-
     if (update_scroller)
     {
     	/* IMPORTANT! If this is an OM_UPDATE, we should NOT redraw the
@@ -683,6 +722,8 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 	    data->ld_CallBack = 
 	    	&(((struct StaticLVData *)cl->cl_UserData)->ls_RenderHook);
 	
+	    data->ld_ShowSelected = (struct Gadget *)GetTagData(GTLV_ShowSelected, ~0, msg->ops_AttrList);
+	    
 	    listview_set(cl, o, msg);
 
 	} /* if (frame created) */
@@ -841,8 +882,9 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 
 			ReleaseGIRPort(rp);
 
-			ReturnInt ("ListView::Input", IPTR, GMR_MEACTIVE);
 		    }
+
+		    DoShowSelected(data, msg->gpi_GInfo, GadToolsBase);
 
 		} /* if (click wasn't on old active item) */
 
@@ -875,9 +917,9 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	    WORD x, y;
 	    struct TagItem itags[] =
 	    {
-	    	{IA_Width,	0L},
-	    	{IA_Height,	0L},
-	    	{TAG_DONE,}
+	    	{IA_Width	, 0L	},
+	    	{IA_Height	, 0L	},
+	    	{TAG_DONE		}
 	    };
 	
 	    D(bug("GREDRAW_REDRAW\n"));
@@ -947,7 +989,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 			G(o)->LeftEdge + LV_BORDER_X,
 			G(o)->TopEdge  + LV_BORDER_Y,
 			G(o)->LeftEdge + G(o)->Width  - 1 - LV_BORDER_X,
-			G(o)->TopEdge  + G(o)->Height - 1 - LV_BORDER_Y);
+			G(o)->TopEdge  + LV_BORDER_Y + NumItemsFit(o, data) * TotalItemHeight(data) - 1);
 
 		data->ld_FirstDamaged = ((data->ld_ScrollEntries > 0) ?
 				visible - abs_steps : 0);

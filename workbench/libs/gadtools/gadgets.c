@@ -45,10 +45,10 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
     Class *cl;
     struct TagItem tags[] =
     {
-	{GA_Disabled, FALSE},
-	{GA_Immediate, FALSE},
-	{GA_RelVerify, TRUE},
-	{TAG_MORE, (IPTR) NULL}
+	{GA_Disabled	, FALSE		},
+	{GA_Immediate	, FALSE		},
+	{GA_RelVerify	, TRUE		},
+	{TAG_MORE	, (IPTR) NULL	}
     };
 
     cl = makebuttonclass(GadToolsBase);
@@ -76,9 +76,9 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
     struct Gadget *obj;
     struct TagItem tags[] =
     {
-	{GA_Disabled, FALSE},
-	{GTCB_Checked, FALSE},
-	{TAG_MORE, (IPTR) NULL}
+	{GA_Disabled	, FALSE		},
+	{GTCB_Checked	, FALSE		},
+	{TAG_MORE	, (IPTR)NULL	}
     };
 
     EnterFunc(bug("makecheckbox()\n"));
@@ -113,11 +113,11 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
     struct Gadget *obj;
     struct TagItem tags[] =
     {
-	{GA_Disabled, FALSE},
-	{GTCY_Labels, FALSE},
-        {GTCY_Active, 0},
-	{GA_RelVerify,TRUE},
-	{TAG_MORE, (IPTR) NULL}
+	{GA_Disabled	, FALSE		},
+	{GTCY_Labels	, FALSE		},
+        {GTCY_Active	, 0		},
+	{GA_RelVerify	, TRUE		},
+	{TAG_MORE	, (IPTR)NULL	}
     };
 
 
@@ -149,13 +149,13 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     STRPTR *labellist;
     struct TagItem *tag, tags[] =
     {
-	{GA_Disabled, FALSE},
-	{AROSMX_Labels, (IPTR) NULL},
-	{AROSMX_Active, 0},
-	{AROSMX_Spacing, 1},
-        {AROSMX_TickHeight, MX_HEIGHT},
-        {AROSMX_TickLabelPlace, GV_LabelPlace_Right},
-	{TAG_MORE, (IPTR) NULL}
+	{GA_Disabled		, FALSE			},
+	{AROSMX_Labels		, (IPTR) NULL		},
+	{AROSMX_Active		, 0			},
+	{AROSMX_Spacing		, 1			},
+        {AROSMX_TickHeight	, MX_HEIGHT		},
+        {AROSMX_TickLabelPlace	, GV_LabelPlace_Right	},
+	{TAG_MORE		, (IPTR) NULL		}
     };
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
@@ -298,17 +298,17 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     
     struct TagItem *tag, tags[] =
     {
-    	{GTTX_Text,		(IPTR)"Blah"},
-    	{GTTX_CopyText,		FALSE},
-    	{GTTX_Clipped,		FALSE},
-    	{GTTX_Border,		FALSE},
-    	{GTTX_FrontPen,		TEXTPEN},
-    	{GTTX_BackPen,		BACKGROUNDPEN},
-    	{GTTX_Justification,	GTJ_LEFT},
-    	{GTA_Text_Format,	(IPTR)"%s"},
-    	{GA_TextAttr,		(IPTR)NULL},
-	{GTA_GadgetKind,	TEXT_KIND},
-	{TAG_MORE, (IPTR) NULL}
+    	{GTTX_Text		, (IPTR)"Blah"	},
+    	{GTTX_CopyText		, FALSE		},
+    	{GTTX_Clipped		, FALSE		},
+    	{GTTX_Border		, FALSE		},
+    	{GTTX_FrontPen		, TEXTPEN	},
+    	{GTTX_BackPen		, BACKGROUNDPEN	},
+    	{GTTX_Justification	, GTJ_LEFT	},
+    	{GTA_Text_Format	, (IPTR)"%s"	},
+    	{GA_TextAttr		, (IPTR)NULL	},
+	{GTA_GadgetKind		, TEXT_KIND	},
+	{TAG_MORE		, (IPTR) NULL	}
     };
 
     /* Could use GetTagData(), but this is faster */
@@ -318,14 +318,13 @@ struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
     	
     	switch (tag->ti_Tag)
     	{
-    	case GTTX_Text:			tags[0].ti_Data = tidata; break;
-    	case GTTX_CopyText:		tags[1].ti_Data	= tidata; break;
-    	case GTTX_Clipped:		tags[2].ti_Data	= tidata; cliptag_found = TRUE;break;
-    	case GTTX_Border:		tags[3].ti_Data	= tidata; break;
-    	case GTTX_FrontPen:		tags[4].ti_Data	= tidata; break;
-    	case GTTX_BackPen:		tags[5].ti_Data	= tidata; break;
-    	case GTTX_Justification:	tags[6].ti_Data	= tidata; break;
-    	    
+    	    case GTTX_Text:		tags[0].ti_Data = tidata; break;
+    	    case GTTX_CopyText:		tags[1].ti_Data	= tidata; break;
+    	    case GTTX_Clipped:		tags[2].ti_Data	= tidata; cliptag_found = TRUE;break;
+    	    case GTTX_Border:		tags[3].ti_Data	= tidata; break;
+    	    case GTTX_FrontPen:		tags[4].ti_Data	= tidata; break;
+    	    case GTTX_BackPen:		tags[5].ti_Data	= tidata; break;
+    	    case GTTX_Justification:	tags[6].ti_Data	= tidata; break;    	    
     	}
     	
     } /* while (iterate taglist) */
@@ -365,17 +364,17 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     
     struct TagItem *tag, tags[] =
     {
-    	{GTNM_Number,		0},
-    	{GTNM_Format,		(IPTR)"%ld"},
-    	{GTNM_Clipped,		FALSE},
-    	{GTNM_Border,		FALSE},
-    	{GTNM_FrontPen,		TEXTPEN},
-    	{GTNM_BackPen,		BACKGROUNDPEN},
-    	{GTNM_Justification,	GTJ_CENTER},
-    	{GTNM_MaxNumberLen,	100},
-    	{GA_TextAttr,		(IPTR)NULL},
-	{GTA_GadgetKind,	NUMBER_KIND},
-	{TAG_MORE, (IPTR) NULL}
+    	{GTNM_Number		, 0		},
+    	{GTNM_Format		, (IPTR)"%ld"	},
+    	{GTNM_Clipped		, FALSE		},
+    	{GTNM_Border		, FALSE		},
+    	{GTNM_FrontPen		, TEXTPEN	},
+    	{GTNM_BackPen		, BACKGROUNDPEN	},
+    	{GTNM_Justification	, GTJ_CENTER	},
+    	{GTNM_MaxNumberLen	, 100		},
+    	{GA_TextAttr		, (IPTR)NULL	},
+	{GTA_GadgetKind		, NUMBER_KIND	},
+	{TAG_MORE		, (IPTR) NULL	}
     };
     
    
@@ -386,15 +385,14 @@ struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
     	
     	switch (tag->ti_Tag)
     	{
-    	case GTNM_Number:		tags[0].ti_Data = tidata; break;
-    	case GTNM_Format:		tags[1].ti_Data	= tidata; break;
-    	case GTNM_Clipped:		tags[2].ti_Data	= tidata; cliptag_found = TRUE;break;
-    	case GTNM_Border:		tags[3].ti_Data	= tidata; break;
-    	case GTNM_FrontPen:		tags[4].ti_Data	= tidata; break;
-    	case GTNM_BackPen:		tags[5].ti_Data	= tidata; break;
-    	case GTNM_Justification:	tags[6].ti_Data	= tidata; break;
-    	case GTNM_MaxNumberLen:		tags[7].ti_Data	= tidata; break;
-    	    
+    	    case GTNM_Number:		tags[0].ti_Data = tidata; break;
+    	    case GTNM_Format:		tags[1].ti_Data	= tidata; break;
+    	    case GTNM_Clipped:		tags[2].ti_Data	= tidata; cliptag_found = TRUE;break;
+    	    case GTNM_Border:		tags[3].ti_Data	= tidata; break;
+    	    case GTNM_FrontPen:		tags[4].ti_Data	= tidata; break;
+    	    case GTNM_BackPen:		tags[5].ti_Data	= tidata; break;
+    	    case GTNM_Justification:	tags[6].ti_Data	= tidata; break;
+    	    case GTNM_MaxNumberLen:	tags[7].ti_Data	= tidata; break;    	    
     	}
     	
     } /* while (iterate taglist) */
@@ -444,35 +442,35 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     
     struct TagItem stags[] =
     {
-    	{GA_Disabled,	FALSE},
-    	{GA_RelVerify,	TRUE},	/* Georg S.: was false */
-    	{GA_Immediate,	TRUE},	/* Georg S.: was false */
-    	{GTSL_Min,	0},
-    	{GTSL_Max,	15},
-    	{GTSL_Level,	0},
-    	{PGA_Freedom,	FREEHORIZ},
-	{PGA_Borderless,TRUE},
-	{PGA_NewLook,	TRUE},
-	{GA_Bounds,	(IPTR)&bbox},
-	{GA_FollowMouse,TRUE},
-    	{TAG_MORE,	(IPTR)NULL}
+    	{GA_Disabled	, FALSE		},
+    	{GA_RelVerify	, TRUE		},	/* Georg S.: was false */
+    	{GA_Immediate	, TRUE		},	/* Georg S.: was false */
+    	{GTSL_Min	, 0		},
+    	{GTSL_Max	, 15		},
+    	{GTSL_Level	, 0		},
+    	{PGA_Freedom	, FREEHORIZ	},
+	{PGA_Borderless	, TRUE		},
+	{PGA_NewLook	, TRUE		},
+	{GA_Bounds	, (IPTR)&bbox	},
+	{GA_FollowMouse	, TRUE		},
+    	{TAG_MORE	, (IPTR)NULL	}
     };
     
     struct TagItem ltags[] = 
     {
-    	 {GA_Left,	0},
-    	 {GA_Top,	0},
-    	 {GA_Width,	0},
-    	 {GA_Height,	0},
-    	 {GA_TextAttr,	(IPTR)NULL},
-    	 {GTNM_Format,	(IPTR)NULL},
-    	 {GTNM_Justification, GTJ_LEFT},
-	 {GTA_Text_DispFunc,	(IPTR)NULL},
-	 {GA_Previous,	(IPTR)NULL},
-	 {GA_DrawInfo,	(IPTR)NULL},
-	 {GTNM_Number,	0},
-	 {GTA_GadgetKind, SLIDER_KIND},
-	 {TAG_DONE,}
+    	 {GA_Left		, 0		},
+    	 {GA_Top		, 0		},
+    	 {GA_Width		, 0		},
+    	 {GA_Height		, 0		},
+    	 {GA_TextAttr		, (IPTR)NULL	},
+    	 {GTNM_Format		, (IPTR)NULL	},
+    	 {GTNM_Justification	, GTJ_LEFT	},
+	 {GTA_Text_DispFunc	, (IPTR)NULL	},
+	 {GA_Previous		, (IPTR)NULL	},
+	 {GA_DrawInfo		, (IPTR)NULL	},
+	 {GTNM_Number		, 0		},
+	 {GTA_GadgetKind	, SLIDER_KIND	},
+	 {TAG_DONE				}
     };
     STRPTR lformat = NULL;
     WORD lmaxlen = 0;
@@ -497,27 +495,27 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     	switch (tag->ti_Tag)
     	{
     	
-    	/* Slider tags */
-    	case GA_Disabled:	stags[0].ti_Data = tidata; break;
-    	case GA_RelVerify:	stags[1].ti_Data = tidata; break;
-    	case GA_Immediate:	stags[2].ti_Data = tidata; break;
-    	case GTSL_Min:		stags[3].ti_Data = tidata; break;
-    	case GTSL_Max:		stags[4].ti_Data = tidata; break;
-    	case GTSL_Level:	level = stags[5].ti_Data = tidata; break;
-    	case PGA_Freedom:
-    	    if (tidata == LORIENT_HORIZ)
-    	    	stags[6].ti_Data = FREEHORIZ;
-    	    else
-    	    	stags[6].ti_Data = FREEVERT;
-    	    break;
-    	
-    	/* Level tags */    
-    	case GTSL_LevelFormat:   lformat          = (STRPTR)tidata;	break;
-    	case GTSL_MaxLevelLen:   lmaxlen          = (UWORD)tidata;	break;
-	case GTSL_MaxPixelLen:   lmaxpixellen     = (ULONG)tidata; 	break;
-	case GTSL_LevelPlace:    lplace	      	  = (UBYTE)tidata;	break;
-    	case GTSL_Justification: ltags[6].ti_Data = tidata;	  	break;
-    	case GTSL_DispFunc:	 ltags[7].ti_Data = tidata;  		break;
+    	    /* Slider tags */
+    	    case GA_Disabled:	stags[0].ti_Data = tidata; break;
+    	    case GA_RelVerify:	stags[1].ti_Data = tidata; break;
+    	    case GA_Immediate:	stags[2].ti_Data = tidata; break;
+    	    case GTSL_Min:	stags[3].ti_Data = tidata; break;
+    	    case GTSL_Max:	stags[4].ti_Data = tidata; break;
+    	    case GTSL_Level:	level = stags[5].ti_Data = tidata; break;
+    	    case PGA_Freedom:
+    		if (tidata == LORIENT_HORIZ)
+    	    	    stags[6].ti_Data = FREEHORIZ;
+    		else
+    	    	    stags[6].ti_Data = FREEVERT;
+    		break;
+
+    	    /* Level tags */    
+    	    case GTSL_LevelFormat:   lformat          = (STRPTR)tidata;	break;
+    	    case GTSL_MaxLevelLen:   lmaxlen          = (UWORD)tidata;	break;
+	    case GTSL_MaxPixelLen:   lmaxpixellen     = (ULONG)tidata; 	break;
+	    case GTSL_LevelPlace:    lplace	      = (UBYTE)tidata;	break;
+    	    case GTSL_Justification: ltags[6].ti_Data = tidata;	  	break;
+    	    case GTSL_DispFunc:	     ltags[7].ti_Data = tidata;  	break;
 
     	} 
     	    
@@ -554,9 +552,9 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 	
 	struct TagItem lntags[] =
 	{
-	     {ICA_TARGET,	(IPTR)NULL},
-	     {ICA_MAP,		(IPTR)NULL},
-	     {TAG_DONE,}
+	     {ICA_TARGET, (IPTR)NULL	},
+	     {ICA_MAP	, (IPTR)NULL	},
+	     {TAG_DONE			}
 	};
 	    
     	/* Set som defaults */
@@ -676,19 +674,19 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, stags[] =
     {
-    	{GTSC_Top,	0},
-    	{GTSC_Total,	0},
-    	{GTSC_Visible,	2},
-    	{PGA_Freedom,	FREEHORIZ},
-    	{GA_Disabled,	FALSE},
-    	{GA_RelVerify,	TRUE},		/* Georg S.: was false */
-    	{GA_Immediate,	TRUE},		/* Georg S.: was false */
-	{GTA_GadgetKind, SCROLLER_KIND},
-	{PGA_Borderless,TRUE},
-	{PGA_NewLook,	TRUE},
-	{GA_Bounds,	(IPTR) &bbox},
-	{GA_FollowMouse,TRUE},
-	{TAG_MORE, (IPTR) NULL}
+    	{GTSC_Top	, 0		},
+    	{GTSC_Total	, 0		},
+    	{GTSC_Visible	, 2		},
+    	{PGA_Freedom	, FREEHORIZ	},
+    	{GA_Disabled	, FALSE		},
+    	{GA_RelVerify	, TRUE		},
+    	{GA_Immediate	, TRUE		},
+	{GTA_GadgetKind	, SCROLLER_KIND	},
+	{PGA_Borderless	, TRUE		},
+	{PGA_NewLook	, TRUE		},
+	{GA_Bounds	, (IPTR) &bbox	},
+	{GA_FollowMouse	, TRUE		},
+	{TAG_MORE	, (IPTR)NULL	}
     };
     
     struct TagItem *scr_dim_tagitem;
@@ -709,22 +707,22 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	
     	switch (tag->ti_Tag)
     	{
-    	case GTSC_Top:		stags[0].ti_Data = tidata; break;
-    	case GTSC_Total:	stags[1].ti_Data = tidata; break;
-    	case GTSC_Visible:	stags[2].ti_Data = tidata; break;
-    	case PGA_Freedom:
-    	    if (tidata == LORIENT_HORIZ)
-    	    	freedom = stags[3].ti_Data = FREEHORIZ;
-    	    else
-    	    	freedom = stags[3].ti_Data = FREEVERT;
-    	    break;
-    	case GA_Disabled:	stags[4].ti_Data = tidata; break;
-    	case GA_RelVerify:	relverify = stags[5].ti_Data = tidata; break;
-    	case GA_Immediate:	immediate = stags[6].ti_Data = tidata; break;
-    	
-    	case GTSC_Arrows:	arrowdim = (WORD)tidata; break;
-	case GTA_Scroller_ArrowKind: arrowkind = (WORD)tidata; break;
-	case GTA_Scroller_ScrollerKind: stags[7].ti_Data = tidata; break;
+    	    case GTSC_Top:	stags[0].ti_Data = tidata; break;
+    	    case GTSC_Total:	stags[1].ti_Data = tidata; break;
+    	    case GTSC_Visible:	stags[2].ti_Data = tidata; break;
+    	    case PGA_Freedom:
+    		if (tidata == LORIENT_HORIZ)
+    	    	    freedom = stags[3].ti_Data = FREEHORIZ;
+    		else
+    	    	    freedom = stags[3].ti_Data = FREEVERT;
+    		break;
+    	    case GA_Disabled:	stags[4].ti_Data = tidata; break;
+    	    case GA_RelVerify:	relverify = stags[5].ti_Data = tidata; break;
+    	    case GA_Immediate:	immediate = stags[6].ti_Data = tidata; break;
+
+    	    case GTSC_Arrows:	arrowdim = (WORD)tidata; break;
+	    case GTA_Scroller_ArrowKind: arrowkind = (WORD)tidata; break;
+	    case GTA_Scroller_ScrollerKind: stags[7].ti_Data = tidata; break;
     	    
     	}
     	
@@ -781,19 +779,19 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	
     	struct TagItem atags[] =
     	{
-    	    {GA_Left,		0},
-    	    {GA_Top,		0},
-    	    {GA_Width,		0},
-    	    {GA_Height,		0},
-    	    {GTA_Arrow_Type,	0},
-    	    {GA_DrawInfo,	(IPTR)NULL},
-    	    {GA_Previous,	(IPTR)NULL},
-    	    {GTA_Arrow_Scroller, (IPTR)NULL},
-    	    {GA_RelVerify,	TRUE},
-    	    {GA_Immediate,	TRUE},
-    	    {GA_ID,		0},
-	    {GTA_GadgetKind,	arrowkind},
-    	    {TAG_DONE}
+    	    {GA_Left		, 0		},
+    	    {GA_Top		, 0		},
+    	    {GA_Width		, 0		},
+    	    {GA_Height		, 0		},
+    	    {GTA_Arrow_Type	, 0		},
+    	    {GA_DrawInfo	, (IPTR)NULL	},
+    	    {GA_Previous	, (IPTR)NULL	},
+    	    {GTA_Arrow_Scroller	, (IPTR)NULL	},
+    	    {GA_RelVerify	, TRUE		},
+    	    {GA_Immediate	, TRUE		},
+    	    {GA_ID		, 0		},
+	    {GTA_GadgetKind	, arrowkind	},
+    	    {TAG_DONE				}
     	};
     	
     	atags[5].ti_Data = (IPTR)vi->vi_dri;    /* Set GA_DrawInfo */
@@ -890,20 +888,20 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, tags[] =
     {
-    	{GA_Disabled,		FALSE		}, /* 0 */
-    	{GA_Immediate,		FALSE		}, /* 1 */
-	{GA_RelVerify,          TRUE		}, /* 2 */
-    	{GA_TabCycle,		TRUE		}, /* 3 */
-    	{GTST_String,		(IPTR)NULL	}, /* 4 */
-    	{GTST_MaxChars,		64UL		}, /* 5 Georg Steger: Maxon Hothelp says so */ 
-    	{GTST_EditHook,		(IPTR)NULL	}, /* 6 */
-    	{STRINGA_ExitHelp,	FALSE		}, /* 7 */
-    	{STRINGA_Justification,	GACT_STRINGLEFT	}, /* 8 */
-    	{STRINGA_ReplaceMode,	FALSE		}, /* 9 */
-    	{GA_TextAttr,		(IPTR)NULL	}, /* 10 */
-	{GTA_GadgetKind,	STRING_KIND	}, /* 11 */
-	{GA_Bounds,		(IPTR)&bbox	}, /* 12 */
-	{TAG_MORE, 		(IPTR)NULL	}  /* 13 */
+    	{GA_Disabled		, FALSE			}, /* 0 */
+    	{GA_Immediate		, FALSE			}, /* 1 */
+	{GA_RelVerify		, TRUE			}, /* 2 */
+    	{GA_TabCycle		, TRUE			}, /* 3 */
+    	{GTST_String		, (IPTR)NULL		}, /* 4 */
+    	{GTST_MaxChars		, 64UL			}, /* 5 */ 
+    	{GTST_EditHook		, (IPTR)NULL		}, /* 6 */
+    	{STRINGA_ExitHelp	, FALSE			}, /* 7 */
+    	{STRINGA_Justification	, GACT_STRINGLEFT	}, /* 8 */
+    	{STRINGA_ReplaceMode	, FALSE			}, /* 9 */
+    	{GA_TextAttr		, (IPTR)NULL		}, /* 10 */
+	{GTA_GadgetKind		, STRING_KIND		}, /* 11 */
+	{GA_Bounds		, (IPTR)&bbox		}, /* 12 */
+	{TAG_MORE		, (IPTR)NULL		}  /* 13 */
     };
     
    
@@ -914,16 +912,16 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     	
     	switch (tag->ti_Tag)
     	{
-    	case GA_Disabled:		tags[0].ti_Data = tidata; break;
-    	case GA_Immediate:		tags[1].ti_Data	= tidata; break;
-	case GA_RelVerify:        	tags[2].ti_Data = tidata; break;
-    	case GA_TabCycle:		tags[3].ti_Data	= tidata; break;
-    	case GTST_String:		tags[4].ti_Data	= tidata; break;
-    	case GTST_MaxChars:		tags[5].ti_Data	= tidata; break;
-    	case GTST_EditHook:		tags[6].ti_Data	= tidata; break;
-    	case STRINGA_ExitHelp:		tags[7].ti_Data	= tidata; break;
-    	case STRINGA_Justification:	tags[8].ti_Data	= tidata; break;
-    	case STRINGA_ReplaceMode:	tags[9].ti_Data	= tidata; break;
+    	    case GA_Disabled:		tags[0].ti_Data = tidata; break;
+    	    case GA_Immediate:		tags[1].ti_Data	= tidata; break;
+	    case GA_RelVerify:        	tags[2].ti_Data = tidata; break;
+    	    case GA_TabCycle:		tags[3].ti_Data	= tidata; break;
+    	    case GTST_String:		tags[4].ti_Data	= tidata; break;
+    	    case GTST_MaxChars:		tags[5].ti_Data	= tidata; break;
+    	    case GTST_EditHook:		tags[6].ti_Data	= tidata; break;
+    	    case STRINGA_ExitHelp:	tags[7].ti_Data	= tidata; break;
+    	    case STRINGA_Justification:	tags[8].ti_Data	= tidata; break;
+    	    case STRINGA_ReplaceMode:	tags[9].ti_Data	= tidata; break;
     	}
     	
     } /* while (iterate taglist) */
@@ -975,20 +973,20 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, tags[] =
     {
-    	{GA_Disabled,		FALSE		}, /* 0 */
-    	{GA_Immediate,		FALSE		}, /* 1 */
-	{GA_RelVerify,		TRUE		}, /* 2 */
-    	{GA_TabCycle,		TRUE		}, /* 3 */
-    	{GTIN_Number,		0L		}, /* 4 */
-    	{GTIN_MaxChars,		10L		}, /* 5 */
-    	{GTIN_EditHook,		(IPTR)NULL	}, /* 6 */
-    	{STRINGA_ExitHelp,	FALSE		}, /* 7 */
-    	{STRINGA_Justification,	GACT_STRINGLEFT	}, /* 8 */
-    	{STRINGA_ReplaceMode,	FALSE		}, /* 9 */
-    	{GA_TextAttr,		(IPTR)NULL	}, /* 10 */
-	{GTA_GadgetKind,	INTEGER_KIND	}, /* 11 */
-	{GA_Bounds,		(IPTR)&bbox	}, /* 12 */
-	{TAG_MORE, 		(IPTR)NULL	}  /* 13 */
+    	{GA_Disabled		, FALSE			}, /* 0 */
+    	{GA_Immediate		, FALSE			}, /* 1 */
+	{GA_RelVerify		, TRUE			}, /* 2 */
+    	{GA_TabCycle		, TRUE			}, /* 3 */
+    	{GTIN_Number		, 0L			}, /* 4 */
+    	{GTIN_MaxChars		, 10L			}, /* 5 */
+    	{GTIN_EditHook		, (IPTR)NULL		}, /* 6 */
+    	{STRINGA_ExitHelp	, FALSE			}, /* 7 */
+    	{STRINGA_Justification	, GACT_STRINGLEFT	}, /* 8 */
+    	{STRINGA_ReplaceMode	, FALSE			}, /* 9 */
+    	{GA_TextAttr		, (IPTR)NULL		}, /* 10 */
+	{GTA_GadgetKind		, INTEGER_KIND		}, /* 11 */
+	{GA_Bounds		, (IPTR)&bbox		}, /* 12 */
+	{TAG_MORE		, (IPTR)NULL		}  /* 13 */
     };
     
    
@@ -999,16 +997,16 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     	
     	switch (tag->ti_Tag)
     	{
-    	case GA_Disabled:		tags[0].ti_Data = tidata; break;
-    	case GA_Immediate:		tags[1].ti_Data	= tidata; break;
-	case GA_RelVerify:		tags[2].ti_Data = tidata; break;
-    	case GA_TabCycle:		tags[3].ti_Data	= tidata; break;
-    	case GTIN_Number:		tags[4].ti_Data	= tidata; break;
-    	case GTIN_MaxChars:		tags[5].ti_Data	= tidata; break;
-    	case GTIN_EditHook:		tags[6].ti_Data	= tidata; break;
-    	case STRINGA_ExitHelp:		tags[7].ti_Data	= tidata; break;
-    	case STRINGA_Justification:	tags[8].ti_Data	= tidata; break;
-    	case STRINGA_ReplaceMode:	tags[9].ti_Data	= tidata; break;
+    	    case GA_Disabled:		tags[0].ti_Data = tidata; break;
+    	    case GA_Immediate:		tags[1].ti_Data	= tidata; break;
+	    case GA_RelVerify:		tags[2].ti_Data = tidata; break;
+    	    case GA_TabCycle:		tags[3].ti_Data	= tidata; break;
+    	    case GTIN_Number:		tags[4].ti_Data	= tidata; break;
+    	    case GTIN_MaxChars:		tags[5].ti_Data	= tidata; break;
+    	    case GTIN_EditHook:		tags[6].ti_Data	= tidata; break;
+    	    case STRINGA_ExitHelp:	tags[7].ti_Data	= tidata; break;
+    	    case STRINGA_Justification:	tags[8].ti_Data	= tidata; break;
+    	    case STRINGA_ReplaceMode:	tags[9].ti_Data	= tidata; break;
     	}
     	
     } /* while (iterate taglist) */
@@ -1052,8 +1050,8 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 
 const struct TagItem scroller2lv[] =
 {
-    {PGA_Top,	GTLV_Top},
-    {TAG_DONE, }
+    {PGA_Top	,	GTLV_Top},
+    {TAG_DONE	, 		}
 };
 
 /* Spacig between scroller and listview */
@@ -1066,7 +1064,8 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
                          struct TextAttr *tattr,
                          struct TagItem *taglist)
 {
-    struct Gadget *lvgad = NULL,  *showselgad = NULL, *scrollergad; /* important to set these to NULL */
+    struct Gadget *lvgad = NULL, *showselgad = (struct Gadget *)~0;
+    struct Gadget *scrollergad;
     struct IBox bbox;
     Class *cl;
 
@@ -1084,7 +1083,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	{GTLV_Top		, 0L		}, /* 1  */
     	{GTLV_MakeVisible	, 0L		}, /* 2  */
     	{GTLV_Labels		, (IPTR)NULL	}, /* 3  */
-    	{GTLV_Selected		, 0L		}, /* 4  */
+    	{GTLV_Selected		, ~0L		}, /* 4  */
     	{GTLV_ItemHeight	, 0L		}, /* 5  */
     	{GTLV_CallBack		, (IPTR)NULL	}, /* 6  */
     	{GTLV_MaxPen		, 0L		}, /* 7  */
@@ -1093,7 +1092,8 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	{GA_TextAttr		, (IPTR)NULL	}, /* 10 */
 	{GA_RelVerify		, TRUE		}, /* 11 */
 	{GA_Bounds		, (IPTR)&bbox	}, /* 12 */
-	{TAG_MORE		, (IPTR)NULL	}  /* 13*/
+	{GTLV_ShowSelected	, showselgad	}, /* 13 */
+	{TAG_MORE		, (IPTR)NULL	}  /* 14 */
     };
     
     EnterFunc(bug("makelistview()\n"));
@@ -1105,19 +1105,23 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	
     	switch (tag->ti_Tag)
     	{
-    	case GA_Disabled:	lvtags[0].ti_Data = tidata; break;
-    	case GTLV_Top:		lvtags[1].ti_Data = tidata; break;
-    	case GTLV_MakeVisible:	lvtags[2].ti_Data = tidata; break;
-    	case GTLV_Labels:	lvtags[3].ti_Data = tidata; break;
-    	case GTLV_Selected:	lvtags[4].ti_Data = tidata; break;
-    	case GTLV_ItemHeight:	lvtags[5].ti_Data = tidata; break;
-    	case GTLV_CallBack:	lvtags[6].ti_Data = tidata; break;
-    	case GTLV_MaxPen:	lvtags[7].ti_Data = tidata; break;
-    	case GTLV_ReadOnly:	lvtags[8].ti_Data = tidata; break;
-    	case LAYOUTA_Spacing:	lvtags[9].ti_Data = tidata; break;
-    	
-    	case GTLV_ShowSelected:	showselgad  = (struct Gadget *)tidata; break;
-    	case GTLV_ScrollWidth:	scroller_width = (UWORD)tidata;
+    	    case GA_Disabled:		lvtags[0].ti_Data = tidata; break;
+    	    case GTLV_Top:		lvtags[1].ti_Data = tidata; break;
+    	    case GTLV_MakeVisible:	lvtags[2].ti_Data = tidata; break;
+    	    case GTLV_Labels:		lvtags[3].ti_Data = tidata; break;
+    	    case GTLV_Selected:		lvtags[4].ti_Data = tidata; break;
+    	    case GTLV_ItemHeight:	lvtags[5].ti_Data = tidata; break;
+    	    case GTLV_CallBack:		lvtags[6].ti_Data = tidata; break;
+    	    case GTLV_MaxPen:		lvtags[7].ti_Data = tidata; break;
+    	    case GTLV_ReadOnly:		lvtags[8].ti_Data = tidata; break;
+    	    case LAYOUTA_Spacing:	lvtags[9].ti_Data = tidata; break;
+
+    	    case GTLV_ShowSelected:
+	        showselgad  = (struct Gadget *)tidata;
+		lvtags[13].ti_Data = (IPTR)showselgad;
+		break;
+		
+    	    case GTLV_ScrollWidth:	scroller_width = (UWORD)tidata;
     	}
     	
     } /* while (iterate taglist) */
@@ -1170,9 +1174,30 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     lv_width -= (scroller_width + SCROLLER_SPACING);
     
     /* Adjust the listview height according to showsel gadget height */
-    if (showselgad)
+    if ((showselgad) && (showselgad != (struct Gadget *)~0))
     {
-    	lv_height -= (showselgad->Height + 4);
+        /* The showselected string gadget must have the same width as the
+	   listview gadget, otherwise fail (AmigaOS does the same). Fail
+	   also if the showselected string gadget is too high*/
+	   
+        if ((EG(showselgad)->BoundsWidth != bbox.Width) ||
+	    (EG(showselgad)->BoundsHeight >= lv_height))
+	{	
+            ReturnPtr ("makelistview", struct Gadget *, NULL);
+        }
+	
+	/* the showselected string gadget shrinks the height of the listview */
+	
+    	lv_height -= EG(showselgad)->BoundsHeight;
+	
+	/* the showselected string gadget will get its position automatically
+	   fixed to be under the listview gadget */
+	   
+	EG(showselgad)->BoundsLeftEdge = bbox.Left;
+	EG(showselgad)->BoundsTopEdge  = bbox.Top + lv_height;
+	EG(showselgad)->LeftEdge       = EG(showselgad)->BoundsLeftEdge + BORDERSTRINGSPACINGX;
+	EG(showselgad)->TopEdge        = EG(showselgad)->BoundsTopEdge  + BORDERSTRINGSPACINGY;
+	
     	D(bug("Showselected gadget specified"));
 
     }
@@ -1180,18 +1205,23 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 			/* GTLV_ItemHeight + LAYOUTA_Spacing */
     totalitemheight = lvtags[5].ti_Data + lvtags[9].ti_Data;
     
+    #if 0 /* stegerg: I think it looks better without this adjustment. Think of
+             GTLV_ShowSelected and aligning with other gadgets */
+    
     /* Adjust listview height so that an exact number of items fits in it */
     viewheight = lv_height - (2 * LV_BORDER_Y);
     lv_height -= (viewheight % totalitemheight);
     
+    #endif
+    
     /* Reinsert the modified dimension attrs into the listview taglist */
     
     D(bug("Dimension passed to listview: w=%d, h=%d\n", lv_width, lv_height));
+
     lv_width_tag->ti_Data  = (IPTR)lv_width;
     lv_height_tag->ti_Data = (IPTR)lv_height;
-    
-    
-    lvtags[13].ti_Data = (IPTR)stdgadtags;
+        
+    lvtags[14].ti_Data = (IPTR)stdgadtags;
     
     cl = makelistviewclass(GadToolsBase);
     if (cl)
@@ -1202,14 +1232,14 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
         {
     	    struct TagItem scr_stdtags[] =
     	    {
-           	{GA_Left, 	0L},
-	   	{GA_Top, 	0L},
-	    	{GA_Width, 	0L},
-	    	{GA_Height, 	0L},
-	    	{GA_Previous, (IPTR)NULL},
-	    	{GA_ID, 	0L},
-	    	{GA_DrawInfo, (IPTR)NULL},
-	    	{TAG_END, 	0L}
+           	{GA_Left	, 0L		},
+	   	{GA_Top		, 0L		},
+	    	{GA_Width	, 0L		},
+	    	{GA_Height	, 0L		},
+	    	{GA_Previous	, (IPTR)NULL	},
+	    	{GA_ID		, 0L		},
+	    	{GA_DrawInfo	, (IPTR)NULL	},
+	    	{TAG_DONE			}
             };
         
             struct TagItem scr_specialtags[] =
@@ -1217,11 +1247,11 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
             	/* The listview will initialize the scrollers top, visible & total,
             	** in its GM_LAYOUT method
             	*/
-            	{GTSC_Arrows, 	scroller_width},
-            	{PGA_Freedom,	LORIENT_VERT},
-		{GTA_Scroller_ArrowKind, LISTVIEW_KIND},
-		{GTA_Scroller_ScrollerKind, LISTVIEW_KIND},
-            	{TAG_DONE,}
+            	{GTSC_Arrows			, scroller_width	},
+            	{PGA_Freedom			, LORIENT_VERT		},
+		{GTA_Scroller_ArrowKind		, LISTVIEW_KIND		},
+		{GTA_Scroller_ScrollerKind	, LISTVIEW_KIND		},
+            	{TAG_DONE						}
             };
         
             D(bug("Listview gadget created: %p\n", lvgad));
@@ -1240,9 +1270,9 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     	    	struct TagItem lvset_tags[] = {{GTA_Listview_Scroller, (IPTR)NULL}, {TAG_DONE, }};
     	    	struct TagItem scrnotify_tags[] =
     	    	{
-    	    	    {ICA_TARGET, 	(IPTR)NULL},
-    	    	    {ICA_MAP,		(IPTR)NULL},
-    	    	    {TAG_DONE, }
+    	    	    {ICA_TARGET	, (IPTR)NULL	},
+    	    	    {ICA_MAP	, (IPTR)NULL	},
+    	    	    {TAG_DONE	 		}
     	    	};
 
                 D(bug("Scroller gadget created: %p\n", scrollergad));
