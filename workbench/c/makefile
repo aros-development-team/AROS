@@ -33,7 +33,8 @@ FILES = \
 	mount \
 	version \
 	copy \
-	tasklist
+	tasklist \
+        addbuffers
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
