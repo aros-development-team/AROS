@@ -18,8 +18,8 @@
 //#define F266Round(x) (((x)+32>>6))
 //#define F266Floor(x) (((x)>>6))
 //#define F266Ceil(x)  ((((x)+63)>>6))
-#define F266Round(x) (((x)+0x10000000+32>>6)-0x00400000)
-#define F266Floor(x) (((x)+0x10000000>>6)-0x00400000)
+#define F266Round(x) ((((x)+0x10000000+32)>>6)-0x00400000)
+#define F266Floor(x) ((((x)+0x10000000)>>6)-0x00400000)
 #define F266Ceil(x)  ((((x)+0x10000000+63)>>6)-0x00400000)
 
 void set_transform(FT_GlyphEngine *ge)

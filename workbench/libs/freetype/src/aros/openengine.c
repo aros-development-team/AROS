@@ -18,7 +18,7 @@ struct GlyphEngine *OpenEngine(void)
 
     D(bug("OpenEngine libbase = 0x%lx\n", mylib));
 
-    if(ge = AllocGE())
+    if((ge = AllocGE()))
     {
 	ge->gle_Library = mylib;
 	ge->gle_Name = EngineName;
