@@ -27,7 +27,7 @@
 	struct Library *, OOPBase, 5, OOP)
 
 /*  FUNCTION
-	Creates a new object of given clas based on the TagItem
+	Creates a new object of given class based on the TagItem
 	parameters passed.
 
     INPUTS

@@ -24,6 +24,8 @@
 typedef ULONG Object;
 
 typedef ULONG MethodID;
+typedef ULONG AttrID;
+
 typedef ULONG AttrBase;
 
 typedef struct

@@ -42,11 +42,22 @@ LIBNAME  := oop
 ULIBNAME := OOP
 
 OSMODULE  := oop.library
-FILES	  := support hash rootclass metaclass   \
-	 privatestubs methodclass interfaceclass serverclass proxyclass hiddmetaclass
+FILES	  :=	interfaceclass hash hiddmetaclass metaclass methodclass  \
+		privatestubs proxyclass rootclass serverclass support 
 	
-FUNCTIONS := newobject obtainattrbase releaseattrbase getattrbase getmethodid \
-	disposeobject addclass removeclass addserver removeserver findserver
+FUNCTIONS := 	addclass	\
+		addserver	\
+		disposeobject	\
+		findserver	\
+		getattr		\
+		getattrbase	\
+		getmethodid	\
+		newobject	\
+		obtainattrbase	\
+		releaseattrbase	\
+		removeclass	\
+		removeserver	\
+		setattrs
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
