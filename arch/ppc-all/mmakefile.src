@@ -24,13 +24,9 @@ include $(TOP)/config/make.cfg
 # Setup
 #
 
-#MM- AROS-ppc: includes-ppc
-
 #MM create-mf-inc-again
 create-mf-inc-again :
 	@$(MAKE) -f $(TOP)/config/mmakefile setup
-
-#MM- includes-ppc : includes-copy-ppc includes-copy
 
 #MM
 clean ::
