@@ -19,7 +19,7 @@
 #include <unistd.h>
 
 AROS_LH1(void, Cause,
-    AROS_LHA(struct Interrupt *, softint, A),
+    AROS_LHA(struct Interrupt *, softint, A1),
     struct ExecBase *, SysBase, 30, Exec)
 {
     AROS_LIBFUNC_INIT
