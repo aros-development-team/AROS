@@ -19,6 +19,8 @@ make    tools mmake contrib
 
 cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU/AROS
 move    contrib $PACKAGE
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
 archive $ARCHIVE $PACKAGE
 
 cd      $ROOT
