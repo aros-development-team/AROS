@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 
 
 FILES := \
+    areatest2 \
     amiga2date \
     amigademo \
     availfonts \
