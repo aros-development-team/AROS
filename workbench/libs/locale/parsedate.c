@@ -49,9 +49,12 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 			from a stream. The hook is called with:
 
 			A0 - address of the Hook structure
-			A1 - locale pointer
-			A2 - NULL
+			A2 - locale pointer
+			A1 - NULL
 
+    	    	    	BTW: The AmigaOS autodocs which state that A1
+			gets locale pointer and A2 NULL are wrong!!
+			
 			The read character should be returned in D0. Note
 			that this is a 32 bit character not an 8 bit
 			character. Return a NULL character if you reach the
@@ -89,8 +92,8 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
     ULONG c;
-    UBYTE day = 0, month = 0, hour = 0, min = 0, sec = 0;
-    UWORD year = 1978;
+    LONG day = 0, month = 0, hour = 0, min = 0, sec = 0;
+    LONG year = 1978;
     BOOL ampm = FALSE, checkEOF = TRUE;
 
     if(    (fmtTemplate == NULL)
@@ -103,8 +106,8 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 #define GetChar()\
 	c = AROS_UFC3(ULONG, getCharFunc->h_Entry, \
 		AROS_UFCA(struct Hook *, getCharFunc, A0), \
-		AROS_UFCA(ULONG, NULL, A2), \
-		AROS_UFCA(struct Locale *, locale, A1))
+		AROS_UFCA(struct Locale *, locale, A2), \
+		AROS_UFCA(ULONG, NULL, A1)) 
 
     while(*fmtTemplate)
     {
@@ -171,10 +174,10 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 		    BOOL monthOk[12];
 		    ULONG i, a;
 
-		    for(i= 0; i < 11; i++)
+		    for(i= 0; i < 12; i++)
 		    {
 			monthOk[i] = TRUE;
-			monthStr[i] = GetLocaleStr(locale, i + strOffs + 14);
+			monthStr[i] = GetLocaleStr(locale, i + strOffs + MON_1);
 		    }
 
 		    c = GetChar();
@@ -387,7 +390,7 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 		    if(IsDigit(locale, c) == FALSE)
 			return FALSE;
 		    year += (c - '0');
-		    year += 1978;
+		    year += 1900;
 		    break;
 
 		case 'Y':
@@ -434,6 +437,41 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 
     if(date)
     {
+    	BOOL leap;
+	
+#if 1
+    	/* stegerg: based on dos.library/strtodate */
+
+	/* First year must be 1978 */
+	if (year < 1978)
+	    return FALSE;
+
+	/* Is this year a leap year ? */
+	leap = (((year % 400) == 0) ||
+	    (((year % 4) == 0) && !((year % 100) == 0)));
+
+	/* Add the days for all years (without leap years) */
+	day += (year - 1978) * 365;
+
+   	year--;
+
+	/* Add leap years */
+	day += ((year / 4) - (year / 100) + (year / 400)
+	    - (494 - 19 + 4));
+
+	/* Add days of months */
+	day += monthdays[month - 1];
+
+	/*
+	    in monthdays, February has 28 days. Correct this in
+	    leap years if month is >= March.
+	*/
+
+    	if (leap && (month >= 3)) day++;
+	
+	date->ds_Days = day;
+
+#else
 	year -= 1978;
 
 	if(year > 2)
@@ -442,6 +480,8 @@ UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 	    day += 1;
 
 	date->ds_Days = year * 365 + day + monthdays[month - 1];
+#endif
+
 	date->ds_Minute = hour * 60 + min;
 	if((hour < 12) && ampm)
 	    date->ds_Minute += 720;
