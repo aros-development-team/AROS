@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Function dran48()
+    Desc: Function erand48()
     Lang: english
 */
 
@@ -39,7 +39,7 @@ extern void __calc_seed(unsigned short int xsubi[3]);
     BUGS
 
     SEE ALSO
-	srand48(), erand48(), drand48()
+	srand48(), drand48()
 
     INTERNALS
 
