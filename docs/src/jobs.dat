@@ -216,6 +216,8 @@ c/which;1;SDuvan;Write C:Which
 c/why;2;srittau;Write C:Why
 colorwheel00000;2;lbischoff;Write ConvertHSBToRGB
 colorwheel00001;2;lbischoff;Write ConvertRGBToHSB
+colorwheel00002;1;stegerg;Write colorwheel.gadget class
+gradientslider00001;2;stegerg;Write gradientslider.gadget class
 commodities00000;2;SDuvan;Write CreateCxObj
 commodities00001;2;SDuvan;Write CxBroker
 commodities00002;2;SDuvan;Write ActivateCxObj
