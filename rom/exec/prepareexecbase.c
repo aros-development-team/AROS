@@ -49,7 +49,7 @@ static APTR allocmem(struct MemHeader *mh, ULONG size)
     {
         struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
         if (mhe->mhe_Alloc)
-	    ret = mhe->mhe_Alloc(mhe, size, MEMF_ANY);
+	    ret = mhe->mhe_Alloc(mhe, size, NULL);
     }
     else
     {

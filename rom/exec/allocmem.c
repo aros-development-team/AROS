@@ -84,11 +84,11 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     AROS_LIBFUNC_INIT
     
     APTR res = NULL;
-    ULONG cond;
     struct checkMemHandlersState cmhs;
 
 #if ENABLE_RT || AROS_MUNGWALL_DEBUG
-    ULONG origSize = byteSize;
+    ULONG origSize         = byteSize;
+    ULONG origRequirements = requirements;
 #endif
 
     D(bug("Call AllocMem (%d, %08lx)\n", byteSize, requirements));
@@ -146,21 +146,19 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
                 {
 		    struct MemHeaderExt *mhe = (struct MemHeaderExt *)mh;
                     if (mhe->mhe_Alloc)
-                        res = mhe->mhe_Alloc(mhe, byteSize, requirements);
+                        res = mhe->mhe_Alloc(mhe, byteSize, &requirements);
                 }
                 else
                 {  
                     res = stdAlloc(mh, byteSize, requirements);
-                }
-                
-                if (res) break;
+                }                
             }
         }
     } while (res == NULL && checkMemHandlers(&cmhs) == MEM_TRY_AGAIN);
 
-
     Permit();
 
+        
     if(res && (requirements & MEMF_CLEAR))
         memset(res, 0, byteSize);        
 
@@ -169,6 +167,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 #endif  
 
 #if AROS_MUNGWALL_DEBUG
+    requirements = origRequirements;
+    
     if (res)
     {
     	struct MungwallHeader *header;
