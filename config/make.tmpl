@@ -268,7 +268,7 @@ $(END_FILE).d : $(END_FILE).c
 clean ::
 	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
 
-$(GENMODULE) : $(wildcard $(TOP)/tools/genmodule/*.[hc])
+$(GENMODULE) $(GENLIBDEFS) : $(wildcard $(TOP)/tools/genmodule/*.[hc])
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP)
 
 $(TOP)/tools/cxref/configure : $(TOP)/tools/cxref/configure.in
@@ -1092,6 +1092,24 @@ endif
 %end
 
 #------------------------------------------------------------------------------
+# Generate a rule to generate a function reference file from a C source file.
+# Basename may contain a directory part, then the source file has to be in that
+# directory. The generated file will be put in the object directory without the
+# directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - objdir (default: $(OBJDIR)): the directory to put the .o file and the .d
+#   file
+%define rule_ref basename=\A cflags=$(CFLAGS) objdir=$(OBJDIR)
+
+%(objdir)/$(notdir %(basename)).ref : %(basename).c $(CXREF)
+	@$(ECHO) "Generating $(notdir $@)..."
+	@$(CXREF) -raw -CPP 'gcc %(cflags) -E -C -dD' $< >$@
+
+%end
+
+#------------------------------------------------------------------------------
 # Build a module
 # options:
 # - conffile (default: $(MODULE).conf): The name of the config file.
@@ -1115,20 +1133,24 @@ BD_MODNAME$(BDID)    := %(modname)
 BD_MODTYPE$(BDID)    := %(modtype)
 BD_CONFFILE$(BDID)   := %(conffile)
 BD_FILES$(BDID)      := %(files)
-BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
 BD_OBJDIR$(BDID)     := %(objdir)
-BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -D'LC_LIBDEFS_FILE="$(BD_MODNAME$(BDID))_libdefs.h"'
+BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
+BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(notdir $(BD_FILES$(BDID)))))
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifeq (%(dflags),)
 BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
 else
-BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -D'LC_LIBDEFS_FILE="$(BD_MODNAME$(BDID))_libdefs.h"'
+BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 endif
-BD_OBJS$(BDID)       := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
-BD_ENDOBJ$(BDID)     := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
+BD_STARTFILE$(BDID)  := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start
+BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
+BD_OBJS$(BDID)       := $(addsuffix .o,$(BD_STARTFILE$(BDID)) $(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 BD_GENINCS$(BDID)    := proto/$(BD_MODNAME$(BDID)).h clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h
+BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
 BD_REFFILE$(BDID)    := %(reffile)
-BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs))
+BD_LIBS$(BDID)       := $(addprefix -l,%(uselibs)) -llibinit -lautoinit
 BD_DEPLIBS$(BDID)    := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs)))
 
 #Add extra flag if shared AROS C library is used
@@ -1137,6 +1159,7 @@ BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
 endif
 
 %rule_compile basename=% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_ref     basename=% objdir=$(BD_OBJDIR$(BDID)) cflags="$(strip $(BD_CFLAGS$(BDID)))"
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 
@@ -1165,33 +1188,43 @@ BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 
 #MM
 %(mmake)-clean :
-	@echo "Cleaning up for module $(BD_MODNAME$(BDID))"
-	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID))\
+	@$(ECHO) "Cleaning up for module $(BD_MODNAME$(BDID))"
+	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID)) \
+	    $(BD_REFFILES$(BDID))\
 	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
 	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
 	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
-	    $(BD_EXTRAFILES$(BDID)) \
-	    $(BD_EXTRAOBJS$(BDID)) \
-	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
+	    $(BD_EXTRAFILES$(BDID)) $(BD_EXTRAOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
+	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
+	    $(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) $(BD_ENDOBJ$(BDID))
 
-$(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF)
-	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
+$(BD_LIBDEFSINC$(BDID)) : $(BD_CONFFILE$(BDID)) $(GENLIBDEFS)
+	@$(ECHO) "Generating $(notdir $@)"
 	%mkdir_q dir=$(BD_OBJDIR$(BDID))
-	@$(CXREF) -raw -CPP 'gcc $(subst ','',$(strip $(BD_CFLAGS$(BDID)))) -E -C -dD' $(subst $(CXREF),,$^) >$@
+	@$(GENLIBDEFS) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID))
 
-$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c \
-$(BD_OBJDIR$(BDID))/$(DB_MODNAME$(BDID))_libdefs.h \
-$(patsubst %.o,%.c,$(BD_ENDOBJ$(BDID))) \
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
+	@$(ECHO) "generating $@"
+	%mkdir_q dir=$(BD_OBJDIR$(BDID))
+	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(BD_LIBDEFSINC$(BDID))\"" >$@
+
+$(BD_REFFILE$(BDID)) : $(BD_REFFILES$(BDID))
+	@$(ECHO) "Generating function reference file for module $(BD_MODNAME$(BDID))"
+	@$(CAT) $(BD_REFFILES$(BDID)) >$@
+
+$(BD_REFFILES$(BDID)) : $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+
+$(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) \
 $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) \
 : $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
-	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
+	@$(ECHO) "Generating functable and includes for module $(BD_MODNAME$(BDID))"
 ifneq ($(BD_CONFFILE$(BDID)),lib.conf)
 	@$(IF) $(TEST) -f lib.conf; then \
-	  echo "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
 	fi
 endif
 	@$(IF) $(TEST) -f libdefs.h; then \
-	  echo "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
 	fi
 	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
 
@@ -1212,6 +1245,9 @@ endif
 
 $(BD_OBJDIR$(BDID)) :
 	%mkdir_q dir=$@
+
+$(BD_DEPS$(BDID)) : \
+  $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 
 %include_deps deps=$(BD_DEPS$(BDID))
 %end
