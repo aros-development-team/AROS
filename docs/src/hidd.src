@@ -557,19 +557,53 @@ vblank is happening right now.
 Create a drawing area with the specified attributes.
 
 \begin{taglist}
-\item{HIDDA_BitMap_Width,UWORD,IG} - Create a bitmap with this width.
-When the bitmap has been created, you can query the attribute.
+\item{HIDDA_BitMap_Width,ULONG,ISG} Create a bitmap with this width
+or query the width. Note that most HIDD don't support to resize a bitmap.
+The width is in HIDD units. Some graphics HIDDs support text mode, then
+this is in characters. But most of the time, this will be in screen or
+printer pixels.
 
-\item{HIDDA_BitMap_Height,UWORD,IG} - Create a bitmap with this height.
-When the bitmap has been created, you can query the attribute.
+\item{HIDDA_BitMap_Height,ULONG,ISG} Create a bitmap with this height
+or query the height. Note that most HIDD don't support to resize a bitmap.
+The height is in HIDD units. Some graphics HIDDs support text mode, then
+this is in characters. But most of the time, this will be in screen or
+printer pixels.
 
-\item{HIDDA_BitMap_Depth,UWORD,IG} - Create a bitmap with this depth.
-When the bitmap has been created, you can query the attribute.
-The number of distinct colors is |1L << depth|.
+\item{HIDDA_BitMap_Depth,UWORD,IG} - Create a bitmap with this depth. When
+the bitmap has been created, you can query the attribute. The number of
+distinct colors is |1L << depth|. Most HIDDs will support depths like 1, 8,
+15, 16, 24 and 32 bit.
 
 \item{HIDDA_BitMap_Showable,BOOL,IG} - Create a bitmap which should later
 be displayed. When the bitmap has been created, you can query the
 attribute.
+
+\item{HIDDA_BitMap_BaseAddress,APTR,ISG} This is the address of the RAM
+of the graphics memory. Note that most HIDDs don't support to set this
+value. This can be used to access the video hardware directly. If you
+plan this, you must check if the HIDD supports this and if it does,
+then you must take the appropriate steps specified in the HIDDs' docs
+to tell the HIDD what you are doing (eg. disable the HIDD). After
+you did this, you can use |HIDDA_Graphics_Format| to find out
+the format in which the data is stored here.
+
+A HIDD which doesn't support direct memory access will return |NULL|.
+
+\item{HIDDA_BitMap_Mode,ULONG,ISG} The display mode. Every HIDD defines
+its own list and uses its own values. Use the method
+|HIDDM_ValueToString()| to get the meanings of this attribute.
+
+\item{HIDDA_BitMap_BestSize,ULONG,G} Query the HIDD for the best size
+for drawing areas or drawing commands. Most graphics chips have
+a certain blocking size, ie. it doesn't matter if you copy 6 bits or
+30 but 33 is slow. The HIDD will return 32 in this case.
+
+\item{HIDDA_BitMap_Format,ULONG,G} Tell the format of the data
+at |HIDDA_BitMap_BaseAddress|. See this tag for details.
+
+\item{HIDDA_BitMap_Visible,ULONG,G} Check if a bitmap is visible.
+Can return |HIDDV_Bitmap_Visible_No|, |HIDDV_Bitmap_Visible_Yes|
+and |HIDDV_Bitmap_Visible_Partial| (if it's not fully visible).
 
 \end{taglist}
 
@@ -580,6 +614,21 @@ bitmaps. If |wait| is |TRUE|, then the call will block until the bitmap
 is made visible (ie. at the next |HIDDV_Graphics_Cmd_WaitTOF|).
 The call return whether bitmap is visible or not if |wait| is
 |FALSE| or |TRUE| otherwise.
+
+\item{ULONG HIDDV_Graphics_Cmd_MoveBitMap (HIDDT_BitMap bm, WORD
+horizontal, WORD vertical)} Move a visible bitmap around the screen.
+Positive values mean move to the left or down, negative values
+means right and up.
+
+\item{ULONG HIDDV_Graphics_Cmd_DepthArrangeBitMap (HIDDT_BitMap bm, ULONG
+mode, HIDDT_BitMap other)} Move a bitmap to the front or back of all
+bitmaps or a specific bitmap. |mode| can be
+|HIDDV_Graphics_DepthArrange_ToFront| and
+|HIDDV_Graphics_DepthArrange_ToBack|. If |other| is |!= NULL|, then the
+bitmap will be moved just in front or behind that bitmap. The |other| is
+|NULL|, then bitmap will be moved in front or behind all other bitmaps. If
+the bitmap was invsible, then |IDDV_Graphics_Cmd_ShowBitMap()| will
+implicitly be called.
 
 \item{void HIDDV_Graphics_Cmd_DeleteBitMap (HIDDT_BitMap bm)}
 Return a drawing area for reuse. You can also dispose it with
@@ -710,44 +759,6 @@ It's behaviour is HIDD specific.
 
 \end{methods}
 
-\begin{taglist}
-\item{HIDDA_Graphics_Mode,ULONG,ISG} The display mode. Every HIDD defines
-its own list and uses its own values. Use the method
-|HIDDM_ValueToString()| to get the meanings of this attribute.
-
-\item{HIDDA_Graphics_Width,ULONG,ISG} This is the width of the available
-drawing area in units. Some graphics HIDDs support text mode; then this
-is in characters. Most of the time, this will be in screen or
-printer pixels.
-
-\item{HIDDA_Graphics_Height,ULONG,ISG} This is the height of the available
-drawing area in units. Some graphics HIDDs support text mode; then this
-is in characters. Most of the time, this will be in screen or
-printer pixels.
-
-\item{HIDDA_Graphics_Depth,UWORD,ISG} This is the number of available
-color bits. Use |1 << depth| to get the number of colors. Most HIDDs
-will support depths like 1, 8, 15, 16, 24 and 32 bit.
-
-\item{HIDDA_Graphics_BaseAddress,APTR,ISG} This is the address of the RAM
-of the graphics memory. Note that most HIDDs don't support to set this
-value. This can be used to access the video hardware directly. If you
-plan this, you must check if the HIDD supports this and if it does,
-then you must take the appropriate steps specified in the HIDDs' docs
-to tell the HIDD what you are doing (eg. disable the HIDD). After
-you did this, you can use |HIDDA_Graphics_Format| to find out
-the format in which the data is stored here.
-
-\item{HIDDA_Graphics_BestSize,ULONG,G} Query the HIDD for the best size
-for drawing areas or drawing commands. Most graphics chips have
-a certain blocking size, ie. it doesn't matter if you copy 6 bits or
-30 but 33 is slow. The HIDD will return 32 in this case.
-
-\item{HIDDA_Graphics_Format,ULONG,G} Tell the format of the data
-at |HIDDA_Graphics_BaseAddress|. See this tag for details.
-
-\end{taglist}
-
 A HIDDs' GC has the following attributes:
 
 \begin{taglist}
@@ -861,6 +872,38 @@ o Some thoughts about the sound.hidd:
     are called if a not-locked unit is exclusively locked by another
     application (or this exclusive lock is freed). So these attributes
     makes only sense with HIDDV_Sound_NonExclusiveNotLocked.
+
+\section{IRQ HIDD}
+
+An IRQ HIDD is a frontend for the IRQ hardware of your computer.
+Whenever the computer generates an IRQ, the IRQ HIDD will catch it
+and check for handlers for this IRQ. If any handlers are available, the
+IRQ HIDD will call them.
+
+An IRQ HIDD uses IRQ IDs to do it's job. Those IDs are not related to
+the IRQ numbers in the hardware.
+
+An IRQ handler is a callback hook with a priority. The handler gets a
+pointer the handler info given to |HIDDM_IRQ_AddHandler()|
+and to the hardware specific IRQ data. For the format of this data,
+see the docs of the specific IRQ HIDD.
+
+\begin{methods}
+\item{BOOL HIDDM_IRQ_AddHandler (HIDDT_IRQ_Handler * handlerInfo, ULONG
+id}) Install an handler for the ID |id|. If the handler could be
+installed, then |TRUE| is returned else |FALSE|. See the |HIDDA_ErrorCode|
+for details if |FALSE| was returned.
+
+\item{void HIDDM_IRQ_RemHandler (HIDDT_IRQ_Handler * handlerInfo)} Removes
+a handler. If the handler is running, this will block until the
+handler can be safely removed. If it is called from inside an IRQ,
+it will not block but postpone the remove.
+
+\item{void HIDDM_CauseIRQ (ULONG id, APTR hardwareInfo)} Generates a pseudo
+IRQ with the specified |id|. The |hardwareInfo| will be passed to the
+handlers instead of the normal hardware IRQ infos.
+
+\end{methods}
 
 \section{Internals}
 
