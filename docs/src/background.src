@@ -5,19 +5,19 @@
 Some time back in the year 1993, the situation for the Amiga looked
 somewhat worse than usual (doesn't it always?) and some Amiga fans got
 together and argued about what should be done to increase the
-acceptance of our beloved machine.  Immediately the main reason for the 
+acceptance of our beloved machine.  Immediately the main reason for the
 missing success of the Amiga became clear: it was propagation  - or the
-lack thereof.  The Amiga should get a more widespread basis to make it 
-more attractive for everyone to use and to develop for.  So plans were 
+lack thereof.  The Amiga should get a more widespread basis to make it
+more attractive for everyone to use and to develop for.  So plans were
 made to reach this goal.  One of the plans was to fix all bugs of the
 AmigaOS, another was to make it an OS of the 90s.  AOS was born.
 
 But what is a bug?  And how should bugs be fixed?  What are the
-features a so-called \italics{modern} OS must have?  And how should 
+features a so-called \italics{modern} OS must have?  And how should
 they be implemented into the AmigaOS?
 
 Two years later, people were still arguing about this and not even one line
-of code had been written (or at least no one had ever seen that code).  
+of code had been written (or at least no one had ever seen that code).
 Discussions were still of the pattern "we must have ..." and someone
 answered "read the old mails" or "this is impossible to do, because ..."
 which was shortly followed by "you're wrong because ..." and so on.
@@ -55,7 +55,7 @@ AmigaOS
 
 To reach this goal, we use a number of techniques.  First of all, we make
 heavy use of the Internet.  You can participate in our project even if you
-can write only one single OS function.  The most current version of the
+can write only one single OS function.	The most current version of the
 source is accessible 24 hours per day and patches can be merged into it at
 any time.  A small database with open tasks prevents all developers from
 doing something twice.
@@ -64,7 +64,7 @@ doing something twice.
 
 This is the current developer list.  Please note that the e-mail addresses
 of all developers but the coordinator are missing.  The reason for this is
-that we want to protect the developers from junk mail.  If you have
+that we want to protect the developers from junk mail.	If you have
 something to ask or say, contact the coordinator
 \email{digulla@aros.fh-konstanz.de}.
 
@@ -114,7 +114,8 @@ of them work, others don't, yet.
 \filename{charset},
 \filename{ktest},
 \filename{searchfile},
-\filename{tstat}
+\filename{tstat},
+\filename{memlist},
 \end{itemize}
 \end{new}
 
@@ -135,7 +136,7 @@ the Escape key or click on one of the "Exit" gadgets at the bottom.
 
 This shows the output of readicon.  In the big window, you can see
 debugging and informational output of the program.  The small window shows
-the normal and selected state of an icon and contains a gadget which has 
+the normal and selected state of an icon and contains a gadget which has
 the icons' images for its normal and selected images.
 
 \section{The future}
@@ -151,6 +152,6 @@ These are things which are still to do:
 
 \begin{new}{7.1.1998}
 Since the new situation (we must have a license from Amiga Int/Inc), this
-has to be overworked.  Right now, it is not possible to license AROS. 
+has to be overworked.  Right now, it is not possible to license AROS.
 Watch this space for further updates.
 \end{new}
