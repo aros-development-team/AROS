@@ -63,16 +63,16 @@ BOOT_TAR_FILES := \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale.info \
     Locale/Countries Locale/Help \
-    Prefs/Font Prefs/Font.info Prefs/Locale Prefs/Serial \
-    Prefs/Input Prefs/Input.info Prefs/Time Prefs/Time.info \
-    Prefs/Zune Prefs/Zune.info Prefs.info \
+    Prefs/Font Prefs/Font.info \
+    Prefs/Input.info Prefs/Time Prefs/Time.info \
+    Prefs.info \
     Prefs/Env-Archive Prefs/Presets/Patterns/Stripes Prefs/Presets/Patterns.info \
     S/Shell-Startup S/Startup-Sequence \
     System/About System/FixFonts System/FixFonts.info System/Themes \
     System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
     Tools/Commodities/Opaque Tools/Commodities/Opaque.info Tools/Debug \
-    Utilities/MultiView Utilities/MultiView.info Utilities.info 
+    Utilities.info 
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
@@ -130,7 +130,7 @@ bootdisk-pc-i386: $(OSGENDIR)/boot/aros.bin
 #MM
 bootdisk-pc-i386-quick : bootdisk-pc-i386
 
-$(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence
+$(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/boot/grub/stage2 $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence
 $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz install
 $(OSGENDIR)/boot/aros.bin: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
 	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
