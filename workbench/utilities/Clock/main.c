@@ -266,6 +266,7 @@ static void GetVisual(void)
 
 static void FreeVisual(void)
 {
+    if (vi) FreeVisualInfo(vi);
     if (dri) FreeScreenDrawInfo(scr, dri);
     if (scr) UnlockPubScreen(NULL, scr);
 }
@@ -542,82 +543,59 @@ static void RenderClock2(void)
 
 static void RenderClock(void)
 {
-    BOOL done = FALSE;
+    LockLayerInfo(&scr->LayerInfo);
+
+    CalcClockMetrics();
+    RenderClock2();
     
-    do
+    SetAPen(win->RPort, dri->dri_Pens[BACKGROUNDPEN]);
+
+    if (clockbm2)
     {
-    	WORD clockrx_check, clockry_check;
-	
-	LockLayerInfo(&scr->LayerInfo);
+	RectFill(win->RPort,
+		 win->BorderLeft,
+		 win->BorderTop,
+		 win->Width - win->BorderRight - 1,
+		 win->BorderTop + BORDER_CLOCK_SPACING_Y - 1);
+	RectFill(win->RPort,
+		 win->Width - win->BorderRight- BORDER_CLOCK_SPACING_X,
+		 win->BorderTop + BORDER_CLOCK_SPACING_Y,
+		 win->Width - win->BorderRight - 1,
+		 win->Height - win->BorderBottom - 1);
 
-	CalcClockMetrics();
-    	clockrx_check = clockrx;
-	clockry_check = clockry;
-	
-	UnlockLayerInfo(&scr->LayerInfo);
+	RectFill(win->RPort,
+		 win->BorderLeft,
+	    	 win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y,
+		 win->Width - win->BorderRight - BORDER_CLOCK_SPACING_X,
+		 win->Height - win->BorderBottom - 1);
 
-	RenderClock2();
+	RectFill(win->RPort,
+		 win->BorderLeft,
+		 win->BorderTop + BORDER_CLOCK_SPACING_Y,
+		 win->BorderLeft + BORDER_CLOCK_SPACING_X - 1,
+		 win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y);
 
-	LockLayerInfo(&scr->LayerInfo);
+    	BltBitMapRastPort(clockbm2,
+	    	    	  0,
+			  0,
+			  win->RPort,
+			  clockcx - clockrx,
+			  clockcy - clockry,
+			  clockraster2_w,
+			  clockraster2_h,
+			  192);
+    }
+    else
+    {
+	RectFill(win->RPort,
+		 win->BorderLeft,
+		 win->BorderTop,
+		 win->Width - win->BorderRight - 1,
+		 win->Height - win->BorderBottom - 1);
+    }
 
-    	CalcClockMetrics();
+    UnlockLayerInfo(&scr->LayerInfo);
 	
-	if ((clockrx_check == clockrx) && (clockry_check == clockry))
-	{
-	    done = TRUE;
-	    
-	    SetAPen(win->RPort, dri->dri_Pens[BACKGROUNDPEN]);
-	    
-	    if (clockbm2)
-	    {
-	    	RectFill(win->RPort,
-		    	 win->BorderLeft,
-			 win->BorderTop,
-			 win->Width - win->BorderRight - 1,
-			 win->BorderTop + BORDER_CLOCK_SPACING_Y - 1);
-		RectFill(win->RPort,
-		    	 win->Width - win->BorderRight- BORDER_CLOCK_SPACING_X,
-			 win->BorderTop + BORDER_CLOCK_SPACING_Y,
-			 win->Width - win->BorderRight - 1,
-			 win->Height - win->BorderBottom - 1);
-			 
-	    	RectFill(win->RPort,
-		    	 win->BorderLeft,
-	    	     	 win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y,
-			 win->Width - win->BorderRight - BORDER_CLOCK_SPACING_X,
-			 win->Height - win->BorderBottom - 1);
-	
-	    	RectFill(win->RPort,
-		    	 win->BorderLeft,
-			 win->BorderTop + BORDER_CLOCK_SPACING_Y,
-			 win->BorderLeft + BORDER_CLOCK_SPACING_X - 1,
-			 win->Height - win->BorderBottom - BORDER_CLOCK_SPACING_Y);
-		
-    		BltBitMapRastPort(clockbm2,
-	    	    		  0,
-				  0,
-				  win->RPort,
-				  clockcx - clockrx,
-				  clockcy - clockry,
-				  clockraster2_w,
-				  clockraster2_h,
-				  192);
-	    }
-	    else
-	    {
-	    	RectFill(win->RPort,
-		    	 win->BorderLeft,
-			 win->BorderTop,
-			 win->Width - win->BorderRight - 1,
-			 win->Height - win->BorderBottom - 1);
-	    }
-	    
-    	}
-	
-	UnlockLayerInfo(&scr->LayerInfo);
-	
-    } while (!done);
-
 }
 
 /*********************************************************************************************/
