@@ -498,6 +498,7 @@ VOID RenderFrame(struct PaletteData *data, struct RastPort *rp, struct IBox *gad
 	    {IA_Width		, gadbox->Width		},
 	    {IA_Height		, gadbox->Height	},
 	    {IA_Recessed	, recessed		},
+	    {IA_EdgesOnly	, edgesonly		},
 	    {TAG_DONE					}
 	};
 	
