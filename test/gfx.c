@@ -63,9 +63,9 @@ void uninstallClipRegion(struct Window * w)
     DisposeRegion(R);
 }
 
-void main(void)
+int main(void)
 {
-  LayersBase = (struct LayersBase *)OpenLibrary("layers.library",0);
+  LayersBase = OpenLibrary("layers.library",0);
   GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",0);
   if (NULL != GfxBase)
   {
@@ -159,4 +159,6 @@ void main(void)
     }
     CloseLibrary((struct Library *)GfxBase);
   }
+  
+    return 0;
 }
