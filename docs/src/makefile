@@ -3,15 +3,10 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-DEST=../html/
+DEST=../html.test/
 JOBDEST=$(DEST)jobserver/
 
-FILES = background faq devinfo-1 devinfo-2 devinfo-3 devinfo-4 devinfo-5 \
-	devinf_inside devinf_outside \
-	history links \
-	jobserv-showfree \
-	jobserv-showwork \
-	jobserv-showdone \
+FILES = main.src
 
 AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 	$(TOP)/compiler/alib/*.c \
@@ -21,21 +16,33 @@ AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 
-SRCS = $(foreach f,$(FILES),$(f).src)
-HTML = $(foreach f,$(FILES),$(DEST)$(f).html) $(DEST)index.html
-
-all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
-	jobserver cgi-scripte dist copy_files \
+all : setup src2html autodocs $(DEST)srcs $(DEST)index.html \
+	$(DEST)filesystems.doc \
+	jobserver cgi-scripte dist copy_files link-pics \
 	access-rights
+
+setup :
+	@for dir in $(DEST) $(DEST)/autodocs $(DEST)/cgi-bin \
+		$(JOBDEST) $(JOBDEST)/cgi-bin ; do \
+	    if [ ! -d $$dir ]; then \
+		mkdir $$dir ; \
+	    else true ; fi \
+	done
+	cd conv ; make
 
 copy_files: $(DEST)rtdemo.log
 
 $(DEST)rtdemo.log: rtdemo.log
 	cp $< $@
 
+link-pics :
+	@if [ ! -L $(DEST)/pics ]; then \
+	    ln -sf ../src/pics $(DEST)/pics ; else true ; \
+	fi
+
 dist : $(DEST)dist.src $(DEST)cgi-bin/dist.src $(JOBDEST)dist.src \
 	$(JOBDEST)cgi-bin/dist.src \
-	$(DEST)autodocs/dist.src $(DEST)pics/dist.src
+	$(DEST)autodocs/dist.src
 
 $(DEST)dist.src :
 	echo -e "*.html\n*.doc" > $@
@@ -48,9 +55,6 @@ $(JOBDEST)dist.src $(DEST)autodocs/dist.src :
 
 $(JOBDEST)cgi-bin/dist.src:
 	echo -e "*.cgi\n*.lib" > $@
-
-$(DEST)pics/dist.src:
-	echo -e "aros_logo.gif\nawd50.jpg\ndemowin.gif\nreadicon.gif\nbackground.gif" > $@
 
 cgi-scripte : \
 	$(DEST)cgi-bin/search.cgi \
@@ -84,42 +88,15 @@ $(DEST)filesystems.doc: filesystems.doc
 clean :
 	rm -f $(HTML)
 
-$(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
-	cat doc_header.html $(DEST)toc.html doc_footer.html | \
-	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $@
-	chmod a+r $@
+src2html : conv/src2html
+	cp $< $@
 
-$(DEST)toc.html : $(SRCS) tochtml.gawk
-	@echo "Generating TOC"
-	@gawk -f tochtml.gawk $(SRCS) > $@
-	@echo "<UL>" >> $@
-	@echo "<LI><FONT SIZE=\"+3\"><A HREF=\"adoc_index.html\">Appendix A. AutoDocs</A> (`getfiledate ../html/adoc_index.html`)</FONT>" >> $@
-	@echo "</UL>" >> $@
-	@echo "" >> $@
-	chmod a+r $@
-
-$(DEST)links.html: links.src $(wildcard $(TOP)/dist/*) src2html.gawk
-	touch links.src
-	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
-	chmod a+r $@
-
-$(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
-	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
-	chmod a+r $@
-
-$(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
-	    page_footer.html collectcontents.sh contents2html.gawk \
-	    makefile2html.gawk src2html.gawk
-	touch devinfo-4.src
-	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
-	chmod a+r $@
-
-$(DEST)background.html: background.src stathtml.gawk src2html.gawk \
-	    devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
-	touch background.src
-	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
-	chmod a+r $@
+$(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
+	    includes src2html
+	src2html --html --output index.html main.src
+	src2html --html --output index.html main.src
+	src2html --html --output index.html main.src
+	mv index* $(DEST)
 
 jobserver : jobserver-setup \
 	    $(JOBDEST).htaccess \
@@ -160,8 +137,10 @@ LITE=/usr/local/Hughes/bin/lite
 $(JOBDEST)cgi-bin/%.lib : %.lib
 	cp $< $@
 	chmod 644 $@
-	cp $< $(DEST)cgi-bin/$<
-	chmod 644 $(DEST)cgi-bin/$<
+
+$(DEST)cgi-bin/%.lib : %.lib
+	cp $< $@
+	chmod 644 $@
 
 $(DEST)jobserv-showfree.html : support.lib
 $(DEST)jobserv-showwork.html : support.lib
@@ -209,26 +188,26 @@ $(JOBDEST)index.html : page_header.html jobserv.index \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-autodocs: $(DEST)adoc_index.html gen/htmlpages
+autodocs: autodoc.inc gen/htmlpages
 
 gen/htmlpages: $(AUTODOC_SRCS)
 	@echo "Regenerating the HTML AutoDocs"
 	@makeadocs $(AUTODOC_SRCS)
 	@touch gen/htmlpages
 
-$(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
+autodoc.inc: gen/adoc_index.tmp adocpost.gawk adoc_header.html \
 	    adoc_footer.html
 	cat adoc_header.html > $@
-	gawk -F: -f adocpost.gawk --assign mode=pre_bylib $(DEST)adoc_index.tmp | \
+	gawk -F: -f adocpost.gawk --assign mode=pre_bylib gen/adoc_index.tmp | \
 	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_bylib >> $@
-	gawk -F: -f adocpost.gawk --assign mode=pre_byname $(DEST)adoc_index.tmp | \
+	gawk -F: -f adocpost.gawk --assign mode=pre_byname gen/adoc_index.tmp | \
 	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
 	cat adoc_footer.html | sed "s/\\\\today/`date "+%d %b %Y"`/" >> $@
 	chmod a+r $@
 
-$(DEST)adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
+gen/adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
 	@echo "Generating HTML AutoDoc Index"
 	@gawk -f adochtmlindex.gawk $(AUTODOC_SRCS) > $@
 	chmod -R a+r $(DEST)autodocs
@@ -237,3 +216,23 @@ $(DEST)inc_index.html: $(INCLUDE_SRCS)
 	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
 	chmod a+r $@
 
+includes: devlist.inc status.inc jobserv-free.inc jobserv-work.inc \
+	jobserv-done.inc contents.inc
+
+devlist.inc : devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
+	gawk -f $< > $@
+
+status.inc : stathtml.gawk
+	gawk -f $< > $@
+
+jobserv-free.inc : jobserv-showfree.cgi
+	jobserv-showfree.cgi > $@
+
+jobserv-work.inc : jobserv-showwork.cgi
+	jobserv-showwork.cgi > $@
+
+jobserv-done.inc : jobserv-showdone.cgi
+	jobserv-showdone.cgi > $@
+
+contents.inc : collectcontents.sh contents2html.gawk makefile2html.gawk
+	collectcontents.sh $(TOP) > $@
