@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-FILES := sys_group sys_user
+FILES := sys_group sys_user sys_pass
 
 #MM- themes-kalamatee-images-gadgets : themes-kalamatee-images-gadgets-system 
 #MM themes-kalamatee-images-gadgets-system : setup
