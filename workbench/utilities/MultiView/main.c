@@ -545,6 +545,13 @@ static void OpenDTO(void)
     val = 0;
     GetDTAttrs(dto, DTA_NominalHoriz, &val, TAG_DONE); winwidth  = (WORD)val;
     GetDTAttrs(dto, DTA_NominalVert , &val, TAG_DONE); winheight = (WORD)val;
+
+    /*
+     *  Add 4 Pixels for border around DataType-Object
+     *  See AddDTOToWin() for details
+     */
+    winwidth += 4;
+    winheight += 4;
     
     GetDTAttrs(dto, DTA_ObjName, &objname, TAG_DONE);    
     strncpy(objnamebuffer, objname ? objname : filenamebuffer, 299);
@@ -707,7 +714,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
     
     if (top != oldtop)
     {
-    	struct Gadget *g;
+	struct Gadget *g;
 	
 	if (horiz)
 	{
@@ -722,11 +729,11 @@ static void ScrollTo(UWORD dir, UWORD quali)
 				     TAG_DONE);
 
 #ifdef __MORPHOS__
-    	/* Looks like setting PGA_Top on Amiga does not cause OM_NOTIFIEs
-           to be sent (to dto). Or something like that. */
+	/* Looks like setting PGA_Top on Amiga does not cause OM_NOTIFIEs
+	   to be sent (to dto). Or something like that. */
 
 	SetDTAttrs(dto, win, NULL, (horiz ? DTA_TopHoriz : DTA_TopVert), top, TAG_DONE);
-#endif	   
+#endif     
 
     } /* if (top != oldtop) */
     
@@ -895,7 +902,7 @@ static void HandleAll(void)
 				    if (StartDragSelect(dto))
 				#else
 				    {
-				    	struct DTSpecialInfo *si;
+					struct DTSpecialInfo *si;
 					
 					/*
 					** ClipView example on AmigaDev CD does just the following.
@@ -908,7 +915,7 @@ static void HandleAll(void)
 				    }
 				#endif
 				    {
-				    	#warning TODO: change mouse pointer to crosshair
+					#warning TODO: change mouse pointer to crosshair
 				    }
 				    break;
 				    
@@ -967,8 +974,8 @@ static void HandleAll(void)
 				    SetWindowPointer (win, WA_Pointer, NULL, TAG_DONE);
 				break;
 
-    	    	    	    case DTA_Title:
-			    	SetWindowTitles(win, (UBYTE *)tidata, (UBYTE *)~0);
+			    case DTA_Title:
+				SetWindowTitles(win, (UBYTE *)tidata, (UBYTE *)~0);
 				break;
 				
 			    /* Error message */
