@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/11/16 01:30:15  aros
+#    Spelling errors
+#
 #    Revision 1.5  1996/11/01 02:05:24  aros
 #    Motorola syntax (no more MIT)
 #
@@ -27,7 +30,7 @@
 #
 #   FUNCTION
 #	Forbid any further taskswitches until a matching call to Permit().
-#	Naturally disbaling taskswitches means:
+#	Naturally disabling taskswitches means:
 #
 #	THIS CALL IS DANGEROUS
 #
@@ -35,7 +38,7 @@
 #	it at all. Most of the time you can live without it by using semaphores
 #	or similar.
 #
-#	Calls to Forbid() nest, i.e. for each call to Dorbid() you need one
+#	Calls to Forbid() nest, i.e. for each call to Forbid() you need one
 #	call to Enable().
 #
 #   INPUTS
