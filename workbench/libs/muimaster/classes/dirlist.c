@@ -415,7 +415,7 @@ const struct __MUIBuiltinClass _MUI_Dirlist_desc =
 { 
     MUIC_Dirlist, 
     MUIC_List, 
-    0, 
+    sizeof(struct Dirlist_DATA), 
     (void*)Dirlist_Dispatcher 
 };
 #endif /* ZUNE_BUILTIN_DIRLIST */

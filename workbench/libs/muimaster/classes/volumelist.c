@@ -170,7 +170,7 @@ const struct __MUIBuiltinClass _MUI_Volumelist_desc =
 { 
     MUIC_Volumelist, 
     MUIC_List, 
-    0, 
+    sizeof(struct Volumelist_DATA), 
     (void*)Volumelist_Dispatcher 
 };
 #endif /* ZUNE_BUILTIN_VOLUMELIST */
