@@ -40,7 +40,7 @@ OSMODULE  := intuition.library
 FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
 	     requesters strgadgets strgclass sysiclass windowclasses \
-	     displayerror intuition_misc inputhandler_support inputhandler_actions \
+	     intuition_misc inputhandler_support inputhandler_actions \
 	     menus menutask barlabelclass fillrectclass groupgclass wbtasktalk \
 	     rootclass icclass modelclass
 	     
