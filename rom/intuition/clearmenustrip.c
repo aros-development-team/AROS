@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/01/14 15:30:24  hkiel
+    Added functions + preliminary code
+
     Revision 1.7  1998/10/20 20:08:04  nlorentz
     Fixed lots of errors due to aros_not_implemented()
 
@@ -67,8 +70,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/ClearMenuStrip()
-    aros_print_not_implemented ("ClearMenuStrip");
+    /* if menu is activated Wait(); until user left menu */
+#warning: TODO: if menu is activated Wait() for user to leave menu
+
+    window->MenuStrip = NULL;
 
     return;
 

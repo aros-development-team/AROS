@@ -98,12 +98,14 @@ FUNCTIONS := \
 	removegadget \
 	removeglist \
 	reportmouse \
+	resetmenustrip \
 	screentoback \
 	screentofront \
 	setattrsa \
 	setdefaultpubscreen \
 	setedithook \
 	setgadgetattrsa \
+	setmenustrip \
 	setpointer \
 	setwindowtitles \
 	sizewindow \
