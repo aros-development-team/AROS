@@ -975,7 +975,6 @@ D(bug("Window: %p\n", w));
 
     D(bug("Poll the replyport for replies from apps\n"));
     
-    
 
     /* Empty port */
     while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
@@ -1043,7 +1042,7 @@ D(bug("Window: %p\n", w));
 
 
                 case IMCODE_MOVEWINDOW: { 
-kprintf("Moving window (%d, %d)\n", msg->dx, msg->dy);
+
                      MoveLayer(NULL,
                                msg->Window->WLayer,
                                msg->dx,
@@ -1279,9 +1278,8 @@ inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struc
     /* Mark the message as taken */    
 
     /* Reply the message to intuition */
-/*    imsg->ExecMessage.mn_ReplyPort = w->WindowPort;
-*/
-    imsg->ExecMessage.mn_ReplyPort = NULL;
+    imsg->ExecMessage.mn_ReplyPort = w->WindowPort;
+
     imsg->IDCMPWindow = w;
     
     PutMsg(w->UserPort, (struct Message *)imsg);
