@@ -1382,7 +1382,7 @@ potgo00001;0;digulla;Write FreePotBits
 potgo00002;0;digulla;Write WritePotgo
 prefs00000;2;stegerg;Write Locale prefs program
 prefs00001;1;petah;Write Font prefs program
-prefs00002;0;stegerg;Write Input prefs program
+prefs00002;1;stegerg;Write Input prefs program
 prefs00003;0;stegerg;Write IControl prefs program
 prefs00004;0;stegerg;Write Palette prefs program
 prefs00005;0;stegerg;Write Pointer prefs program
