@@ -2299,7 +2299,7 @@ struct pragma_description * parse_pragmas(char * filename)
 							//printf("%s\n",comma);
 							
 							if ( NULL == comma) {
-								fprintf(stderr, "Error parsing pragma file!\n");
+								fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
 								free_pragma_description(base_pd);
 								fclose(fdi);
 								exit(-1);
@@ -2310,7 +2310,7 @@ struct pragma_description * parse_pragmas(char * filename)
 							 */
 							lastchar = strchr(comma+1, '(');
 							if ( NULL == lastchar) {
-								fprintf(stderr, "Error parsing pragma file!\n");
+								fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
 								free_pragma_description(base_pd);
 								fclose(fdi);
 								exit(-1);
@@ -2418,6 +2418,84 @@ struct pragma_description * parse_pragmas(char * filename)
 
 						pd->next = base_pd;
 						base_pd = pd;
+					}
+				} else if(!strncmp(substr, "usrcall",7)) {
+					substr += 7;
+					substr = skipstr(substr,' ',1);
+					
+					if (substr[0] == '(') {
+						struct pragma_description * pd = calloc(1,sizeof(struct pragma_description));
+						pd->offset = 0xffff; // sign for user function
+						substr += 1;
+						substr = skipstr(substr,' ',1);
+						if (NULL != pd) {
+							char * lastchar;
+							pd->next = base_pd;
+							base_pd = pd;
+							/*
+							 * Now the name of the function
+							 */
+printf("%s\n",substr);
+							lastchar = strchr(substr+1, '(');
+							if ( NULL == lastchar) {
+								fprintf(stderr, "%d: Error parsing pragma file!\n",__LINE__);
+								free_pragma_description(base_pd);
+								fclose(fdi);
+								exit(-1);
+							}
+							
+							
+							strncpy(&pd->funcname[0],
+							        substr,
+							        skipstr(lastchar,' ',-1)-substr);
+							//printf("funcname: %s\n",pd->funcname);
+							        
+							substr = lastchar + 1;
+							//printf("%s\n",substr);
+							lastchar = strchr(substr,')');
+							/*
+							 * Now read the CPU registers.
+							 */
+							
+							while (substr < lastchar) {
+								int r = 0;
+								substr = skipstr(substr, ' ',1);
+								
+								if (substr[0] == 'a' ||
+								    substr[0] == 'A') {
+									r = 8;
+								} else if (substr[0] == 'd' ||
+								           substr[0] == 'D') {
+									} else {
+										fprintf(stderr, "Wrong register (letter) in pragma file!\n");
+										free_pragma_description(base_pd);
+										fclose(fdi);
+										exit(-1);
+									}
+								
+								if (substr[1] >= '0' && substr[1] <= '8') {
+									r += substr[1] - '0';
+								} else {
+									fprintf(stderr, "Wrong register (number) in pragma file!\n");
+									free_pragma_description(base_pd);
+									fclose(fdi);
+									exit(-1);
+								}
+/*
+								printf("r:%d\n",r);
+								printf("parameter %d goes into %s\n",
+								        pd->numargs+1,
+								        m68k_registers[r]);
+*/
+								pd->args[pd->numargs] = r;
+								pd->numargs++;
+								
+								substr+=2;
+								skipstr(substr, ' ', 1);
+								substr+=1;
+								
+							}
+						}
 					}
 				}
 			}
@@ -2557,7 +2635,7 @@ void strtrim(char ** s)
 		end--;
 	}
 
-	if ((end > start) && (start > 0) && (end_orig != end)) {
+	if ((end > start) && ((start > 0) || (end_orig != end))) {
 		newstr = malloc(end-start+2);
 		strncpy(newstr, (*s)+start, end-start+1);
 		newstr[end-start+1] = 0;
@@ -2668,7 +2746,7 @@ void get_argument(int num, int max, char * pattern, char ** type, char ** val)
 			 */
 			c = i;
 			while (1) {
-				if (1 == other && (' ' == start[c] || '*' == start[c]))
+				if (1 == other && (' ' == start[c] || '\t' == start[c] || '\n' == start[c] || '*' == start[c]))
 					break;
 				
 				if (' ' != start[c])
@@ -2711,94 +2789,120 @@ int rewrite_function(FILE * fdo,
 	printf("must pick ???? from info in: \n%s\n",pattern);
 	ret_type = get_returntype(pattern,pd->funcname);
 
-	fprintf(fdo,
-	       "\nAROS_LH%d(%s, %s,\n",
-	       pd->numargs,
-	       ret_type,
-	       pd->funcname);
+
+	if (0xffff != pd->offset) {
+		fprintf(fdo,
+		       "\nAROS_LH%d(%s, %s,\n",
+		       pd->numargs,
+		       ret_type,
+		       pd->funcname);
 	
 	       
-	while (i < pd->numargs) {
-		get_argument(i, pd->numargs,pattern, &argtype, &argval);
-		fprintf(fdo,
-		        "    AROS_LHA(%s, %s, %s),\n",
-		        argtype,
-		        argval,
-		        m68k_registers[pd->args[i]]);
-
-		free(argtype);
-		free(argval);
-		i++;
-	}  
-
-	if (0 != pd->offset) {	
-		fprintf(fdo,
-		        "    struct %s *, %s, %d, %s)\n{\n",
-		        lc->libbasetype,
-		        lc->libbase,
-		        pd->offset,
-		        lc->basename);
-	} else {
-		fprintf(fdo,
-		        "    struct ExecBase *, SysBase, 0, %s)\n{\n",
-		        lc->basename);
-	}
-
-	/*
-	 * Make the entry in the defines file. Only write
-	 * those functions with offset > 4 (not init,open,close,
-	 * expunge, null)
-	 */
-	if (pd->offset > 4) {
-		fprintf(fdefines, "#ifndef %s\n#define %s(",
-		        pd->funcname,
-		        pd->funcname);
-		
-		i = 0;
-		
 		while (i < pd->numargs) {
 			get_argument(i, pd->numargs,pattern, &argtype, &argval);
-			fprintf(fdefines,
-			        "%s",
-			        argval);
-			if (i < pd->numargs-1) {
-				fprintf(fdefines,",");
-			}
-			free(argtype);
-			free(argval);
-		
-			i++;
-		}	
-	
-		fprintf(fdefines,") \\\n\tAROS_LC%d(%s,%s, \\ \n",
-		        pd->numargs,
-		        ret_type,
-		        pd->funcname);
-
-		i = 0;
-		while (i < pd->numargs) {
-			get_argument(i, pd->numargs,pattern, &argtype, &argval);
-			fprintf(fdefines,
-			        "\tAROS_LCA(%s,%s,%s),\\ \n",
+			fprintf(fdo,
+			        "    AROS_LHA(%s, %s, %s),\n",
 			        argtype,
 			        argval,
 			        m68k_registers[pd->args[i]]);
+
 			free(argtype);
 			free(argval);
-		
 			i++;
-		}	
+		}  
 
-		fprintf(fdefines,
-		        "\tstruct %s *, %s, %d, %s)\n#endif\n\n",
-		        lc->libbasetype,
-		        lc->libbase,
-		        pd->offset,
-		        lc->basename);
+		if (0 != pd->offset) {	
+			fprintf(fdo,
+			        "    struct %s *, %s, %d, %s)\n{\n",
+			        lc->libbasetype,
+			        lc->libbase,
+			        pd->offset,
+			        lc->basename);
+		} else {
+			fprintf(fdo,
+			        "    struct ExecBase *, SysBase, 0, %s)\n{\n",
+			        lc->basename);
+		}
 
-		free(ret_type);
-	}
+		/*
+		 * Make the entry in the defines file. Only write
+		 * those functions with offset > 4 (not init,open,close,
+		 * expunge, null)
+		 */
+		if (pd->offset > 4) {
+			fprintf(fdefines, "#ifndef %s\n#define %s(",
+			        pd->funcname,
+			        pd->funcname);
+			
+			i = 0;
+		
+			while (i < pd->numargs) {
+				get_argument(i, pd->numargs,pattern, &argtype, &argval);
+				fprintf(fdefines,
+				        "%s",
+				        argval);
+				if (i < pd->numargs-1) {
+					fprintf(fdefines,",");
+				}
+				free(argtype);
+				free(argval);
+		
+				i++;
+			}	
 	
+			fprintf(fdefines,") \\\n\tAROS_LC%d(%s,%s, \\\n",
+			        pd->numargs,
+			        ret_type,
+			        pd->funcname);
+
+			i = 0;
+			while (i < pd->numargs) {
+				get_argument(i, pd->numargs,pattern, &argtype, &argval);
+				fprintf(fdefines,
+				        "\tAROS_LCA(%s,%s,%s),\\\n",
+				        argtype,
+				        argval,
+				        m68k_registers[pd->args[i]]);
+				free(argtype);
+				free(argval);
+		
+				i++;
+			}	
+
+			fprintf(fdefines,
+			        "\tstruct %s *, %s, %d, %s)\n#endif\n\n",
+			        lc->libbasetype,
+			        lc->libbase,
+			        pd->offset,
+			        lc->basename);
+
+			free(ret_type);
+		}
+	} else {
+		fprintf(fdo,
+		       "\nAROS_UFH%d(%s, %s",
+		       pd->numargs,
+		       ret_type,
+		       pd->funcname);
+	
+	       
+		while (i < pd->numargs) {
+			get_argument(i, pd->numargs,pattern, &argtype, &argval);
+			strtrim(&argtype);
+			strtrim(&argval);
+			
+			fprintf(fdo,
+			        ",\n    AROS_UFHA(%s, %s, %s)",
+			        argtype,
+			        argval,
+			        m68k_registers[pd->args[i]]);
+
+			free(argtype);
+			free(argval);
+			i++;
+		}  
+		fprintf(fdo,")\n{\n");
+	}
 	return 0;
 }
 
