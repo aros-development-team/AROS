@@ -176,10 +176,12 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
             if(data->format & vHIDD_BitMap_Format_Chunky)
             {
+
                 data->bytesPerPixel = (data->depth + 7) / 8;
                 data->bytesPerRow   = data->bytesPerPixel * ((data->width + alignOffset) / alignDiv);
                 if(allocBuffer)
                 {
+D(bug("Allocating chunky\n"));
                     data->buffer = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
                     if(data->buffer) ok = TRUE;
                 }
@@ -196,9 +198,17 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
                 if(allocBuffer)
                 {
-                    data->buffer = AllocVec(data->depth * sizeof(UBYTE *), MEMF_CLEAR | MEMF_PUBLIC);
+		    ULONG bufsize;
+		    
+		    bufsize = data->depth * sizeof(UBYTE *);
+D(bug("Allocating  bitmap, depth=%d\n", data->depth));
+                    data->buffer = AllocVec(bufsize, MEMF_CLEAR | MEMF_PUBLIC);
                     if(data->buffer)
                     {
+		        memset(data->buffer, 0, bufsize);
+
+D(bug("Buffer: %p\n", data->buffer));
+			
                         plane = (UBYTE **) data->buffer;
                         ok    = TRUE;
     
@@ -206,6 +216,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                         {
                             *plane = AllocVec(data->height * data->bytesPerRow, MEMF_CLEAR | MEMF_PUBLIC);
                             if(*plane == NULL) ok = FALSE;
+			    D(bug("Allocated plane %p\n", *plane));
                             plane++;
                         }
                     }
@@ -243,27 +254,43 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
     UBYTE **plane;
 
     EnterFunc(bug("BitMap::Dispose()\n"));
-
-    if(data->format & vHIDD_BitMap_Format_Planar)
+    
+    if (data->buffer)
     {
-        if(data->buffer)
-        {
+        D(bug("Has buffer %p\n", data->buffer));
+	if(data->format & vHIDD_BitMap_Format_Planar)
+	{
+	    D(bug("Planar, depth=%d\n", data->depth));
             /* buffer is a pointer to an array of planepointer */
             plane = (UBYTE **) data->buffer;
 
             for(i = 0; (i < data->depth) && (*plane != NULL); i++)
             {
+	        D(bug("Freeing plane %p\n", *plane));
                 FreeVec(*plane);
+		D(bug("Plane freed\n"));
                 plane++;
             }
-        }
+	    D(bug("Done freeing planes\n"));
+	}
+	else
+	{
+	    D(bug("Chunky\n"));
+	}
+	
     }
+    
+    if (data->buffer)
+    {
+    	FreeVec(data->buffer);
+    }
+    
     if (data->coltab)
     {
+         D(bug("Has coltab %p\n", data->coltab));
 	 FreeVec(data->coltab);
     }
-
-    FreeVec(data->buffer);
+    D(bug("Calling super\n"));
 
     DoSuperMethod(cl, obj, (Msg) msg);
 
@@ -393,8 +420,8 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
     ULONG src, dest, val, mode;
     ULONG writeMask;
 
-    EnterFunc(bug("BitMap::PutPixel() x: %i, y: %i\n", msg->x, msg->y));
-
+/*    EnterFunc(bug("BitMap::DrawPixel() x: %i, y: %i\n", msg->x, msg->y));
+*/
     /*
         Example: Pixels which bits are set to 0 in the colMask must be
                  unchanged
@@ -437,7 +464,8 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
     HIDD_BM_PutPixel(obj, msg->x, msg->y, val);
 
 
-    ReturnInt("BitMap::PutPixel ", ULONG, 1); /* in quickmode return always 1 */
+/*    ReturnInt("BitMap::DrawPixel ", ULONG, 1); */ /* in quickmode return always 1 */
+    return 1;
 }
 
 
@@ -1375,6 +1403,7 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
 {
     WORD x, y;
     ULONG *pixarray = msg->pixels;
+    ULONG old_fg;
     struct TagItem fg_tags[] =
     {
 	{ aHidd_BitMap_Foreground,	0UL },
@@ -1382,8 +1411,12 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
     };
     struct HIDDBitMapData *data = INST_DATA(cl, o);
     
+    EnterFunc(bug("BitMap::PutBox(x=%d, y=%d, width=%d, height=%d)\n"
+    		, msg->x, msg->y, msg->width, msg->height));
+    
+    
     /* Preserver old fg pen */
-    GetAttr(o, aHidd_BitMap_Foreground, &(fg_tags[0].ti_Data) );
+    GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
     
     
     
@@ -1391,12 +1424,17 @@ static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
     {
     	for (x = 0; x < msg->width; x ++)
     	{
-	    data->fg = *pixarray ++;
+	    fg_tags[0].ti_Data = *pixarray ++;
+	    SetAttrs(o, fg_tags);
+
 	    HIDD_BM_DrawPixel(o, x + msg->x , y + msg->y);
 	}
     }
+    fg_tags[0].ti_Data = old_fg;
+    
     SetAttrs(o, fg_tags);
-    return;
+    
+    ReturnVoid("BitMap::PutBox");
 }
 /*** BitMap::BlitColExp() **********************************************/
 static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColExp *msg)
@@ -1411,6 +1449,10 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
 	{ aHidd_BitMap_Foreground, 0UL },
 	{ TAG_DONE, 0UL }
     };
+    
+    EnterFunc(bug("BitMap::BlitColExp(srcBM=%p, srcX=%d, srcY=%d, destX=%d, destY=%d, width=%d, height=%d)\n",
+    		msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+		
     
     GetAttr(o, aHidd_BitMap_ColExpMode, &cemd);
     GetAttr(o, aHidd_BitMap_Foreground, &fg);
@@ -1457,7 +1499,7 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
 	
     } /* for ( each y ) */
     
-    return;
+    ReturnVoid("BitMap::BlitColExp");
     
 }
 
@@ -1477,8 +1519,8 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
     struct TagItem *tag, *tstate;
     ULONG  idx;
 
-    EnterFunc(bug("BitMap::Set()\n"));
-
+/*    EnterFunc(bug("BitMap::Set()\n"));
+*/
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {
@@ -1510,7 +1552,9 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
         }
     }
 
-    ReturnVoid("BitMap::Set");
+/*    ReturnVoid("BitMap::Set");
+*/
+    return;
 }
 
 
@@ -1554,8 +1598,8 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_drawfilltext	, moHidd_BitMap_FillText	},
         {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	},
         {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		},
-        {(IPTR (*)())bitmap_putbox		, moHidd_BitMap_GetBox		},
-        {(IPTR (*)())bitmap_getbox		, moHidd_BitMap_PutBox		},
+        {(IPTR (*)())bitmap_putbox		, moHidd_BitMap_PutBox		},
+        {(IPTR (*)())bitmap_getbox		, moHidd_BitMap_GetBox		},
         {(IPTR (*)())bitmap_blitcolexp		, moHidd_BitMap_BlitColExp	},
         {NULL, 0UL}
     };

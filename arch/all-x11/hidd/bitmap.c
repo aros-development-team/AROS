@@ -733,6 +733,8 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
     ULONG fg, bg, fg_pixel, bg_pixel;
     LONG x, y;
     
+    EnterFunc(bug("X11Gfx.BitMap::BlitColExp(%p, %d, %d, %d, %d, %d, %d)\n"
+    	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
     
     /* Get the color expansion mode */
     GetAttr(o, aHidd_BitMap_ColExpMode, &cemd);
@@ -746,36 +748,48 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
     	
     
     if (!dest_im)
-    	return;
+    	ReturnVoid("X11Gfx.BitMap::BlitColExp()");
 
     GetAttr(o, aHidd_BitMap_Foreground, &fg);
     GetAttr(o, aHidd_BitMap_Background, &bg);
     
+    D(bug("fg: %d\n", fg));
+    D(bug("bg: %d\n", bg));
     fg_pixel = data->hidd2x11cmap[fg];
     bg_pixel = data->hidd2x11cmap[bg];
     
+    D(bug("fg_pixel: %d\n", fg_pixel));
+    D(bug("bg_pixel: %d\n", bg_pixel));
 
     /* Get XImage from offscreen HIDD bitmap */
     GetAttr(msg->srcBitMap, aHidd_X11Osbm_XImage, (IPTR *)&src_im);
 
-    
+    D(bug("Src ximage: %p\n", src_im));
     for (y = 0; y < msg->height; y ++)
     {
     	for (x = 0; x < msg->width; x ++)
 	{
 	    ULONG is_set;
 	    
+	    
 	    is_set = XGetPixel(src_im, x + msg->srcX, y + msg->srcY);
+	    is_set = map_x11_to_hidd(data->hidd2x11cmap, is_set);
+	    D(bug("Got pixel val %d for (%d, %d)\n"
+	    	, is_set, x + msg->srcX, y + msg->srcY));
 	    
 	    if (is_set)
 	    {
-	    	XPutPixel(dest_im, x + msg->destX, y + msg->destY, fg_pixel);
+	        D(bug("Putting pixel %d at (%d, %d)\n"
+			, fg_pixel, x + msg->destX, y + msg->destY));
+	    	XPutPixel(dest_im, x, y, fg_pixel);
+		
+//	       D(bug("pixel put\n"));
 	    }
 	    else
 	    {
 		if (cemd & vHidd_GC_ColExp_Opaque)
 		{
-		    XPutPixel(dest_im, x + msg->destX, y + msg->destY, bg_pixel);
+		    XPutPixel(dest_im, x, y, bg_pixel);
 		}
 	    }
 	} /* for (each x) */
@@ -793,7 +807,14 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColE
 	, msg->width, msg->height
     );
     
+    
+    
     XDestroyImage(dest_im);
+    
+    XFlush(data->display);
+    
+    
+    ReturnVoid("X11Gfx.BitMap::BlitColExp()");
 }
 
 /*** init_bitmapclass *********************************************************/

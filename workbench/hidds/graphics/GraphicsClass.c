@@ -19,8 +19,8 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -83,7 +83,7 @@ static Object * hiddgfx_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitM
 
 static VOID hiddgfx_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_DisposeBitMap *msg)
 {
-    EnterFunc(bug("HIDDGfx::DisposeBitMap()\n"));
+    EnterFunc(bug("HIDDGfx::DisposeBitMap(bitmap=%p)\n", msg->bitMap));
 
     if(msg->bitMap) DisposeObject(msg->bitMap);
 
