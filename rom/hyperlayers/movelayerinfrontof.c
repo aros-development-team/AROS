@@ -95,7 +95,10 @@
     }
     _l = _l->front;
     if (NULL == _l)
+    {
+      UnlockLayers(layer_to_move->LayerInfo);
       return FALSE;
+    }
   }
 
   if (TRUE == toback)
