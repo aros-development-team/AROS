@@ -41,8 +41,8 @@ void AsyncPrinter(void)
     struct MsgPort       *ReplyPort;
     ULONG                 result = 0;
     
+/* Use the global, used to be __dt_GlobalSysBase */
 #undef SysBase
-#define SysBase __dt_GlobalSysBase
     
     struct Process *MyProc = (struct Process *)FindTask(NULL);
     
@@ -51,7 +51,6 @@ void AsyncPrinter(void)
    
     DataTypesBase = pm->pm_dtb;
    
-#undef SysBase
 #define SysBase (GPB(DataTypesBase)->dtb_SysBase)
    
     object = pm->pm_object;

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: initialize datatypes.library
@@ -16,7 +16,6 @@
 
 #include <proto/exec.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include "datatypes_intern.h"
@@ -60,63 +59,6 @@ static const APTR inittabl[4] =
     &INIT
 };
 
-
-static BOOL openlibs(struct DataTypesBase *DataTypesBase)
-{
-    if(DataTypesBase->dtb_IntuitionBase == NULL)
-	DataTypesBase->dtb_IntuitionBase = OpenLibrary("intuition.library", 39);
-    if(DataTypesBase->dtb_IntuitionBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_LayersBase == NULL)
-	DataTypesBase->dtb_LayersBase = OpenLibrary("layers.library", 37);
-    if(DataTypesBase->dtb_LayersBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_UtilityBase == NULL)
-	DataTypesBase->dtb_UtilityBase = OpenLibrary("utility.library", 37);
-    if(DataTypesBase->dtb_UtilityBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_DOSBase == NULL)
-	DataTypesBase->dtb_DOSBase = OpenLibrary("dos.library", 37);
-    if(DataTypesBase->dtb_DOSBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_IFFParseBase == NULL)
-	DataTypesBase->dtb_IFFParseBase = OpenLibrary("iffparse.library", 37);
-    if(DataTypesBase->dtb_IFFParseBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_LocaleBase == NULL)
-	DataTypesBase->dtb_LocaleBase = OpenLibrary("locale.library", 37);
-    if(DataTypesBase->dtb_LocaleBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_GfxBase == NULL)
-	DataTypesBase->dtb_GfxBase = OpenLibrary("graphics.library", 37);
-    if(DataTypesBase->dtb_GfxBase == NULL)
-	return FALSE;
-
-    if(DataTypesBase->dtb_IconBase == NULL)
-	DataTypesBase->dtb_IconBase = OpenLibrary("icon.library", 37);
-    if(DataTypesBase->dtb_IconBase == NULL)
-	return FALSE;
-
-    if (DataTypesBase->dtb_WorkbenchBase == NULL)
-    {
-	DataTypesBase->dtb_WorkbenchBase = OpenLibrary("workbench.library", 37);
-    }
-
-    if (DataTypesBase->dtb_WorkbenchBase == NULL)
-    {
-	return FALSE;
-    }
-
-    return TRUE;
-}
-
-
 static void closelibs(struct DataTypesBase *DataTypesBase)
 {
     if(DataTypesBase->dtb_IntuitionBase != NULL)
@@ -144,9 +86,7 @@ static void closelibs(struct DataTypesBase *DataTypesBase)
 	CloseLibrary(DataTypesBase->dtb_IconBase);
 
     if (DataTypesBase->dtb_WorkbenchBase != NULL)
-    {
 	CloseLibrary(DataTypesBase->dtb_WorkbenchBase);
-    }
 }
 
 
@@ -159,7 +99,9 @@ AROS_LH2(struct DataTypesBase *, init,
     int i;
 
     DataTypesBase->dtb_SysBase = sysBase;
-    __dt_GlobalSysBase = (struct Library *)sysBase;
+#undef SysBase
+    SysBase = (struct Library *)sysBase;
+#define SysBase ((struct DataTypesBase *)DataTypesBase)->dtb_SysBase
     DataTypesBase->dtb_SegList = segList;
     
     for (i = 0; i < SEM_MAX; i++)
@@ -167,7 +109,105 @@ AROS_LH2(struct DataTypesBase *, init,
 	InitSemaphore(&DataTypesBase->dtb_Semaphores[i]);
     }
 
+    /*
+     * Open libraries. These should all exist at init time, so there is no
+     * point not opening them now. If they happen to fail, we do not load
+     * the library. Under debugging mode print out why though. I don't
+     * alert because a) datatypes isn't that important, and b) it may be a
+     * version problem. In either case I don't want to bring down the
+     * system unnecessarily.
+     */
+
+    if ((DataTypesBase->dtb_UtilityBase =
+	    OpenLibrary("utility.library", 39L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open utility.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_GfxBase =
+	    OpenLibrary("graphics.library", 39L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open graphics.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_LayersBase = 
+	    OpenLibrary("layers.library", 39L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open layers.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_IntuitionBase =
+	    OpenLibrary("intuition.library", 39L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open intuition.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_DOSBase =
+	    OpenLibrary("dos.library", 37L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open dos.library\n"));
+	goto error;
+    }
+
+    /* We may not have these libraries, but try anyway */
+    if ((DataTypesBase->dtb_IFFParseBase =
+	    OpenLibrary("iffparse.library", 37L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open iffparse.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_LocaleBase =
+	    OpenLibrary("locale.library", 0L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open locale.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_IconBase =
+	    OpenLibrary("icon.library", 37L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open icon.library\n"));
+	goto error;
+    }
+
+    if ((DataTypesBase->dtb_WorkbenchBase =
+	    OpenLibrary("workbench.library", 37L)) == NULL)
+    {
+	D(bug("datatypes.library: Cannot open workbench.library\n"));
+	goto error;
+    }
+
+    /* Get the list of datatypes */
+    DataTypesBase->dtb_DTList = GetDataTypesList(DataTypesBase);
+
+    if(!InstallClass((struct Library *)DataTypesBase))
+    {
+	return NULL;
+    }
+
+    /* Try opening the catalog, don't worry if we fail, just keep trying. */
+    DataTypesBase->dtb_LibsCatalog =
+	opencatalog
+	(
+	    (struct Library *)DataTypesBase,
+	    NULL,
+	    "Sys/libs.catalog",
+	    OC_BuiltInLanguage,
+	    "english",
+	    TAG_DONE
+	);
+
     return DataTypesBase;
+
+error:
+    closelibs(DataTypesBase);
+
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 }
@@ -182,27 +222,19 @@ AROS_LH1(struct DataTypesBase *, open,
     /* Keep the compiler happy */
     version = 0;
 
-    /* We have to open some libraries. */
-    if(DataTypesBase->dtb_DOSBase == NULL )
+    /* Try opening the catalog again. */
+    if(DataTypesBase->dtb_LibsCatalog == NULL)
     {
-	if(!openlibs(DataTypesBase))
-	{
-	    closelibs(DataTypesBase);
-	    return NULL;
-	}
-
-	if(DataTypesBase->dtb_LibsCatalog == NULL)
-	    DataTypesBase->dtb_LibsCatalog = opencatalog((struct Library *)DataTypesBase,
-						  NULL, "Sys/libs.catalog",
-						  OC_BuiltInLanguage,
-						  "english", TAG_DONE);
-
-	DataTypesBase->dtb_DTList = GetDataTypesList(DataTypesBase);
-
-	if(!InstallClass((struct Library *)DataTypesBase))
-	{
-	    return NULL;
-	}
+	DataTypesBase->dtb_LibsCatalog =
+	    opencatalog
+	    (
+		(struct Library *)DataTypesBase,
+		NULL,
+		"Sys/libs.catalog",
+		OC_BuiltInLanguage,
+		"english",
+		TAG_DONE
+	    );
     }
 
     /* What else do we have to do? */
