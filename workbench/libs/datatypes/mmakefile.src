@@ -34,6 +34,7 @@ FUNCTIONS := 	 adddtobject \
 		 dodtmethoda \
 		 drawdtobjecta \
 		 findmethod \
+		 findtoolnodea \
 		 findtriggermethod \
 		 freedtmethods \
 		 getdtattrsa \
