@@ -118,7 +118,6 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* C has no exceptions. This is a simple replacement. */
 #define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
 #define ENOMEM_IF(a) if(a) goto enomem /* Throw out of memory. */
-
     /* Inherit the parent process' stacksize if possible */
     if (__is_process(me))
     {
@@ -276,7 +275,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if (__is_process(me))
+	if (__is_process(me) && me->pr_CurrentDir)
 	{
 	    curdir = Lock("", SHARED_LOCK);
 	    ERROR_IF(!curdir);
