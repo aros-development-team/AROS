@@ -9,8 +9,8 @@ alib_stdio00000;2;digulla;Write fclose
 alib_stdio00001;2;digulla;Write fgetc
 alib_stdio00002;2;digulla;Write fputc
 alib_stdio00003;2;digulla;Write fputs
-alib_stdio00004;1;digulla;Write getchar
-alib_stdio00005;1;digulla;Write putchar
+alib_stdio00004;0;digulla;Write getchar
+alib_stdio00005;0;digulla;Write putchar
 alib_stdio00006;2;digulla;Write puts
 amigaguide00000;0;digulla;Write LockAmigaGuideBase
 amigaguide00001;0;digulla;Write UnlockAmigaGuideBase
@@ -520,7 +520,7 @@ exec00004;2;matthias;Write MakeFunctions
 exec00005;2;ldp;Write FindResident
 exec00006;2;matthias;Write InitResident
 exec00007;2;matthias;Write Alert
-exec00008;0;digulla;Write Debug
+exec00008;1;schulz;Write Debug
 exec00009;2;matthias;Write Disable
 exec00010;2;matthias;Write Enable
 exec00011;2;matthias;Write Forbid
