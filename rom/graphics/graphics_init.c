@@ -116,10 +116,6 @@ AROS_LH2(LIBBASETYPEPTR, init,
     {
     	return NULL;
     }
-#if !REGIONS_HAVE_RRPOOL
-    InitSemaphore( &PrivGBase(GfxBase)->rrpoolsem);
-    NEWLIST(&PrivGBase(GfxBase)->rrpoollist);
-#endif
 #endif
 
     Disable();

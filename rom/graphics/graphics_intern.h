@@ -47,27 +47,26 @@
 
 #define REGIONS_USE_MEMPOOL 	1
 
-#define REGIONS_HAVE_RRPOOL     1 && REGIONS_USE_MEMPOOL
-
 extern struct GfxBase * GfxBase;
 
 
 #define SIZERECTBUF 256
 
-struct RegionRectanglePool
-{
-    struct MinNode              Node;
-    struct MinList              List;
-    struct RegionRectangleExt  *RectArray;
-    ULONG                       NumFreeRects;
-};
-
 struct RegionRectangleExt
 {
-    struct RegionRectangle      RR;
-    struct RegionRectanglePool *Owner;
+    struct RegionRectangle     RR;
+    ULONG                      Counter;
 };
 
+struct RegionRectangleExtChunk
+{
+     struct RegionRectangleExt       Rects[SIZERECTBUF];
+     struct RegionRectangleExtChunk *FirstChunk;
+};
+
+#define RRE(x)     ((struct RegionRectangleExt *)(x))
+#define Counter(x) (RRE(x)->Counter)
+#define Chunk(x)   ((struct RegionRectangleExtChunk *)&RRE(x)[-Counter(x)])
 
 /* Internal GFXBase struct */
 struct GfxBase_intern
@@ -86,10 +85,6 @@ struct GfxBase_intern
 #if REGIONS_USE_MEMPOOL
     struct SignalSemaphore  	regionsem;
     APTR    	    	    	regionpool;
-#if !REGIONS_HAVE_RRPOOL
-    struct SignalSemaphore  	rrpoolsem;
-    struct MinList              rrpoollist;
-#endif
 #endif
 };
 
@@ -260,7 +255,7 @@ extern BOOL pattern_pen(struct RastPort *rp
 
 /* function for area opeartions */
 BOOL areafillpolygon(struct RastPort  * rp,
-                     struct Rectangle * bounds, 
+                     struct Rectangle * bounds,
                      UWORD              first_idx,
                      UWORD              last_idx,
                      UWORD              bytesperrow,
@@ -299,55 +294,30 @@ VOID color_get(struct ColorMap *cm,
 		ULONG *b,
 		ULONG index);
 
-#if !REGIONS_USE_MEMPOOL
-#    define NewRegionRectangle()   AllocMem(sizeof(struct RegionRectangle), MEMF_CLEAR)
-#    define DisposeRegionRectangle(rr) FreeMem(rr, sizeof(struct RegionRectangle));
-#else
-#    if REGIONS_HAVE_RRPOOL
-#        define NewRegionRectangle(listptr) _NewRegionRectangle(listptr, GfxBase)
-#    else
-#        define NewRegionRectangle() _NewRegionRectangle(GfxBase)
-#    endif
-#    define DisposeRegionRectangle(rr) _DisposeRegionRectangle(rr, GfxBase)
-#endif
-
 void _DisposeRegionRectangleList
 (
-    struct RegionRectangle *regionrectangle,
+    struct RegionRectangle *RR,
     struct GfxBase         *GfxBase
 );
 
-void _DisposeRegionRectangle
+void _DisposeRegionRectangleExtChunk
 (
-    struct RegionRectangle *regionrectangle,
-    struct GfxBase         *GfxBase
+    struct RegionRectangleExtChunk *Chunk,
+    struct GfxBase                 *GfxBase
 );
 
 struct RegionRectangle *_NewRegionRectangle
 (
-#if REGIONS_HAVE_RRPOOL
-    struct MinList  **RectPoolListPtr,
-#endif
-    struct GfxBase  *GfxBase
+    struct RegionRectangle **LastRectPtr,
+    struct GfxBase *GfxBase
 );
 
-BOOL _CopyRegionRectangleList
+BOOL _LinkRegionRectangleList
 (
     struct RegionRectangle  *src,
     struct RegionRectangle **dstptr,
-#if REGIONS_HAVE_RRPOOL
-    struct MinList          **RectPoolListPtr,
-#endif
     struct GfxBase          *GfxBase
 );
-
-#define DisposeRegionRectangleList(list)     _DisposeRegionRectangleList(list, GfxBase)
-
-#if REGIONS_HAVE_RRPOOL
-#    define CopyRegionRectangleList(src, dstptr, listptr) _CopyRegionRectangleList(src, dstptr, listptr, GfxBase)
-#else
-#    define CopyRegionRectangleList(src, dstptr) _CopyRegionRectangleList(src, dstptr, GfxBase)
-#endif
 
 #endif /* GRAPHICS_INTERN_H */
 

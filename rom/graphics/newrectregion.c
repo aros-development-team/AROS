@@ -71,12 +71,9 @@
 
     if ((region = NewRegion()))
     {
+        struct RegionRectangle *last = NULL;
 
-#if REGIONS_HAVE_RRPOOL
-        if ((rr = NewRegionRectangle(&region->RectPoolList)))
-#else
-        if ((rr = NewRegionRectangle()))
-#endif
+        if ((rr = _NewRegionRectangle(&last, GfxBase)))
 	{
 	    region->bounds.MinX = MinX;
 	    region->bounds.MinY = MinY;

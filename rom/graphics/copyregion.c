@@ -12,7 +12,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH1(struct Region *, CopyRegion,
 
@@ -54,17 +54,20 @@
     
     if ((nreg = NewRegion()))
     {
-	nreg->bounds = region->bounds;
+        if (region->RegionRectangle)
+        {
+	    nreg->bounds = region->bounds;
 
-#if REGIONS_HAVE_RRPOOL
-        if (!CopyRegionRectangleList(region->RegionRectangle, &nreg->RegionRectangle, &nreg->RectPoolList))
-#else
-	if (!CopyRegionRectangleList(region->RegionRectangle, &nreg->RegionRectangle))
-#endif
-	{
-            DisposeRegion(nreg);
-	    nreg = NULL;
-	}
+            struct RegionRectangle *new = NULL;
+
+            if (!_LinkRegionRectangleList(region->RegionRectangle, &new, GfxBase))
+	    {
+                DisposeRegion(nreg);
+	        nreg = NULL;
+	    }
+
+            nreg->RegionRectangle = &Chunk(new)->FirstChunk->Rects[0].RR;
+        }
     }
     
     return nreg;

@@ -52,52 +52,26 @@
 {
     AROS_LIBFUNC_INIT
 
-#if REGIONS_HAVE_RRPOOL
-    struct RegionRectanglePool *Pool;
+    struct RegionRectangleExtChunk *NextChunk;
 
     ASSERT_VALID_PTR(region);
 
-    if (region->RectPoolList)
+    if (!region->RegionRectangle)
+        return;
+
+    NextChunk = Chunk(region->RegionRectangle)->FirstChunk;
+
+    while(NextChunk)
     {
-        while ((Pool = (struct RegionRectanglePool *)RemHead((struct List *)region->RectPoolList)))
-        {
+        struct RegionRectangleExtChunk *OldChunk = NextChunk;
 
-            ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+        NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next;
 
-            FreePooled
-            (
-                PrivGBase(GfxBase)->regionpool,
-                Pool->RectArray,
-                SIZERECTBUF * sizeof(struct RegionRectangleExt)
-            );
-
-            FreePooled
-            (
-                PrivGBase(GfxBase)->regionpool,
-                Pool,
-                sizeof(struct RegionRectanglePool)
-            );
-
-            ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-        }
-
-        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-        FreePooled
-        (
-            PrivGBase(GfxBase)->regionpool,
-            region->RectPoolList,
-            sizeof(struct MinList)
-        );
-
-        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+        if (NextChunk)
+            NextChunk = Chunk(NextChunk->Rects);
+            
+        _DisposeRegionRectangleExtChunk(OldChunk, GfxBase);
     }
-
-#else
-    ASSERT_VALID_PTR(region);
-
-    DisposeRegionRectangleList(region->RegionRectangle);
-#endif
 
     InitRegion(region);
 
