@@ -1,36 +1,74 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#    $Log$
-#    Revision 1.3  1996/12/05 15:31:00  aros
-#    Patches by Geert Uytterhoeven integrated
-#
-#    Revision 1.2  1996/08/01 17:41:31  digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-	.include "machine.i"
+    Desc: Exec function Permit
+    Lang: english
+*/
 
-	.globl	_Exec_Permit
-	.type	_Exec_Permit,@function
-_Exec_Permit:
-	# decrement nesting count and return if there are Forbid()s left
-	subqb	#1,%a6@(TDNestCnt)
-	jpl	end
+/******************************************************************************
 
-	# return if there are no delayed switches pending.
-	tstb	%a6@(AttnResched+1)
-	jpl	end
+    NAME
+        AROS_LH0(void, Permit,
 
-	# if IDNestCnt is not -1 taskswitches are still forbidden
-	tstb	%a6@(IDNestCnt)
-	jpl	end
+    LOCATION
+        struct ExecBase *, SysBase, 23, Exec)
 
-	# Unset delayed switch bit and do the delayed switch
-	bclr	#7,%a6@(AttnResched+1)
-	jsr	%a6@(Switch)
+    FUNCTION
+	This function activates the dispatcher again after a call to Permit().
 
-	# all done.
-end:	rts
+    INPUTS
+
+    RESULT
+
+    NOTES
+	This function preserves all registers.
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	Forbid(), Disable(), Enable()
+	
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(Permit,Exec)
+	.type	AROS_SLIB_ENTRY(Permit,Exec),@function
+AROS_SLIB_ENTRY(Permit,Exec):
+	/* Preserve used registers */
+	move.l	%a1,-(%sp)
+
+	/* Get SysBase */
+	move.l	8(%sp),%a1
+
+	/* Decrement and test TDNestCnt */
+	subq.b	#1,TDNestCnt(%a1)
+	jpl	.noswch
+
+	/* return if there are no delayed switches pending. */
+	tst.b	AttnResched+1(%a1)
+	jpl	.noswch
+
+	/* if IDNestCnt is not -1 taskswitches are still forbidden */
+	tst.b	IDNestCnt(%a1)
+	jpl	.noswch
+
+	/* Unset delayed switch bit and do the delayed switch */
+	bclr	#7,AttnResched+1(%a1)
+	move.l	%a1,-(%sp)
+	jsr	Switch(%a1)
+	addq	#4,%sp
+	
+	/* all done. */
+.noswch:
+	move.l	(%sp)+,%a1
+	rts
 
