@@ -49,7 +49,7 @@
 
 ******************************************************************************/
 {
-    sprintf (buf, "%.*G", ndigit, number);
+    sprintf (buf, "%.*G", (int)ndigit, number);
 
     return buf;
 } /* sprintf */
