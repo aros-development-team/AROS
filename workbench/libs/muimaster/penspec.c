@@ -174,7 +174,7 @@ BOOL zune_penspec_setup(struct MUI_PenSpec_intern *psi, struct MUI_RenderInfo *m
     switch (psi->p_type)
     {
 	case PST_MUI:
-	    if ((psi->p_pen >= 0) && (psi->p_pen < MPEN_COUNT))
+	    if ((psi->p_mui >= 0) && (psi->p_mui < MPEN_COUNT))
 		psi->p_pen = mri->mri_Pens[psi->p_mui];
 	    else
 		return FALSE;
