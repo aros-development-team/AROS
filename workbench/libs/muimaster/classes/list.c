@@ -29,7 +29,6 @@ struct ListEntry
 struct ColumnInfo
 {
     int colno; /* Column number */
-    int entry_width; /* width of the entries (the maximum of the widths of all entries) */
     int user_width; /* user setted width -1 if entry width */
     int min_width; /* min width percentage */
     int max_width; /* min width percentage */
@@ -37,6 +36,8 @@ struct ColumnInfo
     int delta; /* ignored for the first and last column, defaults to 4 */
     int bar;
     char *prepare;
+
+    int entries_width; /* width of the entries (the maximum of the widths of all entries) */
 };
 
 struct MUI_ListData
@@ -210,16 +211,46 @@ static int ParseListFormat(struct MUI_ListData *data, char *format)
 **************************************************************************/
 static void CalcWidths(struct IClass *cl, Object *obj)
 {
-    int i;
+    int i,j;
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
     if (!(_flags(obj) & MADF_SETUP)) return;
+
+    for (j=0;j<data->columns;j++)
+	data->ci[j].entries_width = 0;
 
     for (i=0;i<data->entries_num;i++)
     {
     	struct ListEntry *entry = data->entries[i];
     	if (!entry) break;
-    	DoMethod(obj,MUIM_Display,entry->data,i,data->strings,data->preparses);
+
+	/* Preparses are not required to be set, so we clear them first */
+    	for (j=0;j<data->columns;j++) data->preparses[j] = NULL;
+
+	/* Get the display formation */
+    	DoMethod(obj,MUIM_List_Display,entry->data,i /* entry_pos */, data->strings, data->preparses);
+
+	/* Clear the height */
+	data->entries[i]->height = 0;
+
+	for (j=0;j<data->columns;j++)
+	{
+	    ZText *text = zune_text_new(data->strings[j],data->preparses[j], ZTEXT_ARG_NONE, NULL);
+	    if (text)
+	    {
+		zune_text_get_bounds(text,obj);
+		if (text->height > data->entries[i]->height) data->entries[i]->height = text->height;
+		data->entries[i]->widths[j] = text->width;
+
+		if (text->width > data->ci[j].entries_width)
+		{
+		    /* This columns width is bigger than the other in the same columns, so we store this value */
+		    data->ci[j].entries_width = text->width;
+		}
+
+		zune_text_destroy(text);
+	    }
+	}
     }
 }
 
@@ -388,10 +419,11 @@ static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG List_Setup(struct IClass *cl, Object *obj, struct opGet *msg)
+static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0:
+    if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
+    CalcWidths(cl,obj);
     return 1;
 }
 
