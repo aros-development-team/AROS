@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/01/27 00:22:40  ldp
+    Include proto instead of clib
+
     Revision 1.3  1996/12/10 13:59:49  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -19,10 +22,10 @@
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <aros/asmcall.h>
 #include <aros/machine.h>
 #ifdef __GNUC__

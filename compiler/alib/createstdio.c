@@ -6,13 +6,13 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
 #include <exec/io.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	struct IOStdReq * CreateStdIO (
 

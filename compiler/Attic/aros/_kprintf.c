@@ -1,5 +1,5 @@
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/asmcall.h>
 
 /* All I need is a global variable SysBase */

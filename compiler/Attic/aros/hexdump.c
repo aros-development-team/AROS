@@ -13,7 +13,7 @@ extern struct ExecBase * SysBase;
 /*****************************************************************************
 
     NAME */
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 
 	void hexdump (
 

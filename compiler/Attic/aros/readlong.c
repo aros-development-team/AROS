@@ -5,13 +5,13 @@
     Desc: Read a big endian long (32bit) from a file
     Lang: english
 */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 /******************************************************************************
 
     NAME */
 #include <stdio.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	BOOL ReadLong (
 

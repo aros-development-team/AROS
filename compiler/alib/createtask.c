@@ -7,7 +7,7 @@
 */
 #include <exec/memory.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 struct newMemList
 {
@@ -31,7 +31,7 @@ const struct newMemList MemTemplate =
 
     NAME */
 #include <exec/tasks.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	struct Task * CreateTask (
 

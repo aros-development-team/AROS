@@ -16,7 +16,7 @@ extern struct IntuitionBase * IntuitionBase;
 
     NAME */
 #include <intuition/intuition.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	struct Window * OpenWindowTags (
 

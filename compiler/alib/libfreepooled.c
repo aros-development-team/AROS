@@ -7,12 +7,12 @@
     Lang: english
 */
 #include "pool.h"
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	void LibFreePooled (
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/27 00:22:37  ldp
+    Include proto instead of clib
+
     Revision 1.6  1996/10/24 15:32:26  aros
     Fixed some warnings about int/ptr conversions
 
@@ -18,10 +21,10 @@
     Lang:
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
 
 int main (int argc, char ** argv)

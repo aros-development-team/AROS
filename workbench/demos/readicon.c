@@ -20,11 +20,11 @@
 #include <graphics/gfxbase.h>
 #include <graphics/rastport.h>
 
-#include <clib/alib_protos.h>
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/aros_protos.h>
-#include <clib/intuition_protos.h>
+#include <proto/alib.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/aros.h>
+#include <proto/intuition.h>
 
 AROS_UFH3(ULONG, ProcessDrawerData,
     AROS_UFHA(struct Hook *,   hook, A0),

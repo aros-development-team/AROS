@@ -6,15 +6,15 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dos.h>
 #include <dos/exall.h>
 #include <dos/datetime.h>
-#include <clib/dos_protos.h>
-#include <clib/utility_protos.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <utility/utility.h>
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 #include <stdio.h>
 
 static const char version[] = "$VER: Version 1.1 (4.10.96)\n";

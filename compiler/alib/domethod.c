@@ -11,7 +11,7 @@
 /******************************************************************************
 
     NAME */
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	IPTR DoMethodA (
 

@@ -5,15 +5,15 @@
     Desc: Read one C string from a file
     Lang: english
 */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /******************************************************************************
 
     NAME */
 #include <stdio.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	BOOL ReadString (
 

@@ -5,13 +5,13 @@
     Desc: amiga.lib function DeletePort()
     Lang: english
 */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
 #include <exec/ports.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	void DeletePort (
 

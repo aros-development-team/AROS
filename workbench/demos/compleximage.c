@@ -37,15 +37,15 @@ responsibility is assumed.
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/intuition_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
 
 #include <stdio.h>
 
 #ifdef __AROS
 #define __chip
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 #endif
 
 #ifdef LATTICE

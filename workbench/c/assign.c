@@ -1,8 +1,16 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Assign CLI command
+    Lang: english
+*/
+
 #include <exec/memory.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dos.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
 
 int main (int argc, char ** argv)

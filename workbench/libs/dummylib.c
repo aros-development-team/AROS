@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/01/27 00:22:41  ldp
+    Include proto instead of clib
+
     Revision 1.7  1996/10/24 15:51:27  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -25,7 +28,7 @@
 */
 #include <exec/types.h>
 #include <exec/resident.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
 #   include "dummylib_gcc.h"

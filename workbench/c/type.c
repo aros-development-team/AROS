@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/01/27 00:22:38  ldp
+    Include proto instead of clib
+
     Revision 1.5  1996/09/17 16:43:01  digulla
     Use general startup code
 
@@ -19,9 +22,9 @@
 */
 #include <exec/memory.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dos.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 #define BUFSIZE 8192
 

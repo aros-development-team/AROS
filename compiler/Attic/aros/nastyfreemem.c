@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/01/27 00:17:41  ldp
+    Include proto instead of clib
+
     Revision 1.5  1996/12/10 13:59:44  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -30,7 +33,7 @@
 #include <aros/system.h>
 #include <exec/execbase.h>
 #undef FreeMem /* Don't use any kind of macro here :) We want the real thing */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 extern struct ExecBase * SysBase;
 extern void PurgeChunk (ULONG *, ULONG);
@@ -38,7 +41,7 @@ extern void PurgeChunk (ULONG *, ULONG);
 /*****************************************************************************
 
     NAME */
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 
 	void NastyFreeMem (
 

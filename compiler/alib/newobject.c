@@ -17,7 +17,7 @@ extern struct IntuitionBase * IntuitionBase;
 
     NAME */
 #include <intuition/classusr.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	APTR NewObject (
 

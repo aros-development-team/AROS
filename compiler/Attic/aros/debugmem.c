@@ -11,12 +11,12 @@
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <aros/debug.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 
 	void debugmem (
 

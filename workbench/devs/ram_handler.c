@@ -10,14 +10,14 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/semaphores.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <utility/tagitem.h>
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 #include <dos/dosextens.h>
 #include <dos/dosasl.h>
 #include <dos/exall.h>
 #include <dos/filesystem.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <aros/libcall.h>
 #ifdef __GNUC__
 #include "ram_handler_gcc.h"

@@ -7,8 +7,8 @@
 */
 #include <setjmp.h>
 #include <dos/dos.h>
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
 #include <aros/asmcall.h>
 
 /* Don't define symbols before the entry point. */

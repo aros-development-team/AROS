@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/01/27 00:17:41  ldp
+    Include proto instead of clib
+
     Revision 1.2  1996/12/10 13:59:45  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -18,8 +21,8 @@
 #include <exec/execbase.h>
 #include <memory.h>
 #include <stdlib.h>
-#include <clib/aros_protos.h>
-#include <clib/exec_protos.h>
+#include <proto/aros.h>
+#include <proto/exec.h>
 #include <aros/purify.h>
 #include <aros/rt.h>
 

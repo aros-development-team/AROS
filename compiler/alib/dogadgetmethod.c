@@ -10,7 +10,7 @@
 #   include <intuition/classusr.h>
 #endif
 #include "alib_intern.h"
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 extern struct IntuitionBase * IntuitionBase;
 
@@ -18,7 +18,7 @@ extern struct IntuitionBase * IntuitionBase;
 
     NAME */
 #include <intuition/intuition.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	IPTR DoGadgetMethod (
 

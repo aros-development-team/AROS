@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/27 00:22:37  ldp
+    Include proto instead of clib
+
     Revision 1.6  1996/10/04 17:09:44  digulla
     More readable way to access arguments
 
@@ -21,9 +24,9 @@
     Lang:
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 UBYTE Buffer[4096];
 

@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <aros/system.h>
-#include <clib/dos_protos.h>
-#include <clib/aros_protos.h>
+#include <proto/dos.h>
+#include <proto/aros.h>
 #undef kprintf
 #include <unistd.h>
 
@@ -20,7 +20,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 
 	int kprintf (
 

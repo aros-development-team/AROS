@@ -1,9 +1,17 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <aros/machine.h>
 
 struct task

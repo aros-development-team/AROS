@@ -21,12 +21,12 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/devices.h>
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <aros/rt.h>
 #include <aros/arosbase.h>

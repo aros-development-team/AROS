@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/01/27 00:22:39  ldp
+    Include proto instead of clib
+
     Revision 1.4  1996/09/17 16:43:00  digulla
     Use general startup code
 
@@ -14,9 +17,9 @@
     Desc:
     Lang:
 */
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/aros_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/aros.h>
 #include "dummylib_gcc.h"
 
 int main (int argc, char ** argv)

@@ -7,10 +7,10 @@
 */
 #include <exec/memory.h>
 #include <exec/libraries.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <ctype.h>
 #include <stdio.h>

@@ -12,7 +12,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 
 	APTR LibCreatePool (
 

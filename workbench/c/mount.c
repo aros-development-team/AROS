@@ -1,10 +1,18 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Mount CLI command
+    Lang: english
+*/
+
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <dos/rdargs.h>
-#include <clib/dos_protos.h>
-#include <clib/utility_protos.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
 
 static struct UtilityBase *UtilityBase;
 

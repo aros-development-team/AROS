@@ -11,8 +11,8 @@
 
     NAME */
 #include <exec/io.h>
-#include <clib/alib_protos.h>
-#include <clib/exec_protos.h>
+#include <proto/alib.h>
+#include <proto/exec.h>
 
 	void DeleteStdIO (
 

@@ -13,7 +13,7 @@
 
     NAME */
 #include <aros/asmcall.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	AROS_UFH3(IPTR, HookEntry,
 

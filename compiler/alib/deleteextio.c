@@ -5,13 +5,13 @@
     Desc: Free a structure created by CreateExtIO()
     Lang: english
 */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
 #include <exec/io.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 
 	void DeleteExtIO (
 

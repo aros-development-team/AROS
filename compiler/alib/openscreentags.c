@@ -15,7 +15,7 @@ extern struct IntuitionBase * IntuitionBase;
 
     NAME */
 #include <intuition/screens.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	struct Screen * OpenScreenTags (
 

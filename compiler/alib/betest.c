@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <dos/dos.h>
-#include <clib/exec_protos.h>
-#include <clib/dos_protos.h>
-#include <clib/alib_protos.h>
-#include <clib/aros_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/alib.h>
+#include <proto/aros.h>
 
 int main (int argc, char ** argv)
 {

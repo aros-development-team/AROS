@@ -5,13 +5,13 @@
     Desc:
     Lang: english
 */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
 #include <exec/tasks.h>
-#include <clib/aros_protos.h>
+#include <proto/aros.h>
 
 	void DeleteTask (
 
