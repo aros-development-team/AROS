@@ -1,3 +1,4 @@
+# $Id$
 TOP=..
 
 include $(TOP)/make.cfg

@@ -1,3 +1,4 @@
+# $Id$
 TOP=..
 
 SPECIAL_CFLAGS = -D__AROS
