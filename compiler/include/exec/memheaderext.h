@@ -21,10 +21,10 @@ struct MemHeaderExt
        
     APTR  * mhe_UserData;
     
-    APTR  (* mhe_Alloc)   (struct MemHeaderExt *, ULONG size, ULONG flags);
-    VOID  (* mhe_Free)    (struct MemHeaderExt *, APTR  mem,  ULONG size);
-    APTR  (* mhe_AllocAbs)(struct MemHeaderExt *, ULONG size, APTR  addr);
-    APTR  (* mhe_ReAlloc) (struct MemHeaderExt *, APTR  old,  ULONG size);
+    APTR  (* mhe_Alloc)   (struct MemHeaderExt *, ULONG size, ULONG *flags);
+    VOID  (* mhe_Free)    (struct MemHeaderExt *, APTR  mem,  ULONG  size);
+    APTR  (* mhe_AllocAbs)(struct MemHeaderExt *, ULONG size, APTR   addr);
+    APTR  (* mhe_ReAlloc) (struct MemHeaderExt *, APTR  old,  ULONG  size);
     ULONG (* mhe_Avail)   (struct MemHeaderExt *, ULONG flags);
 };
 
