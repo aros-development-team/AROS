@@ -128,6 +128,7 @@ BOOPSI/PropGClass;2;nlorentz;Implement BOOPSI PropGClass
 BOOPSI/propgadgets;2;digulla;Implement PROP Gadgets
 BOOPSI/RootClass;2;digulla;Implement BOOPSI RootClass
 BOOPSI/StrGClass;2;nlorentz;Implement BOOPSI StrGClass
+BOOPSI/FillRectClass;2;stegerg;Implement BOOPSI FillRectClass
 bullet00000;0;digulla;Write OpenEngine
 bullet00001;0;digulla;Write CloseEngine
 bullet00002;0;digulla;Write SetInfoA
@@ -210,7 +211,7 @@ c/unalias;2;laguest;Write C:UnAlias
 c/unset;2;laguest;Write C:UnSet
 c/unsetenv;2;laguest;Write C:UnSetEnv
 c/version;1;srittau;Write C:Version
-c/wait;0;digulla;Write C:Wait
+c/wait;2;hkiel;Write C:Wait
 c/which;1;SDuvan;Write C:Which
 c/why;2;srittau;Write C:Why
 colorwheel00000;0;digulla;Write ConvertHSBToRGB
@@ -244,7 +245,7 @@ commodities00025;2;SDuvan;Write MatchIX
 commodities00026;2;SDuvan;GetBrokerList
 commodities00027;2;SDuvan;FreeBrokerList
 commodities00028;2;SDuvan;CxNotify
-console00000;0;digulla;Write CDInputHandler
+console00000;1;UNKNOWN;Write CDInputHandler
 console00001;2;digulla;Write RawKeyConvert
 datatypes00000;2;SDuvan;Write ObtainDataTypeA
 datatypes00001;2;SDuvan;Write ReleaseDataType
@@ -392,9 +393,9 @@ DevCMD00120;1;bergers;Write SD - CMD_WRITE
 DevCMD00122;1;bergers;Write SDCMD_BREAK
 DevCMD00123;1;bergers;Write SDCMD_QUERY
 DevCMD00124;1;bergers;Write SDCMD_SETPARAMS
-DevCMD00126;0;;Write TR_ADDREQUEST
-DevCMD00127;0;;Write TR_GETSYSTIME
-DevCMD00128;0;;Write TR_SETSYSTIME
+DevCMD00126;1;UNKNOWN;Write TR_ADDREQUEST
+DevCMD00127;2;UNKNOWN;Write TR_GETSYSTIME
+DevCMD00128;2;UNKNOWN;Write TR_SETSYSTIME
 DevCMD00129;0;;Write TD - CMD_CLEAR
 DevCMD00130;0;;Write TD - CMD_READ
 DevCMD00131;0;;Write TD - CMD_UPDATE
@@ -1081,7 +1082,7 @@ intuition00086;2;SDuvan;Write SetPubScreenModes
 intuition00087;2;SDuvan;Write PubScreenStatus
 intuition00088;2;digulla;Write ObtainGIRPort
 intuition00089;2;digulla;Write ReleaseGIRPort
-intuition00090;0;digulla;Write GadgetMouse
+intuition00090;2;stegerg;Write GadgetMouse
 intuition00091;2;SDuvan;Write GetDefaultPubScreen
 intuition00092;2;srittau;Write EasyRequestArgs
 intuition00093;2;srittau;Write BuildEasyRequestArgs
@@ -1104,17 +1105,17 @@ intuition00109;2;nlorentz;Write FreeScreenDrawInfo
 intuition00110;2;stegerg;Write ResetMenuStrip
 intuition00111;2;digulla;Write RemoveClass
 intuition00112;2;digulla;Write FreeClass
-intuition00113;0;;Write AllocScreenBuffer
-intuition00114;0;;Write FreeScreenBuffer
+intuition00113;2;bergers;Write AllocScreenBuffer
+intuition00114;2;bergers;Write FreeScreenBuffer
 intuition00115;0;digulla;Write ChangeScreenBuffer
 intuition00116;2;hkiel;Write ScreenDepth
 intuition00117;0;digulla;Write ScreenPosition
 intuition00118;2;bergers;Write ScrollWindowRaster
-intuition00119;0;digulla;Write LendMenus
+intuition00119;2;stegerg;Write LendMenus
 intuition00120;2;digulla;Write DoGadgetMethodA
 intuition00121;0;digulla;Write SetWindowPointerA
 intuition00122;0;digulla;Write TimedDisplayAlert
-intuition00123;0;digulla;Write HelpControl
+intuition00123;2;stegerg;Write HelpControl
 keymap00000;2;nlorentz;Write SetKeyMapDefault
 keymap00001;2;nlorentz;Write AskKeyMapDefault
 keymap00002;2;nlorentz;Write MapRawKey
