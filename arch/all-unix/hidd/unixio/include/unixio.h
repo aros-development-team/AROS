@@ -18,6 +18,9 @@
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
 #endif
+#ifndef EXEC_EXECBASE_H
+#   include <exec/execbase.h>
+#endif
 
 #define CLID_Hidd_UnixIO "unixio.hidd"
 #define IID_Hidd_UnixIO	"I_Hidd_UnixIO"
