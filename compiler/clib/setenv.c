@@ -8,8 +8,7 @@
 
 #include <proto/dos.h>
 #include <dos/var.h>
-
-#include <errno.h>
+#include "__env.h"
 
 /*****************************************************************************
 
@@ -23,17 +22,17 @@
 	const char *value,
 	int         overwrite)
 /*  FUNCTION
-	 Change or add an environment variable.
+		Change or add an environment variable.
 
     INPUTS
-	name      - Name of the environment variable,
-	value     - Value wich the variable must be set or changed to.
-	overwrite - If non-zero then, if a variable with the name name already
-	            exists, its value is changet to value, otherwise is not
-		    changed
+		name      - Name of the environment variable,
+		value     - Value wich the variable must be set or changed to.
+		overwrite - If non-zero then, if a variable with the name name already
+	                exists, its value is changet to value, otherwise is not
+		            changed
     RESULT
-       Returns zero on success, or -1 if there was insufficient
-       space in the environment.
+    	Returns zero on success, or -1 if there was insufficient
+    	space in the environment.
 
     NOTES
         This function must not be used in a shared library.
@@ -51,9 +50,9 @@
 
 ******************************************************************************/
 {
-    if (!overwrite && FindVar(name, LV_VAR))
+	if (!overwrite && FindVar(name, LV_VAR))
     	return 0;
 
-    return -!SetVar(name, value, -1, LV_VAR );
+    return -!SetVar(name, value, -1, LV_VAR | GVF_LOCAL_ONLY);
 } /* setenv */
 

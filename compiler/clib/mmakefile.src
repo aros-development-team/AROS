@@ -10,6 +10,7 @@ LIB		:= $(LIBDIR)/libarosc.a
 
 FILES := \
 	__assert \
+	__env \
 	__getfilenode4fd \
 	__ioerr2errno \
 	__isinf \
@@ -77,6 +78,7 @@ FILES := \
 	nrand48 \
 	open \
 	printf \
+	putenv \
 	puts \
 	qsort \
 	rand \
@@ -119,6 +121,7 @@ FILES := \
 	time \
 	ungetc \
 	unlink \
+	unsetenv \
 	vfprintf \
 	vfscanf \
 	vprintf \
