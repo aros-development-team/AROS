@@ -208,7 +208,6 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
             Class   *supercl;
             ClassID  superclid;
 
-            bug ("[Zune] Builtin class `%s' found, let's make it!\n", classid);
 	    /* This may seem strange, but opening muimaster.library here is done in order to
                increase muimaster.library's open count, so that it doesn't get expunged
 	       while some of its internal classes are still in use.  */
@@ -217,11 +216,7 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
 
             /* It can't possibly fail, but well... */
 	    if (!mb)
-	    {
-	        bug ("[Zune] Whoops, couldn't open muimaster.library\n");
-
 	        break;
-	    }
 
 	    if (strcmp(builtins[i]->supername, ROOTCLASS) == 0)
             {
@@ -247,11 +242,6 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
 #endif
                 cl->cl_Dispatcher.h_Data     = mb;
 	    }
-	    else
-	    {
-	        bug ("[Zune] MakeClass failed!! %s - %s - %p - %ld\n",
-		     builtins[i]->name, superclid, supercl, builtins[i]->datasize);
-            }
 
 	    break;
 	}
