@@ -146,6 +146,7 @@ void AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec)();
 void AROS_SLIB_ENTRY(AllocVecPooled,Exec)();
 void AROS_SLIB_ENTRY(FreeVecPooled,Exec)();
 void AROS_SLIB_ENTRY(NewAllocEntry,Exec)();
+void AROS_SLIB_ENTRY(NewAddTask,Exec)();
 
 const void *ExecFunctions[] __attribute__((section(".rodata"))) =
 {
@@ -300,5 +301,6 @@ const void *ExecFunctions[] __attribute__((section(".rodata"))) =
         &AROS_SLIB_ENTRY(AllocVecPooled,Exec), /* 149 */
         &AROS_SLIB_ENTRY(FreeVecPooled,Exec),  /* 150 */
         &AROS_SLIB_ENTRY(NewAllocEntry,Exec),  /* 151 */
+        &AROS_SLIB_ENTRY(NewAddTask,Exec),     /* 152 */
 	(APTR)-1
 };
