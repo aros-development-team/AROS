@@ -28,7 +28,7 @@ void fatalerror(int status)
     if (status)
     {
     	if (errno) perror("collect-aros");
-	exit(status);
+        exit(status);
     }
 }
 
@@ -168,7 +168,30 @@ int main(int argc, char *argv[])
     char buf[200];
     int thereare = 0, incremental = 0;
 
+    char *LINKERPATH  = getenv("AROS_TARGET_LINKERPATH");
+    char *OBJDUMPPATH = getenv("AROS_TARGET_OBJDUMPPATH");
+    char *NMPATH      = getenv("AROS_TARGET_NMPATH");
+
+    if (!LINKERPATH)
+    {
+        fprintf(stderr, "%s: AROS_TARGET_LINKERPATH variable not set, using default value /usr/bin/ld\n", argv[0]);
+        LINKERPATH = "/usr/bin/ld";
+    }
+
+    if (!OBJDUMPPATH)
+    {
+        fprintf(stderr, "%s: AROS_TARGET_OBJDUMPPATH variable not set, using default value /usr/bin/ld\n", argv[0]);
+        OBJDUMPPATH = "/usr/bin/objdump";
+    }
+
+    if (!NMPATH)
+    {
+        fprintf(stderr, "%s: AROS_TARGET_NMPATH variable not set, using default value /usr/bin/ld\n", argv[0]);
+        NMPATH = "/usr/bin/nm";
+    }
+
     atexit(exitfunc);
+
 
     /* Do some stuff with the arguments */
     output = "a.out";
@@ -204,7 +227,7 @@ int main(int argc, char *argv[])
 
     tempoutname  = xtempnam();
     ldscriptname = joinstrings(tempoutname, "-ldscript.x", NULL);
-    command      = joinstrings(OBJDUMPPATH " -h ", output, NULL);
+    command      = joinstrings(OBJDUMPPATH, " -h ", output, NULL);
     pipe         = xpopen(command);
     ldscriptfile = xfopen(ldscriptname, "w");
 
@@ -217,16 +240,16 @@ int main(int argc, char *argv[])
 
     if (ret)
     {
-	free(command);
-	command = joinstrings(LINKERPATH " -r -o ", tempoutname, " ", output, " -T ", ldscriptname, NULL);
+        free(command);
+        command = joinstrings(LINKERPATH, " -r -o ", tempoutname, " ", output, " -T ", ldscriptname, NULL);
 	xsystem(command);
 	free(command);
-	command = joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL);
+	command = joinstrings(MVPATH, " -f ", tempoutname, " ", output, NULL);
 	xsystem(command);
     }
 
     free(command);
-    command = joinstrings(NMPATH " -C -ul ", output, NULL);
+    command = joinstrings(NMPATH, " -C -ul ", output, NULL);
 
     pipe = xpopen(command);
 
