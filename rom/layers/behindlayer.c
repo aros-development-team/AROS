@@ -171,10 +171,10 @@
            to the Display BitMap and backup the Display BitMap into 
            that ClipRect.
 	 */
-        _CR = internal_WhichClipRect(_L, CR->bounds.MinX, CR->bounds.MinY);
+
 
         /*
-            _CR [_L] is now visible and 
+            ClipRect(s) [_L] is/are now visible and 
              CR [ L] is now hidden
 	 */
 
@@ -183,9 +183,9 @@
           The CR  to be hidden can be a simple layer,
                                         superbitmap layer or
                                         smart layer
-          The _CR to become visible can be a simple layer,
-                                             superbitmap layer or
-                                             smart layer 
+          The _CR(s) to become visible can be a simple layer(s),
+                                                superbitmap layer(s) or
+                                                smart layer(s) 
         */
         /* One special case :
            Both layers are smart layers (not superbitmap layers) so
@@ -237,62 +237,79 @@
            /* the part to be hidden belongs to a simple layer.
               I don't do anything here. */
          }
-        
-         if (0 == (_L->Flags & LAYERSIMPLE))
+
+
+         _CR = _L->ClipRect;
+         
+         while (NULL != _CR)
          {
-           if (0 == (_L->Flags & LAYERSUPER))
+           /* There might not just be one ClipRect of the layer _L hidden. So
+              I have to check them all  
+            */
+           if (!(_CR->bounds.MinX > CR->bounds.MaxX ||
+                 _CR->bounds.MaxX < CR->bounds.MinX ||
+                 _CR->bounds.MinY > CR->bounds.MaxY ||
+                 _CR->bounds.MaxY < CR->bounds.MinY))
            {
-               BltBitMap(_CR->BitMap,
-                         _CR->bounds.MinX & 0x0f,
+             if (0 == (_L->Flags & LAYERSIMPLE))
+             {
+               if (0 == (_L->Flags & LAYERSUPER))
+               {
+                 BltBitMap(_CR->BitMap,
+                           _CR->bounds.MinX & 0x0f,
+                           0,
+                           _L->rp->BitMap,
+                           _CR->bounds.MinX,
+                           _CR->bounds.MinY,
+                           _CR->bounds.MaxX - _CR->bounds.MinX + 1,
+                           _CR->bounds.MaxY - _CR->bounds.MinY + 1,
+                           0x0c0,
+                           0xff,
+                           NULL);
+                 FreeBitMap(_CR->BitMap);
+               }
+               else
+               {
+                 /* the part to become visible belongs to a superbitmap layer */
+                 BltBitMap(_L->SuperBitMap,
+                           _CR->bounds.MinX - _L->bounds.MinX + _L->Scroll_X,
+                           _CR->bounds.MinY - _L->bounds.MinY + _L->Scroll_Y,
+                           _L->rp->BitMap,
+                           _CR->bounds.MinX,
+                           _CR->bounds.MinY,
+                           _CR->bounds.MaxX - _CR->bounds.MinX + 1,
+                           _CR->bounds.MaxY - _CR->bounds.MinY + 1,
+                           0x0c0,
+                           0xff,
+                           NULL);
+               }
+             }
+             else
+             {
+               /* the part to become visible belongs to a simple layer,
+                  I add that part to the damage list and clear the part. */
+               OrRectRegion(_L->DamageList, &CR->bounds);
+               L->Flags |= LAYERREFRESH;
+               BltBitMap(_L->rp->BitMap,
+                         0,
                          0,
                          _L->rp->BitMap,
                          _CR->bounds.MinX,
                          _CR->bounds.MinY,
                          _CR->bounds.MaxX - _CR->bounds.MinX + 1,
                          _CR->bounds.MaxY - _CR->bounds.MinY + 1,
-                         0x0c0,
+                         0x000,
                          0xff,
-                         NULL);
-               FreeBitMap(_CR->BitMap);
+                         NULL);   
+             }
+
+             _CR -> lobs   = NULL;
+             _CR -> BitMap = NULL;
            }
-           else
-           {
-             /* the part to become visible belongs to a superbitmap layer */
-             BltBitMap(_L->SuperBitMap,
-                       _CR->bounds.MinX - _L->bounds.MinX + _L->Scroll_X,
-                       _CR->bounds.MinY - _L->bounds.MinY + _L->Scroll_Y,
-                       _L->rp->BitMap,
-                       _CR->bounds.MinX,
-                       _CR->bounds.MinY,
-                       _CR->bounds.MaxX - _CR->bounds.MinX + 1,
-                       _CR->bounds.MaxY - _CR->bounds.MinY + 1,
-                       0x0c0,
-                       0xff,
-                       NULL);
-           }
-         }
-         else
-         {
-           /* the part to become visible belongs to a simple layer,
-              I add that part to the damage list and clear the part. */
-           OrRectRegion(_L->DamageList, &CR->bounds);
-           L->Flags |= LAYERREFRESH;
-           BltBitMap(_L->rp->BitMap,
-                     0,
-                     0,
-                     _L->rp->BitMap,
-                     _CR->bounds.MinX,
-                     _CR->bounds.MinY,
-                     _CR->bounds.MaxX - _CR->bounds.MinX + 1,
-                     _CR->bounds.MaxY - _CR->bounds.MinY + 1,
-                     0x000,
-                     0xff,
-                     NULL);   
+           _CR = _CR->Next;
          }
 
          CR -> lobs   = _L;
-        _CR -> lobs   = NULL;
-        _CR -> BitMap = NULL;
 
         /*
            Now I have to change all lobs-entries in the layers
