@@ -12,25 +12,35 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: Why 1.0 (28.2.97)\n";
+static const char version[] = "$VER: Why 1.1 (2.3.97)\n";
 
 int main()
 {
-    struct Process * proc;
-    struct CommandLineInterface * cli;
+    struct RDArgs *rda;
+    IPTR args[0];
+    struct CommandLineInterface *cli;
     LONG lasterror;
     int error = RETURN_OK;
 
-    proc = (struct Process *)FindTask(NULL);
-    cli = Cli();
-    if (cli != NULL)
+    rda = ReadArgs("", args, NULL);
+    if (rda != NULL)
     {
-        lasterror = cli->cli_Result2;
-        if (lasterror == 0)
-            printf("The last command did not set a return-value\n");
-        else
-            PrintFault(lasterror, "The last command failed, reason");
+        if ((cli = Cli()) != NULL)
+        {
+            lasterror = cli->cli_Result2;
+            if (lasterror == 0)
+                printf("The last command did not set a return-value\n");
+            else
+            {
+                PrintFault(lasterror, "The last command failed, reason");
+                SetIoErr(0);
+            }
+        } else
+            error = RETURN_FAIL;
     } else
+    {
+        PrintFault(IoErr(), "Why");
         error = RETURN_FAIL;
+    }
     return(error);
 }
