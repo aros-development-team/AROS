@@ -1,7 +1,14 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2001/03/09 23:45:48  stegerg
+    catalog for dos.library strings. fixed most error strings
+    (the name of the ERROR_ defines is sometimes misleading).
+    removed ERROR_NUMBER_OF_ARGUMENTS #define (one must use
+    ERROR_TOO_MANY_ARGS for this -> the string for which is
+    "wrong number of arguments")
+
     Revision 1.6  2001/01/30 18:05:36  stegerg
     changed ERROR_BREAK string from "Break" to "***Break"
 
@@ -27,54 +34,54 @@
 
 struct EString EString[]=
 {
-{ ERROR_NO_FREE_STORE,		"No free store" },
-{ ERROR_TASK_TABLE_FULL,	"Task table full" },
-{ ERROR_BAD_TEMPLATE,		"Bad template" },
-{ ERROR_BAD_NUMBER,		"Bad number" },
-{ ERROR_REQUIRED_ARG_MISSING,	"Required argument missing" },
-{ ERROR_KEY_NEEDS_ARG,		"Keyword needs argument" },
-{ ERROR_TOO_MANY_ARGS,		"Too many arguments" },
-{ ERROR_UNMATCHED_QUOTES,	"Unmatched quoted" },
-{ ERROR_LINE_TOO_LONG,		"Line too long" },
-{ ERROR_FILE_NOT_OBJECT,	"File not object" },
-{ ERROR_INVALID_RESIDENT_LIBRARY,"Invalid resident library" },
-{ ERROR_NO_DEFAULT_DIR, 	"No default dir" },
-{ ERROR_OBJECT_IN_USE,		"Object is in use" },
-{ ERROR_OBJECT_EXISTS,		"Object exists already" },
-{ ERROR_DIR_NOT_FOUND,		"Directory not found" },
-{ ERROR_OBJECT_NOT_FOUND,	"Object not found" },
-{ ERROR_BAD_STREAM_NAME,	"Bad stream name" },
-{ ERROR_OBJECT_TOO_LARGE,	"Object too large" },
-{ ERROR_ACTION_NOT_KNOWN,	"Action not known" },
-{ ERROR_INVALID_COMPONENT_NAME, "Invalid component name" },
-{ ERROR_INVALID_LOCK,		"Invalid lock" },
-{ ERROR_OBJECT_WRONG_TYPE,	"Object is of wrong type" },
-{ ERROR_DISK_NOT_VALIDATED,	"Disk is not validated" },
-{ ERROR_DISK_WRITE_PROTECTED,	"Disk is write protected" },
-{ ERROR_RENAME_ACROSS_DEVICES,	"Rename across devices attempted" },
-{ ERROR_DIRECTORY_NOT_EMPTY,	"Directory isn't empty" },
-{ ERROR_TOO_MANY_LEVELS,	"Too many levels" },
-{ ERROR_DEVICE_NOT_MOUNTED,	"Device not mounted" },
-{ ERROR_SEEK_ERROR,		"Seek error" },
-{ ERROR_COMMENT_TOO_BIG,	"Comment too big" },
-{ ERROR_DISK_FULL,		"Disk is full" },
-{ ERROR_DELETE_PROTECTED,	"Object is delete protected" },
-{ ERROR_WRITE_PROTECTED,	"Object is write protected" },
-{ ERROR_READ_PROTECTED, 	"Object is read protected" },
-{ ERROR_NOT_A_DOS_DISK, 	"Not a DOS disk" },
-{ ERROR_NO_DISK,		"No disk in drive" },
-{ ERROR_NO_MORE_ENTRIES,	"No more entries in directory" },
-{ ERROR_IS_SOFT_LINK,		"Object is soft link" },
-{ ERROR_OBJECT_LINKED,		"Object is linked" },
-{ ERROR_BAD_HUNK,		"Bad hunk in loadfile" },
-{ ERROR_NOT_IMPLEMENTED,	"Action not implemented" },
-{ ERROR_RECORD_NOT_LOCKED,	"Record not locked" },
-{ ERROR_LOCK_COLLISION, 	"Lock collision" },
-{ ERROR_LOCK_TIMEOUT,		"Lock timed out" },
-{ ERROR_UNLOCK_ERROR,		"Unlock error" },
-{ ERROR_BUFFER_OVERFLOW,	"Buffer overflow" },
+{ ERROR_NO_FREE_STORE,		"not enough memory available" },
+{ ERROR_TASK_TABLE_FULL,	"process table full" },
+{ ERROR_BAD_TEMPLATE,		"bad template" },
+{ ERROR_BAD_NUMBER,		"bad number" },
+{ ERROR_REQUIRED_ARG_MISSING,	"required argument missing" },
+{ ERROR_KEY_NEEDS_ARG,		"value after keyword missing" },
+{ ERROR_TOO_MANY_ARGS,		"wrong number of arguments" },
+{ ERROR_UNMATCHED_QUOTES,	"unmatched quotes" },
+{ ERROR_LINE_TOO_LONG,		"argument line invalid or too long" },
+{ ERROR_FILE_NOT_OBJECT,	"file is not executable" },
+{ ERROR_INVALID_RESIDENT_LIBRARY,"invalid resident library" },
+{ ERROR_NO_DEFAULT_DIR, 	"Error 201" },
+{ ERROR_OBJECT_IN_USE,		"object is in use" },
+{ ERROR_OBJECT_EXISTS,		"object already exists" },
+{ ERROR_DIR_NOT_FOUND,		"directory not found" },
+{ ERROR_OBJECT_NOT_FOUND,	"object not found" },
+{ ERROR_BAD_STREAM_NAME,	"invalid window description" },
+{ ERROR_OBJECT_TOO_LARGE,	"object too large" },
+{ ERROR_ACTION_NOT_KNOWN,	"filesystem action type unknown" }, /* was: packet request type unknown */
+{ ERROR_INVALID_COMPONENT_NAME, "object name invalid" },
+{ ERROR_INVALID_LOCK,		"invalid object lock" },
+{ ERROR_OBJECT_WRONG_TYPE,	"object is not of required type" },
+{ ERROR_DISK_NOT_VALIDATED,	"disk not validated" },
+{ ERROR_DISK_WRITE_PROTECTED,	"disk is write-protected" },
+{ ERROR_RENAME_ACROSS_DEVICES,	"rename across devices attempted" },
+{ ERROR_DIRECTORY_NOT_EMPTY,	"directory not empty" },
+{ ERROR_TOO_MANY_LEVELS,	"too many levels" },
+{ ERROR_DEVICE_NOT_MOUNTED,	"device (or volume) is not mounted" },
+{ ERROR_SEEK_ERROR,		"seek failure" },
+{ ERROR_COMMENT_TOO_BIG,	"comment is too long" },
+{ ERROR_DISK_FULL,		"disk is full" },
+{ ERROR_DELETE_PROTECTED,	"object is protected from deletion" },
+{ ERROR_WRITE_PROTECTED,	"file is write protected" },
+{ ERROR_READ_PROTECTED, 	"file is read protected" },
+{ ERROR_NOT_A_DOS_DISK, 	"not a valid DOS disk" },
+{ ERROR_NO_DISK,		"no disk in drive" },
+{ ERROR_NO_MORE_ENTRIES,	"no more entries in directory" },
+{ ERROR_IS_SOFT_LINK,		"object is soft link" },
+{ ERROR_OBJECT_LINKED,		"object is linked" },
+{ ERROR_BAD_HUNK,		"bad loadfile hunk" },
+{ ERROR_NOT_IMPLEMENTED,	"function not implemented" },
+{ ERROR_RECORD_NOT_LOCKED,	"record not locked" },
+{ ERROR_LOCK_COLLISION, 	"record lock collision" },
+{ ERROR_LOCK_TIMEOUT,		"record lock timeout" },
+{ ERROR_UNLOCK_ERROR,		"record unlock error" },
+{ ERROR_BUFFER_OVERFLOW,	"buffer overflow" },
 { ERROR_BREAK,			"***Break" },
-{ ERROR_NOT_EXECUTABLE, 	"File is not executable" },
+{ ERROR_NOT_EXECUTABLE, 	"file not executable" },
 
 { STRING_INSERT_VOLUME,         "Please insert volume\n%s\nin any drive" },
 { STRING_VOLUME_FULL,           "The volume %s is full" },
@@ -87,10 +94,8 @@ struct EString EString[]=
 { STRING_REQUESTTITLE,          "System requester" },
 
 
-{ ERROR_NO_MATCHING_ELSEENDIF,  "No matching Else or EndIf"},
-{ ERROR_SCRIPT_ONLY,            "This command is supposed to be used in "
+{ ERROR_NO_MATCHING_ELSEENDIF,  "no matching Else or EndIf"},
+{ ERROR_SCRIPT_ONLY,            "this command is supposed to be used in "
                                 "command files only" },
-{ ERROR_NUMBER_OF_ARGUMENTS,    "Wrong number of arguments" },
-
-{ 0,				"Undefined error" }
+{ 0,				"undefined error" }
 };
