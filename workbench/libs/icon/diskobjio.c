@@ -305,7 +305,6 @@ AROS_UFH3(LONG, dosstreamhook,
 #if 0
 kprintf ("dsh: Read: %02X\n", rc);
 #endif
-
 	break;
 
     case BEIO_WRITE:
@@ -402,11 +401,16 @@ kprintf ("ProcessOldDrawerData\n");
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    return ReadStruct (streamhook
+	    if (ReadStruct (streamhook
 		, (APTR *)&(DO(data->sdd_Dest)->do_DrawerData)
 		, data->sdd_Stream
 		, OldDrawerDataDesc
-	    );
+	    	))
+	    {
+    	    	NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_OLDDRAWERDATA_READ;	    	
+    	    	return TRUE;
+	    }
+	    return FALSE;
 
 	case SDV_SPECIALMODE_WRITE:
 	    return WriteStruct (streamhook
@@ -416,9 +420,12 @@ kprintf ("ProcessOldDrawerData\n");
 	    );
 
 	case SDV_SPECIALMODE_FREE:
-	    FreeStruct (DO(data->sdd_Dest)->do_DrawerData
-		, OldDrawerDataDesc
-	    );
+	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_OLDDRAWERDATA_READ)
+	    {
+		FreeStruct (DO(data->sdd_Dest)->do_DrawerData
+		    , OldDrawerDataDesc
+		);
+	    }
 	    break;
 	}
     }
@@ -525,8 +532,10 @@ static void FreeImage (struct Image * image)
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
 
     if (size)
+    {
 	FreeMem (image->ImageData, size);
-
+    }
+    
     FreeStruct (image, ImageDesc);
 } /* FreeImage */
 
@@ -555,7 +564,7 @@ kprintf ("ProcessGadgetRender\n");
 	    return FALSE;
 
 	DO(data->sdd_Dest)->do_Gadget.GadgetRender = image;
-
+    	NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_GADGETIMAGE_READ;
 	break;
 
     case SDV_SPECIALMODE_WRITE:
@@ -565,9 +574,10 @@ kprintf ("ProcessGadgetRender\n");
 
     case SDV_SPECIALMODE_FREE:
 	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
-
-	FreeImage (image);
-
+    	if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_GADGETIMAGE_READ)
+	{
+	    FreeImage (image);
+    	}
 	break;
     }
 
@@ -603,7 +613,7 @@ kprintf ("ProcessSelectRender\n");
 		return FALSE;
 
 	    DO(data->sdd_Dest)->do_Gadget.SelectRender = image;
-
+    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_SELECTIMAGE_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE:
@@ -613,9 +623,10 @@ kprintf ("ProcessSelectRender\n");
 
 	case SDV_SPECIALMODE_FREE:
 	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
-
-	    FreeImage (image);
-
+    	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_SELECTIMAGE_READ)
+	    {
+	    	FreeImage (image);
+    	    }
 	    break;
 	}
     }
@@ -741,7 +752,7 @@ kprintf ("ProcessDefaultTool\n");
 		return FALSE;
 
 	    DO(data->sdd_Dest)->do_DefaultTool = str;
-
+    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_DEFAULTTOOL_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: {
@@ -753,9 +764,10 @@ kprintf ("ProcessDefaultTool\n");
 
 	case SDV_SPECIALMODE_FREE:
 	    str = DO(data->sdd_Dest)->do_DefaultTool;
-
-	    FreeMem (str, strlen (str)+1);
-
+    	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_DEFAULTTOOL_READ)
+	    {
+	    	FreeMem (str, strlen (str)+1);
+    	    }
 	    break;
 	}
     }
@@ -792,7 +804,7 @@ kprintf ("ProcessToolWindow\n");
 		return FALSE;
 
 	    DO(data->sdd_Dest)->do_ToolWindow = str;
-
+    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_TOOLWINDOW_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: {
@@ -804,9 +816,10 @@ kprintf ("ProcessToolWindow\n");
 
 	case SDV_SPECIALMODE_FREE:
 	    str = DO(data->sdd_Dest)->do_ToolWindow;
-
-	    FreeMem (str, strlen (str)+1);
-
+    	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_TOOLWINDOW_READ)
+	    {
+	    	FreeMem (str, strlen (str)+1);
+    	    }
 	    break;
 	}
     }
@@ -847,6 +860,7 @@ kprintf ("ProcessToolTypes\n");
 	    count = (count >> 2) - 1; /* How many entries */
 
 	    ttarray = AllocMem ((count+1)*sizeof(STRPTR), MEMF_ANY);
+	    if (!ttarray) return FALSE;
 
 #if 0
 kprintf ("Read %d tooltypes (tt=%p)\n", count, ttarray);
@@ -864,7 +878,9 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 		    ULONG i;
 
 		    for (i=0; i<t; i++)
+		    {
 			FreeMem (ttarray[t], strlen (ttarray[t])+1);
+		    }
 
 		    FreeMem (ttarray, (count+1)*sizeof(STRPTR));
 
@@ -875,7 +891,7 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 	    ttarray[t] = NULL;
 
 	    DO(data->sdd_Dest)->do_ToolTypes = (STRPTR *)ttarray;
-
+    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_TOOLTYPES_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: {
@@ -908,6 +924,11 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 	case SDV_SPECIALMODE_FREE:
 	    ttarray = (STRPTR *)DO(data->sdd_Dest)->do_ToolTypes;
 
+    	    if (!(NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_TOOLTYPES_READ))
+	    {
+	    	break;
+	    }
+		
 #if 0
 kprintf ("Free tooltypes (%p)\n", count, ttarray);
 #endif
@@ -919,7 +940,6 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
 		FreeMem (ttarray[t], strlen (ttarray[t])+1);
 	    }
-
 	    FreeMem (ttarray, (t+1)*sizeof(STRPTR));
 
 	    break;
