@@ -1,6 +1,0 @@
-battclock/	- Directory containing a Unix |ReadBattClock()|
-		  function.
-
-dos/		- Unix specific dos.library functions.
-
-exec/		- Unix specific exec.library functions.

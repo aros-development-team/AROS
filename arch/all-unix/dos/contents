@@ -1,4 +1,0 @@
-makefile.src	- Makefile for the config/unix/dos subdirectory.
-
-runprocess.c	- Unix version of of the dos.library |RunProcess()|
-		  function.
