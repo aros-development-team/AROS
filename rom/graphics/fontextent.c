@@ -85,7 +85,7 @@
 	/* tf_CharLoc[2*i+1] contains the width of the glyph bitmap.
 	   But in AROS tf_CharLoc is being handled like an LONG array,
 	   not a WORD array, so the width is tf_CarLoc[i] & 0xFFFF */
-	maxwidth = max(maxwidth, kern + ((LONG *)font->tf_CharLoc)[i] & 0xFFFF);
+	maxwidth = max(maxwidth, kern + ((((LONG *)font->tf_CharLoc)[i]) & 0xFFFF));
 	
 	if(font->tf_CharSpace != NULL)
 	    wspace = kern + ((WORD *)font->tf_CharSpace)[i];
