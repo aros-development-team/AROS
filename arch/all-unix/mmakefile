@@ -1,7 +1,7 @@
 $ Id $
 
 #MM- kernel-unix : \
-#MM    graphics-$(GFXSYSTEM) kernel-x11gfx-kobj workbench-graphics-hidd-kobj \
+#MM    graphics-$(GFXSYSTEM) kernel-x11gfx-kobj workbench-graphics-hidd \
 #MM    intuition-$(GFXSYSTEM) \
 #MM    kernel-unixio-kobj \
 #MM    kernel-fs-emul-kobj
