@@ -447,7 +447,7 @@ struct ACPIBase
     int                                     ACPIB_APIC_IRQ_Model;
     struct GenericAPIC                      *ACPIB_GenericAPIC;         /* !! DO NOT USE!! THIS WILL BE REMOVED SOON!! */
 
-    APTR                                    ACPIB_RSDP_Phys;
+    APTR                                    ACPIB_RSDP_Addr;
     APTR                                    ACPIB_SDT_Addr;
     int                                     ACPIB_SDT_Count;
     APTR                                    *ACPIB_SDT_Entry[MAX_ACPI_TABLES];
