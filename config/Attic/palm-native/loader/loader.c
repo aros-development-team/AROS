@@ -1,4 +1,4 @@
-/* Main code for LCD test */
+/* Code for downloading an ELF file onto the Palm */
 
 #include <Pilot.h>
 #include <System/SerialMgr.h>
@@ -21,27 +21,23 @@ ULong get_ssp(void);
 #define TRUE 1
 #endif
 
-#define BAUDRATE 57600
+#define UNPROTECT_MEMORY         \
+	csa0 = RREG_L(CSA0);     \
+	csa1 = RREG_L(CSA1);     \
+	csa2 = RREG_L(CSA2);     \
+	csa3 = RREG_L(CSA3);     \
+	WREG_L(CSA0)=csa0 &(~8); \
+	WREG_L(CSA1)=csa1 &(~8); \
+	WREG_L(CSA2)=csa2 &(~8); \
+	WREG_L(CSA3)=csa3 &(~8);
 
-struct PalmMemory 
-{
-	ULong	reg_SSP;	/* current position of the supervisor stack pointer */
-	ULong	reg_LSSA;	/* current start address of the LCD display memory */
-	Word	reg_CSGBA;
-	Word	reg_CSGBB;
-	Word	reg_CSGBC;
-	Word	reg_CSGBD;
-	Word	reg_CSUGBA;
-	Word	reg_CSCR;
-	Word	reg_CSA;
-	Word	reg_CSB;
-	Word	reg_CSC;
-	Word	reg_CSD;
-	Word	reg_DRAMMC;
-	Word	reg_DRAMC;
-	Word	reg_SDCTRL;
-	Word	reg_SDPWDN;
-};
+#define PROTECT_MEMORY    \
+	WREG_L(CSA0)=csa0;\
+	WREG_L(CSA1)=csa1;\
+	WREG_L(CSA2)=csa2;\
+	WREG_L(CSA3)=csa3;
+
+#define BAUDRATE 57600
 
 int _strncmp(const char * s1, const char * s2, int len)
 {
@@ -393,18 +389,21 @@ void write_mem(UInt refnum, struct Packet * packet)
 	 */
 	if (packet->payload_length >= 4) {
 		ULong ctr, i;
+		ULong csa0, csa1, csa2, csa3;
 		ULong addr = (((ULong)packet->payload[0]) << 24) |
 		             (((ULong)packet->payload[1]) << 16) |
 		             (((ULong)packet->payload[2]) <<  8) |
 		             (((ULong)packet->payload[3]) <<  0);
 		i = packet->payload_length - 4;
 		ctr = 4;
+		UNPROTECT_MEMORY
 		while (i > 0) {
 			*(Byte *)addr = packet->payload[ctr];
 			addr++;
 			ctr++;
 			i--;
 		}
+		PROTECT_MEMORY
 		/*
 		 * Send back the start address as ack!
 		 */
@@ -424,6 +423,7 @@ void start_program(UInt refnum, struct Packet * packet)
 	 * ULong: Start address
 	 */
 	if (packet->payload_length == 4) {
+		ULong csa0,csa1,csa2,csa3;
 		ULong addr = (((ULong)packet->payload[0]) << 24) |
 		             (((ULong)packet->payload[1]) << 16) |
 		             (((ULong)packet->payload[2]) <<  8) |
@@ -432,7 +432,9 @@ void start_program(UInt refnum, struct Packet * packet)
 		 * Send back the start address as ack!
 		 */
 		send_packet(refnum,packet->payload,4,TYPE_START_PROGRAM_ACK);
+		UNPROTECT_MEMORY
 		execute((void *)addr);
+		PROTECT_MEMORY
 	}
 }
 
@@ -461,11 +463,6 @@ int download_AROS(void)
 	Err err;
 	UInt refNum;
 
-//	WREG_W(CSA) = RREG_W(CSA) & 0x7fff;
-	WREG_W(CSB) = RREG_W(CSB) & 0x7fff;
-	WREG_W(CSC) = RREG_W(CSC) & 0x7fff;
-	WREG_W(CSD) = RREG_W(CSD) & 0x7fff;
-//	*(Long *)get_special_info = 0x12345678;
 
 	err = SysLibFind("Serial Library",&refNum);
 	if (0 == err) {
@@ -485,7 +482,6 @@ int download_AROS(void)
 				while (FALSE == end) {
 					struct Packet * packet;
 					_delay(100);
-					//howdy(refNum);
 					packet = get_next_packet(refNum);
 					if (NULL != packet) {
 						switch (packet->payload_type) {
