@@ -85,6 +85,7 @@ struct Library * PrepareAROSSupportBase (struct ExecBase * SysBase)
 	AROSSupportBase->kprintf = (void *)kprintf;
 	AROSSupportBase->rkprintf = (void *)rkprintf;
 	AROSSupportBase->vkprintf = (void *)vkprintf;
+    	NEWLIST(&AROSSupportBase->AllocMemList);
 
 #warning FIXME Add code to read in the debug options
 
