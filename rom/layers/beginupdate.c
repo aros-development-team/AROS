@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -55,5 +55,6 @@
     D(bug("BeginUpdate(l @ $%lx)\n", l));
 
     return NULL;
+
     AROS_LIBFUNC_EXIT
 } /* BeginUpdate */
