@@ -1171,12 +1171,12 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-	{ SYS_Background, TRUE          },
-	{ SYS_Asynch,     TRUE          },
-	{ SYS_Input,   NULL},
-	{ SYS_Output,  NULL },
-	{ SYS_Error,  NULL },
-	{ TAG_DONE,       0             }
+	{ SYS_Background, TRUE },
+	{ SYS_Asynch,     TRUE },
+	{ SYS_Input,      NULL },
+	{ SYS_Output,     NULL },
+	{ SYS_Error,      NULL },
+	{ TAG_DONE,       0    }
     };
     char cmd[255];
 
