@@ -14,7 +14,8 @@
 <EDEF NAME="ckeyword" BEGIN="<FONT COLOR="red"><TT>" END="</TT></FONT>">
 <EDEF NAME="cppkeyword" BEGIN="<FONT COLOR="red"><TT>" END="</TT></FONT>">
 <EDEF NAME="cppmacro" BEGIN="<B><TT>" END="</TT></B>">
-<EDEF NAME="ccomment" BEGIN="<FONT COLOR="brown"><I>" END="</I></FONT>">
+<EDEF NAME="ccomment" BEGIN="<FONT COLOR="brown"><I>/* " END=" */</I></FONT>">
+<EDEF NAME="htmlcomment" BEGIN="<FONT COLOR="brown">/*<DL><DT><DD>" END="</DL>*/</FONT>">
 <EDEF NAME="cidentifier" BEGIN="<I>" END="</I>">
 <EDEF NAME="cusertype" BEGIN="<B><I>" END="</I></B>">
 <EDEF NAME="cpunctuation" BEGIN="<FONT COLOR="cyan"><B><TT>" END="</TT></B></FONT>">

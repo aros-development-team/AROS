@@ -12,6 +12,7 @@ enum modes
     m_prespace,
     m_punct,
     m_comment,
+    m_html_comment,
     m_cpp,
     m_identifier,
     m_string,
@@ -26,6 +27,7 @@ static const char * ModeDelim[] =
     "",
     "cpunctuation",
     "ccomment",
+    "htmlcomment",
     "cppkeyword",
     "cidentifier",
     "cstring",
@@ -234,8 +236,49 @@ main (int argc, char ** argv)
 
 	    if (c == '*')
 	    {
-		NEWMODE(m_comment);
-		fputs ("/*",  stdout);
+		int htmlmode = 0, cc = 0;
+
+		c = getc (in);
+		if (c == 'H')
+		{
+		    cc ++;
+		    c = getc (in);
+		    if (c == 'T')
+		    {
+			cc ++;
+			c = getc (in);
+			if (c == 'M')
+			{
+			    cc ++;
+			    c = getc (in);
+			    if (c == 'L')
+				htmlmode = 1;
+			}
+		    }
+		}
+
+		if (!htmlmode)
+		{
+		    NEWMODE(m_comment);
+		}
+		else
+		{
+		    NEWMODE(m_html_comment);
+		}
+
+
+		if (!htmlmode)
+		{
+		    char * ptr = "HTML";
+
+		    while (cc--)
+		    {
+			putchar (*ptr);
+			ptr ++;
+		    }
+
+		    ungetc (c, in);
+		}
 
 		while ((c = getc (in)) != EOF)
 		{
@@ -246,7 +289,7 @@ rem_again:
 
 			if (c == '/')
 			{
-			    fputs ("*/",  stdout);
+			    NEWMODE(m_space);
 			    break;
 			}
 			else
@@ -258,6 +301,13 @@ rem_again:
 		    else if (c == '$')
 		    {
 			fputs ("&#36;", stdout);
+		    }
+		    else if (!htmlmode)
+		    {
+			if (c == ' ')
+			    fputs ("&nbsp;", stdout);
+			else
+			    emit_html_char (c, stdout);
 		    }
 		    else
 			putchar (c);
@@ -298,6 +348,10 @@ rem_again:
 		    }
 		    emit_html_char (c, stdout);
 		    column ++;
+		}
+		else if (c == ' ')
+		{
+		    fputs ("&nbsp;", stdout);
 		}
 		else if (c == '"')
 		{
