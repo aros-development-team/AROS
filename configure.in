@@ -447,21 +447,18 @@ elif test "$debug" = "yes"; then
     debug="all"
 fi
 
-# Need to initialise some of the debug types to zero.
-for d in $all_debug_types; do
-    export aros_${d}_debug="0"
-done
-
-if test "$debug" = "none"; then
-    for d in $all_debug_types; do
-        export aros_${d}_debug="0"
-    done
-elif test "$debug" = "all" ; then
+if test "$debug" = "all" ; then
     debug=$all_debug_types
     for d in $all_debug_types; do
         export aros_${d}_debug="1"
     done
 else
+    for d in $all_debug_types; do
+        export aros_${d}_debug="0"
+    done
+fi
+
+if test "$debug" != "none"; then
     debug=`echo $debug | sed s/,/\ /g`
     for d in $debug; do
         found="0"
