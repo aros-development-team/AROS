@@ -44,8 +44,8 @@ extern const int *__ctype_tolower;
 #define ispunct(c)      _istype(c,_ISpunct)
 #define isalnum(c)      _istype(c,_ISalnum)
 
-#define toupper(c)      __ctype_toupper((int)(c))
-#define tolower(c)      __ctype_tolower((int)(c))
+#define toupper(c)      (__ctype_toupper[(int)(c)])
+#define tolower(c)      (__ctype_tolower[(int)(c)])
 
 #endif /* CTYPE_H */
 
