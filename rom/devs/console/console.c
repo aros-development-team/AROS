@@ -26,7 +26,7 @@
 #include <intuition/classusr.h>
 #include <graphics/rastport.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include <graphics/rastport.h>
 
@@ -35,6 +35,8 @@
 #endif
 
 #include "consoleif.h"
+
+#include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -46,72 +48,6 @@
 
 /****************************************************************************************/
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct ConsoleBase *AROS_SLIB_ENTRY(init,Console)();
-void AROS_SLIB_ENTRY(open,Console)();
-BPTR AROS_SLIB_ENTRY(close,Console)();
-BPTR AROS_SLIB_ENTRY(expunge,Console)();
-int AROS_SLIB_ENTRY(null,Console)();
-void AROS_SLIB_ENTRY(beginio,Console)();
-LONG AROS_SLIB_ENTRY(abortio,Console)();
-
-extern struct InputEvent * AROS_SLIB_ENTRY(CDInputHandler,Console) ();
-extern LONG AROS_SLIB_ENTRY(RawKeyConvert,Console) ();
-static const char end;
-
-/****************************************************************************************/
-
-int AROS_SLIB_ENTRY(entry,Console)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident Console_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Console_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    5,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="console.device";
-
-static const char version[]="$VER: console 41.0 (17.11.1997)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct ConsoleBase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,Console)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,Console),
-    &AROS_SLIB_ENTRY(close,Console),
-    &AROS_SLIB_ENTRY(expunge,Console),
-    &AROS_SLIB_ENTRY(null,Console),
-    &AROS_SLIB_ENTRY(beginio,Console),
-    &AROS_SLIB_ENTRY(abortio,Console),
-    &AROS_SLIB_ENTRY(CDInputHandler,Console),
-    &AROS_SLIB_ENTRY(RawKeyConvert,Console),
-    (void *)-1
-};
 
 /****************************************************************************************/
 
@@ -129,17 +65,9 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_UFH3(struct ConsoleBase *, AROS_SLIB_ENTRY(init,Console),
- AROS_UFHA(struct ConsoleBase *,    ConsoleDevice,  D0),
- AROS_UFHA(BPTR,		    segList,	    A0),
- AROS_UFHA(struct ExecBase *,	    sysBase,	    A6)
-)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ConsoleDevice)
 {
-    AROS_USERFUNC_INIT
-    
-    /* Store arguments */
-    ConsoleDevice->sysBase = sysBase;
-    ConsoleDevice->seglist = segList;
+    AROS_SET_LIBFUNC_INIT
     
     NEWLIST(&ConsoleDevice->unitList);
     InitSemaphore(&ConsoleDevice->unitListLock);
@@ -227,7 +155,7 @@ AROS_UFH3(struct ConsoleBase *, AROS_SLIB_ENTRY(init,Console),
 
 	    if(AddTask(task, consoleTaskEntry, NULL) != NULL)
 	    {
-		return ConsoleDevice;
+		return TRUE;
 		/* ALL OK */
 	    }
 
@@ -239,19 +167,19 @@ AROS_UFH3(struct ConsoleBase *, AROS_SLIB_ENTRY(init,Console),
     }
 
     Alert(AT_DeadEnd | AN_ConsoleDev | AG_NoMemory);
-    return NULL;
-    AROS_USERFUNC_EXIT
+    return FALSE;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOStdReq *, ioreq, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct ConsoleBase *, ConsoleDevice, 1, Console)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, ConsoleDevice,
+		     struct IOStdReq, ioreq,
+		     unitnum, flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     
     BOOL success = FALSE;
     
@@ -333,26 +261,25 @@ AROS_LH3(void, open,
     if (!success)
     	goto open_fail;
 
-    /* I have one more opener. */
-    ConsoleDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-
-    ReturnVoid("OpenConsole");
+    return TRUE;
     
 open_fail:
 
     ioreq->io_Error = IOERR_OPENFAIL;    
-    ReturnVoid("OpenConsole failed");
 
-    AROS_LIBFUNC_EXIT
+    return FALSE;
+
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IORequest *, ioreq, A1),
-	   struct ConsoleBase *, ConsoleDevice, 2, Console)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, ConsoleDevice,
+		      struct IORequest, ioreq
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
     
     if (ioreq->io_Unit)
     {
@@ -367,29 +294,14 @@ AROS_LH1(BPTR, close,
     }
     
     return 0;
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    ConsoleDevice->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0I(int, null, struct ConsoleBase *, ConsoleDevice, 4, Console)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2OPENDEV(GM_UNIQUENAME(Open),0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
 
 /****************************************************************************************/
 
@@ -537,6 +449,3 @@ AROS_LH1(LONG, abortio,
 
 /****************************************************************************************/
 
-static const char end=0;
-
-/****************************************************************************************/

@@ -43,7 +43,7 @@ struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct InputEvent *, events, A0),
-	AROS_LHA(struct cdihData   *,cdihdata, A1),
+	AROS_LHA(APTR               , _cdihdata, A1),
 
 /*  LOCATION */
 	struct Library *, ConsoleDevice, 7, Console)
@@ -74,6 +74,8 @@ struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,ConsoleDevice)
 
+    struct cdihData   *cdihdata = _cdihdata;
+    
 #undef ConsoleDevice
 #define ConsoleDevice (cdihdata->consoleDevice)
 
