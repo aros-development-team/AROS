@@ -415,14 +415,11 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
 	width = msg->width;
 
-    	if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
+    	if ((msg->srcY > msg->destY) ||
+	    ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)) ||
+	    (mode == vHidd_GC_DrawMode_Clear) ||
+	    (mode == vHidd_GC_DrawMode_Invert))
 	{
-	    if ((phase = ((long)s_start & 3L)))
-	    {
-		phase = 4 - phase;
-		if (phase > width) phase = width;
-		width -= phase;
-	    }
 	    descending = FALSE;
 	}
 	else
@@ -430,10 +427,6 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 	    s_start += (cnt - 1) * data->width + width;
 	    d_start += (cnt - 1) * ddata->width + width;
 
-	    phase = ((long)s_start & 3L);
-	    if (phase > width) phase = width;
-	    width -= phase;
-	    
 	    descending = TRUE;
 	}
         switch(mode)
@@ -444,19 +437,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
                     while (cnt--)
     	            {
 	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start++ = *s_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((unsigned long*)d_start) = *((unsigned long*)s_start);
-		            d_start += 4;
-		            s_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
+                	while (i--)
                 	{
                             *d_start++ = *s_start++;
                 	}
@@ -469,19 +450,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
                     while (cnt--)
     	            {
 	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *--d_start = *--s_start;
-                	}
-	        	while (i >= 4)
-	        	{
-			    d_start -= 4;
-			    s_start -= 4;
-		            *((unsigned long*)d_start) = *((unsigned long*)s_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
+                	while (i--)
                 	{
                             *--d_start = *--s_start;
                 	}
@@ -497,19 +466,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
                     while (cnt--)
     	            {
 	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start++ &= *s_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((unsigned long*)d_start) &= *((unsigned long*)s_start);
-		            d_start += 4;
-		            s_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
+    	               	while (i--)
                 	{
                             *d_start++ &= *s_start++;
                 	}
@@ -522,19 +479,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
                     while (cnt--)
     	            {
 	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *--d_start &= *--s_start;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            s_start -= 4;
-		            *((unsigned long*)d_start) &= *((unsigned long*)s_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
+               	    	while (i--)
                 	{
                             *--d_start &= *--s_start;
                 	}
@@ -551,19 +496,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
                     while (cnt--)
     	            {
 	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start++ ^= *s_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
-		            d_start += 4;
-		            s_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
+                	while (i--)
                 	{
                             *d_start++ ^= *s_start++;
                 	}
@@ -576,19 +509,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
                     while (cnt--)
     	            {
 	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *--d_start ^= *--s_start;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            s_start -= 4;
-		            *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
+                	while (i--)
                 	{
                             *--d_start ^= *--s_start;
                 	}
@@ -599,112 +520,71 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		break;
 	    	
 	    case vHidd_GC_DrawMode_Clear /* 0x00 */:
-D(bug("Clearing!\n"));
-	    	if (!descending)
-		{		
-                    while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start++ = 0;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((unsigned long*)d_start) = 0;
-		            d_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
-                            *d_start++ = 0;
-                	}
-                	d_start += d_add;
-                    }
-		}
-		else
+    	    	D(bug("Clearing!\n"));
+		if ((phase = ((long)d_start & 3L)))
 		{
-                    while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *--d_start = 0;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            *((unsigned long*)d_start) = 0;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
-                            *--d_start = 0;
-                	}
-                	d_start -= d_add;
-                    }
+		    phase = 4 - phase;
+		    if (phase > width) phase = width;
+		    width -= phase;
 		}
+
+ 		while (cnt--)
+    	        {
+	            i = width;
+		    j = phase;
+                    while (j--)
+                    {
+                        *d_start++ = 0;
+                    }
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = 0;
+		        d_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *d_start++ = 0;
+                    }
+                    d_start += d_add;
+                }
     	    	break;
 			    	
 	    case vHidd_GC_DrawMode_Invert /* 0x0a */:
-	    	if (!descending)
+		if ((phase = ((long)d_start & 3L)))
 		{
-                    while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start = ~*d_start;
-			    d_start++;
-                	}
-	        	while (i >= 4)
-	        	{
-		            *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
-		            d_start += 4;
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
-                            *d_start = ~*d_start;
-			    d_start++;
-                	}
-                	d_start += d_add;
-                    }
+		    phase = 4 - phase;
+		    if (phase > width) phase = width;
+		    width -= phase;
 		}
-		else
-		{
-                    while (cnt--)
-    	            {
-	        	i = width;
-	        	j = phase;
-                	while (j--)
-                	{
-                            *d_start = ~*d_start;
-			    d_start--;
-                	}
-	        	while (i >= 4)
-	        	{
-		            d_start -= 4;
-		            *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
-		            i -= 4;
-	        	}
-	        	while (i--)
-                	{
-                            *d_start = ~*d_start;
-			    d_start--;
-                	}
-                	d_start -= d_add;
+
+                while (cnt--)
+    	        {
+	            i = width;
+		    j = phase;
+    	            while (j--)
+                    {
+                        *d_start = ~*d_start;
+			d_start++;
                     }
-		    break;
-		}
+	            while (i >= 4)
+	            {
+		        *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		        d_start += 4;
+		        i -= 4;
+	            }
+	            while (i--)
+                    {
+                        *d_start = ~*d_start;
+			d_start++;
+                    }
+
+                    d_start += d_add;
+                }
 		break;
 		
 	} /* switch(mode) */
 
-#if 0	
 	if (ddata->disp)
 	{
     	    box.x1 = msg->destX;
@@ -714,12 +594,12 @@ D(bug("Clearing!\n"));
  
             ObtainSemaphore(&XSD(cl)->HW_acc);
 
-//    	    DisplayRefreshArea(ddata, 1, &box);
+    	    DisplayRefreshArea(ddata, 1, &box);
 
             ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 	}
-#endif
+
     }
     ReturnVoid("DisplayGfx.BitMap::CopyBox");
 }
@@ -773,7 +653,7 @@ static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /********************  init_displayclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_Display_METHODS 4 /* 5 */
+#define NUM_Display_METHODS 5
 
 OOP_Class *init_displayclass (struct display_staticdata *xsd)
 {
@@ -790,7 +670,7 @@ OOP_Class *init_displayclass (struct display_staticdata *xsd)
     struct OOP_MethodDescr displayhidd_descr[NUM_Display_METHODS + 1] = 
     {
     	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap},
-/*	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},*/
+	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
 /* stegerg */
 	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape},
 	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos},
