@@ -70,18 +70,47 @@
     	UWORD pens[] = { ~0 };
         struct TagItem screenTags[] =
 	{
+            { SA_Width      , AROS_DEFAULT_WBWIDTH  	},
+            { SA_Height     , AROS_DEFAULT_WBHEIGHT 	},
             { SA_Depth      , AROS_DEFAULT_WBDEPTH  	},
             { SA_Type       , WBENCHSCREEN          	},
             { SA_Title      , (IPTR)"Workbench Screen"  },
-            { SA_Width      , AROS_DEFAULT_WBWIDTH  	},
-            { SA_Height     , AROS_DEFAULT_WBHEIGHT 	},
             { SA_PubName    , (IPTR)"Workbench"     	},
 	    { SA_Pens	    , (IPTR)pens    	    	},
             { SA_SharePens  , TRUE                  	},
 	    { SA_SysFont    , 1     	    	    	},
             { TAG_END       , 0                     	}
         };
-
+    	struct TagItem modetags[] =
+	{
+	    { BIDTAG_DesiredWidth   , AROS_DEFAULT_WBWIDTH  },
+	    { BIDTAG_DesiredHeight  , AROS_DEFAULT_WBHEIGHT },
+	    { BIDTAG_Depth   	    , AROS_DEFAULT_WBDEPTH  },
+	    { TAG_DONE	    	    	    	    	    }
+	};	
+    	ULONG modeid;
+	
+	modeid = BestModeIDA(modetags);
+    	if (modeid != INVALID_ID)
+	{
+	    APTR  disphandle;
+	    
+	    if ((disphandle = FindDisplayInfo(modeid)))
+	    {
+	    	struct DimensionInfo dim;
+	    	
+		if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, modeid))
+		{
+		    screenTags[0].ti_Data = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
+		    screenTags[1].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
+		    if (dim.MaxDepth > AROS_DEFAULT_WBDEPTH)
+		    {
+		    	screenTags[2].ti_Data = dim.MaxDepth;
+		    }
+		}
+	    }
+	}
+	
         wbscreen = OpenScreenTagList( NULL, screenTags );
 
         if( !wbscreen )
