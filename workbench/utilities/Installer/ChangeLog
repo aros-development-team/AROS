@@ -365,4 +365,5 @@
   * Help Requester (makes more.[ch] obsolete for this GUI)
   * request_options
 - switched to Zune as default
+- removed user_confirm() as it is not used
 
