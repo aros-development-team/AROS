@@ -966,7 +966,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     case MENUCHECK: {
         UWORD *pens = data->dri->dri_Pens;
 	
+#if MENUS_AMIGALOOK
     	SetAPen(rport, pens[BARBLOCKPEN]);
+#else
+	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+#endif
 	RectFill(rport, left, top, right, bottom);
 
 	SetAPen(rport, pens[BARDETAILPEN]);
@@ -981,10 +985,25 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
         UWORD *pens = data->dri->dri_Pens;
 
+#if MENUS_AMIGALOOK
     	SetAPen(rport, pens[BARDETAILPEN]);
+#else
+	SetAPen(rport, pens[SHINEPEN]);
+#endif
 	RectFill(rport, left, top, right, bottom);
 
+#if MENUS_AMIGALOOK
 	SetAPen(rport, pens[BARBLOCKPEN]);
+#else
+	SetAPen(rport, pens[SHADOWPEN]);
+
+	RectFill(rport, left + 1, top, right - 1, top);
+	RectFill(rport, right, top + 1, right, bottom - 1);
+	RectFill(rport, left + 1, bottom, right - 1, bottom);
+	RectFill(rport, left, top + 1, left, bottom - 1);
+	 
+	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
+#endif
 	WritePixel(rport, left, top);
 	WritePixel(rport, right, top);
 	WritePixel(rport, right, bottom);
@@ -995,7 +1014,10 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
 	SetFont(rport, GfxBase->DefaultFont);
 	SetSoftStyle(rport, FSF_ITALIC, AskSoftStyle(rport));
-	
+
+#if !MENUS_AMIGALOOK
+	SetAPen(rport, pens[SHADOWPEN]);
+#endif	
 	Move(rport, left + (width - rport->TxWidth) / 2,
 		    top  + (height - rport->TxHeight) / 2 + rport->TxBaseline);
 	Text(rport, "A", 1);
