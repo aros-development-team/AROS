@@ -121,6 +121,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
     AROS_GET_SYSBASE
+    AROS_GET_DOSBASE
 
     D(bug("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode));
 
@@ -240,6 +241,7 @@ int __init_stdfiles(void)
     fdesc *indesc=NULL, *outdesc=NULL, *errdesc=NULL;
     int res = __getfdslot(2);
     AROS_GET_SYSBASE
+    AROS_GET_DOSBASE
 
     if
     (
@@ -288,9 +290,11 @@ void __exit_stdfiles(void)
 void __updatestdio(void)
 {
     GETUSER;
+    struct Process *me;
     AROS_GET_SYSBASE
+    AROS_GET_DOSBASE
 
-    struct Process *me = (struct Process *)FindTask(NULL);
+    me = (struct Process *)FindTask(NULL);
     
     fflush(stdin);
     fflush(stdout);

@@ -70,6 +70,8 @@ static int __putc(int c, BPTR fh);
 
 static int __putc(int c, BPTR fh)
 {
+    AROS_GET_SYSBASE
+    AROS_GET_DOSBASE
     if (FPutC(fh, c) == EOF)
     {
     	GETUSER;
