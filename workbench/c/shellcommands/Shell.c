@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: The shell program.
-    Lang: English
+    The shell program.
 */
 
 /******************************************************************************
@@ -54,13 +53,6 @@
 
     The prompt	 support is not using SetCurrentDirName() as this function
     has improper limitations. More or less the same goes for GetProgramName().
-
-    HISTORY
-
-    2x.12.1999  SDuvan   completely rewritten; alias support, variable
-                         support...
-    0x.01.2000  SDuvan   support for embedded commands; support for resident
-                         commands; C: multiassign capabilities
 
 ******************************************************************************/
 
@@ -703,7 +695,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    int i;
 	    struct TagItem tags[] =
     	    {
-		{ SYS_Input   , NULL                                            },
+		{ SYS_Input   , (IPTR) NULL                                     },
 		{ SYS_Output  , SYS_DupStream                        	    	},
 		{ SYS_Error   , SYS_DupStream                                   },
 		{ SYS_Asynch  , TRUE    	    	    	    	    	},
