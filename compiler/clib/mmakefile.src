@@ -179,6 +179,7 @@ SHARED	:= \
 	read \
 	readdir \
 	realloc \
+        realloc_nocopy \
 	remove \
 	rename \
 	rewind \

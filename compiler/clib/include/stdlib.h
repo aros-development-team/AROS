@@ -123,6 +123,7 @@ char *setstate(char *state);
 void *malloc(size_t size);
 void *calloc(size_t count, size_t size);
 void *realloc(void *oldmem, size_t newsize);
+void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
 void  free(void *memory);
 
 /* Communication with the environment */
