@@ -95,6 +95,12 @@
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
  
   /* overlapping and non-overlapping blits are handled differently. */
+
+  if (NULL != srcRP->Layer)
+    LockLayerRom( srcRP->Layer);
+
+  if (srcRP != destRP  && NULL != destRP->Layer)
+    LockLayerRom(destRP->Layer);
   
   /* check for overlapping blits */
   if ( srcRP == destRP )
@@ -118,12 +124,7 @@
     /* define the region with this rectangle */
     /* check whether operation succeeds = enough memory available*/
     if (FALSE == OrRectRegion(R,&Rect))
-    {
-      if (NULL != srcRP->Layer)
-        UnlockLayerRom(srcRP->Layer);
-      DisposeRegion(R);
-      return;
-    }
+      goto exit;
 
     /* define the rectangle of the source */
     Rect.MinX = xSrc;
@@ -188,41 +189,34 @@
     }
     DisposeRegion(R);
 
-    /* only one layer to unlock!*/
-    if (NULL != srcRP->Layer)
-      UnlockLayerRom(srcRP->Layer);
-      
-    DisposeRegion(R);
-    /* I am out of here! */
-    return;     
-    
   } /* if (destRP == srcRP) */
+  else
+  {
   
-  
-  /* here: process all cases that don't overlap */
+    /* here: process all cases that don't overlap inside of a rastport */
 
-  if (NULL != srcRP->Layer)
-    LockLayerRom( srcRP->Layer);
+    internal_ClipBlit(srcRP,
+                      xSrc,
+                      ySrc,
+                      destRP,
+                      xDest,
+                      yDest,
+                      xSize,
+                      ySize,
+                      minterm,
+                      GfxBase);
+  }  
 
-  if (srcRP!=destRP  && NULL != destRP->Layer)
-    LockLayerRom(destRP->Layer);
-
-  internal_ClipBlit(srcRP,
-                    xSrc,
-                    ySrc,
-                    destRP,
-                    xDest,
-                    yDest,
-                    xSize,
-                    ySize,
-                    minterm,
-                    GfxBase);
-  
-  if (NULL != srcRP->Layer)
-    UnlockLayerRom( srcRP->Layer);
+  /* the way out, even in failure */
+exit:
 
   if (srcRP!=destRP && NULL != destRP->Layer)
     UnlockLayerRom(destRP->Layer);
+
+  if (NULL != srcRP->Layer)
+    UnlockLayerRom( srcRP->Layer);
+  
+  return;
                     
   AROS_LIBFUNC_EXIT
 } /* ClipBlit */
