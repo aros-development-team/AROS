@@ -31,18 +31,25 @@ typedef @sighandler@ SignalHandler;
     The problem is that Linux offers no official way to obtain the
     signals' context. Linux stores the signals' context on the
     process' stack. It looks like this:
+    Attention: As of version 2.2 of the Linux kernel there is
+               not enough room on the stack anymore to save
+               any registers on it. So everything has to go into
+               the context structure. Previously PC and FP used 
+               to be saved on the stack but now this would over-
+               write some return address.
+               The stack you see below is the stack of the last 
+               active task within AROS. The linux kernel puts
+               all kinds of other junk on it.
 
 		    |			       |
 		    +--------------------------+
 		    | last entry before signal |
 		    +--------------------------+
-		    |	    empty space        | <--- SP
-		    +--------------------------+
 		    |	   signal context      |
 		    +--------------------------+
 		    |	   signal number       |
 		    +--------------------------+
-		    |	   return address      |
+		    |	   return address      | 
 		    +--------------------------+
 		    |			       |
 
@@ -67,12 +74,10 @@ typedef @sighandler@ SignalHandler;
 
 /* Use this structure to save/restore registers if the stack is too
    small */
+
 struct AROS_cpu_context
 {
     ULONG regs[9]; /* eip (PC), ebp (FP), eax, ebx, ecx, edx, edi, esi, eflags */
-/*
-    unsigned short regsS[7]; 
-*/
     struct _fpstate fpu; /* FPU registers */
 };
 
@@ -113,14 +118,6 @@ struct AROS_cpu_context
 #define R5(sc)           (sc->esi)
 #define R6(sc)           (sc->eflags)
 
-/*
-#   define RS0(sc)           (sc->gs)
-#   define RS1(sc)           (sc->fs)
-#   define RS2(sc)           (sc->es)
-#   define RS3(sc)           (sc->ds)
-#   define RS4(sc)           (sc->cs)
-#   define RS5(sc)           (sc->ss)  
-*/
 
 /*
     Save and restore the CPU GPRs in the CPU context
@@ -169,7 +166,10 @@ struct AROS_cpu_context
     is not very big. It's big enough that one can save the CPU
     registers but not big enough for the FPU. *sigh*.
 
-    Update: We store the registers now in out own structure
+    Attention: The above WAS TRUE for 2.0.x kernels but now the stack layout
+               looks different. See above!
+
+    Update: We store the registers now in our own structure
 */
 #   define NO_FPU
 
@@ -248,12 +248,6 @@ struct AROS_cpu_context
 
 */
 
-/*
-#define PREPARE_INITIAL_FRAME(sp,pc) \
-	(_PUSH(sp,pc), \
-	_PUSH(sp,0)) // Frame pointer 
-*/
-
 #   define PREPARE_INITIAL_FRAME(sp,pc) \
 	(GetCpuContext(task)->regs[7] = 0), \
 	(GetCpuContext(task)->regs[8] = pc)
@@ -273,14 +267,6 @@ struct AROS_cpu_context
     must store the value of "sp" after the macro and hand it to
     RESTOREREGS() below to restore this context.
 */
-/*
-#define SAVEREGS(task,sc) \
-	((GetSP(task) = (long *)SP(sc)), \
-	_PUSH(GetSP(task),PC(sc)), \
-	_PUSH(GetSP(task),FP(sc)), \
-	SAVE_FPU(task,sc), \
-	SAVE_CPU(task,sc))
-*/
 
 #define SAVEREGS(task,sc) \
 	((GetSP(task) = (long *)SP(sc)), \
@@ -292,14 +278,6 @@ struct AROS_cpu_context
     general purpose registers. After that, you can enter the new
     tasks' context. Both "sp" and "sc" must be initialized.
     The macro will save the new SP into the sigcontext "sc".
-*/
-/*
-#define RESTOREREGS(task,sc) \
-	(RESTORE_CPU(task,sc), \
-	RESTORE_FPU(task,sc), \
-	(FP(sc) = _POP(GetSP(task))), \
-	(PC(sc) = _POP(GetSP(task))), \
-	(SP(sc) = (long)(GetSP(task))))
 */
 
 #   define RESTOREREGS(task,sc) \
