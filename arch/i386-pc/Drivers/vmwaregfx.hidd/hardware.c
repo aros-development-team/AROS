@@ -7,7 +7,7 @@
 */
 
 
-//#include <asm/io.h>
+#include <asm/io.h>
 #define DEBUG 1 /* no SysBase */
 #include <aros/debug.h>
 
@@ -15,24 +15,14 @@
 #include "svga_reg.h"
 #include "vmwaregfxclass.h"
 
-#define inl(port) \
-    ({	long __value;	\
-	__asm__ __volatile__ ("inl %%dx,%%eax":"=a"(__value):"d"(port));	\
-	__value;	})
-
-#define outl(port,val) \
-    ({	long __value=(val);	\
-	__asm__ __volatile__ ("outl %%eax,%%dx"::"a"(__value),"d"(port)); })
-
-
 ULONG vmwareReadReg(struct HWData *data, ULONG reg) {
-	outl(data->indexReg, reg);
+	outl(reg, data->indexReg);
 	return inl(data->valueReg);
 }
 
 void vmwareWriteReg(struct HWData *data, ULONG reg, ULONG val) {
-	outl(data->indexReg, reg);
-	outl(data->valueReg, val);
+	outl(reg, data->indexReg);
+	outl(val, data->valueReg);
 }
 
 #undef SysBase
@@ -104,7 +94,7 @@ ULONG id;
 	}
 	else
 	{
-		ULONG mmio = (ULONG)device->BaseAddress[0] & 0xfffffff0;
+		ULONG mmio = (ULONG)device->BaseAddress[0] & ~0x01;
 		data->indexReg = mmio+SVGA_INDEX_PORT;
 		data->valueReg = mmio+SVGA_VALUE_PORT;
 	}

@@ -13,8 +13,8 @@
 #define DEVICE_VMWARE0405   0x0405
 
 struct HWData  {
-	APTR indexReg;
-	APTR valueReg;
+	UWORD indexReg;
+	UWORD valueReg;
 	ULONG depth;
 	ULONG redmask;
 	ULONG greenmask;
