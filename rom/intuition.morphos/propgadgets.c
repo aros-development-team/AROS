@@ -359,9 +359,6 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
         knobbox->Height = im->Height;
     }
 
-    if (knobbox->Width < KNOBHMIN || knobbox->Height < KNOBVMIN)
-        return FALSE;
-
     if (pi->Flags & FREEHORIZ)
     {
         if (pi->Flags & AUTOKNOB)
