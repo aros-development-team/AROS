@@ -840,7 +840,11 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
     WORD y   = mhd->scr->BarVBorder;
 #endif
 
+#if MENUS_AMIGALOOK
     SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+#else
+    SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN]);
+#endif
 
     Move(rp, x, y + rp->TxBaseline);
     Text(rp, menu->MenuName, len);
@@ -1076,10 +1080,18 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
     {
 	if (item->Flags & ITEMTEXT)
 	{
+#if MENUS_AMIGALOOK
             struct IntuiText *it = (struct IntuiText *)item->ItemFill;
 
 	    PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
+#else
+	    struct IntuiText *it = (struct IntuiText *)item->ItemFill;
 
+	    it->FrontPen = mhd->dri->dri_Pens[(item->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN];
+	    it->DrawMode = JAM1;
+	    
+	    PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
+#endif
 	} else {
     	    struct Image *im = (struct Image *)item->ItemFill;
 	    LONG state = IDS_NORMAL;
@@ -1241,7 +1253,11 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
 	
 	x1 += mhd->amigakey->Width + AMIGAKEY_KEY_SPACING;
 	
+#if MENUS_AMIGALOOK
 	SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
+#else
+	SetAPen(rp, mhd->dri->dri_Pens[(item->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN]);
+#endif
 	Move(rp, x1, item->TopEdge + offy + (item->Height - rp->TxHeight) / 2 +
 		     rp->TxBaseline);
 	Text(rp, &item->Command, 1);
@@ -1327,7 +1343,16 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 
 		if(item->Flags & ITEMTEXT)
 		{
+#if MENUS_AMIGALOOK
 		    PrintIText(rp, (struct IntuiText *)fill, x1, y1);
+#else
+		    struct IntuiText *it = (struct IntuiText *)fill;
+
+		    it->FrontPen = mhd->dri->dri_Pens[TEXTPEN];
+		    it->DrawMode = JAM1;
+	    
+		    PrintIText(rp, it, x1, y1);
+#endif
 		} else {
 		    EraseImage(rp, (struct Image *)fill, x1, y1);
 		    DrawImageState(rp, (struct Image *)fill, x1, y1, IDS_SELECTED, mhd->dri);
