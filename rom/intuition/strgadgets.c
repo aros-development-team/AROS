@@ -11,7 +11,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <intuition/screens.h>
-#include <intuition/sghooks.h>
 #include <intuition/cghooks.h>
 #include <devices/inputevent.h>
 #include <aros/asmcall.h>
@@ -33,11 +32,6 @@
 #define NUMPENS 3
 #define STRALIGNMASK (GACT_STRINGLEFT|GACT_STRINGCENTER|GACT_STRINGRIGHT)
 
-AROS_UFP3(STATIC ULONG, GlobalEditFunc,
-    AROS_UFPA(struct Hook *,		hook,		A0),
-    AROS_UFPA(struct SGWork *,		sgw,		A2),
-    AROS_UFPA(ULONG *, 			command,	A1)
-);
 
 VOID UpdateStringInfo(struct Gadget *);
 
@@ -371,7 +365,6 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
 		      	struct IntuitionBase	*IntuitionBase)
 {
     struct SGWork sgw;
-    struct Hook globhook;
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
     struct StringExtend *strext = NULL;
     ULONG command = 0;
@@ -432,13 +425,10 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     	ReturnInt("HandleStrInput", ULONG , 0UL);
     	
     /* Call the global editing hook */
-    globhook.h_Entry	= (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
-    globhook.h_SubEntry = NULL;
-    globhook.h_Data	= IntuitionBase;
     
     D(bug("calling global hook, Buffer=%s, WorkBuffer=%s\n",
     	strinfo->Buffer, sgw.WorkBuffer));
-    CallHookPkt(&globhook, &sgw, &command);
+    CallHookPkt(GetPrivIBase(IntuitionBase)->GlobalEditHook, &sgw, &command);
     
     /* If there is a local edit hook, run it */
     if (strext)
@@ -846,7 +836,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 /*********************
 **  GlobalEditFunc  **
 *********************/
-AROS_UFH3(STATIC ULONG, GlobalEditFunc,
+AROS_UFH3(ULONG, GlobalEditFunc,
     AROS_UFHA(struct Hook *,		hook,		A0),
     AROS_UFHA(struct SGWork *,		sgw,		A2),
     AROS_UFHA(ULONG *, 			command,	A1)

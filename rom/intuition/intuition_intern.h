@@ -56,6 +56,10 @@ struct IntIntuitionBase
     struct MsgPort	   * InputMP;
     BOOL		     InputDeviceOpen;
     
+    struct Hook		   *GlobalEditHook;
+    /* The default global edit hook */
+    struct Hook		   DefaultEditHook;
+    
     APTR		     DriverData; /* Pointer which the driver may use */
 
 /*

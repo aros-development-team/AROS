@@ -34,6 +34,7 @@
 #include <aros/asmcall.h>
 #include "libdefs.h"
 #include "intuition_intern.h"
+#include "strgadgets.h" /* To get GlobalEditFunc prototype */
 
 static const char name[];
 static const char version[];
@@ -129,6 +130,13 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitFrButtonClass (LIBBASE); /* After BUTTONGCLASS */
     InitPropGClass (LIBBASE);    /* After GADGETCLASS */
     InitStrGClass (LIBBASE);    /* After GADGETCLASS */
+    
+    /* Initialize global stringgadget edit hook */
+    GetPrivIBase(LIBBASE)->DefaultEditHook.h_Entry	= (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
+    GetPrivIBase(LIBBASE)->DefaultEditHook.h_SubEntry	= NULL;
+    GetPrivIBase(LIBBASE)->DefaultEditHook.h_Data	= LIBBASE;
+    
+    GetPrivIBase(LIBBASE)->GlobalEditHook = &(GetPrivIBase(LIBBASE)->DefaultEditHook);
 
     /* You would return NULL if the init failed */
     return LIBBASE;

@@ -12,10 +12,19 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
+#ifndef INTUITION_SGHOOKS_H
+#   include <intuition/sghooks.h>
+#endif
 #ifndef _GADGETS_H_
 #   include "gadgets.h"
 #endif
 
+
+AROS_UFP3(ULONG, GlobalEditFunc,
+    AROS_UFPA(struct Hook *,		hook,		A0),
+    AROS_UFPA(struct SGWork *,		sgw,		A2),
+    AROS_UFPA(ULONG *, 			command,	A1)
+);
 
 
 VOID RefreshStrGadget(struct Gadget *, struct Window *, struct IntuitionBase *);
