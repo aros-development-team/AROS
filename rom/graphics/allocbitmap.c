@@ -366,10 +366,10 @@
 
     	    } /* if (gfxhidd) */
     	    FreeMem(nbm, sizeof (struct BitMap));
-	    
-	} /* if (nbm) */
+	    nbm = NULL;
 
-	ASSERT_VALID_PTR(nbm);
+	} /* if (nbm) */
+	
     }
     else /* Otherwise init a plain Amiga bitmap */
     {
