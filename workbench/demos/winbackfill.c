@@ -19,10 +19,10 @@
 
 struct LayerHookMsg
 {
-	struct Layer *lay;
-	struct Rectangle bounds;
-	LONG offsetx;
-	LONG offsety;
+    struct Layer *lay;
+    struct Rectangle bounds;
+    LONG offsetx;
+    LONG offsety;
 };
 
 extern ULONG HookEntry();
@@ -40,237 +40,260 @@ static struct Hook backfillhook;
 
 static void Cleanup(char *msg)
 {
-	WORD rc;
-	
-	if (msg)
-	{
-		printf("winbackfill: %s\n",msg);
-		rc = RETURN_WARN;
-	} else {
-		rc = RETURN_OK;
-	}
-	
-	if (win) CloseWindow(win);
-	
-	if (patternbm)
-	{
-		WaitBlit();
-		FreeBitMap(patternbm);
-	}
+    WORD rc;
 
-	if (dri) FreeScreenDrawInfo(scr,dri);
-	UnlockPubScreen(0,scr);
+    if (msg)
+    {
+	printf("winbackfill: %s\n",msg);
+	rc = RETURN_WARN;
+    } else {
+	rc = RETURN_OK;
+    }
 
-	if (LayersBase) CloseLibrary(LayersBase);
-	if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-	if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
+    if (win) CloseWindow(win);
 
-	exit(rc);
+    if (patternbm)
+    {
+	WaitBlit();
+	FreeBitMap(patternbm);
+    }
+
+    if (dri) FreeScreenDrawInfo(scr,dri);
+    UnlockPubScreen(0,scr);
+
+    if (LayersBase) CloseLibrary(LayersBase);
+    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
+    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
+
+    exit(rc);
 }
 
 static void OpenLibs(void)
 {
-	if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
-	{
-		Cleanup("Can't open intuition.library V39!");
-	}
-	
-	if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
-	{
-		Cleanup("Can't open graphics.library V39!");
-	}
-	
-	if (!(LayersBase = OpenLibrary("layers.library",39)))
-	{
-		Cleanup("Can't open layers.library V39!");
-	}
+    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
+    {
+	Cleanup("Can't open intuition.library V39!");
+    }
+
+    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
+    {
+	Cleanup("Can't open graphics.library V39!");
+    }
+
+    if (!(LayersBase = OpenLibrary("layers.library",39)))
+    {
+	Cleanup("Can't open layers.library V39!");
+    }
 }
 
 static void MyBackfillFunc(struct Hook *hook,struct RastPort *rp, struct LayerHookMsg *msg)
 {
-	struct RastPort myrp;
-	struct Layer *lay;
-	WORD x1,y1,x2,y2,px,py,pw,ph;
+    struct RastPort myrp;
+    struct Layer *lay;
+    WORD x1,y1,x2,y2,px,py,pw,ph;
 
-	myrp = *rp;
-	lay = msg->lay;
+    myrp = *rp;
+    lay = msg->lay;
 
-	myrp.Layer = 0;
+    myrp.Layer = 0;
 
-	x1 = msg->bounds.MinX;
+    x1 = msg->bounds.MinX;
+    y1 = msg->bounds.MinY;
+    x2 = msg->bounds.MaxX;
+    y2 = msg->bounds.MaxY;
+
+    px = (x1 - lay->bounds.MinX) % PATTERNWIDTH;
+
+    pw = PATTERNWIDTH - px;
+
+    do
+    {
 	y1 = msg->bounds.MinY;
-	x2 = msg->bounds.MaxX;
-	y2 = msg->bounds.MaxY;
+	py = (y1 - lay->bounds.MinY) % PATTERNHEIGHT;
 
-	px = (x1 - lay->bounds.MinX) % PATTERNWIDTH;
+	ph = PATTERNHEIGHT - py;
 
-	pw = PATTERNWIDTH - px;
-	
+	if (pw > (x2 - x1 + 1)) pw = x2 - x1 + 1;
+
 	do
 	{
-		y1 = msg->bounds.MinY;
-		py = (y1 - lay->bounds.MinY) % PATTERNHEIGHT;
-		
-		ph = PATTERNHEIGHT - py;
-		
-		if (pw > (x2 - x1 + 1)) pw = x2 - x1 + 1;
+	    if (ph > (y2 - y1 + 1)) ph = y2 - y1 + 1;
 
-		do
-		{
-			if (ph > (y2 - y1 + 1)) ph = y2 - y1 + 1;
-			
-			BltBitMap(patternbm,
-						 px,
-						 py,
-						 rp->BitMap,
-						 x1,
-						 y1,
-						 pw,
-						 ph,
-						 192,
-						 255,
-						 0);
-						 
-			y1 += ph;
+	    BltBitMap(patternbm,
+		      px,
+		      py,
+		      rp->BitMap,
+		      x1,
+		      y1,
+		      pw,
+		      ph,
+		      192,
+		      255,
+		      0);
 
-			py = 0;
-			ph = PATTERNHEIGHT;
+	    y1 += ph;
 
-		} while (y1 <= y2); /* while(y1 < y2) */
+	    py = 0;
+	    ph = PATTERNHEIGHT;
 
-		x1 += pw;
+	} while (y1 <= y2); /* while(y1 < y2) */
 
-		px = 0;
-		pw = PATTERNWIDTH;
+	x1 += pw;
 
-	} while (x1 <= x2); /* while (x1 < x2) */
-		
+	px = 0;
+	pw = PATTERNWIDTH;
+
+    } while (x1 <= x2); /* while (x1 < x2) */
+
 }
 
 static void InitBackfillHook(void)
 {
-	backfillhook.h_Entry = HookEntry;
-	backfillhook.h_SubEntry = (HOOKFUNC)MyBackfillFunc;
+    backfillhook.h_Entry = HookEntry;
+    backfillhook.h_SubEntry = (HOOKFUNC)MyBackfillFunc;
 }
 
 static void GetVisual(void)
 {
-	if (!(scr = LockPubScreen(0)))
-	{
-		Cleanup("Can't lock pub screen!");
-	}
+    if (!(scr = LockPubScreen(0)))
+    {
+	Cleanup("Can't lock pub screen!");
+    }
 
-	if (!(dri = GetScreenDrawInfo(scr)))
-	{
-		Cleanup("Can't get drawinfo!");
-	}
+    if (!(dri = GetScreenDrawInfo(scr)))
+    {
+	Cleanup("Can't get drawinfo!");
+    }
 }
 
 static void MakePattern(void)
 {
-	struct RastPort *temprp;
+    struct RastPort *temprp;
+    WORD y;
+    ULONG plane1dat = 0xFFFF0000;
+    ULONG plane2dat = 0x0000FFFF;
+    ULONG bpr;
 
-	if (!(patternbm = AllocBitMap(PATTERNWIDTH * 2,
-				      PATTERNHEIGHT * 2,
-				      GetBitMapAttr(scr->RastPort.BitMap,BMA_DEPTH),
-				      0,
-				      scr->RastPort.BitMap)))
+    if (!(patternbm = AllocBitMap(PATTERNWIDTH * 2,
+				  PATTERNHEIGHT * 2,
+				  GetBitMapAttr(scr->RastPort.BitMap,BMA_DEPTH),
+				  BMF_CLEAR,
+				  scr->RastPort.BitMap)))
+    {
+	Cleanup("Can't create pattern bitmap!");
+    }
+
+    if (!(temprp = CreateRastPort()))
+    {
+	Cleanup("Can't create rastport!");
+    }	
+
+    temprp->BitMap = patternbm;
+
+
+    /* AROS gfx functions don't like non visible
+       offscreenbitmaps yet, so for now let's do it
+       this way */
+
+    bpr = GetBitMapAttr(patternbm,BMA_WIDTH) / 8;
+
+    for(y = 0;y < PATTERNHEIGHT;y++)
+    {
+	if (y == PATTERNHEIGHT / 2)
 	{
-		Cleanup("Can't create pattern bitmap!");
+	    plane1dat = (plane1dat << 16) + (plane1dat >> 16);
+	    plane2dat = (plane2dat << 16) + (plane2dat >> 16);
 	}
-	
-	if (!(temprp = CreateRastPort()))
-	{
-		Cleanup("Can't create rastport!");
-	}	
+	*(ULONG *)(((UBYTE *)patternbm->Planes[0]) + y * bpr) = plane1dat;
+	*(ULONG *)(((UBYTE *)patternbm->Planes[1]) + y * bpr) = plane2dat;
+    }
+    
+#if 0
+    SetAPen(temprp,dri->dri_Pens[PATTERNCOL1]);
 
-	temprp->BitMap = patternbm;
-	
-/*
-	SetAPen(temprp,dri->dri_Pens[PATTERNCOL1]);
+    RectFill(temprp,0,0,10,10);
 
-	RectFill(temprp,0,0,10,10);
-	
-	RectFill(temprp,0,0,PATTERNWIDTH - 1,PATTERNHEIGHT - 1);
+    RectFill(temprp,0,0,PATTERNWIDTH - 1,PATTERNHEIGHT - 1);
 
-	SetAPen(temprp,dri->dri_Pens[PATTERNCOL2]);
-	RectFill(temprp,0,
-			0,
-			PATTERNWIDTH / 2 - 1,
-			PATTERNHEIGHT / 2 - 1);
+    SetAPen(temprp,dri->dri_Pens[PATTERNCOL2]);
+    RectFill(temprp,0,
+		    0,
+		    PATTERNWIDTH / 2 - 1,
+		    PATTERNHEIGHT / 2 - 1);
 
-	RectFill(temprp,PATTERNWIDTH / 2,
-			PATTERNHEIGHT / 2,
-			PATTERNWIDTH - 1,
-			PATTERNHEIGHT - 1);
-*/	
-	FreeRastPort(temprp);
+    RectFill(temprp,PATTERNWIDTH / 2,
+		    PATTERNHEIGHT / 2,
+		    PATTERNWIDTH - 1,
+		    PATTERNHEIGHT - 1);*/
+#endif
+
+    FreeRastPort(temprp);
 	
 }
 
 static void MakeWin(void)
 {	
-	if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
-				     WA_Left,10,
-				     WA_Top,10,
-				     WA_Width,300,
-				     WA_Height,150,
-				     WA_Title,(IPTR)"Window Backfill Test",
-				     WA_SimpleRefresh,TRUE,
-				     WA_CloseGadget,TRUE,
-				     WA_DepthGadget,TRUE,
-				     WA_DragBar,TRUE,
-				     WA_SizeGadget,TRUE,
-				     WA_MinWidth,50,
-				     WA_MinHeight,50,
-				     WA_MaxWidth,scr->Width,
-				     WA_MaxHeight,scr->Height,
-				     WA_IDCMP,IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW,
-				     WA_BackFill,(IPTR)&backfillhook,
-				     TAG_DONE)))
-	{
-		Cleanup("Can't open window!");
-	}
+    if (!(win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
+				 WA_Left,10,
+				 WA_Top,10,
+				 WA_Width,300,
+				 WA_Height,150,
+				 WA_Title,(IPTR)"Window Backfill Test",
+				 WA_SimpleRefresh,TRUE,
+				 WA_CloseGadget,TRUE,
+				 WA_DepthGadget,TRUE,
+				 WA_DragBar,TRUE,
+				 WA_SizeGadget,TRUE,
+				 WA_MinWidth,50,
+				 WA_MinHeight,50,
+				 WA_MaxWidth,scr->Width,
+				 WA_MaxHeight,scr->Height,
+				 WA_IDCMP,IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW,
+				 WA_BackFill,(IPTR)&backfillhook,
+				 TAG_DONE)))
+    {
+	Cleanup("Can't open window!");
+    }
 
-	ScreenToFront(win->WScreen);
+    ScreenToFront(win->WScreen);
 
 }
 
 static void HandleAll(void)
 {
-	struct IntuiMessage *msg;
-	
-	BOOL quitme = FALSE;
-	
-	while(!quitme)
+    struct IntuiMessage *msg;
+
+    BOOL quitme = FALSE;
+
+    while(!quitme)
+    {
+	WaitPort(win->UserPort);
+	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
-		WaitPort(win->UserPort);
-		while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
-		{
-			switch(msg->Class)
-			{
-				case IDCMP_CLOSEWINDOW:
-					quitme = TRUE;
-					break;
-					
-				case IDCMP_REFRESHWINDOW:
-					BeginRefresh(win);
-					EndRefresh(win,TRUE);
-					break;
-			}
-			ReplyMsg((struct Message *)msg);
-		}
+	    switch(msg->Class)
+	    {
+		case IDCMP_CLOSEWINDOW:
+			quitme = TRUE;
+			break;
+
+		case IDCMP_REFRESHWINDOW:
+			BeginRefresh(win);
+			EndRefresh(win,TRUE);
+			break;
+	    }
+	    ReplyMsg((struct Message *)msg);
 	}
+    }
 }
 
 int main(void)
 {
-	OpenLibs();
-	InitBackfillHook();
-	GetVisual();
-	MakePattern();
-	MakeWin();
-	HandleAll();
-	Cleanup(0);
-	return 0;
+    OpenLibs();
+    InitBackfillHook();
+    GetVisual();
+    MakePattern();
+    MakeWin();
+    HandleAll();
+    Cleanup(0);
+    return 0;
 }
