@@ -58,7 +58,7 @@ setup-x11keymaptable :
 		
 		
 $(ARCHDIR)/tools/makexkeytable: makexkeytable.c
-	$(CC) -I/usr/X11/include -L/usr/X11/lib -lX11 $< -o $@ 
+	$(CC) $(GUI_CCFLAGS) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
