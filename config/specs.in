@@ -20,4 +20,4 @@
 1
 
 *linker:
-@TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros $ignore_missing_symbols$
+@TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros @ignore_missing_symbols@
