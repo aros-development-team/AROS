@@ -53,11 +53,15 @@
 
     if (rp)
     {
-    	InstallClipRegion(rp->Layer,GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion);
+	if ((--(GetPrivIBase(IntuitionBase)->BackupLayerContext.nestcount)) == 0)
+	{
+    	    InstallClipRegion(rp->Layer,GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion);
+
+	    rp->Layer->Scroll_X = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x;
+	    rp->Layer->Scroll_Y = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y;
+	}
 	
-	rp->Layer->Scroll_X = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x;
-	rp->Layer->Scroll_Y = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y;
-	
+/*	bug("----------- RELEASE: %x\n",rp->Layer);*/
 	UnlockLayerRom(rp->Layer);
 	
 	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);

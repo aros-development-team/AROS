@@ -70,19 +70,24 @@
 	
 	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 
+/*	bug("+++++++++++++ OBTAIN rp=%x lay=%x font=%x origfont=%x\n",rp,rp->Layer,rp->Font,gInfo->gi_RastPort->Font); */
+	
 	LockLayerRom(rp->Layer);
 
-	GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x = rp->Layer->Scroll_X;
-	GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y = rp->Layer->Scroll_Y;
-	
-	rp->Layer->Scroll_X = 0;
-	rp->Layer->Scroll_Y = 0;
-	
-	GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion = InstallClipRegion(rp->Layer, NULL);
+	if (((GetPrivIBase(IntuitionBase)->BackupLayerContext.nestcount)++) == 0)
+	{
+	    GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x = rp->Layer->Scroll_X;
+	    GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y = rp->Layer->Scroll_Y;
+
+	    rp->Layer->Scroll_X = 0;
+	    rp->Layer->Scroll_Y = 0;
+
+	    GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion = InstallClipRegion(rp->Layer, NULL);
+	}
 	
 	SetDrMd(rp, JAM1),
 	SetWriteMask(rp, 0xFF);
-	
+
 	return rp;
     }
     else
