@@ -102,13 +102,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     sss.stk_Upper=stack+stacksize;
 
     oldresult=me->pr_Result2;
-    if(me->pr_CIS)
-	Flush(me->pr_CIS);
-    if(me->pr_COS)
-	Flush(me->pr_COS);
-    if(me->pr_CES)
-	Flush(me->pr_CES);
-	
+
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
@@ -119,14 +113,12 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;
-    
-    if(me->pr_CIS)
-	Flush(me->pr_CIS);
+
     if(me->pr_COS)
 	Flush(me->pr_COS);
     if(me->pr_CES)
 	Flush(me->pr_CES);
-    
+
     me->pr_Result2=oldresult;
 
     FreeMem(stack,stacksize);
