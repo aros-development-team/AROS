@@ -53,14 +53,10 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	movl	ThisTask(%eax),%ecx
 	leal	tc_SPLower(%ecx),%ecx
 
-	pushl %edx
-	pushl	%ecx
 	/* Just to be sure interrupts always find a good stackframe */
 	pushl	%eax
 	call	*Disable(%eax)
 	popl	%eax
-	popl	%ecx
-	popl	%edx
 
 	movl	(%esp),%eax
 	pushl	%ebx
