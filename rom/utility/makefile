@@ -45,7 +45,11 @@ FUNCTIONS := \
 #
 # END_DESC{localmakevar}
 
+ifeq ($(FLAVOUR),native)
+ASM_PATH := $(TOP)/config/$(KERNEL)/utility
+else
 ASM_PATH := $(TOP)/config/$(KERNEL)
+endif
 ARCH_PATH := $(TOP)/config/$(ARCH)
 
 ASM_FILES_TRY := $(foreach f,$(FUNCTIONS),$(ASM_PATH)/$(f).[cs] $(ARCH_PATH)/$(f).[cs])
