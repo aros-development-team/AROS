@@ -17,17 +17,15 @@ shell : $(BINDIR)/arosshell
 	@$(NOP)
 
 #MM
-setup :
-	@$(RM) $(TOP)/errors
-	@$(FOR) dir in $(BINDIR) $(GENDIR) ; do \
-	    $(IF) [ ! -d $$dir ]; then \
-		$(ECHO) "mkdir $$dir" ; \
-		$(MKDIR) "$$dir" ; \
-	    else true ; fi ; \
-	done
-	@$(IF) [ ! -f $(BINDIR)/.gdbinit ]; then \
-	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
-	else true ; fi
+setup : $(CPAK) $(ARCHTOOL)
+
+
+$(CPAK):
+	$(MAKE) -C tools/cpak TOP=$(TOP)
+
+$(ARCHTOOL):
+	$(MAKE) -C tools/archtools TOP=$(TOP)
+
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBS} Flags which are passed to the linker for executables.
@@ -245,7 +243,7 @@ dist-src :
 #
 # END_DESC{target}
 #MM
-clean :
+clean:
 	-$(RM) $(ARCHDIR) mmake Makefile mmake.cache config.cache config.status config.log \
 	    errors crypt
 
@@ -319,4 +317,4 @@ docs:
 mmake : mmake.c
 	$(CC) -Wall -g -O0 $< -o $@
 
-.PHONY: docs dist
+.PHONY: docs dist setup

@@ -29,6 +29,9 @@ GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CCFLAGS	:= @aros_gui_ccflags@
 SHELL_LDFLAGS	:= @aros_shell_ldflags@
 
+ARCHDIR  := $(TOP)/bin/$(ARCH)-$(CPU)
+TOOLDIR  := $(ARCHDIR)/tools
+
 RANLIB	 := @RANLIB@
 AWK	 := @AWK@
 RM	 := @RM@
@@ -47,5 +50,10 @@ CAT	 := @CAT@
 TEST	 := @TEST@
 STRIP	 := @STRIP@
 CHECKUDS := @aros_check_uds@
-MKDEPEND := $(TOP)/scripts/mkdep
 LITE	 := @LITE@
+MKDEPEND := $(TOP)/scripts/mkdep
+MMAKE    := $(TOOLDIR)/mmake
+ARCHTOOL := $(TOOLDIR)/archtool
+CPAK     := $(TOOLDIR)/cpak
+CPAK2    := $(TOOLDIR)/cpak2
+GENMF    := $(TOOLDIR)/genmf

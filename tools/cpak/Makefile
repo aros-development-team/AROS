@@ -1,14 +1,18 @@
 
-all   : cpak cpak2
+all   : real-all
 
-cpak  : cpak.c
-	gcc -Wall -Wunused -O2 cpak.c -o cpak
-	strip cpak
+include $(TOP)/config/make.cfg
 
-cpak2 : cpak2.c
-	gcc -Wall -Wunused -O2 cpak2.c -o cpak2
-	strip cpak2
+real-all: $(CPAK) $(CPAK2)
+
+$(CPAK) : cpak.c
+	gcc -Wall -Wunused -O2 cpak.c -o $(CPAK)
+	strip $(CPAK)
+
+$(CPAK2) : cpak2.c
+	gcc -Wall -Wunused -O2 cpak2.c -o $(CPAK2)
+	strip $(CPAK2)
 
 clean :
-	rm -f cpak cpak2
+	rm -f $(CPAK) $(CPAK2)
 

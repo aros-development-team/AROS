@@ -42,9 +42,7 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 	
-ARCHTOOL := $(TOP)/tools/archtools/archtool
-
-libdefs.h : lib.conf $(ARCHTOOL)
+libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
 	@$(ARCHTOOL) -c
 	

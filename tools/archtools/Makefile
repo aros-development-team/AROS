@@ -1,21 +1,17 @@
-DEBUG =
-CFLAGS = -Wall -Wunused -O2
-CC = gcc
-STRIP = strip
-ECHO = echo
-RM = rm
+all: real-all
 
-EXE = archtool
+include $(TOP)/config/make.cfg
 
-all   : $(EXE)
+CFLAGS := -Wall -Wunused -O2
 
-$(EXE) : archtool.c
+real-all: $(ARCHTOOL)
+
+$(ARCHTOOL) : archtool.c
 	@$(ECHO) "Compiling $@..."
-	@$(CC) $(CFLAGS) $(DEBUG) $< -o $@
+	@$(CC) $(CFLAGS) $< -o $@
 	@$(STRIP) $@
 
-
-clean :
+clean:
 	@$(ECHO) "Cleaning sources..."
-	@$(RM) -f $(EXE)
+	@$(RM) -f $(ARCHTOOL)
 

@@ -112,17 +112,17 @@ setup-includes :
 	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
 # Rule to create a .library in the local dir
-libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
+libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
-	@$(TOP)/tools/archtools/archtool -c
+	@$(ARCHTOOL) -c
 
 $(END_FILE).c :
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
 # Rule to create functable.c
-functable.c : libdefs.h $(TOP)/tools/archtools/archtool
-	@$(TOP)/tools/archtools/archtool -t
+functable.c : libdefs.h
+	@$(ARCHTOOL) -t
 
 #MM
 clean ::

@@ -5,8 +5,8 @@
 maketool make TOP=$(TOP) CURDIR=$(CURDIR) TARGET=$(TARGET)
 defaultmakefilename mmakefile
 defaulttarget AROS
-genmakefilescript $(TOP)/tools/genmf/genmf $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
-genmakefiledeps $(TOP)/tools/genmf/genmf $(TOP)/config/make.tmpl
+genmakefilescript $(GENMF) $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
+genmakefiledeps $(GENMF) $(TOP)/config/make.tmpl
 globalvarfile $(TOP)/config/host.cfg
 genglobalvarfile sh $(TOP)/configure
 

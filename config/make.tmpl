@@ -84,9 +84,9 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 	@%(cmd) %(opt) -I$(OBJDIR) -c $< -o $@ 2>&1|tee %(err)
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
-$(OBJDIR)/functions.c : $(TOP)/tools/archtools/archtool %(archive)
+$(OBJDIR)/functions.c : %(archive)
 %mkdir_q $(OBJDIR)
-	@$(TOP)/tools/archtools/archtool -s %(archive) $@
+	@$(ARCHTOOL) -s %(archive) $@
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
@@ -103,8 +103,8 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 	@%(cmd) %(opt) -I$(OBJDIR) -c $< -o $@ 2>&1|tee %(err)
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
-$(OBJDIR)/functions.c : $(TOP)/tools/cpak/cpak $(foreach f,%(functions),$(f).c)
-	@$(TOP)/tools/cpak/cpak %(functions)
+$(OBJDIR)/functions.c : $(foreach f,%(functions),$(f).c)
+	@$(CPAK) %(functions)
 %mkdir_q $(OBJDIR)
 	@$(MV) functions.c functions.h $(OBJDIR)
 
@@ -209,7 +209,7 @@ endif
 %end
 
 # rule to generate libdefs.h with archtool (options may go away!)
-%define libdefs_rule conffile=lib.conf genlibdefstool=$(TOP)/tools/archtools/archtool dest=libdefs.h
+%define libdefs_rule conffile=lib.conf genlibdefstool=$(ARCHTOOL) dest=libdefs.h
 %(dest) : %(conffile) %(genlibdefstool)
 	@$(ECHO) "Generating $@..."
 	@%(genlibdefstool) -c
@@ -588,15 +588,15 @@ $(OBJDIR)/%.o : %.c
 %compile_q
 
 # Rule to create a .library in the local dir
-libdefs.h : $(TOP)/tools/archtools/archtool lib.conf
+libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
-	@$(TOP)/tools/archtools/archtool -c
+	@$(ARCHTOOL) -c
 
 ifndef NO_FUNCTABLE
 
-functable.c : %(archive) $(TOP)/tools/archtools/archtool libdefs.h
+functable.c : %(archive) libdefs.h
 	@$(ECHO) "Generating $@..."
-	@$(TOP)/tools/archtools/archtool -t %(archive)
+	@$(ARCHTOOL) -t %(archive)
 endif
 
 $(END_FILE).c :
@@ -863,8 +863,8 @@ includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
 			    $(INCDIR)/proto/%(name).h
 	@$(NOP)
 
-$(OBJDIR)/headers.stamp : %(archive) $(TOP)/tools/archtools/archtool
-	@$(TOP)/tools/archtools/archtool -I $(GENINCDIR) %(archive)
+$(OBJDIR)/headers.stamp : %(archive)
+	@$(ARCHTOOL) -I $(GENINCDIR) %(archive)
 	@$(TOUCH) $@
 
 $(INCDIR)/pragmas/%(name)_pragmas.h : $(GENINCDIR)/pragmas/%(name)_pragmas.h
@@ -1005,8 +1005,8 @@ $(OBJDIR)/functions.o : functions.c
 	@$(CC) $(CFLAGS) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
 	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
 
-functions.c : $(TOP)/tools/archtools/archtool $(ARCHIVE)
-	@$(TOP)/tools/archtools/archtool -s $(ARCHIVE) $@
+functions.c : $(ARCHIVE)
+	@$(ARCHTOOL) -s $(ARCHIVE) $@
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
@@ -1019,9 +1019,9 @@ $(OBJDIR)/%.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@$(IF) $(TEST) -s $*.err; then $(TOUCH) $(TOP)/errors;else $(RM) $*.err; fi
 
-functable.c : $(ARCHIVE) $(TOP)/tools/archtools/archtool libdefs.h
+functable.c : $(ARCHIVE) libdefs.h
 	@$(ECHO) "Generating $@..."
-	@$(TOP)/tools/archtools/archtool -t $(ARCHIVE)
+	@$(ARCHTOOL) -t $(ARCHIVE)
 
 $(END_FILE).c : $(TOP)/scripts/makeendtag.awk
 	@$(ECHO) "Regenerating $@..."
@@ -1030,9 +1030,9 @@ $(END_FILE).c : $(TOP)/scripts/makeendtag.awk
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
-libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
+libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
-	@$(TOP)/tools/archtools/archtool -c
+	@$(ARCHTOOL) -c
 
 %end
 
@@ -1073,8 +1073,8 @@ $(OBJDIR)/functions.o : functions.c
 	@$(CC) $(CFLAGS) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
 	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
 
-functions.c : $(TOP)/tools/cpak/cpak $(foreach f,$(FUNCTIONS),$(f).c)
-	@$(TOP)/tools/cpak/cpak $(FUNCTIONS)
+functions.c : $(foreach f,$(FUNCTIONS),$(f).c)
+	@$(CPAK) $(FUNCTIONS)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
@@ -1134,9 +1134,6 @@ END_FILE := $(LIBNAME)_end
 endif
 ifndef OBJDIR
 OBJDIR := $(GENDIR)/$(CURDIR)
-endif
-ifndef ARCHTOOL
-ARCHTOOL := $(TOP)/tools/archtools/archtool
 endif
 ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o

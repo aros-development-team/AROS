@@ -3,30 +3,40 @@
 #
 # $Id$
 
-MMAKE=@MMAKE@
-ifeq ($(MMAKE),)
-MMAKE=./mmake
-endif
+default: all
 
-all: $(MMAKE) genmf archtool
+TOP := $(shell pwd)
+include $(TOP)/config/make.cfg
+
+all: makedirs $(MMAKE) $(GENMF)
 	$(MMAKE)
 
 docs: $(MMAKE)
 	$(MMAKE) .docs
 
-mmake:
-	cd tools/MetaMake; ./configure
+makedirs:
+	@$(RM) $(TOP)/errors
+	@$(FOR) dir in $(BINDIR) $(GENDIR) $(TOOLDIR) ; do \
+	    $(IF) [ ! -d $$dir ]; then \
+		$(ECHO) "mkdir $$dir" ; \
+		$(MKDIR) "$$dir" ; \
+	    else true ; fi ; \
+	done
+	@$(IF) [ ! -f $(BINDIR)/.gdbinit ]; then \
+	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
+	else true ; fi
+
+$(MMAKE):
+	cd tools/MetaMake ; ./configure --prefix=$(TOOLDIR)
 	$(MAKE) -C tools/MetaMake
-	cp tools/MetaMake/mmake .
+	cp tools/MetaMake/mmake $(MMAKE)
 
-genmf:
-	$(MAKE) -C tools/genmf
+$(GENMF):
+	$(MAKE) -C tools/genmf TOP=$(TOP)
 
-archtool:
-	$(MAKE) -C tools/archtools
 
 clean:
 	$(MMAKE) AROS.clean
 
-.PHONY: all docs clean
+.PHONY: default all makedirs docs clean
 

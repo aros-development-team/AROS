@@ -1,12 +1,17 @@
+all : real-all
 
-genmf : genmf.c
-	gcc -Wall -g -O genmf.c -o genmf
+include $(TOP)/config/make.cfg
+
+real-all: $(GENMF)
+
+$(GENMF) : genmf.c
+	gcc -Wall -g -O genmf.c -o $(GENMF)
 
 clean :
-	rm -f genmf
+	rm -f $(GENMF)
 
 check :
-	genmf tmpl.test < in.test
-	genmf --curdir=`pwd` tmpl.test < in.test
+	$(GENMF) tmpl.test < in.test
+	$(GENMF) --curdir=`pwd` tmpl.test < in.test
 
 test : check
