@@ -1,0 +1,28 @@
+#!/bin/zsh
+# Creates documentation packages.
+
+source $SP/setup
+setl   documentation.log
+
+printi "Creating documentation packages..."
+
+printi "Creating HTML documentation package..."
+PACKAGE=$BASENAME-docs-html
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+copy    $SOURCE_DOCS $BUILD_BASE/Documentation
+cd      $BUILD_BASE/Documentation
+
+execute ./build html
+
+cd      $BUILD_BASE/bin/documentation
+move    html $PACKAGE
+archive $ARCHIVE $PACKAGE
+
+cd      $ROOT
+delete  $BUILD_BASE/bin
+delete  $BUILD_BASE/Documentation
+
+cd      $ROOT
+resetl
+
