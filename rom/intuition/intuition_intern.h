@@ -365,6 +365,20 @@ Another note: Maybe use a union here to save space.
 
 */
 
+struct IntIntuiMessage
+{
+    struct ExtIntuiMessage  eimsg;
+    
+    /*
+    ** The following field is needed, because in case of IDCMP_RAWKEY
+    ** IntuiMessage->IAddress is a pointer to this data, not the data
+    ** itself (which is the case for IDCMP_VANILLAKEY)
+    */
+    
+    APTR    	    	    prevCodeQuals;
+};
+
+#define INT_INTUIMESSAGE(x) ((struct IntIntuiMessage *)(x))
 
 struct IntuiActionMessage
 {
