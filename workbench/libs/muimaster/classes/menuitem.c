@@ -273,7 +273,7 @@ STATIC ULONG Menuitem_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	     return 1;
 
 	case MUIA_Menuitem_NewMenu:
-	     if (!data->newmenu) data->newmenu = Menuitem_BuildNewMenu(data,obj);
+	     Menuitem_BuildNewMenu(data,obj);
 	     STORE = (ULONG)data->newmenu;
 	     return 1;
 
