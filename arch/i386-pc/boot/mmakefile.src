@@ -19,6 +19,7 @@ BOOT_TAR_FILES := \
     Classes/DataTypes/ascii.datatype \
     Classes/DataTypes/binary.datatype \
     Classes/DataTypes/text.datatype \
+    Classes/DataTypes/picture.datatype \
     Classes/DataTypes/ilbm.datatype \
     Classes/Gadgets/arospalette.gadget \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
