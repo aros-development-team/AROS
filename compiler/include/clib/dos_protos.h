@@ -483,6 +483,14 @@ __AROS_LP3(LONG, ParsePatternNoCase,
     __AROS_LCA(LONG,   DestLength,  D3), \
     struct DosLibrary *, DOSBase, 161, Dos)
 
+__AROS_LP1(STRPTR, PathPart,
+    __AROS_LPA(STRPTR, path, D1),
+    struct DosLibrary *, DOSBase, 146, Dos)
+#define PathPart(path) \
+    __AROS_LC1(STRPTR, PathPart, \
+    __AROS_LCA(STRPTR, path, D1), \
+    struct DosLibrary *, DOSBase, 146, Dos)
+
 __AROS_LP2(BOOL, PrintFault,
     __AROS_LPA(LONG,   code,   D1),
     __AROS_LPA(STRPTR, header, D2),
