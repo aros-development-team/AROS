@@ -20,7 +20,7 @@ AROS_SH1
     
     if (WorkbenchBase != NULL)
     {
-        success = OpenWorkbenchObject(SHArg(OBJECT), TAG_DONE);
+        success = OpenWorkbenchObject(SHArg(NAME), TAG_DONE);
     }
     else
     {
