@@ -4,9 +4,17 @@
 #   Desc: General rules included at the end of a generated mmakefile
 #
 
+include $(TOP)/tools/genmodule/Makefile.deps
+
 # Rules for the AROS build tools
-$(GENMODULE) $(GENLIBDEFS) : $(wildcard $(TOP)/tools/genmodule/*.[hc])
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP)
+$(GENMODULE) : $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_DEPS))
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP) $(GENMODULE)
+
+$(GENLIBDEFS) : $(addprefix $(TOP)/tools/genmodule/,$(GENLIBDEFS_DEPS))
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP) $(GENLIBDEFS)
+
+$(GENMODULEDUMMY) : $(addprefix $(TOP)/tools/genmodule/,$(GENMODULEDUMMY_DEPS))
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP) $(GENMODULEDUMMY)
 
 $(TOP)/tools/cxref/configure : $(TOP)/tools/cxref/configure.in
 	cd $(TOP)/tools/cxref ; aclocal ; autoconf
