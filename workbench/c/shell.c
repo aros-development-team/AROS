@@ -1,25 +1,32 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: The shell program.
     Lang: english
 */
 #include <exec/memory.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>
+#include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <aros/debug.h>
 
-static const char version[] = "$VER: shell 41.2 (2.10.1997)\n";
+
+struct Library *UtilityBase;
+
+static const char version[] = "$VER: shell 41.3 (13.10.1997)\n";
 
 BPTR cLock;
 struct CommandLineInterface *cli;
+
+
 
 static void printpath(void)
 {
@@ -189,6 +196,7 @@ BPTR loadseg(STRPTR name)
 
 LONG execute(STRPTR com)
 {
+    BOOL ended = FALSE;
     STRPTR s1=NULL, s2=NULL;
     STRPTR args, rest, command=NULL, infile=NULL, outfile=NULL, appfile=NULL;
     STRPTR last;
@@ -257,8 +265,13 @@ LONG execute(STRPTR com)
 	while(*args++)
 	    ;
     }
-    if(command==NULL||!*command)
+    if ((!command) || (!*command))
 	goto end;
+    if (!Stricmp(command, "ENDCLI"))
+    {
+        ended = TRUE;
+        goto end;
+    }
     if(infile!=NULL)
     {
 	in=Open(infile,MODE_OLDFILE);
@@ -348,6 +361,8 @@ end:
 	PrintFault(error,"Couldn't run command");
     }
     Flush(Output());
+    if (ended)
+        return -1;
     return 0;
 }
 
@@ -379,49 +394,67 @@ int main (int argc, char ** argv)
     struct RDArgs *rda;
     STRPTR args[2]={ "S:Shell-Startup", NULL };
     struct linebuf lb = { 0, NULL, 0, 0, 0, 0 };
-    LONG error=0;
+    LONG error=RETURN_OK;
 
-    lb.file=Input();
-
-    cLock = Lock("C:", SHARED_LOCK);
-    if (!cLock)
+    UtilityBase = OpenLibrary("utility.library", 39);
+    if (UtilityBase)
     {
-	PrintFault (IoErr(), "Shell");
-	return RETURN_ERROR;
+
+        lb.file=Input();
+
+        cLock = Lock("C:", SHARED_LOCK);
+        if (cLock)
+        {
+
+            cli=Cli();
+            cli->cli_StandardInput=cli->cli_CurrentInput=Input();
+            cli->cli_StandardOutput=cli->cli_CurrentOutput=Output();
+            setpath(NULL);
+
+            rda=ReadArgs("FROM,COMMAND/K/F",(IPTR *)args,NULL);
+            if(rda!=NULL)
+            {
+                if(args[1])
+                    execute((STRPTR)args[1]);
+                else
+                {
+                    ULONG num=((struct Process *)FindTask(NULL))->pr_TaskNum;
+                    VPrintf("New Shell process %ld\n",&num);
+                    Flush(Output());
+                    cli->cli_Interactive=DOSTRUE;
+                    executefile((STRPTR)args[0]);
+                    while (error==0)
+                    {
+                        prompt();
+                        error=readline(&lb);
+                        if(error||lb.buf==NULL)
+                            break;
+                        error=execute(lb.buf);
+                    }
+                    if (error == -1)
+                        error = 0;
+                    VPrintf("Process %ld ending\n",&num);
+                    Flush(Output());
+                }
+                FreeArgs(rda);
+            } else
+            {
+                PrintFault(IoErr(), "Shell");
+                error = RETURN_FAIL;
+            }
+            UnLock(cLock);
+        } else
+        {
+            PrintFault (IoErr(), "Shell");
+            error = RETURN_FAIL;
+        }
+        CloseLibrary(UtilityBase);
+    } else
+    {
+        VPrintf("Could not open utility.library\n", NULL);
+        SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
+        error = RETURN_FAIL;
     }
 
-    cli=Cli();
-    cli->cli_StandardInput=cli->cli_CurrentInput=Input();
-    cli->cli_StandardOutput=cli->cli_CurrentOutput=Output();
-    setpath(NULL);
-
-    rda=ReadArgs("FROM,COMMAND/K/F",(IPTR *)args,NULL);
-    if(rda!=NULL)
-    {
-	if(args[1])
-	    execute((STRPTR)args[1]);
-	else
-	{
-	    ULONG num=((struct Process *)FindTask(NULL))->pr_TaskNum;
-	    VPrintf("New Shell process %ld\n",&num);
-	    Flush(Output());
-	    cli->cli_Interactive=DOSTRUE;
-	    executefile((STRPTR)args[0]);
-	    for(;;)
-	    {
-		prompt();
-		error=readline(&lb);
-		if(error||lb.buf==NULL)
-		    break;
-		execute(lb.buf);
-	    }
-	    VPrintf("Process %ld ending\n",&num);
-	    Flush(Output());
-	}
-	FreeArgs(rda);
-    }
-
-    UnLock (cLock);
-
-    return 0;
+    return error;
 }

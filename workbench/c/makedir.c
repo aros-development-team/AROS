@@ -13,7 +13,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: makedir 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: makedir 41.2 (11.10.1997)\n";
 
 int main (int argc, char ** argv)
 {
@@ -31,7 +31,7 @@ int main (int argc, char ** argv)
 	    UnLock(lock);
 	else
 	{
-	    VPrintf ("Cannot create %s:", (ULONG *)args);
+	    VPrintf ("Cannot create %s: ", (ULONG *)args);
 	    error = RETURN_FAIL;
 	}
 
@@ -41,6 +41,6 @@ int main (int argc, char ** argv)
 	error=RETURN_FAIL;
 
     if(error)
-	PrintFault(IoErr(),"MakeDir");
+	PrintFault(IoErr(), NULL);
     return error;
 }

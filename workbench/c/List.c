@@ -15,7 +15,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: list 41.3 (4.10.1997)\n";
+static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
 
 
 #define TEMPLATE "DIR/M"
@@ -53,7 +53,6 @@ int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protect
     UBYTE time[LEN_DATSTRING];
     struct DateTime dt;
     char flags[8];
-    int i;
 
     CopyMem(ds, &dt.dat_Stamp, sizeof(struct DateStamp));
     dt.dat_Format  = FORMAT_DOS;
@@ -63,11 +62,14 @@ int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protect
     dt.dat_StrTime = time;
     DateToStr(&dt); /* returns 0 if invalid */
 
-    for(i=0; i<7; i++)
-        if (!(protection & (1<<i)))
-            flags[6-i]="sparwed"[6-i];
-        else
-            flags[6-i]='-';
+    flags[0] = protection&FIBF_SCRIPT?'s':'-';
+    flags[1] = protection&FIBF_PURE?'p':'-';
+    flags[2] = protection&FIBF_ARCHIVE?'a':'-';
+    /* The following flags are high-active! */
+    flags[3] = protection&FIBF_READ?'-':'r';
+    flags[4] = protection&FIBF_WRITE?'-':'w';
+    flags[5] = protection&FIBF_EXECUTE?'-':'e';
+    flags[6] = protection&FIBF_DELETE?'-':'d';
     flags[7] = 0x00;
 
     argv[0] = (IPTR)filename;
@@ -85,7 +87,7 @@ int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protect
         if (VPrintf("%-25.s %7.ld %7.s %-11.s %s\n", argv) < 0)
             error = RETURN_ERROR;
     }
-    if ((!error) && (filenote))
+    if ((!error) && (filenote) && (filenote[0]))
         error = VPrintf(": %s\n", (IPTR *)&filenote);
 
     return error;
@@ -97,10 +99,10 @@ int printsummary(int files, int dirs, int blocks)
 {
     int error = RETURN_OK;
 
-    if ((files == 0) && (dirs == 0))
+    if ((files == 0) && (dirs == 0)) {
         if (VPrintf("Directory is empty\n", NULL) < 0)
             error = RETURN_ERROR;
-    else {
+    } else {
         if ((files)) {
             if (VPrintf("%ld files - ", (IPTR *)&files) < 0)
                 error = RETURN_ERROR;
@@ -110,7 +112,7 @@ int printsummary(int files, int dirs, int blocks)
                 error = RETURN_ERROR;
         }
         if (!error) {
-            if (VPrintf("%ld blocks used\n", (IPTR *)&blocks) < 0)
+            if (VPrintf("%ld bytes used\n", (IPTR *)&blocks) < 0)
                 error = RETURN_ERROR;
         }
     }
@@ -202,7 +204,12 @@ int listfile(STRPTR filename)
                         error = printdirheader(dirname);
                         FreeVec(dirname);
                         if (!error) {
-                            error = printfiledata(fib->fib_FileName, fib->fib_DirEntryType>=0?TRUE:FALSE, &fib->fib_Date, fib->fib_Protection, fib->fib_NumBlocks, fib->fib_Comment);
+                            error = printfiledata(fib->fib_FileName,
+                                                  fib->fib_DirEntryType>=0?TRUE:FALSE,
+                                                  &fib->fib_Date,
+                                                  fib->fib_Protection,
+                                                  fib->fib_NumBlocks,
+                                                  fib->fib_Comment);
                             if (!error)
                                 error = printsummary(1, 0, fib->fib_Size);
                         }
@@ -236,11 +243,11 @@ int main (int argc, char **argv)
     rda = ReadArgs(TEMPLATE, args, NULL);
     if (rda) {
         filelist = (STRPTR *)args[ARG_DIR];
-        if ((filelist) && (filelist[0])) {
+        if ((filelist) && (*filelist)) {
             while ((*filelist) && (!error)) {
                 error = listfile(filelist[0]);
                 filelist++;
-                if (filelist[0])
+                if ((filelist[0]) && (!error))
                     VPrintf("\n", NULL);
             }
         } else
