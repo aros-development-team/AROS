@@ -858,28 +858,8 @@ static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if (data->flags & LIST_ADJUSTHEIGHT)
-    {
-	msg->MinMaxInfo->MinHeight += data->entries_totalheight;
-	msg->MinMaxInfo->DefHeight += data->entries_totalheight;
-	msg->MinMaxInfo->MaxHeight += data->entries_totalheight;
-    }
-    else if (data->entries_num > 0)
-    {
-	ULONG h = data->entry_maxheight + data->prefs_linespacing;
-	msg->MinMaxInfo->MinHeight += 3 * h + data->prefs_linespacing;
-	msg->MinMaxInfo->DefHeight += 8 * h + data->prefs_linespacing;
-	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
-    }
-    else
-    {
-	msg->MinMaxInfo->MinHeight += 40;
-	msg->MinMaxInfo->DefHeight += 100;
-	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;	
-    }
-    D(bug("List minheigh=%d, line maxh=%d\n", msg->MinMaxInfo->MinHeight, data->entry_maxheight));
 
-    if (data->flags & LIST_ADJUSTWIDTH)
+    if ((data->flags & LIST_ADJUSTWIDTH) && (data->entries_num > 0))
     {
 	msg->MinMaxInfo->MinWidth += data->entries_maxwidth;
 	msg->MinMaxInfo->DefWidth += data->entries_maxwidth;
@@ -887,10 +867,34 @@ static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax
     }
     else
     {
-	msg->MinMaxInfo->MinWidth += 44;
-	msg->MinMaxInfo->DefWidth += 104;
+	msg->MinMaxInfo->MinWidth += 40;
+	msg->MinMaxInfo->DefWidth += 100;
 	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
     }
+
+    if (data->entries_num > 0)
+    {
+	if (data->flags & LIST_ADJUSTHEIGHT)
+	{
+	    msg->MinMaxInfo->MinHeight += data->entries_totalheight;
+	    msg->MinMaxInfo->DefHeight += data->entries_totalheight;
+	    msg->MinMaxInfo->MaxHeight += data->entries_totalheight;
+	}
+	else
+	{
+	    ULONG h = data->entry_maxheight + data->prefs_linespacing;
+	    msg->MinMaxInfo->MinHeight += 3 * h + data->prefs_linespacing;
+	    msg->MinMaxInfo->DefHeight += 8 * h + data->prefs_linespacing;
+	    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+	}
+    }
+    else
+    {
+	msg->MinMaxInfo->MinHeight += 36;
+	msg->MinMaxInfo->DefHeight += 96;
+	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;	
+    }
+    D(bug("List minheigh=%d, line maxh=%d\n", msg->MinMaxInfo->MinHeight, data->entry_maxheight));
     return TRUE;
 }
 
