@@ -1,6 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
-OBJDIR	:= $(OSGENDIR)/console
+
 FILES	:= cdinputhandler console rawkeyconvert support \
 	   consoleclass stdconclass consoletask
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
