@@ -17,8 +17,6 @@
 #include <proto/oop.h>
 #include <proto/alib.h>
 
-#include "oss_intern.h"
-
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
