@@ -22,6 +22,9 @@ it will not take very long until we can present applications that make use of
 menus. Actually this should soon give us the ability to compile and run 
 larger applications that were originally written for the Amiga.
 
+  By the time you read this, a new version of AROS should be on AmiNET in
+misc/emu/.
+
        The new license
 
   It should also be mentioned that we have put AROS under a new licence.
@@ -31,7 +34,7 @@ work freely and create Open Source distributions from it. For companies it is
 also very interesting as it allows them to create products from the same
 code and sell them.
 
-       Out intentions
+       Our intentions
 
   We would also like to take the opportunity of pointing out our general 
 intentions in case you havent read about them. 
