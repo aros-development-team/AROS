@@ -96,10 +96,13 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
+    
+    char *bg_win_str = (char*)FindConfig(MUICFG_Background_Window);
+    
     setstring(data->font_normal_string,FindConfig(MUICFG_Font_Normal));
     setstring(data->font_tiny_string,FindConfig(MUICFG_Font_Tiny));
     setstring(data->font_big_string,FindConfig(MUICFG_Font_Big));
-    setstring(data->background_window_string,((char*)FindConfig(MUICFG_Background_Window))+2);
+    setstring(data->background_window_string,bg_win_str ? (bg_win_str + 2) : NULL);
     return 1;    
 }
 
