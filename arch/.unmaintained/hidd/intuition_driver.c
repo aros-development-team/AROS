@@ -402,13 +402,12 @@ struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event
 	
 	UnlockLayerInfo(&scr->LayerInfo);
 	
-	if (!l)
+	if (NULL == l)
 	{
 	    D(bug("iih: Click not inside layer\n"));
 	}
 	else
 	{
-	
 	    new_w = (struct Window *)l->Window;
 	    if (!new_w)
 	    {
@@ -418,12 +417,8 @@ struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event
     D(bug("Found layer %p\n", l));
     
         }
-    
-    
     }
     return new_w;
-
-    
 }
 
 LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
@@ -652,9 +647,11 @@ static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase
     for (i = 0; i < NUM_SYSGADS; i ++)
     {
         if (SYSGAD(w, i))
+	{
+	    RemoveGadget( w, (struct Gadget *)SYSGAD(w, i));
 	    DisposeObject( SYSGAD(w, i) );
+	}
     }
-
 }
 
 void intui_ScrollWindowRaster(struct Window * win,
@@ -696,6 +693,11 @@ void windowneedsrefresh(struct Window * w,
 
   if (NULL == w->UserPort)
     return;
+  
+  
+  /* Refresh the window's gadgetry */
+kprintf("REFRESHING WINDOW GADGETS\n");
+  RefreshGadgets(w->FirstGadget, w, NULL);
   
   /* Can use Forbid() for this */
   
