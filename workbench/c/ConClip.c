@@ -26,7 +26,7 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
+
 
 #undef DEBUG
 #define DEBUG 0
@@ -119,7 +119,7 @@ static void checkport(void)
     }
     progport = CreatePort(CONCLIP_PORTNAME, 1);
     Permit();
-    
+
     if (!progport) cleanup("Could not create MsgPort!");
     
     portmask = 1L << progport->mp_SigBit;
@@ -148,20 +148,20 @@ AROS_UFH3(ULONG, conclipeditfunc,
 	    if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND)
 	    {
 	        D(bug("ConClip/conclipeditfunc: qualifier RCOMMAND okay\n"));
-		
-	        switch(toupper(sgw->Code))
+
+	        switch(ToUpper(sgw->Code))
 		{
 		    case 'C':
 		    	if (!sgw->NumChars) break;
 			/* fall through */
-			
+
 		    case 'V':
 	    		D(bug("ConClip/conclipeditfunc: key = %c\n", toupper(sgw->Code)));
-			
+
 		        if ((port = FindPort(CONCLIP_PORTNAME)))
 			{
 			    calloldhook = FALSE;
-			    
+
 			    replyport.mp_Node.ln_Type	= NT_MSGPORT;
 			    replyport.mp_Node.ln_Name 	= NULL;
 			    replyport.mp_Node.ln_Pri 	= 0;
@@ -174,7 +174,7 @@ AROS_UFH3(ULONG, conclipeditfunc,
 			    msg.msg.mn_ReplyPort 	= &replyport;
 			    msg.msg.mn_Length 		= sizeof(msg);
 			    
-			    msg.code = toupper(sgw->Code);
+			    msg.code = ToUpper(sgw->Code);
 			    msg.sgw  = sgw;			    
 			    
 			    if ((msg.code == CODE_COPY) || (sgw->NumChars < sgw->StringInfo->MaxChars - 1))
@@ -203,7 +203,7 @@ AROS_UFH3(ULONG, conclipeditfunc,
 		
 			break;
 		    
-		} /* switch(toupper(sgw->Code)) */
+		} /* switch(ToUpper(sgw->Code)) */
 		
 	    } /* if (sgw->IEvent->ie_Qualifier & IEQUALIFIER_RCOMMAND) */
     	    break;    
