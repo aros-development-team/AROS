@@ -6,13 +6,45 @@
 #ifndef _MUIMASTER_SUPPORT_AMIGAOS_H_
 #define _MUIMASTER_SUPPORT_AMIGAOS_H_
 
+#ifdef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+
+#ifndef INTUITION_CLASSES_H
+#include <intuition/classes.h>
+#endif
+
+/* Define all classes as built in...should be moved out to config.h like file */
+#define ZUNE_BUILTIN_ABOUTMUI 1
+#define ZUNE_BUILTIN_BOOPSI 1
+#define ZUNE_BUILTIN_COLORADJUST 1
+#define ZUNE_BUILTIN_COLORFIELD 1
+#define ZUNE_BUILTIN_FRAMEADJUST 1
+#define ZUNE_BUILTIN_FRAMEDISPLAY 1
+#define ZUNE_BUILTIN_GAUGE 1
+#define ZUNE_BUILTIN_IMAGEADJUST 1
+#define ZUNE_BUILTIN_IMAGEDISPLAY 1
+#define ZUNE_BUILTIN_PENADJUST 1
+#define ZUNE_BUILTIN_PENDISPLAY 1
+#define ZUNE_BUILTIN_POPASL 1
+#define ZUNE_BUILTIN_POPFRAME 1
+#define ZUNE_BUILTIN_POPIMAGE 1
+#define ZUNE_BUILTIN_POPPEN 1
+#define ZUNE_BUILTIN_SCALE 1
+#define ZUNE_BUILTIN_SCROLLGROUP 1
+#define ZUNE_BUILTIN_SETTINGSGROUP 1
+#define ZUNE_BUILTIN_VIRTGROUP 1
+
 #include <dos.h>
 
 #define AROS_LONG2BE(x) (x)
 
-char *StrDup(char *x);
+char *StrDup(const char *x);
 int snprintf(char *buf, int size, const char *fmt, ...);
 int strlcat(char *buf, char *src, int len);
+Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
+Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy,...);
+
 
 /*** AROS Intuition extensions **********************************************/
 #define DeinitRastPort(rp)      
