@@ -76,6 +76,7 @@ FUNCTIONS = \
 	textfit \
 	textlength \
 	waittof \
+	weightamatch \
 	writepixel \
 	writepixelarray8 \
 	xorrectregion
