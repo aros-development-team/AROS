@@ -1,4 +1,4 @@
-#ifndef INTUITION_INTERNH_H
+#ifndef INTUITION_INTERN_H
 #define INTUITION_INTERN_H
 
 /*
