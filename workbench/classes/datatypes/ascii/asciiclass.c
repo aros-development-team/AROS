@@ -1,3 +1,11 @@
+/*
+    (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang:
+*/
+
 /**********************************************************************/
 
 #include <stdio.h>
@@ -26,6 +34,10 @@
 #include <proto/datatypes.h>
 
 #include "ascii_intern.h"
+
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
 
 /**************************************************************************************************/
 
@@ -56,6 +68,8 @@ static IPTR Ascii_New(Class * cl, Object *o, struct opSet *msg)
                      TDTA_Buffer	, (IPTR)&buffer,
                      TDTA_BufferLen	, (IPTR)&len,
                      TAG_DONE);
+
+	D(bug("AsciiDataType_new: buffer = %x  bufferlen = %d\n", buffer, len));
 
          /* Make sure we have a text buffer */
          if (buffer && len)
@@ -98,18 +112,15 @@ static IPTR Ascii_Dispose(Class *cl, Object *o, Msg msg)
     
     /* Get a pointer to our object data */
     data = INST_DATA (cl, o);
-kprintf("Ascii_Dispose: 1\n");
+
     /* Don't let the super class free the line list */
     if (GetDTAttrs (o, TDTA_LineList, (IPTR) &linelist, TAG_DONE) && linelist)
         NewList (linelist);
-kprintf("Ascii_Dispose: 2\n");
 
     /* Delete the line pool */
     DeletePool (data->Pool);
-kprintf("Ascii_Dispose: 3\n");
 
     retval = DoSuperMethodA(cl, o, msg);
-kprintf("Ascii_Dispose: 4\n");
     
     return retval;
 }
@@ -227,6 +238,8 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
     ULONG 			nomwidth, nomheight;
 
+    D(bug("AsciiDataType_AsyncLayout\n"));
+    
     /* Get all the attributes that we are going to need for a successful layout */
     if (GetDTAttrs (o, DTA_TextAttr	, (IPTR) &tattr		,
                        DTA_TextFont	, (IPTR) &font		,
@@ -238,18 +251,21 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
                        TDTA_WordWrap	, (IPTR) &wrap		,
                        TAG_DONE) == 8)
     {
-kprintf("ascii: async 1\n");
+        D(bug("AsciiDataType_AsyncLayout: Got all attrs\n"));
+
         /* Lock the global object data so that nobody else can manipulate it */
         ObtainSemaphore (&(si->si_Lock));
 
         /* Make sure we have a buffer */
         if (buffer)
         {
-kprintf("ascii: async 2\n");
+	    D(bug("AsciiDataType_AsyncLayout: Got buffer\n"));
+	    
             /* Initialize the temporary RastPort */
             InitRastPort (&trp);
             SetFont (&trp, font);
-kprintf("ascii: async 3\n");
+
+    	    D(bug("AsciiDataType_AsyncLayout: Temp RastPort initialized\n"));
 
             /* Calculate the nominal size */
             nomheight = (ULONG) (24 * font->tf_YSize);
@@ -260,20 +276,24 @@ kprintf("ascii: async 3\n");
 
             /* We only need to perform layout if we are doing word wrap, or this
              * is the initial layout call */
-kprintf("ascii: async 3\n");
+
+    	    D(bug("AsciiDataType_AsyncLayout: Checking if layout is needed\n"));
+	    
             if (wrap || gpl->gpl_Initial)
             {
+		D(bug("AsciiDataType_AsyncLayout: Layout IS needed. Freeing old LineList\n"));
+		
                 /* Delete the old line list */
                 while ((line = (struct Line *) RemHead (linelist)))
                     FreePooled (data->Pool, line, sizeof (struct Line));
-kprintf("ascii: async 4\n");
+
+    		D(bug("AsciiDataType_AsyncLayout. Old LineList freed\n"));
 
                 /* Step through the text buffer */
                 for (i = offset = num = numtabs = 0;
                      (i <= bufferlen) && (bsig == 0) && !abort;
                      i++)
                 {
-kprintf("ascii: async 5\n");
 		    /* Check for end of line */
 		    if (buffer[i] == 10)	// && buffer[i+1]==10)
 
@@ -402,8 +422,11 @@ kprintf("ascii: async 5\n");
                                DTA_Busy		, FALSE					,
                                DTA_Sync		, TRUE					,
                                TAG_DONE);
-        }
-    }
+        } /* if (bsig == 0) */
+		
+    } /* if GetDTAttrs(... */
+
+    D(bug("AsciiDataType_AsyncLayout: Done. Returning %d\n", total));
     
     return (IPTR)total;
 }
@@ -473,7 +496,7 @@ struct IClass *DT_MakeClass(struct Library *asciibase)
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
 #endif
-	cl->cl_UserData = asciibase; /* Required by datatypes (see disposedtobject) */
+	cl->cl_UserData = (IPTR)asciibase; /* Required by datatypes (see disposedtobject) */
     }
 
     return cl;

@@ -1,6 +1,19 @@
+/*
+    (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang:
+*/
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
+
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
+
+/**************************************************************************************************/
 
 struct IClass 		*dt_class;
 
@@ -28,6 +41,8 @@ int __UserLibInit(struct Library *libbase )
     SysBase = *(struct ExecBase**)4;
 #endif
 
+    D(bug("ascii.datatype/__UserLibInit\n"));
+    
     if ((TextBase = OpenLibrary("datatypes/text.datatype", 0)))
     {
 	if((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
@@ -50,6 +65,8 @@ int __UserLibInit(struct Library *libbase )
 				{
 				    AddClass(dt_class);
 
+   				    D(bug("ascii.datatype/__UserLibInit: Returning success\n"));
+
 				    return 0;
 				}
 			    }
@@ -59,6 +76,8 @@ int __UserLibInit(struct Library *libbase )
 	    }
 	}
     }
+
+    D(bug("ascii.datatype/__UserLibInit: Returning failure\n"));
     
     return -1;
 }
@@ -67,6 +86,10 @@ int __UserLibInit(struct Library *libbase )
 
 void __UserLibCleanup(struct Library *libbase )
 {
+    D(bug("ascii.datatype/__UserLibCleanup\n"));
+
+    D(bug("ascii.datatype/__UserLibCleanup: Freeing class\n"));
+
     if(dt_class)
     {
 	RemoveClass(dt_class);
@@ -74,25 +97,26 @@ void __UserLibCleanup(struct Library *libbase )
 	dt_class = NULL;
     }
 
-kprintf("ascii.datatype: __UserLibCleanup 1\n");
-    
+    D(bug("ascii.datatype/__UserLibCleanup: Closing Libraries\n"));
+
     if(TextBase) CloseLibrary(TextBase);
-kprintf("ascii.datatype: __UserLibCleanup 2\n");
     if(IFFParseBase) CloseLibrary(IFFParseBase);
-kprintf("ascii.datatype: __UserLibCleanup 3\n");
     if(DataTypesBase) CloseLibrary(DataTypesBase);
-kprintf("ascii.datatype: __UserLibCleanup 4\n");
     if(UtilityBase) CloseLibrary((struct Library *)UtilityBase);
     if(DOSBase) CloseLibrary((struct Library *)DOSBase);
     if(IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
     if(GfxBase) CloseLibrary((struct Library *)GfxBase);
-kprintf("ascii.datatype: __UserLibCleanup done\n");
+    
+    D(bug("ascii.datatype/__UserLibCleanup: Done\n"));
+
 }
 
 /**************************************************************************************************/
 
 struct IClass *ObtainEngine(void)
 {
+    D(bug("ascii.datatype/ObtainEngine: returning %x\n", dt_class));
+
     return dt_class;
 }
 
