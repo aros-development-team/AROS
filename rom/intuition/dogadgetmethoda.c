@@ -1,7 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  2001/01/10 17:57:07  stegerg
+    dont allocate GadgetInfo structure. Instead have it as a normal variable
+    on the stack. Source code cleanup.
+
     Revision 1.11  2000/01/21 23:06:40  stegerg
     fixed for screengadgets, for which the window parameter
     is supposed to point to the screen (hack).
@@ -123,45 +127,54 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
     IPTR ret = 0;
 
     if (gad) /* OS routines work with NULL objects */
     {
-	struct GadgetInfo *gi = (struct GadgetInfo *)AllocMem(sizeof(struct GadgetInfo), MEMF_PUBLIC|MEMF_CLEAR);
+	struct GadgetInfo gi;
+	struct Window 	  *tw;
 
-	if (gi)
+    	gi.gi_DrInfo = NULL;
+	
+	if (req)
 	{
-	    struct Window *tw;
+	    tw = req->RWindow;
+	}
+	else
+	{
+	    tw = win;
+	}
 
-	    if (req)
+	if (tw)
+	{
+	    /* Initialize the GadgetInfo data. */
+
+    	    if (IS_SCREEN_GADGET(gad))
 	    {
-		gi->gi_Requester = req;
-		tw = req->RWindow;
+	    	gi.gi_Window 	     = NULL;
+		gi.gi_Screen 	     = (struct Screen *)tw;
+		gi.gi_Pens.DetailPen = 0;
+		gi.gi_Pens.BlockPen  = 0;
 	    }
 	    else
 	    {
-		gi->gi_Requester = NULL;
-		tw = win;
-	    } /* if */
+	    	gi.gi_Window 	     = tw;
+		gi.gi_Screen 	     = tw->WScreen;
+		gi.gi_Pens.DetailPen = tw->DetailPen;
+		gi.gi_Pens.BlockPen  = tw->BlockPen;
+	    }
+	    gi.gi_Requester 	 = req;
+	    gi.gi_DrInfo	 = GetScreenDrawInfo (gi.gi_Screen);
 
-	    if (tw)
-	    {
-		/* Initialize the GadgetInfo data. */
-		
-		gi->gi_Window	      = IS_SCREEN_GADGET(gad) ? NULL : tw;
-		gi->gi_Screen	      = IS_SCREEN_GADGET(gad) ? (struct Screen *)tw : tw->WScreen;
-		gi->gi_Pens.DetailPen = IS_SCREEN_GADGET(gad) ? tw->DetailPen : 0;
-		gi->gi_Pens.BlockPen  = IS_SCREEN_GADGET(gad) ? tw->BlockPen : 0;
-		gi->gi_DrInfo	      = GetScreenDrawInfo (gi->gi_Screen);
+	    SET_GI_RPORT(&gi, tw, gad);
 
-		SET_GI_RPORT(gi, tw, gad);
-		
-		gi->gi_Layer	      = gi->gi_RastPort->Layer;
-		
-		GetGadgetDomain(gad, gi->gi_Screen, gi->gi_Window, req, &gi->gi_Domain);
-		
-	    } /* if (tw) */
-	} /* if (gi) */
+	    gi.gi_Layer	         = gi.gi_RastPort->Layer;
+
+	    GetGadgetDomain(gad, gi.gi_Screen, gi.gi_Window, req, &gi.gi_Domain);
+
+	} /* if (tw) */
+	    
 
         /* Protect DoMethodA against race conditions between app task
 	   and input.device task (which executes Intuitions Inputhandler) */
@@ -170,69 +183,61 @@
 	
 	switch (msg->MethodID)
 	{
-	case OM_NEW:
-	case OM_SET:
-	case OM_NOTIFY:
-	case OM_UPDATE:
-	    ((struct opSet *)msg)->ops_GInfo = gi;
-	    ret = DoMethodA((Object *)gad, msg);
-	    break;
-
-	case GM_LAYOUT:
-	    if (gi)
-	    {
-		((struct gpLayout *)msg)->gpl_GInfo = gi;
-
+	    case OM_NEW:
+	    case OM_SET:
+	    case OM_NOTIFY:
+	    case OM_UPDATE:
+		((struct opSet *)msg)->ops_GInfo = &gi;
 		ret = DoMethodA((Object *)gad, msg);
-	    } /* if */
-	    break;
+		break;
 
-	case GM_RENDER:
-	    if (gi)
-	    {
-		struct RastPort *rp;
+	    case GM_LAYOUT:
+		((struct gpLayout *)msg)->gpl_GInfo = &gi;
+    	    	ret = DoMethodA((Object *)gad, msg);
+		break;
 
-		/* Allocate a clone rastport derived from the GadgetInfo
-		 * whose layer clipping information has been nulled out...
-		 */
-		rp = ObtainGIRPort(gi);
-
-		if (rp)
+	    case GM_RENDER:
 		{
-		    if (gi->gi_DrInfo)
+		    struct RastPort *rp;
+
+		    /* Allocate a clone rastport derived from the GadgetInfo
+		     * whose layer clipping information has been nulled out...
+		     */
+		    rp = ObtainGIRPort(&gi);
+
+		    if (rp)
 		    {
-			SetFont(rp, gi->gi_DrInfo->dri_Font);
-		    } /* if */
+			if (gi.gi_DrInfo)
+			{
+			    SetFont(rp, gi.gi_DrInfo->dri_Font);
+			}
 
-		    ((struct gpRender *)msg)->gpr_RPort = rp;
-		    ((struct gpRender *)msg)->gpr_GInfo = gi;
+			((struct gpRender *)msg)->gpr_RPort = rp;
+			((struct gpRender *)msg)->gpr_GInfo = &gi;
 
-		    ret = DoMethodA((Object *)gad, msg);
+			ret = DoMethodA((Object *)gad, msg);
 
-		    ReleaseGIRPort(rp);
-		} /* if */
-	    } /* if */
-	    break;
+			ReleaseGIRPort(rp);
+		    }
+		}
+		break;
 
-	default:
-	    ((struct gpRender *)msg)->gpr_GInfo = gi;
+	    default:
+		((struct gpRender *)msg)->gpr_GInfo = &gi;
+		ret = DoMethodA ((Object *)gad, msg);
+		break;
 
-	    ret = DoMethodA ((Object *)gad, msg);
-	    break;
-
-	} /* switch */
+	} /* switch (msg->MethodID) */
 
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 	
-	if (gi)
-	{
-	    if (gi->gi_DrInfo)
-		FreeScreenDrawInfo (gi->gi_Screen, gi->gi_DrInfo );
+	if (gi.gi_DrInfo) FreeScreenDrawInfo (gi.gi_Screen, gi.gi_DrInfo );
 
-	    FreeMem ((APTR)gi, sizeof(struct GadgetInfo));
-	} /* if */
-    } /* if */
+	
+    } /* if (gad) */
 
     return( (ULONG)ret );
+    
     AROS_LIBFUNC_EXIT
+    
 } /* DoGadgetMethodA */
