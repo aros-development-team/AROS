@@ -1,18 +1,12 @@
 Short: AROS - Amiga Replacement OS
 Author:   Aaron "Optimizer" Digulla (digulla@fh-konstanz.de) and many others
 Uploader: Aaron "Optimizer" Digulla (digulla@fh-konstanz.de)
-Version:  1.6
+Version:  1.7
 Type:	  misc/emu
 
 New this time:
 
-- First small steps on graphics and intuition.library. You can open
-    a window and render in it - Due to a bug, the rendering won't be
-    visible every time. A small demo is there which open a window,
-    renders something (sometimes) and then waits for a keypress.
-- The includes and scripts were missing. They are here now.
-- More things are generated now (function tables and prototypes)
-- Some bug fixes.
+
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
@@ -37,3 +31,15 @@ neccessary to create bin and dev archives and to build/port the
 complete tree. The bin Archive right now contains everything to test
 AROS on Linux. Sorry, no Amiga port at this time.
 
+If you want to contribute, read README.CVS. Right now, you need access
+to a Unix site to do this (or a friend you trust) to generate a password.
+
+Where to find more infos ? Look at these pages on WorldWideWaiting:
+
+http://www.lysator.liu.se/amiga/aros/
+http://colombo.telis-sc.fr/AmigOS/
+http://www.xs4all.nl/~arcade/
+http://ernie.mi.uni-koeln.de/AmigOS
+
+Please note that these pages are not under central control yet and therefore
+may contain quite different contents.
