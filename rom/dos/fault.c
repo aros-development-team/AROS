@@ -6,10 +6,10 @@
     Lang: english
 */
 #include <aros/options.h>
+#include "dos_intern.h"
 #if PassThroughErrnos
 #   include <errno.h>
 #endif
-#include "dos_intern.h"
 
 /*****************************************************************************
 
@@ -40,11 +40,11 @@
 	followed by the error number will be added to the string.
 
     INPUTS
-	code    -   The error code.
-	header  -   The string to prepend to the buffer before the error
+	code	-   The error code.
+	header	-   The string to prepend to the buffer before the error
 		    text. This may be NULL in which case nothing is prepended.
-	buffer  -   The destination buffer.
-	len     -   Length of the buffer.
+	buffer	-   The destination buffer.
+	len	-   Length of the buffer.
 
     RESULT
 	Number of characters placed in the buffer, may be 0.
@@ -76,22 +76,20 @@
 
     if (header)
     {
-        while((index < len) && *header)
-        {
-            buffer[index++] = *header++;
-        }
+	while((index < len) && *header)
+	{
+	    buffer[index++] = *header++;
+	}
 
-        buffer[index++] = ':';
-        buffer[index++] = ' ';
+	buffer[index++] = ':';
+	buffer[index++] = ' ';
     }
 
     theString = DosGetString(code);
 #if PassThroughErrnos
     if ((!theString) && (code & PassThroughErrnos))
     {
-        int errcode = code - PassThroughErrnos;
-        if ((errcode > 0) && (errcode < sys_nerr))
-            theString = sys_errlist[errcode];
+	theString = strerror (code ^ PassThroughErrnos);
     }
 #endif
     if(theString)
@@ -140,7 +138,7 @@
 	    /* Copy the number onto the fault string */
 	    while((index < len) && l2str[l2idx])
 	    {
-	        buffer[index++] = l2str[l2idx++];
+		buffer[index++] = l2str[l2idx++];
 	    }
 	}
     }
