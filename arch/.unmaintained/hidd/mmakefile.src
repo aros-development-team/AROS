@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OS_INCLUDES	:= -I$(GENINCDIR)
-GFX_INCLUDES	:= -I$(TOP)/rom/graphics
+GFX_INCLUDES	:= -I$(TOP)/rom/graphics -I$(TOP)/rom/cgfx
 INT_INCLUDES	:= -I$(TOP)/rom/intuition
 DEPS		:= $(OSGENDIR)/graphics/graphics_driver.d \
 		   $(OSGENDIR)/intuition/intuition_driver.d
