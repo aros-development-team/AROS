@@ -108,7 +108,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 	return DOSFALSE;
     }
     
-    hook.h_Entry = (HOOKFUNC)LocDateToStrPutCharFunc;
+    hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(LocDateToStrPutCharFunc);
     hook.h_Data = &buf;
     
     REPLACEMENT_LOCK;

@@ -5,7 +5,7 @@
     Desc: Locale_RawDoFmt - locale.library's private replacement
     	  of exec.library/RawDoFmt function. IPrefs will install
 	  the patch.
-	  
+
     Lang: english
 */
 
@@ -15,9 +15,56 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+
 extern struct LocaleBase *globallocalebase;
 
 #define LocaleBase globallocalebase
+
+#ifdef __MORPHOS__
+
+/* move.b d0,(a3)+
+   rts
+*/
+#define ARRAY_FUNC      0x16c04e75
+
+/* KPutChar
+	MOVE.L  A6,-(SP)        ;2F0E
+	MOVEA.L (4).L,A6        ;2C7900000004
+	JSR     (-$0204,A6)     ;4EAEFDFC
+	MOVEA.L (SP)+,A6        ;2C5F
+	RTS                     ;4E75
+*/
+
+#define SERIAL_FUNC0    0x2f0e2c79
+#define SERIAL_FUNC1    0x00000004
+#define SERIAL_FUNC2    0x4eaefdfc
+#define SERIAL_FUNC3    0x2c5f4e75
+
+/* Quick reg layout function
+ */
+char *_PPCCallM68k_RawDoFmt(char MyChar,
+			    char *(*PutChProc)(char*,char),
+			    char *PutChData);
+
+char *PPCCallM68k_RawDoFmt(char MyChar,
+			   char *(*PutChProc)(char*,char),
+			   char *PutChData)
+{
+  /* As we call a *QUICK REG LAYOUT* function
+   * below we must make sure that this function backups/restores
+   * all registers
+   */
+  asm(""
+      :
+      :
+      : "r13");
+
+  return _PPCCallM68k_RawDoFmt(MyChar,
+                               PutChProc,
+			       PutChData);
+}
+#endif
+
 
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -29,17 +76,39 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 #ifdef __mc68000__
     register APTR pdata __asm(A3) = hook->h_Data;
 #else
-    APTR pdata = hook->h_Data;
+    char *pdata = hook->h_Data;
 #endif
 
+#ifdef __MORPHOS__
+    char str[2];
+
+    switch ((ULONG) hook->h_SubEntry)
+    {
+      case 0:
+	/* Standard Array Function */
+	*pdata++ = fill;
+	break;
+
+      case 1:
+	/* Standard Serial Function */
+	str[0] = fill;
+	str[1] = '\0';
+	break;
+
+      default:
+	pdata = PPCCallM68k_RawDoFmt(fill,
+				     hook->h_SubEntry,
+				     pdata);
+	break;
+    }
+#else
     AROS_UFC3(void, hook->h_SubEntry,
     	AROS_UFCA(char, fill, D0),
 	AROS_UFCA(APTR, pdata, A3),
 	AROS_UFCA(struct ExecBase *, IntLB(LocaleBase)->lb_SysBase, A6));
-
-#ifdef __mc68000__
-    hook->h_Data = pdata;
 #endif
+
+    hook->h_Data = pdata;
 
     AROS_USERFUNC_EXIT
 }
@@ -64,7 +133,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
 /*  FUNCTION
     	See exec.library/RawDoFmt
-	
+
     INPUTS
     	See exec.library/RawDoFmt
 
@@ -76,7 +145,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	above actually points to SysBase!!! But I may not rename it, because then
 	no entry for this function is generated in the Locale functable by the
 	corresponding script!
-	
+
     EXAMPLE
 
     BUGS
@@ -92,34 +161,53 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
 *****************************************************************************/
 {
+#ifndef __MORPHOS__
     AROS_LIBFUNC_INIT
+#endif
 
 #define LocaleBase globallocalebase
 
     struct Hook       hook;
     APTR    	      retval;
-    
-    hook.h_Entry    = (HOOKFUNC)LocRawDoFmtFormatStringFunc;
+
+#ifdef __MORPHOS__
+    if ((ULONG) PutChProc > 1)
+    {
+	if (*((ULONG*) PutChProc) == ARRAY_FUNC)
+	{
+	    PutChProc = 0;
+	}
+	else if ((((ULONG*) PutChProc)[0] == SERIAL_FUNC0) &&
+		 (((ULONG*) PutChProc)[1] == SERIAL_FUNC1) &&
+		 (((ULONG*) PutChProc)[2] == SERIAL_FUNC2) &&
+		 (((ULONG*) PutChProc)[3] == SERIAL_FUNC3))
+	{
+	    PutChProc = (APTR) 1;
+	}
+    }
+#endif
+
+    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
     hook.h_SubEntry = (HOOKFUNC)PutChProc;
     hook.h_Data     = PutChData;
 
     //kprintf("LocRawDoFmt: FormatString = \"%s\"\n", FormatString);
- 
+
     REPLACEMENT_LOCK;
-    
+
     retval = FormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
     	    	    	  (STRPTR)FormatString,
 			  DataStream,
 			  &hook);
 
     REPLACEMENT_UNLOCK;
-    
+
     //kprintf("LocRawDoFmt: FormatString: returning %x\n", retval);
-    
+
     return retval;
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* LocRawDoFmt */
 
 #undef LocaleBase

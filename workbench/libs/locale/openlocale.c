@@ -79,47 +79,51 @@ extern void InitLocale(
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
+    
     struct IntLocale *locale = NULL;
-
+    
     /* Have we been asked for a disk-based locale? */
     if(name != NULL)
     {
-	struct IFFHandle *iff;
+    struct IFFHandle *iff;
 	ULONG error;
 	struct LocalePrefs *lp;
 	struct ContextNode *cn;
 
 	/* Clear error condition before we start. */
-	SetIoErr(0);
+	
+    SetIoErr(0);
 
 	lp = AllocMem(sizeof(struct LocalePrefs), MEMF_CLEAR);
 	if( lp == NULL )
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
+        
 	    return NULL;
 	}
 
 	iff = AllocIFF();
+    
 	if(iff == NULL)
 	{
-	    FreeMem(lp, sizeof(struct LocalePrefs));
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	    return NULL;
+        FreeMem(lp, sizeof(struct LocalePrefs));
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return NULL;
 	}
 
 	iff->iff_Stream = (ULONG)Open(name, MODE_OLDFILE);
 	if(iff->iff_Stream == NULL)
 	{
-	    FreeMem(lp, sizeof(struct LocalePrefs));
-	    FreeIFF(iff);
-	    return NULL;
+        FreeMem(lp, sizeof(struct LocalePrefs));
+        FreeIFF(iff);
+        return NULL;
 	}
 
-	InitIFFasDOS(iff);
-
-	if(!OpenIFF(iff, IFFF_READ))
+    InitIFFasDOS(iff);
+	
+    if(!OpenIFF(iff, IFFF_READ))
 	{
-	    if(!StopChunk(iff, ID_PREF, ID_LCLE))
+        if(!StopChunk(iff, ID_PREF, ID_LCLE))
 	    {
 		while(1)
 		{
@@ -127,7 +131,6 @@ extern void InitLocale(
 		    if(error == 0)
 		    {
 			cn = CurrentChunk(iff);
-
 			if((cn->cn_ID == ID_LCLE) && (cn->cn_Type == ID_PREF))
 			{
 			    if(ReadChunkBytes(iff, lp, sizeof(struct LocalePrefs)) == sizeof(struct LocalePrefs))
@@ -151,7 +154,7 @@ extern void InitLocale(
 
 	    CloseIFF(iff);
 	}
-	Close((BPTR)iff->iff_Stream);
+    Close((BPTR)iff->iff_Stream);
 	FreeIFF(iff);
 	FreeMem(lp, sizeof(struct LocalePrefs));
     }
@@ -159,11 +162,10 @@ extern void InitLocale(
     {
 	/* Return the current default */
 	ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
-	locale = IntLB(LocaleBase)->lb_CurrentLocale;
-	locale->il_Count++;
-	ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+    locale = IntLB(LocaleBase)->lb_CurrentLocale;
+    locale->il_Count++;
+    ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
     }
-
     /* We let the optimiser do some CSE above */
     return (struct Locale *)locale;
 

@@ -22,7 +22,7 @@
 
 /* aros_print_not_implemented() macro: */
 #include <aros/debug.h>
-
+#include <aros/asmcall.h>
 /* Should the Loc???() replacement functions lock the default locale.
    1 = yes. 0 = no. If you set this to 0, then you must make sure that
    a Locale which was once set as default Locale never gets freed from
@@ -140,3 +140,5 @@ struct IntCatalog
 
 void dispose_catalog(struct IntCatalog * cat,
                      struct LocaleBase * LocaleBase);
+
+void InstallPatches(void);

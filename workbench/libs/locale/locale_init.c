@@ -24,6 +24,10 @@
     non-expunge libraries, which locale is.
 */
 
+#ifdef __MORPHOS__
+    unsigned long __amigappc__ = 1;
+#endif
+
 #define INIT    AROS_SLIB_ENTRY(init, Locale)
 static const char name[];
 static const char version[];
@@ -45,7 +49,11 @@ const struct Resident Locale_resident =
     RTC_MATCHWORD,
     (struct Resident *)&Locale_resident,
     (APTR)&LIBEND,
+#ifdef __MORPHOS__
+    RTF_PPC |RTF_AUTOINIT,
+#else
     RTF_AUTOINIT,
+#endif
     VERSION_NUMBER,
     NT_LIBRARY,
     -120,
@@ -72,10 +80,14 @@ static const APTR inittabl[4] =
 
 struct LocaleBase *globallocalebase;
 
+#ifdef __MORPHOS__
+LIBBASETYPE *LIB_init(LIBBASETYPE *LIBBASE, BPTR segList, struct ExecBase *sysBase)
+#else
 AROS_LH2(LIBBASETYPE *, init,
     AROS_LHA(LIBBASETYPE *,  LIBBASE, D0),
     AROS_LHA(BPTR,                  segList, A0),
     struct ExecBase *, sysBase, 0, Locale)
+#endif
 {
     AROS_LIBFUNC_INIT
 
@@ -129,11 +141,14 @@ AROS_LH2(LIBBASETYPE *, init,
 
 	def->il_Count = 0;
 	IntLB(LIBBASE)->lb_CurrentLocale = def;
+    	InstallPatches();
 	return LIBBASE;
     }
     return NULL;
 
+#ifndef __MORPHOS__
     AROS_LIBFUNC_EXIT
+#endif
 }
 
 AROS_LH1(LIBBASETYPE *, open,
@@ -154,6 +169,20 @@ AROS_LH1(LIBBASETYPE *, open,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH0(BPTR, expunge,
+    LIBBASETYPE *, LIBBASE, 3, Locale)
+{
+    AROS_LIBFUNC_INIT
+
+    /* As I said above, we cannot remove ourselves. */
+    LIBBASE->lb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+
+    /* Free some memory if possible */
+
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+
 AROS_LH0(BPTR, close,
     LIBBASETYPE *, LIBBASE, 2, Locale)
 {
@@ -166,20 +195,6 @@ AROS_LH0(BPTR, close,
 	But we can try and free some memory.
     */
     AROS_LC0(BPTR, expunge, LIBBASETYPE *, LIBBASE, 3, Locale);
-
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(BPTR, expunge,
-    LIBBASETYPE *, LIBBASE, 3, Locale)
-{
-    AROS_LIBFUNC_INIT
-
-    /* As I said above, we cannot remove ourselves. */
-    LIBBASE->lb_LibNode.lib_Flags &= ~LIBF_DELEXP;
-
-    /* Free some memory if possible */
 
     return 0;
     AROS_LIBFUNC_EXIT
