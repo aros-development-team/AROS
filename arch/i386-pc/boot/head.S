@@ -61,6 +61,9 @@ startup_32:
 
 start_again:	cld
 		cli
+		movb	$-1,%al		/* Lock all interrupts */
+		outb	%al,$0xa1
+		outb	%al,$0x21
 		movl	$KERNEL_DS,%eax
 		mov	%ax,%ds
 		mov	%ax,%es
@@ -124,13 +127,6 @@ copy_idts_2:	movl	%eax,(%edi)
 
 		lidt	idt
 
-/* System timer to 50Hz */
-
-		mov	$23864,%eax
-		outb	%al,$0x40
-		xchg	%ah,%al
-		outb	%al,$0x40
-
 		call	checkCPUtype
 
 /* Call C-code kernel */
@@ -140,6 +136,9 @@ copy_idts_2:	movl	%eax,(%edi)
 
 start:		cld
 		cli
+		movb	$-1,%al		/* Lock all interrupts */
+		outb	%al,$0xa1
+		outb	%al,$0x21
 
 /* Set segment registers up */
 
@@ -224,13 +223,6 @@ copy_idts:	movl	%eax,(%edi)
 		movw	$0x3f2,%dx
 		xorb	%al,%al
 		outb	%al,%dx
-
-/* Set the timer to 50Hz */
-
-		mov	$23864,%eax	/* 1193180/50 */
-		outb	%al,$0x40	/* We don't need sending any comands */
-		xchg	%ah,%al 	/* BIOS did it for us */
-		outb	%al,$0x40	/* It was a bit dangerous ... */
 
 		call	checkCPUtype
 
