@@ -4,7 +4,11 @@
 # if the file as parameter.
 #
 
-/bin/ls -le $1 | \
-gawk ' { \
-    print $8". "$7" "$10;          \
-}'
+if [ -e $1 ]; then
+    /bin/ls -le $1 | \
+    gawk ' { \
+	print $8". "$7" "$10;          \
+    }'
+else
+    echo "***"
+fi

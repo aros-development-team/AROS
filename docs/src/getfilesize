@@ -4,30 +4,34 @@
 # the file as parameter
 #
 
-/bin/ls -l $1 | \
-gawk ' \
-    {					    \
-	size = $5;			    \
-	if (size < 2000)                    \
-	    print size " Bytes";            \
-	else if (size < 10000)              \
-	{				    \
-	    size = int((size+51)*10/1024)/10;    \
-	    print size " KB";               \
-	}				    \
-	else if (size < 100000)             \
-	{				    \
-	    size = int((size+512)/1024);          \
-	    print size " KB";               \
-	}				    \
-	else if (size < 10000000)           \
-	{				    \
-	    size = int((size+51200)*10/(1024*1024))/10; \
-	    print size " MB";               \
-	}				    \
-	else				    \
-	{				    \
-	    size = int((size+512000)/(1024*1024));   \
-	    print size " MB";               \
-	}				    \
-}'
+if [ -e $1 ]; then
+    /bin/ls -l $1 | \
+    gawk ' \
+	{					\
+	    size = $5;				\
+	    if (size < 2000)                    \
+		print size " Bytes";            \
+	    else if (size < 10000)              \
+	    {					\
+		size = int((size+51)*10/1024)/10;    \
+		print size " KB";               \
+	    }					\
+	    else if (size < 100000)             \
+	    {					\
+		size = int((size+512)/1024);          \
+		print size " KB";               \
+	    }					\
+	    else if (size < 10000000)           \
+	    {					\
+		size = int((size+51200)*10/(1024*1024))/10; \
+		print size " MB";               \
+	    }					\
+	    else				\
+	    {					\
+		size = int((size+512000)/(1024*1024));   \
+		print size " MB";               \
+	    }					\
+    }'
+else
+    echo "***"
+fi
