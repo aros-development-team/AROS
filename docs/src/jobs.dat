@@ -1473,7 +1473,7 @@ reqtools00018;2;SDuvan;rtUnlockPrefs
 reqtools00019;2;SDuvan;rtCloseWindowSafely
 reqtools00020;2;SDuvan;rtLockWindow
 reqtools00021;2;SDuvan;rtUnlockWindow
-rexxmast00001;0;verhaegs;Write RexxMast whith the "REXX" port
+rexxmast00001;0;verhaegs;Write RexxMast with the "REXX" port
 rexxsyslib00000;1;digulla;Write CreateArgstring
 rexxsyslib00001;1;digulla;Write DeleteArgstring
 rexxsyslib00002;1;digulla;Write LengthArgstring
