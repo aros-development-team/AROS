@@ -490,12 +490,17 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 	SetAPen(rp, dri->dri_Pens[BARTRIMPEN]);
 	RectFill(rp, 0, scr->BarHeight, scr->Width - 1, scr->BarHeight);
 
+	if (!scr->Title)
+	{
+	    scr->Title = scr->DefaultTitle;
+	}
 	if (scr->Title)
 	{
 	    SetAPen(rp, dri->dri_Pens[BARDETAILPEN]);
 	    SetBPen(rp, dri->dri_Pens[BARBLOCKPEN]);
 	    Move(rp, scr->BarHBorder, scr->BarVBorder + rp->TxBaseline);
 	    Text(rp, scr->Title, strlen(scr->Title));
+	   /*   D(bug("screen title render (%d,%d,%s)\n", scr->BarHBorder, scr->BarVBorder + rp->TxBaseline, scr->Title)); */
 	}
 
 	if (scr->FirstGadget)

@@ -6,7 +6,8 @@
     Lang: english
 */
 #include "intuition_intern.h"
-
+/*  # define DEBUG 1 */
+/*  # include <aros/debug.h> */
 /*****************************************************************************
 
     NAME */
@@ -70,9 +71,23 @@
 
     /* Change screen's title */
     if (!screenTitle)
+    {
 	window->ScreenTitle = NULL;
+	if (window->Flags & WFLG_WINDOWACTIVE)
+	{
+	    window->WScreen->Title = window->ScreenTitle;
+	    RenderScreenBar(window->WScreen, FALSE, IntuitionBase);
+	}
+    }
     else if (screenTitle != (CONST_STRPTR)~0L)
+    {
 	window->ScreenTitle = screenTitle;
-
+	if (window->Flags & WFLG_WINDOWACTIVE)
+	{
+	    window->WScreen->Title = window->ScreenTitle;
+	    RenderScreenBar(window->WScreen, FALSE, IntuitionBase);
+	}
+/*  	D(bug("SetWindowTitle(%x, %s)\n", window, screenTitle)); */
+    }
     AROS_LIBFUNC_EXIT
 } /* SetWindowTitles */
