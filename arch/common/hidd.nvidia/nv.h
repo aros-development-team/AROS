@@ -200,6 +200,7 @@ struct staticdata {
     OOP_Object		    *pci;
     OOP_Object		    *Device;
     OOP_Object		    *nvobject;
+    OOP_Object		    *pcidriver;
 
     OOP_AttrBase	    pciAttrBase;
     OOP_AttrBase	    bitMapAttrBase;
@@ -221,6 +222,7 @@ struct staticdata {
     ULONG		    rect_format;
     ULONG		    line_format;
 
+    OOP_MethodID	    mid_ReadLong;
     OOP_MethodID	    mid_CopyMemBox8;
     OOP_MethodID	    mid_CopyMemBox16;
     OOP_MethodID	    mid_CopyMemBox32;
