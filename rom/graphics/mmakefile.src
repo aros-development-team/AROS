@@ -53,6 +53,7 @@ FUNCTIONS := \
 	areamove \
 	askfont \
 	asksoftstyle \
+	attachpalextra \
 	attemptlocklayerrom \
 	bitmapscale \
 	bltbitmap \
@@ -123,6 +124,7 @@ FUNCTIONS := \
 	locklayerrom \
 	move \
 	newregion \
+	obtainpen \
 	obtainbestpena \
 	openfont \
 	orrectregion \

@@ -59,7 +59,7 @@
   if (NULL != colormap)
   {
     /* free the ColorTable */
-    FreeMem(colormap->ColorTable, (colormap->Count) << 1);
+    FreeMem(colormap->ColorTable  , (colormap->Count) << 1);
 
     /* free the LowColorBits */
     FreeMem(colormap->LowColorBits, (colormap->Count) << 1);
@@ -70,8 +70,11 @@
 
     /* free a PaletteExtra structure that might be connected to this */
     if (NULL != colormap->PalExtra)
+    {
+      FreeMem(colormap->PalExtra->pe_RefCnt   , colormap->Count);
+      FreeMem(colormap->PalExtra->pe_AllocList, colormap->Count);
       FreeMem(colormap->PalExtra, sizeof(struct PaletteExtra));
-
+    }
     /* free the structure itself */
     FreeMem(colormap, sizeof(struct ColorMap));
   }
