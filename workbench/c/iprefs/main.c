@@ -55,18 +55,19 @@ static struct prefinfo
 }
 preftable[] =
 {
-    {"input"	    , inputprefsname    , InputPrefs_Handler     },
-    {"font" 	    , fontprefsname     , FontPrefs_Handler      },
-    {"screenmode"   , screenprefsname	, NULL                   },
-    {"locale"	    , localeprefsname	, LocalePrefs_Handler    },
-    {"palette"	    , paletteprefsname  , NULL                   },
-    {"wbpattern"    , patternprefsname  , WBPatternPrefs_Handler },
-    {"icontrol"     , icontrolprefsname , IControlPrefs_Handler  },
-    {"serial"	    , serialprefsname	, SerialPrefs_Handler    },
-    {"printer"	    , printerprefsname	, NULL                   },
-    {"pointer"	    , pointerprefsname  , NULL                   },
-    {"overscan"     , overscanprefsname , NULL                   },
-    {NULL   	    	    	    	      	    	    	 }
+    {"input"	    , inputprefsname     , InputPrefs_Handler      },
+    {"font" 	    , fontprefsname      , FontPrefs_Handler       },
+    {"screenmode"   , screenprefsname	 , NULL                    },
+    {"locale"	    , localeprefsname	 , LocalePrefs_Handler     },
+    {"palette"	    , paletteprefsname   , NULL                    },
+    {"wbpattern"    , patternprefsname   , WBPatternPrefs_Handler  },
+    {"icontrol"     , icontrolprefsname  , IControlPrefs_Handler   },
+    {"screenmode"   , screenmodeprefsname, ScreenModePrefs_Handler },
+    {"serial"	    , serialprefsname	 , SerialPrefs_Handler     },
+    {"printer"	    , printerprefsname	 , NULL                    },
+    {"pointer"	    , pointerprefsname   , NULL                    },
+    {"overscan"     , overscanprefsname  , NULL                    },
+    {NULL   	    	    	    	      	    	    	   }
 
 };
 

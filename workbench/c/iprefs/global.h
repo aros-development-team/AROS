@@ -196,6 +196,10 @@ void KillIFF(struct IFFHandle *iff);
 
 void LocalePrefs_Handler(STRPTR filename);
 
+/* sscreenmodeprefs.c */
+
+void ScreenModePrefs_Handler(STRPTR filename);
+
 /* serialprefs.c */
 
 void SerialPrefs_Handler(STRPTR filename);
