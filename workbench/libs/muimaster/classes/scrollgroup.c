@@ -187,16 +187,21 @@ IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     layout_hook->h_Entry = (HOOKFUNC)Scrollgroup_Layout_Function;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-    	MUIA_Group_Horiz, FALSE,
-    	Child, group = GroupObject,
-	    MUIA_Group_LayoutHook, layout_hook,
-	    Child, contents,
-	    Child, vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,
-	    Child, horiz = ScrollbarObject, MUIA_Group_Horiz, TRUE, End,
-	    Child, button = ScrollbuttonObject, End,
-	    End,
-	TAG_DONE);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+    	
+        MUIA_Group_Horiz, FALSE,
+    	Child, (IPTR) group = GroupObject,
+	    MUIA_Group_LayoutHook, (IPTR) layout_hook,
+	    Child, (IPTR) contents,
+	    Child, (IPTR) vert   = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,
+	    Child, (IPTR) horiz  = ScrollbarObject, MUIA_Group_Horiz, TRUE, End,
+	    Child, (IPTR) button = ScrollbuttonObject, End,
+        End,
+	
+        TAG_DONE
+    );
 
     if (!obj)
     {
