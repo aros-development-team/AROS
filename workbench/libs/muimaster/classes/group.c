@@ -792,7 +792,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     Object                *child;
     struct MinList        *ChildList;
     struct Rectangle        group_rect; /* child_rect;*/
-    int                    page = -1;
+    int                    page;
     struct Region *region = NULL;
     APTR clip;
 
@@ -812,15 +812,19 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    rect.MaxY = _bottom(obj);
 	
 	    OrRectRegion(region, &rect);
-	
+	    page = -1;
 	    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
 	    cstate = (Object *)ChildList->mlh_Head;
 	    while ((child = NextObject(&cstate)))
 	    {
+		/* ??? */
+		++page;
 		if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
 		    continue;
 
-		if (muiAreaData(obj)->mad_Flags & MADF_CANDRAW)
+		if ((muiAreaData(child)->mad_Flags & MADF_CANDRAW)
+		    && (_width(child) > 0)
+		    && (_height(child) > 0))
 		{
 		    rect.MinX = _left(child);
 		    rect.MinY = _top(child);
@@ -960,6 +964,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (region) clip = MUI_AddClipRegion(muiRenderInfo(obj),region);
 
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
+    page = -1;
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
