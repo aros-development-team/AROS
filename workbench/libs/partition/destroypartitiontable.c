@@ -1,14 +1,13 @@
 /*
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
 */
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
 #include "partition_support.h"
 #include "platform.h"
-
 
 /*****************************************************************************
 
@@ -45,9 +44,6 @@
 
     INTERNALS
 
-    HISTORY
-	25-08-02    first version
-
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
@@ -57,7 +53,7 @@
 	{
 	struct PTFunctionTable *handler = root->table->handler;
 
-#undef DestroyPartitionTable()
+#undef DestroyPartitionTable
 		if (handler->destroyPartitionTable)
 		{
 			retval = handler->destroyPartitionTable(PartitionBase, root);

@@ -57,6 +57,5 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
 void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
-    if (LocaleBase)
-        CloseLibrary(LocaleBase);
+    if (LocaleBase != NULL) CloseLibrary((struct Library *) LocaleBase);
 }
