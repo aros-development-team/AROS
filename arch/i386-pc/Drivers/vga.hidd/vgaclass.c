@@ -699,6 +699,25 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
 
+static VOID gfxhidd_showimminentreset(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct bitmap_data *data;
+    
+    Disable();
+    data = XSD(cl)->visible;    
+    if (data)
+    {
+    	struct Box box = {0, 0, data->width - 1, data->height - 1};
+	
+	memset(data->VideoData, 0, data->width * data->height);
+   	
+	vgaRefreshArea(data, 1, &box);	
+    }
+    Enable();
+    
+}
+
+
 /* stuff added by stegerg */
 
 /********** GfxHidd::SetCursorShape()  ****************************/
@@ -766,7 +785,7 @@ static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /********************  init_vgaclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VGA_METHODS 5
+#define NUM_VGA_METHODS 6
 
 OOP_Class *init_vgaclass (struct vga_staticdata *xsd)
 {
@@ -788,6 +807,7 @@ OOP_Class *init_vgaclass (struct vga_staticdata *xsd)
 	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape},
 	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos},
 	{(IPTR (*)())gfxhidd_setcursorvisible,	moHidd_Gfx_SetCursorVisible},
+	{(IPTR (*)())gfxhidd_showimminentreset,	moHidd_Gfx_ShowImminentReset},
 /* end stegerg */
 
 	{NULL, 0UL}
