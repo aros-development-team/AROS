@@ -25,6 +25,7 @@
 #   define EOF (-1)
 #endif
 
+/* Buffering methods that can be specified with setvbuf() */
 #define _IOFBF 0 /* Fully buffered. */
 #define _IOLBF 1 /* Line buffered. */
 #define _IONBF 2 /* Not buffered. */
@@ -105,6 +106,10 @@ extern int fgetpos (FILE * stream, fpos_t * pos);
 extern int fsetpos (FILE * stream, fpos_t * pos);
 
 extern int remove(const char * pathname);
+
+extern int setbuf(FILE *stream, char *buf);
+extern int setlinebuf(FILE *stream);
+extern int setvbuf(FILE *stream, char *buf, int mode, size_t size);
 
 #ifdef AROS_ALMOST_COMPATIBLE
 extern int __vcformat (void * data, int (*outc)(int, void *),
