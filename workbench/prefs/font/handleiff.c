@@ -43,9 +43,9 @@ void writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
  struct FilePrefHeader prefHeader; // Allocate this memory using AllocMem() instead!
  UBYTE a = 0, b = 0;
 
- if(iffHandle = AllocIFF())
+ if((iffHandle = AllocIFF()))
  {
-  if(iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_NEWFILE))
+  if((iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_NEWFILE)))
   {
    InitIFFasDOS(iffHandle); /* Can't fail? Look it up! */
 
@@ -112,7 +112,7 @@ void readIFF(UBYTE *fileName, struct FontPrefs **readFontPrefs)
  if(!(iffHandle = AllocIFF()))
   quitApp("Unable to allocate IFF handle!", 20);
 
- if(iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_OLDFILE)) // Whats up with the "IPTR"? Why not the usual "BPTR"?
+ if((iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_OLDFILE))) // Whats up with the "IPTR"? Why not the usual "BPTR"?
  {
   InitIFFasDOS(iffHandle); // No need to check for errors? RKRM:Libraries p. 781
 

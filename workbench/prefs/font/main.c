@@ -152,13 +152,13 @@ int main(void)
  /* ARG_PUBSCREEN is set (currently) set to NULL by Fonts Preferences.
     If not set, it'll default to Workbench (NULL). If we can't open
     the specified screen, should we try the Workbench screen instead? */
- if(screenPtr = LockPubScreen((UBYTE *)argArray[ARG_PUBSCREEN]))
+ if((screenPtr = LockPubScreen((UBYTE *)argArray[ARG_PUBSCREEN])))
  {
-  if(drawInfo = GetVisualInfo(screenPtr, NULL))
+  if((drawInfo = GetVisualInfo(screenPtr, NULL)))
   {
-   if(appGUIData = createGadgets(screenPtr, drawInfo))
+   if((appGUIData = createGadgets(screenPtr, drawInfo)))
    {
-    if(appGUIData = openAppWindow(screenPtr, appGUIData, drawInfo))
+    if((appGUIData = openAppWindow(screenPtr, appGUIData, drawInfo)))
      inputLoop(appGUIData);
     else
      printf("Can't open window!");
