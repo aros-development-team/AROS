@@ -1043,6 +1043,7 @@ extern void _aros_not_implemented (char *X);
     t8 _##name##_n8 = (n8);                         \
     t9 _##name##_n9 = (n9);                         \
     {                                               \
+	long _##name##_re;			    \
         register t1 _n1 __asm(r1) = _##name##_n1;   \
         register t2 _n2 __asm(r2) = _##name##_n2;   \
         register t3 _n3 __asm(r3) = _##name##_n3;   \
@@ -1062,6 +1063,7 @@ extern void _aros_not_implemented (char *X);
              "r"(_n7),"r"(_n8),"r"(_n9),            \
              "g"(bn)				    \
             :A0,A1,D0,D1,"memory","cc");            \
+	(t)_##name##_re;			    \
     }                                               \
 })
 
