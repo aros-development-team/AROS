@@ -1,3 +1,4 @@
+functions.[ch]
 intuition_functable.c
 intuition_endtag.c
 makefile
