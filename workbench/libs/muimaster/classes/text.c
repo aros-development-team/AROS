@@ -172,7 +172,10 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case MUIA_Text_Contents:
 		if (data->ztext)
+		{
 		    zune_text_destroy(data->ztext);
+		    data->ztext = NULL;
+		}
 		if (data->contents)
 		    g_free(data->contents);
 		data->contents = g_strdup((STRPTR)tag->ti_Data);
@@ -273,7 +276,10 @@ static ULONG Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
 
     if (data->ztext)
+    {
 	zune_text_destroy(data->ztext);
+	data->ztext = NULL;
+    }
 
     return (DoSuperMethodA(cl, obj, (Msg) msg));
 }
