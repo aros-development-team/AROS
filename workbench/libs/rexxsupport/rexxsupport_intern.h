@@ -46,6 +46,7 @@ struct RexxSupportBase_intern; /* prereference */
 struct RexxSupportBase_intern
 {
     struct LibHeader library;
+    struct List openports;
 };
 
 #undef SysBase

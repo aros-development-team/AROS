@@ -22,7 +22,6 @@
 
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
-#define LC_NO_EXPUNGELIB
 
 #define LC_LIBHEADERTYPEPTR        LIBBASETYPEPTR
 #define LC_LIB_FIELD(libBase)      (libBase)->library.lh_LibNode
@@ -39,14 +38,15 @@ int errno;
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    RexxSysBase = OpenLibrary("rexxsyslib.library", 0);
+    NewList(&RSBI(lh)->openports);
+    RexxSysBase = (struct RxsLib *)OpenLibrary("rexxsyslib.library", 0);
     if (RexxSysBase == NULL)
         return FALSE;
     else
         return TRUE;
 }
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
+void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 {
     CloseLibrary(RexxSysBase);
 }

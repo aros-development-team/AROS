@@ -28,8 +28,14 @@ struct arexxfunc {
 
 /* The following function list has to be sorted on name */
 struct arexxfunc funcs[] = {
-    { "ALLOCMEM", 1, 2, rxsupp_allocmem },
-    { "FREEMEM", 2, 2, rxsupp_freemem }
+    { "ALLOCMEM" , 1, 2, rxsupp_allocmem  },
+    { "CLOSEPORT", 1, 1, rxsupp_closeport },
+    { "FREEMEM"  , 2, 2, rxsupp_freemem   },
+    { "GETARG"   , 1, 2, rxsupp_getarg    },
+    { "GETPKT"   , 1, 1, rxsupp_getpkt    },
+    { "OPENPORT" , 1, 1, rxsupp_openport  },
+    { "REPLY"    , 1, 2, rxsupp_reply     },
+    { "WAITPKT"  , 1, 1, rxsupp_waitpkt   }
 };
 #define FUNCCOUNT (sizeof(funcs)/sizeof(struct arexxfunc))
 
@@ -45,7 +51,6 @@ AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
     UBYTE *argstring = NULL;
     LONG rc;
     UBYTE n = msg->rm_Action & RXARGMASK;
-  
     func = bsearch(ARG0(msg), funcs, FUNCCOUNT, sizeof(struct arexxfunc), comparefunc);
     if (func == NULL)
     {
@@ -53,7 +58,6 @@ AROS_AREXXLIBQUERYFUNC(ArexxDispatch, msg,
     }
     else if (n < func->minargs || n > func->maxargs)
     {
-        kprintf("Wrong number of arguments %d\n", n);
         ReturnRexxQuery(ERR10_018, NULL);
     }
     else 
