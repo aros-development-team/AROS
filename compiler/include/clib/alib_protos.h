@@ -62,6 +62,24 @@ void waitbeam (LONG pos);
 CxObj * HotKey (STRPTR description, struct MsgPort *port, LONG id);
 void FreeIEvents (volatile struct InputEvent *events);
 
+/* Gadtools */
+APTR GetVisualInfo (struct Screen * screen, ULONG tag1, ...);
+struct Gadget * CreateGadget(	ULONG kind, 
+				struct Gadget * previous, 
+				struct NewGadget * ng,
+				ULONG tag1,
+				...);
+void GT_SetGadgetAttrs(	struct Gadget * gad, 
+			struct Window * win, 
+			struct Requester * req,
+			ULONG  tag1,
+			...);
+LONG GT_GetGadgetAttrs(	struct Gadget * gad,
+			struct Window * win,
+			struct Requester * req,
+			ULONG	tag1,
+			...);
+
 /* Pools */
 APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
 void LibDeletePool (APTR poolHeader);
