@@ -171,6 +171,7 @@ void * memclr(APTR, ULONG);
 #define FRAMESIZE_MEDRES       1 /* 2:1 medres like AmigaOS */
 #define FRAMESIZE_THICK        2 /* 1:1 thick */
 
+#define SQUARE_WIN_GADGETS     1
 
 #ifdef __AROS__
 /* FIXME: possibly enable this, once gadtools has been updated */

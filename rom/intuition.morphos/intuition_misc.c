@@ -78,6 +78,7 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_TimeOut = 50;
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags = ICF_3DMENUS |
+    	    	    	    	    	    	    	  ICF_OFFSCREENLAYERS |
     	    	    					  ICF_MODEPROMOTE | 
     	    	    					  ICF_MENUSNAP |
 							  ICF_STRGAD_FILTER |
@@ -274,7 +275,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     {GA_Image   , 0                 },
                     //{GA_RelRight  , relright      },
                     {GA_Top     , 0                 },
-                    /*{GA_Width , TITLEBAR_HEIGHT   },*/
+		#if SQUARE_WIN_GADGETS
+                    {GA_Width , TITLEBAR_HEIGHT     },
+		#endif
                     {GA_Height  , TITLEBAR_HEIGHT   },
                     {GA_SysGadget   , TRUE          },
                     {GA_SysGType    , GTYP_WDEPTH       },
@@ -291,7 +294,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 #else
                 {IA_Left    , -1            },
 #endif
-                    /*{IA_Width , TITLEBAR_HEIGHT + 1   },*/
+    	    	#if SQUARE_WIN_GADGETS
+                    {IA_Width , TITLEBAR_HEIGHT + 1   },
+		#endif
                     {IA_Height  , TITLEBAR_HEIGHT   },
                     {SYSIA_Which    , DEPTHIMAGE        },
                     {SYSIA_DrawInfo , (IPTR)dri     },
@@ -356,7 +361,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     {GA_Image   , 0             },
                     //{GA_RelRight  , relright      },
                     {GA_Top     , 0                 },
-                    /*{GA_Width , TITLEBAR_HEIGHT   },*/
+		#if SQUARE_WIN_GADGETS
+                    {GA_Width , TITLEBAR_HEIGHT     },
+		#endif
                     {GA_Height  , TITLEBAR_HEIGHT   },
                     {GA_SysGadget   , TRUE          },
                     {GA_SysGType    , GTYP_WZOOM        },
@@ -373,7 +380,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 #else
                     {IA_Left    , -1            },
 #endif
-                    //{IA_Width , TITLEBAR_HEIGHT + 1   },
+    	    	#if SQUARE_WIN_GADGETS
+                    {IA_Width , TITLEBAR_HEIGHT + 1   },
+		#endif
                     {IA_Height  , TITLEBAR_HEIGHT   },
                     {SYSIA_Which    , ZOOMIMAGE     },
                     {SYSIA_DrawInfo , (IPTR)dri     },
@@ -472,7 +481,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     {GA_Image   , 0     },
                     {GA_Left    , 0         },
                     {GA_Top     , 0         },
-                    /*{GA_Width , TITLEBAR_HEIGHT   },*/
+		#if SQUARE_WIN_GADGETS
+                    {GA_Width , TITLEBAR_HEIGHT   },
+		#endif
                     {GA_Height  , TITLEBAR_HEIGHT   },
                     {GA_SysGadget   , TRUE          },
                     {GA_SysGType    , GTYP_CLOSE        },
@@ -483,7 +494,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 };
             struct TagItem image_tags[] =
                 {
-                    //{IA_Width , TITLEBAR_HEIGHT + 1   },
+		#if SQUARE_WIN_GADGETS
+                    {IA_Width , TITLEBAR_HEIGHT + 1   },
+		#endif
                     {IA_Height  , TITLEBAR_HEIGHT},
                     {SYSIA_Which    , CLOSEIMAGE        },
                     {SYSIA_DrawInfo , (IPTR)dri     },
