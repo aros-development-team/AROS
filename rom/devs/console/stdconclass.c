@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Code for CONU_STANDARD console units.
@@ -52,6 +52,8 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 	{
 	    CU(o)->cu_BgPen = data->dri->dri_Pens[BACKGROUNDPEN];
 	    CU(o)->cu_FgPen = data->dri->dri_Pens[TEXTPEN];
+
+	    Console_RenderCursor(o);
 	    
 	    ReturnPtr("StdCon::New", Object *, o);
 	}
