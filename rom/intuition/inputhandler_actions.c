@@ -280,7 +280,7 @@ static void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 	UnlockLayer(lay);
     }
 	    
-    if (is_sizewindow)
+    //if (is_sizewindow)
     {
 	/* Send IDCMP_NEWSIZE to resized window */
 
@@ -379,9 +379,15 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
 	L = targetwindow->BorderRPort->Layer->back;
     } else {
-	/* Send IDCMP_CHANGEWINDOW to resized window, even if there
-	   was no resizing/position change at all. BGUI for example
+	/* Send IDCMP_NEWSIZE and DCMP_CHANGEWINDOW to resized window, even
+	   if there was no resizing/position change at all. BGUI for example
 	   relies on this! */
+
+	ih_fire_intuimessage(targetwindow,
+			     IDCMP_NEWSIZE,
+			     0,
+			     targetwindow,
+			     IntuitionBase);
 
 	ih_fire_intuimessage(targetwindow,
 		    	     IDCMP_CHANGEWINDOW,
