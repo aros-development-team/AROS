@@ -21,6 +21,7 @@ Boston, MA 02111-1307, USA.  */
 #include "config.h"
 
 #include <stdio.h>
+#include <string.h> /* for strlen() */
 #ifdef HAVE_NETINET_IN_H
 #   include <netinet/in.h> /* for htonl/ntohl() */
 #endif
