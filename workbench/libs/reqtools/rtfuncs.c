@@ -263,7 +263,7 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 {
     BPTR ret;
     
-    if(RTBase->library.lib_OpenCnt != 0)
+    if(RTBase->LibNode.lib_OpenCnt != 0)
     {
 	/* Set the delayed expunge flag and return. */
 	RTBase->LibNode.lib_Flags |= LIBF_DELEXP;
