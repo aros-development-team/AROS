@@ -4,4 +4,7 @@ include $(TOP)/config/make.cfg
 #MM- kernel-linux-i386 : kernel-linux kernel-i386
 #MM- kernel-link-linux-i386 : kernel-link-emul
 
-#MM- workbench-linux-i386 : workbench-linux
+#MM- workbench-linux-i386 : \
+#MM      workbench-linux \
+#MM      workbench-libs-pcilinux
+
