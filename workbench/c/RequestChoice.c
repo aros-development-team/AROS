@@ -111,7 +111,9 @@ static char ERROR_HEADER[] = "RequestChoice";
 
 int Do_RequestChoice(STRPTR, STRPTR, STRPTR *, STRPTR);
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs * rda;
     IPTR          * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL };

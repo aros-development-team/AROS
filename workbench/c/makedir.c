@@ -69,7 +69,9 @@ enum
 };
 
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     IPTR           args[NOOFARGS] = { NULL };
     struct RDArgs *rda;

@@ -62,7 +62,9 @@
 enum { ARG_LABEL = 0, ARG_BACK };
 
 
-int main(int argc, char **argv)
+int __nocommandline = 1;
+
+int main(void)
 {
     struct RDArgs *rda;
     IPTR           args[2] = { NULL, FALSE };
@@ -95,7 +97,7 @@ int main(int argc, char **argv)
 	while(!quit)
 	{
 	    status = ReadItem(buffer, sizeof(buffer), NULL);
-	    
+
 	    if(status == ITEM_ERROR)
 		break;
 

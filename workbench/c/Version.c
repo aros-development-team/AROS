@@ -28,10 +28,6 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-
-struct Library *ArosBase;
-
-
 static const char version[] = "$VER: Version 41.6 (13.09.1998)\n";
 
 static const char ERROR_HEADER[] = "Version";
@@ -380,16 +376,12 @@ int makefilever(STRPTR name)
 }
 
 /* Build information from internal kickstart data. */
+int ArosBase_version = 0;
+
 int makekickver()
 {
     int len;
     struct DateTime dt;
-
-    ArosBase = OpenLibrary(AROSLIBNAME, 0);
-    if(!ArosBase) {
-        printf("%s: This program needs AROS 1.12 or better to run\n", ERROR_HEADER);
-        return RETURN_FAIL;
-    }
 
     /* Fill in struct parsedver. */
     ArosInquire(
@@ -397,7 +389,6 @@ int makekickver()
                 AI_ArosReleaseMinor, &parsedver.revision,
                 AI_ArosReleaseDate, &parsedver.days,
                 TAG_DONE);
-    CloseLibrary(ArosBase); 
 
 #define KICKSTRLEN 5
     parsedver.name = AllocVec(KICKSTRLEN, MEMF_ANY);
@@ -531,7 +522,9 @@ int verifyargs()
     return(error);
 }
 
-int main (int argc, char ** argv)
+int __nocommandline;
+
+int main (void)
 {
     struct RDArgs *rda;
     LONG error = RETURN_OK;

@@ -704,7 +704,9 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 }
 
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     IPTR args[NOOFARGS] = { NULL,          // ARG_DIR
 			    NULL,          // ARG_PAT

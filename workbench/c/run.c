@@ -71,7 +71,9 @@ enum
 };
 
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs  *rda;
 

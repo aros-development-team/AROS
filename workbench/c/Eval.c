@@ -118,7 +118,9 @@ void printLformat(STRPTR format, int value);
 STRPTR fixExpression(STRPTR val1, STRPTR op, STRPTR *vals);
 
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     int  retval = RETURN_FAIL;
 

@@ -113,7 +113,9 @@ int unlockDevice(struct IOFileSys *iofs, STRPTR key)
     return iofs->io_DosError;
 }
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct RDArgs *rd, *rda = NULL;

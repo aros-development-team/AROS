@@ -63,7 +63,9 @@
 
 static const char version[] = "$VER: wait 41.2 (30.04.2000)\n";
 
-int main (int argc, char ** argv)
+int __nocommandline;
+
+int main (void)
 {
     IPTR 		args[4] = { 0, 0, 0, 0 };
     struct RDArgs 	*rda;

@@ -127,9 +127,6 @@ void doInfo();
 
 STRPTR VersionStr = "$VER: Info 41.1 (16.11.00)";
 
-struct UtilityBase  *UtilityBase;
-struct LocaleBase   *LocaleBase;
-
 struct Catalog	*cat;
 struct Locale   *loc = NULL;
 ULONG            MaxLen;
@@ -204,32 +201,24 @@ struct DiskTypeList dtl[] =
 
 /****************************************************************************/
 
+int UtilityBase_version = 0;
+int LocaleBase_version = 0;
+
+int __nocommandline;
+
 int main(void)
 {
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0);
+    static struct TagItem loctags[] = { { OC_Version, 1 },
+						{ TAG_END   , 0 } };
+    cat = OpenCatalogA(NULL, "info_com.catalog", loctags);
+    loc = OpenLocale(NULL);
 
-    if(UtilityBase != NULL)
-    {
-	LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0);
+    D(bug("Calling doInfo()\n"));
 
-	if(LocaleBase != NULL);
-	{
-	    static struct TagItem loctags[] = { { OC_Version, 1 },
-						{ TAG_END   , 0 } };	    
-	    cat = OpenCatalogA(NULL, "info_com.catalog", loctags);
-	    loc = OpenLocale(NULL);
-	    
-	    D(bug("Calling doInfo()\n"));
-	    
-	    doInfo();
-	    
-	    CloseLocale(loc);
-	    CloseCatalog(cat);
-	    CloseLibrary((struct Library *)LocaleBase);
-	}
-	
-	CloseLibrary((struct Library *)UtilityBase);
-    }
+    doInfo();
+
+    CloseLocale(loc);
+    CloseCatalog(cat);
 
     return RETURN_OK;		/* TODO: Fix this */
 }

@@ -312,10 +312,6 @@ struct LayerHookMsg
 
 /****************************************************************************************/
 
-struct Library      	*CyberGfxBase;
-
-/****************************************************************************************/
-
 static struct Screen	*scr;
 static struct ColorMap	*cm;
 static struct BitMap 	*patternbm;
@@ -352,8 +348,6 @@ static void cleanup(char *msg)
 
     if (chunkydata) FreeVec(chunkydata);
 
-    if (CyberGfxBase) CloseLibrary(CyberGfxBase);
-
     exit(0);
 }
 
@@ -361,13 +355,8 @@ static void cleanup(char *msg)
 
 /* V40, because of WriteChunkyPixels */
 int GfxBase_version = 40;
-
-static void openlibs(void)
-{
-    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
-}
-
-/****************************************************************************************/
+int CyberGfxBase_version = 0;
+extern struct Library *CyberGfxBase;
 
 static void p2c(UBYTE *source, UBYTE *dest, LONG width, LONG height,
     	    	LONG totplanes, LONG wantplanes, LONG planarbpr, LONG chunkybpr)
@@ -626,9 +615,10 @@ static void removebackfillhook(void)
 
 /****************************************************************************************/
 
+int __nocommandline;
+
 int main(void)
 {
-    openlibs();
     makechunky();
     getvisual();
     makepatternbitmap();

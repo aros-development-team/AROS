@@ -76,7 +76,6 @@ struct sorted_data
   ULONG                len; // length of line including '\n'.
 };
 
-struct LocaleBase * LocaleBase;
 struct Locale * locale;
 
 int compare(struct sorted_data * sd1, 
@@ -298,18 +297,13 @@ ULONG write_data(struct sorted_data * start, BPTR file_out)
   return 0;
 }
 
-int main (int argc, char **argv)
+int __nocommandline;
+
+int main (void)
 {
   IPTR args[ARG_NUM] = { NULL, NULL, NULL, NULL, NULL};
   struct RDArgs *rda;
   ULONG error = 0;
-
-  LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0);
-  if (!LocaleBase)
-  {
-    printf("Sort needs locale.library!\n");
-    return -1;
-  }
 
   locale = OpenLocale(NULL);
   if (!locale)
@@ -370,7 +364,5 @@ int main (int argc, char **argv)
   if (error)
     PrintFault(IoErr(), "sort");
   
-  CloseLibrary((struct Library *)LocaleBase);
-   
   return error; 
 }

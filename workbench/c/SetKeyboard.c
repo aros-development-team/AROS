@@ -210,6 +210,8 @@ static void Action(void)
 }
 
 
+int __nocommandline;
+
 int main(void)
 {
     OpenLibs();

@@ -71,7 +71,9 @@
 
 static const char version[] = "$VER: Get 41.1 (03.07.1997)\n";
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs * rda;
     IPTR          * args[TOTAL_ARGS] = { NULL };

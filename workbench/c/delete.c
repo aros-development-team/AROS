@@ -98,7 +98,9 @@ static char cmdname[] = "Delete";
 int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	     BOOL force);
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs      *rda;
     struct AnchorPath  *ap;

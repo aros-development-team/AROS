@@ -82,7 +82,9 @@
 
 enum { ARG_FILE = 0, ARG_WEEKDAY, ARG_DATE, ARG_TIME, ARG_ALL };
 
-int main(int argc, char **argv)
+int __nocommandline;
+
+int main(void)
 {
     struct AnchorPath aPath;
     struct RDArgs  *rda;

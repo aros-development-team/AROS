@@ -113,7 +113,9 @@ static const char version[] = "$VER: Filenote 41.1 (29.08.1998)\n";
 
 int Do_Filenote(struct AnchorPath *, STRPTR, STRPTR, LONG, LONG);
 
-int main(int argc, char *argv[])
+int __nocommandline;
+
+int main(void)
 {
     struct RDArgs     * rda;
     struct AnchorPath * apath;

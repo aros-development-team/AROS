@@ -78,6 +78,8 @@ enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
 
 static const char version[] = "$VER: RequestFile 41.1 (29.12.1999)\n";
 
+extern struct Library *AslBase;
+
 struct TagItem FileTags[] =
 {
     /* Note: The ordering of these is _important_! */
@@ -98,9 +100,9 @@ struct TagItem FileTags[] =
     { TAG_DONE            , NULL  }
 };
 
-struct Library *AslBase;
+int __nocommandline;
 
-int main(int argc, char *argv[])
+int main(void)
 {
     struct RDArgs        *rda;
     struct FileRequester *FileReq;
@@ -120,11 +122,6 @@ int main(int argc, char *argv[])
 #define  DoDrawers (args[ARG_DRAWERSONLY] != NULL)
 #define  DoIcons   (args[ARG_NOICONS] != NULL)
 #define  DoPattern (args[ARG_PATTERN] != NULL)
-
-    AslBase = (struct Library *)OpenLibrary("asl.library", 39);
-
-    if(AslBase == NULL)
-	return RETURN_FAIL; 
 
     Buffer = (char *)AllocVec(MAX_PATH_LEN, MEMF_ANY | MEMF_CLEAR);
     if (Buffer != NULL)
