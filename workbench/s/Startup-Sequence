@@ -4,7 +4,10 @@ Mount PIPEFS:
 
 FailAt 21
 
-Makedir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/SYS
+Makedir RAM:Clipboards RAM:ENV RAM:ENV/SYS
+If NOT EXISTS RAM:T
+    Makedir RAM:T
+EndIf
 
 Assign ENV:     RAM:ENV
 Assign T:       RAM:T
@@ -16,13 +19,18 @@ Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
 Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
-Assign FDSK: SYS:DiskImages
+
+If EXISTS SYS:DiskImages
+    Assign FDSK: SYS:DiskImages
+EndIf
 
 Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
 
 Path C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
-Path SYS:Demos ADD QUIET
+If EXISTS SYS:Demos
+    Path SYS:Demos ADD QUIET
+EndIf
 
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
@@ -56,4 +64,4 @@ EndIf
 
 LoadWB
 
-EndCLI
+;EndCLI
