@@ -1,7 +1,7 @@
 Coordination:
     Aaron Digulla
 
-Hidd subsystem:
+HIDD subsystem:
     Aaron Digulla
     Georg Steger
     Iain Templeton
@@ -55,7 +55,7 @@ Graphics:
     Staf Verhaegen
     Flavio Stanchina
 
-Shell Commands:
+Shell commands:
     Martin Recktenwald
     Henning Kiel
     Adam Chodorowski
@@ -100,12 +100,30 @@ DOS:
     Fabio Alemagna
     The MorphOS team
 
-libc and POSIX layer:
+C link library and POSIX layer:
     Aaron Digulla
     Fabio Alemagna
     Iain Templeton
     Henning Kiel
 
-Graphical Artistry:
-    Martin "Mason" Merz
+Documentation:
+    Adam Chodorowski
+    Aaron Digulla
+    Matt Parsons
+    Stefan Rieken
+    Sebastian Rittau
+    Sven Drieling
+    Peter Eriksson
+    Kjetil S. Matheussen
+    Michal Schulz
 
+Translation:
+    Henning Kiel
+    Adam Chodorowski
+    Georg Steger
+    Daniel Holmen
+
+Artistry:
+    Martin "Mason" Merz
+    Cyb0rg / Resistance
+    Alien / Paradox
