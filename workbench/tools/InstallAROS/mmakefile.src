@@ -7,7 +7,7 @@ FILES   := main
 EXEDIR  := $(AROS_TOOLS)
 
 #MM- workbench-tools : workbench-tools-installaros
-#MM workbench-tools-installaros
+#MM workbench-tools-installaros : contrib-zune-classes-nfloattext-class
 
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \

@@ -1434,7 +1434,7 @@ createdirfaild:
 	set(data->proceed, MUIA_Disabled, FALSE);
 
 /** STEP : PACKAGE CLEANUP **/
-
+/*
 	if ( work_Path != dest_Path)
 	{
 		char		*fixuppackage_dirs = AllocVec((fixupdir_count+1)*sizeof(IPTR),MEMF_PUBLIC|MEMF_CLEAR);
@@ -1534,7 +1534,7 @@ createdirfaild:
 
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
-
+*/
 /** STEP : UNDORECORD CLEANUP **/
 
 	D(bug("[INSTALLER] Reached end of Install Function - cleaning up undo logs @ %x...\n",&data->instc_undorecord));
