@@ -132,7 +132,7 @@ void showrects(void)
 		SetAPen(win->RPort, 2);
 		FillRectangle(&current->bounds, regions[i]->bounds.MinX, regions[i]->bounds.MinY);
 		printf("press a key\n");
-		Wait(1L << win->UserPort->mp_SigBit);
+		//Wait(1L << win->UserPort->mp_SigBit);
 	    }
 	    return;
 	}
