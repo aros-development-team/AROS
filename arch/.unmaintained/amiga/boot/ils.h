@@ -6,6 +6,8 @@
     Lang: C
 */
 
+#include <aros/asmcall.h>
+
 AROS_UFP4(LONG, ils_read,
     AROS_UFHA(BPTR,                handle,  D1),
     AROS_UFHA(void *,              buffer,  D2),
