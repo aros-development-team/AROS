@@ -12,6 +12,7 @@ FILES = \
 		layoutdetails \
 		partitions \
 		partitiontables \
+		partitiontypes \
 		ptclass
 		
 
