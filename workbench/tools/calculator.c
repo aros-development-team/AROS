@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -318,7 +318,7 @@ static void MakeGadgets(void)
     mygad = gad[BTYPE_LED] = CreateGadget(TEXT_KIND,
 					  mygad,
 					  &ng,
-					  GTTX_Text,ledstring,
+					  GTTX_Text, (IPTR) ledstring,
 					  GTTX_CopyText,TRUE,
 					  GTTX_Border,TRUE,
 					  GTTX_Justification,GTJ_RIGHT,
@@ -366,13 +366,13 @@ static void MakeGadgets(void)
 
 static void MakeWin(void)
 {
-    win = OpenWindowTags(0,WA_PubScreen,scr,
+    win = OpenWindowTags(0,WA_PubScreen,(IPTR)scr,
 			 WA_Left,scr->MouseX,
 			 WA_Top,scr->MouseY,
 			 WA_InnerWidth,inner_winwidth,
 			 WA_InnerHeight,inner_winheight,
 			 WA_AutoAdjust,TRUE,
-			 WA_Title,"Calculator",
+			 WA_Title,(IPTR)"Calculator",
 			 WA_CloseGadget,TRUE,
 			 WA_DepthGadget,TRUE,
 			 WA_DragBar,TRUE,
@@ -383,7 +383,7 @@ static void MakeWin(void)
 			 IDCMP_VANILLAKEY |
 			 IDCMP_RAWKEY |
 			 IDCMP_REFRESHWINDOW,
-			 WA_Gadgets,gadlist,
+			 WA_Gadgets,(IPTR)gadlist,
 			 TAG_DONE);
 
     if (!win) Cleanup("Can't open window!");
@@ -445,7 +445,7 @@ static void OpenTape(void)
 static double GetValue(void)
 {
     double val;
-    char c,*sp;
+    char c = 0,*sp;
     
     sp = strchr(ledstring,comma);
     if (sp)
@@ -537,7 +537,7 @@ static void RefreshLED(void)
     GT_SetGadgetAttrs(gad[BTYPE_LED],
 		      win,
 		      0,
-		      GTTX_Text,visledstring,
+		      GTTX_Text,(IPTR)visledstring,
 		      TAG_DONE);
 }
 
