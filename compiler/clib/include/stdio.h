@@ -1,5 +1,5 @@
-#ifndef _STDIO_H
-#define _STDIO_H
+#ifndef _STDIO_H_
+#define _STDIO_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -8,25 +8,41 @@
     Desc: ANSI-C header file stdio.h
     Lang: english
 */
+#include <aros/systypes.h>
+
+#ifdef	_AROS_SIZE_T_
+typedef	_AROS_SIZE_T_	size_t;
+#undef	_AROS_SIZE_T_
+#endif
+
+/* Need to define fpos_t to something similar to off_t */
+#ifdef	_AROS_OFF_T_
+typedef _AROS_OFF_T_	fpos_t;
+#else
+typedef	off_t		fpos_t;
+#endif
+
+/*
+    We are supposed to declare it, without including the file.
+    This is too compiler specific to handle at the moment.
+*/
+#if 0
+#ifdef	_AROS_VA_LIST_
+typedef	_AROS_VA_LIST_	va_list;
+#undef	_AROS_VA_LIST_
+#endif
+#else
 #include <stdarg.h>
-#ifndef _SYS_TYPES_H
-#   include <sys/types.h>
 #endif
 
 #ifndef NULL
-#   ifdef __cplusplus
-#	define NULL 0
-#   else
-#	define NULL (void*)0
-#   endif /* __cplusplus */
+#   define NULL 0
 #endif /* NULL */
 
+/* Need to protect against standard Amiga includes */
 #ifndef EOF
 #   define EOF (-1)
 #endif
-
-/* for tmpnam() */
-#define L_tmpnam 20
 
 /* Buffering methods that can be specified with setvbuf() */
 #define _IOFBF 0 /* Fully buffered. */
@@ -34,16 +50,22 @@
 #define _IONBF 2 /* Not buffered. */
 
 #ifndef BUFSIZ
-#   define BUFSIZ 1024
+#   define BUFSIZ	1024
 #endif
-#define FILENAME_MAX 1024
+#define FILENAME_MAX	256		/* Amiga files are 256 */
+#define FOPEN_MAX	16		/* Must be > 8 */
+#define TMP_MAX		10240		/* Must be > 10000 */
+#define P_tmpdir	"T:"		/* Default temporary path */
+#define L_tmpnam	FILENAME_MAX	/* Max temporary filename */
+#define L_ctermid	FILENAME_MAX	/* Max filename for controlling tty */
 
 #ifndef __typedef_FILE
 #   define __typedef_FILE
-    typedef struct
+    /* I need a named struct for FILE, so that I can use it in wchar.h> */
+    typedef struct __sFILE
     {
-    	int fd;
-    	int flags;
+	int fd;
+	int flags;
     } FILE;
 
 #   define _STDIO_EOF    0x0001L
@@ -54,18 +76,9 @@
 #   define _STDIO_APPEND 0x0010L
 #endif
 
-#ifndef __typedef_fpos_t
-#   define __typedef_fpos_t
-typedef long fpos_t;
-#endif
-
-#ifndef _UNISTD_H    /*unistd.h has the same definitions */
-
 #define SEEK_SET    0
 #define SEEK_CUR    1
 #define SEEK_END    2
-
-#endif
 
 #if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
     extern FILE *stdin, *stdout, *stderr;
@@ -73,64 +86,70 @@ typedef long fpos_t;
 #include <libraries/arosc.h>
 #endif
 
-extern FILE *fopen (const char * name, const char * mode);
-extern FILE *fdopen (int filedes, const char *mode);
-extern FILE *freopen (const char *path, const char *mode, FILE *stream );
-extern int fclose (FILE *);
-extern int printf (const char * format, ...);
-extern int vprintf (const char * format, va_list args);
-extern int fprintf (FILE * fh, const char * format, ...);
-extern int vfprintf (FILE * fh, const char * format, va_list args);
-extern int fputc (int c, FILE * stream);
-extern int fputs (const char * str, FILE * stream);
-extern int putchar(int c);
-extern int puts (const char * str);
-extern int fflush (FILE * stream);
-extern int fgetc (FILE * stream);
-extern int ungetc (int c, FILE * stream);
-extern char * fgets (char * buffer, int size, FILE * stream);
-extern int feof (FILE * stream);
-extern int ferror (FILE * stream);
-extern int fileno (FILE * stream);
-extern FILE *feropen (const char *path,	const char *mode, FILE *stream);
+__BEGIN_DECLS
 
-extern void clearerr (FILE * stream);
-extern size_t fread (void *ptr, size_t size, size_t nmemb, FILE * stream);
-extern size_t fwrite (void *ptr, size_t size, size_t nmemb, FILE * stream);
-extern int rename (const char *from, const char *to);
-extern int sprintf (char * str, const char * format, ...);
-extern int vsprintf (char * str, const char * format, va_list args);
-extern int snprintf (char * str, size_t n, const char * format, ...);
-extern int vsnprintf (char * str, size_t n, const char * format, va_list args);
+int remove(const char *filename);
+int rename(const char *from, const char *to);
+FILE *tmpfile(void);
+char *tmpnam(char *s);
+int fclose(FILE *stream);
+int fflush(FILE *stream);
+FILE *fopen(const char * restrict filename, const char * restrict mode);
+FILE *freopen(const char * restrict filename, const char * restrict mode,
+	FILE * restrict stream);
+void setbuf(FILE * restrict stream, char * restrict buf);
+int setvbuf(FILE * restrict stream, char * restrict buf, int mode,
+	size_t size);
+int fprintf(FILE * restrict stream, const char * restrict format, ...);
+int fscanf(FILE * restrict stream, const char * restrict format, ...);
+int printf(const char * restrict format, ...);
+int scanf(const char * restrict format, ...);
+int snprintf(char * restrict s, size_t n, const char * restrict format, ...);
+int sprintf(char * restrict s, const char * restrict format, ...);
+int sscanf(const char * restrict s, const char * restrict format, ...);
+int vfprintf(FILE * restrict stream, const char * restrict format,
+	va_list arg);
+int vfscanf(FILE * restrict stream, const char * restrict format,
+	va_list arg);
+int vprintf(const char * restrict format, va_list arg);
+int vscanf(const char * restrict format, va_list arg);
+int vsnprintf(char * restrict s, size_t n, const char * restrict format,
+	va_list arg);
+int vsprintf(char * restrict s, const char * restrict format,
+	va_list arg);
+int vsscanf(const char * restrict s, const char * restrict format,
+	va_list arg);
+int fgetc(FILE *stream);
+char *fgets(char * restrict s, int n, FILE * restrict stream);
+int fputc(int c, FILE *stream);
+int fputs(const char * restrict s, FILE * restrict stream);
+int getc(FILE *stream);
+int getchar(void);
+char *gets(char *s);
+int putc(int c, FILE *stream);
+int putchar(int c);
+int puts(const char *s);
+int ungetc(int c, FILE *stream);
+size_t fread(void * restrict ptr, size_t size, size_t nmemb,
+    FILE * restrict stream);
+size_t fwrite(const void * restrict ptr, size_t size, size_t nmemb,
+    FILE * restrict stream);
+int fgetpos(FILE * restrict stream, fpos_t * restrict pos);
+int fseek(FILE *stream, long int offset, int whence);
+int fsetpos(FILE *stream, const fpos_t *pos);
+long int ftell(FILE *stream);
+void rewind(FILE *stream);
+void clearerr(FILE *stream);
+int feof(FILE *stream);
+int ferror(FILE *stream);
+void perror(const char *s);
 
-extern int scanf (const char * format, ...);
-extern int vscanf (const char * format, va_list args);
-extern int fscanf (FILE * fh, const char * format, ...);
-extern int vfscanf (FILE * fh, const char * format, va_list args);
-extern int sscanf (const char * str, const char * format, ...);
-extern int vsscanf (const char * str, const char * format, va_list args);
-
-extern int fseek (FILE * stream, long offset, int whence);
-extern long ftell (FILE * stream);
-extern void rewind (FILE * stream);
-extern int fgetpos (FILE * stream, fpos_t * pos);
-extern int fsetpos (FILE * stream, fpos_t * pos);
-
-extern int remove(const char * pathname);
-
-extern int setbuf(FILE *stream, char *buf);
-extern int setlinebuf(FILE *stream);
-extern int setvbuf(FILE *stream, char *buf, int mode, size_t size);
-
-extern int __vcformat (void * data, int (*outc)(int, void *),
-			const char * format, va_list args);
-extern int __vcscan (void * data, int (*getc)(void *),
-			int (*ungetc)(int, void *),
-			const char * format, va_list args);
-
-extern char *tmpnam(char *name_buf);
-
-void perror(const char *);
+/* Internal functions */
+int __vcformat (void * data, int (*outc)(int, void *),
+		const char * format, va_list args);
+int __vcscan (void * data, int (*getc)(void *),
+		int (*ungetc)(int, void *),
+		const char * format, va_list args);
 
 /* AROS specific function to synchronise to keep DOS Input and Output in sync
  * with the C stdin, stdout and stderr
@@ -142,5 +161,38 @@ void updatestdio(void);
 #define getchar()   getc(stdin)
 #define gets(s)     fgets(s, BUFSIZ, stdin)
 
+#if !defined(_ANSI_SOURCE)
+FILE *fdopen (int filedes, const char *mode);
 
-#endif /* _STDIO_H */
+/* Unix Specific */
+void     perror(const char *);
+char    *tempnam(const char *, const char *);
+FILE    *tmpfile(void);
+char    *tmpnam(char *);
+
+int      pclose(FILE *);
+FILE    *popen(const char *, const char *);
+int	 fileno(FILE *);
+
+#if 0
+char	*ctermid(char *);
+char	*ctermid_r(char *);
+
+void     flockfile(FILE *);
+int      ftrylockfile(FILE *);
+void     funlockfile(FILE *);
+
+int      getc_unlocked(FILE *);
+int      getchar_unlocked(void);
+int      putc_unlocked(int, FILE *);
+int      putchar_unlocked(int);
+
+int      getw(FILE *);
+int      putw(int, FILE *);
+#endif
+
+#endif /* !_ANSI_SOURCE */
+
+__END_DECLS
+
+#endif /* _STDIO_H_ */

@@ -24,10 +24,10 @@
 	size_t fwrite (
 
 /*  SYNOPSIS */
-	void * buf,
-	size_t size,
-	size_t nblocks,
-	FILE * stream)
+	const void * restrict	buf,
+	size_t			size,
+	size_t			nblocks,
+	FILE * restrict		stream)
 
 /*  FUNCTION
 	Read an amount of bytes from a stream.

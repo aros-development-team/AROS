@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	double	  number,
-	size_t	  ndigit,
+	int	  ndigit,
 	char	* buf
 	)
 
@@ -49,7 +49,7 @@
 
 ******************************************************************************/
 {
-    sprintf (buf, "%.*G", (int)ndigit, number);
+    sprintf (buf, "%.*G", ndigit, number);
 
     return buf;
 } /* sprintf */

@@ -87,10 +87,10 @@
     char	* ptr;
     char	* copy;
 
-    copy = (char *)str;
-
     while (isspace (*str))
 	str ++;
+
+    copy = (char *)str;
 
     if (*str)
     {
@@ -104,24 +104,25 @@
 		str = ptr;
 	}
 
-	if (*copy == '-')
-	{
-	    if ((signed long)val > 0)
-	    {
-		errno = ERANGE;
+	/* Remember: strtoul() has already done the sign conversion */
+        if (*copy == '-')
+        {
+            if ((signed long)val > 0)
+            {
+                errno = ERANGE;
 
-		val = LONG_MIN;
-	    }
-	}
-	else
-	{
-	    if ((signed long)val < 0)
-	    {
-		errno = ERANGE;
+                val = LONG_MIN;
+            }
+        }
+        else
+        {
+            if ((signed long)val < 0)
+            {
+                errno = ERANGE;
 
-		val = LONG_MAX;
-	    }
-	}
+                val = LONG_MAX;
+            }
+        }
     }
 
     if (endptr)

@@ -1,5 +1,5 @@
-#ifndef _TIME_H
-#define _TIME_H
+#ifndef _TIME_H_
+#define _TIME_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -8,33 +8,29 @@
     Desc: ANSI-C header file time.h
     Lang: english
 */
+#include <aros/systypes.h>
+#include <sys/_posix.h>
 
-#if !defined(__typedef_time_t) && !defined(_TIME_T)
-#   define __typedef_time_t
-#   define _TIME_T
-    typedef long time_t;
+#ifdef	_AROS_TIME_T_
+typedef _AROS_TIME_T_	    time_t;
+#undef	_AROS_TIME_T_
 #endif
 
-#if !defined(__typedef_clock_t) && !defined(_CLOCK_T)
-#   define __typedef_clock_t
-    typedef long clock_t;
+#ifdef	_AROS_CLOCK_T_
+typedef _AROS_CLOCK_T_	    clock_t;
+#undef	_AROS_CLOCK_T_
 #endif
 
-#if !defined(_SIZE_T) && !defined(__typedef_size_t)
-#   define __typedef_size_t
-#   define _SIZE_T
-    /* Must be int and not long. Otherwise gcc will complain */
-    typedef unsigned int size_t;
+#ifdef	_AROS_SIZE_T_
+typedef _AROS_SIZE_T_	    size_t;
+#undef	_AROS_SIZE_T_
 #endif
 
 #ifndef NULL
-#   ifdef __cplusplus
-#	define NULL    0
-#   else
-#	define NULL    ((void *) 0)
-#   endif
+#   define NULL	    0
 #endif
 
+/* XXX: This is supposed to be 1000000 on SUSv2 platforms apparently */
 #define CLOCKS_PER_SEC 50
 
 struct tm
@@ -50,20 +46,83 @@ struct tm
     int tm_isdst;
 };
 
-extern clock_t clock (void);
-extern time_t  time (time_t * tp);
-extern double  difftime (time_t time2, time_t time1);
-extern time_t  mktime (struct tm * tp);
+#if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
 
-extern char * asctime (const struct tm * tp);
-extern char * ctime (const time_t * tp);
-extern size_t strftime (char * s, size_t smax,
-			const char * fmt, const struct tm * tp);
-extern char * strptime (char * s, const char * fmt, struct tm * tm);
+#ifdef	_AROS_TIMER_T_
+typedef	_AROS_TIMER_T_	    timer_t;
+#undef	_AROS_TIMER_T_
+#endif
 
-extern void tzset (void);
+#ifdef	_AROS_CLOCKID_T_
+typedef _AROS_CLOCKID_T_    clockid_t;
+#undef	_AROS_CLOCKID_T_
+#endif
 
-extern struct tm * gmtime    (const time_t * tp);
-extern struct tm * localtime (const time_t * tp);
+struct timespec
+{
+    time_t		tv_sec;		/* seconds */
+    long		tv_nsec;	/* nanoseconds */
+};
 
-#endif /* _TIME_H */
+struct itimerspec
+{
+    struct timespec	it_interval;	/* timer period */
+    struct timespec	it_value;	/* timer expiration */
+};
+
+#define CLOCK_REALTIME		0
+#define TIMER_ABSTIME		1
+
+/* time.h shouldn't include signal.h */
+struct sigevent;
+
+#endif /* !_ANSI_SOURCE && _P1003_1B_VISIBLE */
+
+#if !defined _CLIB_KERNEL_ && !defined _CLIB_LIBRARY_
+    extern int       daylight;
+    extern long int  timezone;
+    extern char     *tzname[];
+#else
+#   include <libraries/arosc.h>
+#endif
+
+__BEGIN_DECLS
+char      *asctime(const struct tm *);
+clock_t    clock(void);
+char      *ctime(const time_t *);
+double     difftime(time_t, time_t);
+struct tm *gmtime(const time_t *);
+struct tm *localtime(const time_t *);
+time_t     mktime(struct tm *);
+size_t     strftime(char *, size_t, const char *, const struct tm *);
+time_t     time(time_t *);
+
+#if !defined(_ANSI_SOURCE)
+void       tzset(void);
+#endif
+
+#if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
+char      *asctime_r(const struct tm *, char *);
+char      *ctime_r(const time_t *, char *);
+struct tm *getdate(const char *);
+struct tm *gmtime_r(const time_t *, struct tm *);
+struct tm *localtime_r(const time_t *, struct tm *);
+char      *strptime(const char *, const char *, struct tm *);
+#endif /* !_ANSI_SOURCE && !_POSIX_SOURCE */
+
+#if !defined(_ANSI_SOURCE) && defined(_P1003_1B_VISIBLE)
+int        clock_getres(clockid_t, struct timespec *);
+int        clock_gettime(clockid_t, struct timespec *);
+int        clock_settime(clockid_t, const struct timespec *);
+int        nanosleep(const struct timespec *, struct timespec *);
+int        timer_create(clockid_t, struct sigevent *, timer_t *);
+int        timer_delete(timer_t);
+int        timer_gettime(timer_t, struct itimerspec *);
+int        timer_getoverrun(timer_t);
+int        timer_settime(timer_t, int, const struct itimerspec *,
+               struct itimerspec *);
+#endif /* !_ANSI_SOURCE && _P1003_1B_VISIBLE */
+
+__END_DECLS
+
+#endif /* _TIME_H_ */

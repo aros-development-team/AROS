@@ -1,5 +1,5 @@
-#ifndef _FCNTL_H
-#define _FCNTL_H
+#ifndef _FCNTL_H_
+#define _FCNTL_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -9,10 +9,17 @@
     Lang: english
 */
 
-/* Prototypes */
-int fcntl (int fd, int cmd, ...);
-int open  (const char * filename, int flags, ...);
-int creat (const char * filename, int mode);
+#include <aros/system.h>
+
+#ifdef	_AROS_PID_T_
+typedef _AROS_PID_T_	pid_t;
+#undef	_AROS_PID_T_
+#endif
+
+#ifdef	_AROS_OFF_T_
+typedef _AROS_OFF_T_	off_t;
+#undef	_AROS_OFF_T_
+#endif
 
 /* Flags for open */
 
@@ -31,27 +38,22 @@ int creat (const char * filename, int mode);
 
 /* Open time flags */
 #define O_NOCTTY	0         /* We ignore this one */
-#define O_CREAT 	0x0040
+#define O_CREAT		0x0040
 #define O_EXCL		0x0080
-#define O_SHLOCK        0         /* files are always opened in shared mode, if not otherwise specified */
+#define O_SHLOCK        0         /* files are always opened in shared mode,
+					if not otherwise specified */
 #define O_EXLOCK        0x0100
-#define O_TRUNC 	0x0200
+#define O_TRUNC		0x0200
 
 /* Operating modes */
 #define O_APPEND	0x0400
 #define O_NONBLOCK	0x0800
-#define O_NDELAY	O_NONBLOCK /* Alias */
+#define O_NDELAY	O_NONBLOCK  /* Alias */
 #define O_SYNC		0x1000
-#define O_FSYNC         O_SYNC     /* Alias */
+#define O_FSYNC         O_SYNC	    /* Alias */
 #define O_ASYNC         0x2000
-
-#ifndef _STDIO_H    /*stdio.h has the same definitions */
-
-#define SEEK_SET    0
-#define SEEK_CUR    1
-#define SEEK_END    2
-
-#endif /* _STDIO_H */
+#define O_DSYNC		0x4000	    /* Different from O_SYNC */
+#define O_RSYNC		0x8000	    /* Read sync */
 
 /* Values for the second argument to `fcntl'.  */
 #define F_DUPFD		0	/* Duplicate file descriptor.  */
@@ -95,4 +97,20 @@ int creat (const char * filename, int mode);
 # define LOCK_UN	8	/* remove lock */
 #endif
 
-#endif /* _FCNTL_H */
+struct flock
+{
+    short	l_type;	    /* type of lock F_RDLCK, F_WRLCK, F_UNLCK */
+    short	l_whence;   /* flag for starting offset */
+    off_t	l_start;    /* starting offset */
+    off_t	l_len;	    /* size, if 0 then until EOF */
+    pid_t	l_pid;	    /* pid of process holding the lock. */
+};
+
+/* Prototypes */
+__BEGIN_DECLS
+int fcntl (int fd, int cmd, ...);
+int open  (const char * filename, int flags, ...);
+int creat (const char * filename, int mode);
+__END_DECLS
+
+#endif /* _FCNTL_H_ */
