@@ -279,13 +279,23 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (is_root)
     {
-	iconlist = MUI_NewObject(MUIC_IconVolumeList, MUIA_Background, MUII_RegisterBack, TAG_DONE);
-    } else
+        iconlist = MUI_NewObject
+        (
+            MUIC_IconVolumeList,
+            MUIA_Background, MUII_RegisterBack, 
+            TAG_DONE
+        );
+    }
+    else
     {
-	char *drw = (char*)GetTagData(MUIA_IconWindow_Drawer,NULL,msg->ops_AttrList);
-	iconlist = MUI_NewObject(MUIC_IconDrawerList,
-				 MUIA_Background, MUII_PageBack,
-				 MUIA_IconDrawerList_Drawer, drw, TAG_DONE);
+	STRPTR drw = (STRPTR) GetTagData(MUIA_IconWindow_Drawer,NULL,msg->ops_AttrList);
+	iconlist = MUI_NewObject
+        (
+            MUIC_IconDrawerList,
+            MUIA_Background,                   MUII_PageBack,
+            MUIA_IconDrawerList_Drawer, (IPTR) drw, 
+            TAG_DONE
+        );
     }
 
     /* Now call the super methods new method with additional tags */
