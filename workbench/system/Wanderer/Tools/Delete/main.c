@@ -39,7 +39,7 @@ int main(int argc, char **argv)
                 (
                     NULL, NULL, 0,
                     "Delete?", "Delete|Cancel",
-                    "Are you sure you want to delete \"%s\"?", name
+                    "Are you sure you want to delete \"%s\"?", (IPTR) name
                 ) == 1
             )
             {
@@ -64,8 +64,8 @@ int main(int argc, char **argv)
                 OpenWorkbenchObject
                 (
                     "SYS:System/Delete",
-                    WBOPENA_ArgLock, startup->sm_ArgList[i].wa_Lock,
-                    WBOPENA_ArgName, startup->sm_ArgList[i].wa_Name,
+                    WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[i].wa_Lock,
+                    WBOPENA_ArgName, (IPTR) startup->sm_ArgList[i].wa_Name,
                     TAG_DONE
                 );
             }
