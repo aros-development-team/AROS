@@ -767,6 +767,14 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    	D(bug("Bug: confirm_entries != MUIA_List_Entries!\n"));
 		    }
 		    break;
+
+	    case    MUIA_List_Quiet:
+		_handle_bool_tag(data->flags, tag->ti_Data, LIST_QUIET);
+		if (!tag->ti_Data)
+		{
+		    DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
+		}
+		break;
     	}
     }
 
@@ -1530,9 +1538,11 @@ static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert 
 		TAG_DONE);
 	}
 
-	data->update = 1;
-	MUI_Redraw(obj,MADF_DRAWUPDATE);
-
+	if (!(data->flags & LIST_QUIET))
+	{
+	    data->update = 1;
+	    MUI_Redraw(obj,MADF_DRAWUPDATE);
+	}
     	data->insert_position = pos;
     	return (ULONG)pos;
     } else
@@ -1638,8 +1648,11 @@ STATIC IPTR List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP_
 	    TAG_DONE);
     }
 
-    data->update = 1;
-    MUI_Redraw(obj,MADF_DRAWUPDATE);
+    if (!(data->flags & LIST_QUIET))
+    {
+	data->update = 1;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
+    }
 
     data->insert_position = pos;
     return (ULONG)pos;
