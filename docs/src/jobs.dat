@@ -437,7 +437,7 @@ dos00004;2;matthias;Write Input
 dos00005;2;matthias;Write Output
 dos00006;2;matthias;Write Seek
 dos00007;2;matthias;Write DeleteFile
-dos00008;0;;Write Rename
+dos00008;2;hkiel;Write Rename
 dos00009;2;matthias;Write Lock
 dos00010;2;matthias;Write UnLock
 dos00011;2;matthias;Write DupLock
