@@ -21,8 +21,8 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #		   $(INCDIR)/core.h \
 	   
 ##MM- AROS-palm : setup setup-native includes compiler kernel boot-native \
-##MM	    create-mf-inc-again kernel-link-native binary-palm-m68k \
-##MM	    workbench-palm-m68k demos contrib-palm-m68k
+##MM	    create-mf-inc-again kernel-link-native binary-palm-m68000 \
+##MM	    workbench-palm-m68000 demos contrib-palm-m68000
 
 
 #MM- AROS-palm-1 : setup
@@ -31,7 +31,7 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM- AROS-palm : \
 #MM	setup-palm \
 #MM	includes \
-#MM	includes-palm-m68k \
+#MM	includes-palm-m68000 \
 #MM	compiler-nofpu \
 #MM	kernel \
 #MM	boot-palm
@@ -46,7 +46,7 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM	linklibs-autoinit \
 #MM	linklibs-arosc \
 #MM	linklibs-coolimages  \
-#MM	linklibs-gcc1-m68k
+#MM	linklibs-gcc1-m68000
 
 
 #MM create-mf-inc-again
@@ -56,7 +56,7 @@ create-mf-inc-again :
 
 # Kernel
 #MM- kernel-palm : kernel-exec-palm \
-#MM	    kernel-expansion-linklib kernel-expansion-palm-m68k \
+#MM	    kernel-expansion-linklib kernel-expansion-palm-m68000 \
 #MM	    kernel-utility-linklib
 
 
@@ -65,15 +65,15 @@ create-mf-inc-again :
 #MM	    kernel-aros-linklib \
 #MM	    kernel-oop-linklib \
 #MM	    kernel-hidd-linklib \
-#MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-palm-m68k \
+#MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-palm-m68000 \
 #MM	    kernel-layers-linklib \
 #MM	    kernel-timer-linklib \
-#MM	    kernel-misc-linklib kernel-misc-palm-m68k \
+#MM	    kernel-misc-linklib kernel-misc-palm-m68000 \
 #MM	    kernel-battclock-palm \
 #MM	    kernel-devs \
 #MM         kernel-intuition-palm \
 #MM	    kernel-keymap-linklib \
-#MM		kernel-filesys-palm-m68k \
+#MM		kernel-filesys-palm-m68000 \
 #MM		Drivers-irq \
 #MM		Drivers-kbd \
 #MM		Drivers-palm
@@ -115,89 +115,89 @@ create-mf-inc-again :
 #MM- kernel-dos-palm : dos-$(CPU) kernel-dos-linklib
 
 # Setup libraries
-#MM kernel-exec-palm-m68k :
-kernel-exec-palm-m68k :
+#MM kernel-exec-palm-m68000 :
+kernel-exec-palm-m68000 :
 	%add_objects rom/boot/libexec
 
-#MM kernel-aros-palm-m68k :
-kernel-aros-palm-m68k :
+#MM kernel-aros-palm-m68000 :
+kernel-aros-palm-m68000 :
 	%add_objects rom/boot/libaros
 
-#MM kernel-keymap-palm-m68k :
-kernel-keymap-palm-m68k :
+#MM kernel-keymap-palm-m68000 :
+kernel-keymap-palm-m68000 :
 	%add_objects rom/boot/libkeymap
 
-#MM kernel-mathffp-palm-m68k :
-kernel-mathffp-palm-m68k :
+#MM kernel-mathffp-palm-m68000 :
+kernel-mathffp-palm-m68000 :
 	%add_objects rom/boot/libmathffp
 
-#MM kernel-mathieeesingbas-palm-m68k :
-kernel-mathieeesingbas-palm-m68k :
+#MM kernel-mathieeesingbas-palm-m68000 :
+kernel-mathieeesingbas-palm-m68000 :
 	%add_objects rom/boot/libmathieeesingbas
 
-#MM kernel-expansion-palm-m68k :
-kernel-expansion-palm-m68k :
+#MM kernel-expansion-palm-m68000 :
+kernel-expansion-palm-m68000 :
 	%add_objects rom/boot/libexpansion
 
-#MM kernel-oop-palm-m68k :
-kernel-oop-palm-m68k :
+#MM kernel-oop-palm-m68000 :
+kernel-oop-palm-m68000 :
 	%add_objects rom/boot/liboop
 
-#MM kernel-layers-palm-m68k :
-kernel-layers-palm-m68k :
+#MM kernel-layers-palm-m68000 :
+kernel-layers-palm-m68000 :
 	%add_objects rom/boot/liblayers
 
-#MM kernel-workbench-palm-m68k :
-kernel-workbench-palm-m68k :
+#MM kernel-workbench-palm-m68000 :
+kernel-workbench-palm-m68000 :
 	%add_objects rom/boot/libworkbench
 
-#MM kernel-hidd-palm-m68k :
-kernel-hidd-palm-m68k :
+#MM kernel-hidd-palm-m68000 :
+kernel-hidd-palm-m68000 :
 	%add_objects rom/boot/libhiddclass
 
-#MM kernel-utility-palm-m68k :
-kernel-utility-palm-m68k :
+#MM kernel-utility-palm-m68000 :
+kernel-utility-palm-m68000 :
 	%add_objects rom/boot/libutility
 
-#MM kernel-dos-palm-m68k :
-kernel-dos-palm-m68k :
+#MM kernel-dos-palm-m68000 :
+kernel-dos-palm-m68000 :
 	%add_objects rom/boot/libdos
 
-#MM kernel-boot-palm-m68k :
-kernel-boot-palm-m68k :
+#MM kernel-boot-palm-m68000 :
+kernel-boot-palm-m68000 :
 	%add_objects rom/boot/libboot
 
-#MM kernel-timer-palm-m68k :
-kernel-timer-palm-m68k :
+#MM kernel-timer-palm-m68000 :
+kernel-timer-palm-m68000 :
 	%add_objects rom/boot/libtimer
 
-#MM kernel-battclock-palm-m68k :
-kernel-battclock-palm-m68k :
+#MM kernel-battclock-palm-m68000 :
+kernel-battclock-palm-m68000 :
 	%add_objects rom/boot/libbattclock
 
-#MM kernel-misc-palm-m68k :
-kernel-misc-palm-m68k :
+#MM kernel-misc-palm-m68000 :
+kernel-misc-palm-m68000 :
 	%add_objects rom/boot/libmisc
 
-#MM kernel-cgfx-palm-m68k :
-kernel-cgfx-palm-m68k :
+#MM kernel-cgfx-palm-m68000 :
+kernel-cgfx-palm-m68000 :
 	%add_objects rom/boot/libcybergraphics
 
-#MM kernel-graphics-palm-m68k :
-kernel-graphics-palm-m68k :
+#MM kernel-graphics-palm-m68000 :
+kernel-graphics-palm-m68000 :
 	%add_objects rom/boot/libgraphics
 	%add_objects rom/boot/libhiddgraphicsstubs
 
-#MM kernel-intuition-palm-m68k :
-kernel-intuition-palm-m68k :
+#MM kernel-intuition-palm-m68000 :
+kernel-intuition-palm-m68000 :
 	%add_objects rom/boot/libintuition
 
-#MM kernel-filesys-palm-m68k :
-kernel-filesys-palm-m68k :
+#MM kernel-filesys-palm-m68000 :
+kernel-filesys-palm-m68000 :
 	%add_objects rom/boot/libcon_handler
 
-#MM kernel-devs-palm-m68k :
-kernel-devs-palm-m68k :
+#MM kernel-devs-palm-m68000 :
+kernel-devs-palm-m68000 :
 	%add_objects rom/boot/libgameport
 	%add_objects rom/boot/libinput
 	%add_objects rom/boot/libkeyboard
@@ -207,24 +207,17 @@ kernel-devs-palm-m68k :
 	%add_objects rom/boot/libafs
 
 #MM
-includes-palm-m68k : $(INCFILES)
+includes-palm-m68000 : $(INCFILES)
 	@$(NOP)
 
 #MM
-binary-palm-m68k : build
+binary-palm-m68000 : build
 	@./build $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
 	    $(OSGENDIR)/boot/kernel >$(OSGENDIR)/boot/aros.bin
 
-#MM
-install-palm-m68k :
-	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
-	@read
-	@$(ECHO) "Writing AROS Image to floppy..."
-	@dd if=$(OSGENDIR)/boot/aros.bin of=/dev/fd0
+#MM- contrib-palm-m68000 : contrib-complete
 
-#MM- contrib-palm-m68k : contrib-complete
-
-#MM- workbench-palm-m68k : workbench-complete workbench
+#MM- workbench-palm-m68000 : workbench-complete workbench
 
 #MM
 includes-copy : $(GENINCDIR)/sigcore.h

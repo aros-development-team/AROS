@@ -20,7 +20,7 @@ AFLAGS = -mc68000
 $(OBJDIR)/%.o : %.s
 	%assemble_q opt=$(AFLAGS)
 
-%make_linklib_setup mmake=linklibs-gcc1-m68k
+%make_linklib_setup mmake=linklibs-gcc1-m68000
 
 %make_linklib
 

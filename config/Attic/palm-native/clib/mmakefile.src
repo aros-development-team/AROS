@@ -36,7 +36,7 @@ clib-palm : $(OBJS)
 	@$(NOP)
 
 #MM
-setup-clib-palm-m68k :
+setup-clib-palm-m68000 :
 	%mkdirs_q $(OBJDIR) $(SOBJDIR)
 	%add_objects   $(foreach f,$(COMMONFILES), compiler/clib/$(f))
 	%exclude_files $(foreach f,$(COMMONFILES), compiler/clib/$(f))
