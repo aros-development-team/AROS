@@ -10,8 +10,8 @@ void writemccinit(void)
 {
     FILE *out;
     char line[256];
-    struct functionlist *methlistit;
-    struct arglist *arglistit;
+    struct functionhead *methlistit;
+    struct functionarg *arglistit;
     struct linelist *linelistit;
     unsigned int lvo;
     int i;

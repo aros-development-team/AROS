@@ -1,16 +1,5 @@
 #include "genmodule.h"
 
-/* In funclist the information of all the functions of the module will be stored.
- * The list has to be sorted on the lvonum field
- */
-struct functionlist *funclist = NULL;
-
-/* In methlist the information of all the methods of the class will be 
- * stored. We (mis)use struct functionlist for this, but don't use certain
- * fields (like lvo and reg (in struct arglist)).
- */
-struct functionlist *methlist;
-
 /* In forcelist a list of basenames is present that need to be present in the
  * static link library so that certain libraries are opened by a program
  */
@@ -32,3 +21,43 @@ unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *cdefprivatelines = NULL, *protolines = NULL;
 
 int customdispatcher = 0; /* does class have custom dispatcher? */
+
+/* Help functions to handle the variables and the types */
+struct linelist *addline(struct linelist **linelistptr, const char *line)
+{
+    while(*linelistptr != NULL) linelistptr = &(*linelistptr)->next;
+    
+    *linelistptr = malloc(sizeof(struct linelist));
+    if (*linelistptr != NULL)
+    {
+	(*linelistptr)->next = NULL;
+	(*linelistptr)->line = strdup(line);
+    }
+    else
+    {
+	puts("Out of memory !");
+	exit(20);
+    }
+
+    return *linelistptr;
+}
+
+struct forcelist *addforcebase(struct forcelist **forcelistptr, const char *basename)
+{
+    while(*forcelistptr != NULL) forcelistptr = &(*forcelistptr)->next;
+    
+    *forcelistptr = malloc(sizeof(struct forcelist));
+    if (*forcelistptr != NULL)
+    {
+	(*forcelistptr)->next = NULL;
+	(*forcelistptr)->basename = strdup(basename);
+    }
+    else
+    {
+	puts("Out of memory !");
+	exit(20);
+    }
+
+    return *forcelistptr;
+}
+	

@@ -10,8 +10,8 @@ void writestart(void)
 {
     FILE *out;
     char line[256];
-    struct functionlist *funclistit;
-    struct arglist *arglistit;
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
     struct linelist *linelistit;
     unsigned int lvo;
     int i;
@@ -120,7 +120,7 @@ void writestart(void)
     else /* NORESIDENT */
     {
 	int neednull = 0;
-	struct functionlist *funclistit2;
+	struct functionhead *funclistit2;
 	
 	funclistit = funclist;
 	if (funclistit->lvo != 1)
