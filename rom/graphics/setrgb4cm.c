@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct ColorMap *, cm, A0),
-	AROS_LHA(WORD 	            , n , D0),
+	AROS_LHA(WORD 	          , n , D0),
 	AROS_LHA(UBYTE            , r , D1),
 	AROS_LHA(UBYTE            , g , D2),
 	AROS_LHA(UBYTE            , b , D3),
@@ -59,13 +59,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  if((NULL != cm) && (n < cm->Count))
-  {
-    WORD * RGBValues = cm->ColorTable;
-    RGBValues[n] = ((r & 0x000f) << 8) |
-                   ((g & 0x000f) << 4) |
-                    (b & 0x000f);
-  }
+  SetRGB32CM(cm, n, r << 28, g << 28, b << 28);
 
   AROS_LIBFUNC_EXIT
 } /* SetRGB4CM */
