@@ -97,7 +97,7 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 	    of tasks waiting. We do both the tests, this is another
 	    opportunity to throw an alert if there is an error.
 	*/
-	else if(
+	if(
 	    sigSem->ss_QueueCount >= 0
 	 && sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL
 	)
