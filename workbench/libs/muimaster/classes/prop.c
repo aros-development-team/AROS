@@ -203,19 +203,22 @@ static ULONG Prop_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 
     if (data->horiz)
     {
-	msg->MinMaxInfo->MinWidth +=  12;
-	msg->MinMaxInfo->MinHeight += 5;
-	msg->MinMaxInfo->DefWidth +=  100;
-	msg->MinMaxInfo->DefHeight += 10;
-	msg->MinMaxInfo->MaxWidth  = MUI_MAXMAX;
-	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
-    } else
-    {
-	msg->MinMaxInfo->MinWidth +=  5;
-	msg->MinMaxInfo->MinHeight += 12;
-	msg->MinMaxInfo->DefWidth +=  10;
-	msg->MinMaxInfo->DefHeight += 50;
+	msg->MinMaxInfo->MinWidth += 12;
+	msg->MinMaxInfo->DefWidth += 50;
 	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+
+	msg->MinMaxInfo->MinHeight += 6;
+	msg->MinMaxInfo->DefHeight += 6;
+	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+    }
+    else /* vertical */
+    {
+	msg->MinMaxInfo->MinWidth += 6;
+	msg->MinMaxInfo->DefWidth += 6;
+	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+
+	msg->MinMaxInfo->MinHeight += 12;
+	msg->MinMaxInfo->DefHeight += 50;
 	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
     }
     return TRUE;
