@@ -6,16 +6,24 @@
     Lang: English.
 */
 
-#include "initstruct.h"
-#include "diskfont_intern.h"
-#include "libdefs.h"
-#include <stddef.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <graphics/text.h>
+#include <diskfont/diskfont.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/alib.h>
+#include <proto/graphics.h>
+
+#include <stddef.h>
+
+#include "initstruct.h"
+#include "libdefs.h"
+#include "diskfont_intern.h"
 
 /****************************************************************************************/
 
@@ -119,7 +127,7 @@ const struct inittable datatable=
 /****************************************************************************************/
 
 struct ExecBase * SysBase;
-struct Library *DOSBase;
+struct DosLibrary *DOSBase;
 
 /****************************************************************************************/
 
@@ -149,6 +157,8 @@ AROS_UFH3(struct DiskfontBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
 
     LIBBASE->seglist = segList;
 
+    NewList(&LIBBASE->diskfontlist);
+    
     /* You would return NULL here if the init failed. */
     return LIBBASE;
     
@@ -188,7 +198,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     D(bug("Inside openfunc\n"));
 
     if (!DOSBase)
-	DOSBase = OpenLibrary("dos.library", 37);
+	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
     if (!DOSBase)
 	return(NULL);
 
@@ -213,7 +223,12 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     LIBBASE->dsh.h_Data = DOSBase;
 
     /* I have one more opener. */
+#if ALWAYS_ZERO_LIBCOUNT
+    LIBBASE->realopencount++;
+#else
     LIBBASE->library.lib_OpenCnt++;
+#endif
+
     LIBBASE->library.lib_Flags&=~LIBF_DELEXP;
 
     /* You would return NULL if the open failed. */
@@ -235,20 +250,13 @@ AROS_LH0(BPTR, close, struct DiskfontBase_intern *, LIBBASE, 2, BASENAME)
     */
 
     /* I have one fewer opener. */
-    if(!--LIBBASE->library.lib_OpenCnt)
-    {
-	if (UtilityBase)
-	    CloseLibrary(UtilityBase);
-	UtilityBase = NULL;
-	
-	if (GfxBase)
-	    CloseLibrary((struct Library *)GfxBase);
-	GfxBase = NULL;
-	
-	if (DOSBase)
-	    CloseLibrary(DOSBase);
-	DOSBase = NULL;
 
+#if ALWAYS_ZERO_LIBCOUNT
+    if(!--LIBBASE->realopencount)
+#else
+    if(!--LIBBASE->library.lib_OpenCnt)
+#endif
+    {
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
@@ -266,19 +274,58 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
+    struct DiskFontHeader *dfh, *dfh2;
+    
     BPTR ret;
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
     */
 
+    ForeachNodeSafe(&LIBBASE->diskfontlist, dfh, dfh2)
+    {
+    	if (dfh->dfh_TF.tf_Accessors < 1)
+	{
+	    /* Possible paranoia check */
+	    if (!(dfh->dfh_TF.tf_Flags & FPF_REMOVED))
+	    {
+	    	/* Unlink from GfxBase->TextFonts */
+	    	Remove(&dfh->dfh_TF.tf_Message.mn_Node);
+		
+		StripFont(&dfh->dfh_TF);
+		
+		/* Unlink from DiskfontBase->diskfontlist */
+		
+		Remove(&dfh->dfh_DF);
+		
+		UnLoadSeg(dfh->dfh_Segment);
+	    }
+	}
+    }
+    
     /* Test for openers. */
+#if ALWAYS_ZERO_LIBCOUNT
+    if (LIBBASE->realopencount)
+#else
     if(LIBBASE->library.lib_OpenCnt)
+#endif
     {
 	/* Set the delayed expunge flag and return. */
 	LIBBASE->library.lib_Flags |= LIBF_DELEXP;
 	return 0;
     }
+
+    if (UtilityBase)
+	CloseLibrary(UtilityBase);
+    UtilityBase = NULL;
+
+    if (GfxBase)
+	CloseLibrary((struct Library *)GfxBase);
+    GfxBase = NULL;
+
+    if (DOSBase)
+	CloseLibrary((struct Library *)DOSBase);
+    DOSBase = NULL;
 
     /* Get rid of the library. Remove it from the list. */
     Remove(&LIBBASE->library.lib_Node);
