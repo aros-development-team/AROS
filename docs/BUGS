@@ -158,3 +158,8 @@ shows the last subdirectory of the path (ie. "Workbench:Locale/Countries"
 becomes "Countries"). This however is only on ffs_device, ram_device is okay.
 Maybe related to BUG000016.
 
+BUG000025
+hkiel@aros.org
+Seek() does not work properly: The position of the file only changes
+to the new one if the current position is on EOF.
+
