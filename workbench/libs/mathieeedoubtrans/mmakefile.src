@@ -1,33 +1,16 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I.
+USER_INCLUDES := -I.
 
-LIBNAME  := mathieeedoubtrans
-ULIBNAME := Mathieeedoubtrans
+LIBNAME 	:= mathieeedoubtrans
+ULIBNAME	:= MathIeeeDoubTrans
 
-# BEGIN_DESC{makefile}
-# This is the makefile for mathieeedoubtrans.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
-
-# BEGIN_DESC{localmakevar}
-# \item{FILES} This is a list of all files (without the .c) which
-#	contain internal functions of the library (eg. libinit(),
-#	libopen(), libexpunge() and the function table).
-#
-# \item{FUNCTIONS} This is a list of all files (without the .c)
-#	with public functions of the library. The makefile will
-#	strip all files from this list for which a special
-#	version for this CPU does exist.
-#
-# END_DESC{localmakevar}
-
-FILES := \
+FILES		:= \
 	intern_ieeedpisodd \
 	intern_ieeedpld
 
-FUNCTIONS := \
+FUNCTIONS	:= \
 	ieeedpatan \
 	ieeedpcosh \
 	ieeedpexp \
@@ -40,15 +23,27 @@ FUNCTIONS := \
 	ieeedptanh \
 	ieeedptieee 
 
-%define_libs postlibs="-lamiga -lmathieeedoubtrans"
+%define_libs prelibs=-l$(LIBNAME)
 
-%genlib
+%genlib_cpak
 
 #MM workbench-libs-mathieeedoubtrans : setup includes linklibs
 workbench-libs-mathieeedoubtrans : show-flags $(SLIB)
 
-#MM setup
-#MM clean
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(END_FILE).c $(LIB) $(SLIB)
+
+
+%additional_objs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
