@@ -52,7 +52,11 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GroupsPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
-	Child, VGroup,
+			       Child, ColGroup(2),
+			       Child, VGroup,
+			       GroupFrameT("Title"),
+			       Child, HVSpace,
+			       End,
 	    Child, ColGroup(3),
 		GroupFrameT("Background"),
 		Child, MakeLabel("Framed"),
