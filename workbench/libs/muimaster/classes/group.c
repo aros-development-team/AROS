@@ -2124,6 +2124,7 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
     case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
     case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
     case MUIM_CallHook: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
+    case MUIM_DrawBackground: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }

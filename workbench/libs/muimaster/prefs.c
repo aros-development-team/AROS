@@ -158,7 +158,7 @@ static void prefs_init_frames (struct ZunePrefs *prefs)
 static void prefs_init_images (struct ZunePrefs *prefs)
 {
     prefs->images[MUII_WindowBack] = zune_image_spec_to_structure((IPTR)"0:128"); /* MUII_BACKGROUND */
-    prefs->images[MUII_RequesterBack] =  zune_image_spec_to_structure((IPTR)"0:132"); /* MUII_SHINEBACK */
+    prefs->images[MUII_RequesterBack] =  zune_image_spec_to_structure((IPTR)"0:137"); /* MUII_SHINEBACK */
     prefs->images[MUII_ButtonBack] = zune_image_spec_to_structure((IPTR)"0:128");
     prefs->images[MUII_ListBack] = zune_image_spec_to_structure((IPTR)"0:128");
     prefs->images[MUII_TextBack] = zune_image_spec_to_structure((IPTR)"0:128");

@@ -1917,6 +1917,13 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
     	img = &def;
     }
 
+    if (img->type == IST_BITMAP && !img->dt)
+    {
+    	def.type = IST_MUICOLOR;
+    	def.muicolor = MPEN_BACKGROUND;
+    	img = &def;
+    }
+
     switch (img->type)
     {
 	case	IST_MUICOLOR:
