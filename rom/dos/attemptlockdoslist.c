@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/26 07:52:11  SDuvan
+    Layout update
+
     Revision 1.7  1998/10/20 16:44:28  hkiel
     Amiga Research OS
 
@@ -24,7 +27,7 @@
     Added standard header for all files
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include "dos_intern.h"
@@ -49,7 +52,7 @@
 	LockDosList() instead.
 
     INPUTS
-	flags - what lists to lock
+	flags  --  what lists to lock
 
     RESULT
 	Handle to the dos list or NULL. This is not a direct pointer
@@ -73,13 +76,19 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    if(flags&LDF_WRITE)
+
+    if(flags & LDF_WRITE)
     {
 	if(!AttemptSemaphore(&DOSBase->dl_DosListLock))
 	    return NULL;
-    }else
+    }
+    else
+    {
 	if(!AttemptSemaphoreShared(&DOSBase->dl_DosListLock))
 	    return NULL;
+    }
+
     return (struct DosList *)&DOSBase->dl_DevInfo;
+
     AROS_LIBFUNC_EXIT
 } /* AttemptLockDosList */

@@ -70,5 +70,6 @@
     Enable();
 
     return rcvd;
+
     AROS_LIBFUNC_EXIT
 } /* CheckSignal */
