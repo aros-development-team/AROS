@@ -205,6 +205,7 @@ APTR zune_bubble_create(Object *obj, LONG x, LONG y, char *text, ULONG flags)
     bubble->shape = zune_bubble_shape_create(obj, bubble, WINWIDTH, WINHEIGHT);
     #endif
     
+#ifndef __AROS__
     bubble->win = OpenWindowTags(NULL, WA_CustomScreen, (IPTR)_screen(obj),
     	    	    	    	       WA_Left, WINLEFT,
 				       WA_Top, WINTOP,
@@ -214,10 +215,20 @@ APTR zune_bubble_create(Object *obj, LONG x, LONG y, char *text, ULONG flags)
 				       WA_Activate, FALSE,
 				       WA_Borderless, TRUE,
 				       WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
-    	    	    	    	    #ifdef __AROS__
-				       WA_Shape, (IPTR)bubble->shape,
-				    #endif				       
 				       TAG_DONE);
+#else				       
+    bubble->win = OpenWindowTags(NULL, WA_CustomScreen, (IPTR)_screen(obj),
+    	    	    	    	       WA_Left, WINLEFT,
+				       WA_Top, WINTOP,
+				       WA_Width, WINWIDTH,
+				       WA_Height, WINHEIGHT,
+				       WA_AutoAdjust, TRUE,
+				       WA_Activate, FALSE,
+				       WA_Borderless, TRUE,
+				       WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
+				       WA_Shape, (IPTR)bubble->shape,
+				       TAG_DONE);
+#endif				       
 				     
     if (!bubble->win)
     {
