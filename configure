@@ -2,6 +2,12 @@
 # Simple script to create host.cfg
 #
 
+if [ -z "$1" ]; then
+    echo "Usage: $0 <configfile>"
+    echo "Writes the system specific things to <configfile>"
+    exit 1
+fi
+
 type=`uname`
 
 # Reasonable defaults
