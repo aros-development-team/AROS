@@ -180,18 +180,18 @@
 	    
 	    if (GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH) >= 15)
 	    {
-	    	buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
+	    	buffer = AllocVec(width * sizeof(LONG), MEMF_ANY);
 	    }
 
             if (buffer != NULL)
             {
-                memset(buffer, 0xAA, width * height * sizeof(LONG));
+                memset(buffer, 0xAA, width * sizeof(LONG));
 
                 WritePixelArrayAlpha
-		(
-		    buffer, 0, 0, width * sizeof(LONG), 
-		    _rp(obj), _left(obj), _top(obj), width, height, 0
-		);
+                (
+                    buffer, 0, 0, 0, 
+                    _rp(obj), _left(obj), _top(obj), width, height, 0
+                );
                 FreeVec(buffer);
             }   else
 #endif
