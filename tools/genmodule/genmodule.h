@@ -12,7 +12,6 @@
 #include "functionhead.h"
 #include "config.h"
 
-void readconfig(struct config *);
 void readref(struct config *);
 void writeincproto(struct config *);
 void writeincclib(struct config *);

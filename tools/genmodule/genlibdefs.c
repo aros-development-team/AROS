@@ -11,7 +11,6 @@ int main(int argc, char **argv)
     char *s;
     struct config *cfg = initconfig(argc, argv, LIBDEFS);
     
-    readconfig(cfg);
     writeinclibdefs(cfg);
     
     return 0;

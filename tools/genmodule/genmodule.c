@@ -12,7 +12,6 @@ int main(int argc, char **argv)
 
     struct config *cfg = initconfig(argc, argv, NORMAL);
 
-    readconfig(cfg);
     readref(cfg);
     if (cfg->modtype == LIBRARY || cfg->modtype == DEVICE)
     {
