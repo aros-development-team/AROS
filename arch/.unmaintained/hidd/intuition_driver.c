@@ -7,12 +7,14 @@
 */
 
 #define AROS_USE_OOP
+#define AROS_ALMOST_COMPATIBLE
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
+#include <exec/lists.h>
 #include <dos/dos.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
@@ -44,59 +46,42 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-
-static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
-static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
-
-
-
-enum {
-    DRAGBAR = 0,
-    CLOSEGAD,
-    DEPTHGAD,
-    SIZEGAD,
-    ZOOMGAD,
-    NUM_SYSGADS
-};
-    
-	
-struct HiddIntWindow
-{
-    struct IntWindow window;
-    
-    /* Some direct-pointers to the window system gadgets 
-       (They are put in windows glist too)
-    */
-    Object * sysgads[NUM_SYSGADS];
-
-};
-
-#define HIW(x) ((struct HiddIntWindow *)x)
-#define SYSGAD(w, idx) (HIW(w)->sysgads[idx])
-
 static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
 static struct Library *LayersBase = NULL;
 
-
-
-
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
     
+    bug("**************************************************************\n"
+        "* Someone called config/hidd/intuition_driver.c/intui_init() *\n"
+	"* This is no longer necessary. Everything is now handled in  *\n"
+	"* intuition.library!!! Fix this!                             *\n"
+	"**************************************************************");
 
+    return FALSE;
 
+#if 0    
 #warning FIXME: this is a hack
     IntuiBase = IntuitionBase;
     
     return TRUE;
+#endif
 }
 
 
 
 int intui_open (struct IntuitionBase * IntuitionBase)
 {
+    bug("**************************************************************\n"
+        "* Someone called config/hidd/intuition_driver.c/intui_open() *\n"
+	"* This is no longer necessary. Everything is now handled in  *\n"
+	"* intuition.library!!! Fix this!                             *\n"
+	"**************************************************************");
+
+    return FALSE;
     
+#if 0    
     /* Hack */
     if (!GfxBase)
     {
@@ -114,6 +99,7 @@ int intui_open (struct IntuitionBase * IntuitionBase)
 
 
     return TRUE;
+#endif
 }
 
 void intui_close (struct IntuitionBase * IntuitionBase)
@@ -132,271 +118,7 @@ void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 
 int intui_GetWindowSize (void)
 {
-    return sizeof (struct HiddIntWindow);
-}
-
-
-/* Georg Steger: changed TITLEBAR_HEIGHT */
-/* #define TITLEBAR_HEIGHT 14 */
-#define TITLEBAR_HEIGHT (w->BorderTop)
-
-int intui_OpenWindow (struct Window * w,
-	struct IntuitionBase * IntuitionBase,
-	struct BitMap        * SuperBitMap,
-	struct Hook          * backfillhook)
-{
-    /* Create a layer for the window */
-    LONG layerflags = 0;
-    
-    EnterFunc(bug("intui_OpenWindow(w=%p)\n", w));
-    
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-    D(bug("screen: %p\n", w->WScreen));
-    D(bug("bitmap: %p\n", w->WScreen->RastPort.BitMap));
-    
-    /* Just insert some default values, should be taken from
-       w->WScreen->WBorxxxx */
-    
-    /* Set the layer's flags according to the flags of the
-    ** window
-    */
-    
-    /* refresh type */
-    if (0 != (w->Flags & WFLG_SIMPLE_REFRESH))
-      layerflags |= LAYERSIMPLE;
-    else
-      if (0!= (w->Flags & WFLG_SUPER_BITMAP))
-        layerflags |= (LAYERSMART|LAYERSUPER);
-      else
-        layerflags |= LAYERSMART;
-        
-    if (0 != (w->Flags & WFLG_BACKDROP))   
-      layerflags |= LAYERBACKDROP;
-
-    D(bug("Window dims: (%d, %d, %d, %d)\n",
-    	w->LeftEdge, w->TopEdge, w->Width, w->Height));
-    	
-    /* A GimmeZeroZero window??? */
-    if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
-    {
-      /* 
-        A GimmeZeroZero window is to be created:
-          - the outer window will be a simple refresh layer
-          - the inner window will be a layer according to the flags
-        What is the size of the inner/outer window supposed to be???
-        I just make it that the outer window has the size of what is requested
-      */
-      
-
-      /* First create outer window */
-      struct Layer * L = CreateUpfrontHookLayer(
-                             &w->WScreen->LayerInfo
-                           , w->WScreen->RastPort.BitMap
-                           , w->LeftEdge
-                           , w->TopEdge
-                           , w->LeftEdge + w->Width - 1
-                           , w->TopEdge  + w->Height - 1
-                           , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
-                           , LAYERS_NOBACKFILL
-                           , SuperBitMap);
-                           
-      /* Could the layer be created. Nothing bad happened so far, so simply leave */
-      if (NULL == L)
-        ReturnBool("intui_OpenWindow", FALSE);
-				      
-      /* install it as the BorderRPort */
-      w->BorderRPort = L->rp;
-
-      /* This layer belongs to a window */
-      L->Window = (APTR)w;
-     
-      w->GZZWidth = w->Width  - w->BorderLeft - w->BorderRight;
-      w->GZZHeight= w->Height - w->BorderTop  - w->BorderBottom;
-
-      /* Now comes the inner window */
-      w->WLayer = CreateUpfrontHookLayer( 
-                   &w->WScreen->LayerInfo
-	  	  , w->WScreen->RastPort.BitMap
-		  , w->LeftEdge + w->BorderLeft  
-		  , w->TopEdge  + w->BorderTop
-		  , w->LeftEdge + w->BorderLeft + w->GZZWidth - 1
-		  , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
-		  , layerflags
-		  , backfillhook
-		  , SuperBitMap);
-
-      /* could this layer be created? If not then delete the outer window and exit */
-      if (NULL == w->WLayer)
-      {
-        DeleteLayer(0, L);
-        ReturnBool("intui_OpenWindow", FALSE);
-      }	
-      	  
-      /* That should do it, I guess... */
-    }
-    else
-    {
-      w->WLayer = CreateUpfrontHookLayer( 
-                   &w->WScreen->LayerInfo
-	  	  , w->WScreen->RastPort.BitMap
-		  , w->LeftEdge
-		  , w->TopEdge
-		  , w->LeftEdge + w->Width - 1
-		  , w->TopEdge  + w->Height - 1
-		  , layerflags
-		  , backfillhook
-		  , SuperBitMap);
-
-      /* Install the BorderRPort here! see GZZ window above  */
-      if (NULL != w->WLayer)
-      {
-        /* 
-           I am installing a totally new RastPort here so window and frame can
-           have different fonts etc. 
-        */
-        w->BorderRPort = AllocMem(sizeof(struct RastPort), MEMF_CLEAR);
-        if (w->BorderRPort)
-        {
-          InitRastPort(w->BorderRPort);
-          w->BorderRPort->Layer  = w->WLayer;
-          w->BorderRPort->BitMap = w->WLayer->rp->BitMap;
-        }
-        else
-        {
-          /* no memory for RastPort! Simply close the window */
-          intui_CloseWindow(w, IntuitionBase);
-    	  ReturnBool("intui_OpenWindow", FALSE);
-        }
-      }		  
-    }
-
-    D(bug("Layer created: %p\n", w->WLayer));
-    D(bug("Window created: %p\n", w));
-    
-    /* common code for GZZ and regular windows */
-    
-    if (w->WLayer)
-    {
-        /* Layer gets pointer to the window */
-        w->WLayer->Window = (APTR)w;
-	/* Window needs a rastport */
-	w->RPort = w->WLayer->rp;
-	
-	/* installation of the correct BorderRPort already happened above !! */
-	 
-	if (createsysgads(w, IntuitionBase))
-	{
-
-    	    ReturnBool("intui_OpenWindow", TRUE);
-
-	}
-	intui_CloseWindow(w, IntuitionBase);
-	
-    } /* if (layer created) */
-    
-    ReturnBool("intui_OpenWindow", FALSE);
-}
-
-void intui_CloseWindow (struct Window * w,
-	                struct IntuitionBase * IntuitionBase)
-{
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-    disposesysgads(w, IntuitionBase);
-    if (0 == (w->Flags & WFLG_GIMMEZEROZERO))
-    {
-      /* not a GZZ window */
-      if (w->WLayer)
-      	DeleteLayer(0, w->WLayer);
-      DeinitRastPort(w->BorderRPort);
-      FreeMem(w->BorderRPort, sizeof(struct RastPort));
-    }
-    else
-    {
-      /* a GZZ window */
-      /* delete inner window */
-      if (NULL != w->WLayer)
-        DeleteLayer(0, w->WLayer);
-      
-      /* delete outer window */
-      if (NULL != w->BorderRPort && 
-          NULL != w->BorderRPort->Layer)
-        DeleteLayer(0, w->BorderRPort->Layer);      
-    }
-}
-
-
-BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
-    WORD width, WORD height)
-{
-    BOOL success;
-    
-    if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
-    {
-      /*
-      ** Move outer window first
-      ** Refresh later
-      */
-      if (FALSE == MoveSizeLayer(window->BorderRPort->Layer,
-    		                 x - window->LeftEdge,
-    		                 y - window->TopEdge,
-    		                 width - window->Width,
-                                 height - window->Height ))
-        return FALSE;
-
-    }
-
-    /*
-    ** Move (inner) window.
-    */
-    if (TRUE == MoveSizeLayer(window->WLayer,
-    	                      x - window->LeftEdge,
-    		              y - window->TopEdge,
-                              width - window->Width,
-                              height - window->Height ))
-    {
-      success = TRUE;
-
-      /*
-      ** The window could be moved. 
-      */
-      window->LeftEdge= x;
-      window->TopEdge = y;
-      window->Width   = width;
-      window->Height  = height;
-
-      if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
-      {
-        window->GZZWidth  += (width - window->Width);
-        window->GZZHeight += (height - window->Height);                
-      }
-
-      /*
-      ** Refresh the window frame here. This 
-      ** should also refresh it for GZZ windows.
-      */
-      RefreshWindowFrame(window);
-      
-    }
-    else
-    {
-      success = FALSE;
-      
-      if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
-      {
-        /*
-        ** The window could not be moved.
-        ** If it's a GZZ window then try to move the
-        ** outer layer back to its old position.
-        ** If this doesn't work then we're in really bad shape.
-        */
-        MoveSizeLayer(window->BorderRPort->Layer,
-      		      x + window->LeftEdge,
-    		      y + window->TopEdge,
-    		      width + window->Width,
-                      height + window->Height);
-      }
-    }
-    return success;
+    return sizeof (struct IntWindow);
 }
 
 
@@ -411,52 +133,6 @@ void intui_ActivateWindow (struct Window * win)
 
 }
 
-struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase)
-{
-    /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
-    struct Screen *scr;
-    struct Layer *l;
-    struct Window *new_w = NULL;
-    ULONG lock;
-    
-    *swallow_event = FALSE;
-
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-#warning Fixme: Find out what screen the click was in.
-
-    lock = LockIBase(0UL);
-    scr = IntuitionBase->ActiveScreen;
-    UnlockIBase(lock);
-    
-    if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
-    {
-	/* What layer ? */
-	D(bug("Click at (%d,%d)\n",ie->ie_X,ie->ie_Y));
-	LockLayerInfo(&scr->LayerInfo);
-	
-	l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
-	
-	UnlockLayerInfo(&scr->LayerInfo);
-	
-	if (NULL == l)
-	{
-	    D(bug("iih: Click not inside layer\n"));
-	}
-	else
-	{
-	    new_w = (struct Window *)l->Window;
-	    if (!new_w)
-	    {
-		D(bug("iih: Selected layer is not a window\n"));
-	    }
-    
-    D(bug("Found layer %p\n", l));
-    
-        }
-    }
-    return new_w;
-}
-
 LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 	LONG size, struct KeyMap * km)
 {
@@ -465,314 +141,3 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 } /* intui_RawKeyConvert */
 
 
-static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
-{
-
-    struct DrawInfo *dri;
-    BOOL is_gzz;
-    
-    EnterFunc(bug("createsysgads(w=%p)\n", w));
-
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-
-    is_gzz = (w->Flags & WFLG_GIMMEZEROZERO) ? TRUE : FALSE;
-
-    dri = GetScreenDrawInfo(w->WScreen);
-    if (dri)
-    {
-	LONG db_left, db_width, relright; /* dragbar sizes */
-	BOOL sysgads_ok = TRUE;
-	
-	    
-	db_left = 0;
-	db_width = 0; /* Georg Steger: was w->Width; */
-	
-	
-	
-	
-	/* Now find out what gadgets the window wants */
-	if (    w->Flags & WFLG_CLOSEGADGET 
-	     || w->Flags & WFLG_DEPTHGADGET
-	     || w->Flags & WFLG_HASZOOM
-	     || w->Flags & WFLG_DRAGBAR /* To assure w->BorderTop being set correctly */
-             || w->Flags & WFLG_SIZEGADGET
-	)
-	{
-	/* If any of titlebar gadgets are present, me might just as well
-	insert a dragbar too */
-	       
-	    w->Flags |= WFLG_DRAGBAR;
-
-            /* Georg Steger: bordertop is set by rom/intuition/openwindow.c
-	                     to scr->WBorTop + FontHeight + 1 */
-			     
-	    /* w->BorderTop = TITLEBAR_HEIGHT; */
-	}
-	
-	/* Relright of rightmost button */
-	relright = - (TITLEBAR_HEIGHT - 1);
-
-
-
-	if (w->Flags & WFLG_SIZEGADGET)
-	{
-	    /* this code must not change the 'relright' variable */
-	    WORD width  = ((struct IntWindow *)w)->sizeimage_width;
-	    WORD height = ((struct IntWindow *)w)->sizeimage_height;
-	    
-	    struct TagItem size_tags[] = {
-	            {GA_RelRight,	-width + 1	},
-		    {GA_RelBottom,	-height + 1 	},
-		    {GA_Width,		width		},
-		    {GA_Height,		height		},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_SIZING 	},
-		    {GA_BottomBorder,	TRUE		},
-		    {GA_RightBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
-	    };
-	    SYSGAD(w, SIZEGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->sizebuttonclass
-			, NULL
-			, size_tags );
-
-	    if (!SYSGAD(w, SIZEGAD))
-		sysgads_ok = FALSE;
-	    
-	    
-	}  
-	
-	if (w->Flags & WFLG_DEPTHGADGET)
-	{
-	    struct TagItem depth_tags[] = {
-	            {GA_RelRight,	relright	},
-		    {GA_Top,		0  		},
-		    {GA_Width,		TITLEBAR_HEIGHT	},
-		    {GA_Height,		TITLEBAR_HEIGHT	},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_WDEPTH 	},
-		    {GA_TopBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
-	    };
-		
-	    relright -= TITLEBAR_HEIGHT;
-		
-	    db_width -= TITLEBAR_HEIGHT;
-	    
-	    SYSGAD(w, DEPTHGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->tbbclass
-			, NULL
-			, depth_tags );
-
-	    if (!SYSGAD(w, DEPTHGAD))
-		sysgads_ok = FALSE;
-	    
-	    
-	}  
-
-	if (w->Flags & WFLG_HASZOOM)
-	{
-	    struct TagItem zoom_tags[] = {
-	            {GA_RelRight,	relright	},
-		    {GA_Top,		0  		},
-		    {GA_Width,		TITLEBAR_HEIGHT	},
-		    {GA_Height,		TITLEBAR_HEIGHT	},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_WZOOM 	},
-		    {GA_TopBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
-	    };
-		
-	    relright -= TITLEBAR_HEIGHT;
-	    db_width -= TITLEBAR_HEIGHT;
-	    
-	    SYSGAD(w, ZOOMGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->tbbclass
-			, NULL
-			, zoom_tags );
-
-	    if (!SYSGAD(w, ZOOMGAD))
-		sysgads_ok = FALSE;
-	}  
-
-	if (w->Flags & WFLG_CLOSEGADGET)
-	{
-	    struct TagItem close_tags[] = {
-	            {GA_Left,		0		},
-		    {GA_Top,		0  		},
-		    {GA_Width,		TITLEBAR_HEIGHT	},
-		    {GA_Height,		TITLEBAR_HEIGHT	},
-		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
-		    {GA_SysGadget,	TRUE		},
-		    {GA_SysGType,	GTYP_CLOSE 	},
-		    {GA_TopBorder,	TRUE		},
-		    {GA_GZZGadget,	is_gzz		},
-		    {TAG_DONE,		0UL }
-	    };
-		
-	    db_left  += TITLEBAR_HEIGHT;
-	    db_width -= TITLEBAR_HEIGHT;
-	    
-	    SYSGAD(w, CLOSEGAD) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->tbbclass
-			, NULL
-			, close_tags );
-
-	    if (!SYSGAD(w, CLOSEGAD))
-		sysgads_ok = FALSE;
-	}  
-
-	/* Now try to create the various gadgets */
-	if (w->Flags & WFLG_DRAGBAR)
-	{
-
-	    struct TagItem dragbar_tags[] = {
-			{GA_Left,	db_left		},
-			{GA_Top,	0		},
-			{GA_RelWidth,	db_width 	},
-			{GA_Height,	TITLEBAR_HEIGHT },
-			{GA_SysGType,	GTYP_WDRAGGING	},
-			{GA_TopBorder,	TRUE		},
-		    	{GA_GZZGadget, 	is_gzz		},
-			{TAG_DONE,	0UL		}
-	    };
-	    SYSGAD(w, DRAGBAR) = NewObjectA(
-			GetPrivIBase(IntuitionBase)->dragbarclass
-			, NULL
-			, dragbar_tags );
-				
-	    if (!SYSGAD(w, DRAGBAR))
-		sysgads_ok = FALSE;
-				
-	}
-	    
-
-	D(bug("Dragbar:  %p\n", SYSGAD(w, DRAGBAR ) ));
-	D(bug("Depthgad: %p\n", SYSGAD(w, DEPTHGAD) ));
-	D(bug("Zoomgad:  %p\n", SYSGAD(w, ZOOMGAD ) ));
-	D(bug("Closegad: %p\n", SYSGAD(w, CLOSEGAD) ));
-	D(bug("Sizegad:  %p\n", SYSGAD(w, SIZEGAD ) ));
-	    
-	/* Don't need drawinfo anymore */
-	FreeScreenDrawInfo(w->WScreen, dri);
-	
-	if (sysgads_ok)
-	{
-	    UWORD i;
-	
-	
-	    D(bug("Adding gadgets\n"));
-	    for (i = 0; i < NUM_SYSGADS; i ++)
-	    {
-		if (SYSGAD(w, i))
-		    AddGList(w, (struct Gadget *)SYSGAD(w, i), 0, 1, NULL);
-	    }
-	    
-	    D(bug("Refreshing frame\n"));
-
-
-	    ReturnBool("createsysgads", TRUE);
-	    
-	} /* if (sysgads created) */
-	
-	disposesysgads(w, IntuitionBase);
-	
-    } /* if (got DrawInfo) */
-    ReturnBool("createsysgads", FALSE);
-
-}
-
-
-static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
-{
-    /* Free system gadges */
-    UWORD i;
-    
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-    for (i = 0; i < NUM_SYSGADS; i ++)
-    {
-        if (SYSGAD(w, i))
-	{
-	    RemoveGadget( w, (struct Gadget *)SYSGAD(w, i));
-	    DisposeObject( SYSGAD(w, i) );
-	}
-    }
-}
-
-
-
-void windowneedsrefresh(struct Window * w, 
-                        struct IntuitionBase * IntuitionBase )
-{
-  /* Supposed to send a message to this window, saying that it needs a
-     refresh. I will check whether there is no such a message queued in
-     its messageport, though. It only needs one such message! 
-  */
-  struct IntuiMessage * IM;
-  BOOL found = FALSE;
-
-#warning this code should be moved inside intuition (it does not contain any hardware specific code)
-  if (NULL == w->UserPort)
-    return;
-  
-  
-  /* Refresh the window's gadgetry ... 
-     ... stegerg: and in the actual implementation
-     call RefershWindowFrame first, as the border gadgets don´t
-     cover the whole border area.*/
-
-  
-  if (FALSE != BeginUpdate(w->WLayer))
-  {
-  
-    if (!(w->Flags & WFLG_GIMMEZEROZERO))
-    {
-      RefreshWindowFrame(w);
-    }
-  
-    /* refresh all gadgets except border gadgets, because they
-       were already refreshed in refreshwindowframe */
-    int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
-  }
-
-  EndUpdate(w->WLayer, FALSE);
-  
-  /* Can use Forbid() for this */
-  
-  Forbid();
-  
-  IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
-
-  /* reset the flag in the layer */
-  w->WLayer->Flags &= ~LAYERREFRESH;
-
-  while ((NULL != IM) && !found)
-  {
-    /* Does the window already have such a message? */
-    if (IDCMP_REFRESHWINDOW == IM->Class)
-    {
-kprintf("Window %s already has a refresh message pending!!\n",w->Title);
-      found = TRUE;
-    }
-    IM = (struct IntuiMessage *)IM->ExecMessage.mn_Node.ln_Succ;
-  }
-  
-  Permit();
-
-kprintf("Sending a refresh message to window %s!!\n",w->Title);
-  if (!found)
-  {
-    IM = alloc_intuimessage(w, IntuitionBase);
-    if (NULL != IM)
-    {
-      IM->Class = IDCMP_REFRESHWINDOW;
-      send_intuimessage(IM, w, IntuitionBase);
-    }
-  }
-}
