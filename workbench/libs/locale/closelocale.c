@@ -61,8 +61,10 @@ extern struct Locale defLocale;
 	ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
 	if(--IntL(locale)->il_Count == 0)
 	{
-	    /* Free the locale structure */
-	    FreeMem(locale, sizeof(struct IntLocale));
+	    /* Free the locale structure if it's not the current
+	       locale */
+	    if (locale != (struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale)
+  	      FreeMem(locale, sizeof(struct IntLocale));
 	}
 	ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
     }

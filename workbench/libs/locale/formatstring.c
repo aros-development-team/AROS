@@ -360,24 +360,23 @@ char HEXarray [] = "0123456789ABCDEF";
               {
                 UBYTE groupsize;
                 ULONG group_index = 0;
-                
                 if (FALSE == length_found)
                 {
                   tmp = *(UWORD *)(((ULONG)stream)+indices[arg_pos-1]);
-                  buffer = &buf[4+1];
                 }
                 else
                 {  
                   tmp = *(ULONG *)(((ULONG)stream)+indices[arg_pos-1]);
-                  buffer = &buf[8+1];
                 }
-                
-                if ((LONG) tmp < 0 && 'd' == fmtTemplate[template_pos])
+                if ((LONG) tmp < 0 && 'D' == fmtTemplate[template_pos])
                 {
                   minus = 1;
                   tmp = -tmp;
                 }
                 
+                /* BUFFERSIZE should be big enough to format a string
+                ** according to locale's formatting conventions
+                */
                 buffer = &buf[BUFFERSIZE];
 
                 if (NULL != locale)
@@ -386,6 +385,7 @@ char HEXarray [] = "0123456789ABCDEF";
                 }
                 else
                   groupsize = 255;
+
                 
                 do
                 {
