@@ -18,6 +18,7 @@
 #include <proto/utility.h>
 #include <proto/dos.h>
 #include <oop/oop.h>
+#include <ctype.h>
 
 #include "../graphics/graphics_private.h"	/* LateGfxInit proto	*/
 #include "../intuition/intuition_private.h"	/* LateIntuiInit proto	*/
@@ -30,6 +31,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#warning This is just a temporary and hackish way to get the HIDDs up and working
+
 struct initbase
 {
     struct ExecBase	*sysbase;
@@ -41,30 +44,16 @@ struct initbase
 #define DOSBase (base->dosbase)
 #define OOPBase (base->oopbase)
 
-struct hiddprefs
-{
-    STRPTR basehiddfile;
-    STRPTR prefsfile;
-    BOOL (*init)(struct Library *hiddbase, struct initbase *base);
-    
-};
 
-static BOOL init_gfx(struct Library *hiddbase, struct initbase *base);
-static BOOL init_hiddtype(struct hiddprefs *hp, struct initbase *base);
+static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base);
 
 /************************************************************************/
 
 
-
-static const struct hiddprefs hprefs[] =
-{
-    { "Sys:hidds/graphics.hidd", "Sys:s/gfxhidd.prefs", init_gfx },
-    { NULL, NULL, 0 }
-}; 
-
-
 #define HIDDPATH "Sys:hidds/"
 #define BUFSIZE 100
+
+#define HIDDPREFSFILE "Sys:s/hidd.prefs"
 
 
 BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
@@ -74,6 +63,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 
     struct initbase stack_b, *base = &stack_b;
     BOOL success = TRUE;
+    UBYTE buf[BUFSIZE];
     
     
     base->sysbase = sysBase;
@@ -88,96 +78,127 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
     }
     else
     {
-    	struct hiddprefs *hp;
+	BPTR fh;
     
 	D(bug("OOP opened\n"));
-    
-    	for (hp = (struct hiddprefs *)hprefs; hp->basehiddfile && success; hp ++)
-    	{
-	     D(bug("Initing %s\n", hp->basehiddfile));
-    	     success = init_hiddtype(hp, base);
-	    
-	} /* for (each hidd to init) */
 	
+	/* Open the hidd prefsfile */
+	
+	fh = Open(HIDDPREFSFILE, MODE_OLDFILE);
+	if (!fh)
+	{
+	    success = FALSE;
+	}
+	else
+	{
+	    D(bug("hiddprefs file opened\n"));
+	    while (FGets(fh, buf, BUFSIZE))
+	    {
+	        STRPTR keyword = buf, arg, end;
+		
+		D(bug("Got line\n"));
+		D(bug("Line: %s\n", buf));
+		  
+		  /* Get keywoard */
+		while ((*keyword != 0) && isspace(*keyword))
+		    keyword ++;
+		
+		if (*keyword == 0)
+		    continue;
+			
+		  /* terminate keyword */
+		arg = keyword;
+		while ((*arg != 0) && (!isblank(*arg)))
+		{
+		    arg ++;
+		}
+		if (*arg == 0)
+		    continue;
+		    
+		*arg = 0;
+		  
+		arg ++;
+		
+		  /* Find start of argument */
+		D(bug("Find argument at %s\n", arg));
+		while ((*arg != 0) && isblank(*arg))
+		    arg ++;
+		 
+		if (*arg == 0)
+		    continue;
+		    
+		D(bug("Terminate argument at %s\n", arg));
+		  /* terminate argument */
+		end = arg;
+		while ( (*end != 0) && (!isblank(*end)))
+		    end ++;
+		if (*end != 0)
+		    *end = 0;
+		 
+		D(bug("Got keyword \"%s\"\n", keyword));
+		D(bug("Got arg \"%s\"\n", arg));
+		
+		if (0 == strcmp(keyword, "library"))
+		{
+		    D(bug("Opening library\n"));
+		      /* Open a specified library */
+		    if (NULL == OpenLibrary(arg, 0))
+		    {
+		        success = FALSE;
+			break;
+		    }
+		    
+		}
+		else if (0 == strcmp(keyword, "gfx"))
+		{
+		    if (!init_gfx(arg, base))
+		    {
+		        success = FALSE;
+			break;
+		    }
+		    
+		}
+		
+/*		else if (0 == strcmp(keyword, "mouse"))
+		{
+		    if (!init_mouse(arg, OOPBase))
+		    {
+		        success = FALSE;
+			break;
+		    }
+		}
+		else if (0 == strcmp(keyword, "kbd"))
+		{
+		    if (!init_kbd(arg, OOPBase))
+		    {
+		        success = FALSE;
+			break;
+		    }
+		}
+*/		  
+		  
+	    }
+	    
+	    Close(fh);
+	
+	}
+    
 	CloseLibrary(OOPBase);
     }
     
     ReturnBool("init_hidds", success);
 }
 
-/**********************
-**  init_hiddtype()  **
-**********************/
-
-/* Init hidd of a single type f.ex gfx */
-static BOOL init_hiddtype(struct hiddprefs *hp, struct initbase *base)
-{
-    struct Library *basehidd;
-    BOOL success = FALSE;
-    
-    EnterFunc(bug("init_hiddtype(basehiddfile=%s, prefsfile=%s)\n",
-    		hp->basehiddfile, hp->prefsfile));
-    
-    basehidd = OpenLibrary(hp->basehiddfile, 0);
-    if (basehidd)
-    {
-
-	/* Read the prefs file */
-	BPTR fh;
-	    
-    	D(bug("basehidd opened\n"));
-	
-	D(bug("Trying to open %s\n", hp->prefsfile));
-	fh = Open(hp->prefsfile, MODE_OLDFILE);
-	if (fh)
-	{	    
-	    UBYTE hiddfile[BUFSIZE];
-	    UBYTE *append = hiddfile;
-	    
-	    D(bug("Opened file %s\n", hp->prefsfile));
-	    
-/*	    strcpy(hiddfile, HIDDPATH);
-	    
-	     Find end of hiddfile buffer
-	    for (append = hiddfile; *append; append ++)
-		;
-		
-*/	    /* Get name of HIDD */
-	    if (FGets(fh, append, BUFSIZE - sizeof (HIDDPATH) + 1))
-	    {
-		struct Library *subhiddbase;
-		
-	    	/* Open the HIDD */
-		D(bug("Trying to open HIDD %s\n", hiddfile));
-		subhiddbase = OpenLibrary(hiddfile, 0);
-		if (subhiddbase)
-		{
-		    success = hp->init(subhiddbase, base);
-		    
-		}
-		
-	   } /* if (able to read hidd prefs) */
-	   	
-	   Close(fh);
-	} /* if (prefsfile opened) */
-	    
-	if (!success)
-	     CloseLibrary(basehidd);
-    } /* if (basehidd inited) */
-    
-    ReturnBool("init_hiddtype", success);
-}
-	
 /*****************
 **  init_gfx()  **
 *****************/
 
-static BOOL init_gfx(struct Library *hiddbase, struct initbase *base)
+static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
 {
     struct GfxBase *GfxBase;
     BOOL success = FALSE;
     
-    EnterFunc(bug("init_gfx(hiddbase=%p)\n", hiddbase));
+    EnterFunc(bug("init_gfx(hiddbase=%s)\n", gfxclassname));
     
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
     if (GfxBase)
@@ -190,12 +211,12 @@ static BOOL init_gfx(struct Library *hiddbase, struct initbase *base)
 	*/
 
     	D(bug("calling private gfx LateGfxInit()\n"));
-	if (LateGfxInit(hiddbase))
+	if (LateGfxInit(gfxclassname))
 	{
 	    struct IntuitionBase *IntuitionBase;
 	    D(bug("success\n"));
 	    
-	    /* Now that gfx. is guaranteed to be up & kicking, let intuition open WB screen */
+	    /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
 	    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
 	    if (IntuitionBase)
 	    {
