@@ -35,11 +35,6 @@ static void *const Intuition_functable[];
 struct IntuitionBase *AROS_SLIB_ENTRY(init,Intuition) ();
 extern const char Intuition_end;
 
-extern int  intui_init (struct IntuitionBase *);
-extern int  intui_open (struct IntuitionBase *);
-extern void intui_close (struct IntuitionBase *);
-extern void intui_expunge (struct IntuitionBase *);
-
 AROS_UFP3(static ULONG, rootDispatcher,
     AROS_UFPA(Class *,  cl,  A0),
     AROS_UFPA(Object *, obj, A2),

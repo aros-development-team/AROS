@@ -426,13 +426,13 @@ AROS_LP3(BOOL, NameFromLock,
 AROS_LP3(LONG, NameFromFH,
     AROS_LPA(BPTR  , fh, D1),
     AROS_LPA(STRPTR, buffer, D2),
-    AROS_LPA(long  , len, D3),
+    AROS_LPA(LONG  , len, D3),
     struct DosLibrary *, DOSBase, 68, Dos)
 #define NameFromFH(fh, buffer, len) \
     AROS_LC3(LONG, NameFromFH, \
     AROS_LCA(BPTR  , fh, D1), \
     AROS_LCA(STRPTR, buffer, D2), \
-    AROS_LCA(long  , len, D3), \
+    AROS_LCA(LONG  , len, D3), \
     struct DosLibrary *, DOSBase, 68, Dos)
 
 AROS_LP2(BPTR, Open,

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/11/08 11:28:02  aros
+    All OS function use now Amiga types
+
+    Moved intuition-driver protos to intuition_intern.h
+
     Revision 1.2  1996/10/24 15:51:19  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -25,9 +30,9 @@
 	AROS_LH3(ULONG, GetAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(unsigned long, attrID, D0),
-	AROS_LHA(APTR         , object, A0),
-	AROS_LHA(ULONG       *, storagePtr, A1),
+	AROS_LHA(ULONG   , attrID, D0),
+	AROS_LHA(Object *, object, A0),
+	AROS_LHA(IPTR *  , storagePtr, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 109, Intuition)

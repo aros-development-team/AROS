@@ -40,46 +40,46 @@ AROS_LP1(void, DeinitRastPort,
 
 AROS_LP3(void, Draw,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , x, D0),
-    AROS_LPA(long             , y, D1),
+    AROS_LPA(LONG             , x, D0),
+    AROS_LPA(LONG             , y, D1),
     struct GfxBase *, GfxBase, 41, Graphics)
 #define Draw(rp, x, y) \
     AROS_LC3(void, Draw, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , x, D0), \
-    AROS_LCA(long             , y, D1), \
+    AROS_LCA(LONG             , x, D0), \
+    AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 41, Graphics)
 
 AROS_LP5(void, DrawEllipse,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , xCenter, D0),
-    AROS_LPA(long             , yCenter, D1),
-    AROS_LPA(long             , a, D2),
-    AROS_LPA(long             , b, D3),
+    AROS_LPA(LONG             , xCenter, D0),
+    AROS_LPA(LONG             , yCenter, D1),
+    AROS_LPA(LONG             , a, D2),
+    AROS_LPA(LONG             , b, D3),
     struct GfxBase *, GfxBase, 30, Graphics)
 #define DrawEllipse(rp, xCenter, yCenter, a, b) \
     AROS_LC5(void, DrawEllipse, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , xCenter, D0), \
-    AROS_LCA(long             , yCenter, D1), \
-    AROS_LCA(long             , a, D2), \
-    AROS_LCA(long             , b, D3), \
+    AROS_LCA(LONG             , xCenter, D0), \
+    AROS_LCA(LONG             , yCenter, D1), \
+    AROS_LCA(LONG             , a, D2), \
+    AROS_LCA(LONG             , b, D3), \
     struct GfxBase *, GfxBase, 30, Graphics)
 
 AROS_LP5(void, EraseRect,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , xMin, D0),
-    AROS_LPA(long             , yMin, D1),
-    AROS_LPA(long             , xMax, D2),
-    AROS_LPA(long             , yMax, D3),
+    AROS_LPA(LONG             , xMin, D0),
+    AROS_LPA(LONG             , yMin, D1),
+    AROS_LPA(LONG             , xMax, D2),
+    AROS_LPA(LONG             , yMax, D3),
     struct GfxBase *, GfxBase, 135, Graphics)
 #define EraseRect(rp, xMin, yMin, xMax, yMax) \
     AROS_LC5(void, EraseRect, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , xMin, D0), \
-    AROS_LCA(long             , yMin, D1), \
-    AROS_LCA(long             , xMax, D2), \
-    AROS_LCA(long             , yMax, D3), \
+    AROS_LCA(LONG             , xMin, D0), \
+    AROS_LCA(LONG             , yMin, D1), \
+    AROS_LCA(LONG             , xMax, D2), \
+    AROS_LCA(LONG             , yMax, D3), \
     struct GfxBase *, GfxBase, 135, Graphics)
 
 AROS_LP1(void, FreeRastPort,
@@ -132,14 +132,14 @@ AROS_LP1(BOOL, InitRastPort,
 
 AROS_LP3(void, Move,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , x, D0),
-    AROS_LPA(long             , y, D1),
+    AROS_LPA(LONG             , x, D0),
+    AROS_LPA(LONG             , y, D1),
     struct GfxBase *, GfxBase, 40, Graphics)
 #define Move(rp, x, y) \
     AROS_LC3(void, Move, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , x, D0), \
-    AROS_LCA(long             , y, D1), \
+    AROS_LCA(LONG             , x, D0), \
+    AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 40, Graphics)
 
 AROS_LP1(struct TextFont *, OpenFont,
@@ -152,62 +152,62 @@ AROS_LP1(struct TextFont *, OpenFont,
 
 AROS_LP3(void, PolyDraw,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , count, D0),
+    AROS_LPA(LONG             , count, D0),
     AROS_LPA(WORD            *, polyTable, A0),
     struct GfxBase *, GfxBase, 56, Graphics)
 #define PolyDraw(rp, count, polyTable) \
     AROS_LC3(void, PolyDraw, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , count, D0), \
+    AROS_LCA(LONG             , count, D0), \
     AROS_LCA(WORD            *, polyTable, A0), \
     struct GfxBase *, GfxBase, 56, Graphics)
 
 AROS_LP3(ULONG, ReadPixel,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , x, D0),
-    AROS_LPA(long             , y, D1),
+    AROS_LPA(LONG             , x, D0),
+    AROS_LPA(LONG             , y, D1),
     struct GfxBase *, GfxBase, 53, Graphics)
 #define ReadPixel(rp, x, y) \
     AROS_LC3(ULONG, ReadPixel, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , x, D0), \
-    AROS_LCA(long             , y, D1), \
+    AROS_LCA(LONG             , x, D0), \
+    AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 53, Graphics)
 
 AROS_LP5(void, RectFill,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , xMin, D0),
-    AROS_LPA(long             , yMin, D1),
-    AROS_LPA(long             , xMax, D2),
-    AROS_LPA(long             , yMax, D3),
+    AROS_LPA(LONG             , xMin, D0),
+    AROS_LPA(LONG             , yMin, D1),
+    AROS_LPA(LONG             , xMax, D2),
+    AROS_LPA(LONG             , yMax, D3),
     struct GfxBase *, GfxBase, 51, Graphics)
 #define RectFill(rp, xMin, yMin, xMax, yMax) \
     AROS_LC5(void, RectFill, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , xMin, D0), \
-    AROS_LCA(long             , yMin, D1), \
-    AROS_LCA(long             , xMax, D2), \
-    AROS_LCA(long             , yMax, D3), \
+    AROS_LCA(LONG             , xMin, D0), \
+    AROS_LCA(LONG             , yMin, D1), \
+    AROS_LCA(LONG             , xMax, D2), \
+    AROS_LCA(LONG             , yMax, D3), \
     struct GfxBase *, GfxBase, 51, Graphics)
 
 AROS_LP7(void, ScrollRaster,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , dx, D0),
-    AROS_LPA(long             , dy, D1),
-    AROS_LPA(long             , xMin, D2),
-    AROS_LPA(long             , yMin, D3),
-    AROS_LPA(long             , xMax, D4),
-    AROS_LPA(long             , yMax, D5),
+    AROS_LPA(LONG             , dx, D0),
+    AROS_LPA(LONG             , dy, D1),
+    AROS_LPA(LONG             , xMin, D2),
+    AROS_LPA(LONG             , yMin, D3),
+    AROS_LPA(LONG             , xMax, D4),
+    AROS_LPA(LONG             , yMax, D5),
     struct GfxBase *, GfxBase, 66, Graphics)
 #define ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax) \
     AROS_LC7(void, ScrollRaster, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , dx, D0), \
-    AROS_LCA(long             , dy, D1), \
-    AROS_LCA(long             , xMin, D2), \
-    AROS_LCA(long             , yMin, D3), \
-    AROS_LCA(long             , xMax, D4), \
-    AROS_LCA(long             , yMax, D5), \
+    AROS_LCA(LONG             , dx, D0), \
+    AROS_LCA(LONG             , dy, D1), \
+    AROS_LCA(LONG             , xMin, D2), \
+    AROS_LCA(LONG             , yMin, D3), \
+    AROS_LCA(LONG             , xMax, D4), \
+    AROS_LCA(LONG             , yMax, D5), \
     struct GfxBase *, GfxBase, 66, Graphics)
 
 AROS_LP4(void, SetABPenDrMd,
@@ -226,32 +226,32 @@ AROS_LP4(void, SetABPenDrMd,
 
 AROS_LP2(void, SetAPen,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(unsigned long    , pen, D0),
+    AROS_LPA(ULONG            , pen, D0),
     struct GfxBase *, GfxBase, 57, Graphics)
 #define SetAPen(rp, pen) \
     AROS_LC2(void, SetAPen, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(unsigned long    , pen, D0), \
+    AROS_LCA(ULONG            , pen, D0), \
     struct GfxBase *, GfxBase, 57, Graphics)
 
 AROS_LP2(void, SetBPen,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(unsigned long    , pen, D0),
+    AROS_LPA(ULONG            , pen, D0),
     struct GfxBase *, GfxBase, 58, Graphics)
 #define SetBPen(rp, pen) \
     AROS_LC2(void, SetBPen, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(unsigned long    , pen, D0), \
+    AROS_LCA(ULONG            , pen, D0), \
     struct GfxBase *, GfxBase, 58, Graphics)
 
 AROS_LP2(void, SetDrMd,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(unsigned long    , drawMode, D0),
+    AROS_LPA(ULONG            , drawMode, D0),
     struct GfxBase *, GfxBase, 59, Graphics)
 #define SetDrMd(rp, drawMode) \
     AROS_LC2(void, SetDrMd, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(unsigned long    , drawMode, D0), \
+    AROS_LCA(ULONG            , drawMode, D0), \
     struct GfxBase *, GfxBase, 59, Graphics)
 
 AROS_LP2(void, SetFont,
@@ -276,48 +276,48 @@ AROS_LP2(ULONG, SetOutlinePen,
 
 AROS_LP2(void, SetRast,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(unsigned long    , pen, D0),
+    AROS_LPA(ULONG            , pen, D0),
     struct GfxBase *, GfxBase, 39, Graphics)
 #define SetRast(rp, pen) \
     AROS_LC2(void, SetRast, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(unsigned long    , pen, D0), \
+    AROS_LCA(ULONG            , pen, D0), \
     struct GfxBase *, GfxBase, 39, Graphics)
 
 AROS_LP3(void, Text,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(STRPTR           , string, A0),
-    AROS_LPA(unsigned long    , count, D0),
+    AROS_LPA(ULONG            , count, D0),
     struct GfxBase *, GfxBase, 10, Graphics)
 #define Text(rp, string, count) \
     AROS_LC3(void, Text, \
     AROS_LCA(struct RastPort *, rp, A1), \
     AROS_LCA(STRPTR           , string, A0), \
-    AROS_LCA(unsigned long    , count, D0), \
+    AROS_LCA(ULONG            , count, D0), \
     struct GfxBase *, GfxBase, 10, Graphics)
 
 AROS_LP3(WORD, TextLength,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(STRPTR           , string, A0),
-    AROS_LPA(unsigned long    , count, D0),
+    AROS_LPA(ULONG            , count, D0),
     struct GfxBase *, GfxBase, 9, Graphics)
 #define TextLength(rp, string, count) \
     AROS_LC3(WORD, TextLength, \
     AROS_LCA(struct RastPort *, rp, A1), \
     AROS_LCA(STRPTR           , string, A0), \
-    AROS_LCA(unsigned long    , count, D0), \
+    AROS_LCA(ULONG            , count, D0), \
     struct GfxBase *, GfxBase, 9, Graphics)
 
 AROS_LP3(LONG, WritePixel,
     AROS_LPA(struct RastPort *, rp, A1),
-    AROS_LPA(long             , x, D0),
-    AROS_LPA(long             , y, D1),
+    AROS_LPA(LONG             , x, D0),
+    AROS_LPA(LONG             , y, D1),
     struct GfxBase *, GfxBase, 54, Graphics)
 #define WritePixel(rp, x, y) \
     AROS_LC3(LONG, WritePixel, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(long             , x, D0), \
-    AROS_LCA(long             , y, D1), \
+    AROS_LCA(LONG             , x, D0), \
+    AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 54, Graphics)
 
 

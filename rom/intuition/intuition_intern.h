@@ -79,4 +79,25 @@ extern struct IntuitionBase * IntuitionBase;
 #define expunge() \
     AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 
+/* Driver prototypes */
+extern int  intui_init (struct IntuitionBase *);
+extern int  intui_open (struct IntuitionBase *);
+extern void intui_close (struct IntuitionBase *);
+extern void intui_expunge (struct IntuitionBase *);
+extern int intui_GetWindowSize (void);
+
+extern void intui_ActivateWindow (struct Window *);
+extern void intui_BeginRefresh (struct Window * window,
+	    struct IntuitionBase * IntuitionBase);
+extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
+extern void intui_EndRefresh (struct Window * window,
+	    BOOL complete,
+	    struct IntuitionBase * IntuitionBase);
+extern int intui_OpenWindow (struct Window *,
+	    struct IntuitionBase *);
+extern void intui_WindowToFront (struct Window * window);
+extern void intui_WindowToBack (struct Window * window);
+extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
+extern void intui_SizeWindow (struct Window * win, LONG dx, LONG dy);
+
 #endif /* INTUITION_INTERN_H */

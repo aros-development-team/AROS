@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/11/08 11:27:54  aros
+    All OS function use now Amiga types
+
+    Moved intuition-driver protos to intuition_intern.h
+
     Revision 1.2  1996/10/24 15:50:22  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -16,7 +21,7 @@
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 
-extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, long,
+extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, LONG,
 				struct KeyMap *);
 
 /*****************************************************************************
@@ -31,7 +36,7 @@ extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, long,
 /*  SYNOPSIS */
 	AROS_LHA(struct InputEvent *, events, A0),
 	AROS_LHA(STRPTR             , buffer, A1),
-	AROS_LHA(long               , length, D1),
+	AROS_LHA(LONG               , length, D1),
 	AROS_LHA(struct KeyMap     *, keyMap, A2),
 
 /*  LOCATION */

@@ -246,11 +246,11 @@ AROS_LP3(APTR, AddTask,
     struct ExecBase *, SysBase, 47, Exec)
 
 AROS_LP1(void, Alert,
-    AROS_LPA(unsigned long, alertNum, D7),
+    AROS_LPA(ULONG, alertNum, D7),
     struct ExecBase *, SysBase, 18, Exec)
 #define Alert(alertNum) \
     AROS_LC1(void, Alert, \
-    AROS_LCA(unsigned long, alertNum, D7), \
+    AROS_LCA(ULONG, alertNum, D7), \
     struct ExecBase *, SysBase, 18, Exec)
 
 AROS_LP2(APTR, AllocAbs,

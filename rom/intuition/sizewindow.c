@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/11/08 11:28:04  aros
+    All OS function use now Amiga types
+
+    Moved intuition-driver protos to intuition_intern.h
+
     Revision 1.3  1996/10/24 15:51:25  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -18,8 +23,6 @@
 */
 #include "intuition_intern.h"
 
-extern void intui_SizeWindow (struct Window * win, long dx, long dy);
-
 /*****************************************************************************
 
     NAME */
@@ -29,8 +32,8 @@ extern void intui_SizeWindow (struct Window * win, long dx, long dy);
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Window *, window, A0),
-	AROS_LHA(long           , dx, D0),
-	AROS_LHA(long           , dy, D1),
+	AROS_LHA(LONG           , dx, D0),
+	AROS_LHA(LONG           , dy, D1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 48, Intuition)

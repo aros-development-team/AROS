@@ -20,10 +20,6 @@
 #endif
 #include <aros/debug.h>
 
-extern int intui_OpenWindow (struct Window *,
-	    struct IntuitionBase *);
-extern int intui_GetWindowSize (void);
-
 /*****************************************************************************
 
     NAME */

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/11/08 11:28:00  aros
+    All OS function use now Amiga types
+
+    Moved intuition-driver protos to intuition_intern.h
+
     Revision 1.6  1996/10/31 13:50:55  aros
     Don't forget to free the RastPort
 
@@ -41,9 +46,6 @@
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>
-
-extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
-extern int  intui_GetWindowSize (void);
 
 /*****************************************************************************
 

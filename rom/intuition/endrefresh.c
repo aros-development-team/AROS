@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/11/08 11:28:01  aros
+    All OS function use now Amiga types
+
+    Moved intuition-driver protos to intuition_intern.h
+
     Revision 1.2  1996/10/24 15:51:19  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -13,10 +18,6 @@
     Lang: english
 */
 #include "intuition_intern.h"
-
-extern void intui_EndRefresh (struct Window * window,
-	    BOOL complete,
-	    struct IntuitionBase * IntuitionBase);
 
 /*****************************************************************************
 

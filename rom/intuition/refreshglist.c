@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/11/08 11:28:04  aros
+    All OS function use now Amiga types
+
+    Moved intuition-driver protos to intuition_intern.h
+
     Revision 1.8  1996/10/25 14:25:56  aros
     Handle BOOPSI Gadgets
 
@@ -51,7 +56,7 @@
 	AROS_LHA(struct Gadget    *, gadgets, A0),
 	AROS_LHA(struct Window    *, window, A1),
 	AROS_LHA(struct Requester *, requester, A2),
-	AROS_LHA(long              , numGad, D0),
+	AROS_LHA(LONG              , numGad, D0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 72, Intuition)

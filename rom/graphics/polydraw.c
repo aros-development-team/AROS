@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(long             , count, D0),
+	AROS_LHA(LONG             , count, D0),
 	AROS_LHA(WORD            *, polyTable, A0),
 
 /*  LOCATION */
