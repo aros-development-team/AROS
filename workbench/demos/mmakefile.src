@@ -50,6 +50,9 @@ FILES	:= \
     readicon \
     regiontest \
     rtdemo \
+    rtscreen \
+    rtstring \
+    rtpalette \
     scrbackfill \
     screenmodereq \
     scrollerwin \
