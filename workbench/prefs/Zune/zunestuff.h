@@ -16,6 +16,7 @@ Object *MakeCheck (CONST_STRPTR label);
 Object *MakeSpacingSlider (void);
 Object *MakeBackgroundPopimage(void);
 Object *MakePopframe(void);
+Object *MakePoppen(void);
 
 #ifndef __GNUC__
 LONG XGET(Object * obj, ULONG attr);
