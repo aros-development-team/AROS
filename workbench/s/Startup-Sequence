@@ -12,7 +12,10 @@ assign LIBS: SYS:Classes ADD
 assign FONTS: SYS:Fonts
 
 path SYS:Utilities SYS:System SYS:Tools ADD QUIET 
+Prompt "%N.%S> "
 
+; Prompt is there to get a correct prompt for arosshell (it doesn't
+; use Shell-Startup).
 ;
 ; To mount unit /dev/fd0 as drive FDSK: make a link from
 ; fdsk/Unit0 to /dev/fd0 (you'll need access rights on the device
