@@ -1,5 +1,5 @@
 # Packages to build, as an array. 
-# Possible are: sources, hosted, contrib and i386-pc.
+# Possible are: sources, documentation, sdk, hosted, contrib and i386-pc.
 CFG_PACKAGES=( sources )
 
 # Which C compiler to use.
