@@ -4,13 +4,16 @@ include $(TOP)/config/make.cfg
 # Use OS's own includes over the ones from AROS
 OS_INCLUDES := -I. -I$(GENINCDIR)
 
+LIBNAME  := exec
+ULIBNAME := Exec
+
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
 # Main function for exec.strap. Need this apart as an anchor for the link:
 INIT_FILE   := execstrap_init
 OSMODULE    := exec.strap
-LIB	    := $(LIBDIR)/libexec.a
+LIB	    := $(LIBDIR)/lib$(LIBNAME).a
 
 # Other support files:
 FILES	    :=
@@ -35,12 +38,11 @@ FUNCTIONS   := \
 # ***** Not Native ***************
 else
 
-OSMODULE    := exec.library
-INIT_FILE   := exec_init
+OSMODULE    := $(LIBNAME).library
+INIT_FILE   := $(LIBNAME)_init
 SYS_FILES   := execfunctions prepareexecbase
 FILES	    := traphandler exec_util
-END_FILE    := exec_endtag
-LIBNAME     := exec
+END_FILE    := $(LIBNAME)_endtag
 
 FUNCTIONS   := \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
