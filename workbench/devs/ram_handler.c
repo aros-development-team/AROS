@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: RAM: handler
@@ -684,16 +684,10 @@ static LONG findname(struct rambase *rambase, STRPTR *name, struct dnode **dnode
     return 0;
 }
 
-static LONG set_file_size(struct rambase *rambase, struct filehandle *handle, LONG *offl, LONG *offh, LONG mode)
+static LONG set_file_size(struct rambase *rambase, struct filehandle *handle, QUAD *offp, LONG mode)
 {
     struct fnode *file=(struct fnode *)handle->node;
-    LONG size=*offl;
-
-    if((size<0?-1:0)!=*offh)
-	return ERROR_SEEK_ERROR;
-
-    if((size<0?-1:0)!=*offh)
-	return ERROR_SEEK_ERROR;
+    QUAD size=*offp;
 
     if(file->type!=ST_FILE)
 	return ERROR_OBJECT_WRONG_TYPE;
@@ -708,8 +702,7 @@ static LONG set_file_size(struct rambase *rambase, struct filehandle *handle, LO
 	return ERROR_SEEK_ERROR;
     if(size<file->size)
 	shrinkfile(rambase,file,size);
-    file->size=*offl=size;
-    *offh=0;
+    file->size=*offp=size;
     return 0;
 }
 
@@ -944,13 +937,11 @@ static LONG free_lock(struct rambase *rambase, struct filehandle *filehandle)
     return 0;
 }
 
-static LONG seek(struct rambase *rambase, struct filehandle *filehandle, LONG *posh, LONG *posl, LONG mode)
+static LONG seek(struct rambase *rambase, struct filehandle *filehandle, QUAD *posp, LONG mode)
 {
     struct fnode *file=(struct fnode *)filehandle->node;
-    LONG pos=*posl;
+    QUAD pos=*posp;
 
-    if((pos<0?-1:0)!=*posh)
-	return ERROR_SEEK_ERROR;
     if(file->type!=ST_FILE)
 	return ERROR_OBJECT_WRONG_TYPE;
     switch(mode)
@@ -962,8 +953,7 @@ static LONG seek(struct rambase *rambase, struct filehandle *filehandle, LONG *p
     }
     if(pos<0)
 	return ERROR_SEEK_ERROR;
-    *posh=0;
-    *posl=filehandle->position;
+    *posp=filehandle->position;
     filehandle->position=pos;
     return 0;
 }
@@ -1316,7 +1306,6 @@ void deventry(struct rambase *rambase)
 		    */
 		    error=seek(rambase,
                                (struct filehandle *)iofs->IOFS.io_Unit,
-                               &iofs->io_Union.io_SEEK.io_Negative,
                                &iofs->io_Union.io_SEEK.io_Offset,
                                iofs->io_Union.io_SEEK.io_SeekMode);
 		    break;
@@ -1486,7 +1475,6 @@ void deventry(struct rambase *rambase)
 		    */
 		    error=set_file_size(rambase,
                                         (struct filehandle *)iofs->IOFS.io_Unit,
-					&iofs->io_Union.io_SET_FILE_SIZE.io_Negative,
                                         &iofs->io_Union.io_SET_FILE_SIZE.io_Offset,
                                         iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode);
 		    break;

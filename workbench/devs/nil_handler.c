@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -234,7 +234,6 @@ AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_SEEK:
-	    iofs->io_Union.io_SEEK.io_Negative=0;
 	    iofs->io_Union.io_SEEK.io_Offset  =0;
 	    break;
 
