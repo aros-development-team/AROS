@@ -426,6 +426,7 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Revision: STORE = __revision; return 1;
 	case MUIA_Group_ActivePage: STORE = data->active_page; return 1;
 	case MUIA_Group_ChildList: return GetAttr(MUIA_Family_List, data->family, msg->opg_Storage);
+	case MUIA_Group_Horiz: STORE = (data->flags & GROUP_HORIZ); return 1;
 	case MUIA_Group_HorizSpacing: STORE = data->horiz_spacing; return 1;
 	case MUIA_Group_VertSpacing: STORE = data->vert_spacing; return 1;
 	case MUIA_Virtgroup_Left: STORE = data->virt_offx; return 1;
