@@ -28,11 +28,11 @@ possible.
 
 \section{Why do you implement the current OS ?}
 
-There has been some talks about writing something which is something like
+There have been some talks about writing something which is something like
 an advanced OS with the features of the AmigaOS. This has been dropped
-and for good reason. First, everyone agrees that the current AmigaOS
-should be enhanced but no one knows how to do that or even agrees on what
-has to be enhanced or what is important. Some want memory protection but
+for a good reason. First, everyone agrees that the current AmigaOS
+should be enhanced, but no one knows how to do that or even agrees on what
+has to be enhanced or what is important. Some want memory protection, but
 don't want to pay the price (major rewrite of the available software and
 speed cut-offs).
 
@@ -42,11 +42,11 @@ know to handle. Then we have the experience to decide what is possible
 and how. And then we decide.
 
 Also we want to be binary compatible to the old AmigaOS on Amiga. The
-reason for this is just that a new OS without any programs that run on
+reason for this is just that a new OS without any programs which run on
 it has no chance to survive. Therefore we try to make the shift from
 the old OS to our new one as painless as possible (but not to the
 extent that we can't improve AROS afterwards). As usual, everything
-has it's price and we try to decide carefully what that price might be
+has its price and we try to decide carefully what that price might be
 and if we and everyone else will be willing to pay it.
 
 \section{Please implement this feature !}
@@ -58,7 +58,7 @@ See, there are plenty of people around who think that their feature is the
 most important and that "the AmigaOS has no future if this feature is not
 built in right now". We say: The AmigaOS' demise has nothing to do with
 missing features. The AmigaOS can do everything a modern OS should do. We
-see that there are possibilities to enhance the AmigaOS but if we do it,
+see that there are possibilities to enhance the AmigaOS, but if we do it,
 who would write the rest of the OS ? In the end, we would have lots of
 nice improvements to the original AmigaOS which would break most of the
 available software and worth nothing, because the OS itself would be
@@ -77,7 +77,7 @@ still free.
 
 \section{How legal is AROS ?}
 
-Well, European law say "To gain interoperability, it is legal to apply
+Well, European law says "To gain interoperability, it is legal to apply
 reverse engineering techniques. It is illegal to distribute the knowledge
 gained by such techiques". So what does that mean ? It means basically that
 you are allowed to disassemble or resource any software to write something
@@ -93,7 +93,7 @@ means. And you must not tell others what you learned. A book like
 Since we avoid disassembling techniques (hey, we want the spirit and not
 the bugs) but use common available knowledge (including programming
 manuals) which don't fall below the NDA, this doesn't apply directly to
-AROS but what counts here is the intention of the law: It's ok to write a
+AROS, but what counts here is the intention of the law: It's ok to write a
 software which is compatible to some other software. Therefore we believe
 that AROS is protected by the law.
 
@@ -123,10 +123,10 @@ compatible)
 
 \section{How about UAE ?}
 
-UAE is an A500 emulator. It's goals differ somewhat from that of AROS: UAE
+UAE is an A500 emulator. Its goals differ somewhat from that of AROS: UAE
 wants to be able to be binary compatible even for games and hardware
-banging code while AROS wants to have native applications. Therefore AROS
-is much faster than UAE but UAE has more software.
+banging code, while AROS wants to have native applications. Therefore AROS
+is much faster than UAE, but UAE has more software.
 
 We are in loose contact with the author of UAE and there is a good chance
 that code for UAE will appear in AROS and vice versa. For example, UAE is
@@ -139,7 +139,7 @@ AROS needs hardware drivers (eg. audio.device).
 The final version of AROS will not depend on Linux or X11 anymore (but
 it will run on them if you insist). Currently, we use Linux and X11 to
 speed up development. For example, if I write a new function to open
-a window, I can write that single function and need not wrote hundreds
+a window, I can write that single function and need not write hundreds
 of other functions in layers, graphics, etc.
 
 \section{How do you want to make it portable ?}
@@ -161,7 +161,7 @@ when C= went bankrupt ? Or when AT did ?
 Fact is that there is only few new software for the Amiga (although Aminet
 has never seen better times) and that hardware is also developed at
 a lower speed (but the most amazing gadgets appear right now). I say,
-the Amiga community (which is still there) just sit and wait. And if
+the Amiga community (which is still there) just sits and waits. And if
 someone releases something which is a bit like the Amiga back in 1984,
 then that machine will boom again. And who knows, maybe you will get
 a CD along with the machine labeled "AROS" :-)
@@ -187,7 +187,7 @@ tried for three years to find a way to implement MP (memory protection)
 into the AmigaOS. They failed. You should take it as a fact that the
 normal AmigaOS will never have something like Unix or WindowsNT.
 
-But all is not lost. There are plans to integrate MP into AROS which will
+But not all is lost. There are plans to integrate MP into AROS which will
 allow to protect at least new programs which know about MP. Some efforts
 in this area look really promising and in the end: Is it really a problem
 if your machine crashes ? Let me explain, before you nail me to a tree :-)
@@ -203,7 +203,7 @@ was happening when the machine crashed and which will save your work and
 can be sure that you don't continue with corrupted data.
 
 The same with VMM, RT, SMP and RTG. We are currently planning how to
-implement them and we make sure that adding these features will be painless
+implement them and we make sure that adding these features will be painless,
 but they are no #1 priorities right now. A very basic RT has been added
 recently, though.
 
@@ -219,7 +219,7 @@ mailing them that you want to see AROS on PIOS ONE might help :-)
 \section{How about PPC or PPC cards ?}
 
 We are regularily asked about AROS on PPC. The answer has always been the
-same: There is no one on the AROS team who own a PPC so we can't do
+same: There is no one on the AROS team who owns a PPC, so we can't do
 anything about this. We have ordered a PPC card from phase5 and a PIOS
 ONE and when they become available, AROS will be ported. But no one
 can tell at this stage, when that will happen. So it's not that we don't
@@ -262,7 +262,7 @@ with the name of the list) with \shell{SUBSCRIBE <youremail>} in the body
 (the subject is ignored), for example, \shell{SUBSCRIBE
 digulla@fh-konstanz.de}. Note that for security reasons, the EMail after
 the subscribe must match your local address (ie. where the mail comes
-from). This is to protect you from beeing added from someone else.
+from). This is to protect you from beeing added by someone else.
 
 \end{new}
 
