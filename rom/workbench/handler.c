@@ -221,7 +221,7 @@ static VOID __handleLaunch
             startup->sm_Process = &process->pr_MsgPort;
             
             /* Send startup message to program */ 
-            PutMsg(startup->sm_Process, startup);
+            PutMsg(startup->sm_Process, (struct Message *) startup);
         }
         else
         {
