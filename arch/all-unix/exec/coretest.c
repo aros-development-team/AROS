@@ -364,7 +364,6 @@ printf ("Dispatch: Old = %s (Stack = %ld), new = %s\n",
 	/* Sort the old task into the list of tasks which want to run */
 	Reschedule (this);
 
-#if 1 /* TODO this doesn't work, yet */
 	/* Save disable counters */
 	this->tc_TDNestCnt = SysBase->TDNestCnt;
 	this->tc_IDNestCnt = SysBase->IDNestCnt;
@@ -372,7 +371,6 @@ printf ("Dispatch: Old = %s (Stack = %ld), new = %s\n",
 	/* Set new counters */
 	SysBase->TDNestCnt = task->tc_TDNestCnt;
 	SysBase->IDNestCnt = task->tc_IDNestCnt;
-#endif
 
 	/* Switch task */
 	THISTASK = task;
