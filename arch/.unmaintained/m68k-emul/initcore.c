@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <hardware/intbits.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
