@@ -4,20 +4,16 @@
 
 include $(TOP)/config/make.cfg
 
-LIB	  := mui
-
 FILES := \
     mui_allocaslrequesttags \
-	mui_aslrequesttags \
-	mui_makeobject \
+    mui_aslrequesttags \
+    mui_makeobject \
     mui_newobject \
     mui_request
 
 #MM- linklibs: linklibs-mui
 #MM linklibs-mui : includes
 
-%make_linklib_setup mmake=linklibs-mui
-%make_linklib
+%build_linklib mmake=linklibs-mui libname=mui files=$(FILES)
 	
 %common
-%include_deps

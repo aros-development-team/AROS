@@ -49,7 +49,7 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 #MM contrib-freetype-module : contrib-freetype-includes
 
 %build_linklib mmake=contrib-freetype-linklib libname=freetype2 \
-    files=$(FILES)
+    files=$(FILESDIR)
 
 %build_module mmake=contrib-freetype-module modname=freetype2 \
     modtype=library files="$(FILES) freetype2_init" linklibname=freetype2shared \

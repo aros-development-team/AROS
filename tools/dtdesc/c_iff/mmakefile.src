@@ -2,8 +2,6 @@ include $(TOP)/config/make.cfg
 
 TARGET_CFLAGS := $(subst -O2,,$(TARGET_CFLAGS))
 
-LIB :=	c_iff
-
 FILES := \
 	checkiff \
 	closeiff \
@@ -21,11 +19,8 @@ FILES := \
 	writechunkdata
 
 #MM- linklibs : linklibs-c_iff
-#MM
-linklibs-c_iff :
 
-%make_linklib_setup mmake=linklibs-c_iff
-%make_linklib
+%build_linklib mmake=linklibs-c_iff libname=c_iff files=$(FILES)
 
 #MM- setup : includes-copy
 
@@ -36,4 +31,3 @@ $(INCDIR)/%.h : %.h
 	$(CP) $< $(INCDIR)
 
 %common
-%include_deps
