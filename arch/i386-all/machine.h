@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/10 13:25:09  digulla
+    Handle BPTR
+
     Revision 1.4  1996/08/15 13:21:56  digulla
     BIG_ENDIAN is already defined in some system header file.
     New #define: SIZEOFULONG is the number of bytes in an ULONG (ie. the
@@ -27,6 +30,13 @@
 #define BIG_ENDIAN 0
 #endif
 #define SIZEOFULONG	4
+
+/*
+ * Replace BPTRs by simple APTRs for this machine.
+ */
+typedef APTR BPTR;
+#define MKBADDR(a) ((APTR)(a))
+#define BADDR(a) (a)
 
 struct JumpVec
 {
