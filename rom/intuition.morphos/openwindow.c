@@ -47,6 +47,7 @@ struct OpenWindowActionMsg
     struct BitMap *bitmap;
     struct Hook *backfillhook;
     struct Region *shape;
+    struct Hook *shapehook;
     struct Layer *parentlayer;
     BOOL visible;
     BOOL success;
@@ -104,7 +105,7 @@ AROS_LH1(struct Window *, OpenWindow,
     struct Window   *w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
     struct TagItem  *tag, *tagList;
     struct RastPort *rp;
-    struct Hook     *backfillhook = LAYERS_BACKFILL;
+    struct Hook     *backfillhook = LAYERS_BACKFILL, *shapehook = NULL;;
     struct Region   *shape = NULL;
     struct IBox     *zoombox = NULL;
     struct Image    *AmigaKey = NULL;
@@ -500,6 +501,11 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_Shape:
                 shape = (struct Region *)tag->ti_Data;
                 break;
+
+    	    case WA_ShapeHook:
+	    	shapehook = (struct Hook *)tag->ti_Data;
+		break;
+		
 
             case WA_Parent:
                 parentwin = ((struct Window *)tag->ti_Data);
@@ -967,6 +973,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     //msg.backfillhook = backfillhook == LAYERS_BACKFILL ? &IW(w)->custombackfill : backfillhook;
     msg.backfillhook = backfillhook;
     msg.shape = shape;
+    msg.shapehook = shapehook;
     msg.parentlayer = parentl;
     msg.visible = windowvisible;
 
@@ -1101,6 +1108,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     struct Hook   * backfillhook = msg->backfillhook;
 #ifdef CreateLayerTagList
     struct Region * shape = msg->shape;
+    struct Hook   * shapehook = msg->shapehook;
     struct Layer  * parent = msg->parentlayer;
     BOOL            visible = msg->visible;
 #endif
@@ -1215,18 +1223,26 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                                    , (struct TagItem *)&layertags);
 
 #else
-
         /* First create outer window */
-        struct Layer * L = CreateUpfrontHookLayer(
-                                   &w->WScreen->LayerInfo
-                                   , w->WScreen->RastPort.BitMap
-                                   , w->LeftEdge
-                                   , w->TopEdge
-                                   , w->LeftEdge + w->Width - 1
-                                   , w->TopEdge  + w->Height - 1
-                                   , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
-                                   , LAYERS_NOBACKFILL
-                                   , NULL);
+
+        struct TagItem lay_tags[] =
+        {
+            {LA_Hook        , (IPTR)LAYERS_NOBACKFILL    	    	    	    	    	},
+            {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
+            {LA_SuperBitMap , (IPTR)NULL                          	    	    	    	},
+            {LA_ChildOf     , (IPTR)parent                              	    	    	},
+            {LA_Visible     , (ULONG)visible                                                    },
+            {TAG_DONE                                           	    	    	    	}
+        };
+
+        struct Layer * L = CreateLayerTagList(&w->WScreen->LayerInfo,
+                        		       w->WScreen->RastPort.BitMap,
+                        		       w->RelLeftEdge,
+                        		       w->RelTopEdge,
+                        		       w->RelLeftEdge + w->Width - 1,
+                        		       w->RelTopEdge + w->Height - 1,
+                        		       LAYERSIMPLE | (layerflags & LAYERBACKDROP),
+                        		       lay_tags);
 
 #endif
         /* Could the layer be created. Nothing bad happened so far, so simply leave */
@@ -1263,16 +1279,31 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
 #else
         /* Now comes the inner window */
-        w->WLayer = CreateUpfrontHookLayer(
-                &w->WScreen->LayerInfo
-                , w->WScreen->RastPort.BitMap
-                , w->LeftEdge + w->BorderLeft
-                , w->TopEdge  + w->BorderTop
-                , w->LeftEdge + w->BorderLeft + w->GZZWidth - 1
-                , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
-                , layerflags
-                , backfillhook
-                , SuperBitMap);
+
+    	{
+            struct TagItem lay_tags[] =
+            {
+                {LA_Hook     	, (IPTR)backfillhook	    	    	    	    	    	    },
+                {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
+                {LA_Shape       , (IPTR)shape                               	    	    	    },
+		{LA_ShapeHook	, (IPTR)shapehook   	    	    	    	    	    	    },
+                {LA_SuperBitMap , (IPTR)SuperBitMap                           	    	    	    },
+                {LA_ChildOf     , (IPTR)parent                              	    	    	    },
+                {LA_Visible     , (ULONG)visible                                                    },
+                {TAG_DONE                                           	    	    	    	    }
+            };
+
+            w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
+                        		    w->WScreen->RastPort.BitMap,
+                        		    w->RelLeftEdge + w->BorderLeft,
+                        		    w->RelTopEdge + w->BorderTop,
+                        		    w->RelLeftEdge + w->BorderLeft + w->GZZWidth - 1,
+                        		    w->RelTopEdge + w->BorderTop + w->GZZHeight - 1,
+                        		    layerflags,
+                        		    lay_tags);
+					    
+	}
+
 #endif
 
         /* could this layer be created? If not then delete the outer window and exit */
@@ -1313,15 +1344,16 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 #else
 
 #ifdef CreateLayerTagList
-        struct TagItem win_tags[] =
+        struct TagItem lay_tags[] =
             {
-                {LA_Hook     , (IPTR)backfillhook},
-                {LA_Priority        , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
-                {LA_Shape       , (IPTR)shape                           },
-                {LA_SuperBitMap   , (IPTR)SuperBitMap                           },
-                {LA_ChildOf       , (IPTR)parent                            },
-                {LA_Visible       , (ULONG)visible                                                    },
-                {TAG_DONE                                       }
+                {LA_Hook     	, (IPTR)backfillhook	    	    	    	    	    	    },
+                {LA_Priority    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
+                {LA_Shape       , (IPTR)shape                               	    	    	    },
+		{LA_ShapeHook	, (IPTR)shapehook   	    	    	    	    	    	    },
+                {LA_SuperBitMap , (IPTR)SuperBitMap                           	    	    	    },
+                {LA_ChildOf     , (IPTR)parent                              	    	    	    },
+                {LA_Visible     , (ULONG)visible                                                    },
+                {TAG_DONE                                           	    	    	    	    }
             };
 
         w->WLayer = CreateLayerTagList(&w->WScreen->LayerInfo,
@@ -1331,7 +1363,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                            w->RelLeftEdge + w->Width - 1,
                            w->RelTopEdge + w->Height - 1,
                            layerflags,
-                           win_tags);
+                           lay_tags);
 
 #else
         w->WLayer = CreateUpfrontHookLayer(
