@@ -33,6 +33,7 @@ struct MUI_GroupsPData
     Object *background_page_popimage;
     Object *spacing_vert_slider;
     Object *spacing_horiz_slider;
+    Object *truncate_titles_checkmark;
     Object *font_title_string;
     Object *normal_popframe;
     Object *virtual_popframe;
@@ -67,69 +68,82 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         cl, obj, NULL,
 	    
         MUIA_Group_SameWidth, TRUE,
-        MUIA_Group_Columns, 2,
+	MUIA_Group_Horiz, TRUE,
         Child, (IPTR) VGroup,
-            GroupFrameT("Title"),
-            Child, (IPTR) VSpace(0),
-            Child, (IPTR) ColGroup(2),
-                MUIA_Group_VertSpacing, 2,
-                Child, (IPTR) Label("Position:"),
-                Child, (IPTR) d.title_position_cycle =
-                           MakeCycle("Position:", positions_labels),
-                Child, (IPTR) Label("Color:"),
-                Child, (IPTR) d.title_color_cycle =
-                           MakeCycle("Color:", color_labels),
-                Child, (IPTR) Label("Font:"),
-                Child, (IPTR) d.font_title_string = MakePopfont(FALSE),
-            End, /* Title */
-            Child, (IPTR) VSpace(0),
-        End,
-        Child, (IPTR) HGroup,
-            GroupFrameT("Frame"),
-            MUIA_Group_SameWidth, TRUE,
-            Child, (IPTR) VGroup,
-               MUIA_Group_VertSpacing, 1,
-               Child, (IPTR) d.normal_popframe = MakePopframe(),
-               Child, (IPTR) CLabel("Normal"),
-            End,
-            Child, (IPTR) VGroup,
-                MUIA_Group_VertSpacing, 1,
-                Child, (IPTR) d.virtual_popframe = MakePopframe(),
-                Child, (IPTR) CLabel("Virtual"),
-            End,
-        End, /* Frame */
-        Child, (IPTR) VGroup,
-            GroupFrameT("Spacing"),
-            Child, (IPTR) VSpace(0),
-            Child, (IPTR) ColGroup(2),
-                MUIA_Group_VertSpacing, 2,
-                Child, (IPTR) Label("Horizontal:"),
-                Child, (IPTR) d.spacing_horiz_slider = (Object*)MakeSpacingSlider(),
-                Child, (IPTR) Label("Vertical:"),
-                Child, (IPTR) d.spacing_vert_slider = (Object*)MakeSpacingSlider(),
-            End, /* Spacing */
-            Child, (IPTR) VSpace(0),
-        End,
-        Child, (IPTR) HGroup,
-            GroupFrameT("Background"),
-            MUIA_Group_SameWidth, TRUE,
-            Child, (IPTR) VGroup,
-                MUIA_Group_VertSpacing, 1,
-                Child, (IPTR) d.background_framed_popimage = MakeBackgroundPopimage(),
-                Child, (IPTR) CLabel("Framed"),
-            End,
-            Child, (IPTR) VGroup,
-                MUIA_Group_VertSpacing, 1,
-                Child, (IPTR) d.background_page_popimage = MakeBackgroundPopimage(),
-                Child, (IPTR) CLabel("Page"),
-            End,
-            Child, (IPTR) VGroup,
-                MUIA_Group_VertSpacing, 1,
-                Child, (IPTR) d.background_register_popimage = MakeBackgroundPopimage(),
-                Child, (IPTR) CLabel("Register"),
-            End,
-        End, /* Background */
-    	
+    	    Child, (IPTR) VGroup,
+    		GroupFrameT("Title"),
+    		Child, (IPTR) VSpace(0),
+    		Child, (IPTR) ColGroup(2),
+    		    MUIA_Group_VertSpacing, 2,
+    		    Child, (IPTR) Label("Position:"),
+    		    Child, (IPTR) d.title_position_cycle =
+    			       MakeCycle("Position:", positions_labels),
+    		    Child, (IPTR) Label("Color:"),
+    		    Child, (IPTR) d.title_color_cycle =
+    			       MakeCycle("Color:", color_labels),
+    		    Child, (IPTR) Label("Font:"),
+    		    Child, (IPTR) d.font_title_string = MakePopfont(FALSE),
+    		End, /* Title */
+    		Child, (IPTR) VSpace(0),
+    	    End,
+    	    Child, (IPTR) VGroup,
+    		GroupFrameT("Spacing"),
+    		Child, (IPTR) VSpace(0),
+    		Child, (IPTR) ColGroup(2),
+    		    MUIA_Group_VertSpacing, 2,
+    		    Child, (IPTR) Label("Horizontal:"),
+    		    Child, (IPTR) d.spacing_horiz_slider = (Object*)MakeSpacingSlider(),
+    		    Child, (IPTR) Label("Vertical:"),
+    		    Child, (IPTR) d.spacing_vert_slider = (Object*)MakeSpacingSlider(),
+    		End, /* Spacing */
+    		Child, (IPTR) VSpace(0),
+    	    End,
+    	    Child, (IPTR) VGroup,
+    		GroupFrameT("Register"),
+    		Child, (IPTR) VSpace(0),
+    		Child, (IPTR) HGroup,
+    		    Child, (IPTR) HSpace(0),
+    		    Child, (IPTR) Label1("Default size truncate titles:"),
+    		    Child, (IPTR) d.truncate_titles_checkmark = MakeCheck(NULL),
+    		End, /* HGroup recessed CM */
+    		Child, (IPTR) VSpace(0),
+    	    End,
+	End,
+	Child, (IPTR) VGroup,
+    	    Child, (IPTR) HGroup,
+    		GroupFrameT("Frame"),
+    		MUIA_Group_SameWidth, TRUE,
+    		Child, (IPTR) VGroup,
+    		   MUIA_Group_VertSpacing, 1,
+    		   Child, (IPTR) d.normal_popframe = MakePopframe(),
+    		   Child, (IPTR) CLabel("Normal"),
+    		End,
+    		Child, (IPTR) VGroup,
+    		    MUIA_Group_VertSpacing, 1,
+    		    Child, (IPTR) d.virtual_popframe = MakePopframe(),
+    		    Child, (IPTR) CLabel("Virtual"),
+    		End,
+    	    End, /* Frame */
+    	    Child, (IPTR) HGroup,
+    		GroupFrameT("Background"),
+    		MUIA_Group_SameWidth, TRUE,
+    		Child, (IPTR) VGroup,
+    		    MUIA_Group_VertSpacing, 1,
+    		    Child, (IPTR) d.background_framed_popimage = MakeBackgroundPopimage(),
+    		    Child, (IPTR) CLabel("Framed"),
+    		End,
+    		Child, (IPTR) VGroup,
+    		    MUIA_Group_VertSpacing, 1,
+    		    Child, (IPTR) d.background_page_popimage = MakeBackgroundPopimage(),
+    		    Child, (IPTR) CLabel("Page"),
+    		End,
+    		Child, (IPTR) VGroup,
+    		    MUIA_Group_VertSpacing, 1,
+    		    Child, (IPTR) d.background_register_popimage = MakeBackgroundPopimage(),
+    		    Child, (IPTR) CLabel("Register"),
+    		End,
+    	    End, /* Background */
+    	End,
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
 
@@ -181,6 +195,11 @@ static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
 		       MUICFG_Group_VSpacing));
 
+/* Checkmark */
+    setcheckmark(data->truncate_titles_checkmark,
+		 DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+			  MUICFG_Register_TruncateTitles));
+
 /* Title (Cycles) */
     set(data->title_position_cycle, MUIA_Cycle_Active,
 	DoMethod(msg->configdata, MUIM_Configdata_GetULong, MUICFG_GroupTitle_Position));
@@ -227,6 +246,10 @@ static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 	     XGET(data->spacing_horiz_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Group_VSpacing,
 	     XGET(data->spacing_vert_slider, MUIA_Numeric_Value));
+
+/* Checkmark */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Register_TruncateTitles,
+	     XGET(data->truncate_titles_checkmark, MUIA_Selected));
 
 /* Title (Cycles) */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_GroupTitle_Position,
