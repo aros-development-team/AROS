@@ -167,7 +167,7 @@
 } while(0)
 
 #define ASSERT_VALID_PTR(x) do {				\
-	(((LONG)(x) > 1024) &&					\
+	(((IPTR)(x) > 1024) &&					\
 	TypeOfMem((APTR)(x))) ? 0 :				\
 	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%lx\n",	\
 	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
@@ -175,7 +175,7 @@
 
 #define ASSERT_VALID_PTR_OR_NULL(x) do {			\
 	((((APTR)(x)) == NULL) ||				\
-	(((LONG)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
+	(((IPTR)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
 	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%lx\n",	\
 	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
 } while(0)
