@@ -9,37 +9,38 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
+#include <utility/tagitem.h>
 
 /*****i***********************************************************************
 
     NAME */
-	AROS_LH3(APTR, PrepareContext,
+	AROS_LH4(BOOL, PrepareContext,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, stackPointer,    A0),
+	AROS_LHA(struct Task *, task,    A0),
 	AROS_LHA(APTR, entryPoint,      A1),
 	AROS_LHA(APTR, fallBack,        A2),
+	AROS_LHA(struct TagItem *, tagList, A3),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 6, Exec)
 
 /*  FUNCTION
-	Allocates the space required to hold a new set of registers
-	on the stack given by stackPointer and clears the area
-	except the for the PC which is set to the address given by
-	entryPoint. The stack will be set so that when the
-	entryPoint function returns, the fallback function will be
-	called.
+	Prepare the context (set of registers) for a new task.
+	The context/stack will be set so that when the entryPoint
+	function returns, the fallback function will be called.
 
     INPUTS
-	stackPointer    -   Pointer to specific stack.
+	task        	-   Pointer to task
 	entryPoint      -   Function to call when the new context
 			    comes alive.
 	fallBack        -   Address of the function to be called
 			    when the entryPoint function returns.
+	tagList     	-   Additional options. Like for passing
+	    	    	    arguments to the entryPoint() functions.
 
     RESULT
-	The new stackPointer with the context saved.
+	TRUE on success. FALSE on failure.
 
     NOTES
 	This function is very CPU dependant. In fact it can differ
