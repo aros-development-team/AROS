@@ -160,6 +160,8 @@ struct Bucket *HashLookupStr(struct HashTable *ht, IPTR id, struct IntOOPBase *O
     for (b = ht->Table[CalcHashStr(ht, id)]; b; b = b->Next)
     {
     	D(bug("Bucket: %p\n", b));
+	D(bug("ID: %p\n", b->ID));
+	D(bug("ID: %s\n", b->ID));
     	if (!strcmp((STRPTR)b->ID, (STRPTR)id))
 	    ReturnPtr ("HashLookupStr", struct Bucket *, b);
     }
@@ -252,6 +254,11 @@ VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b)
 		
 		/* Not really neccessar, but ... */
 		b->Next = NULL;
+	    }
+	    else
+	    {
+	    	/* We are removing the first bucket */
+		ht->Table[idx] = cur_b->Next;
 	    }
 	}
 	
