@@ -231,16 +231,19 @@ BPTR LoadSeg_AOS(BPTR file)
       ERROR(ERROR_BAD_HUNK);
     }
   }
-  /* Clear caches */
-  for (t=numhunks-1 /* last */; t >= (LONG)0 /*first */; t--) {
-    if (hunktab[t].size) {
-      CacheClearE(hunktab[t].memory, hunktab[t].size, CACRF_ClearI|CACRF_ClearD);
-      ((BPTR *)hunktab[t].memory)[-1] = last_p;
-      last_p = MKBADDR((BPTR *)hunktab[t].memory-1);
+  if (hunktab)
+  {
+    /* Clear caches */
+    for (t=numhunks-1 /* last */; t >= (LONG)0 /*first */; t--) {
+	if (hunktab[t].size) {
+	CacheClearE(hunktab[t].memory, hunktab[t].size, CACRF_ClearI|CACRF_ClearD);
+	((BPTR *)hunktab[t].memory)[-1] = last_p;
+	last_p = MKBADDR((BPTR *)hunktab[t].memory-1);
+	}
     }
+    FreeVec(hunktab);
+    hunktab = NULL;
   }
-  FreeVec(hunktab);
-  hunktab = NULL;
 end:
   if (hunktab != NULL) {
     for (t = 0 /* first */; t < numhunks /* last */; t++)
