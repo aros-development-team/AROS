@@ -1,13 +1,76 @@
 /*
-**
-**	Info.c
-**	a replacement for the original Info command from Amiga International
-**
-**	© 1997-1998 by Stephan Rupprecht
-**	All rights resevered
+    (C) 2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: English
 */
 
-#define  DEBUG  1
+/******************************************************************************
+
+
+    NAME
+
+        Info
+
+    SYNOPSIS
+
+        DISKS/S, VOLS=VOLUMES/S, GOODONLY/S, BLOCKS/S, DEVICES/M
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+    Show information on file system devices and volumes. When given no
+    arguments, information on all devices and volumes found in the system
+    is displayed. If information is wanted only for some specific devices,
+    these names may be given as arguments.
+
+    INPUTS
+
+    DISKS     --  show information on file system devices
+    VOLS      --  show information on volumes
+    GOODONLY  --  don't show any information on bad devices or volumes
+    BLOCKS    --  show additional block size and usage information
+    DEVICES   --  device names to show information about
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+  Info
+
+  Unit                 Size    Used    Free Full Errs   State    Type Name
+  Foreign harddisk:  964.1M  776.7M  187.4M  81%    0 read/write  OFS Workbench
+  RAM:                 8.0M    7.1M    7.1M  12%    0 read/write  OFS Ram Disk
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    The original source showed that AROS version of ReadArgs() handles
+    the /M switch with zero arguments differently from AmigaOS. While AROS
+    returns an array where the first pointer is NULL, AmigaOS just returns
+    NULL.
+
+    HISTORY
+
+    16.11.2000  SDuvan  --  converted to AROS
+    23.12.2000  SDuvan  --  changed semantics and updated
+                            (now fully functional)
+
+    Based on the original by:
+    © 1997-1998 by Stephan Rupprecht
+    All rights resevered
+*/
+
+#define  DEBUG  0
 #include <aros/debug.h>
 
 #include <dos/dos.h>
@@ -61,9 +124,6 @@ void FmtProcedure(struct Hook *hook, char a, struct Locale *locale);
 ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod);
 void doInfo();
 
-
-/* HISTORY: Original by Stephan Rupprecht 
-            AROSified by SDuvan  XY.11.2000 */
 
 STRPTR VersionStr = "$VER: Info 41.1 (16.11.00)";
 
@@ -190,13 +250,13 @@ void LPrintf(ULONG id, STRPTR def, ...)
 {
     def = GetStrFromCat(id, def);
     
-    VPrintf(def, ((STRPTR)(&def))+4); 
+    VPrintf(def, ((IPTR *)(&def))+1);
 }
 
 
 BOOL myMatchPatternNoCase(STRPTR *array, STRPTR str)
 {
-    if(array != NULL)
+    if(*array != NULL)
     {
 	while(*array != NULL)
 	{
@@ -235,8 +295,10 @@ BOOL ScanDosList(STRPTR *filter)
     struct DosList     *ndl, *dl;
     STRPTR             *strray = NULL;
     BOOL                err = FALSE;
+
+    D(bug("Entered ScanDosList()\n"));
     
-    if(filter != NULL)
+    if(*filter != NULL)
     {
 	strray = AllocPooled(Pool, sizeof(STRPTR)*MAX_MULTIARGS);
 
@@ -287,6 +349,7 @@ BOOL ScanDosList(STRPTR *filter)
 		{
 		    struct AssignList *al = ndl->dol_misc.dol_assign.dol_List;
 		    
+		    
 		    taskName = ndl->dol_DevName; // ((struct Task *)((struct FileLock *)BADDR(ndl->dol_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
 
 		    D(bug("Found directory %s\n", taskName));
@@ -318,10 +381,23 @@ BOOL ScanDosList(STRPTR *filter)
 	//	    continue;
 	
 	__sprintf(name, "%s:", ndl->dol_DevName);
+
+	D(bug("Found name %s\n", ndl->dol_DevName));
 	
 	if((type == DLT_DEVICE) && (myMatchPatternNoCase(strray, name) == FALSE))
+	{
+	    int i;
+
+	    D(bug("Failure! -- name = %s, strray = %p\n", name, (void *)strray));
+
+	    for (i = 0; strray[i] != NULL; i++)
+	    {
+		D(bug("Strray %i = %s\n", i, strray[i]));
+	    }
+	    
 	    continue;
-	
+	}
+
 	idn = (struct InfoDosNode *)AllocPooled(Pool, sizeof(struct InfoDosNode));
 
 	if(idn == NULL)
@@ -507,7 +583,7 @@ void doInfo()
     
     /* read arguments */
     rdargs = ReadArgs("DISKS/S,VOLS=VOLUMES/S,GOODONLY/S,BLOCKS/S,DEVICES/M",
-		      &args, NULL);
+		      args, NULL);
     
     if(rdargs != NULL)
     {
@@ -515,19 +591,18 @@ void doInfo()
 	BOOL     vols     = (BOOL)args[ARG_VOLS];
 	BOOL     goodOnly = (BOOL)args[ARG_GOODONLY];
 	BOOL     blocks   = (BOOL)args[ARG_BLOCKS];
-	STRPTR  *devs     = (STRPTR)args[ARG_DEVS];
+	STRPTR  *devs     = (STRPTR *)args[ARG_DEVS];
 
 	/* If nothing is specified, show everything we got */
-	if(*devs == NULL && !disks && !vols && !blocks)
+	if(*devs == NULL && !disks && !vols)
 	{
 	    vols = TRUE;
-	    blocks = TRUE;
 	    disks = TRUE;
 	}
 
 	/* check pattern strings */
 	
-	if(devs != NULL)
+	if(*devs != NULL)
 	{
 	    STRPTR  *p = devs;
 	    
@@ -565,6 +640,8 @@ void doInfo()
 	    TEXT    nfmtstr[16];
 	    TEXT    buf[64];
 	    
+	    D(bug("Printing stuff\n"));
+
 	    /* get datetimefmt string */
 	    if(loc && (GetVar("info_datetime", buf, sizeof(buf), 0L) > 0L))
 	    {
@@ -575,7 +652,7 @@ void doInfo()
 	    __sprintf(nfmtstr, "%%-%lds", MaxLen);
 	    
 	    /* show device infomation */
-	    if(devs != NULL || disks || !vols)
+	    if(*devs != NULL || disks || !vols)
 	    {
 		for(idn = head; idn; idn = idn->Next)
 		{
@@ -600,7 +677,10 @@ void doInfo()
 			    first = FALSE;
 			}
 			
+			D(bug("Locking \"%s\"\n", name));
 			lock = Lock(name, SHARED_LOCK);
+
+			D(bug("Lock = %p\n", lock));
 
 			if(lock != NULL)
 			{
@@ -755,7 +835,7 @@ void doInfo()
 				    DateToStr(&dt);		
 				}
 				
-				LPrintf(DATEFMTSTR, "created %.2s, %-10s %s", 
+				LPrintf(DATEFMTSTR, "created %.3s, %-10s %s", 
 					StrDay, StrDate, StrTime);
 			    }
 			}
@@ -767,9 +847,8 @@ void doInfo()
 	}
 	else
 	{
-	    PrintFault( ERROR_NO_FREE_STORE, 0L );
+	    PrintFault( ERROR_NO_FREE_STORE, NULL);
 	}
-
 
 	/* reset window pointer of our process */
 	proc->pr_WindowPtr = win;
