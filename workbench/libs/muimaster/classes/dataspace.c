@@ -97,9 +97,12 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
     struct Dataspace_Node *replace;
     struct Dataspace_Node *node;
 
+    if (NULL == msg->data || msg->len < 1 || msg->id < 1)
+	return 0;
+
     node = (struct Dataspace_Node*)AllocVecPooled(data->current_pool,
 						  sizeof(struct Dataspace_Node)+msg->len);
-    if (!node)
+    if (NULL == node)
     {
 	return 0;
     }
@@ -119,8 +122,7 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
     AddTail((struct List*)&data->list,(struct Node*)node);
     node->id = msg->id;
     node->len = msg->len;
-    CopyMem(msg->data,node+1,node->len);
-
+    CopyMem(msg->data, node + 1, node->len);
     return 1;
 }
 
