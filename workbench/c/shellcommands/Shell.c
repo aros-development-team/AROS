@@ -92,6 +92,7 @@
 #include <dos/var.h>
 #include <dos/filesystem.h>
 #include <dos/bptr.h>
+#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
@@ -436,33 +437,32 @@ LONG interact(void)
     ULONG cliNumber = PROCESS(FindTask(NULL))->pr_TaskNum;
     LONG  error = 0;
     BOOL  moreLeft = FALSE;
-    BOOL  messageprinted = FALSE;
+
+    if (!cli->cli_Background)
+    {
+	SetVBuf(Output(), NULL, BUF_FULL, -1);
+	if (strcmp(FindTask(NULL)->tc_Node.ln_Name, "Boot Shell") == 0)
+	{
+	    PutStr("AROS Amiga® Research Operating System\n"
+	           "Copyright © 1995-2001 AROS Team\n"
+	           "All rights reserved.\n"
+		   "AROS is licensed under the terms of the AROS PUBLIC LICENSE (APL), a copy of "
+		   "which you should have received with it.\n"
+		   "Visit http://www.aros.org/ for further information\n");
+	}
+	else
+	{
+	    IPTR data[] = {(IPTR)cliNumber};
+
+	    VPrintf("New Shell process %ld\n", data);
+	}
+	SetVBuf(Output(), NULL, BUF_LINE, -1);
+    }
 
     do
     {
  	struct CommandLine cl = { NULL, 0, 0 };
 	struct Redirection rd;
-
-	if (cli->cli_Interactive && !messageprinted)
-        {
-	    if (strcmp(FindTask(NULL)->tc_Node.ln_Name, "Boot Shell") == 0)
-	    {
-	        PutStr("AROS Amiga® Research Operating System\n"
-	               "Copyright © 1995-2001 AROS Team\n"
-		       "All rights reserved.\n"
-		       "AROS is licensed under the terms of the AROS PUBLIC LICENSE (APL), a copy of "
-		       "which you should have received with it.\n"
-		       "Visit http://www.aros.org/ for further information\n");
-	    }
-	    else
-	    {
-		IPTR data[] = {(IPTR)cliNumber};
-
-		VPrintf("New Shell process %ld\n", data);
-
-	    }
-	    messageprinted = TRUE;
-	}
 
 	if(Redirection_init(&rd))
 	{
@@ -487,12 +487,14 @@ LONG interact(void)
 	            DeleteFile(BADDR(cli->cli_CommandFile));
 		    AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
 		}
-		
+
 		if (!cli->cli_Background)
 	        {
 		    cli->cli_CurrentInput = cli->cli_StandardInput;
  		    cli->cli_Interactive = TRUE;
 		    moreLeft = TRUE;
+		    Flush(Output());
+		    Flush(Error());
 	        }
 	    }
 	}
@@ -612,9 +614,12 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 exit:
     FreeVec(filtered.CS_Buffer);
 
-    Flush(Output());
-    Flush(Error());
-    
+    if (cli->cli_Interactive)
+    {
+        Flush(Output());
+        Flush(Error());
+    }
+
     return result;
 }
 
