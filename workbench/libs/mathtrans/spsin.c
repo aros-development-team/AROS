@@ -28,7 +28,7 @@
 
 /*  LOCATION */
 
-      struct MathtransBase *, MathtransBase, 6, Mathtrans)
+      struct MathTransBase *, MathTransBase, 6, MathTrans)
 
 /*  FUNCTION
 

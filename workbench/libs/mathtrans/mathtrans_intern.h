@@ -33,12 +33,12 @@
 extern struct ExecBase * SysBase;
 extern struct MathBase * MathBase;
 /*
-    This is the MathtransBase structure. It is documented here because it is
+    This is the MathTransBase structure. It is documented here because it is
     completely private. Applications should treat it as a struct Library, and
     use the mathtrans.library functions to get information.
 */
 
-struct MathtransBase
+struct MathTransBase
 {
     struct Library     library;
     BPTR               seglist;
@@ -46,11 +46,13 @@ struct MathtransBase
 
 /* internal prototypes */
 
-LONG intern_SPLd(struct MathtransBase * MathtransBase, ULONG fnum);
+LONG intern_SPLd(struct MathTransBase * MathTransBase, ULONG fnum);
 LONG intern_SPisodd(ULONG fnum);
 
+/*
 #define expunge() \
- AROS_LC0(BPTR, expunge, struct MathTransBase *, MathTransBase, 3, Mathtrans)
+ AROS_LC0(BPTR, expunge, struct MathTransBase *, MathTransBase, 3, MathTrans)
+*/
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent */

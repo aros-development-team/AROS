@@ -10,7 +10,7 @@
 #include "mathtrans_intern.h"
 #include "libdefs.h"
 
-#define LC_NO_CLOSELIB
+#define LC_NO_EXPUNGELIB
 #define LC_RESIDENTPRI	    -120
 
 #include <libcore/libheader.c>
@@ -40,10 +40,10 @@ ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
     return TRUE;
 } /* L_OpenLib */
 
-void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
+void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (MathBase)
 	CloseLibrary ((struct Library *)MathBase);
 
-} /* L_ExpungeLib */
+} /* L_CloseLib */
 

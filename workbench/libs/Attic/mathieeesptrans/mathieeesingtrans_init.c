@@ -10,7 +10,7 @@
 #include "mathieeesingtrans_intern.h"
 #include "libdefs.h"
 
-#define LC_NO_CLOSELIB
+#define LC_NO_EXPUNGELIB
 #define LC_RESIDENTPRI	    -120
 
 #include <libcore/libheader.c>
@@ -36,14 +36,14 @@ ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
 
     if (!MathIeeeSingBasBase)
 	return FALSE;
-
+	
     return TRUE;
 } /* L_OpenLib */
 
-void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
+void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (MathIeeeSingBasBase)
 	CloseLibrary ((struct Library *)MathIeeeSingBasBase);
 
-} /* L_ExpungeLib */
+} /* L_CloseLib */
 

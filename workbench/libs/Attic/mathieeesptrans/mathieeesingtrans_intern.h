@@ -2,8 +2,8 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.4  1997/09/27 22:00:38  bergers
-    new version of library (uses libheader.c)
+    Revision 1.5  1997/09/28 11:37:08  bergers
+    Updated version - again
 
     Revision 1.3  1997/07/28 20:43:04  bergers
     Some bug-fixes and changes
@@ -62,8 +62,6 @@ struct MathIeeeSingTransBase
 LONG intern_IEEESPLd(struct MathIeeeSingTransBase * MathIeeeSingTransBase, ULONG fnum);
 LONG intern_IEEESPisodd(LONG fnum);
 
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct MathIeeeSingTransBase *, MathIeeeSingTransBase, 3, Mathieeesingtrans)
 
 #define IEEESPMantisse_Mask 0x007FFFFF // 23 bit for the mantisse
 #define IEEESPExponent_Mask 0x7F800000 //  8 bit for the exponent

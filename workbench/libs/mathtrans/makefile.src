@@ -98,11 +98,11 @@ $(LIB): $(OBJS)
 	@$(AR) $@ $?
 	@$(RANLIB) $@
 
-setup :
+setup : libdefs.h
 	%mkdirs_q $(OBJDIR) $(SLIBDIR)
 
 clean::
-	$(RM) $(OBJDIR) *.err *.s
+	$(RM) $(OBJDIR) *.err *.s functable.c endtag.c libdefs.h
 
 $(OBJDIR)/%.o: %.c
 	%compile_q
