@@ -6,7 +6,8 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 SUBDIRS=include arossupport alib clib
 else
-SUBDIRS=include arossupport alib clib
+SUBDIRS=include alib clib
+#arossupport 
 #vcpp vbcc
 endif
 
