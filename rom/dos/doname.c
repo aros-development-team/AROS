@@ -49,10 +49,10 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
     else
     {
 	/* Copy volume name */
-	cur = me->pr_CurrentDir;
-	s1 = name;
+	cur      = me->pr_CurrentDir;
+	s1       = name;
 	pathname = name;
-	volname = NULL;
+	volname  = NULL;
 
 	while (*s1 != 0)
 	{
@@ -68,7 +68,9 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 
 		CopyMem(name, volname, s1 - name - 1);
 		volname[s1 - name - 1] = '\0';
-		// pathname = s1;
+
+		pathname = s1;
+		
 		break;
 	    }
 	}
@@ -78,7 +80,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
     {
     	return ERROR_OBJECT_NOT_FOUND;
     }
-    
+
     dl = LockDosList(LDF_ALL | LDF_READ);
 
     if (volname != NULL)
@@ -93,7 +95,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
 
 	    return ERROR_DEVICE_NOT_MOUNTED;
-	} 
+	}
 	else if (dl->dol_Type == DLT_LATE)
 	{
 	    D(bug("Locking late assign %s\n",
@@ -113,7 +115,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 		    UnLockDosList(LDF_ALL | LDF_READ);
 		    FreeMem(volname, s1 - name);
 		    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-		    
+
 		    return ERROR_DEVICE_NOT_MOUNTED;
 	        }
 
@@ -150,12 +152,14 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	    device = dl->dol_Device;
 	    unit   = dl->dol_Unit;
 	}
+
+	pathname = s1;
     }
     else if (cur)
     {
-	fh = (struct FileHandle *)BADDR(cur);
-	device = fh->fh_Device;
-	unit = fh->fh_Unit;
+	fh       = (struct FileHandle *)BADDR(cur);
+	device   = fh->fh_Device;
+	unit     = fh->fh_Unit;
     }
     else
     {
@@ -169,14 +173,14 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	unit = fh->fh_Unit;
     #endif
     }
-    
+
     iofs->IOFS.io_Device = device;
     iofs->IOFS.io_Unit = unit;
     iofs->io_Union.io_NamedFile.io_Filename = (STRPTR)pathname;
-    
+
     /* Send the request. */
     DosDoIO(&iofs->IOFS);
-    
+
     if (iofs->io_DosError == ERROR_OBJECT_NOT_FOUND &&
 	dl->dol_Type == DLT_DIRECTORY)
     {
