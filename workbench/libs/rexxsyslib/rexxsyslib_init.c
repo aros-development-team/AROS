@@ -6,42 +6,29 @@
     Lang: English
 */
 
-#include <stddef.h>
-#include <exec/types.h>
-#include <exec/libraries.h>
-#include <aros/libcall.h>
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/alib.h>
 
 #include "rexxsyslib_intern.h"
+
+#include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
 #undef SysBase
+#define SysBase LC_SYSBASE_FIELD(LIBBASE)
 
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
-#define LC_NO_EXPUNGELIB
-
-#define LC_LIBHEADERTYPEPTR        LIBBASETYPEPTR
-#define LC_LIB_FIELD(libBase)      (libBase)->library.rl_Node
-#define LC_SYSBASE_FIELD(libBase)  (libBase)->library.rl_SysBase
-#define LC_SEGLIST_FIELD(libBase)  (libBase)->library.rl_SegList
-#define LC_LIBBASESIZE             (sizeof(LIBBASETYPE))
-
-#include <libcore/libheader.c>
-
-#define SysBase LC_SYSBASE_FIELD(lh)
-
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {
-   lh->rexxmsgid = "RexxMsgId";
-   InitSemaphore(&lh->semaphore);
-   NewList(&lh->library.rl_LibList);
-   lh->library.rl_NumLib = 0;
-   NewList(&lh->library.rl_ClipList);
-   lh->library.rl_NumClip = 0;
+   LIBBASE->rexxmsgid = "RexxMsgId";
+   InitSemaphore(&LIBBASE->semaphore);
+   NewList(&LIBBASE->library.rl_LibList);
+   LIBBASE->library.rl_NumLib = 0;
+   NewList(&LIBBASE->library.rl_ClipList);
+   LIBBASE->library.rl_NumClip = 0;
    
    return TRUE;
 }
+
+ADD2INITLIB(InitData, 0);
