@@ -2,12 +2,8 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.3  1996/08/13 13:52:45  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:48  digulla
-    Added standard header for all files
+    Revision 1.4  1996/09/11 12:56:39  digulla
+    Bugfix and a lot of new checks by M. Fleischer
 
     Desc:
     Lang: english
@@ -82,6 +78,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 
     struct Process *me=(struct Process *)FindTask(NULL);
     STRPTR s;
+    BPTR *oldpath, *newpath, *nextpath;
 
     struct TagItem defaults[]=
     {
@@ -101,16 +98,22 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 	{ NP_Cli, 0 },
 	{ TAG_END, 0 }
     };
+    /* C has no exceptions. This is a simple replacement. */
+#define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
+#define ENOMEM_IF(a) if(a) goto enomem /* Throw out of memory. */
 
     ApplyTagChanges(defaults,tags);
-    
+
     process=(struct Process *)AllocMem(sizeof(struct Process),MEMF_PUBLIC|MEMF_CLEAR);
+    ENOMEM_IF(process==NULL);
     stack=AllocMem(defaults[9].ti_Data,MEMF_PUBLIC);
+    ENOMEM_IF(stack==NULL);
     s=(STRPTR)defaults[10].ti_Data;
     while(*s++)
     	;
     namesize=s-(STRPTR)defaults[10].ti_Data;
     name=AllocMem(namesize,MEMF_PUBLIC);
+    ENOMEM_IF(name==NULL);
     s=(STRPTR)defaults[12].ti_Data;
     if(s!=NULL)
     {
@@ -118,107 +121,132 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 	    ;
 	argsize=s-(STRPTR)defaults[12].ti_Data;
 	argptr=(STRPTR)AllocVec(argsize,MEMF_PUBLIC);
+	ENOMEM_IF(argptr==NULL);
     }
     memlist=AllocMem(sizeof(struct MemList)+2*sizeof(struct MemEntry),MEMF_ANY);
+    ENOMEM_IF(memlist==NULL);
+    if(defaults[13].ti_Data)
+    {
+        cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,NULL);
+        ENOMEM_IF(cli==NULL);
+        oldpath=NULL;
+        if(me->pr_Task.tc_Node.ln_Type==NT_PROCESS)
+        {
+            struct CommandLineInterface *oldcli=Cli();
+            if(oldcli!=NULL)
+                oldpath=BADDR(oldcli->cli_CommandDir);
+        }
+        newpath=&cli->cli_CommandDir;
+        while(oldpath!=NULL)
+        {
+            nextpath=AllocVec(2*sizeof(BPTR),MEMF_CLEAR);
+            ENOMEM_IF(nextpath==NULL);
+            newpath[0]=MKBADDR(nextpath);
+            nextpath[1]=DupLock(oldpath[1]);
+            ERROR_IF(!nextpath[1]);
+            newpath=nextpath;
+            oldpath=BADDR(oldpath[0]);
+        }
+    }
     if(defaults[2].ti_Data==~0ul)
-        if((input=Open("NIL:",MODE_OLDFILE)))
-            defaults[2].ti_Data=input;
+    {
+        input=Open("NIL:",MODE_OLDFILE);
+        ERROR_IF(!input);
+        defaults[2].ti_Data=input;
+    }
     if(defaults[4].ti_Data==~0ul)
-    	if((output=Open("NIL:",MODE_NEWFILE)))
-    	    defaults[4].ti_Data=output;
+    {
+    	output=Open("NIL:",MODE_NEWFILE);
+    	ERROR_IF(!output);
+        defaults[4].ti_Data=output;
+    }
     if(defaults[8].ti_Data==~0ul)
     {
         if(me->pr_Task.tc_Node.ln_Type==NT_PROCESS)
         {
-            if((curdir=Lock("",SHARED_LOCK)))
-                defaults[8].ti_Data=curdir;
+            curdir=Lock("",SHARED_LOCK);
+            ERROR_IF(!curdir);
+            defaults[8].ti_Data=curdir;
         }else
             defaults[8].ti_Data=0;
     }
-    if(defaults[13].ti_Data)
-        cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,NULL);
 
-    if(process!=NULL&&stack!=NULL&&name!=NULL&&memlist!=NULL&&
-       defaults[2].ti_Data!=~0ul&&defaults[4].ti_Data!=~0ul&&
-       defaults[8].ti_Data!=~0ul&&(defaults[12].ti_Data==0||argptr!=NULL)&&
-       (defaults[13].ti_Data==0||cli!=NULL))
-    {
-	CopyMem((APTR)defaults[10].ti_Data,name,namesize);
-	CopyMem((APTR)defaults[12].ti_Data,argptr,argsize);
-	process->pr_Task.tc_Node.ln_Type=NT_PROCESS;
-	process->pr_Task.tc_Node.ln_Name=name;
-	process->pr_Task.tc_Node.ln_Pri=defaults[11].ti_Data;
-	process->pr_Task.tc_SPLower=stack;
-	process->pr_Task.tc_SPUpper=stack+defaults[9].ti_Data;
+    CopyMem((APTR)defaults[10].ti_Data,name,namesize);
+    CopyMem((APTR)defaults[12].ti_Data,argptr,argsize);
+    process->pr_Task.tc_Node.ln_Type=NT_PROCESS;
+    process->pr_Task.tc_Node.ln_Name=name;
+    process->pr_Task.tc_Node.ln_Pri=defaults[11].ti_Data;
+    process->pr_Task.tc_SPLower=stack;
+    process->pr_Task.tc_SPUpper=stack+defaults[9].ti_Data;
 
-/*	process->pr_ReturnAddr;		*/
-	NEWLIST(&process->pr_Task.tc_MemEntry);
-	memlist->ml_NumEntries=3;
-	memlist->ml_ME[0].me_Addr=process;
-	memlist->ml_ME[0].me_Length=sizeof(struct Process);
-	memlist->ml_ME[1].me_Addr=stack;
-	memlist->ml_ME[1].me_Length=defaults[9].ti_Data;
-	memlist->ml_ME[2].me_Addr=name;
-	memlist->ml_ME[2].me_Length=namesize;
-	AddHead(&process->pr_Task.tc_MemEntry,&memlist->ml_Node);
-	process->pr_MsgPort.mp_Node.ln_Type=NT_MSGPORT;
-	process->pr_MsgPort.mp_Flags=PA_SIGNAL;
-	process->pr_MsgPort.mp_SigBit=SIGB_DOS;
-	process->pr_MsgPort.mp_SigTask=process;
-	NEWLIST(&process->pr_MsgPort.mp_MsgList);
-	process->pr_SegList=defaults[0].ti_Data;
-	process->pr_StackSize=defaults[9].ti_Data;
-	process->pr_GlobVec=NULL;
-	Forbid();
-	process->pr_TaskNum=DOSBase->dl_ProcCnt++;
-	Permit();
-	process->pr_StackBase=(ULONG)process->pr_Task.tc_SPUpper;
-	process->pr_Result2=0;
-	process->pr_CurrentDir=defaults[8].ti_Data;
-	process->pr_CIS=defaults[2].ti_Data;
-	process->pr_COS=defaults[4].ti_Data;
-	process->pr_CES=defaults[6].ti_Data;
-/*	process->pr_ConsoleTask=;	*/
-/*	process->pr_FileSystemTask=;	*/
-	process->pr_CLI=MKBADDR(cli);
-/*	process->pr_PktWait=;		*/
-/*	process->pr_WindowPtr=;		*/
-/*	process->pr_HomeDir=;		*/
-	process->pr_Flags=(defaults[3].ti_Data?PRF_CLOSEINPUT:0)|
-			  (defaults[5].ti_Data?PRF_CLOSEOUTPUT:0)|
-			  (defaults[7].ti_Data?PRF_CLOSEERROR:0)|
-			  (defaults[13].ti_Data?PRF_FREECLI:0)|
-			  PRF_FREEARGS|PRF_FREESEGLIST|PRF_FREECURRDIR;
-/*	process->pr_ExitCode=;		*/
-/*	process->pr_ExitData=;		*/
-	process->pr_Arguments=argptr;
-	NEWLIST((struct List *)&process->pr_LocalVars);
-	process->pr_ShellPrivate=0;
-	
-	if(AddProcess(process,argptr,argsize,defaults[0].ti_Data?
-		      (APTR)BADDR(defaults[0].ti_Data+1):
-		      (APTR)defaults[1].ti_Data,KillCurrentProcess,
-		      DOSBase)!=NULL)
-	    return process;
-    }
-    if(curdir)
-        UnLock(curdir);
-    if(output)
-	Close(output);
-    if(input)
-	Close(input);
-    if(memlist!=NULL)
-	FreeMem(memlist,sizeof(struct MemList)+2*sizeof(struct MemEntry));
-    if(argptr!=NULL)
-	FreeVec(argptr);
-    if(name!=NULL)
-	FreeMem(name,namesize);
-    if(stack!=NULL)
-	FreeMem(stack,defaults[9].ti_Data);
-    if(process!=NULL)
-	FreeMem(process,sizeof(struct Process));
+/*  process->pr_ReturnAddr; */
+    NEWLIST(&process->pr_Task.tc_MemEntry);
+    memlist->ml_NumEntries=3;
+    memlist->ml_ME[0].me_Addr=process;
+    memlist->ml_ME[0].me_Length=sizeof(struct Process);
+    memlist->ml_ME[1].me_Addr=stack;
+    memlist->ml_ME[1].me_Length=defaults[9].ti_Data;
+    memlist->ml_ME[2].me_Addr=name;
+    memlist->ml_ME[2].me_Length=namesize;
+    AddHead(&process->pr_Task.tc_MemEntry,&memlist->ml_Node);
+    process->pr_MsgPort.mp_Node.ln_Type=NT_MSGPORT;
+    process->pr_MsgPort.mp_Flags=PA_SIGNAL;
+    process->pr_MsgPort.mp_SigBit=SIGB_DOS;
+    process->pr_MsgPort.mp_SigTask=process;
+    NEWLIST(&process->pr_MsgPort.mp_MsgList);
+    process->pr_SegList=defaults[0].ti_Data;
+    process->pr_StackSize=defaults[9].ti_Data;
+    process->pr_GlobVec=NULL;
+    Forbid();
+    process->pr_TaskNum=DOSBase->dl_ProcCnt++;
+    Permit();
+    process->pr_StackBase=(ULONG)process->pr_Task.tc_SPUpper;
+    process->pr_Result2=0;
+    process->pr_CurrentDir=defaults[8].ti_Data;
+    process->pr_CIS=defaults[2].ti_Data;
+    process->pr_COS=defaults[4].ti_Data;
+    process->pr_CES=defaults[6].ti_Data;
+/*  process->pr_ConsoleTask=; */
+/*  process->pr_FileSystemTask=; */
+    process->pr_CLI=MKBADDR(cli);
+/*  process->pr_PktWait=; */
+/*  process->pr_WindowPtr=; */
+/*  process->pr_HomeDir=; */
+    process->pr_Flags=(defaults[3].ti_Data?PRF_CLOSEINPUT:0)|
+                      (defaults[5].ti_Data?PRF_CLOSEOUTPUT:0)|
+                      (defaults[7].ti_Data?PRF_CLOSEERROR:0)|
+                      (defaults[13].ti_Data?PRF_FREECLI:0)|
+                      PRF_FREEARGS|PRF_FREESEGLIST|PRF_FREECURRDIR;
+/*  process->pr_ExitCode=; */
+/*  process->pr_ExitData=; */
+    process->pr_Arguments=argptr;
+    NEWLIST((struct List *)&process->pr_LocalVars);
+    process->pr_ShellPrivate=0;
+
+    if(AddProcess(process,argptr,argsize,defaults[0].ti_Data?
+                  (APTR)BADDR(defaults[0].ti_Data+1):
+                  (APTR)defaults[1].ti_Data,KillCurrentProcess,
+                  DOSBase)!=NULL)
+        return process;
+
+    /* Fall through */
+enomem:
     if(me->pr_Task.tc_Node.ln_Type==NT_PROCESS)
-	me->pr_Result2=ERROR_NO_FREE_STORE;
+        me->pr_Result2=ERROR_NO_FREE_STORE;
+error:
+    FreeDosObject(DOS_CLI,cli);
+    UnLock(curdir);
+    Close(output);
+    Close(input);
+    FreeVec(argptr);
+    if(memlist!=NULL)
+        FreeMem(memlist,sizeof(struct MemList)+2*sizeof(struct MemEntry));
+    if(name!=NULL)
+        FreeMem(name,namesize);
+    if(stack!=NULL)
+        FreeMem(stack,defaults[9].ti_Data);
+    if(process!=NULL)
+        FreeMem(process,sizeof(struct Process));
     return NULL;
     __AROS_FUNC_EXIT
 } /* CreateNewProc */
@@ -230,7 +258,7 @@ static void KillCurrentProcess(void)
     struct Process *me=(struct Process *)FindTask(NULL);
 
     if(me->pr_Flags&PRF_CLOSEINPUT)
-	Close(me->pr_CIS);
+        Close(me->pr_CIS);
     if(me->pr_Flags&PRF_CLOSEOUTPUT)
         Close(me->pr_COS);
     if(me->pr_Flags&PRF_CLOSEERROR)
@@ -238,9 +266,9 @@ static void KillCurrentProcess(void)
     if(me->pr_Flags&PRF_FREEARGS)
         FreeVec(me->pr_Arguments);
     if(me->pr_Flags&PRF_FREESEGLIST)
-    	UnLoadSeg(me->pr_SegList);
+        UnLoadSeg(me->pr_SegList);
     if(me->pr_Flags&PRF_FREECURRDIR)
-    	UnLock(me->pr_CurrentDir);
+        UnLock(me->pr_CurrentDir);
     if(me->pr_Flags&PRF_FREECLI)
         FreeDosObject(DOS_CLI,BADDR(me->pr_CLI));
     RemTask(NULL);
