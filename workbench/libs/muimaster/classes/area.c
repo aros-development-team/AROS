@@ -1352,11 +1352,15 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
     switch (imsg->Code)
     {
 	case	SELECTDOWN:
+		if (data->mad_InputMode == MUIV_InputMode_None) break;
+
 		if (in)
 		{
 //		    set(_win(obj), MUIA_Window_ActiveObject, obj);
 		    data->mad_ClickX = imsg->MouseX;
 		    data->mad_ClickY = imsg->MouseY;
+		    
+		    
 		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
 			break;
 		    nnset(obj,MUIA_Timer,0);
@@ -1371,6 +1375,8 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		}
 
 	case	SELECTUP:
+		if (data->mad_InputMode == MUIV_InputMode_None) break;
+
 		if (data->mad_ehn.ehn_Events != IDCMP_MOUSEBUTTONS)
 		{
 		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
