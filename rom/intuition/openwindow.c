@@ -185,6 +185,10 @@
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 
     RefreshGadgets (w->FirstGadget, w, NULL);
+    
+    /* !!! This does double refreshing as the system gadgets also are refreshed
+       in the above RfreshGadgets() call */
+    RefreshWindowFrame(w);
 
     goto exit;
 
