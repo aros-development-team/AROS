@@ -1,1 +1,4 @@
 C:path C: ADD QUIET
+assign DEVS: devs
+assign LIBS: libs
+assign S: s
