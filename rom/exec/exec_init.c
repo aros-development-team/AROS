@@ -77,12 +77,6 @@ void _aros_not_implemented(char *X)
 	    abs(*(WORD *)((&X)[-1]-2)),
 	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
-
-void aros_print_not_implemented(char *name)
-{
-    kprintf("The function %s is not implemented.\n", name);
-}
-
 #define kprintf (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
 
 /* IntServer:
