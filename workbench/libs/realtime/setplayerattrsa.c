@@ -151,6 +151,8 @@
 		struct Conductor *conductor = player->pl_Source;
 		APTR   lock;
 
+		lock = LockRealTime(RT_CONDUCTORS);
+
 		player->pl_Flags |= PLAYERF_READY;
 
 		if (conductor != NULL)
