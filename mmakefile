@@ -140,14 +140,13 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libinput.a \
     $(LIBDIR)/libkeymap.a \
-    $(LIBDIR)/libinithidds.a \
     $(DEPLIB_AROS)
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/con_handler.o $(GENDIR)/filesys/emul_handler.o \
 	-lexec -lAmigaOS \
 	-lboot -lintuition -lgraphics -ldos -lconsole \
-	-lhiddclass -linithidds -lunixiocl -lboopsi -lutility -ltimer \
+	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-lamiga -larossupport -linput -lkeymap -loop
 

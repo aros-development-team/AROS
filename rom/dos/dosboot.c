@@ -26,6 +26,8 @@
 
 extern void boot();
 
+BOOL init_hidds(struct ExecBase *, struct DosLibrary *);
+
 AROS_UFH3(void, intBoot,
     AROS_UFHA(APTR, argString, A0),
     AROS_UFHA(ULONG, argSize, D0),
@@ -101,6 +103,9 @@ AROS_UFH3(void, intBoot,
 	
 	/* Late binding ENVARC: assign, only if used */
 	AssignLate("ENVARC", "SYS:Prefs/env-archive");
+	
+	/* Initialize HIDDs */
+	init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 
 	/* We now call the system dependant boot - should never return. */
 	AROS_UFC3(void, boot, 
