@@ -243,8 +243,26 @@ report.
 
 \section{What mailing lists are there ?}
 
-Currently there is only a private developer mailing list since we don't have
-that many/any users yet.
+Currently we have these lists:
+
+\begin{description}
+\item{aros-user} This is a public list on which we post announcements and
+updates. The language is english.
+
+\item{aros-gfx} This is a public list where we discuss RTG and HIDDs.
+The language is german for now.
+\end{description}
+
+There is also a list for developers, but that list is private. Ask
+me if you want to be added to it.
+
+To add yourself to any of these lists, write an EMail to
+\shell{<listname>-request@aros.fh-konstanz.de} (replace \shell{<listname>}
+with the name of the list) with \shell{SUBSCRIBE <youremail>} in the body
+(the subject is ignored), for example, \shell{SUBSCRIBE
+digulla@fh-konstanz.de}. Note that for security reasons, the EMail after
+the subscribe must match your local address (ie. where the mail comes
+from). This is to protect you from beeing added from someone else.
 
 \end{new}
 
