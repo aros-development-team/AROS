@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function ExtendFont()
@@ -63,7 +63,8 @@
     struct TagItem  	     def_tags = { TAG_DONE, 0};
     struct tfe_hashnode      *hn;
     struct TextFontExtension *tfe;
-    
+    BOOL    	    	     new_hashnode = FALSE;
+
     if (font == NULL)
 	return FALSE;
 
@@ -79,6 +80,7 @@
     	    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);	    
 	    return FALSE;
 	}
+	new_hashnode = TRUE;
     }
     
     tfe = hn->ext;
@@ -108,7 +110,14 @@
 		
 	    if (driver_ExtendFont(font, hn, GfxBase))
 	    {
-		tfe_hashadd(hn, font, tfe, GfxBase);
+	    	if (new_hashnode)
+		{
+		    tfe_hashadd(hn, font, tfe, GfxBase);
+		}
+		else
+		{
+		    hn->ext = tfe;
+		}
 		
 		ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
     		return TRUE;
