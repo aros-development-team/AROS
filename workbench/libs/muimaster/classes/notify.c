@@ -544,6 +544,7 @@ static ULONG Notify_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetA
     RawDoFmt(msg->format,(ULONG *)&msg->val,(void (*)())&tricky,buf);
     set(obj, msg->attr, buf);
 #else
+#warning MUIM_SetAsString not implemented for AROS!
 #endif
 
 /*      g_vsnprintf(buf, 2048, msg->format, (va_list)&msg->val); */
