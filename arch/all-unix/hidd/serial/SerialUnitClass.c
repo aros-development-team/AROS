@@ -520,7 +520,7 @@ VOID serialunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Star
 }  
   
 
-/******* SerialUnit::SendBreak() **********************************/
+/******* SerialUnit::Stop() **********************************/
 VOID serialunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
