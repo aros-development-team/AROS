@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/15 13:19:02  digulla
+    First attempt to purge memory after free to make code crash which accesses
+    memory after a free but just that happens in RemTask().
+
     Revision 1.4  1996/08/13 13:56:02  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -17,6 +21,12 @@
 #include <exec/execbase.h>
 #include "machine.h"
 #include "memory.h"
+
+#define NASTY_FREEMEM	0	/* Delete contents of free'd memory ? */
+
+#if NASTY_FREEMEM
+void PurgeChunk (ULONG *, ULONG);
+#endif
 
 /*****************************************************************************
 
@@ -108,11 +118,14 @@
 	    /* No chunk in list? Just insert the current one and return. */
 	    if(p2==NULL)
 	    {
+#if NASTY_FREEMEM
+		PurgeChunk ((ULONG *)p3, byteSize);
+#endif
 		p3->mc_Bytes=byteSize;
 		p3->mc_Next=NULL;
 		p1->mc_Next=p3;
 		mh->mh_Free+=byteSize;
-		Permit();
+		Permit ();
 		return;
 	    }
 
@@ -185,6 +198,9 @@
 		p2=p2->mc_Next;
 	    }
 	    /* relink the list and return. */
+#if NASTY_FREEMEM
+	    PurgeChunk ((ULONG *)p3, p4-(UBYTE *)p3);
+#endif
 	    p3->mc_Next=p2;
 	    p3->mc_Bytes=p4-(UBYTE *)p3;
 	    mh->mh_Free+=byteSize;
@@ -193,12 +209,27 @@
 	}
 	mh=(struct MemHeader *)mh->mh_Node.ln_Succ;
     }
+
 #if !defined(NO_CONSISTENCY_CHECKS)
     /* Some memory that didn't fit into any MemHeader? */
     Alert(AN_MemCorrupt|AT_DeadEnd);
 #else
     Permit();
 #endif
+
     __AROS_FUNC_EXIT
 } /* FreeMem */
 
+
+void PurgeChunk (ULONG * ptr, ULONG size)
+{
+    while (size >= sizeof (ULONG))
+    {
+#if SIZEOFULONG > 4
+	*ptr ++ = 0xDEAFBEEFDEADBEEFL;
+#else
+	*ptr ++ = 0xDEAFBEEFL;
+#endif
+	size -= sizeof (ULONG);
+    }
+}
