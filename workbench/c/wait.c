@@ -5,6 +5,51 @@
     Desc:
     Lang:
 */
+
+/******************************************************************************
+
+
+    NAME
+
+        Wait [(n)] [SEC | SECS | MIN | MINS] [ UNTIL (time) ]
+
+    SYNOPSIS
+
+        TIME/N,SEC=SECS/S,MIN=MINS/S,UNTIL/K
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Wait a certain amount of time or until a specified time. Using
+        Wait without any arguments waits for one second.
+   
+    INPUTS
+
+        TIME      --  the number of time units to wait (default is seconds)
+	SEC=SEVS  --  set the time unit to seconds
+	MIN=MINS  --  set the time unit to minutes
+	UNTIL     --  wait until the specified time is reached. The time
+                      is given in the format HH:MM.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <devices/timer.h>
@@ -25,10 +70,11 @@ int main (int argc, char ** argv)
     LONG 		error = RETURN_OK;
     ULONG 		delay = 1;
     
-#define ERROR(a) { error=a; goto end; }
+#define ERROR(a) { error = a; goto end; }
 
-    rda = ReadArgs("time/N,SEC=SECS/S,MIN=MINS/S,UNTIL/K",args,NULL);
-    if(rda == NULL)
+    rda = ReadArgs("TIME/N,SEC=SECS/S,MIN=MINS/S,UNTIL/K", args, NULL);
+
+    if (rda == NULL)
     {
 	PrintFault(IoErr(),"Wait");
         ERROR(RETURN_FAIL);
@@ -56,6 +102,7 @@ int main (int argc, char ** argv)
 		
 	memset(&dt, 0, sizeof(dt));	
 	dt.dat_StrTime = timestring;
+
 	if (!StrToDate(&dt))
 	{
 	    puts("Time should be HH:MM");
@@ -64,7 +111,11 @@ int main (int argc, char ** argv)
 	
 	then_secs = dt.dat_Stamp.ds_Minute * 60 + dt.dat_Stamp.ds_Tick / TICKS_PER_SECOND;
 	diff_secs = then_secs - now_secs;
-	if (diff_secs < 0) diff_secs += 60L * 60L * 24L;
+
+	if (diff_secs < 0)
+	{
+	    diff_secs += 60L * 60L * 24L;
+	}
 
 	delay = diff_secs * TICKS_PER_SECOND;
 
@@ -72,10 +123,14 @@ int main (int argc, char ** argv)
     else
     {
 	if (args[0])
+	{
 	    delay = *((ULONG *)args[0]);
+	}
 
 	if (args[2])
+	{
 	    delay *= 60L;
+	}
 	    
 	delay *= TICKS_PER_SECOND;
     }
@@ -86,7 +141,9 @@ int main (int argc, char ** argv)
 	{
 	    /* Don't care about breaking if delay is less than 1 second */
 	    Delay (delay);
-	} else {
+	}
+	else
+	{
 	    struct MsgPort 	*timermp;
 	    struct timerequest  *timerio;
 	    BOOL		memok = FALSE, devok = FALSE;
@@ -114,10 +171,12 @@ int main (int argc, char ** argv)
 			while(!done)
 			{
 			    sigs = Wait(SIGBREAKF_CTRL_C | timermask);
+
 			    if (sigs & timermask)
 			    {
 			        done = TRUE;
 			    }
+
 			    if (sigs & SIGBREAKF_CTRL_C)
 			    {
 			        if (!CheckIO(&timerio->tr_node)) AbortIO(&timerio->tr_node);
@@ -142,7 +201,8 @@ int main (int argc, char ** argv)
 	    {
 	    	PrintFault(ERROR_NO_FREE_STORE,"Wait");
 		ERROR(RETURN_FAIL);
-	    } else if (!devok)
+	    }
+	    else if (!devok)
 	    {
 	        puts("Wait: Could not open timer.device!");
 		ERROR(RETURN_FAIL);
@@ -153,7 +213,10 @@ int main (int argc, char ** argv)
     } /* if (delay > 0) */
 
 end:
-    if (rda) FreeArgs(rda);
-    
+    if (rda)
+    {
+	FreeArgs(rda);
+    }
+
     return error;
 }
