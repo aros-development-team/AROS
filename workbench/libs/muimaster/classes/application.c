@@ -238,7 +238,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
+//    D(bug("muimaster.library/application.c: Message Port created at 0x%lx\n",data->app_GlobalInfo.mgi_UserPort));
 
     /* Setup timer stuff */
     if (!(data->app_TimerPort = CreateMsgPort()))
@@ -295,6 +295,9 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    if (tag->ti_Data) DoMethod(obj,OM_ADDMEMBER,tag->ti_Data);
 	    else bad_childs = TRUE;
 	    break;
+	case MUIA_Application_Menustrip:
+	    data->app_Menustrip = (Object*)tag->ti_Data;
+	    break;
 	}
     }
 
@@ -340,6 +343,9 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_WindowFamily)
 	MUI_DisposeObject(data->app_WindowFamily);
+
+    if (data->app_Menustrip)
+	MUI_DisposeObject(data->app_Menustrip);
 
     /* free timer stuff */
     if (data->app_TimerReq)
@@ -467,6 +473,9 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 	return(TRUE);
     case MUIA_Application_WindowList:
 	return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
+    case MUIA_Application_Menustrip:
+	STORE = (ULONG)data->app_Menustrip;
+	return 1;
     }
 
     /* our handler didn't understand the attribute, we simply pass
