@@ -44,7 +44,7 @@ struct MUI_FrameadjustData
 
 static Object*MakeSpacingSlider (void)
 {
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
+    Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 9);
     set(obj, MUIA_CycleChain, 1);
     return obj;
 }
