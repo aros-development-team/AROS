@@ -4,12 +4,16 @@ CURDIR=workbench/libs
 
 include $(TOP)/config/make.cfg
 
+ifeq ($(FLAVOUR),native)
+SUBDIRS=diskfont gadtools icon iffparse
+else
 SUBDIRS=mathieeesptrans \
 	mathtrans \
 	diskfont \
 	gadtools \
 	icon \
 	iffparse
+endif
 
 OBJDIR = $(GENDIR)/workbench/libs
 FILES = dummy
