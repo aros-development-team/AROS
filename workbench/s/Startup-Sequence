@@ -39,7 +39,6 @@ Run <NIL: >NIL: ConClip
 
 Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
 
-
 ; -- BEGIN "AROS under construction" section -------------------------
 
 SetClock LOAD
@@ -60,9 +59,6 @@ EndIf
 
 Assign FDSK: SYS:DiskImages
 ;Mount FDSK0:
-
-; Install a Workbench screen background pattern.
-Run <NIL: >NIL: ScreenPattern
 
 PATH SYS:Demos ADD QUIET
 
