@@ -2,6 +2,8 @@
 include $(TOP)/config/make.cfg
 
 INCSUBDIRS :=	aros \
+	        aros/c++ \
+		aros/c++/exec \
 		clib \
 		datatypes \
 		defines \
@@ -27,7 +29,7 @@ INCSUBDIRS :=	aros \
 		utility \
 		workbench
 
-INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h))
+INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp))
 INCLUDES      := $(filter-out rexx/rexxcall-%.h,$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
@@ -60,6 +62,12 @@ $(INCDIR)/%.h : %.h
 	@$(CP) $< $@
 
 $(GENINCDIR)/%.h : %.h
+	@$(CP) $< $@
+
+$(INCDIR)/%.hpp : %.hpp
+	@$(CP) $< $@
+
+$(GENINCDIR)/%.hpp : %.hpp
 	@$(CP) $< $@
 
 setup : $(INCL_DIRS)
