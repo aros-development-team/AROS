@@ -18,8 +18,6 @@
 #include "datatypes_intern.h"
 #include <clib/boopsistubs.h>
 
-#undef DEBUG
-#define DEBUG 1
 #include <aros/debug.h>
 
 /************************** ASCII/BINARY RECOGNITION *************************/

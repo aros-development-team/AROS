@@ -13,8 +13,6 @@
 #include <intuition/intuition.h>
 #include "datatypes_intern.h"	/* Must be after <intuition/intuition.h> */
 
-#undef DEBUG
-#define DEBUG 1
 #include <aros/debug.h>
 
 /*****************************************************************************

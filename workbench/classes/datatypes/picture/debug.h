@@ -10,8 +10,6 @@
 
 #ifdef __AROS__
 
-#undef DEBUG
-#define DEBUG 1
 #include <aros/debug.h>
 
 #else /* not __AROS__ */
