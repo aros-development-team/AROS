@@ -176,6 +176,12 @@
 #   define ZUNE_POPLIST_DESC
 #endif
 
+#if ZUNE_BUILTIN_CRAWLING
+#   define ZUNE_CRAWLING_DESC (&_MUI_Crawling_desc),
+#else
+#   define ZUNE_CRAWLING_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
