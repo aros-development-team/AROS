@@ -26,17 +26,12 @@ INCSUBDIRS :=	aros \
 		workbench
 
 INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h))
-DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
-# The includes target points back to config/$(ARCH)/mmakefile:
-#MM includes : setup-includes includes-$(ARCH)
-includes :
-	@$(NOP)
-
+#MM- includes : setup-includes includes-$(ARCH)
 #MM includes-copy : includes-generate
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
-	@$(NOP)
 
 $(INCDIR)/%.h : %.h
 	@$(CP) $< $@
@@ -46,8 +41,8 @@ $(GENINCDIR)/%.h : %.h
 
 #MM
 setup-includes :
-	@$(FOR) dir in $(INCDIR)         \
-		$(foreach f,$(INCSUBDIRS),$(INCDIR)/$(f)) \
+	@$(FOR) dir in $(AROS_INCLUDES)         \
+		$(foreach f,$(INCSUBDIRS),$(AROS_INCLUDES)/$(f)) \
 		$(GENINCDIR) \
 		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
 	; do \
