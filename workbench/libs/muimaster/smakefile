@@ -43,6 +43,7 @@ CLASSESOBJS= \
   objs/classes/group.o \
   objs/classes/notify.o \
   objs/classes/numeric.o \
+  objs/classes/string.o \
   objs/classes/slider.o \
   objs/classes/window.o \
   objs/classes/text.o
@@ -179,6 +180,9 @@ objs/classes/window.o: classes/window.c
 
 objs/classes/group.o: classes/group.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
+
+objs/classes/string.o: classes/string.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/string.c objname=$@
 
 objs/classes/text.o: classes/text.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/text.c objname=$@
