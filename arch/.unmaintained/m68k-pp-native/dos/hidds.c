@@ -175,10 +175,9 @@ void hidd_demo(struct ExecBase * SysBase)
 	    MoveWindow(win,0,-1);
 	    y--;
 	  }
-	  while (1) {}
 	}
 
-#if 0
+#if 1
 	if (IntuitionBase)
 	{
 	  struct Screen	 *screen;
@@ -192,7 +191,7 @@ void hidd_demo(struct ExecBase * SysBase)
 		{WA_Width,			640},
 		{WA_Height,			100},
 		{WA_Left,			  0},
-		{WA_Top,			379},
+		{WA_Top,			 79},
 		{WA_MinWidth,                   200},
 		{WA_MinHeight,                  100},
 		{WA_MaxWidth,                   640},
@@ -253,7 +252,7 @@ void hidd_demo(struct ExecBase * SysBase)
 			  sprintf(s, "Mouse: %4d, %4d", mx, my);
 
 			  WhitePrint(win2->RPort, s, 80, GfxBase);
-#if 0			  
+#if 0
 			  mx &= 511;
 			  my &= 255;
 			  
