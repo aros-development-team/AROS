@@ -3,9 +3,11 @@
     $Id$
 */
 
+#include <string.h>
 #include <clib/alib_protos.h>
 #include <intuition/classusr.h>
 #include <graphics/gfxmacros.h>
+#include <cybergraphx/cybergraphics.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -14,6 +16,8 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 #include "support.h"
+
+#include "debug.h"
 
 /*****************************************************************************
 
@@ -123,8 +127,8 @@
         }
         
 	if (disabled)
-#ifdef __AROS__
 	{
+#ifdef __AROS__
 #if 0
             /*
                 This aproach might be faster *provided* that the buffer is
@@ -166,18 +170,16 @@
             if (buffer != NULL)
             {
                 memset(buffer, 0xAA, width * height * sizeof(LONG));
-                
+
                 WritePixelArrayAlpha
                 (
                     buffer, 0, 0, width * sizeof(LONG), 
                     _rp(obj), _left(obj), _top(obj), width, height, 0
                 );
-                
                 FreeVec(buffer);
-            }
+            }   else
 #endif
-            else
-#endif /* __AROS__ */
+#endif
             {
                 /* fallback */
                 const static UWORD pattern[] = { 0x8888, 0x2222, };
