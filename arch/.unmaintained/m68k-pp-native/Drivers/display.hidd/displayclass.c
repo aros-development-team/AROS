@@ -773,7 +773,7 @@ static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /********************  init_displayclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_Display_METHODS 5
+#define NUM_Display_METHODS 4 /* 5 */
 
 OOP_Class *init_displayclass (struct display_staticdata *xsd)
 {
@@ -790,7 +790,7 @@ OOP_Class *init_displayclass (struct display_staticdata *xsd)
     struct OOP_MethodDescr displayhidd_descr[NUM_Display_METHODS + 1] = 
     {
     	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap},
-	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
+/*	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},*/
 /* stegerg */
 	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape},
 	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos},
