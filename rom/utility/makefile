@@ -46,8 +46,9 @@ FUNCTIONS := \
 # END_DESC{localmakevar}
 
 ASM_PATH := $(TOP)/config/$(KERNEL)
+ARCH_PATH := $(TOP)/config/$(ARCH)
 
-ASM_FILES_TRY := $(foreach f,$(FUNCTIONS),$(ASM_PATH)/$(f).s)
+ASM_FILES_TRY := $(foreach f,$(FUNCTIONS),$(ASM_PATH)/$(f).[cs] $(ARCH_PATH)/$(f).[cs])
 ASM_FILES_EXIST := $(wildcard $(ASM_FILES_TRY))
 ASM_FILES := $(basename $(notdir $(ASM_FILES_EXIST)))
 
