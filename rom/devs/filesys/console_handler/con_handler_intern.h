@@ -14,10 +14,6 @@
 #include <dos/dosextens.h>
 #include <hidd/hidd.h>
 
-/* POSIX includes */
-#include <sys/types.h>
-#include <dirent.h>
-
 /*
 ** stegerg:
 **
