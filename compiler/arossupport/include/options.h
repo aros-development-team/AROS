@@ -59,8 +59,8 @@
    POSIX operating system), this should be set to 0 to simplify the resulting
    code. */
 #ifndef PassThroughErrnos
-/*#   define PassThroughErrnos	0*/
-#   define PassThroughErrnos	0x40000000
+#   define PassThroughErrnos	0
+/* #   define PassThroughErrnos	0x40000000 */
 #endif
 
 /******************************************************************************
