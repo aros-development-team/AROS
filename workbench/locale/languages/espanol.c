@@ -271,17 +271,20 @@ static const STRPTR __spanish_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Lunes", "Martes", "Miércoles", "Jueves", "Viernes",
-    "Sábado", "Domingo",
+
+#warning: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "domingo", "lunes", "martes", "miércoles", "jueves",
+    "viernes", "sábado",
 
     /* Abbreviated days of the week */
-    "lun", "mar", "mie", "jue", "vie", "sab", "dom",
+    "dom", "lun", "mar", "mie", "jue", "vie", "sab",
 
     /* Months of the year */
-    "Enero", "Febrero", "Marzo",
-    "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre",
-    "Octubre", "Noviembre", "Diciembre",
+    "enero", "febrero", "marzo",
+    "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre",
+    "octubre", "noviembre", "diciembre",
 
     /* Abbreviated months of the year */
     "ene", "feb", "mar", "abr", "may", "jun",

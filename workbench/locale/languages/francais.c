@@ -271,11 +271,14 @@ static const STRPTR __french_strings[] =
 	In English this would be Sunday, this depends upon the settings
 	of Locale->CalendarType.
     */
-    "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi",
-    "Samedi", "Dimanche",
+
+#warning: stegerg: I think this must always start with Sunday and not what comment above says
+
+    "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi",
+    "Vendredi", "Samedi",
 
     /* Abbreviated days of the week */
-    "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim",
+    "Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam",
 
     /* Months of the year */
     "Janvier", "Février", "Mars",
