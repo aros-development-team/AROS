@@ -7,34 +7,6 @@ MSG_ERROR_CANT_CREATE_APPLICATION
 *** Can't create application object.
 ; Can't create application object.
 ;
-MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
-; Can't open %s V%ld!\n
-;
-MSG_CANT_LOCK_SCR
-Kann public Screen nicht locken!
-; Can't lock public screen!
-;
-MSG_CANT_GET_DRI
-Kann DrawInfo nicht ermitteln!
-; Can't get DrawInfo!
-;
-MSG_CANT_GET_VI
-Kann VisualInfo nicht ermitteln!
-; Can't get VisualInfo!
-;
-MSG_CANT_CREATE_GADGET
-Kann Gadgets nicht erzeugen!
-; Can't create gadgets!
-;
-MSG_CANT_CREATE_MENUS
-Kann Menus nicht erzeugen!
-; Can't create menus!
-;
-MSG_CANT_CREATE_WIN
-Kann Fenster nicht erzeugen!
-; Can't create window!
-;
 MSG_CANT_CREATE_REQ
 Kann Datei Requester nicht erzeugen!
 ; Can't open create filerequester!

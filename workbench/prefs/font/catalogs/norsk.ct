@@ -7,34 +7,6 @@ MSG_ERROR_CANT_CREATE_APPLICATION
 *** Can't create application object.
 ; Can't create application object.
 ;
-MSG_CANT_OPEN_LIB
-Kan ikke åpne %s V%ld!\n
-; Can't open %s V%ld!\n
-;
-MSG_CANT_LOCK_SCR
-Kan ikke låse offentlig skjerm!
-; Can't lock public screen!
-;
-MSG_CANT_GET_DRI
-Kan ikke hente DrawInfo!
-; Can't get DrawInfo!
-;
-MSG_CANT_GET_VI
-Kan ikke hente VisualInfo!
-; Can't get VisualInfo!
-;
-MSG_CANT_CREATE_GADGET
-Kan ikke lage knapper!
-; Can't create gadgets!
-;
-MSG_CANT_CREATE_MENUS
-Kan ikke lage menyer!
-; Can't create menus!
-;
-MSG_CANT_CREATE_WIN
-Kan ikke åpne vindu!
-; Can't create window!
-;
 MSG_CANT_CREATE_REQ
 Kan ikke åpne fildialog!
 ; Can't open create filerequester!
