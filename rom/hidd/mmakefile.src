@@ -39,6 +39,8 @@ ALL_FILES := $(FILES)
 
 %prepare_shlib hiddclass $(SHARED_HIDDCLASS)
 
+%mkfunctable_arch
+
 ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
@@ -49,7 +51,7 @@ ifndef OSMODULE
 OSMODULE := $(LIBNAME).$(LIBPOST)
 endif
 
-OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS) functable,$(OBJDIR)/$(f).o)
 ALL_OBJS := $(OBJS) $(INITFUNC) $(ENDFUNC)
 
 $(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
