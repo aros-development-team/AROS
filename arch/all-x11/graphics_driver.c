@@ -369,7 +369,11 @@ int GetXWindow (struct RastPort * rp, struct GfxBase * GfxBase)
 void SetGC (struct RastPort * rp, GC gc, struct GfxBase * GfxBase)
 {
     if (GetDriverData(rp)->dd_GC)
+    {
+LX11
 	XFreeGC (sysDisplay, GetDriverData(rp)->dd_GC);
+UX11
+    }
 
     GetDriverData(rp)->dd_GC = gc;
 }
@@ -1162,9 +1166,9 @@ void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 
     if ((gc = GetGC (rp, GfxBase)))
     {
-LX11
+/* LX11
 	XFreeGC (sysDisplay, gc);
-UX11
+UX11 */
 	SetGC (rp, NULL, GfxBase);
     }
 
