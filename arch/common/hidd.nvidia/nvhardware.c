@@ -77,11 +77,21 @@
 #include "nv_local.h"
 #include "nv_dma.h"
 
-static struct staticdata *sd;
-
 #define SysBase			(sd->sysbase)
 #define OOPBase			(sd->oopbase)
 #define UtilityBase		(sd->utilitybase)
+
+static inline __attribute__((always_inline))
+    ULONG pciReadLong(struct staticdata *sd,
+	UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+{
+    struct pHidd_PCIDriver_ReadConfigLong __msg = {
+	sd->mid_ReadLong,
+	bus, dev, sub, reg
+    }, *msg = &__msg;
+    
+    return (ULONG)OOP_DoMethod(sd->pcidriver, (OOP_Msg)msg);
+}
 
 void nv4GetConfig(struct staticdata *sd)
 {
@@ -127,11 +137,11 @@ void nv10GetConfig (struct staticdata *sd)
 #endif
 
     if((pNv->Chipset & 0xffff) == 0x01a0) {
-//        int amt = pciReadLong(pciTag(0, 0, 1), 0x7C);
-//        pNv->RamAmountKBytes = (((amt >> 6) & 31) + 1) * 1024;
+        int amt = pciReadLong(sd, 0, 0, 1, 0x7C);
+        pNv->RamAmountKBytes = (((amt >> 6) & 31) + 1) * 1024;
     } else if((pNv->Chipset & 0xffff) == 0x01f0) {
-//        int amt = pciReadLong(pciTag(0, 0, 1), 0x84);
-//        pNv->RamAmountKBytes = (((amt >> 4) & 127) + 1) * 1024;
+        int amt = pciReadLong(sd, 0, 0, 1, 0x84);
+        pNv->RamAmountKBytes = (((amt >> 4) & 127) + 1) * 1024;
     } else {
         pNv->RamAmountKBytes = (pNv->PFB[0x020C/4] & 0xFFF00000) >> 10;
     }
@@ -811,16 +821,16 @@ static void nForceUpdateArbitrationSettings (
     ULONG      pixelDepth,
     ULONG     *burst,
     ULONG     *lwm,
+    struct staticdata *sd,
     NVPtr        pNv
 )
 {
-#if 0
     nv10_fifo_info fifo_data;
     nv10_sim_state sim_data;
     unsigned int M, N, P, pll, MClk, NVClk;
     unsigned int uMClkPostDiv, memctrl;
 
-    uMClkPostDiv = (pciReadLong(pciTag(0, 0, 3), 0x6C) >> 8) & 0xf;
+    uMClkPostDiv = (pciReadLong(sd, 0, 0, 3, 0x6C) >> 8) & 0xf;
     if(!uMClkPostDiv) uMClkPostDiv = 4; 
     MClk = 400000 / uMClkPostDiv;
 
@@ -830,20 +840,20 @@ static void nForceUpdateArbitrationSettings (
     sim_data.pix_bpp        = (char)pixelDepth;
     sim_data.enable_video   = 0;
     sim_data.enable_mp      = 0;
-    sim_data.memory_type    = (pciReadLong(pciTag(0, 0, 1), 0x7C) >> 12) & 1;
+    sim_data.memory_type    = (pciReadLong(sd, 0, 0, 1, 0x7C) >> 12) & 1;
     sim_data.memory_width   = 64;
 
-    memctrl = pciReadLong(pciTag(0, 0, 3), 0x00) >> 16;
+    memctrl = pciReadLong(sd, 0, 0, 3, 0x00) >> 16;
 
     if((memctrl == 0x1A9) || (memctrl == 0x1AB) || (memctrl == 0x1ED)) {
         int dimm[3];
 
-        dimm[0] = (pciReadLong(pciTag(0, 0, 2), 0x40) >> 8) & 0x4F;
-        dimm[1] = (pciReadLong(pciTag(0, 0, 2), 0x44) >> 8) & 0x4F;
-        dimm[2] = (pciReadLong(pciTag(0, 0, 2), 0x48) >> 8) & 0x4F;
+        dimm[0] = (pciReadLong(sd, 0, 0, 2, 0x40) >> 8) & 0x4F;
+        dimm[1] = (pciReadLong(sd, 0, 0, 2, 0x44) >> 8) & 0x4F;
+        dimm[2] = (pciReadLong(sd, 0, 0, 2, 0x48) >> 8) & 0x4F;
 
         if((dimm[0] + dimm[1]) != dimm[2]) {
-             ErrorF("WARNING: "
+             bug("WARNING: "
               "your nForce DIMMs are not arranged in optimal banks!\n");
         } 
     }
@@ -863,7 +873,6 @@ static void nForceUpdateArbitrationSettings (
         while (b >>= 1) (*burst)++;
         *lwm   = fifo_data.graphics_lwm >> 3;
     }
-#endif
 }
 
 /****************************************************************************\
@@ -967,6 +976,7 @@ static void CalcVClock2Stage (
  * mode state structure.
  */
 void NVCalcStateExt (
+    struct staticdata *sd,
     NVPtr pNv,
     RIVA_HW_STATE *state,
     int            bpp,
@@ -977,9 +987,6 @@ void NVCalcStateExt (
     int		   flags 
 )
 {
-D(bug("NVCalcStateExt(%p,%p,%d,%d,%d,%d,%d,%d)\n",
-    pNv, state, bpp, width, hDisplaySize, height, dotClock, flags));
-
     ULONG pixelDepth, VClk;
     /*
      * Save mode parameters.
@@ -992,7 +999,6 @@ D(bug("NVCalcStateExt(%p,%p,%d,%d,%d,%d,%d,%d)\n",
      */
     pixelDepth = (bpp + 1)/8;
 
-    D(bug("pixeldepth = %d\n", pixelDepth));
     if(pNv->twoStagePLL)
         CalcVClock2Stage(dotClock, &VClk, &state->pll, &state->pllB, pNv);
     else
@@ -1027,6 +1033,7 @@ D(bug("NVCalcStateExt(%p,%p,%d,%d,%d,%d,%d,%d)\n",
                                           pixelDepth * 8,
                                          &(state->arbitration0),
                                          &(state->arbitration1),
+					  sd,
                                           pNv);
             } else {
                 nv10UpdateArbitrationSettings(VClk, 
@@ -1048,11 +1055,9 @@ D(bug("NVCalcStateExt(%p,%p,%d,%d,%d,%d,%d,%d)\n",
     }
     if(bpp != 8) /* DirectColor */
 	state->general |= 0x00000030;
-    D(bug("state->config = %08x\n", state->config));
 
     state->repaint0 = (((width / 8) * pixelDepth) & 0x700) >> 3;
     state->pixel    = (pixelDepth > 2) ? 3 : pixelDepth;
-    D(bug("state->pixel = %d\n,",state->pixel));
 }
 
 void NVLoadStateExt (
@@ -1062,23 +1067,6 @@ void NVLoadStateExt (
 {
     int i;
 
-    D(bug("LoadStateExt:\n  bpp=%d\tbitsPerPixel=%d\twidth=%d\theight=%d\n",
-	state->bpp, state->bitsPerPixel, state->width, state->height));
-    D(bug("  interlace=%d\trepaint0=%d\trepaint1=%d\tscreen=%d\n",
-	state->interlace, state->repaint0, state->repaint1, state->screen));
-    D(bug("  scale=0x%x\tdither=%d\textra=%d\tpixel=%d\n",
-	state->scale, state->dither, state->extra, state->pixel));
-    D(bug("  horiz=%d\tarbitration0=%d\tarbitration1=%d\n",
-	state->horiz, state->arbitration0, state->arbitration1));
-    D(bug("  vpll=%d\tvpll2=%d\tvpllB=%d\tvpll2B=%d\n",
-	state->vpll, state->vpll2, state->vpllB, state->vpll2B));
-    D(bug("  general=%x\tcrtcOwner=%d\thead=%d\thead2=%d\n",
-	state->general, state->crtcOwner, state->head, state->head2));
-    D(bug("  config=%x\tcursorConfig=%x\toffset=%x\tpitch=%x\n",
-	state->config, state->cursorConfig, state->offset, state->pitch));
-    D(bug("  pll=%d\tpllB=%d\ttimingH=%d\ttimingV=%d\n",
-	state->pll, state->pllB, state->timingH, state->timingV));
-    
     pNv->PMC[0x0140/4] = 0x00000000;
     pNv->PMC[0x0200/4] = 0xFFFF00FF;
     pNv->PMC[0x0200/4] = 0xFFFFFFFF;
@@ -1553,13 +1541,12 @@ static void InitBaseRegs(struct staticdata *sd, struct CardState *card, Sync *mo
 #define SetBit(n) (1<<(n))
 #define Set8Bits(value) ((value)&0xff)
 
-void InitMode(struct staticdata *sdd, struct CardState *state,
+void InitMode(struct staticdata *sd, struct CardState *state,
     ULONG width, ULONG height, UBYTE bpp, ULONG pixelc, ULONG base,
     ULONG HDisplay, ULONG VDisplay, 
     ULONG HSyncStart, ULONG HSyncEnd, ULONG HTotal,
     ULONG VSyncStart, ULONG VSyncEnd, ULONG VTotal)
 {
-    sd = sdd;
     D(bug("[NVidia] Init %dx%dx%d @%x mode\n", width, height, bpp, base));
 
     ULONG   HBlankStart, HBlankEnd, VBlankStart, VBlankEnd, OrgHDisplay = HDisplay;
@@ -1646,7 +1633,7 @@ void InitMode(struct staticdata *sdd, struct CardState *state,
 	sd->Card.CURSOR = (ULONG*)(sd->Card.FrameBuffer + sd->Card.CursorStart);
 
 //    NVLockUnlock(sd, 0);
-    NVCalcStateExt(&sd->Card, state, bpp, width, OrgHDisplay, height, pixelc, 0);
+    NVCalcStateExt(sd, &sd->Card, state, bpp, width, OrgHDisplay, height, pixelc, 0);
 
     state->scale = sd->Card.PRAMDAC[0x0848/4] & 0xfff000ff; 
     state->cursorConfig = 0x00000100;
@@ -1913,8 +1900,6 @@ LOCK_HW
     sd->src_offset = pNv->CurrentState->offset;
     sd->dst_offset = pNv->CurrentState->offset;
 
-    D(bug("width=%d, bitsPerPixel=%d, pitch=%d\n", pNv->CurrentState->width,
-	pNv->CurrentState->bitsPerPixel, pitch));
     pNv->dmaBase = (ULONG*)(&pNv->FrameBuffer[pNv->FbUsableSize]);
 
     for(i = 0; i < SKIPS; i++)
