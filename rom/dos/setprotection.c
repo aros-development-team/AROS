@@ -19,7 +19,7 @@
 	AROS_LH2(BOOL, SetProtection,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name,    D1),
+	AROS_LHA(CONST_STRPTR, name,    D1),
 	AROS_LHA(ULONG,  protect, D2),
 
 /*  LOCATION */

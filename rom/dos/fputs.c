@@ -16,8 +16,8 @@
 	AROS_LH2(LONG, FPuts,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR,   file,   D1),
-	AROS_LHA(STRPTR, string, D2),
+	AROS_LHA(BPTR,         file,   D1),
+	AROS_LHA(CONST_STRPTR, string, D2),
 
 /*  LOCATION */
 

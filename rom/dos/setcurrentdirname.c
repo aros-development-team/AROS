@@ -19,7 +19,7 @@
 	AROS_LH1(BOOL, SetCurrentDirName,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 93, Dos)
