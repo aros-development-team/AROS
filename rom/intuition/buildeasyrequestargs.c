@@ -233,6 +233,8 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
     if (!dri)
 	return;
 
+    SetFont(req->RPort, dri->dri_Font);
+    
     /* draw background pattern */
     SetABPenDrMd(req->RPort,
 		 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],

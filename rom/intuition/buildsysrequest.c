@@ -227,6 +227,8 @@ static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
     if (!dri)
 	return;
 
+    SetFont(req->RPort, dri->dri_Font);
+
     /* draw background pattern */
     SetABPenDrMd(req->RPort,
 		 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
