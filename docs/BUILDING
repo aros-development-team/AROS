@@ -1,3 +1,4 @@
+
 Issues with tools:
 o Do not use GNU automake version 1.4-p5, 1.5 or 1.6 as there it has a 
   bug which makes it impossible to compile AROS. Version 1.4-p4 works 
