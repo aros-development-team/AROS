@@ -70,6 +70,7 @@
 
   struct Layer * first, *_l, *lparent;
   struct Region * newshape = NewRegion(), * oldshape, r, rtmp, cutnewshape;
+  struct Region *clipregion;
   struct Rectangle rectw, recth;
 
   InitRegion(&r);
@@ -77,6 +78,8 @@
   InitRegion(&cutnewshape);
 
   LockLayers(l->LayerInfo);
+
+  clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
 
   /*
    * First Create the new region of the layer:
@@ -350,6 +353,9 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
   }
 
   ClearRegion(&r);
+
+  if (clipregion)
+    _InternalInstallClipRegion(l, clipregion, 0, 0, LayersBase);
 
   UnlockLayers(l->LayerInfo);
 
