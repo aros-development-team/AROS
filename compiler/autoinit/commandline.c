@@ -123,7 +123,7 @@ int __initcommandline(void)
     /*
      * get program name
      */
-     __argv[0] = __getprogramname();
+     __argv[0] = FindTask(NULL)->tc_Node.ln_Name;
 
      if (!__argv[0])
          return 0;
@@ -149,14 +149,12 @@ void __exitcommandline(void)
     if (WBenchMsg != NULL)
         return;
 
-    if (__argv) {
-	if (__argv[0])
-	    FreeVec(__argv[0]);
+    if (__argv)
 	FreeMem(__argv, sizeof (char *) * (__argmax+1));
-    }
 
     if (__args)
 	FreeMem(__args, __argsize+1);
 }
+
 ADD2INIT(__initcommandline, 0);
 ADD2EXIT(__exitcommandline, 0);

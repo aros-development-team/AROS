@@ -29,7 +29,6 @@ LIBBASEFILES := \
 
 # libraries_nolibs must come BEFORE libraries
 LIBHANDLINGFILES := \
-        __getprogramname \
 	__showerror \
 	functions \
 	commandline \
