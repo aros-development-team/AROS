@@ -134,7 +134,7 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
 
     /* Redraw ourself? */
     if ((retval) && (msg->MethodID != OM_NEW) &&
-        (OCLASS(obj) == cl)) {
+        ((msg->MethodID != OM_UPDATE) || (OCLASS(obj) == cl))) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
 	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
