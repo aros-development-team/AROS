@@ -27,7 +27,7 @@
 
 extern struct Library *MUIMasterBase;
 
-//#define MYDEBUG 0
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 
@@ -806,9 +806,8 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 				    	if (data->xpixel == -1)
 				    	{
 					    struct ZTextLine *line;
-					    struct ZTextChunk *chunk;
 					    int offx,len;
-					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len);
+					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, NULL, &offx, &len);
 					    data->xpixel = offx;
 					}
 
@@ -830,9 +829,8 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 				    	if (data->xpixel == -1)
 				    	{
 					    struct ZTextLine *line;
-					    struct ZTextChunk *chunk;
 					    int offx,len;
-					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len);
+					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, NULL, &offx, &len);
 					    data->xpixel = offx;
 					}
 
