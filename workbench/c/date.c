@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Date CLI command
@@ -15,7 +15,7 @@
 #include <dos/datetime.h>
 #include <devices/timer.h>
 
-static const char version[] = "$VER: date 41.3 (4.7.1997)\n";
+static const char version[] = "$VER: date 41.4 (5.3.2000)\n";
 
 #define ARG_STRING "DAY,DATE,TIME,TO=VER/K"
 #define ARG_DAY 0
@@ -29,26 +29,38 @@ int setdate(STRPTR day, STRPTR date, STRPTR time)
     int                error = RETURN_OK;
     BYTE               timererror;
     struct timerequest timerReq;
+    struct DateTime    dt;
 
     timererror = OpenDevice(TIMERNAME, UNIT_MICROHZ, 
 			    (struct IORequest *)&timerReq, 0L);
     if(timererror == 0)
     {
-#warning FIXME:
-	/*	timerReq.tr_time.tv_secs = */
+	dt.dat_StrDay  = day;
+	dt.dat_StrDate = date;
+	dt.dat_StrTime = time;
+
+	if(StrToDate(&dt) == 0)
+	{
+	    PutStr("***Bad args:\n- use DD-MMM-YY or <dayname> or yesterday "
+		   "etc. to set date\n HH:MM:SS or HH:MM to set time\n");
+	    CloseDevice((struct IORequest *)&timerReq);
+	    exit(RETURN_FAIL);
+	}
+
+	timerReq.tr_time.tv_secs = dt.dat_Stamp.ds_Days*60*60*24 +
+	                           dt.dat_Stamp.ds_Minute*60 +
+	                           dt.dat_Stamp.ds_Tick / TICKS_PER_SECOND;
 	timerReq.tr_time.tv_micro = 0;
 	timerReq.tr_node.io_Command = TR_SETSYSTIME;
 	timerReq.tr_node.io_Flags |= IOF_QUICK;
 
 	DoIO((struct IORequest *)&timerReq);
 
-	/* TODO */
-
         CloseDevice((struct IORequest *)&timerReq);
     } 
     else
     {
-        VPrintf("Date: Error opening timer.device\n", NULL);
+        PutStr("Date: Error opening timer.device\n");
         error = RETURN_FAIL;
     }
     
