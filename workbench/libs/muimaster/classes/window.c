@@ -1413,7 +1413,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 
 	    if (data->wd_Menu)
 	    {
-		if (MENUNUM(imsg->Code != NOMENU) && ITEMNUM(imsg->Code) != NOITEM)
+		if (MENUNUM(imsg->Code) != NOMENU && ITEMNUM(imsg->Code) != NOITEM)
 		{
 		    struct MenuItem *item = ItemAddress(data->wd_Menu,imsg->Code);
 		    if (item)
