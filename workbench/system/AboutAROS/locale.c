@@ -6,6 +6,7 @@
     $Id$
 */
 
+#include <aros/symbolsets.h>
 #include <exec/types.h>
 #include <proto/locale.h>
 
@@ -16,12 +17,12 @@
 #define CATALOG_VERSION  0
 
 /*** Variables **************************************************************/
-struct Catalog *catalog;
+static struct Catalog *catalog;
 
 
 /*** Functions **************************************************************/
 /* Main *********************************************************************/
-STRPTR _(ULONG id)
+CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
@@ -56,4 +57,5 @@ void Locale_Deinitialize(void)
     if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
 
-
+ADD2INIT(Locale_Initialize,   90);
+ADD2EXIT(Locale_Deinitialize, 90);
