@@ -113,15 +113,6 @@ struct uio_data
     struct MsgPort		* ud_Port;
 };
 
-struct uioMessage
-{
-    struct Message Message;
-    int 	   fd;
-    int 	   mode;
-    int 	   result;
-    void *callback;
-    void *callbackdata;
-};
 
 AROS_UFH5 (void, SigIO_IntServer,
     AROS_UFHA (ULONG             ,dummy,  D0),

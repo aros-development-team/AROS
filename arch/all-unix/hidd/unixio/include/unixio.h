@@ -19,6 +19,16 @@
 #define CLID_Hidd_UnixIO "unixio.hidd"
 #define IID_Hidd_UnixIO	"I_Hidd_UnixIO"
 
+struct uioMessage
+{
+    struct Message Message;
+    int 	   fd;
+    int 	   mode;
+    int 	   result;
+    void *callback;
+    void *callbackdata;
+};
+
 
 enum {
     moHidd_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
