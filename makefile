@@ -303,7 +303,10 @@ includes: \
 	    $(CLIBDIR)/console_protos.h \
 	    $(CLIBDIR)/icon_protos.h \
 	    $(CLIBDIR)/iffparse_protos.h \
-	    $(CLIBDIR)/mathffp_protos.h
+	    $(CLIBDIR)/mathffp_protos.h \
+	    $(CLIBDIR)/mathieeesingbas_protos.h \
+	    $(CLIBDIR)/mathieeesingtrans_protos.h \
+	    $(CLIBDIR)/mathtrans_protos.h
 
 $(CLIBDIR)/exec_protos.h: $(wildcard rom/exec/*.c) scripts/genprotos.h
 	$(GENPROTOS) Exec "$(TOP)" rom/exec/*.c
@@ -332,19 +335,26 @@ $(CLIBDIR)/console_protos.h: rom/devs/cdinputhandler.c \
 	    rom/devs/cdinputhandler.c rom/devs/rawkeyconvert.c
 
 $(CLIBDIR)/icon_protos.h: $(wildcard workbench/libs/icon/*.c) scripts/genprotos.h
-	$(GENPROTOS) Icon "$(TOP)" \
-	    workbench/libs/icon/*.c
+	$(GENPROTOS) Icon "$(TOP)" workbench/libs/icon/*.c
 
 $(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/genprotos.h
-	$(GENPROTOS) IFFParse "$(TOP)" \
-	    workbench/libs/iffparse/*.c
+	$(GENPROTOS) IFFParse "$(TOP)" workbench/libs/iffparse/*.c
 
 $(CLIBDIR)/mathffp_protos.h: $(wildcard rom/mathffp/*.c) scripts/genprotos.h
 	$(GENPROTOS) Mathffp "$(TOP)" rom/mathffp/*.c
 
+$(CLIBDIR)/mathtrans_protos.h: $(wildcard workbench/libs/mathtrans/*.c) scripts/genprotos.h
+	$(GENPROTOS) Mathtrans "$(TOP)" workbench/libs/mathtrans/*.c
+
+$(CLIBDIR)/mathieeesingbas_protos.h: $(wildcard rom/mathieeesingbas/*.c) scripts/genprotos.h
+	$(GENPROTOS) Mathieeespbas "$(TOP)" rom/mathieeesingbas/*.c
+
+$(CLIBDIR)/mathieeesingtrans_protos.h: $(wildcard workbench/libs/mathieeesptrans/*.c) scripts/genprotos.h
+	$(GENPROTOS) Mathieeesptrans "$(TOP)" workbench/libs/mathieeesptrans/*.c
+
 $(CLIBDIR)/diskfont_protos.h: $(wildcard workbench/libs/diskfont/*.c) scripts/genprotos.h
-	$(GENPROTOS) Diskfont "$(TOP)" \
-	    workbench/libs/diskfont/*.c
+	$(GENPROTOS) Diskfont "$(TOP)" workbench/libs/diskfont/*.c
+
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
 
