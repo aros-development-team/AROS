@@ -42,13 +42,13 @@ $(DEST)dist.src :
 	echo -e "*.html\n*.doc" > $@
 
 $(DEST)cgi-bin/dist.src:
-	echo -e "*.cgi" > $@
+	echo -e "*.cgi\n*.lib" > $@
 
 $(JOBDEST)dist.src $(DEST)autodocs/dist.src :
-	echo -e "*.html\n" > $@
+	echo -e "*.html" > $@
 
 $(JOBDEST)cgi-bin/dist.src:
-	echo -e "*.cgi" > $@
+	echo -e "*.cgi\n*.lib" > $@
 
 $(DEST)pics/dist.src:
 	echo -e "aros_logo.gif\nawd50.jpg\ndemowin.gif\nreadicon.gif\nbackground.gif" > $@
