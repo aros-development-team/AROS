@@ -56,12 +56,6 @@ struct IconEntry
     struct MinNode node;
     struct IconList_Entry entry;
 
-    /* the following could be removed because they are inside IconList_Entry */
-    char *filename;
-    char *label;
-    void *udata;
-    LONG type;
-
     struct DiskObject *dob; /* The icons disk objects */
 
     int x,y;
@@ -119,7 +113,9 @@ struct MUI_IconData
     ULONG last_mics;
     struct IconEntry *last_selected;
 
+    /* Notify stuff */
     struct IconList_Entry *drop_entry; /* the icon where the icons have been dropped */
+    struct IconList_Click icon_click;
 
     /* Render stuff */
 
@@ -155,13 +151,13 @@ static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
     DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
 #endif
 
-    if (icon->label)
+    if (icon->entry.label)
     {
-	txwidth = TextLength(_rp(obj),icon->label,strlen(icon->label));
+	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
 	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
 	ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
 	Move(_rp(obj),tx,ty);
-	Text(_rp(obj),icon->label,strlen(icon->label));
+	Text(_rp(obj),icon->entry.label,strlen(icon->entry.label));
     }
 }
 
@@ -175,9 +171,9 @@ static void IconList_GetIconRectangle(Object *obj, struct IconEntry *icon, struc
 
     GetIconRectangleA(NULL,icon->dob,NULL,rect,NULL);
 
-    if (icon->label)
+    if (icon->entry.label)
     {
-	txwidth = TextLength(_rp(obj),icon->label,strlen(icon->label));
+	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
 	tx = (icon->width - txwidth)/2;
 	if (tx < rect->MinX) rect->MinX = tx;
 	if (tx + txwidth - 1 > rect->MaxX) rect->MaxX = tx + txwidth - 1;
@@ -346,6 +342,7 @@ static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_IconList_Width: STORE = data->width; return 1;
 	case MUIA_IconList_Height: STORE = data->height; return 1;
 	case MUIA_IconList_IconsDropped: STORE = (ULONG)data->drop_entry; return 1;
+	case MUIA_IconList_Clicked: STORE = (ULONG)&data->icon_click; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
@@ -550,8 +547,8 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
     while ((node = (struct IconEntry*)RemTail((struct List*)&data->icon_list)))
     {
 	if (node->dob) FreeDiskObject(node->dob);
-	if (node->label) FreePooled(data->pool,node->label,strlen(node->label)+1);
-	if (node->filename) FreePooled(data->pool,node->filename,strlen(node->filename)+1);
+	if (node->entry.label) FreePooled(data->pool,node->entry.label,strlen(node->entry.label)+1);
+	if (node->entry.filename) FreePooled(data->pool,node->entry.filename,strlen(node->entry.filename)+1);
         FreePooled(data->pool,node,sizeof(struct IconEntry));
     }
 
@@ -590,30 +587,30 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 
     memset(entry,0,sizeof(struct IconEntry));
 
-    if (!(entry->filename = AllocPooled(data->pool,strlen(msg->filename)+1)))
+    if (!(entry->entry.filename = AllocPooled(data->pool,strlen(msg->filename)+1)))
     {
 	FreePooled(data->pool,entry,sizeof(struct IconEntry));
 	FreeDiskObject(dob);
 	return 0;
     }
 
-    strcpy(entry->filename,msg->filename);
+    strcpy(entry->entry.filename,msg->filename);
 
-    if (!(entry->label = AllocPooled(data->pool,strlen(msg->label)+1)))
+    if (!(entry->entry.label = AllocPooled(data->pool,strlen(msg->label)+1)))
     {
-    	FreePooled(data->pool,entry->filename,strlen(entry->filename)+1);
+    	FreePooled(data->pool,entry->entry.filename,strlen(entry->entry.filename)+1);
 	FreePooled(data->pool,entry,sizeof(struct IconEntry));
 	FreeDiskObject(dob);
 	return 0;
     }
 
-    strcpy(entry->label,msg->label);
+    strcpy(entry->entry.label,msg->label);
 
     GetIconRectangleA(NULL,dob,NULL,&rect,NULL);
 
     entry->dob = dob;
-    entry->udata = msg->udata;
-    entry->type = msg->type;
+    entry->entry.udata = msg->udata;
+    entry->entry.type = msg->type;
 
     entry->x = dob->do_CurrentX;
     entry->y = dob->do_CurrentY;
@@ -631,14 +628,14 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	if (entry->y < data->view_y) data->view_y = entry->y;
 	if (entry->y + entry->height - data->view_y > data->height) data->height = entry->y + entry->height - data->view_y;
     }
-    strcpy(entry->filename,msg->filename);
+    strcpy(entry->entry.filename,msg->filename);
 
     {
     	struct IconEntry *icon1, *icon2=NULL;
 	icon1 = List_First(&data->icon_list);
 	while (icon1)
 	{
-	    if (Stricmp(entry->label,icon1->label)<0) break;
+	    if (Stricmp(entry->entry.label,icon1->entry.label)<0) break;
 	    icon2 = icon1;
 	    icon1 = Node_Next(icon1);
 	}
@@ -700,6 +697,10 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				}
 				node = Node_Next(node);
 			    }
+
+			    data->icon_click.shift = !!(msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
+			    data->icon_click.entry = new_selected?&new_selected->entry:NULL;
+			    set(obj,MUIA_IconList_Clicked,&data->icon_click);
 
 			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == new_selected)
 			    {
@@ -782,10 +783,6 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 	    *msg->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
 	} else
 	{
-	    node->entry.filename = node->filename;
-	    node->entry.label = node->label;
-	    node->entry.type = node->type;
-	    node->entry.udata = node->udata;
 	    *msg->entry = &node->entry;
 	}
 	return 0;
@@ -801,9 +798,6 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
     {
 	if (node->selected)
 	{
-	    node->entry.filename = node->filename;
-	    node->entry.label = node->label;
-	    node->entry.udata = node->udata;
 	    *msg->entry = &node->entry;
 	    return 0;
 	}
@@ -917,9 +911,33 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
     } else
     {
     	data->drop_entry = NULL;
-    	set(obj, MUIA_IconList_IconsDropped, data->drop_entry); /* No notify */
+    	set(obj, MUIA_IconList_IconsDropped, data->drop_entry); /* Now notify */
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_UnselectAll
+**************************************************************************/
+static ULONG IconList_UnselectAll(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct IconEntry *node;
+
+    node = List_First(&data->icon_list);
+    while (node)
+    {
+	if (node->selected)
+	{
+	    node->selected = 0;
+	    data->update = 1;
+	    data->update_icon = node;
+	    MUI_Redraw(obj,MADF_DRAWUPDATE);
+	}
+	node = Node_Next(node);
+    }
+    data->first_selected = NULL;
+    return 1;
 }
 
 /**************************************************************************
@@ -962,6 +980,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
 	case MUIM_IconList_Clear: return IconList_Clear(cl,obj,(APTR)msg);
 	case MUIM_IconList_Add: return IconList_Add(cl,obj,(APTR)msg);
 	case MUIM_IconList_NextSelected: return IconList_NextSelected(cl,obj,(APTR)msg);
+	case MUIM_IconList_UnselectAll: return IconList_UnselectAll(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
