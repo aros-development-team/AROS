@@ -72,13 +72,13 @@
   if ((l->Flags & LAYERSUPER) != 0)
   {
     /* store the visible "stuff" to the superbitmap */
-    //SyncSBitMap(l);
+    SyncSBitMap(l);
     
     l->Scroll_X += dx;
     l->Scroll_Y += dy;
 
     /* show what's in the superbitmap */
-    //CopySBitMap(l);
+    CopySBitMap(l);
     return;
   }
   else
