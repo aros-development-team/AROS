@@ -260,5 +260,17 @@ functions for sending messages, copying, etc. between memory spaces. But
 since you're not expecting any old code to run in a fully separate space,
 some of today's bad habits wouldn't really be an issue.
 \end{new}
+\item
+
+\begin{new}{1.9.1998}
+By Sebastian Rittau: Maybe we could rewrite Installer as library, which
+provides functions that are currently contained in Installers language.
+This would allow programmers to easily write Installer scripts in their
+prefered programming language, instead of learning Installer's own 
+language.
+
+While doing this, we could also add methods to uninstall an installed
+package.
+\end{new}
 
 \end{itemize}
