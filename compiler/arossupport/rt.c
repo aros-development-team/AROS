@@ -133,7 +133,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_Init (
 
@@ -178,7 +178,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_Exit (
 
@@ -230,7 +230,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	IPTR RT_IntAdd (
 
@@ -318,7 +318,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	IPTR RT_IntCheck (
 
@@ -402,7 +402,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	IPTR RT_IntFree (
 
@@ -492,7 +492,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_IntEnter (
 
@@ -546,7 +546,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_IntLeave (
 
@@ -594,7 +594,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_ShowStack (
 
@@ -644,7 +644,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_ShowRTStack (
 
@@ -695,7 +695,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 /*****************************************************************************
 
     NAME */
-#include <aros/rt.h>
+	#include <aros/rt.h>
 
 	void RT_FreeResource (
 
