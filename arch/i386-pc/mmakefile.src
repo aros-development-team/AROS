@@ -1,4 +1,4 @@
- # $Id$
+# $Id$
 include $(TOP)/config/make.cfg
 
 OS_INCLUDES	:= -I$(GENINCDIR)
@@ -17,7 +17,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM- software-native-i386 : general-setup binary-native-i386 \
 #MM	    workbench-native-i386 demos contrib-native-i386
 
-#MM- workbench-native-i386 : workbench-complete workbench
+#MM- workbench-native-i386 : workbench-complete workbench workbench-boot-native-i386
 
 #MM- contrib-native-i386 : contrib-complete
 
@@ -174,19 +174,6 @@ create-mf-inc-again :
 #MM- clib-native : clib-native-i386
 
 #MM- includes-native : includes-copy-native-i386 includes-copy includes-native-i386
-
-#MM
-boot-disk : tmp $(OSGENDIR)/boot/aros.bin
-	@mount -o loop $(OSGENDIR)/boot/aros.bin tmp
-	@$(CP) $(BINDIR)/boot/aros-native-i386 tmp
-	@umount tmp
-	@rmdir tmp
-
-tmp:
-	@$(MKDIR) tmp
-
-$(OSGENDIR)/boot/aros.bin:
-	@gunzip -c aros.bin.gz > $@
 
 #MM
 install-boot-disk : boot-disk
