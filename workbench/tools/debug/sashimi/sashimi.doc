@@ -1,0 +1,246 @@
+Sashimi v1.6
+
+Written by Olaf `Olsen' Barthel <olsen@sourcery.han.de>
+Public Domain
+
+
+Sashimi intercepts raw serial debugging output on your own machine; command
+line options are:
+
+Startup: [RECOVER=name]
+         [ON] [BUFK=n (n must be a power of 2)] [BUFFERSIZE=n] [NOPROMPT]
+         [QUIET] [ASKEXIT] [ASKSAVE] [TIMERON] [CONSOLE] [WINDOW=name]
+
+Runtime: [OFF] [SAVE] [SAVEAS=name] [EMPTY]
+
+
+Sashimi is a tool to intercept the raw serial output of Enforcer, Mungwall,
+and all tool and application debugging output that uses kprintf(). This
+makes it possible to use serial debugging on a single Amiga, without
+interfering with attached serial hardware such as modems and serial
+printers.
+
+This is a drop-in replacement for the "Sushi" tool, as written by Carolyn
+Scheppner. Well, not exactly. Sashimi has a few different/new features and
+does not support the complete feature set of the "Sushi" tool. Sashimi only
+runs from Shell and requires Kickstart 2.04 or higher. Sashimi cannot patch
+the older Enforcer at run time which means that you have to use Enforcer
+V37 or an equivalent like CyberGuard.
+
+
+Quick usage
+===========
+Here's what's in my "S:User-Startup" file:
+
+Run >NIL: MungWall NAMETAG
+Run >NIL: Enforcer RAWIO
+Run >NIL: Sashimi CONSOLE BUFK=64 NOPROMPT ASKEXIT ASKSAVE
+
+All standard serial debugging functions are intercepted. Currently, the
+patch to the serial debugging input function just returns a `y'. Standard
+serial debugging output and Enforcer output go into Sashimi's circular buffer
+(the size is user-definable, with a default size of 32K), where it is
+noticed by the Sashimi process and written to the output window. The
+Sashimi process is signalled whenever a carriage return or linefeed comes
+through kprintf().
+
+Sashimi has several startup options, and several runtime options:
+
+Startup: [RECOVER=name]
+         [ON] [BUFK=n (n must be a power of 2)] [BUFFERSIZE=n] [NOPROMPT]
+         [QUIET] [ASKEXIT] [ASKSAVE] [TIMERON] [CONSOLE] [WINDOW=name]
+
+Runtime: [OFF] [SAVE] [SAVEAS=name] [EMPTY]
+
+
+Startup options
+===============
+RECOVER=name    Sashimi will search the Amiga memory for the buffer created
+                and maintained by a previous invocation of Sashimi. This is
+                useful if the system crashed before you had any chance to
+                save the Sashimi buffer to disk. While the search is in
+                progress the system will be frozen. There is no guarantee
+                that Sashimi will find any older buffer or that the contents
+                of the buffer found will still be intact. Once the data is
+                found, it will be saved to the file with the given name.
+
+                Sashimi will exit immediately after processing the recovery
+                command. No further action will be taken. Depending on whether
+                it was successful in recovering the data, Sashimi's return
+                code will be either 0 (= success) or 5 (= failure).
+
+ON              Default (not required)
+
+BUFK=n          Changes the circular buffer size from default 32K to specified
+                power-of-2 K from 4K to whatever you like, i.e. BUFK=8 will
+                allocate a buffer of 8192 bytes.
+
+BUFFERSIZE=n    Changes the circular buffer size from default 32K to specified
+                buffer size, i.e. BUFFERSIZE=8000 will allocate a buffer
+                of 8000 bytes.
+
+NOPROMPT        Turns off the "Sashimi installed" prompt. This is useful if
+                the Sashimi output is redirected to an AUTO CON window such
+                as in conjunction with the CONSOLE option.
+
+QUIET           Causes Sashimi to just buffer all debugging output.
+                This effectively silences serial debugging output.
+
+ASKSAVE         Cause Sashimi to ask you if you want to save the buffer
+                when you exit Sashimi.  If there's nothing in the buffer,
+                it won't ask.
+
+ASKEXIT         Cause Sashimi to ask you if you *really* want to exit if
+                a [Ctrl]+C signal is received.  This is good for people like
+                me who might accidentally [Ctrl]+C in a Sashimi window when
+                they meant to do it somewhere else. This option should
+                only be used if Sashimi has an input stream - i.e. if Sashimi
+                is not run/redirected, or if Sashimi has in/out redirection
+                in a CONSOLE window.
+
+TIMERON         Cause Sashimi to wake up every 1/10 second to check for
+                output. Without this option, Sashimi will just wake up every
+                time a carriage return or linefeed is output.
+
+CONSOLE         This will make Sashimi open a console output window for itself
+                which all input and output will go into. Unless you provide a
+                console window specifier (see WINDOW option), Sashimi will use:
+
+                CON:0/20/640/100/Sashimi  [Ctrl]+E=Empty  [Ctrl]+F=File  [Ctrl]+D=Reset console/AUTO/CLOSE/WAIT/INACTIVE
+
+WINDOW=name     This option works in conjunction with the CONSOLE option and
+                allows you to override the default console window specifier.
+
+
+Runtime options
+===============
+OFF             Signals the active running copy of Sashimi to exit.
+
+EMPTY           Finds the active running copy of Sashimi and empties its
+                buffer.
+
+SAVE            Finds the active running copy of Sashimi and saves its buffer
+                as "T:sashimi.out".
+
+SAVEAS=name     Finds the active running copy of Sashimi and saves its buffer
+                as the specified file name.
+
+
+Example startup usage
+=====================
+
+Sashimi ASKSAVE (in its own shell window)
+
+Run >NIL: Sashimi >"CON:0/20/640/120/Sashimi/AUTO/CLOSE/WAIT/INACTIVE" ON NOPROMPT
+
+Run Sashimi >ram:hits (all output redirected to a file)
+
+
+Keyboard and Break signals
+==========================
+[Ctrl]+C: To quit Sashimi, [Ctrl]+C it (if it has its own window), send it
+          a [Ctrl]+C signal with the Break command, or run Sashimi a second
+          time with the OFF keyword.
+
+[Ctrl]+D: This sends a control sequence to the output console to reset it.
+          Very handy in case garbage data has changed the character set
+          or the text rendering colours.
+
+[Ctrl]+E: Tells Sashimi to empty (clear) its buffer.
+
+[Ctrl]+F: Tells Sashimi to save its own buffer to the file "T:sashimi.out"
+
+
+Other runtime usage
+===================
+Sashimi OFF                     ; tell active running Sashimi to try to exit
+Sashimi SAVE                    ; save buffer of active Sashimi
+Sashimi SAVEAS ram:myhits EMPTY ; save buffer as ram:myhits and clear buffer
+
+Usually, I just hit [Ctrl]+F in the Sashimi window, and it saves its buffer
+as "T:sashimi.out".
+
+
+Programmer interface
+====================
+Sorry, no programmer interface. "Sushi" had one, but I did not see much
+sense in replicating this functionality.
+
+
+Why "Sashimi"?
+==============
+I got bitten by bugs in "Sushi", and not just once. Whenever the Sushi
+circular buffer would wrap around, there was a good chance part of the buffer
+would still be filled with random data when getting saved to disk. If a large
+amount of data would be sent through the kprintf() interface, Sushi would
+occasionally "hickup" and regurgitate stale data from its buffer. I took
+this as indications that the Sushi buffer management code was none too
+robust. Another thing that struck me as odd was the fact that sometimes
+Sushi would stop reporting incoming kprintf() output and effectively behave
+as if it had been stopped with [Ctrl]+C. Sushi also had a tendency to block
+screen output when printing its buffer; it would output the buffer in a
+single Write() operation, causing the console window to lock the display.
+And while that operation was in progress, you could not suspend window output
+or stop it.
+
+Sashimi tries to do better in these situations. The algorithms for
+maintaining the circular buffer (or FIFO) are different. And just in case
+there is a bug in the code, I have provided the complete tool source code.
+
+
+Author
+======
+Sashimi was written by Olaf `Olsen' Barthel, with "Sushi" by Carolyn
+Scheppner as a reference. Sushi was in turn influenced by the "Reporter"
+and "Detective" tools written by Steve Tibbett and Christian E. Hopps.
+
+My postal address:
+
+   Olaf Barthel
+   Brabeckstrasse 35
+   D-30559 Hannover
+   Federal Republic of Germany
+
+My e-mail address:
+
+   olsen@sourcery.han.de
+
+
+History
+=======
+
+Sashimi 1.6 (20.6.99)
+
+	- Sashimi could cause the entire system to hang due to an
+	  unmatched Disable() in the RawPutChar wedge [David Gerber].
+
+	- If Sashimi is not already running "Sashimi OFF" will no
+	  longer restart it.
+
+Sashimi 1.5 (8.2.99)
+
+	- Made the FIFO access routines into atomic operations. This
+	  reduces the risk of two programs trying to modify the
+	  FIFO bookkeeping variables at the same time.
+
+	- Fixed a bug in the FIFO management code which would cause
+	  Sashimi to regurgitate stale data after a buffer overrun.
+	  Strangely, this was one of the bugs in Sushi I wanted to
+	  avoid...
+
+	- Added the new RECOVER functionality.
+
+Sashimi 1.4 (11.9.98)
+
+	- The Sashimi RawPutChar() patch now saves and restores
+	  the contents of A0 and A1. This is necessary since
+	  the KPutStr() code relies upon A0 to remain unchanged
+	  after each call to RawPutChar() [Stuart Kyzer Caie].
+
+Sashimi 1.3 (07.04.98)
+
+	- Updated the console window title text
+
+Sashimi 1.2 (05.04.98)
+
+	- Added the [Ctrl]+D console reset command.
