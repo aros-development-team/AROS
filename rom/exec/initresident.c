@@ -111,9 +111,12 @@
 	    */
 	    library->lib_Node.ln_Type = resident->rt_Type;
 	    library->lib_Node.ln_Name = resident->rt_Name;
-	    library->lib_Version      = resident->rt_Version;
-	    library->lib_IdString     = resident->rt_IdString;
-	    library->lib_Flags	      = LIBF_SUMUSED|LIBF_CHANGED;
+	    if (resident->rt_Type != NT_RESOURCE)
+	    {
+		library->lib_Version      = resident->rt_Version;
+		library->lib_IdString     = resident->rt_IdString;
+		library->lib_Flags	  = LIBF_SUMUSED|LIBF_CHANGED;
+	    }
 
 	    /*
 		Call the library init vector, if set.
