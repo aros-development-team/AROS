@@ -23,18 +23,28 @@ EXES = $(EXEDIR)/vc $(EXEDIR)/vbcc$(KERNEL) $(EXEDIR)/vbccs$(KERNEL)
 all : setup $(EXES)
 
 local-gcc :
-	-$(RM) $(EXES) $(OBJDIR)/*.o
-	$(MAKE) $(MFLAGS) -f mf.local
-	@if [ ! -d bin ]; then $(MKDIR) bin; else true ; fi
-	mv vc vbcc$(KERNEL) vbccs$(KERNEL) bin/
+	$(MAKE) $(MFLAGS) BINDIR=bin-gcc OBJDIR=obj-gcc -f mf.local
 
 local-vc :
-	-$(RM) $(EXES) $(OBJDIR)/*.o
-	$(MAKE) $(MFLAGS) -f mf.local CC="bin/vc +vc-local.config" APPCFLAGS="-v -I. -Imachines/i386" ILDFLAGS=
+	$(MAKE) $(MFLAGS) -f mf.local \
+	    BINDIR=bin-vcc OBJDIR=obj-vcc \
+	    CC="bin-gcc/vc +vc-local.config" \
+	    APPCFLAGS="-v -I. -Imachines/i386" \
+	    ILDFLAGS=
 
 local-vc-test :
-	-$(RM) $(EXES) $(OBJDIR)-vc/*.o
-	$(MAKE) $(MFLAGS) -f mf.local OBJDIR="$(OBJDIR)-vc" CC="vc" APPCFLAGS="-v -I. -Imachines/i386" ILDFLAGS=
+	$(MAKE) $(MFLAGS) -f mf.local \
+	    BINDIR=bin-vcc2 OBJDIR=obj-vcc2 \
+	    CC="bin-vcc/vc +vc-localtest.config" \
+	    APPCFLAGS="-v -I. -Imachines/i386" \
+	    ILDFLAGS=
+
+local-vc-test2 :
+	$(MAKE) $(MFLAGS) -f mf.local \
+	    BINDIR=bin-vcc3 OBJDIR=obj-vcc3 \
+	    CC="bin-vcc2/vc +vc-localtest2.config" \
+	    APPCFLAGS="-v -I. -Imachines/i386" \
+	    ILDFLAGS=
 
 $(EXEDIR)/vc : vc.c $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee $*.err

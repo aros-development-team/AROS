@@ -364,7 +364,11 @@ struct regargs_list{
     int reg;
     struct Var *v;
 };
+#ifdef HAVE_REGPARMS
+extern zlong push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **,struct reg_handle *);
+#else
 extern zlong push_args(struct argument_list *,struct struct_declaration *,int,struct regargs_list **);
+#endif
 extern int regok(int,int,int),allocreg(int,int),freturn(struct Typ *);
 extern int icok(struct IC *);
 extern void free_reg(int);
@@ -536,4 +540,10 @@ extern struct IC *err_ic;
 extern int multiple_ccs;
 
 extern int shortcut(int, int);
+
+/*  Deklarationen fuer Registerparameterfunktionen. */
+#ifdef HAVE_REGPARMS
+extern struct reg_handle empty_reg_handle;
+extern int reg_parm(struct reg_handle *, struct Typ *);
+#endif
 

@@ -21,9 +21,6 @@ int entry_load(struct flowgraph *fg,int i)
 {
     struct flowlist *lp;
     lp=fg->in;
-    /*  Parameter am Anfang laden?  */
-/*    if(fg==fg1&&!zlleq(l2zl(0L),fg->regv[i]->offset)) return(1);*/
-    if(!lp) return(1);
     while(lp){
         if(lp->graph&&lp->graph->regv[i]!=fg->regv[i]&&BTST(lp->graph->av_out,fg->regv[i]->index)) return(1);
         lp=lp->next;
@@ -183,7 +180,7 @@ void insert_regs(struct flowgraph *fg1)
                     }
                 }
                 if(BTST(fg->av_in,fg->regv[i]->index)){
-                    if(entry_load(fg,i)&&(fg!=fg1||!(fg->regv[i]->flags&REGPARM))){
+                    if((fg==fg1||entry_load(fg,i))&&(fg!=fg1||!(fg->regv[i]->flags&REGPARM))){
                         if(DEBUG&8192) printf("\thave to load it at start of block\n");
 
                         new=mymalloc(ICS);
@@ -725,7 +722,7 @@ void local_regs(struct flowgraph *fg)
                 i=p->q2.v->index;
                 if(BTST(lfg->av_kill,i)&&!BTST(lfg->av_out,i)){
                     t=p->q2.v->vtyp->flags;
-                    if(USEQ2ASZ&&nr&&regok(nr,t,0)&&(!(p->q2.flags&DREFOBJ)||regok(nr,t,p->typf))) r=nr; else r=0;
+                    if(USEQ2ASZ&&nr&&regok(nr,t,0)&&!regu[nr]&&!regsa[nr]&&(!(p->q2.flags&DREFOBJ)||regok(nr,t,p->typf))) r=nr; else r=0;
                     if(p->q2.v->reg){ r=p->q2.v->reg;if(regu[r]) free_hreg(lfg,p,r,1);}
                     for(i=0;r==0&&i<=MAXR;i++){
                         if(!regu[i]&&!regsa[i]&&regok(i,t,0)&&(USEQ2ASZ||i!=nr)) {r=i;break;}
@@ -766,7 +763,8 @@ void local_regs(struct flowgraph *fg)
                 i=p->q1.v->index;
                 if(BTST(lfg->av_kill,i)&&!BTST(lfg->av_out,i)){
                     t=p->q1.v->vtyp->flags;
-                    if(nr&&regok(nr,t,0)&&(!(p->q1.flags&DREFOBJ)||regok(nr,t,p->typf))) r=nr; else r=0;
+                    if(nr&&regok(nr,t,0)&&!regu[nr]&&!regsa[nr]&&(!(p->q1.flags&DREFOBJ)||regok(nr,t,p->typf))) r=nr; else r=0;
+                    if(p->code==SETRETURN&&p->z.reg&&regok(p->z.reg,t,p->typf)) r=p->z.reg;
                     if(p->q1.v->reg){ r=p->q1.v->reg;if(regu[r]) free_hreg(lfg,p,r,1);}
                     for(i=0;r==0&&i<=MAXR;i++){
                         if(!regu[i]&&!regsa[i]&&regok(i,t,0)) {r=i;break;}

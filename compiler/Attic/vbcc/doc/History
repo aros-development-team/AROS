@@ -2,10 +2,23 @@ vbcc is (c) in 1995-97 by Volker Barthelmann
 
 (cga68k): changes in the code generator for amiga68k/unix68k
 (cgi386): changes in the code generator for i386
+(cgppc):  changes in the code generator for ppc
 (cla68k): changes in the C library for amiga68k
 (vca68k): changes in the compiler frontend for amiga68k
 (vcu68k): changes in the compiler frontend for unix68k
 
+
+Changes since V0.5
+
+- bug fix: in certain cases wrong code for divisions was generated (cgi386)
+- bug fix: optimizing local register allocation had problems with USEQ2ASZ
+- local_regs() tries to use best reg with SETRETURN
+- started support for default argument passing in registers
+- bug fix: rearranging of array-acceses was buggy with DREFOBJs
+- bug fix: loading of parameters into registers was sometimes wrong if there
+           was a jump to the first basic block after optimization
+- bug fix: casting to void and conditional-expressions with coid caused
+           problems
 
 Changes since V0.4e
 

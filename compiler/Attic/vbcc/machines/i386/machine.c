@@ -1058,6 +1058,11 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
                 fprintf(f,"\tpushl\t%s\n",regnames[dx]);
                 stackoffset-=4;m|=2;
             }
+            if((p->q2.flags&(REG|DREFOBJ))==(REG|DREFOBJ)&&(p->q2.reg==ax||p->q2.reg==dx)){
+                move(f,&p->q2,0,0,dx,t);
+                fprintf(f,"\tpushl\t%s\n",regnames[dx]);
+                m|=8;stackoffset-=4;
+            }
             move(f,&p->q1,0,0,ax,t);
             if(p->q2.flags&KONST){
                 fprintf(f,"\tpush%c\t",x_t[t&15]);probj2(f,&p->q2,t);
@@ -1065,8 +1070,10 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
             }
             if(t&UNSIGNED) fprintf(f,"\txorl\t%s,%s\n\tdivl\t",regnames[dx],regnames[dx]);
                 else       fprintf(f,"\tcltd\n\tidivl\t");
-            if((m&4)||(isreg(q2)&&p->q2.reg==dx)){
+            if((m&12)||(isreg(q2)&&p->q2.reg==dx)){
                 fprintf(f,"(%s)",regnames[sp]);
+            }else if(isreg(q2)&&p->q2.reg==ax){
+                fprintf(f,"%s(%s)",(m&2)?"4":"",regnames[sp]);
             }else{
                 probj2(f,&p->q2,t);
             }
@@ -1074,6 +1081,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
             if(c==DIV) move(f,0,ax,&p->z,0,t);
                 else   move(f,0,dx,&p->z,0,t);
             if(m&4){ fprintf(f,"\taddl\t$%ld,%s\n",zl2l(sizetab[t&15]),regnames[sp]);stackoffset+=4;}
+            if(m&8){ fprintf(f,"\tpopl\t%s\n",regnames[dx]);stackoffset+=4;}
             if(m&2){ fprintf(f,"\tpopl\t%s\n",regnames[dx]);stackoffset+=4;}
             if(m&1){ fprintf(f,"\tpopl\t%s\n",regnames[ax]);stackoffset+=4;}
             continue;

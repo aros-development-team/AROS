@@ -355,6 +355,9 @@ struct Typ *direct_declarator(struct Typ *a)
         }
         if(*s=='('){
             int komma;
+#ifdef HAVE_REGPARMS
+            struct reg_handle reg_handle=empty_reg_handle;
+#endif
             /* Identifier- oder Parameter-list noch nicht komplett */
             /* z.B. ... oder ohne Parameter                        */
             s++;
@@ -380,7 +383,12 @@ struct Typ *direct_declarator(struct Typ *a)
                     {error(21);return_sc=AUTO;}
                 (*sl)[fsd->count].styp=t;
                 (*sl)[fsd->count].storage_class=return_sc;
+#ifdef HAVE_REGPARMS
+                if(t) (*sl)[fsd->count].reg=reg_parm(&reg_handle,t);
+                if(return_reg) (*sl)[fsd->count].reg=return_reg;
+#else
                 (*sl)[fsd->count].reg=return_reg;
+#endif
                 if(return_reg&&!regok(return_reg,t->flags,0)) error(217,regnames[return_reg]);
                 (*sl)[fsd->count].identifier=add_identifier(ident,strlen(ident));
                 if(t){
@@ -949,6 +957,9 @@ void var_declaration(void)
     if(!mdef&&t&&(t->flags&15)==FUNKT&&*s!=';'){
     /*  Funktionsdefinition                                     */
         int i,oldstyle=0;
+#ifdef HAVE_REGPARMS
+        struct reg_handle reg_handle;
+#endif
         fline=line;
         if(DEBUG&1) printf("Funktionsdefinition!\n");
         {int i;
@@ -1047,6 +1058,9 @@ void var_declaration(void)
             }
         }
         first_ic=last_ic=0;ic_count=0;max_offset=l2zl(0L);
+#ifdef HAVE_REGPARMS
+        reg_handle=empty_reg_handle;
+#endif
         for(i=0;i<t->exact->count;i++){
             if(!(*t->exact->sl)[i].styp&&*(*t->exact->sl)[i].identifier){
                 struct Typ *nt;
@@ -1060,6 +1074,11 @@ void var_declaration(void)
             if(*(*t->exact->sl)[i].identifier){
                 struct Var *tmp;int sc;
                 sc=((*t->exact->sl)[i].storage_class|PARAMETER|oldstyle);
+#ifdef HAVE_REGPARMS
+                if(!t->exact->sl) ierror(0);
+                if(!(*t->exact->sl)[i].styp) ierror(0);
+                (*t->exact->sl)[i].reg=reg_parm(&reg_handle,(*t->exact->sl)[i].styp);
+#endif
                 if((*t->exact->sl)[i].reg) sc|=REGPARM;
                 tmp=add_var((*t->exact->sl)[i].identifier,clone_typ((*t->exact->sl)[i].styp),sc,0);
                 tmp->reg=(*t->exact->sl)[i].reg;

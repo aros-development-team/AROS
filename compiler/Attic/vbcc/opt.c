@@ -248,7 +248,7 @@ int peephole(void)
                     struct IC *p1=p->next,*p2=p1->next;
                     if(p1->code==MULT&&p2->code==ADDI2P&&
                        p1->typf==t&&p2->typf==t&&
-                       (p1->q2.flags&KONST)&&(p->z.flags&SCRATCH)&&(p1->z.flags&SCRATCH)&&
+                       (p1->q2.flags&KONST)&&(p->z.flags&(SCRATCH|DREFOBJ))==SCRATCH&&(p1->z.flags&(SCRATCH|DREFOBJ))==SCRATCH&&
                        !compare_objs(&p->z,&p1->q1,t)&&
                        !compare_objs(&p1->z,&p2->q2,t)){
                         if(DEBUG&1024){ printf("rearranging array-access:\n");pric2(stdout,p);pric2(stdout,p1);pric2(stdout,p2);}
@@ -284,7 +284,7 @@ int peephole(void)
             }
             if((c==ADD||c==SUB)&&p->next){
                 struct IC *p1=p->next;
-                if(p1->code==ADDI2P&&p1->typf==t&&(p->z.flags&SCRATCH)&&!compare_objs(&p->z,&p1->q2,t)){
+                if(p1->code==ADDI2P&&p1->typf==t&&(p->z.flags&(SCRATCH|DREFOBJ))==SCRATCH&&!compare_objs(&p->z,&p1->q2,t)){
                     if(DEBUG&1024){ printf("rearranging array-access:\n");pric2(stdout,p);pric2(stdout,p1);}
                     p1->q2=p->q1;
                     p->q1=p1->q1;
