@@ -118,14 +118,13 @@
  *		non-zero value, output a debug message otherwise.
  *
  *	ASSERT_VALID_PTR(x)
- *		Checks that the expression <x> points to a valid
- *		memory location, and outputs a debug message
- *		otherwise. A NULL pointer is considered VALID.
- *
+ *      Checks that the expression <x> points to a valid memory location, and 
+ *      outputs a debug message otherwise. A NULL pointer is considered INVALID.
+ * 
  *	ASSERT_VALID_PTR_OR_NULL(x)
- *		Checks that the expression <x> points to a valid
- *		memory location, and outputs a debug message
- *		otherwise. A NULL pointer is considered NOT VALID.
+ *      Checks that the expression <x> points to a valid memory location or that 
+ *      it is NULL, and outputs a debug message otherwise. A NULL pointer is 
+ *      considered VALID.
  *
  *	ASSERT_VALID_TASK(t)
  *		Checks that the pointer <t> points to a valid Task
