@@ -61,6 +61,7 @@
 #include <workbench/startup.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define ARG_TEMPLATE    "DRAWER,FILE/K,PATTERN/K,TITLE/K,POSITIVE/K," \
                         "NEGATIVE/K,ACCEPTPATTERN/K,REJECTPATTERN/K," \
@@ -111,7 +112,6 @@ int main(int argc, char *argv[])
     int                   Return_Value = RETURN_OK;
     IPTR                  DisplayArgs[1];
     char                 *Buffer;
-    LONG                  DrawerLength;
     BOOL                  Success;
     int                   i;
 
@@ -157,48 +157,36 @@ int main(int argc, char *argv[])
                 {
                     if(DoMulti == FALSE)
                     {
-                        DrawerLength = strlen(FileReq->fr_Drawer) - 1;
+			strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
 			
-                        Success = AddPart(Buffer, FileReq->fr_Drawer,
-					  MAX_PATH_LEN);
-			
+                        Success = AddPart(Buffer,
+                                          FileReq->fr_File,
+                                          MAX_PATH_LEN);
+
                         if(Success != FALSE)
                         {
-                            Success = AddPart((Buffer + DrawerLength),
-                                              FileReq->fr_File,
-                                              MAX_PATH_LEN - DrawerLength);
-			    
-                            if(Success != FALSE)
-                            {
-                                DisplayArgs[0] = (IPTR)Buffer;
-                                VPrintf("\"%s\"\n", DisplayArgs);
-                            }
+                            DisplayArgs[0] = (IPTR)Buffer;
+                            VPrintf("\"%s\"\n", DisplayArgs);
                         }
                     }
                     else
                     {
                         WBFiles = FileReq->fr_ArgList;
 			
-                        DrawerLength = strlen(FileReq->fr_Drawer) - 1;
-			
-                        Success = AddPart(Buffer, FileReq->fr_Drawer,
-                                          MAX_PATH_LEN);
-			
-                        if(Success != FALSE)
-                        {
-                            for (i = 0; i != FileReq->fr_NumArgs; i++)
+                	for (i = 0; i != FileReq->fr_NumArgs; i++)
+                	{
+			    strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
+
+                            Success = AddPart(Buffer,
+                                              WBFiles[i].wa_Name,
+                                              MAX_PATH_LEN);
+
+                            if(Success != FALSE)
                             {
-                                Success = AddPart((Buffer + DrawerLength),
-                                                  WBFiles[i].wa_Name,
-                                                  MAX_PATH_LEN - DrawerLength);
-				
-                                if(Success != FALSE)
-                                {
-                                    DisplayArgs[0] = (IPTR)Buffer;
-                                    VPrintf("\"%s\" ", DisplayArgs);
-                                }
-                            }    
-                        }
+                                DisplayArgs[0] = (IPTR)Buffer;
+                                VPrintf("\"%s\" ", DisplayArgs);
+                            }
+                        }    
 			
                         PutStr("\n");
                     }
