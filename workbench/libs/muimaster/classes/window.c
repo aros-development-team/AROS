@@ -147,6 +147,7 @@ struct MUI_WindowData
 #define MUIWF_USEBOTTOMSCROLLER (1<<9) /* windiw should have a bottom scroller */
 #define MUIWF_ERASEAREA       (1<<10) /* Erase area after a window resize */
 #define MUIWF_ISAPPWINDOW     (1<<11) /* Is an app window (user can drop icons on it) */
+#define MUIWF_ISSUBWINDOW     (1<<12) /* Dont get automatically disposed with app */
 
 struct __dummyXFC3__
 {
@@ -156,9 +157,6 @@ struct __dummyXFC3__
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
 
-/****************************************************************************/
-/** Public functions                                                       **/
-/****************************************************************************/
 
 static ULONG DoHalfshineGun(ULONG a, ULONG b)
 {
@@ -268,7 +266,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     return TRUE;
 }
 
-void CleanupRenderInfo(struct MUI_RenderInfo *mri)
+static void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 {
     int i;
 
@@ -296,7 +294,7 @@ void CleanupRenderInfo(struct MUI_RenderInfo *mri)
     mri->mri_Screen = NULL;
 }
 
-void ShowRenderInfo(struct MUI_RenderInfo *mri)
+static void ShowRenderInfo(struct MUI_RenderInfo *mri)
 {
     if (mri->mri_BufferBM)
     {
@@ -308,14 +306,14 @@ void ShowRenderInfo(struct MUI_RenderInfo *mri)
     }
 }
 
-void HideRenderInfo(struct MUI_RenderInfo *mri)
+static void HideRenderInfo(struct MUI_RenderInfo *mri)
 {
     mri->mri_RastPort = NULL;
 }
 
 
 
-ULONG _zune_window_get_default_events (void)
+static ULONG _zune_window_get_default_events (void)
 {
     return IDCMP_NEWSIZE      | IDCMP_REFRESHWINDOW
          | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUPICK
@@ -323,7 +321,7 @@ ULONG _zune_window_get_default_events (void)
          | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
 }
 
-void _zune_window_change_events (struct MUI_WindowData *data)
+static void _zune_window_change_events (struct MUI_WindowData *data)
 {
     struct MinNode *mn;
     struct MUI_EventHandlerNode *ehn;
@@ -349,7 +347,7 @@ void _zune_window_change_events (struct MUI_WindowData *data)
     }
 }
 
-BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
+static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win;
     ULONG flags = data->wd_CrtFlags;
@@ -610,7 +608,7 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     return FALSE;
 }
 
-void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
+static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
 
@@ -675,7 +673,7 @@ void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 
 
 /* return FALSE only if no resize (dx=dy=0) occured */
-BOOL
+static BOOL
 _zune_window_resize (struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
@@ -698,7 +696,7 @@ _zune_window_resize (struct MUI_WindowData *data)
 
 /**************/
 
-STATIC BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LONG x, LONG y)
+static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LONG x, LONG y)
 {
     Object                *cstate;
     Object                *child;
@@ -726,6 +724,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj);
 static ULONG window_Close(struct IClass *cl, Object *obj);
 
 /* process window message, this does a ReplyMsg() to the message */
+/* Called from application.c */
 void _zune_window_message(struct IntuiMessage *imsg)
 {
     struct Window *iWin;
@@ -1070,9 +1069,6 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 }
 
-/****************************************************************************/
-/** Private functions                                                      **/
-/****************************************************************************/
 
 static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 		      struct IntuiMessage *event, ULONG muikey)
@@ -1598,6 +1594,10 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    set(obj, MUIA_Window_ID, tag->ti_Data);
 		    break;
 
+	    case    MUIA_Window_IsSubWindow:
+		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISSUBWINDOW);
+		    break;
+
 	    case    MUIA_Window_Title:
 		    set(obj, MUIA_Window_Title, tag->ti_Data);
 		    break;
@@ -1686,9 +1686,12 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    if ((data->wd_Flags & MUIWF_OPENED))
-	set(obj, MUIA_Window_Open, FALSE);
-
+    D(bug("Window_Dispose(%p)\n", obj));
+    if (muiGlobalInfo(obj) && _app(obj))
+    {
+	D(bug(" Window_Dispose(%p) : calling app->OM_REMMEMBER\n", obj));
+	DoMethod(_app(obj), OM_REMMEMBER, obj);
+    }
     if (data->wd_RootObject)
 	MUI_DisposeObject(data->wd_RootObject);
 
@@ -1698,6 +1701,7 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_ScreenTitle)
 	FreeVec(data->wd_ScreenTitle);
 
+    D(bug(" Window_Dispose(%p) : calling supermethod\n", obj));
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -1752,6 +1756,9 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 	    case MUIA_Window_ID:
 		data->wd_ID = tag->ti_Data;
+		break;
+	    case MUIA_Window_IsSubWindow:
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ISSUBWINDOW);
 		break;
 	    case MUIA_Window_Open:
 		if (tag->ti_Data && !(data->wd_Flags & MUIWF_OPENED))
@@ -1875,6 +1882,9 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Window_ID:
 	    STORE = data->wd_ID;
 	    return(TRUE);
+	case MUIA_Window_IsSubWindow:
+	    STORE = (data->wd_Flags & MUIWF_ISSUBWINDOW) ? TRUE : FALSE;
+	    return(TRUE);
 	case MUIA_Window_LeftEdge:
 	    if (data->wd_RenderInfo.mri_Window)
 		STORE = (ULONG)data->wd_RenderInfo.mri_Window->LeftEdge;
@@ -1943,16 +1953,28 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    /* Close the window before disconnecting all the childs */
-    set(obj,MUIA_Window_Open,FALSE);
+    D(bug("Window_DisconnectParent(%p) : muiGlobalInfo=%p\n", muiGlobalInfo(obj)));
+    if (muiGlobalInfo(obj))
+    {
+	/* Close the window before disconnecting all the childs */
+	if ((data->wd_Flags & MUIWF_OPENED))
+	{
+	    D(bug(" Window_DisconnectParent(%p) : closing window\n", muiGlobalInfo(obj)));
+	    set(obj, MUIA_Window_Open, FALSE);
+	}
+	if (data->wd_ChildMenustrip)
+	    DoMethod(data->wd_ChildMenustrip, MUIM_DisconnectParent, (IPTR)obj);
 
-    if (data->wd_ChildMenustrip)
-	DoMethod(data->wd_ChildMenustrip, MUIM_DisconnectParent, (IPTR)obj);
-
-    if (data->wd_RootObject)
-	DoMethodA(data->wd_RootObject, (Msg)msg);
-
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+	if (data->wd_RootObject)
+	    DoMethodA(data->wd_RootObject, (Msg)msg);
+	
+	D(bug(" Window_DisconnectParent(%p) : calling supermethod\n", muiGlobalInfo(obj)));
+	return DoSuperMethodA(cl,obj,(Msg)msg);
+    }
+    else
+    {
+	return 0;
+    }
 }
 
 /*
