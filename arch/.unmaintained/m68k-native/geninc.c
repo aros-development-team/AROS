@@ -4,6 +4,9 @@
 #include <exec/tasks.h>
 #include <dos/dosextens.h>
 #include <hardware/custom.h>
+#include <graphics/rastport.h>
+#include <graphics/clip.h>
+#include "privheaders.h"
 #include <stdio.h>
 #include <stddef.h>
 
@@ -94,7 +97,7 @@ int main (void)
     printf ("#define DMA_NoModify         0x%08lx\n", DMA_NoModify       );
     printf ("#define DMA_ReadFromRA       0x%08lx\n", DMA_ReadFromRAM    );
 
-    printf ("#define CACRB_EnableI        %ld\n", BitOf(CACRF_EnableI      ));
+    printf ("\n#define CACRB_EnableI        %ld\n", BitOf(CACRF_EnableI      ));
     printf ("#define CACRB_FreezeI        %ld\n", BitOf(CACRF_FreezeI      ));
     printf ("#define CACRB_ClearI         %ld\n", BitOf(CACRF_ClearI       ));
     printf ("#define CACRB_IBE            %ld\n", BitOf(CACRF_IBE          ));
@@ -109,6 +112,7 @@ int main (void)
     printf ("#define DMAB_NoModify        %ld\n", BitOf(DMA_NoModify       ));
     printf ("#define DMAB_ReadFromR       %ld\n", BitOf(DMA_ReadFromRAM    ));
 
+    printf ("\n/* Custom register constants */\n");
     printf ("#define custom               0xdff000\n");
     printf ("#define dmaconr              0x%04lx\n", offsetof (struct Custom, dmaconr));
     printf ("#define intenar              0x%04lx\n", offsetof (struct Custom, intenar));
@@ -116,6 +120,20 @@ int main (void)
     printf ("#define intena               0x%04lx\n", offsetof (struct Custom, intena));
     printf ("#define intreq               0x%04lx\n", offsetof (struct Custom, intreq));
     printf ("#define dmacon               0x%04lx\n", offsetof (struct Custom, dmacon));
+
+    printf ("\n/* Graphics constants */\n");
+    printf ("#define BltBitMap            %d\n", FuncOffset (5));
+
+    printf ("\n#define lb_GfxBase           %d\n", (int)offsetof (struct LayersBase, lb_GfxBase));
+    printf ("#define lb_SysBase           %d\n", (int)offsetof (struct LayersBase, lb_SysBase));
+
+    printf ("\n#define rp_Layer             %d\n", (int)offsetof (struct RastPort, Layer));
+    printf ("#define rp_BitMap            %d\n", (int)offsetof (struct RastPort, BitMap));
+    printf ("#define cr_BitMap            %d\n", (int)offsetof (struct ClipRect, BitMap));
+    printf ("#define cr_MinX              %d\n", (int)offsetof (struct ClipRect, bounds.MinX));
+    printf ("#define cr_MinY              %d\n", (int)offsetof (struct ClipRect, bounds.MinY));
+    printf ("#define cr_MaxX              %d\n", (int)offsetof (struct ClipRect, bounds.MaxX));
+    printf ("#define cr_MaxY              %d\n", (int)offsetof (struct ClipRect, bounds.MaxY));
 
     return 0;
 }
