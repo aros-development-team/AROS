@@ -70,6 +70,11 @@ rom/ - Things which are internal parts of the OS.
 
 scripts/ - Scripts which are used to generate code.
 
+setup - Execute this shell-script to prepare for compilation of AROS.
+	It checks for needed tools and tries to build them.
+	Run it when you have installed a completely new tree or sources
+	in the tools/ directory have changed.
+
 tools/ - This contains build tools.
 
 test/ - Testcode, which is more complex.
