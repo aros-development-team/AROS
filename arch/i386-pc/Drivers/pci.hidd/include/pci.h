@@ -88,7 +88,7 @@ struct pHidd_PCI_FindDevice
 struct pHidd_PCI_FreeQuery
 {
 	OOP_MethodID		mID;
-	HIDDT_PCI_Device	*devices;
+	HIDDT_PCI_Device	**devices;
 };
 
 #endif /* HIDD_IRQ_H */
