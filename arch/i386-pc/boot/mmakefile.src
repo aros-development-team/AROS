@@ -90,6 +90,9 @@ $(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
 $(BINDIR)/boot/grub/menu.lst : $(TOP)/config/i386-native/boot/menu.lst
 	@$(CP) $^ $@
 
+$(BINDIR)/boot/grub/menu.lst.DH0 : $(TOP)/config/i386-native/boot/menu.lst.DH0
+	@$(CP) $^ $@
+
 $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386.gz
 	@$(CP) $^ $@
 
@@ -103,7 +106,7 @@ $(BINDIR)/boot/grub/% : %
 #MM bootdisk-pc-i386 : software-pc-i386 test
 bootdisk-pc-i386: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
                   $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst \
-                  install
+                  $(BINDIR)/boot/grub/menu.lst.DH0 install
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $(BOOT_DEST_DIR)/S/Startup-Sequence
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
 	@./install $(OSGENDIR)/boot/aros.bin
