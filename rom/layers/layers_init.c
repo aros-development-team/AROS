@@ -17,7 +17,7 @@
 #define LC_RESIDENTPRI		103
 #define LC_LIBBASESIZE		sizeof (struct LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR	struct LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((struct LIBBASETYPEPTR)(lib))->LibNode)
+#define LC_LIB_FIELD(lib)       (((struct LIBBASETYPEPTR)(lib))->lb_LibNode)
 
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
@@ -25,7 +25,8 @@
 
 #include <libcore/libheader.c>
 
-struct ExecBase   * SysBase; /* global variable */
+#undef ExecBase
+struct ExecBase * SysBase; /* global variable */
 struct GfxBase * GfxBase;
 
 ULONG SAVEDS L_InitLib (struct LIBBASETYPEPTR lh)

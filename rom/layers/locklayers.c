@@ -67,7 +67,7 @@
   while (NULL != l)
   {
     LockLayer(NULL, l);
-    l = l->Next;
+    l = l->back;
   }
     
 

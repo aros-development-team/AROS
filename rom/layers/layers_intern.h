@@ -31,6 +31,8 @@ struct LIBBASETYPE
 {
     struct Library   lb_LibNode;
 
+    BPTR	     lb_SegList;
+    
     struct Library * lb_GfxBase;
     struct ExecBase *lb_SysBase;
 };
@@ -88,7 +90,32 @@ struct InternalClipRect
 #define expunge() \
  AROS_LC0(BPTR, expunge, struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
 
+/*
 #define SysBase         LIBBASE->lb_SysBase
 #define GfxBase		LIBBASE->lb_GfxBase
+*/
+
+
+/* Function prototypes from all files... */
+struct ClipRect * Case_0(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_1(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_2(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_3(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_4(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_5(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_6(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_7(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_8(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_9(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_10(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_11(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_12(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_13(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_14(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+struct ClipRect * Case_15(struct Rectangle * R, struct ClipRect * CR, struct BitMap * display_bm, struct Layer * newlayer);
+void CreateClipRectsBehindLayer(struct Layer * L);
+
+struct Layer * internal_WhichLayer(struct Layer * L, WORD x, WORD y);
+
 
 #endif /* _LAYERS_INTERN_H */

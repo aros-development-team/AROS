@@ -64,7 +64,7 @@
   while (NULL != l)
   {
     UnlockLayer(l);
-    l = l->Next;  
+    l = l->back;  
   } 
 
   UnlockLayerInfo(li);   
