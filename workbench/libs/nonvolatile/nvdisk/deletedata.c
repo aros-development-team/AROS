@@ -18,6 +18,7 @@
 #include <proto/dos.h>
 #include <libraries/nonvolatile.h>
 
+static int cxbug; /* For cxref bug */
 
 AROS_LH2(BOOL, DeleteData,
 
