@@ -44,15 +44,22 @@
 #define GETRENDER(gad)  (gad->SelectRender && (gad->Flags & GFLG_SELECTED)) ? \
 			    gad->SelectRender : gad->GadgetRender;
 
-#define BOXWIDTH 5
+#define BOXSIZEX 4
+#define BOXSIZEY 4
 
 /****************************************************************************************/
 
 static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct BBox *bbox,
     	    	            struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
 {
+#warning Amiga handmade (non-boopsi) bool gadgets do not seem to know anything about
+#warning GFLG_LABELSTRING/GFLG_LABELIMAGE. Instead they always assume GadgetText to
+#warning point to a struct IntuiText!!!
+
     if (gadget->GadgetText)
     {
+    	SetFont(rp, dri->dri_Font);
+	
 	switch (gadget->Flags & GFLG_LABELMASK)
 	{
 	    case GFLG_LABELITEXT:
@@ -156,18 +163,15 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 		{
 		    SetDrMd (rp, COMPLEMENT);
 
+		    RectFill (rp, bbox.Left - BOXSIZEX,
+		    	    	  bbox.Top  - BOXSIZEY,
+				  bbox.Left + bbox.Width  - 1 + BOXSIZEX,
+				  bbox.Top  + bbox.Height - 1 + BOXSIZEY);
+
 		    RectFill (rp, bbox.Left,
-		    	    	  bbox.Top,
+			    	  bbox.Top,
 				  bbox.Left + bbox.Width - 1,
 				  bbox.Top + bbox.Height - 1);
-
-		    if (bbox.Width > 2*BOXWIDTH && bbox.Height > 2*BOXWIDTH)
-		    {
-			RectFill (rp, bbox.Left + BOXWIDTH,
-			    	      bbox.Top + BOXWIDTH,
-				      bbox.Left + bbox.Width - BOXWIDTH - 1,
-				      bbox.Top + bbox.Height - BOXWIDTH - 1);
-		    }
 		}
 
 		break;
@@ -249,18 +253,15 @@ void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
 	    case GFLG_GADGHBOX:
 		SetDrMd (rp, COMPLEMENT);
 
+		RectFill (rp, bbox.Left - BOXSIZEX,
+		    	      bbox.Top  - BOXSIZEY,
+			      bbox.Left + bbox.Width  - 1 + BOXSIZEX,
+			      bbox.Top  + bbox.Height - 1 + BOXSIZEY);
+
 		RectFill (rp, bbox.Left,
-		    	      bbox.Top,
+			      bbox.Top,
 			      bbox.Left + bbox.Width - 1,
 			      bbox.Top + bbox.Height - 1);
-
-		if (bbox.Width > 2*BOXWIDTH && bbox.Height > 2*BOXWIDTH)
-		{
-		    RectFill (rp, bbox.Left + BOXWIDTH,
-			    	  bbox.Top + BOXWIDTH,
-				  bbox.Left + bbox.Width - BOXWIDTH - 1,
-				  bbox.Top + bbox.Height - BOXWIDTH - 1);
-		}
 		break;
 
 	} /* switch (gadget->Flags & GFLG_GADGHIGHBITS) */
