@@ -22,7 +22,7 @@
 #define LateIntuiInit(data) \
     AROS_LC1(BOOL, LateIntuiInit, \
     AROS_LCA(APTR, data, A0), \
-    struct IntuitionBase *, IntuitionBase, 120, Intuition)
+    struct IntuitionBase *, IntuitionBase, 150, Intuition)
 
 #define DoNotify(cl, o, ic, msg) \
     AROS_LC4(IPTR, DoNotify, \
