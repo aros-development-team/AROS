@@ -19,12 +19,22 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/******************************************************************************/
+
+#define SPECIAL_LOCKING 1   /* When activated mouse cursor relevant locks are
+    	    	    	       treated in some kind of privileged way, by
+			       inserting wait-for-sem-requests at head of
+			       wait queue, instead of at tail */
+
+/******************************************************************************/
+
 static OOP_Class *init_fakefbclass(struct class_static_data *csd);
 static VOID free_fakefbclass(OOP_Class *cl, struct class_static_data *csd);
 
 static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd);
 static VOID free_fakegfxhiddclass(OOP_Class *cl, struct class_static_data *csd);
 
+/******************************************************************************/
 
 struct gfx_data
 {
@@ -47,15 +57,233 @@ struct gfx_data
     BOOL    	    	    backup_done;
 };
 
+/******************************************************************************/
+
 static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_data *csd);
 static VOID rethink_cursor(struct gfx_data *data, struct class_static_data *csd);
 static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data, struct class_static_data *csd);
 
+/******************************************************************************/
 
 #define LFB(data)	ObtainSemaphore(&(data)->fbsema)
 #define UFB(data)	ReleaseSemaphore(&(data)->fbsema)
+#define LFB_QUICK(data) ObtainSemaphore(&(data)->fbsema)
+#define UFB_QUICK(data) ReleaseSemaphore(&(data)->fbsema)
 
 #define CSD(cl)     	((struct class_static_data *)cl->UserData)
+
+#define __IHidd_FakeFB	(CSD(cl)->hiddFakeFBAttrBase)
+
+/******************************************************************************/
+
+#if SPECIAL_LOCKING
+
+/******************************************************************************/
+
+#undef SysBase
+
+static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urgent,
+    	    	    	    	    	struct ExecBase *SysBase)
+{
+    struct Task *me;
+    
+    /* Get pointer to current task */
+    me=SysBase->ThisTask;
+
+    /* Arbitrate for the semaphore structure */
+    Forbid();
+
+    /*
+	ss_QueueCount == -1 indicates that the semaphore is
+	free, so we increment this straight away. If it then
+	equals 0, then we are the first to allocate this semaphore.
+
+	Note: This will need protection for SMP machines.
+    */
+    sigSem->ss_QueueCount++;
+    if( sigSem->ss_QueueCount == 0 )
+    {
+	/* We now own the semaphore. This is quick. */
+	sigSem->ss_Owner = me;
+	sigSem->ss_NestCount++;
+    }
+
+    /* The semaphore was in use, but was it by us? */
+    else if( sigSem->ss_Owner == me )
+    {
+	/* Yes, just increase the nesting count */
+	sigSem->ss_NestCount++;
+    }
+
+    /*
+	Else, some other task must own it. We have
+	to set a waiting request here.
+    */
+    else
+    {
+	/*
+	    We need a node to mark our semaphore request. Lets use some
+	    stack memory.
+	*/
+	struct SemaphoreRequest sr;
+	sr.sr_Waiter = me;
+
+	/*
+	    Have to clear the signal to make sure that we don't
+	    return immediately. We then add the SemReq to the
+	    waiters list of the semaphore. We were the last to
+	    request, so we must be the last to get the semaphore.
+	*/
+
+#warning This must be atomic!
+	me->tc_SigRecvd &= ~SIGF_SINGLE;
+	
+	if (urgent)
+	{
+	    AddHead((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
+	}
+	else
+	{
+	    AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
+	}
+
+	/*
+	    Finally, we simply wait, ReleaseSemaphore() will fill in
+	    who owns the semaphore.
+	*/
+	Wait(SIGF_SINGLE);
+    }
+
+    /* All Done! */
+    Permit();
+
+}
+
+/******************************************************************************/
+
+static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
+    	    	    	    	    	 struct ExecBase *SysBase)
+{
+   /* Protect the semaphore structure from multiple access. */
+    Forbid();
+
+    /* Release one on the nest count */
+    sigSem->ss_NestCount--;
+    sigSem->ss_QueueCount--;
+
+    if(sigSem->ss_NestCount == 0)
+    {
+	/*
+	    There are two cases here. Either we are a shared
+	    semaphore, or not. If we are not, make sure that the
+	    correct Task is calling ReleaseSemaphore()
+	*/
+
+	/*
+	    Do not try and wake anything unless there are a number
+	    of tasks waiting. We do both the tests, this is another
+	    opportunity to throw an alert if there is an error.
+	*/
+	if(
+	    sigSem->ss_QueueCount >= 0
+	 && sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL
+	)
+	{
+	    struct SemaphoreRequest *sr, *srn;
+
+	    /*
+		Look at the first node, but only to see whether it
+		is shared or not.
+	    */
+	    sr = (struct SemaphoreRequest *)sigSem->ss_WaitQueue.mlh_Head;
+
+	    /*
+		A node is shared if the ln_Name/sr_Waiter field is
+		odd (ie it has bit 1 set).
+
+		If the sr_Waiter field is != NULL, then this is a
+		task waiting, otherwise it is a message.
+	    */
+	    if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
+	    {
+		/* This is a shared lock, so ss_Owner == NULL */
+		sigSem->ss_Owner = NULL;
+
+		/* Go through all the nodes to find the shared ones */
+		ForeachNodeSafe( &sigSem->ss_WaitQueue, sr, srn)
+		{
+		    srn = (struct SemaphoreRequest *)sr->sr_Link.mln_Succ;
+
+		    if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
+		    {
+			Remove((struct Node *)sr);
+
+			/* Clear the bit, and update the owner count */
+			(IPTR)sr->sr_Waiter &= ~1;
+			sigSem->ss_NestCount++;
+
+			/* This is a task, signal it */
+			Signal(sr->sr_Waiter, SIGF_SINGLE);
+		    }
+		}
+	    }
+
+	    /*	This is an exclusive lock - awaken first node */
+	    else
+	    {
+		/* Save typing */
+		struct SemaphoreMessage *sm = (struct SemaphoreMessage *)sr;
+
+		/* Only awaken the first of the nodes */
+		Remove((struct Node *)sr);
+		sigSem->ss_NestCount++;
+
+		sigSem->ss_Owner = sr->sr_Waiter;
+		Signal(sr->sr_Waiter, SIGF_SINGLE);
+	    }
+	    
+	} /* there are waiters */
+	/*  Otherwise, there are not tasks waiting. */
+	else
+	{
+	    sigSem->ss_Owner = NULL;
+	    sigSem->ss_QueueCount = -1;
+	}
+    }
+    else if(sigSem->ss_NestCount < 0)
+    {
+	/*
+	    This can't happen. It means that somebody has released
+	    more times than they have obtained.
+	*/
+	Alert( AN_SemCorrupt );
+    }
+
+    /* All done. */
+    Permit();
+    
+}
+
+/******************************************************************************/
+
+#undef LFB
+#undef UFB
+#undef LFB_QUICK
+#undef UFB_QUICK
+
+#define LFB(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, FALSE, SysBase)
+#define UFB(data)	FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, SysBase)
+
+#define LFB_QUICK(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, TRUE, SysBase)
+#define UFB_QUICK(data) FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, SysBase)
+
+
+/******************************************************************************/
+
+#endif /* SPECIAL_LOCKING */
+
+/******************************************************************************/
+
 #undef OOPBase
 #define OOPBase     	((struct Library *)CSD(cl)->oopbase)
 
@@ -67,8 +295,6 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 
 #undef GfxBase
 #define GfxBase     	(CSD(cl)->gfxbase)
-
-#define __IHidd_FakeFB	(CSD(cl)->hiddFakeFBAttrBase)
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -315,7 +541,7 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     struct gfx_data *data;
     
     data = OOP_INST_DATA(cl, o);
-LFB(data);    
+LFB_QUICK(data);    
     /* erase the old cursor */
     if (data->curs_on)
     	draw_cursor(data, FALSE, CSD(cl));
@@ -327,7 +553,7 @@ LFB(data);
     
     if (data->curs_on)
     	draw_cursor(data, TRUE, CSD(cl));
-UFB(data);	
+UFB_QUICK(data);	
     return TRUE;
 }
 
@@ -337,7 +563,7 @@ static VOID gfx_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     
     data = OOP_INST_DATA(cl, o);
 
-LFB(data);    
+LFB_QUICK(data);    
     
     if (msg->visible)
     {
@@ -356,7 +582,7 @@ LFB(data);
 	}
     }
     
-UFB(data);  
+UFB_QUICK(data);  
   
 }
 
