@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Unalias CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -83,7 +83,6 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
     struct Process  * UnaliasProc;
     struct LocalVar * UnaliasNode;
     IPTR              OutArgs[4];
-    int               Return_Value;
     BOOL              Success;
     LONG              VarLength;
     char              Buffer1[BUFFER_SIZE];
@@ -104,15 +103,12 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
     {
         /* Display a list of aliases.
          */
-        Forbid();
         UnaliasProc = (struct Process *)FindTask(NULL);
-        Permit();
 
         if (UnaliasProc != NULL)
         {
             ForeachNode((struct List *)&(UnaliasProc->pr_LocalVars),
-                        (struct Node *)UnaliasNode
-            )
+                        (struct Node *)UnaliasNode)
             {
                 if (UnaliasNode->lv_Node.ln_Type == LV_ALIAS)
                 {
