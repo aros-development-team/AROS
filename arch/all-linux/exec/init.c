@@ -60,6 +60,7 @@ extern const struct Resident
     LDDemon_resident,
     emul_handler_resident,
     hiddserial_resident,
+    hiddparallel_resident,
     boot_resident,
     con_handler_resident,
     nil_handler_resident,
@@ -96,6 +97,7 @@ static const struct Resident *romtagList[] =
     &Console_resident,			    /* ColdStart,   5	 */
     &emul_handler_resident,		    /* ColdStart,   0	 */
     &hiddserial_resident,   	    	    /* ColdStart,   0    */
+    &hiddparallel_resident,   	    	    /* ColdStart,   0    */
     &Workbench_resident,		    /* ColdStart,  -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
 
