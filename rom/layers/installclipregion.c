@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -56,5 +56,6 @@
     D(bug("InstallClipRegion(layer @ $%lx)\n", layer));
 
     return NULL;
+
     AROS_LIBFUNC_EXIT
 } /* InstallClipRegion */
