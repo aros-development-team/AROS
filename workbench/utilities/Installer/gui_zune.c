@@ -111,23 +111,22 @@ Push_Last
 
 
 const char GuiWinTitle[] ="AROS - Installer V43.3";
-struct Screen *scr;
 
 
 #define WINDOWWIDTH  400
-#define WINDOWHEIGHT 250
+#define WINDOWHEIGHT 300
 
 void helpwin(char *title, char *text)
 {
 BOOL running = TRUE;
-LONG sigs, val;
+LONG sigs = 0;
 
     set(helptext, MUIA_Text_Contents, text);
     set(helpwnd, MUIA_Window_Title, title);
     set(helpwnd, MUIA_Window_Open, TRUE);
     while (running)
     {
-	switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+	switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 	{
 	    case MUIV_Application_ReturnID_Quit:
 		running = FALSE;
@@ -135,6 +134,7 @@ LONG sigs, val;
 	    default:
 		break;
 	}
+	WaitCTRL(sigs);
     }
     set(helpwnd, MUIA_Window_Open, FALSE);
 }
@@ -155,6 +155,7 @@ LONG sigs, val;
  */
 void init_gui()
 {
+struct Screen *scr;
 
     scr = LockPubScreen(NULL);
 
@@ -163,37 +164,38 @@ void init_gui()
 
    	SubWindow, wnd = WindowObject,
 	    MUIA_Window_Title,	GuiWinTitle,
-	    MUIA_Window_Width,	400,
-	    MUIA_Window_Height,	300,
+	    MUIA_Window_Width,	WINDOWWIDTH,
+	    MUIA_Window_Height,	WINDOWHEIGHT,
 	    MUIA_Window_CloseGadget,	FALSE,
 	    MUIA_Window_NoMenus,	TRUE,
 	    MUIA_Window_ID,	MAKE_ID('A','I','N','S'),
-	    WindowContents,
-	    VGroup,
+	    WindowContents, VGroup,
 		Child, root = VGroup, End,
 		Child, HBar(TRUE),
 		Child, HGroup,
-		MUIA_Group_SameSize, TRUE,
-		Child, btproceed = CoolImageIDButton("Proceed", COOL_USEIMAGE_ID),
-		Child, btabort   = CoolImageIDButton("Abort", COOL_CANCELIMAGE_ID),
-		Child, btskip    = CoolImageIDButton("Skip", COOL_WARNIMAGE_ID),
-		Child, bthelp    = CoolImageIDButton("Help", COOL_INFOIMAGE_ID),
+		    MUIA_Group_SameSize, TRUE,
+		    Child, btproceed = CoolImageIDButton("Proceed", COOL_USEIMAGE_ID),
+		    Child, btabort   = CoolImageIDButton("Abort", COOL_CANCELIMAGE_ID),
+		    Child, btskip    = CoolImageIDButton("Skip", COOL_WARNIMAGE_ID),
+		    Child, bthelp    = CoolImageIDButton("Help", COOL_INFOIMAGE_ID),
 		End,
 	    End,
 	End,
    	SubWindow, helpwnd = WindowObject,
-	    MUIA_Window_Width,	400,
-	    MUIA_Window_Height,	300,
+	    MUIA_Window_Width,	WINDOWWIDTH,
+	    MUIA_Window_Height,	WINDOWHEIGHT,
 	    MUIA_Window_CloseGadget,	TRUE,
 	    MUIA_Window_SizeGadget,	FALSE,
 	    MUIA_Window_NoMenus,	TRUE,
 	    WindowContents, VGroup,
 		Child, helptext = TextObject,
-		    GroupFrameT(NULL),
+		    GroupFrame,
+		    MUIA_Background, MUII_GroupBack,
 		    MUIA_Text_Contents, (IPTR)NULL,
 		    MUIA_Text_Editable, FALSE,
 		    MUIA_Text_Multiline, TRUE,
 		End,
+		Child, VSpace(1),
 	    End,
 	End,
     End;
@@ -220,6 +222,7 @@ kprintf("Failed to intialize Zune GUI\n");
     DoMethod(bthelp, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2,
 	MUIM_Application_ReturnID, Push_Help);
     set(wnd, MUIA_Window_Open, TRUE);
+    UnlockPubScreen(NULL, scr);
 }
 
 /*
@@ -299,7 +302,7 @@ void show_working(char *msg)
 void show_message(char * msg, struct ParameterList * pl)
 {
 BOOL running = TRUE;
-ULONG sigs = 0, val;
+ULONG sigs = 0;
 Object *wc;
 
     if ( GetPL(pl, _ALL).used == 1 || get_var_int("@user-level") > _NOVICE )
@@ -325,7 +328,7 @@ Object *wc;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
@@ -343,9 +346,9 @@ kprintf("Skip\n");
 			helpwinpl(HELP_ON_MESSAGE, pl, _HELP);
 			break;
 		    default:
-			WaitCTRL(sigs);
 			break;
 		}
+		WaitCTRL(sigs);
 	    }
 
 	    DelContents(wc);
@@ -414,7 +417,7 @@ char *helptext;
 void request_userlevel(char *msg)
 {
 BOOL running = TRUE;
-ULONG sigs = 0, val;
+ULONG sigs = 0;
 Object *wc;
 Object *btabout;
 
@@ -446,9 +449,10 @@ char **mxlabels;
 
 
     wc = VGroup,
-	Child, VGroup, GroupFrameT(NULL),
+	Child, VGroup, GroupFrame,
 	    Child, TextObject,
-		GroupFrameT(NULL),
+		GroupFrame,
+		MUIA_Background, MUII_GroupBack,
 		MUIA_Text_Contents, (IPTR)(welcome),
 		MUIA_Text_Editable, FALSE,
 		MUIA_Text_Multiline, TRUE,
@@ -457,7 +461,7 @@ char **mxlabels;
 		GroupFrameT(USERLEVEL_REQUEST),
 		MUIA_Radio_Entries, (IPTR)(mxlabels),
 	    End,
-	    Child, btabout = CoolImageIDButton("About Installer"  ,COOL_ASKIMAGE_ID),
+	    Child, btabout = CoolImageIDButton("About Installer" ,COOL_ASKIMAGE_ID),
 	    End,
 	End;
 
@@ -469,7 +473,7 @@ char **mxlabels;
 
 	while (running)
 	{
-	    switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+	    switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 	    {
 		case MUIV_Application_ReturnID_Quit:
 		case Push_Abort:
@@ -490,9 +494,9 @@ kprintf("Skip\n");
 		    show_help_installer();
 		    break;
 		default:
-		    WaitCTRL(sigs);
 		    break;
 	    }
+	    WaitCTRL(sigs);
 	}
 	GetAttr(MUIA_Radio_Active, levelmx, &usrlevel);
 	set_variable("@user-level", NULL, usrlevel);
@@ -525,7 +529,7 @@ kprintf("Skip\n");
 	    running = TRUE;
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
@@ -543,9 +547,9 @@ kprintf("Skip\n");
 			show_help_logfile();
 			break;
 		    default:
-			WaitCTRL(sigs);
 			break;
 		}
+		WaitCTRL(sigs);
 	    }
 	    GetAttr(MUIA_Radio_Active, levelmx, &logval);
 	    switch (logval)
@@ -589,9 +593,10 @@ kprintf("Skip\n");
 		running = TRUE;
 		while (running)
 		{
-		    switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		    switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		    {
 			case MUIV_Application_ReturnID_Quit:
+			case Push_Abort:
 			    DelContents(wc);
 			    cleanup();
 			    exit(-1);
@@ -606,9 +611,9 @@ kprintf("Skip\n");
 			    show_help_pretend();
 			    break;
 			default:
-			    WaitCTRL(sigs);
 			    break;
 		    }
+		    WaitCTRL(sigs);
 		}
 		GetAttr(MUIA_Radio_Active, levelmx, &logval);
 		switch (logval)
@@ -684,13 +689,14 @@ int i, m;
     char *out;
     BOOL running = TRUE;
     Object *levelmx, *wc;
-    ULONG val, sigs;
+    ULONG sigs = 0;
 
 	disable_skip(TRUE);
 	out = collatestrings(m, GetPL(pl, _PROMPT).arg);
 
 	wc = VGroup,
 	Child, VGroup, GroupFrame,
+		    MUIA_Background, MUII_GroupBack,
 		    Child, TextObject,
 			MUIA_Text_Contents, (IPTR)(out),
 			MUIA_Text_Editable, FALSE,
@@ -708,7 +714,7 @@ int i, m;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
@@ -733,20 +739,26 @@ kprintf("Skip\n");
 			}
 			break;
 		    default:
-			WaitCTRL(sigs);
 			break;
 		}
+		WaitCTRL(sigs);
 	    }
 	    GetAttr(MUIA_Radio_Active, levelmx, &retval);
 
 	    DelContents(wc);
 	}
-	FreeVec(mxlabels[0]);
-	FreeVec(mxlabels[1]);
-	FreeVec(mxlabels);
 	FreeVec(out);
 	disable_skip(FALSE);
     }
+    if( preferences.transcriptstream != NULL )
+    {
+	Write(preferences.transcriptstream, "Ask Question: Result was \"", 26);
+	Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
+	Write(preferences.transcriptstream, "\".\n\n", 4);
+    }
+    FreeVec(mxlabels[0]);
+    FreeVec(mxlabels[1]);
+    FreeVec(mxlabels);
 
 return retval;
 }
@@ -787,13 +799,14 @@ long int i, min, max;
     char *out;
     BOOL running = TRUE;
     Object *st, *wc;
-    ULONG val, sigs;
+    ULONG sigs = 0;
 
 	disable_skip(TRUE);
 	out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
 
 	wc = VGroup,
 	Child, VGroup, GroupFrame,
+		    MUIA_Background, MUII_GroupBack,
 		    Child, TextObject,
 			MUIA_Text_Contents, (IPTR)(out),
 			MUIA_Text_Editable, FALSE,
@@ -801,9 +814,10 @@ long int i, min, max;
 		    End,
 		    Child, st  = StringObject,
 			StringFrame,
-			MUIA_String_Accept,	(IPTR)"0123456789",
+			MUIA_String_Accept,	(IPTR)"-0123456789",
 			MUIA_String_Integer,	retval,
-//			MUIA_String_MaxLen,	128,
+			MUIA_String_AdvanceOnCR,TRUE,
+			MUIA_CycleChain,	TRUE,
 		    End,
 		End,
 	    End;
@@ -814,7 +828,7 @@ long int i, min, max;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
@@ -843,9 +857,9 @@ kprintf("Skip\n");
 			}
 			break;
 		    default:
-			WaitCTRL(sigs);
 			break;
 		}
+		WaitCTRL(sigs);
 	    }
 	    GetAttr(MUIA_String_Integer, st, &retval);
 
@@ -854,7 +868,14 @@ kprintf("Skip\n");
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-
+    if( preferences.transcriptstream != NULL )
+    {
+    char tmpbuf[MAXARGSIZE];
+	Write(preferences.transcriptstream, "Ask Number: Result was \"", 24);
+	sprintf(tmpbuf, "%ld", retval);
+	Write(preferences.transcriptstream, tmpbuf, strlen(tmpbuf));
+	Write(preferences.transcriptstream, "\".\n\n", 4);
+    }
 
 return retval;
 }
@@ -865,7 +886,7 @@ return retval;
  */
 char *request_string(struct ParameterList *pl)
 {
-char *retval, *string;
+char *retval, *string = NULL;
 int i;
 
     if( GetPL(pl, _DEFAULT).used == 1 )
@@ -882,13 +903,14 @@ int i;
     char *out;
     BOOL running = TRUE;
     Object *st, *wc;
-    ULONG val, sigs;
+    ULONG sigs = 0;
 
 	disable_skip(TRUE);
 	out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
 
 	wc = VGroup,
 	Child, VGroup, GroupFrame,
+		    MUIA_Background, MUII_GroupBack,
 		    Child, TextObject,
 			MUIA_Text_Contents, (IPTR)(out),
 			MUIA_Text_Editable, FALSE,
@@ -898,6 +920,8 @@ int i;
 			StringFrame,
 			MUIA_String_Contents,	(IPTR)string,
 			MUIA_String_MaxLen,	128,
+			MUIA_String_AdvanceOnCR,TRUE,
+			MUIA_CycleChain,	TRUE,
 		    End,
 		End,
 	    End;
@@ -908,7 +932,7 @@ int i;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
@@ -933,18 +957,23 @@ kprintf("Skip\n");
 			}
 			break;
 		    default:
-			WaitCTRL(sigs);
 			break;
 		}
+		WaitCTRL(sigs);
 	    }
-	    string = XGET(st,MUIA_String_Contents);
+	    get(st, MUIA_String_Contents, (IPTR *)&string);
 
 	    DelContents(wc);
 	}
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-
+    if( preferences.transcriptstream != NULL )
+    {
+	Write(preferences.transcriptstream, "Ask String: Result was \"", 24);
+	Write(preferences.transcriptstream, retval, strlen(retval));
+	Write(preferences.transcriptstream, "\".\n\n", 4);
+    }
 
     retval = addquotes(string);
 
@@ -957,8 +986,117 @@ return retval;
 long int request_choice(struct ParameterList *pl)
 {
 long int retval;
+char **mxlabels;
+int i, max;
+
+    NeedPROMPT(pl);
 
     retval = GetPL(pl, _DEFAULT).intval;
+
+    if ( GetPL(pl, _CHOICES).used == 1 )
+    {
+	max = GetPL(pl, _CHOICES).intval;
+
+	if( max > 32 )
+	{ 
+	    error = SCRIPTERROR;
+	    traperr("More than 32 choices given!\n", NULL);
+	}
+
+	mxlabels = AllocVec((max+1)*sizeof(STRPTR), MEMF_PUBLIC);
+	outofmem(mxlabels);
+
+	for( i = 0 ; i < max ; i++ )
+	{
+	    mxlabels[i] = StrDup(GetPL(pl, _CHOICES).arg[i]);
+	}
+	mxlabels[i] = NULL;
+    }
+    else
+    {
+	error = SCRIPTERROR;
+	traperr("No choices given!\n", NULL);
+    }
+
+    TRANSSCRIPT();
+
+    if ( get_var_int("@user-level") > _NOVICE )
+    {
+    char *out;
+    BOOL running = TRUE;
+    Object *levelmx, *wc;
+    ULONG sigs = 0;
+
+	disable_skip(TRUE);
+	out = collatestrings(GetPL(pl, _PROMPT).intval, GetPL(pl, _PROMPT).arg);
+
+	wc = VGroup,
+	Child, VGroup, GroupFrame,
+		    MUIA_Background, MUII_GroupBack,
+		    Child, TextObject,
+			MUIA_Text_Contents, (IPTR)(out),
+			MUIA_Text_Editable, FALSE,
+			MUIA_Text_Multiline, TRUE,
+		    End,
+		    Child, levelmx = RadioObject,
+			MUIA_Radio_Entries, (IPTR)(mxlabels),
+		    End,
+		End,
+	    End;
+
+	if (wc)
+	{
+	    AddContents(wc);
+
+	    while (running)
+	    {
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+		{
+		    case MUIV_Application_ReturnID_Quit:
+		    case Push_Abort:
+			DelContents(wc);
+			cleanup();
+			exit(-1);
+			break;
+		    case Push_Proceed:
+			running = FALSE;
+			break;
+		    case Push_Skip:
+kprintf("Skip\n");
+			break;
+		    case Push_Help:
+			if (GetPL(pl, _HELP).intval)
+			{
+			    helpwinpl(HELP_ON_ASKCHOICE, pl, _HELP);
+			}
+			else
+			{
+			    helpwin(HELP_ON_ASKCHOICE, get_var_arg("@asknumber-help"));
+			}
+			break;
+		    default:
+			break;
+		}
+		WaitCTRL(sigs);
+	    }
+	    GetAttr(MUIA_Radio_Active, levelmx, &retval);
+
+	    DelContents(wc);
+	}
+	FreeVec(out);
+	disable_skip(FALSE);
+    }
+    if( preferences.transcriptstream != NULL )
+    {
+	Write(preferences.transcriptstream, "Ask Choice: Result was \"", 24);
+	Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
+	Write(preferences.transcriptstream, "\".\n\n", 4);
+    }
+    for( i = 0 ; i < max ; i++ )
+    {
+	FreeVec(mxlabels[i]);
+    }
+    FreeVec(mxlabels);
 
 return retval;
 }
@@ -1045,7 +1183,7 @@ int request_confirm(struct ParameterList * pl)
 int retval = 1;
 BOOL running = TRUE;
 Object *wc;
-ULONG sigs, val;
+ULONG sigs = 0;
 char *out;
 
     NeedPROMPT(pl);
@@ -1058,6 +1196,7 @@ char *out;
 	wc = VGroup,
 	    Child, TextObject,
 		GroupFrame,
+		MUIA_Background, MUII_GroupBack,
 		MUIA_Text_Contents, (IPTR)(out),
 		MUIA_Text_Editable, FALSE,
 		MUIA_Text_Multiline, TRUE,
@@ -1070,7 +1209,7 @@ char *out;
 
 	    while (running)
 	    {
-		switch (val = DoMethod(app,MUIM_Application_Input,(IPTR)&sigs))
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
 		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
@@ -1089,9 +1228,9 @@ char *out;
 			helpwinpl(HELP_ON_CONFIRM, pl, _HELP);
 			break;
 		    default:
-			WaitCTRL(sigs);
 			break;
 		}
+		WaitCTRL(sigs);
 	    }
 
 	    DelContents(wc);
