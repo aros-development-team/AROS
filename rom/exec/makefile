@@ -12,25 +12,28 @@ LIBS = -L$(LIBDIR) -larosc
 FILES = execstrap_res execstrap_init execstrap_end
 
 FUNCTIONS = \
+	initstruct makelibrary makefunctions initresident \
 	setintvector addintserver remintserver \
-	typeofmem \
+	allocmem freemem availmem typeofmem \
 	addmemlist addmemhandler remmemhandler \
 	insert addhead addtail remove remhead remtail enqueue findname \
-	setsignal \
+	setsignal allocsignal freesignal \
 	addport remport waitport findport createmsgport deletemsgport \
-	putmsg getmsg \
+	putmsg getmsg replymsg \
 	doio sendio checkio waitio abortio createiorequest deleteiorequest \
 	addresource remresource openresource \
-	addlibrary remlibrary oldopenlibrary closelibrary setfunction \
-	sumlibrary openlibrary taggedopenlibrary \
-	adddevice \
+	addlibrary remlibrary oldopenlibrary closelibrary \
+	setfunction sumlibrary openlibrary taggedopenlibrary \
+	adddevice remdevice \
 	findtask \
+	rawdofmt \
+	allocvec freevec \
 	initsemaphore attemptsemaphore findsemaphore addsemaphore remsemaphore \
 	obtainsemaphoreshared attemptsemaphoreshared
 
 # Functions that are written in asm and need to be linked into exec.strap.
 # These are in config/$(KERNEL).
-ASMFUNCTIONS = forbid permit disable getcc cacheclearu
+ASMFUNCTIONS = forbid disable getcc cacheclearu
 
 else
 LIBS =

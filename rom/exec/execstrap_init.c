@@ -7,6 +7,9 @@
 
 #include "exec_extfuncs.h"
 
+#define SetFunc(a,b) \
+    SetFunction((struct Library *)SysBase, (  a * -6), (APTR)&AROS_SLIB_ENTRY(b,Exec));
+
 /*
     Architecture dependent function variations:
 */
@@ -45,44 +48,45 @@ int start(void)
 
 	Some functions are safe to call even from interrupts, so protect these
 	with Disable/Enable:
-
 	Alert/Cause/Disable/Enable/FindName/FindPort/FindTask/PutMsg/ReplyMsg/Signal/
 	AddHead/AddTail/Enqueue/RemHead/RemTail/Insert/Remove ... any more?
     */
-
     Disable();
-    SetFunction((struct Library *)SysBase, ( 20 * -6), (APTR)&AROS_SLIB_ENTRY(Disable,Exec));
-    SetFunction((struct Library *)SysBase, ( 22 * -6), (APTR)&AROS_SLIB_ENTRY(Forbid,Exec));
+
+    SetFunc( 20, Disable);
+    SetFunc( 22, Forbid);
+
 #if 0
     /* "Some trouble prevented CycleToMenu to initialize itself properly"
        Related to the microkernel */
-    SetFunction((struct Library *)SysBase, ( 23 * -6), (APTR)&AROS_SLIB_ENTRY(Permit,Exec));
+    SetFunc( 23, Permit);
 #endif
+
 #if 0
     /*
 	Any ixemul program that uses wildcards on the command line will crash the Amiga.
 	Ixemul is responsible for this; there is a code-fragment in
 	ixemul/library/__cli_parse.c to check out why our Insert() fails.
     */
-    SetFunction((struct Library *)SysBase, ( 39 * -6), (APTR)&AROS_SLIB_ENTRY(Insert,Exec));
+    SetFunc( 39, Insert);
 #endif
-    SetFunction((struct Library *)SysBase, ( 40 * -6), (APTR)&AROS_SLIB_ENTRY(AddHead,Exec));
-    SetFunction((struct Library *)SysBase, ( 41 * -6), (APTR)&AROS_SLIB_ENTRY(AddTail,Exec));
-    SetFunction((struct Library *)SysBase, ( 42 * -6), (APTR)&AROS_SLIB_ENTRY(Remove,Exec));
-    SetFunction((struct Library *)SysBase, ( 43 * -6), (APTR)&AROS_SLIB_ENTRY(RemHead,Exec));
-    SetFunction((struct Library *)SysBase, ( 44 * -6), (APTR)&AROS_SLIB_ENTRY(RemTail,Exec));
-    SetFunction((struct Library *)SysBase, ( 45 * -6), (APTR)&AROS_SLIB_ENTRY(Enqueue,Exec));
 
-    SetFunction((struct Library *)SysBase, ( 46 * -6), (APTR)&AROS_SLIB_ENTRY(FindName,Exec));
-    SetFunction((struct Library *)SysBase, ( 49 * -6), (APTR)&AROS_SLIB_ENTRY(FindTask,Exec));
-    SetFunction((struct Library *)SysBase, ( 65 * -6), (APTR)&AROS_SLIB_ENTRY(FindPort,Exec));
-    SetFunction((struct Library *)SysBase, ( 61 * -6), (APTR)&AROS_SLIB_ENTRY(PutMsg,Exec));
+    SetFunc( 40, AddHead);
+    SetFunc( 41, AddTail);
+    SetFunc( 42, Remove);
+    SetFunc( 43, RemHead);
+    SetFunc( 44, RemTail);
+    SetFunc( 45, Enqueue);
+    SetFunc( 46, FindName);
+    SetFunc( 49, FindTask);
+    SetFunc( 65, FindPort);
+    SetFunc( 61, PutMsg);
 
 #if 0
     /* The "move.w ccr,d0" should really be implemented as part of the jumptable, for speed.
        Is this desirable? */
     if ((cpuflags & AFF_68010) == AFF_68010)
-	SetFunction((struct Library *)SysBase, ( 88 * -6), (APTR)&AROS_SLIB_ENTRY(GetCC_10,Exec));
+	SetFunc( 88, GetCC_10);
 #endif
 
     /*
@@ -103,9 +107,9 @@ int start(void)
 	/* If 68040 is set, it implies 020 and 030 bits also set. */
 	if ((cpuflags & AFF_68040) == AFF_68040)
 	{
-	    SetFunction((struct Library *)SysBase, (106 * -6), (APTR)&AROS_SLIB_ENTRY(CacheClearU_40,Exec));
+	    SetFunc(106, CacheClearU_40);
 	}
-	else SetFunction((struct Library *)SysBase, (106 * -6), (APTR)&AROS_SLIB_ENTRY(CacheClearU_20,Exec));
+	else SetFunc(106, CacheClearU_20);
     }
     else
     {
@@ -113,65 +117,91 @@ int start(void)
 	    We are on a 68000/010. These have no caches, so this default call is
 	    essentially a no-op (rts).
 	*/
-	SetFunction((struct Library *)SysBase, (106 * -6), (APTR)&AROS_SLIB_ENTRY(CacheClearU,Exec));
+	SetFunc(106, CacheClearU);
     }
     Enable();
 
-    SetFunction((struct Library *)SysBase, ( 27 * -6), (APTR)&AROS_SLIB_ENTRY(SetIntVector,Exec));
-    SetFunction((struct Library *)SysBase, ( 28 * -6), (APTR)&AROS_SLIB_ENTRY(AddIntServer,Exec));
-    SetFunction((struct Library *)SysBase, ( 29 * -6), (APTR)&AROS_SLIB_ENTRY(RemIntServer,Exec));
-    SetFunction((struct Library *)SysBase, ( 51 * -6), (APTR)&AROS_SLIB_ENTRY(SetSignal,Exec));
-    SetFunction((struct Library *)SysBase, ( 59 * -6), (APTR)&AROS_SLIB_ENTRY(AddPort,Exec));
-    SetFunction((struct Library *)SysBase, ( 60 * -6), (APTR)&AROS_SLIB_ENTRY(RemPort,Exec));
-    SetFunction((struct Library *)SysBase, ( 62 * -6), (APTR)&AROS_SLIB_ENTRY(GetMsg,Exec));
-    SetFunction((struct Library *)SysBase, ( 64 * -6), (APTR)&AROS_SLIB_ENTRY(WaitPort,Exec));
-    SetFunction((struct Library *)SysBase, ( 66 * -6), (APTR)&AROS_SLIB_ENTRY(AddLibrary,Exec));
-    SetFunction((struct Library *)SysBase, ( 67 * -6), (APTR)&AROS_SLIB_ENTRY(RemLibrary,Exec));
-    SetFunction((struct Library *)SysBase, ( 68 * -6), (APTR)&AROS_SLIB_ENTRY(OldOpenLibrary,Exec));
 #if 0
-    /* Guru 01 00 00 0f: */
-    SetFunction((struct Library *)SysBase, ( 69 * -6), (APTR)&AROS_SLIB_ENTRY(CloseLibrary,Exec));
+    /* Fails, presumably on the AROS_ALIGN restrictions: */
+    SetFunc( 13, InitStruct);
+#endif
+    SetFunc( 14, MakeLibrary);
+    SetFunc( 15, MakeFunctions);
+    SetFunc( 17, InitResident);
+    SetFunc( 27, SetIntVector);
+    SetFunc( 28, AddIntServer);
+    SetFunc( 29, RemIntServer);
+#if 0
+    /* Computer boots ok, but then programs fail. KingCON allows you to enter
+       a command, but if you enter return, hangs. No other keypresses are
+       accepted; mclk (clock window) still runs, though: */
+    SetFunc( 33, AllocMem);
+    SetFunc( 35, FreeMem);
+#endif
+    SetFunc( 36, AvailMem);
+    SetFunc( 51, SetSignal);
+    SetFunc( 55, AllocSignal);
+    SetFunc( 56, FreeSignal);
+    SetFunc( 59, AddPort);
+    SetFunc( 60, RemPort);
+    SetFunc( 62, GetMsg);
+    SetFunc( 63, ReplyMsg);
+    SetFunc( 64, WaitPort);
+    SetFunc( 66, AddLibrary);
+    SetFunc( 67, RemLibrary);
+    SetFunc( 68, OldOpenLibrary);
+#if 0
+    /* Guru 01 00 00 0f (AN_BadFreeAddr): */
+    SetFunc( 69, CloseLibrary);
 #endif
 #if 0
     /* Produces very strange code. "c:version" prints
        "Kickstart 39.106. Could not find version information for ''" and fails:
     */
-    SetFunction((struct Library *)SysBase, ( 70 * -6), (APTR)&AROS_SLIB_ENTRY(SetFunction,Exec));
+    SetFunc( 70, SetFunction);
 #endif
-    SetFunction((struct Library *)SysBase, ( 71 * -6), (APTR)&AROS_SLIB_ENTRY(SumLibrary,Exec));
-    SetFunction((struct Library *)SysBase, ( 72 * -6), (APTR)&AROS_SLIB_ENTRY(AddDevice,Exec));
-    SetFunction((struct Library *)SysBase, ( 76 * -6), (APTR)&AROS_SLIB_ENTRY(DoIO,Exec));
-    SetFunction((struct Library *)SysBase, ( 77 * -6), (APTR)&AROS_SLIB_ENTRY(SendIO,Exec));
-    SetFunction((struct Library *)SysBase, ( 78 * -6), (APTR)&AROS_SLIB_ENTRY(CheckIO,Exec));
-    SetFunction((struct Library *)SysBase, ( 79 * -6), (APTR)&AROS_SLIB_ENTRY(WaitIO,Exec));
-    SetFunction((struct Library *)SysBase, ( 80 * -6), (APTR)&AROS_SLIB_ENTRY(AbortIO,Exec));
-    SetFunction((struct Library *)SysBase, ( 81 * -6), (APTR)&AROS_SLIB_ENTRY(AddResource,Exec));
-    SetFunction((struct Library *)SysBase, ( 82 * -6), (APTR)&AROS_SLIB_ENTRY(RemResource,Exec));
-    SetFunction((struct Library *)SysBase, ( 83 * -6), (APTR)&AROS_SLIB_ENTRY(OpenResource,Exec));
-    SetFunction((struct Library *)SysBase, ( 89 * -6), (APTR)&AROS_SLIB_ENTRY(TypeOfMem,Exec));
-    SetFunction((struct Library *)SysBase, ( 92 * -6), (APTR)&AROS_SLIB_ENTRY(OpenLibrary,Exec));
-    SetFunction((struct Library *)SysBase, ( 93 * -6), (APTR)&AROS_SLIB_ENTRY(InitSemaphore,Exec));
+    SetFunc( 71, SumLibrary);
+    SetFunc( 72, AddDevice);
+    SetFunc( 73, RemDevice);
+    SetFunc( 76, DoIO);
+    SetFunc( 77, SendIO);
+    SetFunc( 78, CheckIO);
+    SetFunc( 79, WaitIO);
+    SetFunc( 80, AbortIO);
+    SetFunc( 81, AddResource);
+    SetFunc( 82, RemResource);
+    SetFunc( 83, OpenResource);
+#if 0
+    /* Hangs just after accessing HD for the first time. Related to BCPL/BSTR
+       handling? */
+    SetFunc( 87, RawDoFmt);
+#endif
+    SetFunc( 89, TypeOfMem);
+    SetFunc( 92, OpenLibrary);
+    SetFunc( 93, InitSemaphore);
 #if 0
     /* Can only be patched if we have control over the microkernel: */
-    SetFunction((struct Library *)SysBase, ( 94 * -6), (APTR)&AROS_SLIB_ENTRY(ObtainSemaphore,Exec));
+    SetFunc( 94, _ObtainSemaphore);
 #endif
-    SetFunction((struct Library *)SysBase, ( 96 * -6), (APTR)&AROS_SLIB_ENTRY(AttemptSemaphore,Exec));
-    SetFunction((struct Library *)SysBase, ( 99 * -6), (APTR)&AROS_SLIB_ENTRY(FindSemaphore,Exec));
-    SetFunction((struct Library *)SysBase, (100 * -6), (APTR)&AROS_SLIB_ENTRY(AddSemaphore,Exec));
-    SetFunction((struct Library *)SysBase, (101 * -6), (APTR)&AROS_SLIB_ENTRY(RemSemaphore,Exec));
-    SetFunction((struct Library *)SysBase, (103 * -6), (APTR)&AROS_SLIB_ENTRY(AddMemList,Exec));
-    SetFunction((struct Library *)SysBase, (109 * -6), (APTR)&AROS_SLIB_ENTRY(CreateIORequest,Exec));
-    SetFunction((struct Library *)SysBase, (110 * -6), (APTR)&AROS_SLIB_ENTRY(DeleteIORequest,Exec));
-    SetFunction((struct Library *)SysBase, (111 * -6), (APTR)&AROS_SLIB_ENTRY(CreateMsgPort,Exec));
-    SetFunction((struct Library *)SysBase, (112 * -6), (APTR)&AROS_SLIB_ENTRY(DeleteMsgPort,Exec));
+    SetFunc( 96, AttemptSemaphore);
+    SetFunc( 99, FindSemaphore);
+    SetFunc(100, AddSemaphore);
+    SetFunc(101, RemSemaphore);
+    SetFunc(103, AddMemList);
+    SetFunc(109, CreateIORequest);
+    SetFunc(110, DeleteIORequest);
+    SetFunc(111, CreateMsgPort);
+    SetFunc(112, DeleteMsgPort);
 #if 0
     /* Can only be patched if we have control over the microkernel: */
-    SetFunction((struct Library *)SysBase, (113 * -6), (APTR)&AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec));
+    SetFunc(113, _ObtainSemaphoreShared);
 #endif
-    SetFunction((struct Library *)SysBase, (120 * -6), (APTR)&AROS_SLIB_ENTRY(AttemptSemaphoreShared,Exec));
-    SetFunction((struct Library *)SysBase, (129 * -6), (APTR)&AROS_SLIB_ENTRY(AddMemHandler,Exec));
-    SetFunction((struct Library *)SysBase, (130 * -6), (APTR)&AROS_SLIB_ENTRY(RemMemHandler,Exec));
-    SetFunction((struct Library *)SysBase, (135 * -6), (APTR)&AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec));
+    SetFunc(114, AllocVec);
+    SetFunc(115, FreeVec);
+    SetFunc(120, AttemptSemaphoreShared);
+    SetFunc(129, AddMemHandler);
+    SetFunc(130, RemMemHandler);
+    SetFunc(135, TaggedOpenLibrary);
 
     /*
 	High-tech display tricks (green effects) :-)
