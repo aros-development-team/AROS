@@ -31,6 +31,7 @@ IPTR diskIconNew(Class *cl, Object *obj, struct opSet *msg)
 	struct TagItem *tag;
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
+
 	if(retval)
 	{
 		obj=(Object*)retval;

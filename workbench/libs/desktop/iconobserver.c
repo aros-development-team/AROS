@@ -72,7 +72,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		script=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("script: %d\n", script);
 	}
 
 	tag=FindTagItem(IOA_Pure, msg->ops_AttrList);
@@ -80,7 +79,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		pure=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("pure: %d\n", pure);
 	}
 
 	tag=FindTagItem(IOA_Archived, msg->ops_AttrList);
@@ -88,7 +86,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		archived=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("archived %d\n", archived);
 	}
 
 	tag=FindTagItem(IOA_Readable, msg->ops_AttrList);
@@ -96,7 +93,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		readable=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("readable: %d\n", readable);
 	}
 
 	tag=FindTagItem(IOA_Writeable, msg->ops_AttrList);
@@ -104,7 +100,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		writeable=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("writeable: %d\n", writeable);
 	}
 
 	tag=FindTagItem(IOA_Executable, msg->ops_AttrList);
@@ -112,7 +107,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		executable=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("executable: %d\n", executable);
 	}
 
 	tag=FindTagItem(IOA_Deleteable, msg->ops_AttrList);
@@ -120,7 +114,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	{
 		deleteable=tag->ti_Data;
 		tag->ti_Tag=TAG_IGNORE;
-		kprintf("deleteable: %d\n", deleteable);
 	}
 
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);

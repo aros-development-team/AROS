@@ -178,6 +178,7 @@ AROS_LH1(struct DesktopBase *, open,
     AROS_LIBFUNC_INIT
 
 	struct DesktopOperation *dob;
+	struct List *subList;
 	/*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -280,7 +281,7 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_DesktopObserver)
 			return NULL;
 
-		DesktopBase->db_Icon=MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct IconClassData), iconDispatcher);
+		DesktopBase->db_Icon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Presentation, sizeof(struct IconClassData), iconDispatcher);
 		if(!DesktopBase->db_Icon)
 			return NULL;
 
@@ -313,21 +314,81 @@ AROS_LH1(struct DesktopBase *, open,
 		if(!DesktopBase->db_Operation)
 			return NULL;
 
+		//1
 		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
 		dob->do_Code=(DOC_ICONOP | 1);
 		dob->do_Name="Open...";
+		dob->do_MutualExclude=0;
+		dob->do_Flags=0;
+		dob->do_Number=1;
+		NewList(&dob->do_SubItems);
 		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalIconOpsClassData), internalIconOpsDispatcher);
 		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
 
+		//2
 		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
 		dob->do_Code=(DOC_WINDOWOP | 1);
 		dob->do_Name="Close";
+		dob->do_MutualExclude=0;
+		dob->do_Flags=0;
+		dob->do_Number=2;
+		NewList(&dob->do_SubItems);
 		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalWindowOpsClassData), internalWindowOpsDispatcher);
 		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
 
+		//3
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_WINDOWOP | 2);
+		dob->do_Name="View by";
+		dob->do_MutualExclude=0;
+		dob->do_Flags=0;
+		dob->do_Number=3;
+		NewList(&dob->do_SubItems);
+		subList=&dob->do_SubItems;
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalWindowOpsClassData), internalWindowOpsDispatcher);
+		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
+
+		//4
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_WINDOWOP | 3);
+		dob->do_Name="Large icons";
+		dob->do_MutualExclude=(1 << 5) | (1 << 6);
+		dob->do_Flags=DOF_CHECKED | DOF_CHECKABLE | DOF_MUTUALEXCLUDE;
+		dob->do_Number=4;
+		NewList(&dob->do_SubItems);
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalWindowOpsClassData), internalWindowOpsDispatcher);
+		AddTail(subList, (struct Node*)dob);
+
+		//5
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_WINDOWOP | 4);
+		dob->do_Name="Small icons";
+		dob->do_MutualExclude=(1 << 4) | (1 << 6);
+		dob->do_Flags=DOF_CHECKABLE | DOF_MUTUALEXCLUDE;
+		dob->do_Number=5;
+		NewList(&dob->do_SubItems);
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalWindowOpsClassData), internalWindowOpsDispatcher);
+		AddTail(subList, (struct Node*)dob);
+
+		//6
+		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
+		dob->do_Code=(DOC_WINDOWOP | 5);
+		dob->do_Name="Detail";
+		dob->do_MutualExclude=(1 << 4) | (1 << 5);
+		dob->do_Flags=DOF_CHECKABLE | DOF_MUTUALEXCLUDE;
+		dob->do_Number=6;
+		NewList(&dob->do_SubItems);
+		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalWindowOpsClassData), internalWindowOpsDispatcher);
+		AddTail(subList, (struct Node*)dob);
+
+		//7
 		dob=AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
 		dob->do_Code=(DOC_DESKTOPOP | 1);
 		dob->do_Name="Quit";
+		dob->do_MutualExclude=0;
+		dob->do_Flags=0;
+		dob->do_Number=7;
+		NewList(&dob->do_SubItems);
 		dob->do_Impl=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Operation, sizeof(struct InternalDesktopOpsClassData), internalDesktopOpsDispatcher);
 		AddTail(&DesktopBase->db_OperationList, (struct Node*)dob);
 		// END TEMPORARY!

@@ -91,15 +91,33 @@ IPTR internalWindowOpsExecute(Class *cl, Object *obj, struct opExecute *msg)
 {
 	IPTR retval=0;
 	struct InternalIconOpsClassData *data;
+	Object *iconcontainer=NULL;
 
 	data=(struct InternalWindowOpsClassData*)INST_DATA(cl, obj);
+
+	GetAttr(MUIA_Window_RootObject, msg->target, &iconcontainer);
 
 	switch(msg->operationCode)
 	{
 		// close
 		case (DOC_WINDOWOP | 1):
-			SetAttrs(msg->target, ICA_Open, FALSE, TAG_END);
-			// dispose of some objects and do some cleanup here
+//			SetAttrs(msg->target, ICA_Open, FALSE, TAG_END);
+			SetAttrs(msg->target, MUIA_Window_Open, FALSE, TAG_END);
+			break;
+		// view by
+		case (DOC_WINDOWOP | 2):
+			break;
+		// large icons
+		case (DOC_WINDOWOP | 3):
+			SetAttrs(iconcontainer, ICA_ViewMode, ICAVM_LARGE);
+			break;
+		// small icons
+		case (DOC_WINDOWOP | 4):
+			SetAttrs(iconcontainer, ICA_ViewMode, ICAVM_SMALL);
+			break;
+		// detail
+		case (DOC_WINDOWOP | 5):
+			SetAttrs(iconcontainer, ICA_ViewMode, ICAVM_DETAIL);
 			break;
 	}
 

@@ -133,12 +133,16 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 	struct TagItem *iconTags;
 	ULONG kind;
 	struct IconContainerObserverClassData *data;
+	Object *desktop=NULL;
 
 	data=(struct IconContainerObserverClassData*)INST_DATA(cl, obj);
 
+	GetAttr(ICA_Desktop, _presentation(obj), &desktop);
+
 	for(i=0; i<msg->wsr_Results; i++)
 	{
-		iconTags=AllocVec(13*sizeof(struct TagItem), MEMF_ANY);
+
+		iconTags=AllocVec(18*sizeof(struct TagItem), MEMF_ANY);
 
 		iconTags[0].ti_Tag=IA_DiskObject;
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
@@ -164,8 +168,18 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 		iconTags[10].ti_Data=msg->wsr_ResultsArray[i].sr_Execute;
 		iconTags[11].ti_Tag=IOA_Deleteable;
 		iconTags[11].ti_Data=msg->wsr_ResultsArray[i].sr_Delete;
-		iconTags[12].ti_Tag=TAG_END;
-		iconTags[12].ti_Data=0;
+		iconTags[12].ti_Tag=MUIA_Draggable;
+		iconTags[12].ti_Data=TRUE;
+		iconTags[13].ti_Tag=IA_Size;
+		iconTags[13].ti_Data=msg->wsr_ResultsArray[i].sr_Size;
+		iconTags[14].ti_Tag=IA_LastModified;
+		iconTags[14].ti_Data=&msg->wsr_ResultsArray[i].sr_LastModified;
+		iconTags[15].ti_Tag=IA_Type;
+		iconTags[15].ti_Data=msg->wsr_ResultsArray[i].sr_Type;
+		iconTags[16].ti_Tag=IA_Desktop;
+		iconTags[16].ti_Data=desktop;
+		iconTags[17].ti_Tag=TAG_END;
+		iconTags[17].ti_Data=0;
 
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{
@@ -195,9 +209,10 @@ IPTR iconConObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 				break;
 		}
 
+
 		newIcon=CreateDesktopObjectA(kind, iconTags);
 
-		FreeVec(iconTags);
+			FreeVec(iconTags);
 
 		DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
 	}

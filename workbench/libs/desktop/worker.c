@@ -78,6 +78,9 @@ void scan(struct ScannerWorkerContext *swc)
 						sr[i].sr_Write=fib->fib_Protection & FIBF_WRITE;
 						sr[i].sr_Execute=fib->fib_Protection & FIBF_EXECUTE;
 						sr[i].sr_Delete=fib->fib_Protection & FIBF_DELETE;
+						sr[i].sr_Type=fib->fib_DirEntryType;
+						sr[i].sr_Size=fib->fib_Size;
+						sr[i].sr_LastModified=fib->fib_Date;
 					}
 					FreeDosObject(DOS_FIB, fib);
 				}

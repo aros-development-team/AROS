@@ -13,6 +13,8 @@
 #include <dos/dostags.h>
 #include <dos/dosextens.h>
 #include <intuition/classes.h>
+#include <libraries/desktop.h>
+#include <libraries/gadtools.h>
 #include <utility/tagitem.h>
 
 #include <proto/dos.h>
@@ -160,5 +162,176 @@ struct WorkingMessageNode* findWorkedMessage(struct MinList *list, ULONG id)
 
 	return wmn;
 }
+
+
+BOOL findOperationItem(LONG menuNumber, struct DesktopOperationItem *doi, struct NewMenu *menuDat, LONG *i)
+{
+	LONG j=0, k;
+	BOOL found=FALSE;
+
+
+	while(!found && doi[j].doi_Code!=0)
+	{
+		// find menu number in doi
+		if(doi[j].doi_Number==menuNumber)
+		{
+			// find matching entry in menudat
+			k=0;
+			while(!found && menuDat[k].nm_Type!=NM_END)
+			{
+				if(menuDat[k].nm_UserData==doi[j].doi_Code)
+				{
+//					kprintf("found mutex to exclude : %s\n", doi[j].doi_Name);
+					found=TRUE;
+					*i=k;
+				}
+				k++;
+			}
+		}
+
+		if(doi[j].doi_SubItems)
+		{
+			LONG m=0;
+
+			while(!found && doi[j].doi_SubItems[m].doi_Code!=0)
+			{
+				if(doi[j].doi_SubItems[m].doi_Number==menuNumber)
+				{
+					// find matching entry in menudat
+					k=0;
+					while(!found && menuDat[k].nm_Type!=NM_END)
+					{
+						if(menuDat[k].nm_UserData==doi[j].doi_SubItems[m].doi_Code)
+						{
+							found=TRUE;
+							*i=k;
+						}
+						k++;
+					}
+				}
+				m++;
+			}
+		}
+
+		j++;
+	}
+
+	return found;
+}
+
+LONG getItemPosition(struct NewMenu *menuDat, LONG i)
+{
+	LONG j=i-1;
+	UBYTE menuType;
+
+	while(menuDat[j].nm_Type==menuDat[i].nm_Type)
+		j--;
+
+	return i-j-1;
+}
+
+void doExclude(struct DesktopOperationItem *doi, struct NewMenu *menuDat, LONG n)
+{
+	LONG i=0, j=0;
+	LONG bitNum;
+
+	while(doi[j].doi_Code!=0)
+	{
+		if(doi[j].doi_MutualExclude)
+		{
+			bitNum=0;
+			while(bitNum<32)
+			{
+				if(bitNum & doi[j].doi_MutualExclude)
+				{
+					if(findOperationItem(bitNum, doi, menuDat, &i))
+						menuDat[n].nm_MutualExclude|=(1<<getItemPosition(menuDat, i));
+				}
+
+				bitNum++;
+			}
+		}
+
+		n++;
+		if(doi[j].doi_SubItems)
+		{
+			LONG k=0;
+
+			while(doi[j].doi_SubItems[k].doi_Code!=0)
+			{
+				if(doi[j].doi_SubItems[k].doi_MutualExclude)
+				{
+					bitNum=0;
+					while(bitNum<32)
+					{
+						if((1 << bitNum) & doi[j].doi_SubItems[k].doi_MutualExclude)
+						{
+							if(findOperationItem(bitNum, doi, menuDat, &i))
+								menuDat[n].nm_MutualExclude|=(1<<getItemPosition(menuDat, i));
+						}
+
+						bitNum++;
+					}
+					k++;
+				}
+				n++;
+			}
+		}
+
+		j++;
+		n++;
+	}
+}
+
+void processOperationItem(LONG *reali, LONG *realj, struct DesktopOperationItem *doi, struct NewMenu *menuDat)
+{
+	LONG i=*reali, j=*realj;
+
+	menuDat[i].nm_Type=NM_ITEM;
+	menuDat[i].nm_Label=doi[j].doi_Name;
+	menuDat[i].nm_CommKey=0;
+	menuDat[i].nm_Flags=0;
+	menuDat[i].nm_MutualExclude=0;
+
+	if(doi[j].doi_Flags & DOIF_CHECKABLE)
+	{
+		menuDat[i].nm_Flags|=CHECKIT;
+		if(doi[j].doi_Flags & DOIF_CHECKED)
+			menuDat[i].nm_Flags|=CHECKED;
+	}
+
+	menuDat[i].nm_UserData=doi[j].doi_Code;
+	i++;
+
+	if(doi[j].doi_SubItems)
+	{
+		ULONG k=0;
+
+		while(doi[j].doi_SubItems[k].doi_Code!=0 && doi[j].doi_SubItems[k].doi_Name!=NULL)
+		{
+			menuDat[i].nm_Type=NM_SUB;
+			menuDat[i].nm_Label=doi[j].doi_SubItems[k].doi_Name;
+			menuDat[i].nm_CommKey=0;
+			menuDat[i].nm_Flags=0;
+			menuDat[i].nm_MutualExclude=0;
+
+			if(doi[j].doi_SubItems[k].doi_Flags & DOIF_CHECKABLE)
+			{
+				menuDat[i].nm_Flags|=CHECKIT;
+				if(doi[j].doi_SubItems[k].doi_Flags & DOIF_CHECKED)
+					menuDat[i].nm_Flags|=CHECKED;
+			}
+
+			menuDat[i].nm_UserData=doi[j].doi_SubItems[k].doi_Code;
+			i++;
+			k++;
+		}
+	}
+	j++;
+
+	*reali=i;
+	*realj=j;
+}
+
 
 

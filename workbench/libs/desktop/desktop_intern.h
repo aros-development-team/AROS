@@ -15,16 +15,25 @@
 // this is extremely temporary!  This is part of the extensible
 // context menus.  Because new menuitems can be added by anyone
 // via a nice prefs program, we need to store what to do when
-// a menu is chosen.  It will, shortly, be in a prefs file.. but
+// a menu is chosen.  It will, shortly, somehow, be in a prefs file.. but
 // until then, we hardcode them in a list here
 
 struct DesktopOperation
 {
 	struct Node do_Node;
+	ULONG do_Number;
 	ULONG do_Code;
 	UBYTE *do_Name;
+	ULONG do_MutualExclude;
+	ULONG do_Flags;
+	struct List do_SubItems;
 	struct MUI_CustomClass *do_Impl;
 };
+
+#define DOF_CHECKED        0x00000001
+#define DOF_CHECKABLE      0x00000002
+#define DOF_MUTUALEXCLUDE  0x00000004
+
 // end temporary
 
 struct DesktopBase

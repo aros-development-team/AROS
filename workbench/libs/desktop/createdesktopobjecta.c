@@ -103,7 +103,6 @@
 			findTag=FindTagItem(IA_Label, tags);
 
 			newObject=NewObjectA(DiskIcon->mcc_Class, NULL, tags);
-
 			obsTags[0].ti_Tag=IOA_Name;
 			obsTags[0].ti_Data=findTag->ti_Data;
 			obsTags[1].ti_Tag=OA_Presentation;
@@ -112,6 +111,7 @@
 			obsTags[2].ti_Data=0;
 
 			semanticObject=NewObjectA(DiskIconObserver->mcc_Class, NULL, obsTags);
+
 			break;
 		}
 
@@ -134,12 +134,13 @@
 			obsTags[3].ti_Tag=TAG_END;
 			obsTags[3].ti_Data=0;
 
-
 			semanticObject=NewObjectA(DrawerIconObserver->mcc_Class, NULL, obsTags);
+
 			break;
 		}
 
 		case CDO_ToolIcon:
+
 			newObject=NewObjectA(ToolIcon->mcc_Class, NULL, tags);
 
 			semanticObject=NewObject(ToolIconObserver->mcc_Class, NULL,
@@ -164,7 +165,7 @@
 			break;
 
 		case CDO_Desktop:
-			newObject=NewObjectA(IconContainer->mcc_Class, NULL, tags);
+			newObject=NewObjectA(DesktopBase->db_Desktop->mcc_Class, NULL, tags);
 
 			semanticObject=NewObject(DesktopObserver->mcc_Class, NULL,
 						OA_Presentation, newObject, TAG_END);
