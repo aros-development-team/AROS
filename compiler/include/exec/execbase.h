@@ -119,8 +119,8 @@ struct ExecBase
 #define AFF_68881   (1L<<4)
 #define AFB_68882        5
 #define AFF_68882   (1L<<5)
-#define AFB_FBU40        6
-#define AFF_FBU40   (1L<<6)
+#define AFB_FPU40        6
+#define AFF_FPU40   (1L<<6)
 #define AFB_PRIVATE      15 /* PRIVATE */
 #define AFF_PRIVATE (1L<<15)
 
