@@ -12,6 +12,7 @@
 
 #include "intuition_intern.h"
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 /******************************************************************************/
 
