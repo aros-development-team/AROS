@@ -14,6 +14,7 @@
 
 BPTR LoadSeg_AOS(BPTR file);
 BPTR LoadSeg_ELF(BPTR file);
+BPTR LoadSeg_AOUT(BPTR file);
 
 /*****************************************************************************
 
@@ -71,6 +72,8 @@ D(bug("Loading \"%s\"...\n", name));
 /*	  segs=LoadSeg_AOS(file); Not yet */
 	if(!segs)
 	    segs=LoadSeg_ELF(file);
+	if(!segs)
+	    segs=LoadSeg_AOUT(file);
 
 	/* Clean up */
 	Close(file);
