@@ -1,5 +1,5 @@
-aroslistview_endtag.c
-aroslistview_functable.c
+aroscheckbox_endtag.c
+aroscheckbox_functable.c
 libdefs.h
 mmakefile
 *.err
