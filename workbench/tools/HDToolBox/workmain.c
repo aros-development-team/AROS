@@ -82,13 +82,11 @@ int i,count;
 								node->geometry.dg_CylSectors =
 									node->geometry.dg_TrackSectors *
 									node->geometry.dg_Heads;
+								args[0] = node->geometry.dg_Heads;
+								args[1] = node->geometry.dg_Cylinders;
+								args[2] = node->geometry.dg_TrackSectors;
+								EasyRequestArgs(0, &es, 0, args);
 							}
-							else
-								es.es_TextFormat = "Heads = %ld Cyls = %ld Sec/Track = %ld";
-							args[0] = node->geometry.dg_Heads;
-							args[1] = node->geometry.dg_Cylinders;
-							args[2] = node->geometry.dg_TrackSectors;
-							EasyRequestArgs(0, &es, 0, args);
 							node->partition_changed = FALSE;
 							AddTail(&hd_list, &node->ln);
 							SetGadgetAttrsA
