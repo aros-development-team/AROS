@@ -53,6 +53,8 @@ void AROS_SLIB_ENTRY(beginio, TrackDisk)();
 LONG AROS_SLIB_ENTRY(abortio, TrackDisk)();
 void td_floppytimer(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void td_floppyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+int td_getbyte(unsigned char *, struct TrackDiskBase *);
+int td_sendbyte(unsigned char, struct TrackDiskBase *);
 ULONG TD_InitTask(struct TrackDiskBase *);
 void TD_DevTask(struct TrackDiskBase *);
 BOOL TD_PerformIO( struct IOExtTD *, struct TrackDiskBase *);
@@ -211,7 +213,7 @@ AROS_LH2(struct TrackDiskBase *, init,
     AROS_LIBFUNC_INIT
     struct Library *OOPBase;
     ULONG i;
-    UBYTE drives;
+    UBYTE drives,temp;
 
     D(bug("TD: Init\n"));
 
@@ -228,6 +230,22 @@ AROS_LH2(struct TrackDiskBase *, init,
     	ReturnPtr("Trackdisk",struct TrackDiskBase *,NULL);
     }
 
+    /* Now lets verify that there really is a controller present */
+    outb(0,FDC_DOR);
+    outb(0,FDC_DOR);
+    outb(DORF_RESET,FDC_DOR);
+
+    /* New lets send a version command to it */
+    if (td_sendbyte(0x10,(struct TrackDiskBase *)NULL) == TDERR_DriveInUse)
+    {
+	/* No controller here */
+	bug("TD: No floppy controller found.\n");
+	ReturnPtr("TrackDisk",struct TrackDiskBase *,NULL);
+    }
+    td_getbyte(&temp,(struct TrackDiskBase *)NULL);
+
+    D(bug("TD: Floppy controller version %x\n",temp));
+    
     /* Set up the IRQ system */
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
 
