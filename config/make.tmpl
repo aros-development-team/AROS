@@ -245,6 +245,22 @@ $(TMP_TARGETBASE).d : %(basename).c
 
 
 #------------------------------------------------------------------------------
+# Make an alias from one arch specific build to another arch.
+# arguments:
+# - mainmmake: the mmake of the module in the main tree
+# - arch: the current arch
+# - alias: the alias to which this should point
+%define rule_archalias mainmmake=\A arch=\A alias=\A
+
+#MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU) \
+#MM    %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+
+#MM- %(mainmmake)-%(arch) : %(mainmmake)-%(alias)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Generate a rule to compile a C source file to an shared object file with a
 # .so suffix. Basename may contain a directory part, then the source
 # file has to be in that directory. The generated file will be put in the
@@ -639,8 +655,8 @@ endif
 %define build_module_macro mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= linklibfiles= cflags=$(CFLAGS) dflags= \
-  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK) \
-  genshlinklib=no genfunctable= genincludes= compiler=target
+  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= \
+  genfunctable= genincludes= compiler=target
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick %(mmake)-kobj"
 
@@ -660,21 +676,12 @@ BD_CONFFILE$(BDID)   := %(conffile)
 OBJDIR               ?= $(GENDIR)/$(CURDIR)
 BD_OBJDIR$(BDID)     := %(objdir)
 
-#Support for the dirty old mf.inc file
--include $(BD_OBJDIR$(BDID))/mf.inc
-ADD_OBJS := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
-ADD_SOBJS := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
-ifneq ($(ADDITIONAL_OBJS),)
-$(ADD_OBJS) :
-	@$(ECHO) Precompiled $@ does not exists
-	@exit 1
-$(ADD_SOBJS): %.so : %.o
-	@$(CP) $< $@
-endif
+BD_ARCHOBJS$(BDID)   := $(wildcard $(BD_OBJDIR$(BDID))/arch/*.o)
+BD_ARCHFILES$(BDID)  := $(basename $(notdir $(BD_ARCHOBJS$(BDID))))
 
 BD_INITFILE$(BDID)   := %(initfile)
-BD_FUNCS$(BDID)      := $(filter-out $(SUPPRESS_FILES),%(funcs))
-BD_FILES$(BDID)      := $(filter-out $(SUPPRESS_FILES),%(files))
+BD_FUNCS$(BDID)      := $(filter-out $(BD_ARCHFILES$(BDID)),%(funcs))
+BD_FILES$(BDID)      := $(filter-out $(BD_ARCHFILES$(BDID)),%(files))
 BD_LIBFILES$(BDID)   := %(linklibfiles)
 ifneq ($(wildcard $(BD_CONFFILE$(BDID))),)
 BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
@@ -684,8 +691,17 @@ endif
 
 BD_FUNCSRCS$(BDID)   := $(addsuffix .c,%(funcs))
 BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
-BD_INITOBJ$(BDID)    := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_INITFILE$(BDID)))))
-USE_CPAK             ?= $(USE_CPAK_DEFAULT)
+ifeq ($(filter $(BD_INITFILE$(BDID)), $(BD_ARCHFILES$(BDID))),)
+  BD_INITOBJ$(BDID)  := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_INITFILE$(BDID)))))
+else
+  TMP_INITREPLACE    := $(filter $(notdir $(BD_INITFILE$(BDID))), $(BD_ARCHFILES$(BDID)))
+  TMP_INITKEEP       := $(filter-out $(TMP_INITREPLACE),$(notdir $(BD_INITFILE$(BDID))))
+  BD_INITOBJ$(BDID)  := $(addsuffix .o, \
+  		     	    $(addprefix $(BD_OBJDIR$(BDID))/arch/,$(TMP_INITREPLACE)) \
+			    $(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_INITKEEP)) \
+			 )
+  BD_ARCHOBJS$(BDID) := $(filter-out $(BD_INITOBJ$(BDID)),$(BD_ARCHOBJS$(BDID)))
+endif
 
 TMP_FILES            := $(notdir $(BD_FILES$(BDID)))
 ifneq ($(BD_FUNCS$(BDID)),)
@@ -698,13 +714,9 @@ ifneq ($(BD_FUNCS$(BDID)),)
       TMP_FILES          := functable $(TMP_FILES)
     endif
   endif
-  ifeq (%(usecpak), yes)
-    TMP_FILES      += functions
-  else
-    TMP_FILES      += $(BD_FUNCS$(BDID))
-  endif
+  TMP_FILES      += $(BD_FUNCS$(BDID))
 endif
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES))) $(ADD_OBJS)
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES))) $(BD_ARCHOBJS$(BDID))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 
 BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES)))
@@ -833,9 +845,6 @@ endif
 %rule_compile basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
-%rule_compile basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) \
-	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
-	      compiler=%(compiler)
 endif
 
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
@@ -855,8 +864,6 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
 $(BD_ENDFILE$(BDID)).c :
 	@$(ECHO) "generating $@"
 	@$(ECHO) "#include <libcore/libtail.c>" >$@
-
-%rule_module_collect files=$(BD_FUNCS$(BDID)) dir=$(BD_OBJDIR$(BDID))
 
 %rule_genfunctable files=$(BD_FUNCS$(BDID)) dir=$(BD_OBJDIR$(BDID)) \
   libdefs=$(BD_LIBDEFSINC$(BDID))
@@ -912,8 +919,6 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
 
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
 
-# %(mmake)-linklib is a real big mess (bigger then the rest) but it has
-# to disappear in the so don't try to hard
 #MM %(mmake)-linklib : %(mmake)-setup setup-clib
 #MM %(mmake)-kobj : %(mmake)-setup setup-clib
 
@@ -930,30 +935,11 @@ endif
 # Link only when target %(mmake)-linklib otherwise for example jpeg.datatype
 # that depend on the jpeg library can cause to get this rule executed unwanted
 ifneq ($(filter $(TARGET),%(mmake)-linklib %(mmake)-kobj),)
-ifneq (%(genshlinklib),yes)
 %(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).a
-else
-%(mmake)-linklib : $(LIBDIR)/lib$(BD_MODNAME$(BDID)).so
-endif
-
 %(mmake)-kobj : $(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o
 
 %rule_link_linklib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))"
-
-BD_SHOBJS$(BDID) := $(patsubst %.o,%.so,$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))) $(ADD_SOBJS)
-
-%rule_compile_shared basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler) 
-%rule_compile_shared basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) \
-		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler)
-%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) \
-		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler)
-%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) \
-		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler)
-
-%rule_link_shlib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
-  objs=$(BD_SHOBJS$(BDID))
 
 $(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : $(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
 	@$(LD) -r -o $@ $^
@@ -1036,6 +1022,8 @@ endif
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
 %end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Build catalogs.
@@ -1079,6 +1067,99 @@ BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
 %end
 
 #-----------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Compile files for a arch specific replacement of code for a module
+# - files: the basename of the C files to compile.
+# - asmfiles: the basename of the asm file to assemble.
+# - mainmmake: the mmake of the module in the main directory to compile these
+#   arch specific files for.
+# - maindir: the object directory for the main module
+# - arch: the arch for which to compile these files. It can has to have the form
+#   of ARCH, CPU or ARCH-CPU, e.g. linux, i386 or linux-i386
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - aflags: the flags used during assembling
+# - compiler: (host or target) specifies which compiler to use. By default
+#   the target compiler is used
+%define build_archspecific files= asmfiles= mainmmake=/A maindir=/A arch=/A \
+cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target
+
+ifeq (%(files) %(asmfiles),)
+  $(error no files or asmfiles given)
+endif
+
+%buildid targets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-setup"
+
+#MM- %(mainmmake) : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-linklib : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+#MM- %(mainmmake)-kobj : %(mainmmake)-$(ARCH)-$(CPU) %(mainmmake)-$(ARCH) %(mainmmake)-$(CPU)
+
+#MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-setup
+
+ifeq (%(arch),)
+  $(error argument arch has to be non empty for the rule_compile_archspecific macro)
+endif
+
+BD_OBJDIR$(BDID)  := $(GENDIR)/%(maindir)/arch
+BD_COBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
+BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(asmfiles))))
+BD_OBJS$(BDID)    := $(BD_COBJS$(BDID)) $(BD_ASMOBJS$(BDID))
+BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files))))
+
+ifeq ($(TARGET),%(mainmmake)-%(arch))
+vpath %.c $(filter-out ./,$(dir %(files)))
+vpath %.s $(filter-out ./,$(dir %(asmfiles)))
+vpath %.S $(filter-out ./,$(dir %(asmfiles)))
+endif
+
+#MM %(mainmmake)-%(arch)-setup
+%rule_makedirs dirs=$(BD_OBJDIR$(BDID)) setuptarget=%(mainmmake)-%(arch)-setup
+
+#MM
+%(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
+
+#MM %(mainmmake)-%(arch)-setup
+%rule_makedirs dirs=$(BD_OBJDIR$(BDID)) setuptarget=%(mainmmake)-%(arch)-setup
+
+ifeq ($(findstring %(compiler),host target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(BD_COBJS$(BDID)) : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (%(compiler),host)
+$(BD_COBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+endif
+ifeq ($(TARGET),%(mainmmake)-%(arch))
+$(BD_OBJDIR$(BDID))/%.o : %.c
+	%compile_q opt=%(cflags) cmd=$(TMP_CMD)
+endif
+
+ifeq (%(dflags),)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags)
+else
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
+endif
+ifeq ($(TARGET),%(mainmmake)-%(arch))
+$(BD_OBJDIR$(BDID))/%.d : %.c
+	%mkdepend_q flags=$(TMP_DFLAGS)
+endif
+
+$(BD_ASMOBJS$(BDID)) : AFLAGS:=%(aflags)
+
+ifeq ($(TARGET),%(mainmmake)-%(arch))
+$(BD_OBJDIR$(BDID))/%.o : %.s
+	%assemble_q opt=$(AFLAGS)
+$(BD_OBJDIR$(BDID))/%.o : %.S
+	%assemble_q opt=$(AFLAGS)
+endif
+
+%include_deps depstargets=%(mainmmake)-%(arch) deps=$(TMP_DEPS)
+%end
+#------------------------------------------------------------------------------
 
 
 
