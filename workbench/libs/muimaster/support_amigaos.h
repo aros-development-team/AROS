@@ -14,6 +14,10 @@
 #include <intuition/classes.h>
 #endif
 
+#ifndef AMIGA_COMILER_H
+#include <amiga_compiler.h>
+#endif
+
 /* These are the identity function under AmigaOS */
 #define AROS_LONG2BE(x) (x)
 #define AROS_BE2LONG(x) (x)
@@ -57,7 +61,7 @@ char *StrDup(const char *x);
 int snprintf(char *buf, size_t size, const char *fmt, ...);
 size_t strlcat(char *buf, const char *src, size_t len);
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
-Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy,...);
+Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...);
 
 /*** HookEntry for OS4 (is only a dummy) ************************************/
 #ifdef __amigaos4__
