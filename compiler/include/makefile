@@ -1,5 +1,5 @@
 # $Id$
-TOP=../../..
+TOP=../..
 
 include $(TOP)/config/make.cfg
 
@@ -9,15 +9,16 @@ INCDIR=$(BINDIR)/include
 INCLUDES = $(wildcard *.h */*.h)
 DEST_INCLUDES = $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 
-all: setup os-include
+all: setup
 
 os-include: $(DEST_INCLUDES)
 
 $(INCDIR)/%.h: %.h
 	$(CP) $< $@
 
-setup:
-#	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+setup: make-dirs os-include
+
+make-dirs:
 	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
 	@if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros ; else true ; fi
 	@if [ ! -d $(INCDIR)/clib ]; then $(MKDIR) $(INCDIR)/clib ; else true ; fi
@@ -31,4 +32,4 @@ setup:
 	@if [ ! -d $(INCDIR)/utility ]; then $(MKDIR) $(INCDIR)/utility ; else true ; fi
 
 clean:
-	$(RM) $(INCDIR) links
+	-$(RM) $(INCDIR)
