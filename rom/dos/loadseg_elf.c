@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/23 14:23:54  aros
+    Added some more debug code
+
     Revision 1.7  1996/09/13 17:50:07  digulla
     Use IPTR
 
@@ -28,6 +31,7 @@
 #include <clib/dos_protos.h>
 #include <clib/aros_protos.h>
 #include "dos_intern.h"
+#include <aros/debug.h>
 
 extern struct DosLibrary * DOSBase;
 
@@ -224,6 +228,7 @@ kprintf ("StrTab-Section: name=%d type=%d flags=%d\n",
 	    if(hunks[t].memory==NULL)
 		ERROR(ERROR_NO_FREE_STORE);
 	    hunks[t].memory+=sizeof(BPTR);
+D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t].size));
 	}
     loaded=NULL;
     for(t=0;t<eh.shnum;t++)
