@@ -54,7 +54,9 @@ __asm VOID MUI_DisposeObject(register __a0 Object *obj)
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+#ifndef __MAXON__
 #warning FIXME: I should decrease the open count of library (use cl->hook->data)
+#endif
     DisposeObject(obj);
 
     AROS_LIBFUNC_EXIT
