@@ -40,7 +40,11 @@
 #   include <devices/inputevent.h>
 #endif
 
-                       /***** Intuition Message *****/
+#ifdef AROS_ALMOST_COMPATIBLE
+#define INTUITIONNAME "intuition.library"
+#endif
+
+		       /***** Intuition Message *****/
 
 struct IntuiMessage
 {
@@ -56,7 +60,7 @@ struct IntuiMessage
     ULONG Seconds;
     ULONG Micros;
 
-    struct Window       * IDCMPWindow;
+    struct Window	* IDCMPWindow;
     struct IntuiMessage * SpecialLink;
 };
 
@@ -66,23 +70,23 @@ struct ExtIntuiMessage
     struct TabletData * eim_TabletData;
 };
 
-                            /***** IDCMP *****/
+			    /***** IDCMP *****/
 
 #define IDCMP_SIZEVERIFY     (1L<<0)
-#define IDCMP_NEWSIZE        (1L<<1)
+#define IDCMP_NEWSIZE	     (1L<<1)
 #define IDCMP_REFRESHWINDOW  (1L<<2)
 #define IDCMP_MOUSEBUTTONS   (1L<<3)
 #define IDCMP_MOUSEMOVE      (1L<<4)
 #define IDCMP_GADGETDOWN     (1L<<5)
-#define IDCMP_GADGETUP       (1L<<6)
-#define IDCMP_REQSET         (1L<<7)
-#define IDCMP_MENUPICK       (1L<<8)
+#define IDCMP_GADGETUP	     (1L<<6)
+#define IDCMP_REQSET	     (1L<<7)
+#define IDCMP_MENUPICK	     (1L<<8)
 #define IDCMP_CLOSEWINDOW    (1L<<9)
-#define IDCMP_RAWKEY         (1L<<10)
+#define IDCMP_RAWKEY	     (1L<<10)
 #define IDCMP_REQVERIFY      (1L<<11)
-#define IDCMP_REQCLEAR       (1L<<12)
+#define IDCMP_REQCLEAR	     (1L<<12)
 #define IDCMP_MENUVERIFY     (1L<<13)
-#define IDCMP_NEWPREFS       (1L<<14)
+#define IDCMP_NEWPREFS	     (1L<<14)
 #define IDCMP_DISKINSERTED   (1L<<15)
 #define IDCMP_DISKREMOVED    (1L<<16)
 #define IDCMP_WBENCHMESSAGE  (1L<<17)
@@ -92,23 +96,23 @@ struct ExtIntuiMessage
 #define IDCMP_VANILLAKEY     (1L<<21)
 #define IDCMP_INTUITICKS     (1L<<22)
 #define IDCMP_IDCMPUPDATE    (1L<<23)
-#define IDCMP_MENUHELP       (1L<<24)
+#define IDCMP_MENUHELP	     (1L<<24)
 #define IDCMP_CHANGEWINDOW   (1L<<25)
 #define IDCMP_GADGETHELP     (1L<<26)
 #define IDCMP_LONELYMESSAGE  (1L<<31)
 
 #define CWCODE_MOVESIZE 0
-#define CWCODE_DEPTH    1
-#define MENUHOT         1
-#define MENUCANCEL      2
-#define MENUWAITING     3
-#define OKOK            1
-#define OKCANCEL        2
-#define OKABORT         4
-#define WBENCHOPEN      1
-#define WBENCHCLOSE     2
+#define CWCODE_DEPTH	1
+#define MENUHOT 	1
+#define MENUCANCEL	2
+#define MENUWAITING	3
+#define OKOK		1
+#define OKCANCEL	2
+#define OKABORT 	4
+#define WBENCHOPEN	1
+#define WBENCHCLOSE	2
 
-                            /***** IntuiText *****/
+			    /***** IntuiText *****/
 
 struct IntuiText
 {
@@ -119,11 +123,11 @@ struct IntuiText
     WORD  TopEdge;
 
     struct TextAttr  * ITextFont;
-    UBYTE            * IText;
+    UBYTE	     * IText;
     struct IntuiText * NextText;
 };
 
-                             /***** Menu *****/
+			     /***** Menu *****/
 
 struct Menu
 {
@@ -158,14 +162,14 @@ struct MenuItem
     WORD  TopEdge;
     WORD  Width;
     WORD  Height;
-    UWORD Flags;         /* see below */
+    UWORD Flags;	 /* see below */
     LONG  MutualExclude;
     APTR  ItemFill;
     APTR  SelectFill;
     BYTE  Command;
 
     struct MenuItem * SubItem;
-    UWORD             NextSelect;
+    UWORD	      NextSelect;
 };
 
 /* Flags */
@@ -183,11 +187,11 @@ struct MenuItem
 /* The following flags are READ-ONLY */
 #define ISDRAWN     (1<<12)
 #define HIGHITEM    (1<<13)
-#define MENUTOGGLED (1<<14) 
+#define MENUTOGGLED (1<<14)
 
-#define NOMENU   0x001F
-#define NOITEM   0x003F
-#define NOSUB    0x001F
+#define NOMENU	 0x001F
+#define NOITEM	 0x003F
+#define NOSUB	 0x001F
 #define MENUNULL 0xFFFF
 
 /* Macros */
@@ -211,7 +215,7 @@ struct MenuItem
 #define COMMWIDTH     27
 #define LOWCOMMWIDTH  16
 
-                           /***** Gadgets *****/
+			   /***** Gadgets *****/
 
 struct Gadget
 {
@@ -226,8 +230,8 @@ struct Gadget
     UWORD Activation; /* see below */
     UWORD GadgetType; /* see below */
 
-    APTR               GadgetRender;
-    APTR               SelectRender;
+    APTR	       GadgetRender;
+    APTR	       SelectRender;
     struct IntuiText * GadgetText;
 
     LONG MutualExclude; /* OBSOLETE */
@@ -250,8 +254,8 @@ struct ExtGadget
     UWORD Activation; /* see below */
     UWORD GadgetType; /* see below */
 
-    APTR               GadgetRender;
-    APTR               SelectRender;
+    APTR	       GadgetRender;
+    APTR	       SelectRender;
     struct IntuiText * GadgetText;
 
     LONG MutualExclude; /* OBSOLETE */
@@ -261,7 +265,7 @@ struct ExtGadget
     APTR  UserData;
 
 /* ExtGadget specific fields */
-    ULONG MoreFlags;      /* see below */
+    ULONG MoreFlags;	  /* see below */
     WORD  BoundsLeftEdge;
     WORD  BoundsTopEdge;
     WORD  BoundsWidth;
@@ -269,43 +273,43 @@ struct ExtGadget
 };
 
 /* Flags */
-#define GFLG_GADGHCOMP      0x0000
-#define GFLG_GADGHBOX       (1<<0)
+#define GFLG_GADGHCOMP	    0x0000
+#define GFLG_GADGHBOX	    (1<<0)
 #define GFLG_GADGHIMAGE     (1<<1)
-#define GFLG_GADGHNONE      0x0003
+#define GFLG_GADGHNONE	    0x0003
 #define GFLG_GADGHIGHBITS   0x0003
-#define GFLG_GADGIMAGE      (1<<2)
-#define GFLG_RELBOTTOM      (1<<3)
-#define GFLG_RELRIGHT       (1<<4)
-#define GFLG_RELWIDTH       (1<<5)
-#define GFLG_RELHEIGHT      (1<<6)
-#define GFLG_SELECTED       (1<<7)
-#define GFLG_DISABLED       (1<<8)
-#define GFLG_TABCYCLE       (1<<9)
+#define GFLG_GADGIMAGE	    (1<<2)
+#define GFLG_RELBOTTOM	    (1<<3)
+#define GFLG_RELRIGHT	    (1<<4)
+#define GFLG_RELWIDTH	    (1<<5)
+#define GFLG_RELHEIGHT	    (1<<6)
+#define GFLG_SELECTED	    (1<<7)
+#define GFLG_DISABLED	    (1<<8)
+#define GFLG_TABCYCLE	    (1<<9)
 #define GFLG_STRINGEXTENDED (1<<10)
 #define GFLG_IMAGEDISABLE   (1<<11)
 #define GFLG_LABELITEXT     0x0000
 #define GFLG_LABELSTRING    (1<<12)
 #define GFLG_LABELIMAGE     (1<<13)
-#define GFLG_LABELMASK      0x3000
+#define GFLG_LABELMASK	    0x3000
 #define GFLG_RELSPECIAL     (1<<14)
-#define GFLG_EXTENDED       (1<<15)
+#define GFLG_EXTENDED	    (1<<15)
 
 /* Activation */
-#define GACT_RELVERIFY    (1<<0)
-#define GACT_IMMEDIATE    (1<<1)
-#define GACT_ENDGADGET    (1<<2)
+#define GACT_RELVERIFY	  (1<<0)
+#define GACT_IMMEDIATE	  (1<<1)
+#define GACT_ENDGADGET	  (1<<2)
 #define GACT_FOLLOWMOUSE  (1<<3)
 #define GACT_RIGHTBORDER  (1<<4)
 #define GACT_LEFTBORDER   (1<<5)
-#define GACT_TOPBORDER    (1<<6)
+#define GACT_TOPBORDER	  (1<<6)
 #define GACT_BOTTOMBORDER (1<<7)
 #define GACT_TOGGLESELECT (1<<8)
 #define GACT_STRINGLEFT   0
 #define GACT_STRINGCENTER (1<<9)
 #define GACT_STRINGRIGHT  (1<<10)
-#define GACT_LONGINT      (1<<11)
-#define GACT_ALTKEYMAP    (1<<12)
+#define GACT_LONGINT	  (1<<11)
+#define GACT_ALTKEYMAP	  (1<<12)
 #define GACT_STRINGEXTEND (1<<13)
 #define GACT_BOOLEXTEND   (1<<13)
 #define GACT_ACTIVEGADGET (1<<14)
@@ -314,27 +318,27 @@ struct ExtGadget
 /* GadgetType */
 #define GTYP_GADGETTYPE   0xFC00
 #define GTYP_SYSTYPEMASK  0x00F0
-#define GTYP_SIZING       0x0010
-#define GTYP_WDRAGGING    0x0020
-#define GTYP_SDRAGGING    0x0030
-#define GTYP_WDEPTH       0x0040
-#define GTYP_SDEPTH       0x0050
-#define GTYP_WZOOM        0x0060
-#define GTYP_SUNUSED      0x0070
-#define GTYP_CLOSE        0x0080
-#define GTYP_REQGADGET    (1<<12)
-#define GTYP_GZZGADGET    (1<<13)
-#define GTYP_SCRGADGET    (1<<14)
-#define GTYP_SYSGADGET    (1<<15)
+#define GTYP_SIZING	  0x0010
+#define GTYP_WDRAGGING	  0x0020
+#define GTYP_SDRAGGING	  0x0030
+#define GTYP_WDEPTH	  0x0040
+#define GTYP_SDEPTH	  0x0050
+#define GTYP_WZOOM	  0x0060
+#define GTYP_SUNUSED	  0x0070
+#define GTYP_CLOSE	  0x0080
+#define GTYP_REQGADGET	  (1<<12)
+#define GTYP_GZZGADGET	  (1<<13)
+#define GTYP_SCRGADGET	  (1<<14)
+#define GTYP_SYSGADGET	  (1<<15)
 #define GTYP_BOOLGADGET   0x0001
 #define GTYP_GADGET0002   0x0002
 #define GTYP_PROPGADGET   0x0003
-#define GTYP_STRGADGET    0x0004
+#define GTYP_STRGADGET	  0x0004
 #define GTYP_CUSTOMGADGET 0x0005
-#define GTYP_GTYPEMASK    0x0007
+#define GTYP_GTYPEMASK	  0x0007
 
 /* MoreFlags */
-#define GMORE_BOUNDS       (1L<<0)
+#define GMORE_BOUNDS	   (1L<<0)
 #define GMORE_GADGETHELP   (1L<<1)
 #define GMORE_SCROLLRASTER (1L<<2)
 
@@ -375,7 +379,7 @@ struct PropInfo
 #define KNOBHMIN 6
 #define KNOBVMIN 4
 #define MAXBODY  0xFFFF
-#define MAXPOT   0xFFFF
+#define MAXPOT	 0xFFFF
 
 /***** StringInfo *****/
 
@@ -394,11 +398,11 @@ struct StringInfo
     WORD CTop;
 
     struct StringExtend * Extension;
-    LONG                  LongInt;
-    struct KeyMap       * AltKeyMap;
+    LONG		  LongInt;
+    struct KeyMap	* AltKeyMap;
 };
 
-                         /***** Requester *****/
+			 /***** Requester *****/
 
 struct Requester
 {
@@ -451,7 +455,7 @@ struct EasyStruct
     UBYTE * es_GadgetFormat;
 };
 
-                            /***** Window *****/
+			    /***** Window *****/
 
 struct Window
 {
@@ -471,7 +475,7 @@ struct Window
     ULONG Flags;
 
     struct Menu      * MenuStrip;
-    UBYTE            * Title;
+    UBYTE	     * Title;
     struct Requester * FirstRequest;
     struct Requester * DMRequest;
 
@@ -480,10 +484,10 @@ struct Window
     struct Screen   * WScreen;
     struct RastPort * RPort;
 
-    BYTE              BorderLeft;
-    BYTE              BorderTop;
-    BYTE              BorderRight;
-    BYTE              BorderBottom;
+    BYTE	      BorderLeft;
+    BYTE	      BorderTop;
+    BYTE	      BorderRight;
+    BYTE	      BorderBottom;
     struct RastPort * BorderRPort;
 
     struct Gadget * FirstGadget;
@@ -496,15 +500,15 @@ struct Window
     BYTE    XOffset;
     BYTE    YOffset;
 
-    ULONG                 IDCMPFlags;
-    struct MsgPort      * UserPort;
-    struct MsgPort      * WindowPort;
+    ULONG		  IDCMPFlags;
+    struct MsgPort	* UserPort;
+    struct MsgPort	* WindowPort;
     struct IntuiMessage * MessageKey;
 
-    UBYTE          DetailPen;
-    UBYTE          BlockPen;
+    UBYTE	   DetailPen;
+    UBYTE	   BlockPen;
     struct Image * CheckMark;
-    UBYTE        * ScreenTitle;
+    UBYTE	 * ScreenTitle;
 
     WORD GZZMouseX;
     WORD GZZMouseY;
@@ -535,7 +539,7 @@ struct NewWindow
 
     struct Gadget * FirstGadget;
     struct Image  * CheckMark;
-    UBYTE         * Title;
+    UBYTE	  * Title;
     struct Screen * Screen;
     struct BitMap * BitMap;
 
@@ -562,7 +566,7 @@ struct ExtNewWindow
 
     struct Gadget * FirstGadget;
     struct Image  * CheckMark;
-    UBYTE         * Title;
+    UBYTE	  * Title;
     struct Screen * Screen;
     struct BitMap * BitMap;
 
@@ -578,67 +582,67 @@ struct ExtNewWindow
 };
 
 /* Tags */
-#define WA_Dummy             (TAG_USER + 99)
-#define WA_Left              (WA_Dummy + 1)
-#define WA_Top               (WA_Dummy + 2)
-#define WA_Width             (WA_Dummy + 3)
-#define WA_Height            (WA_Dummy + 4)
-#define WA_DetailPen         (WA_Dummy + 5)
-#define WA_BlockPen          (WA_Dummy + 6)
-#define WA_IDCMP             (WA_Dummy + 7)
-#define WA_Flags             (WA_Dummy + 8)
-#define WA_Gadgets           (WA_Dummy + 9)
-#define WA_Checkmark         (WA_Dummy + 10)
-#define WA_Title             (WA_Dummy + 11)
-#define WA_ScreenTitle       (WA_Dummy + 12)
+#define WA_Dummy	     (TAG_USER + 99)
+#define WA_Left 	     (WA_Dummy + 1)
+#define WA_Top		     (WA_Dummy + 2)
+#define WA_Width	     (WA_Dummy + 3)
+#define WA_Height	     (WA_Dummy + 4)
+#define WA_DetailPen	     (WA_Dummy + 5)
+#define WA_BlockPen	     (WA_Dummy + 6)
+#define WA_IDCMP	     (WA_Dummy + 7)
+#define WA_Flags	     (WA_Dummy + 8)
+#define WA_Gadgets	     (WA_Dummy + 9)
+#define WA_Checkmark	     (WA_Dummy + 10)
+#define WA_Title	     (WA_Dummy + 11)
+#define WA_ScreenTitle	     (WA_Dummy + 12)
 #define WA_CustomScreen      (WA_Dummy + 13)
-#define WA_SuperBitMap       (WA_Dummy + 14)
-#define WA_MinWidth          (WA_Dummy + 15)
-#define WA_MinHeight         (WA_Dummy + 16)
-#define WA_MaxWidth          (WA_Dummy + 17)
-#define WA_MaxHeight         (WA_Dummy + 18)
-#define WA_InnerWidth        (WA_Dummy + 19)
-#define WA_InnerHeight       (WA_Dummy + 20)
+#define WA_SuperBitMap	     (WA_Dummy + 14)
+#define WA_MinWidth	     (WA_Dummy + 15)
+#define WA_MinHeight	     (WA_Dummy + 16)
+#define WA_MaxWidth	     (WA_Dummy + 17)
+#define WA_MaxHeight	     (WA_Dummy + 18)
+#define WA_InnerWidth	     (WA_Dummy + 19)
+#define WA_InnerHeight	     (WA_Dummy + 20)
 #define WA_PubScreenName     (WA_Dummy + 21)
-#define WA_PubScreen         (WA_Dummy + 22)
+#define WA_PubScreen	     (WA_Dummy + 22)
 #define WA_PubScreenFallBack (WA_Dummy + 23)
-#define WA_WindowName        (WA_Dummy + 24)
-#define WA_Colors            (WA_Dummy + 25)
-#define WA_Zoom              (WA_Dummy + 26)
-#define WA_MouseQueue        (WA_Dummy + 27)
-#define WA_BackFill          (WA_Dummy + 28)
-#define WA_RptQueue          (WA_Dummy + 29)
-#define WA_SizeGadget        (WA_Dummy + 30)
-#define WA_DragBar           (WA_Dummy + 31)
-#define WA_DepthGadget       (WA_Dummy + 32)
-#define WA_CloseGadget       (WA_Dummy + 33)
-#define WA_Backdrop          (WA_Dummy + 34)
-#define WA_ReportMouse       (WA_Dummy + 35)
+#define WA_WindowName	     (WA_Dummy + 24)
+#define WA_Colors	     (WA_Dummy + 25)
+#define WA_Zoom 	     (WA_Dummy + 26)
+#define WA_MouseQueue	     (WA_Dummy + 27)
+#define WA_BackFill	     (WA_Dummy + 28)
+#define WA_RptQueue	     (WA_Dummy + 29)
+#define WA_SizeGadget	     (WA_Dummy + 30)
+#define WA_DragBar	     (WA_Dummy + 31)
+#define WA_DepthGadget	     (WA_Dummy + 32)
+#define WA_CloseGadget	     (WA_Dummy + 33)
+#define WA_Backdrop	     (WA_Dummy + 34)
+#define WA_ReportMouse	     (WA_Dummy + 35)
 #define WA_NoCareRefresh     (WA_Dummy + 36)
-#define WA_Borderless        (WA_Dummy + 37)
-#define WA_Activate          (WA_Dummy + 38)
-#define WA_RMBTrap           (WA_Dummy + 39)
+#define WA_Borderless	     (WA_Dummy + 37)
+#define WA_Activate	     (WA_Dummy + 38)
+#define WA_RMBTrap	     (WA_Dummy + 39)
 #define WA_WBenchWindow      (WA_Dummy + 40)
 #define WA_SimpleRefresh     (WA_Dummy + 41)
 #define WA_SmartRefresh      (WA_Dummy + 42)
-#define WA_SizeBRight        (WA_Dummy + 43)
-#define WA_SizeBBottom       (WA_Dummy + 44)
-#define WA_AutoAdjust        (WA_Dummy + 45)
+#define WA_SizeBRight	     (WA_Dummy + 43)
+#define WA_SizeBBottom	     (WA_Dummy + 44)
+#define WA_AutoAdjust	     (WA_Dummy + 45)
 #define WA_GimmeZeroZero     (WA_Dummy + 46)
-#define WA_MenuHelp          (WA_Dummy + 47)
+#define WA_MenuHelp	     (WA_Dummy + 47)
 #define WA_NewLookMenus      (WA_Dummy + 48)
-#define WA_AmigaKey          (WA_Dummy + 49)
-#define WA_NotifyDepth       (WA_Dummy + 50)
-#define WA_Pointer           (WA_Dummy + 52)
-#define WA_BusyPointer       (WA_Dummy + 53)
+#define WA_AmigaKey	     (WA_Dummy + 49)
+#define WA_NotifyDepth	     (WA_Dummy + 50)
+#define WA_Pointer	     (WA_Dummy + 52)
+#define WA_BusyPointer	     (WA_Dummy + 53)
 #define WA_PointerDelay      (WA_Dummy + 54)
 #define WA_TabletMessages    (WA_Dummy + 55)
-#define WA_HelpGroup         (WA_Dummy + 56)
+#define WA_HelpGroup	     (WA_Dummy + 56)
 #define WA_HelpGroupWindow   (WA_Dummy + 57)
 
 /* Flags */
 #define WFLG_SIZEGADGET     (1L<<0)
-#define WFLG_DRAGBAR        (1L<<1)
+#define WFLG_DRAGBAR	    (1L<<1)
 #define WFLG_DEPTHGADGET    (1L<<2)
 #define WFLG_CLOSEGADGET    (1L<<3)
 #define WFLG_SIZEBRIGHT     (1L<<4)
@@ -650,18 +654,18 @@ struct ExtNewWindow
 #define WFLG_OTHER_REFRESH  ((1L<<6) | (1L<<7))
 #define WFLG_REFRESHBITS    WFLG_OTHER_REFRESH
 
-#define WFLG_BACKDROP       (1L<<8)
+#define WFLG_BACKDROP	    (1L<<8)
 #define WFLG_REPORTMOUSE    (1L<<9)
 #define WFLG_GIMMEZEROZERO  (1L<<10)
 #define WFLG_BORDERLESS     (1L<<11)
-#define WFLG_ACTIVATE       (1L<<12)
+#define WFLG_ACTIVATE	    (1L<<12)
 
 /* PRIVATE */
 #define WFLG_WINDOWACTIVE   (1L<<13)
-#define WFLG_INREQUEST      (1L<<14)
-#define WFLG_MENUSTATE      (1L<<15)
+#define WFLG_INREQUEST	    (1L<<14)
+#define WFLG_MENUSTATE	    (1L<<15)
 
-#define WFLG_RMBTRAP        (1L<<16)
+#define WFLG_RMBTRAP	    (1L<<16)
 #define WFLG_NOCAREREFRESH  (1L<<17)
 #define WFLG_NW_EXTENDED    (1L<<18)
 
@@ -671,13 +675,13 @@ struct ExtNewWindow
 #define WFLG_WINDOWREFRESH  (1L<<24)
 #define WFLG_WBENCHWINDOW   (1L<<25)
 #define WFLG_WINDOWTICKED   (1L<<26)
-#define WFLG_VISITOR        (1L<<27)
-#define WFLG_ZOOMED         (1L<<28)
-#define WFLG_HASZOOM        (1L<<29)
+#define WFLG_VISITOR	    (1L<<27)
+#define WFLG_ZOOMED	    (1L<<28)
+#define WFLG_HASZOOM	    (1L<<29)
 
 #define HC_GADGETHELP 1
 
-                           /***** Images *****/
+			   /***** Images *****/
 
 struct Image
 {
@@ -694,7 +698,7 @@ struct Image
     struct Image * NextImage;
 };
 
-                           /***** Border *****/
+			   /***** Border *****/
 
 struct Border
 {
@@ -709,7 +713,7 @@ struct Border
     struct Border * NextBorder;
 };
 
-                         /***** Tablets *****/
+			 /***** Tablets *****/
 
 struct TabletData
 {
@@ -724,12 +728,12 @@ struct TabletData
 };
 
 /* Tags */
-#define TABLETA_Dummy       (TAG_USER + 0x3A000)
+#define TABLETA_Dummy	    (TAG_USER + 0x3A000)
 #define TABLETA_TabletZ     (TABLETA_Dummy + 0x01)
-#define TABLETA_RangeZ      (TABLETA_Dummy + 0x02)
-#define TABLETA_AngleX      (TABLETA_Dummy + 0x03)
-#define TABLETA_AngleY      (TABLETA_Dummy + 0x04)
-#define TABLETA_AngleZ      (TABLETA_Dummy + 0x05)
+#define TABLETA_RangeZ	    (TABLETA_Dummy + 0x02)
+#define TABLETA_AngleX	    (TABLETA_Dummy + 0x03)
+#define TABLETA_AngleY	    (TABLETA_Dummy + 0x04)
+#define TABLETA_AngleZ	    (TABLETA_Dummy + 0x05)
 #define TABLETA_Pressure    (TABLETA_Dummy + 0x06)
 #define TABLETA_ButtonBits  (TABLETA_Dummy + 0x07)
 #define TABLETA_InProximity (TABLETA_Dummy + 0x08)
@@ -739,17 +743,17 @@ struct TabletData
 struct TabletHookData
 {
     struct Screen * thd_Screen;
-    ULONG           thd_Width;
-    ULONG           thd_Height;
-    LONG            thd_ScreenChanged;
+    ULONG	    thd_Width;
+    ULONG	    thd_Height;
+    LONG	    thd_ScreenChanged;
 };
 
-                          /***** Keys *****/
+			  /***** Keys *****/
 
 #define SELECTDOWN (IECODE_LBUTTON)
 #define SELECTUP   (IECODE_LBUTTON | IECODE_UP_PREFIX)
 #define MENUDOWN   (IECODE_RBUTTON)
-#define MENUUP     (IECODE_RBUTTON | IECODE_UP_PREFIX)
+#define MENUUP	   (IECODE_RBUTTON | IECODE_UP_PREFIX)
 #define MIDDLEDOWN (IECODE_MBUTTON)
 #define MIDDLEUP   (IECODE_MBUTTON | IECODE_UP_PREFIX)
 #define ALTLEFT    (IEQUALIFIER_LALT)
@@ -763,17 +767,17 @@ struct TabletHookData
 #define CURSORRIGHT 0x4E
 #define CURSORLEFT  0x4F
 
-#define KEYCODE_Q       0x10
-#define KEYCODE_Z       0x31
-#define KEYCODE_X       0x32
-#define KEYCODE_V       0x34
-#define KEYCODE_B       0x35
-#define KEYCODE_N       0x36
-#define KEYCODE_M       0x37
-#define KEYCODE_LESS    0x38
+#define KEYCODE_Q	0x10
+#define KEYCODE_Z	0x31
+#define KEYCODE_X	0x32
+#define KEYCODE_V	0x34
+#define KEYCODE_B	0x35
+#define KEYCODE_N	0x36
+#define KEYCODE_M	0x37
+#define KEYCODE_LESS	0x38
 #define KEYCODE_GREATER 0x39
 
-                           /* Miscellaneous */
+			   /* Miscellaneous */
 
 struct IBox
 {
@@ -786,8 +790,8 @@ struct IBox
 struct Remember
 {
     struct Remember * NextRemember;
-    ULONG             RememberSize;
-    UBYTE           * Memory;
+    ULONG	      RememberSize;
+    UBYTE	    * Memory;
 };
 
 struct ColorSpec
