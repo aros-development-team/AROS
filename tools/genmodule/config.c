@@ -300,7 +300,8 @@ static void readsectionconfig(struct config *cfg)
             {
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
                 "version", "date", "libcall", "forcebase", "superclass",
-		"residentpri", "options", "sysbase_field", "seglist_field"
+		"residentpri", "options", "sysbase_field", "seglist_field",
+		"rootbase_field"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -413,7 +414,7 @@ static void readsectionconfig(struct config *cfg)
 		do {
 		    static const char *optionnames[] =
 		    {
-			"noautolib", "noexpunge", "noresident"
+			"noautolib", "noexpunge", "noresident", "peropenerbase"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -444,6 +445,9 @@ static void readsectionconfig(struct config *cfg)
 		    case 3: /* noresident */
 			cfg->options |= OPTION_NORESIDENT;
 			break;
+		    case 4: /* peropenerbase */
+			cfg->options |= OPTION_DUPBASE;
+			break;
 		    }
 		    while (isspace(*s)) s++;
 		} while(*s !='\0');
@@ -455,6 +459,10 @@ static void readsectionconfig(struct config *cfg)
 		
 	    case 13: /* seglist_field */
 		cfg->seglist_field = strdup(s);
+		break;
+		
+	    case 14: /* rootbase_field */
+		cfg->rootbase_field = strdup(s);
 		break;
 	    }
 	}

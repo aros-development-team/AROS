@@ -7,9 +7,16 @@
 enum command { CMD_UNSPECIFIED, DUMMY, NORMAL, LIBDEFS };
 enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE };
 enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
-enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT };
-enum optionflags { OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB, OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE,
-                   OPTION_NORESIDENT =1<<BIT_NORESIDENT };
+enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
+                 BIT_DUPBASE
+};
+enum optionflags
+{
+    OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB,
+    OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE,
+    OPTION_NORESIDENT = 1<<BIT_NORESIDENT,
+    OPTION_DUPBASE = 1<<BIT_DUPBASE
+};
 
 struct forcelist {
     struct forcelist *next;
@@ -43,7 +50,7 @@ struct config
     char *basename, *libbase, *libbasetype, *libbasetypeptrextern;
     
     /* Where are the sysbase and seglist fields in the libbase ? */
-    char *sysbase_field, *seglist_field;
+    char *sysbase_field, *seglist_field, *rootbase_field;
 
     /* How are the module functions defined */
     enum libcall libcall;
