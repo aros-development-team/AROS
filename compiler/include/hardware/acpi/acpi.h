@@ -454,6 +454,9 @@ struct ACPIBase
 
     BOOL                                    ACPIB_SMP_Enabled;
     int                                     ACPIB_SMP_Config;
+/** OBSOLETE _ DO NOT USE (only here to fix build probs till acpi,resource is up ;) */
+    int                                     ACPIB_ACPI_LAPIC;
+    int                                     ACPIB_ACPI_IOAPIC;
 };
 
 #endif /* __AROS_ACPI_H__ */
