@@ -9,6 +9,8 @@
 
 #include <proto/dos.h>
 
+#include <string.h>
+
 #include "prefs.h"
 #include "args.h"
 
@@ -19,48 +21,19 @@
 #define ARG_EDIT 1
 #define ARG_USE 2
 #define ARG_SAVE 3
-#define ARG_PUBSCREEN 4
-#define NUM_ARGS 5
+#define NUM_ARGS 4
 
 IPTR argArray[NUM_ARGS];
 struct RDArgs *readArgs;
 
 // Grab any shell arguments given by the user
-struct RDArgs * getArguments(void)
+struct RDArgs *getArguments(void)
 {
-    UBYTE a;
-    struct RDArgs *tmpReadArgs;
-
-    // Let's clear the array. Do we really need this or will ReadArgs() set
-    // every non given argument pointer to NULL? Check it up!
-    // yes, you need it :) [by falemagn]
-
-    for(a = 0; a < NUM_ARGS; a++)
-        argArray[a] = NULL;
-
-    // We need an AROS "IPTR" class pointer here! An IPTR is guaranteed to be AmigaOS "ULONG" compatible?
-
-    if((tmpReadArgs = ReadArgs("FROM,EDIT/S,USE/S,SAVE/S,PUBSCREEN/K", argArray, NULL)))
-    {
-        for(a = 0; a < NUM_ARGS; a++)
-        {
-            if(argArray[a])
-            {
-                kprintf("%d is set!\n", a);
-
-                /* ARG_PUBSCREEN is set (currently) set to NULL by Fonts Preferences.
-                   If not set, it'll default to Workbench (NULL). If we can't open
-                   the specified screen, should we try the Workbench screen instead? */
-
-                if(a == ARG_PUBSCREEN)
-                    kprintf("pubscreen is %s!\n", (char *)argArray[ARG_PUBSCREEN]);
-            }
-        }
-
-        return tmpReadArgs;
-    }
-    else
-        return NULL;
+    struct RDArgs *rdargs = NULL;
+    
+    memset(argArray, NULL, sizeof(argArray));
+    
+    return ReadArgs("FROM,EDIT/S,USE/S,SAVE/S", argArray, NULL);
 }
 
 // Deal with shell arguments. If failure, should we quit or not? If started
