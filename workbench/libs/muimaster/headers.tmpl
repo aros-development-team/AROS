@@ -12,6 +12,13 @@
 extern struct Library *MUIMasterBase;
 #endif
 
+/* By default, disable the variadic stuff for zune, since it's not 
+   very backward compatible */
+#ifndef MUIMASTER_YES_INLINE_STDARG
+#undef  MUIMASTER_NO_INLINE_STDARG
+#define MUIMASTER_NO_INLINE_STDARG
+#endif
+
 /* Prototypes for stubs in mui.lib */
 
 APTR 	MUI_AllocAslRequestTags(unsigned long reqType, Tag tag1, ...);
