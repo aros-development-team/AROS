@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: 
+    Lang: english
+*/
+
 /* Message structure the MenuHandler gets from Intuition */
 
 struct MenuMessage

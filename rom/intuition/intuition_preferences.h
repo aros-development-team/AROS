@@ -1,6 +1,15 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: 
+    Lang: English
+*/
+
 #ifndef INTUITION_PREFERENCES_H
 #   include <intuition/preferences.h>
 #endif
+
 /*
 ** The intuition default preferences structure
 */

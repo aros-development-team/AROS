@@ -1,50 +1,6 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.13  2001/01/31 23:07:30  stegerg
-    various little pubscreen related fixes/improvements.
-
-    Revision 1.12  2000/12/10 20:57:24  stegerg
-    strcmp returns 0 if the strings are identical
-
-    Revision 1.11  2000/12/07 16:15:01  chodorowski
-    Now automatically opens the Workbench screen if there is no default
-    public screen or Workbench screen and the function was called with
-    "Workbench" or NULL as an argument.
-
-    Revision 1.10  2000/04/08 16:38:09  stegerg
-    type cast 2nd param of FindName to (UBYTE *) to avoid
-    compiler warning. Or Should instead 2nd arg of FindName()
-    func be of type CONST_STRPTR?????????????????
-
-    Revision 1.9  2000/02/01 22:48:31  bernie
-    Using CONST_STRPTR for screen name
-
-    Revision 1.8  2000/01/30 23:45:34  bernie
-    Increment visitor count even for LockPubScreen(NULL); Don't expect that IntuitionBase->DefaultScreen is always non-NULL (the AutoDoc says LockPubScreen() should open the Workbench in that case, but we still don't); Add pointer checking assertions.
-
-    Revision 1.7  1999/10/12 17:45:44  SDuvan
-    Added docs, minor updates
-
-    Revision 1.6  1999/09/12 01:48:58  bernie
-    more public screens support
-
-    Revision 1.5  1998/10/20 16:45:59  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1997/01/27 00:36:40  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:05  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:22  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/21 15:48:47  digulla
-    New functions to handle Public Screens
-
 
     Desc:
     Lang: english

@@ -1,19 +1,6 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.6  2000/01/19 19:04:42  stegerg
-    don't call intui_windowlimits
-
-    Revision 1.5  1998/10/20 16:46:08  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1998/01/08 21:12:13  hkiel
-    Added intui_WindowLimits().
-
-    Revision 1.3  1997/12/29 21:18:41  hkiel
-    Supplied WindowLimits() function with life.
-
 
     Desc: Set the minimum and maximum size of a window.
     Lang: english

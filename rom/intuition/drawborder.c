@@ -1,38 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.9  2000/04/03 20:03:07  stegerg
-    for first coordinate in Border->XY it must use
-    Move() and not Draw().
-
-    Revision 1.8  1998/10/20 16:45:54  hkiel
-    Amiga Research OS
-
-    Revision 1.7  1997/01/27 00:36:37  ldp
-    Polish
-
-    Revision 1.6  1996/12/10 14:00:02  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.5  1996/11/08 11:28:01  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.4  1996/10/24 15:51:18  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/10/02 18:10:47  digulla
-    Fixed a bug (coordinates are relative to offset and not to last point)
-
-    Revision 1.2  1996/08/29 13:33:30  digulla
-    Moved common code from driver to Intuition
-    More docs
-
-    Revision 1.1  1996/08/23 17:28:18  digulla
-    Several new functions; some still empty.
-
 
     Desc:
     Lang: english

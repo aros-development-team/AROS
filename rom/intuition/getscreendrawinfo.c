@@ -1,28 +1,6 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.7  2000/07/24 18:58:30  stegerg
-    added an ASSERT_VALID_PTR(screen)
-
-    Revision 1.6  1999/01/16 23:18:29  hkiel
-    Extended AutoDocs
-
-    Revision 1.5  1998/10/20 16:45:58  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1997/01/27 00:36:39  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:04  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:20  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/21 15:48:47  digulla
-    New functions to handle Public Screens
-
 
     Desc: Intuition function GetScreenDrawInfo()
     Lang: english

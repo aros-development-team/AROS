@@ -1,31 +1,6 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.8  1999/10/12 17:45:44  SDuvan
-    Added docs, minor updates
-
-    Revision 1.7  1999/09/12 01:48:58  bernie
-    more public screens support
-
-    Revision 1.6  1999/01/16 23:19:48  hkiel
-    Added aros_print_not_implemented()
-
-    Revision 1.5  1998/10/20 16:46:07  hkiel
-    Amiga Research OS
-
-    Revision 1.4  1997/01/27 00:36:44  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:10  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:25  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/21 15:48:47  digulla
-    New functions to handle Public Screens
-
 
     Desc: Intuition function UnlockPubScreen()
     Lang: english

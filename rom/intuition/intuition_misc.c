@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Intuitions internal structure
+    Lang: english
+*/
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
