@@ -257,6 +257,17 @@ void prop_adj(Project p)
 	extern UBYTE record;
 	if(record == 2) return;
 
+#ifdef FARSCROLL
+	if (p->max_lines > 1)
+	{
+	    VertPot = (p->top_line * MAXPOT) / (p->max_lines - 1);
+	}
+	else
+	{
+	    VertPot = 0;
+	}
+ 	VertBody = (gui.nbline * MAXBODY) / (p->max_lines + gui.nbline - 1);
+#else
 	/* If we have more lines visible than the text actually has (ie. **
 	** there are empty lines visible) the body-size represents the   **
 	** lines visible according to the actual screen size:            */
@@ -272,6 +283,7 @@ void prop_adj(Project p)
 			VertPot = (p->top_line * MAXPOT) / (p->max_lines - gui.nbline),
 			/* The body-size is (number of lines for jump-scroll / all other lines) */
 			VertBody = (gui.nbline * MAXBODY) / p->max_lines;
+#endif
 
 	/* Let's set it */
 	NewModifyProp((struct Gadget *)Prop,Wnd,NULL,ScrollBar.pinfo.Flags,MAXPOT,VertPot,MAXBODY,VertBody,1);

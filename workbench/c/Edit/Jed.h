@@ -21,6 +21,8 @@
 #define	MAX(a,b)			((a)<(b) ? (b):(a))
 #define	SWAP(a,b)		(a^=b, b^=a, a^=b)
 
+/* #define FARSCROLL 1 */
+
 /*** Prototypes ***/
 void cleanup(UBYTE *, int ret);					/* To cleanup properly */
 void dispatch_events(void);						/* Collect events */
