@@ -116,35 +116,56 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 #endif
         }
 
-	/*
-	 * Now draw the VSprite at its current location.
-	 * The bitmap has already been initialized!
-	 */
-	i=0;
-	while (i < bm.Depth && i < 8)
-	{
+
+        if (0 == (CurVSprite->Flags & VSPRITE) &&
+            0 != (CurVSprite->VSBob->Flags & BOBSAWAY))
+        {
+          /*
+           * This Bob is to be removed...
+           */
+          CurVSprite->PrevVSprite->NextVSprite = CurVSprite->NextVSprite;
+          CurVSprite->NextVSprite->PrevVSprite = CurVSprite->PrevVSprite;
+#warning This damages the drawpath and clearpath!
+        }
+        else
+        {
+  	  /*
+	   * Now draw the VSprite/Bob at its current location.
+	   * The bitmap has already been initialized!
+	   */
+	  i =0;
+	  while (i < bm.Depth && i < 8)
+	  {
 	    bm.Planes[i++] = imagedata;
 	    imagedata += bm.Rows * bm.BytesPerRow;
-	}
+	  }
 
-	BltBitMapRastPort(&bm,
-                	  0,
-                	  0,
-                	  rp,
-                	  CurVSprite->X,
-                	  CurVSprite->Y,
-                	  CurVSprite->Width *16,
-                	  CurVSprite->Height,
-                	  0x0c0);
+	  BltBitMapRastPort(&bm,
+                  	    0,
+                	    0,
+                	    rp,
+                	    CurVSprite->X,
+                	    CurVSprite->Y,
+                	    CurVSprite->Width *16,
+                	    CurVSprite->Height,
+                	    0x0c0);
 
-	/*
-	 * I will need to know the vsprite's coordinates
-	 * that it has now the next time as well for clearing
-	 * purposes.
-	 */
-        CurVSprite->OldX = CurVSprite->X;
-        CurVSprite->OldY = CurVSprite->Y;
-
+	  /*
+	   * I will need to know the vsprite's coordinates
+	   * that it has now the next time as well for clearing
+	   * purposes.
+	   */
+          CurVSprite->OldX = CurVSprite->X;
+          CurVSprite->OldY = CurVSprite->Y;
+        
+          if (0 == (CurVSprite->Flags & VSPRITE))
+          {
+            /*
+             * it's a bob! mark it as drawn.
+             */
+            CurVSprite->VSBob->Flags |= BDRAWN;
+          }
+        }
 	CurVSprite = CurVSprite->NextVSprite;
     }
 
@@ -215,15 +236,10 @@ void _ClearBobAndFollowClearPath(struct VSprite * CurVSprite,
      * standard background!
      */
 
-
-    if (CurVSprite->OldX != CurVSprite->X ||
-        CurVSprite->OldY != CurVSprite->Y)
-    {
       EraseRect(rp,
                 CurVSprite->OldX,
                 CurVSprite->OldY,
                 CurVSprite->OldX + ( CurVSprite->Width << 4 ) - 1,
                 CurVSprite->OldY +   CurVSprite->Height       - 1);
-    }
   }
 }
