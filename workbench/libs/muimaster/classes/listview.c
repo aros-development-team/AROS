@@ -225,18 +225,12 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR Listview_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
+
     mui_free(data->layout_hook); /* is always here */
-    return 0;
+    return DoSuperMethodA(cl, obj, msg);
 }
 
-#ifndef _AROS
-__asm IPTR Listview_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Listview_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
