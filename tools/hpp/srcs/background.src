@@ -110,6 +110,16 @@ Here is a list of programs which have been tried on Amiga-Linux/m68k:<P>
 <filename text="ktest">,
 <filename text="searchfile">,
 <filename text="tstat">
+<LI> From FishDisks (#Disk):
+<filename text="lines/lines (41)">,
+<filename text="mxgads/mxgads (52)">,
+<filename text="frags/frags (69)">,
+<filename text="sb/sb (69)">,
+<filename text="blocks/blocks (71)">,
+<filename text="units/units (74)">,
+<filename text="bezier/bouncing/bezier (75)">,
+<filename text="bezier/cubic/bcubic (75)">,
+<filename text="bezier/orig/bezier (75)">
 </UL>
 </NEW>
 
