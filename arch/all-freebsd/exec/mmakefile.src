@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM setup-exec-freebsd : setup-exec-unix setup-exec-$(CPU)
-setup-exec-freebsd : $(GENINCDIR)/sigcore.h
+#MM
+kernel-freebsd-sigcore : $(GENINCDIR)/sigcore.h
 
 $(GENINCDIR)/sigcore.h : sigcore.h
 	%mkdirs_q $(GENINCDIR)
