@@ -33,6 +33,10 @@
 
 /*****************************************************************************************/
 
+#ifdef __MORPHOS__
+    unsigned long __amigappc__ = 1;
+#endif
+
 struct inittable;
 extern const char name[];
 extern const char version[];
@@ -80,7 +84,11 @@ static const struct Resident resident=
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&LIBEND,
+#ifdef __MORPHOS__
+    RTF_PPC |RTF_AUTOINIT,
+#else
     RTF_AUTOINIT,
+#endif
     VERSION_NUMBER,
     NT_LIBRARY,
     0,	/* priority */
@@ -97,10 +105,15 @@ const APTR inittabl[4]=
 {
     (APTR)sizeof(struct AslBase_intern),
     (APTR)LIBFUNCTABLE,
+#ifdef __MORPHOS__
+    NULL,
+#else
     (APTR)&datatable,
+#endif
     &INIT
 };
 
+#ifndef __MORPHOS__
 struct inittable
 {
     S_CPYO(1,1,B);
@@ -124,7 +137,7 @@ const struct inittable datatable=
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };
-
+#endif
 
 /* #undef O
 #undef SysBase */
@@ -293,10 +306,15 @@ struct DosLibrary *DOSBase;
 
 /*****************************************************************************************/
 
+#ifdef __MORPHOS__
+struct AslBase_intern *LIB_init(struct AslBase_intern *LIBBASE, BPTR segList, struct ExecBase *sysBase)
+{
+#else
 AROS_LH2(struct AslBase_intern *, init,
     AROS_LHA(struct AslBase_intern *, LIBBASE, D0),
     AROS_LHA(BPTR,               segList,   A0),
     struct ExecBase *, sysBase, 0, BASENAME)
+#endif
 {
     AROS_LIBFUNC_INIT
 
@@ -611,8 +629,8 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
 
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
-    reqinfo->ParseTagsHook.h_Entry	= (void *)FRTagHook;
-    reqinfo->GadgetryHook.h_Entry	= (void *)FRGadgetryHook;
+    reqinfo->ParseTagsHook.h_Entry	= (void *)AROS_ASMSYMNAME(FRTagHook);
+    reqinfo->GadgetryHook.h_Entry	= (void *)AROS_ASMSYMNAME(FRGadgetryHook);
 
     /* Set font requester info */
 
@@ -624,8 +642,8 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
 
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
-    reqinfo->ParseTagsHook.h_Entry	= (void *)FOTagHook;
-    reqinfo->GadgetryHook.h_Entry	= (void *)FOGadgetryHook;
+    reqinfo->ParseTagsHook.h_Entry	= (void *)AROS_ASMSYMNAME(FOTagHook);
+    reqinfo->GadgetryHook.h_Entry	= (void *)AROS_ASMSYMNAME(FOGadgetryHook);
 
     /* Set screenmode requester info */
 
@@ -637,8 +655,8 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
 
     memset(&(reqinfo->ParseTagsHook), 0, sizeof (struct Hook));
     memset(&(reqinfo->GadgetryHook),  0, sizeof (struct Hook));
-    reqinfo->ParseTagsHook.h_Entry	= (void *)SMTagHook;
-    reqinfo->GadgetryHook.h_Entry	= (void *)SMGadgetryHook;
+    reqinfo->ParseTagsHook.h_Entry	= (void *)AROS_ASMSYMNAME(SMTagHook);
+    reqinfo->GadgetryHook.h_Entry	= (void *)AROS_ASMSYMNAME(SMGadgetryHook);
 
     return;
 }

@@ -7,7 +7,7 @@
 */
 
 #define AROS_ALMOST_COMPATIBLE 1
-
+#undef __NOLIBBASE__
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
