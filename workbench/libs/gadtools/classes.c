@@ -246,7 +246,7 @@ IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     
     tstate = msg->ops_AttrList;
     
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -702,7 +702,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     dosuper_tags = msg->ops_AttrList;
         
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -1241,7 +1241,7 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 
     tstate = msg->ops_AttrList;
     
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
     	
     	switch (tag->ti_Tag)
@@ -1555,10 +1555,10 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem *tag, *tstate, tags[] =
     {
-    	{STRINGA_TextVal,	0UL},
-	{STRINGA_LongVal,	0UL},
-    	{STRINGA_MaxChars,	0UL},
-    	{STRINGA_EditHook,	0UL},
+    	{STRINGA_TextVal,	0UL},  /* 0 */
+	{STRINGA_LongVal,	0UL},  /* 1 */
+    	{STRINGA_MaxChars,	0UL},  /* 2 */
+    	{STRINGA_EditHook,	0UL},  /* 3 */
     	{TAG_MORE,		0UL}
     };
     
@@ -1567,9 +1567,22 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     struct TextAttr *tattr = NULL;
     IPTR retval = 0UL;
 
-    EnterFunc(bug("String::SetNew()\n"));    
+    EnterFunc(bug("String::SetNew()\n"));
+    
+    if (msg->MethodID != OM_NEW)
+    {
+	struct StringData *data = INST_DATA(cl,o);
+
+        if (data->gadgetkind == STRING_KIND)
+	{
+	    tags[1].ti_Tag = TAG_IGNORE;
+	} else {
+	    tags[0].ti_Tag = TAG_IGNORE;
+	}
+    }
+       
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -1630,12 +1643,12 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	struct StringData *data = INST_DATA(cl, retval);
     	struct TagItem fitags[] =
     	{
-	    {IA_Width, 0UL},
-	    {IA_Height, 0UL},
-	    {IA_Resolution, 0UL},
-	    {IA_FrameType, FRAME_RIDGE},
-	    {IA_EdgesOnly, TRUE},
-	    {TAG_DONE, 0UL}
+	    {IA_Width		, 0UL		},
+	    {IA_Height		, 0UL		},
+	    {IA_Resolution	, 0UL		},
+	    {IA_FrameType	, FRAME_RIDGE	},
+	    {IA_EdgesOnly	, TRUE		},
+	    {TAG_DONE		, 0UL		}
     	};
     	
     	fitags[0].ti_Data = G(retval)->Width;
@@ -1708,10 +1721,9 @@ STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
 	/* center image position, we assume image top and left is 0 */
 	itags[0].ti_Data = G(o)->Width + BORDERSTRINGSPACINGX * 2;
 	itags[1].ti_Data = G(o)->Height + BORDERSTRINGSPACINGY * 2;
-	
+
 	SetAttrsA((Object *)data->frame, itags);
 	
-
 	x = G(o)->LeftEdge - BORDERSTRINGSPACINGX; 
 	y = G(o)->TopEdge - BORDERSTRINGSPACINGY;
 	    
@@ -1723,7 +1735,6 @@ STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
    
    	/* render label */
    	renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
-
    	
     } /* if (whole gadget should be redrawn) */
     
@@ -2194,7 +2205,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     EnterFunc(bug("Listview::Set()\n"));
 
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem(&tstate)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
     	IPTR tidata = tag->ti_Data;
     	
