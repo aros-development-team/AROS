@@ -65,9 +65,11 @@ struct MUIMasterBase_intern
     struct ExecBase		*sysbase;
     BPTR			seglist;
 
+    struct DosLibrary  	    	*dosbase;
     struct UtilityBase		*utilitybase;
     struct Library  	    	*aslbase;
     struct GfxBase  	    	*gfxbase;
+    struct Library  	    	*layersbase;
     struct IntuitionBase    	*intuibase;
     
     struct SignalSemaphore ClassSempahore;
@@ -86,6 +88,9 @@ struct MUIMasterBase_intern
 #undef SysBase
 #define SysBase     	(MUIMB(MUIMasterBase)->sysbase)
 
+#undef DOSBase
+#define DOSBase     	(MUIMB(MUIMasterBase)->dosbase)
+
 #undef UtilityBase
 #define UtilityBase	(MUIMB(MUIMasterBase)->utilitybase)
 
@@ -95,6 +100,9 @@ struct MUIMasterBase_intern
 #undef GfxBase
 #define GfxBase     	(MUIMB(MUIMasterBase)->gfxbase)
 
+#undef LayersBase
+#define LayersBase     	(MUIMB(MUIMasterBase)->layersbase)
+
 #undef IntuitionBase
 #define IntuitionBase  	(MUIMB(MUIMasterBase)->intuibase)
 
@@ -102,6 +110,9 @@ struct MUIMasterBase_intern
 
 #undef SysBase
 #define SysBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->sysbase)
+
+#undef DOSBase
+#define DOSBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->dosbase)
 
 #undef UtilityBase
 #define UtilityBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->utilitybase)
@@ -111,6 +122,9 @@ struct MUIMasterBase_intern
 
 #undef GfxBase
 #define GfxBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->gfxbase)
+
+#undef LayersBase
+#define LayersBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->layersbase)
 
 #undef IntuitionBase
 #define IntuitionBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->intuibase)
