@@ -760,7 +760,7 @@ endif
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
-  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
+  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) prefix=$(AROSDIR) \
   reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_ALL.ref \
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
@@ -782,6 +782,8 @@ BD_MODTYPE$(BDID)    := %(modtype)
 BD_CONFFILE$(BDID)   := %(conffile)
 OBJDIR               ?= $(GENDIR)/$(CURDIR)
 BD_OBJDIR$(BDID)     := %(objdir)
+BD_PREFIX$(BDID)     := %(prefix)
+BD_INCLUDE$(BDID)    := $(BD_PREFIX$(BDID))/$(AROS_DIR_INCLUDE)
 
 BD_FILES$(BDID)      := %(files)
 BD_LIBFILES$(BDID)   := %(linklibfiles)
@@ -802,11 +804,11 @@ BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$
 endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 
-BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -idirafter $(TOP)/$(CURDIR) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_INCLUDE$(BDID)) -I$(BD_OBJDIR$(BDID)) -idirafter $(TOP)/$(CURDIR) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifeq (%(dflags),)
 BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
 else
-BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_INCLUDE$(BDID)) -I$(BD_OBJDIR$(BDID)) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 endif
 
 # Add additional files depending the module type
@@ -814,11 +816,11 @@ ifeq ($(findstring $(BD_MODTYPE$(BDID)),library mcc mui mcp),)
     $(error unhandled MODTYPE %(modtype))
 endif
 ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_MODDIR$(BDID)       := $(AROS_LIBS)
+  BD_MODDIR$(BDID)         := $(BD_PREFIX$(BDID))/$(AROS_DIR_LIBS)
   BD_LINKLIBFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c 
   BD_LINKLIBOBJS$(BDID)    := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
-  	                    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o 
-  BD_LINKLIBGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
+                              $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.o 
+  BD_LINKLIBGENFILES$(BDID):= $(BD_PREFIX$(BDID))/$(AROS_DIR_LIB)/lib%(linklibname).a
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit \
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
@@ -826,7 +828,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
-  BD_MODDIR$(BDID)       := $(AROS_CLASSES)/Zune
+  BD_MODDIR$(BDID)       := $(BD_PREFIX$(BDID))/$(AROS_DIR_CLASSES)/Zune
   BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o \
                             $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init.o
   BD_LINKLIBGENFILES$(BDID):= 
@@ -862,7 +864,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_DFILE_DEPS$(BDID) += $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
+  BD_DFILE_DEPS$(BDID) += $(addprefix $(BD_INCLUDE$(BDID))/,$(BD_GENINCS$(BDID)))
 endif
 
 #MM %(mmake) : %(mmake)-includes
@@ -876,7 +878,7 @@ endif
 %(mmake) : $(BD_GENFILES$(BDID))
 
 #MM
-%(mmake)-includes : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
+%(mmake)-includes : $(addprefix $(BD_INCLUDE$(BDID))/,$(BD_GENINCS$(BDID)))
 
 #MM
 %(mmake)-clean ::
@@ -885,7 +887,7 @@ endif
 	    $(BD_REFFILES$(BDID))\
 	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
 	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
-	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
+	    $(addprefix $(BD_INCLUDE$(BDID))/,$(BD_GENINCS$(BDID))) \
 	    $(BD_LINKLIBFILES$(BDID)) $(BD_LINKLIBOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
 	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
 	    $(addsuffix .c,$(BD_STARTFILE$(BDID)) $(BD_ENDFILE$(BDID))) \
@@ -944,15 +946,17 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
 
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
 ifeq ($(BD_MODTYPE$(BDID)),library)
-%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(AROS_INCLUDES)/clib/$(BD_MODNAME$(BDID))_protos.h
-%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/defines/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/pragmas/$(BD_MODNAME$(BDID)).h
-%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(AROS_INCLUDES)/proto/$(BD_MODNAME$(BDID)).h
+%rule_makedirs dirs="$(addprefix $(BD_INCLUDE$(BDID))/, clib defines pragmas proto)" setuptarget=setup-module$(BDID)
+%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(BD_INCLUDE$(BDID))/clib/$(BD_MODNAME$(BDID))_protos.h
+%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/defines/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/pragmas/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/proto/$(BD_MODNAME$(BDID)).h
 endif
 
 # For a shared library also build a static link lib
 ifeq ($(BD_MODTYPE$(BDID)),library)
-%rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
+%rule_makedirs dirs=$(BD_PREFIX$(BDID))/$(AROS_DIR_LIB) setuptarget=setup-module$(BDID)
+%rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID)) libdir=$(BD_PREFIX$(BDID))/$(AROS_DIR_LIB)
 endif
 
 %rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib $(BD_MODDIR$(BDID)) $(KOBJSDIR)" \
