@@ -21,8 +21,8 @@
 	AROS_LH5(struct IClass *, MakeClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE         *, classID, A0),
-	AROS_LHA(UBYTE         *, superClassID, A1),
+	AROS_LHA(CONST_STRPTR   , classID, A0),
+	AROS_LHA(CONST_STRPTR   , superClassID, A1),
 	AROS_LHA(struct IClass *, superClassPtr, A2),
 	AROS_LHA(ULONG          , instanceSize, D0),
 	AROS_LHA(ULONG          , flags, D1),
