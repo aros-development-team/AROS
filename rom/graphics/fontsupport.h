@@ -32,4 +32,7 @@ extern void tfe_hashadd(struct tfe_hashnode *hn
 extern void tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 struct tfe_hashnode *tfe_hashnode_create(struct GfxBase *GfxBase);
 
+OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase);
+	
+
 #endif /* FONTSUPPORT_H */

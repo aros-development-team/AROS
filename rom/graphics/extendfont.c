@@ -9,6 +9,7 @@
 #include <proto/utility.h>
 #include <exec/memory.h>
 #include "graphics_intern.h"
+#include "fontsupport.h"
 
 #include <sys/types.h>
 
@@ -108,7 +109,12 @@
 	    TFE(font->tf_Extension) = tfe;
 	    font->tf_Style |= FSF_TAGGED;
 		
-	    if (driver_ExtendFont(font, hn, GfxBase))
+	    if (!hn->font_bitmap)
+	    {
+	    	hn->font_bitmap = fontbm_to_hiddbm(font, GfxBase);
+	    }
+	    
+	    if (hn->font_bitmap)
 	    {
 	    	if (new_hashnode)
 		{

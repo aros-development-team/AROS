@@ -8,6 +8,7 @@
 
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -45,97 +46,168 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-#if 1
-  driver_Draw(rp, x, y, GfxBase);
-#else
-  LONG x_end = x;
-  LONG y_end = y;
-  LONG x_step = 0, y_step = 0;
-  LONG dx = 1, dy = 1;
-  LONG _x, _y;
-  LONG steps, counter;
-  
-  EnterFunc(bug("driver_Draw(rp=%p, x=%d, y=%d)\n", rp, x, y));
-  
+
+    struct Rectangle 	rr;
+    OOP_Object      	*gc;
+    struct Layer    	*L = rp->Layer;
+    struct BitMap   	*bm = rp->BitMap;
 
     if (!CorrectDriverData (rp, GfxBase))
-    	return;
+	return;
+	
+    gc = GetDriverData(rp)->dd_GC;
 
-  if (rp->cp_x != x)
-  {
     if (rp->cp_x > x)
     {
-      x_step = -1;
-      dx = rp->cp_x - x;
+	rr.MinX = x;
+	rr.MaxX = rp->cp_x;
     }
     else
     {
-      x_step = 1;
-      dx = x - rp->cp_x;
+    	rr.MinX = rp->cp_x;
+	rr.MaxX = x;
     }
-  }
-
-  if (rp->cp_y != y)
-  {
+    
     if (rp->cp_y > y)
     {
-      y_step = -1;
-      dy = rp->cp_y - y;
+	rr.MinY = y;
+	rr.MaxY = rp->cp_y;
     }
     else
     {
-      y_step = 1;
-      dy = y - rp->cp_y;
+    	rr.MinY = rp->cp_y;
+	rr.MaxY = y;
     }
-  }
-
-
-  _x = 0;
-  _y = 0;
-  x = rp->cp_x;
-  y = rp->cp_y;
-  rp->cp_x = x_end;
-  rp->cp_y = y_end;
-
-  if (dx > dy)
-    steps = dx;
-  else
-    steps = dy;
     
-  counter = 0;  
-  while (counter <= steps)
-  {
-    counter++;
-    WritePixel(rp, x, y);
-
-    if (dx > dy)
+    if (NULL == L)
     {
-      x += x_step;
-      /* _x += dx; unnecessary in this case */
-      _y += dy;
-      if (_y >= dx)
-      {
-        _y -= dx;
-        y += y_step;
-      }
+        /* No layer, probably a screen, but may be a user inited bitmap */
+	OOP_Object *bm_obj;
+
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return;
+	    
+	/* No need for clipping */
+	HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
+	    
     }
     else
     {
-      y += y_step;
-      _x += dx;
-      /* _y += dy; unnecessary in this case */
-      if (_x >= dy)
-      {
-        _x -= dy;
-        x += x_step;
-      }
-    }
-  }
+        struct ClipRect     *CR;
+	WORD 	    	    xrel;
+        WORD 	    	    yrel;
+	struct Rectangle    torender, intersect;
 
-#endif
+	LockLayerRom(L);
+	
+	xrel = L->bounds.MinX;
+	yrel = L->bounds.MinY;
+		
+	torender.MinX = rr.MinX + xrel;
+	torender.MinY = rr.MinY + yrel;
+	torender.MaxX = rr.MaxX + xrel;
+	torender.MaxY = rr.MaxY + yrel;
+		
+	CR = L->ClipRect;
+	
+	for (;NULL != CR; CR = CR->Next)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to rectfill ? */
+	    if (_AndRectRect(&CR->bounds, &torender, &intersect))
+	    {
+	    	LONG xoffset, yoffset;
+		LONG layer_rel_x, layer_rel_y;
+		
+		xoffset = intersect.MinX - torender.MinX;
+		yoffset = intersect.MinY - torender.MinY;
+		
+		layer_rel_x = intersect.MinX - L->bounds.MinX;
+		layer_rel_y = intersect.MinY - L->bounds.MinY;
+					
+	        if (NULL == CR->lobs)
+		{		
+		    /* Set clip rectangle */
+		    HIDD_GC_SetClipRect(gc
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    );
+		    
+		    HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+		    	, gc
+			, rp->cp_x + xrel
+			, rp->cp_y + yrel
+			, x + xrel
+			, y + yrel
+		    );
+		    
+		    HIDD_GC_UnsetClipRect(gc);
+		
+		}
+		else
+		{
+		    /* Render into offscreen cliprect bitmap */
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    {
+		    	D(bug("do_render_func(): Superbitmap not handled yet\n"));
+		    }
+		    else
+		    {
+		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
+			LONG layer_rel_x, layer_rel_y;
 
-  AROS_LIBFUNC_EXIT
+			layer_rel_x = intersect.MinX - xrel;
+			layer_rel_y = intersect.MinY - yrel;
+			
+			bm_rel_minx = intersect.MinX - CR->bounds.MinX;
+			bm_rel_miny = intersect.MinY - CR->bounds.MinY;
+			bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
+			bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
+
+		    	HIDD_GC_SetClipRect(gc
+		    		, bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny
+				, bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
+				, bm_rel_maxy
+			);
+			
+			HIDD_BM_DrawLine(HIDD_BM_OBJ(CR->BitMap)
+				, gc
+				, bm_rel_minx - (layer_rel_x - rp->cp_x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - rp->cp_y)
+				, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - y)
+			);
+				
+			HIDD_GC_UnsetClipRect(gc);
+		    }
+		    
+		} /* if (CR->lobs == NULL) */
+		
+	    } /* if (cliprect intersects with area to render into) */
+	    
+	} /* for (each cliprect in the layer) */
+	
+        UnlockLayerRom(L);
+	
+    } /* if (rp->Layer) */
+    
+    rp->cp_x = x;
+    rp->cp_y = y;
+    
+    AROS_LIBFUNC_EXIT
+    
 } /* Draw */

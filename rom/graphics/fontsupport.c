@@ -7,27 +7,34 @@
 */
 
 #include <proto/exec.h>
+#include <proto/oop.h>
 
 #include <exec/memory.h>
 #include <graphics/text.h>
 
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 #include "fontsupport.h"
+
+/****************************************************************************************/
 
 ULONG CalcHashIndex(ULONG n)
 {
-  UBYTE Index = (n        & 0xff) +
-               ((n >>  8) & 0xff) +
-               ((n >> 16) & 0xff) +
-               ((n >> 24) & 0xff);
-  Index &=0x07;
-  return Index; 
+    UBYTE Index = (n        & 0xff) +
+        	 ((n >>  8) & 0xff) +
+        	 ((n >> 16) & 0xff) +
+        	 ((n >> 24) & 0xff);
+    Index &= 0x07;
+    
+    return Index; 
 }
-
+/****************************************************************************************/
 
 /* Functions for solving the TextFontExtension problem using hashes */
 
 #define GFBI(x) ((struct GfxBase_intern *)x)
+
+/****************************************************************************************/
 
 static inline ULONG tfe_calchashidx(APTR ptr)
 {
@@ -43,7 +50,7 @@ static inline ULONG tfe_calchashidx(APTR ptr)
     return idx;
 }
 
-
+/****************************************************************************************/
 
 struct tfe_hashnode *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase)
 {
@@ -67,15 +74,18 @@ struct tfe_hashnode *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase
     return n;
 }
 
-
+/****************************************************************************************/
 
 struct tfe_hashnode *tfe_hashnode_create(struct GfxBase *GfxBase)
 {
     struct tfe_hashnode *n;
     
     n = AllocMem( sizeof (struct tfe_hashnode), MEMF_ANY|MEMF_CLEAR);
+    
     return n;
 }
+
+/****************************************************************************************/
 
 void tfe_hashadd(struct tfe_hashnode *hn
 		, struct TextFont *tf
@@ -97,6 +107,8 @@ void tfe_hashadd(struct tfe_hashnode *hn
 	
     return;
 }
+
+/****************************************************************************************/
 
 void tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase)
 {
@@ -125,5 +137,82 @@ void tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase)
     return;
     
 }
+
+/****************************************************************************************/
+
+OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
+{
+    ULONG width, height;
+    OOP_Object *bm_obj;
+    OOP_Object *tmp_gc;
+    
+    /* Caclulate sizes for the font bitmap */
+    struct TagItem bm_tags[] =
+    {
+	{ aHidd_BitMap_Width	, 0	    	    	},
+	{ aHidd_BitMap_Height	, 0	    	    	},
+	{ aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Plane	},
+	{ TAG_DONE  	    	    	    	    	}
+    };
+    
+    tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+    if (NULL == tmp_gc)
+    	return NULL;
+
+    width  = font->tf_Modulo * 8;
+    height = font->tf_YSize;
+    
+    bm_tags[0].ti_Data = width;
+    bm_tags[1].ti_Data = height;
+	    
+    #warning Handle color textfonts
+    
+    bm_obj = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
+    if (NULL != bm_obj)
+    {
+    	struct template_info ti;
+    	struct BitMap bm;
+	struct TagItem gc_tags[] =
+	{
+	    { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
+	    { TAG_DONE	    	    	    	    	}
+	};
+
+	
+	HIDD_BM_OBJ(&bm)	= bm_obj;
+	HIDD_BM_COLMAP(&bm)	= NULL;
+	HIDD_BM_COLMOD(&bm)	= vHidd_ColorModel_Palette;
+	
+	bm.Rows		= height;
+	bm.BytesPerRow	= WIDTH_TO_BYTES(width);
+	bm.Depth	= 1;
+	bm.Flags	= BMF_AROS_HIDD;
+	
+	ti.source	= font->tf_CharData;
+	ti.x_src	= 0;
+	ti.modulo	= font->tf_Modulo;
+	ti.invertsrc	= FALSE;
+		
+    	/* Copy the character data into the bitmap */
+	OOP_SetAttrs(tmp_gc, gc_tags);
+	
+	amiga2hidd_fast((APTR)&ti
+		, tmp_gc
+		, 0, 0
+		, &bm
+		, 0, 0
+		, width, height
+		, template_to_buf
+		, GfxBase
+	);
+		
+    }
+    
+    release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
+    
+    return bm_obj;
+}
+
+/****************************************************************************************/
 
 

@@ -167,6 +167,9 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
     	    	     LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize,
 		     ULONG *buf, struct BitMap *dest_bm);
 
+BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
+    	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
+
 /****************************************************************************************/
 
 #endif

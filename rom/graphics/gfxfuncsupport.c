@@ -1009,6 +1009,285 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 }
 
 /****************************************************************************************/
+
+BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
+    	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
+{
+    struct Layer     *L       = rp->Layer;
+    struct Rectangle  ScrollRect;
+    struct Rectangle  Rect;
+
+    if (!CorrectDriverData (rp, GfxBase))
+	return FALSE;
+
+    if (0 == dx && 0 == dy)
+    	return TRUE;
+
+    ScrollRect.MinX = x1;
+    ScrollRect.MinY = y1;
+    ScrollRect.MaxX = x2;
+    ScrollRect.MaxY = y2;
+
+    if (!L)
+    {
+        Rect = ScrollRect;
+	TranslateRect(&Rect, -dx, -dy);
+        if (_AndRectRect(&ScrollRect, &Rect, &Rect))
+        {
+            BltBitMap(rp->BitMap,
+                      Rect.MinX + dx,
+                      Rect.MinY + dy,
+	              rp->BitMap,
+                      Rect.MinX,
+                      Rect.MinY,
+                      Rect.MaxX - Rect.MinX + 1,
+                      Rect.MaxY - Rect.MinY + 1,
+		      0xc0, /* copy */
+                      0xff,
+                      NULL );
+	}
+    }
+    else
+    {
+    	struct ClipRect *CR, *LastHiddenCR;
+        struct Region    R;
+
+	LockLayerRom(L);
+
+	TranslateRect(&ScrollRect, L->bounds.MinX, L->bounds.MinY);
+
+	InitRegion(&R);
+
+	if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+	{
+	    if (!SetRegion(L->DamageList, &R))
+	        goto failexit;
+
+	    /* The damage list is relative to the layer */
+	    TranslateRect(&R.bounds, L->bounds.MinX, L->bounds.MinY);
+	}
+
+        #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
+	SortLayerCR(L, dx, dy);
+	#undef LayersBase
+
+	for (LastHiddenCR = NULL, CR = L->ClipRect; CR; CR = CR->Next)
+    	{
+	    CR->_p1 = LastHiddenCR;
+
+	    if (CR->lobs)
+	    {
+		if (LastHiddenCR)
+		    LastHiddenCR->_p2 = CR;
+
+		LastHiddenCR = CR;
+
+		if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+		{
+		    if (!OrRectRegion(&R, &CR->bounds))
+		        goto failexit;
+		}
+	    }
+
+	    CR->_p2 = NULL;
+ 	}
+
+
+	if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+	{
+	    TranslateRect(&R.bounds, -dx, -dy);
+
+	    AndRectRegion(&R, &ScrollRect);
+	}
+
+	for (CR = L->ClipRect; CR; CR = CR->Next)
+    	{
+ 	    int cando = 0;
+
+	    if (CR->lobs && (L->Flags & LAYERSIMPLE) && UpdateDamageList)
+	    {
+	        ClearRectRegion(&R, &CR->bounds);
+	    }
+	    else
+	    if (_AndRectRect(&ScrollRect, &CR->bounds, &Rect))
+	    {
+		TranslateRect(&Rect, -dx, -dy);
+
+		if (_AndRectRect(&ScrollRect, &Rect, &Rect))
+		    cando = 1;
+	    }
+
+	    if (cando)
+	    {
+		/* Rect.Min(X|Y) are the coordinates to wich the rectangle has to be moved
+		   Rect.Max(X|Y) - Rect.Max(X|Y) - 1 are the dimensions of this rectangle */
+		if (!CR->_p1 && !CR->lobs)
+		{
+		    /* there are no hidden/obscured rectangles with which this recrtangle has to deal */
+		    BltBitMap(rp->BitMap,
+                              Rect.MinX + dx,
+        		      Rect.MinY + dy,
+	          	      rp->BitMap,
+                    	      Rect.MinX,
+                   	      Rect.MinY,
+                  	      Rect.MaxX - Rect.MinX + 1,
+                  	      Rect.MaxY - Rect.MinY + 1,
+			      0xc0, /* copy */
+         		      0xff,
+                 	      NULL );
+		}
+		else
+		{
+		    struct BitMap          *srcbm;
+		    struct RegionRectangle *rr;
+                    struct Region          *RectRegion;
+		    struct Rectangle        Tmp;
+		    struct ClipRect        *HiddCR;
+		    WORD                    corrsrcx, corrsrcy;
+		    BOOL   dosrcsrc;
+
+		    RectRegion = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
+		    if (!RectRegion)
+		        goto failexit;
+
+ 		    if (CR->lobs)
+		    {
+			if (L->Flags & LAYERSUPER)
+		        {
+   		            corrsrcx = - L->bounds.MinX - L->Scroll_X;
+          	            corrsrcy = - L->bounds.MinY - L->Scroll_Y;
+		        }
+			else
+			{
+		            corrsrcx = - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
+		            corrsrcy = - CR->bounds.MinY;
+		        }
+			srcbm = CR->BitMap;
+		    }
+		    else
+		    {
+		        corrsrcx  = 0;
+		        corrsrcy  = 0;
+		        srcbm     = rp->BitMap;
+		    }
+
+		    for (HiddCR = CR->_p1; HiddCR; HiddCR = HiddCR->_p1)
+		    {
+			if (_AndRectRect(&RectRegion->bounds, &HiddCR->bounds, &Tmp))
+			{
+
+			    if (!(L->Flags & LAYERSIMPLE))
+			    {
+    			        WORD corrdstx, corrdsty;
+
+				if (L->Flags & LAYERSUPER)
+				{
+	                            corrdstx =  - L->bounds.MinX - L->Scroll_X;
+                        	    corrdsty =  - L->bounds.MinY - L->Scroll_Y;
+				}
+				else
+				{
+				    /* Smart layer */
+				    corrdstx =  - HiddCR->bounds.MinX + ALIGN_OFFSET(HiddCR->bounds.MinX);
+				    corrdsty =  - HiddCR->bounds.MinY;
+				}
+
+
+				BltBitMap(srcbm,
+				          Tmp.MinX + corrsrcx + dx,
+					  Tmp.MinY + corrsrcy + dy,
+					  HiddCR->BitMap,
+					  Tmp.MinX + corrdstx,
+					  Tmp.MinY + corrdsty,
+					  Tmp.MaxX - Tmp.MinX + 1,
+                	      	          Tmp.MaxY - Tmp.MinY + 1,
+			      	          0xc0, /* copy */
+         		      	          0xff,
+                 	   	          NULL );
+			    }
+
+			    if (!ClearRectRegion(RectRegion, &Tmp))
+			    {
+			        DisposeRegion(RectRegion);
+				goto failexit;
+			    }
+			}
+		    }
+
+		    if ((dosrcsrc = _AndRectRect(&CR->bounds, &Rect, &Tmp)))
+		    {
+			if (!ClearRectRegion(RectRegion, &Tmp))
+			{
+			    DisposeRegion(RectRegion);
+			    goto failexit;
+			}
+		    }
+
+		    for (rr = RectRegion->RegionRectangle; rr; rr = rr->Next)
+		    {
+
+			BltBitMap(srcbm,
+			          rr->bounds.MinX + RectRegion->bounds.MinX + corrsrcx + dx,
+                	          rr->bounds.MinY + RectRegion->bounds.MinY + corrsrcy + dy,
+	          	          rp->BitMap,
+                	  	  rr->bounds.MinX + RectRegion->bounds.MinX,
+          			  rr->bounds.MinY + RectRegion->bounds.MinY,
+                		  rr->bounds.MaxX - rr->bounds.MinX + 1,
+                	  	  rr->bounds.MaxY - rr->bounds.MinY + 1,
+			      	  0xc0, /* copy */
+         		      	  0xff,
+                 	   	  NULL );
+		    }
+
+		    if (dosrcsrc)
+		    {
+			BltBitMap(srcbm,
+			          Tmp.MinX + corrsrcx + dx,
+                	          Tmp.MinY + corrsrcy + dy,
+	          		  srcbm,
+			          Tmp.MinX + corrsrcx,
+                	          Tmp.MinY + corrsrcy,
+                		  Tmp.MaxX - Tmp.MinX + 1,
+                	  	  Tmp.MaxY - Tmp.MinY + 1,
+			      	  0xc0, /* copy */
+         		      	  0xff,
+                 	   	  NULL );
+
+		    }
+
+		    DisposeRegion(RectRegion);
+		}
+	    }
+        }
+
+        if ((L->Flags & LAYERSIMPLE) && UpdateDamageList)
+        {
+            /* Add the damagelist to the layer's damage list and set the
+               LAYERREFRESH flag, but of course only if it's necessary */
+
+            /* first clear the damage lists of the scrolled area */
+
+	    TranslateRect(&ScrollRect, -L->bounds.MinX, -L->bounds.MinY);
+	    ClearRectRegion(L->DamageList, &ScrollRect);
+
+            if (R.RegionRectangle)
+            {
+		TranslateRect(&R.bounds, -L->bounds.MinX, -L->bounds.MinY);
+
+		OrRegionRegion(&R, L->DamageList);
+                L->Flags |= LAYERREFRESH;
+            }
+        }
+
+failexit:
+        ClearRegion(&R);
+        UnlockLayerRom(L);
+    }
+
+    return TRUE;
+
+}
+
 /****************************************************************************************/
 /****************************************************************************************/
 /****************************************************************************************/

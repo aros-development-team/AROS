@@ -8,6 +8,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -67,7 +68,6 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    BOOL hasClipRegion = FALSE;
     LONG width, height, absdx, absdy;
 
     /*
@@ -90,8 +90,6 @@
 	if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
 	    yMax = (L->bounds.MaxY - L->bounds.MinY) ;
 
-	if (NULL != L->ClipRegion || LAYERSIMPLE == (L->Flags & LAYERSIMPLE))
-	    hasClipRegion = TRUE;
     }
     else
     {
@@ -123,8 +121,7 @@
     }
 
 
-     if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
-                                   hasClipRegion, GfxBase))
+     if (FALSE == MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
         return;
 
     /*

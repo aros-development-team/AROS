@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <proto/exec.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -56,6 +57,7 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+
     struct RastPort * newRP;
 
     newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
@@ -64,13 +66,24 @@
     {
 	CopyMem (rp, newRP, sizeof (struct RastPort));
 
-	if (!driver_CloneRastPort (newRP, rp, GfxBase))
+	if (!CorrectDriverData(newRP,  GfxBase))
 	{
 	    FreeMem (newRP, sizeof (struct RastPort));
 	    newRP = NULL;
 	}
+	else
+	{
+	    /* copy rastports attributes */
+	    SetFont(newRP, rp->Font);
+	    SetABPenDrMd(newRP, GetAPen(rp), GetBPen(rp), GetDrMd(rp));
+	    Move(newRP, rp->cp_x, rp->cp_y);
+
+	    #warning Some attributes not copied    
+ 	}
     }
 
     return newRP;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* CloneRastPort */

@@ -11,7 +11,6 @@
 #include <proto/oop.h>
 #include "graphics_intern.h"
 
-
 /*****************************************************************************
 
     NAME */
@@ -67,8 +66,9 @@
     if (NULL != hn)
     {
     	tfe = hn->ext;
-	driver_StripFont(font, hn, GfxBase);
 	
+	if (hn->font_bitmap) OOP_DisposeObject(hn->font_bitmap);
+	    
     	/* Remove the hashitem (tfe_hashdelete() has semaphore protection) */
 	tfe_hashdelete(font, GfxBase);
 	
