@@ -298,7 +298,7 @@ boot_func (char *arg, int flags)
       /* Switch to video mode */
       if (mbi.vbe_mode != 0x03 &&
          (set_vbe_mode (mbi.vbe_mode) != 0x004F ||
-          get_vbe_mode_info (mbi.vbe_mode, &mode_info_block) != 0x004F))
+          get_vbe_mode_info (mbi.vbe_mode & ~0x4000, &mode_info_block) != 0x004F))
        {
          /* fallback to text mode */
          mbi.vbe_mode = 0x03;
