@@ -24,10 +24,10 @@ $(STUBSDIR)/%.o : $(STUBSDIR)/%.S
 	%compile_q
 
 $(STUBSDIR)/stubslist : $(STUBSDIR)/$(GENSTUBS)
-	./$(GENSTUBS) -list >$@
+	$(STUBSDIR)/$(GENSTUBS) -list >$@
 
 $(STUBSDIR)/%.S:
-	./$(GENSTUBS) $(basename $(notdir $@)) >$@
+	$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
 $(OBJS) : $(STUBSDIR)/$(GENSTUBS)
 
