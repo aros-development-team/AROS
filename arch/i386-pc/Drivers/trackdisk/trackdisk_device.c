@@ -64,13 +64,13 @@ BOOL TD_PerformIO( struct IOExtTD *, struct TrackDiskBase *);
 
 static const char end;
 
-int AROS_SLIB_ENTRY(entry,TrackDisk)(void)
+int __used AROS_SLIB_ENTRY(entry,TrackDisk)(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
 }
 
-static const struct Resident TrackDisk_resident =
+static const struct Resident TrackDisk_resident __used =
 {
     RTC_MATCHWORD,
     (struct Resident *)&TrackDisk_resident,
