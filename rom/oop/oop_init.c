@@ -17,6 +17,7 @@
 #include <oop/method.h>
 #include <oop/server.h>
 #include <oop/proxy.h>
+#include <oop/interface.h>
 
 #include "intern.h"
 #include "libdefs.h"
@@ -70,11 +71,12 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 
     struct IDDescr intern_ids[] =
     {
-	{ GUID_Root,	&__OOPI_Root	},
-	{ GUID_Meta,	&__OOPI_Meta	},
-	{ GUID_Method,	&__OOPI_Method	},
-	{ GUID_Server,	&__OOPI_Server	},
-	{ GUID_Proxy,	&__OOPI_Proxy	},
+	{ GUID_Root,		&__OOPI_Root		},
+	{ GUID_Meta,		&__OOPI_Meta		},
+	{ GUID_Method,		&__OOPI_Method		},
+	{ GUID_Server,		&__OOPI_Server		},
+	{ GUID_Proxy,		&__OOPI_Proxy		},
+	{ GUID_Interface,	&__OOPI_Interface	},
 	{ NULL,	NULL }
     };
 
@@ -128,7 +130,11 @@ BOOL InitUtilityClasses(struct IntOOPBase *OOPBase)
         OOPBase->ob_ProxyClass = InitProxyClass((struct Library *)OOPBase);
 	if (OOPBase->ob_ProxyClass)
 	{
-    	    return (TRUE);
+	    OOPBase->ob_InterfaceClass = InitInterfaceClass((struct Library *)OOPBase);
+	    if (OOPBase->ob_InterfaceClass)
+	    {
+    	    	return (TRUE);
+	    }
 	}
     }
     

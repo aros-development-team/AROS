@@ -43,6 +43,7 @@ enum {
     IDX_IMethod,
     IDX_IServer,
     IDX_IProxy,
+    IDX_IInterface,
     NUM_Indexes
 };
 
@@ -73,11 +74,12 @@ struct IntClass
 
 
 
-#define __OOPI_Root	(GetOBase(OOPBase)->ob_InternIDs[IDX_IRoot])
-#define __OOPI_Meta	(GetOBase(OOPBase)->ob_InternIDs[IDX_IMeta])
-#define __OOPI_Method	(GetOBase(OOPBase)->ob_InternIDs[IDX_IMethod])
-#define __OOPI_Server	(GetOBase(OOPBase)->ob_InternIDs[IDX_IServer])
-#define __OOPI_Proxy	(GetOBase(OOPBase)->ob_InternIDs[IDX_IProxy])
+#define __OOPI_Root		(GetOBase(OOPBase)->ob_InternIDs[IDX_IRoot])
+#define __OOPI_Meta		(GetOBase(OOPBase)->ob_InternIDs[IDX_IMeta])
+#define __OOPI_Method		(GetOBase(OOPBase)->ob_InternIDs[IDX_IMethod])
+#define __OOPI_Server		(GetOBase(OOPBase)->ob_InternIDs[IDX_IServer])
+#define __OOPI_Proxy		(GetOBase(OOPBase)->ob_InternIDs[IDX_IProxy])
+#define __OOPI_Interface	(GetOBase(OOPBase)->ob_InternIDs[IDX_IInterface])
 
 struct IntOOPBase
 {
@@ -104,6 +106,7 @@ struct IntOOPBase
     Class			 *ob_MethodClass;
     Class			 *ob_ServerClass;
     Class			 *ob_ProxyClass;
+    Class			 *ob_InterfaceClass;
     
     struct HashTable	       * ob_IDTable;
     ULONG			 ob_CurrentID;
@@ -134,6 +137,7 @@ BOOL InitMetaClass(struct IntOOPBase *OOPBase);
 Class *InitMethodClass(struct IntOOPBase *OOPBase);
 Class *InitServerClass(struct Library *OOPBase);
 Class *InitProxyClass(struct Library *OOPBase);
+Class *InitInterfaceClass(struct Library *OOPBase);
 
 /*****************
 **  Structures  **
