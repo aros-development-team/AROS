@@ -185,7 +185,7 @@ APTR zune_bubble_create(Object *obj, LONG x, LONG y, char *text, ULONG flags)
     
     bubble->text = text;
 
-    bubble->ztext = zune_text_new(NULL, bubble->text, ZTEXT_ARG_NONE, NULL);
+    bubble->ztext = zune_text_new(NULL, bubble->text, ZTEXT_ARG_NONE, 0);
     if (!bubble->ztext)
     {
     	zune_bubble_delete(obj, bubble);	
@@ -248,7 +248,9 @@ void zune_bubble_delete(Object *obj, APTR bubble)
     if (b)
     {
     	if (b->win) CloseWindow(b->win);
+#ifdef __AROS__
 	if (b->shape) DisposeRegion(b->shape);
+#endif
     	if (b->ztext) zune_text_destroy(b->ztext);
 	
     	if (b->flags & BUBBLEF_CREATESHORTHELP_CALLED)
