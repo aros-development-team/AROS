@@ -39,9 +39,11 @@
 /* Sanity check macros */
 #undef DBPRINTF
 #undef THIS_FILE
+#undef ASSERT(x)
 #undef ASSERT_VALID_PTR(x)
 #undef ASSERT_VALID_PTR_OR_NULL(x)
-#undef ASSERT(x)
+#undef ASSERT_VALID_TASK(t)
+#undef ASSERT_VALID_PROCESS(p)
 
 /*  Macros for "stair debugging" */
 #undef SDInit
@@ -152,10 +154,10 @@
 
 #define ASSERT_VALID_TASK(t) ( ASSERT_VALID_PTR(t) &&		\
 	(((t)->tc_Node.ln_Type == NT_TASK) ||			\
-	(t)->tc_Node.ln_Type == NT_PROCESS) )
+	(t)->tc_Node.ln_Type == NT_PROCESS) );
 
 #define ASSERT_VALID_PROCESS(p) ( ASSERT_VALID_PTR(p) &&	\
-	(((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS) )
+	(((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS) );
 
 
     /* return-macros. NOTE: I make a copy of the value in __aros_val, because
