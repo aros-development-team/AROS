@@ -1,9 +1,9 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function SetPubScreenModes()
-    Lang: english
+    Desc:
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -22,9 +22,19 @@
 
 /*  FUNCTION
 
+    Specify global intuition public screen handling. 
+
     INPUTS
 
+    modes  --  The new set of flags to consider. Currently defined flags are:
+               SHANGHAI       Workbench windows are opened on the default
+	                      public screen.
+	       POPPUBSCREEN   When a visitor window opens on a public screen,
+	                      the screen is brought to front.
+
     RESULT
+
+    The flags set before the change was made.
 
     NOTES
 
@@ -34,19 +44,28 @@
 
     SEE ALSO
 
+    OpenScreen()
+
     INTERNALS
 
     HISTORY
+    
+    24-06-98    SDuvan  Implemented
 
 *****************************************************************************/
+#define GPB(x) GetPrivIBase(x)
+
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/SetPubScreenModes()
-    aros_print_not_implemented ("SetPubScreenModes");
+    UWORD retval;
 
-    return 0;
+    retval = GPB(IntuitionBase)->pubScrGlobalMode;
+
+    GPB(IntuitionBase)->pubScrGlobalMode = modes;
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* SetPubScreenModes */

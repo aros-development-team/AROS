@@ -1,9 +1,9 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function NextPubScreen()
-    Lang: english
+    Desc:
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -15,51 +15,81 @@
 	AROS_LH2(UBYTE *, NextPubScreen,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Screen *, screen, A0),
-	AROS_LHA(UBYTE         *, namebuf, A1),
+	AROS_LHA(struct Screen *, screen  , A0),
+	AROS_LHA(UBYTE *        , namebuff, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 89, Intuition)
 
 /*  FUNCTION
-	Returns the name of the name of the next pub screen in system rotation.
-	This allows visitor windows to jump among public screens in a cycle.
+
+    Gets the next public screen in the system; this allows visitor windows
+    to jump among public screens in a cycle.
 
     INPUTS
-	screen - The screen your window is currently open on.
-	namebuf - Pointer to a buffer of MAXPUBSCREENNAME+1 characters.
-		This function will fill in the name of the next public screen.
-	mousepoint - Pointer to an array of two WORDs or a structure of type Point
+
+    screen    --  Pointer to the public screen your window is open in or
+                  NULL if you don't have a pointer to a public screen.
+    namebuff  --  Pointer to a buffer with (at least) MAXPUBSCREENNAME+1
+                  characters to put the name of the next public screen in.
 
     RESULT
-	NULL if there are no public screens, otherwise the pointer to your
-	namebuf.
+    
+    Returns 'namebuff' or NULL if there are no public screens.
 
     NOTES
-	Note that the public screen may be closed or not remain public before
-	having called LockPubScreen(), so consider the case that
-	LockPubScreen() may fail.
+
+    We cannot guarantee that the public screen, the name of which you got
+    by using this function, is available when you call for instance 
+    LockPubScreen(). Therefore you must be prepared to handle failure of
+    that kind of functions.
+        This function may return the name of a public screen which is in
+    private mode.
+        The cycle order is undefined, so draw no conclusions based on it!
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	OpenScreen(), LockPubScreen()
+
+    OpenScreen(), PubScreenStatus()
 
     INTERNALS
+    
+    Maybe we should correct the + 1 stupidity right away?
 
     HISTORY
 
+    21-06-98    SDuvan  Implemented
+
 *****************************************************************************/
+#define GPB(x) GetPrivIBase(x)
+
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/NextPubScreen()
-    aros_print_not_implemented ("NextPubScreen");
+    struct PubScreenNode *ps;
+    struct IntScreen *scr = (struct IntScreen *)screen;
 
-    return NULL;
+    if(scr == NULL)
+	scr = (struct IntScreen *)GPB(IntuitionBase)->DefaultPubScreen;
+
+    if(scr == NULL)
+	return NULL;
+
+    if(scr->pubScrNode == NULL)
+    	return NULL;     /* This was not a public screen */
+    
+    LockPubScreenList();
+
+    ps = (struct PubScreenNode *)ps->psn_Node.ln_Succ;
+    strcpy(namebuff, ps->psn_Node.ln_Name);
+    
+    UnlockPubScreenList();
+
+    return namebuff;
 
     AROS_LIBFUNC_EXIT
 } /* NextPubScreen */

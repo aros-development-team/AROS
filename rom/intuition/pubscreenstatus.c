@@ -1,9 +1,9 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1998 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Intuition function PubScreenStatus()
-    Lang: english
+    Desc:
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -15,17 +15,27 @@
 	AROS_LH2(UWORD, PubScreenStatus,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Screen *, screen     , A0),
-	AROS_LHA(UWORD          , statusflags, D0),
+	AROS_LHA(struct Screen *, Scr        , A0),
+	AROS_LHA(UWORD          , StatusFlags, D0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 92, Intuition)
 
 /*  FUNCTION
 
+    Change the status flags for a given public screen. 
+
     INPUTS
 
+    Scr          --  The screen the flags of which to change.
+    StatusFlags  --  The new values for the flags, see <intuition/screens.h>
+                     for further information on the flag bits.
+
     RESULT
+
+    Clears bit 0 if the screen wasn't public or if it was impossible
+    to make private (PSNF_PRIVATE) as visitor windows are open on it.
+    The other bits in the return value are reserved for future use.
 
     NOTES
 
@@ -35,19 +45,36 @@
 
     SEE ALSO
 
+    OpenScreen()
+
     INTERNALS
 
     HISTORY
+        21-06-98    SDuvan  Implemented
 
 *****************************************************************************/
+#define GPB(x) GetPrivIBase(x)
+
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/PubScreenStatus()
-    aros_print_not_implemented ("PubScreenStatus");
+    ULONG  retval;
 
-    return NULL;
+    LockPubScreenList();
+
+    if(GetPrivScreen(Scr)->pubScrNode == NULL ||
+       GetPrivScreen(Scr)->pubScrNode->psn_VisitorCount != 0)
+	retval = 0x0;
+    else
+    {
+	GetPrivScreen(Scr)->pubScrNode->psn_Flags = StatusFlags;
+	retval = 0x1;
+    }
+
+    UnlockPubScreenList();
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* PubScreenStatus */
