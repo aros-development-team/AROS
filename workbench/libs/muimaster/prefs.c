@@ -24,6 +24,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/commodities.h>
+#include <proto/intuition.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -295,9 +296,30 @@ void __zune_prefs_init (struct ZunePrefs *prefs)
     prefs->window_font_small = g_strdup("fixed");
     prefs->window_font_big = g_strdup("fixed");
 
-    for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
-	prefs->fonts[i] = OpenFont(&defaultFont);
+	struct Screen *scr = LockPubScreen(NULL);
+	if (scr)
+	{
+	    struct TextAttr scr_attr;
+	    scr_attr = *scr->Font;
+
+	    prefs->fonts[0] = NULL;
+	    prefs->fonts[-MUIV_Font_Normal] = OpenFont(&scr_attr);
+	    prefs->fonts[-MUIV_Font_List] = OpenFont(&scr_attr);
+	    prefs->fonts[-MUIV_Font_Tiny] = OpenFont(&scr_attr);
+	    prefs->fonts[-MUIV_Font_Fixed] = OpenFont(&defaultFont);
+	    prefs->fonts[-MUIV_Font_Title] = OpenFont(&scr_attr);
+	    prefs->fonts[-MUIV_Font_Big] = OpenFont(&scr_attr);
+	    prefs->fonts[-MUIV_Font_Button] = OpenFont(&scr_attr);
+	    prefs->fonts[-MUIV_Font_Knob] = OpenFont(&scr_attr);
+	    UnlockPubScreen(NULL,scr);
+	} else
+	{
+	    for (i = 0; i < -MUIV_Font_NegCount; i++)
+	    {
+		prefs->fonts[i] = OpenFont(&defaultFont);
+	    }
+	}
     }
 
 /* radio */
