@@ -67,7 +67,6 @@ keytable[] =
     {K_Up,		0x4c },
     {K_Left,		0x4f },
     {K_Down,		0x4d },
-    {K_F12,		0x5f },	/* Pause key might be better */
     {K_KP_Enter,	0x43 },
     {K_KP_Decimal,	0x3c },
     {K_KP_Sub,		0x4a },
@@ -95,8 +94,8 @@ keytable[] =
     {K_F8,		0x57 },
     {K_F9,		0x58 },
     {K_F10,		0x59 },
-    {K_F11,		0x5f },		/* HELP */
-    {K_F12,		0x5f },		/* HELP */
+    {K_F11,		0x66 },		/* LAMIGA */
+    {K_F12,		0x67 },		/* RAMIGA */
     {K_Home,		0x5f },		/* HELP */
     
     {K_A,		0x20 },
@@ -255,11 +254,18 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *msg)
 {
     struct kbd_data * data;
+    UWORD key;
     
     EnterFunc(bug("kbd_handleevent()\n"));
     data = INST_DATA(cl, o);
-    D(bug("%lx ",pckey2hidd(msg->event)));
-    data->kbd_callback(data->callbackdata,pckey2hidd(msg->event));
+    key = pckey2hidd(msg->event);
+    D(bug("%lx ",key));
+    if (key == 0x78)	// Reset request
+		ColdReboot();
+	if (data->kbd_callback)
+	{
+    	data->kbd_callback(data->callbackdata, key);
+	}
     ReturnVoid("Kbd::HandleEvent");
 }
 
