@@ -17,7 +17,7 @@ int main()
     
     if (!Test_Initialize()) goto error;
     
-    object  = NewObject(Test_CLASS->mcc_Class, NULL, NULL);
+    object  = TestObject, End;
     
     gettimeofday(&tv_start, NULL);
     
