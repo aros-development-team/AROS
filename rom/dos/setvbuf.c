@@ -10,12 +10,13 @@
 /*****************************************************************************
 
     NAME */
+#include <dos/stdio.h>
 #include <proto/dos.h>
 
 	AROS_LH4(LONG, SetVBuf,
 
 /*  SYNOPSIS */
-	AROS_LHA(BPTR  , fh, D1),
+	AROS_LHA(BPTR  , file, D1),
 	AROS_LHA(STRPTR, buff, D2),
 	AROS_LHA(LONG  , type, D3),
 	AROS_LHA(LONG  , size, D4),
@@ -48,9 +49,41 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write dos/SetVBuf()
-    aros_print_not_implemented ("SetVBuf");
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
-    return EOF;
+    switch (type)
+    {
+        case BUF_LINE: fh->fh_Flags = (fh->fh_Flags & ~FHF_NOBUF) | FHF_LINEBUF; break;
+        case BUF_FULL: fh->fh_Flags = fh->fh_Flags & ~(FHF_NOBUF | FHF_LINEBUF); break;
+        case BUF_NONE: fh->fh_Flags = (fh->fh_Flags | FHF_NOBUF) & ~FHF_LINEBUF; break;
+	default:
+	    return EOF;
+    }
+
+    if (size != -1)
+    {
+        if (size < 208) size = 208;
+
+        if (buff)
+        {
+	    if (fh->fh_Flags & FHF_BUF)
+ 	        FreeMem(fh->fh_Buf, fh->fh_Size);
+	    fh->fh_Flags &= ~FHF_BUF;
+	}
+	else
+	{
+	    buff = AllocMem(size, MEMF_ANY);
+	    if (!buff)
+	    {
+	        SetIoErr(ERROR_NO_FREE_STORE);
+		return EOF;
+	    }
+	    fh->fh_Flags |= FHF_BUF;
+	}
+
+	fh->fh_Buf  = buff;
+    }
+
+    return 0;
     AROS_LIBFUNC_EXIT
 } /* SetVBuf */
