@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/23 14:05:42  aros
+    #define was renamed
+
     Revision 1.4  1996/10/21 20:53:17  aros
     Changed BIG_ENDIAN to AROS_BIG_ENDIAN
 
@@ -25,7 +28,7 @@ typedef LONG type_L;
 #define S_DEF(i,l) union                                                        \
 		   {								\
 		     struct _##i { l } _l;					\
-		     char _s[(sizeof(struct _##i)+LONGALIGN-1)&~(LONGALIGN-1)]; \
+		     char _s[(sizeof(struct _##i)+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1)]; \
 		   } _##i
 
 

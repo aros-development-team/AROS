@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/23 14:07:20  aros
+    #define was renamed
+
     Revision 1.3  1996/10/19 17:07:32  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -91,7 +94,7 @@ int main(int argc, char* argv[])
 		    t->tc_Node.ln_Name="new task";
 		    t->tc_SPLower=s;
 		    t->tc_SPUpper=s+STACKSIZE;
-#if STACK_GROWS_DOWNWARDS
+#if AROS_STACK_GROWS_DOWNWARDS
 		    t->tc_SPReg=(UBYTE *)t->tc_SPUpper-SP_OFFSET;
 #else
 		    t->tc_SPReg=(UBYTE *)t->tc_SPLower-SP_OFFSET;
