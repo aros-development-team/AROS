@@ -91,6 +91,11 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_f
 
+#MM
+includes-copy : $(INCDIR)/proto/wb.h $(INCDIR)/clib/workbench_protos.h
+	@$(CP) $(INCDIR)/proto/wb.h $(INCDIR)/proto/workbench.h
+	@$(CP) $(INCDIR)/clib/workbench_protos.h $(INCDIR)/clib/wb_protos.h
+
 #MM kernel-workbench-linklib : setup includes kernel-workbench-$(ARCH)-$(CPU)
 kernel-workbench-linklib : show-flags $(LIB)
 	@$(NOP)
