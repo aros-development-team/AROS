@@ -78,6 +78,7 @@ int main (void)
     printf ("\n# Task Flags\n");
     printf ("#define TS_RUN        %d\n", TS_RUN);
     printf ("#define TS_READY      %d\n", TS_READY);
+    printf ("#define TS_REMOVED    %d\n", TS_REMOVED);
     printf ("#define TF_EXCEPT     0x%04lX\n", TF_EXCEPT);
     printf ("#define TF_SWITCH     0x%04lX\n", TF_SWITCH);
 

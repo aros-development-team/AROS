@@ -63,10 +63,13 @@ AROS_CDEFNAME(linux_sighandler):
 #endif
 	/* If there's no current task, we don't need to save
 	   the registers */
-	tst.l	ThisTask(%a6)
+	movea.l	ThisTask(%a6),%a1
+	jbeq	.nosave
+	/* Don's save the registers if the task was removed,
+	   it will never get to run again. */
+	cmp.b	#TS_REMOVED,tc_State(%a1)
 	jbeq	.nosave
 	movea.l	sc(%sp),%a0
-	movea.l	ThisTask(%a6),%a1
 	move.l  sc_usp(%a0),tc_SPReg(%a1)
 	movea.l	tc_UnionETask(%a1),%a1
 	movea.l	iet_Context(%a1),%a1
