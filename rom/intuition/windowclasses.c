@@ -272,6 +272,7 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	    
     	    D(bug("locking all layers\n"));
 
+    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 	    LockLayers(&w->WScreen->LayerInfo);
 	    	    
 	    SetDrMd(data->rp, COMPLEMENT);
@@ -466,6 +467,8 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	   rastport clone
     */
     UnlockLayers(&w->WScreen->LayerInfo);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+
     FreeRastPort(data->rp);
     
     return TRUE;
@@ -594,7 +597,10 @@ static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 	if (data->rp)
 	{      
 	    /* Lock all layers while the window is resized */
-D(bug("locking all layers\n"));
+	    
+    	    D(bug("locking all layers\n"));
+	    
+    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 	    LockLayers(&w->WScreen->LayerInfo);
 	    
 	    SetDrMd(data->rp, COMPLEMENT);
@@ -785,6 +791,8 @@ static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg
 	   rastport clone
     */
     UnlockLayers(&w->WScreen->LayerInfo);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+    
     FreeRastPort(data->rp);
     
     return TRUE;
