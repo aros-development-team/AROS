@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <toollib/error.h>
 #include <toollib/stdiocb.h>
+#include <toollib/stringcb.h>
 #include "html.h"
 #include "parse.h"
 #include "var.h"
@@ -15,7 +16,8 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     FILE       * fh;
     FILE       * cmdoutput;
     char       * cmdoutputname;
-    int VerbatimInput;
+    int ProcessInput;
+    int ExpandInput;
     int InputFile;
     int ProcessOutput;
 
@@ -35,28 +37,102 @@ HTML_Filter (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     Var_PushLevel ();
 
-    VerbatimInput = (FindNodeNC (&tag->args, "VERBATIMINPUT") != NULL);
+    ProcessInput  = (FindNodeNC (&tag->args, "PROCESSINPUT")  != NULL);
+    ExpandInput   = (FindNodeNC (&tag->args, "EXPANDINPUT")   != NULL);
     InputFile	  = (FindNodeNC (&tag->args, "INPUTFILE")     != NULL);
     ProcessOutput = (FindNodeNC (&tag->args, "PROCESSOUTPUT") != NULL);
 
     fn = xstrdup (tmpnam (NULL));
 
-    fh = fopen (fn, "w");
-
-    if (!fh)
+    if (!ProcessInput)
     {
-	PushStdError ("Can open %s for writing", fn);
-	xfree (fn);
-	Var_FreeLevel (Var_PopLevel ());
-	return T_ERROR;
+	fh = fopen (fn, "w");
+
+	if (!fh)
+	{
+	    PushStdError ("Can open %s for writing", fn);
+	    xfree (fn);
+	    Var_FreeLevel (Var_PopLevel ());
+	    return T_ERROR;
+	}
+
+	body = Var_Get ("@body");
+
+	if (body)
+	{
+	    if (ExpandInput)
+	    {
+		String ebody = Var_Subst (body);
+
+		if (!ebody)
+		{
+		    Str_PushError (in, "Can't expand body");
+		    return T_ERROR;
+		}
+
+		fputs (ebody->buffer, fh);
+		VS_Delete (ebody);
+	    }
+	    else
+		fputs (body, fh);
+	}
+
+	fclose (fh);
     }
+    else
+    {
+	StdioStream  * ppout = StdStr_New (fn, "w");
+	StringStream * ppin;
+	int rc;
 
-    body = Var_Get ("@body");
+	if (!ppout)
+	{
+	    PushStdError ("Can open %s for writing", fn);
+	    xfree (fn);
+	    Var_FreeLevel (Var_PopLevel ());
+	    return T_ERROR;
+	}
 
-    if (body)
-	fputs (body, fh);
+	body = Var_Get ("@body");
 
-    fclose (fh);
+	if (body)
+	{
+	    String ebody = NULL;
+
+	    if (ExpandInput)
+	    {
+		ebody = Var_Subst (body);
+
+		if (!ebody)
+		{
+		    Str_PushError (in, "Can't expand body");
+		    return T_ERROR;
+		}
+
+		ppin = StrStr_New (ebody->buffer);
+	    }
+	    else
+		ppin = StrStr_New (body);
+
+	    rc = HTML_Parse ((MyStream *)ppin, (MyStream *)ppout, data);
+
+	    StrStr_Delete (ppin);
+	    if (ebody)
+		VS_Delete (ebody);
+	}
+	else
+	    rc = T_OK;
+
+	StdStr_Delete (ppout);
+
+	if (rc != T_OK)
+	{
+	    PushStdError ("Failed to prepare the input for the filter", cmdarg->value);
+	    xfree (fn);
+	    Var_FreeLevel (Var_PopLevel ());
+	    return T_ERROR;
+	}
+    }
 
     if (InputFile)
     {
