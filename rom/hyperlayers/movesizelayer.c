@@ -69,10 +69,10 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * first, *_l, *lparent;
-  struct Region * newshape = NewRegion(), * oldshape, r;
-
+  struct Region * newshape = NewRegion(), * oldshape, r, rtmp;
   struct Rectangle rectw, recth;
 
+  rtmp.RegionRectangle = NULL; // min. initialization
   r.RegionRectangle = NULL; // min. initialization
   
   LockLayers(l->LayerInfo);
@@ -232,11 +232,11 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
    * Now make them visible again.
    */
   _l = first;
+  l->shape = newshape;
   while (1)
   {
     if (_l == l)
     {
-      l->shape = newshape;
       if (IS_VISIBLE(l))
       {
 #if 0
@@ -257,11 +257,16 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
 #endif    
       ClearRegion(l->VisibleRegion);
       _ShowPartsOfLayer(_l, &r, LayersBase);
-      ClearRegionRegion(_l->shape, &r);
+      
+      _SetRegion(_l->shape, &rtmp);
+      AndRegionRegion(_l->parent->shape, &rtmp);
+      ClearRegionRegion(&rtmp, &r);
+      
     }
       
     _l = _l->back;
   }
+
 
   /*
    * Now make those parts of the layers after l up to and including
@@ -305,10 +310,15 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     }
       
     if (IS_VISIBLE(_l))
-      ClearRegionRegion(_l->shape, &r);
-      
+    {
+      _SetRegion(_l->shape, &rtmp);
+      AndRegionRegion(_l->parent->shape, &rtmp);
+      ClearRegionRegion(&rtmp, &r);
+    }  
     _l = _l->back;
   }
+
+  ClearRegion(&rtmp);
     
   /*  
    * Now I need to clear the old layer at its previous place..
@@ -328,19 +338,14 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
    * If the size of the layer became larger clear the
    * new area where it is visible.
    */
-  if (dw > 0 || dh > 0)
+  if ((dw > 0 || dh > 0) && !IS_SUPERREFRESH(l))
   {
     ClearRegion(&r);
     if (dw > 0)
       OrRectRegion(&r, &rectw);
     if (dh > 0)
       OrRectRegion(&r, &recth);
-    if (!IS_SUPERREFRESH(l))
-      _BackFillRegion(l, &r, TRUE);
-    else
-    {
-#warning Missing code for super bitmapped layers.
-    }
+    _BackFillRegion(l, &r, TRUE);
   }
 
   ClearRegion(&r);
