@@ -23,22 +23,24 @@
 #define LOC_MAJORV	0x0c
 #define LOC_MINORV	0x0e
 #define LOC_ROMSIZE	0x14		/* offset from end of ROM! */
-#define ROM_END 	0x1000000
+#define ROM_END		0x1000000
 
-#define KICKSIZE	(*(ULONG *)(ROM_END - LOC_ROMSIZE))
-#define KICKBASE	(ROM_END - KICKSIZE)
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+/* Native AROS support functions */
+IPTR kicksize(void);
+IPTR kickbase(void);
+#endif
 
 /*****************************************************************************
 
     NAME */
-#include <proto/aros.h>
 #include <aros/inquire.h>
 
-	AROS_LH1(void, ArosInquire,
+	AROS_LH1(ULONG, ArosInquire,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct TagItem *, tags, A0),
+	AROS_LHA(struct TagItem *, taglist, A0),
 
 /*  LOCATION */
 
@@ -58,6 +60,8 @@
 	All queries understood by this call will have appropriate values
 	assigned to the location a tag's ti_Data pointed to.
 
+	This function will (for now) always return 0.
+
     NOTES
 
     EXAMPLE
@@ -65,6 +69,7 @@
     BUGS
 
     SEE ALSO
+	aros/arosbase.h
 
     INTERNALS
 
@@ -72,8 +77,8 @@
 
 ******************************************************************************/
 {
-    IPTR	    ret;
     struct TagItem *tag;
+    ULONG ret = 0;
 
     D(bug("ArosInquire(taglist=%p)\n", tags));
 
@@ -81,31 +86,30 @@
     {
 	D(bug("  tag = $%lx\n", tag->ti_Tag));
 
-	ret = 0;
-
 	switch(tag->ti_Tag)
 	{
 
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
 	/*
 	    Only support these tags if we are on the native machine. On other
-	    machines this call will return 0 for these tags.
+	    machines this call will not touch the storage space. Set the
+	    storage space to 0 if you want to see if this call touches it.
 	*/
 
 	case AI_KickstartBase:
-	    ret = KICKBASE;
+	    *(IPTR *)tag->ti_Data = kickbase();
 	    break;
 
 	case AI_KickstartSize:
-	    ret = KICKSIZE;
+	    *(IPTR *)tag->ti_Data = kicksize();
 	    break;
 
 	case AI_KickstartVersion:
-	    ret = (IPTR)(*(UWORD *)(KICKBASE + LOC_MAJORV));
+	    *(UWORD *)tag->ti_Data = *(UWORD *)(kickbase() + LOC_MAJORV);
 	    break;
 
 	case AI_KickstartRevision:
-	    ret = (IPTR)(*(UWORD *)(KICKBASE + LOC_MINORV));
+	    *(UWORD *)tag->ti_Data = *(UWORD *)(kickbase() + LOC_MINORV);
 	    break;
 #endif
 
@@ -114,17 +118,17 @@
 		aros.library version masquerades as AROS version. This means
 		that all aros modules must have the same major version number.
 	    */
-	    ret = LIBVERSION;
+	    *(IPTR *)tag->ti_Data = (IPTR)(ULONG)LIBVERSION;
 	    break;
 
 	case AI_ArosReleaseMajor:
 	    /* Update this whenever a new AROS is released */
-	    ret = 1;
+	    *(IPTR *)tag->ti_Data = (IPTR)(ULONG)1;
 	    break;
 
 	case AI_ArosReleaseMinor:
 	    /* Update this whenever a new AROS is released */
-	    ret = 11;
+	    *(IPTR *)tag->ti_Data = (IPTR)(ULONG)11;
 	    break;
 
 	}
@@ -132,4 +136,18 @@
 	*(ULONG *)(tag->ti_Data) = ret;
     }
 
+    return ret;
 } /* ArosInquireTagList */
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+/* Native AROS support functions */
+IPTR kicksize(void)
+{
+    return *(ULONG *)(ROM_END - LOC_ROMSIZE);
+}
+
+IPTR kickbase(void)
+{
+    return (ROM_END - kicksize());
+}
+#endif
