@@ -1060,7 +1060,7 @@ ifeq ($(BD_MODDIR$(BDID)),)
     BD_MODDIR$(BDID)  := $(AROS_DEVS)
   endif
   ifeq ($(BD_MODTYPE$(BDID)),resource)
-    BD_MODDIR$(BDID)  := $(AROS_MODULES)
+    BD_MODDIR$(BDID)  := $(AROS_RESOURCES)
   endif
   ifeq ($(BD_MODTYPE$(BDID)),mui)
     BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
