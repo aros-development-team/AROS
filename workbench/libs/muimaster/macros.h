@@ -76,6 +76,7 @@
 #define RegisterGroup(ts)   MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, (ts)
 
 #define End                 MUIOBJMACRO_END
+#define EndBoopsi           BOOPSIOBJMACRO_END
 
 #define Child               MUIA_Group_Child
 #define SubWindow           MUIA_Application_Window
@@ -147,7 +148,7 @@
  These macros will create a simple button. It's simply calling
  MUI_MakeObject()
 **************************************************************************/
-#define SimpleButton(label) MUI_MakeObject(MUIO_Button,label)
+#define SimpleButton(label) MUI_MakeObject(MUIO_Button,(IPTR)label)
 
 #define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), (IPTR)(image), 0)
 #define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), imageid, MUIO_CoolButton_CoolImageID)
@@ -186,7 +187,7 @@
 /**************************************************************************
  Use this for getting a pop button
 **************************************************************************/
-#define PopButton(img) MUI_MakeObject(MUIO_PopButton, (IPTR)(img))
+#define PopButton(img) MUI_MakeObject(MUIO_PopButton, img)
 
 
 /**************************************************************************

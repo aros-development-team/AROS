@@ -89,10 +89,23 @@ struct __MUIBuiltinClass {
      MUI_NewObjectA(__class, (struct TagItem *)(__tags + 1)); \
 })
 
+#define BOOPSIOBJMACRO_START(class) \
+({                                  \
+     Class * __class = class;       \
+     IPTR __tags[] = {0
+
+#define BOOPSIOBJMACRO_END                                      \
+     TAG_DONE};                                                 \
+     NewObjectA(__class, NULL, (struct TagItem *)(__tags + 1)); \
+})
+
 #else
 
 #define MUIOBJMACRO_START(class) MUI_NewObject(class
 #define MUIOBJMACRO_END TAG_DONE)
+
+#define BOOPSIOBJMACRO_START(class) NewObject(class, NULL
+#define BOOPSIOBJMACRO_END TAG_DONE)
 
 #endif
 
