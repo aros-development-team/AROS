@@ -131,6 +131,7 @@ SHARED	:= \
 	exit \
         _exit \
 	fchmod \
+	fchown \
 	fclose \
 	fcntl \
 	fdopen \
