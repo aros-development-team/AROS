@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.5  2000/01/22 20:29:31  stegerg
+    added ActQualifier to inputbase struct.
+
     Revision 1.4  1999/10/20 19:36:24  stegerg
     When testing the Workbench background pattern once
     a deadend alert showed up saying something about
@@ -78,6 +81,7 @@ struct inputbase
     struct MinList HandlerList;
     struct InputEvent *EventQueueHead;
     struct InputEvent *EventQueueTail;
+    UWORD ActQualifier;
 };
 
 #define expunge() \
