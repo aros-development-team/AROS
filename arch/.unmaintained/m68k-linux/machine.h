@@ -21,9 +21,9 @@
      UseExecstubs has to be defined when UseRegisterArgs is used!
 */
 #if UseRegisterArgs
-#define UseExecstubs
+#undef UseExecStubs
+#define UseExecstubs 1
 #endif
-
 
 /* Linux/m68k gcc has no register args capabilities */
 #define AROS_COMPILER_NO_REGARGS
@@ -53,6 +53,18 @@
 #define AROS_BPTR_TYPE	long
 #define MKBADDR(a)	(((LONG)(a)) >> 2)
 #define BADDR(a)	((APTR)((ULONG)(a) << 2))
+
+/* For debugging only: Pass errnos from the emulated OS. dos/Fault() will
+   recognise them */
+#undef PassThroughErrnos
+#define PassThroughErrnos 0x40000000
+
+/* Linux/m68k seems to set bit 31 in all memory allocations, so
+   default AllocEntry() checking goes wrong. */
+#define AROS_ALLOCENTRY_FAILED(memType) \
+	((struct MemList *)NULL)
+#define AROS_CHECK_ALLOCENTRY(memList) \
+	((APTR)(memList) != NULL)
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the

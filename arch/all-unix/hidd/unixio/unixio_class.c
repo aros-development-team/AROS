@@ -389,7 +389,7 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, UnixIO),
 
     ml = AllocEntry ((struct MemList *)&nml);
 
-    if (!((IPTR)ml & (0x80ul<<(sizeof(APTR)-1)*8)) )
+    if (AROS_CHECK_ALLOCENTRY(ml))
     {
 	newtask = ml->ml_ME[0].me_Addr;
 

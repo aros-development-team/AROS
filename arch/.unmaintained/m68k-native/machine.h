@@ -35,6 +35,12 @@
 #define MKBADDR(a)	(((unsigned long)(a))>>2)
 #define BADDR(a)	(((unsigned long)(a))<<2)
 
+/* Macros to test/set failure of AllocEntry() */
+#define AROS_ALLOCENTRY_FAILED(memType) \
+	((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
+#define AROS_CHECK_ALLOCENTRY(memList) \
+	(!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
+
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
     field jmp should contain the code for an absolute jmp to a 32bit

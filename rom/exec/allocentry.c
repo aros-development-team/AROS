@@ -82,7 +82,7 @@
     ret=(struct MemList *)AllocMem(mlsize,MEMF_PUBLIC);
 
     /* Check nasty case where the returncode is misleading :-( */
-    if((IPTR)ret&0x80ul<<(sizeof(APTR)-1)*8)
+    if(ret && !AROS_CHECK_ALLOCENTRY(ret))
     {
 	FreeMem(ret,mlsize);
 	ret=NULL;
@@ -90,7 +90,7 @@
 
     /* The allocation failed? Return "no public memory" */
     if(ret==NULL)
-	return (struct MemList *)(MEMF_PUBLIC|0x80ul<<(sizeof(APTR)-1)*8);
+	return AROS_ALLOCENTRY_FAILED(MEMF_PUBLIC);
 
     /* Init new struct */
     ret->ml_NumEntries=entry->ml_NumEntries;
@@ -123,8 +123,7 @@
 	    if(ret->ml_ME[i].me_Addr==NULL)
 	    {
 		/* No. Set returncode to "none of the 'ml_ME[i].me_Reqs' memory". */
-		entry=(struct MemList *)
-		    ((IPTR)entry->ml_ME[i].me_Reqs|0x80ul<<(sizeof(APTR)-1)*8);
+		entry=AROS_ALLOCENTRY_FAILED(entry->ml_ME[i].me_Reqs);
 
 		/* Free everything allocated until now... */
 		for(;i-->0;)
