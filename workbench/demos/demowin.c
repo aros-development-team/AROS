@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/09/17 16:08:53  digulla
+    Better formatting
+
     Revision 1.9  1996/09/11 16:50:25  digulla
     Use correct way to access "entry"
 
@@ -512,7 +515,11 @@ static LONG tinymain(void)
 
 		len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
 
-		bug ("Key %ld + Qual %lx=\"", im->Code, im->Qualifier);
+		bug ("Key %s %3ld + Qual %08lx=\""
+		    , (im->Code & 0x8000) ? "up  " : "down"
+		    , (LONG)(im->Code & 0xFF)
+		    , (LONG)im->Qualifier
+		);
 
 		if (len < 0)
 		{
