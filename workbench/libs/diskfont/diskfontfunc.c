@@ -36,6 +36,9 @@ struct FileEntry
     struct DirEntry        *DirEntry;
     STRPTR 		    FileName;
     struct DateStamp        FileChanged;
+    UWORD                   ContentsID;
+    UBYTE                   SupportedStyles;
+    UBYTE                   FontStyle;
     ULONG                   Numentries;
     struct TTextAttr       *Attrs;
 };
@@ -89,6 +92,8 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
     
     strsize = strlen(ead->ed_Name) + 1;
     size = sizeof(struct FileEntry) + strsize + fdh->NumEntries * sizeof(struct TTextAttr);
+    if (fdh->ContentsID == OFCH_ID) /* Reserve extra Attr for outline fonts */
+         size += sizeof(struct TTextAttr);
     
     for (i = 0; i < fdh->NumEntries; i++)
 	if (fdh->TAttrArray[i].tta_Tags != NULL)
@@ -108,14 +113,25 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
     retval->FileChanged = *(struct DateStamp *)&ead->ed_Days;
     
     retval->Numentries = fdh->NumEntries;
+    retval->ContentsID = fdh->ContentsID;
     retval->Attrs = (struct TTextAttr *)(filename + strsize);
     memcpy(retval->Attrs, fdh->TAttrArray, fdh->NumEntries * sizeof(struct TTextAttr));
+    if (retval->ContentsID == OFCH_ID)
+    {
+         int ind = retval->Numentries;
+         
+         retval->Numentries++;
+         retval->SupportedStyles = OTAG_GetSupportedStyles(fdh->OTagList, DiskfontBase);
+         retval->FontStyle = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
+         retval->Attrs[ind].tta_Name = filename;
+         retval->Attrs[ind].tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
+    }
 
     tagitems = (struct TagItem *)(retval->Attrs + fdh->NumEntries);
     for (i = 0; i < fdh->NumEntries; i++)
     {
 	retval->Attrs[i].tta_Name = retval->FileName;
-	
+   
 	if (fdh->TAttrArray[i].tta_Tags != NULL)
 	{
 	    tagcount = NumTags(fdh->TAttrArray[i].tta_Tags, DiskfontBase);
@@ -327,6 +343,9 @@ STATIC BOOL StreamOutFileList(struct MinList *filelist, struct FileHandle *fh, s
 	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Days, fh);
 	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Minute, fh);
 	ok = ok && WriteLong(&DiskfontBase->dsh, fe->FileChanged.ds_Tick, fh);
+        ok = ok && WriteWord(&DiskfontBase->dsh, fe->ContentsID, fh);
+        ok = ok && WriteByte(&DiskfontBase->dsh, fe->SupportedStyles, fh);
+        ok = ok && WriteByte(&DiskfontBase->dsh, fe->FontStyle, fh);
 	D(bug("StreamOutFileList: Write numentries=%d\n", fe->Numentries));
 	ok = ok && WriteLong(&DiskfontBase->dsh, fe->Numentries, fh);
 	
@@ -371,6 +390,9 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, struct FileHandle *fh, s
 	D(bug("StreamInFileList: read days: %d minute: %d tick: %d\n",
 	      fe2.FileChanged.ds_Days, fe2.FileChanged.ds_Minute,
 	      fe2.FileChanged.ds_Tick));
+        ok = ok && ReadWord(&DiskfontBase->dsh, &fe2.ContentsID, fh);
+        ok = ok && ReadByte(&DiskfontBase->dsh, &fe2.SupportedStyles, fh);
+        ok = ok && ReadByte(&DiskfontBase->dsh, &fe2.FontStyle, fh);
 	ok = ok && ReadLong(&DiskfontBase->dsh, &fe2.Numentries, fh);
 
 	if (ok)
@@ -794,7 +816,7 @@ APTR DF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
     dfdata = AllocResources(DiskfontBase);
     if (dfdata == NULL)
     {
-	D(bug("DF_IteratorInit: Error executing Allocreaources\n"));
+	D(bug("DF_IteratorInit: Error executing Allocresources\n"));
 	ReturnPtr("DF_IteratorInit", APTR, NULL);
     }
 
@@ -824,7 +846,7 @@ APTR DF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
     /* If DirEntry was empty search for one that is not empty */
     while (dfdata->CurrentDirEntry != NULL && dfdata->CurrentFileEntry == NULL)
     {
-	dfdata->CurrentDirEntry = GetSucc(dfdata->CurrentDirEntry);
+	dfdata->CurrentDirEntry = (struct DirEntry *)GetSucc(dfdata->CurrentDirEntry);
 	if (dfdata->CurrentDirEntry != NULL)
 	    dfdata->CurrentFileEntry = (struct FileEntry *)GetHead(dfdata->CurrentDirEntry);
 
@@ -844,7 +866,7 @@ APTR DF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
 
 /****************************************************************************************/
 
-struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct TTextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
 {
     struct TTextAttr *retval;
     struct DFData *dfdata = (struct DFData *)iterator;
@@ -855,10 +877,41 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 	ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, NULL);
     
     retval = dfdata->CurrentFileEntry->Attrs + dfdata->AttrsIndex;
-    
-    if (dfdata->AttrsIndex < dfdata->CurrentFileEntry->Numentries-1)
-	dfdata->AttrsIndex++;
-    else
+    if (dfdata->CurrentFileEntry->ContentsID == OFCH_ID
+	&& reqattr != NULL
+	&& dfdata->AttrsIndex == dfdata->CurrentFileEntry->Numentries-1)
+    {
+        /* The last attr for a outline font is filled with values matching
+	 * as close as possible the reqattr */
+        retval->tta_YSize = reqattr->tta_YSize;
+        retval->tta_Style = dfdata->CurrentFileEntry->FontStyle;
+        
+        retval->tta_Tags  = NULL;
+       
+        if (reqattr->tta_Style & FSF_TAGGED)
+	{
+	     retval->tta_Style |= FSF_TAGGED;
+	     retval->tta_Tags  = reqattr->tta_Tags;
+	}
+
+        if ((reqattr->tta_Style & FSF_BOLD)
+	    && !(retval->tta_Style & FSF_BOLD)
+	    && (dfdata->CurrentFileEntry->SupportedStyles & FSF_BOLD))
+	{
+	    retval->tta_Style |= FSF_BOLD;
+	}
+       
+        if ((reqattr->tta_Style & FSF_ITALIC)
+	    && !(retval->tta_Style & FSF_ITALIC)
+	    && (dfdata->CurrentFileEntry->SupportedStyles & FSF_ITALIC))
+	{
+	    retval->tta_Style |= FSF_ITALIC;
+	}
+    }
+       
+    /* Let the iterator point to the next attr */
+    if ((dfdata->AttrsIndex == dfdata->CurrentFileEntry->Numentries-1)
+	|| (dfdata->CurrentFileEntry->ContentsID == OFCH_ID && reqattr==NULL && dfdata->AttrsIndex == dfdata->CurrentFileEntry->Numentries-1))
     {
 	dfdata->PrevFileEntry = dfdata->CurrentFileEntry;
 	dfdata->CurrentFileEntry = (struct FileEntry *)GetSucc(dfdata->CurrentFileEntry);
@@ -877,6 +930,8 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 		dfdata->CurrentFileEntry = (struct FileEntry *)GetHead(&dfdata->CurrentDirEntry->FileList);
 	}
     }
+    else
+	dfdata->AttrsIndex++;
 
     ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, retval);
 }
@@ -943,8 +998,6 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct TTextAttr *tattr,
 				      fdh->OTagList,
 				      DiskfontBase);
 	    D(bug("DF_IteratorRememberOpen: tf=0x%lx\n", tf));
-
-	    FreeFontDescr(fdh, DiskfontBase);
 	}
 	else
 	{
@@ -956,6 +1009,8 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct TTextAttr *tattr,
 
 	    D(bug("DF_IteratorRememberOpen: tf=0x%lx\n", tf));
 	}
+
+        FreeFontDescr(fdh, DiskfontBase);
     }
     else
 	D(bug("DF_IteratorRememberOpen: Font Description read failed\n"));
@@ -1013,3 +1068,109 @@ VOID DF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
     
     FreeResources(dfdata, DiskfontBase);
 }
+
+/****************************************************************************************/
+
+/*******************/
+/* DF_OpenFontPath */
+/*******************/
+
+/****************************************************************************************/
+
+struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_intern *DiskfontBase)
+{
+    struct TextFont *tf = NULL;
+    struct FontDescrHeader *fdh;
+
+    D(bug("DF_OpenFontPath(reqattr=0x%lx)\n", reqattr));
+    
+    fdh = ReadFontDescr(reqattr->ta_Name, DiskfontBase);
+    
+    if (fdh != NULL)
+    {
+        WORD max_match_weight = 0, match_weight;
+        LONG match_index = -1;
+        int i;
+        
+	D(bug("DF_OpenFontPath: Font Description read\n"));
+       
+        for (i=0; i>fdh->NumEntries; i++)
+	{
+	    match_weight = WeighTAMatch((struct TextAttr *)reqattr,
+					(struct TextAttr *)&fdh->TAttrArray[i],
+					fdh->TAttrArray[i].tta_Tags);
+	   
+	    if (match_weight > max_match_weight)
+	    {
+	        max_match_weight = match_weight;
+	        match_index = i;
+	    }
+	}
+       
+        if (match_index >= 0)
+	{
+	   if (IS_OUTLINE_FONT(&fdh->TAttrArray[match_index]))
+	   {
+	       D(bug("DF_OpenFontPath: loading outline font\n"));
+	
+	       tf = OTAG_ReadOutlineFont(&fdh->TAttrArray[match_index],
+					 (struct TTextAttr *)reqattr,
+					 fdh->OTagList,
+					 DiskfontBase);
+	       D(bug("DF_OpenFontPath: tf=0x%lx\n", tf));
+
+	   }
+	   else
+	   {
+	       D(bug("DF_OpenFontPath: loading bitmap font\n"));
+	    
+	       tf = ReadDiskFont(&fdh->TAttrArray[match_index],
+				 reqattr->ta_Name,
+				 DiskfontBase);
+
+	       D(bug("DF_OpenFontPath: tf=0x%lx\n", tf));
+	   }
+	}
+       
+        FreeFontDescr(fdh, DiskfontBase);
+    }
+    else
+        D(bug("DF_OpenFontPath: Font Description read failed\n"));
+    
+    if (tf != NULL)
+    {
+	struct DiskFontHeader *dfh;
+	
+	/* PPaint's personal.font/8 has not set FPF_DISKFONT,
+	 (FPF_ROMFONT neither), but AmigaOS diskfont.library
+	 still shows FPF_DISKFONT set when opening this font */
+		   
+	tf->tf_Flags &= ~FPF_ROMFONT;
+	tf->tf_Flags |= FPF_DISKFONT;
+		
+	D(bug("Adding font: %p\n", tf));
+		
+	/* Forbid() must be called before AddFont, because AddFont clears
+	 tf_Accessors and in the worst case it could happen to us that
+	 after the AddFont() another task opens and closes/frees the
+	 diskfont, before we manage to increase tf_Accessors. */
+		   
+	Forbid();
+
+	AddFont(tf);				
+	tf->tf_Accessors++;
+
+	dfh = (struct DiskFontHeader *)((UBYTE *)(tf) - (LONG)OFFSET(DiskFontHeader, dfh_TF));
+
+	/* Paranoia check */
+	if (dfh->dfh_FileID == DFH_ID)
+	    ADDTAIL(&DiskfontBase->diskfontlist, &dfh->dfh_DF);
+
+	Permit();
+	
+	D(bug("Font added\n"));
+    }
+
+    return tf;
+}
+

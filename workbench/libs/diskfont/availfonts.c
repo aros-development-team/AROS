@@ -130,7 +130,7 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
     if (flags & AFF_DISK)
     {
 	iterator = DF_IteratorInit(DFB(DiskfontBase));
-	while((attr = DF_IteratorGetNext(iterator, DFB(DiskfontBase)))!=NULL)
+	while((attr = DF_IteratorGetNext(iterator, NULL, DFB(DiskfontBase)))!=NULL)
 	{
 	    if ((!IS_SCALED_FONT(attr) || (flags & AFF_SCALED))
 		&& !(IS_OUTLINE_FONT(attr) && (flags & AFF_BITMAP)))
