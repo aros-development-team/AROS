@@ -42,6 +42,19 @@ static char today[32];
 static char * links[256];
 static int    linkcnt;
 
+static char * thischapter = NULL;
+
+void setthischapter (const char * chapter)
+{
+    if (thischapter)
+    {
+	xfree (thischapter);
+	thischapter = NULL;
+    }
+
+    thischapter = strdup (chapter);
+}
+
 #define MAXFILESIZE	15000
 
 void emit_html_init (void)
@@ -78,6 +91,7 @@ void emit_html_init (void)
 
     time (&tt);
     tm = *localtime (&tt);
+
     strftime (today, sizeof(today), "%d. %b %Y\n", &tm);
 }
 
@@ -287,6 +301,10 @@ static void paste_html_file (const char * name)
 	{
 	    strcpy (line, today);
 	}
+	else if (!strcmp (line, "\\thischapter\n"))
+	{
+	    strcpy (line, thischapter);
+	}
 
 	fputs (line, out);
     }
@@ -331,6 +349,8 @@ void emit_html (int token, va_list args)
 	{
 	    char * text = va_arg (args, char *);
 
+	    setthischapter (text);
+
 	    forcebreak ();
 
 	    if (appendix)
@@ -352,9 +372,11 @@ void emit_html (int token, va_list args)
 		fprintf (tocfh, "2 %d", chapter);
 	    }
 	    fprintf (tocfh, " %lu %d\n", getfiledate (filename), labelcount);
-	    fprintf (tocfh, "%s\n%s\n", outname, text);
+	    fprintf (tocfh, "%s\n%s%s\n", outname, text,
+		isnewtext ? " *New*" : "");
 
 	    emit_html_string_ws (text);
+	    if (isnewtext) emit_html_string_ws (" *New*");
 	    printf ("%s\n", text);
 	    emit_special ("</A></H1>");
 	    emit_par ();
@@ -385,10 +407,12 @@ void emit_html (int token, va_list args)
 		fprintf (tocfh, "3 %d.%d", chapter, section);
 	    }
 	    fprintf (tocfh, " %lu %d\n", getfiledate (filename), labelcount);
-	    fprintf (tocfh, "%s\n%s\n", outname, text);
+	    fprintf (tocfh, "%s\n%s%s\n", outname, text,
+		isnewtext ? " *New*" : "");
 
 	    emit_special (".%d ", section);
 	    emit_html_string_ws (text);
+	    if (isnewtext) emit_html_string_ws (" *New*");
 	    emit_special ("</A></H2>\n\n");
 	    emit_par ();
 	    labelcount ++;
@@ -416,10 +440,12 @@ void emit_html (int token, va_list args)
 		fprintf (tocfh, "4 %d.%d.%d", chapter, section, subsection);
 	    }
 	    fprintf (tocfh, " %lu %d\n", getfiledate (filename), labelcount);
-	    fprintf (tocfh, "%s\n%s\n", outname, text);
+	    fprintf (tocfh, "%s\n%s%s\n", outname, text,
+		isnewtext ? " *New*" : "");
 
 	    emit_special (".%d.%d ", section, subsection);
 	    emit_html_string_ws (text);
+	    if (isnewtext) emit_html_string_ws (" *New*");
 	    emit_special ("</A></H3>\n\n");
 	    emit_par ();
 	    labelcount ++;
@@ -528,11 +554,16 @@ void emit_html (int token, va_list args)
 	emit_par ();
 	break;
 
+    case BEGIN_NEW:
+	emit_special ("<FONT COLOR=\"#108010\">");
+	break;
+
     case BEGIN:
 	emit_par ();
 
 	switch (lmode)
 	{
+	case lm_new: /* doesn't happen */
 	case lm_none: break;
 	case lm_description: emit_special ("<DL>"); break;
 	case lm_itemize:     emit_special ("<UL>"); break;
@@ -547,8 +578,12 @@ void emit_html (int token, va_list args)
 
 	    switch (lmode)
 	    {
-	    case lm_none: break;
+	    case lm_none:
 		yyerror ("Unexpected \\item in normal text");
+		break;
+
+	    case lm_new:
+		yyerror ("Unexpected \\item in \\begin{new}");
 		break;
 
 	    case lm_description:
@@ -578,6 +613,7 @@ void emit_html (int token, va_list args)
 	switch (lmode)
 	{
 	case lm_none: break;
+	case lm_new:	     emit_special ("</FONT>"); break;
 	case lm_description: emit_nl (); emit_special ("</DL>"); break;
 	case lm_itemize:     emit_nl (); emit_special ("</UL>"); break;
 	case lm_enumeration: emit_nl (); emit_special ("</OL>"); break;
