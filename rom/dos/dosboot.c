@@ -268,7 +268,7 @@ BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase )
 	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_NewName;
 	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
 	    {
-		if (AddDosEntry(dn))
+		if (AddDosEntry((struct DosList *) dn))
 		{
 		    dn->dn_Unit = iofs->IOFS.io_Unit;
 		    dn->dn_Device = iofs->IOFS.io_Device;
