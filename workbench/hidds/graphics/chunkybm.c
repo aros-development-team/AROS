@@ -128,9 +128,15 @@ static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o,
 	    break;
 	    
 	case 3:
+    	#if AROS_BIG_ENDIAN
 	    dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
 	    dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
 	    dest[2] = (UBYTE)msg->pixel & 0x000000FF;
+	#else
+	    dest[0] = (UBYTE)msg->pixel & 0x000000FF;
+	    dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
+	    dest[2] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
+	#endif
 	    break;
 		
 /*	 if (1 == ( ((IPTR)dest) & 1) )
@@ -176,7 +182,11 @@ static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
 	    break;
 	    
 	case 3:
+	#if AROS_BIG_ENDIAN
 	    retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2];
+    	#else
+	    retval = (HIDDT_Pixel) (src[2] << 16) + (src[1] << 8) + src[0];
+	#endif
 	    break;
 	    
 	    //(*((UBYTE *) src++) << 16) | *((UWORD *) src));
