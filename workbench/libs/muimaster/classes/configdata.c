@@ -191,7 +191,7 @@ static struct spec_cfg DefFramespecValues[] =
     { MUIV_Frame_Slider,      MUICFG_Frame_Slider,      "400000" }, /* slider container         */
     { MUIV_Frame_Knob,        MUICFG_Frame_Knob,        "202211" }, /* slider knob              */
     { MUIV_Frame_Drag,        MUICFG_Frame_Drag,        "300000" }, /* dnd frame                */
-    { 0,                      0,                        NULL },
+    { -1,                     -1,                       NULL     },
 };
 
 /* called by Configdata_New */
@@ -522,6 +522,38 @@ static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
 }
 
 /**************************************************************************
+ MUIM_Configdata_SetFramespec
+**************************************************************************/
+static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
+				    struct MUIP_Configdata_SetFramespec *msg)
+{
+    int i;
+
+    if (!msg->framespec || !*msg->framespec)
+    {
+	D(bug("Configdata_SetFramespec(%p) : id %08lx, val invalid\n",
+	      obj, msg->id));
+	return 0;
+    }
+
+    for (i = 0; DefFramespecValues[i].defspec; i++)
+    {
+	if (DefFramespecValues[i].cfgid == msg->id)
+	    if (!strcmp(DefFramespecValues[i].defspec, msg->framespec))
+	    {
+		D(bug("Configdata_SetFramespec(%p) : set to def, id %08lx, val %s\n",
+		      obj, msg->id, msg->framespec));
+		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
+		return 0;
+	    }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR)msg->framespec,
+	     strlen(msg->framespec) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
  MUIM_Configdata_SetFont
 **************************************************************************/
 static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
@@ -719,6 +751,7 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 	case MUIM_Configdata_GetULong: return Configdata_GetULong(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetULong: return Configdata_SetULong(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetImspec: return Configdata_SetImspec(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetFramespec: return Configdata_SetFramespec(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetFont: return Configdata_SetFont(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Save: return Configdata_Save(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Load: return Configdata_Load(cl, obj, (APTR)msg);
