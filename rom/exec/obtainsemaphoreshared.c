@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Get a shared lock on a semaphore.
@@ -100,18 +100,19 @@ void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
 
     /*
 	The semaphore is in use, but it could be shared. if it is,
-	ss_Owner == NULL
+	ss_Owner == NULL. Or it could already be exclusively owned
+	by me. if it is, ss_Owner == me.
     */
-    else if( sigSem->ss_Owner == NULL )
+    else if( (sigSem->ss_Owner == me) || ( sigSem->ss_Owner == NULL ) )
     {
 	/* Yes, just increase the nesting count */
 	sigSem->ss_NestCount++;
     }
 
     /*
-	Otherwise it is an exclusive semaphore, and we have to
-	wait for it. This is pretty simple, we simply do the
-	same as for ObtainSemaphore(), but set that this is a
+	Otherwise it is an exclusive semaphore owned by someone else,
+	and we have to wait for it. This is pretty simple, we simply do
+	the same as for ObtainSemaphore(), but set that this is a
 	shared semaphore.
     */
     else
