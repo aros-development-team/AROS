@@ -159,7 +159,7 @@
 				       nativeicon->icon35.height,
 				       CTABFMT_XRGB8);
 				       
-		    FreeVec(cgfxcoltab);
+		    FreeVecPooled(POOL, cgfxcoltab);
 		    return;
 		    
 		} /* if ((cgfxcoltab = AllocVec(img->numcolors * sizeof(ULONG), MEMF_ANY))) */
