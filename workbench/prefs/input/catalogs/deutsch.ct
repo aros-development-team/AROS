@@ -103,3 +103,16 @@ Tastaturbelegung
 ;
 MSG_TIME_FORMAT
 %d,%02d s
+;
+MSG_GAD_MOUSE_BUTTON_MAPPING
+Tasten Zuordnung
+;
+MSG_GAD_MOUSE_MAPPING_SELECT
+Auswahl
+;
+MSG_GAD_MOUSE_MAPPING_MENU (//)
+Menü
+;
+MSG_GAD_MOUSE_MAPPING_THIRD (//)
+Dritte
+;

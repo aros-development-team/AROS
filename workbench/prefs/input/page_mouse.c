@@ -9,20 +9,45 @@
 /*********************************************************************************************/
 
 #include "global.h"
+#include <aros/debug.h>
 #include <stdio.h>
 
 #include "computermouse_image.c"
 
 /*********************************************************************************************/
 
-static struct Gadget *gadlist, *textgad, *gad;
+#define FRAME_FRAMEWIDTH  (FRAMESPACEX * 2)
+#define FRAME_FRAMEHEIGHT (FRAMESPACEY + dri->dri_Font->tf_YSize + SPACE_Y)
+
+#define FRAME_OFFX (FRAMESPACEX)
+#define FRAME_OFFY (dri->dri_Font->tf_YSize + SPACE_Y)
+
+#define LABELSPACE_X 4
+
+#define CYCLE_EXTRAWIDTH (dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + 16)
+
+#define COMPUTERMOUSE_CENTERX (COMPUTERMOUSE_WIDTH / 2)
+#define COMPUTERMOUSE_MAPPOSY 45
+#define COMPUTERMOUSE_POINTSY 20
+#define COMPUTERMOUSE_LEFTPOINT (COMPUTERMOUSE_CENTERX - 18)
+#define COMPUTERMOUSE_RIGHTPOINT (COMPUTERMOUSE_CENTERX + 18)
+
+#define MAPGAD_SPACEX 5 /* should be odd */
+
+/*********************************************************************************************/
+
+static struct Gadget *gadlist, *gad, *leftmapgad, *rightmapgad, *midmapgad;
 static WORD minwidth, minheight;
 static WORD domleft, domtop, domwidth, domheight;
+static WORD mapgroupwidth, mapgroupheight, mapgroupx1, mapgroupy1;
+static WORD mapgadwidth, computermousex1, computermousey1;
+static WORD leftlinex1, leftliney1, rightlinex1, rightliney1, midlinex1, midliney1;
 static BOOL init_done;
 
 static UBYTE computermouse_chunky[COMPUTERMOUSE_WIDTH * COMPUTERMOUSE_HEIGHT];
 static UBYTE *computermouse_chunky_remapped;
 
+static STRPTR maplabels[4];
 static ULONG computermouse_coltab[256];
 static WORD  remaptable[256];
 
@@ -64,6 +89,19 @@ static UBYTE *unpack_byterun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
 }
 
 #endif
+
+/*********************************************************************************************/
+
+static void DrawFrames(void)
+{
+    DrawFrameWithTitle(win->RPort,
+    	    	       mapgroupx1,
+		       mapgroupy1,
+		       mapgroupx1 + mapgroupwidth - 1,
+		       mapgroupy1 + mapgroupheight - 1,
+		       MSG(MSG_GAD_MOUSE_BUTTON_MAPPING));
+
+}
 
 /*********************************************************************************************/
 
@@ -140,10 +178,19 @@ static LONG mouse_init(void)
 
 /*********************************************************************************************/
 
+static void DrawDrop(WORD x, WORD y)
+{
+    RectFill(win->RPort, x - 1, y - 1, x + 1, y + 1);
+    Move(win->RPort, x - 2, y); Draw(win->RPort, x + 2, y);
+    Move(win->RPort, x, y - 2); Draw(win->RPort, x, y + 2);
+    
+}
+/*********************************************************************************************/
+
 static void RepaintComputerMouse(void)
 {
     if (page_active)
-    {
+    {		 
 	if (truecolor)
 	{
 	    WriteLUTPixelArray(computermouse_chunky,
@@ -152,8 +199,8 @@ static void RepaintComputerMouse(void)
 			       COMPUTERMOUSE_WIDTH,
 			       win->RPort,
 			       computermouse_coltab,
-			       domleft + 1,
-			       domtop  + 1,
+			       computermousex1,
+			       computermousey1,
 			       COMPUTERMOUSE_WIDTH,
 			       COMPUTERMOUSE_HEIGHT,
 			       CTABFMT_XRGB8);
@@ -161,15 +208,77 @@ static void RepaintComputerMouse(void)
 	else
 	{
 	    WriteChunkyPixels(win->RPort,
-	    	    	      domleft + 1,
-			      domtop  + 1,
-			      domleft + 1 + COMPUTERMOUSE_WIDTH  - 1,
-			      domtop  + 1 + COMPUTERMOUSE_HEIGHT - 1,
+			      computermousex1,
+			      computermousey1,
+			      computermousex1 + COMPUTERMOUSE_WIDTH  - 1,
+			      computermousey1 + COMPUTERMOUSE_HEIGHT - 1,
 			      computermouse_chunky_remapped,
 			      COMPUTERMOUSE_WIDTH);
 	}
 
+    	SetAPen(win->RPort, dri->dri_Pens[SHADOWPEN]);
+	SetDrMd(win->RPort, JAM1);
+	
+	Move(win->RPort, leftlinex1, leftliney1);
+	Draw(win->RPort, leftlinex1, computermousey1 + COMPUTERMOUSE_POINTSY);
+	Draw(win->RPort, computermousex1 + COMPUTERMOUSE_LEFTPOINT, computermousey1 + COMPUTERMOUSE_POINTSY);
+	DrawDrop(computermousex1 + COMPUTERMOUSE_LEFTPOINT, computermousey1 + COMPUTERMOUSE_POINTSY);
+	
+	Move(win->RPort, rightlinex1, rightliney1);
+	Draw(win->RPort, rightlinex1, computermousey1 + COMPUTERMOUSE_POINTSY);
+	Draw(win->RPort, computermousex1 + COMPUTERMOUSE_RIGHTPOINT, computermousey1 + COMPUTERMOUSE_POINTSY);
+	DrawDrop(computermousex1 + COMPUTERMOUSE_RIGHTPOINT, computermousey1 + COMPUTERMOUSE_POINTSY);
+	
+	Move(win->RPort, midlinex1, midliney1);
+	Draw(win->RPort, midlinex1, computermousey1 + COMPUTERMOUSE_POINTSY);
+	DrawDrop(midlinex1, computermousey1 + COMPUTERMOUSE_POINTSY);
+	
     } /* if (page_active) */
+}
+
+/*********************************************************************************************/
+
+static LONG mouse_layout(void)
+{
+    static LONG butmapids[] =
+    {
+    	MSG_GAD_MOUSE_MAPPING_SELECT,
+	MSG_GAD_MOUSE_MAPPING_MENU,
+	MSG_GAD_MOUSE_MAPPING_THIRD
+    };
+    struct RastPort temprp;
+    WORD    	    i, w, biggestw;
+    
+    InitRastPort(&temprp);
+    SetFont(&temprp, dri->dri_Font);
+    
+    biggestw = 0;
+    for(i = 0; i < 3; i++)
+    {
+    	maplabels[i] = MSG(butmapids[i]);
+	w = TextLength(&temprp, maplabels[i], strlen(maplabels[i]));
+	if (w > biggestw) biggestw = w;
+    }
+    
+    mapgadwidth = biggestw + CYCLE_EXTRAWIDTH;
+    
+    biggestw = mapgadwidth * 2 + MAPGAD_SPACEX + FRAME_FRAMEWIDTH;
+    
+    w = TextLength(&temprp, MSG(MSG_GAD_MOUSE_BUTTON_MAPPING), strlen(MSG(MSG_GAD_MOUSE_BUTTON_MAPPING)));
+    w += FRAMETITLE_EXTRAWIDTH;
+    
+    if (w > biggestw) biggestw = w;
+    
+    w = COMPUTERMOUSE_WIDTH + FRAME_FRAMEWIDTH;
+    if (w > biggestw) biggestw = w;
+    
+    mapgroupwidth  = biggestw;
+    mapgroupheight = COMPUTERMOUSE_HEIGHT + FRAME_FRAMEHEIGHT;
+           
+    minwidth  = mapgroupwidth;
+    minheight = mapgroupheight;
+
+    DeinitRastPort(&temprp);
 }
 
 /*********************************************************************************************/
@@ -208,7 +317,51 @@ static void mouse_cleanup(void)
 
 static LONG mouse_makegadgets(void)
 {
-    return TRUE;
+    struct NewGadget ng;
+    
+    gad = CreateContext(&gadlist);
+
+    mapgroupx1 = domleft;
+    mapgroupy1 = domtop;
+
+    computermousex1 = (mapgroupwidth - FRAME_FRAMEWIDTH - COMPUTERMOUSE_WIDTH) / 2 + mapgroupx1 + FRAME_OFFX;
+    computermousey1 = (mapgroupheight - FRAME_FRAMEHEIGHT - COMPUTERMOUSE_HEIGHT) / 2 + mapgroupy1 + FRAME_OFFY;
+     
+    ng.ng_LeftEdge   = computermousex1 + COMPUTERMOUSE_CENTERX - (MAPGAD_SPACEX / 2) - mapgadwidth ;
+    ng.ng_TopEdge    = computermousey1 + COMPUTERMOUSE_MAPPOSY;
+    ng.ng_Width      = mapgadwidth;
+    ng.ng_Height     = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT;
+    ng.ng_GadgetText = NULL;
+    ng.ng_TextAttr   = 0;
+    ng.ng_GadgetID   = MSG_GAD_MOUSE_MAPPING_SELECT;
+    ng.ng_Flags      = 0;
+    ng.ng_VisualInfo = vi;
+     
+    leftliney1 = rightliney1 = ng.ng_TopEdge - 1;
+    leftlinex1 = ng.ng_LeftEdge + (mapgadwidth / 2);
+    
+    gad = leftmapgad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR)maplabels,
+    	    	    	    	    	    	    	  TAG_DONE);
+		
+    ng.ng_LeftEdge  += MAPGAD_SPACEX + mapgadwidth;
+    ng.ng_GadgetID  =  MSG_GAD_MOUSE_MAPPING_MENU;
+    
+    rightlinex1 = ng.ng_LeftEdge + (mapgadwidth / 2);
+    
+    gad = rightmapgad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR)maplabels,
+    	    	    	    	    	    	    	   TAG_DONE);
+	
+    ng.ng_LeftEdge =  computermousex1 + COMPUTERMOUSE_CENTERX - (mapgadwidth / 2);
+    ng.ng_TopEdge  += ng.ng_Height + SPACE_Y;
+    ng.ng_GadgetID =  MSG_GAD_MOUSE_MAPPING_THIRD;
+    	
+    midlinex1 = computermousex1 + COMPUTERMOUSE_CENTERX;
+    midliney1 = ng.ng_TopEdge - 1;
+    					   
+    gad = midmapgad = CreateGadget(CYCLE_KIND, gad, &ng, GTCY_Labels, (IPTR)maplabels,
+    	    	    	    	    	    	    	   TAG_DONE);
+    
+    return gad ? TRUE : FALSE;
 }
 
 /*********************************************************************************************/
@@ -231,8 +384,7 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_LAYOUT:
-	    minwidth  = COMPUTERMOUSE_WIDTH * 4 + 2;
-    	    minheight = COMPUTERMOUSE_HEIGHT * 2 + 2;
+	    retval = mouse_layout();
 	    break;
 	    
 	case PAGECMD_GETMINWIDTH:
@@ -245,6 +397,7 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 	    
 	case PAGECMD_SETDOMLEFT:
 	    domleft = param;
+	    kprintf("setdomleft. domleft = %d\n", domleft);
 	    break;
 	    
 	case PAGECMD_SETDOMTOP:
@@ -252,15 +405,11 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_SETDOMWIDTH:
-	    /* domwidth = param; */
-	    domwidth = minwidth;
-	    domleft += (param - minwidth ) /2;
+	    domwidth = param;
 	    break;
 	    
 	case PAGECMD_SETDOMHEIGHT:
-	    /* domheight = param; */
-	    domheight = minheight;
-	    domtop += (param - minheight) / 2;
+	    domheight = param;
 	    break;
 	    
 	case PAGECMD_MAKEGADGETS:
@@ -273,6 +422,11 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 		page_active = TRUE;
 
 	    	RepaintComputerMouse();
+
+		AddGList(win, gadlist, -1, -1, NULL);
+		GT_RefreshWindow(win, NULL);
+		RefreshGList(gadlist, win, NULL, -1);
+		DrawFrames();
 	    }
 	    break;
 	    
@@ -287,6 +441,10 @@ LONG page_mouse_handler(LONG cmd, IPTR param)
 	
 	case PAGECMD_REFRESH:
 	    RepaintComputerMouse();
+	    RefreshGList(leftmapgad, win, NULL, 1);
+	    RefreshGList(rightmapgad, win, NULL, 1);	    
+	    RefreshGList(midmapgad, win, NULL, 1);
+	    DrawFrames();
 	    break;
 	
 	case PAGECMD_HANDLEINPUT:

@@ -194,7 +194,7 @@ static LONG kbd_layout(void)
         
     if (maxw > lvgroupwidth) lvgroupwidth = maxw;
     
-    lvgroupheight = SPACE_Y * 2 + dri->dri_Font->tf_YSize * 8 + FRAME_FRAMEHEIGHT;
+    lvgroupheight = SPACE_Y * 2 + dri->dri_Font->tf_YSize * 12 + FRAME_FRAMEHEIGHT;
        
     /* Calculate width of time display labels */
     
@@ -610,6 +610,8 @@ LONG page_kbd_handler(LONG cmd, IPTR param)
 	    
 	case PAGECMD_SETDOMWIDTH:
 	    domwidth = param;
+	    rategroupwidth  = domleft + domwidth - rategroupx1;
+	    delaygroupwidth = domleft + domwidth - delaygroupx1;
 	    break;
 	    
 	case PAGECMD_SETDOMHEIGHT:
