@@ -82,6 +82,7 @@
 	}
 
 	fh->fh_Buf  = buff;
+	fh->fh_Size = size;
     }
 
     return 0;
