@@ -15,6 +15,8 @@ BOOT_FILES := \
 	C/Mount C/Shell \
 	Devs/Mountlist Devs/ram.handler\
 	S/Startup-Sequence S/hidd.prefs \
+	Prefs/Env-Archive/Sys/font.prefs \
+	Prefs/Env-Archive/Sys/nv_location \
 	contrib/aminet/untgz \
 	boot/grub/stage1 boot/grub/stage2 boot/grub/menu.lst
 
@@ -32,7 +34,7 @@ BOOT_TAR_FILES := \
 	Libs/reqtools.library \
 	Locale/Countries Locale/Languages \
 	Locale/Catalogs/deutsch/Sys Locale/Catalogs/italiano/Sys Locale/Catalogs/svenska/Sys \
-	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial Prefs/Env-Archive \
+	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
 	S \
 	System \
 	Tools \
@@ -55,6 +57,9 @@ setup-native :
 	%mkdirs_q $(BOOT_DEST_DIR)/C
 	%mkdirs_q $(BOOT_DEST_DIR)/Devs
 	%mkdirs_q $(BOOT_DEST_DIR)/S
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive
+	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/Sys
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib/aminet
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
