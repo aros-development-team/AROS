@@ -49,32 +49,40 @@ LONG retval;
 			afshandle = (struct AfsHandle *)iofs->IOFS.io_Unit;
 			switch (iofs->IOFS.io_Command)
 			{
-/*			case (UWORD)-1 :
-				iofs->IOFS.io_Unit = (struct Unit *)(&initVolume
-					(
-						afsbase,
-						iofs->IOFS.io_Device,
-						iofs->io_Union.io_OpenDevice.io_DeviceName,
-						iofs->io_Union.io_OpenDevice.io_Unit,
-						(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ,
-						&iofs->io_DosError
-					)->ah);
-				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
+			case (UWORD)-1 :
+				{
+					struct Volume *volume;
+					 volume = initVolume
+						(
+							afsbase,
+							iofs->IOFS.io_Device,
+							iofs->io_Union.io_OpenDevice.io_DeviceName,
+							iofs->io_Union.io_OpenDevice.io_Unit,
+							(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ,
+							&iofs->io_DosError
+						);
+					if (volume != NULL)
+						iofs->IOFS.io_Unit = (struct Unit *)&volume->ah;
+					PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
+				}
 				continue;
 			case (UWORD)-2 :
-				volume=((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
-				if (volume->locklist)
 				{
-					error = ERROR_OBJECT_IN_USE;
+					struct Volume *volume;
+					volume=((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
+					if (volume->locklist)
+					{
+						error = ERROR_OBJECT_IN_USE;
+					}
+					else
+					{
+						uninitVolume(afsbase, volume);
+						error=0;
+					}
+					iofs->io_DosError = error;
+					PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
 				}
-				else
-				{
-					uninitVolume(afsbase, volume);
-					error=0;
-				}
-				iofs->io_DosError = error;
-				PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
-				continue;*/
+				continue;
 			case FSA_SAME_LOCK :
 				iofs->io_Union.io_SAME_LOCK.io_Same=sameLock
 					(

@@ -307,7 +307,6 @@ struct IOHandle *openBlockDevice(struct afsbase *afsbase, struct IOHandle *ioh)
 			if (diskPresent(afsbase, ioh))
 				ioh->ioflags |= IOHF_DISK_IN;
 			checkAddChangeInt(afsbase, ioh);
-			ioh->mp->mp_SigTask = afsbase->port.mp_SigTask;
 			return ioh;
 		}
 		DeleteMsgPort(ioh->mp);
