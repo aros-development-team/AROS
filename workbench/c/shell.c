@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/17 16:09:34  digulla
+    Another failure to make SIGALRM work :(
+
     Revision 1.6  1996/09/13 17:52:11  digulla
     Use IPTR
 
@@ -141,9 +144,12 @@ static LONG readline(struct linebuf *lb)
 	}else if(subsize<0)
 	{
 	    /*ada 30.8.96 This is a REALLY BAD hack !! */
-	    if (IoErr() != -1)
+	    if (IoErr() != -1 && IoErr() != 0)
 	    {
-		VPrintf("Got Error\n", NULL);
+		ULONG error = IoErr();
+
+		VPrintf ("Shell:Read %ld\n", &error);
+		PrintFault(IoErr(), "Shell:Read");
 		FreeVec(lb->buf);
 		lb->buf=NULL;
 		return IoErr();
