@@ -5,6 +5,7 @@
     Desc: Private graphics function for allocating screen bitmaps
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include <exec/memory.h>

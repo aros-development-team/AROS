@@ -10,11 +10,12 @@
 #include <exec/memory.h>
 #include <graphics/regions.h>
 #include <proto/exec.h>
+#include "intregions.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH0(struct Region *, NewRegion,
 

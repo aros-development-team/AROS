@@ -5,6 +5,7 @@
     Desc: Graphics function OpenMonitor()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/monitor.h>
 
 /*****************************************************************************

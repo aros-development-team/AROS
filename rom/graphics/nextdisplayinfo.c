@@ -7,6 +7,7 @@
 */
 #include <graphics/displayinfo.h>
 #include <hidd/graphics.h>
+#include "graphics_intern.h"
 #include "dispinfo.h"
 
 /*****************************************************************************

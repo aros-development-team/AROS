@@ -9,6 +9,7 @@
 #include <graphics/rastport.h>
 #include <string.h>
 #include <proto/cybergraphics.h>
+#include <aros/macros.h>
 
 void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
     	    	    	  struct GfxBase *GfxBase);

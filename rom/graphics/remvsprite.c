@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <graphics/gels.h>
+#include "gels_internal.h"
 #include <graphics/rastport.h>
 #include "graphics_intern.h"
 #include <proto/exec.h>

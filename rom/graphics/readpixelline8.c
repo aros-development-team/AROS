@@ -10,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH6(LONG, ReadPixelLine8,
 

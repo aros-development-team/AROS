@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <graphics/gfxbase.h>
+#include <exec/execbase.h>
 #include <exec/tasks.h>
 
 /*****************************************************************************

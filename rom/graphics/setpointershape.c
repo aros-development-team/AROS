@@ -5,6 +5,7 @@
     Desc: Private graphics function for setting mouse pointer shape
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <exec/memory.h>
 #include <graphics/rastport.h>

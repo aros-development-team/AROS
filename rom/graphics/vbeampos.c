@@ -5,6 +5,7 @@
     Desc: Read the current vertical position of the beam
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************

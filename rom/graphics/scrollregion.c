@@ -8,6 +8,7 @@
 #include "graphics_intern.h"
 #include <graphics/regions.h>
 #include "intregions.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 

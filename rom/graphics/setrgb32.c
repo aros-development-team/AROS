@@ -5,8 +5,10 @@
     Desc: Set one color register for this Viewport
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+#include <proto/oop.h>
 
 /*****************************************************************************
 

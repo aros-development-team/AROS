@@ -5,6 +5,7 @@
     Desc: Remove a font from the list of public available fonts.
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <proto/exec.h>
 
