@@ -1,7 +1,6 @@
 # $Id$
 
-# (bernie) removed targets to speed up things: setup includes compiler arosboot
-#MM- AROS-amiga : kernel workbench demos games
+#MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games
 
 # hidd-graphics target removed from below line because of missing lib.conf file
 #MM- kernel-amiga : kernel-hidd \
