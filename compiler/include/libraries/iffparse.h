@@ -21,6 +21,9 @@
 #ifndef DEVICES_CLIPBOARD_H
 #   include <devices/clipboard.h>
 #endif
+#ifndef AROS_MACROS_H
+#   include <aros/macros.h>
+#endif
 
 struct IFFHandle
 {
@@ -118,8 +121,7 @@ struct ClipboardHandle
 #define IFFERR_NOHOOK     -11L
 #define IFF_RETURN2CLIENT -12L
 
-#define MAKE_ID(a,b,c,d) (((ULONG) (a)<<24) | ((ULONG) (b)<<16) | \
-                          ((ULONG) (c)<<8)  | ((ULONG) (d)))
+#define MAKE_ID(a,b,c,d) AROS_MAKE_ID((a),(b),(c),(d))
 
 #define ID_FORM MAKE_ID('F','O','R','M')
 #define ID_LIST MAKE_ID('L','I','S','T')

@@ -116,6 +116,12 @@
 #    define __pure
 #endif
 
+#if __GNUC_PREREQ(2,5)
+#    define __const     __attribute__((__const__))
+#else
+#    define __const
+#endif
+
 /* 4. Macros for debugging and development */
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #   define AROS_64BIT_TYPE long long

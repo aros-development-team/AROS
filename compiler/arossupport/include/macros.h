@@ -326,4 +326,8 @@
 #   define AROS_SWAP(x,y)       (x) ^= (y) ^= (x) ^= (y)
 #endif
 
+/* Build an 'ID' as used by iffparse.library and some other libraries as well. */
+#define AROS_MAKE_ID(a,b,c,d) (((ULONG) (a)<<24) | ((ULONG) (b)<<16) | \
+                               ((ULONG) (c)<<8)  | ((ULONG) (d)))
+
 #endif /* AROS_MACROS_H */
