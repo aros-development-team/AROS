@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef AROSLISTVIEW_INTERN_H
 #define AROSLISTVIEW_INTERN_H
 

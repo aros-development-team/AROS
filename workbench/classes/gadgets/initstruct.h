@@ -1,10 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Defines and macros to create and fill an inittable
     Lang: english
 */
+
 #ifndef _INITSTRUCT_H_
 #define _INITSTRUCT_H_
 #ifndef EXEC_TYPES_H
