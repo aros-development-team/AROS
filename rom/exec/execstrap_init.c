@@ -14,6 +14,12 @@ extern void AROS_SLIB_ENTRY(GetCC_10,Exec)();
 extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec)();
 extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec)();
 
+/*
+    TODO:
+
+    Check for the right mouse button, and disable AROSfA if depressed.
+*/
+
 int start(void)
 {
     struct ExecBase *SysBase;
@@ -36,15 +42,12 @@ int start(void)
     /*
 	The biggie: SetFunction() as many library vectors as possible.
 	Protection from multitasking is provided by SetFunction (Forbid/Permit).
-    */
 
-    /*
 	Some functions are safe to call even from interrupts, so protect these
-	with Disable/Enable.
+	with Disable/Enable:
 
-	Alert/Cause/Disable/Enable/FindName/FindPort/FindTask/PutMsg/ReplyMsg/Signal
-
-	AddHead/AddTail/Enqueue/RemHead/RemTail/Insert/Remove
+	Alert/Cause/Disable/Enable/FindName/FindPort/FindTask/PutMsg/ReplyMsg/Signal/
+	AddHead/AddTail/Enqueue/RemHead/RemTail/Insert/Remove ... any more?
     */
 
     Disable();
@@ -56,7 +59,11 @@ int start(void)
     SetFunction((struct Library *)SysBase, ( 23 * -6), (APTR)&AROS_SLIB_ENTRY(Permit,Exec));
 #endif
 #if 0
-    /* E.g. grep gurus: */
+    /*
+	Any ixemul program that uses wildcards on the command line will crash the Amiga.
+	Ixemul is responsible for this; there is a code-fragment in
+	ixemul/library/__cli_parse.c to check out why our Insert() fails.
+    */
     SetFunction((struct Library *)SysBase, ( 39 * -6), (APTR)&AROS_SLIB_ENTRY(Insert,Exec));
 #endif
     SetFunction((struct Library *)SysBase, ( 40 * -6), (APTR)&AROS_SLIB_ENTRY(AddHead,Exec));
@@ -79,7 +86,7 @@ int start(void)
 #endif
 
     /*
-       BTW: What bit(s) is (are) set for the MC68060?
+       BTW:  What bit(s) is (are) set for the MC68060?
        BTW2: They would really be set by the 68060.library, which will obviously
              not have executed at this point in the reset-procedure.
        BTW3: If there is an agreed upon bit for the 68060, we could examine the
@@ -102,15 +109,17 @@ int start(void)
     }
     else
     {
+	/*
+	    We are on a 68000/010. These have no caches, so this default call is
+	    essentially a no-op (rts).
+	*/
 	SetFunction((struct Library *)SysBase, (106 * -6), (APTR)&AROS_SLIB_ENTRY(CacheClearU,Exec));
     }
     Enable();
 
-#if 0
-    /* Instant machine hang-up: */
+    SetFunction((struct Library *)SysBase, ( 27 * -6), (APTR)&AROS_SLIB_ENTRY(SetIntVector,Exec));
     SetFunction((struct Library *)SysBase, ( 28 * -6), (APTR)&AROS_SLIB_ENTRY(AddIntServer,Exec));
     SetFunction((struct Library *)SysBase, ( 29 * -6), (APTR)&AROS_SLIB_ENTRY(RemIntServer,Exec));
-#endif
     SetFunction((struct Library *)SysBase, ( 51 * -6), (APTR)&AROS_SLIB_ENTRY(SetSignal,Exec));
     SetFunction((struct Library *)SysBase, ( 59 * -6), (APTR)&AROS_SLIB_ENTRY(AddPort,Exec));
     SetFunction((struct Library *)SysBase, ( 60 * -6), (APTR)&AROS_SLIB_ENTRY(RemPort,Exec));
@@ -141,6 +150,7 @@ int start(void)
     SetFunction((struct Library *)SysBase, ( 83 * -6), (APTR)&AROS_SLIB_ENTRY(OpenResource,Exec));
     SetFunction((struct Library *)SysBase, ( 89 * -6), (APTR)&AROS_SLIB_ENTRY(TypeOfMem,Exec));
     SetFunction((struct Library *)SysBase, ( 92 * -6), (APTR)&AROS_SLIB_ENTRY(OpenLibrary,Exec));
+    SetFunction((struct Library *)SysBase, ( 93 * -6), (APTR)&AROS_SLIB_ENTRY(InitSemaphore,Exec));
 #if 0
     /* Can only be patched if we have control over the microkernel: */
     SetFunction((struct Library *)SysBase, ( 94 * -6), (APTR)&AROS_SLIB_ENTRY(ObtainSemaphore,Exec));
@@ -152,6 +162,8 @@ int start(void)
     SetFunction((struct Library *)SysBase, (103 * -6), (APTR)&AROS_SLIB_ENTRY(AddMemList,Exec));
     SetFunction((struct Library *)SysBase, (109 * -6), (APTR)&AROS_SLIB_ENTRY(CreateIORequest,Exec));
     SetFunction((struct Library *)SysBase, (110 * -6), (APTR)&AROS_SLIB_ENTRY(DeleteIORequest,Exec));
+    SetFunction((struct Library *)SysBase, (111 * -6), (APTR)&AROS_SLIB_ENTRY(CreateMsgPort,Exec));
+    SetFunction((struct Library *)SysBase, (112 * -6), (APTR)&AROS_SLIB_ENTRY(DeleteMsgPort,Exec));
 #if 0
     /* Can only be patched if we have control over the microkernel: */
     SetFunction((struct Library *)SysBase, (113 * -6), (APTR)&AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec));
