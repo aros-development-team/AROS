@@ -158,7 +158,7 @@ static void preparedir(void)
 	}
     } else {
 
-	err = mkdir(destdir, 0666);
+	err = mkdir(destdir, 0766);
 	if (err)
 	{
 	    fprintf(stderr, "Error: could not create directory \"%s\"! Error = %i\n", destdir, err);
