@@ -16,23 +16,11 @@ cd      $BUILD_BASE/AROS
 execute ./configure --target=pc-i386 --enable-build-type=nightly
 make
 
-PACKAGE=$BASENAME-i386-pc-boot-floppy
-ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
-
-make    bootdisk
-makedir $BUILD_BASE/$PACKAGE
-copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.bin $BUILD_BASE/$PACKAGE
-cd      $BUILD_BASE
-copy    $SOURCE_AROS/LICENSE $PACKAGE
-copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-archive $ARCHIVE $PACKAGE
-delete  $PACKAGE
-
 PACKAGE=$BASENAME-i386-pc-boot-iso
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
 CONTRIB_ARCHIVE=$ARCHIVE_ROOT/$VERSION/Binaries/AROS-$VERSION-i386-all-contrib.tar.bz2
-if [ -f $ARCHIVE_ROOT/$VERSION/Binaries/AROS-$VERSION-i386-all-contrib.tar.bz2 ]; then
+if [ -f $CONTRIB_ARCHIVE ]; then
     echo "--- Binary contrib package found, unarchiving..."
     cd      $BUILD_BASE/AROS/bin/pc-i386/AROS
     execute tar xjf $CONTRIB_ARCHIVE
@@ -55,3 +43,4 @@ delete  $PACKAGE
 cd      $ROOT
 delete  $BUILD_BASE/AROS
 resetl
+
