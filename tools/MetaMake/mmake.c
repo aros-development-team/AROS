@@ -2092,7 +2092,7 @@ main (int argc, char ** argv)
 	    }
 	    else if (!strcmp (argv[t], "--help"))
 	    {
-		printf ("%s [--version] [-v,--verbose] [--debug] [--help]\n");
+		printf ("%s [--version] [-v,--verbose] [--debug] [--help]\n", argv[0]);
 		return 0;
 	    }
 	    else
