@@ -64,8 +64,8 @@
         rr = rr->Next
     )
     {
-        if (y > MaxY(rr)) return FALSE;
-	if (y < MinY(rr)) continue;
+        if (y > MaxY(rr)) continue;
+        if (y < MinY(rr)) return FALSE;
         if (x < MinX(rr)) continue;
         if (x > MaxX(rr)) continue;
 
