@@ -22,6 +22,7 @@
 #include <proto/muimaster.h>
 #endif
 
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -660,6 +661,9 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    {
 			data->entries_num = tag->ti_Data;
 			set(obj, MUIA_List_VertProp_Entries, data->entries_num);
+		    } else
+		    {
+		    	D(bug("Bug: confirm_entries != MUIA_NList_Entries!\n"));
 		    }
 		    break;
 
@@ -996,14 +1000,24 @@ static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    while (data->entries_num)
+    while (data->confirm_entries_num)
     {
-    	struct ListEntry *lentry = data->entries[--data->entries_num];
+    	struct ListEntry *lentry = data->entries[--data->confirm_entries_num];
 	DoMethod(obj, MUIM_List_Destruct, lentry->data, data->pool);
 	FreeListEntry(data,lentry);
     }
     /* Should never fail when shrinking */
     SetListSize(data,0);
+
+    if (data->confirm_entries_num != data->entries_num)
+    {
+	SetAttrs(obj,
+	    MUIA_List_Entries,0,
+	    MUIA_List_First,0,
+	    MUIA_List_Active, MUIV_List_Active_Off,
+	    TAG_DONE);
+    }
+
     return 0;
 }
 
