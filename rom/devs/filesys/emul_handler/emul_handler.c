@@ -56,6 +56,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #undef timeval
+#include <sys/vfs.h>
 
 /* Underlying OS's rename() Clib function prototype */
 #include <stdio.h>
@@ -130,7 +131,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.6 (25.07.2000)\r\n";
+static const char version[]="$VER: emul_handler 41.7 (16.12.2000)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -1749,11 +1750,30 @@ AROS_LH1(void, beginio,
             parent_dir_post(emulbase, &(iofs->io_Union.io_PARENT_DIR.io_DirName));
             break;    
             
-	case FSA_IS_FILESYSTEM:
+        case FSA_IS_FILESYSTEM:
 	    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
 	    error = 0;
 	    break;
 	    
+        case FSA_DISK_INFO:
+	    {
+		struct InfoData *id = (struct InfoData *)iofs->IOFS.io_Unit;
+		struct statfs    buf;
+
+		statfs(".", &buf);
+
+		id->id_NumSoftErrors = 0;
+		id->id_UnitNumber = 0;
+		id->id_DiskState = ID_VALIDATED;
+		id->id_NumBlocks = buf.f_blocks;
+		id->id_NumBlocksUsed = buf.f_blocks - buf.f_bavail;
+		id->id_BytesPerBlock = buf.f_bsize;
+		id->id_DiskType = ID_DOS_DISK; /* Well, not really true... */
+		id->id_VolumeNode = NULL;
+		id->id_InUse = TRUE;
+
+		break;
+	    }
 	    
 	case FSA_SET_COMMENT:
 	case FSA_SET_PROTECT:
