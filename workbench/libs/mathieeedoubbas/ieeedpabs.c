@@ -57,7 +57,7 @@
 ******************************************************************************/
 {
     /*if (0 == y) */
-    if (is_eqC(y,0,0,0))
+    if (is_eqC(y,0,0,0ULL))
       /* value is 0 -> set the Zero Flag */
       SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
     else
