@@ -24,6 +24,7 @@
 
 #include "layers_intern.h"
 #include "basicfuncs.h"
+#include "../graphics/intregions.h"
 
 extern struct ExecBase * SysBase;
 
@@ -564,7 +565,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
       /*
        * Do the two rectangles overlap?
        */
-      if (AndRectRect(&_cr->bounds, &oldcr->bounds, &intersect))
+      if (_AndRectRect(&_cr->bounds, &oldcr->bounds, &intersect))
       {
         LONG xSize = intersect.MaxX - intersect.MinX + 1;
 	LONG ySize = intersect.MaxY - intersect.MinY + 1;
