@@ -17,5 +17,9 @@ execute cvs checkout necessary
 delete  $SOURCE_NECESSARY
 move    contrib $SOURCE_NECESSARY
 
+printi  "Updating documentation sources..."
+cd      $SOURCE_DOCS
+execute cvs update
+
 cd      $ROOT
 resetl
