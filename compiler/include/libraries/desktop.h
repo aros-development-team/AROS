@@ -3,7 +3,7 @@
 
 /*** Kinds for use with CreateDesktopObjectA() ****************/
 
-#define CDO_Window                        1
+#define CDO_DirectoryWindow               1
 #define CDO_IconContainer                 2
 #define CDO_DiskIcon                      3
 #define CDO_DrawerIcon                    4
@@ -11,6 +11,7 @@
 #define CDO_ProjectIcon                   6
 #define CDO_TrashcanIcon                  7
 #define CDO_Desktop                       8
+#define CDO_DesktopWindow                 9
 
 /*** Tags for use with CreateDesktopObjectA() *****************/
 
