@@ -1,0 +1,18 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS     := Clock
+ICONDIR   := $(AROSDIR)/Utilities
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+
+#MM
+gorilla-icons : setup $(ICONFILES)
+	@$(NOP)
+
+$(ICONDIR)/%.info : %.info.src %.png
+	@$(ILBMTOICON) $+ $@
+
+setup :
+	%mkdirs_q $(ICONDIR)
