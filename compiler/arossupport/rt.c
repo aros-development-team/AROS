@@ -191,9 +191,9 @@ RTDesc const * RT_Resources[RTT_MAX];
     {
 	for (i=0; i<HASH_SIZE; i++)
 	{
-	    for (next=GetHead(&rtd->rtd_ResHash[t][i]); (rt=next); )
+	    for (next=(RTNode *)GetHead(&rtd->rtd_ResHash[t][i]); (rt=next); )
 	    {
-		next = GetSucc (rt);
+		next = (RTNode *)GetSucc (rt);
 
 		RT_FreeResource (rtd, t, rt);
 	    }

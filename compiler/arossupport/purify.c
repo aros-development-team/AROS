@@ -72,7 +72,6 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE
     NEWLIST (&P_Memory);
 } /* Purify_Init */
 
@@ -454,7 +453,7 @@ extern void RT_ShowRTStack (void);
 {
     struct PNode * node;
 
-    for (node=GetHead(&P_Memory); node; node=GetSucc(node))
+    for (node=(struct PNode *)GetHead(&P_Memory); node; node=(struct PNode *)GetSucc(node))
     {
 	if (node->Memory <= (UBYTE *)memPtr
 	    || (UBYTE *)memPtr < node->Memory+node->Size
@@ -515,7 +514,7 @@ extern void RT_ShowRTStack (void);
     *before = NULL;
     *after  = NULL;
 
-    for (node=GetHead(&P_Memory); node; node=GetSucc(node))
+    for (node=(struct PNode *)GetHead(&P_Memory); node; node=(struct PNode *)GetSucc(node))
     {
 	if (!*before)
 	{

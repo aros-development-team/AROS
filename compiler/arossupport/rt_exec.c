@@ -382,7 +382,6 @@ static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL *
 
 static IPTR RT_DeletePort (RTData * rtd, PortResource * rt)
 {
-    AROS_GET_SYSBASE
     DeletePort (rt->Port);
 
     return TRUE;

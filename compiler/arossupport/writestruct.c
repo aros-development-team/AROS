@@ -292,7 +292,7 @@ struct WriteLevel
 	    Remove ((struct Node *)last);
 
 	    /* Get the last level */
-	    if ((curr = GetTail (list)))
+	    if ((curr = (struct WriteLevel *)GetTail (list)))
 	    {
 		FreeMem (last, sizeof (struct WriteLevel));
 	    }
