@@ -47,11 +47,12 @@
 
     if (string)
     {
-	fputs(stdout, string);
-	fputs(stdout, ": ");
+	fputs(string, stderr);
+	fputs(": ", stderr);
     }
 
-    fputs(stdout, strerror(errno));
-    fputs(stdout, "\n");
+    fputs(strerror(errno), stderr);
+    fputs("\n", stderr);
+
 } /* perror */
 
