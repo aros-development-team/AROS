@@ -26,8 +26,8 @@
 
 #include "x11gfx_intern.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -233,6 +233,7 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
     if (data->xwindow)
     {
     	XDestroyWindow( GetSysDisplay(), data->xwindow);
+	XFlush( GetSysDisplay() );
     }
     
     cleanupx11stuff(data);

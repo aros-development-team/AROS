@@ -185,6 +185,7 @@ static VOID gc_writepixeldirect(Class *cl, Object *o, struct pHidd_GC_WritePixel
      
      XSetForeground(data->display, data->gc, data->hidd2x11cmap[msg->val]);
      XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
+     XFlush(data->display);
      return;
 }
 
@@ -254,6 +255,8 @@ static VOID gc_fillrect(Class *cl, Object *o, struct pHidd_GC_DrawRect *msg)
 	, msg->maxX - msg->minX + 1
 	, msg->maxY - msg->minY + 1
     );
+
+    XFlush(data->display);
     ReturnVoid("X11Gfx.GC::FillRect");
     
 
@@ -277,6 +280,8 @@ static VOID gc_copyarea(Class *cl, Object *o, struct pHidd_GC_CopyArea *msg)
 	, msg->destX
 	, msg->destY
     );
+    
+    XFlush(data->display);
     ReturnVoid("X11Gfx.GC::CopyArea");
 }
 /*********  GC::Clear()  *************************************/
@@ -310,6 +315,7 @@ static VOID gc_clear(Class *cl, Object *o, struct pHidd_GC_Clear *msg)
 	    width, height,
 	    FALSE);
     
+    XFlush(data->display);
     return;
     
 }
