@@ -11,7 +11,6 @@
 
     NAME */
 #include <proto/asl.h>
-#include <clib/asl_protos.h>
 
 	AROS_LH0(struct FileRequester *, AllocFileRequest,
 
@@ -22,6 +21,7 @@
 	struct Library *, AslBase, 5, Asl)
 
 /*  FUNCTION
+	Obsolete. Use AllocAslRequest() instead.
 
     INPUTS
 
@@ -34,6 +34,7 @@
     BUGS
 
     SEE ALSO
+	AllocAslRequest()
 
     INTERNALS
 

@@ -28,7 +28,8 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 /*****************************************************************************
 
     NAME */
-#include <clib/asl_protos.h>
+#include <proto/asl.h>
+#include <utility/tagitem.h>
 
 	AROS_LH2(BOOL, AslRequest,
 

@@ -5,13 +5,13 @@
     Desc:
     Lang: english
 */
-#include <proto/asl.h>
 #include "asl_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/asl_protos.h>
+#include <proto/asl.h>
+#include <libraries/asl.h>
 
 	AROS_LH1(void, FreeFileRequest,
 
@@ -22,6 +22,7 @@
 	struct Library *, AslBase, 6, Asl)
 
 /*  FUNCTION
+	Obsolete. Use FreeAslRequest() instead.
 
     INPUTS
 
@@ -34,6 +35,7 @@
     BUGS
 
     SEE ALSO
+	FreeAslRequest()
 
     INTERNALS
 

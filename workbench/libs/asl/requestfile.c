@@ -6,13 +6,13 @@
     Lang: english
 */
 
-#include <proto/asl.h>
 #include "asl_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/asl_protos.h>
+#include <proto/asl.h>
+#include <libraries/asl.h>
 
 	AROS_LH1(BOOL, RequestFile,
 
@@ -23,6 +23,7 @@
 	struct Library *, AslBase, 7, Asl)
 
 /*  FUNCTION
+	Obsolete. Use AslRequest() instead.
 
     INPUTS
 
@@ -35,6 +36,7 @@
     BUGS
 
     SEE ALSO
+	AslRequest()
 
     INTERNALS
 

@@ -12,7 +12,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/asl_protos.h>
+#include <proto/asl.h>
 
 	AROS_LH1(void, FreeAslRequest,
 
@@ -23,8 +23,10 @@
 	struct Library *, AslBase, 9, Asl)
 
 /*  FUNCTION
+	Frees a requester that was allocated with AllocAslRequest().
 
     INPUTS
+	requester - The requester that is to be freed.
 
     RESULT
 
