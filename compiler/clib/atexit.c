@@ -22,6 +22,7 @@ static struct MinList __atexit_list;
 int atexit(void (*func)(void))
 {
     GETUSER;
+    AROS_GET_SYSBASE
 
     struct AtExitNode *aen = malloc(sizeof(*aen));
 
@@ -45,6 +46,7 @@ int __init_atexit(void)
 void __exit_atexit(void)
 {
     GETUSER;
+    AROS_GET_SYSBASE
 
     struct AtExitNode *aen;
 
