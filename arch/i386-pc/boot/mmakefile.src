@@ -12,9 +12,10 @@ OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
 	   $(OSGENDIR)/graphics/fakegfxhidd.o
 
 BOOT_C := \
-	Alias assign avail cd Copy date delete dir Echo execute FailAt \
-	Info install List makedir mount newshell path Prompt Protect Relabel rename \
-	run Set Setenv shell Stack type
+	Alias assign avail Copy date delete dir execute FailAt Info install \
+	List makedir mount newshell path Protect Relabel rename run shell type
+BOOT_C_SHELL := \
+	CD Echo Prompt Set Setenv Stack
 BOOT_Gadgets := \
 	aroscheckbox.gadget aroscycle.gadget aroslist.class aroslistview.gadget \
 	arosmutualexclude.gadget arospalette.gadget colorwheel.gadget gradientslider.gadget
@@ -31,6 +32,7 @@ BOOT_grub := stage1 stage2 menu.lst
 
 BOOT_SRC_DIR := $(AROSDIR)
 BOOT_SRC_C := $(foreach f, $(BOOT_C), $(AROS_DIR)/C/$(f))
+BOOT_SRC_C_SHELL := $(foreach f, $(BOOT_C_SHELL), $(AROS_DIR)/C/$(f))
 BOOT_SRC_Gadgets := $(foreach f, $(BOOT_Gadgets), $(BOOT_SRC_DIR)/Classes/Gadgets/$(f))
 BOOT_SRC_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_SRC_DIR)/contrib/aminet/$(f))
 BOOT_SRC_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_SRC_DIR)/Demos/$(f))
@@ -42,6 +44,7 @@ BOOT_SRC_grub := $(foreach f, $(BOOT_grub), $(BOOT_SRC_DIR)/boot/grub/$(f))
 
 BOOT_DEST_DIR := $(OSGENDIR)/bootdisk
 BOOT_DEST_C := $(foreach f, $(BOOT_C), $(BOOT_DEST_DIR)/C/$(f))
+BOOT_DEST_C_SHELL := $(foreach f, $(BOOT_C_SHELL), $(BOOT_DEST_DIR)/C/$(f))
 BOOT_DEST_Gadgets := $(foreach f, $(BOOT_Gadgets), $(BOOT_DEST_DIR)/Classes/Gadgets/$(f))
 BOOT_DEST_Aminet := $(foreach f, $(BOOT_Aminet), $(BOOT_DEST_DIR)/contrib/aminet/$(f))
 BOOT_DEST_Demos := $(foreach f, $(BOOT_Demos), $(BOOT_DEST_DIR)/Demos/$(f))
@@ -96,7 +99,7 @@ $(BINDIR)/boot/grub/% : %
 	
 #MM bootdisk-native-i386 : software-native-i386
 bootdisk-native-i386: \
-	$(BOOT_DEST_C) $(BOOT_DEST_Gadgets) $(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
+	$(BOOT_DEST_C) $(BOOT_DEST_C_SHELL) $(BOOT_DEST_Gadgets) $(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
 	$(BOOT_DEST_Devs) $(BOOT_DEST_Libs) $(BOOT_DEST_S) $(BOOT_DEST_Tools) \
 	$(BOOT_DEST_grub) $(BINDIR)/boot/aros-native-i386 install
 	@$(CP) $(BINDIR)/boot/aros-native-i386 $(BOOT_DEST_DIR)/Devs
