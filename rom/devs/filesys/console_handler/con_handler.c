@@ -33,6 +33,7 @@
 #include <aros/asmcall.h>
 
 #include <stddef.h>
+#include <string.h>
 
 #undef SDEBUG
 #undef DEBUG
@@ -131,8 +132,8 @@ AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
     /* Store arguments */
     conbase->sysbase = sysBase;
     conbase->seglist = segList;
-    conbase->device.dd_Library.lib_OpenCnt = 1;    
-  
+    conbase->device.dd_Library.lib_OpenCnt = 1;
+
     conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if (conbase->dosbase)
     {
@@ -143,7 +144,7 @@ AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
 	       open, if intuition.library is open, then Input.Device must be
 	       open, too, ... and I don't like to OpenDevice just for Peek-
 	       Qualifier */
-	       
+
 	    #warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
 	    Forbid();
 	    conbase->inputbase = (struct Device *)FindName(&conbase->sysbase->DeviceList, "input.device");
@@ -161,15 +162,21 @@ AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
 		{
 		    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
 		    WORD   a;
-		    
+
 		    for(a = 0; a < 3; a++)
 		    {
 		    	AROS_BSTR_putchar(s, a, devnames[i][a]);
 		    }
 		    AROS_BSTR_setstrlen(s, 3);
-		    
+
 		    dn->dn_Type		= DLT_DEVICE;
-		    dn->dn_Unit		= NULL;
+
+		    /* 
+		       i equals 1 when dn_NewName is "RAW", and 0 otherwise. This
+		       tells con_task that it has to start in RAW mode
+		    */   
+		    dn->dn_Unit		= (struct Unit *)i;
+
 		    dn->dn_Device	= &conbase->device;
 		    dn->dn_Handler	= NULL;
 		    dn->dn_Startup	= NULL;
@@ -189,12 +196,12 @@ AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
 	    }
 
 	    CloseLibrary((struct Library *)conbase->intuibase);
- 	
+
     	} /* if (intuition opened) */
-	
+
 	CloseLibrary((struct Library *)conbase->dosbase);
    	/* Alert(AT_DeadEnd|AG_NoMemory|AN_Unknown); */
-	
+
     } /* if (dos opened) */
 
     return NULL;
@@ -216,7 +223,7 @@ AROS_LH3(void, open,
     unitnum=0;
     flags=0;
 
-/* 
+/*
     if(conbase->dosbase == NULL)
     {
 	conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
@@ -226,11 +233,19 @@ AROS_LH3(void, open,
 	    return;
 	}
     }
-    
+
 */
 
    /* I have one more opener. */
     conbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
+
+    /*
+       Check whether the user mounted us as "RAW", in which case abuse of the
+       io_Unit field in the iofs structure to tell the con task that it has
+       to start in RAW mode
+    */
+    if (strncasecmp("RAW", iofs->io_Union.io_OpenDevice.io_DosName, 4))
+        iofs->IOFS.io_Unit = (struct Unit *)1;
 
     /* Set returncode */
     iofs->IOFS.io_Error=0;
@@ -288,11 +303,11 @@ static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
     struct conTaskParams    params;
     struct Task     	    *contask;
     LONG    	    	    err = 0;
-    
+
     EnterFunc(bug("open_conh(filename=%s, mode=%d)\n",
     	filename, mode));
 
-    if (fh)
+    if (fh != NULL && fh != (struct filehandle *)1)
     {
         /* DupLock */
 	fh->usecount++;
@@ -314,7 +329,7 @@ static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
 
 	err = iofs->io_DosError;
     }
-    
+
     ReturnInt("open_conh", LONG, err);
 }
 
@@ -347,8 +362,8 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	    error = open_con(conbase, iofs);
 	    break;
-	    
-	case FSA_CLOSE:	
+
+	case FSA_CLOSE:
         case FSA_READ:
 	case FSA_WRITE:
 	case FSA_CONSOLE_MODE:
@@ -482,7 +497,7 @@ AROS_LH1(void, beginio,
     /* If the quick bit is not set send the message to the port */
     if(!(iofs->IOFS.io_Flags&IOF_QUICK) && !request_queued)
 	ReplyMsg(&iofs->IOFS.io_Message);
-	
+
     ReturnVoid("conhandler_beginio");
 
     AROS_LIBFUNC_EXIT

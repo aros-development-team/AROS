@@ -196,13 +196,11 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 
     if (strncasecmp("RAW:", filename, 4) == 0)
     {
-	fh->flags |= FHFLG_RAW;
 	filename += 4;
 	kprintf("Raw: stream\n");
     }
     else if (strncasecmp("CON:", filename, 4) == 0)
     {
-	fh->flags &= ~FHFLG_RAW;
 	filename += 4;
 
 	kprintf("Con: stream\n");
