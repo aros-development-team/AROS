@@ -47,10 +47,21 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/WBenchToBack()
-    aros_print_not_implemented ("WBenchToBack");
+struct Screen *curscreen;
 
-    return FALSE;
+    curscreen = IntuitionBase->FirstScreen;
+    while( curscreen && !(curscreen->Flags & WBENCHSCREEN) )
+	curscreen = curscreen->NextScreen;
+
+    if ( curscreen )
+    {
+	ScreenToBack ( curscreen );
+	return TRUE;
+    }
+    else
+    {
+	return FALSE;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* WBenchToBack */

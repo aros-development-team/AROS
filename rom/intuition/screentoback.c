@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	ScreenToFront()
+	ScreenToFront(), ScreenDepth()
 
     INTERNALS
 
@@ -53,8 +53,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/ScreenToBack()
-    aros_print_not_implemented ("ScreenToBack");
+    ScreenDepth ( screen, SDEPTH_TOBACK, NULL );
 
     AROS_LIBFUNC_EXIT
 } /* ScreenToBack */

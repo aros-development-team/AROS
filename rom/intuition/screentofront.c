@@ -21,12 +21,16 @@
 	struct IntuitionBase *, IntuitionBase, 42, Intuition)
 
 /*  FUNCTION
-	Move the screen in front of all other screens.
+	Move a screen in front of all other screens. If the screen is in a
+	group, the screen will be moved in front of all other screens in the
+	group only. If the screen is the parent of a group, the whole
+	group will be moved in the front.
 
     INPUTS
-	screen - This screen
+	screen - Move this screen.
 
     RESULT
+	You will see the screen move in front of all other screens.
 
     NOTES
 
@@ -35,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	ScreenToBack()
+	ScreenToBack(), ScreenDepth()
 
     INTERNALS
 
@@ -48,8 +52,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/ScreenToFront()
-    aros_print_not_implemented ("ScreenToFront");
+    ScreenDepth ( screen, SDEPTH_TOFRONT, NULL );
 
     AROS_LIBFUNC_EXIT
 } /* ScreenToFront */
