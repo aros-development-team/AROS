@@ -19,11 +19,31 @@ funct getenv (char $name)
 funct urlDecode (char $str)
 {
     $newstr = sub($str,"+"," ");
-    $newstr = sub($newstr,"%40","@");
-    $newstr = sub($newstr,"%2D","-");
+    $newstr = sub($newstr,"%0D","");
+    $newstr = sub($newstr,"%0A","\n");
+    $newstr = sub($newstr,"%20"," ");
+    $newstr = sub($newstr,"%21","!");
+    $newstr = sub($newstr,"%22","\"");
+    $newstr = sub($newstr,"%23","#");
+    $newstr = sub($newstr,"%24","$");
     $newstr = sub($newstr,"%25","%");
+    $newstr = sub($newstr,"%26","&");
     $newstr = sub($newstr,"%27","'");
+    $newstr = sub($newstr,"%28","(");
+    $newstr = sub($newstr,"%29",")");
+    $newstr = sub($newstr,"%2A","*");
+    $newstr = sub($newstr,"%2B","+");
+    $newstr = sub($newstr,"%2C",",");
+    $newstr = sub($newstr,"%2D","-");
+    $newstr = sub($newstr,"%2E",".");
     $newstr = sub($newstr,"%2F","/");
+    $newstr = sub($newstr,"%3A",":");
+    $newstr = sub($newstr,"%3B",";");
+    $newstr = sub($newstr,"%3C","<");
+    $newstr = sub($newstr,"%3D","=");
+    $newstr = sub($newstr,"%3E",">");
+    $newstr = sub($newstr,"%3F","?");
+    $newstr = sub($newstr,"%40","@");
     return ($newstr);
 }
 
