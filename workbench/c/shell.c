@@ -105,8 +105,8 @@ static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
 #define SET_HOMEDIR 1
 
-#define  P(x)			/* Debug macro */
-#define  P2(x)			/* Debug macro */
+#define  P(x)		/* Debug macro */
+#define  P2(x)		/* Debug macro */
 
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
@@ -675,6 +675,23 @@ LONG interact(STRPTR script)
 /* Close redirection files and install regular input and output streams */
 void releaseFiles(struct Redirection *rd)
 {
+#if 1 /* stegerg */
+    if (rd->oldIn)
+    {
+    	SelectInput(rd->oldIn);
+	if (rd->newIn) Close(rd->newIn);
+	
+	rd->oldIn = rd->newIn = NULL;
+    }
+    
+    if (rd->oldOut)
+    {
+    	SelectOutput(rd->oldOut);
+	if (rd->newOut) Close(rd->newOut);
+	
+	rd->oldOut = rd->newOut = NULL;
+    }
+#else
     if(rd->newIn != NULL)
     {
 	Close(SelectInput(rd->oldIn));
@@ -686,6 +703,7 @@ void releaseFiles(struct Redirection *rd)
 	Close(SelectOutput(rd->oldOut));
 	rd->newOut = NULL;
     }
+#endif
 }
 
 
@@ -734,6 +752,11 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    goto exit;
 	}
 	
+	/* stegerg: Set redirection to default in/out handles */
+	
+	rd->oldIn  = SelectInput(cli->cli_StandardInput);
+	rd->oldOut = SelectOutput(cli->cli_StandardOutput);
+	
 	if(rd->haveOutRD)
 	{
 	    P(kprintf("Redirecting output to file %s\n", rd->outFileName));
@@ -745,8 +768,12 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 		goto exit;
 	    }
 
+#if 1 /* stegerg */
+    	    SelectOutput(rd->newOut);
+#else
 	    cli->cli_CurrentOutput = rd->newOut;
 	    rd->oldOut = SelectOutput(rd->newOut);
+#endif
 	}
 
 	if(rd->haveAppRD)
@@ -759,8 +786,13 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    }
 	    
 	    Seek(rd->newOut, 0, OFFSET_END);
+	    
+#if 1 /* stegerg */
+    	    SelectOutput(rd->newOut);
+#else
 	    cli->cli_CurrentOutput = rd->newOut;
 	    rd->oldOut = SelectOutput(rd->newOut);
+#endif
 	}
 
 	if(rd->haveInRD)
@@ -772,8 +804,12 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	       goto exit;
 	    }
 	    
+#if 1 /* stegerg */
+    	    SelectInput(rd->newIn);
+#else
 	    cli->cli_CurrentInput = rd->newIn;
 	    rd->oldIn = SelectInput(rd->newIn);
+#endif
 	}
 
 	P(kprintf("Calling executeLine()\n"));
@@ -1219,7 +1255,7 @@ LONG executeFile(STRPTR fileName)
 	    struct CommandLine cl = { NULL, 0, 0 };
 
 	    if(!Redirection_init(&rd))
-		break;
+	    	break;
 
 	    moreLeft = readLine(&cl, cli->cli_CurrentInput);
 
@@ -1337,7 +1373,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
     }
 
 
-    P(kprintf("Trying to load command: %s\n", commandName));
+    P(kprintf("Trying to load command1: %s\n", commandName));
  
     commandSeg = LoadSeg(commandName);
 
