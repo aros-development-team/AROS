@@ -1,1 +1,4 @@
 mmakefile
+endtag.c
+libdefs.h
+functable.c
