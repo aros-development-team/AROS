@@ -1,9 +1,14 @@
 \chapter{History}
 
-\begin{new}{16.9.1997}
+\begin{new}{18.11.1997}
 \section{Project History}
 
 \begin{itemize}
+\item 18.11.1997 Removed the source from our FTP server until Amiga
+    Int./Inc. make a decision whether we can continue AROS or not
+    and if we can under what conditions.
+\item 15.11.1997 Talked to Jeff Schindler about AROS
+\item 14.11.1997 Talked to Petro Tyschtschenko about AROS
 \item 28.10.1997 Our first HIDD: The UnixIO.hidd
 \item 23.10.1997 BOOPSI.library and HIDD.class have been committed.
 \item 17.10.1997 AROS has two new mailing lists: \shell{aros-gfx}

@@ -14,15 +14,6 @@ contains the latest binary release for linux as
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.readme}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386.readme})
 \end{itemize}
-and the source as
-\begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.tgz}
-(\fileinfo{$(TOP)/dist/AROSdev.tgz})
-\item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.lha}
-(\fileinfo{$(TOP)/dist/AROSdev.lha})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.readme}.
-(\fileinfo{$(TOP)/dist/AROSdev.readme})
-\end{itemize}
 Also available is the latest beta as binary for linux as
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.tgz}
@@ -31,13 +22,6 @@ Also available is the latest beta as binary for linux as
 (\fileinfo{$(TOP)/dist/AROS-linux-i386-current.lha})
 \item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.readme}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386-current.readme})
-\end{itemize}
-and the source of the beta as
-\begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.tgz}
-(\fileinfo{$(TOP)/dist/AROSdev-current.tgz})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.readme}
-(\fileinfo{$(TOP)/dist/AROSdev-current.readme}).
 \end{itemize}
 \begin{new}{13.7.1997}
 \end{new}
@@ -69,6 +53,9 @@ and
 \link{Cronus}{http://www.ninemoons.com/}
 \item \link{Smaky 400}{http://lamicounter.epfl.ch/Smaky/sm400.html} -
 A m68k PCI card for PCs.
+\item \link{OASYS Proposals}{http://www.ecs.soton.ac.uk/~sps196/OASYS}
+- Some great ideas for \link{OASYS}{http://www.netreach.net/~fleecy/oasys/}
+but they should be implemented in AmigaOS/AROS, too.
 
 \end{itemize}
 
@@ -98,9 +85,10 @@ A m68k PCI card for PCs.
 \item \link{Amiga Web Directory}{http://www.cucug.org/amiga.html} -
 Various Amiga related informations: News, Links, Mags, Docs
 \item \link{Amiga Technologies}{http://www.amiga.de/}
-\item \link{Semantic Dictionary Encoding (SDE)}
-{http://www.norconnect.no/SDE/} - Run the same binary on many different CPUs
-(Link is dead :-( )
+\item \link{Juice}
+{http://www.ics.uci.edu/~juice/} - Something similar to Java (from the
+user point of view), probably what has become of SDE (Semantic Dictionary
+Encoding).
 \item \link{Amiga Report Technical Journal}
 {http://www.warped.com/~artech/} - Amiga developer magazine
 \item \link{A new Amiga: A/Box by phase5}{http://www.phase5.de/}
