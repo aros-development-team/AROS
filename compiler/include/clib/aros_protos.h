@@ -34,9 +34,10 @@ extern struct ExecBase * Sysbase;
     Prototypes
 */
 ULONG	CalcChecksum (APTR mem, ULONG size);
-int	kprintf      (const UBYTE *, ...);
-void	NastyFreeMem (APTR, ULONG);
-APTR	RemoveSList  (APTR *, APTR);
+int	kprintf      (const UBYTE * fmt, ...);
+void	NastyFreeMem (APTR mem, ULONG size);
+APTR	RemoveSList  (APTR * list, APTR node);
+void	hexdump      (const void * data, IPTR offset, ULONG count);
 
 #define kprintf     (((struct AROSBase *)(SysBase->DebugData))->kprintf)
 
