@@ -7,11 +7,8 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 # Rule to create AROS for pc-i386
 #   
 
-# contrib-grub is only needed to boot native version(s)
-# therefore it is put directly here instead into "contrib-complete"
-
 #MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386 \
-#MM	    contrib-grub bootdisk-pc-i386
+#MM	    config-i386-native-boot-grub bootdisk-pc-i386
 
 #MM- general-setup-pc-i386: setup setup-pc-i386 includes compiler
 

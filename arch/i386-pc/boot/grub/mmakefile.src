@@ -1,9 +1,9 @@
-#
+# Makefile to build GRUB.
 
 include $(TOP)/config/make.cfg
 
-#MM contrib-grub
-contrib-grub: setup grub-build grub-copy
+#MM config-i386-native-boot-grub
+config-i386-native-boot-grub: setup grub-build grub-copy
 
 .PHONY: grub-build
 grub-build: Makefile
