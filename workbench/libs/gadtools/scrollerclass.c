@@ -44,9 +44,11 @@
 
 struct ScrollerData
 {
-    Object 	*frame;
-    WORD 	gadgetkind;
-    UBYTE 	labelplace;
+    Object 		*frame;
+    struct Gadget 	*arrow1;
+    struct Gadget	*arrow2;
+    WORD 		gadgetkind;
+    UBYTE 		labelplace;
 };
 
 /**********************************************************************************************/
@@ -64,7 +66,7 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     	{TAG_MORE		}
     };
 
-    struct ScrollerData *data;
+    struct ScrollerData *data = INST_DATA(cl, o);
 
     tags[3].ti_Data = (IPTR)msg->ops_AttrList;
     
@@ -81,7 +83,6 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     	switch (tag->ti_Tag)
     	{
 	     case GTA_GadgetKind:
-	     	data = INST_DATA(cl, o);
 		data->gadgetkind = tag->ti_Data;
 		break;
 
@@ -98,43 +99,63 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
             	break;
             	
              case GTA_Scroller_Dec:
-#if 0
-                /* buttong_class gives -GA_ID if mouse outside arrow */
-                if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
-                {
-#endif
-
-            	    if (tags[1].ti_Data > 0)
-            	    {
-            	    	((ULONG)tags[1].ti_Data) --;
-            	    	retval = 1UL;
-            	    }
-#if 0
-                }
-#endif
+            	if (tags[1].ti_Data > 0)
+            	{
+            	    ((ULONG)tags[1].ti_Data) --;
+            	    retval = 1UL;
+            	}
                 break;
             
             case GTA_Scroller_Inc:
-#if 0
-                /* buttong_class gives -GA_ID if mouse outside arrow */
-                if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
-                {
-#endif
-            	    /* Top < (Total - Visible) ? */
-            	    if (tags[1].ti_Data < (tags[0].ti_Data - tags[2].ti_Data))
-            	    {
-            	    	((ULONG)tags[1].ti_Data) ++;
-           	    	retval = 1UL;
-           	    }
-#if 0
-            	}
-#endif
-            	break;
+        	/* Top < (Total - Visible) ? */
+        	if (tags[1].ti_Data < (tags[0].ti_Data - tags[2].ti_Data))
+        	{
+            	    ((ULONG)tags[1].ti_Data) ++;
+           	    retval = 1UL;
+        	}
+                break;
             
-	     	
-    	}
+	    case GTA_Scroller_Arrow1:
+	        data->arrow1 = (struct Gadget *)tag->ti_Data;
+		break;
+		
+	    case GTA_Scroller_Arrow2:
+	        data->arrow2 = (struct Gadget *)tag->ti_Data;
+		break;
+	
+	    case GA_Disabled:
+	        {
+		    struct TagItem set_tags[] = 
+		    {
+		        {GA_Disabled	, tag->ti_Data	},
+			{TAG_DONE			}
+		    };
+		    
+		    if (data->arrow1)
+		    {
+		        if (msg->ops_GInfo)
+			{
+			    SetGadgetAttrsA(data->arrow1, msg->ops_GInfo->gi_Window, 0, set_tags);
+			} else {
+			    SetAttrsA((Object *)data->arrow1, set_tags);
+			}
+		    }
+		    
+		    if (data->arrow2)
+		    {
+		        if (msg->ops_GInfo)
+			{
+			    SetGadgetAttrsA(data->arrow2, msg->ops_GInfo->gi_Window, 0, set_tags);
+			} else {
+			    SetAttrsA((Object *)data->arrow2, set_tags);
+			}
+		    }
+		}
+		break;
+		
+    	} /* switch (tag->ti_Tag) */
     	
-    }
+    } /* while ((tag = NextTagItem((const struct TagItem **)&tstate))) */
 
     DoSuperMethod(cl, o, OM_SET, tags, msg->ops_GInfo);
 
@@ -290,7 +311,7 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
 	     * The check of cl == OCLASS(o) should fail if we have been
 	     * subclassed, and we have gotten here via DoSuperMethodA().
 	     */
-	    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
+	    if ( retval && ( (msg->MethodID != OM_UPDATE) ||  (cl == OCLASS(o)) ) )
 	    {
 		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
 		if (gi)

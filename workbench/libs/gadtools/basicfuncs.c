@@ -15,13 +15,18 @@
 #include <graphics/rastport.h>
 #include <graphics/rpattr.h>
 #include <graphics/text.h>
+#include <graphics/gfxmacros.h>
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 #include <aros/debug.h>
 #include "gadtools_intern.h"
 
+/**********************************************************************************************/
+
 #define EG(x) ((struct ExtGadget *)(x))
+
+/**********************************************************************************************/
 
 void freeitext(struct GadToolsBase_intern *GadToolsBase,
                struct IntuiText *itext)
@@ -32,6 +37,8 @@ void freeitext(struct GadToolsBase_intern *GadToolsBase,
     FreeVec(itext->ITextFont);
     FreeVec(itext);
 }
+
+/**********************************************************************************************/
 
 /* Create a struct IntuiText accordings to a struct NewGadget */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
@@ -95,6 +102,7 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
     return it;
 }
 
+/**********************************************************************************************/
 
 struct TextFont *preparefont(struct GadToolsBase_intern *GadToolsBase,
 			     struct RastPort *rport, struct IntuiText *itext,
@@ -122,6 +130,8 @@ struct TextFont *preparefont(struct GadToolsBase_intern *GadToolsBase,
     return font;
 }
 
+/**********************************************************************************************/
+
 void closefont(struct GadToolsBase_intern *GadToolsBase,
 	       struct RastPort *rport,
 	       struct TextFont *font, struct TextFont *oldfont)
@@ -132,6 +142,8 @@ void closefont(struct GadToolsBase_intern *GadToolsBase,
 	CloseFont(font);
     }
 }
+
+/**********************************************************************************************/
 
 BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 		 struct Gadget *gad, struct RastPort *rport, LONG labelplace)
@@ -222,3 +234,23 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
     }
     return TRUE;
 }
+
+/**********************************************************************************************/
+
+void DoDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+		       WORD pen, struct GadToolsBase_intern *GadToolsBase)
+{
+    UWORD pattern[] = { 0x8888, 0x2222 };
+
+    SetDrMd( rp, JAM1 );
+    SetAPen( rp, pen );
+    SetAfPt( rp, pattern, 1);
+
+    /* render disable pattern */
+    RectFill(rp, x1, y1, x2, y2);
+    
+    SetAfPt (rp, NULL, 0);
+    
+}
+
+/**********************************************************************************************/

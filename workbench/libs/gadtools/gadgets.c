@@ -11,6 +11,7 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <proto/intuition.h>
+#include <graphics/gfxmacros.h>
 #include <intuition/intuition.h>
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
@@ -773,7 +774,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     if (!scroller)
     	return (NULL);
     
-    if (arrowdim) /* Scroller has arroes ? */
+    if (arrowdim) /* Scroller has arrows ? */
     {
     	Class *arrowcl;
     	
@@ -793,7 +794,13 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 	    {GTA_GadgetKind	, arrowkind	},
     	    {TAG_DONE				}
     	};
-    	
+    	struct TagItem tellscrollertags[] =
+	{
+	    {GTA_Scroller_Arrow1, 0		},
+	    {GTA_Scroller_Arrow2, 0		},
+	    {TAG_DONE				}
+	};
+	
     	atags[5].ti_Data = (IPTR)vi->vi_dri;    /* Set GA_DrawInfo */
     	atags[6].ti_Data = (IPTR)scroller;	/* Set GA_Previous */
     	atags[7].ti_Data = (IPTR)scroller;	/* Set GTA_Arrow_Scroller */
@@ -855,6 +862,11 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     	    	
     	} /* if (scroller is FREEVERT or FREEHORIZ) */
     	
+	tellscrollertags[0].ti_Data = (IPTR)arrow_dec;
+	tellscrollertags[1].ti_Data = (IPTR)arrow_inc;
+	
+	SetAttrsA(scroller, tellscrollertags);
+	
     } /* if (scroller should have arrows attached) */
     
     ReturnPtr ("makescroller", struct Gadget *, scroller);
@@ -1064,7 +1076,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
                          struct TextAttr *tattr,
                          struct TagItem *taglist)
 {
-    struct Gadget *lvgad = NULL, *showselgad = (struct Gadget *)~0;
+    struct Gadget *lvgad = NULL, *showselgad = LV_SHOWSELECTED_NONE;
     struct Gadget *scrollergad;
     struct IBox bbox;
     Class *cl;
@@ -1073,27 +1085,27 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     WORD scroller_width = 16; /* default */
     
     struct TagItem *lv_width_tag, *lv_height_tag;
-    WORD lv_width, lv_height, viewheight;
+    WORD lv_width, lv_height /*, viewheight */;
     
     WORD ysize, totalitemheight = 0;
     
     struct TagItem *tag, lvtags[] =
     {
-    	{GA_Disabled		, FALSE		}, /* 0  */
-    	{GTLV_Top		, 0L		}, /* 1  */
-    	{GTLV_MakeVisible	, 0L		}, /* 2  */
-    	{GTLV_Labels		, (IPTR)NULL	}, /* 3  */
-    	{GTLV_Selected		, ~0L		}, /* 4  */
-    	{GTLV_ItemHeight	, 0L		}, /* 5  */
-    	{GTLV_CallBack		, (IPTR)NULL	}, /* 6  */
-    	{GTLV_MaxPen		, 0L		}, /* 7  */
-    	{GTLV_ReadOnly		, 0L		}, /* 8  */
-    	{LAYOUTA_Spacing	, 0L		}, /* 9  */    	
-    	{GA_TextAttr		, (IPTR)NULL	}, /* 10 */
-	{GA_RelVerify		, TRUE		}, /* 11 */
-	{GA_Bounds		, (IPTR)&bbox	}, /* 12 */
-	{GTLV_ShowSelected	, showselgad	}, /* 13 */
-	{TAG_MORE		, (IPTR)NULL	}  /* 14 */
+    	{GA_Disabled		, FALSE			}, /* 0  */
+    	{GTLV_Top		, 0L			}, /* 1  */
+    	{GTLV_MakeVisible	, 0L			}, /* 2  */
+    	{GTLV_Labels		, (IPTR)NULL		}, /* 3  */
+    	{GTLV_Selected		, ~0L			}, /* 4  */
+    	{GTLV_ItemHeight	, 0L			}, /* 5  */
+    	{GTLV_CallBack		, (IPTR)NULL		}, /* 6  */
+    	{GTLV_MaxPen		, 0L			}, /* 7  */
+    	{GTLV_ReadOnly		, 0L			}, /* 8  */
+    	{LAYOUTA_Spacing	, 0L			}, /* 9  */    	
+    	{GA_TextAttr		, (IPTR)NULL		}, /* 10 */
+	{GA_RelVerify		, TRUE			}, /* 11 */
+	{GA_Bounds		, (IPTR)&bbox		}, /* 12 */
+	{GTLV_ShowSelected	, (IPTR)showselgad	}, /* 13 */
+	{TAG_MORE		, (IPTR)NULL		}  /* 14 */
     };
     
     EnterFunc(bug("makelistview()\n"));
@@ -1174,7 +1186,7 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     lv_width -= (scroller_width + SCROLLER_SPACING);
     
     /* Adjust the listview height according to showsel gadget height */
-    if ((showselgad) && (showselgad != (struct Gadget *)~0))
+    if ((showselgad) && (showselgad != LV_SHOWSELECTED_NONE))
     {
         /* The showselected string gadget must have the same width as the
 	   listview gadget, otherwise fail (AmigaOS does the same). Fail

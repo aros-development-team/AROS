@@ -81,9 +81,9 @@ struct StaticLVData
 };
 
 /* Flags */
-#define LVFLG_READONLY		(1 << 0)
-#define LVFLG_FONT_OPENED	(1 << 1)
-
+#define LVFLG_READONLY			(1 << 0)
+#define LVFLG_FONT_OPENED		(1 << 1)
+#define LVFLG_FORCE_SELECT_STATE	(1 << 2)
 
 /* The flags below are used for as a trick to easily select the right pens,
 ** or the right hook draw states. The combinations of the flags can be used
@@ -215,6 +215,8 @@ STATIC VOID RenderEntries(Class *cl, Object *o, struct gpRender *msg,
     EnterFunc(bug("RenderEntries(msg=%p, entryoffset=%d, numentries=%d)\n",
     	msg, entryoffset, numentries));
     
+    if (!data->ld_Labels || (data->ld_Labels == (struct List *)~0)) return;
+    
     oldfont = msg->gpr_RPort->Font;
     SetFont(msg->gpr_RPort, data->ld_Font);
     
@@ -260,9 +262,12 @@ STATIC VOID RenderEntries(Class *cl, Object *o, struct gpRender *msg,
     	ULONG retval;
 
     	/* update state */
-    	if (current_entry == data->ld_Selected)
+    	if ((current_entry == data->ld_Selected) &&
+	    ((data->ld_ShowSelected != LV_SHOWSELECTED_NONE) || (data->ld_Flags & LVFLG_FORCE_SELECT_STATE)))
+	{
     	    state |= SELECTED;
-    
+        }
+	
     	D(bug("Rendering entry %d: node %s\n", current_entry, node->ln_Name));
 
     	/* Call custom render hook */
@@ -404,7 +409,7 @@ STATIC VOID ScrollEntries(Object *o, struct LVData *data, WORD old_top, WORD new
 
 STATIC VOID DoShowSelected(struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
 {
-    if (data->ld_ShowSelected && (data->ld_ShowSelected != (struct Gadget *)~0))
+    if (data->ld_ShowSelected && (data->ld_ShowSelected != LV_SHOWSELECTED_NONE))
     {
         struct TagItem set_tags[] =
 	{
@@ -430,7 +435,7 @@ STATIC VOID DoShowSelected(struct LVData *data, struct GadgetInfo *gi, struct Ga
 	
 	GT_SetGadgetAttrsA(data->ld_ShowSelected, gi ? gi->gi_Window : NULL, NULL, set_tags);
 	
-    } /* if (data->ld_ShowSelected && (data->ld_ShowSelected != (struct Gadget *)~0)) */
+    } /* if (data->ld_ShowSelected && (data->ld_ShowSelected != LV_SHOWSELECTED_NONE)) */
 }
 
 /**********************************************************************************************/
@@ -536,7 +541,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
     		    data->ld_NumEntries = 0;
 
-		    if (data->ld_Labels)
+		    if (data->ld_Labels && (data->ld_Labels != (struct List *)~0))
 		    {
     			/* Update the labelcount */
     			ForeachNode(data->ld_Labels, n)
@@ -625,6 +630,27 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	data->ld_LabelPlace = (LONG)tidata;
 	    	break;
 	    	
+	    case GA_Disabled:
+	        {
+		    struct TagItem set_tags[] = 
+		    {
+		        {GA_Disabled	, tag->ti_Data	},
+			{TAG_DONE			}
+		    };
+		    
+		    if (data->ld_Scroller)
+		    {
+		        if (msg->ops_GInfo)
+			{
+			    SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, msg->ops_GInfo->gi_Window, 0, set_tags);
+			} else {
+			    SetAttrsA(data->ld_Scroller, set_tags);
+			}
+		    }
+		}
+	        refresh_all = TRUE;
+		break;
+		
 	} /* switch (tag->ti_Tag) */
 
     } /* while (more tags to iterate) */
@@ -722,7 +748,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 	    data->ld_CallBack = 
 	    	&(((struct StaticLVData *)cl->cl_UserData)->ls_RenderHook);
 	
-	    data->ld_ShowSelected = (struct Gadget *)GetTagData(GTLV_ShowSelected, ~0, msg->ops_AttrList);
+	    data->ld_ShowSelected = (struct Gadget *)GetTagData(GTLV_ShowSelected, (IPTR)LV_SHOWSELECTED_NONE, msg->ops_AttrList);
 	    
 	    listview_set(cl, o, msg);
 
@@ -794,16 +820,17 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 
     if (msg->MethodID == GM_GOACTIVE)
     {
-	if (!msg->gpi_IEvent) /* Not activated ny user ? */
-    	    ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);    
-
-	if (data->ld_Flags & LVFLG_READONLY)
-    	    ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);
+	if ((!msg->gpi_IEvent) || /* Not activated by user ? */
+	    (data->ld_Flags & LVFLG_READONLY) ||
+	    (!data->ld_Labels) ||
+	    (data->ld_Labels == (struct List *)~0))
+	{
+    	    ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE); 
+	}   
     }	
     
     /* How many entries are currently shown in the Gtlv ? */
     shown = ShownEntries(o, data);
-
 
     if ((msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE) ||
         (msg->gpi_IEvent->ie_Class == IECLASS_TIMER))
@@ -867,6 +894,7 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 	    		data->ld_FirstDamaged = clickpos;
 	    		data->ld_NumDamaged = 1;
 
+			data->ld_Flags |= LVFLG_FORCE_SELECT_STATE;
 			DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
 
 			/* Rerender old active if it was shown in the listview */
@@ -904,6 +932,31 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 
 /**********************************************************************************************/
 
+STATIC IPTR listview_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+{
+    struct LVData 	*data = INST_DATA(cl, o);
+    struct RastPort	*rp;
+    
+    if ((data->ld_ShowSelected == LV_SHOWSELECTED_NONE) &&
+    	(data->ld_Selected >= data->ld_Top) &&
+	(data->ld_Selected < data->ld_Top + NumItemsFit(o, data)))
+    {
+        if ((rp = ObtainGIRPort(msg->gpgi_GInfo)))
+	{
+	    data->ld_FirstDamaged = data->ld_Selected - data->ld_Top;
+	    data->ld_NumDamaged = 1;
+
+	    DoMethod(o, GM_RENDER, msg->gpgi_GInfo, rp, GREDRAW_UPDATE);
+	
+	    ReleaseGIRPort(rp);
+	}
+    }	
+
+    ReturnInt ("Listview::GoInactive", IPTR, 0);
+}
+
+/**********************************************************************************************/
+
 STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct LVData *data = INST_DATA(cl, o);
@@ -927,19 +980,13 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	     /* Erase the old gadget imagery */
 	    SetAPen(msg->gpr_RPort, data->ld_Dri->dri_Pens[BACKGROUNDPEN]);
 
-
 	    RectFill(msg->gpr_RPort,
 		G(o)->LeftEdge,
 		G(o)->TopEdge,
 		G(o)->LeftEdge + G(o)->Width  - 1,
 		G(o)->TopEdge  + G(o)->Height - 1);
 
-	    if (data->ld_Labels)
-	    {
-	    	RenderEntries(cl, o, msg,
-			0, ShownEntries(o, data),
-			GadToolsBase);
-	    }
+	    RenderEntries(cl, o, msg, 0, ShownEntries(o, data), GadToolsBase);
 	    
 	    /* center image position, we assume image top and left is 0 */
 	    itags[0].ti_Data = G(o)->Width;
@@ -947,7 +994,6 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	
 	    SetAttrsA((Object *)data->ld_Frame, itags);
 	
-
 	    x = G(o)->LeftEdge; 
 	    y = G(o)->TopEdge;
 	    
@@ -1020,6 +1066,18 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 
     } /* switch (render mode) */
 
+    if (G(o)->Flags & GFLG_DISABLED)
+    {
+        DoDisabledPattern(msg->gpr_RPort, G(o)->LeftEdge,
+					  G(o)->TopEdge,
+					  G(o)->LeftEdge + G(o)->Width - 1,
+					  G(o)->TopEdge + G(o)->Height - 1,
+					  msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
+					  GadToolsBase);
+    }
+    
+    data->ld_Flags &= ~LVFLG_FORCE_SELECT_STATE;
+    
     ReturnInt ("Listview::Render", IPTR, 1UL);
 }
 
@@ -1044,6 +1102,10 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 	    retval = listview_input(cl, o, (struct gpInput *)msg);
 	    break;
 
+	case GM_GOINACTIVE:
+	    retval = listview_goinactive(cl, o, (struct gpGoInactive *)msg);
+	    break;
+	    
 	case OM_NEW:
 	    retval = listview_new(cl, o, (struct opSet *)msg);
 	    break;

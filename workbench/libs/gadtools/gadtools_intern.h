@@ -62,6 +62,8 @@ void freeitext(struct GadToolsBase_intern *GadToolsBase,
 	       
 BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 		 struct Gadget *gad, struct RastPort *rport, LONG labelplace);
+void DoDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+		       WORD pen, struct GadToolsBase_intern *GadToolsBase);
 	       
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 Class *maketextclass(struct GadToolsBase_intern *GadToolsBase);
@@ -157,6 +159,8 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 #define GTA_ChildGadgetKind	  (GT_Dummy + 10)
 #define GTA_Scroller_ScrollerKind (GT_Dummy + 11)
 #define GTA_Scroller_ArrowKind	  (GT_Dummy + 12)
+#define GTA_Scroller_Arrow1       (GT_Dummy + 13)
+#define GTA_Scroller_Arrow2       (GT_Dummy + 14)
 
 /* private gadget kinds */
 
@@ -201,64 +205,64 @@ BOOL layoutsubitems(struct MenuItem * motheritem,
 
 struct GadToolsBase_intern
 {
-    struct Library    library;
-    struct ExecBase * sysbase;
-    BPTR	      seglist;
+    struct Library    		library;
+    struct ExecBase 		* sysbase;
+    BPTR	      		seglist;
 
-    struct IntuitionBase * intuibase;
-    struct Library	 * dosbase;
-    struct GfxBase	 * gfxbase;
-    struct Library	 * utilitybase;
-    struct Library	 * boopsibase;
+    struct IntuitionBase 	* intuibase;
+    struct Library	 	* dosbase;
+    struct GfxBase	 	* gfxbase;
+    struct Library	 	* utilitybase;
+    struct Library	 	* boopsibase;
 
-    struct Library	 * aroscbbase;
-    struct Library       * aroscybase;
-    struct Library	 * arosmxbase;
-    struct Library	 * arospabase;
+    struct Library		* aroscbbase;
+    struct Library      	* aroscybase;
+    struct Library		* arosmxbase;
+    struct Library		* arospabase;
 
-    Class * buttonclass;
-    Class * textclass;
-    Class * sliderclass;
-    Class * scrollerclass;
-    Class * arrowclass;
-    Class * stringclass;
-    Class * listviewclass;
-    Class * checkboxclass;
-    Class * cycleclass;
-    Class * mxclass;
-    Class * paletteclass;
+    Class 			* buttonclass;
+    Class 			* textclass;
+    Class 			* sliderclass;
+    Class 			* scrollerclass;
+    Class 			* arrowclass;
+    Class 			* stringclass;
+    Class 			* listviewclass;
+    Class 			* checkboxclass;
+    Class 			* cycleclass;
+    Class 			* mxclass;
+    Class 			* paletteclass;
     
     /* Semaphore to protect the bevel object. */
-    struct SignalSemaphore   bevelsema;
+    struct SignalSemaphore   	bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
-    struct Image           * bevel;
-    struct SignalSemaphore   classsema;
+    struct Image           	* bevel;
+    struct SignalSemaphore   	classsema;
 };
 
 /* extended intuimsg as used by GT_GetIMsg, GT_FilterIMsg, ... */
 
 struct GT_IntuiMessage
 {
-    struct ExtIntuiMessage imsg;
-    struct IntuiMessage * origmsg;
-    BOOL wasalloced;
+    struct ExtIntuiMessage 	imsg;
+    struct IntuiMessage 	* origmsg;
+    BOOL 			wasalloced;
 };
 
 /* dummy gadget created by CreateContext */
 
 struct GT_ContextGadget
 {
-    struct Gadget gad;
-    struct GT_IntuiMessage gtmsg;
-    struct Gadget *activegadget;
-    struct Gadget *parentgadget;
-    IPTR gadget_value;
-    IPTR gadgetkind;
-    IPTR childgadgetkind;
-    IPTR childinfo;
-    ULONG getattrtag;
-    ULONG setattrtag;
-    WORD scrollticker;
+    struct Gadget 		gad;
+    struct GT_IntuiMessage 	gtmsg;
+    struct Gadget 		*activegadget;
+    struct Gadget 		*parentgadget;
+    IPTR 			gadget_value;
+    IPTR 			gadgetkind;
+    IPTR 			childgadgetkind;
+    IPTR 			childinfo;
+    ULONG 			getattrtag;
+    ULONG 			setattrtag;
+    WORD 			scrollticker;
 };
 
 /* The following typedefs are necessary, because the names of the global
@@ -293,6 +297,7 @@ struct VisualInfo
     struct Screen   * vi_screen;
     struct DrawInfo * vi_dri;
 };
+
 #define VI(x) ((struct VisualInfo *)x)
 
 #define TAG_Left	0
@@ -320,5 +325,7 @@ struct VisualInfo
 
 #define BORDERSTRINGSPACINGX 4
 #define BORDERSTRINGSPACINGY 2
+
+#define LV_SHOWSELECTED_NONE ((struct Gadget *)~0)
 
 #endif /* GADTOOLS_INTERN_H */
