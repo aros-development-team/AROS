@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.12  1997/09/25 11:13:36  nlorentz
+    Added refreshing of stringgadgets
+
     Revision 1.11  1997/01/27 00:36:42  ldp
     Polish
 
@@ -49,6 +52,13 @@
 #include "boolgadgets.h"
 #include "boopsigadgets.h"
 #include "propgadgets.h"
+#include "strgadgets.h"
+
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <intuition/classes.h>
 
 /*****************************************************************************
 
@@ -113,6 +123,7 @@
 
     for ( ; gadgets && numGad; gadgets=gadgets->NextGadget, numGad --)
     {
+    	D(bug("RefreshGList: gadget=%p\n",gadgets));
 	switch (gadgets->GadgetType & GTYP_GTYPEMASK)
 	{
 	case GTYP_BOOLGADGET:
@@ -127,6 +138,7 @@
 	    break;
 
 	case GTYP_STRGADGET:
+	    RefreshStrGadget (gadgets, window, IntuitionBase);
 	    break;
 
 	case GTYP_CUSTOMGADGET:
@@ -135,6 +147,7 @@
 
 	} /* switch GadgetType */
     }
+    ReturnVoid("RefreshGList");
 
     AROS_LIBFUNC_EXIT
 } /* RefreshGList */
