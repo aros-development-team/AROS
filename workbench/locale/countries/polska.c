@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Country data for Poland
@@ -39,18 +39,18 @@ struct CountryPrefs polskaPrefs =
     "%q:%M",
 
     /* Decimal point, group separator, frac group separator */
-    ",", ".", "\x00",
+    ",", ".", "",
 
     /* For grouping rules, see <libraries/locale.h> */
 
     /* Grouping, Frac Grouping */
-    "\x03\x00", "\x00",
+    { 3 }, { 0 },
 
     /* Mon dec pt, mon group sep, mon frac group sep */
-    ",", ".", "\x00",
+    ",", ".", "",
 
     /* Mon Grouping, Mon frac grouping */
-    "\x03\x00", "\x00",
+    { 3 }, { 0 },
 
     /* Mon Frac digits, Mon IntFrac digits, then number of digits in
        the fractional part of the money value. Most countries that
@@ -66,10 +66,10 @@ struct CountryPrefs polskaPrefs =
     /* Int CS, this is the ISO 4217 symbol, followed by the character to
        separate that symbol from the rest of the money. (\x00 for none).
     */
-    "PLZ\x00",
+    "PLZ",
 
     /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
-    "\x00", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
+    "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
 
     /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
     "-", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
