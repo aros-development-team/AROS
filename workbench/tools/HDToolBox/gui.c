@@ -1724,7 +1724,7 @@ int i;
 						Child, dosenvecgadgets.custboot=MUI_MakeObject
 							(
 								MUIO_Checkmark,
-								"_Custom Bootcode"
+								(IPTR)"_Custom Bootcode"
 							),
 					End,
 					Child, HGroup,
