@@ -1221,7 +1221,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Background stuff */
-    data->wd_Background = zune_image_spec_to_structure(MUII_WindowBack);
+//    data->wd_Background = zune_image_spec_to_structure(MUII_WindowBack);
 
     D(bug("muimaster.library/window.c: Window Object created at 0x%lx\n",obj));
 
@@ -1235,7 +1235,7 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    if (data->wd_Background) zune_imspec_free(data->wd_Background);
+//    if (data->wd_Background) zune_imspec_free(data->wd_Background);
 
     if ((data->wd_Flags & MUIWF_OPENED))
     {
@@ -1618,10 +1618,16 @@ static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
 **************************************************************************/
 static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
+    char *background_spec;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+
     if (!SetupRenderInfo(&data->wd_RenderInfo))
 	return FALSE;
 
+    DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, &background_spec);
+    if (!background_spec) background_spec = "0:128"; /* MUII_BACKGROUND */
+
+    data->wd_Background = zune_image_spec_to_structure((IPTR)background_spec);
     zune_imspec_setup(&data->wd_Background,&data->wd_RenderInfo);
 
     return TRUE;
@@ -1635,6 +1641,8 @@ static ULONG Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
     zune_imspec_cleanup(&data->wd_Background,&data->wd_RenderInfo);
+    zune_imspec_free(data->wd_Background);
+    data->wd_Background = NULL;
 
     if (data->wd_dnd)
     {
