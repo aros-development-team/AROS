@@ -13,6 +13,9 @@
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
 #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
@@ -24,6 +27,8 @@ struct BBox
 {
     WORD Left, Top, Width, Height;
 };
+
+void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg);
 
 /* Calculate the size of the Bounding Box of the gadget */
 void CalcBBox (struct Window *, struct Gadget *, struct BBox *);

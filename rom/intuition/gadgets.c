@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Common routines for Gadgets
@@ -7,11 +7,79 @@
 */
 #include "intuition_intern.h"
 #include "gadgets.h"
+#include <exec/types.h>
+#include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <intuition/cghooks.h>
+#include <intuition/classes.h>
+#include <intuition/classusr.h>
+#include <intuition/imageclass.h>
 #include <proto/graphics.h>
+#include <graphics/rastport.h>
 
 #define EG(o) ((struct ExtGadget *)o)
+#define IM(o) ((struct Image *)o)
+
+/* print the label of a gadget object */
+void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
+{
+    struct RastPort *rp = msg->gpr_RPort;
+    struct IBox container;
+    UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+
+    GetGadgetIBox(o, msg->gpr_GInfo, &container);
+
+    switch (EG(o)->Flags & GFLG_LABELMASK)
+    {
+    case GFLG_LABELITEXT:
+        PrintIText(rp,
+	    EG(o)->GadgetText,
+	    container.Left,
+	    container.Top);
+	break;
+
+    case GFLG_LABELSTRING:
+        if(EG(o)->GadgetText != NULL)
+	{
+	    ULONG len = strlen ((STRPTR) EG(o)->GadgetText);
+
+	    if (len > 0UL)
+	    {
+	        ULONG x;
+		ULONG y;
+
+		x = container.Left + (container.Width / 2);
+		x -= LabelWidth (rp,
+		    (STRPTR)EG(o)->GadgetText, len, IntuitionBase) / 2;
+		y = container.Top + (container.Height / 2) +
+		    rp->Font->tf_Baseline;
+		y -= rp->Font->tf_YSize / 2;
+		SetAPen (rp, pens[TEXTPEN]);
+		Move (rp, x, y);
+		RenderLabel (rp,
+		    (STRPTR) EG(o)->GadgetText, len,
+		    IntuitionBase);
+	    }
+	}
+	break;
+
+    case GFLG_LABELIMAGE:
+        {
+            /* center image position, we assume image top and left is 0 */
+            ULONG x = container.Left + ((container.Width / 2) -
+		(IM(EG(o)->GadgetText)->Width / 2));
+            ULONG y = container.Top + ((container.Height / 2) -
+	        (IM(EG(o)->GadgetText)->Height / 2));
+
+            DrawImageState(rp,
+	        IM(EG(o)->GadgetText),
+		x, y,
+		((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+		msg->gpr_GInfo->gi_DrInfo);
+        }
+        break;
+    }
+}
 
 /* Calculate the size of the Bounding Box of the gadget */
 void CalcBBox (struct Window * window, struct Gadget * gadget,
