@@ -35,7 +35,7 @@
 
 /*** Workbench library name *************************************************/
 
-#define WORKBENCH_NAME           "workbench.library"
+#define WORKBENCHNAME           "workbench.library"
 
 /*** Structures and associated definitions **********************************/
 
@@ -166,7 +166,7 @@ struct AppWindowDropZoneMsg {
 
 struct IconSelectMsg {
     ULONG           ism_Length;
-    BPTR            ism_Drawer; 
+    BPTR            ism_Drawer;
     STRPTR          ism_Name;
     UWORD           ism_Type;
     BOOL            ism_Selected;
@@ -182,8 +182,15 @@ struct IconSelectMsg {
 /* Hook return values */
 #define ISMACTION_Unselect (0)
 #define ISMACTION_Select   (1)
-#define ISMACTION_Ignore   (2) 
+#define ISMACTION_Ignore   (2)
 #define ISMACTION_Stop     (3)
+
+/*** Private structures *****************************************************/
+
+struct AppWindow;
+struct AppWindowDropZone;
+struct AppIcon;
+struct AppMenuItem;
 
 /*** Start of workbench.library tags ****************************************/
 
@@ -213,7 +220,7 @@ struct IconSelectMsg {
 /* Notify the AppIcon when it's select state changes (BOOL) */
 #define WBAPPICONA_NotifySelectState        (WBA_Dummy+14)
 
-/*** Tags for use with AddAppMenuA() ****************************************/
+/*** Tags for use with AddAppMenuItemA() ************************************/
 
 /* Command key string for this AppMenu (STRPTR) */
 #define WBAPPMENUA_CommandKeyString         (WBA_Dummy+15)
