@@ -2091,13 +2091,6 @@ static VOID int_openscreen(struct OpenScreenActionMsg *msg,
         IntuitionBase->FirstScreen =
             IntuitionBase->ActiveScreen = &screen->Screen;
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set as ActiveScreen\n"));
-
-	/* set mouse bounds to equal new active screen size */
-        struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-	iihd->MouseBoundsLeft = IntuitionBase->ActiveScreen->LeftEdge;
-	iihd->MouseBoundsRight = IntuitionBase->ActiveScreen->LeftEdge + IntuitionBase->ActiveScreen->Width;
-	iihd->MouseBoundsTop = IntuitionBase->ActiveScreen->TopEdge;
-	iihd->MouseBoundsBottom = IntuitionBase->ActiveScreen->TopEdge + IntuitionBase->ActiveScreen->Height;
     }
 
     /* set the default pub screen */

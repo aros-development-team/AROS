@@ -507,6 +507,7 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
             /* size mouse bounds such that mouse pointer cannot move if window cannot move, if offscreenlayers is turned off */
 	    if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
             	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+		iihd->MouseBoundsActiveFlag = TRUE;
             	iihd->MouseBoundsLeft = data->mousex;
             	iihd->MouseBoundsRight = w->WScreen->Width - (w->Width - data->mousex);
             	iihd->MouseBoundsTop = data->mousey;
@@ -973,13 +974,9 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
         data->rp = NULL;
     }
 
-    if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
-    	struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
-    	iihd->MouseBoundsLeft = w->WScreen->LeftEdge;
-    	iihd->MouseBoundsRight = w->WScreen->LeftEdge + w->WScreen->Width;
-    	iihd->MouseBoundsTop = w->WScreen->TopEdge;
-    	iihd->MouseBoundsBottom = w->WScreen->TopEdge + w->WScreen->Height;
-    }
+    /* shut off mouse bounds checking.  */
+    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    iihd->MouseBoundsActiveFlag = FALSE;
 
     return TRUE;
 
