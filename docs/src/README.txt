@@ -31,11 +31,11 @@ follows:
 
 	ispell -p $TOP/docs/src/AROS-dict aaaa/bbbb.src
 
-assuming $TOP will be expanded to my local AROS directory. If you specify
-the exact location of the directory where the personal dictionary is,
-ispell will assume it has to write to your home directory. In other words,
-if you are spell checking a file in ~johndoe/AROS/docs/src/, and you
-issue:
+assuming $TOP will be expanded to my local AROS directory. If you
+do not specify the exact location of the directory where the personal
+dictionary is, ispell will assume it has to write to your home directory.
+In other words, if you are spell checking a file in
+~johndoe/AROS/docs/src/, and you issue:
 
 	ispell -p AROS-dict example.src
 
