@@ -117,7 +117,7 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
 // TEMPORARY!!!!! Use CreateDesktopObjectA(CDO_Window.....) instead!
     dirWindow = WindowObject,
         MUIA_Window_Width, 300,
-        MUIA_Window_Height, 140,
+        MUIA_Window_Height, 300,
         MUIA_Window_Menustrip, strip =
         MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
         MUIA_Window_UseBottomBorderScroller, TRUE,
