@@ -79,7 +79,6 @@ int main(void)
 
     int    result;
     int    error = RETURN_OK;
-    ULONG *bufsptr;
     ULONG  buffers = 0;
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
@@ -87,7 +86,7 @@ int main(void)
     if (rda != NULL)
     {
 	STRPTR  drive = (STRPTR)args[ARG_DRIVE];
-	ULONG  *bufsptr = (ULONG)args[ARG_BUFFERS];
+	ULONG  *bufsptr = (ULONG *)args[ARG_BUFFERS];
 
 	if (bufsptr != NULL)
 	{
