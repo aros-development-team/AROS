@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
 #include "gadtools_intern.h"
 
 /*********************************************************************
@@ -56,7 +57,10 @@
     {
 	nextgad = glist->NextGadget;
 	if ((glist->Flags & GTYP_GADTOOLS) == GTYP_GADTOOLS)
+	{
+	    FreeVec(glist->GadgetText);
 	    DisposeObject(glist);
+	}
 	else
 	{
 	    if (lastgad != NULL)

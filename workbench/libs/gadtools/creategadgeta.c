@@ -68,26 +68,26 @@
 	{GA_Top, 0L},
 	{GA_Width, 0L},
 	{GA_Height, 0L},
-	{GA_Text, (IPTR)NULL},
-	{GA_TextAttr, (IPTR)NULL},
+	{GA_IntuiText, (IPTR)NULL},
 	{GA_Previous, (IPTR)previous},
 	{GA_ID, 0L},
 	{GA_DrawInfo, (IPTR)NULL},
+	{GA_UserData, (IPTR)NULL},
 	{TAG_END, 0L}
     };
 
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
 	return NULL;
 
-    stdgadtags[0].ti_Data = ng->ng_LeftEdge;
-    stdgadtags[1].ti_Data = ng->ng_TopEdge;
-    stdgadtags[2].ti_Data = ng->ng_Width;
-    stdgadtags[3].ti_Data = ng->ng_Height;
-    stdgadtags[4].ti_Data = (IPTR)ng->ng_GadgetText;
-    stdgadtags[5].ti_Data = (IPTR)ng->ng_TextAttr;
-    stdgadtags[6].ti_Data = (IPTR)previous;
-    stdgadtags[7].ti_Data = ng->ng_GadgetID;
-    stdgadtags[8].ti_Data = (IPTR)(((struct VisualInfo *)(ng->ng_VisualInfo))->vi_dri);
+    stdgadtags[TAG_Left].ti_Data = ng->ng_LeftEdge;
+    stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
+    stdgadtags[TAG_Width].ti_Data = ng->ng_Width;
+    stdgadtags[TAG_Height].ti_Data = ng->ng_Height;
+    stdgadtags[TAG_IText].ti_Data = (IPTR)makeitext((struct GadToolsBase_intern *)GadToolsBase, ng);
+    stdgadtags[TAG_Previous].ti_Data = (IPTR)previous;
+    stdgadtags[TAG_ID].ti_Data = ng->ng_GadgetID;
+    stdgadtags[TAG_DrawInfo].ti_Data = (IPTR)(((struct VisualInfo *)(ng->ng_VisualInfo))->vi_dri);
+    stdgadtags[TAG_UserData].ti_Data = (IPTR)ng->ng_UserData;
 
     switch(kind)
     {

@@ -17,6 +17,9 @@
 #ifndef PROTO_INTUITION_H
 #   include <proto/intuition.h>
 #endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
@@ -36,10 +39,20 @@ struct VisualInfo;
 struct GadToolsBase_intern; /* prerefrence */
 
 /* Internal prototypes */
+BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
+		 struct Gadget *gad, struct RastPort *rport, LONG redraw);
+void drawdisabledpattern(struct GadToolsBase_intern *GadToolsBase,
+			 struct RastPort *rport, UWORD pen,
+			 WORD left, WORD top, UWORD width, UWORD height);
+struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
+			    struct NewGadget *ng);
 void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
                       struct RastPort *rport,
                       WORD left, WORD top, WORD width, WORD height,
                       struct TagItem *taglist);
+
+Class *makecheckclass(struct GadToolsBase_intern *GadToolsBase);
+
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
                           struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
@@ -59,6 +72,8 @@ struct GadToolsBase_intern
     struct Library       * dosbase;
     struct GfxBase       * gfxbase;
     struct Library       * utilitybase;
+
+    Class * checkclass;
 };
 
 /* The following typedefs are necessary, because the names of the global
@@ -93,11 +108,11 @@ struct VisualInfo
 #define TAG_Top      1
 #define TAG_Width    2
 #define TAG_Height   3
-#define TAG_Text     4
-#define TAG_TextAttr 5
-#define TAG_Previous 6
-#define TAG_ID       7
-#define TAG_DrawInfo 8
-
+#define TAG_IText    4
+#define TAG_Previous 5
+#define TAG_ID       6
+#define TAG_DrawInfo 7
+#define TAG_UserData 8
+#define TAG_Num      9
 
 #endif /* GADTOOLS_INTERN_H */

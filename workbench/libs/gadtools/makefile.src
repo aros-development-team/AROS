@@ -8,7 +8,7 @@ include $(TOP)/config/make.cfg
 # Main function for gadtools.library. Need this apart as an anchor for the link:
 INIT_FILE = gadtools_init
 
-FILES = gadtools_functable basicfuncs gadgets
+FILES = gadtools_functable basicfuncs classes gadgets
 
 # Guarantee that this will go at the end of the file:
 END_FILE = gadtools_endtag

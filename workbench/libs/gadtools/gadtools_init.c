@@ -124,6 +124,8 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     /* Keep compiler happy */
     version=0;
 
+    GadToolsBase->checkclass = NULL;
+
     if (!IntuitionBase)
         IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 36);
     if (!IntuitionBase)
@@ -143,8 +145,6 @@ AROS_LH1(struct GadToolsBase_intern *, open,
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
 	return NULL;
-
-    storelibbases(LIBBASE);
 
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
@@ -166,7 +166,9 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
-    {
+      {
+        if (GadToolsBase->checkclass)
+	    FreeClass(GadToolsBase->checkclass);
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
 	if (GfxBase)
@@ -222,13 +224,4 @@ AROS_LH0I(int, null, struct GadToolsBase_intern *, LIBBASE, 4, BASENAME)
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
-}
-
-#undef IntuitionBase
-
-struct IntuitionBase *IntuitionBase;
-
-void storelibbases(struct GadToolsBase_intern *GadToolsBase)
-{
-    IntuitionBase = GTB(GadToolsBase)->intuibase;
 }
