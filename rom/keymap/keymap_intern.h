@@ -1,7 +1,7 @@
 #ifndef KEYMAP_INTERN_H
 #define KEYMAP_INTERN_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Keymaps internal structure
@@ -19,6 +19,7 @@
 #ifndef DEVICES_KEYMAP_H
 #   include <devices/keymap.h>
 #endif
+#include <dos/bptr.h>
 
 #define KEYMAPNAME "keymap.library"
 
@@ -70,19 +71,15 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km);
 /* Librarybase struct */
 struct KeymapBase
 {
-    struct Library 		LibNode;
-    struct ExecBase		*SysBase;
+    struct Library 		 LibNode;
+    struct ExecBase		*ExecBase;
+    BPTR                         SegList;
     struct KeyMap		*DefaultKeymap;
     struct KeyMapNode		*DefKeymapNode;
     struct KeyMapResource	 KeymapResource;
 };
 
 
-#define SysBase KMBase(KeymapBase)->SysBase
-
-/* Needed for close() */
-#define expunge() \
-    AROS_LC0(BPTR, expunge, struct KeymapBase *, KeymapBase, 3, Keymap)
-
+#define SysBase KMBase(KeymapBase)->ExecBase
 
 #endif /* KEYMAP_INTERN_H */
