@@ -21,6 +21,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/sghooks.h>
 #include <devices/keymap.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -31,6 +32,7 @@
 #include "gadgets.h"
 #include "propgadgets.h"
 #include "boopsigadgets.h"
+#include "strgadgets.h"
 
 static struct IntuitionBase * IntuiBase;
 
@@ -783,13 +785,29 @@ void intui_ProcessEvents (void)
 		im->Qualifier = StateToQualifier (xb->state);
 		im->MouseX = xb->x;
 		im->MouseY = xb->y;
-
+		D(bug("ipe: GADGETDOWN\n"));
 		switch (xb->button)
 		{
-		case Button1:
+		case Button1: {
+		    struct Gadget *newgad;
+		    
 		    im->Code = SELECTDOWN;
 
-		    gadget = FindGadget (w, xb->x, xb->y, gi);
+		    newgad = FindGadget (w, xb->x, xb->y, gi);
+		    
+		    /* If the active gadget was a stringgadget, and we clicked
+		    ** outside it, then deactivate it.
+		    */
+		    if (gadget != newgad)
+		    {
+		    	if (gadget->GadgetType & GTYP_STRGADGET)
+		    	{
+		    	    gadget->Flags &= ~GFLG_SELECTED;
+		    	    
+		    	    RefreshStrGadget(gadget, w, IntuitionBase);
+		    	}
+		    }
+		    gadget = newgad;
 
 		    if (gadget)
 		    {
@@ -815,7 +833,21 @@ void intui_ProcessEvents (void)
 			case GTYP_PROPGADGET:
 			    HandlePropSelectDown(gadget, w, NULL, xb->x, xb->y, IntuitionBase);
 			    break;
-
+			    
+			case GTYP_STRGADGET:
+			{
+			    struct InputEvent ie;
+			    UWORD imsgcode;
+			    
+			    ie.ie_Class = IECLASS_RAWMOUSE;
+			    ie.ie_Code	= SELECTDOWN;
+			    ie.ie_position.ie_xy.ie_x = xb->x;
+			    ie.ie_position.ie_xy.ie_y = xb->y;
+			    
+			    HandleStrInput(gadget, gi, &ie, &imsgcode, IntuitionBase);
+			    
+			} break;
+			    
 
 			case GTYP_CUSTOMGADGET: {
 			    struct gpInput gpi;
@@ -825,7 +857,8 @@ void intui_ProcessEvents (void)
 
 			    ie.ie_Class = IECLASS_RAWMOUSE;
 			    ie.ie_Code	= SELECTDOWN;
-
+		    	    gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
+		    	    
 			    gpi.MethodID	= GM_GOACTIVE;
 			    gpi.gpi_GInfo	= gi;
 			    gpi.gpi_IEvent	= &ie;
@@ -860,7 +893,7 @@ void intui_ProcessEvents (void)
 			} /* GadgetType */
 		    } /* Over some gadget ? */
 
-		    break;
+		}break;
 
 		case Button2:
 		    im->Code = MIDDLEDOWN;
@@ -908,11 +941,12 @@ void intui_ProcessEvents (void)
 
 			    if (selected)
 				RefreshGList (gadget, w, NULL, 1);
-
+			    gadget = NULL;
 			    break;
 
 			case GTYP_PROPGADGET:
 			    HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
+			    gadget = NULL;
 			    break;
 
 			case GTYP_CUSTOMGADGET: {
@@ -923,7 +957,8 @@ void intui_ProcessEvents (void)
 
 			    ie.ie_Class = IECLASS_RAWMOUSE;
 			    ie.ie_Code	= SELECTUP;
-
+			    gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
+			    
 			    gpi.MethodID	= GM_HANDLEINPUT;
 			    gpi.gpi_GInfo	= gi;
 			    gpi.gpi_IEvent	= &ie;
@@ -939,12 +974,18 @@ void intui_ProcessEvents (void)
 
 			    if (retval & GMR_VERIFY)
 				im->Code = termination & 0x0000FFFF;
+				
+			    /* This is a temporary kludge. We should NOT do this
+			    ** if GMR_MEACTIVE is returned. Example of
+			    ** a BOOPSI gadget that stays active after 
+			    ** SELECTUP is strgclass gagdets.
+			    */
+			    gadget = NULL;
 
 			    break; }
 
 			} /* switch GadgetType */
 
-			gadget = NULL;
 		    } /* if (gadget) */
 
 		    break;
@@ -969,6 +1010,68 @@ void intui_ProcessEvents (void)
 		result = XKeyToAmigaCode(xk);
 		im->Code = xk->keycode;
 		im->Qualifier = result >> 16;
+		
+		D(bug("ipe: RAWKEY Press: gadget=%p\n", gadget));
+		
+		if (gadget)
+		{
+		    /* Both GTYP_STRGADGET and GTYP_CUSTOMGADGET
+		    ** requires a struct InputEvent.
+		    */
+		    
+		    struct InputEvent ie;
+		    ie.ie_Class 	= IECLASS_RAWKEY;
+		    ie.ie_Code		= im->Code;
+		    ie.ie_Qualifier	= im->Qualifier;
+		    
+		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+		    case GTYP_STRGADGET: {
+		    	UWORD imsgcode;
+		    	ULONG ret = HandleStrInput(gadget, gi, &ie, &imsgcode, IntuitionBase);
+		    	if (ret == SGA_END)
+		    	{
+		    	    if (gadget->Activation & GACT_RELVERIFY)
+		    	    {
+		    	    	im->Class = IDCMP_GADGETUP;
+		    	    	im->Code  = imsgcode;
+		    	    	im->IAddress = gadget;
+		    	    	gadget = NULL;
+		    	    }
+		    	}
+		    } break;
+		    	
+		    case GTYP_CUSTOMGADGET: {
+		    	struct gpInput gpi;
+			IPTR retval;
+			ULONG termination;
+
+			XButtonEvent * xb = &event.xbutton;		    	
+			
+			gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
+			gpi.MethodID	    = GM_HANDLEINPUT;
+			gpi.gpi_GInfo	    = gi;
+			gpi.gpi_IEvent	    = &ie;
+			gpi.gpi_Termination = &termination;
+			/* These _should_ be set to suitable values */
+			gpi.gpi_Mouse.X	    = xb->x;
+			gpi.gpi_Mouse.Y	    = xb->y;
+			gpi.gpi_TabletData  = NULL;
+					
+			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+			if (!(retval & GMR_MEACTIVE))
+			{
+			    gadget = NULL;
+			    if (retval & GMR_NOREUSE)
+			    	im->Class = 0L;
+			}
+			 
+		    
+		    	} break;
+		    }
+		
+		}
+		
 
 		ptr = NULL;
 	    } break;
@@ -982,6 +1085,8 @@ void intui_ProcessEvents (void)
 		im->Code = xk->keycode | 0x8000;
 		im->Qualifier = result >> 16;
 
+		D(bug("ipe: RAWKEY Release: gadget=%p\n", gadget));
+		
 		ptr = NULL;
 	    } break;
 
@@ -1060,7 +1165,8 @@ void intui_ProcessEvents (void)
 
 			ie.ie_Class = IECLASS_RAWMOUSE;
 			ie.ie_Code  = IECODE_NOBUTTON;
-
+			gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
+			
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = &ie;
