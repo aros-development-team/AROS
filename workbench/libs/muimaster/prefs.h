@@ -82,7 +82,7 @@ typedef enum RegisterLook {
 
 struct ZunePrefsNew
 {
-    char *fonts[-MUIV_Font_NegCount];
+    CONST_STRPTR fonts[-MUIV_Font_NegCount];
     CONST_STRPTR imagespecs[MUII_Count];
     struct MUI_FrameSpec_intern frames[MUIV_Frame_Count];
 
