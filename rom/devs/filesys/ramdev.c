@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/23 14:21:32  aros
+    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
+    which not.
+
     Revision 1.2  1996/08/01 17:41:23  digulla
     Added standard header for all files
 
@@ -50,9 +54,9 @@ struct cnode
 {
     struct MinNode node;
     LONG type;			/* ST_LINKDIR */
-    char *name;			/* Link's name */
-    struct cnode *self;		/* Pointer to top of structure */
-    struct hnode *link;		/* NULL */
+    char *name; 		/* Link's name */
+    struct cnode *self; 	/* Pointer to top of structure */
+    struct hnode *link; 	/* NULL */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* 0 */
     char *comment;		/* NULL */
@@ -65,9 +69,9 @@ struct vnode
 {
     struct MinNode node;
     LONG type;			/* ST_USERDIR */
-    char *name;			/* Directory name */
-    struct vnode *self;		/* Points to top of structure */
-    struct hnode *link;		/* This one is linked to me */
+    char *name; 		/* Directory name */
+    struct vnode *self; 	/* Points to top of structure */
+    struct hnode *link; 	/* This one is linked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* 0 */
     char *comment;		/* NULL */
@@ -82,9 +86,9 @@ struct dnode
 {
     struct MinNode node;
     LONG type;			/* ST_USERDIR */
-    char *name;			/* Directory name */
+    char *name; 		/* Directory name */
     struct vnode *volume;	/* Volume's root directory */
-    struct hnode *link;		/* This one is linked to me */
+    struct hnode *link; 	/* This one is linked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
     char *comment;		/* Some comment */
@@ -96,15 +100,15 @@ struct fnode
 {
     struct MinNode node;
     LONG type;			/* ST_FILE */
-    char *name;			/* Filename */
+    char *name; 		/* Filename */
     struct vnode *volume;	/* Volume's root directory */
-    struct hnode *link;		/* This one is linked to me */
+    struct hnode *link; 	/* This one is linked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
     char *comment;		/* Some file comment */
     LONG size;			/* Filesize */
     UBYTE *blocks[16];		/* Upto 0x1000 bytes */
-    UBYTE **iblocks[4];		/* Upto 0x41000 bytes */
+    UBYTE **iblocks[4]; 	/* Upto 0x41000 bytes */
     UBYTE ***i2block;		/* Upto 0x1041000 bytes */
     UBYTE ****i3block;		/* Upto 0x101041000 bytes */
 };
@@ -114,9 +118,9 @@ struct snode
 {
     struct MinNode node;
     LONG type;			/* ST_SOFTLINK */
-    char *name;			/* Link's name */
+    char *name; 		/* Link's name */
     struct vnode *volume;	/* Volume's root directory */
-    struct hnode *link;		/* This one is hardlinked to me */
+    struct hnode *link; 	/* This one is hardlinked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
     char *comment;		/* Some file comment */
@@ -128,13 +132,13 @@ struct hnode
 {
     struct MinNode node;
     LONG type;			/* ST_LINKDIR */
-    char *name;			/* Link's name */
+    char *name; 		/* Link's name */
     struct vnode *volume;	/* Volume's root directory */
-    struct hnode *link;		/* This one is hardlinked to me */
+    struct hnode *link; 	/* This one is hardlinked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
     char *comment;		/* Some file comment */
-    struct hnode *orig;		/* original object */
+    struct hnode *orig; 	/* original object */
 };
 
 #define BLOCKSIZE	256
@@ -197,23 +201,23 @@ __AROS_LH2(struct rambase *, init,
 	   struct ExecBase *, SysBase, 0, ramdev)
 {
     __AROS_FUNC_INIT
-    
+
     /* This function is single-threaded by exec by calling Forbid. */
 
     struct MsgPort *port;
     struct Task *task;
     struct SignalSemaphore *semaphore;
     APTR stack;
-    
+
     /* Store arguments */
     rambase->sysbase=SysBase;
     rambase->seglist=segList;
     rambase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(rambase->dosbase!=NULL)
     {
-        rambase->utilitybase=(struct UtilityBase *)OpenLibrary("utility.library",39);
-        if(rambase->utilitybase!=NULL)
-        {    
+	rambase->utilitybase=(struct UtilityBase *)OpenLibrary("utility.library",39);
+	if(rambase->utilitybase!=NULL)
+	{
 	    port=(struct MsgPort *)AllocMem(sizeof(struct MsgPort),MEMF_PUBLIC|MEMF_CLEAR);
 	    if(port!=NULL)
 	    {
@@ -230,29 +234,29 @@ __AROS_LH2(struct rambase *, init,
 		    NEWLIST(&task->tc_MemEntry);
 		    task->tc_Node.ln_Type=NT_TASK;
 		    task->tc_Node.ln_Name="ram.handler task";
-	    
+
 		    stack=AllocMem(2048,MEMF_PUBLIC);
 		    if(stack!=NULL)
 		    {
 			task->tc_SPLower=stack;
 			task->tc_SPUpper=(BYTE *)stack+2048;
-#if STACK_GROWS_DOWNWARDS
+#if AROS_STACK_GROWS_DOWNWARDS
 			task->tc_SPReg=(BYTE *)task->tc_SPUpper-SP_OFFSET-sizeof(APTR);
 			((APTR *)task->tc_SPUpper)[-1]=rambase;
 #else
 			task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET+sizeof(APTR);
 			*(APTR *)task->tc_SPLower=rambase;
 #endif
-	    
+
 			semaphore=(struct SignalSemaphore *)AllocMem(sizeof(struct SignalSemaphore),MEMF_PUBLIC|MEMF_CLEAR);
 			if(semaphore!=NULL)
 			{
 			    rambase->sigsem=semaphore;
 			    InitSemaphore(semaphore);
-		    
+
 			    if(AddTask(task,deventry,NULL)!=NULL)
-			        return rambase;
-		        
+				return rambase;
+
 			    FreeMem(semaphore,sizeof(struct SignalSemaphore));
 			}
 			FreeMem(stack,2048);
@@ -398,10 +402,10 @@ __AROS_LH1(void, beginio,
 
     /* Nothing is done quick */
     iofs->IOFS.io_Flags&=~IOF_QUICK;
-    
+
     /* So let the device task do it */
     PutMsg(rambase->port,&iofs->IOFS.io_Message);
-    
+
     __AROS_FUNC_EXIT
 }
 
@@ -417,7 +421,7 @@ __AROS_LH1(LONG, abortio,
 	    rambase->iofs=iofs;
 	    Signal(rambase->port->mp_SigTask,rambase->port->mp_SigBit);
 	    while(rambase->iofs!=NULL)
-	        Wait(1<<iofs->IOFS.io_Message.mn_ReplyPort->mp_SigBit);
+		Wait(1<<iofs->IOFS.io_Message.mn_ReplyPort->mp_SigBit);
 	    ReleaseSemaphore(rambase->sigsem);
     }
 #endif
@@ -429,10 +433,10 @@ static STRPTR Strdup(struct rambase *rambase, STRPTR string)
 {
     STRPTR s2=string,s3;
     while(*s2++)
-    	;
+	;
     s3=(STRPTR)AllocMem(s2-string,MEMF_ANY);
     if(s3!=NULL)
-    	CopyMem(string,s3,s2-string);
+	CopyMem(string,s3,s2-string);
     return s3;
 }
 
@@ -440,9 +444,9 @@ static void Strfree(struct rambase *rambase, STRPTR string)
 {
     STRPTR s2=string;
     if(string==NULL)
-        return;
+	return;
     while(*s2++)
-    	;
+	;
     FreeMem(string,s2-string);
 }
 
@@ -473,7 +477,7 @@ static LONG startup(struct rambase *rambase, STRPTR name, struct TagItem *args)
 		    {
 			dev=(struct cnode *)AllocMem(sizeof(struct cnode),MEMF_CLEAR);
 			if(dev!=NULL)
-			{    
+			{
 			    dev->name=Strdup(rambase,name);
 			    if(dev->name!=NULL)
 			    {
@@ -526,7 +530,7 @@ static LONG getblock(struct rambase *rambase, struct fnode *file, LONG block, in
 {
     ULONG a, i;
     UBYTE **p, **p2;
-    
+
     if(block<0x10)
     {
 	p=&file->blocks[block];
@@ -558,21 +562,21 @@ static LONG getblock(struct rambase *rambase, struct fnode *file, LONG block, in
 	    p=p2;
 	    while(i--&&p!=NULL)
 	    {
-	        a=(block>>i*8)&0xff;
-	        p2=(UBYTE **)p[a];
-	        if(!(block&((1<<i*8)-1)))
-	        {
+		a=(block>>i*8)&0xff;
+		p2=(UBYTE **)p[a];
+		if(!(block&((1<<i*8)-1)))
+		{
 		    p[a]=NULL;
 		    if(!a)
-		        FreeMem(p,PBLOCKSIZE);
-	        }
-	        p=p2;
+			FreeMem(p,PBLOCKSIZE);
+		}
+		p=p2;
 	    }
 	    if(p!=NULL)
-	        FreeMem(p,BLOCKSIZE);
+		FreeMem(p,BLOCKSIZE);
 	    break;
-        case 0:
-            p=(UBYTE **)*p;
+	case 0:
+	    p=(UBYTE **)*p;
 	    while(i--&&p!=NULL)
 		p=((UBYTE ***)p)[(block>>i*8)&0xff];
 	    *result=(UBYTE *)p;
@@ -580,19 +584,19 @@ static LONG getblock(struct rambase *rambase, struct fnode *file, LONG block, in
 	case 1:
 	    while(i--)
 	    {
-	        if(*p==NULL)
-	        {
-	            *p=AllocMem(PBLOCKSIZE,MEMF_ANY);
-	            if(*p==NULL)
-	                return ERROR_NO_FREE_STORE;
-	        }
-	        p=(UBYTE **)*p+((block>>i*8)&0xff);
+		if(*p==NULL)
+		{
+		    *p=AllocMem(PBLOCKSIZE,MEMF_ANY);
+		    if(*p==NULL)
+			return ERROR_NO_FREE_STORE;
+		}
+		p=(UBYTE **)*p+((block>>i*8)&0xff);
 	    }
 	    if(*p==NULL)
 	    {
-	        *p=AllocMem(BLOCKSIZE,MEMF_CLEAR);
-	        if(*p==NULL)
-	            return ERROR_NO_FREE_STORE;
+		*p=AllocMem(BLOCKSIZE,MEMF_CLEAR);
+		if(*p==NULL)
+		    return ERROR_NO_FREE_STORE;
 	    }
 	    *result=*p;
 	    break;
@@ -610,16 +614,16 @@ static void shrinkfile(struct rambase *rambase, struct fnode *file, LONG size)
 {
     ULONG blocks, block;
     UBYTE *p;
-    
+
     blocks=(size+BLOCKSIZE-1)/BLOCKSIZE;
     block =(file->size+BLOCKSIZE-1)/BLOCKSIZE;
     for(;block-->blocks;)
 	(void)getblock(rambase,file,block,-1,&p);
     if(size&0xff)
     {
-        (void)getblock(rambase,file,size,0,&p);
-        if(p!=NULL)
-       	    zerofill(p+(size&0xff),-size&0xff);
+	(void)getblock(rambase,file,size,0,&p);
+	if(p!=NULL)
+	    zerofill(p+(size&0xff),-size&0xff);
     }
     file->size=size;
 }
@@ -627,17 +631,17 @@ static void shrinkfile(struct rambase *rambase, struct fnode *file, LONG size)
 static void delete(struct rambase *rambase, struct fnode *file)
 {
     struct hnode *link;
-    
+
     if(file->type!=ST_LINKDIR&&file->link!=NULL)
     {
-        link=file->link;
-    	Strfree(rambase,file->name);
-    	Strfree(rambase,file->comment);
-    	file->name=link->name;
-    	file->link=link->link;
-    	file->usecount=link->usecount;
-    	file->protect=link->protect;
-    	file->comment=link->comment;
+	link=file->link;
+	Strfree(rambase,file->name);
+	Strfree(rambase,file->comment);
+	file->name=link->name;
+	file->link=link->link;
+	file->usecount=link->usecount;
+	file->protect=link->protect;
+	file->comment=link->comment;
 	Remove((struct Node *)file);
 	Insert(NULL,(struct Node *)file,(struct Node *)link);
 	Remove((struct Node *)link);
@@ -649,23 +653,23 @@ static void delete(struct rambase *rambase, struct fnode *file)
     Strfree(rambase,file->comment);
     switch(file->type)
     {
-        case ST_USERDIR:
-            FreeMem(file,sizeof(struct dnode));
-            return;
-        case ST_FILE:
-            shrinkfile(rambase,file,0);
-            FreeMem(file,sizeof(struct fnode));
-            return;
-        case ST_LINKDIR:
-            link=((struct hnode *)file)->orig;
-            while((struct fnode *)link->link!=file)
-                link=link->link;
-            link->link=file->link;
-            FreeMem(file,sizeof(struct hnode));
-            return;
-        case ST_SOFTLINK:
-            Strfree(rambase,((struct snode *)file)->contents);
-            return;
+	case ST_USERDIR:
+	    FreeMem(file,sizeof(struct dnode));
+	    return;
+	case ST_FILE:
+	    shrinkfile(rambase,file,0);
+	    FreeMem(file,sizeof(struct fnode));
+	    return;
+	case ST_LINKDIR:
+	    link=((struct hnode *)file)->orig;
+	    while((struct fnode *)link->link!=file)
+		link=link->link;
+	    link->link=file->link;
+	    FreeMem(file,sizeof(struct hnode));
+	    return;
+	case ST_SOFTLINK:
+	    Strfree(rambase,((struct snode *)file)->contents);
+	    return;
     }
 }
 
@@ -731,7 +735,7 @@ static LONG set_file_size(struct rambase *rambase, struct filehandle *handle, LO
 {
     struct fnode *file=(struct fnode *)handle->node;
     LONG size=*offset;
-    
+
     if(file->type!=ST_FILE)
 	return ERROR_OBJECT_WRONG_TYPE;
     switch(mode)
@@ -828,42 +832,42 @@ static LONG locate_object(struct rambase *rambase, struct filehandle **handle, S
     error=findname(&name,&dir);
     if((mode&LMF_CREATE)&&error==ERROR_OBJECT_NOT_FOUND)
     {
-        char *s=name;
-        struct fnode *file;
+	char *s=name;
+	struct fnode *file;
 	while(*s)
 	    if(*s=='/')
 		return error;
-        fh=AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
-        if(fh!=NULL)
-        {
-            file=(struct fnode *)AllocMem(sizeof(struct fnode),MEMF_CLEAR);
-            if(file!=NULL)
-            {
-                file->name=Strdup(rambase,name);
-                if(file->name!=NULL)
-                {
-                    file->type=ST_FILE;
-                    file->protect=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
-                    file->volume=dir->volume;
-                    file->volume->volcount++;
-                    if(mode&LMF_LOCK)
-                        file->usecount=~0ul/2+1;
-                    file->usecount++;
-                    AddTail((struct List *)&dir->list,(struct Node *)file);
-                    fh->node=(struct dnode *)file;
-                    *handle=fh;
-                    return 0;
-                }
-                FreeMem(file,sizeof(struct fnode));
-            }
-            FreeMem(fh,sizeof(struct filehandle));
-        }
-        return ERROR_NO_FREE_STORE;
+	fh=AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
+	if(fh!=NULL)
+	{
+	    file=(struct fnode *)AllocMem(sizeof(struct fnode),MEMF_CLEAR);
+	    if(file!=NULL)
+	    {
+		file->name=Strdup(rambase,name);
+		if(file->name!=NULL)
+		{
+		    file->type=ST_FILE;
+		    file->protect=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
+		    file->volume=dir->volume;
+		    file->volume->volcount++;
+		    if(mode&LMF_LOCK)
+			file->usecount=~0ul/2+1;
+		    file->usecount++;
+		    AddTail((struct List *)&dir->list,(struct Node *)file);
+		    fh->node=(struct dnode *)file;
+		    *handle=fh;
+		    return 0;
+		}
+		FreeMem(file,sizeof(struct fnode));
+	    }
+	    FreeMem(fh,sizeof(struct filehandle));
+	}
+	return ERROR_NO_FREE_STORE;
     }
     if(error)
-        return error;
+	return error;
     if((mode&LMF_EXECUTE)&&!(dir->protect&LMF_EXECUTE))
-        return ERROR_NOT_EXECUTABLE;
+	return ERROR_NOT_EXECUTABLE;
     if((mode&LMF_WRITE)&&!(dir->protect&LMF_WRITE))
 	return ERROR_WRITE_PROTECTED;
     if((mode&LMF_READ)&&!(dir->protect&LMF_READ))
@@ -876,17 +880,17 @@ static LONG locate_object(struct rambase *rambase, struct filehandle **handle, S
 	    return ERROR_OBJECT_IN_USE;
 	dir->usecount=~0ul/2+1;
     }else
-        if(dir->usecount<0)
-            return ERROR_OBJECT_IN_USE;
+	if(dir->usecount<0)
+	    return ERROR_OBJECT_IN_USE;
     dir->usecount++;
     fh=(struct filehandle *)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
     if(fh==NULL)
     {
-        dir->usecount=(dir->usecount-1)&~0ul/2;
-        return ERROR_NO_FREE_STORE;
+	dir->usecount=(dir->usecount-1)&~0ul/2;
+	return ERROR_NO_FREE_STORE;
     }
     if(mode&LMF_CLEAR)
-        shrinkfile(rambase,(struct fnode *)dir,0);
+	shrinkfile(rambase,(struct fnode *)dir,0);
     dir->volume->volcount++;
     fh->node=dir;
     *handle=fh;
@@ -906,14 +910,14 @@ static LONG seek(struct rambase *rambase, struct filehandle *filehandle, LONG *p
 {
     struct fnode *file=(struct fnode *)filehandle->node;
     LONG pos=*posl;
-    
+
     if((pos<0?-1:0)!=*posh)
-        return ERROR_SEEK_ERROR;
+	return ERROR_SEEK_ERROR;
     if(file->type!=ST_FILE)
 	return ERROR_OBJECT_WRONG_TYPE;
     switch(mode)
     {
-        case OFFSET_BEGINNING:	break;
+	case OFFSET_BEGINNING:	break;
 	case OFFSET_CURRENT:	pos+=filehandle->position; break;
 	case OFFSET_END:	pos+=file->size; break;
 	default:		return ERROR_NOT_IMPLEMENTED;
@@ -932,21 +936,21 @@ static LONG examine_node(struct fnode *file, ULONG **buffer, ULONG *size, ULONG 
     ULONG siz=*size/sizeof(ULONG),bsize;
     STRPTR s1=NULL, s2;
     int i, k;
-    
+
     for(i=1;type;i++)
     {
 	if(type&1)
 	{
 	    if(!siz)
-	        return ERROR_BUFFER_OVERFLOW;
+		return ERROR_BUFFER_OVERFLOW;
 	    switch(i)
 	    {
 		case ETB_COMMENT:
 		    s1=file->comment;
 		    if(s1==NULL)
 		    {
-		        *buffer++=0;
-		        break;
+			*buffer++=0;
+			break;
 		    }
 		    bsize=commsize;
 		    /* Fall through */
@@ -959,29 +963,29 @@ static LONG examine_node(struct fnode *file, ULONG **buffer, ULONG *size, ULONG 
 		    s2=(STRPTR)buf;
 		    if(bsize)
 		    {
-		        /* Fixed sized field */
+			/* Fixed sized field */
 			if(bsize/sizeof(ULONG)>siz)
 			    return ERROR_BUFFER_OVERFLOW;
 			siz-=bsize/sizeof(ULONG)-1;
 			do
 			    if(!(*s2++=*s1++))
-			        break;
+				break;
 			while(--bsize);
 			s2[-1]=0;
 		    }else
-		        /* Variable sized field */
+			/* Variable sized field */
 			for(;;)
 			{
-		    	    for(k=0;k<sizeof(ULONG);k++)
-		    	        if(!(*s2++=*s1++))
-		    	        {
-		    	            for(;k<sizeof(ULONG);k++)
-		    	                *s2++=0;
-		    	            break;
-		    	        }
-		    	    if(!--siz)
-		    	        return ERROR_BUFFER_OVERFLOW;
-		        }
+			    for(k=0;k<sizeof(ULONG);k++)
+				if(!(*s2++=*s1++))
+				{
+				    for(;k<sizeof(ULONG);k++)
+					*s2++=0;
+				    break;
+				}
+			    if(!--siz)
+				return ERROR_BUFFER_OVERFLOW;
+			}
 		    buf=(ULONG*)s2;
 		    break;
 		case ETB_TYPE:
@@ -1021,21 +1025,21 @@ static LONG examine(struct filehandle *handle, ULONG *buffer, ULONG size, struct
     ULONG type[16], filesize=0, commsize=0;
     while(tags->ti_Tag!=TAG_END)
     {
-        switch(tags->ti_Tag)
-        {
-            case EXA_TYPE:
-                type=tags->ti_Data;
-                break;
-            case EXA_NAMESIZE:
-                filesize=tags->ti_Data;
-                break;
-            case EXA_COMMENTSIZE:
-                commsize=tags->ti_Data;
-                break;
-            default:
-                return ERROR_NOT_IMPLEMENTED;
-        }
-        tags++;
+	switch(tags->ti_Tag)
+	{
+	    case EXA_TYPE:
+		type=tags->ti_Data;
+		break;
+	    case EXA_NAMESIZE:
+		filesize=tags->ti_Data;
+		break;
+	    case EXA_COMMENTSIZE:
+		commsize=tags->ti_Data;
+		break;
+	    default:
+		return ERROR_NOT_IMPLEMENTED;
+	}
+	tags++;
     }
     return examine_node((struct fnode *)handle->node, &buffer, &size, type, namesize, commsize);
 }
@@ -1044,7 +1048,7 @@ static LONG delete_object(struct rambase *rambase, struct filehandle *filehandle
 {
     struct fnode *file=(struct fnode *)filehandle->node;
     if((struct fnode *)file->volume==file)
-        return ERROR_OBJECT_WRONG_TYPE;
+	return ERROR_OBJECT_WRONG_TYPE;
     if(file->usecount)
 	return ERROR_OBJECT_IN_USE;
     if(!(file->protect&FIBF_DELETE))
@@ -1061,7 +1065,7 @@ LONG die(struct rambase *rambase, struct filehandle *handle)
     struct vnode *vol;
     struct dnode *dir;
     struct fnode *file;
-    
+
     dev=(struct cnode *)handle->node;
     free_lock(rambase,handle);
     if(dev->type!=ST_LINKDIR||dev->self!=dev)
@@ -1077,11 +1081,11 @@ LONG die(struct rambase *rambase, struct filehandle *handle)
 
     while(vol->list.mlh_Head->mln_Succ!=NULL)
     {
-        dir=(struct dnode *)vol->list.mlh_Head;
-        if(dir->type==ST_USERDIR)
-            while((file=(struct fnode *)RemHead((struct List *)&dir->list))!=NULL)
+	dir=(struct dnode *)vol->list.mlh_Head;
+	if(dir->type==ST_USERDIR)
+	    while((file=(struct fnode *)RemHead((struct List *)&dir->list))!=NULL)
 		AddTail((struct List *)&vol->list,(struct Node *)dir);
-        delete(rambase,(struct fnode *)dir);
+	delete(rambase,(struct fnode *)dir);
     }
     Strfree(rambase,vol->name);
     FreeMem(vol,sizeof(struct vnode));
@@ -1097,19 +1101,19 @@ void deventry(struct rambase *rambase)
     struct IOFileSys *iofs;
     LONG error=0;
     /*
-    	Init device port. AllocSignal() cannot fail because this is a
-	freshly created task with all signal bits still free. 
+	Init device port. AllocSignal() cannot fail because this is a
+	freshly created task with all signal bits still free.
     */
     rambase->port->mp_SigBit=AllocSignal(-1);
     rambase->port->mp_Flags=PA_SIGNAL;
-    
+
     /* Get and process the messages. */
     for(;;)
     {
-    	while((iofs=(struct IOFileSys *)GetMsg(rambase->port))!=NULL)
-    	{
-    	    switch(iofs->IOFS.io_Command)
-    	    {
+	while((iofs=(struct IOFileSys *)GetMsg(rambase->port))!=NULL)
+	{
+	    switch(iofs->IOFS.io_Command)
+	    {
 		case FSA_STARTUP:
 		    /*
 			mount a new dos device (a new filesystem)
@@ -1137,7 +1141,7 @@ void deventry(struct rambase *rambase)
 			LONG protect;  protection flags if a new file is created
 		    */
 		    error=locate_object(rambase,(struct filehandle **)&iofs->IOFS.io_Unit,
-		    		      (STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
+				      (STRPTR)iofs->io_Args[0], iofs->io_Args[1]);
 		    break;
 
 		case FSA_READ:
@@ -1145,12 +1149,12 @@ void deventry(struct rambase *rambase)
 			read a number of bytes from a file
 			Unit *current; filehandle
 			APTR buffer;   data
-			LONG numbytes; number of bytes to read / 
-			               number of bytes read on return,
-			               0 if there are no more bytes in the file
+			LONG numbytes; number of bytes to read /
+				       number of bytes read on return,
+				       0 if there are no more bytes in the file
 		    */
 		    error=read(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-		    	     (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
+			     (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
 		    break;
 
 		case FSA_WRITE:
@@ -1162,23 +1166,23 @@ void deventry(struct rambase *rambase)
 				       number of bytes written on return
 		    */
 		    error=write(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-		    	      (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
+			      (APTR)iofs->io_Args[0], &iofs->io_Args[1]);
 		    break;
-		    
+
 		case FSA_SEEK:
 		    /*
 			set / read position in file
 			Unit *current; filehandle
 			LONG posh;
 			LONG posl;     relative position /
-			               old position on return
+				       old position on return
 			LONG mode;     one of OFFSET_BEGINNING, OFFSET_CURRENT,
 				       OFFSET_END
 		    */
 		    error=seek(rambase,(struct filehandle *)iofs->IOFS.io_Unit,
-		    	     &iofs->io_Args[0], &iofs->io_Args[1], iofs->io_Args[2]);
+			     &iofs->io_Args[0], &iofs->io_Args[1], iofs->io_Args[2]);
 		    break;
-		    
+
 		case FSA_FREE_LOCK:
 		    /*
 			get rid of a handle
@@ -1191,13 +1195,13 @@ void deventry(struct rambase *rambase)
 		    /*
 			Get information about the current object
 			Unit *current; current object
-			ULONG *buffer;  to be filled
+			ULONG *buffer;	to be filled
 			ULONG size;    size of the buffer
 			ULONG type;    type of information to get
 		    */
 		    error=examine((struct filehandle *)iofs->IOFS.io_Unit,
-		                  (ULONG *)iofs->io_Args[0], iofs->io_Args[1],
-		                  iofs->io_Args[2]);
+				  (ULONG *)iofs->io_Args[0], iofs->io_Args[1],
+				  iofs->io_Args[2]);
 		    break;
 #endif
 /*
@@ -1209,7 +1213,7 @@ void deventry(struct rambase *rambase)
     Unit *current; current directory, untouched by the handler
     STRPTR name;   filename
     LONG target;   target handle for hardlinks/target name for softlinks
-    LONG mode;     !=0 softlink
+    LONG mode;	   !=0 softlink
 
   FSA_CREATE_DIR
   FSA_RENAME
@@ -1250,14 +1254,14 @@ void deventry(struct rambase *rambase)
   FSA_EXAMINE_ALL_END
 
 */
-    	    }
-    	    iofs->io_DosError=error;
-    	    ReplyMsg(&iofs->IOFS.io_Message);
-    	}
-    	if(rambase->waitdoslist.mlh_Head->mln_Succ!=NULL)
-    	{
+	    }
+	    iofs->io_DosError=error;
+	    ReplyMsg(&iofs->IOFS.io_Message);
+	}
+	if(rambase->waitdoslist.mlh_Head->mln_Succ!=NULL)
+	{
 	    if(!AttemptLockDosList(LDF_DEVICES|LDF_VOLUMES|LDF_WRITE))
-	        Delay(TICKS_PER_SECOND/2);
+		Delay(TICKS_PER_SECOND/2);
 	    else
 	    {
 		while((iofs=(struct IOFileSys *)RemHead((struct List *)&rambase->waitdoslist))!=NULL)
@@ -1273,24 +1277,24 @@ void deventry(struct rambase *rambase)
 		UnLockDosList(LDF_DEVICES|LDF_VOLUMES|LDF_WRITE);
 	    }
 	}
-#if 0	
+#if 0
 	if(rambase->iofs!=NULL)
 	{
-    	    iofs=rambase->iofs;
-    	    if(iofs->IOFS.io_Message.mn_Node.ln_Type==NT_MESSAGE)
-    	    {
-    		abort_notify(rambase,iofs);
+	    iofs=rambase->iofs;
+	    if(iofs->IOFS.io_Message.mn_Node.ln_Type==NT_MESSAGE)
+	    {
+		abort_notify(rambase,iofs);
 		iofs->io_DosError=ERROR_BREAK;
 		rambase->iofs=NULL;
 		ReplyMsg(&iofs->IOFS.io_Message);
-    	    }else
-    	    {
+	    }else
+	    {
 		rambase->iofs=NULL;
 		Signal(1,0);
-    	    }
-    	}
+	    }
+	}
 #endif
-    	Wait(1<<rambase->port->mp_SigBit);
+	Wait(1<<rambase->port->mp_SigBit);
     }
 }
 

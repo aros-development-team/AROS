@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/23 14:21:28  aros
+    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
+    which not.
+
     Revision 1.6  1996/10/19 17:07:25  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -89,7 +93,7 @@
 	The source has the right alignment now. All I need to do is to
 	check if this is true for the destination, too.
     */
-    if(!((IPTR)dst&(LONGALIGN-1)))
+    if(!((IPTR)dst&(AROS_LONGALIGN-1)))
     {
 	/* Yes. I may copy LONGs. */
 	LONG *s=(LONG *)src,*d=(LONG *)dst;

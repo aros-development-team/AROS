@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:21:17  aros
+    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
+    which not.
+
     Revision 1.5  1996/10/19 17:07:21  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -38,6 +42,7 @@
     #include "ram_handler_gcc.h"
 #endif
 #include <aros/machine.h>
+#include <stddef.h>
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
@@ -249,7 +254,7 @@ __AROS_LH2(struct rambase *, init,
 		    {
 			task->tc_SPLower=stack;
 			task->tc_SPUpper=(BYTE *)stack+2048;
-#if STACK_GROWS_DOWNWARDS
+#if AROS_STACK_GROWS_DOWNWARDS
 			task->tc_SPReg=(BYTE *)task->tc_SPUpper-SP_OFFSET-sizeof(APTR);
 			((APTR *)task->tc_SPUpper)[-1]=rambase;
 #else
@@ -1032,7 +1037,7 @@ static LONG examine(struct fnode *file, struct ExAllData *ead, ULONG size, ULONG
 		    break;
 	    }
 	case 0:
-	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+PTRALIGN-1)&~(PTRALIGN-1));
+	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
     }
     return 0;
 }
@@ -1140,7 +1145,7 @@ __AROS_LH1(BPTR, close,
 
     Strfree(rambase,dev->name);
     FreeMem(dev,sizeof(struct cnode));
-    
+
     iofs->io_DosError=0;
 
     /* I have one fewer opener. */

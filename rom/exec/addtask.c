@@ -2,13 +2,17 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/23 14:21:23  aros
+    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
+    which not.
+
     Revision 1.7  1996/10/19 17:07:23  aros
     Include <aros/machine.h> instead of machine.h
 
     Revision 1.6  1996/09/11 16:54:23  digulla
     Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.5  1996/08/16 14:05:12  digulla
     Added debug output
@@ -124,7 +128,7 @@ void __AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     /* Get new stackpointer. */
     sp=task->tc_SPReg;
     if(task->tc_SPReg==NULL)
-#if STACK_GROWS_DOWNWARDS
+#if AROS_STACK_GROWS_DOWNWARDS
 	sp=(UBYTE *)task->tc_SPUpper-SP_OFFSET;
 #else
 	sp=(UBYTE *)task->tc_SPLower-SP_OFFSET;

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/23 14:21:29  aros
+    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
+    which not.
+
     Revision 1.7  1996/10/21 20:53:16  aros
     Changed BIG_ENDIAN to AROS_BIG_ENDIAN
 
@@ -162,13 +166,13 @@
 	{
 	    case 0:
 		/* Align pointer to LONG requirements */
-		it =(UBYTE *)(((IPTR)it +LONGALIGN-1)&~(LONGALIGN-1));
-		dst=(UBYTE *)(((IPTR)dst+LONGALIGN-1)&~(LONGALIGN-1));
+		it =(UBYTE *)(((IPTR)it +AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1));
+		dst=(UBYTE *)(((IPTR)dst+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1));
 		break;
 	    case 1:
 		/* Same for WORDs */
-		it =(UBYTE *)(((IPTR)it +WORDALIGN-1)&~(WORDALIGN-1));
-		dst=(UBYTE *)(((IPTR)dst+WORDALIGN-1)&~(WORDALIGN-1));
+		it =(UBYTE *)(((IPTR)it +AROS_WORDALIGN-1)&~(AROS_WORDALIGN-1));
+		dst=(UBYTE *)(((IPTR)dst+AROS_WORDALIGN-1)&~(AROS_WORDALIGN-1));
 		break;
 	    case 2:
 		/* Nothing to do for bytes */
@@ -257,7 +261,7 @@
 	}
 
 	/* Align next instruction byte */
-	it=(UBYTE *)(((IPTR)it+LONGALIGN-1)&~(LONGALIGN-1));
+	it=(UBYTE *)(((IPTR)it+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1));
     }
     __AROS_FUNC_EXIT
 }

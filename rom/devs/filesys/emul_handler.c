@@ -2,16 +2,20 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.13  1996/10/21 20:57:50  aros
+    Revision 1.14  1996/10/23 14:21:32  aros
+    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
+    which not.
+
+    Revision 1.13  1996/10/21 20:57:50	aros
     ADE doesn't need to have the patch for timeval.
 
-    Revision 1.12  1996/10/14 02:38:39  iaint
+    Revision 1.12  1996/10/14 02:38:39	iaint
     FreeBSD patch no longer needed.
 
-    Revision 1.11  1996/10/10 13:23:55  digulla
+    Revision 1.11  1996/10/10 13:23:55	digulla
     Make handler work with timer (Fleischer)
 
-    Revision 1.10  1996/09/13 17:57:07  digulla
+    Revision 1.10  1996/09/13 17:57:07	digulla
     Use IPTR
 
     Revision 1.9  1996/09/13 04:23:23  aros
@@ -46,7 +50,7 @@
     Lang:
 */
 #include <aros/system.h>
-#ifndef _AMIGA  /* ADE <sys/time.h> has provisions for this */
+#ifndef _AMIGA	/* ADE <sys/time.h> has provisions for this */
 #define DEVICES_TIMER_H /* avoid redefinition of struct timeval */
 #endif /* _AMIGA */
 #include <exec/resident.h>
@@ -64,6 +68,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -441,7 +446,7 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 		    break;
 	    }
 	case 0:
-	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+PTRALIGN-1)&~(PTRALIGN-1));
+	    ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
 	    return 0;
     }
 }
@@ -631,21 +636,21 @@ __AROS_LH1(void, beginio,
 	    {
 		if(fh->fd==STDOUT_FILENO)
 		    fh->fd=STDIN_FILENO;
-	        for(;;)
-	        {
-	            fd_set rfds;
-	            struct timeval tv;
-	            FD_ZERO(&rfds);
-	            FD_SET(fh->fd,&rfds);
-	            tv.tv_sec=0;
-	            tv.tv_usec=100000;
-	            if(select(fh->fd+1,&rfds,NULL,NULL,&tv))
-	                break;
-	            SysBase->ThisTask->tc_State=TS_READY;
-	            AddTail(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-	            Switch();
-	        }
-	        
+		for(;;)
+		{
+		    fd_set rfds;
+		    struct timeval tv;
+		    FD_ZERO(&rfds);
+		    FD_SET(fh->fd,&rfds);
+		    tv.tv_sec=0;
+		    tv.tv_usec=100000;
+		    if(select(fh->fd+1,&rfds,NULL,NULL,&tv))
+			break;
+		    SysBase->ThisTask->tc_State=TS_READY;
+		    AddTail(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+		    Switch();
+		}
+
 		iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
