@@ -17,6 +17,8 @@
  * PREV(c);     ungetc a character
  * VAL(a)       leads to 1 if a is true and valid
  */
+#define FULL_SPECIFIERS
+
 #define NEXT(c) ((c)=(*getc)(data),size++,incount++)
 #define PREV(c) do{if((c)!=EOF)(*ungetc)((c),data);size--;incount--;}while(0)
 #define VAL(a)  ((a)&&size<=width)

@@ -15,6 +15,7 @@ FILES := \
 	__isinf \
 	__open \
 	__rand48_misc \
+	__stat \
 	__stdio \
 	__vcformat \
 	__vcscan \
@@ -63,6 +64,7 @@ FILES := \
 	freopen \
 	fseek \
 	fsetpos \
+	fstat \
 	ftell \
 	ftruncate \
 	fwrite \
@@ -71,6 +73,7 @@ FILES := \
 	getenv \
 	gettimeofday \
 	gmtime \
+	isatty \
 	isinf \
 	jrand48 \
 	labs \

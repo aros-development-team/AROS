@@ -1,4 +1,4 @@
-/*
+/*            
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 

@@ -13,7 +13,7 @@ int utimes(const char *file, struct timeval tvp[2])
     ds.ds_Tick   = (t % 60) * TICKS_PER_SECOND;
 
     if (SetFileDate(file, &ds))
-	return(0);
+	return 0;
 
-    return(-1);
+    return -1;
 }
