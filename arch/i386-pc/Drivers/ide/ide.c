@@ -1088,7 +1088,7 @@ void RDBInfo(struct ide_Unit *unit)
         {
             /* Make an extra pass to figure out the geometry */
             highcyl = highhead = highsec = 0;
-            for (i=0;i<3;i++)
+            for (i=0;i<=3;i++)
             {
                 count = 0x1be + (i*16);
                 pe = (struct PartEntry *)(&buffer[count]);
