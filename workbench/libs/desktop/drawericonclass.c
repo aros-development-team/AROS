@@ -51,10 +51,11 @@ IPTR drawerIconSet(Class * cl, Object * obj, struct opSet * msg)
         switch (tag->ti_Tag)
         {
             default:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
     return retval;
 }

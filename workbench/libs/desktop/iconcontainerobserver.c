@@ -101,10 +101,11 @@ IPTR iconConObsSet(Class * cl, Object * obj, struct opSet * msg)
                     break;
                 }
             default:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
     return retval;
 }

@@ -58,10 +58,11 @@ IPTR desktopSet(Class * cl, Object * obj, struct opSet * msg)
                 data->activeWindow = tag->ti_Data;
                 break;
             default:
-                retval = DoSuperMethodA(cl, obj, (Msg) msg);
                 break;
         }
     }
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
 
     return retval;
 }
