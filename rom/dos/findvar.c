@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Find a local variable.
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 #include <proto/exec.h>
@@ -13,6 +13,7 @@
 /*****************************************************************************
 
     NAME */
+
 #include <proto/dos.h>
 #include <dos/var.h>
 
@@ -29,10 +30,10 @@
         Finds a local variable structure.
 
     INPUTS
-        name    -   the name of the variable you wish to find. Note that
+        name   --   the name of the variable you wish to find. Note that
                     variable names follow the same syntax and semantics
                     as filesystem names.
-        type    -   The type of variable to be found (see <dos/var.h>).
+        type   --   The type of variable to be found (see <dos/var.h>).
 		    Actually, only the lower 8 bits of "type" are used
 		    by FindVar().
 
@@ -78,46 +79,49 @@
 	is the length of lv_Value
 
     HISTORY
-        27-11-96    digulla automatically created from
-                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  /* only the lowest 8 Bits are valid here */
-  type &= 0xFF;
-
-  if(name)
-  {
-    /* We scan through the process->pr_LocalVars list */
-    struct Process  *pr;
-    struct LocalVar *var;
+    /* Only the lowest 8 bits are valid here */
+    type &= 0xFF;
     
-    pr  = (struct Process *)FindTask(NULL);
-    var = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
-
-    while(var != (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail) )
-    { 
-      LONG res;
-      if(var->lv_Node.ln_Type == type)
-      {
-        /* The list is alphabetically sorted. */
-        res = Stricmp(name, var->lv_Node.ln_Name);
-        
-        /* Found it */
-        if(res == 0)
-          return var;
-
-        /* We have gone too far through the sorted list. */
-        else if(res < 0)
-          return NULL;
-      }
-      var = (struct LocalVar *)var->lv_Node.ln_Succ;
+    if (name != NULL)
+    {
+	/* We scan through the process->pr_LocalVars list */
+	struct Process  *pr;
+	struct LocalVar *var;
+	
+	pr  = (struct Process *)FindTask(NULL);
+	var = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
+	
+	ForeachNode(&pr->pr_LocalVars, var)
+	{ 
+	    LONG res;
+	    
+	    if (var->lv_Node.ln_Type == type)
+	    {
+		/* The list is alphabetically sorted. */
+		res = Stricmp(name, var->lv_Node.ln_Name);
+		
+		/* Found it */
+		if (res == 0)
+		{
+		    return var;
+		}
+		
+		/* We have gone too far through the sorted list. */
+		else if (res < 0)
+		{
+		    break;
+		}
+	    }
+	}
     }
-  }
-  return NULL;
-
-  AROS_LIBFUNC_EXIT
+    
+    return NULL;
+    
+    AROS_LIBFUNC_EXIT
 } /* FindVar */

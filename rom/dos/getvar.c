@@ -1,13 +1,14 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: GetVar - Return the value of a local or global variable.
-    Lang: english
+    Lang: English
 */
-#include "dos_intern.h"
-#include <proto/exec.h>
 #include <dos/dos.h>
+#include <proto/exec.h>
+#include "dos_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -83,142 +84,168 @@
         Redo the RESULT documentation.
 
     HISTORY
-        27-11-96    digulla automatically created from
-                            dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  if(name && buffer)
-  {
-    /* not global only? */
-    if( 0 == (flags & GVF_GLOBAL_ONLY))
+    D(bug("GetVar: name = \"%s\", buffer = $%lx, size = %ld, flags = $%lx\n",
+	  name, buffer, size, flags));
+
+    if (0 == size)
     {
-      /* look for a local variable */
-      struct LocalVar *lv;
+	D(bug("GetVar: bad size\n"));
 
-      /* look for a variable of the given name */
-      lv = FindVar(name, flags);
-      if(lv)
-      {
-        int i;
-        if(0 == size)
-        {
-          SetIoErr(ERROR_BAD_NUMBER);
-          return 0;
-        }
+	SetIoErr(ERROR_BAD_NUMBER);
 
-        /* which size is shorter: the buffer or the size of the value? */
-        i = (size < lv->lv_Len) ? size : lv->lv_Len;
-        CopyMem(lv->lv_Value, buffer, i);
+	return 0;
+    }
 
-        /* were we supposed to stop after the first "\n"?
-           = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
-        */
-        if (0 == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
-        {
-          int j = 0;
-          while ( (buffer[j] != '\n') && (j < i) )
-            j++;
-          if (j == i)
-            size = j - 1;
-          else
-            size = j;
-          buffer[size]= 0x0; /* mark end of string */
-        }
-        else
-          if (GVF_BINARY_VAR == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
-          {
-            size = i-1;
-            buffer[size] = 0x0; /* mark end of string */
-          }
-          else
-            if ((GVF_BINARY_VAR|GVF_DONT_NULL_TERM) ==
-                (flags & ((GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))  )
-            {
-              if (i < size)
-                size = i + 1;
-              else
-                size = i;
-            }
-
-        SetIoErr(lv->lv_Len);
-        return size;
-
-      } /* Got lv */
-    } /* !global only */
-
-    /****** GLOBAL VARIABLE TREATMENT ******/
-
-    /* global variable: GVF_GLOBAL_ONLY is set *OR*
-                        GVF_GLOBAL_ONLY AND GVF_LOCAL_ONLY are NOT set
-     */
-    if (GVF_GLOBAL_ONLY == (flags & GVF_GLOBAL_ONLY) ||
-        0               == (flags & (GVF_GLOBAL_ONLY|GVF_LOCAL_ONLY)) )
+    if (name && buffer)
     {
-      BPTR file;
-      /* as standard: look for the file in ENV: if no path is
-         given in the variable
-      */
-      UBYTE filebuf[256] = "ENV:";
-      AddPart(filebuf, name, 256);
+	/* not global only? */
+	if(0 == (flags & GVF_GLOBAL_ONLY))
+	{
+	    /* look for a local variable */
+	    struct LocalVar *lv;
+	    
+	    /* look for a variable of the given name */
+	    lv = FindVar(name, flags);
 
-      file = Open(filebuf, MODE_OLDFILE);
-      if(file) /* file could be opened */
-      {
-        ULONG fSize;
-        struct FileInfoBlock fib;
+	    if (lv)
+	    {
+		int i;
+		/* which size is shorter: the buffer or the size of
+		   the value? */
+		i = (size < lv->lv_Len) ? size : lv->lv_Len;
+		CopyMem(lv->lv_Value, buffer, i);
+		
+		/* were we supposed to stop after the first "\n"?
+		   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
+		*/
+		if (0 == (flags & GVF_BINARY_VAR))
+		{
+		    int j = 0;
 
-        if(0 == size)
-        {
-          SetIoErr(ERROR_BAD_NUMBER);
-          return -1;
-        }
+		    while ((buffer[j] != '\n') && (j < i))
+		    {
+			j++;
+		    }
+		    
+		    if (j == size)
+		    {
+			j = size - 1;
+		    }
 
-        if(ExamineFH(file, &fib))
-        {
-          /* fSize now contains the size of variable. */
-          fSize = fib.fib_Size;
-        }
-        else
-          return -1;
+		    buffer[j]= 0x0; /* mark end of string */
+		    size = j;
+		}
+		else if (0 == (flags & GVF_DONT_NULL_TERM))
+		{
+		    if (i == size)
+		    {
+			i = size - 1;
+		    }
+		    
+		    buffer[i] = 0x0; /* mark end of string */
+		    size = i;
+		}
+		else
+		{
+		    size = i;
+		}
+		
+		SetIoErr(lv->lv_Len);
+		D(bug("GetVar: return %d\n", size));
 
-        /* We return the number of bytes actually read. */
-        size = Read(file, buffer, size);
-        Close(file);
+		return size;
+	    } /* Got lv */
+	} /* !global only */
+	
+	/****** GLOBAL VARIABLE TREATMENT ******/
+	
+	if ((flags & 0xff) == LV_VAR && !(flags & GVF_LOCAL_ONLY))
+	{
+	    BPTR file;
+	    LONG i;
+	    
+	    /* as standard: look for the file in ENV: if no path is
+	       given in the variable */
+	    UBYTE filebuf[256] = "ENV:";
+	    
+	    AddPart(filebuf, name, 256);
+	    file = Open(filebuf, MODE_OLDFILE);
 
-        /* were we supposed to stop after the first "\n"?
-           = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
-        */
-        if (0 == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
-        {
-          int j = 0;
-          /* lets search for the first '\n' (if any) in the string and
-           * replace it by '\0'.  
-           */
-          while ( (buffer[j] != '\n') && (j < size) )
-            j++;
-          if (j != size)
-            size = j;
-          buffer[size]= '\0'; /* mark end of string */
-        }
-        else
-          if (GVF_BINARY_VAR == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
-          {
-            size--;
-            buffer[size] = 0x0; /* mark end of string */
-          }
+	    if (file) /* file could be opened */
+	    {
+		ULONG fSize;
+		struct FileInfoBlock fib;
+		
+		if (ExamineFH(file, &fib))
+		{
+		    /* fSize now contains the size of variable. */
+		    fSize = fib.fib_Size;
+		}
+		else
+		{
+		    D(bug("GetVar: can't find size\n"));
 
-        SetIoErr(fSize);
-        return size;
-      } /* open(file) */
-    } /* ! local file only */
-  } /* name and buffer */
+		    return -1;
+		}
+		
+		/* We return the number of bytes actually read. */
+		i = Read(file, buffer, size);
+		Close(file);
 
-  SetIoErr(ERROR_OBJECT_NOT_FOUND);
-  return -1;
+		/* were we supposed to stop after the first "\n"?
+		   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM */
+		if (0 == (flags & GVF_BINARY_VAR))
+		{
+		    int j = 0;
+		    /* lets search for the first '\n' (if any) in the
+		     * string and replace it by '\0'. */
+		    while ((buffer[j] != '\n') && (j < i))
+		    {
+			j++;
+		    }
+		    
+		    if (j == size)
+		    {
+			j = size - 1;
+		    }
 
-  AROS_LIBFUNC_EXIT
+		    buffer[j]= '\0'; /* mark end of string */
+		    size = j;
+		}
+		else if (0 == (flags & GVF_DONT_NULL_TERM))
+		{
+		    if (i == size)
+		    {
+			i = size - 1;
+		    }
+
+		    buffer[i] = 0x0; /* mark end of string */
+		    size = i;
+		}
+		else
+		{
+		    size = i;
+		}
+		
+		SetIoErr(fSize);
+		D(bug("GetVar: return %d\n", size));
+
+		return size;
+	    } /* open(file) */
+	} /* ! local file only */
+    } /* name and buffer */
+    
+    D(bug("GetVar: not found\n"));
+
+    SetIoErr(ERROR_OBJECT_NOT_FOUND);
+
+    return -1;
+
+    AROS_LIBFUNC_EXIT
 } /* GetVar */
