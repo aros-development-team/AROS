@@ -3,15 +3,16 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	serial_init serial_stubs functable SerialClass SerialUnitClass endtag
+FILES	:=	serial_init functable SerialClass SerialUnitClass endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
+LIBS	:=	-L$(LIBDIR) -lhiddserialstubs
 
 #MM- Drivers-native: Serial-native
 
-#MM Serial-native : 
+#MM Serial-native : workbench-hidd-serial-stubs
 Serial-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/serial_driver
-	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	ld -r $(LIBS) $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/serial_driver.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/serial_driver.o
 

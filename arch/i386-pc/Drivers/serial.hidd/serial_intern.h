@@ -46,6 +46,7 @@ struct HIDDSerialUnitData
     UBYTE		paritytype;
     UBYTE		stopbits;
     BOOL		breakcontrol;    
+    BOOL		stopped;
 };
 
 struct class_static_data
