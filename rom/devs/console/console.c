@@ -277,7 +277,7 @@ AROS_LH3(void, open,
     	    case CONU_SNIPMAP:
     	    	classptr = SNIPMAPCLASSPTR;
     	    	break;
-		
+
 	    default:
 	    	goto open_fail;
 
@@ -371,12 +371,12 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
-    
+
     BOOL done_quick = TRUE;
-    
+
     /* WaitIO will look into this */
     ioreq->io_Message.mn_Node.ln_Type=NT_MESSAGE;
-    
+
     EnterFunc(bug("BeginIO(ioreq=%p)\n", ioreq));
 
     switch (ioreq->io_Command)
@@ -392,7 +392,7 @@ AROS_LH1(void, beginio,
 	        struct NSDeviceQueryResult *d;
 
     		d = (struct NSDeviceQueryResult *)ioreq->io_Data;
-		
+
 		d->DevQueryFormat 	 = 0;
 		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
 		d->DeviceType 	 	 = NSDEVTYPE_CONSOLE;
@@ -403,12 +403,12 @@ AROS_LH1(void, beginio,
 	    }
 	    break;
 #endif
-	    
+
 
     	case CMD_WRITE: {
 	    ULONG towrite;
 
-#if DEBUG	    
+#if DEBUG
 	    {
 	    	char *str;
 	    	int i;
@@ -418,31 +418,31 @@ AROS_LH1(void, beginio,
 	    	    kprintf("%c\n", *str ++);
 	    	}
 	    }
-#endif    
+#endif
 	    if (ioreq->io_Length == -1) {
 	    	towrite = strlen((STRPTR)ioreq->io_Data);
 	    } else {
 	    	towrite = ioreq->io_Length;
 	    }
-	     
+
 
 	    ioreq->io_Actual = writeToConsole((struct ConUnit *)ioreq->io_Unit
 	    	, ioreq->io_Data
 		, towrite
 		, ConsoleDevice
 	    );
-	    
+
     	    break; }
-	    
+
 	case CMD_READ:
 	    done_quick = FALSE;
-	    
+
 	    break;
-    	    
+
 	default:
 	    error = IOERR_NOCMD;
 	    break;
-	    
+
     } /* switch (ioreq->io_Command) */
 
     if (!done_quick)
@@ -474,36 +474,36 @@ AROS_LH1(LONG, abortio,
 	   struct ConsoleBase *, ConsoleDevice, 6, Console)
 {
     AROS_LIBFUNC_INIT
-    
+
     LONG ret = -1;
 
     ObtainSemaphore(&ConsoleDevice->consoleTaskLock);
-    
+
     /* The ioreq can either be in the ConsoleDevice->commandPort MsgPort,
        or be in the ConsoleDevice->readRequests List, or be already done.
-       
+
        In the first two cases ln_Type will be NT_MESSAGE (= it can be
        aborted), in the last case ln_Type will be NT_REPLYMSG (cannot
        abort, because already done)
-      
+
        The consoleTaskLock Semaphore hopefully makes sure that there are no
        other/"in-between" cases.
-       
+
     */
-           
+
     if (ioreq->io_Message.mn_Node.ln_Type != NT_REPLYMSG)
     {
-        ioreq->io_Error = IOERR_ABORTED;
+	ioreq->io_Error = IOERR_ABORTED;
 	Remove(&ioreq->io_Message.mn_Node);
 	ReplyMsg(&ioreq->io_Message);
-	
+
 	ret = 0;
     }
-    
+
     ReleaseSemaphore(&ConsoleDevice->consoleTaskLock);
 
     return ret;
-    
+
     AROS_LIBFUNC_EXIT
 }
 

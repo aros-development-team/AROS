@@ -98,7 +98,7 @@ struct ConsoleBase;
 enum 
 {
     C_ASCII = 0,
-    
+
     C_ESC,
     C_BELL,
     C_BACKSPACE,
@@ -136,7 +136,7 @@ enum
     C_SCROLL_DOWN,
     C_CURSOR_TAB_CTRL,
     C_CURSOR_BACKTAB,
-    
+
     C_SELECT_GRAPHIC_RENDITION,
     
     C_CURSOR_VISIBLE,
@@ -153,6 +153,8 @@ enum
     C_SET_LINE_LENGTH,
     C_SET_LEFT_OFFSET,
     C_SET_TOP_OFFSET,
+
+    C_ASCII_STRING,
     
     NUM_CONSOLE_COMMANDS
 };

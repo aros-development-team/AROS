@@ -46,8 +46,7 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 	   Basically this is bug-prevention.
 	*/
 	memset(data, 0, sizeof (struct stdcondata));
-	
-	
+
 	data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
 	if (data->dri)
 	{
@@ -56,13 +55,13 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 
     	    data->cursorvisible = TRUE;
 	    Console_RenderCursor(o);
-	    
+
 	    ReturnPtr("StdCon::New", Object *, o);
 	}
     	CoerceMethodA(cl, o, (Msg)&dispmid);
     }
     ReturnPtr("StdCon::New", Object *, NULL);
-    
+
 }
 
 /***********  StdCon::Dispose()  **************************/
@@ -72,14 +71,12 @@ static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
     struct stdcondata *data= INST_DATA(cl, o);
     if (data->dri)
     	FreeScreenDrawInfo(CU(o)->cu_Window->WScreen, data->dri);
-	
+
     /* Let superclass free its allocations */
     DoSuperMethodA(cl, o, msg);
-    
+
     return;
 }
-
-
 
 /*********  StdCon::DoCommand()  ****************************/
 
@@ -89,56 +86,93 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
     struct Window   	*w  = CU(o)->cu_Window;
     struct RastPort 	*rp = w->RPort;
-    UBYTE 		*params = msg->Params;
+    IPTR 		*params = msg->Params;
     struct stdcondata 	*data = INST_DATA(cl, o);
-    
+
     EnterFunc(bug("StdCon::DoCommand(o=%p, cmd=%d, params=%p)\n",
     	o, msg->Command, params));
-	
+
     switch (msg->Command)
     {
     case C_ASCII:
-    	
-    	D(bug("Writing char %c at (%d, %d)\n",
+
+	D(bug("Writing char %c at (%d, %d)\n",
     		params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
-    		
+
 	Console_UnRenderCursor(o);
 
     	SetAPen(rp, CU(o)->cu_FgPen);
 	SetBPen(rp, CU(o)->cu_BgPen);
     	SetDrMd(rp, JAM2);
     	Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
-    	Text(rp, &params[0], 1);
-    	
+	{
+	    UBYTE c = params[0];
+	    Text(rp, &c, 1);
+	}
+
     	Console_Right(o, 1);
-	
+
 	/* Rerender the cursor */
 	Console_RenderCursor(o);
 
     	break;
 
+    case C_ASCII_STRING:
+
+	D(bug("Writing string %.*s at (%d, %d)\n",
+    		 (int)params[1], (char *)params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
+
+	Console_UnRenderCursor(o);
+
+    	SetAPen(rp, CU(o)->cu_FgPen);
+	SetBPen(rp, CU(o)->cu_BgPen);
+    	SetDrMd(rp, JAM2);
+
+	{
+	    ULONG  len     = params[1];
+	    STRPTR str     = (STRPTR)params[0];
+
+	    while (len)
+	    {
+		ULONG remaining_space = CHAR_XMAX(o)+1-XCCP;
+		ULONG line_len        = len < remaining_space ? len : remaining_space;
+
+		Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
+	    	Text(rp, str, line_len);
+
+	    	Console_Right(o, line_len);
+
+		len -= line_len;
+		str += line_len;
+	    }
+	}
+
+	/* Rerender the cursor */
+	Console_RenderCursor(o);
+
+	break;
     case C_FORMFEED:
     {
     	/* Clear the console */
 
         UBYTE oldpen = rp->FgPen;
-        
+
 	Console_UnRenderCursor(o);
-	
+
     	SetAPen( rp, CU(o)->cu_BgPen );
-    	RectFill(rp 
+    	RectFill(rp
     		,CU(o)->cu_XROrigin
     		,CU(o)->cu_YROrigin
     		,CU(o)->cu_XRExtant
     		,CU(o)->cu_YRExtant);
-    		
+
     	SetAPen(rp, oldpen);
 
 	Console_RenderCursor(o);
 
     	break;
     }
-    
+
     case C_BELL:
         /* !!! maybe trouble with LockLayers() here !!! */
 //    	DisplayBeep(CU(o)->cu_Window->WScreen);
@@ -161,13 +195,13 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
         Console_Right(o, params[0]);
 	Console_RenderCursor(o);
 	break;
-	
+
     case C_DELETE_CHAR: /* FIXME: can it have params!? */
         Console_UnRenderCursor(o);
 	Console_ClearCell(o, XCCP, YCCP);
 	Console_RenderCursor(o);
 	break;
-	
+
     case C_HTAB:
     {
 	WORD x = XCCP, i = 0;
@@ -189,21 +223,21 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     case C_CURSOR_HTAB:
     {
     	WORD i = params[0];
-	
+
 	do
 	{
-	    UBYTE dummy;
-	    
+	    IPTR dummy;
+
 	    Console_DoCommand(o, C_HTAB, 0, &dummy);
-  
+
 	} while (--i > 0);
     	break;
     }
-    
+
     case C_CURSOR_BACKTAB:
     {
     	WORD count = params[0];
-	
+
     	Console_UnRenderCursor(o);
 
 	do
@@ -215,42 +249,42 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	    {
 		i++;
 	    }
-	    
+
 	    i--;
-	    
+
 	    if (i >= 0) if (CU(o)->cu_TabStops[i] != (UWORD)-1)
 	    {
 		Console_Left(o, x - CU(o)->cu_TabStops[i]);
 	    }
-	    	    
+
 	} while (--count > 0);
 
 	Console_RenderCursor(o);
-	
+
     	break;
     }
-    
+
     case C_LINEFEED:
     	D(bug("Got linefeed command\n"));
 	/*Console_ClearCell(o, XCCP, YCCP);*/
 	Console_UnRenderCursor(o);
-	
+
     	Console_Down(o, 1);
-	
+
 	/* Check for linefeed mode (LF or LF+CR) */
-	
+
 	D(bug("conflags: %d\n", ICU(o)->conFlags));
-	
+
 	/* if (ICU(o)->conFlags & CF_LF_MODE_ON) */
 	if (CHECK_MODE(o, M_LNM))
 	{
-	    UBYTE dummy;
+	    IPTR dummy;
 	    /* Do carriage return */
 	    Console_DoCommand(o, C_CARRIAGE_RETURN, 0, &dummy);
 	}
 	Console_RenderCursor(o);
     	break;
-	
+
 
     case C_VTAB:
     	Console_Up(o, 1);
@@ -284,7 +318,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     {
     	WORD y = ((WORD)params[0]) - 1;
 	WORD x = ((WORD)params[1]) - 1;
-	
+
 	if (x < CHAR_XMIN(o))
 	{
 	    x = CHAR_XMIN(o);
@@ -293,7 +327,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	{
 	    x = CHAR_XMAX(o);
 	}
-	
+
 	if (y < CHAR_YMIN(o))
 	{
 	    y = CHAR_YMIN(o);
@@ -302,12 +336,12 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	{
 	    y = CHAR_YMAX(o);
 	}
-	
+
     	Console_UnRenderCursor(o);
-	
+
 	XCCP = XCP = x;
 	YCCP = YCP = y;
-	
+
 	Console_RenderCursor(o);
     	break;
     }
@@ -330,7 +364,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     		,CU(o)->cu_XRExtant
     		,CU(o)->cu_YROrigin + (YCP + 1) * YRSIZE - 1);
 
-    		
+
     	SetAPen(rp, oldpen);
     	
 	Console_RenderCursor(o);
@@ -339,9 +373,9 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	
     case C_ERASE_IN_DISPLAY:
     {
-    	UBYTE param = 1;
+    	IPTR param = 1;
         UBYTE oldpen = rp->FgPen;
-        
+
     	/* Clear till EOL */
     	Console_DoCommand(o, C_ERASE_IN_LINE, 1, &param);
     	
@@ -366,7 +400,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     }
 
     case C_INSERT_LINE:
-    {    
+    {
         UBYTE oldpen = rp->FgPen;
 
     	Console_UnRenderCursor(o);
@@ -410,14 +444,14 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     case C_SCROLL_UP:
     {
         UBYTE oldpen = rp->FgPen;
-	
+
     	D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
 		GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), YRSIZE * params[0]));
 
     	Console_UnRenderCursor(o);
-	
+
 	SetAPen( rp, CU(o)->cu_BgPen );
-#warning LockLayers problem here ?    
+#warning LockLayers problem here ?
     	ScrollRaster(rp
 		, 0
 		, YRSIZE * params[0]
@@ -426,7 +460,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		, GFX_XMAX(o)
 		, GFX_YMAX(o) );
 	SetAPen(rp, oldpen);
-	
+
     	Console_RenderCursor(o);
 	
 	break;
@@ -500,7 +534,7 @@ static VOID stdcon_rendercursor(Class *cl, Object *o, struct P_Console_RenderCur
 {
     struct RastPort   *rp = RASTPORT(o);
     struct stdcondata *data = INST_DATA(cl, o);
-     
+
     /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
 
     data->rendercursorcount++;
@@ -596,7 +630,7 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 	y1 = GFX_YMAX(o) + 1;
 	x2 = WINDOW(o)->Width - WINDOW(o)->BorderRight - 1;
 	y2 = WINDOW(o)->Height - WINDOW(o)->BorderBottom - 1;
-	
+
 	if ((x2 >= x1) && (y2 >= y1))
 	{
 	    SetAPen(rp, 0);
@@ -605,13 +639,13 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 	}
     }
 
-    if ((old_xcp != XCP) || (old_ycp != YCP)) 
+    if ((old_xcp != XCP) || (old_ycp != YCP))
     {
     #if 0
         SetAPen(rp, 0);
 	SetDrMd(rp, JAM2);
 	RectFill(rp, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
-    #endif
+#endif
 
     	if (old_ycp != YCP)
 	{
@@ -622,13 +656,13 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 	    ScrollRaster(rp,
 	                 0, CU(o)->cu_YRSize,
 			 GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
-    	    
+
 	    /* Move cursor to column 0 */
-	    	    
+
 	    XCP = CHAR_XMIN(o);
 	    XCCP = CHAR_XMIN(o);
 	}
-	
+
 	data->rendercursorcount--;
     	Console_RenderCursor(o);
     }
@@ -646,21 +680,21 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
     AROS_USERFUNC_INIT
 
     IPTR retval = 0UL;
-    
+
     switch (msg->MethodID)
     {
     case OM_NEW:
         retval = (IPTR)stdcon_new(cl, o, (struct opSet *)msg);
 	break;
-	
+
     case OM_DISPOSE:
     	stdcon_dispose(cl, o, msg);
 	break;
-	
+
     case M_Console_DoCommand:
     	stdcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
 	break;
-	
+
     case M_Console_RenderCursor:
     	stdcon_rendercursor(cl, o, (struct P_Console_RenderCursor *)msg);
 	break;
@@ -672,16 +706,16 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
     case M_Console_ClearCell:
     	stdcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
 	break;
-	
+
     case M_Console_NewWindowSize:
         stdcon_newwindowsize(cl, o, (struct P_Console_NewWindowSize *)msg);
 	break;
-	
+
     default:
     	retval = DoSuperMethodA(cl, o, msg);
 	break;
     }
-    
+
     return retval;
 
     AROS_USERFUNC_EXIT
