@@ -74,7 +74,8 @@
 
     while (!IsListEmpty(&appWindow->aw_DropZones))
     {
-	RemoveAppWindowDropZone(appWindow, GetHead(&appWindow->aw_DropZones));
+	RemoveAppWindowDropZone(appWindow, 
+	      (struct AppWindowDropZone *)GetHead(&appWindow->aw_DropZones));
     }
 
     Remove((struct Node *)appWindow);
