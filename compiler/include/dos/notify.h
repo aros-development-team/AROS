@@ -28,10 +28,10 @@
    READ-ONLY! */
 struct NotifyRequest
 {
-    UBYTE * nr_Name;     /* Name of the watched file. */
-    UBYTE * nr_FullName; /* Fully qualified name of the watched file. This is
+    STRPTR  nr_Name;     /* Name of the watched file. */
+    STRPTR  nr_FullName; /* Fully qualified name of the watched file. This is
                             READ-ONLY! */
-    ULONG   nr_UserData; /* Fill in with your own data. */
+    IPTR    nr_UserData; /* Fill in with your own data. */
     ULONG   nr_Flags;    /* see below */
 
     /* The following union specified the way to notify the application, if
