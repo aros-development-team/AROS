@@ -402,7 +402,7 @@ static UBYTE valid_datalengths[] =
   6,
   7,
   8,
-  ~0
+  0
 };
 
 static UBYTE unix_datalengths[] =
@@ -430,7 +430,7 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
         {
           int j = 0;
           BOOL found = FALSE;
-          while (~0 != valid_datalengths[j])
+          while (0 != valid_datalengths[j])
           {
             if ((UBYTE)tags[i].ti_Data == valid_datalengths[j])
             {
@@ -711,7 +711,6 @@ OOP_Class *init_serialunitclass (struct class_static_data *csd)
     {
         __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
         if (NULL != __IHidd_SerialUnitAB) {
-	{
             D(bug("SerialUnit Class ok\n"));
             cl->UserData = (APTR)csd;
 

@@ -577,7 +577,6 @@ OOP_Class *init_serialunitclass (struct class_static_data *csd)
     {
         __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
         if (NULL != __IHidd_SerialUnitAB) {
-	{
             D(bug("SerialUnit Class ok\n"));
             cl->UserData = (APTR)csd;
 
