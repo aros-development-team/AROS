@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1998/04/13 22:50:01  hkiel
+    Include <proto/exec.h>
+
     Revision 1.3  1996/09/13 17:57:10  digulla
     Use IPTR
 
@@ -11,6 +14,7 @@
     Desc:
     Lang:
 */
+#include <proto/exec.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/io.h>

@@ -2,12 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1998/04/13 22:50:02  hkiel
+    Include <proto/exec.h>
+
     Revision 1.2  1996/08/01 17:41:40  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
+#include <proto/exec.h>
 #include <clib/exec_protos.h>
 #include <stdio.h>
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/04/13 22:50:02  hkiel
+    Include <proto/exec.h>
+
     Revision 1.4  1996/10/24 15:51:34  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -16,6 +19,7 @@
     Desc:
     Lang:
 */
+#include <proto/exec.h>
 #include <aros/libcall.h>
 #include <clib/exec_protos.h>
 #include <exec/execbase.h>

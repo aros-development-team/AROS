@@ -1,10 +1,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "proto/dos.h"
-#include "proto/exec.h"
-#include "proto/utility.h"
-
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <dos/var.h>
 
 
 #define DefCheckVar(VarName, Flags,Expected) \

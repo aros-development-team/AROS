@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/04/13 22:50:02  hkiel
+    Include <proto/exec.h>
+
     Revision 1.4  1996/10/23 14:07:20  aros
     #define was renamed
 
@@ -14,6 +17,7 @@
     Desc:
     Lang:
 */
+#include <proto/exec.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/tasks.h>
