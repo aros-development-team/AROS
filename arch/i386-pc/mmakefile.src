@@ -33,7 +33,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-dos-native			\
 #MM	kernel-boot-linklib			\
 #MM	kernel-aros-native			\
-#MM	kernel-oop-linklib			\
+#MM	kernel-oop-native			\
 #MM	kernel-hidd-linklib			\
 #MM	kernel-layers-linklib			\
 #MM	kernel-timer-linklib			\
@@ -42,14 +42,14 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-keymap-linklib			\
 #MM	kernel-mathieeesingbas-linklib		\
 #MM	kernel-mathffp-linklib			\
-#MM	kernel-devs				\
+#MM	kernel-devs-native				\
 #MM	kernel-filesys				\
 #MM	kernel-graphics-linklib			\
 #MM	graphics-gfxhidd			\
 #MM	kernel-graphics-native-i386 		\
 #MM	kernel-intuition-native			\
 #MM	kernel-cgfx-linklib			\
-#MM	kernel-workbench-linklib		\
+#MM	kernel-workbench-native		\
 #MM	kernel-filesys-native-i386		\
 #MM	Drivers-native-irq			\
 #MM	Drivers-native-kbd			\
@@ -69,10 +69,13 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-exec-native : exec-native-i386 kernel-exec-linklib
 #MM- kernel-expansion-native : kernel-expansion-native-i386 kernel-expansion-linklib
 #MM- kernel-aros-native : kernel-aros-native-i386 kernel-aros-linklib
+#MM- kernel-oop-native : kernel-oop-native-i386 kernel-oop-linklib
 #MM- kernel-misc-native : kernel-misc-native-i386 kernel-misc-linklib
 #MM- kernel-battclock-native : kernel-battclock-native-i386 kernel-battclock-linklib
+#MM- kernel-devs-native : kernel-devs-native-i386 kernel-devs workbench-fs-afs-linklib
 #MM- kernel-intuition-native : intuition-gfxhidd intuition-native-i386 kernel-intuition-linklib
 #MM- kernel-dos-native : dos-native-i386 kernel-dos-linklib
+#MM- kernel-workbench-native : kernel-workbench-native-i386 kernel-workbench-linklib
 
 #
 # Setup libraries
