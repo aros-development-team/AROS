@@ -86,8 +86,8 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-        struct mouse_data *data = OOP_INST_DATA(cl, o);
-        struct TagItem *tag, *tstate;
+        struct mouse_data   *data = OOP_INST_DATA(cl, o);
+        struct TagItem      *tag, *tstate;
 
         tstate = msg->attrList;
 
@@ -110,20 +110,24 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
                         break;
                 }
             }
+	    
         } /* while (tags to process) */
 
         /* Search for mouse installed. As USB is the fastest to test, do it
         first, if not found search for PS/2 mouse. If failure then check every
         COM port in the system - the las chance to see... */
+	
 	data->type = MDT_USB;
         if (!test_mouse_usb(cl, o))
         {
 	    memset(&data->u.com, 0, sizeof(data->u.com));
 	    data->type = MDT_SERIELL;
+	    
 	    if (!test_mouse_com(cl, o))
 	    {
 	    	memset(&data->u.ps2, 0, sizeof(data->u.ps2));
 		data->type = MDT_PS2;
+		
         	if (!test_mouse_ps2(cl, o))
                 {
                     /* No mouse found. What we can do now is just Dispose() :( */
@@ -141,52 +145,67 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         MSD(cl)->mousehidd = o;
         ReleaseSemaphore( &MSD(cl)->sema);
     }
+    
     return o;
 }
 
-STATIC VOID _mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg) {
-struct mouse_data *data = OOP_INST_DATA(cl, o);
+STATIC VOID _mouse_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
 
-   ObtainSemaphore( &MSD(cl)->sema);
-   MSD(cl)->mousehidd = NULL;
-   ReleaseSemaphore( &MSD(cl)->sema);
-   switch (data->type)
-   {
-   case MDT_USB:
-      dispose_mouse_usb(cl, o);
-      break;
-   case MDT_SERIELL:
-      dispose_mouse_seriell(cl, o);
-      break;
-   case MDT_PS2:
-      dispose_mouse_ps2(cl, o);
-      break;
-   }
-   OOP_DoSuperMethod(cl, o, msg);
+    ObtainSemaphore( &MSD(cl)->sema);
+    MSD(cl)->mousehidd = NULL;
+    ReleaseSemaphore( &MSD(cl)->sema);
+
+    switch (data->type)
+    {
+	case MDT_USB:
+	   dispose_mouse_usb(cl, o);
+	   break;
+
+	case MDT_SERIELL:
+	   dispose_mouse_seriell(cl, o);	  
+	   break;
+
+	case MDT_PS2:
+	   dispose_mouse_ps2(cl, o);
+	   break;
+    }
+
+    OOP_DoSuperMethod(cl, o, msg);
 }
 
 /***** Mouse::Get()  ***************************************/
 static VOID _mouse_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-struct mouse_data *data = OOP_INST_DATA(cl, o);
-ULONG idx;
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
+    ULONG   	       idx;
 
-	if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
+    if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
+    {
+	switch (idx)
 	{
-		switch (idx)
-		{
-		case aoHidd_Mouse_IrqHandler:
-			*msg->storage = (IPTR)data->mouse_callback;
-			break;
-		case aoHidd_Mouse_IrqHandlerData:
-			*msg->storage = (IPTR)data->callbackdata;
-			break;
-		case aoHidd_Mouse_State:
-			if (data->type == MDT_PS2)
-				getps2State(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
-			break;
-		}
+	    case aoHidd_Mouse_IrqHandler:
+		*msg->storage = (IPTR)data->mouse_callback;
+		return;
+		
+	    case aoHidd_Mouse_IrqHandlerData:
+		*msg->storage = (IPTR)data->callbackdata;
+		return;
+		
+	    case aoHidd_Mouse_State:
+		if (data->type == MDT_PS2)
+		    getps2State(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
+		return;
+
+    	    case aoHidd_Mouse_RelativeCoords:
+	    	*msg->storage = TRUE;
+	    	return;
 	}
+	
+    }
+    
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 /***** Mouse::HandleEvent()  ***************************************/
@@ -199,7 +218,7 @@ static VOID _mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_
 
     data = OOP_INST_DATA(cl, o);
 
-/* Nothing done yet */
+    /* Nothing done yet */
 
     ReturnVoid("_Mouse::HandleEvent");
 }
@@ -219,39 +238,39 @@ OOP_Class *_init_mouseclass (struct mouse_staticdata *msd)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &msd->hiddMouseAB },
-        { NULL, NULL }
+        { NULL	    	, NULL      	    }
     };
 	
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-        {OOP_METHODDEF(_mouse_new),     moRoot_New},
-        {OOP_METHODDEF(_mouse_dispose), moRoot_Dispose},
-        {OOP_METHODDEF(_mouse_get),     moRoot_Get},
-        {NULL, 0UL}
+        {OOP_METHODDEF(_mouse_new)  	, moRoot_New	},
+        {OOP_METHODDEF(_mouse_dispose)	, moRoot_Dispose},
+        {OOP_METHODDEF(_mouse_get)  	, moRoot_Get	},
+        {NULL	    	    	    	, 0UL	    	}
     };
     
     struct OOP_MethodDescr mousehidd_descr[NUM_MOUSE_METHODS + 1] = 
     {
-        {OOP_METHODDEF(_mouse_handleevent),  moHidd_Mouse_HandleEvent},
-        {NULL, 0UL}
+        {OOP_METHODDEF(_mouse_handleevent)  , moHidd_Mouse_HandleEvent	},
+        {NULL	    	    	    	    , 0UL   	    	    	}
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr, IID_Root,  NUM_ROOT_METHODS},
-        {mousehidd_descr,       IID_Hidd_PCmouse, NUM_MOUSE_METHODS},
-        {NULL, NULL, 0}
+        {root_descr 	    	, IID_Root	    , NUM_ROOT_METHODS	},
+        {mousehidd_descr    	, IID_Hidd_PCmouse  , NUM_MOUSE_METHODS },
+        {NULL	    	    	, NULL	    	    , 0     	    	}
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,         (IPTR)CLID_Hidd },
-        {aMeta_InterfaceDescr,  (IPTR)ifdescr},
-        {aMeta_InstSize,        (IPTR)sizeof (struct mouse_data) },
-        {aMeta_ID,              (IPTR)CLID_Hidd_PCmouse },
-        {TAG_DONE, 0UL}
+        {aMeta_SuperID	    	, (IPTR)CLID_Hidd   	    	    },
+        {aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
+        {aMeta_InstSize     	, (IPTR)sizeof (struct mouse_data)  },
+        {aMeta_ID   	    	, (IPTR)CLID_Hidd_PCmouse   	    },
+        {TAG_DONE   	    	, 0UL	    	    	    	    }
     };
 
     EnterFunc(bug("_MouseHiddClass init\n"));
@@ -279,6 +298,7 @@ OOP_Class *_init_mouseclass (struct mouse_staticdata *msd)
         /* Don't need this anymore */
         OOP_ReleaseAttrBase(IID_Meta);
     }
+    
     ReturnPtr("_init_mouseclass", Class *, cl);
 }
 
@@ -288,7 +308,7 @@ VOID _free_mouseclass(struct mouse_staticdata *msd)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &msd->hiddMouseAB },
-        { NULL, NULL }
+        { NULL	    	, NULL      	    }
     };
     
     EnterFunc(bug("_free_mouseclass(msd=%p)\n", msd));
@@ -302,6 +322,7 @@ VOID _free_mouseclass(struct mouse_staticdata *msd)
 
         OOP_ReleaseAttrBases(attrbases);
     }
+    
     ReturnVoid("_free_mouseclass");
 }
 
