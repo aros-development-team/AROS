@@ -30,8 +30,8 @@ FILES	:= \
 	locale \
 	realtime \
 	utility \
-	workbench
-
+	workbench \
+	muimaster
 
 
 #MM- linklibs: linklibs-autoinit
