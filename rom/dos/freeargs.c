@@ -48,10 +48,14 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* ReadArgs() failed. Clean everything up. */
-    FreeVec(((struct DAList *)args->RDA_DAList)->ArgBuf);
-    FreeVec(((struct DAList *)args->RDA_DAList)->StrBuf);
-    FreeVec(((struct DAList *)args->RDA_DAList)->MultVec);
-    FreeVec((struct DAList *)args->RDA_DAList);
+    if (args->RDA_DAList)
+    {
+	FreeVec(((struct DAList *)args->RDA_DAList)->ArgBuf);
+	FreeVec(((struct DAList *)args->RDA_DAList)->StrBuf);
+	FreeVec(((struct DAList *)args->RDA_DAList)->MultVec);
+	FreeVec((struct DAList *)args->RDA_DAList);
+    }
+
     FreeVec(args);
 
     AROS_LIBFUNC_EXIT
