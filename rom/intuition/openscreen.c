@@ -594,9 +594,9 @@ static const ULONG coltab[] = {
 
         D(bug("fonts set\n"));	    
 
-	screen->Screen.BarVBorder  = 4; /* on the Amiga it is (usually?) 1 */
+	screen->Screen.BarVBorder  = 1; /* on the Amiga it is (usually?) 1 */
 	screen->Screen.BarHBorder  = 5;
-	screen->Screen.MenuVBorder = 4; /* on teh Amiga it is (usually?) 2 */
+	screen->Screen.MenuVBorder = 2; /* on teh Amiga it is (usually?) 2 */
 	screen->Screen.MenuHBorder = 4;
 	screen->Screen.BarHeight   = screen->DInfo.dri_Font->tf_YSize +
 	    			     screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
