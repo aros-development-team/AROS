@@ -32,9 +32,8 @@
 		: get_planarbm_object((bitmap), GfxBase) ) 
 
 #define RELEASE_HIDD_BM(bm_obj, bitmap)	\
-	( ( IS_HIDD_BM(bitmap))	\
-		? 0				\
-		: release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase) )
+	{ if(! IS_HIDD_BM(bitmap))	\
+		release_cache_object(SDD(GfxBase)->planarbm_cache, (bm_obj), GfxBase); }
 
 
 #define IS_HIDD_BM(bitmap) (((bitmap)->Flags & BMF_AROS_HIDD) == BMF_AROS_HIDD)
