@@ -73,10 +73,12 @@
   *  > Setenv Var $Var   
      > $Var
      is not a good idea...
+  *  $ must be taken care of differently than it is now so that things
+     like cd SYS:Olle/$pelle works
 
  */
 
-#define  DEBUG  0
+#define  DEBUG  1
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -556,6 +558,8 @@ int main(int argc, char **argv)
     STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
     LONG           error          = RETURN_OK;
 
+    kprintf("Executing shell\n");
+
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
 
     if(UtilityBase != NULL)
@@ -580,9 +584,13 @@ int main(int argc, char **argv)
 		{			
 		    cli->cli_Interactive = DOSFALSE;
 		    cli->cli_Background  = DOSTRUE;
+		    P(kprintf("Running command %s\n",
+			      (STRPTR)args[ARG_COMMAND]));
 		    error = checkLine(&rd, &cl);
 		    Redirection_release(&rd);
 		}
+		
+		P(kprintf("Command done\n"));
 	    }
 	    else
 	    {
@@ -767,7 +775,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    rd->oldIn = SelectInput(rd->newIn);
 	}
 
-	P(kprintf("Calling executeLine()\n"));
+	kprintf("Calling executeLine()\n");
 
 	/* OK, we've got a command. Let's execute it! */
 	executeLine(rd->commandStr, filtered.CS_Buffer, rd);
@@ -1445,6 +1453,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack,
 					 commandArgs, strlen(commandArgs));
 	
+	kprintf("Returned from command %s\n", command);
 	unloadCommand(cli->cli_Module, &ss);
 	
 	cli->cli_Result2 = IoErr();
@@ -1491,9 +1500,11 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	PrintFault(error, cli->cli_CommandName);
     }
     
-    Flush(Output());
+    //    Flush(Output());
 
     // P(Delay(1*8));
+
+    kprintf("Done with the command...\n");
         
     return error;
 }
