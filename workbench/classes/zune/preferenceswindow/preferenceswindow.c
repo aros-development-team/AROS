@@ -27,7 +27,7 @@
 
 /*** Locale functions *******************************************************/
 
-STRPTR __MSG(struct Catalog *catalog, ULONG id)
+STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
     {
@@ -39,8 +39,7 @@ STRPTR __MSG(struct Catalog *catalog, ULONG id)
     }
 }
 
-#define MSG(id) __MSG(catalog,id)
-
+#define _(id) MSG(catalog, id)
 
 /*** Instance data **********************************************************/
 
@@ -80,30 +79,36 @@ IPTR PreferencesWindow__OM_NEW
     
         MUIA_Window_CloseGadget, FALSE,
         
-        WindowContents, VGroup,
-            Child, contents,
-            Child, RectangleObject, 
+        WindowContents, (IPTR) VGroup,
+            Child, (IPTR) contents,
+            Child, (IPTR) RectangleObject, 
                 MUIA_Rectangle_HBar, TRUE, 
-                MUIA_FixHeight, 2, 
+                MUIA_FixHeight,      2, 
             End,
-            Child, HGroup,
-                Child, HGroup,
+            Child, (IPTR) HGroup,
+                Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     MUIA_Weight,             0,
                     
-                    Child, testButton   = ImageButton(MSG(MSG_TEST), "THEME:Images/Gadgets/Preferences/Test.png"),
-                    Child, revertButton = ImageButton(MSG(MSG_REVERT), "THEME:Images/Gadgets/Preferences/Revert.png"),
+                    Child, (IPTR) testButton   = ImageButton(_(MSG_TEST), "THEME:Images/Gadgets/Preferences/Test.png"),
+                    Child, (IPTR) revertButton = ImageButton(_(MSG_REVERT), "THEME:Images/Gadgets/Preferences/Revert.png"),
                 End,
-                Child, RectangleObject,
+                Child, (IPTR) RectangleObject,
                     MUIA_Weight, 50,
                 End,
-                Child, HGroup,
+                Child, (IPTR) RectangleObject,
+                    MUIA_Weight, 50,
+                End,
+                Child, (IPTR) RectangleObject,
+                    MUIA_Weight, 50,
+                End,
+                Child, (IPTR) HGroup,
                     MUIA_Group_SameWidth, TRUE,
                     MUIA_Weight,             0,
                     
-                    Child, saveButton   = ImageButton(MSG(MSG_SAVE), "THEME:Images/Gadgets/Preferences/Save.png"),
-                    Child, useButton    = ImageButton(MSG(MSG_USE), "THEME:Images/Gadgets/Preferences/Use.png"),
-                    Child, cancelButton = ImageButton(MSG(MSG_CANCEL), "THEME:Images/Gadgets/Preferences/Cancel.png"),
+                    Child, (IPTR) saveButton   = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Preferences/Save.png"),
+                    Child, (IPTR) useButton    = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Preferences/Use.png"),
+                    Child, (IPTR) cancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Preferences/Cancel.png"),
                 End,
             End,
         End,
@@ -180,7 +185,7 @@ IPTR PreferencesWindow__OM_NEW
 error:
     if (catalog != NULL) CloseCatalog(catalog);
     
-    return NULL;
+    return (IPTR) NULL;
 }
 
 IPTR PreferencesWindow__OM_DISPOSE
