@@ -147,8 +147,8 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     if ( sourcetype == DTST_RAM && filehandle == NULL && bmhd )
     {
 	D(bug("png.datatype/LoadPNG(): Creating an empty object\n"));
-	PNG_Exit(&png, ERROR_NOT_IMPLEMENTED);
-	return FALSE;
+	PNG_Exit(&png, 0);
+	return TRUE;
     }
     
     if ( sourcetype != DTST_FILE || !filehandle || !bmhd )
