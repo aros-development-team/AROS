@@ -272,10 +272,12 @@
 	}						\
 } while(0)
 
+#    define MungWallCheck() AvailMem(MEMF_CLEAR)
 #else
 
 #    define MUNGE_BLOCK(ptr, size, fill)
 #    define CHECK_WALL(ptr, fill, size)
+#    define MungWallCheck()
 
 #endif /* MDEBUG */
 
