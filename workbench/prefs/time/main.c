@@ -54,7 +54,7 @@ libtable[] =
 
 /*********************************************************************************************/
 
-static struct Hook  	    	yearhook;	    	
+static struct Hook  	    	yearhook, clockhook;	    	
 static struct RDArgs        	*myargs;
 static IPTR                 	args[NUM_ARGS];
 
@@ -255,8 +255,27 @@ static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
     	nnset(obj, MUIA_String_Integer, year);
     }
     
-    nnset(cal, MUIA_Calendar_Year, year);
+    nnset(calobj, MUIA_Calendar_Year, year);
 
+}
+
+/*********************************************************************************************/
+
+static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
+{
+    struct ClockData *cd;
+    UBYTE s[3];
+    
+    get(obj, MUIA_Clock_Time, (IPTR *)&cd);
+    
+    sprintf(s, "%02d", cd->hour);
+    nnset(hourobj, MUIA_String_Contents, s);
+ 
+    sprintf(s, "%02d", cd->min);  
+    nnset(minobj, MUIA_String_Contents, s);
+    
+    sprintf(s, "%02d", cd->sec);      
+    nnset(secobj, MUIA_String_Contents, s);
 }
 
 /*********************************************************************************************/
@@ -274,6 +293,9 @@ static void MakeGUI(void)
     
     yearhook.h_Entry = HookEntry;
     yearhook.h_SubEntry = (HOOKFUNC)YearFunc;
+    
+    clockhook.h_Entry = HookEntry;
+    clockhook.h_SubEntry = (HOOKFUNC)ClockFunc;
     
     if (LocaleBase)
     {
@@ -337,26 +359,26 @@ static void MakeGUI(void)
 				MUIA_FixWidthTxt, (IPTR)"-",
 				End,
 			    End,
-    			Child, cal = NewObject(calendarmcc->mcc_Class, NULL, TAG_DONE),
+    			Child, calobj = NewObject(calendarmcc->mcc_Class, NULL, TAG_DONE),
 			End,
 		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
-			Child, clock = NewObject(clockmcc->mcc_Class, NULL, TAG_DONE),
+			Child, clockobj = NewObject(clockmcc->mcc_Class, NULL, TAG_DONE),
 			Child, HGroup,
 			    Child, HVSpace,
-			    Child, StringObject, /* hour gadget */
+			    Child, hourobj = StringObject, /* hour gadget */
 			    	StringFrame,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
 				End,
 			    Child, CLabel2(":"),
-			    Child, StringObject, /* min gadget */
+			    Child, minobj = StringObject, /* min gadget */
 			    	StringFrame,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
 				End,
 			    Child, CLabel2(":"),		    
-			    Child, StringObject, /* sec gadget */
+			    Child, secobj = StringObject, /* sec gadget */
 			    	StringFrame,
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
@@ -381,15 +403,18 @@ static void MakeGUI(void)
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, cal, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
+    DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, calobj, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
     DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);
     DoMethod(yearaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 1);
     DoMethod(yearsubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, -1);
     
-    set(cal, MUIA_Calendar_Date, &clockdata);
+    DoMethod(clockobj, MUIM_Notify, MUIA_Clock_Ticked, TRUE, clockobj, 2, MUIM_CallHook, (IPTR)&clockhook);
+    
+    set(calobj, MUIA_Calendar_Date, &clockdata);
     set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
     set(yearobj, MUIA_String_Integer, clockdata.year);
     
+    CallHookPkt(&clockhook, clockobj, 0);
 }
 
 /*********************************************************************************************/
