@@ -1,3 +1,0 @@
-mmake .AROS-pp-native-1
-sh copy.coff
-mmake .AROS-pp-native
