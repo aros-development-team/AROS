@@ -47,21 +47,21 @@
   These are write-once read-many */
 
 static OOP_AttrBase HiddBitMapAttrBase	= 0;  
-static OOP_AttrBase HiddX11GfxAB		= 0;
-static OOP_AttrBase HiddX11BitMapAB		= 0;
+static OOP_AttrBase HiddX11GfxAB	= 0;
+static OOP_AttrBase HiddX11BitMapAB	= 0;
 static OOP_AttrBase HiddSyncAttrBase	= 0;
 static OOP_AttrBase HiddPixFmtAttrBase	= 0;
-static OOP_AttrBase HiddGfxAttrBase		= 0;
+static OOP_AttrBase HiddGfxAttrBase	= 0;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_BitMap,  	&HiddBitMapAttrBase	},
-    { IID_Hidd_X11Gfx,  	&HiddX11GfxAB		},
-    { IID_Hidd_X11BitMap,	&HiddX11BitMapAB	},
-    { IID_Hidd_Sync,		&HiddSyncAttrBase	},
-    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase	},
-    { IID_Hidd_Gfx,		&HiddGfxAttrBase	},
-    { NULL, NULL }
+    { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
+    { IID_Hidd_X11Gfx	, &HiddX11GfxAB		},
+    { IID_Hidd_X11BitMap, &HiddX11BitMapAB	},
+    { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
+    { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
+    { IID_Hidd_Gfx  	, &HiddGfxAttrBase	},
+    { NULL  	    	, NULL      	    	}
 };
 
 
@@ -73,9 +73,7 @@ struct gfx_data
     int		depth;
     Colormap	colmap;
     Cursor	cursor;
-    
-    /* Frame buffer window */
-    Window	fbwin;
+    Window	fbwin; /* Frame buffer window */
 #if ADJUST_XWIN_SIZE
     Window	masterwin;
 #endif
@@ -92,127 +90,139 @@ static BOOL initx11stuff(struct x11_staticdata *xsd);
 
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-
-
-    struct TagItem pftags[] = {
-    	{ aHidd_PixFmt_RedShift,	0	}, /* 0 */
-	{ aHidd_PixFmt_GreenShift,	0	}, /* 1 */
-	{ aHidd_PixFmt_BlueShift,  	0	}, /* 2 */
-	{ aHidd_PixFmt_AlphaShift,	0	}, /* 3 */
-	{ aHidd_PixFmt_RedMask,		0	}, /* 4 */
-	{ aHidd_PixFmt_GreenMask,	0	}, /* 5 */
-	{ aHidd_PixFmt_BlueMask,	0	}, /* 6 */
-	{ aHidd_PixFmt_AlphaMask,	0	}, /* 7 */
-	{ aHidd_PixFmt_ColorModel,	0	}, /* 8 */
-	{ aHidd_PixFmt_Depth,		0	}, /* 9 */
-	{ aHidd_PixFmt_BytesPerPixel,	0	}, /* 10 */
-	{ aHidd_PixFmt_BitsPerPixel,	0	}, /* 11 */
-	{ aHidd_PixFmt_StdPixFmt,	0	}, /* 12 */
-	{ aHidd_PixFmt_CLUTShift,	0	}, /* 13 */
-	{ aHidd_PixFmt_CLUTMask,	0	}, /* 14 */ 
-	{ aHidd_PixFmt_BitMapType,	0	}, /* 15 */   
-	{ TAG_DONE, 0UL }
+    struct TagItem pftags[] =
+    {
+    	{ aHidd_PixFmt_RedShift     , 0	    }, /* 0 */
+	{ aHidd_PixFmt_GreenShift   , 0	    }, /* 1 */
+	{ aHidd_PixFmt_BlueShift    , 0	    }, /* 2 */
+	{ aHidd_PixFmt_AlphaShift   , 0	    }, /* 3 */
+	{ aHidd_PixFmt_RedMask	    , 0	    }, /* 4 */
+	{ aHidd_PixFmt_GreenMask    , 0	    }, /* 5 */
+	{ aHidd_PixFmt_BlueMask     , 0	    }, /* 6 */
+	{ aHidd_PixFmt_AlphaMask    , 0	    }, /* 7 */
+	{ aHidd_PixFmt_ColorModel   , 0	    }, /* 8 */
+	{ aHidd_PixFmt_Depth	    , 0	    }, /* 9 */
+	{ aHidd_PixFmt_BytesPerPixel, 0	    }, /* 10 */
+	{ aHidd_PixFmt_BitsPerPixel , 0	    }, /* 11 */
+	{ aHidd_PixFmt_StdPixFmt    , 0	    }, /* 12 */
+	{ aHidd_PixFmt_CLUTShift    , 0	    }, /* 13 */
+	{ aHidd_PixFmt_CLUTMask     , 0	    }, /* 14 */ 
+	{ aHidd_PixFmt_BitMapType   , 0	    }, /* 15 */   
+	{ TAG_DONE  	    	    , 0UL   }
     };
     
-    struct TagItem tags_160_160[] = {
-    	{ aHidd_Sync_HDisp,		160	},
-	{ aHidd_Sync_VDisp,		160	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_160_160[] =
+    {
+    	{ aHidd_Sync_HDisp  , 160 },
+	{ aHidd_Sync_VDisp  , 160 },
+	{ TAG_DONE  	    , 0UL }
     };
     
-    struct TagItem tags_240_320[] = {
-    	{ aHidd_Sync_HDisp,		240	},
-	{ aHidd_Sync_VDisp,		320	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_240_320[] =
+    {
+    	{ aHidd_Sync_HDisp  , 240 },
+	{ aHidd_Sync_VDisp  , 320 },
+	{ TAG_DONE  	    , 0UL }
     };
 
-    struct TagItem tags_320_240[] = {
-    	{ aHidd_Sync_HDisp,		320	},
-	{ aHidd_Sync_VDisp,		240	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_320_240[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 320 },
+	{ aHidd_Sync_VDisp  , 240 },
+	{ TAG_DONE  	    , 0UL }
     };
 
-    struct TagItem tags_512_384[] = {
-    	{ aHidd_Sync_HDisp,		512	},
-	{ aHidd_Sync_VDisp,		384	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_512_384[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 512 },
+	{ aHidd_Sync_VDisp  , 384 },
+	{ TAG_DONE  	    , 0UL }
     };
 
-    struct TagItem tags_640_480[] = {
-    	{ aHidd_Sync_HDisp,		640	},
-	{ aHidd_Sync_VDisp,		480	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_640_480[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 640 },
+	{ aHidd_Sync_VDisp  , 480 },
+	{ TAG_DONE  	    , 0UL }
     };
 
-    struct TagItem tags_800_600[] = {
-    	{ aHidd_Sync_HDisp,		800	},
-	{ aHidd_Sync_VDisp,		600	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_800_600[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 800 },
+	{ aHidd_Sync_VDisp  , 600 },
+	{ TAG_DONE  	    , 0UL }
     };
 
-    struct TagItem tags_1024_768[] = {
-    	{ aHidd_Sync_HDisp,		1024	},
-	{ aHidd_Sync_VDisp,		768	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_1024_768[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 1024  },
+	{ aHidd_Sync_VDisp  , 768   },
+	{ TAG_DONE  	    , 0UL   }
     };
     
-    struct TagItem tags_1152_864[] = {
-    	{ aHidd_Sync_HDisp,		1152	},
-	{ aHidd_Sync_VDisp,		864	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_1152_864[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 1152  },
+	{ aHidd_Sync_VDisp  , 864   },
+	{ TAG_DONE  	    , 0UL   }
     };
     
-    struct TagItem tags_1280_960[] = {
-    	{ aHidd_Sync_HDisp,		1280	},
-	{ aHidd_Sync_VDisp,		960	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_1280_960[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 1280  },
+	{ aHidd_Sync_VDisp  , 960   },
+	{ TAG_DONE  	    , 0UL   }
     };
     
-    struct TagItem tags_1280_1024[] = {
-    	{ aHidd_Sync_HDisp,		1280	},
-	{ aHidd_Sync_VDisp,		1024	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_1280_1024[] =
+    {
+    	{ aHidd_Sync_HDisp  , 1280  },
+	{ aHidd_Sync_VDisp  , 1024  },
+	{ TAG_DONE  	    , 0UL   }
     };
     
-    struct TagItem tags_1600_1200[] = {
-    	{ aHidd_Sync_HDisp,		1600	},
-	{ aHidd_Sync_VDisp,		1200	},
-	{ TAG_DONE, 0UL }
+    struct TagItem tags_1600_1200[] = 
+    {
+    	{ aHidd_Sync_HDisp  , 1600  },
+	{ aHidd_Sync_VDisp  , 1200  },
+	{ TAG_DONE  	    , 0UL   }
     };
     
-    struct TagItem mode_tags[] = {
-	{ aHidd_Gfx_PixFmtTags, (IPTR)pftags		},
+    struct TagItem mode_tags[] =
+    {
+	{ aHidd_Gfx_PixFmtTags	, (IPTR)pftags		},
 	
 	/* Default values for the sync attributes */
-	{ aHidd_Sync_PixelClock, 	100000000	}, /* Oh boy,  this X11 pixelclock is fast ;-) */
-	{ aHidd_Sync_LeftMargin,	0		},
-	{ aHidd_Sync_RightMargin,	0		},
-	{ aHidd_Sync_HSyncLength,	0		},
-	{ aHidd_Sync_UpperMargin,	0		},
-	{ aHidd_Sync_LowerMargin,	0		},
-	{ aHidd_Sync_VSyncLength,	0		},
+	{ aHidd_Sync_PixelClock , 100000000	    	}, /* Oh boy,  this X11 pixelclock is fast ;-) */
+	{ aHidd_Sync_LeftMargin , 0		    	},
+	{ aHidd_Sync_RightMargin, 0		    	},
+	{ aHidd_Sync_HSyncLength, 0		    	},
+	{ aHidd_Sync_UpperMargin, 0		    	},
+	{ aHidd_Sync_LowerMargin, 0		    	},
+	{ aHidd_Sync_VSyncLength, 0		    	},
 	
 	/* The different syncmodes. The default attribute values above 
 	    will be applied to each of these. Note that
 	    you can alter the defaults between the tags bewlow 
 	*/
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_160_160	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_240_320	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_320_240	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_512_384	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_640_480	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_800_600	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1024_768	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1152_864	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1280_960	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1280_1024	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)tags_1600_1200	},
-	{ TAG_DONE, 0UL }
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_160_160	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_240_320	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_320_240	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_512_384	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_640_480	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_800_600	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1024_768	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1152_864	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_960	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_1024	},
+	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1600_1200	},
+	{ TAG_DONE  	    	, 0UL 	    	    	}
     };
     
-    struct TagItem mytags[] = {
-	{ aHidd_Gfx_ModeTags,	(IPTR)mode_tags		},
-	{ TAG_MORE, (IPTR)msg->attrList }
+    struct TagItem mytags[] =
+    {
+	{ aHidd_Gfx_ModeTags	, (IPTR)mode_tags	},
+	{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
     };
     struct pRoot_New mymsg = { msg->mID, mytags };
     struct x11_staticdata *xsd = NULL;
@@ -220,7 +230,8 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     EnterFunc(bug("X11Gfx::New()\n"));
 
 	/* Do GfxHidd initalization here */
-    if (!initx11stuff(XSD(cl))) {
+    if (!initx11stuff(XSD(cl)))
+    {
 	kprintf("!!! initx11stuff() FAILED IN X11Gfx::New() !!!\n");
 	ReturnPtr("X11Gfx::New()", OOP_Object *, NULL);
     }
@@ -236,13 +247,18 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
     pftags[7].ti_Data = 0x00000000;
 	    
-    if (XSD(cl)->vi.class == TrueColor) {
+    if (XSD(cl)->vi.class == TrueColor)
+    {
         pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
-    } else if (XSD(cl)->vi.class == PseudoColor) {
+    }
+    else if (XSD(cl)->vi.class == PseudoColor)
+    {
 	pftags[8].ti_Data = vHidd_ColorModel_Palette;
         pftags[13].ti_Data = XSD(cl)->clut_shift;
 	pftags[14].ti_Data = XSD(cl)->clut_mask;		
-    } else {
+    }
+    else
+    {
 	kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
 	cleanupx11stuff(xsd);
 	ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
@@ -253,15 +269,18 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     pftags[11].ti_Data = XSD(cl)->depth;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
     
-#warning Do better than this
+    #warning Do better than this
+
     /* We assume chunky */
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
-    if (NULL != o) {
+    if (NULL != o)
+    {
 	XColor bg, fg;
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
-LX11
+	
+    LX11
 	data->display	= XSD(cl)->display;
 	data->screen	= DefaultScreen( data->display );
 	data->depth	= DisplayPlanes( data->display, data->screen );
@@ -276,19 +295,11 @@ LX11
 	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
 	bg.flags = (DoRed | DoGreen | DoBlue);
 
-	XRecolorCursor( data->display
-   	   , data->cursor
-   	   , &fg, &bg
-	);
-UX11
+	XRecolorCursor(data->display, data->cursor, &fg, &bg);
+    UX11
 	
 	D(bug("X11Gfx::New(): Got object from super\n"));
-#if 0	
-ObtainSemaphore(&XSD(cl)->sema);
-	XSD(cl)->activecallback = (VOID (*)())GetTagData(aHidd_Gfx_ActiveBMCallBack, (IPTR)NULL, msg->attrList);
-	XSD(cl)->callbackdata = (APTR)GetTagData(aHidd_Gfx_ActiveBMCallBackData, (IPTR)NULL, msg->attrList);
-ReleaseSemaphore(&XSD(cl)->sema);
-#endif	
+
 	data->display = XSD(cl)->display;
 	
     }
@@ -299,6 +310,7 @@ ReleaseSemaphore(&XSD(cl)->sema);
 static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
+    
     EnterFunc(bug("X11Gfx::Dispose(o=%p)\n", o));
     data = OOP_INST_DATA(cl, o);
     
@@ -313,23 +325,21 @@ static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /********** GfxHidd::NewBitMap()  ****************************/
 static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
-
-    BOOL displayable, framebuffer;
+    BOOL    	    	    	 displayable, framebuffer;    
+    struct pHidd_Gfx_NewBitMap   p;
+    OOP_Object      	    	*newbm;
+    IPTR    	    	    	 drawable;
     
-    struct pHidd_Gfx_NewBitMap p;
-    OOP_Object *newbm;
-    IPTR drawable;
-    
-    struct gfx_data *data;
-    struct TagItem tags[] =
+    struct gfx_data 	    	*data;
+    struct TagItem  	    	 tags[] =
     {
-    	{ aHidd_X11Gfx_SysDisplay,	(IPTR) NULL	},	/* 0 */
-	{ aHidd_X11Gfx_SysScreen,	0UL 		},	/* 1 */	
-	{ aHidd_X11Gfx_SysCursor,	0UL		},	/* 2 */
-	{ aHidd_X11Gfx_ColorMap,	0UL		},	/* 3 */
-	{ aHidd_X11Gfx_VisualClass,	0UL		},	/* 4 */
-	{ TAG_IGNORE,			0UL		},	/* 5 */
-	{ TAG_MORE, (IPTR) NULL }				/* 6 */
+    	{ aHidd_X11Gfx_SysDisplay   , (IPTR) NULL   },	/* 0 */
+	{ aHidd_X11Gfx_SysScreen    , 0UL   	    },	/* 1 */	
+	{ aHidd_X11Gfx_SysCursor    , 0UL   	    },	/* 2 */
+	{ aHidd_X11Gfx_ColorMap     , 0UL   	    },	/* 3 */
+	{ aHidd_X11Gfx_VisualClass  , 0UL   	    },	/* 4 */
+	{ TAG_IGNORE	    	    , 0UL   	    },	/* 5 */
+	{ TAG_MORE  	    	    , (IPTR) NULL   }   /* 6 */
     };
     
     EnterFunc(bug("X11Gfx::NewBitMap()\n"));
@@ -346,55 +356,77 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    if (framebuffer) {
+    
+    if (framebuffer)
+    {
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
-    } else if (displayable) {
+    }
+    else if (displayable)
+    {
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[5].ti_Data	= (IPTR)XSD(cl)->offbmclass;
-    } else {
+    }
+    else
+    {
     	/* When do we create an x11 offscreen bitmap ?
 	    - For 1-plane bitmaps.
 	    - Bitmaps that have a friend that is an X11 bitmap
 	      and there is no standard pixfmt supplied
 	    - If the user supplied a modeid.
 	*/
-	OOP_Object *friend;
-	BOOL usex11 = FALSE;
-    	HIDDT_StdPixFmt stdpf;
+	OOP_Object  	*friend;
+	BOOL 	    	 usex11 = FALSE;
+    	HIDDT_StdPixFmt  stdpf;
 
 	friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 	stdpf = (HIDDT_StdPixFmt)GetTagData(aHidd_BitMap_StdPixFmt, vHidd_StdPixFmt_Unknown, msg->attrList);
-	if (NULL != friend) {
-	    if (vHidd_StdPixFmt_Unknown == stdpf) {
+
+	if (NULL != friend)
+	{
+	    if (vHidd_StdPixFmt_Unknown == stdpf)
+	    {
 	    	Drawable d;
+		
 	    	/* Is the friend ann X11 bitmap ? */
 	    	d = (Drawable)OOP_GetAttr(friend, aHidd_X11BitMap_Drawable, (IPTR *)&d);
-	    	if (0 != d) {
+	    	if (0 != d)
+		{
 	    	    usex11 = TRUE;
 		}
 	    }
 	}
-	if (!usex11) {
-	    if (vHidd_StdPixFmt_Plane == stdpf) {
+	
+	if (!usex11)
+	{
+	    if (vHidd_StdPixFmt_Plane == stdpf)
+	    {
 	    	usex11 = TRUE;
-	    } else {
+	    }
+	    else
+	    {
 	    	HIDDT_ModeID modeid;
+		
 	    	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
-		if (vHidd_ModeID_Invalid != modeid) {
+		
+		if (vHidd_ModeID_Invalid != modeid)
+		{
 		    usex11 = TRUE;
 		}
 	    }
 	}
 	
-	if (usex11) {
+	if (usex11)
+	{
 	    tags[5].ti_Tag  = aHidd_BitMap_ClassPtr;
 	    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
 	    
-	} else {
+	}
+	else
+	{
 	    /* Let the superclass allocate if it is a standard pixelformat thus do nothing */
 	    
-	    kprintf("!!! COULD NOT CREATE OFSCREEN X11 BITMAP FOR SUPPLIED ATTRS !!!\n");
+	    kprintf("x11 hidd: Could not create offscreen bitmap for supplied attrs! Superclass hopefully can.\n");
 	    
 //	    *((ULONG *)0) = 0;
 	}
@@ -406,14 +438,17 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     p.attrList = tags;
     
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-    if (NULL != newbm && framebuffer) {
+    
+    if (NULL != newbm && framebuffer)
+    {
     	OOP_GetAttr(newbm, aHidd_X11BitMap_Drawable, &drawable);
 	data->fbwin = (Window)drawable;
-#if ADJUST_XWIN_SIZE
+    #if ADJUST_XWIN_SIZE
     	OOP_GetAttr(newbm, aHidd_X11BitMap_MasterWindow, &drawable);
 	data->masterwin = (Window)drawable;
-#endif
+    #endif
     }
+    
     ReturnPtr("X11Gfx::NewBitMap", OOP_Object *, newbm);
 }
 
@@ -421,7 +456,8 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
-    ULONG idx;
+    ULONG   	     idx;
+    
     if (IS_X11GFX_ATTR(msg->attrID, idx))
     {
 	switch (idx)
@@ -438,25 +474,30 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
-    } else if (IS_GFX_ATTR(msg->attrID, idx)) {
-    	switch (idx) {
+    }
+    else if (IS_GFX_ATTR(msg->attrID, idx))
+    {
+    	switch (idx)
+	{
 	    case aoHidd_Gfx_IsWindowed:
 	    	*msg->storage = (IPTR)TRUE;
 		break;
 		
 	    case aoHidd_Gfx_SupportsHWCursor:
-#if X11SOFTMOUSE
+    	    #if X11SOFTMOUSE
 	    	*msg->storage = (IPTR)FALSE;
-#else
+    	    #else
 	    	*msg->storage = (IPTR)TRUE;
-#endif
+    	    #endif
 		break;
 		
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
 	}
-    } else {
+    }
+    else
+    {
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
@@ -466,9 +507,9 @@ static VOID gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
-    OOP_Object *fb = 0;
-    IPTR width, height, modeid;
-    OOP_Object *pf, *sync;
+    OOP_Object      *fb = 0;
+    IPTR    	     width, height, modeid;
+    OOP_Object      *pf, *sync;
     struct gfx_data *data;
 	
     data = OOP_INST_DATA(cl, o);
@@ -483,15 +524,15 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     {
     	struct MsgPort *port;
 	
-#if 1
+    #if 1
     	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &height);
-#else
+    #else
     	OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
 	OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-#endif
+    #endif
 
-#if ADJUST_XWIN_SIZE		
+    #if ADJUST_XWIN_SIZE		
 	/* Send resize message to the x11 task */
 	port = CreateMsgPort();
 	if (NULL != port)
@@ -513,15 +554,15 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 		
 		WaitPort(port);
 		FreeMem(nmsg, sizeof (*nmsg));
-#endif		
+    #endif		
 		
 		fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-#if ADJUST_XWIN_SIZE		
+    #if ADJUST_XWIN_SIZE		
 	    }
 	    DeleteMsgPort(port);
 	}
 	
-#endif
+    #endif
     }
     return fb;
 }
@@ -530,10 +571,10 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 /*********  Gfx::CopyBox()  *************************************/
 static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
-    ULONG mode;
-    Drawable src = 0, dest = 0;
-    struct gfx_data *data;
-    struct bitmap_data *bmdata;
+    ULONG   	     	 mode;
+    Drawable 	     	 src = 0, dest = 0;
+    struct gfx_data 	*data;
+    struct bitmap_data  *bmdata;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -560,7 +601,6 @@ LX11
 
     XSetFunction(data->display, bmdata->gc, mode);
     
-
     XCopyArea(data->display
     	, src			/* src	*/
 	, dest			/* dest */
@@ -574,7 +614,8 @@ LX11
     );
 	
     XFlush(data->display);
-UX11    
+UX11
+    
     return;
 }
 
@@ -612,40 +653,40 @@ OOP_Class *init_gfxclass (struct x11_staticdata *xsd)
 
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{(IPTR (*)())gfx_new,		moRoot_New},
-    	{(IPTR (*)())gfx_dispose,	moRoot_Dispose},
-    	{(IPTR (*)())gfx_get,		moRoot_Get},
-	{NULL, 0UL}
+    	{(IPTR (*)())gfx_new	, moRoot_New	},
+    	{(IPTR (*)())gfx_dispose, moRoot_Dispose},
+    	{(IPTR (*)())gfx_get	, moRoot_Get	},
+	{NULL	    	    	, 0UL	    	}
     };
     
     struct OOP_MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
-    	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap		},
-    	{(IPTR (*)())gfxhidd_show,		moHidd_Gfx_Show			},
-    	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox		},
-    	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape	},
-    	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos		},
-    	{(IPTR (*)())gfxhidd_setcursorvisible,	moHidd_Gfx_SetCursorVisible	},
-	{NULL, 0UL}
+    	{(IPTR (*)())gfxhidd_newbitmap	    	, moHidd_Gfx_NewBitMap		},
+    	{(IPTR (*)())gfxhidd_show   	    	, moHidd_Gfx_Show		},
+    	{(IPTR (*)())gfxhidd_copybox	    	, moHidd_Gfx_CopyBox		},
+    	{(IPTR (*)())gfxhidd_setcursorshape 	, moHidd_Gfx_SetCursorShape	},
+    	{(IPTR (*)())gfxhidd_setcursorpos   	, moHidd_Gfx_SetCursorPos	},
+    	{(IPTR (*)())gfxhidd_setcursorvisible	, moHidd_Gfx_SetCursorVisible	},
+	{NULL	    	    	    	    	, 0UL	    	    	    	}
     };
     
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{root_descr, 	IID_Root, 	NUM_ROOT_METHODS},
-    	{gfxhidd_descr, IID_Hidd_Gfx, 	NUM_GFXHIDD_METHODS},
-	{NULL, NULL, 0}
+    	{root_descr 	, IID_Root  	, NUM_ROOT_METHODS  	},
+    	{gfxhidd_descr	, IID_Hidd_Gfx	, NUM_GFXHIDD_METHODS	},
+	{NULL	    	, NULL	    	, 0 	    	    	}
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd_Gfx},
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct gfx_data) },
-	{ aMeta_ID,		(IPTR)CLID_Hidd_X11Gfx },
-	{TAG_DONE, 0UL}
+	{ aMeta_SuperID     	, (IPTR)CLID_Hidd_Gfx	    	    },
+	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    },
+	{ aMeta_InstSize    	, (IPTR)sizeof (struct gfx_data)    },
+	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_X11Gfx    	    },
+	{ TAG_DONE  	    	, 0UL	    	    	    	    }
     };
 
     EnterFunc(bug("GfxHiddClass init\n"));
@@ -707,11 +748,13 @@ static ULONG mask_to_shift(ULONG mask)
 {
     ULONG i;
     
-    for (i = 32; mask; i --) {
+    for (i = 32; mask; i --)
+    {
 	mask >>= 1;
     }
 	
-    if (mask == 32) {
+    if (mask == 32)
+    {
    	i = 0;
     }
 	
@@ -723,16 +766,12 @@ static ULONG mask_to_shift(ULONG mask)
 static BOOL initx11stuff(struct x11_staticdata *xsd)
 {
 /*    XColor fg, bg; */
-    BOOL ok = TRUE;
-
-    XVisualInfo template;
-    XVisualInfo *visinfo;
-    int template_mask;
-    int numvisuals;
-
-
-    
-    XImage *testimage;
+    BOOL    	     ok = TRUE;
+    XVisualInfo      template;
+    XVisualInfo     *visinfo;
+    int     	     template_mask;
+    int     	     numvisuals;
+    XImage  	    *testimage;
 
 
     EnterFunc(bug("initx11stuff()\n"));
@@ -748,7 +787,6 @@ LX11
 
     if (numvisuals > 1)
     {
-
     	    kprintf("!!! GOT MORE THAN ONE VISUAL FROM X !!!\n");
 //    	    kill(getpid(), SIGSTOP);
     }
@@ -772,7 +810,8 @@ LX11
 	
 	/* We only support TrueColor for now */
 	
-	switch (visinfo->class) {
+	switch (visinfo->class)
+	{
 	    case TrueColor:
 		/* Get the pixel masks */
 		xsd->red_shift	 = mask_to_shift(xsd->vi.red_mask);
@@ -798,10 +837,6 @@ LX11
 
 	xsd->depth = 0;
 
-#define NEW_DEPTH_CALC 1
-
-#if NEW_DEPTH_CALC
-
     	/* stegerg: based on xwininfo source */
 	
 	{
@@ -821,7 +856,6 @@ LX11
 	    
 	    kprintf("\n\n BITS PER PIXEL = %d \n\n\n", xsd->depth);
  	}
-#endif
 
 	/* Create a dummy X image to get bits per pixel */
 	testimage = XGetImage(xsd->display
@@ -830,20 +864,19 @@ LX11
 		, AllPlanes, ZPixmap
 	);
 	
-	if (NULL != testimage)	{
-#if NEW_DEPTH_CALC
+	if (NULL != testimage)
+	{
     	    xsd->bytes_per_pixel = (testimage->bits_per_pixel + 7) >> 3;
-#else
-	    xsd->depth = testimage->bits_per_pixel;
-	    xsd->bytes_per_pixel = (xsd->depth + 7) >> 3;
-#endif
 	    XDestroyImage(testimage);
-	} else {
+	}
+	else
+	{
 	    kprintf("!!! X11gfx could not get bits per pixel\n");
 	    kill(getpid(), SIGSTOP);
 	}
 	
-	if (PseudoColor == xsd->vi.class) {
+	if (PseudoColor == xsd->vi.class)
+	{
 	    xsd->clut_mask  = (1L << xsd->depth) - 1;
 	    xsd->clut_shift = 0;
 	}
@@ -895,6 +928,7 @@ UX11
 static VOID cleanupx11stuff(struct x11_staticdata *xsd)
 {
 LX11
+
     /* Do nothing for now */
     if (0 != xsd->dummy_window_for_creating_pixmaps)
     {
@@ -902,9 +936,11 @@ LX11
     }
     
 #if USE_XSHM
-	cleanup_shared_mem(xsd->display, xsd->xshm_info);
-#endif    
+    cleanup_shared_mem(xsd->display, xsd->xshm_info);
+#endif 
+   
 UX11
+
     return;
 }
 
