@@ -97,13 +97,15 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		{
 		    sprintf(spec_buf,"6:%ld",tag->ti_Data);
 		    spec = spec_buf;
-		} else
+		}
+		else if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
 		{
-		    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
-		    {
-			sprintf(spec_buf,"0:%ld",tag->ti_Data);
-			spec = spec_buf;
-		    } else spec = (char*)tag->ti_Data;
+		    sprintf(spec_buf,"0:%ld",tag->ti_Data);
+		    spec = spec_buf;
+		}
+		else
+		{
+		    spec = (char*)tag->ti_Data;
 		}
 		data->spec = StrDup(spec);
 	    }
@@ -244,6 +246,11 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
             else
                 set(obj, MUIA_FillArea, TRUE);
         }
+
+	if ((data->img != NULL) && (data->img->type == IST_BRUSH))
+	{
+	    set(obj, MUIA_Frame, MUIV_Frame_None);
+	}
     }
     return 1;
 }
@@ -277,7 +284,6 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	struct MUI_MinMax minmax;
 
 	zune_imspec_askminmax(data->img, &minmax);
-
    
 	if (data->flags & MIF_FREEHORIZ)
 	{
@@ -320,9 +326,6 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	    msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
 	    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 	}
-
-	
-
     }
     else if (data->old_image)
     {
