@@ -1,0 +1,26 @@
+- fix: create BACKDROP layer in same priority (not lower priority).
+       -> changes to CreatLayerTagList(), UpfrontLayer() and BehindLayer()!!!
+- fix: parent layer should get/use layer info hook
+- fix: add support for super bitmap layers everywhere.
+   - when layer is enlarged (might already work automatically when 
+     implemented in helper routines)
+   - in _BackupPartsOfLayer()
+   - in _ShowPartsOfLayer()
+   - in _ShowLayer()
+     - watch Scroll layer variable!!!
+- handling of errors: out of memory error!
+
+- optimization: if a layer is already completely hidden
+                there is no need to call _BackupPartsOfLayer() again.
+- optimization: do not copy a bitmap that has the same size and
+                offset as the target bitmap but rather move
+                only the pointer (if possible).
+
+- New features: let shape be changed:   ChangeLayerShape(newshape) 
+                     much code similar to MoveSizeLayer() !!!
+                     -> write common code routine!
+                scale a layer and its contents:
+                     ScaleLayer(factor,numerator,denominator, fixx, fixy) (see ScalerDiv) 
+                     use BitMapScale()
+                make invisible layer visible and
+                     vice versa : ChangeLayerVisibility(TRUE/FALSE)
