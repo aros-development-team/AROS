@@ -1,23 +1,27 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+FILES := debugdriver
+
+EXEDIR := $(DEVSDIR)Midi
+EXE    := $(EXEDIR)/debugdriver
+
+USE_CLIB_STATIC := yes
+USE_MLIB := yes
+USE_AROSLIB := yes
+
+USER_CFLAGS := -O2 -Wunused -Wall
+
 #MM workbench-devs-midi : setup includes linklibs
-workbench-devs-midi: $(DEVSDIR)/Midi/debugdriver
+workbench-devs-midi: $(EXE)
 	@$(NOP)
 
-#MM
-clean ::
-	$(RM) *.err *.o
+%make_prog_setup mmake=debugdriver
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
 #MM
-setup :
+setup ::
 	%mkdirs_q $(DEVSDIR)/Midi
 
-
-$(DEVSDIR)/Midi/debugdriver: debugdriver.o
-	$(CC) -nostartfiles -nostdlib -Xlinker -i $(LIBDIR)/startup.o debugdriver.o -o $(DEVSDIR)/Midi/debugdriver -L$(LIBDIR) -larossupport -lamiga -larosc -larosm
-
-debugdriver.o: debugdriver.c
-	$(CC) debugdriver.c -I$(INCDIR) -c
-
 %common
+%include_deps
