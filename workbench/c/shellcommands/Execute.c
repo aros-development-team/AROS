@@ -5,12 +5,9 @@
     Desc:
     Lang:
 */
-#include <exec/memory.h>
 #include <proto/exec.h>
-#include <dos/dosextens.h>
-#include <dos/dostags.h>
+#include <dos/filesystem.h>
 #include <proto/dos.h>
-#include <utility/tagitem.h>
 
 #include "shcommands.h"
 
@@ -19,53 +16,30 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 {
     AROS_SHCOMMAND_INIT
 
-    BPTR shell;
-    STRPTR s1, s2, s3, buf;
-    LONG error=0;
+    BPTR from;
+    struct CommandLineInterface *cli = Cli();
 
-    s1=s2=SHArg(NAME);
+    if (!cli)
+        return RETURN_ERROR;
 
-    while(*s2++);
-
-    buf=(STRPTR)AllocVec(6+2*(s2-s1),MEMF_ANY);
-    if(buf!=NULL)
+    from = Open(SHArg(NAME), FMF_READ);
+    if (!from)
     {
-	CopyMem("FROM ",buf,8);
-	s3=buf+5;
-	s2=s1;
-	*s3++='\"';
-	while(*s1)
-	{
-	    if(*s1=='*'||*s1=='\"'||*s1=='\n')
-		*s3++='*';
-	    if(*s1=='\n')
-		*s3++='n';
-	    else
-		*s3++=*s1;
-	    s1++;
-	}
-	*s3++='\"';
-	*s3=0;
-	shell=LoadSeg("c:shell");
-	if(shell)
-	{
-	    RunCommand(shell,4096,buf,s3-buf);
-	    UnLoadSeg(shell);
-	}
-	else
-            error = RETURN_FAIL;
-        FreeVec(buf);
-    }
-    else
-    {
-        SetIoErr(ERROR_NO_FREE_STORE);
-        error = RETURN_FAIL;
+        PrintFault(IoErr(), "Execute");
+	return RETURN_FAIL;
     }
 
-    if(error)
-	PrintFault(IoErr(), NULL);
+    if (!cli->cli_Interactive)
+    {
+        PutStr("Execute doesn't handle nested scripts yet\n");
+        Close(from);
+	return RETURN_ERROR;
+    }
 
-    return error;
+    cli->cli_Interactive  = FALSE;
+    cli->cli_CurrentInput = from;
+
+    return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
 }

@@ -5,6 +5,9 @@
     Desc:
     Lang:
 */
+
+#define DEBUG 1
+
 #include <exec/execbase.h>
 #include <exec/libraries.h>
 #include <proto/exec.h>

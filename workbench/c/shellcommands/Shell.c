@@ -66,7 +66,6 @@
 
 /* TODO:
 
- (*) EndCli/EndShell support
   *  Alias [] support
   *  Break support (and SetSignal(0L) before execution) -- CreateNewProc()?
   *  Script file execution capabilities (if script bit set)
@@ -91,8 +90,8 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/var.h>
-#include <dos/rdargs.h>
 #include <dos/filesystem.h>
+#include <dos/bptr.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
@@ -106,9 +105,9 @@
 
 #include <aros/debug.h>
 
-extern struct UtilityBase *UtilityBase;
-
-static const char version[] = "$VER: shell 41.6 (" __DATE__ ")\n";
+#define SH_GLOBAL_SYSBASE 1
+#define SH_GLOBAL_DOSBASE 1
+#include "shcommands.h"
 
 #define SET_HOMEDIR 1
 
@@ -192,17 +191,6 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 		struct Redirection *rd);
 
 
-/* Function: executeFile
- *
- * Action:   Run all commands found in a command file.
- *
- * Input:    STRPTR   fileName  --  the name of the file containing the
- *                                  commands
- *
- * Output:   LONG  --  error code or 0 if everything went OK
- */
-LONG executeFile(STRPTR fileName);
-
 
 /* Function: executeLine
  *
@@ -258,34 +246,6 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl);
 void releaseFiles(struct Redirection *rd);
 
 
-/* Function: extractEmbeddedCommand
- *
- * Action:   Check if an item beginning with ' is an embedded command and if
- *           that is the case, extract the embedded command line and update
- *           the state of the input stream accordningly.
- *
- * Input:    struct CommandLine *cl  --  command line for embedded command
- *                                       (the result will be stored here)
- *           struct CSource     *cs  --  input stream
- *
- * Output:   --
- */
-BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs);
-
-
-/* Function: copyEmbedResult
- *
- * Action:   Insert the result of executing an embedded command into the
- *           commandline of the parent command.
- *
- * Input:    struct CSource     *filtered  --  output stream (command line)
- *           struct Redirection *rd        --  state
- *
- * Output:   BOOL  --  success/failure indicator
- */
-BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd);
-
-
 /* Function: appendString
  *
  * Action:   Add a string to the filtered command line
@@ -320,7 +280,7 @@ BOOL appendString(struct CSource *cs, STRPTR from, LONG size);
  *
  * Output:   LONG  --  error code
  */
-LONG interact(STRPTR script);
+LONG interact(void);
 
 
 /* Function: loadCommand
@@ -410,220 +370,58 @@ static void printPrompt(void);
 
 
 /*****************************************************************************/
-
-
-static void printPath(void)
-{
-    STRPTR  buf;
-    ULONG   i;
-
-    for(i = 256; ; i += 256)
-    {
-	buf = AllocVec(i, MEMF_ANY);
-
-	if(buf == NULL)
-	    break;
-
-	if(GetCurrentDirName(buf, i) == DOSTRUE)
-	{
-	    FPuts(Output(), buf);
-	    FreeVec(buf);
-	    break;
-	}
-
-	FreeVec(buf);
-
-	if(IoErr() != ERROR_OBJECT_TOO_LARGE)
-	    break;
-    }
-}
-
-
-static void setPath(BPTR lock)
-{
-    BPTR    dir;
-    STRPTR  buf;
-    ULONG   i;
-
-    if(lock == NULL)
-	dir = CurrentDir(NULL);
-    else
-	dir = lock;
-
-    for(i = 256; ; i += 256)
-    {
-	buf = AllocVec(i, MEMF_ANY);
-
-	if(buf == NULL)
-	    break;
-
-	if(NameFromLock(dir, buf, i))
-	{
-	    SetCurrentDirName(buf);
-	    FreeVec(buf);
-	    break;
-	}
-
-	FreeVec(buf);
-    }
-
-    if(lock == NULL)
-	CurrentDir(dir);
-}
-
-
+void setupResidentCommands(void);
 #define PROCESS(x) ((struct Process *)(x))
 
-static void PrintF(char *format, ...)
+static void PrintF(char *format, ...);
+
+AROS_SH1(Shell, 41.1,
+AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 {
-    va_list args;
-    va_start(args, format);
+    AROS_SHCOMMAND_INIT
 
-    VPrintf(format, args);
-
-    va_end(args);
-}
-
-
-static void printPrompt(void)
-{
-    BSTR prompt = Cli()->cli_Prompt;
-    LONG length = AROS_BSTR_strlen(prompt);
-    ULONG i;
-
-    for(i = 0; i < length; i++)
-    {
-	if(AROS_BSTR_getchar(prompt, i) == '%')
-	{
-	    i++;
-
-	    if(i == length)
-		break;
-
-	    switch(AROS_BSTR_getchar(prompt, i))
-	    {
-	    case 'N':
-	    case 'n':
-		PrintF("%ld", PROCESS(FindTask(NULL))->pr_TaskNum);
-		break;
-	    case 'R':
-	    case 'r':
-		PrintF("%ld", Cli()->cli_ReturnCode);
-		break;
-	    case 'S':
-	    case 's':
-		printPath();
-		break;
-	    default:
-		FPutC(Output(), '%');
-		FPutC(Output(), AROS_BSTR_getchar(prompt, i));
-		break;
-	    }
-	}
-	else
-	    FPutC(Output(), AROS_BSTR_getchar(prompt, i));
-    }
-
-    Flush(Output());
-}
-
-#if DO_CHANGE_SIGNAL
-
-static void changeSignalTo(BPTR filehandle, struct Task *task)
-{
-    struct FileHandle *fh;
-    struct IOFileSys  iofs;
-
-    if (filehandle)
-    {
-    	fh = (struct FileHandle *)BADDR(filehandle);
-
-	iofs.IOFS.io_Message.mn_Node.ln_Type   = NT_REPLYMSG;
-	iofs.IOFS.io_Message.mn_ReplyPort      = &((struct Process *)task)->pr_MsgPort;
-	iofs.IOFS.io_Message.mn_Length         = sizeof(struct IOFileSys);
-	iofs.IOFS.io_Command                   = FSA_CHANGE_SIGNAL;
-	iofs.IOFS.io_Flags                     = 0;
-
-	iofs.IOFS.io_Device    	    	       = fh->fh_Device;
-	iofs.IOFS.io_Unit      	    	       = fh->fh_Unit;
-	iofs.io_Union.io_CHANGE_SIGNAL.io_Task = task;
-
-	DoIO(&iofs.IOFS);
-
-    }
-}
-
-#endif
-
-enum { ARG_FROM = 0, ARG_COMMAND, NOOFARGS };
-
-struct RDArgs *rda;
-
-int __nocommandline = 1;
-
-void setupResidentCommands(void);
-
-int main(void)
-{
-    STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
-    LONG           error          = RETURN_OK;
+    LONG error = RETURN_OK;
 
     P(kprintf("Executing shell\n"));
+
+    UtilityBase = OpenLibrary("utility.library", 39);
+    if (!UtilityBase) return RETURN_FAIL;
 
     setupResidentCommands();
 
     cli = Cli();
-    cli->cli_StandardInput  = cli->cli_CurrentInput  = Input();
-    cli->cli_StandardOutput = cli->cli_CurrentOutput = Output();
     setPath(NULL);
 
-#if DO_CHANGE_SIGNAL
-    changeSignalTo(cli->cli_StandardInput, FindTask(NULL));
-    changeSignalTo(cli->cli_StandardOutput, FindTask(NULL));
-#endif
+    if (strcmp(FindTask(NULL)->tc_Node.ln_Name, "Boot Shell") == 0)
+        SetPrompt("%N>");
 
-    rda = ReadArgs("FROM,COMMAND/K/F", (IPTR *)args, NULL);
-
-    if(rda != NULL)
+    if(SHArg(COMMAND))
     {
-	if(args[ARG_COMMAND] != NULL)
+	struct Redirection rd;
+ 	struct CommandLine cl = {SHArgLine(),
+       			         0,
+				 strlen(SHArg(COMMAND))};
+
+	if(Redirection_init(&rd))
 	{
-	    struct Redirection rd;
-	    struct CommandLine cl = {(STRPTR)args[ARG_COMMAND],
-		  		     strlen((STRPTR)args[ARG_COMMAND]),
-				     0};
+	    P(kprintf("Running command %s\n", SHArg(COMMAND)));
+	    error = checkLine(&rd, &cl);
+	    Redirection_release(&rd);
+	}
 
-	    if(Redirection_init(&rd))
-	    {
-		cli->cli_Interactive = DOSFALSE;
-		P(kprintf("Running command %s\n",
-		          (STRPTR)args[ARG_COMMAND]));
-		error = checkLine(&rd, &cl);
-		Redirection_release(&rd);
-	    }
-
-	    P(kprintf("Command done\n"));
-	 }
-	 else
-	 {
-	    error = interact((STRPTR)args[ARG_FROM]);
-	    kprintf("error = %d\n");
-	 }
-
-	 FreeArgs(rda);
-    }
-    else
-    {
-	PrintFault(IoErr(), "Shell");
-	error = RETURN_FAIL;
+	P(kprintf("Command done\n"));
     }
 
-    kprintf("Exiting shell\n");
-    P(kprintf("USERDATA 2 = %p\n", FindTask(0)->tc_UserData));
+    error = interact();
+
+    P(kprintf("Exiting shell\n"));
 
     return error;
+
+    AROS_SHCOMMAND_EXIT
 }
 
+struct UtilityBase *UtilityBase;
 
 void setupResidentCommands(void)
 {
@@ -633,52 +431,69 @@ void setupResidentCommands(void)
 
 
 /* First we execute the script, then we interact with the user */
-LONG interact(STRPTR script)
+LONG interact(void)
 {
     ULONG cliNumber = PROCESS(FindTask(NULL))->pr_TaskNum;
     LONG  error = 0;
     BOOL  moreLeft = FALSE;
-
-    if (cliNumber != 1)
-    	printFlush("New Shell process %ld\n", cliNumber);
-
-    cli->cli_Interactive = DOSTRUE;
-
-    P(kprintf("Calling executeFile()\n"));
-
-    executeFile(script);
-
-    P(kprintf("User interaction\n"));
-
-    /* Reset standard failure level */
-    cli->cli_FailLevel = RETURN_ERROR;
-    SelectInput(cli->cli_StandardInput);
-
-    /* Reset cli_CurrentInput after the execution of the file. This
-       marks the fact that we've now entered interactive mode. */
-    cli->cli_CurrentInput = cli->cli_StandardInput;
-
-    P(kprintf("Input now comes from the terminal.\n"));
+    BOOL  messageprinted = FALSE;
 
     do
     {
-	struct CommandLine cl = { NULL, 0, 0 };
+ 	struct CommandLine cl = { NULL, 0, 0 };
 	struct Redirection rd;
+
+	if (cli->cli_Interactive && !messageprinted)
+        {
+	    if (strcmp(FindTask(NULL)->tc_Node.ln_Name, "Boot Shell") == 0)
+	    {
+	        PutStr("AROS Amiga® Research Operating System\n"
+	               "Copyright © 1995-2001 AROS Team\n"
+		       "All rights reserved.\n"
+		       "AROS is licensed under the terms of the AROS PUBLIC LICENSE (APL), a copy of "
+		       "which you should have received with it.\n"
+		       "Visit http://www.aros.org for further informations\n");
+	    }
+	    else
+	    {
+		IPTR data[] = {(IPTR)cliNumber};
+
+		VPrintf("New Shell process %ld\n", data);
+
+	    }
+	    Flush(Output());
+	    messageprinted = TRUE;
+	}
 
 	if(Redirection_init(&rd))
 	{
-	    printPrompt();
+	    if (cli->cli_Interactive)
+	        printPrompt();
 
-	    moreLeft = readLine(&cl, Input());
+	    moreLeft = readLine(&cl, cli->cli_CurrentInput);
 	    error = checkLine(&rd, &cl);
 
 	    Redirection_release(&rd);
 	    FreeVec(cl.line);
 	}
 
+	if (!moreLeft)
+	{
+	    if (!cli->cli_Interactive)
+	    {
+		Close(cli->cli_CurrentInput);
+
+		if (!cli->cli_Background)
+	        {
+		    cli->cli_CurrentInput = cli->cli_StandardInput;
+ 		    cli->cli_Interactive = TRUE;
+		    moreLeft = TRUE;
+	        }
+	    }
+	}
     } while(moreLeft);
 
-    printFlush("Process %ld ending\n", cliNumber);
+    if (cli->cli_Interactive) printFlush("Process %ld ending\n", cliNumber);
 
     return error;
 }
@@ -687,35 +502,11 @@ LONG interact(STRPTR script)
 /* Close redirection files and install regular input and output streams */
 void releaseFiles(struct Redirection *rd)
 {
-#if 1 /* stegerg */
-    if (rd->oldIn)
-    {
-    	SelectInput(rd->oldIn);
-	if (rd->newIn) Close(rd->newIn);
+   if (rd->newIn) Close(rd->newIn);
+   rd->newIn = NULL;
 
-	rd->oldIn = rd->newIn = NULL;
-    }
-
-    if (rd->oldOut)
-    {
-    	SelectOutput(rd->oldOut);
-	if (rd->newOut) Close(rd->newOut);
-
-	rd->oldOut = rd->newOut = NULL;
-    }
-#else
-    if(rd->newIn != NULL)
-    {
-	Close(SelectInput(rd->oldIn));
-	rd->newIn = NULL;
-    }
-
-    if(rd->newOut != NULL)
-    {
-	Close(SelectOutput(rd->oldOut));
-	rd->newOut = NULL;
-    }
-#endif
+   if (rd->newOut) Close(rd->newOut);
+   rd->newOut = NULL;
 }
 
 char avBuffer[256];
@@ -758,11 +549,6 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	/* stegerg: Set redirection to default in/out handles */
 
-	rd->oldIn  = SelectInput(cli->cli_StandardInput);
-
-	if (!rd->oldOut)
-	    rd->oldOut = SelectOutput(cli->cli_StandardOutput);
-
 	if(rd->haveOutRD)
 	{
 	    P(kprintf("Redirecting output to file %s\n", rd->outFileName));
@@ -777,12 +563,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    }
 
 
-#if 1 /* stegerg */
     	    SelectOutput(rd->newOut);
-#else
-	    cli->cli_CurrentOutput = rd->newOut;
-	    rd->oldOut = SelectOutput(rd->newOut);
-#endif
 	}
 
 	if(rd->haveAppRD)
@@ -794,12 +575,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	        goto exit;
 	    }
 
-#if 1 /* stegerg */
     	    SelectOutput(rd->newOut);
-#else
-	    cli->cli_CurrentOutput = rd->newOut;
-	    rd->oldOut = SelectOutput(rd->newOut);
-#endif
 	}
 
 	if(rd->haveInRD)
@@ -811,12 +587,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	       goto exit;
 	    }
 
-#if 1 /* stegerg */
     	    SelectInput(rd->newIn);
-#else
-	    cli->cli_CurrentInput = rd->newIn;
-	    rd->oldIn = SelectInput(rd->newIn);
-#endif
 	}
 
 	P(kprintf("Calling executeLine()\n"));
@@ -824,6 +595,8 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	/* OK, we've got a command. Let's execute it! */
 	executeLine(rd->commandStr, filtered.CS_Buffer, rd);
 
+	SelectInput(cli->cli_StandardInput);
+	SelectOutput(cli->cli_StandardOutput);
 	result = TRUE;
     }
     else
@@ -1073,62 +846,6 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	}
 	else
 	{
-	    /* Embedded command? */
-	    if(item == '`')
-	    {
-		struct CommandLine embedCl = { NULL, 0, 0 };
-
-		advance(1);
-
-		P(kprintf("Found possible embedded command.\n"));
-
-		if(extractEmbeddedCommand(&embedCl, cs))
-		{
-		    /* The Amiga shell has severe problems when using
-		       redirections in embedded commands so here, the
-		       semantics differ somewhat. Unix shells seems to be
-		       a little bit sloppy with this, too.
-		           If you really wanted to, you could track down
-		       uses of > and >> and make them work inside ` `, too,
-		       but this seems to be rather much work for little gain.
-		    */
-
-		    char embedOutputFilename[sizeof("T:Shell$embed") +
-					     sizeof("9999999999999")];
-		    struct Redirection embedRd;
-
-		    /* No memory? */
-		    if(!Redirection_init(&embedRd))
-			return FALSE;
-
-		    /* Construct temporary output filename */
-		    __sprintf(embedOutputFilename, "T:Shell%ld$embed",
-			      PROCESS(FindTask(NULL))->pr_TaskNum);
-
-		    /* Temporary */
-		    strcpy(embedRd.outFileName, embedOutputFilename);
-
-		    embedRd.haveOutRD = TRUE;   /* ` _ ` is an implicit output
-						   redirection */
-
-		    P(kprintf("Doing embedded command.\n"));
-
-		    checkLine(&embedRd, &embedCl);
-
-		    P(kprintf("Embedded command done.\n"));
-
-		    copyEmbedResult(filtered, &embedRd);
-
-		    Redirection_release(&embedRd);
-
-		    /* Now, go on with the original argument string */
-		    continue;
-		}
-
-		/* If this was just "`command", extractEmbeddedCommand will
-		   have made sure that the '`' is included in the command
-		   name */
-	    }
 
 	    /* This is a regular character -- that is, we have a command */
 	    if(!rd->haveCommand)
@@ -1166,53 +883,6 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 }
 
 
-BOOL extractEmbeddedCommand(struct CommandLine *cl, struct CSource *fromCs)
-{
-    LONG  position  = fromCs->CS_CurChr;
-    BOOL  foundPrim = FALSE;
-
-    while(position <= fromCs->CS_Length)
-    {
-	if(fromCs->CS_Buffer[position] == '`')
-	{
-	    foundPrim = TRUE;
-	    break;
-	}
-
-	position++;
-    }
-
-    if(!foundPrim)
-    {
-	/* Back input stream to include the preceding ` in the command name */
-
-	D(bug("Found end of embedded command\n"));
-	fromCs->CS_CurChr--;
-	return FALSE;
-    }
-
-    /* Initialize stream data structure for embedded command */
-    cl->position = 0;
-    cl->size = position - fromCs->CS_CurChr;
-
-    D(bug("Embedded command size = %i\n", cl->size));
-
-    /* Just `` ? */
-    if (cl->size == 0)
-    {
-	return FALSE;
-    }
-
-    cl->line = &fromCs->CS_Buffer[fromCs->CS_CurChr];
-
-    /* End string */
-    fromCs->CS_Buffer[position] = 0;
-
-    /* Correct the original stream data structure */
-    fromCs->CS_CurChr = min(position + 1, fromCs->CS_Length);
-
-    return TRUE;
-}
 
 
 BOOL getCommand(struct CSource *filtered, struct CSource *cs,
@@ -1268,7 +938,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
 
     while(TRUE)
     {
-	letter = FGetC(inputStream);
+	letter = inputStream ? FGetC(inputStream) : EOF;
 
 	P2(kprintf("Read character %c (%d)\n", letter, letter));
 
@@ -1332,66 +1002,6 @@ BOOL appendString(struct CSource *cs, STRPTR fromStr, LONG size)
     return TRUE;
 }
 
-
-
-LONG executeFile(STRPTR fileName)
-{
-    BPTR  scriptFile;		/* Well, this is actually not really a script
-				   file, but anyway. */
-
-    scriptFile = Open(fileName, MODE_OLDFILE);
-
-    if(BADDR(scriptFile) != NULL)
-    {
-	BOOL               moreLeft; /* Script ended? */
-	BOOL	    	   breakD;   /* User hit CTRL D? */
-
-	struct Redirection rd;
-
-	cli->cli_CurrentInput = scriptFile; /* Set current input for script
-					       commands */
-	P(kprintf("Loaded script\n"));
-
-    	SetSignal(0, SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F);
-
-	do
-	{
-	    struct CommandLine cl = { NULL, 0, 0 };
-
-	    if(!Redirection_init(&rd))
-	    	break;
-
-	    moreLeft = readLine(&cl, cli->cli_CurrentInput);
-
-	    P(kprintf("Calling checkLine()\n"));
-	    checkLine(&rd, &cl);
-	    FreeVec(cl.line);
-
-	    Redirection_release(&rd);
-
-    	    breakD = CheckSignal(SIGBREAKF_CTRL_D);
-
-	} while(moreLeft && !breakD && (cli->cli_ReturnCode < cli->cli_FailLevel));
-
-	/* Was there an error encountered in the script file that had a
-	   higher fail code than what was specified with FailAt? */
-	if(cli->cli_ReturnCode >= cli->cli_FailLevel)
-	{
-	    /* The interface for GetProgramName() is unbelieveably stupid,
-	       so I use the pointer here instead. This ought to be CHANGED
-	       in dos.library (to C strings). */
-	    IPTR pArgs[] = { (IPTR)cli->cli_CommandName, cli->cli_ReturnCode };
-
-	    VFWritef(Output(), "%T0: failed returncode %N\n", pArgs);
-	}
-
-	Close(scriptFile);
-    }
-
-    return 0;			/* Temporary */
-}
-
-
 void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 {
     if(ss->residentCommand)
@@ -1433,21 +1043,6 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
     /* We check the resident lists only if we do not have an absolute path */
     if(!absolutePath)
     {
-	/* Before checking the resident list, we check if we should we shut
-	   down this Shell */
-	if(Stricmp("EndCli"  , commandName) == 0 ||
-	   Stricmp("EndShell", commandName) == 0)
-	{
-	    FreeArgs(rda);
-	    CloseLibrary((struct Library *)UtilityBase);
-	    P(kprintf("Shutting down the shell\n"));
-
-	    /* For now, we don't deal with (closing) redirections or freeing
-	       cl.line -- to be able to do this we must return FALSE, as this
-	       might be a recursive call of an embedded command */
-	    exit(RETURN_OK);
-	}
-
 	Forbid();
 
 	/* Check regular list first... */
@@ -1629,20 +1224,6 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 }
 
 
-/* Currently, no error checking is involved */
-BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd)
-{
-    char a = 0;
-
-    Seek(embedRd->newOut, 0, OFFSET_BEGINNING);
-
-    while((a = FGetC(embedRd->newOut)) != '\n')
-	appendString(filtered, &a, 1);
-
-    return TRUE;
-}
-
-
 BOOL Redirection_init(struct Redirection *rd)
 {
     bzero(rd, sizeof(struct Redirection));
@@ -1677,3 +1258,118 @@ void Redirection_release(struct Redirection *rd)
 
     releaseFiles(rd);
 }
+
+static void printPath(void)
+{
+    STRPTR  buf;
+    ULONG   i;
+
+    for(i = 256; ; i += 256)
+    {
+	buf = AllocVec(i, MEMF_ANY);
+
+	if(buf == NULL)
+	    break;
+
+	if(GetCurrentDirName(buf, i) == DOSTRUE)
+	{
+	    FPuts(Output(), buf);
+	    FreeVec(buf);
+	    break;
+	}
+
+	FreeVec(buf);
+
+	if(IoErr() != ERROR_OBJECT_TOO_LARGE)
+	    break;
+    }
+}
+
+
+static void setPath(BPTR lock)
+{
+    BPTR    dir;
+    STRPTR  buf;
+    ULONG   i;
+
+    if(lock == NULL)
+	dir = CurrentDir(NULL);
+    else
+	dir = lock;
+
+    for(i = 256; ; i += 256)
+    {
+	buf = AllocVec(i, MEMF_ANY);
+
+	if(buf == NULL)
+	    break;
+
+	if(NameFromLock(dir, buf, i))
+	{
+	    SetCurrentDirName(buf);
+	    FreeVec(buf);
+	    break;
+	}
+
+	FreeVec(buf);
+    }
+
+    if(lock == NULL)
+	CurrentDir(dir);
+}
+
+
+
+static void PrintF(char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    VPrintf(format, args);
+
+    va_end(args);
+}
+
+
+static void printPrompt(void)
+{
+    BSTR prompt = Cli()->cli_Prompt;
+    LONG length = AROS_BSTR_strlen(prompt);
+    ULONG i;
+
+    for(i = 0; i < length; i++)
+    {
+	if(AROS_BSTR_getchar(prompt, i) == '%')
+	{
+	    i++;
+
+	    if(i == length)
+		break;
+
+	    switch(AROS_BSTR_getchar(prompt, i))
+	    {
+	    case 'N':
+	    case 'n':
+		PrintF("%ld", PROCESS(FindTask(NULL))->pr_TaskNum);
+		break;
+	    case 'R':
+	    case 'r':
+		PrintF("%ld", Cli()->cli_ReturnCode);
+		break;
+	    case 'S':
+	    case 's':
+		printPath();
+		break;
+	    default:
+		FPutC(Output(), '%');
+		FPutC(Output(), AROS_BSTR_getchar(prompt, i));
+		break;
+	    }
+	}
+	else
+	    FPutC(Output(), AROS_BSTR_getchar(prompt, i));
+    }
+
+    Flush(Output());
+}
+
