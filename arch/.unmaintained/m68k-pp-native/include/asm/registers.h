@@ -7,20 +7,20 @@
 #define REGISTERS_H
 
 #ifdef __PILOT_CODE__
-#define WREG_L(addr)	*(Long *)addr
-#define RREG_L(addr)	*(Long *)addr
-#define WREG_W(addr)	*(Word *)addr
-#define RREG_W(addr)	*(Word *)addr
-#define WREG_B(addr)	*(Byte *)addr
-#define RREG_B(addr)	*(Byte *)addr
+#define WREG_L(addr)	*(Long *)(addr)
+#define RREG_L(addr)	*(Long *)(addr)
+#define WREG_W(addr)	*(Word *)(addr)
+#define RREG_W(addr)	*(Word *)(addr)
+#define WREG_B(addr)	*(Byte *)(addr)
+#define RREG_B(addr)	*(Byte *)(addr)
 #else
 #include <exec/types.h>
-#define WREG_L(addr)	*(ULONG *)addr
-#define RREG_L(addr)	*(ULONG *)addr
-#define WREG_W(addr)	*(UWORD *)addr
-#define RREG_W(addr)	*(UWORD *)addr
-#define WREG_B(addr)	*(UBYTE *)addr
-#define RREG_B(addr)	*(UBYTE *)addr
+#define WREG_L(addr)	*(ULONG *)(addr)
+#define RREG_L(addr)	*(ULONG *)(addr)
+#define WREG_W(addr)	*(UWORD *)(addr)
+#define RREG_W(addr)	*(UWORD *)(addr)
+#define WREG_B(addr)	*(UBYTE *)(addr)
+#define RREG_B(addr)	*(UBYTE *)(addr)
 #endif
 
 #define IRQ_LEVEL1	0x064
