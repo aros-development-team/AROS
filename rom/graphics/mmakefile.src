@@ -41,6 +41,7 @@ FUNCTIONS	:= \
 	freeraster \
 	freerastport \
 	getapen \
+	getbitmapattr \
 	getbpen \
 	getdrmd \
 	getoutlinepen \
