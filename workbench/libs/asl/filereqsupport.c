@@ -336,9 +336,12 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
         char *pat;
 	
 	GetAttr(STRINGA_TextVal, udata->PatternGad, (IPTR *)&pat);
-	if (ParsePatternNoCase(pat, parsedpattern, MAX_PATTERN_LEN * 2 + 3) != -1)
+	if (pat[0])
 	{
-	    dopatternstring = TRUE;
+	    if (ParsePatternNoCase(pat, parsedpattern, MAX_PATTERN_LEN * 2 + 3) != -1)
+	    {
+		dopatternstring = TRUE;
+	    }
 	}
     }
         
