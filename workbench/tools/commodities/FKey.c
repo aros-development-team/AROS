@@ -113,21 +113,22 @@ Quit Q
 
 /*********************************************************************************************/
 
-#define ACTION_CYCLE_WIN    0
-#define ACTION_CYCLE_SCR    1
-#define ACTION_ENLARGE_WIN  2
-#define ACTION_SHRINK_WIN   3
-#define ACTION_TOGGLE_WIN   4
-#define ACTION_INSERT_TEXT  5
-#define ACTION_RUN_PROG     6
-#define ACTION_RUN_AREXX    7
+#define ACTION_CYCLE_WIN     0
+#define ACTION_CYCLE_SCR     1
+#define ACTION_ENLARGE_WIN   2
+#define ACTION_SHRINK_WIN    3
+#define ACTION_TOGGLE_WIN    4
+#define ACTION_INSERT_TEXT   5
+#define ACTION_RUN_PROG      6
+#define ACTION_RUN_AREXX     7
 
-#define RETURNID_NEWKEY     1
-#define RETURNID_DELKEY     2
-#define RETURNID_STRINGACK  3
-#define RETURNID_LVACK	    4
-#define RETURNID_CMDACK     5
-#define RETURNID_SAVE	    6
+#define RETURNID_NEWKEY      1
+#define RETURNID_DELKEY      2
+#define RETURNID_STRINGACK   3
+#define RETURNID_LVACK	     4
+#define RETURNID_CMDACK      5
+#define RETURNID_SAVE	     6
+#define RETURNID_DOUBLESTART 7
 
 /*********************************************************************************************/
 
@@ -531,6 +532,8 @@ static void MakeGUI(void)
     
     set(liststr, MUIA_String_AttachedList, (IPTR)list);
 
+    DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_DOUBLESTART);
+    
     //DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
@@ -1239,6 +1242,10 @@ void HandleAll(void)
 		
 	    case RETURNID_SAVE:
     	    	SaveSettings();
+		break;
+		
+	    case RETURNID_DOUBLESTART:
+	    	set(wnd, MUIA_Window_Open, TRUE);
 		break;
 	}
 	
