@@ -30,14 +30,14 @@ Open questions: Will this interfere with the way Exec handles libraries now
 locking of the exec library list ? What happens if |libClose()| calls
 |libExpunge()| ?
 
-
-\item By Nils Henrik Lorentzen:
-Extend on the datatypes concept. Some datatypes-alike system where
-dataprocessing methods can be added to datatype classes. (Eg. for pictures
-one could add methods like |Rotate()|, |Flip()| and other typical image
-processing operators. Similarly one can add sound fx methods for sound data).
-For this to be usefull one should probably be able to add methods
-to a class one by one (so BOOPSI can probably not be used for this).
+\begin{new}{27.10.1997}
+\item By Nils Henrik Lorentzen: Extend on the
+datatypes concept. Some datatypes-alike system where dataprocessing methods
+can be added to datatype classes. (Eg. for pictures one could add methods
+like |Rotate()|, |Flip()| and other typical image processing operators.
+Similarly one can add sound fx methods for sound data). For this to be
+usefull one should probably be able to add methods to a class one by one
+(so BOOPSI can probably not be used for this).
 
 The objects should contain the data in a raw format so that the methods
 can easily operate on it. One should be able to stream data in and out
@@ -55,8 +55,8 @@ object type. (text/image/structured drawing).
 
 Now, should these objects be able to show themselves,
 like the old datatypes ? Well, IMO they should not be bound to
-a single operating system/GUI system, but they could maybe show 
-themselves through some RTG system (?). 
+a single operating system/GUI system, but they could maybe show
+themselves through some RTG system (?).
 But the viewer could also stream out the data from
 the object to show. When the object's data has changed, the
 viewer could be notified and where in the stream the "damaged" data is.
@@ -82,10 +82,19 @@ If the system can work on other platforms too, we get even
 more developers that can support it.
 
 I believe that if some system should have any chance at all
-of taking some market share from M$ it  a) has to be free.
-b) must be available on as many platforms as possible. c) must consist 
-of tiny components that can be added at run-time.=>This way it'll be 
+of taking some market share from M$ it	a) has to be free.
+b) must be available on as many platforms as possible. c) must consist
+of tiny components that can be added at run-time.=>This way it'll be
 easier for developers to support it.
+
+\item When a new HIDD is installed, it should appear in the list of
+available HIDDs automatically (eg. by file notification on the directory).
+
+\item We need an automatic converter for the incompatible features of AROS
+to convert the old AmigaOS code to AROS (which can then be compiled on
+AmigaOS by our compatibility lib).
+
+\end{new}
 
 \end{itemize}
 \end{new}
