@@ -193,7 +193,7 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
     if (LocaleBase != NULL)
     {
 	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog", 
-				 OC_BuiltInLanguage, "english", TAG_DONE);
+				 OC_BuiltInLanguage, (IPTR)"english", TAG_DONE);
 	D(bug("Library locale.library opened!\n"));
     }
     else
@@ -219,6 +219,56 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 	}
 
 	tmpLibTable++;
+    }
+
+    if (Cli() != NULL)
+    {
+	struct RDArgs *rda;
+	IPTR           args[] = { NULL, NULL, (IPTR)FALSE };
+
+	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+
+	if (rda != NULL)
+	{
+	    if (args[ARG_PRI] != NULL)
+	    {
+		nb.nb_Pri = *(LONG *)args[ARG_PRI];
+	    }
+
+	    getQualifier((STRPTR)args[ARG_QUALIFIER]);
+
+	    cfInfo.ci_doubleClick = args[ARG_DOUBLE];
+
+	    if (cfInfo.ci_doubleClick)
+	    {
+		D(bug("Using the double clicking method.\n"));
+	    }
+	}
+
+	FreeArgs(rda);
+    }
+    else
+    {
+	IconBase = OpenLibrary("icon.library", 39);
+
+	if (IconBase != NULL)
+	{
+	    UBYTE  **array = ArgArrayInit(argc, (UBYTE **)argv);
+
+	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
+	    cfInfo.ci_doubleClick = ArgString(array, "DOUBLE", NULL) != NULL;
+	   
+	    getQualifier(ArgString(array, "QUALIFIER", NULL));
+
+	    ArgArrayDone();
+	}
+	else
+	{
+	    printf("%s %s %i", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), 
+		   "icon.library", 39);
+	}
+	
+	CloseLibrary(IconBase);
     }
 
     nb.nb_Name = getCatalog(catalogPtr, MSG_CLICK2FNT_CXNAME);
@@ -276,56 +326,6 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
     }
     
     InputBase = (struct Library *)inputIO->io_Device;
-
-    if (Cli() != NULL)
-    {
-	struct RDArgs *rda;
-	IPTR           args[] = { NULL, NULL, (IPTR)FALSE };
-
-	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-
-	if (rda != NULL)
-	{
-	    if (args[ARG_PRI] != NULL)
-	    {
-		nb.nb_Pri = *(LONG *)args[ARG_PRI];
-	    }
-
-	    getQualifier((STRPTR)args[ARG_QUALIFIER]);
-
-	    cfInfo.ci_doubleClick = args[ARG_DOUBLE];
-
-	    if (cfInfo.ci_doubleClick)
-	    {
-		D(bug("Using the double clicking method.\n"));
-	    }
-	}
-
-	FreeArgs(rda);
-    }
-    else
-    {
-	IconBase = OpenLibrary("icon.library", 39);
-
-	if (IconBase != NULL)
-	{
-	    UBYTE  **array = ArgArrayInit(argc, (UBYTE **)argv);
-
-	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
-	    cfInfo.ci_doubleClick = ArgString(array, "DOUBLE", NULL) != NULL;
-	   
-	    getQualifier(ArgString(array, "QUALIFIER", NULL));
-
-	    ArgArrayDone();
-	}
-	else
-	{
-	    printf("%s %s %i", getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), 
-		   "icon.library", 39);
-	}
-	
-	CloseLibrary(IconBase);
-    }
 
     return TRUE;
 }
