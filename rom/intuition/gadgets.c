@@ -16,6 +16,7 @@
 #include <intuition/imageclass.h>
 #include <proto/graphics.h>
 #include <graphics/rastport.h>
+#include <graphics/text.h>
 
 #define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
@@ -31,12 +32,17 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 
     switch (EG(o)->Flags & GFLG_LABELMASK)
     {
-    case GFLG_LABELITEXT:
+    case GFLG_LABELITEXT: {
+	struct TextExtent te;
+
+	TextExtent(rp, EG(o)->GadgetText->IText,
+		   strlen(EG(o)->GadgetText->IText), &te);
         PrintIText(rp,
 	    EG(o)->GadgetText,
-	    container.Left,
-	    container.Top);
-	break;
+	    container.Left + (container.Width - te.te_Width)/2,
+	    container.Top + container.Height - 1 -
+	    (container.Height - te.te_Height)/2);
+	break; }
 
     case GFLG_LABELSTRING:
         if(EG(o)->GadgetText != NULL)
