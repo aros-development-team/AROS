@@ -7,7 +7,7 @@ MODNAME	    := rexxsupport
 MODTYPE	    := library
 
 FILES := allocmem freemem openport closeport waitpkt getarg getpkt \
-         portcleanup reply showdir
+         portcleanup reply showdir showlist
 FUNCS := arexxdispatch closeportrsrc
 
 USE_ROMLIB := yes

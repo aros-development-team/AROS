@@ -1482,7 +1482,7 @@ rexxsupport;2;verhaegs;Write GETPKT
 rexxsupport;2;verhaegs;Write OPENPORT
 rexxsupport;2;verhaegs;Write REPLY
 rexxsupport;2;verhaegs;Write SHOWDIR
-rexxsupport;1;verhaegs;Write SHOWLIST
+rexxsupport;2;verhaegs;Write SHOWLIST
 rexxsupport;0;verhaegs;Write STATEF
 rexxsupport;2;verhaegs;Write WAITPKT
 rexxsyslib00000;2;verhaegs;Write CreateArgstring
