@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/21 14:09:10  digulla
+    No need for __AROS macros
+
     Revision 1.2  1996/09/17 18:05:45  digulla
     Same names for same parameters
 
@@ -51,10 +54,5 @@ extern struct IntuitionBase * IntuitionBase;
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
     return OpenWindowTagList (newWindow, (struct TagItem *)&tag1);
-
-    __AROS_FUNC_EXIT
 } /* OpenWindowTags */
