@@ -20,6 +20,7 @@ CLASSES := \
     gauge \
     group \
     iconlist \
+    iconlistview \
     image \
     imageadjust \
     list \
