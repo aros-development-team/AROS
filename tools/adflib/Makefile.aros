@@ -38,6 +38,7 @@ $(OBJDIR)/defendian.h: myconf.aros
 $(ADFLIB) : $(foreach f,$(SRC),$(OBJDIR)/$(f).o)
 	@$(MECHO) "Creating adflib/$(notdir $@)..."
 	@$(HOST_AR) $@ $?
+	@$(HOST_RANLIB) $@
 
 $(OBJDIR)/%.o : %.c $(OBJDIR)/defendian.h
 	@$(MECHO) "Compiling adflib/$(notdir $@)..."
