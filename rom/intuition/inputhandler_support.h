@@ -36,18 +36,20 @@ void NotifyDepthArrangement(struct Window *w,
 
 /*********************************************************************/
 
-void PrepareGadgetInfo(struct GadgetInfo *gi, struct Window *win);
+void PrepareGadgetInfo(struct GadgetInfo *gi, struct Screen *scr, struct Window *win);
 
 void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad);
+
+void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad);
 
 struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, struct Gadget *gadget,
 					ULONG termination,
 					BOOL *reuse_event,struct IntuitionBase *IntuitionBase);
 
-struct Gadget * FindGadget (struct Window * window, int x, int y,
+struct Gadget * FindGadget (struct Screen *scr, struct Window * window, int x, int y,
 			    struct GadgetInfo * gi, struct IntuitionBase *IntuitionBase);
 
-BOOL InsideGadget(struct Window *win, struct Gadget *gad,
+BOOL InsideGadget(struct Screen *scr, struct Window *win, struct Gadget *gad,
 		  WORD x, WORD y);
 
 struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad, struct IntuitionBase *IntuitionBase);

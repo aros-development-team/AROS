@@ -107,7 +107,7 @@ void CalcBBox (struct Window * window, struct Gadget * gadget,
     
     */
     
-   GetDomGadgetIBox(gadget, window, NULL, (struct IBox *)bbox);
+   GetDomGadgetIBox(gadget, window->WScreen, window, NULL, (struct IBox *)bbox);
    
 } /* CalcBBox */
 
@@ -214,7 +214,7 @@ VOID drawrect(struct RastPort *rp
     return;
 }
 
-void GetGadgetDomain(struct Gadget *gad, struct Window *win,
+void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
                      struct Requester *req, struct IBox *box)
 {
     switch (gad->GadgetType & (GTYP_GADGETTYPE & ~GTYP_SYSGADGET))
@@ -222,8 +222,8 @@ void GetGadgetDomain(struct Gadget *gad, struct Window *win,
 	case GTYP_SCRGADGET:
 	    box->Left	= 0;
 	    box->Top	= 0;
-	    box->Width  = win->WScreen->Width;
-	    box->Height = win->WScreen->Height;
+	    box->Width  = scr->Width;
+	    box->Height = scr->Height;
 
 	    break;
 
@@ -272,49 +272,49 @@ void GetGadgetDomain(struct Gadget *gad, struct Window *win,
     } /* switch (gadgettype) */
 }
 
-WORD GetGadgetLeft(struct Gadget *gad, struct Window *win, struct Requester *req)
+WORD GetGadgetLeft(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
 
-    GetGadgetDomain(gad, win, req, &box);
+    GetGadgetDomain(gad, scr, win, req, &box);
     
     return gad->LeftEdge + ADDREL(gad, GFLG_RELRIGHT, (&box), Width - 1);
 }
 
-WORD GetGadgetTop(struct Gadget *gad, struct Window *win, struct Requester *req)
+WORD GetGadgetTop(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
 
-    GetGadgetDomain(gad, win, req, &box);
+    GetGadgetDomain(gad, scr, win, req, &box);
     
     return gad->TopEdge + ADDREL(gad, GFLG_RELBOTTOM, (&box), Height - 1);
 }
 
-WORD GetGadgetWidth(struct Gadget *gad, struct Window *win, struct Requester *req)
+WORD GetGadgetWidth(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
 
-    GetGadgetDomain(gad, win, req, &box);
+    GetGadgetDomain(gad, scr, win, req, &box);
     
     return gad->Width + ADDREL(gad, GFLG_RELWIDTH, (&box), Width);
 }
 
-WORD GetGadgetHeight(struct Gadget *gad, struct Window *win, struct Requester *req)
+WORD GetGadgetHeight(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
 
-    GetGadgetDomain(gad, win, req, &box);
+    GetGadgetDomain(gad, scr, win, req, &box);
     
     return gad->Height + ADDREL(gad, GFLG_RELHEIGHT, (&box), Height);
 }
 
 /* gadget box in screen coords */
-void GetScrGadgetIBox(struct Gadget *gad, struct Window *win,
+void GetScrGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box)
 {
     struct IBox domain;
     
-    GetGadgetDomain(gad, win, req, &domain);
+    GetGadgetDomain(gad, scr, win, req, &domain);
     
     if (req)
     {
@@ -338,10 +338,10 @@ void GetScrGadgetIBox(struct Gadget *gad, struct Window *win,
 }
 
 /* gadget box relative to upper left window edge */
-void GetWinGadgetIBox(struct Gadget *gad, struct Window *win,
+void GetWinGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box)
 {
-    GetScrGadgetIBox(gad, win, req, box);
+    GetScrGadgetIBox(gad, scr, win, req, box);
     
     if (req)
     {
@@ -359,13 +359,13 @@ void GetWinGadgetIBox(struct Gadget *gad, struct Window *win,
 }
 
 /* gadget box in domain coords */
-void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
+void GetDomGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box)
 {
     struct IBox domain;
     
-    GetWinGadgetIBox(gad, win, req, box);
-    GetGadgetDomain(gad, win, req, &domain);
+    GetWinGadgetIBox(gad, scr, win, req, box);
+    GetGadgetDomain(gad, scr, win, req, &domain);
     
     box->Left -= domain.Left;
     box->Top  -= domain.Top;
@@ -374,7 +374,7 @@ void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
 
 
 /* gadget bounds in screen coords */
-void GetScrGadgetBounds(struct Gadget *gad, struct Window *win,
+void GetScrGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		        struct Requester *req, struct IBox *box)
 {
     struct IBox domain;
@@ -383,7 +383,7 @@ void GetScrGadgetBounds(struct Gadget *gad, struct Window *win,
     {
         if (EG(gad)->MoreFlags & GMORE_BOUNDS)
 	{
-	    GetGadgetDomain(gad, win, req, &domain);
+	    GetGadgetDomain(gad, scr, win, req, &domain);
 
 	    if (req)
 	    {
@@ -411,14 +411,14 @@ void GetScrGadgetBounds(struct Gadget *gad, struct Window *win,
     
     /* if gadget does not have bounds return box */
     
-    GetScrGadgetIBox(gad, win, req, box);
+    GetScrGadgetIBox(gad, scr, win, req, box);
 }
 
 /* gadget bounds relative to upper left window edge */
-void GetWinGadgetBounds(struct Gadget *gad, struct Window *win,
+void GetWinGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		        struct Requester *req, struct IBox *box)
 {
-    GetScrGadgetBounds(gad, win, req, box);
+    GetScrGadgetBounds(gad, scr, win, req, box);
     
     if (req)
     {
@@ -436,13 +436,13 @@ void GetWinGadgetBounds(struct Gadget *gad, struct Window *win,
 }
 
 /* gadget bounds in domain coords */
-void GetDomGadgetBounds(struct Gadget *gad, struct Window *win,
+void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		        struct Requester *req, struct IBox *box)
 {
     struct IBox domain;
     
-    GetWinGadgetBounds(gad, win, req, box);
-    GetGadgetDomain(gad, win, req, &domain);
+    GetWinGadgetBounds(gad, scr, win, req, box);
+    GetGadgetDomain(gad, scr, win, req, &domain);
     
     box->Left -= domain.Left;
     box->Top  -= domain.Top;
@@ -475,7 +475,7 @@ void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase)
 	    if (gad->Flags & (GFLG_RELRIGHT | GFLG_RELBOTTOM |
 			      GFLG_RELWIDTH | GFLG_RELHEIGHT | GFLG_RELSPECIAL))
 	    {
-		GetDomGadgetBounds(gad, win, NULL, &box);
+		GetDomGadgetBounds(gad, win->WScreen, win, NULL, &box);
 		EraseRect(win->RPort, box.Left,
 		    		      box.Top,
 				      box.Left + box.Width - 1,

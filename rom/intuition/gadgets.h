@@ -47,42 +47,43 @@ VOID drawrect(struct RastPort *rp
 	, WORD x2, WORD y2
 	, struct IntuitionBase *IntuitionBase);
 
-void GetGadgetDomain(struct Gadget *gad, struct Window *win,
+void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
                      struct Requester *req, struct IBox *box);
 
 /* gadget coords relative to their domain! */
 		     
-WORD GetGadgetLeft(struct Gadget *gad, struct Window *win, struct Requester *req);
-WORD GetGadgetTop(struct Gadget *gad, struct Window *win, struct Requester *req);
-WORD GetGadgetWidth(struct Gadget *gad, struct Window *win, struct Requester *req);
-WORD GetGadgetHeight(struct Gadget *gad, struct Window *win, struct Requester *req);
+WORD GetGadgetLeft(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
+WORD GetGadgetTop(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
+WORD GetGadgetWidth(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
+WORD GetGadgetHeight(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
 
 /* gadget box in screen coords */
-void GetScrGadgetIBox(struct Gadget *gad, struct Window *win,
+void GetScrGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 
 /* gadget box relative to upper left window edge */
-void GetWinGadgetIBox(struct Gadget *gad, struct Window *win,
+void GetWinGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 
 /* gadget box in domain coords */
-void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
+void GetDomGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 
 /* gadget bounds (or box if not GMORE_BOUNDS) in screen coords */
-void GetScrGadgetBounds(struct Gadget *gad, struct Window *win,
+void GetScrGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 
 /* gadget bounds (or box if not GMORE_BOUNDS) relative to upper left window edge */
-void GetWinGadgetBounds(struct Gadget *gad, struct Window *win,
+void GetWinGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 
 /* gadget bounds (or box if not GMORE_BOUNDS)in domain coords */
-void GetDomGadgetBounds(struct Gadget *gad, struct Window *win,
+void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box);
 		      
 		      
 void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase);
+
 
 #endif /* _GADGETS_H_ */
 

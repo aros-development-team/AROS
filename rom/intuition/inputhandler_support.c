@@ -226,14 +226,13 @@ void NotifyDepthArrangement(struct Window *w,
 /************************
 **  PrepareGadgetInfo  **
 ************************/
-void PrepareGadgetInfo(struct GadgetInfo *gi, struct Window *win)
+void PrepareGadgetInfo(struct GadgetInfo *gi, struct Screen *scr, struct Window *win)
 {
-    gi->gi_Screen	  = win->WScreen;
+    gi->gi_Screen	  = scr;
     gi->gi_Window	  = win;
-    gi->gi_Domain	  = *((struct IBox *)&win->LeftEdge); /* depends on gadget: will be overwritten */
-    gi->gi_RastPort   	  = win->RPort;			      /* "       "  "     : "    "  "           */
-    gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
-    gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
+    gi->gi_RastPort   	  = 0;
+    gi->gi_Pens.DetailPen = scr->DetailPen;
+    gi->gi_Pens.BlockPen  = scr->BlockPen;
     gi->gi_DrInfo	  = &(((struct IntScreen *)gi->gi_Screen)->DInfo);
 }
 
@@ -244,7 +243,28 @@ void PrepareGadgetInfo(struct GadgetInfo *gi, struct Window *win)
 void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad)
 {
     SET_GI_RPORT(gi, gi->gi_Window, gad);
-    GetGadgetDomain(gad, gi->gi_Window, NULL, &gi->gi_Domain);
+    GetGadgetDomain(gad, gi->gi_Screen, gi->gi_Window, NULL, &gi->gi_Domain);
+}
+/***********************
+**  SetGIMouseCoords  **
+***********************/
+void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad)
+{
+    struct GadgetInfo *gi = gpi->gpi_GInfo;
+    
+    WORD mousex, mousey;
+    
+    if (gi->gi_Window)
+    {
+        mousex = gi->gi_Window->MouseX;
+	mousey = gi->gi_Window->MouseY;
+    } else {
+        mousex = gi->gi_Screen->MouseX;
+	mousey = gi->gi_Screen->MouseY;
+    }
+    
+    gpi->gpi_Mouse.X = mousex - gi->gi_Domain.Left - GetGadgetLeft(gad, gi->gi_Screen, gi->gi_Window, NULL);
+    gpi->gpi_Mouse.Y = mousey - gi->gi_Domain.Top  - GetGadgetTop(gad, gi->gi_Screen, gi->gi_Window, NULL);
 }
 
 /*******************************
@@ -311,10 +331,10 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 /*****************
 **  FindGadget	**
 *****************/
-struct Gadget * FindGadget (struct Window * window, int x, int y,
+struct Gadget * FindGadget (struct Screen *scr, struct Window * window, int x, int y,
 			    struct GadgetInfo * gi, struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget * gadget;
+    struct Gadget * gadget, * firstgadget;
     struct gpHitTest gpht;
     struct IBox ibox;
     WORD xrel, yrel;
@@ -322,32 +342,38 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
 
-    for (gadget = window->FirstGadget; gadget; gadget = gadget->NextGadget)
+    if (window)
+    {
+        firstgadget = window->FirstGadget;
+    } else {
+        firstgadget = scr->FirstGadget;
+    }
+    
+    for (gadget = firstgadget; gadget; gadget = gadget->NextGadget)
     {
     	if (!(gadget->Flags & GFLG_DISABLED))
 	{
     	    /* stegerg: domain depends on gadgettype and windowflags! */
-            GetGadgetDomain(gadget, window, NULL, &gi->gi_Domain);
+            GetGadgetDomain(gadget, scr, window, NULL, &gi->gi_Domain);
 
 	    /* Get coords relative to window */
 
     	    GetGadgetIBox((Object *)gadget, gi, &ibox);
 
-	    xrel = x - gi->gi_Domain.Left - window->LeftEdge;
-	    yrel = y - gi->gi_Domain.Top  - window->TopEdge;
+	    xrel = x - gi->gi_Domain.Left - (window ? window->LeftEdge : 0);
+	    yrel = y - gi->gi_Domain.Top  - (window ? window->TopEdge : 0);
 
 	    if (   xrel >= ibox.Left
 		&& yrel >= ibox.Top
 		&& xrel < ibox.Left + ibox.Width 
 		&& yrel < ibox.Top  + ibox.Height )
 	    {
-		if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET) break;
-
+	    	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET) break;
+	  
 		gpht.gpht_Mouse.X = xrel - ibox.Left;
 		gpht.gpht_Mouse.Y = yrel - ibox.Top;
 
-		if (Locked_DoMethodA ((Object *)gadget, (Msg)&gpht, IntuitionBase) == GMR_GADGETHIT)
-		    break;
+		if (Locked_DoMethodA ((Object *)gadget, (Msg)&gpht, IntuitionBase) == GMR_GADGETHIT) break;
 
 	    }
 
@@ -363,13 +389,13 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 /*******************
 **  InsideGadget  **
 *******************/
-BOOL InsideGadget(struct Window *win, struct Gadget *gad,
+BOOL InsideGadget(struct Screen *scr, struct Window *win, struct Gadget *gad,
 		  WORD x, WORD y)
 {
     struct IBox box;
     BOOL rc = FALSE;
     
-    GetScrGadgetIBox(gad, win, NULL, &box);
+    GetScrGadgetIBox(gad, scr, win, NULL, &box);
        
     if ((x >= box.Left) &&
     	(y >= box.Top)  &&
@@ -401,7 +427,7 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad, struct I
 			  IntuitionBase);
     }
 
-    PrepareGadgetInfo(gi, win);
+    PrepareGadgetInfo(gi, win->WScreen, win);
     SetGadgetInfoGadget(gi, gad);
     
     switch(gad->GadgetType & GTYP_GTYPEMASK)
@@ -422,8 +448,8 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad, struct I
 	    gpi.gpi_GInfo	= gi;
 	    gpi.gpi_IEvent	= NULL;
 	    gpi.gpi_Termination = &termination;
-	    gpi.gpi_Mouse.X = win->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gad, win, NULL);
-	    gpi.gpi_Mouse.Y = win->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gad, win, NULL);
+	    gpi.gpi_Mouse.X = win->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gad, gi->gi_Screen, gi->gi_Window, NULL);
+	    gpi.gpi_Mouse.Y = win->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gad, gi->gi_Screen, gi->gi_Window, NULL);
 	    gpi.gpi_TabletData	= NULL;
 
 	    retval = Locked_DoMethodA ((Object *)gad, (Msg)&gpi, IntuitionBase);

@@ -169,7 +169,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 )
 {
     struct InputEvent	*ie;
-    struct Screen	* screen;
     struct Gadget *gadget = iihdata->ActiveGadget;
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
     ULONG  lock;
@@ -197,8 +196,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     	D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
 	reuse_event = FALSE;
 	ptr = NULL;
-
-	iihdata->ActQualifier = ie->ie_Qualifier;
 	
         /* Use event to find the active window */
              
@@ -328,36 +325,38 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    continue;
 
         /* If there is no active window, nothing to do */
-        if (w == NULL)
-	    continue;
+/*        if (w == NULL)
+	    continue;*/
 	         		
  	/* 
 	**  IntuiMessages get the mouse coordinates relative to
 	**  the upper left corner of the window no matter if
 	**  window is GZZ or not
 	*/
-			    
-	screen = w->WScreen;
-	
+			    	
 	switch (ie->ie_Class)
 	{
 	    
 	case IECLASS_REFRESHWINDOW:
-	    fire_intuimessage(w, IDCMP_REFRESHWINDOW, 0, w, IntuitionBase);
+	    if (w)
+	    {
+		fire_intuimessage(w, IDCMP_REFRESHWINDOW, 0, w, IntuitionBase);
 
-	    RefreshGadgets (w->FirstGadget, w, NULL);
-	    
+		RefreshGadgets (w->FirstGadget, w, NULL);
+	    }
 	    break; /* case IECLASS_REFRESHWINDOW */
 
 	case IECLASS_SIZEWINDOW:
-	    fire_intuimessage(w, IDCMP_NEWSIZE, 0, w, IntuitionBase);
+	    if (w)
+	    {
+		fire_intuimessage(w, IDCMP_NEWSIZE, 0, w, IntuitionBase);
 
-	    /* Change width of dragbar gadget */
+		/* Change width of dragbar gadget */
 
 
-	    /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
-	    DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
-	    
+		/* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
+	    }
 	    break; /* case IECLASS_SIZEWINDOW */
 
 	case IECLASS_RAWMOUSE:
@@ -366,9 +365,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case SELECTDOWN: {
 		BOOL new_gadget = FALSE;
 
+		iihdata->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
+		
 		if (!gadget)
 		{
-  		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi, IntuitionBase);
+  		    gadget = FindGadget (IntuitionBase->ActiveScreen, w, ie->ie_X, ie->ie_Y, gi, IntuitionBase);
 		    if (gadget)
 		    {
 		        /* Whenever the active gadget changes the gi must be updated
@@ -376,7 +377,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			   forget to do this if somewhere else the active
 			   gadget is changed, for example in ActivateGadget!!! */
 			   
-		        PrepareGadgetInfo(gi, w);
+		        PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w);
 		    	SetGadgetInfoGadget(gi, gadget);
 			
 			if ((gadget->Activation & GACT_IMMEDIATE) &&
@@ -411,13 +412,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
-			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
-
 			HandlePropSelectDown(gadget,
 					     w,
 					     NULL,
-					     w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL),
-					     w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL),
+					     w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL),
+					     w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL),
 					     IntuitionBase);
 
 
@@ -429,7 +428,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			** else deactivate stringadget and reuse event.
 			*/
 
-			if (InsideGadget(w, gadget, ie->ie_X, ie->ie_Y))
+			if (InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y))
 			{
 			    UWORD imsgcode;
 
@@ -464,11 +463,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
-
-
+			SetGPIMouseCoords(&gpi, gadget);
+			
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
 			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
@@ -480,7 +477,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    } /* switch (GadgetType) */
 
 		} /* if (a gadget is active) */
-		else
+		else if (w)
 		{
 		    fire_intuimessage(w,
 		    		      IDCMP_MOUSEBUTTONS,
@@ -492,9 +489,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		}break; /* case SELECTDOWN */
 
 	    case SELECTUP:
+		iihdata->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
+
 		if (gadget)
 		{
-		    int inside = InsideGadget(w,gadget, ie->ie_X, ie->ie_Y);
+		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
 
 
@@ -552,9 +551,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
+			SetGPIMouseCoords(&gpi, gadget);
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
@@ -566,7 +564,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    } /* switch GadgetType */
 
 		} /* if (a gadget is currently active) */
-		else
+		else if (w)
 		{
 		    fire_intuimessage(w,
 		    		      IDCMP_MOUSEBUTTONS,
@@ -581,6 +579,25 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case MENUUP:
 	    case MIDDLEDOWN:
 	    case MIDDLEUP:
+	    	switch(ie->ie_Code)
+		{
+		    case MENUDOWN:
+		    	iihdata->ActQualifier |= IEQUALIFIER_RBUTTON;
+			break;
+		
+		    case MENUUP:
+		    	iihdata->ActQualifier &= ~IEQUALIFIER_RBUTTON;
+			break;
+		
+		    case MIDDLEDOWN:
+		    	iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
+			break;
+			
+		    case MIDDLEUP:
+		    	iihdata->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
+			break;
+		}
+		
 		if (gadget)
 		{
 		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
@@ -594,9 +611,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
+			SetGPIMouseCoords(&gpi, gadget);
 
 			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
@@ -606,7 +622,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    } /* if (active gadget is a BOOPSI gad) */
 
 		} /* if (there is an active gadget) */
-		else
+		else if (w)
 		{
 		    fire_intuimessage(w,
 		    		      IDCMP_MOUSEBUTTONS,
@@ -631,7 +647,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (gadget)
 		{
-		    int inside = InsideGadget(w,gadget,ie->ie_X,ie->ie_Y);
+		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
 
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
@@ -645,13 +661,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
-		        GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
-			
 			HandlePropMouseMove(gadget
 				,w
 				,NULL
-				,w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL)
-				,w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL)
+				,w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, gi->gi_Screen, gi->gi_Window, NULL)
+				,w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, gi->gi_Screen, gi->gi_Window, NULL)
 				,IntuitionBase);
 
 			break;
@@ -665,9 +679,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
+			SetGPIMouseCoords(&gpi, gadget);
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
@@ -680,6 +693,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    	
 		} /* if (a gadget is currently active) */
 
+		if (!w) continue;
+		
 		if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE)) continue;
 		
 		/* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
@@ -768,12 +783,20 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    } /* switch (im->im_Code)  (what button was pressed ?) */
 	    break;
 
-
+#define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
+			IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+			IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
+			IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
+			IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
+			
 	case IECLASS_RAWKEY:
 	    /* send release events only to windows who
 	       have not set IDCMP_VANILLAKEY and no
 	       active gadget */
-	       
+	    
+	    iihdata->ActQualifier &= ~KEY_QUALIFIERS;
+	    iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
+				      
 	    if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
 	         (!gadget && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
 	    {
@@ -831,9 +854,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
+			SetGPIMouseCoords(&gpi, gadget);
 
 			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
@@ -846,7 +868,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    } /* switch (gadget type) */
 
 		} /* if (a gadget is currently active) */
-		else
+		else if (w)
 		{
 		    BOOL is_repeat_event;
 		    		  
@@ -912,9 +934,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    gpi.gpi_GInfo	= gi;
 		    gpi.gpi_IEvent	= ie;
 		    gpi.gpi_Termination = &termination;
-		    gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-		    gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 		    gpi.gpi_TabletData  = NULL;
+		    SetGPIMouseCoords(&gpi, gadget);
 
 		    retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
 
@@ -924,6 +945,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		} /* if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) */
 		
 	    } /* if (gadget) */
+	    
+	    if (!w) continue;
 	    
 	    /* Send INTUITICK msg only if app already replied the last INTUITICK msg */
 	    if (w->Flags & WFLG_WINDOWTICKED) continue;
@@ -945,11 +968,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    break; /* case IECLASS_TIMER */
 
 	case IECLASS_ACTIVEWINDOW:
-	    fire_intuimessage(w, IDCMP_ACTIVEWINDOW, 0, w, IntuitionBase);
+	    if (w) fire_intuimessage(w, IDCMP_ACTIVEWINDOW, 0, w, IntuitionBase);
 	    break;
 
 	case IECLASS_INACTIVEWINDOW:
-	    fire_intuimessage(w, IDCMP_INACTIVEWINDOW, 0, w, IntuitionBase);
+	    if (w) fire_intuimessage(w, IDCMP_INACTIVEWINDOW, 0, w, IntuitionBase);
 	    break;
 
 	default:
