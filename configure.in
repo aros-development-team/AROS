@@ -409,9 +409,18 @@ case "$target_os" in
     freebsd*)
 	aros_target_arch="freebsd"
 	aros_target_cpu="i386"
-	aros_object_format="elf_i386_fbsd"
 	aros_flavour="emulation"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+
+	dnl FreeBSD 5.x has changed the default object format.
+	case $target_os in
+	    freebsd5*)
+		aros_object_format="elf_i386_fbsd"
+		;;
+
+	    *)
+		aros_object_format="elf_i386"
+	esac
 
 	dnl Need to override this here, it's just too hard later.
 	aros_target_cc_includes="/usr/include"
