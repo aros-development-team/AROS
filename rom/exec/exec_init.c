@@ -64,11 +64,7 @@ static const UBYTE version[] = VERSION_STRING;
 extern void debugmem(void);
 extern void idleTask(struct ExecBase *);
 
-#warning FIXME: This is public to allow PrepareExecBase() to work
-struct AROSSupportBase AROSSupportBase;
-
-#warning FIXME: This global SysBase declaration does not seem to be used any more (remove it?)
-/* struct ExecBase *SysBase; */
+static struct AROSSupportBase AROSSupportBase;
 
 /*
     We temporarily redefine kprintf() so we use the real version in case
@@ -76,13 +72,33 @@ struct AROSSupportBase AROSSupportBase;
 */
 
 #undef kprintf
+#undef rkprintf
+struct Library * PrepareAROSSupportBase (void)
+{
+    AROSSupportBase.kprintf = (void *)kprintf;
+    AROSSupportBase.rkprintf = (void *)rkprintf;
+
+#warning FIXME Add code to read in the debug options
+	
+    return &AROSSupportBase;
+}
+
+void AROSSupportBase_SetStdOut (void * stdout)
+{
+    AROSSupportBase.StdOut = stdout;
+}
+
+#warning FIXME: This global SysBase declaration does not seem to be used any more (remove it?)
+/* struct ExecBase *SysBase; */
+
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
 	    abs(*(WORD *)((&X)[-1]-2)),
 	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
-#define kprintf (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
+#define kprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
+#define rkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
 
 /* IntServer:
     This interrupt handler will send an interrupt to a series of queued
