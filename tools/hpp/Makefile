@@ -5,12 +5,15 @@ CFLAGS	 = -g -Wall -O -I..
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
-OBJS	 = parse_html.o html.o main.o var.o db.o
+OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o
 
-all : hpp
+all : hpp format
 
 hpp : $(OBJS) $(DEPLIBS)
 	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS)
+
+format : format.o
+	$(CC) $(CFLAGS) $< -o $@ $(LIBS)
 
 htmlparsetest : test_parse_html.o $(DEPLIBS)
 	$(CC) $(CFLAGS) test_parse_html.o -o $@ $(LIBS)
@@ -47,15 +50,28 @@ html.o: /usr/include/linux/errno.h /usr/include/asm/errno.h
 html.o: /usr/include/alloca.h ../toollib/mystream.h ../toollib/callback.h
 html.o: ../toollib/stringcb.h ../toollib/vstring.h ../toollib/error.h parse.h
 html.o: parse_html.h var.h html.h
+html_filter.o: ../toollib/error.h ../toollib/toollib.h
+html_filter.o: /usr/include/sys/types.h /usr/include/linux/types.h
+html_filter.o: /usr/include/linux/posix_types.h
+html_filter.o: /usr/include/asm/posix_types.h /usr/include/asm/types.h
+html_filter.o: /usr/include/sys/bitypes.h /usr/include/stdarg.h
+html_filter.o: /usr/include/stdlib.h /usr/include/features.h
+html_filter.o: /usr/include/sys/cdefs.h /usr/include/stddef.h
+html_filter.o: /usr/include/errno.h /usr/include/linux/errno.h
+html_filter.o: /usr/include/asm/errno.h /usr/include/alloca.h
+html_filter.o: ../toollib/stdiocb.h /usr/include/stdio.h /usr/include/libio.h
+html_filter.o: /usr/include/_G_config.h ../toollib/mystream.h
+html_filter.o: ../toollib/callback.h html.h parse.h var.h
+html_filter.o: ../toollib/vstring.h
 main.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
-main.o: /usr/include/sys/cdefs.h ../toollib/stdiocb.h ../toollib/toollib.h
+main.o: /usr/include/sys/cdefs.h ../toollib/stdiocb.h ../toollib/mystream.h
+main.o: ../toollib/callback.h ../toollib/error.h ../toollib/toollib.h
 main.o: /usr/include/sys/types.h /usr/include/linux/types.h
 main.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
 main.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
 main.o: /usr/include/stdarg.h /usr/include/stdlib.h /usr/include/features.h
 main.o: /usr/include/stddef.h /usr/include/errno.h /usr/include/linux/errno.h
-main.o: /usr/include/asm/errno.h /usr/include/alloca.h ../toollib/mystream.h
-main.o: ../toollib/callback.h ../toollib/error.h html.h parse.h var.h
+main.o: /usr/include/asm/errno.h /usr/include/alloca.h html.h parse.h var.h
 main.o: ../toollib/vstring.h db.h
 parse_html.o: /usr/include/stdio.h /usr/include/libio.h
 parse_html.o: /usr/include/_G_config.h /usr/include/sys/cdefs.h
@@ -71,7 +87,8 @@ parse_html.o: /usr/include/stdarg.h /usr/include/stdlib.h
 parse_html.o: /usr/include/errno.h /usr/include/linux/errno.h
 parse_html.o: /usr/include/asm/errno.h /usr/include/alloca.h
 var.o: /usr/include/ctype.h /usr/include/features.h /usr/include/sys/cdefs.h
-var.o: /usr/include/endian.h /usr/include/bytesex.h ../toollib/error.h
+var.o: /usr/include/endian.h /usr/include/bytesex.h /usr/include/stdio.h
+var.o: /usr/include/libio.h /usr/include/_G_config.h ../toollib/error.h
 var.o: ../toollib/toollib.h /usr/include/sys/types.h
 var.o: /usr/include/linux/types.h /usr/include/linux/posix_types.h
 var.o: /usr/include/asm/posix_types.h /usr/include/asm/types.h
