@@ -8,7 +8,7 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <graphics/gfxmacros.h>
-
+#include <intuition/cghooks.h>
 #include "intuition_intern.h"
 #include "propgadgets.h"
 #include "gadgets.h"
@@ -359,12 +359,9 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 	struct IntuitionBase * IntuitionBase)
 {
-    UBYTE DrawMode;
-    BYTE AreaPtSz;
-    ULONG apen;
-    UWORD * AreaPtrn;
     struct PropInfo * pi;
     struct DrawInfo * dri;
+    struct GadgetInfo gi;
     struct RastPort * rp;
     struct BBox bbox, kbox;
     D(bug("RefreshPropGadget(gad=%p, win=%s)\n", gadget, window->Title));
@@ -377,75 +374,72 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 	if (bbox.Width <= 0 || bbox.Height <= 0)
 	    return;
 
-	rp = window->RPort,
-	apen = GetAPen (rp);
-	DrawMode = GetDrMd (rp);
-	AreaPtrn = rp->AreaPtrn;
-	AreaPtSz = rp->AreaPtSz;
+        SET_GI_RPORT(&gi, window, gadget);
+	gi.gi_Layer = gi.gi_RastPort->Layer;
 	
-
-	pi = (struct PropInfo *)gadget->SpecialInfo;
-
-	if (!pi)
-	    return;
-
-	SetDrMd (rp, JAM2);
-
-	if (!(pi->Flags & PROPBORDERLESS))
+	if ((rp = ObtainGIRPort(&gi)))
 	{
-	    SetAPen(window->RPort,dri->dri_Pens[SHADOWPEN]);
-	    drawrect(rp,bbox.Left,
-	    		bbox.Top,
-			bbox.Left + bbox.Width - 1,
-			bbox.Top + bbox.Height - 1,
-			IntuitionBase);
-	
-	    bbox.Left++;
-	    bbox.Top++;
-	    bbox.Width -= 2;
-	    bbox.Height -= 2;
-	    if (!(pi->Flags & PROPNEWLOOK))
+	    pi = (struct PropInfo *)gadget->SpecialInfo;
+
+	    if (!pi)
+		return;
+
+	    SetDrMd (rp, JAM2);
+
+	    if (!(pi->Flags & PROPBORDERLESS))
 	    {
-	    	bbox.Left++;
+		SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+		drawrect(rp,bbox.Left,
+	    		    bbox.Top,
+			    bbox.Left + bbox.Width - 1,
+			    bbox.Top + bbox.Height - 1,
+			    IntuitionBase);
+
+		bbox.Left++;
 		bbox.Top++;
 		bbox.Width -= 2;
 		bbox.Height -= 2;
+		if (!(pi->Flags & PROPNEWLOOK))
+		{
+	    	    bbox.Left++;
+		    bbox.Top++;
+		    bbox.Width -= 2;
+		    bbox.Height -= 2;
+		}
 	    }
-	}
-	
-	if (pi->Flags & PROPNEWLOOK)
-	{
-	    UWORD pattern[] = {0x5555,0xAAAA};
-	    
-	    SetAfPt(rp, pattern, 1);
-	    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-	    SetBPen(rp, dri->dri_Pens[(gadget->Activation & (GACT_TOPBORDER |
-	    						     GACT_LEFTBORDER |
-							     GACT_RIGHTBORDER |
-							     GACT_BOTTOMBORDER)) ? ((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
-							  			 : BACKGROUNDPEN]);
-	    RectFill(rp, bbox.Left,
-	    		 bbox.Top,
-			 bbox.Left + bbox.Width - 1,
-			 bbox.Top + bbox.Height - 1);
-	    SetAfPt(rp, 0, 0);
-	    
-	} else {
-	    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-	    RectFill(rp, bbox.Left,
-	    		 bbox.Top,
-			 bbox.Left + bbox.Width - 1,
-			 bbox.Top + bbox.Height - 1);
-	}
-	    	
-	if (!CalcKnobSize (gadget, &kbox))
-	    return;
-	
-	RefreshPropGadgetKnob (gadget, NULL, &kbox, window, IntuitionBase);
 
-	SetDrMd (window->RPort, DrawMode);
-	SetAPen (window->RPort, apen);
-	SetAfPt (window->RPort, AreaPtrn, AreaPtSz);
+	    if (pi->Flags & PROPNEWLOOK)
+	    {
+		UWORD pattern[] = {0x5555,0xAAAA};
+
+		SetAfPt(rp, pattern, 1);
+		SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+		SetBPen(rp, dri->dri_Pens[(gadget->Activation & (GACT_TOPBORDER |
+	    							 GACT_LEFTBORDER |
+								 GACT_RIGHTBORDER |
+								 GACT_BOTTOMBORDER)) ? ((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
+							  			     : BACKGROUNDPEN]);
+		RectFill(rp, bbox.Left,
+	    		     bbox.Top,
+			     bbox.Left + bbox.Width - 1,
+			     bbox.Top + bbox.Height - 1);
+		SetAfPt(rp, 0, 0);
+
+	    } else {
+		SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+		RectFill(rp, bbox.Left,
+	    		     bbox.Top,
+			     bbox.Left + bbox.Width - 1,
+			     bbox.Top + bbox.Height - 1);
+	    }
+	    ReleaseGIRPort(rp);
+	    
+	} /* if ((rp = ObtainGIRPort(&gi))) */
+
+	if (CalcKnobSize (gadget, &kbox))
+	{
+	    RefreshPropGadgetKnob (gadget, NULL, &kbox, window, IntuitionBase);
+	}
 	
 	FreeScreenDrawInfo(window->WScreen, dri);
 	
@@ -462,11 +456,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
     struct DrawInfo * dri;
     struct RastPort * rp;
     struct PropInfo * pi;
+    struct GadgetInfo gi;
     
-    UWORD * AreaPtrn;
-    UBYTE DrawMode;
-    BYTE AreaPtSz;
-    ULONG apen;
     UWORD flags;
     
     D(bug("RefresPropGadgetKnob(flags=%d, clear=%p, knob = %p, win=%s)\n",
@@ -477,242 +468,239 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
     
     if ((dri = GetScreenDrawInfo(window->WScreen)))
     {
-    	rp = window->RPort;
+    	SET_GI_RPORT(&gi, window, gadget),
+	gi.gi_Layer = gi.gi_RastPort->Layer;
 	
-	apen = GetAPen (rp);
-	DrawMode = GetDrMd (rp);
-	AreaPtrn = rp->AreaPtrn;
-	AreaPtSz = rp->AreaPtSz;
-	
-	SetDrMd (window->RPort, JAM2);
+    	if ((rp = ObtainGIRPort(&gi)))
+	{	
+	    SetDrMd (rp, JAM2);
 
-	if (clear && clear->Width > 0 && clear->Height > 0)
-	{
-
-	    if (pi->Flags & PROPNEWLOOK)
+	    if (clear && clear->Width > 0 && clear->Height > 0)
 	    {
-		UWORD pattern[] = {0x5555,0xAAAA};
 
-		SetAfPt(rp, pattern, 1);
-		SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-		SetBPen(rp, dri->dri_Pens[(gadget->Activation & (GACT_TOPBORDER |
-	    							 GACT_LEFTBORDER |
-								 GACT_RIGHTBORDER |
-								 GACT_BOTTOMBORDER)) ? ((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
-							  			     : BACKGROUNDPEN]);
-		RectFill(rp, clear->Left,
-	    		     clear->Top,
-			     clear->Left + clear->Width - 1,
-			     clear->Top + clear->Height - 1);
-		SetAfPt(rp, 0, 0);
-
-	    } else {
-		SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-		RectFill(rp, clear->Left,
-	    		     clear->Top,
-			     clear->Left + clear->Width - 1,
-			     clear->Top + clear->Height - 1);
-	    }
-	}
-
-	if (flags & AUTOKNOB)
-	{
-	    int hit = ((flags & KNOBHIT) != 0);
-
-	    if (flags & PROPNEWLOOK)
-	    {
-	        if (gadget->Activation & (GACT_TOPBORDER |
-					  GACT_LEFTBORDER |
-					  GACT_RIGHTBORDER |
-					  GACT_BOTTOMBORDER))
+		if (pi->Flags & PROPNEWLOOK)
 		{
-		    if (flags & PROPBORDERLESS)
+		    UWORD pattern[] = {0x5555,0xAAAA};
+
+		    SetAfPt(rp, pattern, 1);
+		    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+		    SetBPen(rp, dri->dri_Pens[(gadget->Activation & (GACT_TOPBORDER |
+	    							     GACT_LEFTBORDER |
+								     GACT_RIGHTBORDER |
+								     GACT_BOTTOMBORDER)) ? ((window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN)
+							  				 : BACKGROUNDPEN]);
+		    RectFill(rp, clear->Left,
+	    			 clear->Top,
+				 clear->Left + clear->Width - 1,
+				 clear->Top + clear->Height - 1);
+		    SetAfPt(rp, 0, 0);
+
+		} else {
+		    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+		    RectFill(rp, clear->Left,
+	    			 clear->Top,
+				 clear->Left + clear->Width - 1,
+				 clear->Top + clear->Height - 1);
+		}
+	    }
+
+	    if (flags & AUTOKNOB)
+	    {
+		int hit = ((flags & KNOBHIT) != 0);
+
+		if (flags & PROPNEWLOOK)
+		{
+	            if (gadget->Activation & (GACT_TOPBORDER |
+					      GACT_LEFTBORDER |
+					      GACT_RIGHTBORDER |
+					      GACT_BOTTOMBORDER))
 		    {
-		    	SetAPen(rp,dri->dri_Pens[SHINEPEN]);
-			
-			/* Top edge */
-			RectFill(rp,knob->Left,
-				    knob->Top,
-				    knob->Left + knob->Width - 2,
-				    knob->Top);
-			
-			/* Left edge */	    
-			RectFill(rp,knob->Left,
-				    knob->Top + 1,
-				    knob->Left,
-				    knob->Top + knob->Height - 2);
-			
-			SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-			
-			/* Right edge */
-			RectFill(rp,knob->Left + knob->Width - 1,
-				    knob->Top,
-				    knob->Left + knob->Width - 1,
-				    knob->Top + knob->Height - 1);
-			
-			/* Bottom edge */	    
-			RectFill(rp,knob->Left,
-				    knob->Top + knob->Height - 1,
-				    knob->Left + knob->Width - 2,
-				    knob->Top + knob->Height - 1);
-		    
-		    	knob->Left++;
-			knob->Top++;
-			knob->Width -= 2;
-			knob->Height -= 2;
-			
+			if (flags & PROPBORDERLESS)
+			{
+		    	    SetAPen(rp,dri->dri_Pens[SHINEPEN]);
+
+			    /* Top edge */
+			    RectFill(rp,knob->Left,
+					knob->Top,
+					knob->Left + knob->Width - 2,
+					knob->Top);
+
+			    /* Left edge */	    
+			    RectFill(rp,knob->Left,
+					knob->Top + 1,
+					knob->Left,
+					knob->Top + knob->Height - 2);
+
+			    SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+
+			    /* Right edge */
+			    RectFill(rp,knob->Left + knob->Width - 1,
+					knob->Top,
+					knob->Left + knob->Width - 1,
+					knob->Top + knob->Height - 1);
+
+			    /* Bottom edge */	    
+			    RectFill(rp,knob->Left,
+					knob->Top + knob->Height - 1,
+					knob->Left + knob->Width - 2,
+					knob->Top + knob->Height - 1);
+
+		    	    knob->Left++;
+			    knob->Top++;
+			    knob->Width -= 2;
+			    knob->Height -= 2;
+
+			    SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
+
+			    /* Interior */
+			    RectFill(rp,knob->Left,
+		    			knob->Top,
+					knob->Left + knob->Width - 1,
+					knob->Top + knob->Height - 1);
+			} else
+			{
+		            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+
+		    	    if (flags & FREEHORIZ)
+			    {
+				/* black line at the left and at the right */
+
+				RectFill(rp,knob->Left,
+			    		    knob->Top,
+					    knob->Left,
+					    knob->Top + knob->Height - 1);
+
+				RectFill(rp,knob->Left + knob->Width - 1,
+			    		    knob->Top,
+					    knob->Left + knob->Width - 1,
+					    knob->Top + knob->Height - 1);
+
+				knob->Left++,
+				knob->Width -= 2;
+			    }
+			    if (flags & FREEVERT)
+			    {
+				/* black line at the top and at the bottom */
+
+				RectFill(rp,knob->Left,
+			    		    knob->Top,
+					    knob->Left + knob->Width - 1,
+					    knob->Top);
+
+				RectFill(rp,knob->Left,
+			    		    knob->Top + knob->Height - 1,
+					    knob->Left + knob->Width - 1,
+					    knob->Top + knob->Height - 1);
+
+				knob->Top++;
+				knob->Height -= 2;
+			    }
+			}
+
 			SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-			
-			/* Interior */
+
+			/* interior */
 			RectFill(rp,knob->Left,
 		    		    knob->Top,
 				    knob->Left + knob->Width - 1,
 				    knob->Top + knob->Height - 1);
-		    } else
+
+		    } /* gadget inside window border */
+		    else
 		    {
-		        SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-			
-		    	if (flags & FREEHORIZ)
+			if (flags & PROPBORDERLESS)
 			{
-			    /* black line at the left and at the right */
-			    		    
-			    RectFill(rp,knob->Left,
-			    		knob->Top,
-					knob->Left,
-					knob->Top + knob->Height - 1);
-				
+		    	    SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+
+			    /* paint black right and bottom edges */
+
 			    RectFill(rp,knob->Left + knob->Width - 1,
-			    		knob->Top,
+					knob->Top,
 					knob->Left + knob->Width - 1,
 					knob->Top + knob->Height - 1);
-			
-			    knob->Left++,
-			    knob->Width -= 2;
-			}
-			if (flags & FREEVERT)
+
+			    RectFill(rp,knob->Left,
+					knob->Top + knob->Height - 1,
+					knob->Left + knob->Width - 2,
+					knob->Top + knob->Height - 1);
+
+		    	    knob->Width--;
+			    knob->Height--;
+			} else
 			{
-			    /* black line at the top and at the bottom */
-			    
-			    RectFill(rp,knob->Left,
-			    		knob->Top,
-					knob->Left + knob->Width - 1,
-					knob->Top);
-			
-			    RectFill(rp,knob->Left,
-			    		knob->Top + knob->Height - 1,
-					knob->Left + knob->Width - 1,
-					knob->Top + knob->Height - 1);
-			
-			    knob->Top++;
-			    knob->Height -= 2;
+		            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+
+		    	    if (flags & FREEHORIZ)
+			    {
+				/* black line at the left and at the right */
+
+				RectFill(rp,knob->Left,
+			    		    knob->Top,
+					    knob->Left,
+					    knob->Top + knob->Height - 1);
+
+				RectFill(rp,knob->Left + knob->Width - 1,
+			    		    knob->Top,
+					    knob->Left + knob->Width - 1,
+					    knob->Top + knob->Height - 1);
+
+				knob->Left++,
+				knob->Width -= 2;
+			    }
+			    if (flags & FREEVERT)
+			    {
+				/* black line at the top and at the bottom */
+
+				RectFill(rp,knob->Left,
+			    		    knob->Top,
+					    knob->Left + knob->Width - 1,
+					    knob->Top);
+
+				RectFill(rp,knob->Left,
+			    		    knob->Top + knob->Height - 1,
+					    knob->Left + knob->Width - 1,
+					    knob->Top + knob->Height - 1);
+
+				knob->Top++;
+				knob->Height -= 2;
+			    }
 			}
-		    }
-		    
-		    SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-		    
-		    /* interior */
-		    RectFill(rp,knob->Left,
-		    		knob->Top,
-				knob->Left + knob->Width - 1,
-				knob->Top + knob->Height - 1);
-						     
-		} /* gadget inside window border */
-		else
-		{
-		    if (flags & PROPBORDERLESS)
-		    {
-		    	SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-			
-			/* paint black right and bottom edges */
-			
-			RectFill(rp,knob->Left + knob->Width - 1,
-				    knob->Top,
+
+			SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+
+			/* interior */
+			RectFill(rp,knob->Left,
+		    		    knob->Top,
 				    knob->Left + knob->Width - 1,
 				    knob->Top + knob->Height - 1);
-			
-			RectFill(rp,knob->Left,
-				    knob->Top + knob->Height - 1,
-				    knob->Left + knob->Width - 2,
-				    knob->Top + knob->Height - 1);
-				    
-		    	knob->Width--;
-			knob->Height--;
-		    } else
-		    {
-		        SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-			
-		    	if (flags & FREEHORIZ)
-			{
-			    /* black line at the left and at the right */
-			    			    
-			    RectFill(rp,knob->Left,
-			    		knob->Top,
-					knob->Left,
-					knob->Top + knob->Height - 1);
-				
-			    RectFill(rp,knob->Left + knob->Width - 1,
-			    		knob->Top,
-					knob->Left + knob->Width - 1,
-					knob->Top + knob->Height - 1);
-			
-			    knob->Left++,
-			    knob->Width -= 2;
-			}
-			if (flags & FREEVERT)
-			{
-			    /* black line at the top and at the bottom */
-			    
-			    RectFill(rp,knob->Left,
-			    		knob->Top,
-					knob->Left + knob->Width - 1,
-					knob->Top);
-			
-			    RectFill(rp,knob->Left,
-			    		knob->Top + knob->Height - 1,
-					knob->Left + knob->Width - 1,
-					knob->Top + knob->Height - 1);
-			
-			    knob->Top++;
-			    knob->Height -= 2;
-			}
-		    }
-		    
-		    SetAPen(rp, dri->dri_Pens[SHINEPEN]);
-		    
-		    /* interior */
-		    RectFill(rp,knob->Left,
-		    		knob->Top,
-				knob->Left + knob->Width - 1,
-				knob->Top + knob->Height - 1);
-				
-		} /* gadget not inside window border */
-		
-	    } /* if (flags & PROPNEWLOOK) */
-	    else
-	    {
-	    	/* very old and ugly look */
-		
-		SetAPen (rp, dri->dri_Pens[hit ? FILLPEN : SHADOWPEN]);
 
-		RectFill (rp
-		    , knob->Left
-		    , knob->Top
-		    , knob->Left + knob->Width - 1
-		    , knob->Top + knob->Height - 1
-		);
-		
-	    } /* not PROPNEWLOOK */
+		    } /* gadget not inside window border */
+
+		} /* if (flags & PROPNEWLOOK) */
+		else
+		{
+	    	    /* very old and ugly look */
+
+		    SetAPen (rp, dri->dri_Pens[hit ? FILLPEN : SHADOWPEN]);
+
+		    RectFill (rp
+			, knob->Left
+			, knob->Top
+			, knob->Left + knob->Width - 1
+			, knob->Top + knob->Height - 1
+		    );
+
+		} /* not PROPNEWLOOK */
+
+	    } /* if (flags & AUTOKNOB) */
+	    ReleaseGIRPort(rp);
 	    
-	} /* if (flags & AUTOKNOB) */
-
+	} /* if ((rp = ObtainGIRPort(&gi))) */
+	
 	FreeScreenDrawInfo(window->WScreen, dri);
 	
     } /* if ((dri = GetScreenDrawInfo(window->WScreen))) */
-    
-    SetDrMd (window->RPort, DrawMode);
-    SetAPen (window->RPort, apen);
-    SetAfPt (window->RPort, AreaPtrn, AreaPtSz);
-    
+        
     ReturnVoid("RefreshPropGadgetKnob");
     
 } /* RefreshPropGadgetKnob */

@@ -36,27 +36,6 @@
 
 VOID UpdateStringInfo(struct Gadget *);
 
-struct RPPres
-{
-    UBYTE OldAPen;
-    UBYTE OldBPen;
-    UBYTE OldDrMd;
-    struct TextFont *OldFont;
-};
-
-#define PreserveRP(rp, pres)	\
-    pres.OldAPen = GetAPen(rp);	\
-    pres.OldBPen = GetBPen(rp);	\
-    pres.OldDrMd = GetDrMd(rp);	\
-    pres.OldFont = rp->Font;
-    
-#define ResetRP(rp, pres)	\
-    SetAPen(rp, pres.OldAPen);	\
-    SetBPen(rp, pres.OldBPen);	\
-    SetDrMd(rp, pres.OldDrMd);	\
-    SetFont(rp, pres.OldFont);
-    
-
 #define CharXSize(char, rp) 			\
  ((rp->Font->tf_Flags & FPF_PROPORTIONAL) 	\
  	? rp->Font->tf_XSize 			\
@@ -299,7 +278,9 @@ STATIC UWORD GetTextRight(struct Gadget		*gad,
 *********************/
 STATIC VOID GetPensAndFont(struct Gadget *gad,
 			UWORD 		 *pens,
-			struct Window	*win)
+			struct Window	*win,
+			struct RastPort *rp,
+			struct IntuitionBase *IntuitionBase)
 {   
 
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
@@ -311,8 +292,10 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     	strext = ((struct StringInfo *)gad->SpecialInfo)->Extension;
     	
     	if (strext->Font)
-    	    SetFont(win->RPort, strext->Font);
-
+	{
+    	    SetFont(rp, strext->Font);
+	}
+	
     	if ((gad->Flags & GFLG_SELECTED) == GFLG_SELECTED)
     	{
     	    pens[STRTEXTPEN]	= strext->ActivePens[0];
@@ -888,17 +871,25 @@ VOID RefreshStrGadget(struct Gadget	*gad,
 		struct Window		*win,
 		struct IntuitionBase	*IntuitionBase)
 {
-
-    EnterFunc(bug("RefreshStrGadget(gad=%p, win=%s)\n", gad, win->Title));
-	
-    if (gad->GadgetRender)
-    {
-  	DrawBorder(win->RPort,
-    		(struct Border *)gad->GadgetRender,
-    		gad->LeftEdge,
-    		gad->TopEdge);
-    }
+    struct GadgetInfo gi;
+    struct RastPort *rp;
     
+    EnterFunc(bug("RefreshStrGadget(gad=%p, win=%s)\n", gad, win->Title));
+
+    SET_GI_RPORT(&gi, win, gad);
+    gi.gi_Layer = gi.gi_RastPort->Layer;
+    
+    if ((rp = ObtainGIRPort(&gi)))
+    {
+	if (gad->GadgetRender)
+	{
+  	    DrawBorder(rp,
+    		    (struct Border *)gad->GadgetRender,
+    		    gad->LeftEdge,
+    		    gad->TopEdge);
+	}
+	ReleaseGIRPort(rp);
+    }
     UpdateStrGadget(gad, win, IntuitionBase);
     
     ReturnVoid("RefreshStrGadget");
@@ -950,6 +941,7 @@ VOID UpdateStrGadget(struct Gadget	*gad,
 		struct Window		*win,
 		struct IntuitionBase	*IntuitionBase)
 {
+    struct GadgetInfo gi;
     struct BBox bbox;
 
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
@@ -957,8 +949,7 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     
     UWORD text_top;
     
-    struct RPPres rppres;
-    struct RastPort *rp = win->RPort;
+    struct RastPort *rp;
     
     STRPTR dispstr;
     UWORD dispstrlen;
@@ -966,6 +957,12 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     UWORD pens[NUMPENS];
     
     EnterFunc(bug("UpdateStrGadget(current text=%s)\n", strinfo->Buffer));
+
+    SET_GI_RPORT(&gi, win, gad);
+    gi.gi_Layer = gi.gi_RastPort->Layer;
+    
+    rp = ObtainGIRPort(&gi);
+    if (!rp) return;
 
     CalcBBox(win, gad, &bbox);
     
@@ -978,11 +975,8 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     	
     dispstr = strinfo->Buffer + strinfo->DispPos;
     dispstrlen = MIN(strinfo->DispCount, strinfo->NumChars - strinfo->DispPos);
-
-    /* Preserve rastport stuff */
-    PreserveRP(rp, rppres);
-
-    GetPensAndFont(gad, pens, win);
+    
+    GetPensAndFont(gad, pens, win, rp, IntuitionBase);
     
     /* Clear the background */
     SetAPen(rp, pens[STRBACKPEN]);
@@ -1029,8 +1023,7 @@ VOID UpdateStrGadget(struct Gadget	*gad,
 	    1 );
     } /* if (gadget selected => render cursor) */
     
-    /* Reinsert old values */
-    ResetRP(rp, rppres);
-
+    ReleaseGIRPort(rp);
+    
     ReturnVoid("UpdateStrGadget");
 }

@@ -8,24 +8,25 @@
 
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <intuition/cghooks.h>
 #include "intuition_intern.h"
 #include "gadgets.h"
 
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	    struct IntuitionBase * IntuitionBase)
 {
+    struct GadgetInfo gi;
+    struct RastPort *rp;
     struct BBox bbox;
 
     APTR  render;
-    UBYTE DrawMode;
-    ULONG apen;
 
 #define RENDERGADGET(win,gad,rend)              \
 	if (rend)                               \
 	{					\
 	    if (gad->Flags & GFLG_GADGIMAGE)    \
 	    {					\
-		DrawImage (win->RPort           \
+		DrawImage (rp                   \
 		    , (struct Image *)rend      \
 		    , bbox.Left 		\
 		    , bbox.Top			\
@@ -33,7 +34,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	    }					\
 	    else				\
 	    {					\
-		DrawBorder (win->RPort          \
+		DrawBorder (rp                  \
 		    , (struct Border *)rend     \
 		    , bbox.Left 		\
 		    , bbox.Top			\
@@ -49,12 +50,15 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
     if (bbox.Width <= 0 || bbox.Height <= 0)
 	return;
 
-    apen = GetAPen (window->RPort);
-    DrawMode = GetDrMd (window->RPort);
+    SET_GI_RPORT(&gi, window, gadget);
+    gi.gi_Layer = gi.gi_RastPort->Layer;
+    
+    rp = ObtainGIRPort(&gi);
+    if (!rp) return;
+    
+    SetDrMd (rp, JAM1);
 
-    SetDrMd (window->RPort, JAM1);
-
-    EraseRect (window->RPort
+    EraseRect (rp
 	, bbox.Left
 	, bbox.Top
 	, bbox.Left + bbox.Width - 1
@@ -81,7 +85,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	{
 
 	case GFLG_LABELITEXT:
-	    PrintIText (window->RPort
+	    PrintIText (rp
 		, gadget->GadgetText
 		, bbox.Left
 		, bbox.Top
@@ -94,23 +98,23 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
 	    len = strlen (text);
 
-	    labelwidth = LabelWidth (window->RPort, text, len, IntuitionBase);
-	    labelheight = window->RPort->Font->tf_YSize;
+	    labelwidth = LabelWidth (rp, text, len, IntuitionBase);
+	    labelheight = rp->Font->tf_YSize;
 
-	    SetAPen (window->RPort, 1);
-	    SetDrMd (window->RPort, JAM1);
+	    SetAPen (rp, 1);
+	    SetDrMd (rp, JAM1);
 
-	    Move (window->RPort
+	    Move (rp
 		, bbox.Left + bbox.Width/2 - labelwidth/2
 		, bbox.Top + bbox.Height/2 - labelheight/2
-		    + window->RPort->Font->tf_Baseline
+		    + rp->Font->tf_Baseline
 	    );
-	    RenderLabel (window->RPort, text, len, IntuitionBase);
+	    RenderLabel (rp, text, len, IntuitionBase);
 
 	    break; }
 
 	case GFLG_LABELIMAGE:
-	    DrawImage (window->RPort
+	    DrawImage (rp
 		, (struct Image *)gadget->GadgetText
 		, bbox.Left
 		, bbox.Top
@@ -127,9 +131,9 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
 	if (gadget->Flags & GFLG_SELECTED)
 	{
-	    SetDrMd (window->RPort, COMPLEMENT);
+	    SetDrMd (rp, COMPLEMENT);
 
-	    RectFill (window->RPort
+	    RectFill (rp
 		, bbox.Left
 		, bbox.Top
 		, bbox.Left + bbox.Width - 1
@@ -145,10 +149,10 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
 	if (gadget->Flags & GFLG_SELECTED)
 	{
-	    SetDrMd (window->RPort, COMPLEMENT);
+	    SetDrMd (rp, COMPLEMENT);
 
 #define BOXWIDTH 5
-	    RectFill (window->RPort
+	    RectFill (rp
 		, bbox.Left
 		, bbox.Top
 		, bbox.Left + bbox.Width - 1
@@ -157,7 +161,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
 	    if (bbox.Width > 2*BOXWIDTH && bbox.Height > 2*BOXWIDTH)
 	    {
-		RectFill (window->RPort
+		RectFill (rp
 		    , bbox.Left + BOXWIDTH
 		    , bbox.Top + BOXWIDTH
 		    , bbox.Left + bbox.Width - BOXWIDTH - 1
@@ -169,6 +173,6 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	break;
     } /* Highlight after contents have been drawn */
 
-    SetDrMd (window->RPort, DrawMode);
-    SetAPen (window->RPort, apen);
+    ReleaseGIRPort(rp);
+    
 } /* RefreshBoolGadget */
