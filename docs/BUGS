@@ -276,7 +276,7 @@ nlorentz@online.no
 Cause() does not work from inside keyboard.device, so input.device
 never gets keyboard events.
 
-BUD000042 fixed
+BUG000042 fixed
 nlorentz@online.no
 There are race conditions between the intuition input handler
 and CloseWindow(). When the closebutton is hit many times
@@ -288,3 +288,14 @@ Fixed: CloseWindow() now sends a message to intuition, that does
 the actual closing of the window, thus no race conditions occur.
 Downside is that it will slow down the inputhandler, but I think
 it is not a big problem.
+
+BUG000043
+nlorentz@online.no
+fish/fiveinline hangs when trying to drag the window.
+It hangs inside the dragbar class when it tries to lock all layers.
+That means somewhere (probably inside graphics_driver) there
+is a LockLayer() call without a matching UnlockLayer().
+I think the graphics_driver functions that need locking should
+maybe be reworked so they have only one exitpont (ie. return),
+thus reducing the risk for such bugs, and it would also make
+them less difficult to understand.
