@@ -27,17 +27,20 @@ FILES = $(LIBNAME)_functable intern_ieeespld intern_ieeespisodd
 END_FILE = $(LIBNAME)_endtag
 
 FUNCTIONS = \
-	ieeespsqrt \
-	ieeespexp \
-	ieeespsinh \
+	ieeespcos \
 	ieeespcosh \
-	ieeesptanh \
+	ieeespexp \
+	ieeespfieee \
 	ieeesplog \
 	ieeesplog10 \
 	ieeesppow \
 	ieeespsin \
-	ieeespcos \
-	ieeesptan
+	ieeespsincos \
+	ieeespsinh \
+	ieeespsqrt \
+	ieeesptan \
+	ieeesptanh \
+	ieeesptieee
 
 ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
 
