@@ -16,25 +16,25 @@
 
 
 #if SH_GLOBAL_SYSBASE
-#    define DECLARE_SysBase_global extern struct ExecBase *SysBase
-#    define DEFINE_SysBase_global struct ExecBase *SysBase
+#    define DECLARE_SysBase_global extern struct ExecBase *SysBase;
+#    define DEFINE_SysBase_global struct ExecBase *SysBase;
 #    define DEFINE_SysBase_local
 #    define main_SysBase_arg
 #else
 #    define DECLARE_SysBase_global
-#    define DEFINE_SysBase_local struct ExecBase *SysBase
+#    define DEFINE_SysBase_local struct ExecBase *SysBase;
 #    define DEFINE_SysBase_global
 #endif
 
 
 #if SH_GLOBAL_DOSBASE
-#    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase
-#    define DEFINE_DOSBase_global struct DosLibrary *DOSBase
+#    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase;
+#    define DEFINE_DOSBase_global struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_local
 #    define main_DOSBase_arg
 #else
 #    define DECLARE_DOSBase_global
-#    define DEFINE_DOSBase_local struct DosLibrary *DOSBase
+#    define DEFINE_DOSBase_local struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_global
 #    define main_DOSBase_arg ,DOSBase
 #endif
@@ -59,8 +59,8 @@
 
 #define __AROS_SH_ARGS(name, version, numargs, defl, templ, help) \
 DECLARE_main(name);                                            \
-DECLARE_SysBase_global;                                        \
-DECLARE_DOSBase_global;                                        \
+DECLARE_SysBase_global                                         \
+DECLARE_DOSBase_global                                         \
                                                                \
 AROS_UFH3(LONG, entry,                                         \
     AROS_UFHA(char *,argstr,A0),                               \
@@ -70,8 +70,8 @@ AROS_UFH3(LONG, entry,                                         \
 {                                                              \
     AROS_USERFUNC_INIT                                         \
 							       \
-    DEFINE_SysBase_local;                                      \
-    DEFINE_DOSBase_local;                                      \
+    DEFINE_SysBase_local                                       \
+    DEFINE_DOSBase_local                                       \
                                                                \
     LONG __retcode = RETURN_FAIL;                              \
     IPTR __shargs[numargs] = defl;                             \
@@ -118,8 +118,8 @@ __exit:                                                        \
     AROS_USERFUNC_EXIT                                         \
 }                                                              \
                                                                \
-DEFINE_SysBase_global;                                         \
-DEFINE_DOSBase_global;                                         \
+DEFINE_SysBase_global                                          \
+DEFINE_DOSBase_global                                          \
 							       \
 static UBYTE name##_version[] = "$VER: "                       \
                                  stringify(name) " "           \
