@@ -125,3 +125,52 @@ SAVEDS STDARGS struct IClass *ObtainEngine(void)
 }
 
 /**************************************************************************************************/
+
+ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
+{
+    IPTR retval;
+
+    putreg(REG_A4, (long) cl->cl_Dispatcher.h_SubEntry);        /* Small Data */
+
+    // D(bug("ilbm.datatype/DT_Dispatcher: Entering\n"));
+
+    switch(msg->MethodID)
+    {
+	case OM_NEW:
+	    D(bug("ilbm.datatype/DT_Dispatcher: Method OM_NEW\n"));
+	    retval = ILBM__OM_NEW(cl, o, (struct opSet *)msg);
+	    break;
+
+	default:
+	    retval = DoSuperMethodA(cl, o, msg);
+	    break;
+
+    } /* switch(msg->MethodID) */
+
+    // D(bug("ilbm.datatype/DT_Dispatcher: Leaving\n"));
+
+    return retval;
+    
+}
+
+/**************************************************************************************************/
+
+struct IClass *DT_MakeClass(struct Library *ilbmbase)
+{
+    struct IClass *cl;
+    
+    cl = MakeClass("ilbm.datatype", "picture.datatype", 0, 0, 0);
+
+    D(bug("ilbm.datatype/DT_MakeClass: DT_Dispatcher 0x%lx\n", (unsigned long) DT_Dispatcher));
+
+    if (cl)
+    {
+	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
+	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
+	cl->cl_UserData = (IPTR)ilbmbase; /* Required by datatypes (see disposedtobject) */
+    }
+
+    return cl;
+}
+
+/**************************************************************************************************/
