@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS specific list class implementation.
-    Lang: english
+    AROS specific list class implementation.
 */
 
 #include <exec/types.h>
@@ -61,7 +60,7 @@ STATIC IPTR list_set(Class *cl, Object *o,struct opSet *msg)
 {
     IPTR retval = 0UL;
     
-    struct TagItem *tag, *tstate;
+    const struct TagItem *tag, *tstate;
     struct ListData *data;
     
     data = INST_DATA(cl, o);
@@ -107,7 +106,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
     {
     	struct ListData *data;
     	APTR *srcarray = NULL;
-    	struct TagItem *tag, *tstate;
+    	const struct TagItem *tag, *tstate;
     	
     	ULONG puddlesz = 2008, threshsz = 1024;
     	
@@ -146,7 +145,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 	
 	
 	/* User supplied source array ? */
-	srcarray = (APTR *)GetTagData(AROSA_List_SourceArray, NULL, msg->ops_AttrList);
+	srcarray = (APTR *)GetTagData(AROSA_List_SourceArray, (IPTR) NULL, msg->ops_AttrList);
 	
 	/* Allocate a bunch of free listentries */
 	data->ld_PointerArray = AllocEntries( (srcarray != NULL) 
@@ -166,7 +165,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 	if (!data->ld_PointerArray || !data->ld_Pool)
 	{
 	    CoerceMethod(cl, o, OM_DISPOSE);
-	    return (NULL);
+	    return (IPTR) NULL;
 	}
 	
 	/* As default there is no active entry */

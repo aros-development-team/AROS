@@ -48,12 +48,12 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
-	return(NULL);
+	return FALSE;
 
     if (!IntuitionBase)
     	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
-	return (NULL);
+	return FALSE;
 
     /* ------------------------- */
     /* Create the class itself */
@@ -61,7 +61,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!lh->classptr)
 	lh->classptr = InitListClass(lh);
     if (!lh->classptr)
-    	return (NULL);
+    	return FALSE;
 
     /* ------------------------- */
 
