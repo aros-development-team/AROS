@@ -599,8 +599,6 @@ AROS_UFH3(void, serialunit_receive_data,
   /*
   ** ... and deliver them to whoever is interested. 
   */
-kprintf("%s: Read %d bytes from serial port.\n",__FUNCTION__,len);
-kprintf("IDNestCnt: %d; TDNestCnt: %d\n",SysBase->IDNestCnt,SysBase->TDNestCnt);
 
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
