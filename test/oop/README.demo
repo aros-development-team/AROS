@@ -3,10 +3,10 @@ a hash table instead of switch().
 
 This allows for some optimizations:
 - Skipping unimplemented class calls.
-- Obtaining single methods, and call the directly.
+- Obtaining single methods, and call them directly.
 
 The demo shows how fast these two invocation methods
-are compared to each other. This test is not
-very much to go by though, because I don't have a large
-class hierarchy (so methods are well spread through
+are compared to each other. This test is not meant
+to say much, because I don't have a large class
+hierarchy, yet (so methods are well spread through
 the hash table in this demo).
