@@ -61,11 +61,6 @@ setup-pc-i386 :
 	%mkdirs_q $(BOOT_DEST_DIR)/contrib/aminet
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
 
-#MM
-workbench-s-pc-i386 : Startup-Sequence
-	#@$(CP) $< $(SDIR)
-	@$(NOP)
-
 #MM kernel-link-pc-i386 : setup
 kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
 	@$(NOP)
