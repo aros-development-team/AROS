@@ -10,7 +10,7 @@ struct MUI_NotifyData
 {
     struct MUI_GlobalInfo *mnd_GlobalInfo;
     ULONG                  mnd_UserData;
-    STRPTR                 mnd_ObjectID;
+    ULONG                  mnd_ObjectID;
 
     /* private starts here */
     struct MinList        *mnd_NotifyList; /* priv1 */

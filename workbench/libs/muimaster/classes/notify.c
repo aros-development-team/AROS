@@ -166,7 +166,7 @@ static ULONG Notify_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_ObjectID:
-	        data->mnd_ObjectID = (STRPTR)tag->ti_Data;
+	        data->mnd_ObjectID = (ULONG)tag->ti_Data;
 	        break;
 
 	    case MUIA_UserData:
@@ -306,7 +306,7 @@ static ULONG Notify_OMSET(struct IClass *cl, Object *obj, struct opSet *msg)
 	        break;
 
 	    case MUIA_ObjectID:
-	        data->mnd_ObjectID = (STRPTR)tag->ti_Data;
+	        data->mnd_ObjectID = (ULONG)tag->ti_Data;
 	        break;
 
 	    case MUIA_UserData:
