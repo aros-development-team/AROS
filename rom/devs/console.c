@@ -43,10 +43,10 @@ const struct Resident Console_resident=
     RTC_MATCHWORD,
     (struct Resident *)&Console_resident,
     (APTR)&end,
-    RTF_AUTOINIT,
-    1,
+    RTF_AUTOINIT|RTF_COLDSTART,
+    41,
     NT_DEVICE,
-    0,
+    5,
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
@@ -54,7 +54,7 @@ const struct Resident Console_resident=
 
 static const char name[]="console.device";
 
-static const char version[]="$VER: console 1.0 (23.8.96)\r\n";
+static const char version[]="$VER: console 41.0 (17.11.97)\r\n";
 
 static const APTR inittabl[4]=
 {
