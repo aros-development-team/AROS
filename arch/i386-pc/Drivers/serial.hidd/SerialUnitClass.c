@@ -352,13 +352,17 @@ BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialU
 	serial_outp(data, UART_MCR, (tags[i].ti_Data & 0x0f) | 0x08);
       break;
       
+      case TAG_SKIP:
+      break;
+      
       default:
         valid = FALSE;
     }
     i++;
   }
   
-  serial_outp(data, UART_LCR, get_lcr(data));
+  if (TRUE == valid)
+    serial_outp(data, UART_LCR, get_lcr(data));
 
   return valid;
 }
@@ -721,104 +725,47 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 #define SysBase (hw->sysBase)
 #define csd ((struct class_static_data *)(irq->h_Data))
 
+static void common_serial_int_handler(HIDDT_IRQ_Handler *irq, 
+                                      HIDDT_IRQ_HwInfo *hw,
+                                      ULONG unitnum)
+{
+	UBYTE code = UART_IIR_NO_INT;
+
+	if (csd->units[unitnum])
+		code = serial_inp(csd->units[unitnum], UART_IIR) & 0x07;
+
+	switch (code)
+	{
+		case UART_IIR_RLSI:
+			(void)serial_inp(csd->units[unitnum], UART_LSR);
+		break;
+
+		case UART_IIR_RDI:
+			if (csd->units[unitnum]) serialunit_receive_data(csd->units[unitnum],NULL,SysBase);
+		break;
+
+		case UART_IIR_MSI:
+			(void)serial_inp(csd->units[unitnum], UART_MSR);
+		break;
+
+		case UART_IIR_THRI:
+			if (csd->units[unitnum]) 
+				if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase))
+					(void)serial_inp(csd->units[unitnum], UART_IIR);
+		break;
+	}	
+}
+
 void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
-    UBYTE code;
-
-    code = UART_IIR_NO_INT;
-
-    if (csd->units[0])
-	code = serial_inp(csd->units[0], UART_IIR) & 0x07;
-
-    switch (code)
-    {
-	case UART_IIR_RLSI:
-	    (void)serial_inp(csd->units[0], UART_LSR);
-	    break;
-	case UART_IIR_RDI:
-	    if (csd->units[0]) serialunit_receive_data(csd->units[0],NULL,SysBase);
-	    break;
-	case UART_IIR_MSI:
-	    (void)serial_inp(csd->units[0], UART_MSR);
-	    break;
-	case UART_IIR_THRI:
-	    if (csd->units[0]) 
-	      if (0 == serialunit_write_more_data(csd->units[0], NULL, SysBase))
-	        (void)serial_inp(csd->units[0], UART_IIR);
-	    break;
-    }	
-
-    code = UART_IIR_NO_INT;
-    if (csd->units[2])
-	code = serial_inp(csd->units[2], UART_IIR) & 0x07;
-    switch (code)
-    {
-	case UART_IIR_RLSI:
-	    (void)serial_inp(csd->units[2], UART_LSR);
-	    break;
-	case UART_IIR_RDI:
-	    if (csd->units[2]) serialunit_receive_data(csd->units[2],NULL,SysBase);
-	    break;
-	case UART_IIR_MSI:
-	    (void)serial_inp(csd->units[2], UART_MSR);
-	    break;
-	case UART_IIR_THRI:
-	    if (csd->units[2]) 
-	      if (0 == serialunit_write_more_data(csd->units[2], NULL, SysBase))
-	        (void)serial_inp(csd->units[2], UART_IIR);
-	    break;
-    }	
-
-    return;
+	common_serial_int_handler(irq, hw, 0);
+	common_serial_int_handler(irq, hw, 2);
 }
 
 void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 {
-    UBYTE code;
-
-    code = UART_IIR_NO_INT;
-    if (csd->units[1])
-	code = serial_inp(csd->units[1], UART_IIR) & 0x07;
-    switch (code)
-    {
-	case UART_IIR_RLSI:
-	    (void)serial_inp(csd->units[1], UART_LSR);
-	    break;
-	case UART_IIR_RDI:
-	    if (csd->units[1]) serialunit_receive_data(csd->units[1],NULL,SysBase);
-	    break;
-	case UART_IIR_MSI:
-	    (void)serial_inp(csd->units[1], UART_MSR);
-	    break;
-	case UART_IIR_THRI:
-	    if (csd->units[1]) 
-	      if (0 == serialunit_write_more_data(csd->units[1], NULL, SysBase))
-	        (void)serial_inp(csd->units[1], UART_IIR);
-	    break;
-    }
-
-    code = 1;
-    if (csd->units[3])
-	code = serial_inp(csd->units[3], UART_IIR) & 0x07;
-    switch (code)
-    {
-	case UART_IIR_RLSI:
-	    (void)serial_inp(csd->units[3], UART_LSR);
-	    break;
-	case UART_IIR_RDI:
-	    if (csd->units[3]) serialunit_receive_data(csd->units[3],NULL,SysBase);
-	    break;
-	case UART_IIR_MSI:
-	    (void)serial_inp(csd->units[3], UART_MSR);
-	    break;
-	case UART_IIR_THRI:
-	    if (csd->units[3]) 
-	      if (0 == serialunit_write_more_data(csd->units[3], NULL, SysBase))
-	        (void)serial_inp(csd->units[3], UART_IIR);
-	    break;
-    }	
-
-    return;
+	common_serial_int_handler(irq, hw, 1);
+	common_serial_int_handler(irq, hw, 3);
 }
 
 static void adapt_data(struct HIDDSerialUnitData * data,
