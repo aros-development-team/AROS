@@ -1,3 +1,8 @@
+/* 
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <string.h>
 #include <exec/types.h>
 #include <clib/alib_protos.h>
@@ -67,18 +72,21 @@ struct TextFont *zune_font_get(Object *obj, LONG preset)
 	}
 
 	/* no font loaded, fallback to screen font or system font */
-	if (preset != MUIV_Font_Fixed)
+	if (!mri->mri_Fonts[-preset])
 	{
-	    struct TextAttr scr_attr;
-	    scr_attr = *(_screen(obj)->Font);
-	    scr_attr.ta_Flags = 0;
+	    if (MUIV_Font_Normal == preset)
+	    {
+		struct TextAttr scr_attr;
+		scr_attr = *(_screen(obj)->Font);
+		scr_attr.ta_Flags = 0;
 /*  	    D(bug("zune_font_get : OpenDiskFont(%s) (screen font)\n", scr_attr.ta_Name)); */
-	    mri->mri_Fonts[-preset] = OpenDiskFont(&scr_attr);
+		mri->mri_Fonts[-preset] = OpenDiskFont(&scr_attr);
+	    }
+	    else /* MUIV_Font_Fixed */
+	    {
+		mri->mri_Fonts[-preset] = GfxBase->DefaultFont;
+	    }
 	}
-        else
-        {
-            mri->mri_Fonts[-preset] = GfxBase->DefaultFont;
-        }
 	return mri->mri_Fonts[-preset];
     }
     return (struct TextFont *)preset;
