@@ -23,8 +23,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <errno.h>
-#include <sys/stat.h>
 #define timeval sys_timeval
+#include <sys/stat.h>
 #include <sys/time.h>
 #undef timeval
 #ifdef __GNUC__
