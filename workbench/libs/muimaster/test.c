@@ -118,6 +118,7 @@ void main(void)
     Object *open_button;
     Object *quit_button;
     Object *repeat_button;
+    static char *pages[] = {"Groups","Colorwheel",NULL};
 
     struct Hook hook;
     struct Hook hook_wheel;
@@ -155,48 +156,50 @@ void main(void)
 
     	    WindowContents, VGroup,
     	    	Child, TextObject, TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
-    	    	Child, HGroup,
-		    GroupFrameT("A horizontal group"),
-		    Child, ColGroup(2),
-			GroupFrameT("A column group"),
-			Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button4", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button5", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			End,
-		    Child, VGroup,
-			GroupFrameT("A vertical group"),
-			Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			End,
-		    End,
+    	    	Child, RegisterGroup(pages),
+		    Child, HGroup,
+		        GroupFrameT("A horizontal group"),
+		        Child, ColGroup(2),
+			    GroupFrameT("A column group"),
+			    Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button4", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button5", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    End,
+		        Child, VGroup,
+			    GroupFrameT("A vertical group"),
+			    Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			   End,
+		       End,
 
-		Child, VGroup,
-		    Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
-		        GroupFrame,
-		        MUIA_Boopsi_ClassID  , "colorwheel.gadget",
-		        MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
-		        MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
-		        MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
-		        MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
-		        MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
-		        WHEEL_Screen         , NULL,         /* the screen pointer  */
-		        GA_Left     , 0,
-		        GA_Top      , 0, /* MUI will automatically     */
-		        GA_Width    , 0, /* fill in the correct values */
-		        GA_Height   , 0,
-		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
-		        WHEEL_Saturation, 0, /* start in the center */
-		        MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
+		    Child, VGroup,
+		        Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
+		            GroupFrame,
+		            MUIA_Boopsi_ClassID  , "colorwheel.gadget",
+		            MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
+		            MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
+		            MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
+		            MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
+		            MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
+		            WHEEL_Screen         , NULL,         /* the screen pointer  */
+		            GA_Left     , 0,
+		            GA_Top      , 0, /* MUI will automatically     */
+		            GA_Width    , 0, /* fill in the correct values */
+		            GA_Height   , 0,
+		            ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
+		            WHEEL_Saturation, 0, /* start in the center */
+		            MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
 					        for boopsi gadgets but the colorwheel
 					        doesnt bother about redrawing its backgorund */
-		        End,
+		            End,
 
-		    Child, r_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
-		    Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
-		    Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		        Child, r_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
+		        End,
 		    End,
 
 		Child, RectangleObject,
