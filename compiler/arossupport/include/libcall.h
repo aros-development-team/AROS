@@ -94,12 +94,12 @@ typedef unsigned long (*ULONG_FUNC)();
 /* Library functions which need the libbase */
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
-    __AROS_LHA(a1),\
+    __AROS_LHAQUAD(a1),\
     __AROS_LH_BASE(bt,bn))
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
-    __AROS_LHA(a1),\
-    __AROS_LHA(a2),\
+    __AROS_LHAQUAD(a1),\
+    __AROS_LHAQUAD(a2),\
     __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
