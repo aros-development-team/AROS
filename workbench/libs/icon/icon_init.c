@@ -5,6 +5,9 @@
     Desc: Init of icon.library
     Lang: english
 */
+
+/****************************************************************************************/
+
 #define SAVEDS
 #include <utility/utility.h> /* this must be before icon_intern.h */
 
@@ -40,11 +43,17 @@
     unsigned long __amigappc__ = 1;
 #endif
 
+/****************************************************************************************/
+
 struct ExecBase   * SysBase; /* global variable */
 struct DosLibrary * DOSBase;
 
+/****************************************************************************************/
+
 ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
 {
+    LONG i;
+    
     SysBase = lh->ib_SysBase;
 
     DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 39);
@@ -59,22 +68,45 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     if (!LB(lh)->intuitionbase)
 	return NULL;
 
+    /* Following libraries needed only for 3.5 style icons. If
+       the libraries cannot be opened, we simply don't support
+       3.5 icons */
+       
+    LB(lh)->iffparsebase = OpenLibrary("iffparse.library", 39);
+    LB(lh)->cybergfxbase = OpenLibrary("cybergraphics.library", 39);
+    
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
-    LB(lh)->dsh.h_Data  = DOSBase;
+    LB(lh)->dsh.h_Data  = lh;
 
+    InitSemaphore(&LB(lh)->iconlistlock);
+    for(i = 0; i < ICONLIST_HASHSIZE; i++)
+    {
+    	NewList((struct List *)&LB(lh)->iconlists[i]);
+    }
+    
     return TRUE;
-} /* L_InitLib */
+}
 
+/****************************************************************************************/
 
 void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (DOSBase)
 	CloseLibrary ((struct Library *)DOSBase);
 
+    if (LB(lh)->iffparsebase)
+    	CloseLibrary (LB(lh)->iffparsebase);
+	
+    if (LB(lh)->cybergfxbase)
+    	CloseLibrary (LB(lh)->cybergfxbase);
+	
     if (LB(lh)->intuitionbase)
 	CloseLibrary (LB(lh)->intuitionbase);
 
     if (LB(lh)->utilitybase)
 	CloseLibrary (LB(lh)->utilitybase);
 
-} /* L_ExpungeLib */
+}
+
+/****************************************************************************************/
+

@@ -10,6 +10,8 @@
 #undef __NOLIBBASE__
 #endif
 
+/****************************************************************************************/
+
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
@@ -27,40 +29,81 @@
 #include <proto/arossupport.h>
 #include <proto/intuition.h>
 
-AROS_UFP3S(ULONG, ProcessDrawerData,
+#include "icon_intern.h"
+
+/****************************************************************************************/
+
+AROS_UFP3S(ULONG, ProcessClearMem,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
+
+AROS_UFP3S(ULONG, ProcessOldDrawerData,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
+);
+
+AROS_UFP3S(ULONG, ProcessNewDrawerData,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
+);
+
 AROS_UFP3S(ULONG, ProcessGadgetRender,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,    streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
+
 AROS_UFP3S(ULONG, ProcessSelectRender,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
+
 AROS_UFP3S(ULONG, ProcessDefaultTool,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
+
+AROS_UFP3S(ULONG, ProcessToolWindow,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
+);
+
 AROS_UFP3S(ULONG, ProcessToolTypes,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
+
 AROS_UFP3S(ULONG, ProcessFlagPtr,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
 
-static const struct Hook ProcessDrawerDataHook =
+AROS_UFP3S(ULONG, ProcessIcon35,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
+);
+
+static const struct Hook ProcessClearMemHook =
 {
-    { NULL, NULL}, AROS_ASMSYMNAME(ProcessDrawerData), NULL, NULL
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessClearMem), NULL, NULL
+},
+ProcessOldDrawerDataHook =
+{
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessOldDrawerData), NULL, NULL
+},
+ProcessNewDrawerDataHook =
+{
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessNewDrawerData), NULL, NULL
 },
 ProcessGadgetRenderHook =
 {
@@ -78,13 +121,26 @@ ProcessDefaultToolHook =
 {
     { NULL, NULL}, AROS_ASMSYMNAME(ProcessDefaultTool), NULL, NULL
 },
+ProcessToolWindowHook =
+{
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessToolWindow), NULL, NULL
+},
 ProcessToolTypesHook =
 {
     { NULL, NULL}, AROS_ASMSYMNAME(ProcessToolTypes), NULL, NULL
+},
+ProcessIcon35Hook =
+{
+    { NULL, NULL}, AROS_ASMSYMNAME(ProcessIcon35), NULL, NULL
 };
+
+/****************************************************************************************/
 
 #undef O
 #define O(x)    (offsetof (struct Gadget,x))
+
+/****************************************************************************************/
+
 static const IPTR GadgetDesc[] =
 {
     sizeof (struct Gadget),
@@ -106,8 +162,13 @@ static const IPTR GadgetDesc[] =
     SDM_END
 };
 
+/****************************************************************************************/
+
 #undef O
 #define O(x)    (offsetof (struct DiskObject,x))
+
+/****************************************************************************************/
+
 static const IPTR DiskObjectDesc[] =
 {
     sizeof (struct DiskObject),
@@ -126,8 +187,13 @@ static const IPTR DiskObjectDesc[] =
     SDM_END
 };
 
+/****************************************************************************************/
+
 #undef O
 #define O(x)    (offsetof (struct Image,x))
+
+/****************************************************************************************/
+
 static const IPTR ImageDesc[] =
 {
     sizeof (struct Image),
@@ -143,20 +209,30 @@ static const IPTR ImageDesc[] =
     SDM_END
 };
 
+/****************************************************************************************/
+
 const IPTR IconDesc[] =
 {
-    sizeof (struct DiskObject),
+    sizeof (struct NativeIcon),
+    SDM_SPECIAL(0,&ProcessClearMemHook),
     SDM_STRUCT(0,DiskObjectDesc),
-    SDM_SPECIAL(0,&ProcessDrawerDataHook),
+    SDM_SPECIAL(0,&ProcessOldDrawerDataHook),
     SDM_SPECIAL(0,&ProcessGadgetRenderHook),
     SDM_SPECIAL(0,&ProcessSelectRenderHook),
     SDM_SPECIAL(0,&ProcessDefaultToolHook),
     SDM_SPECIAL(0,&ProcessToolTypesHook),
+    SDM_SPECIAL(0,&ProcessToolWindowHook),
+    SDM_SPECIAL(0,&ProcessNewDrawerDataHook),
+    SDM_SPECIAL(0,&ProcessIcon35Hook),
     SDM_END
 };
 
+/****************************************************************************************/
+
 #undef O
 #define O(x)    (offsetof (struct NewWindow,x))
+
+/****************************************************************************************/
 
 const IPTR NewWindowDesc[] =
 {
@@ -183,21 +259,28 @@ const IPTR NewWindowDesc[] =
     SDM_END
 };
 
+/****************************************************************************************/
+
 #undef O
 #define O(x)    (offsetof (struct DrawerData,x))
-const IPTR DrawerDataDesc[] =
+
+/****************************************************************************************/
+
+const IPTR OldDrawerDataDesc[] =
 {
     sizeof (struct DrawerData),
     SDM_STRUCT(O(dd_NewWindow),NewWindowDesc),
     SDM_LONG(O(dd_CurrentX)),
     SDM_LONG(O(dd_CurrentY)),
-    /* SDM_ULONG(O(dd_Flags)),
-    SDM_UWORD(O(dd_ViewModes)), */
     SDM_END
 };
 
-#undef DOSBase
-#define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
+/****************************************************************************************/
+
+//#undef DOSBase
+//#define DOSBase     ((struct DOSLibrary *)(hook->h_Data))
+
+/****************************************************************************************/
 
 AROS_UFH3(LONG, dosstreamhook,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -239,17 +322,36 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
     AROS_USERFUNC_EXIT
 } /* dosstreamhook */
 
-
-/*    if (!WriteStruct (icon, dobj, IconDesc))
-
-		FreeStruct (dobj, DiskObjectDesc); */
+/****************************************************************************************/
 
 #define DO(x)       ((struct DiskObject *)x)
 
-#undef DOSBase
-#define DOSBase     ((struct DOSLibrary *)(streamhook->h_Data))
+//#undef DOSBase
+//#define DOSBase     ((struct DOSLibrary *)(streamhook->h_Data))
 
-AROS_UFH3S(ULONG, ProcessDrawerData,
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessClearMem,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
+    AROS_UFHA(struct SDData *, data, A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    if (data->sdd_Mode == SDV_SPECIALMODE_READ)
+    {
+    	memset(data->sdd_Dest, 0, sizeof(struct NativeIcon));
+    }
+    
+    return TRUE;
+    
+    AROS_USERFUNC_EXIT
+    
+}
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessOldDrawerData,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
@@ -257,7 +359,7 @@ AROS_UFH3S(ULONG, ProcessDrawerData,
 {
     AROS_USERFUNC_INIT
 #if 0
-kprintf ("ProcessDrawerData\n");
+kprintf ("ProcessOldDrawerData\n");
 #endif
 
 /*    if (DO(data->sdd_Dest)->do_Type == WBDRAWER)
@@ -273,19 +375,19 @@ kprintf ("ProcessDrawerData\n");
 	    return ReadStruct (streamhook
 		, (APTR *)&(DO(data->sdd_Dest)->do_DrawerData)
 		, data->sdd_Stream
-		, DrawerDataDesc
+		, OldDrawerDataDesc
 	    );
 
 	case SDV_SPECIALMODE_WRITE:
 	    return WriteStruct (streamhook
 		, DO(data->sdd_Dest)->do_DrawerData
 		, data->sdd_Stream
-		, DrawerDataDesc
+		, OldDrawerDataDesc
 	    );
 
 	case SDV_SPECIALMODE_FREE:
 	    FreeStruct (DO(data->sdd_Dest)->do_DrawerData
-		, DrawerDataDesc
+		, OldDrawerDataDesc
 	    );
 	    break;
 	}
@@ -294,7 +396,9 @@ kprintf ("ProcessDrawerData\n");
     return TRUE;
 
     AROS_USERFUNC_EXIT
-} /* ProcessDrawerData */
+} /* ProcessOldDrawerData */
+
+/****************************************************************************************/
 
 static struct Image * ReadImage (struct Hook * streamhook, BPTR file)
 {
@@ -347,6 +451,8 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
     return image;
 } /* ReadImage */
 
+/****************************************************************************************/
+
 static int WriteImage (struct Hook * streamhook, BPTR file,
 	struct Image * image)
 {
@@ -379,6 +485,8 @@ kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
     return (t == size);
 } /* WriteImage */
 
+/****************************************************************************************/
+
 static void FreeImage (struct Image * image)
 {
     ULONG size;
@@ -391,6 +499,8 @@ static void FreeImage (struct Image * image)
 
     FreeStruct (image, ImageDesc);
 } /* FreeImage */
+
+/****************************************************************************************/
 
 AROS_UFH3S(ULONG, ProcessGadgetRender,
     AROS_UFHA(struct Hook *,   hook, A0),
@@ -435,6 +545,8 @@ kprintf ("ProcessGadgetRender\n");
 
     AROS_USERFUNC_EXIT
 } /* ProcessGadgetRender */
+
+/****************************************************************************************/
 
 AROS_UFH3S(ULONG, ProcessSelectRender,
     AROS_UFHA(struct Hook *,   hook, A0),
@@ -483,6 +595,8 @@ kprintf ("ProcessSelectRender\n");
     AROS_USERFUNC_EXIT
 } /* ProcessSelectRender */
 
+/****************************************************************************************/
+
 AROS_UFH3S(ULONG, ProcessFlagPtr,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
@@ -528,6 +642,8 @@ kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
     AROS_USERFUNC_EXIT
 } /* ProcessFlagPtr */
 
+/****************************************************************************************/
+
 static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
 {
     ULONG  len;
@@ -554,6 +670,8 @@ kprintf ("ReadIconString: \"%s\"\n", str);
     return str;
 } /* ReadIconString */
 
+/****************************************************************************************/
+
 static int WriteIconString (struct Hook * streamhook, BPTR file, STRPTR str)
 {
     ULONG len;
@@ -565,6 +683,8 @@ static int WriteIconString (struct Hook * streamhook, BPTR file, STRPTR str)
 
     return FWrite (file, str, len, 1) != EOF;
 } /* WriteIconString */
+
+/****************************************************************************************/
 
 AROS_UFH3S(ULONG, ProcessDefaultTool,
     AROS_UFHA(struct Hook *,   hook, A0),
@@ -614,6 +734,59 @@ kprintf ("ProcessDefaultTool\n");
 
     AROS_USERFUNC_EXIT
 } /* ProcessDefaultTool */
+
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessToolWindow,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
+    AROS_UFHA(struct SDData *, data, A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    STRPTR str;
+
+#if 0
+kprintf ("ProcessToolWindow\n");
+#endif
+
+    if (DO(data->sdd_Dest)->do_ToolWindow)
+    {
+	switch (data->sdd_Mode)
+	{
+	case SDV_SPECIALMODE_READ:
+	    str = ReadIconString (streamhook, data->sdd_Stream);
+
+	    if (!str)
+		return FALSE;
+
+	    DO(data->sdd_Dest)->do_ToolWindow = str;
+
+	    break;
+
+	case SDV_SPECIALMODE_WRITE: {
+	    str = DO(data->sdd_Dest)->do_ToolWindow;
+
+	    WriteIconString (streamhook, data->sdd_Stream, str);
+
+	    break; }
+
+	case SDV_SPECIALMODE_FREE:
+	    str = DO(data->sdd_Dest)->do_ToolWindow;
+
+	    FreeMem (str, strlen (str)+1);
+
+	    break;
+	}
+    }
+
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+} /* ProcessToolWindow */
+
+/****************************************************************************************/
 
 AROS_UFH3S(ULONG, ProcessToolTypes,
     AROS_UFHA(struct Hook *,   hook, A0),
@@ -732,4 +905,81 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
     AROS_USERFUNC_EXIT
 } /* ProcessToolTypes */
 
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessNewDrawerData,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
+    AROS_UFHA(struct SDData *, data, A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+#if 0
+kprintf ("ProcessNewDrawerData\n");
+#endif
+
+    if (DO(data->sdd_Dest)->do_DrawerData &&
+    	((LONG)DO(data->sdd_Dest)->do_Gadget.UserData > 0) &&
+	((LONG)DO(data->sdd_Dest)->do_Gadget.UserData <= WB_DISKREVISION))
+    {
+	switch (data->sdd_Mode)
+	{
+	case SDV_SPECIALMODE_READ:
+	    if (!ReadLong(streamhook, &DO(data->sdd_Dest)->do_DrawerData->dd_Flags, data->sdd_Stream))
+		return FALSE;
+
+    	    if (!ReadWord(streamhook, &DO(data->sdd_Dest)->do_DrawerData->dd_ViewModes, data->sdd_Stream))
+	    	return FALSE;
+		
+	    break;
+
+	case SDV_SPECIALMODE_WRITE: 
+	    if (!WriteLong(streamhook, DO(data->sdd_Dest)->do_DrawerData->dd_Flags, data->sdd_Stream))
+		return FALSE;
+
+    	    if (!WriteWord(streamhook, DO(data->sdd_Dest)->do_DrawerData->dd_ViewModes, data->sdd_Stream))
+	    	return FALSE;
+	    break;
+	}
+    }
+
+    return TRUE;
+
+    AROS_USERFUNC_EXIT
+} /* ProcessNewDrawerData */
+
+/****************************************************************************************/
+
+#define IconBase ((IconBase_T *)(streamhook->h_Data))
+
+/****************************************************************************************/
+
+AROS_UFH3S(ULONG, ProcessIcon35,
+    AROS_UFHA(struct Hook *,   hook, A0),
+    AROS_UFHA(struct Hook *,   streamhook, A2),
+    AROS_UFHA(struct SDData *, data, A1)
+)
+{
+    AROS_USERFUNC_INIT
+    
+    IPTR retval = TRUE;
+
+#if 0
+kprintf ("ProcessIcon35\n");
+#endif
+    
+    switch (data->sdd_Mode)
+    {
+    	case SDV_SPECIALMODE_READ:
+	    ReadIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
+    	    break;	    
+    }
+    
+    return retval;
+    
+    AROS_USERFUNC_EXIT
+} /* ProcessIcon35 */
+
+/****************************************************************************************/
 
