@@ -382,6 +382,7 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 	if (text != NULL)
 	{
 	    zune_text_get_bounds(text, obj);
+	    
 	    if (text->height > data->entries[pos]->height)
 		data->entries[pos]->height = text->height;
 	    data->entries[pos]->widths[j] = text->width;
@@ -1785,8 +1786,11 @@ STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_Cr
     if (!li)
 	return NULL;
     li->obj = msg->obj;
+
     AddTail((struct List *)&data->images, (struct Node *)li);
+    DoMethod(li->obj, MUIM_ConnectParent, (IPTR)obj);
     DoSetupMethod(li->obj, muiRenderInfo(obj));
+
 
     return (IPTR)li;
 }
@@ -1802,6 +1806,7 @@ STATIC IPTR List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_De
     if (li)
     {
 	DoMethod(li->obj, MUIM_Cleanup);
+	DoMethod(li->obj, MUIM_DisconnectParent);
 	Remove((struct Node *)li);
 	FreePooled(data->pool, li, sizeof(struct ListImage));
     }
