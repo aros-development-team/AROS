@@ -84,22 +84,12 @@ void readconfig(void)
     
     if (modtype == MCC || modtype == MUI || modtype == MCP)
     {
-        struct functionlist *function;
+        struct functionhead *function;
         
-        function = malloc(sizeof(struct functionlist));
+        function = newfunctionhead("MCC_Query", NULL, firstlvo - 1);
+	funcaddarg(function, NULL, NULL, "D0");
+
         function->next = funclist;
-        function->name = "MCC_Query";
-        function->type = NULL;
-        function->lvo = firstlvo - 1;
-	function->novararg = 0;
-        function->argcount = 1;
-        function->arguments = malloc(sizeof(struct arglist));
-        function->arguments->next = NULL;
-        function->arguments->type = NULL;
-        function->arguments->name = NULL;
-        function->arguments->reg  = "D0";
-	function->aliases = NULL;
-        
         funclist = function;
     }
 }
@@ -109,7 +99,6 @@ static void readsectionconfig(void)
 {
     int atend = 0, i;
     char *line, *s, *s2;
-    struct forcelist **forcelistptr = &forcelist;
     
     while (!atend)
     {
@@ -210,10 +199,7 @@ static void readsectionconfig(void)
 		break;
 		
 	    case 8: /* forcebase */
-		*forcelistptr = malloc(sizeof(struct forcelist));
-		(*forcelistptr)->next = NULL;
-		(*forcelistptr)->basename = strdup(s);
-		forcelistptr = &(*forcelistptr)->next;
+		addforcebase(&forcelist, s);
 		break;
                 
             case 9: /* superclass */
@@ -319,7 +305,6 @@ static void readsectionconfig(void)
 static void readsectionproto(void)
 {
     int atend = 0;
-    struct linelist **linelistptr = &protolines;
     char *line, *s;
     
     while (!atend)
@@ -330,10 +315,7 @@ static void readsectionproto(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    *linelistptr = malloc(sizeof(struct linelist));
-	    (*linelistptr)->line = strdup(line);
-	    (*linelistptr)->next = NULL;
-	    linelistptr = &(*linelistptr)->next;
+	    addline(&protolines, line);
 	}
 	else
 	{
@@ -361,7 +343,6 @@ static void readsectioncdef(void)
 {
     int atend = 0;
     char *line, *s;
-    struct linelist **linelistptr = &cdeflines;
     
     while (!atend)
     {
@@ -371,10 +352,7 @@ static void readsectioncdef(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    *linelistptr = malloc(sizeof(struct linelist));
-	    (*linelistptr)->line = strdup(line);
-	    (*linelistptr)->next = NULL;
-	    linelistptr = &(*linelistptr)->next;
+	    addline(&cdeflines, line);
 	}
 	else
 	{
@@ -402,7 +380,6 @@ static void readsectioncdefprivate(void)
 {
     int atend = 0;
     char *line, *s;
-    struct linelist **linelistptr = &cdefprivatelines;
     
     while (!atend)
     {
@@ -412,10 +389,7 @@ static void readsectioncdefprivate(void)
 
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    *linelistptr = malloc(sizeof(struct linelist));
-	    (*linelistptr)->line = strdup(line);
-	    (*linelistptr)->next = NULL;
-	    linelistptr = &(*linelistptr)->next;
+	    addline(&cdefprivatelines, line);
 	}
 	else
 	{
@@ -444,8 +418,7 @@ static void readsectionfunctionlist(void)
     int atend = 0;
     char *line, *s, *s2;
     unsigned int lvo = firstlvo;
-    struct functionlist **funclistptr = &funclist;
-    struct arglist **arglistptr;
+    struct functionhead **funclistptr = &funclist;
     
     if (basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
@@ -518,14 +491,16 @@ static void readsectionfunctionlist(void)
 	    sclosebracket = strchr(line,')');
 	    scolon = strchr(line,':');
 	    
-	    *funclistptr = malloc(sizeof(struct functionlist));
-	    (*funclistptr)->next = NULL;
-	    (*funclistptr)->type = NULL;
-	    (*funclistptr)->argcount = 0;
-	    (*funclistptr)->arguments = NULL;
-	    (*funclistptr)->aliases = NULL;
-	    (*funclistptr)->lvo = lvo;
-	    (*funclistptr)->novararg = 0;
+	    /* Duplicate the function name */
+	    for (len = 0;
+		 line[len] != '\0' && !isspace(line[len]) && line[len] != ':' && line[len] != '(';
+		 len++
+	    )
+		/*NOP*/;
+
+	    line[len] = '\0';
+
+	    *funclistptr = newfunctionhead(line, NULL, lvo);
 	    lvo++;
 
 	    /* Parse registers specifications if available */
@@ -539,7 +514,6 @@ static void readsectionfunctionlist(void)
 		*sopenbracket='\0';
 		*sclosebracket='\0';
 		
-		arglistptr = &(*funclistptr)->arguments;
 		s = sopenbracket+1;
 		while (isspace(*s)) s++;
 		while (*s!='\0')
@@ -548,16 +522,10 @@ static void readsectionfunctionlist(void)
 		    if (memchr("AD",s[0],2)!=NULL && memchr("01234567",s[1],8)!=NULL)
 		    {
 			char c = s[2];
-			
-			(*funclistptr)->argcount++;
-			(*arglistptr) = malloc(sizeof(struct arglist));
+
 			s[2] = '\0';
-			(*arglistptr)->reg = strdup(s);
+			funcaddarg(*funclistptr, NULL, NULL, s);
 			s[2] = c;
-			(*arglistptr)->next = NULL;
-			(*arglistptr)->type = NULL;
-			(*arglistptr)->name = NULL;
-			arglistptr = &(*arglistptr)->next;
 		    }
 		    else
 			exitfileerror(20, "wrong register \"%s\" for argument %u\n", s, (*funclistptr)->argcount+1);
@@ -573,20 +541,11 @@ static void readsectionfunctionlist(void)
 		}
 	    }
 
-	    /* Duplicate the function name */
-	    for (len = 0;
-		 line[len] != '\0' && !isspace(line[len]) && line[len] != ':';
-		 len++
-	    )
-		/*NOP*/;
-
-	    line[len] = '\0';
-	    (*funclistptr)->name = strdup(line);
 	    
 	    /* Parse extra specification, like aliases, vararg, ... */
 	    if (scolon != NULL)
 	    {
-		struct aliaslist **aliaslistptr = &(*funclistptr)->aliases;
+		struct functionalias **aliaslistptr = &(*funclistptr)->aliases;
 		
 		s = scolon+1;
 		while (isspace(*s)) s++;
@@ -604,13 +563,10 @@ static void readsectionfunctionlist(void)
 			s2 = s;
 			while (!isspace(*s2) && *s2!=')') s2++;
 			
-			*aliaslistptr = malloc(sizeof(struct aliaslist));
-			(*aliaslistptr)->next = NULL;
 			c = *s2;
 			*s2 = '\0';
-			(*aliaslistptr)->alias = strdup(s);
+			funcaddalias(*funclistptr, s);
 			*s2 = c;
-			aliaslistptr = &(*aliaslistptr)->next;
 			
 			s = s2;
 			while (isspace(*s)) s++;

@@ -10,8 +10,9 @@ void writestubs(void)
 {
     FILE *out;
     char line[256];
-    struct functionlist *funclistit;
-    struct arglist *arglistit;
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
+    struct functionalias *aliasesit;
 
     snprintf(line, 255, "%s/%s_stubs.c", gendir, modulename);
     out = fopen(line, "w");

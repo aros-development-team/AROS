@@ -13,14 +13,14 @@ struct _parseinfo
 {
     char infunction;
     char newarg;
-    struct arglist **arglistptr;
-    struct functionlist *currentfunc;
+    struct functionarg *funcarg;
+    struct functionhead *currentfunc;
 };
 
 void readref(void)
 {
-    struct functionlist *funclistit = NULL;
-    struct functionlist *currentfunc = NULL; /* will be either funclistit or methlistit */
+    struct functionhead *funclistit = NULL;
+    struct functionhead *currentfunc = NULL; /* will be either funclistit or methlistit */
     struct _parseinfo parseinfo;
     unsigned int funcnamelength;
     char *begin, *end, *line;
@@ -55,7 +55,7 @@ void readref(void)
 		libcall==REGISTER)
 	    {
 		/* About to leave function */
-		if ((*parseinfo.arglistptr)!=NULL)
+		if (parseinfo.funcarg!=NULL)
 		{
 		    fprintf(stderr, "Error: too many registers specified for function \"%s\"\n",
 			    parseinfo.currentfunc->name);
@@ -161,16 +161,10 @@ void readref(void)
 		    else
 		    {
 			if (parseinfo.newarg)
-			{
-			    assert(*parseinfo.arglistptr==NULL);
-			    *parseinfo.arglistptr = malloc(sizeof(struct arglist));
-			    (*parseinfo.arglistptr)->next = NULL;
-			    (*parseinfo.arglistptr)->reg = "";
-			    parseinfo.currentfunc->argcount++;
-			}
+			    parseinfo.funcarg = funcaddarg(parseinfo.currentfunc, NULL, NULL, "");
 			else
 			{
-			    if (*parseinfo.arglistptr==NULL)
+			    if (parseinfo.funcarg==NULL)
 			    {
 				fprintf(stderr, "Error: argument count mismatch for funtion \"%s\"\n",
                                             parseinfo.currentfunc->name);
@@ -180,16 +174,16 @@ void readref(void)
 			
 			if (libcall == STACK)
 			{
-			    (*parseinfo.arglistptr)->type = strdup(begin);
-			    (*parseinfo.arglistptr)->name = NULL;
+			    parseinfo.funcarg->type = strdup(begin);
+			    parseinfo.funcarg->name = NULL;
 			}
 			else
 			{
-			    (*parseinfo.arglistptr)->type = strdup(begin);
-			    (*parseinfo.arglistptr)->name = name;
+			    parseinfo.funcarg->type = strdup(begin);
+			    parseinfo.funcarg->name = name;
 			}
 			
-			parseinfo.arglistptr = &((*parseinfo.arglistptr)->next);
+			parseinfo.funcarg = parseinfo.funcarg->next;
 		    }
 		}
 		else if (strncmp(line, "Type", 4)==0)
@@ -216,7 +210,7 @@ void readref(void)
      */
     if (libcall == REGISTERMACRO)
     {
-	struct arglist * arglistit;
+	struct functionarg * arglistit;
 	char *s;
 	
 	for
@@ -259,7 +253,7 @@ void readref(void)
                 && strcmp(funclistit->name, "MCC_Query") == 0 
             )
             {
-                struct arglist *arglistit = funclistit->arguments;
+                struct functionarg *arglistit = funclistit->arguments;
                 
                 if (arglistit == NULL)
                 {
@@ -314,17 +308,9 @@ int parsemuimethodname(char *name,
 	    && strncmp(modulename, name, sep - name) == 0
 	)
 	{
-	    struct functionlist *method, *it;
+	    struct functionhead *method, *it;
 
-	    method = malloc(sizeof(struct functionlist));
-	    method->next = NULL;
-	    method->name = strdup(sep + 2); 
-	    method->type = NULL; /* not known yet */
-	    method->argcount = 0;
-	    method->arguments = NULL;
-	    method->aliases = NULL;
-	    method->lvo = 0; /* not used */
-	    method->novararg = 0;
+	    method = newfunctionhead(sep+2, NULL, 0);
 	    
 	    if (methlist == NULL )
 		methlist = method;
@@ -337,7 +323,7 @@ int parsemuimethodname(char *name,
 		it->next = method;
 	    }
                     
-	    parseinfo->arglistptr = &(method->arguments);
+	    parseinfo->funcarg = method->arguments;
 	    parseinfo->currentfunc = method;
 	    ok = 1;
 	    parseinfo->newarg = 1;
@@ -353,9 +339,10 @@ int parsemacroname(char *name,
 {
     if (libcall == REGISTERMACRO && (strncmp(name, "AROS_LH_", 8) == 0  || strncmp(name, "AROS_NTLH_", 10) == 0)) 
     {
-	struct functionlist *funclistit, *func;
-	char *begin, *end;
+	struct functionhead *funclistit, *func;
+	char *begin, *end, *funcname;
 	int novararg;
+	unsigned int lvo;
 	
 	if (strncmp(name, "AROS_LH_", 8) == 0)
 	{
@@ -374,18 +361,15 @@ int parsemacroname(char *name,
 	begin = begin + strlen(basename) + 1;
 	end = begin + strlen(begin) - 1;
 	
-	func = malloc(sizeof(struct functionlist));
-	func->argcount = 0;
-	func->arguments = NULL;
-	func->aliases = NULL;
-	func->novararg = novararg;
-	
 	while(end != begin && *end != '_') end--;
 	*end = '\0';
-	func->name = strdup(begin);
+	funcname = begin;
 	
 	begin = end+1;
-	sscanf(begin, "%d", &func->lvo);
+	sscanf(begin, "%d", &lvo);
+
+	func = newfunctionhead(funcname, NULL, lvo);
+	func->novararg = novararg;
 
 	if (funclist == NULL || funclist->lvo > func->lvo)
 	{
@@ -415,7 +399,7 @@ int parsemacroname(char *name,
 
 	parseinfo->currentfunc = func;
 	parseinfo->newarg = 1;
-	parseinfo->arglistptr = &(func->arguments);
+	parseinfo->funcarg = func->arguments;
 	
 	return 1;
     }
@@ -426,7 +410,7 @@ int parsemacroname(char *name,
 int parsefunctionname(char *name,
 		      struct _parseinfo *parseinfo)
 {
-    struct functionlist *funclistit;
+    struct functionhead *funclistit;
     
     if (libcall == REGISTERMACRO)
 	return 0;
@@ -440,7 +424,7 @@ int parsefunctionname(char *name,
 	return 0;
     else
     {
-	parseinfo->arglistptr = &(funclistit->arguments);
+	parseinfo->funcarg = funclistit->arguments;
 	parseinfo->currentfunc = funclistit;
 	
 	switch (libcall)

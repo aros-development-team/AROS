@@ -9,28 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 
-struct arglist {
-    struct arglist *next;
-    char *type;
-    char *name;
-    char *reg;
-};
-
-struct aliaslist {
-    struct aliaslist *next;
-    char *alias;
-};
-
-struct functionlist {
-    struct functionlist *next;
-    char *name;
-    char *type;
-    unsigned int argcount;
-    struct arglist *arguments;
-    struct aliaslist *aliases;
-    unsigned int lvo;
-    int novararg;
-};
+#include "functionhead.h"
 
 struct forcelist {
     struct forcelist *next;
@@ -42,17 +21,6 @@ struct linelist {
     char *line;
 };
 
-/* In funclist the information of all the functions of the module will be stored.
- * The list has to be sorted on the lvonum field
- */
-extern struct functionlist *funclist;
-
-/* In methlist the information of all the methods of the class will be 
- * stored. We (mis)use struct functionlist for this, but don't use certain
- * fields (like lvo and reg (in struct arglist)).
- */
-extern struct functionlist *methlist;
-
 /* In forcelist a list of basenames is present that need to be present in the
  * static link library so that certain libraries are opened by a program
  */
@@ -62,7 +30,7 @@ extern struct forcelist *forcelist;
 extern char *conffile, *gendir, *genincdir, *reffile;
 
 /* global variables that store the configuration of the module */
-enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP };
+enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE };
 extern enum modtype modtype;
 enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 extern enum libcall libcall;
@@ -79,6 +47,9 @@ extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cdeflines, *cdefprivatelines, *protolines;
 
 extern int customdispatcher; /* does class have custom dispatcher? */
+
+struct linelist *addline(struct linelist **linelistptr, const char *line);
+struct forcelist *addforcebase(struct forcelist **forcelistptr, const char *basename);
 
 void readconfig(void);
 void readref(void);

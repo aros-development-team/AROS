@@ -6,16 +6,16 @@
 */
 #include "genmodule.h"
 
-static void writedefineregister(FILE *, struct functionlist *);
-static void writedefinevararg(FILE *, struct functionlist *);
-static void writedefinestack(FILE *, struct functionlist *);
-static void writealiases(FILE *, struct functionlist *);
+static void writedefineregister(FILE *, struct functionhead *);
+static void writedefinevararg(FILE *, struct functionhead *);
+static void writedefinestack(FILE *, struct functionhead *);
+static void writealiases(FILE *, struct functionhead *);
 
 void writeincdefines(int dummy)
 {
     FILE *out;
     char line[256];
-    struct functionlist *funclistit;
+    struct functionhead *funclistit;
 
     snprintf(line, 255, "%s/defines/%s.h", genincdir, modulename);
     out = fopen(line, "w");
@@ -69,9 +69,9 @@ void writeincdefines(int dummy)
 
 
 void
-writedefineregister(FILE *out, struct functionlist *funclistit)
+writedefineregister(FILE *out, struct functionhead *funclistit)
 {
-    struct arglist *arglistit;
+    struct functionarg *arglistit;
     
     fprintf(out,
 	    "\n"
@@ -125,9 +125,9 @@ writedefineregister(FILE *out, struct functionlist *funclistit)
 }
 
 void
-writedefinevararg(FILE *out, struct functionlist *funclistit)
+writedefinevararg(FILE *out, struct functionhead *funclistit)
 {
-    struct arglist *arglistit = funclistit->arguments;
+    struct functionarg *arglistit = funclistit->arguments;
     char isvararg = 0, *varargname;
 	
     /* Go to last argument */
@@ -225,9 +225,9 @@ writedefinevararg(FILE *out, struct functionlist *funclistit)
 }
 
 void
-writedefinestack(FILE *out, struct functionlist *funclistit)
+writedefinestack(FILE *out, struct functionhead *funclistit)
 {
-    struct arglist *arglistit;
+    struct functionarg *arglistit;
     
     fprintf(out, "#define %s ((%s (*)(", funclistit->name, funclistit->type);
     for (arglistit = funclistit->arguments;
@@ -243,9 +243,9 @@ writedefinestack(FILE *out, struct functionlist *funclistit)
 }
 
 void
-writealiases(FILE *out, struct functionlist *funclistit)
+writealiases(FILE *out, struct functionhead *funclistit)
 {
-    struct aliaslist *aliasesit;
+    struct functionalias *aliasesit;
     
     for (aliasesit = funclistit->aliases;
 	 aliasesit != NULL;
