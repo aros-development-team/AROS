@@ -34,8 +34,8 @@ extern ULONG AROS_SLIB_ENTRY(add,arosc)();
 extern ULONG AROS_SLIB_ENTRY(asl,arosc)();
 extern const char arosc_end;
 
-extern struct ExecBase *SysBase;
-extern struct DosLibrary  *DOSBase;
+extern struct ExecBase   *SysBase;
+extern struct DosLibrary *DOSBase;
 
 int entry(void)
 {
@@ -71,7 +71,6 @@ const APTR inittabl[4]=
 
 DECLARESET(INIT);
 DECLARESET(EXIT);
-DECLARESET(LIBS);
 
 AROS_LH2(struct aroscbase *, init,
  AROS_LHA(struct aroscbase *, aroscbase, D0),
@@ -85,7 +84,7 @@ AROS_LH2(struct aroscbase *, init,
     SysBase = sysBase;
     aroscbase->seglist=segList;
 
-    if (set_open_libraries(SETNAME(LIBS)))
+    if (set_open_libraries())
         return NULL;
 
     /* You would return NULL here if the init failed. */
@@ -105,19 +104,6 @@ AROS_LH1(struct aroscbase *, open,
 	If you break the Forbid() another task may enter this function
 	at the same time. Take care.
     */
-
-    struct AroscUserdata *userdata;
-
-    userdata = AllocMem(sizeof(struct AroscUserdata), MEMF_ANY|MEMF_CLEAR);
-    if (!userdata)
-        return NULL;
-
-    (struct AroscUserdata *)(FindTask(0)->tc_UserData) = userdata;
-
-    /* passes these value to the program */
-    userdata->ctype_b       = __ctype_b;
-    userdata->ctype_toupper = __ctype_toupper;
-    userdata->ctype_tolower = __ctype_tolower;
 
     /* Keep compiler happy */
     version=0;
@@ -140,9 +126,6 @@ AROS_LH0(BPTR, close, struct aroscbase *, aroscbase, 2, arosc)
 	at the same time. Take care.
     */
 
-    struct AroscUserdata *userdata = (struct AroscUserdata *)(FindTask(0)->tc_UserData);
-
-    FreeMem(userdata, sizeof(struct AroscUserdata));
     /* I have one fewer opener. */
     if(!--aroscbase->library.lib_OpenCnt)
     {
@@ -179,7 +162,7 @@ AROS_LH0(BPTR, expunge, struct aroscbase *, aroscbase, 3, arosc)
     /* Get returncode here - FreeMem() will destroy the field. */
     ret=aroscbase->seglist;
 
-    set_close_libraries(SETNAME(LIBS));
+    set_close_libraries();
 
     /* Free the memory. */
     FreeMem((char *)aroscbase-aroscbase->library.lib_NegSize,
@@ -212,17 +195,40 @@ static void *const functable[]=
     (void *)-1
 };
 
-int arosc_internalinit(void)
+int arosc_internalinit(struct AroscUserData *userdata)
 {
-    return set_call_funcs(SETNAME(INIT), 1);
+    APTR *tc_UserDataptr = &(FindTask(0)->tc_UserData);
+
+    /*save the old value of tc_UserData */
+    userdata->oldtc_UserData = *(struct AroscUserData **)tc_UserDataptr;
+
+    /*store the new one */
+    *(struct AroscUserData **)tc_UserDataptr = userdata;
+
+    /* passes these value to the program */
+    userdata->ctype_b       = __ctype_b;
+    userdata->ctype_toupper = __ctype_toupper;
+    userdata->ctype_tolower = __ctype_tolower;
+
+    set_call_funcs(SETNAME(INIT), 1);
+
+    return 0;
 }
 
 int arosc_internalexit(void)
 {
-    return set_call_funcs(SETNAME(EXIT), -1);
+    APTR *tc_UserDataptr = &(FindTask(0)->tc_UserData);
+    struct AroscUserData *userdata = *(struct AroscUserData **)tc_UserDataptr;
+
+    set_call_funcs(SETNAME(EXIT), -1);
+
+    /*restore the old value */
+    *tc_UserDataptr = userdata->oldtc_UserData;
+
+    /* Free the memory the program has allocated for us */
+    FreeVec(userdata);
 }
 
 
 DEFINESET(INIT);
 DEFINESET(EXIT);
-DEFINESET(LIBS);
