@@ -12,7 +12,7 @@ all: makedirs tools mmake
 
 makedirs:
 	@$(RM) $(TOP)/errors
-	$(FOR) dir in $(AROSDIR) $(GENDIR) $(TOOLDIR) ; do \
+	@$(FOR) dir in $(AROSDIR) $(GENDIR) $(TOOLDIR) ; do \
 	    $(IF) [ ! -d $$dir ]; then \
 		$(MECHO) $(MKDIR) "$$dir" ; \
 		$(MKDIR) "$$dir" ; \
