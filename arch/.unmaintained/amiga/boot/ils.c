@@ -1,3 +1,11 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Amiga bootloader -- InternalLoadSeg support routines
+    Lang: english
+*/
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -13,58 +21,65 @@ extern struct ilsMemList ils_mem;
 
 LONG ils_read(BPTR handle __d1, void *buffer __d2, LONG length __d3, struct DosLibrary *DOSBase __a6)
 {
-	return( Read(handle, buffer, length) );
+    return( Read(handle, buffer, length) );
 }
 
 void *ils_alloc(ULONG size __d0, ULONG attrib __d1, struct ExecBase *SysBase __a6)
 {
-	void *result;
-	ULONG savesize = size;
+    void *result;
+    ULONG savesize = size;
 
-	attrib |= MEMF_KICK|MEMF_REVERSE;
+    attrib |= MEMF_KICK|MEMF_REVERSE;
 
-	result = AllocMem(size, attrib);
+    result = AllocMem(size, attrib);
 
-	/* all memory that is allocated during the LoadSeg has to be entered
-		into the KickMemPtr for protection during reset. We keep a list of
-		our allocations so we can make this MemList
-	*/
-	if(result)
+    /*
+	all memory that is allocated during the LoadSeg has to be entered
+	into the KickMemPtr for protection during reset. We keep a list of
+	our allocations so we can make this MemList
+    */
+    if(result)
+    {
+	struct ilsMemNode *node;
+
+	if( (node = AllocMem(sizeof(struct ilsMemNode), MEMF_CLEAR)) )
 	{
-		struct ilsMemNode *node;
-
-		if( (node = AllocMem(sizeof(struct ilsMemNode), MEMF_CLEAR)) )
-		{
-			node->imn_Addr = result;
-			node->imn_Size = savesize;
-			AddTail((struct List *)&ils_mem, (struct Node *)node);
-			/* keep a counter so we don't have to count nodes later */
-			ils_mem.iml_Num++;
-		}
+	    node->imn_Addr = result;
+	    node->imn_Size = savesize;
+	    AddHead((struct List *)&ils_mem, (struct Node *)node);
+	    /*
+		Keep a counter so we don't have to count nodes later.
+	    */
+	    ils_mem.iml_Num++;
+	    /*
+		This counts number of nodes since the loading of the last
+		module. This field is reset in the FindResMod() routine.
+	    */
+	    ils_mem.iml_NewNum++;
 	}
-	return(result);
+    }
+    return(result);
 }
 
 void ils_free(void *block __a1, ULONG size __d0, struct ExecBase *SysBase __a6)
 {
-	void *saveblock = block;
-	struct ilsMemNode *node;
+    void *saveblock = block;
+    struct ilsMemNode *node;
 
-	FreeMem(block, size);
+    FreeMem(block, size);
 
-	/* now remove this block from our list */
-	/* find it */
-	for(node = (struct ilsMemNode *)ils_mem.iml_List.mlh_Head; node->imn_Node.mln_Succ; node = (struct ilsMemNode *)node->imn_Node.mln_Succ)
+    /* now remove this block from our list */
+    /* find it */
+    for(node = (struct ilsMemNode *)ils_mem.iml_List.mlh_Head; node->imn_Node.mln_Succ; node = (struct ilsMemNode *)node->imn_Node.mln_Succ)
+    {
+	/* is this the right block? */
+	if(node->imn_Addr == saveblock)
 	{
-		/* is this the right block? */
-		if(node->imn_Addr == saveblock)
-		{
-			/* yes: remove from list and free it's memory */
-			Remove((struct Node *)node);
-			ils_mem.iml_Num--;
-			FreeMem(node, sizeof(struct ilsMemNode));
-		}
+	    /* yes: remove from list and free it's memory */
+	    Remove((struct Node *)node);
+	    ils_mem.iml_Num--;
+	    FreeMem(node, sizeof(struct ilsMemNode));
 	}
-
+    }
 }
 

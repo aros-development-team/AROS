@@ -1,3 +1,11 @@
+#
+#   (C) 1995-96 AROS - The Amiga Replacement OS
+#   $Id$
+#
+#   Desc: Amiga bootloader -- makefile
+#   Lang: english
+#
+
 # This directory is not built like the other parts of AROS.
 
 TOP=../../..
@@ -8,7 +16,7 @@ include $(TOP)/config/make.cfg
 CFLAGS = $(COMMON_CFLAGS) -Wno-uninitialized
 LDFLAGS = -noixemul
 
-FILES = main ils
+FILES = main ils config
 
 all:	setup $(BINDIR)/boot
 

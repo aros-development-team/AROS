@@ -1,4 +1,12 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
+    Desc: Amiga bootloader -- quick SAS/C compat register declarations for GCC
+    Lang: english
+*/
+
+#ifdef __GNUC__
 #define __d0 __asm("d0")
 #define __d1 __asm("d1")
 #define __d2 __asm("d2")
@@ -15,3 +23,4 @@
 #define __a4 __asm("a4")
 #define __a5 __asm("a5")
 #define __a6 __asm("a6")
+#endif

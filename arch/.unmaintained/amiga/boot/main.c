@@ -1,31 +1,41 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Amiga bootloader -- main file
+    Lang: english
+*/
+
+/*
+    Note: This whole thing may seem a bit kludgy. It is.
+*/
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/nodes.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include "boot.h"
 #include "registers.h"
+#include "boot.h"
+#include "ils.h"
+#include "config.h"
+#include "version.h"
 
-/*
-    Set this to 1 to make a non-test version:
-*/
-#define FINAL 1
-
+struct Module *LoadModule(char *);
+void FreeModules(struct ModuleList *);
+BOOL BuildTagPtrs(struct ModuleList *);
 struct MemList *BuildMemList(struct ilsMemList *, ULONG *, ULONG);
 void StuffTags(struct MemList *, ULONG *, ULONG);
 void *FindResMod(struct ilsMemList *);
-extern LONG ils_read(BPTR __d1, void * __d2, LONG __d3, struct DosLibrary * __a6);
-extern void *ils_alloc(ULONG __d0, ULONG __d1, struct ExecBase * __a6);
-extern void ils_free(void * __a1, ULONG __d0, struct ExecBase * __a6);
+void PrintTagPtrs(void);
 
-#define BANNER "AROS system loader"
-#define VERSIONSTRING "1.0"
-
-char *version = "$VER: " BANNER " " VERSIONSTRING " (30.12.96)";
+char *version = "$VER: " BANNER " " VERSIONSTRING " " DATE;
+char *configfile = "boot.config";
 
 ULONG stack = 16384;
 ULONG ils_table[3];
@@ -33,36 +43,23 @@ struct ilsMemList ils_mem;
 
 int main(void)
 {
-    BPTR seglist, fh;
-    struct Resident *resmod;
-    struct MemList *memlist;
-    ULONG *modlist;
-    ULONG nummods = 0;
+    struct FileList *filelist;
+    struct Node *node;
+    struct Module *module;
+    struct ModuleList ModuleList;
 
-    Printf(BANNER " " VERSIONSTRING "\n");
-    Printf("Checking if KickTagPtr is already in use... %s\n",
-	SysBase->KickTagPtr ? (ULONG)(UBYTE *)"yes" : (ULONG)(UBYTE *)"no" );
+    PutStr("\n" BANNER " " VERSIONSTRING "\n\n");
 
-    if(SysBase->KickTagPtr)
+    if(SysBase->LibNode.lib_Version < 37)
     {
-	ULONG *list;
-
-	Printf("Modules already in use:\n");
-
-	list = SysBase->KickTagPtr;
-
-	while(*list)
-	{
-	    Printf("\t0x%08lx", *list);
-	    Printf("\t%s\n", (ULONG)((struct Resident *)*list)->rt_IdString);
-
-	    list++;
-	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
-	}
+	PutStr("This utility is for AmigaOS 2.04 (V37) and higher\n\n");
+	exit(RETURN_WARN);
     }
 
+    PrintTagPtrs();
+
     /*
-	InternalLoadSeg use
+	InternalLoadSeg use.
     */
     ils_table[0] = (ULONG)&ils_read;
     ils_table[1] = (ULONG)&ils_alloc;
@@ -70,57 +67,150 @@ int main(void)
 
     NewList((struct List *)&ils_mem);
 
-    if(!(fh = Open("libs/exec.strap", MODE_OLDFILE)))
+    /*
+	Construct a List of filenames to process.
+    */
+    if(!(filelist = ReadConfig(configfile)))
     {
-	PrintFault(IoErr(), "Error");
-	exit(10);
+	PutStr("Error reading config file\n");
+	exit(RETURN_ERROR);
+    }
+
+    PutStr("Loading modules ...\n");
+
+    NewList((struct List *)&ModuleList);
+    ModuleList.ml_Num = 0;
+
+    /*
+	Traverse this list and load the modules into memory.
+    */
+    for(node = filelist->fl_List.lh_Head; node->ln_Succ; node = node->ln_Succ)
+    {
+	if( (module = LoadModule(node->ln_Name)) )
+	{
+	    AddTail((struct List *)&ModuleList, (struct Node *)module);
+	    ModuleList.ml_Num++;
+	    Printf("\t%s\n", (ULONG)module->m_Resident->rt_IdString);
+	}
+	else
+	{
+	    node = 0; /* on normal exit, this points to the last module processed */
+	    break;
+	}
+    }
+
+    if(node)
+    {
+	/*
+	    If we're here, all modules we're loaded normally. Build all
+	    structures needed for the KickTag/Mem fields, and put them there.
+	*/
+	if( (BuildTagPtrs(&ModuleList)) )
+	{
+	    PutStr("\nAll modules loaded successfully, reset to activate.\n\n");
+	}
+	else
+	{
+	    FreeModules(&ModuleList);
+	}
+    }
+    else
+    {
+	Printf("Error loading one of the modules\n");
+	FreeModules(&ModuleList);
+    }
+
+    FreeConfig(filelist);
+
+    exit(RETURN_OK);
+}
+
+struct Module *LoadModule(char *filename)
+{
+    BPTR fh, seglist;
+    struct Module *mod = 0;
+
+    if(!(fh = Open(filename, MODE_OLDFILE)))
+    {
+	PrintFault(IoErr(), filename);
+	return 0;
+    }
+
+    if(!(mod = AllocVec(sizeof(struct Module), MEMF_CLEAR)))
+    {
+	PutStr("Could not allocate memory for module.\n");
+	Close(fh);
+	return 0;
     }
 
     if( (seglist = InternalLoadSeg(fh, NULL, &ils_table[0], &stack)) )
     {
-	resmod = FindResMod(&ils_mem);
-	nummods++;
-
-	Printf("Loaded: %s\n", (ULONG)resmod->rt_IdString);
-
-	/*
-	    Allocate memory for our KickTagPtr table:
-	    number of modules loaded + 1 (table terminator)
-	*/
-	if( (modlist = AllocVec( (nummods+1)*sizeof(ULONG), MEMF_CLEAR|MEMF_KICK|MEMF_REVERSE)) )
-	{
-	    modlist[0] = (ULONG)resmod;
-	    modlist[nummods] = NULL;
-
-	    /*
-		build a memlist to be put in KickMemPtr
-	    */
-	    if( (memlist = BuildMemList(&ils_mem, modlist, (nummods+1)*sizeof(ULONG) )) )
-	    {
-#if FINAL == 1
-		StuffTags(memlist, modlist, nummods);
-		Close(fh);
-		Printf("Modules loaded, reset to activate\n");
-		exit(0);
-#else
-		Printf("Test complete, cleaning up\n");
-		FreeVec(memlist);
-#endif
-	    }
-	    FreeVec(modlist);
-	}
-
-	/*
-	    We come here if anything went wrong.
-	*/
-	InternalUnLoadSeg(seglist, &ils_free);
+	mod->m_SegList = seglist;
+	mod->m_Resident = FindResMod(&ils_mem);
     }
-    Close(fh);
 
-    exit(10);
+    Close(fh);
+    return mod;
 }
 
-struct MemList *BuildMemList(struct ilsMemList *prelist, ULONG *modlist, ULONG modlistsize)
+void FreeModules(struct ModuleList *modlist)
+{
+    struct Module *mod, *next;
+
+    for(mod = (struct Module *)modlist->ml_List.mlh_Head; mod->m_Node.mln_Succ; mod = next)
+    {
+	/* get next node here, because after the Remove() it is undefined */
+	next = (struct Module *)mod->m_Node.mln_Succ;
+	Remove((struct Node *)mod);
+	InternalUnLoadSeg(mod->m_SegList, &ils_free);
+    }
+}
+
+BOOL BuildTagPtrs(struct ModuleList *modlist)
+{
+    struct MemList *memlist;
+    ULONG *modarray;
+    ULONG i;
+    struct Module *mod;
+
+    /*
+	Allocate memory for our KickTagPtr table:
+	number of modules loaded + 1 (table terminator)
+    */
+    if( (modarray = AllocVec((modlist->ml_Num+1)*sizeof(ULONG),
+			     MEMF_CLEAR|MEMF_KICK|MEMF_REVERSE)) )
+    {
+	/*
+	    Fill the KickTagPtr array with pointers to our Resident modules.
+	*/
+	for(i = 0, mod = (struct Module *)modlist->ml_List.mlh_Head;
+	    mod->m_Node.mln_Succ;
+	    mod = (struct Module *)mod->m_Node.mln_Succ, i++)
+	{
+	    modarray[i] = (ULONG)mod->m_Resident;
+	}
+	/*
+	    Terminate the module array.
+	*/
+	modarray[i+1] = NULL;
+
+	/*
+	    build a memlist to be put in KickMemPtr
+	*/
+	if( (memlist = BuildMemList(&ils_mem, modarray,
+				    (modlist->ml_Num+1)*sizeof(ULONG) )) )
+	{
+	    StuffTags(memlist, modarray, modlist->ml_Num);
+	    return TRUE;
+	}
+	FreeVec(modarray);
+    }
+    return FALSE;
+}
+
+struct MemList *BuildMemList(struct ilsMemList *prelist,
+			     ULONG *		modlist,
+			     ULONG 		modlistsize)
 {
     struct MemList *memlist;
     struct MemEntry *me;
@@ -139,6 +229,9 @@ struct MemList *BuildMemList(struct ilsMemList *prelist, ULONG *modlist, ULONG m
     /*
 	Allocate memory from the top of the memory list, to keep fragmentation
 	down, and hopefully to keep all our applications in one place.
+
+	TODO: The MEMF_KICK may cause boot to fail on <V39 OS. If this is a
+	problem, I could drop back to MEMF_CHIP if on <V39 OS.
     */
     if(!(memlist = AllocVec(size, MEMF_CLEAR|MEMF_KICK|MEMF_REVERSE))) return(NULL);
 
@@ -157,7 +250,7 @@ struct MemList *BuildMemList(struct ilsMemList *prelist, ULONG *modlist, ULONG m
     memlist->ml_NumEntries = numentries+1;
 
     /*
-	Put the modlist in the MemEntry.
+	Put the modlist in the next MemEntry.
     */
     me = (struct MemEntry *)( ((ULONG)memlist) + sizeof(struct MemList) );
     me->me_Addr = modlist;
@@ -175,7 +268,7 @@ struct MemList *BuildMemList(struct ilsMemList *prelist, ULONG *modlist, ULONG m
     while(prelist->iml_Num)
     {
 	/*
-	    pop a node off the list (FIFO)
+	    pop a node off the list
 	*/
 	node = (struct ilsMemNode *)RemHead((struct List *)prelist);
 
@@ -221,6 +314,10 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 	Flush caches. I have some problems with having to boot twice to get
 	into AROS. Maybe this will help? Or it may be the BlizKick util I'm
 	using that gets in the way? Or maybe something totally unexpected? :)
+
+	Update: this didn't help. I still have to run boot twice to get AROSfA
+	loaded for the first time. If AROSfA is already loaded, I can just clear
+	the vectors and load boot again, and it will load correctly. Strange.
     */
     CacheClearU();
 
@@ -242,12 +339,15 @@ void *FindResMod(struct ilsMemList *list)
 {
     struct ilsMemNode *node;
     UWORD *ptr;
-    ULONG counter;
+    ULONG num, counter;
 
     /*
-	search all our memory blocks for the Resident struct
+	Search all memory blocks for the Resident struct. Only new nodes
+	will be searched.
     */
-    for(node = (struct ilsMemNode *)ils_mem.iml_List.mlh_Head; node->imn_Node.mln_Succ; node = (struct ilsMemNode *)node->imn_Node.mln_Succ)
+    for(node = (struct ilsMemNode *)ils_mem.iml_List.mlh_Head, num = ils_mem.iml_NewNum;
+	node->imn_Node.mln_Succ || num;
+	node = (struct ilsMemNode *)node->imn_Node.mln_Succ, num--)
     {
 	/*
 	    In each block: skip to the magic word, if present.
@@ -257,9 +357,41 @@ void *FindResMod(struct ilsMemList *list)
 
 	for(ptr = node->imn_Addr; counter; ptr++, counter--)
 	{
-	    if(*ptr == RTC_MATCHWORD) return((void *)ptr);
+	    if(RTC_MATCHWORD == *ptr)
+	    {
+		/*
+		    Reset the counter, so that next time only new nodes will
+		    be searched.
+		*/
+		ils_mem.iml_NewNum = 0;
+
+		return((void *)ptr);
+	    }
 	}
     }
 
     return 0;
 }
+
+void PrintTagPtrs(void)
+{
+    if(SysBase->KickTagPtr)
+    {
+	ULONG *list;
+
+	PutStr("Modules already in use:\n");
+
+	list = SysBase->KickTagPtr;
+
+	while(*list)
+	{
+	    Printf("\t0x%08lx", *list);
+	    Printf("\t%s\n", (ULONG)((struct Resident *)*list)->rt_IdString);
+
+	    list++;
+	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
+	}
+    }
+}
+
+/* main.c */
