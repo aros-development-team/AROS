@@ -31,9 +31,9 @@
 
 /* Unix includes */
 #include <errno.h>
-#include "/usr/include/sys/types.h"
-#include "/usr/include/fcntl.h"
-#include "/usr/include/unistd.h"
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
 #define timeval sys_timeval
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -89,7 +89,7 @@ static const struct newMemList MemTemplate =
 
 
 static const UBYTE name[] = "unixioclass";
-static const UBYTE version[] = "unixioclass 41.1 (27.10.1997)";
+static const UBYTE version[] = "unixioclass 41.1 (27.10.1997)\r\n";
 
 static const char unknown[] = "--unknown device--";
 
