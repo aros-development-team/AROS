@@ -9,7 +9,7 @@
 #include <libraries/bootmenu.h>
 #include <string.h>
 #include "devs_private.h"
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "bootmenu_intern.h"
