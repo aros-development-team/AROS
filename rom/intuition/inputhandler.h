@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Header for Intuition's InputHandler
@@ -37,6 +37,8 @@ struct IIHData
     WORD			DeltaMouseX;
     WORD			DeltaMouseY;
     UWORD			ActQualifier;
+    UWORD   	    	    	PrevKeyMouseState;
+    UWORD   	    	    	ActKeyMouseState;
     BOOL			ActInputEventUsed;
 };
 

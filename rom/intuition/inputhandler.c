@@ -26,6 +26,7 @@
 #include <intuition/cghooks.h>
 #include <intuition/sghooks.h>
 #include <devices/inputevent.h>
+#include <devices/rawkeycodes.h>
 #include "inputhandler.h"
 
 #include "boopsigadgets.h"
@@ -869,9 +870,91 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		/* release events go only to gadgets and windows who
 		   have not set IDCMP_VANILLAKEY */
 
+
 		iihdata->ActQualifier &= ~KEY_QUALIFIERS;
 		iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
 
+    	    	/* Keyboard mouse emulation */
+
+		{
+		    UWORD code = ie->ie_Code & ~IECODE_UP_PREFIX;
+		    
+		    /* Mouse button emulation: LALT + LAMIGA = LBUTTON, RALT + RAMIGA = RBUTTON */
+		    
+		    if ((code == RAWKEY_LAMIGA) ||
+		        (code == RAWKEY_LALT)   ||
+			(code == RAWKEY_RAMIGA) ||
+			(code == RAWKEY_RALT))
+		    {
+    	    		 iihdata->PrevKeyMouseState = iihdata->ActKeyMouseState;
+			 iihdata->ActKeyMouseState = 0;
+    	    		 if ((ie->ie_Qualifier & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_LALT)) == (IEQUALIFIER_LCOMMAND | IEQUALIFIER_LALT))
+			 {
+			     iihdata->ActKeyMouseState |= IEQUALIFIER_LEFTBUTTON;
+			 }
+    	    		 if ((ie->ie_Qualifier & (IEQUALIFIER_RCOMMAND | IEQUALIFIER_RALT)) == (IEQUALIFIER_RCOMMAND | IEQUALIFIER_RALT))
+			 {
+			     iihdata->ActKeyMouseState |= IEQUALIFIER_RBUTTON;
+			 }
+
+			 if ((iihdata->ActKeyMouseState & IEQUALIFIER_LEFTBUTTON) != (iihdata->PrevKeyMouseState & IEQUALIFIER_LEFTBUTTON))
+			 {
+			      orig_ie->ie_Class    = IECLASS_RAWMOUSE;
+			      orig_ie->ie_SubClass = 0;
+			      orig_ie->ie_Code     = (iihdata->ActKeyMouseState & IEQUALIFIER_LEFTBUTTON) ? IECODE_LBUTTON : IECODE_LBUTTON | IECODE_UP_PREFIX;
+			      orig_ie->ie_X        = 0;
+			      orig_ie->ie_Y        = 0;
+			      *ie = *orig_ie;
+
+			      reuse_event = TRUE;
+			      break;
+			 }
+
+			 if ((iihdata->ActKeyMouseState & IEQUALIFIER_RBUTTON) != (iihdata->PrevKeyMouseState & IEQUALIFIER_RBUTTON))
+			 {
+			      orig_ie->ie_Class    = IECLASS_RAWMOUSE;
+			      orig_ie->ie_SubClass = 0;
+			      orig_ie->ie_Code     = (iihdata->ActKeyMouseState & IEQUALIFIER_RBUTTON) ? IECODE_RBUTTON : IECODE_RBUTTON | IECODE_UP_PREFIX;
+			      orig_ie->ie_X        = 0;
+			      orig_ie->ie_Y        = 0;
+			      *ie = *orig_ie;
+
+			      reuse_event = TRUE;
+			      break;
+			 }
+			 
+		    } /* if key is one of LAMIGA/LALT/RAMIGA/RALT */ 
+		    
+		    if ((iihdata->ActQualifier & (IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND)) &&
+		    	MouseCoordsRelative() &&
+    	    	    	((ie->ie_Code == RAWKEY_UP)    ||
+		    	 (ie->ie_Code == RAWKEY_DOWN)  ||
+			 (ie->ie_Code == RAWKEY_LEFT)  ||
+			 (ie->ie_Code == RAWKEY_RIGHT)))
+		    {
+		    	static BYTE xmap[] = { 0, 0, 1, -1};
+			static BYTE ymap[] = {-1, 1, 0,  0};
+			WORD        shift;
+			
+			shift = (iihdata->ActQualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) ? 40 : 1;
+			
+		      	/* Mouse Move Emulation */
+			
+			orig_ie->ie_Class    = IECLASS_RAWMOUSE;
+			orig_ie->ie_SubClass = 0;
+			orig_ie->ie_Code     = IECODE_NOBUTTON;
+			orig_ie->ie_X	     = xmap[code - RAWKEY_UP] * shift;
+			orig_ie->ie_Y	     = ymap[code - RAWKEY_UP] * shift;
+			
+			*ie = *orig_ie;
+			reuse_event = TRUE;
+			break;
+		    }
+		    
+		} /**/
+		
+    	    	/* End Keyboard mouse emulation */
+		
 		if (MENUS_ACTIVE)
 		{
 		    FireMenuMessage(MMCODE_EVENT, 0, ie, IntuitionBase);
