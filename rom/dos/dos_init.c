@@ -34,7 +34,7 @@ static void *const LIBFUNCTABLE[];
 LIBBASETYPEPTR INIT ();
 extern const char LIBEND;
 
-#ifndef CREATE_ROM
+#ifndef AROS_CREATE_ROM
 struct DosLibrary *DOSBase;
 struct DosLibrary **dosPtr = &DOSBase;
 #endif
