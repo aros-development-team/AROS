@@ -42,7 +42,11 @@ ULONG setHeaderDate
 	)
 {
 
-	D(bug("afs.handler: setHeaderDate: for headerblock %ld\n", blockbuffer->blocknum));
+	D(bug
+		(
+			"afs.handler: setHeaderDate: for headerblock %ld\n",
+			blockbuffer->blocknum)
+		);
 	blockbuffer->buffer[BLK_DAYS(volume)]=AROS_LONG2BE(ds->ds_Days);
 	blockbuffer->buffer[BLK_MINS(volume)]=AROS_LONG2BE(ds->ds_Minute);
 	blockbuffer->buffer[BLK_TICKS(volume)]=AROS_LONG2BE(ds->ds_Tick);
@@ -211,7 +215,10 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	/* if we try to delete a directory
       check if it is empty
 	*/
-	if (AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_USERDIR)
+	if (
+			AROS_BE2LONG
+				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_USERDIR
+		)
 	{
 		for (key=BLK_TABLE_START;key<=BLK_TABLE_END(ah->volume);key++)
 		{
@@ -237,7 +244,10 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	invalidBitmap(afsbase, ah->volume);
 	writeBlock(afsbase, ah->volume,priorbuffer);
 	markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
-	if (AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_FILE)
+	if (
+			AROS_BE2LONG
+				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_FILE
+		)
 	{
 		for (;;)
 		{
@@ -249,19 +259,25 @@ struct BlockCache *blockbuffer, *priorbuffer;
 					key--
 				)
 			{
-				markBlock(afsbase, ah->volume, AROS_BE2LONG(blockbuffer->buffer[key]), -1);
+				markBlock
+					(
+						afsbase,
+						ah->volume,
+						AROS_BE2LONG(blockbuffer->buffer[key]),
+						-1
+					);
 			}
 			if (!blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
 				break;
 			// get next extensionblock
 			blockbuffer->flags &= ~BCF_USED;
-			if (!(blockbuffer=getBlock
-					(
-						afsbase,
-						ah->volume,
-						AROS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
-					)
-				))
+			blockbuffer=getBlock
+				(
+					afsbase,
+					ah->volume,
+					AROS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
+				);
+			if (!blockbuffer)
 			{
 				priorbuffer->flags &= ~BCF_USED;
 				return ERROR_UNKNOWN;
@@ -312,23 +328,32 @@ STRPTR name;
 	StrCpyFromBstr(name,buffer);
 	key=getHashKey(buffer,volume->SizeBlock-56,volume->flags)+BLK_TABLE_START;
 	// sort in ascending order
-	if ((dir->buffer[key]) && (AROS_BE2LONG(dir->buffer[key])<file->blocknum))
+	if (
+			(dir->buffer[key]) &&
+			(AROS_BE2LONG(dir->buffer[key])<file->blocknum))
 	{
-		if (!(dir=getBlock(afsbase, volume, AROS_BE2LONG(dir->buffer[key]))))
+		dir=getBlock(afsbase, volume, AROS_BE2LONG(dir->buffer[key]));
+		if (!dir)
 			return 0;
 		key=BLK_HASHCHAIN(volume);
-		while ((dir->buffer[key]) && (AROS_BE2LONG(dir->buffer[key])<file->blocknum))
+		while (
+					(dir->buffer[key]) &&
+					(AROS_BE2LONG(dir->buffer[key])<file->blocknum)
+				)
 		{
-			if (!(dir=getBlock(afsbase, volume, AROS_BE2LONG(dir->buffer[key]))))
+			dir=getBlock(afsbase, volume, AROS_BE2LONG(dir->buffer[key]));
+			if (!dir)
 				return 0;
 		}
 	}
 	file->buffer[BLK_HASHCHAIN(volume)]=dir->buffer[key];
 	dir->buffer[key]=AROS_LONG2BE(file->blocknum);
 	file->buffer[BLK_CHECKSUM]=0;
-	file->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
+	file->buffer[BLK_CHECKSUM]=
+		AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
 	dir->buffer[BLK_CHECKSUM]=0;
-	dir->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,dir->buffer));
+	dir->buffer[BLK_CHECKSUM]=
+		AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,dir->buffer));
 	return dir;
 }
 
@@ -407,7 +432,14 @@ UBYTE newentryname[34];
 		return error;
 	oldfile->flags |= BCF_USED;
 	// do we move a directory?
-	if (AROS_BE2LONG(oldfile->buffer[BLK_SECONDARY_TYPE(dirah->volume)])==ST_USERDIR) {
+	if (
+			AROS_BE2LONG
+				(
+					oldfile->buffer
+						[BLK_SECONDARY_TYPE(dirah->volume)]
+				)==ST_USERDIR
+		)
+	{
 		// is newdirblock child of olock&oname
 		dirblock=getBlock(afsbase, dirah->volume,dirblocknum);
 		if (!dirblock)
@@ -455,8 +487,26 @@ UBYTE newentryname[34];
 			return ERROR_UNKNOWN;
 		}
 	}
-	if ((AROS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_USERDIR) &&
-		(AROS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_ROOT))
+	if (
+			(
+				AROS_BE2LONG
+					(
+						dirblock->buffer
+							[
+								BLK_SECONDARY_TYPE(dirah->volume)
+							]
+					)!=ST_USERDIR
+			) &&
+			(
+				AROS_BE2LONG
+					(
+						dirblock->buffer
+							[
+								BLK_SECONDARY_TYPE(dirah->volume)
+							]
+					)!=ST_ROOT
+			)
+		)
 	{
 		oldfile->flags &= ~BCF_USED;
 		lastlink->flags &= ~BCF_USED;
@@ -540,6 +590,13 @@ struct DateStamp ds;
 ULONG i;
 
 	dirblock->flags |= BCF_USED;
+	if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i))
+	{
+		dirblock->flags &= ~BCF_USED;
+		error = ERROR_OBJECT_EXISTS;
+		return 0;
+	}
+	error = 0;
 	if (!invalidBitmap(afsbase, volume))
 	{
 		dirblock->flags &= ~BCF_USED;
@@ -553,7 +610,8 @@ ULONG i;
 		error=ERROR_DISK_FULL;
 		return 0;
 	}
-	if (!(newblock=getFreeCacheBlock(afsbase, volume,i)))
+	newblock=getFreeCacheBlock(afsbase, volume,i);
+	if (!newblock)
 	{
 		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
@@ -582,7 +640,8 @@ ULONG i;
 	newblock->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(entrytype);
 	dirblock->flags |= BCF_USED;
 	newblock->buffer[BLK_OWN_KEY]=AROS_LONG2BE(newblock->blocknum);
-	if (!(dirblock=linkNewBlock(afsbase, volume,dirblock,newblock)))
+	dirblock=linkNewBlock(afsbase, volume,dirblock,newblock);
+	if (!dirblock)
 	{
 		markBlock(afsbase, volume,newblock->blocknum,-1);
 		newblock->flags &= ~BCF_USED;
