@@ -219,8 +219,6 @@ char *GetScreenTitle(void)
 Object *app;
 Object *root_iconwnd;
 Object *root_menustrip;
-Object *execute_wnd;
-Object *execute_command_string;
 
 /**************************************************************************
  This is a custom class inheriting from the WindowClass.
@@ -574,97 +572,36 @@ struct MUI_CustomClass *CL_Wanderer;
 #define WandererObject BOOPSIOBJMACRO_START(CL_Wanderer->mcc_Class)
 
 
-/******** Execute Window ********/
-
-static char *execute_current_directory;
-static char *execute_command;
-
-/**************************************************************************
- Open the execute window
-
- This function will always get the current drawer as argument
-**************************************************************************/
-void execute_open(char **cd_ptr)
-{
-    char *cd;
-
-    if (cd_ptr) cd = *cd_ptr;
-    else cd = NULL;
-
-    if (execute_current_directory) FreeVec(execute_current_directory);
-    execute_current_directory = StrDup(cd);
-
-    setstring(execute_command_string,execute_command);
-    set(execute_wnd,MUIA_Window_Open,TRUE);
-    set(execute_wnd,MUIA_Window_ActiveObject, execute_command_string);
-}
-
 /**************************************************************************
  Open the execute window. Simliar to above but you can also set the
  command. Called when item is openend
 **************************************************************************/
 void execute_open_with_command(char *cd, char *contents)
 {
-    if (execute_current_directory) FreeVec(execute_current_directory);
-    execute_current_directory = StrDup(cd);
-
-    setstring(execute_command_string,contents);
-    set(execute_wnd,MUIA_Window_Open,TRUE);
-    set(execute_wnd,MUIA_Window_ActiveObject, execute_command_string);
-}
-
-/**************************************************************************
- ...
-**************************************************************************/
-void execute_ok(void)
-{
-    char *cd;
-    BPTR input;
     BPTR lock;
-
-    set(execute_wnd,MUIA_Window_Open,FALSE);
-    if (execute_command) FreeVec(execute_command);
-    execute_command = StrDup((char*)XGET(execute_command_string,MUIA_String_Contents));
-    if (!execute_command) return;
-
-    if (!execute_current_directory) cd = "RAM:";
-    else cd = execute_current_directory;
-
-    lock = Lock(cd,ACCESS_READ);
-    if (!lock) return;
-
-    input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
-    if (input)
-    {
-#ifdef __AROS__
-	if (SystemTags(execute_command,
-	    	SYS_Asynch,	TRUE,
-	    	SYS_Input,  (IPTR)input,
-	    	SYS_Output, (IPTR)NULL,
-	    	SYS_Error,  (IPTR)NULL,
-		NP_CurrentDir, (IPTR)lock, /* Will be freed automatical if successful */
-	    	TAG_DONE) == -1)
-#else
-	if (SystemTags(execute_command,
-	    	SYS_Asynch,	TRUE,
-	    	SYS_Input,  (IPTR)input,
-	    	SYS_Output, (IPTR)NULL,
-		NP_CurrentDir, (IPTR)lock, /* Will be freed automatical if successful */
-	    	TAG_DONE) == -1)
-#endif
-        {
-            UnLock(lock);
-            Close(input);
-        }
-    } else UnLock(lock);
+    
+    if (cd != NULL) lock = Lock(cd, ACCESS_READ);
+    else            lock = Lock("RAM:", ACCESS_READ);
+        
+    OpenWorkbenchObject
+    (
+        "WANDERER:Tools/ExecuteCommand",
+        WBOPENA_ArgLock, (IPTR) lock,
+        WBOPENA_ArgName, (IPTR) contents,
+        TAG_DONE
+    );
+    
+    if (lock != NULL) UnLock(lock);
 }
 
 /**************************************************************************
- Execute operation was canceld
+ Open the execute window
+
+ This function will always get the current drawer as argument
 **************************************************************************/
-void execute_cancel(void)
+VOID execute_open(STRPTR *cdptr)
 {
-    set(execute_wnd,MUIA_Window_Open,FALSE);
+    execute_open_with_command(cdptr != NULL ? *cdptr : NULL, NULL);
 }
 
 /*******************************/
@@ -796,8 +733,8 @@ void icon_delete(void)
                         OpenWorkbenchObject
                         (
                             "WANDERER:Tools/Delete",
-                            WBOPENA_ArgLock, (Tag)parent,
-                            WBOPENA_ArgName, (Tag)FilePart(entry->filename),
+                            WBOPENA_ArgLock, (IPTR) parent,
+                            WBOPENA_ArgName, (IPTR) FilePart(entry->filename),
                             TAG_DONE
                         );
                         
@@ -1023,8 +960,6 @@ void DoDetach(void)
 **************************************************************************/
 int main(void)
 {
-    Object *execute_execute_button, *execute_cancel_button;
-
     hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
     hook_action.h_Entry = (HOOKFUNC)hook_func_action;
 
@@ -1065,25 +1000,6 @@ int main(void)
 	    MUIA_IconWindow_IsBackdrop, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
 	    EndBoopsi,
-	SubWindow, execute_wnd = WindowObject,
-	    MUIA_Window_Title, "Execute a file",
-	    WindowContents, VGroup,
-	    MUIA_Background, MUII_GroupBack,
-		Child, TextObject, MUIA_Text_Contents,"Enter command and its arguments:",End,
-		Child, HGroup,
-		    Child, Label("Command:"),
-		    Child, PopaslObject,
-			MUIA_Popstring_Button, PopButton(MUII_PopFile),
-			MUIA_Popstring_String, execute_command_string = StringObject, StringFrame, End,
-			End,
-		    End,
-		Child, HGroup,
-		    Child, execute_execute_button = SimpleButton("_Execute"),
-		    Child, HVSpace,
-		    Child, execute_cancel_button = SimpleButton("_Cancel"),
-		    End,
-		End,
-	    End,
 	EndBoopsi;
 
     if (app)
@@ -1094,12 +1010,6 @@ int main(void)
 
 	/* If "Execute Command" entry is clicked open the execute window */
 	DoAllMenuNotifies(root_menustrip,"RAM:");
-
-        /* Execute Window Notifies */
-        DoMethod(execute_command_string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, execute_ok);
-        DoMethod(execute_execute_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_ok);
-        DoMethod(execute_cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
-        DoMethod(execute_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
 
 	/* And now open it */
 	DoMethod(root_iconwnd, MUIM_IconWindow_Open);
