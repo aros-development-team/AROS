@@ -727,4 +727,11 @@ The idea is to have a software which scans a software for AmigaOS functions
 and reports those which are not yet implemented.
 
 \end{new}
+\item
+\begin{new}{11.12.2000}
+By Michael Schulz: I would like to put LibBase as first argument for every function
+in every library (like in real classes). Then with __attribute__((regparm(1))) we
+could force compiler to pass first argument (would be LibBase) through register
+instead of stack.
+\end{new}
 \end{itemize}
