@@ -1306,7 +1306,7 @@ D(bug("Window: %p\n", w));
 
                      EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
-		     if (L->Flags & LAYERSIMPLE)
+		     if (0 != (L->Flags & LAYERSIMPLE))
 		     {
 			 OrRectRegion(L->DamageList, &rect);
 		     }
@@ -1321,7 +1321,7 @@ D(bug("Window: %p\n", w));
 
                      EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
-		     if (L->Flags & LAYERSIMPLE)
+		     if (0 != (L->Flags & LAYERSIMPLE))
 		     {
 			 OrRectRegion(L->DamageList, &rect);
 		     }
@@ -1482,7 +1482,7 @@ D(bug("Window: %p\n", w));
 
         	     EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
-		     if (L->Flags & LAYERSIMPLE)
+		     if (0 != (L->Flags & LAYERSIMPLE))
 		     {
 			 OrRectRegion(L->DamageList, &rect);
 		     }
@@ -1497,7 +1497,7 @@ D(bug("Window: %p\n", w));
 
         	     EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
-		     if (L->Flags & LAYERSIMPLE)
+		     if (0 != (L->Flags & LAYERSIMPLE))
 		     {
 			 OrRectRegion(L->DamageList, &rect);
 		     }
