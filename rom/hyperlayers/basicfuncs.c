@@ -1446,7 +1446,7 @@ void _BackFillRegion(struct Layer * l,
         _TranslateRect(&rect, 
                        r->bounds.MinX - l->bounds.MinX,
                        r->bounds.MinY - l->bounds.MinY);
-#if 1
+#if 0
 kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
         __FUNCTION__,
         rect.MinX,
