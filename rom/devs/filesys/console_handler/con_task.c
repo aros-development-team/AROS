@@ -200,12 +200,12 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 
     struct TagItem win_tags [] =
     {
-	{WA_PubScreen	,0		},
-	{WA_AutoAdjust	,TRUE		},
-	{WA_PubScreenName    , screename},
-	{WA_PubScreenFallBack, TRUE     },
-	{TAG_DONE                       }
-    }
+	{WA_PubScreen	,0	    },
+	{WA_AutoAdjust	,TRUE       },
+	{WA_PubScreenName, NULL     },
+	{WA_PubScreenFallBack, TRUE },
+	{TAG_DONE                   }
+    };
 
     win_tags[2].ti_Data=fh->screenname;
     fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
