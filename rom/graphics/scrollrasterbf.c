@@ -36,7 +36,7 @@
       will be affected. The lower right corner (xMax, yMax) is
       automatically adjusted to the lower right corner in case
       it would be outside.
-      After this operation the Flags bit of the layer associated 
+      After this operation the Flags bit of the layer associated
       with this rastport, if there is any layer, should be tested
       for simple layers in case there has any damage been created.
       
@@ -70,12 +70,12 @@
     BOOL hasClipRegion = FALSE;
     LONG width, height, absdx, absdy;
 
-    /* 
+    /*
        This function will simply call ScrollRaster() and fill the empty
        space with calls to EraseRect()
      */
 
-    /* 
+    /*
        adjust xMax and yMax in case the lower right corner would be outside
        the rastport
     */
@@ -83,10 +83,10 @@
     if (NULL != rp->Layer)
     {
 	struct Layer * L = rp->Layer;
-	
+
 	if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
 	    xMax = (L->bounds.MaxX - L->bounds.MinX) ;
-	    
+
 	if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
 	    yMax = (L->bounds.MaxY - L->bounds.MinY) ;
 
@@ -97,13 +97,13 @@
     {
 	/* this one belongs to a screen */
 	struct BitMap * bm = rp->BitMap;
-	
+
 	ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
 	ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-	
+
 	if (xMax >= width )
 	    xMax = width - 1;
-	    
+
 	if (yMax >= height)
 	    yMax = height - 1;
     }
@@ -123,12 +123,12 @@
     }
 
 
-    if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
+     if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
                                    hasClipRegion, GfxBase))
         return;
 
-    /* 
-       The raster is scrolled and I fill the empty area with the 
+    /*
+       The raster is scrolled and I fill the empty area with the
        EraseRect()
      */
 
@@ -150,7 +150,7 @@
 	    EraseRect(rp,
                       xMin,
                       yMin,
-                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */ 
+                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */
                       yMax);
 	}
     }

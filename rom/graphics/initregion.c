@@ -66,10 +66,6 @@
     region->bounds.MaxY = 0;
     region->RegionRectangle = NULL;
 
-#if REGIONS_HAVE_RRPOOL
-    region->RectPoolList = NULL;
-#endif
-
     AROS_LIBFUNC_EXIT
     
 } /* InitRegion */

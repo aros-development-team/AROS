@@ -35,7 +35,7 @@
       will be affected. The lower right corner (xMax, yMax) is
       automatically adjusted to the lower right corner in case
       it would be outside.
-      After this operation the Flags bit of the layer associated 
+      After this operation the Flags bit of the layer associated
       with this rastport, if there is any layer, should be tested
       for simple layers in case there has any damage been created.
       
@@ -72,7 +72,7 @@
     BOOL hasClipRegion = FALSE;
     LONG width, height, absdx, absdy;
 
-    /* 
+    /*
        This function will simply call ScrollRaster() and fill the empty
        space with calls to RectFill
      */

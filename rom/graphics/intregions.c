@@ -22,322 +22,1279 @@
 
 #include <aros/debug.h>
 
-#if !USE_BANDED_FUNCTIONS
 
-/* clears from rect the area that overlaps with clearrect
- * and returns the remaining RegionRectangles in *erg
- */
-BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
-		   struct RegionRectangle** erg)
-{
-    struct RegionRectangle* first = NULL;
-    struct RegionRectangle* new;
-
-    if (overlap(*clearrect, *rect)) { /* overlap? */
-	if (rect->MinY < clearrect->MinY) {  /* upper */
-	    first = NewRegionRectangle();
-	    if (!first)
-		return FALSE;
-	    first->bounds.MinX = rect->MinX;
-	    first->bounds.MinY = rect->MinY;
-	    first->bounds.MaxX = rect->MaxX;
-	    first->bounds.MaxY = clearrect->MinY - 1;
-	}
-	if (rect->MaxY > clearrect->MaxY) {  /* lower */
-	    new = NewRegionRectangle();
-	    if (!new && first) {
-		DisposeRegionRectangleList(first);
-		return FALSE;
-	    }
-	    new->bounds.MinX = rect->MinX;
-	    new->bounds.MinY = clearrect->MaxY + 1;
-	    new->bounds.MaxX = rect->MaxX;
-	    new->bounds.MaxY = rect->MaxY;
-	    if (first) {
-		first->Prev = new;
-		new->Next = first;
-	    }
-	    first = new;
-	}
-	if (rect->MinX < clearrect->MinX) {  /* left */
-	    new = NewRegionRectangle();
-	    if (!new && first) {
-		DisposeRegionRectangleList(first);
-		return FALSE;
-	    }
-	    new->bounds.MinX = rect->MinX;
-	    new->bounds.MinY = MAX(rect->MinY, clearrect->MinY);
-	    new->bounds.MaxX = clearrect->MinX-1;
-	    new->bounds.MaxY = MIN(rect->MaxY, clearrect->MaxY);
-	    if (first) {
-		first->Prev = new;
-		new->Next = first;
-	    }
-	    first = new;
-	}
-	if (rect->MaxX > clearrect->MaxX) {  /* right */
-	    new = NewRegionRectangle();
-	    if (!new && first) {
-		DisposeRegionRectangleList(first);
-		return FALSE;
-	    }
-	    new->bounds.MinX = clearrect->MaxX+1;
-	    new->bounds.MinY = MAX(rect->MinY, clearrect->MinY);
-	    new->bounds.MaxX = rect->MaxX;
-	    new->bounds.MaxY = MIN(rect->MaxY, clearrect->MaxY);
-	    if (first) {
-		first->Prev = new;
-		new->Next = first;
-	    }
-	    first = new;
-	}
-    } else {
-      /* no overlap, just take the given 'rect'
-       */
-      first = NewRegionRectangle();
-      if (!first)
-	return FALSE;
-      first->bounds = *rect;
-    }
-    *erg = first;
-    return TRUE;
-}  /* clearrectrect() */
-#endif
-
-/* return a copy of all RegionRectangles linked with src
- * in *dstptr. Returns FALSE in case there's no enough memory
- */
-BOOL _CopyRegionRectangleList
+void _DisposeRegionRectangleExtChunk
 (
-    struct RegionRectangle  *src,
-    struct RegionRectangle **dstptr,
-#if REGIONS_HAVE_RRPOOL
-    struct MinList          **RectPoolListPtr,
-#endif
-    struct GfxBase          *GfxBase
+    struct RegionRectangleExtChunk *Chunk,
+    struct GfxBase                 *GfxBase
 )
 {
-    struct RegionRectangle *first = NULL;
-    struct RegionRectangle *prev  = NULL;
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
 
-    for (; src; src = src->Next)
-    {
+    FreePooled
+    (
+        PrivGBase(GfxBase)->regionpool,
+        Chunk,
+        sizeof(struct RegionRectangleExtChunk)
+    );
 
-#if REGIONS_HAVE_RRPOOL
-        struct RegionRectangle *new = NewRegionRectangle(RectPoolListPtr);
-#else
-        struct RegionRectangle *new = NewRegionRectangle();
-#endif
-        if (!new)
-        {
-            DisposeRegionRectangleList(*dstptr);
-            return FALSE;
-        }
-
-        new->Prev = prev;
-        new->Next = NULL;
-        new->bounds = src->bounds;
-
-        if (!first)
-            first = new;
-        else
-            prev->Next = new;
-
-        prev = new;
-    }
-
-    *dstptr = first;
-
-    return TRUE;
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
 }
+
+
 
 void _DisposeRegionRectangleList
-(
-    struct RegionRectangle *regionrectangle,
-    struct GfxBase         *GfxBase
-)
-{
-    struct RegionRectangle *next;
-
-    ASSERT_VALID_PTR_OR_NULL(regionrectangle);
-
-    while(regionrectangle)
-    {
-    	next = regionrectangle->Next;
-	DisposeRegionRectangle(regionrectangle);
-	regionrectangle = next;
-    }
-} /* DisposeRegionRectangleList */
-
-struct RegionRectangle *_NewRegionRectangle
-(
-#if REGIONS_HAVE_RRPOOL
-    struct MinList **RectPoolListPtr,
-#endif
-    struct GfxBase *GfxBase
-)
-{
-    struct RegionRectanglePool *Pool;
-    struct RegionRectangleExt  *RRE;
-
-#if REGIONS_HAVE_RRPOOL
-    if (!*RectPoolListPtr)
-    {
-        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-        *RectPoolListPtr = AllocPooled
-        (
-            PrivGBase(GfxBase)->regionpool,
-            sizeof(struct MinList)
-        );
-
- 	if (!*RectPoolListPtr)
-        {
-            ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-            return NULL;
-        }
-        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-        NEWLIST(*RectPoolListPtr);
-
-        Pool = NULL;
-    }
-    else
-    {
-        Pool = (struct RegionRectanglePool *)GetHead(*RectPoolListPtr);
-    }
-#else
-    ObtainSemaphore(&PrivGBase(GfxBase)->rrpoolsem);
-    Pool = (struct RegionRectanglePool *)GetHead(&PrivGBase(GfxBase)->rrpoollist);
-#endif
-
-    if (!Pool || !Pool->NumFreeRects)
-    {
-	int i;
-
-        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-        Pool = AllocPooled
-        (
-            PrivGBase(GfxBase)->regionpool,
-            sizeof(struct RegionRectanglePool)
-        );
-
- 	if (!Pool)
-        {
-            ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-            #if !REGIONS_HAVE_RRPOOL
-            ReleaseSemaphore(&PrivGBase(GfxBase)->rrpoolsem);
-            #endif
-            return NULL;
-        }
-
-        Pool->RectArray = AllocPooled
-        (
-            PrivGBase(GfxBase)->regionpool,
-            SIZERECTBUF * sizeof(struct RegionRectangleExt)
-        );
-
-        if (!Pool->RectArray)
-        {
-            FreePooled
-            (
-                PrivGBase(GfxBase)->regionpool,
-                Pool,
-                sizeof(struct RegionRectanglePool)
-            );
-
-            ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-            #if !REGIONS_HAVE_RRPOOL
-            ReleaseSemaphore(&PrivGBase(GfxBase)->rrpoolsem);
-            #endif
-            return NULL;
-        }
-
-        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-        NEWLIST(&Pool->List);
-
-        for (i = 0; i < SIZERECTBUF; i++)
-        {
-            ADDHEAD(&Pool->List, (struct Node *)&Pool->RectArray[i]);
- 	}
-
-        Pool->NumFreeRects = SIZERECTBUF;
-
-#if REGIONS_HAVE_RRPOOL
-        ADDHEAD(*RectPoolListPtr, (struct Node *)Pool);
-#else
-        ADDHEAD(&PrivGBase(GfxBase)->rrpoollist, (struct Node *)Pool);
-#endif
-    }
-
-    RRE = (struct RegionRectangleExt *)GetTail(&Pool->List);
-    REMOVE(RRE);
-
-    if (--Pool->NumFreeRects == 0)
-    {
-        REMOVE(Pool);
-#if REGIONS_HAVE_RRPOOL
-        ADDTAIL(*RectPoolListPtr, Pool);
-#else
-        ADDTAIL(&PrivGBase(GfxBase)->rrpoollist, Pool);
-#endif
-    }
-
-    RRE->Owner   = Pool;
-
-#if !REGIONS_HAVE_RRPOOL
-    ReleaseSemaphore(&PrivGBase(GfxBase)->rrpoolsem);
-#endif
-
-    RRE->RR.Prev = NULL;
-    RRE->RR.Next = NULL;
-
-    return (struct RegionRectangle *)RRE;
-}
-
-void _DisposeRegionRectangle
 (
     struct RegionRectangle *RR,
     struct GfxBase         *GfxBase
 )
 {
-    struct RegionRectangleExt  *RRE  = (struct RegionRectangleExt *)RR;
-    struct RegionRectanglePool *Pool = RRE->Owner;
+    struct RegionRectangleExtChunk *NextChunk;
 
-#if !REGIONS_HAVE_RRPOOL
-    ObtainSemaphore(&PrivGBase(GfxBase)->rrpoolsem);
-#endif
+    if (!RR)
+	return;
 
-    if (++Pool->NumFreeRects == SIZERECTBUF)
+    if (RR->Prev)
     {
-        REMOVE((struct Node *)Pool);
+        RR->Prev->Next = NULL;
+    }
 
-        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-        FreePooled
-        (
-            PrivGBase(GfxBase)->regionpool,
-            Pool->RectArray,
-            SIZERECTBUF * sizeof(struct RegionRectangleExt)
-        );
-
-        FreePooled
-        (
-            PrivGBase(GfxBase)->regionpool,
-            Pool,
-            sizeof(struct RegionRectanglePool)
-        );
-
-        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+    if (!Counter(RR))
+    {
+        NextChunk = Chunk(RR);
     }
     else
     {
-	ADDTAIL(&Pool->List, RR);
+	RR = &Chunk(RR)->Rects[SIZERECTBUF - 1].RR;
+        NextChunk = (struct RegionRectangleExtChunk *)RR->Next;
+        RR->Next = NULL;
     }
 
-#if !REGIONS_HAVE_RRPOOL
-    ReleaseSemaphore(&PrivGBase(GfxBase)->rrpoolsem);
-#endif
+    while(NextChunk)
+    {
+        struct RegionRectangleExtChunk *OldChunk = NextChunk;
+
+        NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next;
+
+        _DisposeRegionRectangleExtChunk(OldChunk, GfxBase);
+    }
 }
+
+/*
+   Takes all the rectangles from src and linkes them with the rectangle
+   to which *dstptr points. *dstptr at the end will hold the pointer
+   to the LAST rectangle in the resulting list.
+   If the system runs out of memory the function will deallocate any allocated
+   memory and will return FALSE. TRUE, otherwise.
+ */
+
+BOOL _LinkRegionRectangleList
+(
+    struct RegionRectangle  *src,
+    struct RegionRectangle **dstptr,
+    struct GfxBase          *GfxBase
+)
+{
+    struct RegionRectangle *prev = *dstptr;
+
+    for (; src; src = src->Next)
+    {
+        struct RegionRectangle *new = _NewRegionRectangle(dstptr, GfxBase);
+
+        if (!new)
+        {
+            if (prev)
+                _DisposeRegionRectangleList(prev->Next, GfxBase);
+
+            return FALSE;
+        }
+
+        new->bounds = src->bounds;
+    }
+
+    return TRUE;
+}
+
+static inline struct RegionRectangleExtChunk *_NewRegionRectangleExtChunk
+(
+    struct GfxBase *GfxBase
+)
+{
+    struct RegionRectangleExtChunk *Chunk;
+
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+    Chunk = AllocPooled
+    (
+        PrivGBase(GfxBase)->regionpool,
+        sizeof(struct RegionRectangleExtChunk)
+    );
+
+    if (!Chunk)
+    {
+        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+        return NULL;
+    }
+
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+    return Chunk;
+}
+
+inline struct RegionRectangle *_NewRegionRectangle
+(
+    struct RegionRectangle **LastRectPtr,
+    struct GfxBase *GfxBase
+)
+{
+    struct RegionRectangleExt *RRE = RRE(*LastRectPtr);
+
+    if (!RRE)
+    {
+        struct RegionRectangleExtChunk *Chunk;
+
+        Chunk = _NewRegionRectangleExtChunk(GfxBase);
+
+        if (Chunk)
+            RRE = Chunk->Rects;
+
+        if (RRE)
+        {
+            RRE->Counter = 0;
+            RRE->RR.Prev = NULL;
+            RRE->RR.Next = NULL;
+
+            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
+
+            Chunk->FirstChunk = Chunk;
+        }
+    }
+    else
+    if (RRE->Counter == SIZERECTBUF - 1)
+    {
+        struct RegionRectangleExtChunk *Chunk;
+
+        Chunk = _NewRegionRectangleExtChunk(GfxBase);
+
+        if (Chunk)
+        {
+            Chunk->FirstChunk = Chunk(RRE)->FirstChunk;
+            RRE = Chunk->Rects;
+        }
+        else
+            RRE = NULL;
+
+        if (RRE)
+        {
+            RRE->Counter = 0;
+            RRE->RR.Prev = *LastRectPtr;
+            RRE->RR.Next = NULL;
+            (*LastRectPtr)->Next = &RRE->RR;
+
+            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
+        }
+    }
+    else
+    {
+	struct RegionRectangleExt *Prev = RRE++;
+
+        RRE->RR.Next    = NULL;
+        RRE->RR.Prev    = &Prev->RR;
+        Prev->RR.Next   = &RRE->RR;
+
+        RRE->Counter    = Prev->Counter + 1;
+    }
+
+    return *LastRectPtr = (struct RegionRectangle *)RRE;
+}
+
+#define Bounds(x) (&(x)->bounds)
+#define MinX(rr)   (Bounds(rr)->MinX)
+#define MaxX(rr)   (Bounds(rr)->MaxX)
+#define MinY(rr)   (Bounds(rr)->MinY)
+#define MaxY(rr)   (Bounds(rr)->MaxY)
+
+#define ADVANCE(nextbandptr, rr)                    \
+{                                                   \
+    if ((rr)->Next && MinY((rr)->Next) == MinY(rr)) \
+        rr = (rr)->Next;                            \
+    else                                            \
+    {                                               \
+    	if (nextbandptr)                            \
+            *nextbandptr = (rr)->Next;              \
+        rr = NULL;                                  \
+    }                                               \
+}
+
+#define NEWREG(prevptr, rr)                     \
+{                                               \
+    rr = _NewRegionRectangle(prevptr, GfxBase); \
+    if (!rr)                                    \
+        return FALSE;                           \
+}
+
+#define ADDRECT(minx, maxx)    \
+{                              \
+   struct RegionRectangle *rr; \
+   NEWREG(DstPtr, rr);         \
+                               \
+   MinX(rr) = minx;            \
+   MinY(rr) = MinY;            \
+   MaxX(rr) = maxx;            \
+   MaxY(rr) = MaxY;            \
+}
+
+#define ADDRECTMERGE(minx, maxx)     \
+{                                    \
+    if                               \
+    (                                \
+        !*(DstPtr) ||                \
+        (MinY(*(DstPtr)) != MinY) || \
+        ((minx-1) > MaxX(*DstPtr))   \
+    )                                \
+    {                                \
+	ADDRECT((minx), (maxx));     \
+    }                                \
+    else                             \
+    if (MaxX(*DstPtr) < maxx)        \
+    {                                \
+        MaxX(*DstPtr) = maxx;        \
+    }                                \
+}
+
+#define FIXLASTBAND(first, last)                      \
+if (!first)                                           \
+{                                                     \
+    first = last;                                     \
+}                                                     \
+else                                                  \
+{                                                     \
+    struct RegionRectangle *newlastrect = last->Prev; \
+                                                      \
+    first->Prev->Next = last;                         \
+    last->Prev = first->Prev;                         \
+    first->Prev = newlastrect;                        \
+}
+
+#define DOBANDCHECKS(firstlastdst, lastdst, curdst)                        \
+if (curdst != lastdst)                                                     \
+{                                                                          \
+    if (!lastdst)                                                          \
+    {                                                                      \
+        DstBounds->MinY = MinY(&(Chunk(curdst)->FirstChunk->Rects[0].RR)); \
+        DstBounds->MinX = MinX(&(Chunk(curdst)->FirstChunk->Rects[0].RR)); \
+        DstBounds->MaxX = MaxX(curdst);                                    \
+        firstlastdst = &Chunk(curdst)->FirstChunk->Rects[0].RR;            \
+    }                                                                      \
+    else                                                                   \
+    {                                                                      \
+        if (DstBounds->MinX > MinX(lastdst->Next))                         \
+            DstBounds->MinX = MinX(lastdst->Next);                         \
+        if (DstBounds->MaxX < MaxX(curdst))                                \
+            DstBounds->MaxX = MaxX(curdst);                                \
+                                                                           \
+        if (MaxY(firstlastdst) == MinY(curdst) - 1)                        \
+        {                                                                  \
+            struct RegionRectangle *_one = firstlastdst;                   \
+            struct RegionRectangle *_two = lastdst->Next;                  \
+                                                                           \
+            while (_one != lastdst->Next && _two)                          \
+            {                                                              \
+		if                                                         \
+                (                                                          \
+                    MinX(_one) == MinX(_two) &&                            \
+                    MaxX(_one) == MaxX(_two)                               \
+                )                                                          \
+                {                                                          \
+                    _one = _one->Next;                                     \
+                    _two = _two->Next;                                     \
+                }                                                          \
+                else                                                       \
+                {                                                          \
+                    break;                                                 \
+                }                                                          \
+	    }                                                              \
+                                                                           \
+            if (_one == lastdst->Next && !_two)                            \
+            {                                                              \
+                LONG MaxY = MaxY(curdst);                                  \
+                _one = firstlastdst;                                       \
+                _DisposeRegionRectangleList(lastdst->Next, GfxBase);       \
+                while (_one)                                               \
+                {                                                          \
+                    MaxY(_one) = MaxY;                                     \
+                    _one = _one->Next;                                     \
+                }                                                          \
+                                                                           \
+                curdst = lastdst;                                          \
+            }                                                              \
+            else                                                           \
+                firstlastdst = lastdst->Next;                              \
+	}                                                                  \
+        else                                                               \
+            firstlastdst = lastdst->Next;                                  \
+    }                                                                      \
+    lastdst = curdst;                                                      \
+}
+
+#if DOTEST
+#    define DEBUG 1
+#endif
+
+#if DEBUG
+void dumprect(struct Rectangle *rec)
+{
+    if (!rec)
+    {
+        kprintf("NULL\n");
+        return;
+    }
+
+    kprintf("(%d,%d)-(%d,%d)\n", (int)rec->MinX, (int)rec->MinY,
+                                 (int)rec->MaxX, (int)rec->MaxY);
+}
+void dumpregion(struct Region *reg)
+{
+    struct RegionRectangle *rr;
+
+    if (!reg)
+    {
+        kprintf("NULL\n");
+        return;
+    }
+
+    kprintf("Bounds: "); dumprect(&reg->bounds);
+
+    for (rr = reg->RegionRectangle; rr; rr = rr->Next)
+    {
+        kprintf("    Rectangle %p: ", rr); dumprect(&rr->bounds);
+    }
+}
+
+void dumpregionrectangles(struct RegionRectangle *rr)
+{
+
+    while (rr)
+    {
+	kprintf("%p (prev: %p - next: %p): ", rr, rr->Prev, rr->Next);
+        dumprect(&rr->bounds);
+        rr = rr->Next;
+    }
+}
+
+void dumpband(struct RegionRectangle *rr, LONG OffX, LONG MinY, LONG MaxY)
+{
+    if (rr)
+    {
+	while (1)
+        {
+	    struct Rectangle r;
+            r.MinX = MinX(rr) + OffX;
+            r.MaxX = MaxX(rr) + OffX;
+            r.MinY = MinY;
+            r.MaxY = MaxY;
+            kprintf("%p (prev: %p - next: %p): ", rr, rr->Prev, rr->Next);
+            dumprect(&r);
+            if (rr->Next && MinY(rr->Next) == MinY(rr)) rr = rr->Next; else break;
+        }
+    }
+    else
+        kprintf("\n");
+}
+#endif
+
+static BOOL _OrBandBand
+(
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG                     MinY,
+    LONG                     MaxY,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct RegionRectangle **NextSrc1Ptr,
+    struct RegionRectangle **NextSrc2Ptr,
+    struct GfxBase          *GfxBase
+)
+{
+    while (Src1 && Src2)
+    {
+        if (MinX(Src1) + OffX1 < MinX(Src2) + OffX2)
+        {
+	    ADDRECTMERGE(MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
+            ADVANCE(NextSrc1Ptr, Src1);
+        }
+        else
+        {
+	    ADDRECTMERGE(MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
+            ADVANCE(NextSrc2Ptr, Src2);
+        }
+    }
+
+    if (Src1)
+    {
+        do
+        {
+            ADDRECTMERGE(MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
+            ADVANCE(NextSrc1Ptr, Src1);
+        } while (Src1);
+    }
+    else
+    while (Src2)
+    {
+	ADDRECTMERGE(MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
+        ADVANCE(NextSrc2Ptr, Src2);
+    }
+
+    return TRUE;
+}
+
+BOOL _AndBandBand
+(
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG                     MinY,
+    LONG                     MaxY,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct RegionRectangle **NextSrc1Ptr,
+    struct RegionRectangle **NextSrc2Ptr,
+    struct GfxBase          *GfxBase
+)
+{
+    while (Src1 && Src2)
+    {
+        if (MinX(Src1) + OffX1 < MinX(Src2) + OffX2)
+        {
+	    if (MaxX(Src1) + OffX1 >= MaxX(Src2) + OffX2)
+            {
+            	/* Src1 totally covers Src2 */
+                ADDRECT(MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
+ 	        ADVANCE(NextSrc2Ptr, Src2);
+            }
+            else
+            {
+                if (MaxX(Src1) + OffX1 >= MinX(Src2) + OffX2)
+            	    /* Src1 partially covers Src2 */
+                    ADDRECT(MinX(Src2) + OffX2, MaxX(Src1) + OffX1);
+
+                ADVANCE(NextSrc1Ptr, Src1);
+            }
+        }
+	else
+        {
+	    if (MaxX(Src2) + OffX2 >= MaxX(Src1) + OffX1)
+            {
+            	/* Src2 totally covers Src1 */
+                ADDRECT(MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
+ 	        ADVANCE(NextSrc1Ptr, Src1);
+            }
+            else
+            {
+                if (MaxX(Src2) + OffX2 >= MinX(Src1) + OffX1)
+            	    /* Src2 partially covers Src1 */
+                    ADDRECT(MinX(Src1) + OffX1, MaxX(Src2) + OffX2);
+
+                ADVANCE(NextSrc2Ptr, Src2);
+            }
+        }
+    }
+
+    if (Src1)
+    {
+        do ADVANCE(NextSrc1Ptr, Src1) while (Src1);
+    }
+    else
+    while (Src2) ADVANCE(NextSrc2Ptr, Src2);
+
+    return TRUE;
+}
+
+BOOL _ClearBandBand
+(
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG                     MinY,
+    LONG                     MaxY,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct RegionRectangle **NextSrc1Ptr,
+    struct RegionRectangle **NextSrc2Ptr,
+    struct GfxBase          *GfxBase
+)
+{
+    LONG MinX = 0;
+
+    if (Src2)
+        MinX = MinX(Src2) + OffX2;
+
+    while (Src1 && Src2)
+    {
+	if (MaxX(Src1) + OffX1 < MinX)
+        {
+	    /* Subtrahend doesn't overlap minuend. Just skip it */
+            ADVANCE(NextSrc1Ptr, Src1);
+        }
+        else
+        if (MinX(Src1) + OffX1 <= MinX)
+        {
+            /* Subtrahend precedes minuend: nuke left edge of minuend */
+	    MinX = MaxX(Src1) + OffX1 + 1;
+
+            if (MinX > MaxX(Src2) + OffX2)
+            {
+		/*
+                   Subtrahend completely overlaps minuend, so advance
+                   to the next minuend and reset MinX to its left
+   	        */
+                ADVANCE(NextSrc2Ptr, Src2);
+                if (Src2)
+                    MinX = MinX(Src2) + OffX2;
+            }
+            else
+            {
+                /* Subtrahend doesn't extend beyond minuend, so advence to the next one */
+                ADVANCE(NextSrc1Ptr, Src1);
+            }
+  	}
+        else
+        if (MinX(Src1) + OffX1 <= MaxX(Src2) + OffX2)
+        {
+	    /*
+               Subtrahend covers part of minuend.
+               Add uncovered part of minuend to the band and jump to the next
+               subtrahend
+     	    */
+
+            ADDRECT(MinX, MinX(Src1) + OffX1 - 1);
+
+            MinX = MaxX(Src1) + OffX1 + 1;
+
+            if (MinX > MaxX(Src2) + OffX2)
+            {
+                /*Minuend used up: advance to the next one */
+                ADVANCE(NextSrc2Ptr, Src2);
+                if (Src2)
+                    MinX = MinX(Src2) + OffX2;
+            }
+            else
+            {
+                /* Subtrahend used up */
+                ADVANCE(NextSrc1Ptr, Src1);
+            }
+	}
+        else
+        {
+	    /*
+	       Minuend used up: add any remaining piece before advancing.
+	     */
+
+             if (MaxX(Src2) + OffX2 >= MinX)
+             {
+                 ADDRECT(MinX, MaxX(Src2) + OffX2);
+             }
+
+             ADVANCE(NextSrc2Ptr, Src2);
+             if (Src2)
+                 MinX = MinX(Src2) + OffX2;
+        }
+    }
+
+    if (Src1)
+    {
+        do ADVANCE(NextSrc1Ptr, Src1) while (Src1);
+    }
+    else
+    while (Src2)
+    {
+	ADDRECT(MinX, MaxX(Src2) + OffX2);
+        ADVANCE(NextSrc2Ptr, Src2);
+        if (Src2)
+        {
+            MinX = MinX(Src2) + OffX2;
+        }
+    }
+
+    return TRUE;
+}
+
+typedef BOOL (*BandOperation)
+(
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG                     MinY,
+    LONG                     MaxY,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct RegionRectangle **NextSrc1Ptr,
+    struct RegionRectangle **NextSrc2Ptr,
+    struct GfxBase          *GfxBase
+);
+
+BOOL _DoOperationBandBand
+(
+    BandOperation            Operation,
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG 		     OffY1,
+    LONG 		     OffY2,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct Rectangle        *DstBounds,
+    struct GfxBase          *GfxBase
+)
+{
+    struct RegionRectangle  *Dst, *LastDst, *FirstLastDst;
+    struct RegionRectangle **NextSrc1Ptr = (void *)~0;
+    struct RegionRectangle **NextSrc2Ptr = (void *)~0;
+    struct RegionRectangle  *Band1 = Src1, *Band2 = Src2;
+
+    BOOL res = TRUE;
+
+    LONG TopY1 = 0, TopY2 = 0;
+
+    FirstLastDst = LastDst = Dst = *DstPtr = NULL;
+
+    while (Src1 && Src2)
+    {
+	LONG MinY, MaxY;
+
+        if (NextSrc1Ptr)
+        {
+            TopY1 = MinY(Src1) + OffY1;
+            NextSrc1Ptr = NULL;
+        }
+
+	if (NextSrc2Ptr)
+        {
+            TopY2 = MinY(Src2) + OffY2;
+            NextSrc2Ptr = NULL;
+        }
+
+	if (TopY1 < TopY2)
+        {
+	    MinY = TopY1;
+	    MaxY = MIN(MaxY(Src1) + OffY1, TopY2 - 1);
+	    TopY1 = MaxY + 1;
+
+            Band1 = Src1;
+            Band2 = NULL;
+        }
+        else
+        if (TopY2 < TopY1)
+        {
+	    MinY = TopY2;
+	    MaxY = MIN(MaxY(Src2) + OffY2, TopY1 - 1);
+	    TopY2 = MaxY + 1;
+
+            Band1 = NULL;
+            Band2 = Src2;
+        }
+        else
+        {
+	    MinY = TopY1;
+	    MaxY = MIN(MaxY(Src1) + OffY1, MaxY(Src2) + OffY2);
+	    TopY1 = TopY2 = MaxY + 1;
+
+            Band1 = Src1;
+            Band2 = Src2;
+	}
+
+	NextSrc1Ptr = (MaxY == MaxY(Src1) + OffY1) ? &Src1 : NULL;
+	NextSrc2Ptr = (MaxY == MaxY(Src2) + OffY2) ? &Src2 : NULL;
+
+        if
+        (
+            !Operation
+            (
+                OffX1, OffX2,
+                MinY, MaxY,
+                Band1, Band2,
+                &Dst,
+                NextSrc1Ptr, NextSrc2Ptr,
+                GfxBase
+	    )
+        )
+        {
+            res = FALSE;
+            goto end;
+        }
+
+	DOBANDCHECKS(FirstLastDst, LastDst, Dst);
+
+    }
+
+
+    while (Src1)
+    {
+	if (NextSrc1Ptr)
+            TopY1 = MinY(Src1) + OffY1;
+
+        NextSrc1Ptr = (void *)~0;
+
+
+        if
+        (
+            !Operation
+            (
+                OffX1, OffX2,
+                TopY1, MaxY(Src1) + OffY1,
+                Src1, NULL,
+                &Dst,
+                &Src1, NULL,
+                GfxBase
+            )
+        )
+        {
+            res = FALSE;
+            goto end;
+        }
+
+	DOBANDCHECKS(FirstLastDst, LastDst, Dst);
+    }
+
+    while (Src2)
+    {
+	if (NextSrc2Ptr)
+            TopY2 = MinY(Src2) + OffY2;
+
+        NextSrc2Ptr = (void *)~0;
+
+        if
+        (
+            !Operation
+            (
+                OffX1, OffX2,
+                TopY2, MaxY(Src2) + OffY2,
+                NULL, Src2,
+                &Dst,
+                NULL, &Src2,
+                GfxBase
+            )
+        )
+        {
+            res = FALSE;
+            goto end;
+        }
+
+	DOBANDCHECKS(FirstLastDst, LastDst, Dst);
+    }
+
+end:
+
+    if (Dst)
+    {
+        if (res)
+        {
+            DstBounds->MaxY = MaxY(Dst);
+            *DstPtr = &Chunk(Dst)->FirstChunk->Rects[0].RR;
+        }
+        else
+            _DisposeRegionRectangleList(&Chunk(Dst)->FirstChunk->Rects[0].RR, GfxBase);
+    }
+
+    return res;
+}
+
+
+BOOL _OrRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+)
+{
+    struct Region R3;
+
+    InitRegion(&R3);
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _OrBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
+    {
+        ClearRegion(R2);
+
+        *R2 = R3;
+
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL _OrRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+)
+{
+    struct Region Res;
+    struct RegionRectangle rr;
+
+    InitRegion(&Res);
+
+    rr.bounds = *Rect;
+    rr.Next   = NULL;
+    rr.Prev   = NULL;
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _OrBandBand,
+            MinX(Reg),
+            0,
+	    MinY(Reg),
+            0,
+            Reg->RegionRectangle,
+            &rr,
+            &Res.RegionRectangle,
+            &Res.bounds,
+            GfxBase
+        )
+    )
+    {
+	ClearRegion(Reg);
+
+        *Reg = Res;
+
+        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL _XorRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+);
+
+BOOL _XorRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+)
+{
+    struct Region R;
+    struct RegionRectangle rr;
+
+    InitRegion(&R);
+
+    R.bounds = *Rect;
+    R.RegionRectangle = &rr;
+
+    rr.Next = NULL;
+    MinX(&rr) = MinY(&rr) = 0;
+    MaxX(&rr) = Rect->MaxX - Rect->MinX;
+    MaxY(&rr) = Rect->MaxY - Rect->MinY;
+
+    return _XorRegionRegion(&R, Reg, GfxBase);
+}
+
+BOOL _ClearRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+)
+{
+    struct Region Res;
+    struct RegionRectangle rr;
+
+    InitRegion(&Res);
+
+    rr.bounds = *Rect;
+    rr.Next   = NULL;
+    rr.Prev   = NULL;
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            0,
+            MinX(Reg),
+            0,
+	    MinY(Reg),
+            &rr,
+            Reg->RegionRectangle,
+            &Res.RegionRectangle,
+            &Res.bounds,
+            GfxBase
+        )
+    )
+    {
+	ClearRegion(Reg);
+
+        *Reg = Res;
+
+        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static inline struct RegionRectangle * ShrinkBand
+(
+    LONG OffX,
+    LONG OffY,
+    struct RegionRectangle  *Band,
+    LONG MinX,
+    LONG MinY,
+    LONG MaxX,
+    LONG MaxY,
+    struct RegionRectangle **NextBandPtr
+)
+{
+    struct RegionRectangle *NewFirst;
+    struct RegionRectangle *LastBand = Band;
+
+    while (Band && MinX > MaxX(Band))
+    {
+        ADVANCE(NextBandPtr, Band);
+    }
+
+
+    if (!Band)
+        NewFirst = *NextBandPtr;
+    else
+        NewFirst = Band;
+
+    if (Chunk(NewFirst) != Chunk(LastBand))
+        _DisposeRegionRectangleExtChunk(Chunk(LastBand), GfxBase);
+
+
+    if (Band)
+    {
+        if (MinX(Band) < MinX)
+            MinX(Band) = MinX + OffX;
+    }
+
+    while (Band && MaxX > MaxX(Band))
+    {
+        MinY(Band) = MinY + OffY;
+        MaxY(Band) = MaxY + OffY;
+
+        MaxX(Band) += OffX;
+
+        ADVANCE(NextBandPtr, Band);
+    }
+
+    if (Band)
+    {
+	struct RegionRectangle *LastRR;
+
+        MinY(Band) = MinY + OffY;
+        MaxY(Band) = MaxY + OffY;
+
+        MaxX(Band) = MaxX + OffX;
+
+        LastRR = Band;
+	while (Band)
+        {
+            ADVANCE(NextBandPtr, Band);
+        }
+
+        if (*NextBandPtr)
+            (*NextBandPtr)->Prev = LastRR;
+        LastRR->Next = *NextBandPtr;
+    }
+
+    return NewFirst;
+}
+
+BOOL _AndRectRegion
+(
+    struct Region    *Reg,
+    struct Rectangle *Rect,
+    struct GfxBase   *GfxBase
+)
+{
+    struct RegionRectangle *rr = Reg->RegionRectangle;
+    struct Rectangle OldBounds = Reg->bounds;
+
+    if (!rr || !AndRectRect(Rect, &OldBounds, &Reg->bounds))
+    {
+        ClearRegion(Reg);
+        return TRUE;
+    }
+
+    if
+    (
+        MinX(Reg) == OldBounds.MinX &&
+        MinY(Reg) == OldBounds.MinY &&
+        MaxX(Reg) == OldBounds.MaxX &&
+        MaxY(Reg) == OldBounds.MaxY
+    )
+    {
+        return TRUE;
+    }
+
+    while
+    (
+	Rect->MinY > MaxY(rr) + OldBounds.MinY
+    )
+    {
+        rr = rr->Next;
+    }
+
+    Reg->RegionRectangle = rr;
+    rr->Prev = NULL;
+
+    while
+    (
+        rr                                      &&
+        Rect->MaxY >= MinY(rr) + OldBounds.MinY
+    )
+    {
+        /* The band overlaps with the rectangle */
+	struct RegionRectangle *LastRR   = rr->Prev;
+        struct RegionRectangle *NewFirst;
+
+        NewFirst = ShrinkBand
+        (
+            OldBounds.MinX - MinX(Reg),
+            OldBounds.MinY - MinY(Reg),
+            rr,
+            Rect->MinX - OldBounds.MinX,
+            MAX(Rect->MinY - OldBounds.MinY, MinY(rr)),
+            Rect->MaxX - OldBounds.MinX,
+            MIN(Rect->MaxY - OldBounds.MinY, MaxY(rr)),
+            &rr
+	);
+
+        if (LastRR)
+            LastRR->Next = NewFirst;
+        else
+            Reg->RegionRectangle = NewFirst;
+
+        NewFirst->Prev = LastRR;
+    }
+
+    _DisposeRegionRectangleList(rr, GfxBase);
+
+    return TRUE;
+}
+
+BOOL _AndRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+)
+{
+    struct Region R3;
+
+    InitRegion(&R3);
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _AndBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
+    {
+	ClearRegion(R2);
+
+        *R2 = R3;
+
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL _ClearRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+)
+{
+    struct Region R3;
+
+    InitRegion(&R3);
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
+    {
+	ClearRegion(R2);
+
+        *R2 = R3;
+
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL _XorRegionRegion
+(
+    struct Region  *R1,
+    struct Region  *R2,
+    struct GfxBase *GfxBase
+)
+{
+    struct Region R3;
+    struct RegionRectangle *Diff1 = NULL;
+    struct RegionRectangle *Diff2 = NULL;
+    LONG res = FALSE;
+
+    InitRegion(&R3);
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &Diff1,
+            &R3.bounds,
+            GfxBase
+        ) &&
+
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            MinX(R2),
+            MinX(R1),
+            MinY(R2),
+	    MinY(R1),
+            R2->RegionRectangle,
+            R1->RegionRectangle,
+            &Diff2,
+            &R3.bounds,
+            GfxBase
+        ) &&
+
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+	    0,
+            0,
+            0,
+            0,
+            Diff1,
+            Diff2,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
+    {
+	res = TRUE;
+
+        ClearRegion(R2);
+
+        *R2 = R3;
+
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
+    }
+
+    _DisposeRegionRectangleList(Diff1, GfxBase);
+    _DisposeRegionRectangleList(Diff2, GfxBase);
+
+    return res;
+
+}
+
+
+#if DOTEST
+
+#undef GfxBase
+#include <proto/graphics.h>
+
+int main(void)
+{
+    int i;
+
+    struct Region *R1 = NewRegion();
+    struct Region *R2 = NewRegion();
+
+    for (i = 0; i < 10; i++)
+    {
+        int l = i*20;
+
+	struct Rectangle r = {l, 0, l+11, 201};
+        _OrRectRegion(R1, &r, GfxBase);
+    }
+
+    for (i = 0; i < 10; i++)
+    {
+        int u = i*20;
+
+	struct Rectangle r = {0, u, 201, u+11};
+        _OrRectRegion(R2, &r, GfxBase);
+    }
+
+    for (i = 0; i<100000; i++)
+    {
+        XorRegionRegion(R2, R1);
+    }
+
+    DisposeRegion(R2);
+    DisposeRegion(R1);
+    return 0;
+}
+#endif
+

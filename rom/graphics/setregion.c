@@ -58,7 +58,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct RegionRectangle * rrs, *rrd, *rrd_prev, **addr;
+    struct RegionRectangle * rrs, *rrd, *rrd_prev, *addr;
 
     dest->bounds = src->bounds;
 
@@ -72,22 +72,21 @@
         rrd->bounds = rrs->bounds;
     }
 
-    DisposeRegionRectangleList(rrd);
+    _DisposeRegionRectangleList(rrd, GfxBase);
 
     if (rrd_prev)
-        addr = &rrd_prev->Next;
+        addr = rrd_prev;
     else
-        addr = &dest->RegionRectangle;
+    {
+        dest->RegionRectangle = NULL;
+        addr = dest->RegionRectangle;
+    }
 
-#if REGIONS_HAVE_RRPOOL
-    if (!CopyRegionRectangleList(rrs, addr, &dest->RectPoolList))
-#else
-    if (!CopyRegionRectangleList(rrs, addr))
-#endif
+    if (!_LinkRegionRectangleList(rrs, &addr, GfxBase))
         return FALSE;
 
-    if (*addr)
-        (*addr)->Prev = rrd_prev;
+    if (!rrd_prev)
+        dest->RegionRectangle = addr ? &Chunk(addr)->FirstChunk->Rects[0].RR : NULL;
 
     return TRUE;
 

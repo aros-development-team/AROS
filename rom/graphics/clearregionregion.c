@@ -52,44 +52,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if USE_BANDED_FUNCTIONS
 
     return _ClearRegionRegion(region1, region2, GfxBase);
 
-#else
-    ASSERT_VALID_PTR(region1);
-    ASSERT_VALID_PTR(region2);
-
-    if (region2->RegionRectangle &&
-    	region1->RegionRectangle &&
-	overlap(region2->bounds, region1->bounds))
-    {
-	struct RegionRectangle  *rr;
-	struct RegionRectangle	*backup;
-	struct Rectangle    	clearrect;
-
-	if (!CopyRegionRectangleList(region2->RegionRectangle, &backup))
-	    return FALSE;
-
-	for (rr = region1->RegionRectangle; rr; rr = rr->Next)
-	{
-            clearrect.MinX = rr->bounds.MinX + region1->bounds.MinX;
-	    clearrect.MinY = rr->bounds.MinY + region1->bounds.MinY;
-	    clearrect.MaxX = rr->bounds.MaxX + region1->bounds.MinX;
-	    clearrect.MaxY = rr->bounds.MaxY + region1->bounds.MinY;
-	    
-	    if (!ClearRectRegion(region2, &clearrect))
-	    {
-		DisposeRegionRectangleList(region2->RegionRectangle);
-		region2->RegionRectangle = backup;
-		return FALSE;
-	    }
-	}
-	/* the backup is not needed anymore in this case */
-	DisposeRegionRectangleList(backup);
-    }
-    return TRUE;
-#endif
     AROS_LIBFUNC_EXIT
 
 } /* ClearRegionRegion */
