@@ -23,7 +23,7 @@
 	AROS_LHA(ULONG            , b, D3),
 
 /*  LOCATION */ /* CHANGE No. *********************************************/
-	struct GfxBase *, GfxBase, 142, Graphics)
+	struct GfxBase *, GfxBase, 48, Graphics)
 
 /*  FUNCTION
 	Changes a single color of a viewport.
