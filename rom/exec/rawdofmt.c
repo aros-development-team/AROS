@@ -149,28 +149,20 @@
 		{
 		    minwidth=minwidth*10+(*FormatString++-'0');
 		} while(*FormatString>='0'&&*FormatString<='9');
-
-		/* Dot following width modifier? */
-		if(*FormatString=='.')
+	    }
+	    
+	    /* Dot following width modifier? */
+	    if(*FormatString=='.')
+	    {
+		FormatString++;
+		/* Get maximum width */
+		if(*FormatString>='0'&&*FormatString<='9')
 		{
-		    FormatString++;
-		    /* Get maximum width */
-		    if(*FormatString>='0'&&*FormatString<='9')
-		    {
-			maxwidth=0;
-			do
-			    maxwidth=maxwidth*10+(*FormatString++-'0');
-			while(*FormatString>='0'&&*FormatString<='9');
-		    }
+		    maxwidth=0;
+		    do
+			maxwidth=maxwidth*10+(*FormatString++-'0');
+		    while(*FormatString>='0'&&*FormatString<='9');
 		}
-#if 0 /* stegerg: ??? */
-		else
-		{
-		    /* No. It was in fact a maxwidth modifier */
-		    maxwidth=minwidth;
-		    minwidth=0;
-		}
-#endif
 	    }
 	
 	    /* 'l' modifier? (long argument) */
