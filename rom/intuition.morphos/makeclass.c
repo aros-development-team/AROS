@@ -84,7 +84,7 @@ AROS_LH5(struct IClass *, MakeClass,
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     Class *iclass = NULL;
-
+    
     EXTENDUWORD(instanceSize);
 
     DEBUG_MAKECLASS(dprintf("MakeClass: ID <%s> SuperID <%s> Super 0x%lx Size 0x%lx Flags 0x%lx\n",
@@ -106,31 +106,54 @@ AROS_LH5(struct IClass *, MakeClass,
 
     ObtainSemaphoreShared(&GetPrivIBase(IntuitionBase)->ClassListLock);
 
-    /* Does this class already exist ? */
+    /* Does this class already exist? */
     if (!FindClass(classID))
     {
-        /* Has the user specified a classPtr ? */
+        /* Has the user specified a classPtr? */
         if (!superClassPtr)
         {
-            /* Search for the class ... */
+            /* Search for the class... */
             superClassPtr = FindClass(superClassID);
         }
 
         if (superClassPtr)
         {
-            /* Get some memory */
-            if ((iclass = (Class *) AllocMem(sizeof (Class), MEMF_PUBLIC|MEMF_CLEAR)))
-            {
-                /* Felder init */
-                iclass->cl_Super      = superClassPtr;
-                iclass->cl_ID         = classID;
-                iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
-                                        superClassPtr->cl_InstSize;
-                iclass->cl_InstSize   = instanceSize;
-                iclass->cl_Flags      = flags;
+            /* Allocate memory */
+            iclass = (Class *) AllocMem
+            (
+                sizeof(Class), MEMF_PUBLIC | MEMF_CLEAR
+            );
+            
+            if (iclass != NULL)
+	    {
+                /* Initialize fields */
+		iclass->cl_Super      = superClassPtr;
+		iclass->cl_ID	      = classID;
+		iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
+					superClassPtr->cl_InstSize;
+		iclass->cl_InstSize   = instanceSize;
+		iclass->cl_Flags      = flags;
+                iclass->cl_ObjectSize = iclass->cl_InstOffset 
+                                      + iclass->cl_InstSize
+                                      + sizeof(struct _Object);
                 
-                /* SuperClass is used one more time now */
-                AROS_ATOMIC_INC(superClassPtr->cl_SubclassCount);
+                /* Initialize memory subsystem */
+                iclass->cl_MemoryPool = CreatePool
+                (
+                    MEMF_ANY | MEMF_CLEAR | MEMF_SEM_PROTECTED, 
+                    32 * iclass->cl_ObjectSize, iclass->cl_ObjectSize
+                );
+                   
+                if (iclass->cl_MemoryPool != NULL)
+                {
+                    /* SuperClass is used one more time now */
+                    AROS_ATOMIC_INC(superClassPtr->cl_SubclassCount);
+                }
+                else
+                {
+                    FreeMem(iclass, sizeof(Class));
+                    iclass = NULL;
+                }
             }
         }
         else

@@ -53,51 +53,51 @@ AROS_UFH3(IPTR, rootDispatcher,
  
     SEE ALSO
  
-    HISTORY
-    14.09.93    ada created
- 
 ******************************************************************************/
 {
     AROS_USERFUNC_INIT
 
     IPTR   retval = 0;
-    Class *objcl;
+    Class *iclass;
 
     switch (msg->MethodID)
     {
 	case OM_NEW:
-            objcl = (Class *)o;
-
-            /* Get memory. The objects shows how much is needed.
-               (The object is not an object, it is a class pointer!) */
-            o = (Object *) AllocMem
+            iclass = (Class *) o;
+	    
+            /* 
+                Get memory for the instance data. The class knows how much is
+                needed. NOTE: The object argument is actually the class!
+            */
+            
+            o = (Object *) AllocPooled
             (
-        	objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object),
-        	MEMF_ANY | MEMF_CLEAR
+                iclass->cl_MemoryPool, iclass->cl_ObjectSize
             );
 
             if (o)
             {
-        	_OBJ(o)->o_Class = objcl;
+        	_OBJ(o)->o_Class = iclass;
 
-        	AROS_ATOMIC_INC(objcl->cl_ObjectCount);
+        	AROS_ATOMIC_INC(iclass->cl_ObjectCount);
 
         	retval = (IPTR) BASEOBJECT(o);
             }
             break;
 
 	case OM_DISPOSE:
-            /* Free memory. Caller is responsible that everything else
-               is already cleared! */
-            objcl = OCLASS(o);
+            /* 
+                Free memory. Caller is responsible that everything else
+                is already cleared! 
+            */
+            iclass = OCLASS(o);
 
-            AROS_ATOMIC_DEC(OCLASS(o)->cl_ObjectCount);
-
-            FreeMem
+            FreePooled
             (
-        	_OBJECT(o), 
-        	objcl->cl_InstOffset + objcl->cl_InstSize + sizeof (struct _Object)
+        	iclass->cl_MemoryPool, _OBJECT(o), iclass->cl_ObjectSize
             );
+            
+            AROS_ATOMIC_DEC(OCLASS(o)->cl_ObjectCount);
             break;
 
 	case OM_ADDTAIL:
