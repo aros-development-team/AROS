@@ -170,43 +170,21 @@ OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
     bm_obj = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
     if (NULL != bm_obj)
     {
-    	struct template_info ti;
-    	struct BitMap bm;
 	struct TagItem gc_tags[] =
 	{
-	    { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
-	    { TAG_DONE	    	    	    	    	}
+	    { aHidd_GC_DrawMode     	    , vHidd_GC_DrawMode_Copy	},
+	    { aHidd_GC_Foreground   	    , 1	    	    	    	},
+	    { aHidd_GC_Background   	    , 0 	    	    	},
+	    { aHidd_GC_ColorExpansionMode   , vHidd_GC_ColExp_Opaque    },
+	    { TAG_DONE	    	    	    	    	    	    	}
 	};
 
-	
-	HIDD_BM_OBJ(&bm)	= bm_obj;
-	HIDD_BM_COLMAP(&bm)	= NULL;
-	HIDD_BM_COLMOD(&bm)	= vHidd_ColorModel_Palette;
-	HIDD_BM_REALDEPTH(&bm)	= 1;
-	
-	bm.Rows		= height;
-	bm.BytesPerRow	= WIDTH_TO_BYTES(width);
-	bm.Depth	= 1;
-	bm.Flags	= BMF_AROS_HIDD;
-	
-	ti.source	= font->tf_CharData;
-	ti.x_src	= 0;
-	ti.modulo	= font->tf_Modulo;
-	ti.invertsrc	= FALSE;
-		
-    	/* Copy the character data into the bitmap */
+	/* Copy the character data into the bitmap */
 	OOP_SetAttrs(tmp_gc, gc_tags);
 	
-	amiga2hidd_fast((APTR)&ti
-		, tmp_gc
-		, 0, 0
-		, &bm
-		, 0, 0
-		, width, height
-		, template_to_buf
-		, GfxBase
-	);
-		
+	HIDD_BM_PutTemplate(bm_obj, tmp_gc, font->tf_CharData, font->tf_Modulo,
+	    	    	    0, 0, 0, width, height, FALSE);
+
     }
     
     release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
