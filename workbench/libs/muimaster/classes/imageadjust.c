@@ -11,6 +11,7 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
