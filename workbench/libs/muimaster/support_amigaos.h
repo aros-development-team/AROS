@@ -33,6 +33,7 @@ int strlcat(char *buf, char *src, int len);
 #define AROS_LIBFUNC_INIT
 #define AROS_LIBBASE_EXT_DECL(a, b) extern a b;
 #define AROS_LIBFUNC_EXIT
+#define AROS_ASMSYMNAME(a) a
 
 /*** AROS types *************************************************************/
 #ifndef __AROS_TYPES_DEFINED__
@@ -40,6 +41,7 @@ int strlcat(char *buf, char *src, int len);
     typedef unsigned long IPTR;
     typedef long          STACKLONG;
     typedef unsigned long STACKULONG;
+    typedef void (*VOID_FUNC)();
 #endif /* __AROS_TYPES_DEFINED__ */
 
 /*** AROS register definitions **********************************************/
