@@ -45,9 +45,37 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write WaitPkt()
-    aros_print_not_implemented ("WaitPkt");
+    struct Process * me = (struct Process *)FindTask(NULL);
+    struct IOFileSys * iofs;
+    struct DosPacket * dp;
+    
+    if (me->pr_PktWait)
+    {
+#if 0
+      dp = me->pr_PktWait();
+#endif
+    }
+    else
+    {
+      WaitPort(&me->pr_MsgPort);
+      iofs = (struct IOFileSys *)GetMsg(&me->pr_MsgPort);
+//    dp = iofs->IOFS.io_oldpacket;
+    }
+    
 
-    return NULL;
+    /*
+    ** The Result code 1 is most of the time a DOS boolean
+    ** but unfortunately this is not always true...
+    */
+
+#warning do_Res1 is always DOSTRUE!
+    dp->dp_Res1 = DOSTRUE;
+    dp->dp_Res2 = iofs->io_DosError;
+    SetIoErr(iofs->io_DosError);
+    
+    FreeMem(iofs, sizeof(struct IOFileSys));    
+    
+    return dp;
+
     AROS_LIBFUNC_EXIT
 } /* WaitPkt */
