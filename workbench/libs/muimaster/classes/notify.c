@@ -481,9 +481,9 @@ static ULONG Notify_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_Ki
  */
 static ULONG Notify_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet *msg)
 {
+    /* TODO: Fix types, they shouldn't be ULONG */
     ULONG *destobj_p;
-
-    for (destobj_p = (ULONG*)&msg->obj; destobj_p != NULL; destobj_p++)
+    for (destobj_p = (ULONG*)&msg->obj; (*destobj_p) != NULL; destobj_p++)
     {
 	set((APTR)*destobj_p, msg->attr, msg->val);
     }
