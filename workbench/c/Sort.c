@@ -300,7 +300,7 @@ int __nocommandline;
 
 int main (void)
 {
-  IPTR args[ARG_NUM] = { NULL, NULL, NULL, NULL, NULL};
+  IPTR args[ARG_NUM] = { (IPTR) NULL, (IPTR) NULL, (IPTR) NULL, FALSE, FALSE};
   struct RDArgs *rda;
   ULONG error = 0;
 
