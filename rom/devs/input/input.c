@@ -128,15 +128,21 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
     /* Store arguments */
     InputDevice->sysBase = sysBase;
     InputDevice->seglist = segList;
-    
+
     NEWLIST( &(InputDevice->HandlerList) );
-    
-#warning Assuming that VBlankFrequency is 50 is bad!
-    InputDevice->KeyRepeatThreshold.tv_secs  = DEFAULT_KEY_REPEAT_THRESHOLD / 50;
-    InputDevice->KeyRepeatThreshold.tv_micro = (DEFAULT_KEY_REPEAT_THRESHOLD % 50) * 1000000L / 50;
-    InputDevice->KeyRepeatInterval.tv_secs   = DEFAULT_KEY_REPEAT_INTERVAL / 50;
-    InputDevice->KeyRepeatInterval.tv_micro  = (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000L / 50;
-    
+
+    /*
+	These defaults are in terms of 50 Hz ticks. The real VBlank frequency
+	does not effect them.
+    */
+    InputDevice->KeyRepeatThreshold.tv_secs = DEFAULT_KEY_REPEAT_THRESHOLD / 50;
+    InputDevice->KeyRepeatThreshold.tv_micro
+	= (DEFAULT_KEY_REPEAT_THRESHOLD % 50) * 1000000 / 50;
+
+    InputDevice->KeyRepeatInterval.tv_secs  = DEFAULT_KEY_REPEAT_INTERVAL / 50;
+    InputDevice->KeyRepeatInterval.tv_micro
+	= (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000 / 50;
+
     /* Initialise the input.device task. */
     InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
     if(InputDevice->InputTask != NULL)
