@@ -5,7 +5,8 @@ include $(TOP)/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
-all: setup  $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
+all: setup  machine.i \
+	    $(OSGENDIR)/supervisor.o $(OSGENDIR)/switch.o \
 	    $(OSGENDIR)/dispatch.o $(OSGENDIR)/disable.o $(OSGENDIR)/enable.o \
 	    $(OSGENDIR)/forbid.o $(OSGENDIR)/permit.o $(OSGENDIR)/preparecontext.o \
 	    $(OSGENDIR)/special.o $(OSGENDIR)/semaphoreglue.o $(OSGENDIR)/exception.o \
@@ -21,7 +22,11 @@ setup :
 clean:
 	$(RM) $(OSGENDIR) $(LIBDIR)/libkernel.a
 
-$(OSGENDIR)/%.o: %.s
+machine.i: geninc.c
+	$(CC) $(CFLAGS) -o geninc geninc.c
+	geninc > machine.i
+
+$(OSGENDIR)/%.o: %.s machine.i
 	$(AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err ; else true ; fi
 
@@ -34,3 +39,5 @@ $(OSGENDIR)/%.d: %.c
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+
+include $(OSGENDIR)/geninc.d
