@@ -52,7 +52,7 @@ struct VMWareGfxBase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef SysBase
@@ -142,7 +142,7 @@ struct TagItem findpcitags[] =
 				((*ptr)->DeviceID == DEVICE_VMWARE0710)
 			)
 		{
-			D(bug("found vmwareSVGA 0710 device\n"));
+			bug("[VMWare] Found vmwareSVGA 0710 device\n");
 			xsd->card = *ptr;
 			break;
 		}
@@ -151,7 +151,7 @@ struct TagItem findpcitags[] =
 						((*ptr)->DeviceID == DEVICE_VMWARE0405)
 					)
 		{
-			D(bug("found vmwareSVGA 0405 device\n"));
+			bug("[VMWare] Found vmwareSVGA 0405 device\n");
 			xsd->card = *ptr;
 			break;
 		}
@@ -162,7 +162,7 @@ struct TagItem findpcitags[] =
 	{
 		if (!initVMWareGfxHW(&xsd->data, xsd->card))
 		{
-			D(bug("init hw error (unsupported vmware svga)\n"));
+			bug("[VMWare] Found unsupported vmware svga device, aborting\n");
 			xsd->card = NULL;
 		}
 	}
