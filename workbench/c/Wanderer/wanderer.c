@@ -96,7 +96,7 @@ enum
 static struct NewMenu nm[] =
 {
   {NM_TITLE, "Wanderer"              },
-    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE, NULL, (void*)MEN_WANDERER_BACKDROP},
+    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE|CHECKED, NULL, (void*)MEN_WANDERER_BACKDROP},
     {NM_ITEM,  "Execute Command...", "E", NULL,               NULL, (void*)MEN_WANDERER_EXECUTE},
     {NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
@@ -338,14 +338,9 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		        {
 		            SetAttrs(obj,
 				MUIA_Window_Title, NULL,
-				MUIA_Window_Borderless, TRUE,
-				MUIA_Window_CloseGadget, FALSE,
-				MUIA_Window_SizeGadget, FALSE,
-				MUIA_Window_DepthGadget, FALSE,
-				MUIA_Window_DragBar, FALSE,
 				MUIA_Window_UseBottomBorderScroller, FALSE,
 				MUIA_Window_UseRightBorderScroller, FALSE,
-				MUIA_Window_Backdrop, TRUE,
+				MUIA_Window_WandererBackdrop, TRUE,
 				TAG_DONE);
 				
 		        } else
@@ -356,14 +351,9 @@ STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 			    SetAttrs(obj,
 				MUIA_Window_Title,title,
-				MUIA_Window_Borderless, FALSE,
-				MUIA_Window_CloseGadget, TRUE,
-				MUIA_Window_SizeGadget, TRUE,
-				MUIA_Window_DepthGadget, TRUE,
-				MUIA_Window_DragBar, TRUE,
 				MUIA_Window_UseBottomBorderScroller, TRUE,
 				MUIA_Window_UseRightBorderScroller, TRUE,
-				MUIA_Window_Backdrop, FALSE,
+				MUIA_Window_WandererBackdrop, FALSE,
 				TAG_DONE);
 			}
 		        data->is_backdrop = !!tag->ti_Data;
@@ -715,12 +705,6 @@ void wanderer_backdrop(Object **pstrip)
     if (item)
     {
     	set(root_iconwnd,MUIA_Window_Open,FALSE);
-    	SetAttrs(root_iconwnd,
-	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
-	    MUIA_Window_LeftEdge, 0,
-	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
-	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
-	    TAG_DONE);
 	set(root_iconwnd,MUIA_IconWindow_IsBackdrop, xget(item, MUIA_Menuitem_Checked));
     	set(root_iconwnd,MUIA_Window_Open,TRUE);
     }
@@ -973,10 +957,6 @@ int main(void)
 	MUIA_Application_Description, "The AROS filesystem GUI",
     	SubWindow, root_iconwnd = IconWindowObject,
 	    MUIA_UserData, 1,
-	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
-	    MUIA_Window_LeftEdge, 0,
-	    MUIA_Window_Width,  MUIV_Window_Width_Screen(100),
-	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
 	    MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
 	    MUIA_Window_ScreenTitle, GetScreenTitle(),
             MUIA_IconWindow_IsRoot, TRUE,
