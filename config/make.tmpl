@@ -16,7 +16,7 @@
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
 	    fi ; \
@@ -2426,3 +2426,4 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #   The reason is that I'm trying to work out which of macros are still
 #   needed, and because of this, I'm trying to keep my additions separate
 #   from all the others.
+
