@@ -8,10 +8,8 @@
 #endif /* !__INLINE_MACROS_H */
 
 #ifndef BOOPSI_BASE_NAME
-#define BOOPSI_BASE_NAME BoopsiBase
+#define BOOPSI_BASE_NAME BOOPSIBase
 #endif /* !BOOPSI_BASE_NAME */
-
-#if 0 /* Disabled because of duplicate names in intuition */
 
 #define AddClass(classPtr) \
 	LP1NR(0x1e, AddClass, struct IClass *, classPtr, a0, \
@@ -62,7 +60,5 @@
 #define SetAttrs(a0, tags...) \
 	({ULONG _tags[] = { tags }; SetAttrsA((a0), (struct TagItem *)_tags);})
 #endif /* !NO_INLINE_STDARG */
-
-#endif /* disable */
 
 #endif /* !_INLINE_BOOPSI_H */
