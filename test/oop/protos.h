@@ -1,0 +1,32 @@
+#ifndef PROTOS_H
+#define PROTOS_H
+
+/*
+   (C) 1997-98 AROS - The Amiga Replacement OS
+   $Id$
+
+   Desc: Demo of new OOP system
+   Lang: english
+*/
+
+#include "types.h"
+#include "oop.h"
+
+/* Prototypes */
+Class *MakeClass(STRPTR classID, STRPTR superID, struct MethodDescr *mDescr, ULONG instDataSize,
+ULONG numeNewMethods);
+VOID FreeClass(Class *cl);
+VOID AddClass(Class *cl);
+VOID RemoveClass(Class *cl);
+Object *NewObject(Class *cl, STRPTR classID, Msg msg);
+VOID DisposeObject(Object *obj);
+
+BOOL InitOOP();
+VOID CleanupOOP();
+
+IPTR CoerceMethodA(Class *cl, Object *o, Msg msg);
+IPTR DoMethodA(Object *o, Msg msg);
+IPTR DoSuperMethodA(Class *cl, Object *o, Msg msg);
+Method *GetMethod(Object *o, ULONG methodID);
+
+#endif /* PROTOS_H */
