@@ -7,6 +7,7 @@
 
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
+#include <proto/utility.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -180,14 +181,35 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_Button: /* STRPTR label */
 	{
+            /* find the control char */
+            int control_char = 0;
+            char *label = (char*)params[0];
+
+	    if (label)
+	    {
+		unsigned char *p = label;
+		unsigned char c;
+
+		while ((c = *p++))
+		{
+		    if (c == '_')
+		    {
+			control_char = ToLower(*p);
+			break;
+		    }
+		}
+
+	    }
+
 	    return MUI_NewObject(MUIC_Text,
 		ButtonFrame,
 		MUIA_Font, MUIV_Font_Button,
 		MUIA_Text_HiCharIdx, '_',
-		MUIA_Text_Contents, params[0],
+		MUIA_Text_Contents, label,
 		MUIA_Text_PreParse, "\33c",
 		MUIA_InputMode    , MUIV_InputMode_RelVerify,
 		MUIA_Background   , MUII_ButtonBack,
+		control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 		TAG_DONE);
 	}
 
