@@ -6,7 +6,7 @@ OBJDIR		:= $(GENDIR)/filesys
 FILES		:= con_handler
 OBJS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS		:= $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-LIB		:= $(OBJDIR)/con_handler.a
+LIB		:= $(LIBDIR)/libcon_handler.a
 
 #MM
 kernel-filesys-$(ARCH)-$(CPU) : show-flags $(LIB)

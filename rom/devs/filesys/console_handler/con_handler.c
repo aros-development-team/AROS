@@ -12,6 +12,8 @@
 
 /* AROS includes */
 
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <proto/exec.h>
 #include <exec/libraries.h>
 #include <exec/resident.h>
@@ -108,7 +110,7 @@ static const struct TagItem win_tags[] =
 {
     {WA_Width,		500},
     {WA_Height,		300},
-    {WA_SimpleRefresh,	TRUE},
+    {WA_SmartRefresh,	TRUE},
     {WA_DragBar,	TRUE},
     {WA_IDCMP,		IDCMP_REFRESHWINDOW | IDCMP_RAWKEY | IDCMP_MOUSEMOVE | IDCMP_MOUSEBUTTONS|IDCMP_GADGETUP|IDCMP_GADGETDOWN},
     {WA_Title,		(IPTR)"CON:"},
@@ -131,10 +133,16 @@ static LONG open_con(struct conbase 	*conbase
     {
     	D(bug("fh allocated\n"));
     	/* Create msgport for console.device communication */
-	fh->conmp = CreateMsgPort();
+	fh->conmp = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
 	if (fh->conmp)
 	{
+	
     	    D(bug("conmp created\n"));
+	    fh->conmp->mp_Flags = PA_SIGNAL;
+	    fh->conmp->mp_SigBit = SIGB_DOS;
+	    fh->conmp->mp_SigTask = FindTask(NULL);
+	    NEWLIST(&fh->conmp->mp_MsgList);
+	    
 	    fh->conio = (struct IOStdReq *)CreateIORequest(fh->conmp, sizeof (struct IOStdReq));
 	    if (fh->conio)
 	    {
@@ -203,7 +211,7 @@ static LONG open_con(struct conbase 	*conbase
 
 static LONG close_con(struct conbase *conbase, struct filehandle *fh)
 {
-    EnterFunc(bug("close_conh(fh=%p)\n", fh));
+    EnterFunc(bug("close_con(fh=%p)\n", fh));
     /* Abort all pending requests */
     if (!CheckIO( ioReq(fh->conio) ))
     	AbortIO( ioReq(fh->conio) );
@@ -215,11 +223,11 @@ static LONG close_con(struct conbase *conbase, struct filehandle *fh)
     CloseDevice((struct IORequest *)fh->conio);
     CloseWindow(fh->window);
     DeleteIORequest( ioReq(fh->conio) );
-    DeleteMsgPort(fh->conmp);
+    FreeMem(fh->conmp, sizeof (struct MsgPort));
     
     FreeMem(fh, sizeof (struct filehandle));
     
-    ReturnInt("close_conh", LONG, 0);
+    ReturnInt("close_con", LONG, 0);
 }
 
 static LONG con_read(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer, LONG *length_ptr)
@@ -229,12 +237,13 @@ static LONG con_read(struct conbase *conbase, struct filehandle *fh, UBYTE *buff
     fh->conio->io_Command = CMD_READ;
     fh->conio->io_Data	  = buffer;
     fh->conio->io_Length  = *length_ptr;
+	
+    fh->conmp->mp_SigTask = FindTask(NULL);
+    fh->conmp->mp_SigBit = SIGB_DOS;
     
-    kprintf("con_handler: Read() not implemened, thus entering endless loop\n");
-    for (;;) {err = err;}
     err = DoIO( ioReq(fh->conio) );
     *length_ptr = fh->conio->io_Actual;
-    
+
     return err;
 }
 
@@ -243,12 +252,17 @@ static LONG con_write(struct conbase *conbase, struct filehandle *fh, UBYTE *buf
     LONG err;
     
     EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, buffer));
+
     
     fh->conio->io_Command = CMD_WRITE;
     fh->conio->io_Data	  = buffer;
     fh->conio->io_Length  = *length_ptr;
+
+    fh->conmp->mp_SigTask = FindTask(NULL);
+    fh->conmp->mp_SigBit = SIGB_DOS;
     
     err = DoIO( ioReq(fh->conio) );
+    
     *length_ptr = fh->conio->io_Actual;
     
    ReturnInt("con_write", LONG, err);
@@ -442,7 +456,7 @@ AROS_LH1(void, beginio,
 	
 
 	case FSA_READ:
-	    error = con_read(	conbase,
+ 	    error = con_read(	conbase,
 	    			(struct filehandle *)iofs->IOFS.io_Unit,
 				iofs->io_Union.io_READ.io_Buffer,
 				&(iofs->io_Union.io_READ.io_Length));
