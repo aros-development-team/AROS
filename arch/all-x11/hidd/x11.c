@@ -38,6 +38,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+
 #include "x11.h"
 
 #define DEBUG 0
@@ -181,13 +182,24 @@ VOID free_x11class(struct x11_staticdata *xsd)
 }
 
 
+int unixio_callback(int displayfd, struct x11_staticdata *xsd)
+{
+    int pending;
+    
+LX11    
+    pending = XPending(xsd->display);
+UX11
 
+
+    return pending;
+}
 
 VOID x11task_entry(struct x11task_params *xtp)
 {
     HIDD *unixio;
     struct x11_staticdata *xsd = xtp->xsd;
-    
+/*    int i = 0;
+*/    
     unixio = (HIDD)New_UnixIO(OOPBase);
     if (unixio)
     {
@@ -201,6 +213,7 @@ VOID x11task_entry(struct x11task_params *xtp)
 D(bug("Entering input loop, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
 	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
 	, xsd->x11sema.ss_QueueCount));
+	
 
 
     for (;;)
@@ -208,15 +221,30 @@ D(bug("Entering input loop, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
         int ret;
 	XEvent event;
 	
+	
     	ret = (int)Hidd_UnixIO_Wait( unixio
 			, ConnectionNumber( xsd->display )
-			, vHidd_UnixIO_Read );
+			, vHidd_UnixIO_Read
+			, unixio_callback
+			, (APTR)xsd );
+			
+/*	i ++;
+	if ((i % 10) == 0 )
+	{
+	    kprintf("x11hidd task woken up %d times\n", i);
+	}
+*/	
+
+			
+
 
 D(bug("Got input from unixio\n"));
 			
 	if (ret != 0)
+	{
 	    continue;
-	    
+	}
+
  	for (;;)	    
 	{
 	    BOOL window_found = FALSE;
@@ -234,17 +262,19 @@ D(bug("Inside XPending lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
 UX11	    
 	    if (pending == 0)
 	    	break;
-	    
-	
+/*	    kprintf("I");
+*/	
 
 D(bug("Outside XNexeEvent lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
 	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
 	, xsd->x11sema.ss_QueueCount));
+	
 LX11
 D(bug("Doing XNextEvent\n"));
 	    XNextEvent (xsd->display, &event);
 D(bug("Done XNextEvent()\n"));	    
 UX11
+
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
 	    if (event.type == MappingNotify)
