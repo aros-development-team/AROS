@@ -1748,7 +1748,10 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     	} else
     	{
 	    while ((child = NextObject(&cstate)))
-		DoMethod(child, MUIM_Show);
+	    {
+		if (_flags(child) & MADF_SHOWME)
+		    DoMethod(child, MUIM_Show);
+	    }
 	}
     }
     return TRUE;
@@ -1788,7 +1791,10 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     	} else
     	{
 	    while ((child = NextObject(&cstate)))
-		DoMethod(child, MUIM_Hide);
+	    {
+		if (_flags(child) & MADF_CANDRAW)
+		    DoMethod(child, MUIM_Hide);
+	    }
 	}
     }
 
