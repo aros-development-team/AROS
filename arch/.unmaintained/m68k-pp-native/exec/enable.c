@@ -82,7 +82,7 @@
 		/*
 		 * Enable interrupt by allowing all of them.
 		 */
-		SetSR(0x0000,0x0700);
+		WREG_L(IMR) = 0
 	}
 
 	AROS_LIBFUNC_EXIT

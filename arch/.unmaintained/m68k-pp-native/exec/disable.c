@@ -80,7 +80,7 @@
 	/*
 	 * Disable interrupts by masking all interrupts.
 	 */
-	SetSR(0x0700,0x0700);
+	WREG_L(IMR) = ~0;
 
 	SysBase->IDNestCnt++;
 
