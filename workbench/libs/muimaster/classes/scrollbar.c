@@ -28,20 +28,20 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *prop = MUI_NewObject(MUIC_Prop,MUIA_Prop_Horiz, horiz, TAG_MORE, msg->ops_AttrList);
     Object *but;
 
-    obj = (Object *)DoSuperNew(cl, obj, PropFrame, MUIA_Group_Child, prop, TAG_MORE, msg->ops_AttrList);
+    obj = (Object *)DoSuperNew(cl, obj, MUIA_Group_Spacing, 0, MUIA_Group_Child, prop, TAG_MORE, msg->ops_AttrList);
     if (!obj)
 	return FALSE;
 
     data = INST_DATA(cl, obj);
 
-    but = TextObject, MUIA_Weight, 0, ButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Text_Contents, horiz?"L":"U", End;
+    but = TextObject, MUIA_Weight, 0, ButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, horiz?"L":"U", End;
     if (but)
     {
 	DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, prop, 2, MUIM_Prop_Decrease, 1);
 	DoMethod(obj, OM_ADDMEMBER, but);
     }
 
-    but = TextObject, MUIA_Weight, 0, ButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Text_Contents, horiz?"R":"D", End;
+    but = TextObject, MUIA_Weight, 0, ButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, horiz?"R":"D", End;
     if (but)
     {
 	DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, prop, 2, MUIM_Prop_Increase, 1);
