@@ -39,7 +39,7 @@ FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
 	     requesters strgadgets strgclass sysiclass windowclasses \
 	     displayerror intuition_misc inputhandler_support inputhandler_actions \
-	     menus menutask barlabelclass 
+	     menus menutask barlabelclass fillrectclass
 	     
 FUNCTIONS := \
 	activategadget \
