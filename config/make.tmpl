@@ -1490,10 +1490,17 @@ clean ::
 #
 %define link_module_q err="$(notdir $@).err" objs=/A endtag= id=
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(STATIC_LD) $(STATIC_LDFLAGS) $(LDFLAGS%(id)) \
+	@if $(STATIC_LD) $(STATIC_LDFLAGS) $(LDFLAGS%(id)) \
 	    $(GENMAP) $(OBJDIR%(id))/$(MODULE%(id)).map \
 	    %(objs) $(LIBS%(id)) %(endtag) $(COMPILER_LIBS) \
-	    -o $@ 2>&1 | tee $(OBJDIR%(id))/%(err)
+	    -o $@ 2>&1 > $(OBJDIR%(id))/%(err); \
+	then \
+	    cat $(OBJDIR%(id))/%(err); \
+	else \
+	    cat $(OBJDIR%(id))/%(err); \
+	    exit 1; \
+	fi
+	
 	@if $(TEST) ! -s $(OBJDIR%(id))/%(err) ; then $(RM) $(OBJDIR%(id))/%(err) ; fi
 	@$(STRIP) $@
 %end
