@@ -186,8 +186,9 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     dfh = prevsegment = AllocSegment(prevsegment, i, MEMF_ANY | MEMF_CLEAR, DiskfontBase);
     if (!dfh) goto failure;
 
-    fontsegment = tmp_dfh.dfh_Segment = (BPTR)MAKE_REAL_SEGMENT(dfh);
-    
+    fontsegment = (BPTR)MAKE_REAL_SEGMENT(dfh);
+    tmp_dfh.dfh_Segment = (LONG)fontsegment;
+   
     tf = &dfh->dfh_TF;
     
     D(bug("charkern in temp:  %p\n", 	tmp_dfh.dfh_TF.tf_CharKern));

@@ -85,6 +85,10 @@
           textAttr->ta_Style,
           textAttr->ta_Flags));
 
+    /* If font name contains a path don´t look into the cache but open it directly from disk */
+    if (FilePart(textAttr->ta_Name) != textAttr->ta_Name)
+        return DF_OpenFontPath(textAttr, DiskfontBase);
+
     tf = OpenFont(textAttr);
     if (tf!=NULL)
     {
@@ -109,14 +113,12 @@
 
     if (match_weight!=MAXFONTMATCHWEIGHT)
     {
-	UWORD oldYSize;
-	
 	iterator = DF_IteratorInit(DFB(DiskfontBase));
 	if (iterator == NULL)
 	    D(bug("Error initializing Diskfont Iterator\n"));
 	else
 	{
-	    while ((ttait = DF_IteratorGetNext(iterator, DFB(DiskfontBase)))!=NULL)
+	    while ((ttait = DF_IteratorGetNext(iterator, (struct TTextAttr *)textAttr, DFB(DiskfontBase)))!=NULL)
 	    {
 		D(bug("OpenDiskFont: Checking font: %s\n", ttait->tta_Name));
 	        ULONG len2 = strlen(ttait->tta_Name) - 5;
@@ -125,18 +127,9 @@
 	       
 		if ((len == len2)  && (strncasecmp(ttait->tta_Name, textAttr->ta_Name, len) == 0))
 		{
-		    if (IS_OUTLINE_FONT(ttait))
-		    {
-			/* For outline font make the YSize equal because it
-			 * is scalable */
-			oldYSize = ttait->tta_YSize;
-			ttait->tta_YSize = textAttr->ta_YSize;
-		    }
 		    new_match_weight = WeighTAMatch((struct TTextAttr *)textAttr,
 						    (struct TextAttr *)ttait,
 						    ttait->tta_Tags);
-		    if (IS_OUTLINE_FONT(ttait))
-			ttait->tta_YSize = oldYSize;
 
 		    if (new_match_weight > match_weight)
 		    {
