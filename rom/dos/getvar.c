@@ -134,6 +134,15 @@
             size = i-1;
             buffer[size] = 0x0; /* mark end of string */
           }
+          else
+            if (GVF_BINARY_VAR|GVF_DONT_NULL_TERM ==
+                (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)) )
+            {
+              if (i < size)
+                size = i + 1;
+              else
+                size = i;
+            }
 
         SetIoErr(lv->lv_Len);
         return size;
