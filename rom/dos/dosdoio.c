@@ -46,6 +46,9 @@
 {
     AROS_LIBFUNC_INIT
 
+#if 1
+    return DoIO(iORequest);
+#else    
     /*
 	Prepare the message. Tell the device that it is OK to wait in the
 	BeginIO() call by setting the quick bit.
@@ -99,6 +102,9 @@ loop:
 
     /* All done. Get returncode. */
     return iORequest->io_Error;
+
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* DosDoIO */
 
