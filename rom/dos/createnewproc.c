@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new process
@@ -74,42 +74,44 @@ void internal_ChildFree(APTR tid);
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Allocated resources */
-    struct Process  *process = NULL;
-    BPTR             input = 0, output = 0, curdir = 0;
-    STRPTR           stack = NULL, name = NULL, argptr = NULL;
-    ULONG            namesize = 0, argsize = 0;
-    struct MemList  *memlist = NULL;
+    struct Process  	    	*process = NULL;
+    BPTR            	    	 input = 0, output = 0, curdir = 0;
+    STRPTR          	    	 stack = NULL, name = NULL, argptr = NULL;
+    ULONG           	    	 namesize = 0, argsize = 0;
+    struct MemList  	    	*memlist = NULL;
     struct CommandLineInterface *cli = NULL;
-    struct Process  *me = (struct Process *)FindTask(NULL);
-    STRPTR           s;
-    BPTR            *oldpath, *newpath, *nextpath;
+    struct Process  	    	*me = (struct Process *)FindTask(NULL);
+    STRPTR          	    	 s;
+    BPTR            	    	*oldpath, *newpath, *nextpath;
 
     /* TODO: NP_CommandName, NP_HomeDir, NP_ConsoleTask, NP_NotifyOnDeath */
 
+#define TAGDATA_NOT_SPECIFIED ~0ul
+
     struct TagItem defaults[]=
     {
-    /* 0 */    { NP_Seglist,	   0           },
-    /* 1 */    { NP_Entry,	   (IPTR)NULL  },
-    /* 2 */    { NP_Input,	   ~0ul        },
-    /* 3 */    { NP_CloseInput,    1           },
-    /* 4 */    { NP_Output,	   ~0ul        },
-    /* 5 */    { NP_CloseOutput,   1           },
-    /* 6 */    { NP_Error,	   0           },
-    /* 7 */    { NP_CloseError,    1           },
-    /* 8 */    { NP_CurrentDir,    ~0ul        },
-    /* 9 */    { NP_StackSize,	   AROS_STACKSIZE },
-    /*10 */    { NP_Name,	   (IPTR)"New Process" },
-    /*11 */    { NP_Priority,	   me->pr_Task.tc_Node.ln_Pri },
-    /*12 */    { NP_Arguments,	   (IPTR)NULL  },
-    /*13 */    { NP_Cli,	   0           },
-    /*14 */    { NP_UserData,	   (IPTR)NULL  },
-    /*15 */    { NP_ExitCode,      (IPTR)NULL  },
-    /*16 */    { NP_ExitData,      (IPTR)NULL  },
-    /*17 */    { NP_WindowPtr,     (IPTR)NULL  }, /* Default: default public
-                                                     screen */
-    /*18 */    { NP_CopyVars,      (IPTR)TRUE  },
-    /*19 */    { NP_Synchronous,   (IPTR)FALSE },
-	       { TAG_END,          0           }
+    /* 0 */    { NP_Seglist 	, 0                 	    	},
+    /* 1 */    { NP_Entry   	, (IPTR)NULL        	    	},
+    /* 2 */    { NP_Input   	, TAGDATA_NOT_SPECIFIED       	},
+    /* 3 */    { NP_CloseInput	, 1           	    	    	},
+    /* 4 */    { NP_Output  	, TAGDATA_NOT_SPECIFIED    	},
+    /* 5 */    { NP_CloseOutput , 1           	    	    	},
+    /* 6 */    { NP_Error   	, 0           	    	    	},
+    /* 7 */    { NP_CloseError	, 1           	    	    	},
+    /* 8 */    { NP_CurrentDir	, TAGDATA_NOT_SPECIFIED    	},
+    /* 9 */    { NP_StackSize	, AROS_STACKSIZE    	        },
+    /*10 */    { NP_Name    	, (IPTR)"New Process" 	    	},
+    /*11 */    { NP_Priority	, me->pr_Task.tc_Node.ln_Pri 	},
+    /*12 */    { NP_Arguments	, (IPTR)NULL  	    	    	},
+    /*13 */    { NP_Cli     	, 0           	    	    	},
+    /*14 */    { NP_UserData	, (IPTR)NULL  	    	    	},
+    /*15 */    { NP_ExitCode	, (IPTR)NULL  	    	    	},
+    /*16 */    { NP_ExitData	, (IPTR)NULL  	    	    	},
+    /*17 */    { NP_WindowPtr	, (IPTR)NULL  	    	    	}, /* Default: default public screen */
+    /*18 */    { NP_CopyVars	, (IPTR)TRUE  	    	    	},
+    /*19 */    { NP_Synchronous , (IPTR)FALSE 	    	    	},
+    /*20 */    { NP_FreeSeglist , (IPTR)TRUE  	    	    	},
+	       { TAG_END    	, 0           	    	    	}
     };
 
     /* C has no exceptions. This is a simple replacement. */
@@ -197,7 +199,7 @@ void internal_ChildFree(APTR tid);
 	}
     }
 
-    if(defaults[2].ti_Data == ~0ul)
+    if(defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
 	{     
@@ -210,7 +212,7 @@ void internal_ChildFree(APTR tid);
 	    defaults[2].ti_Data = 0;
     }
 
-    if(defaults[4].ti_Data == ~0ul)
+    if(defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
 	{
@@ -223,7 +225,7 @@ void internal_ChildFree(APTR tid);
 	    defaults[4].ti_Data = 0;
     }
 
-    if(defaults[8].ti_Data == ~0ul)
+    if(defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
 	{
@@ -292,7 +294,8 @@ void internal_ChildFree(APTR tid);
 		        (defaults[7].ti_Data  ? PRF_CLOSEERROR  : 0) |
 		        (defaults[13].ti_Data ? PRF_FREECLI     : 0) |
 	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS : 0) |
-		        PRF_FREEARGS | PRF_FREESEGLIST | PRF_FREECURRDIR;
+			(defaults[20].ti_Data ? PRF_FREESEGLIST : 0) |
+		        PRF_FREEARGS | PRF_FREECURRDIR;
     process->pr_ExitCode = (APTR)defaults[15].ti_Data; 
     process->pr_ExitData = defaults[16].ti_Data; 
     process->pr_Arguments = argptr;
