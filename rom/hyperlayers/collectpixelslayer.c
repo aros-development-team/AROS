@@ -73,11 +73,12 @@ struct CollectPixelsMsg
 
 *****************************************************************************/
 {
-	LockLayers(l->LayerInfo);
+//	LockLayers(l->LayerInfo);
 	D(bug("%s: layer=%p,region=%p\n",
 	      __FUNCTION__,
 	      l,
 	      r));
+	LockLayer(0,l);
 	while (NULL != l && !IS_ROOTLAYER(l) && FALSE == IS_EMPTYREGION(r)) {
 		if (IS_VISIBLE(l)) {
 			/*
@@ -227,11 +228,19 @@ struct CollectPixelsMsg
 				/*
 				 * Jump to the parent layer.
 				 */
+				UnlockLayer(l);
 				l = l->parent;
+				if (l)
+					LockLayer(0,l);
 			}
 		}
+		UnlockLayer(l);
 		l = l->back;
+		if (l)
+			LockLayer(0,l);
 	}
+	if (l)
+		UnlockLayer(l);
 	
 	if (!IS_EMPTYREGION(r)) {
 		struct RegionRectangle * _rr = r->RegionRectangle;
@@ -265,6 +274,6 @@ struct CollectPixelsMsg
 	} else {
 		D(bug("Complete region handled! - Nothing to take from screen!\n"));
 	}
-	UnlockLayers(l->LayerInfo);
+//	UnlockLayers(l->LayerInfo);
 }
 
