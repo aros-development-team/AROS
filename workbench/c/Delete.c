@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Delete CLI Command
@@ -91,7 +91,7 @@ enum
 /* Maximum file path length */
 #define MAX_PATH_LEN    512
 
-static const char version[] = "$VER: delete 41.2 (6.1.2000)\n";
+static const char version[] = "$VER: Delete 41.2 (6.1.2000)\n";
 static char cmdname[] = "Delete";
 
 

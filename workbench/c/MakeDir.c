@@ -1,8 +1,8 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Makedir CLI command
+    Desc: MakeDir CLI command
     Lang: English
 */
 
@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 
-static const char version[] = "$VER: makedir 41.4 (12.11.2000)\n";
+static const char version[] = "$VER: MakeDir 41.4 (12.11.2000)\n";
 
 /******************************************************************************
 

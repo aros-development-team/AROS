@@ -61,7 +61,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: avail 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: Avail 41.1 (14.3.1997)\n";
 
 
 #define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S"

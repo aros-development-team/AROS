@@ -2,7 +2,7 @@
     (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
+    Desc: NewShell CLI Command
     Lang: English
 */
 
@@ -103,7 +103,7 @@
    
 #define DO_CHANGE_SIGNAL 0
 
-static const char version[] = "$VER: newshell 41.1 (21.04.2001)\n";
+static const char version[] = "$VER: NewShell 41.1 (21.04.2001)\n";
 
 int __nocommandline;
 

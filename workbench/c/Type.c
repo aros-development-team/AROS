@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Type CLI command
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <exec/execbase.h>
@@ -11,7 +11,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 
-static const char version[] = "$VER: type 41.1 (14.3.1997)\n";
+static const char version[] = "$VER: Type 41.1 (14.3.1997)\n";
 
 #define BUFSIZE 8192
 

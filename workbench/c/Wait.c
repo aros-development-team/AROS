@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Wait CLI Command
+    Lang: English
 */
 
 /******************************************************************************
@@ -61,7 +61,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static const char version[] = "$VER: wait 41.2 (30.04.2000)\n";
+static const char version[] = "$VER: Wait 41.2 (30.04.2000)\n";
 
 int __nocommandline;
 
