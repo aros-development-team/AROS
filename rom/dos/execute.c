@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
+    Desc: Execute a CLI command
     Lang: English
 */
 
@@ -46,7 +46,7 @@
 
     RESULT
 
-    Boolean tellning whether Execute() could find and start the specified
+    Boolean telling whether Execute() could find and start the specified
     command(s). (This is NOT the return code of the command(s).)
 
     NOTES
