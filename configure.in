@@ -185,6 +185,7 @@ AROS_PROG(LITE,[lite])
 AROS_PROG(PYTHON,[python])
 AROS_PROG(GNUPLOT,[gnuplot])
 AROS_PROG(CAT,[cat])
+AROS_PROG(BISON,[bison])
 
 FOR=for
 IF=if
