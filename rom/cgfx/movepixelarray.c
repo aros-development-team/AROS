@@ -15,13 +15,13 @@
 	AROS_LH7(ULONG, MovePixelArray,
 
 /*  SYNOPSIS */
-	AROS_LHA(UWORD            , , D0),
-	AROS_LHA(UWORD            , , D1),
-	AROS_LHA(struct RastPort *, , A1),
-	AROS_LHA(UWORD            , , D2),
-	AROS_LHA(UWORD            , , D3),
-	AROS_LHA(UWORD            , , D4),
-	AROS_LHA(UWORD            , , D5),
+	AROS_LHA(UWORD            , SrcX, D0),
+	AROS_LHA(UWORD            , SrcY, D1),
+	AROS_LHA(struct RastPort *, RastPort, A1),
+	AROS_LHA(UWORD            , DstX, D2),
+	AROS_LHA(UWORD            , DstY, D3),
+	AROS_LHA(UWORD            , SizeX, D4),
+	AROS_LHA(UWORD            , SizeY, D5),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 22, Cybergraphics)
@@ -50,9 +50,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("MovePixelArray");
+    
+    return driver_MovePixelArray(SrcX, SrcY, RastPort, DstX, DstY, SizeX, SizeY, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* MovePixelArray */

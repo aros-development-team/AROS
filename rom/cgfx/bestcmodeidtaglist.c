@@ -15,7 +15,7 @@
 	AROS_LH1(ULONG, BestCModeIDTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TagItem *, , A0),
+	AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 10, Cybergraphics)
@@ -44,9 +44,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("BestCModeIDTagList");
+    
+    return driver_BestCModeIDTagList(tags, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* BestCModeIDTagList */

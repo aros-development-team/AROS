@@ -44,10 +44,15 @@ FILES	  :=
 	
 FUNCTIONS := 	\
 	alloccmodelisttaglist	\
+	bestcmodeidtaglist	\
+	cvideoctrltaglist	\
+	extractcolor		\
 	fillpixelarray		\
 	freecmodelist		\
 	getcybermapattr		\
+	getcyberidattr		\
 	invertpixelarray	\
+	movepixelarray		\
 	readpixelarray		\
 	readrgbpixel		\
 	writelutpixelarray	\

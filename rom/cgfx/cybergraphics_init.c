@@ -50,8 +50,9 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     	OOPBase = OpenLibrary("oop.library", 0);
 	if (OOPBase)
 	{
-	    GfxBase = OpenLibrary("graphics.library", 37);
-	    if (GfxBase)
+#undef GfxBase
+	    GetCGFXBase(LIBBASE)->gfxbase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+	    if (GetCGFXBase(LIBBASE)->gfxbase)
 	    {
 		return TRUE;
 	    }

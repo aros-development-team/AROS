@@ -15,13 +15,13 @@
 	AROS_LH7(ULONG, ExtractColor,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, , A0),
-	AROS_LHA(struct BitMap   *, , A1),
-	AROS_LHA(ULONG            , , D0),
-	AROS_LHA(ULONG            , , D1),
-	AROS_LHA(ULONG            , , D2),
-	AROS_LHA(ULONG            , , D3),
-	AROS_LHA(ULONG            , , D4),
+	AROS_LHA(struct RastPort *, RastPort, A0),
+	AROS_LHA(struct BitMap   *, SingleMap, A1),
+	AROS_LHA(ULONG            , Colour, D0),
+	AROS_LHA(ULONG            , sX, D1),
+	AROS_LHA(ULONG            , sY, D2),
+	AROS_LHA(ULONG            , Width, D3),
+	AROS_LHA(ULONG            , Height, D4),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 31, Cybergraphics)
@@ -50,9 +50,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("ExtractColor");
+    
+    return driver_ExtractColor(RastPort, SingleMap, Colour, sX, sY, Width, Height, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* ExtractColor */

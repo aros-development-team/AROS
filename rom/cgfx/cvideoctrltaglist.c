@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+
+#include <graphics/view.h>
 #include "cybergraphics_intern.h"
 
 /*****************************************************************************
@@ -12,11 +14,12 @@
     NAME */
 #include <clib/cybergraphics_protos.h>
 
+
 	AROS_LH2(void, CVideoCtrlTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, , A0),
-	AROS_LHA(struct TagItem  *, , A1),
+	AROS_LHA(struct ViewPort *, vp, A0),
+	AROS_LHA(struct TagItem  *, tags, A1),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 27, Cybergraphics)
@@ -45,9 +48,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("CVideoCtrlTagList");
+    
+    driver_CVideoCtrlTagList(vp, tags, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* CVideoCtrlTagList */

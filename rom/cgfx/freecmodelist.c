@@ -45,7 +45,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     
-    driver_FreeCModeList(modeList, CyberGfxBase);
+    driver_FreeCModeList(modeList, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* FreeCModeList */

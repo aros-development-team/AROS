@@ -15,8 +15,8 @@
 	AROS_LH2(ULONG, GetCyberIDAttr,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, , D0),
-	AROS_LHA(ULONG, , D1),
+	AROS_LHA(ULONG, attribute, 	D0),
+	AROS_LHA(ULONG, DisplayModeID, 	D1),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 17, Cybergraphics)
@@ -45,9 +45,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("GetCyberIDAttr");
+    
+    return driver_GetCyberIDAttr(attribute, DisplayModeID, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* GetCyberIDAttr */

@@ -45,10 +45,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     
-    
-    driver_AllocCModeListTagList(tags, CyberGfxBase);
-    
-
+    return driver_AllocCModeListTagList(tags, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* AllocCModeListTagList */
