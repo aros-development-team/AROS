@@ -7,6 +7,9 @@
 */
 #define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <exec/types.h>
 
 #include <proto/exec.h>
@@ -48,7 +51,7 @@ struct x11clbase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
@@ -81,12 +84,13 @@ static BOOL initclasses(struct x11_staticdata *xsd)
     xsd->osbmclass = init_osbmclass(xsd);
     if (NULL == xsd->osbmclass)
     	goto failure;
-
+D(bug("initining mouse\n"));
     xsd->mouseclass = init_mouseclass(xsd);
     if (NULL == xsd->mouseclass)
     	goto failure;
 
 
+D(bug("initining kbd\n"));
     xsd->kbdclass = init_kbdclass(xsd);
     if (NULL == xsd->kbdclass)
     	goto failure;
@@ -94,6 +98,7 @@ static BOOL initclasses(struct x11_staticdata *xsd)
     return TRUE;
         
 failure:
+D(bug("failure\n"));
     freeclasses(xsd);
 
     return FALSE;
@@ -128,6 +133,32 @@ static VOID freeclasses(struct x11_staticdata *xsd)
     return;
 }
 
+static int MyErrorHandler (Display * display, XErrorEvent * errevent)
+{
+    char buffer[256];
+
+    XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
+    fprintf (stderr
+	, "XError %d (Major=%d, Minor=%d)\n%s\n"
+	, errevent->error_code
+	, errevent->request_code
+	, errevent->minor_code
+	, buffer
+    );
+    fflush (stderr);
+
+    return 0;
+}
+
+static int MySysErrorHandler (Display * display)
+{
+    perror ("X11-Error");
+    fflush (stderr);
+
+    return 0;
+}
+
+
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct x11_staticdata *xsd;
@@ -139,6 +170,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	NEWLIST( &xsd->xwindowlist );
 	InitSemaphore( &xsd->winlistsema );
 	InitSemaphore( &xsd->sema );
+	InitSemaphore( &xsd->x11sema );
 	
 	
         xsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
@@ -152,10 +184,20 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 		/* Try to get the display */
 		if (!(displayname = getenv("DISPLAY")))
 		    displayname =":0.0";
+		    
+		/* Do not need to singlethead this
+		   since no other tasks are using X currently
+		*/
+		   		    
     		xsd->display = XOpenDisplay(displayname);
 		if (xsd->display)
 		{
+		   D(bug("x11_init: got display\n"));
 
+		    XSetErrorHandler (MyErrorHandler);
+		    XSetIOErrorHandler (MySysErrorHandler);
+		    D(bug("error handlers set\n"));
+		    
 		    if (initclasses(xsd))
 		    {
 			/* The X11 task should be the last one up.
@@ -164,6 +206,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 			       
 			struct x11task_params xtp;
 			    
+		   	D(bug("x11_init: got classes\n"));
+			
 			xtp.parent = FindTask(NULL);
 			xtp.ok_signal   = SIGBREAKF_CTRL_E;
 			xtp.fail_signal = SIGBREAKF_CTRL_F;
@@ -171,7 +215,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 			    
 			if (create_x11task(&xtp, SysBase))
 			{
-			    
+			    D(bug("x11_init: Task up& running\n"));
 			    return TRUE;
 			}
 			freeclasses(xsd);

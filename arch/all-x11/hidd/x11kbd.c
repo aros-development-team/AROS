@@ -28,7 +28,7 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
 struct x11kbd_data
 {
-    VOID (*kbd_callback)(APTR, ULONG, ULONG);
+    VOID (*kbd_callback)(APTR, UWORD, ULONG);
     APTR callbackdata;
 };
 
@@ -39,83 +39,6 @@ static struct abdescr attrbases[] =
     { IID_Hidd_Kbd, &HiddKbdAB },
     { NULL, NULL }
 };
-
-
-/***** X11Kbd::New()  ***************************************/
-static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
-{
-    BOOL has_kbd_hidd = FALSE;
-    ObtainSemaphoreShared( &XSD(cl)->sema);
-    
-    if (XSD(cl)->kbdhidd)
-    	has_kbd_hidd = TRUE;
-	
-    ReleaseSemaphore( &XSD(cl)->sema);
-    
-    if (has_kbd_hidd) /* Cannot open twice */
-    	return NULL; /* Should have some error code here */
-
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
-    if (o)
-    {
-	struct x11kbd_data *data = INST_DATA(cl, o);
-	struct TagItem *tag, *tstate;
-	
-	tstate = msg->attrList;
-	while ((tag = NextTagItem(&tstate)))
-	{
-	    ULONG idx;
-	    
-	    if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
-	    {
-	    	switch (idx)
-		{
-		    case aoHidd_Kbd_IrqHandler:
-		    	data->kbd_callback = (VOID (*)())tag->ti_Data;
-			break;
-			
-		    case aoHidd_Kbd_IrqHandlerData:
-		    	data->callbackdata = (APTR)tag->ti_Data;
-			break;
-		}
-	    }
-	    
-	} /* while (tags to process) */
-	
-	ObtainSemaphore( &XSD(cl)->sema);
-	XSD(cl)->kbdhidd = o;
-	ReleaseSemaphore( &XSD(cl)->sema);
-    }
-    return o;
-}
-
-/***** X11Kbd::HandleEvent()  ***************************************/
-
-static VOID x11kbd_handleevent(Class *cl, Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
-{
-    struct x11kbd_data * data = INST_DATA(cl, o);
-    
-    XKeyEvent *xk = &(msg->event->xkey);
-
-    
-    if (msg->event->type == KeyPress)
-    {
-	data->kbd_callback(data->callbackdata
-		, (ULONG)xkey2hidd(xk, XSD(cl))
-		, vHidd_Kbd_Press );
-		
-    }
-    else if (msg->event->type == KeyRelease)
-    {
-	data->kbd_callback(data->callbackdata
-		, (ULONG)xkey2hidd(xk, XSD(cl))
-		, vHidd_Kbd_Release );
-    }
-
-    
-    return;
-}
-
 
 struct _keytable
 {
@@ -214,6 +137,103 @@ keytable[] =
     {0, -1 }
 };
 
+/***** X11Kbd::New()  ***************************************/
+static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
+{
+    BOOL has_kbd_hidd = FALSE;
+    struct TagItem *tag, *tstate;
+    APTR callback = NULL;
+    APTR callbackdata = NULL;
+    
+    EnterFunc(bug("X11Kbd::New()\n"));
+    
+    ObtainSemaphoreShared( &XSD(cl)->sema);
+    
+    if (XSD(cl)->kbdhidd)
+    	has_kbd_hidd = TRUE;
+	
+    ReleaseSemaphore( &XSD(cl)->sema);
+    
+    if (has_kbd_hidd) /* Cannot open twice */
+    	ReturnPtr("X11Kbd::New", Object *, NULL); /* Should have some error code here */
+
+    D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
+    tstate = msg->attrList;
+    while ((tag = NextTagItem(&tstate)))
+    {
+	ULONG idx;
+	
+	D(bug("Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
+	    
+	if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
+	{
+	    D(bug("Kbd hidd tag\n"));
+	    switch (idx)
+	    {
+		case aoHidd_Kbd_IrqHandler:
+		    callback = (APTR)tag->ti_Data;
+		    D(bug("Got callback %p\n", (APTR)tag->ti_Data));
+		    break;
+			
+		case aoHidd_Kbd_IrqHandlerData:
+		    callbackdata = (APTR)tag->ti_Data;
+		    D(bug("Got data %p\n", (APTR)tag->ti_Data));
+		    break;
+	    }
+	}
+	    
+    } /* while (tags to process) */
+    if (NULL == callback)
+    	ReturnPtr("X11Kbd::New", Object *, NULL); /* Should have some error code here */
+
+    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    if (o)
+    {
+	struct x11kbd_data *data = INST_DATA(cl, o);
+	data->kbd_callback = (VOID (*)())callback;
+	data->callbackdata = callbackdata;
+	
+	ObtainSemaphore( &XSD(cl)->sema);
+	XSD(cl)->kbdhidd = o;
+	ReleaseSemaphore( &XSD(cl)->sema);
+    }
+    ReturnPtr("X11Kbd::New", Object *, o);
+}
+
+/***** X11Kbd::HandleEvent()  ***************************************/
+
+static VOID x11kbd_handleevent(Class *cl, Object *o, struct pHidd_X11Kbd_HandleEvent *msg)
+{
+    struct x11kbd_data * data;
+    
+    XKeyEvent *xk;
+
+    EnterFunc(bug("x11kbd_handleevent()\n"));
+    xk = &(msg->event->xkey);
+    data = INST_DATA(cl, o);
+    if (msg->event->type == KeyPress)
+    {
+	data->kbd_callback(data->callbackdata
+		, (UWORD)xkey2hidd(xk, XSD(cl))
+		, vHidd_Kbd_Press );
+		
+    }
+    else if (msg->event->type == KeyRelease)
+    {
+	data->kbd_callback(data->callbackdata
+		, (UWORD)xkey2hidd(xk, XSD(cl))
+		, vHidd_Kbd_Release );
+    }
+
+    
+    ReturnVoid("X11Kbd::HandleEvent");
+}
+
+
+
+#undef XSD
+#define XSD(cl) xsd
+
 #if 0
 long StateToQualifier (unsigned long state)
 {
@@ -264,9 +284,6 @@ long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
  
     D(bug("xkey2hidd\n"));
 
-#if 0
-    result = StateToQualifier (xk->state) << 16L;
-#endif
     
 LX11
     xk->state = 0;
@@ -278,10 +295,6 @@ UX11
 	if (ks == keytable[t].keysym)
 	{
 	    D(bug("xktac: found in table\n"));
-#if 0
-	    result |= (keytable[t].amiga_qual << 16) | keytable[t].amiga;
-	    
-#endif
 	    result = keytable[t].hiddcode;
 	    
 	    ReturnInt ("xk2h", long, result);
@@ -298,8 +311,6 @@ UX11
 
 /********************  init_kbdclass()  *********************************/
 
-#undef XSD
-#define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS 1
 #define NUM_X11KBD_METHODS 1
@@ -334,6 +345,7 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
 	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
 	{ aMeta_InstSize,		(IPTR)sizeof (struct x11kbd_data) },
+	{ aMeta_ID,			(IPTR)CLID_Hidd_X11Kbd },
 	{TAG_DONE, 0UL}
     };
 
@@ -349,7 +361,7 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
 	    
 	    if (obtainattrbases(attrbases, OOPBase))
 	    {
-		D(bug("MousHiddClass ok\n"));
+		D(bug("KbdHiddClass ok\n"));
 		
 	    	AddClass(cl);
 	    }
@@ -362,7 +374,7 @@ Class *init_kbdclass (struct x11_staticdata *xsd)
 	/* Don't need this anymore */
 	ReleaseAttrBase(IID_Meta);
     }
-    return cl;
+    ReturnPtr("init_kbdclass", Class *, cl);
 }
 
 

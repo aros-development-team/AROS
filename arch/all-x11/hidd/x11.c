@@ -40,9 +40,6 @@
 
 #include "x11.h"
 
-#define LX11
-#define UX11
-
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -200,7 +197,10 @@ VOID x11task_entry(struct x11task_params *xtp)
     	Signal(xtp->parent, xtp->fail_signal);
     }
     
-    Wait(0L);
+D(bug("Entering input loop, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
+	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
+	, xsd->x11sema.ss_QueueCount));
+
 
     for (;;)
     {
@@ -210,17 +210,39 @@ VOID x11task_entry(struct x11task_params *xtp)
     	ret = (int)Hidd_UnixIO_Wait( unixio
 			, ConnectionNumber( xsd->display )
 			, vHidd_UnixIO_Read );
+
+D(bug("Got input from unixio\n"));
 			
 	if (ret != 0)
 	    continue;
 	    
-	while (XPending (xsd->display))
+ 	for (;;)	    
 	{
 	    BOOL window_found = FALSE;
 	    struct xwinnode *node;
+	    int pending;
+
+D(bug("Outside XPending lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
+	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
+	, xsd->x11sema.ss_QueueCount));
+LX11	
+D(bug("Inside XPending lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
+	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
+	, xsd->x11sema.ss_QueueCount));
+	    pending = XPending (xsd->display);
+UX11	    
+	    if (pending == 0)
+	    	break;
 	    
+	
+
+D(bug("Outside XNexeEvent lock, sema owner=%p, self=%p, nestcnt=%d, qcnt=%d\n"
+	, xsd->x11sema.ss_Owner, FindTask(NULL), xsd->x11sema.ss_NestCount
+	, xsd->x11sema.ss_QueueCount));
 LX11
+D(bug("Doing XNextEvent\n"));
 	    XNextEvent (xsd->display, &event);
+D(bug("Done XNextEvent()\n"));	    
 UX11
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
@@ -256,7 +278,8 @@ UX11
 	 
 	    gcval.plane_mask = 0xFFFFFFFF;
 	    gcval.graphics_exposures = True;
-	 
+
+LX11	 
 	    gc = XCreateGC( xsd->display
 	 		, DefaultRootWindow( xsd->display )
 			, GCPlaneMask | GCGraphicsExposures
@@ -267,6 +290,7 @@ UX11
 	        XSetForeground(xsd->display, gc, BlackPixel(xsd->display, DefaultScreen(xsd->display)));
 	        XDrawLine(xsd->display, event.xany.window, gc, 10, 10, 200, 200);
 	    }
+UX11	    
 */
 	        D(bug("Got event for window %x\n", event.xany.window));
 	    	switch (event.type)
@@ -291,9 +315,13 @@ UX11
 
 	    	case KeyPress: 
 	    	case KeyRelease:
+		    D(bug("Keypress/keyreleas\n"));
 	    	    ObtainSemaphoreShared( &xsd->sema );
 		    if (xsd->kbdhidd)
+		    {
+		        D(bug("kbdhidd present, calling it\n"));
 			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
+		    }
 	    	
 		    ReleaseSemaphore( &xsd->sema );
 		    break;

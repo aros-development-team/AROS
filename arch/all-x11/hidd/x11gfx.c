@@ -63,81 +63,13 @@ struct gfx_data
    
 };
 
+
+static VOID cleanupx11stuff(struct gfx_data *data);
+static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd);
+
 /*********************
 **  GfxHidd::New()  **
 *********************/
-
-
-/*
-   Inits sysdisplay, sysscreen, colormap, etc.. */
-static BOOL initx11stuff(struct gfx_data *data)
-{
-/*    XColor fg, bg; */
-	BOOL ok = TRUE;
-	
-        XColor bg, fg;
-	
-	
-	
-    	data->screen = DefaultScreen( data->display );
-	
-	data->depth  = DisplayPlanes( data->display, data->screen );
-	data->colmap = DefaultColormap( data->display, data->screen );
-	
-	
-/*	data->maxpen = NUM_COLORS; */
-	
-	/* Create cursor */
-	
-	data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
-	fg.pixel = BlackPixel(data->display, data->screen);
-	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
-	fg.flags = (DoRed | DoGreen | DoBlue);
-	bg.pixel = WhitePixel(data->display, data->screen);
-	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
-	bg.flags = (DoRed | DoGreen | DoBlue);
-	
-	
-	XRecolorCursor( data->display
-		, data->cursor
-		, &fg, &bg
-	);
-
-    
-    return ok;
-
-}
-
-static VOID cleanupx11stuff(struct gfx_data *data)
-{
-    /* Do nothing for now */
-    return;
-}
-
-static int MyErrorHandler (Display * display, XErrorEvent * errevent)
-{
-    char buffer[256];
-
-    XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
-    fprintf (stderr
-	, "XError %d (Major=%d, Minor=%d)\n%s\n"
-	, errevent->error_code
-	, errevent->request_code
-	, errevent->minor_code
-	, buffer
-    );
-    fflush (stderr);
-
-    return 0;
-}
-
-static int MySysErrorHandler (Display * display)
-{
-    perror ("X11-Error");
-    fflush (stderr);
-
-    return 0;
-}
 
 
 static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
@@ -155,10 +87,8 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	data->display = XSD(cl)->display;
 	
 	/* Do GfxHidd initalization here */
-	if (initx11stuff(data));
+	if (initx11stuff(data, XSD(cl)));
 	{
-	    XSetErrorHandler (MyErrorHandler);
-	    XSetIOErrorHandler (MySysErrorHandler);
 
     	    ReturnPtr("X11Gfx::New", Object *, o);
 	}
@@ -323,7 +253,7 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
 	/* Don't need this anymore */
 	ReleaseAttrBase(IID_Meta);
     }
-    return cl;
+    ReturnPtr("init_gfxclass", Class *, cl);
 }
 
 
@@ -350,4 +280,52 @@ VOID free_gfxclass(struct x11_staticdata *xsd)
 }
 
 
+
+/*
+   Inits sysdisplay, sysscreen, colormap, etc.. */
+static BOOL initx11stuff(struct gfx_data *data, struct x11_staticdata *xsd)
+{
+/*    XColor fg, bg; */
+	BOOL ok = TRUE;
+	
+        XColor bg, fg;
+	
+	
+	
+    	data->screen = DefaultScreen( data->display );
+	
+	data->depth  = DisplayPlanes( data->display, data->screen );
+	data->colmap = DefaultColormap( data->display, data->screen );
+	
+	
+/*	data->maxpen = NUM_COLORS; */
+	
+	/* Create cursor */
+LX11	
+	data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
+	
+	fg.pixel = BlackPixel(data->display, data->screen);
+	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
+	fg.flags = (DoRed | DoGreen | DoBlue);
+	bg.pixel = WhitePixel(data->display, data->screen);
+	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
+	bg.flags = (DoRed | DoGreen | DoBlue);
+	
+	
+	XRecolorCursor( data->display
+		, data->cursor
+		, &fg, &bg
+	);
+
+UX11
+    
+    return ok;
+
+}
+
+static VOID cleanupx11stuff(struct gfx_data *data)
+{
+    /* Do nothing for now */
+    return;
+}
 

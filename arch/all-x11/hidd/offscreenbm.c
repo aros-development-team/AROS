@@ -113,7 +113,9 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	}
 	else
 	{
+
 	    D(bug("Got imdata: %p\n", data->imdata));
+LX11
 	    data->ximage = XCreateImage( data->display
 		, DefaultVisual(data->display, data->screen)
 		, depth
@@ -125,6 +127,8 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		, 8   /*bitmap pad. 8, 16 or 32 */
 		, bytesperrow
 	     );
+UX11
+	     
 	     if (!data->ximage)
 	     	ok = FALSE;
 	     else
@@ -158,8 +162,13 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
     
     EnterFunc(bug("X11Gfx.Osbm::Dispose(o=%p)\n", o));
     D(bug("Freeing ximage %p\n", data->ximage));
+
     if (data->ximage)
+    {
+LX11    
     	XFree(data->ximage);
+UX11	
+    }
 	
     D(bug("Freeing imdata %p\n", data->imdata));
     if (data->imdata)
@@ -279,7 +288,7 @@ Class *init_osbmclass(struct x11_staticdata *xsd)
     
     Class *cl = NULL;
 
-    EnterFunc(bug("init_osbitmapclass(xsd=%p)\n", xsd));
+    EnterFunc(bug("init_osbitmapclass(xsd=%p, MetaAttrBase=%x)\n", xsd, MetaAttrBase));
 
     if(MetaAttrBase)
     {

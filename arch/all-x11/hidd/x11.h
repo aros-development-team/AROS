@@ -114,6 +114,8 @@ struct xwinnode
 struct x11_staticdata
 {
     struct SignalSemaphore sema; /* Protexting this whole struct */
+    struct SignalSemaphore x11sema;
+    
     struct Library *oopbase;
     struct Library *utilitybase;
     struct ExecBase *sysbase;
@@ -164,7 +166,10 @@ VOID free_x11class  ( struct x11_staticdata * );
 #define XTASK_PRIORITY 10
 #define XTASK_STACKSIZE 8192
 
-#define LX11
-#define UX11
+#define LX11   		 ObtainSemaphore (&XSD(cl)->x11sema); \
+D(bug("SEMA OBTAIN: me=%p : owner=%p, cnt=%d\n", FindTask(NULL), XSD(cl)->x11sema.ss_Owner,XSD(cl)->x11sema.ss_NestCount));
+
+#define UX11 D(bug("SEMA RELEASE: me=%p : owner=%p, cnt=%d\n", FindTask(NULL), XSD(cl)->x11sema.ss_Owner,XSD(cl)->x11sema.ss_NestCount)); \
+	ReleaseSemaphore(&XSD(cl)->x11sema);
 
 #endif /* HIDD_X11_H */

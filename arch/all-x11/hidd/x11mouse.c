@@ -181,11 +181,11 @@ Class *init_mouseclass (struct x11_staticdata *xsd)
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
 	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
 	{ aMeta_InstSize,		(IPTR)sizeof (struct x11mouse_data) },
+	{ aMeta_ID,			(IPTR)CLID_Hidd_X11Mouse },
 	{TAG_DONE, 0UL}
     };
 
-    EnterFunc(bug("MouseHiddClass init\n"));
-    
+    EnterFunc(bug("init_mouseclass(xsd=%p)\n", xsd));
     if (MetaAttrBase)
     {
     	cl = NewObject(NULL, CLID_HiddMeta, tags);
@@ -209,7 +209,7 @@ Class *init_mouseclass (struct x11_staticdata *xsd)
 	/* Don't need this anymore */
 	ReleaseAttrBase(IID_Meta);
     }
-    return cl;
+    ReturnPtr("init_mouseclass", Class *, cl);
 }
 
 

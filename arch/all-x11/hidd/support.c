@@ -66,10 +66,9 @@ BOOL obtainattrbases(struct abdescr *abd, struct Library *OOPBase)
     
 }
 
-/* Creates an XImage AND allocates bitmap */
 
 #undef OOPBase
-#define OOPBase ((struct Library *)OCLASS(OCLASS(o)))
+#define OOPBase ((struct Library *)OCLASS(OCLASS(o))->UserData)
 
 
 VOID Hidd_X11Mouse_HandleEvent(Object *o, XEvent *event)
@@ -92,9 +91,10 @@ VOID Hidd_X11Kbd_HandleEvent(Object *o, XEvent *event)
     struct pHidd_X11Kbd_HandleEvent msg;
     static MethodID mid = 0;
     
+    
     if (!mid)
     	mid = GetMethodID(IID_Hidd_X11Kbd, moHidd_X11Kbd_HandleEvent);
-	
+
     msg.mID = mid;
     msg.event = event;
     
@@ -102,45 +102,3 @@ VOID Hidd_X11Kbd_HandleEvent(Object *o, XEvent *event)
 }
 
 
-#if 0
-
-XImage *alloc_ximage(Display *display, int screen, ULONG width, UBYTE depth, UBYTE height)
-{
-    XImage *image;
-    image = XCreateImage( display
-		, DefaultVisual(display, screen)
-		, depth
-		, ZPixmap
-		, 0
-		, NULL
-		, width
-		, height
-		, 16
-		, 0
-    );
-	    
-    if (image)
-    {
-        ULONG size;
-	
-	size = ((width - 1) >> 3) + 1;
-	size = size * height * depth;
-	
-        image->data = AllocVec(size, MEMF_ANY);
-	if (image->data)
-	{
-	    return image;
-	}
-	XFree(image);
-    }
-    return NULL;
-    
-}
-
-VOID free_ximage(XImage *image)
-{
-    FreeVec(image->data);
-    image->data = NULL;
-    XFree(image);
-}
-#endif
