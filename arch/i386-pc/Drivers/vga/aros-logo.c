@@ -1,4 +1,9 @@
-/* This is our logo... last 8 bytes (pad) in each line are faked... */
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    This is our logo... last 8 bytes (pad) in each line are faked... 
+*/
 
 #include <graphics/gfx.h>
 

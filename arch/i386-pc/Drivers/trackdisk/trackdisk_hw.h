@@ -1,7 +1,8 @@
 #ifndef  TRACKDISK_HW_H
 #define  TRACKDISK_HW_H
+
 /*
-    Copyright © 2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Hardware defs for trackdisk

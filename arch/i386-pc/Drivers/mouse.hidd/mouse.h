@@ -2,13 +2,12 @@
 #define _MOUSE_H
 
 /*
-    (C) 2000 AROS - The Amiga Research OS
-    $Id: 
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Include for the mouse native HIDD.
     Lang: English.
 */
-
 
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>

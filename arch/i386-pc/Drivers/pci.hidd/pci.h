@@ -2,8 +2,8 @@
 #define HIDD_PCI_H
 
 /*
-    (C) 2000 AROS - The Amiga Research OS
-    $Id: 
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Include for the vga gfx HIDD.
     Lang: English.

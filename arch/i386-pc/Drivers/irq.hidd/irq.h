@@ -2,7 +2,7 @@
 #define _HIDD_IRQ_H
 
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the irq system HIDD.
