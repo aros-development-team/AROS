@@ -5,12 +5,17 @@
     Desc: Add a node to the head of a list
     Lang: english
 */
+#include <exec/lists.h>
+#include <proto/exec.h>
+
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
 
 /*****************************************************************************
 
     NAME */
-#include <exec/lists.h>
-#include <proto/exec.h>
 
 	AROS_LH2I(void, AddHead,
 
@@ -55,8 +60,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    assert (node);
-    assert (list);
+    ASSERT_VALID_PTR(node);
+    ASSERT_VALID_PTR(list);
 
     /*
 	Make the node point to the old first node in the list and to the

@@ -10,6 +10,11 @@
 #include <exec/ports.h>
 #include <proto/exec.h>
 
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -55,7 +60,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
     ASSERT_VALID_PTR(message);
     ASSERT_VALID_PTR(port);
 
@@ -71,10 +75,11 @@
     /* Add it to the message list. */
     AddTail(&port->mp_MsgList,&message->mn_Node);
 
+    ASSERT_VALID_PTR(port->mp_SigTask)
     if(port->mp_SigTask)
     {
 	/* And trigger the action. */
-	switch(port->mp_Flags&PF_ACTION)
+	switch(port->mp_Flags & PF_ACTION)
 	{
 	    case PA_SIGNAL:
 		/* Send the signal */

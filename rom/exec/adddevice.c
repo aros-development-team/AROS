@@ -10,6 +10,11 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -49,6 +54,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ASSERT_VALID_PTR(device);
 
     /* Just in case the user forgot them */
     device->dd_Library.lib_Node.ln_Type=NT_DEVICE;

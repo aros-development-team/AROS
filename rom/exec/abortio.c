@@ -10,6 +10,11 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -51,6 +56,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ASSERT_VALID_PTR(iORequest);
+    ASSERT_VALID_PTR(iORequest->io_Device);
 
     return AROS_LVO_CALL1(ULONG,
 	AROS_LCA(struct IORequest *,iORequest,A1),

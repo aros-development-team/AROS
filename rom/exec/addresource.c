@@ -45,6 +45,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ASSERT_VALID_PTR(resource);
 
     /* Just in case the user forgot them */
     ((struct Node *)resource)->ln_Type=NT_RESOURCE;

@@ -5,12 +5,17 @@
     Desc: Add a node at the end of a list.
     Lang: english
 */
+#include <exec/lists.h>
+#include <proto/exec.h>
+
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
 
 /*****************************************************************************
 
     NAME */
-#include <exec/lists.h>
-#include <proto/exec.h>
 
 	AROS_LH2I(void, AddTail,
 
@@ -52,8 +57,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    assert (node);
-    assert (list);
+    ASSERT_VALID_PTR(node);
+    ASSERT_VALID_PTR(list);
 
     /*
 	Make the node point to the head of the list. Our predecessor is the

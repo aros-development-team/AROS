@@ -5,10 +5,16 @@
     Desc: Add a port to the public list of ports.
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include <exec/ports.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
 
 /*****************************************************************************
 
@@ -48,14 +54,13 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ASSERT_VALID_PTR(port);
 
     /* Yes, this is a messageport */
     port->mp_Node.ln_Type=NT_MSGPORT;
 
     /* Clear the list of messages */
-    port->mp_MsgList.lh_Head=(struct Node *)&port->mp_MsgList.lh_Tail;
-    port->mp_MsgList.lh_Tail=NULL;
-    port->mp_MsgList.lh_TailPred=(struct Node *)&port->mp_MsgList.lh_Head;
+    NEWLIST(&port->mp_MsgList);
 
     /* Arbitrate for the list of messageports. */
     Forbid();
@@ -67,4 +72,3 @@
     Permit();
     AROS_LIBFUNC_EXIT
 } /* AddPort */
-

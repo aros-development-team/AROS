@@ -10,6 +10,11 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -47,6 +52,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    ASSERT_VALID_PTR(memHandler);
+
     /* Protect the low memory handler list */
     Forbid();
 	/* Nothing spectacular: Just add the new node */
