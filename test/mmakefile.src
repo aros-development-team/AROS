@@ -24,6 +24,7 @@ FILES := amiga2date \
 	showvisshape \
 	sortlayercr \
 	signaltest \
+	strtodate \
 	tasktest \
 	tasktest2 \
 	ExNext \
