@@ -42,17 +42,17 @@ extern const struct Resident
     UnixIO_resident,
     Graphics_ROMTag,
     Layers_ROMTag,
-    Timer_resident,
+    Timer_ROMTag,
     Battclock_resident,
-    Keyboard_resident,
-    Gameport_resident,
+    Keyboard_ROMTag,
+    Gameport_ROMTag,
     Keymap_ROMTag,
-    Input_resident,
+    Input_ROMTag,
     Intuition_ROMTag,
     X11Hidd_resident,
     LinuxHidd_resident,
     Cybergraphics_ROMTag,
-    Console_resident,
+    Console_ROMTag,
 #if ENABLE_DBUS == 1
     Dbus_ROMTag,
 #endif
@@ -68,7 +68,6 @@ extern const struct Resident
     con_handler_resident,
     nil_handler_resident,
     ram_handler_resident;
-
 
 
 /* This list MUST be in the correct order (priority). */
@@ -87,17 +86,17 @@ static const struct Resident *romtagList[] =
     &UnixIO_resident,			    /* ColdStart,   91	 */
     &Graphics_ROMTag, 		    /* ColdStart,   65	 */
     &Layers_ROMTag,			    /* ColdStart,   60   */
-    &Timer_resident,			    /* ColdStart,   50	 */
+    &Timer_ROMTag,			    /* ColdStart,   50	 */
     &Battclock_resident,		    /* ColdStart,   45	 */
-    &Keyboard_resident,			    /* ColdStart,   44	 */
-    &Gameport_resident,			    /* ColdStart,   43	 */
+    &Keyboard_ROMTag,			    /* ColdStart,   44	 */
+    &Gameport_ROMTag,			    /* ColdStart,   43	 */
     &Keymap_ROMTag,			    /* ColdStart,   40	 */
-    &Input_resident,			    /* ColdStart,   30	 */
+    &Input_ROMTag,			    /* ColdStart,   30	 */
     &Intuition_ROMTag,		    /* ColdStart,   10	 */
     &X11Hidd_resident,			    /* ColdStart,   9	 */
     &LinuxHidd_resident,			    /* ColdStart,   9	 */
     &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
-    &Console_resident,			    /* ColdStart,   5	 */
+    &Console_ROMTag,			    /* ColdStart,   5	 */
 #if ENABLE_DBUS == 1
     &Dbus_ROMTag,			    /* ColdStart,   0	 */
 #endif
@@ -118,6 +117,7 @@ static const struct Resident *romtagList[] =
     &con_handler_resident,		    /* AfterDOS,   -126  */
     &nil_handler_resident,		    /* AfterDOS,   -127	 */
     &ram_handler_resident,		    /* AfterDOS,   -128	 */
+//    &Partition_ROMTag,                     
 
     NULL
 };
