@@ -40,5 +40,10 @@ ULONG LabelWidth (struct RastPort *, STRPTR label, ULONG len,
 void RenderLabel (struct RastPort *, STRPTR label, ULONG len,
 		struct IntuitionBase *);
 
+VOID drawrect(struct RastPort *rp
+	, WORD x1, WORD y1
+	, WORD x2, WORD y2
+	, struct IntuitionBase *IntuitionBase);
+
 #endif /* _GADGETS_H_ */
 

@@ -181,3 +181,18 @@ void RenderLabel (struct RastPort * rp, STRPTR label, ULONG len,
     }
 }
 
+
+VOID drawrect(struct RastPort *rp
+	, WORD x1, WORD y1
+	, WORD x2, WORD y2
+	, struct IntuitionBase *IntuitionBase)
+{
+    Move(rp, x1, y1);
+    
+    Draw(rp, x2, y1);
+    Draw(rp, x2, y2);
+    Draw(rp, x1, y2);
+    Draw(rp, x1, y1);
+    
+    return;
+}
