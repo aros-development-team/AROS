@@ -2,12 +2,16 @@ TOP=..
 RM=rm -rf
 CFLAGS=$(COMMON_CFLAGS) -fomit-frame-pointer -Dmain=submain -I $(TOP)/include -I $(TOP)/amiga/include
 
-all: helloworld newshell type echo cd avail list librarytest run execute path \
-     shell dir
+EXES = helloworld newshell type echo cd avail list librarytest run execute \
+     path shell dir wait
+
+all: $(EXES)
 
 clean:
-	$(RM) helloworld newshell type echo cd avail list librarytest run execute \
-		path shell dir core *.o
+	$(RM) $(EXES) core *.o
+
+wait: wait.c
+	$(CC) $(CFLAGS) $^ -c -o $@
 
 newshell: newshell.c
 	$(CC) $(CFLAGS) $^ -c -o $@
@@ -30,8 +34,8 @@ avail: avail.c
 list: list.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-dir: dir.c
-	$(CC) $(CFLAGS) $^ -c -o $@
+dir: dir.c strlen.c qsort.c strcpy.c
+	$(CC) $(CFLAGS) dir.c -c -o $@
 
 librarytest: librarytest.c
 	$(CC) $(CFLAGS) -I ../libs $^ -c -o $@
