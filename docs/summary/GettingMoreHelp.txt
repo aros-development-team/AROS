@@ -13,6 +13,7 @@ This summary contains comments from:
     Paul Huxham <paulhuxham@yahoo.com>
     Henrik Berglund SdU <adb94hbd@mds.mdh.se>
     Peter Eriksson <petah@acc.umu.se>
+    Johan Alfredsson <d95duvan@dtek.chalmers.se>
 
 
 How motivate people to write for AROS?
@@ -69,7 +70,7 @@ Request
 To sum up, the request should include in what areas help
 is needed, what experience might be needed and a description
 of what the different areas would mean. Just stating "bus.hidd"
-would not interrest anyone unless it is specified what it means.
+would not interest anyone unless it is specified what it means.
 
 
 
@@ -82,6 +83,87 @@ what experience would be needed, but that's what I would want
 you guys on the list to help me with before I send something
 out to the public.
 
+I think it is important that such tasks (that we can get "outside" help
+with) is quite small and independent. For instance, sending out a message
+asking for help with
+
+    1) TCP/IP stack
+    2) bus.hidd
+    3) New workbench
+
+won't get anyone helping at all (my guess at least). These tasks are
+either too big or you really need special expertise. Rather, I think it
+would be better to focus on small things, although leaving in _some_
+bigger things might be good also.
+
+    Examples:
+
+       Preferences programs
+       Datatypes
+       Icon.library enhancements
+       BOOPSI itexticlass
+
+
+Yes, its a good idea to start with smaller request. So the people
+could estimate how much time they will need and the chance that
+they could finish their work is bigger.
+
+Its propably better to start with stuff known by amiga developers
+than with things which are special for AROS like the HIDD system.
+
+If the first type of requests works (and AROS has better docs for 
+building, oop-lib, hidd, porting) then the requests could be 
+become bigger and more AROS specific.
+
+ 
+ "There's still a lot of work to do for AROS. So AROS can need your
+  help! 
+
+  [description of the AROS project and the goal]
+
+  At the moment you can i.e. write the missing preference applications:
+
+    - ...
+    - ...
+
+  These should be implemented using bgui and?or gaddtools.library and
+  the iffparse.library in plain ANSI-C. All these libraries are working 
+  on AROS. The developement is done in ANSI-C (instead of C++)
+  to make it easier to port AROS to different systems (the AROS
+  project started 7 years ago).
+
+  So you need knowledge about the AmigaOS, the preference you want
+  to implement, the bgui- or gadtools- and iffparse-libraries and
+  about plain ANSI-C to write preference applications for AROS.
+  
+  Some preference are implemented so you can use the existing sources
+  to start writing a missing prefs. You will also getting help from
+  the people of the aros-dev mailinglist.
+
+  For developing its recommended to use a Linux/x86 system. Because
+  AROS is portable its also possible to do developement on ...
+  but at the moment the linux branch is the easiest to handle.
+
+  You need on this system:
+     - gcc 2.9x+ (2.96 from redhat does not work)
+     - make, autoconf, automake,...
+     - CVS
+
+  In the FAQ on www.aros.org you can find a few informations about
+  the AROS project and the developement for AROS. 
+
+  Please write to ... if you are interested in doing some work
+  for AROS or if you have any questions and suggestions. You
+  could also join the aros user mailinglist: see ...
+ 
+  contact:
+
+  [maybe its good to describe also the idea and the intention of this request]
+  " 
+  
+  
+List
+----------------
  - Implementing missing library functions (see docs/src/jobs.dat)
 
  - HIDD's of different kinds, NET.HIDD, BUS.HIDD, PCI.HIDD etc etc.
