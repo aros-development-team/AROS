@@ -32,6 +32,7 @@ FILES	    := \
 	setlocale \
 	tasklist \
 	crlist \
+	stacksnoop \
 	damagelist \
 	type \
 	wait \
