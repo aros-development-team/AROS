@@ -1,4 +1,4 @@
-LIBOBJS = libfunc.o pictureclass.o
+LIBOBJS = libfunc.o pictureclass.o colorhandling.o
 
 picture.datatype: ${LIBOBJS}
    slink with <<
@@ -20,6 +20,9 @@ libfunc.o: libfunc.c
 
 pictureclass.o: pictureclass.c
    sc nostackcheck define=MYDEBUG pictureclass.c OBJNAME=$@
+
+colorhandling.o: colorhandling.c
+   sc nostackcheck define=MYDEBUG colorhandling.c OBJNAME=$@
 
 clean:
     delete FORCE libfunc.o
