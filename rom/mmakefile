@@ -33,4 +33,7 @@
 #MM      kernel-expansion-includes \
 #MM      kernel-layers-includes \
 #MM      kernel-workbench-includes \
-#MM      kernel-cgfx-includes
+#MM      kernel-cgfx-includes \
+#MM      kernel-timer-includes \
+#MM      kernel-oop-includes \
+#MM      kernel-battclock-includes

@@ -36,6 +36,8 @@
 #MM- includes : \
 #MM     workbench-libs-amigaguide-includes \
 #MM     workbench-libs-asl-includes \
+#MM     workbench-libs-bullet-includes \
+#MM     workbench-libs-bsdsocket-includes \
 #MM     workbench-libs-commodities-includes \
 #MM     workbench-libs-camd-includes \
 #MM     workbench-libs-datatypes-includes \
