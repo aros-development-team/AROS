@@ -74,7 +74,6 @@ Class *makecheckboxclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makecycleclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makemxclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makepaletteclass(struct GadToolsBase_intern *GadToolsBase);
-Class *makebarlabelclass(struct GadToolsBase_intern *GadToolsBase);
 
 /* Listview class has some data that must be freed */
 VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase);
@@ -228,7 +227,6 @@ struct GadToolsBase_intern
     Class * cycleclass;
     Class * mxclass;
     Class * paletteclass;
-    Class * barlabelclass; /* for menus */
     
     /* Semaphore to protect the bevel object. */
     struct SignalSemaphore   bevelsema;
