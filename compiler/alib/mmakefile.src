@@ -50,6 +50,7 @@ FILES	:= \
     dogadgetmethod \
     domethod \
     dosupermethod \
+    dosupernew \
     drawbevelbox \
     easyrequest \
     extendfonttags \
