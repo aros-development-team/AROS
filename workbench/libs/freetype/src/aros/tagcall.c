@@ -1,3 +1,4 @@
+#define NO_INLINE_STDARG
 #include <proto/freetype2.h>
 #include <diskfont/glyph.h>
 
