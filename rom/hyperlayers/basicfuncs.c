@@ -488,6 +488,8 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
 
 #if !CLIPRECTS_OUTSIDE_OF_SHAPE
       AndRegionRegion(l->shape,r);
+#else
+      AndRectRegion(r,&l->bounds);
 #endif
       if (TRUE == invisible)
         invisible = FALSE;
@@ -1404,7 +1406,8 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
       _TranslateRect(&region->bounds, l->bounds.MinX, l->bounds.MinY);
 
       r = AndRegionRegionND(l->VisibleRegion, region);
-
+      AndRegionRegion(l->shape, r);
+      
       l->ClipRect = _CreateClipRectsFromRegion(r,
                                                l,
                                                FALSE,
