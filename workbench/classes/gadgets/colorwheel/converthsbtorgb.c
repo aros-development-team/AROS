@@ -52,6 +52,75 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, ColorWheelBase)
 
+#if 1
+
+    DOUBLE H, S, I, R, G, B, f, w, q, t;
+    LONG   i;
+
+    H = ((DOUBLE) hsb->cw_Hue) / ((DOUBLE) 0xFFFFFFFF);
+    S = ((DOUBLE) hsb->cw_Saturation) / ((DOUBLE) 0xFFFFFFFF);
+    I = ((DOUBLE) hsb->cw_Brightness) / ((DOUBLE) 0xFFFFFFFF);
+
+    if (S == 0.0)
+    {
+        S = 0.000001;
+    }
+    
+    if (H == 1.0) H = 0.0;
+    
+    H = H * 6.0;
+    i = (LONG)H;
+    f = H - i;
+    w = I * (1.0 - S);
+    q = I * (1.0 - (S * f));
+    t = I * (1.0 - (S * (1.0 - f)));
+
+    switch (i)
+    {
+	case 0:
+            R = I;
+            G = t;
+            B = w;
+            break;
+	    
+	case 1:
+            R = q;
+            G = I;
+            B = w;
+            break;
+	    
+	case 2:
+            R = w;
+            G = I;
+            B = t;
+            break;
+	    
+	case 3:
+            R = w;
+            G = q;
+            B = I;
+            break;
+	    
+	case 4:
+            R = t;
+            G = w;
+            B = I;
+            break;
+	    
+	case 5:
+            R = I;
+            G = w;
+            B = q;
+            break;
+	    
+    } /* switch (i) */
+
+    rgb->cw_Red   = (ULONG) rint (R * 0xFFFFFFFF);
+    rgb->cw_Green = (ULONG) rint (G * 0xFFFFFFFF);
+    rgb->cw_Blue  = (ULONG) rint (B * 0xFFFFFFFF);
+                                       
+#else
+
     DOUBLE H, S, I, R, G, B;
 
     H = ((DOUBLE) hsb->cw_Hue) / ((DOUBLE) 0xFFFFFFFF);
@@ -85,5 +154,9 @@
     rgb->cw_Green = (ULONG) rint (G * 0xFFFFFFFF);
     rgb->cw_Blue = (ULONG) rint (B * 0xFFFFFFFF);
 
+#endif
+
     AROS_LIBFUNC_EXIT
+
+
 } /* ConvertHSBToRGB */

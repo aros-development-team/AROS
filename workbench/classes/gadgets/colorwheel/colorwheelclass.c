@@ -20,8 +20,10 @@
 #include <stdlib.h> /* abs() */
 #include "colorwheel_intern.h"
 
+#undef SDEBUG
 #define SDEBUG 0
-#define DEBUG 0
+#undef DEBUG
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define ColorWheelBase ((struct ColorWheelBase_intern *)(cl->cl_UserData))
@@ -38,6 +40,8 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     
     EnterFunc(bug("ColorWheel::Set()\n"));
+    
+    if (msg->MethodID == OM_SET) retval = DoSuperMethodA(cl, o, msg);
     
     for (tstate = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
     {
@@ -66,7 +70,15 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
     {
     	struct ColorWheelData *data = INST_DATA(cl, o);
     	
-    	colorwheel_set(cl, o, msg);
+	data->scr = (struct Screen *)GetTagData(WHEEL_Screen, 0, msg->ops_AttrList);
+	
+	if (data->scr)
+	{
+    	    colorwheel_set(cl, o, msg);
+	} else {
+	    CoerceMethod(cl, o, OM_DISPOSE);
+	    o = NULL;
+	}
     	   
     }
     ReturnPtr ("ColorWheel::New", Object *, o);
@@ -96,13 +108,20 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     struct ColorWheelData 	*data = INST_DATA(cl, o);    
     struct DrawInfo 		*dri = msg->gpr_GInfo->gi_DrInfo;
     struct RastPort 		*rp = msg->gpr_RPort;
+    struct IBox			gbox;
     
     EnterFunc(bug("ColorWheel::Render()\n"));    
 
+    GetGadgetIBox(o, msg->gpr_GInfo, &gbox);
+    
+    data->dri = dri;
+    
     switch (msg->gpr_Redraw)
     {
     	case GREDRAW_REDRAW:
-    	     
+    	    RenderWheel(data, rp, &gbox, ColorWheelBase);
+	    break;
+	    
     	case GREDRAW_UPDATE:    	 
     	    break;
     	    
@@ -123,6 +142,8 @@ STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     
+    if (data->rgblinebuffer) FreeVec(data->rgblinebuffer);
+    
     DoSuperMethodA(cl, o, msg);
 }
 
@@ -134,7 +155,8 @@ STATIC IPTR colorwheel_goactive(Class *cl, Object *o, struct gpInput *msg)
     struct ColorWheelData 	*data = INST_DATA(cl, o);
 
     EnterFunc(bug("ColorWheel::GoActive()\n"));
-
+    
+    retval = GMR_NOREUSE;
     
     ReturnInt("ColorWheel::GoActive", IPTR, retval);
 }
@@ -147,8 +169,8 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
     IPTR 			retval = 0UL;
     struct InputEvent 		*ie = msg->gpi_IEvent;
     
-    EnterFunc(bug("ColorWheel::HandleInput\n"));
-    
+    EnterFunc(bug("ColorWheel::HandleInput \n"));
+
     retval = GMR_MEACTIVE;
         
     ReturnInt("ColorWheel::HandleInput", IPTR, retval);

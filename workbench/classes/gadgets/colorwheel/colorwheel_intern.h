@@ -31,8 +31,6 @@
 
 #include "libdefs.h"
 
-#include "libdefs.h"
-
 /***************************************************************************************************/
 
 #define SysBase (((struct LibHeader *) ColorWheelBase)->lh_SysBase)
@@ -44,6 +42,9 @@
 
 struct ColorWheelData
 {
+    struct Screen		*scr;
+    struct DrawInfo		*dri;
+    LONG			*rgblinebuffer;
     WORD 			dummy;
 };
 
@@ -58,6 +59,7 @@ struct ColorWheelBase_intern
     struct IntuitionBase	*intuibase;
 #endif
     struct GfxBase		*gfxbase;
+    struct Library		*cybergfxbase;
     struct Library		*utilitybase;
     
 };
@@ -65,6 +67,11 @@ struct ColorWheelBase_intern
 /***************************************************************************************************/
 
 struct IClass * InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
+
+BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat);
+VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
+		 struct ColorWheelBase_intern *ColorWheelBase);
+
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct ColorWheelBase_intern *ColorWheelBase);
@@ -94,6 +101,9 @@ typedef struct IntuitionBase IntuiBase;
 
 #undef GfxBase
 #define GfxBase		CWB(ColorWheelBase)->gfxbase
+
+#define CyberGfxBase    CWB(ColorWheelBase)->cybergfxbase
+
 #undef SysBase
 #define SysBase		CWB(ColorWheelBase)->sysbase
 
