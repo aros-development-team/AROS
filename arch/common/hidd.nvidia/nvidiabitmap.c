@@ -135,7 +135,7 @@ static OOP_Object *onbm__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	    bm->state = (struct CardState *)AllocPooled(sd->memPool, 
 					sizeof(struct CardState));
 	    
-	    bzero(bm->framebuffer + (IPTR)sd->Card.FrameBuffer, 640*480*2);
+	    bzero(sd->Card.FrameBuffer + bm->framebuffer, 640*480*2);
 	    
 	    if (bm->state)
 	    {
@@ -658,101 +658,76 @@ static VOID bm__drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawL
 
 static VOID bm__putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
-    D(bug("[NVBitMap] PutImageLUT(%p, %d, %d:%d, %d:%d, %p)\n",
-    msg->pixels, msg->modulo, msg->x, msg->y, msg->width, msg->height, msg->pixlut));
-
     nvBitMap *bm = OOP_INST_DATA(cl, o);
-    
-    LOCK_BITMAP 
-    
-    ULONG *ptr = (ULONG*)sd->scratch_buffer;
 
-    WORD                    x, y;
-    UBYTE                   *pixarray = (UBYTE *)msg->pixels;
-    HIDDT_PixelLUT          *pixlut = msg->pixlut;
-    HIDDT_Pixel             *lut = pixlut ? pixlut->pixels : NULL;
-    OOP_Object              *gc = msg->gc;
-   
-    if ((ptr != (ULONG*)0xffffffff) && bm->fbgfx)
+    LOCK_BITMAP
+
+    IPTR VideoData = bm->framebuffer;
+
+    if (bm->fbgfx)
     {
-	ULONG *cpuptr = (ULONG*)((IPTR)ptr + sd->Card.FrameBuffer);
-    
-	LOCK_HW
-    
-	bm->usecount++;
+	VideoData += (IPTR)sd->Card.FrameBuffer;
 
-
-	sd->gpu_busy = TRUE;
-
-	NVSetRopSolid(sd, GC_DRMD(gc), ~0 << bm->depth);
-	
-	NVDmaStart(&sd->Card, SURFACE_FORMAT, 4);
-	NVDmaNext(&sd->Card, bm->surface_format);
-        NVDmaNext(&sd->Card, (bm->pitch << 16) | ((msg->width * bm->bpp + 63) & ~63));
-        NVDmaNext(&sd->Card, (IPTR)ptr);
-        NVDmaNext(&sd->Card, bm->framebuffer);
-	
-	NVDmaStart(&sd->Card, RECT_FORMAT, 1);
-	NVDmaNext(&sd->Card, bm->rect_format);
-
-	sd->rect_format = bm->rect_format;
-	sd->surface_format = bm->surface_format;
-	sd->dst_pitch = bm->pitch;
-	sd->src_pitch = (msg->width * bm->bpp + 63) & ~63;
-	sd->src_offset = (IPTR)ptr;
-        sd->dst_offset = bm->framebuffer;
-	
-	for (y=0; y < msg->height; y++)
-	{    
-	    sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
-
-	    if (lut)
-	    {
-		if (bm->bpp == 4)
-		{
-		    for (x=0; x < msg->width; x++)
-		    {
-		        cpuptr[x] = lut[pixarray[x]];
-		    }
-		}
-		else if (bm->bpp == 2)
-		{
-		    for (x=0; x < msg->width; x++)
-		    {
-			((UWORD*)cpuptr)[x] = lut[pixarray[x]];
-		    }
-		}
-		else
-		{
-		    for (x=0; x < msg->width; x++)
-		    {
-			((UBYTE*)cpuptr)[x] = lut[pixarray[x]];
-		    }
-		}
-
-	    }
-	    else
-	    {
-		for (x=0; x < msg->width; x++)
-		{
-		    cpuptr[x] = pixarray[x];
-		}
-	    }
-	    pixarray += msg->modulo;
-
-	    NVDmaStart(&sd->Card, BLIT_POINT_SRC, 3);
-	    NVDmaNext(&sd->Card, (0 << 16) | (0 & 0xffff));
-	    NVDmaNext(&sd->Card, ((msg->y + y) << 16) | (msg->x & 0xffff));
-	    NVDmaNext(&sd->Card, (1 << 16) | (msg->width & 0xffff));
-	    
-    	    NVDmaKickoff(&sd->Card);
+        if (sd->gpu_busy)
+        {
+	    LOCK_HW
+	    NVSync(sd);
+	    UNLOCK_HW
 	}
-	
-	UNLOCK_HW
     }
-    else OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
+    switch(bm->bpp)
+    {
+	case 2:
+	    {
+		struct pHidd_BitMap_CopyLUTMemBox16 __m = {
+			    sd->mid_CopyLUTMemBox16,
+			    msg->pixels,
+			    0,
+			    0,
+			    (APTR)VideoData,
+			    msg->x,
+			    msg->y,
+			    msg->width,
+			    msg->height,
+			    msg->modulo,
+			    bm->pitch,
+			    msg->pixlut		    
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+	case 4:	
+	    {
+		struct pHidd_BitMap_CopyLUTMemBox32 __m = {
+			    sd->mid_CopyLUTMemBox32,
+			    msg->pixels,
+			    0,
+			    0,
+			    (APTR)VideoData,
+			    msg->x,
+			    msg->y,
+			    msg->width,
+			    msg->height,
+			    msg->modulo,
+			    bm->pitch,
+			    msg->pixlut		    
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+    	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(data->bytesperpix) */
+ 
     UNLOCK_BITMAP
+
 }
 
 static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o, 
@@ -1634,7 +1609,9 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
     	sd->mid_PutMemPattern8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
     	sd->mid_PutMemPattern16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
     	sd->mid_PutMemPattern32 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
-	
+	sd->mid_CopyLUTMemBox16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
+	sd->mid_CopyLUTMemBox32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
+
 	if (cl)
 	{
 	    cl->UserData = sd;
