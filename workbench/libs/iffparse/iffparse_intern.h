@@ -6,6 +6,9 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
+#ifndef PROTO_ALIB_H
+#   include <proto/alib.h>
+#endif
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
 #endif
@@ -14,9 +17,6 @@
 #endif
 #ifndef PROTO_UTILITY_H
 #   include <proto/utility.h>
-#endif
-#ifndef PROTO_ALIB_H
-#   include <proto/alib.h>
 #endif
 #ifndef PROTO_IFFPARSE_H
 #   include <proto/iffparse.h>
