@@ -28,7 +28,7 @@
 
 /* IDs */
 #define IID_Hidd_Displaygfx	"hidd.gfx.display"
-#define CLID_HiddDisplaygfx	"hidd.gfx.display"
+#define CLID_Hidd_Displaygfx	"hidd.gfx.display"
 
 /* misc */
 

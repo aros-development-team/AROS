@@ -34,8 +34,9 @@ void hidd_demo(struct ExecBase * SysBase)
 
     /* absolutely necessary!!!*/
     OpenLibrary("graphics.hidd",0); // runs through and seems to get init. ok.
+// *(ULONG *)0x12347=1;
     OpenLibrary("display.hidd",0);  // seems not to get where it should.
-*(ULONG *)0x12345=1;
+// *(ULONG *)0x1234F=1;
     OpenLibrary("hidd.gfx.display",0);
     {
 	struct GfxBase *GfxBase;
@@ -43,7 +44,7 @@ void hidd_demo(struct ExecBase * SysBase)
     
 //        kprintf("init_gfx(hiddbase=%s)\n", "hidd.gfx.display");
 
-*(ULONG *)0xc0debadf=0;
+// *(ULONG *)0xc0debadf=0;
         GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
         if (GfxBase)
         {
@@ -53,13 +54,18 @@ void hidd_demo(struct ExecBase * SysBase)
 	        library (although it will probably not be neccesary).
 	    */
 
-//	    kprintf("calling private gfx LateGfxInit()\n");
+	    kprintf("calling private gfx LateGfxInit()\n");
 	    if (LateGfxInit("hidd.gfx.display"))
 	    {
+		
 	        struct IntuitionBase *IntuitionBase;
-*(ULONG *)0xc0debad3 = 0;
+// *(ULONG *)0xc0debad3 = 0;
 //	        kprintf("success\n");
 			    
+// *(ULONG *)0x1235F=1;
+
+    	    	kprintf("lategfxinit okay\n");
+ 
 	        /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
 	        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
 kprintf("ibase = %lx\n", IntuitionBase);
@@ -72,7 +78,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
 		    CloseLibrary((struct Library *)IntuitionBase);
 		}
 	    }
-//	    kprintf("Closing gfx\n");
+	    kprintf("Closing gfx\n");
 	
 	    CloseLibrary((struct Library *)GfxBase);
 
@@ -119,11 +125,12 @@ kprintf("ibase = %lx\n", IntuitionBase);
         GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
 	if (IntuitionBase)
 	{
+
 	    struct TagItem tags[] = {
-		{WA_Width,			320},
-		{WA_Height,			240},
-		{WA_Left,			100},
-		{WA_Top,			100},
+		{WA_Width,			100},
+		{WA_Height,			100},
+		{WA_Left,			50},
+		{WA_Top,			50},
 		{WA_MinWidth,                   320},
 		{WA_MinHeight,                  240},
 		{WA_MaxWidth,                   640},
@@ -133,8 +140,11 @@ kprintf("ibase = %lx\n", IntuitionBase);
 		{WA_SizeGadget,                TRUE},
 		{WA_DepthGadget,               TRUE},
 		{TAG_DONE,			  0}};
+kprintf("Opening window\n");
 	    win = OpenWindowTagList(0, tags);
 	}
+
+kprintf("Window okay: win = %x\n", win);
 
         DrawEllipse(win->RPort,160,120,80,80);
         DrawEllipse(win->RPort,185,90,15,15);

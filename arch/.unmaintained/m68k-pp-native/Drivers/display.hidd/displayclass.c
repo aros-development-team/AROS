@@ -70,23 +70,11 @@ struct display_data
 
 struct DisplayModeDesc
     DisplayDefMode[NUM_MODES]={
-		{"640x480x4 @ 60Hz",	// h: 31.5 kHz v: 60Hz
-		640,480,4,0,
+		{"160x160x1 @ 60Hz",	// h: 31.5 kHz v: 60Hz
+		160,160,1,0,
 		0,
-		640,664,760,800,0,
-		480,491,493,525}	//,
-#ifndef ONLY640 
-		{"768x576x4 @ 54Hz",	// h: 32.5 kHz v: 54Hz
-		768,576,4,1,
-		0,
-		768,795,805,872,0,
-		576,577,579,600},
-		{"800x600x4 @ 52Hz",	// h: 31.5 kHz v: 52Hz
-		800,600,4,1,
-		0,
-		800,826,838,900,0,	// 900
-		600,601,603,617}	// 617
-#endif
+		160,160,160,160,0,
+		160,160,160,160}	//,
 		};
 
 /* Default mouse shape */
@@ -125,6 +113,8 @@ UBYTE shape[] =
     taglist[idx].ti_Tag  = aHidd_Sync_ ## tag;	\
     taglist[idx].ti_Data = val
 
+static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg);
+
 VOID init_sync_tags(struct TagItem *tags, struct DisplayModeDesc *md, OOP_Class * cl)
 {
 #define xsd XSD(cl)
@@ -160,23 +150,15 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_BitsPerPixel,	0	}, /* 11 */
 	{ aHidd_PixFmt_StdPixFmt,	0	}, /* 12 */
 	{ aHidd_PixFmt_CLUTShift,	0	}, /* 13 */
-	{ aHidd_PixFmt_CLUTMask,	0x0f	}, /* 14 */
+	{ aHidd_PixFmt_CLUTMask,	0x01	}, /* 14 */
 	{ aHidd_PixFmt_BitMapType,	0	}, /* 15 */
 	{ TAG_DONE, 0UL }
     };
-    struct TagItem sync_640_480[NUM_SYNC_TAGS];
-#ifndef ONLY640 
-    struct TagItem sync_758_576[NUM_SYNC_TAGS];
-    struct TagItem sync_800_600[NUM_SYNC_TAGS];
-#endif
+    struct TagItem sync_160_160[NUM_SYNC_TAGS];
 
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags		},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640_480	},
-#ifndef ONLY640
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_758_576	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800_600	},
-#endif
+	{ aHidd_Gfx_SyncTags,	(IPTR)sync_160_160	},
 	{ TAG_DONE, 0UL }
     };
     
@@ -186,8 +168,6 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     };
     struct pRoot_New mymsg;
 #undef xsd
-
-*(ULONG *)0xc0de2122=0;
 
     /* Init the pixel format */
     pftags[0].ti_Data = 0;
@@ -201,21 +181,17 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     pftags[7].ti_Data = 0;
 	
     pftags[8].ti_Data = vHidd_ColorModel_Palette;
-    pftags[9].ti_Data = 4;
+    pftags[9].ti_Data = 1;
     pftags[10].ti_Data = 1;
-    pftags[11].ti_Data = 4;
+    pftags[11].ti_Data = 1;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
 
 #warning Is this true in all cases ?
-    pftags[15].ti_Data = vHidd_BitMapType_Chunky;
+    pftags[15].ti_Data = vHidd_BitMapType_Planar;
 
     
     /* First init the sync tags */
-    init_sync_tags(sync_640_480, &DisplayDefMode[0], cl);
-#ifndef ONLY640
-    init_sync_tags(sync_758_576, &DisplayDefMode[1], cl);
-    init_sync_tags(sync_800_600, &DisplayDefMode[2], cl);
-#endif
+    init_sync_tags(sync_160_160, &DisplayDefMode[0], cl);
     
     /* init mytags. We use TAG_MORE to attach our own tags before we send them
     to the superclass */
@@ -239,6 +215,7 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     EnterFunc(bug("DisplayGfx::New()\n"));
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     if (o)
     {
 	D(bug("Got object from super\n"));
@@ -290,12 +267,13 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
     struct pHidd_Gfx_NewBitMap mymsg;
     
     EnterFunc(bug("DisplayGfx::NewBitMap()\n"));
-*(ULONG *)0xc0de2123=0;
     
     data = OOP_INST_DATA(cl, o);
-    
-    /* Displayable bitmap ? */
+
 #define xsd XSD(cl)
+     
+    /* Displayable bitmap ? */
+
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
 #undef xsd
@@ -834,12 +812,12 @@ OOP_Class *init_displayclass (struct display_staticdata *xsd)
 	{ aMeta_SuperID,		(IPTR)CLID_Hidd_Gfx},
 	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
 	{ aMeta_InstSize,		(IPTR)sizeof (struct display_data) },
-//	{ aMeta_ID,			(IPTR)CLID_Hidd_Displaygfx },
+	{ aMeta_ID,			(IPTR)CLID_Hidd_Displaygfx },
 	{TAG_DONE, 0UL}
     };
 
     EnterFunc(bug("VgaHiddClass init\n"));
-*(ULONG *)0xc0de76ac = 0;
+
     if (MetaAttrBase)
     {
     	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
@@ -857,11 +835,11 @@ OOP_Class *init_displayclass (struct display_staticdata *xsd)
 #if 0
 	    if (OOP_ObtainAttrBases(attrbases))
 #else
-	    if (!__IHidd_BitMap         || 
-	        !__IHidd_DisplayBitMap  ||
-	        !__IHidd_DisplayGfx     ||
-	        !__IHidd_Sync           ||
-	        !__IHidd_Gfx)
+	    if (__IHidd_BitMap         && 
+	        __IHidd_DisplayBitMap  &&
+	        __IHidd_DisplayGfx     &&
+	        __IHidd_Sync           &&
+	        __IHidd_Gfx)
 #endif
 	    {
 		D(bug("VgaHiddClass ok\n"));
