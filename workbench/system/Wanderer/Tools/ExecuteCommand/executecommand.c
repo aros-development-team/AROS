@@ -25,14 +25,16 @@
 
           
 /*** Private methods ********************************************************/
-#define MUIM_ExecuteCommand_Execute (TAG_USER | 0x20000000)
+#define MUIM_ExecuteCommand_ExecuteCommand  (TAG_USER | 0x20000000)
+struct  MUIP_ExecuteCommand_ExecuteCommand  { ULONG MethodID; ULONG delayed; };
 
 /*** Instance data **********************************************************/
 struct ExecuteCommand_DATA
 {
     Object *ecd_Window,
            *ecd_CommandString;
-    BPTR    ecd_Lock;
+    BPTR    ecd_Parent;
+    BOOL    ecd_UnlockParent;
 };
 
 /*** Methods ****************************************************************/
@@ -44,8 +46,9 @@ IPTR ExecuteCommand__OM_NEW
     struct ExecuteCommand_DATA *data           = NULL;
     struct TagItem             *tstate         = message->ops_AttrList,
                                *tag            = NULL;
-    BPTR                        lock           = NULL;
-    STRPTR                      name           = NULL;
+    BPTR                        parent         = NULL;
+    BOOL                        unlockParent   = FALSE;
+    CONST_STRPTR                initial        = NULL;
     Object                     *window,
                                *commandString,
                                *executeButton,
@@ -56,16 +59,29 @@ IPTR ExecuteCommand__OM_NEW
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_ExecuteCommand_Lock:
-                lock = (BPTR) tag->ti_Data;
-                D(bug("* got lock %p\n", lock));
+            case MUIA_ExecuteCommand_Parent:
+                parent = (BPTR) tag->ti_Data;
                 break;
                 
-            case MUIA_ExecuteCommand_Name:
-                name = (STRPTR) tag->ti_Data;
-                D(bug("* got name %s\n", name));
+            case MUIA_ExecuteCommand_Initial:
+                initial = (CONST_STRPTR) tag->ti_Data;
                 break;
         }
+    }
+    
+    /* Setup parameters ----------------------------------------------------*/
+    if (parent == NULL)
+    {
+        if ((parent = Lock("RAM:", ACCESS_READ)) != NULL)
+        {
+            unlockParent = TRUE;
+        }
+    }
+    
+    if (initial == NULL)
+    {
+        // FIXME: retrieve last command used
+        initial = "";
     }
     
     /* Create application and window objects -------------------------------*/
@@ -85,7 +101,7 @@ IPTR ExecuteCommand__OM_NEW
                     GroupFrameT("Command and arguments"),
                     Child, (IPTR) PopaslObject,
                         MUIA_Popstring_String, (IPTR) commandString = StringObject,
-                            MUIA_String_Contents, name != NULL ? (IPTR) name : (IPTR) "",
+                            MUIA_String_Contents, (IPTR) initial,
                             StringFrame,
                         End,
                         MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopFile),
@@ -112,13 +128,16 @@ IPTR ExecuteCommand__OM_NEW
         TAG_DONE
     );
     
-    if (self == NULL) goto error;
+    if (self == NULL) return NULL;
     
+    /* Store instance data -------------------------------------------------*/
     data = INST_DATA(CLASS, self);
     data->ecd_Window        = window;
     data->ecd_CommandString = commandString;
-    data->ecd_Lock          = lock;
+    data->ecd_Parent        = parent;
+    data->ecd_UnlockParent  = unlockParent;
     
+    /* Setup notifications -------------------------------------------------*/
     DoMethod
     ( 
         window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
@@ -126,37 +145,44 @@ IPTR ExecuteCommand__OM_NEW
     );
     
     DoMethod
-    ( 
+    (
         cancelButton, MUIM_Notify, MUIA_Pressed, FALSE, 
         (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
     );
-            
+    
     DoMethod
     (
         commandString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, 
-        (IPTR) self, 1, MUIM_ExecuteCommand_Execute
+        (IPTR) self, 2, MUIM_ExecuteCommand_ExecuteCommand, TRUE
     );
     
     DoMethod
     (
-        executeButton, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR) self, 1, MUIM_ExecuteCommand_Execute
+        executeButton, MUIM_Notify, MUIA_Pressed, FALSE,
+        (IPTR) self, 2, MUIM_ExecuteCommand_ExecuteCommand, TRUE
     );
     
     return (IPTR) self;
+}
+
+IPTR ExecuteCommand__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
+{
+    struct ExecuteCommand_DATA *data = INST_DATA(CLASS, self);
     
-error:
+    if (data->ecd_UnlockParent && data->ecd_Parent != NULL)
+    {
+        UnLock(data->ecd_Parent);
+    }
     
-    return NULL;
+    return DoSuperMethodA(CLASS, self, message);
 }
 
 IPTR ExecuteCommand__MUIM_Application_Execute
-(     
+(
     Class *CLASS, Object *self, Msg message 
 )
 {
-    struct ExecuteCommand_DATA *data    = INST_DATA(CLASS, self);
-    ULONG                       signals = 0L;
+    struct ExecuteCommand_DATA *data = INST_DATA(CLASS, self);
     
     SET(data->ecd_Window, MUIA_Window_Open, TRUE);
     SET(data->ecd_Window, MUIA_Window_ActiveObject, (IPTR) data->ecd_CommandString);
@@ -168,70 +194,78 @@ IPTR ExecuteCommand__MUIM_Application_Execute
     return NULL;
 }
 
-IPTR ExecuteCommand__MUIM_ExecuteCommand_Execute
+IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
 (
-    Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, 
+    struct MUIP_ExecuteCommand_ExecuteCommand *message
 )
 {
     struct ExecuteCommand_DATA *data = INST_DATA(CLASS, self);
-    BPTR                        console, cd = NULL;
-    STRPTR                      command;
     
-    SET(data->ecd_Window, MUIA_Window_Open, FALSE);
-    GET(data->ecd_CommandString, MUIA_String_Contents, &command);
-    
-    if (data->ecd_Lock != NULL) cd = CurrentDir(data->ecd_Lock);
-    
-    console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
-    if (console != NULL)
+    if (message->delayed)
     {
-        if
+        SET(data->ecd_Window, MUIA_Window_Open, FALSE);
+        DoMethod
         (
-            SystemTags
-            (
-                command,
-	    	
-                SYS_Asynch,	   TRUE,
-	    	SYS_Input,  (IPTR) console,
-	    	SYS_Output, (IPTR) NULL,
-	    	SYS_Error,  (IPTR) NULL,
-	    	
-                TAG_DONE
-            ) == -1
-        )
-        {
-            /* An error occured, so we need to close the filehandle */
-            Close(console);
-        }
+            self, MUIM_Application_PushMethod, (IPTR) self, 2,
+            MUIM_ExecuteCommand_ExecuteCommand, FALSE
+        );
     }
     else
     {
-        // FIXME: error dialog
+        BPTR   console, cd = NULL;
+        STRPTR command;
+        
+        GET(data->ecd_CommandString, MUIA_String_Contents, &command);
+        
+        if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
+        
+        console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+        if (console != NULL)
+        {
+            if
+            (
+                SystemTags
+                (
+                    command,
+                    
+                    SYS_Asynch,	   TRUE,
+                    SYS_Input,  (IPTR) console,
+                    SYS_Output, (IPTR) NULL,
+                    SYS_Error,  (IPTR) NULL,
+                    
+                    TAG_DONE
+                ) == -1
+            )
+            {
+                /* An error occured, so we need to close the filehandle */
+                Close(console);
+            }
+        }
+        else
+        {
+            // FIXME: error dialog
+        }
+        
+        if (cd != NULL) CurrentDir(cd);
+        
+        DoMethod(self, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
     
-    if (cd != NULL) CurrentDir(cd);
-    
-    DoMethod(self, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
     return NULL;
 }
+
 
 /*** Dispatcher *************************************************************/
 BOOPSI_DISPATCHER(IPTR, ExecuteCommand_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW: 
-            return ExecuteCommand__OM_NEW(CLASS, self, (struct opSet *) message);
-        
-        case MUIM_Application_Execute:
-            return ExecuteCommand__MUIM_Application_Execute(CLASS, self, message);
-        
-        case MUIM_ExecuteCommand_Execute:
-            return ExecuteCommand__MUIM_ExecuteCommand_Execute(CLASS, self, message);
-            
-        default:     
-            return DoSuperMethodA(CLASS, self, message);
+        case OM_NEW:                             return ExecuteCommand__OM_NEW(CLASS, self, (struct opSet *) message);
+        case OM_DISPOSE:                         return ExecuteCommand__OM_DISPOSE(CLASS, self, message);
+        case MUIM_Application_Execute:           return ExecuteCommand__MUIM_Application_Execute(CLASS, self, message);
+        case MUIM_ExecuteCommand_ExecuteCommand: return ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand(CLASS, self, (struct MUIP_ExecuteCommand_ExecuteCommand *) message);
+        default:                                 return DoSuperMethodA(CLASS, self, message);
     }
     
     return NULL;
@@ -253,5 +287,8 @@ BOOL ExecuteCommand_Initialize()
 
 VOID ExecuteCommand_Deinitialize()
 {
-    MUI_DeleteCustomClass(ExecuteCommand_CLASS);
+    if (ExecuteCommand_CLASS != NULL)
+    {
+        MUI_DeleteCustomClass(ExecuteCommand_CLASS);
+    }
 }

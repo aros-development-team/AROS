@@ -16,13 +16,32 @@
 #include <libraries/mui.h>
 #include <workbench/startup.h>
 
+#include <stdlib.h>
+
 #include "executecommand.h"
+
+void cleanup(CONST_STRPTR message)
+{
+    ExecuteCommand_Deinitialize();
+    
+    if (message != NULL)
+    {
+        // FIXME: show error message
+        exit(RETURN_FAIL);
+    }
+    else
+    {
+        exit(RETURN_OK);
+    }
+}
 
 int main(int argc, char **argv)
 {
     Object *application;
-        
-    if (!ExecuteCommand_Initialize()) return 20; // FIXME: better error handling
+    BPTR    parent  = NULL;
+    STRPTR  initial = NULL;
+    
+    if (!ExecuteCommand_Initialize()) cleanup("Initialization failed.");
     
     if (argc == 0)
     {
@@ -30,26 +49,23 @@ int main(int argc, char **argv)
         
         if (startup->sm_NumArgs > 1)
         {
-            application = ExecuteCommandObject,
-                MUIA_ExecuteCommand_Lock, (IPTR) startup->sm_ArgList[1].wa_Lock,
-                MUIA_ExecuteCommand_Name, (IPTR) startup->sm_ArgList[1].wa_Name,
-            EndBoopsi;
-        }
-        else
-        {
-            application = ExecuteCommandObject, EndBoopsi;
-        }
-        
-        if (application != NULL)
-        {
-            DoMethod(application, MUIM_Application_Execute);
-            MUI_DisposeObject(application);
+            parent  = startup->sm_ArgList[1].wa_Lock;
+            initial = startup->sm_ArgList[1].wa_Name;
         }
     }
-    else
+            
+    application = ExecuteCommandObject,
+        MUIA_ExecuteCommand_Parent,  (IPTR) parent,
+        MUIA_ExecuteCommand_Initial, (IPTR) initial,
+    EndBoopsi;
+    
+    if (application != NULL)
     {
-        Printf("ERROR: Cannot be started from CLI."); 
+        DoMethod(application, MUIM_Application_Execute);
+        MUI_DisposeObject(application);
     }
     
-    return 0;
+    cleanup(NULL);
+    
+    return 0; /* make compiler happy */
 }
