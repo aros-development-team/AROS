@@ -1,0 +1,16 @@
+printf
+<LINK NAME="<stdfunc>printf</stdfunc>" REF="printf.asc">
+int
+<ckeyword>int</ckeyword>
+char
+<ckeyword>char</ckeyword>
+@include
+<cppkeyword>#include</cppkeyword>
+@comment
+<ccomment>$text</ccomment>
+@identifier
+<cidentifier>$text</cidentifier>
+@string
+<cstring>$text</cstring>
+@punctuation
+<cpunctuation>$text</cpunctuation>
