@@ -5,48 +5,37 @@
 #
 
 USER_CFLAGS := -Wall -Wunused -O2
+
 -include $(TOP)/config/make.cfg
+include Makefile.deps
 
-HOST_CC	    ?= gcc
-HOST_STRIP  ?= strip
-MECHO	    ?= echo
-HOST_CFLAGS ?= $(USER_CFLAGS)
-GENMODULE   ?= genmodule
+HOST_CC	       ?= gcc
+HOST_STRIP     ?= strip
+MECHO	       ?= echo
+HOST_CFLAGS    ?= $(USER_CFLAGS)
+GENMODULE      ?= genmodule
+GENLIBDEFS     ?= genlibdefs
+GENMODULEDUMMY ?= genmoduledummy
 
-all : $(GENMODULE) $(GENLIBDEFS)
+all : $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY)
 
-SRCS := genmodule.c \
-     	fileread.c \
-        readconfig.c \
-	readref.c \
-	writeincclib.c \
-	writeincproto.c \
-	writeincdefines.c \
-	writestart.c \
-	writeend.c \
-	writeautoinit.c \
-	writestubs.c
-	
-INCS := genmodule.h fileread.h
-
-
-$(GENMODULE) : $(SRCS) $(INCS)
+$(GENMODULE) : $(GENMODULE_DEPS)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(SRCS) -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(GENMODULE_SRCS) -o $@
 	@$(HOST_STRIP) $@
 
-SRCS2 := genlibdefs.c \
-      	 fileread.c \
-         readconfig.c \
-	 writeinclibdefs.c
-	
-$(GENLIBDEFS) : $(SRCS2) $(INCS)
+$(GENLIBDEFS) : $(GENLIBDEFS_DEPS)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(SRCS2) -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(GENLIBDEFS_SRCS) -o $@
+	@$(HOST_STRIP) $@
+
+$(GENMODULEDUMMY) : $(GENMODULEDUMMY_DEPS)
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $(GENMODULEDUMMY_SRCS) -o $@
 	@$(HOST_STRIP) $@
 
 
 clean :
-	@$(RM) $(COLLECT-AROS)
+	@$(RM) $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY)
 
 .PHONY : all clean

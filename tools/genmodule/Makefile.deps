@@ -1,0 +1,30 @@
+GENOMDULE_SRCS := \
+    genmodule.c \
+    fileread.c \
+    readconfig.c \
+    readref.c \
+    writeincclib.c \
+    writeincproto.c \
+    writeincdefines.c \
+    writestart.c \
+    writeend.c \
+    writeautoinit.c \
+    writestubs.c
+GENMODULE_INCS := genmodule.h fileread.h
+GENMODULE_DEPS := $(GENMODULE_SRCS) $(GENMODULE_INCS)
+
+GENLIBDEFS_SRCS := \
+    genlibdefs.c \
+    fileread.c \
+    readconfig.c \
+    writeinclibdefs.c
+GENLIBDEFS_DEPS := $(GENLIBDEFS_SRCS) $(GENMODULE_INCS)
+	
+GENMODULEDUMMY_SRCS := \
+    genmoduledummy.c \
+    fileread.c \
+    readconfig.c \
+    writeincproto.c \
+    writeincclib.c \
+    writeincdefines.c
+GENMODULEDUMMY_DEPS := $(GENMODULEDUMMY_SRCS) $(GENMODULE_INCS)

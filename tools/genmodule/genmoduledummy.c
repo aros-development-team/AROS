@@ -31,9 +31,9 @@ int main(int argc, char **argv)
 {
     char *s;
     
-    if (argc!=7)
+    if (argc!=5)
     {
-	fprintf(stderr, "Usage: %s modname modtype conffile gendir genincdir reffile\n", argv[0]);
+	fprintf(stderr, "Usage: %s modname modtype conffile gendir\n", argv[0]);
 	exit(20);
     }
 
@@ -45,11 +45,6 @@ int main(int argc, char **argv)
     if (strcmp(argv[2],"library")==0)
     {
 	modtype = LIBRARY;
-	firstlvo = 5;
-    }
-    else if (strcmp(argv[2],"mcc")==0)
-    {
-	modtype = MCC;
 	firstlvo = 5;
     }
     else
@@ -66,30 +61,12 @@ int main(int argc, char **argv)
 	exit(20);
     }
     if (argv[4][strlen(argv[4])-1]=='/') argv[2][strlen(argv[2])-1]='\0';
-    gendir = argv[4];
-    
-    if (strlen(argv[5])>200)
-    {
-	fprintf(stderr, "Ridiculously long path for genincdir\n");
-	exit(20);
-    }
-    if (argv[5][strlen(argv[5])-1]=='/') argv[5][strlen(argv[5])-1]='\0';
-    genincdir = argv[5];
-
-    reffile = argv[6];
+    genincdir = argv[4];
 
     readconfig();
-    readref();
-    if( modtype == LIBRARY )
-    {
-        writeincproto(0);
-        writeincclib(0);
-        writeincdefines(0);
-        writeautoinit();
-    }
-    writestart();
-    writeend();
-    writestubs();
+    writeincproto(1);
+    writeincclib(1);
+    writeincdefines(1);
     
     return 0;
 }
