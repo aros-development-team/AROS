@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/21 14:20:26  digulla
+    DEBUG Code
+    Initialize new RastPort with InitRastPort()
+
     Revision 1.2  1996/08/29 13:33:32  digulla
     Moved common code from driver to Intuition
     More docs
@@ -18,6 +22,15 @@
 #include <intuition/intuition.h>
 #include <clib/exec_protos.h>
 #include <clib/graphics_protos.h>
+
+#ifndef DEBUG_OpenWindow
+#   define DEBUG_OpenWindow 0
+#endif
+#if DEBUG_OpenWindow
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
 
 extern int intui_OpenWindow (struct Window *,
 	    struct IntuitionBase *);
@@ -71,14 +84,24 @@ extern int intui_GetWindowSize (void);
     struct Window * w;
     struct RastPort * rp;
 
+    D(bug("OpenWindow (%p = { Left=%d Top=%d Width=%d Height=%d })\n"
+	, newWindow
+	, newWindow->LeftEdge
+	, newWindow->TopEdge
+	, newWindow->Width
+	, newWindow->Height
+    ));
+
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
-    rp = AllocMem (sizeof (struct RastPort), MEMF_CLEAR);
+    rp = AllocMem (sizeof (struct RastPort), MEMF_ANY);
 
     if (!w || !rp)
 	goto failexit;
 
     if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
 	goto failexit;
+
+    InitRastPort (rp);
 
     w->LeftEdge    = newWindow->LeftEdge;
     w->TopEdge	   = newWindow->TopEdge;
@@ -142,6 +165,6 @@ failexit:
     }
 
 exit:
-    return w;
+    ReturnPtr ("OpenWindow", struct Window *, w);
     __AROS_FUNC_EXIT
 } /* OpenWindow */
