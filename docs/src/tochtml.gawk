@@ -19,7 +19,8 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	prefix=chapter".";
 	a[toc]="0:"prefix":"toc":"title;
 	print "<OL>"
-	print "<H1><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A></H1>";
+	date=getfiledate(fn);
+	print "<H1><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A> ("date")</H1>";
 	section=0; subsection=0;
 	toc++;
     }
@@ -102,4 +103,13 @@ function shiftfiles(fn      ,fninfo) {
 
 	close (fninfo);
     }
+}
+
+function getfiledate(fn     ,date) {
+    cmd="getfiledate "fn;
+
+    cmd | getline date;
+    close (cmd);
+
+    return date;
 }
