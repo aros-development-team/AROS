@@ -34,6 +34,8 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     IPTR retval = 0UL;
     struct PaletteData *data = INST_DATA(cl, o);
     
+    BOOL labelplace_set = FALSE;
+    
     EnterFunc(bug("Palette::Set()\n"));
     
     for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
@@ -74,6 +76,12 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	case AROSA_Palette_IndicatorWidth:	/* [I] */
     	    data->pd_IndWidth = (UWORD)tidata;
     	    D(bug("Indicatorwidth set to %d\n", tidata));
+    	    
+    	    /* If palette has an indictor on left, GA_LabelPlace
+    	    ** defaults to GV_LabelPlace_Left
+    	    */
+    	    if (!labelplace_set)
+    	 	data->pd_LabelPlace = GV_LabelPlace_Left;
     	    break;
 
     	case AROSA_Palette_IndicatorHeight:	/* [I] */
@@ -81,6 +89,18 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	    D(bug("Indicatorheight set to %d\n", tidata));
     	    break;
     	    
+    	case GA_LabelPlace:			/* [I] */
+    	    data->pd_LabelPlace = (LONG)tidata;
+    	    D(bug("Labelplace set to %d\n", tidata));
+    	    
+    	    labelplace_set = TRUE;
+    	    break;
+    	    
+    	case GA_TextAttr:			/* [I] */
+    	    data->pd_TAttr = (struct TextAttr *)tidata;
+    	    D(bug("TextAttr set to %s %d\n",
+    	    	data->pd_TAttr->ta_Name, data->pd_TAttr->ta_YSize));
+    	    break;
     	    
     	case AROSA_Palette_ColorTable:
     	    D(bug(" !!!!! ColorTable attribute not implemented (yet) !!!!!\n"));
@@ -130,8 +150,10 @@ STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
     	data->pd_ColorOffset	= 0;
     	data->pd_IndWidth 	= 0;
     	data->pd_IndHeight	= 0;
+    	data->pd_LabelPlace	= GV_LabelPlace_Above;
     	
     	palette_set(cl, o, msg);
+    	
     
     }
     ReturnPtr ("Palette::New", Object *, o);
@@ -146,19 +168,24 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     
     UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     struct RastPort *rp;
+    struct IBox *gbox = &(data->pd_GadgetBox);
     
     EnterFunc(bug("Palette::Render()\n"));    
-    
-    D(bug("Window: %s\n", msg->gpr_GInfo->gi_Window->Title));
-    
+
     rp = msg->gpr_RPort;
-    
-    
+
+   
     switch (msg->gpr_Redraw)
     {
     	case GREDRAW_REDRAW:
     	    D(bug("Doing total redraw\n"));
     	    RenderPalette(data, pens, rp, AROSPaletteBase);
+    	    
+    	    /* Render frame aroun ibox */
+    	    if (data->pd_IndWidth || data->pd_IndHeight)
+    	    {
+    	    	RenderFrame(rp, &(data->pd_IndicatorBox), pens, TRUE, AROSPaletteBase);
+    	    }
     
     	case GREDRAW_UPDATE:
      	    D(bug("Doing redraw update\n"));
@@ -169,13 +196,29 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
     	    {
     	    	struct IBox *ibox = &(data->pd_IndicatorBox);
     	    	SetAPen(msg->gpr_RPort, pens[data->pd_Color]);
-    	    	RectFill(msg->gpr_RPort, ibox->Left, ibox->Top,
-    	    	    ibox->Left + ibox->Width - 1, ibox->Top + ibox->Height - 1);
+    	    	RectFill(msg->gpr_RPort,
+    	    		ibox->Left + VBORDER + VSPACING,
+    	    		ibox->Top  + HBORDER + HSPACING,
+    	    	        ibox->Left + ibox->Width  - 1 - VBORDER - VSPACING,
+    	    	        ibox->Top +  ibox->Height - 1 - HBORDER - HSPACING);
 
     	    }
     	    break;
     	    
+    	    
     } /* switch (redraw method) */
+    
+    if (EG(o)->Flags & GFLG_DISABLED)
+    {
+    	DrawDisabledPattern(rp, gbox, pens[SHADOWPEN], AROSPaletteBase);
+    }
+    
+    /* Render gadget label in correct position */
+    RenderLabel((struct Gadget *)o, gbox, rp,
+    		data->pd_LabelPlace, AROSPaletteBase);
+    		
+    RenderFrame(rp, gbox, pens, FALSE, AROSPaletteBase);
+    
     	
     ReturnVoid("Palette::Render");
 }
@@ -213,34 +256,42 @@ STATIC IPTR palette_goactive(Class *cl, Object *o, struct gpInput *msg)
     struct PaletteData *data = INST_DATA(cl, o);
 
     EnterFunc(bug("Palette::GoActive()\n"));
-
-    if (msg->gpi_IEvent)
+    if (EG(o)->Flags & GFLG_DISABLED)
     {
-    	UBYTE clicked_color;
-    	
-    	/* Set temporary active to the old active */
-    	data->pd_ColorBackup = data->pd_Color;
-    	
-    	clicked_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, AROSPaletteBase);
-    	
-    	if (clicked_color != data->pd_Color)
-    	{
-    	    struct RastPort *rp;
-    	    
-    	    data->pd_Color = clicked_color;
-    	
-    	    if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
-    	    {
-	    	DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
-	    
-	    	ReleaseGIRPort(rp);
-	    }
-	}
-	
-	retval = GMR_MEACTIVE;
+    	retval = GMR_NOREUSE;
     }
     else
-    	retval = GMR_NOREUSE;
+    {
+    	if (msg->gpi_IEvent)
+    	{
+    	    UBYTE clicked_color;
+    	
+    	    /* Set temporary active to the old active */
+    	    data->pd_ColorBackup = data->pd_Color;
+    	
+    	    clicked_color = ComputeColor(data, msg->gpi_Mouse.X, msg->gpi_Mouse.Y, AROSPaletteBase);
+    	
+    	    if (clicked_color != data->pd_Color)
+    	    {
+    	    	struct RastPort *rp;
+    	    
+    	    	data->pd_Color = clicked_color;
+    	
+    	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
+    	    	{
+	    	    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+	    
+	    	    ReleaseGIRPort(rp);
+	    	}
+	    }
+	
+	    retval = GMR_MEACTIVE;
+        } /* if (gadget activated is a result of user input) */
+        
+        else
+    	    retval = GMR_NOREUSE;
+    } /* if (gadget isn't disabled) */
+    
     ReturnInt("Palette::GoActive", IPTR, retval);
 }
 
@@ -364,7 +415,10 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     /* The palette gadget has been resized and we need to update our layout */
     
     struct PaletteData *data = INST_DATA(cl, o);
-    struct IBox *pbox = &(data->pd_PaletteBox), *indbox = &(data->pd_IndicatorBox);
+    struct IBox *gbox   = &(data->pd_GadgetBox),
+    		*pbox   = &(data->pd_PaletteBox),
+    		*indbox = &(data->pd_IndicatorBox);
+
     
     UWORD cols, rows;
 
@@ -378,7 +432,7 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     EnterFunc(bug("Palette::Layout()\n"));
     
     if (!msg->gpl_GInfo)
-    	return; /* We MUST have a GInfo to get screen aspect ratio */
+    	ReturnVoid("Palette::Layout"); /* We MUST have a GInfo to get screen aspect ratio */
     
     /* Delete the old gadget box */
     if (!msg->gpl_Initial)
@@ -390,31 +444,43 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     	{
     	    SetAPen(rp, msg->gpl_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
     	    
-    	    RectFill(rp, pbox->Left, pbox->Top, 
-    	    	pbox->Left + pbox->Width - 1, pbox->Top + pbox->Height - 1);
+    	    RectFill(rp, gbox->Left, gbox->Top, 
+    	    	pbox->Left + gbox->Width - 1, gbox->Top + gbox->Height - 1);
     	}
     }
 
     /* get the IBox surrounding the whole palette */
-    GetGadgetIBox(o, msg->gpl_GInfo, pbox);
-    
+    GetGadgetIBox(o, msg->gpl_GInfo, gbox);
     D(bug("Got palette ibox: (%d, %d, %d, %d)\n",
-    	pbox->Left, pbox->Top, pbox->Width, pbox->Height));
+    	gbox->Left, gbox->Top, gbox->Width, gbox->Height));
+    	
+    /* Get the palette box */
+    pbox->Left   = gbox->Left + VBORDER + VSPACING;
+    pbox->Top    = gbox->Top  + HBORDER + HSPACING;
+    pbox->Width  = gbox->Width  - VBORDER * 2 - VSPACING * 2;
+    pbox->Height = gbox->Height - HBORDER * 2 - HSPACING * 2;
+    
     	
     /* If we have an indicator box then account for this */
     if (data->pd_IndHeight)
     {
-    	indbox->Top 	= (pbox->Top += data->pd_IndHeight);
+    	indbox->Top 	= pbox->Top;
     	indbox->Left	= pbox->Left;
     	indbox->Width	= pbox->Width;
     	indbox->Height	= data->pd_IndHeight;
+    	
+    	pbox->Height -= (indbox->Height + HSPACING * 2);
+	pbox->Top    += (data->pd_IndHeight + HSPACING * 2);
     }
     else if (data->pd_IndWidth)
     {
-    	indbox->Left	= (pbox->Left += data->pd_IndWidth);
+    	indbox->Left	= pbox->Left;
     	indbox->Top	= pbox->Top;
     	indbox->Width	= data->pd_IndWidth;
     	indbox->Height	= pbox->Height;
+    	
+    	pbox->Width -= (indbox->Width + VSPACING * 2);
+    	pbox->Left  += (data->pd_IndWidth + VSPACING * 2);
     }
 
     
@@ -536,7 +602,7 @@ AROS_UFH3(STATIC IPTR, dispatch_paletteclass,
 	     * subclassed, and we have gotten here via DoSuperMethodA().
 	     */
 	    if (    retval
-	    	 && (msg->MethodID == OM_UPDATE)
+	    	 && ((msg->MethodID == OM_UPDATE) || (msg->MethodID = OM_SET))
 	    	 && (cl == OCLASS(o))	)
 	    {
 	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;

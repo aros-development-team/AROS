@@ -42,8 +42,10 @@ struct PaletteData
     UWORD	pd_IndWidth;
     UWORD	pd_IndHeight;
 
-    struct IBox pd_PaletteBox;
-    struct IBox pd_IndicatorBox;
+    struct IBox pd_GadgetBox;	 /* Box surrounding whole palette 	*/
+    struct IBox pd_PaletteBox;	 /* Box surrounding palette 		*/
+    struct IBox pd_IndicatorBox; /* Box surrounding indicator		*/
+    
     UWORD	pd_ColWidth;
     UWORD	pd_RowHeight;
     UBYTE	pd_NumCols;
@@ -54,6 +56,8 @@ struct PaletteData
     ** outside the gadget.
     */
     UBYTE	pd_ColorBackup;
+    struct TextAttr *pd_TAttr;
+    LONG	pd_LabelPlace;
     
 };
 
@@ -64,15 +68,24 @@ struct PaletteData
 #undef EG
 #define EG(o) ((struct ExtGadget *)o)
 
-#define HBORDER	1
-#define VBORDER	2
+
+
+#define HSPACING	2
+#define VSPACING	3
+
+#define HBORDER	HSPACING
+#define VBORDER (VSPACING - 1)
+
 
 #define HSELBORDER	1
-#define VSELBORDER	2
+#define VSELBORDER	1
 
 /*****************
 **  Prototypes  **
 *****************/
+
+VOID RenderFrame(struct RastPort *, struct IBox *, UWORD *, BOOL,
+		struct PaletteBase_intern *);
 
 VOID RenderPalette(struct PaletteData *, UWORD *,
 	struct RastPort *, struct PaletteBase_intern *);
@@ -84,6 +97,22 @@ VOID UpdateActiveColor( struct PaletteData *, UWORD *,
 VOID GetGadgetIBox(Object *, struct GadgetInfo *, struct IBox *);
 UBYTE ComputeColor(struct PaletteData *, WORD, WORD, struct PaletteBase_intern *);
 BOOL InsidePalette(struct IBox *, WORD, WORD);
+
+void DrawDisabledPattern(struct RastPort *, struct IBox *, UWORD,
+			 struct PaletteBase_intern *);
+
+
+struct TextFont *PrepareFont(struct RastPort *, struct IntuiText *,
+		struct TextFont **, struct PaletteBase_intern *);
+
+
+void DisposeFont(struct RastPort *, struct TextFont *, struct TextFont *,
+		struct PaletteBase_intern *);
+			 
+BOOL RenderLabel( struct Gadget *gad, struct IBox *, 
+		 struct RastPort *, LONG labelplace,
+                 struct PaletteBase_intern *);
+
 /********************
 **  Library stuff  **
 ********************/
