@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.19  2001/09/08 00:48:19  falemagn
+    It seems that EPIPE must not be returned when a reader closes its pipe's end before consuming all the writer's data
+
     Revision 1.18  2001/09/04 17:39:02  falemagn
     Supports AbortIO() now
 
@@ -40,7 +43,7 @@
 */
 #define AROS_ALMOST_COMPATIBLE
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/errors.h>
 #include <exec/resident.h>
@@ -847,7 +850,7 @@ AROS_UFH3(LONG, pipefsproc,
 			            "Reply to all the waiting writers");
 
 			    while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingwrites)))
-			        SendBack(msg, ERROR_BROKEN_PIPE);
+			        SendBack(msg, 0);
 		        }
 		    }
 		    if (un->mode & FMF_WRITE)
