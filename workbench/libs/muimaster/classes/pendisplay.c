@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -23,13 +23,14 @@
 #include "muimaster_intern.h"
 #include "textengine.h"
 #include "support.h"
+#include "support_classes.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_PendisplayData
+struct Pendisplay_DATA
 {
     struct MUI_PenSpec  penspec;
     struct MUI_RGBcolor rgb;
@@ -42,7 +43,7 @@ struct MUI_PendisplayData
 **************************************************************************/
 static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PendisplayData   *data;
+    struct Pendisplay_DATA   *data;
     struct TagItem  	    	*tag, *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -86,7 +87,7 @@ static IPTR Pendisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Pendisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PendisplayData   *data;
+    struct Pendisplay_DATA   *data;
  
     data = INST_DATA(cl, obj);
     if (data->refobj)
@@ -102,7 +103,7 @@ static IPTR Pendisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Pendisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PendisplayData   *data;
+    struct Pendisplay_DATA   *data;
     struct TagItem  	    	*tag, *tags;
    BOOL    	    	    	 newcol = FALSE;
     IPTR    	    	    	 retval;
@@ -174,7 +175,7 @@ static IPTR Pendisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG  Pendisplay_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
-    struct MUI_PendisplayData *data  = INST_DATA(cl, obj);
+    struct Pendisplay_DATA *data  = INST_DATA(cl, obj);
     IPTR    	    	      *store = msg->opg_Storage;
 
     switch (msg->opg_AttrID)
@@ -209,7 +210,7 @@ static ULONG  Pendisplay_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Pendisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_PendisplayData *data = INST_DATA(cl,obj);
+    struct Pendisplay_DATA *data = INST_DATA(cl,obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
 
@@ -226,7 +227,7 @@ static IPTR Pendisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
 **************************************************************************/
 static IPTR Pendisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_PendisplayData *data = INST_DATA(cl,obj);
+    struct Pendisplay_DATA *data = INST_DATA(cl,obj);
 
     if (data->pen != -1)
     {
@@ -259,7 +260,7 @@ static IPTR Pendisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
 **************************************************************************/
 static IPTR Pendisplay_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_PendisplayData *data = INST_DATA(cl,obj);
+    struct Pendisplay_DATA *data = INST_DATA(cl,obj);
     LONG    	    	       color;
     
     DoSuperMethodA(cl,obj,(Msg)msg);
@@ -339,6 +340,7 @@ static IPTR Pendisplay_SetMUIPen(struct IClass *cl, Object *obj, struct MUIP_Pen
     return 0;
 }
 
+#if ZUNE_BUILTIN_PENDISPLAY
 BOOPSI_DISPATCHER(IPTR, Pendisplay_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -360,13 +362,11 @@ BOOPSI_DISPATCHER(IPTR, Pendisplay_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Pendisplay_desc = { 
+const struct __MUIBuiltinClass _MUI_Pendisplay_desc =
+{ 
     MUIC_Pendisplay, 
     MUIC_Area, 
-    sizeof(struct MUI_PendisplayData), 
+    sizeof(struct Pendisplay_DATA), 
     (void*)Pendisplay_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_PENDISPLAY */

@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -27,6 +27,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
@@ -37,7 +38,7 @@ extern struct Library *MUIMasterBase;
 #define FLAG_PEN_ALLOCATED  2
 #define FLAG_NO_PEN 	    4
 
-struct MUI_ColoradjustData
+struct Coloradjust_DATA
 {
     struct Library *colorwheelbase;
     struct Library *gradientsliderbase;
@@ -52,7 +53,7 @@ struct MUI_ColoradjustData
 
 #define ColorWheelBase data->colorwheelbase
 
-static void NotifyGun(Object *obj, struct MUI_ColoradjustData *data, LONG gun)
+static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, LONG gun)
 {
     static Tag guntotag[3] = 
     {
@@ -75,7 +76,7 @@ static void NotifyGun(Object *obj, struct MUI_ColoradjustData *data, LONG gun)
     CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR)tags, NULL);
 }
 
-static void NotifyAll(Object *obj, struct MUI_ColoradjustData *data)
+static void NotifyAll(Object *obj, struct Coloradjust_DATA *data)
 {
     struct TagItem tags[] =
     {
@@ -95,7 +96,7 @@ static void NotifyAll(Object *obj, struct MUI_ColoradjustData *data)
 static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
 {
     struct ColorWheelRGB    	cw;
-    struct MUI_ColoradjustData *data = *(struct MUI_ColoradjustData **)msg;
+    struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
     IPTR   gun = ((IPTR *)msg)[1];
     
     ULONG red = xget(data->rslider,MUIA_Numeric_Value);
@@ -135,7 +136,7 @@ static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
 
 static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
 {
-    struct MUI_ColoradjustData *data = *(struct MUI_ColoradjustData **)msg;
+    struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
     struct ColorWheelHSB    	hsb;
     struct ColorWheelRGB    	cw;
     
@@ -170,7 +171,7 @@ static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
 
 static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
 {
-    struct MUI_ColoradjustData *data = *(struct MUI_ColoradjustData **)msg;
+    struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
     struct ColorWheelHSB    	hsb;
     struct ColorWheelRGB    	cw;
     
@@ -203,7 +204,7 @@ static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
 **************************************************************************/
 static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ColoradjustData   *data;
+    struct Coloradjust_DATA   *data;
     struct TagItem  	    	*tag, *tags;
     struct Library  	    	*colorwheelbase, *gradientsliderbase;
     Object  	    	    	*rslider, *gslider, *bslider;
@@ -365,7 +366,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 static IPTR Coloradjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ColoradjustData  *data;
+    struct Coloradjust_DATA  *data;
     struct Library  	    	*colorwheelbase;
     struct Library  	    	*gradientsliderbase;
     IPTR    	    	    	 retval;
@@ -388,7 +389,7 @@ static IPTR Coloradjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ColoradjustData   *data;
+    struct Coloradjust_DATA   *data;
     struct TagItem  	    	*tag, *tags;
     ULONG   	    	    	*rgb;
     BOOL    	    	    	 newcol = FALSE;
@@ -473,7 +474,7 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG  Coloradjust_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
-    struct MUI_ColoradjustData *data  = INST_DATA(cl, obj);
+    struct Coloradjust_DATA *data  = INST_DATA(cl, obj);
     IPTR    	    	      *store = msg->opg_Storage;
 
     switch (msg->opg_AttrID)
@@ -503,7 +504,7 @@ static ULONG  Coloradjust_Get(struct IClass *cl, Object * obj, struct opGet *msg
 **************************************************************************/
 static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_ColoradjustData *data = INST_DATA(cl,obj);
+    struct Coloradjust_DATA *data = INST_DATA(cl,obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
 
@@ -552,7 +553,7 @@ static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
 **************************************************************************/
 static IPTR Coloradjust_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_ColoradjustData *data = INST_DATA(cl,obj);
+    struct Coloradjust_DATA *data = INST_DATA(cl,obj);
 
     if (data->gradpen != -1)
     {
@@ -563,6 +564,7 @@ static IPTR Coloradjust_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clea
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+#if ZUNE_BUILTIN_COLORADJUST
 BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -578,13 +580,11 @@ BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Coloradjust_desc = { 
+const struct __MUIBuiltinClass _MUI_Coloradjust_desc =
+{ 
     MUIC_Coloradjust, 
     MUIC_Group, 
-    sizeof(struct MUI_ColoradjustData), 
+    sizeof(struct Coloradjust_DATA), 
     (void*)Coloradjust_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_COLORADJUST */

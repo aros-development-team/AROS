@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -23,11 +23,12 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 #include "frame.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_FramedisplayData
+struct Framedisplay_DATA
 {
     struct MUI_FrameSpec_intern fs_intern;
     char spec[8];
@@ -39,7 +40,7 @@ struct MUI_FramedisplayData
 **************************************************************************/
 static IPTR Framedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_FramedisplayData   *data;
+    struct Framedisplay_DATA   *data;
     struct TagItem  	    *tag, *tags;
     
     D(bug("Framedisplay_New starts\n"));
@@ -70,7 +71,7 @@ static IPTR Framedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Framedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_FramedisplayData *data = INST_DATA(cl, obj);
+    struct Framedisplay_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -92,7 +93,7 @@ static IPTR Framedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Framedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_FramedisplayData *data = INST_DATA(cl, obj);
+    struct Framedisplay_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
     {
 	case MUIA_Framedisplay_Spec:
@@ -128,7 +129,7 @@ static IPTR Framedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
 **************************************************************************/
 static IPTR Framedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
-    struct MUI_FramedisplayData *data = INST_DATA(cl, obj);
+    struct Framedisplay_DATA *data = INST_DATA(cl, obj);
     struct ZuneFrameGfx *zframe;
     APTR region;
     WORD ileft, itop, iright, ibottom;
@@ -168,7 +169,7 @@ static IPTR Framedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *m
     return 1;
 }
 
-
+#if ZUNE_BUILTIN_FRAMEDISPLAY
 BOOPSI_DISPATCHER(IPTR, Framedisplay_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -183,13 +184,11 @@ BOOPSI_DISPATCHER(IPTR, Framedisplay_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Framedisplay_desc = { 
+const struct __MUIBuiltinClass _MUI_Framedisplay_desc =
+{ 
     MUIC_Framedisplay, 
     MUIC_Area, 
-    sizeof(struct MUI_FramedisplayData), 
+    sizeof(struct Framedisplay_DATA), 
     (void*)Framedisplay_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_FRAMEDISPLAY */

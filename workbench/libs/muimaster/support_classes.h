@@ -34,10 +34,58 @@
 #   define ZUNE_BOOPSI_DESC
 #endif
 
+#if ZUNE_BUILTIN_COLORADJUST
+#   define ZUNE_COLORADJUST_DESC (&_MUI_Coloradjust_desc),
+#else
+#   define ZUNE_COLORADJUST_DESC
+#endif
+
+#if ZUNE_BUILTIN_COLORFIELD
+#   define ZUNE_COLORFIELD_DESC (&_MUI_Colorfield_desc),
+#else
+#   define ZUNE_COLORFIELD_DESC
+#endif
+
+#if ZUNE_BUILTIN_FRAMEADJUST
+#   define ZUNE_FRAMEADJUST_DESC (&_MUI_Frameadjust_desc),
+#else
+#   define ZUNE_FRAMEADJUST_DESC
+#endif
+
+#if ZUNE_BUILTIN_FRAMEDISPLAY
+#   define ZUNE_FRAMEDISPLAY_DESC (&_MUI_Framedisplay_desc),
+#else
+#   define ZUNE_FRAMEDISPLAY_DESC
+#endif
+
 #if ZUNE_BUILTIN_GAUGE
 #   define ZUNE_GAUGE_DESC (&_MUI_Gauge_desc),
 #else
 #   define ZUNE_GAUGE_DESC
+#endif
+
+#if ZUNE_BUILTIN_IMAGEADJUST
+#   define ZUNE_IMAGEADJUST_DESC (&_MUI_Imageadjust_desc),
+#else
+#   define ZUNE_IMAGEADJUST_DESC
+#endif
+
+#if ZUNE_BUILTIN_IMAGEDISPLAY
+#   define ZUNE_IMAGEDISPLAY_DESC (&_MUI_Imagedisplay_desc),
+#else
+#   define ZUNE_IMAGEDISPLAY_DESC
+#endif
+
+#if ZUNE_BUILTIN_PENADJUST
+#   define ZUNE_PENADJUST_DESC (&_MUI_Penadjust_desc),
+#else
+#   define ZUNE_PENADJUST_DESC
+#endif
+
+#if ZUNE_BUILTIN_PENDISPLAY
+#   define ZUNE_PENDISPLAY_DESC (&_MUI_Pendisplay_desc),
+#else
+#   define ZUNE_PENDISPLAY_DESC
 #endif
 
 #if ZUNE_BUILTIN_POPASL

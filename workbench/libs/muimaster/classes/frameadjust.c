@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,11 +26,12 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 #include "frame.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_FrameadjustData
+struct Frameadjust_DATA
 {
     struct MUI_FrameSpec_intern fs_intern;
     char spec[10];
@@ -53,12 +54,12 @@ static Object*MakeSpacingSlider (void)
 struct SliderFuncMsg
 {
     Object *slider;
-    struct MUI_FrameadjustData *data;
+    struct Frameadjust_DATA *data;
 };
 
 static void SliderFunc(struct Hook *hook, Object *obj, struct SliderFuncMsg *msg)
 {
-    struct MUI_FrameadjustData *data = msg->data;
+    struct Frameadjust_DATA *data = msg->data;
     Object *slider = msg->slider;
     ULONG val;
     char fs[10];
@@ -95,12 +96,12 @@ struct FramesFuncMsg
 {
     ULONG type;
     ULONG state;
-    struct MUI_FrameadjustData *data;
+    struct Frameadjust_DATA *data;
 };
 
 static void FramesFunc(struct Hook *hook, Object *obj, struct FramesFuncMsg *msg)
 {
-    struct MUI_FrameadjustData *data = msg->data;
+    struct Frameadjust_DATA *data = msg->data;
     char fs[10];
 
     data->fs_intern.type = msg->type;
@@ -141,7 +142,7 @@ static Object *MakeFrameDisplay(int i, int state)
 **************************************************************************/
 static IPTR Frameadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_FrameadjustData   *data;
+    struct Frameadjust_DATA   *data;
     struct TagItem  	    *tag, *tags;
     Object *FD_display;
     Object *SL_top, *SL_left, *SL_right, *SL_bottom;
@@ -251,7 +252,7 @@ static IPTR Frameadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Frameadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_FrameadjustData *data = INST_DATA(cl, obj);
+    struct Frameadjust_DATA *data = INST_DATA(cl, obj);
 
     switch(msg->opg_AttrID)
     {
@@ -264,7 +265,7 @@ static ULONG Frameadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return(DoSuperMethodA(cl, obj, (Msg) msg));
 }
 
-
+#if ZUNE_BUILTIN_FRAMEADJUST
 BOOPSI_DISPATCHER(IPTR, Frameadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -276,13 +277,11 @@ BOOPSI_DISPATCHER(IPTR, Frameadjust_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Frameadjust_desc = { 
+const struct __MUIBuiltinClass _MUI_Frameadjust_desc =
+{ 
     MUIC_Frameadjust, 
     MUIC_Group,
-    sizeof(struct MUI_FrameadjustData), 
+    sizeof(struct Frameadjust_DATA), 
     (void*)Frameadjust_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_FRAMEADJUST */
