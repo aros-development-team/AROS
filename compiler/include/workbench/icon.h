@@ -29,6 +29,8 @@
 #include <dos/dos.h>
 #endif
 
+#if 0
+
 /*** Icon library name ******************************************************/
 
 const STRPTR ICONNAME = "icon.library";
@@ -297,5 +299,7 @@ const Tag ICONA_Reserved8                 = ICONA_Dummy + 88;
 /*** Last tag ***************************************************************/
 
 const Tag ICONA_LAST_TAG                  = ICONA_Dummy + 88;
+
+#endif
 
 #endif /* WORKBENCH_ICON_H */
