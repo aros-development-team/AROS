@@ -10,6 +10,8 @@
 "          It *should* be general enough to be used on many architectures.\n"\
 "*/\n"\
 "\n"\
+"FORCE_COMMON_ALLOCATION\n" \
+"\n" \
 "SECTIONS\n"\
 "{\n"\
 "  .text 0 :\n"\
