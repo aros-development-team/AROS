@@ -23,8 +23,8 @@ MKDIR ?= mkdir
 MECHO ?= echo
 ADFLIB ?= $(TOOLDIR)/libadf.a
 
-OBJDIR	= $(TOOLDIR)/obj
-DEPFILE = $(TOOLDIR)/depend
+OBJDIR := $(TOOLDIR)/obj
+DEPS   := $(foreach f,$(SRC),$(OBJDIR)/$(f).d)
 
 HOST_CFLAGS := $(HOST_CFLAGS) -Wall -I. -O2 -I${NATIV_DIR} -I$(OBJDIR)
 
@@ -44,6 +44,11 @@ $(OBJDIR)/%.o : %.c $(OBJDIR)/defendian.h
 	@$(MECHO) "Compiling adflib/$(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
 
+$(OBJDIR)/%.d : %.c
+	@$(MECHO) Finding dependencies for $<...
+	@$(MKDIR) -p $(dir $@)
+	@$(HOST_CC) $(HOST_CFLAGS) -M $< > $@
+
 $(OBJDIR)/adf_nativ.o: ${NATIV_DIR}/adf_nativ.c ${NATIV_DIR}/adf_nativ.h
 	@$(HOST_CC) ${HOST_CFLAGS} -c ${NATIV_DIR}/adf_nativ.c -o $@
 
@@ -57,10 +62,6 @@ clean :
 	@mv -f Makefile.tmp Makefile
 	-@$(RM) Makefile.bak
 
-depend : $(DEPFILE)
-	@$(NOP)
+depend : $(DEPS)
 
-$(DEPFILE) : 
-	@makedepend -f- -- $(HOST_CFLAGS) -- *.c > $(DEPFILE)
-
--include $(DEPFILE)
+-include $(DEPS)
