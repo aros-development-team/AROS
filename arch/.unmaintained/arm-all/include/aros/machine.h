@@ -42,6 +42,7 @@
 */
 struct FullJumpVec
 {
+    unsigned short jmp;       // not necessary - if this leaves, change machine.i offsets!
     unsigned char vec[4];
 };
 
