@@ -524,3 +524,8 @@ first. But since these functions do only work properly if a bitmap is attached
 to the rastport, one can not call them inside of InitRastPort.
 There is a workaround for this problem in OpenWindow ATM, so that at least a
 window's rastport is initialized correctly.     
+
+BUG000076
+sduvan@aros.org
+Drawing the colorwheel through a mask as explained by Georg in the file
+palettereq.c in workbench/libs/reqtools.
