@@ -76,6 +76,7 @@ struct IntIntuitionBase
     struct Screen	   * DefaultPublicScreen;
     struct SignalSemaphore * PubScreenListLock;
 */
+    struct Library         * LayersBase;
 };
 
 struct IntScreen
@@ -103,30 +104,43 @@ extern struct IntuitionBase * IntuitionBase;
 #endif
 #define _GfxBase     (GetPrivIBase(IntuitionBase)->GfxBase)
 #define GfxBase     _GfxBase
+
+#ifdef LayersBase
+#undef LayersBase
+#endif
+#define _LayersBase     (GetPrivIBase(IntuitionBase)->LayersBase)
+#define LayersBase     _LayersBase
+
 #ifdef SysBase
 #undef SysBase
 #endif
 #define SysBase     (GetPrivIBase(IntuitionBase)->SysBase)
+
 #ifdef UtilityBase
 #undef UtilityBase
 #endif
 #define UtilityBase (GetPrivIBase(IntuitionBase)->UtilBase)
+
 #ifdef KeymapBase
 #undef KeymapBase
 #endif
 #define KeymapBase (GetPrivIBase(IntuitionBase)->KeymapBase)
+
 #ifdef TimerBase
 #undef TimerBase
 #endif
 #define TimerBase (GetPrivIBase(IntuitionBase)->TimerBase)
+
 #ifdef TimerMP
 #undef TimerMP
 #endif
 #define TimerMP (GetPrivIBase(IntuitionBase)->TimerMP)
+
 #ifdef TimerIO
 #undef TimerIO
 #endif
 #define TimerIO (GetPrivIBase(IntuitionBase)->TimerIO)
+
 #ifdef BOOPSIBase
 #undef BOOPSIBase
 #endif

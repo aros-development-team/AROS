@@ -206,6 +206,12 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	    return NULL;
     }
 
+    if (!LayersBase)
+    {
+	if (!(LayersBase = (void *)OpenLibrary ("layers.library", 39)) )
+	    return NULL;
+    }
+
     if (!UtilityBase)
     {
 	if (!(UtilityBase = (void *)OpenLibrary (UTILITYNAME, 39)) )
