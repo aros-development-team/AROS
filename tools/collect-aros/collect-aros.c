@@ -1,6 +1,10 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
+    
+    Desc: AROS linker wrapper that handles symbol sets
+    Lang: english
+    Original Author: falemagn
  */
 
 #include <stdio.h>
@@ -83,7 +87,7 @@ void docommand(char *path, char *argv[])
 	{
 	   fprintf(stderr, "collect-aros - Error while executing %s\n", path);
 	   perror(NULL);
-	}   
+	}
 
 	errno = 0; /* the parent process is going to exit too
 	            and we don't want it to complain again about the error. */
@@ -158,16 +162,25 @@ int main(int argc, char *argv[])
     FILE *pipe;
     FILE *setsfile = NULL;
     char buf[200];
-    int thereare = 0;
+    int thereare = 0, incremental = 0;
 
     atexit(exitfunc);
 
-    /* Get the output file name */
+    /* Do some stuff with the arguments */
     output = "a.out";
     for (cnt = 1; argv[cnt]; cnt++)
     {
-    	if (argv[cnt][0]=='-' && argv[cnt][1]=='o')
-     	    output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
+    	/* We've encountered an option */
+	if (argv[cnt][0]=='-')
+	{
+            /* Get the output file name */
+	    if (argv[cnt][1]=='o')
+     	        output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
+            else
+	    /* Incremental linking is required */
+            if (argv[cnt][0]=='r')
+	        incremental = 1;
+	}
     }
 
     tempoutname  = xtempnam();
@@ -194,6 +207,9 @@ int main(int argc, char *argv[])
     ldargs[cnt+1] = NULL;
 
     docommand(LINKERPATH, ldargs);
+
+    if (incremental)
+        return 0;
 
     command = joinstrings(NMPATH " ", output, NULL);
 
