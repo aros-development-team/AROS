@@ -52,6 +52,12 @@ $(DEST)toc.html : $(SRCS) tochtml.gawk
 	@gawk -f tochtml.gawk $(SRCS) > $@
 	chmod a+r $@
 
+$(DEST)devinfo.html : devinfo.src src2html.gawk page_header.html \
+	    page_footer.html collectcontents.sh contents2html.gawk \
+	    makefile2html.gawk
+	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
+	chmod a+r $@
+
 $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
