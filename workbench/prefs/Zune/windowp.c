@@ -19,6 +19,8 @@
 #include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+/*  #define DEBUG 1 */
+#include <aros/debug.h>
 #endif
 
 #include "zunestuff.h"
@@ -33,6 +35,10 @@ struct MUI_WindowPData
     Object *font_big_string;
     Object *background_window_popimage;
     Object *background_requester_popimage;
+    Object *spacing_left_slider;
+    Object *spacing_right_slider;
+    Object *spacing_top_slider;
+    Object *spacing_bottom_slider;
 };
 
 static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
@@ -45,43 +51,79 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 #define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
 #define AddConfigImgStr(str,id) if(str && *str && *str != '6'){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
 
+
+static Object*MakeSpacingSlider (void)
+{
+    return MUI_MakeObject(MUIO_Slider, "", 0, 9);
+}
+
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
     struct MUI_WindowPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
-	Child, VGroup,
-	    Child, ColGroup(2),
-		GroupFrameT("Fonts"),
-		Child, MakeLabel("Normal"),
-		Child, PopaslObject,
-		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, d.font_normal_string = StringObject, StringFrame, End,
-		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		    End,
-
-		Child, MakeLabel("Tiny"),
-		Child, PopaslObject,
-		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, d.font_tiny_string = StringObject, StringFrame, End,
-		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		    End,
-
-		Child, MakeLabel("Big"),
-		Child, PopaslObject,
-		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, d.font_big_string = StringObject, StringFrame, End,
-		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		    End,
-		End,
-
-	    Child, ColGroup(2),
-		GroupFrameT("Background"),
-		Child, d.background_window_popimage = PopimageObject, End,
-		Child, d.background_requester_popimage = PopimageObject, End,
-		Child, MakeLabel("Window"),
-		Child, MakeLabel("Requester"),
+	Child, HGroup,
+	   Child, VGroup,
+	       Child, ColGroup(2),
+                   GroupFrameT("Control"),
+			       Child, HVSpace,
+			       Child, HVSpace,
+		   End,
+   	       Child, ColGroup(2),
+   		   GroupFrameT("Fonts"),
+   		   Child, MakeLabel("Normal"),
+   		   Child, PopaslObject,
+   		       MUIA_Popasl_Type, ASL_FontRequest,
+   		       MUIA_Popstring_String, d.font_normal_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
+   		       End,
+   
+   		   Child, MakeLabel("Tiny"),
+   		   Child, PopaslObject,
+   		       MUIA_Popasl_Type, ASL_FontRequest,
+   		       MUIA_Popstring_String, d.font_tiny_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
+   		       End,
+   
+   		   Child, MakeLabel("Big"),
+   		   Child, PopaslObject,
+   		       MUIA_Popasl_Type, ASL_FontRequest,
+   		       MUIA_Popstring_String, d.font_big_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
+   		       End,
+   		   End,
+	        End,
+	     Child, VGroup,
+                Child, ColGroup(2),
+		   GroupFrameT("Background"),
+			       Child, VGroup,
+		   Child, d.background_window_popimage = PopimageObject, End,
+		   Child, MUI_MakeObject(MUIO_Label, "Window", MUIO_Label_Centered),
+			       End,
+			       Child, VGroup,
+		   Child, d.background_requester_popimage = PopimageObject, End,
+		   Child, MUI_MakeObject(MUIO_Label, "Requester", MUIO_Label_Centered),
+			       End,
+		   End,
+	        Child, ColGroup(4),
+                   GroupFrameT("Spacing"),
+			       MUIA_Group_Spacing, 2,
+			       Child, MakeLabel("L"),
+			       Child, d.spacing_left_slider = MakeSpacingSlider(),
+			       Child, d.spacing_top_slider = MakeSpacingSlider(),
+			       Child, MakeLabel("T"),
+			       Child, MakeLabel("R"),
+			       Child, d.spacing_right_slider = MakeSpacingSlider(),
+			       Child, d.spacing_bottom_slider = MakeSpacingSlider(),
+			       Child, MakeLabel("B"),
+			       End,
+	       Child, ColGroup(3),
+                   GroupFrameT("Frame Thickness"),
+			       Child, HVSpace,
+			       Child, HVSpace,
+			       Child, HVSpace,
+		   End,
 		End,
 	    End,
     	TAG_MORE, msg->ops_AttrList);
@@ -104,10 +146,24 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
     setstring(data->font_big_string,FindConfig(MUICFG_Font_Big));
     spec = FindConfig(MUICFG_Background_Window);
     set(data->background_window_popimage,MUIA_Imagedisplay_Spec,
-	spec ? spec : MUII_WindowBack);
+	spec ? (IPTR)spec : MUII_WindowBack);
     spec = FindConfig(MUICFG_Background_Requester);
     set(data->background_requester_popimage,MUIA_Imagedisplay_Spec,
-	spec ? spec : MUII_RequesterBack);
+	spec ? (IPTR)spec : MUII_RequesterBack);
+
+    setslider(data->spacing_left_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Window_Spacing_Left));
+    setslider(data->spacing_right_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Window_Spacing_Right));
+    setslider(data->spacing_top_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Window_Spacing_Top));
+    setslider(data->spacing_bottom_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Window_Spacing_Bottom));
+
     return 1;    
 }
 
@@ -129,6 +185,10 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
 
     str = (char*)xget(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
     AddConfigImgStr(str,MUICFG_Background_Requester);
+
+    D(bug("slider left = %ld\n", xget(data->spacing_left_slider, MUIA_Numeric_Value)));
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Left,
+	     xget(data->spacing_left_slider, MUIA_Numeric_Value));
 
     return TRUE;
 }
