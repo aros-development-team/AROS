@@ -56,8 +56,6 @@ IPTR XGET(Object *obj, Tag attr);
 #endif
 
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
-APTR AllocVecPooled (APTR pool, ULONG memsize);
-void FreeVecPooled (APTR pool, APTR mem);
 
 /* returns next node of this node */
 void *Node_Next(APTR node);
