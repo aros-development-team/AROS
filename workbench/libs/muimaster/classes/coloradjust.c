@@ -109,14 +109,14 @@ static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
     data->rgb[1] = cw.cw_Green;
     data->rgb[2] = cw.cw_Blue;
     
-    nnset(data->colfield, MUIA_Colorfield_RGB, data->rgb);
+    nnset(data->colfield, MUIA_Colorfield_RGB, (IPTR)data->rgb);
     
     if (data->wheel)
     {
     	struct ColorWheelHSB hsb;
  		
 	ConvertRGBToHSB(&cw, &hsb);
-    	nnset(data->wheel, WHEEL_HSB, &hsb);
+    	nnset(data->wheel, WHEEL_HSB, (IPTR)&hsb);
 	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));	
 
 	if (data->gradpen != -1)
@@ -153,7 +153,7 @@ static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
     nnset(data->gslider, MUIA_Numeric_Value, data->rgb[1] >> 24);
     nnset(data->bslider, MUIA_Numeric_Value, data->rgb[2] >> 24);
     
-    nnset(data->colfield, MUIA_Colorfield_RGB, data->rgb);
+    nnset(data->colfield, MUIA_Colorfield_RGB, (IPTR)data->rgb);
 
     if (data->gradpen != -1)
     {
@@ -192,7 +192,7 @@ static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
     nnset(data->gslider, MUIA_Numeric_Value, data->rgb[1] >> 24);
     nnset(data->bslider, MUIA_Numeric_Value, data->rgb[2] >> 24);
     
-    nnset(data->colfield, MUIA_Colorfield_RGB, data->rgb);
+    nnset(data->colfield, MUIA_Colorfield_RGB, (IPTR)data->rgb);
     
     NotifyAll(obj, data);    
 }
@@ -320,7 +320,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
    	}
     }
  
-    nnset(colfield, MUIA_Colorfield_RGB, data->rgb);
+    nnset(colfield, MUIA_Colorfield_RGB, (IPTR)data->rgb);
     nnset(rslider, MUIA_Numeric_Value, data->rgb[0] >> 24);
     nnset(gslider, MUIA_Numeric_Value, data->rgb[1] >> 24);
     nnset(bslider, MUIA_Numeric_Value, data->rgb[2] >> 24);
@@ -341,7 +341,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	nnset(wheel, WHEEL_Saturation, hsb.cw_Saturation);
 	nnset(wheel, WHEEL_Hue, hsb.cw_Hue);
 	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
-	nnset(data->grad, GRAD_PenArray, data->gradpenarray);
+	nnset(data->grad, GRAD_PenArray, (IPTR)data->gradpenarray);
     }
         
     DoMethod(rslider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->sliderhook, (IPTR)data, 0);
@@ -390,7 +390,6 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ColoradjustData   *data;
     struct TagItem  	    	*tag, *tags;
     ULONG   	    	    	*rgb;
-    IPTR    	    	    	 retval;
     BOOL    	    	    	 newcol = FALSE;
     
     data = INST_DATA(cl, obj);
@@ -433,7 +432,7 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	D(bug("coloradjust: sliders set to %ld, %ld, %ld\n", data->rgb[0] >> 24,
 	      data->rgb[1] >> 24, data->rgb[2] >> 24));
 
-	nnset(data->colfield, MUIA_Colorfield_RGB, data->rgb);
+	nnset(data->colfield, MUIA_Colorfield_RGB, (IPTR)data->rgb);
 
 	if (data->wheel)
 	{

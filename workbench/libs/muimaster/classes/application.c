@@ -252,7 +252,6 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ApplicationData *data;
     struct TagItem        *tags,*tag;
     BOOL   bad_childs = FALSE;
-    struct Date *date;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)

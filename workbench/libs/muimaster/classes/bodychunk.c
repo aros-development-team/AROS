@@ -338,7 +338,7 @@ static IPTR Bodychunk_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 
     if (!make_bitmap(cl, obj)) return FALSE;
     
-    set(obj, MUIA_Bitmap_Bitmap, data->bm);
+    set(obj, MUIA_Bitmap_Bitmap, (IPTR)data->bm);
     
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
     {
