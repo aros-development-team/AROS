@@ -73,7 +73,7 @@ const struct Resident emul_handler_resident=
     (APTR)&end,
     RTF_AUTOINIT,
     1,
-    NT_LIBRARY,
+    NT_DEVICE,
     0,
     (char *)name,
     (char *)&version[6],
@@ -477,7 +477,7 @@ static LONG startup(struct emulbase *emulbase)
 			    dlv=MakeDosEntry("Workbench",DLT_VOLUME);
 			    if(dlv!=NULL)
 			    {
-				dlc=MakeDosEntry("SYS",DLT_DEVICE);
+				dlc=MakeDosEntry("EMUL",DLT_DEVICE);
 				if(dlc!=NULL)
 				{
 				    ret=ERROR_OBJECT_EXISTS;
