@@ -45,7 +45,7 @@ const struct Resident Graphics_resident=
     RTF_AUTOINIT|RTF_COLDSTART,
     41,
     NT_LIBRARY,
-    0,
+    65,
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl

@@ -43,7 +43,7 @@ const struct Resident Mathffp_resident=
     RTF_AUTOINIT|RTF_COLDSTART,
     41,
     NT_LIBRARY,
-    0,
+    -120,
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl

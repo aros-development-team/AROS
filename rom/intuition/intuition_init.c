@@ -67,7 +67,7 @@ const struct Resident Intuition_resident=
     RTF_AUTOINIT|RTF_COLDSTART,
     LIBVERSION,
     NT_LIBRARY,
-    0,
+    10,
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
