@@ -167,6 +167,8 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
 
 /****************************************************************************/
 
+
+/****************************************************************************/
 BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
     struct SysIData *data = INST_DATA(cl, obj);
@@ -513,81 +515,74 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	right  = left + width  - 1;
 	bottom = top  + height - 1;
 	
-	/* Render bottom left window  */
+	/* Render top left window  */
 	
 	SetAPen(rport, pens[SHADOWPEN]);
         drawrect(rport
 		, left
-		, top + (height / 3)
-		, right - (width / 3 )
-		, bottom
-		, IntuitionBase);
-	
-	/* Render top right window  */
-	drawrect(rport
-		, left + (width / 3)
 		, top
-		, right
+		, right - (width / 3 )
 		, bottom - (height / 3)
 		, IntuitionBase);
-		
 	
-	/* Fill top right window (inside of the frame above) */
-	SetAPen(rport, pens[SHINEPEN]);
+	
+	/* Fill top left window (inside of the frame above) */
+	
+	if (msg->imp_State != IDS_INACTIVENORMAL)
+	{
+	    SetAPen(rport,pens[BACKGROUNDPEN]);
+	    RectFill(rport
+	            , left		    + 1
+		    , top		    + 1
+		    , right - (width / 3)   - 1
+		    , bottom - (height / 3) - 1);
+		 
+	}
+	
+	/* Render bottom right window  */
+	SetAPen(rport, pens[SHADOWPEN]);
+	drawrect(rport
+		, left + (width / 3)
+		, top + (height / 3)
+		, right
+		, bottom
+		, IntuitionBase);
+		
+	/* Fill bottom right window (inside of the frame above) */
+	SetAPen(rport, pens[(msg->imp_State == IDS_INACTIVENORMAL) ? BACKGROUNDPEN : SHINEPEN]);
 	RectFill(rport
 		, left + (width / 3) 	+ 1
-		, top 			+ 1
+		, top + (height / 3)	+ 1
 		, right 		- 1
-		, bottom - (height / 3) - 1);
+		, bottom 		- 1);
 
         
+	if (msg->imp_State == IDS_SELECTED)
+	{
+	    /* Re-Render top left window  */
+
+	    SetAPen(rport, pens[SHADOWPEN]);
+            drawrect(rport
+		    , left
+		    , top
+		    , right - (width / 3 )
+		    , bottom - (height / 3)
+		    , IntuitionBase);
+	}
         break; }
 	
     	
          
 	
     case CLOSEIMAGE: {
-        /* Closeimage is just a black rectangle filled with white */
-        UWORD *pens = data->dri->dri_Pens;
-	UWORD bg;
-
-        WORD h_spacing = width  / 4;
-	WORD v_spacing = height / 4;
+	UWORD *pens = data->dri->dri_Pens;
 	
-	/* Bottom & right of image */
-
-	WORD right;
-	WORD bottom;
-	
-
-	bg = getbgpen(msg->imp_State, pens);
-	
-	/* Clear background into correct color */
-	SetAPen(rport, bg);
-	RectFill(rport, left, top, left + width - 1, top + height - 1);
-	
-	right  = left + width  - 1 - h_spacing;
-	bottom = top  + height - 1 - v_spacing;
-
-	left += h_spacing; top += v_spacing;
-	
-	
-	/* in bottom left draw a rect and fill it with white */
-
+	SetAPen(rport, getbgpen(msg->imp_State, pens));
+	RectFill(rport,left, top, left + width - 1, top + height - 1);
 	SetAPen(rport, pens[SHADOWPEN]);
-	drawrect( rport
-		, left
-		, top
-		, right
-		, bottom
-		, IntuitionBase);
-		
-	SetAPen(rport, pens[SHINEPEN]);
-	RectFill( rport
-		, left   + 1
-		, top    + 1
-		, right  - 1
-		, bottom - 1);
+	RectFill(rport, left + 5, top + 4, left + width - 1 - 5, top + height - 1 - 4);
+	SetAPen(rport, pens[(msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
+	RectFill(rport, left + 6, top + 5, left + width - 1 - 6, top + height - 1 - 5); 
 
         break; }
 	
@@ -603,25 +598,19 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	SetAPen(rport, bg);
 	RectFill(rport, left, top, left + width - 1, top + height - 1);
 	
-	
-	
-	/* in bottom left draw a rect and fill it with white */
-
 	SetAPen(rport, pens[SHADOWPEN]);
-	drawrect( rport
-		, left
-		, top  + (height / 2)
-		, left + (width  / 2)
-		, bottom
-		, IntuitionBase);
-		
-	SetAPen(rport, pens[SHINEPEN]);
-	RectFill( rport
-		, left		      + 1
-		, top  + (height / 2) + 1
-		, left + (width  / 2) - 1
-		, bottom	      - 1);
+	RectFill(rport, left + 2, top + 2, left + width - 1 - 2, top + height - 1 - 2);
 
+	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? SHINEPEN :
+						 	       (msg->imp_State == IDS_NORMAL) ? FILLPEN : BACKGROUNDPEN]);
+	RectFill(rport, left + 3, top + 3, left + width - 1 - 3, top + height - 1 - 3);
+	
+	SetAPen(rport, pens[SHADOWPEN]);
+	RectFill(rport, left + 3, top + 3, left + 4 + 4, top + 3 + 4);
+	
+	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN :
+							       (msg->imp_State == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
+	RectFill(rport,left + 4, top + 3, left + 5 + 1, top + 3 + 3);
         break; }
 	
     
@@ -739,6 +728,7 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
     {
 	
 	case IDS_NORMAL:
+	case IDS_SELECTED:
 	    bg = pens[FILLPEN];
 	    break;
 	    

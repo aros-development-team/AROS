@@ -52,6 +52,18 @@ const ULONG gtyp2image[] =
     CLOSEIMAGE		/* GTYP_CLOSE		*/
 };
 
+const WORD image_leftedge[] = 
+{
+    0,		/* GTYP_SIZING		*/
+    0,		/* GTYP_WDRAGGING	*/
+    0,		/* GTYP_SDRAGGING	*/
+    -1,		/* GTYP_WDEPTH		*/
+    -1, 	/* GTYP_SDEPTH		*/
+    -1,		/* GTYP_WZOOM		*/
+    0,		/* GTYP_SUNUSED		*/
+    0,		/* GTYP_CLOSE		*/
+};
+
 struct dragbar_data
 {
      /* Current left- and topedge of moving window. Ie when the user releases
@@ -115,14 +127,25 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 	    
 	/* Draw a thin dark line around the bar */
 	
-	SetAPen(rp, pens[SHADOWPEN]);
-	drawrect( rp
-		, container.Left
-		, container.Top
-		, container.Left + container.Width  - 1
-		, container.Top  + container.Height - 1
-		, IntuitionBase);
+	SetAPen(rp, pens[SHINEPEN]);
+	RectFill(rp,container.Left,
+		    container.Top,
+		    container.Left,
+		    container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+	RectFill(rp,container.Left + 1,
+		    container.Top,
+		    container.Left + container.Width - 1,
+		    container.Top);
 	
+	SetAPen(rp,pens[SHADOWPEN]);
+	RectFill(rp,container.Left + container.Width - 1,
+		    container.Top + 1,
+		    container.Left + container.Width - 1,
+		    container.Top + container.Height - 1);
+	RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
+		    container.Top + container.Height - 1,
+		    container.Left + container.Width - 2,
+		    container.Top + container.Height - 1);
 	
 	/* Render the titlebar */
 	if (NULL != win->Title)
@@ -141,6 +164,7 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 		, container.Width
 		, container.Height);
 
+	    SetAPen(rp, pens[(win->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
 	    Move(rp, container.Left + 3, container.Top + dri->dri_Font->tf_Baseline + 3);
 	
 	    Text(rp, win->Title, textlen);
@@ -457,10 +481,11 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	{
 	    struct TagItem image_tags[] =
 	    {
-	    	{IA_Width,		G(o)->Width  - 2		},
-	    	{IA_Height, 		G(o)->Height - 2		},
-	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]	},
-	    	{SYSIA_DrawInfo,	(IPTR)dri			},
+/*	    	{IA_Left,		image_leftedge[SYSGADTYPE_IDX(o)]				},*/
+	    	{IA_Width,		G(o)->Width - 2 /* - image_leftedge[SYSGADTYPE_IDX(o)] */	},
+	    	{IA_Height, 		G(o)->Height - 2						},
+	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]					},
+	    	{SYSIA_DrawInfo,	(IPTR)dri							},
 	    	{TAG_DONE, 0UL}
 	    };
 
@@ -494,6 +519,7 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 {
 	struct tbb_data *data = INST_DATA(cl, o);
 	struct IBox container;
+	struct RastPort *rp = msg->gpr_RPort;
 	
 	/* center image position, we assume image top and left is 0 */
 	ULONG x, y;
@@ -502,13 +528,13 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	D(bug("Gadget IBOX\n"));
+
 	x = container.Left + ((container.Width / 2) -
 		    (IM(data->image)->Width / 2));
 		    
 	y = container.Top + ((container.Height / 2) -
 		    (IM(data->image)->Height / 2));
-	
-	
+		
 	/* Are we part of the active window ? */
 	if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
 	{
@@ -521,22 +547,33 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	
 	D(bug("Drawing image\n"));
 
-   	DrawImageState(msg->gpr_RPort
+   	DrawImageState(rp
 	    , (struct Image *)data->image
 	    , x, y
 	    , state
 	    , msg->gpr_GInfo->gi_DrInfo);
 	    
 	/* For now just render a tiny black edge around the image */
-	SetAPen(msg->gpr_RPort, pens[SHADOWPEN]);
-	drawrect(msg->gpr_RPort
-		, container.Left
-		, container.Top
-		, container.Left + container.Width - 1
-		, container.Top + container.Height - 1
-		, IntuitionBase);
-		
-    
+
+	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
+	RectFill(rp,container.Left,
+		    container.Top,
+		    container.Left,
+		    container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+	RectFill(rp,container.Left + 1,
+		    container.Top,
+		    container.Left + container.Width - 1,
+		    container.Top);
+	
+	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
+	RectFill(rp,container.Left + container.Width - 1,
+		    container.Top + 1,
+		    container.Left + container.Width - 1,
+		    container.Top + container.Height - 1);
+	RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
+		    container.Top + container.Height - 1,
+		    container.Left + container.Width - 2,
+		    container.Top + container.Height - 1);
     return;
 }
 

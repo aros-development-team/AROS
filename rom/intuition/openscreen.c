@@ -29,7 +29,7 @@ static const ULONG coltab[] = {
     0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70	*/
     0x00000000, 0x00000000, 0x00000000, /* Black	*/
     0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White	*/
-    0xFFFFFFFF, 0xA5A5A5A5, 0x00000000, /* Orange	*/
+    0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
     
     0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue		*/
     0x00000000, 0xFFFFFFFF, 0x00000000, /* Green	*/
@@ -170,16 +170,16 @@ static const ULONG coltab[] = {
         */
 	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
-	screen->Screen.BarHeight = 0;
-	screen->Screen.BarVBorder = 0;
-	screen->Screen.BarHBorder = 0;
+	screen->Screen.BarHeight   = 0;
+	screen->Screen.BarVBorder  = 0;
+	screen->Screen.BarHBorder  = 0;
 	screen->Screen.MenuVBorder = 0;
 	screen->Screen.MenuHBorder = 0;
 
-	screen->Screen.WBorTop = 0;
-	screen->Screen.WBorLeft = 0;
-	screen->Screen.WBorRight = 0;
-	screen->Screen.WBorBottom = 0;
+	screen->Screen.WBorTop    = 7;  /* Amiga default is 2 */
+	screen->Screen.WBorLeft   = 4;
+	screen->Screen.WBorRight  = 4;
+	screen->Screen.WBorBottom = 5;  /* Amiga default is 2 */
 
 
 	screen->Screen.Title = newScreen->DefaultTitle;
@@ -216,7 +216,7 @@ static const ULONG coltab[] = {
 	screen->Pens[TEXTPEN] = 1;
 	screen->Pens[SHINEPEN] = 2;
 	screen->Pens[SHADOWPEN] = 1;
-	screen->Pens[FILLPEN] = 4;
+	screen->Pens[FILLPEN] = 3;
 	screen->Pens[FILLTEXTPEN] = 2;
 	screen->Pens[BACKGROUNDPEN] = 0;
 	screen->Pens[HIGHLIGHTTEXTPEN] = 1;

@@ -137,11 +137,6 @@
     if (newWindow->DetailPen == 0xFF) newWindow->DetailPen = 1;
     if (newWindow->BlockPen  == 0xFF) newWindow->BlockPen = 0;
 
-    w->BorderLeft   = 1;
-    w->BorderTop    = 10;
-    w->BorderRight  = 1;
-    w->BorderBottom = 1;
-
     w->MinWidth  = newWindow->MinWidth;
     w->MinHeight = newWindow->MinHeight;
     w->MaxWidth  = newWindow->MaxWidth;
@@ -158,6 +153,30 @@
     /* Copy flags */
     w->Flags = newWindow->Flags;
 
+    if (!(w->Flags & WFLG_BORDERLESS))
+    {
+	w->BorderLeft   = w->WScreen->WBorLeft;
+	w->BorderRight  = w->WScreen->WBorRight;
+	w->BorderTop    = w->WScreen->WBorTop;
+	w->BorderBottom = w->WScreen->WBorBottom;
+    }
+    
+    if (newWindow->Title || (w->Flags & (WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_DEPTHGADGET)))
+    {
+    	/* this is a hack. the correct way to "correct" (increase if necessary)
+	   the w->Border??? items would be to check all GACT_???BORDER gadgets
+	   (inclusive sysgadgets which are GACT_????BORDER gadgets as well) in
+	   newwindow->FirstGadget (or WA_Gadgets tag) and all sysgadgets and then
+	   make sure that each window border is big enough so that none of these
+	   gadgets extends outside the window border area */
+	   
+    	/* Georg Steger: ??? font ??? */
+    	if (w->WScreen->Font)
+	    w->BorderTop += ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font->tf_YSize + 1;
+	else
+	    w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
+    }
+    
     if (!intui_OpenWindow (w, IntuitionBase, newWindow->BitMap))
 	goto failexit;
 

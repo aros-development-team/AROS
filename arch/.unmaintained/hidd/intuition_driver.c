@@ -135,7 +135,10 @@ int intui_GetWindowSize (void)
 }
 
 
-#define TITLEBAR_HEIGHT 14
+/* Georg Steger: changed TITLEBAR_HEIGHT */
+/* #define TITLEBAR_HEIGHT 14 */
+#define TITLEBAR_HEIGHT (w->BorderTop)
+
 int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase,
 	struct BitMap        * SuperBitMap)
@@ -317,25 +320,64 @@ void intui_RefreshWindowFrame(struct Window *w)
 {
     /* Draw a frame around the window */
     struct RastPort *rp = w->BorderRPort;
+    struct DrawInfo *dri;
     UWORD i;
     
     EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
     
-    LockLayerRom(rp->Layer);
-    
-    SetAPen(rp, 1);
-    D(bug("Pen set\n"));
-    drawrect(rp, 0, 0, w->Width - 1, w->Height - 1, IntuitionBase);
-
-    /* Refresh all the sytem gadgets */
-    
-    for (i = 0; i < NUM_SYSGADS; i ++)
+    if (!(w->Flags & WFLG_BORDERLESS))
     {
-        if (SYSGAD(w, i))
-	    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
-    }
-    
-    UnlockLayerRom(rp->Layer);
+	dri = GetScreenDrawInfo(w->WScreen);
+	if (dri)
+	{
+	    LockLayerRom(rp->Layer);
+
+#if 0
+	    SetAPen(rp, 1);
+	    D(bug("Pen set\n"));
+	    drawrect(rp, 0, 0, w->Width - 1, w->Height - 1, IntuitionBase);
+#endif
+
+	    SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+	    if (w->BorderLeft > 0) RectFill(rp, 0, 0, 0, w->Height - 1);
+	    if (w->BorderTop > 0)  RectFill(rp, 0, 0, w->Width - 1, 0);
+	    if (w->BorderRight > 1) RectFill(rp, w->Width - w->BorderRight,w->BorderTop,
+	    					 w->Width - w->BorderRight,w->Height - w->BorderBottom);
+	    if (w->BorderBottom > 1) RectFill(rp,w->BorderLeft,w->Height - w->BorderBottom,
+	    					 w->Width - w->BorderRight,w->Height - w->BorderBottom);
+	    
+	    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+	    if (w->BorderRight > 0) RectFill(rp, w->Width - 1, 1, w->Width - 1, w->Height - 1);
+	    if (w->BorderBottom > 0) RectFill(rp, 1, w->Height - 1, w->Width - 1, w->Height - 1);
+	    if (w->BorderLeft > 1) RectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
+	    					w->BorderLeft - 1, w->Height - w->BorderBottom);
+	    if (w->BorderTop > 1) RectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
+	    				       w->Width - w->BorderRight, w->BorderTop - 1);
+	    
+	   
+	    SetAPen(rp, dri->dri_Pens[(w->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
+	    if (w->BorderLeft > 2) RectFill(rp, 1, 1, w->BorderLeft - 2,w->Height - 2);
+	    if (w->BorderTop > 2)  RectFill(rp, 1, 1, w->Width - 2, w->BorderTop - 2);
+	    if (w->BorderRight > 2) RectFill(rp, w->Width - w->BorderRight + 1, 1,
+	    					 w->Width - 2, w->Height - 2);
+	    if (w->BorderBottom > 2) RectFill(rp, 1, w->Height - w->BorderBottom + 1,
+	    					  w->Width - 2, w->Height - 2);
+						  
+	    /* Refresh all the sytem gadgets */
+
+	    for (i = 0; i < NUM_SYSGADS; i ++)
+	    {
+        	if (SYSGAD(w, i))
+		    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
+	    }
+
+	    UnlockLayerRom(rp->Layer);
+
+	    FreeScreenDrawInfo(w->WScreen, dri);
+	    
+	} /* if (dri) */
+	
+    } /* if (!(win->Flags & WFLG_BORDERLESS)) */
     
     ReturnVoid("intui_RefreshWindowFrame");
 }
@@ -500,7 +542,10 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	       
 	    w->Flags |= WFLG_DRAGBAR;
 
-	    w->BorderTop = TITLEBAR_HEIGHT;
+            /* Georg Steger: bordertop is set by rom/intuition/openwindow.c
+	                     to scr->WBorTop + FontHeight + 1 */
+			     
+	    /* w->BorderTop = TITLEBAR_HEIGHT; */
 	}
 	
 	/* Relright of rightmost button */
