@@ -28,9 +28,6 @@ VAR struct Library              *DiskfontBase;
 VAR struct Screen               *scr;
 VAR struct Window               *win;
 VAR struct DrawInfo             *dri;
-VAR struct Menu                 *menus;
-VAR struct Menu                 *pictmenus;
-VAR struct Menu                 *textmenus;
 VAR STRPTR                      filename;
 VAR APTR                        vi;
 VAR struct Catalog              *catalog;
@@ -48,13 +45,20 @@ VAR WORD                        prog_exitcode;
 VAR UBYTE                       filenamebuffer[300];
 VAR UBYTE                       objnamebuffer[300];
 VAR UBYTE                       s[300];
+/* current dt's group ID */
 VAR ULONG                       dto_subclass_gid;
+/* basic menus and menu dependent on current dt's group ID */
+VAR struct Menu                 *menus;
+VAR struct Menu                 *pictmenus;
+VAR struct Menu                 *textmenus;
+/* methods supported by current dt */
 VAR UBYTE                       dto_supports_write;
 VAR UBYTE                       dto_supports_write_iff;
 VAR UBYTE                       dto_supports_print;
 VAR UBYTE                       dto_supports_copy;
 VAR UBYTE                       dto_supports_selectall;
 VAR UBYTE                       dto_supports_clearselected;
+/* triggers supported by current dt */
 VAR UBYTE                       dto_supports_activate_field;
 VAR UBYTE                       dto_supports_next_field;
 VAR UBYTE                       dto_supports_prev_field;
@@ -62,3 +66,9 @@ VAR UBYTE                       dto_supports_retrace;
 VAR UBYTE                       dto_supports_search;
 VAR UBYTE                       dto_supports_search_prev;
 VAR UBYTE                       dto_supports_search_next;
+/* variables for picture-dt scaling */
+VAR UWORD			pdt_origwidth;
+VAR UWORD			pdt_origheight;
+VAR WORD			pdt_zoom;
+VAR BOOL			pdt_fit_win;
+VAR BOOL			pdt_keep_aspect;

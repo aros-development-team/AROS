@@ -52,10 +52,15 @@ struct NewMenu nm[] =
 struct NewMenu nmpict[] =
 {
     {NM_TITLE, (STRPTR)MSG_MEN_PICT                                                      },
-     {NM_ITEM, (STRPTR)MSG_MEN_PICT_FIT_WIN              , 0, CHECKIT | MENUTOGGLE       },
      {NM_ITEM, (STRPTR)MSG_MEN_PICT_ZOOM_IN                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_PICT_ZOOM_OUT                                             },
      {NM_ITEM, (STRPTR)MSG_MEN_PICT_RESET                                                },
+     {NM_ITEM, NM_BARLABEL                                                               },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_FIT_WIN              , 0, CHECKIT | MENUTOGGLE       },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_KEEP_ASPECT          , 0, CHECKIT | MENUTOGGLE       },
+     {NM_ITEM, NM_BARLABEL                                                               },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_FORCE_MAP            , 0, CHECKIT | MENUTOGGLE       },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_DITHER               , 0, CHECKIT | MENUTOGGLE | CHECKED },
     {NM_END}
 };
 
@@ -323,21 +328,21 @@ void About(void)
 
 ULONG DoTrigger(ULONG what)
 {
-    struct dtTrigger m;
+    struct dtTrigger msg;
 
-    m.MethodID          = DTM_TRIGGER;
-    m.dtt_GInfo         = NULL;
-    m.dtt_Function      = what;
-    m.dtt_Data          = NULL;
+    msg.MethodID          = DTM_TRIGGER;
+    msg.dtt_GInfo         = NULL;
+    msg.dtt_Function      = what;
+    msg.dtt_Data          = NULL;
 
-    return DoDTMethodA(dto, win, NULL, (Msg)&m);                               
+    return DoDTMethodA(dto, win, NULL, (Msg)&msg);
 }
 
 /*********************************************************************************************/
 
 ULONG DoWriteMethod(STRPTR name, ULONG mode)
 {
-    struct dtWrite m;
+    struct dtWrite msg;
     BPTR fh;
     ULONG retval;
     
@@ -352,14 +357,14 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
 	    return FALSE;
 	}
     }
-    m.MethodID          = DTM_WRITE;
-    m.dtw_GInfo         = NULL;
-    m.dtw_FileHandle    = fh;
-    m.dtw_Mode          = mode;
-    m.dtw_AttrList      = NULL;
+    msg.MethodID          = DTM_WRITE;
+    msg.dtw_GInfo         = NULL;
+    msg.dtw_FileHandle    = fh;
+    msg.dtw_Mode          = mode;
+    msg.dtw_AttrList      = NULL;
 
     D(bug("Multiview: Saving %s mode %ld\n", name ? name : (STRPTR)"[nothing]", mode));
-    retval = DoDTMethodA(dto, win, NULL, (Msg)&m);
+    retval = DoDTMethodA(dto, win, NULL, (Msg)&msg);
     if (fh)
     {
 	Close( fh );
@@ -370,6 +375,80 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
 	}
     }
     return retval;
+}
+
+/*********************************************************************************************/
+
+ULONG DoLayout(ULONG initial)
+{
+    struct gpLayout msg;
+
+    msg.MethodID	= DTM_ASYNCLAYOUT;
+    msg.gpl_GInfo	= NULL;
+    msg.gpl_Initial	= initial;
+
+    return DoMethodA(dto, (Msg)&msg);
+;    return DoAsyncLayout(dto, &msg);
+}
+
+/*********************************************************************************************/
+
+ULONG DoScaleMethod(ULONG xsize, ULONG ysize, BOOL aspect)
+{
+    struct pdtScale msg;
+    
+    D(bug(" scale width %d height %d\n", xsize, ysize));
+    msg.MethodID	= PDTM_SCALE;
+    msg.ps_NewWidth	= xsize;
+    msg.ps_NewHeight	= ysize;
+    msg.ps_Flags	= aspect ? PScale_KeepAspect : 0;
+    // D(bug("- method %08lx newwidth %ld newheight %ld flags %08lx\n", msg.MethodID, msg.ps_NewWidth, msg.ps_NewHeight, msg.ps_Flags));
+
+    return DoMethodA(dto, (Msg)&msg);
+}
+
+/*********************************************************************************************/
+
+void DoZoom(WORD zoomer)
+{
+    UWORD curwidth, curheight;
+    
+    if (zoomer > 0)
+    {
+	curwidth = pdt_origwidth * zoomer;
+	curheight = pdt_origheight * zoomer;
+    }
+    else
+    {
+	curwidth = pdt_origwidth / -zoomer;
+	curheight = pdt_origheight / -zoomer;
+    }
+    D(bug(" zoom %d width %d height %d\n", zoomer, curwidth, curheight));
+    DoScaleMethod(curwidth, curheight, 0);
+#if 0
+    D(bug("=> layout\n"));
+    DoLayout(TRUE);
+    D(bug("=> erase\n"));
+    EraseRect(win->RPort, win->BorderLeft,
+			  win->BorderTop,
+			  win->Width - 1 - win->BorderRight,
+			  win->Height - 1 - win->BorderBottom);
+			  
+    D(bug("=> attrs\n"));
+    SetDTAttrs (dto, NULL, NULL, GA_Left        , win->BorderLeft + 2                           ,
+				 GA_Top         , win->BorderTop + 2                            ,
+				 GA_RelWidth    , - win->BorderLeft - win->BorderRight - 4      ,
+				 GA_RelHeight   , - win->BorderTop - win->BorderBottom - 4      ,
+				 TAG_DONE);
+
+    D(bug("=> refresh\n"));
+    RefreshDTObjects(dto, win, NULL, NULL);
+#endif
+#warning TODO: better new layout required
+    D(bug("=> removedt\n"));
+    RemoveDTObject(win, dto);
+    D(bug("=> adddt\n"));
+    AddDTOToWin();
 }
 
 /*********************************************************************************************/

@@ -497,7 +497,7 @@ static void KillGadgets(void)
 
 /*********************************************************************************************/
 
-static void AddDTOToWin(void)
+void AddDTOToWin(void)
 {
     EraseRect(win->RPort, win->BorderLeft,
 			  win->BorderTop,
@@ -607,8 +607,13 @@ static void OpenDTO(void)
 #endif
 
     val = 0;
-    GetDTAttrs(dto, DTA_NominalHoriz, (IPTR)&val, TAG_DONE); winwidth  = (WORD)val;
-    GetDTAttrs(dto, DTA_NominalVert , (IPTR)&val, TAG_DONE); winheight = (WORD)val;
+    GetDTAttrs(dto, DTA_NominalHoriz, (IPTR)&val, TAG_DONE);
+    pdt_origwidth = winwidth = (WORD)val;
+    GetDTAttrs(dto, DTA_NominalVert , (IPTR)&val, TAG_DONE);
+    pdt_origheight = winheight = (WORD)val;
+    pdt_zoom = 1;
+    pdt_fit_win = FALSE;
+    pdt_keep_aspect = FALSE;
 
     /*
      *  Add 4 Pixels for border around DataType-Object
@@ -758,6 +763,7 @@ static void MakeWindow(void)
 						  IDCMP_RAWKEY      |
 						  IDCMP_IDCMPUPDATE |
 						  IDCMP_MENUPICK    |
+						  IDCMP_NEWSIZE     |
 						  IDCMP_INTUITICKS      ,
 			    TAG_DONE);
 
@@ -886,6 +892,26 @@ static void ScrollTo(UWORD dir, UWORD quali)
 
     } /* if (top != oldtop) */
 
+}
+
+/*********************************************************************************************/
+
+static void FitToWindow(void)
+{
+    if( pdt_fit_win )
+    {
+	int x, y;
+	
+	x = win->Width - (win->BorderLeft + win->BorderRight + 4);
+	y = win->Height - (win->BorderTop + win->BorderBottom + 4);
+	D(bug("=> width %ld height %ld\n", x, y));
+	DoScaleMethod(x, y, pdt_keep_aspect);
+	#warning TODO: better new layout required
+	D(bug("=> removedt\n"));
+	RemoveDTObject(win, dto);
+	D(bug("=> adddt\n"));
+	AddDTOToWin();
+    }
 }
 
 /*********************************************************************************************/
@@ -1147,20 +1173,53 @@ static void HandleAll(void)
 				    OutputMessage(not_supported);
 				    break;
 				    
-				case MSG_MEN_PICT_FIT_WIN:
-				    OutputMessage(not_supported);
-				    break;
-
 				case MSG_MEN_PICT_ZOOM_IN:
-				    OutputMessage(not_supported);
+				    pdt_zoom++;
+				    if (pdt_zoom == -1 ) pdt_zoom = 1;
+				    DoZoom(pdt_zoom);
 				    break;
 
 				case MSG_MEN_PICT_ZOOM_OUT:
-				    OutputMessage(not_supported);
+				    pdt_zoom--;
+				    if (pdt_zoom == 0 ) pdt_zoom = -2;
+				    DoZoom(pdt_zoom);
 				    break;
 
 				case MSG_MEN_PICT_RESET:
-				    OutputMessage(not_supported);
+				    pdt_zoom = 1;
+				    DoZoom(pdt_zoom);
+				    break;
+
+				case MSG_MEN_PICT_FIT_WIN:
+				    pdt_fit_win = (item->Flags & CHECKED) ? TRUE : FALSE;
+				    FitToWindow();
+				    break;
+
+				case MSG_MEN_PICT_KEEP_ASPECT:
+				    pdt_keep_aspect = (item->Flags & CHECKED) ? TRUE : FALSE;
+				    FitToWindow();
+				    break;
+
+				case MSG_MEN_PICT_FORCE_MAP:
+				    SetDTAttrs (dto, NULL, NULL,
+						PDTA_DestMode, (item->Flags & CHECKED) ? FALSE : TRUE,
+						TAG_DONE);
+				    #warning TODO: better new layout required
+				    D(bug("=> removedt\n"));
+				    RemoveDTObject(win, dto);
+				    D(bug("=> adddt\n"));
+				    AddDTOToWin();
+				    break;
+
+				case MSG_MEN_PICT_DITHER:
+				    SetDTAttrs (dto, NULL, NULL,
+						PDTA_DitherQuality, (item->Flags & CHECKED) ? 4 : 0,
+						TAG_DONE);
+				    #warning TODO: better new layout required
+				    D(bug("=> removedt\n"));
+				    RemoveDTObject(win, dto);
+				    D(bug("=> adddt\n"));
+				    AddDTOToWin();
 				    break;
 
 				case MSG_MEN_TEXT_WORDWRAP:
@@ -1199,12 +1258,17 @@ static void HandleAll(void)
 		    } /* while(men != MENUNULL) */
 		    break;
 		    
+		case IDCMP_NEWSIZE:
+		    D(bug("IDCMP NEWSIZE\n"));
+		    FitToWindow();
+		    break;
+
 		case IDCMP_IDCMPUPDATE:
 		    tstate = tags = (struct TagItem *)msg->IAddress;
 		    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
 		    {
 			tidata = tag->ti_Data;
-//			D(bug("IDCMP UPDATE %08lx\n", (long)tag->ti_Tag));
+//			D(bug("IDCMP UPDATE %08lx %08lx\n", (long)tag->ti_Tag, (long)tag->ti_Data));
 			switch (tag->ti_Tag)
 			{
 			    /* Change in busy state */
