@@ -21,7 +21,10 @@ $(AROSDIR)/boot/grub/stage1: stage1/stage1
 $(AROSDIR)/boot/grub/stage2: stage2/stage2
 	@$(CP) stage2/stage2 $(AROSDIR)/boot/grub
  
-configure: configure.in
+config.h.in: configure.in
+	autoheader
+
+configure: config.h.in configure.in
 	autoconf
 
 Makefile: configure
