@@ -771,7 +771,6 @@ void WindowNeedsRefresh(struct Window * w,
      call RefershWindowFrame first, as the border gadgets don´t
      cover the whole border area.*/
 
-  
   if (FALSE != BeginUpdate(w->WLayer))
   {
   
@@ -784,11 +783,9 @@ void WindowNeedsRefresh(struct Window * w,
        were already refreshed in refreshwindowframe */
     int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
   }
-
   EndUpdate(w->WLayer, FALSE);
   
   /* Can use Forbid() for this */
-  
   Forbid();
   
   IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
@@ -801,7 +798,7 @@ void WindowNeedsRefresh(struct Window * w,
     /* Does the window already have such a message? */
     if (IDCMP_REFRESHWINDOW == IM->Class)
     {
-kprintf("Window %s already has a refresh message pending!!\n",w->Title);
+kprintf("Window %s already has a refresh message pending!!\n",w->Title ? w->Title : "<NONAME>");
       found = TRUE;break;
     }
   }
@@ -810,7 +807,11 @@ kprintf("Window %s already has a refresh message pending!!\n",w->Title);
 
   if (!found)
   {
-kprintf("Sending a refresh message to window %s!!\n",w->Title);
+kprintf("Sending a refresh message to window %s  %d %d %d %d!!\n",w->Title ? w->Title : "<NONAME>",
+								w->LeftEdge,
+								w->TopEdge,
+								w->Width,
+								w->Height);
 
     IM = alloc_intuimessage(w, IntuitionBase);
     if (NULL != IM)
