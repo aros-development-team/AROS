@@ -9,6 +9,8 @@
 #include "inputhandler.h"
 #include "gadgets.h"
 
+#include <proto/exec.h>
+
 /*****************************************************************************
 
     NAME */
@@ -51,7 +53,33 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    struct DeferedActionMessage * msg;
+    BOOL success = FALSE;
     
+    if (((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) ||
+        ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
+    {
+	msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
+
+	if (NULL != msg)
+	{
+	    msg->Code        = AMCODE_ACTIVATEGADGET;
+	    msg->Window      = window;
+	    msg->Gadget      = gadget;
+	    msg->Task        = FindTask(NULL);
+
+	    SetSignal(0,SIGF_INTUITION);
+	    PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+	    Wait(SIGF_INTUITION);
+
+	    success = (BOOL)msg->Code;
+
+	    FreeMem(msg, sizeof(struct DeferedActionMessage));
+	}   
+    }
+      
+#if 0
     
     struct IIHData	*iih;
     BOOL success = FALSE;
@@ -177,7 +205,8 @@
 		break;
 		
     }	/* switch () */
-    
+
+#endif
     
     return success;
 
