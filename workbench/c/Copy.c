@@ -171,7 +171,7 @@
     FOOVR=FORCEOVERWRITE:
     When this option is enabled, files are overwritten also, when they are
     protected.
-    
+
     DONTOVR=DONTOVERWRITE:
     This option prevents overwriting of destination files.
 
@@ -299,11 +299,6 @@ static const char version[] = "$VER: Copy 41.1 (3.3.2001)\n";
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <exec/memory.h>
-
-/* Note: AROS Printf() is not working, so we use the regular stdio printf()
-         instead */
-#undef Printf
-#define Printf printf
 
 #define PARAM   "FROM/M,TO,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"         \
                 "DIRECT/S,CLONE/S,DATES/S,NOPRO/S,COM=COMMENT/S,"       \
@@ -719,7 +714,7 @@ ULONG main(void)
 #ifdef _AROS
 		if (*args.from == NULL)
 		{
-		    Printf("No arguments specified\n");
+		    PutStr("No arguments specified\n");
 		    FreeArgs(rda);
 		    FreeDosObject(DOS_RDARGS, rda);
 
@@ -766,10 +761,10 @@ ULONG main(void)
 		{
 		    ULONG i;
 		    cd.RetVal2 = RETURN_OK;
-		    
+
 		    if (!args.silent)
 		    {
-			Printf(texts[TEXTNUM_MODE + COPYMODE_MAKEDIR]);
+			PutStr(texts[TEXTNUM_MODE + COPYMODE_MAKEDIR]);
 		    }		    
 
 		    while (!cd.RetVal && !cd.RetVal2 && *args.from)
@@ -782,7 +777,7 @@ ULONG main(void)
 
 				if (!args.quiet)
 				{
-				    Printf(TEXT_ERR_WILDCARD_DEST);
+				    PutStr(TEXT_ERR_WILDCARD_DEST);
 				}
 			    }
 			    else
@@ -849,7 +844,7 @@ ULONG main(void)
 		    {
 			if (!args.silent)
 			{
-			    Printf(texts[TEXTNUM_MODE + cd.Mode +
+			    PutStr(texts[TEXTNUM_MODE + cd.Mode +
 					(cd.Flags & COPYFLAG_SOFTLINK ? 1 : 0)]);
 			}
 			
@@ -878,7 +873,7 @@ ULONG main(void)
 
 				if (!args.quiet)
 				{
-				    Printf(TEXT_ERR_WILDCARD_DEST);
+				    PutStr(TEXT_ERR_WILDCARD_DEST);
 				}
 			    }
 			}
@@ -994,7 +989,7 @@ ULONG main(void)
 			if (!(cd.Flags & COPYFLAG_DONE) && !args.silent && 
 			    !cd.RetVal && !cd.RetVal2)
 			{
-			    Printf(TEXT_NOTHING_DONE);
+			    PutStr(TEXT_NOTHING_DONE);
 			}
 
 			FreeDosObject(DOS_FIB, cd.Fib);
@@ -1032,7 +1027,7 @@ ULONG main(void)
 	
 #ifndef _AROS
 	CloseLibrary((struct Library *)dosbase);
-#endif  _AROS
+#endif  /*_AROS*/
 
 	if (args.errwarn && cd.RetVal2 == RETURN_WARN)
 	{
@@ -1050,7 +1045,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     ULONG retval, doit = 0, deep = 0, failval = RETURN_WARN, first = 0;
     
 #if DEBUG
-    Printf("PatCopy(%s, .)\n", name);
+    VPrintf("PatCopy(%s, .)\n", (IPTR*)&name);
 #endif
     
     if ((cd->Mode == COPYMODE_COPY || (cd->Flags & COPYFLAG_ALL)) && !IsPattern(name))
@@ -1081,7 +1076,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     {
 	APath->ap_BreakBits = SIGBREAKF_CTRL_C;
 	APath->ap_Strlen = FILEPATH_SIZE;
-	
+
 	for (retval = MatchFirst(name, APath); !retval && cd->RetVal <=
 		 failval && !cd->RetVal2; retval = MatchNext(APath))
 	{
@@ -1248,7 +1243,7 @@ ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
 	{
 	    if(!(cd->Flags & COPYFLAG_QUIET))
 	    {
-		Printf(TEXT_ERR_DEST_DIR);
+		PutStr(TEXT_ERR_DEST_DIR);
 	    }
 	    
 	    err = 2;
@@ -1266,7 +1261,7 @@ ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
 		if (!(cd->Flags & COPYFLAG_SILENT))
 		{
 		    PrintName(name, 1, 1, 1);
-		    Printf("%s\n", TEXT_CREATED);
+		    VPrintf("%s\n", (IPTR *)&TEXT_CREATED);
 		}
 
 		UnLock(a);
@@ -1314,20 +1309,20 @@ void PrintName(STRPTR name, ULONG deep, ULONG dir, ULONG txt)
     
     while (deep--)
     {
-	Printf(" ");
+	PutStr(" ");
     }
     
     if ((deep = strlen(name)) > PRINTOUT_SIZE) /* reduce name size */
     {
 	name += deep-PRINTOUT_SIZE;
-	Printf("...");
+	PutStr("...");
     }
     
-    Printf((dir ? TEXT_DIRECTORY : "%s"), name);
+    VPrintf((dir ? TEXT_DIRECTORY : "%s"), (IPTR *)&name);
 
     if (txt)
     {
-	Printf(" ..");
+	PutStr(" ..");
     }
     
     Flush(Output());
@@ -1341,7 +1336,7 @@ void PrintNotDone(STRPTR name, STRPTR txt, ULONG deep, ULONG dir)
 	PrintName(name, deep, dir, 1);
     }
 
-    Printf(TEXT_NOT_DONE, txt);
+    VPrintf(TEXT_NOT_DONE, (IPTR *)&txt);
     PrintFault(IoErr(),0);
 }
 
@@ -1377,7 +1372,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
     STRPTR printerr = 0, printok = "";
     
 #if DEBUG
-    Printf("DoWork(%s, .)\n", name);
+    VPrintf("DoWork(%s, .)\n", (IPTR *)&name);
 #endif
     
     if (cd->RetVal > (cd->Flags & COPYFLAG_ERRWARN ? RETURN_OK : RETURN_WARN) || cd->RetVal2)
@@ -1396,7 +1391,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
 		return;
 	    }
-	    
+
 	    cd->DestPathSize = strlen(cd->DestName);
 	}
 
@@ -1410,8 +1405,10 @@ void DoWork(STRPTR name, struct CopyData *cd)
 	STRPTR txt = TEXT_OPENED_FOR_OUTPUT;
 	
 #if DEBUG
-	Printf("Partly DIRECT mode active now (%s - %s)\n", cd->FileName,
-	       cd->DestName);
+	{
+	    IPTR args[2] = {(IPTR)cd->FileName, (IPTR)cd->DestName};
+	    VPrintf("Partly DIRECT mode active now (%s - %s)\n", args);
+	}
 #endif
 	
 	if ((out = Open(cd->DestName, MODE_NEWFILE)))
@@ -1462,7 +1459,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
 	    if (!(cd->Flags & COPYFLAG_SILENT))
 	    {
-		Printf("%s\n", txt);
+		VPrintf("%s\n", (IPTR *)&txt);
 	    }
 	}
 
@@ -1490,9 +1487,9 @@ void DoWork(STRPTR name, struct CopyData *cd)
 	{
 	    if (!(cd->Flags & COPYFLAG_QUIET))
 	    {
-		Printf(" %s ", cd->FileName);
-		Printf(TEXT_NOT_DONE, TEXT_DELETED);
-		Printf("%s\n", TEXT_ERR_DELETE_DEVICE);
+		VPrintf(" %s ", (IPTR *)&cd->FileName);
+		VPrintf(TEXT_NOT_DONE, (IPTR *)&TEXT_DELETED);
+		VPrintf("%s\n", (IPTR *)&TEXT_ERR_DELETE_DEVICE);
 	    }
 	}
 
@@ -1546,8 +1543,8 @@ void DoWork(STRPTR name, struct CopyData *cd)
 		    PrintName(name, cd->Deep, 1, 1);
 		}
 
-		Printf(TEXT_NOT_DONE, TEXT_ENTERED);
-		Printf(TEXT_ERR_INFINITE_LOOP);
+		VPrintf(TEXT_NOT_DONE, (IPTR *)&TEXT_ENTERED);
+		PutStr(TEXT_ERR_INFINITE_LOOP);
 	    }
 	}
 	else if ((a = TestDest(cd->DestName, 1, cd)) < 0)
@@ -1626,8 +1623,8 @@ void DoWork(STRPTR name, struct CopyData *cd)
 			PrintName(name, cd->Deep, 1, 1);
 		    }
 		    
-		    Printf(TEXT_NOT_DONE, TEXT_LINKED);
-		    Printf(TEXT_ERR_FORCELINK);
+		    VPrintf(TEXT_NOT_DONE, (IPTR *)&TEXT_LINKED);
+		    PutStr(TEXT_ERR_FORCELINK);
 		}
 	    }
 	    else if (LinkFile(lock, cd->DestName, cd->Flags & COPYFLAG_SOFTLINK))
@@ -1646,7 +1643,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 	    
 	    if (!(cd->Flags & COPYFLAG_SILENT))
 	    {	
-		Printf("\n");
+		PutStr("\n");
 	    }
 	}
     }
@@ -1744,7 +1741,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
 	if (!(cd->Flags & COPYFLAG_SILENT))
 	{
-	    Printf("%s\n", printok);
+	    VPrintf("%s\n", (IPTR *)&printok);
 	}
 	
 	SetData(cd->DestName, cd);
