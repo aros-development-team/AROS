@@ -104,7 +104,7 @@
 
 #include <aros/debug.h>
 
-struct UtilityBase *UtilityBase;
+extern struct UtilityBase *UtilityBase;
 
 static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
@@ -594,67 +594,54 @@ int main(void)
 
     P(kprintf("Executing shell\n"));
 
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
+    cli = Cli();
+    cli->cli_StandardInput  = cli->cli_CurrentInput  = Input();
+    cli->cli_StandardOutput = cli->cli_CurrentOutput = Output();
+    setPath(NULL);
 
-    if(UtilityBase != NULL)
-    {
-	cli = Cli();
-	cli->cli_StandardInput  = cli->cli_CurrentInput  = Input();
-	cli->cli_StandardOutput = cli->cli_CurrentOutput = Output();
-	setPath(NULL);
-	
 #if DO_CHANGE_SIGNAL
-	changeSignalTo(cli->cli_StandardInput, FindTask(NULL));
-	changeSignalTo(cli->cli_StandardOutput, FindTask(NULL));
+    changeSignalTo(cli->cli_StandardInput, FindTask(NULL));
+    changeSignalTo(cli->cli_StandardOutput, FindTask(NULL));
 #endif
-	
-	rda = ReadArgs("FROM,COMMAND/K/F", (IPTR *)args, NULL);
-	
-	if(rda != NULL)
-	{
-	    if(args[ARG_COMMAND] != NULL)
-	    {
-		struct Redirection rd;
-		struct CommandLine cl = {(STRPTR)args[ARG_COMMAND],
-					 strlen((STRPTR)args[ARG_COMMAND]),
-					 0};
 
-		if(Redirection_init(&rd))
-		{			
-		    cli->cli_Interactive = DOSFALSE;
-		    cli->cli_Background  = DOSTRUE;
-		    P(kprintf("Running command %s\n",
-			      (STRPTR)args[ARG_COMMAND]));
-		    error = checkLine(&rd, &cl);
-		    Redirection_release(&rd);
-		}
-		
-		P(kprintf("Command done\n"));
-	    }
-	    else
-	    {
-		error = interact((STRPTR)args[ARG_FROM]);
-	    }
-	    
-	    FreeArgs(rda);
-	}
-	else
-	{
-	    PrintFault(IoErr(), "Shell");
-	    error = RETURN_FAIL;
-	}
+    rda = ReadArgs("FROM,COMMAND/K/F", (IPTR *)args, NULL);
 
-        CloseLibrary((struct Library *)UtilityBase);
+    if(rda != NULL)
+    {
+	if(args[ARG_COMMAND] != NULL)
+	{
+	    struct Redirection rd;
+	    struct CommandLine cl = {(STRPTR)args[ARG_COMMAND],
+		  		     strlen((STRPTR)args[ARG_COMMAND]),
+				     0};
+
+	    if(Redirection_init(&rd))
+	    {
+		cli->cli_Interactive = DOSFALSE;
+		cli->cli_Background  = DOSTRUE;
+		P(kprintf("Running command %s\n",
+		          (STRPTR)args[ARG_COMMAND]));
+		error = checkLine(&rd, &cl);
+		Redirection_release(&rd);
+	    }
+
+	    P(kprintf("Command done\n"));
+	 }
+	 else
+	 {
+	    error = interact((STRPTR)args[ARG_FROM]);
+	 }
+
+	 FreeArgs(rda);
     }
     else
     {
-        PutStr("Could not open utility.library\n");
-        SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
-        error = RETURN_FAIL;
+	PrintFault(IoErr(), "Shell");
+	error = RETURN_FAIL;
     }
 
     P(kprintf("Exiting shell\n"));
-    
+
     return error;
 }
 
@@ -1647,11 +1634,3 @@ void Redirection_release(struct Redirection *rd)
 
     releaseFiles(rd);
 }
-
-#include <aros/symbolsets.h>
-
-void shell_exit_check(void)
-{
-    kprintf("Sto uscendoooo\n");
-}
-ADD2EXIT(shell_exit_check, 0);
