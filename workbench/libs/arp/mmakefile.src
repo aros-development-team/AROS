@@ -35,6 +35,7 @@ FUNCTIONS	:= \
 	pathname \
 	printf \
 	puts \
+	qsort \
 	readline \
 	setenv \
 	strcmp \

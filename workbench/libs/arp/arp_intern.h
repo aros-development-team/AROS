@@ -9,7 +9,10 @@
 #ifndef ARP_INTERN_H
 #define ARP_INTERN_H
 
+#include <exec/types.h>
 #include <libraries/arp.h>
+#include <intuition/intuition.h>
+#include <exec/ports.h>
 
 extern struct ArpBase ArpBase;
 
@@ -25,6 +28,22 @@ extern struct ArpBase ArpBase;
 void intern_AddTrackedResource(struct ArpBase * ArpBase,
                                WORD ID,
                                APTR Stuff);
+
+void DoQSort(ULONG baseptr,
+             ULONG l,
+             ULONG r,
+             ULONG byte_size,
+             LONG  (* user_function)());
+
+void Exchange(void * Lptr1,
+              void * Lptr2,
+              ULONG byte_size);
+
+LONG user_function(void * Lptr1,
+                   void * Lptr2);
+
+void StripIntuiMessages(struct MsgPort * mp,
+                        struct Window * window);
 
 int strlen(const char *);
 
