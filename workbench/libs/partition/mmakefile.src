@@ -25,7 +25,8 @@ FUNCS := \
 	getpartitionattrs \
 	setpartitionattrs \
 	querypartitiontableattrs \
-	querypartitionattrs
+	querypartitionattrs \
+	destroypartitiontable
 
 #MM- workbench-libs-partition : setup includes linklibs workbench-libs-partition-module
 %make_module_setup mmake=workbench-libs-partition
