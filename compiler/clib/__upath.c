@@ -362,16 +362,11 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 		break;
 
 	    case S_DOT2:
-	        if (ch == '\0')
-		{
-		    buf++[0] = '/';
-		    run = 0;
-		}
-		else
-	        if (ch == '/')
+	        if (ch == '/' || ch == '\0')
 		{
 		    dir_sep = '/';
 		    state = S_SLASH;
+		    continue;
 		}
 		else
 		{
