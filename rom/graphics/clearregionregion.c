@@ -17,8 +17,8 @@
 	AROS_LH2(BOOL, ClearRegionRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region *, region1, A0),
-	AROS_LHA(struct Region *, region2, A1),
+	AROS_LHA(struct Region *, R1, A0),
+	AROS_LHA(struct Region *, R2, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 187, Graphics)
@@ -53,7 +53,37 @@
 {
     AROS_LIBFUNC_INIT
 
-    return _ClearRegionRegion(region1, region2, GfxBase);
+    struct Region R3;
+
+    InitRegion(&R3);
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
+    {
+	ClearRegion(R2);
+
+        *R2 = R3;
+
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
+
+        return TRUE;
+    }
+
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 

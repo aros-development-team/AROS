@@ -17,8 +17,8 @@
 	AROS_LH2(BOOL, XorRegionRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region *, region1, A0),
-	AROS_LHA(struct Region *, region2, A1),
+	AROS_LHA(struct Region *, R1, A0),
+	AROS_LHA(struct Region *, R2, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 103, Graphics)
@@ -46,63 +46,6 @@
 	AndRegionRegion(), OrRegionRegion()
 
     INTERNALS
-        Two regions A and B consist of rectangles a1,...,a3 and b1,...,b3.
-        A xor B := A*NOT(B) + NOT(A)*B
-
-	falemagn:
-
-	1) A xor B                                   :=
-	2) A*NOT(B) + NOT(A)*B                       :=
-	3) A*NOT(A) + A*NOT(B) + B*NOT(B)+ NOT(A)*B  :=
-	4) A*(NOT(A) + NOT(B)) + B*(NOT(A) + NOT(B)) :=
-	5) (NOT(A) + NOT(B)) * (A+B)                 :=
-	6) NOT(A*B) * (A+B)
-
-	X - Y |
-	------|
-	0   0 | 0
-	0   1 | 0
-	1   0 | 1
-	1   1 | 0
-
-	Hence:
-	X - Y := m2 := X * NOT(Y)
-
-	If we set
-
-	7) X := A+B
-
-	and
-
-	8) Y := A*B
-
-	then
-
-	9) X - Y := (A+B) - (A*B) := (A+B) * NOT(A*B)
-
-	But (9) := (6) := (1)
-
-	Hence:
-
-	A xor B := (A+B) - (A*B)
-
-	The "-" operation is given us by ClearRegionRegion
-
-	If we implement (2) then we have to use
-
-	    2 times AndRegionRegion
-	    1 time  OrRegionRegion
-	    2 times ClearRegionRegion (in XorRectRegion)
-	    2 times AndRectRegion     (in XorRectRegion)
-	    2 times OrRectRegion      (in XorRectRegion)
-
-	If we implement (9) then we have to use
-
-	    1 time AndRegionRegion
-	    1 time OrRegionRegion
-	    1 time ClearRegionRegion
-
-	it's evident that (9) is considerably faster than (2)
 
     HISTORY
 	27-11-96    digulla  automatically created from
@@ -113,51 +56,74 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-#if USE_BANDED_FUNCTIONS
-    return _XorRegionRegion(region1, region2, GfxBase);
+    AROS_LIBFUNC_INIT
 
-#else
+    struct Region R3;
+    struct RegionRectangle *Diff1 = NULL;
+    struct RegionRectangle *Diff2 = NULL;
 
-    struct Region* intersection, *copy2;
+    LONG res = FALSE;
 
-    if ((intersection = CopyRegion(region2)))
+    InitRegion(&R3);
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &Diff1,
+            &R3.bounds,
+            GfxBase
+        ) &&
+
+        _DoOperationBandBand
+        (
+            _ClearBandBand,
+            MinX(R2),
+            MinX(R1),
+            MinY(R2),
+	    MinY(R1),
+            R2->RegionRectangle,
+            R1->RegionRectangle,
+            &Diff2,
+            &R3.bounds,
+            GfxBase
+        ) &&
+
+        _DoOperationBandBand
+        (
+            _OrBandBand,
+	    0,
+            0,
+            0,
+            0,
+            Diff1,
+            Diff2,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
     {
-	if ((copy2 = CopyRegion(region2)))
-        {
-            if (AndRegionRegion(region1, intersection))
-	    {
- 	        if (OrRegionRegion(region1, region2))
-	        {
-    	            if (intersection->RegionRectangle)
-    		    {
-		        BOOL result = ClearRegionRegion(intersection, region2);
+	res = TRUE;
 
-		        if (!result)
-		        {
-		            /* reinstall old RegionRectangles */
-			    struct Region tmp;
-			    tmp      = *region2;
-			    *region2 = *copy2;
-			    *copy2    = tmp;
-		        }
+        ClearRegion(R2);
 
-		        DisposeRegion(intersection);
-	                DisposeRegion(copy2);
-		        return result;
-		    }
+        *R2 = R3;
 
-		    DisposeRegion(intersection);
-	            DisposeRegion(copy2);
-		    return TRUE;
-    	        }
-	    }
-	    DisposeRegion(copy2);
-	}
-        DisposeRegion(intersection);
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
     }
-    return FALSE;
 
-#endif
-  AROS_LIBFUNC_EXIT
+    _DisposeRegionRectangleList(Diff1, GfxBase);
+    _DisposeRegionRectangleList(Diff2, GfxBase);
+
+    return res;
+
+    AROS_LIBFUNC_EXIT
 }

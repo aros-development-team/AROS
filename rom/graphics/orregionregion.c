@@ -17,8 +17,8 @@
 	AROS_LH2(BOOL, OrRegionRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Region *, region1, A0),
-	AROS_LHA(struct Region *, region2, A1),
+	AROS_LHA(struct Region *, R1, A0),
+	AROS_LHA(struct Region *, R2, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 102, Graphics)
@@ -52,29 +52,37 @@
 {
     AROS_LIBFUNC_INIT
 
-#if USE_BANDED_FUNCTIONS
+    struct Region R3;
 
-    return _OrRegionRegion(region1, region2, GfxBase);
+    InitRegion(&R3);
 
-#else
-
-    struct Rectangle CurRectangle;
-    struct RegionRectangle * CurRR = region1 -> RegionRectangle;
-
-    while (NULL != CurRR)
+    if
+    (
+        _DoOperationBandBand
+        (
+            _OrBandBand,
+            MinX(R1),
+            MinX(R2),
+	    MinY(R1),
+            MinY(R2),
+            R1->RegionRectangle,
+            R2->RegionRectangle,
+            &R3.RegionRectangle,
+            &R3.bounds,
+            GfxBase
+        )
+    )
     {
-      CurRectangle.MinX = region1->bounds.MinX + CurRR->bounds.MinX;
-      CurRectangle.MaxX = region1->bounds.MinX + CurRR->bounds.MaxX;
-      CurRectangle.MinY = region1->bounds.MinY + CurRR->bounds.MinY;
-      CurRectangle.MaxY = region1->bounds.MinY + CurRR->bounds.MaxY;
+        ClearRegion(R2);
 
-      if (FALSE == OrRectRegion(region2, &CurRectangle))
-        return FALSE;
+        *R2 = R3;
 
-      CurRR = CurRR -> Next;
+        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
+
+        return TRUE;
     }
 
-    return TRUE;
-#endif
+    return FALSE;
+
     AROS_LIBFUNC_EXIT
 }

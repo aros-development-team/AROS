@@ -15,6 +15,12 @@
 BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 		   struct RegionRectangle** erg);
 
+#define Bounds(x) (&(x)->bounds)
+#define MinX(rr)   (Bounds(rr)->MinX)
+#define MaxX(rr)   (Bounds(rr)->MaxX)
+#define MinY(rr)   (Bounds(rr)->MinY)
+#define MaxY(rr)   (Bounds(rr)->MaxY)
+
 #define overlapX(a,b)         \
 (                             \
     ((a).MinX <= (b).MaxX) && \
@@ -77,84 +83,46 @@ if (dx || dy)                                  \
 
 #define InitRegion(region)            \
 {                                     \
-    (region)->bounds.MinX = 0;        \
-    (region)->bounds.MinY = 0;        \
-    (region)->bounds.MaxX = 0;        \
-    (region)->bounds.MaxY = 0;        \
+    MinX(region) = 0;                 \
+    MinY(region) = 0;                 \
+    MaxX(region) = 0;                 \
+    MaxY(region) = 0;                 \
     (region)->RegionRectangle = NULL; \
 }
+
 
 /* ugly hack, I know... */
 #ifndef GfxBase
 
-BOOL _OrRectRegion
+typedef BOOL (BandOperation)
 (
-    struct Region    *Reg,
-    struct Rectangle *Rect,
-    struct GfxBase   *GfxBase
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG                     MinY,
+    LONG                     MaxY,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct RegionRectangle **NextSrc1Ptr,
+    struct RegionRectangle **NextSrc2Ptr,
+    struct GfxBase          *GfxBase
 );
 
-BOOL _XorRectRegion
+BOOL _DoOperationBandBand
 (
-    struct Region    *Reg,
-    struct Rectangle *Rect,
-    struct GfxBase   *GfxBase
+    BandOperation           *Operation,
+    LONG                     OffX1,
+    LONG                     OffX2,
+    LONG 		     OffY1,
+    LONG 		     OffY2,
+    struct RegionRectangle  *Src1,
+    struct RegionRectangle  *Src2,
+    struct RegionRectangle **DstPtr,
+    struct Rectangle        *DstBounds,
+    struct GfxBase          *GfxBase
 );
 
-BOOL _ClearRectRegion
-(
-    struct Region    *Reg,
-    struct Rectangle *Rect,
-    struct GfxBase   *GfxBase
-);
-
-BOOL _AndRectRegion
-(
-    struct Region    *Reg,
-    struct Rectangle *Rect,
-    struct GfxBase   *GfxBase
-);
-
-BOOL _OrRegionRegion
-(
-    struct Region  *R1,
-    struct Region  *R2,
-    struct GfxBase *GfxBase
-);
-
-BOOL _AndRegionRegion
-(
-    struct Region  *R1,
-    struct Region  *R2,
-    struct GfxBase *GfxBase
-);
-
-BOOL _ClearRegionRegion
-(
-    struct Region  *R1,
-    struct Region  *R2,
-    struct GfxBase *GfxBase
-);
-
-BOOL _XorRegionRegion
-(
-    struct Region  *R1,
-    struct Region  *R2,
-    struct GfxBase *GfxBase
-);
-
-BOOL _AreRegionsEqual
-(
-    struct Region *R1,
-    struct Region *R2
-);
-
-void _NormalizeRegion
-(
-    struct Region  *R,
-    struct GfxBase *GfxBase
-);
-
+extern BandOperation _OrBandBand, _AndBandBand, _ClearBandBand;
 
 #endif
 
