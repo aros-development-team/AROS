@@ -73,7 +73,8 @@ void readref(void)
 		while (isspace(*(end-1))) end--;
 		*end = '\0';
                 
-                sep = strchr(begin, '$');
+                sep = strstr(begin, "__OM_");
+                if (sep == NULL) sep = strstr(begin, "__MUIM_");
                 
                 if 
                 (
@@ -83,12 +84,11 @@ void readref(void)
                 )
 		{
                     struct functionlist *method;
-                    
                     infunction = 1; 
                     
                     method = malloc(sizeof(struct functionlist));
                     method->next = NULL;
-                    method->name = strdup(sep + 1); 
+                    method->name = strdup(sep + 2); 
                     method->type = NULL; /* not known yet */
                     method->argcount = 0;
                     method->arguments = NULL;
@@ -224,7 +224,7 @@ void readref(void)
 		    if (list == funclistit)
                         end = begin+strlen(begin)-strlen(list->name);
 		    else /* methlistit */
-                        end = begin+strlen(begin)-(strlen(list->name)+strlen(modulename)+1);
+                        end = begin+strlen(begin)-(strlen(list->name)+strlen(modulename)+2);
                     while (isspace(*(end-1))) end--;
 		    *end = '\0';
 		    list->type = strdup(begin);

@@ -108,7 +108,7 @@ void writemccinit(void)
     {
         int first = 1;
         
-        fprintf(out, "%s %s$%s(", methlistit->type, modulename, methlistit->name);
+        fprintf(out, "%s %s__%s(", methlistit->type, modulename, methlistit->name);
         
         for 
         (
@@ -149,7 +149,7 @@ void writemccinit(void)
         fprintf
         (
             out, 
-            "        case %s: return %s$%s( ", 
+            "        case %s: return %s__%s( ", 
             methlistit->name, modulename, methlistit->name
         );
         
