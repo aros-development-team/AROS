@@ -100,6 +100,11 @@ LONG intern_IEEEDPisodd(QUAD fnum);
 #define pi_64 0x400921FB54442D18ULL
 #define pi QuadData(pi_Hi, pi_Lo, pi_64)
 
+#define pio2_Hi 0x3FF921FB
+#define pio2_Lo 0x54442D18
+#define pio2_64 0x3FF921FB54442D18ULL
+#define pio2 QuadData(pio2_Hi, pio2_Lo, pio2_64)
+
 #define pio2_hi_Hi 0x3FF921FB
 #define pio2_hi_Lo 0x54442D18
 #define pio2_hi_64 0x3FF921FB54442D18ULL
@@ -198,6 +203,117 @@ LONG intern_IEEEDPisodd(QUAD fnum);
 #define onefifth_Lo 0x99999999
 #define onefifth_64 0x3fc9999999999999ULL
 
+/* Defines to calculate the cosine */
+#define cosf1_Hi 0x3ff00000  /* 1 */
+#define cosf1_Lo 0x00000000
+#define cosf1_64 0x3ff0000000000000ULL
+#define cosf1 QuadData(cosf1_Hi, cosf1_Lo, cosf1_64)
+
+#define cosf2_Hi 0xbfe00000  /* -1/2! */
+#define cosf2_Lo 0x00000000
+#define cosf2_64 0xbfe0000000000000ULL
+#define cosf2 QuadData(cosf2_Hi, cosf2_Lo, cosf2_64)
+
+#define cosf3_Hi 0x3fa55555  /* 1/4! */
+#define cosf3_Lo 0x55555555
+#define cosf3_64 0x3fa5555555555555ULL
+#define cosf3 QuadData(cosf3_Hi, cosf3_Lo, cosf3_64)
+
+#define cosf4_Hi 0xbf56c16c  /* -1/6! */
+#define cosf4_Lo 0x16c16c16
+#define cosf4_64 0xbf56c16c16c16c16ULL
+#define cosf4 QuadData(cosf4_Hi, cosf4_Lo, cosf4_64)
+
+#define cosf5_Hi 0x3efa01a0  /* 1/8! */
+#define cosf5_Lo 0x1a01a01a
+#define cosf5_64 0x3efa01a01a01a010ULL
+#define cosf5 QuadData(cosf5_Hi, cosf5_Lo, cosf5_64)
+
+#define cosf6_Hi 0xbe927e4f  /* -1/10! */
+#define cosf6_Lo 0xb7789f5c
+#define cosf6_64 0xbe927e4fb7789f5cULL
+#define cosf6 QuadData(cosf6_Hi, cosf6_Lo, cosf6_64)
+
+#define cosf7_Hi 0x3e21eed8  /* 1/12! */
+#define cosf7_Lo 0xeff8d897
+#define cosf7_64 0x3e21eed8eff8d897ULL
+#define cosf7 QuadData(cosf7_Hi, cosf7_Lo, cosf7_64)
+
+#define cosf8_Hi 0xbda93974  /* -1/14! */
+#define cosf8_Lo 0xa8c07c9d
+#define cosf8_64 0xbda93974a8c07c9dULL
+#define cosf8 QuadData(cosf8_Hi, cosf8_Lo, cosf8_64)
+
+/* Defines to calculate the sine */
+#define sinf1_Hi 0x3ff00000  /* 1 */
+#define sinf1_Lo 0x00000000
+#define sinf1_64 0x3ff0000000000000ULL
+#define sinf1 QuadData(sinf1_Hi, sinf1_Lo, sinf1_64)
+
+#define sinf2_Hi 0xbfc55555  /* -1/3! */
+#define sinf2_Lo 0x55555555
+#define sinf2_64 0xbfc5555555555555ULL
+#define sinf2 QuadData(sinf2_Hi, sinf2_Lo, sinf2_64)
+
+#define sinf3_Hi 0x3f811111  /* 1/5! */
+#define sinf3_Lo 0x11111111
+#define sinf3_64 0x3f81111111111111ULL
+#define sinf3 QuadData(sinf3_Hi, sinf3_Lo, sinf3_64)
+
+#define sinf4_Hi 0xbf2a01a0  /* -1/7! */
+#define sinf4_Lo 0x1a01a01a
+#define sinf4_64 0xbf2a01a01a01a01aULL
+#define sinf4 QuadData(sinf4_Hi, sinf4_Lo, sinf4_64)
+
+#define sinf5_Hi 0x3ec71de3  /* 1/9! */
+#define sinf5_Lo 0xa556c733
+#define sinf5_64 0x3ec71de3a556c733ULL
+#define sinf5 QuadData(sinf5_Hi, sinf5_Lo, sinf5_64)
+
+#define sinf6_Hi 0xbe5ae645  /* -1/11! */
+#define sinf6_Lo 0x67f544e3
+#define sinf6_64 0xbe5ae64567f544e3ULL
+#define sinf6 QuadData(sinf6_Hi, sinf6_Lo, sinf6_64)
+
+#define sinf7_Hi 0x3de61246  /* 1/13! */
+#define sinf7_Lo 0x13a86d09
+#define sinf7_64 0x3de6124613a86d09ULL
+#define sinf7 QuadData(sinf7_Hi, sinf7_Lo, sinf7_64)
+
+#define sinf8_Hi 0xbd6ae7f3  /* -1/15! */
+#define sinf8_Lo 0xe733b81f
+#define sinf8_64 0xbd6ae7f3e733b81fULL
+#define sinf8 QuadData(sinf8_Hi, sinf8_Lo, sinf8_64)
+
 
 #endif /* __MATHIEEEDOUBTRANS_INTERN_H__  */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -15,12 +15,14 @@ FUNCTIONS	:= \
 	ieeedpacos \
 	ieeedpasin \
 	ieeedpatan \
+	ieeedpcos \
 	ieeedpcosh \
 	ieeedpexp \
 	ieeedpfieee \
 	ieeedplog \
 	ieeedplog10 \
 	ieeedppow \
+	ieeedpsin \
 	ieeedpsinh \
 	ieeedpsqrt \
 	ieeedptanh \
