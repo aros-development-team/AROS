@@ -67,30 +67,30 @@ endif
 
 ALL_FILES := $(FILES)
 ALL_FUNCTIONS := $(FUNCTIONS)
-%prepare_replace rom/boopsi
-%filter_replace FILES
-%filter_replace FUNCTIONS
+#%prepare_replace rom/boopsi
+#%filter_replace FILES
+#%filter_replace FUNCTIONS
 
 # Set up for shared library creation.
 ifeq ("$(SHARED_BOOPSI)"),"yes")
 SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
-%prepare_shlib boopsi $(SHARED_BOOPSI)
+#%prepare_shlib boopsi $(SHARED_BOOPSI)
 
-%genromlib_finline
+#%genromlib_finline
 
-#MM kernel-boopsi-linklib : setup includes kernel-boopsi-$(ARCH)-$(CPU)
+###MM kernel-boopsi-linklib : setup includes kernel-boopsi-$(ARCH)-$(CPU)
 kernel-boopsi-linklib : $(LIB)
 	@$(NOP)
 
-#MM kernel-boopsi-module : setup includes kernel-boopsi-$(ARCH)-$(CPU)
+###MM kernel-boopsi-module : setup includes kernel-boopsi-$(ARCH)-$(CPU)
 kernel-boopsi-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
-#MM clean setup
+####MM clean setup
 
-%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
-%ctoasm_q
+##%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
+#%ctoasm_q
 
-%common
-%include_deps
+#%common
+#%include_deps
