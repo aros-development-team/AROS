@@ -27,7 +27,7 @@
 #include <dos/exall.h>
 #include <dos/filesystem.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "ram_handler_gcc.h"
@@ -38,22 +38,9 @@
 
 #include  "HashTable.h"
 
-
-extern const char name[];
-extern const char version[];
-extern const APTR inittabl[4];
-extern void *const functable[];
-extern const UBYTE datatable;
-extern struct rambase *AROS_SLIB_ENTRY(init,ramdev)();
-extern void AROS_SLIB_ENTRY(open,ramdev)();
-extern BPTR AROS_SLIB_ENTRY(close,ramdev)();
-extern BPTR AROS_SLIB_ENTRY(expunge,ramdev)();
-extern int AROS_SLIB_ENTRY(null,ramdev)();
-extern void AROS_SLIB_ENTRY(beginio,ramdev)();
-extern LONG AROS_SLIB_ENTRY(abortio,ramdev)();
 extern void deventry();
-extern const char end;
 
+#include LC_LIBDEFS_FILE
 
 #define  NRF_NOT_REPLIED  NRF_MAGIC
 
@@ -203,51 +190,6 @@ struct filehandle
     IPTR position;
 };
 
-int ram_handler_entry(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-const struct Resident ram_handler_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&ram_handler_resident,
-    (APTR)&end,
-    RTF_AUTOINIT | RTF_AFTERDOS,
-    41,
-    NT_DEVICE,
-    -127,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[] = "ram.handler";
-
-static const char version[] = "$VER: ram-handler 41.3 (11.10.1997)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct rambase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,ramdev)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,ramdev),
-    &AROS_SLIB_ENTRY(close,ramdev),
-    &AROS_SLIB_ENTRY(expunge,ramdev),
-    &AROS_SLIB_ENTRY(null,ramdev),
-    &AROS_SLIB_ENTRY(beginio,ramdev),
-    &AROS_SLIB_ENTRY(abortio,ramdev),
-    (void *)-1
-};
-
-static const UBYTE datatable = 0;
-
 /* Use This from now on */
 #ifdef SysBase
     #undef SysBase
@@ -258,13 +200,11 @@ static const UBYTE datatable = 0;
 #define SysBase rambase->sysbase
 #define DOSBase rambase->dosbase
 
-AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
- AROS_UFHA(struct rambase *, rambase, D0),
- AROS_UFHA(BPTR,             segList,   A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs);
+
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, rambase)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
     /* This function is single-threaded by exec by calling Forbid. */
 
@@ -273,10 +213,6 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
     struct SignalSemaphore *semaphore;
     APTR stack;
 
-
-    /* Store arguments */
-    rambase->sysbase = sysBase;
-    rambase->seglist = segList;
     rambase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",39);
 
     if (rambase->dosbase != NULL)
@@ -331,7 +267,7 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 			    rambase->sigsem = semaphore;
 			    InitSemaphore(semaphore);
 
-			    if (!segList) /* Are we a ROM module? */
+			    if (rambase->seglist==NULL) /* Are we a ROM module? */
 			    {
 			        struct DeviceNode *dn;
         		        /* Install RAM: handler into device list
@@ -345,16 +281,12 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 			        {
 	    			    struct IOFileSys dummyiofs;
 
-	   			    AROS_LC3(void, open,
-	   			    AROS_UFHA(struct IOFileSys *, &dummyiofs, A1),
-    	    			    AROS_UFHA(ULONG,              0, D0),
-	   			    AROS_UFHA(ULONG,              0, D1),
-	     	    		    struct rambase *, rambase, 1, ram_handler);
-
-	   			    if (!dummyiofs.IOFS.io_Error)
+	   			    if (OpenDev(rambase, &dummyiofs))
 	   			    {
 				        STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
 
+					rambase->device.dd_Library.lib_OpenCnt++;
+					
 	    			        AROS_BSTR_putchar(s, 0, 'R');
 	    			        AROS_BSTR_putchar(s, 1, 'A');
 	    			        AROS_BSTR_putchar(s, 2, 'M');
@@ -370,7 +302,7 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 
 				        if (AddDosEntry((struct DosList *)dn))
 				            if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
-		    		                return rambase;
+		    		                return TRUE;
 	    			    }
 
 				    FreeMem(dn, sizeof (struct DeviceNode));
@@ -378,7 +310,7 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 			    }
 			    else
  			    if (AddTask(task, deventry, NULL) != NULL)
-		    		return rambase;
+		    		return TRUE;
 
 			    FreeMem(semaphore, sizeof(struct SignalSemaphore));
 			}
@@ -398,9 +330,9 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 	CloseLibrary((struct Library *)rambase->dosbase);
     }
 
-    return NULL;
+    return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 #ifdef UtilityBase
@@ -475,27 +407,31 @@ static void Strfree(struct rambase *rambase, STRPTR string)
 }
 
 
-AROS_LH3(void, open,
- AROS_LHA(struct IOFileSys *, iofs, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct rambase *, rambase, 1, ramdev)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, rambase,
+		     struct IOFileSys, iofs,
+		     unitnum,
+		     flags
+)
 {
-    AROS_LIBFUNC_INIT
-    struct filehandle *fhv, *fhc;
-    struct vnode *vol;
-    struct cnode *dev;
-    struct DosList *dlv;
-
-    /* Keep the compiler happy */
-    unitnum = flags = 0;
-
-    /* I have one more opener. */
-    rambase->device.dd_Library.lib_OpenCnt++;
+    AROS_SET_DEVFUNC_INIT
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
+    return OpenDev(rambase, iofs);
+
+    AROS_SET_DEVFUNC_EXIT
+}
+
+
+static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs)
+{
+    struct filehandle *fhv, *fhc;
+    struct vnode *vol;
+    struct cnode *dev;
+    struct DosList *dlv;
+    
     iofs->IOFS.io_Error = ERROR_NO_FREE_STORE;
 
     fhv = (struct filehandle*)AllocMem(sizeof(struct filehandle), MEMF_CLEAR);
@@ -540,7 +476,6 @@ AROS_LH3(void, open,
 			    iofs->IOFS.io_Unit = (struct Unit *)fhc;
 			    iofs->IOFS.io_Device = &rambase->device;
 			    AddDosEntry(dlv);
-			    rambase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 			    rambase->root = vol;
 			    iofs->IOFS.io_Error = 0;
 
@@ -548,7 +483,7 @@ AROS_LH3(void, open,
 				HashTable_new(rambase, 100, stringHash,
 					      my_strcasecmp, nullDelete);
 
-			    return;
+			    return TRUE;
 			}
 
 			Strfree(rambase, vol->name);
@@ -565,34 +500,20 @@ AROS_LH3(void, open,
 
 	FreeMem(fhv, sizeof(struct filehandle));
     }
-
-    /* Set returncode */
+    
     iofs->IOFS.io_Error = IOERR_OPENFAIL;
 
-    rambase->device.dd_Library.lib_OpenCnt--;
-
-    AROS_LIBFUNC_EXIT
+    return FALSE;
 }
 
-
-AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, rambase)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
 
-    BPTR ret;
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
     */
-
-    /* Test for openers. */
-    if (rambase->device.dd_Library.lib_OpenCnt || rambase->seglist == 0)
-    {
-	/* Set the delayed expunge flag and return. */
-	rambase->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-
-	return 0;
-    }
 
     /* Kill device task and free all resources */
     RemTask(rambase->port->mp_SigTask);
@@ -604,34 +525,15 @@ AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
     CloseLibrary((struct Library *)rambase->utilitybase);
     CloseLibrary((struct Library *)rambase->dosbase);
 
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&rambase->device.dd_Library.lib_Node);
+    return TRUE;
 
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret = rambase->seglist;
-
-    /* Free the memory. */
-    FreeMem((char *)rambase - rambase->device.dd_Library.lib_NegSize,
-	    rambase->device.dd_Library.lib_NegSize +
-	    rambase->device.dd_Library.lib_PosSize);
-
-    return ret;
-
-    AROS_LIBFUNC_EXIT
-}
-
-
-AROS_LH0I(int, null, struct rambase *, rambase, 4, ramdev)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct rambase *, rambase, 5, ramdev)
+	   struct rambase *, rambase, 5, Ram)
 {
     AROS_LIBFUNC_INIT
 
@@ -650,7 +552,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct rambase *, rambase, 6, ramdev)
+	   struct rambase *, rambase, 6, Ram)
 {
     AROS_LIBFUNC_INIT
     return 0;
@@ -1716,11 +1618,12 @@ static LONG delete_object(struct rambase *rambase,
 }
 
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IOFileSys *, iofs, A1),
-	   struct rambase *, rambase, 2, ramdev)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, rambase,
+		      struct IOFileSys, iofs
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 	
     struct cnode  *dev;
     struct vnode  *vol;
@@ -1747,9 +1650,6 @@ AROS_LH1(BPTR, close,
 	return 0;
     }
 
-    /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device = (struct Device *)-1;
-    
     free_lock(rambase, handle);
     RemDosEntry(vol->doslist);
     FreeDosEntry(vol->doslist);
@@ -1777,20 +1677,9 @@ AROS_LH1(BPTR, close,
 
     iofs->io_DosError = 0;
 
-    /* I have one fewer opener. */
-    if (!--rambase->device.dd_Library.lib_OpenCnt)
-    {
-	/* Delayed expunge pending? */
-	if (rambase->device.dd_Library.lib_Flags & LIBF_DELEXP)
-	{
-	    /* Then expunge the device */
-	    return expunge();
-	}
-    }
+    return TRUE;
 
-    return 0;
-
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 
@@ -2905,5 +2794,7 @@ inline ULONG HashTable_size(HashTable *ht)
     return ht->nElems;
 }
 
-
-static const char end = 0;
+ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2OPENDEV(GM_UNIQUENAME(Open),0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge),0)
