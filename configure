@@ -188,10 +188,6 @@ case "$1" in
 	echo "SHARED_CFLAGS = $SHARED_CFLAGS" >> $2
 	echo "SHARED_AR = $SHARED_AR" >> $2
     fi
-
-    if [ -d config ]; then
-	cd config ; make TOP=.. CURDIR=./config setup
-    fi
     ;;
 "-h" )
     echo "#ifndef AROS_CONFIG_H" > $2
