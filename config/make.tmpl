@@ -88,7 +88,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	    if test ! -e $$dir/%(submf) ; then \
 		echo "Generating %(submf)..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
-		--assign TOP="%(top)" \
+		--assign TOP="$(TOP)" \
 		$$dir/%(submf).src > $$dir/%(submf) || exit 1 ; \
 	    fi ; \
 	    if ( cd $$dir ; \
