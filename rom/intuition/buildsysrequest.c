@@ -1,10 +1,12 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function BuildSysRequest()
     Lang: english
 */
+
+/**********************************************************************************************/
 
 #include "intuition_intern.h"
 #include <stdio.h>
@@ -23,6 +25,8 @@
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
 
+/**********************************************************************************************/
+
 #define OUTERSPACING_X 		4
 #define OUTERSPACING_Y 		4
 #define GADGETGADGETSPACING 	8
@@ -32,6 +36,7 @@
 #define BUTTONBORDER_X 		8
 #define BUTTONBORDER_Y 		4
 
+/**********************************************************************************************/
 
 struct sysreqdims
 {
@@ -42,6 +47,8 @@ struct sysreqdims
     int   gadgets;     /* number of gadgets */
     UWORD gadgetwidth; /* width of a gadget */
 };
+
+/**********************************************************************************************/
 
 static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
 				struct Screen *scr,
@@ -117,13 +124,13 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct Screen *scr = NULL, *lockedscr = NULL;
-    struct Window *req;
-    struct Gadget *gadgets;
-    STRPTR reqtitle;
-    STRPTR gadgetlabels[3];
-    struct sysreqdims dims;
-    struct IntRequestUserData *requserdata;
+    struct Screen   	    	*scr = NULL, *lockedscr = NULL;
+    struct Window   	    	*req;
+    struct Gadget   	    	*gadgets;
+    STRPTR  	    	    	reqtitle;
+    STRPTR  	    	    	gadgetlabels[3];
+    struct  	    	    	sysreqdims dims;
+    struct IntRequestUserData 	*requserdata;
 
     /* negtext and bodytest must be specified, postext is optional */
     if (!negtext || !bodytext) return NULL;
@@ -173,19 +180,23 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 				   MEMF_ANY);
 	    if (requserdata)
 	    {
-		req = OpenWindowTags(NULL,
-				     WA_Width, dims.width,
-				     WA_Height, dims.height,
-				     WA_IDCMP, IDCMP_GADGETUP | IDCMPFlags,
-				     WA_Gadgets, (IPTR)gadgets,
-				     WA_Title, (IPTR)reqtitle,
-				     (lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr,
-				     WA_Flags, WFLG_DRAGBAR |
-					       WFLG_DEPTHGADGET |
-					       WFLG_ACTIVATE |
-					       WFLG_RMBTRAP /*|
-					       WFLG_SIMPLE_REFRESH*/,
-				     TAG_DONE);
+	    	struct TagItem win_tags[] =
+		{
+		    {WA_Width	    	    	    	    	 , dims.width	    	    	},
+		    {WA_Height	    	    	    	    	 , dims.height	    	    	},
+		    {WA_IDCMP	    	    	    	    	 , IDCMP_GADGETUP | IDCMPFlags	},
+		    {WA_Gadgets     	    	    	    	 , (IPTR)gadgets    	    	},
+		    {WA_Title	    	    	    	    	 , (IPTR)reqtitle   	    	},
+		    {(lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr	    	    	},
+		    {WA_Flags	    	    	    	    	 , WFLG_DRAGBAR     |
+								   WFLG_DEPTHGADGET |
+								   WFLG_ACTIVATE    |
+								   WFLG_RMBTRAP   /*|
+								   WFLG_SIMPLE_REFRESH*/    	},
+    	    	    {TAG_DONE	    	    	    	    	    	    	    	    	}
+		};
+		
+		req = OpenWindowTagList(NULL, win_tags);
 		if (req)
 		{
 		    if (lockedscr) UnlockPubScreen(NULL, lockedscr);
@@ -212,7 +223,10 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     return NULL;
 
     AROS_LIBFUNC_EXIT
+    
 } /* BuildSysRequest */
+
+/**********************************************************************************************/
 
 /* draw the contents of the requester */
 static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
@@ -220,8 +234,20 @@ static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
 		             struct Gadget *gadgets,
 		             struct IntuitionBase *IntuitionBase)
 {
+    struct TagItem frame_tags[] =
+    {
+	{IA_Left    	, req->BorderLeft + OUTERSPACING_X  	    	    	    	    	},
+	{IA_Top     	, req->BorderTop + OUTERSPACING_Y   	    	    	    	    	},
+	{IA_Width   	, req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2	},
+	{IA_Height  	, req->Height - req->BorderTop - req->BorderBottom -
+		          dims->fontheight - OUTERSPACING_Y * 2 -
+			  TEXTGADGETSPACING - BUTTONBORDER_Y * 2    	    	    	    	},
+	{IA_Recessed	, TRUE	    	    	    	    	    	    	    	    	},
+	{IA_EdgesOnly	, FALSE     	    	    	    	    	    	    	    	},
+	{TAG_DONE   	    	    	    	    	    	    	    	    	    	}
+    };
     struct DrawInfo *dri;
-    struct Image *frame;
+    struct Image    *frame;
 
     dri = GetScreenDrawInfo(scr);
     if (!dri)
@@ -241,15 +267,7 @@ static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
     SetAfPt(req->RPort, NULL, 0);
 
     /* draw textframe */
-    frame = (struct Image *)NewObject(NULL, FRAMEICLASS,
-	IA_Left, req->BorderLeft + OUTERSPACING_X,
-	IA_Top, req->BorderTop + OUTERSPACING_Y,
-	IA_Width, req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2,
-	IA_Height, req->Height - req->BorderTop - req->BorderBottom -
-		   dims->fontheight - OUTERSPACING_Y * 2 - TEXTGADGETSPACING - BUTTONBORDER_Y * 2,
-	IA_Recessed, TRUE,
-	IA_EdgesOnly, FALSE,
-	TAG_DONE);
+    frame = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
     if (frame)
     {
 	DrawImageState(req->RPort, frame, 0, 0, IDS_NORMAL, dri);
@@ -267,6 +285,7 @@ static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
     FreeScreenDrawInfo(scr, dri);
 }
 
+/**********************************************************************************************/
 
 /* calculate dimensions of the requester */
 static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
@@ -276,8 +295,8 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
 				      struct IntuitionBase *IntuitionBase)
 {
 
-    int currentgadget = 0;
-    WORD itextwidth, itextheight;
+    LONG  currentgadget = 0;
+    WORD  itextwidth, itextheight;
     UWORD textboxwidth = 0, gadgetswidth; /* width of upper/lower part */
 
     /* calculate height of requester */
@@ -336,24 +355,29 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
     return TRUE;
 }
 
+/**********************************************************************************************/
+
 /* make all the gadgets */
 static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 					      STRPTR *gadgetlabels,
 					      struct Screen *scr,
 					      struct IntuitionBase *IntuitionBase)
 {
-    struct Gadget *gadgetlist, *thisgadget = NULL;
-    struct Image *gadgetframe;
-    int currentgadget;
-    UWORD xoffset, restwidth;
+    struct TagItem frame_tags[] =
+    {
+    	{IA_FrameType, FRAME_BUTTON},
+	{IA_EdgesOnly, TRUE 	   },
+	{TAG_DONE   	    	   }
+    };
+    struct Gadget   *gadgetlist, *thisgadget = NULL;
+    struct Image    *gadgetframe;
+    WORD    	    currentgadget;
+    UWORD   	    xoffset, restwidth;
 
     if (gadgetlabels[0] == NULL)
 	return NULL;
 
-    gadgetframe = (struct Image *)NewObject(NULL, FRAMEICLASS,
-					    IA_FrameType, FRAME_BUTTON,
-					    IA_EdgesOnly, TRUE,
-					    TAG_DONE);
+    gadgetframe = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
     if (!gadgetframe)
 	return NULL;
 
@@ -370,27 +394,25 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 
     for (currentgadget = 0; gadgetlabels[currentgadget]; currentgadget++)
     {
-	IPTR gadgetid;
+    	WORD 	       gadgetid = (currentgadget == (dims->gadgets - 1)) ? 0 : currentgadget + 1;
+    	struct TagItem gad_tags[] =
+	{
+	    {GA_ID  	 , gadgetid 	    	    	    	    	},
+	    {GA_Previous , (IPTR)thisgadget	    	   	    	},
+	    {GA_Left	 , xoffset  	    	    	    	    	},
+	    {GA_Width	 , dims->gadgetwidth	    	    	    	},
+	    {GA_Top 	 , dims->height -
+	    	    	   scr->WBorBottom - dims->fontheight -
+			   OUTERSPACING_Y - BUTTONBORDER_Y * 2	    	},
+	    {GA_Height	 , dims->fontheight + BUTTONBORDER_Y * 2	},
+	    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]   	    	},
+	    {GA_Image	 , (IPTR)gadgetframe	    	    	    	},
+	    {GA_RelVerify, TRUE     	    	    	    	    	},
+	    {TAG_DONE	    	    	    	    	    	    	}
+	};
+	
+	thisgadget = NewObjectA(NULL, FRBUTTONCLASS, gad_tags);
 
-	if (currentgadget == (dims->gadgets - 1))
-	    gadgetid = 0;
-	else
-	    gadgetid = currentgadget + 1;
-
-	thisgadget = NewObject(NULL, FRBUTTONCLASS,
-		GA_ID,		gadgetid,
-		GA_Previous,	thisgadget,
-		GA_Left,	xoffset,
-		GA_Width,	dims->gadgetwidth,
-		GA_Top, 	dims->height -
-				scr->WBorBottom - dims->fontheight
-				- OUTERSPACING_Y - BUTTONBORDER_Y * 2,
-		GA_Height,	dims->fontheight + BUTTONBORDER_Y * 2,
-		GA_Text,	(IPTR)gadgetlabels[currentgadget],
-		GA_Image,	(IPTR)gadgetframe,
-		GA_RelVerify,	TRUE,
-		TAG_DONE
-	);
 
 	if (currentgadget == 0)
 	    gadgetlist = thisgadget;
@@ -412,9 +434,7 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
     return gadgetlist;
 }
 
-
-
-
+/**********************************************************************************************/
 
 static void ReqITextSize(struct Screen *scr, struct IntuiText *itext,
 		 	 WORD *width, WORD *height,
@@ -440,6 +460,8 @@ static void ReqITextSize(struct Screen *scr, struct IntuiText *itext,
     }
 }		      
 
+/**********************************************************************************************/
+
 static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 			  struct RastPort *rp, struct IntuiText *itext, WORD x, WORD y,
 			  struct IntuitionBase *IntuitionBase)
@@ -456,4 +478,6 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     	itext = itext->NextText;
     }
 }			  
+
+/**********************************************************************************************/
 

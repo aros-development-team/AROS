@@ -32,7 +32,8 @@
 
 /* print the label of a gadget object */
 
-void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
+void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
+    	    	      struct IntuitionBase *IntuitionBase)
 {
     struct RastPort 	*rp = msg->gpr_RPort;
     struct IBox 	container;

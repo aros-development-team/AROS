@@ -1,5 +1,5 @@
 /*
-    (C) 1996-97 AROS - The Amiga Research OS
+    (C) 1996-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS buttongclass implementation
@@ -161,7 +161,7 @@ void buttong_render(Class *cl, Object *o, struct gpRender *msg)
 	/*#warning Amiga buttongclass does not seem to render gadgetlabel at all*/
 
 	/* print label */
-	printgadgetlabel(cl, o, msg);
+	printgadgetlabel(cl, o, msg, IntuitionBase);
 	#endif
 	
 	if ( EG(o)->Flags & GFLG_DISABLED )
