@@ -119,7 +119,7 @@ ULONG _zune_window_get_default_events (void)
     return IDCMP_NEWSIZE      | IDCMP_REFRESHWINDOW
          | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUPICK
          | IDCMP_CLOSEWINDOW  | IDCMP_RAWKEY
-         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_VANILLAKEY;
+         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
 }
 
 void _zune_window_change_events (struct MUI_WindowData *data)
@@ -128,7 +128,6 @@ void _zune_window_change_events (struct MUI_WindowData *data)
     struct MUI_EventHandlerNode *ehn;
     ULONG new_events = _zune_window_get_default_events();
     ULONG old_events = data->wd_Events;
-/*  	g_print("old events= %d  mask = %d\n", data->wd_Events, mask); */
 
     for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
     {
@@ -136,11 +135,15 @@ void _zune_window_change_events (struct MUI_WindowData *data)
         new_events |= ehn->ehn_Events;
     }
 
+    /* sba: kill the IDCMP_VANILLAKEY flag. MUI doesn't to this but programs
+    ** which use this will behave different
+    */
+    new_events &= ~IDCMP_VANILLAKEY;
+
     data->wd_Events = new_events;
     if ((old_events != new_events) && (data->wd_Flags & MUIWF_OPENED))
     {
         ModifyIDCMP(data->wd_RenderInfo.mri_Window, new_events);
-/*  	g_print("set events\n"); */
     }
 }
 
@@ -186,7 +189,7 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
                           data->wd_MinMax.MaxWidth  + hborders,
                           data->wd_MinMax.MaxHeight + vborders);
 
-        win->UserData = data->wd_RenderInfo.mri_WindowObject;
+        win->UserData = (char*)data->wd_RenderInfo.mri_WindowObject;
         win->UserPort = data->wd_UserPort; /* Same port for all windows */
         ModifyIDCMP(win, data->wd_Events);
 
@@ -257,105 +260,49 @@ _zune_window_resize (struct MUI_WindowData *data)
 
 /**************/
 
-#warning REWORK: Eventhandling stuff
-
 void _zune_window_message(struct IntuiMessage *imsg)
 {
     struct Window *iWin;
     Object        *oWin;
-//    Object *grab_object;
     struct MUI_WindowData *data;
 
     iWin = imsg->IDCMPWindow;
     oWin = (Object *)iWin->UserData;
 
     data = muiWindowData(oWin);
-//    ASSERT(data->wd_RenderInfo.mri_Window == iWin);
 
     switch (imsg->Class)
     {
-    case IDCMP_NEWSIZE:
-        if ((iWin->GZZWidth  != data->wd_Width)
-         || (iWin->GZZHeight != data->wd_Height))
-        {
-            data->wd_Width  = iWin->GZZWidth;
-            data->wd_Height = iWin->GZZHeight;
-	    D(bug("NEWSIZE: hide root object\n"));
-            DoMethod(data->wd_RootObject, MUIM_Hide);
+	case IDCMP_NEWSIZE:
+	    if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
+	    {
+		data->wd_Width  = iWin->GZZWidth;
+		data->wd_Height = iWin->GZZHeight;
+		DoMethod(data->wd_RootObject, MUIM_Hide);
             
-            _width(data->wd_RootObject) = data->wd_Width
-                - (data->wd_innerLeft + data->wd_innerRight);
-            _height(data->wd_RootObject) = data->wd_Height
-                - (data->wd_innerBottom + data->wd_innerTop);
-	    D(bug("NEWSIZE: layout root object\n"));
-            DoMethod(data->wd_RootObject, MUIM_Layout);
-//kprintf("NEWSIZE: show root object\n");
-            DoMethod(data->wd_RootObject, MUIM_Show);
+		_width(data->wd_RootObject) = data->wd_Width - (data->wd_innerLeft + data->wd_innerRight);
+		_height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
+		DoMethod(data->wd_RootObject, MUIM_Layout);
+		DoMethod(data->wd_RootObject, MUIM_Show);
+		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+	    }
+	    break;
 
-            MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-        }
-        break;
+	case IDCMP_REFRESHWINDOW:
+	    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
+	    {
+		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+	     	MUI_EndRefresh(&data->wd_RenderInfo, 0);
+	    }
+	    break;
 
-    case IDCMP_REFRESHWINDOW:
-//kprintf("REFRESHWINDOW: MUI_BeginRefresh()\n");
-        if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
-        {
-          /* redraw root object of window */
-//kprintf("REFRESHWINDOW: MUI_Redraw()\n");
-          MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+	case IDCMP_CLOSEWINDOW:
+	    set(oWin, MUIA_Window_CloseRequest, TRUE);
+	    break;
 
-//kprintf("REFRESHWINDOW: MUI_EndRefresh()\n");
-          MUI_EndRefresh(&data->wd_RenderInfo, 0);
-        }
-        break;
-
-    case IDCMP_MOUSEBUTTONS:
-    case IDCMP_MOUSEMOVE:
-    case IDCMP_RAWKEY:
-        handle_event(oWin, imsg, imsg->Class);
-        break;
-
-    case IDCMP_MENUPICK:
-        break;
-
-    case IDCMP_CLOSEWINDOW:
-//kprintf("CLOSEWINDOW: MUIA_Window_CloseRequest = TRUE\n");
-        set(oWin, MUIA_Window_CloseRequest, TRUE);
-        break;
-
-    case IDCMP_ACTIVEWINDOW:
-//kprintf("ACTIVEWINDOW\n");
-        break;
-
-    case IDCMP_INACTIVEWINDOW:
-//kprintf("INACTIVEWINDOW\n");
-        break;
-
-    case IDCMP_VANILLAKEY:
-//kprintf("VANILLAKEY $%02lx (%c)\n", imsg->Code, (imsg->Code & 0x60) ? imsg->Code : '?');
-        switch (imsg->Code)
-        {
-        case '\t':
-            if (imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-            {
-//kprintf(" -> MUIKEY_GADGET_PREV\n");
-                set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);
-            }
-            else
-            {
-//kprintf(" -> MUIKEY_GADGET_NEXT\n");
-                set(oWin, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
-            }
-            break;
-
-        case '\033': /* ESC */
-//kprintf(" -> MUIKEY_WINDOW_CLOSE\n");
-            set(oWin, MUIA_Window_CloseRequest, TRUE);
-            break;
-        }
-          
-        break;
     }
+
+    handle_event(oWin, imsg, imsg->Class);
 
 #if 0
     /* If there is a grab in effect...
@@ -539,8 +486,7 @@ handle_key(Object *win, struct IntuiMessageKey *event, gint mask)
  * event : event to handle
  * mask : event mask to match corresponding to this event
  */
-static void
-handle_event(Object *win, struct IntuiMessage *event, ULONG mask)
+static void handle_event(Object *win, struct IntuiMessage *event, ULONG mask)
 {
     struct MUI_WindowData *data = muiWindowData(win);
     struct MinNode *mn;
@@ -555,8 +501,28 @@ handle_event(Object *win, struct IntuiMessage *event, ULONG mask)
 	{
 	    res = invoke_event_handler(ehn, event, MUIKEY_NONE);
 	    if (res & MUI_EventHandlerRC_Eat)
-		break;
+		return;
 	}
+    }
+
+    if (mask == IDCMP_RAWKEY)
+    {
+	ULONG key;
+
+	if (event->Code == 66) /* tab */
+	{
+	    if (event->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);
+	    else set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
+	    return;
+	}
+
+	key = ConvertKey(event);
+	switch (key)
+	{
+	    case '\033':
+                set(win, MUIA_Window_CloseRequest, TRUE);
+                break;
+        }
     }
 }
 
