@@ -82,7 +82,7 @@ int __init_memstuff(void)
 {
     GETUSER;
     AROS_GET_SYSBASE_OK
-    __startup_mempool = CreatePool(MEMF_ANY, 4096L, 2000L);
+    __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 4096L, 2000L);
 
     if (!__startup_mempool)
     {
