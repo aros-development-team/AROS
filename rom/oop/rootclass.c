@@ -56,7 +56,7 @@ static Object *basemeta_new(Class *cl, Object *o, struct pRoot_New *msg)
     */
 
     tstate = msg->attrList;
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         if (IS_META_ATTR(tag->ti_Tag, idx))
 	{
