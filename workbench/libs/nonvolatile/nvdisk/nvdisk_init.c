@@ -26,7 +26,7 @@
 #include <exec/libraries.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 
 #define INIT	AROS_SLIB_ENTRY(init, NVDisk)
