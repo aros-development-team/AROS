@@ -2,7 +2,7 @@
 #define GADGETS_AROSCYCLE_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS cycle class.
@@ -25,7 +25,7 @@
 #define AROSCYCLENAME	"Gadgets/aroscycle.gadget"
 
 /* Tags to be passed to AROSCYCLECLASS. */
-#define AROSCYCLE_Dummy 40000L
+#define AROSCYCLE_Dummy (TAG_USER + 0x05100000)
   /* [ISG] (STRPTR *) Null-terminated list of labels for gadget. */
 #define AROSCYCLE_Labels GTCY_Labels
   /* [ISG] (UWORD) Active label (starting with 0). */

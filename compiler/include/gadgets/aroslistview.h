@@ -19,7 +19,7 @@
 #define AROSLISTVIEWCLASS "listview.aros"
 #define AROSLISTVIEWNAME  "Gadgets/aroslistview.gadget"
 
-#define AROSLV_TAGBASE 20000L
+#define AROSLV_TAGBASE (TAG_USER + 0x05120000)
 
 /* Attribute IDs */
 
