@@ -46,7 +46,6 @@ SetClock LOAD
 
 ; Call FixFonts if it was never called before
 If NOT EXISTS SYS:Fonts/_fixfonts_called
-  echo "Executing FixFonts"
   FixFonts
   echo "blah" >SYS:Fonts/_fixfonts_called
 EndIf
