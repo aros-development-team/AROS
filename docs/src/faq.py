@@ -14,6 +14,7 @@ class Item:
 class FAQ:
     def __init__ (self, *dirs):
 	self.items = []
+	self.mtime = 0
 
 	apply (self.processDirs, dirs)
 
@@ -35,7 +36,10 @@ class FAQ:
 	    #print item
 	    path = os.path.join (dirname, item)
 	    if os.path.isfile (path):
-		self.items.append (Item (path))
+		child = Item (path)
+		self.items.append (child)
+		if child.mtime > self.mtime:
+		    self.mtime = child.mtime
 
     def toXml (self):
 	result = xmlsupport.Tag ('chapter title="FAQ - Frequently Asked Questions"')
