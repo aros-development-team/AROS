@@ -51,10 +51,10 @@ void writemccquery(void)
     {
     case MCC:
     case MUI:
-        fprintf(out, "        case MCC_CLASS:          return MCC;\n");
+        fprintf(out, "        case MCC_CLASS:          return (IPTR)MCC;\n");
         break;
     case MCP:
-        fprintf(out, "        case MCC_PREFS_CLASS:    return MCC;\n");
+        fprintf(out, "        case MCC_PREFS_CLASS:    return (IPTR)MCC;\n");
         break;
     }
     
@@ -66,7 +66,7 @@ void writemccquery(void)
         out,
         "    }\n"
         "\n"
-        "    return NULL;\n"
+        "    return 0;\n"
         "}\n"
     );
     
