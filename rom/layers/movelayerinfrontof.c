@@ -27,8 +27,13 @@
 	struct LayersBase *, LayersBase, 28, Layers)
 
 /*  FUNCTION
+        Moves layer directly in front of another layer. Other layers
+        might become visible.  
 
     INPUTS
+        layer_to_move - pointer to layer that is to be moved
+        other_layer   - pointer to other layer that will be behind the
+                        layer_to_move.
 
     RESULT
 
@@ -56,7 +61,7 @@
 
   D(bug("MoveLayerInFrontOf(layer_to_move @ $%lx, other_layer @ $%lx)\n", layer_to_move, other_layer));
 
-  /* Do a few checks whether I will do all this here at all... */
+  /* Do a few checks whether I will have to do all this here at all... */
   
   /* do they have the same root ? */
   if (LI != other_layer->LayerInfo)
@@ -303,34 +308,75 @@ if (NULL == CR_tmp)
              And backup the data from the displayed bitmap to this bitmap
 	    */
 
-           BltBitMap(layer_to_move->rp->BitMap,
-                     CR->bounds.MinX,
-                     CR->bounds.MinY,
-                     CR->BitMap,
-                     CR->bounds.MinX & 0x0f,
-                     0,
-                     CR->bounds.MaxX - CR->bounds.MinX + 1,
-                     CR->bounds.MaxY - CR->bounds.MinY + 1,
-                     0x0c0,
-                     0xff,
-                     NULL);
+           if (0 == (layer_to_move-> Flags & LAYERSUPER))
+	   {
+             /* no SuperBitMap */
+             BltBitMap(layer_to_move->rp->BitMap,
+                       CR->bounds.MinX,
+                       CR->bounds.MinY,
+                       CR->BitMap,
+                       CR->bounds.MinX & 0x0f,
+                       0,
+                       CR->bounds.MaxX - CR->bounds.MinX + 1,
+                       CR->bounds.MaxY - CR->bounds.MinY + 1,
+                       0x0c0,
+                       0xff,
+                       NULL);
 
-           /*
-              Now display all the previously hidden parts that fit into 
-              the ClipRect that was shown before.
-	    */
+ 	   }
+           else
+	   {
+             /* with SuperBitMap */
+             BltBitMap(layer_to_move->rp->BitMap,
+                       CR->bounds.MinX,
+                       CR->bounds.MinY,
+                       layer_to_move->SuperBitMap,
+                       CR->bounds.MinX - layer_to_move->bounds.MinX +
+                                         layer_to_move->Scroll_X,
+                       CR->bounds.MinY - layer_to_move->bounds.MinY +
+                                         layer_to_move->Scroll_Y,
+                       CR->bounds.MaxX - CR->bounds.MinX + 1,
+                       CR->bounds.MaxY - CR->bounds.MinY + 1,
+                       0x0c0,
+                       0xff,
+                       NULL);
+	   }
+ 
+           if (0 == (L_tmp->Flags & LAYERSUPER))
+	   {
+             /*
+                Now display all the previously hidden parts that fit into 
+                the ClipRect that was shown before.
+	      */
 
-           BltBitMap(CR_tmp->BitMap,
-                     CR_tmp->bounds.MinX & 0x0f,
-                     0,
-                     layer_to_move->rp->BitMap,
-                     CR_tmp->bounds.MinX,
-                     CR_tmp->bounds.MinY,
-                     CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
-                     CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
-                     0x0c0,
-                     0xff,
-                     NULL);
+             BltBitMap(CR_tmp->BitMap,
+                       CR_tmp->bounds.MinX & 0x0f,
+                       0,
+                       layer_to_move->rp->BitMap,
+                       CR_tmp->bounds.MinX,
+                       CR_tmp->bounds.MinY,
+                       CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                       CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                       0x0c0,
+                       0xff,
+                       NULL);
+	   }
+           else
+	   {
+             BltBitMap(L_tmp->SuperBitMap,
+                       CR_tmp->bounds.MinX - L_tmp->bounds.MinX +
+                                             L_tmp->Scroll_X,
+                       CR_tmp->bounds.MinY - L_tmp->bounds.MinY +
+                                             L_tmp->Scroll_Y,
+                       layer_to_move->rp->BitMap,
+                       CR_tmp->bounds.MinX,
+                       CR_tmp->bounds.MinY,
+                       CR_tmp->bounds.MaxX - CR_tmp->bounds.MinX + 1,
+                       CR_tmp->bounds.MaxY - CR_tmp->bounds.MinY + 1,
+                       0x0c0,
+                       0xff,
+                       NULL);
+	   }
 
            /* 
               If the hidden ClipRect had the same size as the
@@ -360,17 +406,36 @@ if (NULL == CR_tmp)
                  /* Take this ClipRect out of the list */
                  CR_tmp -> Next = CR_del -> Next;
 
-                 BltBitMap(CR_del->BitMap,
-                           CR_del->bounds.MinX & 0x0f,
-                           0,
-                           layer_to_move->rp->BitMap,
-                           CR_del->bounds.MinX,
-                           CR_del->bounds.MinY,
-                           CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
-                           CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
-                           0x0c0,
-                           0xff,
-                           NULL);
+                 if (0 == (L_tmp->Flags & LAYERSUPER))
+		 {
+                   BltBitMap(CR_del->BitMap,
+                             CR_del->bounds.MinX & 0x0f,
+                             0,
+                             layer_to_move->rp->BitMap,
+                             CR_del->bounds.MinX,
+                             CR_del->bounds.MinY,
+                             CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
+                             CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
+                             0x0c0,
+                             0xff,
+                             NULL);
+		 }
+                 else
+		 {
+                   BltBitMap(L_tmp->SuperBitMap,
+                             CR_del->bounds.MinX - L_tmp->bounds.MinX +
+                                                   L_tmp->Scroll_X,
+                             CR_del->bounds.MinY - L_tmp->bounds.MinY +
+                                                   L_tmp->Scroll_Y,
+                             layer_to_move->rp->BitMap,
+                             CR_del->bounds.MinX,
+                             CR_del->bounds.MinY,
+                             CR_del->bounds.MaxX - CR_del->bounds.MinX + 1,
+                             CR_del->bounds.MaxY - CR_del->bounds.MinY + 1,
+                             0x0c0,
+                             0xff,
+                             NULL);
+		 }
 
                  FreeBitMap(CR_del -> BitMap);
                  FreeMem(CR_del, sizeof(struct ClipRect));

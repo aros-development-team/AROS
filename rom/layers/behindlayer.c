@@ -143,13 +143,15 @@
 
   while (NULL != CR)
   {
+/*
 kprintf("This Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d\n",
           CR->bounds.MinX,CR->bounds.MaxX,
           CR->bounds.MinY,CR->bounds.MaxY);
+*/
     /* Was this ClipRect visible before ??? */
     if (NULL == CR->lobs)
     {
-kprintf("Is visible!!!\n");
+//kprintf("Is visible!!!\n");
       /* 
          Check which layer is now visible at this point. If its not
          the layer L then I will have to hide that part of the ClipRect.
@@ -164,7 +166,7 @@ kprintf("Is visible!!!\n");
            to the Display BitMap and backup the Display BitMap into 
            that ClipRect.
 	 */
-kprintf("Priority: %d\n",L_tmp->priority);
+//kprintf("Priority: %d\n",L_tmp->priority);
 //        CreateClipRectsSelf(L_tmp, FALSE);
         _CR = internal_WhichClipRect(_L, CR->bounds.MinX, CR->bounds.MinY);
 
@@ -172,7 +174,7 @@ kprintf("Priority: %d\n",L_tmp->priority);
             _CR [_L] is now visible and 
              CR [ L] is now hidden
 	 */
-
+/*
 if (CR->bounds.MinX != _CR->bounds.MinX ||
     CR->bounds.MaxX != _CR->bounds.MaxX ||
     CR->bounds.MinY != _CR->bounds.MinY ||
@@ -185,17 +187,14 @@ kprintf("     Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d  (Pri: %d)\n",
           _CR->bounds.MinY,_CR->bounds.MaxY,
           _L->priority);
 kprintf("bl: A L->rp: %x, _CR: %x\n",L->rp,_CR);
-
+*/
         SwapBitsRastPortClipRect(L->rp, _CR);
-
-kprintf("bl: B\n");
 
          CR -> lobs   = _L;
         _CR -> lobs   = NULL;
          CR -> BitMap = _CR -> BitMap;
         _CR -> BitMap = NULL;
 
-kprintf("bl: C\n");
         /*
            Now I have to change all lobs-entries in the layers
            behind the layer that became visible (_L) so they are
@@ -203,7 +202,7 @@ kprintf("bl: C\n");
          */
         while (NULL != L_tmp -> back)
         {
-
+/*
 if (CR->bounds.MinX != _CR->bounds.MinX ||
     CR->bounds.MaxX != _CR->bounds.MaxX ||
     CR->bounds.MinY != _CR->bounds.MinY ||
@@ -220,6 +219,7 @@ else
 kprintf("     Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d\n",
           _CR->bounds.MinX,_CR->bounds.MaxX,
           _CR->bounds.MinY,_CR->bounds.MaxY);
+*/
 
           L_tmp = internal_WhichLayer(L_tmp->back, 
                                       CR->bounds.MinX, 
@@ -235,9 +235,6 @@ kprintf("     Cliprect: MinX: %d, MaxX: %d, MinY: %d, MaxY: %d\n",
           _CR -> lobs = _L;
 	} /* while */
       } /* if */
-
-else kprintf("\t\tstays visible!!!\n");
-
     } /* if */
     CR = CR -> Next;
   } /* while */

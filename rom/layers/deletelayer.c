@@ -207,20 +207,41 @@
           */
           if (Ltmp == L_behind)
           {  
+            if (0 == (L_behind->Flags & LAYERSUPER))
+	    { 
+              /* no SuperBitMap */
+              BltBitMap(
+                CR->BitMap,
+                CR->bounds.MinX & 0x0f,
+                0,
+                LD->rp->BitMap,
+                CR->bounds.MinX,
+                CR->bounds.MinY,
+                CR->bounds.MaxX - CR->bounds.MinX + 1,
+                CR->bounds.MaxY - CR->bounds.MinY + 1,
+                0x0c0, /* copy */
+                0xff,
+                NULL
+               );
+	    }
+            else
+	    {
+              /* with SuperBitMap */
+              BltBitMap(
+                L_behind->SuperBitMap,
+                CR->bounds.MinX - L_behind->bounds.MinX + L_behind->Scroll_X,
+                CR->bounds.MinY - L_behind->bounds.MinY + L_behind->Scroll_Y,
+                LD->rp->BitMap,
+                CR->bounds.MinX,
+                CR->bounds.MinY,
+                CR->bounds.MaxX - CR->bounds.MinX + 1,
+                CR->bounds.MaxY - CR->bounds.MinY + 1,
+                0x0c0, /* copy */
+                0xff,
+                NULL
+               );              
+	    }
             /* ... restore the bitmap stuff found there */
-            BltBitMap(
-              CR->BitMap,
-              CR->bounds.MinX & 0x0f,
-              0,
-              LD->rp->BitMap,
-              CR->bounds.MinX,
-              CR->bounds.MinY,
-              CR->bounds.MaxX - CR->bounds.MinX + 1,
-              CR->bounds.MaxY - CR->bounds.MinY + 1,
-              0x0c0, /* copy */
-              0xff,
-              NULL
-             );
             /* 
                Free the bitmap and clear the lobs entry 
             */

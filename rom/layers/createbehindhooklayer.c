@@ -83,6 +83,7 @@
     L->LayerInfo = li;
     L->Width     = x1-x0+1;
     L->Height    = y1-y0+1;
+    L->SuperBitMap = bm2;
 
     InitSemaphore(&L->Lock);
     LockLayer(0, L);
