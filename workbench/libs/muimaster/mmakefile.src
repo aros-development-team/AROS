@@ -73,6 +73,7 @@ FILES := \
     dragndrop \
     menu \
     datatypescache \
+    font \
     $(CLASSFILES)
     	    
 FUNCS := \
