@@ -913,6 +913,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     NewList((struct List*)&(data->wd_EHList));
     NewList((struct List*)&(data->wd_CCList));
     NewList((struct List*)&(data->wd_CycleChain));
+    NewList((struct List*)&(data->wd_IDList));
 
     data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET
                       | WFLG_SIMPLE_REFRESH | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
@@ -1327,7 +1328,7 @@ static ULONG Window_AddEventHandler(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/window.c: Add Eventhandler\n"));
+//    D(bug("muimaster.library/window.c: Add Eventhandler\n"));
 
     Enqueue((struct List *)&data->wd_EHList, (struct Node *)msg->ehnode);
     _zune_window_change_events(data);
@@ -1342,7 +1343,7 @@ static ULONG Window_RemEventHandler(struct IClass *cl, Object *obj,
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("muimaster.library/window.c: Rem Eventhandler\n"));
+//    D(bug("muimaster.library/window.c: Rem Eventhandler\n"));
 
     Remove((struct Node *)msg->ehnode);
     _zune_window_change_events(data);
@@ -1478,6 +1479,54 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
     return 0;
 }
 
+/**************************************************************************
+ 
+**************************************************************************/
+static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadegtID *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct IDNode *newnode = mui_alloc_struct(struct IDNode);
+
+    if (newnode)
+    {
+	int id = 1;
+	struct MinNode *mn;
+
+	for (mn = data->wd_IDList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+	{
+	    struct IDNode *idn = (struct IDNode *)mn;
+	    if (id < idn->id) break;
+	    id++;
+	}
+
+        newnode->id = id;
+	
+	Insert((struct List*)&data->wd_IDList,(struct Node*)&newnode->node,(struct Node*)mn);
+	return (IPTR)id;
+    }
+    return 0;
+}
+
+/**************************************************************************
+ 
+**************************************************************************/
+static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_FreeGadgetID *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct MinNode *mn;
+
+    for (mn = data->wd_IDList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    {
+	struct IDNode *idn = (struct IDNode *)mn;
+	if (msg->gadgetid == idn->id)
+	{
+	    Remove((struct Node*)idn);
+	    mui_free(idn);
+	}
+    }
+
+    return 0;
+}
 
 /******************************************************************************/
 /******************************************************************************/
@@ -1511,6 +1560,8 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_AddControlCharHandler: return Window_AddControlCharHandler(cl, obj, (APTR)msg);
 	case MUIM_Window_RemControlCharHandler: return Window_RemControlCharHandler(cl, obj, (APTR)msg);
 	case MUIM_Window_DragObject: return Window_DragObject(cl, obj, (APTR)msg);
+	case MUIM_Window_AllocGadgetID: return Window_AllocGadgetID(cl, obj, (APTR)msg);
+	case MUIM_Window_FreeGadgetID: return Window_FreeGadgetID(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
