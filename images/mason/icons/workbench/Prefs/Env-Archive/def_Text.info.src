@@ -1,1 +1,2 @@
-TYPE = TEXT
+TYPE = PROJECT
+DEFAULTTOOL = SYS:Utilities/MultiView
