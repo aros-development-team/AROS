@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct DiskObject *, icon, A0),
-        AROS_LHA(struct Tagitem *,    tags, A1),
+        AROS_LHA(struct TagItem *,    tags, A1),
 
 /*  LOCATION */
         struct Library *, IconBase, 26, Icon)
@@ -46,6 +46,8 @@
     
 #   warning TODO: Implement icon/IconControlA()
     aros_print_not_implemented("icon/IconControlA()");
+    
+    return 0;
     
     AROS_LIBFUNC_EXIT
 } /* IconControlA() */
