@@ -69,74 +69,14 @@ typedef struct _ZuneKeySpec {
     IX ix;
 } ZuneKeySpec;
 
+typedef enum RegisterLook {
+    REGISTER_LOOK_TRADITIONAL,
+    REGISTER_LOOK_GADTOOLS,
+} RegisterLook;
+
 /*
  * User Prefs for interface drawing
  */
-struct ZunePrefs {
-    /* all frames */
-    struct MUI_FrameSpec frames[MUIV_Frame_Count];
-    /* Images */
-    struct MUI_ImageSpec *images[MUII_Count];
-    /* Pens */
-    struct { int red; int green; int blue; } muipens[MPEN_COUNT];
-    /* Fonts */
-    struct TextFont *fonts[-MUIV_Font_NegCount];
-    /* Buttons */
-    STRPTR   textbutton_font;
-    WORD     radiobutton_hspacing;
-    WORD     radiobutton_vspacing;
-    /* Cycles */
-    CycleMenuPosition cycle_menu_position;
-    WORD     cycle_menu_min_entries;
-    WORD     cycle_menu_speed;
-    BOOL     cycle_menu_recessed_entries;
-    /* Groups */
-    GroupTitlePosition group_title_position;
-    GroupTitleColor    group_title_color;
-    STRPTR   group_title_font;
-    WORD     group_hspacing;
-    WORD     group_vspacing;
-    /* Strings */
-    struct MUI_PenSpec string_bg_active;
-    struct MUI_PenSpec string_text_active;
-    struct MUI_PenSpec string_bg_inactive;
-    struct MUI_PenSpec string_text_inactive;
-    /* Lists */
-    STRPTR   list_font_normal;
-    STRPTR   list_font_fixed;
-    WORD     list_linespacing;
-    /* Navigation */
-    BOOL                 dragndrop_left_button;
-    STRPTR               dragndrop_left_modifier;
-    BOOL                 dragndrop_middle_button;
-    STRPTR               dragndrop_middle_modifier;
-    LONG                 dragndrop_autostart;
-    DNDLook              dragndrop_look;
-    BalancingLook        balancing_look;
-    ActiveObjectLook     active_object_look;
-    struct MUI_PenSpec   active_object_color;
-
-    ZuneKeySpec muikeys[MUIKEY_COUNT];
-
-    /* Scrollbars */
-    ScrollbarLook     sb_look;
-    /* Sliders */
-    STRPTR               slider_knob_font;
-    /* Special */
-    /* Windows */
-    WindowPosition  window_position;
-
-    STRPTR   window_font_normal;
-    STRPTR   window_font_small;
-    STRPTR   window_font_big;
-
-    WORD     window_inner_left;
-    WORD     window_inner_right;
-    WORD     window_inner_top;
-    WORD     window_inner_bottom;
-
-    ULONG    app_cfg_spy_delay;
-};
 
 struct ZunePrefsNew
 {
@@ -159,6 +99,42 @@ struct ZunePrefsNew
 
     /* MUI Keys */
     ZuneKeySpec muikeys[MUIKEY_COUNT];
+
+    /* Zune registers */
+    RegisterLook register_look;
+
+    /* Buttons */
+    WORD     radiobutton_hspacing; /* yet unused, remove this comment when handled */
+    WORD     radiobutton_vspacing; /* yet unused, remove this comment when handled */
+
+    /* Cycles */
+    CycleMenuPosition cycle_menu_position; /* yet unused, remove this comment when handled */
+    WORD     cycle_menu_min_entries; /* yet unused, remove this comment when handled */
+    WORD     cycle_menu_speed; /* yet unused, remove this comment when handled */
+    BOOL     cycle_menu_recessed_entries; /* yet unused, remove this comment when handled */
+
+    /* Strings */
+    struct MUI_PenSpec string_bg_active; /* yet unused, remove this comment when handled */
+    struct MUI_PenSpec string_text_active; /* yet unused, remove this comment when handled */
+    struct MUI_PenSpec string_bg_inactive; /* yet unused, remove this comment when handled */
+    struct MUI_PenSpec string_text_inactive; /* yet unused, remove this comment when handled */
+
+    /* Lists */
+    WORD     list_linespacing; /* yet unused, remove this comment when handled */
+
+    /* Navigation */
+    BOOL                 dragndrop_left_button; /* yet unused, remove this comment when handled */
+    STRPTR               dragndrop_left_modifier; /* yet unused, remove this comment when handled */
+    BOOL                 dragndrop_middle_button; /* yet unused, remove this comment when handled */
+    STRPTR               dragndrop_middle_modifier; /* yet unused, remove this comment when handled */
+    LONG                 dragndrop_autostart; /* yet unused, remove this comment when handled */
+    DNDLook              dragndrop_look; /* yet unused, remove this comment when handled */
+    BalancingLook        balancing_look; /* yet unused, remove this comment when handled */
+    ActiveObjectLook     active_object_look; /* yet unused, remove this comment when handled */
+    struct MUI_PenSpec   active_object_color; /* yet unused, remove this comment when handled */
+
+    /* Scrollbars */
+    ScrollbarLook     sb_look; /* yet unused, remove this comment when handled */
 };
 
 #endif
