@@ -20,7 +20,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <aros/asmcall.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -102,7 +102,7 @@ LDLoad(
 	though.
     */
     D(bug(
-	"LDLoad(caller=(%p) %s, name=%s, basedir=%s)\n",
+	"[LDLoad] caller=(%p) %s, name=%s, basedir=%s\n",
 	caller, caller->pr_Task.tc_Node.ln_Name, name, basedir
     ));
 
@@ -110,9 +110,9 @@ LDLoad(
     {
     	/* Try the current directory of the caller */
 
-	D(bug("Process\n"));
+	D(bug("[LDLoad] Process\n"));
 	me->pr_CurrentDir = caller->pr_CurrentDir;
-	D(bug("Trying currentdir\n"));
+	D(bug("[LDLoad] Trying currentdir\n"));
 	seglist = LoadSeg(name);
 	if( seglist )
 	    return seglist;
@@ -120,7 +120,7 @@ LDLoad(
 	/* The the program directory of the caller */
 	if( caller->pr_HomeDir != NULL )
 	{
-	    D(bug("Trying homedir\n"));
+	    D(bug("[LDLoad] Trying homedir\n"));
 	    me->pr_CurrentDir = caller->pr_HomeDir;
 	    seglist = LoadSeg(name);
 	    if( seglist )
@@ -133,7 +133,7 @@ LDLoad(
 	   && (dp = GetDeviceProc( basedir, dp )) != NULL
     )
     {
-    	D(bug("Trying default dir, dp=%p\n", dp));
+    	D(bug("[LDLoad] Trying default dir, dp=%p\n", dp));
 	/* XXX: There is something bad here if dvp_Lock == NULL */
 	me->pr_CurrentDir = dp->dvp_Lock;
 	seglist = LoadSeg(name);
@@ -171,11 +171,11 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 	    {
 		struct Library *lib;
 
-		D(bug("Calling InitResident(%p) on %s\n", res, res->rt_Name));
+		D(bug("[LDInit] Calling InitResident(%p) on %s\n", res, res->rt_Name));
 		Forbid();
 		lib = InitResident(res, seglist);
 		Permit();
-		D(bug("Done calling InitResident(%p) on %s\n", res, res->rt_Name));
+		D(bug("[LDInit] Done calling InitResident(%p) on %s\n", res, res->rt_Name));
 		if( lib == NULL )
 		    UnLoadSeg(seglist);
 		return lib;
@@ -183,7 +183,7 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 	}
 	seg = *(BPTR *)BADDR(seg);
     }
-    D(bug("LD: Couldn't find Resident for %p\n", seglist));
+    D(bug("[LDInit] Couldn't find Resident for %p\n", seglist));
     UnLoadSeg(seglist);
     return NULL;
 }
@@ -337,7 +337,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 
 	    if (curtask)
 	    {
-		D(bug("Circular dependency found!\n"));
+		bug("Circular dependency found!\n");
 	        object = NULL;
 	    }
         }
@@ -375,10 +375,10 @@ AROS_LH2(struct Library *, OpenLibrary,
 	ldd.ldd_BaseDir = "libs:";
 
     	SetSignal(0, SIGF_SINGLE);
-	D(bug("LDCaller: Sending request for %s v%ld\n", libname, version));
+	D(bug("[LDCaller] Sending request for %s v%ld\n", libname, version));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
-	D(bug("LDCaller: Returned\n"));
+	D(bug("[LDCaller] Returned\n"));
 
 	library = LDInit(ldd.ldd_Return, DOSBase);
 
@@ -403,7 +403,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 
 	    if(library->lib_Version >= version)
 	    {
-	        D(bug("LDCaller: Calling libOpen() of %s\n",
+	        D(bug("[LDCaller] Calling libOpen() of %s\n",
     		        library->lib_Node.ln_Name));
 
 	        library = AROS_LVO_CALL1(struct Library *,
@@ -411,7 +411,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 		    struct Library *, library, 1,
 	        );
 
-	        D(bug("LDCaller: libOpen() returned\n"));
+	        D(bug("[LDCaller] libOpen() returned\n"));
 	    }
 	    else
 	       library = NULL;
@@ -499,7 +499,6 @@ AROS_LH4(BYTE, OpenDevice,
 	struct Task  *curtask = FindTask(0);
 	struct ETask *et      = GetETask(curtask);
 
-	D(bug("Checking for circular dependency\n"));
 	if (et)
 	{
 	    while (curtask && curtask != object->ldon_FirstLocker)
@@ -507,7 +506,7 @@ AROS_LH4(BYTE, OpenDevice,
 
 	    if (curtask)
 	    {
-		D(bug("Circular dependency found!\n"));
+		bug("[LDCaller] Circular dependency found!\n");
 	        object = NULL;
 	    }
         }
@@ -541,10 +540,10 @@ AROS_LH4(BYTE, OpenDevice,
 	ldd.ldd_BaseDir = "devs:";
 
 	SetSignal(0, SIGF_SINGLE);
-	D(bug("LDCaller: Sending request for %s\n", devname));
+	D(bug("[LDCaller] Sending request for %s\n", devname));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
-	D(bug("LDCaller: Returned\n"));
+	D(bug("[LDCaller] Returned\n"));
 
 	iORequest->io_Device = (struct Device *)LDInit(ldd.ldd_Return, DOSBase);
 
@@ -560,7 +559,7 @@ AROS_LH4(BYTE, OpenDevice,
 	    iORequest->io_Error = 0;
 	    iORequest->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
-  	    D(bug("LDCaller: Calling devOpen() of %s unit %ld\n",
+  	    D(bug("[LDCaller] Calling devOpen() of %s unit %ld\n",
 		    iORequest->io_Device->dd_Library.lib_Node.ln_Name, unitNumber));
 
 	    AROS_LVO_CALL3(void,
@@ -570,7 +569,7 @@ AROS_LH4(BYTE, OpenDevice,
 	        struct Device *, iORequest->io_Device, 1,
 	    );
 
-	    D(bug("LDCaller: devOpen() returned\n"));
+	    D(bug("[LDCaller] devOpen() returned\n"));
 
 	    if (iORequest->io_Error)
 	        iORequest->io_Device = NULL;
@@ -587,7 +586,7 @@ AROS_LH4(BYTE, OpenDevice,
        ReleaseSemaphore(&object->ldon_SigSem);
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
-    D(bug("%s", iORequest->io_Error?"LDCaller: Couldn't open the device\n":""));
+    D(bug("%s", iORequest->io_Error?"[LDCaller] Couldn't open the device\n":""));
 
     return iORequest->io_Error;
 
@@ -677,7 +676,7 @@ AROS_UFH3(LONG, LDFlush,
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library;
 
-    bug("LDDemon: Flush called\n");
+    D(bug("[LDDemon] Flush called\n"));
     DOSBase->dl_LDReturn = MEM_DID_NOTHING;
 
     /* Forbid() is already done, but I don't want to rely on it. */
@@ -758,7 +757,7 @@ AROS_UFH3(void, LDDemon,
 	WaitPort(DOSBase->dl_LDDemonPort);
 	while( (ldd = (struct LDDMsg *)GetMsg(DOSBase->dl_LDDemonPort)) )
 	{
-	    D(bug("LDDemon: Got a request for %s in %s\n",
+	    D(bug("[LDDemon] Got a request for %s in %s\n",
 		    ldd->ldd_Name, ldd->ldd_BaseDir));
 
 	    ldd->ldd_Return = LDLoad(
@@ -767,7 +766,10 @@ AROS_UFH3(void, LDDemon,
 		ldd->ldd_BaseDir,
 		DOSBase);
 
-	    D(bug("LDDemon: Replying with %p as result\n", ldd->ldd_Return));
+	    if (ldd->ldd_Return == 0)
+		bug("[LDDemon] Could not open %s\n",ldd->ldd_Name);
+	    else
+	    	D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
 	    ReplyMsg((struct Message *)ldd);
 	} /* messages available */
     }
