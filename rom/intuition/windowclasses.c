@@ -32,6 +32,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/***********************************************************************************/
 
 #define G(o)  ((struct Gadget *)o)
 #define EG(o) ((struct ExtGadget *)o)
@@ -39,6 +40,8 @@
 
 /* For table lookup of images */
 #define SYSGADTYPE_IDX(o) ( ((G(o)->GadgetType & GTYP_SYSTYPEMASK) >> 4) - 1)
+
+/***********************************************************************************/
 
 const ULONG gtyp2image[] = 
 {
@@ -100,10 +103,14 @@ struct dragbar_data
 
 };
 
+/***********************************************************************************/
+
 /* drawwindowframe is used when the user drags or resizes a window */
 
 #define DWF_THICK_X 2
 #define DWF_THICK_Y 2
+
+/***********************************************************************************/
 
 static void drawwindowframe(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 			    struct IntuitionBase *IntuitionBase)
@@ -140,7 +147,11 @@ static void drawwindowframe(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD
     }
 }
 
+/***********************************************************************************/
+
 #define IntuitionBase ((struct IntuitionBase *)(cl)->cl_UserData)
+
+/***********************************************************************************/
 
 static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
 {
@@ -230,6 +241,8 @@ static VOID dragbar_render(Class *cl, Object *o, struct gpRender * msg)
     ReturnVoid("DragBar::Render");
 }
 
+/***********************************************************************************/
+
 static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 {
     
@@ -288,6 +301,7 @@ D(bug("locking all layers\n"));
     
 }
 
+/***********************************************************************************/
 
 static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
@@ -405,6 +419,8 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
     return retval;
 }
 
+/***********************************************************************************/
+
 static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct dragbar_data *data;
@@ -456,9 +472,9 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     
 }
 
+/***********************************************************************************/
+
 /***********  Window dragbar class **********************************/
-
-
 
 AROS_UFH3S(IPTR, dispatch_dragbarclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -509,10 +525,11 @@ AROS_UFH3S(IPTR, dispatch_dragbarclass,
     ReturnPtr ("dragbar_dispatcher", IPTR, retval);
 }
 
+/***********************************************************************************/
+
 /*********************
 ** The SizeButtonClass
 *********************/
-
 
 struct sizebutton_data
 {
@@ -536,6 +553,8 @@ struct sizebutton_data
      
      Object * image;
 };
+
+/***********************************************************************************/
 
 static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
 {
@@ -600,6 +619,8 @@ static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
     return;
 }
 
+/***********************************************************************************/
+
 static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 {
     
@@ -658,6 +679,7 @@ D(bug("locking all layers\n"));
     
 }
 
+/***********************************************************************************/
 
 static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
@@ -772,6 +794,8 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
     return retval;
 }
 
+/***********************************************************************************/
+
 static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct sizebutton_data *data;
@@ -820,6 +844,8 @@ static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg
     return TRUE;
 }
 
+/***********************************************************************************/
+
 static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
 {
     /* Only interesting attribute is gadget type */
@@ -865,6 +891,8 @@ static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
     return NULL;
 }
 
+/***********************************************************************************/
+
 static VOID sizebutton_dispose(Class *cl, Object *o, Msg msg)
 {
     struct sizebutton_data *data = INST_DATA(cl, o);
@@ -874,9 +902,9 @@ static VOID sizebutton_dispose(Class *cl, Object *o, Msg msg)
     return;
 }
 
+/***********************************************************************************/
+
 /***********  Size Button class **********************************/
-
-
 
 AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -929,6 +957,7 @@ AROS_UFH3S(IPTR, dispatch_sizebuttonclass,
 }
 
 
+/***********************************************************************************/
 
 /************************************************
 *  TBButton class (TitleBarButton)
@@ -942,6 +971,8 @@ struct tbb_data
  Note: I could put these in separate subclasses, but thhey have
  so much in common, that I just have them in the same class
 */
+
+/***********************************************************************************/
 
 static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 {
@@ -988,6 +1019,8 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
     return NULL;
 }
 
+/***********************************************************************************/
+
 static VOID tbb_dispose(Class *cl, Object *o, Msg msg)
 {
     struct tbb_data *data = INST_DATA(cl, o);
@@ -997,87 +1030,103 @@ static VOID tbb_dispose(Class *cl, Object *o, Msg msg)
     return;
 }
 
+/***********************************************************************************/
+
+static IPTR tbb_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+{
+    struct IBox box;
+    
+    GetGadgetIBox(o, msg->gpht_GInfo, &box);
+    
+    return ((msg->gpht_Mouse.X >= 0) &&
+    	    (msg->gpht_Mouse.Y >= 0) &&
+	    (msg->gpht_Mouse.X < box.Width) &&
+	    (msg->gpht_Mouse.Y < box.Height)) ? GMR_GADGETHIT : 0;
+}
+
+/***********************************************************************************/
 
 static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 {
-	struct tbb_data *data = INST_DATA(cl, o);
-	struct IBox container;
-	struct RastPort *rp = msg->gpr_RPort;
-	
-	/* center image position, we assume image top and left is 0 */
-	ULONG x, y;
-        ULONG state;
-	/* UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens; */
-	
-	GetGadgetIBox(o, msg->gpr_GInfo, &container);
-	D(bug("Gadget IBOX\n"));
+    struct tbb_data *data = INST_DATA(cl, o);
+    struct IBox container;
+    struct RastPort *rp = msg->gpr_RPort;
 
-	x = container.Left; /* + ((container.Width / 2) -
-		    (IM(data->image)->Width / 2)); */
-		    
-	y = container.Top; /* + ((container.Height / 2) -
-		    (IM(data->image)->Height / 2)); */
-		
-	/* Are we part of the active window ? */
-	if (msg->gpr_GInfo->gi_Window)
+    /* center image position, we assume image top and left is 0 */
+    ULONG x, y;
+    ULONG state;
+    /* UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens; */
+
+    GetGadgetIBox(o, msg->gpr_GInfo, &container);
+    D(bug("Gadget IBOX\n"));
+
+    x = container.Left; /* + ((container.Width / 2) -
+		(IM(data->image)->Width / 2)); */
+
+    y = container.Top; /* + ((container.Height / 2) -
+		(IM(data->image)->Height / 2)); */
+
+    /* Are we part of the active window ? */
+    if (msg->gpr_GInfo->gi_Window)
+    {
+	if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
 	{
-	    if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
-	    {
-		state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
-	    }
-	    else
-	    {
-		state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_INACTIVESELECTED : IDS_INACTIVENORMAL );
-	    }
+	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
 	}
 	else
 	{
-	    /* Screen gadgets don't have a window */
-	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
+	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_INACTIVESELECTED : IDS_INACTIVENORMAL );
 	}
-	
-	D(bug("Drawing image\n"));
+    }
+    else
+    {
+	/* Screen gadgets don't have a window */
+	state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
+    }
 
-   	DrawImageState(rp
-	    , (struct Image *)data->image
-	    , x, y
-	    , state
-	    , msg->gpr_GInfo->gi_DrInfo);
+    D(bug("Drawing image\n"));
+
+    DrawImageState(rp
+	, (struct Image *)data->image
+	, x, y
+	, state
+	, msg->gpr_GInfo->gi_DrInfo);
 
 #if 0	    
-	/* For now just render a tiny black edge around the image */
+    /* For now just render a tiny black edge around the image */
 
-	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
+    SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
 
-	/* left edge */
-	RectFill(rp,container.Left,
-		    container.Top,
-		    container.Left,
-		    container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
+    /* left edge */
+    RectFill(rp,container.Left,
+		container.Top,
+		container.Left,
+		container.Top + container.Height - 1 - ((container.Left == 0) ? 0 : 1));
 
-	/* top edge */
-	RectFill(rp,container.Left + 1,
-		    container.Top,
-		    container.Left + container.Width - 1 - ((container.Top == 0) ? 0 : 1),
-		    container.Top);
-	
-	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
+    /* top edge */
+    RectFill(rp,container.Left + 1,
+		container.Top,
+		container.Left + container.Width - 1 - ((container.Top == 0) ? 0 : 1),
+		container.Top);
 
-	/* right edge */
-	RectFill(rp,container.Left + container.Width - 1,
-		    container.Top + ((container.Top == 0) ? 1 : 0),
-		    container.Left + container.Width - 1,
-		    container.Top + container.Height - 1);
+    SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
 
-	/* bottom edge */
-	RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
-		    container.Top + container.Height - 1,
-		    container.Left + container.Width - 2,
-		    container.Top + container.Height - 1);
+    /* right edge */
+    RectFill(rp,container.Left + container.Width - 1,
+		container.Top + ((container.Top == 0) ? 1 : 0),
+		container.Left + container.Width - 1,
+		container.Top + container.Height - 1);
+
+    /* bottom edge */
+    RectFill(rp,container.Left + ((container.Left == 0) ? 1 : 0),
+		container.Top + container.Height - 1,
+		container.Left + container.Width - 2,
+		container.Top + container.Height - 1);
 #endif
     return;
 }
 
+/***********************************************************************************/
 
 static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
@@ -1140,6 +1189,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
     
 }
 
+/***********************************************************************************/
 
 AROS_UFH3S(IPTR, dispatch_tbbclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -1160,23 +1210,19 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
 	case OM_DISPOSE:
 	    tbb_dispose(cl, o, msg);
 	    break;
-	    
+	
+	case GM_HITTEST:
+	    retval = tbb_hittest(cl, o, (struct gpHitTest *)msg);
+	    break;
+	        
 	case GM_RENDER:
 	    tbb_render(cl, o, (struct gpRender *)msg);
 	    break;
 	    
-	case GM_LAYOUT:
-	    break;
-	    
-	case GM_DOMAIN:
-	    break;
-	    
-
 	case GM_HANDLEINPUT:
 	    retval = tbb_handleinput(cl, o , (struct gpInput *)msg);
 	    break;
-	    
-	    
+	    	    
 	default:
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
@@ -1185,10 +1231,12 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
     ReturnPtr ("tbb_dispatcher", IPTR, retval);
 }
 
-/****************************************************************************/
+/***********************************************************************************/
+
 #undef IntuitionBase
 
-/* Initialize our dragbar class. */
+/***********************************************************************************/
+
 struct IClass *InitDragBarClass (struct IntuitionBase * IntuitionBase)
 {
     struct IClass *cl = NULL;
@@ -1206,8 +1254,8 @@ struct IClass *InitDragBarClass (struct IntuitionBase * IntuitionBase)
     return (cl);
 }
 
+/***********************************************************************************/
 
-/* Initialize our sizebutton class. */
 struct IClass *InitSizeButtonClass (struct IntuitionBase * IntuitionBase)
 {
     struct IClass *cl = NULL;
@@ -1224,8 +1272,8 @@ struct IClass *InitSizeButtonClass (struct IntuitionBase * IntuitionBase)
     return (cl);
 }
 
+/***********************************************************************************/
 
-/* Initialize our TitleBarButton class. */
 struct IClass *InitTitleBarButClass (struct IntuitionBase * IntuitionBase)
 {
     struct IClass *cl = NULL;
@@ -1242,4 +1290,6 @@ struct IClass *InitTitleBarButClass (struct IntuitionBase * IntuitionBase)
 
     return (cl);
 }
+
+/***********************************************************************************/
 
