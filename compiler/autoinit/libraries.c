@@ -18,7 +18,7 @@
 
 DECLARESET(LIBS);
 
-int __includelibrarieshandling = 0;
+AROS_MAKE_ASM_SYM(__includelibrarieshandling, 0);
                              
 int set_open_libraries(void)
 {
@@ -29,8 +29,18 @@ int set_open_libraries(void)
     
     ForeachElementInSet(SETNAME(LIBS), 1, pos, set)
     {
-        *set->baseptr = OpenLibrary(set->name, *set->versionptr);
-	if (!*set->baseptr)
+        LONG version = *set->versionptr;
+	BOOL do_not_fail = 0;
+	
+	if (version < 0)
+	{
+	    version = -(version + 1); 
+	    do_not_fail = 1;
+	}
+	
+        *set->baseptr = OpenLibrary(set->name, version);
+	
+	if (!do_not_fail && *set->baseptr == NULL)
 	{
 	    __showerror
 	    (
