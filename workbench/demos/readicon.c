@@ -15,11 +15,16 @@
 #include <aros/debug.h>
 #include <workbench/workbench.h>
 #include <intuition/intuition.h>
+#include <intuition/intuitionbase.h>
+#include <intuition/intuition.h>
+#include <graphics/gfxbase.h>
+#include <graphics/rastport.h>
 
 #include <clib/alib_protos.h>
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 #include <clib/aros_protos.h>
+#include <clib/intuition_protos.h>
 
 AROS_UFH3(ULONG, ProcessDrawerData,
     AROS_UFHA(struct Hook *,   hook, A0),
@@ -151,6 +156,95 @@ IPTR IconDesc[] =
 
 #define IM(x)       ((struct Image *)x)
 
+struct IntuitionBase *IntuitionBase;
+struct GfxBase *GfxBase;
+
+void DoWindow (struct DiskObject * dobj)
+{
+    struct Window   * win = NULL;
+    struct RastPort * rp;
+    struct IntuiMessage * im;
+    int cont;
+
+    GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
+    IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
+
+    if (!GfxBase)
+    {
+	printf ("Couldn't open %s\n", GRAPHICSNAME);
+	goto end;
+    }
+
+    if (!IntuitionBase)
+    {
+	bug ("Couldn't open intuition.library\n");
+	goto end;
+    }
+
+    dobj->do_Gadget.LeftEdge = dobj->do_Gadget.Width * 2 + 30;
+    dobj->do_Gadget.TopEdge  = 10;
+
+    win = OpenWindowTags (NULL
+	, WA_Title,	    "Show an icon"
+	, WA_Left,	    100
+	, WA_Top,	    100
+	, WA_Width,	    dobj->do_Gadget.Width * 3 + 40
+	, WA_Height,	    dobj->do_Gadget.Height + 20
+	, WA_IDCMP,	    IDCMP_RAWKEY
+	, WA_SimpleRefresh, TRUE
+	, WA_Gadgets,	    &dobj->do_Gadget
+	, TAG_END
+    );
+    D(bug("OpenWindow win=%p\n", win));
+
+    if (!win)
+	goto end;
+
+    rp = win->RPort;
+
+    DrawImage (rp, dobj->do_Gadget.GadgetRender, 10, 10);
+    DrawImage (rp, dobj->do_Gadget.SelectRender, 20 + dobj->do_Gadget.Width, 10);
+
+    cont = 1;
+
+    while (cont)
+    {
+	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
+	{
+	    /* D("Got msg\n"); */
+	    switch (im->Class)
+	    {
+	    case IDCMP_RAWKEY:
+		cont = FALSE;
+		break;
+
+	    }
+
+	    ReplyMsg ((struct Message *)im);
+	}
+	else
+	{
+	    /* D("Waiting\n"); */
+	    Wait (1L << win->UserPort->mp_SigBit);
+	}
+    }
+
+end:
+    if (win)
+    {
+	D(bug("CloseWindow (%p)\n", win));
+	CloseWindow (win);
+    }
+
+    if (GfxBase)
+	CloseLibrary ((struct Library *)GfxBase);
+
+    if (IntuitionBase)
+	CloseLibrary ((struct Library *)IntuitionBase);
+
+    return;
+} /* DoWindow */
+
 int main (int argc, char ** argv)
 {
     struct RDArgs     * rda;
@@ -260,6 +354,8 @@ int main (int argc, char ** argv)
 
 		    Close (icon);
 		}
+
+		DoWindow (dobj);
 
 		FreeStruct (dobj, DiskObjectDesc);
 	    }
