@@ -9,9 +9,11 @@
     Lang: english
 */
 
+#include <dos/dos.h>
+
 typedef struct
 {
-    void *fh;
+    BPTR fh;
     int  flags;
     unsigned int opencount;
 } fdesc;
