@@ -17,8 +17,9 @@
 #define MUICFG_Window_Spacing_Top       0x03  /* ULONG, vert pixels (def.=3) */
 #define MUICFG_Window_Spacing_Bottom    0x04  /* ULONG, vert pixels (def.=3) */
 #define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def.=4) */
-#define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def.=4) */
 #define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def.=1) */
+#define MUICFG_Group_HSpacing           0x07  /* ULONG, horiz pixels (def.=6) */
+#define MUICFG_Group_VSpacing           0x08  /* ULONG, vertical pixels (def.=3) */
 #define MUICFG_List_FontLeading         0x0b  /* ULONG, vertical pixels (def.=1) */
 #define MUICFG_GroupTitle_Position      0x0f  /* ULONG, 1=centered */
 #define MUICFG_GroupTitle_Color         0x10  /* ULONG, 0=normal */
@@ -100,11 +101,15 @@
 #define MUIM_Configdata_GetString      (METHOD_USER|0x00426621) /* Zune 20030319 */
 #define MUIM_Configdata_GetULong       (METHOD_USER|0x00427253) /* Zune 20030319 */
 #define MUIM_Configdata_SetULong       (METHOD_USER|0x00427224) /* Zune 20030320 */
+#define MUIM_Configdata_SetImspec      (METHOD_USER|0x0042b581) /* Zune 20030323 */
+#define MUIM_Configdata_SetFont        (METHOD_USER|0x004265c4) /* Zune 20030323 */
 #define MUIM_Configdata_Save           (METHOD_USER|0x0042571a) /* Zune 20030320 */
 #define MUIM_Configdata_Load           (METHOD_USER|0x004278ba) /* Zune 20030320 */
 struct MUIP_Configdata_GetString       {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_GetULong        {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_SetULong        {ULONG MethodID; ULONG id; ULONG val; };
+struct MUIP_Configdata_SetImspec       {ULONG MethodID; ULONG id; CONST_STRPTR imspec; };
+struct MUIP_Configdata_SetFont         {ULONG MethodID; ULONG id; CONST_STRPTR font; };
 struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; };
 struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
 

@@ -148,26 +148,25 @@ static struct spec_cfg DefImspecValues[] =
     { MUII_TapeDown,      MUICFG_Image_TapeDown,        "0:128" },
     { MUII_PageBack,      MUICFG_Background_Page,       "0:128" },
     { MUII_ReadListBack,  MUICFG_Background_ReadList,   "0:128" },
+    { 0,                  0,                            NULL },
 };
-
-static int Num_Imspec_Defaults = sizeof(DefImspecValues) / sizeof(struct spec_cfg);
 
 /* called by Configdata_New */
 static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
 {
     int i;
 
-    for (i = 0; i < Num_Imspec_Defaults; i++)
+    for (i = 0; DefImspecValues[i].defspec; i++)
     {
 	CONST_STRPTR imspec;
 	struct spec_cfg *img = DefImspecValues + i;
 
 	imspec = GetConfigString(obj, img->cfgid);
-	D(bug("init_imspecs: %ld %lx %s ...\n", img->muiv, img->cfgid, imspec));
+/*  	D(bug("init_imspecs: %ld %lx %s ...\n", img->muiv, img->cfgid, imspec)); */
 	data->prefs.imagespecs[img->muiv] = imspec;
 	if (!data->prefs.imagespecs[img->muiv])
 	{
-	    D(bug("*** init_imspecs: null imagespec\n"));
+	    D(bug("*** init_imspecs: null imagespec %ld\n", img->muiv));
 	}
     }
 }
@@ -192,16 +191,15 @@ static struct spec_cfg DefFramespecValues[] =
     { MUIV_Frame_Slider,      MUICFG_Frame_Slider,      "400000" }, /* slider container         */
     { MUIV_Frame_Knob,        MUICFG_Frame_Knob,        "202211" }, /* slider knob              */
     { MUIV_Frame_Drag,        MUICFG_Frame_Drag,        "300000" }, /* dnd frame                */
+    { 0,                      0,                        NULL },
 };
-
-static int Num_Framespec_Defaults = sizeof(DefFramespecValues) / sizeof(struct spec_cfg);
 
 /* called by Configdata_New */
 static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
 {
     int i;
 
-    for (i = 0; i < Num_Framespec_Defaults; i++)
+    for (i = 0; DefFramespecValues[i].defspec; i++)
     {
 	CONST_STRPTR framespec;
 	struct spec_cfg *fcfg = DefFramespecValues + i;
@@ -225,6 +223,8 @@ static struct def_ulval DefULValues[] =
     { MUICFG_Window_Spacing_Bottom, 3 },
     { MUICFG_Radio_HSpacing, 4 },
     { MUICFG_Radio_VSpacing, 1 },
+    { MUICFG_Group_HSpacing, 6 },
+    { MUICFG_Group_VSpacing, 3 },    
     { MUICFG_Cycle_MenuCtrl_Position, CYCLE_MENU_POSITION_BELOW },
     { MUICFG_Cycle_MenuCtrl_Level, 2 },
     { MUICFG_Cycle_MenuCtrl_Speed, 0 },
@@ -264,6 +264,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return NULL;
+
+/*      D(bug("Configdata_New(%p)\n", obj)); */
 
     data = INST_DATA(cl, obj);
 
@@ -310,8 +312,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->prefs.group_title_position = GROUP_TITLE_POSITION_CENTERED;
     data->prefs.group_title_color = GROUP_TITLE_COLOR_HILITE;
-    data->prefs.group_hspacing = 4;
-    data->prefs.group_vspacing = 4;
+    data->prefs.group_hspacing = GetConfigULong(obj, MUICFG_Group_HSpacing);
+    data->prefs.group_vspacing = GetConfigULong(obj, MUICFG_Group_VSpacing);
 
     /*---------- registers ----------*/
 
@@ -414,6 +416,8 @@ static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     int i;
 
+/*      D(bug("Configdata_Dispose(%p)\n", obj)); */
+
     if (data->prefs.dragndrop_left_modifier.readable_hotkey)
 	FreeVec(data->prefs.dragndrop_left_modifier.readable_hotkey);
     if (data->prefs.dragndrop_middle_modifier.readable_hotkey)
@@ -461,17 +465,17 @@ static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
     {
 	int i;
 
-	for (i = 0; DefStrValues[i].id != 0; i++)
+	for (i = 0; DefStrValues[i].id; i++)
 	{
 	    if (DefStrValues[i].id == msg->id)
 		return (IPTR)DefStrValues[i].val;
 	}
-	for (i = 0; i < Num_Imspec_Defaults; i++)
+	for (i = 0; DefImspecValues[i].defspec; i++)
 	{
 	    if (DefImspecValues[i].cfgid == msg->id)
 		return (IPTR)DefImspecValues[i].defspec;
 	}
-	for (i = 0; i < Num_Framespec_Defaults; i++)
+	for (i = 0; DefFramespecValues[i].defspec; i++)
 	{
 	    if (DefFramespecValues[i].cfgid == msg->id)
 		return (IPTR)DefFramespecValues[i].defspec;
@@ -484,6 +488,56 @@ static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
     }
 }
 
+/**************************************************************************
+ MUIM_Configdata_SetImspec
+**************************************************************************/
+static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_SetImspec *msg)
+{
+    int i;
+
+    if (!msg->imspec || !*msg->imspec || *msg->imspec == '6')
+    {
+	D(bug("Configdata_SetImspec(%p) : id %08lx, val invalid\n",
+	      obj, msg->id));
+	return 0;
+    }
+
+    for (i = 0; DefImspecValues[i].defspec; i++)
+    {
+	if (DefImspecValues[i].cfgid == msg->id)
+	    if (!strcmp(DefImspecValues[i].defspec, msg->imspec))
+	    {
+		D(bug("Configdata_SetImspec(%p) : set to def, id %08lx, val %s\n",
+		      obj, msg->id, msg->imspec));
+		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
+		return 0;
+	    }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR)msg->imspec, strlen(msg->imspec) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetFont
+**************************************************************************/
+static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_SetFont *msg)
+{
+    int i;
+
+    if (!msg->font || !*msg->font)
+    {
+	D(bug("Configdata_SetFont(%p) : id %08lx, val invalid\n",
+	      obj, msg->id));
+	DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+	return 0;
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR)msg->font, strlen(msg->font) + 1, msg->id);
+    return 0;
+}
 
 /**************************************************************************
  MUIM_Configdata_GetULong
@@ -511,7 +565,6 @@ static ULONG Configdata_GetULong(struct IClass *cl, Object * obj,
     }
 }
 
-
 /**************************************************************************
  MUIM_Configdata_SetULong
 **************************************************************************/
@@ -527,13 +580,15 @@ static ULONG Configdata_SetULong(struct IClass *cl, Object * obj,
 	if (DefULValues[i].id == msg->id)
 	    if (DefULValues[i].val == v)
 	    {
-		D(bug("Configdata_SetULong : set to def, id %08lx, val %ld\n",
-		      msg->id, v));
+		D(bug("Configdata_SetULong(%p) : set to def, id %08lx, val %ld\n",
+		      obj, msg->id, v));
+		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
+		return 0;
 	    }
     }
 
     v = AROS_LONG2BE(v);
-    D(bug("Configdata_SetULong: adding %08lx to %08lx chunk\n", v, msg->id));
+    D(bug("Configdata_SetULong(%p): adding %08lx to %08lx chunk\n", obj, v, msg->id));
     DoMethod(obj, MUIM_Dataspace_Add, (IPTR)vp, 4, msg->id);
     return 0;
 }
@@ -650,7 +705,6 @@ static ULONG Configdata_Load(struct IClass *cl, Object * obj,
  */
 BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 {
-    D(bug("Configdata %p got %08lx method\n", obj, msg->MethodID));
     switch (msg->MethodID)
     {
 	/* Whenever an object shall be created using NewObject(), it will be
@@ -662,6 +716,8 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 	case MUIM_Configdata_GetString: return Configdata_GetString(cl, obj, (APTR)msg);
 	case MUIM_Configdata_GetULong: return Configdata_GetULong(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetULong: return Configdata_SetULong(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetImspec: return Configdata_SetImspec(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetFont: return Configdata_SetFont(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Save: return Configdata_Save(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Load: return Configdata_Load(cl, obj, (APTR)msg);
     }
