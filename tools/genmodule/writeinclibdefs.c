@@ -11,6 +11,7 @@ void writeinclibdefs(void)
     FILE *out;
     char line[1024];
     char *suffix;
+    struct linelist *linelistit;
     
     snprintf(line, 1023, "%s/%s_libdefs.h", gendir, modulename);
     out = fopen(line, "w");
@@ -50,6 +51,7 @@ void writeinclibdefs(void)
         "#define LIBBASE          %s\n"
         "#define LIBBASETYPE      %s\n"
         "#define LIBBASETYPEPTR   %s *\n"
+        "#define LC_LIBBASESIZE   sizeof(%s)\n"
         "#define VERSION_NUMBER   %u\n"
         "#define REVISION_NUMBER  %u\n"
         "#define BASENAME         %s\n"
@@ -66,13 +68,16 @@ void writeinclibdefs(void)
         "#endif /* _%s_LIBDEFS_H */\n",
         modulename, suffix,
         basename, basename,
-        libbase, libbasetype, libbasetype,
+        libbase, libbasetype, libbasetype, libbasetype,
         majorversion, minorversion,
         basename, basename,
         modulename, majorversion, minorversion, datestring,
         modulename, modulename,
         modulenameupper
     );
+
+    for (linelistit = cdefprivatelines; linelistit!=NULL; linelistit = linelistit->next)
+	fprintf(out, "%s\n", linelistit->line);
     
     fclose(out);
 }

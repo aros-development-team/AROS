@@ -9,6 +9,7 @@
 static void readsectionconfig(void);
 static void readsectionproto(void);
 static void readsectioncdef(void);
+static void readsectioncdefprivate(void);
 static void readsectionfunctionlist(void);
 
 void readconfig(void)
@@ -25,7 +26,7 @@ void readconfig(void)
     {
 	if (strncmp(line, "##", 2)==0)
 	{
-	    static char *parts[] = {"config", "proto", "cdef", "functionlist"};
+	    static char *parts[] = {"config", "proto", "cdefprivate", "cdef", "functionlist"};
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
 	    int i, atend = 0;
@@ -63,11 +64,15 @@ void readconfig(void)
 		readsectionproto();
 		break;
 		
-	    case 3: /* cdef */
-		readsectioncdef();
+	    case 3: /* cdefprivate */
+		readsectioncdefprivate();
 		break;
 		
-	    case 4: /* functionlist */
+	    case 4: /* cdef */
+		readsectioncdef();
+		break;
+
+	    case 5: /* functionlist */
 		readsectionfunctionlist();
 		break;
 	    }
@@ -327,6 +332,47 @@ static void readsectioncdef(void)
 		exitfileerror(20, "\"##end cdef\" expected\n");
 
 	    s += 5;
+	    while (isspace(*s)) s++;
+	    if (*s!='\0')
+		exitfileerror(20, "unexpected character at position %d\n");
+
+	    atend = 1;
+	}
+    }
+}
+
+static void readsectioncdefprivate(void)
+{
+    int atend = 0;
+    char *line, *s;
+    struct linelist **linelistptr = &cdefprivatelines;
+    
+    while (!atend)
+    {
+	line = readline();
+	if (line==NULL)
+	    exitfileerror(20, "unexptected end of file in section cdef\n");
+
+	if (strncmp(line, "##", 2)!=0)
+	{
+	    *linelistptr = malloc(sizeof(struct linelist));
+	    (*linelistptr)->line = strdup(line);
+	    (*linelistptr)->next = NULL;
+	    linelistptr = &(*linelistptr)->next;
+	}
+	else
+	{
+	    s = line+2;
+	    while (isspace(*s)) s++;
+	    if (strncmp(s, "end", 3)!=0)
+		exitfileerror(20, "\"##end cdefprivate\" expected\n");
+
+	    s += 3;
+	    while (isspace(*s)) s++;
+	    if (strncmp(s, "cdefprivate", 11)!=0)
+		exitfileerror(20, "\"##end cdefprivate\" expected\n");
+
+	    s += 11;
 	    while (isspace(*s)) s++;
 	    if (*s!='\0')
 		exitfileerror(20, "unexpected character at position %d\n");

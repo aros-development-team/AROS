@@ -97,7 +97,7 @@ void writestart(void)
 	    "    &AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),\n",
 	    modulename);
 
-    lvo = firstlvo;
+    lvo = 4;
     for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
 	for (i = lvo+1; i<funclistit->lvo; i++)

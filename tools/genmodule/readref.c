@@ -334,6 +334,8 @@ int parsemacroname(char *name,
 	char *begin, *end;
 
 	func = malloc(sizeof(struct functionlist));
+	func->argcount = 0;
+	func->arguments = NULL;
 	
 	begin = name+8;
 	end = begin + strlen(begin) - 1;
@@ -345,8 +347,11 @@ int parsemacroname(char *name,
 	begin = end+1;
 	sscanf(begin, "%d", &func->lvo);
 
-	if (funclist == NULL)
+	if (funclist == NULL || funclist->lvo > func->lvo)
+	{
+	    func->next = funclist;
 	    funclist = func;
+	}
 	else
 	{
 	    for
