@@ -328,7 +328,7 @@ IPTR IPWindow__OM_NEW
     
 error:
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -360,7 +360,7 @@ IPTR IPWindow__MUIM_PrefsWindow_Revert
     RestorePrefs();
     Prefs2Gadgets(data, &icontrolprefs);
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -379,7 +379,7 @@ IPTR IPWindow__MUIM_PrefsWindow_Save
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -397,7 +397,7 @@ IPTR IPWindow__MUIM_PrefsWindow_Use
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -418,7 +418,7 @@ IPTR IPWindow__MUIM_PrefsWindow_Cancel
     SetAttrs(self, MUIA_Window_Open, FALSE, TAG_DONE);
     DoMethod(_app(self), MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -439,7 +439,7 @@ IPTR IPWindow__MUIM_IPWindow_Open
 	}
     }
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -456,7 +456,7 @@ IPTR IPWindow__MUIM_IPWindow_SaveAs
     	SavePrefs(filename);
     }
         
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -471,7 +471,7 @@ IPTR IPWindow__MUIM_IPWindow_Default
     DefaultPrefs();
     Prefs2Gadgets(data, &icontrolprefs);
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -488,7 +488,7 @@ IPTR IPWindow__MUIM_IPWindow_LastSaved
     	Prefs2Gadgets(data, &icontrolprefs);
     }
     
-    return NULL;
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -531,7 +531,7 @@ BOOPSI_DISPATCHER(IPTR, IPWindow_Dispatcher, CLASS, self, message)
             return DoSuperMethodA(CLASS, self, message);
     }
     
-    return NULL;
+    return 0;
 }
 BOOPSI_DISPATCHER_END
 
@@ -635,9 +635,9 @@ void MakeGUI(void)
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_WINTITLE),
 	MUIA_Application_Base, (IPTR)"Icontrol",
-  	SubWindow, (IPTR) (wnd = NewObject(IPWindow_CLASS->mcc_Class, NULL, TAG_DONE),
-	End);
-	
+  	SubWindow, (IPTR) (wnd = NewObject(IPWindow_CLASS->mcc_Class, NULL, TAG_DONE)),
+	End;
+
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
