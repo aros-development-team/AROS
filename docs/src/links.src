@@ -11,9 +11,11 @@ The latest snapshots (updated every night) are in
 They are for the impatient and should not be expected to work.
 
 \item There a couple of mailing lists. One is
-\link{for users}{http://www.aros.org/mailman/listinfo/aros-user}
-and the other
-\link{for developers}{http://www.aros.org/mailman/listinfo/aros-dev}.
+\link{for users}{http://www.aros.org/mailman/listinfo/aros-user},
+then we have a list
+\link{for developers}{http://www.aros.org/mailman/listinfo/aros-dev}
+and last but not least a list
+\link{for announcements}{http://www.aros.org/mailman/listinfo/aros-announce}.
 Follow the links to subscribe yourself or to read the archives
 with the old postings. Please note that you must be subscribed
 to the developer list to access the archive.
