@@ -414,7 +414,7 @@ int init_cg(void)
     t_min[SHORT]=l2zl(-32768L);
     t_min[LONG]=zlsub(l2zl(-2147483647L),l2zl(1L));
     t_min[INT]=t_min[LONG];
-    t_max[CHAR]=ul2zul(128UL);
+    t_max[CHAR]=ul2zul(127L);
     t_max[SHORT]=ul2zul(32767UL);
     t_max[LONG]=ul2zul(2147483647UL);
     t_max[INT]=t_max[LONG];

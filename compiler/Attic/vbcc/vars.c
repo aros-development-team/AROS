@@ -108,5 +108,5 @@ struct IC *err_ic;
 
 int multiple_ccs;
 
-char *copyright="vbcc V0.4f (c) in 1995-96 by Volker Barthelmann\n";
+char *copyright="vbcc V0.5 (c) in 1995-97 by Volker Barthelmann\n";
 

@@ -892,8 +892,10 @@ void var_declaration(void)
                 if((v->vtyp->flags&15)==ARRAY&&zleqto(v->vtyp->size,l2zl(0L))){
                     struct const_list *p=v->clist;
                     while(p){v->vtyp->size=zladd(v->vtyp->size,l2zl(1L));p=p->next;}
-                    local_offset[nesting]=zladd(local_offset[nesting],szof(v->vtyp));
-                    if(zlleq(max_offset,local_offset[nesting])) max_offset=local_offset[nesting];
+                    if(v->storage_class==AUTO||v->storage_class==REGISTER){
+                        local_offset[nesting]=zladd(local_offset[nesting],szof(v->vtyp));
+                        if(zlleq(max_offset,local_offset[nesting])) max_offset=local_offset[nesting];
+                    }
                 }
                 if(v->storage_class==AUTO||v->storage_class==REGISTER){
                     struct IC *new;

@@ -517,7 +517,6 @@ void gen_IC(np p,int ltrue,int lfalse)
             struct Var *v;
             gen_IC(p->left,0,0); r=1;
             v=p->left->o.v;
-            if(DEBUG) printf("call by name %s\n",v->identifier);
             if(v->fi&&v->fi->first_ic&&(c_flags_val[0].l&4096)){
             /*  function call inlining  */
                 struct argument_list *al;

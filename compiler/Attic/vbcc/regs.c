@@ -282,7 +282,7 @@ void do_loop_regs(struct flowgraph *start,struct flowgraph *end)
             if(BTST(start->av_in,i)){
                 int pr=vilist[i]->reg;
                 for(r=1;r<=MAXR;r++){
-                    if(pr==0){
+                    if(pr==0||!regok(r,vilist[i]->vtyp->flags,0)||regsa[r]){
                         savings[i][r]-=8;
                     }else{
                         if(r==pr) savings[i][r]+=8; else savings[i][r]+=4;
@@ -641,11 +641,12 @@ void free_hreg(struct flowgraph *fg,struct IC *p,int reg,int mustr)
                 preg[m->z.reg]=1;
         }
         if(((m->q1.flags&VAR)&&m->q1.v==v)||
-           ((m->q2.flags&VAR)&&m->q2.v==v))
+           ((m->q2.flags&VAR)&&m->q2.v==v)||
+           ((m->z.flags&(VAR|DREFOBJ))==(VAR|DREFOBJ)&&m->z.v==v))
             first=m;
-        if((m->z.flags&(REG|DREFOBJ))==REG&&m->z.reg==reg) break;
+/*        if((m->z.flags&(REG|DREFOBJ))==REG&&m->z.reg==reg) break;*/
     }
-    if(!first) ierror(0);
+    if(!first) {pric(stdout,p);ierror(0);}
     for(rreg=0,i=1;i<=MAXR;i++){
         if(preg[i]||regu[i]||regsa[i]||!regok(i,v->vtyp->flags,0)) continue;
         if(calls==0&&regscratch[i]){rreg=i;break;}
