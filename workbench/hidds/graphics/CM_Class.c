@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics colormap class implementation.
@@ -29,7 +29,9 @@ struct colormap_data {
     HIDDT_ColorLUT clut;
 };
 
-static OOP_AttrBase HiddColorMapAttrBase = 0;
+/* Don't initialize with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddColorMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_ColorMap,	&HiddColorMapAttrBase	},

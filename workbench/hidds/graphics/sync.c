@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Sync info class
@@ -18,8 +18,9 @@
 
 #include "graphics_intern.h"
 
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
-static OOP_AttrBase HiddSyncAttrBase = 0;
+static OOP_AttrBase HiddSyncAttrBase;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_Sync,	&HiddSyncAttrBase	},

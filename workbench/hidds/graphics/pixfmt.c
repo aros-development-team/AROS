@@ -17,7 +17,9 @@
 
 #include "graphics_intern.h"
 
-static OOP_AttrBase HiddPixFmtAttrBase = 0;
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddPixFmtAttrBase;
 
 struct pixfmt_data {
      HIDDT_PixelFormat pf;

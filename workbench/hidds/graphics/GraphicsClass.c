@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics hidd class implementation.
@@ -50,12 +50,15 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 
 /*static OOP_AttrBase HiddGCAttrBase;*/
 
-static OOP_AttrBase HiddPixFmtAttrBase	= 0;
-static OOP_AttrBase HiddBitMapAttrBase	= 0;
-static OOP_AttrBase HiddGfxAttrBase		= 0;
-static OOP_AttrBase HiddSyncAttrBase	= 0;
-static OOP_AttrBase HiddGCAttrBase		= 0;
-static OOP_AttrBase HiddColorMapAttrBase	= 0;
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddGCAttrBase;
+static OOP_AttrBase HiddColorMapAttrBase;
+
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_PixFmt, 		&HiddPixFmtAttrBase	},
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
@@ -2005,7 +2008,7 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
 /*********** Stubs for private methods **********************/
 OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
 {
-   static OOP_MethodID mid = 0;
+   static OOP_MethodID mid; /* Don't initialize with "=0", otherwise it goes into DATA segment! */
    
    struct pHidd_Gfx_RegisterPixFmt p;
    
@@ -2022,7 +2025,7 @@ OOP_Object *HIDD_Gfx_RegisterPixFmt(OOP_Object *o, struct TagItem *pixFmtTags)
 
 VOID HIDD_Gfx_ReleasePixFmt(OOP_Object *o, OOP_Object *pixFmt)
 {
-   static OOP_MethodID mid = 0;
+   static OOP_MethodID mid; /* Don't initialize with "=0", otherwise it goes into DATA segment! */
    
    struct pHidd_Gfx_ReleasePixFmt p;
    

@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics bitmap class implementation.
@@ -28,12 +28,13 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
-static OOP_AttrBase HiddBitMapAttrBase	= 0;
-static OOP_AttrBase HiddGCAttrBase		= 0;
-static OOP_AttrBase HiddPixFmtAttrBase	= 0;
-static OOP_AttrBase HiddSyncAttrBase	= 0;
-static OOP_AttrBase HiddColorMapAttrBase	= 0;
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddGCAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddSyncAttrBase;
+static OOP_AttrBase HiddColorMapAttrBase;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
@@ -1979,7 +1980,7 @@ void free_bitmapclass(struct class_static_data *csd)
 /*********** Stubs for private methods **********************/
 BOOL HIDD_BitMap_SetBitMapTags(OOP_Object *o, struct TagItem *bitMapTags)
 {
-   static OOP_MethodID mid = 0;
+   static OOP_MethodID mid; /* Dont initialize with "=0" otherwise it goes into DATA segment */
    
    struct pHidd_BitMap_SetBitMapTags p;
    
