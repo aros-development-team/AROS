@@ -358,6 +358,10 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
         flags |= WFLG_ACTIVATE;
 
+    if (data->wd_MinMax.MinHeight == data->wd_MinMax.MaxHeight
+	&& data->wd_MinMax.MinWidth == data->wd_MinMax.MaxWidth)
+	flags &= ~WFLG_SIZEGADGET;
+
     if (!(flags & WFLG_SIZEBRIGHT))
         flags |= WFLG_SIZEBBOTTOM;
 
@@ -611,7 +615,9 @@ void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
     }
 }
 
-void
+
+/* return FALSE only if no resize (dx=dy=0) occured */
+BOOL
 _zune_window_resize (struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
@@ -620,6 +626,7 @@ _zune_window_resize (struct MUI_WindowData *data)
     WORD dx = data->wd_Width  - win->Width + hborders;
     WORD dy = data->wd_Height - win->Height + vborders;
 
+    D(bug("_zune_window_resize : dx=%d, dy=%d\n", dx, dy));
     SizeWindow(win, dx, dy);
 
     /* The following WindowLimits() call doesn't really work because SizeWindow() is async */
@@ -628,6 +635,7 @@ _zune_window_resize (struct MUI_WindowData *data)
                       data->wd_MinMax.MaxWidth + hborders,
                       data->wd_MinMax.MaxHeight + vborders);
 
+    return (dx || dy);
 }
 
 /**************/
@@ -2088,9 +2096,18 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     return TRUE;
 }
 
+/* calculate a new layout
+ * see MUIA_ShowMe
+ * see Group_ExitChange
+ * see Group_Columns
+ * see Group_Rows
+ */
 static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Window_RecalcDisplay *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+    LONG left,top,width,height;
+    BOOL resized;
+
     if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
 
     DoMethod(data->wd_RootObject, MUIM_Hide);
@@ -2101,17 +2118,30 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
     window_minmax(obj,data);
     /* resize window ? */
     window_select_dimensions(data);
-    _zune_window_resize(data);
+    resized = _zune_window_resize(data);
 
     install_backbuffer(cl, obj);
 
     window_show(cl, obj);
 
+#if 0
+    if (msg->originator && !resized)
     {
-	LONG left,top,width,height;
+	left = _left(msg->originator);
+	top = _top(msg->originator);
+	width = _width(msg->originator);
+	height = _height(msg->originator);
 
+/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+			 left, top, width, height, left, top, 0);
+	MUI_Redraw(msg->originator, MADF_DRAWALL);
+    }
+    else
+#endif
+    {
 	left = data->wd_RenderInfo.mri_Window->BorderLeft;
-	top = data->wd_RenderInfo.mri_Window->BorderTop,
+	top = data->wd_RenderInfo.mri_Window->BorderTop;
 	width = data->wd_RenderInfo.mri_Window->Width
 	    - data->wd_RenderInfo.mri_Window->BorderRight - left;
 	height = data->wd_RenderInfo.mri_Window->Height
@@ -2119,9 +2149,9 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
 
 /*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
 	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-		 left, top, width, height, left, top, 0);
+			 left, top, width, height, left, top, 0);
+	MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     }
-    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     return TRUE;
 }
 
