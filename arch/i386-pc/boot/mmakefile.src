@@ -23,6 +23,7 @@ BOOT_TAR_FILES := \
 	Classes/DataTypes/ascii.datatype Classes/DataTypes/binary.datatype Classes/DataTypes/text.datatype \
 	Classes/Gadgets/arospalette.gadget \
 	Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
+	Demos \
 	Devs \
 	Fonts/fixed \
 	Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
