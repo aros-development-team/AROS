@@ -334,6 +334,7 @@ struct IFS_INHIBIT
 #define FSA_ADD_NOTIFY	    35
 struct IFS_NOTIFY
 {
+    STRPTR io_FileName;		/* Needed for synchronous operation */
     struct NotifyRequest *io_NotificationRequest;
 };
 
