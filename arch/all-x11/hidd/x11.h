@@ -163,7 +163,22 @@ VOID free_x11class  ( struct x11_staticdata * );
 
 
 #define XTASK_NAME "x11hidd task"
-#define XTASK_PRIORITY 10
+
+#warning Try to reduce below task priority.
+/* We need to have highest priotity for this task, because we
+are simulating an interrupt. Ie. an "interrupt handler" called
+but this task should NEVER be interrupted by a task (for example input.device),
+otherwize it will give strange effects, especially in the circular-buffer handling
+in gameport/keyboard. (Writing to the buffer is not atomic even
+from within the IRQ handler!)
+
+ Instead of calling
+the irq handler directly from the task, we should instead 
+Cause() a software irq, but Cause() does not work at the moment..
+*/
+
+#define XTASK_PRIORITY 50
+
 #define XTASK_STACKSIZE 8192
 
 #define LX11   		 ObtainSemaphore (&XSD(cl)->x11sema); \
