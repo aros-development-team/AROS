@@ -42,7 +42,7 @@ struct ColorWheelRGB
 #define WHEEL_Brightness     (WHEEL_Dummy + 3)
 #define WHEEL_HSB            (WHEEL_Dummy + 4)
 #define WHEEL_Red            (WHEEL_Dummy + 5)
-#define WHEEL_GREen          (WHEEL_Dummy + 6)
+#define WHEEL_Green          (WHEEL_Dummy + 6)
 #define WHEEL_Blue           (WHEEL_Dummy + 7)
 #define WHEEL_RGB            (WHEEL_Dummy + 8)
 #define WHEEL_Screen         (WHEEL_Dummy + 9)
