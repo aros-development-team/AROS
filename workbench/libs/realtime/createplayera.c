@@ -158,6 +158,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
     /* Set default values */
     player->pl_Reserved0 = -1;	          /* AlarmSigBit */
+    player->pl_Flags |= PLAYERF_READY;    /* There are indications that the default is TRUE. -ksvalast. */
 
 
     while((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
