@@ -28,14 +28,22 @@ AROS_LH0(void, Switch,
 	If the state is not TS_RUN then the task is already in a list
     */
 
+    Disable();
+    
     if( (this->tc_State != TS_RUN)
 		&& !(this->tc_Flags & TF_EXCEPT) )
     {
+#if 0
 	if( SysBase->IDNestCnt >= 0 )
 	{
 		sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
 	}
-		
+#endif
+	sigset_t temp_sig_int_mask;
+	
+	sigemptyset(&temp_sig_int_mask);	
+	sigaddset( &temp_sig_int_mask, SIGUSR1);
+ 		
 	/*      Its quite possible that they have interrupts Disabled(),
 		we should fix that here, otherwise we can't switch. 
 
@@ -47,10 +55,14 @@ AROS_LH0(void, Switch,
 		the system clock, and is probably quicker.
 	*/
 
+	sigprocmask(SIG_UNBLOCK, &temp_sig_int_mask, NULL);
 	SysBase->AttnResched |= 0x8000;
 	kill(getpid(), SIGUSR1);
+	sigprocmask(SIG_BLOCK, &temp_sig_int_mask, NULL);
 
     }
 
+    Enable();
+    
     AROS_LIBFUNC_EXIT
 } /* Switch() */
