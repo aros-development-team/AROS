@@ -3,7 +3,7 @@
 
 /*
     (C) 1997 AROS - The Amiga Replacement OS
-    $Id: 
+    $Id$
 
     Desc: Definitions for utility.library
     Lang: english
