@@ -207,6 +207,9 @@ void DoWindow (struct DiskObject * dobj)
 
     cont = 1;
 
+    printf ("Press a key to exit\n");
+    Flush (Output ());
+
     while (cont)
     {
 	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
@@ -281,12 +284,12 @@ int main (int argc, char ** argv)
 
 		/* hexdump (dobj, 0L, sizeof (struct DiskObject)); */
 
-		kprintf ("Some information about the icon:\n"
+		printf ("Some information about the icon:\n"
 		    "Magic = %d\n"
 		    "Version = %d\n"
 		    "Type = %d\n"
 		    "Gadget: %dx%d+%d+%d Flags=%x Act=%x Type=%d\n"
-		    "Stack = %d\n"
+		    "Stack = %ld\n"
 		    , dobj->do_Magic
 		    , dobj->do_Version
 		    , dobj->do_Type
@@ -302,7 +305,7 @@ int main (int argc, char ** argv)
 
 		if (dobj->do_Gadget.GadgetRender)
 		{
-		    kprintf ("GImage: %dx%d+%d+%d\n"
+		    printf ("GImage: %dx%d+%d+%d\n"
 			, IM(dobj->do_Gadget.GadgetRender)->Width
 			, IM(dobj->do_Gadget.GadgetRender)->Height
 			, IM(dobj->do_Gadget.GadgetRender)->LeftEdge
@@ -316,12 +319,12 @@ int main (int argc, char ** argv)
 		}
 		else
 		{
-		    kprintf ("GImage: none\n");
+		    printf ("GImage: none\n");
 		}
 
 		if (dobj->do_Gadget.SelectRender)
 		{
-		    kprintf ("SImage: %dx%d+%d+%d\n"
+		    printf ("SImage: %dx%d+%d+%d\n"
 			, IM(dobj->do_Gadget.SelectRender)->Width
 			, IM(dobj->do_Gadget.SelectRender)->Height
 			, IM(dobj->do_Gadget.SelectRender)->LeftEdge
@@ -335,15 +338,15 @@ int main (int argc, char ** argv)
 		}
 		else
 		{
-		    kprintf ("SImage: none\n");
+		    printf ("SImage: none\n");
 		}
 
-		kprintf ("DefaultTool: %s\n", dobj->do_DefaultTool);
+		printf ("DefaultTool: %s\n", dobj->do_DefaultTool);
 
-		kprintf ("ToolTypes:\n");
+		printf ("ToolTypes:\n");
 
 		for (t=0; dobj->do_ToolTypes[t]; t++)
-		    kprintf ("TT %d: %s\n", t, dobj->do_ToolTypes[t]);
+		    printf ("TT %d: %s\n", t, dobj->do_ToolTypes[t]);
 
 		if (!(icon = Open ("readicon.info", MODE_NEWFILE)) )
 		    PrintFault (IoErr(), "Cannot write icon to readicon.info");
@@ -377,7 +380,7 @@ AROS_UFH3(ULONG, ProcessDrawerData,
     AROS_UFHA(struct SDData *, data, A1)
 )
 {
-kprintf ("ProcessDrawerData\n");
+/* kprintf ("ProcessDrawerData\n"); */
     if (DO(data->sdd_Dest)->do_Type == WBDRAWER)
     {
 	switch (data->sdd_Mode)
@@ -482,7 +485,7 @@ AROS_UFH3(ULONG, ProcessGadgetRender,
 )
 {
     struct Image * image;
-kprintf ("ProcessGadgetRender\n");
+/* kprintf ("ProcessGadgetRender\n"); */
 
     switch (data->sdd_Mode)
     {
@@ -519,7 +522,7 @@ AROS_UFH3(ULONG, ProcessSelectRender,
 )
 {
     struct Image * image;
-kprintf ("ProcessSelectRender\n");
+/* kprintf ("ProcessSelectRender\n"); */
 
     if (DO(data->sdd_Dest)->do_Gadget.Flags & GFLG_GADGHIMAGE)
     {
