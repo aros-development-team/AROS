@@ -1183,12 +1183,14 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
     case OM_DISPOSE: {
     	struct ArrowData *data = INST_DATA(cl, o);
 
-    	if (data->frame)
+   	if (data->frame)
     	    DisposeObject(data->frame);
-    	
+     	
     	if (data->arrowimage)
     	    DisposeObject(data->arrowimage);
-    	} break;
+	    
+	retval = DoSuperMethodA(cl, o, msg);
+   	} break;
     
     case GM_HANDLEINPUT:
     	retval = arrow_handleinput(cl, o, (struct gpInput *)msg);
@@ -1776,6 +1778,8 @@ AROS_UFH3S(IPTR, dispatch_stringclass,
     	    DisposeObject(data->frame);
     	if (data->font)
     	    CloseFont(data->font);
+	
+	retval = DoSuperMethodA(cl, o, msg);
     } break;
 
     default:
@@ -2426,6 +2430,7 @@ STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
     if (data->ld_Flags & LVFLG_FONT_OPENED)
 	CloseFont(data->ld_Font);
 
+    DoSuperMethodA(cl, o, msg);
 }
 
 /**************************
