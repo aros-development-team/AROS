@@ -8,8 +8,8 @@ include $(TOP)/config/make.cfg
 
 EXEDIR=$(BINDIR)/test
 TESTOBJDIR = $(GENDIR)/rom/dos
-LIBS = -L$(LIBDIR) -lamiga -laros -larosc
-DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
+LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(LIBDIR)/startup.o \
 	$(LIBDIR)/libarosc.a
 
 OBJDIR=$(OSGENDIR)/dos

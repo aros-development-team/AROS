@@ -29,7 +29,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <aros/rt.h>
-#include <aros/arosbase.h>
+#include <aros/arossupportbase.h>
 #include <hardware/intbits.h>
 #include "memory.h"
 #include <aros/machine.h>
@@ -60,7 +60,7 @@ struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
 static int returncode=20;
-static struct AROSBase AROSBase;
+static struct AROSSupportBase AROSSupportBase;
 
 extern struct Task * inputDevice;
 extern void debugmem (void);
@@ -219,9 +219,9 @@ int main(int argc,char *argv[])
 	SysBase->LibNode.lib_Version	  = 41;
 	SysBase->LibNode.lib_Revision	  = 10;
 
-	SysBase->DebugData = &AROSBase;
+	SysBase->DebugData = &AROSSupportBase;
 
-	AROSBase.kprintf = (void *)kprintf;
+	AROSSupportBase.kprintf = (void *)kprintf;
 
 	NEWLIST (&SysBase->MemList);
 	AddHead (&SysBase->MemList, &mh.mh_Node);
@@ -402,8 +402,8 @@ int main(int argc,char *argv[])
 	fh_stdout->fh_Device =&emulbase->eb_device;
 	fh_stdout->fh_Unit   =emulbase->eb_stdout;
 
-	/* AROSBase.StdOut = MKBADDR(fh_stdout); */
-	AROSBase.StdOut = stderr;
+	/* AROSSupportBase.StdOut = MKBADDR(fh_stdout); */
+	AROSSupportBase.StdOut = stderr;
 
 	CreateNewProc (bootprocess);
     }
