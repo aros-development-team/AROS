@@ -1,0 +1,48 @@
+## version $VER: timeprefs.catalog 1.0 (02.02.2005)
+## codeset 0
+## language magyar
+;
+MSG_CANT_OPEN_LIB
+Nem tudtam megnyitni: %s v%ld\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Nem tudtam létrehozni az alkalmazást!
+; Can't create application object!
+;
+MSG_WINTITLE
+Idõ beállítások
+; Time Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+K\0Kilép
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Szerkesztés
+; Edit
+;
+MSG_MEN_EDIT_RESTORE
+V\0Visszaállít
+; R\0Restore
+;
+MSG_OK
+Rendben
+; Ok
+;
+MSG_GAD_SAVE
+Ment
+; Save
+;
+MSG_GAD_USE
+Használ
+; Use
+;
+MSG_GAD_CANCEL
+Mégsem
+; Cancel
+;
