@@ -23,10 +23,10 @@ struct libraryset
 
 extern int set_call_funcs(const void *set[], int direction, int test_fail);
 extern
-AROS_UFH3(int, set_call_libfuncs,
-	  AROS_UFHA(void**, set, A0),
-	  AROS_UFHA(int, order, D0),
-	  AROS_UFHA(void*, libbase, A6)
+AROS_UFP3(int, set_call_libfuncs,
+	  AROS_UFPA(void**, set, A0),
+	  AROS_UFPA(int, order, D0),
+	  AROS_UFPA(void*, libbase, A6)
 	 );
 
 extern int set_open_libraries_Sys(struct ExecBase *);
