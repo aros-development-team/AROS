@@ -1001,6 +1001,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
     }
 
     /* Title text drawing */
+    SetDrMd(_rp(obj), JAM1);
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
     if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
     {
