@@ -187,6 +187,25 @@ case "$target_os" in
 	aros_shared_cflags="-fPIC"
 	;;
 
+    native*)
+	aros_arch="native"
+	aros_common_cflags="-Wall -O2"
+	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
+	case "$target_cpu" in
+	*i?86*)
+	    aros_flavour="standalone"
+	    aros_mkdepend="aros_mkdepend -D__GNUC__ -Di386"
+	    aros_shared_ar="$aros_shared_ar -shared -o"
+	    aros_shell_ldflags=""
+	    aros_cpu="i386"
+	    ;;
+	*)
+	    echo "Unknown CPU for native --- $target_cpu"
+	    ;;
+	esac
+	aros_shared_cflags="-mcpu=k6"
+	;;
+
     freebsd*)
 	aros_arch="freebsd"
 	aros_cpu="i386"
