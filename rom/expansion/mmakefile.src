@@ -1,0 +1,165 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+# BEGIN_DESC{makefile}
+# This is the makefile for expansion.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
+
+# This is the libraries main file, which contains the resident structure,
+# we use this as an anchor for the link.
+INIT_FILE = expansion_init
+
+FILES = expansion_functable
+
+# Guarantee that this will go at the end of the file:
+END_FILE = expansion_endtag
+
+FUNCTIONS = addbootnode addconfigdev adddosnode allocboardmem \
+	    allocconfigdev allocexpansionmem configboard configchain \
+	    findconfigdev freeboardmem freeconfigdev freeexpansionmem \
+	    getcurrentbinding makedosnode obtainconfigbinding \
+	    readexpansionbyte readexpansionrom releaseconfigbinding \
+	    remconfigdev setcurrentbinding writeexpansionbyte
+
+# BEGIN_DESC{localmakevar}
+# This is where the machine dependant magic comes in. The directories under
+# the $(TOP)/config subtree will create lists of files which they wish to
+# be used, these lists are used to add files to the link, and prevent the
+# compilation of some files.
+#
+# We create versions of the file lists we filter again for creating the
+# function tables and other uses.
+# END_DESC{localmakevar}
+
+ALL_FUNCTIONS = $(FUNCTIONS)
+%prepare_replace rom/expansion
+%filter_replace $(FUNCTIONS)
+
+OBJDIR=$(OSGENDIR)/expansion
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# The options for the linker include your own library and any additional libs
+# that you require.
+LIBS = -L$(LIBDIR) -lexpansion
+
+# The filename of the linklib
+LIB=$(LIBDIR)/libexpansion.a
+
+# The names of the linklibs this depends on - should track $(LIBS)
+LIBLIST = expansion
+
+# The filenames of the linklibs this depends on
+LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+# The object filenames
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
+
+all: setup $(OSMODDIR)/expansion.library
+
+.PHONY: asm
+asm: $(foreach f,$(ALL_FUNCTIONS) $(INIT_FILE) $(END_FILE) $(ALL_FILES),$(f).s) all
+
+$(OSMODDIR)/expansion.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee expansion.map
+	@if test ! -s expansion.map; then rm expansion.map ; else true ; fi
+	@strip $@
+
+%.s: %.c
+	@echo "Generating $@ ..."
+	@$(CC) -S $(CFLAGS) $< -c -o $@
+
+# Collect all (asm-)functions in a linklib for fast linking:
+$(LIB): $(OBJS)
+	@echo "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+# ***** Not Native ***************
+else
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_EXPANSION)","yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS)
+else
+SPECIAL_CFLAGS=
+endif
+
+# This is required for systems that use shared libraries, you need the name
+# of your library, plus the flag that says whether to build the module as
+# shared or not, eg
+
+%prepare_shlib expansion
+
+OBJ_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
+DEP_FILES = $(INIT_FILE) $(FILES) $(ALL_FUNCTIONS) $(END_FILE)
+DEPS = $(foreach f,$(DEP_FILES),$(OBJDIR)/$(f).d)
+OBJS = $(foreach f,$(OBJ_FILES),$(OBJDIR)/$(f).o)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+# ***** END ***************
+endif
+
+#MM kernel-expansion : setup includes
+kernel-expansion : setup $(OSMODDIR)/expansion.library
+
+#MM kernel-expansion-linklib : setup includes
+kernel-expansion-linklib : setup $(LIB)
+
+#MM
+setup :
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+clean::
+	-$(RM) $(OBJDIR) *.err $(LIB)
+
+$(OBJDIR)/%.o: %.c
+	%compile_q
+
+# This rule creates the function table for the library, if you don't need
+# one of these, it is ok to remove the rule. Don't forget to change the
+# file name.
+expansion_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q Expansion
+
+# Create the endtag for the library. This is vitally important if you are
+# ever to be created as a rom module, since it helps speed up the finding
+# of ROMTags
+expansion_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Expansion
+
+# Make sure that the init file depends upon the library config/version file.
+$(OBJDIR)/expansion_init.o: libdefs.h
+
+%libdefs_rule
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q
+
+%common
+%include_deps
