@@ -128,7 +128,6 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->cycleclass = NULL;
     LIBBASE->mxclass = NULL;
     LIBBASE->paletteclass = NULL;
-    LIBBASE->barlabelclass = NULL;
     
     InitSemaphore(&LIBBASE->bevelsema);
     LIBBASE->bevel = NULL;
@@ -271,10 +270,6 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	    FreeClass(LIBBASE->paletteclass);
 	LIBBASE->paletteclass = NULL;
 
-	if (LIBBASE->barlabelclass)
-	    FreeClass(LIBBASE->barlabelclass);
-	LIBBASE->barlabelclass = NULL;
-	
 	if (LIBBASE->arosmxbase)
 	    CloseLibrary(LIBBASE->arosmxbase);
         LIBBASE->arosmxbase = NULL;
