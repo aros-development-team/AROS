@@ -6,6 +6,13 @@ NOTE: This is beta. If you want this code, then have a look at our
 \lref{Links}{Links} See also the
 \lref{Section about CVS}{CVS}.
 
+\begin{itemize}
+\item Bugfixes (as usual)
+\item Some new functions
+\item We have the first game for AROS: Moria3D runs after minor changes
+\item All neccessary includes to compile AROS
+\end{itemize}
+
 Things we currently work on:
 
 \begin{itemize}
