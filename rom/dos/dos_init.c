@@ -9,6 +9,7 @@
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
+#include <exec/alerts.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <dos/dosextens.h>
@@ -24,9 +25,9 @@
 static const char name[];
 static const char version[];
 static const APTR Dos_inittabl[4];
-static void *const FUNCTABLE[];
+static void *const LIBFUNCTABLE[];
 struct LIBBASETYPE *INIT ();
-extern const char END;
+extern const char LIBEND;
 
 struct DosLibrary *DOSBase;
 struct DosLibrary **dosPtr = &DOSBase;
@@ -43,9 +44,9 @@ const struct Resident Dos_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Dos_resident,
-    (APTR)&END,
+    (APTR)&LIBEND,
     RTF_AUTOINIT,
-    LIBVERSION,
+    VERSION_NUMBER,
     NT_LIBRARY,
     -120,
     (char *)name,
@@ -53,13 +54,13 @@ const struct Resident Dos_resident=
     (ULONG *)Dos_inittabl
 };
 
-static const char name[]=LIBNAME;
-static const char version[]=VERSION;
+static const char name[]=NAME_STRING;
+static const char version[]=VERSION_STRING;
 
 static const APTR Dos_inittabl[4]=
 {
     (APTR)sizeof(struct LIBBASETYPE),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
 };
@@ -92,52 +93,76 @@ AROS_LH2(struct LIBBASETYPE *, init,
     LIBBASE->dl_UtilityBase=OpenLibrary("utility.library",39);
     if(LIBBASE->dl_UtilityBase!=NULL)
     {
-	struct TagItem tags[]=
+	/* iaint:
+	    I know this is bad, but I also know that the timer.device
+	    will never go away during the life of dos.library. I also
+	    don't intend to make any I/O calls using this.
+
+	    I also know that timer.device does exist in the device list
+	    at this point in time.
+
+	    I can't allocate a timerequest/MsgPort pair here anyway,
+	    because I need a separate one for each caller to Delay()
+	*/
+	Forbid();
+	LIBBASE->dl_TimerBase = (struct Device *)
+	    FindName(&SysBase->DeviceList, "timer.device");
+
+	if(LIBBASE->dl_TimerBase != NULL)
 	{
-	    { NP_Entry, (IPTR)LDDemon },
-	    { NP_Input, 0 },
-	    { NP_Output, 0 },
-	    { NP_Name, (IPTR)"lib & dev loader demon" },
-	    { NP_UserData, (IPTR)LIBBASE },
-	    { TAG_END, 0 }
-	};
+	    struct TagItem tags[]=
+	    {
+		{ NP_Entry, (IPTR)LDDemon },
+		{ NP_Input, 0 },
+		{ NP_Output, 0 },
+		{ NP_Name, (IPTR)"lib & dev loader demon" },
+		{ NP_UserData, (IPTR)LIBBASE },
+		{ TAG_END, 0 }
+	    };
 
-	LIBBASE->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
+	    LIBBASE->dl_TimerBase->dd_Library.lib_OpenCnt++;
+	    Permit();
 
-	if(LIBBASE->dl_LDDemon!=NULL)
-	{
-	    (void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenDevice,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseDevice,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    LIBBASE->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
 
-	    LIBBASE->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
-	    LIBBASE->dl_LDHandler.is_Node.ln_Pri=0;
-	    LIBBASE->dl_LDHandler.is_Code=LDFlush;
+	    if(LIBBASE->dl_LDDemon!=NULL)
+	    {
+		(void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenLibrary,Dos));
+		(void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenDevice,Dos));
+		(void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseLibrary,Dos));
+		(void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseDevice,Dos));
+		(void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
+		(void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
 
-	    *dosPtr = LIBBASE;
+		LIBBASE->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
+		LIBBASE->dl_LDHandler.is_Node.ln_Pri=0;
+		LIBBASE->dl_LDHandler.is_Code=LDFlush;
 
-	    AddMemHandler(&LIBBASE->dl_LDHandler);
-	    AddLibrary((struct Library *)LIBBASE);
+		*dosPtr = LIBBASE;
 
-	    /*
-		Here we have to get the first node of the mountlist,
-		and we try and boot from it, (assign it to SYS:).
-	    */
-	    DOSBoot(SysBase, DOSBase);
+		AddMemHandler(&LIBBASE->dl_LDHandler);
+		AddLibrary((struct Library *)LIBBASE);
 
-	    /* This is where we start the RTC_AFTERDOS residents */
-	    InitCode(RTF_AFTERDOS,0);
+		/*
+		    Here we have to get the first node of the mountlist,
+		    and we try and boot from it, (assign it to SYS:).
+		*/
+		DOSBoot(SysBase, DOSBase);
 
-	    /* We now restart the multitasking	- this is done
-	       automatically by RemTask() when it switches.
-	    */
-	    RemTask(NULL);
+		/* This is where we start the RTC_AFTERDOS residents */
+		InitCode(RTF_AFTERDOS,0);
+
+		/* We now restart the multitasking	- this is done
+		   automatically by RemTask() when it switches.
+		*/
+		RemTask(NULL);
+	    }
 	}
+	Permit();
+	Alert(AT_DeadEnd | AG_OpenDev | AN_DOSLib | AO_TimerDev);
 	CloseLibrary(LIBBASE->dl_UtilityBase);
     }
+    Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_UtilityLib);
 
     return NULL;
     AROS_LIBFUNC_EXIT

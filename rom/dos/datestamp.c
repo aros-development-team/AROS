@@ -1,15 +1,19 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: DateStamp() - Get the current date.
     Lang: english
 */
-#define timeval sys_timeval
-#	include <sys/time.h>
-#undef timeval
-#	include <unistd.h>
-#	include "dos_intern.h"
+#include <devices/timer.h>
+#include <proto/timer.h>
+#include "dos_intern.h"
+
+#define SECONDS_PER_DAY     (60UL * 60 * 24)
+#define SECONDS_PER_MINUTE  (60UL)
+#define uSEC_PER_SEC	    (1000000UL)
+#define TICKS_PER_SEC	    (50UL)
+#define uSEC_PER_TICK	    (uSEC_PER_SEC / TICKS_PER_SEC)
 
 /*****************************************************************************
 
@@ -57,21 +61,16 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-#define SECONDS_PER_DAY     (60UL * 60 * 24)
-#define SECONDS_PER_MINUTE  (60UL)
-#define uSEC_PER_SEC	    (1000000UL)
-#define TICKS_PER_SEC	    (50UL)
-#define uSEC_PER_TICK	    (uSEC_PER_SEC / TICKS_PER_SEC)
-#define AMIGA_UNIX_OFFSET   (2922UL) /* Days between 1.1.78 (Amiga) and 1.1.70 (Unix) */
-    struct sys_timeval stv;
 
-    gettimeofday (&stv, NULL);
+    /* We get the date from the timer.device before splitting it up */
+    struct timeval tv;
+    GetSysTime(&tv);
 
-    date->ds_Days = stv.tv_sec / SECONDS_PER_DAY - AMIGA_UNIX_OFFSET;
-    stv.tv_sec %= SECONDS_PER_DAY;
-    date->ds_Minute = stv.tv_sec / SECONDS_PER_MINUTE;
-    stv.tv_sec %= SECONDS_PER_MINUTE;
-    date->ds_Tick = (stv.tv_usec + stv.tv_sec * uSEC_PER_SEC) /
+    date->ds_Days = tv.tv_secs / SECONDS_PER_DAY;
+    tv.tv_secs %= SECONDS_PER_DAY;
+    date->ds_Minute = tv.tv_secs / SECONDS_PER_MINUTE;
+    tv.tv_secs %= SECONDS_PER_MINUTE;
+    date->ds_Tick = (tv.tv_micro + tv.tv_secs * uSEC_PER_SEC) /
 	    uSEC_PER_TICK;
 
     return date;

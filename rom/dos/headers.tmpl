@@ -1,0 +1,20 @@
+##begin defines
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
+##end defines
+
+##begin clib
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
+
+#ifndef DOSBase
+extern struct DosLibrary *DOSBase;
+#endif
+
+/* Forward definition */
+struct DevProc;
+struct TagItem;
+
+##end clib

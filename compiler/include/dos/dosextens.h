@@ -23,6 +23,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_DEVICES_H
+#   include <exec/devices.h>
+#endif
 #ifndef EXEC_SEMAPHORES
 #   include <exec/semaphores.h>
 #endif
@@ -55,7 +58,7 @@ struct DosLibrary
 
     /* The following fields are PRIVATE! */
     struct ErrorString	 * dl_Errors;
-    struct timerequest	 * dl_TimeReq;
+    struct Device	 * dl_TimerBase;	
     struct Library	 * dl_UtilityBase;
     struct Library	 * dl_IntuitionBase;
 

@@ -19,6 +19,10 @@
 #undef UtilityBase
 #endif
 #define UtilityBase (DOSBase->dl_UtilityBase)
+#ifdef TimerBase
+#undef TimerBase
+#endif
+#define TimerBase (DOSBase->dl_TimerBase)
 
 /* Needed for close() */
 #define expunge() \

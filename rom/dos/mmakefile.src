@@ -1,124 +1,145 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OS_INCLUDES := -I$(GENINCDIR)
-ifeq ("$(SHARED_DOS)","yes")
-SPECIAL_CFLAGS := $(SHARED_CFLAGS)
+# BEGIN_DESC{makefile}
+# This is the mmakefile for dos.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+USER_INCLUDES := -I.
+OS_INCLUDES := -I$(INCDIR)
+
+# BEGIN_DESC{localmakevar}
+# \item{LIBNAME} The lowercase name of the library (without the extension).
+#	This is used to help derive some filenames.
+#
+# \item{ULIBNAME} This also contains the library name, but with the correct
+#	case (the same as found in the library base name).
+#
+# \item{OSMODULE} The name of the file which is created when compiling to
+#	a target with module files. In this library it is expansion.library.
+#
+# \item{FILES} This is a list of all files (without the .c) that
+#	contain internal functions of the library. You do not need to include
+#	the library init, function-table or end files.
+#
+# \item{FUNCTIONS} This is a list of all the functions that make
+#	up the library. The mmakefile will strip all the files in
+#	this list for which a special CPU dependant version exists.
+#	This list is concatenated into the file functions.c before
+#	compilation for a speed boost.
+# END_DESC{localmakevar}
+
+OBJDIR   := $(GENDIR)/$(CURDIR)
+TESTOBJDIR := $(GENDIR)/$(CURDIR)
+LIBNAME	 := dos
+ULIBNAME := Dos
+
+OSMODULE  := dos.library
+IMAGE_TYPES := aos aout elf
+FILES	  := devname doname dosboot errorlist lddemon runprocess \
+	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
+
+FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
+	     allocdosobject assignadd assignlate assignlock assignpath \
+	     attemptlockdoslist changemode checksignal cli cliinitnewcli \
+	     cliinitrun close comparedates createdir createnewproc \
+	     createproc currentdir datestamp datetostr delay deletefile \
+	     deletevar deviceproc dopkt dosgetstring duplock endnotify \
+	     errorreport exall exallend examine execute exit exnext fault \
+	     fgetc fgets filepart findarg findcliproc finddosentry findsegment \
+	     findvar flush format fputc fputs fread freeargs freedeviceproc \
+	     freedosentry freedosobject fwrite getargstr getconsoletask \
+	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
+	     getprogramname getprompt getvar info inhibit input \
+	     internalloadseg internalunloadseg ioerr isfilesystem \
+	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
+	     makedosentry makelink matchend matchfirst matchnext matchpattern \
+	     matchpatternnocase maxcli namefromlock newloadseg nextdosentry \
+	     open openfromlock output parentdir parentoffh parsepattern \
+	     parsepatternnocase pathpart printfault putstr read readargs \
+	     readitem relabel remassignlist remdosentry remsegment rename \
+	     replypkt runcommand samedevice samelock seek selectinput \
+	     selectoutput sendpkt setargstr setcomment setconsoletask \
+	     setcurrentdirname setfiledate setfilesize setfilesystask \
+	     setioerr setmode setowner setprogramdir setprogramname \
+	     setprompt setprotection setvar setvbuf splitname startnotify \
+	     strtodate strtolong systemtaglist ungetc unloadseg \
+	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
+	     vprintf waitforchar waitpkt write writechars 
+
+# BEGIN_DESC{localmakevar}
+# \item{DEPLIBS} List of extra libraries that you want included during
+#	the linking process. You should not include the paths in this
+#	list, as it will be added later. You do not need to include your
+#	own lib here.
+# END_DESC{localmakevar}
+
+ifeq ("$(FLAVOUR)","native")
+DEPLIBS	:=
+else
+DEPLIBS :=
 endif
 
-LIBNAME     := dos
-ULIBNAME    := Dos
-EXEDIR	    := $(BINDIR)/test
-TESTOBJDIR  := $(GENDIR)/rom/dos
-OBJDIR	    := $(OSGENDIR)/$(LIBNAME)
-LIB	    := $(LIBDIR)/lib$(LIBNAME).so
+# BEGIN_DESC{localmakevar}
+# This is where the machine dependant magic comes in. The directories under the
+# $(TOP)/config subtree will create lists of files which they wish to be used.
+# These lists are used to add files to the link, and to prevent the compilation
+# of other files.
+#
+# We create versions of the file lists for use with creating the function
+# table, which needs all of the files listed.
+#
+# We also set up the $(OBJDIR) variable, and do some test to see whether we
+# are compiling a shared library.
+# END_DESC{localmakevar}
 
-%define_libs
-
-%prepare_shlib $(LIBNAME) $(SHARED_DOS)
-
-INIT_FILE   := $(LIBNAME)_init
-
-FILES	    := $(LIBNAME)_functable lddemon errorlist internalloadseg_elf devname doname \
-	       internalloadseg_aout internalloadseg_aos dosboot
-
-END_FILE    := $(LIBNAME)_endtag
-
-FUNCTIONS   := \
-	abortpkt addbuffers adddosentry addpart addprocess addsegment	     \
-	allocdosobject assignadd assignlate	       \
-	assignlock assignpath attemptlockdoslist changemode checksignal cli  \
-	cliinitnewcli cliinitrun close comparedates createdir createnewproc  \
-	createproc currentdir datestamp datetostr	\
-	delay deletefile deletevar deviceproc dopkt	\
-	duplock endnotify errorreport	    \
-	exall exallend examine execute exit exnext fault fgetc	   \
-	fgets filepart findarg findcliproc finddosentry findsegment findvar  \
-	flush format fputc fputs fread freeargs freedeviceproc	     \
-	freedosentry freedosobject fwrite getargstr getconsoletask   \
-	getcurrentdirname getdeviceproc getfilesystask getprogramdir	     \
-	getprogramname getprompt getvar info inhibit input internalloadseg   \
-	internalunloadseg ioerr isfilesystem isinteractive loadseg   \
-	lock lockdoslist lockrecord lockrecords makedosentry	 \
-	makelink matchend matchfirst matchnext matchpattern		     \
-	matchpatternnocase maxcli namefromlock newloadseg	  \
-	nextdosentry open openfromlock output parentdir    \
-	parentoffh parsepattern parsepatternnocase pathpart printfault	     \
-	putstr read readargs readitem readlink relabel remassignlist	     \
-	remdosentry remsegment rename replypkt runcommand samedevice	     \
-	samelock seek selectinput selectoutput sendpkt setargstr setcomment  \
-	setconsoletask setcurrentdirname setfiledate setfilesize	     \
-	setfilesystask setioerr setmode setowner setprogramdir		     \
-	setprogramname setprompt setprotection setvar setvbuf splitname      \
-	startnotify strtodate strtolong systemtaglist ungetc	      \
-	unloadseg unlockdoslist unlockrecord unlockrecords vfprintf   \
-	vfwritef vprintf waitforchar waitpkt write writechars \
-	dosgetstring
-
-PRE_FILES := $(FILES)
-PRE_FUNCS := $(FUNCTIONS)
+ALL_FILES := $(FILES)
+ALL_FUNCTIONS := $(FUNCTIONS)
 %prepare_replace rom/dos
 %filter_replace FILES
 %filter_replace FUNCTIONS
 
-DEPS	    := $(foreach f,$(INIT_FILE) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
-ALL_FILES   := $(INIT_FILE) $(FILES) $(ADDITIONAL_OBJS) $(END_FILE)
-OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+# Set up for shared library creation.
+ifeq ("$(SHARED_DOS)"),"yes")
+SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
+endif
+%prepare_shlib dos $(SHARED_DOS)
 
-#MM
-kernel-dos-linklib : show-flags $(LIB)
-	@$(NOP)
+%genromlib_f
 
-show-flags :
-	@echo "CFLAGS=$(CFLAGS)"
+#MM includes-generate : setup-clib
+%genlibincludes
 
-# MetaMake targets
-#MM kernel-dos : setup-dos includes kernel-setup kernel-dos-$(ARCH)-$(CPU)
-kernel-dos :
-	@$(NOP)
-
-#MM
-setup-dos :
-	%mkdirs_q $(OBJDIR) $(LIBDIR)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err $(LIB) \
-	    $(LIBNAME)_functable.c $(LIBNAME)_endtag.c \
-	    functions.*
-
-TESTS := datetostr strtodate splitname readargs
+TESTS := datetostr runprocess strtodate splitname readargs
+TEST_DEPLIBS := arossupport arosc amiga
+TEST_DEPS := $(foreach f,$(TEST_DEPLIBS),$(LIBDIR)/lib$(f).a)
 
 #MM
 check : setup-check $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
-$(LIB) : $(OBJDIR)/functions.o $(OBJS)
-	%mklib_f
-
-$(EXEDIR)/% : %.c $(DEPLIBS)
-	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS)"
+$(TESTDIR)/% : %.c $(TEST_DEPS)
+	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBS)"
 
 setup-check :
 	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
+$(TESTDIR)/runprocess : runprocess.c ../../config/unix/exec/stackswap.c
+	$(CC) -DTEST -DNO_MAIN $(CFLAGS) -c ../../config/unix/exec/stackswap.c \
+	    -o $(TESTOBJDIR)/ss.o
+	$(CC) -DTEST $(CFLAGS) $< $(TESTOBJDIR)/ss.o -o $@
+	$(RM) $(TESTOBJDIR)/ss.o
+	
+#MM kernel-dos-linklib : setup includes kernel-dos-$(ARCH)-$(CPU)
+kernel-dos-linklib : show-flags $(LIB)
 
-$(LIBNAME)_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
-	    $(TOP)/scripts/makefunctable.awk
-	%mkfunctable_q $(ULIBNAME)
+#MM kernel-dos-module : setup includes kernel-dos-$(ARCH)-$(CPU)
+kernel-dos-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 
-$(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
-	%mkendtag_q $(ULIBNAME)
+#MM clean setup
 
-$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
-
-%additional_objs_rule
-
-%libdefs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
+%ctoasm_q
 
 %common
 %include_deps
