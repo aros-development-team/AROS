@@ -2,6 +2,8 @@ TOP=..
 
 include $(TOP)/make.cfg
 
+#CC=$(PURIFY) $(SYS_CC)
+
 OBJDIR = $(GENDIR)/exe
 LIBS = -L$(LIBDIR) -laros
 
