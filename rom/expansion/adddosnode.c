@@ -110,8 +110,10 @@
 		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
 		iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_NewName;
 
+		kprintf("ADDSOSNODE: trying to open filesystem %S\n", handler);
 		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
 		{
+		    kprintf("ADDDOSNODE: Ok, I did it!\n");
 		    /*
 		      Ok, this means that the handler was able to open,
 		      the old mount command just left the device hanging?
@@ -123,6 +125,8 @@
 		    deviceNode->dn_Unit = iofs->IOFS.io_Unit;
 		    ok = TRUE;
 		}
+		else
+		    kprintf("ADDDOSNODE: Failed!!\n");
 
 		DeleteIORequest(&iofs->IOFS);
 	    }
@@ -135,24 +139,27 @@
 	ok = TRUE;
     }
 
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-
-    /* Aha, DOS is up and running... */
-    if (DOSBase != NULL)
+    if (ok)
     {
-	/* We should add the filesystem to the DOS device list. It will
-	   usable from this point onwards.
+        DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
 
-	   The DeviceNode structure that was passed to us can be added
-	   to the DOS list as it is, and we will let DOS start the
-	   filesystem task if it is necessary to do so.
-	*/
+        /* Aha, DOS is up and running... */
+        if (DOSBase != NULL)
+        {
+	    /* We should add the filesystem to the DOS device list. It will
+	       usable from this point onwards.
 
-	AddDosEntry((struct DosList *)deviceNode);
-	CloseLibrary((struct Library *)DOSBase);
+	       The DeviceNode structure that was passed to us can be added
+	       to the DOS list as it is, and we will let DOS start the
+	       filesystem task if it is necessary to do so.
+	    */
+
+	    AddDosEntry((struct DosList *)deviceNode);
+	    CloseLibrary((struct Library *)DOSBase);
+        }
     }
-    
+
     return ok;
-    
+
     AROS_LIBFUNC_EXIT
 } /* AddDosNode */
