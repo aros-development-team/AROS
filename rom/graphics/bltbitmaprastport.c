@@ -12,19 +12,22 @@
     NAME */
 #include <clib/graphics_protos.h>
 
-	void BltBitMapRastPort (
+	AROS_LH9 (void, BltBitMapRastPort,
 
 /*  SYNOPSIS */
-	struct BitMap   * srcBitMap,
-	LONG              xSrc,
-	LONG              ySrc,
-	struct RastPort * destRP,
-	LONG              xDest,
-	LONG              yDest,
-	LONG              xSize,
-	LONG              ySize,
-	ULONG             minterm)
+	AROS_LHA(struct BitMap   *, srcBitMap, A0),
+	AROS_LHA(LONG             , xSrc, D0),
+	AROS_LHA(LONG             , ySrc, D1),
+	AROS_LHA(struct RastPort *, destRP, A1),
+	AROS_LHA(LONG             , xDest, D2),
+	AROS_LHA(LONG             , yDest, D3),
+	AROS_LHA(LONG             , xSize, D4),
+	AROS_LHA(LONG             , ySize, D5),
+	AROS_LHA(ULONG            , minterm, D6),
 
+/*  LOCATION */
+	struct GfxBase *, GfxBase, 121, Graphics)
+	    
 /*  FUNCTION
 
     INPUTS
