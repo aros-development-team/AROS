@@ -21,6 +21,7 @@
 #define LC_LIBBASESIZE sizeof(LIBBASETYPE)
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
+#define LC_RESIDENTFLAGS (RTF_AUTOINIT | RTF_COLDSTART)
 
 #include <libcore/libheader.c>
 
