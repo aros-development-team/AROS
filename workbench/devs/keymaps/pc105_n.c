@@ -1,6 +1,6 @@
 #include <devices/keymap.h>
 
-#define KMNAME "pc105_s"
+#define KMNAME "pc105_n"
 
 #define CONST const
 
