@@ -76,6 +76,7 @@ void BltRPtoCR(struct RastPort *    rp,
 	      Mode, 
 	      ~0, 
 	      NULL);
+
 }
 
 void BltCRtoRP(struct RastPort *   rp,
@@ -94,6 +95,7 @@ void BltCRtoRP(struct RastPort *   rp,
 	      Mode, 
 	      ~0, 
 	      NULL);
+
 }
 
 #endif /* if !native */
@@ -119,6 +121,7 @@ void _CallLayerHook(struct Hook * h,
                     struct LayersBase * LayersBase)
 {
   struct BitMap * bm = rp->BitMap;
+
   if (h == LAYERS_BACKFILL)
   {
     /* Use default backfill, which means that I will clear the area */
@@ -586,7 +589,8 @@ int _CopyClipRectsToClipRects(struct Layer * l,
               struct Rectangle rect = intersect;
             
               _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
-            
+
+#warning: stegerg: Not sure if this is a good idea. What for example if updating is done in several passes? And CopyClipRectsToClipRects is used by all kinds of functions including BeginUpdate/EndUpdate/InstallClipRegion/etc.
               ClearRectRegion(l->DamageList, &rect);
 #if 0
 kprintf("");
@@ -950,6 +954,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
 #endif
 
 #warning Must have oldcr->BitMap also for SuperBitMap layers!
+
               BltBitMap(srcbm,
                         xSrc,
                         ySrc,
@@ -1001,6 +1006,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
    * the I must call the backfillhook for the
    * area of the damage list of a simple refresh layer
    */
+
   if (IS_SIMPLEREFRESH(l) && 
       (l->Flags & LAYERREFRESH) &&
       FALSE == backupmode &&
@@ -1256,6 +1262,8 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
              bm->Depth,
              BMF_CLEAR,
              bm);
+	     
+#warning stegerg: the backfill hook should be called for this bitmap! But _CallLayerHook always uses rp->BitMap
         }
       }
       
