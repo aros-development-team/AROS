@@ -64,7 +64,7 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     y1 >= (Rect)->MinY &&                   \
     y2 <= (Rect)->MaxY &&                   \
     x1 >= (Rect)->MinX &&                   \
-    x2 >= (Rect)->MaxX                      \
+    x2 <= (Rect)->MaxX                      \
 )
 
 #define _IsPointInRect(Rect, x, y) _IsRectInRect(Rect, (x), (y), (x), (y))
