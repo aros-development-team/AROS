@@ -30,6 +30,8 @@ extern "C" {
 #ifdef __AROS__
 #include <aros/debug.h>
 #include <exec/execbase.h>
+
+#undef D
 #else
 void KPrintF(const char *fmt, ...);
 #endif
@@ -40,7 +42,7 @@ void KPrintF(const char *fmt, ...);
 #define DEBUG_TAGLIST(x)      { struct TagItem *tstate = x; \
 				struct TagItem *tag; \
 				bug("TagList : \n"); \
-				while((tag = NextTagItem(&tstate))) \
+				while((tag = NextTagItem((const struct TagItem **)&tstate))) \
 				  bug("{0x%08lx,0x%08lx}\n",tag->ti_Tag,tag->ti_Data); \
 			      }
 #define DEBUG_EXECLIST(x)     { struct Node *node; bug("ExecList : \n"); \
@@ -48,21 +50,36 @@ void KPrintF(const char *fmt, ...);
 				   bug("0x%08lx : %s\n",node,node->ln_Name); \
 			      }
 
-#define DBLINE    bug(PROJECTNAME " " __FILE__ "(%4ld):" DEBUGFUNC "() :",__LINE__)
+//#define DBLINE    bug(PROJECTNAME " " __FILE__ "(%4ld):" DEBUGFUNC "() :",__LINE__)
+#define DBLINE    bug(PROJECTNAME " %s(%4ld):%s() :", __FILE__, __LINE__, DEBUGFUNC)
 
 #define DC(x)
 #define DB(x)     { DBLINE; bug x; }
 #define DBL(l,x)  { DBLINE; bug x; }
-#define ENTERING  D(fbug("enter " DEBUGFUNC "()\n"))
-#define LEAVING   D(fbug("leave " DEBUGFUNC "()\n"))
+
+//#define ENTERING  D(fbug("enter " DEBUGFUNC "()\n"))
+//#define LEAVING   D(fbug("leave " DEBUGFUNC "()\n"))
+#define ENTERING  D(fbug("enter %s()\n", DEBUGFUNC))
+#define LEAVING   D(fbug("leave %s()\n", DEBUGFUNC))
+
 #define ENTERLVL(l) ENTERING
 #define LEAVELVL(l) LEAVING
+
+/*
 #define DTL(x)    D({ bug(__FILE__ "(%4ld):" DEBUGFUNC "() ",__LINE__); \
 		    DEBUG_TAGLIST(x); \
 		  })
 #define DDL(x)    D({ bug(__FILE__ "(%4ld):" DEBUGFUNC "() ",__LINE__); \
 		    DEBUG_EXECLIST(x); \
 		  })
+*/
+#define DTL(x)    D({ bug("%s (%4ld):%s() ", __FILE__, __LINE__, DEBUGFUNC); \
+		    DEBUG_TAGLIST(x); \
+		  })
+#define DDL(x)    D({ bug("%s (%4ld):%s() ", __FILE__, __LINE__, DEBUGFUNC); \
+		    DEBUG_EXECLIST(x); \
+		  })
+
 #define DA(e, x)   D({ if((e)) { bug("Fault: "); bug x; } })
 #define DIA(e, x)
 #define DELAY(x)  {if(FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS) Delay(x);}
