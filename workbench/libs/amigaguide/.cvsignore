@@ -1,0 +1,8 @@
+*_endtag.c
+*.map
+functable.c
+functions.c
+functions.h
+libdefs.h
+mmakefile
+

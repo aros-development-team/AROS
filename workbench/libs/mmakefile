@@ -5,7 +5,8 @@
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
-#MM- workbench-libs-complete : workbench-libs-arp \
+#MM- workbench-libs-complete : workbench-libs-amigaguide \
+#MM         workbench-libs-arp \
 #MM         workbench-libs-asl \
 #MM         workbench-libs-commodities \
 #MM	    workbench-libs-datatypes \
