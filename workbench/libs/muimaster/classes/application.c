@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
@@ -694,7 +694,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    {
 		struct MUI_InputHandlerNode *ihn;
 		ihn = (struct MUI_InputHandlerNode *)mn;
-		if (signal & ihn->ihn_Flags) DoMethod(ihn->ihn_Object,ihn->ihn_Method);
+		if (signal & ihn->ihn_Signals) DoMethod(ihn->ihn_Object,ihn->ihn_Method);
 	    }
 	}
     }
