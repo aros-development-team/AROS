@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	/* void */
-	AROS_LHA(struct muUserInfo *, info, A0),
+	AROS_LHA(struct secUserInfo *, info, A0),
 
 /*  LOCATION */
 	struct Library *, SecurityBase, 10, Security)

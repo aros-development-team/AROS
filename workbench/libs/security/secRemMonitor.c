@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	/* (monitor) */
-	AROS_LHA(struct muMonitor *, monitor, A0),
+	AROS_LHA(struct secMonitor *, monitor, A0),
 
 /*  LOCATION */
 	struct Library *, SecurityBase, 29, Security)

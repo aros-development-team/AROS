@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	/* void */
-	AROS_LHA(struct muExtOwner *, info, A0),
+	AROS_LHA(struct secExtOwner *, info, A0),
 
 /*  LOCATION */
 	struct Library *, SecurityBase, 22, Security)
