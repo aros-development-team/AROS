@@ -122,6 +122,8 @@ void _CallLayerHook(struct Hook * h,
 {
   struct BitMap * bm = rp->BitMap;
 
+  if (IL(L)->intflags & INTFLAG_AVOID_BACKFILL) return;
+  
   if (h == LAYERS_BACKFILL)
   {
     /* Use default backfill, which means that I will clear the area */
@@ -517,7 +519,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
 			      struct LayersBase *LayersBase)
 {
   struct BitMap * display_bm = l->rp->BitMap;
-
+  
   while (NULL != oldcr)
   {
     struct ClipRect * _cr = newcr;
@@ -1015,6 +1017,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d _cr->lobs: %d\n",
                      -dr->bounds.MinX-l->bounds.MinX,
                      -dr->bounds.MinY-l->bounds.MinY);
       rr = rr->Next;
+ 
     }    
   }
 
@@ -1124,6 +1127,7 @@ if (show_region == l->VisibleRegion)
 				TRUE,
 				FALSE,
 				LayersBase);
+
 
       l->ClipRect = newcr;
   }
