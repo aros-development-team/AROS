@@ -70,6 +70,7 @@ typedef enum {
     vHidd_IRQ_HDD2,         /* IDE port 2 */
     vHidd_IRQ_Ether,        /* Ethernet card IRQ */
     vHidd_IRQ_Mouse,        /* PS/2 mouse IRQ */
+    vHidd_IRQ_Touchscreen,  /* Touchscreen IRQ */
 
     vHidd_IRQ_NumIRQ        /* Number of IRQ's defined */
     
