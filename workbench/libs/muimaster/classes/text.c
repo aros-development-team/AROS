@@ -34,6 +34,8 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+extern struct Library *MUIMasterBase;
+
 #define MYDEBUG 1
 #include "debug.h"
 
