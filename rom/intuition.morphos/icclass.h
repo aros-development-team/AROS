@@ -21,4 +21,4 @@ struct ICData
 
 #define ICMAGIC 1234
 
-#endif _ICCLASS_H
+#endif /* _ICCLASS_H */
