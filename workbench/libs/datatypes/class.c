@@ -275,6 +275,8 @@ AROS_UFH3(IPTR, Dispatcher,
 	  AROS_UFHA(Object *, object, A2),
 	  AROS_UFHA(Msg, msg, A1))
 {
+    AROS_USERFUNC_INIT
+
     struct DataTypesBase *DataTypesBase = (struct DataTypesBase *)class->cl_UserData;
     struct DTObject *dto = INST_DATA(class,object);
     struct DTSpecialInfo *dtsi = ((struct Gadget *)object)->SpecialInfo;
@@ -370,7 +372,7 @@ AROS_UFH3(IPTR, Dispatcher,
 				    
 				    UnLock((BPTR)handle);
 				    break;
-				    
+
 				case DTF_MISC:
 				    newdto->dto_Handle = handle;
 				    Success = TRUE;
@@ -562,7 +564,7 @@ AROS_UFH3(IPTR, Dispatcher,
 					    
 					    if(dto->dto_MouseX >= dto->dto_TotalPHoriz)
 						dto->dto_MouseX = dto->dto_TotalPHoriz - 1;
-					    
+
 					    if(hunit>1)
 						dto->dto_MouseX = dto->dto_MouseX / hunit * hunit;
 					    
@@ -586,7 +588,7 @@ AROS_UFH3(IPTR, Dispatcher,
 				case (IECODE_LBUTTON | IECODE_UP_PREFIX):
 				    retval = GMR_VERIFY | GMR_NOREUSE;
 				    break;
-				    
+
 				case IECODE_RBUTTON:
 				    {
 					((struct Gadget *)object)->Flags &= ~GFLG_SELECTED;
@@ -802,7 +804,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		
 		ReleaseGIRPort(rp);
 	    }
-	    
+
 	    dtsi->si_Flags &= ~(DTSIF_DRAGGING | DTSIF_DRAGSELECT);
 	    ((struct Gadget *)object)->Flags &= ~(GFLG_SELECTED | GFLG_RELSPECIAL);
 	} /* case GM_GOINACTIVE */
@@ -874,7 +876,7 @@ AROS_UFH3(IPTR, Dispatcher,
 	
     case DTM_ABORTPRINT:
 	Forbid();
-	
+
 	if(dto->dto_PrinterProc != NULL)
 	    Signal((struct Task *)dto->dto_PrinterProc, SIGBREAKF_CTRL_C);
 	
@@ -972,8 +974,10 @@ AROS_UFH3(IPTR, Dispatcher,
 	retval = DoSuperMethodA(class, object, msg);
 	break;
     }
-    
+
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 

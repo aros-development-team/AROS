@@ -20,7 +20,9 @@ AROS_UFH2(void, dt_putchr,
 	  AROS_UFHA(UBYTE,    chr, D0),
 	  AROS_UFHA(STRPTR *, p,   A3))
 {
+    AROS_USERFUNC_INIT
     *(*p)++ = chr;
+    AROS_USERFUNC_EXIT
 }
 
 void dt__sprintf(struct Library *DataTypesBase, UBYTE *buffer,

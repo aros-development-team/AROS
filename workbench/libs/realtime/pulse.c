@@ -32,6 +32,7 @@ AROS_UFH3(void, Pulse,
 	  AROS_UFHA(ULONG,             argSize, D0),
 	  AROS_UFHA(struct ExecBase *, sysBase, A6))
 {
+    AROS_USERFUNC_INIT
 #undef SysBase
 #define SysBase sysBase
     struct internal_RealTimeBase *RealTimeBase = GPB(FindTask(NULL)->tc_UserData);
@@ -69,13 +70,13 @@ AROS_UFH3(void, Pulse,
 					 (not external) whose heartbeats
 					 aliases against 600Hz? */
 	time = GPB(RealTimeBase)->rtb_Time;
-	
+
 	timeMsg.pmt_Method = PM_TICK;
 	timeMsg.pmt_Time = time;
 
 	lock = LockRealTime(RT_CONDUCTORS);
-	
-	ForeachNode((struct List *)&GPB(RealTimeBase)->rtb_ConductorList, 
+
+	ForeachNode((struct List *)&GPB(RealTimeBase)->rtb_ConductorList,
 		    (struct Node *)conductor)
 	{
 	    if (conductor->cdt_State == CONDSTATE_RUNNING)
@@ -160,4 +161,6 @@ AROS_UFH3(void, Pulse,
 	
 	UnlockRealTime(lock);
     } /* forever */
+
+    AROS_USERFUNC_EXIT
 }

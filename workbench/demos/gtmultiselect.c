@@ -93,6 +93,8 @@ AROS_UFH3(IPTR, MyRenderFunc,
     AROS_UFHA(struct LVDrawMsg *,	msg,	        A1)
 )
 {
+    AROS_LIBFUNC_INIT
+
     IPTR retval;
     
     if (msg->lvdm_MethodID == LV_DRAW)
@@ -121,7 +123,7 @@ AROS_UFH3(IPTR, MyRenderFunc,
 	    	DO_SELECT(node);
 	    }
 	}
-	
+
 #if SHOW_SELECTFILL
 	erasepen = IS_SELECTED(node) ? FILLPEN : BACKGROUNDPEN;
 #else
@@ -129,7 +131,7 @@ AROS_UFH3(IPTR, MyRenderFunc,
 #endif
 
      	SetDrMd(rp, JAM1);
-     	        	    
+
 	SetAPen(rp, dri->dri_Pens[erasepen]);
      	RectFill(rp, min_x, min_y, max_x, max_y);
 
@@ -184,7 +186,8 @@ AROS_UFH3(IPTR, MyRenderFunc,
      {
      	retval = LVCB_UNKNOWN;
      }
-     	
+
+     AROS_LIBFUNC_EXIT
 }
 
 static void makegadgets(void)

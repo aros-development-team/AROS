@@ -32,9 +32,13 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
     AROS_UFHA(struct Locale *, locale, A2),
     AROS_UFHA(ULONG, null, A1))
 {
+    AROS_USERFUNC_INIT
+
     STRPTR *buf = (STRPTR *)hook->h_Data;
-    
+
     return *(*buf)++;
+
+    AROS_USERFUNC_EXIT
 }
 
  /*****************************************************************************

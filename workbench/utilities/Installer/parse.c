@@ -1,6 +1,7 @@
 /* parse.c -- Here are all functions used to parse the input file */
 
 #include "Installer.h"
+//#include <stdio.h>
 
 /* External variables */
 extern char buffer[MAXARGSIZE];

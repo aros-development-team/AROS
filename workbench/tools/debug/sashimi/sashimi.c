@@ -284,6 +284,8 @@ AROS_LH1(void, NewRawPutChar,
     AROS_LHA(UBYTE, c, D0),
     struct ExecBase *, SysBase, 86, Exec)
 {    
+    AROS_LIBFUNC_INIT
+
     /* Do not store NUL bytes. */
     if(c != '\0')
     {
@@ -313,6 +315,8 @@ AROS_LH1(void, NewRawPutChar,
 
         Enable();
     }
+
+    AROS_LIBFUNC_EXIT
 }
 
 /****************************************************************************/

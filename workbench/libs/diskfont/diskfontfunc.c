@@ -273,6 +273,8 @@ AROS_UFH3(IPTR, DiskFontFunc,
     AROS_UFHA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     /* Note: TRUE is default */
     ULONG retval = FH_SUCCESS;
     struct FontDescrHeader  *fdh;
@@ -296,7 +298,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
               	dfhd->CurrentFileEntry = dfhd->FileList;
 
             break;
-            
+
             
         case FHC_AF_READFONTINFO:
             
@@ -344,7 +346,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
             */
             if (index != 0)
             	retval |= FH_REUSENAME;
-            
+
             /* Go on with next entry in the TextAttrArray */
             index ++;
             dfhd->TTextAttrIndex = index;
@@ -368,7 +370,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
             FreeResources(dfhd, DFB(DiskfontBase) );
             
             break;
-        
+
         case FHC_AF_GETDATE:
 
             ds = fhc->fhc_UserData;
@@ -464,7 +466,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
 
 		AddFont(fhc->fhc_TextFont);				
 		fhc->fhc_TextFont->tf_Accessors++;
-		
+
 		Permit();
 				
 		D(bug("Font added\n"));
@@ -477,6 +479,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
     
     ReturnInt ("DiskFontFunc", ULONG, retval);
 
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

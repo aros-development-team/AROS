@@ -112,7 +112,7 @@
       #else
 	#undef IEEEDPNAN_64
 	QUAD IEEEDPNAN_64;
-	Set_Value64C(IEEEDPNAN_64, IEEEDPNAN_Hi, IEEEDPNAN_Lo, 0UUL /* dummy - unused */);
+	Set_Value64C(IEEEDPNAN_64, IEEEDPNAN_Hi, IEEEDPNAN_Lo);
       #endif
 
       return IEEEDPNAN_64;	   /* acos(|x|>1) is NaN */

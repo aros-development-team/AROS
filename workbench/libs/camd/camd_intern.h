@@ -376,27 +376,27 @@ BOOL InitCamdTimer(void);
 void UninitCamdTimer(void);
 void CamdWait(void);
 
-	AROS_LH2(BOOL, SetMidiAttrsA,
-	AROS_LHA(struct MidiNode *, midinode, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+	AROS_LP2(BOOL, SetMidiAttrsA,
+	AROS_LPA(struct MidiNode *, midinode, A0),
+	AROS_LPA(struct TagItem *, tags, A1),
 	struct CamdBase *, CamdBase, 14, Camd);
 
-	AROS_LH2(BOOL, GetMidi,
-	AROS_LHA(struct MidiNode *, midinode, A0),
-	AROS_LHA(MidiMsg *, msg, A1),
+	AROS_LP2(BOOL, GetMidi,
+	AROS_LPA(struct MidiNode *, midinode, A0),
+	AROS_LPA(MidiMsg *, msg, A1),
 	struct CamdBase *, CamdBase, 28, Camd);
 
-	AROS_LH2(BOOL, SetMidiLinkAttrsA,
-	AROS_LHA(struct MidiLink *, midilink, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+	AROS_LP2(BOOL, SetMidiLinkAttrsA,
+	AROS_LPA(struct MidiLink *, midilink, A0),
+	AROS_LPA(struct TagItem *, tags, A1),
 	struct CamdBase *, CamdBase, 21, Camd);
 
-	AROS_LH1(void, CloseMidiDevice,
-	AROS_LHA(struct MidiDeviceData *, mididevicedata, A0),
+	AROS_LP1(void, CloseMidiDevice,
+	AROS_LPA(struct MidiDeviceData *, mididevicedata, A0),
 	struct CamdBase *, CamdBase, 35, Camd);
 
-	AROS_LH1(struct MidiDeviceData *, OpenMidiDevice,
-	AROS_LHA(UBYTE *, name, A0),
+	AROS_LP1(struct MidiDeviceData *, OpenMidiDevice,
+	AROS_LPA(UBYTE *, name, A0),
 	struct CamdBase *, CamdBase, 34, Camd);
 
 #endif /* CAMD_INTERN_H */

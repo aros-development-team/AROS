@@ -298,13 +298,16 @@ AROS_UFH4(ULONG, rtVBlank,
 	  AROS_UFHA(void *, data, A1),
 	  AROS_UFHA(ULONG, dummy2, A5),
 	  AROS_UFHA(struct ExecBase *, mySysBase, A6))
-{ 
+{
+    AROS_USERFUNC_INIT
     struct internal_RealTimeBase *RealTimeBase = GPB(data);
 
     // kprintf("Signalling task %p\n", RealTimeBase->rtb_PulseTask);
     Signal(RealTimeBase->rtb_PulseTask, SIGF_SINGLE);
 
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 

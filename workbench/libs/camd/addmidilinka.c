@@ -79,7 +79,10 @@
 	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 
 #ifdef _AROS
-	if(Camd_SetMidiLinkAttrsA(midilink,tags,CamdBase)==FALSE)
+	AROS_LC2(BOOL, SetMidiLinkAttrsA,
+	         AROS_LCA(struct MidiLink *, midilink, A0),
+	         AROS_LCA(struct TagItem *, tags, A1),
+	         struct CamdBase *, CamdBase, 16, Camd);
 #else
 	if(SetMidiLinkAttrsA(midilink,tags,CamdBase)==FALSE)
 #endif

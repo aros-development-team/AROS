@@ -30,9 +30,13 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     AROS_UFHA(struct Locale *, locale, A2),
     AROS_UFHA(char, c, A1))
 {
+    AROS_USERFUNC_INIT
+
     STRPTR *buf = (STRPTR *)hook->h_Data;
-    
+
     *(*buf)++ = c;
+
+    AROS_USERFUNC_EXIT
 }
 
  /*****************************************************************************

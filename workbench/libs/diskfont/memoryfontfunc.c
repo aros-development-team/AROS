@@ -35,6 +35,8 @@ AROS_UFH3(IPTR, MemoryFontFunc,
     AROS_UFHA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     /* Note: FALSE is default */
     ULONG retval = FALSE;
     
@@ -126,6 +128,8 @@ AROS_UFH3(IPTR, MemoryFontFunc,
     }
     
     ReturnInt ("MemoryFontFunc", ULONG, retval);
+
+    AROS_USERFUNC_EXIT
 }
- 
+
 /****************************************************************************************/

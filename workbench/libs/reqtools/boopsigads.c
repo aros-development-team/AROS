@@ -166,14 +166,16 @@ AROS_UFH3(ULONG, StrEditHookEntry,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct SGWork *, sgw, A2),
     AROS_UFHA(ULONG *, msg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 ULONG ASM SAVEDS
 StrEditHookEntry (
     REGPARAM(a0, struct Hook *, hook),
     REGPARAM(a2, struct SGWork *, sgw),
     REGPARAM(a1, ULONG *, msg) )
-#endif
 {
+#endif
     struct StrGadUserData	*userdata;
     WORD	qual, rawcode;
 
@@ -239,6 +241,9 @@ StrEditHookEntry (
     } /* if( msg[ 0 ] == SGH_KEY ) */
 
     return( FALSE );
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************************/

@@ -54,13 +54,18 @@ AROS_UFH2 (void, puttostr,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(STRPTR *,strPtrPtr,A3)
 )
+{
+    AROS_USERFUNC_INIT
 #else
 void puttostr(REGPARAM(d0, UBYTE, chr),
     	      REGPARAM(a3, STRPTR *, strPtrPtr))
-#endif
 {
+#endif
     *(*strPtrPtr)= chr;
     (*strPtrPtr) ++;
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************************/
@@ -70,13 +75,18 @@ AROS_UFH2 (void, CountBarsAndChars,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,ptr,A3)
 )
+{
+    AROS_USERFUNC_INIT
 #else
 void CountBarsAndChars(REGPARAM(d0, UBYTE, chr),
     	     	       REGPARAM(a3, ULONG *, ptr))
-#endif
 {
+#endif
     if (chr == '|') (ptr[0])++;
     (ptr[1])++;
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************************/
@@ -86,13 +96,18 @@ AROS_UFH2 (void, CountNewLinesAndChars,
 	AROS_UFHA(UBYTE, chr, D0),
 	AROS_UFHA(ULONG *,ptr,A3)
 )
+{
+    AROS_USERFUNC_INIT
 #else
 void CountNewLinesAndChars(REGPARAM(d0, UBYTE, chr),
     	     	           REGPARAM(a3, ULONG *, ptr))
-#endif
 {
+#endif
     if (chr == '\n') (ptr[0])++;
     (ptr[1])++;
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /****************************************************************************************/

@@ -338,15 +338,15 @@ static void HandleNotify(void)
 static void HandleAll(void)
 {
     ULONG sigs;
-    
+
     for(;;)
     {
-    	sigs = Wait(notifysig | SIGBREAKF_CTRL_C);
-	
+	sigs = Wait(notifysig | SIGBREAKF_CTRL_C);
+
 	if (sigs & SIGBREAKF_CTRL_C) break;
-	
+
 	if (sigs & notifysig) HandleNotify();
-	
+
     } /* for(;;) */
 }
 
@@ -379,7 +379,7 @@ int main(void)
     NotifyLauncherTask();
     HandleAll();
     Cleanup(NULL);
-    
+
     return 0;
 }
 
