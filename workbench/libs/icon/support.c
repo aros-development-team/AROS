@@ -132,11 +132,30 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBas
     return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, file, IconDesc);
 }
 
-/****************************************/
-/* Copy the deficon name of type	*/
-/* supplied into the mem supplied	*/
-/* (GetDefDiskObject & PutDefDiskObject */
-/****************************************/
+CONST_STRPTR GetDefaultIconName(LONG type)
+{
+    static const char * const defaultNames[] =
+    {
+        "Disk",         /* WBDISK    (1) */ 
+        "Drawer",       /* WBDRAWER  (2) */
+        "Tool",         /* WBTOOL    (3) */
+        "Project",      /* WBPROJECT (4) */
+        "Trashcan",     /* WBGARBAGE (5) */
+        "Device",       /* WBDEVICE  (6) */
+        "Kick",         /* WBKICK    (7) */
+        "AppIcon"       /* WBAPPICON (8) */
+    };
+    
+    if (type >= 1 && type <= 8)
+    {
+        return defaultNames[type - 1];
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
 
 VOID GetDefIconName (LONG def_type, UBYTE * deficonname)
 {
