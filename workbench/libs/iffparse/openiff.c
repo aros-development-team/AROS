@@ -86,7 +86,9 @@
 		{
 		    /* Everything went OK */
 		    /* Set the acess mode, and mark the stream as opened */
+		    iff->iff_Flags &= ~IFFF_RWBITS;
 		    iff->iff_Flags |= (rwMode | IFFF_OPEN);
+
 		    err = 0L;
 		}
 		else
@@ -111,10 +113,15 @@
 		    &cmd
 		);
 	    }
-	}
+	} /* IFFF_READ */
 	else
+	{
+	    iff->iff_Flags &= ~IFFF_RWBITS;
+	    iff->iff_Flags |= (rwMode | IFFF_OPEN);	
 	    err = 0L;
-    }
+	}
+	
+    } /* if (!err) */
 
     return (err);
     AROS_LIBFUNC_EXIT
