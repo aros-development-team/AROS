@@ -405,6 +405,8 @@ static int relocate
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
 
+    struct symbol *SysBase_sym = NULL;
+    
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol *sym = &symtab[ELF32_R_SYM(rel->info)];
@@ -430,8 +432,15 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
-                if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
-                    s = (ULONG)&SysBase;
+                if
+                (
+                    (SysBase_sym == sym) || 
+                    (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
+                )
+                {
+                        SysBase_sym = sym;
+                        s = (ULONG)&SysBase;
+                }
                 else
 		    s = sym->value;
                 break;
