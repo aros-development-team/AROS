@@ -43,6 +43,7 @@ FILES := \
 	ferror \
 	fflush \
 	fgetc \
+	fgetpos \
 	fgets \
 	fopen \
 	fprintf \
@@ -52,6 +53,7 @@ FILES := \
 	fread \
 	free \
 	fseek \
+	fsetpos \
 	ftell \
 	fwrite \
 	getenv \
