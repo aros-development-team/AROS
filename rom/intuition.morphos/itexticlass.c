@@ -35,6 +35,8 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #ifndef __MORPHOS__
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
