@@ -255,7 +255,9 @@ void ProcessEvents (struct inputbase *InputDevice)
 		case IND_WRITEEVENT: {
 		    struct InputEvent *ie;
 		    
-		    ie = (struct InputEvent *)ioreq->io_Data; 
+		    ie = (struct InputEvent *)ioreq->io_Data;
+		    
+		    ie->ie_NextEvent = NULL; 
 		    /* Add a timestamp to the event */
 		    GetSysTime( &(ie->ie_TimeStamp ));
 		    
@@ -384,7 +386,6 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    	gpdie->ie_Qualifier = InputDevice->ActQualifier & KEY_QUALIFIERS;
 	    }
 	    
-	    //kprintf("** adding gameport event (addr = %x) class = %d \n",gpdie,gpdie->ie_Class);
 	    /* Add event to queue */
 	    AddEQTail(gpdie, InputDevice);
 
