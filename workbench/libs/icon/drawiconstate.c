@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <intuition/imageclass.h>
 #include "icon_intern.h"
 
 /*****************************************************************************
@@ -50,9 +51,15 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
     
-    if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
+    if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
     {
-	DrawImage(rp,(struct Image*)icon->do_Gadget.GadgetRender,leftEdge,topEdge);
+	DrawImage(rp,(struct Image*)icon->do_Gadget.SelectRender,leftEdge,topEdge);
+    } else
+    {
+	if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
+	{
+	    DrawImage(rp,(struct Image*)icon->do_Gadget.GadgetRender,leftEdge,topEdge);
+	}
     }
 
 #warning DrawIconStateA() is only very limited implemented
