@@ -22,9 +22,6 @@
 #include <aros/debug.h>
 #undef kprintf
 
-#define SetFunc(offset,name) \
-    SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec));
-
 /* flash() */
 void flash(UWORD);
 
@@ -55,13 +52,25 @@ int entry(void)
 
 extern const char name[];
 extern const char version[];
+extern UBYTE dearray[];
 extern int start(void);
 extern const char end;
 
-struct Resident resident =
+struct SpecialResident
 {
+    struct Resident res;
+    ULONG magiccookie;
+    UBYTE *statusarray;
+    UWORD maxslot;
+};
+
+#define SR_COOKIE 0x4afb4afc
+
+struct SpecialResident resident =
+{
+    {
     RTC_MATCHWORD,
-    &resident,
+    (struct Resident*)&resident,
     (APTR)&end,
     RTF_COLDSTART,
     41,			/* version */
@@ -73,10 +82,45 @@ struct Resident resident =
     (char *)name,
     (char *)&version[6],
     &start
+    },
+    SR_COOKIE,		/* magic cookie to recognize a patchable library */
+    dearray,		/* pointer to array of function status bytes */
+    137			/* highest vector slot in this library */
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.8 (15.3.97)";
+const char version[] = "$VER: exec.strap 41.9 (21.3.97)";
+
+/*
+    Array of function slots to enable/disable. They are all set to 1 (enabled)
+    by default. "boot" will find the SR_COOKIE in the resident structure to see
+    if this array is present, and will then disable certain functions if they
+    are specified as off in the config file.
+*/
+UBYTE dearray[] =
+{
+    /* 137 functions in exec.library V40 (plus one for offset 0) */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*   0-  9 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  10- 19 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  20- 29 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  30- 39 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  40- 49 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  50- 59 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  60- 69 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  70- 79 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  80- 89 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /*  90- 99 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 100-109 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 110-119 */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 120-129 */
+    1, 1, 1, 1, 1, 1, 1, 1        /* 130-137 */
+};
+
+#define SetFunc(offset,name) \
+{ \
+    if(dearray[offset]) \
+	SetFunction((struct Library *)SysBase, (offset * -6), (APTR)&AROS_SLIB_ENTRY(name,Exec)); \
+}
 
 int start(void)
 {
@@ -101,6 +145,10 @@ int start(void)
 
     D(bug("exec.strap installing...\n"));
 
+    /*
+	This test will have to be changed if we start patching the exec version
+	number.
+    */
     if (SysBase->LibNode.lib_Version < 37)
     {
 	/* Refuse to run on anything less than ROM 2.04 */
@@ -110,8 +158,12 @@ int start(void)
 
     flash(BLUE);
 
+#if 1 /* Disable in boot.config */
+    /* The cause of a second infinite reset loop, as reported on 39.106 ROM?
+       I have the same ROM, without this problem */
     /* First patch SetFunction itself. */
     SetFunc( 70, SetFunction);
+#endif
 
     /*
 	The biggie: SetFunction() as many library vectors as possible.
@@ -254,7 +306,7 @@ int start(void)
     SetFunc( 87, RawDoFmt);
 #endif
     SetFunc( 89, TypeOfMem);
-#if 0
+#if 1 /* Disable in boot.config */
     /* May be incompatible with OS37 OpenLibrary() */
     SetFunc( 92, OpenLibrary);
 #endif
@@ -291,6 +343,10 @@ int start(void)
     SetFunc(120, AttemptSemaphoreShared);
 #endif
 
+    /*
+	This test will have to be changed if we start patching the exec version
+	number.
+    */
     if (SysBase->LibNode.lib_Version >= 39)
     {
 	D(bug("Found kickstart >= 39. Extra functions installed.\n"));
