@@ -1151,331 +1151,360 @@ AROS_LH1(BPTR, close,
 	   struct rambase *, rambase, 2, ramdev)
 {
     AROS_LIBFUNC_INIT
-    struct cnode *dev;
-    struct vnode *vol;
-    struct dnode *dir;
-    struct fnode *file;
+
+    struct cnode  *dev;
+    struct vnode  *vol;
+    struct dnode  *dir;
+    struct fnode  *file;
+
     struct filehandle *handle;
 
-    handle=(struct filehandle *)iofs->IOFS.io_Unit;
-    dev=(struct cnode *)handle->node;
-    vol=dev->volume;
-    if(dev->type!=ST_LINKDIR||dev->self!=dev)
+    handle = (struct filehandle *)iofs->IOFS.io_Unit;
+    dev = (struct cnode *)handle->node;
+    vol = dev->volume;
+
+    if(dev->type != ST_LINKDIR || dev->self != dev)
     {
-	iofs->io_DosError=ERROR_OBJECT_WRONG_TYPE;
+	iofs->io_DosError = ERROR_OBJECT_WRONG_TYPE;
 	return 0;
     }
     if(vol->volcount)
     {
-	iofs->io_DosError=ERROR_OBJECT_IN_USE;
+	iofs->io_DosError = ERROR_OBJECT_IN_USE;
 	return 0;
     }
 
     /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
+    iofs->IOFS.io_Device = (struct Device *)-1;
 
-    free_lock(rambase,handle);
+    free_lock(rambase, handle);
     RemDosEntry(vol->doslist);
     FreeDosEntry(vol->doslist);
 
-    while(vol->list.mlh_Head->mln_Succ!=NULL)
+    while(vol->list.mlh_Head->mln_Succ != NULL)
     {
-	dir=(struct dnode *)vol->list.mlh_Head;
-	if(dir->type==ST_USERDIR)
-	    while((file=(struct fnode *)RemHead((struct List *)&dir->list))!=NULL)
-		AddTail((struct List *)&vol->list,(struct Node *)dir);
-	delete(rambase,(struct fnode *)dir);
+	dir = (struct dnode *)vol->list.mlh_Head;
+
+	if(dir->type == ST_USERDIR)
+	{
+	    while((file = (struct fnode *)RemHead((struct List *)&dir->list)) != NULL)
+		AddTail((struct List *)&vol->list, (struct Node *)dir);
+	}
+	
+	delete(rambase, (struct fnode *)dir);
     }
     Strfree(rambase,vol->name);
     FreeMem(vol,sizeof(struct vnode));
 
     Strfree(rambase,dev->name);
-    FreeMem(dev,sizeof(struct cnode));
+    FreeMem(dev, sizeof(struct cnode));
 
-    iofs->io_DosError=0;
+    iofs->io_DosError = 0;
 
     /* I have one fewer opener. */
     if(!--rambase->device.dd_Library.lib_OpenCnt)
     {
 	/* Delayed expunge pending? */
-	if(rambase->device.dd_Library.lib_Flags&LIBF_DELEXP)
+	if(rambase->device.dd_Library.lib_Flags & LIBF_DELEXP)
 	    /* Then expunge the device */
 	    return expunge();
     }
     return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
 void deventry(struct rambase *rambase)
 {
-    struct IOFileSys *iofs;
-    struct dnode *dir;
-    LONG error=0;
+    struct IOFileSys  *iofs;
+    struct dnode      *dir;
+
+    LONG   error = 0;
     /*
 	Init device port. AllocSignal() cannot fail because this is a
 	freshly created task with all signal bits still free.
     */
-    rambase->port->mp_SigBit=AllocSignal(-1);
-    rambase->port->mp_Flags=PA_SIGNAL;
+    rambase->port->mp_SigBit = AllocSignal(-1);
+    rambase->port->mp_Flags  = PA_SIGNAL;
 
     /* Get and process the messages. */
     for(;;)
     {
-	while((iofs=(struct IOFileSys *)GetMsg(rambase->port))!=NULL)
+	while((iofs = (struct IOFileSys *)GetMsg(rambase->port)) != NULL)
 	{
 	    switch(iofs->IOFS.io_Command)
 	    {
-		case FSA_OPEN:
-		    /*
-			get handle on a file or directory
-			Unit *current; current directory / new handle on return
-			STRPTR name;   file- or directoryname
-			LONG mode;     open mode
-		    */
-		    error=open_(rambase,
-                                (struct filehandle **)&iofs->IOFS.io_Unit,
-                                iofs->io_Union.io_OPEN.io_Filename,
-                                iofs->io_Union.io_OPEN.io_FileMode);
+	    case FSA_OPEN:
+		/*
+		  get handle on a file or directory
+		  Unit *current; current directory / new handle on return
+		  STRPTR name;   file- or directoryname
+		  LONG mode;     open mode
+		*/
+		error = open_(rambase,
+			      (struct filehandle **)&iofs->IOFS.io_Unit,
+			      iofs->io_Union.io_OPEN.io_Filename,
+			      iofs->io_Union.io_OPEN.io_FileMode);
+		break;
+		
+	    case FSA_OPEN_FILE:
+		/*
+		  open a file or create a new one
+		  Unit *current; current directory / new handle on return
+		  STRPTR name;   file- or directoryname
+		  LONG mode;     open mode
+		  LONG protect;  protection flags if a new file is created
+		*/
+		error = open_file(rambase,
+				  (struct filehandle **)&iofs->IOFS.io_Unit,
+				  iofs->io_Union.io_OPEN_FILE.io_Filename,
+				  iofs->io_Union.io_OPEN_FILE.io_FileMode,
+				  iofs->io_Union.io_OPEN_FILE.io_Protection);
+		break;
+		
+	    case FSA_READ:
+		/*
+		  read a number of bytes from a file
+		  Unit *current; filehandle
+		  APTR buffer;   data
+		  LONG numbytes; number of bytes to read /
+		  number of bytes read on return,
+		  0 if there are no more bytes in the file
+		*/
+		error = read(rambase,
+			     (struct filehandle *)iofs->IOFS.io_Unit,
+			     iofs->io_Union.io_READ.io_Buffer,
+			     &iofs->io_Union.io_READ.io_Length);
+		break;
+		
+	    case FSA_WRITE:
+		/*
+		  write a number of bytes to a file
+		  Unit *current; filehandle
+		  APTR buffer;   data
+		  LONG numbytes; number of bytes to write /
+		  number of bytes written on return
+		*/
+		error=write(rambase,
+			    (struct filehandle *)iofs->IOFS.io_Unit,
+			    iofs->io_Union.io_WRITE.io_Buffer,
+			    &iofs->io_Union.io_WRITE.io_Length);
+		break;
+		
+	    case FSA_SEEK:
+		/*
+		  set / read position in file
+		  Unit *current; filehandle
+		  LONG posh;
+		  LONG posl;     relative position /
+		  old position on return
+		  LONG mode;     one of OFFSET_BEGINNING, OFFSET_CURRENT,
+		  OFFSET_END
+		*/
+		error=seek(rambase,
+			   (struct filehandle *)iofs->IOFS.io_Unit,
+			   &iofs->io_Union.io_SEEK.io_Offset,
+			   iofs->io_Union.io_SEEK.io_SeekMode);
 		    break;
-
-		case FSA_OPEN_FILE:
-		    /*
-			open a file or create a new one
-			Unit *current; current directory / new handle on return
-			STRPTR name;   file- or directoryname
-			LONG mode;     open mode
-			LONG protect;  protection flags if a new file is created
-		    */
-		    error=open_file(rambase,
-                                    (struct filehandle **)&iofs->IOFS.io_Unit,
-                                    iofs->io_Union.io_OPEN_FILE.io_Filename,
-                                    iofs->io_Union.io_OPEN_FILE.io_FileMode,
-                                    iofs->io_Union.io_OPEN_FILE.io_Protection);
-		    break;
-
-		case FSA_READ:
-		    /*
-			read a number of bytes from a file
-			Unit *current; filehandle
-			APTR buffer;   data
-			LONG numbytes; number of bytes to read /
-				       number of bytes read on return,
-				       0 if there are no more bytes in the file
-		    */
-		    error=read(rambase,
-                               (struct filehandle *)iofs->IOFS.io_Unit,
-                               iofs->io_Union.io_READ.io_Buffer,
-                               &iofs->io_Union.io_READ.io_Length);
-		    break;
-
-		case FSA_WRITE:
-		    /*
-			write a number of bytes to a file
-			Unit *current; filehandle
-			APTR buffer;   data
-			LONG numbytes; number of bytes to write /
-				       number of bytes written on return
-		    */
-		    error=write(rambase,
-                                (struct filehandle *)iofs->IOFS.io_Unit,
-                                iofs->io_Union.io_WRITE.io_Buffer,
-                                &iofs->io_Union.io_WRITE.io_Length);
-		    break;
-
-		case FSA_SEEK:
-		    /*
-			set / read position in file
-			Unit *current; filehandle
-			LONG posh;
-			LONG posl;     relative position /
-				       old position on return
-			LONG mode;     one of OFFSET_BEGINNING, OFFSET_CURRENT,
-				       OFFSET_END
-		    */
-		    error=seek(rambase,
-                               (struct filehandle *)iofs->IOFS.io_Unit,
-                               &iofs->io_Union.io_SEEK.io_Offset,
-                               iofs->io_Union.io_SEEK.io_SeekMode);
-		    break;
-
-		case FSA_CLOSE:
-		    /*
-			get rid of a handle
-			Unit *current; filehandle
-		    */
-		    error=free_lock(rambase,(struct filehandle *)iofs->IOFS.io_Unit);
-		    break;
-
-		case FSA_EXAMINE:
-		    /*
-			Get information about the current object
-			Unit *current; current object
-			struct ExAllData *ead; buffer to be filled
-			ULONG size;    size of the buffer
-			ULONG type;    type of information to get
-			iofs->io_DirPos; leave current position so
-					ExNext() knows where to find
-					next object
-		    */
-		    error=examine((struct fnode *)((struct filehandle *)iofs->IOFS.io_Unit)->node,
-				  iofs->io_Union.io_EXAMINE.io_ead,
-				  iofs->io_Union.io_EXAMINE.io_Size,
-                                  iofs->io_Union.io_EXAMINE.io_Mode,
-                                  &(iofs->io_DirPos));
-		    break;
-
-		case FSA_EXAMINE_NEXT:
-		    /*
-		       Get information about the next object 
-		       Unit *current; current object
-		       struct FileInfoBlock *fib; 
-		    */
-	            error=examine_next(rambase,
-			               (struct filehandle *)iofs->IOFS.io_Unit,
-	    		               iofs->io_Union.io_EXAMINE_NEXT.io_fib);
-	            break;
-
-		case FSA_EXAMINE_ALL:
-		    /*
-			Read the current directory
-			Unit *current; current directory
-			struct ExAllData *ead; buffer to be filled
-			ULONG size;    size of the buffer
-			ULONG type;    type of information to get
-		    */
-		    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
-				      iofs->io_Union.io_EXAMINE_ALL.io_ead,
-				      iofs->io_Union.io_EXAMINE_ALL.io_Size,
-                                      iofs->io_Union.io_EXAMINE_ALL.io_Mode);
-		    break;
-
-		case FSA_CREATE_DIR:
-		    /*
-			Build lock and open a new directory
-			Unit *current; current directory
-			STRPTR name;   name of the dir to create
-			LONG protect;  Protection flags for the new dir
-		    */
-		    error=create_dir(rambase,
-                                     (struct filehandle **)&iofs->IOFS.io_Unit,
-				     iofs->io_Union.io_CREATE_DIR.io_Filename,
-                                     iofs->io_Union.io_CREATE_DIR.io_Protection);
-		    break;
-
-		case FSA_DELETE_OBJECT:
-		    /*
-			Delete file or directory
-			Unit *current; current directory
-			STRPTR name;   filename
-		    */
-		    error=delete_object(rambase,
-                                        (struct filehandle *)iofs->IOFS.io_Unit,
-					iofs->io_Union.io_DELETE_OBJECT.io_Filename);
-		    break;
-
-		case FSA_SET_PROTECT:
-		    /*
-			Set protection bits for a certain file or directory.
-			Unit *current; current directory
-			STRPTR name;   filename
-			ULONG protect; new protection bits
-		    */
-		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,
-                                   &iofs->io_Union.io_SET_PROTECT.io_Filename,
-                                   &dir);
-		    if(!error)
-			dir->protect=iofs->io_Union.io_SET_PROTECT.io_Protection;
-		    break;
-
-		case FSA_SET_OWNER:
-		    /*
-			Set owner and group of the file or directory
-			Unit *current; current directory
-			STRPTR name;   filename
-			ULONG UID;
-			ULONG GID;
-		    */
-		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,
-                                   &iofs->io_Union.io_SET_OWNER.io_Filename,
-                                   &dir);
-		    if(!error)
+		    
+	    case FSA_CLOSE:
+		/*
+		  get rid of a handle
+		  Unit *current; filehandle
+		*/
+		error=free_lock(rambase,(struct filehandle *)iofs->IOFS.io_Unit);
+		break;
+		
+	    case FSA_EXAMINE:
+		/*
+		  Get information about the current object
+		  Unit *current; current object
+		  struct ExAllData *ead; buffer to be filled
+		  ULONG size;    size of the buffer
+		  ULONG type;    type of information to get
+		  iofs->io_DirPos; leave current position so
+		  ExNext() knows where to find
+		  next object
+		*/
+		error=examine((struct fnode *)((struct filehandle *)iofs->IOFS.io_Unit)->node,
+			      iofs->io_Union.io_EXAMINE.io_ead,
+			      iofs->io_Union.io_EXAMINE.io_Size,
+			      iofs->io_Union.io_EXAMINE.io_Mode,
+			      &(iofs->io_DirPos));
+		break;
+		
+	    case FSA_EXAMINE_NEXT:
+		/*
+		  Get information about the next object 
+		  Unit *current; current object
+		  struct FileInfoBlock *fib; 
+		*/
+		error=examine_next(rambase,
+				   (struct filehandle *)iofs->IOFS.io_Unit,
+				   iofs->io_Union.io_EXAMINE_NEXT.io_fib);
+		break;
+		
+	    case FSA_EXAMINE_ALL:
+		/*
+		  Read the current directory
+		  Unit *current; current directory
+		  struct ExAllData *ead; buffer to be filled
+		  ULONG size;    size of the buffer
+		  ULONG type;    type of information to get
+		*/
+		error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
+				  iofs->io_Union.io_EXAMINE_ALL.io_ead,
+				  iofs->io_Union.io_EXAMINE_ALL.io_Size,
+				  iofs->io_Union.io_EXAMINE_ALL.io_Mode);
+		break;
+		
+	    case FSA_CREATE_DIR:
+		/*
+		  Build lock and open a new directory
+		  Unit *current; current directory
+		  STRPTR name;   name of the dir to create
+		  LONG protect;  Protection flags for the new dir
+		*/
+		error=create_dir(rambase,
+				 (struct filehandle **)&iofs->IOFS.io_Unit,
+				 iofs->io_Union.io_CREATE_DIR.io_Filename,
+				 iofs->io_Union.io_CREATE_DIR.io_Protection);
+		break;
+		
+	    case FSA_DELETE_OBJECT:
+		/*
+		  Delete file or directory
+		  Unit *current; current directory
+		  STRPTR name;   filename
+		*/
+		error=delete_object(rambase,
+				    (struct filehandle *)iofs->IOFS.io_Unit,
+				    iofs->io_Union.io_DELETE_OBJECT.io_Filename);
+		break;
+		
+	    case FSA_SET_PROTECT:
+		/*
+		  Set protection bits for a certain file or directory.
+		  Unit *current; current directory
+		  STRPTR name;   filename
+		  ULONG protect; new protection bits
+		*/
+		dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
+		error=findname(rambase,
+			       &iofs->io_Union.io_SET_PROTECT.io_Filename,
+			       &dir);
+		if(!error)
+		    dir->protect=iofs->io_Union.io_SET_PROTECT.io_Protection;
+		break;
+		
+	    case FSA_SET_OWNER:
+		/*
+		  Set owner and group of the file or directory
+		  Unit *current; current directory
+		  STRPTR name;   filename
+		  ULONG UID;
+		  ULONG GID;
+		*/
+		dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
+		error=findname(rambase,
+			       &iofs->io_Union.io_SET_OWNER.io_Filename,
+			       &dir);
+		if(!error)
+		{
+		}
+		break;
+		
+	    case FSA_SET_DATE:
+		/*
+		  Set creation date of the file
+		  Unit *current; current directory
+		  STRPTR name;   filename
+		  ULONG days;
+		  ULONG mins;
+		  ULONG ticks;   timestamp
+		*/
+		dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
+		error=findname(rambase,
+			       &iofs->io_Union.io_SET_DATE.io_Filename,
+			       &dir);
+		if(!error)
+		{
+		}
+		break;
+		
+	    case FSA_SET_COMMENT:
+		/*
+		  Set a comment for the file or directory;
+		  Unit *current; current directory
+		  STRPTR name;   filename
+		  STRPTR comment; NUL terminated C string or NULL.
+		*/
+		dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
+		error=findname(rambase,
+			       &iofs->io_Union.io_SET_COMMENT.io_Filename,
+			       &dir);
+		if(!error)
+		{
+		    if(iofs->io_Union.io_SET_COMMENT.io_Comment)
 		    {
-		    }
-		    break;
-
-		case FSA_SET_DATE:
-		    /*
-			Set creation date of the file
-			Unit *current; current directory
-			STRPTR name;   filename
-			ULONG days;
-			ULONG mins;
-			ULONG ticks;   timestamp
-		    */
-		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,
-                                   &iofs->io_Union.io_SET_DATE.io_Filename,
-                                   &dir);
-		    if(!error)
-		    {
-		    }
-		    break;
-
-		case FSA_SET_COMMENT:
-		    /*
-			Set a comment for the file or directory;
-			Unit *current; current directory
-			STRPTR name;   filename
-			STRPTR comment; NUL terminated C string or NULL.
-		    */
-		    dir=((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		    error=findname(rambase,
-                                   &iofs->io_Union.io_SET_COMMENT.io_Filename,
-                                   &dir);
-		    if(!error)
-		    {
-			if(iofs->io_Union.io_SET_COMMENT.io_Comment)
+			STRPTR s = Strdup(rambase,
+					  iofs->io_Union.io_SET_COMMENT.io_Comment);
+			if(s!=NULL)
 			{
-			    STRPTR s=Strdup(rambase,iofs->io_Union.io_SET_COMMENT.io_Comment);
-			    if(s!=NULL)
-			    {
-				Strfree(rambase,dir->comment);
-				dir->comment=s;
-			    }else
-				error=ERROR_NO_FREE_STORE;
-			}else
-			{
-			    Strfree(rambase,dir->comment);
-			    dir->comment=NULL;
+			    Strfree(rambase, dir->comment);
+			    dir->comment = s;
 			}
+			else
+			    error = ERROR_NO_FREE_STORE;
+		    }else
+		    {
+			Strfree(rambase, dir->comment);
+			dir->comment = NULL;
 		    }
-		    break;
+		}
+		break;
+		
+	    case FSA_SET_FILE_SIZE:
+		/*
+		  Set a new size for the file.
+		  Unit *file;    filehandle
+		  LONG offh;
+		  LONG offl;     offset to current position/
+		  new size on return
+		  LONG mode;     relative to what (see Seek)
+		*/
+		error = set_file_size(rambase,
+				      (struct filehandle *)iofs->IOFS.io_Unit,
+				      &iofs->io_Union.io_SET_FILE_SIZE.io_Offset,
+				      iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode);
+		break;
+		
+	    case FSA_IS_FILESYSTEM:
+		iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
+		error = 0;
+		break;
+		
+	    case FSA_DISK_INFO:
+		{
+		    struct InfoData *id = (struct InfoData *)iofs->IOFS.io_Unit;
 
-		case FSA_SET_FILE_SIZE:
-		    /*
-			Set a new size for the file.
-			Unit *file;    filehandle
-			LONG offh;
-			LONG offl;     offset to current position/
-				       new size on return
-			LONG mode;     relative to what (see Seek)
-		    */
-		    error=set_file_size(rambase,
-                                        (struct filehandle *)iofs->IOFS.io_Unit,
-                                        &iofs->io_Union.io_SET_FILE_SIZE.io_Offset,
-                                        iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode);
-		    break;
+		    id->id_NumSoftErrors = 0;
+		    id->id_UnitNumber = 0;
+		    id->id_DiskState = ID_VALIDATED;
+		    id->id_NumBlocks = AvailMem(MEMF_TOTAL | MEMF_PUBLIC)/BLOCKSIZE;
+		    id->id_NumBlocksUsed = id->id_NumBlocks - AvailMem(MEMF_PUBLIC)/BLOCKSIZE;
+		    id->id_BytesPerBlock = BLOCKSIZE;
+		    id->id_DiskType = ID_DOS_DISK;
+		    id->id_VolumeNode = NULL;        /* What is this? */
+		    id->id_InUse = (LONG)TRUE;
 
-		case FSA_IS_FILESYSTEM:
-		    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
 		    error = 0;
-		    break;
-
-		default:
-		    error=ERROR_NOT_IMPLEMENTED;
-		    break;
+		}
+		break;
+		
+	    default:
+		error = ERROR_NOT_IMPLEMENTED;
+		break;
 /*
   FSA_FILE_MODE
     Change or read the mode of a single filehandle
@@ -1504,7 +1533,6 @@ void deventry(struct rambase *rambase)
 
   FSA_RENAME
   FSA_READ_LINK
-  FSA_DISK_INFO
   FSA_SERIALIZE_DISK
   FSA_WAIT_CHAR
   FSA_INFO
@@ -1522,7 +1550,8 @@ void deventry(struct rambase *rambase)
 
 */
 	    }
-	    iofs->io_DosError=error;
+
+	    iofs->io_DosError = error;
 	    ReplyMsg(&iofs->IOFS.io_Message);
 	}
 #if 0
