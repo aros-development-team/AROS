@@ -78,7 +78,7 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     
     obj = (Object *)DoSuperNew(cl, obj,
 			       MUIA_Group_Columns, 2,
-
+			       MUIA_Group_SameSize, TRUE,
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 2,
 			       GroupFrameT("Control"),
@@ -167,31 +167,138 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     set(data->refresh_cycle, MUIA_CycleChain, 1);
     set(data->multi_cycle, MUIA_CycleChain, 1);
 
+    DoMethod(d.smooth_checkmark, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, d.smooth_slider,
+	     3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
+
     return (IPTR)obj;
 }
 
 
-/*
- * MUIM_Settingsgroup_ConfigToGadgets
- */
 static IPTR ListviewsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_ListviewsPData *data = INST_DATA(cl, obj);
     STRPTR spec;
 
+/* Backgrounds */
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_List);
+    set(data->input_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_ReadList);
+    set(data->readonly_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_ListCursor);
+    set(data->active_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_ListSelect);
+    set(data->selected_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Background_ListSelCur);
+    set(data->activeselected_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
+
+/* Frames */
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Frame_InputList);
+    set(data->input_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_Frame_ReadList);
+    set(data->readonly_popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
+
+/* Font */
+    setstring(data->fonts_normal_string, (IPTR)FindFont(MUICFG_Font_List));
+    setstring(data->fonts_fixed_string, (IPTR)FindFont(MUICFG_Font_Fixed));
+
+/* Sliders */
+    setslider(data->smooth_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Listview_SmoothVal));
+    setslider(data->fonts_leading_slider,
+	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		       MUICFG_Listview_Font_Leading));
+
+/* Checkmarks */
+    setcheckmark(data->smooth_checkmark,
+		 DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+			  MUICFG_Listview_Smoothed));
+/* Cycles */
+    setcycle(data->multi_cycle,
+	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		      MUICFG_Listview_Multi));
+
+    setcycle(data->refresh_cycle,
+	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		      MUICFG_Listview_Refresh));
+
     return 1;    
 }
 
 
-/*
- * MUIM_Settingsgroup_ConfigToGadgets
- */
 static IPTR ListviewsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_ListviewsPData *data = INST_DATA(cl, obj);
     STRPTR str;
+
+/* Font */
+    str = getstring(data->fonts_normal_string);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_List, (IPTR)str);
+
+    str = getstring(data->fonts_fixed_string);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Fixed, (IPTR)str);
+
+/* Frames */
+    str = (STRPTR)xget(data->input_popframe, MUIA_Framedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_InputList,
+	     (IPTR)str);
+
+    str = (STRPTR)xget(data->readonly_popframe, MUIA_Framedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFramespec, MUICFG_Frame_ReadList,
+	     (IPTR)str);
+
+/* Backgrounds */
+    str = (STRPTR)xget(data->input_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_List,
+	     (IPTR)str);
+
+    str = (STRPTR)xget(data->readonly_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ReadList,
+	     (IPTR)str);
+
+    str = (STRPTR)xget(data->active_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ListCursor,
+	     (IPTR)str);
+
+    str = (STRPTR)xget(data->selected_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ListSelect,
+	     (IPTR)str);
+
+    str = (STRPTR)xget(data->activeselected_popimage, MUIA_Imagedisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_ListSelCur,
+	     (IPTR)str);
+
+/* Sliders */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_SmoothVal,
+	     xget(data->smooth_slider, MUIA_Numeric_Value));
+
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Font_Leading,
+	     xget(data->fonts_leading_slider, MUIA_Numeric_Value));
+
+/* Checkmarks */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Smoothed,
+	     xget(data->smooth_checkmark, MUIA_Selected));
+
+/* Cycles */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Multi,
+	     xget(data->multi_cycle, MUIA_Cycle_Active));
+
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Listview_Refresh,
+	     xget(data->refresh_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }
