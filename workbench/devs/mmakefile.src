@@ -13,12 +13,10 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-fs-complete : workbench-fs
 #MM- workbench-fs : \
-#MM    workbench-fs-ffs \
 #MM    workbench-fs-pipefs \
 #MM    workbench-fs-fdsk \
 #MM    workbench-fs-zero
 #MM- workbench-fs-quick : \
-#MM    workbench-fs-ffs-quick \
 #MM    workbench-fs-pipefs-quick \
 #MM    workbench-fs-fdsk-quick \
 #MM    workbench-fs-zero-quick
@@ -36,11 +34,6 @@ include $(TOP)/config/make.cfg
 %build_module_macro mmake=workbench-devs-ramdrive \
   modname=ramdrive modtype=device \
   initfile=ramdrive_device \
-  uselibs="arossupport amiga rom"
-
-%build_module_macro mmake=workbench-fs-ffs \
-  modname=ffs modtype=handler \
-  initfile=ffs_handler \
   uselibs="arossupport amiga rom"
 
 %build_module_macro mmake=workbench-fs-pipefs \
