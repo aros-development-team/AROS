@@ -83,6 +83,7 @@
 		}
 	}
 	DEBUG_FREEMENUS(bug("FreeMenus: Free MenuMem 0x%lx\n", p));
+	FreeVec(p);
     }
     DEBUG_FREEMENUS(bug("FreeMenus: done\n"));
 
