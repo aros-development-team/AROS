@@ -52,8 +52,8 @@ If NOT EXISTS SYS:Fonts/_fixfonts_called
   echo "blah" >SYS:Fonts/_fixfonts_called
 EndIf
 
-SetDefaultFont ttcourier 14
-SetDefaultFont arial 13 SCREEN
+;SetDefaultFont ttcourier 14
+;SetDefaultFont arial 13 SCREEN
 
 ; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
 
@@ -72,6 +72,9 @@ Assign FDSK: SYS:DiskImages
 ;Mount FDSK0:
 
 ; Install a Workbench screen background pattern.
+; The wait is there to make sure, that IPrefs has installed new fonts
+; before screen is opened
+Wait 1
 Run <NIL: >NIL: screenpattern
 
 PATH SYS:Demos ADD QUIET
