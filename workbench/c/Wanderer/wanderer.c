@@ -722,11 +722,11 @@ struct MUI_CustomClass *CL_Wanderer;
  Open the execute window. Simliar to above but you can also set the
  command. Called when item is openend
 **************************************************************************/
-void execute_open_with_command(char *cd, char *contents)
+void execute_open_with_command(BPTR cd, char *contents)
 {
     BPTR lock;
     
-    if (cd != NULL) lock = Lock(cd, ACCESS_READ);
+    if (cd != NULL) lock = cd;
     else            lock = Lock("RAM:", ACCESS_READ);
         
     OpenWorkbenchObject
@@ -737,7 +737,7 @@ void execute_open_with_command(char *cd, char *contents)
         TAG_DONE
     );
     
-    if (lock != NULL) UnLock(lock);
+    if (cd == NULL) UnLock(lock);
 }
 
 /**************************************************************************
@@ -747,7 +747,7 @@ void execute_open_with_command(char *cd, char *contents)
 **************************************************************************/
 VOID execute_open(STRPTR *cdptr)
 {
-    execute_open_with_command(cdptr != NULL ? *cdptr : NULL, NULL);
+    execute_open_with_command(cdptr != NULL ? Lock(*cdptr, SHARED_LOCK) : NULL, NULL);
 }
 
 /*******************************/
@@ -1030,26 +1030,21 @@ AROS_UFH3(void, hook_func_action,
 	} 
         else if (ent->type == ST_FILE)
 	{
-	    BPTR newwd, oldwd;
-	    STRPTR pathname;
+	    BPTR newwd, oldwd, file;
 
 	    /* Set the CurrentDir to the path of the executable to be started */
-	    pathname = StrDup(ent->filename);
-	    PathPart(pathname)[0] = 0;
-	    newwd = Lock(pathname,SHARED_LOCK);
-	    if(newwd)
+	    file = Lock(ent->filename, SHARED_LOCK);
+	    if(file)
 	    {
+		newwd = ParentDir(file);
 		oldwd = CurrentDir(newwd);
-	    }
-            if (!OpenWorkbenchObject(ent->filename, TAG_DONE))
-            {
-		execute_open_with_command(pathname, FilePart(ent->filename));
-            }
-	    FreeVec(pathname);
-	    if(newwd)
-	    {
+		if (!OpenWorkbenchObject(ent->filename, TAG_DONE))
+		{
+		    execute_open_with_command(newwd, FilePart(ent->filename));
+		}
 		CurrentDir(oldwd);
 		UnLock(newwd);
+		UnLock(file);
 	    }
 	}
     } else
