@@ -59,17 +59,17 @@ SHARED_LD	:= $(CROSSCOMPILE)gcc
 KERNEL_LD	:= $(CROSSCOMPILE)gcc
 GENMAP		:= -Wl,-Map -Xlinker
 
-TARGET_CFLAGS	:= -Wall -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -D__string_h -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__
-TARGET_AFLAGS	:= -Wall -x assembler-with-cpp -mc68000
+TARGET_CFLAGS	:= -Wall -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -D__string_h -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -fomit-frame-pointer
+TARGET_AFLAGS	:= -Wall -x assembler-with-cpp -mc68000 --short-branchs
 TARGET_LDFLAGS	:= -nostartfiles -nostdlib -Wl,-r
-STATIC_CFLAGS	:=
-STATIC_AFLAGS	:=
+STATIC_CFLAGS	:= -Wa,-mc68000
+STATIC_AFLAGS	:= -mc68000
 STATIC_LDFLAGS	:= 
 SHARED_CFLAGS	:= -fPIC
 SHARED_AFLAGS	:= 
 SHARED_LDFLAGS	:= -Wl,-rpath,./lib -shared
 KERNEL_LDFLAGS	:= -Wl,-rpath,./lib
-DEBUG_CFLAGS	:= -Wall -g -O2 -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000
+DEBUG_CFLAGS	:= -Wall -g -O2 -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000 -Wa,-mc68000
 DEBUG_AFLAGS	:= 
 DEBUG_LDFLAGS	:= -g
 
