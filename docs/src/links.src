@@ -6,7 +6,6 @@
 \begin{itemize}
 \item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} with
 contains the latest binary release for linux as
-
 \begin{itemize}
 \item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.tgz}
 (\fileinfo{$(TOP)/dist/AROS-linux-i386.tgz})
@@ -41,8 +40,6 @@ and the source of the beta as
 (\fileinfo{$(TOP)/dist/AROSdev-current.readme}).
 \end{itemize}
 \begin{new}{13.7.1997}
-Since AROS contains too many files now, the lha version of the archive is no
-longer available.
 \end{new}
 
 \item AROS in
