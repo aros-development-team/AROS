@@ -15,7 +15,7 @@
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_ListData
+struct MUI_ListviewData
 {
     int dummy;
 };
@@ -23,9 +23,9 @@ struct MUI_ListData
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
+static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ListData   *data;
+    struct MUI_ListviewData   *data;
     struct TagItem  	    *tag, *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -46,9 +46,9 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 #ifndef _AROS
-__asm IPTR List_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+__asm IPTR Listview_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
-AROS_UFH3S(IPTR,List_Dispatcher,
+AROS_UFH3S(IPTR,Listview_Dispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
@@ -57,7 +57,7 @@ AROS_UFH3S(IPTR,List_Dispatcher,
     switch (msg->MethodID)
     {
 	case OM_NEW:
-	    return List_New(cl, obj, (struct opSet *)msg);
+	    return Listview_New(cl, obj, (struct opSet *)msg);
 	    
     }
     
@@ -67,10 +67,10 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUI_List_desc = { 
-    MUIC_List, 
-    MUIC_Area, 
-    sizeof(struct MUI_ListData), 
-    (void*)List_Dispatcher 
+const struct __MUIBuiltinClass _MUI_Listview_desc = { 
+    MUIC_Listview, 
+    MUIC_Group, 
+    sizeof(struct MUI_ListviewData), 
+    (void*)Listview_Dispatcher 
 };
 
