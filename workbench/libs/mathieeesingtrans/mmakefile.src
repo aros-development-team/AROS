@@ -26,11 +26,14 @@ FUNCS := \
     ieeesptanh \
     ieeesptieee
 
-#MM- workbench-libs-mathieeesingtrans : includes
+#MM workbench-libs-mathieeesingtrans-includes : \
+#MM    kernel-exec-includes \
+#MM    kernel-mathieeesingbas-includes \
+#MM    includes-copy
 
-%build_module_macro mmake=workbench-libs-mathieeesingtrans \
-  modname=mathieeesingtrans modtype=library \
-  files=$(FILES) funcs=$(FUNCS) \
-  conffile=lib.conf uselibs=rom
+%build_module mmake=workbench-libs-mathieeesingtrans \
+    modname=mathieeesingtrans modtype=library \
+    files="mathieeesingtrans_init $(FILES) $(FUNCS)" \
+    uselibs=rom
 
 %common

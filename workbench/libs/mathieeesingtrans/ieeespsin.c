@@ -50,7 +50,7 @@
 
 AROS_LH1(float, IEEESPSin,
     AROS_LHA(float, y, D0),
-    struct MathIeeeSingTransBase *, MathIeeeSingTransBase, 6, MathIeeeSingTrans
+    struct Library *, MathIeeeSingTransBase, 6, MathIeeeSingTrans
 )
 {
     AROS_LIBFUNC_INIT

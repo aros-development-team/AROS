@@ -61,7 +61,7 @@
 
 AROS_LH1(float, IEEESPLog10,
     AROS_LHA(float, y, D0),
-    struct MathIeeeSingTransBase *, MathIeeeSingTransBase, 21, MathIeeeSingTrans
+    struct Library *, MathIeeeSingTransBase, 21, MathIeeeSingTrans
 )
 {
     AROS_LIBFUNC_INIT
@@ -106,11 +106,7 @@ AROS_LH1(float, IEEESPLog10,
         Exponent |= Sign;
     }
     
-    ld_M = intern_IEEESPLd
-    ( 
-        (struct MathIeeeSingTransBase *) MathIeeeSingTransBase,
-        (y & IEEESPMantisse_Mask) | 0x3f000000 
-    );
+    ld_M = intern_IEEESPLd((y & IEEESPMantisse_Mask) | 0x3f000000);
     
     /*               
                       ld M + E

@@ -45,18 +45,9 @@
 extern struct ExecBase * SysBase;
 extern struct MathIeeeSingBasBase * MathIeeeSingBasBase;
 
-struct MathIeeeSingTransBase
-{
-    struct Library     LibNode;
-    BPTR               mist_SegList;
-    
-    struct ExecBase *  mist_SysBase;
-};
-
-
 /* Internal prototypes */
 
-LONG intern_IEEESPLd(struct MathIeeeSingTransBase * MathIeeeSingTransBase, ULONG fnum);
+LONG intern_IEEESPLd(ULONG fnum);
 LONG intern_IEEESPisodd(LONG fnum);
 
 
