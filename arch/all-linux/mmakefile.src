@@ -23,7 +23,7 @@ CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
 #MM	    kernel-expansion-linklib \
 #MM	    kernel-filesys \
 #MM	    kernel-boopsi-linklib \
-#MM	    kernel-hidd-linux-$(CPU) \
+#MM	    kernel-hidd-linux \
 #MM	    kernel-expansion-linklib \
 #MM	    kernel-timer-linklib \
 #MM	    kernel-battclock-linux
