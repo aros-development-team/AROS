@@ -187,8 +187,8 @@ static int Group_GetNumVisibleChildren(struct MUI_GroupData *data, struct MinLis
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
-		num_visible_children--;
+	if (IS_HIDDEN(child))
+	    num_visible_children--;
     }
     return num_visible_children;
 }
@@ -1083,7 +1083,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     if (data->flags & GROUP_SAME_WIDTH) {
 	cstate = (Object *)children->mlh_Head;
 	while ((child = NextObject(&cstate))) {
-	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	    if (IS_HIDDEN(child))
 		continue;
 	    maxminwidth = MAX(maxminwidth, _minwidth(child));
 	}
@@ -1097,7 +1097,7 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     while ((child = NextObject(&cstate))) {
 	WORD minwidth;
 
-	if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
+	if (IS_HIDDEN(child))
 	    continue;
 	if (data->flags & GROUP_SAME_WIDTH)
 	{
@@ -1153,7 +1153,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     {
 	cstate = (Object *)children->mlh_Head;
 	while ((child = NextObject(&cstate))) {
-	    if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
+	    if (IS_HIDDEN(child))
 		continue;
 	    maxminheight = MAX(maxminheight, _minheight(child));
 	}
@@ -1164,8 +1164,9 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	if (IS_HIDDEN(child))
 	    continue;
+
 	if (data->flags & GROUP_SAME_HEIGHT)
 	    _minheight(child) = MIN(maxminheight, w0_maxheight(child));
 	tmp.MinHeight += _minheight(child);
@@ -1210,7 +1211,7 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 
 	j = 0;
 	while ((child = NextObject(&cstate))) {
-	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	    if (IS_HIDDEN(child))
 		continue;
 	    if (data->flags & GROUP_SAME_HEIGHT)
 	    {
@@ -1267,7 +1268,7 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	/* process all childs to get childs on a column */
 	cstate = (Object *)children->mlh_Head;
 	while ((child = NextObject(&cstate))) {
-	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	    if (IS_HIDDEN(child))
 		continue;
 	    ++j;
 	    if (((j - 1) % data->columns) != i)
@@ -2133,7 +2134,7 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
 	    LONG cwidth;
 	    LONG cheight;
 
-	    if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
+	    if (IS_HIDDEN(child))
 		continue;
 	    /* max width for childs in this column */
 	    col_width = col_infos[j].dim;
