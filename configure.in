@@ -123,6 +123,9 @@ case "$host_os" in
 	    *m68k*)
 		aros_host_cpu="m68k"
 		;;
+	    *powerpc*)
+	    	aros_host_cpu="ppc"
+		;;
 	    *)
 		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
 		aros_host_cpu="$host_cpu"
@@ -361,6 +364,13 @@ case "$target_os" in
 		aros_object_format="elf_i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
+		aros_default_wbdepth=8
+		;;
+	    *powerpc*)
+	    	aros_target_cpu="ppc"
+		aros_object_format="elf32-powerpc"
+		aros_flavour="emulation"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
 		aros_default_wbdepth=8
 		;;
 	    *)
