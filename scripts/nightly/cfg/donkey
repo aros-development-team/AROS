@@ -1,4 +1,3 @@
-CFG_PACKAGES=(sources sdk hosted i386-pc documentation)
-CFG_CONTRIB_TYPE=i386-pc
+CFG_PACKAGES=(sources sdk contrib hosted i386-pc documentation)
 
 CFG_CC=gcc-3.2
