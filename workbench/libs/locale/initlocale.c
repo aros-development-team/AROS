@@ -57,8 +57,6 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n",il));
 
-    bug("OOO\n");
-
     while(lang == NULL && i < 10)
     {
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
@@ -72,7 +70,6 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 		AROS_UFCA(ULONG, 7, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
     #else
-    asm __volatile__ ("NOP\n;");
     if( NULL != lName &&
     	    AROS_CALL4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
 		AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
@@ -82,7 +79,6 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
                 struct LocaleBase *, LocaleBase) != 0)
     #endif
 	{
-    asm __volatile__ ("NOP\n;");
     	    #warning FIXME: watch out for buffer overflows here!
 	    strcpy(fileBuf, lName);
 	    strcat(fileBuf, ".language");
@@ -146,11 +142,9 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	    
     	    /* If it is still no good, then we have no hope */
 	}
-	bug("I = %d\n", i);
 	i++;
     }
 
-    bug("FOOO\n");
     if (lang == NULL)
     {
     	strcpy(il->LanguageName, defLocale.loc_LanguageName);
