@@ -42,9 +42,17 @@ AROS_UFH3(VOID, FileDisplayHook,
     bufstrptr = (STRPTR)hook->h_Data;
     
     *dharray ++ = ead->ed_Name;
-    snprintf(bufstrptr, DISPHOOKBUFSIZE, "%d", ead->ed_Size);
-    *dharray = bufstrptr;
-
+    if (ead->ed_Type < 0)
+    {
+    	/* file */
+  	snprintf(bufstrptr, DISPHOOKBUFSIZE, "%d", ead->ed_Size);
+  	*dharray = bufstrptr;
+	
+    } else {
+    	/* dir */
+	*dharray = "Directory";
+    }
+    
     return;
 }
 
@@ -122,9 +130,9 @@ AROS_UFH3(VOID, FileDestructHook,
     AROS_UFHA(struct ExAllData *,	ead,		A1)
 )
 {
-        
+    
     FreePooled(pool, ead->ed_Name, strlen(ead->ed_Name) + 1);
-    FreePooled(pool, ead->ed_Comment, strlen(ead->ed_Comment) + 1);
+    if (ead->ed_Comment) FreePooled(pool, ead->ed_Comment, strlen(ead->ed_Comment) + 1);
     
     FreePooled(pool, ead, sizeof (struct ExAllData));
     
