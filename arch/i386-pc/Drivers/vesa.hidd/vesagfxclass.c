@@ -67,7 +67,7 @@ STATIC OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{aHidd_PixFmt_BitsPerPixel, 0}, /* 11 */
 	{aHidd_PixFmt_StdPixFmt,    0}, /* 12 */
 	{aHidd_PixFmt_CLUTShift,    0}, /* 13 */
-	{aHidd_PixFmt_CLUTMask,     0x0f}, /* 14 */
+	{aHidd_PixFmt_CLUTMask,     0}, /* 14 */
 	{aHidd_PixFmt_BitMapType,   0}, /* 15 */
 	{TAG_DONE, 0UL }
     };
