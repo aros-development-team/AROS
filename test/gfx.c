@@ -18,7 +18,7 @@ struct NewWindow MyWin =
   };
 
 struct GfxBase * GfxBase;
-struct LayersBase * LayersBase;
+struct Library * LayersBase;
 
 void installClipRegion(struct Window * w)
 {
