@@ -730,24 +730,27 @@ void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WOR
 {
     struct Screen *scr = win->WScreen;
     
-    if (*width > scr->Width) *width = scr->Width;
-    if (*height > scr->Height) *height = scr->Height;
-
     if (*width < 1) *width = 1;
     if (*height < 1) *height = 1;
-    
-    if ((*left + *width) > scr->Width)
+
+    if (!(win->WScreen->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
     {
-    	*left = scr->Width - *width;
-    } else if (*left < 0) {
-    	*left = 0;
-    }
-    
-    if ((*top + *height) > scr->Height)
-    {
-    	*top = scr->Height - *height;
-    } else if (*top < 0) {
-    	*top = 0;
+	if (*width > scr->Width) *width = scr->Width;
+	if (*height > scr->Height) *height = scr->Height;
+
+	if ((*left + *width) > scr->Width)
+	{
+    	    *left = scr->Width - *width;
+	} else if (*left < 0) {
+    	    *left = 0;
+	}
+
+	if ((*top + *height) > scr->Height)
+	{
+    	    *top = scr->Height - *height;
+	} else if (*top < 0) {
+    	    *top = 0;
+	}
     }
 }
 

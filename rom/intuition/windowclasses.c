@@ -112,7 +112,36 @@ struct dragbar_data
 
 /***********************************************************************************/
 
-static void drawwindowframe(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+static void cliprectfill(struct Screen *scr, struct RastPort *rp,
+    	    	    	 WORD x1, WORD y1, WORD x2, WORD y2,
+			 struct IntuitionBase *IntuitionBase)
+{
+    WORD scrx2 = scr->Width  - 1;
+    WORD scry2 = scr->Height - 1;
+    
+    /* Check if inside at all */
+    
+    if (!((x1 > scrx2) || (x2 < 0) || (y1 > scry2) || (y2 < 0)))
+    {
+    	if (x1 < 0) x1 = 0;
+	if (y1 < 0) y1 = 0;
+	if (x2 > scrx2) x2 = scrx2;
+	if (y2 > scry2) y2 = scry2;
+	
+	/* paranoia */
+	
+	if ((x2 >= x1) && (y2 >= y1))
+	{
+	    RectFill(rp, x1, y1, x2, y2);
+	}	
+    }
+    
+}
+
+/***********************************************************************************/
+
+static void drawwindowframe(struct Screen *scr, struct RastPort *rp,
+    	    	    	    WORD x1, WORD y1, WORD x2, WORD y2,
 			    struct IntuitionBase *IntuitionBase)
 {
     /* this checks should not be necessary, but just to be sure */
@@ -136,14 +165,14 @@ static void drawwindowframe(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD
     if (((x2 - x1) < (DWF_THICK_X * 2)) ||
         ((y2 - y1) < (DWF_THICK_Y * 2)))
     {
-    	RectFill(rp, x1, y1, x2, y2);
+    	cliprectfill(scr, rp, x1, y1, x2, y2, IntuitionBase);
     }
     else
     {
-    	RectFill(rp, x1, y1, x2, y1 + DWF_THICK_Y - 1);
-	RectFill(rp, x2 - DWF_THICK_X + 1, y1 + DWF_THICK_Y, x2, y2);
-	RectFill(rp, x1, y2 - DWF_THICK_Y + 1, x2 - DWF_THICK_X, y2);
-	RectFill(rp, x1, y1 + DWF_THICK_Y, x1 + DWF_THICK_X - 1, y2 - DWF_THICK_Y);
+    	cliprectfill(scr, rp, x1, y1, x2, y1 + DWF_THICK_Y - 1, IntuitionBase);
+	cliprectfill(scr, rp, x2 - DWF_THICK_X + 1, y1 + DWF_THICK_Y, x2, y2, IntuitionBase);
+	cliprectfill(scr, rp, x1, y2 - DWF_THICK_Y + 1, x2 - DWF_THICK_X, y2, IntuitionBase);
+	cliprectfill(scr, rp, x1, y1 + DWF_THICK_Y, x1 + DWF_THICK_X - 1, y2 - DWF_THICK_Y, IntuitionBase);
     }
 }
 
@@ -282,7 +311,8 @@ D(bug("locking all layers\n"));
 	    	    
 	    SetDrMd(data->rp, COMPLEMENT);
 	    
-	    drawwindowframe(data->rp
+	    drawwindowframe(w->WScreen
+	    	    	    , data->rp
 			    , data->curleft
 			    , data->curtop
 			    , data->curleft + w->Width  - 1
@@ -334,33 +364,35 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			new_left = scr->MouseX - data->mousex;
 			new_top  = scr->MouseY - data->mousey;
 
-			if (new_left < 0)
+    	    	        if (!(scr->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
 			{
-			    data->mousex += new_left;
-			    new_left = 0;
-			}
+			    if (new_left < 0)
+			    {
+				data->mousex += new_left;
+				new_left = 0;
+			    }
 
-			if (new_top < 0)
-			{
-			    data->mousey += new_top;
-			    new_top = 0;
-			}
+			    if (new_top < 0)
+			    {
+				data->mousey += new_top;
+				new_top = 0;
+			    }
 
-			if (new_left + w->Width > scr->Width)
-			{
-			    LONG correct_left;
-			    correct_left = scr->Width - w->Width; /* align to screen border */
-			    data->mousex += new_left - correct_left;
-			    new_left = correct_left;
-			}
-			if (new_top + w->Height > scr->Height)
-			{
-			    LONG correct_top;
-			    correct_top = scr->Height - w->Height; /* align to screen border */
-			    data->mousey += new_top - correct_top;
-			    new_top = correct_top;
-			}
-
+			    if (new_left + w->Width > scr->Width)
+			    {
+				LONG correct_left;
+				correct_left = scr->Width - w->Width; /* align to screen border */
+				data->mousex += new_left - correct_left;
+				new_left = correct_left;
+			    }
+			    if (new_top + w->Height > scr->Height)
+			    {
+				LONG correct_top;
+				correct_top = scr->Height - w->Height; /* align to screen border */
+				data->mousey += new_top - correct_top;
+				new_top = correct_top;
+			    }
+    	    	    	}
 
 			if (data->curleft != new_left || data->curtop != new_top)
 			{
@@ -371,7 +403,8 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    		    if (data->isrendered)
 			    {
 				/* Erase old frame */
-				drawwindowframe(data->rp
+				drawwindowframe(w->WScreen
+				    	    	, data->rp
 						, data->curleft
 						, data->curtop
 						, data->curleft + w->Width  - 1
@@ -386,7 +419,8 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 			    /* Rerender the window frame */
 
-			    drawwindowframe(data->rp
+			    drawwindowframe(w->WScreen
+			    	    	   , data->rp
 					   , data->curleft
 					   , data->curtop
 					   , data->curleft + w->Width  - 1
@@ -438,7 +472,8 @@ static IPTR dragbar_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	SetDrMd(data->rp, COMPLEMENT);
 
 	/* Erase old frame */
-	drawwindowframe(data->rp
+	drawwindowframe(w->WScreen
+	    	       , data->rp
 		       , data->curleft
 		       , data->curtop
 		       , data->curleft + w->Width  - 1
@@ -661,7 +696,8 @@ D(bug("locking all layers\n"));
 	    
 	    SetDrMd(data->rp, COMPLEMENT);
 	    
-	    drawwindowframe(data->rp
+	    drawwindowframe(w->WScreen
+	    	    	    , data->rp
 			    , w->LeftEdge
 			    , w->TopEdge
 			    , w->LeftEdge + data->width  - 1
@@ -732,13 +768,15 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			  new_height = w->MaxHeight;
 
 
-                	/* limit dimensions so window fits on the screen */		
-			if (new_width + w->LeftEdge > scr->Width)
-			  new_width = scr->Width - w->LeftEdge;
+    	    	    	if (!(w->WScreen->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
+			{
+                	    /* limit dimensions so window fits on the screen */		
+			    if (new_width + w->LeftEdge > scr->Width)
+			      new_width = scr->Width - w->LeftEdge;
 
-			if (new_height + w->TopEdge > scr->Height)
-			  new_height = scr->Height - w->TopEdge;
-
+			    if (new_height + w->TopEdge > scr->Height)
+			      new_height = scr->Height - w->TopEdge;
+    	    	    	}
 
 			if (data->height != new_height || data->width != new_width)
 			{
@@ -747,7 +785,8 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    		    if (data->isrendered)
 			    {
 				/* Erase old frame */
-				drawwindowframe(data->rp
+				drawwindowframe(w->WScreen
+				    	    	, data->rp
 						, w->LeftEdge
 						, w->TopEdge
 						, w->LeftEdge + data->width  - 1
@@ -762,7 +801,8 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 			    /* Rerender the window frame */
 
-  			    drawwindowframe(data->rp
+  			    drawwindowframe(w->WScreen
+			    	    	   , data->rp
 					   , w->LeftEdge
 					   , w->TopEdge
 					   , w->LeftEdge + data->width  - 1
@@ -814,7 +854,8 @@ static IPTR sizebutton_goinactive(Class *cl, Object *o, struct gpGoInactive *msg
 	SetDrMd(data->rp, COMPLEMENT);
 
 	/* Erase old frame */
-	drawwindowframe(data->rp
+	drawwindowframe(w->WScreen
+	    	       , data->rp
 		       , w->LeftEdge
 		       , w->TopEdge
 		       , w->LeftEdge + data->width  - 1

@@ -653,24 +653,27 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	    	WORD dx = am->iam_MoveWindow.dx;
 		WORD dy = am->iam_MoveWindow.dy;
 		
-		/* correct dx, dy if necessary */
-		
-		if ((targetwindow->LeftEdge + targetwindow->Width + dx) > targetwindow->WScreen->Width)
+		if (!(targetscreen->LayerInfo.Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
 		{
-		    dx = targetwindow->WScreen->Width - (targetwindow->LeftEdge + targetwindow->Width);
-		} else if ((targetwindow->LeftEdge + dx) < 0)
-		{
-		    dx = -targetwindow->LeftEdge;
-		}
+		    /* correct dx, dy if necessary */
 
-		if ((targetwindow->TopEdge + targetwindow->Height + dy) > targetwindow->WScreen->Height)
-		{
-		    dy = targetwindow->WScreen->Height - (targetwindow->TopEdge + targetwindow->Height);
-		} else if ((targetwindow->TopEdge + dy) < 0)
-		{
-		    dy = -targetwindow->TopEdge;
-		}
-		
+		    if ((targetwindow->LeftEdge + targetwindow->Width + dx) > targetwindow->WScreen->Width)
+		    {
+			dx = targetwindow->WScreen->Width - (targetwindow->LeftEdge + targetwindow->Width);
+		    } else if ((targetwindow->LeftEdge + dx) < 0)
+		    {
+			dx = -targetwindow->LeftEdge;
+		    }
+
+		    if ((targetwindow->TopEdge + targetwindow->Height + dy) > targetwindow->WScreen->Height)
+		    {
+			dy = targetwindow->WScreen->Height - (targetwindow->TopEdge + targetwindow->Height);
+		    } else if ((targetwindow->TopEdge + dy) < 0)
+		    {
+			dy = -targetwindow->TopEdge;
+		    }
+    	    	}
+				
 		if (dx || dy)
 		{   
 		    LOCK_REFRESH(targetscreen);
