@@ -14,10 +14,14 @@
  * 
  */
 
+struct MUI_ImageSpec_intern;
+
 typedef struct ZTextChunk {
     struct MinNode node; /* embedded node */
     char                 *str;
-//    struct MUI_ImageSpec *image;
+    CONST_STRPTR          spec;
+    struct MUI_ImageSpec_intern *image;
+    Object               *obj; /* Area subclass, see List_CreateImage */
     LONG                  dripen;
     UBYTE                 style;
 
