@@ -927,7 +927,7 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
 static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 				    struct ZuneFrameGfx *zframe, WORD frame_top)
 {
-    APTR textdrawclip = NULL;
+    APTR textdrawclip = (APTR)-1;
     struct Region *region;
     int tx;
     int tw, frame_height;
@@ -984,7 +984,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 	    
     zframe->draw(muiRenderInfo(obj), _left(obj), frame_top, _width(obj), frame_height);
 
-    if (region && textdrawclip != NULL)
+    if (region && textdrawclip != (APTR)-1)
     {
 	MUI_RemoveClipRegion(muiRenderInfo(obj),textdrawclip);
 /*		DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
