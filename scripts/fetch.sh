@@ -3,6 +3,7 @@
 # Copyright © 2004, The AROS Development Team. All rights reserved.
 # $Id$
 
+
 usage()
 {
     error "Usage: $1 -a archive [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
@@ -18,12 +19,16 @@ fetch()
 
     local ret=true
     
+    trap 'rm -f "$destination/$file".tmp; exit' SIGINT SIGKILL SIGTERM
+
     case $protocol in
         http | ftp)    
-            if ! wget -c "$origin/$file" -O "$destination/$file"; then
-	        rm -f "$destination/$file"
+            if ! wget -c "$origin/$file" -O "$destination/$file".tmp; then
                 ret=false
+	    else
+	        mv "$destination/$file".tmp "$destination/$file"
 	    fi
+            rm -f "$destination/$file".tmp
 	    ;;
 	"")
 	    cp "$origin/$file" "$destination/$file";;
@@ -31,6 +36,8 @@ fetch()
 	    echo "Unknown protocol type \`$protocol'"
 	    ret=false;;
     esac
+    
+    trap SIGINT SIGKILL SIGTERM
     
     $ret
 }
