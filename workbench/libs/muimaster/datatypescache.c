@@ -73,7 +73,7 @@ VOID MyBltMaskBitMap( CONST struct BitMap *srcBitMap, LONG xSrc, LONG ySrc, stru
 }
 #endif
 
-__asm void HookFunc_BltMask(register __a0 struct Hook *hook, register __a1 struct LayerHookMsg *msg, register __a2 struct RastPort *rp )
+ASM void HookFunc_BltMask(REG(a0, struct Hook *hook), REG(a1,struct LayerHookMsg *msg), REG(a2,struct RastPort *rp ))
 {
   struct BltMaskHook *h = (struct BltMaskHook*)hook;
 
@@ -82,7 +82,9 @@ __asm void HookFunc_BltMask(register __a0 struct Hook *hook, register __a1 struc
   LONG offsetx = h->srcx + msg->offsetx - h->destx;
   LONG offsety = h->srcy + msg->offsety - h->desty;
 
+#ifdef __SASC
 	putreg(REG_A4,(long)hook->h_Data);
+#endif
 
   MyBltMaskBitMap( h->srcBitMap, offsetx, offsety, rp->BitMap, msg->bounds.MinX, msg->bounds.MinY, width, height, &h->maskBitMap);
 }
@@ -103,7 +105,9 @@ VOID MyBltMaskBitMapRastPort( struct BitMap *srcBitMap, LONG xSrc, LONG ySrc, st
 		
 	/* Initialize the hook */
 	hook.hook.h_Entry = (HOOKFUNC)HookFunc_BltMask;
+#ifdef __SASC
 	hook.hook.h_Data = (void*)getreg(REG_A4);
+#endif
 	hook.srcBitMap = srcBitMap;
 	hook.srcx = xSrc;
 	hook.srcy = ySrc;
@@ -390,7 +394,7 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
 
 	struct BackFillInfo *BFI = (struct BackFillInfo *)Hook; // get the data for our backfillhook
 
-#if !defined(__MAXON__) && !defined(__AROS__)
+#ifdef __SASC
 	putreg(12,(long)Hook->h_Data);
 #endif
 
@@ -445,7 +449,7 @@ void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1,
 	{
 	    LONG depth = GetBitMapAttr(bitmap,BMA_DEPTH);
 	    bfi->Hook.h_Entry = (ULONG (*)())WindowPatternBackFillFunc;
-#if !defined(__MAXON__) && !defined(__AROS__)
+#ifdef __SASC
 	    bfi->Hook.h_Data = (APTR)getreg(12);	/* register A4 */
 #endif
 
