@@ -35,7 +35,7 @@
 #include <aros/debug.h>
 
 void serialunit_receive_data();
-void serialunit_write_more_data();
+ULONG serialunit_write_more_data();
 
 UWORD get_ustcnt(struct HIDDSerialUnitData * data);
 BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
@@ -47,16 +47,22 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
 #define MAXSPEED 230400
 
 static inline void serial_out_w(struct HIDDSerialUnitData * data, 
-                                int offset, 
-                                int value)
+                                ULONG offset, 
+                                UWORD value)
 {
 	WREG_W((data->baseaddr+offset)) = value;
 }
 
-static inline unsigned int serial_in_w(struct HIDDSerialUnitData * data,
-                                       int offset)
+static inline UWORD serial_in_w(struct HIDDSerialUnitData * data,
+                                ULONG offset)
 {
 	return RREG_W(data->baseaddr+offset);
+}
+
+static inline UBYTE serial_in_b(struct HIDDSerialUnitData * data,
+                                ULONG offset)
+{
+	return RREG_B(data->baseaddr+offset);
 }
 
 /*************************** Classes *****************************/
@@ -101,7 +107,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
     
 		data->datalength = 8;
 		data->parity     = FALSE;
-		data->baudrate   = 0; /* will be initialize in set_baudrate() */
+		data->baudrate   = SER_DEFAULT_BAUDRATE;
 		data->unitnum    = unitnum;
 
 		CSD(cl->UserData)->units[data->unitnum] = data;
@@ -111,9 +117,13 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 		/* Init UART - See 14-10 of dragonball documentation */
 		serial_out_w(data,USTCNT, UEN | RXEN);
 		dummy = RREG_W(URX1);
+
+		/* Now set the baudrate */
+		set_baudrate(data, data->baudrate);
+
+		/* Set the interrupts and the levels according to the baudrate */
 		serial_out_w(data, USTCNT, (get_ustcnt(data) | UEN | RXEN | TXEN));
 
-		set_baudrate(data, SER_DEFAULT_BAUDRATE);
 	} /* if (obj) */
 
 	ReturnPtr("SerialUnit::New()", OOP_Object *, obj);
@@ -278,8 +288,10 @@ BOOL serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialU
 BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
 	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+
+	UWORD code = serial_in_w(data, UTX);
+	serial_out_w(data, UTX, code | SEND_BREAK);
 	
-	data = NULL;
 
 	return SerErr_LineErr;
 }
@@ -371,14 +383,13 @@ AROS_UFH3(void, serialunit_receive_data,
 {
 	struct HIDDSerialUnitData * data = iD;
 	int len = 0;
-	UWORD urx;
 	UBYTE buffer[READBUFFER_SIZE];
 
 	/*
 	** Read the data from the port ...
 	*/
 	while (1) {
-		urx = serial_in_w(data, URX);
+		UWORD urx = serial_in_w(data, URX);
 		if (urx & DATA_READY)
 			buffer[len++] = (UBYTE)urx;
 		else
@@ -393,7 +404,7 @@ AROS_UFH3(void, serialunit_receive_data,
 		data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 }
 
-AROS_UFH3(void, serialunit_write_more_data,
+AROS_UFH3(ULONG, serialunit_write_more_data,
    AROS_UFHA(APTR, iD, A1),
    AROS_UFHA(APTR, iC, A5),
    AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -644,10 +655,42 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 #define SysBase (hw->sysBase)
 #define csd ((struct class_static_data *)(irq->h_Data))
 
+
+static void common_serial_int_handler(HIDDT_IRQ_Handler * irq, 
+                                      HIDDT_IRQ_HwInfo * hw,
+                                      ULONG unitnum)
+{
+	UWORD code = 0;
+	if (csd->units[unitnum])
+		code = serial_in_b(csd->units[unitnum], UBAUD) << 8;
+	
+	if (code & (FIFO_EMPTY|FIFO_HALF|DATA_READY)) {
+		if (csd->units[unitnum]) {
+			serialunit_receive_data(csd->units[unitnum],
+			                        NULL,
+			                        SysBase);
+		}
+	}
+
+	code = 0;
+	if (csd->units[unitnum])
+		code = serial_in_w(csd->units[unitnum], UTX);
+
+	if (code & (FIFO_EMPTY|FIFO_HALF|TX_AVAIL)) {
+		if (csd->units[unitnum]) {
+			if (0 == serialunit_write_more_data(csd->units[unitnum], NULL, SysBase)) {
+				
+			}
+		}
+	}
+}
+
 void serial_int_uart1(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
+	common_serial_int_handler(irq, hw, 0);
 }
 
 void serial_int_uart2(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
+	common_serial_int_handler(irq, hw, 1);
 }
