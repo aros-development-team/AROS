@@ -60,6 +60,9 @@
     {
 	LONG NewCoord =  JOIN_XY_COORDS( CurVSprite -> X, CurVSprite -> Y );
 
+        if (0 != CurVSprite->VSBob)
+          CurVSprite->VSBob->Flags &= ~BDRAWN;
+
 	if (Coord <= NewCoord)
 	{
 	    /* sorting is not necessary for this VSprite */
