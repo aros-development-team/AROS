@@ -232,6 +232,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct GadgetInfo 	    *gi = &iihdata->GadgetInfo;
     BOOL    	    	    reuse_event = FALSE;
     struct Window   	    *w;
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+    WORD    	    	    pointerposx, pointerposy;
+    BOOL    	    	    call_setpointerpos = FALSE;
+#endif
  
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
 
@@ -758,8 +762,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
 			}
 
+    	    	    #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
 			SetPointerPos(ie->ie_X, ie->ie_Y);
-
+    	    	    #else
+		    	pointerposx = ie->ie_X;
+			pointerposy = ie->ie_Y;
+			call_setpointerpos = TRUE;
+		    #endif
+		    
 			iihdata->LastMouseX = ie->ie_X;
 			iihdata->LastMouseY = ie->ie_Y;
 
@@ -1254,6 +1264,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
     D(bug("Outside pollingloop\n"));
 
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+    if (call_setpointerpos)
+    {
+    	SetPointerPos(pointerposx, pointerposy);
+    }
+#endif
     
     {
         struct InputEvent *last_ie = NULL;
