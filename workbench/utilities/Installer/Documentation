@@ -417,7 +417,7 @@ Execute an AmigaDOS script.
       [(noreq)]
 )
   Checks if a <name> exists.
-  Returns 0 if non-existant, 1 for a file or 2 for a directory.
+  Returns 0 if non-existent, 1 for a file or 2 for a directory.
   If (noreq) is specified, then no requester will pop up if
   <name> should be on a not-mounted volume.
 
