@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  1998/11/07 10:41:21  nlorentz
+    Various small bugfixes
+
     Revision 1.5  1998/10/20 16:44:17  hkiel
     Amiga Research OS
 
@@ -154,6 +157,9 @@ struct intConUnit
 /* The conFlags */
 #define CF_DELAYEDDISPOSE	(1L << 0)
 #define CF_DISPOSE		(1L << 1)
+
+/* Determining whether linefeed (LF==LF+CR) mode is on */
+#define CF_LF_MODE_ON		(1L << 2)
 
 /* Message passed from console input handler to console device task */
 #define MSGBUFSIZE 200

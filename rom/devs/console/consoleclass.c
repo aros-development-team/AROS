@@ -15,8 +15,8 @@
 #include "consoleif.h"
 #include "console_gcc.h"
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
@@ -183,6 +183,37 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
     ReturnVoid("Console::Down");
 }
 
+/***************************
+**  Console::DoCommand()  **
+***************************/
+static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
+{
+    EnterFunc(bug("Console::DoCommand(cmd=%d)\n", msg->Command));
+    switch (msg->Command)
+    {
+    	case C_SET_LF_MODE:
+	     D(bug("Set LF mode ON\n"));
+	     /* LF==LF+CR */
+	D(bug("conflags: %d\n", ICU(o)->conFlags));
+	     ICU(o)->conFlags |= CF_LF_MODE_ON;
+	D(bug("conflags: %d\n", ICU(o)->conFlags));
+	     
+	     break;
+
+    	case C_RESET_NEWLINE_MODE:
+	     /* LF==LF */
+	     D(bug("Set LF mode OFF\n"));
+	     ICU(o)->conFlags &= ~CF_LF_MODE_ON;
+	     break;
+	     
+	   
+	     
+    }
+    
+    ReturnVoid("Console::DoCommand");
+}
+
+/********* Console class dispatcher **********************************/
 AROS_UFH3(static IPTR, dispatch_consoleclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
@@ -212,6 +243,11 @@ AROS_UFH3(static IPTR, dispatch_consoleclass,
     case M_Console_Down:
     	console_down(cl, o, (struct P_Console_Down *)msg);
 	break;
+	
+    case M_Console_DoCommand:
+    	console_docommand(cl, o, (struct P_Console_DoCommand *)msg);
+	break;
+	
     default:
     	retval = DoSuperMethodA(cl, o, msg);
 	break;

@@ -90,20 +90,22 @@ ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
 ** string2command()  **
 **********************/
 
-#define STR_SLM	"\0x32\0x30\0x68" /* Set linefeed mode    */
-#define STR_RNM "\0x32\0x30\0x6C" /* Set reset mode 	  */
-#define STR_DSR "\0x36\0x6E"	  /* device status report */
 
+static const UBYTE str_slm[] = {0x32, 0x30, 0x68 }; /* Set linefeed mode    */
+static const UBYTE str_rnm[] = {0x32, 0x30, 0x6C }; /* Reset newline mode   */
+static const UBYTE str_dsr[] = {0x36, 0x6E };       /* device status report */
+
+#define NUM_SPECIAL_COMMANDS 3
 static const struct special_cmd_descr
 {
     BYTE	Command;
     STRPTR	CommandStr;
     BYTE	Length; 
-} scd_tab[] = {
+} scd_tab[NUM_SPECIAL_COMMANDS] = {
 
-    {C_SET_LF_MODE, 		STR_SLM, sizeof (STR_SLM) },
-    {C_RESET_NEWLINE_MODE,	STR_RNM, sizeof (STR_RNM) },
-    {C_DEVICE_STATUS_REPORT, 	STR_DSR, sizeof (STR_DSR) }
+    {C_SET_LF_MODE, 		(STRPTR)str_slm, 3 },
+    {C_RESET_NEWLINE_MODE,	(STRPTR)str_rnm, 3 },
+    {C_DEVICE_STATUS_REPORT, 	(STRPTR)str_dsr, 2 }
 
 };
 
@@ -114,8 +116,9 @@ static BOOL string2command( BYTE 	*cmd_ptr
 		, UBYTE 		*p_tab
 		, struct ConsoleBase 	*ConsoleDevice)
 {
-    UBYTE *write_str = *writestr_ptr,
-    	*csi_str = NULL;
+    UBYTE *write_str = *writestr_ptr;
+
+    UBYTE *csi_str = write_str;
     
     BOOL found = FALSE,
     	 csi   = FALSE;
@@ -150,15 +153,19 @@ static BOOL string2command( BYTE 	*cmd_ptr
 	{
 	    BYTE i;
 	    /* Look for some special commands */
-	    for (i = sizeof (scd_tab) - 1; ((i >= 0) && (!found)) ; i -- )
+	    for (i = 0; ((i < NUM_SPECIAL_COMMANDS) && (!found)) ; i ++ )
 	    {
+	    	D(bug("str_end; %p, csi_str %p\n", str_end, csi_str));
 	    	/* Check whether command sequence is longer than input */
-	    	if (str_end < csi_str + scd_tab[i].Length)
+	    	if (str_end < csi_str + scd_tab[i].Length - 1)
 	    	    continue; /* if so, check next command sequence */
-	    	    
-		/* Coomand match ? */    
+	    	
+		D(bug("Comparing for special command %d, idx %d, cmdstr %s, len %d, csistr %s \n", 
+			scd_tab[i].Command, i, scd_tab[i].CommandStr, scd_tab[i].Length, csi_str));
+ 		/* Command match ? */    
 	    	if (0 == strncmp(csi_str, scd_tab[i].CommandStr, scd_tab[i].Length))
 		{
+		    D(bug("Special command found\n"));
 	    	    csi_str += scd_tab[i].Length;
 	    	    *cmd_ptr = scd_tab[i].Command;
 	    	
@@ -271,7 +278,7 @@ static BOOL string2command( BYTE 	*cmd_ptr
     /* Return pointer to first character AFTER last interpreted char */
     *writestr_ptr = write_str;
     
-    ReturnBool ("WriteToConsole", found);
+    ReturnBool ("StringToCommand", found);
 }
 
 

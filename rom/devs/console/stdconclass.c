@@ -16,8 +16,8 @@
 #include "console_gcc.h"
 #include "consoleif.h"
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 struct stdcondata
@@ -76,7 +76,7 @@ static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
 **  StdCon::DoCommand()  **
 **************************/
 
-VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
+static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 
 {
 
@@ -134,15 +134,27 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
     case C_LINEFEED:
     	D(bug("Got linefeed command\n"));
     	Console_Down(o, 1);
+	
+	/* Check for linefeed mode (LF or LF+CR) */
+	
+	D(bug("conflags: %d\n", ICU(o)->conFlags));
+	if (ICU(o)->conFlags & CF_LF_MODE_ON)
+	{
+	    UBYTE dummy;
+	    /* Do carriage return */
+	    Console_DoCommand(o, C_CARRIAGE_RETURN, &dummy);
+	}
     	break;
 
 /*    case C_VTAB:
     	break;
 */
     case C_CARRIAGE_RETURN:
+    	
     	/* Goto start of line */
     	CU(o)->cu_XCP = CHAR_XMIN(o);
-    	Console_Down(o, 1);
+    	CU(o)->cu_XCCP = CHAR_XMIN(o);
+/*     	Console_Down(o, 1); */
     	break;
 
 
@@ -219,6 +231,9 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
     case C_:
     	break;
 */
+    default:
+    	DoSuperMethodA(cl, o, (Msg)msg);
+	break;
     }
 
     ReturnVoid("StdCon::DoCommand");
