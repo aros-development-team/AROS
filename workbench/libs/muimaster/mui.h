@@ -346,11 +346,6 @@ typedef enum {
     MPEN_COUNT      = 8,
 } MPen;
 
-typedef struct {
-    MPen fg;
-    MPen bg;
-} MPenCouple;
-
 typedef enum {
     PST_MUI = 'm',
     PST_CMAP = 'p',
