@@ -26,8 +26,6 @@
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
-extern struct ExecBase * SysBase;
-
 #define CLIPRECTS_OUTSIDE_OF_SHAPE 1
 
 #define SCROLLSIGN +
@@ -262,44 +260,6 @@ void _FreeExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
     FreeMem(li->LayerInfo_extra, sizeof(struct LayerInfo_extra));
 
     li->LayerInfo_extra = NULL;
-}
-
-/*
- * Initialize LayerInfo_extra and save the current environment.
- */
-ULONG _InitLIExtra(struct Layer_Info * li,
-                   struct LayersBase * LayersBase)
-{
-    struct LayerInfo_extra *lie = li->LayerInfo_extra;
-
-    LockLayerInfo(li);
-
-    /*
-     * Initialize the ResourceList contained in the LayerInfo_extra.
-     * This list is used to keep track of Layers' resource (memory/
-     * bitmaps/etc.) allocations.
-     */
-    NewList((struct List *)&lie->lie_ResourceList);
-
-    /*
-     * Save the current environment, so we can drop back in case of
-     * an error.
-     */
-    // return setjmp(lie->lie_JumpBuf);
-    return 0;
-}
-
-void ExitLIExtra(struct Layer_Info * li,
-                 struct LayersBase * LayersBase)
-{
-    struct LayerInfo_extra *lie = li->LayerInfo_extra;
-
-    /* Free all resources associated with the layers. */
-//    FreeLayerResources(li, TRUE);
-
-    UnlockLayerInfo(li);
-
-    longjmp(lie->lie_JumpBuf, 1);
 }
 
 /*
@@ -1061,9 +1021,6 @@ int _BackupPartsOfLayer(struct Layer * l,
 {
   struct ClipRect * newcr;
   struct Region *r, * clipregion;
-
-if (hide_region == l->VisibleRegion)
-  kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
 
   /*
    * Uninstall clipping region. This causes all pixels to
