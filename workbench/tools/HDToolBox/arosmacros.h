@@ -51,10 +51,6 @@
 #else
 #	include <aros/macros.h>
 #	include <aros/asmcall.h>
-#	define AROS_WORD2LE(x) x
-#	define AROS_LONG2LE(x) x
-#	define AROS_LE2WORD(x) x
-#	define AROS_LE2LONG(x) x
 #endif
 
 #endif /* AROSMACROS_H */
