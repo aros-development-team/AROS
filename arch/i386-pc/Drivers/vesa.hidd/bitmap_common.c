@@ -552,6 +552,90 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 	    
 }
 
+/*** BitMap::BlitColorExpansion() **********************************************/
+static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+{
+    struct BitmapData  *data = OOP_INST_DATA(cl, o);
+    HIDDT_Pixel     	fg, bg, pix;
+    ULONG   	    	cemd;
+    LONG    	    	x, y;
+    ULONG   	    	mod, bpp;
+    UBYTE   	       *mem;
+    BOOL    	    	opaque;
+    
+    fg = GC_FG(msg->gc);
+    bg = GC_BG(msg->gc);
+    cemd = GC_COLEXP(msg->gc);
+
+    bpp = data->bytesperpix;
+    
+    mem = data->VideoData + msg->destY * data->bytesperline + msg->destX * bpp;
+    mod = data->bytesperline - msg->width * bpp;
+    
+    opaque = (cemd & vHidd_GC_ColExp_Opaque) ? TRUE : FALSE;
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+        for (x = 0; x < msg->width; x ++)
+        {
+	    ULONG is_set;
+
+	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+	    if (is_set)
+	    {
+		pix = fg;
+	    }
+	    else if (opaque)
+	    {
+		pix = bg;
+	    }
+	    else
+	    {
+		mem += bpp;
+		continue;
+	    }
+
+    	    switch(bpp)
+	    {
+		case 1:
+   	    	    *mem++ = pix;
+		    break;
+
+		case 2:
+		    *((UWORD *)mem)++ = pix;
+    	    	    break;
+
+		case 3:
+		#if AROS_BIG_ENDIAN
+		    *((UBYTE *)mem)++ = pix >> 16;
+		    *((UBYTE *)mem)++ = pix >> 8;
+		    *((UBYTE *)mem)++ = pix;
+		#else
+		    *((UBYTE *)mem)++ = pix;
+		    *((UBYTE *)mem)++ = pix >> 8;
+		    *((UBYTE *)mem)++ = pix >> 16;
+		#endif
+		    break;
+
+		case 4:
+		    *((ULONG *)mem)++ = pix;
+		    break;
+
+	    }
+	    
+	} /* for (each x) */
+
+    	mem += mod;
+
+    } /* for (each y) */
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    LOCK_FRAMEBUFFER(XSD(cl));    
+    vesaRefreshArea(data, msg->destX, msg->destY, msg->destX + msg->width - 1, msg->destY + msg->height - 1);
+    UNLOCK_FRAMEBUFFER(XSD(cl));    
+#endif
+}
+
 /*** BitMap::Get() *******************************************/
 
 static VOID MNAME(get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
