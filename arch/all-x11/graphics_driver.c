@@ -339,7 +339,7 @@ UX11
 	    char *pattern;
 	    int y,z;
 
-	    depth = rp->BitMap->Depth;	/* Number of bitplanes used for AreaPtrn */
+	    depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);	/* Number of bitplanes used for AreaPtrn */
 	    width = 16;
 	    height = 1>>(rp->AreaPtSz);	/* AreaPtSz is negative */
 	    
