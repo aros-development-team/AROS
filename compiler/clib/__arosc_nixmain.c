@@ -1,4 +1,4 @@
-/*
+/* 
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
@@ -127,7 +127,12 @@ BOOL clone_vars(struct MinList *old_vars)
        be a public function for this?  */
     ForeachNode(&me->pr_LocalVars, lv)
     {
-        size_t copyLength = strlen(lv->lv_Node.ln_Name) + 1 + sizeof(struct LocalVar);
+        size_t copyLength;
+	
+        if (lv->lv_Len == 0)
+	    continue;
+	
+        copyLength = strlen(lv->lv_Node.ln_Name) + 1 + sizeof(struct LocalVar);
 
         newVar = (struct LocalVar *)AllocVec(copyLength, MEMF_PUBLIC);
         if (newVar == NULL)
@@ -139,7 +144,8 @@ BOOL clone_vars(struct MinList *old_vars)
 	memcpy(newVar, lv, copyLength);
 	newVar->lv_Node.ln_Name = (char *)newVar + sizeof(struct LocalVar);
         newVar->lv_Value        = AllocMem(lv->lv_Len, MEMF_PUBLIC);
-        if (newVar->lv_Value == NULL && lv->lv_Len > 0)
+
+        if (newVar->lv_Value == NULL)
         {
 	    FreeVec(newVar);
 	    free_vars(&l);
