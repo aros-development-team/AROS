@@ -674,19 +674,83 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
     ReturnVoid("driver_BltBitMapRastPort");
 }
 
-#define SWAP(a,b)       { a ^= b; b ^= a; a ^= b; }
 
 void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
 {
 
-    CorrectDriverData (rp, GfxBase);
+    if (!CorrectDriverData (rp, GfxBase))
+    	return;
+	
+    
+    
 }
 
-void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
+void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LONG rx, LONG ry,
 		struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+
+    LONG   x = rx, y = 0;     /* ellipse points */
+
+    /* intermediate terms to speed up loop */
+    LONG t1 = rx * rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG t4 = ry * ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG t7 = rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG d2 = (t1 >> 1) - t8 + t5;
+    EnterFunc(bug("driver_DrawEllipse()"));
+    
+    if (!CorrectDriverData (rp, GfxBase))
+    	ReturnVoid("driver_DrawEllipse (No driverdata)");
+
+    while (d2 < 0)                  /* til slope = -1 */
+    {
+        /* draw 4 points using symmetry */
+        WritePixel(rp, center_x + x, center_y + y);
+        WritePixel(rp, center_x + x, center_y - y);
+        WritePixel(rp, center_x - x, center_y + y);
+        WritePixel(rp, center_x - x, center_y - y);
+    
+        y++;            /* always move up here */
+        t9 = t9 + t3;
+        if (d1 < 0)     /* move straight up */
+        {
+            d1 = d1 + t9 + t2;
+            d2 = d2 + t9;
+        }
+        else            /* move up and left */
+        {
+            x--;
+            t8 = t8 - t6;
+            d1 = d1 + t9 + t2 - t8;
+            d2 = d2 + t9 + t5 - t8;
+        }
+    }
+
+    do                              /* rest of top right quadrant */
+    {
+        /* draw 4 points using symmetry */
+        WritePixel(rp, center_x + x, center_y + y);
+        WritePixel(rp, center_x + x, center_y - y);
+        WritePixel(rp, center_x - x, center_y + y);
+        WritePixel(rp, center_x - x, center_y - y);
+    
+        x--;            /* always move left here */
+        t8 = t8 - t6;
+        if (d2 < 0)     /* move up and left */
+        {
+            y++;
+            t9 = t9 + t3;
+            d2 = d2 + t9 + t5 - t8;
+        }
+        else            /* move straight left */
+        {
+            d2 = d2 + t5 - t8;
+        }
+    } while (x >= 0);
+
+	
+    ReturnVoid("driver_DrawEllipse");
 }
 
 #define NUMCHARS(tf) ((tf->tf_HiChar - tf->tf_LoChar) + 2)
@@ -911,6 +975,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   ULONG i;
   BYTE * Plane;
   LONG penno;
+  BOOL found_offscreen = FALSE;
   
   if(!CorrectDriverData (rp, GfxBase))
 	return ((ULONG)-1L);
@@ -965,7 +1030,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
        draw it to the bitmap, otherwise we have to draw it into the
        bitmap of the cliprect. 
     */
-    while (NULL != CR)
+    while ((NULL != CR) && (!found_offscreen))
     {
       if (x >= (CR->bounds.MinX - XRel) &&
           x <= (CR->bounds.MaxX - XRel) &&
@@ -994,6 +1059,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
+	   
+	  found_offscreen = TRUE;
            
           bm = CR -> BitMap;
            
@@ -1041,6 +1108,10 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   }
 
  /* get the pen for this rastport */
+ penno = -1L;
+ 
+ if (found_offscreen)
+ {
 
   pen_Mask = 1;
   penno = 0;
@@ -1059,6 +1130,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     pen_Mask = pen_Mask << 1;
   } /* for */
   
+ } /* if (found inside offsecreen cliprect) */
   /* if there was a layer I have to unlock it now */
 
 /*!!!
@@ -1083,6 +1155,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
   ULONG i;
   BYTE * Plane; 
   struct gfx_driverdata *dd;
+  BOOL found_offscreen = FALSE;
 
   struct TagItem bm_tags[] = 
   {
@@ -1149,7 +1222,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
        draw it to the bitmap, otherwise we have to draw it into the
        bitmap of the cliprect. 
     */
-    while (NULL != CR)
+    while ((NULL != CR) && (!found_offscreen)) 
     {
       if (x >= (CR->bounds.MinX - XRel) &&
           x <= (CR->bounds.MaxX - XRel) &&
@@ -1181,6 +1254,9 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
+	   
+	  found_offscreen = TRUE;
+	  
           bm = CR -> BitMap;
            
           Width = GetBitMapAttr(bm, BMA_WIDTH);
@@ -1238,11 +1314,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
   }
 
-  /* nlorentz: before writing to the bitmap manually,
-     check that it is not a HIDD bitmap. 
-     HIDD bitmaps have no planes in them
-  */
-  if ((bm->Flags & BMF_AROS_DISPLAYED) == 0)
+  if (found_offscreen)
   {
 
     /* get the pen for this rastport */
@@ -1272,7 +1344,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
       pen_Mask = pen_Mask << 1;
     } /* for */
   
-  } /* if (not a hidd bitmap) */
+  } /* if (bitmap found as offscreen bitmap) */
 
 
   /* if there was a layer I have to unlock it now */
@@ -2529,10 +2601,32 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
     ReturnInt("driver_BltBitMap", LONG, planecnt);
 }
 
+/*********** driver_BltClear()  *******************************/
+/* !!!! This will break programs that uses this function
+  to clear visble areas 
+*/
+
 void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags,
     struct GfxBase * GfxBase)
 {
-    
+  /* this will do the job on *any* system
+   * without using the blitter
+   */
+  ULONG count, end;
+
+  if (0 != (flags & 2) )
+    /* use row/bytesperrow */
+    bytecount = (bytecount & 0xFFFF) * (bytecount >> 16);
+
+  /* we have an even number of BYTES to clear here */
+  /* but use LONGS for clearing the block */
+  count = 0;
+  end = bytecount >> 2;
+  while(count < end)
+    ((ULONG *)memBlock)[count++] = 0;
+  /* see whether we had an odd number of WORDS */
+  if (0 != (bytecount & 2))
+    ((UWORD *)memBlock)[(count * 2)] = 0;
 }
 
 void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
@@ -3247,16 +3341,15 @@ static VOID pattern_to_buf(struct pattern_info *pi
     /* x_src, y_src is the coordinates int the layer. */
     LONG y;
     struct RastPort *rp = pi->rp;
-    
-    ULONG drmd = GetDrMd(rp);
     ULONG apen = GetAPen(rp);
     ULONG bpen = GetBPen(rp);
+    
+    ULONG drmd = GetDrMd(rp);
     UBYTE *apt = (UBYTE *)rp->AreaPtrn;
     
-    ULONG pattern_height = 1L << ABS(rp->AreaPtSz);
 
-    EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %p)\n"
-    			, pi, x_src, y_src, xsize, ysize, buf ));
+    EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %d, %d, %p)\n"
+    			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize, buf ));
 			
 
     if ((drmd & JAM2) == 0)
@@ -3296,80 +3389,14 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	
 		if (apt)
 		{
-		    ULONG idx, mask;
-		    
-		    /* This rp has area pattern. Get pattern offset.
-		       Patterns are allways 16 bits wide.
-		    */
-
-		    
-		    idx = COORD_TO_BYTEIDX((x + x_src) & 0x0F, (y + y_src) & (pattern_height - 1), 2);
-		    mask = XCOORD_TO_MASK(x + x_src);
-		    
-/*		    D(bug("idx: %d, mask: %d\n", idx, mask));
-*/		    
-		    /* Mono- or multicolor ? */
-		    if (rp->AreaPtSz > 0)
-		    {
-		    	/* mono */
-			set_pixel = apt[idx] & mask;
-			if (drmd & INVERSVID)
-			    set_pixel = ((set_pixel != 0) ? 0UL : 1UL );
-			
-			if (set_pixel)
-			{
-			    /* Use FGPen to render */
-			    pixval = apen;
-			}
-			else
-			{
-			    if (drmd & JAM2)
-			    {
-			    	pixval = bpen;
-				set_pixel = 1UL;
-			    }
-			    else
-			    {   
-			        /* Do not set pixel */
-			    	set_pixel = 0UL;
-			    }
-			
-			}
-
-			
-		    }
-		    else
-		    {
-		        UBYTE i, depth;
-			ULONG plane_size, pen_mask;
-			UBYTE *plane;
-			
-			plane_size = (/* bytesperrow = */ 2 ) * pattern_height;
-			depth = pi->dest_depth;
-			plane = apt;
-			
-		    	/* multicolored pattern, get pixel from all planes */
-			for (i = 0; i < depth; i ++)
-			{
-
-			    pen_mask <<= 1;
-	
-			    if ((plane[idx] & mask) != 0)
-				pixval |= pen_mask;
-			}
-			
-			set_pixel = TRUE;
-		   }
-		    
+		
+		   set_pixel = pattern_pen(rp, x + x_src, y + y_src, apen, bpen, &pixval, GfxBase);
 		   if (set_pixel)
 		   {
 		   	D(bug(" s"));
 		    	*buf = pixval;
 		   }
-		   else
-/*		   	*buf ++ =  Keep old value */
-
-			
+		    
 		   D(bug("(%d, %d): %d", x, y, *buf));
 		   buf ++;
 		}
@@ -3400,13 +3427,11 @@ static VOID bltpattern_amiga(struct pattern_info *pi
     /* x_src, y_src is the coordinates int the layer. */
     LONG y;
     struct RastPort *rp = pi->rp;
-    
-    ULONG drmd = GetDrMd(rp);
     ULONG apen = GetAPen(rp);
     ULONG bpen = GetBPen(rp);
+    
     UBYTE *apt = (UBYTE *)rp->AreaPtrn;
     
-    ULONG pattern_height = 1L << ABS(rp->AreaPtSz);
     UBYTE dest_depth = GetBitMapAttr(dest_bm, BMA_DEPTH);
     
     for (y = 0; y < ysize; y ++)
@@ -3439,70 +3464,8 @@ static VOID bltpattern_amiga(struct pattern_info *pi
 	
 		if (apt)
 		{
-		    ULONG idx, mask;
-		    
-		    /* This rp has area pattern. Get pattern offset.
-		       Patterns are allways 16 bits wide.
-		    */
 
-		    idx = COORD_TO_BYTEIDX((x + x_src) & 0x0F, (y + y_src) & (pattern_height - 1), 2);
-		    mask = XCOORD_TO_MASK(x + x_src);
-		    
-/*		    D(bug("idx: %d, mask: %d\n", idx, mask));
-*/		    
-		    /* Mono- or multicolor ? */
-		    if (rp->AreaPtSz > 0)
-		    {
-		    	/* mono */
-			set_pixel = apt[idx] & mask;
-			if (drmd & INVERSVID)
-			    set_pixel = ((set_pixel != 0) ? 0UL : 1UL );
-			
-			if (set_pixel)
-			{
-			    /* Use FGPen to render */
-			    pixval = apen;
-			}
-			else
-			{
-			    if (drmd & JAM2)
-			    {
-			    	pixval = bpen;
-				set_pixel = 1UL;
-			    }
-			    else
-			    {   
-			        /* Do not set pixel */
-			    	set_pixel = 0UL;
-			    }
-			
-			}
-
-			
-		    }
-		    else
-		    {
-		        UBYTE i, depth;
-			ULONG plane_size, pen_mask;
-			UBYTE *plane;
-			
-			plane_size = (/* bytesperrow = */ 2 ) * pattern_height;
-			depth = pi->dest_depth;
-			plane = apt;
-			
-		    	/* multicolored pattern, get pixel from all planes */
-			for (i = 0; i < depth; i ++)
-			{
-
-			    pen_mask <<= 1;
-	
-			    if ((plane[idx] & mask) != 0)
-				pixval |= pen_mask;
-			}
-			
-			set_pixel = TRUE;
-		   }
-		    
+		   set_pixel = pattern_pen(rp, x + x_src, y + y_src, apen, bpen, &pixval, GfxBase);
 		   if (set_pixel)
 		   {
 		    	setbitmappixel(dest_bm, x + x_dest, y + y_dest, pixval, dest_depth, 0xFF);
@@ -3614,19 +3577,19 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
 		    
 D(bug("amiga2hidd_fast(xmin=%d, ymin=%d, destx=%d, desty=%d, w=%d, h=%d)\n"
 			, xMin, yMin 
-			, intersect.MinX, intersect.MaxX
+			, intersect.MinX, intersect.MinY
 			, intersect.MaxX - intersect.MinX + 1
 			, intersect.MaxY - intersect.MinY + 1
 		    ));
 		    amiga2hidd_fast( (APTR) &pi
 			, xMin, yMin 
 			, BM_OBJ(bm)
-			, intersect.MinX, intersect.MaxX
+			, intersect.MinX, intersect.MinY
 			, intersect.MaxX - intersect.MinX + 1
 			, intersect.MaxY - intersect.MinY + 1
 			, pattern_to_buf
 		    );
-		    
+D(bug("Done putting to hidd\n"));		    
 		}
 		else
 		{
@@ -3956,7 +3919,7 @@ static VOID bltmask_amiga(struct bltmask_info *bmi
     
 
     EnterFunc(bug("bltmask_amiga(%p, %d, %d, %d, %d, %d, %d, %p)\n"
-    			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize));
+    			, bmi, x_src, y_src, x_dest, y_dest, xsize, ysize));
 
     src_depth  = GetBitMapAttr(bmi->srcbm, BMA_DEPTH);
     dest_depth = GetBitMapAttr(destbm,     BMA_DEPTH);
