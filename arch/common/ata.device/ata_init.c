@@ -82,6 +82,8 @@ static struct __bus {
     {0x1e8, 11},
 };
 
+#define SysBase (unit->au_Base->ata_SysBase)
+
 /* Add a bootnode using expansion.library */
 static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 {
@@ -165,7 +167,7 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 
     return FALSE;
 }
-
+#undef SysBase
 
 /*
     Here shall we start. Make function static as it shouldn't be visible from

@@ -26,6 +26,7 @@
 
 #undef LIBBASE
 #define LIBBASE (unit->au_Base)
+#define SysBase (LIBBASE->ata_SysBase)
 
 /*
     Prepare PRD entries for sectors transfer. This function assumes, that noone
