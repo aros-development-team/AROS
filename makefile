@@ -391,3 +391,10 @@ cleandep:
 # END_DESC{target}
 docs: .FORCE
 	cd $(TOP)/docs/src ; make
+
+# BEGIN_DESC{target}
+# \item{mmake} Build MetaMake tool
+#
+# END_DESC{target}
+mmake : mmake.c
+	$(CC) $(CFLAGS) $< -o $@
