@@ -62,6 +62,8 @@
 #  include <aros/debug.h>
 #endif
 
+#include <libcore/base.h>
+
 /****************************************************************************************/
 
 #define OUTBUFFERSIZE 1025
@@ -197,22 +199,20 @@ struct MyMidiNode{
 };
 
 struct CamdBase_intern{
-    struct Library		library;
-    struct ExecBase		*sysbase;
-    BPTR			seglist;
+    struct LibHeader		lh;
 
-    struct UtilityBase		*utilitybase;
-	struct DosLibrary *dosbase;
+/*    struct UtilityBase		*utilitybase;
+    struct DosLibrary *dosbase;*/
 
-	struct Drivers *drivers;
-	struct List mymidinodes;
-	struct List midiclusters;
+    struct Drivers *drivers;
+    struct List mymidinodes;
+    struct List midiclusters;
 
 
-	/* Lock semaphore. Obtained Shared before reading various lists and
-	   obtained exclusive before adding/deleting to/from various lists. */
+    /* Lock semaphore. Obtained Shared before reading various lists and
+       obtained exclusive before adding/deleting to/from various lists. */
 
-	struct SignalSemaphore *CLSemaphore;
+    struct SignalSemaphore *CLSemaphore;
 
 };
 
@@ -239,15 +239,16 @@ struct CamdBase_intern{
 
 #  undef CB
 #  define CB(b)		((struct CamdBase_intern *)b)
-
+/*
 #  undef SysBase
-#  define SysBase		(((struct CamdBase_intern *)CamdBase)->sysbase)
+#  define SysBase		(((struct LibHeader *)CamdBase)->lh_SysBase)
 
 #  undef UtilityBase
 #  define UtilityBase	(((struct CamdBase_intern *)CamdBase)->utilitybase)
 
 #  undef DOSBase
 #  define DOSBase	(((struct CamdBase_intern *)CamdBase)->dosbase)
+*/
 
 /****************************************************************************************/
 

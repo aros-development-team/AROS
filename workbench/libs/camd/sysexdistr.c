@@ -12,9 +12,6 @@
 #include "camd_intern.h"
 
 
-#undef SysBase
-
-
 /* Sysex receiving is a bit of a mess... (and not very much tested either) -ksvalast- */
 
 int GetSysXLen(UBYTE *buffer){

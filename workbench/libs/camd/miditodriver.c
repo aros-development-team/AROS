@@ -16,9 +16,6 @@
 
 #include "camd_intern.h"
 
-#undef SysBase
-#undef DOSBase
-
 #ifndef min
 #define min(a,b) ((a)<=(b)?(a):(b))
 #endif
