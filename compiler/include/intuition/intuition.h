@@ -464,17 +464,17 @@ struct Requester
    BuildEasyRequest(). It describes the general look of the requester. */
 struct EasyStruct
 {
-    ULONG   es_StructSize;   /* Should be sizeof(struct EasyStruct). Note
-                                that this size may change, if you update the
-                                includes! Do not use absolute values as
-                                the size of pointers may vary on different
-                                platforms! */
-    ULONG   es_Flags;        /* None defined, yet */
-    UBYTE * es_Title;        /* Text in the titlebar of the requester */
-    UBYTE * es_TextFormat;   /* Text in requester (printf-style). The
-                                arguments needed for that string are the
-                                fourth paramter to EasyRequestArgs() */
-    UBYTE * es_GadgetFormat; /* Text of the gadgets, separated by |'s */
+    ULONG        es_StructSize;   /* Should be sizeof(struct EasyStruct). Note
+                                     that this size may change, if you update the
+                                     includes! Do not use absolute values as
+                                     the size of pointers may vary on different
+                                     platforms! */
+    ULONG        es_Flags;        /* None defined, yet */
+    CONST_STRPTR es_Title;        /* Text in the titlebar of the requester */
+    CONST_STRPTR es_TextFormat;   /* Text in requester (printf-style). The
+                                     arguments needed for that string are the
+                                     fourth paramter to EasyRequestArgs() */
+    CONST_STRPTR es_GadgetFormat; /* Text of the gadgets, separated by |'s */
 };
 
 			    /***** Window *****/
