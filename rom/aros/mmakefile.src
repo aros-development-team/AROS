@@ -1,88 +1,25 @@
-# $Id$
+#   $Id$
+#
+#   Generate aros.library
+#
 include $(TOP)/config/make.cfg
 
-# BEGIN_DESC{makefile}
-# This is the mmakefile for aros.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
-
-# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+MODNAME := aros
+MODTYPE := library
 USER_INCLUDES := -I.
 
-# BEGIN_DESC{localmakevar}
-# \item{LIBNAME} The lowercase name of the library (without the extension).
-#	This is used to help derive some filenames.
-#
-# \item{ULIBNAME} This also contains the library name, but with the correct
-#	case (the same as found in the library base name).
-#
-# \item{OSMODULE} The name of the file which is created when compiling to
-#	a target with module files. In this library it is expansion.library.
-#
-# \item{FILES} This is a list of all files (without the .c) that
-#	contain internal functions of the library. You do not need to include
-#	the library init, function-table or end files.
-#
-# \item{FUNCTIONS} This is a list of all the functions that make
-#	up the library. The mmakefile will strip all the files in
-#	this list for which a special CPU dependant version exists.
-#	This list is concatenated into the file functions.c before
-#	compilation for a speed boost.
-# END_DESC{localmakevar}
+FILES := 
+FUNCS := arosinquirea mutex 
 
-LIBNAME  := aros
-ULIBNAME := Aros
+MAKE_SHLIB := $(SHARED_AROS)
 
-OSMODULE  := aros.library
-FILES	  :=
-FUNCTIONS := arosinquirea mutex
+# This metatarget is so that the xxx-module and xxx-linklib both require
+# the same things to be built before running those targets.
+#MM- kernel-aros : setup includes linklibs
 
-# BEGIN_DESC{localmakevar}
-# \item{DEPLIBS} List of link libraries that are passed to the linker. These
-#	should be without the path, as this will be affixed later. You do
-#	not need to include your own lib here.
-# END_DESC{localmakevar}
-
-ifeq ("$(FLAVOUR)","native")
-DEPLIBS := arosc
-else
-DEPLIBS :=
-endif
-
-# BEGIN_DESC{localmakevar}
-# This is where the machine dependant magic comes in. The directories under the
-# $(TOP)/config subtree will create lists of files which they wish to be used.
-# These lists are used to add files to the link, and to prevent the compilation
-# of other files.
-#
-# We create versions of the file lists for use with creating the function
-# table, which needs all of the files listed.
-# END_DESC{localmakevar}
-
-ALL_FILES := $(FILES)
-ALL_FUNCTIONS := $(FUNCTIONS)
-%prepare_replace rom/aros
-%filter_replace FILES
-%filter_replace FUNCTIONS
-
-# Set up for shared library compilation.
-ifeq ("$(SHARED_AROS)","yes")
-SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
-endif
-
-%prepare_shlib aros $(SHARED_AROS)
-
-%genromlib_finline
-
-#MM kernel-aros-linklib : setup includes kernel-aros-$(ARCH)-$(CPU)
-kernel-aros-linklib : $(LIB)
-	@$(NOP)
-
-#MM kernel-aros-module : setup includes kernel-aros-$(ARCH)-$(CPU)
-kernel-aros-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
-	@$(NOP)
-
-#MM clean setup
+%make_module_setup mmake=kernel-aros
+%make_module mmake=kernel-aros
+%make_lib_includes
 
 %common
-%include_deps
+%include_deps 

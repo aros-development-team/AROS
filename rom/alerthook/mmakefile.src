@@ -1,56 +1,21 @@
-# $Id$
-TOP=../..
-CURDIR=rom/alerthook
-
-# Use OS's own includes over the ones from AROS
-SPECIAL_CFLAGS=-I/usr/include
-
+#   $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(OSGENDIR)/alerthook
+MODULE := alert.hook
+MODTYPE := module
 
-FILES := alerthook
-
-# Do the magic required for function replacement.
-# Keep this value for later
-ALL_FILES := $(FILES)
-
-%prepare_replace rom/alerthook
-%filter_replace FILES
-
-OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-
-#MM kernel-alerthook-module : setup includes
-kernel-alerthook-module : $(OSMODDIR)/alert.hook
-	@$(NOP)
-
-$(OSMODDIR)/alert.hook : $(OBJS)
-	@$(ECHO) "Building $@ ..."
-	@$(CC) $(ILDFLAGS) $(OBJS) $(GENMAP) alerthook.map -o $@ 2>&1|tee alert.err
-	@if $(TEST) ! -s alert.err ; then rm alert.err ; else true ; fi
-	@strip $@
+#MM kernel-alerthook-module : setup includes linklibs
+kernel-alerthook-module : $(AROS_MODULES)/$(MODULE)
 
 #MM
-setup :
-	%mkdirs_q $(OSGENDIR) $(OBJDIR)
+kernel-alerthook-module-quick : kernel-alerthook-module
 
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB)
+%make_module_setup mmake=kernel-alerthook
 
-$(OBJDIR)/%.o : %.c
-	%compile_q
+# Can't use make_module_single here because of the naming .hook
+$(MOD_DIR)/$(MODULE) : $(OBJDIR)/alerthook.o
+	%link_module_q objs=$^
 
-%asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
-
-%ctoasm_q
-
-%additional_objs_rule
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%make_module_common
 
 %common
-%include_deps
