@@ -18,6 +18,7 @@
 #include <libraries/expansionbase.h>
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
+#include <devices/bootblock.h>
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -53,6 +54,31 @@ const struct Resident boot_resident =
 	"AROS Boot Strap 41.0\r\n",
 	(APTR)&boot_init
 };
+
+static const struct _dt {
+    IPTR    mask,type,fs;
+} DosTypes[] = {
+    { 0xffffff00, AROS_MAKE_ID('D','O','S','\0'), (IPTR)"afs.handler"	    },
+    { 0xffffffff, AROS_MAKE_ID('E','X','T','\2'), (IPTR)"ext2.handler"    },
+    { 0xffffff00, AROS_MAKE_ID('F','A','T',' ' ), (IPTR)"fat.handler"     },
+    { 0,0,0, }
+};
+
+IPTR MatchHandler(IPTR DosType)
+{
+    int i;
+    IPTR fs=0;
+
+    for (i=0; i < (sizeof(DosTypes) / sizeof(struct _dt)); i++)
+    {
+	if ((DosType & DosTypes[i].mask) == DosTypes[i].type)
+	{
+	    fs = DosTypes[i].fs;
+	    break;
+	}
+    }
+    return fs;
+}
 
 ULONG getOffset(struct PartitionBase *PartitionBase, struct PartitionHandle *ph) {
 STACKIPTR tags[3];
@@ -103,13 +129,16 @@ struct DeviceNode *devnode;
 	    tags[3] = (STACKIPTR)&pp[4];
 	    tags[4] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
-	    pp[0] = (IPTR)"afs.handler";
+//	    pp[0] = (IPTR)"afs.handler";
 	    pp[1] = (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device);
 	    pp[2] = fssm->fssm_Unit;
 	    pp[3] = fssm->fssm_Flags;
 	    i = getOffset(PartitionBase, pn);
 	    pp[DE_LOWCYL+4] += i;
 	    pp[DE_HIGHCYL+4] += i;
+	    
+	    pp[0] = MatchHandler(pp[DE_DOSTYPE + 4]);
+	    
 	    devnode = MakeDosNode(pp);
 	    if (devnode)
 	    {
@@ -125,6 +154,8 @@ struct DeviceNode *devnode;
 		    AROS_BSTR_setstrlen(devnode->dn_OldName, i);
 		    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
 		    AddBootNode(pp[DE_BOOTPRI+4], 0, devnode, 0);
+		    D(bug("[Boot] AddBootNode(%s,%lx,'%s')\n", devnode->dn_NewName, pp[DE_DOSTYPE + 4],
+			pp[0]));
 		    return;
 		}
 	    }
