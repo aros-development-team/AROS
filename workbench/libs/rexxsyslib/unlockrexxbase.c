@@ -40,9 +40,9 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
 
-    aros_print_not_implemented ("UnlockRexxBase");
+    ReleaseSemaphore(&RSBI(RexxSysBase)->semaphore);
 
+    ReturnVoid("UnlockRexxBase");
     AROS_LIBFUNC_EXIT
 } /* UnlockRexxBase */
