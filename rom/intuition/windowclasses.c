@@ -536,6 +536,7 @@ static VOID sizebutton_render(Class *cl, Object *o, struct gpRender * msg)
 		    container.Top + container.Height - 1,
 		    container.Left + container.Width - 2,
 		    container.Top + container.Height - 1);
+
     return;
 }
 

@@ -1340,19 +1340,23 @@ D(bug("Window: %p\n", w));
                      
                      if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
+                       struct RastPort * rp = targetwindow->BorderRPort;
+                       SetAPen(rp, 0);
                        if (msg->dy > 0)
                        {
-                         struct RastPort * rp = targetwindow->BorderRPort;
-                         SetAPen(rp, 0);
-                         Move(rp, 0, targetwindow->Height-targetwindow->BorderBottom);
-                         Draw(rp, targetwindow->Width-targetwindow->BorderRight, targetwindow->Height-targetwindow->BorderBottom);
+                         RectFill(rp,
+                                  0,
+                                  targetwindow->Height - targetwindow->BorderBottom,
+                                  targetwindow->Width,
+                                  targetwindow->Height);
                        }
                        if (msg->dx > 0)
                        {
-                         struct RastPort * rp = targetwindow->BorderRPort;
-                         SetAPen(rp, 0);
-                         Move(rp, targetwindow->Width-targetwindow->BorderRight, 0);
-                         Draw(rp, targetwindow->Width-targetwindow->BorderRight, targetwindow->Height-targetwindow->BorderBottom);
+                         RectFill(rp,
+                                  targetwindow->Width - targetwindow->BorderRight,
+                                  targetwindow->BorderTop,
+                                  targetwindow->Width,
+                                  targetwindow->Height - targetwindow->BorderBottom);
                        }
                      }
                      
