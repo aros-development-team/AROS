@@ -165,7 +165,7 @@ static Object *main_page_group; /* contains the selelected group */
 static Object *main_page_group_displayed; /* The current displayed group */
 static Object *main_page_space; /* a space object */
 
-static struct MUI_CustomClass *CL_ImageClipboard = NULL;
+struct MUI_CustomClass *CL_ImageClipboard = NULL;
 
 int open_classes(void)
 {

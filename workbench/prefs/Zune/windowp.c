@@ -130,11 +130,15 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, ColGroup(2),
 		   GroupFrameT("Background"),
 			       Child, VGroup,
-		   Child, d.background_window_popimage = PopimageObject, MUIA_Draggable, TRUE, End,
+		   Child, d.background_window_popimage =
+			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
+					 MUIA_Draggable, TRUE, End,
 		   Child, MUI_MakeObject(MUIO_Label, "Window", MUIO_Label_Centered),
 			       End,
 			       Child, VGroup,
-		   Child, d.background_requester_popimage = PopimageObject, MUIA_Draggable, TRUE, End,
+		   Child, d.background_requester_popimage =
+					 NewObject(CL_ImageClipboard->mcc_Class, NULL,
+						   MUIA_Draggable, TRUE, End,
 		   Child, MUI_MakeObject(MUIO_Label, "Requester", MUIO_Label_Centered),
 			       End,
 		   End,
