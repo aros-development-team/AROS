@@ -1,9 +1,8 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
     $Id$
-
-    Desc:
-    Lang: english
 */
 
 #define AROS_TAGRETURNTYPE APTR
