@@ -3,17 +3,28 @@
 \label{CVS}CVS is a software to maintain a database which contains the
 sources of a project one works on. The software offers a list of commands
 to merge the most recent version of the project with the local sources and
-to publish changes on has made over the Internet.
+to publish changes one has made over the Internet.
 
+\begin{new}{7.10.1997}
 \subsection{CVS on Un*x}
+\end{new}
 
-If you have Linux or any other Un*x, then all you need is CVS 1.8 or better.
+If you have Linux or any other Un*x, then all you need is
+\begin{new}{7.10.1997}
+CVS 1.9
+\end{new}
+or better.
 If it's not already on your system (type \shell{cvs} to find out), fetch
 if from one of the many GNU mirrors and install it in your \filename{$HOME}.
 
-Then get the AROS developer archive from the AmiNET and compile
-\filename{crypt.c} (just say \shell{make crypt}. Think of a good password
-and use \filename{crypt} to encode it, like this:
+\begin{new}{7.10.1997}
+If you want to get the sources only, you can use the anonymous access (see
+below). If you want to have read-write access to the database,
+\end{new}
+then get the
+AROS developer archive from the AmiNET and compile \filename{crypt.c} (just
+say \shell{make crypt}. Think of a good password and use \filename{crypt}
+to encode it, like this:
 
 \begin{example}
 > make crypt
@@ -24,14 +35,24 @@ Encrypting my_password: cbEVHg0j9uNRs
 Now skip the next section and read on in "How get access to the AROS CVS
 server".
 
+\begin{new}{7.10.1997}
 \subsection{CVS on Amiga}
 
-If you have an Amiga, you can participate, too. Just get the CVS from
-ADE, install it and get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
-in \filename{comm/tcp}) from AmiNET. You also must have
+If you have an Amiga, you can participate, too. If you just want to
+download the newest source, you can use the anonymous user (see below).
+If you want to modify the sources, then you have to create a password.
+In any case, you have to get the CVS from
+ADE, install it.
+
+If you want full access, and get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
+in \filename{comm/tcp}) from AmiNET
+(no need to install AmiTCP; just get the archive and extract the file
+\filename{AmiTCP} from it).
+\end{new}
+You also must have
 \filename{ixemul.library} 45.0 (should come with ADE) and
 \filename{ixnet.library} in \filename{LIBS:}. Then you can create
-your password with \filename{crypt} out of the \filename{AROScrypt.lha}
+your password with \filename{crypt} out of the \filename{AROS-crypt.lha}
 archive from AmiNET (in \filename{dev/misc}) like this:
 
 \begin{example}
@@ -52,25 +73,43 @@ But you can use Miami with CVS to work on AROS after you have created
 a password with AmiTCP.
 \end{new}
 
+\begin{new}{7.10.1997}
 \subsection{How to get access to the AROS CVS server}
+\end{new}
 
 Mail the password you have created to me:
 \email{digulla@aros.fh-konstanz.de}. The subject must be
 \shell{Access to AROS CVS Server} and with this text in the mail:
 
+\begin{new}{18.8.1997}
 \begin{example}
-Please add <my_login, eg. digulla> <password, eg. cbEVHg0j9uNRs>
+Please add <my_login> <password>
 \end{example}
 
-Don't forget to fill in the information :-)
+like this:
+
+\begin{example}
+Please add digulla xx1LtbDbOY4
+\end{example}
+
+To check: You should get \shell{xx1LtbDbOY4} if you call crypt with
+\shell{crypt test xx}.
+\end{new}
 
 Wait until I confirm this. While you wait, look for CVS 1.8 or better if
 you haven't already done so.
 
+\begin{new}{18.8.1997}
+If you want read-only access, then your username is \shell{anon} and
+your password is \shell{anon}, too.
+\end{new}
+
+\begin{new}{7.10.1997}
 \subsection{Logging into the server}
+\end{new}
 
 Before you can use any CVS commands, you must log into the server. To do this,
-use the CVS command "login":
+use the CVS command \shell{login}:
 
 \begin{example}
 > cvs -d :pserver:user@aros.fh-konstanz.de:/home/AROS/CVS login
@@ -82,18 +121,26 @@ where \shell{user} is your login, eg. digulla:
 > cvs -d :pserver:digulla@aros.fh-konstanz.de:/home/AROS/CVS login
 \end{example}
 
+\begin{new}{18.8.1997}
+For anonymous readonly access, it would look like this:
+
+\begin{example}
+> cvs -d :pserver:anon@aros.fh-konstanz.de:/home/AROS/CVS login
+\end{example}
+\end{new}
+
 This should ask you for your password. Type it in and if there is no error
 displayed, you are connected. If there is an error, try to omit the
-":pserver:". If this still doesn't work, double check for
+\shell{pserver}. If this still doesn't work, double check for
 typos and if you really, really, really can't find anything, then you
 got my email.
 
 \begin{emph}
 It seems that the login command for CVS has changed. Version of CVS
-upto 1.8.1 and earlier need not have ":pserver:" before the login name,
+upto 1.8.1 and earlier need not have \shell{:pserver:} before the login name,
 but later versions require it. If you have problems to login, try to omit
-":pserver:" or prepend it. If CVS wants it, you will get an error reading
-"cvs login: can only use pserver method with `login' command".
+\shell{pserver} or prepend it. If CVS wants it, you will get an error reading
+\shell{cvs login: can only use pserver method with `login' command}.
 \end{emph}
 
 If the login has succeeded, then you can save you some typing by storing
