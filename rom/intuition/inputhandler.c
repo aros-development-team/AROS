@@ -1574,7 +1574,11 @@ D(bug("Window: %p\n", w));
 	              _L ==  ((struct Window *)_L->Window)->BorderRPort->Layer            )
 	          {
 	            /* simply refresh that window's frame */
+		    
+		    BeginUpdate(_L);
 	            RefreshWindowFrame((struct Window *)_L->Window);
+		    EndUpdate(_L, TRUE);
+		    
 	            _L->Flags &= ~LAYERREFRESH;
 	          }
 	          else
@@ -1610,7 +1614,11 @@ D(bug("Window: %p\n", w));
 	              L  ==  ((struct Window *)L->Window)->BorderRPort->Layer            )
 	          {
 	            /* simply refresh that window's frame */
+		    
+		    BeginUpdate(L);
 	            RefreshWindowFrame((struct Window *)L->Window);
+		    EndUpdate(L, TRUE);
+		    
 	            L->Flags &= ~LAYERREFRESH;
 	          }
 	          else
