@@ -10,3 +10,5 @@ test
 *.lnk
 *.gst
 *.mdbi
+buildincludes
+muimaster.lib
