@@ -12,9 +12,6 @@
 #include <clib/keymap_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/keymap.h>
 #else
 #include <defines/keymap.h>

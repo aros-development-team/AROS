@@ -12,9 +12,6 @@
 #include <clib/bullet_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/bullet.h>
 #else
 #include <defines/bullet.h>

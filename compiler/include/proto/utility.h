@@ -12,9 +12,6 @@
 #include <clib/utility_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/utility.h>
 #else
 #include <defines/utility.h>

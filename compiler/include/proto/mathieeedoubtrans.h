@@ -12,9 +12,6 @@
 #include <clib/mathieeedoubtrans_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/mathieeedoubtrans.h>
 #else
 #include <defines/mathieeedoubtrans.h>

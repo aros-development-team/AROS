@@ -12,9 +12,6 @@
 #include <clib/mathtrans_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/mathtrans.h>
 #else
 #include <defines/mathtrans.h>

@@ -12,9 +12,6 @@
 #include <clib/asl_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/asl.h>
 #else
 #include <defines/asl.h>

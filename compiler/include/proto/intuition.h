@@ -12,9 +12,6 @@
 #include <clib/intuition_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
-#ifndef NO_INLINE_STDARG
-#define NO_INLINE_STDARG
-#endif
 #include <inline/intuition.h>
 #else
 #include <defines/intuition.h>
