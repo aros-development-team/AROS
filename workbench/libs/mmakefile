@@ -1,7 +1,7 @@
 # $Id$
 
 # The workbench-libs target points back to config/$(ARCH)/mmakefile:
-#MM- workbench-libs : workbench-libs-$(ARCH)
+#MM- workbench-libs : workbench-libs-$(ARCH)-$(CPU)
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.

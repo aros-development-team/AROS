@@ -288,11 +288,11 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_finline
 
-#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH) hidd-graphics-linklib
+#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)-$(CPU) hidd-graphics-linklib
 kernel-graphics-linklib : $(LIB)
 	@$(NOP)
 
-#MM kernel-graphics-module : setup includes kernel-graphics-$(ARCH)
+#MM kernel-graphics-module : setup includes kernel-graphics-$(ARCH)-$(CPU)
 kernel-graphics-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 

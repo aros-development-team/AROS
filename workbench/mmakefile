@@ -3,7 +3,7 @@
 include $(TOP)/config/make.cfg
 
 # The workbench target points back to config/$(ARCH)/mmakefile:
-#MM- workbench : workbench-$(ARCH)
+#MM- workbench : workbench-$(ARCH)-$(CPU)
 
 #MM- workbench-complete : \
 #MM	    workbench-hidds \
