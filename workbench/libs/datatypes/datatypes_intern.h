@@ -53,6 +53,8 @@
 #include <libraries/locale.h>
 #endif
 
+#include <libcore/base.h>
+
 enum
 {
     SEM_LIB,
@@ -134,18 +136,10 @@ struct DTObject
 #define DTOFLGF_HAS_MOVED  (1<<0)
 
 
-/*
- * Sigh, we need a global SysBase in order to link properly against the
- * functions in amiga.lib such as DoMethodA() which in debugging mode
- * require a SysBase. This used to be called __dt_GlobalSysBase.
- * Interestingly enough, this is a common symbol...
- */
-struct ExecBase *SysBase;
-
 struct DataTypesBase
 {
     /* Datatypes library structure */
-    struct Library dtb_LibNode;
+    struct LibHeader dtb_LibHeader;
     
     /* Align to long word */
     UWORD dtb_Pad1;
@@ -241,13 +235,9 @@ typedef struct IntuitionBase IntuiBase;
 #define DOSBase ((struct DataTypesBase *)DataTypesBase)->dtb_DOSBase
 /* We cannot define this t */
 /* #define IntuitionBase ((struct DataTypesBase *)DataTypesBase)->dtb_IntuitionBase */
-#define SysBase ((struct DataTypesBase *)DataTypesBase)->dtb_SysBase
+#define SysBase ((struct LibHeader *)DataTypesBase)->lh_SysBase
 #define IFFParseBase ((struct DataTypesBase *)DataTypesBase)->dtb_IFFParseBase
 #define LocaleBase (GPB(DataTypesBase)->dtb_LocaleBase)
 #define GfxBase (GPB(DataTypesBase)->dtb_GfxBase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct DataTypesBase *, DataTypesBase, 3, DataTypes)
-     
 
 #endif /* DATATYPES_INTERN_H */
