@@ -34,8 +34,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-void serialunit_receive_data();
-ULONG serialunit_write_more_data();
+static void serialunit_receive_data(APTR iD, UWORD data, struct ExecBase *);
+static ULONG serialunit_write_more_data(APTR iD, APTR iC, struct ExecBase *);
 
 UWORD get_ustcnt(struct HIDDSerialUnitData * data);
 BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
@@ -61,7 +61,7 @@ static inline UWORD serial_in_w(struct HIDDSerialUnitData * data,
                                 ULONG offset)
 {
 	AROS_GET_SYSBASE
-	UWORD value = RREG_W(data->baseaddr+offset);
+	UWORD value = RREG_W((data->baseaddr+offset));
 	D(bug("peek.w 0x%x = 0x%x\n",data->baseaddr+offset,value));
 	return value;
 }
@@ -75,6 +75,7 @@ static inline void serial_out_b(struct HIDDSerialUnitData * data,
 	D(bug("poke.b 0x%x,0x%x\n",data->baseaddr+offset,value));
 	WREG_B((data->baseaddr+offset)) = value;
 }
+#endif
 
 static inline UBYTE serial_in_b(struct HIDDSerialUnitData * data,
                                 ULONG offset)
@@ -84,7 +85,6 @@ static inline UBYTE serial_in_b(struct HIDDSerialUnitData * data,
 	D(bug("peek.b 0x%x = 0x%x\n",data->baseaddr+offset,value));
 	return value;
 }
-#endif
 
 #define SysBase (CSD(cl->UserData)->sysbase)
 
@@ -389,7 +389,7 @@ UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit
 }
 
 
-/************* The software interrupt handler that gets data from UART *****/
+/************* The function that gets data from UART *****/
 
 
 #undef OOPBase
@@ -398,10 +398,7 @@ UWORD serialunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit
 
 #define READBUFFER_SIZE 65
 
-AROS_UFH3(void, serialunit_receive_data,
-   AROS_UFHA(APTR, iD, A1),
-   AROS_UFHA(APTR, iC, A5),
-   AROS_UFHA(struct ExecBase *, SysBase, A6))
+static void serialunit_receive_data(APTR iD, UWORD urx, struct ExecBase * SysBase)
 {
 	struct HIDDSerialUnitData * data = iD;
 	int len = 0;
@@ -413,12 +410,16 @@ AROS_UFH3(void, serialunit_receive_data,
 	** byte per interrupt. I hope the real thing is a bit better... !!!
 	*/
 	while (len < sizeof(buffer)) {
-		UWORD urx = serial_in_w(data, O_URX);
-		if (urx & DATA_READY_F) {
-			buffer[len++] = (UBYTE)urx;
-			/* for xcopilot need to get out of here. */
-			break;
-		} else {
+		buffer[len++] = (UBYTE)urx;
+//D(bug("Got byte form serial port: %d (%c)\n",(UBYTE)urx,(UBYTE)urx));
+		
+		/*
+		 * Check for the next incoming byte - whether there is one.
+		 * I have to do it this way, because xcopilot returns no
+		 * DATA_READY flag once the register is read with 16 bit access.
+		 */
+		urx = serial_in_w(data, O_URX);
+		if (0 == (DATA_READY_F & urx)) {
 			break;
 		}
 	}
@@ -431,10 +432,7 @@ AROS_UFH3(void, serialunit_receive_data,
 		data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 }
 
-AROS_UFH3(ULONG, serialunit_write_more_data,
-   AROS_UFHA(APTR, iD, A1),
-   AROS_UFHA(APTR, iC, A5),
-   AROS_UFHA(struct ExecBase *, SysBase, A6))
+static ULONG serialunit_write_more_data(APTR iD, APTR iC, struct ExecBase * SysBase)
 {
 	struct HIDDSerialUnitData * data = iD;
 
@@ -448,7 +446,7 @@ AROS_UFH3(ULONG, serialunit_write_more_data,
 	/*
 	** Ask for more data be written to the unit
 	*/
-	D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
+//	D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
 
 	if (NULL != data->DataWriteCallBack)
 		data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
@@ -690,16 +688,17 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler * irq,
                                       ULONG unitnum)
 {
 	UWORD code = 0;
-	if (csd->units[unitnum])
+	if (csd->units[unitnum]) {
 		code = serial_in_w(csd->units[unitnum], O_URX);
+	}
 
-D(bug("---------- IN COMMON HANDLER!\n"));
-D(bug("URX: code=0x%x\n",code));
+//D(bug("---------- IN COMMON SERIAL HANDLER!\n"));
+//D(bug("URX: code=0x%x\n",code));
 	if (code & (FIFO_EMPTY_F|FIFO_HALF_F|DATA_READY_F)) {
 		D(bug("In %s 1\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
 			serialunit_receive_data(csd->units[unitnum],
-			                        NULL,
+			                        code,
 			                        SysBase);
 		}
 	}
@@ -708,7 +707,7 @@ D(bug("URX: code=0x%x\n",code));
 	if (csd->units[unitnum])
 		code = serial_in_w(csd->units[unitnum], O_UTX);
 
-D(bug("UTX: code=0x%x\n",code));
+//D(bug("UTX: code=0x%x\n",code));
 	if (code & (FIFO_EMPTY_F|FIFO_HALF_F|TX_AVAIL_F)) {
 		D(bug("In %s 2\n",__FUNCTION__));
 		if (csd->units[unitnum]) {
