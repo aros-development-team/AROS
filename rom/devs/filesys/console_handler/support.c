@@ -146,7 +146,7 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
     APTR stack;
     
     #define TASKMEM_SIZE (sizeof(struct Task) + CONTASK_STACKSIZE)
-    
+
     memlist = AllocMem(sizeof (struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
     if (memlist)
     {
@@ -220,6 +220,7 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
     {
 	fh->flags &= ~FHFLG_RAW;
 	filename += 4;
+
 	kprintf("Con: stream\n");
     }
     else
@@ -260,89 +261,91 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 		{
 		    UWORD paramlen = filename - param - 1;
 
-		    if (paramid == 1)
-		    {
-		    	nw->LeftEdge = paramval;
-		    }
-		    else if (paramid == 2)
-		    {
-		    	nw->TopEdge = paramval;
-		    }
-		    else if (paramid == 3)
-		    {
-		    	nw->Width = paramval;
-		    }
-		    else if (paramid == 4)
-		    {
-		    	nw->Height = paramval;
-		    }
-		    else if (paramid == 5)
-		    {
+		    switch(paramid)
+		      {
+		      case 1:
+			nw->LeftEdge = paramval;
+			break;
+		      case 2:
+			nw->TopEdge = paramval;
+			break;
+		      case 3:
+			nw->Width = paramval;
+			break;
+		      case 4:
+			nw->Height = paramval;
+			break;
+		      case 5:
 			if ((fh->wintitle = AllocVec(paramlen + 1, MEMF_PUBLIC)))
-			{
+			  {
 			    CopyMem(param, fh->wintitle, paramlen);
 			    fh->wintitle[paramlen] = '\0';
 			    nw->Title = fh->wintitle;
-			}
-		    } else {
+			  }
+			break;
+		      default:
 			if (!strnicmp(param, "WAIT", paramlen))
-			{
+			  {
 			    fh->flags |= FHFLG_WAIT;
-			}
+			  }
 			else if (!strnicmp(param, "CLOSE", paramlen))
-			{
+			  {
 			    nw->Flags |= WFLG_CLOSEGADGET;
-			}
+			  }
 			else if (!strnicmp(param, "NOCLOSE", paramlen))
-			{
+			  {
 			    nw->Flags &= ~WFLG_CLOSEGADGET;
-			}
+			  }
 			else if (!strnicmp(param, "AUTO", paramlen))
-			{
+			  {
 			    fh->flags |= FHFLG_AUTO;
-			}
+			  }
 			else if (!strnicmp(param, "INACTIVE", paramlen))
-			{
+			  {
 			    nw->Flags &= ~WFLG_ACTIVATE;
-			}
+			  }
 			else if (!strnicmp(param, "NODEPTH", paramlen))
-			{
+			  {
 			    nw->Flags &= ~WFLG_DEPTHGADGET;
-			}
+			  }
 			else if (!strnicmp(param, "NOSIZE", paramlen))
-			{
+			  {
 			    nw->Flags &= ~WFLG_SIZEGADGET;
-			}
+			  }
 			else if (!strnicmp(param, "NODRAG", paramlen))
-			{
+			  {
 			    nw->Flags &= ~WFLG_DRAGBAR;
-			}
+			  }
 			else if (!strnicmp(param, "NOBORDER", paramlen))
-			{
+			  {
 			    nw->Flags |= WFLG_BORDERLESS;
-			}
+			  }
 			else if (!strnicmp(param, "BACKDROP", paramlen))
-			{
+			  {
 			    nw->Flags |= WFLG_BACKDROP;
 			    nw->Flags &= ~(WFLG_DRAGBAR | WFLG_SIZEGADGET);
-			}
+			  }
 			else if (!strnicmp(param, "SIMPLE", paramlen))
-			{
+			  {
 			    /* TODO */
-			}
+			  }
 			else if (!strnicmp(param, "SMART", paramlen))
-			{
+			  {
 			    /* TODO */
-			}
+			  }
 			else if (!strnicmp(param, "ALT", paramlen))
-			{
+			  {
 			    /* TODO: style "ALT30/30/200/200" */
-			}
-			else if (!strnicmp(param, "SCREEN", paramlen))
-			{
-			    /* TODO */
-			}
-		    }
+			  }
+			else if (!strnicmp(param, "SCREEN", 6))
+			  {
+			    if ((fh->screentitle = AllocVec(paramlen - 5, MEMF_PUBLIC)))
+			      {
+				CopyMem(param+6, fh->screentitle, paramlen);
+				fh->wintitle[paramlen] = '\0';
+			      }
+			  }
+		      }
 		    
 		    paramok = FALSE;
 		}
@@ -350,11 +353,11 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh,
 		paramid++;
 		param = filename;
 		break;
-	
-	    default:
-	        paramok = TRUE;
-		break;
 		
+	default:
+	  paramok = TRUE;
+	  break;
+	  
 	} /* switch(c) */
 	
     } /* while (!done) */
