@@ -54,6 +54,7 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+    if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return;
 
     muiRenderInfo(obj)->mri_ClipRect.MinX = _left(obj);
     muiRenderInfo(obj)->mri_ClipRect.MinY = _top(obj);
