@@ -27,8 +27,9 @@
 #define D(x) if (debug) x
 #define bug Printf
 
-/* maximum config file length */
-#define MAX_LINE_LEN 100
+/* Maximum config file length. Is actually 100, but we add 2 for the newline
+   character and the \0 character. */
+#define MAX_LINE_LEN 102
 
 char txt_module[] = "MODULE";
 char args_module[] = "MODULE/K/A";
