@@ -20,6 +20,8 @@
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
 
+#include <string.h>
+
 int main(int argc, char **argv)
 {
     if (argc == 0)
@@ -42,8 +44,13 @@ int main(int argc, char **argv)
             )
             {
                 BPTR cd = CurrentDir(lock);
+                TEXT buffer[512];
                 
                 DeleteFile(name); // FIXME: check error
+                NameFromLock(lock, buffer, 512);
+                strcat(buffer, name);
+                D(bug("telling wb to update %s\n", buffer));
+                UpdateWorkbenchObject(buffer, WBPROJECT, TAG_DONE);
                 
                 CurrentDir(cd);
             }
