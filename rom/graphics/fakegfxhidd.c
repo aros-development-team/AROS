@@ -900,6 +900,21 @@ static IPTR fakefb_putalphatemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     BITMAP_METHOD_EXIT
 }
 
+static IPTR fakefb_putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
+{
+    BITMAP_METHOD_INIT
+    
+    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
+    {
+    	REMOVE_CURSOR(data);
+	inside = TRUE;
+    }
+    
+    FORWARD_METHOD
+    
+    BITMAP_METHOD_EXIT
+}
+
 static IPTR fakefb_getimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
     BITMAP_METHOD_INIT
@@ -1239,6 +1254,7 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
         {(IPTR (*)())fakefb_puttemplate	    	, moHidd_BitMap_PutTemplate         },
         {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
         {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
+        {(IPTR (*)())fakefb_putpattern	    	, moHidd_BitMap_PutPattern          },
         {(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())fakefb_putimagelut		, moHidd_BitMap_PutImageLUT	    },
         {(IPTR (*)())fakefb_getimagelut		, moHidd_BitMap_GetImageLUT	    },
