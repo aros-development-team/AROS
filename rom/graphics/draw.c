@@ -49,6 +49,10 @@
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
   driver_Draw (rp, x, y, GfxBase);
+  
+  /* Update rastport coords */
+  rp->cp_x = x;
+  rp->cp_y = y;
 
   AROS_LIBFUNC_EXIT
 } /* Draw */
