@@ -146,6 +146,7 @@ SHARED	:= \
 	gcvt \
 	getcwd \
 	getenv \
+        getpid \
 	gettimeofday \
 	gmtime \
 	isatty \
