@@ -19,19 +19,19 @@ int main()
     
     object  = NewObject(Test_CLASS->mcc_Class, NULL, NULL);
     
-    GetSysTime(&tv_start);
+    gettimeofday(&tv_start, NULL);
     
     for(i = 0; i < count; i++)
     {    
         DoMethod(object, MUIM_Test_Dummy);        
     }
     
-    GetSysTime(&tv_end);
+    gettimeofday(&tv_end, NULL);
     
     DisposeObject(object);
     
-    elapsed = ((double)(((tv_end.tv_secs * 1000000) + tv_end.tv_micro) 
-            - ((tv_start.tv_secs * 1000000) + tv_start.tv_micro)))/1000000.;
+    elapsed = ((double)(((tv_end.tv_sec * 1000000) + tv_end.tv_usec) 
+            - ((tv_start.tv_sec * 1000000) + tv_start.tv_usec)))/1000000.;
     
     printf
     (

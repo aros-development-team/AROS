@@ -5,20 +5,19 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <sys/time.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
-#include <devices/timer.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
-#include <proto/timer.h>
 
 /*** Instance data **********************************************************/
 struct Test_DATA
