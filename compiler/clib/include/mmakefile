@@ -9,7 +9,7 @@ DIRS            := $(INCDIR) $(INCDIR)/sys
 #MM compiler-clib-includes : compiler-clib-includes-setup
 compiler-clib-includes : includes-copy
 
-#MM includes-copy : 
+#MM includes-copy : compiler-clib-includes-setup
 includes-copy : setup $(DEST_INCLUDES)
 	@$(NOP)
 
