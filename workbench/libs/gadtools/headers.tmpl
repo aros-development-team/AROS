@@ -1,5 +1,15 @@
 ##begin proto
+#ifndef GadToolsBase
 extern struct Library * GadToolsBase;
+#endif
+
+#include <intuition/intuition.h>
+#include <intuition/screens.h>
+#include <utility/tagitem.h>
+
+APTR         GetVisualInfo(struct Screen *, Tag, ...);
+struct Menu *CreateMenus(struct NewMenu *, Tag, ...);
+BOOL         LayoutMenus(struct Menu *, APTR, Tag, ...);
 
 ##end proto
 
