@@ -94,7 +94,7 @@ const IPTR SupportedMethods[] =
 //    DTM_WRITE,
 
     PDTM_WRITEPIXELARRAY,
-//    PDTM_READPIXELARRAY,
+    PDTM_READPIXELARRAY,
     PDTM_SCALE,
 
     (~0)
@@ -578,11 +578,11 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
         return FALSE;
     }
 
-    if(!(GetDTAttrs((Object *) g, DTA_Domain, &domain,
-   			       DTA_TopHoriz, &TopHoriz,
-   			       DTA_TopVert, &TopVert,
-   			       DTA_NominalHoriz, &NominalWidth,
-   			       DTA_NominalVert, &NominalHeight,
+    if(!(GetDTAttrs((Object *) g, DTA_Domain,    (IPTR) &domain,
+   			       DTA_TopHoriz,     (IPTR) &TopHoriz,
+   			       DTA_TopVert,      (IPTR) &TopVert,
+   			       DTA_NominalHoriz, (IPTR) &NominalWidth,
+   			       DTA_NominalVert,  (IPTR) &NominalHeight,
    			       TAG_DONE) == 5))
     {
         D(bug("picture.datatype/GM_RENDER: Couldn't get dimensions\n"));
@@ -706,12 +706,12 @@ STATIC IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpI
 		    IPTR topv, totalv, visiblev;
 		    LONG newtoph, newtopv;
 		    
-		    GetDTAttrs((Object *)g, DTA_TopVert     , &topv,
-		    	    	    	    DTA_TotalVert   , &totalv,
-					    DTA_VisibleVert , &visiblev,
-					    DTA_TopHoriz    , &toph,
-					    DTA_TotalHoriz  , &totalh,
-					    DTA_VisibleHoriz, &visibleh,
+		    GetDTAttrs((Object *)g, DTA_TopVert     , (IPTR) &topv,
+		    	    	    	    DTA_TotalVert   , (IPTR) &totalv,
+					    DTA_VisibleVert , (IPTR) &visiblev,
+					    DTA_TopHoriz    , (IPTR) &toph,
+					    DTA_TotalHoriz  , (IPTR) &totalh,
+					    DTA_VisibleHoriz, (IPTR) &visibleh,
 					    TAG_DONE);
 				
 		    newtoph = pd->ClickX - msg->gpi_Mouse.X;
@@ -915,8 +915,8 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	 */
 	if(!(GetDTAttrs((Object *) g, DTA_Domain, (IPTR) &domain,
 				   DTA_ObjName, (IPTR) &Title,
-				   DTA_NominalHoriz, &Width,
-				   DTA_NominalVert, &Height,
+				   DTA_NominalHoriz, (IPTR) &Width,
+				   DTA_NominalVert, (IPTR) &Height,
 				   TAG_DONE) == 4))
 	{
 	    return FALSE;
@@ -1041,6 +1041,7 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
         }
     } /* if(pixelformat != pd->SrcPixelFormat) */
 
+    /* Copy picture data */
     {
         long line, lines;
         APTR srcstart;
@@ -1062,6 +1063,60 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
 	for( line=0; line<lines; line++ )
 	{
 	    // D(bug("picture.datatype/DTM_WRITEPIXELARRAY: COPY src 0x%lx dest 0x%lx bytes %ld\n", (long)srcstart, (long)deststart, numbytes));
+	    CopyMem((APTR) srcstart, (APTR) deststart, numbytes);
+	    srcstart += srcmod;
+	    deststart += destmod;
+	}
+    }
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBlitPixelArray *msg)
+{
+    struct Picture_Data *pd;
+
+    int pixelformat;
+    int pixelbytes;
+
+    pd = (struct Picture_Data *) INST_DATA(cl, g);
+
+    /* Do some checks first */
+    if( !pd->SrcBuffer || !pd->DestMode )
+    {
+        D(bug("picture.datatype/DTM_READPIXELARRAY: No source buffer or wrong DestMode\n"));
+	return FALSE;
+    }
+    pixelformat = (long)msg->pbpa_PixelFormat;
+    if ( pixelformat != pd->SrcPixelFormat )	/* This also checks for pd->SrcBuffer */
+    {
+        D(bug("picture.datatype/DTM_READPIXELARRAY: Source/Dest Pixelformat mismatch: %d <-> %ld (not yet supported)\n", pixelformat, pd->SrcPixelFormat));
+	return FALSE;
+    }
+    
+    /* Copy picture data */
+    {
+        long line, lines;
+        APTR srcstart;
+        APTR deststart;
+        long srcmod, destmod;
+        long destwidth, numbytes;
+
+        /* Now copy the new source data to the ChunkyBuffer line by line */
+        pixelbytes = pd->SrcPixelBytes;
+        srcmod = pd->SrcWidthBytes;
+        srcstart = pd->SrcBuffer + msg->pbpa_Left * pixelbytes + msg->pbpa_Top * srcmod;
+        destmod = msg->pbpa_PixelArrayMod;
+        deststart = msg->pbpa_PixelData;
+        destwidth = msg->pbpa_Width;
+        lines = msg->pbpa_Height;
+        numbytes = destwidth * pixelbytes;
+
+	/* simply copy data */
+	for( line=0; line<lines; line++ )
+	{
+	    // D(bug("picture.datatype/DTM_READPIXELARRAY: COPY src 0x%lx dest 0x%lx bytes %ld\n", (long)srcstart, (long)deststart, numbytes));
 	    CopyMem((APTR) srcstart, (APTR) deststart, numbytes);
 	    srcstart += srcmod;
 	    deststart += destmod;
@@ -1251,6 +1306,13 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
         {
             // D(bug("picture.datatype/DT_Dispatcher: Method PDTM_WRITEPIXELARRAY\n"));
             RetVal=(IPTR) PDT_WritePixelArray(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
+            break;
+        }
+
+        case PDTM_READPIXELARRAY:
+        {
+            // D(bug("picture.datatype/DT_Dispatcher: Method PDTM_READPIXELARRAY\n"));
+            RetVal=(IPTR) PDT_ReadPixelArray(cl, (struct Gadget *) o, (struct pdtBlitPixelArray *) msg);
             break;
         }
 
