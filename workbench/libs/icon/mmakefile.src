@@ -6,6 +6,15 @@ USER_INCLUDES := -I.
 MODNAME	    := icon
 MODTYPE	    := library
 
+ifeq ($(TARGET_ARCH),morphos)
+OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
+MOSLIB			:= /ade/morphos/lib
+FORCE_DEPLIBS 	:=
+FORCE_LIBS 		:= $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a $(MOSLIB)/libstring.a \
+				  $(MOSLIB)/libmath.a $(MOSLIB)/libc.a $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
+USE_CPAK 		:= no
+endif
+
 FILES	:=  basicfuncs diskobjio
 FUNCS	:=  addfreelist bumprevision deletediskobject findtooltype \
 	    freediskobject freefreelist getdefdiskobject getdiskobject \

@@ -27,9 +27,13 @@
 #   include <aros/asmcall.h>
 #endif
 #ifndef LIBCORE_BASE_H
+#ifndef __MORPHOS__
 #   include <libcore/base.h>
 #endif
+#endif
 #include <string.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 /* Internal prototypes */
 AROS_UFP3(LONG, dosstreamhook,

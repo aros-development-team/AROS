@@ -56,7 +56,7 @@
 
     struct MemList  *memlist;
     struct MemEntry *mementry;
-
+    
     /* We get hold of the last memlist node inside the list */
     memlist = (struct MemList*)freelist->fl_MemList.lh_TailPred;
 
@@ -69,7 +69,7 @@
 	if (!(memlist = AllocMem (sizeof(struct IconInternalMemList),
 		    MEMF_ANY)
 	) )
-	    return FALSE;
+	    {dprintf("addfreelist(): return FALSE\n"); return FALSE;}
 
 	memlist->ml_NumEntries = 0;
 
@@ -86,6 +86,7 @@
 
     freelist->fl_NumFree ++;
 
+    dprintf("addfreelist(): return FALSE\n");
     return TRUE;
     AROS_LIBFUNC_EXIT
 } /* AddFreeList */
