@@ -7,8 +7,10 @@
     Lang:
 */
 
-#include <aros/arosbase.h>
+#include <defines/aros.h>
+#include <clib/aros_protos.h>
 #include <aros/inquire.h>
+#include <aros/arosbase.h>
 #include <dos/dos.h>
 
 #include <proto/exec.h>
