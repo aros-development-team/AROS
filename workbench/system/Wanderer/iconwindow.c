@@ -312,6 +312,7 @@ IPTR IconWindow__MUIM_IconWindow_Open
     
     DoMethod(data->iwd_IconList, MUIM_IconList_Clear);
     SET(self, MUIA_Window_Open, TRUE);
+    SET(self, MUIA_Window_Activate, TRUE);
     DoMethod(data->iwd_IconList, MUIM_IconList_Update);
     
     return TRUE;

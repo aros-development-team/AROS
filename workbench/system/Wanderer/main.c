@@ -16,8 +16,6 @@
 
 /* global variables */
 Object *app;
-Object *root_iconwnd;
-Object *root_menustrip;
 
 LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
 struct Process *__detacher_process              = NULL;
