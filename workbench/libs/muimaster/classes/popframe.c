@@ -30,16 +30,20 @@ struct Popframe_DATA
 
 IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Popframe_DATA   *data;
-    struct TagItem  	    *tag, *tags;
-    //Object *frame;
+    struct Popframe_DATA *data;
+    struct TagItem  	 *tag, *tags;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-			       ButtonFrame,
-			       InnerSpacing(4,4),
-			       MUIA_Background, MUII_ButtonBack,
-			       MUIA_InputMode, MUIV_InputMode_RelVerify,
-			       TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        ButtonFrame,
+        InnerSpacing(4,4),
+        MUIA_Background, MUII_ButtonBack,
+        MUIA_InputMode,  MUIV_InputMode_RelVerify,
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
     
