@@ -11,8 +11,8 @@
 /****************************************************************************/
 /** Prototypes **************************************************************/
 
-void GUI_Open();
+BOOL GUI_Open();
 void GUI_Close();
-void GUI_Update( LONG position );
+void GUI_Update( LONG position, LONG max );
 
 #endif /* PKG_GUI_H */

@@ -12,6 +12,7 @@
 /****************************************************************************/
 /*** Prototypes *************************************************************/
 
+BPTR FILE_Open( CONST_STRPTR path, LONG mode );
 LONG FILE_Read( BPTR file, APTR buffer, LONG length );
 LONG FILE_Write( BPTR file, CONST_APTR buffer, LONG length );
 LONG FILE_Position( BPTR file );

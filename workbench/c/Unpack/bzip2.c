@@ -42,7 +42,7 @@ APTR BZ2_Open( CONST_STRPTR path, LONG mode )
     if( bzf->bzf_Buffer == NULL ) goto error;
     bzf->bzf_BufferAmount = 0;
     
-    bzf->bzf_File = Open( path, MODE_OLDFILE );
+    bzf->bzf_File = FILE_Open( path, MODE_READ );
     if( bzf->bzf_File == NULL ) goto error;    
 
     bzf->bzf_Stream.bzalloc = bzAlloc;

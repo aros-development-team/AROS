@@ -4,12 +4,12 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := unpack package bzip2 file support
+FILES 	    := unpack gui package bzip2 file support
 EXEDIR      := $(AROS_C)
 EXE 	    := $(EXEDIR)/Unpack
 
 USE_CLIB_STATIC := yes
-#USE_AMIGALIB    := yes
+USE_AMIGALIB    := yes
 
 #MM workbench-c-unpack : includes linklibs 
 
