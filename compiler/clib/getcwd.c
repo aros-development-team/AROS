@@ -61,43 +61,40 @@
 	return NULL;
     }
 
-    if (pathname != NULL)
+    if (buf != NULL)
     {
-	if (buf != NULL)
+	if (strlen(pathname) < size)
 	{
-	    if (strlen(pathname) < size)
-	    {
-		strcpy (buf, pathname);
-	    }
-	    else
-	    {
-		errno = ERANGE;
-		return NULL;
-	    }
+	    strcpy (buf, pathname);
 	}
 	else
 	{
-	    int len;
-	    char *newbuf;
+	    errno = ERANGE;
+	    return NULL;
+	}
+    }
+    else
+    {
+	int len;
+	char *newbuf;
 
-	    len = strlen(pathname);
+	len = strlen(pathname);
 
-	    if (size == 0)
-	    {
-		size = len+1;
-	    }
+	if (size == 0)
+	{
+	    size = len+1;
+	}
 
-	    if (len < size)
-	    {
-		newbuf = (char *)malloc (size*sizeof(char));
-		strcpy (newbuf, pathname);
-		return newbuf;
-	    }
-	    else
-	    {
-		errno = ERANGE;
-		return NULL;
-	    }
+	if (len < size)
+	{
+	    newbuf = (char *)malloc (size*sizeof(char));
+	    strcpy (newbuf, pathname);
+	    return newbuf;
+	}
+	else
+	{
+	    errno = ERANGE;
+	    return NULL;
 	}
     }
 
