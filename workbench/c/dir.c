@@ -1,10 +1,14 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Dir CLI command
-    Lang: english
+    Lang: English
 */
+
+#define  DEBUG  1
+#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/dos.h>
@@ -17,165 +21,445 @@
 #include <string.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <aros/debug.h>
 
-static const char version[] = "$VER: dir 41.11 (26.10.1997)\n";
+#include <stdio.h>
+
+
+/******************************************************************************
+
+
+    NAME
+
+    Dir [(dir | pattern)] [OPT A | I | D | F] [ALL] [DIRS] [FILES] [INTER]
+
+
+    SYNOPSIS
+
+    DIR,OPT/K,ALL/S,DIRS/S,FILES/S,INTER/S
+
+    LOCATION
+
+    Workbench:C
+
+    FUNCTION
+
+    DIR displays the file or directory contained in the current or 
+    specified directory. Directories get listed first, then in alphabetical
+    order, the files are listed in two columns. Pressing CTRL-C aborts the
+    directory listing.
+
+
+    INPUTS
+
+    ALL    --  Display all subdirectories and their files recursively.
+    DIRS   --  Display only directories.
+    FILES  --  Display only files.
+    INTER  --  Enter interactive mode.
+
+               Interactive listing mode stops after each name to display
+	       a question mark at which you can enter commands. These
+	       commands are:
+
+	       Return      --  Goto the next file or directory.
+	       E/ENTER     --  Enters a directory.
+	       DEL/DELETE  --  Delete a file or an empty directory.
+	       C/COM       --  Let the file or directory be the input of
+	                       a DOS command (which specified after the C or
+			       COM or specified separately later).
+	       Q/QUIT      --  Quit interactive mode.
+	       B/BACK      --  Go back one directory level.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+    XY.11.2000  SDuvan  added pattern matching support and support for
+                        FILES/S, DIRS/S and OPT/K and some support for
+			INTER/S. Complete interactive support is still missing.
+
+******************************************************************************/
+
+static const char version[] = "$VER: dir 41.12 (27.11.2000)\n";
 
 struct UtilityBase *UtilityBase;
 
 struct table
 {
-    char ** entries;
-    int     num, max;
+    char **entries;
+    int    num;
+    int    max;
 };
 
-char ** files;
-int num_files, max_files;
-char ** dirs;
-int num_dirs, max_dirs;
 
-static int AddEntry (struct table * table, char * entry)
+/*  Prototypes  */
+
+static LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles,
+			 BOOL inter);
+static LONG doDir(STRPTR dir, BOOL all, BOOL dirs, BOOL files, BOOL inter);
+
+static void showline(char *fmt, LONG args[]);
+static void maybeShowline(char *format, LONG args[], BOOL doIt, BOOL inter);
+static void maybeShowlineCR(char *format, LONG args[], BOOL doIt, BOOL inter);
+
+static int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
+		    struct ExAllControl *eac, struct table *dirs,
+		    struct table *files);
+
+
+static int AddEntry(struct table *table, char *entry)
 {
-    char * dup;
-
+    char *dup;
+    
     if (table->num == table->max)
     {
-	int new_max = table->max + 128;
-	char ** new_entries;
+	int    new_max = table->max + 128;
+	char **new_entries;
 
-	new_entries = AllocVec (sizeof(char *)*new_max, MEMF_ANY);
+	new_entries = AllocVec(sizeof(char *)*new_max, MEMF_ANY);
 
-	if (!new_entries)
+	if (new_entries == NULL)
 	    return 0;
-
+	
 	if (table->num)
 	{
-	    CopyMemQuick (table->entries, new_entries, sizeof(char *)* table->num);
-	    FreeVec (table->entries);
+	    CopyMemQuick(table->entries, new_entries,
+			 sizeof(char *)*table->num);
+	    FreeVec(table->entries);
 	}
-
+	
 	table->entries = new_entries;
 	table->max = new_max;
     }
-
+    
     if (!(dup = strdup (entry)) )
 	return 0;
+    
+    table->entries[table->num++] = dup;
 
-    table->entries[table->num ++] = dup;
     return 1;
 }
 
-static int compare_strings (const void * s1, const void * s2)
+
+static int compare_strings(const void * s1, const void * s2)
 {
-    return strcasecmp (*(char **)s1, *(char **)s2);
+    return strcasecmp(*(char **)s1, *(char **)s2);
 }
+
 
 int indent = 0;
-static void showline (char * fmt, LONG args[])
+
+
+static void maybeShowlineCR(char *format, LONG args[], BOOL doIt, BOOL inter)
 {
-    int t;
+    maybeShowline(format, args, doIt, inter);
 
-    for (t=0; t<indent; t++)
-	VPrintf ("    ", NULL);
-
-    VPrintf (fmt, args);
+    if (!inter)
+    {
+	VPrintf("\n", NULL);
+    }
 }
 
-struct
+
+#define  INTERARG_TEMPLATE  "E=ENTER/S,B=BACK/S,DEL=DELETE/S,Q=QUIT/S,C=COM/S,COMMAND"
+
+enum
 {
-    char * dir;
-    char * opt;
-    ULONG all;
-} args = {
-    NULL,
-    NULL,
-    0
+    INTERARG_ENTER = 0,
+    INTERARG_BACK,
+    INTERARG_DELETE,
+    INTERARG_QUIT,
+    INTERARG_COM,
+    INTERARG_COMMAND,
+    NOOFINTERARGS
 };
 
-static LONG do_dir (char *path)
-{
-    BPTR dir;
-    LONG loop;
-    struct ExAllControl *eac;
-    struct ExAllData *ead;
-    static UBYTE buffer[4096];
-    LONG error=RETURN_OK;
-    struct table dirs, files;
 
+static void maybeShowline(char *format, LONG args[], BOOL doIt, BOOL inter)
+{
+    if(doIt)
+    {
+	showline(format, args);
+
+#if 0
+	if(inter)
+	{
+	    struct ReadArgs *rda;
+
+	    IPTR  interArgs[NOOFINTERARGS] = { (IPTR)FALSE,
+					       (IPTR)FALSE,
+					       (IPTR)FALSE,
+					       (IPTR)FALSE,
+					       (IPTR)FALSE,
+					       NULL };
+	    
+	    rda = ReadArgs(INTERARG_TEMPLATE, interArgs, NULL);
+	    
+	    if (rda != NULL)
+	    {
+		if (interArgs[ARG_ENTER])
+		{
+		    return c_Enter;
+		}
+		else if (interArgs[ARG_BACK])
+		{
+		    return c_Back;
+		}
+		else if (interArgs[ARG_DELETE])
+		{
+		    return c_Delete;
+		}
+		else if (interArgs[ARG_QUIT])
+		{
+		    return c_Quit;
+		}
+		else if (interArgs[ARG_COM])
+		{
+		    return c_Com;
+		}
+		else if (interArgs[ARG_COMMAND] != NULL)
+		{
+		    command = 
+		    return c_Command;
+		}
+	    }
+	}
+#endif
+
+    }
+}
+
+
+static void showline(char *fmt, LONG args[])
+{
+    int t;
+    
+    for (t = 0; t < indent; t++)
+	VPrintf("    ", NULL);
+
+    VPrintf(fmt, args);
+}
+
+
+#define  ARG_TEMPLATE  "DIR,OPT/K,ALL/S,DIRS/S,FILES/S,INTER/S"
+
+enum
+{
+    ARG_DIR = 0,
+    ARG_OPT,
+    ARG_ALL,
+    ARG_DIRS,
+    ARG_FILES,
+    ARG_INTER
+};
+
+int main(int argc, char **argv)
+{
+    struct RDArgs *rda;
+    IPTR           args[] = { NULL,
+			      NULL,
+			      (IPTR)FALSE,
+			      (IPTR)FALSE,
+			      (IPTR)FALSE,
+                              (IPTR)FALSE };
+    
+    LONG  error = RETURN_FAIL;
+    
+    UtilityBase = (struct UtilityBase *)OpenLibrary(UTILITYNAME, 39);
+    
+    if (UtilityBase != NULL)
+    {
+	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+	
+	if (rda != NULL)
+	{
+	    STRPTR dir = (STRPTR)args[ARG_DIR];
+	    STRPTR opt = (STRPTR)args[ARG_OPT];
+	    BOOL   all = (BOOL)args[ARG_ALL];
+	    BOOL   dirs = (BOOL)args[ARG_DIRS];
+	    BOOL   files = (BOOL)args[ARG_FILES];
+	    BOOL   inter = (BOOL)args[ARG_INTER];
+	    
+	    /* Convert the OPT arguments (if any) into the regular switches */
+	    if (opt != NULL)
+	    {
+		while (*opt != NULL)
+		{
+		    switch (ToUpper(*opt))
+		    {
+		    case 'D':
+			dirs = TRUE;
+			break;
+
+		    case 'F':
+			files = TRUE;
+			break;
+
+		    case 'A':
+			all = TRUE;
+			break;
+
+		    case 'I':
+			inter = TRUE;
+			break;
+
+		    default:
+			printf("%c option ignored\n", *opt);
+			break;
+		    }
+
+		    opt++;
+		}
+	    }
+
+	    if(dir == NULL)
+	    {
+		dir = "";
+	    }
+
+	    if(!files && !dirs)
+	    {
+		files = TRUE;
+		dirs  = TRUE;
+	    }
+
+	    error = doPatternDir(dir, all, dirs, files, inter);
+	    
+	    FreeArgs(rda);
+	}
+    }
+
+    if (error != RETURN_OK)
+    {
+	PrintFault(IoErr(), NULL);
+    }
+    
+    CloseLibrary((struct Library *)UtilityBase);
+
+    return error;
+}
+
+
+#define  MAX_PATH_LEN  512
+
+static LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles,
+			 BOOL inter)
+{
+    struct AnchorPath *ap;	/* Matching structure */
+
+    LONG  match;		/* Loop variable */
+    LONG  error = RETURN_FAIL;
+
+    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 
+				       MAX_PATH_LEN, MEMF_CLEAR);
+
+    if(ap != NULL)
+    {
+	ap->ap_Strlen = MAX_PATH_LEN;
+
+	for(match = MatchFirst(dirPat, ap); match == 0; match = MatchNext(ap))
+	{
+	    error = doDir(ap->ap_Buf, all, doDirs, doFiles, inter);
+
+	    if(error == RETURN_FAIL)
+	    {
+		break;
+	    }
+	}
+
+	MatchEnd(ap);
+    }
+
+    FreeVec(ap);
+
+    return error;
+}
+
+
+static LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
+{
+    BPTR  lock;
+
+    static UBYTE buffer[4096];
+
+    struct ExAllControl  *eac;
+
+    LONG error = RETURN_OK;
+
+    struct table  dirs;
+    struct table  files;
+    
     dirs.entries = files.entries = NULL;
     dirs.max = files.max = 0;
     dirs.num = files.num = 0;
+    
+    lock = Lock(dir, SHARED_LOCK);
 
-    dir=Lock(path,SHARED_LOCK);
-    if(dir)
+    if(lock != NULL)
     {
-	eac=AllocDosObject(DOS_EXALLCONTROL,NULL);
-	if(eac!=NULL)
+	eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+	
+	if(eac != NULL)
 	{
 	    int t;
 	    IPTR argv[3];
-
-	    eac->eac_LastKey=0;
-	    do
+	    
+	    eac->eac_LastKey = 0;
+	
+	    error = CheckDir(lock, (struct ExAllData *)buffer, sizeof(buffer),
+			     eac, &dirs, &files);
+	    
+	    FreeDosObject(DOS_EXALLCONTROL, eac);
+	    
+	    if (error == 0 && doDirs)
 	    {
-		loop=ExAll(dir,(struct ExAllData *)buffer,4096,ED_COMMENT,eac);
-		if(!loop&&IoErr()!=ERROR_NO_MORE_ENTRIES)
-		{
-		    error=RETURN_ERROR;
-		    break;
-		}
-		if(eac->eac_Entries)
-		{
-		    ead=(struct ExAllData *)buffer;
-		    do
-		    {
-			if (!AddEntry (ead->ed_Type > 0 ? &dirs : &files, ead->ed_Name))
-			{
-			    loop = 0;
-			    error=RETURN_FAIL;
-                            SetIoErr(ERROR_NO_FREE_STORE);
-			    break;
-			}
-
-			ead=ead->ed_Next;
-		    }while(ead!=NULL);
-		}
-	    }while((loop) && (error==RETURN_OK));
-	    FreeDosObject(DOS_EXALLCONTROL,eac);
-
-	    if (!error)
-	    {
-		if (dirs.num)
+		if (dirs.num != 0)
 		{
 		    indent ++;
-
-		    qsort (dirs.entries, dirs.num, sizeof (char *),
-			compare_strings);
-
-		    for (t=0; t<dirs.num; t++)
+		    
+		    qsort(dirs.entries, dirs.num, sizeof(char *),
+			  compare_strings);
+		    
+		    for (t = 0; t < dirs.num; t++)
 		    {
-			argv[0] = (IPTR) dirs.entries[t];
-
-			if (args.all)
+			argv[0] = (IPTR)dirs.entries[t];
+			
+			if (all)
 			{
-                            char * newpath;
-                            int len, pathlen = strlen(path);
+                            char *newpath;
+                            int len;
+			    int pathlen = strlen(dir);
+			    
                             len = pathlen + strlen(dirs.entries[t]) + 2;
-
+			    
                             newpath = AllocVec(len, MEMF_ANY);
-                            if (newpath)
+			    
+                            if (newpath != NULL)
                             {
-                                CopyMem(path, newpath, pathlen + 1);
+                                CopyMem(dir, newpath, pathlen + 1);
+				
                                 if (AddPart(newpath, dirs.entries[t], len))
                                 {
-                                    showline ("%-25.s <DIR>\n", argv);
-                                    error = do_dir (newpath);
+                                    maybeShowlineCR(" %s (dir)", argv,
+						    doDirs, inter);
+                                    error = doDir(newpath, all, doDirs,
+						  doFiles, inter);
                                 }
                                 else
                                 {
                                     SetIoErr(ERROR_LINE_TOO_LONG);
                                     error = RETURN_ERROR;
                                 }
+				
                                 FreeVec(newpath);
                             }
                             else
@@ -183,89 +467,127 @@ static LONG do_dir (char *path)
                                 SetIoErr(ERROR_NO_FREE_STORE);
                                 error = RETURN_FAIL;
                             }
-                            if (error)
+			    
+                            if (error != RETURN_OK)
                                 break;
 			}
 			else
-			    showline ("    %-25.s <DIR>\n", argv);
+			{
+			    maybeShowlineCR(" %s (dir)", argv, doDirs, inter);
+			}
 		    }
-
-		    indent --;
+		    
+		    indent--;
 		}
-
-		if (files.num)
+	    }
+	    
+	    if (files.num != 0 && doFiles)
+	    {
+		qsort(files.entries, files.num, sizeof(char *),
+		      compare_strings);
+		
+		for (t = 0; t < files.num; t += 2)
 		{
-		    qsort (files.entries, files.num, sizeof (char *),
-			compare_strings);
-
-		    for (t=0; t<files.num; t+=2)
+		    argv[0] = (IPTR)(files.entries[t]);
+		    argv[1] = (IPTR)(t + 1 < files.num ?
+				     files.entries[t+1] : "");
+		    
+		    if (all)
 		    {
-			argv[0] = (IPTR) (files.entries[t]);
-			argv[1] = (IPTR) (t+1 < files.num ? files.entries[t+1] : "");
-			if (args.all)
-			    showline ("    %-25.s %-25.s\n", argv);
-			else
-			    showline ("%-25.s %-25.s\n", argv);
+			maybeShowlineCR("    %-25.s", argv,
+					doFiles, inter);
+			
+			if (files.num != t + 1)
+			{
+			    maybeShowlineCR("    %-25.s", argv + 1,
+					    doFiles, inter);
+			}
+		    }
+		    else
+		    {
+			maybeShowline(" %-25.s", argv, doFiles,
+				      inter);
+			maybeShowlineCR(" %-25.s", argv + 1, doFiles,
+					inter);
 		    }
 		}
 	    }
-
-	    if (dirs.num)
+	    
+	    if (dirs.num != 0)
 	    {
-		for (t=0; t<dirs.num; t++)
+		for (t = 0; t < dirs.num; t++)
 		{
-		    free (dirs.entries[t]);
+		    free(dirs.entries[t]);
 		}
-
+		
 		if (dirs.entries)
-		    FreeVec (dirs.entries);
+		    FreeVec(dirs.entries);
 	    }
-
-	    if (files.num)
+	    
+	    if (files.num != 0)
 	    {
-		for (t=0; t<files.num; t++)
-		{
-		    free (files.entries[t]);
-		}
-
-		if (files.entries)
-		    FreeVec (files.entries);
+		for (t = 0; t < files.num; t++)
+	    {
+		free(files.entries[t]);
 	    }
-	}else
+		
+		if (files.entries)
+		{
+		    FreeVec(files.entries);
+		}
+	    }
+	}
+	else
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
-	    error=RETURN_FAIL;
+	    error = RETURN_FAIL;
 	}
-	UnLock(dir);
-    } else
-        error = RETURN_FAIL;
-
-    return error;
-}
-
-int main (int argc, char ** argv)
-{
-    struct RDArgs *rda;
-    LONG error=0;
-
-    UtilityBase=(struct UtilityBase *)OpenLibrary(UTILITYNAME,39);
-
-    if (!UtilityBase)
-	return RETURN_ERROR;
-
-    rda=ReadArgs("DIR,OPT/K,ALL/S",(IPTR *)&args,NULL);
-    if(rda!=NULL)
+	
+	UnLock(lock);
+    }
+    else
     {
-	error = do_dir (args.dir!=NULL?args.dir:"");
-
-	FreeArgs(rda);
-    }else
-	error=RETURN_FAIL;
-    if(error)
-	PrintFault(IoErr(), NULL);
-
-    CloseLibrary((struct Library *)UtilityBase);
-
+	error = RETURN_FAIL;
+    }
+    
     return error;
 }
 
+
+static int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
+		    struct ExAllControl *eac, struct table *dirs,
+		    struct table *files)
+{
+    int   error = RETURN_OK;
+    LONG  loop;
+
+    do
+    {
+	loop = ExAll(lock, ead, eadSize, ED_COMMENT, eac);
+	
+	if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
+	{
+	    error = RETURN_ERROR;
+	    break;
+	}
+	
+	if(eac->eac_Entries != NULL)
+	{
+	    do
+	    {
+		if (!AddEntry(ead->ed_Type > 0 ? dirs : files,
+			      ead->ed_Name))
+		{
+		    loop = 0;
+		    error = RETURN_FAIL;
+		    SetIoErr(ERROR_NO_FREE_STORE);
+		    break;
+		}
+		
+		ead = ead->ed_Next;
+	    } while(ead != NULL);
+	}
+    } while((loop) && (error == RETURN_OK));
+
+    return error;
+}
