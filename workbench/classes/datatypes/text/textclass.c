@@ -2302,6 +2302,7 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	{
 	    ULONG redraw_type;
 
+#ifndef _AROS
 	    if (!AttemptSemaphoreShared(&(si->si_Lock)))
 	    {
 		/* The datatype should be redrawn but can not get the lock, so redraw it the next time fully */
@@ -2309,6 +2310,9 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 		td->redraw = 1;
 		return 0;
 	    }
+#else
+	    ObtainSemaphore(&(si->si_Lock));
+#endif
 
 	    if (td->redraw)
 	    {
@@ -2466,7 +2470,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		if (newx != top)
 		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
 				      GA_ID, g->GadgetID,
-				      DTA_TopVert, newx,
+				      DTA_TopHoriz, newx,
 				      TAG_DONE);
 #else
  		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
