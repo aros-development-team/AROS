@@ -53,7 +53,6 @@
 #include <exec/semaphores.h>
 #endif
 
-
 /* Sometype defs in AROS */
 #ifndef _AROS
 #ifndef _AROS_TYPES_DEFINED
@@ -104,6 +103,8 @@ struct MUIMasterBase_intern
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
 #ifdef _AROS
+
+#include <proto/muimaster.h>
 
 #undef SysBase
 #define SysBase     	(MUIMB(MUIMasterBase)->sysbase)
@@ -197,8 +198,6 @@ struct MUIMasterBase_intern
 
 #undef CoolImagesBase
 #define CoolImagesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->coolimagesbase)
-
-char *StrDup(char *x); /* support.c */
 
 /*
 #undef DataTypesBase

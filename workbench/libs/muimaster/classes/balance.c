@@ -14,18 +14,13 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
-#ifdef _AROS
-#include <proto/muimaster.h>
-#else
-#define ASSERT(x) x
-#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
 #include "prefs.h"
 
-//#define MYDEBUG 1
+#define MYDEBUG 1
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -37,8 +32,11 @@ struct MUI_BalanceData
 {
     struct MUI_EventHandlerNode ehn;
     ULONG horizgroup;
-    ULONG state;
+    ULONG state;       /* 0: not clicked, 1: clicked, 2: shift-clicked */
     LONG clickpos;
+    LONG lastpos;
+    LONG lazy;
+    struct List *objs;
 };
 
 /**************************************************************************
@@ -236,6 +234,87 @@ static ULONG  Balance_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     return TRUE;
 }
 
+static void draw_object_frame (Object *obj, Object *o)
+{
+    SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
+    Move(_rp(obj), _mleft(o), _mtop(o));
+    Draw(_rp(obj), _mleft(o), _mbottom(o));
+    Draw(_rp(obj), _mright(o), _mbottom(o));
+    Draw(_rp(obj), _mright(o), _mtop(o));
+    Draw(_rp(obj), _mleft(o), _mtop(o));
+    Draw(_rp(obj), _mright(o), _mbottom(o));
+    Move(_rp(obj), _mright(o), _mtop(o));
+    Draw(_rp(obj), _mleft(o), _mbottom(o));
+}
+
+static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
+{
+    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    Object *sibling;
+    Object *object_state;
+
+    object_state = (Object *)data->objs->lh_Head;
+    while ((sibling = NextObject(&object_state)))
+    {
+	if (!(_flags(sibling) & MADF_SHOWME))
+	    continue;
+/*  	D(bug("sibling %lx\n", sibling)); */
+	
+    }
+    
+}
+
+static void recalc_weights_neighbours (struct IClass *cl, Object *obj, WORD mouse)
+{
+    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    Object *sibling;
+    Object *object_state;
+
+    object_state = (Object *)data->objs->lh_Head;
+    while ((sibling = NextObject(&object_state)))
+    {
+	if (!(_flags(sibling) & MADF_SHOWME))
+	    continue;
+/*  	D(bug("sibling %lx\n", sibling)); */
+	
+    }
+}
+
+static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
+{
+    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    
+    if (data->state == 1)
+	recalc_weights_all(cl, obj, mouse);
+    else
+	recalc_weights_neighbours(cl, obj, mouse);
+
+    DoMethod(_parent(obj), MUIM_Layout);
+
+    if (muiGlobalInfo(obj)->mgi_Prefs->balancing_look == BALANCING_SHOW_OBJECTS)
+    {
+	MUI_Redraw(_parent(obj),MADF_DRAWALL);
+    }
+    else
+    {
+	Object *sibling;
+	Object *object_state;
+
+	DoMethod(_parent(obj), MUIM_DrawBackground, _mleft(_parent(obj)),
+		 _mtop(_parent(obj)), _mwidth(_parent(obj)), _mheight(_parent(obj)),
+		 0, 0, 0);
+	/* for each child, draw a black frame */
+	object_state = (Object *)data->objs->lh_Head;
+	while ((sibling = NextObject(&object_state)))
+	{
+	    if (!(_flags(sibling) & MADF_SHOWME))
+		continue;
+/*  	D(bug("sibling %lx\n", sibling)); */
+	    draw_object_frame(obj, sibling);
+	}
+    }
+}
+
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
@@ -252,11 +331,16 @@ static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 	        {
 	            if (_isinobject(msg->imsg->MouseX, msg->imsg->MouseY))
 	            {
+			get(_parent(obj), MUIA_Group_ChildList, &data->objs);
 		        data->clickpos = data->horizgroup ? msg->imsg->MouseX : msg->imsg->MouseY;
+			data->lastpos = data->clickpos;
 			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
 			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			data->state = 1;
+			if (msg->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+			    data->state = 2;
+			else
+			    data->state = 1;
 			MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    }
 	        }
@@ -275,13 +359,22 @@ static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 
 	    case IDCMP_MOUSEMOVE:
 	    {
+		if ((data->horizgroup) && (msg->imsg->MouseX == data->lastpos))
+		    break;
+		if ((!data->horizgroup) && (msg->imsg->MouseY == data->lastpos))
+		    break;
+		data->lazy ^= 1;
+		if (data->lazy)
+		    break;
 		if (data->horizgroup)
 		{
-		    /*  f(cl, obj, msg->imsg->MouseX - data->clickpos); */
+		    handle_move(cl, obj, msg->imsg->MouseX);
+		    data->lastpos = msg->imsg->MouseX;
 		}
 		else
 		{
-		    /*  f(cl, obj, msg->imsg->MouseY - data->clickpos); */
+		    handle_move(cl, obj, msg->imsg->MouseY);
+		    data->lastpos = msg->imsg->MouseY;
 		}
 	    }
 	    break;
