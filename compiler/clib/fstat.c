@@ -1,9 +1,18 @@
+/*
+    Copyright © 2001, The AROS Development Team. All rights reserved. 
+    $Id$
+
+    Desc: ANSI C function fstat()
+    Lang: English
+*/
+
 #include <errno.h>
 
 #include "__stat.h"
 #include "__open.h"
 
 #include <sys/stat.h>
+
 
 int fstat(int fd, struct stat *sb)
 {
@@ -14,6 +23,7 @@ int fstat(int fd, struct stat *sb)
     if (!desc)
     {
         errno = EBADF;
+
 	return -1;
     }
 
