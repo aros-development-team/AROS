@@ -128,8 +128,8 @@ static struct NewMenu nm[] =
 
 /*********************************************************************************************/
 void Cleanup(STRPTR msg);
-void ExecuteCommand();
-void backdrop(ULONG);
+void ExecuteCommand(void);
+void backdrop(BOOL check);
 /*********************************************************************************************/
 
 LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
@@ -316,9 +316,9 @@ kprintf("LoadWB.HandleAll\n");
 }
 
 /*********************************************************************************************/
- void backdrop(check)
+void backdrop(BOOL check)
 {
-    if (check) = FALSE
+    if (!check)
     {
         CloseWindow(wbwindow);
              wbwindow = OpenWindowTags(NULL,
@@ -337,7 +337,7 @@ kprintf("LoadWB.HandleAll\n");
 	);
 
     }
-        if (check) = TRUE
+        if (check)
     {
         CloseWindow(wbwindow);
              wbwindow = OpenWindowTags(NULL,
