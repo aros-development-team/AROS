@@ -1003,7 +1003,16 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 	    wheelheight = maxheight;
 	}
 
+    #ifndef _AROS
+    #if 1
+    #warning Changed, because gcc produced wrong code! gcc 2.95.1 compiled under UAE JIT for Linux!?
+    	wheelwidth = glob->screenres.y;
+	wheelwidth *= wheelheight;
+	wheelwidth /= glob->screenres.x;
+    #else
 	wheelwidth = wheelheight * glob->screenres.y / glob->screenres.x;
+    #endif
+    #endif
 
 	if( ( scrwidth - winwidth > wheelwidth + 8 ) &&
 	      ( scrheight > 200 ) )
@@ -1183,46 +1192,57 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 	} /* if( glob->fancywheel ) */
 #endif
 
-
-	glob->wheel_slider = ( struct Gadget * ) NewObject ( NULL, "gradientslider.gadget",
-		GA_ID,			SLIDER_ID,
-		GA_Top,			wheeltop + wheelheight + spacing,
-		GA_Left,		leftoff,
-		GA_Width,		wheelwidth,
-		GA_Height,		glob->fontheight + 3,
+    	{
+	    struct TagItem slider_tags[] =
+	    {
+		{GA_ID	    	    , SLIDER_ID     	    	    	},
+		{GA_Top     	    , wheeltop + wheelheight + spacing	},
+		{GA_Left    	    , leftoff	    	    	    	},
+		{GA_Width   	    , wheelwidth    	    	    	},
+		{GA_Height  	    , glob->fontheight + 3  	    	},
 #ifdef GRADIENT
-		glob->numgradpens ? GRAD_PenArray : TAG_IGNORE,
-				    	glob->wheel_pens,
+		{glob->numgradpens ?
+		 GRAD_PenArray :
+		 TAG_IGNORE 	    , (IPTR)glob->wheel_pens	     	},
 #endif
-		GRAD_KnobPixels,	8,
-		PGA_Freedom,		LORIENT_HORIZ,
-		ICA_TARGET,     	ICTARGET_IDCMP,
-	TAG_END );
-
-
+		{GRAD_KnobPixels    , 8     	    	    	    	},
+		{PGA_Freedom	    , LORIENT_HORIZ 	    	    	},
+		{ICA_TARGET 	    , ICTARGET_IDCMP	    	    	},
+		{TAG_END    	    	    	    	    	    	}
+	    };
+	    	
+	    glob->wheel_slider = (struct Gadget *)NewObjectA(NULL, "gradientslider.gadget", slider_tags);
+	
+	}
+	
 	if( glob->wheel_slider )
 	{
-
-	    glob->wheel = ( struct Gadget * ) NewObject( NULL, "colorwheel.gadget",
-		    GA_Top,			wheeltop,
-		    GA_Left,			leftoff,
-		    GA_Width,			wheelwidth,
-		    GA_Height,			wheelheight,
-		    GA_ID,			WHEEL_ID,
-		    WHEEL_Screen,		glob->scr,
-		    (glob->fancywheel ? TAG_IGNORE : WHEEL_MaxPens),
-					    	0,
-		    WHEEL_GradientSlider,	glob->wheel_slider,
+    	    struct TagItem wheel_tags[] =
+	    {
+		 {GA_Top    	    	, wheeltop  	    	    },
+		 {GA_Left   	    	, leftoff   	    	    },
+		 {GA_Width  	    	, wheelwidth	    	    },
+		 {GA_Height 	    	, wheelheight	    	    },
+		 {GA_ID     	    	, WHEEL_ID  	    	    },
+		 {WHEEL_Screen	    	, (IPTR)glob->scr     	    },
+		 {glob->fancywheel ?
+		  TAG_IGNORE :
+		  WHEEL_MaxPens     	, 0 	    	    	    },
+		 {WHEEL_GradientSlider	, (IPTR)glob->wheel_slider  },
 #ifdef _AROS
 /* Need this, because without BevelBox AROS colorwheel gadget renders through mask
-   which because of bugs in gfx library functions (!?) does not work yet and instead
-   causes mem trashes/crashes/etc (in AmigaOS the AROS colorwheel gadget works fine
-   even without BevelBox, that is: with mask rendering) */
-		    WHEEL_BevelBox,		TRUE,
+which because of bugs in gfx library functions (!?) does not work yet and instead
+causes mem trashes/crashes/etc (in AmigaOS the AROS colorwheel gadget works fine
+even without BevelBox, that is: with mask rendering) */
+		 {WHEEL_BevelBox    	, TRUE	    	    	    },
 #endif
-		    GA_Previous,		glob->wheel_slider,
-		    ICA_TARGET,             	ICTARGET_IDCMP,
-	    TAG_END );
+		 {GA_Previous	    	, (IPTR)glob->wheel_slider  },
+		 {ICA_TARGET	    	, ICTARGET_IDCMP    	    },
+		 {TAG_END   	    	    	    	    	    }
+	    };
+	    
+	    glob->wheel = (struct Gadget *)NewObjectA(NULL, "colorwheel.gadget", wheel_tags);
+
 	}
 	    
     } /* if( glob->dowheel )*/
