@@ -157,6 +157,10 @@ struct pRoot_New yourmsg;
 	pftags[5].ti_Data = XSD(cl)->data.greenmask;
 	pftags[6].ti_Data = XSD(cl)->data.bluemask;
 	pftags[7].ti_Data = 0;
+	D(bug("[VMWare] New: Masks red=%08x<<%d,green=%08x<<%d,blue%08x<<%d\n",
+		    pftags[4].ti_Data, pftags[0].ti_Data,
+		    pftags[5].ti_Data, pftags[1].ti_Data,
+		    pftags[6].ti_Data, pftags[2].ti_Data));
 	if (XSD(cl)->data.pseudocolor)
 		pftags[8].ti_Data = vHidd_ColorModel_Palette;
 	else
