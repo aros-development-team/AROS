@@ -940,8 +940,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     asm("mov %0,%%ds\n\t"   /* User DS */
 	"mov %0,%%es\n\t"       /* User ES */
+	"movl %%esp,%%ebx\n\t"  /* Hold the esp value before pushing! */
 	"pushl %0\n\t"          /* User SS */
-	"pushl %%esp\n\t"       /* Stack frame */
+	"pushl %%ebx\n\t"       /* Stack frame */
 	"pushl $0x3002\n\t"     /* IOPL:3 */
 	"pushl %1\n\t"          /* User CS */
 	"pushl $1f\n\t"         /* Entry address */
@@ -953,16 +954,17 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 #    define _stringify(x) #x
 #    define stringify(x) _stringify(x)
 
-    asm("movl $" stringify(USER_DS) ",%eax\n\t"
-        "mov %eax,%ds\n\t"                         /* User DS */
-	"mov %eax,%es\n\t"                         /* User ES */
-	"pushl %eax\n\t"                           /* User SS */
-	"pushl %esp\n\t"                           /* Stack frame */
+    asm("movl $" stringify(USER_DS) ",%%eax\n\t"
+        "mov %%eax,%%ds\n\t"                         /* User DS */
+	"mov %%eax,%%es\n\t"                         /* User ES */
+	"movl %%esp,%%ebx\n\t"			/* Hold the esp value before pushing! */
+	"pushl %%eax\n\t"                           /* User SS */
+	"pushl %%ebx\n\t"                           /* Stack frame */
 	"pushl $0x3002\n\t"                        /* IOPL:3 */
 	"pushl $" stringify(USER_CS) "\n\t"        /* User CS */
 	"pushl $1f\n\t"                            /* Entry address */
 	"iret\n"                                   /* Go down to the user mode */
-	"1:\tsti");                                /* Enable interrupts */
+	"1:\tsti":::"eax","ebx");                                /* Enable interrupts */
 
 #   undef stringify
 #   undef _stringify
