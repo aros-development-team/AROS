@@ -2517,10 +2517,22 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 	}
 	
 	rr->nr = nr;
-	
+		
+	if (nr->nr_Flags & NRF_NOTIFY_INITIAL)
+	{
+	    struct MinList tempList;
+	    
+	    /* Create a temporary list on the stack and add the receiver to
+	       it. Then forget about this and add the node to the receiver
+	       list (below this block). */
+	    NewList((struct List *)&tempList);
+	    AddHead((struct List *)&tempList, &rr->node);
+	    Notify_notifyTasks(rambase, &tempList);
+	}
+
 	/* Add the receiver node to the file's/directory's list of receivers */
 	AddTail((struct List *)&dnTemp->receivers, &rr->node);
-	
+
 	return TRUE;
     }
     else
