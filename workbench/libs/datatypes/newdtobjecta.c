@@ -12,6 +12,10 @@
 #include <intuition/intuition.h>
 #include "datatypes_intern.h"	/* Must be after <intuition/intuition.h> */
 
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -112,24 +116,27 @@
     struct IFFHandle *iff = NULL;
     Object           *dtobj = NULL;
     UBYTE            *BaseName = NULL;
+    
+    D(bug("datatypes.library/NewDTObjectA\n"));
 
-kprintf("NewDTObjectA: 1 attrs = %x UtilityBase = %x\n",attrs,UtilityBase);    
     if(!(SourceType = GetTagData(DTA_SourceType, DTST_FILE, attrs)))
-{
-kprintf("NewDTObejctA: 11\n");
+    {
+        D(bug("datatypes.library/NewDTObjectA: Bad DTA_SourceType (or no such tag)\n"));
 	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-kprintf("NewDTObejctA: 12\n");
-}
+    }
     else
     {
-kprintf("NewDTObjectA: 2\n");    
+        D(bug("datatypes.library/NewDTObjectA: DTA_SourceType okay\n"));
+
 	DataType = (struct DataType *)GetTagData(DTA_DataType, NULL, attrs);
 	Handle   =              (APTR)GetTagData(DTA_Handle,   NULL, attrs);
 	GroupID  =                    GetTagData(DTA_GroupID,  0   , attrs);
-kprintf("NewDTObjectA: 3\n");    
+
+        D(bug("datatypes.library/NewDTObjectA: Got attrs DTA_DataType, DTA_Handle and DTA_GroupID\n"));
 	
 	if((SourceType == DTST_RAM) && GroupID)
 	{
+            D(bug("datatypes.library/NewDTObjectA: SourceType is DTST_RAM and GroupID is != 0\n"));
 	    switch (GroupID)
 	    {
 	    case GID_ANIMATION:  BaseName="animation";         break;
@@ -146,34 +153,40 @@ kprintf("NewDTObjectA: 3\n");
 	}
 	else
 	{
-kprintf("NewDTObjectA: 4\n");    
-	    if(Handle != NULL)
-{
-kprintf("NewDTObjectA: 5\n");    
+            D(bug("datatypes.library/NewDTObjectA: SourceType is *not* DTST_RAM or GroupID is 0\n"));
 
+	    if(Handle != NULL)
+	    {
+ 		D(bug("datatypes.library/NewDTObjectA: We have a DTA_Handle. Calling ObtainDataTypeA\n"));
+		
 		DataType = ObtainDataTypeA(SourceType, Handle, attrs);
-kprintf("NewDTObjectA: 6\n");    
-}
+
+    		D(bug("datatypes.library/NewDTObjectA: ObtainDataTypeA() returned %x\n", DataType));
+
+	    }
 	    else
 	    {
-kprintf("NewDTObjectA: 7\n");    
+                D(bug("datatypes.library/NewDTObjectA: DTA_Handle is NULL\n"));
 		if(DataType == NULL)
 		{
-kprintf("NewDTObjectA: 8\n");    
+   		    D(bug("datatypes.library/NewDTObjectA: DataType is NULL\n"));
+
 		    switch(SourceType)
 		    {
 		    case DTST_FILE:
-kprintf("NewDTObjectA: 9\n");    
+    			D(bug("datatypes.library/NewDTObjectA: SourceType is DTST_FILE\n"));
+
 			if((lock = Lock(name, ACCESS_READ)))
 			{
-kprintf("NewDTObjectA: 10\n");    
+    			    D(bug("datatypes.library/NewDTObjectA: Lock(\"%s\") okay\n", name));
 			    if((DataType = ObtainDataTypeA(SourceType,
 							   (APTR)lock, attrs)))
 			    {
-kprintf("NewDTObjectA: 11\n");    
+   				D(bug("datatypes.library/NewDTObjectA: ObtainDataType returned %x\n", DataType));
 				if (GroupID && (DataType->dtn_Header->dth_GroupID != GroupID))
 				{
-kprintf("NewDTObjectA: 12\n");    
+    				    D(bug("datatypes.library/NewDTObjectA: Bad GroupID\n"));
+
 				    ReleaseDataType(DataType);
 				    DataType = NULL;
 				    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
@@ -187,74 +200,92 @@ kprintf("NewDTObjectA: 12\n");
 				UnLock(lock);
 				lock = NULL;
 			    }
+			    
 			} /* if lock aquired */
-kprintf("NewDTObjectA: 13\n");    
 			break;
 			
 		    case DTST_CLIPBOARD:
+    			D(bug("datatypes.library/NewDTObjectA: SourceType = DTST_CLIPBOARD\n"));
+
 			if(!(iff = AllocIFF()))
 			    SetIoErr(ERROR_NO_FREE_STORE);
 			else
 			{
+    			    D(bug("datatypes.library/NewDTObjectA: AllocIFF okay\n"));
 			    if((iff->iff_Stream = (ULONG)OpenClipboard((ULONG)name)))
 			    {
+    				D(bug("datatypes.library/NewDTObjectA: OpenClipBoard okay\n"));
+
 				InitIFFasClip(iff);
 				
 				if(!OpenIFF(iff, IFFF_READ))
 				{
+    				    D(bug("datatypes.library/NewDTObjectA: OpenIFF okay\n"));
+				    
 				    if((DataType = ObtainDataTypeA(SourceType,
 								  iff, attrs)))
 				    {
+   					D(bug("datatypes.library/NewDTObjectA: ObtainDataType returned %x\n", DataType));
+
 					if (GroupID && (DataType->dtn_Header->dth_GroupID != GroupID))
 					{
+    					    D(bug("datatypes.library/NewDTObjectA: Bad GroupID\n"));
+
 					    ReleaseDataType(DataType);
 					    DataType = NULL;
 					    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
 					}
 					else
 					    Handle = iff;
-				    }
+					    
+				    } /* ObtainDataType okay */
 				    if(Handle == NULL)
 					CloseIFF(iff);
-				}
+					
+				} /* OpenIFF okay */
+				
 				if(Handle == NULL)
 				    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
-			    }
+				    
+			    } /* OpenClipBoard okay */
 			    
 			    if(Handle == NULL)
 			    {
 				FreeIFF(iff);
 				iff = NULL;
 			    }
-			}
+			    
+			} /* AllocIFF okay */
 			
 			break;
-		    }
-		}
-	    }
-	}
-kprintf("NewDTObjectA: 14\n");    
+			
+		    } /* switch(SourceType) */
+		    
+		} /* if (DataType == NULL */
+		
+	    } /* DTA_Handle == NULL */
+	    
+	} /* SourceType != DTST_RAM or GroupID == 0 */
 	
 	if(DataType != NULL)
 	    BaseName = DataType->dtn_Header->dth_BaseName;
-kprintf("NewDTObjectA: 15\n");    
 	
 	if(BaseName != NULL)
 	{
 	    UBYTE libname[120];
 	    struct Library *DTClassBase;
 
-kprintf("NewDTObjectA: 16\n");    
+    	    D(bug("datatypes.library/NewDTObjectA: Trying OpenLibrary(datatypes/%s.datatype)\n", BaseName));
 	    
 	    dt_sprintf(DataTypesBase, libname,"datatypes/%s.datatype", BaseName);
-kprintf("NewDTObjectA: 17: libname = %s\n", libname);    
 	    
 	    if(!(DTClassBase = OpenLibrary(libname, 0)))
 		SetIoErr(DTERROR_UNKNOWN_DATATYPE);
 	    else
 	    {
 		struct IClass *DTClass;
-kprintf("NewDTObjectA: 18\n");    
+
+   		D(bug("datatypes.library/NewDTObjectA: OpenLibrary okay. Now calling ObtainEngine\n"));
 		
 		/* Call ObtainEngine() */
 		if((DTClass = AROS_LVO_CALL0(Class *, struct Library *,
@@ -262,6 +293,8 @@ kprintf("NewDTObjectA: 18\n");
 		    
 		{
 		    struct TagItem Tags[4];
+
+    		    D(bug("datatypes.library/NewDTObjectA: ObtainEngine returned %x\n", DTClass));
 		    
 		    Tags[0].ti_Tag  = DTA_Name;
 		    Tags[0].ti_Data = (ULONG)name;
@@ -272,46 +305,55 @@ kprintf("NewDTObjectA: 18\n");
 		    Tags[3].ti_Tag  = TAG_MORE;
 		    Tags[3].ti_Data = (ULONG)attrs;
 		    
+    		    D(bug("datatypes.library/NewDTObjectA: Calling NewObjectA on obtained engine\n"));
+
 		    dtobj = NewObjectA(DTClass, NULL, Tags);
+
+    		    D(bug("datatypes.library/NewDTObjectA: NewObjectA returned %x\n", dtobj));
 		    
 		    lock = NULL;
 		    iff = NULL;
-		}
+		    
+		} /* ObtainEngine okay */
 		
 		if(dtobj == NULL)
 		    CloseLibrary(DTClassBase);
-	    }
-kprintf("NewDTObjectA: 30\n");    
-	}
-kprintf("NewDTObjectA: 31\n");    
+		    
+	    } /* datatype class library could be opened */
+
+	} /* if (BaseName != NULL) */
 	
 	if(dtobj == NULL)
 	{
-kprintf("NewDTObjectA: 32\n");    
+    	    D(bug("datatypes.library/NewDTObjectA: dtobj is NULL. Cleaning up\n"));
+
 	    if(lock != NULL)
 		UnLock(lock);
-kprintf("NewDTObjectA: 33\n");    
 	    
 	    if(iff != NULL)
 	    {
-kprintf("NewDTObjectA: 34\n");    
+    		D(bug("datatypes.library/NewDTObjectA: Calling CloseIFF\n"));
 		CloseIFF(iff);
-kprintf("NewDTObjectA: 35\n");    
+    		D(bug("datatypes.library/NewDTObjectA: Calling CloseClipboard\n"));
 		CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
-kprintf("NewDTObjectA: 36\n");    
+    		D(bug("datatypes.library/NewDTObjectA: Calling FreeIFF\n"));
 		FreeIFF(iff);
-kprintf("NewDTObjectA: 37\n");    
-	    }
-	}
-    }
-kprintf("NewDTObjectA: 38\n");    
-    
+   		D(bug("datatypes.library/NewDTObjectA: IFF cleanup done\n"));
+
+	    } /* if (iff != NULL) */
+	    
+	} /* if (dtobj == NULL) */
+	
+    } /* SourceType okay */
+        
     if(IoErr() == ERROR_OBJECT_NOT_FOUND)
 	SetIoErr(DTERROR_COULDNT_OPEN);
-kprintf("NewDTObjectA: 39 dto = %x\n", dtobj);    
-    
+
+    D(bug("datatypes.library/NewDTObjectA: Done. Returning %x\n", dtobj));
+
     return dtobj;
     
     AROS_LIBFUNC_EXIT
+    
 } /* NewDTObjectA */
 

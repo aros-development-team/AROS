@@ -14,7 +14,9 @@
 #include "datatypes_intern.h"
 #include <clib/boopsistubs.h>
 
-
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
 
 /************************** ASCII/BINARY RECOGNITION *************************/
 
@@ -87,11 +89,11 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
     //    struct XpkFib *xpkfib=NULL;
     BPTR dosfile;
 
-kprintf("datatypes.library/NewOpen: name = %s\n", name);
+    D(bug("datatypes.library/NewOpen: name = %s\n", name));
 	
     if((dosfile = Open(name, MODE_OLDFILE)))
     {
-kprintf("datatypes.library/NewOpen: open okay\n");
+	D(bug("datatypes.library/NewOpen: open okay\n"));
 
 	returnfh = dosfile;
 
@@ -154,54 +156,55 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 {
     struct CompoundDatatype *cdt = NULL;
 
-kprintf("ExamineLock: 1\n");
+    D(bug("datatypes.library/ExamineLock\n"));
     
     ObtainSemaphoreShared(&getDTLIST->dtl_Lock);
 
-kprintf("ExamineLock: 2\n");
-    
     if(Examine(lock, fib))
     {
-kprintf("ExamineLock: 31\n");
+        D(bug("datatypes.library/ExamineLock: Examine okay\n"));
 	if (fib->fib_DirEntryType > 0)
 	{
-kprintf("ExamineLock: 4\n");
+   	    D(bug("datatypes.library/ExamineLock: is a directory\n"));
 	    cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, 
 							    &getDTLIST->dtl_MiscList,
 							    "directory");
-kprintf("ExamineLock: 5\n");
 	}
 	else
 	{
-kprintf("ExamineLock: 6\n");
 	    if (fib->fib_DirEntryType < 0)
 	    {
 		UBYTE namebuf[510];
 		
-kprintf("ExamineLock: 7\n");
+    		D(bug("datatypes.library/ExamineLock: is a file\n"));
+		
 		if (NameFromLock(lock, namebuf, sizeof(namebuf)))
 		{
 		    BPTR file;
 		    
-kprintf("ExamineLock: 8\n");
+    		    D(bug("datatypes.library/ExamineLock: NameFromLock okay. Name = \"%s\"\n", namebuf));
+		    
 		    if((file = NewOpen(DataTypesBase, namebuf, DTST_FILE, 0)))
 		    {
 			UBYTE *CheckArray;
 			UWORD CheckSize = (getDTLIST->dtl_LongestMask > 64) ?
 			    getDTLIST->dtl_LongestMask : 64;
 			
-kprintf("ExamineLock: 10\n");
+    			D(bug("datatypes.library/ExamineLock: NewOpen okay\n"));
+
 			if((CheckArray = AllocVec((ULONG)(CheckSize)+1,
 						  MEMF_CLEAR)))
 			{
-kprintf("ExamineLock: 11\n");
+   			    D(bug("datatypes.library/ExamineLock: Alloced CheckArray\n"));
+			    
 			    if((CheckSize = Read(file, CheckArray, 
 						 (ULONG)CheckSize)) > 0)
 			    {
 				struct DTHookContext dthc;
 				struct IFFHandle *iff;
 				
-kprintf("ExamineLock: 12\n");
+    				D(bug("datatypes.library/ExamineLock: Read in CheckArray size = %d\n", CheckSize));
+				
 				Seek(file, 0, OFFSET_BEGINNING);
 				
 				dthc.dthc_SysBase = (struct Library *)SysBase;
@@ -213,21 +216,20 @@ kprintf("ExamineLock: 12\n");
 				dthc.dthc_FileHandle = file;
 				dthc.dthc_Buffer = CheckArray;
 				dthc.dthc_BufferLength = CheckSize;
-kprintf("ExamineLock: 13 iffparsebase = %x\n", IFFParseBase);
 				
 				if(!(iff=dthc.dthc_IFF = AllocIFF()))
 				    SetIoErr(ERROR_NO_FREE_STORE);
 				else
 				{
-kprintf("ExamineLock: 14 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
+    				    D(bug("datatypes.library/ExamineLock: AllocIFF okay: iff = %x\n", iff));
+
 				    iff->iff_Stream = (IPTR)file;   /* Hmm? */
-kprintf("ExamineLock: 15 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 				    InitIFFasDOS(iff);
-kprintf("ExamineLock: 16 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 				    
 				    if (!OpenIFF(iff, IFFF_READ))
 				    {
-kprintf("ExamineLock: 17 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
+    					D(bug("datatypes.library/ExamineLock: OpenIFF okay. Now calling ExamineData\n"));
+
 					cdt = ExamineData(DataTypesBase,
 							  &dthc,
 							  CheckArray,
@@ -235,25 +237,33 @@ kprintf("ExamineLock: 17 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
 							  fib->fib_FileName,
 							  fib->fib_Size);
 					
-kprintf("ExamineLock: 18 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
+    					D(bug("datatypes.library/ExamineLock: ExamineData() returned %x\n", cdt));
+
 					CloseIFF(iff);
-kprintf("ExamineLock: 19 iff = %x dthc_iff = %x\n", iff, dthc.dthc_IFF);
-				    }
-kprintf("ExamineLock: 19_1: iff = %x cdt = %x iffparsebase = %x\n", dthc.dthc_IFF, cdt, IFFParseBase);
+					
+				    } /* OpenIFF okay */
 				    
 				    FreeIFF(iff); /* AROS BUG FIX: was dthc.dthc_IFF) */
-kprintf("ExamineLock: 20\n");
-				}
-			    }
+				    
+				} /* AllocIFF okay */
+				
+			    } /* if (CheckSize = Read(... */
+			    		    
 			    FreeVec(CheckArray);
-			}
+			    
+			} /* if (CheckArray = AllocVec(... */
 			
 			Close(file);
+			
 		    } /* if file opened */
+		    
 		} /* if I got the name from the lock */
-	    }
-	}
-    }
+		
+	    } /* it is a file */
+	    
+	} /* it is not a directory */
+	
+    } /* if(Examine(lock, fib)) */
 
     ReleaseSemaphore(&getDTLIST->dtl_Lock);
     
@@ -456,6 +466,7 @@ void dt_sprintf(struct Library *DataTypesBase, UBYTE *buffer, UBYTE *format, ...
     RawDoFmt(format, &format+1, (VOID_FUNC)putchr, &buffer);
 }
 
+#warning these work only with stack growing downwards and should therefore be fixed to use macros in utility/tagitem.h
 
 ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...)
 {
@@ -466,7 +477,14 @@ ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...)
 ULONG Do_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
 		   struct GadgetInfo *ginfo, ULONG flags, Tag firstTag,...)
 {
-    return DoMethod(object, OM_NOTIFY, &firstTag, ginfo, flags);
+    struct opUpdate opu;
+    
+    opu.MethodID = OM_NOTIFY;
+    opu.opu_AttrList = (struct TagItem *)&firstTag;
+    opu.opu_GInfo = ginfo;
+    opu.opu_Flags = flags;
+    
+    return DoMethodA(object, (Msg)&opu);
 }
 
 

@@ -181,9 +181,7 @@ AROS_LH1(struct DataTypesBase *, open,
 						  OC_BuiltInLanguage,
 						  "english", TAG_DONE);
 
-kprintf("datatypes_init/open() 1: utilitybase = %x\n", UtilityBase);
 	DataTypesBase->dtb_DTList = GetDataTypesList(DataTypesBase);
-kprintf("datatypes_init/open() 2: utilitybase = %x\n", UtilityBase);
 
 	if(!InstallClass((struct Library *)DataTypesBase))
 	{
@@ -194,8 +192,6 @@ kprintf("datatypes_init/open() 2: utilitybase = %x\n", UtilityBase);
     /* What else do we have to do? */
     DataTypesBase->dtb_LibNode.lib_OpenCnt++;
     DataTypesBase->dtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
-
-kprintf("datatypes_init/open() 3: utilitybase = %x\n", UtilityBase);
 
     return DataTypesBase;
     AROS_LIBFUNC_EXIT

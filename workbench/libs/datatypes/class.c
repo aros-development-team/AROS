@@ -31,6 +31,9 @@
 
 #include <clib/boopsistubs.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 /* #include <devices/printer.h>  --  No printer stuff yet... */
 
 /*****************************************************************************/
@@ -285,7 +288,8 @@ AROS_UFH3(IPTR, Dispatcher,
 	    struct Gadget   *newobject;
 	    struct DTObject *newdto;
 	    
-kprintf("dtclass_new 1\n");
+	    D(bug("datatypes.library/class/OM_NEW\n"));
+
 	    if(!(newobject = (struct Gadget *)DoSuperMethodA(class, object,
 							     msg)))
 		SetIoErr(ERROR_NO_FREE_STORE);
@@ -295,7 +299,8 @@ kprintf("dtclass_new 1\n");
 		struct TagItem *nametag;
 		BOOL Success = FALSE;
 		APTR handle;
-kprintf("dtclass_new 2\n");
+
+	        D(bug("datatypes.library/class/OM_NEW: DoSuperMethod succeeded\n"));
 		
 		newdto = INST_DATA(class, newobject);
 		
@@ -313,8 +318,9 @@ kprintf("dtclass_new 2\n");
 		else
 		{
 		    LONG namelen = 2;
+
+	    	    D(bug("datatypes.library/class/OM_NEW: DTA_Name tag found\n"));
 		    
-kprintf("dtclass_new 3\n");
 		    if (newdto->dto_SourceType == DTST_FILE)
 		    {
 		        namelen = (ULONG)strlen((UBYTE *)nametag->ti_Data) + 1;
@@ -324,7 +330,8 @@ kprintf("dtclass_new 3\n");
 			SetIoErr(ERROR_NO_FREE_STORE);
 		    else
 		    {
-kprintf("dtclass_new 4\n");
+	   		D(bug("datatypes.library/class/OM_NEW: Namelen allocation succeeded\n"));
+			
 			switch(newdto->dto_SourceType)
 			{
 			    case DTST_FILE:
@@ -340,10 +347,13 @@ kprintf("dtclass_new 4\n");
 			    Success = TRUE;
 			else
 			{
-kprintf("dtclass_new 5\n");
+	   		    D(bug("datatypes.library/class/OM_NEW: DTA_DataType tag value okay\n"));
+			    
 			    switch(newdto->dto_SourceType)
 			    {
 			    case DTST_FILE:
+			    	D(bug("datatypes.library/class/OM_NEW: SourceType = DTST_FILE\n"));
+
 				switch(newdto->dto_DataType->dtn_Header->dth_Flags & DTF_TYPE_MASK)
 				{
 				case DTF_IFF:
@@ -367,10 +377,12 @@ kprintf("dtclass_new 5\n");
 				    break;
 				    
 				default:
-kprintf("datatypes.library: calling NewOpen\n");
+	   			    D(bug("datatypes.library/class/OM_NEW: calling NewOpen()\n"));
+
 				    if((newdto->dto_Handle = (APTR)NewOpen((struct Library *)DataTypesBase, newdto->dto_Name, DTST_FILE, 0)))
 					Success = TRUE;
-kprintf("datatypes.library: calling NewOpen success = %d\n",Success);
+
+	    			    D(bug("datatypes.library/class/OM_NEW: NewOpened() returned %s\n", Success ? "success" : "failure"));
 				    
 				    UnLock((BPTR)handle);
 				    break;
@@ -378,7 +390,8 @@ kprintf("datatypes.library: calling NewOpen success = %d\n",Success);
 				break;
 				
 			    case DTST_CLIPBOARD:
-kprintf("dtclass_new 6\n");
+			    	D(bug("datatypes.library/class/OM_NEW: SourceType = DTST_CLIPBOARD\n"));
+
 				newdto->dto_Handle = handle;
 				Success = TRUE;
 				break;
@@ -396,7 +409,9 @@ kprintf("dtclass_new 6\n");
 		else
 		    CoerceMethod(class, (Object *)newobject, OM_DISPOSE);
 	    }
-kprintf("datatypes.library: OM_NEW: returning %x handle = %x\n", retval, newdto->dto_Handle);
+
+	    D(bug("datatypes.library/class/OM_NEW: returning %x handle = %x\n", retval, newdto->dto_Handle));
+
 	    break;
 	} /* case OM_NEW: */
 
@@ -414,7 +429,7 @@ kprintf("datatypes.library: OM_NEW: returning %x handle = %x\n", retval, newdto-
 	break;
 	
     case OM_GET:
-kprintf("datatypes.library OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID);
+	D(bug("datatypes.library/class/OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID));
 	{
 	    IPTR *store = ((struct opGet *)msg)->opg_Storage;
 	    retval = 1;
@@ -436,9 +451,7 @@ kprintf("datatypes.library OM_GET: tag = %x\n", ((struct opGet*)msg)->opg_AttrID
 		
 	    case DTA_Name:          *store = (IPTR)dto->dto_Name;     break;
 	    case DTA_SourceType:    *store = dto->dto_SourceType;      break;
-	    case DTA_Handle:
-kprintf("datatypes.library OM_GET DTA_Handle: = %x\n", dto->dto_Handle);
-	            *store = (IPTR)dto->dto_Handle;   break;
+	    case DTA_Handle:	    *store = (IPTR)dto->dto_Handle;   break;
 	    case DTA_DataType:      *store = (IPTR)dto->dto_DataType; break;
 	    case DTA_Domain:        *store = (IPTR)&dto->dto_Domain;  break;
 		
