@@ -62,7 +62,7 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		      %h -- abbreviated month name
 		      %H -- hour using 24 hour style with leading zeros
 		      %I -- hour using 12 hour style with leading zeros
-		      %j -- julian date
+		      %j -- julian date (day of year as a decimal)
 		      %m -- month number with leading zeros
 		      %M -- the number of minutes with leading zeros
 		      %n -- linefeed
@@ -196,9 +196,14 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 		break;
 		
 	    case 'j':
-	        /* TODO */
-#warning Julian date not implemented.
-		_WriteString("unimplemented!", hook, locale);
+		/* Julian date is DDD (1 - 366)*/
+		PrintDigits(
+		    cData.mday + dayspermonth[cData.month],
+		    '0',
+		    3,
+		    hook,
+		    locale
+		);
 		break;
 		
 	    case 'm':
