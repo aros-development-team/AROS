@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Code executed by the console.device task.
@@ -89,7 +89,7 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
     {
     	/* Create a messageport that will be used to receive commands */
 	ConsoleDevice->commandPort = CreateMsgPort();
-	if (NULL == CreateMsgPort())
+	if (NULL == ConsoleDevice->commandPort)
 	    success = FALSE;
     }
     
