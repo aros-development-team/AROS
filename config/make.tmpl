@@ -1060,8 +1060,8 @@ $(OBJDIR)/%.d : %.c
 # file %(from), with outputfile going to %(to).
 %define makeicon2 from=$< to=$@ img1="$(basename $(basename $<))_N.png" img2="$(basename $(basename $<))_S.png"
 	@$(ECHO) "Creating icon %(to)..."
-	@$(PNGTOPNM) %(img1) | $(PPMTOILBM) >$(GENDIR)/genicon1.iff
-	@$(PNGTOPNM) %(img2) | $(PPMTOILBM) >$(GENDIR)/genicon2.iff
+	@$(PNGTOPNM) %(img1) | $(PPMTOILBM) -maxplanes 8 >$(GENDIR)/genicon1.iff
+	@$(PNGTOPNM) %(img2) | $(PPMTOILBM) -maxplanes 8 >$(GENDIR)/genicon2.iff
 	@$(ILBMTOICON) %(from) $(GENDIR)/genicon1.iff $(GENDIR)/genicon2.iff %(to)
 %end
 
