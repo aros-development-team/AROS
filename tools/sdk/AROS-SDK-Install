@@ -99,7 +99,7 @@ while true; do
     read aros_sdk_path_tmp
 
     if test "$aros_sdk_path_tmp" != ""; then
-        aros_sdk_path=aros_sdk_path_tmp
+        aros_sdk_path=$aros_sdk_path_tmp
     fi
 
     while true; do
