@@ -81,6 +81,9 @@ void writeincdefines(int dummy)
 
 	    /* Output a vararg macro if the function matches the prototype */
 
+	    if (funclistit->novararg)
+		continue;
+	    
 	    /* Go to last argument */
 	    arglistit = funclistit->arguments;
 	    if (arglistit == NULL)

@@ -91,6 +91,7 @@ void readconfig(void)
         function->name = "MCC_Query";
         function->type = NULL;
         function->lvo = firstlvo - 1;
+	function->novararg = 0;
         function->argcount = 1;
         function->arguments = malloc(sizeof(struct arglist));
         function->arguments->next = NULL;
@@ -121,7 +122,7 @@ static void readsectionconfig(void)
             {
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
                 "version", "date", "libcall", "forcebase", "superclass",
-		"residentpri"
+		"residentpri", "options"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -231,6 +232,43 @@ static void readsectionconfig(void)
 			exitfileerror(20, "residentpri number format error\n");
 		    }
 		}
+		break;
+	    case 11: /* options */
+		do {
+		    static const char *optionnames[] =
+		    {
+			"noautolib", "noexpunge"
+		    };
+		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
+		    int optionnum;
+
+		    for (i = 0, optionnum = 0; optionnum==0 && i<optionnums; i++)
+		    {
+			if (strncmp(s, optionnames[i], strlen(optionnames[i]))==0)
+			{
+			    optionnum = i + 1;
+			    s += strlen(optionnames[i]);
+			    while (isspace(*s)) s++;
+			    if (*s == ',')
+				s++;
+			    else if (*s != '\0')
+				exitfileerror(20, "Unrecognized option\n");
+			}
+		    }
+		    if (optionnum == 0)
+			exitfileerror(20, "Unrecognized option\n");
+		    switch (optionnum)
+		    {
+		    case 1: /* noautolib */
+			options |= OPTION_NOAUTOLIB;
+			break;
+		    case 2: /* noexpunge */
+			options |= OPTION_NOEXPUNGE;
+			break;
+		    }
+		    while (isspace(*s)) s++;
+		} while(*s !='\0');
+		break;
 	    }
 	}
 	else /* Line starts with ## */
@@ -482,6 +520,7 @@ static void readsectionfunctionlist(void)
 	    (*funclistptr)->argcount = 0;
 	    (*funclistptr)->arguments = NULL;
 	    (*funclistptr)->lvo = lvo;
+	    (*funclistptr)->novararg = 0;
 	    lvo++;
 	    switch (libcall)
 	    {

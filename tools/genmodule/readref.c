@@ -302,7 +302,8 @@ int parsemuimethodname(char *name,
 	    method->argcount = 0;
 	    method->arguments = NULL;
 	    method->lvo = 0; /* not used */
-                    
+	    method->novararg = 0;
+	    
 	    if (methlist == NULL )
 		methlist = method;
 	    else
@@ -328,12 +329,23 @@ int parsemuimethodname(char *name,
 int parsemacroname(char *name,
 		   struct _parseinfo *parseinfo)
 {
-    if (libcall == REGISTERMACRO && strncmp(name, "AROS_LH_", 8) == 0)
+    if (libcall == REGISTERMACRO && (strncmp(name, "AROS_LH_", 8) == 0  || strncmp(name, "AROS_NTLH_", 10) == 0)) 
     {
 	struct functionlist *funclistit, *func;
 	char *begin, *end;
-
-	begin = name+8;
+	int novararg;
+	
+	if (strncmp(name, "AROS_LH_", 8) == 0)
+	{
+	    begin = name+8;
+	    novararg = 0;
+	}
+	else
+	{
+	    begin = name+10;
+	    novararg = 1;
+	}
+	
 	if (strncmp(begin, basename, strlen(basename)) != 0 || begin[strlen(basename)] != '_')
 	    return 0;
 	
@@ -343,6 +355,7 @@ int parsemacroname(char *name,
 	func = malloc(sizeof(struct functionlist));
 	func->argcount = 0;
 	func->arguments = NULL;
+	func->novararg = novararg;
 	
 	while(end != begin && *end != '_') end--;
 	*end = '\0';

@@ -1,6 +1,19 @@
 #ifndef AROS_LIBCALL_H
 #define AROS_LIBCALL_H
 
+#ifndef __typedef_VOID_FUNC
+#define __typedef_VOID_FUNC
+typedef void (*VOID_FUNC)();
+#endif
+#ifndef __typedef_LONG_FUNC
+#define __typedef_LONG_FUNC
+typedef long (*LONG_FUNC)();
+#endif
+#ifndef __typedef_ULONG_FUNC
+#define __typedef_ULONG_FUNC
+typedef unsigned long (*ULONG_FUNC)();
+#endif
+
 #define AROS_LHA(type,name,reg) type,name,reg
 #define __AROS_LHA_GENMOD(type,name,reg) type name ## _ ## reg
 #define AROS_LHAQUAD(type,name,reg1,reg2) type,name,reg1,reg2
@@ -143,6 +156,160 @@
     __AROS_LHA_GENMOD(a14))
 #define AROS_LH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
     t AROS_LH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9),\
+    __AROS_LHA_GENMOD(a10),\
+    __AROS_LHA_GENMOD(a11),\
+    __AROS_LHA_GENMOD(a12),\
+    __AROS_LHA_GENMOD(a13),\
+    __AROS_LHA_GENMOD(a14),\
+    __AROS_LHA_GENMOD(a15))
+
+
+#define AROS_NTLH0(t,n,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o (void)
+#define AROS_NTLH1(t,n,a1,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1))
+#define AROS_NTLH2(t,n,a1,a2,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2))
+#define AROS_NTLH3(t,n,a1,a2,a3,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3))
+#define AROS_NTLH4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4))
+#define AROS_NTLH5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5))
+#define AROS_NTLH6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6))
+#define AROS_NTLH7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7))
+#define AROS_NTLH8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8))
+#define AROS_NTLH9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9))
+#define AROS_NTLH10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9),\
+    __AROS_LHA_GENMOD(a10))
+#define AROS_NTLH11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9),\
+    __AROS_LHA_GENMOD(a10),\
+    __AROS_LHA_GENMOD(a11))
+#define AROS_NTLH12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9),\
+    __AROS_LHA_GENMOD(a10),\
+    __AROS_LHA_GENMOD(a11),\
+    __AROS_LHA_GENMOD(a12))
+#define AROS_NTLH13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9),\
+    __AROS_LHA_GENMOD(a10),\
+    __AROS_LHA_GENMOD(a11),\
+    __AROS_LHA_GENMOD(a12),\
+    __AROS_LHA_GENMOD(a13))
+#define AROS_NTLH14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
+    __AROS_LHA_GENMOD(a1),\
+    __AROS_LHA_GENMOD(a2),\
+    __AROS_LHA_GENMOD(a3),\
+    __AROS_LHA_GENMOD(a4),\
+    __AROS_LHA_GENMOD(a5),\
+    __AROS_LHA_GENMOD(a6),\
+    __AROS_LHA_GENMOD(a7),\
+    __AROS_LHA_GENMOD(a8),\
+    __AROS_LHA_GENMOD(a9),\
+    __AROS_LHA_GENMOD(a10),\
+    __AROS_LHA_GENMOD(a11),\
+    __AROS_LHA_GENMOD(a12),\
+    __AROS_LHA_GENMOD(a13),\
+    __AROS_LHA_GENMOD(a14))
+#define AROS_NTLH15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
+    t AROS_NTLH_ ## s ## _ ## n ## _ ## o(\
     __AROS_LHA_GENMOD(a1),\
     __AROS_LHA_GENMOD(a2),\
     __AROS_LHA_GENMOD(a3),\
