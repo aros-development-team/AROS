@@ -239,21 +239,21 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
 	maxchars = data->StrInfo.MaxChars;
 	if (!data->StrInfo.Buffer)
 	{
-	    data->StrInfo.Buffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+	    data->StrInfo.Buffer = (STRPTR)AllocVec(maxchars, MEMF_ANY | MEMF_CLEAR);
 	    if (!data->StrInfo.Buffer)
 		goto failure;
 	    data->Flags |= SFLG_BUFFER_ALLOCATED;
 	}
 	if (!data->StrInfo.UndoBuffer)
 	{
-	    data->StrInfo.UndoBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+	    data->StrInfo.UndoBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY | MEMF_CLEAR);
 	    if (!data->StrInfo.UndoBuffer)
 		goto failure;
 	    data->Flags |= SFLG_UNDOBUF_ALLOCATED;
 	}
 	if (!data->StrExtend.WorkBuffer)
 	{
-	    data->StrExtend.WorkBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+	    data->StrExtend.WorkBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY | MEMF_CLEAR);
 	    if (!data->StrExtend.WorkBuffer)
 		goto failure;
 	    data->Flags |= SFLG_WORKBUF_ALLOCATED;
