@@ -1,0 +1,17 @@
+printi  "Updating sources..."
+
+printi  "Updating AROS sources..."
+cd      $SOURCE_AROS
+execute cvs update
+
+printi  "Updating contrib sources..."
+cd      $SOURCE_CONTRIB
+execute cvs update
+
+printi  "Updating necessary module sources..."
+cd      $SOURCE_AROS
+execute cvs checkout necessary
+delete  $SOURCE_NECESSARY
+move    contrib $SOURCE_NECESSARY
+
+cd      $ROOT

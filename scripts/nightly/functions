@@ -1,0 +1,53 @@
+#
+# Codes:
+# ---   = Information
+# !!!   = Error
+# >>>   = Executing command
+
+print() {
+    echo $* | tee -a $LOG_ALL | tee -a $LOG_THIS
+}
+
+printi() {
+    print '---' $*
+}
+
+printe() {
+    print '!!!' $* 
+}
+
+printx() {
+    print '>>>' $*
+}
+
+cd() {
+    printx "cd" $*
+    chdir $*
+}
+
+execute() {
+    printx $*
+    export RC=0
+    (
+        $*
+        if [ $? != 0 ]; then
+            printe "Command '$*' returned error. ABORTING BUILD!"
+            touch /tmp/_aros_build_fail
+        fi
+    ) | tee -a $LOG_ALL | tee -a $LOG_THIS
+    if [ -f /tmp/_aros_build_fail ]; then
+        rm -f /tmp/_aros_build_fail
+        exit 5
+    fi
+}
+
+resetl() {
+    LOG_CURRENT=/dev/null
+}
+
+setl() {
+    LOG_THIS=$*
+    if [ ! -f $file ]; then
+        touch $file >/dev/null
+    fi    
+}

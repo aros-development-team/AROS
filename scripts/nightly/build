@@ -1,0 +1,31 @@
+#!/bin/zsh
+
+export SP=$(dirname $0)
+source $SP/setup initial
+
+printi "Starting "$CFG_NAME" nightly build..."
+
+source $SP/update
+if [ $? != 0 ]; then
+    printe "Updating sources FAILED! Aborting script."
+    exit 5
+fi
+
+FAILED=""
+
+for package in $CFG_PACKAGES; do
+    zsh $SP/pkg/$package
+    if [ $? != 0 ]; then
+        printe "Build of package '"$package"' FAILED."
+        FAILED="$FAILED $package"
+    else
+        printi "Build of package '"$package"' completed successfully."
+    fi
+done
+
+source $SP/cleanup
+
+printi "Compressing log files..."
+for file in $ARCHIVE_BASE/*.log; do
+    bzip2 $file
+done

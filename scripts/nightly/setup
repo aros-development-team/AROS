@@ -1,0 +1,71 @@
+# Import configuration
+source $SP/cfg/current
+
+# Determine version
+VERSION=$(date -u +"%Y%m%d")
+BASENAME=AROS-$VERSION
+
+# Setup important paths
+ROOT=$(pwd)
+
+SOURCE_ROOT=$ROOT/Source
+SOURCE_AROS=$SOURCE_ROOT/AROS
+SOURCE_CONTRIB=$SOURCE_ROOT/Contrib
+SOURCE_NECESSARY=$SOURCE_ROOT/Necessary
+
+BUILD_ROOT=$ROOT/Build
+BUILD_BASE=$BUILD_ROOT/$VERSION
+
+ARCHIVE_ROOT=$ROOT/Archive
+ARCHIVE_BASE=$ARCHIVE_ROOT/$VERSION
+
+# Setup log paths
+LOG_ALL=$ARCHIVE_BASE/$BASENAME.log
+LOG_THIS=/dev/null
+
+# Figure out the host platform
+HOST_OS=$(uname)
+case $HOST_OS in
+    Linux)
+        HOST_OS=linux
+        ;;
+    FreeBSD)
+        HOST_OS=freebsd
+        ;;
+esac
+        
+HOST_CPU=$(uname -m)
+case $HOST_CPU in
+    i?86)
+        HOST_CPU=i386
+        ;;
+esac
+
+
+# Figure out the build tools
+if [[ $HOST_OS == "freebsd" ]]; then
+    alias make='execute gmake'
+else
+    alias make='execute make'
+fi
+
+alias archive='execute tar cjvf'
+alias makedir='execute mkdir -p'
+alias  delete='execute rm -rf'
+alias    copy='execute cp -pR'
+alias    move='execute mv -f'
+
+# Initial setup, if requested
+if [[ $1 == "initial" ]]; then
+    # Setup directories if needed
+    rm -rf $BUILD_BASE $ARCHIVE_BASE
+    mkdir -p $BUILD_ROOT $BUILD_BASE
+    mkdir -p $ARCHIVE_ROOT $ARCHIVE_BASE
+
+    if [ ! -f $LOG_ALL ]; then
+        touch $LOG_ALL
+    fi
+fi
+
+# Import functions
+source $SP/functions

@@ -1,0 +1,33 @@
+#!/bin/zsh
+# Creates source packages.
+
+source $SP/setup
+
+printi "Creating source packages..."
+
+printi "Creating AROS source package..."
+PACKAGE=$BASENAME-source
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+setl    $ARCHIVE_BASE/$PACKAGE.log
+copy    $SOURCE_AROS $BUILD_BASE/$PACKAGE
+copy    $SOURCE_NECESSARY $BUILD_BASE/$PACKAGE/contrib
+cd      $BUILD_BASE
+archive $ARCHIVE $PACKAGE
+cd      $ROOT
+delete  $BUILD_BASE/$PACKAGE
+resetl
+
+printi "Creating contrib source package..."
+PACKAGE=$BASENAME-contrib-source
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+setl    $ARCHIVE_BASE/$PACKAGE.log
+copy    $SOURCE_CONTRIB $BUILD_BASE/$PACKAGE
+cd      $BUILD_BASE
+archive $ARCHIVE $PACKAGE
+cd      $ROOT
+delete  $BUILD_BASE/$PACKAGE
+resetl
+
+cd      $ROOT

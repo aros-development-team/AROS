@@ -1,0 +1,54 @@
+#!/bin/zsh
+# Creates AROS/i386-pc binary packages.
+
+source $SP/setup
+
+printi "Creating AROS/i386-pc binary packages..."
+
+setl    $ARCHIVE_BASE/$BASENAME-i386-pc.log
+delete  $BUILD_BASE/AROS
+copy    $SOURCE_AROS    $BUILD_BASE/AROS
+copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+
+cd      $BUILD_BASE/AROS
+execute autoconf
+execute ./configure --target=pc-i386
+make
+
+PACKAGE=$BASENAME-i386-pc-boot-floppy
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+make    bootdisk-pc-i386
+makedir $BUILD_BASE/$PACKAGE
+copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.bin $BUILD_BASE/$PACKAGE
+cd      $BUILD_BASE
+archive $ARCHIVE $PACKAGE
+delete  $PACKAGE
+
+PACKAGE=$BASENAME-i386-pc-boot-iso
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+cd      $BUILD_BASE/AROS
+make    bootiso-pc-i386
+makedir $BUILD_BASE/$PACKAGE
+copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.iso $BUILD_BASE/$PACKAGE
+cd      $BUILD_BASE
+archive $ARCHIVE $PACKAGE
+delete  $PACKAGE
+
+if [[ $CFG_I386_PC_MAKE_CONTRIB == "yes" ]]; then
+    printi "Creating AROS/i386-all contrib package..."
+    
+    PACKAGE=$BASENAME-i386-all-contrib
+    ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+    
+    move    $BUILD_BASE/AROS/bin/pc-i386/AROS/contrib $BUILD_BASE/$PACKAGE
+    cd      $BUILD_BASE
+    archive $ARCHIVE $PACKAGE
+    
+    delete  $PACKAGE
+fi
+
+cd      $ROOT
+delete  $BUILD_BASE/AROS
+resetl
