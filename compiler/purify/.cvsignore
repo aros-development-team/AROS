@@ -5,3 +5,4 @@ t_illread
 obj
 *.o
 *.a
+*.tmp
