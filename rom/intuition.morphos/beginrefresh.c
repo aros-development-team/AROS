@@ -48,7 +48,7 @@ AROS_LH1(void, BeginRefresh,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    ULONG oldclip;
+    //ULONG oldclip;
     ULONG mode = NO_DOUBLEBUFFER;
 
 #ifdef BEGINUPDATEGADGETREFRESH
