@@ -1,14 +1,26 @@
-c/ - This directory contains a couple of applications for AROS
-	and some demos.
+c/         - CLI-based programs for AROS.
 
-demos/ - Some demos for AROS (former tests).
+classes/   - BOOPSI classes, ie. datatypes and gadgets.
 
-devs/ - Disk-based devices, eg. \filename{RAM:} and
-	\filename{NIL:}.
+demos/     - Dome demos for AROS (former tests).
 
-libs/ - Disk-based shared libraries.
+devs/      - Disk-based devices, keymaps, datatype descriptors
+             and the Mountlist.
 
-locale/ - Localization information. Languages, catalogs, country data.
+fonts/     - Bitmap fonts.
 
-s/ - This directory contains the Startup-Sequence.
+hidds/     - Hardware Independant Device Drivers.
 
+libs/      - Disk-based shared libraries.
+
+locale/    - Localization information. Languages, catalogs and country data.
+
+prefs/     - Preferences programs.
+
+s/         - Startup scripts and the hidd preferences.
+
+system/    - System tools.
+
+tools/     - Misc tools and commodities.
+
+utilities/ - Misc utilities.
