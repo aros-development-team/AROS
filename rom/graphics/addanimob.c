@@ -26,7 +26,7 @@
 
 /*  FUNCTION
 	Link the AnimOb into the list pointed to by AnimKey.
-        Calls AddBob with all components of a Bob and initilizes
+        Calls AddBob with all components of a Bob and initializes
         all the timers of the components of this AnimOb.
 	You have to provide a valid GelsInfo structure that is linked
 	to the RastPort (InitGels())
@@ -34,7 +34,7 @@
     INPUTS
         anOb  = pointer to AnimOb structure to be added to list of
 		AnimObs
-	anKey = address of a pointer to the firts AnimOb in the list
+	anKey = address of a pointer to the first AnimOb in the list
                 (when first calling this function the content of
 		this address has to be NULL!)
 	rp    = pointer to a valid RastPort with initialized GelsInfo
@@ -75,7 +75,7 @@
 
   while (NULL != CurAnimComp)
   {
-    /* initilize the timer of each component's first sequence */
+    /* initialize the timer of each component's first sequence */
     CurAnimComp -> Timer = CurAnimComp -> TimeSet;
     AddBob(CurAnimComp -> AnimBob, rp);
     /* visit the next component */
