@@ -58,9 +58,9 @@
 	struct PTFunctionTable *handler = root->table->handler;
 
 #undef DestroyPartitionTable()
-		if (handler->DestroyPartitionTable)
+		if (handler->destroyPartitionTable)
 		{
-			retval = handler->DestroyPartitionTable(PartitionBase, root);
+			retval = handler->destroyPartitionTable(PartitionBase, root);
 			if (retval == 0)
 				ClosePartitionTable(root);
 		}

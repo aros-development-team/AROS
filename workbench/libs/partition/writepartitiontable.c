@@ -52,8 +52,8 @@
 	{
 	struct PTFunctionTable *handler = root->table->handler;
 
-		if (handler->WritePartitionTable)
-			return handler->WritePartitionTable(PartitionBase, root);
+		if (handler->writePartitionTable)
+			return handler->writePartitionTable(PartitionBase, root);
 	}
 	return 1;
 	AROS_LIBFUNC_EXIT

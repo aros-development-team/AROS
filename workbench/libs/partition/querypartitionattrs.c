@@ -49,8 +49,8 @@
 	{
 	struct PTFunctionTable *handler = table->table->handler;
 
-		if (handler->QueryPartitionAttrs)
-			return handler->QueryPartitionAttrs(PartitionBase);
+		if (handler->queryPartitionAttrs)
+			return handler->queryPartitionAttrs(PartitionBase);
 	}
 	return 0;
 	AROS_LIBFUNC_EXIT
