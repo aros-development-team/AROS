@@ -480,68 +480,73 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     
     EnterFunc(bug("Text::Render()\n"));
     
-    /* preserve font */
-    oldfont = rp->Font;
-    SetFont(rp, data->font);
-    
-    /* Create the text */
-    str = textbuf;
-    RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)puttostr, &str);
-    
-    D(bug("Text formatted into: %s\n", textbuf));
-    numchars = strlen(textbuf);
-    
-    left   = G(o)->LeftEdge;
-    top    = G(o)->TopEdge;
-    width  = G(o)->Width;
-    height = G(o)->Height;
-    
-    if (data->flags & TEXTF_BORDER)
+    if (data->toprint)
     {
-    	/* Render the border */
-    	D(bug("Rendering frame\n"));
-    	renderframe(rp, (struct Gadget *)o, pens, GadToolsBase);
-    	
-    	left += VBORDER + 1;
-    	top  += HBORDER + 1;
-    	width  = G(o)->Width -  (VBORDER + 1) * 2;
-    	height = G(o)->Height - (HBORDER + 1) * 2;
-    }
-    
-    if (data->flags & TEXTF_CLIPPED)
-    {
-    	struct TextExtent te;
-    	
-    	/* See how many chars fits into the display area */
-    	numchars = TextFit(rp, textbuf, numchars, &te, NULL, 1, width, G(o)->Height);
-    }
-    
-    tlength = TextLength(rp, textbuf, numchars);
-    
-    left2 = left;
-    switch (data->justification)
-    {
-    	case GTJ_LEFT:
-    	    break;
-    	case GTJ_RIGHT:
-    	    left2 += (width - tlength);
-    	    break;
-    	case GTJ_CENTER:
-    	    left2 += ((width - tlength) / 2);
-    	    break;
-    }
-    
-    /* Render text */
-    D(bug("Rendering text of lenghth %d at (%d, %d)\n", numchars, left, top));
-    SetABPenDrMd(rp, pens[data->backpen], pens[data->backpen], JAM2);
-    RectFill(rp, left, top, left + width - 1, top + height - 1);
-    SetAPen(rp, pens[data->frontpen]);
-    
-    Move(rp, left2, 
-    	top + ((height - data->font->tf_YSize) / 2) + data->font->tf_Baseline);
-    Text(rp, textbuf, numchars);
-    
-    SetFont(rp, oldfont);
+	/* preserve font */
+	oldfont = rp->Font;
+	SetFont(rp, data->font);
+
+	/* Create the text */
+	str = textbuf;
+
+	RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)puttostr, &str);
+
+	D(bug("Text formatted into: %s\n", textbuf));
+	numchars = strlen(textbuf);
+
+	left   = G(o)->LeftEdge;
+	top    = G(o)->TopEdge;
+	width  = G(o)->Width;
+	height = G(o)->Height;
+
+	if (data->flags & TEXTF_BORDER)
+	{
+    	    /* Render the border */
+    	    D(bug("Rendering frame\n"));
+    	    renderframe(rp, (struct Gadget *)o, pens, GadToolsBase);
+
+    	    left += VBORDER + 1;
+    	    top  += HBORDER + 1;
+    	    width  = G(o)->Width -  (VBORDER + 1) * 2;
+    	    height = G(o)->Height - (HBORDER + 1) * 2;
+	}
+
+	if (data->flags & TEXTF_CLIPPED)
+	{
+    	    struct TextExtent te;
+
+    	    /* See how many chars fits into the display area */
+    	    numchars = TextFit(rp, textbuf, numchars, &te, NULL, 1, width, G(o)->Height);
+	}
+
+	tlength = TextLength(rp, textbuf, numchars);
+
+	left2 = left;
+	switch (data->justification)
+	{
+    	    case GTJ_LEFT:
+    		break;
+    	    case GTJ_RIGHT:
+    		left2 += (width - tlength);
+    		break;
+    	    case GTJ_CENTER:
+    		left2 += ((width - tlength) / 2);
+    		break;
+	}
+
+	/* Render text */
+	D(bug("Rendering text of lenghth %d at (%d, %d)\n", numchars, left, top));
+	SetABPenDrMd(rp, pens[data->backpen], pens[data->backpen], JAM2);
+	RectFill(rp, left, top, left + width - 1, top + height - 1);
+	SetAPen(rp, pens[data->frontpen]);
+
+	Move(rp, left2, 
+    	    top + ((height - data->font->tf_YSize) / 2) + data->font->tf_Baseline);
+	Text(rp, textbuf, numchars);
+
+	SetFont(rp, oldfont);
+
+    } /* if (data->toprint) */
     
     ReturnVoid("Text::Render");
 }
@@ -2069,18 +2074,21 @@ STATIC VOID UpdateScroller(Object *o, struct LVData *data, struct GadgetInfo *gi
     struct TagItem scrtags[] = 
     {
 	{PGA_Top,		0L},
-	{PGA_Total,		0L},
-	{PGA_Visible, 	0L},
+	{PGA_Total,		1L},
+	{PGA_Visible, 	1L},
 	{TAG_DONE,}
     };
 
     EnterFunc(bug("UpdateScroller(data=%p, gi=%p\n", data, gi));
 
-	
-    scrtags[0].ti_Data = data->ld_Top;
-    scrtags[1].ti_Data = data->ld_NumEntries;
-    scrtags[2].ti_Data = ShownEntries(o, data);
-	
+
+    if (data->ld_NumEntries > 0)
+    {
+	scrtags[0].ti_Data = data->ld_Top;
+	scrtags[1].ti_Data = data->ld_NumEntries;
+	scrtags[2].ti_Data = ShownEntries(o, data);
+    }
+    
     if (gi)
     	SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
     else
@@ -2231,11 +2239,15 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	struct Node *n;
     	
     	data->ld_NumEntries = 0;
-    	/* Update the labelcount */
-    	ForeachNode(data->ld_Labels, n)
-    	{
-    	    data->ld_NumEntries ++;
-    	}
+
+	if (data->ld_Labels)
+	{
+    	    /* Update the labelcount */
+    	    ForeachNode(data->ld_Labels, n)
+    	    {
+    		data->ld_NumEntries ++;
+    	    }
+	}
     	D(bug("Number of items added: %d\n", data->ld_NumEntries));
     }
     
@@ -2484,10 +2496,13 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 		G(o)->LeftEdge + G(o)->Width  - 1,
 		G(o)->TopEdge  + G(o)->Height - 1);
 
-	    RenderEntries(cl, o, msg,
-		0, ShownEntries(o, data),
-		GadToolsBase);
-		
+	    if (data->ld_Labels)
+	    {
+	    	RenderEntries(cl, o, msg,
+			0, ShownEntries(o, data),
+			GadToolsBase);
+	    }
+	    
 	    /* center image position, we assume image top and left is 0 */
 	    itags[0].ti_Data = G(o)->Width;
 	    itags[1].ti_Data = G(o)->Height;
