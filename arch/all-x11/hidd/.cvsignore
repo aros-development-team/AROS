@@ -1,5 +1,2 @@
 mmakefile
-x11gfx_end.c
 libdefs.h
-endtag.c
-

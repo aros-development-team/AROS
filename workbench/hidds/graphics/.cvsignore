@@ -1,5 +1,3 @@
-*.bak
 mmakefile
-graphics_end.c
 libdefs.h
 CHANGES

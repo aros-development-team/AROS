@@ -1,4 +1,2 @@
-*.map
 libdefs.h
-*_endtag.c
 mmakefile

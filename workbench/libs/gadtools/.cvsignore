@@ -1,6 +1,2 @@
 libdefs.h
-makefile
-gadtools_endtag.c
 mmakefile
-functable.c
-*.map

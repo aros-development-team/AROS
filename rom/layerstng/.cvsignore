@@ -1,5 +1,3 @@
-makefile
 mmakefile
 *.s
 libdefs.h
-endtag.c

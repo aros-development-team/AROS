@@ -1,4 +1,2 @@
-*.bak
 mmakefile
-hiddclass_end.c
 libdefs.h
