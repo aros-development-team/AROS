@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Intuition function InitRequester()
-    Lang: english
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -21,8 +21,8 @@
 	struct IntuitionBase *, IntuitionBase, 23, Intuition)
 
 /*  FUNCTION
-	Initialize struct Requester for use.
-	Basically sets all values to NULL or zero.
+        This function is OBSOLETE and should not be called. To preserve
+	compatibility with old programs, calling this function is a no-op.
 
     INPUTS
 	requester - The struct Requester to be initialized
@@ -31,9 +31,7 @@
 	None.
 
     NOTES
-	Be sure to call InitRequester *before* changing values. Unlike
-	stated in the early versions of the Intuition Reference Manual
-	this function will kill all your infos in the struct.
+        This function is obsolete.
 
     EXAMPLE
 
@@ -50,12 +48,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-    /* Set values to zero */
-    memset (requester, 0, sizeof(struct Requester) );
-
-    /* Set non-zero values */
-#warning TODO: Do we need to set non-zero values?
 
     AROS_LIBFUNC_EXIT
 } /* InitRequester */
