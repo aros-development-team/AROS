@@ -1,4 +1,5 @@
 #define MUIMASTER_YES_INLINE_STDARG
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <dos/dos.h>
@@ -21,7 +22,6 @@
 #include "gui.h"
 #include "version.h"
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 CONST_STRPTR versionString = VERSIONSTR;
@@ -100,7 +100,7 @@ int main( void )
         
         while
         ( 
-               DoMethod(application, MUIM_Application_NewInput, &signals) 
+               DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals) 
             != MUIV_Application_ReturnID_Quit
         )
         {
