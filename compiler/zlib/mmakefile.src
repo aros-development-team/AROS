@@ -34,5 +34,9 @@ USER_CFLAGS	:= -DAROS -DNO_ERRNO_H
 %make_linklib_setup mmake=linklibs-arosz
 %make_linklib
 
+setup ::
+	@$(RM) $(AROSDIR)/lib/libz.a
+	@ln -s $(AROSDIR)/lib/libarosz.a $(AROSDIR)/lib/libz.a
+    
 %common
 %include_deps
