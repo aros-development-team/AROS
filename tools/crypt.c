@@ -1,10 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility for crypt(3).
     Lang: english
 */
+
 /*
     This is the sourcecode for crypt. It is a small program which makes
     it more convenient to create Unix passwords with crypt(3).
