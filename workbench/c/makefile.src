@@ -32,6 +32,7 @@ FILES = \
 	mount \
 	newshell \
 	path \
+	rename \
 	run \
 	shell \
 	tasklist \
@@ -39,16 +40,15 @@ FILES = \
 	version \
 	wait \
 	why \
-	rename \
+	Alias \
 	Filenote \
 	Get \
 	Getenv \
 	Protect \
 	RequestChoice \
-	Alias \
-	Unalias \
 	Set \
-	Setenv
+	Setenv \
+	Unalias
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
