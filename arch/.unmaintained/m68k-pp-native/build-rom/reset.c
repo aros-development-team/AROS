@@ -44,11 +44,18 @@ void aros_reset(void)
 	WREG_B(LOTCR) = 0x4e; // 0xfffffa2b
 
 	/*
-	 * Enable timer 2
+	 * Set timer 1
+	 */
+	WREG_W(TCTL1)  = 0x13;  // enable timer + interrupt request on compare
+	WREG_W(TCMP1)  = 0x411a;
+
+#if 0
+	/*
+	 * Set timer 2
 	 */
 	WREG_W(TCTL2)  = 0x11;  // enable timer + interrupt request on compare
 	WREG_W(TCMP2)  = 0x0f00;
-
+#endif
 	/*
 	 * Allow the interrupt for timer 1 & 2 to go through!
 	 * Disable interrupts by manipulating SR.
