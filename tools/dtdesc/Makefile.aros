@@ -40,7 +40,7 @@ $(OBJDIR)/%.o : %.c
 	$(HOST_CC) $(HOST_CFLAGS) $(INCL) -c $< -o $@
 
 c_iff/libc_iff.a:
-	cd c_iff && $(MAKE)
+	$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc/c_iff -f Makefile.aros TOP=$(TOP)
 
 $(OBJDIR) :
 	$(MKDIR) $(OBJDIR)
@@ -49,4 +49,4 @@ clean:
 	$(RM) *.o
 	$(RM) examinedtdesc
 	$(RM) $(CREATEDTDESC)
-	cd c_iff && $(MAKE) clean
+	$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc/c_iff -f Makefile.aros TOP=$(TOP) clean
