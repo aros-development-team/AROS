@@ -333,12 +333,16 @@ int parsemacroname(char *name,
 	struct functionlist *funclistit, *func;
 	char *begin, *end;
 
+	begin = name+8;
+	if (strncmp(begin, basename, strlen(basename)) != 0 || begin[strlen(basename)] != '_')
+	    return 0;
+	
+	begin = begin + strlen(basename) + 1;
+	end = begin + strlen(begin) - 1;
+	
 	func = malloc(sizeof(struct functionlist));
 	func->argcount = 0;
 	func->arguments = NULL;
-	
-	begin = name+8;
-	end = begin + strlen(begin) - 1;
 	
 	while(end != begin && *end != '_') end--;
 	*end = '\0';
