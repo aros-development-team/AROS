@@ -781,6 +781,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 )
 {
     AROS_LIBFUNC_INIT
+    AROS_GET_SYSBASE
 
     struct Library *AROS_SLIB_ENTRY(OpenLibrary,Dos)();
     BYTE AROS_SLIB_ENTRY(OpenDevice,Dos)();
