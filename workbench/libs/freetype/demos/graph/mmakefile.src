@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES		:= -I. -Igraph -I./aros
-OBJDIR			:= $(GENDIR)/contrib/freetype/graph
+OBJDIR			:= $(GENDIR)/workbench/libs/freetype/demos/graph
 LIB			:= $(LIBDIR)/libfreetypegraph.a
 GRAPHCFLAGS		:= $(CFLAGS) -DDEVICE_AROS
 %define_libs
@@ -18,8 +18,8 @@ FILES := \
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-#MM contrib-freetype-graph : setup includes linklibs
-contrib-freetype-graph : $(LIB)
+#MM workbench-libs-freetype-graph : setup includes linklibs
+workbench-libs-freetype-graph : $(LIB)
 	@$(NOP)
 
 #MM

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM contrib-freetype-ftmanager : contrib-freetype-module
+#MM workbench-system-ftmanager : workbench-libs-freetype-module
 
 FILES  := ftmanager
 EXEDIR := $(AROS_SYSTEM)
@@ -13,9 +13,9 @@ USE_MUILIB      := yes
 
 USER_CFLAGS := -I$(TOP)/rom/exec
 
-contrib-freetype-ftmanager : setup $(EXE)
+workbench-system-ftmanager : setup $(EXE)
 
-%make_prog_setup mmake=contrib-freetype-ftmanager
+%make_prog_setup mmake=workbench-system-ftmanager
 
 LIBS := -lfreetype2shared $(LIBS)
 

@@ -1,9 +1,6 @@
-#MM- contrib-complete : contrib-freetype2
-
-#MM- contrib-freetype : contrib-freetype2
-
-#MM- contrib-freetype2 : contrib-freetype-linklib \
-#MM	contrib-freetype-graph \
-#MM	contrib-freetype-fonts \
-#MM	contrib-freetype-demos \
-#MM     contrib-freetype-ftmanager
+#MM- workbench-libs-freetype-complete : 
+#MM     workbench-libs-freetype-linklib \
+#MM     workbench-libs-freetype-module \
+#MM	workbench-libs-freetype-graph \
+#MM	workbench-libs-freetype-demos \
+#MM     workbench-libs-freetype-ftmanager
