@@ -64,26 +64,39 @@ __asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register 
         l = mri->mri_RastPort->Layer;
 
     if ((l == NULL) || (r == NULL) || (mri->mri_rCount == 10))
+    {
+    	if (r) DisposeRegion(r);
         return (APTR)-1;
-
+    }
+    
     if (mri->mri_rCount != 0)
         /* NOTE: ignoring the result here... */
         AndRegionRegion(mri->mri_rArray[mri->mri_rCount-1], r);
 
     if ((w != NULL) && (mri->mri_Flags & MUIMRI_REFRESHMODE))
+    {
+    	LockLayerInfo(&w->WScreen->LayerInfo);
         EndRefresh(w, FALSE);
+    }
 
+#if 1 /* stegerg: what's this good for? */
     if ((w != NULL) && !(w->Flags & WFLG_SIMPLE_REFRESH))
         LockLayerInfo(&w->WScreen->LayerInfo);
+#endif
 
     result = InstallClipRegion(l, r);
 
+#if 1 /* stegerg: what's this good for? */
     if ((w != NULL) && !(w->Flags & WFLG_SIMPLE_REFRESH))
         UnlockLayerInfo(&w->WScreen->LayerInfo);
+#endif
 
     if ((w != NULL) && (mri->mri_Flags & MUIMRI_REFRESHMODE))
+    {
         BeginRefresh(w);
-
+	UnlockLayerInfo(&w->WScreen->LayerInfo);
+    }
+    
     mri->mri_rArray[mri->mri_rCount++] = r;
 
     return result;
