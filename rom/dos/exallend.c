@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/11/23 19:55:26  SDuvan
+    Added or improved documentation
+
     Revision 1.6  2000/11/18 12:21:37  SDuvan
     Simplified
 
@@ -23,7 +26,7 @@
     A couple of new DOS functions from M. Fleischer
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -51,17 +54,31 @@
 
 /*  FUNCTION
 
+    Stop an ExAll() operation before returning ERROR_NO_MORE_ENTRIES.
+
     INPUTS
+
+    The inputs should correspond to the inputs for the ExAll() function.
+
+    lock     --  lock on the directory that is being examined
+    buffer   --  buffer for data returned
+    size     --  size of 'buffer' in bytes
+    type     --  type of data to be returned
+    control  --  control data structure
 
     RESULT
 
     NOTES
+
+    The control data structure must have been allocated with AllocDosObject().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+    ExAll(), AllocDosObject()
 
     INTERNALS
 
@@ -91,3 +108,4 @@
 
     AROS_LIBFUNC_EXIT
 } /* ExAllEnd */
+

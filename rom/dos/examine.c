@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: dos.library function Examine().
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -27,17 +27,31 @@
 
 /*  FUNCTION
 
+    Fill in a FileInfoBlock structure concerning a file or directory 
+    associated with a particular lock.
+
     INPUTS
+
+    lock  --  lock to examine
+    fib   --  FileInfoBlock where the result of the examination is stored
 
     RESULT
 
+    A boolean telling whether the operation was successful or not.
+
     NOTES
+
+    FileInfoBlocks should be allocated with AllocDosObject(). You may make
+    a copy of the FileInfoBlock but, however, this copy may NOT be passed
+    to ExNext()!
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+
+    Lock(), UnLock(), ExNext(), AllocDosObject(), ExAll(), <dos/dos.h>
 
     INTERNALS
 
