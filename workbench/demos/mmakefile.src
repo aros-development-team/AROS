@@ -61,7 +61,7 @@ FILES	:= \
     test_text \
     unixio \
     winbackfill \
-    window \
+    window
 endif
 
 EXEDIR := $(AROSDIR)/Demos
