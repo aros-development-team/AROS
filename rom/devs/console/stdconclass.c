@@ -156,6 +156,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	/* Clear the console */
 
         UBYTE oldpen = rp->FgPen;
+	IPTR  newcurpos[2] = {0,0};
 
 	Console_UnRenderCursor(o);
 
@@ -168,6 +169,8 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
     	SetAPen(rp, oldpen);
 
+	Console_DoCommand(o, C_CURSOR_POS, 2, newcurpos);
+	
 	Console_RenderCursor(o);
 
     	break;
