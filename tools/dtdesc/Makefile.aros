@@ -19,8 +19,8 @@ HOST_STRIP  ?= strip
 MKDIR	    ?= mkdir
 HOST_CFLAGS ?= -Wall -g -O
 INCL	    := -I. -I c_iff
-TOOLDIR	    ?= .
-OBJDIR	    ?= $(TOOLDIR)/obj
+TOOLDIR     ?= .
+OBJDIR      := $(TOOLDIR)/obj
 
 RM	    ?= rm -f
 AR	    ?= ar rv
