@@ -195,7 +195,12 @@ endif
 
 %(dir)/functable.c : $(addsuffix .c,%(files)) $(BINDIR)/scripts/genfunctable.awk %(libdefs)
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(AWK) -v file=%(libdefs) -f $(BINDIR)/scripts/genfunctable.awk $(addsuffix .c,%(files)) > $@
+ifneq (%(files),)
+	$(AWK) -v file=%(libdefs) -f $(BINDIR)/scripts/genfunctable.awk $(addsuffix .c,%(files)) > $@
+else
+	$(ARCHTOOL) -t
+	$(MV) functable.c $@
+endif
 %end
 #------------------------------------------------------------------------------
 
@@ -701,17 +706,21 @@ else
 endif
 
 TMP_FILES            := $(notdir $(BD_FILES$(BDID)))
-ifneq ($(BD_FUNCS$(BDID)),)
-  ifeq (%(genfunctable),)
-    ifneq ($(BD_MODTYPE$(BDID)),resource)
-      TMP_FILES          := functable $(TMP_FILES)
+ifeq (%(genfunctable),yes)
+  TMP_FILES          := functable $(TMP_FILES)
+else
+  ifneq ($(BD_FUNCS$(BDID)),)
+    ifeq (%(genfunctable),)
+      ifneq ($(BD_MODTYPE$(BDID)),resource)
+        TMP_FILES    := functable $(TMP_FILES)
+      endif
+    else
+      ifneq (%(genfunctable),no)
+        TMP_FILES    := functable $(TMP_FILES)
+      endif
     endif
-  else
-    ifneq (%(genfunctable),no)
-      TMP_FILES          := functable $(TMP_FILES)
-    endif
+    TMP_FILES        += $(BD_FUNCS$(BDID))
   endif
-  TMP_FILES      += $(BD_FUNCS$(BDID))
 endif
 BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES))) $(BD_ARCHOBJS$(BDID))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
@@ -749,7 +758,7 @@ BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -I. -I$(TOP)/workbench/l
 endif
 
 # Add additional files depending the module type
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device resource mui mcc),)
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device resource mui mcc hidd),)
     $(error unhandled MODTYPE %(modtype))
 endif
 ifeq ($(BD_MODTYPE$(BDID)),library)
@@ -775,6 +784,9 @@ ifeq ($(BD_MODTYPE$(BDID)),mui)
 endif
 ifeq ($(BD_MODTYPE$(BDID)),mcc)
   BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
+endif
+ifeq ($(BD_MODTYPE$(BDID)),hidd)
+  BD_MODDIR$(BDID)  := $(HIDDSDIR)
 endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
@@ -2337,7 +2349,7 @@ STUBS_DEP := $(foreach f,$(STUBS),$(OBJDIR)/$(f).d)
 HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
 
 #MM- linklibs: hidd-%(hidd)-stubs
-#MM
+#MM hidd-%(hidd)-stubs : includes includes-copy
 hidd-%(hidd)-stubs : $(HIDD_LIB)($(STUBS_MEM))
 
 $(HIDD_LIB)($(STUBS_MEM)) : $(STUBS_OBJ)
