@@ -752,6 +752,7 @@ AROS_UFH3(void, LDDemon,
     DOSBase->dl_LDDemonPort->mp_Flags = PA_SIGNAL;
 #endif
 
+
     for(;;)
     {
 	WaitPort(DOSBase->dl_LDDemonPort);
