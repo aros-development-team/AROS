@@ -61,11 +61,13 @@ extern void Exec_FreeMem();
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  void (* FunctionArray[])() = { (void *)&Dos_Read,
-                                 (void *)&Exec_AllocMem,
-                                 (void *)&Exec_FreeMem  };
+  void (* FunctionArray[3])();
 
   BPTR file, segs=0;
+
+  FunctionArray[0] = __AROS_GETVECADDR(DOSBase,7);
+  FunctionArray[1] = __AROS_GETVECADDR(SysBase,33);
+  FunctionArray[2] = __AROS_GETVECADDR(SysBase,35);
 
   /* Open the file */
   file = Open (name,MODE_OLDFILE);
