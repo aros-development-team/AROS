@@ -116,8 +116,9 @@ int main(void)
 
 	if (sscanf(idx, "%d%c%n", &pri, &c, &num)<2 || c!='_')
 	{
-	    fprintf(stderr, "Warning: suspicious symbol name\n");
-	    continue;
+	    fprintf(stderr, "Error: malformed symbolset name %s\n"
+	                    "The wrong part starts with %s\n", sym, idx);
+	    exit(1);
 	}
 
 	idx += num;
@@ -125,8 +126,9 @@ int main(void)
 	idx2 = strstr(idx, "_element_");
 	if (!idx2)
 	{
-	    fprintf(stderr, "Warning: suspicious symbol name\n");
-	    continue;
+	    fprintf(stderr, "Error: malformed symbolset name %s\n"
+	                    "The wrong part starts with %s\n", sym, idx);
+	    exit(20);
 	}
 
 	*idx2='\0'; /*terminate the set string*/
