@@ -6,6 +6,9 @@
     Lang: English
 */
 
+#ifndef MISC_INTERN_H
+#define MISC_INTERN_H
+
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
@@ -19,9 +22,11 @@
 #include <resources/misc.h>
 #endif
 
+#include <exec/libraries.h>
+
 struct MiscBase
 {
-    struct Node		    mb_Node;
+    struct Node             mb_Node;
     struct ExecBase	   *mb_SysBase;
 
     struct SignalSemaphore  mb_Lock;
@@ -36,3 +41,4 @@ struct MiscBase
 
 #define GPB(x)          ((struct MiscBase *)x)
 
+#endif //MISC_INTERN_H

@@ -5,10 +5,7 @@ FUNCS := allocmiscresource freemiscresource
 
 #MM- kernel-misc : includes linklibs
 
-%build_module_macro mmake=kernel-misc \
+%build_module mmake=kernel-misc \
   modname=misc modtype=resource \
-  funcs=$(FUNCS) \
-  conffile=lib.conf \
-  genincludes=yes
-  
-%common
+  files="misc_init $(FUNCS)"
+
