@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Write a big endian string to a file
+    Desc: Write a big endian string to a streamhook
     Lang: english
 */
 #include <proto/dos.h>
@@ -11,20 +11,23 @@
 
     NAME */
 #include <stdio.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	BOOL WriteString (
 
 /*  SYNOPSIS */
-	BPTR   fh,
-	STRPTR data)
+	struct Hook * hook,
+	STRPTR	      data,
+	void	    * stream)
 
 /*  FUNCTION
-	Writes one big endian string to a file.
+	Writes one big endian string to a streamhook.
 
     INPUTS
-	fh - Write to this file
+	hook - Write to this streamhook
 	data - Data to be written
+	stream - Stream passed to streamhook
 
     RESULT
 	The function returns TRUE on success and FALSE otherwise.
@@ -39,18 +42,17 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadFloat(),
-	ReadDouble(), ReadString(), WriteWord(), WriteLong(), WriteFloat(),
-	WriteDouble()
+	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
+	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
-	27.11.96    ada created
 
 ******************************************************************************/
 {
     do
     {
-	if (FPutC (fh, *data) == EOF)
+	if (CallHook (hook, stream, BEIO_WRITE, *data) == EOF)
 	    return FALSE;
     } while (*data ++);
 

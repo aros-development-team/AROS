@@ -18,6 +18,29 @@
 #endif
 #include <stddef.h>
 
+/* Big endian streamhook mathods */
+struct BEIOM_Read
+{
+    ULONG MethodID; /* BEIO_READ */
+};
+
+struct BEIOM_Write
+{
+    ULONG MethodID; /* BEIO_WRITE */
+    ULONG Data;     /* One byte to emit (0..255) */
+};
+
+struct BEIOM_Ignore
+{
+    ULONG MethodID; /* BEIO_IGNORE */
+    ULONG Count;    /* How many bytes */
+};
+
+/* Big endian streamhook access modes */
+#define BEIO_READ	0   /* Read a byte */
+#define BEIO_WRITE	1   /* Write a byte */
+#define BEIO_IGNORE	2   /* Skip some bytes (read only) */
+
 #define SDT_END 	0 /* Read one  8bit byte */
 #define SDT_UBYTE	1 /* Read one  8bit byte */
 #define SDT_UWORD	2 /* Read one 16bit word */
@@ -36,8 +59,9 @@
 
 struct SDData
 {
-    APTR sdd_Dest;
-    WORD sdd_Mode;
+    APTR   sdd_Dest;
+    WORD   sdd_Mode;
+    void * sdd_Stream;
 };
 
 #define SDV_SPECIALMODE_READ	0  /* Function was called to read from file */

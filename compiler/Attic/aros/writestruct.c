@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Write a big endian structure to a file
+    Desc: Write a big endian structure to a streamhook
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -25,24 +25,26 @@ struct WriteLevel
 
     NAME */
 #include <stdio.h>
-#include <aros/structdesc.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	BOOL WriteStruct (
 
 /*  SYNOPSIS */
-	BPTR	     fh,
-	APTR	     data,
-	const IPTR * sd)
+	struct Hook * hook,
+	void	    * data,
+	void	    * stream,
+	const IPTR  * sd)
 
 /*  FUNCTION
-	Writes one big endian structure to a file.
+	Writes one big endian structure to a streamhook.
 
     INPUTS
-	fh - Write to this file
+	hook - Write to this streamhook
+	data - Data to be written
+	stream - Stream passed to streamhook
 	sd - Description of the structure to be written. The first element
 		is the size of the structure.
-	data - Address of the structure
 
     RESULT
 	The function returns TRUE on success and FALSE otherwise. In error,
@@ -53,7 +55,7 @@ struct WriteLevel
 	endian machines.
 
     EXAMPLE
-	See below.
+	See ReadStruct().
 
     BUGS
 
@@ -67,12 +69,11 @@ struct WriteLevel
 	NULL when the structure is read back).
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadFloat(),
+	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
 	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
-	WriteFloat(), WriteDouble(), WriteString()
+	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
-	28.11.96 digulla created
 
 ******************************************************************************/
 {
@@ -100,31 +101,31 @@ struct WriteLevel
 	switch (IDESC)
 	{
 	case SDT_UBYTE:      /* Write one  8bit byte */
-	    if (!WriteByte (fh, *((UBYTE *)(curr->s + IDESC))))
+	    if (!WriteByte (hook, *((UBYTE *)(curr->s + IDESC)), stream))
 		goto error;
 
 	    break;
 
 	case SDT_UWORD:      /* Write one 16bit word */
-	    if (!WriteWord (fh, *((UWORD *)(curr->s + IDESC))))
+	    if (!WriteWord (hook, *((UWORD *)(curr->s + IDESC)), stream))
 		goto error;
 
 	    break;
 
 	case SDT_ULONG:      /* Write one 32bit long */
-	    if (!WriteLong (fh, *((ULONG *)(curr->s + IDESC))))
+	    if (!WriteLong (hook, *((ULONG *)(curr->s + IDESC)), stream))
 		goto error;
 
 	    break;
 
 	case SDT_FLOAT:      /* Write one 32bit IEEE */
-	    if (!WriteFloat (fh, *((FLOAT *)(curr->s + IDESC))))
+	    if (!WriteFloat (hook, *((FLOAT *)(curr->s + IDESC)), stream))
 		goto error;
 
 	    break;
 
 	case SDT_DOUBLE:     /* Write one 64bit IEEE */
-	    if (!WriteDouble (fh, *((DOUBLE *)(curr->s + IDESC))))
+	    if (!WriteDouble (hook, *((DOUBLE *)(curr->s + IDESC)), stream))
 		goto error;
 
 	    break;
@@ -136,15 +137,15 @@ struct WriteLevel
 
 	    if (str)
 	    {
-		if (!WriteByte (fh, 1))
+		if (!WriteByte (hook, 1, stream))
 		    goto error;
 
-		if (!WriteString (fh, str))
+		if (!WriteString (hook, str, stream))
 		    goto error;
 	    }
 	    else
 	    {
-		if (!WriteByte (fh, 0))
+		if (!WriteByte (hook, 0, stream))
 		    goto error;
 
 		curr->pos ++;
@@ -184,7 +185,7 @@ struct WriteLevel
 
 	    if (ptr)
 	    {
-		if (!WriteByte (fh, 1))
+		if (!WriteByte (hook, 1, stream))
 		    goto error;
 
 		if (!(next = AllocMem (sizeof (struct WriteLevel), MEMF_ANY)) )
@@ -199,7 +200,7 @@ struct WriteLevel
 	    }
 	    else
 	    {
-		if (!WriteByte (fh, 0))
+		if (!WriteByte (hook, 0, stream))
 		    goto error;
 
 		curr->pos ++;
@@ -214,7 +215,7 @@ struct WriteLevel
 
 	    while (count --)
 	    {
-		if (FPutC (fh, 0) == EOF)
+		if (CallHook (hook, stream, BEIO_WRITE, 0) == EOF)
 		    goto error;
 	    }
 
@@ -236,7 +237,7 @@ struct WriteLevel
 
 	    while (count --)
 	    {
-		if (FPutC (fh, 0) == EOF)
+		if (CallHook (hook, stream, BEIO_WRITE, 0) == EOF)
 		    goto error;
 	    }
 
@@ -251,24 +252,27 @@ struct WriteLevel
 	    value  = IDESC;
 	    count  = IDESC;
 
+	    count <<= 2;
+
 	    while (count --)
 	    {
-		if (!WriteLong (fh, 0L))
+		if (CallHook (hook, stream, BEIO_WRITE, 0) == EOF)
 		    goto error;
 	    }
 
 	    break; }
 
 	case SDT_SPECIAL: {   /* Call user hook */
-	    struct Hook * hook;
+	    struct Hook * uhook;
 	    struct SDData data;
 
-	    data.sdd_Dest = ((APTR)(curr->s + IDESC));
-	    data.sdd_Mode = SDV_SPECIALMODE_WRITE;
+	    data.sdd_Dest   = ((APTR)(curr->s + IDESC));
+	    data.sdd_Mode   = SDV_SPECIALMODE_WRITE;
+	    data.sdd_Stream = stream;
 
-	    hook = (struct Hook *)IDESC;
+	    uhook = (struct Hook *)IDESC;
 
-	    CallHookA (hook, fh, &data);
+	    CallHookA (uhook, hook, &data);
 
 	    break; }
 
@@ -310,157 +314,3 @@ error:
     return FALSE;
 } /* WriteStruct */
 
-#ifdef TEST
-#include <stdio.h>
-#include <dos/dos.h>
-#include <aros/structdesc.h>
-#include <proto/alib.h>
-
-struct Level1
-{
-    BYTE l1_Byte;
-    LONG l1_Long;
-};
-
-struct MainLevel
-{
-    BYTE   ml_Byte;
-    UBYTE  ml_UByte;
-    WORD   ml_Word;
-    UWORD  ml_UWord;
-    LONG   ml_Long;
-    ULONG  ml_ULong;
-    FLOAT  ml_Float;
-    DOUBLE ml_Double;
-    STRPTR ml_String;
-    struct Level1 ml_Level1;
-
-    BYTE   * ml_BytePtr;
-    WORD   * ml_WordPtr;
-    LONG   * ml_LongPtr;
-    FLOAT  * ml_FloatPtr;
-    DOUBLE * ml_DoublePtr;
-    STRPTR * ml_StringPtr;
-    struct Level1 * ml_Level1Ptr;
-};
-
-IPTR ByteDesc[]   = { sizeof(UBYTE),  SDM_UBYTE(0),  SDM_END };
-IPTR WordDesc[]   = { sizeof(UWORD),  SDM_UWORD(0),  SDM_END };
-IPTR LongDesc[]   = { sizeof(ULONG),  SDM_ULONG(0),  SDM_END };
-IPTR FloatDesc[]  = { sizeof(FLOAT),  SDM_FLOAT(0),  SDM_END };
-IPTR DoubleDesc[] = { sizeof(DOUBLE), SDM_DOUBLE(0), SDM_END };
-IPTR StringDesc[] = { sizeof(STRPTR), SDM_STRING(0), SDM_END };
-
-#define O(x)        offsetof(struct Level1,x)
-IPTR Level1Desc[] =
-{
-    sizeof (struct Level1),
-    SDM_UBYTE(O(l1_Byte)),
-    SDM_ULONG(O(l1_Long)),
-    SDM_END
-};
-
-#undef O
-#define O(x)        offsetof(struct MainLevel,x)
-IPTR MainDesc[] =
-{
-    sizeof (struct MainLevel),
-    SDM_UBYTE(O(ml_Byte)),
-    SDM_UBYTE(O(ml_UByte)),
-    SDM_UWORD(O(ml_Word)),
-    SDM_UWORD(O(ml_UWord)),
-    SDM_ULONG(O(ml_Long)),
-    SDM_ULONG(O(ml_ULong)),
-    SDM_FLOAT(O(ml_Float)),
-    SDM_DOUBLE(O(ml_Double)),
-    SDM_STRING(O(ml_String)),
-    SDM_STRUCT(O(ml_Level1),Level1Desc),
-
-    SDM_PTR(O(ml_BytePtr),ByteDesc),
-    SDM_PTR(O(ml_WordPtr),WordDesc),
-    SDM_PTR(O(ml_LongPtr),LongDesc),
-    SDM_PTR(O(ml_FloatPtr),FloatDesc),
-    SDM_PTR(O(ml_DoublePtr),DoubleDesc),
-    SDM_PTR(O(ml_StringPtr),StringDesc),
-    SDM_PTR(O(ml_Level1Ptr),Level1Desc),
-
-    SDM_END
-};
-
-int main (int argc, char ** argv)
-{
-    struct MainLevel demo =
-    {
-	(BYTE)0x88,       0xFF,
-	(WORD)0x8844,     0xFF77,
-	(LONG)0x88442211, 0xFF773311,
-	1.5, 1.75,
-	"Hallo",
-	{ (BYTE)0x88, (LONG)0x88442211 },
-	/* ... */
-    };
-    BYTE b = (BYTE)0x88;
-    WORD w = (WORD)0x8844;
-    LONG l = (LONG)0x88442211;
-    FLOAT f = 1.5;
-    DOUBLE d = 1.75;
-    STRPTR s = "Hallo";
-    struct Level1 l1 =
-    {
-	(BYTE)0x88, (LONG)0x88442211
-    };
-    BPTR fh;
-
-    demo.ml_BytePtr = &b;
-    demo.ml_WordPtr = &w;
-    demo.ml_LongPtr = &l;
-    demo.ml_FloatPtr = &f;
-    demo.ml_DoublePtr = &d;
-    demo.ml_StringPtr = &s;
-    demo.ml_Level1Ptr = &l1;
-
-    fh = Open ("writestruct.dat", MODE_NEWFILE);
-
-    if (!fh)
-    {
-	PrintFault (IoErr(), "Can't open file\n");
-	return 10;
-    }
-
-    /*
-	This writes the following data stream:
-
-	    0000 88			    ml_Byte
-	    0001 ff			    ml_Ubyte
-	    0002 88 44			    ml_Word
-	    0004 ff 77			    ml_UWord
-	    0006 88 44 22 11		    ml_Long
-	    000a ff 77 33 11		    ml_ULong
-	    000e 3f c0 00 00		    ml_Float
-	    0012 3f fc 00 00 00 00 00 00    ml_Double
-	    001a 01:48 61 6c 6c 6f 00	    ml_String
-	    0021 88			    ml_Level1.l1_Byte
-	    0022 88 44 22 11		    ml_Level1.l1_Long
-	    0026 01:88			    ml_BytePtr
-	    0028 01:88 44		    ml_WordPtr
-	    002b 01:88 44 22 11 	    ml_LongPtr
-	    0030 01:3f c0 00 00 	    ml_FloatPtr
-	    0035 01:3f fc 00 00 00 00 00 00 ml_DoublePtr
-	    003e 01:01:48 61 6c 6c 6f 00    ml_StringPtr - Note two 01 !
-	    0046 01:88 88 44 22 11	    ml_Level1Ptr
-    */
-
-    if (!WriteStruct (fh, &demo, MainDesc))
-    {
-	PrintFault (IoErr(), "Failed to write to file\n");
-    }
-
-    if (!Close (fh))
-    {
-	PrintFault (IoErr(), "Failed to close file\n");
-    }
-
-    return 0;
-} /* main */
-
-#endif /* TEST */

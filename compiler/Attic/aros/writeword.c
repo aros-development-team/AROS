@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Write a big endian word (16bit) from a file
+    Desc: Write a big endian word (16bit) from a streamhook
     Lang: english
 */
 #include <proto/dos.h>
@@ -11,20 +11,23 @@
 
     NAME */
 #include <stdio.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	BOOL WriteWord (
 
 /*  SYNOPSIS */
-	BPTR  fh,
-	UWORD data)
+	struct Hook * hook,
+	UWORD	      data,
+	void	    * stream)
 
 /*  FUNCTION
-	Writes one big endian 16bit value to a file.
+	Writes one big endian 16bit value to a streamhook.
 
     INPUTS
-	fh - Write to this file
+	hook - Write to this streamhook
 	data - Data to be written
+	stream - Stream passed to streamhook
 
     RESULT
 	The function returns TRUE on success and FALSE otherwise.
@@ -39,18 +42,17 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadDouble(),
-	ReadString(), WriteWord(), WriteLong(), WriteDouble(),
-	WriteString()
+	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
+	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
-	14.09.93    ada created
 
 ******************************************************************************/
 {
-    if (FPutC (fh, data >> 8) == EOF)
+    if (CallHook (hook, stream, BEIO_WRITE, data >> 8) == EOF)
 	return FALSE;
 
-    return (FPutC (fh, data & 0xFF) != EOF);
+    return (CallHook (hook, stream, BEIO_WRITE, data & 0xFF) != EOF);
 } /* WriteWord */
 

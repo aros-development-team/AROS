@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Read one C string from a file
+    Desc: Read one C string from a streamhook
     Lang: english
 */
 #include <proto/dos.h>
@@ -13,21 +13,24 @@
 
     NAME */
 #include <stdio.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	BOOL ReadString (
 
 /*  SYNOPSIS */
-	BPTR	 fh,
-	STRPTR * dataptr)
+	struct Hook * hook,
+	STRPTR	    * dataptr,
+	void	    * stream)
 
 /*  FUNCTION
-	Reads one C string from a file.
+	Reads one C string from a streamhook.
 
     INPUTS
-	fh - Read from this file
+	hook - Streamhook
 	dataptr - Put the data here. If you don't need the string anymore,
 	    call FreeVec() to free it.
+	stream - Read from this stream
 
     RESULT
 	The function returns TRUE on success. On success, the string
@@ -36,17 +39,17 @@
 	FreeVec().
 
     NOTES
-	This function reads big endian values from a file even on little
-	endian machines.
+	This function reads big endian values from a streamhook even on
+	little endian machines.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadFloat(),
-	ReadDouble(), WriteByte(), WriteWord(), WriteLong(),
-	WriteFloat(), WriteDouble(), WriteString()
+	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
+	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
 	14.09.93    ada created
@@ -62,7 +65,7 @@
 
     for (;;)
     {
-	c = FGetC (fh);
+	c = CallHook (hook, stream, BEIO_READ);
 
 	if (c == EOF)
 	{

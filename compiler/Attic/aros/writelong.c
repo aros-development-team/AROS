@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Write a big endian long (32bit) from a file
+    Desc: Write a big endian long (32bit) from a streamhook
     Lang: english
 */
 #include <proto/dos.h>
@@ -11,20 +11,23 @@
 
     NAME */
 #include <stdio.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	BOOL WriteLong (
 
 /*  SYNOPSIS */
-	BPTR  fh,
-	ULONG data)
+	struct Hook * hook,
+	ULONG	      data,
+	void	    * stream)
 
 /*  FUNCTION
-	Writes one big endian 32bit value to a file.
+	Writes one big endian 32bit value to a streamhook.
 
     INPUTS
-	fh - Write to this file
+	hook - Write to this streamhook
 	data - Data to be written
+	stream - Stream passed to streamhook
 
     RESULT
 	The function returns TRUE on success and FALSE otherwise.
@@ -39,12 +42,11 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadDouble(),
-	ReadString(), WriteByte(), WriteWord(), WriteDouble(),
-	WriteString()
+	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
+	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
-	14.09.93    ada created
 
 ******************************************************************************/
 {
@@ -59,7 +61,7 @@
 #endif
 
 #define WRITE_ONE_CHAR			\
-    if (FPutC (fh, *ptr NEXT) == EOF)   \
+    if (CallHook (hook, stream, BEIO_WRITE, *ptr NEXT) == EOF) \
 	return FALSE
 
     WRITE_ONE_CHAR;

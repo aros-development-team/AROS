@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Write a big endian floating point (32bit) from a file
+    Desc: Write a big endian floating point (32bit) from a streamhook
     Lang: english
 */
 #include <proto/dos.h>
@@ -11,20 +11,23 @@
 
     NAME */
 #include <stdio.h>
+#include <aros/bigendianio.h>
 #include <proto/alib.h>
 
 	BOOL WriteFloat (
 
 /*  SYNOPSIS */
-	BPTR  fh,
-	FLOAT data)
+	struct Hook * hook,
+	FLOAT	      data,
+	void	    * stream)
 
 /*  FUNCTION
-	Writes one big endian 32bit floating point value to a file.
+	Writes one big endian 32bit floating point value to a streamhook.
 
     INPUTS
-	fh - Write to this file
+	hook - Write to this streamhook
 	data - Data to be written
+	stream - Stream passed to streamhook
 
     RESULT
 	The function returns TRUE on success and FALSE otherwise.
@@ -39,33 +42,27 @@
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadDouble(),
-	ReadString(), WriteByte(), WriteWord(), WriteLong(), WriteDouble(),
-	WriteString()
+	ReadByte(), ReadWord(), ReadLong(), ReadFloat(), ReadDouble(),
+	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
+	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
     HISTORY
-	14.09.93    ada created
 
 ******************************************************************************/
 {
     UBYTE * ptr;
-    LONG    rc;
 
 #if AROS_BIG_ENDIAN
     ptr = (UBYTE *)&data;
-#   define NEXT ptr++
+#   define NEXT ++
 #else
     ptr = ((UBYTE *)&data) + 3;
-#   define NEXT ptr--
+#   define NEXT --
 #endif
 
 #define WRITE_ONE_BYTE	    \
-    rc = FPutC (fh, *ptr);  \
-			    \
-    if (rc == EOF)          \
-	return FALSE;	    \
-			    \
-    NEXT
+    if (CallHook (hook, stream, BEIO_WRITE, *ptr NEXT) == EOF) \
+	return FALSE
 
     WRITE_ONE_BYTE;
     WRITE_ONE_BYTE;
