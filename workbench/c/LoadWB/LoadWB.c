@@ -218,7 +218,7 @@ kprintf("LoadWB.HandleNotify\n");
                                 es.es_StructSize   = sizeof(es);
 				es.es_Flags        = 0;
 				es.es_Title        = "About AROS Workbench...";
-				es.es_TextFormat   = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.\n\nAROS 0.7x ROM (Alpha)\nWe made it...\nThe AROS Development team: Aaron Digulla, Georg Steger,\nNils Henrik Lorentzen, Henning Kiel, Staf Verhaegen,\nHenrik Berglund, Michal Schulz, Iain Templeton,\nFabio Alemagna, Sebastian Heutling, Johan Grip,\nTobias Seiler, Johan Alfredsson, Matt Parsons...\nTo be continued...";
+				es.es_TextFormat   = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.\n\nAROS 0.7x ROM (Alpha)\nWe made it...\nThe AROS Development team: Aaron Digulla, Georg Steger,\nNils Henrik Lorentzen, Henning Kiel, Staf Verhaegen,\nHenrik Berglund, Michal Schulz, Iain Templeton,\nFabio Alemagna, Sebastian Heutling, Johan Grip,\nTobias Seiler, Johan Alfredsson, Adam Chodorowski,\nMatt Parsons...\nTo be continued...";
 				es.es_GadgetFormat = "Better than ever!";
 				EasyRequest ( wbwindow, &es, NULL, NULL, NULL );
 
