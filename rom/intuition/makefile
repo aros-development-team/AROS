@@ -17,6 +17,10 @@ setup :
 clean:
 	$(RM) $(OSGENDIR) *.err
 
+$(OSGENDIR)/intui_x11.o: intui_x11.c
+	$(CC) $(CFLAGS) $(X11CCFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	if test ! -s $*.err; then rm $*.err; fi
+
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
