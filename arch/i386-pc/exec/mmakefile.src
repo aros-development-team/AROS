@@ -1,0 +1,58 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR		:= $(OSGENDIR)/exec
+OS_INCLUDES	:= -I$(GENINCDIR)
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
+CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
+AFLAGS2 	:= $(AFLAGS) -I.. -I$(GENINCDIR)
+TESTS		:=
+FILES		:= \
+	cachecleare cacheclearu cachecontrol cachepredma \
+	cachepostdma coldreboot disable dispatch enable \
+	forbid getcc permit setsr stackswap \
+	supervisor switch debug addintserver addtask \
+	alloctrap cause freetrap preparecontext \
+	rawputchar remintserver alert
+
+COREFILES	:= \
+	andimask intserver irq orimask restorefpu restorecpu \
+	storefpu storecpu init semaphores cpu
+
+#MM
+exec-native-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o) $(OBJDIR)/exec_init.o
+	@$(NOP)
+
+#MM
+setup-exec-native-i386 : $(GENINCDIR)/sigcore.h
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
+	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
+	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
+
+#MM
+$(GENINCDIR)/sigcore.h : ../sigcore.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OBJDIR)/%.o : %.S
+	%assemble_q opt=$(AFLAGS2)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+init.s : init.c
+    %ctoasm_q
+
+cpu.s : cpu.c
+    %ctoasm_q
+
+%common
