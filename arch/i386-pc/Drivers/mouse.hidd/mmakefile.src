@@ -5,7 +5,7 @@ USER_INCLUDES := -I. -I../../include
 
 FILES	:=	mouse_init mouseclass functable drv_usb drv_ps2 drv_com
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
-LIBS    :=	-L$(LIBDIR) -lhiddserialstubs
+LIBS    :=	-L$(LIBDIR) -lhiddstubs
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
