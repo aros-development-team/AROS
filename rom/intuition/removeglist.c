@@ -64,7 +64,13 @@
     for (last=gadget; last->NextGadget && --numGad; last=last->NextGadget);
 
     pred->NextGadget = last->NextGadget;
+
+    /* stegerg: don't do this. DOpus for example relies on gadget->NextGadget
+                not being touched 
+
     last->NextGadget = NULL;
+    
+    */
 
     return count;
     AROS_LIBFUNC_EXIT
