@@ -31,7 +31,7 @@ struct MUI_WindowData
     struct MinList wd_IDList;       /* gadget ids */
     ULONG          wd_Events;       /* events received */
     ULONG          wd_CrtFlags;     /* window creation flags, see below */
-    struct ObjNode *wd_ActiveObject; /* the active object embeded in the cyclechain */
+    Object        *wd_ActiveObject; /* the active object */
     APTR           wd_DefaultObject;
     ULONG          wd_ID;
     STRPTR         wd_Title;

@@ -16,8 +16,6 @@
 
 extern struct Library *MUIMasterBase;
 
-/********** Popstring ***********/
-
 struct MUI_PopstringData
 {
     struct Hook *close_hook;
@@ -49,6 +47,8 @@ static IPTR Popstring_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
+    data->button = button;
+    data->string = string;
 
     /* parse initial taglist */
 
@@ -61,6 +61,8 @@ static IPTR Popstring_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Popstring_OpenHook: data->open_hook = (struct Hook*)tag->ti_Data;break;
     	}
     }
+
+    DoMethod(button,MUIM_Notify,MUIA_Pressed,FALSE,obj,1,MUIM_Popstring_Open);
 
     return (IPTR)obj;
 }
@@ -96,6 +98,7 @@ static IPTR Popstring_Close(struct IClass *cl, Object *obj, struct MUIP_Popstrin
     if (data->close_hook && data->open)
     {
     	DoMethod(_app(obj), MUIM_Application_PushMethod, obj, 4, MUIM_CallHook, data->close_hook, data->string, msg->result);
+	data->open = 0;
     	set(data->button,MUIA_Disabled, FALSE);
     }
     return 0;
@@ -125,6 +128,7 @@ static IPTR Popstring_Open(struct IClass *cl, Object *obj, struct MUIP_Popstring
 	    }
 	}
     }
+    return 0;
 }
 
 /**************************************************************************
@@ -161,124 +165,3 @@ const struct __MUIBuiltinClass _MUI_Popstring_desc = {
     (void*)Popstring_Dispatcher 
 };
 
-/********** Popasl ***********/
-
-struct MUI_PopaslData
-{
-    int dummy;
-};
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct MUI_PopaslData   *data;
-    struct TagItem  	    *tag, *tags;
-    
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!obj) return FALSE;
-    
-    data = INST_DATA(cl, obj);
-
-    /* parse initial taglist */
-
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
-    {
-	switch (tag->ti_Tag)
-	{
-    	}
-    }
-    
-    return (IPTR)obj;
-}
-
-#ifndef _AROS
-__asm IPTR Popasl_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Popasl_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
-{
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-	    return Popasl_New(cl, obj, (struct opSet *)msg);
-	    
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
-}
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Popasl_desc = { 
-    MUIC_Popasl,
-    MUIC_Popstring, 
-    sizeof(struct MUI_PopaslData), 
-    (void*)Popasl_Dispatcher 
-};
-
-/********** Popobject ***********/
-
-struct MUI_PopobjectData
-{
-    int dummy;
-};
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct MUI_PopobjectData   *data;
-    struct TagItem  	    *tag, *tags;
-    
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!obj) return FALSE;
-    
-    data = INST_DATA(cl, obj);
-
-    /* parse initial taglist */
-
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
-    {
-	switch (tag->ti_Tag)
-	{
-    	}
-    }
-    
-    return (IPTR)obj;
-}
-
-#ifndef _AROS
-__asm IPTR Popobject_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Popobject_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
-{
-    switch (msg->MethodID)
-    {
-	case OM_NEW:
-	    return Popobject_New(cl, obj, (struct opSet *)msg);
-	    
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
-}
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Popobject_desc = { 
-    MUIC_Popobject, 
-    MUIC_Popstring, 
-    sizeof(struct MUI_PopobjectData), 
-    (void*)Popobject_Dispatcher 
-};
