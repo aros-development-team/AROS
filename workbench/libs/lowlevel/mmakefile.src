@@ -47,4 +47,4 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(SYS_FILES) $(FILES) functions $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
