@@ -1,0 +1,32 @@
+Known problems/bugs:
+
+  - GRUB cannot boot any uncommon format of floppies, such as 1.68MB.
+    Perhaps we should add support to embed a fixed geometry in a drive.
+
+  - GRUB cannot boot FreeBSD 3.4 and 4.0 directly. So you must
+    chain-load them instead.
+
+  - FreeBSD boot command-line options are slightly problematic, and
+    OpenBSD options are probably quite wrong.  This is because they
+    use options that are bits in a data word passed at boot time, and
+    the developers change the encoding sometimes.  Will re-sync in a later
+    release.
+
+  - If an "uppermem" command was used to tell GRUB it had a different
+    amount of upper memory available, then the user escapes to the menu
+    interface, the upper memory displayed there still says the amount
+    set by the user instead of being reset to the default by the escape.
+    It actually resets when the next command-line is entered or config
+    file entry is executed.
+
+  - There is at least one problem when using an "install_partition" that is
+    a BSD sub-partition where the PC partition isn't explicit (i.e.
+    the default 0xFF00FF is a problem)...  this is when using "makeactive"
+    without explicitly setting the root partition.  If this is done, a
+    "no such partition" error will be generated.
+
+  - Cannot boot FreeBSD "kzip"ed image.  Use a normal kernel (using GRUB's
+    automatic "gzip" decompression works fine).
+
+  - Hitting Ctrl-Alt-Delete when in GRUB locks some machines.  Use Reset
+    for now.  (This apparently hasn't been observed for a while)
