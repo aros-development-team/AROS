@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 
 #ifndef __MATHIEEESINGTRANS_INTERN_H__
@@ -33,6 +30,11 @@
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+
+#include <proto/exec.h>
+#include <libraries/mathieeesp.h>
+#include <proto/mathieeesingtrans.h>
+
 
 /*
     This is the MathIeeeSingTransBase structure. It is documented here because

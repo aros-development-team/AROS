@@ -1,15 +1,36 @@
-#    $Id$
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
 include $(TOP)/config/make.cfg
 
-FILES	:= \
-	intern_ieeespisodd \
-	intern_ieeespld
+FILES := \
+    intern_ieeespisodd \
+    intern_ieeespld
+
+FUNCS := \
+    ieeespacos \
+    ieeespasin \
+    ieeespatan \
+    ieeespcos \
+    ieeespcosh \
+    ieeespexp \
+    ieeespfieee \
+    ieeesplog10 \
+    ieeesplog \
+    ieeesppow \
+    ieeespsin \
+    ieeespsincos \
+    ieeespsinh \
+    ieeespsqrt \
+    ieeesptan \
+    ieeesptanh \
+    ieeesptieee
 
 #MM- workbench-libs-mathieeesingtrans : setup includes
 
 %build_module_macro mmake=workbench-libs-mathieeesingtrans \
   modname=mathieeesingtrans modtype=library \
-  files=$(FILES) archfile=mathieeesingtrans.arch \
+  files=$(FILES) funcs=$(FUNCS) \
   conffile=lib.conf uselibs=arosc
 
 %common
