@@ -132,6 +132,7 @@ typedef struct
     int buildmflist;
     int buildtargetlist;
 
+    struct List ignoredirs;
     struct List vars;
     struct List makefiles;
     struct List targets;
@@ -238,7 +239,7 @@ char * getvar (Project * prj, const char * varname)
     if (var)
 	return var->value;
 
-    sprintf (buffer, "$(%s)", varname);
+    sprintf (buffer, "?$(%s)", varname);
     return buffer;
 }
 
@@ -376,6 +377,7 @@ Project * initproject (char * name)
     prj->buildmflist = 1;
     prj->buildtargetlist = 1;
 
+    NEWLIST(&prj->ignoredirs);
     NEWLIST(&prj->vars);
     NEWLIST(&prj->makefiles);
     NEWLIST(&prj->targets);
@@ -486,7 +488,15 @@ printf ("name=%s\n", name);
 
 	    if (!strcmp (cmd, "add"))
 	    {
-		ADDTAIL(&project->makefiles, newnode(args,NULL));
+		struct Node * n;
+		n = newnode(args,NULL);
+		ADDTAIL(&project->makefiles, n);
+	    }
+	    else if (!strcmp (cmd, "ignoredir"))
+	    {
+		struct Node * n;
+		n = newnode(args,NULL);
+		ADDTAIL(&project->ignoredirs, n);
 	    }
 	    else if (!strcmp (cmd, "defaultmakefilename"))
 	    {
@@ -618,10 +628,11 @@ void buildmflist (Project * prj)
 		exit (10);
 	    }
 
-	    if (S_ISDIR (st.st_mode) && strcmp(dirent->d_name, "CVS")
+	    if (S_ISDIR (st.st_mode)
 		&& strcmp (dirent->d_name, ".")
 		&& strcmp (dirent->d_name, "..")
 		&& !S_ISLNK (st.st_mode)
+		&& !FindNode (&prj->ignoredirs, dirent->d_name)
 	    )
 	    {
 		addnodeonce (&dirs, path, NULL);
@@ -652,33 +663,6 @@ void buildmflist (Project * prj)
     }
 
 #if 0
-    find = popen ("find . -type d -print", "r");
-    if (!find)
-    {
-	error ("Running find in %s", prj->top);
-	exit (10);
-    }
-
-    while (fgets (line, sizeof(line), find))
-    {
-	ptr = line + strlen(line) - 1;
-	*ptr = '/';
-	strcpy (ptr+1, mfnsrc);
-
-	if (stat (line+2,&st) == 0)
-	    addnodeonce (&prj->makefiles, line+2, NULL);
-	else
-	{
-	    ptr[len+1] = 0;
-	    if (stat (line+2,&st) == 0)
-		addnodeonce (&prj->makefiles, line+2, NULL);
-	}
-    }
-
-    pclose (find);
-#endif
-
-#if 1
     printf ("project %s.makefiles=", prj->node.name);
     printlist (&prj->makefiles);
 #endif
@@ -717,7 +701,7 @@ void appendtarget (Project * prj, const char * tname, const char * mf, char ** d
 
     addnodeonce(&target->makefiles, mf, NULL);
 
-#if 0
+#if 1
 printf ("add %s.%s mf=%s\n", prj->node.name, target->node.name, mf);
 #endif
 
@@ -725,7 +709,7 @@ printf ("add %s.%s mf=%s\n", prj->node.name, target->node.name, mf);
     {
 	while (*deps)
 	{
-#if 0
+#if 1
 printf ("   add dep %s\n", *deps);
 #endif
 	    addnodeonce (&target->deps, *deps, NULL);
@@ -799,7 +783,7 @@ void buildtargetlist (Project * prj)
 		char * depptr, ** deps;
 		int count, depc, t;
 
-		ptr = line+3;
+		ptr = substvars (prj, line+3);
 		while (isspace (*ptr))
 		    ptr ++;
 
@@ -807,7 +791,7 @@ void buildtargetlist (Project * prj)
 		{
 		    char ** targets;
 		    fgets (line, sizeof(line), fh);
-		    ptr = line;
+		    ptr = substvars (prj, line);
 
 		    while (*ptr != ':' && *ptr)
 			ptr ++;

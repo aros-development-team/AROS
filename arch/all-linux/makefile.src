@@ -17,11 +17,13 @@ SUBDIRS= $(foreach f,$(DIRS),../$(f))
 all: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 	%subdirs_q target=all top=..
 
+#MM
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	%subdirs_q target=setup top=..
 
-clean::
+#MM
+clean ::
 	-$(RM) $(OSGENDIR) *.err
 
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS)
@@ -31,5 +33,8 @@ $(OSGENDIR)/%.o: %.c
 
 $(OSGENDIR)/%.d: %.c
 	%mkdepend_q flags=$(CFLAGS2)
+
+#MM exec-linux : includes
+exec-linux : all
 
 %common

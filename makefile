@@ -397,4 +397,4 @@ docs: .FORCE
 #
 # END_DESC{target}
 mmake : mmake.c
-	$(CC) $(CFLAGS) $< -o $@
+	gcc -Wall -g -O0 $< -o $@

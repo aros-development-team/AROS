@@ -138,10 +138,12 @@ $(OBJDIR)/init.o: init.c
 # ***** END ***************
 endif
 
+#MM
 setup :
 	@echo "CFLAGS=$(CFLAGS)"
 	%mkdirs_q $(OBJDIR) $(OSMODDIR)
 
+#MM
 clean::
 	$(RM) $(OBJDIR) *.err $(LIB)
 
@@ -152,6 +154,11 @@ $(OBJDIR)/%.o: %.c
 
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
+
+# MetaMake targets
+#MM libs : includes exec-$(ARCH)
+
+libs : all
 
 %common
 %include_deps

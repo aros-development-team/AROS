@@ -38,7 +38,7 @@ contain the following things:
     genmakefiledeps $(TOP)/scripts/genmf.gawk
     # mmake will read this file and every variable in this file will
     # be available everywhere where you can use a variable.
-    globalvariables $(TOP)/config/host.cfg
+    globalvarfile $(TOP)/config/host.cfg
 
     # Some makefiles must have a different name than
     # defaultmakefilename. You can add them manually here.
@@ -55,3 +55,5 @@ which makefiles provide the metatargets you gave in the command line and on
 which other metatargets that depend on those metatargets and will then
 successively make all metatargets.
 
+MMake will calculate TOP (the path to the top of the project) and CURDIR
+(the path to the current directory relative to TOP) to make.
