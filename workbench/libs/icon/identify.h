@@ -2,16 +2,17 @@
 #define _IDENTIFY_H_
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-AROS_UFP3
-(
-    struct DiskObject *, FindDefaultIcon,
-    AROS_UFPA(struct Hook *,            hook,     A0),
-    AROS_UFPA(APTR,                     reserved, A2),
-    AROS_UFPA(struct IconIdentifyMsg *, iim,      A1) 
-);
+#include <workbench/workbench.h>
+#include <workbench/icon.h>
+
+/*** Prototypes *************************************************************/
+struct DiskObject *__FindDefaultIcon_WB(struct IconIdentifyMsg *iim, struct Library *IconBase);
+
+/*** Macros *****************************************************************/
+#define FindDefaultIcon(iim) (__FindDefaultIcon_WB((iim), IconBase))
 
 #endif /* _IDENTIFY_H_ */

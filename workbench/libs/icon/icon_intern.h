@@ -125,7 +125,7 @@ struct NativeIcon
 struct IconBase
 {
     struct LibHeader        LibHeader;
-    struct Library  	    *pngbase;
+    struct Library  	   *pngbase;
     struct Hook             dsh;
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
@@ -133,8 +133,6 @@ struct IconBase
     APTR                    ib_MemoryPool;
     ULONG   	    	    ib_CRCTable[256];
     BOOL    	    	    ib_CRCTableComputed;
-    /* Default identify hook -----------------------------------------------*/
-    struct Hook             ib_DefaultIdentifyHook;
     
     /* Global settings -----------------------------------------------------*/
     struct Screen          *ib_Screen;
