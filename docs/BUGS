@@ -109,7 +109,7 @@ The problem is that DoName() does not support a lock to the root directory of
 a device. This is due to the fact that this functionality is missing in the
 filehandler system.
 
-BUG000015
+BUG000015 fixed
 digulla@fh-konstanz.de
 After rtdemo, dir doesn't work anymore. I get "Object not found".
 Changing dirs or using assigns causes segfaults. However, this only affects
@@ -119,12 +119,12 @@ Location of the bug:
 The line file = Open("test.rtdemo",...) causes the error in the long run
 because when removing this line verything seems to work alright.
 
-BUG000016 partial fix
+BUG000016 fixed
 digulla@fh-konstanz.de
 The path of the inital shell is wrong. Instead of "Workbench:" it
 reads "Workbench:.". If you CD into a subdir (say libs), then
 it doesn't change.
-Still using the "cd" command the prompt does not change.
+The "cd" command didn't SetCurrentDirName().
 
 BUG000017
 bergers@aros.org
@@ -217,11 +217,11 @@ BUG000031 fixed
 mreckt@wurzelausix.CS.Uni-SB.DE
 "run" runs another program, but never returns.
 
-BUG000032
+BUG000032 fixed
 srittau@aros.org
 "rtdemo" segfaults.
 
-BUG000033
+BUG000033 fixed
 mreckt@wurzelausix.CS.Uni-SB.DE
   Workbench:> RequestChoice test test yes no 
   Loading "RequestChoice"...
@@ -241,11 +241,11 @@ srittau@aros.org
 "wait" segfaults, if certain times are used. Probably a problem with
 Delay() (or wait's communication with Delay()).
 
-BUG000035
+BUG000035 fixed
 mreckt@wurzelausix.CS.Uni-SB.DE
 "newshell" complains: "Device not mounted"
 
-BUG000036
+BUG000036 fixed
 mreckt@wurzelausix.CS.Uni-SB.DE
   echo SYS:Demos/demowin > cmd
   shell cmd
@@ -416,3 +416,4 @@ BUG000060
 bergers@aros.org
 Newshell creates two (?) simple refresh windows. When moving these windows
 the result is garbage on the screen.
+
