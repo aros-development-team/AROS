@@ -75,7 +75,7 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     }
     
     /* Initialize memory pool ----------------------------------------------*/
-    if (!(LB(lh)->ib_MemoryPool = CreatePool(MEMF_ANY, 8192, 8192)))
+    if (!(LB(lh)->ib_MemoryPool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 8194, 8194)))
     {
         return FALSE;
     }
