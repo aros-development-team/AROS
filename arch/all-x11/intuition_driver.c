@@ -362,6 +362,11 @@ void intui_WindowToFront (struct IntWindow * window)
     XRaiseWindow (sysDisplay, window->iw_XWindow);
 }
 
+void intui_WindowToBack (struct IntWindow * window)
+{
+    XLowerWindow (sysDisplay, window->iw_XWindow);
+}
+
 long StateToQualifier (unsigned long state)
 {
     long result;

@@ -444,5 +444,21 @@ __AROS_LP2(void, UnlockPubScreen,
     __AROS_LCA(struct Screen *, screen, A1), \
     struct IntuitionBase *, IntuitionBase, 86, Intuition)
 
+__AROS_LP1(void, WindowToBack,
+    __AROS_LPA(struct Window *, window, A0),
+    struct IntuitionBase *, IntuitionBase, 51, Intuition)
+#define WindowToBack(window) \
+    __AROS_LC1(void, WindowToBack, \
+    __AROS_LCA(struct Window *, window, A0), \
+    struct IntuitionBase *, IntuitionBase, 51, Intuition)
+
+__AROS_LP1(void, WindowToFront,
+    __AROS_LPA(struct Window *, window, A0),
+    struct IntuitionBase *, IntuitionBase, 52, Intuition)
+#define WindowToFront(window) \
+    __AROS_LC1(void, WindowToFront, \
+    __AROS_LCA(struct Window *, window, A0), \
+    struct IntuitionBase *, IntuitionBase, 52, Intuition)
+
 
 #endif /* CLIB_INTUITION_PROTOS_H */

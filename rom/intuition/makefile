@@ -46,7 +46,9 @@ FUNCTIONS = \
 	setwindowtitles \
 	sizewindow \
 	unlockibase \
-	unlockpubscreen
+	unlockpubscreen \
+	windowtoback \
+	windowtofront
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
