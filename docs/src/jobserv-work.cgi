@@ -1,75 +1,44 @@
 #!/usr/local/Hughes/bin/lite
 
-$sock = msqlConnect("");
-
-if ($sock < 0)
-{
-	echo ("Can't connect to server!\n");
-	exit (10);
-}
-
-if (msqlSelectDB ($sock,"jobserv") < 0)
-{
-	echo ("Can't open database!\n");
-	msqlClose ($sock);
-	exit (10);
-}
-
-echo ("Content-type: text/html\n\n");
+printf ("Content-type: text/html\n\n");
 /* echo ("$argv[0] $argv[1]\n"); */
 
-/* if (msqlQuery ($sock, "select jobid,comment from jobs where status = 0 and jobid like 'intu%'") < 0) */
-if (msqlQuery ($sock, "select jobid,comment from jobs where status = 1") < 0)
+printf ("<FORM ACTION=\"/~digulla/jobserver/cgi-bin/jobserv-work2.cgi\" METHOD=\"GET\">\n");
+printf ("Identify yourself: <SELECT name=\"Name\">\n");
+
+$filename = "../devlist.txt";
+/* printf ("filename=%s<P>\n", $filename); */
+
+$fd = open ($filename, "<");
+/* printf ("fd=%d<P>\n", $fd); */
+
+if ($fd == -1)
 {
-	echo ("Error: $ERRMSG\n");
-	msqlClose ($sock);
-	exit (10);
-}
-
-$query = msqlStoreResult ();
-printf ("There are %d jobs currently in work. Enter your EMail and select the ones\n",
-    msqlNumRows($query));
-echo ("your want to mark as completed and submit the form<P>\n");
-echo ("<FORM ACTION=\"cgi-bin/jobs-alloc.cgi\" METHOD=\"GET\">\n");
-echo ("<INPUT TYPE=\"text\" NAME=\"EMail\" SIZE=50 MAXLENGTH=256><P>\n");
-echo ("<TABLE>\n");
-
-$row = msqlFetchRow ($query);
-
-if ( # $row == 0 )
-{
-    echo ("Error: $ERRMSG\n");
+    echo ("Error opening $filename: $ERRMSG\n");
     msqlClose ($sock);
     exit (10);
 }
-else
+
+$line = readln ($fd);
+
+while ($line != "")
 {
-    $col = 0;
-    while ( # $row != 0 )
+    $line = chop ($line);
+
+    if ($line != "")
     {
-	if ($col == 0)
-	{
-	    echo ("<TR>");
-	}
-	echo ("<TD><INPUT TYPE=\"checkbox\" VALUE=\"$row[0]\"</TD>");
-	echo ("<TD>$row[1]</TD>\n");
-	$row = msqlFetchRow ($query);
-	$col = $col + 1;
-	if ($col == 3)
-	{
-	    echo ("</TR>");
-	    $col = 0;
-	}
+	$info = split ($line, ":");
+
+	printf ("<OPTION value=\"%s\">%s</OPTION>\n", $info[1], $info[0]);
     }
 
-    if ($col != 0)
-    {
-	echo ("</TR>");
-    }
+    $line = readln ($fd);
 }
-echo ("</TABLE>\n");
-echo ("<INPUT TYPE=\"submit\" value=\"Mark jobs as done\"><P>\n");
-echo ("</FORM>\n");
 
-msqlFreeResult ($query);
-msqlClose ($sock);
+close ($fd);
+
+printf ("</SELECT><P>\n");
+
+printf ("</TABLE>\n");
+printf ("<INPUT TYPE=\"submit\" value=\"Login\"><P>\n");
+printf ("</FORM>\n");

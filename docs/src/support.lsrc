@@ -1,0 +1,26 @@
+funct getenv (char $name)
+{
+    $fd = open ("printenv " + $name, "<|");
+
+    if ($fd >= 0)
+    {
+	$line = readln ($fd);
+	$line = chop ($line);
+	close ($fd);
+    }
+    else
+    {
+	$line = "";
+    }
+
+    return ($line);
+}
+
+funct urlDecode (char $str)
+{
+    $newstr = sub($str,"%40","@");
+    $newstr = sub($newstr,"%2D","-");
+    $newstr = sub($newstr,"%2F","/");
+    return ($newstr);
+}
+

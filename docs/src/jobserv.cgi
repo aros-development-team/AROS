@@ -1,59 +1,135 @@
-#!/bin/sh
+#!/usr/local/Hughes/bin/lite
 
-echo "Content-type: text/html"
-echo ""
-echo "<HTML>"
-echo "<TITLE>AROS - Jobserver output</TITLE>"
-echo "<H1>Output of the jobserver for your submission</H1>"
-#echo "pwd"
-#echo "<PRE>"
-#pwd
-#echo "</PRE>"
-#echo "printenv"
-#echo "<PRE>"
-#printenv | sort
-#echo "</PRE>"
-#echo "set"
-#echo "<PRE>"
-#set | sort
-#echo "</PRE>"
+load "support.lib";
 
-ARGS="`cat`"
+$sock = msqlConnect("aros.fh-konstanz.de");
 
-echo "cat"
-echo "<PRE>"
-echo "$ARGS"
-echo "</PRE>"
+if ($sock < 0)
+{
+    printf ("Can't connect to server!\n");
+    exit (10);
+}
 
-echo "begin gawk<p>"
-gawk 'BEGIN {
-    print "<H1>gawk</h1>";
-    str="'$ARGS'";
-    print str;
-    argc=split(str,a,"\\&");
-    print argc"<p>";
-    for(t=1; t<=argc; t++)
+if (msqlSelectDB ($sock,"jobserv") < 0)
+{
+    printf ("Can't open database!\n");
+    msqlClose ($sock);
+    exit (10);
+}
+
+printf ("Content-type: text/html\n\n");
+
+/* printf ("<PRE>");
+printf ("argc=%d\n", $argc);
+$t = 0;
+while ($t < $argc)
+{
+    printf ("%d: %s\n", $t, $argv[$t]);
+    $t = $t + 1;
+}
+
+system ("printenv");
+$line = read ($stdin,10);
+if ($line == "")
+{
+    if ($ERRMSG != "")
     {
-	split(a[t],a2,"=");
-	print a2[1] " = "a2[2]"<P>";
-	if (a2[1]=="email")
+	printf ("Error reading stdin: %s\n", $ERRMSG);
+    }
+    else
+    {
+	printf ("EOF");
+    }
+}
+else
+{
+    printf ("stdin = %s\n", $line);
+}
+printf ("</PRE>"); */
+
+$query_string = getenv ("QUERY_STRING");
+
+printf ("query_string=%s<BR>\n", $query_string);
+
+$args = split ($query_string, "&");
+$query_string = "";
+
+$t = 0;
+
+while ($t < #$args)
+{
+    $info = split ($args[$t], "=");
+    $t = $t + 1;
+
+    if ($info[0] == "email")
+    {
+	$email = urlDecode ($info[1]);
+	printf ("Your EMail is %s<P>\n", $email);
+    }
+    else
+    {
+	$jobid = urlDecode ($info[0]);
+
+
+	$query = "select comment from jobs where jobid = '" + $jobid + "'";
+
+	$res = msqlQuery ($sock, $query);
+
+	if ($res < 0)
 	{
-	    email=a2[2];
+	    printf ("Error with query \"%s\": %s<BR>\n", $query, $ERRMSG);
+	    $comment = $info[0];
 	}
 	else
 	{
-	    argv[t,"arg"]=a2[1];
-	    argv[t,"val"]=a2[2];
+	    $query = msqlStoreResult ();
+	    $row = msqlFetchRow ($query);
+	    msqlFreeResult ($query);
+	    $comment = $row[0];
+	}
+
+	if ($info[1] == "req")
+	{
+	    printf ("Allocating \"%s\"<BR>\n", $comment);
+	    $status = 1;
+	}
+	else
+	{
+	    if ($info[1] == "free")
+	    {
+		printf ("Freeing \"%s\"<BR>\n", $comment);
+		$status = 0;
+	    }
+	    else
+	    {
+		printf ("Done with \"%s\"<BR>\n", $comment);
+		$status = 2;
+	    }
+	}
+
+	$query = "update jobs set status=" +
+		(char)$status +
+		",email='" + $email + "' where jobid = '" +
+		$info[0] + "'";
+
+	$res = msqlQuery ($sock, $query);
+
+	if ($res < 0)
+	{
+	    printf ("Error with query \"%s\": %s<BR>\n", $query, $ERRMSG);
 	}
     }
+}
 
-    if (email=="")
-    {
-	print "Error: You must supply your EMail address.";
-	exit(10);
-    }
-}' 2>&1 | cat
-echo "end gawk<p>"
+/*
+$res = msqlQuery ($sock, "select jobid,comment from jobs where status = 1 and email = '" + $email + "' order by comment");
 
-echo "</BODY></HTML>"
 
+printf ("There are %d jobs allocated by you.\n",
+    $res);
+
+$query = msqlStoreResult ();
+$row = msqlFetchRow ($query);
+msqlFreeResult ($query); */
+
+msqlClose ($sock);

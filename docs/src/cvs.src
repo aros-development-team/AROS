@@ -228,11 +228,11 @@ be credited for your work.
 There is now a preliminary jobserver WWW interface:
 
 \begin{itemize}
-\item \link{Show free jobs}{jobserv-free.html}
+\item \link{Show free jobs}{jobserv-showfree.html}
 
-\item \link{Show jobs which are in work}{jobserv-work.html}
+\item \link{Show jobs which are in work}{jobserv-showwork.html}
 
-\item \link{Show completed jobs}{jobserv-done.html}
+\item \link{Show completed jobs}{jobserv-showdone.html}
 
 \end{itemize}
 

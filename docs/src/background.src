@@ -68,28 +68,7 @@ all developers but the coordinator are missing. The reason for this is that
 we want to protect the developers from junk mail. If you have something to
 ask or say, contact the \link{coordinator}{mailto:digulla@aros.fh-konstanz.de}.
 
-\begin{itemize}
-\item Aaron Digulla - Coordinator
-\item Matthias Fleischer - Exec, DOS, drivers
-\item Peter Boeckmann - Sparc, Alpha
-\item Iain Templeton - FreeBSD, utility
-\item Peter Bortas - WWW site
-\item Martin Recktenwald - WWW, misc.
-\item Lennard voor den Dag - Amiga port
-\item Chris Lawrence - Linux/m68k
-\item Geert Uytterhoeven - Linux/m68k
-\item Nils Henrik Lorentzen - diskfont, icons
-\item Stefan Ruppert - Datatypes
-\item Kars de Jong - misc
-\item Stefan Reinauer
-\item Christopher D. Judd
-\item Tommy Johansson
-\item Paolo Costabel
-\item Bill Boatman
-\item Daniel Verite
-\item Michael Roth
-\item Nico Heinz
-\end{itemize}
+\exec{gawk -f devitemfilt.gawk}
 
 \section{The current status}
 

@@ -18,10 +18,7 @@ if (msqlSelectDB ($sock,"jobserv") < 0)
 echo ("Content-type: text/html\n\n");
 /* echo ("$argv[0] $argv[1]\n"); */
 
-/* if (msqlQuery ($sock, "select jobid,comment from jobs where status = 0 and jobid like 'intu%'") < 0) */
-/* $res = msqlQuery ($sock, "select comment,email from jobs where status = 2"); */
-/* $res = msqlQuery ($sock, "select comment,email from jobs where status = 2 and jobid like 'intu%' order by comment"); */
-$res = msqlQuery ($sock, "select comment,email from jobs where status = 2 order by comment");
+$res = msqlQuery ($sock, "select comment,email from jobs where status = 0 order by comment");
 
 if ($res < 0)
 {
@@ -30,11 +27,12 @@ if ($res < 0)
 	exit (10);
 }
 
-printf ("There are %d completed jobs.<P>\n", $res);
+printf ("There are %d jobs free.\n", $res);
 
 $query = msqlStoreResult ();
+
 echo ("<TABLE>\n");
-echo ("<TH>Job</TH><TH>Completed by</TH>\n");
+echo ("<TR><TH>Job</TH><TH>Added by</TH></TR>\n");
 
 $row = msqlFetchRow ($query);
 
@@ -50,16 +48,13 @@ while ( # $row != 0 )
 	$row[1],
 	$row[1]
     );
-    /* echo ("<TD>$row[0]</TD>");
-    echo ("<TD><A HREF=\"mailto:$row[1]\">$row[1]</A></TD>\n"); */
+    $row = msqlFetchRow ($query);
     $col = $col + 1;
     if ($col == 1)
     {
-	echo ("</TR>\n");
+	echo ("</TR>");
 	$col = 0;
     }
-    $row = msqlFetchRow ($query);
-    /* printf ("%d %s\n", # $row, $row[0]); */
 }
 
 if ($col != 0)

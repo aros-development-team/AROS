@@ -34,7 +34,7 @@ printf ("There are %d completed jobs.<P>\n", $res);
 
 $query = msqlStoreResult ();
 echo ("<TABLE>\n");
-echo ("<TH>Job</TH><TH>Completed by</TH>\n");
+echo ("<TR><TH>Job</TH><TH>Completed by</TH></TR>\n");
 
 $row = msqlFetchRow ($query);
 

@@ -4,6 +4,8 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 DEST=../html/
+JOBDEST=$(DEST)jobserver/
+
 FILES = background faq devinfo-1 devinfo-2 devinfo-3 devinfo-4 devinfo-5 \
 	devinf_inside devinf_outside \
 	history links
@@ -27,13 +29,13 @@ all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
 cgi-scripte : \
 	$(DEST)cgi-bin/search.cgi \
 	$(DEST)cgi-bin/counter.cgi \
-	$(DEST)cgi-bin/jobserv-free.cgi \
-	$(DEST)cgi-bin/jobserv-work.cgi \
-	$(DEST)cgi-bin/jobserv-done.cgi
+	$(DEST)cgi-bin/jobserv-showfree.cgi \
+	$(DEST)cgi-bin/jobserv-showwork.cgi \
+	$(DEST)cgi-bin/jobserv-showdone.cgi
 
 access-rights:
 	cd $(DEST) ; \
-	    chmod -R ug=rwX,o=rwX . ; \
+	    chmod -R u=rwX,og=rX . ; \
 	    chmod o+w cgi-bin/counter.txt
 
 index :
@@ -83,33 +85,98 @@ $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
 
-$(DEST)background.html: background.src stathtml.gawk src2html.gawk
+$(DEST)background.html: background.src stathtml.gawk src2html.gawk \
+	    devitemfilt.gawk
 	touch background.src
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
 
-jobserver : $(DEST)jobserv-free.html \
-	    $(DEST)jobserv-work.html \
-	    $(DEST)jobserv-done.html
+jobserver : jobserver-setup \
+	    $(JOBDEST).htaccess \
+	    $(JOBDEST)devlist.txt \
+	    $(JOBDEST)jobserv-free.html \
+	    $(JOBDEST)jobserv-work.html \
+	    $(JOBDEST)jobserv-done.html \
+	    $(JOBDEST)cgi-bin/jobserv-free.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-work.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-work2.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-done.cgi \
+	    $(JOBDEST)cgi-bin/jobserv.cgi \
+	    $(JOBDEST)cgi-bin/support.lib \
+	    $(JOBDEST)index.html \
+	    $(DEST)jobserv-showfree.html \
+	    $(DEST)jobserv-showwork.html \
+	    $(DEST)jobserv-showdone.html
 
-$(DEST)jobserv-free.html: page_header.html jobserv-free.body \
+jobserver-setup :
+	@if [ ! -d $(JOBDEST) ]; then $(MKDIR) $(JOBDEST); else true; fi
+	@if [ ! -d $(JOBDEST)cgi-bin ]; then $(MKDIR) $(JOBDEST)cgi-bin; else true; fi
+
+$(JOBDEST).ht% : jobserv.ht%
+	cp $< $@
+	chmod 644 $@
+
+$(JOBDEST)cgi-bin/%.cgi : %.cgi
+	cp $< $@
+	chmod 755 $@
+
+LITE=/usr/local/Hughes/bin/lite
+
+$(JOBDEST)cgi-bin/%.lib : %.lsrc
+	$(LITE) -l$(basename $<).lib $<
+	cp $(basename $<).lib $@
+	chmod 644 $@
+
+$(JOBDEST)devlist.txt: devlist.gawk $(HOME)/CVSROOT/passwd.txt
+	gawk -f $< | sort > $@
+	chmod 644 $@
+
+$(JOBDEST)jobserv-free.html: page_header.html jobserv-free.body \
 	    page_footer_nolinks.html
 	cat $^ | \
-	    sed "s/\\\\thischapter/Free jobs/" \
+	    sed "s/\\\\thischapter/Free jobs/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(DEST)jobserv-work.html: page_header.html jobserv-work.body \
+$(JOBDEST)jobserv-work.html: page_header.html jobserv-work.body \
 	    page_footer_nolinks.html
 	cat $^ | \
-	    sed "s/\\\\thischapter/Free in work/" \
+	    sed "s/\\\\thischapter/Jobs which are in work/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(DEST)jobserv-done.html: page_header.html jobserv-done.body \
+$(JOBDEST)jobserv-done.html: page_header.html jobserv-done.body \
 	    page_footer_nolinks.html
 	cat $^ | \
-	    sed "s/\\\\thischapter/Finished jobs/" \
+	    sed "s/\\\\thischapter/Finished jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(DEST)jobserv-showfree.html: page_header.html jobserv-showfree.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Free jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(DEST)jobserv-showwork.html: page_header.html jobserv-showwork.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Free jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(DEST)jobserv-showdone.html: page_header.html jobserv-showdone.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Finished jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)index.html : page_header.html jobserv.index \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Finished jobs/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 

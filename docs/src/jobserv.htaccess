@@ -1,0 +1,8 @@
+AuthUserFile /home/digulla/.htpasswd
+AuthGroupFile /dev/null
+AuthName ByPassword
+AuthType Basic
+
+<Limit GET>
+require user aros-dev
+</Limit>
