@@ -34,32 +34,44 @@
 #define isascii(c)      (((c) & ~0x7F) == 0)
 #define toascii(c)      ((c) & 0x7F)
 
-#define isupper(c)      _istype(c,_ISupper)
-#define islower(c)      _istype(c,_ISlower)
-#define isalpha(c)      _istype(c,_ISalpha)
-#define isdigit(c)      _istype(c,_ISdigit)
-#define isxdigit(c)     _istype(c,_ISxdigit)
-#define isspace(c)      _istype(c,_ISspace)
-#define isprint(c)      _istype(c,_ISprint)
-#define isgraph(c)      _istype(c,_ISgraph)
-#define isblank(c)	_istype(c,_ISblank)
-#define iscntrl(c)      _istype(c,_IScntrl)
-#define ispunct(c)      _istype(c,_ISpunct)
-#define isalnum(c)      _istype(c,_ISalnum)
-#define iscsym(c)	(isalnum(c) || (((c) & 127) == 0x5F))	/* SAS C */
-#define iscsymf(c)	(isalpha(c) || (((c) & 127) == 0x5F)) 	/* SAS C */
+#define _isupper(c)     _istype(c,_ISupper)
+#define _islower(c)     _istype(c,_ISlower)
+#define _isalpha(c)     _istype(c,_ISalpha)
+#define _isdigit(c)     _istype(c,_ISdigit)
+#define _isxdigit(c)    _istype(c,_ISxdigit)
+#define _isspace(c)     _istype(c,_ISspace)
+#define _isprint(c)     _istype(c,_ISprint)
+#define _isgraph(c)     _istype(c,_ISgraph)
+#define _isblank(c)	_istype(c,_ISblank)
+#define _iscntrl(c)     _istype(c,_IScntrl)
+#define _ispunct(c)     _istype(c,_ISpunct)
+#define _isalnum(c)     _istype(c,_ISalnum)
+#define _iscsym(c)	(isalnum(c) || (((c) & 127) == 0x5F))	/* SAS C */
+#define _iscsymf(c)	(isalpha(c) || (((c) & 127) == 0x5F)) 	/* SAS C */
 
 #define _toupper(c)      (__ctype_toupper[(int)(c)])
 #define _tolower(c)      (__ctype_tolower[(int)(c)])
 
-static __inline__ int toupper(int c)
-{
-    return _toupper(c);
-}
+#define __ctype_make_func(__name__)                         \
+static __inline__ typeof(_ ## __name__(0)) __name__(int c); \
+static __inline__ typeof(_ ## __name__(0)) __name__(int c)  \
+{ return _ ## __name__(c); }
 
-static __inline__ int tolower(int c)
-{
-    return _tolower(c);
-}
+__ctype_make_func(isupper)
+__ctype_make_func(islower)
+__ctype_make_func(isalpha)
+__ctype_make_func(isdigit)
+__ctype_make_func(isxdigit)
+__ctype_make_func(isspace)
+__ctype_make_func(isprint)
+__ctype_make_func(isgraph)
+__ctype_make_func(isblank)
+__ctype_make_func(iscntrl)
+__ctype_make_func(ispunct)
+__ctype_make_func(isalnum)
+__ctype_make_func(iscsym)
+__ctype_make_func(iscsymf)
+__ctype_make_func(toupper)
+__ctype_make_func(tolower)
 
 #endif /* _CTYPE_H_ */
