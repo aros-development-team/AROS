@@ -205,9 +205,13 @@ extern LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
 extern void driver_WaitTOF (struct GfxBase *);
 
 
-#define DEBUG 0
-#define SDEBUG 0
-#include <aros/debug.h>
+/* functions in support.c */
+extern BOOL pattern_pen(struct RastPort *rp
+	, LONG x, LONG y
+	, ULONG apen, ULONG bpen
+	, ULONG *pixval_ptr
+	, struct GfxBase *GfxBase);
+
 
 
 #endif /* GRAPHICS_INTERN_H */
