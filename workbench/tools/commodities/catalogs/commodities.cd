@@ -185,3 +185,12 @@ I\0Iconify
 MSG_FKEY_MEN_PROJECT_QUIT (//)
 Q\0Quit
 ;
+MSG_NOCAPSLOCK_CXNAME (//)
+NoCapsLock
+;
+MSG_NOCAPSLOCK_CXTITLE (//)
+NoCapsLock:
+;
+MSG_NOCAPSLOCK_CXDESCR (//)
+Renders the CAPS LOCK key ineffective
+;
