@@ -101,13 +101,14 @@ static LONG country_init(void)
 
 /*********************************************************************************************/
 
+#warning FIXME: this seems broken... probably needs to use AROS_UFH3...
 static IPTR LVRenderHook(
     struct Hook *hook,
     struct Node *node,
     struct LVDrawMsg *msg
 )
 {
-    AROS_USERFUNC_INIT
+    //AROS_USERFUNC_INIT
 
     IPTR retval;
     
@@ -181,7 +182,7 @@ static IPTR LVRenderHook(
      	
      return retval;
 
-     AROS_USERFUNC_EXIT
+     //AROS_USERFUNC_EXIT
 }
 
 /*********************************************************************************************/
