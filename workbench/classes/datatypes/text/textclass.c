@@ -8,9 +8,43 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "text_intern.h"
+#include <exec/types.h>
+#include <exec/memory.h>
+#include <dos/dostags.h>
+#include <graphics/gfxbase.h>
+#include <graphics/rpattr.h>
+#include <intuition/imageclass.h>
+#include <intuition/icclass.h>
+#include <intuition/gadgetclass.h>
+#include <datatypes/datatypesclass.h>
+#include <datatypes/textclass.h>
 
-/**************************************************************************************************/
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/iffparse.h>
+#include <proto/layers.h>
+
+#ifndef _AROS
+#include <libraries/reqtools.h>
+#include <proto/reqtools.h>
+#endif
+
+#ifdef COMPILE_DATATYPE
+#include <proto/datatypes.h>
+#endif
+
+#include "compilerspecific.h"
+#include "support.h"
+#include "textclass.h"
+
+/* Define the following to enable the debug version */
+/* #define MYDEBUG */
+#include "debug.h"
+
 
 #ifdef _AROS
 #define NO_PRINTER 1
@@ -18,36 +52,7 @@
 #define NO_PRINTER 0
 #endif
 
-/**************************************************************************************************/
-
-/* Define the following for the debug version */
-/* #define MYDEBUG */
-
-/* Debug Macros */
-
-#ifdef _AROS
-
-#undef DEBUG
-#define DEBUG 1
-#include <aros/debug.h>
-
-#else /* _AROS */
-
-#define bug kprintf
-
-#ifdef MYDEBUG
-
-#define D(x) {kprintf("%s/%ld (%s): ", __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name);(x);};
-#else
-#define D(x) ;
-
-#endif /* MYDEBUG */
-
-#endif
-/*_AROS */
-
-/**************************************************************************************************/
-
+/* Some prototypes */
 static void CopyText(struct Text_Data *td);
 static void ClearSelected(struct Text_Data *td, struct RastPort *rp);
 
@@ -544,26 +549,26 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 					SetABPenDrMd(rp, 1, 3, JAM2);
 					Text(rp, text, len);
 
-				    }	/* if(mark_line2 == line) else ... */
+				    } /* if(mark_line2 == line) else ... */
 
-				}	/* if(len>0) */
+				} /* if(len>0) */
 
-			    }	/* if(!mark) else ... */
+			    } /* if(!mark) else ... */
 
-			}	/* if(len) */
+			} /* if(len) */
 
-		    }	/* if(width > 0) */
+		    } /* if(width > 0) */
 
-		}	/* if(len > 0) */
+		} /* if(len > 0) */
 
-	    }	/* if(linenum >= minlinenum) */
+	    } /* if(linenum >= minlinenum) */
 
 	    if (line->ln_Flags & LNF_LF)
 	    {
 		y += fonty;
 	    }
 
-	}	/* if(linenum >= td->vert_top) */
+	} /* if(linenum >= td->vert_top) */
 
 
 	if (mark_line2 == line)
@@ -573,9 +578,9 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 	{
 	    linenum++;
 	}
-	line = (struct Line *) Node_Next(line);		//line->ln_Link.mln_Succ;
+	line = (struct Line *) Node_Next(line);
 
-    }	/* while(line) */
+    } /* while(line) */
 
     SetABPenDrMd(rp, apen, bpen, mode);
     SetFont(rp, oldfont);
@@ -1625,6 +1630,72 @@ STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1
     return DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags);
 }
 
+#ifndef _AROS
+
+struct AsyncMethodMsg
+{
+    struct Message amm_ExecMessage;
+    Object *amm_Object;
+    Msg amm_Msg;
+};
+
+/* SAVEDS or simliar not needed */
+ULONG asyncmethodfunc(void)
+{
+    struct Library *SysBase = *((struct Library **) 4L);
+    struct Process *proc = (struct Process *) FindTask(NULL);
+    Object *obj;
+    Msg msg;
+    struct AsyncMethodMsg *amsg;
+
+    WaitPort(&proc->pr_MsgPort);
+    amsg = (struct AsyncMethodMsg *) GetMsg(&proc->pr_MsgPort);
+    obj = amsg->amm_Object;
+    msg = amsg->amm_Msg;
+    ReplyMsg(&amsg->amm_ExecMessage);
+
+    D(bug("Recieved object : %lx, msg : %lx\n",obj,msg));
+
+    return DoMethodA(obj,msg);
+}
+
+STATIC struct Process *DoAsyncMethodA(Class *cl,Object *obj,Msg msg,struct TagItem *tagList)
+{
+    struct MsgPort *mport;
+    struct Process *proc = NULL;
+
+    if ((mport = CreateMsgPort()))
+    {
+    	struct AsyncMethodMsg *amsg = (struct AsyncMethodMsg*)AllocVec(sizeof(struct AsyncMethodMsg),MEMF_PUBLIC);
+    	if (amsg)
+    	{
+	    amsg->amm_Object = obj;
+	    amsg->amm_Msg    = msg;
+
+	    amsg->amm_ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
+	    amsg->amm_ExecMessage.mn_ReplyPort    = mport;
+
+	    if ((proc = CreateNewProcTags(NP_Entry,asyncmethodfunc,
+					  (tagList) ? TAG_MORE : TAG_IGNORE,tagList,
+					  TAG_DONE)))
+	    {
+		PutMsg(&proc->pr_MsgPort,&amsg->amm_ExecMessage);
+		WaitPort(mport);
+            }
+            FreeVec(amsg);
+        }
+	DeleteMsgPort(mport);
+    }
+    return proc;
+}
+
+STATIC struct Process *DoAsyncMethod(Class *cl,Object *obj,Msg msg,ULONG tag1,...)
+{
+    return DoAsyncMethodA(cl,obj,msg,(struct TagItem *) &tag1);
+}
+
+#endif
+
 STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *msg)
 {
     struct Gadget *g;
@@ -1727,18 +1798,18 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 			td->title = StrCopy(name);
 			return g;
 
-		    }	/* switch (type) */
+		    } /* switch (type) */
 
-		}	/* if (st == DTST_CLIPBOARD) else ... */
+		} /* if (st == DTST_CLIPBOARD) else ... */
 
-	    }	/* if (handle) */
+	    } /* if (handle) */
 	    else
 		SetIoErr(ERROR_OBJECT_NOT_FOUND);
 
-	}	/* if(st == DTST_CLIPBOARD || st == DTST_FILE) */
+	} /* if(st == DTST_CLIPBOARD || st == DTST_FILE) */
 	CoerceMethod(cl, (Object *) g, OM_DISPOSE);
 
-    }	/* if((g = (struct Gadget*)DoSuperMethodA(cl, o, (Msg)msg))) */
+    } /* if((g = (struct Gadget*)DoSuperMethodA(cl, o, (Msg)msg))) */
     return NULL;
 
 }
@@ -1759,13 +1830,13 @@ STATIC ULONG DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg
     {
     case TDTA_Buffer:
 	D(bug("Get: Tag ID: TDTA_Buffer 0x%lx\n", td->buffer_allocated));
-	*msg->opg_Storage = (ULONG) td->buffer_allocated;	//(td->buffer_setted?td->buffer_setted:td->buffer_allocated);
+	*msg->opg_Storage = (ULONG) td->buffer_allocated;
 
 	break;
 
     case TDTA_BufferLen:
 	D(bug("Get: Tag ID: TDTA_BufferLen  %ld\n", td->buffer_allocated_len));
-	*msg->opg_Storage = (ULONG) td->buffer_allocated_len;	//(td->buffer_setted_len?td->buffer_setted_len:td->buffer_allocated_len);
+	*msg->opg_Storage = (ULONG) td->buffer_allocated_len;
 
 	break;
 
@@ -1949,14 +2020,13 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 	    D(bug("Set: 0x%lx  %ld\n", ti->ti_Tag, ti->ti_Data));
 	    break;
 
-	}	/* switch (ti->ti_Tag) */
+	} /* switch (ti->ti_Tag) */
 
-    }	/* while ((ti = NextTagItem(&tl))) */
+    } /* while ((ti = NextTagItem(&tl))) */
 
     if (layout && msg->ops_GInfo)
     {
-	DoMethod((Object *) g, GM_LAYOUT, msg->ops_GInfo, TRUE);	//!td->layouted);
-
+	DoMethod((Object *) g, GM_LAYOUT, msg->ops_GInfo, TRUE);
     }
 
     if (redraw_all || (new_top_horiz && new_top_vert))
@@ -2049,9 +2119,9 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	    }
 	    ReleaseSemaphore(&(si->si_Lock));
 
-	}	/* if (GetDtAttrs(... */
+	} /* if (GetDtAttrs(... */
 
-    }	/* if(!(si->si_Flags & DTSIF_LAYOUT)) */
+    } /* if(!(si->si_Flags & DTSIF_LAYOUT)) */
 
     return 0;
 }
@@ -2173,6 +2243,167 @@ STATIC VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
     PrintText(td, msg->dtp_PIO);
 }
 
+#ifndef _AROS
+
+STATIC LONG strseg(struct Line *line, STRPTR str, LONG slen)
+{
+    STRPTR text = line->ln_Text;
+    STRPTR ptr;
+    LONG llen = line->ln_TextLen;
+    LONG len;
+
+    while (llen >= slen)
+    {
+	ptr = str;
+	len = slen;
+
+	while (ToLower(*text) == ToLower(*ptr))
+	{
+	    text++;
+	    ptr++;
+	    llen--;
+	    len--;
+	}
+
+	if (len==0)
+	    return text - line->ln_Text - slen;
+	else
+	{
+	    text++;
+	    llen--;
+	}
+    }
+    return -1;
+}
+
+STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction,struct dttSearchText *msg)
+{
+    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, obj);
+    struct List *list;
+
+    if (GetAttr(TDTA_LineList,obj,(ULONG *) &list))
+    {
+	struct Line *line;
+	LONG len = msg->dttst_TextLen;
+	LONG found = td->search_line;
+	LONG found_x = 0;
+	LONG y = 0;
+
+	line = (struct Line *)list->lh_Head;
+
+	if (direction == -1)
+	    found--;
+
+	while (y <= found && line->ln_Link.mln_Succ)
+	{
+	    if (line->ln_Flags & LNF_LF)
+		y++;
+	    line = (struct Line *) line->ln_Link.mln_Succ;
+	}
+
+	found = -1;
+
+	if (direction == -1)
+	{
+	    if (line->ln_Link.mln_Pred)
+		line = (struct Line *) line->ln_Link.mln_Pred;
+
+	    while (line->ln_Link.mln_Pred && found == -1)
+	    {
+		if (line->ln_Flags & LNF_LF)
+		    y--;
+
+		if (line->ln_TextLen >= len)
+		{
+		    found_x = strseg(line,msg->dttst_Text,msg->dttst_TextLen);
+		    if (found_x >= 0)
+		    {
+			found = y;
+			break;
+		    }
+		}
+		line = (struct Line *) line->ln_Link.mln_Pred;
+	     }
+	} else
+	{
+	    while (line->ln_Link.mln_Succ && found == -1)
+	    {
+		if (line->ln_TextLen >= len)
+		{
+		    found_x = strseg(line,msg->dttst_Text,msg->dttst_TextLen);
+		    if (found_x >= 0)
+		    {
+			found = y;
+			break;
+		    }
+		}
+		if (line->ln_Flags & LNF_LF)
+		    y++;
+		line = (struct Line *) line->ln_Link.mln_Succ;
+	    }
+	}
+
+	td->search_line = found;
+
+	if (found < 0)
+	{
+	    DisplayBeep(msg->dttst_GInfo->gi_Screen);
+/*	    found = 0;*/
+	} else
+	{
+	    struct RastPort *rp = ObtainGIRPort(msg->dttst_GInfo);
+	    if (td->mark_line1 && rp)
+	    {
+		DrawMarkedText(td,rp,FALSE);
+		td->mark_line1 = td->mark_line2 = NULL;
+	    }
+
+	    notifyAttrChanges(obj,msg->dttst_GInfo,0,DTA_TopVert,found,TAG_DONE);
+
+            td->mark_line1 = td->mark_line2 = line;
+            td->mark_x1 = found_x + line->ln_XOffset / td->font->tf_XSize;
+            td->mark_x2 = td->mark_x1 + msg->dttst_TextLen;
+            td->mark_y1 = td->mark_y2 = found;
+
+	    if (rp)
+	    {
+	    	DrawMarkedText(td,rp,TRUE);
+		ReleaseGIRPort(rp);
+	    }
+	}
+    }
+}
+
+STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
+{
+    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
+    struct Library *ReqToolsBase;
+
+    if ((ReqToolsBase = OpenLibrary("reqtools.library",38)))
+    {
+	struct GadgetInfo *ginfo = &msg->dttgs_GInfo;
+	ULONG retval = rtGetString(td->search_buffer,sizeof(td->search_buffer),
+				   "Text Datatype Search String", NULL,
+				   RT_Window     ,ginfo->gi_Window,
+				   RT_ReqPos     ,REQPOS_CENTERWIN,
+				   RT_LockWindow ,TRUE,
+				   TAG_DONE);
+	CloseLibrary(ReqToolsBase);
+
+	if (retval)
+	{
+	    Forbid();
+	    DoMethod(g,msg->dttgs_SearchMethod,ginfo,td->search_buffer,strlen(td->search_buffer));
+	    Permit();
+	}
+    }
+
+    if (FindTask(NULL) == (struct Task*)td->search_proc)
+    	td->search_proc = NULL;
+}
+
+#endif
+
 #ifdef _AROS
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
@@ -2281,12 +2512,67 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	}
 	break;
 
+#ifndef _AROS
+
+    case DTM_TRIGGER:
+	{
+   	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
+	    ULONG function = ((struct dtTrigger*)msg)->dtt_Function;
+
+	    D(bug("Dispatcher called (MethodID: DTM_TRIGGER)!\n"));
+
+	    if (function == STM_ACTIVATE_FIELD)
+	    {
+		if (!td->search_proc)
+		{
+		    td->msg.MethodID           = DTTM_GET_STRING;
+		    /* copy the full GadgetInfo, because this request is asyncron and datatypes
+		     * creates this structure on the stack (Oh No) !
+		     */
+		    td->msg.dttgs_GInfo        = *((struct dtTrigger*)msg)->dtt_GInfo;
+		    td->msg.dttgs_SearchMethod = DTTM_SEARCH_NEXT;
+
+		    td->search_proc = DoAsyncMethod(cl,o,(Msg) &td->msg,NP_Name,"text.datatype getstring process",TAG_DONE);
+		}
+	    } else
+	    {
+	    	ULONG search_method;
+
+		if (function == STM_PREV_FIELD || function == STM_BROWSE_PREV)
+		    search_method = DTTM_SEARCH_PREV;
+		else search_method = DTTM_SEARCH_NEXT;
+
+		if (td->search_buffer[0])
+		{
+		    DoMethod(o,search_method, ((struct dtTrigger*)msg)->dtt_GInfo,
+			     td->search_buffer,strlen(td->search_buffer));
+		}
+	    }
+	}
+	break;
+
+	case DTTM_GET_STRING:
+		D(bug("Dispatcher called (MethodID: DTTM_GET_STRING)!\n"));
+		DT_GetString(cl,o,(struct dttGetString *) msg);
+		break;
+
+	case DTTM_SEARCH_NEXT:
+		D(bug("Dispatcher called (MethodID: DTTM_SEARCH_NEXT)!\n"));
+		DT_SearchString(cl,o,1,(struct dttSearchText *) msg);
+		break;
+
+	case DTTM_SEARCH_PREV:
+		D(bug("Dispatcher called (MethodID: DTTM_SEARCH_PREV)!\n"));
+		DT_SearchString(cl,o,-1,(struct dttSearchText *) msg);
+		break;
+#endif
+
     default:
 	D(bug("Dispatcher called (MethodID: %ld=0x%lx)!\n", *msg, *msg));
 	return DoSuperMethodA(cl, o, (Msg) msg);
     }
 
-    return NULL;
+    return 0;
 }
 
 struct IClass *DT_MakeClass(void)

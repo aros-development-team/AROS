@@ -6,8 +6,9 @@
 
 #include <string.h>
 
-#include "text_intern.h"
-
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/iffparse.h>
 
 #ifndef _AROS
 #ifdef __SASC

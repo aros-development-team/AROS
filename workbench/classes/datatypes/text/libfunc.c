@@ -6,9 +6,10 @@
  It must be compiled with sc's libcode option
 ***********************************************************************/
 
-#include "text_intern.h"
+#include <proto/exec.h>
+#include <proto/intuition.h>
 
-/**************************************************************************************************/
+#include "compilerspecific.h"
 
 struct IClass 		*dt_class;
 

@@ -1,16 +1,20 @@
-Short:     V44.4 of the text.datatype replacemnet
+Short:     V44.5 of the text.datatype replacemnet
 Uploader:  sebauer@t-online.de (Sebastian Bauer)
 Author:    sebauer@t-online.de (Sebastian Bauer)
 Type:      util/dtype
-Kurz:      V44.4 des text.datatypes Ersatz
+Kurz:      V44.5 des text.datatypes Ersatz
 Requires:  OS 3.0
-Version:   44.4
+Version:   44.5
 
 Introduction
 ~~~~~~~~~~~~
-This is a replacement of the text.datatype. I wrote it because the
+This is a replacement of the text.datatype. It should be compatible with
+the orginal text.datatypes available within the OS. I wrote it because the
 orginal text.datatype lacks the support of marking and copying passages.
-I tried to be compatible with old one.
+With this version you also can search through the whole text.
+
+To popup the search requester press return. Use Tab to search forward and
+Shift-Tab to search backward.
 
 Copyright, Distribution and Disclamer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +34,9 @@ install it
 
 History
 ~~~~~~~
+Version 44.5 (27.08.00)
+ - implemented the search feature
+
 Version 44.4 (05.08.00)
  - envvar: TEXTDT_MENUMARKING, if setted to 1, marking is only
    possible if the menu item is selected before

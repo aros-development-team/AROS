@@ -9,7 +9,7 @@ lib lib:sc.lib lib:mydebug.o
 NOICONS
 SD
 SC
-libversion 44 librevision 4 libid "text.datatype 44.4 (02.07.00)"
+libversion 44 librevision 5 libid "text.datatype 44.5 (27.08.00)"
 <
    copy text.datatype SYS:Classes/datatypes
    avail flush
