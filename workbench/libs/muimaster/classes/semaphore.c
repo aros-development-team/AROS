@@ -8,6 +8,7 @@
 #include <exec/semaphores.h>
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"

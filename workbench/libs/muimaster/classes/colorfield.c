@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 
 #include <string.h>
 
