@@ -23,8 +23,9 @@ struct MUI_ScrollgroupData
 #ifndef _AROS
 __asm ULONG Scrollgroup_Function(register __a0 struct Hook *hook, register __a1 void **msg)
 #else
-AROS_UFH2(ULONG,Scrollgroup_Function,
+AROS_UFH3(ULONG,Scrollgroup_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
+	AROS_UFHA(APTR, dummy, A2),
 	AROS_UFHA(void **, msg,  A1))
 #endif
 {
