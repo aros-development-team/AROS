@@ -26,11 +26,9 @@ struct IntuitionBase *IntuitionBase;
 struct Library *GfxBase;
 struct Library *LayersBase;
 struct DosLibrary *DOSBase;
-struct Screen *screen;
-struct Window * window;
 
 struct Screen * openscreen(void);
-void closescreen(struct Screen * screen); 
+struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h);
 
 VOID test_blttemplate( struct Window *w);
 VOID test_bltpattern(struct Window *w);
@@ -48,20 +46,38 @@ int main(int argc, char **argv)
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
+	      struct Screen *screen;
+	      struct Window *w1;
+
+	      
               if ((screen = openscreen())) 
               {
-	       
-	        test_flood(window);
-		fflush(stdout);
-	       
-	      	/* Wait forever */
-		Wait(0L);
-		
-/*                init();
-		doall();
-                restore(); 
-*/
-		closescreen(screen);
+	        
+		w1 = openwindow(screen, 100, 100, 200, 200);
+		if (w1)
+		{
+
+#ifdef USE_TWO_WINDOWS
+		    struct Window *w2;
+
+		    w2 = openwindow(screen, 150, 150, 250, 250);
+		    if (w2)
+		    {
+
+#endif	       
+			/* Wait forever */
+			test_flood(w1);
+
+			Wait(0L);
+
+#ifdef USE_TWO_WINDOWS		
+			CloseWindow(w2);
+		    }
+		    
+#endif		    
+		    CloseWindow(w1);
+		}
+		CloseScreen(screen);
 	      }
               CloseLibrary((struct Library *)DOSBase);
 	  }
@@ -74,6 +90,30 @@ int main(int argc, char **argv)
 
 
 
+struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
+{
+
+  struct Window *window;
+  printf("Opening window, screen=%p\n", screen);
+  
+  window = OpenWindowTags(NULL,
+			  WA_IDCMP, IDCMP_RAWKEY,
+			  WA_Left,	x,
+			  WA_Top,	y,
+                          WA_Height, 	w,
+                          WA_Width, 	h,
+			  WA_CustomScreen, screen,
+			  WA_Activate,		TRUE,
+			  WA_DepthGadget, 	TRUE,
+			  WA_Zoom,		TRUE,
+			  WA_CloseGadget,	TRUE,
+			  WA_Title,		"X11 gfxhidd demo",
+                          TAG_END);
+
+  printf("Window opened\n");
+  
+  return window;
+}
 struct Screen * openscreen(void)
 {
   struct Screen * screen;
@@ -84,23 +124,7 @@ struct Screen * openscreen(void)
                           SA_Height, 	480,
                           TAG_END);
 
-  printf("Opening window, screen=%p\n", screen);
 
-  window = OpenWindowTags(NULL,
-			  WA_IDCMP, IDCMP_RAWKEY,
-			  WA_Left,	100,
-			  WA_Top,	100,
-                          WA_Height, 	200,
-                          WA_Width, 	200,
-			  WA_CustomScreen, screen,
-			  WA_Activate,		TRUE,
-			  WA_DepthGadget, 	TRUE,
-			  WA_Zoom,		TRUE,
-			  WA_CloseGadget,	TRUE,
-			  WA_Title,		"X11 gfxhidd demo",
-                          TAG_END);
-
-  printf("Window opened\n");
 
 /*  screen->RastPort.longreserved[0] = window->RPort->longreserved[0];
 
@@ -109,13 +133,7 @@ struct Screen * openscreen(void)
   return screen;
 }
 
-void closescreen(struct Screen * screen)
-{
-  CloseWindow(window);
-  CloseScreen(screen);
-}
 
-#define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
 
 VOID test_flood(struct Window *w)
 {
