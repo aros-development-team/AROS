@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+#MM- AROS-morphos : prepare-morphos setup-clib workbench-morphos
+
+#MM- workbench-locale-morphos: workbench-libs-locale-module-quick
+
+#MM- workbench-morphos: workbench-locale-morphos
+
+#MM
+prepare-morphos : $(TOP)/config/morphos/Include/aros/libcall.h
+	%mkdirs_q $(AROSDIR)/Include
+	%mkdirs_q $(AROSDIR)/Libs
+	$(CP) -r $(TOP)/config/morphos/Include/* $(AROSDIR)/Include
