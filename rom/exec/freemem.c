@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/09/11 16:56:16  digulla
+    Move PurgeChunk() to aros.lib
+
     Revision 1.8  1996/08/23 17:06:56  digulla
     Began work on ressource tracking
 
@@ -45,7 +48,7 @@
 #define NASTY_FREEMEM	0	/* Delete contents of free'd memory ? */
 
 #if NASTY_FREEMEM
-void PurgeChunk (ULONG *, ULONG);
+extern void PurgeChunk (ULONG *, ULONG);
 #endif
 
 /*****************************************************************************
@@ -245,18 +248,3 @@ void PurgeChunk (ULONG *, ULONG);
     __AROS_FUNC_EXIT
 } /* FreeMem */
 
-
-/* Don't use #if on this one since it may be used by some other routine, too.
-    It's not static by design. */
-void PurgeChunk (ULONG * ptr, ULONG size)
-{
-    while (size >= sizeof (ULONG))
-    {
-#if SIZEOFULONG > 4
-	*ptr ++ = 0xDEAFBEEFDEADBEEFL;
-#else
-	*ptr ++ = 0xDEAFBEEFL;
-#endif
-	size -= sizeof (ULONG);
-    }
-}
