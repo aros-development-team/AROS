@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/01/17 23:38:40  stegerg
+    added C_CURSOR_VISIBLE and C_CURSOR_INVISIBLE,
+    which are detected but not implemented yet.
+
     Revision 1.9  1999/12/26 21:44:22  nlorentz
     Now console works also for input, so you can run programs from newshell. Some current issues: cursor rendering does not work very well, and you have to press CTRL-Enter instead of just Enter to execute a command
 
@@ -157,6 +161,9 @@ enum
     C_CURSOR_BACKTAB,
     
     C_SELECT_GRAPHIC_RENDATION,
+    
+    C_CURSOR_VISIBLE,
+    C_CURSOR_INVISIBLE,
     
     NUM_CONSOLE_COMMANDS
 };
