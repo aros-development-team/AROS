@@ -1186,6 +1186,27 @@ struct ListNode *lnode;
 	}
 }
 
+void disableObject(Object *object) {
+LONG disabled;
+
+	get(object, MUIA_Disabled, &disabled);
+	if (disabled == FALSE)
+	{
+		set(object, MUIA_Disabled, TRUE);
+	}
+}
+
+void enableObject(Object *object) {
+LONG disabled;
+
+	get(object, MUIA_Disabled, &disabled);
+	if (disabled == TRUE)
+	{
+		set(object, MUIA_Disabled, FALSE);
+	}
+}
+
+
 /********************************** Left  Listview ***************************/
 
 AROS_UFH3(void, lv_doubleclick,
@@ -1218,18 +1239,42 @@ struct ListNode *iln;
 		switch (type)
 		{
 		case LNT_Root:
-			set(gadgets.buttons[GB_ADD_ENTRY], MUIA_Disabled, FALSE);
-			set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, TRUE);
+			enableObject(gadgets.buttons[GB_ADD_ENTRY]);
+			disableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+			disableObject(gadgets.buttons[GB_CREATE_TABLE]);
+			disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
+			disableObject(gadgets.buttons[GB_RESIZE_MOVE]);
+			disableObject(gadgets.buttons[GB_PARENT]);
+			disableObject(gadgets.buttons[GB_RENAME]);
+			disableObject(gadgets.buttons[GB_DOSENVEC]);
+			disableObject(gadgets.buttons[GB_SWITCHES]);
+			disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
 			break;
 		case LNT_Device:
-			set(gadgets.buttons[GB_ADD_ENTRY], MUIA_Disabled, TRUE);
-			set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, TRUE);
+			disableObject(gadgets.buttons[GB_ADD_ENTRY]);
+			disableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+			disableObject(gadgets.buttons[GB_CREATE_TABLE]);
+			disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
+			disableObject(gadgets.buttons[GB_RESIZE_MOVE]);
+			enableObject(gadgets.buttons[GB_PARENT]);
+			disableObject(gadgets.buttons[GB_RENAME]);
+			disableObject(gadgets.buttons[GB_DOSENVEC]);
+			disableObject(gadgets.buttons[GB_SWITCHES]);
+			disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
 			break;
 		case LNT_Harddisk:
 		case LNT_Partition:
-			set(gadgets.buttons[GB_ADD_ENTRY], MUIA_Disabled, FALSE);
+			enableObject(gadgets.buttons[GB_ADD_ENTRY]);
+			disableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+			disableObject(gadgets.buttons[GB_CREATE_TABLE]);
+			disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
+			enableObject(gadgets.buttons[GB_RESIZE_MOVE]);
+			enableObject(gadgets.buttons[GB_PARENT]);
+			disableObject(gadgets.buttons[GB_RENAME]);
+			disableObject(gadgets.buttons[GB_DOSENVEC]);
+			disableObject(gadgets.buttons[GB_SWITCHES]);
+			disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
 			DoMethod(gadgets.buttons[GB_RESIZE_MOVE], MUIM_KillNotify, MUIA_Pressed);
-			set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, FALSE);
 			DoMethod
 			(
 				gadgets.buttons[GB_RESIZE_MOVE],
@@ -1267,6 +1312,11 @@ char sizestr[16];
 		case LNT_Device:
 			sprintf(str, "%s: %ld", MSG(WORD_Units),countNodes(&iln->list, LNT_Harddisk));
 			DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+			enableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+			if (iln->change_count > 0)
+				enableObject(gadgets.buttons[GB_SAVE_CHANGES]);
+			else
+				disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
 			break;
 		case LNT_Harddisk:
 		case LNT_Partition:
@@ -1328,8 +1378,30 @@ char sizestr[16];
 					else
 						strcat(str, MSG_STD(NOSTR));
 					DoMethod(gadgets.rightlv, MUIM_List_InsertSingle, str, MUIV_List_Insert_Bottom);
+					enableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+					enableObject(gadgets.buttons[GB_RENAME]);
+					enableObject(gadgets.buttons[GB_DOSENVEC]);
+					enableObject(gadgets.buttons[GB_SWITCHES]);
 				}
+				else if (iln->ln.ln_Type == LNT_Harddisk)
+				{
+					if (iln->change_count > 0)
+						enableObject(gadgets.buttons[GB_SAVE_CHANGES]);
+					else
+						disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
+				}
+				enableObject(gadgets.buttons[GB_CREATE_TABLE]);
+				enableObject(gadgets.buttons[GB_CHANGE_TYPE]);
 			}
+			break;
+		case LNT_Parent:
+			disableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+			disableObject(gadgets.buttons[GB_RENAME]);
+			disableObject(gadgets.buttons[GB_DOSENVEC]);
+			disableObject(gadgets.buttons[GB_SWITCHES]);
+			disableObject(gadgets.buttons[GB_CREATE_TABLE]);
+			disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
+			disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
 			break;
 		}
 	}
@@ -1787,7 +1859,15 @@ int i;
 		);
 		/* MUIM_CallHook, hook */
 	}
-	set(gadgets.buttons[GB_RESIZE_MOVE], MUIA_Disabled, TRUE);
+	disableObject(gadgets.buttons[GB_REMOVE_ENTRY]);
+	disableObject(gadgets.buttons[GB_CREATE_TABLE]);
+	disableObject(gadgets.buttons[GB_CHANGE_TYPE]);
+	disableObject(gadgets.buttons[GB_RESIZE_MOVE]);
+	disableObject(gadgets.buttons[GB_PARENT]);
+	disableObject(gadgets.buttons[GB_RENAME]);
+	disableObject(gadgets.buttons[GB_DOSENVEC]);
+	disableObject(gadgets.buttons[GB_SWITCHES]);
+	disableObject(gadgets.buttons[GB_SAVE_CHANGES]);
 	DoMethod
 	(
 		quit_item,
