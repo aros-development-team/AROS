@@ -1,8 +1,8 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: libinit library - Set the SysBase global variable when needed
+    Set the global SysBase variable when needed.
 */
 
 #include <proto/exec.h>
@@ -12,13 +12,13 @@ struct ExecBase *SysBase;
 
 AROS_SET_LIBFUNC(SetSysBase, struct ExecBase *, sysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
     
     SysBase = sysBase;
     
     return TRUE;
     
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2SET(SetSysBase, sysinit, 0);
