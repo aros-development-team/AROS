@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/21 14:15:05  digulla
+    Number TagList
+    New tag: NP_UserData
+    Don't free non-allocated resources.
+
     Revision 1.5  1996/09/13 17:50:05  digulla
     Use IPTR
 
@@ -85,20 +90,21 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 
     struct TagItem defaults[]=
     {
-	{ NP_Seglist, 0 },
-	{ NP_Entry, (IPTR)NULL },
-	{ NP_Input, ~0ul },
-	{ NP_CloseInput, 1 },
-	{ NP_Output, ~0ul },
-	{ NP_CloseOutput, 1 },
-	{ NP_Error, 0 },
-	{ NP_CloseError, 1 },
-	{ NP_CurrentDir, ~0ul },
-	{ NP_StackSize, 4000 },
-	{ NP_Name, (IPTR)"New Process" },
-	{ NP_Priority, me->pr_Task.tc_Node.ln_Pri },
-	{ NP_Arguments, (IPTR)NULL },
-	{ NP_Cli, 0 },
+    /* 0 */    { NP_Seglist,	   0 },
+    /* 1 */    { NP_Entry,	   (IPTR)NULL },
+    /* 2 */    { NP_Input,	   ~0ul },
+    /* 3 */    { NP_CloseInput,    1 },
+    /* 4 */    { NP_Output,	   ~0ul },
+    /* 5 */    { NP_CloseOutput,   1 },
+    /* 6 */    { NP_Error,	   0 },
+    /* 7 */    { NP_CloseError,    1 },
+    /* 8 */    { NP_CurrentDir,    ~0ul },
+    /* 9 */    { NP_StackSize,	   20000 },
+    /*11 */    { NP_Name,	   (IPTR)"New Process" },
+    /*12 */    { NP_Priority,	   me->pr_Task.tc_Node.ln_Pri },
+    /*13 */    { NP_Arguments,	   (IPTR)NULL },
+    /*14 */    { NP_Cli,	   0 },
+    /*15 */    { NP_UserData,	   (IPTR)NULL },
 	{ TAG_END, 0 }
     };
     /* C has no exceptions. This is a simple replacement. */
@@ -182,6 +188,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     process->pr_Task.tc_SPLower=stack;
     process->pr_Task.tc_SPUpper=stack+defaults[9].ti_Data;
 
+
 /*  process->pr_ReturnAddr; */
     NEWLIST(&process->pr_Task.tc_MemEntry);
     memlist->ml_NumEntries=3;
@@ -209,6 +216,9 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     process->pr_CIS=defaults[2].ti_Data;
     process->pr_COS=defaults[4].ti_Data;
     process->pr_CES=defaults[6].ti_Data;
+
+    process->pr_Task.tc_UserData = (APTR)defaults[15].ti_Data;
+
 /*  process->pr_ConsoleTask=; */
 /*  process->pr_FileSystemTask=; */
     process->pr_CLI=MKBADDR(cli);
@@ -237,19 +247,33 @@ enomem:
     if(me->pr_Task.tc_Node.ln_Type==NT_PROCESS)
 	me->pr_Result2=ERROR_NO_FREE_STORE;
 error:
-    FreeDosObject(DOS_CLI,cli);
-    UnLock(curdir);
-    Close(output);
-    Close(input);
-    FreeVec(argptr);
+    if (cli)
+	FreeDosObject(DOS_CLI,cli);
+
+    if (curdir)
+	UnLock(curdir);
+
+    if (output)
+	Close(output);
+
+    if (input)
+	Close(input);
+
+    if (argptr)
+	FreeVec(argptr);
+
     if(memlist!=NULL)
 	FreeMem(memlist,sizeof(struct MemList)+2*sizeof(struct MemEntry));
+
     if(name!=NULL)
 	FreeMem(name,namesize);
+
     if(stack!=NULL)
 	FreeMem(stack,defaults[9].ti_Data);
+
     if(process!=NULL)
 	FreeMem(process,sizeof(struct Process));
+
     return NULL;
     __AROS_FUNC_EXIT
 } /* CreateNewProc */
