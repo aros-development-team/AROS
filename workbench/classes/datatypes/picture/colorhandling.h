@@ -16,7 +16,7 @@ struct HistEntry
 };
 
 BOOL AllocSrcBuffer( struct Picture_Data *pd, long width, long height, ULONG pixelformat, int pixelbytes );
-BOOL AllocDestBM( struct Picture_Data *pd, long width, long height, int depth );
+BOOL AllocDestBM( struct Picture_Data *pd );
 void FreeSource( struct Picture_Data *pd );
 void FreeDest( struct Picture_Data *pd );
 void InitGreyColTable( struct Picture_Data *pd );
