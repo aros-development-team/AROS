@@ -135,7 +135,13 @@ struct DTObject
 #define DTOFLGF_HAS_MOVED  (1<<0)
 
 
-struct Library *__dt_GlobalSysBase;
+/*
+ * Sigh, we need a global SysBase in order to link properly against the
+ * functions in amiga.lib such as DoMethodA() which in debugging mode
+ * require a SysBase. This used to be called __dt_GlobalSysBase.
+ * Interestingly enough, this is a common symbol...
+ */
+struct ExecBase *SysBase;
 
 struct DataTypesBase
 {

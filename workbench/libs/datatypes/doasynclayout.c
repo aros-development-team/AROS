@@ -36,8 +36,8 @@ void AsyncLayouter(void)
     struct DTSpecialInfo *dtsi;
     Object *object;
     
+/* Use the global, used to be __dt_GlobalSysBase */
 #undef SysBase
-#define SysBase __dt_GlobalSysBase
     
     struct Process *MyProc = (struct Process *)FindTask(NULL);
     
@@ -46,7 +46,6 @@ void AsyncLayouter(void)
     
     dtb = lm->lm_dtb;
     
-#undef SysBase
 #define SysBase dtb->dtb_SysBase
     
     object = lm->lm_object;
