@@ -4,6 +4,10 @@
 AROS-linux :
 	@$(NOP)
 
+#MM apps : Moria3D
+apps :
+	@$(NOP)
+
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-exec-$(CPU) setup-x11
 setup-linux :
 	@$(NOP)
