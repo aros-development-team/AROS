@@ -1,0 +1,160 @@
+Summary: GettingMoreHelp
+------------------------
+
+This is a summary of the GettingMoreHelp discussion on aros-dev
+from january 2002. It covers ome pints and ideas of what
+must to do next and how should this be done.
+
+
+This summary contains comments from:
+
+    Björn Hagström <orgin@home.se>
+    Adam Chodorowski <adam.chodorowski@home.se>
+    Paul Huxham <paulhuxham@yahoo.com>
+    Henrik Berglund SdU <adb94hbd@mds.mdh.se>
+    Peter Eriksson <petah@acc.umu.se>
+
+
+How motivate people to write for AROS?
+-----------------------------------------
+
+- People thinking that all areas are covered by someone.
+- So they have the impression that things are being handled fine 
+  and no help is necessary.
+- This is probably the reason why they do not offering their
+  time for AROS.
+  
+- At the moment there are any informations on the AROS website
+  about what YOU can do for AROS.
+- List a free jobs in CVS at docs/src/jobs.dat 
+- Solution: Create direct requests about things which could be
+  done for AROS and spread them.   
+
+I was just sitting at work today thinking about AROS and its
+current developement. 
+
+Currently there's rather a few active
+developers involved and I see people wanting help with their
+part in AROS just about every time I visit #Aros. I came
+to wonder why there are so few helping out. In my opinion
+that's mainly because most people that know of AROS thinks
+that things are going very smooth, with all areas covered
+by someone already involved and that things are being handled
+just fine. Atleast that's the picture that most public
+statements from us would (and does imho) give. 
+
+In such a
+light people might not think twice about offering their
+time. I brough the matter up in #AROS and people agreed
+with me, and we though that something should be done. So
+my suggestion is that a more direct request for help is
+made, describing in what areas we need help and what those
+areas are. I would be happy to assemble such a request and
+then we (including myself :) can post it on popular forums,
+like ann, comp.sys.amiga.*, moobunny, chech amiga news and
+whatnot.
+
+I would basically write a message saying "Want to help?
+This is what we need: 1,2,3 and this is what would help
+is you were experienced in: a,b,c"
+
+
+
+Request
+------------
+- In what areas help is needed?
+- What experience might be needed?
+- Description of what the different areas (meaning of areas).
+
+To sum up, the request should include in what areas help
+is needed, what experience might be needed and a description
+of what the different areas would mean. Just stating "bus.hidd"
+would not interrest anyone unless it is specified what it means.
+
+
+
+Request list
+---------------
+
+I made a quick list of the different areas that might come
+up. I don't have the knowledge about what they would mean, or
+what experience would be needed, but that's what I would want
+you guys on the list to help me with before I send something
+out to the public.
+
+ - Implementing missing library functions (see docs/src/jobs.dat)
+
+ - HIDD's of different kinds, NET.HIDD, BUS.HIDD, PCI.HIDD etc etc.
+ - Specific drivers for gfx-cards, VESA support
+ - Audio implementation 
+
+ - TCP/IP stack
+
+ - Datatypes
+ - Printer support
+ - translator.library (sources can be downloaded from aminet)
+ 
+ - A functional workbench
+ - Prefs programs
+
+ - Coordinating gui design for AROS programs, such as prefs program,
+   tools and utilities.
+ - Porting MUI
+
+ - Text editors, vim, emacs ..
+ - Port of GCC and the whole development tool chain (gcc, make,
+   binutils...)
+
+ - Improving the C linklib (porting ixemul from geekgagdets.org)
+
+   Implementing missing ANSI (and some POSIX) functions in the clib, to make 
+   it easier to port GNU software (eg. GCC, make and binutils). 
+  
+   The most biggest  thing missing is support for POSIX style signaling, 
+   but there's probably a lot of other functions too.
+  
+
+ - Porting to more hardware platforms
+
+   A first step might be to make a hosted flavour for an OS on the intended 
+   platform, of which some *NIX flavor is probably easiest (since most *NIX 
+   code is the same for different operating systems).
+ 
+   Some ideas for possible ports which AFAIK haven't been started yet:
+   + Amiga 
+   + Atari ;-)
+   + HP 300 series (m68k based)
+   + SUN Sparc
+   + iPaq
+   + ...
+
+ - Improving existing native ports
+
+  As always, more drivers. Just some examples AFAIK nobody is working on:
+ 
+  - AROS/palm-native:
+    o Graphics
+    o Input (touchscreen, buttons)
+    o Sound
+ 
+  - AROS/i386-native:
+    o Specific graphic card drivers (we only have general, not very well
+      accelerated ones). A short wishlist:
+      + nVidia TNT/TNT2/GeForce
+      + S3 Virge
+      + Matrox Millenium
+    o USB
+    o SCSI
+    o Specific IDE chipsets (eg. Promise UltraATA)
+    o ...a lot more.
+
+
+Porting MUI
+-------------------
+- Problem MUI is closed source, commercial software
+- Convince Stefan Stuntz to release the source 
+- Convince Stefan Stuntz to release a binary for AROS
+- Reimplement MUI starting with Zune (GPLed MUI clone for X11)
+   Flavio Stanchina
+   http://spazioweb.inwind.it/fstanchina/ 
+   flavio.stanchina@tin.it
