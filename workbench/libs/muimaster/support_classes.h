@@ -28,17 +28,42 @@
 #   define ZUNE_ABOUTMUI_DESC
 #endif
 
+#if ZUNE_BUILTIN_BOOPSI
+#   define ZUNE_BOOPSI_DESC (&_MUI_Boopsi_desc),
+#else
+#   define ZUNE_BOOPSI_DESC
+#endif
+
 #if ZUNE_BUILTIN_GAUGE
 #   define ZUNE_GAUGE_DESC (&_MUI_Gauge_desc),
 #else
 #   define ZUNE_GAUGE_DESC
 #endif
 
-#if ZUNE_BUILTIN_BOOPSI
-#   define ZUNE_BOOPSI_DESC (&_MUI_Boopsi_desc),
+#if ZUNE_BUILTIN_POPASL
+#   define ZUNE_POPASL_DESC (&_MUI_Popasl_desc),
 #else
-#   define ZUNE_BOOPSI_DESC
+#   define ZUNE_POPASL_DESC
 #endif
+
+#if ZUNE_BUILTIN_POPFRAME
+#   define ZUNE_POPFRAME_DESC (&_MUI_Popframe_desc),
+#else
+#   define ZUNE_POPFRAME_DESC
+#endif
+
+#if ZUNE_BUILTIN_POPIMAGE
+#   define ZUNE_POPIMAGE_DESC (&_MUI_Popimage_desc),
+#else
+#   define ZUNE_POPIMAGE_DESC
+#endif
+
+#if ZUNE_BUILTIN_POPPEN
+#   define ZUNE_POPPEN_DESC (&_MUI_Poppen_desc),
+#else
+#   define ZUNE_POPPEN_DESC
+#endif
+
 
 struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
 BOOL DestroyClasses(struct Library *MUIMasterBase);

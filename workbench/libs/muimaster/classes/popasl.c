@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -25,6 +25,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -355,7 +356,7 @@ static ULONG Popasl_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-
+#if ZUNE_BUILTIN_POPASL
 BOOPSI_DISPATCHER(IPTR, Popasl_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -369,13 +370,11 @@ BOOPSI_DISPATCHER(IPTR, Popasl_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Popasl_desc = { 
+const struct __MUIBuiltinClass _MUI_Popasl_desc =
+{ 
     MUIC_Popasl,
     MUIC_Popstring, 
     sizeof(struct MUI_PopaslData), 
     (void*)Popasl_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_POPASL */

@@ -109,16 +109,15 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_ChunkyImage_desc,
     &_MUI_Cycle_desc,
     &_MUI_Popstring_desc,
-    &_MUI_Popasl_desc,
     &_MUI_Listview_desc,
     &_MUI_List_desc,
-    &_MUI_Popasl_desc,
+    ZUNE_POPASL_DESC
     &_MUI_Popobject_desc,
     ZUNE_GAUGE_DESC
     ZUNE_ABOUTMUI_DESC
     &_MUI_Settingsgroup_desc,
     &_MUI_Imageadjust_desc,
-    &_MUI_Popimage_desc,
+    ZUNE_POPIMAGE_DESC
     &_MUI_Scale_desc,
     &_MUI_Radio_desc,
     &_MUI_IconList_desc,
@@ -131,10 +130,10 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Imagedisplay_desc,
     &_MUI_Pendisplay_desc,
     &_MUI_Penadjust_desc,
-    &_MUI_Poppen_desc,
+    ZUNE_POPPEN_DESC
     &_MUI_Mccprefs_desc,
     &_MUI_Framedisplay_desc,
-    &_MUI_Popframe_desc,
+    ZUNE_POPFRAME_DESC
     &_MUI_Frameadjust_desc
 };
 

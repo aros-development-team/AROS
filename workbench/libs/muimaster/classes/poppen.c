@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -15,10 +15,11 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_PoppenData
+struct Poppen_DATA
 {
     Object *wnd;
     Object *penadjust;
@@ -32,7 +33,7 @@ struct MUI_PoppenData
 **************************************************************************/
 static IPTR Poppen_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PoppenData   *data;
+    struct Poppen_DATA   *data;
     struct TagItem  	    *tag, *tags;
     //Object *image;
 
@@ -72,7 +73,7 @@ static IPTR Poppen_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Poppen_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_PoppenData *data = INST_DATA(cl, obj);
+    struct Poppen_DATA *data = INST_DATA(cl, obj);
     
     if (data->wnd)
     {
@@ -90,7 +91,7 @@ static IPTR Poppen_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 STATIC IPTR Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PoppenData *data = INST_DATA(cl, obj);
+    struct Poppen_DATA *data = INST_DATA(cl, obj);
 
     if (!data->wnd)
     {
@@ -156,7 +157,7 @@ STATIC IPTR Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 STATIC IPTR Poppen_CloseWindow(struct IClass *cl, Object *obj,
 				 struct MUIP_Poppen_CloseWindow *msg)
 {
-    struct MUI_PoppenData *data = INST_DATA(cl, obj);
+    struct Poppen_DATA *data = INST_DATA(cl, obj);
     int ok = msg->ok;
 
     set(data->wnd, MUIA_Window_Open, FALSE);
@@ -177,7 +178,7 @@ STATIC IPTR Poppen_CloseWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
-
+#if ZUNE_BUILTIN_POPPEN
 BOOPSI_DISPATCHER(IPTR, Poppen_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -191,13 +192,11 @@ BOOPSI_DISPATCHER(IPTR, Poppen_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Poppen_desc = { 
+const struct __MUIBuiltinClass _MUI_Poppen_desc =
+{ 
     MUIC_Poppen, 
     MUIC_Pendisplay, 
-    sizeof(struct MUI_PoppenData), 
+    sizeof(struct Poppen_DATA), 
     (void*)Poppen_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_POPPEN */
