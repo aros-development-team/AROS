@@ -4,6 +4,7 @@
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include <exec/memory.h>
+#include <exec/alerts.h>
 #include <exec/interrupts.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
@@ -109,8 +110,6 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
-    gpht.gpht_Mouse.X = x - GetLeft(gadget, window);
-    gpht.gpht_Mouse.Y = y - GetTop(gadget, window);
 
     for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
     {
@@ -129,6 +128,10 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 	}
 	else
 	{
+	    /* Get coords relative to window */
+    	    gpht.gpht_Mouse.X = x - window->LeftEdge;
+    	    gpht.gpht_Mouse.Y = y - window->TopEdge;
+	    
 	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
 		break;
 	}
@@ -169,6 +172,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
     for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
     {
+    
+	struct Window *new_w;
+	BOOL swallow_event = FALSE;
+    
     	D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
 	reuse_event = FALSE;
 	ptr = NULL;
@@ -176,23 +183,65 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     /* If there is no active window, and this is not a SELECTDOWN,
        mouse event, then exit because we do not have a window
        to send events to. */
-        
+       
+       /* Use event to find the active window */
+       
+	new_w = intui_FindActiveWindow(ie, &swallow_event, IntuitionBase)
+	D(bug("iih:New active window: %p\n", new_w));
 
-    	if (!w && !((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTDOWN)))
-    	{
-            D(bug("iih: No active window, skipping\n"));
+
+#warning Have a look at this later
+/* NOTE !! We can add an optimization here,
+  by checking if the mouseclick is at all inside the window.
+  If new_w is NULL here, then the mouseclick was outside
+  windows, and then there is not much point in trying to find
+  a gadget to send the event to !
+*/
+
+	if (!new_w)
+	{
+	    if (!w)
+		continue;
+	  
+	}
+	else
+	{
+	    if (new_w != w)
+	    {
+
+		D(bug("Activating new window (title %s)\n", new_w->Title));
+			
+		lock = LockIBase(0UL);
+		IntuitionBase->ActiveWindow = new_w;
+		UnlockIBase(lock);
+			
+		RefreshWindowFrame(new_w);
+			
+		D(bug("Window activated\n"));
+		w = new_w;
+			
+		     
+	    }
+	}
+	
+	if (swallow_event)
 	    continue;
-    	}
-    
-
+		     
+	/* At this point w opoints to a valid active window */
+	
 	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage.
-	** If it was sent to an app, then we have to allocate a new IntuiMessage
+	 ** If it was sent to an app, then we have to get a new IntuiMessage
 	*/
 	
-
 	if (!im)
 	{
-	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
+		im = get_intuimessage(w, IntuitionBase);
+	}
+	    
+	if (!im)
+	{
+	    /* Ouch, we're in BIG trouble */
+	    Alert(AT_DeadEnd|AN_Intuition|AG_NoMemory);
 	}
 
 	im->Class	= 0L;
@@ -200,19 +249,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	im->MouseX	= mpos_x;
 	im->MouseY	= mpos_y;
 	im->IDCMPWindow = w;
-	
-	if (w)
-	{
-	    screen = w->WScreen;
+	    
+	    
+	screen = w->WScreen;
 
-	    gi->gi_Screen	  = screen;
-	    gi->gi_Window	  = w;
-	    gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
-	    gi->gi_RastPort   = w->RPort;
-	    gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
-	    gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
-	    gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
-	}
+	gi->gi_Screen	  = screen;
+	gi->gi_Window	  = w;
+	gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
+	gi->gi_RastPort   = w->RPort;
+	gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
+	gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
+	gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
 
 	switch (ie->ie_Class)
 	{
@@ -233,7 +280,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    break;
 
 	case IECLASS_RAWMOUSE:
-	    im->Code	= ie->ie_Code;
+	    /* IECLASS_RAWMOUSE events are let through even when there is no active window */
+	    if (im)
+	    {
+		im->Code	= ie->ie_Code;
+	    }
 
 	    ptr = "RAWMOUSE";
 
@@ -241,33 +292,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    {
 	    case SELECTDOWN: {
 		BOOL new_gadget = FALSE;
-		struct Window *new_w;		
-		D(bug("SELECTDOWN\n"));
-		new_w = intui_FindActiveWindow(ie, IntuitionBase);
-		D(bug("iih:New active window: %p\n", new_w));
-
-		if (!new_w)
-		{
-		    if (!w)
-		    	continue;
-		}
-		else
-		{
-		    if (new_w != w)
-		    {
-
-		        D(bug("Activating new window (title %s)\n", new_w->Title));
-			ActivateWindow(new_w);
-			D(bug("Window activated\n"));
-			w = new_w;
-			
-			/* Go to the top of the loop so we get calculated "gi" again */
-			reuse_event = TRUE;
-			continue;
-		    }
-		}
-
-                /* at this point w contains the pointer to the active window */
 
  	        /* 
 	        **  The mouse coordinates relative to the upper left
@@ -281,6 +305,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (!gadget)
 		{
+
+  
 		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi);
 		    if (gadget)
 		    {
@@ -310,7 +336,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
-			HandlePropSelectDown(gadget, w, NULL, ie->ie_X, ie->ie_Y, IntuitionBase);
+			HandlePropSelectDown(gadget, w, NULL, im->MouseX, im->MouseY, IntuitionBase);
 			break;
 
 		    case GTYP_STRGADGET:
@@ -345,8 +371,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = ie->ie_X;
-			gpi.gpi_Mouse.Y = ie->ie_Y;
+			gpi.gpi_Mouse.X = im->MouseX;
+			gpi.gpi_Mouse.Y = im->MouseY;
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -452,8 +478,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = ie->ie_X;
-			gpi.gpi_Mouse.Y = ie->ie_Y;
+			gpi.gpi_Mouse.X = im->MouseX;
+			gpi.gpi_Mouse.Y = im->MouseY;
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -889,7 +915,8 @@ D(bug("Window: %p\n", w));
 		else
 		{
 		    D(bug("Putting msg to window %p\n"));
-		    PutMsg (w->UserPort, (struct Message *)im);
+		    send_intuimessage(im, w, IntuitionBase);
+		    
 		    im = NULL;
 		    D(bug("Msg put\n"));
 		}
@@ -910,22 +937,31 @@ D(bug("Window: %p\n", w));
 
     /* If the last intuimessage intialized was a swallowed event, then
        there's no more use of it as all events have been processed,
-       and we may free it.
-    */
+       Howevever, we do NOT free it, because it is kept
+       in the window->MessageKey list for later use.
+       This means that less time is wasted Allocating/Deallocating messages.
 
     if (im)
     {
 	FreeMem (im, sizeof (struct IntuiMessage));
 	im = NULL;
     }
-
+*/
 
     D(bug("Poll the replyport for replies from apps\n"));
+    
+    
 
     /* Empty port */
+    
     while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
     {
+    
+        /* Do NOT free message here. Instead just mark it as IDCMP_LONELYMESSAGE,
+	so we can reuse it later
 	FreeMem (im, sizeof (struct IntuiMessage));
+	*/
+	im->Class |= IDCMP_LONELYMESSAGE;
     }
 
     D(bug("Outside pollingloop\n"));
