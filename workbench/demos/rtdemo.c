@@ -49,6 +49,16 @@ int main (int argc, char ** argv)
 
     FreeMem (illmem, size);
 
+    /* Allocate some more memory */
+    mem = AllocVec (size, MEMF_ANY);
+    printf ("Bug 4: Forget to free %d bytes at %p\n", size, mem);
+
+    /* Bug 5: Wrong pointer */
+    illmem = (APTR)4;
+    printf ("Bug 5: Freeing %p\n", illmem);
+
+    FreeVec (illmem);
+
     /*
 	Terminate RT. This will also be a NOP if RT is not enabled. If
 	any resources are still allocated, then this will free and print
