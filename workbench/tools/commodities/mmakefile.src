@@ -1,0 +1,45 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+SPECIAL_CFLAGS := -D__AROS -I$(TOP)/workbench/libs -I$(TOP)/workbench/libs/commodities
+
+#CC := $(PURIFY) $(SYS_CC)
+EXEDIR := $(BINDIR)/Tools/Commodities
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+%define_libs
+
+FILES := Exchange
+
+EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+
+#MM commodities-quick : 
+commodities-quick : commodities
+	@$(NOP)
+	
+#MM commodities : setup cx-setup includes linklibs
+commodities : show-flags $(EXES)
+	@$(NOP)
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(EXEDIR) $(OBJDIR)
+
+#MM
+clean ::
+	-$(RM) $(EXES)
+
+$(EXEDIR)/% : $(OBJDIR)/%.o $(DEPLIBS)
+	%link_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(APPCFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
