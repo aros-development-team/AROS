@@ -3,15 +3,32 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=  irq_init functable endtag irq
-OBJDIR	:=	$(GENDIR)/$(CURDIR)
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+FILES	    := irq_init irqclass functable servers irq stubs endtag
+OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 #MM Drivers-native : 
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) irq.s irq_init.s
+Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/hidd.kernel.irq
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/hidd.kernel.irq.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.kernel.irq.o
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
 #MM
 clean ::
