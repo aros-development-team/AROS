@@ -23,7 +23,9 @@ static void SIGHANDLER (int sig)
 }
 #endif /* __linux__ */
 
+#if 0
 static void UnixDispatch (sigcontext_t * sc, struct ExecBase * SysBase);
+#endif
 
 
 static void sighandler (int sig, sigcontext_t * sc)
@@ -57,8 +59,9 @@ static void sighandler (int sig, sigcontext_t * sc)
     }
 
     supervisor--;
-}
+} /* sighandler */
 
+#if 0
 static void UnixDispatch (sigcontext_t * sc, struct ExecBase * SysBase)
 {
     struct Task * this;
@@ -115,7 +118,8 @@ printf ("Dispatch(): New task=%p (%s)\n",
     this, this && this->tc_Node.ln_Name ? this->tc_Node.ln_Name : "(null)"
 );
 
-}
+} /* UnixDispatch */
+#endif
 
 void InitCore(void)
 {
@@ -143,4 +147,4 @@ void InitCore(void)
     interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
 
     setitimer (ITIMER_REAL, &interval, NULL);
-}
+} /* InitCore */
