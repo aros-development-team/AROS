@@ -6,12 +6,17 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/expansion.h>
 #include <proto/intuition.h>
 #include <proto/partition.h>
 
+#include <devices/bootblock.h>
 #include <devices/trackdisk.h>
+#include <dos/dosextens.h>
 #include <exec/memory.h>
+#include <libraries/expansion.h>
 #include <libraries/partition.h>
 
 #include "partitiontables.h"
@@ -116,6 +121,7 @@ UWORD num;
 		if (ptn->ln.ln_Name)
 		{
 			ptn->ph = pn->ph;
+			ptn->hd = pn->root->hd;
 			count = 0;
 			while (table->ln.ln_Name[count] == ' ')
 				ptn->ln.ln_Name[count++]=' ';
@@ -141,6 +147,7 @@ UWORD num;
 struct PartitionTableNode *newPartitionTable
 	(
 		struct Window *mainwin,
+		struct HDUnitNode *hd,
 		struct PartitionHandle *ph,
 		char *name,
 		ULONG unit
@@ -155,6 +162,7 @@ struct PartitionTableNode *ptn;
 		if (ptn->ln.ln_Name)
 		{
 			ptn->ph = ph;
+			ptn->hd = hd;
 			ptn->tattrlist = QueryPartitionTableAttrs(ph);
 			ptn->pattrlist = QueryPartitionAttrs(ph);
 			GetPartitionTableAttrsA
@@ -193,6 +201,7 @@ struct PartitionTableNode *ptn;
 LONG findPT
 	(
 		struct Window *mainwin,
+		struct HDUnitNode *hd,
 		struct PartitionHandle *ph,
 		char *name,
 		ULONG unit
@@ -204,13 +213,13 @@ ULONG i;
 
 	if (OpenPartitionTable(ph)==0)
 	{
-		newPartitionTable(mainwin,ph,name,unit);
+		newPartitionTable(mainwin, hd, ph, name, unit);
 		node = (struct PartitionHandle *)ph->table->list.lh_Head;
 		i = 0;
 		while (node->ln.ln_Succ)
 		{
 			strcpy(str, "   subtable");
-			findPT(mainwin, node,str,(i<<16)+unit);
+			findPT(mainwin, hd, node,str,(i<<16)+unit);
 			i++;
 			node = (struct PartitionHandle *)node->ln.ln_Succ;
 		}
@@ -226,8 +235,8 @@ struct HDUnitNode *hd;
 	hd = (struct HDUnitNode *)hdlist->lh_Head;
 	while (hd->ln.ln_Succ)
 	{
-		if (findPT(mainwin, hd->root, hd->ln.ln_Name, hd->unit)==0)
-			newPartitionTable(mainwin,hd->root,hd->ln.ln_Name,hd->unit);
+		if (findPT(mainwin, hd, hd->root, hd->ln.ln_Name, hd->unit)==0)
+			newPartitionTable(mainwin, hd, hd->root,hd->ln.ln_Name,hd->unit);
 		hd = (struct HDUnitNode *)hd->ln.ln_Succ;
 	}
 }
@@ -410,6 +419,230 @@ ULONG args[40];
 				maingadgets[ID_MAIN_SAVE_CHANGES-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,sctdtags
 			);
+	}
+}
+
+/* 
+ Output: 0 - no mount (no partition change)
+         1 - mount that device
+         2 - reboot not really neccessary
+             (FS not so important things changed like de_Mask)
+         3 - reboot neccessary
+             (FS important things changed like de_LowCyl)
+*/
+WORD checkMount
+	(
+		struct PartitionTableNode *table,
+		STRPTR name,
+		struct DosEnvec *de
+	)
+{
+WORD retval = 1;
+struct DosList *dl;
+struct DeviceNode *entry;
+
+	dl = LockDosList(LDF_READ | LDF_DEVICES);
+	if (dl)
+	{
+		entry = (struct DeviceNode *)FindDosEntry(dl, name, LDF_DEVICES);
+		if (entry)
+		{
+		struct FileSysStartupMsg *fssm;
+		struct DosEnvec *d_de;
+		STRPTR devname;
+
+			fssm = (struct FileSysStartupMsg *)BADDR(entry->dn_Startup);
+			devname = AROS_BSTR_ADDR(BADDR(fssm->fssm_Device));
+			if (
+					(fssm->fssm_Unit != table->hd->unit) ||
+					(
+						strncmp
+						(
+							devname,
+							table->hd->ln.ln_Name,
+							strlen(table->hd->ln.ln_Name)
+						)
+					)
+				)
+			{
+				retval = 3; /* better do a reboot */
+			}
+			else
+			{	
+				d_de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
+				if (
+						(d_de->de_SizeBlock != de->de_SizeBlock) ||
+						(d_de->de_Reserved  != de->de_Reserved) ||
+						(d_de->de_PreAlloc  != de->de_PreAlloc) ||
+						(d_de->de_LowCyl    != de->de_LowCyl) ||
+						(d_de->de_HighCyl   != de->de_HighCyl) ||
+						(d_de->de_DosType   != de->de_DosType) ||
+						(
+							(
+								/* at least one has de_BootBocks */
+								(d_de->de_TableSize>=DE_BOOTBLOCKS) ||
+								(de->de_TableSize>=DE_BOOTBLOCKS)
+							) &&
+							(
+								/* if one has no de_BootBlock assume de_BootBlock change */
+								(d_de->de_TableSize<DE_BOOTBLOCKS) ||
+								(de->de_TableSize<DE_BOOTBLOCKS)
+							)
+						) ||
+						(
+							/* both have de_BootBlocks */
+							(d_de->de_TableSize>=DE_BOOTBLOCKS) &&
+							(de->de_TableSize>=DE_BOOTBLOCKS) &&
+							(d_de->de_BootBlocks != de->de_BootBlocks)
+						)
+					)
+				{
+					retval = 3;
+				}
+				else if
+					(
+						(d_de->de_NumBuffers  != de->de_NumBuffers) ||
+						(d_de->de_BufMemType  != de->de_BufMemType) ||
+						(d_de->de_MaxTransfer != de->de_MaxTransfer) ||
+						(d_de->de_Mask        != de->de_Mask) ||
+						(d_de->de_BootPri     != de->de_BootPri)
+					)
+				{
+					retval = 2;
+				}
+				else
+					retval = 0;
+			}
+		}
+		UnLockDosList(LDF_READ | LDF_DEVICES);
+	}
+	return retval;
+}
+
+void mount
+	(
+		struct PartitionTableNode *table,
+		struct PartitionHandle *ph,
+		STRPTR name,
+		struct DosEnvec *de
+	)
+{
+struct ExpansionBase *ExpansionBase;
+struct DeviceNode *dn;
+struct DosEnvec *nde;
+IPTR *params;
+UBYTE str[32];
+ULONG i;
+
+#warning "TODO: get filesystem"
+	if ((de->de_DosType & 0xFFFFFF00) == BBNAME_DOS)
+	{
+		ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",41);
+		if (ExpansionBase)
+		{
+			params = (IPTR *)AllocVec(sizeof(struct DosEnvec)+sizeof(IPTR)*4, MEMF_PUBLIC | MEMF_CLEAR);
+			if (params)
+			{
+				nde = (struct DosEnvec *)&params[4];
+				CopyMem(de, nde, sizeof(struct DosEnvec));
+				params[0] = (IPTR)"afs.handler";
+				sprintf(str, "%s.device", table->hd->ln.ln_Name);
+				params[1] = (IPTR)str;
+				params[2] = (IPTR)table->hd->unit;
+				params[3] = 0;
+				dn = MakeDosNode(params);
+				if (dn)
+				{
+					dn->dn_OldName = AllocVec(strlen(name)+2, MEMF_PUBLIC);
+					i = 0;
+					do
+					{
+						AROS_BSTR_putchar(dn->dn_OldName, i, name[i]);
+					} while (name[i++]);
+					AROS_BSTR_setstrlen(dn->dn_OldName, i-1);
+					dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
+					AddDosNode(nde->de_BootPri, ADNF_STARTPROC, dn);
+				}
+				else
+					FreeVec(params);
+			}
+			CloseLibrary((struct Library *)ExpansionBase);
+		}
+	}
+	else
+		kprintf("ignored %s: unknown FS (0x%lx)\n", name, de->de_DosType);
+}
+
+void mountPartitions(struct List *ptlist) {
+struct EasyStruct es =
+	{
+		sizeof(struct EasyStruct), 0,
+		"HDToolBox",
+		0,
+		"Yes|No"
+	};
+struct PartitionTableNode *table;
+struct PartitionHandle *ph;
+WORD cm;
+WORD reboot=0;
+
+	table = (struct PartitionTableNode *)ptlist->lh_Head;
+	while (table->ln.ln_Succ)
+	{
+	LONG flag;
+
+		ph = (struct PartitionHandle *)table->ph->table->list.lh_Head;
+		while (ph->ln.ln_Succ)
+		{
+			if (existsAttr(table->pattrlist, PTA_AUTOMOUNT))
+			{
+				GetPartitionAttrsA(ph, PT_AUTOMOUNT, &flag, TAG_DONE);
+				if (flag)
+				{
+					if (existsAttr(table->pattrlist, PTA_NAME))
+					{
+					UBYTE name[32];
+					struct DosEnvec de;
+
+						GetPartitionAttrsA(ph, PT_NAME, name, PT_DOSENVEC, &de, TAG_DONE);
+						cm = checkMount(table, name, &de);
+						if (cm == 1)
+							mount(table, ph, name, &de);
+						else if (cm == 2)
+							kprintf("may reboot\n");
+						else if (cm == 3)
+							kprintf("have to reboot\n");
+						else
+							kprintf("mount %s not needed\n", name);
+						if (reboot<cm)
+							reboot = cm;
+					}
+					else
+						kprintf("Partition with no name is automountable\n");
+				}
+			}
+			ph = (struct PartitionHandle *)ph->ln.ln_Succ;
+		}
+		table = (struct PartitionTableNode *)table->ln.ln_Succ;
+	}
+	if (reboot>1)
+	{
+		if (reboot == 2)
+		{
+			es.es_TextFormat =
+				"A reboot is not necessary because the changes do not\n"
+				"affect the work of any running filesystem.\n"
+				"Do you want to reboot anyway?";
+		}
+		else
+		{
+			es.es_TextFormat =
+				"A reboot is required because the changes affect\n"
+				"the work of at least one running filesystem.\n"
+				"Do you want to reboot now?";
+		}
+		if (EasyRequestArgs(0, &es, 0, 0))
+			ColdReboot();
 	}
 }
 
