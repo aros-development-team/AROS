@@ -955,7 +955,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 
    WriteChunkyPixels(&DestRP, 0, 0, BM_Width-1, BM_Height-1, pd->ChunkyBuffer, BM_Width16);
 
-#ifdef AROS
+#ifdef _AROS
    DeinitRastPort(&SrcRP);
    DeinitRastPort(&DestRP);
 #endif
