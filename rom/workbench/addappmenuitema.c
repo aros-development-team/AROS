@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a menuitem to Workbench's list of AppMenuItems.
@@ -12,6 +12,7 @@
 
 #include "workbench_intern.h"
 #include <workbench/workbench.h>
+#include <proto/utility.h>
 
 /*****************************************************************************
 
