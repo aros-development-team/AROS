@@ -599,9 +599,9 @@ endif
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick"
+%buildid targets="%(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick"
 
-.PHONY : setup-module$(BDID)
+.PHONY : setup-module$(BDID) %(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick
 
 ifeq (%(modname),)
 $(error using %build_module: modname may not be empty)
@@ -699,13 +699,17 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
   BD_DFILE_DEPS$(BDID) += $(addprefix $(INCDIR)/,$(BD_GENINCS$(BDID)))
 endif
 
-#MM %(mmake) : %(mmake)-setup
+#MM %(mmake) : %(mmake)-includes
+#MM %(mmake)-includes : %(mmake)-setup
 
 #MM
 %(mmake)-quick : %(mmake)
 
 #MM
-%(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID))
+%(mmake) : $(BD_GENFILES$(BDID))
+
+#MM
+%(mmake)-includes : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
 
 #MM
 %(mmake)-clean ::
@@ -723,7 +727,7 @@ endif
 #MM
 %(mmake)-setup : setup-module$(BDID)
 
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),) # Avoid conflicts
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
 endif
@@ -731,7 +735,8 @@ endif
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
-%rule_ref     basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags="-I$(BD_OBJDIR$(BDID))/dummyinc $(strip $(BD_CFLAGS$(BDID)))"
+%rule_ref     basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags="-I$(dir $(GENMODULE))/genmod_inc -I$(BD_OBJDIR$(BDID))/dummyinc $(strip $(BD_CFLAGS$(BDID)))"
 %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 	      compiler=%(compiler)
@@ -741,7 +746,7 @@ endif
 endif
 
 # Some include files need to be generated before the .c can be parsed.
-ifeq ($(TARGET),%(mmake)) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes),) # Only for this target these deps are wanted
 $(BD_REFFILES$(BDID)) : $(BD_REFFILE_DEPS$(BDID))
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
@@ -1416,56 +1421,6 @@ endif
 %end
 
 #------------------------------------------------------------------------------
-# Prepare creation of a shared lib
-%define prepare_shlib lib=dummy shflag=$(SHARED_DUMMY) lib_suffix=$(HOST_LIB_SUFFIX)
-ifeq ("%(shflag)","yes")
-LIB    := $(LIBDIR)/lib%(lib).so%(lib_suffix)
-RMLIB  := $(LIBDIR)/lib%(lib).a
-AR     := $(SHARED_LD) $(SHARED_LDFLAGS) -o
-RANLIB := $(NOP)
-else
-LIB    := $(LIBDIR)/lib%(lib).a
-RMLIB  := $(LIBDIR)/lib%(lib).so%(lib_suffix)
-endif
-%end
-
-#------------------------------------------------------------------------------
-# Compile function table
-%define compilefunctable
-$(OBJDIR)/functable.d : $(OBJDIR)/functable.c
-%mkdepend_q flags="$(CFLAGS) -I."
-
-$(OBJDIR)/functable.o : $(OBJDIR)/functable.c
-%compile_q opt="$(CFLAGS) -I$(OBJDIR) -I."
-%end
-
-#------------------------------------------------------------------------------
-# Generate function table with archtool
-%define mkfunctable_arch
-$(OBJDIR)/functable.c : mmakefile.src libdefs.h
-	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(ARCHTOOL) -t
-	@$(MV) functable.c $@
-
-%compilefunctable
-%end
-
-#------------------------------------------------------------------------------
-# Generate endskip variable
-%define mkendtag_q
-$(END_FILE).c : libdefs.h
-	%mkdir_q dir=$(OBJDIR)
-	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
-
-$(ENDFUNC) : $(END_FILE).c libdefs.h
-%compile_q
-
-$(END_FILE).d : $(END_FILE).c
-%mkdepend_q flags="$(MKDEPEND_CFLAGS) -I."
-%end
-
-#------------------------------------------------------------------------------
 # Common rules for all makefiles
 %define common
 # Delete generated makefiles
@@ -1500,61 +1455,6 @@ asm : $(foreach f,%(opt),$(f).s) all
 %.s : %.c
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(TARGET_CC) -S $(CFLAGS) $< -c -o $@
-%end
-
-#------------------------------------------------------------------------------
-# Used to help with the function replacement mechanism. Use like
-#
-#	%prepare_replace module=os/exec
-#
-# This will include the file contain information written out by the
-# $(TOP)/config makefiles which is used to filter out files that are
-# being replaced by machine dependant versions in the $(TOP)/config
-# subtree.
-#
-# You can also determine which group of files you wish to filter against
-# with the filter command. You pass it the variable to modify as var
-#
-# Eg:
-#	%prepare_replace module=os/foobar
-#	%filter_replace $(FUNCTIONS)
-#
-# The variable $(ADDITIONAL_OBJS) will be available for you to link in
-# extra files.
-#
-# You should save the values of the variables which you filter in case
-# you need them at a later date.
-#
-%define prepare_replace module=/M
--include $(GENDIR)/%(module)/mf.inc
-%end
-
-#------------------------------------------------------------------------------
-%define filter_replace var=FILES filter=$(SUPPRESS_FILES)
-%(var) := $(filter-out %(filter),$(%(var)))
-%end
-
-#------------------------------------------------------------------------------
-# You can use this to prevent objects which weren't compiled correctly by
-# config/$(...) directories to not be compiled by the local makefile.
-%define additional_objs_rule
-$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
-	@$(ECHO) Error: One of the precompiled object files did not exist.
-	@exit 1
-%end
-
-#------------------------------------------------------------------------------
-%define add_objects files=/M
-	@$(FOR) file in %(files) ; do \
-	    $(ECHO) >> $(GENDIR)/config.files "add $$file" ; \
-	done
-%end
-
-#------------------------------------------------------------------------------
-%define exclude_files files=/M
-	@$(FOR) file in %(files) ; do \
-	    $(ECHO) >> $(GENDIR)/config.files "not $$file" ; \
-	done
 %end
 
 #------------------------------------------------------------------------------
