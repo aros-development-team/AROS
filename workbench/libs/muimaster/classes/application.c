@@ -15,9 +15,6 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/commodities.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"

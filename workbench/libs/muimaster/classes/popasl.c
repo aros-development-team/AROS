@@ -21,10 +21,6 @@
 
 #include <string.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 #include "compiler.h"
 #include "mui.h"
 #include "muimaster_intern.h"

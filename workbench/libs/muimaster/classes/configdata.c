@@ -16,9 +16,6 @@
 #include <proto/iffparse.h>
 #include <proto/dos.h>
 #include <proto/commodities.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"

@@ -12,10 +12,9 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -230,6 +229,8 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 3, MUIV_TriggerValue);
     DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
 
+    D(bug("Scrollgroup_New(%lx)\n", obj));
+    D(bug(" vert = %lx, horiz = %lx, button = %lx\n", vert, horiz, button));
     return (ULONG)obj;
 }
 

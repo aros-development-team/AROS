@@ -9,10 +9,6 @@
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"

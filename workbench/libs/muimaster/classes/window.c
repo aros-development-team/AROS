@@ -24,9 +24,6 @@
 #include <proto/commodities.h>
 #include <proto/layers.h>
 #include <proto/gadtools.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 #define MUI_OBSOLETE /* for the obsolette menu stuff */
 
