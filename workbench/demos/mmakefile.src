@@ -13,7 +13,7 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 FILES	:= \
     font2c gtdemo helloworld inquire intuitext librarytest listfonts \
-    keymap mxgads oopdemo readicon regiontest shadowborder sift strtest \
+    keymaptest mxgads oopdemo readicon regiontest shadowborder sift strtest \
     ooplib consoledemo serialtest window test_text \
     clippingtest
 
