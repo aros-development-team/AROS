@@ -23,7 +23,7 @@ delete  $BUILD_BASE/$PACKAGE
 
 printi "Creating contrib source package..."
 PACKAGE=$BASENAME-contrib-source
-ARCHIVE=$ARCHIVE_BASE/ $PACKAGE.tar.bz2
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
 copy    $SOURCE_CONTRIB $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE/$PACKAGE
@@ -47,4 +47,3 @@ delete  $BUILD_BASE/$PACKAGE
 
 cd      $ROOT
 resetl
-
