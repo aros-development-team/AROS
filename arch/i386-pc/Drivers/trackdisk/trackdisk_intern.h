@@ -9,20 +9,22 @@
 
 struct TrackDiskBase
 {
-    struct Device      		td_device;
-    struct ExecBase		*sysbase;	/* Useless for native but... */
-    struct SignalSemaphore	io_lock;	/* Lock IO acces to floppy */
-    struct TDU			*units[4];	/* Up to four units allowed */
+    struct Device           td_device;
+    struct ExecBase         *sysbase;	/* Useless for native but... */
+    struct SignalSemaphore  io_lock;	/* Lock IO acces to floppy */
+	struct Message          *io_msg;	/* Messege that is processed */
+    struct TDU      *units[4];	/* Up to four units allowed */
     UBYTE			DOR;		/* Digital Output Register */
-    UBYTE			rawcom[9];	/* RAW command to send */
+	UBYTE			comsize;	/* RAW command size */
+	UBYTE			rawcom[9];	/* RAW command to send */
     UBYTE			result[7];	/* Last set of bytes */
+	volatile UBYTE	timeout[4];	/* if 0 turn drive motor off */
+	volatile UBYTE	iotime;		/* Time counter for io operations */
 };
-
-#define TDU_P(x) ((struct TDU_PublicUnit *)x)
 
 struct TDU
 {
-    struct	TDU_PublicUnit;
+    struct	TDU_PublicUnit pub;
     UBYTE 	unitnum;		/* Unit number */
     UBYTE 	unittype;		/* Unit type from BIOS setup */
     APTR	dma_buffer;		/* Buffer for DMA transfers */
@@ -108,8 +110,8 @@ struct TDU
 /* Values for FD_COMMAND */
 #define FD_RECALIBRATE      0x07    /* move to track 0 */
 #define FD_SEEK         0x0F    /* seek track */
-#define FD_READ         0xE6    /* read with MT, MFM, SKip deleted */
-#define FD_WRITE        0xC5    /* write with MT, MFM */
+#define FD_READ         0x66    /* read with MFM, SKip deleted */
+#define FD_WRITE        0x85    /* write with MFM */
 #define FD_SENSEI       0x08    /* Sense Interrupt Status */
 #define FD_SPECIFY      0x03    /* specify HUT etc */
 #define FD_FORMAT       0x4D    /* format one track */
@@ -118,7 +120,7 @@ struct TDU
 #define FD_PERPENDICULAR    0x12    /* perpendicular r/w mode */
 #define FD_GETSTATUS        0x04    /* read ST3 */
 #define FD_DUMPREGS     0x0E    /* dump the contents of the fdc regs */
-#define FD_READID       0xEA    /* prints the header of a sector */
+#define FD_READID       0x4A    /* prints the header of a sector */
 #define FD_UNLOCK       0x14    /* Fifo config unlock */
 #define FD_LOCK         0x94    /* Fifo config lock */
 #define FD_RSEEK_OUT        0x8f    /* seek out (i.e. to lower tracks) */
@@ -168,6 +170,183 @@ __OUT(l,,int)
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct TrackDiskBase *, TDBase, 3, TrackDisk)
+
+/* DMA section based on linuxish /asm/dma.h */
+
+#define dma_outb		outb
+#define dma_inb			inb
+#define MAX_DMA_CHANNELS	8
+
+/* The maximum address that we can perform a DMA transfer to on this platform */
+#define MAX_DMA_ADDRESS      (PAGE_OFFSET+0x1000000)
+
+/* 8237 DMA controllers */
+#define IO_DMA1_BASE	0x00	/* 8 bit slave DMA, channels 0..3 */
+#define IO_DMA2_BASE	0xC0	/* 16 bit master DMA, ch 4(=slave input)..7 */
+
+/* DMA controller registers */
+#define DMA1_CMD_REG		0x08	/* command register (w) */
+#define DMA1_STAT_REG		0x08	/* status register (r) */
+#define DMA1_REQ_REG            0x09    /* request register (w) */
+#define DMA1_MASK_REG		0x0A	/* single-channel mask (w) */
+#define DMA1_MODE_REG		0x0B	/* mode register (w) */
+#define DMA1_CLEAR_FF_REG	0x0C	/* clear pointer flip-flop (w) */
+#define DMA1_TEMP_REG           0x0D    /* Temporary Register (r) */
+#define DMA1_RESET_REG		0x0D	/* Master Clear (w) */
+#define DMA1_CLR_MASK_REG       0x0E    /* Clear Mask */
+#define DMA1_MASK_ALL_REG       0x0F    /* all-channels mask (w) */
+
+#define DMA2_CMD_REG		0xD0	/* command register (w) */
+#define DMA2_STAT_REG		0xD0	/* status register (r) */
+#define DMA2_REQ_REG            0xD2    /* request register (w) */
+#define DMA2_MASK_REG		0xD4	/* single-channel mask (w) */
+#define DMA2_MODE_REG		0xD6	/* mode register (w) */
+#define DMA2_CLEAR_FF_REG	0xD8	/* clear pointer flip-flop (w) */
+#define DMA2_TEMP_REG           0xDA    /* Temporary Register (r) */
+#define DMA2_RESET_REG		0xDA	/* Master Clear (w) */
+#define DMA2_CLR_MASK_REG       0xDC    /* Clear Mask */
+#define DMA2_MASK_ALL_REG       0xDE    /* all-channels mask (w) */
+
+#define DMA_ADDR_0              0x00    /* DMA address registers */
+#define DMA_ADDR_1              0x02
+#define DMA_ADDR_2              0x04
+#define DMA_ADDR_3              0x06
+#define DMA_ADDR_4              0xC0
+#define DMA_ADDR_5              0xC4
+#define DMA_ADDR_6              0xC8
+#define DMA_ADDR_7              0xCC
+
+#define DMA_CNT_0               0x01    /* DMA count registers */
+#define DMA_CNT_1               0x03
+#define DMA_CNT_2               0x05
+#define DMA_CNT_3               0x07
+#define DMA_CNT_4               0xC2
+#define DMA_CNT_5               0xC6
+#define DMA_CNT_6               0xCA
+#define DMA_CNT_7               0xCE
+
+#define DMA_PAGE_0              0x87    /* DMA page registers */
+#define DMA_PAGE_1              0x83
+#define DMA_PAGE_2              0x81
+#define DMA_PAGE_3              0x82
+#define DMA_PAGE_5              0x8B
+#define DMA_PAGE_6              0x89
+#define DMA_PAGE_7              0x8A
+
+#define DMA_MODE_READ	0x44	/* I/O to memory, no autoinit, increment, single mode */
+#define DMA_MODE_WRITE	0x48	/* memory to I/O, no autoinit, increment, single mode */
+#define DMA_MODE_CASCADE 0xC0   /* pass thru DREQ->HRQ, DACK<-HLDA only */
+
+#define DMA_AUTOINIT	0x10
+
+/* enable/disable a specific DMA channel */
+static __inline__ void enable_dma(unsigned int dmanr)
+{
+	if (dmanr<=3)
+		dma_outb(dmanr,  DMA1_MASK_REG);
+	else
+		dma_outb(dmanr & 3,  DMA2_MASK_REG);
+}
+
+static __inline__ void disable_dma(unsigned int dmanr)
+{
+	if (dmanr<=3)
+		dma_outb(dmanr | 4,  DMA1_MASK_REG);
+	else
+		dma_outb((dmanr & 3) | 4,  DMA2_MASK_REG);
+}
+
+/* Clear the 'DMA Pointer Flip Flop'.
+ * Write 0 for LSB/MSB, 1 for MSB/LSB access.
+ * Use this once to initialize the FF to a known state.
+ * After that, keep track of it. :-)
+ * --- In order to do that, the DMA routines below should ---
+ * --- only be used while holding the DMA lock ! ---
+ */
+static __inline__ void clear_dma_ff(unsigned int dmanr)
+{
+	if (dmanr<=3)
+		dma_outb(0,  DMA1_CLEAR_FF_REG);
+	else
+		dma_outb(0,  DMA2_CLEAR_FF_REG);
+}
+
+/* set mode (above) for a specific DMA channel */
+static __inline__ void set_dma_mode(unsigned int dmanr, char mode)
+{
+	if (dmanr<=3)
+		dma_outb(mode | dmanr,  DMA1_MODE_REG);
+	else
+		dma_outb(mode | (dmanr&3),  DMA2_MODE_REG);
+}
+
+/* Set only the page register bits of the transfer address.
+ * This is used for successive transfers when we know the contents of
+ * the lower 16 bits of the DMA current address register, but a 64k boundary
+ * may have been crossed.
+ */
+static __inline__ void set_dma_page(unsigned int dmanr, char pagenr)
+{
+	switch(dmanr) {
+		case 0:
+			dma_outb(pagenr, DMA_PAGE_0);
+			break;
+		case 1:
+			dma_outb(pagenr, DMA_PAGE_1);
+			break;
+		case 2:
+			dma_outb(pagenr, DMA_PAGE_2);
+			break;
+		case 3:
+			dma_outb(pagenr, DMA_PAGE_3);
+			break;
+		case 5:
+			dma_outb(pagenr & 0xfe, DMA_PAGE_5);
+			break;
+		case 6:
+			dma_outb(pagenr & 0xfe, DMA_PAGE_6);
+			break;
+		case 7:
+			dma_outb(pagenr & 0xfe, DMA_PAGE_7);
+			break;
+	}
+}
+
+/* Set transfer address & page bits for specific DMA channel.
+ * Assumes dma flipflop is clear.
+ */
+static __inline__ void set_dma_addr(unsigned int dmanr, unsigned int a)
+{
+	set_dma_page(dmanr, a>>16);
+	if (dmanr <= 3)  {
+	    dma_outb( a & 0xff, ((dmanr&3)<<1) + IO_DMA1_BASE );
+            dma_outb( (a>>8) & 0xff, ((dmanr&3)<<1) + IO_DMA1_BASE );
+	}  else  {
+	    dma_outb( (a>>1) & 0xff, ((dmanr&3)<<2) + IO_DMA2_BASE );
+	    dma_outb( (a>>9) & 0xff, ((dmanr&3)<<2) + IO_DMA2_BASE );
+	}
+}
+
+
+/* Set transfer size (max 64k for DMA1..3, 128k for DMA5..7) for
+ * a specific DMA channel.
+ * You must ensure the parameters are valid.
+ * NOTE: from a manual: "the number of transfers is one more
+ * than the initial word count"! This is taken into account.
+ * Assumes dma flip-flop is clear.
+ * NOTE 2: "count" represents _bytes_ and must be even for channels 5-7.
+ */
+static __inline__ void set_dma_count(unsigned int dmanr, unsigned int count)
+{
+        count--;
+	if (dmanr <= 3)  {
+	    dma_outb( count & 0xff, ((dmanr&3)<<1) + 1 + IO_DMA1_BASE );
+	    dma_outb( (count>>8) & 0xff, ((dmanr&3)<<1) + 1 + IO_DMA1_BASE );
+        } else {
+	    dma_outb( (count>>1) & 0xff, ((dmanr&3)<<2) + 2 + IO_DMA2_BASE );
+	    dma_outb( (count>>9) & 0xff, ((dmanr&3)<<2) + 2 + IO_DMA2_BASE );
+        }
+}
 
 #ifdef	SysBase
 #undef	SysBase
