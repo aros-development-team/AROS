@@ -40,6 +40,7 @@ struct MUI_ScrollbarsPData
     Object *background_popimage;
     Object *knob_popimage;
     Object *arrangement_radio;
+    Object *pos_radios[3];
 };
 
 static CONST_STRPTR gadget_type_labels[] =
@@ -58,10 +59,10 @@ static char *arrangement_labels[] =
     NULL,
 };
 
-static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
-}
+/*  static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...) */
+/*  { */
+/*      return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL)); */
+/*  } */
 
 #define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 
@@ -75,9 +76,21 @@ Object *MakeArrowPopimage (CONST_STRPTR wintitle)
 		     MUIA_MaxHeight, 28,
 		     MUIA_Imagedisplay_FreeHoriz, FALSE,
 		     MUIA_Imagedisplay_FreeVert, FALSE,
-		     MUIA_Window_Title, wintitle,
+		     MUIA_Window_Title, (IPTR)wintitle,
 		     TAG_DONE, 0);
 }  
+
+Object *MakeSingleRadio (void)
+{
+    return ImageObject,
+	MUIA_Image_FontMatch, TRUE,
+	MUIA_InputMode, MUIV_InputMode_Immediate,
+	MUIA_Selected, FALSE,
+	MUIA_ShowSelState, FALSE,
+	MUIA_Image_Spec, MUII_RadioButton,
+	MUIA_Frame, MUIV_Frame_None,
+	End;
+}
 
 static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -125,7 +138,7 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 					 MUIA_CycleChain, 1,
 					 MUIA_Imagedisplay_FreeHoriz, FALSE,
 					 MUIA_Imagedisplay_FreeVert, FALSE,
-					 MUIA_Window_Title, "Knob",
+					 MUIA_Window_Title, (IPTR)"Knob",
 					 TAG_DONE),
 			       Child, CLabel("Knob"),
 			       End, /* VGroup Knob */
@@ -142,11 +155,19 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       GroupFrameT("Frame"),
 			       Child, d.popframe = MakePopframe(),
 			       End, /* Frame VGroup*/
-			       Child, VGroup,
+			       Child, ColGroup(3),
 			       GroupFrameT("Arrangement"),
-			       Child, d.arrangement_radio = RadioObject,
-			       MUIA_Radio_Entries, arrangement_labels, End,
-			       End, /* Arrangement VGroup*/
+			       /* Child, d.arrangement_radio = RadioObject,
+				  MUIA_Radio_Entries, arrangement_labels, End, */
+			       /*  Child, ColGroup(3), */
+			       Child, d.pos_radios[0] = MakeSingleRadio(),
+			       Child, d.pos_radios[1] = MakeSingleRadio(),
+			       Child, d.pos_radios[2] = MakeSingleRadio(),
+			       Child, ScrollbarObject, MUIA_Scrollbar_Type, MUIV_Scrollbar_Type_Top, End,
+			       Child, ScrollbarObject, MUIA_Scrollbar_Type, MUIV_Scrollbar_Type_Sym, End,
+			       Child, ScrollbarObject, MUIA_Scrollbar_Type, MUIV_Scrollbar_Type_Bottom, End,
+			       /*  End, */ /* ColGroup 3 */
+			       End, /* Arrangement */
 			       End, /* VGroup right */
     	TAG_MORE, msg->ops_AttrList);
 
@@ -165,6 +186,19 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	     6, MUIM_MultiSet, MUIA_Disabled, TRUE,
 	     d.background_popimage, d.knob_popimage, NULL);
 
+    DoMethod(d.pos_radios[0], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	     d.pos_radios[1], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
+    DoMethod(d.pos_radios[0], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	     d.pos_radios[2], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
+    DoMethod(d.pos_radios[1], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	     d.pos_radios[0], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
+    DoMethod(d.pos_radios[1], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	     d.pos_radios[2], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
+    DoMethod(d.pos_radios[2], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	     d.pos_radios[0], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
+    DoMethod(d.pos_radios[2], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	     d.pos_radios[1], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
+
     return (IPTR)obj;
 }
 
@@ -177,6 +211,7 @@ static IPTR ScrollbarsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 {
     struct MUI_ScrollbarsPData *data = INST_DATA(cl, obj);
     STRPTR spec;
+    int pos;
 
 /* Images */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
@@ -211,9 +246,11 @@ static IPTR ScrollbarsP_ConfigToGadgets(struct IClass *cl, Object *obj,
     set(data->popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
 
 /* Radio (Arrangement) */
-    setmutex(data->arrangement_radio,
-	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
-		      MUICFG_Scrollbar_Arrangement));
+    pos = DoMethod(msg->configdata, MUIM_Configdata_GetULong,
+		   MUICFG_Scrollbar_Arrangement);
+    if (pos < 0 || pos > 2)
+	pos = 0;
+    set(data->pos_radios[pos], MUIA_Selected, TRUE);
 
     return 1;    
 }
@@ -227,6 +264,8 @@ static IPTR ScrollbarsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 {
     struct MUI_ScrollbarsPData *data = INST_DATA(cl, obj);
     STRPTR str;
+    int pos;
+    int i;
 
 /* Frame */
     str = (STRPTR)xget(data->popframe, MUIA_Framedisplay_Spec);
@@ -238,8 +277,14 @@ static IPTR ScrollbarsP_GadgetsToConfig(struct IClass *cl, Object *obj,
 	     xget(data->gadget_type_cycle, MUIA_Cycle_Active));
 
 /* Radio */
+    for (i = 0; i < 3; i++)
+    {
+	if (xget(data->pos_radios[i], MUIA_Selected))
+	    pos = i;
+    }
+
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Scrollbar_Arrangement,
-	     xget(data->arrangement_radio, MUIA_Radio_Active));
+	     pos);
 
 /* Images */
     str = (STRPTR)xget(data->background_popimage, MUIA_Imagedisplay_Spec);
