@@ -51,9 +51,11 @@ FILES	    := \
 	Prompt \
 	Protect \
 	RequestChoice \
+	RequestFile \
 	Set \
 	SetDate \
 	Setenv \
+	Stack \
 	Unalias \
 	Version \
 	Which
