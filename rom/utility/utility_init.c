@@ -2,16 +2,24 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/24 15:49:28  aros
+    Use the new "AROS" macros
+
+    Fixed severe bug: The size of the library was "struct UtilityBase" instead
+    of "struct IntUtilityBase" which caused a MemCorrupt-Alert.
+
+    Use GetIntUtilityBase() to access the private fields.
+
     Revision 1.5  1996/09/11 16:54:31  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-    	some systems name an external symbol "x" as "_x" and others as "x".
-    	(The problem arises with assembler symbols which might differ)
+    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
+	some systems name an external symbol "x" as "_x" and others as "x".
+	(The problem arises with assembler symbols which might differ)
 
     Revision 1.4  1996/09/11 14:03:56  digulla
     Quick hack to make it work again.
 
     Revision 1.3  1996/08/13 14:11:54  digulla
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:41:42  digulla
     Added standard header for all files
@@ -30,7 +38,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const Utility_functable[];
-struct UtilityBase *__AROS_SLIB_ENTRY(init,Utility) ();
+struct UtilityBase *AROS_SLIB_ENTRY(init,Utility) ();
 extern const char Utility_end;
 
 int Utility_entry(void)
@@ -59,38 +67,38 @@ static const char version[]="$VER: utility 39.0 (5.6.96)\n\015";
 
 static const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct UtilityBase),
+    (APTR)sizeof(struct IntUtilityBase),
     (APTR)Utility_functable,
     NULL,
-    &__AROS_SLIB_ENTRY(init,Utility)
+    &AROS_SLIB_ENTRY(init,Utility)
 };
 
 #ifdef SysBase
 #undef SysBase
 #endif
-#define SysBase UtilityBase->ub_SysBase
+#define SysBase GetIntUtilityBase(UtilityBase)->ub_SysBase
 
-__AROS_LH2(struct UtilityBase *, init,
- __AROS_LHA(struct UtilityBase *, UtilityBase, D0),
- __AROS_LHA(BPTR,               segList,   A0),
+AROS_LH2(struct UtilityBase *, init,
+ AROS_LHA(struct UtilityBase *, UtilityBase, D0),
+ AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Utility)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Store arguments */
-    UtilityBase->ub_SysBase=sysBase;
-    UtilityBase->ub_SegList=segList;
+    GetIntUtilityBase(UtilityBase)->ub_SysBase=sysBase;
+    GetIntUtilityBase(UtilityBase)->ub_SegList=segList;
 
     /* You would return NULL if the init failed */
     return UtilityBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(struct UtilityBase *, open,
- __AROS_LHA(ULONG, version, D0),
+AROS_LH1(struct UtilityBase *, open,
+ AROS_LHA(ULONG, version, D0),
 	   struct UtilityBase *, UtilityBase, 1, Utility)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Keep compiler happy */
     version=0;
@@ -101,13 +109,13 @@ __AROS_LH1(struct UtilityBase *, open,
 
     /* You would return NULL if the open failed. */
     return UtilityBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, close,
+AROS_LH0(BPTR, close,
 	   struct UtilityBase *, UtilityBase, 2, Utility)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
     if(!--UtilityBase->ub_LibNode.lib_OpenCnt)
@@ -118,13 +126,13 @@ __AROS_LH0(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge,
+AROS_LH0(BPTR, expunge,
 	   struct UtilityBase *, UtilityBase, 3, Utility)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
 
@@ -140,20 +148,20 @@ __AROS_LH0(BPTR, expunge,
     Remove(&UtilityBase->ub_LibNode.lib_Node);
 
     /* Get returncode here - FreeMem() will destroy the field. */
-    ret=UtilityBase->ub_SegList;
+    ret=GetIntUtilityBase(UtilityBase)->ub_SegList;
 
     /* Free the memory. */
     FreeMem((char *)UtilityBase-UtilityBase->ub_LibNode.lib_NegSize,
 	    UtilityBase->ub_LibNode.lib_NegSize+UtilityBase->ub_LibNode.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null,
+AROS_LH0I(int, null,
 	    struct UtilityBase *, UtilityBase, 4, Utility)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
