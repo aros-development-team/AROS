@@ -49,6 +49,7 @@ struct pcibase
 #define DEBUG 1
 #include <aros/debug.h>
 
+#undef kprintf
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
@@ -67,7 +68,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)
 	    {
-		PCIFindBios();
+		PCIHWProbe();
 		return TRUE;
 	    }
 	    CloseLibrary(xsd->oopbase);
