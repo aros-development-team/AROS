@@ -2,11 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Shortcut OpenLibrary call for system modules
+    Desc: Shortcut OpenLibrary call for system modules (private!)
     Lang: english
 */
 
-#include <exec/types.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
@@ -100,7 +99,7 @@ char *copyrights[] =
 	    If it didn't open, FindResident(), InitResident(), and then
 	    try to open it again.
 	*/
-	if(!(res = FindResident(libnames[tag-1]))) return 0;
+	if(!(res = FindResident(libnames[tag-1]))) return NULL;
 	InitResident(res, NULL);
 	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
     }
@@ -110,6 +109,6 @@ char *copyrights[] =
     /*
 	If we get here, tag must be 0, or the lib didn't open.
     */
-    return 0;
+    return NULL;
 
 } /* TaggedOpenLibrary */
