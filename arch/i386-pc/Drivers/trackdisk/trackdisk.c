@@ -207,89 +207,110 @@ ULONG *pp;
 	/* If there is defined a drive */
     	if (((drives>>(4*i))&15)!=0)
     	{
-	   	/* Get mem for it */
-	   	unit=(struct TDU*)AllocMem(sizeof(struct TDU), MEMF_CLEAR|MEMF_PUBLIC);
-    	   if (!unit)	/* PANIC! No memory for units! */
+	    /* Get mem for it */
+	    unit=(struct TDU*)AllocMem(sizeof(struct TDU), MEMF_CLEAR|MEMF_PUBLIC);
+	    if (!unit)	/* PANIC! No memory for units! */
     	   	Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
-    	   unit->pub.tdu_StepDelay=4;	/* Standard values here */
-    	   unit->pub.tdu_SettleDelay=16;
-    	   unit->pub.tdu_RetryCount=3;
-    	   unit->unitnum=i;
-    	   unit->unittype=(drives>>(4*i))&15;
-    	
-    	   /* Alloc memory for track buffering */
-    	   unit->dma_buffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
-    	   if (!unit->dma_buffer)
-    	    	Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
-    	   /* If buffer doesn't fit into DMA page realloc it */
-    	   if (( (((ULONG)unit->dma_buffer+DP_SECTORS*512)&0xffff0000) -
-    	    	   ((ULONG)unit->dma_buffer&0xffff0000) )!=0)
-    	   {
+	    unit->pub.tdu_StepDelay=4;	/* Standard values here */
+	    unit->pub.tdu_SettleDelay=16;
+	    unit->pub.tdu_RetryCount=3;
+	    unit->unitnum=i;
+	    unit->unittype=(drives>>(4*i))&15;
+	    
+	    /* Alloc memory for track buffering */
+	    unit->dma_buffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
+
+	    if (!unit->dma_buffer)
+	    {
+    	    	Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoMemory);
+	    }
+
+	    /* If buffer doesn't fit into DMA page realloc it */
+	    if (( (((ULONG)unit->dma_buffer + DP_SECTORS*512) & 0xffff0000) -
+		  ((ULONG)unit->dma_buffer&0xffff0000) ) != 0)
+	    {
     	    	APTR buffer;
-    	    	buffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
+
+    	    	buffer = AllocMem(DP_SECTORS*512, MEMF_CLEAR | MEMF_CHIP);
+
     	    	if (!buffer)
-    	    	    Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
-    	    	FreeMem(unit->dma_buffer,DP_SECTORS*512);
-				unit->dma_buffer=buffer;
-    	   }
-			unit->flags=0;
-			unit->lastcyl=-1;
-			unit->lasthd=-1;
-			if (ExpansionBase)
+		{
+    	    	    Alert(AT_DeadEnd | AO_TrackDiskDev | AG_NoMemory);
+		}
+
+    	    	FreeMem(unit->dma_buffer, DP_SECTORS*512);
+		unit->dma_buffer = buffer;
+	    }
+
+	    unit->flags = 0;
+	    unit->lastcyl = -1;
+	    unit->lasthd = -1;
+
+	    if (ExpansionBase)
+	    {
+		pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
+
+		if (pp)
+		{
+		    pp[0] = (ULONG)"afs.handler";
+		    pp[1] = (ULONG)name;
+		    pp[2] = i;
+		    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
+		    pp[DE_SIZEBLOCK + 4] = 128;
+		    pp[DE_NUMHEADS + 4] = 2;
+		    pp[DE_SECSPERBLOCK + 4] = 1;
+		    pp[DE_BLKSPERTRACK + 4] = 18;
+		    pp[DE_RESERVEDBLKS + 4] = 2;
+		    pp[DE_LOWCYL + 4] = 0;
+		    pp[DE_HIGHCYL + 4] = 79;
+		    pp[DE_NUMBUFFERS + 4] = 10;
+		    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
+		    pp[DE_MAXTRANSFER + 4] = 0x00200000;
+		    pp[DE_MASK + 4] = 0x7FFFFFFE;
+		    pp[DE_BOOTPRI + 4] = 5;
+		    pp[DE_DOSTYPE + 4] = 0x444F5300;
+		    pp[DE_BOOTBLOCKS + 4] = 2;
+		    devnode = MakeDosNode(pp);
+
+		    if (devnode)
+		    {
+			devnode->dn_OldName = MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR));
+			
+			if (devnode->dn_OldName != NULL)
 			{
-				pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
-				if (pp)
-				{
-					pp[0]=(ULONG)"afs.handler";
-					pp[1]=(ULONG)name;
-					pp[2]=i;
-					pp[DE_TABLESIZE+4]=DE_BOOTBLOCKS;
-					pp[DE_SIZEBLOCK+4]=128;
-					pp[DE_NUMHEADS+4]=2;
-					pp[DE_SECSPERBLOCK+4]=1;
-					pp[DE_BLKSPERTRACK+4]=18;
-					pp[DE_RESERVEDBLKS+4]=2;
-					pp[DE_LOWCYL+4]=0;
-					pp[DE_HIGHCYL+4]=79;
-					pp[DE_NUMBUFFERS+4]=10;
-					pp[DE_BUFMEMTYPE+4]=MEMF_PUBLIC | MEMF_CHIP;
-					pp[DE_MAXTRANSFER+4]=0x00200000;
-					pp[DE_MASK+4]=0x7FFFFFFE;
-					pp[DE_BOOTPRI+4]=5;
-					pp[DE_DOSTYPE+4]=0x444F5300;
-					pp[DE_BOOTBLOCKS+4]=2;
-					devnode = MakeDosNode(pp);
-					if (devnode)
-					{
-						if ((devnode->dn_NewName=AllocMem(5,MEMF_PUBLIC|MEMF_CLEAR)))
-						{
-							devnode->dn_NewName[0]=3;
-							devnode->dn_NewName[1]='D';
-							devnode->dn_NewName[2]='F';
-							devnode->dn_NewName[3]=i+'0';
-							devnode->dn_OldName=MKBADDR(devnode->dn_NewName);
-							devnode->dn_NewName += 1;
-							AddBootNode(pp[DE_BOOTPRI+4],0,devnode,0);
-						}
-					}
-				}
+			    AROS_BSTR_putchar(devnode->dn_OldName, 0, 'D');
+			    AROS_BSTR_putchar(devnode->dn_OldName, 1, 'F');
+			    AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + i);
+			    AROS_BSTR_setstrlen(devnode->dn_OldName, 3);
+			    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
+
+			    AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
 			}
+		    }
+		}
+	    }
     	}
-    	TDBase->units[i]=(struct TDU*)unit;
-    	unit=NULL;
-    }
-	if (ExpansionBase)
-		CloseLibrary((struct Library *)ExpansionBase);
-    TDBase->units[2]=NULL;	/* Third and fourth drives are disabled now */
-    TDBase->units[3]=NULL;
-
-    fd_outb(0,FD_DOR);	/* Reset controller */
-    fd_outb(0,FD_DOR);
-    fd_outb(4,FD_DOR);	/* Turn it on again */
-
-	td_dinit(TDBase);	/* Init drives */
 	
+    	TDBase->units[i] = (struct TDU*)unit;
+    	unit = NULL;
+    }
+
+    if (ExpansionBase)
+    {
+	CloseLibrary((struct Library *)ExpansionBase);
+    }
+
+    TDBase->units[2] = NULL;	/* Third and fourth drives are disabled now */
+    TDBase->units[3] = NULL;
+    
+    fd_outb(0, FD_DOR);	/* Reset controller */
+    fd_outb(0, FD_DOR);
+    fd_outb(4, FD_DOR);	/* Turn it on again */
+    
+    td_dinit(TDBase);	/* Init drives */
+    
     return TDBase;
+
     AROS_LIBFUNC_EXIT
 }
 
