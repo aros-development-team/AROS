@@ -125,11 +125,14 @@
 
 	/*
 	    Add a '/' onto the end of the current path, unless of course
-	    the new path has a ':' or '/' on it already...
+	    the new path has a ':' or '/' on it already or current path
+	    is emtpy (stegerg) ...
 	*/
 	if(    (*filename != '/')
+	    && (didx != 0 )
 	    && (dirname[didx - 1] != ':')
-	    && (dirname[didx - 1] != '/') )
+	    && (dirname[didx - 1] != '/')
+	  )
 	{
 	    dirname[didx++] = '/';
 	}
