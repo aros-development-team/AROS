@@ -65,7 +65,7 @@
     bm->Depth = depth;
     bm->Rows  = height;
     bm->Flags = 0;
-    bm->Pad   = 0;
+    bm->pad   = 0;
     bm->BytesPerRow = ((width + 15) >> 3) & ~0x1;
 
     AROS_LIBFUNC_EXIT

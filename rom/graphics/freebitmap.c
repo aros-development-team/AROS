@@ -56,7 +56,7 @@
     
     ASSERT_VALID_PTR(bm);
 
-    if (bm->Pad != 0 || (bm->Flags & BMF_AROS_HIDD))
+    if (bm->pad != 0 || (bm->Flags & BMF_AROS_HIDD))
     {
 	HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, (OOP_Object *)HIDD_BM_OBJ(bm));
 
