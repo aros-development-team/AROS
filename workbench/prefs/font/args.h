@@ -1,19 +1,28 @@
-#ifndef _ARGS_H
-#define _ARGS_H
+#ifndef _ARGS_H_
+#define _ARGS_H_
 
 /*
     Copyright © 2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <exec/types.h>
+
+/*** Structures *************************************************************/
+enum Argument
+{
+    FROM,
+    USE,
+    SAVE,
+    COUNT  /* Number of arguments */
+};
+
 /*** Prototypes *************************************************************/
-struct RDArgs * getArguments(void);
-UBYTE processArguments(void);
+BOOL ReadArguments(VOID);
+VOID FreeArguments(VOID);
+IPTR GetArgument(enum Argument arg);
 
-/* Return values from processArguments() */
-#define APP_RUN		0
-#define APP_STOP	1
-#define APP_FAIL	2
+/*** Macros *****************************************************************/
+#define ARG(a) GetArgument((a))
 
-
-#endif /* _ARGS_H */
+#endif /* _ARGS_H_ */

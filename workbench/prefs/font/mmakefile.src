@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main gui prefs locale misc args asl
+FILES 	    := main args locale misc fpeditor 
 EXEDIR      := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-font

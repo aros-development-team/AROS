@@ -31,7 +31,7 @@ MSG_CANT_ALLOCATE_MEM
 Kan ikke allokere programminne!
 ; Can't allocate application memory!
 ;
-MSG_WINDOW_TITLE
+MSG_NAME
 Fontinstillinger
 ; Font Preferences
 ;
