@@ -29,6 +29,26 @@ static const UBYTE kbdimage_data[] =
 
 static const UBYTE kbdimage_pal[] =
 {
+#if 1
+#define COL(a,b,c) (a + b + c) / 3, (a + b + c) / 3, (a + b + c) / 3
+
+	COL(182,179,182),
+	COL( 73, 97, 68),
+	COL(116,148,110),
+	COL(153,179,148),
+	COL(158,182,153),
+	COL( 86,110, 78),
+	COL(184,203,180),
+	COL(178,198,174),
+	COL(162,186,156),
+	COL(119,154,111),
+	COL(172,194,168),
+	COL(128,161,123),
+	COL( 63, 85, 59),
+	COL(108,141,101),
+	COL(167,190,163),
+	COL(144,172,139)
+#else
 	182,179,182,
 	 73, 97, 68,
 	116,148,110,
@@ -45,6 +65,7 @@ static const UBYTE kbdimage_pal[] =
 	108,141,101,
 	167,190,163,
 	144,172,139
+#endif
 };
 
 const struct CoolImage cool_kbdimage =
