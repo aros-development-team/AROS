@@ -31,9 +31,13 @@
 #   include "support_amigaos.h"
 #endif 
 
+struct MUI_RenderInfo;
+struct IntuiMessage;
+
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)
 #define mui_alloc_struct(x) ((x *)AllocVec(sizeof(x),MEMF_CLEAR))
 #define mui_free(x) FreeVec(x)
+
 
 int isRegionWithinBounds(struct Region *r, int left, int top, int width, int height);
 ULONG ConvertKey(struct IntuiMessage *imsg);
@@ -47,10 +51,6 @@ ULONG ConvertKey(struct IntuiMessage *imsg);
 ((tag) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
 
 #define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
-
-#ifndef __SASC
-struct MUI_RenderInfo;
-#endif
 
 #ifndef __GNUC__
 IPTR XGET(Object *obj, Tag attr);
