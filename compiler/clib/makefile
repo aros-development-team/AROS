@@ -102,9 +102,7 @@ FILES = \
 	vsscanf \
 	write
 
-ifneq ($(FLAVOUR),native)
 ASMFILES = setjmp longjmp
-endif
 
 all: setup $(LIBDIR)/libarosc.a
 
