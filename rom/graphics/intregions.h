@@ -55,6 +55,22 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     res;                                                       \
 })
 
+#define _AreRectsEqual(Rect1, Rect2)  \
+(                                     \
+    (Rect1)->MinX == (Rect2)->MinX && \
+    (Rect1)->MinY == (Rect2)->MinY && \
+    (Rect1)->MaxX == (Rect2)->MaxX && \
+    (Rect1)->MaxY == (Rect2)->MaxY    \
+)
+
+#define _IsPointInRect(Rect, x, y) \
+(                                  \
+    y >= (Rect)->MinY &&           \
+    y <= (Rect)->MaxY &&           \
+    x >= (Rect)->MinX &&           \
+    x <= (Rect)->MaxX              \
+)
+
 #define _TranslateRect(rect, dx, dy) \
 {                                    \
     struct Rectangle *_rect = rect;  \
@@ -94,7 +110,7 @@ if (dx || dy)                                  \
 /* ugly hack, I know... */
 #ifndef GfxBase
 
-typedef BOOL (BandOperation)
+typedef BOOL BandOperation
 (
     LONG                     OffX1,
     LONG                     OffX2,
