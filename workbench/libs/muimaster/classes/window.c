@@ -740,7 +740,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 
 		    if (muikey != MUIKEY_NONE && (_flags(ehn->ehn_Object) & MADF_CANDRAW))
 		    {
-			res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+			res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
 			if (res & MUI_EventHandlerRC_Eat) return;
 		    }
 		}
@@ -1497,7 +1497,7 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
+    if (msg->ccnode->ehn_Events) Enqueue((struct List *)&data->wd_CCList, (struct Node *)msg->ccnode);
 
     /* Due to the lack of an better idea ... */
     if (muiAreaData(msg->ccnode->ehn_Object)->mad_Flags & MADF_CYCLECHAIN)
@@ -1520,7 +1520,8 @@ static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct ObjNode     *node = FindObjNode(&data->wd_CycleChain,msg->ccnode->ehn_Object);
 
-    Remove((struct Node *)msg->ccnode);
+    if (msg->ccnode->ehn_Events) Remove((struct Node *)msg->ccnode);
+
     if (node)
     {
     	/* Remove from the chain list */
