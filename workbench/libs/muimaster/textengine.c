@@ -29,6 +29,7 @@
 #include <intuition/screens.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/utility.h>
 
 #include "mui.h"
 #include "textengine.h"
@@ -150,7 +151,7 @@ struct line_pos_datas {
 struct zune_context;
 
 static ZTextLine *zune_text_parse_line (STRPTR *s, struct zune_context *zc,
-					int *argtype, TEXT arg);
+					int *argtype, int arg);
 
 
 /************************/
@@ -193,7 +194,7 @@ struct zune_context
 /**************************************************************************
  ...
 **************************************************************************/
-ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
+ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT argbyte)
 {
     ZText *text;
     /* STRPTR *lines; */
@@ -201,6 +202,7 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
     char *dup_content, *buf;
     int preparse_len;
     struct zune_context zc;
+    int arg;
 
     if (!(text = mui_alloc_struct(ZText))) return NULL;
     text->style = ZTC_STYLE_NORMAL;
@@ -222,6 +224,13 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
     zc.pen = TEXTPEN;
     zc.style = ZTC_STYLE_NORMAL;
     zc.align = ZTL_LEFT;
+
+    if (argtype == ZTEXT_ARG_HICHAR)
+    {
+    	/* store lower and upper case in arg */
+    	arg = ToLower(argbyte)|(ToUpper(argbyte)<<8);
+    } else arg = argbyte;
+
     /* the other elements are done by other functions */
 
     while (*buf)
@@ -417,7 +426,7 @@ static STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, STRPTR
 
  Note that the contents in s_ptr is overwritten.
 **************************************************************************/
-static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, int *argtype, TEXT arg)
+static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, int *argtype, int arg)
 {
     STRPTR s;
     UBYTE c;
@@ -429,6 +438,7 @@ static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, 
     if (!(ztl = mui_alloc_struct(ZTextLine))) return NULL;
     NewList((struct List*)&ztl->chunklist);
 
+    ztl->align = zc->align;
     zc->text_start = zc->text = s;
     zc->line = ztl;
 
@@ -444,8 +454,7 @@ static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, 
 	    continue;
 	}
 
-	/* not sure if this is correct as this has no control which char should be underlined */
-        if (*argtype == ZTEXT_ARG_HICHAR && arg == c)
+        if (*argtype == ZTEXT_ARG_HICHAR && (((arg & 0xff) == c) || (((arg >> 8)&0xff) == c)))
         {
 	    ULONG styleback = zc->style;
 	    zune_text_chunk_new(zc);
@@ -819,9 +828,10 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 	    	ULONG newstyle = FS_NORMAL;
 
 		if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
+		if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
 		if (newstyle != style)
 		{
-		    SetSoftStyle(rp, newstyle, AskSoftStyle(rp));
+		    SetSoftStyle(rp, newstyle, 0xff);
 		    style = newstyle;
 		}
 
