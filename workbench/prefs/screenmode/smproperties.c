@@ -15,9 +15,22 @@
 
 struct ScreenModeProperties_DATA
 {
-    Object *width, *height, *depth;
+    Object *width, *height, *depth,
+           *def_width, *def_height;
+    
     ULONG DisplayID;
 };
+
+#define CheckMark(selected)                          \
+    ImageObject,                                     \
+        ImageButtonFrame,                            \
+        MUIA_InputMode      , MUIV_InputMode_Toggle, \
+        MUIA_Image_Spec     , MUII_CheckMark,        \
+        MUIA_Image_FreeVert , TRUE,                  \
+        MUIA_Selected       , selected,              \
+        MUIA_Background     , MUII_ButtonBack,       \
+        MUIA_ShowSelState   , FALSE,                 \
+    End
 
 #define HLeft(obj...) \
     (IPTR)(HGroup, (IPTR)GroupSpacing(0), Child, (IPTR)(obj), Child, (IPTR)HSpace(0), End)
@@ -25,23 +38,32 @@ struct ScreenModeProperties_DATA
 Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     struct ScreenModeProperties_DATA *data;	 
-    Object *width, *height, *depth;     
+    Object *width, *height, *depth,
+           *def_width, *def_height;
     ULONG id;
     
     self = (Object *)DoSuperNewTags
     (
         CLASS, self, NULL,
         Child, (IPTR)HGroup,
-	    Child, (IPTR)GroupObject,
-	        MUIA_Group_Columns, 2,
+	    Child, (IPTR)ColGroup(4),
 	        Child, (IPTR)Label("\33lWidth:"),
 	        Child, HLeft(width = NumericbuttonObject, End),
-	        Child, (IPTR)Label("\33lHeight:"),
+		Child, (IPTR)(def_width = CheckMark(TRUE)),
+	        Child, (IPTR)Label("\33l_default"),
+	        
+		Child, (IPTR)Label("\33lHeight:"),
 	        Child, HLeft(height = NumericbuttonObject, End),
-	        Child, (IPTR)Label("\33lDepth:"),
+		Child, (IPTR)(def_height = CheckMark(TRUE)),
+	        Child, (IPTR)Label("\33ld_efault"),
+	        
+		Child, (IPTR)Label("\33lDepth:"),
 	        Child, HLeft(depth = NumericbuttonObject, End),
-		MUIA_Weight, 50,
+		Child, (IPTR)RectangleObject, End,
+		Child, (IPTR)RectangleObject, End,		
 	    End,  
+	    Child, (IPTR)MUI_MakeObject(MUIO_VBar, 20),
+	    Child, (IPTR)RectangleObject, End,
 	End,
 	
         TAG_MORE, (IPTR)message->ops_AttrList
@@ -76,6 +98,34 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 	MUIM_Set, MUIA_ScreenModeProperties_Depth, MUIV_TriggerValue
     );
     
+    DoMethod
+    (
+        def_width, MUIM_Notify, MUIA_Selected, TRUE,
+	(IPTR)width, 1,
+	MUIM_Numeric_SetDefault
+    );
+
+    DoMethod
+    (
+        width, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+	(IPTR)def_width, 3,
+	MUIM_Set, MUIA_Selected, FALSE
+    );
+    
+    DoMethod
+    (
+        def_height, MUIM_Notify, MUIA_Selected, TRUE,
+	(IPTR)height, 1,
+	MUIM_Numeric_SetDefault
+    );
+
+    DoMethod
+    (
+        height, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+	(IPTR)def_height, 3,
+	MUIM_Set, MUIA_Selected, FALSE
+    );
+        
     id = GetTagData(MUIA_ScreenModeProperties_DisplayID, INVALID_ID, message->ops_AttrList); 
     set(self, MUIA_ScreenModeProperties_DisplayID, id);
     
