@@ -4,6 +4,10 @@
 \section{Project History}
 
 \begin{itemize}
+\item 17.10.1997 AROS has two new mailing lists: \shell{aros-gfx}
+    and \shell{aros-user}.
+\item 15.10.1997 AROS has it's own domain now ! Use
+    \link{http://www.aros.org/}{http://www.aros.org/}
 \item 6.10.1997 AROS is now built with own make tool
 \item 2.10.1997 Got first running version of VBCC for i386
 \item 16.9.1997 First binary Amiga program ran on AROS on Linux/m68k
