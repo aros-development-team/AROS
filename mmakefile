@@ -17,7 +17,7 @@ shell : $(BINDIR)/arosshell
 	@$(NOP)
 
 #MM
-setup :
+setup : 
 	@$(RM) $(TOP)/errors
 	@$(FOR) dir in $(BINDIR) $(GENDIR) ; do \
 	    $(IF) [ ! -d $$dir ]; then \
@@ -25,6 +25,9 @@ setup :
 		$(MKDIR) "$$dir" ; \
 	    else true ; fi ; \
 	done
+	@$(IF) [ ! -f $(BINDIR)/.gdbinit ]; then \
+	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
+	else true ; fi 
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBS} Flags which are passed to the linker for executables.
