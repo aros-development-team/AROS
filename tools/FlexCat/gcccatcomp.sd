@@ -8,10 +8,9 @@
 
    Do NOT edit by hand!
 ****************************************************************/
-#include <aros/system.h>
+#include <aros/locale.h> 
 
-#define make_abs(sym, value) asm(".globl " AROS_ASMSYMNAME(#sym), "\\n.set " AROS_ASMSYMNAME(#sym) ", " #value)
+CATALOG_BEGIN(%b, %v)
+    CATALOG_STR(%b, %i, %s, %e)
+CATALOG_END(%b)
 
-make_abs(%i_ID, %e);
-
-const char %i_STR[] = %s;
