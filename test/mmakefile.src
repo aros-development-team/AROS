@@ -36,7 +36,8 @@ FILES := amiga2date \
 	semtorture \
 	obtainpentest \
 	writepixelarray \
-    rawtest
+	rawtest \
+	camdtree
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
