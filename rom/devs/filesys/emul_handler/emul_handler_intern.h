@@ -21,15 +21,16 @@
 
 struct emulbase
 {
-    struct Device	device;
-    struct Unit       * stdin;
-    struct Unit       * stdout;
-    struct Unit       * stderr;
-    struct ExecBase   * sysbase;
-    struct DosLibrary * dosbase;
-    struct Library    * oopbase;
-    HIDD		unixio;
-    BPTR seglist;
+    struct Device		  device;
+    struct Unit       		* stdin;
+    struct Unit       		* stdout;
+    struct Unit       		* stderr;
+    struct ExecBase  		* sysbase;
+    struct DosLibrary 		* dosbase;
+    struct Library   		* oopbase;
+    struct SignalSemaphore 	  sem;
+    HIDD			  unixio;
+    BPTR 			  seglist;
 };
 
 #ifdef SysBase
