@@ -58,7 +58,7 @@ IPTR CallHook (struct Hook * hook, APTR object, ...)
 
     va_start (args, object);
 
-    retval = CallHookPkt (hook, object, args);
+    retval = CallHookPkt (hook, object, (APTR)args);
 
     va_end (args);
 
