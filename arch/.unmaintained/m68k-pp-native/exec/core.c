@@ -69,7 +69,9 @@ BOOL init_core(struct ExecBase * SysBase)
 	return rc;
 }
 
-static void do_db_IRQ(unsigned int irq, struct pt_regs * regs);
+static void do_db_IRQ(unsigned int irq,
+                      unsigned int virq,
+                      struct pt_regs * regs);
 static void disable_db_irq(unsigned int irq);
 static void enable_db_irq(unsigned int irq);
 
@@ -100,23 +102,28 @@ static inline void mask_and_ack_dbirq(unsigned int irq)
 {
 }
 
-static void do_db_IRQ(unsigned int virq, struct pt_regs * regs)
+static void do_db_IRQ(unsigned int irq, 
+                      unsigned int virq,
+                      struct pt_regs * regs)
 {
 	AROS_GET_SYSBASE
 	struct irqServer     * iServer;
-	struct irqDescriptor * desc = &PLATFORMDATA(SysBase)->irq_desc[virq];
+	struct irqDescriptor * desc = &PLATFORMDATA(SysBase)->irq_desc[irq];
 
-	D(bug("In do_db_IRQ(virq=%d)\n",virq));
+//	D(bug("In do_db_IRQ(irq=%d,virq=%d)\n",irq,virq));
 	{
 		unsigned int status;
-		mask_and_ack_dbirq(virq);
+		mask_and_ack_dbirq(irq);
 		status = desc->id_status & ~(IRQ_REPLAY | IRQ_WAITING);
 		iServer = NULL;
 		if (!(status & (IRQ_DISABLED | IRQ_INPROGRESS))) {
 			iServer = desc->id_server;
 			status |= IRQ_INPROGRESS;
 		} else {
-			D(bug("IRQ server used!? %p",desc->id_server));
+			D(bug("IRQ server used!? %p (irq=%d,virq=%d)\n",
+			      desc->id_server,
+			      irq,
+			      virq));
 		}
 		desc->id_status = status;
 	}
@@ -126,14 +133,14 @@ static void do_db_IRQ(unsigned int virq, struct pt_regs * regs)
 		D(bug("No IRQ handler found!\n"));
 		return;
 	}
-	D(bug("Handling virq %d in handler!\n",virq));
+//	D(bug("Handling virq %d in server now!\n",virq));
 	handle_IRQ_event(virq, regs, iServer);
 
 	{
 		unsigned int status = desc->id_status & ~IRQ_INPROGRESS;
 		desc->id_status = status;
 		if (!(status & IRQ_DISABLED))
-			enable_db_irq(virq);
+			enable_db_irq(irq);
 	}
 }
 
@@ -144,7 +151,7 @@ static void do_db_IRQ(unsigned int virq, struct pt_regs * regs)
 static void handle_IRQ_event(unsigned int virq, struct pt_regs * regs, struct irqServer * is)
 {
 	ULONG imr = RREG_L(IMR);
-	WREG_L(IMR) = 0xffffffff;
+	WREG_L(IMR) = ~0;
 	is->is_handler(virq, is->is_UserData, regs);
 	WREG_L(IMR) = imr;
 }
@@ -196,8 +203,9 @@ extern void sys_Dispatch(struct pt_regs * regs);
 {	
 	AROS_GET_SYSBASE
 	BOOL treated = FALSE;
-	struct irqDescriptor * irq_desc = PLATFORMDATA(SysBase)->irq_desc;
+	struct irqDescriptor * irq_desc = &PLATFORMDATA(SysBase)->irq_desc[irq];
 	ULONG isr = RREG_L(ISR);
+	
 	/*
 	 * Now the problem with this processor is that it multiplexes multiple
 	 * interrupt sources over one IRQ. So I demultiplex them here by
@@ -205,7 +213,7 @@ extern void sys_Dispatch(struct pt_regs * regs);
 	 * level I have.
 	 */
 
-	//D(bug("isr=0x%x,irq=%d\n",isr,irq));
+//	D(bug("isr=0x%x,irq=%d\n",isr,irq));
 	switch (irq) {
 		case 0:
 
@@ -228,27 +236,33 @@ extern void sys_Dispatch(struct pt_regs * regs);
 				volatile UWORD tstat2;
 				treated = TRUE;
 				/*
-				 * Explicitly call the dispatcher here to get Multitasking
-				 * going. Hm, might maybe want to put this into the chain
-				 * of handlers...
-				 */
-				sys_Dispatch(regs);
-				/* This is WRONG, but that's the IRQ I get for timer2 */
-				irq_desc[0].id_count++;
-				irq_desc[0].id_handler->ic_handle(vHidd_IRQ_Timer, regs);
-				/*
 				 * Leave the following two lines as they are.
 				 */
 				tstat2 = RREG_W(TSTAT2);
 				WREG_W(TSTAT2) = 0;
+				/*
+				 * Explicitly call the dispatcher here to get Multitasking
+				 * going. Hm, might maybe want to put this into the chain
+				 * of handlers...
+				 */
+//				D(bug("------------ Task SWITCH!\n"));
+				sys_Dispatch(regs);
+				irq_desc->id_count++;
+
+				irq_desc->id_handler->ic_handle(irq,
+				                                0, /* -> index of vHidd_IRQ_Timer in servers.c */
+				                                regs);
 			}
 
 			if (isr & UART1_F) {
+//				D(bug("-------------- UART IRQ!\n"));
 				/* UART 1 */
 				treated = TRUE;
 
-				irq_desc[irq].id_count++;
-				irq_desc[irq].id_handler->ic_handle(4, regs);
+				irq_desc->id_count++;
+				irq_desc->id_handler->ic_handle(irq, 
+				                                4, /* -> index of vHidd_IRQ_Serial1 in servers.c */ 
+				                                regs);
 			}
 
 			if (isr & WDT_F) {
@@ -257,10 +271,6 @@ extern void sys_Dispatch(struct pt_regs * regs);
 
 			if (isr & RTC_F) {
 				/* real time clock */
-				treated = TRUE;
-
-				irq_desc[irq].id_count++;
-				//irq_desc[irq].id_handler->ic_handle(, regs);
 			}
 
 			if (isr & LCDC_F) {
@@ -273,7 +283,14 @@ extern void sys_Dispatch(struct pt_regs * regs);
 		break;
 		
 		case 5:
-
+			if (isr & PEN_F) {
+//				D(bug("Pen IRQ!\n"));
+				irq_desc->id_count++;
+				irq_desc->id_handler->ic_handle(irq,
+				                                12, /* index of vHidd_IRQ_Mouse in servers.c */
+				                                regs);
+				treated = TRUE;
+			}
 		break;
 		
 		case 6:
@@ -297,7 +314,7 @@ extern void sys_Dispatch(struct pt_regs * regs);
 	if ((isr & PWM2_F) && (irq == ((ilcr >> 4) & 0x07))) {
 		
 	} 
-#endif	 
+#endif
 	 
 	if (FALSE == treated) {
 		D(bug("Untreated: irq=%d,isr=0x%x\n",irq,isr));
@@ -334,7 +351,7 @@ static void irqSetup(struct irqDescriptor irq_desc[], struct ExecBase * SysBase)
 	irq_desc[0].id_server = &VBlank;
 	irq_desc[0].id_depth = 0;
 	irq_desc[0].id_status &= ~IRQ_DISABLED;
-//	irq_desc[0].id_handler->ic_startup(0);
+	irq_desc[0].id_handler->ic_startup(0);
 }
 
 
@@ -346,9 +363,9 @@ BOOL irqSet(int irq, struct irqServer *is, void * isd, struct ExecBase * SysBase
 		                                  MEMF_PUBLIC|MEMF_CLEAR);
 		if (NULL != _is) {
 			rc = TRUE;
-			_is -> is_handler = is->is_handler;
-			_is -> is_name = is->is_name;
-			_is -> is_UserData= isd;
+			_is->is_handler  = is->is_handler;
+			_is->is_name     = is->is_name;
+			_is->is_UserData = isd;
 			PLATFORMDATA(SysBase)->irq_desc[irq].id_server  = _is;
 			PLATFORMDATA(SysBase)->irq_desc[irq].id_depth   = 0;
 			PLATFORMDATA(SysBase)->irq_desc[irq].id_status &= ~IRQ_DISABLED;
