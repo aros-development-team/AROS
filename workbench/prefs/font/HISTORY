@@ -29,3 +29,5 @@
 			found by Georg Steger. Although he commited a fix, new code has been added
 			replacing his (Font should require slightly less stackmemory now)
 			(Developer's release 5)
+0.11 (30.9.2001)	"Font" now listens for IDCMP_VANILLAKEY events, currently only responding
+			to "code 27" - triggered by the "escape" key. (Developer's release 6)
