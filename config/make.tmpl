@@ -1414,6 +1414,10 @@ endif
 setup :: $(LIBDEFS)
 	%mkdirs_q  $(OBJDIR) $(LIBDIR) $(MOD_DIR)
 
+#MM
+setup-morphos :: $(LIBDEFS)
+	%mkdirs_q  $(OBJDIR) $(LIBDIR) $(MOD_DIR)
+
 clean ::
 	-@$(RM) $(OBJDIR)
 
