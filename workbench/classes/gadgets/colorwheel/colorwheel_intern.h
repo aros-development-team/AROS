@@ -75,6 +75,9 @@ struct ColorWheelData
     WORD			knobsavex;
     WORD			knobsavey;
     BYTE			wheeldrawn;
+    BOOL			free_donation;
+    LONG			range;
+    LONG			levels;
 };
 
 
@@ -105,6 +108,8 @@ VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *g
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct ColorWheelBase_intern *ColorWheelBase);
+void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
+void freePens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
 
 
 /***************************************************************************************************/

@@ -246,6 +246,8 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	    data->maxpens  =           GetTagData(WHEEL_MaxPens       , 256	      , msg->ops_AttrList);
 	    
     	    colorwheel_set(cl, o, msg);
+
+    	    allocPens(data, ColorWheelBase);    	    
 	} else {
 	    CoerceMethod(cl, o, OM_DISPOSE);
 	    o = NULL;
@@ -369,6 +371,8 @@ STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
         WaitBlit();
 	FreeBitMap(data->bm);
     }
+    freePens(data, ColorWheelBase);
+    
     DoSuperMethodA(cl, o, msg);
 }
 
@@ -568,7 +572,11 @@ struct IClass *InitColorWheelClass (struct ColorWheelBase_intern * ColorWheelBas
 
     if ((cl = MakeClass("colorwheel.gadget", GADGETCLASS, NULL, sizeof(struct ColorWheelData), 0)))
     {
+#ifdef _AROS
 	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_colorwheelclass);
+#else
+	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC) dispatch_colorwheelclass;
+#endif
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)ColorWheelBase;
 

@@ -55,6 +55,28 @@
 
 /***************************************************************************************************/
 
+const UBYTE Bayer16[16][16] =
+{
+   {   1,235, 59,219, 15,231, 55,215,  2,232, 56,216, 12,228, 52,212},
+   { 129, 65,187,123,143, 79,183,119,130, 66,184,120,140, 76,180,116},
+   {  33,193, 17,251, 47,207, 31,247, 34,194, 18,248, 44,204, 28,244},
+   { 161, 97,145, 81,175,111,159, 95,162, 98,146, 82,172,108,156, 92},
+   {   9,225, 49,209,  5,239, 63,223, 10,226, 50,210,  6,236, 60,220},
+   { 137, 73,177,113,133, 69,191,127,138, 74,178,114,134, 70,188,124},
+   {  41,201, 25,241, 37,197, 21,254, 42,202, 26,242, 38,198, 22,252},
+   { 169,105,153, 89,165,101,149, 85,170,106,154, 90,166,102,150, 86},
+   {   3,233, 57,217, 13,229, 53,213,  0,234, 58,218, 14,230, 54,214},
+   { 131, 67,185,121,141, 77,181,117,128, 64,186,122,142, 78,182,118},
+   {  35,195, 19,249, 45,205, 29,245, 32,192, 16,250, 46,206, 30,246},
+   { 163, 99,147, 83,173,109,157, 93,160, 96,144, 80,174,110,158, 94},
+   {  11,227, 51,211,  7,237, 61,221,  8,224, 48,208,  4,238, 62,222},
+   { 139, 75,179,115,135, 71,189,125,136, 72,176,112,132, 68,190,126},
+   {  43,203, 27,243, 39,199, 23,253, 40,200, 24,240, 36,196, 20,254},
+   { 171,107,155, 91,167,103,151, 87,168,104,152, 88,164,100,148, 84}
+};
+
+/***************************************************************************************************/
+
 BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat)
 {
     DOUBLE d, r, rx, ry, l, h, s;
@@ -242,6 +264,117 @@ STATIC VOID TrueWheel(struct ColorWheelData *data, struct RastPort *rp, struct I
     } /* data->rgbinebuffer == NULL */
 }
 
+/****************************************************************************/
+
+STATIC VOID ClutWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
+		      struct ColorWheelBase_intern *ColorWheelBase)
+{
+    struct ColorWheelHSB 	hsb;
+    struct ColorWheelRGB 	rgb;
+    struct RastPort		tRP;
+    struct BitMap		*tBM;
+    WORD 			x, y, left, top, width, height, bgpen;
+    DOUBLE 			cx, cy;
+    UBYTE			*buf;
+
+    if( (data->donation == NULL) || data->maxpens < 8L )
+    	return;
+
+    left   = box->Left;
+    top    = box->Top;
+    width  = box->Width;
+    height = box->Height;
+    bgpen  = data->dri->dri_Pens[BACKGROUNDPEN];
+    
+    cx = (DOUBLE)width  / 2.0;
+    cy = (DOUBLE)height / 2.0;
+    
+    hsb.cw_Brightness = 0xFFFFFFFF;
+    
+    if( (tBM = AllocBitMap( width,1, GetBitMapAttr( rp->BitMap, BMA_DEPTH ), 0L, NULL )) )
+    {
+    	InitRastPort( &tRP );
+    	tRP.BitMap = tBM;
+    	
+    	if( (buf = AllocVec( (((width + 15) >> 4) << 4), MEMF_ANY )) )
+    	{    		
+    	    LONG range  = data->range,
+	    	 levels = data->levels;
+
+	    for(y = 0; y < height; y++)
+	    {
+		UBYTE  *p = buf;
+	    #if USE_SYMMETRIC_SPEEDUP
+		UBYTE  *p2 = &p[width];
+		
+		for(x = 0; x < width / 2; x++)
+	    #else
+	        for(x = 0; x < width; x++)
+	    #endif
+		{
+		    if (CalcWheelColor(x, y, cx, cy, &hsb.cw_Hue, &hsb.cw_Saturation))
+		    {
+			LONG t, v, r, g, b, base;
+
+		        ConvertHSBToRGB(&hsb, &rgb);
+
+		        t = Bayer16[y % 16][x % 16];
+			t = (t * range) / 255;
+
+		        v = ( rgb.cw_Red >> 24 ) & 0xff;
+
+		        base = (v / range) * range;
+
+		        r = (v - base > t) ? base + range : base;
+
+		        v = ( rgb.cw_Green >> 24 ) & 0xff;
+
+		        base = (v / range) * range;
+
+			g = (v - base > t) ? base + range : base;
+
+		        v = ( rgb.cw_Blue >> 24 ) & 0xff;
+
+		        base = (v / range) * range;
+
+		        b = (v - base > t) ? base + range : base;
+
+	            	r = ((r / range) * levels * levels);
+	            	g /= range;
+	            	b /= range;
+	            	base =  r + (g*levels) + b;
+	            	*p++ = data->donation[ base ];
+
+	            	#if USE_SYMMETRIC_SPEEDUP
+	            	base = r + (b*levels) + g;
+	            	*--p2 = data->donation[ base ];
+	            	#endif
+		    }
+		    else
+		    {
+			*p++ = bgpen;
+			#if USE_SYMMETRIC_SPEEDUP
+			*--p2 = bgpen;
+			#endif
+		    }	
+
+		} /* for(x = 0; x < width; x++) */
+
+		WritePixelLine8( rp, left,top+y, width, buf, &tRP );
+
+	    } /* for(y = 0; y < height; y++) */
+
+	    FreeVec( buf );
+	    
+	} /* if( buf = AllocVec( (((width+15)>>4)<<4), MEMF_ANY ) ) */	
+	
+	WaitBlit();
+	FreeBitMap( tBM );
+	DeinitRastPort( &tRP );
+	
+    } /* if( tBM = AllocBitMap( width,1, GetBitMapAttr( rp->BitMap, BMA_DEPTH ), 0L, NULL ) ) */
+}
+
 /***************************************************************************************************/
 
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
@@ -286,6 +419,7 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    temprp.BitMap = data->bm;
 	       
 	    SetDrMd(&temprp, JAM1);
+	    SetRast( &temprp, data->dri->dri_Pens[ BACKGROUNDPEN ] ); 
 
 	    if (data->frame)
 	    {
@@ -315,6 +449,7 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    {
 		TrueWheel(data, &temprp, &wbox, ColorWheelBase);
 	    } else {
+	        ClutWheel(data, &temprp, &wbox, ColorWheelBase);
 	    }
 
 	    SetAPen(&temprp, data->dri->dri_Pens[SHADOWPEN]);
@@ -445,3 +580,123 @@ void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 }
 
 /***************************************************************************************************/
+
+void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase )
+{
+    if( ! ( CyberGfxBase && GetBitMapAttr( data->scr->RastPort.BitMap, BMA_DEPTH ) >= 15 ) )
+    {		
+	struct ColorMap *cm = data->scr->ViewPort.ColorMap;
+	LONG	 	i;		
+
+	data->free_donation = FALSE;
+
+	if( data->donation )
+	{		
+	    for( i = 0; data->donation[i] != 0xffff; i++ );
+
+	    data->maxpens = i;
+	}
+	else if( (data->donation = (UWORD *) AllocVec( sizeof( UWORD ) * (data->maxpens+1), MEMF_PUBLIC )) )
+	{		
+	    UWORD	*p = data->donation;
+
+	    for( i = 0; i < data->maxpens; i++ )
+	    {
+		UWORD	n;
+
+		n = ObtainPen( cm, -1L, 0, 0, 0, PEN_EXCLUSIVE | PEN_NO_SETCOLOR );
+
+		if( n == 0xffff )
+		    break;
+
+		*p++ = n;				
+	    }
+
+	    *p = 0xffff;
+	    data->maxpens = i;
+
+	    for( i = 6; i >= 2; i-- )
+	    {
+		LONG max = i*i*i;
+
+		if( max <= data->maxpens )
+		{													
+		    for( p = &data->donation[max]; *p != 0xffff; p++ )
+			ReleasePen( cm, *p );
+
+		    data->donation[max] = 0xffff;
+		    data->maxpens = max;
+
+		    break;
+		}	
+	    }				
+
+	    data->free_donation = TRUE;
+	}
+
+	if( data->donation != NULL && data->maxpens >= 8L )
+	{
+	    LONG	 levels, range, r,g,b;
+	    UWORD	*p = data->donation;
+
+	    for(i = 6 ; i >= 2 ; i--)
+	    {
+		if(i * i * i <= data->maxpens)
+	        {
+		    levels = i;
+		    break;
+	    	}
+	    }
+
+	    range = 255 / (levels - 1);
+
+	    for(r = 0, i = 0 ; r < levels ; r++)
+	    {
+		for(g = 0 ; g < levels ; g++)
+		{
+		    for(b = 0 ; b < levels ; b++)
+		    {
+			SetRGB32( &data->scr->ViewPort, *p++, 
+			        (r * range) * 0x01010101, 
+			        (g * range) * 0x01010101,
+			        (b * range) * 0x01010101 );
+		    }	
+		}
+	    }
+
+	    data->range = range;
+	    data->levels = levels;
+	    
+	} /* if( data->donation != NULL && data->maxpens >= 8L ) */
+	else
+	{
+	    freePens( data, ColorWheelBase );
+	}	
+	
+    } /* if( ! ( CyberGfxBase && GetBitMapAttr( data->scr->RastPort.BitMap, BMA_DEPTH ) >= 15 ) ) */	
+}	
+
+/***************************************************************************************************/
+
+void freePens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase )
+{
+    if( data->free_donation )
+    {
+	struct ColorMap *cm = data->scr->ViewPort.ColorMap;
+	UWORD		*p;
+
+	for( p = data->donation; *p != 0xffff; p++ )
+	    ReleasePen( cm, *p );
+
+	FreeVec( data->donation );
+	data->donation = NULL;
+    }	
+}	
+
+/***************************************************************************************************/
+/***************************************************************************************************/
+/***************************************************************************************************/
+/***************************************************************************************************/
+/***************************************************************************************************/
+/***************************************************************************************************/
+
