@@ -52,9 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct RegionRectangleExtChunk *NextChunk;
-
     ASSERT_VALID_PTR(region);
+
+    struct RegionRectangleExtChunk *NextChunk;
 
     if (!region->RegionRectangle)
         return;
@@ -69,8 +69,8 @@
 
         if (NextChunk)
             NextChunk = Chunk(NextChunk->Rects);
-            
-        _DisposeRegionRectangleExtChunk(OldChunk, GfxBase);
+
+        _DisposeRegionRectangleExtChunk(OldChunk);
     }
 
     InitRegion(region);
