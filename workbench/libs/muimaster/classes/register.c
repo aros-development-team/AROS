@@ -97,6 +97,17 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 	right_item_bar_x = _left(obj) + ri->x2 + 1;
 	item_bg_height = data->tab_height;
 	text_y = y + data->ty;
+	item_bar_width = right_item_bar_x - left_item_bar_x + 1;
+	/* fill tab with register background */
+	DoMethod(obj,MUIM_DrawBackground, left_item_bar_x, top_item_bar_y + 4,
+		 item_bar_width, item_bg_height - 4,
+		 left_item_bar_x, top_item_bar_y + 4, 0);
+	DoMethod(obj,MUIM_DrawBackground, left_item_bar_x + 2, top_item_bar_y + 2,
+		 item_bar_width - (2 * 2), 2,
+		 left_item_bar_x + 2, top_item_bar_y + 2, 0);
+	DoMethod(obj,MUIM_DrawBackground, left_item_bar_x + 4, top_item_bar_y + 1,
+		 item_bar_width - (2 * 4), 1,
+		 left_item_bar_x + 4, top_item_bar_y + 1, 0);
     }
     else
     {
@@ -106,27 +117,15 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 	right_item_bar_x = _left(obj) + ri->x2;
 	item_bg_height = data->tab_height - 3;
 	text_y = y + data->ty + 1;
+	item_bar_width = right_item_bar_x - left_item_bar_x + 1;
+	SetAPen(_rp(obj), _pens(obj)[MPEN_BACKGROUND]);
+	RectFill(_rp(obj), left_item_bar_x, top_item_bar_y + 4,
+		 right_item_bar_x, bottom_item_bar_y);
+	RectFill(_rp(obj), left_item_bar_x + 2, top_item_bar_y + 2,
+		 right_item_bar_x - 2, top_item_bar_y + 3);
+	RectFill(_rp(obj), left_item_bar_x + 4, top_item_bar_y + 1,
+		 right_item_bar_x - 4, top_item_bar_y + 1);
     }
-    item_bar_width = right_item_bar_x - left_item_bar_x + 1;
-
-    fitwidth = item_bar_width - TEXTSPACING;
-    fitlen = TextFit(_rp(obj), ri->text, ri->textlen, &extent, NULL, 1, fitwidth, data->tab_height);
-    fitpix = extent.te_Width;
-/*      D(bug("extent for %s (len=%d) in %d pix = %d chars, %d pix [%x,%x,%x]\n", */
-/*  	  ri->text, ri->textlen, fitwidth, fitlen, fitpix, _rp(obj), _rp(obj)->Font, _font(obj))); */
-
-    x = left_item_bar_x + (item_bar_width - fitpix) / 2;
-
-    /* fill tab with register background */
-    DoMethod(obj,MUIM_DrawBackground, left_item_bar_x, top_item_bar_y + 4,
-	     item_bar_width, item_bg_height - 4,
-	     left_item_bar_x, top_item_bar_y + 4, 0);
-    DoMethod(obj,MUIM_DrawBackground, left_item_bar_x + 2, top_item_bar_y + 2,
-	     item_bar_width - (2 * 2), 2,
-	     left_item_bar_x + 2, top_item_bar_y + 2, 0);
-    DoMethod(obj,MUIM_DrawBackground, left_item_bar_x + 4, top_item_bar_y + 1,
-	     item_bar_width - (2 * 4), 1,
-	     left_item_bar_x + 4, top_item_bar_y + 1, 0);
 
     /* top horiz bar */
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
@@ -170,6 +169,12 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
     WritePixel(_rp(obj), right_item_bar_x - 3, top_item_bar_y + 1);
 
     /* text */ 
+    fitwidth = item_bar_width - TEXTSPACING;
+    fitlen = TextFit(_rp(obj), ri->text, ri->textlen, &extent, NULL, 1, fitwidth, data->tab_height);
+    fitpix = extent.te_Width;
+/*      D(bug("extent for %s (len=%d) in %d pix = %d chars, %d pix [%x,%x,%x]\n", */
+/*  	  ri->text, ri->textlen, fitwidth, fitlen, fitpix, _rp(obj), _rp(obj)->Font, _font(obj))); */
+    x = left_item_bar_x + (item_bar_width - fitpix) / 2;
     SetDrMd(_rp(obj), JAM1);
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
     Move(_rp(obj), x, text_y);
