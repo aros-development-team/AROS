@@ -1,0 +1,17 @@
+#   $Id$
+#
+#   Makefile for Mason's workbench icons
+
+include $(TOP)/config/make.cfg
+
+ICONS := Prefs Storage System T Tools Utilities
+ICONFILES := $(foreach f, $(ICONS), $(AROSDIR)/$(f).info)
+
+#MM- masonicons : masonworkbenchicons
+
+#MM
+masonworkbenchicons : $(ICONFILES)
+	@$(NOP)
+	
+$(AROSDIR)/%.info : %.info.src %_N.png %_S.png
+	%makeicon2
