@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <exec/memory.h>
 #include <graphics/gfx.h>
@@ -81,6 +82,14 @@ struct MUI_IconData
 
     struct MUI_EventHandlerNode ehn;
 
+    LONG touch_x;
+    LONG touch_y;
+
+    LONG click_x;
+    LONG click_y;
+
+    struct IconEntry *first_selected; /* the icon which has been selected first or NULL */
+
     /* DoubleClick stuff */
     ULONG last_secs;
     ULONG last_mics;
@@ -96,6 +105,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
     
     obj = (Object *)DoSuperNew(cl, obj,
+	MUIA_Dropable, TRUE,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 
@@ -276,7 +286,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	if (node->dob)
 	{
 	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
-	    DrawIconState(_rp(obj),node->dob,node->filename,_mleft(obj) - data->view_x + node->x, _mtop(obj) - data->view_y + node->y, node->selected, ICONDRAWA_EraseBackground, node->selected?IDS_SELECTED:IDS_NORMAL, TAG_DONE);
+	    DrawIconState(_rp(obj),node->dob,node->filename,_mleft(obj) - data->view_x + node->x, _mtop(obj) - data->view_y + node->y, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
 	}
 	node = Node_Next(node);
     }
@@ -377,6 +387,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			    	node->selected = 0;
 				node = Node_Next(node);
 			    }
+			    data->first_selected = NULL;
 
 			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
 			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
@@ -390,6 +401,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			    	    my >= node->y - data->view_y && my < node->y - data->view_y + node->height)
 			    	{
 				    node->selected = 1;
+				    data->first_selected = node;
 				    break;
 				}
 				node = Node_Next(node);
@@ -406,6 +418,9 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			    }
 
 			    MUI_Redraw(obj,MADF_DRAWOBJECT);
+
+			    data->click_x = mx;
+			    data->click_y = my;
 
 			    return MUI_EventHandlerRC_Eat;
 			}
@@ -425,6 +440,21 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 	    case    IDCMP_MOUSEMOVE:
 		    if (data->mouse_pressed)
 		    {
+		    	int move_x = mx;
+		    	int move_y = my;
+		    	
+			if (data->first_selected && (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2))
+			{
+			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+
+			    data->touch_x = move_x + data->view_x - data->first_selected->x;
+			    data->touch_y = move_y + data->view_y - data->first_selected->y;
+			    DoMethod(obj,MUIM_DoDrag, data->touch_x, data->touch_y, 0);
+			}
+
+			return MUI_EventHandlerRC_Eat;
 		    }
 		    break;
 	}
@@ -433,6 +463,87 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
     return 0;
 }
 
+/**************************************************************************
+ MUIM_CreateDragImage
+**************************************************************************/
+static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct MUI_DragImage *img;
+
+    if (!data->first_selected) DoSuperMethodA(cl,obj,(Msg)msg);
+
+    if ((img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage),MEMF_CLEAR)))
+    {
+    	struct IconEntry *node;
+	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
+
+	node = data->first_selected;
+
+    	img->width = node->width;
+    	img->height = node->height;
+
+    	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
+    	{
+    	    struct RastPort temprp;
+    	    InitRastPort(&temprp);
+    	    temprp.BitMap = img->bm;
+
+	    DrawIconState(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
+    	}
+
+    	img->touchx = msg->touchx;
+    	img->touchy = msg->touchy;
+    	img->flags = 0;
+    }
+    return (ULONG)img;
+}
+
+/**************************************************************************
+ MUIM_DeleteDragImage
+**************************************************************************/
+static ULONG IconList_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+
+    if (!data->first_selected) return DoSuperMethodA(cl,obj,(Msg)msg);
+
+    if (msg->di)
+    {
+	if (msg->di->bm) FreeBitMap(msg->di->bm);
+	FreeVec(msg->di);
+    }
+    return NULL;
+}
+
+/**************************************************************************
+ MUIM_DragQuery
+**************************************************************************/
+static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    if (msg->obj == obj) return MUIV_DragQuery_Accept;
+    return MUIV_DragQuery_Refuse;
+}
+
+/**************************************************************************
+ MUIM_DragDrop
+**************************************************************************/
+static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+
+    if (msg->obj == obj)
+    {
+	if (data->first_selected)
+	{
+	    data->first_selected->x = msg->x - _mleft(obj) + data->view_x - data->touch_x;
+	    data->first_selected->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
+	    MUI_Redraw(obj,MADF_DRAWOBJECT);
+	}
+    }
+
+    return DoSuperMethodA(cl,obj,msg);
+}
 
 #ifndef _AROS
 __asm IPTR IconList_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -455,6 +566,10 @@ AROS_UFH3S(IPTR,IconList_Dispatcher,
 	case MUIM_Draw: return IconList_Draw(cl,obj,(struct MUIP_Draw *)msg);
 	case MUIM_Layout: return IconList_Layout(cl,obj,(struct MUIP_Layout *)msg);
 	case MUIM_HandleEvent: return IconList_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
+	case MUIM_CreateDragImage: return IconList_CreateDragImage(cl,obj,(APTR)msg);
+	case MUIM_DeleteDragImage: return IconList_DeleteDragImage(cl,obj,(APTR)msg);
+	case MUIM_DragQuery: return IconList_DragQuery(cl,obj,(APTR)msg);
+	case MUIM_DragDrop: return IconList_DragDrop(cl,obj,(APTR)msg);
 	case MUIM_IconList_Update: return IconList_Update(cl,obj,(APTR)msg);
 	case MUIM_IconList_Clear: return IconList_Clear(cl,obj,(APTR)msg);
 	case MUIM_IconList_Add: return IconList_Add(cl,obj,(APTR)msg);
