@@ -74,14 +74,15 @@ FILES := \
     testide \
     playoss \
     openlib \
-    dumpmem
+    dumpmem \
+    simplepng
 
 EXEDIR := $(AROS_TESTS)
 
 USER_CFLAGS := -I$(TOP)/workbench/libs
 
 #MM test : test-clib test-zune test-desktop
-#MM test : includes includes-copy
+#MM test : includes includes-copy workbench-datatypes-png-includes
 
 %build_progs mmake=test \
     files=$(FILES) targetdir=$(EXEDIR) \
