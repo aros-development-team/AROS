@@ -277,10 +277,9 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 static ULONG  Numeric_Decrease(struct IClass *cl, Object * obj, struct MUIP_Numeric_Decrease *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
-
-    data->value = CLAMP(data->value - msg->amount, data->min, data->max);
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
-    return 0;
+    LONG newval = CLAMP(data->value - msg->amount, data->min, data->max);
+    if (newval != data->value) set(obj,MUIA_Numeric_Value, newval);
+    return 1;
 }
 
 /**************************************************************************
@@ -289,10 +288,9 @@ static ULONG  Numeric_Decrease(struct IClass *cl, Object * obj, struct MUIP_Nume
 static ULONG Numeric_Increase(struct IClass *cl, Object * obj, struct MUIP_Numeric_Increase *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
-
-    data->value = CLAMP(data->value + msg->amount, data->min, data->max);
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
-    return 0;
+    LONG newval = CLAMP(data->value + msg->amount, data->min, data->max);
+    if (newval != data->value) set(obj,MUIA_Numeric_Value, newval);
+    return 1;
 }
 
 
