@@ -762,7 +762,7 @@ void exec_cinit()
     AllocAbs((ULONG)&_end - 0x000a0000, (APTR)0x000a0000);
 
     /* Protect bootup stack from being allocated */
-    AllocAbs(0x90000,0x3000);
+    AllocAbs(0x3000,0x90000);
 
     rkprintf("Kernel protected\n");
 
