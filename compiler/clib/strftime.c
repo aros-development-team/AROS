@@ -75,6 +75,8 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *ti
 {
     size_t size = 0, tmp;
     
+    if (format == NULL || timeptr == NULL) return 0;
+    
     while (*format)
     {
         if (*format == '%')
