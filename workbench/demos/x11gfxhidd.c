@@ -71,7 +71,6 @@ int main(int argc, char **argv)
 			handleevents(w1);
 /*			test_flood(w1);
 */
-
 #ifdef USE_TWO_WINDOWS		
 			CloseWindow(w2);
 		    }
@@ -104,8 +103,8 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
 			  WA_IDCMP, IDCMP_RAWKEY,
 			  WA_Left,	x,
 			  WA_Top,	y,
-                          WA_Height, 	w,
-                          WA_Width, 	h,
+                          WA_Width, 	w,
+                          WA_Height, 	h,
 			  WA_CustomScreen, screen,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
