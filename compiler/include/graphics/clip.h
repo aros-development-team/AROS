@@ -40,8 +40,8 @@ struct Layer
     struct ClipRect * SuperClipRect;
 
     APTR Window;
-    WORD ScrollX;
-    WORD ScrollY;
+    WORD Scroll_X;
+    WORD Scroll_Y;
 
     struct ClipRect * cr;
     struct ClipRect * cr2;
@@ -72,7 +72,7 @@ struct ClipRect
     struct ClipRect  * prev;
     struct Layer     * lobs;
     struct BitMap    * BitMap;
-    struct Rectangle   Bounds;
+    struct Rectangle   bounds;
 
     void * _p1;
     void * _p2;
