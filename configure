@@ -65,10 +65,10 @@ case "$type" in
 "AmigaOS" )
 	CC="gcc"
 	COMMON_CFLAGS="-Wall -g -O0"
-	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
+	ILDFLAGS="-nostartfiles -nostdlib"
 	ARCH="amiga"
 	KERNEL="m68k-native"
-	MKDEPEND="true"
+	MKDEPEND="makedepend -D__GNUC__ -Dmc68000"
 	;;
 esac
 
