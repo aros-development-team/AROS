@@ -72,6 +72,7 @@
     InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
 
     iofs.IOFS.io_Device = dir->fh_Device;
+    iofs.IOFS.io_Unit = dir->fh_Unit;
 
     /* Save device for EndNotify() purposes */
     notify->nr_Device = dir->fh_Device;
