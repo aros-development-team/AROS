@@ -2064,46 +2064,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 
 }
 
-WORD driver_TextLength (struct RastPort * rp, STRPTR string, ULONG len,
-		    struct GfxBase * GfxBase)
-{
-    struct TextFont *tf = rp->Font;
-    WORD strlen = 0;
-
-    while (len --)
-    {
-	
-	if (tf->tf_Flags & FPF_PROPORTIONAL)
-	{
-	    WORD idx;
-	
-	    if ( *string < tf->tf_LoChar || *string > tf->tf_HiChar)
-	    {
-		idx = NUMCHARS(tf) - 1; /* Last glyph is the default glyph */
-	    }
-	    else
-	    {
-		idx = *string - tf->tf_LoChar;
-	    }
-	    strlen += ((WORD *)tf->tf_CharSpace)[idx];
-	}
-	else
-	{
-	    strlen += tf->tf_XSize;
-	}
-	
-	string ++;
-	
-    }
-    return strlen;
-}
-
-void driver_Move (struct RastPort * rp, LONG x, LONG y,
-		    struct GfxBase * GfxBase)
-{
-    return;
-}
-
 struct prlut8_render_data {
     ULONG pen;
     HIDDT_PixelLUT *pixlut;
@@ -2170,18 +2130,6 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     return do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
 }
 
-void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
-		    struct GfxBase * GfxBase)
-{
-    int i;                              /* Loop variable */
-
-    for(i = 0; i < count-1; i++)
-    {
-	Move(rp, coords[2*i], coords[2*i+1]);
-	Draw(rp, coords[2*i+2], coords[2*i+3]);
-    }
-}
-
 /******** SetRast() ************************************/
 
 
@@ -2216,123 +2164,6 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 }
 
 
-void driver_SetFont (struct RastPort * rp, struct TextFont * font,
-		    struct GfxBase * GfxBase)
-{
-    CorrectDriverData (rp, GfxBase);
-}
-
-
-struct TextFont * driver_OpenFont (struct TextAttr * ta,
-	struct GfxBase * GfxBase)
-{
-    struct TextFont *tf, *best_so_far = NULL;
-    WORD bestmatch = 0;
-   
-    
-    if (!ta->ta_Name)
-	return NULL;
-	
-    /* Search for font in the fontlist */
-    Forbid();
-    ForeachNode(&GfxBase->TextFonts, tf)
-    {
-	if (0 == strcmp(tf->tf_Message.mn_Node.ln_Name, ta->ta_Name))
-	{
-	    UWORD match;
-	    struct TagItem *tags = NULL;
-	    struct TextAttr match_ta =
-	    {
-	    	tf->tf_Message.mn_Node.ln_Name,
-		tf->tf_YSize,
-		tf->tf_Style,
-		tf->tf_Flags
-	    };
-	    
-	    if (ExtendFont(tf, NULL))
-	    {
-	        tags = ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags;
-		
-	    }
-	    else
-	    	tags = NULL;
-	    
-	    match = WeighTAMatch(ta, &match_ta, tags);
-	    if (match > bestmatch)
-	    {
-	    	bestmatch = match;
-		best_so_far = tf;
-	    }
-	}
-    }
-    Permit();
-
-    
-    return best_so_far;
-}
-
-void driver_CloseFont (struct TextFont * tf, struct GfxBase * GfxBase)
-{
-    /* Nobody using the font anymore ? */
-    if (    tf->tf_Accessors == 0
-         && (tf->tf_Flags & FPF_ROMFONT) == 0) /* Don't free ROM fonts */
-    {
-        Forbid();
-	
-	Remove((struct Node *)tf);
-	
-	Permit();
-	
-	/* Free font data */
-	
-	/* !!! NOTE. FreeXXX functions has to match AllocXXX in
-	   workbench/libs/diskfont/diskfont_io.c
-	*/
-
-	if (tf->tf_Style & FSF_COLORFONT)
-	{
-	    UWORD i;
-	    struct ColorFontColors *cfc;
-			
-	    for (i = 0; i < 8; i ++)
-	    {
-		if (CTF(tf)->ctf_CharData[i])
-		    FreeVec(CTF(tf)->ctf_CharData[i]);
-	    }
-	    
-	    cfc = CTF(tf)->ctf_ColorFontColors;
-	    if (cfc)
-	    {
-		if (cfc->cfc_ColorTable)
-		    FreeVec(cfc->cfc_ColorTable);
-				
-		FreeVec(cfc);
-	    }
-
-	}
-	else
-	{
-	    /* Not a colortextfont, only one plane */
-	    FreeVec(tf->tf_CharData);
-	}
-	StripFont(tf);
-	
-	if (tf->tf_CharSpace)
-	    FreeVec(tf->tf_CharSpace);
-	    
-	if (tf->tf_CharKern)
-	    FreeVec(tf->tf_CharKern);
-	    
-	/* All fonts have a tf_CharLoc allocated */    
-	FreeVec(tf->tf_CharLoc); 
-	
-	FreeVec(tf->tf_Message.mn_Node.ln_Name);
-	FreeVec(tf);
-	
-    }
-    return;
-}
-
 BOOL driver_ExtendFont(struct TextFont *tf, struct tfe_hashnode *hn, struct GfxBase *GfxBase)
 {
     if (NULL != hn->font_bitmap)
@@ -2352,32 +2183,6 @@ void driver_StripFont(struct TextFont *tf, struct tfe_hashnode *hn, struct GfxBa
     	OOP_DisposeObject(hn->font_bitmap);
     }
     return;
-}
-
-int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
-{
-
-   /* Do nothing */
-   
-/*    if (!rp->BitMap)
-    {
-	rp->BitMap = AllocMem (sizeof (struct BitMap), MEMF_CLEAR|MEMF_ANY);
-	
-	if (!rp->BitMap)
-	{
-	    return FALSE;
-	}
-    }
-
-*/
-/*    if(!GetDriverData(rp))
-	InitDriverData (rp, GfxBase);
-    else
-	CorrectDriverData(rp, GfxBase);
-
-*/
-
-    return TRUE;
 }
 
 int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
@@ -2416,88 +2221,6 @@ void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
     }
     return;
 }
-
-void driver_InitView(struct View * View, struct GfxBase * GfxBase)
-{
-  /* To Do */
-  View->DxOffset = 0;
-  View->DyOffset = 0;
-} /* driver_InitView */
-
-void driver_InitVPort(struct ViewPort * ViewPort, struct GfxBase * GfxBase)
-{
-  /* To Do (maybe even an unnecessary function) */
-} /* driver_InitVPort */
-
-ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
-			struct GfxBase * GfxBase)
-{
-
-    CorrectDriverData (rp, GfxBase);
-
-#warning TODO
-
-    /* For now we do not support bit masking */
-    return FALSE;
-    
-}
-
-void driver_WaitTOF (struct GfxBase * GfxBase)
-{
-}
-
-void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
-	    struct GfxBase * GfxBase)
-{
-    LONG t;
-
-    for (t = 0; t < count; t ++ )
-    {
-	driver_SetRGB32 (vp, t
-	    , (colors[t] & 0x0F00) << 20
-	    , (colors[t] & 0x00F0) << 24
-	    , (colors[t] & 0x000F) << 28
-	    , GfxBase
-	);
-        
-    }
-} /* driver_LoadRGB4 */
-
-void driver_LoadRGB32(struct ViewPort * vp, const ULONG * table,
-	    struct GfxBase * GfxBase)
-{
-    LONG  t;
-    ULONG count;
-    
-    EnterFunc(bug("driver_LoadRGB32(vp=%p, table=%p)\n", vp, table));
-    
-    /* table is terminated by a count value of 0 */
-   
-    while ((count = (*table) >> 16))
-    {
-        ULONG first;
-	
-	count = (*table) >> 16;
-	first = *table & 0xFFFF;
-
-	table ++;
-
-	for (t=0; t<count; t++)
-	{
-	    driver_SetRGB32 (vp, t + first
-		, table[0]
-		, table[1]
-		, table[2]
-		, GfxBase
-	    );
-
-	    table += 3;
-	}
-
-    } /* while (*table) */
-    ReturnVoid("driver_LoadRGB32");
-
-} /* driver_LoadRGB32 */
 
 struct BitMap *driver_AllocScreenBitMap(ULONG modeid, struct GfxBase *GfxBase)
 {
@@ -3398,20 +3121,6 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
 
 } /* driver_SetRGB32 */
 
-void driver_SetRGB4 (struct ViewPort * vp, ULONG color,
-	    ULONG red, ULONG green, ULONG blue,
-	    struct GfxBase * GfxBase)
-{
- 	driver_SetRGB32 (vp, color
-	    , (ULONG)(red<<28)
-	    , (ULONG)(green<<28)
-	    , (ULONG)(blue<<28)
-	    , GfxBase
-	);
-}
-
-
-
 struct wp8_render_data {
     UBYTE *array;
     ULONG modulo;
@@ -3979,49 +3688,25 @@ VOID driver_WriteChunkyPixels(struct RastPort * rp, ULONG xstart, ULONG ystart,
 		ULONG xstop, ULONG ystop, UBYTE * array,
 		LONG bytesperrow, struct GfxBase *GfxBase)
 {
-    driver_WritePixelArray8(rp 
-		, xstart, ystart
-		, xstop, ystop
-		, array, NULL
-		, GfxBase
-    );
+    LONG pixwritten;
 
-}
-
-LONG driver_ReadPixelLine8 (struct RastPort * rp, ULONG xstart,
-			    ULONG ystart, ULONG width,
-			    UBYTE * array, struct RastPort * temprp,
-			    struct GfxBase *GfxBase)
-{
-    /* We are lazy, and waste som cycles to be able to reuse what we've
-       allready done
-     */
+#warning Do not use HIDD_BM_PIXTAB, because object might have no pixtab
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
     
-    return driver_ReadPixelArray8(rp
-    	, xstart, ystart
-	, xstart + width - 1, ystart
-	, array, temprp
-	, GfxBase
-    );
-}		    
+    EnterFunc(bug("driver_WritePixelArray8(%p, %d, %d, %d, %d)\n",
+    	rp, xstart, ystart, xstop, ystop));
+	
+  
+    pixwritten = write_pixels_8(rp, array
+    	, bytesperrow
+	, xstart, ystart
+	, xstop, ystop
+	, &pixlut
+	, GfxBase);
 
+    ReturnInt("driver_WriteChunkyPixels", LONG, pixwritten);
 
-LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
-			    ULONG ystart, ULONG width,
-			    UBYTE * array, struct RastPort * temprp,
-			    struct GfxBase *GfxBase)
-{
-    /* We are lazy, and waste som cycles to be able to reuse what we've
-       allready done
-     */
-    return driver_WritePixelArray8(rp
-    	, xstart, ystart
-	, xstart + width - 1, ystart
-	, array, temprp
-	, GfxBase
-    );
 }
-
 
 struct layerhookmsg
 {
