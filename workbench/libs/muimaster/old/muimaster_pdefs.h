@@ -1,13 +1,12 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #ifndef _MUIMASTER_PDEFS_H
 #define _MUIMASTER_PDEFS_H
-
-/*
-    (C) 1995-2000 AROS - The Amiga Research OS
-    $Id$
-
-    Desc: Private defines for muimaster.library
-    Lang: english
-*/
 
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>

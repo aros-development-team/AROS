@@ -1,3 +1,11 @@
+/* 
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002, The AROS Development Team.
+    All rights reserved.
+
+    $Id$
+*/
+
 #include <config.h>
 
 #include <gdk/gdk.h>

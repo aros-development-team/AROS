@@ -1,3 +1,10 @@
+/*
+    Copyright © 2002, The AROS Development Team. 
+    All rights reserved.
+    
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <intuition/classes.h>
 #include <utility/tagitem.h>
