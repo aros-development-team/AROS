@@ -143,7 +143,7 @@ AROS_SHA(,STRING, /F, NULL))
 	UnLock(lock);
     }
 
-    return (RETURN_OK);
+    SHReturn(RETURN_OK);
 
     AROS_SHCOMMAND_EXIT
 } /* main */
