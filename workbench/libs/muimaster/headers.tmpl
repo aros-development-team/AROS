@@ -1,0 +1,17 @@
+##begin clib
+
+#ifndef INTUITION_CLASSUSR_H
+#   include <intuition/classusr.h>
+#endif
+
+#ifndef UTILITIY_TAGITEM_H
+#   include <utility/tagitem.h>
+#endif
+
+/* Prototypes for stubs in mui.lib */
+
+APTR 	MUI_AllocAslRequestTags(unsigned long reqType, Tag tag1, ...);
+BOOL 	MUI_AslRequestTags(APTR requester, Tag tag1, ...);
+Object *MUI_NewObject(char *classname, Tag tag1, ...);
+
+##end clib
