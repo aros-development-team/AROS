@@ -15,11 +15,49 @@
 
 static const char version[] = "$VER: makedir 41.4 (12.11.2000)\n";
 
-/* TODO:  INSERT documentation here */
+/******************************************************************************
 
-/* HISTORY:  12 November 2000,  SDuvan  --  Implmented multiple target support,
-                                            rewrote to live up to AmigaDOS
-					    semantics */
+    NAME
+
+        MakeDir
+
+    SYNOPSIS
+
+        NAME/M
+
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Create new empty directories with specified names.
+
+    INPUTS
+
+
+    RESULT
+
+    NOTES
+
+        MakeDir does not create an icon for a new directory.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+    12 November 2000,  SDuvan  --  Implmented multiple target support,
+                                   rewrote to live up to AmigaDOS
+				   semantics 
+
+*******************************************************************************/
+
 
 enum
 {
