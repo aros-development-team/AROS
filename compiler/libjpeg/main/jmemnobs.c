@@ -1,5 +1,8 @@
 /*
     $Id$
+    
+    Changes:
+    1.4.03: Use AllocVec/FreeVec instead of malloc/free because of problems in jpeg.datatype
 */
 
 /*
@@ -19,10 +22,18 @@
  * Note that the max_memory_to_use option is ignored by this implementation.
  */
 
+#include <proto/exec.h>
+#include <exec/memory.h>
+
 #define JPEG_INTERNALS
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jmemsys.h"		/* import the system-dependent declarations */
+
+#include "debug.h"
+
+#define malloc(size) AllocVec((size), MEMF_ANY)
+#define free(mem) FreeVec(mem)
 
 #ifndef HAVE_STDLIB_H		/* <stdlib.h> should declare malloc(),free() */
 extern void * malloc JPP((size_t size));
@@ -38,6 +49,7 @@ extern void free JPP((void *ptr));
 JGLOBAL(void *)
 jpeg_get_small (j_common_ptr cinfo, size_t sizeofobject)
 {
+  D(bug("libjpeg: alloc small %ld\n", (long)sizeofobject));
   return (void *) malloc(sizeofobject);
 }
 
@@ -58,6 +70,7 @@ jpeg_free_small (j_common_ptr cinfo, void * object, size_t sizeofobject)
 JGLOBAL(void FAR *)
 jpeg_get_large (j_common_ptr cinfo, size_t sizeofobject)
 {
+  D(bug("libjpeg: alloc large %ld\n", (long)sizeofobject));
   return (void FAR *) malloc(sizeofobject);
 }
 
