@@ -123,11 +123,9 @@ STATIC ULONG NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1
 STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     struct Gadget *g;
-    struct TagItem *attrs;
+    const struct TagItem *attrs = msg->ops_AttrList;
     struct TagItem *ti;
     struct Picture_Data *pd;
-
-    attrs = msg->ops_AttrList;
 
 #if 0	/* DTA_SourceType is handled by subclasses */
     IPTR sourcetype;
@@ -240,13 +238,12 @@ STATIC IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Picture_Data *pd;
-    struct TagItem *tl;
+    const struct TagItem *tl = msg->ops_AttrList;
     struct TagItem *ti;
     IPTR RetVal;
     struct RastPort *rp;
 
     pd=(struct Picture_Data *) INST_DATA(cl, g);
-    tl=msg->ops_AttrList;
     RetVal=0;
 
     while((ti=NextTagItem(&tl)))
@@ -724,7 +721,7 @@ STATIC IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpI
 		    
 		    if ((newtoph != (LONG)toph) || (newtopv != (LONG)topv))
 		    {
-		    	NotifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+		    	NotifyAttrChanges((Object *) g, msg->gpi_GInfo, 0,
 					   GA_ID, g->GadgetID,
 					   DTA_TopHoriz, newtoph,
 					   DTA_TopVert, newtopv,
@@ -750,7 +747,7 @@ STATIC IPTR DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg)
     IPTR RetVal;
 
     D(bug("picture.datatype/GM_LAYOUT: Initial %d\n", (int)msg->gpl_Initial));
-    NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
+    NotifyAttrChanges((Object *) g, msg->gpl_GInfo, 0,
    				 GA_ID, g->GadgetID,
    				 DTA_Busy, TRUE,
    				 TAG_DONE);
@@ -768,7 +765,7 @@ STATIC IPTR DT_ProcLayout(struct IClass *cl, struct Gadget *g, struct gpLayout *
 {
     IPTR RetVal;
 
-    NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
+    NotifyAttrChanges((Object *) g, msg->gpl_GInfo, 0,
    				 GA_ID, g->GadgetID,
    				 DTA_Busy, TRUE,
    				 TAG_DONE);
@@ -961,7 +958,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	si->si_TotHoriz = Width;
 #endif
     
-	NotifyAttrChanges((Object *) g, msg->gpl_GInfo, NULL,
+	NotifyAttrChanges((Object *) g, msg->gpl_GInfo, 0,
 				     GA_ID, g->GadgetID,
     
 				     DTA_VisibleVert, domain->Height,
@@ -1303,7 +1300,7 @@ STATIC IPTR DT_ObtainDrawInfo(struct IClass *cl, struct Gadget *g, struct opSet 
 
     if( !pd->UseAsImage )
     {
-    	RetVal = DoMethod( (Object *)g, DTM_PROCLAYOUT, NULL, 1L );
+    	RetVal = DoMethod( (Object *)g, DTM_PROCLAYOUT, (IPTR) NULL, 1L );
     	if( RetVal )
 	{
     	    pd->UseAsImage = TRUE;
@@ -1557,7 +1554,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
 
 struct IClass *DT_MakeClass(struct Library *picturebase)
 {
-    struct IClass *cl = MakeClass("picture.datatype", DATATYPESCLASS, NULL, sizeof(struct Picture_Data), NULL);
+    struct IClass *cl = MakeClass("picture.datatype", DATATYPESCLASS, NULL, sizeof(struct Picture_Data), 0);
 
     if (cl)
     {
