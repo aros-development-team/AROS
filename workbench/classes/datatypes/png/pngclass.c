@@ -63,7 +63,7 @@ struct PNGStuff
 
 /**************************************************************************************************/
 
-static png_voidp my_malloc_fn(png_structp png_ptr, png_size_t size)
+png_voidp my_malloc_fn(png_structp png_ptr, png_size_t size)
 {
     png_voidp ret;
     
@@ -78,30 +78,30 @@ static png_voidp my_malloc_fn(png_structp png_ptr, png_size_t size)
 
 /**************************************************************************************************/
 
-static void my_free_fn(png_structp png_ptr, png_voidp ptr)
+void my_free_fn(png_structp png_ptr, png_voidp ptr)
 {
     if (ptr) FreeVec(ptr);
 }
 
 /**************************************************************************************************/
 
-static void my_error_fn(png_structp png_ptr, png_const_charp error_msg)
+void my_error_fn(png_structp png_ptr, png_const_charp error_msg)
 {
     D(bug("PNG error: %s\n", error_msg ? error_msg : ""));
     
-    if (png_ptr) longjmp(png_jmpbuf(png_ptr), 1);
+    if (png_ptr && png_jmpbuf(png_ptr)) longjmp(png_jmpbuf(png_ptr), 1);
 }
 
 /**************************************************************************************************/
 
-static void my_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
+void my_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 {
     D(bug("PNG warning: %s\n", warning_msg ? warning_msg : ""));
 }
 
 /**************************************************************************************************/
 
-static void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
+void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
     BPTR    	file = png_get_io_ptr(png_ptr);
     png_uint_32 count;
@@ -198,7 +198,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     }
     
     png.png_end_info_ptr = png_create_info_struct(png.png_ptr);
-    if (!png.png_info_ptr)
+    if (!png.png_end_info_ptr)
     {
     	D(bug("png.datatype/LoadPNG():Can't create png end info struct!\n"));
     	png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, NULL);
@@ -409,7 +409,8 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	}
 
 	buffer = AllocVec(buffersize, 0);
-
+    	if (!buffer) png_error(png.png_ptr, "Out of memory!");
+	
 	while(png.png_num_lace_passes--)
 	{
     	    for(y = 0, buf = buffer; y < png.png_height; y++, buf += modulo)
