@@ -1,6 +1,9 @@
 # $Id$
 TOP=../..
 
+# Use OS's own includes over the ones from AROS
+SPECIAL_CFLAGS=-I/usr/include
+
 include $(TOP)/config/make.cfg
 
 FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
