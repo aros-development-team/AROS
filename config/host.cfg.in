@@ -40,6 +40,8 @@ IF		:= @IF@
 TEST		:= @TEST@
 CAT		:= @CAT@
 BISON		:= @BISON@
+PNGTOPNM    	:= @PNGTOPNM@
+PPMTOILBM   	:= @PPMTOILBM@
 
 GUI_LIBDIR	:= @aros_gui_libdir@
 GUI_LDFLAGS	:= @aros_gui_ldflags@
