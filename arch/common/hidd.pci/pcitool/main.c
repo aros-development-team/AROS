@@ -222,14 +222,6 @@ AROS_UFH3(void, select_function,
 	set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf, 79));
 	vendor = val;
 
-	if (vendor == 0x10de)
-	{
-	    HIDD_PCIDriver_UnmapPCI(drv, 
-		HIDD_PCIDriver_MapPCI(drv, 0xd0000000, 1000),
-		1000);
-	    
-	}
-
 	OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(ProductID, MUIA_Text_Contents, buf);
