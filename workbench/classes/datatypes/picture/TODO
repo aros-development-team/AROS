@@ -1,3 +1,5 @@
+Last status update: 24. Jan 2003
+
 picture.datatype is an external class. So it has only very few
 functions: some library-support and the class-dispatcher.
 But the methods and properties of the class must be written.
@@ -12,43 +14,54 @@ documentation                   Hey, I am a programmer, not an author ;)
 dispatcher-function             100% done
 
 methods:                        
-    OM_NEW			80% done
-    OM_DISPOSE			80% done
+    OM_NEW			OK
+    OM_DISPOSE			OK
     OM_UPDATE			part of OM_SET
-    OM_SET			90% done
-    OM_GET			90% done
-    GM_RENDER
-    GM_LAYOUT
-    GM_GOACTIVE
-    GM_HANDLEINPUT
-    DTM_CLEARSELECTED
-    DTM_COPY
-    DTM_SELECT
-    DTM_WRITE
-    DTM_PRINT
-    GM_HITTEST
-    DTM_PROCLAYOUT
-    DTM_FRAMEBOX    
+    OM_SET			OK, see below
+    OM_GET			OK, see below
+    GM_RENDER                   OK
+    GM_LAYOUT                   uses DTM_ASYNCLAYOUT
+    GM_GOACTIVE                 superclass
+    GM_HANDLEINPUT              superclass
+    GM_HITTEST                  superclass
+    DTM_PROCLAYOUT              uses DTM_ASYNCLAYOUT
+    DTM_ASYNCLAYOUT             OK, improvements in speed and quality possible
+    DTM_FRAMEBOX                superclass
+    DTM_SELECT                  ?
+    DTM_CLEARSELECTED           ?
+    DTM_COPY                    missing
+    DTM_PRINT                   missing
+    DTM_WRITE                   missing
+    PDTM_WRITEPIXELARRAY        OK
+    PDTM_READPIXELARRAY         missing
+    PDTM_SCALE                  missing
 
 The following attributes must be supported:
-    OBP_Precision         (I)
-    DTA_Methods           (G)
-    PDTA_ModeID           (ISG)
-    PDTA_BitMapHeader     (G)
-    PDTA_BitMap           (ISG)
-    PDTA_ColorRegisters   (G)
-    PDTA_CRegs            (G)
-    PDTA_GRegs            (G)
-    PDTA_ColorTable       (G)
-    PDTA_ColorTable2      (G)
-    PDTA_Allocated        (G)
-    PDTA_NumColors        (ISG)
-    PDTA_NumAlloc         (G)
-    PDTA_Remap            (I)
-    PDTA_Screen           (IS)
-    PDTA_FreeSourceBitMap (IS)
-    PDTA_Grab             (ISG)
-    PDTA_DestBitMap       (G)
-    PDTA_ClassBitMap      (ISG)
-    PDTA_NumSparse        (I)
-    PDTA_SparseTable      (I)
+    OBP_Precision         (I)   OK
+    DTA_Methods           (G)   OK
+    PDTA_ModeID           (ISG) OK, but not used internally
+    PDTA_BitMapHeader     (G)   OK
+    PDTA_BitMap           (ISG) OK
+    PDTA_DestBitMap       (G)   OK, with limitations
+    PDTA_ClassBitMap      (ISG) OK, can't be used in parallel with PDTA_BitMap
+    PDTA_Screen           (ISG) OK, alternate mapping dest ? (additional Get)
+    PDTA_ColorRegisters   (G)   OK, but not used internally
+    PDTA_CRegs            (G)   OK
+    PDTA_GRegs            (G)   OK
+    PDTA_ColorTable       (G)   OK ? private
+    PDTA_ColorTable2      (G)   OK ? private
+    PDTA_NumColors        (ISG) OK
+    PDTA_NumAlloc         (G)   OK
+    PDTA_Allocated        (G)   not implemented, obsolete (wasn't clearly defined)
+    PDTA_SparseTable      (I)   OK
+    PDTA_NumSparse        (I)   OK
+    PDTA_Grab             (ISG) OK ?
+    PDTA_FreeSourceBitMap (ISG) OK (additional Get)
+    PDTA_Remap            (I)   OK, set get ?
+    PDTA_UseFriendBitMap  (ISG) OK, but not used internally
+    PDTA_SourceMode       (ISG) OK, but ignored internally
+    PDTA_DestMode         (ISG) OK, but ignored internally
+    PDTA_MaxDitherPens    (ISG) OK ?
+    PDTA_DitherQuality    (ISG) OK ?
+    PDTA_AllocatedPens    (G)   OK ?
+    PDTA_ScaleQuality     (ISG) OK, but not used internally
