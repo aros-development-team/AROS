@@ -22,6 +22,7 @@
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 #define LC_NO_EXPUNGELIB
+#define LC_LIBBASESIZE (sizeof(LIBBASETYPE))
 
 #include <libcore/libheader.c>
 
