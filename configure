@@ -10,6 +10,7 @@ COMMON_CFLAGS="-g"
 RANLIB="ranlib"
 X11LIBDIR=""
 X11INCDIR=""
+MKDEPEND="makedepend"
 
 # Flags to link AROS binaries (ie. binaries which are to be started
 # inside AROS). What we need is something like a shared lib: All
@@ -34,6 +35,7 @@ case "$type" in
 	ARCH="linux"
 	KERNEL="i386-emul"
 	X11LIBDIR="/usr/X11R6/lib"
+	MKDEPEND="makedepend -D__GNUC__ -Di386"
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa -g"
@@ -95,3 +97,4 @@ else
     echo "X11CCFLAGS =" >> $1
 fi
 
+echo "MKDEPEND = $MKDEPEND" >> $1

@@ -142,15 +142,12 @@ include/clib/console_protos.h: devs/cdinputhandler.c devs/rawkeyconvert.c
 
 .FORCE:
 
-$(GENDIR)/test/%.o: test/%.c
-	$(CC) $(CFLAGS) -I ./libs $^ -c -o $@
-
 $(GENDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@
+	$(CC) $(CFLAGS) $< -c -o $@
 
-$(TESTDIR)/devicetest: $(GENDIR)/test/devicetest.o $(GENDIR)/test/dummydev.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $(GENDIR)/test/devicetest.o $(GENDIR)/test/dummydev.o $(LIBS) -o $@
+$(GENDIR)/%.d: %.c
+	@$(RM) $@
+	@touch $@
+	@$(MKDEPEND) -f$@ -p$(GENDIR)/ -- $(CFLAGS) -- $^
 
-$(TESTDIR)/% : $(GENDIR)/test/%.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) -o $@
-
+include $(GENDIR)/arosshell.d
