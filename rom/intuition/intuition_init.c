@@ -148,13 +148,6 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	   struct LIBBASETYPE *, LIBBASE, 1, Intuition)
 {
     AROS_LIBFUNC_INIT
-    struct TagItem screenTags[] =
-    {
-	{ SA_Depth, 4			},
-	{ SA_Type,  WBENCHSCREEN	},
-	{ SA_Title, (IPTR)"Workbench"   },
-	{ TAG_END, 0 }
-    };
 
     /* Keep compiler happy */
     version=0;
@@ -238,22 +231,6 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
     }
 
-/* This MUST be moved to after dosBoot process calls InitHidds() (dos/inithidds.c)
-    
-    if (!GetPrivIBase(LIBBASE)->WorkBench)
-    {
-	struct Screen * screen;
-
-	screen = OpenScreenTagList (NULL, screenTags);
-
-	if (!screen)
-	    return NULL;
-
-	LIBBASE->FirstScreen =
-	    LIBBASE->ActiveScreen =
-	    GetPrivIBase(LIBBASE)->WorkBench = screen;
-    }
-*/
     if (!intui_open (LIBBASE))
 	return NULL;
 
@@ -299,7 +276,9 @@ AROS_LH0(BPTR, expunge,
     }
 
 
-    /* Free unecessary memory */
+    /* Free unecessary memory. */
+    
+    /* The WB screen is opened in ./lateintuiinit.c */
     if (GetPrivIBase(LIBBASE)->WorkBench)
 	CloseScreen (GetPrivIBase(LIBBASE)->WorkBench);
     
