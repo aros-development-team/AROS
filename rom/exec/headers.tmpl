@@ -8,12 +8,6 @@
 #ifndef SysBase
 extern struct ExecBase * SysBase;
 #endif
-##end clib
-
-##begin proto
-#ifndef SysBase
-extern struct ExecBase * SysBase;
-#endif
 
 #ifndef  EXEC_TYPES_H
 #include <exec/types.h>
@@ -35,6 +29,16 @@ extern struct ExecBase * SysBase;
 #endif
 #ifndef  EXEC_SEMAPHORES_H
 #include <exec/semaphores.h>
+#endif
+#ifndef  EXEC_INTERRUPTS_H
+#include <exec/interrupts.h>
+#endif
+
+##end clib
+
+##begin proto
+#ifndef SysBase
+extern struct ExecBase * SysBase;
 #endif
 
 ##end proto
