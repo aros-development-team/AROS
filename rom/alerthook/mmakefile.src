@@ -1,0 +1,59 @@
+# $Id$
+TOP=../..
+CURDIR=rom/alerthook
+
+# Use OS's own includes over the ones from AROS
+SPECIAL_CFLAGS=-I/usr/include
+
+include $(TOP)/config/make.cfg
+
+OBJDIR=$(OSGENDIR)/alerthook
+
+FILES := alerthook
+
+# Do the magic required for function replacement.
+# Keep this value for later
+ALL_FILES := $(FILES)
+
+%prepare_replace rom/alerthook
+%filter_replace FILES
+
+OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+#MM kernel-alerthook-module : setup includes
+kernel-alerthook-module : show-flags $(OSMODDIR)/alert.hook
+	@$(NOP)
+
+$(OSMODDIR)/alert.hook : $(OBJS)
+	@$(ECHO) "Building $@ ..."
+	@$(CC) $(ILDFLAGS) $(OBJS) $(GENMAP) alert.map -o $@ 2>&1|tee alert.err
+	@if $(TEST) ! -s alert.err ; then rm alert.err ; else true ; fi
+	@strip $@
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR) $(OBJDIR)
+
+show-flags :
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+%asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
+
+%ctoasm_q
+
+%additional_objs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+%common
+%include_deps
