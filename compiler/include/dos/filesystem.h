@@ -75,7 +75,7 @@ struct IFS_OPEN
 struct IFS_READ_WRITE
 {
       /* The buffer for the data to read/to write. */
-    void * io_Buffer;
+    char * io_Buffer;
       /* The length of the buffer. This is filled by the filesystem handler
          with the number of bytes actually read/written. */
     LONG   io_Length;
@@ -88,11 +88,9 @@ struct IFS_READ_WRITE
 #define FSA_SEEK 5
 struct IFS_SEEK
 {
-      /* TRUE, if offset is negative, otherwise FALSE. */
-    LONG io_Negative;
       /* Offset from position, specified as mode. This is filled by the
          filehandler with the old position in the file. */
-    LONG io_Offset;
+      QUAD io_Offset; 
       /* Seek mode as defined in <dos/dos.h> (OFFSET_#?). */
     LONG io_SeekMode;
 };
