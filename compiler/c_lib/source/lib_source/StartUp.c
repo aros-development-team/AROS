@@ -1,5 +1,5 @@
 /*
-**	$VER: StartUp.c 37.11 (24.6.97)
+**	$VER: StartUp.c 37.14 (13.8.97)
 **
 **	Library startup-code and function table definition
 **
@@ -27,31 +27,23 @@
 
 #include "SampleFuncs.h"
 
-AROS_LH2(struct LIBBASETYPE *, InitLib,
-    AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
+AROS_LH2(LIBBASETYPEPTR, InitLib,
+    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
     AROS_LHA(BPTR,                 segList, A0),
     struct ExecBase *, SysBase, 0, BASENAME
 );
-AROS_LH1 (struct LIBBASETYPE *, OpenLib,
+AROS_LH1 (LIBBASETYPEPTR, OpenLib,
     AROS_LHA (ULONG, version, D0),
-    struct LIBBASETYPE *, LIBBASE, 1, BASENAME
+    LIBBASETYPEPTR, LIBBASE, 1, BASENAME
 );
-AROS_LH0 (struct LIBBASETYPE *, CloseLib,
-    struct LIBBASETYPE *, LIBBASE, 2, BASENAME
+AROS_LH0 (LIBBASETYPEPTR, CloseLib,
+    LIBBASETYPEPTR, LIBBASE, 2, BASENAME
 );
-AROS_LH0 (struct LIBBASETYPE *, ExpungeLib,
-    struct LIBBASETYPE *, LIBBASE, 3, BASENAME
+AROS_LH0 (LIBBASETYPEPTR, ExpungeLib,
+    LIBBASETYPEPTR, LIBBASE, 3, BASENAME
 );
-AROS_LH0 (struct LIBBASETYPE *, ExtFuncLib,
-    struct LIBBASETYPE *, LIBBASE, 4, BASENAME
-);
-
-/* Declare functions for FuncTab[] */
-AROS_LH3 (struct LIBBASETYPE *, EXF_TestRequest,
-    AROS_LHA (UBYTE *, title_d1, D1),
-    AROS_LHA (UBYTE *, body,     D2),
-    AROS_LHA (UBYTE *, gadgets,  D3),
-    struct LIBBASETYPE *, LIBBASE, 5, BASENAME
+AROS_LH0 (LIBBASETYPEPTR, ExtFuncLib,
+    LIBBASETYPEPTR, LIBBASE, 4, BASENAME
 );
 
 LONG ASM LibStart(void)
@@ -73,37 +65,26 @@ const InitTab =
     sizeof(struct LIBBASETYPE),
     &FuncTab[0],
     &DataTab,
-#ifndef _AROS
-    InitLib
-#else
     (APTR) AROS_SLIB_ENTRY(InitLib, BASENAME)
-#endif
 };
 
 APTR const FuncTab [] =
 {
-#ifndef _AROS
-    OpenLib,
-    CloseLib,
-    ExpungeLib,
-    ExtFuncLib,
-
-    EXF_TestRequest,  /* add your own functions here */
-#else
     (APTR) AROS_SLIB_ENTRY(OpenLib, BASENAME),
     (APTR) AROS_SLIB_ENTRY(CloseLib, BASENAME),
     (APTR) AROS_SLIB_ENTRY(ExpungeLib, BASENAME),
     (APTR) AROS_SLIB_ENTRY(ExtFuncLib, BASENAME),
+
+    /* add your own functions here */
     (APTR) AROS_SLIB_ENTRY(EXF_TestRequest, BASENAME),
-#endif
 
     (APTR) ((LONG)-1)
 };
 
 
-AROS_LH2(struct LIBBASETYPE *, InitLib,
-    AROS_LHA(struct LIBBASETYPE *, exb,     D0),
-    AROS_LHA(BPTR,                 segList, A0),
+AROS_LH2(LIBBASETYPEPTR, InitLib,
+    AROS_LHA(LIBBASETYPEPTR, exb,     D0),
+    AROS_LHA(BPTR,           segList, A0),
     struct ExecBase *, sysBase, 0, BASENAME)
 {
     LIBBASE = exb;
@@ -121,9 +102,9 @@ AROS_LH2(struct LIBBASETYPE *, InitLib,
     return (NULL);
 }
 
-AROS_LH1 (struct LIBBASETYPE *, OpenLib,
+AROS_LH1 (LIBBASETYPEPTR, OpenLib,
     AROS_LHA (ULONG, version, D0),
-    struct LIBBASETYPE *, LIBBASE, 1, BASENAME
+    LIBBASETYPEPTR, LIBBASE, 1, BASENAME
 )
 {
 #ifdef __MAXON__
@@ -138,8 +119,8 @@ AROS_LH1 (struct LIBBASETYPE *, OpenLib,
     return(LIBBASE);
 }
 
-AROS_LH0 (struct LIBBASETYPE *, CloseLib,
-    struct LIBBASETYPE *, LIBBASE, 2, BASENAME
+AROS_LH0 (LIBBASETYPEPTR, CloseLib,
+    LIBBASETYPEPTR, LIBBASE, 2, BASENAME
 )
 {
     LIBBASE->exb_LibNode.lib_OpenCnt--;
@@ -155,8 +136,8 @@ AROS_LH0 (struct LIBBASETYPE *, CloseLib,
     return(NULL);
 }
 
-AROS_LH0 (struct LIBBASETYPE *, ExpungeLib,
-    struct LIBBASETYPE *, LIBBASE, 3, BASENAME
+AROS_LH0 (LIBBASETYPEPTR, ExpungeLib,
+    LIBBASETYPEPTR, LIBBASE, 3, BASENAME
 )
 {
     APTR seglist;
@@ -191,14 +172,14 @@ AROS_LH0 (struct LIBBASETYPE *, ExpungeLib,
     return(NULL);
 }
 
-AROS_LH0 (struct LIBBASETYPE *, ExtFuncLib,
-    struct LIBBASETYPE *, LIBBASE, 4, BASENAME
+AROS_LH0 (LIBBASETYPEPTR, ExtFuncLib,
+    LIBBASETYPEPTR, LIBBASE, 4, BASENAME
 )
 {
     return(NULL);
 }
 
-struct LIBBASETYPE *LIBBASE = NULL;
+LIBBASETYPEPTR LIBBASE = NULL;
 
 #ifdef __SASC
 

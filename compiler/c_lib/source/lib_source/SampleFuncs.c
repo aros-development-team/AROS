@@ -1,5 +1,5 @@
 /*
-**	$VER: SampleFuncs.c 37.11 (24.6.97)
+**	$VER: SampleFuncs.c 37.14 (13.8.97)
 **
 **	Demo functions for example.library
 **
@@ -22,6 +22,7 @@
 #endif
 
 #include "compiler.h"
+#include "intern.h"
 #include "SampleFuncs.h"
 
  /* Please note, that &ExampleBase always resides in register __a6 as well,
@@ -41,7 +42,7 @@ AROS_LH3 (ULONG, EXF_TestRequest,
     AROS_LHA (UBYTE *, title_d1, D1),
     AROS_LHA (UBYTE *, body,     D2),
     AROS_LHA (UBYTE *, gadgets,  D3),
-    struct ExampleBase *, ExampleBase, 5, Example
+    LIBBASETYPEPTR, LIBBASE, 5, BASENAME
 )
 {
     UBYTE *title = title_d1;

@@ -1,7 +1,7 @@
 #ifndef _COMPILER_H
 #define _COMPILER_H
 /*
-**	$VER: compiler.h 37.11 (24.6.97)
+**	$VER: compiler.h 37.14 (13.8.97)
 **
 **	Compiler independent register (and SAS/C extensions) handling
 **
@@ -178,6 +178,8 @@ Therefore ASM must be used. */
     )
 
 #   define AROS_LP3 AROS_LH3
+
+#   define AROS_SLIB_ENTRY(n,s)     n
 
 #endif
 

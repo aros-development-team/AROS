@@ -2,7 +2,7 @@
 #define _INTERN_H
 
 /*
-**	$VER: LibInit.c 37.11 (24.6.97)
+**	$VER: LibInit.c 37.14 (13.8.97)
 **
 **	Common header file for all parts of the library.
 **
@@ -23,10 +23,10 @@
 #   include "compiler.h"
 #endif
 
-extern ULONG SAVEDS STDARGS L_OpenLibs(struct LIBBASETYPE *exb);
-extern void  SAVEDS STDARGS L_CloseLibs(struct LIBBASETYPE *exb);
+extern ULONG SAVEDS STDARGS L_OpenLibs(LIBBASETYPEPTR exb);
+extern void  SAVEDS STDARGS L_CloseLibs(LIBBASETYPEPTR exb);
 
-extern struct LIBBASETYPE *LIBBASE;
+extern LIBBASETYPEPTR LIBBASE;
 
 extern struct ExecBase	    *SysBase;
 extern struct IntuitionBase *IntuitionBase;

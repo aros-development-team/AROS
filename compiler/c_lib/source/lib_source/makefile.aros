@@ -24,16 +24,18 @@ $(LIB) : $(OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
 	$(CHECKUDS) $@
 
-StartUp.o : StartUp.c SampleFuncs.h compiler.h
+StartUp.o : StartUp.c SampleFuncs.h compiler.h intern.h libdefs.h
 	@echo "Compiling $<..."
 	@$(CC) $(CFLAGS) -c StartUp.c
 
-LibInit.o : LibInit.c compiler.h
+LibInit.o : LibInit.c compiler.h intern.h libdefs.h
 	@echo "Compiling $<..."
 	@$(CC) $(CFLAGS) -c LibInit.c
 
-SampleFuncs.o : SampleFuncs.c SampleFuncs.h compiler.h
+SampleFuncs.o : SampleFuncs.c SampleFuncs.h compiler.h intern.h libdefs.h
 	@echo "Compiling $<..."
 	@$(CC) $(CFLAGS) -c SampleFuncs.c
 
-
+libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
+	@echo "Generating $@..."
+	@$(AWK) -f $(TOP)/scripts/genlibdefs.gawk $< > $@

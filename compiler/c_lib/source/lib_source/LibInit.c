@@ -1,5 +1,5 @@
 /*
-**	$VER: LibInit.c 37.11 (24.6.97)
+**	$VER: LibInit.c 37.14 (13.8.97)
 **
 **	Library initializers and functions to be called by StartUp.c
 **
@@ -27,7 +27,7 @@
 #include "intern.h"
 
 #ifndef _AROS
-#   define INTUITIONNAME "intuition.library" /* AROS defines these */
+#   define INTUITIONNAME "intuition.library" /* AROS defines this */
 #else
 #   define AROS_ALMOST_COMPATIBLE /* INTUITIONNAME */
 #   include <intuition/intuitionbase.h> /* INTUITIONNAME */
@@ -87,7 +87,7 @@ DataTab =
     when expunging !
  */
 
-ULONG SAVEDS STDARGS L_OpenLibs(struct LIBBASETYPE *exb)
+ULONG SAVEDS STDARGS L_OpenLibs(LIBBASETYPEPTR exb)
 {
     SysBase = exb->exb_SysBase;
 
@@ -105,7 +105,7 @@ ULONG SAVEDS STDARGS L_OpenLibs(struct LIBBASETYPE *exb)
     return(TRUE);
 }
 
-void SAVEDS STDARGS L_CloseLibs (struct LIBBASETYPE *exb)
+void SAVEDS STDARGS L_CloseLibs (LIBBASETYPEPTR exb)
 {
     if(GfxBase)       CloseLibrary((struct Library *) GfxBase);
     if(IntuitionBase) CloseLibrary((struct Library *) IntuitionBase);
