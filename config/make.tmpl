@@ -1705,10 +1705,9 @@ endif
 
 ifneq (%(install_target),)
     %(mmake)-install_command = \
-        $(RM) $@ && \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
         -C $(GENDIR)/$(CURDIR) %(install_target) && \
-        $(TOUCH) $(GENDIR)/$(CURDIR)/.installed;
+        $(TOUCH) $(GENDIR)/$(CURDIR)/.installed
 
     %(mmake)-uninstall_command = \
     $(RM) $(GENDIR)/$(CURDIR)/.installed && \
@@ -1722,19 +1721,12 @@ endif
 #MM- %(mmake)-quick : %(mmake)-configure %(postconfigure) %(mmake)-build_and_install-quick %(postinstall)
 
 #MM
-%(mmake)-build_and_install-quick : $(GENDIR)/$(CURDIR)/.installed
-
-$(GENDIR)/$(CURDIR)/.built : $(GENDIR)/$(CURDIR)/.configured
+%(mmake)-build_and_install-quick :  $(GENDIR)/$(CURDIR)/.configured
 	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(GENDIR)/$(CURDIR); then \
-            $(RM) $@ && \
-	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(GENDIR)/$(CURDIR); \
-        fi && \
-        if ! test -e $@; then\
-            $(TOUCH) $@; \
+            $(RM)  $(GENDIR)/$(CURDIR)/.installed && \
+	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(GENDIR)/$(CURDIR) && \
+	    $(%(mmake)-install_command); \
         fi
-
-$(GENDIR)/$(CURDIR)/.installed : $(GENDIR)/$(CURDIR)/.built
-	$(%(mmake)-install_command)
 
 %(srcdir)/.files-touched:
 	find %(srcdir) -exec $(TOUCH) -r %(srcdir)/configure '{}' \; && \
