@@ -1474,6 +1474,17 @@ reqtools00019;2;SDuvan;rtCloseWindowSafely
 reqtools00020;2;SDuvan;rtLockWindow
 reqtools00021;2;SDuvan;rtUnlockWindow
 rexxmast00001;1;verhaegs;Write RexxMast with the "REXX" port
+rexxsupport;2;verhaegs;Write ALLOCMEM
+rexxsupport;0;verhaegs;Write CLOSEPORT
+rexxsupport;2;verhaegs;Write FREEMEM
+rexxsupport;0;verhaegs;Write GETARG
+rexxsupport;0;verhaegs;Write GETPKT
+rexxsupport;0;verhaegs;Write OPENPORT
+rexxsupport;0;verhaegs;Write REPLY
+rexxsupport;0;verhaegs;Write SHOWDIR
+rexxsupport;0;verhaegs;Write SHOWLIST
+rexxsupport;0;verhaegs;Write STATEF
+rexxsupport;0;verhaegs;Write WAITPKT
 rexxsyslib00000;2;verhaegs;Write CreateArgstring
 rexxsyslib00001;2;verhaegs;Write DeleteArgstring
 rexxsyslib00002;2;verhaegs;Write LengthArgstring
