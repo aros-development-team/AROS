@@ -80,8 +80,8 @@ extern int scanf (const char * format, ...);
 extern int vscanf (const char * format, va_list args);
 extern int fscanf (FILE * fh, const char * format, ...);
 extern int vfscanf (FILE * fh, const char * format, va_list args);
-extern int sscanf (char * str, const char * format, ...);
-extern int vsscanf (char * str, const char * format, va_list args);
+extern int sscanf (const char * str, const char * format, ...);
+extern int vsscanf (const char * str, const char * format, va_list args);
 
 extern int fseek (FILE * stream, long offset, int whence);
 extern long ftell (FILE * stream);
