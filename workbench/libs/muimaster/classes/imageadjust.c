@@ -283,7 +283,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 				   is_directory ?
 				   MUIV_List_InsertSingleAsTree_List : 0);
 		}
-
+#warning "FIXME: where does num's value come from here?"
 		if (num != -1 && is_directory)
 		{
 		    AddDirectory(list, buf, num);
@@ -451,11 +451,11 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imageadjust_DATA   *data;
     struct TagItem  	    *tag, *tags;
-    static const char *labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", "Gradient", NULL};
-    static const char *labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
-    static const char *labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
-    static const char *labels_color[] = {"Color", NULL};
-    static const char *gradient_type_entries[] = {"Scaled", "Tiled", NULL};
+    static const char * const labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", "Gradient", NULL};
+    static const char * const labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
+    static const char * const labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
+    static const char * const labels_color[] = {"Color", NULL};
+    static const char * const gradient_type_entries[] = {"Scaled", "Tiled", NULL};
 
     Object *pattern_group = NULL;
     Object *vector_group = NULL;
@@ -611,7 +611,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->adjust_type = adjust_type;
     data->color_group = color_group;
-    data->originator = GetTagData(MUIA_Imageadjust_Originator, 0, msg->ops_AttrList);
+    data->originator  = (APTR)GetTagData(MUIA_Imageadjust_Originator, 0, msg->ops_AttrList);
 
     if (adjust_type != MUIV_Imageadjust_Type_Pen)
     {
@@ -756,7 +756,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    DoMethod(data->external_list, MUIM_Notify,
 		     MUIA_Listview_DoubleClick, TRUE,
 		     MUIV_Notify_Application, 5, MUIM_Application_PushMethod,
-		     data->originator, 2,  MUIM_Popimage_CloseWindow, TRUE);
+		     (IPTR)data->originator, 2,  MUIM_Popimage_CloseWindow, TRUE);
     }
     Imageadjust_SetImagespec(obj,data,spec);
     return (IPTR)obj;
@@ -798,7 +798,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	LONG pos[6];
     };
 
-    static struct pages pages_per_type[] = 
+    const static struct pages pages_per_type[] = 
     {
 	{ MUIV_Imageadjust_Type_Pen, { 2, -1, -1, -1, -1, -1} },
 	{ MUIV_Imageadjust_Type_Background, { 0, 2, 4, 5, -1, -1} },

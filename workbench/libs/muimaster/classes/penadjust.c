@@ -115,9 +115,9 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
 
 IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    static const char *register_labels[] = {"MUI", "Colormap", "RGB", NULL};
-    static const char *lv_labels[] = {"Shine", "Halfshine", "Background", "Halfshadow", "Shadow", "Text", "Fill", "Mark", NULL};
-    static const struct Hook          muipen_display_hook = { {NULL, NULL}, HookEntry,  MuipenDisplayFunc, NULL };
+    static const char * const register_labels[]  = {"MUI", "Colormap", "RGB", NULL};
+    static const char * const lv_labels[]        = {"Shine", "Halfshine", "Background", "Halfshadow", "Shadow", "Text", "Fill", "Mark", NULL};
+    static const struct Hook muipen_display_hook = { {NULL, NULL}, HookEntry,  MuipenDisplayFunc, NULL };
 
     struct Penadjust_DATA   *data;
     struct TagItem  	       *tag, *tags;

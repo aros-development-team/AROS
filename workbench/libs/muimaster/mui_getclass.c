@@ -17,7 +17,7 @@
 /*#define MYDEBUG 1*/
 #include "debug.h"
 
-static CONST_STRPTR searchpaths[] = {
+static CONST_STRPTR const searchpaths[] = {
     "PROGDIR:Zune/%s",
     "Zune/%s",
     "Classes/Zune/%s",
@@ -38,7 +38,7 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
     struct Library         *mcclib = NULL;
     struct MUI_CustomClass *mcc    = NULL ;
     Class                  *cl     = NULL;
-    CONST_STRPTR           *pathptr;
+    CONST_STRPTR const     *pathptr;
     TEXT                    s[255];
 
     for (pathptr = searchpaths; *pathptr; pathptr++)

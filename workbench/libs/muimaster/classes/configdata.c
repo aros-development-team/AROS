@@ -60,7 +60,7 @@ struct spec_cfg {
     CONST_STRPTR defspec;
 };
 
-static struct spec_cfg DefImspecValues[] =
+const static struct spec_cfg DefImspecValues[] =
 {
     { MUII_WindowBack,    MUICFG_Background_Window,     "0:128" },
     { MUII_RequesterBack, MUICFG_Background_Requester,  "0:137" },
@@ -132,7 +132,7 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
 **************************************************************************/
 
 /* spec format : type, recessed, left, right, up, down spacing */
-static struct spec_cfg DefFramespecValues[] =
+const static struct spec_cfg DefFramespecValues[] =
 {
     { MUIV_Frame_None,        MUICFG_Invalid,           "000000" }, /* invisible frame          */
     { MUIV_Frame_Button,      MUICFG_Frame_Button,      "202211" }, /* text button              */
@@ -177,7 +177,7 @@ struct def_ulval {
     ULONG val;
 };
 
-static struct def_ulval DefULValues[] =
+const static struct def_ulval DefULValues[] =
 {
     { MUICFG_Window_Spacing_Left,     4 },
     { MUICFG_Window_Spacing_Right,    4 },
@@ -221,7 +221,7 @@ struct def_strval {
 };
 
 /* NULL values not allowed */
-static struct def_strval DefStrValues[] =
+const static struct def_strval DefStrValues[] =
 {
     { MUICFG_Font_Normal,   "" },
     { MUICFG_Font_List,     "" },
