@@ -4,6 +4,7 @@
 #include <graphics/gfxbase.h>
 #include <cybergraphx/cybergraphics.h>
 #include <libraries/commodities.h>
+#include <libraries/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -11,11 +12,18 @@
 #include <proto/cybergraphics.h>
 #include <proto/layers.h>
 #include <proto/commodities.h>
+#include <proto/locale.h>
 #include <proto/alib.h>
 
 #include <aros/debug.h>
 
 #include <stdio.h>
+
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#define CATCOMP_ARRAY
+
+#include "../commodities_strings.h"
 
 #include "main.h"
 #include "support.h"
@@ -24,30 +32,52 @@
 
 /************************************************************************************/
 
+UBYTE version[] = "$VER: StartMenu 0.2 (13.10.2001)";
+
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,HIDE/S"
 
 #define ARG_PRI   0
 #define ARG_HIDE  1
 #define NUM_ARGS  2
 
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
-struct Library *CyberGfxBase;
-struct Library *LayersBase;
-struct Library *CxBase;
+struct IntuitionBase *IntuitionBase = NULL;
+struct GfxBase *GfxBase = NULL;
+struct Library *CyberGfxBase = NULL;
+struct Library *LayersBase = NULL;
+struct Library *CxBase = NULL;
+struct LocaleBase *LocaleBase = NULL;
+
+/* Libraries to open */
+struct LibTable
+{
+ APTR   lT_Library;
+ STRPTR lT_Name;
+ ULONG  lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,	"intuition.library",		39L },
+ { &GfxBase,		"graphics.library",		39L },
+ { &CyberGfxBase,	"cybergraphics.library",	39L },
+ { &LayersBase,		"layers.library",		39L },
+ { &CxBase,		"commodities.library",		39L },
+ { NULL }
+};
 
 static struct NewBroker nb =
 {
    NB_VERSION,
-   "StartMenu", 
-   "StartMenu 0.9", 
-   "Program launch commoditiy", 
+   NULL,
+   NULL,
+   NULL,
    NBU_NOTIFY | NBU_UNIQUE, 
    0,
    0,
    NULL,                             
    0 
 };
+
+static struct Catalog *catalogPtr;
 
 static struct MsgPort *cxport;
 
@@ -81,6 +111,18 @@ static BOOL tohide;
 static BOOL hidden;
 #define MINIMUM_VISIBLE 3
 
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+    STRPTR string;
+
+    if(catalogPtr)
+	string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    else
+	string = CatCompArray[id].cca_Str;
+
+    return(string);
+}
+
 static void HideAction(CxMsg *msg,CxObj *obj)
 {
 	struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
@@ -111,19 +153,30 @@ static void HandleHide(void)
 static void Cleanup(char *msg)
 {
     struct Message *cxmsg;
+    struct LibTable *tmpLibTable = libTable;
     
-    if (msg)
+    if(msg)
     {
-	printf("StartMenu: %s\n",msg);
+	printf("%s", msg);
     }
 
-    if (panelwin) CloseWindow(panelwin);
+    if(IntuitionBase)
+    {
+	if(panelwin)
+	    CloseWindow(panelwin);
     
-    if (dri) FreeScreenDrawInfo(scr, dri);
-    if (scr) UnlockPubScreen(0, scr);
-    
-    if (cxbroker) DeleteCxObjAll(cxbroker);
-    if (cxport)
+	if(dri)
+	    FreeScreenDrawInfo(scr, dri);
+
+	if(scr)
+	    UnlockPubScreen(0, scr);
+    }
+
+    if(CxBase)
+	if (cxbroker)
+	    DeleteCxObjAll(cxbroker);
+
+    if(cxport)
     {
         while((cxmsg = GetMsg(cxport)))
 	{
@@ -132,14 +185,29 @@ static void Cleanup(char *msg)
         DeleteMsgPort(cxport);
     }
     
-    if (myargs) FreeArgs(myargs);
+    if(myargs)
+	FreeArgs(myargs);
 
-    if (CxBase) CloseLibrary(CxBase);
-    if (LayersBase) CloseLibrary(LayersBase);
-    if (CyberGfxBase) CloseLibrary(CyberGfxBase);
-    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
-	if (actionbit) FreeSignal(actionbit);
+    if(LocaleBase)
+    {
+        CloseCatalog(catalogPtr);
+        CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
+        kprintf("Closed locale.library!\n");
+    }
+    
+    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
+    {
+	if((*(struct Library **)tmpLibTable->lT_Library))
+	{
+	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
+	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	}
+
+	tmpLibTable++;
+    }
+
+    if(actionbit)
+	FreeSignal(actionbit);
 
     exit(0);
 }
@@ -179,29 +247,27 @@ static void Init(void)
 
 static void OpenLibs(void)
 {
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
-    {
-	Cleanup("Can't open intuition.library V39!");
-    }
+    struct LibTable *tmpLibTable = libTable;
+    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
 
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
+    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
-	Cleanup("Can't open graphics.library V39!");
+	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
     }
+    else
+	kprintf("Warning: Can't open locale.library V40!\n");
 
-    if (!(CyberGfxBase = OpenLibrary("cybergraphics.library",0)))
+    while(tmpLibTable->lT_Library)
     {
-	Cleanup("Can't open cybergraphics.library!");
-    }
+	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+        {
+	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+	    Cleanup(tmpString);
+	}
+        else
+	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
 
-    if (!(LayersBase = OpenLibrary("layers.library",39)))
-    {
-	Cleanup("Can't open layers.library V39!");
-    }
-
-    if (!(CxBase = OpenLibrary("commodities.library",39)))
-    {
-	Cleanup("Can't open commodities.library V39!");
+	tmpLibTable++;
     }
 }
 
@@ -223,7 +289,7 @@ static void InitCX(void)
 {
     if (!(cxport = CreateMsgPort()))
     {
-        Cleanup("Can't create MsgPort!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
     }
     
     nb.nb_Port = cxport;
@@ -232,14 +298,14 @@ static void InitCX(void)
     
     if (!(cxbroker = CxBroker(&nb, 0)))
     {
-        Cleanup("Can't create CxBroker object!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
     }
     
 	if (args[ARG_HIDE])
 	{
 		if (!(cxcust = CxCustom(HideAction, 0)))
     	{
-        	Cleanup("Can't create CxCustom object!\n");
+        	Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
     	}
 
     	AttachCxObj(cxbroker, cxcust);
@@ -254,12 +320,12 @@ static void GetVisual(void)
 {
     if (!(scr = LockPubScreen(NULL)))
     {
-        Cleanup("Can't lock pub screen!");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_LOCK_SCR));
     }
     
     if (!(dri = GetScreenDrawInfo(scr)))
     {
-        Cleanup("Can't get screen drawinfo!");
+        Cleanup("Can't get screen drawinfo! (This shouldn't happen?!)\n");
     }
 
     scrwidth = scr->Width;
@@ -367,23 +433,24 @@ static void MakePanelWin(void)
 				 WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_REFRESHWINDOW,
 				 TAG_DONE);
      
-    if (!panelwin) Cleanup("Can't open panel window!");
-	visiblepanelheight = panelheight;
+    if(!panelwin)
+	Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_WIN));
 
-	if (args[ARG_HIDE] && (panelwin->WLayer->LayerInfo->Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
-	{
-		maintask   = FindTask(0);
-		actionbit  = AllocSignal(-1);
-		actionmask = 1 << actionbit;
+    visiblepanelheight = panelheight;
+
+    if(args[ARG_HIDE] && (panelwin->WLayer->LayerInfo->Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
+    {
+	maintask   = FindTask(0);
+	actionbit  = AllocSignal(-1);
+	actionmask = 1 << actionbit;
 		 
-		tohide = TRUE;
-		hidden = TRUE;
-		HandleHide();
-	}
-	else
-		args[ARG_HIDE] = actionbit = actionmask = 0;
+	tohide = TRUE;
+	hidden = TRUE;
+	HandleHide();
+    }
+    else
+	args[ARG_HIDE] = actionbit = actionmask = 0;
 
-	    
     panelmask = 1L << panelwin->UserPort->mp_SigBit;
     panelrp = panelwin->RPort;
     
@@ -475,11 +542,16 @@ int main(void)
 {
     Init();
     OpenLibs();
+
+    nb.nb_Name = getCatalog(catalogPtr, MSG_STARTMENU_CXNAME);
+    nb.nb_Title = getCatalog(catalogPtr, MSG_STARTMENU_CXTITLE);
+    nb.nb_Descr = getCatalog(catalogPtr, MSG_STARTMENU_CXDESCR);
+
     GetArguments();
     GetVisual();
     MakePanelWin();
     InitCX();
-	HandleAll();
+    HandleAll();
     Cleanup(0);
     
     return 0;

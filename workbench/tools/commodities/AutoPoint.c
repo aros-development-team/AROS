@@ -50,18 +50,30 @@
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <libraries/commodities.h>
+#include <libraries/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/layers.h>
 #include <proto/commodities.h>
+#include <proto/locale.h>
 #include <proto/alib.h>
+
+#include <stdio.h>
 
 #define  DEBUG 0
 #include <aros/debug.h>
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#define CATCOMP_ARRAY
+
+#include "commodities_strings.h"
+
 
 /***************************************************************************/
+
+UBYTE version[] = "$VER: AutoPoint 0.2 (13.10.2001)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -69,18 +81,12 @@
 #define NUM_ARGS  1
 
 
-struct IntuitionBase *IntuitionBase;
-struct Library       *LayersBase;
-struct Library       *CxBase;
-struct Library       *IconBase;
-
-
 static struct NewBroker nb =
 {
     NB_VERSION,
-    "AutoPoint", 
-    "Automatic window activator", 
-    "Activates the window under the mouse",
+    NULL,
+    NULL,
+    NULL,
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
@@ -110,44 +116,104 @@ static AP apInfo =
 };
 
 
+/* Libraries to open */
+struct LibTable
+{
+ APTR   lT_Library;
+ STRPTR lT_Name;
+ ULONG  lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,      "intuition.library",	39L},
+ { &LayersBase,         "layers.library",	39L},
+ { &CxBase,             "commodities.library",	39L},
+ { NULL }
+};
+
+
+struct Catalog       *catalogPtr;
+struct IntuitionBase *IntuitionBase = NULL;
+struct Library       *LayersBase = NULL;
+struct Library       *CxBase = NULL;
+struct Library       *IconBase = NULL;
+
+
 static void freeResources(APState *as);
 static BOOL initiate(int argc, char **argv, APState *as);
 static void autoActivate(CxMsg *msg, CxObj *co);
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
+
+
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+    STRPTR string;
+
+    if(catalogPtr)
+        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    else
+        string = CatCompArray[id].cca_Str;
+
+    return(string);
+}
 
 
 static BOOL initiate(int argc, char **argv, APState *as)
 {
     CxObj *customObj;
+    struct LibTable *tmpLibTable = libTable;
+    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
 
     memset(as, 0, sizeof(APState));
 
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",
-							39);
-    if(IntuitionBase == NULL)
-	return FALSE;
+    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
+    {
+	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+	kprintf("Library locale.library opened!\n");
+    }
+    else
+	kprintf("Warning: Can't open locale.library V40!\n");
 
-    LayersBase = OpenLibrary("layers.library", 39);
-    if(LayersBase == NULL)
-	return FALSE;
-    
-    CxBase = OpenLibrary("commodities.library", 39);
-    if(CxBase == NULL)
-	return FALSE;
+    while(tmpLibTable->lT_Library)
+    {
+	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+	{
+	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+	    printf("%s", tmpString);
+	    return FALSE;
+	}
+        else
+	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
 
+	tmpLibTable++;
+    }
+
+    nb.nb_Name = getCatalog(catalogPtr, MSG_AUTOPOINT_CXNAME);
+    nb.nb_Title = getCatalog(catalogPtr, MSG_AUTOPOINT_CXTITLE);
+    nb.nb_Descr = getCatalog(catalogPtr, MSG_AUTOPOINT_CXDESCR);
 
     as->as_msgPort = CreateMsgPort();
     if(as->as_msgPort == NULL)
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
 	return FALSE;
+    }
     
     nb.nb_Port = as->as_msgPort;
     
     as->as_broker = CxBroker(&nb, 0);
     if(as->as_broker == NULL)
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
 	return FALSE;
+    }
     
     customObj = CxCustom(autoActivate, 0);
     if(customObj == NULL)
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
 	return FALSE;
+    }
 
     AttachCxObj(as->as_broker, customObj);
     ActivateCxObj(as->as_broker, TRUE);
@@ -180,7 +246,12 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	    nb.nb_Pri = ArgInt(array, "CX_PRIORITY", 0);
 	    ArgArrayDone();
 	}
-	
+	else
+	{
+	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), "icon.library", 39L);
+	    printf("%s", tmpString);
+	}
+
 	CloseLibrary(IconBase);
     }
 
@@ -191,9 +262,11 @@ static BOOL initiate(int argc, char **argv, APState *as)
 static void freeResources(APState *as)
 {
     struct Message *cxm;
-    
-    if(as->as_broker != NULL)
-	DeleteCxObjAll(as->as_broker);
+    struct LibTable *tmpLibTable = libTable;
+
+    if(CxBase)
+	if(as->as_broker != NULL)
+	    DeleteCxObjAll(as->as_broker);
 
     if(as->as_msgPort != NULL)
     {
@@ -202,16 +275,25 @@ static void freeResources(APState *as)
 
         DeleteMsgPort(as->as_msgPort);
     }
+
+    if(LocaleBase)
+    {
+	CloseCatalog(catalogPtr);
+	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
+	kprintf("Closed locale.library!\n");
+    }
+
     
+    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
+    {
+	if((*(struct Library **)tmpLibTable->lT_Library))
+	{
+	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
+	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	}
 
-    if(IntuitionBase != NULL)
-	CloseLibrary((struct Library *)IntuitionBase);
-
-    if(LayersBase != NULL)
-	CloseLibrary(LayersBase);
-
-    if(CxBase != NULL)
-	CloseLibrary(CxBase);
+	tmpLibTable++;
+    }
 }
 
 

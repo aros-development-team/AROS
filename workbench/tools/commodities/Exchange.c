@@ -45,6 +45,10 @@
     HISTORY
 
     0x.01.2000  SDuvan   implemented
+    07.10.2001  petah    Exchange is fully localized. Some extra safety
+                         checks have been added to the cleanup function. A
+                         version string has been added. (0.2)
+    14.10.2001  petah    The listview is updated in a better fashion. (0.3)
 
 ******************************************************************************/
 
@@ -91,7 +95,15 @@
 
 #include <string.h>
 
+#include <stdio.h>
+
 #include <aros/debug.h>
+
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#define CATCOMP_ARRAY
+
+#include "commodities_strings.h"
 
 #define  P(x)   x
 
@@ -99,6 +111,8 @@
 #define SPACEY       4
 #define EXTRAHEIGHT  6
 #define LABELSPACEY  4
+
+UBYTE version[] = "$VER: Exchange 0.3 (14.10.2001)";
 
 struct ExchangeState
 {
@@ -131,6 +145,21 @@ struct ExchangeState
     LONG       ec_cxPri;	/* Priority of the Exchange broker */
 };
 
+/* Libraries to open */
+struct LibTable
+{
+ APTR	lT_Library;
+ STRPTR	lT_Name;
+ ULONG	lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,	"intuition.library",	40L},
+ { &GadToolsBase,	"gadtools.library",	40L},
+ { &UtilityBase,	"utility.library",	40L},
+ { &CxBase,		"commodities.library",	40L},
+ { NULL }
+};
 
 /* Prototypes */
 struct BrokerCopy *getNth(struct List *list, LONG n);
@@ -149,7 +178,9 @@ BOOL    initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeigh
 BOOL    readShellArgs(struct ExchangeState *ec);
 BOOL    readWBArgs(int argc, char **argv, struct ExchangeState *ec);
 BOOL    getResources(struct ExchangeState *es);
-
+STRPTR  getCatalog(struct Catalog *catalogPtr, ULONG id);
+void    setupMenus(struct Catalog *catalogPtr);
+void    showSimpleMessage(struct ExchangeState *ec, STRPTR msgString);
 
 int main(int argc, char **argv)
 {
@@ -203,9 +234,9 @@ struct IntuitionBase *IntuitionBase = NULL;
 struct NewBroker exBroker =
 {
     NB_VERSION,
-    "Exchange",
-    "Commodities Exchange",	/* Should get this from the catalog */
-    "Controls system commodities",  /* -- " -- */
+    NULL,			/* The next three fields are set by getCatalog() */
+    NULL,
+    NULL,
     NBU_UNIQUE | NBU_NOTIFY,	/* One Exchange is enough */
     COF_SHOW_HIDE,		/* nb_Flags */
     0,				/* nb_Pri -- should be set by tooltypes */
@@ -255,12 +286,14 @@ BOOL readShellArgs(struct ExchangeState *ec)
 BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
 {
     STRPTR    popUp;
-    UBYTE   **tt;
+    UBYTE   **tt, tmpString[128];
 
     IconBase = OpenLibrary("icon.library", 40);
     
     if (IconBase == NULL)
     {
+	sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB), "icon.library", 40L);
+        showSimpleMessage(ec, tmpString);
 	return FALSE;
     }
     
@@ -282,15 +315,12 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
 }
 
 
-enum { menu_Quit };
-
 static struct NewMenu nm[] =
 {
-    {NM_TITLE, "Project" },
-    {NM_ITEM,  "Quit", "Q", 0, 0, (APTR)menu_Quit },
-    {NM_END}
+ { NM_TITLE,	(STRPTR)MSG_MEN_PROJECT },
+ { NM_ITEM,	(STRPTR)MSG_MEN_PROJECT_QUIT },
+ { NM_END } /* petah: Should we use a trailing comma here? Look it up! */
 };
-
 
 BOOL getResources(struct ExchangeState *ec)
 {
@@ -299,46 +329,37 @@ BOOL getResources(struct ExchangeState *ec)
     LONG              topOffset;
     LONG    	      fontHeight;
     LONG    	      winHeight;
-    
+    struct LibTable *tmpLibTable = libTable;
+    UBYTE	      tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
+
     memset(ec, 0, sizeof(struct ExchangeState));
 
-    /* First, open necessary libraries */
-    
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 40);
-    
-    if (UtilityBase == NULL)
-    {
-	return FALSE;
-    }
-    
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",
-							40);
-    
-    if (IntuitionBase == NULL)
-    {
-	return FALSE;
-    }
-    
-    CxBase = OpenLibrary("commodities.library", 40);
-    
-    if (CxBase == NULL)
-    {
-	return FALSE;
-    }
-    
+    /* First, open necessary libraries - start with locale (for localized error messages thruout the program initialisation */
 
-    //    LocaleBase = OpenLibrary("locale.library", 40);
-    
-    //    if(LocaleBase == NULL)
-    //        return FALSE;
-    
-    GadToolsBase = OpenLibrary("gadtools.library", 40);
-    
-    if (GadToolsBase == NULL)
+    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
-	return FALSE;
+	/* TODO: OC_BuiltInLanguage should be NULL, but AROS locale doesn't support it yet */
+	ec->ec_catalog = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+
+	if(ec->ec_catalog == NULL)
+	    P(kprintf("OpenCatalog() failed!\n"));
     }
-    
+    else
+	P(kprintf("Warning: Can't open locale.library V40!\n"));
+
+    while(tmpLibTable->lT_Library)
+    {
+	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+	{
+	    sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+	    showSimpleMessage(ec, tmpString);
+	    return FALSE;
+	}
+	else
+	    P(kprintf("Library %s opened!\n", tmpLibTable->lT_Name));
+
+	tmpLibTable++;
+    }    
 
     P(kprintf("Libraries opened!"));
  
@@ -357,15 +378,11 @@ BOOL getResources(struct ExchangeState *ec)
     //     return FALSE;
 
     
-    /* TODO: BuiltInLanguage should be NULL, but AROS' locale is not
-             complete */
-    //    ec->ec_catalog = OpenCatalog(NULL, "Sys/commodities.catalog",
-    //			         OC_BuiltInLanguage, "english", TAG_DONE);
-    
-    //    if(ec->ec_catalog == NULL)
-    //        return FALSE;
-    
     NEWLIST(&ec->ec_brokerList);
+
+    exBroker.nb_Name = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXNAME);
+    exBroker.nb_Title = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXTITLE);
+    exBroker.nb_Descr = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXDESCR);
 
     exBroker.nb_Port = ec->ec_msgPort;
     ec->ec_broker = CxBroker(&exBroker, NULL);
@@ -393,6 +410,8 @@ BOOL getResources(struct ExchangeState *ec)
 
     if (screen == NULL)
     {
+	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_LOCK_SCR));
+
 	return FALSE;
     }
 
@@ -400,6 +419,8 @@ BOOL getResources(struct ExchangeState *ec)
 
     if (ec->ec_visualInfo == NULL)
     {
+	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_GET_VI));
+
 	return FALSE;
     }
 
@@ -413,15 +434,21 @@ BOOL getResources(struct ExchangeState *ec)
 	return FALSE;
     }
 
+    setupMenus(ec->ec_catalog);
+
     ec->ec_menus = CreateMenusA(nm, NULL);
 
     if (ec->ec_menus == NULL)
     {
+	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_CREATE_MENUS));
+
 	return FALSE;
     }
 
     if (!LayoutMenusA(ec->ec_menus, ec->ec_visualInfo, NULL))
     {
+	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_LAYOUT_MENUS));
+
 	return FALSE;
     }
 	
@@ -438,8 +465,8 @@ BOOL getResources(struct ExchangeState *ec)
 				   WA_Top,          0,
 				   WA_Width,        500,
 				   WA_Height,       winHeight,
-				   WA_Title,        "Exchange:", /* TODO */
-				   WA_IDCMP,        BUTTONIDCMP | CYCLEIDCMP |
+				   WA_Title,        getCatalog(ec->ec_catalog, MSG_EXCHANGE_WINTITLE),
+ 				   WA_IDCMP,        BUTTONIDCMP | CYCLEIDCMP |
 				                    LISTVIEWIDCMP | 
 				                    IDCMP_CLOSEWINDOW |
 				                    IDCMP_GADGETUP |
@@ -452,6 +479,7 @@ BOOL getResources(struct ExchangeState *ec)
     
     if (ec->ec_window == NULL)
     {
+	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_CREATE_WIN));
 	return FALSE;
     }
 
@@ -473,7 +501,7 @@ struct NewGadget listView =
     32,
     180,
     78,
-    "Available commodities",	/* TODO: Use the catalog */
+    NULL,
     NULL,			/* TextAttr */
     ID_listView,
     PLACETEXT_ABOVE,
@@ -503,7 +531,7 @@ struct NewGadget killBut =
     94,
     140,
     16,
-    "Remove",                	/* TODO: Use the catalog */
+    NULL,                	/* Set by getCatalog()  */
     NULL,			/* TextAttr */
     ID_killBut,
     PLACETEXT_IN,
@@ -518,7 +546,7 @@ struct NewGadget showBut =
     76,
     140,
     16,
-    "Show",                	/* TODO: Use the catalog */
+    NULL,                	/* Set by getCatalog() */
     NULL,			/* TextAttr */
     ID_showBut,
     PLACETEXT_IN,
@@ -533,7 +561,7 @@ struct NewGadget hideBut =
     76,
     140,
     16,
-    "Hide",                	/* TODO: Use the catalog */
+    NULL,                	/* Set by getCatalog() */
     NULL,			/* TextAttr */
     ID_hideBut,
     PLACETEXT_IN,
@@ -548,7 +576,7 @@ struct NewGadget textGad =
     32,
     284,
     18,
-    "Information",             	/* TODO: Use the catalog */
+    NULL,	             	/* Set by getCatalog() */
     NULL,			/* TextAttr */
     ID_textGad,
     PLACETEXT_ABOVE,
@@ -573,7 +601,8 @@ struct NewGadget textGad2 =
 
 
 /* Cycle gadget texts */
-STRPTR  strings[] = { "Active", "Inactive", NULL };
+//STRPTR  strings[] = { "Active", "Inactive", NULL };
+STRPTR strings[3];
 
 BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
 {
@@ -586,6 +615,15 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     showBut.ng_VisualInfo  = ec->ec_visualInfo;
     hideBut.ng_VisualInfo  = ec->ec_visualInfo;
     killBut.ng_VisualInfo  = ec->ec_visualInfo;
+
+    listView.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_LISTVIEW);
+    showBut.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_GAD_SHOW);
+    hideBut.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_GAD_HIDE);
+    killBut.ng_GadgetText = getCatalog(ec->ec_catalog, MSG_EXCHANGE_GAD_REMOVE);
+
+    strings[0] = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CYCLE_ACTIVE);
+    strings[1] = getCatalog(ec->ec_catalog, MSG_EXCHANGE_CYCLE_INACTIVE);
+    strings[2] = NULL;
 
     CreateContext(&ec->ec_context);
 
@@ -666,8 +704,8 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     /* Information window */
     if ((ec->ec_textGad = CreateGadget(TEXT_KIND, ec->ec_context,
 				       &textGad,
-				       GTTX_Text    , "Exchange",
-				       GTTX_CopyText, TRUE,
+				       //GTTX_Text    , "Exchange",
+				       //GTTX_CopyText, TRUE,
 				       GTTX_Border  , TRUE,
 				       TAG_DONE)) == NULL)
     {
@@ -676,16 +714,13 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     
     if ((ec->ec_textGad2 = CreateGadget(TEXT_KIND, ec->ec_context,
 					&textGad2,
-					GTTX_Text    , "Test message",
-					GTTX_CopyText, TRUE,
+					//GTTX_Text    , "Test message",
+					//GTTX_CopyText, TRUE,
 					GTTX_Border  , TRUE,
 					TAG_DONE)) == NULL)
     {
 	return FALSE;
     }
-
-    /* NOTE! GadTools bug: If GTTX_CopyText is not set, the gadget will not
-             be displayed */
 
     return TRUE;
 }
@@ -694,37 +729,70 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
 
 void freeResources(struct ExchangeState *ec)
 {
-    ClearMenuStrip(ec->ec_window);
-    CloseWindow(ec->ec_window);
+    struct LibTable *tmpLibTable = libTable;
 
-    P(kprintf("Closed window\n"));
+    if(IntuitionBase)
+    {
+	if(ec->ec_window)
+	{
+	    ClearMenuStrip(ec->ec_window);
+	    CloseWindow(ec->ec_window);
 
-    FreeMenus(ec->ec_menus);
-    FreeGadgets(ec->ec_context);
-    FreeVisualInfo(ec->ec_visualInfo);
+	    P(kprintf("Closed window\n"));
+	}
+    }
 
-    P(kprintf("Freed visualinfo\n"));
+    if(GadToolsBase)
+    {
+        /* Passing NULL to these functions is safe! */
+	FreeMenus(ec->ec_menus);
+	FreeGadgets(ec->ec_context);
+	FreeVisualInfo(ec->ec_visualInfo);
 
-    FreeBrokerList(&ec->ec_brokerList);
+	P(kprintf("Freed visualinfo\n"));
+    }
 
-    P(kprintf("Freed brokerlist\n"));
+    if(CxBase)
+    {
+	/* petah: Is it safe to pass NULL to FreeBrokerList()? */
+	if(&ec->ec_brokerList)
+	{
+	    FreeBrokerList(&ec->ec_brokerList);
 
-    // CloseCatalog(ec->ec_catalog);
+	    P(kprintf("Freed brokerlist\n"));
+	}
 
-    P(kprintf("Closed catalog\n"));
+	/* It's safe to pass NULL here, but because of the kprintf() we do it anyway */
+ 	if(&ec->ec_broker)
+	{
+	    DeleteCxObjAll(ec->ec_broker);
 
-    DeleteCxObjAll(ec->ec_broker);
-
-    P(kprintf("Deleted broker\n"));
+	    P(kprintf("Deleted broker\n"));
+	}
+    }
 
     // DeleteMsgPort(ec->hotkeyPort);
     DeleteMsgPort(ec->ec_msgPort);
 
-    CloseLibrary((struct Library *)UtilityBase);
-    CloseLibrary((struct Library *)IntuitionBase);
-    CloseLibrary(GadToolsBase);
-    CloseLibrary((struct Library *)LocaleBase);
-    CloseLibrary(CxBase);
+    if(LocaleBase)
+    {
+	CloseCatalog(ec->ec_catalog);
+
+	P(kprintf("Closed catalog\n"));
+
+	CloseLibrary((struct Library *)LocaleBase);
+    }
+
+    while(tmpLibTable->lT_Name)	/* Check for name rather than pointer */
+    {
+	if((*(struct Library **)tmpLibTable->lT_Library))
+	{
+	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
+	    P(kprintf("Closed %s!\n", tmpLibTable->lT_Name));
+	}
+
+    	tmpLibTable++;
+    }
 }
 
 
@@ -804,8 +872,9 @@ void realMain(struct ExchangeState *ec)
 
 				switch ((LONG)GTMENUITEM_USERDATA(item))
 				{
-				case menu_Quit:
+				case MSG_MEN_PROJECT_QUIT:
 				    quitNow = TRUE;
+
 				    break;
 				}
 			    }
@@ -903,7 +972,7 @@ void informBroker(LONG command, struct ExchangeState *ec)
 		      GTLV_Selected, &whichGad,
 		      TAG_DONE);
 
-    brok = getNth(&ec->ec_brokerList, whichGad);
+    brok = getNth(&ec->ec_brokerList, whichGad); /* TODO: Is this OK? */
 
     P(kprintf("Informing the broker <%s>. Reason %d\n", brok->co_Node.ln_Name,
 	      (int)command));
@@ -1008,4 +1077,69 @@ void redrawList(struct ExchangeState *ec)
     GT_SetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
 		      GTLV_Labels, (IPTR)&ec->ec_brokerList,
 		      TAG_DONE);
+
+    /* When an item is removed from the list, make the first item ("0") the selected one (petah) */
+    GT_SetGadgetAttrs(ec->ec_listView, ec->ec_window, NULL,
+		      GTLV_Selected, 0, TAG_DONE);
+
+    /* Update the text gadgets */
+    updateInfo(ec);
+}
+
+
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+    STRPTR string;
+
+    if(catalogPtr)
+	string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    else
+	string = CatCompArray[id].cca_Str;
+
+    return(string);
+}
+
+void setupMenus(struct Catalog *catalogPtr)
+{
+    struct NewMenu *newMenuPtr = nm;
+    ULONG id;
+
+    while(newMenuPtr->nm_Type != NM_END)
+    {
+
+	if(newMenuPtr->nm_Label != NM_BARLABEL)
+	{
+	    id = (ULONG)newMenuPtr->nm_Label;
+
+	    if(newMenuPtr->nm_Type == NM_TITLE)
+		newMenuPtr->nm_Label = getCatalog(catalogPtr, id);
+	    else
+	    {
+		newMenuPtr->nm_Label = getCatalog(catalogPtr, id) + 2; /* CAUTION: Menus will be crippled if the lack keyboard shortcuts! */
+		newMenuPtr->nm_CommKey = getCatalog(catalogPtr, id);
+		newMenuPtr->nm_UserData = (APTR)id; /* petah: OK? */
+	    }
+	}
+	newMenuPtr++;
+    }
+}
+
+void showSimpleMessage(struct ExchangeState *ec, STRPTR msgString)
+{
+    struct EasyStruct easyStruct;
+
+    easyStruct.es_StructSize	= sizeof(easyStruct);
+    easyStruct.es_Flags		= 0;
+    easyStruct.es_Title		= getCatalog(ec->ec_catalog, MSG_EXCHANGE_CXNAME);
+    easyStruct.es_TextFormat	= msgString;
+    easyStruct.es_GadgetFormat	= getCatalog(ec->ec_catalog, MSG_OK);		
+
+    if(IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI && ec->ec_window)
+    {
+	EasyRequestArgs(ec->ec_window, &easyStruct, NULL, NULL);
+    }
+    else
+    {
+	printf("%s", msgString);
+    }
 }

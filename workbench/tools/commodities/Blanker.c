@@ -3,12 +3,14 @@
 #include <graphics/gfx.h>
 #include <graphics/gfxbase.h>
 #include <libraries/commodities.h>
+#include <libraries/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/commodities.h>
 #include <proto/alib.h>
+#include <proto/locale.h>
 
 #include <aros/debug.h>
 
@@ -16,6 +18,8 @@
 
 
 /************************************************************************************/
+
+UBYTE version[] = "$VER: Blanker 0.2 (14.10.2001)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,SECONDS=SEC/N/K,STARS=ST/N/K"
 
@@ -29,16 +33,18 @@
 #define CMD_STARTBLANK 1
 #define CMD_STOPBLANK  2
 
-struct IntuitionBase *IntuitionBase;
-struct GfxBase *GfxBase;
-struct Library *CxBase;
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#define CATCOMP_ARRAY
+
+#include "commodities_strings.h"
 
 static struct NewBroker nb =
 {
    NB_VERSION,
-   "Blanker", 
-   "System Screen Blanker", 
-   "Blanks Screen When System Inactive", 
+   NULL,
+   NULL,
+   NULL,
    NBU_NOTIFY | NBU_UNIQUE, 
    0,
    0,
@@ -46,11 +52,32 @@ static struct NewBroker nb =
    0 
 };
 
+/* Libraries to open */
+struct LibTable
+{
+ APTR   lT_Library;
+ STRPTR lT_Name;
+ ULONG  lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,	"intuition.library",    39L},
+ { &GfxBase,		"graphics.library",     39L},
+ { &CxBase,		"commodities.library",  39L},
+ { NULL }
+};
+
+struct LocaleBase *LocaleBase       = NULL;
+struct Library *GadToolsBase        = NULL;
+struct Library *CxBase              = NULL;
+struct IntuitionBase *IntuitionBase = NULL;
+
 static struct MsgPort *cxport;
 static struct Window *win;
 static struct RastPort *rp;
 static struct Task *maintask;
 
+static struct Catalog *catalogPtr;
 static struct RDArgs *myargs;
 static CxObj *cxbroker, *cxcust;
 static ULONG cxmask, actionmask;
@@ -69,33 +96,75 @@ static WORD star_x[MAX_STARS], star_y[MAX_STARS],
 static void Cleanup(char *msg)
 {
     struct Message *cxmsg;
+    struct LibTable *tmpLibTable = libTable;
     
-    if (msg)
+    if(msg)
     {
-	printf("Blanker: %s\n",msg);
+	puts(msg);
     }
 
-    if (win) CloseWindow(win);
-
-    if (cxbroker) DeleteCxObjAll(cxbroker);
-    if (cxport)
+    if(IntuitionBase)
     {
-        while((cxmsg = GetMsg(cxport)))
+	if(win)
+	    CloseWindow(win);
+    }
+
+    if(CxBase)
+    {
+
+	if(cxbroker)
+	    DeleteCxObjAll(cxbroker);
+
+	if(cxport)
 	{
-	    ReplyMsg(cxmsg);
+	    while((cxmsg = GetMsg(cxport)))
+	    {
+		ReplyMsg(cxmsg);
+	    }
+
+	    DeleteMsgPort(cxport);
 	}
-        DeleteMsgPort(cxport);
     }
     
-    if (myargs) FreeArgs(myargs);
+    if(myargs)
+	FreeArgs(myargs);
 
-    if (CxBase) CloseLibrary(CxBase);
-    if (GfxBase) CloseLibrary((struct Library *)GfxBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
+    if(LocaleBase)
+    {
+	CloseCatalog(catalogPtr);
+	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
+	kprintf("Closed locale.library!\n");
+    }
 
-    if (actionsig) FreeSignal(actionsig);
+    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
+    {
+	if((*(struct Library **)tmpLibTable->lT_Library))
+	{
+	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
+	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	}
+
+	tmpLibTable++;
+    }
+
+    if(actionsig)
+	FreeSignal(actionsig);
     
     exit(0);
+}
+
+/************************************************************************************/
+
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+    STRPTR string;
+
+    if(catalogPtr)
+	string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    else
+	string = CatCompArray[id].cca_Str;
+
+    return(string);
 }
 
 /************************************************************************************/
@@ -119,20 +188,30 @@ static void Init(void)
 
 static void OpenLibs(void)
 {
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
+    struct LibTable *tmpLibTable = libTable;
+    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
+
+    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
-	Cleanup("Can't open intuition.library V39!");
+	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+    }
+    else
+	kprintf("Warning: Can't open locale.library V40!\n");
+
+    while(tmpLibTable->lT_Library)
+    {
+	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+	{
+	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+            //showSimpleMessage(ec, tmpString);
+            Cleanup(tmpString);
+        }
+        else
+	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
+
+        tmpLibTable++;
     }
 
-    if (!(GfxBase = (struct GfxBase *)OpenLibrary("graphics.library",39)))
-    {
-	Cleanup("Can't open graphics.library V39!");
-    }
-
-    if (!(CxBase = OpenLibrary("commodities.library",39)))
-    {
-	Cleanup("Can't open commodities.library V39!");
-    }
 }
 
 /************************************************************************************/
@@ -206,7 +285,7 @@ static void InitCX(void)
 {
     if (!(cxport = CreateMsgPort()))
     {
-        Cleanup("Can't create MsgPort!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
     }
     
     nb.nb_Port = cxport;
@@ -215,12 +294,12 @@ static void InitCX(void)
     
     if (!(cxbroker = CxBroker(&nb, 0)))
     {
-        Cleanup("Can't create CxBroker object!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
     }
     
     if (!(cxcust = CxCustom(BlankerAction, 0)))
     {
-        Cleanup("Can't create CxCustom object!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
     }
     
     AttachCxObj(cxbroker, cxcust);
@@ -242,25 +321,39 @@ static LONG myrand(void)
 
 static void MakeWin(void)
 {
+    struct Screen *screenPtr;
     WORD y, y2, stripheight = 20;
     LONG i;
-    
-    win = OpenWindowTags(0,WA_Left,0,
-			   WA_Top,0,
-			   WA_Width,10000,
-			   WA_Height,10000,
-			   WA_AutoAdjust,TRUE,
-			   WA_BackFill,(IPTR)LAYERS_NOBACKFILL,
-			   WA_SimpleRefresh,TRUE,
-			   WA_Borderless,TRUE,
-			   TAG_DONE);
 
-    if (win)
+/* FIXME: LockPubScreen() thank you. Here's what AROS says when blanking:
+lockpubscreen.c, 153: bad pointer: name = $40059027
+lparent: 403e7490, l->parent: 403e7490
+*/
+
+    if(!(screenPtr = LockPubScreen(NULL)))
+     kprintf("Warning: LockPubScreen() failed!\n");
+
+    printf("Width = %d Height = %d\n", screenPtr->Width, screenPtr->Height);
+
+    win = OpenWindowTags(0, WA_Left, 0,
+			    WA_Top, 0,
+			    WA_Width, screenPtr->Width,
+			    WA_Height, screenPtr->Height,
+			    WA_AutoAdjust, TRUE,
+			    WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
+			    WA_SimpleRefresh, TRUE,
+			    WA_Borderless, TRUE,
+			    TAG_DONE);
+
+    if(screenPtr)
+     UnlockPubScreen(NULL, screenPtr);
+
+    if(win)
     {
         rp = win->RPort;
 
-        scrwidth  = win->WScreen->Width;
-	scrheight = win->WScreen->Height;
+        scrwidth  = win->Width;
+	scrheight = win->Height;
 	
 	for(i = 0;i < num_stars;i++)
 	{
@@ -314,6 +407,8 @@ static void MakeWin(void)
 	} /* for(y = 0;y < scrheight - 1;y++, stripheight++) */
 	
     } /* if (win) */
+    else
+     printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_WIN));
 }
 
 /************************************************************************************/
@@ -422,6 +517,11 @@ int main(void)
 {
     Init();
     OpenLibs();
+
+    nb.nb_Name = getCatalog(catalogPtr, MSG_BLANKER_CXNAME);
+    nb.nb_Title = getCatalog(catalogPtr, MSG_BLANKER_CXTITLE);
+    nb.nb_Descr = getCatalog(catalogPtr, MSG_BLANKER_CXDESCR);
+
     GetArguments();
     InitCX();
     HandleAll();
