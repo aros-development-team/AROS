@@ -34,6 +34,11 @@
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w,
 			      struct IntuitionBase *IntuitionBase);
 
+void notify_mousemove_screensandwindows(WORD x, 
+                                        WORD y, 
+                                        struct IntuitionBase * IntuitionBase);
+
+
 /***************
 **  InitIIH   **
 ***************/
@@ -441,11 +446,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         if (w == NULL)
 	    continue;
 	         
-	/* mouse position relative to upper left window edge,
-	   only valid for certain IECLASSes!! */
-	   
 	win_mousex = ie->ie_X - w->LeftEdge;
 	win_mousey = ie->ie_Y - w->TopEdge;
+ 
+	if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+	{
+	  win_mousex -= w->MouseX;
+	  win_mousey -= w->MouseY;
+	}
 		
 	/*
 	** If the last InputEvent was swallowed, we can reuse the IntuiMessage.
@@ -800,15 +808,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		struct IntuiMessage *msg, *succ;
 
 		im->Class = IDCMP_MOUSEMOVE;
-	        
 		ptr = "MOUSEMOVE";
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;
-		
-		/* Set the screens mouse coords.
-		   This won't work if no window is active */
-		w->WScreen->MouseX = ie->ie_X;
-		w->WScreen->MouseY = ie->ie_Y;
+
+		notify_mousemove_screensandwindows(ie->ie_X, 
+		                                   ie->ie_Y, 
+		                                   IntuitionBase);
 
 		if (gadget)
 		{
@@ -1773,4 +1779,39 @@ inline struct IntuiMessage *alloc_intuimessage(struct IntuitionBase *IntuitionBa
     }
     
     return imsg;
+}
+
+
+/*
+  All screens and windows will be updated with the current position of
+  the mouse pointer. The windows will receive relative mouse coordinates.
+*/
+void notify_mousemove_screensandwindows(WORD x, 
+                                        WORD y, 
+                                        struct IntuitionBase * IntuitionBase)
+{
+  struct Screen * scr = IntuitionBase->FirstScreen;
+  while (NULL != scr)
+  {
+    /* 
+    ** Visit all windows of this screen
+    */
+    struct Window * win = scr->FirstWindow;
+    
+    while (NULL != win)
+    {
+      win->MouseX = x - win->LeftEdge;
+      win->MouseY = y - win->TopEdge;
+      
+      if (0 != (win->Flags & WFLG_GIMMEZEROZERO))
+      {
+        win->GZZMouseX = x - (win->LeftEdge + win->BorderLeft);
+        win->GZZMouseY = y - (win->TopEdge  + win->BorderTop);
+      }
+      win = win -> NextWindow;
+    }
+    scr->MouseX = x;
+    scr->MouseY = y;
+    scr = scr->NextScreen;
+  }
 }
