@@ -43,6 +43,8 @@
 #include <hidd/serial.h>
 #include <hidd/unixio.h>
 
+#include <devices/serial.h>
+
 #include "serial_intern.h"
 
 #undef  SDEBUG
@@ -325,10 +327,14 @@ ULONG serialunit_setbaudrate(Class *cl, Object *o, struct pHidd_SerialUnit_SetBa
 }
 
 /******* SerialUnit::SendBreak() **********************************/
-VOID serialunit_sendbreak(Class *cl, Object *o, struct pHidd_SerialUnit_SendBreak *msg)
+BYTE serialunit_sendbreak(Class *cl, Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
   struct HIDDSerialUnitData * data = INST_DATA(cl, o);
-  tcsendbreak(data->filedescriptor, msg->duration);
+  
+  if (0 == tcsendbreak(data->filedescriptor, msg->duration))
+    return 0;
+  
+  return SerErr_LineErr;
 }
 
 /************* The software interrupt handler that gets data from UART *****/

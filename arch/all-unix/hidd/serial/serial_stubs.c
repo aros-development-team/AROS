@@ -126,7 +126,7 @@ BOOL HIDD_SerialUnit_SetBaudrate(Object *obj, ULONG baudrate)
 
 /***************************************************************/
 
-VOID HIDD_SerialUnit_SendBreak(Object *obj, int duration)
+BYTE HIDD_SerialUnit_SendBreak(Object *obj, int duration)
 {
     static MethodID mid = 0;
     struct pHidd_SerialUnit_SendBreak p;
@@ -136,6 +136,6 @@ VOID HIDD_SerialUnit_SendBreak(Object *obj, int duration)
     p.mID	= mid;
     p.duration  = duration;
 
-    DoMethod(obj, (Msg) &p);
+    return ((BYTE)DoMethod(obj, (Msg) &p));
 }
 

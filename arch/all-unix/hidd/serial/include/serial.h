@@ -110,7 +110,7 @@ VOID     HIDD_Serial_DisposeUnit	(Object *obj, Object *unit);
 BOOL     HIDD_SerialUnit_Init	(Object *obj, VOID * DataReceived, VOID * WriteData);
 ULONG    HIDD_SerialUnit_Write	(Object *obj, UBYTE * data, ULONG length);
 BOOL     HIDD_SerialUnit_SetBaudrate(Object *obj, ULONG baudrate);
-VOID     HIDD_SerialUnit_SendBreak(Object *obj, int duration);
+BYTE     HIDD_SerialUnit_SendBreak(Object *obj, int duration);
 
 
 #endif /* HIDD_SERIAL_H */
