@@ -253,7 +253,7 @@ static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct Ic
 {
 #if 0
     struct Rectangle toplace_rect;
-    
+
     IconList_GetIconRectangle(obj, toplace, &toplace_rect);
     toplace_rect.MinX += atx + data->view_x;
     toplace_rect.MaxX += atx + data->view_x;
@@ -269,17 +269,17 @@ static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct Ic
     	data->width = toplace_rect.MaxX - data->view_x;
 	set(obj, MUIA_IconList_Width, data->width);
     }
-    
+
     if (toplace_rect.MaxY - data->view_y > data->height)
     {
     	data->height = toplace_rect.MaxY - data->view_y;
 	set(obj, MUIA_IconList_Height, data->height);
     }
-#endif    
+#endif
 }
 
 /**************************************************************************
- Place icons with NO_ICON_POSITION coords somewhere 
+ Place icons with NO_ICON_POSITION coords somewhere
 **************************************************************************/
 
 static void IconList_FixNoPositionIcons(Object *obj, struct MUI_IconData *data)
@@ -598,7 +598,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	    rect.MaxY += _mtop(obj) - data->view_y + data->update_icon->y;
 
 	    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
-	    EraseRect(_rp(obj),rect.MinX,rect.MinY,rect.MaxX,rect.MaxY);
+            DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
 	    /* We could have deleted also other icons so they must be redrawn */
 	    icon = List_First(&data->icon_list);
@@ -631,71 +631,71 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	{
 	    struct Region *region;
 	    BOOL scroll_caused_damage;
-	    
+
 	    scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
-	    
+
 	    data->update = 0;
-	    
+
 	    if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
 	    	(abs(data->update_scrolldy) >= _mheight(obj)))
 	    {
 		MUI_Redraw(obj, MADF_DRAWOBJECT);
 		return 0;
 	    }
-	    
+
 	    region = NewRegion();
 	    if (!region)
 	    {
 		MUI_Redraw(obj, MADF_DRAWOBJECT);
 		return 0;
 	    }
-	    
+
 	    if (data->update_scrolldx > 0)
 	    {
 	    	struct Rectangle rect;
-		
+
 		rect.MinX = _mright(obj) - data->update_scrolldx;
 		rect.MinY = _mtop(obj);
 		rect.MaxX = _mright(obj);
 		rect.MaxY = _mbottom(obj);
-		
+
 		OrRectRegion(region, &rect);
 	    }
 	    else if (data->update_scrolldx < 0)
 	    {
 	    	struct Rectangle rect;
-		
+
 		rect.MinX = _mleft(obj);
 		rect.MinY = _mtop(obj);
 		rect.MaxX = _mleft(obj) - data->update_scrolldx;
 		rect.MaxY = _mbottom(obj);
-		
+
 		OrRectRegion(region, &rect);
 	    }
 
 	    if (data->update_scrolldy > 0)
 	    {
 	    	struct Rectangle rect;
-		
+
 		rect.MinX = _mleft(obj);
 		rect.MinY = _mbottom(obj) - data->update_scrolldy;
 		rect.MaxX = _mright(obj);
 		rect.MaxY = _mbottom(obj);
-		
+
 		OrRectRegion(region, &rect);
 	    }
 	    else if (data->update_scrolldy < 0)
 	    {
 	    	struct Rectangle rect;
-		
+
 		rect.MinX = _mleft(obj);
 		rect.MinY = _mtop(obj);
 		rect.MaxX = _mright(obj);
 		rect.MaxY = _mtop(obj) - data->update_scrolldy;
-		
+
 		OrRectRegion(region, &rect);
 	    }
-	    	    
+
 	    ScrollRasterBF(_rp(obj),
 	    	    	   data->update_scrolldx,
 			   data->update_scrolldy,
@@ -703,15 +703,15 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 			   _mtop(obj),
 			   _mright(obj),
 			   _mbottom(obj));
-		
+
     	    scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
 
 	    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-	    
+
 	    MUI_Redraw(obj, MADF_DRAWOBJECT);
-	    
+
 	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-	    
+
 //	    DisposeRegion(region);
 
 	    if (scroll_caused_damage)
@@ -725,7 +725,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
 		    Object *o;
 
-		    get(_win(obj),MUIA_Window_RootObject, (IPTR *)&o);	       
+		    get(_win(obj),MUIA_Window_RootObject, (IPTR *)&o);
 		    MUI_Redraw(o, MADF_DRAWOBJECT);
 
 		    MUI_EndRefresh(muiRenderInfo(obj), 0);
@@ -734,12 +734,10 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
 	    return 0;
 	}
-	
+
     } else
     {
-    	/* We don't use the predefined MUI background because workbench has own */
-	EraseRect(_rp(obj),_mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-	/*  DoMethod(obj, MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj)); */
+	DoMethod(obj, MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
     }
 
 
@@ -747,7 +745,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
      * it should be done after all icons have been loaded */
 
     IconList_FixNoPositionIcons(obj, data);
-    
+
     clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
     icon = List_First(&data->icon_list);
