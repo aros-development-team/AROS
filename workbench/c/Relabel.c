@@ -54,6 +54,7 @@
 #include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <string.h>
 
 
 enum { ARG_DRIVE = 0, ARG_NAME };
