@@ -82,7 +82,7 @@ if [ ! -z $failed ]; then
     mail_write "The following packages FAILED to build completely:"
     for package in $failed; do
         mail_write $package
-	tail -100 $LOG_BASE/$package.log >/tmp/_aros_build_log_$package
+	bzcat $LOG_BASE/$package.log | tail -100 - >/tmp/_aros_build_log_$package
 	ATTACH=( $ATTACH -a/tmp/_aros_build_log_$package )
     done
     mail_write ""
