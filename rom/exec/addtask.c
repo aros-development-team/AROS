@@ -120,7 +120,7 @@
     if(task->tc_TrapCode == NULL)
 	task->tc_TrapCode = SysBase->TaskTrapCode;
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE) || 1
     /*
 	If you can't to store the registers on the signal stack, you
 	must set this flag.
@@ -198,8 +198,8 @@
 #ifdef STACKSNOOP
     {
         UBYTE *startfill, *endfill;
-	
-    #if AROS_STACK_GROWS_DOWNWARDS	
+
+    #if AROS_STACK_GROWS_DOWNWARDS
 	startfill = (UBYTE *)task->tc_SPLower;
 	endfill   = ((UBYTE *)task->tc_SPReg) - 16;
     #else
@@ -211,7 +211,7 @@
 	{
 	    *startfill++ = 0xE1;
 	}
-	
+
     }
 #endif
 
