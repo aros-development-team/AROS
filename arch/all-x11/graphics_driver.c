@@ -739,7 +739,7 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
 	    struct GfxBase * GfxBase)
 {
     int t;
-    XColor xc;
+/*    XColor xc; */
     Colormap cm;
 
     cm = DefaultColormap (sysDisplay, sysScreen);
@@ -776,8 +776,8 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
 void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
 	    struct GfxBase * GfxBase)
 {
-    int t, r, g, b;
-    XColor xc;
+    int t /*, r, g, b */ ;
+    /* XColor xc; */
     Colormap cm;
     UWORD count, first;
 
