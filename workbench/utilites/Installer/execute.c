@@ -31,7 +31,7 @@ ScriptArg *current, *dummy = NULL;
 int cmd_type;
 int slen, i, j;
 int quiet;
-char *clip, **mclip;
+char *clip, **mclip, *string;
 void *params;
 
   current = commands;
@@ -53,10 +53,23 @@ void *params;
       {
         if( current->arg != NULL )
         {
+          cleanup();
           printf( "Argument in list of commands!\n" );
           exit(-1);
         }
       }
+    }
+    free( current->parent->arg );
+    current->parent->arg = NULL;
+    current->parent->intval = current->intval;
+    if( current->arg != NULL )
+    {
+      current->parent->arg = malloc( sizeof( current->arg ) + 1 );
+      if( current->parent->arg == NULL )
+      {
+        end_malloc();
+      }
+      strcpy( current->parent->arg, current->arg );
     }
   }
   else
@@ -94,7 +107,20 @@ void *params;
                           exit(-1);
                           break;
 
-      case _AND		: /* logically AND two arguments */
+      case _AND		: /* logically AND two arguments	*/
+      case _BITAND	: /* bitwise AND two arguments		*/
+      case _BITOR	: /* bitwise OR two arguments		*/
+      case _BITXOR	: /* bitwise XOR two arguments		*/
+      case _DIFF	: /* returns 1 if 1st != 2nd else 0	*/
+      case _DIV		: /* divide 1st by 2nd intval		*/
+      case _EQUAL	: /* returns 1 if 1st = 2nd else 0	*/
+      case _LESS	: /* returns 1 if 1st < 2nd else 0	*/
+      case _LESSEQ	: /* returns 1 if 1st <= 2nd else 0	*/
+      case _MINUS	: /* subtract 2nd from 1st intval	*/
+      case _MORE	: /* returns 1 if 1st > 2nd else 0	*/
+      case _MOREEQ	: /* returns 1 if 1st >= 2nd else 0	*/
+      case _OR		: /* logically OR two arguments		*/
+      case _XOR		: /* logically XOR two arguments	*/
                           if( current->next != NULL  && current->next->next != NULL )
                           {
                             current = current->next;
@@ -106,16 +132,185 @@ void *params;
                             {
                               execute_script( current->next->cmd, level + 1 );
                             }
-                            current->parent->intval = current->intval && current->next->intval;
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                /* Strip off quotes */
+                                clip = strip_quotes( current->arg );
+                                i = atoi( clip );
+                                free( clip );
+                              }
+                              else
+                              {
+                                i = get_var_int( current->arg );
+                              }
+                            }
+                            else
+                            {
+                              i = current->intval;
+                            }
+                            current = current->next;
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                /* Strip off quotes */
+                                clip = strip_quotes( current->arg );
+                                j = atoi( clip );
+                                free( clip );
+                              }
+                              else
+                              {
+                                j = get_var_int( current->arg );
+                              }
+                            }
+                            else
+                            {
+                              j = current->intval;
+                            }
+                            switch( cmd_type )
+                            {
+                              case _AND :
+                                current->parent->intval = i && j;
+                                break;
+                              case _BITAND :
+                                current->parent->intval = i & j;
+                                break;
+                              case _BITOR :
+                                current->parent->intval = i | j;
+                                break;
+                              case _BITXOR :
+                                current->parent->intval = i ^ j;
+                                break;
+                              case _DIFF :
+                                current->parent->intval = ( i != j ) ? 1 : 0;
+                                break;
+                              case _DIV :
+                                if( j == 0 )
+                                {
+                                  cleanup();
+                                  printf( "Division by zero!\n" );
+                                  exit(-1);
+                                }
+                                current->parent->intval = (int)( i / j );
+                                break;
+                              case _EQUAL :
+                                current->parent->intval = ( i == j ) ? 1 : 0;
+                                break;
+                              case _LESS :
+                                current->parent->intval = (i < j ) ? 1 : 0;
+                                break;
+                              case _LESSEQ :
+                                current->parent->intval = ( i <= j ) ? 1 : 0;
+                                break;
+                              case _MINUS :
+                                current->parent->intval = i - j;
+                                break;
+                              case _MORE :
+                                current->parent->intval = ( i > j ) ? 1 : 0;
+                                break;
+                              case _MOREEQ :
+                                current->parent->intval = ( i >= j ) ? 1 : 0;
+                                break;
+                              case _OR :
+                                current->parent->intval = i || j;
+                                break;
+                              case _XOR :
+                                current->parent->intval = ( i && !j ) || ( j && !i );
+                                break;
+                            }
                           }
                           else
                           {
 #warning FIXME: add error message
+                            cleanup();
                             printf( "ERROR!\n" );
                             exit(-1);
                           }
                           free( current->parent->arg );
                           current->parent->arg = NULL;
+                          break;
+
+      case _CAT		: /* Return concatenated strings */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          while( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              /* There is a command instead of a value -- execute command */
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                /* Strip off quotes */
+                                clip = strip_quotes( current->arg );
+                              }
+                              else
+                              {
+                                string = get_var_arg( current->arg );
+                                if( string != NULL )
+                                {
+                                  clip = malloc( strlen( string ) + 1 );
+                                  if( clip == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  strcpy( clip, string );
+                                }
+                                else
+                                {
+                                  clip = malloc( MAXARGSIZE );
+                                  if( clip == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  sprintf( clip, "%d", get_var_int( current->arg ));
+                                }
+                              }
+                            }
+                            else
+                            {
+                              clip = malloc( MAXARGSIZE );
+                              if( clip == NULL )
+                              {
+                                end_malloc();
+                              }
+                              sprintf( clip, "%d", current->intval );
+                            }
+                            slen = current->parent->arg == NULL ?
+                                   0 :
+                                   strlen( current->parent->arg );
+                            current->parent->arg = realloc( current->parent->arg, slen + strlen( clip ) + 1 );
+                            if( current->parent->arg == NULL )
+                            {
+                              end_malloc();
+                            }
+                            sprintf( &(current->parent->arg[slen]), "%s", clip );
+                            free( clip );
+                          }
+                          /* Add surrounding quotes to string */
+                          slen = strlen( current->parent->arg );
+                          clip = malloc( slen + 1 );
+                          if( clip == NULL )
+                          {
+                            end_malloc();
+                          }
+                          strcpy( clip, current->parent->arg );
+                          current->parent->arg = realloc( current->parent->arg, slen + 3 );
+                          if( current->parent->arg == NULL)
+                          {
+                            end_malloc();
+                          }
+                          (current->parent->arg)[0] = DQUOTE;
+                          strcpy( (current->parent->arg) + 1, clip );
+                          (current->parent->arg)[slen+1] = DQUOTE;
+                          (current->parent->arg)[slen+2] = 0;
                           break;
 
       case _COMPLETE	: /* Display how much we have done in percent */
@@ -194,6 +389,119 @@ void *params;
                           exit(0);
                           break;
 
+      case _IF		: /* if 1st arg != 0 execute 2nd cmd else execute optional 3rd cmd */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL && current->next->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                i = atoi( current->arg );
+                              }
+                              else
+                              {
+                                clip = get_var_arg( current->arg );
+                                if( clip == NULL )
+                                {
+                                  i = get_var_int( current->arg );
+                                }
+                                else
+                                {
+                                  i = atoi( clip );
+                                }
+                              }
+                            }
+                            else
+                            {
+                              i = current->intval;
+                            }
+                            if( i == 0 )
+                            {
+                              current = current->next;
+                            }
+                            if( current->next != NULL )
+                            {
+                              current = current->next;
+                              if( current->cmd != NULL )
+                              {
+                                execute_script( current->cmd, level + 1 );
+                              }
+                              current->parent->intval = current->intval;
+                              if( current->arg != NULL )
+                              {
+                                current->parent->arg = malloc( sizeof( current->arg ) + 1 );
+                                if( current->parent->arg == NULL )
+                                {
+                                  end_malloc();
+                                }
+                                strcpy( current->parent->arg, current->arg );
+                              }
+                            }
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            cleanup();
+                            printf( "No arguments given!\n" );
+                            exit(-1);
+                          }
+                          break;
+
+      case _BITNOT	: /* bitwise invert argument */
+      case _NOT		: /* logically invert argument */
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                clip = strip_quotes( current->arg );
+                                i = atoi( clip );
+                                free( clip );
+                              }
+                              else
+                              {
+                                clip = get_var_arg( current->arg );
+                                if( clip == NULL )
+                                {
+                                  i = get_var_int( current->arg );
+                                }
+                                else
+                                {
+                                  i = atoi( clip );
+                                }
+                              }
+                            }
+                            else
+                            {
+                              i = current->intval;
+                            }
+                            current->parent->intval = ( cmd_type == _NOT ) ? !i : ~i;
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            cleanup();
+                            printf( "No argument given!\n" );
+                            exit(-1);
+                          }
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          break;
+
       case _PLUS	: /* Sum up all arguments and return that value */
                           current->parent->intval = 0;
                           while( current->next != NULL )
@@ -246,6 +554,7 @@ void *params;
                                 /* There is a command instead of a varname */
 #warning FIXME: What to do if cmd but expected varname?
 #warning FIXME: Maybe do not allow varnames with quotes, too.
+                                cleanup();
                                 printf( "Expected symbol, found function instead!\n" );
                                 exit(-1);
                               }
@@ -309,7 +618,7 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                                 {
                                   /* Add surrounding quotes to string */
                                   slen = strlen( clip );
-                                  dummy->parent->arg = malloc(slen+3);
+                                  dummy->parent->arg = malloc( slen + 3 );
                                   if( dummy->parent->arg == NULL)
                                   {
                                     end_malloc();
@@ -329,48 +638,95 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           }
                           break;
 
-      case _TRANSCRIPT	: /* concatenate strings into logfile */
-                          if( preferences.transcriptfile != NULL )
+      case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL )
                           {
-                            while( current->next != NULL )
+                            current = current->next;
+                            if( current->cmd != NULL )
                             {
-                              current = current->next;
-                              if( current->cmd != NULL )
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
                               {
-                                /* There is a command instead of a value -- execute command */
-                                execute_script( current->cmd, level + 1 );
-                              }
-                              if( current->arg != NULL )
-                              {
-                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                                {
-                                  /* Strip off quotes */
-                                  clip = strip_quotes( current->arg );
-                                  fprintf( preferences.transcriptstream, "%s ", clip );
-                                  free( clip );
-                                }
-                                else
-                                {
-                                  clip = get_var_arg( current->arg );
-                                  if( clip != NULL )
-                                  {
-                                    fprintf( preferences.transcriptstream, "%s ", clip );
-                                  }
-                                  else
-                                  {
-                                    fprintf( preferences.transcriptstream, "%d ", get_var_int( current->arg ) );
-                                  }
-                                }
+                                i = atoi( current->arg );
                               }
                               else
                               {
-                                fprintf( preferences.transcriptstream, "%d ", current->intval );
+                                clip = get_var_arg( current->arg );
+                                if( clip == NULL )
+                                {
+                                  i = get_var_int( current->arg );
+                                }
+                                else
+                                {
+                                  i = atoi( clip );
+                                }
                               }
                             }
-                            fprintf( preferences.transcriptstream, "\n" );
+                            else
+                            {
+                              i = current->intval;
+                            }
+                            if( i > 0 )
+                            {
+                              j = 0;
+                              for( ; i > 0 ; i-- )
+                              {
+                                if( current->next != NULL )
+                                {
+                                  current = current->next;
+                                }
+                                else
+                                {
+                                  j = 1;
+                                }
+                              }
+                              if( j == 0 )
+                              {
+                                current->parent->intval = current->intval;
+                                if( current->arg != NULL )
+                                {
+                                  current->parent->arg = malloc( strlen( current->arg ) + 1 );
+                                  if( current->parent->arg == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  strcpy( current->parent->arg, current->arg );
+                                }
+                              }
+                            }
                           }
-                          /* Return last string or all ? */
-#warning FIXME: Decide what to do
+                          else
+                          {
+                            cleanup();
+                            printf( "ERROR!\n" );
+                            exit(-1);
+                          }
+                          break;
+
+      case _STRLEN	: /* Return the length of the string */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              current->parent->intval = ( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE ) ?
+                                                        strlen( current->arg ) - 2 :
+                                                        strlen( get_var_arg( current->arg ) );
+                            }
+                          }
                           break;
 
       case _STRING	: /* Call RawDoFmt with string as format and args and return output */
@@ -478,7 +834,7 @@ printf( "\n" );
 
                           /* Add surrounding quotes to string */
                           slen = strlen( current->parent->arg );
-                          clip = malloc(slen+3);
+                          clip = malloc(slen + 3);
                           if( clip == NULL)
                           {
                             end_malloc();
@@ -492,6 +848,165 @@ printf( "\n" );
 
                           current->parent->intval = 0;
 
+                          break;
+
+      case _TIMES	: /* Multiply all arguments and return that value */
+                          if( current->next == NULL )
+                          {
+                            cleanup();
+                            printf( "No arguments to \"*\" operator!\n" );
+                            exit(-1);
+                          }
+                          current->parent->intval = 1;
+                          while( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            if( current->arg != NULL )
+                            {
+                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                              {
+                                /* Strip off quotes */
+                                clip = strip_quotes( current->arg );
+                                current->parent->intval *= atoi( clip );
+                                free( clip );
+                              }
+                              else
+                              {
+                                clip = get_var_arg( current->arg );
+                                if( clip != NULL )
+                                {
+                                  current->parent->intval *= atoi( clip );
+                                }
+                                else
+                                {
+                                  current->parent->intval *= get_var_int( current->arg );
+                                }
+                              }
+                            }
+                            else
+                            {
+                              current->parent->intval *= current->intval;
+                            }
+                          }
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          break;
+
+      case _TRANSCRIPT	: /* concatenate strings into logfile */
+                          if( preferences.transcriptfile != NULL )
+                          {
+                            while( current->next != NULL )
+                            {
+                              current = current->next;
+                              if( current->cmd != NULL )
+                              {
+                                /* There is a command instead of a value -- execute command */
+                                execute_script( current->cmd, level + 1 );
+                              }
+                              if( current->arg != NULL )
+                              {
+                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                {
+                                  /* Strip off quotes */
+                                  clip = strip_quotes( current->arg );
+                                  fprintf( preferences.transcriptstream, "%s ", clip );
+                                  free( clip );
+                                }
+                                else
+                                {
+                                  clip = get_var_arg( current->arg );
+                                  if( clip != NULL )
+                                  {
+                                    fprintf( preferences.transcriptstream, "%s ", clip );
+                                  }
+                                  else
+                                  {
+                                    fprintf( preferences.transcriptstream, "%d ", get_var_int( current->arg ) );
+                                  }
+                                }
+                              }
+                              else
+                              {
+                                fprintf( preferences.transcriptstream, "%d ", current->intval );
+                              }
+                            }
+                            fprintf( preferences.transcriptstream, "\n" );
+                          }
+                          /* Return last string or all ? */
+#warning FIXME: Decide what to do
+                          break;
+
+      case _UNTIL	: /* execute 2nd cmd until 1st arg != 0 */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL && current->next->next != NULL )
+                          {
+                            current = current->next;
+                            i = 0;
+                            while( i == 0 )
+                            {
+                              /* Execute command */
+                              if( current->next->cmd != NULL )
+                              {
+                                execute_script( current->next->cmd, level + 1 );
+                              }
+
+                              /* Now check condition */
+                              if( current->cmd != NULL )
+                              {
+                                execute_script( current->cmd, level + 1 );
+                              }
+                              if( current->arg != NULL )
+                              {
+                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                {
+                                  i = atoi( current->arg );
+                                }
+                                else
+                                {
+                                  clip = get_var_arg( current->arg );
+                                  if( clip == NULL )
+                                  {
+                                    i = get_var_int( current->arg );
+                                  }
+                                  else
+                                  {
+                                    i = atoi( clip );
+                                  }
+                                }
+                              }
+                              else
+                              {
+                                i = current->intval;
+                              }
+                              /* condition is true -> return values and exit */
+                              if( i != 0 )
+                              {
+                                current->parent->intval = current->next->intval;
+                                if( current->next->arg != NULL )
+                                {
+                                  current->parent->arg = malloc( sizeof( current->next->arg ) + 1 );
+                                  if( current->parent->arg == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  strcpy( current->parent->arg, current->next->arg );
+                                }
+                              }
+                            }
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            cleanup();
+                            printf( "No arguments given!\n" );
+                            exit(-1);
+                          }
                           break;
 
       case _WELCOME	: /* Display strings instead of "Welcome to the <APPNAME> App installation utility" */
@@ -535,6 +1050,74 @@ printf( "\n" );
                           /* Return last string or all ? */
 #warning FIXME: Decide what to do
 #endif /* DEBUG */
+                          break;
+
+      case _WHILE	: /* while 1st arg != 0 execute 2nd cmd */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL && current->next->next != NULL )
+                          {
+                            current = current->next;
+                            i = 1;
+                            while( i != 0 )
+                            {
+                              if( current->cmd != NULL )
+                              {
+                                execute_script( current->cmd, level + 1 );
+                              }
+                              if( current->arg != NULL )
+                              {
+                                if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+                                {
+                                  i = atoi( current->arg );
+                                }
+                                else
+                                {
+                                  clip = get_var_arg( current->arg );
+                                  if( clip == NULL )
+                                  {
+                                    i = get_var_int( current->arg );
+                                  }
+                                  else
+                                  {
+                                    i = atoi( clip );
+                                  }
+                                }
+                              }
+                              else
+                              {
+                                i = current->intval;
+                              }
+                              if( i != 0 )
+                              {
+                                if( current->next->cmd != NULL )
+                                {
+                                  execute_script( current->next->cmd, level + 1 );
+                                }
+                              }
+                              else
+                              {
+                                current->parent->intval = current->next->intval;
+                                if( current->next->arg != NULL )
+                                {
+                                  current->parent->arg = malloc( sizeof( current->next->arg ) + 1 );
+                                  if( current->parent->arg == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  strcpy( current->parent->arg, current->next->arg );
+                                }
+                              }
+                            }
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            cleanup();
+                            printf( "No arguments given!\n" );
+                            exit(-1);
+                          }
                           break;
 
       case _WORKING	: /* Display strings below "Working on Installation" */
@@ -599,10 +1182,9 @@ int i;
   else
   {
     for( i = 0 ; i < _MAXCOMMAND && strcasecmp(internal_commands[i].cmdsymbol, argument ) != 0 ; i++ );
-    if( i == _MAXCOMMAND )
-      return _UNKNOWN;
-    else
-      return ( internal_commands[i].cmdnumber );
+      return ( i == _MAXCOMMAND ) ?
+             _UNKNOWN :
+             internal_commands[i].cmdnumber;
   }
 }
 

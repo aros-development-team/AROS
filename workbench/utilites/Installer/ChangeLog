@@ -87,4 +87,19 @@
 0017
 - First try with RawDoFmt() -- not very successful :-(
 
+0018
+- Added code for "bitand" "bitor" "bitxor" "/" "-" "or" "xor" "=" "<" "<="
+  ">" ">=" "<>" (integrated into "and" )
+- Implemented "*" "not" "bitnot" "strlen" "select" "if"
+- minor optimizations
+
+0019
+- added cleanup() before each exit(-1);
+- added support for number-strings in arithmetic functions where missing
+- implemented "cat"
+- fixed bug in "select" and return (NULL|0) if n<=0 or n>number of items
+- fixed bug in variable storage (if text == NULL )
+- added return value for blocks
+- implemented "while" "until"
+
 

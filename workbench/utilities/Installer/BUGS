@@ -15,3 +15,6 @@ adding a simple line with eg. printf() breaks working code, whereas it can
 cure broken code as well)
 Maybe connected to BUG00002
 
+BUG00004
+Strings are limited to MAXARGSIZE which is 1024 ATM.
+

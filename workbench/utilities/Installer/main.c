@@ -186,7 +186,7 @@ char *filename;
     printf( "Welcome to %s App installation utility.\n", (char *)get_variable( "@app-name" ) );
 #endif
   }
-  execute_script( &script, 0 );
+  execute_script( script.cmd, 0 );
 
   if( preferences.transcriptstream != NULL )
   {

@@ -55,10 +55,9 @@ struct VariableList *entry;
   entry = find_var( name );
 
   /* Return Pointer to value */
-  if( entry->vartext == NULL )
-    return &(entry->varinteger);
-  else
-    return entry->vartext;
+  return ( entry->vartext == NULL ) ?
+         (void *)&(entry->varinteger) :
+         (void *)entry->vartext;
 }
 
 char *get_var_arg( char *name )
@@ -109,6 +108,7 @@ struct VariableList *list;
     {
       /* Free space for strings to be replaced in dynamic list */
       free( localvars[i].vartext );
+      localvars[i].vartext = NULL;
     }
     list = localvars;
   }
@@ -117,6 +117,7 @@ struct VariableList *list;
 #warning FIXME: Who can change values of preset variables?
     /* Free space for strings to be replaced in preset list */
     free( variables[i].vartext );
+    variables[i].vartext = NULL;
   }
 
   /* Change values in list */
