@@ -34,6 +34,8 @@ struct TagItem fotags1[] =
 {
     {ASLFO_TextAttr, (IPTR)&mytextattr},
     {ASLFO_TitleText	, (IPTR)"ASL Font requester"   },
+    {ASLFO_DoDrawMode, TRUE},
+    {ASLFO_DoStyle, TRUE},
     {TAG_DONE	    	    	    	    	       }
 };
 
@@ -48,8 +50,11 @@ static void showrequester(char *msg, struct TagItem *tags)
 	if (AslRequest(freq, NULL))
 	{
 	    printf("\n-------------------------------------------------------\n\n");
-	    printf("FontName = %s\n", freq->fo_TAttr.tta_Name);
-	    printf("FontSize = %d\n", freq->fo_TAttr.tta_YSize);
+	    printf("FontName  = %s\n", freq->fo_TAttr.tta_Name);
+	    printf("FontSize  = %d\n", freq->fo_TAttr.tta_YSize);
+	    printf("FontStyle = %d\n", freq->fo_TAttr.tta_Style);
+	    printf("FontFlags = %d\n", freq->fo_TAttr.tta_Flags);
+	    printf("DrawMode  = %d\n", freq->fo_DrawMode);
 	    
 	} else printf("\nRequester was aborted\n");
 	FreeAslRequest(freq);
