@@ -5724,7 +5724,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct Library *Cyber
     
     gfxhidd = SDD(GfxBase)->gfxhidd;
     
-    for (tstate = taglist; (tag = NextTagItem(&tstate)); ) {
+    for (tstate = taglist; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
 	switch (tag->ti_Tag) {
 	    case CYBRMREQ_MinWidth:
 	    	minwidth = (ULONG)tag->ti_Data;
