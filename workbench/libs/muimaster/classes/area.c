@@ -962,7 +962,7 @@ static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct I
 
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 {
-    if (data->mad_InputMode != MUIV_InputMode_None)
+//    if (data->mad_InputMode != MUIV_InputMode_None)
     {
 	DoMethod(_win(obj),
 		 MUIM_Window_RemControlCharHandler, (IPTR)&data->mad_ccn);

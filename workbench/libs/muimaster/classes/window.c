@@ -1473,7 +1473,7 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_RemControlCharHandler *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    struct ObjNode     *node = FindObjNode(&data->wd_CCList,msg->ccnode->ehn_Object);
+    struct ObjNode     *node = FindObjNode(&data->wd_CycleChain,msg->ccnode->ehn_Object);
 
     Remove((struct Node *)msg->ccnode);
     if (node)
@@ -1553,16 +1553,17 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 
     if (newnode)
     {
-	int id = 1;
+	int id;
 	struct MinNode *mn;
-
-        newnode->id = id;
 
 	if (IsListEmpty((struct List*)&data->wd_IDList))
 	{
+	    newnode->id = 1;
 	    AddHead((struct List*)&data->wd_IDList,(struct Node*)&newnode->node);
 	    return (IPTR)id;
 	}
+
+	id = 1;
 
 	for (mn = data->wd_IDList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
@@ -1570,7 +1571,7 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 	    if (id < idn->id) break;
 	    id++;
 	}
-	
+	newnode->id = id;
 	Insert((struct List*)&data->wd_IDList,(struct Node*)&newnode->node,(struct Node*)mn);
 	return (IPTR)id;
     }
