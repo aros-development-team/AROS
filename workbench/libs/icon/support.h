@@ -18,6 +18,7 @@ BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBas
 BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase);
 
 struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase);
+BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBase);
 
 VOID GetDefIconName (LONG def_type, UBYTE * deficonname);
 LONG CalcIconHash(struct DiskObject *dobj);
@@ -32,5 +33,6 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
 #define CloseDefaultIcon(file) (__CloseDefaultIcon_WB((file), LB(IconBase)))
 
 #define ReadIcon(file) (__ReadIcon_WB((file), LB(IconBase)))
+#define WriteIcon(file, icon) (__WriteIcon_WB((file), (icon), LB(IconBase)))
 
 #endif /* _SUPPORT_H_ */

@@ -127,6 +127,10 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
     return icon;
 }
 
+BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBase)
+{
+    return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, file, IconDesc);
+}
 
 /****************************************/
 /* Copy the deficon name of type	*/

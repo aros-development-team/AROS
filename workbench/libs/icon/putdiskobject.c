@@ -48,8 +48,8 @@
     
     if ((file = OpenIcon(name, MODE_NEWFILE)) != NULL)
     {
-        success = WriteStruct(&LB(IconBase)->dsh, (APTR) icon, file, IconDesc);
-        CloseIcon(icon);
+        success = WriteIcon(file, icon);
+        CloseIcon(file);
     }
     
     return success;
