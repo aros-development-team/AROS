@@ -157,7 +157,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    {
 		if (initclasses(xsd))
 		{
-		    D(bug("Everything OK\n"));
+		    bug("[VGA] Initialized VGA hardware.\n");
 		    return TRUE;
 		}
 		CloseLibrary(xsd->utilitybase);
