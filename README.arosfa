@@ -1,0 +1,103 @@
+Short: AROS 1.10 - Amiga Replacement OS (Amiga native binaries)
+Author:   Aaron "Optimizer" Digulla (digulla@aros.fh-konstanz.de) and many others
+Uploader: Lennard voor den Dag (ldp@worldonline.nl)
+Version:  1.10
+Type:     misc/emu
+Requires: OS 2.04 or better, 68020 or better
+
+
+HOW TO USE THIS
+---------------
+
+There are three system modules in this archive. They are:
+
+- alert.hook       -- AROS alert.hook 41.6
+- exec.strap       -- AROS exec.strap 1.2
+- utility.library  -- AROS utility.library 39.10
+
+These can be loaded into the system by the tool imaginatively called 'boot'.
+Unpack this archive, cd into AROS, and run 'boot -h' for a summary of options.
+Running 'boot' will read the file 'boot.config', which contains the names of
+the modules to be loaded. These modules will now be loaded into the system and
+will be a available after a reset. Don't be afraid if you see some blue and
+green stripes on your screen during reset, this is a sign that 'exec.strap' has
+been successfully started (gfx card owners may not see these).
+
+You can use 'tools/printresmodules' to see all modules currently active and
+available in the system. After a reset, you can easily identify the modules
+you have just loaded by looking at the second field in the output. This is the
+memory address of the module. ROM modules are in the range of 0x00f80000 to
+0x00ffffff (not if you have softkicked a kickstart). AROS modules will have an
+address in RAM.
+
+
+WARNING
+-------
+
+The software in this archive is still in Alpha state. This means that it may
+or may not work on your system. Especially 'utility.library' is known to cause
+problems with certain kinds of programs, e.g. amigaguide and multiview. You
+may want to remove 'utility.library' from 'boot.config'. The other two modules
+should cause no problems. We appreciate it if you could drop us a message
+telling us it worked or didn't work on your machine. Please also mention your
+system configuration (processor types/model/kickstart version/etc), so we can
+fix the bugs.
+
+It has been tested on an A1200/Blizzard 1230-IV/nofpu/2+8 MB/kick 39.106.
+It has been compiled to run on a 68020 or better.
+
+
+TECHNICAL INFO
+--------------
+
+Upon running 'boot', the modules will be loaded into the KickTagPtr/KickMemPtr
+field of ExecBase. During reset, exec merges these lists with the list of
+modules from ROM, with the highest version of a particular module actually
+making it into the system. By default, 'boot' will not touch modules/software
+that is already utilizing these KickPtrs in ExecBase. This keeps eg. RAD alive.
+'boot' will not check if some AROS modules are already in the system and will
+happily install duplicates. You can remedy this by running 'boot -x', which
+first clears the KickPtrs before installing any new modules (killing RAD: in
+the process). Running 'boot -X' will only clear the KickPtrs, and do nothing
+else. Future versions of boot will examine pre-installed modules and replace
+them intelligently.
+
+Dependant on the OS version, the modules will be loaded into a particular type
+of memory. Under OS 39+, they will be loaded in MEMF_KICK. This memory type was
+added in that version of the OS, and guarantees that this memory is available
+early on in the reset procedure. Earlier versions of the OS do not know this
+type of memory, so modules will be loaded into MEMF_CHIP, which is guaranteed
+to always be available at that point. If you know your fastmem is also
+available early during the reset period (if it is real AutoConfig[tm] mem), you
+can force the modules into MEMF_FAST, by running 'boot -f'.
+
+More extensive information on what these modules actually do can be found in
+the source archive.
+
+
+WHERE TO FIND MORE INFOS ?
+--------------------------
+
+Look at these pages on WorldWideWait:
+
+    http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
+    http://aros.fh-konstanz.de/~digulla/ (German Mirror)
+
+If you have FTP, you can also get the most recent version as tar.gz files
+from
+
+    ftp://aros.fh-konstanz.de/pub/aros/
+
+This software is subject to the "Standard Amiga FD-Software Copyright Note".
+It is MAILWARE as defined in paragraph 4s.
+If you like it and use it regularly please send a message to the
+following address:
+
+    Aaron "Optimizer" Digulla
+    Th.-Heuss-Str. 8
+    78467 Konstanz
+    Germany
+
+    EMail: digulla@aros.fh-konstanz.de
+
+For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
