@@ -94,8 +94,7 @@ workbench-boot-native-i386: \
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 	
-# software-native-i386
-#MM bootdisk-native-i386:
+#MM bootdisk-native-i386 : software-native-i386
 bootdisk-native-i386: \
 	$(BOOT_DEST_C) $(BOOT_DEST_Gadgets) $(BOOT_DEST_Aminet) $(BOOT_DEST_Demos) \
 	$(BOOT_DEST_Devs) $(BOOT_DEST_Libs) $(BOOT_DEST_S) $(BOOT_DEST_Tools) \
