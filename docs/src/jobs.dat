@@ -211,7 +211,7 @@ c/unalias;2;laguest;Write C:UnAlias
 c/unset;2;laguest;Write C:UnSet
 c/unsetenv;2;laguest;Write C:UnSetEnv
 c/version;1;srittau;Write C:Version
-c/wait;1;hkiel;Write C:Wait
+c/wait;2;hkiel;Write C:Wait
 c/which;1;SDuvan;Write C:Which
 c/why;2;srittau;Write C:Why
 colorwheel00000;2;lbischoff;Write ConvertHSBToRGB
