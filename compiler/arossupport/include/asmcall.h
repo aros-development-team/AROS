@@ -575,19 +575,19 @@ typedef unsigned long (*ULONG_FUNC)();
 	__AROS_UFPA(a1),\
 	__AROS_UFPA(a2),\
 	__AROS_UFPA(a3))
-#if !(defined(UseRegisterArgs) && defined(AROS_COMPILER_NO_REGARGS))
-#   define AROS_UFP3S(t,n,a1,a2,a3) \
-	__AROS_UFP_PREFIX t n (\
-	__AROS_UFPA(a1),\
-	__AROS_UFPA(a2),\
-	__AROS_UFPA(a3))
-#else
-#   define AROS_UFP3S(t,n,a1,a2,a3) \
-	__AROS_UFP_PREFIX static t n (\
-	__AROS_UFPA(a1),\
-	__AROS_UFPA(a2),\
-	__AROS_UFPA(a3))
-#endif
+#   if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS))
+#	define AROS_UFP3S(t,n,a1,a2,a3) \
+	    __AROS_UFP_PREFIX static t n (\
+	    __AROS_UFPA(a1),\
+	    __AROS_UFPA(a2),\
+	    __AROS_UFPA(a3))
+#   else
+#	define AROS_UFP3S(t,n,a1,a2,a3) \
+	    __AROS_UFP_PREFIX t n (\
+	    __AROS_UFPA(a1),\
+	    __AROS_UFPA(a2),\
+	    __AROS_UFPA(a3))
+#   endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
 #   define AROS_UFP4(t,n,a1,a2,a3,a4) \
 	__AROS_UFP_PREFIX t n (\
 	__AROS_UFPA(a1),\
@@ -601,15 +601,7 @@ typedef unsigned long (*ULONG_FUNC)();
 	__AROS_UFPA(a3),\
 	__AROS_UFPA(a4),\
 	__AROS_UFPA(a5))
-#   if !(defined(UseRegisterArgs) && defined(AROS_COMPILER_NO_REGARGS))
-#	define AROS_UFP5S(t,n,a1,a2,a3,a4,a5) \
-	    __AROS_UFP_PREFIX t n (\
-	    __AROS_UFPA(a1),\
-	    __AROS_UFPA(a2),\
-	    __AROS_UFPA(a3),\
-	    __AROS_UFPA(a4),\
-	    __AROS_UFPA(a5))
-#   else
+#   if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS))
 #	define AROS_UFP5S(t,n,a1,a2,a3,a4,a5) \
 	    __AROS_UFP_PREFIX static t n (\
 	    __AROS_UFPA(a1),\
@@ -617,7 +609,15 @@ typedef unsigned long (*ULONG_FUNC)();
 	    __AROS_UFPA(a3),\
 	    __AROS_UFPA(a4),\
 	    __AROS_UFPA(a5))
-#   endif
+#   else
+#	define AROS_UFP5S(t,n,a1,a2,a3,a4,a5) \
+	    __AROS_UFP_PREFIX t n (\
+	    __AROS_UFPA(a1),\
+	    __AROS_UFPA(a2),\
+	    __AROS_UFPA(a3),\
+	    __AROS_UFPA(a4),\
+	    __AROS_UFPA(a5))
+#   endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
 #   define AROS_UFP6(t,n,a1,a2,a3,a4,a5,a6) \
 	__AROS_UFP_PREFIX t n (\
 	__AROS_UFPA(a1),\
