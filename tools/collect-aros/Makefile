@@ -18,8 +18,8 @@ all : $(COLLECT-AROS)
 
 $(COLLECT-AROS) : collect-aros.c gensets.c
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $^ -o $@ -DLINKERPATH=\"/usr/bin/ld\" \
-	-DNMPATH=\"$(NM_PLAIN)\" -DGCCPATH=\"$(TARGET_CC)\" -DMVPATH=\"$(MV)\"
+	$(HOST_CC) $(HOST_CFLAGS) $^ -o $@ -DLINKERPATH=\"/usr/bin/ld\" \
+	-DNMPATH="\"$(NM_PLAIN)\"" -DGCCPATH="\"$(TARGET_CC)\"" -DMVPATH="\"$(MV)\""
 	@$(HOST_STRIP) $(COLLECT-AROS)
 
 clean :
