@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 DESTDIR := $(BINDIR)/Locale/Catalogs
 
-CATALOGS 	:= deutsch svenska italiano norsk
+CATALOGS 	:= deutsch svenska italiano norsk français
 CATDESC 	:= multiview
 CATSUBDIR	:= Sys/
 CATNAME 	:= MultiView

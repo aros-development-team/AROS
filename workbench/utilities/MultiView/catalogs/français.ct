@@ -1,0 +1,103 @@
+## version $VER: multiview.catalog 1.0 (13.09.2000)
+## codeset 0
+## language français
+;
+MSG_CANT_OPEN_LIB
+Impossible d'ouvrir %s V%ld !\n
+;
+MSG_CANT_CREATE_IC
+Impossible de créer d'interconnexion !
+;
+MSG_CANT_LOCK_SCR
+Impossible de vérouiller l'écran public !
+;
+MSG_CANT_GET_DRI
+Impossible d'obtenir la structure DrawInfo !
+;
+MSG_CANT_GET_VI
+Impossible de créer la structure VisualInfo !
+;
+MSG_CANT_CREATE_SYSIMAGE
+Impossible de créer les images SYSICLASS !
+;
+MSG_CANT_CREATE_GADGET
+Impossible de créer les Gadgets !
+;
+MSG_CANT_CREATE_MENUS
+Impossible de créer les Menus !
+;
+MSG_CANT_CREATE_WIN
+Impossible de créer une fenêtre !
+;
+MSG_MEN_PROJECT
+Projet
+;
+MSG_MEN_PROJECT_OPEN
+O\0Ouvrir ...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Sauver sous ...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Imprimer
+;
+MSG_MEN_PROJECT_ABOUT
+?\0À propos ...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Quitter
+;
+MSG_MEN_EDIT
+Edition
+;
+MSG_MEN_EDIT_MARK
+B\0Marquer
+;
+MSG_MEN_EDIT_COPY
+C\0Copier
+;
+MSG_MEN_EDIT_SELECTALL
+L\0Tout sélectionner
+;
+MSG_MEN_EDIT_CLEARSELECTED
+H\0Annuler la sélection
+;
+MSG_MEN_WINDOW
+Fenêtre
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0Plein écran
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Diminuer
+;
+MSG_MEN_WINDOW_NORMAL
+ \0Normale
+;
+MSG_MEN_WINDOW_MAXIMIZE
+ \0Agrandir
+;
+MSG_MEN_SETTINGS
+Configuration
+;
+MSG_MEN_SETTINGS_SAVEDEF
+D\0Sauver par défaut
+;
+MSG_ASL_OPEN_TITLE
+Ouvirir le fichier
+;
+MSG_ASL_SAVE_TITLE
+Sauver le fichier
+;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+MultiView - L'afficheur universel
+;
+MSG_CONTINUE
+Continuer
+;
+MSG_OK
+Ok
+;
