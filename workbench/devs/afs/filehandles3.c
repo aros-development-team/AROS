@@ -38,6 +38,10 @@ ULONG owner;
 
 	next=(STRPTR)ead+sizes[mode];
 	end=(STRPTR)ead+size;
+	
+    	if(next>end) /* > is correct. Not >= */
+	    return ERROR_BUFFER_OVERFLOW;
+	    
 	switch (mode)
 	{
 	case ED_OWNER :
@@ -48,7 +52,7 @@ ULONG owner;
 		if (AROS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)])!=ST_ROOT)
 		{
 			name=(STRPTR)((ULONG)entryblock->buffer+(BLK_COMMENT_START(volume)*4));
-			if ((next+name[0]+1)>=end)
+			if ((next+name[0]+1)>end)
 				return ERROR_BUFFER_OVERFLOW;
 			ead->ed_Comment=next;
 			CopyMem(name+1, ead->ed_Comment, name[0]);
@@ -69,7 +73,7 @@ ULONG owner;
 		ead->ed_Type=AROS_BE2LONG(entryblock->buffer[BLK_SECONDARY_TYPE(volume)]);
 	case ED_NAME :
 		name=(STRPTR)((ULONG)entryblock->buffer+(BLK_FILENAME_START(volume)*4));
-		if ((next+name[0]+1)>=end)
+		if ((next+name[0]+1)>end)
 			return ERROR_BUFFER_OVERFLOW;
 		ead->ed_Name=next;
 		CopyMem(name+1, ead->ed_Name, name[0]);
@@ -174,6 +178,14 @@ ULONG error,i,block;
 				error=examineEAD(afsbase, ah->volume, ead, entryblock, size, mode);
 				if (error)
 				{
+				    	/* stegerg: CHECK CHECK CHECK CHECK CHECK */
+				    	if (error == ERROR_BUFFER_OVERFLOW)
+					{
+					    ah->dirpos=AROS_BE2LONG(headerblock->buffer[i]);
+					    error=0;
+					}
+				    	/* stegerg: END CHECK CHECK CHECK CHECK CHECK */
+					
 					ead->ed_Next=0;
 					headerblock->flags &= ~BCF_USED;
 					return error;
