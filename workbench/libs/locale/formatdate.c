@@ -129,7 +129,9 @@ ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,30
 	_WriteChar(0, hook, locale);
 	return;
     }
-    
+
+#warning Amiga2Date will fail around year 2114, because then the numer of seconds since 1978 dont fit in a 32 bit variable anymore!
+   
     Amiga2Date(date->ds_Days*86400 + date->ds_Minute*60 + date->ds_Tick / 50,
 	       &cData);
     
