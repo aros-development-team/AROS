@@ -183,8 +183,8 @@ ULONG ASM SAVEDS GetString (
     int 		scrwidth, scrheight, i, j, npos, nlen, nogadgets, retnum;
     int 		invisible, scrfontht, gadlines = 0;
     int 		leftoff, rightoff;
-    ULONG 		tagdata, *gadlenptr, *gadposptr, idcmpflags;
-    APTR 		gadfmtargs, textfmtargs, args;
+    ULONG 		*gadlenptr = NULL, *gadposptr = NULL, idcmpflags;
+    APTR 		gadfmtargs = NULL, textfmtargs = NULL, args;
 
     memset (&itxt, 0, sizeof (struct IntuiText));
     memset (&ng, 0, sizeof (struct NewGadget));
@@ -222,9 +222,9 @@ ULONG ASM SAVEDS GetString (
 	    
     /* parse tags */
     tstate = taglist;
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
-	tagdata = tag->ti_Data;
+	IPTR tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)
 	{
 	    switch (tag->ti_Tag)
@@ -283,7 +283,7 @@ ULONG ASM SAVEDS GetString (
 	    
 	} /* if (tag->ti_Tag > RT_TagBase)*/
 	
-    } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
+    } /* while ((tag = NextTagItem (&tstate))) */
 
     glob->catalog = RT_OpenCatalog (locale);
 
@@ -570,7 +570,7 @@ ULONG ASM SAVEDS GetString (
 	    ng.ng_Height -= 2;
 
 	    gad = myCreateGadget (TEXT_KIND, gad, &ng,
-			    GTTX_Text, glob->minmaxstr, GTTX_Border, TRUE, TAG_END);
+			    GTTX_Text, (IPTR) glob->minmaxstr, GTTX_Border, TRUE, TAG_END);
 	    ng.ng_Height += 2;
 	}
 	
@@ -738,7 +738,7 @@ static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
 		     IA_FGPen, glob->drinfo->dri_Pens[pen],
 		     IA_BGPen, glob->drinfo->dri_Pens[bgpen],
 		     IA_Mode, JAM2,
-		     (pen == SHINEPEN) ? IA_APattern : TAG_END, pattern,
+		     (pen == SHINEPEN) ? IA_APattern : TAG_END, (IPTR) pattern,
 		     IA_APatSize, 1,
       		     TAG_END);
       
@@ -781,7 +781,7 @@ static ULONG ASM SAVEDS myReqHandler (
 
     /* parse tags */
     tstate = taglist;
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)

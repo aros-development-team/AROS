@@ -194,7 +194,7 @@ ChangeReqAttrA (REGPARAM(a1, APTR, req),
     IPTR 			tagdata;
 
     /* parse tags */
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)
@@ -288,7 +288,7 @@ ChangeReqAttrA (REGPARAM(a1, APTR, req),
 	    
 	} /* if (tag->ti_Tag > RT_TagBase) */
 	
-    } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
+    } /* while ((tag = NextTagItem (&tstate))) */
  
 #warning There was a missing return. For AROS I added return 1!?
 

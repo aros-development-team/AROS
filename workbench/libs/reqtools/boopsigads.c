@@ -115,7 +115,7 @@ struct Gadget * REGARGS my_CreateButtonGadget (
 
 	/* create image */
 
-	image = NewObject (ButtonImgClass, NULL, IA_Data, &idata, TAG_END);
+	image = NewObject (ButtonImgClass, NULL, IA_Data, (IPTR) &idata, TAG_END);
 
 	gad->GadgetRender = gad->SelectRender = image;
     }
@@ -275,7 +275,7 @@ struct Gadget * REGARGS my_CreateIntegerGadget (
     if ((intgad = myCreateGadget (INTEGER_KIND, gad, newgad,
 	    GTIN_MaxChars, maxchars,
 	    GTIN_Number, value, STRINGA_Justification, just,
-	    GTST_EditHook, &stredithook,
+	    GTST_EditHook, (IPTR) &stredithook,
     TAG_END)))
 	    intgad->UserData = NULL;
 	    
@@ -293,7 +293,7 @@ struct Gadget * REGARGS my_CreateStringGadget (
     struct Gadget *strgad;
 
     if ((strgad = myCreateGadget (STRING_KIND, gad, newgad, GTST_MaxChars, maxchars,
-				  GTST_String, string, GTST_EditHook, &stredithook, TAG_END)))
+				  GTST_String, (IPTR) string, GTST_EditHook, (IPTR) &stredithook, TAG_END)))
 	    strgad->UserData = NULL;
  
     return (strgad);
@@ -305,7 +305,7 @@ void REGARGS my_SetStringGadget (struct Window *win, struct Gadget *gad, char *s
 {
     if (!gad) return;
     
-    myGT_SetGadgetAttrs (gad, win, NULL, GTST_String, str, TAG_END);
+    myGT_SetGadgetAttrs (gad, win, NULL, GTST_String, (IPTR) str, TAG_END);
 }
 
 /****************************************************************************************/
@@ -483,7 +483,7 @@ struct Image * REGARGS my_CreateGadgetLabelImage (
     idata.idata_TextAttr = ng->ng_TextAttr;
     idata.idata_Underscore = '_';
     
-    return (previm->NextImage = NewObject (ButtonImgClass, NULL, IA_Data , &idata,
+    return (previm->NextImage = NewObject (ButtonImgClass, NULL, IA_Data , (IPTR) &idata,
     								 IA_FGPen, pen   , 
 								 IA_Left , left  ,
 								 IA_Top  , top   ,

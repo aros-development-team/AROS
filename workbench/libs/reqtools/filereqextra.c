@@ -186,7 +186,7 @@ void REGARGS PrintEntry (GlobData *glob, int i)
     struct ReqEntry 	*entry;
     struct RastPort 	*reqrp = glob->reqrp;
     char 		sizestr[16], tempstr[108], *volname = NULL, *str;
-    int 		apen, bpen, top, len, sizelen, sizelenpix, type, rectpen, left, entrytop;
+    int 		apen = 0, bpen = 0, top, len = 0, sizelen = 0, sizelenpix = 0, type, rectpen, left, entrytop;
     LONG 		size;
 
     mySetWriteMask (glob->reqrp, glob->entrymask);
@@ -834,7 +834,7 @@ AddDisk(
 
 #ifdef __AROS__
 	    {
-		BPTR lock = Lock(&deventry->name, SHARED_LOCK);
+		BPTR lock = Lock((CONST_STRPTR) &deventry->name, SHARED_LOCK);
 
 		if (lock != NULL)
 		{
@@ -1387,7 +1387,7 @@ void REGARGS SetTextGad (GlobData *glob, struct Gadget *gad, char *text)
 {
     if (!gad) return;
     
-    myGT_SetGadgetAttrs (gad, glob->reqwin, NULL, GTTX_Text, text,
+    myGT_SetGadgetAttrs (gad, glob->reqwin, NULL, GTTX_Text, (IPTR) text,
     						  TAG_END);
 }
 
@@ -1487,7 +1487,7 @@ void REGARGS UpdateDepthDisplay (GlobData *glob, int depth, ULONG id)
 {
     BuildColStr (glob->currcolstr, depth, id);
     
-    myGT_SetGadgetAttrs (glob->currcolgad, glob->reqwin, NULL, GTTX_Text, glob->currcolstr,
+    myGT_SetGadgetAttrs (glob->currcolgad, glob->reqwin, NULL, GTTX_Text, (IPTR) glob->currcolstr,
     							       TAG_END);
 }
 
@@ -1548,7 +1548,7 @@ void REGARGS DisplayModeAttrs (GlobData *glob)
 	    UpdateDepthGad (glob);
 	    BuildColStr (glob->maxcolstr, glob->currmaxdepth, glob->modeid);
 	    myGT_SetGadgetAttrs (glob->maxcolgad, glob->reqwin, NULL,
-			    GTTX_Text, glob->maxcolstr, TAG_END);
+			    GTTX_Text, (IPTR) glob->maxcolstr, TAG_END);
 	}
 	SetSizeGads (glob);
 	

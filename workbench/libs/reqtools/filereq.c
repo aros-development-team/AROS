@@ -51,7 +51,7 @@ APTR ASM SAVEDS FileRequestA (
     struct ReqEntry 			*entry;
     struct TagItem			*tag, *tstate;
     struct RealFontRequester 		*fontreq;
-    struct RealScreenModeRequester 	*scrmodereq;
+    struct RealScreenModeRequester 	*scrmodereq = NULL;
     struct DiskfontBase 		*DiskfontBase;
     struct TextAttr 			*fontattr = NULL;
     struct TextFont 			*deffont;
@@ -137,7 +137,7 @@ APTR ASM SAVEDS FileRequestA (
 
     /* parse tags */
     tstate = taglist;
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)
