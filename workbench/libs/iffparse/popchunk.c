@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #include "iffparse_intern.h"
 
@@ -53,12 +50,6 @@
     WriteStream, we don't have to fiddle with it here.
     However if the stream is buffered, we MUST see if we are
     about to pop the chunk that started the Buffering (in PushChunk)
-
-
-
-    HISTORY
-  27-11-96    digulla automatically created from
-	  iffparse_lib.fd and clib/iffparse_protos.h
 
 *****************************************************************************/
 {
@@ -174,8 +165,7 @@
 	}
     }
     
-    return (NULL);
-
+    return 0;
 
     AROS_LIBFUNC_EXIT
 } /* PopChunk */
