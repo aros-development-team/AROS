@@ -58,6 +58,9 @@
 #define ITEXTICLASS   "itexticlass"
 #define POINTERCLASS  "pointerclass"
 
+/* public classes existing only in AROS but not AmigaOS */
+#define MENUBARLABELCLASS "menubarlabelclass"
+
 #define OM_Dummy     0x0100
 #define OM_NEW       (OM_Dummy + 1)
 #define OM_DISPOSE   (OM_Dummy + 2)
