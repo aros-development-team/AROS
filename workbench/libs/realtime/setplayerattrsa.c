@@ -70,6 +70,7 @@
 
     LONG           *error = NULL;
     struct TagItem *tag, *tl = tagList;
+    APTR            lock;
 
     error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
 
@@ -96,8 +97,6 @@
 		/* Is this player attached to a conductor? */
 		if (player->pl_Source != NULL)
 		{		    
-		    APTR lock;
-
 		    lock = LockRealTime(RT_CONDUCTORS);
 		    Remove((struct Node *)player);
 		    Enqueue((struct List *)&player->pl_Source->cdt_Players,
