@@ -20,9 +20,9 @@ struct TagItem txttags[]=
 {
 	{GTTX_Text, (ULONG)"Interface  Address   LUN   Status    Drive Type"},
 	{GTTX_CopyText, TRUE},
+	{GTTX_Clipped, TRUE},
 	{TAG_DONE,0}
 };
-struct List hd_list;
 struct TagItem hdtags[]=
 {
 	{GTLV_Labels,0},
@@ -74,7 +74,7 @@ struct creategadget maingadgets[]=
 	{
 		TEXT_KIND,
 		{
-			10,20,300,20,
+			10,20,400,20,
 			NULL, NULL,
 			ID_MAIN_TEXT, NULL, NULL, NULL
 		},
