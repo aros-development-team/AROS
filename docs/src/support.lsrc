@@ -18,7 +18,8 @@ funct getenv (char $name)
 
 funct urlDecode (char $str)
 {
-    $newstr = sub($str,"%40","@");
+    $newstr = sub($str,"+"," ");
+    $newstr = sub($newstr,"%40","@");
     $newstr = sub($newstr,"%2D","-");
     $newstr = sub($newstr,"%2F","/");
     return ($newstr);
