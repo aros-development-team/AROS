@@ -932,7 +932,7 @@ intuition00004;2;stegerg;Write ClearMenuStrip
 intuition00005;0;digulla;Write ClearPointer
 intuition00006;2;digulla;Write CloseScreen
 intuition00007;2;digulla;Write CloseWindow
-intuition00008;0;digulla;Write CloseWorkBench
+intuition00008;1;chodorowski;Write CloseWorkBench
 intuition00009;2;hkiel;Write CurrentTime
 intuition00010;0;digulla;Write DisplayAlert
 intuition00011;1;nlorentz;Write DisplayBeep
@@ -954,7 +954,7 @@ intuition00026;2;digulla;Write OnGadget
 intuition00027;2;hkiel;Write OnMenu
 intuition00028;2;digulla;Write OpenScreen
 intuition00029;2;digulla;Write OpenWindow
-intuition00030;0;digulla;Write OpenWorkBench
+intuition00030;1;chodorowski;Write OpenWorkBench
 intuition00031;2;digulla;Write PrintIText
 intuition00032;2;digulla;Write RefreshGadgets
 intuition00033;2;digulla;Write RemoveGadget
