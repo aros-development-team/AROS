@@ -20,7 +20,6 @@ SFILES := \
 	erand48 \
 	atof \
 	isinf \
-	memcpy \
 	sscanf \
 	strtol \
 	strtod \
