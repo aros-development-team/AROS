@@ -47,7 +47,7 @@ Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (NULL == msg->attrList)
     	return (Object *)DoSuperMethod(cl, o, (Msg)msg);
 
-    for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); ) {
+    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
     	ULONG idx;
 	if (IS_PIXFMT_ATTR(tag->ti_Tag, idx)) {
 	

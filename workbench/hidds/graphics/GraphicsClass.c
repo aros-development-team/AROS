@@ -224,7 +224,7 @@ static struct List * hiddgfx_querygfxmodes(Class *cl, Object *o, struct pHidd_Gf
 
     data = INST_DATA(cl, o);
     
-    for (tstate = msg->queryTags; (tag = NextTagItem(&tstate)); ) {
+    for (tstate = msg->queryTags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
 	switch (tag->ti_Tag) {
 	    case tHidd_GfxMode_MinWidth:
 	    	minwidth = (ULONG)tag->ti_Tag;
@@ -347,7 +347,7 @@ static Object *hiddgfx_registerpixfmt(Class *cl, Object *o, struct pHidd_Gfx_Reg
     
     data = INST_DATA(cl, o);
     
-    for (tstate = msg->pixFmtTags; (tag = NextTagItem(&tstate)); ) {
+    for (tstate = msg->pixFmtTags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
     	ULONG idx;
 	if (IS_PIXFMT_ATTR(tag->ti_Tag, idx)) {
 	    switch (idx) {

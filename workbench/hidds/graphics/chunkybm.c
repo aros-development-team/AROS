@@ -10,6 +10,8 @@
 
 #include "graphics_intern.h"
 
+#include <string.h>
+
 #define DEBUG 0
 #include <aros/debug.h>
 

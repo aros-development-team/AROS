@@ -44,7 +44,7 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     BOOL gotwidth = FALSE, gotheight = FALSE, gotpf = FALSE;
     
-    for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); ) {
+    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
     	ULONG idx;
 	
 	if (IS_GFXMODE_ATTR(tag->ti_Tag, idx)) {
