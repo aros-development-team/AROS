@@ -1,0 +1,4 @@
+aros_functable.c
+libdefs.h
+*.s
+*.map
