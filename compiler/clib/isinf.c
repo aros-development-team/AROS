@@ -24,6 +24,8 @@
 #ifdef isinf
 #   undef isinf
 #endif
+int __isinf(double);
+
 int isinf(double val)
 {
     return __isinf(val);

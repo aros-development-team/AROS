@@ -128,13 +128,14 @@ extern double fabs (double);
 extern double floor (double);
 extern double fmod (double, double);
 
+extern int isinf (double);
+extern int isnan (double);
+
 #if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
 extern double erf (double);
 extern double erfc (double);
 extern double gamma (double);
 extern double hypot (double, double);
-extern int isinf (double);
-extern int isnan (double);
 extern int finite (double);
 extern double j0 (double);
 extern double j1 (double);
