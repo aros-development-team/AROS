@@ -80,25 +80,25 @@ void closemuimaster(void)
 
 enum
 {
-    MEN_WORKBENCH = 1,
-    MEN_WORKBENCH_BACKDROP,
-    MEN_WORKBENCH_EXECUTE,
-    MEN_WORKBENCH_SHELL,
-    MEN_WORKBENCH_ABOUT,
-    MEN_WORKBENCH_QUIT,
+    MEN_WANDERER = 1,
+    MEN_WANDERER_BACKDROP,
+    MEN_WANDERER_EXECUTE,
+    MEN_WANDERER_SHELL,
+    MEN_WANDERER_ABOUT,
+    MEN_WANDERER_QUIT,
 };
 
 static struct NewMenu nm[] =
 {
-  {NM_TITLE, "Workbench"              },
-    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE, NULL, (void*)MEN_WORKBENCH_BACKDROP},
-    {NM_ITEM,  "Execute Command...", "E", NULL,               NULL, (void*)MEN_WORKBENCH_EXECUTE},
+  {NM_TITLE, "Wanderer"              },
+    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE, NULL, (void*)MEN_WANDERER_BACKDROP},
+    {NM_ITEM,  "Execute Command...", "E", NULL,               NULL, (void*)MEN_WANDERER_EXECUTE},
     {NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
     {NM_ITEM,  "Last Message" },
-    {NM_ITEM,  "Shell",              "W", NULL,               NULL, (void*)MEN_WORKBENCH_SHELL},
-    {NM_ITEM,  "About...",           "?", NULL,               NULL, (void*)MEN_WORKBENCH_ABOUT},
-    {NM_ITEM,  "Quit...",            "Q", NULL,               NULL, (void*)MEN_WORKBENCH_QUIT},
+    {NM_ITEM,  "Shell",              "W", NULL,               NULL, (void*)MEN_WANDERER_SHELL},
+    {NM_ITEM,  "About...",           "?", NULL,               NULL, (void*)MEN_WANDERER_ABOUT},
+    {NM_ITEM,  "Quit...",            "Q", NULL,               NULL, (void*)MEN_WANDERER_QUIT},
 
   {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "New Drawer", "N"},
@@ -135,7 +135,7 @@ static struct NewMenu nm[] =
     {NM_ITEM,  "Empty Trash..." },
 
   {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "ResetWB" },
+    {NM_ITEM,  "ResetWanderer" },
   {NM_END}
 
 };
@@ -263,7 +263,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     is_root = (int)GetTagData(MUIA_IconWindow_IsRoot,FALSE,msg->ops_AttrList);
     if (is_root)
     {
-	title = "AROS Workbench";
+	title = "Wanderer";
 	iconlist = MUI_NewObject(MUIC_IconVolumeList, TAG_DONE);
     } else
     {
@@ -461,11 +461,11 @@ void shell_open(char **cd_ptr)
     }
 }
 
-void workbench_about(void)
+void wanderer_about(void)
 {
-    MUI_RequestA(app,NULL,0,"About AROS Workbench", "*Better than ever",
+    MUI_RequestA(app,NULL,0,"About Wanderer", "*Better than ever",
 	"AROS ROM version 0.7 (alpha)\n"
-	"AROS Workbench version 0.1 (alpha)\n\n"
+	"Wanderer version 0.1 (alpha)\n\n"
 	"Copyright © 2002, The AROS Development Team.\n"
 	"All rights reserved.\n\n"
 	"\033cWe made it...\n\n"
@@ -478,9 +478,9 @@ void workbench_about(void)
 	"\nTo be continued...",NULL);
 }
 
-void workbench_quit(void)
+void wanderer_quit(void)
 {
-    if (MUI_RequestA(app,NULL,0,"AROS Workbench", "*Ok|Cancel", "Do you really want to quit the Workbench?",NULL))
+    if (MUI_RequestA(app,NULL,0,"Wanderer", "*Ok|Cancel", "Do you really want to quit Wanderer?",NULL))
 	DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -491,10 +491,10 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
 {
     if (!strip) return;
 
-    DoMenuNotify(strip,MEN_WORKBENCH_EXECUTE,execute_open, path);
-    DoMenuNotify(strip,MEN_WORKBENCH_SHELL,shell_open,path);
-    DoMenuNotify(strip,MEN_WORKBENCH_ABOUT,workbench_about,NULL);
-    DoMenuNotify(strip,MEN_WORKBENCH_QUIT,workbench_quit,NULL);
+    DoMenuNotify(strip,MEN_WANDERER_EXECUTE,execute_open, path);
+    DoMenuNotify(strip,MEN_WANDERER_SHELL,shell_open,path);
+    DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
+    DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
 }
 
 /**************************************************************************
@@ -633,7 +633,7 @@ int main(void)
     {
 	ULONG sigs = 0;
 
-	DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, workbench_quit);
+	DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, wanderer_quit);
 
 	/* If "Execute Command" entry is clicked open the execute window */
 	DoAllMenuNotifies(root_menustrip,"RAM:");
