@@ -221,6 +221,29 @@ endif
 #------------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------
+# Generate a rule to assemble a source file to an object file. Basename may
+# contain a directory part, then the source file has to be in that directory.
+# The generated file will be put in the object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - flags (default $(AFLAGS)): the asm flags to use for assembling
+# - targetdir: the directory to put the .o file. By default it is put in the
+#   same directory as the .s file
+%define rule_assemble basename=/A flags=$(AFLAGS) targetdir=
+
+ifeq (%(targetdir),)
+%(basename).o : %(basename).s
+	%assemble_q opt=%(flags)
+
+else
+%(targetdir)/$(notdir %(basename)).o : %(basename).s
+	%assemble_q opt=%(flags)
+
+endif
+%end
+#------------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------------
 # Link the %(objs) to the library %(libdir)/lib%(libname).a in
@@ -537,13 +560,17 @@ endif
 # Build a linklib.
 # - mmake is the mmaketarget
 # - libname is the baselibname e.g. lib%(libname).a will be created
-# - files are the C source files to include in the lib
+# - files are the C source files to include in the lib. The list of files
+#   has to be given without the .c suffix
+# - asmfiles are the asm files to include in the lib. The list of files has to
+#   be given with the .s suffix
 # - cflags are the flags to compile the source (default $(CFLAGS))
 # - dflags are the flags use during makedepend (default equal to cflags)
+# - aflags are the flags use during assembling (default $(AFLAGS))
 # - objdir is where the .o are generated
 # - libdir is the directory where the linklib will be placed (default $(LIBDIR))
 %define build_linklib mmake=/A libname=/A files="$(basename $(wildcard *.c))" \
-  cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) libdir=$(LIBDIR)
+  asmfiles= cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
 
@@ -554,8 +581,9 @@ BD_OBJDIR$(BDID)     := %(objdir)
 BD_LIBDIR$(BDID)     := %(libdir)
 
 BD_FILES$(BDID)      := %(files)
+BD_ASMFILES$(BDID)   := %(asmfiles)
 BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID) $(BD_ASMFILES)))))
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)))
 
 BD_CFLAGS$(BDID)     := %(cflags)
@@ -564,6 +592,7 @@ BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
 else
 BD_DFLAGS$(BDID)     := %(dflags)
 endif
+BD_AFLAGS$(BDID)     := %(aflags)
 
 BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
 
@@ -590,6 +619,8 @@ endif
 ifeq ($(TARGET),%(mmake))
 %rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_assemble basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+	       flags=$(BD_AFLAGS$(BDID))
 endif
 
 %rule_link_linklib libname=%(libname) objs=$(BD_OBJS$(BDID)) libdir=$(BD_LIBDIR$(BDID))
