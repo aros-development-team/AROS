@@ -794,7 +794,7 @@ endif
 #------------------------------------------------------------------------------
 # Build a module using the deprecated macro's to define the functions in the
 # library. Explanation of this macro is done in the developer's manual
-%define build_module_macro mmake=/A modname=/A modtype=/A \
+%define build_module_macro mmake=/A modname=/A modtype=/A dir= \
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= linklibfiles= cflags=$(CFLAGS) dflags= \
   objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usehostlibs= \
@@ -814,6 +814,7 @@ endif
 # assign and generate the local variables used in this macro
 BD_MODNAME$(BDID)    := %(modname)
 BD_MODTYPE$(BDID)    := %(modtype)
+BD_MODDIR$(BDID)     := %(dir)
 BD_CONFFILE$(BDID)   := %(conffile)
 OBJDIR               ?= $(GENDIR)/$(CURDIR)
 BD_OBJDIR$(BDID)     := %(objdir)
@@ -897,32 +898,34 @@ endif
 ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device resource mui mcc hidd),)
     $(error unhandled MODTYPE %(modtype))
 endif
-ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_MODDIR$(BDID)  := $(AROS_LIBS)
-endif
-ifeq ($(BD_MODTYPE$(BDID)),gadget)
-  BD_MODDIR$(BDID)  := $(AROS_GADGETS)
-endif
-ifeq ($(BD_MODTYPE$(BDID)),datatype)
-  BD_MODDIR$(BDID)  := $(AROS_DATATYPES)
-endif
-ifeq ($(BD_MODTYPE$(BDID)),handler)
-  BD_MODDIR$(BDID)  := $(AROS_FS)
-endif
-ifeq ($(BD_MODTYPE$(BDID)),device)
-  BD_MODDIR$(BDID)  := $(AROS_DEVS)
-endif
-ifeq ($(BD_MODTYPE$(BDID)),resource)
-  BD_MODDIR$(BDID)  := $(AROS_MODULES)
-endif
-ifeq ($(BD_MODTYPE$(BDID)),mui)
-  BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
-endif
-ifeq ($(BD_MODTYPE$(BDID)),mcc)
-  BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
-endif
-ifeq ($(BD_MODTYPE$(BDID)),hidd)
-  BD_MODDIR$(BDID)  := $(HIDDSDIR)
+ifeq ($(BD_MODDIR$(BDID)),)
+  ifeq ($(BD_MODTYPE$(BDID)),library)
+    BD_MODDIR$(BDID)  := $(AROS_LIBS)
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),gadget)
+    BD_MODDIR$(BDID)  := $(AROS_GADGETS)
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),datatype)
+    BD_MODDIR$(BDID)  := $(AROS_DATATYPES)
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),handler)
+    BD_MODDIR$(BDID)  := $(AROS_FS)
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),device)
+    BD_MODDIR$(BDID)  := $(AROS_DEVS)
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),resource)
+    BD_MODDIR$(BDID)  := $(AROS_MODULES)
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),mui)
+    BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),mcc)
+    BD_MODDIR$(BDID)  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq ($(BD_MODTYPE$(BDID)),hidd)
+    BD_MODDIR$(BDID)  := $(HIDDSDIR)
+  endif
 endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
