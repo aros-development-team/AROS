@@ -15,7 +15,7 @@
       AROS_LH1(ULONG, ReadLine,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(char *, address, D0),
+      AROS_LHA(char *, address, A0),
 
 /*  LOCATION */
       struct ArpBase *, ArpBase, 41, Arp)
@@ -25,7 +25,7 @@
 
     SYNOPSIS
         Count = ReadLine("Address")
- 	  d0		    A0
+          d0                A0
 
     FUNCTION
        This function reads a line of up to MaxInputBuf characters from
