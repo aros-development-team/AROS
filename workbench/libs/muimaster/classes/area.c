@@ -1460,13 +1460,26 @@ static ULONG Area_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_Cr
     struct MUI_DragImage *img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage),MEMF_CLEAR);
     if (img)
     {
+    	struct ZuneFrameGfx *zframe;
 	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
-    	img->width = _width(obj);
-    	img->height = _height(obj);
+	zframe = zune_zframe_get(&__zprefs.frames[MUIV_Frame_Drag]);
+
+    	img->width = _width(obj) + 2*zframe->xthickness;
+    	img->height = _height(obj) + 2*zframe->ythickness;
+
     	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
     	{
     	    /* Render the stuff now */
+    	    struct RastPort *rp_save = muiRenderInfo(obj)->mri_RastPort;
+    	    struct RastPort temprp;
+    	    InitRastPort(&temprp);
+    	    temprp.BitMap = img->bm;
+    	    ClipBlit(_rp(obj),_left(obj),_top(obj),&temprp,zframe->xthickness,zframe->ythickness,_width(obj),_height(obj),0xc0);
+
+	    muiRenderInfo(obj)->mri_RastPort = &temprp;
+	    zframe->draw[0](muiRenderInfo(obj), 0, 0, img->width, img->height);
+	    muiRenderInfo(obj)->mri_RastPort = rp_save;
     	}
 
     	img->touchx = msg->touchx;
