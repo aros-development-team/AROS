@@ -29,10 +29,10 @@ setvbe 1024 768 32
 title AROS VGA  640x480  4bpp
 kernel /boot/aros-pc-i386.gz
 
-title AROS NVIDIA
+title AROS nVidia
 kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=nvidia.hidd
 
-title AROS VMWare
-kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd
+#title AROS VMWare
+#kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd
 
 # [E] (DO NOT REMOVE THIS LINE!)
