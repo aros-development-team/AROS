@@ -57,15 +57,23 @@
 static BOOL init_cursor(struct GfxBase *GfxBase);
 static VOID cleanup_cursor(struct GfxBase *GfxBase);
 
-struct pix_render_data {
+struct rgbpix_render_data
+{
     HIDDT_Pixel pixel;
 };
 
-static LONG pix_write(APTR pr_data
-	, OOP_Object *bm, OOP_Object *gc
-	, LONG x, LONG y
-	, struct GfxBase *GfxBase);
 
+static LONG rgbpix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
+    	            	 LONG x, LONG y, struct GfxBase *GfxBase)
+{
+    struct rgbpix_render_data *prd;
+    
+    prd = (struct rgbpix_render_data *)pr_data;
+    
+    HIDD_BM_PutPixel(bm, x, y, prd->pixel);
+    
+    return 0;
+}
 #if 0
 OOP_AttrBase HiddBitMapAttrBase	= 0;
 OOP_AttrBase HiddGCAttrBase		= 0;
@@ -220,6 +228,7 @@ void ReleaseDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
 {
     struct gfx_driverdata *dd = GetDriverData(rp);
     
+    /* FIXME: stegerg 23 jan 2004: needs semprotection, too! */
     dd->dd_LockCount--;
     
 //    if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
@@ -959,114 +968,6 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 
 }
 
-struct prlut8_render_data {
-    ULONG pen;
-    HIDDT_PixelLUT *pixlut;
-};
-
-static LONG pix_read_lut8(APTR prlr_data
-	, OOP_Object *bm, OOP_Object *gc
-	, LONG x, LONG y
-	, struct GfxBase *GfxBase)
-{
-    struct prlut8_render_data *prlrd;
-    
-    
-    prlrd = (struct prlut8_render_data *)prlr_data;
-    
-    if (NULL != prlrd->pixlut) {
-	HIDD_BM_GetImageLUT(bm, (UBYTE *)&prlrd->pen, 1, x, y, 1, 1, prlrd->pixlut);
-    } else {
-    	prlrd->pen = HIDD_BM_GetPixel(bm, x, y);
-    }
-
-    return 0;
-}
-
-
-ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
-		    struct GfxBase * GfxBase)
-{
-    struct prlut8_render_data prlrd;
-    LONG ret;
-    
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
-  
-    if(!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return ((ULONG)-1L);
-	
-    if (IS_HIDD_BM(rp->BitMap))
-    	prlrd.pixlut = &pixlut;
-    else
-    	prlrd.pixlut = NULL;
-	
-    prlrd.pen = -1;
-
-    ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, GfxBase);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
-    if (-1 == ret || -1 == prlrd.pen)
-    {
-        D(bug("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??"));
-    	return (ULONG)-1;
-    }
-	
-    return prlrd.pen;
-}
-
-LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
-		    struct GfxBase * GfxBase)
-{
-
-    struct pix_render_data prd;
-    LONG    	    	   retval;
-    
-    if(!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return  -1L;
-	
-    prd.pixel = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
-    retval = do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
-    return retval;
-}
-
-/******** SetRast() ************************************/
-
-
-void driver_SetRast (struct RastPort * rp, ULONG color,
-		    struct GfxBase * GfxBase)
-{
-
-    
-    /* We have to use layers to perform clipping */
-    struct BitMap *bm = rp->BitMap;
-    HIDDT_Pixel pixval;
-    
-    ULONG width, height;
-    
-    width  = GetBitMapAttr(bm, BMA_WIDTH);
-    height = GetBitMapAttr(bm, BMA_HEIGHT);
-    pixval = BM_PIXEL(bm, color);
-    
-    
-    fillrect_pendrmd(rp
-    	, 0, 0
-	, width  - 1
-	, height - 1
-	, pixval
-	, vHidd_GC_DrawMode_Copy
-	, GfxBase
-    );
-    
-
-    ReturnVoid("driver_SetRast");
-
-}
-
-
 /***********************************************/
 /* CYBERGFX CALLS                            ***/
 
@@ -1216,25 +1117,12 @@ static ULONG rpa_render(APTR rpar_data
     return width * height;
 }
 
-static LONG pix_write(APTR pr_data
-	, OOP_Object *bm, OOP_Object *gc
-	, LONG x, LONG y
-	, struct GfxBase *GfxBase)
-{
-    struct pix_render_data *prd;
-    prd = (struct pix_render_data *)pr_data;
-    
-    HIDD_BM_PutPixel(bm, x, y, prd->pixel);
-    
-    return 0;
-}
-
 static LONG pix_read(APTR pr_data
 	, OOP_Object *bm, OOP_Object *gc
 	, LONG x, LONG y
 	, struct GfxBase *GfxBase)
 {
-    struct pix_render_data *prd;
+    struct rgbpix_render_data *prd;
     
     prd = (struct pix_render_data *)pr_data;
     
@@ -1829,7 +1717,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 	, ULONG pixel, struct Library *CyberGfxBase)
 {
     
-    struct pix_render_data  prd;
+    struct rgbpix_render_data  prd;
     HIDDT_Color     	    col;
     LONG    	    	    retval;
     
@@ -1851,7 +1739,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     
     prd.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
     
-    retval = do_pixel_func(rp, x, y, pix_write, &prd, GfxBase);
+    retval = do_pixel_func(rp, x, y, rgbpix_write, &prd, GfxBase);
       
     RELEASE_DRIVERDATA(rp, GfxBase);
     
@@ -1863,7 +1751,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
 	, struct Library *CyberGfxBase)
 {
-    struct pix_render_data prd;
+    struct rgbpix_render_data prd;
     
     /* Get the HIDD pixel val */
     HIDDT_Color col;

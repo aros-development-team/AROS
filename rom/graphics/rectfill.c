@@ -51,6 +51,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
+    FIX_GFXCOORD(xMin);
+    FIX_GFXCOORD(yMin);
+    FIX_GFXCOORD(xMax);
+    FIX_GFXCOORD(yMax);
+    
     if ((xMax >= xMin) && (yMax >= yMin))
     {
 	if (rp->AreaPtrn)

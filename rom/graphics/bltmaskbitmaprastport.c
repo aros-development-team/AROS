@@ -91,6 +91,11 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     EnterFunc(bug("BltMaskBitMapRastPort(%d %d %d, %d, %d, %d)\n"
     	, xSrc, ySrc, xDest, yDest, xSize, ySize));
 
+    FIX_GFXCOORD(xSrc);
+    FIX_GFXCOORD(ySrc);
+    FIX_GFXCOORD(xDest);
+    FIX_GFXCOORD(yDest);
+    
     if ((xSize < 1) || (ySize < 1)) return;
     
     if (!OBTAIN_DRIVERDATA(destRP, GfxBase))

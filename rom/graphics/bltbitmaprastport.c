@@ -86,6 +86,11 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
     	return;
 
+    FIX_GFXCOORD(xSrc);
+    FIX_GFXCOORD(ySrc);
+    FIX_GFXCOORD(xDest);
+    FIX_GFXCOORD(yDest);
+    
     brd.minterm	= minterm;
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
     if (NULL == brd.srcbm_obj)

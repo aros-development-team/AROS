@@ -30,10 +30,10 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *	, rp		, A0),
-	AROS_LHA(ULONG             	, xstart	, D0),
-	AROS_LHA(ULONG             	, ystart	, D1),
-	AROS_LHA(ULONG             	, xstop		, D2),
-	AROS_LHA(ULONG             	, ystop		, D3),
+	AROS_LHA(LONG             	, xstart	, D0),
+	AROS_LHA(LONG             	, ystart	, D1),
+	AROS_LHA(LONG             	, xstop		, D2),
+	AROS_LHA(LONG             	, ystop		, D3),
 	AROS_LHA(UBYTE * 		, array		, A2),
 	AROS_LHA(struct RastPort *	, temprp	, A1),
 
@@ -71,6 +71,13 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     
     EnterFunc(bug("ReadPixelArray8(%p, %d, %d, %d, %d)\n",
     	rp, xstart, ystart, xstop, ystop));
+    
+    FIX_GFXCOORD(xstart);
+    FIX_GFXCOORD(ystart);
+    FIX_GFXCOORD(xstop);
+    FIX_GFXCOORD(ystop);
+    
+    if ((xstart > xstop) || (ystart > ystop)) return 0;
     
     if (!OBTAIN_DRIVERDATA(rp, GfxBase))
 	return 0;

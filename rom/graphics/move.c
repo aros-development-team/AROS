@@ -5,8 +5,9 @@
     Desc: Graphics function Move()
     Lang: english
 */
-#include "graphics_intern.h"
 #include <graphics/rastport.h>
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -49,6 +50,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    FIX_GFXCOORD(x);
+    FIX_GFXCOORD(y);
+    
     rp->cp_x = x;
     rp->cp_y = y;
     rp->linpatcnt = 15;

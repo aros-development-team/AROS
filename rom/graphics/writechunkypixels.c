@@ -18,10 +18,10 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A0),
-	AROS_LHA(ULONG            , xstart, D0),
-	AROS_LHA(ULONG            , ystart, D1),
-	AROS_LHA(ULONG            , xstop, D2),
-	AROS_LHA(ULONG            , ystop, D3),
+	AROS_LHA(LONG             , xstart, D0),
+	AROS_LHA(LONG             , ystart, D1),
+	AROS_LHA(LONG             , xstop, D2),
+	AROS_LHA(LONG             , ystop, D3),
 	AROS_LHA(UBYTE           *, array, A2),
 	AROS_LHA(LONG             , bytesperrow, D4),
 
@@ -57,6 +57,13 @@
 
     pixlut.entries = AROS_PALETTE_SIZE;
     pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
+
+    FIX_GFXCOORD(xstart);
+    FIX_GFXCOORD(ystart);
+    FIX_GFXCOORD(xstop);
+    FIX_GFXCOORD(ystop);
+    
+    if ((xstart > xstop) || (ystart > ystop)) return 0;
 
     if (!pixlut.pixels)
     {

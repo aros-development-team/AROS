@@ -100,6 +100,12 @@
 
     BOOL li_locked = FALSE;
 
+
+    FIX_GFXCOORD(xSrc);
+    FIX_GFXCOORD(ySrc);
+    FIX_GFXCOORD(xDest);
+    FIX_GFXCOORD(yDest);
+
     /* overlapping and non-overlapping blits are handled differently. */
 
     if (srcRP->Layer &&

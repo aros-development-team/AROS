@@ -93,6 +93,9 @@ static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
     EnterFunc(bug("driver_BltTemplate(%d, %d, %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
 	
+    FIX_GFXCOORD(xDest);
+    FIX_GFXCOORD(yDest);
+	
     if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
     	ReturnVoid("driver_BltTemplate");
 	

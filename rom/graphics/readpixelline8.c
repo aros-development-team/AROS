@@ -16,8 +16,8 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort * 	, rp		, A0),
-	AROS_LHA(ULONG			, xstart	, D0),
-	AROS_LHA(ULONG			, ystart	, D1),
+	AROS_LHA(LONG			, xstart	, D0),
+	AROS_LHA(LONG			, ystart	, D1),
 	AROS_LHA(ULONG			, width		, D2),
 	AROS_LHA(UBYTE           *	, array		, A2),
 	AROS_LHA(struct RastPort * 	, tempRP	, A1),
