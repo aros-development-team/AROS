@@ -98,13 +98,13 @@
 #   define __noreturn
 #endif
 
-#if __GNUC_PREREQ(2,5) && !(__GNU_PREREQ(2,6) && defined __cplusplus)
+#if __GNUC_PREREQ(2,5) && !(__GNUC_PREREQ(2,6) && defined __cplusplus)
 #   define __noeffect  __attribute__((__const__))
 #else
 #   define __noeffect
 #endif
 
-#if __GNUC_PREREQ(2.7)
+#if __GNUC_PREREQ(2,7)
 #    define __unused   __attribute__((__unused__))
 #else
 #    define __unused
