@@ -1,3 +1,11 @@
+/*
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Intuition's InputHandler
+    Lang: english
+*/
+
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include <proto/exec.h>
 #include <proto/boopsi.h>
@@ -225,18 +233,16 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	
 	/* Use event to find the active window */
         
+	w = IntuitionBase->ActiveWindow;
+	
 	if (!MENUS_ACTIVE)
 	{
-            lock = LockIBase(0UL);
+            /* lock = LockIBase(0UL); */
 
     	    old_w = IntuitionBase->ActiveWindow;
 	    if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
 	    {
 		w = FindActiveWindow(ie, &swallow_event, IntuitionBase);
-	    }
-	    else
-	    {
-		w = old_w;
 	    }
 
 	    D(bug("iih:New active window: %p\n", w));
@@ -258,7 +264,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		new_active_window = TRUE;
 	    }
 
- 	    UnlockIBase(lock);
+ 	    /* UnlockIBase(lock); */
 
 	    if (new_active_window)
 	    {
