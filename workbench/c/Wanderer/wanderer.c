@@ -70,12 +70,14 @@ void closemuimaster(void)
 #else
 int openmuimaster(void)
 {
-    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+/*    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
     return 0;
+*/
 }
 void closemuimaster(void)
 {
-    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+/*    if (MUIMasterBase) CloseLibrary(MUIMasterBase);*/
+    return 1;
 }
 #endif
 
