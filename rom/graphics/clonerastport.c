@@ -1,0 +1,76 @@
+/*
+    (C) 1995 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Graphics function CloneRastPort()
+    Lang: english
+*/
+#include "graphics_intern.h"
+#include <exec/memory.h>
+#include <graphics/rastport.h>
+#include <clib/exec_protos.h>
+
+/*****************************************************************************
+
+    NAME */
+	#include <graphics/rastport.h>
+	#include <clib/graphics_protos.h>
+
+	AROS_LH1(struct RastPort *, CloneRastPort,
+
+/*  SYNOPSIS */
+	AROS_LHA(struct RastPort *, rp, A1),
+
+/*  LOCATION */
+	struct GfxBase *, GfxBase, 178, Graphics)
+
+/*  FUNCTION
+	This function creates a copy of a RastPort.
+
+    INPUTS
+	rp - The RastPort to clone.
+
+    RESULT
+	A pointer to a RastPort with the same attributes as the RastPort
+	which was specified or NULL if there was not enough memory to perform
+	the operation.
+
+    NOTES
+	This function is AROS specific. For compatibility, there is a
+	function in aros.lib which does the same on Amiga.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	CreateRastPort(), FreeRastPort()
+
+    INTERNALS
+
+    HISTORY
+	29-10-95    digulla automatically created from
+			    graphics_lib.fd and clib/graphics_protos.h
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    struct RastPort * newRP;
+
+    newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
+
+    if (newRP)
+    {
+	CopyMem (rp, newRP, sizeof (struct RastPort));
+
+	if (!driver_CloneRastPort (newRP, rp, GfxBase))
+	{
+	    FreeMem (newRP, sizeof (struct RastPort));
+	    newRP = NULL;
+	}
+    }
+
+    return newRP;
+    AROS_LIBFUNC_EXIT
+} /* CloneRastPort */
