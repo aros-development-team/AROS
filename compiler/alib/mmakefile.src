@@ -23,6 +23,10 @@ FILES	:= \
     argstring \
     arosinquire \
     aslrequesttags \
+    asmallocpooled \
+    asmcreatepool \
+    asmdeletepool \
+    asmfreepooled \
     beginio \
     bestmodeid \
     buildeasyrequest \
