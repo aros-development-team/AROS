@@ -69,7 +69,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    BYTE old_fgpen = GetAPen(rp);
+    ULONG old_drmd = GetDrMd(rp);
     LONG width, height, absdx, absdy;
 
     FIX_GFXCOORD(xMin);
@@ -122,9 +122,9 @@
 
     if ((absdx >= width) || (absdy >= height))
     {
-	SetAPen(rp, GetBPen(rp));
+	SetDrMd(rp, old_drmd ^ INVERSVID);
 	RectFill(rp, xMin, yMin, xMax, yMax);
-	SetAPen(rp, old_fgpen);
+	SetDrMd(rp, old_drmd);
 	
 	return;
     }
@@ -137,7 +137,7 @@
        RectFill()
      */
 
-    SetAPen(rp, GetBPen(rp));
+    SetDrMd(rp, old_drmd ^ INVERSVID);
 
     /* was it scrolled left or right? */
     if (0 != dx)
@@ -184,7 +184,7 @@
 	}
     }
 
-    SetAPen(rp, old_fgpen);
+    SetDrMd(rp, old_drmd);
   
     AROS_LIBFUNC_EXIT
 } /* ScrollRaster */
