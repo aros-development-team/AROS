@@ -39,6 +39,8 @@ struct MUI_StringsPData
     Object *active_bg_popimage;
     Object *active_text_poppen;
     Object *cursor_poppen;
+    Object *marked_bg_poppen;
+    Object *marked_text_poppen;
 };
 
 Object *MakePopupPopimage(CONST_STRPTR title)
@@ -122,10 +124,25 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             End,
 	End, // Inactive String Colors
 	Child, HGroup,
-	GroupFrameT("Cursor"),
-        MUIA_VertWeight, 80,
-            Child, (IPTR) d.cursor_poppen = MakePoppen(),
-	End, // Cursor
+	    Child, HGroup,
+	    GroupFrameT("Cursor"),
+	    Child, (IPTR) d.cursor_poppen = MakePoppen(),
+	    End, // Cursor
+	    Child, HGroup,
+	    GroupFrameT("Marked String Colors"),
+	    MUIA_Group_SameWidth, TRUE,
+	    Child, (IPTR) VGroup,
+	        MUIA_Group_VertSpacing, 1,
+	        Child, (IPTR) d.marked_bg_poppen = MakePoppen(),
+	        Child, (IPTR) CLabel("Background"),
+	        End,
+	    Child, (IPTR) VGroup,
+	        MUIA_Group_VertSpacing, 1,
+	        Child, (IPTR) d.marked_text_poppen = MakePoppen(),
+	        Child, (IPTR) CLabel("Text"),
+	        End,
+	    End, // Marked String Colors
+	End, // Cursor + Marked
 
 	End,
         End,
@@ -190,6 +207,13 @@ static IPTR StringsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 			    MUICFG_String_Cursor);
     set(data->cursor_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
 
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_String_MarkedText);
+    set(data->marked_text_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_String_MarkedBackground);
+    set(data->marked_bg_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
     return 1;    
 }
 
@@ -237,6 +261,14 @@ static IPTR StringsP_GadgetsToConfig(struct IClass *cl, Object *obj,
     str = (STRPTR)XGET(data->cursor_poppen, MUIA_Pendisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
 	     MUICFG_String_Cursor, (IPTR)str);
+
+    str = (STRPTR)XGET(data->marked_text_poppen, MUIA_Pendisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
+	     MUICFG_String_MarkedText, (IPTR)str);
+
+    str = (STRPTR)XGET(data->marked_bg_poppen, MUIA_Pendisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
+	     MUICFG_String_MarkedBackground, (IPTR)str);
 
     return TRUE;
 }
