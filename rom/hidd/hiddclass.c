@@ -8,11 +8,12 @@
 
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
+#include <exec/libraries.h>
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
-#include <exec/resident.h>
 #include <exec/alerts.h>
+
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 #include <oop/oop.h>
@@ -22,82 +23,24 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-#ifdef _AROS
-#include <aros/asmcall.h>
-#endif /* _AROS */
+#include "hiddclass_intern.h"
 
-#define SDEBUG 0
-#define DEBUG 0
+#undef  SDEBUG
+#undef  DEBUG
+#define DEBUG 1
 #include <aros/debug.h>
 
-static const UBYTE name[];
-static const UBYTE version[];
-static ULONG AROS_SLIB_ENTRY(init,HIDD)();
-extern const char HIDD_End;
-
-int entry(void)
-{
-    return -1;
-}
-
-const struct Resident HIDD_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&HIDD_resident,
-    (APTR)&HIDD_End,
-    RTF_COLDSTART,
-    41,
-    NT_UNKNOWN,
-    90, /* Has to be after OOP */
-    (UBYTE *)name,
-    (UBYTE *)version,
-    (APTR)&AROS_SLIB_ENTRY(init,HIDD)
-};
-
-static const UBYTE name[] = "hiddclass";
-static const UBYTE version[] = "hiddclass 41.1 (23.10.1997)\r\n";
-
-static const char unknown[] = "--unknown device--";
-
-
-static AttrBase HiddAttrBase;
+static const char unknown[]  = "--unknown device--";
+static AttrBase HiddAttrBase = 0;
 
 #define IS_HIDD_ATTR(attr, idx) ((idx = attr - HiddAttrBase) < num_Hidd_Attrs)
-
-/************************************************************************/
-
-struct HIDDData
-{
-    UWORD	hd_Type;
-    UWORD	hd_SubType;
-    ULONG	hd_Producer;
-    STRPTR	hd_Name;
-    STRPTR	hd_HWName;
-    BOOL	hd_Active;
-    UWORD	hd_Locking;
-    ULONG	hd_Status;
-    ULONG	hd_ErrorCode;
-};
-
-/* Static Data for the hiddclass. */
-struct HCD
-{
-    struct Library		*UtilityBase;
-    struct Library		*OOPBase;
-    struct MinList		 hiddList;
-    struct SignalSemaphore	 listLock;
-};
-
-#define OOPBase	(((struct HCD *)cl->UserData)->OOPBase)
-#define UtilityBase	(((struct HCD *)cl->UserData)->UtilityBase)
 
 /* Implementation of root HIDD class methods. */
 static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg);
 
 
-/******************
-**  HIDD::New()  **
-******************/
+/*** HIDD::New() **************************************************************/
+
 static Object *hidd_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("HIDD::New(cl=%s)\n", cl->ClassNode.ln_Name));
@@ -105,135 +48,108 @@ static Object *hidd_new(Class *cl, Object *o, struct pRoot_New *msg)
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if(o)
     {
-    	struct HIDDData *hd;
+        struct HIDDData *hd;
         struct TagItem *list = msg->attrList;
-	struct pRoot_Set set_msg;
-	
-	hd = INST_DATA(cl, o);
+        struct pRoot_Set set_msg;
+        
+        hd = INST_DATA(cl, o);
 
-	/*  Initialise the HIDD class. These fields are publicly described
-	    as not being settable at Init time, however it is the only way to
-	    get proper abstraction if you ask me. Plus it does reuse code
-	    in a nice way.
+        /*  Initialise the HIDD class. These fields are publicly described
+            as not being settable at Init time, however it is the only way to
+            get proper abstraction if you ask me. Plus it does reuse code
+            in a nice way.
 
-	    To pass these into the init code I would recommend that your
-	    pass in a TagList of your tags, which is linked to the user's
-	    tags by a TAG_MORE. This way you will prevent them from setting
-	    these values.
-	*/
+            To pass these into the init code I would recommend that your
+            pass in a TagList of your tags, which is linked to the user's
+            tags by a TAG_MORE. This way you will prevent them from setting
+            these values.
+        */
 
-	hd->hd_Type 	= GetTagData(aHidd_Type, 	0, list);
-	hd->hd_SubType 	= GetTagData(aHidd_SubType, 	0, list);
-	hd->hd_Producer = GetTagData(aHidd_Producer, 	0, list);
-	
-	hd->hd_Name 	= (STRPTR)GetTagData(aHidd_Name, 	(IPTR)unknown,	list);
-	hd->hd_HWName 	= (STRPTR)GetTagData(aHidd_HardwareName,(IPTR)unknown,	list);
-	
-	hd->hd_Status 	= GetTagData(aHidd_Status, 	vHidd_StatusUnknown, 	list);
-	hd->hd_Locking 	= GetTagData(aHidd_Locking, 	vHidd_LockShared, 	list);
-	hd->hd_ErrorCode= GetTagData(aHidd_ErrorCode, 	0, list);
+        hd->hd_Type     = GetTagData(aHidd_Type,        0, list);
+        hd->hd_SubType  = GetTagData(aHidd_SubType,     0, list);
+        hd->hd_Producer = GetTagData(aHidd_Producer,    0, list);
+        
+        hd->hd_Name     = (STRPTR)GetTagData(aHidd_Name,        (IPTR)unknown,  list);
+        hd->hd_HWName   = (STRPTR)GetTagData(aHidd_HardwareName,(IPTR)unknown,  list);
+        
+        hd->hd_Status   = GetTagData(aHidd_Status,      vHidd_StatusUnknown,    list);
+        hd->hd_Locking  = GetTagData(aHidd_Locking,     vHidd_LockShared,       list);
+        hd->hd_ErrorCode= GetTagData(aHidd_ErrorCode,   0, list);
 
-	hd->hd_Active 	= TRUE; /* Set default, GetTagData() comes later */
-	
-	/* Use OM_SET to set the rest */
+        hd->hd_Active   = TRUE; /* Set default, GetTagData() comes later */
+        
+        /* Use OM_SET to set the rest */
 
 
-	set_msg.attrList = msg->attrList;
-	hidd_set(cl, o, &set_msg);
-	
-	
+        set_msg.attrList = msg->attrList;
+        hidd_set(cl, o, &set_msg);
     }
     
     ReturnPtr("HIDD::New", Object *, o);
 }
 
 
-/******************
-**  HIDD::Set()  **
-******************/
+/*** HIDD::Set() **************************************************************/
 
 static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg)
 {
 
-    struct TagItem *tstate = msg->attrList;
-    struct TagItem *tag;
+    struct TagItem  *tstate = msg->attrList;
+    struct TagItem  *tag;
     struct HIDDData *hd = INST_DATA(cl, o);
+
+    EnterFunc(bug("HIDD::Set(cl=%s)\n", cl->ClassNode.ln_Name));
 
     while((tag = NextTagItem(&tstate)))
     {
-    	ULONG idx;
-	
-    	if (IS_HIDD_ATTR(tag->ti_Tag, idx))
-	{
-	    switch(idx)
-	    {
-		case aoHidd_Active:
-	    	    hd->hd_Active = tag->ti_Data;
-	    	    break;
-		    
-	    }
-	}
+        ULONG idx;
+        
+        if (IS_HIDD_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+                case aoHidd_Active:
+                    hd->hd_Active = tag->ti_Data;
+                    break;
+                    
+            }
+        }
     }
-    return;
+
+    ReturnVoid("HIDD::Set");
 }
 
-/******************
-**  HIDD::Get()  **
-******************/
+
+/*** HIDD::Get() **************************************************************/
+
 static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
 {
     struct HIDDData *hd = INST_DATA(cl, o);
     ULONG idx;
     
+    EnterFunc(bug("HIDD::Get(cl=%s)\n", cl->ClassNode.ln_Name));
 
     if (IS_HIDD_ATTR(msg->attrID, idx))
     {
-    	switch (idx)
-	{
-	case aoHidd_Type:
-	    *msg->storage = hd->hd_Type;
-	    break;
-
-	case aoHidd_SubType:
-	    *msg->storage = hd->hd_SubType;
-	    break;
-
-	case aoHidd_Producer:
-	    *msg->storage = hd->hd_Producer;
-	    break;
-
-	case aoHidd_Name:
-	    *msg->storage = (IPTR)hd->hd_Name;
-	    break;
-
-	case aoHidd_HardwareName:
-	    *msg->storage = (IPTR)hd->hd_HWName;
-	    break;
-
-	case aoHidd_Active:
-	    *msg->storage = hd->hd_Active;
-	    break;
-
-	case aoHidd_Status:
-	    *msg->storage = hd->hd_Status;
-	    break;
-
-	case aoHidd_ErrorCode:
-	    *msg->storage = hd->hd_ErrorCode;
-	    break;
-
-	case aoHidd_Locking:
-	    *msg->storage = hd->hd_Locking;
-	    break;
-	
-	}
+        switch (idx)
+        {
+            case aoHidd_Type        : *msg->storage = hd->hd_Type;         break;
+            case aoHidd_SubType     : *msg->storage = hd->hd_SubType;      break;
+            case aoHidd_Producer    : *msg->storage = hd->hd_Producer;     break;
+            case aoHidd_Name        : *msg->storage = (IPTR)hd->hd_Name;   break;
+            case aoHidd_HardwareName: *msg->storage = (IPTR)hd->hd_HWName; break;
+            case aoHidd_Active      : *msg->storage = hd->hd_Active;       break;
+            case aoHidd_Status      : *msg->storage = hd->hd_Status;       break;
+            case aoHidd_ErrorCode   : *msg->storage = hd->hd_ErrorCode;    break;
+            case aoHidd_Locking     : *msg->storage = hd->hd_Locking;      break;
+        }
     }
     
-    return;
-
+    ReturnVoid("HIDD::Get");
 }
 
 
+#if 0
 /***********************************
 **  Unimplemented methods 
 */
@@ -244,84 +160,84 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
 /*    switch(msg->MethodID)
     {
     case OM_NEW:
-	retval = DoSuperMethodA(cl, o, msg);
-	if(!retval)
-	    break;
+        retval = DoSuperMethodA(cl, o, msg);
+        if(!retval)
+            break;
 
-	hd = INST_DATA(cl, retval);
+        hd = INST_DATA(cl, retval);
 
-	if( hd != NULL)
-	{
-	    struct TagItem *list = ((struct opSet *)msg)->ops_AttrList;
-	    hd->hd_Type = GetTagData(aHidd_Type, 0, list);
-	    hd->hd_SubType = GetTagData(aHidd_SubType, 0, list);
-	    hd->hd_Producer = GetTagData(aHidd_Producer, 0, list);
-	    hd->hd_Name = (STRPTR)GetTagData(aHidd_Name, (IPTR)unknown, list);
-	    hd->hd_HWName = (STRPTR)GetTagData(aHidd_HardwareName, (IPTR)unknown, list);
-	    hd->hd_Active = TRUE; 
-	    hd->hd_Status = GetTagData(aHidd_Status, HIDDV_StatusUnknown, list);
-	    hd->hd_ErrorCode = GetTagData(aHidd_ErrorCode, 0, list);
-	    hd->hd_Locking = GetTagData(aHidd_Locking, HIDDV_LockShared, list);
-	}
+        if( hd != NULL)
+        {
+            struct TagItem *list = ((struct opSet *)msg)->ops_AttrList;
+            hd->hd_Type = GetTagData(aHidd_Type, 0, list);
+            hd->hd_SubType = GetTagData(aHidd_SubType, 0, list);
+            hd->hd_Producer = GetTagData(aHidd_Producer, 0, list);
+            hd->hd_Name = (STRPTR)GetTagData(aHidd_Name, (IPTR)unknown, list);
+            hd->hd_HWName = (STRPTR)GetTagData(aHidd_HardwareName, (IPTR)unknown, list);
+            hd->hd_Active = TRUE; 
+            hd->hd_Status = GetTagData(aHidd_Status, HIDDV_StatusUnknown, list);
+            hd->hd_ErrorCode = GetTagData(aHidd_ErrorCode, 0, list);
+            hd->hd_Locking = GetTagData(aHidd_Locking, HIDDV_LockShared, list);
+        }
 
     case OM_SET:
     {
-	struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
-	struct TagItem *tag;
+        struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
+        struct TagItem *tag;
 
-	while((tag = NextTagItem(&tstate)))
-	{
-	    switch(tag->ti_Tag)
-	    {
-	    case aHidd_Active:
-		hd->hd_Active = tag->ti_Data;
-		break;
-	    }
-	}
-	break;
+        while((tag = NextTagItem(&tstate)))
+        {
+            switch(tag->ti_Tag)
+            {
+            case aHidd_Active:
+                hd->hd_Active = tag->ti_Data;
+                break;
+            }
+        }
+        break;
     }
 
 
     case OM_GET:
     {
-	switch(((struct opGet *)msg)->opg_AttrID)
-	{
-	case aHidd_Type:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_Type;
-	    break;
+        switch(((struct opGet *)msg)->opg_AttrID)
+        {
+        case aHidd_Type:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_Type;
+            break;
 
-	case aHidd_SubType:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_SubType;
-	    break;
+        case aHidd_SubType:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_SubType;
+            break;
 
-	case aHidd_Producer:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_Producer;
-	    break;
+        case aHidd_Producer:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_Producer;
+            break;
 
-	case aHidd_Name:
-	    *((struct opGet *)msg)->opg_Storage = (IPTR)hd->hd_Name;
-	    break;
+        case aHidd_Name:
+            *((struct opGet *)msg)->opg_Storage = (IPTR)hd->hd_Name;
+            break;
 
-	case aHidd_HardwareName:
-	    *((struct opGet *)msg)->opg_Storage = (IPTR)hd->hd_HWName;
-	    break;
+        case aHidd_HardwareName:
+            *((struct opGet *)msg)->opg_Storage = (IPTR)hd->hd_HWName;
+            break;
 
-	case aHidd_Active:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_Active;
-	    break;
+        case aHidd_Active:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_Active;
+            break;
 
-	case aHidd_Status:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_Status;
-	    break;
+        case aHidd_Status:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_Status;
+            break;
 
-	case aHidd_ErrorCode:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_ErrorCode;
-	    break;
+        case aHidd_ErrorCode:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_ErrorCode;
+            break;
 
-	case aHidd_Locking:
-	    *((struct opGet *)msg)->opg_Storage = hd->hd_Locking;
-	    break;
-	}
+        case aHidd_Locking:
+            *((struct opGet *)msg)->opg_Storage = hd->hd_Locking;
+            break;
+        }
     }
 
 */
@@ -329,181 +245,223 @@ static VOID hidd_get(Class *cl, Object *o, struct pRoot_Get *msg)
 
     /* These are the "hiddclass" methods. */
 
-    /*	These two are invalid, since we don't have anything to get
-	from a class, so the superclass should handle these.
+    /*  These two are invalid, since we don't have anything to get
+        from a class, so the superclass should handle these.
 
-	This is especially the case since the only place that we can
-	get the information for these methods is from an object, but
-	we don't have any objects if this method is called.
+        This is especially the case since the only place that we can
+        get the information for these methods is from an object, but
+        we don't have any objects if this method is called.
     */
 /*    case HIDDM_Meta_Get:
     case HIDDM_Meta_MGet:
-	retval = 0;
-	break;
+        retval = 0;
+        break;
 */
-    /*	Yet to determine the semantics of these so we just let
-	them return 0 for now.
+    /*  Yet to determine the semantics of these so we just let
+        them return 0 for now.
     */
 /*    case HIDDM_BeginIO:
     case HIDDM_AbortIO:
-	retval = 0;
-	break;
+        retval = 0;
+        break;
 
     case HIDDM_LoadConfigPlugin:
     case HIDDM_Lock:
     case HIDDM_Unlock:
-	retval = NULL;
-	break;
+        retval = NULL;
+        break;
 
     case HIDDM_AddHIDD:
     {
 
-	Class *hc = ((hmAdd *)msg)->hma_Class;
+        Class *hc = ((hmAdd *)msg)->hma_Class;
 
-	if( (hc->cl_Flags & CLF_INLIST) == 0 )
-	{
+        if( (hc->cl_Flags & CLF_INLIST) == 0 )
+        {
 
-	    ObtainSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
-	    AddTail(
-		(struct List *)&((struct HCD *)cl->cl_UserData)->hiddList,
-		(struct Node *)hc
-	    );
-	    ReleaseSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
+            ObtainSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
+            AddTail(
+                (struct List *)&((struct HCD *)cl->cl_UserData)->hiddList,
+                (struct Node *)hc
+            );
+            ReleaseSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
 
-	    hc->cl_Flags |= CLF_INLIST;
-	    retval = TRUE;
-	}
-	break;
+            hc->cl_Flags |= CLF_INLIST;
+            retval = TRUE;
+        }
+        break;
     }
 
     case HIDDM_RemoveHIDD:
     {
-	struct IClass *hc = ((hmAdd *)msg)->hma_Class;
+        struct IClass *hc = ((hmAdd *)msg)->hma_Class;
 
-	if( hc->cl_Flags & CLF_INLIST )
-	{
-	    ObtainSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
-	    Remove((struct Node *)hc);
-	    ReleaseSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
-	    hc->cl_Flags &= ~CLF_INLIST;
-	}
+        if( hc->cl_Flags & CLF_INLIST )
+        {
+            ObtainSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
+            Remove((struct Node *)hc);
+            ReleaseSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
+            hc->cl_Flags &= ~CLF_INLIST;
+        }
     }
 
     case OM_DISPOSE:
 
     default:
-	retval = DoSuperMethodA(cl, o, msg);
+        retval = DoSuperMethodA(cl, o, msg);
     }
 
     return retval;
 }
 */
-/* This is the initialisation code for the HIDD class itself. */
-#undef OOPBase
+#endif
+
+
+/*************************** Classes *****************************/
+
+#undef SysBase
 #undef UtilityBase
+#undef OOPBase
+
+#define SysBase     (lh->hd_SysBase)
+#define UtilityBase (csd->UtilityBase)
+#define OOPBase     (csd->OOPBase)
 
 #define NUM_ROOT_METHODS 3
 #define NUM_HIDD_METHODS 0
 
-AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
-    AROS_UFHA(ULONG, dummy1, D0),
-    AROS_UFHA(ULONG, dummy2, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+ULONG init_hiddclass(struct IntHIDDClassBase *lh)
 {
-    struct Library *OOPBase;
-    Class *cl;
-    struct HCD *hcd;
-    
-    
+    Class  *cl = NULL;
+    struct  class_static_data *csd;
+    ULONG   alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
+    ULONG   ok    = 0;
+
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-    	{ (IPTR (*)())hidd_new,		moRoot_New		},
-    	{ (IPTR (*)())hidd_set,		moRoot_Set		},
-    	{ (IPTR (*)())hidd_get,		moRoot_Get		},
-    	{ NULL, 0UL }
+        { (IPTR (*)())hidd_new,         moRoot_New              },
+        { (IPTR (*)())hidd_set,         moRoot_Set              },
+        { (IPTR (*)())hidd_get,         moRoot_Get              },
+        { NULL, 0UL }
     };
 
     
     struct MethodDescr hidd_mdescr[NUM_HIDD_METHODS + 1] =
     {
-    	{ NULL, 0UL }
+        { NULL, 0UL }
     };
     
     struct InterfaceDescr ifdescr[] =
     {
-    	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
-	{hidd_mdescr, IID_Hidd, NUM_HIDD_METHODS},
-	{NULL, NULL, 0UL}
+        {root_mdescr, IID_Root, NUM_ROOT_METHODS},
+        {hidd_mdescr, IID_Hidd, NUM_HIDD_METHODS},
+        {NULL, NULL, 0UL}
     
     };
     
     
-
     /*
-	We map the memory into the shared memory space, because it is
-	to be accessed by many processes, eg searching for a HIDD etc.
+        We map the memory into the shared memory space, because it is
+        to be accessed by many processes, eg searching for a HIDD etc.
 
-	Well, maybe once we've got MP this might help...:-)
+        Well, maybe once we've got MP this might help...:-)
     */
-    hcd = AllocMem(sizeof(struct HCD), MEMF_CLEAR|MEMF_PUBLIC);
-    if(hcd == NULL)
+
+    EnterFunc(bug("HIDD::Init()\n"));
+
+    /* If you are not running from ROM, don't use Alert() */
+
+    alert = AT_DeadEnd | AG_NoMemory | AN_Unknown;
+    csd = lh->hd_csd = AllocMem(sizeof(struct class_static_data), MEMF_CLEAR|MEMF_PUBLIC);
+    if(csd)
     {
-	/* If you are not running from ROM, don't use Alert() */
-	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
-	return NULL;
+        NEWLIST(&csd->hiddList);
+        InitSemaphore(&csd->listLock);
+
+        alert = AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown;
+        OOPBase = OpenLibrary("oop.library", 0);
+        if(OOPBase)
+        {
+            UtilityBase = OpenLibrary("utility.library", 0);
+            if(UtilityBase)
+            {
+                /* Create the class structure for the "hiddclass" */
+
+                AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+
+                struct TagItem tags[] =
+                {
+                    {aMeta_SuperID,             (IPTR)CLID_Root},
+                    {aMeta_InterfaceDescr,      (IPTR)ifdescr},
+                    {aMeta_ID,                  (IPTR)CLID_Hidd},
+                    {aMeta_InstSize,            (IPTR)sizeof (struct HIDDData) },
+                    {TAG_DONE, 0UL}
+                };
+
+                alert = AT_DeadEnd | AN_Unknown | AO_Unknown;
+                cl = csd->hiddclass = NewObject(NULL, CLID_HiddMeta, tags);
+                if(cl)
+                {
+                    cl->UserData = csd;
+
+                    HiddAttrBase = ObtainAttrBase(IID_Hidd);
+                    if(HiddAttrBase)
+                    {
+                        AddClass(cl);
+                        ok = 1;
+                    } /* if(HiddAttrBase) */
+
+                } /* if(cl) */
+
+            } /* if(UtilityBase) */
+
+        } /* if(OOPBase) */
     }
 
-    NEWLIST(&hcd->hiddList);
-    InitSemaphore(&hcd->listLock);
-
-    OOPBase = hcd->OOPBase = OpenLibrary("oop.library", 0);
-    if(hcd->OOPBase == NULL)
+    if(ok == 0)
     {
-	FreeMem(hcd, sizeof(struct HCD));
-	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown);
-	return NULL;
+        free_hiddclass(lh);
+
+        lh->hd_csd = NULL;
+
+        /* If you are not running from ROM, don't use Alert() */
+
+        Alert(alert);
     }
 
-    hcd->UtilityBase = OpenLibrary("utility.library",0);
-    if(hcd->UtilityBase == NULL)
-    {
-	CloseLibrary(hcd->OOPBase);
-	FreeMem(hcd, sizeof(struct HCD));
-	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_UtilityLib);
-	return NULL;
-    }
-
-    /* Create the class structure for the "hiddclass" */
-    {
-        AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
-        struct TagItem tags[] =
-    	{
-            {aMeta_SuperID,		(IPTR)CLID_Root},
-	    {aMeta_InterfaceDescr,	(IPTR)ifdescr},
-	    {aMeta_ID,			(IPTR)CLID_Hidd},
-	    {aMeta_InstSize,		(IPTR)sizeof (struct HIDDData) },
-	    {TAG_DONE, 0UL}
-    	};
-    
-	cl = NewObject(NULL, CLID_HiddMeta, tags);
-	if (cl == NULL)
-	{
-	    CloseLibrary(hcd->UtilityBase);
-	    CloseLibrary(hcd->OOPBase);
-	    FreeMem(hcd, sizeof(struct HCD));
-	    Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown);
-	    return NULL;
-        }
-	
-    }
-    
-    cl->UserData = hcd;
-    HiddAttrBase = GetAttrBase(IID_Hidd);
-
-    AddClass(cl);
-
-    return TRUE;
+    ReturnInt("HIDD::Init", ULONG, ok);
 }
 
-const char HIDD_End = 0;
+
+VOID free_hiddclass(struct IntHIDDClassBase *lh)
+{
+    struct class_static_data *csd = lh->hd_csd;
+
+    EnterFunc(bug("HIDD::Free()\n"));
+
+    if(csd)
+    {
+        if(csd->hiddclass)
+        {
+            RemoveClass(csd->hiddclass);
+            if(HiddAttrBase)
+            {
+                ReleaseAttrBase(IID_Hidd);
+                HiddAttrBase = 0;
+            }
+
+            DisposeObject((Object *) csd->hiddclass);
+        }
+
+
+        if(OOPBase)     CloseLibrary(OOPBase);
+        if(UtilityBase) CloseLibrary(UtilityBase);
+
+        FreeMem(csd, sizeof(struct class_static_data));
+
+        lh->hd_csd = NULL;
+    }
+
+    ReturnVoid("HIDD::Free");
+}
+

@@ -1,35 +1,101 @@
-# $Id$
+#$Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR	:= $(GENDIR)/$(CURDIR)
+# a make.tmpl for a hiddclass would be useful
 
-#specify includes to copy
+CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
 
-MY_INCLS := $(wildcard include/*.h)
-DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
-GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+OBJDIR	    := $(GENDIR)/$(CURDIR)
+#OS_INCLUDES := -I$(GENINCDIR)
 
+# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+USER_INCLUDES := -I.
 
-#All modules must be in single files.
-MODULES	:= hiddclass
+# will be expand to LIBNAME.LIBPOST i.e. hiddclass.hidd
+LIBNAME     := hiddclass
+ULIBNAME    := Hiddclass
+LIBPOST     := hidd
 
-#One lib pr. module. Lib follows naming of modules.
-LIBS := $(foreach f, $(MODULES), $(LIBDIR)/lib$(f).a)
+FILES       := hiddclass functable
 
-OBJS := $(foreach f, $(MODULES), $(OBJDIR)/$(f).o)
+INIT_FILE   := $(LIBNAME)_init
+END_FILE    := $(LIBNAME)_end
 
-#MM kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
-kernel-hidd:
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+ifeq ($(FLAVOUR),native)
+DEPLIBS := arossupport arosc
+else
+DEPLIBS :=
+endif
+
+# Replacement is probably of limited use in this directory, but I'll
+# support it nonetheless.
+ALL_FILES := $(FILES)
+%prepare_replace rom/hidd
+%filter_replace FILES
+
+%prepare_shlib hiddclass $(SHARED_HIDDCLASS)
+
+ifndef INITFUNC
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+endif
+ifndef ENDFUNC
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
+endif
+ifndef OSMODULE
+OSMODULE := $(LIBNAME).$(LIBPOST)
+endif
+
+OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+ALL_OBJS := $(OBJS) 
+
+$(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
+	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a) $(ENDFUNC)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	  $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) $(ENDFUNC) \
+		-o $@ 2>&1 | tee $(OSMODULE).err
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+ifeq ($(FLAVOUR),native)
+	@strip $@
+else
+	@strip -x $@
+endif
+
+#MM kernel-hidd-linklib : setup includes kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd-linklib : show-flags $(LIB)
 	@$(NOP)
 
-#MM
-kernel-hidd-linklib : show-flags $(LIBS)
+#MM kernel-hidd-module : setup includes kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd-module : show-flags $(HIDDSDIR)/$(OSMODULE)
+
+# --- QUICK HACKS BEGIN --- 
+# These are hacks for faster execution of "mmake" and "make". Use them
+# only if you know set the setup is correct and do not add them as targets
+# in other makefiles.
+#
+# Usage: 
+#   mmake AROS.kernel-hidd-module-quick
+#   make -f mmakefile TOP=/dh1/AROS CURDIR=rom/hidd kernel-hidd-module-quick
+
+#MM kernel-hidd-module-quick : kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd-module-quick : show-flags $(LIB) $(HIDDSDIR)/$(OSMODULE)
 	@$(NOP)
 
-DEPS := $(foreach f, $(MODULES), $(OBJDIR)/$(f).d)
+#MM kernel-hidd-includes-quick : kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd-includes-quick : setup-includes includes-copy 
+	$(NOP)
 
-$(LIBDIR)/lib%.a : $(OBJDIR)/%.o
-	$(CC) $(ILDFLAGS) $< -o $@
+# --- QUICK HACKS END ---
+
+DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+
+$(LIB): libdefs.h $(ALL_OBJS)
+	%mklib_q from=$(ALL_OBJS)
+	@$(RM) $(RMLIB)
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
@@ -45,21 +111,37 @@ $(GENINCDIR)/hidd/%.h : include/%.h
 setup-includes :
 	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
+# Rule to create a .library in the local dir
+libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
+	@$(ECHO) "Generating $@..."
+	@$(TOP)/tools/archtools/archtool -c
+
+$(END_FILE).c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+# Rule to create functable.c
+functable.c : libdefs.h $(TOP)/tools/archtools/archtool
+	@$(TOP)/tools/archtools/archtool -t
+
 #MM
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
-$(OBJDIR)/%.o : %.c 
+$(OBJDIR)/%.o : %.c
 	%compile_q 
 
+%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
+
+%ctoasm_q
+
+%additional_objs_rule
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
-	
-	
 
 %common
 %include_deps

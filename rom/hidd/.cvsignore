@@ -1,3 +1,7 @@
 *.err
 *.bak
 mmakefile
+functable.c
+hiddclass.hidd.map
+hiddclass_end.c
+libdefs.h
