@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a node into a sorted list
@@ -25,6 +25,9 @@
 
 /*  FUNCTION
 	Sort a node into a list. The sort-key is the field node->ln_Pri.
+	The node will be inserted into the list before the first node
+	with lower priority. This creates a FIFO queue for nodes with
+	the same priority.
 
     INPUTS
 	list - Insert into this list. The list has to be in descending
@@ -33,7 +36,7 @@
 		be a complete node and not a MinNode !
 
     RESULT
-	The new node will be inserted before nodes with the same or lower
+	The new node will be inserted before nodes with lower
 	priority.
 
     NOTES
@@ -75,7 +78,7 @@
 	    Look for the first node with a lower pri as the node
 	    we have to insert into the list.
 	*/
-	if (node->ln_Pri > next->ln_Pri)
+	if (node->ln_Pri >= next->ln_Pri)
 	    break;
     }
 
@@ -102,4 +105,3 @@
 
     AROS_LIBFUNC_EXIT
 } /* Enqueue */
-
