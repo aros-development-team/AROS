@@ -21,8 +21,10 @@ ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick/delegates/ljpeg-6b.tar.gz
 
 Directory structure:
 doc : documentation for linker library and test programs
-main : sources for linker library
+main : sources for libjpeg linker library
 test : sources for test programs
+datatype : jpeg.datatype, this doesn't belong to libjpeg, but is an application
+           using it; see jpeg.readme in there
 
 Global changes to the original sources:
 * Added CVS header
@@ -96,5 +98,7 @@ Files added to the original sources:
 * README
 * LEGAL
 * test/README
+* main/debug.h
 * main/mmakefile.src
 * test/mmakefile.src
+* datatype/*
