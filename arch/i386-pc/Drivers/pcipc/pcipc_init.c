@@ -54,11 +54,11 @@ static const char Pci_Name[] = NAME_STRING;
 static const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
 
-static const struct Resident Pci_Resident = {
+static const struct Resident Pcipc_Resident = {
     RTC_MATCHWORD,
-    &Pci_Resident,
+    &Pcipc_Resident,
     &LIBEND,
-    RTF_SINGLETASK | RTF_AUTOINIT,
+    RTF_COLDSTART | RTF_AUTOINIT,
     VERSION_NUMBER,
     NT_LIBRARY,
     89,
@@ -72,10 +72,10 @@ static const APTR inittabl[4] =
     (APTR)sizeof(LIBBASETYPE),
     (APTR)LIBFUNCTABLE,
     NULL,
-    &Pci_init
+    &Pcipc_init
 };
 
-AROS_UFH3(LIBBASETYPEPTR, Pci_init,
+AROS_UFH3(LIBBASETYPEPTR, Pcipc_init,
     AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),
     AROS_UFHA(BPTR, slist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -85,29 +85,34 @@ AROS_UFH3(LIBBASETYPEPTR, Pci_init,
     struct pci_staticdata *psd;
 
     LIBBASE->sysBase = SysBase;
-    LIBBASE->LibNode.lib_Node.ln_Pri = Pci_Resident.rt_Pri;
-    LIBBASE->LibNode.lib_Node.ln_Name = Pci_Resident.rt_Name;
+    LIBBASE->LibNode.lib_Node.ln_Pri = Pcipc_Resident.rt_Pri;
+    LIBBASE->LibNode.lib_Node.ln_Name = Pcipc_Resident.rt_Name;
     LIBBASE->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     LIBBASE->LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
     LIBBASE->LibNode.lib_Version = VERSION_NUMBER;
     LIBBASE->LibNode.lib_Revision = REVISION_NUMBER;
     LIBBASE->LibNode.lib_IdString = &Pci_VersionID[6];
 
-    D(bug("PCPCI: Initializing\n"));
+    D(bug("PCIPC: Initializing\n"));
 
     psd = AllocMem(sizeof(struct pci_staticdata), MEMF_CLEAR | MEMF_PUBLIC);
     LIBBASE->psd = psd;
     
     if (psd)
     {
+	D(bug("PCIPC: Got psd\n"));
 	psd->sysbase = SysBase;
 	psd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	if (psd->oopbase)
 	{
+	    D(bug("PCIPC: Got OOP\n"));
 	    psd->utilitybase = OpenLibrary(UTILITYNAME, 0);
+	    if (psd->utilitybase)
 	    {
-    		if (init_pcidriverclass(psd))
+		D(bug("PCIPC: Got Utility\n"));
+    		if (init_pcipcdriverclass(psd))
 		{
+		    D(bug("PCIPC: Init ok\n"));
 		    return LIBBASE;
 		}
 	    }
@@ -176,7 +181,7 @@ AROS_LH0(BPTR, expunge,
 	UBYTE *negptr = (UBYTE*)LIBBASE;
 	ULONG negsize, possize, fullsize;
 
-	free_pcidriverclass(LIBBASE->psd, LIBBASE->psd->driverClass);
+	free_pcipcdriverclass(LIBBASE->psd, LIBBASE->psd->driverClass);
 	CloseLibrary(LIBBASE->psd->utilitybase);
 	CloseLibrary(LIBBASE->psd->oopbase);
 

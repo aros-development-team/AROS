@@ -138,7 +138,7 @@ static void pcidriver_WL(OOP_Class *cl, OOP_Object *o,
 #define OOPBase	    (psd->oopbase)
 #define UtilityBase (psd->utilitybase)
 
-void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
+void free_pcipcdriverclass(struct pci_staticdata *psd, OOP_Class *cl)
 {
     D(bug("PCI: Dummy Driver Class destruction\n"));
     
@@ -157,7 +157,7 @@ void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
 #define _NUM_ROOT_METHODS	1
 #define _NUM_PCIDRIVER_METHODS	4
 
-OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
+OOP_Class *init_pcipcdriverclass(struct pci_staticdata *psd)
 {
     OOP_Class *cl = NULL;
     OOP_Object *pci = NULL;
@@ -204,6 +204,7 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 	    cl->UserData = (APTR)psd;
 	    psd->hiddPCIDriverAB = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
 	    psd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
+
 	    if (psd->hiddPCIDriverAB)
 	    {
 		struct pHidd_PCI_AddHardwareDriver msg;
@@ -222,7 +223,7 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 	    }
 	    else
 	    {
-		free_pcidriverclass(psd, cl);
+		free_pcipcdriverclass(psd, cl);
 		cl = NULL;
 	    }
 	}
