@@ -9,7 +9,7 @@
 #ifndef __UPATH_H__
 #define __UPATH_H__
 
-#include <aros/system.h>
+#include <sys/cdefs.h>
 
 __BEGIN_DECLS
 
