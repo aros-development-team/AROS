@@ -68,6 +68,12 @@
     LONG index = 0;
     STRPTR theString;
 
+    if (code == 0)
+    {
+	*buffer = '\0';
+	return 0;
+    }
+
     /* Do this to make sure there is room for a NULL terminator */
     len--;
 
@@ -107,36 +113,27 @@
 	    buffer[index++] = *theString++;
 	}
 
-	if (code == 0)
+	/* If the number is negative, whack in a - sign. */
+	if(code < 0)
 	{
-	    /* If code is 0, just insert it. */
-	    if (len-- > 0)
-		buffer[index++] = '0';
+	    code = -code;
+	    buffer[index++] = '-';
 	}
-	else
+
+	/* Convert the number to a string, I work backwards, its easier */
+	l2str[l2idx--] = '\0';
+	while(code != 0)
 	{
-	    /* If the number is negative, whack in a - sign. */
-	    if(code < 0)
-	    {
-		code = -code;
-		buffer[index++] = '-';
-	    }
+	    l2str[l2idx--] = (code % 10) + '0';
+	    code /= 10;
+	}
 
-	    /* Convert the number to a string, I work backwards, its easier */
-	    l2str[l2idx--] = '\0';
-	    while(code != 0)
-	    {
-		l2str[l2idx--] = (code % 10) + '0';
-		code /= 10;
-	    }
+	l2str[l2idx] = ' ';
 
-	    l2str[l2idx] = ' ';
-
-	    /* Copy the number onto the fault string */
-	    while((index < len) && l2str[l2idx])
-	    {
-		buffer[index++] = l2str[l2idx++];
-	    }
+	/* Copy the number onto the fault string */
+	while((index < len) && l2str[l2idx])
+	{
+	    buffer[index++] = l2str[l2idx++];
 	}
     }
     buffer[index] = '\0';
