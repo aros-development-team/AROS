@@ -226,34 +226,95 @@ int intui_OpenWindow (struct IntWindow * iw,
 	struct IntuitionBase * IntuitionBase)
 {
     XGCValues gcval;
+    XSetWindowAttributes winattr;
     GC gc;
 
-    iw->iw_XWindow = XCreateSimpleWindow (GetSysDisplay ()
+    winattr.event_mask = 0;
+
+    if ((iw->iw_Window.Flags & WFLG_REFRESHBITS) == WFLG_SMART_REFRESH)
+    {
+	winattr.backing_store = Always;
+    }
+    else
+    {
+	winattr.backing_store = NotUseful;
+	winattr.event_mask |= ExposureMask;
+    }
+
+    if ((iw->iw_Window.Flags & WFLG_RMBTRAP)
+	|| iw->iw_Window.IDCMPFlags
+	    & (IDCMP_MOUSEBUTTONS
+		| IDCMP_GADGETDOWN
+		| IDCMP_GADGETUP
+		| IDCMP_MENUPICK
+	    )
+    )
+	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
+
+    if (iw->iw_Window.IDCMPFlags & IDCMP_REFRESHWINDOW)
+	winattr.event_mask |= ExposureMask;
+
+    if (iw->iw_Window.IDCMPFlags & IDCMP_MOUSEMOVE)
+	winattr.event_mask |= PointerMotionMask;
+
+    if (iw->iw_Window.IDCMPFlags & (IDCMP_RAWKEY | IDCMP_VANILLAKEY))
+	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
+
+
+    if (iw->iw_Window.IDCMPFlags & IDCMP_ACTIVEWINDOW)
+	winattr.event_mask |= EnterWindowMask;
+
+    if (iw->iw_Window.IDCMPFlags & IDCMP_INACTIVEWINDOW)
+	winattr.event_mask |= LeaveWindowMask;
+
+    if (iw->iw_Window.IDCMPFlags & (IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW))
+	winattr.event_mask |= StructureNotifyMask;
+
+    /* TODO IDCMP_SIZEVERIFY IDCMP_DELTAMOVE */
+
+    winattr.cursor = sysCursor;
+    winattr.save_under = True;
+    winattr.background_pixel = sysCMap[0];
+
+    iw->iw_XWindow = XCreateWindow (GetSysDisplay ()
 	, DefaultRootWindow (GetSysDisplay ())
 	, iw->iw_Window.LeftEdge
 	, iw->iw_Window.TopEdge
 	, iw->iw_Window.Width
 	, iw->iw_Window.Height
-	, 15
-	, sysCMap[1]
-	, sysCMap[0]
+	, 5 /* BorderWidth */
+	, DefaultDepth (GetSysDisplay (), GetSysScreen ())
+	, InputOutput
+	, DefaultVisual (GetSysDisplay (), GetSysScreen ())
+	, CWBackingStore
+	    | CWCursor
+	    | CWSaveUnder
+	    | CWEventMask
+	    | CWBackPixel
+	, &winattr
     );
 
     SetXWindow (iw->iw_Window.RPort, iw->iw_XWindow);
 
-    XSetGraphicsExposures (sysDisplay, gc, TRUE);
-
     /*TODO __SetSizeHints (w); */
 
     gcval.plane_mask = sysPlaneMask;
+    gcval.graphics_exposures = True;
 
-    gc = XCreateGC (sysDisplay, iw->iw_XWindow, GCPlaneMask, &gcval);
+    gc = XCreateGC (sysDisplay
+	, iw->iw_XWindow
+	, GCPlaneMask
+	    | GCGraphicsExposures
+	, &gcval
+    );
 
     if (!gc)
     {
 	XDestroyWindow (sysDisplay, iw->iw_XWindow);
 	return FALSE;
     }
+
+    /* XSetGraphicsExposures (sysDisplay, gc, TRUE); */
 
     SetGC (iw->iw_Window.RPort, gc);
 
@@ -266,7 +327,7 @@ int intui_OpenWindow (struct IntWindow * iw,
 	return FALSE;
     }
 
-    XSelectInput (sysDisplay
+    /* XSelectInput (sysDisplay
 	, iw->iw_XWindow
 	, ExposureMask
 	    | ButtonPressMask
@@ -277,12 +338,13 @@ int intui_OpenWindow (struct IntWindow * iw,
 	    | EnterWindowMask
 	    | LeaveWindowMask
 	    | StructureNotifyMask
-    );
+    ); */
 
-    XDefineCursor (sysDisplay, iw->iw_XWindow, sysCursor);
+    /* XDefineCursor (sysDisplay, iw->iw_XWindow, sysCursor); */
     XMapRaised (sysDisplay, iw->iw_XWindow);
 
-    XSync (sysDisplay, FALSE);
+    XFlush (sysDisplay);
+    /* XSync (sysDisplay, FALSE); */
 
     Diow(bug("Opening Window %08lx (X=%ld)\n", w, iw->iw_XWindow));
 
