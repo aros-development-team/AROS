@@ -117,6 +117,9 @@ BEGIN {
 	{
 	    if ($1 != "")
 	    {
+		if (!match ($0,lib))
+		    next;
+
 		line=$0;
 		sub(/[ \t]*$/,"",line);
 		sub(/^#?[ \t]*/,"",line);
