@@ -100,7 +100,7 @@ STATIC UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
     return (top);
 }
 
-STATIC VOID NotifyTop(Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
+STATIC VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
 {
     struct opUpdate notifymsg;
     struct TagItem notifyattrs[3];
@@ -116,15 +116,19 @@ STATIC VOID NotifyTop(Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
     notifymsg.opu_GInfo	    = gi;
     notifymsg.opu_Flags	    = (final != FALSE) ? 0 : OPUF_INTERIM;
 	
-    DoSuperMethodA(OCLASS(o), o, (Msg)&notifymsg);
+    DoSuperMethodA(cl, o, (Msg)&notifymsg);
     
     return;
 }
 
-STATIC VOID UpdateTop(Object *o, struct GadgetInfo *gi, struct PropGData *data, BOOL final)
+STATIC VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
 {
+    /* Updates the PGA_Top attribute accordin to the Bofy/Pot vars.
+    ** Also triggers notifcation if PGA_Top has changed.
+    */
 
     UWORD top, pot;
+    struct PropGData *data = (struct PropGData *)INST_DATA(cl, o);
     
     pot = (data->propinfo.Flags & FREEVERT) ? data->propinfo.VertPot :
        					      data->propinfo.HorizPot;
@@ -135,7 +139,7 @@ STATIC VOID UpdateTop(Object *o, struct GadgetInfo *gi, struct PropGData *data, 
     if (top != data->top)
     {
     	data->top = top;
-      	NotifyTop(o, gi, top, final);
+      	NotifyTop(cl, o, gi, top, final);
     }
     return;
 }
@@ -164,25 +168,28 @@ STATIC IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     	switch (tag->ti_Tag)
     	{
     	    case PGA_Top:
-    	
+		D(bug("propg:PGA_Top set to %d\n", tag->ti_Data));    	    	
 		data->top = tag->ti_Data;
-		NotifyTop(o, msg->ops_GInfo, data->top, TRUE);
+		NotifyTop(cl, o, msg->ops_GInfo, data->top, TRUE);
  	    	set_flag= TRUE;
 		retval = 1UL;
 		break;
     	
     	    case PGA_Visible:
-    	
+		D(bug("propg:PGA_Visible set to %d,top=%d,total=%d\n", 
+		tag->ti_Data, data->top, data->total));    	
 		data->visible = tag->ti_Data;
 		set_flag = TRUE;
 		retval = 1UL;
 		break;
     	    
 	    case PGA_Total:
-    	
+
+		D(bug("propg:PGA_Total set to %d\n", tag->ti_Data));
 		data->total = tag->ti_Data;
     		set_flag = TRUE;
 		retval = 1UL;
+
 		break;
 
 	    /* When one of the four next ones is set, what should then happen
@@ -377,7 +384,7 @@ STATIC IPTR goactive_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    retval = GMR_NOREUSE|GMR_VERIFY;
     	    
     	    /* Update PGA_Top. Final update. */
-    	    UpdateTop(o, msg->gpi_GInfo, data, TRUE);
+    	    UpdateTop(cl, o, msg->gpi_GInfo, TRUE);
     	}
     	else
     	{
@@ -429,7 +436,7 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    	data->last_y = msg->gpi_Mouse.Y;
     	    	
     	    	/* Update PGA_Top. Interim update. */
-    	    	UpdateTop(o, msg->gpi_GInfo, data, FALSE);
+    	    	UpdateTop(cl, o, msg->gpi_GInfo, FALSE);
     	    	
 	    } break;
 	    	    
@@ -449,7 +456,7 @@ STATIC IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    	SetGadgetType(o, GTYP_CUSTOMGADGET);
     	    	
     	    	/* Update PGA_Top. Final update. */
-    	    	UpdateTop(o, msg->gpi_GInfo, INST_DATA(cl, o), TRUE);
+    	    	UpdateTop(cl, o, msg->gpi_GInfo, TRUE);
     	    
     	    	*(msg->gpi_Termination) = IDCMP_GADGETUP;
     	    	retval = GMR_NOREUSE|GMR_VERIFY;
@@ -475,7 +482,7 @@ STATIC IPTR render_propgclass(Class *cl, Object *o, struct gpRender *msg)
    	msg->gpr_GInfo->gi_Window,
     	IntuitionBase
     );
-
+    
     SetGadgetType(o, GTYP_CUSTOMGADGET);
 
     return (1UL);
@@ -501,7 +508,7 @@ STATIC IPTR goinactive_propgclass(Class *cl, Object *o, struct gpGoInactive *msg
 	SetGadgetType(o, GTYP_CUSTOMGADGET);
 	
 	/* Update PGA_Top. Final update */
-    	UpdateTop(o, msg->gpgi_GInfo, INST_DATA(cl, o), TRUE);
+    	UpdateTop(cl, o, msg->gpgi_GInfo, TRUE);
     }
     return (0UL);   	    	
 }
@@ -517,6 +524,7 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 {
     IPTR retval = 0UL;
 
+    D(bug("propg dispatcher: %d\n", msg->MethodID));
 
     switch(msg->MethodID)
     {
@@ -558,6 +566,8 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 		    struct RastPort *rp = ObtainGIRPort(gi);
 		    if (rp)
 		    {
+		    	D(bug("prop:updating propgadget, win=%s, rp=%p, gi=%p\n",
+		    		gi->gi_Window->Title, rp, gi));
 		    	DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
 		    	ReleaseGIRPort(rp);
 		    } /* if */
@@ -575,7 +585,7 @@ AROS_UFH3(STATIC IPTR, dispatch_propgclass,
 	    break;
     } /* switch */
 
-    return retval;
+    ReturnPtr ("propg disp", IPTR, retval);
 }  /* dispatch_propgclass */
 
 
