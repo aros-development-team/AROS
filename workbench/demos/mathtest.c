@@ -1,8 +1,11 @@
 #include <proto/exec.h>
 #include <proto/aros.h>
 #include <proto/dos.h>
+
+#define float LONG
 #include <proto/mathffp.h>
 #include <proto/mathtrans.h>
+#include <proto/mathieeesingbas.h>
 #include <proto/mathieeesingtrans.h>
 
 #include <stdio.h>
@@ -11,27 +14,49 @@
 
 struct Library * MathBase;
 struct Library * MathTransBase;
+struct Library * MathIeeeSingBasBase;
 struct Library * MathIeeeSingTransBase;
+struct Library * MathIeeeDoubBasBase;
+struct Library * MathIeeeDoubTransBase;
 
 int main(int argc, char ** argv)
 {
-    LONG FFPOne, FFPTwo, FFPOnehalf, FFPMinusOne, FFPNull;
-    LONG SPOne, SPTwo;
-    LONG res;
+    float FFPOne, FFPTwo, FFPOnehalf, FFPMinusOne, FFPNull;
+    float SPOne, SPTwo, SPOnehalf;
+    float float_res;
+    LONG * float_resptr = (LONG *)&float_res;
+    LONG * ptr;
+    LONG wanted;
 
-    FFPOne	= 0x80000041UL;
-    FFPTwo	= 0x80000042UL;
-    FFPMinusOne = 0x800000C1UL;
-    FFPOnehalf	= 0x80000040UL;
-    FFPNull	= 0x00000000UL;
+    #define DEF_FFPOne		0x80000041UL;
+    #define DEF_FFPTwo		0x80000042UL;
+    #define DEF_FFPMinusOne 	0x800000C1UL;
+    #define DEF_FFPOnehalf	0x80000040UL;
+    #define DEF_FFPNull		0x00000000UL;
 
-    SPOne	= 0x3f800000UL;
-    SPTwo	= 0x40000000UL;
+    #define DEF_SPOne		0x3f800000UL;
+    #define DEF_SPTwo		0x40000000UL;
+    #define DEF_SPOnehalf	0x3f000000UL;
+    
+    ptr = (LONG *)&FFPOne; 	*ptr = DEF_FFPOne;
+    ptr = (LONG *)&FFPTwo; 	*ptr = DEF_FFPTwo;
+    ptr = (LONG *)&FFPMinusOne;	*ptr = DEF_FFPMinusOne;
+    ptr = (LONG *)&FFPOnehalf;	*ptr = DEF_FFPOnehalf;
+    ptr = (LONG *)&FFPNull; 	*ptr = DEF_FFPNull;
+    
+    ptr = (LONG *)&SPOne; 	*ptr = DEF_SPOne;
+    ptr = (LONG *)&SPOnehalf; 	*ptr = DEF_SPOnehalf;
+    ptr = (LONG *)&SPTwo; 	*ptr = DEF_SPTwo;
 
-#define CHECK(func,args,cres) \
-    res = func args; \
-    if (res != cres) \
-	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=%08lx)\n", __LINE__, res, cres); \
+/* if you deactivate #define float LONG something very funny happens here:    
+printf("two: %x <-> %x \n",*ptr,SPTwo);
+printf("two: %x <-> %x \n",SPTwo,*ptr);
+*/
+
+#define CHECK(func, args, cres) \
+    float_res = func args; \
+    if (*float_resptr != cres) \
+	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=0x%08lx)\n", __LINE__, *float_resptr, cres); \
     else \
 	printf ("OK  : " #func " " #args "\n");
 
@@ -40,20 +65,19 @@ int main(int argc, char ** argv)
 	printf ("Couldn't open mathffp.library\n");
 	return (0);
     }
-
+	
     printf("Very basic mathffp functionality test...\n");
 
     /* this should set the zero-bit*/
-    CHECK(SPAbs,(0),FFPNull);
+    wanted = DEF_FFPNull;	CHECK(SPAbs,(0),wanted);
 
-    CHECK(SPFlt,(0),FFPNull);
-    CHECK(SPFlt,(1),FFPOne);
-    CHECK(SPFlt,(2),FFPTwo);
-    CHECK(SPFlt,(-1),FFPMinusOne);
-    CHECK(SPAdd,(FFPOne, FFPOne),FFPTwo);
-    CHECK(SPDiv,(FFPTwo, FFPOne),FFPOnehalf);
-    CHECK(SPMul,(FFPOne, FFPTwo),FFPTwo);
-
+    wanted = DEF_FFPNull;	CHECK(SPFlt,(0),wanted);
+    wanted = DEF_FFPOne;	CHECK(SPFlt,(1),wanted);
+    wanted = DEF_FFPTwo;	CHECK(SPFlt,(2),wanted);
+    wanted = DEF_FFPMinusOne;	CHECK(SPFlt,(-1),wanted);
+    wanted = DEF_FFPTwo;	CHECK(SPAdd,(FFPOne, FFPOne),wanted);
+    wanted = DEF_FFPOnehalf;	CHECK(SPDiv,(FFPTwo, FFPOne),wanted);
+    wanted = DEF_FFPTwo;	CHECK(SPMul,(FFPOne, FFPTwo),wanted);
     CloseLibrary(MathBase);
 
     if (!(MathTransBase = OpenLibrary("mathtrans.library", 0L)))
@@ -78,6 +102,13 @@ int main(int argc, char ** argv)
 
     CloseLibrary(MathTransBase);
 
+    if (!(MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0L)))
+    {
+	printf ("Couldn't open mathieeesingbas.library\n");
+	return (0);
+    }
+
+
     if (!(MathIeeeSingTransBase = OpenLibrary("mathieeesingtrans.library", 0L)))
     {
 	printf ("Couldn't open mathieeesingtrans.library\n");
@@ -91,18 +122,22 @@ int main(int argc, char ** argv)
     CHECK (IEEESPLog10, (SPTwo),      0x3e9a209aUL);
     CHECK (IEEESPSin,   (SPOne),      0x3f576aa4UL);
     CHECK (IEEESPCos,   (SPOne),      0x3f0a5140UL);
-/*
-    CHECK (IEEESPTan,   (SPOne),      0xUL);
-*/
+    CHECK (IEEESPTan,   (SPOne),      0x3fc75923UL);
     CHECK (IEEESPSinh,  (SPTwo),      0x40681e7bUL);
     CHECK (IEEESPCosh,  (SPTwo),      0x4070c7d1UL);
-/*
-    CHECK (IEEESPTanh,  (SPOne),     0xc2f7d640UL);
-    CHECK (IEEESPExp,   (SPTwo),     0xec732543UL);
-    CHECK (IEEESPAsin,  (SPOnehalf), 0x860a9240UL);
-    CHECK (IEEESPAcos,  (SPOnehalf), 0x860a9241UL);
-*/
+    CHECK (IEEESPTanh,  (SPOne),      0x3f42f7d6UL);
+    CHECK (IEEESPExp,   (SPTwo),      0x40ec7325UL);
+    CHECK (IEEESPAsin,  (SPOnehalf),  0x3f060a92UL);
+    CHECK (IEEESPAcos,  (SPOnehalf),  0x3f860a92UL);
+
     CloseLibrary(MathIeeeSingTransBase);
+
+    if (!(MathIeeeDoubBasBase = OpenLibrary("mathieeedoubbas.library", 0L)))
+    {
+	printf ("Couldn't open mathieeedoubbas.library\n");
+	return (0);
+    }
+    CloseLibrary(MathIeeeDoubBasBase);
 
     return (0);
 }
