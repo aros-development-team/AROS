@@ -167,12 +167,10 @@ AROS_UFP3(LONG, dosstreamhook,
     AROS_UFPA(BPTR,            file, A2),
     AROS_UFPA(ULONG *,         msg, A1)
 );
-VOID	GetDefIconName (LONG, UBYTE *);
+
+#include "support.h"
+
 UBYTE * WriteValue     (LONG, UBYTE *);
-LONG CalcIconHash(struct DiskObject *dobj);
-VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase);
-VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase);
-struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase);
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
