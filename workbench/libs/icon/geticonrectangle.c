@@ -67,6 +67,8 @@
     }
 
 #warning GetIconRectangleA() is only very limited implemented
-
+    
+    return TRUE;
+    
     AROS_LIBFUNC_EXIT
 } /* GetIconRectangle */
