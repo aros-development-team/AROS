@@ -7,6 +7,7 @@
 #include <proto/mathtrans.h>
 #include <proto/mathieeesingbas.h>
 #include <proto/mathieeesingtrans.h>
+#include <proto/mathieeedoubbas.h>
 
 #include <stdio.h>
 
@@ -27,16 +28,21 @@ int main(int argc, char ** argv)
     LONG * float_resptr = (LONG *)&float_res;
     LONG * ptr;
     LONG wanted;
+    double double_res;
+    QUAD * double_resptr = (QUAD *)&double_res;
 
-    #define DEF_FFPOne		0x80000041UL;
-    #define DEF_FFPTwo		0x80000042UL;
-    #define DEF_FFPMinusOne 	0x800000C1UL;
-    #define DEF_FFPOnehalf	0x80000040UL;
-    #define DEF_FFPNull		0x00000000UL;
+    #define DEF_FFPOne		0x80000041UL
+    #define DEF_FFPTwo		0x80000042UL
+    #define DEF_FFPMinusOne 	0x800000C1UL
+    #define DEF_FFPOnehalf	0x80000040UL
+    #define DEF_FFPNull		0x00000000UL
 
-    #define DEF_SPOne		0x3f800000UL;
-    #define DEF_SPTwo		0x40000000UL;
-    #define DEF_SPOnehalf	0x3f000000UL;
+    #define DEF_SPOne		0x3f800000UL
+    #define DEF_SPTwo		0x40000000UL
+    #define DEF_SPOnehalf	0x3f000000UL
+    
+    #define DEF_DPOne		0x3ff0000000000000ULL
+    #define DEF_DPTwo		0x4000000000000000ULL
     
     ptr = (LONG *)&FFPOne; 	*ptr = DEF_FFPOne;
     ptr = (LONG *)&FFPTwo; 	*ptr = DEF_FFPTwo;
@@ -59,6 +65,14 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=0x%08lx)\n", __LINE__, *float_resptr, cres); \
     else \
 	printf ("OK  : " #func " " #args "\n");
+
+#define CHECK_DOUBLE(func, args, cres) \
+    double_res = func args; \
+    if (*double_resptr != cres) \
+	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", __LINE__, (LONG)(((QUAD)*double_resptr)>>32),(LONG)double_resptr, (LONG)(((QUAD)cres)>>32),(LONG)cres); \
+    else \
+	printf ("OK  : " #func " " #args "\n");
+
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
     {
@@ -137,6 +151,9 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 	printf ("Couldn't open mathieeedoubbas.library\n");
 	return (0);
     }
+    
+    CHECK_DOUBLE(IEEEDPFlt, (1), DEF_DPOne);
+    CHECK_DOUBLE(IEEEDPAdd, (DEF_DPOne, DEF_DPOne), DEF_DPTwo);
     CloseLibrary(MathIeeeDoubBasBase);
 
     return (0);
