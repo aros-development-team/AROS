@@ -46,6 +46,7 @@ struct JumpVec
     unsigned char vec[4];
 };
 
+
 /* Any jump to an unimplemented vector will cause an access to this address */
 #define _aros_empty_vector		0xc0edbabe
 
@@ -53,6 +54,19 @@ struct JumpVec
 #define __AROS_ASMJMP			0x4EF9
 #define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
 #define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
+
+struct FullJumpVec
+{
+    unsigned short jmp;
+    unsigned char  vec[4];
+};
+#define __AROS_SET_FULLJMP(v,a)                          \
+do                                                       \
+{                                                        \
+	struct FullJumpVec *_v = v;                      \
+	_v->jmp = __AROS_ASMJMP;                         \
+	*((ULONG *)(_v->vec)) = (ULONG)(a)-(ULONG)(_v)-6;\
+} while(0)
 
 
 /* Use these to acces a vector table */
