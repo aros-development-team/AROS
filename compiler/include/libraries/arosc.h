@@ -12,6 +12,7 @@
 #define AROS_ALMOST_COMPATIBLE
 
 #include <dos/dos.h>
+#include <exec/types.h>
 #include <exec/tasks.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>
@@ -36,7 +37,7 @@ struct AroscUserData
     void **stderrptr;
     void *startup_jmp_bufptr;
     void *startup_errorptr;
-
+    
     /* these fields are for internal use only */
     void *env_list;
     struct MinList stdio_files;
@@ -56,6 +57,9 @@ struct AroscUserData
     struct MinList atexit_list;
     mode_t umask;
 
+    /* Used by chdir() */
+    BOOL startup_cd_changed;
+    BPTR startup_cd_lock;
 };
 
 extern struct Library *aroscbase;
@@ -91,6 +95,8 @@ extern struct Library *aroscbase;
 #define __stdfiles                            (clib_userdata->stdfiles)
 #define __atexit_list                         (clib_userdata->atexit_list)
 #define __umask                               (clib_userdata->umask)
+#define __startup_cd_changed                  (clib_userdata->startup_cd_changed)
+#define __startup_cd_lock                     (clib_userdata->startup_cd_lock)
 
 #else
 

@@ -17,13 +17,14 @@
 #define _POSIX_VERSION
 
 /* Prototypes */
-int access (const char *path, int mode);
-int close (int fd);
-int dup(int oldfd);
-int dup2(int oldfd, int newfd);
+int   access (const char *path, int mode);
+int   close (int fd);
+int   dup(int oldfd);
+int   dup2(int oldfd, int newfd);
+int   chdir( const char *path );
 char *getcwd(char *buf, size_t size);
-int isatty(int fd);
-int lseek(int fildes, off_t offset, int whence);
+int   isatty(int fd);
+int   lseek(int fildes, off_t offset, int whence);
 
 /* Create a one-way communication channel (pipe).
    If successful, two file descriptors are stored in PIPEDES;
