@@ -17,6 +17,7 @@
 #include <aros/debug.h>
 #include <aros/asmcall.h>
 #include <aros/machine.h>
+#include "internalloadseg.h"
 
 extern struct DosLibrary * DOSBase;
 
@@ -150,7 +151,8 @@ static LONG relocate(   struct aout_hdr *head,
 BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR table,
                           LONG * functionarray,
-                          LONG * stack)
+                          LONG * stack,
+                          struct DosLibrary * DOSBase)
 {
 /* Currently the only parameter passed to this function that is
    actually used is file. The rest is there for completeness.

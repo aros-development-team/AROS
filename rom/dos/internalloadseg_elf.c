@@ -16,6 +16,7 @@
 #include <aros/asmcall.h>
 #include <aros/machine.h>
 #include "dos_intern.h"
+#include "internalloadseg.h"
 #include <aros/debug.h>
 #include <string.h>
 
@@ -116,7 +117,7 @@ struct hunk
 };
 
 
-int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size, LONG * funcarray)
+int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size, LONG * funcarray, struct DosLibrary * DOSBase)
 {
   LONG    subsize;
   UBYTE * buf     = (UBYTE *)buffer;
@@ -151,7 +152,8 @@ int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size, LONG * funcarr
 BPTR InternalLoadSeg_ELF (BPTR file,
                           BPTR table,
                           LONG * functionarray,
-                          LONG * stack)
+                          LONG * stack,
+                          struct DosLibrary * DOSBase)
 {
 /* Currently the only parameter passed to this function that is
    actually used is file. The rest is there for completeness.
@@ -182,7 +184,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
   *error = 0;
 
   /* Load the header */
-  if (read_block (file, 0, &eh, sizeof (eh), functionarray))
+  if (read_block (file, 0, &eh, sizeof (eh), functionarray, DOSBase))
     goto end;
 
   /* Check the header of the file */
@@ -209,7 +211,7 @@ eh.type, ET_REL, eh.machine, EM_386, EM_68K);
     ERROR (ERROR_NO_FREE_STORE);
 
   /* Read section table */
-  if (read_block(file, eh.shoff, shtab, eh.shentsize * eh.shnum, functionarray))
+  if (read_block(file, eh.shoff, shtab, eh.shentsize * eh.shnum, functionarray, DOSBase))
     goto end;
 
   /* Look up the symbol table */
@@ -250,7 +252,7 @@ kprintf("error object_wrong_type 2\n");
     ERROR (ERROR_NO_FREE_STORE);
 
   /* Read the symbol table */
-  if (read_block (file, sh->offset, symtab, sh->size, functionarray))
+  if (read_block (file, sh->offset, symtab, sh->size, functionarray, DOSBase))
     goto end;
 
   numsym = sh->size / sizeof (struct symbol);
@@ -300,7 +302,7 @@ kprintf("error object_wrong_type 2\n");
     if (shstrtab == NULL)
       ERROR (ERROR_NO_FREE_STORE);
 
-    if (read_block (file, sh->offset, shstrtab, sh->size, functionarray))
+    if (read_block (file, sh->offset, shstrtab, sh->size, functionarray, DOSBase))
       goto end;
 
 #if PRINT_SECTION_NAMES
@@ -364,7 +366,7 @@ kprintf("error object_wrong_type 2\n");
 
     /* kprintf ("Reading StrTab at %d (offset=%ld, size=%ld)\n", eh.shstrndx, sh->offset, sh->size); */
 
-    if (read_block (file, sh->offset, strtab, sh->size, functionarray))
+    if (read_block (file, sh->offset, strtab, sh->size, functionarray, DOSBase))
       goto end;
 
 #if PRINT_STRINGTAB
@@ -474,7 +476,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
     switch(sh->type)
     {
       case SHT_PROGBITS: /* Code */
-          if (read_block (file, sh->offset, hunks[t].memory, sh->size, functionarray))
+          if (read_block (file, sh->offset, hunks[t].memory, sh->size, functionarray, DOSBase))
             goto end;
 
           loaded = hunks[t].memory;
@@ -513,7 +515,7 @@ kprintf("error object_wrong_type 4\n");
             ERROR (ERROR_NO_FREE_STORE);
 
           /* Load it */
-          if (read_block (file, sh->offset, reltab, sh->size, functionarray))
+          if (read_block (file, sh->offset, reltab, sh->size, functionarray, DOSBase))
             goto end;
 
           numrel = sh->size / sizeof (struct relo);
