@@ -9,15 +9,19 @@ struct IIHData
 {
     struct IntuitionBase	*IntuitionBase;
     struct MsgPort		*IntuiReplyPort;
+    struct Window		*ActiveWindow;
     struct Gadget		*ActiveGadget;
     WORD			LastMouseX;
     WORD			LastMouseY;
 };
 
-AROS_UFP3(struct InputEvent *, IntuiInputHandler,
+struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase);
+VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase);
+
+
+AROS_UFP2(struct InputEvent *, IntuiInputHandler,
     AROS_UFPA(struct InputEvent *,      oldchain,       A0),
-    AROS_UFPA(struct IIHData *,         iihdata,        A1),
-    AROS_UFPA(struct Window *,          w,              A2)
+    AROS_UFPA(struct IIHData *,         iihdata,        A1)
 );
 
 #endif /* INPUTHANDLER_H */

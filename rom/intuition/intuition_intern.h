@@ -55,6 +55,8 @@ struct IntIntuitionBase
     struct IOStdReq	   * InputIO;
     struct MsgPort	   * InputMP;
     BOOL		     InputDeviceOpen;
+    struct Interrupt	   * InputHandler;
+
     
     struct Hook		   *GlobalEditHook;
     /* The default global edit hook */

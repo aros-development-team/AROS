@@ -35,6 +35,10 @@
 #include "libdefs.h"
 #include "intuition_intern.h"
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
+#include "inputhandler.h"
+
+#define DEBUG 1
+#include <aros/debug.h>
 
 static const char name[];
 static const char version[];
@@ -86,10 +90,6 @@ static const APTR inittabl[4]=
     NULL,
     &INIT
 };
-
-void intui_ProcessEvents (void);
-
-struct Task * inputDevice;
 
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
@@ -182,20 +182,22 @@ AROS_LH1(struct LIBBASETYPE *, open,
     	    return (NULL);
     	
     }
+
+    if (!GetPrivIBase(LIBBASE)->InputHandler)
+    {
+    	D(bug("Initializing inputhandler\n"));
+    	if ( !(GetPrivIBase(LIBBASE)->InputHandler = InitIIH(LIBBASE)) )
+    	    return (NULL);
+    	    
+    	D(bug("Adding inputhandler\n"));
+    	GetPrivIBase(LIBBASE)->InputIO->io_Data = (APTR)GetPrivIBase(LIBBASE)->InputHandler;
+    	GetPrivIBase(LIBBASE)->InputIO->io_Command = IND_ADDHANDLER;
     
-    /* intuition_driver needs to know about the input.device task */
-    inputDevice = FindTask("input.device");
+    	D(bug("Calling DoIO()\n"));
+    	DoIO((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);
+    	D(bug("DoIO() called\n"));
+    }
     
-    /* Now one might think that here comes the initialization
-    ** of the intuition inputhandler, but this is instead done
-    ** by the input.device task. This has a good reason:
-    ** The inputhandler uses a message port for getting replies
-    ** from IntuitMessages sent to the application.
-    ** Since this port is used in input.device task's
-    ** context, the port's mp_SigBit must be allocated in the
-    ** same context. The OpenDevice() call above is there
-    ** merely to make sure the input.device task is up & running
-    */
     
 
     if (!GfxBase)
@@ -279,6 +281,18 @@ AROS_LH0(BPTR, expunge,
 
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
+
+
+    if (GetPrivIBase(LIBBASE)->InputHandler)
+    {
+    	CleanupIIH(GetPrivIBase(LIBBASE)->InputHandler, LIBBASE);
+
+    	/* Remove inputandler */
+    	GetPrivIBase(LIBBASE)->InputIO->io_Data = (APTR)GetPrivIBase(LIBBASE)->InputHandler;
+    	GetPrivIBase(LIBBASE)->InputIO->io_Command = IND_REMHANDLER;
+    	DoIO((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);
+    }
+    
 
     if (GetPrivIBase(LIBBASE)->InputDeviceOpen)
     	CloseDevice((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);

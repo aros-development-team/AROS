@@ -1,3 +1,4 @@
+#define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include <proto/exec.h>
 #include <proto/boopsi.h>
 #include <proto/intuition.h>
@@ -19,6 +20,69 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
+
+/***************
+**  InitIIH   **
+***************/
+
+struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
+{
+    struct Interrupt *iihandler;
+    struct IIHData *iihdata;
+
+    D(bug("InitIIH(IntuitionBase=%p)\n", IntuitionBase));
+
+    iihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+    if (iihandler)
+    {
+	iihdata = AllocMem(sizeof (struct IIHData), MEMF_ANY|MEMF_CLEAR);
+	if (iihdata)
+	{
+	    struct MsgPort *port;
+	    port = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
+	    if (port)
+	    {
+	    	port->mp_Flags   = PA_SIGNAL;
+	    	port->mp_SigBit  = SIGB_INTUITION;
+	    	port->mp_SigTask = FindTask("input.device");
+	    	NEWLIST( &(port->mp_MsgList) );
+	    	iihdata->IntuiReplyPort = port;
+	    	
+		iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
+		iihandler->is_Data = iihdata;
+		iihandler->is_Node.ln_Pri	= 50;
+		iihandler->is_Node.ln_Name	= "Intuition InputHandler";
+
+		iihdata->IntuitionBase = IntuitionBase;
+
+		ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
+	    }
+	    FreeMem(iihdata, sizeof (struct IIHData));
+	}
+	FreeMem(iihandler, sizeof (struct Interrupt));
+    }
+    ReturnPtr ("InitIIH", struct Interrupt *, NULL);
+}
+
+/****************
+** CleanupIIH  **
+****************/
+
+VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase)
+{
+    /* One might think that this port is still in use by the inputhandler.
+    ** However, if intuition is closed for the last time, there should be no
+    ** windows that IntuiMessage can be sent to.
+    */
+    FreeMem(((struct IIHData *)iihandler->is_Data)->IntuiReplyPort, sizeof (struct MsgPort));
+    
+    
+    FreeMem(iihandler->is_Data, sizeof (struct IIHData));
+    FreeMem(iihandler, sizeof (struct Interrupt));
+
+    return;
+}
+
 
 #define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ? w->field : 0)
 #define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT,w,Width)   + gad->LeftEdge)
@@ -79,10 +143,9 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 /************************
 **  IntuiInputHandler  **
 ************************/
-AROS_UFH3(struct InputEvent *, IntuiInputHandler,
+AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     AROS_UFHA(struct InputEvent *,      oldchain,       A0),
-    AROS_UFHA(struct IIHData *,         iihdata,        A1),
-    AROS_UFHA(struct Window *,          w,              A2)
+    AROS_UFHA(struct IIHData *,         iihdata,        A1)
 )
 {
     struct InputEvent	*ie;
@@ -96,13 +159,16 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
     WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY;
     struct GadgetInfo stackgi, *gi = &stackgi;
     BOOL reuse_event = FALSE;
+    struct Window *w = iihdata->ActiveWindow;
+    
+    D(bug("Inside intuition inputhandler, active window=%p\n", w));
 
     for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
     {
 	reuse_event = FALSE;
 	ptr = NULL;
 
-	/* If the last InnputEvent was swallowed, we can reuse the IntuiMessage */
+	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage */
 	if (!im)
 	{
 	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
@@ -113,20 +179,27 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	im->MouseX	= mpos_x;
 	im->MouseY	= mpos_y;
 	im->IDCMPWindow = w;
+	
+	/* We may not have an active window yet, we must get one
+	** through IECLASS_ACITVEWINDOW
+	*/
+	if (w)
+	{
+	    screen = w->WScreen;
 
-	screen = w->WScreen;
-
-	gi->gi_Screen	  = screen;
-	gi->gi_Window	  = w;
-	gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
-	gi->gi_RastPort   = w->RPort;
-	gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
-	gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
-	gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
+	    gi->gi_Screen	  = screen;
+	    gi->gi_Window	  = w;
+	    gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
+	    gi->gi_RastPort   = w->RPort;
+	    gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
+	    gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
+	    gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
+	}
 
 
 	switch (ie->ie_Class)
 	{
+	    
 	case IECLASS_REFRESHWINDOW:
 	    ptr       = "REFRESHWINDOW";
 	    im->Class = IDCMP_REFRESHWINDOW;
@@ -702,8 +775,13 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 	    break; /* case IECLASS_RAWKEY */
 
 	case IECLASS_ACTIVEWINDOW:
+	    D(bug("iih: Got IECLASS_ACTIVEWINDOW event\n"));
 	    im->Class = IDCMP_ACTIVEWINDOW;
 	    ptr = "ACTIVEWINDOW";
+
+	    /* This is a hack to make one-to-one mapping in x11 work. */
+	    w = (struct Window *)ie->ie_EventAddress;
+	    im->IDCMPWindow = w;
 	    break;
 
 	case IDCMP_INACTIVEWINDOW:
@@ -749,6 +827,7 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 
 
     iihdata->ActiveGadget = gadget;
+    iihdata->ActiveWindow = w;
 
     /* If IntuiMessages has been swallowed (im->Class = 0), there is a free IntuiMessage
     ** struct (eg. not sent to the apps messageport),
