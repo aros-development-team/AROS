@@ -1,0 +1,60 @@
+#
+#	Copyright (C) 1995-1998 AROS
+#	$Id$
+#
+#	Desc: Makefile configuration for AROS (from autoconf)
+#
+ARCH	:= @aros_arch@
+CPU	:= @aros_cpu@
+HOST_ARCH := @host_arch@
+HOST_CPU  := @host_cpu@
+FLAVOUR := @aros_flavour@
+SHELL	:= @aros_shell@
+GFXSYSTEM := @aros_gfxsystem@
+
+SYS_CC	:= @aros_cc@
+SYS_AS	:= @aros_as@
+HOST_CC := @aros_host_cc@
+HOST_AS := @aros_host_as@
+
+COMMON_CFLAGS	:= @aros_common_cflags@
+COMMON_AFLAGS	:= @aros_common_aflags@
+APP_CFLAGS	:= @aros_appcflags@
+ILDFLAGS	:= @aros_ildflags@
+SYS_INCLUDES	:= @aros_sysincludes@
+GENMAP		:= @aros_genmap@
+DEBUG_CFLAGS	:= @aros_debug_cflags@
+GUI_LIBDIR	:= @aros_gui_libdir@
+GUI_LDFLAGS	:= @aros_gui_ldflags@
+GUI_LIBFLAGS	:= @aros_gui_libflags@
+GUI_INCDIR	:= @aros_gui_incdir@
+GUI_CCFLAGS	:= @aros_gui_ccflags@
+SHELL_LDFLAGS	:= @aros_shell_ldflags@
+
+ARCHDIR  := $(TOP)/bin/$(ARCH)-$(CPU)
+TOOLDIR  := $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
+
+RANLIB	 := @RANLIB@
+AWK	 := @AWK@
+RM	 := @RM@
+CP	 := @CP@
+MV	 := @MV@
+ECHO	 := @ECHO@
+MKDIR	 := @MKDIR@
+TOUCH	 := @TOUCH@
+AR	 := @AR@
+SORT	 := @SORT@
+UNIQ	 := @UNIQ@
+FOR	 := @FOR@
+IF	 := @IF@
+NOP	 := @NOP@
+CAT	 := @CAT@
+TEST	 := @TEST@
+STRIP	 := @STRIP@
+CHECKUDS := @aros_check_uds@
+LITE	 := @LITE@
+MKDEPEND := $(TOP)/scripts/mkdep
+MMAKE    := $(TOOLDIR)/mmake
+ARCHTOOL := $(TOOLDIR)/archtool
+CPAK     := $(TOOLDIR)/cpak
+GENMF    := $(TOOLDIR)/genmf
