@@ -86,10 +86,10 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *ti
             switch(*++format)
             {
                 case 'a':
-                    ADDS(STR(ABDAY_1+timeptr->tm_wday));
+                    ADDS(STR(ABDAY_1+timeptr->tm_wday+1));
                 case 'b':
                 case 'h':
-                    ADDS(STR(ABMON_1+timeptr->tm_mon));
+                    ADDS(STR(ABMON_1+timeptr->tm_mon+1));
                 case 'c':
                     ADDS("%m/%d/%y");
                 case 'd':
@@ -115,9 +115,9 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *ti
                 case 'y':
                     ADDN(2,timeptr->tm_year%100);
                 case 'A':
-                    ADDS(STR(DAY_1+timeptr->tm_wday));
+                    ADDS(STR(DAY_1+timeptr->tm_wday+1));
                 case 'B':
-                    ADDS(STR(MON_1+timeptr->tm_mon));
+                    ADDS(STR(MON_1+timeptr->tm_mon+1));
                 case 'C':
                     ADDS("%a %b %e %H:%M:%S %Y");
                 case 'D':
