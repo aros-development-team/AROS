@@ -107,6 +107,7 @@ FUNCTIONS := \
 	gfxlookup \
 	gfxnew \
 	initarea \
+	initbitmap \
 	initgels \
 	initgmasks \
 	initmasks \
