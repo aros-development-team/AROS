@@ -204,40 +204,47 @@ IPTR Install__MUIM_Install
     return NULL;
 }
 
+BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name)
+{
+    BOOL success = FALSE;
+    
+    if (Inhibit(device, DOSTRUE))
+    {
+        success = Format(device, name, ID_FFS_DISK);
+        Inhibit(device, DOSFALSE);
+    }
+    
+    return success;
+}
+
 IPTR Install__MUIM_Format
 (     
  Class *CLASS, Object *self, Msg message 
 )
 {
-    struct Install_DATA* data = INST_DATA(CLASS, self);
-
+    struct Install_DATA *data    = INST_DATA(CLASS, self);
+    BOOL                 success = FALSE;
+    BPTR                 lock;
+    
     set(data->label, MUIA_Text_Contents, "Formatting...");
     set(data->gauge2, MUIA_Gauge_Current, 0);
-
-    BOOL fail = FALSE;
-
-        if(Inhibit(kDstDir, DOSTRUE))
-        {
-            if(!Format(kDstDir, kDstName, ID_FFS_DISK))
-            {
-            fail = TRUE;
-            }
-            Inhibit(kDstDir, DOSFALSE);
-        }
-        else
-        {
-        fail = TRUE;
-        }
-
-    if(fail)
+    
+    /* Format DH0: */
+    success = FormatPartition(kDstDir, kDstName);
+    
+    /* Format DH1:, if it's not already formated */
+    if ((lock = Lock("DH1:", ACCESS_READ)) != NULL)
     {
-        return FALSE;
+        UnLock(lock);
     }
     else
     {
-        set(data->gauge2, MUIA_Gauge_Current, 100);
-        return TRUE;
+        FormatPartition("DH1:", "Work");
     }
+    
+    if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
+    
+    return success;
 }
 
 IPTR Install__MUIM_MakeDirs
