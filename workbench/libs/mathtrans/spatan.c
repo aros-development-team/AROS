@@ -81,7 +81,7 @@
     }
     else
     {
-      float res;
+      LONG res;
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
       /* workaround a bug in egcs 1.0.3: complains about illegal operands to | */
@@ -101,7 +101,7 @@
     /* pi/2 - 1/x + 1/(3*x^3) = pi/2 + (1-3*x^2)/(3*x^3)*/
     if (fnumabs == fnum1) /* arg has positive sign */
     {
-      float res;
+      LONG res;
       SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
 
       /* workaround a bug in egcs 1.0.3: complains about illegal operands to | */
@@ -116,7 +116,7 @@
     }
     else
     {
-      float res;
+      LONG res;
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
       /* workaround a bug in egcs 1.0.3: complains about illegal operands to | */
