@@ -55,41 +55,44 @@ Boston, MA 02111-1307, USA.  */
 #define ID	((0L << 24) | (5L << 16) | 1)
 
 /* Types */
-struct Node
-{
-    struct Node * next,
-		* prev;
-    char	* name;
-};
+typedef struct _Node Node;
 
-struct List
+struct _Node
 {
-    struct Node * first,
-		* last,
-		* prelast;
+    Node * next,
+	 * prev;
+    char * name;
 };
 
 typedef struct
 {
-    struct Node node;
-    char      * value;
+    Node * first,
+	 * last,
+	 * prelast;
+}
+List;
+
+typedef struct
+{
+    Node   node;
+    char * value;
 }
 Var;
 
 typedef struct
 {
-    struct Node node;
-    int updated;
+    Node node;
+    int  updated;
 
-    struct List makefiles;
-    struct List deps;
+    List makefiles;
+    List deps;
 }
 Target;
 
 typedef struct
 {
-    struct Node node;
-    time_t	time;
+    Node   node;
+    time_t time;
 }
 Dep;
 
@@ -97,15 +100,15 @@ typedef struct _DirNode DirNode;
 
 struct _DirNode
 {
-    struct Node node;
+    Node node;
     time_t	time;
     DirNode   * parent;
-    struct List subdirs;
+    List subdirs;
 };
 
 typedef struct
 {
-    struct Node node;
+    Node node;
 
     char * maketool;
     char * defaultmakefilename;
@@ -121,16 +124,16 @@ typedef struct
     int buildmflist;
     int buildtargetlist;
 
-    struct List genmakefiledeps;
-    struct List ignoredirs;
-    struct List vars;
-    struct List makefiles;
-    struct List targets;
+    List genmakefiledeps;
+    List ignoredirs;
+    List vars;
+    List makefiles;
+    List targets;
 }
 Project;
 
 /* globals */
-struct List projects;
+List projects;
 Project * defaultprj, * project;
 Project * firstprj;
 char * mflags[64];
@@ -140,48 +143,45 @@ int targetc;
 int verbose = 0;
 
 /* Macros */
-#   define NEWLIST(l)       (((struct List *)l)->prelast \
-				= (struct Node *)(l), \
-			    ((struct List *)l)->last = 0, \
-			    ((struct List *)l)->first \
-				= (struct Node *)\
-				    &(((struct List *)l)->last))
+#   define NewList(l)       (((List *)l)->prelast = (Node *)(l), \
+			    ((List *)l)->last = 0, \
+			    ((List *)l)->first = (Node *)&(((List *)l)->last))
 
-#   define ADDHEAD(l,n)     ((void)(\
-	((struct Node *)n)->next          = ((struct List *)l)->first, \
-	((struct Node *)n)->prev          = (struct Node *)&((struct List *)l)->first, \
-	((struct List *)l)->first->prev = ((struct Node *)n), \
-	((struct List *)l)->first          = ((struct Node *)n)))
+#   define AddHead(l,n)     ((void)(\
+	((Node *)n)->next        = ((List *)l)->first, \
+	((Node *)n)->prev        = (Node *)&((List *)l)->first, \
+	((List *)l)->first->prev = ((Node *)n), \
+	((List *)l)->first       = ((Node *)n)))
 
-#   define ADDTAIL(l,n)     ((void)(\
-	((struct Node *)n)->next              = (struct Node *)&((struct List *)l)->last, \
-	((struct Node *)n)->prev              = ((struct List *)l)->prelast, \
-	((struct List *)l)->prelast->next = ((struct Node *)n), \
-	((struct List *)l)->prelast          = ((struct Node *)n) ))
+#   define AddTail(l,n)     ((void)(\
+	((Node *)n)->next          = (Node *)&((List *)l)->last, \
+	((Node *)n)->prev          = ((List *)l)->prelast, \
+	((List *)l)->prelast->next = ((Node *)n), \
+	((List *)l)->prelast       = ((Node *)n) ))
 
 #   define Remove(n)        ((void)(\
-	((struct Node *)n)->prev->next = ((struct Node *)n)->next,\
-	((struct Node *)n)->next->prev = ((struct Node *)n)->prev ))
+	((Node *)n)->prev->next = ((Node *)n)->next,\
+	((Node *)n)->next->prev = ((Node *)n)->prev ))
 
-#   define GetHead(l)       (void *)(((struct List *)l)->first->next \
-				? ((struct List *)l)->first \
-				: (struct Node *)0)
-#   define GetTail(l)       (void *)(((struct List *)l)->prelast->prev \
-				? ((struct List *)l)->prelast \
-				: (struct Node *)0)
-#   define GetSucc(n)       (void *)(((struct Node *)n)->next->next \
-				? ((struct Node *)n)->next \
-				: (struct Node *)0)
-#   define GetPred(n)       (void *)(((struct Node *)n)->prev->prev \
-				? ((struct Node *)n)->prev \
-				: (struct Node *)0)
+#   define GetHead(l)       (void *)(((List *)l)->first->next \
+				? ((List *)l)->first \
+				: (Node *)0)
+#   define GetTail(l)       (void *)(((List *)l)->prelast->prev \
+				? ((List *)l)->prelast \
+				: (Node *)0)
+#   define GetNext(n)       (void *)(((Node *)n)->next->next \
+				? ((Node *)n)->next \
+				: (Node *)0)
+#   define GetPrev(n)       (void *)(((Node *)n)->prev->prev \
+				? ((Node *)n)->prev \
+				: (Node *)0)
 #   define ForeachNode(l,n) \
-	for (n=(void *)(((struct List *)(l))->first); \
-	    ((struct Node *)(n))->next; \
-	    n=(void *)(((struct Node *)(n))->next))
+	for (n=(void *)(((List *)(l))->first); \
+	    ((Node *)(n))->next; \
+	    n=(void *)(((Node *)(n))->next))
 #   define ForeachNodeSafe(l,node,next) \
-	for (node=(void *)(((struct List *)(l))->first); \
-	    ((next)=(void*)((struct Node *)(node))->next); \
+	for (node=(void *)(((List *)(l))->first); \
+	    ((next)=(void*)((Node *)(node))->next); \
 	    (node)=(void *)(next))
 
 #define cfree(x)        if (x) free (x)
@@ -239,10 +239,10 @@ xfree (void * ptr)
     free (ptr);
 }
 
-struct Node *
-FindNode (const struct List * l, const char * name)
+Node *
+FindNode (const List * l, const char * name)
 {
-    struct Node * n;
+    Node * n;
 
     ForeachNode (l, n)
     {
@@ -265,9 +265,9 @@ error (char * fmt, ...)
 }
 
 void
-printlist (struct List * l)
+printlist (List * l)
 {
-    struct Node * n;
+    Node * n;
 
     ForeachNode (l,n)
     {
@@ -276,7 +276,7 @@ printlist (struct List * l)
 }
 
 void
-printvarlist (struct List * l)
+printvarlist (List * l)
 {
     Var * n;
 
@@ -287,7 +287,7 @@ printvarlist (struct List * l)
 }
 
 void
-printtargetlist (struct List * l)
+printtargetlist (List * l)
 {
     Target * n;
 
@@ -336,7 +336,7 @@ newdepnode (const char * path)
 }
 
 Var *
-addnodeonce (struct List * l, const char * name, const char * value)
+addnodeonce (List * l, const char * name, const char * value)
 {
     Var * n;
 
@@ -350,7 +350,7 @@ addnodeonce (struct List * l, const char * name, const char * value)
     else
     {
 	n = newnode (name, value);
-	ADDTAIL(l,n);
+	AddTail(l,n);
     }
 
     return n;
@@ -505,19 +505,19 @@ initproject (char * name)
     prj->buildmflist = 1;
     prj->buildtargetlist = 1;
 
-    NEWLIST(&prj->genmakefiledeps);
-    NEWLIST(&prj->ignoredirs);
-    NEWLIST(&prj->vars);
-    NEWLIST(&prj->makefiles);
-    NEWLIST(&prj->targets);
+    NewList(&prj->genmakefiledeps);
+    NewList(&prj->ignoredirs);
+    NewList(&prj->vars);
+    NewList(&prj->makefiles);
+    NewList(&prj->targets);
 
     return prj;
 }
 
 void
-freelist (struct List * l)
+freelist (List * l)
 {
-    struct Node * node, * next;
+    Node * node, * next;
 
     ForeachNodeSafe(l,node,next)
     {
@@ -529,7 +529,7 @@ freelist (struct List * l)
 }
 
 void
-freevarlist (struct List * l)
+freevarlist (List * l)
 {
     Var * node, * next;
 
@@ -555,9 +555,9 @@ freetarget (Target * target)
 }
 
 void
-freetargetlist (struct List * l)
+freetargetlist (List * l)
 {
-    struct Node * node, * next;
+    Node * node, * next;
 
     ForeachNodeSafe(l,node,next)
     {
@@ -607,9 +607,9 @@ init (void)
 	exit (10);
     }
 
-    NEWLIST(&projects);
+    NewList(&projects);
     defaultprj = project = initproject ("default");
-    ADDTAIL(&projects, project);
+    AddTail(&projects, project);
 
     if ((optionfile = getenv ("MMAKE_CONFIG")))
     {
@@ -669,7 +669,7 @@ printf ("name=%s\n", name);
 	    if (!firstprj)
 		firstprj = project;
 
-	    ADDTAIL(&projects,project);
+	    AddTail(&projects,project);
 	}
 	else
 	{
@@ -699,15 +699,15 @@ printf ("name=%s\n", name);
 
 	    if (!strcmp (cmd, "add"))
 	    {
-		struct Node * n;
-		n = (struct Node *)newnode(args,NULL);
-		ADDTAIL(&project->makefiles, n);
+		Node * n;
+		n = (Node *)newnode(args,NULL);
+		AddTail(&project->makefiles, n);
 	    }
 	    else if (!strcmp (cmd, "ignoredir"))
 	    {
-		struct Node * n;
-		n = (struct Node *)newnode(args,NULL);
-		ADDTAIL(&project->ignoredirs, n);
+		Node * n;
+		n = (Node *)newnode(args,NULL);
+		AddTail(&project->ignoredirs, n);
 	    }
 	    else if (!strcmp (cmd, "defaultmakefilename"))
 	    {
@@ -825,7 +825,7 @@ readcachedir (FILE * fh)
 	return NULL;
 
     node = (DirNode *)xmalloc (sizeof (DirNode));
-    NEWLIST(&node->subdirs);
+    NewList(&node->subdirs);
     node->node.name = xmalloc (len+1);
     node->parent = NULL;
 
@@ -856,7 +856,7 @@ readcachedir (FILE * fh)
     while ((subnode = readcachedir (fh)))
     {
 	subnode->parent = node;
-	ADDTAIL (&node->subdirs, subnode);
+	AddTail (&node->subdirs, subnode);
     }
 
     return node;
@@ -901,7 +901,7 @@ readcache (Project * prj)
 	struct stat st;
 
 	prj->topdir = (DirNode *) xmalloc (sizeof (DirNode));
-	NEWLIST(&prj->topdir->subdirs);
+	NewList(&prj->topdir->subdirs);
 	prj->topdir->node.name = xstrdup ("");
 	prj->topdir->parent = NULL;
 
@@ -996,13 +996,13 @@ adddirnode (Project * prj, const char * path)
 	if (!subdir)
 	{
 	    subdir = (DirNode *) xmalloc (sizeof (DirNode));
-	    NEWLIST (&subdir->subdirs);
+	    NewList (&subdir->subdirs);
 	    subdir->node.name = xstrdup (dirname);
 	    subdir->parent = node;
 	    stat (pathcopy, &st);
 	    subdir->time = st.st_mtime;
 
-	    ADDTAIL(&node->subdirs, subdir);
+	    AddTail(&node->subdirs, subdir);
 
 	    node = subdir;
 	}
@@ -1118,14 +1118,14 @@ buildmflist (Project * prj)
     struct stat st;
     char path[256];
     int len, offset;
-    struct List dirs;
-    struct Node * cd;
+    List dirs;
+    Node * cd;
     DIR * dirh;
     struct dirent * dirent;
     int foundmf;
     DirNode * dnode;
     int done, todo, nummfs, reread;
-    struct Node * tmpnode;
+    Node * tmpnode;
 
     if (!prj->buildmflist)
 	return;
@@ -1141,9 +1141,9 @@ buildmflist (Project * prj)
     len = strlen (mfn);
     strcpy (mfnsrc+len, ".src");
 
-    NEWLIST(&dirs);
-    cd = (struct Node *)newnode (".", NULL);
-    ADDTAIL(&dirs,cd);
+    NewList(&dirs);
+    cd = (Node *)newnode (".", NULL);
+    AddTail(&dirs,cd);
 
     done = nummfs = reread = 0;
 
@@ -1332,9 +1332,9 @@ appendtarget (Project * prj, const char * tname, const char * mf, char ** deps)
     {
 	target = (Target *) xmalloc (sizeof(Target));
 	target->node.name = strdup (tname);
-	ADDTAIL(&prj->targets, target);
-	NEWLIST(&target->makefiles);
-	NEWLIST(&target->deps);
+	AddTail(&prj->targets, target);
+	NewList(&target->makefiles);
+	NewList(&target->deps);
 	target->updated = 0;
     }
 
@@ -1375,7 +1375,7 @@ setvar (Project * prj, const char * name, const char * val)
 	var = (Var *) xmalloc (sizeof (Var));
 	var->node.name = xstrdup (name);
 	var->value = NULL;
-	ADDTAIL(&prj->vars, var);
+	AddTail(&prj->vars, var);
     }
 
     SETSTR (var->value, val);
@@ -1390,7 +1390,7 @@ void
 buildtargetlist (Project * prj)
 {
     int max, pos, data;
-    struct Node * mfnode;
+    Node * mfnode;
     FILE * fh;
     char line[256];
     int lineno;
@@ -1507,8 +1507,8 @@ printf ("Read %d lines\n", lineno);
 void
 readvars (Project * prj)
 {
-    struct List deps;
-    struct Node * node, * next;
+    List deps;
+    Node * node, * next;
     Dep * dep;
 
     if (!prj->readvars)
@@ -1589,18 +1589,18 @@ readvars (Project * prj)
 	fclose (fh);
     }
 
-    NEWLIST(&deps);
+    NewList(&deps);
     ForeachNodeSafe (&project->genmakefiledeps, node, next)
     {
 	Remove (node);
-	ADDTAIL (&deps, node);
+	AddTail (&deps, node);
     }
 
     ForeachNodeSafe (&deps, node, next)
     {
 	Remove (node);
 	dep = newdepnode (substvars (project, node->name));
-	ADDTAIL (&project->genmakefiledeps, dep);
+	AddTail (&project->genmakefiledeps, dep);
 	xfree (node->name);
 	xfree (node);
     }
@@ -1786,7 +1786,7 @@ maketarget (char * metatarget)
     char * pname, * tname, * ptr;
     Project * prj;
     Target * target, * subtarget;
-    struct Node * node;
+    Node * node;
 
     pname = ptr = metatarget;
     while (*ptr && *ptr != '.')
@@ -1794,6 +1794,15 @@ maketarget (char * metatarget)
     if (*ptr)
 	*ptr ++ = 0;
     tname = ptr;
+
+    if (!*pname)
+    {
+	prj = GetHead (&projects);
+	if (prj)
+	    prj = GetNext (prj);
+
+	pname = prj->node.name;
+    }
 
     prj = (Project *)FindNode (&projects, pname);
 
