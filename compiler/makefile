@@ -3,7 +3,11 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
+ifeq ($(FLAVOUR),native)
+SUBDIRS=include clib
+else
 SUBDIRS=include aros alib clib vcpp vbcc
+endif
 
 all:
 	@for dir in $(SUBDIRS) ; do \
