@@ -71,6 +71,8 @@ int main(int argc, char* argv[])
 
     Wait(SIGBREAKF_CTRL_C);
 
+    DeletePlayer(player);
+
     CloseLibrary(RealTimeBase);
 
     return 0;
