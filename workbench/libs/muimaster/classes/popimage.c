@@ -210,6 +210,13 @@ IPTR Popimage__MUIM_Popimage_CloseWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
+IPTR Popimage__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
+				     struct MUIP_DisconnectParent *msg)
+{
+    DoMethod(obj, MUIM_Popimage_CloseWindow, FALSE);
+    return DoSuperMethodA(cl, obj, msg);
+}
+
 #if ZUNE_BUILTIN_POPIMAGE
 BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
 {
@@ -220,6 +227,7 @@ BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
 	case MUIM_Hide: return Popimage__MUIM_Hide(cl, obj, (APTR)msg);
 	case MUIM_Popimage_OpenWindow: return Popimage__MUIM_Popimage_OpenWindow(cl, obj, (APTR)msg);
 	case MUIM_Popimage_CloseWindow: return Popimage__MUIM_Popimage_CloseWindow(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Popimage__MUIM_DisconnectParent(cl, obj, (APTR)msg);
         default: return DoSuperMethodA(cl, obj, msg);
     }
 }
