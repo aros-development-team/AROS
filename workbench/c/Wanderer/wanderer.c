@@ -393,6 +393,7 @@ STATIC IPTR IconWindow_DoubleClicked(struct IClass *cl, Object *obj, Msg msg)
 STATIC IPTR IconWindow_Open(struct IClass *cl, Object *obj, Msg msg)
 {
     struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
+    DoMethod(data->iconlist,MUIM_IconList_Clear);
     set(obj,MUIA_Window_Open,TRUE);
     DoMethod(data->iconlist,MUIM_IconList_Update);
     return 1;
