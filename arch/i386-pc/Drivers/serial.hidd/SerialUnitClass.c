@@ -235,6 +235,12 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
   
   EnterFunc(bug("SerialUnit::Write()\n"));
 
+  /*
+   * If the output is currently stopped just don't do anything here.
+   */
+  if (TRUE == data->stopped)
+    return 0;
+
   status = serial_inp(data, UART_LSR);
   
   if (status & UART_LSR_THRE)
@@ -350,6 +356,35 @@ BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_
   return SerErr_LineErr;
 }
 
+/******* SerialUnit::Start() **********************************/
+VOID serialunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
+{
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+  
+  /*
+   * Allow or start feeding the UART with data. Get the data 
+   * from upper layer.
+   */
+  if (NULL != data->DataWriteCallBack)
+    data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+  /*
+   * Also mark the stopped flag as FALSE.
+   */
+  data->stopped = FALSE;
+}  
+
+/******* SerialUnit::Stop() **********************************/
+VOID serialunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Stop *msg)
+{
+  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+  
+  /*
+   * The next time the interrupt comes along and asks for
+   * more data we just don't do anything...
+   */
+  data->stopped = TRUE;
+}
+
 /****** SerialUnit::GetCapabilities ********************************/
 VOID serialunit_getcapabilities(OOP_Class * cl, OOP_Object *o, struct TagItem * tags)
 {
@@ -421,6 +456,13 @@ AROS_UFH3(void, serialunit_write_more_data,
   struct HIDDSerialUnitData * data = iD;
 
   /*
+   * If the output is currently stopped just don't do
+   * anything here.
+   */
+  if (TRUE == data->stopped)
+    return;
+    
+  /*
   ** Ask for more data be written to the unit
   */
   D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
@@ -462,6 +504,8 @@ OOP_Class *init_serialunitclass (struct class_static_data *csd)
         {(IPTR (*)())serialunit_setbaudrate,	moHidd_SerialUnit_SetBaudrate},
         {(IPTR (*)())serialunit_setparameters,	moHidd_SerialUnit_SetParameters},
         {(IPTR (*)())serialunit_sendbreak,	moHidd_SerialUnit_SendBreak},
+        {(IPTR (*)())serialunit_start,		moHidd_SerialUnit_Start},
+        {(IPTR (*)())serialunit_stop,		moHidd_SerialUnit_Stop},
         {(IPTR (*)())serialunit_getcapabilities,moHidd_SerialUnit_GetCapabilities},
         {NULL, 0UL}
     };
