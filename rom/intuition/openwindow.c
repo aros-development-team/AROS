@@ -8,6 +8,7 @@
 #include "intuition_intern.h"
 #include <exec/memory.h>
 #include <graphics/layers.h>
+#include <graphics/gfx.h>
 #include <intuition/intuition.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
@@ -76,7 +77,8 @@
     struct TagItem *tag, *tagList;
     struct RastPort *rp;
     struct Hook *backfillhook = LAYERS_BACKFILL;
-
+    struct Rectangle *zoomrectangle = NULL;
+    
     UBYTE * screenTitle = NULL;
     BOOL    autoAdjust	= FALSE;
     ULONG   innerWidth	= ~0L;
@@ -147,7 +149,10 @@
 	    case WA_SizeBBottom:	MODIFY_FLAG(WFLG_SIZEBBOTTOM);      break;
 	    case WA_GimmeZeroZero:	MODIFY_FLAG(WFLG_GIMMEZEROZERO);    break;
 	    case WA_NewLookMenus:	MODIFY_FLAG(WFLG_NEWLOOKMENUS);     break;
-	    case WA_Zoom:		MODIFY_FLAG(WFLG_HASZOOM);	    break;
+	    case WA_Zoom:
+	    	zoomrectangle = (struct Rectangle *)tag->ti_Data;
+		MODIFY_FLAG(WFLG_HASZOOM);
+		break;
 
 	    case WA_DetailPen:
 		if (nw.DetailPen == 0xFF)
@@ -362,10 +367,29 @@
     w->Width	   = nw.Width;
     w->Height	   = nw.Height;
 
-    ((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
-    ((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
-    ((struct IntWindow *)w)->ZipWidth    = w->Width;
-    ((struct IntWindow *)w)->ZipHeight   = w->Height;
+    if (autoAdjust)
+    {
+    	if (w->Width  > w->WScreen->Width)  w->Width  = w->WScreen->Width;
+	if (w->Height > w->WScreen->Height) w->Height = w->WScreen->Height;
+	
+	if ((w->LeftEdge + w->Width) > w->WScreen->Width)  w->LeftEdge = w->WScreen->Width - w->Width;
+	if ((w->TopEdge + w->Height) > w->WScreen->Height) w->TopEdge = w->WScreen->Height - w->Height;
+	 
+    }
+    if (zoomrectangle)
+    {
+	((struct IntWindow *)w)->ZipLeftEdge = zoomrectangle->MinX;
+	((struct IntWindow *)w)->ZipTopEdge  = zoomrectangle->MinY;
+	((struct IntWindow *)w)->ZipWidth    = zoomrectangle->MaxX - zoomrectangle->MinX + 1;
+	((struct IntWindow *)w)->ZipHeight   = zoomrectangle->MaxY - zoomrectangle->MinY + 1;    	
+    }
+    else
+    {
+	((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
+	((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
+	((struct IntWindow *)w)->ZipWidth    = w->Width;
+	((struct IntWindow *)w)->ZipHeight   = w->Height;
+    }
     
     if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
 	goto failexit;
