@@ -976,6 +976,74 @@ VOID	HIDD_BM_CopyMemBox32(OOP_Object *obj
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_CopyLUTMemBox16(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod
+	, HIDDT_PixelLUT *pixlut)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyLUTMemBox16 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox16);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;   
+    p.dstMod = dstMod;
+    p.pixlut = pixlut;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_CopyLUTMemBox32(OOP_Object *obj
+    	, APTR src
+	, WORD srcX
+	, WORD srcY
+	, APTR dst
+	, WORD dstX
+	, WORD dstY
+	, UWORD width
+	, UWORD height
+	, ULONG srcMod
+	, ULONG dstMod
+	, HIDDT_PixelLUT *pixlut)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_CopyLUTMemBox32 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyLUTMemBox32);
+        
+    p.mID = mid;
+    p.src = src;
+    p.srcX = srcX;
+    p.srcY = srcY;
+    p.dst = dst;
+    p.dstX = dstX;
+    p.dstY = dstY;
+    p.width = width;
+    p.height = height;
+    p.srcMod = srcMod;   
+    p.dstMod = dstMod;
+    p.pixlut = pixlut;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap)
 {
     STATIC_MID;

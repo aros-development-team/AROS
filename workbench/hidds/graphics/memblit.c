@@ -434,3 +434,69 @@ VOID bitmap_copymembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyM
 }
 
 /****************************************************************************************/
+
+VOID bitmap_copylutmembox16(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox16 *msg)
+{
+    HIDDT_Pixel *pixlut = msg->pixlut->pixels;
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+    
+    if (!pixlut) return;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX;
+    src_start_add = msg->srcMod - width;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 2;
+    dst_start_add = msg->dstMod - width * 2;
+        
+    while(height--)
+    {
+    	w = width;
+
+	while(w--)
+	{
+	    *((UWORD *)dst_start)++ = (UWORD)(pixlut[*((UBYTE *)src_start)++]);
+	}
+	src_start += src_start_add;
+	dst_start += dst_start_add;
+    }
+}
+
+/****************************************************************************************/
+
+VOID bitmap_copylutmembox32(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_CopyLUTMemBox32 *msg)
+{
+    HIDDT_Pixel *pixlut = msg->pixlut->pixels;
+    UBYTE *src_start, *dst_start;
+    LONG width, height, w;
+    ULONG src_start_add, dst_start_add;
+
+    if (!pixlut) return;
+    
+    width = msg->width;
+    height = msg->height;
+
+    src_start = msg->src + msg->srcY * msg->srcMod + msg->srcX;
+    src_start_add = msg->srcMod - width;
+
+    dst_start = msg->dst + msg->dstY * msg->dstMod + msg->dstX * 4;
+    dst_start_add = msg->dstMod - width * 4;
+        
+    while(height--)
+    {
+    	w = width;
+
+	while(w--)
+	{
+	    *((ULONG *)dst_start)++ = (ULONG)(pixlut[*((UBYTE *)src_start)++]);
+	}
+	src_start += src_start_add;
+	dst_start += dst_start_add;
+    }
+}
+
+/****************************************************************************************/
