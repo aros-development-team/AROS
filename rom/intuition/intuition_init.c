@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Library header for intuition
-    Lang: english
+    Lang: English
 */
 #define AROS_ALMOST_COMPATIBLE
 
@@ -253,6 +253,16 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
     }
 
+    if(!DOSBase)
+    {
+	DOSBase = OpenLibrary("dos.library", 0);
+
+	/* Install intuition's version of DisplayError() that puts up
+	   a requester with Retry/Cancel options */
+	SetFunction(DOSBase, -81*LIB_VECTSIZE,
+		    AROS_SLIB_ENTRY(DisplayError, Intuition));
+    }
+
     if (!intui_open (LIBBASE))
 	return NULL;
 
@@ -312,6 +322,9 @@ AROS_LH0(BPTR, expunge,
 
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
+
+    if (DOSBase)
+	CloseLibrary(DOSBase);
 
 
     if (GetPrivIBase(LIBBASE)->InputHandler)
