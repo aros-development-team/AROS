@@ -11,6 +11,7 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
+#include <asm/io.h>
 #include <exec/alerts.h>
 #include <exec/memory.h>
 
@@ -25,7 +26,7 @@
 
 #include "mouse.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
@@ -45,17 +46,6 @@ int     mouse_Select(struct mouse_data *, ULONG);
 void    mouse_FlushInput(struct mouse_data *);
 int     mouse_DetectPNP(struct mouse_data *, OOP_Object *);
 void    handle_events(UBYTE proto, struct mouse_data *);
-
-/* Misc functions */
-
-#define inb(port) \
-    ({  char __value;   \
-    __asm__ __volatile__ ("inb $" #port ",%%al":"=a"(__value)); \
-    __value;    })
-
-#define outb(val,port) \
-    ({  char __value=(val); \
-    __asm__ __volatile__ ("outb %%al,$" #port::"a"(__value)); })
 
 /* mouse_usleep - sleep for usec microseconds */
 #warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
@@ -280,7 +270,7 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
     mcr[0].ti_Data = 3;     /* DTR=1, RTS=1 */
     HIDD_SerialUnit_SetParameters(unit, mcr);
     /* Try to read data. Mouse has to respond if PNP */
-    tmpavail = mouse_Select(data, 200000);
+    tmpavail = mouse_Select(data, 300000);
     if (!tmpavail)
         goto connect_idle;
 
@@ -317,7 +307,7 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
     ++c;    /* make it `End ID' */
     for (;;)
     {
-        if (!mouse_Select(data, 200000))
+        if (!mouse_Select(data, 300000))
             break;
 
         mouse_GetFromRing(data, &buf[i]);
@@ -750,6 +740,7 @@ int mouse_Select(struct mouse_data *data, ULONG usec)
         /* Decrease wait counter */
         usec -= step;
     }
+    avail = r->top - r->ptr;
     return avail;
 }
 
