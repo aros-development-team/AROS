@@ -14,7 +14,7 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(ULONG, MUI_BeginRefresh,
+	AROS_LH2(BOOL, MUI_BeginRefresh,
 
 /*  SYNOPSIS */
 	AROS_LHA( struct MUI_RenderInfo *, mri, A0),
