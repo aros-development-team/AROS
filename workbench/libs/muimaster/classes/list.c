@@ -282,6 +282,44 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
 }
 
 /**************************************************************************
+ Determine the dims of a single entry and adapt the columinfo according
+ to it. pos might be ENTRY_TITLE
+**************************************************************************/
+static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct ListEntry *entry = data->entries[pos];
+    int j;
+
+    if (!entry) return;
+
+    DisplayEntry(cl,obj,pos);
+
+    /* Clear the height */
+    data->entries[pos]->height = 0;
+
+    for (j=0;j<data->columns;j++)
+    {
+	ZText *text = zune_text_new(data->strings[j],data->preparses[j], ZTEXT_ARG_NONE, NULL);
+	if (text)
+	{
+	    zune_text_get_bounds(text,obj);
+	    if (text->height > data->entries[pos]->height) data->entries[pos]->height = text->height;
+	    data->entries[pos]->widths[j] = text->width;
+
+	    if (text->width > data->ci[j].entries_width)
+	    {
+	        /* This columns width is bigger than the other in the same columns, so we store this value */
+	        data->ci[j].entries_width = text->width;
+	    }
+
+	    zune_text_destroy(text);
+	}
+    }
+    if (data->entries[pos]->height > data->entry_maxheight) data->entry_maxheight = data->entries[pos]->height;
+}
+
+/**************************************************************************
  Determine the widths of the entries
 **************************************************************************/
 static void CalcWidths(struct IClass *cl, Object *obj)
@@ -298,36 +336,27 @@ static void CalcWidths(struct IClass *cl, Object *obj)
 
     for (i=(data->title?ENTRY_TITLE:0);i<data->entries_num;i++)
     {
-    	struct ListEntry *entry = data->entries[i];
-    	if (!entry) break;
-
-	DisplayEntry(cl,obj,i);
-
-	/* Clear the height */
-	data->entries[i]->height = 0;
-
-	for (j=0;j<data->columns;j++)
-	{
-	    ZText *text = zune_text_new(data->strings[j],data->preparses[j], ZTEXT_ARG_NONE, NULL);
-	    if (text)
-	    {
-		zune_text_get_bounds(text,obj);
-		if (text->height > data->entries[i]->height) data->entries[i]->height = text->height;
-		data->entries[i]->widths[j] = text->width;
-
-		if (text->width > data->ci[j].entries_width)
-		{
-		    /* This columns width is bigger than the other in the same columns, so we store this value */
-		    data->ci[j].entries_width = text->width;
-		}
-
-		zune_text_destroy(text);
-	    }
-	}
-	if (data->entries[i]->height > data->entry_maxheight) data->entry_maxheight = data->entries[i]->height;
+	CalcDimsOfEntry(cl,obj,i);
     }
     if (!data->entry_maxheight) data->entry_maxheight = 1;
 }
+
+/**************************************************************************
+ Calculates the number of visible entry lines. Returns 1 if it has
+ changed
+**************************************************************************/
+static int CalcVertVisible(struct IClass *cl, Object *obj)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    int old_entries_visible = data->entries_visible;
+    int old_entries_top_pixel = data->entries_top_pixel;
+
+    data->entries_visible = (_mheight(obj) - data->title_height)/data->entry_maxheight;
+    data->entries_top_pixel = _mtop(obj) + data->title_height + (_mheight(obj) - data->title_height - data->entries_visible * data->entry_maxheight)/2;
+
+    return (old_entries_visible != data->entries_visible) || (old_entries_top_pixel != data->entries_top_pixel);
+}
+
 
 /**************************************************************************
  OM_NEW
@@ -562,6 +591,11 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }
 		    break;
 
+	    case    MUIA_List_Visible:
+		    if (data->vertprop_visible != tag->ti_Data)
+			set(obj,MUIA_List_VertProp_Visible, tag->ti_Data);
+		    break;
+
 	    case    MUIA_List_Entries:
 		    if (data->confirm_entries_num == tag->ti_Data)
 		    {
@@ -635,9 +669,8 @@ static ULONG List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
     struct MUI_ListData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
 
-    /* Calc the entries visible */
-    data->entries_visible = (_mheight(obj) - data->title_height)/data->entry_maxheight;
-    data->entries_top_pixel = _mtop(obj) + data->title_height + (_mheight(obj) - data->title_height - data->entries_visible * data->entry_maxheight)/2;
+    /* Calc the numbers of entries visible */
+    CalcVertVisible(cl,obj);
 
     /* So the notify takes happens */
     set(obj, MUIA_List_VertProp_Visible, data->entries_visible);
@@ -930,8 +963,6 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
     	LONG until = pos + count;
     	APTR *toinsert = msg->entries;
 
-//    	data->confirm_entries_num = data->entries_num;
-
 	if (!(PrepareInsertListEntries(data, pos, count)))
 	    return ~0;
 
@@ -954,6 +985,8 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 	    {
 	    	FreeListEntry(data,lentry);
 	    	RemoveListEntries(data, pos, until - pos);
+
+		/* TODO: Also check for visible stuff like below */
 	    	if (data->entries_num != data->confirm_entries_num)
 		    set(obj,MUIA_List_Entries,data->confirm_entries_num);
 		return ~0;
@@ -962,12 +995,30 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 	    data->entries[pos] = lentry;
 	    data->confirm_entries_num++;
 
+	    if (_flags(obj) & MADF_SETUP)
+	    {
+	    	/* We have to calulate the with and height of the newly inserted entry, this
+	    	** has to be done after inserting the element into the list */
+	    	CalcDimsOfEntry(cl,obj,pos);
+	    }
+
 	    toinsert++;
 	    pos++;
 	}
 
+	
+	if (_flags(obj) & MADF_SETUP)
+	    CalcVertVisible(cl,obj); /* Recalculate the number of visible entries */
+
 	if (data->entries_num != data->confirm_entries_num)
-	    set(obj,MUIA_List_Entries,data->confirm_entries_num);
+	{
+	    SetAttrs(obj,
+		MUIA_List_Entries, data->confirm_entries_num,
+		MUIA_List_Visible, data->entries_visible,
+		TAG_DONE);
+	}
+
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
 
     	data->insert_position = pos;
     	return (ULONG)pos;
@@ -996,7 +1047,7 @@ STATIC ULONG List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetE
 
     if (pos == MUIV_List_GetEntry_Active) pos = data->entries_active;
 
-    if (pos < 0 && pos >= data->entries_num)
+    if (pos < 0 || pos >= data->entries_num)
     {
     	*msg->entry = NULL;
     	return NULL;
