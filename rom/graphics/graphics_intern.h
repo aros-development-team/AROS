@@ -166,6 +166,7 @@ struct GfxBase_intern
     struct GfxBase 	 	gfxbase;
 
     struct Library  	    	*oopbase;
+    struct Library  	    	*cybergfxbase;
     /* Driver data shared between all rastports (allocated once) */
     struct shared_driverdata	shared_driverdata;
 
