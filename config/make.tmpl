@@ -144,3 +144,16 @@ libdefs.h: lib.conf $(TOP)/scripts/genlibdefs.gawk
 	@echo "Generating $@..."
 	@$(AWK) -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
 %end
+
+# rule to generate asm files from c files (for debugging purposes)
+%define asm_rule
+.PHONY: asm
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+%end
+
+# generate asm files from c files (for debugging purposes)
+%define ctoasm_q
+%.s: %.c
+	@echo "Generating $(CURDIR)/$@..."
+	@$(CC) -S $(CFLAGS) $< -c -o $@
+%end
