@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 DESTDIR := $(BINDIR)/Locale/Catalogs
 
-CATALOGS 	:= deutsch
+CATALOGS 	:= deutsch français
 CATDESC 	:= clock
 CATSUBDIR	:= Sys/
 CATNAME 	:= Clock
