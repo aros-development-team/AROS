@@ -1023,7 +1023,11 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
        
 	/* Let the iterator point to the next attr */
 	if ((df_data->u.FontsData.AttrsIndex == df_data->u.FontsData.CurrentFileEntry->Numentries-1)
-	    || (df_data->u.FontsData.CurrentFileEntry->ContentsID == OFCH_ID && df_data->ReqAttr==NULL && df_data->u.FontsData.AttrsIndex == df_data->u.FontsData.CurrentFileEntry->Numentries-1))
+	    || (df_data->u.FontsData.CurrentFileEntry->ContentsID == OFCH_ID
+		&& df_data->ReqAttr==NULL &&
+		df_data->u.FontsData.AttrsIndex == df_data->u.FontsData.CurrentFileEntry->Numentries-2
+	       )
+	   )
 	{
 	    df_data->u.FontsData.PrevFileEntry = df_data->u.FontsData.CurrentFileEntry;
 	    df_data->u.FontsData.CurrentFileEntry = (struct FileEntry *)GetSucc(df_data->u.FontsData.CurrentFileEntry);
@@ -1074,6 +1078,10 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 	/* Let the iterator point to the next element.
 	 */
 	df_data->u.FileData.AttrsIndex++;
+
+	/* Do not return the best-match attribute if it is not an outline font,
+	 * this is done by increasing the AttrsIndex once more
+	 */
 	if (df_data->u.FileData.FDH->ContentsID != OFCH_ID
 	    && df_data->u.FileData.AttrsIndex == df_data->u.FileData.FDH->NumEntries)
 	{
@@ -1081,7 +1089,7 @@ struct TTextAttr *DF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *
 	}
 	break;
     }
-	
+
     ReturnPtr("DF_IteratorGetNext", struct TTextAttr *, retval);
 }
 
@@ -1111,6 +1119,12 @@ VOID DF_IteratorRemember(APTR iterator, struct DiskfontBase_intern *DiskfontBase
 	{
 	    df_data->u.FontsData.RememberFileEntry = df_data->u.FontsData.PrevFileEntry;
 	    df_data->u.FontsData.RememberIndex = df_data->u.FontsData.RememberFileEntry->Numentries-1;
+	    if (df_data->u.FontsData.CurrentFileEntry->ContentsID == OFCH_ID
+		&& df_data->ReqAttr == NULL
+	       )
+	    {
+		df_data->u.FontsData.RememberIndex--;
+	    }
 	}
     
 	D(bug("DF_IteratorRemember: Remembered font: %s/%d\n",
@@ -1149,9 +1163,45 @@ struct TextFont *DF_IteratorRememberOpen(APTR iterator, struct DiskfontBase_inte
     switch (df_data->Type)
     {
     case DF_FONTSDATA:
-	olddir = CurrentDir(df_data->u.FontsData.RememberFileEntry->DirEntry->DirLock);
-	fdh = ReadFontDescr(df_data->u.FontsData.RememberFileEntry->FileName, DiskfontBase);
-	RememberAttr = &fdh->TAttrArray[df_data->u.FontsData.RememberIndex];
+	{
+	    struct FileEntry *rementry = df_data->u.FontsData.RememberFileEntry;
+	    
+	    olddir = CurrentDir(rementry->DirEntry->DirLock);
+	    fdh = ReadFontDescr(rementry->FileName, DiskfontBase);
+	    if (rementry->ContentsID == OFCH_ID
+		&& df_data->u.FontsData.RememberIndex == rementry->Numentries - 1)
+	    {
+		UBYTE SupportedStyles = OTAG_GetSupportedStyles(fdh->OTagList, DiskfontBase);
+
+		/* It is the TAttr generated for best matching */
+		RememberAttr = &rementry->Attrs[df_data->u.FontsData.RememberIndex];
+		RememberAttr->tta_Style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
+		RememberAttr->tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
+
+		RememberAttr->tta_Tags = NULL;
+		if (df_data->ReqAttr->tta_Style & FSF_TAGGED)
+		{
+		    RememberAttr->tta_Style |= FSF_TAGGED;
+		    RememberAttr->tta_Tags = df_data->ReqAttr->tta_Tags;
+		}
+			
+		if ((df_data->ReqAttr->tta_Style & FSF_BOLD)
+		    && !(RememberAttr->tta_Style & FSF_BOLD)
+		    && (SupportedStyles & FSF_BOLD))
+		{
+		    RememberAttr->tta_Style |= FSF_BOLD;
+		}
+			
+		if ((df_data->ReqAttr->tta_Style & FSF_ITALIC)
+		    && !(RememberAttr->tta_Style & FSF_ITALIC)
+		    && (SupportedStyles & FSF_ITALIC))
+		{
+		    RememberAttr->tta_Style |= FSF_ITALIC;
+		}
+	    }
+	    else
+		RememberAttr = &fdh->TAttrArray[df_data->u.FontsData.RememberIndex];
+	}
 	break;
 	
     case DF_FILEDATA:
@@ -1412,4 +1462,3 @@ struct TextFont *DF_OpenFontPath(struct TextAttr *reqattr, struct DiskfontBase_i
 
     return tf;
 }
-
