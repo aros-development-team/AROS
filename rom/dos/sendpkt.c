@@ -154,7 +154,15 @@
 
 //    iofs.IOFS.io_replyport = replyport; // device should use this for reply 
 
+
     PutMsg(port, &iofs->IOFS.io_Message);
+
+    /*
+     * So just in case the packet is to be aborted 
+     * I know which IORequest to use. The user will
+     * us the packet itself to abort it.
+     */
+    dp->dp_Arg7 = iofs;
 
     AROS_LIBFUNC_EXIT
 } /* SendPkt */
