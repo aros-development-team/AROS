@@ -129,3 +129,42 @@ end
 document thistask
 Print out information about the currently running task.
 end
+
+define modlist
+    if debug_seglist
+        printf "SegList  Module\n"
+        printf "---------------------------------------------------------------------\n"
+
+        set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
+
+        while ($segnode->node.mln_Succ != 0)
+            printf "%08x %s\n", $segnode->seglist, $segnode->name
+
+            set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
+        end
+    end
+end
+document modlist
+List of all the modules currently loaded in memory
+end
+
+define findhit
+    if debug_seglist
+        set $cont = 1
+        set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
+
+        while ($segnode->node.mln_Succ != 0) && $cont
+            set $nextseg = $segnode->seglist
+
+            while $nextseg && $cont
+	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *(ULONG *)((UBYTE *)$nextseg - 4) - sizeof(BPTR))
+                    printf "Hit found in %s\n", $segnode->name
+
+                    set $cont = 0
+                end
+
+                set $nextseg = *(BPTR *)$nextseg
+     	    end
+
+            set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
+        end
