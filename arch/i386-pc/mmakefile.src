@@ -33,7 +33,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-bootloader-pc-i386-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     workbench-fs-afs-kobj \
-#MM     workbench-graphics-hidd-kobj \
+#MM     workbench-hidd-graphics-kobj \
 #MM     aminet-disk-cdrom-amicdrom-kobj \
 #MM	kernel-pc-i386-drivers
 
