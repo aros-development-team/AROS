@@ -4,5 +4,9 @@ $ Id $
 #MM    graphics-$(GFXSYSTEM) kernel-x11gfx-kobj workbench-graphics-hidd-kobj \
 #MM    intuition-$(GFXSYSTEM) \
 #MM    kernel-unixio-kobj \
-#MM    workbench-hidd-unix \
 #MM    kernel-fs-emul-kobj
+
+#MM- workbench-unix : workbench-hidd-unix
+#MM- workbench-hidd-unix : \
+#MM    workbench-hidd-unix-parallel \
+#MM    workbench-hidd-unix-serial
