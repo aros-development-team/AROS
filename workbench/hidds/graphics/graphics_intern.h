@@ -26,7 +26,8 @@ struct gfxmode_data {
     ULONG width;
     ULONG height;
     
-    Object *pixfmt;
+    Object **pfarray;
+    ULONG numpfs;
     
     Object *gfxhidd;
     

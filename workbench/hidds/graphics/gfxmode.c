@@ -43,94 +43,104 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct TagItem * pftags = NULL;
     
     BOOL gotwidth = FALSE, gotheight = FALSE, gotpf = FALSE;
-    
-    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
-    	ULONG idx;
-	
-	if (IS_GFXMODE_ATTR(tag->ti_Tag, idx)) {
-	    switch (idx) {
-	    	case aoHidd_GfxMode_Width:
-		    width = (ULONG)tag->ti_Data;
-		    gotwidth = TRUE;
-		    break;
-		    
-		case aoHidd_GfxMode_Height:
-		    height = (ULONG)tag->ti_Data;
-		    gotheight = TRUE;
-		    break;
-		    
-		case aoHidd_GfxMode_StdPixFmt:
-		    
-		    if (gotpf) {/* ERROR: Allready got pf */
-		    	kprintf("!!! GfxMode::New() duplicate PixFmt tags\n");
-		    	return NULL;
-		    }
-		    stdpf = (HIDDT_StdPixFmt)tag->ti_Data;
-		      	
-#warning Implement this
-/*		     CONVERT TO STANDARD PIXELFORMAT */
-		    
-		    gotpf = TRUE;  
-		    break;
-		 
-		 
-		case aoHidd_GfxMode_PixFmtTags:
-		    if (gotpf) { /* ERROR: Allready got pf */
-		    	kprintf("!!! GfxMode::New() duplicate PixFmt tags\n");
-		    	return NULL;
-		    }
-		    
-		    pftags = (struct TagItem *)tag->ti_Data;
-		    
-		    gotpf = TRUE;
-		    break;
-		    
-		case aoHidd_GfxMode_GfxHidd:
-		    gfxhidd = (Object *)tag->ti_Data;
-		    break;
-	    
-	    } /*switch */
-	    
-	} /* if (is gfxmode attr) */
-	
-    } /* for (all attributes) */
-    
-    if (NULL == gfxhidd) {
-    	kprintf("!!! GfxMode::New() No GfxHidd pointer supplied\n");
-	return NULL;
-    }
-    
-    if (!gotpf) {
-    	kprintf("!!! GfxMode::New() No PixFmt description supplied\n");
-	return NULL;
-    }
-    
-    
-    if (NULL != pftags) {
-    	/* Register a pixfmt object */
-	pfobj = HIDD_Gfx_RegisterPixFmt(gfxhidd, pftags);
-	
-    } else {
-    	/* Try to get a standard pixel format */
-	pfobj = CSD(cl)->std_pixfmts[stdpf - num_Hidd_PseudoPixFmt];
-    }
-    
-    if (NULL == pfobj)
-    	return NULL;
+    BOOL ok = TRUE;
 
+    gfxhidd = GetTagData(aHidd_GfxMode_GfxHidd, NULL, msg->attrList);    
+    if (NULL == gfxhidd) {
+	kprintf("!!! NO GFXHIDD SUPPLPIED TO GfxMode::New() !!\n");
+	return NULL;
+    }
+    
+    /* Get Object from superclass */
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
-     	return NULL;
-     
-     
+    	return NULL;
     
-     /* Get the attributes */
     data = INST_DATA(cl, o);
+
+    /* Get the number of pixel fromats for this gfxmode */
+    data->numpfs = 0;
+    for (tstate = msg->AttrList; (tag = NextTagItem((const struct TagItem **)&tstate));  ) {
+    	if (	aHidd_GfxMode_PixFmtTags == tag->ti_Tag 
+	     ||	aHidd_GfxMode_StdPixFmt  == tag->ti_Tag ) {
+	     
+	    data->numpfs ++;
+	}
+    }
     
-    data->width		= width;
-    data->height	= height;
-    data->pixfmt  	= pfobj;
-    data->gfxhidd	= gfxhidd;
+    if (0 == data->numpfs) {
+    	kprintf("!!! NO PIXEL FORMATS SUPPLIED TO GfxMode::New() !!!\n");
+	ok = FALSE;
+    }
+    
+    /* Allocate array for pixel formats */
+    if (ok) {
+	data->pfarray = AllocMem(sizeof (*data->pfarray) * data->numpfs, MEMF_CLEAR);
+	if (NULL == data->pfarray)
+    	    ok = FALSE;
+    }
+    
+    
+    if (ok) {
+	ULONG pfidx = 0;
+	
+	for (tstate = msg->attrList; ok && (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+	    ULONG idx;
+	
+	    if (IS_GFXMODE_ATTR(tag->ti_Tag, idx)) {
+		switch (idx) {
+		    case aoHidd_GfxMode_Width:
+			width = (ULONG)tag->ti_Data;
+			gotwidth = TRUE;
+			break;
+		    
+		    case aoHidd_GfxMode_Height:
+			height = (ULONG)tag->ti_Data;
+			gotheight = TRUE;
+			break;
+		    
+		    case aoHidd_GfxMode_StdPixFmt:
+		    
+			stdpf = (HIDDT_StdPixFmt)tag->ti_Data;
+			data->pfarray[pfidx ++] = CSD(cl)->std_pixfmts[tag->ti_Data - num_Hidd_PseudoPixFmt];
+			break;
+		 
+		    case aoHidd_GfxMode_PixFmtTags:
+			data->pfarray[pfidx] = HIDD_Gfx_RegisterPixFmt(gfxhidd, (struct TagItem *)tag->ti_Data);
+			if (NULL == data->pfarray[pfidx]) {
+			    ok = FALSE;
+			    break;
+			}
+			pfidx ++;
+			break;
+		    
+	    	} /*switch */
+	    
+	    } /* if (is gfxmode attr) */
+	
+	} /* for (all attributes) */
+		
+    } /* if (ok) */
+    
+    if (ok) {
+    
+	if (gotwidth && gotheight) {
+    
+	    data->width		= width;
+	    data->height	= height;
+	    data->gfxhidd	= gfxhidd;
+	    
+	} else ok = FALSE;
+	
+    }
+    
+    if (!ok) {
+	MethodID coerce_mid = GetMethodID(IID_Root, moRoot_Dispose);
+	
+	CoerceMethod(cl, o, (Msg)&dispose_mid);
+	o = NULL;
+    }
+    
     
     return o;
      
@@ -253,6 +263,20 @@ kprintf("gfxmode::get()\n");
     return;
     
     
+}
+
+Object *gfxmode_lookuppixfmt(Class *cl, Object *o, struct pHidd_GfxMode_LookupPixFmt *msg)
+{
+    struct gfxmode_data *data;
+    
+    data = INST_DATA(cl, o);
+    
+    if (msg->pixFmtNo >= data->numpfs) {
+    	kprintf("!!! TO LARGE IDX IN CALL TO GfxMode::LookupPixFmt() !!!\n");
+	return NULL;
+    }
+    
+    return data->pfarrary[msg->pixFmtNo];
 }
 
 /*** init_gfxmodeclass *********************************************************/

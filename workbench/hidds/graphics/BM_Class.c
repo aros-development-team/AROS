@@ -702,14 +702,10 @@ kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), c
 		    register HIDDT_Pixel pix;
 		    register HIDDT_Color *col;
 		    
-// kprintf("%d:%d", x, y);
 		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
-// kprintf(":%d", pix);
 		    col = &ctab[pix];
-// kprintf(":%p", col);
 	
 		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
-// kprintf(":%d ", GC_FG(gc));
 /*		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &ctab[HIDD_BM_GetPixel(obj, srcX++, srcY)]);
 */		    
 		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
