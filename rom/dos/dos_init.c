@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/09/17 18:40:21  digulla
+    Only one global DOSBase to avoid multiple opens without close
+    InitSemaphore() needs SysBase
+
     Revision 1.6  1996/09/13 17:50:06  digulla
     Use IPTR
 
@@ -47,9 +51,6 @@ int Dos_entry(void)
     return -1;
 }
 
-/* CreateNewProc needs a global DOSBase variable */
-struct DosLibrary *DOSBase;
-
 const struct Resident Dos_resident=
 {
     RTC_MATCHWORD,
@@ -84,24 +85,25 @@ void __AROS_SLIB_ENTRY(CloseDevice,Dos)();
 void __AROS_SLIB_ENTRY(RemLibrary,Dos)();
 void LDFlush();
 
+#undef SysBase
+
 __AROS_LH2(struct DosLibrary *, init,
- __AROS_LHA(struct DosLibrary *, dosBase, D0),
+ __AROS_LHA(struct DosLibrary *, DOSBase, D0),
  __AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, Dos)
+	   struct ExecBase *, SysBase, 0, Dos)
 {
     __AROS_FUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    DOSBase=dosBase;
-    dosBase->dl_SysBase=sysBase;
-    dosBase->dl_SegList=segList;
+    DOSBase->dl_SysBase=SysBase;
+    DOSBase->dl_SegList=segList;
 
-    InitSemaphore(&dosBase->dl_DosListLock);
-    InitSemaphore(&dosBase->dl_LDSigSem);
+    InitSemaphore(&DOSBase->dl_DosListLock);
+    InitSemaphore(&DOSBase->dl_LDSigSem);
 
-    dosBase->dl_UtilityBase=OpenLibrary("utility.library",39);
-    if(dosBase->dl_UtilityBase!=NULL)
+    DOSBase->dl_UtilityBase=OpenLibrary("utility.library",39);
+    if(DOSBase->dl_UtilityBase!=NULL)
     {
 	static const struct TagItem tags[]=
 	{
@@ -111,8 +113,10 @@ __AROS_LH2(struct DosLibrary *, init,
 	    { NP_Name, (IPTR)"lib & dev loader demon" },
 	    { TAG_END, 0 }
 	};
-	dosBase->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
-	if(dosBase->dl_LDDemon!=NULL)
+
+	DOSBase->dl_LDDemon=CreateNewProc((struct TagItem *)tags);
+
+	if(DOSBase->dl_LDDemon!=NULL)
 	{
 	    (void)SetFunction(&SysBase->LibNode,-92*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(OpenLibrary,Dos));
 	    (void)SetFunction(&SysBase->LibNode,-74*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(OpenDevice,Dos));
@@ -120,18 +124,24 @@ __AROS_LH2(struct DosLibrary *, init,
 	    (void)SetFunction(&SysBase->LibNode,-75*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(CloseDevice,Dos));
 	    (void)SetFunction(&SysBase->LibNode,-67*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(RemLibrary,Dos));
 	    (void)SetFunction(&SysBase->LibNode,-73*sizeof(struct JumpVec),__AROS_SLIB_ENTRY(RemLibrary,Dos));
-	    dosBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
-	    dosBase->dl_LDHandler.is_Node.ln_Pri=0;
-	    dosBase->dl_LDHandler.is_Code=LDFlush;
-	    AddMemHandler(&dosBase->dl_LDHandler);
-	    return dosBase;
+
+	    DOSBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
+	    DOSBase->dl_LDHandler.is_Node.ln_Pri=0;
+	    DOSBase->dl_LDHandler.is_Code=LDFlush;
+
+	    AddMemHandler(&DOSBase->dl_LDHandler);
+
+	    return DOSBase;
 	}
-	CloseLibrary(dosBase->dl_UtilityBase);
+
+	CloseLibrary(DOSBase->dl_UtilityBase);
     }
 
     return NULL;
     __AROS_FUNC_EXIT
 }
+
+#define SysBase     (DOSBase->dl_SysBase)
 
 __AROS_LH1(struct DosLibrary *, open,
  __AROS_LHA(ULONG, version, D0),
