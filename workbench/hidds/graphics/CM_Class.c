@@ -205,7 +205,9 @@ static HIDDT_Pixel colormap_getpixel(Class *cl, Object *o, struct pHidd_ColorMap
     data = INST_DATA(cl, o);
      
     if (msg->pixelNo < 0 || msg->pixelNo > data->clut.entries) {
-	kprintf("!!! Unvalid msg->pixelNo in ColorMap::GetPixel()\n");
+	kprintf("!!! Unvalid msg->pixelNo (%d) in ColorMap::GetPixel(). clutentries = %d\n",
+		msg->pixelNo,
+		data->clut.entries);
 	
 //	*((ULONG *)0) = 0;
 	return (HIDDT_Pixel)-1L;
