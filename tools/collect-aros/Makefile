@@ -28,7 +28,7 @@ getlinkername: getlinkername.c
 	@$(HOST_STRIP) $@
 
 collect-aros.h : getlinkername
-	if [ -e $(LINKERPATH) ]; then \
+	if [ -x $(LINKERPATH) ]; then \
 	    echo "#define LINKERPATH" \"$(LINKERPATH)\" > collect-aros.h; \
 	else \
 	    echo "#define LINKERPATH \"/usr/bin/ld\"" > collect-aros.h; \
