@@ -129,7 +129,7 @@ void removefromrootnode(struct Process *process, struct DosLibrary *DOSBase)
     ObtainSemaphore(&root->rn_RootLock);
   
     /* Remove node from CliList */
-    ForeachNodeSafe(&root->rn_CliList, (struct Node *)cliNode, temp)
+    ForeachNodeSafe(&root->rn_CliList, cliNode, temp)
     {
 	if (cliNode->ci_Process == process)
 	{
