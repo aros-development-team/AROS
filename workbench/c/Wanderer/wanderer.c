@@ -724,7 +724,7 @@ void wanderer_about(void)
     MUI_RequestA(app,NULL,0,"About Wanderer", "*Better than ever",
 	"AROS ROM version 0.7 (alpha)\n"
 	"Wanderer version 0.1 (alpha)\n\n"
-	"Copyright © 2002, The AROS Development Team.\n"
+	"Copyright © 2003, The AROS Development Team.\n"
 	"All rights reserved.\n\n"
 	"\033cWe made it...\n\n"
 	"\033bThe AROS Development Team\033n\n"
