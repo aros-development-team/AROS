@@ -164,4 +164,8 @@ struct MUIMasterBase_intern
 
 /****************************************************************************************/
 
+#ifndef __ZUNE_PREFS_H__
+#include "prefs.h"
+#endif
+
 #endif /* MUIMASTER_INTERN_H */
