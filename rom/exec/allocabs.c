@@ -1,48 +1,20 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.8  1996/11/21 10:49:48  aros
-    Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
-    problems.
 
-    The #includes in the header *must* begin in the first column. Otherwise
-    makedepend will ignore them (GCC works, though).
-
-    Removed a couple of Logs
-
-    Revision 1.7  1996/10/24 15:50:43  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.6  1996/10/19 17:07:23  aros
-    Include <aros/machine.h> instead of machine.h
-
-    Revision 1.5  1996/09/13 17:51:21  digulla
-    Use IPTR
-
-    Revision 1.4  1996/08/13 13:55:57  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:04  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Exec function AllocAbs()
+    Lang: english
 */
-#include <exec/memory.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/machine.h>
-#include <clib/exec_protos.h>
 #include "memory.h"
 
 /*****************************************************************************
 
     NAME */
-	#include <exec/memory.h>
-	#include <clib/exec_protos.h>
+#include <exec/memory.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH2(APTR, AllocAbs,
 
