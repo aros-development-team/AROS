@@ -453,13 +453,11 @@ ULONG dogadgetmethod(struct Library *DTBase, struct Gadget *gad,
 		     struct Window *win, struct Requester *req,
 		     ULONG MethodID, ...)
 {
-   return(DoGadgetMethodA(gad, win, req, (Msg)&MethodID));
+    return(DoGadgetMethodA(gad, win, req, (Msg)&MethodID));
 }
 
 struct Catalog *opencatalog(struct Library *DTBase, struct Locale *locale,
 			    STRPTR name, Tag firstTag, ...)
 {
-#warning "No OpenCatalogA yet" 
-    return NULL;
-    //    return(OpenCatalogA(locale, name, (struct TagItem *)&firstTag));
+    return(OpenCatalogA(locale, name, (struct TagItem *)&firstTag));
 }
