@@ -556,7 +556,7 @@ void emit_html (int token, va_list args)
 	    if (file)
 		emit_special ("</A>");
 	    emit_special ("</I></B>");
-	    lastemit = let_char;
+	    /* lastemit = let_char; */
 	}
 	break;
 
