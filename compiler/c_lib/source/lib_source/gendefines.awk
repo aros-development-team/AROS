@@ -65,6 +65,9 @@ BEGIN {
     print "#ifndef EXEC_TYPES_H"
     print "#   include <exec/types.h>"
     print "#endif"
+    print "#ifndef AROS_PREPROCESSOR_VARIADIC_CAST2IPTR_HPP"
+    print "#   include <aros/preprocessor/variadic/cast2iptr.hpp>"
+    print "#endif"
     print ""
 
     file = "headers.tmpl"
@@ -303,10 +306,10 @@ function emit_struct(tname)
 
                 printf "%s, ", arg[t, 2]
 	    }
-            print "args...) \\"
+            print "...) \\"
 
             print "({ \\"
-            print "     IPTR __args[] = { args }; \\"
+            print "     IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \\"
 
             printf "     %s(", fname
             for (t=0; t<narg; t++)
