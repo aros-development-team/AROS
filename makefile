@@ -86,7 +86,7 @@ clean:
 	done
 
 $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
-	$(CC) $(CFLAGS) $< $(LIBS) /usr/lib/X11R6/lib/libX11.a -o $@
+	$(CC) $(CFLAGS) $< $(LIBS) $(X11LDFLAGS) -lX11 -o $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
