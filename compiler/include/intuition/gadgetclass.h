@@ -21,102 +21,109 @@
 #ifdef _AMIGA
 #   define STCKWORD	WORD
 #   define STCKULONG	ULONG
+#   define STCKLONG	LONG
 #else
 #   define STCKWORD	int
 #   define STCKULONG	unsigned long
+#   define STCKLONG	long
 #endif
 
 /* GadgetClass attributes */
-#define GA_Dummy	    (TAG_USER +0x30000)
-#define GA_Left 	    (GA_Dummy + 0x0001)
-#define GA_RelRight	    (GA_Dummy + 0x0002)
-#define GA_Top		    (GA_Dummy + 0x0003)
-#define GA_RelBottom	    (GA_Dummy + 0x0004)
-#define GA_Width	    (GA_Dummy + 0x0005)
-#define GA_RelWidth	    (GA_Dummy + 0x0006)
-#define GA_Height	    (GA_Dummy + 0x0007)
-#define GA_RelHeight	    (GA_Dummy + 0x0008)
-#define GA_Text 	    (GA_Dummy + 0x0009) /* ti_Data is (UBYTE *) */
-#define GA_Image	    (GA_Dummy + 0x000A)
-#define GA_Border	    (GA_Dummy + 0x000B)
-#define GA_SelectRender     (GA_Dummy + 0x000C)
-#define GA_Highlight	    (GA_Dummy + 0x000D)
-#define GA_Disabled	    (GA_Dummy + 0x000E)
-#define GA_GZZGadget	    (GA_Dummy + 0x000F)
-#define GA_ID		    (GA_Dummy + 0x0010)
-#define GA_UserData	    (GA_Dummy + 0x0011)
-#define GA_SpecialInfo	    (GA_Dummy + 0x0012)
-#define GA_Selected	    (GA_Dummy + 0x0013)
-#define GA_EndGadget	    (GA_Dummy + 0x0014)
-#define GA_Immediate	    (GA_Dummy + 0x0015)
-#define GA_RelVerify	    (GA_Dummy + 0x0016)
-#define GA_FollowMouse	    (GA_Dummy + 0x0017)
-#define GA_RightBorder	    (GA_Dummy + 0x0018)
-#define GA_LeftBorder	    (GA_Dummy + 0x0019)
-#define GA_TopBorder	    (GA_Dummy + 0x001A)
-#define GA_BottomBorder     (GA_Dummy + 0x001B)
-#define GA_ToggleSelect     (GA_Dummy + 0x001C)
-#define GA_SysGadget	    (GA_Dummy + 0x001D) /* internal */
-#define GA_SysGType	    (GA_Dummy + 0x001E) /* internal */
-#define GA_Previous	    (GA_Dummy + 0x001F) /* Previous Gadget [I.G] */
-#define GA_Next 	    (GA_Dummy + 0x0020)
-#define GA_DrawInfo	    (GA_Dummy + 0x0021) /* Some Gadgets need this */
+#define GA_Dummy	    (TAG_USER + 0x30000)
+#define GA_Left 	    (GA_Dummy +  1) /* (LONG) Left edge */
+#define GA_RelRight	    (GA_Dummy +  2) /* (LONG) Left=Win->Width-this-1 */
+#define GA_Top		    (GA_Dummy +  3) /* (LONG) Top edge */
+#define GA_RelBottom	    (GA_Dummy +  4) /* (LONG) Top=Win->Height-this-1 */
+#define GA_Width	    (GA_Dummy +  5) /* (LONG) Width */
+#define GA_RelWidth	    (GA_Dummy +  6) /* (LONG) Width=Win->Width-this */
+#define GA_Height	    (GA_Dummy +  7) /* (LONG) Height */
+#define GA_RelHeight	    (GA_Dummy +  8)
+#define GA_Text 	    (GA_Dummy +  9) /* (UBYTE *) */
+#define GA_Image	    (GA_Dummy + 10)
+#define GA_Border	    (GA_Dummy + 11)
+#define GA_SelectRender     (GA_Dummy + 12)
+#define GA_Highlight	    (GA_Dummy + 13)
+#define GA_Disabled	    (GA_Dummy + 14)
+#define GA_GZZGadget	    (GA_Dummy + 15)
+#define GA_ID		    (GA_Dummy + 16)
+#define GA_UserData	    (GA_Dummy + 17)
+#define GA_SpecialInfo	    (GA_Dummy + 18)
+#define GA_Selected	    (GA_Dummy + 19)
+#define GA_EndGadget	    (GA_Dummy + 20)
+#define GA_Immediate	    (GA_Dummy + 21)
+#define GA_RelVerify	    (GA_Dummy + 22)
+#define GA_FollowMouse	    (GA_Dummy + 23)
+#define GA_RightBorder	    (GA_Dummy + 24)
+#define GA_LeftBorder	    (GA_Dummy + 25)
+#define GA_TopBorder	    (GA_Dummy + 26)
+#define GA_BottomBorder     (GA_Dummy + 27)
+#define GA_ToggleSelect     (GA_Dummy + 28)
+#define GA_SysGadget	    (GA_Dummy + 29) /* internal */
+#define GA_SysGType	    (GA_Dummy + 30) /* internal */
+#define GA_Previous	    (GA_Dummy + 31) /* Previous Gadget [I.G] */
+#define GA_Next 	    (GA_Dummy + 32)
+#define GA_DrawInfo	    (GA_Dummy + 33) /* Some Gadgets need this */
 
 /* You should use at most ONE of GA_Text, GA_IntuiText, and GA_LabelImage */
-#define GA_IntuiText	    (GA_Dummy + 0x0022) /* ti_Data is (struct IntuiText *) */
-#define GA_LabelImage	    (GA_Dummy + 0x0023) /* ti_Data is an image (object) */
+#define GA_IntuiText	    (GA_Dummy + 34) /* ti_Data is (struct IntuiText *) */
+#define GA_LabelImage	    (GA_Dummy + 35) /* ti_Data is an image (object) */
 
-#define GA_TabCycle	    (GA_Dummy + 0x0024) /* BOOL: Handle Tab/Shift-Tab */
-#define GA_GadgetHelp	    (GA_Dummy + 0x0025) /* Send GADGETHELP message */
-#define GA_Bounds	    (GA_Dummy + 0x0026) /* struct IBox * */
-#define GA_RelSpecial	    (GA_Dummy + 0x0027) /* Special handling in GM_LAYOUT */
+#define GA_TabCycle	    (GA_Dummy + 36) /* BOOL: Handle Tab/Shift-Tab */
+#define GA_GadgetHelp	    (GA_Dummy + 37) /* Send GADGETHELP message */
+#define GA_Bounds	    (GA_Dummy + 38) /* struct IBox * */
+#define GA_RelSpecial	    (GA_Dummy + 39) /* Special handling in GM_LAYOUT */
+#define GA_TextAttr	    (GA_Dummy + 40) /* (struct TextAttr *) */
+#define GA_ReadOnly	    (GA_Dummy + 41) /* (BOOL) */
+
 
 /* PROPGCLASS attributes */
 #define PGA_Dummy	    (TAG_USER + 0x31000)
-#define PGA_Freedom	    (PGA_Dummy + 0x0001) /* only one of FREEVERT or FREEHORIZ */
-#define PGA_Borderless	    (PGA_Dummy + 0x0002)
-#define PGA_HorizPot	    (PGA_Dummy + 0x0003)
-#define PGA_HorizBody	    (PGA_Dummy + 0x0004)
-#define PGA_VertPot	    (PGA_Dummy + 0x0005)
-#define PGA_VertBody	    (PGA_Dummy + 0x0006)
-#define PGA_Total	    (PGA_Dummy + 0x0007)
-#define PGA_Visible	    (PGA_Dummy + 0x0008)
-#define PGA_Top 	    (PGA_Dummy + 0x0009)
-#define PGA_NewLook	    (PGA_Dummy + 0x000A)
+#define PGA_Freedom	    (PGA_Dummy +  1) /* only one of FREEVERT or FREEHORIZ */
+#define PGA_Borderless	    (PGA_Dummy +  2)
+#define PGA_HorizPot	    (PGA_Dummy +  3)
+#define PGA_HorizBody	    (PGA_Dummy +  4)
+#define PGA_VertPot	    (PGA_Dummy +  5)
+#define PGA_VertBody	    (PGA_Dummy +  6)
+#define PGA_Total	    (PGA_Dummy +  7)
+#define PGA_Visible	    (PGA_Dummy +  8)
+#define PGA_Top 	    (PGA_Dummy +  9)
+#define PGA_NewLook	    (PGA_Dummy + 10)
 
 /* STRGCLASS attributes */
 #define STRINGA_Dummy	    (TAG_USER      +0x32000)
-#define STRINGA_MaxChars    (STRINGA_Dummy + 0x0001)
-#define STRINGA_Buffer	    (STRINGA_Dummy + 0x0002)
-#define STRINGA_UndoBuffer  (STRINGA_Dummy + 0x0003)
-#define STRINGA_WorkBuffer  (STRINGA_Dummy + 0x0004)
-#define STRINGA_BufferPos   (STRINGA_Dummy + 0x0005)
-#define STRINGA_DispPos     (STRINGA_Dummy + 0x0006)
-#define STRINGA_AltKeyMap   (STRINGA_Dummy + 0x0007)
-#define STRINGA_Font	    (STRINGA_Dummy + 0x0008)
-#define STRINGA_Pens	    (STRINGA_Dummy + 0x0009)
-#define STRINGA_ActivePens  (STRINGA_Dummy + 0x000A)
-#define STRINGA_EditHook    (STRINGA_Dummy + 0x000B)
-#define STRINGA_EditModes   (STRINGA_Dummy + 0x000C)
+#define STRINGA_MaxChars    (STRINGA_Dummy +  1)
+#define STRINGA_Buffer	    (STRINGA_Dummy +  2)
+#define STRINGA_UndoBuffer  (STRINGA_Dummy +  3)
+#define STRINGA_WorkBuffer  (STRINGA_Dummy +  4)
+#define STRINGA_BufferPos   (STRINGA_Dummy +  5)
+#define STRINGA_DispPos     (STRINGA_Dummy +  6)
+#define STRINGA_AltKeyMap   (STRINGA_Dummy +  7)
+#define STRINGA_Font	    (STRINGA_Dummy +  8)
+#define STRINGA_Pens	    (STRINGA_Dummy +  9)
+#define STRINGA_ActivePens  (STRINGA_Dummy + 10)
+#define STRINGA_EditHook    (STRINGA_Dummy + 11)
+#define STRINGA_EditModes   (STRINGA_Dummy + 12)
 
 /* booleans */
-#define STRINGA_ReplaceMode	(STRINGA_Dummy + 0x000D)
-#define STRINGA_FixedFieldMode	(STRINGA_Dummy + 0x000E)
-#define STRINGA_NoFilterMode	(STRINGA_Dummy + 0x000F)
-#define STRINGA_Justification	(STRINGA_Dummy + 0x0010) /* GACT_STRINGCENTER,
-							    GACT_STRINGLEFT,
-							    GACT_STRINGRIGHT */
-#define STRINGA_LongVal 	(STRINGA_Dummy + 0x0011)
-#define STRINGA_TextVal 	(STRINGA_Dummy + 0x0012)
-#define STRINGA_ExitHelp	(STRINGA_Dummy + 0x0013) /* Exit on "Help" */
+#define STRINGA_ReplaceMode	(STRINGA_Dummy + 13)
+#define STRINGA_FixedFieldMode	(STRINGA_Dummy + 14)
+#define STRINGA_NoFilterMode	(STRINGA_Dummy + 15)
+#define STRINGA_Justification	(STRINGA_Dummy + 16) /* GACT_STRINGCENTER,
+							GACT_STRINGLEFT,
+							GACT_STRINGRIGHT */
+#define STRINGA_LongVal 	(STRINGA_Dummy + 17)
+#define STRINGA_TextVal 	(STRINGA_Dummy + 18)
+#define STRINGA_ExitHelp	(STRINGA_Dummy + 19) /* Exit on "Help" */
 
 #define SG_DEFAULTMAXCHARS	(128)
 
 /* Gadget Layout related attributes	*/
 #define LAYOUTA_Dummy		(TAG_USER  + 0x38000)
-#define LAYOUTA_LayoutObj	(LAYOUTA_Dummy + 0x0001)
-#define LAYOUTA_Spacing 	(LAYOUTA_Dummy + 0x0002)
-#define LAYOUTA_Orientation	(LAYOUTA_Dummy + 0x0003)
+#define LAYOUTA_LayoutObj	(LAYOUTA_Dummy + 1)
+#define LAYOUTA_Spacing 	(LAYOUTA_Dummy + 2)
+#define LAYOUTA_Orientation	(LAYOUTA_Dummy + 3)
+#define LAYOUTA_ChildMaxWidth	(LAYOUTA_Dummy + 4)
+#define LAYOUTA_ChildMaxHeight	(LAYOUTA_Dummy + 5)
 
 /* orientation values	*/
 #define LORIENT_NONE	0
@@ -137,6 +144,7 @@
 #define GM_LAYOUT	(6)     /* re-evaluate your size based on the GadgetInfo
 				   Domain. Do NOT re-render yourself yet, you
 				   will be called when it is time... */
+#define GM_DOMAIN	(7)     /* Query the sizing requirements */
 
 /* Parameter "Messages" passed to gadget class methods  */
 
@@ -269,5 +277,24 @@ struct gpLayout
 					 */
 };
 
+
+/*
+    The GM_DOMAIN method is used to obtain the sizing requirements of an
+    object for a class before ever creating an object.
+*/
+/* GM_DOMAIN */
+struct gpDomain
+{
+    ULONG		 MethodID;
+    struct GadgetInfo	*gpd_GInfo;
+    struct RastPort	*gpd_RPort;	/* RastPort to layout for */
+    STCKLONG		 gpd_Which;
+    struct IBox 	 gpd_Domain;	/* Resulting domain */
+    struct TagItem	*gpd_Attrs;	/* Additional attributes */
+};
+
+#define GDOMAIN_MINIMUM 	(0) /* Minimum size */
+#define GDOMAIN_NOMINAL 	(1) /* Nominal size */
+#define GDOMAIN_MAXIMUM 	(2) /* Maximum size */
 
 #endif /* INTUITION_GADGETCLASS_H */
