@@ -80,7 +80,7 @@
 #endif
 
     D(bug("Call AllocMem (%d, %08lx)\n", byteSize, requirements));
-	 
+
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	goto end;
@@ -88,16 +88,16 @@
 #if MDEBUG
     /* Make room for safety walls around allocated block and an some more extra space
        for other interesting things, actually --> the size.
-       
+
        This all will look like this:
-       
+
        [MEMCHUNK_FOR_EXTRA_STUFF][BEFORE-MUNGWALL][<alloced-memory-for-user>][AFTER_MUNGWALL]
- 
+
        The first ULONG in MEMCHUNK_FOR_EXTRA_STUFF is used to save the original alloc
        size (byteSize) param. So it is possible in FreeMem to check, if freemem size
        matches allocmem size or not.
     */
- 
+
     byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
 #endif /* MDEBUG */
 

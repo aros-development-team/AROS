@@ -114,15 +114,15 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
     * this is the workaround I'm currently using:
     */
 
-    *retptr = entry(argptr,argsize,SysBase);
+//    *retptr = entry(argptr,argsize,SysBase);
 
-/*    *retptr = AROS_UFC3R(ULONG, entry,
+    *retptr = AROS_UFC3R(ULONG, entry,
 		AROS_UFCA(STRPTR, argptr, A0),
 		AROS_UFCA(ULONG, argsize, D0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6),
 		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)
 	      );
-*/
+
     StackSwap(sss);
 
     proc->pr_ReturnAddr = oldReturnAddr;
