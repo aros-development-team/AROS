@@ -819,5 +819,13 @@ are not created by classname but by the pointer returned by
 
 \section{Random unsorted ideas}
 
+The HIDD Tool Library (HIDDTL) must offer a way to make the process which
+wants to execute a method on the HIDD to wait if the HIDD is locked.
+It must also offer functions to lock/unlock a semaphore to allow the
+HIDD to block. If no locking is possible (eg. NetBSD), then there must
+be a way to query this, too.
+
+There must be a set of functions to install IRQ handlers.
+
 \end{new}
 
