@@ -129,7 +129,9 @@ AROS_UFH3S(IPTR, dispatch_fillrectclass,
 	  AROS_UFHA(Object *, obj, A2),
 	  AROS_UFHA(Msg, msg, A1)
 )
-{    
+{
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
     switch (msg->MethodID)
@@ -153,14 +155,16 @@ AROS_UFH3S(IPTR, dispatch_fillrectclass,
 	case IM_DRAWFRAME:
 	    retval = fillrect_draw(cl, obj, (struct impDraw *)msg);
 	    break;
-	    
+
 	default:
 	    retval = DoSuperMethodA(cl, obj, msg);
 	    break;
 
     } /* switch (msg->MethodID) */
-    
+
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************/

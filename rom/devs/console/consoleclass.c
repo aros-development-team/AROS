@@ -464,6 +464,8 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     switch (msg->MethodID)
@@ -487,7 +489,7 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
     case M_Console_Down:
     	console_down(cl, o, (struct P_Console_Down *)msg);
 	break;
-	
+
     case M_Console_DoCommand:
     	console_docommand(cl, o, (struct P_Console_DoCommand *)msg);
 	break;
@@ -506,7 +508,8 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 	
     }
     return (retval);
-	
+
+    AROS_USERFUNC_EXIT	
 }
 
 

@@ -12,6 +12,8 @@
 AROS_LH0(void, TrapHandler,
     struct ExecBase *, SysBase, NONE, Exec)
 {
+    AROS_LIBFUNC_INIT
+
     struct Task * task;
 
     task = FindTask (NULL);
@@ -22,4 +24,6 @@ AROS_LH0(void, TrapHandler,
 	    task->tc_Node.ln_Name
 	    : "-- unknown task --"
     );
+
+    AROS_LIBFUNC_EXIT
 } /* TrapHandler */

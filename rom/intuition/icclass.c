@@ -53,6 +53,8 @@ AROS_UFH3S(IPTR, dispatch_icclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct ICData	*ic = NULL;
     IPTR 		retval = 0UL;
 
@@ -170,7 +172,8 @@ AROS_UFH3S(IPTR, dispatch_icclass,
     } /* switch */
 
     return retval;
-    
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_icclass */
 
 #undef IntuitionBase

@@ -85,6 +85,8 @@ char *const copyrights[] =
 
 ******************************************************************************/
 {
+    AROS_LIBFUNC_INIT
+
     struct Library *lib;
     struct Resident *res;
 
@@ -111,4 +113,5 @@ char *const copyrights[] =
     */
     return NULL;
 
+    AROS_LIBFUNC_EXIT
 } /* TaggedOpenLibrary */

@@ -74,6 +74,8 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
     AROS_UFHA(struct ASLLVDrawMsg *,	msg,	        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     if (msg->lvdm_MethodID == LV_DRAW)
@@ -194,6 +196,8 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
      }
      	
      return retval;
+
+     AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
@@ -208,6 +212,8 @@ AROS_UFH3(VOID, FRTagHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct TagItem 	*tag, *tstate;
     struct IntFileReq 	*ifreq;
     IPTR		tidata;
@@ -369,6 +375,8 @@ AROS_UFH3(VOID, FRTagHook,
     }
     
     ReturnVoid("FRTagHook");
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
@@ -379,6 +387,8 @@ AROS_UFH3(ULONG, FRGadgetryHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     ULONG retval;
 
     switch (ld->ld_Command)
@@ -406,6 +416,8 @@ AROS_UFH3(ULONG, FRGadgetryHook,
     }
 
     return (retval);
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/

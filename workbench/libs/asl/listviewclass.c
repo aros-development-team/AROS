@@ -92,6 +92,8 @@ AROS_UFH3(IPTR, ASLLVRenderHook,
     AROS_UFHA(struct ASLLVDrawMsg *,	msg,	        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     if (msg->lvdm_MethodID == LV_DRAW)
@@ -115,7 +117,7 @@ AROS_UFH3(IPTR, ASLLVRenderHook,
      	    case ASLLVR_SELECTED:
 		erasepen = FILLPEN;
 		textpen = FILLTEXTPEN;
-		
+
 		/* Fall through */
 		
      	    case ASLLVR_NORMAL:
@@ -156,6 +158,8 @@ AROS_UFH3(IPTR, ASLLVRenderHook,
      }
      	
      return retval;
+
+     AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/
@@ -998,6 +1002,8 @@ AROS_UFH3S(IPTR, dispatch_asllistviewclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
     switch (msg->MethodID)
@@ -1042,6 +1048,8 @@ AROS_UFH3S(IPTR, dispatch_asllistviewclass,
     } /* switch (msg->MethodID) */
      
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/

@@ -113,6 +113,8 @@ AROS_UFH5S(void, IntServer,
     AROS_UFHA(APTR, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     struct Interrupt * irq;
 
     ForeachNode(intList, irq)
@@ -125,6 +127,8 @@ AROS_UFH5S(void, IntServer,
 	))
 	    break;
     }
+
+    AROS_USERFUNC_EXIT
 }
 
 AROS_UFH4(int, Dispatcher,
@@ -136,9 +140,11 @@ AROS_UFH4(int, Dispatcher,
     /* Check if a task switch is necessary */
     /* 1. There has to be another task in the ready-list */
     /* 2. The first task in the ready list hast to have the
-          same or higher priority than the currently active task */ 
+          same or higher priority than the currently active task */
 
-    if( SysBase->TaskReady.lh_Head->ln_Succ != NULL &&  
+    AROS_USERFUNC_INIT
+
+    if( SysBase->TaskReady.lh_Head->ln_Succ != NULL &&
         ((BYTE)SysBase->ThisTask->tc_Node.ln_Pri <=
 	 (BYTE)((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
 	)
@@ -161,16 +167,20 @@ AROS_UFH4(int, Dispatcher,
 
     /* This make the int handler continue with the rest of the ints. */
     return 0;
+
+    AROS_USERFUNC_EXIT
 } /* Dispatcher */
 
 AROS_UFH1(void, idleCount,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
     /* This keeps track of how many times the idle task becomes active.
 	Apart from also testing the tc_Launch vector, it also keeps a
 	count of how many times we've gone idle since startup.
     */
     SysBase->IdleCount++;
+    AROS_USERFUNC_EXIT
 }
 
 extern ULONG SoftIntDispatch();

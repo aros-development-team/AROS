@@ -63,6 +63,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   LONG * Hash = GfxBase -> hash_table;
   ULONG Index = CalcHashIndex((ULONG)pointer);
 
@@ -82,4 +84,6 @@
           node -> xln_Pred = (struct Node *)&Hash[Index];
           Hash[Index] = (LONG)node;
         Permit();
+
+  AROS_LIBFUNC_EXIT
 } /* GfxAssociate */

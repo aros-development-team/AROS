@@ -454,10 +454,12 @@ AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
 	   AROS_UFHA(Msg, msg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-#endif
 {
+#endif
     IPTR retval = 0;
 
     switch(msg->MethodID)
@@ -494,6 +496,9 @@ IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, re
     } /* switch(msg->MethodID) */
     
     return retval;
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 /**************************************************************************************************/

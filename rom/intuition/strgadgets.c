@@ -894,6 +894,8 @@ AROS_UFH3(ULONG, GlobalEditFunc,
     AROS_UFHA(ULONG *, 			command,	A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     ULONG retcode = 0;
         
     switch (*command)
@@ -908,6 +910,8 @@ AROS_UFH3(ULONG, GlobalEditFunc,
     }
     
     return retcode;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/

@@ -33,6 +33,8 @@ AROS_UFH4(ULONG, VBlankInt,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
     )
 {
+    AROS_USERFUNC_INIT
+
     struct timerequest *tr, *next;
 
     /*
@@ -108,5 +110,6 @@ AROS_UFH4(ULONG, VBlankInt,
     }
 
     return 0;
+    AROS_USERFUNC_EXIT
 }
 	

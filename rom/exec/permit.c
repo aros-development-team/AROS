@@ -56,11 +56,12 @@
     HISTORY
 
 ******************************************************************************/
-#else
-void _Exec_Permit(struct ExecBase * SysBase)
-#endif
 {
     AROS_LIBFUNC_INIT
+#else
+void _Exec_Permit(struct ExecBase * SysBase)
+{
+#endif
 
     /*
 	Task switches are allowed again, if a switch is pending, we
@@ -86,5 +87,7 @@ void _Exec_Permit(struct ExecBase * SysBase)
     }
 #endif
 
+#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
+#endif
 } /* Permit() */

@@ -384,6 +384,8 @@ AROS_UFH3S(IPTR, dispatch_mxclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct MXData   *data;
     IPTR    	    retval = 0UL;
 
@@ -427,6 +429,8 @@ AROS_UFH3S(IPTR, dispatch_mxclass,
     }
 
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/

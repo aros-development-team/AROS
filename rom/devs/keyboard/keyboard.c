@@ -764,6 +764,8 @@ AROS_UFH3(VOID, kbdSendQueuedEvents,
     AROS_UFHA(APTR, thisfunc, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     /* Broadcast keys */
     struct IORequest *ioreq, *nextnode;
     struct List *pendingList = (struct List *)&KBBase->kb_PendingQueue;
@@ -787,6 +789,7 @@ AROS_UFH3(VOID, kbdSendQueuedEvents,
 
     if (IsListEmpty(pendingList)) kbUn->kbu_flags &= ~KBUF_PENDING;
 
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -287,6 +287,8 @@ AROS_UFH3S(IPTR, dispatch_aslbuttonclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
 
     switch (msg->MethodID)
@@ -310,14 +312,16 @@ AROS_UFH3S(IPTR, dispatch_aslbuttonclass,
 	case GM_LAYOUT:
 	    retval = aslbutton_layout(cl, obj, (struct gpLayout *)msg);
 	    break;
-	    
+
 	default:
 	    retval = DoSuperMethodA(cl, obj, msg);
 	    break;
 
     } /* switch (msg->MethodID) */
-    
+
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /***********************************************************************************/

@@ -58,6 +58,8 @@
 
 ******************************************************************************/
 {
+  AROS_LIBFUNC_INIT
+
   /* this function uses the queue bsblthd (bsblttl) */
   
   /* I am accessing a public structure and there's no semaphore...*/
@@ -87,9 +89,11 @@
   {
     /* queue it at the end */
     GfxBase->bsblttl->n = bn;
-    GfxBase->bsblttl    = bn;      
+    GfxBase->bsblttl    = bn;
   }
-  
+
   Permit();
+
+  AROS_LIBFUNC_EXIT
   
 } /* QBSBlit */

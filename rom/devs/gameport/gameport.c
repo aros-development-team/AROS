@@ -195,10 +195,14 @@ AROS_UFH4(ULONG, gpVBlank,
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, mySysBase, A6))
 { 
+    AROS_USERFUNC_INIT
+
     if((*(ULONG *)data) < ~0)
 	(*(ULONG *)data)++;
-    
+
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -627,6 +631,8 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
     AROS_UFHA(APTR, thisfunc, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     /* Broadcast keys */
     struct IORequest 	*ioreq, *nextnode;
     struct List 	*pendingList;
@@ -650,8 +656,10 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
 	
 	if (!moreevents) break;
     }
-    
+
     if (IsListEmpty(pendingList)) gpUn->gpu_flags &= ~GBUF_PENDING;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

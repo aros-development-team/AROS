@@ -122,8 +122,12 @@ AROS_UFH5 (void, SigIO_IntServer,
     AROS_UFHA (struct ExecBase  *,SysBase,A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct uio_data * ud = (struct uio_data *) intList;
     Signal (ud -> ud_WaitForIO, SIGBREAKF_CTRL_C);
+
+    AROS_USERFUNC_EXIT
 }
 
 /******************
@@ -497,6 +501,8 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct Library  * OOPBase;
     struct OOP_IClass * cl;
     struct uio_data * ud;
@@ -520,7 +526,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     	{ (IPTR (*)())unixio_abortasyncio,moHidd_UnixIO_AbortAsyncIO	},
     	{ NULL, 0UL }
     };
-    
+
     struct OOP_InterfaceDescr ifdescr[] =
     {
     	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
@@ -656,6 +662,8 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
         }
     }
     return NULL;
+
+    AROS_USERFUNC_EXIT
 }
 
 

@@ -599,6 +599,8 @@ AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     
     switch(msg->MethodID)
@@ -643,7 +645,8 @@ AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
     } /* switch */
 
     return (retval);
-    
+
+    AROS_USERFUNC_EXIT
 }  /* dispatch_gradientsliderclass */
 
 

@@ -924,10 +924,10 @@ AROS_UFH2 (void, puttostr,
 	AROS_UFHA(STRPTR *,strPtrPtr,A3)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     *(*strPtrPtr)= chr;
     (*strPtrPtr) ++;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
@@ -994,6 +994,8 @@ AROS_UFH3(ULONG, StringEditFunc,
     AROS_UFHA(struct SGWork *,		sgw,		A2),
     AROS_UFHA(ULONG *, 			command,	A1))
 {
+    AROS_USERFUNC_INIT
+
     ULONG retcode = 0;
         
     switch(*command)
@@ -1021,10 +1023,12 @@ AROS_UFH3(ULONG, StringEditFunc,
 		    break;
 	    }
     	    break;
-    
+
     }
-    
+
     return retcode;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/

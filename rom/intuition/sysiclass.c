@@ -1120,6 +1120,8 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
     AROS_UFHA(Msg,      msg, A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval = 0UL;
     struct SysIData *data;
 
@@ -1152,6 +1154,8 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
     }
 
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /**************************************************************************************************/

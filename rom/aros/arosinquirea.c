@@ -81,6 +81,8 @@ IPTR kickbase(void);
 
 ******************************************************************************/
 {
+    AROS_LIBFUNC_INIT
+
     struct TagItem *tag;
     ULONG ret = 0;
 
@@ -162,6 +164,7 @@ IPTR kickbase(void);
     }
 
     return ret;
+    AROS_LIBFUNC_EXIT
 } /* ArosInquireA */
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)

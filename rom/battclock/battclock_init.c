@@ -67,6 +67,8 @@ AROS_UFH3(struct BattClockBase *, AROS_SLIB_ENTRY(init,BASENAME),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
     struct BattClockBase * BattClockBase = NULL;
     
@@ -85,4 +87,6 @@ AROS_UFH3(struct BattClockBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	AddResource(BattClockBase);
     }
     return BattClockBase;
+
+    AROS_USERFUNC_EXIT
 }

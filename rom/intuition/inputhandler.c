@@ -192,6 +192,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     AROS_UFHA(struct IIHData *,         iihdata,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct InputEvent 	    *ie, *orig_ie, stackie;
     struct Gadget   	    *gadget = iihdata->ActiveGadget;
     struct IntuitionBase    *IntuitionBase = iihdata->IntuitionBase;
@@ -359,7 +361,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 
 	    } /* if (new_active_window) */
-	
+
 	} /* if (!MENUS_ACTIVE) */
 	
 	if (!swallow_event) switch (ie->ie_Class)
@@ -407,7 +409,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 				new_gadget = TRUE;
 			    }
-			    
+
 			} /* if (!gadget) */
 
 			if (gadget)
@@ -1152,6 +1154,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
 
     return iihdata->ReturnInputEvent;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

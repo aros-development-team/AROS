@@ -126,6 +126,8 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
 ******************************************************************************/
 {
+    AROS_LIBFUNC_INIT
+
     /* Protect env */
     Disable ();
 
@@ -212,6 +214,8 @@ struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
     /* This is on the new stack */
     Enable ();
+
+    AROS_LIBFUNC_EXIT
 } /* StackSwap */
 
 #ifndef NO_MAIN

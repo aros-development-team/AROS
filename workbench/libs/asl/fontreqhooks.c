@@ -74,6 +74,8 @@ AROS_UFH3(IPTR, SizeListviewRenderFunc,
     AROS_UFHA(struct ASLLVDrawMsg *,	msg,	        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
 
     if (msg->lvdm_MethodID == LV_DRAW)
@@ -97,7 +99,7 @@ AROS_UFH3(IPTR, SizeListviewRenderFunc,
      	    case ASLLVR_SELECTED:
 		erasepen = FILLPEN;
 		textpen = FILLTEXTPEN;
-		
+
 		/* Fall through */
 		
      	    case ASLLVR_NORMAL:
@@ -141,6 +143,8 @@ AROS_UFH3(IPTR, SizeListviewRenderFunc,
      }
      	
      return retval;
+
+     AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
@@ -155,9 +159,11 @@ AROS_UFH3(VOID, FOTagHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     struct TagItem 	*tag, *tstate;
     struct IntFontReq 	*iforeq;
-    
+
     EnterFunc(bug("FOTagHook(hook=%p, pta=%p)\n", hook, pta));
 
     iforeq = (struct IntFontReq *)pta->pta_IntReq;
@@ -185,7 +191,7 @@ AROS_UFH3(VOID, FOTagHook,
 	    case ASLFO_InitialFlags:
 	    	iforeq->ifo_TextAttr.ta_Flags = (UBYTE)tidata;
 		break;
-	
+
 	    case ASLFO_InitialFrontPen:
 	    	iforeq->ifo_FrontPen = (UBYTE)tidata;
 		break;
@@ -280,8 +286,10 @@ AROS_UFH3(VOID, FOTagHook,
 	} /* switch (tag->ti_Tag) */
 
     } /* while ((tag = NextTagItem(&tstate)) != 0) */
-	
+
     ReturnVoid("FOTagHook");
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
@@ -292,6 +300,8 @@ AROS_UFH3(ULONG, FOGadgetryHook,
     AROS_UFHA(struct AslBase_intern *,  AslBase,        A1)
 )
 {
+    AROS_USERFUNC_INIT
+
     ULONG retval;
 
     switch (ld->ld_Command)
@@ -323,6 +333,8 @@ AROS_UFH3(ULONG, FOGadgetryHook,
     }
 
     return (retval);
+
+    AROS_USERFUNC_EXIT
 }
 
 /*****************************************************************************************/
