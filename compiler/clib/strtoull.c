@@ -119,6 +119,7 @@
         {
             if (*str == '0') /* Base 8 or 16 */
             {
+                str++;
                 if (*str == 'x' || *str == 'X')
                 {
                     base = 16;
@@ -126,8 +127,6 @@
                 }
                 else
                     base = 8;
-
-                str++;
             }
             else /* Any other digit: Base 10 (decimal) */
                 base = 10;
