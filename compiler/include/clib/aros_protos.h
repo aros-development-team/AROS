@@ -12,11 +12,19 @@
 #   include <exec/types.h>
 #endif
 
+#ifdef DEBUG_FreeMem
+#   if DEBUG_FreeMem
+#	undef FreeMem
+#	define FreeMem NastyFreeMem
+#   endif
+#endif
+
 /*
     Prototypes
 */
 ULONG CalcChecksum (APTR mem, ULONG size);
 int   STRCMP	   (const UBYTE *, const UBYTE *);
 int   kprintf	   (const UBYTE *, ...);
+void  NastyFreeMem (void *, ULONG);
 
 #endif /* CLIB_AROS_PROTOS_H */
