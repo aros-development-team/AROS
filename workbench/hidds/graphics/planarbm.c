@@ -122,16 +122,19 @@ static VOID planarbm_dispose(Class *cl, Object *o, Msg msg)
     
     data = INST_DATA(cl, o);
     
-    if (NULL != data->planes)
+    if (data->planes_alloced)
     {
-    	for (i = 0; i < data->depth; i ++)
+	if (NULL != data->planes)
 	{
-	    if (NULL != data->planes[i])
+    	    for (i = 0; i < data->depth; i ++)
 	    {
-		FreeVec(data->planes[i]);
+		if (NULL != data->planes[i])
+		{
+		    FreeVec(data->planes[i]);
+		}
 	    }
+	    FreeVec(data->planes);
 	}
-	FreeVec(data->planes);
     }
     
     DoSuperMethod(cl, o, msg);
@@ -161,15 +164,18 @@ static VOID planarbm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
 
     for(i = 0; i < data->depth; i++)
     {
-	if(msg->pixel & mask)
+    	if ((*plane != NULL) && (*plane != (UBYTE *)-1))
 	{
-	    *(*plane + offset) = *(*plane + offset) | pixel;
-	}
-	else
-	{
-	    *(*plane + offset) = *(*plane + offset) & notpixel;
-	}
-
+	    if(msg->pixel & mask)
+	    {
+		*(*plane + offset) = *(*plane + offset) | pixel;
+	    }
+	    else
+	    {
+		*(*plane + offset) = *(*plane + offset) & notpixel;
+	    }
+        }
+	
 	mask = mask << 1;
 	plane++;
     }
@@ -195,9 +201,15 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 
     for(i = 0; i < data->depth; i++)
     {
-	if(*(*plane + offset) & pixel)
+        if (*plane == (UBYTE *)-1)
 	{
 	    retval = retval | (1 << i);
+	} else if (*plane != NULL)
+	{
+	    if(*(*plane + offset) & pixel)
+	    {
+		retval = retval | (1 << i);
+	    }
 	}
 	plane++;
     }
