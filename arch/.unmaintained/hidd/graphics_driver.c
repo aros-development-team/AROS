@@ -13,6 +13,7 @@
 #include <string.h>
 #include <exec/memory.h>
 #include <exec/semaphores.h>
+#include <clib/macros.h>
 
 #include <proto/exec.h>
 #include <graphics/rastport.h>
@@ -171,7 +172,6 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     BOOL retval = TRUE;
     struct gfx_driverdata * dd, * old;
     
-    EnterFunc(bug("CorrectDriverData(rp=%p)\n", rp));
 
     
     if (!rp)
@@ -195,7 +195,7 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 
 	}
     }
-    ReturnBool("CorrectDriverData", retval);
+    return retval;
 }
 
 BOOL init_romfonts(struct GfxBase *GfxBase)
@@ -402,32 +402,230 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     CorrectDriverData (rp, GfxBase);
 }
 
+/* Return the intersection area of a and b in intersect.
+ * Return value is TRUE if a and b have such an area,  
+ * else FALSE - the coordinates in intersect are not     
+ * changed in this case.
+ */
+static BOOL andrectrect(struct Rectangle* a, struct Rectangle* b, struct Rectangle* intersect)
+{
+    if (a->MinX <= b->MaxX) {
+	if (a->MinY <= b->MaxY) {
+	  if (a->MaxX >= b->MinX) {
+		if (a->MaxY >= b->MinY) {
+		    intersect->MinX = MAX(a->MinX, b->MinX);
+		    intersect->MinY = MAX(a->MinY, b->MinY);
+		    intersect->MaxX = MIN(a->MaxX, b->MaxX);
+		    intersect->MaxY = MIN(a->MaxY, b->MaxY);
+		    return TRUE;
+		}
+	    }
+	}
+    }
+    return FALSE;
+} /* andrectrect() */
+
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
+    struct gfx_driverdata *dd;
+    ULONG width, height;
+    struct Layer *L = rp->Layer;
+    struct BitMap *bm = rp->BitMap;
+    
     EnterFunc(bug("driver_RectFill(%d, %d, %d, %d)\n", x1, y1, x2, y2));
-    if (CorrectDriverData(rp, GfxBase))
-    {
-    	/* Do the clipping slow but simple, WritePixel() which will take
-	care of it for us. */
-	LONG y;
-	   
-	for (y = y1; y <= y2; y ++)
-	{
-	    LONG x;
-	    
-	    for (x = x1; x <= x2; x ++)
-	    {
-	        WritePixel(rp, x, y);
-	    }
+    if (!CorrectDriverData(rp, GfxBase))
+    	return;
+	
+    dd = GetDriverData(rp);
 
-	}
+    width  = GetBitMapAttr(bm, BMA_WIDTH);
+    height = GetBitMapAttr(bm, BMA_HEIGHT);
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen */
+	
+	/* Clip against bitmap bounds  */
+	if (x1 > width || y1 > height || x2 < 0 || y2 < 0)
+	    return; /* Makes no sense */
+	    
+	if (x1 < 0)  x1 = 0;
+	if (y1 < 0)  y1 = 0;
+
+	if (x2 > width)  x2 = width;
+	if (y2 > height) y2 = height; 
+
+	HIDD_GC_FillRect( dd->dd_GC, x1, y1, x2, y2 );
+	
+	
     }
+    else
+    {
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle tofill, intersect;
+	
+	tofill.MinX = x1 + xrel;
+	tofill.MinY = y1 + yrel;
+	tofill.MaxX = x2 + xrel;
+	tofill.MaxY = y2 + yrel;
+	
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to rectfill ? */
+	    if (andrectrect(&CR->bounds, &tofill, &intersect))
+	    {
+	        if (NULL == CR->lobs)
+		{
+		    D(bug("non-obscure cliprect, intersect= (%d,%d,%d,%d)\n"
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    ));
+		    
+		    /* Cliprect not obscured, so we may render directly into the display */
+		    HIDD_GC_FillRect(dd->dd_GC
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    );
+		}
+		else
+		{
+		    /* Render into offscreen cliprect bitmap */
+		    
+		    
+		}
+	    }
+	    CR = CR->Next;
+	}
+	
+
+    }
+    
+	
+	
     ReturnVoid("driver_RectFill");
 }
 
+void BltBitMapRastPort (struct BitMap   * srcBitMap,
+	LONG xSrc, LONG ySrc,
+	struct RastPort * destRP,
+	LONG xDest, LONG yDest,
+	LONG xSize, LONG ySize,
+	ULONG minterm
+)
+{
+    struct gfx_driverdata *dd;
+    ULONG width, height;
+    struct Layer *L = destRP->Layer;
+    struct BitMap *bm = destRP->BitMap;
+    
+    EnterFunc(bug("driver_BltBitMapRastPort(%d %d %d, %d, %d, %d)\n"
+    	, xSrc, ySrc, xDest, yDest, xSize, ySize));
+	
+    if (!CorrectDriverData(destRP, GfxBase))
+    	return;
+	
+    dd = GetDriverData(destRP);
+
+    width  = GetBitMapAttr(bm, BMA_WIDTH);
+    height = GetBitMapAttr(bm, BMA_HEIGHT);
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen */
+	
+	/* BltBitMap() will do clipping against bitmap bounds for us  */
+
+	BltBitMap(srcBitMap
+		, xSrc, ySrc
+		, bm
+		, xDest, yDest
+		, xSize, ySize
+		, minterm, 0xFF	, NULL
+	);
+	
+	
+    }
+    else
+    {
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle toblit, intersect;
+	
+	toblit.MinX = xDest + xrel;
+	toblit.MinY = yDest + yrel;
+	toblit.MaxX = (xDest + xSize - 1) + xrel;
+	toblit.MaxY = (yDest + ySize - 1) + yrel;
+	
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ? */
+	    if (andrectrect(&CR->bounds, &toblit, &intersect))
+	    {
+	        if (NULL == CR->lobs)
+		{
+		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    ));
+		    
+		    /* Cliprect not obscured, so we may render directly into the display */
+		    BltBitMap(srcBitMap
+		    	, xSrc, ySrc
+			, bm
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, minterm, 0xFF, NULL
+		    );
+		}
+		else
+		{
+		    /* Render into offscreen cliprect bitmap */
+		    BltBitMap(srcBitMap
+		    	, xSrc, ySrc
+			, CR->BitMap
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, minterm, 0xFF, NULL
+		    );
+		    
+		    
+		}
+	    }
+	    CR = CR->Next;
+	}
+	
+
+    }
+	
+	
+    ReturnVoid("driver_BltBitMapRastPort");
+}
+
 #define SWAP(a,b)       { a ^= b; b ^= a; a ^= b; }
-#define ABS(x)          ((x) < 0 ? -(x) : (x))
 
 void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
@@ -450,10 +648,11 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 {
 
 #warning Does not handle color textfonts nor drawingmodes
-    UWORD numchars;
-    WORD  start_y;
+    WORD  render_y;
     struct TextFont *tf;
     WORD current_x;
+    struct BitMap bm;
+    
     if (!CorrectDriverData (rp, GfxBase))
     	return;
 	
@@ -461,94 +660,65 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     tf = rp->Font;
 
     /* Render along font's baseline */
-    start_y = rp->cp_y - tf->tf_Baseline;
+    render_y = rp->cp_y - tf->tf_Baseline;
     current_x = rp->cp_x;
     
-    numchars = NUMCHARS(tf);
+    /* Fill in bitmap with info about font */
+    memset(&bm,0, sizeof(struct BitMap));
+    bm.BytesPerRow = tf->tf_Modulo;
+    bm.Rows	= tf->tf_YSize;
+    bm.Flags = 0;
+    bm.Pad = 0;
+    if (tf->tf_Style & FSF_COLORFONT)
+    {
+    	UBYTE plane;
+	for (plane = 0; plane < CTF(tf)->ctf_Depth; plane ++)
+	{
+	    bm.Planes[plane] = CTF(tf)->ctf_CharData[plane];
+	    bm.Depth = CTF(tf)->ctf_Depth;
+	}
+	
+    }
+    else
+    {
+        bm.Planes[0] = tf->tf_CharData;
+	bm.Depth = 1;
+    }
+    
+    
     while ( len -- )
     {
-	UWORD row, bitno, width;
 	ULONG charloc;
-	UBYTE idx; /* index into font tables */
-	WORD glyph_y;
-	UWORD modulo;
-	WORD next_x;
+	WORD render_x;
+	ULONG idx;
 	
-
-	
-	if ( *string < tf->tf_LoChar || *string > tf->tf_HiChar)
-	{
-	    idx = numchars - 1; /* Last glyph is the default glyph */
-	}
-	else
-	{
-	    idx = *string - tf->tf_LoChar;
-	}
-	
+	idx = *string - tf->tf_LoChar;
 	charloc = ((ULONG *)tf->tf_CharLoc)[idx];
-	modulo = 0;
+
 	
 	if (tf->tf_Flags & FPF_PROPORTIONAL)
 	{
-	    /* Use kerning values to advance correctly */ 
-	    /* !!!! Depending on drawmmode one might have to render into
-	       the area between the old and new current_x */
-	    next_x += ((WORD *)tf->tf_CharKern)[idx];
+	    render_x = current_x + ((WORD *)tf->tf_CharKern)[idx];
 	}
 	else
-	    next_x = current_x; /* monospace */
-	
-	/* These nested loops render the glyph using WritePixel().
-	   They may/should later be replaced with BltMitMap() or similar
-	*/
-	for (glyph_y = start_y, row = 0; row < tf->tf_YSize; row ++, glyph_y ++)
+	    render_x = current_x;	/* Monospace */
+	    
+	if (tf->tf_Style & FSF_COLORFONT)
 	{
-	    WORD glyph_x;
-	    bitno = charloc >> 16;
-	    width = charloc & 0xFFFF;
-	    
-	    for (glyph_x = current_x; width --; glyph_x ++)
-	    {
-	        /* This iftest can be moved out of the for-loops for speed
-		  (speed/code size tradeoff) */
-		  
-	        if (tf->tf_Style & FSF_COLORFONT)
-		{
-		    UWORD plane;
-		    for (plane = 0; plane < CTF(tf)->ctf_Depth; plane ++)
-		    {
-		    	UBYTE *charptr = (UBYTE *)CTF(tf)->ctf_CharData[plane];
-			ULONG pen = 0;
-		    	charptr += modulo;
-		    
-	    	    	if ( charptr[bitno >> 3] & (1 << ((~bitno) & 0x07)) )
-		    	{
-			    /* Do something clever here */
-		    	}
-		        
-		    }
-		    
-		    /* SetAPen(rp, something); */
-		    /* SetBPen(rp, something); */
-		    /* WritePixel(rp, glyph_x, glyph_y); */
-		    
-		}
-		else
-		{
-		    UBYTE *charptr = (UBYTE *)tf->tf_CharData;
-		    charptr += modulo;
-		    
-	    	    if ( charptr[bitno >> 3] & (1 << ((~bitno) & 0x07)) )
-		    {
-		    	WritePixel(rp, glyph_x, glyph_y);
-		    }
-		}
-		bitno ++;
+	}
+	else
+	{
+	    BltBitMapRastPort(&bm
+	    	, charloc >> 16 /* x */
+		, 0	/* y */
+		, rp
+		, render_x, render_y
+		, charloc & 0xFFFF /* with of glyph */
+		, tf->tf_YSize
+		, 0xC0 /* Plain copy for now */
 		
-	    } /* for (each x) */
-	    modulo += tf->tf_Modulo;
-	    
-	} /* for (each y) */
+	    ); 
+	}
 	
 	if (tf->tf_Flags & FPF_PROPORTIONAL)
 	    current_x += ((WORD *)tf->tf_CharSpace)[idx];
@@ -688,6 +858,7 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
    ReturnVoid("driver_Draw");
 }
 
+
 ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
@@ -770,6 +941,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
         LONG Offset;
         if (NULL == CR->lobs)
         {
+	  
           i = (y + YRel) * Width + 
              ((x + XRel) >> 3);
           Mask = (1 << (7-((x + XRel) & 0x07)));
@@ -791,6 +963,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
             Width = (Width >> 3);
            
           Offset = CR->bounds.MinX & 0x0f;
+
           
           i = (y - (CR->bounds.MinY - YRel)) * Width + 
              ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
@@ -863,9 +1036,8 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
   BYTE * Plane; 
   struct gfx_driverdata *dd;
   
-  EnterFunc(bug("driver_WritePixel(rp=%p, x=%d, y=%d)\n", rp, x, y));
   if(!CorrectDriverData (rp, GfxBase))
-	ReturnInt("driver_WritePixel", LONG,  ((ULONG)-1L));
+	return  -1L;
 	
   dd = GetDriverData(rp);
 
@@ -882,7 +1054,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         y < 0 || y  > Height)
     {
       /* no, it's not ! I refuse to do anything :-))  */
-	ReturnInt("driver_WritePixel", LONG,  ((ULONG)-1L));
+	return -1L;
     }
   }
 
@@ -905,8 +1077,6 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     WORD YRel = L->bounds.MinY;
     WORD XRel = L->bounds.MinX;
     
-    D(bug("Layer coords: maxx=%d, maxy=%d, minx=%d, miny=%d\n",
-    	L->bounds.MaxX, L->bounds.MaxY, XRel, YRel)); 
 
 
     /* Is this pixel inside the layer ?? */
@@ -914,7 +1084,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         y > (L->bounds.MaxY - YRel + 1)   )
     {
       /* ah, no it is not. So we exit */
-	ReturnInt("driver_WritePixel(not inside layer)", LONG,  ((ULONG)-1L));
+	return -1L;
     }
     
     /* No one may interrupt me while I'm working with this layer */
@@ -1047,7 +1217,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     UnlockLayer(L);
 */
 
-  ReturnInt("driver_WritePixel(at bottom)", LONG,  0);
+  return 0;
 
 }
 
@@ -1402,8 +1572,8 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    
 	    /* Store it in plane array */
 	    BM_OBJ(nbm) = bm_obj;
-	    nbm->Rows  = ((sizex - 1) >> 3) + 1;
-	    nbm->BytesPerRow = sizey;
+	    nbm->Rows   = sizey;
+	    nbm->BytesPerRow = ((sizex - 1) >> 3) + 1;
 	    nbm->Depth  = depth;
 	    nbm->Flags  = flags;
 	    
@@ -1425,6 +1595,103 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     }
 
     ReturnPtr("driver_AllocBitMap", struct BitMap *, NULL);
+}
+
+static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen)
+{
+    LONG modulo;
+    LONG num_whole;
+    UBYTE plane;
+    UBYTE i;
+    UBYTE pre_pixels_to_set,
+    	  post_pixels_to_set; /* pixels to clear in pre and post byte */
+ 
+    UBYTE prebyte_mask, postbyte_mask;
+    
+    pre_pixels_to_set  = 7 - (x_start & 0x07);
+    post_pixels_to_set = (x_start + xsize - 1) & 0x07;
+    num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
+
+    num_whole >>= 3; /* number of bytes */
+
+    modulo = bm->BytesPerRow - num_whole;
+    
+    if (pre_pixels_to_set == 0)
+    {
+        num_whole --;
+	prebyte_mask = 0xFF;
+    }
+    else
+    {
+	/* Say we want to clear two pixels in last byte. We want the mask
+	MSB 00000011 LSB
+	*/
+	prebyte_mask = 0;
+	for (i = 0; i < pre_pixels_to_set; i ++ )
+	{
+	    prebyte_mask <<= 1;
+    	    prebyte_mask |=  1;
+    	}
+	modulo ++;
+    }
+    
+    if (post_pixels_to_set == 0)
+    {
+        num_whole --;
+	prebyte_mask = 0xFF;
+    }
+    else
+    {
+	/* Say we want to set two pixels in last byte. We want the mask
+	MSB 11000000 LSB
+	*/
+	postbyte_mask = 0;
+	for (i = 0; i < post_pixels_to_set; i ++ )
+	{
+	    postbyte_mask <<= 1;
+    	    postbyte_mask |=  1;
+	}
+    	postbyte_mask <<= (7 - post_pixels_to_set);
+	modulo ++;
+    }
+    
+    
+    for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
+    {
+    
+        LONG y;
+	UBYTE pixvals;
+    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + (x_start >> 3);
+	
+	/* Set or clear current bit of val ? */
+	if (pen & (1L << plane))
+	    pixvals = 0xFF;
+	else
+	    pixvals = 0x00;
+	
+	/* Set the pre and postmask */
+	prebyte_mask  = (pixvals & prebyte_mask)  | (~prebyte_mask);  
+	postbyte_mask = (pixvals & postbyte_mask) | (~prebyte_mask);
+	
+	for (y = y_start; y < ysize; y ++)
+	{
+	    LONG x;
+	    /* Clear the first nonwhole byte */
+	    *curbyte ++ &= prebyte_mask;
+	    
+	    for (x = 0; x < num_whole; x ++)
+	    {
+	        *curbyte ++ = pixvals;
+	    }
+	    /* Clear the last nonwhole byte */
+	    *curbyte++ &= postbyte_mask;
+	    
+	    curbyte += modulo;
+	}
+	
+    }
+    return;
+    
 }
 
 static VOID clearbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize)
@@ -1497,7 +1764,7 @@ static VOID clearbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG 
 	{
 	    LONG x;
 	    /* Clear the first nonwhole byte */
-	    *curbyte ++ = prebyte_mask;
+	    *curbyte ++ &= prebyte_mask;
 	    
 	    for (x = 0; x < num_whole; x ++)
 	    {
@@ -1579,9 +1846,9 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     
     EnterFunc(bug("driver_BltBitMap()\n"));
 
-/*    kprintf("driver_BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %d, %d)\n",
+    kprintf("driver_BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %d, %d)\n",
     	srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm, mask);
-*/    
+    
     /* The posibble cases:
 	1) both src and dest is HIDD bitmaps
 	2) src is HIDD bitmap, dest is amigabitmap.
@@ -1603,8 +1870,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	    switch (minterm)
 	    {
 	    	case 0x00: /* Clear dest */
-/* kprintf("clear HIDD bitmap\n");
-*/
+ kprintf("clear HIDD bitmap\n");
+
 		    gc_tags[0].ti_Data = 0L;
 		    SetAttrs(dst_gc, gc_tags);
 		    
@@ -1617,8 +1884,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 		    break;
 		
 		case 0xC0: /* Plain copy */
-/* kprintf("copy HIDD to HIDD\n");
-*/		    HIDD_GC_CopyArea(src_gc
+ kprintf("copy HIDD to HIDD\n");
+		    HIDD_GC_CopyArea(src_gc
 		    	, xSrc, ySrc
 			, dst_gc
 			, xDest, yDest
@@ -1639,16 +1906,16 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	    switch (minterm)
 	    {
 	        case 0: /* Clear Amiga bitmap */
-/* kprintf("clear amiga bitmap\n");
-*/		    clearbitmapfast(destBitMap, xDest, yDest, xSize, ySize);
+ kprintf("clear amiga bitmap\n");
+		    clearbitmapfast(destBitMap, xDest, yDest, xSize, ySize);
 		    
 		    break;
 		    
 		case 0XC0: { /* Copy from HIDD bm to Amiga BM */
 		    ULONG width = GetBitMapAttr(destBitMap, BMA_WIDTH);
 		    UBYTE depth = GetBitMapAttr(destBitMap, BMA_DEPTH);
-/* kprintf("copy HIDD to bitmap\n");
-*/		    
+ kprintf("copy HIDD to Amiga:\n");
+
 		    width = ((width - 1) >> 3) + 1; /* width in bytes */
 		    for (x = 0; x < xSize; x ++)
 		    {
@@ -1656,7 +1923,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 			{
 		    	    ULONG pen;
 			    /* Get the pen value */
-			
+
 			    pen = HIDD_GC_ReadPixel(BM_GC_OBJ(srcBitMap), x + xSrc, y + ySrc);
 			    setbitmappixel(destBitMap
 			    	, x + xDest
@@ -1687,8 +1954,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	{
 	    case 0:/* Clear the destination */
 
-/* kprintf("clear HIDD bitmap\n"); 
-*/
+ kprintf("clear HIDD bitmap\n"); 
+
 		gc_tags[0].ti_Data = 0L;
 		SetAttrs(dst_gc, gc_tags);
 		    
@@ -1707,7 +1974,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 		UBYTE depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
 		LONG x, y;
 
-/* kprintf("copy Amiga to HIDD\n"); */
+ kprintf("copy Amiga to HIDD\n"); 
 		    
 		width = ((width - 1) >> 3) + 1; /* width in bytes */
 		
@@ -1716,6 +1983,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 		    for (y = 0; y < ySize; y ++)
 		    {
 		    	ULONG pen;
+
 			/* Get the pen value */
 			pen = getbitmappixel(srcBitMap
 				, x + xSrc
@@ -1723,6 +1991,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 				, width
 				, depth
 			);
+
 
 			gc_tags[0].ti_Data = pen;
 			SetAttrs(BM_GC_OBJ(destBitMap), gc_tags);
