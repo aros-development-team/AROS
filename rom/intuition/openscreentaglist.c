@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/01/21 23:04:52  stegerg
+    SHOWTITLE (SA_ShowTitle) defaults to TRUE:
+
     Revision 1.7  1999/08/16 21:07:33  stegerg
     taglist is now handled in openscreen
 
@@ -75,7 +78,7 @@
 	0, 0, 640, 200, 1, /* left, top, width, height, depth */
 	0, 1, /* DetailPen, BlockPen */
 	HIRES | LACE, /* ViewModes */
-	CUSTOMSCREEN, /* Type */
+	CUSTOMSCREEN | SHOWTITLE, /* Type */
 	NULL, /* Font */
 	NULL, /* DefaultTitle */
 	NULL, /* Gadgets */
