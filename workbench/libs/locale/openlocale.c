@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: OpenLocale() - Give access to a new locale.
@@ -10,6 +10,7 @@
 #include <libraries/locale.h>
 #include <libraries/iffparse.h>
 #include <prefs/prefhdr.h>
+#include <proto/dos.h>
 #include <prefs/locale.h>
 #include <proto/exec.h>
 #include <proto/iffparse.h>
