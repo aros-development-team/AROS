@@ -5,9 +5,7 @@ FILES := mxclass support
 
 #MM workbench-gadgets-arosmutualexclude : includes linklibs
 
-%build_module_macro mmake=workbench-gadgets-arosmutualexclude \
-  modname=arosmutualexclude modtype=gadget files=$(FILES) \
-  conffile=lib.conf uselibs=rom
-
-%common
+%build_module mmake=workbench-gadgets-arosmutualexclude \
+  modname=arosmutualexclude modtype=gadget \
+  files=$(FILES) uselibs=rom
 
