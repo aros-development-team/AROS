@@ -317,10 +317,10 @@ static int load_hunk
 (
     BPTR                 file,
     BPTR               **next_hunk_ptr,
-    struct sheader     *sh,
+    struct sheader      *sh,
     LONG                *funcarray,
     BOOL                 do_align,
-    struct DosLibrary  *DOSBase
+    struct DosLibrary   *DOSBase
 )
 {
     struct hunk *hunk;
@@ -388,7 +388,7 @@ static int load_hunk
 
 static int relocate
 (
-  D(struct elfheader  *eh,)
+    struct elfheader  *eh,
     struct sheader    *sh,
     ULONG              shrel_idx,
     struct DosLibrary *DOSBase
@@ -430,7 +430,10 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
-		s = sym->value;
+                if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
+                    s = (ULONG)&SysBase;
+                else
+		    s = sym->value;
                 break;
 
   	    default:
@@ -568,7 +571,7 @@ BPTR InternalLoadSeg_ELF
                    that only one symbol table per file is allowed. However, it
                    also states that this may change in future... we already handle it.
         */
-        if (sh[i].type == SHT_SYMTAB D(|| sh[i].type == SHT_STRTAB))
+        if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr)
@@ -625,7 +628,7 @@ BPTR InternalLoadSeg_ELF
         )
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
-            if (!sh[i].addr || !relocate(D(&eh,) sh, i, DOSBase))
+            if (!sh[i].addr || !relocate(&eh, sh, i, DOSBase))
                 goto error;
 
             MyFree(sh[i].addr, sh[i].size);
@@ -661,7 +664,7 @@ end:
     /* deallocate the symbol tables */
     for (i = 0; i < eh.shnum; i++)
     {
-        if (((sh[i].type == SHT_SYMTAB) D(|| sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
+        if (((sh[i].type == SHT_SYMTAB) || (sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
             MyFree(sh[i].addr, sh[i].size);
     }
 
