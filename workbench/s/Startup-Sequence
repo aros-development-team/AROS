@@ -18,6 +18,8 @@ Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
 Assign HELP:    LOCALE:Help DEFER
+Assign THEMES:  SYS:Themes
+Assign THEME:   THEMES:Mason
 ;Assign PRINTERS: DEVS:Printers
 
 If EXISTS SYS:DiskImages
