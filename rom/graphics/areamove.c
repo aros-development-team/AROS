@@ -70,7 +70,7 @@
     {
       areainfo->FirstX = x;
       areainfo->FirstY = y;
-      AreaDraw(rp, x, y);
+      return AreaDraw(rp, x, y);
     }
     else
     {
@@ -115,4 +115,4 @@
     return -1;
 
   AROS_LIBFUNC_EXIT
-} /* AreaDraw */
+} /* AreaMove */
