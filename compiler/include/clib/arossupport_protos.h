@@ -42,6 +42,7 @@ extern struct ExecBase * Sysbase;
 */
 ULONG   CalcChecksum (APTR mem, ULONG size);
 int     kprintf      (const UBYTE * fmt, ...);
+int     rkprintf     (const STRPTR, const STRPTR, int, const UBYTE * fmt, ...);
 void    NastyFreeMem (APTR mem, ULONG size);
 APTR    RemoveSList  (APTR * list, APTR node);
 void    hexdump      (const void * data, IPTR offset, ULONG count);
@@ -67,9 +68,10 @@ BOOL WriteStruct (struct Hook *, APTR   data, void * stream, const IPTR * desc);
 void FreeStruct  (APTR s,  const IPTR * desc);
 
 
-/* don't use SysBase->DebugData on AmigaOS */
+/* don't use SysBase->kprintf on AmigaOS */
 #ifndef __amigaos__
-#define kprintf     (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
+#   define kprintf     (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
+#   define rkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
 #endif
 
 #endif /* CLIB_AROSSUPPORT_PROTOS_H */
