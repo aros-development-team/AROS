@@ -70,9 +70,11 @@ static struct OOP_ABDescr attrbases[] =
 #define DEBUG 0
 #include <aros/debug.h>
  
-static void init_empty_cursor(Window w
+/* static void init_empty_cursor(Window w
 	, GC c
-	, struct x11_staticdata *xsd);
+	, struct x11_staticdata *xsd); */
+
+static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x11_staticdata *xsd);
 
 /*********** BitMap::New() *************************************/
 
@@ -229,14 +231,16 @@ UX11
 
 #if ADJUST_XWIN_SIZE
 	if (DRAWABLE(data) && MASTERWIN(data))
+	{
 #else
 	if (DRAWABLE(data))
-#endif
 	{
             XSizeHints 		sizehint;
+#endif
 	    struct MsgPort 	*port;	    
 	    struct notify_msg 	*msg;
-
+    	    Pixmap icon;
+	    
 LX11
 	    XStoreName   (GetSysDisplay(), MASTERWIN(data), "AROS");
 	    XSetIconName (GetSysDisplay(), MASTERWIN(data), "AROS Screen");
@@ -251,6 +255,22 @@ LX11
 #endif
 	    
 	    XSetWMProtocols (GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
+
+    	    icon = init_icon(GetSysDisplay(),
+	    	    	     MASTERWIN(data),
+			     DefaultColormap(GetSysDisplay(), GetSysScreen()),
+			     depth,
+			     XSD(cl));
+	    if (icon)
+	    {
+		XWMHints hints;
+
+		hints.icon_pixmap = icon;
+		hints.flags = IconPixmapHint;
+
+		XSetWMHints(GetSysDisplay(), MASTERWIN(data), &hints);
+	    }
+	    
 
 	    D(bug("Calling XMapRaised\n"));
 
@@ -616,6 +636,7 @@ void free_onbmclass(struct x11_staticdata *xsd)
     ReturnVoid("free_onbmclass");
 }
 
+#if 0
 static void init_empty_cursor(Window w
 	, GC gc
 	, struct x11_staticdata *xsd)
@@ -694,4 +715,74 @@ UX11
     }
  
  	
+}
+
+#endif
+
+static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x11_staticdata *xsd)
+{
+    #include "icon.h"
+
+    #define SHIFT_PIX(pix, shift)	\
+	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
+    
+    Pixmap icon = XCreatePixmap(d, w, width, height, depth);
+    char *data = header_data;
+    LONG red_shift, green_shift, blue_shift;
+    GC gc;
+    
+    red_shift   = 24 - xsd->red_shift;
+    green_shift = 24 - xsd->green_shift;
+    blue_shift  = 24 - xsd->blue_shift;
+    
+    if (icon)
+    {
+    	gc = XCreateGC(d, icon, 0, 0);
+	
+	if (gc)
+	{
+    	    WORD x, y;
+
+	    for(y = 0; y < height; y++)
+	    {
+	    	for(x = 0; x < width; x++)
+		{
+	    	    ULONG rgb[3];
+		    ULONG pixel = 0;
+
+		    HEADER_PIXEL(data,rgb);
+
+		    if (xsd->vi.class == TrueColor)
+    	    	    {
+			pixel = (SHIFT_PIX(rgb[0] & 0xFF, red_shift)   & xsd->vi.red_mask)   |
+		    		(SHIFT_PIX(rgb[1] & 0xFF, green_shift) & xsd->vi.green_mask) |
+				(SHIFT_PIX(rgb[2] & 0xFF, blue_shift)  & xsd->vi.blue_mask);		    	
+		    }
+		    else if (xsd->vi.class == PseudoColor)
+		    {
+		    	XColor xcol;
+			
+			xcol.red   = (rgb[0] << 8) + rgb[0];
+			xcol.green = (rgb[1] << 8) + rgb[1];
+			xcol.blue  = (rgb[2] << 8) + rgb[2];
+			xcol.flags = DoRed | DoGreen | DoBlue;
+			
+			if (XAllocColor(d, cm, &xcol))
+			{
+			    pixel = xcol.pixel;
+			}
+		    }
+		    
+    	    	    XSetForeground(d, gc, pixel);
+		    XDrawPoint(d, icon, gc, x, y);
+		}
+	    }
+	    
+	    XFreeGC(d, gc);
+	    
+	} /* if (gc) */
+	
+    } /* if (icon) */
+    
+    return icon;
 }
