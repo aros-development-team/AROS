@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Class for VGA and compatible cards.
@@ -721,15 +721,18 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
     	    box.y1 = msg->destY;
     	    box.x2 = box.x1 + msg->width;
     	    box.y2 = box.y1 + msg->height;
+ 
             ObtainSemaphore(&XSD(cl)->HW_acc);
+
     	    vgaRefreshArea(ddata, 1, &box);
+            if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
+                    (XSD(cl)->mouseX <= box.x2) ) ||
+        	(   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
+                    (XSD(cl)->mouseY <= box.y2) ) )
+        	draw_mouse(XSD(cl));
+
             ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-        if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW >= box.x1) &&
-                (XSD(cl)->mouseX <= box.x2) ) ||
-            (   (XSD(cl)->mouseY + XSD(cl)->mouseH >= box.y1) &&
-                (XSD(cl)->mouseY <= box.y2) ) )
-            draw_mouse(XSD(cl));
 	}
     }
     ReturnVoid("VGAGfx.BitMap::CopyBox");
@@ -760,6 +763,8 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     box.x2 = box.x1 + XSD(cl)->mouseW;
     box.y2 = box.y1 + XSD(cl)->mouseH;
 
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+
     if (XSD(cl)->visible)
 	vgaRefreshArea(XSD(cl)->visible, 1, &box);
 
@@ -775,6 +780,8 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     }
     
     draw_mouse(XSD(cl));
+
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
     
     return TRUE;
 }
@@ -784,8 +791,10 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     XSD(cl)->mouseVisible = msg->visible;
-    
+
+    ObtainSemaphore(&XSD(cl)->HW_acc);    
     draw_mouse(XSD(cl));
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
 }
 
 /* end of stuff added by stegerg */

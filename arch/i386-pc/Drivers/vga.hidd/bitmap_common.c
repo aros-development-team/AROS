@@ -1,3 +1,11 @@
+/*
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: English.
+*/
+
 #include <exec/alerts.h>
 
 #undef DEBUG
@@ -24,8 +32,8 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
     vgaRefreshArea(data, 1, &box);
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
     draw_mouse(XSD(cl));
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
     
     return;
@@ -202,11 +210,11 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
     *ptr2 |= 1;		// This or'ed value isn't important
 
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-
     if (((msg->x >= XSD(cl)->mouseX) && (msg->x < (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
 	((msg->y >= XSD(cl)->mouseY) && (msg->y < (XSD(cl)->mouseY + XSD(cl)->mouseH))))
 	draw_mouse(XSD(cl));
+
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 #endif /* OnBitmap */
 
@@ -264,11 +272,11 @@ static VOID MNAME(drawpixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_D
 
     *ptr2 |= 1;		// This or'ed value isn't important
 
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-
     if (((msg->x >= XSD(cl)->mouseX) && (msg->x < (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
 	((msg->y >= XSD(cl)->mouseY) && (msg->y < (XSD(cl)->mouseY + XSD(cl)->mouseH))))
 	draw_mouse(XSD(cl));
+
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 #endif /* OnBitmap */
 
@@ -342,15 +350,19 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
         box.y1 = msg->y;
         box.x2 = box.x1 + msg->width - 1;
         box.y2 = box.y1 + msg->height - 1;
+
         ObtainSemaphore(&XSD(cl)->HW_acc);
+	
         vgaRefreshArea(data, 1, &box);
-        ReleaseSemaphore(&XSD(cl)->HW_acc);
 	
 	if ( (	(XSD(cl)->mouseX + XSD(cl)->mouseW - 1 >= box.x1) &&
 		(XSD(cl)->mouseX <= box.x2) ) ||
 	    (	(XSD(cl)->mouseY + XSD(cl)->mouseH - 1 >= box.y1) && 
 		(XSD(cl)->mouseY <= box.y2) ) )
 	    draw_mouse(XSD(cl));
+	    
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
+
     }
     
     ReturnVoid("VGAGfx.BitMap::PutImage");
@@ -451,15 +463,19 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
         box.y1 = msg->y;
         box.x2 = box.x1 + msg->width - 1;
         box.y2 = box.y1 + msg->height - 1;
+
         ObtainSemaphore(&XSD(cl)->HW_acc);
+
         vgaRefreshArea(data, 1, &box);
-        ReleaseSemaphore(&XSD(cl)->HW_acc);
 
         if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW - 1 >= box.x1) &&
                 (XSD(cl)->mouseX <= box.x2) ) ||
             (   (XSD(cl)->mouseY + XSD(cl)->mouseH - 1 >= box.y1) &&
                 (XSD(cl)->mouseY <= box.y2) ) )
             draw_mouse(XSD(cl));
+
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
+
     }
     ReturnVoid("VGAGfx.BitMap::PutImageLUT");
 }
@@ -594,15 +610,19 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
         box.y1 = msg->minY;
         box.x2 = msg->maxX;
         box.y2 = msg->maxY;
-        ObtainSemaphore(&XSD(cl)->HW_acc);
-        vgaRefreshArea(data, 1, &box);
-        ReleaseSemaphore(&XSD(cl)->HW_acc);
 
+        ObtainSemaphore(&XSD(cl)->HW_acc);
+
+        vgaRefreshArea(data, 1, &box);
         if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW - 1 >= box.x1) &&
                 (XSD(cl)->mouseX <= box.x2) ) ||
             (   (XSD(cl)->mouseY + XSD(cl)->mouseH - 1 >= box.y1) &&
                 (XSD(cl)->mouseY <= box.y2) ) )
             draw_mouse(XSD(cl));
+
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
+
+
     }
     ReturnVoid("VGAGfx.BitMap::FillRect");
 }
@@ -664,15 +684,18 @@ static VOID MNAME(blitcolorexpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd
         box.y1 = msg->destY;
         box.x2 = box.x1 + msg->width - 1;
         box.y2 = box.y1 + msg->height - 1;
-        ObtainSemaphore(&XSD(cl)->HW_acc);
-        vgaRefreshArea(data, 1, &box);
-        ReleaseSemaphore(&XSD(cl)->HW_acc);
 
+        ObtainSemaphore(&XSD(cl)->HW_acc);
+
+        vgaRefreshArea(data, 1, &box);
         if ( (  (XSD(cl)->mouseX + XSD(cl)->mouseW - 1 >= box.x1) &&
                 (XSD(cl)->mouseX <= box.x2) ) ||
             (   (XSD(cl)->mouseY + XSD(cl)->mouseH - 1 >= box.y1) &&
                 (XSD(cl)->mouseY <= box.y2) ) )
             draw_mouse(XSD(cl));
+
+        ReleaseSemaphore(&XSD(cl)->HW_acc);
+
     }    
     ReturnVoid("VGAGfx.BitMap::BlitColorExpansion");
 }
