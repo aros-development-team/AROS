@@ -36,12 +36,8 @@ setup-freebsd :
 
 
 #MM setup-exec-freebsd : setup-exec-unix setup-exec-i386
-setup-exec-freebsd : 
+setup-exec-freebsd : $(GENINCDIR)/sigcore.h
 	%add_objects rom/exec/init
-
-#MM
-includes-copy : $(GENINCDIR)/sigcore.h
-	@$(NOP)
 
 $(GENINCDIR)/sigcore.h : $(TOP)/config/freebsd/exec/sigcore.h
 	%mkdirs_q $(GENINCDIR)
