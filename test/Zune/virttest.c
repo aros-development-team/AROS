@@ -46,23 +46,23 @@ int main(void)
 	    MUIA_Window_Activate, TRUE,
 
     	    WindowContents, VGroup,
-    	    	Child, SimpleButton("hello"),
+/*      	    	Child, SimpleButton("hello"), */
 		Child, ScrollgroupObject,
 		    MUIA_Scrollgroup_Contents, HGroupV,
 		    	VirtualFrame,
-			Child, VGroup,
+/*  			Child, VGroup, */
+/*  			    Child, SimpleButton("one"), */
+/*  			    Child, SimpleButton("two"), */
+/*  			    Child, SimpleButton("one"), */
+/*  			    Child, SimpleButton("two"), */
+/*  			    Child, SimpleButton("one"), */
+/*  			    Child, SimpleButton("two"), */
+/*  			    End, */
+/*  			Child, VGroup, */
 			    Child, SimpleButton("one"),
-			    Child, SimpleButton("two"),
-			    Child, SimpleButton("one"),
-			    Child, SimpleButton("two"),
-			    Child, SimpleButton("one"),
-			    Child, SimpleButton("two"),
-			    End,
-			Child, VGroup,
-			    Child, SimpleButton("one"),
-			    Child, SimpleButton("two"),
-			    Child, SimpleButton("one"),
-			    End,
+/*  			    Child, SimpleButton("two"), */
+/*  			    Child, SimpleButton("one"), */
+/*  			    End, */
 			End,
 		    End,
 		End,
