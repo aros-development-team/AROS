@@ -69,12 +69,7 @@ static void getvisual(void)
     if (!(scr = LockPubScreen(NULL)))
     {
         cleanup("Can't lock pub screen!");
-    }
-    
-    if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) <= 8)
-    {
-        cleanup("Need hi or true color screen!");
-    }
+    }    
 }
 
 /***********************************************************************************/
