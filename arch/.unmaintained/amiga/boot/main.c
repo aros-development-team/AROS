@@ -22,6 +22,7 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 
 #include "boot.h"
 #include "ils.h"
