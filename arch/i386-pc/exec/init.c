@@ -315,6 +315,8 @@ int main()
 		{WA_Left,			100},
 		{WA_Top,			100},
 		{WA_Title,	       (ULONG)text0},
+		{WA_SizeGadget,                TRUE},
+		{WA_DepthGadget,               TRUE},
 		{TAG_DONE,			  0}};
 	    win = OpenWindowTagList(0, tags);
 	}
