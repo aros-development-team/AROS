@@ -32,6 +32,8 @@ AROS_UFH3(struct DummyBase *,LIB_init,
         AROS_LHA(ULONG, seglist, A0),
 	AROS_LHA(struct ExecBase *, sysbase, A6))
 {
+    AROS_USERFUNC_INIT
+    
 #if INIT_DEBUG_BUG
     D(bug("in LIB_init a\n")); /* segfaults */
 #endif
@@ -46,6 +48,8 @@ AROS_UFH3(struct DummyBase *,LIB_init,
 
     D(bug("dummy.library: Init succesfull\n"));
     return DummyBase;
+    
+    AROS_USERFUNC_EXIT
 }
 
 /********/
@@ -64,11 +68,15 @@ AROS_LH1(struct DummyBase *, LIB_open,
 AROS_UFH1(ULONG,LIB_expunge,
         AROS_LHA(struct DummyBase *, DummyBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     if (DummyBase->library.lib_OpenCnt == 0)
 	Remove((struct Node *)DummyBase);
     else
 	DummyBase->library.lib_Flags |= LIBF_DELEXP;
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 /********/
@@ -76,6 +84,8 @@ AROS_UFH1(ULONG,LIB_expunge,
 AROS_UFH1(ULONG,LIB_close,
         AROS_LHA(struct DummyBase *, DummyBase, D0))
 {
+    AROS_USERFUNC_INIT
+    
     ULONG ret = 0;
 
     DummyBase->library.lib_OpenCnt--;
@@ -83,6 +93,8 @@ AROS_UFH1(ULONG,LIB_close,
 	if (DummyBase->library.lib_Flags & LIBF_DELEXP)
 	    ret = LIB_expunge(DummyBase);
     return ret;
+
+    AROS_USERFUNC_EXIT
 }
 
 /********/

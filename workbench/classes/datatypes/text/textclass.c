@@ -3057,6 +3057,8 @@ AROS_UFH3S(IPTR, DT_Dispatcher,
 ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 LONG * msg)
 #endif
 {
+    AROS_USERFUNC_INIT
+    
     ULONG retval;
 
     switch (*msg)
@@ -3187,6 +3189,8 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
     }
 
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 #ifndef __AROS__
