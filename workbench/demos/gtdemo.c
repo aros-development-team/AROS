@@ -9,7 +9,7 @@
 #include <aros/config.h>
 
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#define ENABLE_RT 1
+#   define ENABLE_RT 1
 #endif
 
 #include <stdio.h>
@@ -123,7 +123,7 @@ BOOL openwin()
 			 WA_PubScreen, scr,
 			 WA_Left, 0,
 			 WA_Top, 0,
-			 WA_Width, 400,
+			 WA_Width, 600,
 			 WA_Height, 300,
 			 WA_Title, "GTDemo",
 			 WA_IDCMP,
@@ -131,7 +131,7 @@ BOOL openwin()
 			     CHECKBOXIDCMP |
 			     MXIDCMP |
                              IDCMP_GADGETUP |
-			     IDCMP_RAWKEY |
+			     IDCMP_VANILLAKEY |
 			     IDCMP_CLOSEWINDOW |
 			     IDCMP_REFRESHWINDOW,
 			 WA_SimpleRefresh, TRUE,
@@ -209,8 +209,10 @@ void handlewin()
 		draw_bevels(win, vi);
 		GT_EndRefresh(win, TRUE);
 		break;
+            case IDCMP_VANILLAKEY:
+                if (msg->Code != 0x1B) /* if escape, quit */
+                    break;
 	    case IDCMP_CLOSEWINDOW:
-	    case IDCMP_RAWKEY:
 		ready = TRUE;
 		break;
 	    case IDCMP_GADGETDOWN:
@@ -227,7 +229,7 @@ void handlewin()
 
                     GT_GetGadgetAttrs((struct Gadget *) msg->IAddress, win, NULL,
                                       GTMX_Active, (IPTR) & active, TAG_DONE);
-                    printf(" (%ld)", active);
+                    printf(" (active: %ld)", active);
                     break;
                 }
                 }
