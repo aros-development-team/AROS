@@ -4,7 +4,7 @@
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION
 Fel: Kan inte skapa applikationsobjekt.
-; Error: Can not create application object.
+; Error: Can't create application object.
 ;
 MSG_WINDOW_TITLE
 Klocka
