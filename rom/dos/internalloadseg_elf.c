@@ -21,9 +21,6 @@
 #include <string.h>
 #include <stddef.h>
 
-extern struct DosLibrary * DOSBase;
-
-
 /* Debugging */
 #define PRINT_SECTION_NAMES     0
 #define PRINT_STRINGTAB         0
@@ -145,6 +142,7 @@ struct hunk
 #undef MyAlloc
 #undef MyFree
 
+
 #define MyRead(file, buf, size)      \
     AROS_CALL3                       \
     (                                \
@@ -155,6 +153,7 @@ struct hunk
         struct DosLibrary *, DOSBase \
     )
 
+
 #define MyAlloc(size, flags)        \
     AROS_CALL2                      \
     (                               \
@@ -163,7 +162,6 @@ struct hunk
         AROS_LCA(ULONG, flags, D1), \
         struct ExecBase *, SysBase  \
     )
-
 
 
 #define MyFree(addr, size)          \
@@ -233,44 +231,7 @@ static void * load_block
     return NULL;
 }
 
-/*
-
-We will follow this pattern:
-
-Load Elf Header
-{
-    Load Sections Headers
-    {
-        Load Symbol Table // Assuming that there's always a symbol table
-        {
-            For Each PROGBITS and NOBITS section (sec)
-            {
-                If sec has to be allocated
-                {
-                    if sec is PROGBITS Load Section sec
-                    else Allocate enough space and put it in sec
-
-	            Add sec to a list of hunks.
-                }
-            }
-
-            For Each REL and RELA section (sec)
-            {
-                Load sec
-                Relocate sec.sec_to_relocate
-		Unload sec
-  	    }
-
-            Free Symbol Table
-
-            return the list of hunks
-	}
-    }
-}
-
-*/
-
-static __inline__ int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
+static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 {
     if
     (
@@ -290,12 +251,18 @@ static __inline__ int check_header(struct elfheader *eh, struct DosLibrary *DOSB
         eh->ident[EI_VERSION] != EV_CURRENT  ||
         eh->type              != ET_REL      ||
 
-        #if defined(__mc68000__)
-            eh->ident[EI_DATA] != ELFDATA2MSB ||
-            eh->machine        != EM_68K
-        #elif defined(__i386__)
+        #if defined(__i386__)
+
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
+
+        #elif defined(__mc68000__)
+
+            eh->ident[EI_DATA] != ELFDATA2MSB ||
+            eh->machine        != EM_68K
+
+        #else
+        #    error Your architecture is not supported
         #endif
     )
     {
@@ -317,7 +284,7 @@ static int load_hunk
 {
 
     struct hunk *hunk;
-     
+
     if (!sh->size)
         return 1;
 
@@ -347,9 +314,9 @@ static int load_hunk
 
 static int relocate
 (
-    struct sheader *sh,
-    int             shrel_idx,
-    struct DosLibrary  *DOSBase
+    struct sheader    *sh,
+    ULONG              shrel_idx,
+    struct DosLibrary *DOSBase
 )
 {
     struct sheader *shrel    = &sh[shrel_idx];
@@ -361,7 +328,7 @@ static int relocate
     char          *section  = toreloc->addr;
 
     ULONG numrel = shrel->size / shrel->entsize;
-    int i;
+    ULONG i;
 
     //kprintf("Section %d has %d relocation entries\n", shrel_idx, numrel);
     for (i=0; i<numrel; i++, rel++)
@@ -379,7 +346,7 @@ static int relocate
         kprintf("dest section base   = %p\n", toreloc->addr);
         kprintf("source section base = %p\n", sh[sym->shindex].addr);
         #endif
-        
+
         switch (sym->shindex)
         {
             case SHN_UNDEF:
@@ -387,7 +354,7 @@ static int relocate
                 return 0;
 
             case SHN_COMMON:
-                kprintf("Found a COMMON symbol.\n");
+                kprintf("There are COMMON symbols. This should't happen\n");
                 return 0;
 
             case SHN_ABS:
@@ -425,7 +392,7 @@ static int relocate
 
             case R_68k_NONE:
                 break;
-                
+
             #else
             #    error Your architecture is not supported
             #endif
@@ -449,139 +416,145 @@ BPTR InternalLoadSeg_ELF
     struct DosLibrary *DOSBase
 )
 {
-    struct elfheader eh;
-    BPTR hunks = 0;
+    struct elfheader  eh;
+    struct sheader   *sh;
+    BPTR   hunks         = 0;
+    BPTR  *next_hunk_ptr = &hunks;
+    ULONG offset = 0, i;
 
-    /* Load Elf Header */
+    /* Load Elf Header and Section Headers */
     if
     (
-        read_block(file, 0, &eh, sizeof(eh), funcarray, DOSBase) &&
-        check_header(&eh, DOSBase)
+        !read_block(file, 0, &eh, sizeof(eh), funcarray, DOSBase) ||
+        !check_header(&eh, DOSBase) ||
+        /*
+            Use eh.shnum+1 instead of eh.shnum so that we allocate space also for the common section
+            header, which will come in hand in case there are common symbols.
+        */
+        !(sh = load_block(file, eh.shoff, (eh.shnum+1) * eh.shentsize, funcarray, DOSBase))
     )
     {
-        /* Load Section Headers. Also allocate space for a probable common section */
-        struct sheader *sh = load_block(file, eh.shoff, (eh.shnum+1) * eh.shentsize, funcarray, DOSBase);
-        if (sh)
+        return 0;
+    }
+
+    /*
+        Load Symbol Table(s).
+
+        NOTICE: the ELF standard, at the moment (Nov 2002) explicitely states
+                that only one symbol table per file is allowed. However, it
+                also states that this may change in future... we already handle it.
+    */
+
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if (sh[i].type == SHT_SYMTAB)
         {
-            int i;
-
-            /* Load Symbol Table(s) */
-            for (i = 0; i < eh.shnum; i++)
-            {
-                if (sh[i].type == SHT_SYMTAB)
-                {
-                    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
-                    if (!sh[i].addr)
-                        break;
-                }
-            }
-
-            if (i == eh.shnum)
-            {
-                BPTR  *next_hunk_ptr = &hunks;
-
-                /* Load all loadable PROGBITS and NOBITS sections */
-                for (i = 0; i < eh.shnum; i++)
-                {
-                    if
-                    (
-                        (sh[i].type == SHT_PROGBITS || sh[i].type == SHT_NOBITS) &&
-                        (sh[i].flags & SHF_ALLOC)
-                    )
-                    {
-                        if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, DOSBase))
-                            break;
-                    }
-                }
-
-                {
-                    ULONG offset = 0;
-
-                    /* Allocate space for common symbols */
-	            for (i = 0; i < eh.shnum; i++)
-                    {
-                        if (sh[i].type == SHT_SYMTAB)
-                        {
-                            struct symbol *sym = (struct symbol *)sh[i].addr;
-                            ULONG numsyms = sh[i].size / sh[i].entsize;
-                            ULONG j;
-
-                            for (j = 0; j < numsyms; j++, sym++)
-                            {
-                                if (sym->shindex == SHN_COMMON)
-                                {
-                                    offset       = (offset + sym->value-1) & ~(sym->value-1);
-                                    sym->value   = offset;
-                                    sym->shindex = eh.shnum; /* The common section's index */
-
-                                    offset += sym->size;
-                                }
-                            }
-                        }
-                    }
-
-                    sh[eh.shnum].size = offset;
-                    sh[eh.shnum].type = SHT_NOBITS;
-		    sh[eh.shnum].addr = NULL;
-                    if (!load_hunk(0, &next_hunk_ptr, &sh[eh.shnum], funcarray, DOSBase))
-                    {
-                        /* force an error */
-                        i = 0;
-                    }
-
-                }
-
-                if (i == eh.shnum)
-                {
-                    /* Relocate the sections */
-                    for (i = 0; i < eh.shnum; i++)
-                    {
-                        if ((sh[i].type == SHT_RELA || sh[i].type == SHT_REL) && sh[sh[i].info].addr)
-                        {
-			    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
-                            if (sh[i].addr)
-                            {
-                                if (!relocate(sh, i, DOSBase))
-                                    break;
-                            }
-
-                            MyFree(sh[i].addr, sh[i].size);
-                            sh[i].addr = NULL;
-                        }
-	            }
-                }
-            }
-
-            /* There were some errors, deallocate all the allocated sections */
-            if (i < eh.shnum)
-            {
-                for (i = 0; i < eh.shnum; i++)
-                {
-                    if (sh[i].addr)
-                    {
-                        if (sh[i].type == SHT_PROGBITS || sh[i].type == SHT_NOBITS)
-                            MyFree(sh[i].addr - sizeof(struct hunk), sh[i].size + sizeof(struct hunk));
-                        else
-                            MyFree(sh[i].addr, sh[i].size);
-                    }
-                }
-
- 		hunks = 0;
-	    }
-            /* No errors, deallocate only the symbol tables */
-            else
-            {
-                for (i = 0; i < eh.shnum; i++)
-                {
-                    if (sh[i].addr && sh[i].type == SHT_SYMTAB)
-                        MyFree(sh[i].addr, sh[i].size);
-                }
-            }
-
-            /* Free the section headers */
-            MyFree(sh, (eh.shnum+1) * eh.shentsize);
+            sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            if (!sh[i].addr)
+                goto error;
         }
     }
+
+    /* Load all loadable sections and make hunks out of them */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if (sh[i].flags & SHF_ALLOC)
+        {
+            if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, DOSBase))
+                goto error;
+        }
+    }
+
+    /* Allocate space for common symbols */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if (sh[i].type == SHT_SYMTAB)
+        {
+            struct symbol *sym = (struct symbol *)sh[i].addr;
+            ULONG numsyms = sh[i].size / sh[i].entsize;
+            ULONG j;
+
+            for (j = 0; j < numsyms; j++, sym++)
+            {
+                if (sym->shindex == SHN_COMMON)
+                {
+                    offset       = (offset + sym->value-1) & ~(sym->value-1);
+                    sym->value   = offset;
+                    sym->shindex = eh.shnum; /* The common section's index */
+
+                    offset += sym->size;
+                }
+            }
+        }
+    }
+
+    sh[eh.shnum].size  = offset;
+    sh[eh.shnum].type  = SHT_NOBITS;
+    sh[eh.shnum].addr  = NULL;
+    sh[eh.shnum].flags = SHF_ALLOC;
+
+    if (!load_hunk(0, &next_hunk_ptr, &sh[eh.shnum], funcarray, DOSBase))
+        goto error;
+
+    /* Relocate the sections */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if
+        (
+            #if defined(__i386__)
+
+            sh[i].type == SHT_REL &&
+
+            #elif defined(__m68000__)
+
+            sh[i].type == SHT_RELA &&
+
+            #else
+            #    error Your architecture is not supported
+            #endif
+            
+            sh[sh[i].info].addr
+        )
+        {
+	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
+            if (!sh[i].addr || !relocate(sh, i, DOSBase))
+                goto error;
+
+            MyFree(sh[i].addr, sh[i].size);
+            sh[i].addr = NULL;
+        }
+    }
+
+
+    /* No errors, deallocate only the symbol tables */
+    for (i = 0; i < eh.shnum; i++)
+    {
+        if (sh[i].type == SHT_SYMTAB)
+            MyFree(sh[i].addr, sh[i].size);
+    }
+
+    goto end;
+
+error:
+
+    /* There were some errors, deallocate all the allocated sections */
+    for (i = 0; i < eh.shnum + 1; i++)
+    {
+        if (sh[i].addr)
+        {
+            if (sh[i].flags & SHF_ALLOC)
+                MyFree(sh[i].addr - sizeof(struct hunk), sh[i].size + sizeof(struct hunk));
+            else
+                MyFree(sh[i].addr, sh[i].size);
+        }
+    }
+
+    hunks = 0;
+
+end:
+
+    /* Free the section headers */
+    MyFree(sh, (eh.shnum+1) * eh.shentsize);
 
     return hunks;
 }
