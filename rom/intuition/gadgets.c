@@ -534,17 +534,20 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
 		    
 		    GetDomGadgetBounds(gad, win->WScreen, win, NULL, &box);
 
-		    rect.MinX = box.Left;
-		    rect.MinY = box.Top;
-		    rect.MaxX = box.Left + box.Width  - 1;
-		    rect.MaxY = box.Top  + box.Height - 1;
-
-		    if (!onlydamagelist) EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-		    if (!(lay->Flags & LAYERSUPER))
+		    if ((box.Width > 0) && (box.Height > 0))
 		    {
-			OrRectRegion(lay->DamageList, &rect);
-			lay->Flags |= LAYERREFRESH;
+			rect.MinX = box.Left;
+			rect.MinY = box.Top;
+			rect.MaxX = box.Left + box.Width  - 1;
+			rect.MaxY = box.Top  + box.Height - 1;
+
+			if (!onlydamagelist) EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+
+			if (!(lay->Flags & LAYERSUPER))
+			{
+			    OrRectRegion(lay->DamageList, &rect);
+			    lay->Flags |= LAYERREFRESH;
+			}
 		    }
 				  
 		}
