@@ -162,9 +162,8 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
-    HIDDT_Pixel fg, val=0, writeMask, dest;
+    HIDDT_Pixel fg;
     unsigned char *ptr;
-    HIDDT_DrawMode drmd;
 
 #ifdef OnBitmap
     int pix;
@@ -172,27 +171,8 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
     unsigned char *ptr2;
 #endif /* OnBitmap */
 
-    drmd=GC_DRMD(msg->gc);
-
     fg = msg->pixel;
     ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
-    
-    // handle different DrawModes
-    
-    if (vHidd_GC_DrawMode_Copy == drmd && GC_COLMASK(msg->gc) == ~OUL)
-    {
-    } else
-    {
-	dest = *ptr;
-	writeMask = ~GC_COLMASK(msg->gc) & dest;
-	
-	if(drmd & 1) val = ( fg &  dest);
-	if(drmd & 2) val = ( fg & ~dest) | val;
-	if(drmd & 4) val = (~fg &  dest) | val;
-	if(drmd & 8) val = (~fg & ~dest) | val;
-	
-	fg = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
-    }
     
     *ptr = (char) fg;
 
