@@ -236,7 +236,7 @@ static void update_PATH(void)
 
 	PATH = new_PATH;
 
-	new_PATH[oldlen] = '\0';
+	D(new_PATH[oldlen] = '\0');
 	D(bug("new_PATH = %s\n", new_PATH));
 
 	if (oldlen)
