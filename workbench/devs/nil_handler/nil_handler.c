@@ -98,9 +98,7 @@ AROS_UFH3(struct nilbase *, AROS_SLIB_ENTRY(init,nil_handler),
 	    struct DeviceNode *dn;
             /* Install NIL: handler into device list
 	     *
-	     * KLUDGE: nil.handler should create only one device node, depending on
-	     * the startup packet it gets. The mountlists for NIL: should be into dos.library bootstrap
-	     * routines.
+	     * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
 	     */
 
 	    if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
@@ -122,13 +120,13 @@ AROS_UFH3(struct nilbase *, AROS_SLIB_ENTRY(init,nil_handler),
 	    	    AROS_BSTR_putchar(s, 2, 'L');
 	    	    AROS_BSTR_setstrlen(s, 3);
 
-	    	    dn->dn_Type	= DLT_DEVICE;
-	    	    dn->dn_Unit	= dummyiofs.IOFS.io_Unit;
-	    	    dn->dn_Device	= dummyiofs.IOFS.io_Device;
-	    	    dn->dn_Handler	= NULL;
-	    	    dn->dn_Startup	= NULL;
-	    	    dn->dn_OldName	= MKBADDR(s);
-	    	    dn->dn_NewName	= AROS_BSTR_ADDR(dn->dn_OldName);
+	    	    dn->dn_Type    = DLT_DEVICE;
+	    	    dn->dn_Unit    = dummyiofs.IOFS.io_Unit;
+	    	    dn->dn_Device  = dummyiofs.IOFS.io_Device;
+	    	    dn->dn_Handler = NULL;
+	    	    dn->dn_Startup = NULL;
+	    	    dn->dn_OldName = MKBADDR(s);
+	    	    dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
 
 		    if (AddDosEntry((struct DosList *)dn))
 		        return nilbase;
@@ -166,10 +164,10 @@ AROS_LH3(void, open,
     dev=AllocMem(sizeof(ULONG),MEMF_PUBLIC|MEMF_CLEAR);
     if(dev!=NULL)
     {
-        iofs->IOFS.io_Unit=(struct Unit *)dev;
-        iofs->IOFS.io_Device=&nilbase->device;
-    	nilbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-    	iofs->IOFS.io_Error=0;
+        iofs->IOFS.io_Unit   = (struct Unit *)dev;
+        iofs->IOFS.io_Device = &nilbase->device;
+    	nilbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+    	iofs->IOFS.io_Error = 0;
     	return;
     }else
 	iofs->io_DosError=ERROR_NO_FREE_STORE;
@@ -269,11 +267,7 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
 	    /* No names allowed on NIL: */
-	    if
-	    (
-	       stricmp(iofs->io_Union.io_NamedFile.io_Filename, "NIL:") != 0 &&
-	       iofs->io_Union.io_NamedFile.io_Filename[0]
-            )
+	    if (iofs->io_Union.io_NamedFile.io_Filename[0])
 	    {
 		error=ERROR_OBJECT_NOT_FOUND;
 		break;
@@ -282,7 +276,7 @@ AROS_LH1(void, beginio,
 	    ++*(ULONG *)iofs->IOFS.io_Unit;
 	    Permit();
 	    break;
-	    
+
 	case FSA_READ:
 	    iofs->io_Union.io_READ.io_Length=0;
 	    break;
