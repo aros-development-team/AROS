@@ -34,7 +34,6 @@ struct HIDDBitMapData
     ULONG bytesPerRow;   /* bytes per row                 */
     ULONG bytesPerPixel; /* bytes per pixel               */
     APTR  colorTab;      /* color table of the bitmap     */
-    APTR  buffer;        /* content of the bitmap         */
     HIDDT_Color *coltab;
 
     ULONG fg;        /* foreground color                                 */
@@ -80,6 +79,9 @@ struct class_static_data
     Class                *bitmapclass;  /* bitmap class           */
     Class                *gcclass;      /* graphics context class */
     Class		 *colormapclass; /* colormap class	  */
+    
+    Class		 *planarbmclass;
+    Class		 *chunkybmclass;
 };
 
 
@@ -121,5 +123,12 @@ void   free_gcclass(struct class_static_data *csd);
 
 VOID  bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg);
 ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg);
+
+
+Class *init_planarbmclass(struct class_static_data *csd);
+void   free_planarbmclass(struct class_static_data *csd);
+
+Class *init_chunkybmclass(struct class_static_data *csd);
+void   free_chunkybmclass(struct class_static_data *csd);
 
 #endif /* GRAPHICS_HIDD_INTERN_H */
