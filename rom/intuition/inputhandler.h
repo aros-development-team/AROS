@@ -24,6 +24,9 @@ struct IIHData
     struct MinList		IntuiActionQueue;
     struct MinList		GeneratedInputEventList;
     struct Gadget		*ActiveGadget;
+    struct Gadget   	    	*ActiveSysGadget;
+    struct Gadget   	    	*MasterDragGadget;
+    struct Gadget   	    	*MasterSizeGadget;
     struct GadgetInfo		GadgetInfo;
     struct InputEvent		*ActInputEvent; /* Will be NULL outside Intuition's InputEvent handling loop */
     struct InputEvent		*ReturnInputEvent;

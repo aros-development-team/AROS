@@ -531,6 +531,17 @@ void HandleIntuiActions(struct IIHData *iihdata,
 				gpgi.gpgi_Abort = 1; 
 
 				Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
+				
+				if (iihdata->ActiveSysGadget)
+				{
+				    gadget = iihdata->ActiveSysGadget;
+				    iihdata->ActiveSysGadget = NULL;
+				    
+				    if (IS_BOOPSI_GADGET(gadget))
+				    {
+				    	Locked_DoMethodA((Object *)gadget, (Msg)&gpgi, IntuitionBase);
+				    }
+				}
 			    }
 			    break;
 			

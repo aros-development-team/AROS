@@ -84,7 +84,6 @@ struct IClass *InitMenuBarLabelClass (LIBBASETYPEPTR LIBBASE);
 
 struct IClass *InitDragBarClass (LIBBASETYPEPTR LIBBASE);
 struct IClass *InitSizeButtonClass (LIBBASETYPEPTR LIBBASE);
-struct IClass *InitTitleBarButClass (LIBBASETYPEPTR LIBBASE);
 
 
 int Intuition_entry(void)
@@ -201,10 +200,6 @@ AROS_LH2(LIBBASETYPEPTR, init,
     if (!GetPrivIBase(LIBBASE)->dragbarclass)
     	return NULL;
 
-    GetPrivIBase(LIBBASE)->tbbclass = InitTitleBarButClass (LIBBASE); /* After GADGETCLASS */
-    if (!GetPrivIBase(LIBBASE)->tbbclass)
-    	return NULL;
-
     GetPrivIBase(LIBBASE)->sizebuttonclass = InitSizeButtonClass (LIBBASE); /* After GADGETCLASS */
     if (!GetPrivIBase(LIBBASE)->sizebuttonclass)
     	return NULL;
@@ -251,6 +246,12 @@ AROS_LH1(LIBBASETYPEPTR, open,
     	
     }
 
+    if (!UtilityBase)
+    {
+	if (!(UtilityBase = (void *)OpenLibrary (UTILITYNAME, 39)) )
+	    return NULL; /* don't close anything */
+    }
+
     if (!GetPrivIBase(LIBBASE)->InputHandler)
     {
     	D(bug("Initializing inputhandler\n"));
@@ -278,12 +279,6 @@ AROS_LH1(LIBBASETYPEPTR, open,
     {
 	if (!(LayersBase = (void *)OpenLibrary ("layers.library", 39)) )
 	    return NULL;
-    }
-
-    if (!UtilityBase)
-    {
-	if (!(UtilityBase = (void *)OpenLibrary (UTILITYNAME, 39)) )
-	    return NULL; /* don't close anything */
     }
 
     if (!KeymapBase)

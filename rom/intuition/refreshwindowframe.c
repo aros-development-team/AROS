@@ -45,19 +45,33 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    EnterFunc(bug("RefreshWindowFrame(window=%p)\n", window));
+
+    int_refreshwindowframe(window, FALSE, IntuitionBase);
+    
+    ReturnVoid("RefreshWindowFrame");
+
+    AROS_LIBFUNC_EXIT
+    
+} /* RefreshWindowFrame */
+
+VOID int_refreshwindowframe(struct Window *window, BOOL onlytitle, struct IntuitionBase *IntuitionBase)
+{
     /* Draw a frame around the window */
+    
     struct RastPort *rp = window->BorderRPort;
     struct DrawInfo *dri;
-    struct Region *old_clipregion;
-    WORD  old_scroll_x, old_scroll_y;
-    
-    EnterFunc(bug("RefreshWindowFrame(window=%p)\n", window));
-    
+    struct Region   *old_clipregion;
+    WORD    	     old_scroll_x, old_scroll_y;
+        
     if (!(window->Flags & WFLG_BORDERLESS))
     {    	
 	dri = GetScreenDrawInfo(window->WScreen);
+
 	if (dri)
-	{
+	{	    
+	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+
 	    LockLayerRom(rp->Layer);
 
 	    old_scroll_x = rp->Layer->Scroll_X;
@@ -155,38 +169,56 @@
 	    			   		        window->Width - 2, 
 	    					        window->Height - 2,
 	    					        IntuitionBase);
-						  
-	    InstallClipRegion(rp->Layer,old_clipregion);
-	    
-	    rp->Layer->Scroll_X = old_scroll_x;
-	    rp->Layer->Scroll_Y = old_scroll_y;
-	    
-	    UnlockLayerRom(rp->Layer);
-	    
-    	    /* Refresh all the gadgets with GACT_???BORDER activation set */
+		
+	    if (NULL != window->Title)
+	    {
+		int left = 0, right = window->Width - 1;
+		struct Gadget *g;
 
-            /* The layer must not be locked when calling RefreshGList,
-	       otherwise a deadlock can happen:
-	       
-	       task a: ObtainGirPort: ObtainSem(GadgetLock)
-	       
-	       ** task switch **
-	       
-	       task b: LockLayer
-	               refreshglist -> ObtainGIRPort : ObtainSem(GadgetLock)
-		                                       must wait because locked by task a
-						       
-	       ** task switch **
-	       
-	       task a: ObtainGirPort: LockLayer
-	                              must wait because layer locked by task b
-				      
-	       --------------------------------------------------------------------
-	       = Deadlock: task a tries to lock layer which is locked by task b
-	                   task b will never unlock the layer because it tries to
-			   ObtainSem GadgetLock which is locked by task a.
-	    
-	    */
+		for (g = window->FirstGadget; g; g = g->NextGadget)
+		{
+		    if (g->Activation & GACT_TOPBORDER)
+		    {
+			if (g->LeftEdge >= 0)
+			{
+			    if (g->LeftEdge + g->Width > left)
+				left = g->LeftEdge + g->Width;
+			}
+			else
+			{
+			    if (g->LeftEdge + window->Width < right)
+				right = g->LeftEdge + window->Width;
+			}
+		    }
+		}
+
+		if (right - left > 6)
+		{
+		    ULONG textlen, titlelen;
+		    struct TextExtent te;
+
+		    SetFont(rp, dri->dri_Font);
+
+		    titlelen = strlen(window->Title);
+		    textlen = TextFit(rp
+			    , window->Title
+			    , titlelen
+			    , &te
+			    , NULL
+			    , 1
+			    , right - left - 6
+			    , window->BorderTop - 2);
+
+		    SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLTEXTPEN : TEXTPEN]);
+		    SetDrMd(rp, JAM1);
+		#ifdef __MORPHOS__
+		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 1);
+		#else
+		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 3);
+		#endif
+		    Text(rp, window->Title, textlen);
+		}
+	    }
 	    
 	    int_refreshglist(window->FirstGadget, 
 	                     window, 
@@ -195,15 +227,19 @@
 	                     REFRESHGAD_BORDER, 
 	                     0, 
 	                     IntuitionBase);
-	                     	    
+						  
+	    InstallClipRegion(rp->Layer, old_clipregion);
+	    
+	    rp->Layer->Scroll_X = old_scroll_x;
+	    rp->Layer->Scroll_Y = old_scroll_y;
+	    	    	                     	    
+	    UnlockLayerRom(rp->Layer);
+	    
+            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 
 	    FreeScreenDrawInfo(window->WScreen, dri);
 	    
 	} /* if (dri) */
 	
-    } /* if (!(win->Flags & WFLG_BORDERLESS)) */
-    
-    ReturnVoid("RefreshWindowFrame");
-
-    AROS_LIBFUNC_EXIT
-} /* RefreshWindowFrame */
+    } /* if (!(win->Flags & WFLG_BORDERLESS)) */    
+}
