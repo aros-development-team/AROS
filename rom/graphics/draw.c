@@ -57,35 +57,6 @@
   
   EnterFunc(bug("driver_Draw(rp=%p, x=%d, y=%d)\n", rp, x, y));
   
-  /* nlorentz: If this is a horisontal or vertical line, use RectFill() instead
-     because it is much faster. Note: Maybe it should be up to the HIDD to
-     decide which is faster, but first Draw() would have to use the HIDD
-     Draw() method. Or we could simply introduce DrawHLine() and DrawVLine()
-     methods in the HIDD
-  */
-  if (rp->cp_x == x || rp->cp_y == y)
-  {
-  	LONG x1, x2, y1, y2;
-	if (rp->cp_x > x) {
-	    x1 = x;
-	    x2 = rp->cp_x;
-		
-	} else {
-	    x1 = rp->cp_x;
-	    x2 = x;
-	}
-
-	if (rp->cp_y > y) {
-	    y1 = y;
-	    y2 = rp->cp_y;
-		
-	} else {
-	    y1 = rp->cp_y;
-	    y2 = y;
-	}
-	
-	RectFill(rp, x1, y1, x2, y2);
-  }
 
     if (!CorrectDriverData (rp, GfxBase))
     	return;
