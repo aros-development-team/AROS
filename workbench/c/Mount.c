@@ -271,6 +271,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	    vec->de_SizeBlock      = (IPTR)(args[3]  ? *args[3]  : 512)/4;
 	    vec->de_SegOrg         = args[3]  ? (IPTR)*args[3]  : (IPTR)512;
 	    vec->de_Surfaces       = args[4]  ? (IPTR)*args[4]  : (IPTR)2;
+	    vec->de_SectorPerBlock = 1;
 	    vec->de_BlocksPerTrack = args[5]  ? (IPTR)*args[5]  : (IPTR)11;
 	    vec->de_Reserved       = args[6]  ? (IPTR)*args[6]  : (IPTR)2;
 	    vec->de_Interleave     = args[7]  ? (IPTR)*args[7]  : (IPTR)0;
