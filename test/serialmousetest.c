@@ -37,13 +37,29 @@ static UBYTE mousebuffer[3];
 static ULONG bufptr;
 
 
+struct mouse_action {
+	BYTE	dx;
+	BYTE	dy;
+	ULONG	flags;
+};
+
 struct protocol {
 	const char * signature;
 	ULONG signature_length;
 	ULONG packet_length;
-	void (* handler)(char *, ULONG);
+	const void (* handler)(char *, ULONG, struct mouse_action *);
 	const char * name;
 };
+
+
+/*
+ * The following flags are defined:
+ */
+#define MOUSE_LEFT_BUTTON	0x01
+#define MOUSE_RIGHT_BUTTON	0x02
+#define MOUSE_MIDDLE_BUTTON	0x04
+
+#define MOUSE_DATA_VALID	0x8000
 
 const char ms_mouse[] = 
 {
@@ -72,7 +88,7 @@ const char ms_mouse[] =
 	0x11,0x09
 };
 
-static void ms_mouse_protocol(char * buffer, ULONG len);
+static const void ms_mouse_protocol(char *, ULONG, struct mouse_action * );
 
 
 /*
@@ -83,7 +99,9 @@ const struct protocol protocols[] = {
 	{NULL    , 0               , 0, NULL             , NULL}
 };
 
-static void ms_mouse_protocol(char * buffer, ULONG len)
+static const void ms_mouse_protocol(char * buffer, 
+                                    ULONG len,
+                                    struct mouse_action * ma)
 {
 	ULONG i = 0;
 
@@ -96,7 +114,6 @@ static void ms_mouse_protocol(char * buffer, ULONG len)
 #endif
 	
 	while (len > 0) {
-		BYTE dx,dy;
 		switch (bufptr) {
 			case 0:
 			case 1:
@@ -111,20 +128,18 @@ static void ms_mouse_protocol(char * buffer, ULONG len)
 				bufptr = 0;
 					
 				if ((mousebuffer[2] & 0x40)) {
-				
+					ma->flags = MOUSE_DATA_VALID;
 					if ((mousebuffer[2] & 0x20))
-						printf("Left button down.\n");
+						ma->flags |= MOUSE_LEFT_BUTTON;
 					if ((mousebuffer[2] & 0x10))
-						printf("Right button down.\n");
-					dy = (mousebuffer[1] & 0x20) 
+						ma->flags |= MOUSE_RIGHT_BUTTON;
+					ma->dy = (mousebuffer[1] & 0x20) 
 					           ? (mousebuffer[1]-0x40)
 					           : (mousebuffer[1]);
-					dx = (mousebuffer[0] & 0x20) 
+					ma->dx = (mousebuffer[0] & 0x20) 
 					           ? (mousebuffer[0]-0x40)
 					           : (mousebuffer[0]);
 					
-					if (dx || dy)
-						printf("Movement: dx %d, dy %d\n",dx,dy);
 				}
 			break;
 		
@@ -136,10 +151,63 @@ static void ms_mouse_protocol(char * buffer, ULONG len)
 	}
 }
 
+static void check_mouse_action(struct mouse_action * old_action,
+                               struct mouse_action * cur_action)
+{
+	if (cur_action->flags & MOUSE_DATA_VALID &&
+	    old_action->flags & MOUSE_DATA_VALID) {
+		/*
+		 * Check buttons
+		 */
+		if (old_action->flags & MOUSE_LEFT_BUTTON) {
+			if (0 == (cur_action->flags & MOUSE_LEFT_BUTTON)) {
+		    		printf("Left mouse button released!\n");
+			}
+		} else
+		if (0 == (old_action->flags & MOUSE_LEFT_BUTTON)) {
+			if (cur_action->flags & MOUSE_LEFT_BUTTON) {
+				printf("Left mouse button pressed!\n");
+			}
+		}
+
+		if (old_action->flags & MOUSE_RIGHT_BUTTON) {
+			if (0 == (cur_action->flags & MOUSE_RIGHT_BUTTON)) {
+		    		printf("Right mouse button released!\n");
+			}
+		} else
+		if (0 == (old_action->flags & MOUSE_RIGHT_BUTTON)) {
+			if (cur_action->flags & MOUSE_RIGHT_BUTTON) {
+				printf("Right mouse button pressed!\n");
+			}
+		}
+
+		if (old_action->flags & MOUSE_MIDDLE_BUTTON) {
+			if (0 == (cur_action->flags & MOUSE_MIDDLE_BUTTON)) {
+		    		printf("Middle mouse button released!\n");
+			}
+		} else
+		if (0 == (old_action->flags & MOUSE_MIDDLE_BUTTON)) {
+			if (cur_action->flags & MOUSE_MIDDLE_BUTTON) {
+				printf("Middle mouse button pressed!\n");
+			}
+		}
+
+		if (cur_action->dx) {
+			printf("Mouse movement left/right: %d\n",cur_action->dx);
+		}
+		if (cur_action->dy) {
+			printf("Mouse movement up/down: %d\n",cur_action->dy);
+		}
+	}
+}
+
 static void read_input(struct IOExtSer * IORequest, 
                        struct MsgPort * notifport,
-                       void (* handler)(char *, ULONG))
+                       const void (* handler)(char *, ULONG, struct mouse_action *))
 {
+	struct mouse_action old_action, cur_action;
+	old_action.flags = 0;
+	cur_action.flags = 0;
 	int n = 3;
 	while (1) {
 		BYTE buf[10];
@@ -157,12 +225,19 @@ static void read_input(struct IOExtSer * IORequest,
 		            (1 << notifport->mp_SigBit) |
 		            SIGBREAKF_CTRL_C );
 		if (NULL != CheckIO((struct IORequest *)IORequest)) {
+			
 			if (NULL == handler) {
 				printf("No handler given. Calling def. handler!\n");
-				ms_mouse_protocol(buf, n);
+				ms_mouse_protocol(buf, n, &cur_action);
 			} else {
-				handler(buf, n);
+				handler(buf, n, &cur_action);
 			}
+			
+			check_mouse_action(&old_action, &cur_action);
+
+			if (cur_action.flags & MOUSE_DATA_VALID)
+				old_action = cur_action;
+			
 			IODone = TRUE;
 		}
 		
@@ -232,9 +307,8 @@ static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport
 {
 	struct MsgPort * SerPort;
         ULONG unitnum = unit;
-                	
-        printf("unit %ld\n",unitnum);
-	SerPort = CreatePort(NULL,0);
+        
+       	SerPort = CreatePort(NULL,0);
 	if (NULL != SerPort)  {
 		struct IOExtSer * IORequest;
 		IORequest = (struct IOExtSer *)CreateExtIO(SerPort, sizeof(struct IOExtSer));
@@ -256,7 +330,7 @@ static void mouse_driver(ULONG unit, BOOL probe_proto,struct MsgPort * notifport
 				
 				
 				if (0 == ((struct IORequest *)IORequest)->io_Error) {
-					void (*handler) (char*,ULONG) = NULL;
+					const void (*handler) (char*,ULONG,struct mouse_action *) = NULL;
 					if (TRUE == probe_proto) {
 						const struct protocol * p;
 						p = probe_protocol(IORequest, notifport);
