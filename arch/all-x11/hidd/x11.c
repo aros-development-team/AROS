@@ -12,6 +12,7 @@
 #include <hidd/hidd.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
@@ -24,7 +25,7 @@
 #include <exec/memory.h>
 #include <exec/libraries.h>
 #include <exec/resident.h>
-
+#include <hardware/intbits.h>
 #include <utility/utility.h>
 
 #include <aros/asmcall.h>
@@ -44,6 +45,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define NOUNIXIO 1
 
 #define XTASK_NAME "x11hidd task"
 
@@ -200,6 +202,19 @@ VOID free_x11class(struct x11_staticdata *xsd)
     ReturnVoid("free_x11class");
 }
 
+#if NOUNIXIO
+
+AROS_UFH4(ULONG, x11VBlank,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    Signal((struct Task *)data, SIGBREAKF_CTRL_D);
+    return 0;
+}
+
+#else
 
 static int unixio_callback(int displayfd, struct x11_staticdata *xsd)
 {
@@ -212,11 +227,28 @@ UX11
 
     return pending;
 }
+#endif
 
 VOID x11task_entry(struct x11task_params *xtp)
 {
-    HIDD *unixio;
     struct x11_staticdata *xsd = xtp->xsd;
+  
+#if NOUNIXIO
+    struct Interrupt myint;
+    
+    myint.is_Code         = (APTR)&x11VBlank;
+    myint.is_Data         = FindTask(NULL);
+    myint.is_Node.ln_Name = "X11 VBlank server";
+    myint.is_Node.ln_Pri  = 0;
+    myint.is_Node.ln_Type = NT_INTERRUPT;
+	
+    AddIntServer(INTB_VERTB, &myint);
+
+    Signal(xtp->parent, xtp->ok_signal);
+
+#else
+
+    HIDD *unixio;
     
     unixio = (HIDD)New_UnixIO(OOPBase);
     if (unixio)
@@ -227,14 +259,19 @@ VOID x11task_entry(struct x11task_params *xtp)
     {
     	Signal(xtp->parent, xtp->fail_signal);
     }
-    
+#endif    
 
     for (;;)
     {
-        int ret;
 	XEvent event;
 	
-	
+#if NOUNIXIO
+
+	Wait(SIGBREAKF_CTRL_D);
+
+#else	
+        int ret;
+
     	ret = (int)Hidd_UnixIO_Wait( unixio
 			, ConnectionNumber( xsd->display )
 			, vHidd_UnixIO_Read
@@ -248,7 +285,7 @@ D(bug("Got input from unixio\n"));
 	{
 	    continue;
 	}
-
+#endif
  	for (;;)	    
 	{
 	    BOOL window_found = FALSE;
