@@ -1,0 +1,84 @@
+#!/bin/sh
+#set -x
+
+opts=""
+files=""
+dest=""
+cconly=0
+
+CC=$1
+shift
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+    -o )
+	dest="$2"
+	shift
+	;;
+    -o* )
+	dest="`echo $1 | cut -c3-`"
+	;;
+    -c )
+	cconly=1
+	opts="$opts -c"
+	;;
+    -I )
+	opts="$opts -I$2"
+	shift
+	;;
+    -l )
+	opts="$opts -l$2"
+	shift
+	;;
+    -L )
+	opts="$opts -L$2"
+	shift
+	;;
+    *.a )
+	opts="$opts $1"
+	;;
+    -* )
+	opts="$opts $1"
+	;;
+    * )
+	files="$files $1"
+	;;
+    esac
+    shift
+done
+
+#echo "opts=$opts"
+#echo "files=$files"
+
+asm=0
+case "$files" in
+    *.s* )
+	asm=1;
+	srcname=`basename $files .s`
+	;;
+    *.c* )
+	asm=0;
+	srcname=`basename $files .c`
+	;;
+esac
+
+if [ "$cconly" -eq 1 ]; then
+    srcdir=`dirname $files`
+    destdir=`dirname $dest`
+
+    if [ "$asm" -eq 1 ]; then
+	cp $srcdir/$srcname.s $destdir/$srcname.s
+    else
+	#echo $CC -S -o $destdir/$srcname.s $files $opts
+	$CC -S -o $destdir/$srcname.s $files $opts
+    fi
+    #echo "Purify $destdir/$srcname.s -o $destdir/$srcname.new"
+    gawk -f /home/digulla/AROS/scripts/purify.awk -- \
+	$destdir/$srcname.s -o $destdir/$srcname.new && \
+	mv $destdir/$srcname.new $destdir/$srcname.s
+    #echo $CC -o $dest $destdir/$srcname.s $opts
+    $CC -o $dest $destdir/$srcname.s $opts
+else
+    #echo $CC -o $dest $files $opts
+    $CC -o $dest $files $opts
+fi
