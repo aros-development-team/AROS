@@ -341,7 +341,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->external_display_hook.h_Entry = (HOOKFUNC)Imageadjust_External_Display;
     set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
 
-    DoMethod(obj,MUIM_Notify,MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);
+    /* Because we have many childs, we disbale the forwarding of the notify method */
+    DoMethod(obj, MUIM_Group_DoMethodNoForward, MUIM_Notify, MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);
 
     Imageadjust_SetImagespec(obj,data,spec);
     return (IPTR)obj;
@@ -459,7 +460,6 @@ static IPTR Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
     DoMethod(data->external_list,MUIM_List_Clear);
     AddDirectory(data->external_list,"MUI:Images",-1);
     return 0;
-
 }
 
 #ifndef _AROS

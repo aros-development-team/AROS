@@ -84,6 +84,7 @@ struct MUI_GroupData
     LONG virt_mwidth,virt_mheight; /* The complete width */
     LONG saved_minwidth,saved_minheight;
     LONG dont_forward_get; /* Setted temporary to 1 so that the get method is not forwarded */
+    LONG dont_forward_methods; /* Setted temporary to 1, meaning that the methods are not forwarded to the group's children */
 };
 
 #define GROUP_HORIZ       (1<<1)
@@ -621,6 +622,20 @@ Group_Sort(struct IClass *cl, Object *obj, struct MUIP_Group_Sort *msg)
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_Group_DoMethodNoForward
+
+ Executes the given method but does not forward it to the children
+**************************************************************************/
+static ULONG Group_DoMethodNoForward(struct IClass *cl, Object *obj, struct MUIP_Group_DoMethodNoForward *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    ULONG rc;
+    data->dont_forward_methods = 1; /* disable forwarding */
+    rc = DoMethodA(obj, (Msg)&msg->DoMethodID); /* Probably doesn't not work correctly on AROS? */
+    data->dont_forward_methods = 0;
+    return rc;
+}
 
 /*
  * Propagate a method to group childs.
@@ -632,6 +647,8 @@ Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
     Object               *cstate;
     Object               *child;
     struct MinList       *ChildList;
+
+    if (data->dont_forward_methods) return TRUE;
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
@@ -2249,6 +2266,7 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 	return Group_InitChange(cl, obj, (APTR)msg);
     case MUIM_Group_Sort :
 	return Group_Sort(cl, obj, (APTR)msg);
+	case MUIM_Group_DoMethodNoForward: return Group_DoMethodNoForward(cl, obj, (APTR)msg);
     case MUIM_ConnectParent : return Group_ConnectParent(cl, obj, (APTR)msg);
     case MUIM_DisconnectParent: return Group_DisconnectParent(cl, obj, (APTR)msg);
     case MUIM_Layout: return Group_Layout(cl, obj, (APTR)msg);
