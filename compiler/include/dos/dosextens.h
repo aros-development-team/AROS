@@ -337,7 +337,7 @@ struct FileHandle
 
 
 /* Structure of a lock, as returned by Lock() and similar functions. This
-   structure is not by AROS. Lock() also returns a struct FileHandle! */
+   structure is not used by AROS. Lock() also returns a struct FileHandle! */
 #if 0
 struct FileLock
 {
