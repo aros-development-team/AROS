@@ -707,10 +707,24 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case CMD_START:
+      /*
+       * Start the serial port IO. Tell the hidd to do that.
+       */
+      HIDD_SerialUnit_Start(SU->su_Unit);
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
+      ioreq->IOSer.io_Flags |= IOF_QUICK;
     break;
 
     /*******************************************************************/
     case CMD_STOP:
+      /*
+       * Stop any serial port IO going on. Tell the hidd to do that.
+       */
+      HIDD_SerialUnit_Stop(SU->su_Unit);
+      if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOSer.io_Message);
+      ioreq->IOSer.io_Flags |= IOF_QUICK;
     break;
 
     /*******************************************************************/
