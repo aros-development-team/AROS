@@ -465,6 +465,7 @@ AROS_UFH3S(IPTR, dispatch_gadgetclass,
     	
     case OM_DISPOSE:
     	FreeICData(&(GD(o)->IC));
+	retval = DoSuperMethodA(cl, o, (Msg)msg);
     	break;    	
 
     default:
