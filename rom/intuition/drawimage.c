@@ -7,6 +7,7 @@
 */
 #include "intuition_intern.h"
 #include <proto/graphics.h>
+#include <aros/macros.h>
 
 #undef DEBUG
 #define DEBUG 1
@@ -117,13 +118,18 @@
 
 		for (d=0; d < image->Depth; d++)
 		{
+		    UWORD dat;
+		    
 		    while (!bits[plane])
 		    {
 			plane ++;
 			shift <<= 1;
 		    }
 
-		    pen |= (bits[plane][offset] & bitmask) ? shift : 0;
+		    dat = bits[plane][offset];
+		    dat = AROS_WORD2BE(dat);
+		    
+		    pen |= (dat & bitmask) ? shift : 0;
 
 		    plane ++;
 		    shift <<= 1;
@@ -158,16 +164,18 @@
 		    bitmask = START_BITMASK;
 		    offset ++;
 		}
-	    }
+		
+	    } /* for (x=0; x < image->Width; x++, xoff++) */
 
 	    SetAPen (rp, pen);
 	    Draw (rp, xoff-1, yoff);
 
 	    if (bitmask != START_BITMASK)
 		offset ++;
-	}
-
-    }
+		
+	} /* for (y=0; y < image->Height; y++, yoff++) */
+	
+    } /* for ( ; image; image=image->NextImage) */
 
     /* Restore RastPort */
     SetAPen (rp, apen);
