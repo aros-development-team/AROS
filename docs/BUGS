@@ -575,6 +575,9 @@ stefan.berger@att.net
 'Which' does almost never return the path to the program even if that
 program is in the path list. Try "Which Which".
 
+SDuvan: This is not a bug in 'Which'. The reason for this is that the 
+        executable bit is not set for AROS executables hosted on UNIX. 
+
 BUG000082
 adam.chodorowski@chello.se
 Keyboard repeat in X isn't re-enabled properly after AROS has exited (either 
