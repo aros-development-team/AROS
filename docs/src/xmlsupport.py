@@ -106,6 +106,7 @@ class Reader:
 	pos = string.find (self.string, end, self.pos)
 	assert pos != -1
 	text = self.string[self.pos:pos]
+	self.adjustLineCount (text)
 	self.pos = pos + len (end)
 	return Text (text)
 	
@@ -136,12 +137,12 @@ class Reader:
 		tagEnd = string.find (self.string, '>', self.pos)
 		assert tagEnd != -1
 		text = self.string[self.pos+1:tagEnd]
+		self.adjustLineCount (text)
 		empty = 0
 		if text[-1] == '/':
 		    #print text
 		    empty = 1
 		    text = text[:-1]
-		self.adjustLineCount (text)
 		self.pos = tagEnd + 1
 		text = string.strip (text)
 		if text[0] == '/':
@@ -157,6 +158,7 @@ class Reader:
 	    assert pos != -1
 	    text = self.string[self.pos+1:pos]
 	    self.pos = pos+1
+	    self.adjustLineCount (text)
 	    return Entity (text)
 	else:
 	    nextTagStart = string.find (self.string, '<', self.pos)
