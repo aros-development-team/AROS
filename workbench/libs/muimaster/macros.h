@@ -268,7 +268,7 @@
 ({                                                                      \
     IPTR  __zune_get_storage;                                           \
     ULONG __zune_get_ret = GetAttr((attr), (obj), &__zune_get_storage); \
-    (IPTR)(*storage) = __zune_get_storage;                              \
+    *storage = (typeof(*storage))__zune_get_storage;                    \
     __zune_get_ret;                                                     \
 })
 
