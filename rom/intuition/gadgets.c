@@ -404,6 +404,8 @@ void GetScrGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 	    box->Width = EG(gad)->BoundsWidth + ADDREL(gad, GFLG_RELWIDTH, (&domain), Width);
 
 	    box->Height = EG(gad)->BoundsHeight + ADDREL(gad, GFLG_RELHEIGHT, (&domain), Height);
+	    
+	    return;
 
 	} /* if (gad->MoreFlags & GMORE_BOUNDS) */
 	
