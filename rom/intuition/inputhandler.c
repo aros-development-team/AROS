@@ -35,7 +35,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
     iihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
     if (iihandler)
     {
-	iihdata = AllocMem(sizeof (struct IIHData), MEMF_ANY|MEMF_CLEAR);
+	iihdata = AllocMem(sizeof (struct IIHData), MEMF_PUBLIC|MEMF_CLEAR);
 	if (iihdata)
 	{
 	    struct MsgPort *port;
@@ -154,7 +154,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct Gadget *gadget = iihdata->ActiveGadget;
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
     ULONG  lock;
-    UWORD wait = 0;
     char *ptr = NULL;
     WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY;
     struct GadgetInfo stackgi, *gi = &stackgi;
@@ -173,7 +172,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	reuse_event = FALSE;
 	ptr = NULL;
 
-	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage */
+	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage.
+	** If it was sent to an app, then we have to allocate a new IntuiMessage
+	*/
 	if (!im)
 	{
 	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
@@ -811,7 +812,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		{
 		    PutMsg (w->UserPort, (struct Message *)im);
 		    im = NULL;
-		    wait ++;
 		}
 
 		UnlockIBase (lock);
@@ -828,9 +828,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     IntuitionBase->ActiveWindow = w;
     UnlockIBase(lock);
 
-    /* If IntuiMessages has been swallowed (im->Class = 0), there is a free IntuiMessage
-    ** struct (eg. not sent to the apps messageport),
-    ** and we must free it here
+    /* If the last intuimessage intialized was a swallowed event, then
+       there's no more use of it as all events have been processed,
+       and we may free it.
     */
 
     if (im)
@@ -839,28 +839,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	im = NULL;
     }
 
-    /* Wait for the apps to reply to the sent IntuiMessage.
-    ** Each time we wake up we will probably only have receive
-    ** one message. This is because input.device run on higher pri than apps,
-    ** and will therefore be woke up immediately when an app
-    ** calls ReplyMsg().
-    */
 
-    D(bug("Going into waitloop	for reply from app\n"));
-    while (wait)
+    D(bug("Poll the replyport for replies from apps\n"));
+
+    /* Empty port */
+    while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
     {
-	Wait (1L << iihdata->IntuiReplyPort->mp_SigBit);
-    
-       D(bug("Returned from wait\n"));
-
-	/* Empty port */
-	while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
-	{
-	    FreeMem (im, sizeof (struct IntuiMessage));
-	    wait --;
-	}
+	FreeMem (im, sizeof (struct IntuiMessage));
     }
 
-    D(bug("Outside waitloop\n"));
+    D(bug("Outside pollingloop\n"));
     return (oldchain);
 }
