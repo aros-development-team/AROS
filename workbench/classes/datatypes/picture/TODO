@@ -1,19 +1,22 @@
 picture.datatype is an external class. So it has only very few
 functions: some library-support and the class-dispatcher.
 But the methods and properties of the class must be written.
+As a first step picture.datatype will be developed for a very
+special environment: AROS datatypes.library, AROS ppm.datatype,
+AROS Multiview.
+When it runs in this env it will be generalized.
 The following items must be implemented:
 
 library-framework               100% done
 documentation                   Hey, I am a programmer, not an author ;)
-dispatcher-function             80% done, some missing support-functions
-				for the methods
+dispatcher-function             100% done
 
-methods:                        still missing completely
-    OM_NEW
-    OM_DISPOSE
-    OM_UPDATE
-    OM_SET
-    OM_GET
+methods:                        
+    OM_NEW			80% done
+    OM_DISPOSE			80% done
+    OM_UPDATE			part of OM_SET
+    OM_SET			90% done
+    OM_GET			90% done
     GM_RENDER
     GM_LAYOUT
     GM_GOACTIVE
@@ -26,3 +29,26 @@ methods:                        still missing completely
     GM_HITTEST
     DTM_PROCLAYOUT
     DTM_FRAMEBOX    
+
+The following attributes must be supported:
+    OBP_Precision         (I)
+    DTA_Methods           (G)
+    PDTA_ModeID           (ISG)
+    PDTA_BitMapHeader     (G)
+    PDTA_BitMap           (ISG)
+    PDTA_ColorRegisters   (G)
+    PDTA_CRegs            (G)
+    PDTA_GRegs            (G)
+    PDTA_ColorTable       (G)
+    PDTA_ColorTable2      (G)
+    PDTA_Allocated        (G)
+    PDTA_NumColors        (ISG)
+    PDTA_NumAlloc         (G)
+    PDTA_Remap            (I)
+    PDTA_Screen           (IS)
+    PDTA_FreeSourceBitMap (IS)
+    PDTA_Grab             (ISG)
+    PDTA_DestBitMap       (G)
+    PDTA_ClassBitMap      (ISG)
+    PDTA_NumSparse        (I)
+    PDTA_SparseTable      (I)

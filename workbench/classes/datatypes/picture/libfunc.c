@@ -14,6 +14,8 @@
 #include <proto/intuition.h>
 
 #include "compilerspecific.h"
+#include "debug.h"
+
 
 struct IClass           *dt_class;
 
@@ -50,6 +52,8 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
     SysBase = *(struct ExecBase**)4;
 #endif
 
+    D(bug("picture.datatype/__UserLibInit\n"));
+
     if((LayersBase = OpenLibrary("layers.library", 39)))
     {
 	if((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 39)))
@@ -74,6 +78,8 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 				    {
 					AddClass(dt_class);
 					
+					D(bug("picture.datatype/__UserLibInit: Returning success\n"));
+
 					return 0;
 				    }
 				}
@@ -85,6 +91,8 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 	}
     }
     
+    D(bug("picture.datatype/__UserLibInit: Returning failure\n"));
+
     return -1;
 }
 
@@ -92,12 +100,18 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 
 ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
 {
+    D(bug("picture.datatype/__UserLibCleanup\n"));
+
+    D(bug("picture.datatype/__UserLibCleanup: Freeing class\n"));
+
     if(dt_class)
     {
 	RemoveClass(dt_class);
 	FreeClass(dt_class);
 	dt_class = NULL;
     }
+
+    D(bug("picture.datatype/__UserLibCleanup: Closing Libraries\n"));
     
     if(IFFParseBase) CloseLibrary(IFFParseBase);
     if(DataTypesBase) CloseLibrary(DataTypesBase);
@@ -107,12 +121,16 @@ ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
     if(IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
     if(GfxBase) CloseLibrary((struct Library *)GfxBase);
     if(LayersBase) CloseLibrary(LayersBase);
+
+    D(bug("picture.datatype/__UserLibCleanup: Done\n"));
 }
 
 /**************************************************************************************************/
 
 SAVEDS STDARGS struct IClass *ObtainEngine(void)
 {
+    D(bug("picture.datatype/ObtainEngine: returning %x\n", dt_class));
+
     return dt_class;
 }
 
