@@ -157,11 +157,11 @@ endif
 #MM- workbench-hidd-unix : hidd-serial-unix-module
 
 	
-#MM hidd-serial-unix-linklib : setup includes linklibs kernel-hidd-unix
+#MM hidd-serial-unix-linklib : setup includes linklibs kernel-hidd-unix workbench-hidd-serial-stubs
 hidd-serial-unix-linklib : $(LIB) setup
 	@$(NOP)
 
-#MM hidd-serial-unix-module : setup includes linklibs kernel-hidd-unix
+#MM hidd-serial-unix-module : setup includes linklibs kernel-hidd-unix workbench-hidd-serial-stubs
 hidd-serial-unix-module : $(SLIB)
 	@$(NOP)
 
