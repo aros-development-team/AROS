@@ -11,3 +11,5 @@ t
 t.asm
 make.log
 c_lib
+thread
+thread.c
