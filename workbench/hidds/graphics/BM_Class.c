@@ -3119,7 +3119,7 @@ static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 
 	     data = OOP_INST_DATA(cl, o);
 
-	     bpl = ((HIDDT_PixelFormat *)data->prot.pixfmt)->size * msg->width;
+	     bpl = ((HIDDT_PixelFormat *)data->prot.pixfmt)->bytes_per_pixel * msg->width;
 	     break;
 	}
 
@@ -3138,7 +3138,7 @@ static ULONG bitmap_bytesperline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 		return 0;
 	    }
 
-	    bpl = ((HIDDT_PixelFormat *)pf)->size * msg->width;
+	    bpl = ((HIDDT_PixelFormat *)pf)->bytes_per_pixel * msg->width;
 	    break;
 	}
      }
