@@ -44,6 +44,9 @@ clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
 	$(END_FILE).c $(LIB) $(SLIB)
 
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform
 # shared library calls sometimes leads the optimizer to a dead-end situation
