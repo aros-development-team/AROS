@@ -135,15 +135,28 @@ kprintf("LoadWB.ExecuteCommand\n");
     if(finish == 1)
     {
 	BPTR input;
-	GT_GetGadgetAttrs(gad, cmdwin, NULL, GTST_String, &cmdstring, TAG_DONE);
-	input = Open("CON:////AROS Shell/CLOSE/AUTO", FMF_READ);
-	SystemTags(cmdstring,
-	    SYS_Asynch,		TRUE,
-	    SYS_Input,		input,
-	    SYS_Output,		(IPTR)NULL,
-	    SYS_Error,		(IPTR)NULL,
-	    TAG_DONE);
 
+        GT_GetGadgetAttrs(gad, cmdwin, NULL, GTST_String, &cmdstring, TAG_DONE);
+
+        input = Open("CON:////AROS Shell/CLOSE/AUTO/WAIT", FMF_READ);
+
+        if
+        (
+            SystemTags
+            (
+                cmdstring,
+	    	SYS_Asynch,	TRUE,
+	    	SYS_Input,  (IPTR)input,
+	    	SYS_Output, (IPTR)NULL,
+	    	SYS_Error,  (IPTR)NULL,
+	    	TAG_DONE
+            ) == -1
+            &&
+            input
+        )
+        {
+            Close(input);
+        }
     }
 
     RemoveGList(cmdwin, cmdglist, -1);
