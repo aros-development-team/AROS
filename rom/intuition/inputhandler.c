@@ -1249,6 +1249,10 @@ D(bug("Window: %p\n", w));
 		       UnlockLayer(L);
                      }
                      
+		     /* Before resizing the layers eraserect the area of all
+		        GFLG_REL*** gadgets (except those in the window border */
+	             EraseRelGadgetArea(targetwindow, IntuitionBase);
+		     
                      /* I first resize the outer window if a GZZ window */
                      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
@@ -1287,15 +1291,15 @@ D(bug("Window: %p\n", w));
                          L = targetlayer->back;
                        }
                      }
-                     /* and redraw the window frame */
-                     RefreshWindowFrame(targetwindow);
-
-		     /* Change width of dragbar gadget */
-
-
 		     /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
 		     DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
 
+                     /* and redraw the window frame */
+                     RefreshWindowFrame(targetwindow);
+
+		     /* and refresh all gadgets except border gadgets */
+		     int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
+		     
 		     /* Send IDCMP_NEWSIZE to resized window */
                      {
 		    	struct IntuiMessage *imsg;
