@@ -5,13 +5,22 @@ Basic Installation of AROS-SOURCES
 
 1. Get the source tree.
 
-	At the moment you have to be an AROS-developer to get the sources
-	due to our status with Amiga Inc., which says that we must have a
-	licence.
 	As you can read this text, I assume that you already have the
-	sources from the CVS server.
-	To obtain a recent version, do a "cvs update -d", so you get all
-	new files and directories.
+	sources from the CVS server, AmiNet or the AROS FTP server.
+
+	To obtain a recent version via cvs, do a "cvs update -d -P", so
+	you get all new files and directories.
+
+	Locations are:
+
+	* CVS - Bleeding edge
+	:pserver:username@cvs.aros.org/home/cvs/aros
+
+	* AmiNet - Stable releases
+	misc/emu
+
+	* AROS FTP - All releases
+	ftp://ftp.aros.org/
 
 
 2. Install the tree, say in "/usr/src" or anything apropriate.
@@ -19,13 +28,13 @@ Basic Installation of AROS-SOURCES
 	It is possible to build AROS in your main cvs-copy, as all
 	generated files should be ignored by the CVS server, but I think
 	it is better to leave your copy clean, if you can afford the disk
-	space. A complete compilation has over 6000 files and ~50MB
-	for -O2 optimized binaries!
+	space. A complete compilation has over 6000 files (inodes) and
+	approx. 50 MegaByte for -O2 optimized binaries!
 
 
 3. Make sure you have all the necessary tools for compilation.
 
-	i.e. a c-compiler (gcc/egcs recommended), binutils, gawk, etc.
+	I.e. a c-compiler (gcc/egcs recommended), binutils, gawk, etc.
 
 
 4. Run "autoconf".
@@ -57,12 +66,19 @@ Basic Installation of AROS-SOURCES
 	Use "./configure --help" for all possible options.
 
 
-5. Compile your sources.
+5. Configure make.opts
+
+	AROS/make.defaults contains the default values for compilation.
+	Copy this file to AROS/make.opts and edit it to your needs.
+	Options are documented in the default file.
+
+
+6. Compile your sources.
 
 	Call the wrapper Makefile with 'make'
 
 
-6. Install the package.
+7. Install the package.
 
 	If you compiled AROS as an emulation then all binaries are placed
 	in AROS/bin/$(os)-$(cpu)/AROS. To start AROS 'cd' into this dir,
