@@ -785,7 +785,10 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     
     if (!CorrectDriverData (rp, GfxBase))
     	return;
-	
+
+    /* does this rastport have a layer. If yes, lock the layer it.*/
+    if (NULL != rp->Layer)
+      LockLayerRom(rp->Layer);	
     
     tf = rp->Font;
 
@@ -849,6 +852,10 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     } /* for (each character to render) */
     
     Move(rp, current_x, rp->cp_y);
+    
+    if (NULL != rp->Layer)
+      UnlockLayerRom(rp->Layer);
+    
     return;
 
 }
@@ -1014,6 +1021,11 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
       return -1;
     }
   }
+  else
+  {
+    /* No one may access the layer while I am doing this here! */
+    LockLayerRom(L);
+  }
 
   if (0 != (Width & 0x07))
     Width = (Width >> 3) + 1;
@@ -1037,12 +1049,11 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
         y > (L->bounds.MaxY - YRel + 1)   )
     {
       /* ah, no it is not. So we exit. */
+      UnlockLayerRom(L);
       return -1;
     }
     /* No one may interrupt me while I'm working with this layer */
-/*!!!
-    LockLayer(L);
-*/
+
     /* search the list of ClipRects. If the cliprect where the pixel
        goes into does not have an entry in lobs, we can directly
        draw it to the bitmap, otherwise we have to draw it into the
@@ -1151,10 +1162,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
  } /* if (found inside offsecreen cliprect) */
   /* if there was a layer I have to unlock it now */
 
-/*!!!
   if (NULL != L) 
-    UnlockLayer(L);
-*/
+    UnlockLayerRom(L);
 
   return penno;
 
@@ -1203,7 +1212,12 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 	return -1L;
     }
   }
-
+  else
+  {
+    /* No one may access the layer while I am doing this here! */
+    LockLayerRom(L);
+  }
+  
   if (0 != (Width & 0x07))
     Width = (Width >> 3) + 1;
   else
@@ -1225,6 +1239,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         y > (L->bounds.MaxY - YRel + 1)   )
     {
       /* ah, no it is not. So we exit */
+        UnlockLayerRom(L);
 	return -1L;
     }
     
@@ -1232,9 +1247,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     /* But there is a problem: if this is called from a routine that 
        already  locked  the layer is already I am stuck. 
     */
-/* !!!
-    LockLayer(L);
-*/
+
     /* search the list of ClipRects. If the cliprect where the pixel
        goes into does not have an entry in lobs, we can directly
        draw it to the bitmap, otherwise we have to draw it into the
@@ -1314,12 +1327,6 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
   else
   { /* this is probably something like a screen */
   
-
-    /* if it is an old window... */
-/*    if (bm->Flags & BMF_AROS_OLDWINDOW)
-         return driver_WritePixel (rp, x, y, GfxBase);
-*/
-
     i = y * Width + (x >> 3);
     Mask = (1 << (7-(x & 0x07)));
 
@@ -1366,10 +1373,9 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 
 
   /* if there was a layer I have to unlock it now */
-/*!!!
+
   if (NULL != L) 
-    UnlockLayer(L);
-*/
+    UnlockLayerRom(L);
 
   return 0;
 
