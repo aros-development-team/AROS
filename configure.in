@@ -362,7 +362,6 @@ aros_cc_pre=""
 aros_target_cc="$aros_host_cc"
 aros_target_as="$aros_host_cc"
 aros_shared_ld="$aros_host_ld"
-aros_static_ld="$aros_host_ld"
 aros_kernel_ld="$aros_host_ld"
 aros_target_ld="/usr/bin/ld"
 
@@ -381,18 +380,15 @@ aros_target_strip="strip"
 
 # It is necessary to clear the include and link paths for target
 # commands. This should help clear up problems when cross compiling.
-aros_target_cflags="-Wall -Werror-implicit-function-declaration"
-aros_target_aflags="-Wall -x assembler-with-cpp"
-aros_target_ldflags="-nostartfiles -nostdlib"
+aros_config_cflags="-Wall -Werror-implicit-function-declaration"
+aros_config_aflags="-Wall -x assembler-with-cpp"
+aros_config_ldflags=""
 
 aros_shared_default=yes
 
 aros_shared_cflags="-fPIC"
 aros_shared_aflags=""
 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-aros_static_cflags=""
-aros_static_aflags=""
-aros_static_ldflags=""
 aros_kernel_ldflags="-Wl,-rpath,./lib"
 
 aros_compiler_libs=
@@ -434,7 +430,7 @@ else
     build_type="personal"
 fi
 
-aros_target_cflags="$aros_target_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
+aros_config_cflags="$aros_config_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build_type_string"
 
 AC_MSG_RESULT($build_type)
 
@@ -526,10 +522,10 @@ AC_MSG_CHECKING([what optimization level to use])
 AC_ARG_WITH(optimization,[  --with-optimization=N   Use optimization level N [default=2]],optimization=$withval,optimization=unknown)
 if test "$optimization" = "unknown"; then
     dnl default is -O2 for normal builds, -O0 for debug builds
-    aros_target_cflags="$aros_target_cflags -O2"
+    aros_config_cflags="$aros_config_cflags -O2"
     aros_debug_cflags="$aros_debug_cflags -O0"
 else
-    aros_target_cflags="$aros_target_cflags -O$optimization"
+    aros_config_cflags="$aros_config_cflags -O$optimization"
     aros_debug_cflags="$aros_debug_cflags -O$optimization"
 fi
 AC_MSG_RESULT($withval)
@@ -616,7 +612,6 @@ case "$target_os" in
 
     prep)
 	aros_target_arch="prep"
-	aros_target_cflags="$aros_target_cflags -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_object_format="elf32ppc"
@@ -637,7 +632,6 @@ case "$target_os" in
 		aros_target_strip="ppc-linux-strip"
 		aros_target_objcopy="ppc-linux-objcopy"
 		aros_target_objdump="ppc-linux-objdump"
-		aros_static_ld="ppc-linux-ld"
 		aros_shared_ld="ppc-linux-ld"
 		aros_kernel_ld="ppc-linux-ld"
 		;;
@@ -697,7 +691,6 @@ case "$target_os" in
                 AC_MSG_ERROR("Unknown CPU for OpenBSD -- $target_cpu")
                 ;;
         esac
-	aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
 	aros_target_genmap="-Wl,-M -Xlinker >"
         aros_target_nm_flags="-u"
 	aros_flavour="emulation"
@@ -716,7 +709,7 @@ case "$target_os" in
                 AC_MSG_ERROR("Unknown CPU for Solaris -- $target_cpu")
                 ;;
         esac
-        aros_target_cflags="$aros_target_cflags -D$aros_target_cpu"
+        aros_config_cflags="$aros_config_cflags -D$aros_target_cpu"
         aros_flavour="emulation"
         ;;
 
@@ -726,7 +719,6 @@ case "$target_os" in
 	aros_target_cpu="ppc"
 	aros_object_format="elf_ppc"
 	aros_flavour="nativecompat"
-	aros_target_cflags="-O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__ -D__NOLIBBASE__"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
 	gcc_target_cpu="ppc"
 	;;
@@ -736,22 +728,18 @@ case "$target_os" in
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_shared_default="no"
 
-	aros_target_cflags="$aros_target_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
+	aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
 
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
 		aros_object_format="m68kelf"
 		aros_flavour="nativecompat"
-		aros_target_cflags="$aros_target_cflags -m68020 -m68881"
-		aros_target_aflags="$aros_target_aflags -m68060"
 		gcc_target_cpu="mc68000"
 		;;
 	    *ppc*)
 		aros_cpu="ppc"
 		aros_flavour="native"
-		aros_target_cflags="$aros_target_cflags -mpowerpc -mcpu=603e"
-		aros_target_aflags="$aros_target_aflags -m603e"
 		gcc_target_cpu="ppc"
 		;;
 	    *)
@@ -794,7 +782,6 @@ case "$target_os" in
                 aros_target_cc="m68k-elf-gcc -pipe"
                 aros_target_ld="$(which m68k-elf-ld)"
 		aros_target_as="m68k-elf-gcc -pipe"
-		aros_static_ld="m68k-elf-gcc"
 		aros_shared_ld="m68k-elf-gcc"
 		aros_kernel_ld="m68k-elf-gcc"
 		aros_target_ar="m68k-elf-ar"
@@ -803,17 +790,11 @@ case "$target_os" in
 		aros_target_nm="m68k-elf-nm"
 		aros_target_objcopy="m68k-elf-objcopy"
 		aros_target_objdump="m68k-elf-objdump"
-		aros_target_cflags="$aros_target_cflags -fno-builtin -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NEEDS___MAIN -Dlinux"
-		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
-		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_compiler_libs="-lgcc1"
 		aros_shared_default=no
 		aros_shared_cflags="-fpic"
 		aros_shared_aflags=""
 		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-		aros_static_cflags="-Wa,-mc68000"
-		aros_static_aflags="-mc68000"
-		aros_static_ldflags=""
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
 		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
@@ -861,11 +842,18 @@ fi
 
 TARGET_CC="${TOPDIR}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc"
 TARGET_AS=$TARGET_CC
-STATIC_LD=$TARGET_CC
+TARGET_LD=$TARGET_CC
+
+NOSTARTUP_LDFLAGS=-nostartfiles
+NIX_LDFLAGS=-nix
+DETACH_LDFLAGS=-detach
 
 AC_SUBST(TARGET_CC)
 AC_SUBST(TARGET_AS)
-AC_SUBST(STATIC_LD)
+AC_SUBST(TARGET_LD)
+AC_SUBST(NOSTARTUP_LDFLAGS)
+AC_SUBST(NIX_LDFLAGS)
+AC_SUBST(DETACH_LDFLAGS)
 
 AC_SUBST(aros_cc_pre)
 
@@ -1045,14 +1033,11 @@ AC_SUBST(aros_shared_default)
 AC_SUBST(aros_object_format)
 AC_SUBST(aros_compiler_libs)
 
-AC_SUBST(aros_target_cflags)
-AC_SUBST(aros_target_aflags)
+AC_SUBST(aros_config_cflags)
+AC_SUBST(aros_config_aflags)
 AC_SUBST(aros_target_ld)
-AC_SUBST(aros_target_ldflags)
+AC_SUBST(aros_config_ldflags)
 
-AC_SUBST(aros_static_cflags)
-AC_SUBST(aros_static_aflags)
-AC_SUBST(aros_static_ldflags)
 AC_SUBST(aros_shared_cflags)
 AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
