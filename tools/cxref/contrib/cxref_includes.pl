@@ -1,5 +1,5 @@
 #!/bin/sh
-# -*- perl -*-
+# -*- cperl -*-
 #
 # C Cross Referencing & Documentation tool. Version 1.5b.
 #

@@ -1,5 +1,4 @@
 #!/bin/sh
-# -*- perl -*-
 #
 # C Cross Referencing & Documentation tool. Version 1.5.
 #
