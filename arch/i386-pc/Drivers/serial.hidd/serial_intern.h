@@ -66,7 +66,10 @@ struct class_static_data
     OOP_Object               *irqhidd;
 
     struct HIDDSerialUnitData   *units[SER_MAX_UNITS];
+    OOP_AttrBase                hiddSerialUnitAB;
 };
+
+#define __IHidd_SerialUnitAB   (csd->hiddSerialUnitAB)
 
 #define SER_DEFAULT_BAUDRATE	57600
 

@@ -46,7 +46,10 @@ struct class_static_data
 
     OOP_Class		 *serialhiddclass;
     OOP_Class		 *serialunitclass;
+    OOP_AttrBase          hiddSerialUnitAB;
 };
+
+#define __IHidd_SerialUnitAB   (csd->hiddSerialUnitAB)
 
 struct HIDDSerialUnitData
 {
