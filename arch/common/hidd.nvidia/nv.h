@@ -196,7 +196,7 @@ struct staticdata {
     struct MemHeader	    *CardMem;
 
     struct SignalSemaphore  HWLock;	    /* Hardware exclusive semaphore */
-
+    struct SignalSemaphore  MultiBMLock;    /* To lock more than one bitmap at a time */
     APTR		    memPool;
 
     OOP_Class		    *nvclass;
@@ -240,6 +240,9 @@ struct staticdata {
     OOP_MethodID	    mid_GetMem32Image16;
     OOP_MethodID	    mid_GetImage;
     OOP_MethodID	    mid_Clear;
+    OOP_MethodID    	    mid_PutMemTemplate8;
+    OOP_MethodID    	    mid_PutMemTemplate16;
+    OOP_MethodID    	    mid_PutMemTemplate32;
     
     BOOL		    gpu_busy;
 
@@ -278,11 +281,17 @@ struct planarbm_data
     BOOL    planes_alloced;
 };
 
-#define LOCK_HW		{ ObtainSemaphore(&sd->HWLock); }
-#define UNLOCK_HW	{ ReleaseSemaphore(&sd->HWLock); }
+#define LOCK_HW		     { ObtainSemaphore(&sd->HWLock); }
+#define UNLOCK_HW	     { ReleaseSemaphore(&sd->HWLock); }
 
-#define LOCK_BITMAP	{ ObtainSemaphore(&bm->bmLock); }
-#define UNLOCK_BITMAP	{ ReleaseSemaphore(&bm->bmLock); }
+#define LOCK_BITMAP	     { ObtainSemaphore(&bm->bmLock); }
+#define UNLOCK_BITMAP	     { ReleaseSemaphore(&bm->bmLock); }
+
+#define LOCK_BITMAP_BM(bm)   { ObtainSemaphore(&(bm)->bmLock); }
+#define UNLOCK_BITMAP_BM(bm) { ReleaseSemaphore(&(bm)->bmLock); }
+
+#define LOCK_MULTI_BITMAP    { ObtainSemaphore(&sd->MultiBMLock); }
+#define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
 
 LIBBASETYPE {
     struct Library	LibNode;
