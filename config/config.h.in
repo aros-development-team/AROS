@@ -26,6 +26,6 @@
 #define AROS_MUNGWALL_DEBUG 	    	@aros_mungwall_debug@
 #define AROS_STACK_DEBUG    	    	@aros_stack_debug@
 
-#define USE_XSHM	    	    	@HAVE_XSHM_SUPPORT@
+#define USE_XSHM	    	    	@DO_XSHM_SUPPORT@
 
 #endif /* AROS_CONFIG_H */
