@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1999 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Main program for modtool.
@@ -83,7 +83,6 @@ int main(int argc, char **argv)
 	    i++;
 	}
 
-#if 0
 	/*
 	    Generate the EndTag of the library in a separate
 	    file. Really there is little point to this, but I
@@ -94,7 +93,6 @@ int main(int argc, char **argv)
 	    endTagPath = argv[i+1];
 	    i++;
 	}
-#endif
 
 	/*
 	    headers.tmpl contains some extra information to stuff into
@@ -197,14 +195,12 @@ int main(int argc, char **argv)
 		includePath, mc->include);
 	}
 
-	/*
 	if(pragmaIncFile == NULL)
 	{
 	    pragmaIncFile = malloc( (nameCount + 20) * sizeof(char));
 	    sprintf(pragmaIncFile, "%s/pragmas/%s_pragmas.h",
 		includePath, mc->include);
 	}
-	*/
 
 	/* So, now we have the names, lets create some files. */
 	genInclClib(clibIncFile, md, headersTmpl);

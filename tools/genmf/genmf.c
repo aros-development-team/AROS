@@ -66,6 +66,8 @@ typedef struct
     int    flags;
     int    pos;
 #define ARGF_MULTI  1
+#define ARGF_ALWAYS 2
+#define ARGF_GOTIT  4
 }
 Arg;
 
@@ -495,6 +497,8 @@ void read_templates (const char * fn)
 		{
 		    if (*flags == 'M')
 			arg->flags |= ARGF_MULTI;
+		    else if(*flags == 'A')
+			arg->flags |= ARGF_ALWAYS;
 		    else
 			error ("Unknown flag %s in argument %s of template %s",
 			    flags, arg->node.name, tmpl->node.name);
@@ -639,12 +643,25 @@ void replace_template (const char * string)
 		freeflags[arg->pos] = 1;
 		vals->value = NULL;
 		free_string (vals);
+		arg->flags |= ARGF_GOTIT;
 	    }
 	    else
 	    {
+		arg->flags |= ARGF_GOTIT;
 		values[arg->pos] = xstrdup (value);
 		freeflags[arg->pos] = 1;
 		arg = GetNext (arg);
+	    }
+	}
+
+	ForeachNode (&tmpl->args, arg)
+	{
+	    if(	    arg->flags & ARGF_ALWAYS
+		&&  (arg->flags & ARGF_GOTIT) == 0 )
+	    {
+		error("No value supplied for argument %s for template %s",
+		    arg->node.name, tmpl->node.name
+		);
 	    }
 	}
 
