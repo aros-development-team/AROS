@@ -1,7 +1,7 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5e.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   The function protypes that are missing from the lex and yacc output.
   ******************/ /******************
@@ -73,7 +73,7 @@ extern int parse_line;
 /*+ For communication between the lex and yacc code. +*/
 extern YYSTYPE yylval;
 
-/*+ For communication between the lex and yacc code. +*/
+/*+ The file that the lex code is to read from. +*/
 extern FILE *yyin;
 
 /* Global functions */

@@ -20,14 +20,14 @@ IS                      ((u|U|l|L)+|([iI]8|[iI]16|[iI]32|[iI]64))
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5e.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   C lexical analyser
   CPP processing, including GNU extensions, using yylval as a string.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,98,99,2000,01,02,03 Andrew M. Bishop
+  This file Copyright 1995,96,97,98,99,2000,01,02,03,04 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -241,13 +241,15 @@ static int push_past=0;
 <CPP_INCLUDE>{N}                { parse_line++; BEGIN(INITIAL); }
 
 <CPP_INC_FILE>"\""[^"]+"\""     { inc_file=CopyString(yytext+1); inc_file[strlen(inc_file)-1]=0;
+                                  inc_file_flags=0;
+                                  if(!parse_file) inc_file_flags=-1;
                                   if(!parse_file) parse_file=inc_file;
                                   GetCurrentComment();
-                                  inc_file_flags=0; BEGIN(CPP_INC_FLAGS); }
+                                  BEGIN(CPP_INC_FLAGS); }
 <CPP_INC_FILE>.|\n              { BEGIN(INITIAL); /* Ignore bad pre-processor output */ }
 
 <CPP_INC_FLAGS>{W}+{D}+         { inc_file_flags+=1<<atoi(yytext); }
-<CPP_INC_FLAGS>{W}*{N}          { if(inc_file_flags&6 || *inc_file=='<')
+<CPP_INC_FLAGS>{W}*{N}          { if(inc_file_flags&6 || inc_file_flags==-1 || *inc_file=='<')
                                      parse_file=SeenFileChange(inc_file,inc_file_flags);
                                   BEGIN(INITIAL); }
 <CPP_INC_FLAGS>.                { BEGIN(INITIAL); /* Ignore bad pre-processor output */ }

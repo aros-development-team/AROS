@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5e.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   Collects the pre-processing instruction stuff.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,99,2000,01,02,03 Andrew M. Bishop
+  This file Copyright 1995,96,97,99,2000,01,02,03,04 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -158,6 +158,11 @@ char *SeenFileChange(char *name,int flag)
    {
     in_header=1;
     return(NULL);
+   }
+ else if(flag==-1)
+   {
+    in_header=0;
+    return(CurFile->name);
    }
 
  name=CanonicaliseName(name);

@@ -5,7 +5,7 @@
 
 <!--
 Cxref: /home/amb/cxref/cxref -O/home/amb/cxref/doc -NREADME -xref -latex2e -html32-src -rtf -sgml README.c
-CPP  : /home/amb/cxref/cpp/cxref-cpp -C -dD -dI
+CPP  : /home/amb/cxref/cpp/cxref-cpp -cxref-cpp-defines /home/amb/cxref/cpp/cxref-cpp.defines -C -dD -dI
 -->
 
 <article>

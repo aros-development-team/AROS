@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5c.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   Writes the raw information and / or warnings out.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,99,2001 Andrew M. Bishop
+  This file Copyright 1995,96,97,99,2001,04 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -123,9 +123,9 @@ static void WriteWarnRawFilePart(File file)
       {
        int len=strlen(file->name)-2;
        if(!file->inc_in->n && !strcmp(&file->name[len],".h"))
-          printf("Warning %16s : Header file %s is not included in any files.\n",filename,file->name);
+          printf("Warning %16s : Header file '%s' is not included in any files.\n",filename,file->name);
        if( file->inc_in->n && !strcmp(&file->name[len],".c"))
-          printf("Warning %16s : Source file %s is included in another file.\n",filename,file->name);
+          printf("Warning %16s : Source file '%s' is included in another file.\n",filename,file->name);
       }
    }
 
@@ -140,7 +140,7 @@ static void WriteWarnRawFilePart(File file)
              printf("References Function %s\n",file->f_refs->s1[i]);
          }
        if(option_warn&WARN_XREF && !file->f_refs->s2[i])
-          printf("Warning %16s : File references function %s() whose definition is unknown.\n",filename,file->f_refs->s1[i]);
+          printf("Warning %16s : File references function '%s()' whose definition is unknown.\n",filename,file->f_refs->s1[i]);
       }
 
  if(option_xref&XREF_VAR)
@@ -154,7 +154,7 @@ static void WriteWarnRawFilePart(File file)
              printf("References Variable %s\n",file->v_refs->s1[i]);
          }
        if(option_warn&WARN_XREF && !file->v_refs->s2[i])
-          printf("Warning %16s : File references variable %s whose definition is unknown.\n",filename,file->v_refs->s1[i]);
+          printf("Warning %16s : File references variable '%s' whose definition is unknown.\n",filename,file->v_refs->s1[i]);
       }
 }
 
@@ -173,7 +173,7 @@ static void WriteWarnRawInclude(Include inc)
  if(inc->comment && option_raw)
     printf("<<<\n%s\n>>>\n",inc->comment);
  if(option_warn&WARN_COMMENT && !inc->comment)
-    printf("Warning %16s : #Include %s does not have a comment.\n",filename,inc->name);
+    printf("Warning %16s : #Include '%s' does not have a comment.\n",filename,inc->name);
 
  if(option_raw && inc->includes)
     WriteWarnRawSubInclude(inc->includes,1);
@@ -236,7 +236,7 @@ static void WriteWarnRawDefine(Define def)
  if(def->comment && option_raw)
     printf("<<<\n%s\n>>>\n",def->comment);
  if(option_warn&WARN_COMMENT && !def->comment)
-    printf("Warning %16s : #Define %s does not have a comment.\n",filename,def->name);
+    printf("Warning %16s : #Define '%s' does not have a comment.\n",filename,def->name);
 
  if(option_raw)
     printf("Defined: %s:%d\n",filename,def->lineno);
@@ -251,7 +251,7 @@ static void WriteWarnRawDefine(Define def)
           printf("Arguments: %s\n",def->args->s1[i]);
       }
     if(option_warn&WARN_COMMENT && !def->args->s2[i])
-       printf("Warning %16s : #Define %s has an argument %s with no comment.\n",filename,def->name,def->args->s1[i]);
+       printf("Warning %16s : #Define '%s' has an argument '%s' with no comment.\n",filename,def->name,def->args->s1[i]);
    }
 }
 
@@ -275,7 +275,7 @@ static void WriteWarnRawTypedef(Typedef type)
  if(type->comment && option_raw)
     printf("<<<\n%s\n>>>\n",type->comment);
  if(option_warn&WARN_COMMENT && !type->comment)
-    printf("Warning %16s : Type %s does not have a comment.\n",filename,type->name);
+    printf("Warning %16s : Type '%s' does not have a comment.\n",filename,type->name);
 
  if(option_raw)
     printf("Defined: %s:%d\n",filename,type->lineno);
@@ -309,7 +309,7 @@ static void WriteWarnRawStructUnion(StructUnion su, int depth,StructUnion base)
  char* splitsu=NULL;
 
  if(option_warn&WARN_COMMENT && depth && !su->comment)
-    printf("Struct/Union component %s in %s does not have a comment.\n",su->name,base->name);
+    printf("Warning %16s : Struct/Union component '%s' in '%s' does not have a comment.\n",filename,su->name,base->name);
 
  splitsu=strstr(su->name,"{...}");
  if(splitsu) splitsu[-1]=0;
@@ -380,7 +380,7 @@ static void WriteWarnRawVariable(Variable var)
    }
 
  if(option_warn&WARN_COMMENT && !var->comment && (var->scope&(GLOBAL|LOCAL|EXTERNAL|EXTERN_F) || option_raw))
-    printf("Warning %16s : Variable %s does not have a comment.\n",filename,var->name);
+    printf("Warning %16s : Variable '%s' does not have a comment.\n",filename,var->name);
 
  if(option_raw)
     printf("Defined: %s:%d\n",var->incfrom?var->incfrom:filename,var->lineno);
@@ -417,10 +417,10 @@ static void WriteWarnRawVariable(Variable var)
     if(option_warn&WARN_XREF)
       {
        if(var->scope&(EXTERNAL|EXTERN_F) && !var->defined)
-          printf("Warning %16s : Variable %s has an unknown global definition.\n",filename,var->name);
+          printf("Warning %16s : Variable '%s' has an unknown global definition.\n",filename,var->name);
 
        if(var->scope&(GLOBAL|LOCAL|EXTERNAL|EXTERN_F) && !var->used->n)
-          printf("Warning %16s : Variable %s is not used anywhere.\n",filename,var->name);
+          printf("Warning %16s : Variable '%s' is not used anywhere.\n",filename,var->name);
 
        if(var->scope&(GLOBAL|EXTERNAL|EXTERN_F) && var->used->n)
          {
@@ -431,9 +431,9 @@ static void WriteWarnRawVariable(Variable var)
              else
                 is_used_elsewhere=1;
           if(!is_used_elsewhere)
-             printf("Warning %16s : Variable %s is %s but only used in this file.\n",filename,var->name,var->scope&GLOBAL?"global":"extern");
+             printf("Warning %16s : Variable '%s' is %s but only used in this file.\n",filename,var->name,var->scope&GLOBAL?"global":"extern");
           if(!is_used_here)
-             printf("Warning %16s : Variable %s is %s but not used in this file.\n",filename,var->name,var->scope&GLOBAL?"global":"extern");
+             printf("Warning %16s : Variable '%s' is %s but not used in this file.\n",filename,var->name,var->scope&GLOBAL?"global":"extern");
          }
       }
    }
@@ -466,7 +466,7 @@ static void WriteWarnRawFunction(Function func)
    }
 
  if(option_warn&WARN_COMMENT && !func->comment)
-    printf("Warning %16s : Function %s() does not have a comment.\n",filename,func->name);
+    printf("Warning %16s : Function '%s()' does not have a comment.\n",filename,func->name);
 
  if(option_raw)
     printf("Defined: %s:%d\n",func->incfrom?func->incfrom:filename,func->lineno);
@@ -476,7 +476,7 @@ static void WriteWarnRawFunction(Function func)
     if(func->protofile && option_raw)
        printf("Prototyped in %s\n",func->protofile);
     if(option_warn&WARN_XREF && !func->protofile)
-       printf("Warning %16s : Function %s() is not prototyped.\n",filename,func->name);
+       printf("Warning %16s : Function '%s()' is not prototyped.\n",filename,func->name);
    }
 
  if(option_raw)
@@ -487,7 +487,7 @@ static void WriteWarnRawFunction(Function func)
        printf("Type: %s\n",func->type);
    }
  if(option_warn&WARN_COMMENT && !func->cret && strncmp("void ",func->type,5))
-    printf("Warning %16s : Function %s() has a return value with no comment.\n",filename,func->name);
+    printf("Warning %16s : Function '%s()' has a return value with no comment.\n",filename,func->name);
 
  for(i=0;i<func->args->n;i++)
    {
@@ -499,7 +499,7 @@ static void WriteWarnRawFunction(Function func)
           printf("Arguments: %s\n",func->args->s1[i]);
       }
     if(option_warn&WARN_COMMENT && !func->args->s2[i] && strcmp("void",func->args->s1[i]))
-       printf("Warning %16s : Function %s() has an argument %s with no comment.\n",filename,func->name,func->args->s1[i]);
+       printf("Warning %16s : Function '%s()' has an argument '%s' with no comment.\n",filename,func->name,func->args->s1[i]);
    }
 
  if(option_raw && func->incfrom)
@@ -518,7 +518,7 @@ static void WriteWarnRawFunction(Function func)
          }
 #if 0 /* Too verbose */
        if(option_warn&WARN_XREF && !func->calls->s2[i])
-          printf("Warning %16s : Function %s() calls function %s() whose definition is unknown.\n",filename,func->name,func->calls->s1[i]);
+          printf("Warning %16s : Function '%s()' calls function '%s()' whose definition is unknown.\n",filename,func->name,func->calls->s1[i]);
 #endif
       }
 
@@ -545,7 +545,7 @@ static void WriteWarnRawFunction(Function func)
              printf("References Function %s\n",func->f_refs->s1[i]);
          }
        if(option_warn&WARN_XREF && !func->f_refs->s2[i])
-          printf("Warning %16s : Function %s() references function %s() whose definition is unknown.\n",filename,func->name,func->f_refs->s1[i]);
+          printf("Warning %16s : Function '%s()' references function '%s()' whose definition is unknown.\n",filename,func->name,func->f_refs->s1[i]);
       }
    }
 
@@ -560,16 +560,16 @@ static void WriteWarnRawFunction(Function func)
              printf("References Variable %s\n",func->v_refs->s1[i]);
          }
        if(option_warn&WARN_XREF && !func->v_refs->s2[i])
-          printf("Warning %16s : Function %s() references variable %s whose definition is unknown.\n",filename,func->name,func->v_refs->s1[i]);
+          printf("Warning %16s : Function '%s()' references variable '%s' whose definition is unknown.\n",filename,func->name,func->v_refs->s1[i]);
       }
 
 
  if(option_warn&WARN_XREF)
    {
     if(!func->used->n && !func->called->n)
-       printf("Warning %16s : Function %s() is not used anywhere.\n",filename,func->name);
+       printf("Warning %16s : Function '%s()' is not used anywhere.\n",filename,func->name);
 
-    if(func->scope&GLOBAL && (func->called->n || func->used->n))
+    if(func->scope&(GLOBAL|EXTERNAL) && (func->called->n || func->used->n))
       {
        int is_used_elsewhere=0;
        for(i=0;i<func->called->n;i++)
@@ -579,7 +579,7 @@ static void WriteWarnRawFunction(Function func)
           if(strcmp(func->used->s2[i],filename))
             {is_used_elsewhere=1;break;}
        if(!is_used_elsewhere)
-          printf("Warning %16s : Function %s() is global but is only used in this file.\n",filename,func->name);
+          printf("Warning %16s : Function '%s()' is global but is only used in this file.\n",filename,func->name);
       }
    }
 }

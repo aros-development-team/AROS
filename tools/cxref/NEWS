@@ -1,3 +1,40 @@
+Version 1.5g of cxref released : Sun Jun 13 09:30:00 2004
+---------------------------------------------------------
+
+Bug fixes
+  New fix allowing a mix of declarations and statements in compound statements.
+  Fix handling of -Afoo=bar options again.
+
+Configure/Make changes
+  Add a --without-cxref-cpp option to force using gcc instead of cxref-cpp.
+
+cxref-cpp changes
+  cxref-cpp now gets gcc defines and include path at runtime from config file.
+  There is a script cxref-cpp-configure to create this configuration file.
+
+
+*NOTE* The notes for version 1.5 below apply also.
+
+
+Version 1.5f of cxref released : Sat Feb 14 15:00:00 2004
+---------------------------------------------------------
+
+Bug fixes
+  Allow mixtures of variable declarations and statements in compound statements.
+  Don't look for argument comment for functions with void arguments.
+  Ensure that variables defined in header file and locally get comments.
+  Fix the text printed for some warnings from the -warn option.
+  Declaring a function as extern is the same as not declaring it local.
+
+GCC changes
+  Handle better gcc-3.x putting all of its internal #defines in the output.
+  Handle gcc 3.x style options in the cxref-cpp pre-processor.
+  Compile cxref-cpp if using gcc-3.x that drops comment on same line as #include.
+
+
+*NOTE* The notes for version 1.5 below apply also.
+
+
 Version 1.5e of cxref released : Sun Jun 29 10:30:00 2003
 ---------------------------------------------------------
 
@@ -13,7 +50,7 @@ GCC changes
   Compile cxref-cpp if using gcc-3.x that drops comment on same line as #define.
 
 
-*NOTE* The notes for version 1.5d below apply also.
+*NOTE* The notes for version 1.5 below apply also.
 
 
 Version 1.5d of cxref released : Sun May 05 12:00:00 2002
@@ -40,7 +77,7 @@ GCC changes
   Allow the use of gcc-3.x instead of the cxref-cpp program.
 
 
-*NOTE* The notes for version 1.5c below apply also.
+*NOTE* The notes for version 1.5 below apply also.
 
 
 Version 1.5c of cxref released : Sat Apr 28 16:45:00 2001
@@ -55,7 +92,7 @@ Optimisation
   Speed up the lex code.
 
 
-*NOTE* The notes for version 1.5b below apply also.
+*NOTE* The notes for version 1.5 below apply also.
 
 
 Version 1.5b of cxref released : Sun Sep 26 10:00:00 1999
@@ -71,7 +108,7 @@ Optimisation
   Speed up the cross referencing, especially for the first pass with no outputs.
 
 
-*NOTE* The notes for version 1.5a below apply also.
+*NOTE* The notes for version 1.5 below apply also.
 
 
 Version 1.5a of cxref released : Fri Jun 18 19:15:00 1999

@@ -2,13 +2,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5d.
+  C Cross Referencing & Documentation tool. Version 1.5g.
 
   C parser.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,98,99,2000,01,02 Andrew M. Bishop
+  This file Copyright 1995,96,97,98,99,2000,01,02,03,04 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -849,11 +849,6 @@ statement
 	| return_statement
 	;
 
-statement_list
-	: statement
-	| statement_list statement
-	;
-
 /* Compound statement */
 
 compound_statement
@@ -866,13 +861,18 @@ compound_statement
 
 compound_statement_body
 	: /* Empty */
-	| inner_declaration_list
-	| statement_list
-	| inner_declaration_list statement_list
+	| block_item_list
 	;
 
-inner_declaration_list
-	: declaration_list
+block_item_list
+	: block_item
+	| block_item_list block_item
+	;
+
+block_item
+	: statement
+	| declaration
+                { scope=0; reset(); common_comment=NULL; in_typedef=0; }
 	;
 
 /* Conditional statements */

@@ -1,4 +1,4 @@
-             C Cross Referencing & Documentation tool Version 1.5e
+             C Cross Referencing & Documentation tool Version 1.5g
              =====================================================
 
 To install the program, do the following:
@@ -8,8 +8,15 @@ To install the program, do the following:
    The cxref specific options that you can use are:
 
    --enable-us-paper    - Enable US paper size instead of A4
+
    --with-cxref-cpp     - This forces the cxref-cpp program to be compiled and
                           used instead of gcc.
+   --without-cxref-cpp  - This forces the cxref-cpp program not to be compiled
+                          and gcc will be used instead.
+
+   (Normally the configure script will check if the gcc version that you are
+    using works the same as cxref-cpp and uses that if it is.  The above two
+    options allow forcing to either use cxref-cpp or gcc in all cases).
 
    The list of generic configure options can be seen by using the --help option.
 

@@ -1,12 +1,12 @@
 # $Header$
 #
-# C Cross Referencing & Documentation tool. Version 1.5d.
+# C Cross Referencing & Documentation tool. Version 1.5g.
 #
 # CPP Makefile.
 #
 # Written by Andrew M. Bishop
 #
-# This file Copyright 1995,96,99,2000,01,02 Andrew M. Bishop
+# This file Copyright 1995,96,99,2000,01,02,04 Andrew M. Bishop
 # It may be distributed under the GNU Public License, version 2, or
 # any higher version.  See section COPYING of the GNU Public license
 # for conditions under which this file may be redistributed.
@@ -23,6 +23,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=$(DESTDIR)@bindir@
 mandir=$(DESTDIR)@mandir@
+datadir=$(DESTDIR)@datadir@/cxref
 
 # The installation program.
 
@@ -47,13 +48,6 @@ LIBRARY=@LIBS@
 
 ########
 
-INCLUDE_DIR1=@INCLUDE_DIR1@
-INCLUDE_DIR2=@INCLUDE_DIR2@
-INCLUDE_DIR3=@INCLUDE_DIR3@
-PREDEFINES=@PREDEFINES@
-
-########
-
 programs : @CXREF_CPP@
 
 ########
@@ -62,18 +56,25 @@ OBJ_FILES=cccp.o cexp.o version.o
 
 ####
 
-cxref-cpp : $(OBJ_FILES)
+cxref-cpp : $(OBJ_FILES) cxref-cpp.defines
 	$(LD) $(LDFLAGS) $(OBJ_FILES) -o $@ $(LIBRARY)
 	@touch $@
 
 ########
 
-install : @CXREF_CPP@
+install : programs
 	[ ! -f cxref-cpp ] || $(INSTALL) -m 755 cxref-cpp $(bindir)
-	[ ! -f cxref-cpp ] || $(INSTALL) -m 644 README.man $(mandir)/man1/cxref-cpp.1
+	[ ! -f cxref-cpp ] || $(INSTALL) -m 644 cxref-cpp.man $(mandir)/man1/cxref-cpp.1
+	[ ! -f cxref-cpp ] || $(INSTALL) -m 755 cxref-cpp-configure $(bindir)
+	[ ! -f cxref-cpp ] || $(INSTALL) -m 644 cxref-cpp-configure.man $(mandir)/man1/cxref-cpp-configure.1
+	[ ! -f cxref-cpp ] || [ -d $(datadir) ] || $(INSTALL) -d $(datadir)
+	[ ! -f cxref-cpp ] || $(INSTALL) -m 644 cxref-cpp.defines $(datadir)
 
-install-win32 : @CXREF_CPP@
-	[ ! -f cxref-cpp ] || $(INSTALL) -m 755 cxref-cpp.exe $(bindir)
+install-win32 : programs
+	[ ! -f cxref-cpp.exe ] || $(INSTALL) -m 755 cxref-cpp.exe $(bindir)
+	[ ! -f cxref-cpp.exe ] || $(INSTALL) -m 755 cxref-cpp-configure $(bindir)
+	[ ! -f cxref-cpp.exe ] || [ -d $(datadir) ] || $(INSTALL) -d $(datadir)
+	[ ! -f cxref-cpp.exe ] || $(INSTALL) -m 644 cxref-cpp.defines $(datadir)
 
 ########
 
@@ -83,7 +84,7 @@ clean :
 ####
 
 distclean : clean
-	-rm -f Makefile autoconfig.h \
+	-rm -f Makefile cxref-cpp-configure autoconfig.h \
 	config.log config.status config.cache conftest.gcc
 
 ########
@@ -97,11 +98,11 @@ cexp.c : cexp.y
 
 cccp.o: cccp.c config.h tm.h pcp.h autoconfig.h
 	$(CC) -c -w $(CFLAGS) $(srcdir)/cccp.c -o $@ $(INCLUDE) \
-	 '-DLOCAL_INCLUDE_DIR="$(INCLUDE_DIR1)"' \
-	 '-DTOOL_INCLUDE_DIR="$(INCLUDE_DIR2)"' \
-	 '-DGCC_INCLUDE_DIR="$(INCLUDE_DIR3)"' \
+	 '-DLOCAL_INCLUDE_DIR="INCLUDE_DIR1"' \
+	 '-DTOOL_INCLUDE_DIR="INCLUDE_DIR2"' \
+	 '-DGCC_INCLUDE_DIR="INCLUDE_DIR3"' \
 	 '-DGPLUSPLUS_INCLUDE_DIR="."' \
-	 '-DCPP_PREDEFINES="$(PREDEFINES)"'
+	 '-DCXREF_CPP_DEFINES="$(datadir)/cxref-cpp.defines"'
 	@touch $@
 
 ####
@@ -115,5 +116,10 @@ cccp.o: cccp.c config.h tm.h pcp.h autoconfig.h
 
 version.o    : version.c
 cexp.o       : cexp.c config.h tm.h autoconfig.h
+
+########
+
+cxref-cpp.defines : cxref-cpp-configure
+	./cxref-cpp-configure $(CC) -o $@
 
 ########

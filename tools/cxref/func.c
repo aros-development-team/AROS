@@ -1,7 +1,7 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5c.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   Handle Function stuff.
   ******************/ /******************
@@ -176,7 +176,7 @@ void SeenFunctionArg(char* name,char *type)
 
  if(name)
    {
-    if(type)
+    if(type && strcmp(type,"void"))
       {
        int i;
 
