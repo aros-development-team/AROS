@@ -117,7 +117,7 @@ struct ClipRect * CopyClipRectsInRegion(struct Layer *,
 ** layers 
 */
 #define IS_SIMPLEREFRESH(l) (0 != ((l)->Flags & LAYERSIMPLE))
-#define IS_SMARTREFRESH(l)  (LAYERSMART == ((l)->Flags & LAYERSMART))
+#define IS_SMARTREFRESH(l)  (LAYERSMART == ((l)->Flags & (LAYERSMART|LAYERSUPER)))
 #define IS_SUPERREFRESH(l)  (0 != ((l)->Flags & LAYERSUPER))
 
 #endif /* _LAYERS_INTERN_H */
