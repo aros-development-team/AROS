@@ -29,7 +29,7 @@ struct MinList debug_seglist, free_debug_segnodes;
         AROS_LH1(BPTR, LoadSeg,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR, name, D1),
+        AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 25, Dos)
