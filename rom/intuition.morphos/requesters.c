@@ -36,18 +36,18 @@ void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *Intuition
 /* free the gadgets made in BuildEasyRequestArgs() */
 void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase)
 {
+    struct Image *frame = gadgets->GadgetRender;
+
     while (gadgets)
     {
         struct Gadget* nextgadget = 0;
-        struct Image *frame = 0;
 
         GetAttr(GA_Next,gadgets,(ULONG*)&nextgadget);
-        GetAttr(GA_Image,gadgets,(ULONG*)&frame);
-
-        if (frame) DisposeObject(frame);
         DisposeObject(gadgets);
         gadgets = nextgadget;
     }
+    
+    DisposeObject(frame);
 }
 
 
