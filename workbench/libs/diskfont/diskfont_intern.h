@@ -21,6 +21,7 @@
 #ifndef EXEC_LISTS_H
 #   include  <exec/lists.h>
 #endif
+#include <exec/semaphores.h>
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
 #endif
@@ -56,36 +57,8 @@
 #define FONTTYPE_OUTLINEFONT (FPF_ROMFONT | FPF_DISKFONT)
 #define FONTTYPE_FLAGMASK    (FPF_ROMFONT | FPF_DISKFONT)
 
-/* Flags for the FontInfoNode->Flags field */
-
-
-#define FDF_REUSENAME	(1 << 0)
-#define FDF_REUSETAGS	(1 << 1)
-
-/* Possible returnvalues for AvailFonts hooks
-( or an or'ed combination of these )
-*/
-
-#define FH_SUCCESS	(1 << 0)
-#define FH_SCANFINISHED (1 << 1)
-
-#define FH_REUSENAME	(1 << 2)
-#define FH_REUSETAGS	(1 << 3)
-
-/* Non-fatal error */
-#define FH_SINGLEERROR	(1 << 4)
-
-
-/* The different AvailFonts hook commands */
-
-#define FHC_AF_INIT		0
-#define FHC_AF_READFONTINFO	1
-#define FHC_AF_CLEANUP		2
-#define FHC_AF_GETDATE		3
-#define FHC_ODF_INIT		4
-#define FHC_ODF_CLEANUP		5
-#define FHC_ODF_GETMATCHINFO	6
-#define FHC_ODF_OPENFONT	7
+#define IS_SCALED_FONT(ta) (((ta)->tta_Flags & FONTTYPE_FLAGMASK) == FONTTYPE_SCALEDFONT)
+#define IS_OUTLINE_FONT(ta) (((ta)->tta_Flags & FONTTYPE_FLAGMASK) == FONTTYPE_OUTLINEFONT)
 
 /* ID for cache-file */
 #ifdef __MORPHOS__
@@ -98,62 +71,10 @@
 #ifdef __MORPHOS__
 #define CACHE_FILE      "FONTS:_fontcache"
 #else
-#define CACHE_FILE "FONTS:cachefile"
+#define CACHE_FILE      "fontcache"
 #endif
 #define PROGDIRFONTSDIR "PROGDIR:Fonts/"
-#define FONTSDIR "FONTS:"
-
-/* Structure for storing TAvailFonts elements */
-struct FontInfoNode
-{
-    struct MinNode	NodeHeader;
-
-    struct TAvailFonts	TAF;
-
-    /* or-ed combo of FDF_REUSENAME and FDF_REUSETAGS  */
-    UBYTE		Flags;
-
-    STRPTR		NameInBuf;
-    UWORD		NameLength; /* !!!! Includes 0 terminator */
-    struct TagItem	*TagsInBuf;
-    UWORD		NumTags;
-};
-
-
-/* Structure describing the hooks that shall be used
-for reading font descriptions in AvailFonts()
-*/
-
-struct AFHookDescr
-{
-    /* Flags that must match the flags input to AvailFonts
-    for this hook to be executed. (AFF_MEMORY, AFF_DISK, etc..)
-    */
-
-    ULONG	  ahd_Flags;
-    struct Hook   ahd_Hook;
-};
-
-
-
-/* Hook structure message structure for sending data to
-the font description reading routines */
-
-struct FontHookCommand
-{
-    ULONG		fhc_Command;
-
-    /* Used both by OpenDiskFont and AvailFonts for returning font descriptions from th hook */
-    struct TTextAttr	fhc_DestTAttr;
-
-    /* Used by OpenDiskFont only */
-    struct TTextAttr	*fhc_ReqAttr;
-    struct TextFont	*fhc_TextFont;
-
-    /* This field can be filled out by the hook. It will not be changed outside the hook */
-    APTR		fhc_UserData;
-
-};
+#define FONTSDIR        "FONTS:"
 
 struct OTagList
 {
@@ -171,30 +92,6 @@ struct FontDescrHeader
     struct  OTagList	*OTagList;
 };
 
-
-
-
-/* States we can be in if the buffer is filled */
-#define BFSTATE_FONTINFO    0
-#define BFSTATE_FONTNAME    1
-#define BFSTATE_FONTTAGS    2
-
-
-/* structure keepin the current state of copying fonts into the buffer */
-
-struct CopyState
-{
-    /* What node was currently being written when buffer was full ? */
-    struct FontInfoNode		*BufferFullNode;
-
-    /* What state were we in when the buffer was full ? */
-    UWORD			BufferFullState;
-
-    /* Pointer into where we should start simulating copying into the buffer
-    for reading bytes needed
-    */
-    APTR			BufferFullPtr;
-};
 
 
 
@@ -218,30 +115,18 @@ struct DiskfontBase_intern; /* prerefrence */
 
 /* memoryfontfunc.c */
 
-AROS_UFP3(IPTR, MemoryFontFunc,
-    AROS_UFPA(struct Hook *, h, A0),
-    AROS_UFPA(struct FontHookCommand *, fhc, A2),
-    AROS_UFPA(struct DiskfontBase_intern *, DiskfontBase, A1)
-);
+APTR MF_IteratorInit(struct DiskfontBase_intern *);
+struct TTextAttr *MF_IteratorGetNext(APTR, struct DiskfontBase_intern *);
+VOID MF_IteratorFree(APTR, struct DiskfontBase_intern *);
 
 /* diskfontfunc.c */
 
-AROS_UFP3(IPTR, DiskFontFunc,
-    AROS_UFPA(struct Hook *, h, A0),
-    AROS_UFPA(struct FontHookCommand *,fhc,A2),
-    AROS_UFPA(struct DiskfontBase_intern *, DiskfontBase, A1)
-);
-
-/* af_scanfontinfo.c */
-
-BOOL  ScanFontInfo(ULONG, struct MinList *, struct DiskfontBase_intern *);
-
-/* af_copyfontstobuffer.c */
-
-BOOL  CopyDescrToBuffer (UBYTE *, ULONG, ULONG, struct MinList *, struct CopyState *, struct DiskfontBase_intern *);
-ULONG CountBytesNeeded	(UBYTE *, ULONG, struct CopyState *, struct DiskfontBase_intern *);
-VOID  UpdatePointers	(UBYTE *, ULONG, struct MinList *, struct DiskfontBase_intern *);
-
+VOID CleanUpFontsDirEntryList(struct DiskfontBase_intern *);
+APTR DF_IteratorInit(struct DiskfontBase_intern *);
+struct TTextAttr *DF_IteratorGetNext(APTR, struct DiskfontBase_intern *);
+VOID DF_IteratorRemember(APTR, struct DiskfontBase_intern *);
+struct TextFont *DF_IteratorRememberOpen(APTR, struct TTextAttr *, struct DiskfontBase_intern *);
+VOID DF_IteratorFree(APTR, struct DiskfontBase_intern *);
 
 /* diskfont_io.c */
 
@@ -251,22 +136,8 @@ struct TextFont *ReadDiskFont(struct TTextAttr *, CONST_STRPTR, struct DiskfontB
 
 /* af_fontdescr_io.c */
 
-struct FontDescrHeader *ReadFontDescr(CONST_STRPTR, BOOL, struct DiskfontBase_intern *);
+struct FontDescrHeader *ReadFontDescr(CONST_STRPTR, struct DiskfontBase_intern *);
 VOID FreeFontDescr(struct FontDescrHeader *, struct DiskfontBase_intern *);
-
-/* af_fontcache_io.c */
-
-BOOL ReadCache(ULONG, struct MinList *, struct DiskfontBase_intern *);
-BOOL WriteCache(struct MinList *, struct DiskfontBase_intern *);
-BOOL OKToReadCache(struct DiskfontBase_intern *);
-
-/* af_helpfuncs.c */
-
-struct FontInfoNode *AllocFIN(struct MinList *, struct DiskfontBase_intern *);
-VOID FreeFIN(struct FontInfoNode *, struct DiskfontBase_intern *);
-VOID FreeFontList(struct MinList *, struct DiskfontBase_intern *);
-ULONG NumTags(struct TagItem *, struct DiskfontBase_intern *);
-ULONG CopyTagItems(struct TagItem *, struct TagItem *, struct DiskfontBase_intern *);
 
 /* dosstreamhook.c */
 
@@ -293,7 +164,11 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, st
 
 APTR AllocSegment(APTR, ULONG, ULONG, struct DiskfontBase_intern *);
 struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase_intern *);
-BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);
+struct TagItem *ReadTagsNum(BPTR, ULONG *, struct DiskfontBase_intern *);
+/*BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);*/
+BOOL WriteTagsNum(BPTR, struct TagItem *, struct DiskfontBase_intern *);
+ULONG NumTags(struct TagItem *, struct DiskfontBase_intern *);
+ULONG CopyTagItems(struct TagItem *, struct TagItem *, struct DiskfontBase_intern *);
 
 
 /********************/
@@ -308,9 +183,6 @@ BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);
 
 #undef	TAVF
 #define TAVF(p) ((struct TAvailFonts      *)p)
-
-#undef	FIN
-#define FIN(n)  ((struct FontInfoNode     *)n)
 
 #undef	TI
 #define TI(t)   ((struct TagItem          *)t)
@@ -328,18 +200,21 @@ BOOL WriteTags(BPTR, struct TagItem *, struct DiskfontBase_intern *);
 
 struct DiskfontBase_intern
 {
-    struct Library	library;
+    struct Library	   library;
     /* struct ExecBase * sysbase; */
-    BPTR		seglist;
+    BPTR		   seglist;
 
 /*    struct Library	 * dosbase; */
-    struct GfxBase	* gfxbase;
-    struct Library	* utilitybase;
+    struct GfxBase	  *gfxbase;
+    struct Library	  *utilitybase;
 
     /* dosstreamhandler hook neede for endian io funcs */
-    struct Hook		dsh;
-    struct AFHookDescr	hdescr[NUMFONTHOOKS];
-    struct List		diskfontlist;
+    struct Hook		   dsh;
+    struct List		   diskfontlist;
+    
+    struct MinList         fontsdirentrylist;
+    struct SignalSemaphore fontssemaphore;
+    
 #if ALWAYS_ZERO_LIBCOUNT
     UWORD		realopencount;
 #endif

@@ -32,7 +32,7 @@
 
 /****************************************************************************************/
 
-struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, BOOL ProgdirFlag, struct DiskfontBase_intern *DiskfontBase)
+struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
     struct FontDescrHeader  *fdh = 0;
     struct TTextAttr 	    *tattr;
@@ -111,7 +111,7 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, BOOL ProgdirFlag, s
         /* Read the fontname */
         
         STRPTR	strptr;
-        UWORD   oldstrlen = 0; /* Length of fontname in file including null-termination */
+        UWORD   len = 0; /* Length of fontname in file including null-termination */
 
         strptr = strbuf;
         
@@ -120,52 +120,26 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, BOOL ProgdirFlag, s
        	    if (!ReadByte( &DFB(DiskfontBase)->dsh, strptr, (void *)fh))
         	goto failure;
         		
-            oldstrlen ++;
+            len ++;
         }
         while (*strptr ++);
 
     	/* We set tattr->tta_Name to the real font name, for
 	   example FONTS:helvetica/15 */
 	   
-    	{
-	    CONST_STRPTR filepart = FilePart(filename);
-	    LONG pathlen, len;
-	    
-	    pathlen = ((IPTR)filepart) - ((IPTR)filename);
-#ifdef PROGDIRFONTSDIR
-	    len = oldstrlen + (pathlen ? pathlen : (ProgdirFlag ? sizeof(PROGDIRFONTSDIR) : sizeof(FONTSDIR)));
-#else
-    	    len = oldstrlen + (pathlen ? pathlen : sizeof(FONTSDIR));
-#endif
-	    
-	    if (!(tattr->tta_Name = AllocVec(len + 1, MEMF_ANY)))
-	    	goto failure;
+	if (!(tattr->tta_Name = AllocVec(len + 1, MEMF_ANY)))
+	    goto failure;
 		
-	    if (pathlen)
-	    {
-	    	memcpy(tattr->tta_Name, filename, pathlen);
-		tattr->tta_Name[pathlen] = '\0';
-	    }
-	    else
-	    {
-#ifdef PROGDIRFONTSDIR
-		if (ProgdirFlag)
-		    strcpy(tattr->tta_Name, PROGDIRFONTSDIR);
-		else
-#endif
-	    	strcpy(tattr->tta_Name, FONTSDIR);
-	    }
-	    strcat(tattr->tta_Name, strbuf);
+	strcpy(tattr->tta_Name, strbuf);
 
-	    D(bug("ReadFontDescr: tta_Name \"%s\"\n", tattr->tta_Name));
-	}
+	D(bug("ReadFontDescr: tta_Name \"%s\"\n", tattr->tta_Name));
        	    
         /* Seek to the end of the fontnamebuffer ( - 2 if tagged) */
         Flush(fh);
         Seek
         (
             fh,
-            MAXFONTPATH - ( oldstrlen + (fdh->Tagged ? 2 : 0) ),
+            MAXFONTPATH - ( len + (fdh->Tagged ? 2 : 0) ),
             OFFSET_CURRENT
         );
             
@@ -210,9 +184,12 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, BOOL ProgdirFlag, s
                     goto failure;
                 
             } /* if (numtags) */
-            
+            else
+		tattr->tta_Tags = NULL;
         
         } /* if (fdh->Tagged) */
+	else
+	    tattr->tta_Tags = NULL;
         
         /* Read the rest of the info */
         if (!ReadWord( &DFB(DiskfontBase)->dsh, &(tattr->tta_YSize), (void *)fh ))
@@ -326,9 +303,9 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
             {
                 if (tattr->tta_Name)
                     FreeVec(tattr->tta_Name);
-                
-                if (tattr->tta_Tags)
-                    FreeVec(tattr->tta_Tags);
+
+		if (tattr->tta_Tags)
+		    FreeVec(tattr->tta_Tags);
                 
                 tattr ++;
             }

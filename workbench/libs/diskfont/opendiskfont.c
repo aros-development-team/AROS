@@ -70,17 +70,13 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
  	
-    WORD 			match_weight = 0, new_match_weight;
-    struct FontHookCommand 	fhc;
-    struct Hook 		*hook, *bestmatch_hook = NULL;
-    struct TTextAttr 		best_so_far = {0}, *destattr;
-    struct TextFont 		*tf = 0;
-    APTR    	    	    	bestmatch_userdata = 0;
-    UWORD 			idx;
-
-    BOOL 			finished = FALSE;
-    BOOL 			matchfound = FALSE;
-
+    WORD match_weight = 0, new_match_weight;
+    APTR iterator;
+    BOOL bestinmemory = TRUE;
+    struct TTextAttr *ttait;
+    struct TextFont *tf = NULL;
+    ULONG len = strlen(textAttr->ta_Name)-5;
+    
     D(bug("OpenDiskFont(textAttr=%p)\n", textAttr));
     D(bug("Name %s YSize %ld Style 0x%lx Flags 0x%lx\n",
           textAttr->ta_Name,
@@ -88,179 +84,88 @@
           textAttr->ta_Style,
           textAttr->ta_Flags));
 
-    tf=OpenFont(textAttr);
-    if (tf)
+    tf = OpenFont(textAttr);
+    if (tf!=NULL)
     {
-      D(bug("openfont tf 0x%lx\n", tf));
-      if (WeighTAMatch((struct TTextAttr *) textAttr, (struct TextAttr *)(((int)&tf->tf_YSize)-4), 
-          ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags) != MAXFONTMATCHWEIGHT) 
-      {
-	D(bug("weight is not right..search better font\n"));
-        CloseFont(tf);
-        tf=NULL;
-      }
-    }        
-
-    if (!tf)
-    {
-    
-      /* PerfectMatch info should be passed to hook */
-   
-      fhc.fhc_ReqAttr = (struct TTextAttr*)textAttr;
-      destattr = &(fhc.fhc_DestTAttr);
-  
-      /* Ask the hooks for matching textattrs */
-  
-      for (idx = 1; (idx < NUMFONTHOOKS) && !finished; idx ++)
-      {
-  	ULONG retval;
-  
-  	hook = &(DFB(DiskfontBase)->hdescr[idx].ahd_Hook);
-  
-	D(bug("fonthook[%ld] 0x%lx\n",idx,hook));
-  
-  	/* Initalize the hook */
-  	fhc.fhc_Command = FHC_ODF_INIT;
-  
-  	if ( !CallHookPkt(hook, &fhc, DFB(DiskfontBase) ))
+	struct TTextAttr tattr;
+	
+	tattr.tta_Name = tf->tf_Message.mn_Node.ln_Name;
+	tattr.tta_YSize = tf->tf_YSize;
+	tattr.tta_Style = tf->tf_Style;
+	tattr.tta_Flags = tf->tf_Flags;
+	if (ExtendFont(tf, NULL))
 	{
-	    D(bug("Init failed\n"));
-  	    continue; /* Go on with next hook */
+	    tattr.tta_Tags = TFE(tf->tf_Extension)->tfe_Tags;
+	    if (tattr.tta_Tags) tattr.tta_Style |= FSF_TAGGED;
 	}
-  
-	D(bug("try to match it\n"));
-  
-  	/* Ask the hook for info on a font */
-  	fhc.fhc_Command = FHC_ODF_GETMATCHINFO;
-  
-  	for (;;)
-  	{				
-  	    /* Reset tags field in case the hook doesn't do it */
-  	    destattr->tta_Tags = 0;
-  
-  	    retval = CallHookPkt(hook, &fhc, DFB(DiskfontBase));
-	    D(bug("retval 0x%lx\n",retval));
-  
-  	    /* Error or finished scanning ? */
-  	    if (!retval || (retval & FH_SCANFINISHED))
-	    {
-		D(bug("match failed\n"));
-  		break;
-	    }
-  
-      	#if 0
-  	    /* WeightTAMatch does not compare the fontnames, so we do it here */
-  	    if ( strcmp(FilePart(textAttr->ta_Name), destattr->tta_Name) != 0 )
-  		continue;
-      	#endif
-  	
-  	    /* How well does this font match ? */
-  	    new_match_weight = WeighTAMatch((struct TTextAttr *) textAttr, (struct TextAttr *)destattr, destattr->tta_Tags);
-  
-  	    D(bug("New matchweight: %d\n", new_match_weight));					
-  
-  	    /* Better match found ? */
-  
-  	    if (new_match_weight > match_weight)
-  	    {
-  	    	matchfound = TRUE;
-  		
-  	    	match_weight = new_match_weight;
-  				
-  		if (bestmatch_hook && (bestmatch_hook != hook))
-  		{
-  		    /* Old bestmatch_hook is no longer best matching hook,
-  		       so we send it the FHC_ODF_CLEANUP, which it initially
-  		       did not got sent, because of --> [1] */
-  		    
-  		    struct FontHookCommand cleanup_fhc = fhc;
-  		    
-  		    cleanup_fhc.fhc_Command  = FHC_ODF_CLEANUP;
-  		    cleanup_fhc.fhc_UserData = bestmatch_userdata;
-
-		    D(bug("cleanup font\n"));
-  		    CallHookPkt(bestmatch_hook, &cleanup_fhc, DFB(DiskfontBase) );
-  		    
-  		}
-  		
-  		best_so_far = *destattr;
-  		
-  		bestmatch_hook 	   = hook;
-      	    	bestmatch_userdata = fhc.fhc_UserData;
-  		
-  		/* Perfect match found ? */
-  		if (new_match_weight == MAXFONTMATCHWEIGHT)
-  		{
-  		    finished = TRUE;
-  		    D(bug("\tPerfect match\n"));
-  		    break;
-  		}
-  
-  	    }
-  
-  	} /* for (;;) */ 
-  
-      	if (bestmatch_hook != hook)
-  	{
-  	    /* Tell the hook to cleanup */
-  	    fhc.fhc_Command = FHC_ODF_CLEANUP;
-
-	    D(bug("cleanup font\n"));
-  	    CallHookPkt(hook, &fhc, DFB(DiskfontBase) );
-  	}
-  	else
-  	{
-  	    /*
-  	    ** [1] The hook of the best matching font will get FHC_ODF_CLEANUP
-  	    **     after FHC_ODF_OPENFONT
-  	    */
-  	}
-  
-  
-      } /* for ( iterate hooktable ) */
-  
-      if (matchfound)
-      {
-  
-	D(bug("match found\n"));
-  	/* Open the font */
-  	fhc.fhc_Command     	    = FHC_ODF_OPENFONT;
-  	fhc.fhc_UserData    	    = bestmatch_userdata;
-      	fhc.fhc_ReqAttr     	    = (struct TTextAttr*)textAttr;
-      	fhc.fhc_DestTAttr           = best_so_far;
-  		
-	D(bug("open font\n"));
-
-  	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
-  	tf = fhc.fhc_TextFont;
-  
-	D(bug("tf 0x%lx\n",tf));
-
-      	if (tf)
-  	{
-	    D(bug("extend font\n"));
-  	    if (ExtendFont(tf, NULL))
-  	    {
-  		#warning CHECKME
-  
-  		struct TextFontExtension *tfe = (struct TextFontExtension *)tf->tf_Extension;
-  
-  		tfe->tfe_Flags0 |= TE0F_NOREMFONT;
-  	    }
-  	}
-  	
-  	
-      	/* cleanup only here, because of [1] */
-  	 
-  	fhc.fhc_Command = FHC_ODF_CLEANUP;
-
-	D(bug("cleanup font\n"));
-
-  	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
-  	
-      }
+	else
+	    tattr.tta_Tags = NULL;
+	
+	match_weight = WeighTAMatch((struct TTextAttr *)textAttr,
+				    (struct TextAttr *)&tattr,
+				    tattr.tta_Tags);
     }
 
+    if (match_weight!=MAXFONTMATCHWEIGHT)
+    {
+	UWORD oldYSize;
+	
+	iterator = DF_IteratorInit(DFB(DiskfontBase));
+	if (iterator == NULL)
+	    D(bug("Error initializing Diskfont Iterator\n"));
+	else
+	{
+	    while ((ttait = DF_IteratorGetNext(iterator, DFB(DiskfontBase)))!=NULL)
+	    {
+		D(bug("OpenDiskFont: Checking font: %s\n", ttait->tta_Name));
+		
+		if (strncasecmp(ttait->tta_Name, textAttr->ta_Name, len) == 0)
+		{
+		    if (IS_OUTLINE_FONT(ttait))
+		    {
+			/* For outline font make the YSize equal because it
+			 * is scalable */
+			oldYSize = ttait->tta_YSize;
+			ttait->tta_YSize = textAttr->ta_YSize;
+		    }
+		    new_match_weight = WeighTAMatch((struct TTextAttr *)textAttr,
+						    (struct TextAttr *)ttait,
+						    ttait->tta_Tags);
+		    if (IS_OUTLINE_FONT(ttait))
+			ttait->tta_YSize = oldYSize;
+
+		    if (new_match_weight > match_weight)
+		    {
+			match_weight = new_match_weight;
+			DF_IteratorRemember(iterator, DFB(DiskfontBase));
+			bestinmemory = FALSE;
+		    }
+		    if (match_weight==MAXFONTMATCHWEIGHT)
+			break;
+		}
+	    }
+	
+	    /* Best still in memory then open this font, otherwise load from disk */
+	    if (!bestinmemory)
+	    {
+		if (tf!=NULL)
+		    CloseFont(tf);
+		tf = DF_IteratorRememberOpen(iterator, (struct TTextAttr *)textAttr, DFB(DiskfontBase));
+	    }
+	    DF_IteratorFree(iterator, DFB(DiskfontBase));
+	}
+    }
+    
+    if (tf)
+    {
+	D(bug("extend font\n"));
+	if (ExtendFont(tf, NULL))
+	{
+#warning CHECKME
+	    TFE(tf->tf_Extension)->tfe_Flags0 |= TE0F_NOREMFONT;
+	}
+    }
+  	
     ReturnPtr("OpenDiskFont", struct TextFont *, tf);
 	
     AROS_LIBFUNC_EXIT

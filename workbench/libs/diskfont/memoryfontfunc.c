@@ -20,136 +20,88 @@
 /****************************************************************************************/
 
 /* Userdata needed by the MemoryFontHook */
-struct MFHData
+struct MFData
 {
     /* Pointer to the current font in the memory font list */
     struct TextFont *CurrentFont;
+    struct TTextAttr currattr;
 };
 
 /****************************************************************************************/
 
-/* Hook for reading fonts from memory */
+/*******************/
+/* MF_IteratorInit */
+/*******************/
 
 /****************************************************************************************/
 
-AROS_UFH3(IPTR, MemoryFontFunc,
-    AROS_UFHA(struct Hook *,				h, 				A0),
-    AROS_UFHA(struct FontHookCommand *,		fhc,			A2),
-    AROS_UFHA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
-)
+APTR MF_IteratorInit(struct DiskfontBase_intern *DiskfontBase)
 {
-    AROS_USERFUNC_INIT
+    struct MFData *mfdata;
 
-    /* Note: FALSE is default */
-    ULONG retval = FALSE;
+    mfdata = AllocVec(sizeof(struct MFData), MEMF_ANY|MEMF_CLEAR);
+    if (mfdata == NULL)
+	return NULL;
     
-    struct MFHData  *mfhd;
-    struct TextFont             *curfont;
-
-    struct TTextAttr *tattr = &(fhc->fhc_DestTAttr);
-
-    (void)h;
-
-    D(bug("MemoryFontFunc(hook=%p, fhc=%p)\n", h, fhc));
-        
-    /* What command do we have */
-    
-    switch (fhc->fhc_Command)
-    {
-    	case FHC_ODF_INIT:
-        case FHC_AF_INIT:
-        
-            /* Allocate user data */
-            if ((mfhd = AllocMem( sizeof (struct MFHData), MEMF_ANY )) != 0 )
-            {
-            	/* GFX library allready open */
- 			
- 		/* To prevent race conditions */
-		Forbid();
+    /* To prevent race conditions */
+    Forbid();
 					
-                /* Get the first font */
-                mfhd->CurrentFont = (struct TextFont*)DFB(DiskfontBase)->gfxbase->TextFonts.lh_Head;
-                    
-                /* Insert the userdata into the hookcommand struct */
-                fhc->fhc_UserData = mfhd;
+    /* Get the first font */
+    mfdata->CurrentFont = (struct TextFont*)GetHead(&DiskfontBase->gfxbase->TextFonts);
 
-                retval = FH_SUCCESS;
-            }         
-            break;
-            
-        /* ---------------------- */            
-        
-        case FHC_ODF_GETMATCHINFO:
-        case FHC_AF_READFONTINFO:
-			 
-            /* Get userdata */
-            mfhd = fhc->fhc_UserData;
-            
-            /* Get current font */
-            curfont = mfhd->CurrentFont;
-           
-	    if (fhc->fhc_Command == FHC_ODF_GETMATCHINFO)
-	    {
-	    	STRPTR shortname = FilePart(fhc->fhc_ReqAttr->tta_Name);
-		
-	    	while(curfont && curfont->tf_Message.mn_Node.ln_Succ)
-		{
-		    if (strcmp(curfont->tf_Message.mn_Node.ln_Name, shortname) == 0) break;
-		    curfont = (struct TextFont *)curfont->tf_Message.mn_Node.ln_Succ;
-		}
-	    }
-	    
-            /* Get a pointer to the next font. Are we at the end of the list ? */
-            if (!(mfhd->CurrentFont = (struct TextFont*)curfont->tf_Message.mn_Node.ln_Succ))
-            {
-	        retval |= FH_SCANFINISHED;
-		break;
-	    }
-            
-            /* Insert font info into the supplied tattr */
-            tattr->tta_Tags = NULL; /* Defaults to NULL */
-            
-	    tattr->tta_Name =  curfont->tf_Message.mn_Node.ln_Name;
-            tattr->tta_YSize = curfont->tf_YSize;
-            tattr->tta_Style = curfont->tf_Style;
-            tattr->tta_Flags = curfont->tf_Flags;
-        
-            /* Does this font have an exstension structure ? */ 
-            if (ExtendFont(curfont, 0L))
-	    {
-            	tattr->tta_Tags = TFE(curfont->tf_Extension)->tfe_Tags;
-		if (tattr->tta_Tags) tattr->tta_Style |= FSF_TAGGED;
-            }
+    return (APTR)mfdata;
+}
 
-	    retval |= FH_SUCCESS;
-            break;
+/****************************************************************************************/
 
-        /* ---------------------- */                        
-        
-        case FHC_ODF_CLEANUP:
-        case FHC_AF_CLEANUP:
-            /* Danger for race conditions over */
-            Permit();
-        
-            /* Free the userdata */
-            FreeMem(fhc->fhc_UserData, sizeof (struct MFHData));
-            
-            /* FHC_CLEANUP is never allowed to fail */
-            retval = FH_SUCCESS;
-            
-            break;
-        
-        case FHC_ODF_OPENFONT:
-	    fhc->fhc_DestTAttr.tta_Name = (STRPTR)FilePart(fhc->fhc_DestTAttr.tta_Name);
-            fhc->fhc_TextFont = OpenFont((struct TextAttr *)&fhc->fhc_DestTAttr);
-    	    retval = (fhc->fhc_TextFont != NULL);
-    	    break;
-	    
-    }
+/**********************/
+/* MF_IteratorGetNext */
+/**********************/
+
+/****************************************************************************************/
+
+struct TTextAttr *MF_IteratorGetNext(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+{
+    struct MFData *mfdata = (struct MFData *)iterator;
+    struct TextFont *currfont;
     
-    ReturnInt ("MemoryFontFunc", ULONG, retval);
+    if (mfdata==NULL || mfdata->CurrentFont==NULL)
+	return NULL;
+    
+    currfont = mfdata->CurrentFont;
+    
+    mfdata->currattr.tta_Tags = NULL;
+    mfdata->currattr.tta_Name = currfont->tf_Message.mn_Node.ln_Name;
+    mfdata->currattr.tta_YSize = currfont->tf_YSize;
+    mfdata->currattr.tta_Style = currfont->tf_Style;
+    mfdata->currattr.tta_Flags = currfont->tf_Flags;
+    
+    if (ExtendFont(currfont, 0L))
+    {
+	mfdata->currattr.tta_Tags = TFE(currfont->tf_Extension)->tfe_Tags;
+	if (mfdata->currattr.tta_Tags) mfdata->currattr.tta_Style |= FSF_TAGGED;
+    }
 
-    AROS_USERFUNC_EXIT
+    /* Go to next font */
+    mfdata->CurrentFont = (struct TextFont *)GetSucc(mfdata->CurrentFont);
+    
+    return &mfdata->currattr;
+}
+
+/****************************************************************************************/
+
+/*******************/
+/* MF_IteratorFree */
+/*******************/
+
+/****************************************************************************************/
+
+VOID MF_IteratorFree(APTR iterator, struct DiskfontBase_intern *DiskfontBase)
+{
+    struct MFData *mfdata = (struct MFData *)iterator;
+    
+    FreeVec(mfdata);
+    Permit();
 }
 
 /****************************************************************************************/

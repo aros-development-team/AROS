@@ -16,9 +16,8 @@ TARGET_CFLAGS	:= -O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__
 USE_CPAK 		:= no
 endif
 
-FILES	:=  af_copyfontstobuffer af_scanfontinfo af_fontcache_io \
-	    af_fontdescr_io memoryfontfunc diskfontfunc \
-	    dosstreamhook af_helpfuncs diskfont_io bullet basicfuncs
+FILES	:=  af_fontdescr_io memoryfontfunc diskfontfunc \
+	    dosstreamhook diskfont_io bullet basicfuncs
 
 # Guarantee that this will go at the end of the file:
 FUNCS	:=  opendiskfont	\

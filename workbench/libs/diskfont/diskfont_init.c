@@ -164,7 +164,9 @@ AROS_UFH3(struct DiskfontBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
     LIBBASE->seglist = segList;
 
     NEWLIST(&LIBBASE->diskfontlist);
-
+    NEWLIST(&LIBBASE->fontsdirentrylist);
+    InitSemaphore(&LIBBASE->fontssemaphore);
+    
 #ifdef __MORPHOS__
     LIBBASE->library.lib_Revision = REVISION_NUMBER;
 #endif
@@ -207,15 +209,6 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     if (LIBBASE->library.lib_OpenCnt == 1)
 #endif
     {
-    /* Hook descriptions */
-	static const struct AFHookDescr hdescrdef[] =
-	{
-	    {AFF_MEMORY	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(MemoryFontFunc)	 , 0L, 0L}},
-	    {AFF_DISK	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(DiskFontFunc)	 , 0L, 0L}}
-	};
-	UWORD idx;
-
-
 	if (!DOSBase)
 	    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
 	if (!DOSBase)
@@ -253,11 +246,6 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 	}
 
     /* Insert the fonthooks into the DiskfontBase */
-
-	for (idx = 0; idx < NUMFONTHOOKS; idx ++)
-	{
-	    LIBBASE->hdescr[idx] = hdescrdef[idx];
-	}
 
 	LIBBASE->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
 	LIBBASE->dsh.h_Data = DOSBase;
@@ -349,6 +337,8 @@ AROS_LH0(BPTR, expunge, struct DiskfontBase_intern *, LIBBASE, 3, BASENAME)
 	return 0;
     }
 
+    CleanUpFontsDirEntryList(LIBBASE);
+    
     if (UtilityBase)
 	CloseLibrary(UtilityBase);
     UtilityBase = NULL;
