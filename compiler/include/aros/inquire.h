@@ -21,7 +21,9 @@
 	/* ULONG: Minor AROS release version, e.g. 11 */
 
 
-/* Architecture specific flags */
+/* Architecture specific tags */
+
+/* Native Amiga */
 #define AI_BaseA		(AI_Base + 0x10000)
 
 #define AI_KickstartBase	(AI_BaseA + 1)
@@ -35,6 +37,11 @@
 
 #define AI_KickstartRevision	(AI_BaseA + 4)
 	/* UWORD: Minor Kickstart revision */
+
+
+/* Linux */
+#define AI_BaseL		(AI_Base + 0x20000)
+
 
 
 #endif /* AROS_AROSSUPPORTBASE_H */
