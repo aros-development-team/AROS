@@ -20,12 +20,11 @@
 
 #include "etask.h"
 
-
 /* Don't define symbols before the entry point. */
 extern struct ExecBase  *SysBase;
 extern struct WBStartup *WBenchMsg;
-extern int main (int argc, char ** argv);
-
+extern int main(int argc, char ** argv);
+int (*__main_function_ptr)(int argc, char ** argv) __attribute__((__weak__)) = main;
 
 DECLARESET(INIT);
 DECLARESET(EXIT);
@@ -99,7 +98,10 @@ AROS_UFH3(static LONG, __startup_entry,
             /* ctors get called in inverse order than init funcs */
             set_call_funcs(SETNAME(CTORS), -1);
 
-	    __aros_startup.as_startup_error = main (__argc, __argv);
+	    /* Invoke the main function. A weak symbol is used as function name so that
+	       it can be overridden (for *nix stuff, for instance).  */
+
+	    __aros_startup.as_startup_error = (*__main_function_ptr) (__argc, __argv);
         }
 
     }
