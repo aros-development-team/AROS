@@ -7,6 +7,9 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 
 /*
     Defines
@@ -68,7 +71,7 @@
 
 #define StackSwap(sss) \
     AROS_LC1(void, StackSwap, \
-    AROS_LCA(struct StackSwapStruct *, sss, A0) \
+    AROS_LCA(struct StackSwapStruct *, sss, A0), \
     struct ExecBase *, SysBase, 122, Exec)
 
 #define SuperState() \
