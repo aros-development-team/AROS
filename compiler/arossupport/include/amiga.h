@@ -16,7 +16,7 @@
 #define __AROS_STRUCTURE_ALIGNMENT  4
 
 /* To handle the slightly different procedure naming */
-#define AROS_SLIB_ENTRY(n,s)    s ## _ ## n
+#define __AROS_SLIB_ENTRY(n,s)    s ## _ ## n
 #define AROS_ASMSYMNAME(s)      s
 
 #endif /* AROS_AMIGA_H */
