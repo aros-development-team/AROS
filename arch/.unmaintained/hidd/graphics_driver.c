@@ -1628,7 +1628,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
     }
     else
     {
-        struct ClipRect *CR = L->ClipRect;
+        struct ClipRect *CR;
 	WORD xrel = L->bounds.MinX;
         WORD yrel = L->bounds.MinY;
 	struct Rectangle torender, intersect;
@@ -1639,6 +1639,8 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 	torender.MaxY = rr.MaxY + yrel;
 	
 	LockLayerRom(L);
+	
+	CR = L->ClipRect;
 	
 	for (;NULL != CR; CR = CR->Next)
 	{
