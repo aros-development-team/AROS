@@ -38,7 +38,7 @@ void showText(struct afsbase *afsbase, char *string, ...) {
 void showError(struct afsbase *afsbase, ULONG error, ...) {
 char *texts[]={0,
 				"No ioport",
-				"No device",
+				"Couldn't open device %s",
 				"Couldn't add disk as dosentry",
 				"Disk is not validated!\n",
 				"Wrong data block %ld",
