@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include "intern.h"
 #define MD(x) ((struct metadata *)x)
+#include <aros/debug.h>
 
 /*****************************************************************************
 

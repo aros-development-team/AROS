@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Add a server to the list of public servers
@@ -7,8 +7,10 @@
 */
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
+#include <exec/memory.h>
 #include <proto/exec.h>
 #include <string.h>
+#include <aros/debug.h>
 #include "intern.h"
 
 /*****************************************************************************

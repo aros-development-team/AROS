@@ -1,21 +1,23 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: OOP function OOP_ObtainAttrBases
     Lang: english
 */
 
+#include <proto/exec.h>
+#include <exec/memory.h>
+#include <aros/debug.h>
 #include "intern.h"
 #include "hash.h"
+
 /*****************************************************************************
 
     NAME */
-#include <proto/exec.h>
-#include <exec/memory.h>
-#include <aros/libcall.h>
 
-#include <aros/debug.h>
+#include <proto/oop.h>
+#include <oop/oop.h>
 
 	AROS_LH1(BOOL, OOP_ObtainAttrBases,
 
