@@ -5,10 +5,8 @@ FILES := con_task support completion
 
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 
-%build_module_macro mmake=kernel-fs-con \
-  modname=con modtype=handler \
-  initfile=con_handler files=$(FILES) \
-  conffile=lib.conf \
-  uselibs="amiga rom arosc m"
+%build_module mmake=kernel-fs-con \
+    modname=con modtype=device modsuffix=handler \
+    files="con_handler $(FILES)" \
+    uselibs="amiga rom arosc m"
 
-%common

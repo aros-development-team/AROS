@@ -12,6 +12,7 @@
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
+#include <intuition/intuition.h>
 #include <hidd/hidd.h>
 #include <aros/asmcall.h>
 
