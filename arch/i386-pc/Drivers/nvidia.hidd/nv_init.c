@@ -458,6 +458,9 @@ APTR vbuffer_alloc(struct nv_staticdata *nsd, int size)
 	    elements from the list I need node's predessor. For the
 	    first element I can use mh->mh_First instead of a real predessor.
 	*/
+	
+	Forbid();
+	
 	p1=(struct vMemChunk *)&nsd->first;
 	p2=p1->next;
 
@@ -542,13 +545,17 @@ void vbuffer_free(struct nv_staticdata *nsd, APTR buff, int size)
 	}
 	else
 	{
-		struct vMemChunk *p1 = &nsd->first;
-		struct vMemChunk *p2 = nsd->first;
-		struct vMemChunk *p3 = (struct vMemChunk *)buff;
-		UBYTE *p4 = (UBYTE*)p3 + size;
+		struct vMemChunk *p1;
+		struct vMemChunk *p2;
+		struct vMemChunk *p3;
+		UBYTE *p4;
 	
 		Forbid();
 		
+		p1 = &nsd->first;
+		p2 = nsd->first;
+		p3 = (struct vMemChunk *)buff;
+		p4 = (UBYTE*)p3 + size;
 		if(p2==NULL)
 		{
 			p3->size=size;
@@ -557,7 +564,7 @@ void vbuffer_free(struct nv_staticdata *nsd, APTR buff, int size)
 			nsd->memfree+=size;
 			Permit();
 			return;
-	    }
+	    	}
 
 		do
 		{
