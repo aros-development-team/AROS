@@ -1,12 +1,17 @@
 #include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/keymap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <exec/execbase.h>
 #include <devices/rawkeycodes.h>
+#include <devices/inputevent.h>
 
 #define NUM_STDKEYS 89
 #define NOKEY -1
+
+struct Library *KeymapBase;
 
 static WORD std_keytable[NUM_STDKEYS] =
 {
@@ -102,6 +107,75 @@ static WORD std_keytable[NUM_STDKEYS] =
       
 };
 
+static void dotest(void)
+{
+    struct Window *win;
+    struct IntuiMessage *msg;
+    BOOL quitme = FALSE;
+    
+    KeymapBase = OpenLibrary("keymap.library", 0);
+    if (!KeymapBase) return;
+    
+    win = OpenWindowTags(NULL, WA_Left, 20,
+    	    	    	       WA_Top, 20,
+			       WA_Width, 300,
+			       WA_Height, 20,
+			       WA_Activate, TRUE,
+			       WA_CloseGadget, TRUE,
+			       WA_DepthGadget, TRUE,
+			       WA_Title, (IPTR)"IDCMP_RAWKEY Test",
+			       WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_RAWKEY,
+			       TAG_DONE);
+    if (!win)
+    {
+    	CloseLibrary(KeymapBase);
+    	return;
+    }
+    
+    while(!quitme)
+    {
+    	WaitPort(win->UserPort);
+	while((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
+	{
+	    switch(msg->Class)
+	    {
+	    	case IDCMP_CLOSEWINDOW:
+		    quitme = TRUE;
+		    break;
+		    
+		case IDCMP_RAWKEY:
+		    printf("RAWKEY %s: %3d (0x%02x) QUAL=0x%04x DEAD=0x%08lx ", 
+		    	    (msg->Code & IECODE_UP_PREFIX) ? "UP  " : "DOWN",
+			    (msg->Code & ~IECODE_UP_PREFIX),
+			    (msg->Code & ~IECODE_UP_PREFIX),
+			    msg->Qualifier,
+			    *(ULONG *)msg->IAddress);
+			    
+		    {
+		    	struct InputEvent ie;
+			char buf[20];
+			WORD ret;
+			
+			ie.ie_Class         = IECLASS_RAWKEY;
+    	    	    	ie.ie_Code          = msg->Code;
+			ie.ie_Qualifier     = msg->Qualifier;
+			ie.ie_EventAddress  = *(ULONG *)msg->IAddress;
+			
+			ret = MapRawKey(&ie, buf, sizeof(buf), NULL);
+			if (ret >= 0) buf[ret] = 0;
+			
+    	    	    	printf("MAPPED=%3d (%s)\n", ret, (ret == -1) ? "<NONE>" : ((ret == 0) ? "<ZERO>" : buf));
+		    }
+		    break;
+	    }
+	    ReplyMsg((struct Message *)msg);
+	}
+    }
+    
+    CloseWindow(win);
+    CloseLibrary(KeymapBase);
+}
+
 int main(int argc, char **argv)
 {
     WORD *table;
@@ -110,15 +184,14 @@ int main(int argc, char **argv)
     WORD index;
     WORD trashed = 0;
     
-    table = (WORD *)SysBase->ex_Reserved2[1]; /* set up in config/i386-native/Drivers/keyboard/kbdclass.c */
-    if (!table)
-    {
-    	puts("Error: table points to NULL!\n");
-	return 0;
-    }
-
     if (argc == 2)
     {
+    	if (strcmp(argv[1], "test") == 0)
+	{
+	    dotest();
+    	    return 0;
+	}
+	
     	index = strtol(argv[1], 0, 0);
 	
 	if (index < 0) index = 0;
@@ -126,8 +199,15 @@ int main(int argc, char **argv)
 	
 	startindex = endindex = index;
     }
+
+    table = (WORD *)SysBase->ex_Reserved2[1]; /* set up in config/i386-native/Drivers/keyboard/kbdclass.c */
+    if (!table)
+    {
+    	puts("Error: table points to NULL!\n");
+	return 0;
+    }
     
-    printf("Table address = 0x%x\n\n", table);
+    printf("Table address = 0x%p\n\n", table);
     
     for(index = startindex; index <= endindex; index++)
     {
