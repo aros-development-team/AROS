@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: initialize datatypes.library
-    Lang: English.
 */
 
 #include <exec/types.h>
@@ -81,9 +78,6 @@ static void closelibs(struct DataTypesBase *DataTypesBase)
 
     if(DataTypesBase->dtb_GfxBase != NULL)
 	CloseLibrary(DataTypesBase->dtb_GfxBase);
-
-    if(DataTypesBase->dtb_IconBase != NULL)
-	CloseLibrary(DataTypesBase->dtb_IconBase);
 
     if (DataTypesBase->dtb_WorkbenchBase != NULL)
 	CloseLibrary(DataTypesBase->dtb_WorkbenchBase);
@@ -166,13 +160,6 @@ AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
 	    OpenLibrary("locale.library", 0L)) == NULL)
     {
 	D(bug("datatypes.library: Cannot open locale.library\n"));
-	goto error;
-    }
-
-    if ((DataTypesBase->dtb_IconBase =
-	    OpenLibrary("icon.library", 37L)) == NULL)
-    {
-	D(bug("datatypes.library: Cannot open icon.library\n"));
 	goto error;
     }
 
