@@ -5,7 +5,7 @@
 -lautoinit
 
 *link:
--m elf_@aros_target_cpu@ -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib
+-m @aros_object_format@ -L@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/lib
 
 *lib:
 %{!static: -larosc_shared} %{static: -larosc} -larosm
