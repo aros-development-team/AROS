@@ -29,8 +29,10 @@
 #MM	workbench-libs-icon \
 #MM	workbench-libs-iffparse \
 #MM workbench-libs-mathtrans \
-#MM workbench-libs-mathieeedoubbas \
-#MM workbench-libs-mathieeedoubtrans
+
+# workbench-libs-mathieeedoubtrans <- removed due to bogus AROS_LHQUAD* macros
+# workbench-libs-mathieeedoubbas <- removed due to bogus AROS_LHQUAD* macros
+
 
 #MM- workbench-classes-amiga : workbench-classes-complete
 
