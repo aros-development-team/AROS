@@ -179,7 +179,7 @@ FOREVER {
 struct NewWindow TstWindow = {
    0,0,WDTH,HGHT, /* LeftEdge,TopEdge,Width,Height */
    8,9,           /* DetailPen,BlockPen     */
-   NL,
+   0,
    SMART_REFRESH | ACTIVATE, /*Flags*/
    NL,NL,"Test",   /* FirstGadget, CheckMark, Title  */
    NL,         /* MUST SET SCREEN AFTER OPENSCREEN!!! */
@@ -367,10 +367,10 @@ register int i,j;
    for ( i=0; i<500 ; i++) {
       mp2 = (LONG *)mem_ptr;
       for ( j = 0; j < 2000 ; j++) {
-         *mp2++ = NL;
-         *mp2++ = NL;
-         *mp2++ = NL;
-         *mp2++ = NL;
+         *mp2++ = 0L;
+         *mp2++ = 0L;
+         *mp2++ = 0L;
+         *mp2++ = 0L;
          }
       }
 

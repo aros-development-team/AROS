@@ -152,9 +152,9 @@ int main(int argc, char **argv)
 	    UBYTE *data;
 	    ULONG size;
 	    
-	    PNG_GetChunkInfo(chunks[0], &data, &size);
+	    PNG_GetChunkInfo(chunks[0], (APTR *) &data, &size);
 	    
-	    printf("\nICON chunk found. Size %d\n", size);
+	    printf("\nICON chunk found. Size %ld\n", size);
 	    {
 	    	while(size >= 4)
 		{
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Icon X Position: %d\n", val);
+				printf("Icon X Position: %ld\n", val);
 			    }
 			    break;
 			    
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Icon Y Position: %d\n", val);
+				printf("Icon Y Position: %ld\n", val);
 			    }
 			    break;
 
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer X Position: %d\n", val);
+				printf("Drawer X Position: %ld\n", val);
 			    }
 			    break;
 
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer Y Position: %d\n", val);
+				printf("Drawer Y Position: %ld\n", val);
 			    }
 			    break;
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer Width: %d\n", val);
+				printf("Drawer Width: %ld\n", val);
 			    }
 			    break;
 
@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer Height: %d\n", val);
+				printf("Drawer Height: %ld\n", val);
 			    }
 			    break;
 
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 				size -= 4;
 				data += 4;
 				
-				printf("Drawer View/Type Flags: %x\n", val);
+				printf("Drawer View/Type Flags: %lx\n", val);
 			    }
 			    break;
 
