@@ -120,7 +120,7 @@ int InitWB()
     vi = GetVisualInfoA(wbscreen, NULL);
 
     wbwindow = OpenWindowTags(NULL,
-	WA_Title,	"AROS Workbench",
+	WA_Title,	"AROS Workbench Alpha Version 0.1 (No file navigation)",
 //	WA_Flags,	(WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE) ,
 	WA_Flags,	(WFLG_BACKDROP | WFLG_ACTIVATE) ,
 	WA_IDCMP,	(IDCMP_MENUPICK),
@@ -217,8 +217,8 @@ kprintf("LoadWB.HandleNotify\n");
                                 es.es_StructSize   = sizeof(es);
 				es.es_Flags        = 0;
 				es.es_Title        = "About AROS Workbench...";
-				es.es_TextFormat   = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.";
-				es.es_GadgetFormat = "Ok";
+				es.es_TextFormat   = "Written by Henning Kiel <hkiel@aros.org>\nCopyright © 2002, The AROS Development Team.\nAll rights reserved.\n\nAROS 3.1 ROM (Alpha)\nWe made it...\nThe AROS Development team: Aaron Digulla, Georg Steger,\nNils Henrik Lorentzen, Henning Kiel, Staf Verhaegen,\nHenrik Berglund, Michal Schulz, Iain Templeton,\nFabio Alemagna, Sebastian Heutling, Johan Grip,\nTobias Seiler, Johan Alfredsson, Matt Parsons...\nTo be continued...";
+				es.es_GadgetFormat = "Better than ever!";
 				EasyRequest ( wbwindow, &es, NULL, NULL, NULL );
 
                                 break;
