@@ -22,7 +22,7 @@ COLLECT-AROS-FILES := collect-aros.c gensets.c misc.c $(COLLECT-AROS-BACKEND) \
 $(COLLECT-AROS) : misc.h ldscript.h gensets.h docommand.h backend.h
 $(COLLECT-AROS) : $(COLLECT-AROS-FILES)
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(COLLECT-AROS-FILES) -o $@
+	@$(HOST_CC) -o $@ $(HOST_CFLAGS) $(COLLECT-AROS-FILES) $(HOST_LDFLAGS) 
 
 
 clean :
