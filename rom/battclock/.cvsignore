@@ -1,4 +1,2 @@
 mmakefile
-*.bak
 libdefs.h
-endtag.c

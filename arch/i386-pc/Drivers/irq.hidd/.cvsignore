@@ -1,5 +1,4 @@
 mmakefile
 libdefs.h
-endtag.c
 irq.s
 irq_init.s
