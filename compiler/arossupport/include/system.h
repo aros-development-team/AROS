@@ -116,7 +116,7 @@
 #    define __pure
 #endif
 
-/* 4. Makros for debugging and development */
+/* 4. Macros for debugging and development */
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #   define AROS_64BIT_TYPE long long
 #   define AROS_HAVE_LONG_LONG
@@ -148,7 +148,35 @@
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
 
 #ifndef AROS_ASMSYMNAME
-#   define AROS_ASMSYMNAME(n)     n
+#   define AROS_ASMSYMNAME(n) n
+#endif
+
+#ifndef AROS_CSYM_FROM_ASM_NAME
+#   ifdef __ELF__
+#       define AROS_CSYM_FROM_ASM_NAME(n) #n
+#   else
+#       error define AROS_CSYM_FROM_ASM_NAME for your architecture
+#   endif
+#endif
+
+/* Makes a 'new' symbol which occupies the same memory location as the 'old' symbol */
+#if !defined AROS_MAKE_ALIAS
+#   define AROS_MAKE_ALIAS(old, new) \
+        typeof(old) new __attribute__((__alias__(AROS_CSYM_FROM_ASM_NAME(old))))
+#endif
+
+/* define an asm symbol 'sym' with value 'value'
+   'value' has to be an asm constant, thus either an address number or
+   an asm symbol name, */
+#if !defined AROS_MAKE_ASM_SYM 
+#    define AROS_MAKE_ASM_SYM(sym, value)   \
+         asm("\n.globl " #sym "\n\t"        \
+             ".set " #sym ", " #value "\n")
+#endif
+
+#if !defined AROS_IMPORT_ASM_SYM 
+#    define AROS_IMPORT_ASM_SYM(sym) \
+         asm("\n.globl" #sym "\n")
 #endif
 
 #endif /* AROS_SYSTEM_H */
