@@ -361,6 +361,7 @@
   * request_confirm
   * show_message
   * request_bool
+  * request_choice
   * Help Requester (makes more.[ch] obsolete for this GUI)
 - switched to Zune as default
 
