@@ -1,0 +1,86 @@
+To use the AROS CVS Server:
+
+1. Create a passwort with "crypt":
+
+    > make crypt
+    > crypt my_password
+    Encrypting my_password: cbEVHg0j9uNRs
+
+2. Mail that password to
+
+    digulla@wi-pc44.fh-konstanz.de
+    Subject: Access to AROS CVS Server
+
+    Please add <my_login, eg. digulla> <password, eg. cbEVHg0j9uNRs>
+
+3. Wait until I confirm this. While you wait, look for CVS 1.8.1 and
+install it.
+
+4. When you got my reply and you have CVS 1.8.1, use this to login:
+
+    > cvs -d aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS login
+
+This asks you for your password. Type it in and if there is no error
+displayed, you are connected.
+
+5. Now you can use _any_ CVS comand as if the main source tree was
+on your local host. To get a complete copy of the current tree, use:
+
+    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS checkout AROS
+
+!!! NOTE !!! IMPORTANT !!!
+
+    You must use "aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
+    login but ":pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
+    use CVS (or in other words: after login, you must prepend ":pserver:"
+    to the argument of the -d option. This tells CVS that your are logged
+    in.
+
+6. What can I do now ? Well, you can edit any file or create any number
+of new files. To send me your changes, you must commit them, namely with:
+
+    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS commit [<file>]
+
+where <file> is the name of a file you want to update on MY host. If
+you don't specify a certain file, CVS will update all files in the CURRENT
+DIRECTORY and ALL SUB-DIRECTORIES. This command is the last one to really
+make the change here on my host. All other commands simply change the
+state at YOUR place.
+
+7. What do I do it I have a new file ? Then you must register it with
+"cvs ... add <file>", eg.
+
+    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS add some_new_file.c
+
+This won't do anything here at my place but simply tell CVS at YOUR
+place that there is a new file. The next "cvs ... commit" then registers
+your new file here.
+
+8. All right but what when others change files ? In this case, nothing
+happens. CVS won't notice you or update your files. To tell CVS to look
+for new files and changes by other people (ie. make YOUR files uptodate),
+use
+
+    cvs -d :pserver:aros@wi-pc44.fh-konstanz.de:/home/AROS/CVS update [<file>]
+
+As usual, give a file if you want only this file to be checked and updated
+or nothing and CVS will check all files in this dir and all subdirs.
+
+9. What happens when two people edit the same file ? Good question. The
+answer is that I don't know exactly. What I know is that no changes will
+be lost. CVS will always keep a backup copy of the original file (it is
+kinda smart; it will notice when you try to change a file someone else
+has already changed), so there is no chance that your changes might be
+made in a file edited by someone else in the mean time. CVS will try
+to figure out what the differences are between your version and the one
+you used as a starting point and the version now in the repository and
+also the version you used as a starting point. Then these diffs are
+compared, too. If CVS doesn't find any places where both diffs show
+changes (ie. you edited somewhere at the end of the file and the other
+guy edited at the beginning), it will simply merge both diffs and create
+a new version with BOTH YOUR changes and the changes of the other person.
+If CVS cannot resolve all every change, it does as best as it can and
+then offers you a file which contains the rest: Your changes and the
+changes of the other person. Then you have to manually clean this up
+and after that CVS will use this file as the new version. At least that's
+what the manual says :)
