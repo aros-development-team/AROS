@@ -4,7 +4,7 @@ CURDIR=rom/utility
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(OSGENDIR)/utility
+OBJDIR=$(GENDIR)/$(CURDIR)
 
 # Use OS's own includes over the ones from AROS
 ifeq ("$(SHARED_UTILITY)","yes")
@@ -12,6 +12,9 @@ SPECIAL_CFLAGS := $(SHARED_CFLAGS) -I/usr/include
 else
 SPECIAL_CFLAGS := -I/usr/include
 endif
+
+USER_INCLUDES = -I.
+USER_DEFINES = -D_AROS
 
 # BEGIN_DESC{makefile}
 # This is the makefile for utility.library. Use it if you want to compile
@@ -33,9 +36,9 @@ endif
 # Main function for exec.strap. Need this apart as an anchor for the link:
 INIT_FILE := utility_init
 # Guarantee that this will go at the end of the file:
-END_FILE := utility_endtag
+END_FILE := endtag
 
-FILES := utility_functable getnamespace intfindnamedobj
+FILES := functable getnamespace intfindnamedobj
 
 FUNCTIONS := \
 	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
@@ -115,18 +118,13 @@ $(OBJDIR)/%.o: %.c
 
 %additional_objs_rule
 
-utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) $(TOP)/scripts/makefunctable.awk
-	%mkfunctable_q Utility
-
-$(END_FILE).c: $(TOP)/scripts/makeendtag.awk
-	%mkendtag_q Utility
-
-$(OBJDIR)/utility_init.o: libdefs.h
-
-%libdefs_rule
+%genlib
 
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
 %include_deps
+
+$(OBJDIR)/utility_init.o: libdefs.h
+
