@@ -5,6 +5,7 @@
     Desc: Common startup code
     Lang: english
 */
+#include <aros/config.h>
 #include <setjmp.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
@@ -13,6 +14,15 @@
 #include <aros/asmcall.h>
 #if 1
 #   include <aros/debug.h>
+#endif
+
+#if AROS_FLAVOUR == AROS_FLAVOUR_NATIVE
+asm("
+	.text
+
+	move.l	4.w,a6
+	jra	_entry(pc)
+");
 #endif
 
 /* Don't define symbols before the entry point. */
@@ -28,6 +38,11 @@ extern LONG __startup_error;
     gcc emits strings for a certain function _before_ the code the program
     will crash immediately because the first element in the code won't be
     valid assembler code.
+
+    970314 ldp: It will now work because of the asm-stub above.
+
+    TODO: reset and initialise the FPU.
+          resident startup
 */
 AROS_UFH3(LONG, entry,
     AROS_UFHA(char *,argstr,A0),
