@@ -21,10 +21,14 @@
 	struct Library *, RexxSysBase, 22, RexxSys)
 
 /*  FUNCTION
+        Deletes a RexxArg structure previously created with CreateArgstring
 
     INPUTS
+        Pointer to the string part of the RexxArg structure returned from
+        CreateArgstring
 
     RESULT
+        void
 
     NOTES
 
@@ -33,6 +37,7 @@
     BUGS
 
     SEE ALSO
+        CreateArgstring()
 
     INTERNALS
 

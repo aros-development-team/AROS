@@ -22,10 +22,15 @@
 	struct Library *, RexxSysBase, 26, RexxSys)
 
 /*  FUNCTION
+        This function will clear a specified number of arguments by calling
+        DeleteArgstring on them.
 
     INPUTS
+        msgptr - RexxMsg to clear the arguments from
+        count  - The number of arguments in the message to clear
 
     RESULT
+        void
 
     NOTES
 
@@ -34,6 +39,7 @@
     BUGS
 
     SEE ALSO
+         FillRexxMsg(), DeleteArgstring()
 
     INTERNALS
 
@@ -45,8 +51,13 @@
     ULONG i;
     
     for (i = 0; i < count; i++)
-        if (msgptr->rm_Args[i] != NULL)
+    {
+	if (msgptr->rm_Args[i] != NULL)
+	{
 	    DeleteArgstring(msgptr->rm_Args[i]);
+	    msgptr->rm_Args[i] = NULL;
+	}
+    }
     
     ReturnVoid("ClearRexxMsg");
     AROS_LIBFUNC_EXIT

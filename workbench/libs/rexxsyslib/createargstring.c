@@ -23,18 +23,27 @@
 	struct Library *, RexxSysBase, 21, RexxSys)
 
 /*  FUNCTION
+        This function will create a RexxArg structure and copy the supplied
+        string into it.
 
     INPUTS
+        string - String to copy into the RexxArg structure
+        length - Length of the string to copy.
 
     RESULT
+        Will return a pointer the string part of the allocated RexxArg
+        structure.
 
     NOTES
+        Pointer to the string returned by this function may be used as a
+        null terminated C string but should be considered read-only.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        DeleteArgstring(), LengthArgstring()
 
     INTERNALS
 

@@ -21,10 +21,13 @@
 	struct Library *, RexxSysBase, 28, RexxSys)
 
 /*  FUNCTION
+        Test to see if given Message is a RexxMsg
 
     INPUTS
+        msgptr - Message to test
 
     RESULT
+        TRUE if it is one, FALSE otherwise
 
     NOTES
 
@@ -33,9 +36,11 @@
     BUGS
 
     SEE ALSO
+        CreateRexxMsg
 
     INTERNALS
-
+        The name of the Node part of the Message is used to see if this
+        is a RexxMsg.
 
 *****************************************************************************/
 {

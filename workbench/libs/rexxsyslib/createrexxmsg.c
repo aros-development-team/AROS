@@ -25,10 +25,18 @@
 	struct Library *, RexxSysBase, 24, RexxSys)
 
 /*  FUNCTION
+        Creation and initialization of a RexxMsg structure
 
     INPUTS
+        port      - ReplyPort where the message is replied when it has been
+                    handled
+        extension - The filename extension to use when searching for macros
+        host      - Name of the port to use as the initial command host
+                    (e.g. as used in the ADDRESS Rexx statement). When NULL
+                    is given "REXX" will be used.
 
     RESULT
+        Pointer to the freshly allocated RexxMsg.
 
     NOTES
 
@@ -37,8 +45,11 @@
     BUGS
 
     SEE ALSO
+        DeleteRexxMsg(), IsRexxMsg(), FillRexxMsg(), ClearRexxMsg()
 
     INTERNALS
+        The name in the Node part of this RexxMsg is set to a unique value
+        that is used in IsRexxMsg to test if it is a RexxMsg.
 
 
 *****************************************************************************/
