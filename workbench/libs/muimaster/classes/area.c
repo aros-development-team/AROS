@@ -115,6 +115,8 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
 //static void setup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 //static void cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj);
 
+#define ZUNE_FOCUS_TYPE_ACTIVE_OBJ 0
+#define ZUNE_FOCUS_TYPE_DROP_OBJ   1
 
 static void _zune_focus_new(Object *obj, int type)
 {
@@ -122,17 +124,24 @@ static void _zune_focus_new(Object *obj, int type)
     struct RastPort *rp = _rp(obj);
     UWORD oldDrPt = rp->LinePtrn;
 
-    int x1 = _left(obj) - 1;
-    int y1 = _top(obj)  - 1;
-    int x2 = _left(obj) + _width(obj);
-    int y2 = _top(obj)  + _height(obj);
+    int x1 = _left(obj);
+    int y1 = _top(obj);
+    int x2 = _left(obj) + _width(obj) -1;
+    int y2 = _top(obj)  + _height(obj) -1;
 
     if (!parent || parent == _win(obj)) return;
 
     SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], _pens(obj)[MPEN_SHADOW], JAM2);
 
-    if (!type) SetDrPt(rp, 0xCCCC);
-    else SetDrPt(rp,0x5555);
+    if (type == ZUNE_FOCUS_TYPE_ACTIVE_OBJ)
+    {
+    	SetDrPt(rp, 0xCCCC);
+	x1--; y1--; x2++; y2++;
+    }
+    else
+    {
+    	SetDrPt(rp,0x5555);
+    }
 
     Move(rp, x1, y1);
     Draw(rp, x2, y1);
@@ -142,23 +151,79 @@ static void _zune_focus_new(Object *obj, int type)
     SetDrPt(rp, oldDrPt);
 }
 
-static void _zune_focus_destroy(Object *obj)
+static void _zune_focus_destroy(Object *obj, int type)
 {
     Object *parent = _parent(obj);
 
-    int x1 = _left(obj) - 1;
-    int y1 = _top(obj)  - 1;
-    int x2 = _left(obj) + _width(obj);
-    int y2 = _top(obj)  + _height(obj);
-    int width = x2 - x1 + 1;
-    int height = y2 - y1 + 1;
+    int x1 = _left(obj);
+    int y1 = _top(obj);
+    int x2 = _left(obj) + _width(obj) - 1;
+    int y2 = _top(obj)  + _height(obj) - 1;
+    int width; 
+    int height;
 
-    if (!parent || parent == _win(obj)) return;
+    if (type == ZUNE_FOCUS_TYPE_ACTIVE_OBJ)
+    {
+    	if (!parent || parent == _win(obj)) return;
 
-    DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, 0, 0, 0);
-    DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, 0, 0, 0);
-    DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, 0, 0, 0);
-    DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, 0, 0, 0);
+    	x1--; y1--; x2++; y2++;
+	width = x2 - x1 + 1;
+    	height = y2 - y1 + 1;
+    
+	DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, 0, 0, 0);
+	DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, 0, 0, 0);
+	DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, 0, 0, 0);
+	DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, 0, 0, 0);
+    }
+    else
+    {
+    	struct Region 	 *region;
+	struct Rectangle  rect;
+	APTR	    	  clip = NULL;
+	
+	region = NewRegion();
+	if (region)
+	{
+	    rect.MinX = _left(obj);
+	    rect.MinY = _top(obj);
+	    rect.MaxX = _right(obj);
+	    rect.MaxY = _top(obj);
+	    
+	    OrRectRegion(region, &rect);
+	    
+	    rect.MinX = _right(obj);
+	    rect.MinY = _top(obj);
+	    rect.MaxX = _right(obj);
+	    rect.MaxY = _bottom(obj);
+	    
+	    OrRectRegion(region, &rect);
+
+	    rect.MinX = _left(obj);
+	    rect.MinY = _bottom(obj);
+	    rect.MaxX = _right(obj);
+	    rect.MaxY = _bottom(obj);
+	    
+	    OrRectRegion(region, &rect);
+
+	    rect.MinX = _left(obj);
+	    rect.MinY = _top(obj);
+	    rect.MaxX = _left(obj);
+	    rect.MaxY = _bottom(obj);
+	    
+	    OrRectRegion(region, &rect);
+	 
+	    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);  
+	     
+	} /* if (region) */
+	 
+    	MUI_Redraw(obj, MADF_DRAWOBJECT);
+	
+	if (region)
+	{
+	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+	}
+	
+    }
 }
 
 
@@ -1278,7 +1343,7 @@ static ULONG Area_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
 
     if (obj == activeobj)
-	_zune_focus_new(obj, 0);
+	_zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
 
     return TRUE;
 }
@@ -1293,7 +1358,7 @@ static ULONG Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 
     get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
     if (obj == activeobj)
-	_zune_focus_destroy(obj);
+	_zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
 
     zune_imspec_hide(data->mad_Background);
     if (data->mad_Flags & MADF_SHOWSELSTATE
@@ -1333,7 +1398,7 @@ static ULONG Area_GoActive(struct IClass *cl, Object *obj, Msg msg)
     if (!(_flags(obj) & MADF_ACTIVE))
     {
 	if (_flags(obj) & MADF_CANDRAW)
-	    _zune_focus_new(obj, 0);
+	    _zune_focus_new(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
 
 	_flags(obj) |= MADF_ACTIVE;
     }
@@ -1348,7 +1413,7 @@ static ULONG Area_GoInactive(struct IClass *cl, Object *obj, Msg msg)
     if (_flags(obj) & MADF_ACTIVE)
     {
 	if (_flags(obj) & MADF_CANDRAW)
-	    _zune_focus_destroy(obj);
+	    _zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_ACTIVE_OBJ);
 
 	_flags(obj) &= ~MADF_ACTIVE;
     }
@@ -1799,7 +1864,7 @@ static IPTR Area_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_D
 static ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
 {
     //struct MUI_AreaData *data = INST_DATA(cl, obj);
-    _zune_focus_new(obj, 1);
+    _zune_focus_new(obj, ZUNE_FOCUS_TYPE_DROP_OBJ);
     return 0;
 }
 
@@ -1809,7 +1874,7 @@ static ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegi
 static ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
 {
     //struct MUI_AreaData *data = INST_DATA(cl, obj);
-    _zune_focus_destroy(obj);
+    _zune_focus_destroy(obj, ZUNE_FOCUS_TYPE_DROP_OBJ);
     return 0;
 }
 
