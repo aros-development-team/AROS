@@ -37,34 +37,6 @@
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 84, Graphics)
 
-#define AreaDraw(rp, x, y) \
-    AROS_LC3(LONG, AreaDraw, \
-    AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(LONG             , x, D0), \
-    AROS_LCA(LONG             , y, D1), \
-    struct GfxBase *, GfxBase, 43, Graphics)
-
-#define AreaEllipse(rp, xCenter, yCenter, a, b) \
-    AROS_LC5(LONG, AreaEllipse, \
-    AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(LONG             , xCenter, D0), \
-    AROS_LCA(LONG             , yCenter, D1), \
-    AROS_LCA(LONG             , a, D2), \
-    AROS_LCA(LONG             , b, D3), \
-    struct GfxBase *, GfxBase, 31, Graphics)
-
-#define AreaEnd(rp) \
-    AROS_LC1(LONG, AreaEnd, \
-    AROS_LCA(struct RastPort *, rp, A1), \
-    struct GfxBase *, GfxBase, 44, Graphics)
-
-#define AreaMove(rp, x, y) \
-    AROS_LC3(LONG, AreaMove, \
-    AROS_LCA(struct RastPort *, rp, A1), \
-    AROS_LCA(LONG             , x, D0), \
-    AROS_LCA(LONG             , y, D1), \
-    struct GfxBase *, GfxBase, 42, Graphics)
-
 #define AskFont(rp, textAttr) \
     AROS_LC2(void, AskFont, \
     AROS_LCA(struct RastPort *, rp, A1), \
@@ -189,33 +161,10 @@
     AROS_LCA(struct RastPort *, rp, A0), \
     struct GfxBase *, GfxBase, 146, Graphics)
 
-#define InitArea(areaInfo, vectorBuffer, maxVectors) \
-    AROS_LC3(void, InitArea, \
-    AROS_LCA(struct AreaInfo *, areaInfo, A0), \
-    AROS_LCA(APTR             , vectorBuffer, A1), \
-    AROS_LCA(LONG             , maxVectors, D0), \
-    struct GfxBase *, GfxBase, 47, Graphics)
-
-#define InitBitMap(bitMap, depth, width, height) \
-    AROS_LC4(void, InitBitMap, \
-    AROS_LCA(struct BitMap *, bitMap, A0), \
-    AROS_LCA(LONG           , depth, D0), \
-    AROS_LCA(LONG           , width, D1), \
-    AROS_LCA(LONG           , height, D2), \
-    struct GfxBase *, GfxBase, 65, Graphics)
-
 #define InitRastPort(rp) \
     AROS_LC1(BOOL, InitRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
     struct GfxBase *, GfxBase, 33, Graphics)
-
-#define InitTmpRas(tmpRas, PLANEPTR, buffer, size) \
-    AROS_LC4(struct TmpRas *, InitTmpRas, \
-    AROS_LCA(struct TmpRas *, tmpRas, A0), \
-    AROS_LCA(               , PLANEPTR, A1), \
-    AROS_LCA(               , buffer, D0), \
-    AROS_LCA(LONG           , size, ), \
-    struct GfxBase *, GfxBase, 78, Graphics)
 
 #define LoadRGB32(vp, table) \
     AROS_LC2(void, LoadRGB32, \

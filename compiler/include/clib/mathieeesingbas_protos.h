@@ -70,6 +70,7 @@ AROS_LP2(LONG, IEEESPSub,
 
 AROS_LP1(LONG, IEEESPTst,
     AROS_LPA(LONG, y, D0),
-    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 8, Mathieeespbas )
+    struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 8, Mathieeespbas)
+
 
 #endif /* CLIB_MATHIEEESPBAS_PROTOS_H */
