@@ -4,24 +4,17 @@
 #
 include $(TOP)/config/make.cfg
 
-MODNAME := boopsi
-MODTYPE := library
-USER_INCLUDES := -I.
+#####MM- kernel-boopsi : includes linklibs
 
 FILES := rootclass icclass modelclass
 FUNCS := addclass disposeobject donotify findclass freeclass freeicdata \
 	 getattr makeclass newobjecta nextobject removeclass setattrsa
 
-USE_AMIGALIB := yes
-USE_CLIB := yes
+#%build_module_macro mmake=kernel-boopsi \
+#  modname=boopsi modtype=library \
+#  funcs=$(FUNCS) files=$(FILES) \
+#  conffile=lib.conf \
+#  uselibs="amiga arosc_shared" \
+#  genshlinklib=$(SHARED_BOOPSI)
 
-MAKE_SHLIB := $(SHARED_BOOPSI)
-
-#####MM- kernel-boopsi : includes linklibs
-
-#%make_module_setup mmake=kernel-boopsi
-#%make_module mmake=kernel-boopsi
-#%make_lib_includes
-
-#%common
-#%include_deps
+%common
