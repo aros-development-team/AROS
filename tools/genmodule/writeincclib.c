@@ -42,7 +42,8 @@ void writeincclib(void)
 	for (arglistit = funclistit->arguments;
 	     arglistit!=NULL;
 	     arglistit = arglistit->next)
-	    fprintf(out, "        AROS_LPA(%s, %s,),\n", arglistit->type, arglistit->name);
+	    fprintf(out, "        AROS_LPA(%s, %s, %s),\n",
+		    arglistit->type, arglistit->name, arglistit->reg);
 
 	fprintf(out, "        struct Library *, %sBase, %d, %s)\n",
 		basename, start, basename);
