@@ -15,6 +15,8 @@
 #include <exec/interrupts.h>
 #include <exec/devices.h>
 
+#include <oop/oop.h>
+#include <devices/gameport.h>
 
 /* Must always be a multiple of 3 since one event consists of code, x and y */
 
@@ -31,7 +33,7 @@ struct GameportBase
     struct ExecBase   		*gp_sysBase;
     struct Library    		*gp_LowLevelBase;
 
-    BPTR               		gp_seglist;
+    APTR               		gp_seglist;
     
     struct MinList          	gp_PendingQueue; 	/* IOrequests (GPD_READEVENT)
 						    	   not done quick */
@@ -57,6 +59,9 @@ struct GameportBase
     OOP_AttrBase                HiddMouseAB_;
 };
 
+#ifdef HiddMouseAB
+#undef HiddMouseAB
+#endif
 #define HiddMouseAB (GPBase->HiddMouseAB_)
 
 typedef struct GPUnit
@@ -76,10 +81,6 @@ typedef struct GPUnit
 #define GBUB_PENDING 		0			/* Unit has pending request for gameport
 				   			   events */
 #define GBUF_PENDING 		0x01
-
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct GameportBase *, GPBase, 3, Gameport)
 
 
 #ifdef SysBase
