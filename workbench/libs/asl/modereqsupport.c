@@ -71,7 +71,7 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		
 		strcpy(name, nameinfo.Name);
 	    } else {
-	        sprintf(name, "%ldx%ldx%ld",
+	        sprintf(name, "%dx%dx%d",
 			diminfo.Nominal.MaxX - diminfo.Nominal.MinX + 1,
 			diminfo.Nominal.MaxY - diminfo.Nominal.MinY + 1,
 			diminfo.MaxDepth);
