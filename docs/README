@@ -45,7 +45,7 @@ LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH" (without the "")).
 
 Now you will get a prompt reading "Workbench:> ". Now type "dir all" and
 press return and doesn't it look familiar (There will be lots of debugging
-output which you can savely ignore. It will go away in the next versions) ?
+output which you can safely ignore. It will go away in the next versions) ?
 Try "demowin" to see what our intuition.library and graphics.library can
 do. Have you tried "sift" ? This is the AROS version of sift.c which is in
 the RKRMs. We just copied and compiled it and it works ! If you want to try
