@@ -24,6 +24,9 @@
 #include <aros/debug.h>
 #undef kprintf
 
+char timername[] = "timer.device";
+char inputname[] = "input.device";
+
 /*****************************************************************************
 
     NAME */
@@ -77,10 +80,19 @@
     BYTE ret=IOERR_OPENFAIL;
 
     D(bug("OpenDevice $%lx $%lx $%lx %ld (\"%s\") by \"%s\"\n", devName, unitNumber, iORequest,
-	flags, (devName > (STRPTR)0x400) ? devName : (UBYTE *)"(null)", SysBase->ThisTask->tc_Node.ln_Name));
+	flags, (devName > (STRPTR)1) ? devName : (UBYTE *)"(null)", SysBase->ThisTask->tc_Node.ln_Name));
 
     /* Arbitrate for the device list */
     Forbid();
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    /*
+	Kludge for compatibility with V40 kickstart. DO NOT depend on this!
+	See TaggedOpenLibrary() for more info.
+    */
+    if     (devName == (STRPTR)0) devName = timername;
+    else if(devName == (STRPTR)1) devName = inputname;
+#endif
 
     /* Look for the device in our list */
     device=(struct Device *)FindName(&SysBase->DeviceList,devName);
