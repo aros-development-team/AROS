@@ -197,25 +197,25 @@ static LONG u2a[][2]=
 static APTR emul_malloc(struct emulbase *emulbase, ULONG size)
 {
     ULONG *res;
-    
+
     // kprintf("** emul_malloc: size = %d **\n",size);
     ObtainSemaphore(&emulbase->memsem);
-    
+
     size += sizeof(ULONG);
     res = AllocPooled(emulbase->mempool, size);
     if (res) *res++ = size;
-    
+
     ReleaseSemaphore(&emulbase->memsem);
 
     // kprintf("** emul_malloc: size = %d  result = %x **\n",size-sizeof(ULONG),res);
-    
+
     return res;
 }
 
 /*********************************************************************************************/
 
 static void emul_free(struct emulbase *emulbase, APTR mem)
-{    
+{
     if (!mem)
     {
         kprintf("*** emul_handler: tried to free NULL mem ***\n");
@@ -224,7 +224,7 @@ static void emul_free(struct emulbase *emulbase, APTR mem)
         ULONG size = *--m;
 
         // kprintf("** emul_free: size = %d  memory = %x **\n",size-sizeof(ULONG),mem);
-	
+
 	ObtainSemaphore(&emulbase->memsem);
 	FreePooled(emulbase->mempool, m, size);
 	ReleaseSemaphore(&emulbase->memsem);
@@ -320,7 +320,7 @@ static LONG makefilename(struct emulbase *emulbase,
 	{
 	    if ((*dest)[dirlen - 2] != '/') strcat(*dest, "/");
 	}
-	
+
 	strcat(*dest, filename);
 
 	if (!shrink(emulbase, *dest))
@@ -365,7 +365,7 @@ static void fixcase(struct emulbase *emulbase, char *pathname)
 	    if (stat((const char *)pathname, &st) != 0)
 	    {
 	    	dirfound = FALSE;
-		
+
         	pathstart[-1] = '\0';
 		dir = opendir(pathname);
 		pathstart[-1] = '/';		
@@ -745,6 +745,8 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	    /* stat() failed. If ret is unset, generate it from errno. */
 	    if (!ret)
 		ret = err_u2a();
+
+	    emul_free(emulbase, fh->name);
 	}
 	FreeMem(fh, sizeof(struct filehandle));
     } else
@@ -980,7 +982,7 @@ static LONG startup(struct emulbase *emulbase)
 				STRPTR s;
 				STRPTR s2;
     	    	    	    	WORD   i;
-				
+
 				/*  We want s to point to the first 4-byte
 				    aligned memory after the structure.
 				*/
@@ -1074,8 +1076,8 @@ char * pathname_from_name (struct emulbase *emulbase, char * name)
   char * result = NULL;
   /* look for the first '/' in the filename starting at the end */
   while (i != 0 && name[i] != '/')
-    i--; 
-    
+    i--;
+
   if (0 != i)
   {
     result = (char *)emul_malloc(emulbase, i+1);
@@ -1083,7 +1085,7 @@ char * pathname_from_name (struct emulbase *emulbase, char * name)
       return NULL;
     strncpy(result, name, i);
     result[i]=0x0;
-  } 
+  }
   return result;
 }
 
@@ -1097,8 +1099,8 @@ char * filename_from_name(struct emulbase *emulbase, char * name)
   char * result = NULL;
   /* look for the first '/' in the filename starting at the end */
   while (i != 0 && name[i] != '/')
-    i--; 
- 
+    i--;
+
   if (0 != i)
   {
     result = (char *)emul_malloc(emulbase, len-i);
@@ -1106,9 +1108,9 @@ char * filename_from_name(struct emulbase *emulbase, char * name)
       return NULL;
     strncpy(result, &name[i+1], len-i);
     result[len-i-1]=0x0;
-  } 
-  return result;  
-} 
+  }
+  return result;
+}
 
 /*********************************************************************************************/
 
