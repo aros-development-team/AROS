@@ -61,7 +61,7 @@ struct stat st;
 		fd = open(srcpath, O_RDONLY);
 		if (fd != -1)
 		{
-			fah = openfile(NULL, ah, filename, FMF_READ | FMF_WRITE | FMF_CREATE | FMF_LOCK | FMF_CLEAR, FIBF_WRITE | FIBF_READ);
+			fah = openfile(NULL, ah, filename, FMF_READ | FMF_WRITE | FMF_CREATE | FMF_LOCK | FMF_CLEAR, 0);
 			if (fah != NULL)
 			{
 				written=0;
