@@ -67,7 +67,7 @@
 /* TODO:
 
   *  Alias [] support
-  *  Break support (and SetSignal(0L) before execution) -- CreateNewProc()?
+  *  Break support (and +(0L) before execution) -- CreateNewProc()?
   *  Script file execution capabilities (if script bit set)
   *  $ must be taken care of differently than it is now so that things
      like cd SYS:Olle/$pelle works
@@ -452,7 +452,7 @@ LONG interact(void)
 		       "All rights reserved.\n"
 		       "AROS is licensed under the terms of the AROS PUBLIC LICENSE (APL), a copy of "
 		       "which you should have received with it.\n"
-		       "Visit http://www.aros.org for further informations\n");
+		       "Visit http://www.aros.org/ for further information\n");
 	    }
 	    else
 	    {
