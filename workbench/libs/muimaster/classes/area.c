@@ -28,7 +28,7 @@ extern struct Library *MUIMasterBase;
 #include "prefs.h"
 #include "font.h"
 
-/*  #define MYDEBUG 1 */
+//#define MYDEBUG 1
 #include "debug.h"
 
 /*
@@ -199,6 +199,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Disabled:
+	    case MUIA_NestedDisabled:
 		if (tag->ti_Data)
 		{
 		    data->mad_DisableCount = 1;
@@ -430,6 +431,25 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Disabled:
 		    if (tag->ti_Data)
 		    {
+		    	if (!data->mad_DisableCount)
+			{
+			    data->mad_DisableCount = 1;
+			    change_disable = 1;
+			}
+		    }
+		    else 
+		    {
+		    	if (data->mad_DisableCount)
+		    	{
+			    data->mad_DisableCount = 0;
+			    change_disable = 1;
+			}
+		    }
+		    break;
+
+	    case    MUIA_NestedDisabled:
+		    if (tag->ti_Data)
+		    {
 		    	if (!data->mad_DisableCount) change_disable = 1;
 		    	data->mad_DisableCount++;
 		    }   else 
@@ -560,6 +580,7 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return(TRUE);
 
 	case    MUIA_Disabled:
+	case MUIA_NestedDisabled:
 	    STORE = !!data->mad_DisableCount; /* BOOLEAN */
 	    return(TRUE);
 
@@ -667,6 +688,11 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
     msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
     msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+
+    D(bug("Area_AskMinMax 0x%lx (%s): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", obj, data->mad_FrameTitle,
+	  msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
+	  msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
+	  msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight));
 
     return TRUE;
 }
