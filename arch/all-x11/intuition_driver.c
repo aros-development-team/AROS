@@ -273,8 +273,8 @@ int intui_OpenWindow (struct IntWindow * iw,
     if (iw->iw_Window.IDCMPFlags & IDCMP_INACTIVEWINDOW)
 	winattr.event_mask |= LeaveWindowMask;
 
-/*    if (iw->iw_Window.IDCMPFlags & (IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW)) */
-	winattr.event_mask |= StructureNotifyMask;
+    /* Always show me if the window has changed */
+    winattr.event_mask |= StructureNotifyMask;
 
     /* TODO IDCMP_SIZEVERIFY IDCMP_DELTAMOVE */
 
@@ -333,24 +333,10 @@ int intui_OpenWindow (struct IntWindow * iw,
 	return FALSE;
     }
 
-    /* XSelectInput (sysDisplay
-	, iw->iw_XWindow
-	, ExposureMask
-	    | ButtonPressMask
-	    | ButtonReleaseMask
-	    | PointerMotionMask
-	    | KeyPressMask
-	    | KeyReleaseMask
-	    | EnterWindowMask
-	    | LeaveWindowMask
-	    | StructureNotifyMask
-    ); */
-
-    /* XDefineCursor (sysDisplay, iw->iw_XWindow, sysCursor); */
     XMapRaised (sysDisplay, iw->iw_XWindow);
 
+    /* Show window *now* */
     XFlush (sysDisplay);
-    /* XSync (sysDisplay, FALSE); */
 
     Diow(bug("Opening Window %p (X=%ld)\n", iw, iw->iw_XWindow));
 
@@ -517,9 +503,12 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
     if (!*buf && t == 1) t = 0;
     if (!t) *buf = 0;
 
-ende:	/*printf ("RawKeyConvert: In %02x %04x %04x Out : %d cs %02x '%c'\n",
+ende:
+/*
+    printf ("RawKeyConvert: In %02x %04x %04x Out : %d cs %02x '%c'\n",
 	    ie->ie_Code, ie->ie_Qualifier, xk.state, t, (ubyte)*buf,
-	    (ubyte)*buf);*/
+	    (ubyte)*buf);
+*/
 
     return (t);
 }
