@@ -30,8 +30,12 @@
 #define ICA_ScrollToVert  ICA_BASE+4
 #define ICA_SelectedIcons ICA_BASE+6
 
+#define DA_BASE  TAG_USER+7500
+#define DA_ActiveWindows DA_BASE+1
+
 #define DOC_ICONOP   0x10000000
 #define DOC_WINDOWOP 0x20000000
+#define DOC_DESKTOPOP 0x40000000
 
 struct DesktopOperationItem
 {
