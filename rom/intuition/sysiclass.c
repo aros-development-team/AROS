@@ -308,7 +308,6 @@ D(bug("sysi_setnew called successfully\n"));
     switch (data->type)
     {
     case CHECKIMAGE:
-    case MXIMAGE:
     {
         struct TagItem tags[] = {
           {IA_FrameType, FRAME_BUTTON},
@@ -327,6 +326,7 @@ D(bug("sysi_setnew called successfully\n"));
     }
 
     /* Just to prevent it from reaching default: */
+    case MXIMAGE:
     case LEFTIMAGE:
     case UPIMAGE:
     case RIGHTIMAGE:
@@ -355,15 +355,17 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     WORD top = IM(obj)->TopEdge + msg->imp_Offset.Y;
     UWORD width = IM(obj)->Width;
     UWORD height = IM(obj)->Height;
+    WORD right = left + width - 1;
+    WORD bottom = top + height - 1;
 
-    EraseRect(rport, left, top, left + width - 1, top + height - 1);
+/*    EraseRect(rport, left, top, left + width - 1, top + height - 1);*/
 
+    SetDrMd(rport, JAM1);
+    
     switch(data->type)
     {
     case CHECKIMAGE:
     {
-        WORD right = left + width - 1;
-	WORD bottom = top + height - 1;
 	WORD h_spacing = width / 4;
 	WORD v_spacing = height / 4;
 	
@@ -379,35 +381,64 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	    top += v_spacing;bottom -= v_spacing;height -= v_spacing * 2;
 	    
             SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-       	    SetDrMd(rport, JAM1);
 
+	    #if 0
             draw_thick_line(cl, rport, left, top + height/2, left + width/3, bottom, 0);
             draw_thick_line(cl, rport, left + width/3, bottom, right - 2, top, 0);
             Move(rport, right -1 , top);
             Draw(rport, right, top);
+	    #else
+	    draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
+	    draw_thick_line(cl, rport, left + 1, bottom, right - 1, top, 0);
+	    #endif
 
         }
         break;
     }
     case MXIMAGE:
     {
-        struct TagItem tags[] = {
-          { IA_Recessed, FALSE },
-          { TAG_DONE, 0UL }
-        };
+        BOOL selected = FALSE;
+	WORD col1 = SHINEPEN;
+	WORD col2 = SHADOWPEN;
 
-        /* Draw frame */
-        if (msg->imp_State == IDS_SELECTED)
-            tags[0].ti_Data = TRUE;
-        SetAttrsA(data->frame, tags);
-        DrawImageState(rport, data->frame,
-                       msg->imp_Offset.X, msg->imp_Offset.Y,
-                       IDS_NORMAL, data->dri);
-
-        if (msg->imp_State == IDS_SELECTED)
+	if ((msg->imp_State == IDS_SELECTED) || (msg->imp_State == IDS_INACTIVESELECTED))
+	{
+	    col1 = SHADOWPEN;
+	    col2 = SHINEPEN;
+	    selected = TRUE;
+	}
+	
+	SetAPen(rport, data->dri->dri_Pens[BACKGROUNDPEN]);
+	RectFill(rport, left, top, right, bottom);
+	
+	SetAPen(rport, data->dri->dri_Pens[col1]);
+	RectFill(rport, left + 2, top, right - 3, top + 1);
+	RectFill(rport, left + 1, top + 2, left + 2, top + 3);
+	RectFill(rport, left, top + 4, left + 1, bottom - 4);
+	RectFill(rport, left + 1, bottom - 3, left + 2, bottom - 2);
+	RectFill(rport, left + 2, bottom - 1, left + 2, bottom);
+	
+	SetAPen(rport, data->dri->dri_Pens[col2]);
+	RectFill(rport, right - 2, top, right - 2, top + 1);
+	RectFill(rport, right - 2, top + 2, right - 1, top + 3);
+	RectFill(rport, right - 1, top + 4, right, bottom - 4);
+	RectFill(rport, right - 2, bottom - 3, right - 1, bottom - 2);
+	RectFill(rport, left + 3, bottom - 1, right - 2, bottom);
+	
+        if (selected)
         {
-            SetABPenDrMd(rport, data->dri->dri_Pens[FILLPEN], 0, JAM1);
-            RectFill(rport, left + 4, top + 2, left + width - 5, top + height - 3);
+	    left += 4;right -= 4;width -= 8;
+	    top += 4;bottom -= 4;height -= 8;
+	    
+            SetAPen(rport, data->dri->dri_Pens[FILLPEN]);
+	    if ((width >= 3) && (height >= 3))
+	    {
+        	RectFill(rport, left + 1, top, right - 1, top);
+		RectFill(rport, left, top + 1, right, bottom - 1);
+		RectFill(rport, left + 1, bottom, right - 1, bottom);
+	    } else {
+	        RectFill(rport, left, top, right, bottom);
+	    }
         }
         break;
     }
@@ -421,13 +452,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cy;
 	
-    	SetDrMd(rport, JAM1);
-
 	if (!(data->flags & SYSIFLG_NOBORDER))
 	{
 	    renderimageframe(rport, LEFTIMAGE, msg->imp_State, data->dri->dri_Pens,
 	    		     left, top, width, height, IntuitionBase);
-	    left++;top++;
+	    left++;top++;right--;bottom--;
 	    width -= 2;height -= 2; 
 	}
 
@@ -449,11 +478,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	}
 	else
 	{
-	    WORD right, bottom, i;
+	    WORD i;
 	    
 	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
 	    
-	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    RectFill(rport, left, top, right, bottom);
 	    
 	    left += HSPACING; top += VSPACING;
 	    width -= HSPACING * 2;
@@ -486,13 +515,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cx;
 	
-    	SetDrMd(rport, JAM1);
-
 	if (!(data->flags & SYSIFLG_NOBORDER))
 	{
 	    renderimageframe(rport, UPIMAGE, msg->imp_State, data->dri->dri_Pens,
 	    		     left, top, width, height, IntuitionBase);
-	    left++;top++;
+	    left++;top++;right--;bottom--;
 	    width -= 2;height -= 2; 
 	}
 
@@ -514,11 +541,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	}
 	else
 	{
-	    WORD right, bottom, i;
+	    WORD i;
 	    
 	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
 	    
-	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    RectFill(rport, left, top, right, bottom);
 	    	    
 	    left += HSPACING; top += VSPACING;
 	    width -= HSPACING * 2;
@@ -551,13 +578,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cy;
 	
-    	SetDrMd(rport, JAM1);
-
 	if (!(data->flags & SYSIFLG_NOBORDER))
 	{
 	    renderimageframe(rport, RIGHTIMAGE, msg->imp_State, data->dri->dri_Pens,
 	    		     left, top, width, height, IntuitionBase);
-	    left++;top++;
+	    left++;top++;right--;bottom--;
 	    width -= 2;height -= 2; 
 	}
 
@@ -580,11 +605,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	}
 	else
 	{
-	    WORD right, bottom, i;
+	    WORD i;
 	    
 	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
 	    
-	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    RectFill(rport, left, top, right, bottom);
 	    
 	    left += HSPACING; top += VSPACING;
 	    width -= HSPACING * 2;
@@ -617,13 +642,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cx;
 	
-    	SetDrMd(rport, JAM1);
-
 	if (!(data->flags & SYSIFLG_NOBORDER))
 	{
 	    renderimageframe(rport, DOWNIMAGE, msg->imp_State, data->dri->dri_Pens,
 	    		     left, top, width, height, IntuitionBase);
-	    left++;top++;
+	    left++;top++;right--;bottom--;
 	    width -= 2;height -= 2; 
 	}
 
@@ -645,11 +668,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	}
 	else
 	{
-	    WORD right, bottom, i;
+	    WORD i;
 	    
 	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
 	    
-	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    RectFill(rport, left, top, right, bottom);
 	    	    
 	    left += HSPACING; top += VSPACING;
 	    width -= HSPACING * 2;
@@ -685,9 +708,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 
         WORD h_spacing; 
 	WORD v_spacing;
-	
-	WORD right, bottom;
-	
+		
 	if (!(data->flags & SYSIFLG_NOBORDER))
 	{
 	    renderimageframe(rport, DEPTHIMAGE, msg->imp_State, pens,
@@ -778,8 +799,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
     case CLOSEIMAGE: {
 	UWORD *pens = data->dri->dri_Pens;
-	WORD right;
-	WORD bottom;
 	WORD h_spacing;
 	WORD v_spacing;
 
@@ -817,8 +836,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     case ZOOMIMAGE: {
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
-	WORD right;
-	WORD bottom;
 	WORD h_spacing;
 	WORD v_spacing;
 
@@ -1028,8 +1045,6 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
     BOOL leftedgegodown = FALSE;
     BOOL topedgegoright = FALSE;
     
-    SetDrMd(rp, JAM1);    
-
     switch(which)
     {
     	case CLOSEIMAGE:
