@@ -10,15 +10,26 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM 	demos games shell
 
 #MM- kernel-freebsd : \
-#MM	kernel-aros-linklib kernel-battclock-freebsd \
-#MM	kernel-boot-linklib kernel-devs \
-#MM	kernel-dos-freebsd kernel-exec-freebsd \
-#MM	kernel-expansion-linklib kernel-filesys kernel-hidd-freebsd \
-#MM	kernel-graphics-freebsd kernel-intuition-freebsd \
+#MM	kernel-aros-linklib \
+#MM	kernel-battclock-freebsd \
+#MM	kernel-boot-linklib \
+#MM	kernel-devs \
+#MM	kernel-dos-freebsd \
+#MM	kernel-exec-freebsd \
+#MM	kernel-expansion-linklib \
+#MM	kernel-filesys \
+#MM	kernel-filesys-unix \
+#MM	kernel-hidd-freebsd \
+#MM	kernel-graphics-freebsd \
+#MM	kernel-intuition-freebsd \
 #MM	kernel-keymap-linklib \
-#MM	kernel-mathffp-linklib kernel-mathieeesingbas-linklib \
-#MM	kernel-timer-linklib kernel-utility-freebsd kernel-oop-linklib \
-#MM     kernel-layers-linklib kernel-workbench-linklib	\
+#MM	kernel-mathffp-linklib \
+#MM	kernel-mathieeesingbas-linklib \
+#MM	kernel-timer-linklib \
+#MM	kernel-utility-freebsd \
+#MM	kernel-oop-linklib \
+#MM	kernel-layers-linklib \
+#MM	kernel-workbench-linklib \
 #MM	kernel-cgfx-linklib
 
 # 'Re'target the serial and parallel hidds to what is needed in free bsd.
@@ -32,8 +43,11 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 kernel :
 	@$(NOP)
 
-#MM setup-freebsd : setup-exec-freebsd setup-dos-unix \
-#MM	setup-battclock-unix setup-$(GFXSYSTEM)
+#MM setup-freebsd : \
+#MM	setup-exec-freebsd \
+#MM	setup-dos-unix \
+#MM	setup-battclock-unix \
+#MM	setup-$(GFXSYSTEM)
 setup-freebsd : 
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
 	%add_objects rom/boot/strap_emul

@@ -15,7 +15,7 @@ USE_LIBDEFS := no
 # This requires linking against system libraries, do not build a module.
 NO_MODULE := yes
 
-#MM- kernel-filesys : kernel-fs-emul
+#MM- kernel-filesys-unix : kernel-fs-emul
 #MM- kernel-fs-emul : setup includes linklibs kernel-fs-emul-linklib
 %make_module_setup mmake=kernel-fs-emul
 %make_module mmake=kernel-fs-emul
