@@ -196,6 +196,8 @@ endif
 ALL_FILES := $(FILES)
 ALL_FUNCTIONS := $(FUNCTIONS)
 %prepare_replace rom/intuition
+%filter_replace FUNCTIONS
+%filter_replace FILES
 
 # Set up for shared library creation.
 ifeq ("$(SHARED_INTUITION)"),"yes")
