@@ -77,8 +77,10 @@ This status was generated\ \today.
 
 \incverb{status.inc}
 
-\link{Graphical progress (90K GIF)}{progress.gif}
+\link{Graphical progress (20K JPG)}{progress.jpg}
 \link{(2K PNG, doesn't work with Netscape 4.7)}{progress.png}
+\link{Contributed software (20K JPG)}{contrib.jpg}
+\link{(2K PNG, doesn't work with Netscape 4.7)}{contrib.png}
 }
 
 \begin{new}{9.10.1997}
