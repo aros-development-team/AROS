@@ -13,6 +13,7 @@
 #include <exec/lists.h>
 #include <aros/system.h>
 #include <exec/tasks.h>
+#include <exec/ports.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <stdarg.h>
@@ -30,8 +31,12 @@ typedef struct
     struct MinNode Node;
     const char	 * File;
     ULONG	   Line;
+    ULONG	   Flags;
 }
 RTNode;
+
+/* Private flags of resource nodes */
+#define RTNF_DONT_FREE	    0x80000000 /* Resource must not be freed */
 
 typedef struct
 {
@@ -48,6 +53,13 @@ typedef struct
     ULONG  Flags;
 }
 MemoryResource;
+
+typedef struct
+{
+    RTNode	     Node;
+    struct MsgPort * Port;
+}
+PortResource;
 
 typedef struct
 {
@@ -111,6 +123,11 @@ static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success);
 static IPTR RT_FreeVec (MemoryResource * rt);
 static IPTR RT_ShowErrorVec (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
+static IPTR RT_CreatePort (PortResource * rt, va_list args, BOOL * success);
+static IPTR RT_DeletePort (PortResource * rt);
+static IPTR RT_ShowErrorPort (RTDesc *, PortResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckPort (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
+
 static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success);
 static IPTR RT_CloseLibrary (LibraryResource * rt);
 static IPTR RT_ShowErrorLib (RTDesc *, LibraryResource *, IPTR, int, const char * file, ULONG line, va_list);
@@ -156,6 +173,14 @@ RTDesc RT_Resources[RTT_MAX] =
 	RT_Search,
 	(RT_ShowError) RT_ShowErrorVec,
 	NULL, /* Check */
+    },
+    { /* RTT_PORTS */
+	sizeof (PortResource),
+	(RT_AllocFunc) RT_CreatePort,
+	(RT_FreeFunc)  RT_DeletePort,
+	RT_Search,
+	(RT_ShowError) RT_ShowErrorPort,
+	(RT_CheckFunc) RT_CheckPort,
     },
     { /* RTT_LIBRARY */
 	sizeof (LibraryResource),
@@ -401,6 +426,77 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     NAME */
 	#include <aros/rt.h>
 
+	void RT_IntTrack (
+
+/*  SYNOPSIS */
+	int	     rtt,
+	const char * file,
+	int	     line,
+	APTR	     res,
+	...)
+
+/*  FUNCTION
+	Adds a resource to be tracked. The arguments after
+	line depend on the type of resource to be traced.
+	The resource›is marked as "must not be freed by the
+	user".
+
+    INPUTS
+	rtt - Type of the resource
+	file - The file RT_IntAdd was called it
+	line - The line of the file
+	res - Pointer to the resouce
+
+    RESULT
+	none
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	24-12-95    digulla created
+
+******************************************************************************/
+{
+    va_list	args;
+    Resource * rtnew;
+
+    if (!InitWasCalled)
+	return;
+
+    if (!(rtnew = AllocMem (RT_Resources[rtt].Size, MEMF_ANY|MEMF_CLEAR)) )
+    {
+	kprintf ("RT_IntAdd: Out of memory\n");
+    }
+    else
+    {
+	rtnew->Node.File  = file;
+	rtnew->Node.Line  = line;
+	rtnew->Node.Flags = RTNF_DONT_FREE;
+	rtnew->Resource   = res;
+
+	va_start (args, res);
+
+	va_end (args);
+
+	AddTail ((struct List *)&RT_Resources[rtt].ResList,
+	    (struct Node *)rtnew
+	);
+    }
+} /* RT_IntTrack */
+
+/*****************************************************************************
+
+    NAME */
+	#include <aros/rt.h>
+
 	IPTR RT_IntCheck (
 
 /*  SYNOPSIS */
@@ -558,7 +654,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	args
     );
 
-    if (ret == RT_SEARCH_FOUND)
+    if (ret == RT_SEARCH_FOUND && !(rt->Flags & RTNF_DONT_FREE))
     {
 	ret = (*(RT_Resources[rtt].FreeFunc)) (rt);
 
@@ -829,20 +925,23 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     if (!InitWasCalled)
 	return;
 
-    /* Print an error */
-    (void) (*(RT_Resources[rtt].ShowError))
-    (
-	&RT_Resources[rtt],
-	rtnode,
-	0UL,
-	RT_EXIT,
-	NULL,
-	0L,
-	NULL
-    );
+    if (!(rtnode->Flags & RTNF_DONT_FREE) )
+    {
+	/* Print an error */
+	(void) (*(RT_Resources[rtt].ShowError))
+	(
+	    &RT_Resources[rtt],
+	    rtnode,
+	    0UL,
+	    RT_EXIT,
+	    NULL,
+	    0L,
+	    NULL
+	);
 
-    /* free the resource */
-    (void) (*(RT_Resources[rtt].FreeFunc)) (rtnode);
+	/* free the resource */
+	(void) (*(RT_Resources[rtt].FreeFunc)) (rtnode);
+    }
 
     /* Remove resource from list and free it */
     Remove ((struct Node *)rtnode);
@@ -981,6 +1080,19 @@ static IPTR RT_ShowErrorMem (RTDesc * desc, MemoryResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: Memory\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    MemPtr=%p\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->Memory
+		);
+	    }
 	    break;
 
 	case RT_SEARCH_NOT_FOUND:
@@ -1058,7 +1170,21 @@ static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: Vec-Memory\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    MemPtr=%p\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->Memory
+		);
+	    }
 	    break;
+
 
 	case RT_SEARCH_NOT_FOUND:
 	    kprintf ("RT%s: Memory not found\n"
@@ -1085,6 +1211,156 @@ static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
 
     return ret;
 } /* RT_ShowErrorVec */
+
+
+/**************************************
+	       RT Ports
+**************************************/
+
+static IPTR RT_CreatePort (PortResource * rt, va_list args, BOOL * success)
+{
+    STRPTR name;
+    LONG   pri;
+
+    name = va_arg (args, STRPTR);
+    pri  = va_arg (args, LONG);
+
+    if (!CheckPtr (name, NULL_PTR))
+    {
+	kprintf ("CreatePort(): Illegal name pointer\n"
+		"    name=%p at %s:%d\n"
+	    , name
+	    , rt->Node.File, rt->Node.Line
+	);
+	return 0ul;
+    }
+
+    rt->Port = CreatePort (name, pri);
+
+    if (rt->Port)
+	*success = TRUE;
+
+    return (IPTR)(rt->Port);
+} /* RT_CreatePort */
+
+static IPTR RT_DeletePort (PortResource * rt)
+{
+    DeletePort (rt->Port);
+
+    return TRUE;
+} /* RT_ClosePort */
+
+static IPTR RT_ShowErrorPort (RTDesc * desc, PortResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+    if (mode != RT_EXIT)
+    {
+	const char     * modestr = (mode == RT_FREE) ? "Close" : "Check";
+	struct MsgPort * port;
+
+	port = va_arg (args, struct MsgPort *);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: MsgPort\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    Port=%p (Name=%s Pri=%d)\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->Port
+		    , rt->Port->mp_Node.ln_Name
+			? rt->Port->mp_Node.ln_Name
+			: NULL
+		    , rt->Port->mp_Node.ln_Pri
+		);
+	    }
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: Port not found\n"
+		    "    %s at %s:%d\n"
+		    "    Port=%p\n"
+		, modestr
+		, modestr
+		, file, line
+		, port
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: Port was not closed\n"
+		"    Opened at %s:%d\n"
+		"    Port=%p (Name=%s Pri=%d)\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->Port
+	    , rt->Port->mp_Node.ln_Name
+		? rt->Port->mp_Node.ln_Name
+		: NULL
+	    , rt->Port->mp_Node.ln_Pri
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorPort */
+
+static IPTR RT_CheckPort (RTDesc * desc,
+			const char * file, ULONG line,
+			ULONG op, va_list args)
+{
+    PortResource * rt;
+
+    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+	rt = NULL;
+
+    switch (op)
+    {
+    case RTTO_PutMsg:
+	{
+	    struct MsgPort * port;
+	    struct Message * message;
+
+	    port    = va_arg (args, struct MsgPort *);
+	    message = va_arg (args, struct Message *);
+
+	    if (!rt)
+	    {
+		kprintf ("PutMsg(): Illegal port pointer\n"
+			"    Port=%p Message=%p at %s:%d\n"
+		    , port, message
+		    , file, line
+		);
+
+		return -1;
+	    }
+	    else if (CheckPtr (message, 0))
+	    {
+		kprintf ("PutMsg(): Illegal message pointer\n"
+			"    Port=%p Message=%p at %s:%d\n"
+		    , port, message
+		    , file, line
+		);
+
+		return -1;
+	    }
+
+	    PutMsg (port, message);
+
+	    return 0;
+	}
+
+    } /* switch (op) */
+
+    return 0L;
+} /* RT_CheckPort */
 
 
 /**************************************
@@ -1125,6 +1401,19 @@ static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: Library\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    LibBase=%p\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->Lib
+		);
+	    }
 	    break;
 
 	case RT_SEARCH_NOT_FOUND:
@@ -1250,6 +1539,19 @@ static IPTR RT_ShowErrorFile (RTDesc * desc, FileResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: File\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    FH=%p\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->FH
+		);
+	    }
 	    break;
 
 	case RT_SEARCH_NOT_FOUND:
@@ -1406,10 +1708,25 @@ static IPTR RT_CheckFile (RTDesc * desc,
 static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success)
 {
     struct NewScreen * ns;
+    struct TagItem   * tags = NULL;
+    int op;
 
+    op = va_arg (args, int);
     ns = va_arg (args, struct NewScreen *);
 
-    if (!CheckPtr (ns, 0))
+    switch (op)
+    {
+    case RTTO_OpenScreenTags:
+	tags = (struct TagItem *)args;
+	break;
+
+    case RTTO_OpenScreenTagList:
+	tags = va_arg (args, struct TagItem *);
+	break;
+
+    }
+
+    if (!CheckPtr (ns, NULL_PTR))
     {
 	kprintf ("OpenScreen(): Illegal NewScreen pointer\n"
 		"    NewScreen=%p at %s:%d\n"
@@ -1418,8 +1735,17 @@ static IPTR RT_OpenScreen (ScreenResource * rt, va_list args, BOOL * success)
 	);
 	return 0ul;
     }
+    else if (!CheckPtr (tags, NULL_PTR))
+    {
+	kprintf ("OpenScreenTagList(): Illegal TagItem pointer\n"
+		"    tagList=%p at %s:%d\n"
+	    , tags
+	    , rt->Node.File, rt->Node.Line
+	);
+	return 0ul;
+    }
 
-    rt->Screen = OpenScreen (ns);
+    rt->Screen = OpenScreenTagList (ns, tags);
 
     if (rt->Screen)
 	*success = TRUE;
@@ -1475,6 +1801,19 @@ static IPTR RT_ShowErrorScreen (RTDesc * desc, ScreenResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: Screen\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    Screen=%p\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->Screen
+		);
+	    }
 	    break;
 
 	case RT_SEARCH_NOT_FOUND:
@@ -1567,10 +1906,25 @@ static IPTR RT_CheckScreen (RTDesc * desc,
 static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success)
 {
     struct NewWindow * nw;
+    struct TagItem   * tags = NULL;
+    int op;
 
+    op = va_arg (args, int);
     nw = va_arg (args, struct NewWindow *);
 
-    if (!CheckPtr (nw, 0))
+    switch (op)
+    {
+    case RTTO_OpenWindowTags:
+	tags = (struct TagItem *)args;
+	break;
+
+    case RTTO_OpenWindowTagList:
+	tags = va_arg (args, struct TagItem *);
+	break;
+
+    }
+
+    if (!CheckPtr (nw, NULL_PTR))
     {
 	kprintf ("OpenWindow(): Illegal NewWindow pointer\n"
 		"    NewWindow=%p at %s:%d\n"
@@ -1579,8 +1933,17 @@ static IPTR RT_OpenWindow (WindowResource * rt, va_list args, BOOL * success)
 	);
 	return 0ul;
     }
+    else if (!CheckPtr (tags, NULL_PTR))
+    {
+	kprintf ("OpenWindowTagList(): Illegal TagList pointer\n"
+		"    tagList=%p at %s:%d\n"
+	    , nw
+	    , rt->Node.File, rt->Node.Line
+	);
+	return 0ul;
+    }
 
-    rt->Window = OpenWindow (nw);
+    rt->Window = OpenWindowTagList (nw, tags);
 
     if (rt->Window)
 	*success = TRUE;
@@ -1608,6 +1971,19 @@ static IPTR RT_ShowErrorWindow (RTDesc * desc, WindowResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
+	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    {
+		kprintf ("RT%s: Try to free read-only resource: Window\n"
+			"    %s at %s:%d\n"
+			"    Added at %s:%d\n"
+			"    Window=%p\n"
+		    , modestr
+		    , modestr
+		    , file, line
+		    , rt->Node.File, rt->Node.Line
+		    , rt->Window
+		);
+	    }
 	    break;
 
 	case RT_SEARCH_NOT_FOUND:

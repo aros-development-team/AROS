@@ -16,24 +16,47 @@
 #   endif
 
 /* Resources */
-#   define RTT_ALLOCMEM     0
-#   define RTT_ALLOCVEC     1
-#   define RTT_LIBRARY	    2
-#   define RTT_FILE	    3
-#   define RTT_SCREEN	    4	/* Screen before Window, so the windows are
-				    closed before the screen */
-#   define RTT_WINDOW	    5
-#   define RTT_MAX	    6
+enum
+{
+    RTT_ALLOCMEM,
+    RTT_ALLOCVEC,
+    RTT_PORTS,
+    RTT_LIBRARY,
+    RTT_FILE,
+    RTT_SCREEN, /* Screen before Window, so the windows are closed before the screen */
+    RTT_WINDOW,
 
-#   define RTTB_DOS	    1		    /* Base: DOS operations */
-#   define RTTO_Read	    (RTTB_DOS+0)    /* DOS-Op: Read() */
-#   define RTTO_Write	    (RTTB_DOS+1)    /* DOS-Op: Write() */
+    /* Don't add anything below here !!! */
+    RTT_MAX
+};
 
-#   define RTTB_INTUITION	1	    /* Base: Intuition ops */
-#   define RTTO_ScreenToFront	(RTTB_INTUITION+0)
-#   define RTTO_ScreenToBack	(RTTB_INTUITION+1)
-#   define RTTO_WindowToFront	(RTTB_INTUITION+2)
-#   define RTTO_WindowToBack	(RTTB_INTUITION+3)
+enum
+{
+    RTTB_EXEC,
+    RTTO_PutMsg,
+};
+
+enum
+{
+    RTTB_DOS,
+    RTTO_Read,
+    RTTO_Write,
+};
+
+enum
+{
+    RTTB_INTUITION,
+    RTTO_OpenScreen,
+    RTTO_OpenScreenTags,
+    RTTO_OpenScreenTagList,
+    RTTO_ScreenToFront,
+    RTTO_ScreenToBack,
+    RTTO_OpenWindow,
+    RTTO_OpenWindowTags,
+    RTTO_OpenWindowTagList,
+    RTTO_WindowToFront,
+    RTTO_WindowToBack,
+};
 
 void RT_Init (void);
 void RT_Exit (void);
@@ -41,56 +64,78 @@ IPTR RT_IntAdd (int rtt, const char * file, int line, ...); /* Add a resource fo
 IPTR RT_IntCheck (int rtt, const char * file, int line, int op, ...); /* Check a resource before use */
 IPTR RT_IntFree (int rtt, const char * file, int line, ...); /* Stop tracking of a resource */
 void RT_IntEnter (const char * functionname, const char * filename, int line);
+void RT_IntTrack(int rtt, const char * file, int line, APTR res, ...);
 void RT_Leave (void);
+
+/* Add a resource for tracking which must not be freed. */
 
 #   if ENABLE_RT
 #	define RT_Add(rtt, args...)       RT_IntAdd (rtt, __FILE__, __LINE__, ##args)
 #	define RT_Check(rtt, op, args...) RT_IntCheck (rtt, __FILE__, __LINE__, op, ##args)
 #	define RT_Free(rtt, args...)      RT_IntFree (rtt, __FILE__, __LINE__, ##args)
 #	define RT_Enter(fn)               RT_IntEnter (fn,__FILE__, __LINE__)
+#	define RT_Track(rtt, res...)      RT_IntTrack (rtt, __FILE__, __LINE__, ##res)
 
 #	ifndef PROTO_EXEC_H
 #	    include <proto/exec.h>
 #	endif
 #	undef AllocMem
-#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_ALLOCMEM,(ULONG)(size),(ULONG)(flags))
+#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_ALLOCMEM,(size),(flags))
 #	undef FreeMem
-#	define FreeMem(ptr,size)        (void)RT_Free(RTT_ALLOCMEM,(APTR)(ptr),(ULONG)(size))
+#	define FreeMem(ptr,size)        (void)RT_Free(RTT_ALLOCMEM,(ptr),(size))
 #	undef AllocVec
-#	define AllocVec(size,flags)     (APTR)RT_Add(RTT_ALLOCVEC,(ULONG)(size),(ULONG)(flags))
+#	define AllocVec(size,flags)     (APTR)RT_Add(RTT_ALLOCVEC,(size),(flags))
 #	undef FreeVec
-#	define FreeVec(ptr)             (void)RT_Free(RTT_ALLOCVEC,(APTR)(ptr))
+#	define FreeVec(ptr)             (void)RT_Free(RTT_ALLOCVEC,(ptr))
 #	undef OpenLibrary
-#	define OpenLibrary(name,ver)    (APTR)RT_Add(RTT_LIBRARY,(STRPTR)(name),(ULONG)(ver))
+#	define OpenLibrary(name,ver)    (APTR)RT_Add(RTT_LIBRARY,(name),(ver))
 #	undef CloseLibrary
-#	define CloseLibrary(lib)        (void)RT_Free(RTT_LIBRARY,(struct Library *)(lib))
+#	define CloseLibrary(lib)        (void)RT_Free(RTT_LIBRARY,(lib))
+#	undef CreateMsgPort
+#	define CreateMsgPort()          (APTR)RT_Add(RTT_PORT,NULL,0)
+#	undef DeleteMsgPort
+#	define DeleteMsgPort(mp)        (APTR)RT_Free(RTT_PORT,(mp))
+#	undef CreatePort
+#	define CreatePort(name,pri)     (APTR)RT_Add(RTT_PORT,(name),(pri))
+#	undef DeletePort
+#	define DeletePort(mp)           (APTR)RT_Free(RTT_PORT,(mp))
+#	undef PutMsg
+#	define PutMsg(mp,msg)           (APTR)RT_Check(RTT_PORT,RTTO_PutMsg,(mp),(msg))
 
 #	undef Open
-#	define Open(path,mode)          (BPTR)RT_Add(RTT_FILE,(STRPTR)(path),(LONG)(mode))
+#	define Open(path,mode)          (BPTR)RT_Add(RTT_FILE,(path),(mode))
 #	undef Close
-#	define Close(fh)                (void)RT_Free(RTT_FILE,(BPTR)(fh))
+#	define Close(fh)                (void)RT_Free(RTT_FILE,(fh))
 #	undef Read
-#	define Read(fh,buffer,length)   (LONG)RT_Check(RTT_FILE,RTTO_Read,(BPTR)(fh),(APTR)(buffer),(LONG)(length))
+#	define Read(fh,buffer,length)   (LONG)RT_Check(RTT_FILE,RTTO_Read,(fh),(buffer),(length))
 #	undef Write
-#	define Write(fh,buffer,length)  (LONG)RT_Check(RTT_FILE,RTTO_Write,(BPTR)(fh),(APTR)(buffer),(LONG)(length))
+#	define Write(fh,buffer,length)  (LONG)RT_Check(RTT_FILE,RTTO_Write,(fh),(buffer),(length))
 
 #	undef OpenScreen
-#	define OpenScreen(ns)           (struct Screen *)RT_Add(RTT_WINDOW,(struct NewScreen *)(ns))
+#	define OpenScreen(ns)           (struct Screen *)RT_Add(RTT_SCREEN,RTTO_OpenScreen,(ns))
+#	undef OpenScreenTagList
+#	define OpenScreenTagList(ns,tl) (struct Screen *)RT_Add(RTT_SCREEN,RTTO_OpenScreenTagList,(ns),(tl))
+#	undef OpenScreenTags
+#	define OpenScreenTags(ns,tag...) (struct Screen *)RT_Add(RTT_SCREEN,RTTO_OpenScreenTags,(ns),##tag)
 #	undef CloseScreen
-#	define CloseScreen(s)           (void)RT_Free(RTT_WINDOW,(struct Screen *)(s))
+#	define CloseScreen(s)           (void)RT_Free(RTT_SCREEN,(s))
 #	undef ScreenToFront
-#	define ScreenToFront(s)         (void)RT_Check(RTT_WINDOW,RTTO_ScreenToFront,(struct Screen *)(s))
+#	define ScreenToFront(s)         (void)RT_Check(RTT_SCREEN,RTTO_ScreenToFront,(s))
 #	undef ScreenToBack
-#	define ScreenToBack(s)          (void)RT_Check(RTT_WINDOW,RTTO_ScreenToBack,(struct Screen *)(s))
+#	define ScreenToBack(s)          (void)RT_Check(RTT_SCREEN,RTTO_ScreenToBack,(s))
 
 #	undef OpenWindow
-#	define OpenWindow(nw)           (struct Window *)RT_Add(RTT_WINDOW,(struct NewWindow *)(nw))
+#	define OpenWindow(nw)           (struct Window *)RT_Add(RTT_WINDOW,RTTO_OpenWindow,(nw))
+#	undef OpenWindowTagList
+#	define OpenWindowTagList(nw,tl) (struct Window *)RT_Add(RTT_WINDOW,RTTO_OpenWindowTagList,(nw),(tl))
+#	undef OpenWindowTags
+#	define OpenWindowTags(nw,tag...) (struct Window *)RT_Add(RTT_WINDOW,RTTO_OpenWindowTags,(nw),##tag)
 #	undef CloseWindow
-#	define CloseWindow(w)           (void)RT_Free(RTT_WINDOW,(struct Window *)(w))
+#	define CloseWindow(w)           (void)RT_Free(RTT_WINDOW,(w))
 #	undef WindowToFront
-#	define WindowToFront(w)         (void)RT_Check(RTT_WINDOW,RTTO_WindowToFront,(struct Window *)(w))
+#	define WindowToFront(w)         (void)RT_Check(RTT_WINDOW,RTTO_WindowToFront,(w))
 #	undef WindowToBack
-#	define WindowToBack(w)          (void)RT_Check(RTT_WINDOW,RTTO_WindowToBack,(struct Window *)(w))
+#	define WindowToBack(w)          (void)RT_Check(RTT_WINDOW,RTTO_WindowToBack,(w))
 #   endif
 #else
 #   define RT_Init()                /* eps */
