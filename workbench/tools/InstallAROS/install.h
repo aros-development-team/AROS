@@ -85,7 +85,7 @@ static const char* KMsgCancelDanger =
 "Canceling now may leave your pc in an\n"
 "unbootable state\n\n"
 "Are you sure you wish to cancel\n"
-"this instalation?\n";
+"this installation?\n";
 
 static const char* KMsgProceed =
 "_Proceed";
