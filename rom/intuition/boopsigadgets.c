@@ -12,6 +12,40 @@
 #include <intuition/intuitionbase.h>
 #include <proto/intuition.h>
 
+
+#include "intuition_intern.h"
+#define DEBUG 1
+#include <aros/debug.h>
+
+VOID DoGMLayout(struct Gadget		*glist,
+		struct Window		*win,
+		struct Requester	*req,
+		UWORD			numgad,
+		BOOL			initial,
+		struct IntuitionBase	*IntuitionBase)
+{
+    
+    while (glist && numgad)
+    {
+    	/* Is this a BOOPSI gad with special relativity ? */
+    	if (glist->GadgetType & GTYP_CUSTOMGADGET && glist->Flags & GFLG_RELSPECIAL)
+    	{
+    	    struct gpLayout lmsg;
+    	    lmsg.MethodID    = GM_LAYOUT;
+    	    lmsg.gpl_GInfo   = NULL;
+    	    lmsg.gpl_Initial = initial;
+    	    DoGadgetMethodA(glist, win, req, (Msg)&(lmsg));
+    	    
+    	}
+    	
+        glist = glist->NextGadget;
+    	numgad --;
+
+    }
+    return;
+}
+
+
 void RefreshBoopsiGadget (struct Gadget * gadget, struct Window * win,
 	struct IntuitionBase * IntuitionBase)
 {
