@@ -34,6 +34,7 @@
 #include "prefs.h"
 #include "penspec.h"
 #include "imspec.h"
+#include "clipboard.h"
 #include "string.h"
 
 //#define MYDEBUG 1
@@ -149,6 +150,32 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
     return TRUE;
 }
 
+static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start, WORD *stop)
+{
+    WORD markstart = data->MarkPos;
+    WORD markstop  = data->BufferPos;
+    
+    markstart = MIN(markstart, data->NumChars);
+    markstart = MAX(markstart, 0);
+    
+    markstop  = MIN(markstop, data->NumChars);
+    markstop  = MAX(markstop, 0);
+ 
+    if (markstart == markstop) return FALSE;
+    
+    if (markstart > markstop)
+    {
+    	markstart ^= markstop;
+    	markstop  ^= markstart;
+    	markstart ^= markstop;	
+    }
+    
+    *start = markstart;
+    *stop = markstop;
+    
+    return TRUE;
+}
+
 static BOOL Buffer_KillMarked(struct MUI_StringData *data)
 {
     WORD markstart = data->MarkPos;
@@ -156,19 +183,14 @@ static BOOL Buffer_KillMarked(struct MUI_StringData *data)
     WORD marklen;
     
     //kprintf("\nBuffer_KillMarked 1  markpos %d  bufferpos %d  numchars %d\n", markstart, markstop, data->NumChars);    
+
     if (!(data->msd_Flags & MSDF_MARKING)) return FALSE;
     
     data->msd_Flags &= ~MSDF_MARKING;
     
-    markstart = MIN(markstart, data->NumChars);
-    markstart = MAX(markstart, 0);
+    if (!Buffer_GetMarkedRange(data, &markstart, &markstop)) return FALSE;
     
-    markstop  = MIN(markstop, data->NumChars);
-    markstop  = MAX(markstop, 0);
-
     //kprintf("Buffer_KillMarked 2  markstart %d  markstop %d\n", markstart, markstop);    
-    
-    if (markstart == markstop) return FALSE;
     
     if (markstart > markstop)
     {
@@ -942,6 +964,53 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 1;
     }
 
+    if (((ToLower(code) == 'c') || (ToLower(code) == 'x')) &&
+    	(qual & IEQUALIFIER_RCOMMAND))
+    {
+    	WORD markstart, markstop;
+	
+    	if ((data->msd_Flags & MSDF_MARKING) && Buffer_GetMarkedRange(data, &markstart, &markstop))
+	{	    
+	    clipboard_write_text(&data->Buffer[markstart], markstop - markstart);
+	    
+	    if (ToLower(code) == 'x')
+	    {
+		Buffer_KillMarked(data);
+	    }
+	    else
+	    {
+	    	data->BufferPos = markstop;
+	    	data->msd_Flags &= ~MSDF_MARKING;
+	    }
+    	    return 1;
+	}
+	return 0;
+    }
+
+    if ((ToLower(code) == 'v') && (qual & IEQUALIFIER_RCOMMAND))
+    {
+    	STRPTR text;
+	int    retval;
+
+	retval = Buffer_KillMarked(data);
+	if ((text = clipboard_read_text()))
+	{
+	    STRPTR text2 = text;
+	    UBYTE  c;
+	    
+	    while((c = *text2++))
+	    {
+	    	if (!isprint(c)) break;
+		if (!(Buffer_AddChar(data, c))) break;
+		if (!retval) retval = 1;
+	    }
+	    
+	    clipboard_free_text(text);
+	}
+ 
+	return retval;
+    }
+    
     if (data->msd_Accept != NULL)
     {
     	/* Check if character is accepted */
