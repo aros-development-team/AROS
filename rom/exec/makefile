@@ -105,6 +105,11 @@ else
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
+
+# To study the assembler output for evaluation (can be helpful in tracking
+# down bugs):
+%.s: %.c
+	$(CC) -S $(CFLAGS) $< -c -o $@
 endif
 
 setup :
@@ -116,13 +121,6 @@ clean:
 $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
-
-ifeq ($(FLAVOUR),native)
-# To study the assembler output for evaluation (can be helpful in tracking
-# down bugs):
-%.s: %.c
-	$(CC) -S $(CFLAGS) $< -c -o $@
-endif
 
 $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
