@@ -304,9 +304,9 @@ VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixel
 	 return;
     }
     
-    switch (HIDD_BM_GRAPHTYPE(srcfmt)) {
+    switch (HIDD_PF_GRAPHTYPE(srcfmt)) {
 	case vHidd_GT_TrueColor:
-	    switch (HIDD_BM_GRAPHTYPE(dstfmt)) {
+	    switch (HIDD_PF_GRAPHTYPE(dstfmt)) {
 	    	case vHidd_GT_TrueColor:
 		     true_to_true(cl, o, msg);
 		     break;
@@ -322,7 +322,7 @@ VOID bitmap_convertpixels(Class *cl, Object *o, struct pHidd_BitMap_ConvertPixel
 	
 	case vHidd_GT_Palette:
 	case vHidd_GT_StaticPalette:
-	    switch (HIDD_BM_GRAPHTYPE(dstfmt)) {
+	    switch (HIDD_PF_GRAPHTYPE(dstfmt)) {
 	    	case vHidd_GT_TrueColor:
 		     pal_to_true(cl, o, msg);
 		     break;

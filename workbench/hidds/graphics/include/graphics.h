@@ -25,15 +25,13 @@
 #define CLID_Hidd_BitMap        "hidd.graphics.bitmap"
 #define CLID_Hidd_GC		"hidd.graphics.gc"
 
-#define CLID_Hidd_GfxMode	"hidd.graphics.gfxmode"
-#define CLID_Hidd_PixFmt	"hidd.graphics.pixfmt"
 
 #define IID_Hidd_Gfx      "hidd.graphics.graphics"
 #define IID_Hidd_BitMap   "hidd.graphics.bitmap"
 #define IID_Hidd_GC       "hidd.graphics.gc"
 
 #define IID_Hidd_GfxMode	"hidd.graphics.gfxmode"
-#define IID_Hidd_PixFmt		"hidd.graphics.pixfmt"
+#define IID_Hidd_PixFmt	"hidd.graphics.pixfmt"
 
 /* Some "example" hidd bitmaps */
 
@@ -73,14 +71,16 @@ enum
     moHidd_Gfx_DisposeBitMap,   /* class knows which gc- and bitmap-class */
 				/* works together.                        */
 				
-    /* Tis method is used only by subclasses, I repeat:
+    /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
     */
     moHidd_Gfx_RegisterGfxModes,
     
     /* These methods are used by apps to get available modes */
     moHidd_Gfx_QueryGfxModes,
-    moHidd_Gfx_ReleaseGfxModes
+    moHidd_Gfx_ReleaseGfxModes,
+    
+    num_Hidd_Gfx_Methods
 };
 
 
@@ -113,6 +113,13 @@ struct pHidd_Gfx_DisposeGC
 struct pHidd_Gfx_NewBitMap
 {
     MethodID       mID;
+    
+    /* Subclasses should fill one of the below, and set the other one to NULL,
+       and then call the base gfx hidd class through DoSuperMethod */
+    Class	*classPtr;
+    STRPTR	classID;
+    
+    
     struct TagItem *attrList;
 };
 
@@ -153,6 +160,9 @@ struct ModeNode {
 
 
 typedef UWORD HIDDT_ColComp;	/* Color component */
+
+typedef ULONG HIDDT_Pixel;
+
 	
 typedef struct {
    HIDDT_ColComp	red;
@@ -160,9 +170,10 @@ typedef struct {
    HIDDT_ColComp	blue;
    HIDDT_ColComp	alpha;
    
+   HIDDT_Pixel		pixval;
+   
 } HIDDT_Color;
 
-typedef ULONG HIDDT_Pixel;
 
 
 typedef struct {
@@ -185,7 +196,7 @@ enum {
 
 #define vHidd_GT_Mask 0x03
 
-#define HIDD_BM_GRAPHTYPE(pf) ((pf)->flags & vHidd_GT_Mask)
+#define HIDD_PF_GRAPHTYPE(pf) ((pf)->flags & vHidd_GT_Mask)
 
 typedef ULONG HIDDT_StdPixFmt;
 typedef ULONG HIDDT_DrawMode;
@@ -291,6 +302,11 @@ enum
     moHidd_BitMap_BytesPerLine,
     moHidd_BitMap_GetPixelFormat,
     moHidd_BitMap_ConvertPixels,
+ 
+    /* This method is used only by subclasses, I repeat:
+    ONLY BY SUBCLASSES, to register available modes in the baseclass
+    */
+    moHidd_BitMap_SetPixelFormat,
     
     moHidd_BitMap_PrivateSet
 };
@@ -556,6 +572,11 @@ struct pHidd_BitMap_ConvertPixels
     
 };
 
+struct pHidd_BitMap_SetPixelFormat {
+    MethodID mID;
+    struct TagItem *pixFmtTags;
+};
+
 /**** Graphics context definitions ********************************************/
     /* Methods for a graphics context */
 /*    
@@ -669,6 +690,8 @@ VOID     HIDD_BM_ConvertPixels  (Object *obj
 	, HIDDT_PixelLUT *pixlut
 );
 
+Object * HIDD_BM_SetPixelFormat(Object *o, struct TagItem *pixFmtTags);
+
 /*******************************************************/
 /**  PROTECTED DATA 
 	!! These structures are at the top of the gfx hidd baseclasses.
@@ -692,20 +715,18 @@ enum {
      aoHidd_GfxMode_Width = 0,
      aoHidd_GfxMode_Height,
      aoHidd_GfxMode_StdPixFmt,
-     aoHidd_GfxMode_PixFmtPtr,
+     aoHidd_GfxMode_PixFmtTags,
      aoHidd_GfxMode_Depth,
      
      num_Hidd_GfxMode_Attrs
 };
 
-#define aHidd_GfxMode_Width	(HiddGfxModeAttrBase + aoHidd_GfxMode_Width	)
-#define aHidd_GfxMode_Height	(HiddGfxModeAttrBase + aoHidd_GfxMode_Height	)
-#define aHidd_GfxMode_StdPixFmt	(HiddGfxModeAttrBase + aoHidd_GfxMode_StdPixFmt	)
-#define aHidd_GfxMode_PixFmtPtr	(HiddGfxModeAttrBase + aoHidd_GfxMode_PixFmtPtr	)
-#define aHidd_GfxMode_Depth	(HiddGfxModeAttrBase + aoHidd_GfxMode_Depth	)
+#define aHidd_GfxMode_Width		(HiddGfxModeAttrBase + aoHidd_GfxMode_Width	)
+#define aHidd_GfxMode_Height		(HiddGfxModeAttrBase + aoHidd_GfxMode_Height	)
+#define aHidd_GfxMode_StdPixFmt		(HiddGfxModeAttrBase + aoHidd_GfxMode_StdPixFmt	)
+#define aHidd_GfxMode_PixFmtTags	(HiddGfxModeAttrBase + aoHidd_GfxMode_PixFmtTags	)
+#define aHidd_GfxMode_Depth		(HiddGfxModeAttrBase + aoHidd_GfxMode_Depth	)
 
-#define IS_GFXMODE_ATTR(attr, idx) \
-	( ( ( idx ) = (attr) - HiddGfxModeAttrBase) < num_Hidd_GfxMode_Attrs)
 
 
 /****************** PixFmt definitions **************************/

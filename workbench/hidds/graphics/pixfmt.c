@@ -25,8 +25,8 @@ struct pixfmt_data {
 };
 
 
-#define GOT_ATTR(code) ((attrcheck & (1L << aoHidd_PixFmt_ ## code) == (1L << aoHidd_PixFmt_ ## code)))
-#define FOUND_ATTR(code)  attrcheck |= (aoHidd_PixFmt_ ## code);
+#define GOT_ATTR(code) ((attrcheck & (1L << aoHidd_PixFmt_ ## code)) == (1L << aoHidd_PixFmt_ ## code))
+#define FOUND_ATTR(code)  attrcheck |= (1L << aoHidd_PixFmt_ ## code);
 
 
 Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
@@ -34,7 +34,7 @@ Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
     struct pixfmt_data * data;
     struct TagItem *tag, *tstate;
     
-    ULONG attrcheck;
+    ULONG attrcheck = 0;
     
     ULONG graphtype, depth, bytespp, bitspp;
     HIDDT_StdPixFmt stdpf;
@@ -42,8 +42,11 @@ Object *pixfmt_new(Class *cl, Object *o, struct pRoot_New *msg)
     HIDDT_Pixel redmask, greenmask, bluemask, alphamask, clutmask;
     
     HIDDT_PixelFormat *pf;
+    
+    /* If no attrs are supplied, just create an empty pixfmt object */
+    if (NULL == msg->attrList)
+    	return DoSuperMethod(cl, o, (Msg)msg);
 
-kprintf("PIXFMT::NEW()\n");    
     for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); ) {
     	ULONG idx;
 	if (IS_PIXFMT_ATTR(tag->ti_Tag, idx)) {
@@ -217,8 +220,7 @@ static VOID pixfmt_get(Class *cl, Object *o, struct pRoot_Get *msg)
     HIDDT_PixelFormat *pf;
     struct pixfmt_data *data;
     ULONG idx;
-    
-    
+
     data = INST_DATA(cl, o);
     pf = &data->pf;
     
@@ -334,7 +336,6 @@ Class *init_pixfmtclass(struct class_static_data *csd)
     {
         {aMeta_SuperID,        (IPTR) CLID_Root},
         {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_ID,             (IPTR) CLID_Hidd_PixFmt},
         {aMeta_InstSize,       (IPTR) sizeof (struct pixfmt_data)},
         {TAG_DONE, 0UL}
     };
@@ -350,13 +351,13 @@ Class *init_pixfmtclass(struct class_static_data *csd)
         {
             D(bug("PixFmt class ok\n"));
             csd->pixfmtclass = cl;
+kprintf("init_pixfmtclass: csd=%p\n", csd);
             cl->UserData     = (APTR) csd;
             
             /* Get attrbase for the PixFmt interface */
             HiddPixFmtAttrBase = ObtainAttrBase(IID_Hidd_PixFmt);
             if(HiddPixFmtAttrBase)
             {
-                AddClass(cl);
             }
             else
             {

@@ -84,6 +84,8 @@ Object * HIDD_Gfx_NewBitMap(Object *obj, struct TagItem *tagList)
     if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewBitMap);
         
     p.mID      = mid;
+    p.classPtr = NULL;
+    p.classID  = NULL;
     p.attrList = tagList;
 
     return((Object *) DoMethod(obj, (Msg) &p));
@@ -568,6 +570,7 @@ Object *    HIDD_BM_GetPixelFormat  (Object *obj, HIDDT_StdPixFmt stdPixFmt)
 {
     static MethodID mid = 0;
     struct pHidd_BitMap_GetPixelFormat p;
+
     
     if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixelFormat);
         
@@ -614,4 +617,17 @@ VOID     HIDD_BM_ConvertPixels  (Object *obj
     p.pixlut	= pixlut;
     
     DoMethod(obj, (Msg) &p);
+}
+
+Object * HIDD_BM_SetPixelFormat(Object *obj, struct TagItem *pixFmtTags)
+{
+    static MethodID mid = 0;
+    struct pHidd_BitMap_SetPixelFormat p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetPixelFormat);
+        
+    p.mID = mid;
+    p.pixFmtTags = pixFmtTags;
+    
+    return (Object *)DoMethod(obj, (Msg)&p);
 }

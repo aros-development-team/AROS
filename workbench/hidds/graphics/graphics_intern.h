@@ -6,6 +6,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
@@ -25,14 +28,71 @@ struct gfxmode_data {
     
     Object *pixfmt;
     
+    Object *gfxhidd;
+    
     UWORD depth;
     
 };
 
+
+/* This is the pixfmts DB. */
+#warning Find a way to optimize searching in the pixfmt database
+
+/* Organize the pf db in some other way that makes it quixker to find a certain PF */
+
+struct pfnode {
+    struct MinNode node;
+    Object *pixfmt;
+    ULONG   refcount;
+};
+
+/* This is used as an alias for both pfnode and ModeNode */
+struct objectnode {
+   struct MinNode node;
+   Object *object;
+   ULONG refcount;
+};
+
+/* Private GfxMode attrs */
+enum {
+	aoHidd_GfxMode_GfxHidd = num_Hidd_GfxMode_Attrs,
+	
+	num_Total_GfxMode_Attrs
+};
+
+#define aHidd_GfxMode_GfxHidd	(HiddGfxModeAttrBase + aoHidd_GfxMode_GfxHidd)
+
 struct HIDDGraphicsData
 {
+	struct SignalSemaphore modesema;
 	struct MinList modelist;
+
+	
+	/* Pixel format "database" */
+	struct SignalSemaphore pfsema;
+	struct MinList pflist;
 };
+
+/* Private gfxhidd methods */
+enum {
+    moHidd_Gfx_RegisterPixFmt = num_Hidd_Gfx_Methods,
+    moHidd_Gfx_ReleasePixFmt
+};
+
+struct pHidd_Gfx_RegisterPixFmt {
+    MethodID mID;
+    struct TagItem *pixFmtTags;
+    
+};
+
+struct pHidd_Gfx_ReleasePixFmt {
+    MethodID mID;
+    Object *pixFmt;
+};
+
+
+Object *HIDD_Gfx_RegisterPixFmt(Object *o, struct TagItem *pixFmtTags);
+VOID HIDD_Gfx_ReleasePixFmt(Object *o, Object *pixFmt);
 
 struct HIDDBitMapData
 {
@@ -64,9 +124,22 @@ struct HIDDBitMapData
     ULONG colExp;	/* Color expansion mode	*/
     
     Object *friend;	/* Friend bitmap */
+    
+    Object *gfxhidd;
 
 };
 
+/* Private bitmap attrs */
+
+enum {
+    aoHidd_BitMap_GfxHidd = num_Hidd_BitMap_Attrs,
+    
+    num_Total_BitMap_Attrs
+    
+};
+
+
+#define aHidd_BitMap_GfxHidd	(HiddBitMapAttrBase + aoHidd_BitMap_GfxHidd)
 
 struct HIDDGCData
 {
@@ -120,16 +193,16 @@ struct IntHIDDGraphicsBase
 };
 
 
-#define CSD(x) ((struct class_static_data *)x)
+#define CSD(x) ((struct class_static_data *)x->UserData)
 
 #undef SysBase
-#define SysBase (CSD(cl->UserData)->sysbase)
+#define SysBase (CSD(cl)->sysbase)
 
 #undef UtilityBase
-#define UtilityBase (CSD(cl->UserData)->utilitybase)
+#define UtilityBase (CSD(cl)->utilitybase)
 
 #undef OOPBase
-#define OOPBase (CSD(cl->UserData)->oopbase)
+#define OOPBase (CSD(cl)->oopbase)
 
 
 /* pre declarations */

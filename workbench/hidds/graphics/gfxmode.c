@@ -19,24 +19,28 @@
 
 static AttrBase HiddGfxModeAttrBase = 0;
 
+#define IS_GFXMODE_ATTR(attr, idx) \
+	( ( ( idx ) = (attr) - HiddGfxModeAttrBase) < num_Total_GfxMode_Attrs)
 
 Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     struct gfxmode_data * data;
     struct TagItem *tag, *tstate;
+    Object *pfobj = NULL;
+    
+    Object *gfxhidd = NULL;
     
     ULONG width, height;
     UWORD depth;
     
     HIDDT_StdPixFmt stdpf;
-    Object * pfptr;
+    struct TagItem * pftags = NULL;
     
     BOOL gotwidth = FALSE, gotheight = FALSE, gotpf = FALSE;
     
-    
-    
     for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); ) {
     	ULONG idx;
+	
 	if (IS_GFXMODE_ATTR(tag->ti_Tag, idx)) {
 	    switch (idx) {
 	    	case aoHidd_GfxMode_Width:
@@ -51,8 +55,10 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    
 		case aoHidd_GfxMode_StdPixFmt:
 		    
-		    if (gotpf) /* ERROR: Allready got pf */
+		    if (gotpf) {/* ERROR: Allready got pf */
+		    	kprintf("!!! GfxMode::New() duplicate PixFmt tags\n");
 		    	return NULL;
+		    }
 		    stdpf = (HIDDT_StdPixFmt)tag->ti_Data;
 		      	
 #warning Implement this
@@ -62,11 +68,13 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    break;
 		 
 		 
-		case aoHidd_GfxMode_PixFmtPtr:
-		    if (gotpf) /* ERROR: Allready got pf */
+		case aoHidd_GfxMode_PixFmtTags:
+		    if (gotpf) { /* ERROR: Allready got pf */
+		    	kprintf("!!! GfxMode::New() duplicate PixFmt tags\n");
 		    	return NULL;
+		    }
 		    
-		    pfptr = (Object *)tag->ti_Data;
+		    pftags = (struct TagItem *)tag->ti_Data;
 		    
 		    gotpf = TRUE;
 		    break;
@@ -75,8 +83,9 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    depth = (UWORD)tag->ti_Data;
 		    break;
 		    
-		    
-		    
+		case aoHidd_GfxMode_GfxHidd:
+		    gfxhidd = (Object *)tag->ti_Data;
+		    break;
 	    
 	    } /*switch */
 	    
@@ -84,22 +93,60 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
     } /* for (all attributes) */
     
+    if (NULL == gfxhidd) {
+    	kprintf("!!! GfxMode::New() No GfxHidd pointer supplied\n");
+	return NULL;
+    }
+    
+    if (!gotpf) {
+    	kprintf("!!! GfxMode::New() No PixFmt description supplied\n");
+	return NULL;
+    }
+    
+    
+    if (NULL != pftags) {
+    	/* Register a pixfmt object */
+	pfobj = HIDD_Gfx_RegisterPixFmt(gfxhidd, pftags);
+	
+    } else {
+    	/* Try to get a standard pixel format */
+	pfobj = CSD(cl)->std_pixfmts[stdpf - num_Hidd_PseudoPixFmt];
+    }
+    
+    if (NULL == pfobj)
+    	return NULL;
+
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
      	return NULL;
      
+     
+    
      /* Get the attributes */
     data = INST_DATA(cl, o);
     
     data->width		= width;
     data->height	= height;
-    data->pixfmt  	= pfptr;
+    data->pixfmt  	= pfobj;
     data->depth		= depth;
     
     return o;
      
 }     
+
+
+static VOID gfxmode_dispose(Class *cl, Object *o, Msg msg)
+{
+     struct gfxmode_data *data;
      
+     data = INST_DATA(cl, o);
+     
+     HIDD_Gfx_ReleasePixFmt(data->gfxhidd, data->pixfmt);
+     
+     DoSuperMethod(cl, o, (Msg)msg);
+     
+     return;
+}
 
 /*** init_gfxmodeclass *********************************************************/
 
@@ -109,14 +156,15 @@ Object *gfxmode_new(Class *cl, Object *o, struct pRoot_New *msg)
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
 
-#define NUM_ROOT_METHODS   1
+#define NUM_ROOT_METHODS   2
 #define NUM_GFXMODE_METHODS 0
 
 Class *init_gfxmodeclass(struct class_static_data *csd)
 {
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
-        {(IPTR (*)())gfxmode_new    , moRoot_New    },
+        {(IPTR (*)())gfxmode_new, 	moRoot_New	},
+        {(IPTR (*)())gfxmode_dispose,	moRoot_Dispose	},
 	{ NULL, 0UL }
     };
     
@@ -137,7 +185,6 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
     {
         {aMeta_SuperID,        (IPTR) CLID_Root},
         {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_ID,             (IPTR) CLID_Hidd_GfxMode},
         {aMeta_InstSize,       (IPTR) sizeof (struct gfxmode_data)},
         {TAG_DONE, 0UL}
     };
@@ -148,6 +195,8 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
 
     if(MetaAttrBase)
     {
+    
+
         cl = NewObject(NULL, CLID_HiddMeta, tags);
         if(cl)
         {
@@ -159,7 +208,6 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
             HiddGfxModeAttrBase = ObtainAttrBase(IID_Hidd_GfxMode);
             if(HiddGfxModeAttrBase)
             {
-                AddClass(cl);
             }
             else
             {
