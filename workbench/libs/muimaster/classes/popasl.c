@@ -83,14 +83,7 @@ static LONG Asl_Entry(void)
     return 0;
 }
 
-#ifndef __AROS__
-static __asm ULONG Popasl_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
-AROS_UFH3(ULONG,Popasl_Open_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
+static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
 {
     char *buf = NULL;
     struct MUI_PopaslData *data = (struct MUI_PopaslData *)hook->h_Data;
@@ -206,14 +199,7 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
 }
 
 
-#ifndef __AROS__
-static __asm ULONG Popasl_Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
-#else
-AROS_UFH3(ULONG,Popasl_Close_Function,
-	AROS_UFHA(struct Hook *, hook,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(void **, msg,  A1))
-#endif
+static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct MUI_PopaslData *data= (struct MUI_PopaslData *)hook->h_Data;
     Object *string = (Object*)msg[0];
@@ -246,7 +232,7 @@ AROS_UFH3(ULONG,Popasl_Close_Function,
 	    	{
 		    struct FontRequester *font_req = (struct FontRequester*)data->asl_req;
 		    char *name = font_req->fo_Attr.ta_Name;
-		    int size = font_req->fo_Attr.ta_YSize;
+		    LONG size = font_req->fo_Attr.ta_YSize;
 		    int len = strlen(name)+20;
 		    char *buf = (char*)AllocVec(len,MEMF_CLEAR);
 		    if (buf)
@@ -257,11 +243,7 @@ AROS_UFH3(ULONG,Popasl_Close_Function,
 
 		        /* Remove the .font extension */
 		        if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
-		    #ifdef __AROS__
-		        sprintf(num_buf,"%d",size);
-		    #else
-		        sprintf(num_buf,"%ld",size);
-		    #endif
+		        snprintf(num_buf, 20, "%ld", size);
 		        AddPart(buf,num_buf,len);
 		        set(string,MUIA_String_Contents,buf);
 		        FreeVec(buf);
@@ -313,9 +295,11 @@ static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    data->open_hook.h_Entry = (HOOKFUNC)Popasl_Open_Function;
+    data->open_hook.h_Entry = HookEntry;
+    data->open_hook.h_SubEntry = (HOOKFUNC)Popasl_Open_Function;
     data->open_hook.h_Data = data;
-    data->close_hook.h_Entry = (HOOKFUNC)Popasl_Close_Function;
+    data->close_hook.h_Entry = HookEntry;
+    data->close_hook.h_SubEntry = (HOOKFUNC)Popasl_Close_Function;
     data->close_hook.h_Data = data;
     data->asl_req = asl_req;
     data->type = asl_type;
