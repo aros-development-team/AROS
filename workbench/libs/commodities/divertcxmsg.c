@@ -67,7 +67,7 @@
 	
     ROUTECxMsg(cxm, (CxObj *)GetHead(&headObj->co_ObjList));
     
-    if (cxm->cxm_Level > cxm_MaxLevel)
+    if (cxm->cxm_Level >= cxm_MaxLevel)
     {
 	return;
     }
