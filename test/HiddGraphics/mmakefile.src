@@ -2,8 +2,8 @@
 include $(TOP)/config/make.cfg
 
 #INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
-EXEDIR      := $(BINDIR)/test/HiddGraphics
-OBJDIR      := $(GENDIR)/test/GfxHidd
+EXEDIR      := $(BINDIR)/Demo
+OBJDIR      := $(GENDIR)/test/HiddGraphics
 
 STARTUP = $(LIBDIR)/startup.o
 LIBS    = -L$(LIBDIR) -larossupport -lamiga -lhiddgraphicsstubs $(TOOL).a -larosc -larosm
