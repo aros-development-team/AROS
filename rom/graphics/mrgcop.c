@@ -15,7 +15,7 @@
         AROS_LH1(ULONG, MrgCop,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct View *, View, A1),
+        AROS_LHA(struct View *, view, A1),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 35, Graphics)
@@ -23,7 +23,7 @@
 /*  FUNCTION
 
     INPUTS
-        View -
+        view -
 
     RESULT
         error -

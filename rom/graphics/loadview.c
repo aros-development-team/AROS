@@ -15,7 +15,7 @@
         AROS_LH1(void, LoadView,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct View *, View, A1),
+        AROS_LHA(struct View *, view, A1),
 
 /*  LOCATION */
         struct GfxBase *, GfxBase, 37, Graphics)
@@ -23,7 +23,7 @@
 /*  FUNCTION
 
     INPUTS
-        View - pointer to the View structure which contains the pointer to the
+        view - pointer to the View structure which contains the pointer to the
                constructed coprocessor instructions list, or NULL
 
     RESULT
