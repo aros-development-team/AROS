@@ -30,7 +30,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -44,72 +44,7 @@
 #include "con_handler_intern.h"
 #include "support.h"
 
-/****************************************************************************************/
-
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct conbase * AROS_SLIB_ENTRY(init,con_handler) ();
-void AROS_SLIB_ENTRY(open,con_handler) ();
-BPTR AROS_SLIB_ENTRY(close,con_handler) ();
-BPTR AROS_SLIB_ENTRY(expunge,con_handler) ();
-int AROS_SLIB_ENTRY(null,con_handler) ();
-void AROS_SLIB_ENTRY(beginio,con_handler) ();
-LONG AROS_SLIB_ENTRY(abortio,con_handler) ();
-
-static const char end;
-
-/****************************************************************************************/
-
-int con_handler_entry(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident con_handler_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&con_handler_resident,
-    (APTR)&end,
-    RTF_AUTOINIT | RTF_AFTERDOS,
-    41,
-    NT_DEVICE,
-    -126,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]="con.handler";
-
-static const char version[]="$VER: con-handler 41.2 (03.3.2002)\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct conbase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,con_handler)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,con_handler),
-    &AROS_SLIB_ENTRY(close,con_handler),
-    &AROS_SLIB_ENTRY(expunge,con_handler),
-    &AROS_SLIB_ENTRY(null,con_handler),
-    &AROS_SLIB_ENTRY(beginio,con_handler),
-    &AROS_SLIB_ENTRY(abortio,con_handler),
-    (void *)-1
-};
-
-static const UBYTE datatable=0;
+#include LC_LIBDEFS_FILE
 
 /****************************************************************************************/
 
@@ -117,22 +52,14 @@ static const UBYTE datatable=0;
 
 /****************************************************************************************/
 
-AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
-    AROS_UFHA(struct conbase *,	    conbase, D0),
-    AROS_UFHA(BPTR,		    segList, A0),
-    AROS_UFHA(struct ExecBase *,    sysBase, A6))
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, conbase)
 {
-    AROS_USERFUNC_INIT
+    AROS_SET_LIBFUNC_INIT
  
     static const char *devnames[2] = { "CON", "RAW" };
     struct DeviceNode *dn;
     int     	      i;
 
-
-    /* Store arguments */
-    conbase->sysbase = sysBase;
-    conbase->seglist = segList;
-    conbase->device.dd_Library.lib_OpenCnt = 1;
 
     conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if (conbase->dosbase)
@@ -188,7 +115,7 @@ AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
 			if (i == 0)
 			    continue;
 
-			return conbase;
+			return TRUE;
 		    }
 
 	   	    FreeMem(dn, sizeof (struct DeviceNode));
@@ -204,24 +131,21 @@ AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
 
     } /* if (dos opened) */
 
-    return NULL;
+    return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH3(void, open,
-    AROS_LHA(struct IOFileSys *, iofs, A1),
-    AROS_LHA(ULONG,              unitnum, D0),
-    AROS_LHA(ULONG,              flags, D1),
-    struct conbase *, conbase, 1, con_handler)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, conbase,
+		     struct IOFileSys, iofs,
+		     unitnum,
+		     flags
+)
 {
-    AROS_LIBFUNC_INIT
-
-    /* Keep compiler happy */
-    unitnum=0;
-    flags=0;
+    AROS_SET_DEVFUNC_INIT
 
 /*
     if(conbase->dosbase == NULL)
@@ -236,9 +160,6 @@ AROS_LH3(void, open,
 
 */
 
-   /* I have one more opener. */
-    conbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
-
     /*
        Check whether the user mounted us as "RAW", in which case abuse of the
        io_Unit field in the iofs structure to tell the con task that it has
@@ -252,44 +173,16 @@ AROS_LH3(void, open,
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH1(BPTR, close,
-    AROS_LHA(struct IOFileSys *, iofs, A1),
-    struct conbase *, conbase, 2, con_handler)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Let any following attemps to use the device crash hard. */
-    iofs->IOFS.io_Device=(struct Device *)-1;
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0(BPTR, expunge, struct conbase *, conbase, 3, con_handler)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    conbase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-    return 0;
     
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0I(int, null, struct conbase *, conbase, 4, con_handler)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 
 /****************************************************************************************/
 
@@ -349,7 +242,7 @@ static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
 
 AROS_LH1(void, beginio,
     AROS_LHA(struct IOFileSys *, iofs, A1),
-    struct conbase *, conbase, 5, con_handler)
+    struct conbase *, conbase, 5, Con)
 {
     AROS_LIBFUNC_INIT
 
@@ -519,7 +412,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
     AROS_LHA(struct IOFileSys *, iofs, A1),
-    struct conbase *, conbase, 6, con_handler)
+    struct conbase *, conbase, 6, Con)
 {
     AROS_LIBFUNC_INIT
     
@@ -528,9 +421,5 @@ AROS_LH1(LONG, abortio,
     
     AROS_LIBFUNC_EXIT
 }
-
-/****************************************************************************************/
-
-static const char end = 0;
 
 /****************************************************************************************/
