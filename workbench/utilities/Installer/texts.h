@@ -14,6 +14,7 @@
 
 /* Texts */
 
+#define WELCOME_TEMPLATE "Welcome to the %s App installation utility!"
 #define USERLEVEL_REQUEST "Which user-level do you want?"
 #define NOVICE_NAME	"Novice"
 #define ADVANCED_NAME	"Advanced"
@@ -25,7 +26,7 @@
 "\n"						\
 "   NOVICE\n"					\
 "     user won't be asked anymore questions.\n"	\
-"     However the user may be requested to\n"	\
+"     However, the user may be requested to\n"	\
 "     insert disks or make other decisions.\n"	\
 "\n"						\
 "   AVERAGE\n"					\
@@ -37,6 +38,10 @@
 "   EXPERT\n"					\
 "     user must confirm all actions."
 
+#define MESSAGE		"Message"
+#define PROMPT		"Prompt"
+#define YES_TEXT	"Yes"
+#define NO_TEXT		"No"
 #define LOG_QUESTION	"Installer can log all actions. What do you want?"
 #define LOG_FILE_TEXT	"Write to log file"
 #define LOG_PRINT_TEXT	"Log to printer (PRT:)"
@@ -54,7 +59,7 @@
 " \"Pretend to Install\" will not install the\n"	\
 " application for real on your Disk, instead\n"		\
 " it will only log all the actions to the\n"		\
-" log-file.  However if the \"(safe)\" flag is\n"	\
+" log-file.  However, if the \"(safe)\" flag is\n"	\
 " set for functions in the script these will\n"		\
 " be done even if in pretend mode."
 
@@ -62,18 +67,17 @@
 #define ABOUT_ON_INSTALLER "About Installer"
 #define ABOUT_INSTALLER			\
 " This is AROS Installer V%d.%d\n"	\
-" Copyright © 1995-2003,\n"		\
-" The AROS Development Team.\n"		\
+" Copyright © 1995-2003, The AROS Development Team.\n"\
 " All rights reserved.\n"		\
 "\n"					\
 " It is intended to be compatible to\n"	\
 "\n"					\
-"   Installer V43.3\n"			\
+"        Installer V43.3\n"		\
 "\n"					\
 "\n"					\
 " This program was mainly written by\n"	\
 "\n"					\
-"   Henning Kiel <hkiel@aros.org>"
+"        Henning Kiel <hkiel@aros.org>\n"
 
 
 #define HELP_ON_USERCONFIRM	"Help on Confirmation"

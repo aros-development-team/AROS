@@ -355,3 +355,12 @@
 0058
 - started a Zune/MUI GUI gui_zune.c
 
+0059
+- implemented for Zune:
+  * request_userlevel
+  * request_confirm
+  * show_message
+  * request_bool
+  * Help Requester (makes more.[ch] obsolete for this GUI)
+- switched to Zune as default
+

@@ -68,9 +68,9 @@ int len = 0, i, j, k;
       k = 0;
       for ( len = strlen ( instrs[i] ) ; len > 0 ; len-- )
       {
-        retval[j] = instrs[i][k];
-        j++;
-        k++;
+	retval[j] = instrs[i][k];
+	j++;
+	k++;
       }
       retval[j] = LINEFEED;
       j++;

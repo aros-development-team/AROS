@@ -1107,7 +1107,7 @@ void *params;
 			      }
 			      else
 			      {
-			        /* Rename file */
+				/* Rename file */
 				if (    ( preferences.pretend == 0 || GetPL( parameter, _SAFE).used == 1 )
 				    && usrconfirm )
 				{
@@ -1473,7 +1473,7 @@ void *params;
 			      char *tempnam;
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
-			        string = strip_quotes( current->arg );
+				string = strip_quotes( current->arg );
 			      }
 			      else
 			      {
@@ -1506,7 +1506,7 @@ void *params;
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
-			        string = strip_quotes( current->arg );
+				string = strip_quotes( current->arg );
 			      }
 			      else
 			      {
@@ -1540,7 +1540,7 @@ void *params;
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
-			        string = strip_quotes( current->arg );
+				string = strip_quotes( current->arg );
 			      }
 			      else
 			      {
@@ -1563,7 +1563,7 @@ void *params;
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
-			        string = strip_quotes( current->arg );
+				string = strip_quotes( current->arg );
 			      }
 			      else
 			      {
@@ -1652,7 +1652,7 @@ void *params;
 			    {
 			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
 			      {
-			        string = strip_quotes( current->arg );
+				string = strip_quotes( current->arg );
 			      }
 			      else
 			      {
@@ -1686,7 +1686,7 @@ void *params;
 			      char buffer[1024] = {0};
 			      string = strip_quotes( current->arg );
 
-#warning: FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
+#warning FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
 			      i = GetVar( string, buffer, 1023, NULL );
 
 			      FreeVec( string );
