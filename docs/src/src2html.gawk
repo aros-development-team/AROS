@@ -1,5 +1,4 @@
 BEGIN {
-    toc=0;
     sp=0;
     skip=0;
     keeplf=0;
@@ -54,6 +53,8 @@ BEGIN {
     fninfo=ARGV[1];
     gsub(/.src$/,".info",fninfo);
 
+    toc=0;
+
     if (fninfo!="")
     {
 	while ((getline < fninfo) > 0)
@@ -62,7 +63,11 @@ BEGIN {
 		prev_doc=$2;
 	    else if ($1=="next")
 		next_doc=$2;
+	    else if ($1=="toc")
+		a_toc[toc++]=substr($0,5);
 	}
+
+	close (fninfo);
     }
 
     if (prev_doc!="")
@@ -76,8 +81,50 @@ BEGIN {
 
 	while ((getline < file) > 0)
 	    print
+
+	close (file);
     }
 
+    if (toc > 0)
+    {
+	print "<CENTER><FONT SIZE=7><B>Table of Contents</B></FONT></CENTER>"
+	print "<OL>"
+	level=0;
+
+	for (t=0; t<toc; t++)
+	{
+	    n=split(a_toc[t],a,":");
+
+	    while (level < a[1])
+	    {
+		print "<OL>"
+		level ++;
+	    }
+	    while (level > a[1])
+	    {
+		print "</OL>"
+		level --;
+	    }
+
+	    prefix=a[2];
+	    no=a[3];
+	    title=a[4];
+
+	    print "<H"level+1"><A HREF=\"#"no"\">"prefix" "title"</A></H"level+1">"
+	}
+
+	while (level > 0)
+	{
+	    print "</OL>"
+	    level --;
+	}
+
+	print "</OL>"
+	print "<CENTER><P><HR WIDTH=\"100%\"></P></CENTER>"
+
+    }
+
+    toc=0;
     while ((token=yylex()) != "")
     {
 	if (token=="cmd")
@@ -85,21 +132,24 @@ BEGIN {
 	    if (yytext=="chapter")
 	    {
 		getarg();
-		yytext="\n\n<H1><A NAME=\""toc"\">"yytext"</A></H1>"
+		split(a_toc[toc],a,":");
+		yytext="\n\n<H1><A NAME=\""toc"\">"a[2]" "yytext"</A></H1>"
 		skippar=1;
 		toc++;
 	    }
 	    else if (yytext=="section")
 	    {
 		getarg();
-		yytext="\n\n<H2><A NAME=\""toc"\">"yytext"</A></H2>"
+		split(a_toc[toc],a,":");
+		yytext="\n\n<H2><A NAME=\""toc"\">"a[2]" "yytext"</A></H2>"
 		skippar=1;
 		toc++;
 	    }
 	    else if (yytext=="subsection")
 	    {
 		getarg();
-		yytext="\n\n<H3><A NAME=\""toc"\">"yytext"</A></H3>"
+		split(a_toc[toc],a,":");
+		yytext="\n\n<H3><A NAME=\""toc"\">"a[2]" "yytext"</A></H3>"
 		skippar=1;
 		toc++;
 	    }

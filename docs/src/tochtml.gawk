@@ -15,8 +15,11 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	    print "</OL>"
 	chapter ++;
 	checkfile();
+	title=substr($0,RSTART+9,RLENGTH-10);
+	prefix=chapter".";
+	a[toc]="0:"prefix":"toc":"title;
 	print "<OL>"
-	print "<H1><A HREF=\""fnhtml"#"toc"\">"chapter". "substr($0,RSTART+9,RLENGTH-10)"</A></H1>";
+	print "<H1><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A></H1>";
 	section=0; subsection=0;
 	toc++;
     }
@@ -29,7 +32,10 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	section ++;
 	checkfile();
 	print "<OL>"
-	print "<H2><A HREF=\""fnhtml"#"toc"\">"chapter"."section" "substr($0,RSTART+9,RLENGTH-10)"</A></H2>";
+	title=substr($0,RSTART+9,RLENGTH-10);
+	prefix=chapter"."section;
+	a[toc]="1:"prefix":"toc":"title;
+	print "<H2><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A></H2>";
 	toc++;
 	subsection=0;
     }
@@ -39,7 +45,10 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
     {
 	subsection ++;
 	checkfile();
-	print "<H3><A HREF=\""fnhtml"#"toc"."subsection"\">"chapter"."section"."subsection" "substr($0,RSTART+12,RLENGTH-13)"</A></H3>";
+	title=substr($0,RSTART+12,RLENGTH-13);
+	prefix=chapter"."section"."subsection;
+	a[toc]="2:"prefix":"toc":"title;
+	print "<H3><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A></H3>";
 	toc++;
     }
 }
@@ -47,9 +56,9 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
     if (match($0,/\\label{[^}]*}/))
     {
 	label=substr($0,RSTART+7,RLENGTH-8);
-	fn=FILENAME;
-	sub(/.src$/,".html",fn);
-	print label " " fn >> "html.lab";
+	f=FILENAME;
+	sub(/.src$/,".html",f);
+	print label " " f >> "html.lab";
     }
 }
 END {
@@ -67,9 +76,10 @@ function checkfile() {
 	fnhtml=fn;
 	fninfo=fn;
 	sub(/.src$/,".html",fnhtml);
-	toc=0;
 
 	shiftfiles(fnhtml);
+
+	toc=0;
     }
 }
 
@@ -86,6 +96,9 @@ function shiftfiles(fn      ,fninfo) {
 
 	print "prev " file1 > fninfo;
 	print "next " file3 >> fninfo;
+
+	for (t=0; t<toc; t++)
+	    print "toc " a[t] >> fninfo;
 
 	close (fninfo);
     }
