@@ -98,14 +98,14 @@ AROS_UFH3(void, boot,
     	Close(Input());
     if(Output())
     	Close(Output());
-    	
+ 
     SelectInput(MKBADDR(fh_stdin));
     SelectOutput(MKBADDR(fh_stdout));
     ((struct Process *)FindTask(NULL))->pr_CES = MKBADDR(fh_stdout);
-    
+ 
     AROSSupportBase.StdOut = stderr;    
-    
+ 
     submain(0, NULL);
-    RemTask(NULL);        
+    RemTask(NULL);
     /* NOT REACHED */
 }
