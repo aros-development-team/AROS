@@ -94,7 +94,7 @@ SHARED	:= \
 	__ioerr2errno \
 	__isinf \
 	__open \
-	__rand48_misc \
+	__rand48 \
 	__stat \
 	__stdio \
 	__vcformat \
