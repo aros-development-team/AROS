@@ -99,7 +99,7 @@
 
 		snprintf (tempstr,
 		    sizeof (tempstr),
-		    "copy_%d%s",
+		    "copy_%ld%s",
 		    copy_number,
 		    oldnameptr
 		);
