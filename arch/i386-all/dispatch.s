@@ -63,11 +63,11 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 
 	/* Switch bit set? */
 	testb	$TF_SWITCH,tc_Flags(%edx)
-	je	.noswch
+	je	1f
 	movl	tc_Switch(%edx),%eax
 	call	*%eax
 
-.noswch:
+1:
 	/* Store IDNestCnt */
 	movb	IDNestCnt(%ecx),%al
 	movb	%al,tc_IDNestCnt(%edx)
@@ -89,23 +89,23 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 
 	/* Launch bit set? */
 	cmpb	$0,tc_Flags(%edx)
-	jge	.nolnch
+	jge	2f
 	movl	tc_Launch(%edx),%eax
 	call	*%eax
 
-.nolnch:
+2:
 	/* Get new sp */
 	movl	tc_SPReg(%edx),%eax
 
 	/* Compare agains SPLower */
 	cmpl	%eax,tc_SPLower(%edx)
-	ja	.alert
+	ja	3f
 
 	/* Compare against SPUpper */
 	cmpl	%eax,tc_SPUpper(%edx)
-	ja	.ok
+	ja	4f
 
-.alert:
+3:
 	/* Call Alert() */
 	pushl	%ecx
 	pushl	$(AT_DeadEnd|AN_StackProbe)
@@ -113,28 +113,25 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	call	*%eax
 	/* Function does not return */
 
-.called_alert:
 	nop
 
-.ok:
+4:
 	/* Put the SP into the correct register after checking */
 	movl	%eax,%esp
 
 	/* Unblock signals if necessary */
 	cmpb	$0,tc_IDNestCnt(%edx)
-	jge	.noen
+	jge	5f
 
-#if 0 /* This function is *always* called from a signal handler */
 	/* If called from the signal handler don't do it. */
-	cmpb	$0,AROS_CSYMNAME(supervisor)
-	jne	.noen
-	call	os_enable
-#endif
+	cmpl	$0,AROS_CSYMNAME(supervisor)
+	jne	5f
+	call	AROS_CSYMNAME(os_enable)
 
-.noen:
+5:
 	/* Except bit set? */
 	testb	$TF_EXCEPT,tc_Flags(%edx)
-	je	.noexpt
+	je	6f
 
 	/* Raise task exception in Disable()d state */
 	pushl	%ecx
@@ -149,7 +146,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	addl	$4,%esp
 
 	/* Restore registers and return */
-.noexpt:
+6:
 	popl	%ebp
 	popl	%esi
 	popl	%edi
