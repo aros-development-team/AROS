@@ -106,6 +106,8 @@ int main()
     Object *application;
     Object *window;
     Object *list;
+    Object *string;
+
 
     struct Hook listConstructHook, listDestructHook, listDisplayHook;
 
@@ -137,6 +139,9 @@ int main()
             MUIA_Window_Activate, TRUE,
 
             WindowContents, VGroup,
+	        Child, string = StringObject,
+		    StringFrame,
+		End,
                 Child, list = ListviewObject,
                     MUIA_Listview_List, ListObject,
                         InputListFrame,
@@ -157,11 +162,18 @@ int main()
     {
         ULONG signals = 0;
         
-        SetAttrs( window, MUIA_Window_Open, TRUE, TAG_DONE );
-                
+        set( window, MUIA_Window_Open, TRUE );
+
+	DoMethod
+        (
+            window,
+            MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            application, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
+        );
+
     	while
-        ( 
-            (LONG) DoMethod( application, MUIM_Application_NewInput, &signals ) 
+        (
+            (LONG) DoMethod( application, MUIM_Application_NewInput, &signals )
             != MUIV_Application_ReturnID_Quit
         )
 	{
