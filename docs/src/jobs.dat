@@ -241,6 +241,9 @@ clib00123;2;hkiel;setlinebuf
 clib00124;0;hkiel;setvbuf
 clib00125;2;hkiel;system
 clib00126;2;stegerg;Write stpcpy
+clib00127;2;chodorowski;Write stpblk
+clib00128;2;chodorowski;Write stpbrk
+clib00129;2;chodorowski;Write stpchr
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
