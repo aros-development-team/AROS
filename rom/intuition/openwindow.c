@@ -84,6 +84,7 @@
     ULONG   innerWidth	= ~0L;
     ULONG   innerHeight = ~0L;
     WORD    mousequeue = DEFAULTMOUSEQUEUE;
+    ULONG   moreFlags = 0;
     
     ULONG lock;
     BOOL driver_init_done = FALSE;
@@ -132,24 +133,26 @@
 	    case WA_InnerWidth:  innerWidth  = tag->ti_Data; break;
 	    case WA_InnerHeight: innerHeight = tag->ti_Data; break;
 
-    #define MODIFY_FLAG(name)   if (tag->ti_Data) \
-				    nw.Flags |= (name); else nw.Flags &= ~(name)
+#define MODIFY_FLAG(name)   if (tag->ti_Data) \
+			    nw.Flags |= (name); else nw.Flags &= ~(name)
+#define MODIFY_MFLAG(name)  if (tag->ti_Data) \
+			    moreFlags |= (name); else moreFlags &= ~(name)
 
-	    case WA_SizeGadget:		MODIFY_FLAG(WFLG_SIZEGADGET);       break;
-	    case WA_DragBar:		MODIFY_FLAG(WFLG_DRAGBAR);          break;
-	    case WA_DepthGadget:	MODIFY_FLAG(WFLG_DEPTHGADGET);      break;
-	    case WA_CloseGadget:	MODIFY_FLAG(WFLG_CLOSEGADGET);      break;
-	    case WA_Backdrop:		MODIFY_FLAG(WFLG_BACKDROP);         break;
-	    case WA_ReportMouse:	MODIFY_FLAG(WFLG_REPORTMOUSE);      break;
-	    case WA_NoCareRefresh:	MODIFY_FLAG(WFLG_NOCAREREFRESH);    break;
-	    case WA_Borderless:		MODIFY_FLAG(WFLG_BORDERLESS);       break;
-	    case WA_Activate:		MODIFY_FLAG(WFLG_ACTIVATE);         break;
-	    case WA_RMBTrap:		MODIFY_FLAG(WFLG_RMBTRAP);          break;
-	    case WA_WBenchWindow:	MODIFY_FLAG(WFLG_WBENCHWINDOW);     break;
-	    case WA_SizeBRight:		MODIFY_FLAG(WFLG_SIZEBRIGHT);       break;
-	    case WA_SizeBBottom:	MODIFY_FLAG(WFLG_SIZEBBOTTOM);      break;
-	    case WA_GimmeZeroZero:	MODIFY_FLAG(WFLG_GIMMEZEROZERO);    break;
-	    case WA_NewLookMenus:	MODIFY_FLAG(WFLG_NEWLOOKMENUS);     break;
+	    case WA_SizeGadget:	    MODIFY_FLAG(WFLG_SIZEGADGET);      break;
+	    case WA_DragBar:	    MODIFY_FLAG(WFLG_DRAGBAR);         break;
+	    case WA_DepthGadget:    MODIFY_FLAG(WFLG_DEPTHGADGET);     break;
+	    case WA_CloseGadget:    MODIFY_FLAG(WFLG_CLOSEGADGET);     break;
+	    case WA_Backdrop:	    MODIFY_FLAG(WFLG_BACKDROP);        break;
+	    case WA_ReportMouse:    MODIFY_FLAG(WFLG_REPORTMOUSE);     break;
+	    case WA_NoCareRefresh:  MODIFY_FLAG(WFLG_NOCAREREFRESH);   break;
+	    case WA_Borderless:	    MODIFY_FLAG(WFLG_BORDERLESS);      break;
+	    case WA_Activate:	    MODIFY_FLAG(WFLG_ACTIVATE);        break;
+	    case WA_RMBTrap:	    MODIFY_FLAG(WFLG_RMBTRAP);         break;
+	    case WA_WBenchWindow:   MODIFY_FLAG(WFLG_WBENCHWINDOW);    break;
+	    case WA_SizeBRight:	    MODIFY_FLAG(WFLG_SIZEBRIGHT);      break;
+	    case WA_SizeBBottom:    MODIFY_FLAG(WFLG_SIZEBBOTTOM);     break;
+	    case WA_GimmeZeroZero:  MODIFY_FLAG(WFLG_GIMMEZEROZERO);   break;
+	    case WA_NewLookMenus:   MODIFY_FLAG(WFLG_NEWLOOKMENUS);    break;
 	    case WA_Zoom:
 	    	zoomrectangle = (struct Rectangle *)tag->ti_Data;
 		MODIFY_FLAG(WFLG_HASZOOM);
@@ -231,18 +234,24 @@
 		break;
 
 	    case WA_BackFill:
-	    	backfillhook = (struct Hook *)tag->ti_Data;
+		backfillhook = (struct Hook *)tag->ti_Data;
 		break;
 	    
 	    case WA_MouseQueue:
-	    	mousequeue = tag->ti_Data;
+		mousequeue = tag->ti_Data;
 	    	break;
 		
+	    /* These two are not implemented in AmigaOS */
 	    case WA_WindowName:
 	    case WA_Colors:
+		break;
+
+	    case WA_NotifyDepth:
+		MODIFY_MFLAG(WMFLG_NOTIFYDEPTH);
+		break;
+
 	    case WA_RptQueue:
 	    case WA_MenuHelp:
-	    case WA_NotifyDepth:
 	    case WA_Checkmark:
 	    case WA_AmigaKey:
 	    case WA_Pointer:
@@ -326,9 +335,9 @@
     else
 	w->WScreen = GetPrivIBase(IntuitionBase)->WorkBench;
 
-
     /* Copy flags */
     w->Flags = nw.Flags;
+    w->MoreFlags = moreFlags;
 
     if (!(w->Flags & WFLG_BORDERLESS))
     {
@@ -363,8 +372,10 @@
     	if (w->BorderBottom < 16) w->BorderBottom = 16;
     }
 
-    if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
-    if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
+    if (innerWidth != ~0L)
+	nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
+    if (innerHeight != ~0L)
+	nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
     
     w->LeftEdge    = nw.LeftEdge;
     w->TopEdge	   = nw.TopEdge;
@@ -375,10 +386,10 @@
     {
     	if (w->Width  > w->WScreen->Width)  w->Width  = w->WScreen->Width;
 	if (w->Height > w->WScreen->Height) w->Height = w->WScreen->Height;
-	
-	if ((w->LeftEdge + w->Width) > w->WScreen->Width)  w->LeftEdge = w->WScreen->Width - w->Width;
-	if ((w->TopEdge + w->Height) > w->WScreen->Height) w->TopEdge = w->WScreen->Height - w->Height;
-	 
+	if ((w->LeftEdge + w->Width) > w->WScreen->Width)
+	    w->LeftEdge = w->WScreen->Width - w->Width;
+	if ((w->TopEdge + w->Height) > w->WScreen->Height)
+	    w->TopEdge = w->WScreen->Height - w->Height;
     }
     if (zoomrectangle)
     {
@@ -429,10 +440,9 @@
     {
     	w->Descendant->Parent = w;
     }
-    w->WScreen->FirstWindow = w;
-    
-    w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
+    w->WScreen->FirstWindow = w;
+    w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
 
     UnlockIBase (lock);
@@ -460,7 +470,6 @@ kprintf("%s: Calling RefreshGadgets!\n",__FUNCTION__);
     }
     else
     {
-
 	RefreshWindowFrame(w);
     }
     
