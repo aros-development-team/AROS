@@ -12,8 +12,6 @@
 #include <utility/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
-#include <oop/server.h>
-#include <oop/proxy.h>
 
 #include "intern.h"
 #include "libdefs.h"
@@ -76,10 +74,12 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 	{ IID_Root,		&__IRoot		},
 	{ IID_Meta,		&__IMeta		},
 	
+#if 0	
 	{ IID_Method,		&__IMethod		},
 	{ IID_Server,		&__IServer		},
 	{ IID_Proxy,		&__IProxy		},
 	{ IID_Interface,	&__IInterface		},
+#endif
 	{ NULL,	NULL }
     };
 
@@ -133,6 +133,7 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 **************************/
 BOOL InitUtilityClasses(struct IntOOPBase *OOPBase)
 {
+#if 0
     D(bug("Initializing methodclass\n"));
     if ((GetOBase(OOPBase)->ob_MethodClass = init_methodclass(GetOBase(OOPBase) )))
     {
@@ -148,13 +149,16 @@ BOOL InitUtilityClasses(struct IntOOPBase *OOPBase)
 	    	OOPBase->ob_InterfaceClass = init_interfaceclass((struct Library *)OOPBase);
 	    	if (OOPBase->ob_InterfaceClass)
 	    	{
+#endif		
     	    	    D(bug("Everything initialized\n"));
-    	    	    return (TRUE);
+    	    	    return TRUE;
+#if 0		    
 		}
 	    }
 	}
     }
+#endif    
     
-    return (FALSE);
+    return FALSE;
 }
 
