@@ -9,9 +9,10 @@ include $(TOP)/config/make.cfg
 
 # MetaMake rules
 #MM AROS : AROS-$(ARCH)
+AROS : checkerr
 
 #MM
-AROS : $(BINDIR)/arosshell checkerr
+shell : $(BINDIR)/arosshell 
 
 #MM
 setup :
