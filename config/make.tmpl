@@ -782,7 +782,8 @@ includes-generate : setup $(OBJDIR)/headers.stamp \
 
 FSRCS := $(foreach f,%(functions),$(f).c)
 
-$(OBJDIR)/headers.stamp : mmakefile.src libdefs.h $(FSRCS) \
+$(OBJDIR)/headers.stamp : mmakefile.src $(wildcard headers.tmpl) libdefs.h \
+            $(FSRCS) \
             $(SCRIPTDIR)/genshared \
             $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk
 	@$(SCRIPTDIR)/genshared -clib -prefix $(GENINCDIR) $(FSRCS)
@@ -807,7 +808,7 @@ includes-generate : setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/proto/%(name).h
 	@$(NOP)
 
-$(OBJDIR)/headers.stamp : mmakefile.src libdefs.h %(archive)
+$(OBJDIR)/headers.stamp : mmakefile.src $(wildcard headers.tmpl) libdefs.h %(archive)
 	@$(ARCHTOOL) -I $(GENINCDIR) %(archive)
 	@$(TOUCH) $@
 
@@ -841,7 +842,8 @@ includes-generate : setup $(OBJDIR)/headers.stamp \
 
 FSRCS := $(foreach f,%(functions),$(f).c)
 
-$(OBJDIR)/headers.stamp : mmakefile.src libdefs.h $(FSRCS) \
+$(OBJDIR)/headers.stamp : mmakefile.src $(wildcard headers.tmpl) libdefs.h \
+            $(FSRCS) \
             $(SCRIPTDIR)/genshared \
             $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk \
             $(SCRIPTDIR)/geninline.awk
