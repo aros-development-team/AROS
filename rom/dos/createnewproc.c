@@ -2,7 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.12  1997/03/19 16:35:42  digulla
+    Revision 1.13  1997/04/11 07:58:09  aros
+    NP_UserData was wrong
+
+    Revision 1.12  1997/03/19 16:35:42	digulla
     Removed log
 
 
@@ -210,7 +213,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     process->pr_COS=(BPTR)defaults[4].ti_Data;
     process->pr_CES=(BPTR)defaults[6].ti_Data;
 
-    process->pr_Task.tc_UserData = (APTR)defaults[15].ti_Data;
+    process->pr_Task.tc_UserData = (APTR)defaults[14].ti_Data;
 
 /*  process->pr_ConsoleTask=; */
 /*  process->pr_FileSystemTask=; */
