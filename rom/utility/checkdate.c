@@ -87,7 +87,7 @@
 
     switch( date->month )
     {
-	/* 30 days hath April, September, June and November */
+	/* 30 days hath September, April, June and November */
 	case 4:
 	case 6:
 	case 9:
