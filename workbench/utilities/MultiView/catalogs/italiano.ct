@@ -29,6 +29,9 @@ Impossibile creare i menu!
 MSG_CANT_CREATE_WIN
 Impossibile creare la finestra!
 ;
+MSG_SAVE_FAILED
+Salvataggio fallito!
+;
 MSG_MEN_PROJECT
 Progetto
 ;
@@ -38,6 +41,10 @@ O\0Apri...
 MSG_MEN_PROJECT_SAVEAS
 A\0Salva come...
 ;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Speichern als IFF...
+;
+
 MSG_MEN_PROJECT_PRINT
 P\0Stampa
 ;
@@ -85,6 +92,48 @@ D\0Salva come predefinite
 ;
 MSG_ASL_OPEN_TITLE
 Scegli file da caricare
+;
+MSG_MEN_PICT
+Immagine
+;
+MSG_MEN_PICT_ZOOM_IN
+Z\0Zoom in
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Zoom Out
+;
+MSG_MEN_PICT_RESET
+ \0Ripristina originale
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Grandezza finestra
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Mantieni proporzioni
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Forza colori
+;
+MSG_MEN_PICT_DITHER
+ \0Dithering
+;
+MSG_MEN_TEXT
+Testo
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0A capo automatico
+;
+MSG_MEN_TEXT_SEARCH
+ \0Cerca testo...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Occorrenza precedente
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Occorrenza successiva
+;
+MSG_ASL_OPEN_TITLE
+Scegli fila da caricare
 ;
 MSG_ASL_SAVE_TITLE
 Scegli file in cui salvare
