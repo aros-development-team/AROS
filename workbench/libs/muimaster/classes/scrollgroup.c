@@ -30,6 +30,8 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(struct MUI_LayoutMsg *, lm,  A1))
 {
+    AROS_USERFUNC_INIT
+    
     struct Scrollgroup_DATA *data = (struct Scrollgroup_DATA *)hook->h_Data;
     switch (lm->lm_Type)
     {
@@ -136,6 +138,8 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 		}
     }
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -144,6 +148,8 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 	AROS_UFHA(APTR, dummy, A2),
 	AROS_UFHA(void **, msg,  A1))
 {
+    AROS_USERFUNC_INIT
+
     struct Scrollgroup_DATA *data = (struct Scrollgroup_DATA *)hook->h_Data;
     int type = (int)msg[0];
     LONG val = (LONG)msg[1];
@@ -167,6 +173,8 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 	case	4: nnset(data->vert, MUIA_Prop_First, val); break;
     }
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)

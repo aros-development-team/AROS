@@ -383,6 +383,8 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
     AROS_UFHA(struct RastPort *, RP, A2),
     AROS_UFHA(struct BackFillMsg *, BFM, A1))
 {
+    AROS_USERFUNC_INIT
+
 	WORD OffsetX; // the offset within the tile in x direction
 	WORD OffsetY; // the offset within the tile in y direction
 
@@ -407,6 +409,8 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
 //		OffsetY -= (BFI->Screen->Height - BFI->Height)/2;
 
 	CopyTiledBitMap(BFI->BitMap,MOD(OffsetX+BFI->OffsetX,BFI->Width),MOD(OffsetY+BFI->OffsetY,BFI->Height),BFI->CopyWidth,BFI->CopyHeight,RP->BitMap,&BFM->Bounds);
+
+    AROS_USERFUNC_EXIT
 }
 
 static void CalculateCopySizes(struct BackFillInfo *BFI)
