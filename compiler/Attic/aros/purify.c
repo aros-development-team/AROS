@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/01/28 13:41:55  digulla
+    Use string.h instead of memory.h
+
     Revision 1.3  1997/01/27 00:17:41  ldp
     Include proto instead of clib
 
@@ -19,7 +22,7 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/execbase.h>
-#include <memory.h>
+#include <string.h>
 #include <stdlib.h>
 #include <proto/aros.h>
 #include <proto/exec.h>
