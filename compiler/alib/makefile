@@ -8,7 +8,8 @@ include $(TOP)/config/make.cfg
 OBJDIR=$(GENDIR)/alib
 
 FILES=alib_util newobject setattrs openwindowtags openscreentags \
-	dogadgetmethod domethod dosupermethod
+	dogadgetmethod domethod dosupermethod readbyte readword \
+	readlong readstring
 
 all: setup $(LIBDIR)/libamiga.a $(LIBDIR)/startup.o
 
