@@ -25,10 +25,6 @@ extern struct Library *MUIMasterBase;
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
-/*
- * Attributes and methods, all done !
-*/
-
 #define ROUND(x) ((int)(x + 0.5))
 
 /* Attributes filtered out in OM_SET, before OM_SET gets passed to children.
@@ -348,7 +344,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_Columns:
 		data->columns = MAX((ULONG)tag->ti_Data, 1);
 		data->rows = 0;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, obj);
 		break;
 	    case MUIA_Group_ActivePage:
 		change_active_page(cl, obj, (LONG)tag->ti_Data);
@@ -362,7 +358,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_Rows:
 		data->rows = MAX((ULONG)tag->ti_Data, 1);
 		data->columns = 0;
-		DoMethod(_win(obj), MUIM_Window_RecalcDisplay);
+		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, obj);
 		break;
 	    case MUIA_Group_Spacing:
 		data->horiz_spacing = tag->ti_Data;
@@ -621,7 +617,6 @@ static ULONG
 Group_ExitChange(struct IClass *cl, Object *obj,
 		 struct MUIP_Group_ExitChange *msg)
 {
-    static ULONG method = MUIM_Window_RecalcDisplay;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
     if (data->flags & GROUP_CHANGING)
@@ -631,7 +626,7 @@ Group_ExitChange(struct IClass *cl, Object *obj,
 /* FIXME: this needs optimization !!! */
 	/* as a last resort only */
 	if ((_flags(obj) & MADF_SETUP) && _win(obj))
-	    DoMethodA(_win(obj), (Msg)&method);
+	    DoMethod(_win(obj), MUIM_Window_RecalcDisplay, obj);
     }
 
     return TRUE;
@@ -1004,8 +999,8 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	tmp.MaxWidth += w0_maxwidth(child);
 	tmp.MaxWidth = MIN(tmp.MaxWidth, MUI_MAXMAX);
 	tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
-	tmp.DefHeight = MAX(tmp.DefHeight, w0_defheight(child));
-	tmp.MaxHeight = MIN(tmp.MaxHeight, w0_maxheight(child));
+	tmp.DefHeight = MAX(tmp.DefHeight, _defheight(child));
+	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
     }
     END_MINMAX();
 }
@@ -1049,8 +1044,8 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	tmp.MaxHeight += w0_maxheight(child);
 	tmp.MaxHeight = MIN(tmp.MaxHeight, MUI_MAXMAX);
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
-	tmp.DefWidth = MAX(tmp.DefWidth, w0_defwidth(child));
-	tmp.MaxWidth = MIN(tmp.MaxWidth, w0_maxwidth(child));
+	tmp.DefWidth = MAX(tmp.DefWidth, _defwidth(child));
+	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
     }
     END_MINMAX();
 }
