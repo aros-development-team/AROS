@@ -22,10 +22,10 @@
 	struct DosLibrary *, DOSBase, 117, Dos)
 
 /*  FUNCTION
-	Frees a dos list entry created with MakeDosEntry().
+	Free a dos list entry created with MakeDosEntry().
 
     INPUTS
-	dlist - pointer to dos list entry. May be NULL.
+	dlist  --  pointer to dos list entry. May be NULL.
 
     RESULT
 
@@ -48,10 +48,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    if(dlist!=NULL)
+    if (dlist != NULL)
     {
-	FreeVec(dlist->dol_DevName-1);
-	FreeMem(dlist,sizeof(struct DosList));
+	/* It's important to free OldName here due to BSTR compatibility
+	   shit. See MakeDosEntry() */
+	FreeVec(BADDR(dlist->dol_OldName));
+	FreeMem(dlist, sizeof(struct DosList));
     }
 
     AROS_LIBFUNC_EXIT
