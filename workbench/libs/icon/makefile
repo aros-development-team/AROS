@@ -51,6 +51,11 @@ $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+$(OBJDIR)/icon_init.o: libdefs.h
+
+libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
+	gawk -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
+
 ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 endif
