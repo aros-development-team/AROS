@@ -42,7 +42,6 @@
 */
 struct FullJumpVec
 {
-    unsigned short jmp;
     unsigned char vec[4];
 };
 
