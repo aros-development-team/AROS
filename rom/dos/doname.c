@@ -141,8 +141,8 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary *DOSBase)
 	     al = al->al_Next)
 	{
 	    fh = BADDR(al->al_Lock);
-	    iofs->IOFS.io_Device = device;
-	    iofs->IOFS.io_Unit = unit;
+	    iofs->IOFS.io_Device = fh->fh_Device;
+	    iofs->IOFS.io_Unit = fh->fh_Unit;
 	    DoIO(&iofs->IOFS);
 	}
     }
