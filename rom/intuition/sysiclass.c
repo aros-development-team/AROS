@@ -160,6 +160,9 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
 {
     Move(rport, x1, y1);
     Draw(rport, x2, y2);
+    /* Georg Steger */
+    Move(rport, x1 + 1, y1);
+    Draw(rport, x2 + 1, y2);
 }
 
 /****************************************************************************/
@@ -366,41 +369,121 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     }
     
     #define SPACING 3
+    /* Georg Steger */
+    #define HSPACING 4
+    #define VSPACING 2
+    
     case LEFTIMAGE:
+    {
+    	WORD cy;
+	
     	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
+
+#if 0
     	Move(rport, left + width - SPACING - 1, top + SPACING); /* Move to upper right */
     	Draw(rport, left + SPACING, top + ((height - 2 * SPACING) / 2));     /* Render '/' */
     	Move(rport, rport->cp_x, rport->cp_y + 1);
     	Draw(rport, left + width - SPACING - 1, top + height - SPACING - 1); /* Render '\' */
+#endif
+	/* Georg Steger */
+	cy = height / 2;
+
+	Move(rport, left + width - 1 - HSPACING, top + VSPACING + 1);
+	Draw(rport, left + HSPACING, top + height - cy);
+	Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+	Draw(rport, left + HSPACING, top + height - cy - 1);
+	
+	Move(rport, left + width - 1 - HSPACING, top + height - 1- VSPACING - 1);
+	Draw(rport, left + HSPACING, top + cy - 1);
+	Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
+	Draw(rport, left + HSPACING, top + cy);
+	
     	break;
-    	
+    }
+
     case UPIMAGE:
+    {
+    	WORD cx;
+	
     	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
+#if 0
     	Move(rport, left + SPACING, top + height - SPACING - 1); /* Move to lower left */
     	Draw(rport, left + ((width - SPACING * 2) / 2), top + SPACING);	 /* Render '/' */
     	Move(rport, rport->cp_x + 1, rport->cp_y);
     	Draw(rport, left + width - SPACING - 1, top + height - SPACING - 1); /* Render '\' */
+#endif
+	/* Georg Steger */
+	cx = width / 2;
+	
+	Move(rport, left + HSPACING + 1, top + height - 1 - VSPACING);
+	Draw(rport, left + width - cx, top + VSPACING);
+	Move(rport, left + HSPACING, top + height - 1 - VSPACING);
+	Draw(rport, left + width - cx - 1, top + VSPACING);
+	
+	Move(rport, left + width - 1 - HSPACING - 1, top + height - 1 - VSPACING);
+	Draw(rport, left + cx - 1, top + VSPACING);
+	Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
+	Draw(rport, left + cx, top + VSPACING);
     	break;
-    	
+    }
+    
     case RIGHTIMAGE:
+    {
+    	WORD cy;
+	
     	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
+#if 0
     	Move(rport, left + SPACING, top + SPACING); /* Move to upper left */
     	Draw(rport, left + width - SPACING - 1, top + ((height - 2 * SPACING) / 2)); /* Render '\' */
     	Move(rport, rport->cp_x, rport->cp_y + 1);
     	Draw(rport, left + SPACING, top + height - SPACING - 1);		 /* Render '/' */
+#endif
+	/* Georg Steger */
+	cy = height / 2;
+
+	Move(rport, left + HSPACING, top + VSPACING + 1);
+	Draw(rport, left + width - 1 - HSPACING, top + height - cy);
+	Move(rport, left + HSPACING, top + VSPACING);
+	Draw(rport, left + width - 1 - HSPACING, top + height - cy - 1);
+	
+	Move(rport, left + HSPACING, top + height - 1- VSPACING - 1);
+	Draw(rport, left + width - 1 - HSPACING, top + cy - 1);
+	Move(rport, left + HSPACING, top + height - 1 - VSPACING);
+	Draw(rport, left + width - 1 - HSPACING, top + cy);
+	
     	break;
+    }
+
     case DOWNIMAGE:
+    {
+    	WORD cx;
+	
     	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
-    	Move(rport, left + SPACING, top + SPACING);	/* Move to upper left */
+#if 0    	
+	Move(rport, left + SPACING, top + SPACING);	/* Move to upper left */
     	Draw(rport, left + ((width - SPACING * 2) / 2), top + height - SPACING - 1);
     	Move(rport, rport->cp_x + 1, rport->cp_y);
     	Draw(rport, left + width - SPACING - 1, top + SPACING);
-    	break;
+#endif
+	/* Georg Steger */
+	cx = width / 2;
 	
+	Move(rport, left + HSPACING + 1, top + VSPACING);
+	Draw(rport, left + width - cx, top + height - 1 - VSPACING);
+	Move(rport, left + HSPACING, top + VSPACING);
+	Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
+	
+	Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
+	Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
+	Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+	Draw(rport, left + cx, top + height - 1 - VSPACING);
+    	break;
+    }
+
     case DEPTHIMAGE: {
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
