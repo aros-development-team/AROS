@@ -39,7 +39,7 @@ static void readfile(FILE *in)
     {
 	if (!strstr(linebuf,"PRIV"))
 	{
-	    if (strstr(linebuf,"#include"))
+	    if (strchr(linebuf,'#') && strstr(linebuf,"include"))
 	    {
 	    	char *start = strchr(linebuf,'"');
 	    	if (start)
