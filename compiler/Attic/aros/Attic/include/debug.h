@@ -15,6 +15,7 @@
 /* Remove all macros. They get new values each time this file is
     included */
 #undef D
+#undef D2
 #undef ReturnVoid
 #undef ReturnPtr
 #undef ReturnStr
@@ -26,6 +27,12 @@
 
 #if DEBUG
 #   define D(x)     x
+
+#   if DEBUG > 1
+#	define D2(x)    x
+#   else
+#	define D2(x)    /* eps */
+#endif
 
     /* return-macros. NOTE: I make a copy of the value in __aros_val, because
        the return-value might have side effects (like return x++;). */
@@ -54,6 +61,7 @@
 				    return __aros_val; }
 #else /* !DEBUG */
 #   define D(x)     /* eps */
+#   define D2(x)     /* eps */
 
 #   define ReturnVoid(name)                 return
 #   define ReturnPtr(name,type,val)         return val
