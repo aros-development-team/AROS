@@ -7,9 +7,12 @@
 */
 #include "intuition_intern.h"
 #include <exec/memory.h>
+#include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <proto/utility.h>
+
 
 #ifndef DEBUG_OpenScreen
 #   define DEBUG_OpenScreen 0
@@ -85,8 +88,11 @@ static const ULONG coltab[] = {
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    
+    struct NewScreen ns;
+    struct TagItem *tag, *tagList;
     struct IntScreen * screen;
-#define COPY(x)     screen->Screen.x = newScreen->x
+#define COPY(x)     screen->Screen.x = ns.x
 
     D(bug("OpenScreen (%p = { Left=%d Top=%d Width=%d Height=%d Depth=%d })\n"
 	, newScreen
@@ -97,15 +103,87 @@ static const ULONG coltab[] = {
 	, newScreen->Depth
     ));
 
+    ns = *newScreen;
+
+    if (newScreen->Type & NS_EXTENDED)
+    {
+    	tagList = ((struct ExtNewScreen *)newScreen)->Extension;
+    }
+    else
+    {
+    	tagList = NULL;
+    }
+    
+    if (tagList)
+    {
+	while ((tag = NextTagItem (&tagList)))
+	{
+	    switch (tag->ti_Tag)
+	    {
+	    case SA_Left:	ns.LeftEdge  = tag->ti_Data; break;
+	    case SA_Top:	ns.TopEdge   = tag->ti_Data; break;
+	    case SA_Width:	ns.Width     = tag->ti_Data; break;
+	    case SA_Height:     ns.Height    = tag->ti_Data; break;
+	    case SA_Depth:	ns.Depth     = tag->ti_Data; break;
+	    case SA_DetailPen:  ns.DetailPen = tag->ti_Data; break;
+	    case SA_BlockPen:   ns.BlockPen  = tag->ti_Data; break;
+	    case SA_Type:	ns.Type	     = tag->ti_Data; break;
+
+	    case SA_Title:
+		ns.DefaultTitle = (UBYTE *)tag->ti_Data;
+		break;
+
+	    case SA_Font:
+		ns.Font = (struct TextAttr *)tag->ti_Data;
+		break;
+
+	    case SA_Colors:
+	    case SA_ErrorCode:
+	    case SA_SysFont:
+	    case SA_BitMap:
+	    case SA_PubName:
+	    case SA_PubSig:
+	    case SA_PubTask:
+	    case SA_DisplayID:
+	    case SA_DClip:
+	    case SA_Overscan:
+	    case SA_ShowTitle:
+	    case SA_Behind:
+	    case SA_Quiet:
+	    case SA_AutoScroll:
+	    case SA_Pens:
+	    case SA_FullPalette:
+	    case SA_ColorMapEntries:
+	    case SA_Parent:
+	    case SA_Draggable:
+	    case SA_Exclusive:
+	    case SA_SharePens:
+	    case SA_BackFill:
+	    case SA_Interleaved:
+	    case SA_Colors32:
+	    case SA_VideoControl:
+	    case SA_FrontChild:
+	    case SA_BackChild:
+	    case SA_LikeWorkbench:
+	    case SA_MinimizeISG:
+    #warning TODO: Missing SA_ Tags
+		break;
+
+	    } /* switch (tag->ti_Tag) */
+
+	} /* while ((tag = NextTagItem (&tagList))) */
+
+    } /* if (tagList) */
+    
     screen = AllocMem (sizeof (struct IntScreen), MEMF_ANY | MEMF_CLEAR);
 
     if (screen)
     {
       /* First Init the RastPort then get the BitPlanes!! */
         int success = InitRastPort (&screen->Screen.RastPort);      
-        screen->Screen.RastPort.BitMap = AllocBitMap(newScreen->Width, 
-                                                     newScreen->Height, 
-                                                     newScreen->Depth, 
+        screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width, 
+                                                     ns.Height, 
+                                                     ns.Depth, 
                                                      BMF_CLEAR |BMF_DISPLAYABLE , 
 
                                                      NULL);
@@ -160,7 +238,7 @@ static const ULONG coltab[] = {
 	COPY(Font);
 	COPY(DefaultTitle);
 
-	screen->Screen.Flags = newScreen->Type;
+	screen->Screen.Flags = ns.Type;
 
         /* Mark the bitmap of the screen as an AROS-displayed BitMap */
 	screen->Screen.RastPort.BitMap->Flags |= BMF_AROS_DISPLAYED;
@@ -182,7 +260,7 @@ static const ULONG coltab[] = {
 	screen->Screen.WBorBottom = 4;  /* Amiga default is 2 */
 
 
-	screen->Screen.Title = newScreen->DefaultTitle;
+	screen->Screen.Title = ns.DefaultTitle;
 
 	screen->Screen.NextScreen = IntuitionBase->FirstScreen;
 	IntuitionBase->FirstScreen =
@@ -196,7 +274,7 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_Version = DRI_VERSION;
 	screen->DInfo.dri_NumPens = NUMDRIPENS;
 	screen->DInfo.dri_Pens = screen->Pens;
-	screen->DInfo.dri_Depth = newScreen->Depth;
+	screen->DInfo.dri_Depth = ns.Depth;
 	screen->DInfo.dri_Resolution.X = 44;
 	screen->DInfo.dri_Resolution.Y = 44;
 	screen->DInfo.dri_Flags = 0;

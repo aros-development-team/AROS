@@ -8,8 +8,10 @@
 #include "intuition_intern.h"
 #include <exec/memory.h>
 #include <intuition/intuition.h>
+#include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <proto/utility.h>
 #include "boopsigadgets.h"
 #include <exec/ports.h>
 
@@ -67,8 +69,17 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    struct NewWindow nw;
     struct Window * w;
+    struct TagItem *tag, *tagList;
     struct RastPort * rp;
+
+    UBYTE * screenTitle = NULL;
+    BOOL    autoAdjust	= FALSE;
+    ULONG   innerWidth	= ~0L;
+    ULONG   innerHeight = ~0L;
+
     ULONG lock;
     BOOL driver_init_done = FALSE;
 
@@ -80,6 +91,126 @@
 	, newWindow->Height
     ));
 
+    nw = *newWindow;
+    
+    if (newWindow->Flags & WFLG_NW_EXTENDED)
+    {
+    	tagList = ((struct ExtNewWindow *)newWindow)->Extension;
+    }
+    else
+    {
+    	tagList = NULL;
+    }
+    
+    if (tagList)
+    {
+	while ((tag = NextTagItem (&tagList)))
+	{
+	    switch (tag->ti_Tag)
+	    {
+	    case WA_Left:	nw.LeftEdge     = tag->ti_Data; break;
+	    case WA_Top:	nw.TopEdge	= tag->ti_Data; break;
+	    case WA_Width:	nw.Width	= tag->ti_Data; break;
+	    case WA_Height:     nw.Height	= tag->ti_Data; break;
+	    case WA_IDCMP:	nw.IDCMPFlags   = tag->ti_Data; break;
+	    case WA_Flags:	nw.Flags	= tag->ti_Data; break;
+	    case WA_MinWidth:   nw.MinWidth     = tag->ti_Data; break;
+	    case WA_MinHeight:  nw.MinHeight    = tag->ti_Data; break;
+	    case WA_MaxWidth:   nw.MaxWidth     = tag->ti_Data; break;
+	    case WA_MaxHeight:  nw.MaxHeight    = tag->ti_Data; break;
+
+	    case WA_Gadgets:    nw.FirstGadget  = (struct Gadget *)(tag->ti_Data); break;
+	    case WA_Title:	nw.Title	= (UBYTE *)(tag->ti_Data); break;
+
+	    case WA_ScreenTitle: screenTitle = (UBYTE *)tag->ti_Data; break;
+	    case WA_AutoAdjust:  autoAdjust  = (tag->ti_Data != 0); break;
+	    case WA_InnerWidth:  innerWidth  = tag->ti_Data; break;
+	    case WA_InnerHeight: innerHeight = tag->ti_Data; break;
+
+    #define MODIFY_FLAG(name)   if (tag->ti_Data) \
+				    nw.Flags |= (name); else nw.Flags &= ~(name)
+
+	    case WA_SizeGadget:		MODIFY_FLAG(WFLG_SIZEGADGET);       break;
+	    case WA_DragBar:		MODIFY_FLAG(WFLG_DRAGBAR);          break;
+	    case WA_DepthGadget:	MODIFY_FLAG(WFLG_DEPTHGADGET);      break;
+	    case WA_CloseGadget:	MODIFY_FLAG(WFLG_CLOSEGADGET);      break;
+	    case WA_Backdrop:		MODIFY_FLAG(WFLG_BACKDROP);         break;
+	    case WA_ReportMouse:	MODIFY_FLAG(WFLG_REPORTMOUSE);      break;
+	    case WA_NoCareRefresh:	MODIFY_FLAG(WFLG_NOCAREREFRESH);    break;
+	    case WA_Borderless:		MODIFY_FLAG(WFLG_BORDERLESS);       break;
+	    case WA_Activate:		MODIFY_FLAG(WFLG_ACTIVATE);         break;
+	    case WA_RMBTrap:		MODIFY_FLAG(WFLG_RMBTRAP);          break;
+	    case WA_WBenchWindow:	MODIFY_FLAG(WFLG_WBENCHWINDOW);     break;
+	    case WA_SizeBRight:		MODIFY_FLAG(WFLG_SIZEBRIGHT);       break;
+	    case WA_SizeBBottom:	MODIFY_FLAG(WFLG_SIZEBBOTTOM);      break;
+	    case WA_GimmeZeroZero:	MODIFY_FLAG(WFLG_GIMMEZEROZERO);    break;
+	    case WA_NewLookMenus:	MODIFY_FLAG(WFLG_NEWLOOKMENUS);     break;
+	    case WA_Zoom:		MODIFY_FLAG(WFLG_HASZOOM);	    break;
+
+	    case WA_DetailPen:
+		if (nw.DetailPen == 0xFF)
+		    nw.DetailPen = tag->ti_Data;
+		break;
+
+	    case WA_BlockPen:
+		if (nw.BlockPen == 0xFF)
+		    nw.BlockPen = tag->ti_Data;
+		break;
+
+	    case WA_CustomScreen:
+		nw.Screen = (struct Screen *)(tag->ti_Data);
+		nw.Type = CUSTOMSCREEN;
+		break;
+
+	    case WA_SuperBitMap:
+		nw.Flags |= WFLG_SUPER_BITMAP;
+		nw.BitMap = (struct BitMap *)(tag->ti_Data);
+		break;
+
+	    case WA_SimpleRefresh:
+		if (tag->ti_Data)
+		    nw.Flags |= WFLG_SIMPLE_REFRESH;
+		break;
+
+	    case WA_SmartRefresh:
+		if (tag->ti_Data)
+		    nw.Flags |= WFLG_SMART_REFRESH;
+		break;
+
+	    case WA_PubScreenName:
+	    case WA_PubScreen:
+	    case WA_PubScreenFallBack:
+	    case WA_WindowName:
+	    case WA_Colors:
+	    case WA_MouseQueue:
+	    case WA_RptQueue:
+	    case WA_BackFill:
+	    case WA_MenuHelp:
+	    case WA_NotifyDepth:
+	    case WA_Checkmark:
+	    case WA_AmigaKey:
+	    case WA_Pointer:
+	    case WA_BusyPointer:
+	    case WA_PointerDelay:
+	    case WA_HelpGroup:
+	    case WA_HelpGroupWindow:
+	    case WA_TabletMessages:
+    #warning TODO: Missing WA_ Tags
+		break;
+	    } /* switch Tag */
+
+	} /* while ((tag = NextTagItem (&tagList))) */
+	
+    } /* if (tagList) */
+    
+    if (nw.Flags & WFLG_SIZEGADGET)
+    {
+    	if (!(nw.Flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM)))
+	{
+	    nw.Flags |= WFLG_SIZEBRIGHT;
+	}
+    }
+    
 #define IW(x) ((struct IntWindow *)x)
 
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
@@ -106,7 +237,7 @@
     if (NULL == w->UserPort)
 	goto failexit;
 
-    if (!ModifyIDCMP (w, newWindow->IDCMPFlags))
+    if (!ModifyIDCMP (w, nw.IDCMPFlags))
 	goto failexit;
 	
     IW(w)->closeMessage = AllocMem(sizeof (struct closeMessage), MEMF_PUBLIC);
@@ -115,10 +246,10 @@
 
     D(bug("modified IDCMP\n"));
 
-    w->LeftEdge    = newWindow->LeftEdge;
-    w->TopEdge	   = newWindow->TopEdge;
-    w->Width	   = newWindow->Width;
-    w->Height	   = newWindow->Height;
+    w->LeftEdge    = nw.LeftEdge;
+    w->TopEdge	   = nw.TopEdge;
+    w->Width	   = nw.Width;
+    w->Height	   = nw.Height;
 
     ((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
     ((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
@@ -127,36 +258,31 @@
 
 /*    w->RPort	   = rp; */
 
-    w->FirstGadget = newWindow->FirstGadget;
+    w->FirstGadget = nw.FirstGadget;
 
 
     D(bug("Window dims: (%d, %d, %d, %d)\n"
     	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
 	
 
-    if (newWindow->DetailPen == 0xFF) newWindow->DetailPen = 1;
-    if (newWindow->BlockPen  == 0xFF) newWindow->BlockPen = 0;
+    if (nw.DetailPen == 0xFF) nw.DetailPen = 1;
+    if (nw.BlockPen  == 0xFF) nw.BlockPen = 0;
 
-    w->BorderLeft   = 1;
-    w->BorderTop    = 12;
-    w->BorderRight  = 1;
-    w->BorderBottom = 1;
+    w->MinWidth  = nw.MinWidth;
+    w->MinHeight = nw.MinHeight;
+    w->MaxWidth  = nw.MaxWidth;
+    w->MaxHeight = nw.MaxHeight;
 
-    w->MinWidth  = newWindow->MinWidth;
-    w->MinHeight = newWindow->MinHeight;
-    w->MaxWidth  = newWindow->MaxWidth;
-    w->MaxHeight = newWindow->MaxHeight;
-
-    if (newWindow->Type == PUBLICSCREEN)
+    if (nw.Type == PUBLICSCREEN)
 	w->WScreen = IntuitionBase->ActiveScreen;
-    else if (newWindow->Type == CUSTOMSCREEN)
-	w->WScreen = newWindow->Screen;
+    else if (nw.Type == CUSTOMSCREEN)
+	w->WScreen = nw.Screen;
     else
 	w->WScreen = GetPrivIBase (IntuitionBase)->WorkBench;
 
 
     /* Copy flags */
-    w->Flags = newWindow->Flags;
+    w->Flags = nw.Flags;
 
     if (!(w->Flags & WFLG_BORDERLESS))
     {
@@ -166,12 +292,12 @@
 	w->BorderBottom = w->WScreen->WBorBottom;
     }
     
-    if (newWindow->Title || (w->Flags & (WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_DEPTHGADGET)))
+    if (nw.Title || (w->Flags & (WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_DEPTHGADGET)))
     {
     	/* this is a hack. the correct way to "correct" (increase if necessary)
 	   the w->Border??? items would be to check all GACT_???BORDER gadgets
 	   (inclusive sysgadgets which are GACT_????BORDER gadgets as well) in
-	   newwindow->FirstGadget (or WA_Gadgets tag) and all sysgadgets and then
+	   nw.FirstGadget (or WA_Gadgets tag) and all sysgadgets and then
 	   make sure that each window border is big enough so that none of these
 	   gadgets extends outside the window border area */
 	   
@@ -181,8 +307,17 @@
 	else
 	    w->BorderTop += GfxBase->DefaultFont->tf_YSize + 1;
     }
+
+    if (w->Flags & WFLG_SIZEBRIGHT)
+    {
+    	if (w->BorderRight < 16) w->BorderRight = 16;
+    }
+    if (w->Flags & WFLG_SIZEBBOTTOM)
+    {
+    	if (w->BorderBottom < 16) w->BorderBottom = 16;
+    }
     
-    if (!intui_OpenWindow (w, IntuitionBase, newWindow->BitMap))
+    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap))
 	goto failexit;
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
@@ -198,12 +333,12 @@
 
     D(bug("set fonts\n"));
 
-    SetAPen (rp, newWindow->DetailPen);
-    SetBPen (rp, newWindow->BlockPen);
+    SetAPen (rp, nw.DetailPen);
+    SetBPen (rp, nw.BlockPen);
     SetDrMd (rp, JAM2);
 
     D(bug("set pens\n"));
-    SetWindowTitles (w, newWindow->Title, (STRPTR)-1);
+    SetWindowTitles (w, nw.Title, (STRPTR)-1);
     D(bug("set title\n"));
 
     lock = LockIBase (0);
@@ -231,7 +366,7 @@
     /* !!! This does double refreshing as the system gadgets also are refreshed
        in the above RfreshGadgets() call */
 
-    if (newWindow->Flags & WFLG_ACTIVATE)
+    if (nw.Flags & WFLG_ACTIVATE)
     {
     	/* RefreshWindowFrame() will be called from within ActivateWindow().
 	No point in doing double refreshing.
@@ -247,6 +382,10 @@
 
 	RefreshWindowFrame(w);
     }
+    
+    if (screenTitle != NULL)
+	SetWindowTitles (w, (UBYTE *)~0L, screenTitle);
+
     goto exit;
 
 failexit:
