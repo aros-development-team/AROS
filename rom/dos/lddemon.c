@@ -318,9 +318,10 @@ AROS_LH2(struct Library *, OpenLibrary,
     {
         object = LDNewObjectNode(stripped_libname, DOSBase);
 	if (object)
+	{
 	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node *)object);
-
-        object->ldon_AccessCount += 1;
+            object->ldon_AccessCount += 1;
+	}
     }
 #if CHECK_DEPENDENCY
     else
@@ -389,12 +390,14 @@ AROS_LH2(struct Library *, OpenLibrary,
 	        under a Forbidden state.
 
 		falemagn: well, it doesn't want us under a Forbidden state, it just
-		          wants to besingle threaded, and it is, ifact, so no
+		          wants to besingle threaded, and it is, in fact, so no
 			  need of Forbid()/Permit() around open. I Hope... :)
+
 	    */
 	    Forbid();
 	    tmplib = (struct Library *)FindName(&SysBase->LibList, stripped_libname);
 	    Permit();
+
 	    if( tmplib != NULL )
 	        library = tmplib;
 
@@ -412,6 +415,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	    }
 	    else
 	       library = NULL;
+
 	}
     }
 
@@ -465,10 +469,10 @@ AROS_LH4(BYTE, OpenDevice,
     {
         object = LDNewObjectNode(stripped_devname, DOSBase);
 	if (object)
+	{
 	    AddTail(&DOSBase->dl_LDObjectsList, (struct Node*)object);
-
-	object->ldon_AccessCount += 1;
-
+	    object->ldon_AccessCount += 1;
+	}
     }
 #if CHECK_DEPENDENCY
     else
