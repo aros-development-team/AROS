@@ -924,13 +924,18 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
     switch (newval)
     {
 	case	MUIV_Window_ActiveObject_None:
+		data->wd_ActiveObject = NULL;
+		if (old_active)
+		{
+		    if (_flags(old_active)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
+		}
 		break;
 
 	case	MUIV_Window_ActiveObject_Next:
 		if (data->wd_ActiveObject)
 		{
 		    data->wd_ActiveObject = NULL;
-		    if (_flags(obj)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(old_active)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
 		    if (old_activenode)
 		    {
 			data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ)?((struct ObjNode*)old_activenode->node.mln_Succ)->obj:NULL;
@@ -950,7 +955,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		if (data->wd_ActiveObject)
 		{
 		    data->wd_ActiveObject = NULL;
-		    if (_flags(obj)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
+		    if (_flags(old_active)&MADF_CANDRAW) DoMethod(old_active, MUIM_GoInactive);
 		    if (old_activenode)
 		    {
 			 data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred)?((struct ObjNode*)old_activenode->node.mln_Pred)->obj:NULL;
@@ -967,7 +972,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		break;
 
 	default:
-		if (data->wd_ActiveObject)
+		if (old_active)
 		{
 		    data->wd_ActiveObject = NULL;
 		    DoMethod(old_active, MUIM_GoInactive);
@@ -978,7 +983,7 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 
     if (data->wd_ActiveObject)
     {
-	if (_flags(obj)&MADF_CANDRAW) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+	if (_flags(data->wd_ActiveObject)&MADF_CANDRAW) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
     }
 }
 
