@@ -35,7 +35,7 @@ LIBNAME  := layers
 ULIBNAME := Layers
 
 OSMODULE  := layers.library
-FILES	  := cliprectfunctions createcliprectsbehindlayer helpfunctions
+FILES	  := cliprectfunctions createcliprectsbehindlayer basicfuncs helpfunctions
 	
 FUNCTIONS := \
 	createupfronthooklayer		\
