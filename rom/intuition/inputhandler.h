@@ -16,11 +16,17 @@ struct IIHData
     struct MsgPort		*IntuiDeferedActionPort;
     struct Gadget		*ActiveGadget;
     struct GadgetInfo		GadgetInfo;
+    struct InputEvent		*ActInputEvent; /* will be NULL outside Intuition's InputEvent handling loop */
+    struct InputEvent		*ReturnInputEvent;
+    struct InputEvent		*GeneratedInputEvents;
+    struct InputEvent		*ActGeneratedInputEvent;
+    APTR			InputEventMemPool;
     WORD			LastMouseX;
     WORD			LastMouseY;
     WORD			DeltaMouseX;
     WORD			DeltaMouseY;
     UWORD			ActQualifier;
+    BOOL			ActInputEventUsed;
 };
 
 struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase);
