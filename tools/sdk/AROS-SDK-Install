@@ -76,7 +76,7 @@ else
 fi
 echo -e "${B}$cc_include${N}"
 
-tools_list="ld nm ar objcopy objdump objcopy strip"
+tools_list="ld nm as ar objcopy objdump objcopy ranlib strip"
 
 for tool in $tools_list; do
     echo -en "Checking ${B}$tool${N}... "
@@ -200,17 +200,21 @@ EOF
 chmod a+x AROS-SDK-Uninstall
 
 echo Copying files...
+ln -sf $as      $aros_sdk_path/${cc_cpu}-aros/bin/as
 ln -sf $ar      $aros_sdk_path/${cc_cpu}-aros/bin/ar
 ln -sf $nm      $aros_sdk_path/${cc_cpu}-aros/bin/nm
 ln -sf $objcopy $aros_sdk_path/${cc_cpu}-aros/bin/objcopy
 ln -sf $objdump $aros_sdk_path/${cc_cpu}-aros/bin/objdump
+ln -sf $ranlib  $aros_sdk_path/${cc_cpu}-aros/bin/ranlib
 
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/gcc     $aros_sdk_path/bin/${cc_cpu}-aros-gcc
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/ld      $aros_sdk_path/bin/${cc_cpu}-aros-ld
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/ar      $aros_sdk_path/bin/${cc_cpu}-aros-ar
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/as      $aros_sdk_path/bin/${cc_cpu}-aros-as
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/nm      $aros_sdk_path/bin/${cc_cpu}-aros-nm
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/objcopy $aros_sdk_path/bin/${cc_cpu}-aros-objcopy
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/objdump $aros_sdk_path/bin/${cc_cpu}-aros-objdump
+ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/ranlib  $aros_sdk_path/bin/${cc_cpu}-aros-ranlib
 ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/strip   $aros_sdk_path/bin/${cc_cpu}-aros-strip
 
 cp -a $cc_cpu/lib/*     $aros_sdk_path/${cc_cpu}-aros/lib/
