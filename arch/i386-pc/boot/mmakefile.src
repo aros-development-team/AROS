@@ -173,7 +173,6 @@ GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
 $(OSGENDIR)/boot/aros.iso: 
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
-	@$(CP) $(OSGENDIR)/boot/aros.bin "$(AROSDIR)/Tools/Boot Disks/cdbootfloppy.img"
 	@mkisofs \
 		-o $(OSGENDIR)/boot/aros.iso \
 		-b boot/grub/iso9660_stage1_5 \
