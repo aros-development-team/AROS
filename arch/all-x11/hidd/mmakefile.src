@@ -51,10 +51,11 @@ libdefs.h : lib.conf
 	
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 	
-disabled_functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
+functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
 	libdefs.h
-	@$(ECHO) "Generating $@..."
-	$(ARCHTOOL) -t
+
+#	@$(ECHO) "Generating $@..."
+#	$(ARCHTOOL) -t
 
 endtag.c :
 	@$(ECHO) "Generating $@..."
