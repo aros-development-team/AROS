@@ -28,6 +28,7 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
+#include <aros/asmcall.h>
 
 #include <hidd/graphics.h>
 
@@ -68,7 +69,7 @@ struct shared_driverdata
     struct Library *oopbase;
 };
 
-
+static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen);
 /* Attrbases */
 static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddGCAttrBase = 0;
@@ -322,6 +323,21 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 }
 
 
+static VOID clipagainstbitmap(struct BitMap *bm, LONG *x1, LONG *y1, LONG *x2, LONG *y2, struct GfxBase *GfxBase)
+{
+    ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
+    ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
+    
+    /* Clip against bitmap bounds  */
+	    
+    if (*x1 < 0)  *x1 = 0;
+    if (*y1 < 0)  *y1 = 0;
+
+    if (*x2 >= width)  *x2 = width  - 1;
+    if (*y2 >= height) *y2 = height - 1; 
+    
+    return;
+}
 
 void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	ULONG drmd, struct GfxBase * GfxBase)
@@ -399,11 +415,6 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     CorrectDriverData (rp, GfxBase);
 }
 
-void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
-		    struct GfxBase * GfxBase)
-{
-    CorrectDriverData (rp, GfxBase);
-}
 
 /* Return the intersection area of a and b in intersect.
  * Return value is TRUE if a and b have such an area,  
@@ -432,7 +443,6 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
     struct gfx_driverdata *dd;
-    ULONG width, height;
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
     
@@ -451,23 +461,12 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     /* Get ready for setting bitmap's gc, but don't set unless neccesary */
     bm_tags[0].ti_Data = (IPTR)dd->dd_GC;
 
-    width  = GetBitMapAttr(bm, BMA_WIDTH);
-    height = GetBitMapAttr(bm, BMA_HEIGHT);
     
     if (NULL == L)
     {
         /* No layer, probably a screen */
 	
-	/* Clip against bitmap bounds  */
-	if (x1 > width || y1 > height || x2 < 0 || y2 < 0)
-	    return; /* Makes no sense */
-	    
-	if (x1 < 0)  x1 = 0;
-	if (y1 < 0)  y1 = 0;
-
-	if (x2 > width)  x2 = width;
-	if (y2 > height) y2 = height; 
-
+	clipagainstbitmap(bm, &x1, &y1, &x2, &y2, GfxBase);
 	SetAttrs(BM_OBJ(bm), bm_tags);	/* Set GC */
 	HIDD_BM_FillRect(BM_OBJ(bm) , x1, y1, x2, y2 );
 	
@@ -517,7 +516,13 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		else
 		{
 		    /* Render into offscreen cliprect bitmap */
-#warning TODO		    
+#warning setbitmapfast should handle drawmodes (JAM1, JAM2,..)
+		    setbitmapfast(CR->BitMap
+		    	, intersect.MinX, intersect.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, GetAPen(rp)
+		    );
 		    
 		}
 	    }
@@ -611,7 +616,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 			, intersect.MinY
 			, intersect.MaxX - intersect.MinX + 1
 			, intersect.MaxY - intersect.MinY + 1
-			, minterm, 0xFF, NULL
+			, minterm, destRP->Mask, NULL
 		    );
 		}
 		else
@@ -624,7 +629,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 			, intersect.MinY - CR->bounds.MinY
 			, intersect.MaxX - intersect.MinX + 1
 			, intersect.MaxY - intersect.MinY + 1
-			, minterm, 0xFF, NULL
+			, minterm, destRP->Mask, NULL
 		    );
 		    
 		    
@@ -998,10 +1003,6 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
   else
   { /* this is probably a screen */
 
-    /* if it is an old window... */
-/*    if (bm->Flags & BMF_AROS_OLDWINDOW)
-      return driver_WritePixel (rp, x, y, GfxBase);
-*/
     if (bm->Flags & BMF_AROS_DISPLAYED)
         return HIDD_BM_GetPixel(dd->dd_GC, x, y);
     
@@ -1271,6 +1272,73 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
     if (NULL != L)
     {
         /* Layered rastport, we have to clip this operation. */
+    	/* Window rastport, we need to clip th operation */
+	
+        struct ClipRect *CR = L->ClipRect;
+	struct Rectangle intersect;
+	
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to blit ?
+	    
+	    Theoretically this test shouldn't be necessary because
+	    we are setting the whole rastport, and all cliprects
+	    should be inside that rastport, but I do not know
+	    the internals of layers, so I'll do it anyway
+	    
+	    */
+	    if (andrectrect(&CR->bounds, &L->bounds, &intersect))
+	    {
+		
+	        if (NULL == CR->lobs)
+		{
+		    struct TagItem bm_tags[] =
+		    {
+			{ aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy},
+			{ aHidd_BitMap_Foreground, color },
+			{ TAG_DONE, 0}
+		    };
+		    
+		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    ));
+		    
+		    /* Write to the HIDD */
+	
+		    SetAttrs(BM_OBJ(bm), bm_tags);
+		    HIDD_BM_FillRect(BM_OBJ(bm)
+		    	, intersect.MinX, intersect.MinY
+			, intersect.MaxX, intersect.MaxY
+		    );
+	
+		}
+		else
+		{
+		    setbitmapfast(CR->BitMap
+		    	, intersect.MinX, intersect.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, color
+		    );
+		    
+		    
+		} /* if (intersecton inside hidden cliprect) */
+
+		
+	    } /* if (cliprect intersects with area we want to draw to) */
+	    
+	    CR = CR->Next;
+	} /* while (cliprects to examine) */
+	
+	
     }
     else
     {
@@ -1278,6 +1346,7 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	
 	struct TagItem tags[] = {
     	    	{ aHidd_BitMap_Background, color },
+		{ aHidd_BitMap_DrawMode, vHIDD_GC_DrawMode_Copy },
 	    	{ TAG_DONE, 0UL }
 	};
 	
@@ -1490,7 +1559,11 @@ ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
 
     CorrectDriverData (rp, GfxBase);
 
+#warning TODO
+
+    /* For now we do not support bit masking */
     return FALSE;
+    
 }
 
 void driver_WaitTOF (struct GfxBase * GfxBase)
@@ -1723,6 +1796,8 @@ static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xs
 #define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
 #define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
 	( ((y) * (bytes_per_row)) + ((x) >> 3) )
+
+#define XCOORD_TO_MASK(x) (1L << (7 - (x & 0x07)))
 
 static VOID setbitmappixel(struct BitMap *bm
 	, LONG x, LONG y
@@ -2546,12 +2621,12 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
         struct ClipRect *CR = L->ClipRect;
 	WORD xrel = L->bounds.MinX;
         WORD yrel = L->bounds.MinY;
-	struct Rectangle toread, intersect;
+	struct Rectangle towrite, intersect;
 	
-	toread.MinX = xstart + xrel;
-	toread.MinY = ystart + yrel;
-	toread.MaxX = xstop  + xrel;
-	toread.MaxY = ystop  + yrel;
+	towrite.MinX = xstart + xrel;
+	towrite.MinY = ystart + yrel;
+	towrite.MaxX = xstop  + xrel;
+	towrite.MaxY = ystop  + yrel;
 	
 	while (NULL != CR)
 	{
@@ -2560,12 +2635,12 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 		CR->lobs));
 		
 	    /* Does this cliprect intersect with area to blit ? */
-	    if (andrectrect(&CR->bounds, &toread, &intersect))
+	    if (andrectrect(&CR->bounds, &towrite, &intersect))
 	    {
 	        ULONG inter_width  = intersect.MaxX - intersect.MinX + 1;
 		ULONG inter_height = intersect.MaxY - intersect.MinY + 1;
-		LONG array_rel_x = intersect.MinX - toread.MinX;
-		LONG array_rel_y = intersect.MinY - toread.MinY;
+		LONG array_rel_x = intersect.MinX - towrite.MinX;
+		LONG array_rel_y = intersect.MinY - towrite.MinY;
 		
 	        if (NULL == CR->lobs)
 		{
@@ -2775,56 +2850,167 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 } /* driver_WritePixelArray8 */
 
 
-struct blt_template_info
+static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct BitMap *dest
+	, LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize, struct RastPort *rp, struct GfxBase *GfxBase)
 {
-    PLANEPTR plane;
-    UWORD drawmode;
-    ULONG modulo;
+    UBYTE *srcptr;
+    UBYTE dest_depth = GetBitMapAttr(dest, BMA_DEPTH);
+    UWORD drmd = GetDrMd(rp);
+    UBYTE apen = GetAPen(rp);
+    UBYTE bpen = GetBPen(rp);
+    LONG x, y;
+
+    /* Find the exact startbyte */
+    srcptr = source + (x_src >> 3);
+    
+    /* Find the exact startbit */
+    x_src &= 0x07;
+    
+
+    for (y = 0; y < ysize; y ++)
+    {
+    	for (x = 0; x < xsize; x ++)
+	{
+	    UBYTE pen;
+	    UBYTE mask = 1 << (7 - ((x + x_src) & 0x07));
+	    BOOL is_set = ((*srcptr & mask) ? TRUE : FALSE);
+	    BOOL set_pixel = FALSE;
+	    
+	    if (drmd & INVERSVID)
+	    {
+	    	is_set = ((is_set == TRUE) ? FALSE : TRUE);
+	    }
+	    if (drmd & JAM1)
+	    {
+	    	/* Only use apen if pixel is set */
+		if (is_set)
+		{
+		    pen = apen;
+		    set_pixel = TRUE;
+		}
+		    
+	    }
+	    else if (drmd & JAM2)
+	    {
+	    	/* Use apen if pixel is et, bpen otherwise */
+		if (is_set)
+		    pen = apen;
+		else
+		    pen = bpen;
+		    
+		set_pixel = TRUE;
+		
+	    }
+	    else if (drmd & COMPLEMENT)
+	    {
+		
+	    	pen = getbitmappixel(dest
+			, x + x_dest
+			, y + y_dest, dest_depth
+			, 0xFF
+		);
+		
+		pen = ~pen;
+
+		
+	    }
+	    if (set_pixel)
+	    {
+		setbitmappixel(dest
+			, x + x_dest
+			, y + y_dest
+			, dest_depth, 0xFF
+			, pen
+		);
+	    }
+
+	
+	    /* Last pixel in this byte ? */
+	    if (((x + x_src) & 0x07) == 0x07)
+	    	srcptr ++;
+		
+	}
+	srcptr += modulo;
+    }
+    return;
+}	
+
+
+struct template_info
+{
+    PLANEPTR source;
+    LONG x_src;
+    LONG modulo;
+    BOOL invertsrc;
+    
     
 };
 
-#define BTI(x) ((struct blt_template_info *)x)
-
-static VOID template_to_buf(APTR src_info, LONG x_src, LONG y_src, ULONG width, ULONG height, ULONG *bufptr)
+VOID template_to_buf(struct template_info *ti, LONG x_src, LONG y_src, ULONG xsize, ULONG ysize, ULONG *buf)
 {
-    UBYTE *planeptr = BTI(src_info)->plane;
-    ULONG modulo   = BTI(src_info)->modulo;
+    UBYTE *srcptr;
+    LONG x, y;
+    /* Find the exact startbyte */
+    srcptr = ti->source + (x_src >> 3) + (ti->modulo * y_src);
     
-    LONG y;
-    
-    /* Get to the current y-position */
-    for (y = 0; y < y_src; y ++)
-    	planeptr += modulo;
-    
-    /* Find correct byte */
-    planeptr += (x_src >> 3);
-    
-    for (y = 0; y < height; y ++)
+    /* Find the exact startbit */
+    x_src &= 0x07;
+
+    for (y = 0; y < ysize; y ++)
     {
-    	LONG x;
-	for (x = x_src; x < width; x ++)
+    	for (x = 0; x < xsize; x ++)
 	{
-	    /* Get a bit from the bitmap */
-	}
+	    UBYTE mask = 1 << (7 - ((x + x_src) & 0x07));
+	    BOOL is_set = ((*srcptr & mask) ? TRUE : FALSE);
+	    
+	    if (ti->invertsrc)
+	    {
+	    	is_set = ((is_set == TRUE) ? FALSE : TRUE);
+	    }
+	    
+	    if (is_set)
+		*buf = 1UL;
+	    else
+		*buf = 0UL;
+		
+	    buf ++;
+	
+	    /* Last pixel in this byte ? */
+	    if (((x + x_src) & 0x07) == 0x07)
+	    	srcptr ++;
+		
+	} 
+	srcptr += ti->modulo;
     }
+    
+    return;
 }
 
-#warning TODO
-/* !!! Note: The functionality of BltTemplate() is a candidate for beeing
-   moved into the HIDDs, because most gfx cards can do color expansion in HW.
-*/
-
 VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
-	LONG xDest, LONG yDest, LONG xSize, LONG ySize)
+	LONG xDest, LONG yDest, LONG xSize, LONG ySize, struct GfxBase *GfxBase)
 {
     struct gfx_driverdata *dd;
     struct Layer *L = destRP->Layer;
     struct BitMap *bm = destRP->BitMap;
     ULONG width, height;
+    Object *template_bm;
+    struct template_info ti;
+    
+    struct TagItem setgc_tags[] =
+    {
+    	{aHidd_BitMap_GC, 0UL},
+	{TAG_DONE, 0UL}
+    };
+    struct TagItem bm_tags[] = 
+    {
+    	{ aHidd_BitMap_Width,	xSize },
+	{ aHidd_BitMap_Height,	ySize },
+	{ aHidd_BitMap_Depth,	1 },
+	{ aHidd_BitMap_Displayable, FALSE },
+	{ TAG_DONE, 0UL }
+    };
+    
 
-    struct blt_template_info bti;
-    bti.drawmode = GetDrMd(destRP);
-    bti.plane = source;
     
     EnterFunc(bug("driver_BltTemplate(%d %d %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
@@ -2833,27 +3019,49 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     	return;
 	
     dd = GetDriverData(destRP);
+    
+    /* Prepare for setting bitmap GC */
+    setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
 
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     
+    /* Create an offscreen HIDD bitmap of depth 1 to use in color expansion */
+    template_bm = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, bm_tags);
+    if (!template_bm)
+    	return;
+	
+    /* Copy contents from Amiga bitmap to the offscreen HIDD bitmap */
+    ti.source	 = source;
+    ti.modulo	 = srcMod;
+    ti.invertsrc = ((GetDrMd(destRP) & INVERSVID) ? TRUE : FALSE);
+    
+    amiga2hidd_fast( (APTR)&ti
+    	, xSrc, 0
+	, template_bm
+	, 0, 0
+	, xSize, ySize
+	, template_to_buf
+    );
+	
     if (NULL == L)
     {
         /* No layer, probably a screen */
 	
-	/* Just create a pixelarray  of the data and write it to the destination HIDD */
-	amiga2hidd_fast( (APTR) &bti
-		, xSrc, 0
-		, BM_OBJ(bm)
+	SetAttrs( BM_OBJ(bm), setgc_tags );
+	
+	/* Blit with color expansion */
+	HIDD_BM_BlitColExp( BM_OBJ(bm)
+		, template_bm
+		, 0, 0
 		, xDest, yDest
-		, xSize, ySize
-		, template_to_buf
-	);
+		, xSize, ySize);
+	
 	
     }
     else
     {
-    	/* Window rastport, we need to clip th operation */
+    	/* Window rastport, we need to clip the operation */
 	
         struct ClipRect *CR = L->ClipRect;
 	WORD xrel = L->bounds.MinX;
@@ -2874,8 +3082,13 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	    /* Does this cliprect intersect with area to blit ? */
 	    if (andrectrect(&CR->bounds, &toblit, &intersect))
 	    {
+		    
+		
 	        if (NULL == CR->lobs)
 		{
+		    LONG  clipped_xsrc, clipped_ysrc;
+		    clipped_xsrc = /* xsrc = 0 + */ intersect.MinX - toblit.MinX;
+		    clipped_ysrc = /* ysrc = 0 + */ intersect.MinY - toblit.MinY;
 		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
 		    	, intersect.MinX
 			, intersect.MinY
@@ -2883,10 +3096,39 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 			, intersect.MaxY
 		    ));
 		    
+		    HIDD_BM_BlitColExp( BM_OBJ(bm)
+			, template_bm
+			, clipped_xsrc, clipped_ysrc
+			, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+		    );
+		    
 		}
 		else
 		{
+		    UBYTE *clipped_source;
+		    LONG clipped_xsrc;
+		    
 		    /* This is the tricky one: render into offscreen cliprect bitmap */
+
+		    clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
+		    clipped_source = clipped_source + (((clipped_xsrc - 1) >> 4) + 1);
+		    clipped_xsrc &= 0x0F;
+
+		    blttemplate_amiga(clipped_source
+		    	, clipped_xsrc
+			, srcMod
+			, CR->BitMap
+			, intersect.MinX - CR->bounds.MinX
+			, intersect.MinY - CR->bounds.MinY
+			, intersect.MaxX - intersect.MinX + 1
+			, intersect.MaxY - intersect.MinY + 1
+			, destRP, GfxBase
+		    );
+		    
+		    	
 
 		}
 		
@@ -2896,6 +3138,235 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	} /* while (cliprects to examine) */
 	
     } /* if (not screen rastport) */
+    
+    HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, template_bm);
 	
     ReturnVoid("driver_BltTemplate");
 }
+
+
+
+VOID driver_WriteChunkyPixels(struct RastPort * rp, ULONG xstart, ULONG ystart,
+		ULONG xstop, ULONG ystop, UBYTE * array,
+		LONG bytesperrow, struct GfxBase *GfxBase)
+{
+    driver_WritePixelArray8(rp 
+		, xstart, ystart
+		, xstop, ystop
+		, array, NULL
+		, GfxBase
+    );
+
+}
+
+LONG driver_ReadPixelLine8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG width,
+			    UBYTE * array, struct RastPort * temprp,
+			    struct GfxBase *GfxBase)
+{
+    /* We are lazy, and waste som cycles to be able to reuse what we've
+       allready done
+     */
+    
+    return driver_ReadPixelArray8(rp
+    	, xstart, ystart
+	, xstart + width - 1, 1
+	, array, temprp
+	, GfxBase
+    );
+}		    
+
+
+LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG width,
+			    UBYTE * array, struct RastPort * temprp,
+			    struct GfxBase *GfxBase)
+{
+    /* We are lazy, and waste som cycles to be able to reuse what we've
+       allready done
+     */
+    return driver_WritePixelArray8(rp
+    	, xstart, ystart
+	, xstart + width - 1, 1
+	, array, temprp
+	, GfxBase
+    );
+}
+
+
+VOID driver_CopySBitMap(struct Layer *L)
+{
+    /* Move all info from superbitmap into layer */
+}
+
+VOID driver_SyncSBitMap(struct Layer *L)
+{
+    /* Move all info from superbitmap into layer */
+}
+
+struct layerhookmsg
+{
+    struct Layer *Layer;
+/*  struct Rectangle rect; (replaced by the next line!) */
+    WORD MinX, MinY, MaxX, MaxY;
+    LONG OffsetX, OffsetY;
+};
+
+
+VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg)
+{
+    struct BitMap *bm = rp->BitMap;
+
+    if(h == LAYERS_BACKFILL)
+    {
+        /* Use default backfill */
+	if (bm->Flags & BMF_AROS_DISPLAYED)
+	{
+	     struct TagItem bm_tags[] =
+	     {
+	     	{aHidd_BitMap_Foreground, 0UL},
+		{aHidd_BitMap_DrawMode,	  vHIDD_GC_DrawMode_Copy},
+		{TAG_DONE, 0UL}
+	     };
+
+	     SetAttrs(BM_OBJ(bm), bm_tags);
+		    
+		    /* Cliprect not obscured, so we may render directly into the display */
+	     HIDD_BM_FillRect(BM_OBJ(bm)
+		, msg->MinX, msg->MinY
+		, msg->MaxX, msg->MaxY
+	     );
+	}
+	else
+	{
+	    clearbitmapfast(rp->BitMap
+	    	, msg->MinX, msg->MinY
+		, msg->MaxX - msg->MinX + 1
+		, msg->MaxY - msg->MinY + 1
+	    );
+	}
+    }
+
+    else if(h != LAYERS_NOBACKFILL)
+    {
+	/* Call user specified hook */
+	AROS_UFC3(void, h->h_Entry,
+	    AROS_UFCA(struct Hook *,         h,    A0),
+	    AROS_UFCA(struct RastPort *,     rp,   A2),
+	    AROS_UFCA(struct layerhookmsg *, msg, A1)
+	);
+    }
+}
+
+void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
+		    struct GfxBase * GfxBase)
+{
+
+    ULONG width, height;
+    struct Layer *L = rp->Layer;
+    struct BitMap *bm = rp->BitMap;
+    
+    EnterFunc(bug("driver_EraseRect(%d, %d, %d, %d)\n", x1, y1, x2, y2));
+    if (!CorrectDriverData(rp, GfxBase))
+    	ReturnVoid("driver_EraseRect(No driverdata)");
+	
+    
+
+    width  = GetBitMapAttr(bm, BMA_WIDTH);
+    height = GetBitMapAttr(bm, BMA_HEIGHT);
+    
+    if (NULL == L)
+    {
+	struct layerhookmsg msg;
+	
+	clipagainstbitmap(bm, &x1, &y1, &x2, &y2, GfxBase);
+	
+	
+	/* Use the layerinfo hook */
+	msg.Layer = NULL;
+	msg.MinX = x1;
+	msg.MinY = y1;
+	msg.MaxX = x2;
+	msg.MaxY = y2;
+	
+	/* Hook should not use these */
+	msg.OffsetX = 0;
+	msg.OffsetY = 0;
+	
+#warning TODO
+/*  From where do I get the layerinfo->BlankHook ?
+    Maybe put it into rp->LongReserved[1] in
+    OpenScreen() ? (Or really inside intui_OpenScreen() )
+	calllayerhook(struct Hook *???, rp, &msg);
+*/
+	
+    }
+    else
+    {
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle toerase, intersect;
+	struct layerhookmsg msg;
+	
+	toerase.MinX = x1 + xrel;
+	toerase.MinY = y1 + yrel;
+	toerase.MaxX = x2 + xrel;
+	toerase.MaxY = y2 + yrel;
+	
+	msg.Layer = L;
+	
+#warning TODO
+/* What should these be ? */	
+	msg.OffsetX = 0;
+	msg.OffsetY = 0;
+	
+	
+	while (NULL != CR)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to rectfill ? */
+	    if (andrectrect(&CR->bounds, &toerase, &intersect))
+	    {
+	    
+	        if (NULL == CR->lobs)
+		{
+		    D(bug("non-obscured cliprect, intersect= (%d,%d,%d,%d)\n"
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    ));
+		    
+		    msg.MinX = intersect.MinX;
+		    msg.MinY = intersect.MinY;
+		    msg.MaxX = intersect.MaxX;
+		    msg.MaxY = intersect.MaxY;
+		    
+		    calllayerhook(L->BackFill, rp, &msg);
+		}
+		else
+		{
+		    msg.MinX = intersect.MinX - CR->bounds.MinX;
+		    msg.MinY = intersect.MinY - CR->bounds.MinY;
+		    msg.MaxX = intersect.MaxX - CR->bounds.MaxX;
+		    msg.MaxY = intersect.MaxY - CR->bounds.MaxY;
+		    
+		    calllayerhook(L->BackFill, rp, &msg);
+
+		}
+
+	    }
+	    CR = CR->Next;
+	}
+	
+
+    }
+    ReturnVoid("driver_EraseRect");
+
+}
+
+
