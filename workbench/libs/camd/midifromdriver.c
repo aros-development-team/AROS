@@ -12,8 +12,13 @@
 
 #include "camd_intern.h"
 
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#include "camd_intern.h"
+
 #undef SysBase
-#undef DosBase
 #undef DOSBase
 
 
@@ -24,11 +29,10 @@ void Receiver_SetError(
 	struct DriverData *driverdata,
 	ULONG errorcode
 ){
-	ULONG lock;
 	struct MidiLink *midilink;
 	struct MyMidiNode *mymidinode;
 
-	lock=ObtainSharedSem(&driverdata->incluster->mutex);
+	ObtainSemaphoreShared(&driverdata->incluster->semaphore);
 
 		if(! (IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers))){
 			midilink=(struct MidiLink *)driverdata->incluster->cluster.mcl_Receivers.lh_Head;
@@ -44,7 +48,7 @@ void Receiver_SetError(
 			}
 		}
 
-	ReleaseSharedSem(&driverdata->incluster->mutex,lock);
+	ReleaseSemaphore(&driverdata->incluster->semaphore);
 }
 
 
@@ -55,11 +59,10 @@ void Receiver_SysExSuperTreat(
 	struct DriverData *driverdata,
 	UBYTE data
 ){
-	ULONG lock;
 	struct MidiLink *midilink;
 	struct MyMidiNode *mymidinode;
 
-	lock=ObtainSharedSem(&driverdata->incluster->mutex);
+	ObtainSemaphoreShared(&driverdata->incluster->semaphore);
 
 		if(! (IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers))){
 			midilink=(struct MidiLink *)driverdata->incluster->cluster.mcl_Receivers.lh_Head;
@@ -75,7 +78,7 @@ void Receiver_SysExSuperTreat(
 			}
 		}
 
-	ReleaseSharedSem(&driverdata->incluster->mutex,lock);
+	ReleaseSemaphore(&driverdata->incluster->semaphore);
 
 }
 
@@ -83,12 +86,11 @@ void Receiver_SuperTreat2(
 	struct DriverData *driverdata,
 	struct MyMidiMessage2 *msg2
 ){
-	ULONG lock;
 	struct MidiLink *midilink;
 	struct MyMidiNode *mymidinode;
 	ULONG msg;
 
-	lock=ObtainSharedSem(&driverdata->incluster->mutex);
+	ObtainSemaphoreShared(&driverdata->incluster->semaphore);
 
 		if(! (IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers))){
 
@@ -99,7 +101,7 @@ void Receiver_SuperTreat2(
 					if(driverdata->lastsysex==NULL){		// If a realtime-message are inside of a sysexmessage.
 						msg=(msg2->status<<24)|(msg2->data1<<16)|(msg2->data2<<8);
 						while(Midi2Driver((struct DriverData *)midilink,msg,10000)==FALSE){
-							Delay(1);
+							CamdWait();
 						}
 					}
 				}else{
@@ -116,7 +118,7 @@ void Receiver_SuperTreat2(
 			}
 		}
 
-	ReleaseSharedSem(&driverdata->incluster->mutex,lock);
+	ReleaseSemaphore(&driverdata->incluster->semaphore);
 
 }
 
@@ -459,6 +461,5 @@ SAVEDS void ASM Receiver(
 	Signal(&driverdata->ReceiverProc->pr_Task,1L<<driverdata->ReceiverSig);
 
 }
-
 
 

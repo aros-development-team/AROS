@@ -5,7 +5,7 @@
     Desc: 
     Lang: English
 */
-
+#include <proto/exec.h>
 #include <proto/dos.h>
 
 #include "camd_intern.h"
@@ -34,7 +34,6 @@
     EXAMPLE
 
     BUGS
-		May not work for AROS.
 
     SEE ALSO
 		OpenMidiDevice
@@ -50,12 +49,25 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
-	UBYTE *temp=(UBYTE *)mididevicedata;
+	struct Drivers *driver,*temp;
 
-//#warning Fix camd/closemididevice next line
-	temp=temp-8;
+	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 
-	UnLoadSeg(MKBADDR(temp));
+	driver=FindPrevDriverForMidiDeviceData(mididevicedata,CamdBase);
+
+	if(driver==NULL){
+		driver=CB(CamdBase)->drivers;
+		CB(CamdBase)->drivers=CB(CamdBase)->drivers->next;
+	}else{
+		temp=driver->next;
+		driver->next=driver->next->next;
+		driver=temp;
+	}
+
+	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+
+	UnLoadSeg(driver->seglist);
+	FreeMem(driver,sizeof(struct Drivers));
 
    AROS_LIBFUNC_EXIT
 }

@@ -136,6 +136,14 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 }
 
 
+#ifdef _AROS
+#  define CLEARD1
+#else
+#  include <dos.h>
+#  define CLEARD1	putreg(REG_D1,0);	// This is sas/c spesific!
+#  define UNCLEARD1	putreg(REG_D1,0xff);
+#endif
+
 ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
 	UBYTE ret;
 
@@ -145,22 +153,36 @@ ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
 		ret=*driverdata->buffercurrsend_rt;
 		IncBuffer_rt(driverdata,&driverdata->buffercurrsend_rt);
 		driverdata->unsent_rt--;
+		CLEARD1
 		return ret;
 	}
 
 
 	if(driverdata->transmitfunc!=NULL){
-		return (*driverdata->transmitfunc)(driverdata);
+		ret=(*driverdata->transmitfunc)(driverdata);
+		CLEARD1
+		return ret;
 	}
 
 	if(driverdata->realtimesysx==1){
 		driverdata->transmitfunc=Transmit_SysEx;
-		return Transmit_SysEx(driverdata);
+		ret=Transmit_SysEx(driverdata);
+		CLEARD1
+		return ret;
 	}
 
 	if(driverdata->unsent!=0){
-		return Transmit_Status(driverdata);
+		ret=Transmit_Status(driverdata);
+		CLEARD1
+		return ret;
 	}
+
+#ifndef _AROS
+	if(driverdata->mididevicedata->Flags&1==0){
+		UNCLEARD1
+		return 0xfd;		// Dummy-message.
+	}
+#endif
 
 	return 0x100;
 
@@ -182,7 +204,7 @@ BOOL Midi2Driver_rt(struct DriverData *driverdata,ULONG msg){
 
 	IncBuffer_rt(driverdata,&driverdata->buffercurr_rt);
 
-	(*driverdata->midiportdata->ActivateXmit)();
+	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
 
 	return TRUE;
 }
@@ -225,7 +247,7 @@ BOOL Midi2Driver(
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 
-	(*driverdata->midiportdata->ActivateXmit)();
+	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
 
 	return TRUE;
 }
@@ -250,7 +272,7 @@ BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 		driverdata->realtimesysx=1;
 	}
 
-	(*driverdata->midiportdata->ActivateXmit)();
+	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
 
 	return TRUE;
 }

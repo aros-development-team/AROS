@@ -24,6 +24,7 @@
 #  define AROS_LIBBASE_EXT_DECL(a,b)
 #  define AROS_LIBFUNC_EXIT
 #  define aros_print_not_implemented(a) kprintf("camd.library: "a" is not implemented\n");
+#  define AROS_PTRALIGN 2
 #else
 #  ifndef AROS_LIBCALL_H
 #    include <aros/libcall.h>
@@ -66,17 +67,6 @@
 #define SYSEXRECEIVERPROCBUFFERSIZE 1025
 #define NUMBEROFSYSEXSTORECIEVE 1025
 
-struct CamdMutEx{
-	ULONG shared;
-	struct SignalSemaphore semaphore;
-	BOOL exclusive;
-};
-
-struct SegmentSak{
-	UBYTE stuff[8];									//BCPL-pointer and moveq #x,d0;rts
-	struct MidiDeviceData mididevicedata;
-};
-
 struct MyMidiMessage2{
 	UBYTE status;
 	UBYTE data1;
@@ -86,7 +76,7 @@ struct MyMidiMessage2{
 
 struct MyMidiCluster{
 	struct MidiCluster cluster;
-	struct CamdMutEx mutex;
+	struct SignalSemaphore semaphore;
 };
 
 struct DriverData{
@@ -164,7 +154,6 @@ struct DriverData{
 
 struct Drivers{
 	struct Drivers *next;
-	ULONG num;
 	ULONG numports;
 	BPTR seglist;
 	struct MidiDeviceData *mididevicedata;
@@ -218,7 +207,13 @@ struct CamdBase_intern{
 	struct Drivers *drivers;
 	struct List mymidinodes;
 	struct List midiclusters;
-	struct SignalSemaphore *CLSemaphore;		// Lock semaphore. Obtained before all adding/deleting to/from lists.
+
+
+	/* Lock semaphore. Obtained Shared before reading various lists and
+	   obtained exclusive before adding/deleting to/from various lists. */
+
+	struct SignalSemaphore *CLSemaphore;
+
 };
 
 #ifdef _AMIGA
@@ -263,12 +258,6 @@ struct CamdBase_intern{
 
 
 /* Prototypes */
-
-void InitCamdMutEx(struct CamdMutEx *mutex);
-ULONG ObtainSharedSem(struct CamdMutEx *mutex);
-void ReleaseSharedSem(struct CamdMutEx *mutex,ULONG lock);
-void ObtainExclusiveSem(struct CamdMutEx *mutex);
-void ReleaseExclusiveSem(struct CamdMutEx *mutex);
 
 struct CamdBase{struct Library library;};
 BYTE GetMsgLen(LONG msg);
@@ -328,8 +317,8 @@ void EndReceiverProc(
 	struct CamdBase *CamdBase
 );
 
-BOOL InitMiniCamd(struct CamdBase *CamdBase);
-void UninitMiniCamd(struct CamdBase *CamdBase);
+BOOL InitCamd(struct CamdBase *CamdBase);
+void UninitCamd(struct CamdBase *CamdBase);
 void Reciever_SysExSuperTreat(
 	struct DriverData *driverdata,
 	UBYTE data
@@ -365,16 +354,25 @@ extern WORD MidiMsgType_status_data1(UBYTE status,UBYTE data1);
 BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *CamdBase);
 void CloseDriver(struct DriverData *driverdata,struct CamdBase *CamdBase);
 
-void FreeDriver(struct Drivers *driver,
+void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
 );
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
 );
 
+struct Drivers *FindPrevDriverForMidiDeviceData(
+	struct MidiDeviceData *mididevicedata,
+	struct CamdBase *CamdBase
+);
+
 ULONG mystrlen(char *string);
 void mysprintf(struct CamdBase *camdbase,char *string,char *fmt,...);
 struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node);
+
+BOOL InitCamdTimer(void);
+void UninitCamdTimer(void);
+void CamdWait(void);
 
 	AROS_LH2(BOOL, SetMidiAttrsA,
 	AROS_LHA(struct MidiNode *, midinode, A0),
@@ -391,4 +389,13 @@ struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node);
 	AROS_LHA(struct TagItem *, tags, A1),
 	struct CamdBase *, CamdBase, 21, Camd);
 
+	AROS_LH1(void, CloseMidiDevice,
+	AROS_LHA(struct MidiDeviceData *, mididevicedata, A0),
+	struct CamdBase *, CamdBase, 35, Camd);
+
+	AROS_LH1(struct MidiDeviceData *, OpenMidiDevice,
+	AROS_LHA(UBYTE *, name, A0),
+	struct CamdBase *, CamdBase, 34, Camd);
+
 #endif /* CAMD_INTERN_H */
+

@@ -33,6 +33,9 @@
     RESULT
 
     NOTES
+		If you are not the owner of the midilink, you should lock
+		Camd before calling to ensure that it wont go away.
+		Theres no point in locking if you know it wont go away.
 
     EXAMPLE
 
@@ -57,7 +60,7 @@
 	ULONG *where;
 	ULONG ret=0;
 
-	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 
 	while((tag=NextTagItem(&tstate))){
 		ret++;

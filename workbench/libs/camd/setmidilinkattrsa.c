@@ -36,6 +36,20 @@
     RESULT
 
     NOTES
+		- If the midilink is not owned by yourself, please lock
+		  camd to ensure it wont go away.
+
+		- Allthough you are able to modify midilinks owned by
+		  others, please avoid it, its normally "non of your buziness",
+		  and may lead to crashes and other "unexpected" behaviours.
+		  However, if you have full control of the owner of the
+		  midilink (f.ex when both you and the owner belongs to the
+		  same probram and you are absolutely shure you know what
+		  you are doing), there is no problem.
+
+		- Warning! If another task have locked Camd and is waiting
+		  for you to finish, there will be a deadlock if you try
+		  to change priority or change/set cluster.
 
     EXAMPLE
 
@@ -68,7 +82,7 @@
 	struct DriverData *driverdata=NULL;
 
 	ULONG *ErrorCode=(ULONG *)GetTagData(MLINK_ErrorCode,NULL,tags);
-
+	D(bug("setmidilink2\n"));
 	while((tag=NextTagItem(&tstate))){
 		switch(tag->ti_Tag){
 			case MLINK_Name:
@@ -100,7 +114,7 @@
 				if(mycluster!=NULL){
 					ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 					if(type==NT_USER-MLTYPE_Receiver){
-						ObtainExclusiveSem(&mycluster->mutex);
+						ObtainSemaphore(&mycluster->semaphore);
 					}
 
 						Remove(&midilink->ml_Node);
@@ -111,7 +125,7 @@
 							Enqueue(&midilink->ml_Location->mcl_Senders,&midilink->ml_Node);
 						}
 					if(type==NT_USER-MLTYPE_Receiver){
-						ReleaseExclusiveSem(&mycluster->mutex);
+						ReleaseSemaphore(&mycluster->semaphore);
 					}
 					ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 				}else{
@@ -141,14 +155,18 @@
 				break;
 		}
 	}
-
+	D(bug("setmidilink3\n"));
 	if(ret!=FALSE){
+	  D(bug("setmidilink4\n"));
 		clustername=(char *)GetTagData(MLINK_Location,NULL,tags);
+	D(bug("setmidilink5\n"));
 		if(clustername!=NULL){
 			ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+	D(bug("setmidilink6\n"));
 				if(SetClusterForLink(midilink,clustername,ErrorCode,CamdBase)==FALSE){
 					ret=FALSE;
 				}
+	D(bug("setmidilink7\n"));
 			ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 		}
 	}

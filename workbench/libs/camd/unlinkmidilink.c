@@ -12,7 +12,7 @@
 
 
 /* 
-	CLSemaphore must be obtained first.
+	CLSemaphore must be exlusive obtained first.
 */
 
 void UnlinkMidiLink(
@@ -26,7 +26,7 @@ void UnlinkMidiLink(
 
 	if(cluster!=NULL){
 		if(type==NT_USER-MLTYPE_Receiver){
-			ObtainExclusiveSem(&mycluster->mutex);
+			ObtainSemaphore(&mycluster->semaphore);
 		}
 		Remove(&midilink->ml_Node);
 	}
@@ -37,7 +37,7 @@ void UnlinkMidiLink(
 
 	if(cluster!=NULL){
 		if(type==NT_USER-MLTYPE_Receiver){
-			ReleaseExclusiveSem(&mycluster->mutex);
+			ReleaseSemaphore(&mycluster->semaphore);
 		}
 		D(bug("here3\n"));
 		LinkHasBeenRemovedFromCluster(cluster,CamdBase);

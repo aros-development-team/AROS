@@ -135,7 +135,7 @@ struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase){
 
 	if(mymidicluster==NULL) return NULL;
 
-	InitCamdMutEx(&mymidicluster->mutex);
+	InitSemaphore(&mymidicluster->semaphore);
 
 	midicluster=&mymidicluster->cluster;
 
@@ -212,9 +212,7 @@ BOOL AddClusterReceiver(
 	struct MyMidiCluster *mycluster=(struct MyMidiCluster *)cluster;
 
 	if(node->ln_Type!=NT_USER-MLTYPE_NTypes){
-
 	  driverdata=FindSenderDriverInCluster(cluster);
-
 	  if(driverdata!=NULL){
 			if(driverdata->isInOpen==FALSE && driverdata->isOutOpen==FALSE){
 				if(OpenDriver(driverdata,ErrorCode,CamdBase)==FALSE){
@@ -225,16 +223,15 @@ BOOL AddClusterReceiver(
 			}
 		}
 		midilink=(struct MidiLink *)node;
-	  
-		ObtainExclusiveSem(&mycluster->mutex);
-	  		midilink->ml_Location=cluster;
+		ObtainSemaphore(&mycluster->semaphore);
+		midilink->ml_Location=cluster;
 	}else{
 		/* The receiver is a hardware-receiver, not a midilink. */
-		ObtainExclusiveSem(&mycluster->mutex);
+		ObtainSemaphore(&mycluster->semaphore);
 	}
 
 	Enqueue(&cluster->mcl_Receivers,node);
-	ReleaseExclusiveSem(&mycluster->mutex);
+	ReleaseSemaphore(&mycluster->semaphore);
 
 	return TRUE;
 }

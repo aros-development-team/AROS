@@ -104,7 +104,7 @@
 		if(data==0xf0){
 			if(TOdriverdata==NULL){
 				if(midilink->ml_Location!=NULL){
-					ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+					ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 						TOdriverdata=FindReceiverDriverInCluster(midilink->ml_Location);
 					ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 				}
@@ -128,8 +128,8 @@
 					TOdriverdata->buffercurrsend_sx=0;
 					TOdriverdata->issending_sx=1;
 
-					while(SysEx2Driver(TOdriverdata,driverdata->lastsysex)==FALSE) Delay(1);
-					while(TOdriverdata->issending_sx!=0) Delay(1);
+					while(SysEx2Driver(TOdriverdata,driverdata->lastsysex)==FALSE) CamdWait();
+					while(TOdriverdata->issending_sx!=0) CamdWait();
 
 				ReleaseSemaphore(&TOdriverdata->sysexsemaphore);
 			}

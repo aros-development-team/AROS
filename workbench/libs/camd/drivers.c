@@ -25,6 +25,7 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 		return FALSE;
 	}
 
+	D(bug("About to open port, %s %d\n",driverdata->mididevicedata->Name,driverdata->portnum));
 	driverdata->midiportdata=(*driverdata->mididevicedata->OpenPort)(
 		driverdata->mididevicedata,
 		driverdata->portnum,
@@ -32,7 +33,9 @@ BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *
 		Receiver,
 		driverdata
 	);
+	D(bug("Finished to open port\n"));
 	if(driverdata->midiportdata==NULL){
+		D(bug("Seems like it failed...\n"));
 		EndReceiverProc(driverdata,CamdBase);
 		if(ErrorCode!=NULL){
 			*ErrorCode=CME_NoUnit(driverdata->portnum);
@@ -67,12 +70,7 @@ BOOL AllocDriverData(
 	struct MidiCluster *cluster;
 	char nametemp[256];
 
-	driver->mididevicedata=mididevicedata;
-
-	nports=mididevicedata->NPorts;
-	if(nports==0) return FALSE;
-
-	driver->numports=nports;
+	nports=driver->numports;
 
 	driver->driverdatas=AllocMem((ULONG)(sizeof(struct DriverData *)*nports),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 	if(driver->driverdatas==NULL){
@@ -158,7 +156,7 @@ BOOL AllocDriverData(
 }
 
 
-void FreeDriver(struct Drivers *driver,
+void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
 ){
 	struct DriverData *driverdata;
@@ -189,51 +187,74 @@ void FreeDriver(struct Drivers *driver,
 		}
 		FreeMem(driver->driverdatas,sizeof(struct DriverData *)*driver->numports);
 	}
-	UnLoadSeg(driver->seglist);
-	FreeMem(driver,sizeof(struct Drivers));
+}
+
+struct Drivers *FindPrevDriverForMidiDeviceData(
+	struct MidiDeviceData *mididevicedata,
+	struct CamdBase *CamdBase
+){
+	struct Drivers *driver,*temp=NULL;
+
+	driver=CB(CamdBase)->drivers;
+
+	while(driver->mididevicedata!=mididevicedata){
+		temp=driver;
+		driver=driver->next;
+	}
+
+	return temp;
 }
 
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
 ){
-	BPTR seglist;
-	struct SegmentSak *myseglist;
 	struct Drivers *driver;
 	struct MidiDeviceData *mididevicedata;
-	seglist=LoadSeg(name);
 
-	myseglist=BADDR(seglist);
+	D(bug("trying to open %s..\n",name));
 
-	mididevicedata=(struct MidiDeviceData *)&myseglist->mididevicedata;
+#ifdef _AROS
+	mididevicedata=Camd_OpenMidiDevice(name,CamdBase);
+#else
+	mididevicedata=OpenMidiDevice(name,CamdBase);
+#endif
+	D(bug("It was a %s..\n",mididevicedata==NULL?"not success":"success"));
 
-	if(mididevicedata->Magic!=MDD_Magic){
-		UnLoadSeg(seglist);
+	if(mididevicedata==NULL) return;
+
+#ifdef _AROS
+	if(mididevicedata->Flags&1==0){
+		D(bug("%s: mididevicedata->Flags&1==0 is not not supported for AROS!\n",name));
+		Camd_CloseMidiDevice(mididevicedata,CamdBase);
+		return;
+	}
+#endif
+
+	if((*mididevicedata->Init)(SysBase)==FALSE){
+#ifdef _AROS
+		Camd_CloseMidiDevice(mididevicedata,CamdBase);
+#else
+		CloseMidiDevice(mididevicedata,CamdBase);
+#endif
 		return;
 	}
 
-	driver=AllocMem(sizeof(struct Drivers),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
+	driver=FindPrevDriverForMidiDeviceData(mididevicedata,CamdBase);
 	if(driver==NULL){
-		UnLoadSeg(seglist);
-		return;
+		driver=CB(CamdBase)->drivers;
+	}else{
+		driver=driver->next;
 	}
-
-	driver->seglist=seglist;
 
 	if(AllocDriverData(driver,mididevicedata,CamdBase)==FALSE){
-		FreeDriver(driver,CamdBase);
+		FreeDriverData(driver,CamdBase);
+#ifdef _AROS
+		Camd_CloseMidiDevice(mididevicedata,CamdBase);
+#else
+		CloseMidiDevice(mididevicedata,CamdBase);
+#endif
 		return;
 	}
-
-	if(CB(CamdBase)->drivers!=NULL){
-		driver->num=CB(CamdBase)->drivers->num+1;
-	}else{
-		driver->num=0;
-	}
-
-	driver->next=CB(CamdBase)->drivers;
-	CB(CamdBase)->drivers=driver;
-
-	(*mididevicedata->Init)();
 
 }
 
