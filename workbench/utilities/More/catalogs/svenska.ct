@@ -1,36 +1,36 @@
-## version $VER: more.catalog 1.0 (18.10.2000)
+## version $VER: more.catalog 1.0 (14.10.2001)
 ## codeset 0
 ## language svenska
 ;
 MSG_CANT_OPEN_LIB 
-Kunde inte öppna %s V%ld!
+Kan inte öppna %s V%ld!
 ;
 MSG_NO_MEM 
 Slut på minne!
 ;
 MSG_CANT_LOCK_SCR 
-Kunde inte låsa publika skärmen!
+Kan inte låsa allmän skärm!
 ;
 MSG_CANT_GET_DRI 
-Kunde inte få DrawInfo! 
+Kan inte läsa DrawInfo! 
 ;
 MSG_CANT_GET_VI 
-Kunde inte få VisualInfo!
+Kan inte läsa VisualInfo!
 ;
 MSG_CANT_CREATE_SYSIMAGE 
-Kunde inte skapa SYSICLASS bilder!
+Kan inte skapa SYSICLASS-bilder!
 ;
 MSG_CANT_CREATE_GADGET
-Kunde inte skapa knappar!
+Kan inte skapa knappar!
 ;
 MSG_CANT_CREATE_MENUS 
-Kunde inte skapa menyer!
+Kan inte skapa menyer!
 ;
 MSG_CANT_CREATE_WIN 
-Kunde inte skapa fönster!
+Kan inte skapa fönster!
 ;
 MSG_MEN_PROJECT 
-Arkiv
+Projekt
 ;
 MSG_MEN_PROJECT_OPEN 
 O\0Öppna...
