@@ -199,11 +199,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    {
 		//int pct = j * 100 / i;
 
-#ifdef __AROS__
 		snprintf(buf, 255, "%d%%", j);
-#else
-		sprintf(buf, "%d%%", j);
-#endif
 		total_width += TextLength(_rp(obj),buf,strlen(buf));
 		if (total_width > (3 * _mwidth(obj) / 8))
 		{
@@ -248,11 +244,8 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    {
 		ZText *ztext;
 		int val = k * 100 / i;
-#ifdef __AROS__
+
 		snprintf(buf, 255, "%d%%", val);
-#else
-		sprintf(buf, "%d%%", val);
-#endif
 		ztext = zune_text_new(NULL,buf,ZTEXT_ARG_NONE,0);
 		if (ztext)
 		{
