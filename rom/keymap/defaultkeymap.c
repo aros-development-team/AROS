@@ -97,11 +97,11 @@ static UBYTE hikeymaptypes[] =
     C,		/* 44 RETURN */
     A, 	 	/* 45 ESCAPE */
     N, 	 	/* 46 DEL  */
-    NOP,	/* 47 */
-    NOP,	/* 48 */
-    NOP,	/* 49 */
+    ST|S,	/* 47 INSERT ?? */
+    ST|S,	/* 48 PAGE UP ?? */
+    ST|S,	/* 49 PAGE DOWN ?? */
     N,		/* 4A NUMERIC PAD - */
-    NOP,	/* 4B */
+    ST|S,	/* 4B F11 ?? */
     ST|S, 	/* 4C CURSORUP*/
     ST|S, 	/* 4D CURSORDOWN */
     ST|S, 	/* 4E CURSORRIGHT */
@@ -136,10 +136,10 @@ static UBYTE hikeymaptypes[] =
     NOP,	/* 6B */
     NOP,	/* 6C */
     NOP,	/* 6D */
-    NOP,	/* 6E */
-    NOP, 	/* 6F */
-    NOP, 	/* 70 */
-    NOP, 	/* 71 */
+    ST|A,	/* 6E PAUSE/BREAK ??*/
+    ST|S, 	/* 6F F12 ?? */
+    ST|C, 	/* 70 HOME ?? */
+    ST|C, 	/* 71 END ?? */
     NOP, 	/* 72 */
     NOP, 	/* 73 */
     NOP, 	/* 74 */
@@ -356,6 +356,77 @@ UBYTE f10_descr[] =
     0x9B,'1','9','~'
 };
 
+UBYTE f11_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'2','0','~',
+    0x9B,'3','0','~'
+};
+
+UBYTE f12_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'2','1','~',
+    0x9B,'3','1','~'
+};
+
+UBYTE insert_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'4','0','~',
+    0x9B,'5','0','~'
+};
+
+UBYTE pageup_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'4','1','~',
+    0x9B,'5','1','~'
+};
+
+UBYTE pagedown_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'4','2','~',
+    0x9B,'5','2','~'
+};
+
+UBYTE pausebreak_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'4','3','~',
+    0x9B,'5','3','~'
+};
+
+UBYTE home_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'4','4','~',
+    0x9B,'5','4','~'
+};
+
+UBYTE end_descr[] =
+{
+    4,4,
+    4,8,
+    
+    0x9B,'4','5','~',
+    0x9B,'5','5','~'
+};
 
 UBYTE up_descr[] =
 {
@@ -418,11 +489,11 @@ static IPTR hikeymap[] =
     BYTES(0, 0, 10, 13),	/* 44 RETURN */
     BYTES(0, 0, 0x9B, 27),	/* 45 ESCAPE */
     BYTES(127, 127, 127, 127),	/* 46 DEL */
-    BYTES(0, 0, 0, 0),		/* 47 */
-    BYTES(0, 0, 0, 0),		/* 48 */
-    BYTES(0, 0, 0, 0),		/* 49 */
+    STRING(insert_descr),	/* 47 INSERT ?? */
+    STRING(pageup_descr),	/* 48 PAGEUP ?? */
+    STRING(pagedown_descr),	/* 49 PAGEDOWN ?? */
     BYTES('-', '-', '-', '-'),	/* 4A NUMPAD - */
-    BYTES(0, 0, 0, 0), 		/* 4B */
+    STRING(f11_descr), 		/* 4B F11 ?? */
     STRING(up_descr),		/* 4C CURSOR UP*/
     STRING(down_descr),		/* 4D CURSOR DOWN*/
     STRING(right_descr),	/* 4E CURSOR RIGHT */
@@ -457,10 +528,10 @@ static IPTR hikeymap[] =
     BYTES(0, 0, 0, 0),		/* 6B */
     BYTES(0, 0, 0, 0),		/* 6C */
     BYTES(0, 0, 0, 0),		/* 6D */
-    BYTES(0, 0, 0, 0),		/* 6E */
-    BYTES(0, 0, 0, 0),		/* 6F */
-    BYTES(0, 0, 0, 0),		/* 70 */
-    BYTES(0, 0, 0, 0),		/* 71 */
+    STRING(pausebreak_descr),	/* 6E PAUSE/BREAK ?? */
+    STRING(f12_descr),		/* 6F F12 ?? */
+    STRING(home_descr),		/* 70 HOME ?? */
+    STRING(end_descr),		/* 71 END ?? */
     BYTES(0, 0, 0, 0),		/* 72 */
     BYTES(0, 0, 0, 0),		/* 73 */
     BYTES(0, 0, 0, 0),		/* 74 */
