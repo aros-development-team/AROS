@@ -62,7 +62,7 @@
 
     InitIOFS(&iofs, FSA_INHIBIT, DOSBase);
 
-    iofs.IOFS.io_Device = GetDevice(name, NULL, DOSBase);
+    iofs.IOFS.io_Device = GetDevice(name, &iofs.IOFS.io_Unit, DOSBase);
 
     if(iofs.IOFS.io_Device == NULL)
 	return DOSFALSE;
