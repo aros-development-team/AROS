@@ -44,8 +44,7 @@ responsibility is assumed.
 
 #ifdef __AROS
 #define __chip
-extern struct ExecBase * SysBase;
-extern struct DosLibrary *DOSBase;
+#include <clib/alib_protos.h>
 #endif
 
 #ifdef LATTICE
