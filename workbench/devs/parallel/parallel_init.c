@@ -28,7 +28,7 @@
 #include <hidd/parallel.h>
 #include <utility/tagitem.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <exec/lists.h>
 #if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #    include "parallel_intern.h"
@@ -37,76 +37,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include LC_LIBDEFS_FILE
+
 /****************************************************************************************/
 
 #define NEWSTYLE_DEVICE 1
-
-/****************************************************************************************/
-
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct parallelbase *AROS_SLIB_ENTRY(init,Parallel)();
-void AROS_SLIB_ENTRY(open,Parallel)();
-BPTR AROS_SLIB_ENTRY(close,Parallel)();
-BPTR AROS_SLIB_ENTRY(expunge,Parallel)();
-int AROS_SLIB_ENTRY(null,Parallel)();
-void AROS_SLIB_ENTRY(beginio,Parallel)();
-LONG AROS_SLIB_ENTRY(abortio,Parallel)();
-
-static const char end;
-
-/****************************************************************************************/
-
-int AROS_SLIB_ENTRY(entry,Parallel)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident Parallel_resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Parallel_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    30,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[]=PARALLELNAME;
-
-static const char version[]="$VER: parallel 41.0 (2.28.1999)\r\n";
-
-static const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct parallelbase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,Parallel)
-};
-
-static void *const functable[]=
-{
-    &AROS_SLIB_ENTRY(open,Parallel),
-    &AROS_SLIB_ENTRY(close,Parallel),
-    &AROS_SLIB_ENTRY(expunge,Parallel),
-    &AROS_SLIB_ENTRY(null,Parallel),
-    &AROS_SLIB_ENTRY(beginio,Parallel),
-    &AROS_SLIB_ENTRY(abortio,Parallel),
-    (void *)-1
-};
-
-struct ExecBase * SysBase;
 
 struct parallelbase * pubParallelBase;
 
@@ -131,24 +66,14 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
- AROS_UFHA(struct parallelbase *, ParallelDevice, D0),
- AROS_UFHA(BPTR               , segList     , A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, ParallelDevice)
 {
-  AROS_USERFUNC_INIT
-
-  SysBase = sysBase;
+  AROS_SET_LIBFUNC_INIT
 
   D(bug("parallel device: init\n"));
 
   pubParallelBase = ParallelDevice;
 
-  /* Store arguments */
-  ParallelDevice->sysBase = sysBase;
-  ParallelDevice->seglist = segList;
-    
   /* open the parallel hidd */
   if (NULL == ParallelDevice->ParallelHidd)
   {
@@ -156,7 +81,7 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
     D(bug("parallel.hidd base: 0x%x\n",ParallelDevice->ParallelHidd));
     
     if (NULL == ParallelDevice->ParallelHidd)
-    	return NULL;
+    	return FALSE;
 	
     if (NULL == ParallelDevice->oopBase)
       ParallelDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);    
@@ -164,7 +89,7 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
     {
     	CloseLibrary(ParallelDevice->ParallelHidd);
 	ParallelDevice->ParallelHidd = NULL;
-    	return NULL;
+    	return FALSE;
     }
 	
     ParallelDevice->ParallelObject = OOP_NewObject(NULL, CLID_Hidd_Parallel, NULL);
@@ -175,26 +100,27 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
 	ParallelDevice->oopBase = NULL;
 	CloseLibrary(ParallelDevice->ParallelHidd);
 	ParallelDevice->ParallelHidd = NULL;
-      	return NULL;
+      	return FALSE;
     }
   }
     
   NEWLIST(&ParallelDevice->UnitList);
-  return (ParallelDevice);
-  AROS_USERFUNC_EXIT
+  return TRUE;
+
+  AROS_SET_LIBFUNC_EXIT
 }
 
 
 /****************************************************************************************/
 
-
-AROS_LH3(void, open,
- AROS_LHA(struct IORequest *, ioreq, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	 struct parallelbase *, ParallelDevice, 1, Parallel)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, ParallelDevice,
+		     struct IORequest, ioreq,
+		     unitnum,
+		     flags
+)
 {
-  AROS_LIBFUNC_INIT
+  AROS_SET_DEVFUNC_INIT
 
   struct ParallelUnit * PU = NULL;
 
@@ -204,7 +130,7 @@ AROS_LH3(void, open,
   {
       D(bug("parallel.device/open: IORequest structure passed to OpenDevice is too small!\n"));
       ioreq->io_Error = IOERR_OPENFAIL;
-      return;
+      return FALSE;
   }
 
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
@@ -244,8 +170,6 @@ AROS_LH3(void, open,
           HIDD_ParallelUnit_Init(PU->pu_Unit, RBF_InterruptHandler, NULL, WBE_InterruptHandler, NULL);
           ioreq->io_Device = (struct Device *)ParallelDevice;
           ioreq->io_Unit   = (struct Unit *)PU;  
-          ParallelDevice->device.dd_Library.lib_OpenCnt ++;
-          ParallelDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
           /*
           ** put it in the list of open units
@@ -254,7 +178,7 @@ AROS_LH3(void, open,
 
           ioreq->io_Error  = 0;
  
-          return;
+          return TRUE;
         }
 
         D(bug("ParallelUnit could not be created!\n"));
@@ -292,26 +216,20 @@ AROS_LH3(void, open,
     }
   }
 
-  if (ioreq->io_Error == 0)
-  {
-      ParallelDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-      ParallelDevice->device.dd_Library.lib_OpenCnt ++;    
-  }
-  
-  return;
+  return TRUE;
      
-
-  AROS_LIBFUNC_EXIT
+  AROS_SET_DEVFUNC_EXIT
 }
 
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IORequest *, ioreq, A1),
-	   struct parallelbase *, ParallelDevice, 2, Parallel)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, ParallelDevice,
+		      struct IORequest, ioreq
+)
 {
-  AROS_LIBFUNC_INIT
+  AROS_SET_DEVFUNC_INIT
   struct ParallelUnit * PU = (struct ParallelUnit *)ioreq->io_Unit;
 
   /*
@@ -340,40 +258,16 @@ AROS_LH1(BPTR, close,
     PU->pu_OpenerCount--;
   }
 
-  /* Let any following attemps to use the device crash hard. */
-  ioreq->io_Device=(struct Device *)-1;
+  return TRUE;
 
-  ParallelDevice->device.dd_Library.lib_OpenCnt --;    
-  
-  if (ParallelDevice->device.dd_Library.lib_OpenCnt == 0)
-  {
-    if (ParallelDevice->device.dd_Library.lib_Flags & LIBF_DELEXP)
-    {
-    	#define expunge() \
-    	    AROS_LC0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
-
-      return expunge();
-    }
-  }
-  
-  return 0;
-  AROS_LIBFUNC_EXIT
+  AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-
-AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, ParallelDevice)
 {
-    AROS_LIBFUNC_INIT
-
-    BPTR ret = 0;
-
-    if (ParallelDevice->device.dd_Library.lib_OpenCnt)
-    {
-    	ParallelDevice->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-	return 0;
-    }
+    AROS_SET_LIBFUNC_INIT
 
     if (NULL != ParallelDevice->ParallelObject)
     {
@@ -385,30 +279,19 @@ AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
       ParallelDevice->ParallelHidd   = NULL;
       ParallelDevice->ParallelObject = NULL;
     }
-  
-    Remove(&ParallelDevice->device.dd_Library.lib_Node);
+    if (ParallelDevice->oopBase) CloseLibrary(ParallelDevice->oopBase);
     
-    ret = ParallelDevice->seglist;
-    
-    FreeMem((char *)ParallelDevice - ParallelDevice->device.dd_Library.lib_NegSize,
-    	    ParallelDevice->device.dd_Library.lib_NegSize +
-	    ParallelDevice->device.dd_Library.lib_PosSize);
-    
-    return ret;
+    return TRUE;
 
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-
-AROS_LH0I(int, null, 
-   struct parallelbase *, ParallelDevice, 4, Parallel)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
@@ -779,9 +662,5 @@ AROS_LH1(LONG, abortio,
   return 0;
   AROS_LIBFUNC_EXIT
 }
-
-/****************************************************************************************/
-
-static const char end=0;
 
 /****************************************************************************************/
