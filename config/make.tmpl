@@ -802,6 +802,10 @@ MYDIRS$(BDID) := $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(GENINCDIR)/clib \
   
 %rule_makedirs dirs=$(MYDIRS$(BDID)) setuptarget=setup-module$(BDID)
 
+#MM %(mmake)-linklib : %(mmake)
+%build_linklib mmake=%(mmake)-linklib libname=partition \
+  files="$(BD_INITFILE$(BDID)) $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID)) $(BD_ENDFILE$(BDID))"
+
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
