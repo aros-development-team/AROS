@@ -812,25 +812,30 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	  {
 	    /* Does this Layer need a refresh and does it belong
 	       to a Window ?? */
-	    if (0 != (_L->Flags & LAYERREFRESH) &&
-	        NULL != _L->Window)
+	    if (0 != (_L->Flags & LAYERREFRESH))
 	    {
-	      /* Does it belong to a GZZ window and is it
-	         the outer window of that GZZ window? */
-	      if (0  != (((struct Window *)_L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
-	          _L ==  ((struct Window *)_L->Window)->BorderRPort->Layer            )
+	      if (_L == targetwindow->WScreen->BarLayer)
 	      {
-	        /* simply refresh that window's frame */
+	        RenderScreenBar(targetwindow->WScreen, TRUE, IntuitionBase);
+	      } else if (_L->Window != NULL)
+	      {
+		/* Does it belong to a GZZ window and is it
+	           the outer window of that GZZ window? */
+		if (0  != (((struct Window *)_L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
+	            _L ==  ((struct Window *)_L->Window)->BorderRPort->Layer            )
+		{
+	          /* simply refresh that window's frame */
 
-		BeginUpdate(_L);
-	        RefreshWindowFrame((struct Window *)_L->Window);
-		EndUpdate(_L, TRUE);
+		  BeginUpdate(_L);
+	          RefreshWindowFrame((struct Window *)_L->Window);
+		  EndUpdate(_L, TRUE);
 
-	        _L->Flags &= ~LAYERREFRESH;
+	          _L->Flags &= ~LAYERREFRESH;
+		}
+		else
+	          WindowNeedsRefresh((struct Window *)_L->Window,
+	                             IntuitionBase);
 	      }
-	      else
-	        WindowNeedsRefresh((struct Window *)_L->Window,
-	                           IntuitionBase);
 	    }
 	   _L = _L->back;
 
@@ -851,25 +856,29 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	  {  
 	    /* Does this Layer need a refresh and does it belong
 	       to a Window ?? */
-	    if (0 != (L->Flags & LAYERREFRESH) &&
-	        NULL != L->Window)
+	    if (0 != (L->Flags & LAYERREFRESH))
 	    {
-	      /* Does it belong to a GZZ window and is it
-	         the outer window of that GZZ window? */
-	      if (0  != (((struct Window *)L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
-	          L  ==  ((struct Window *)L->Window)->BorderRPort->Layer            )
+	      if (L == targetwindow->WScreen->BarLayer)
 	      {
-	        /* simply refresh that window's frame */
+	        RenderScreenBar(targetwindow->WScreen, TRUE, IntuitionBase);
+	      } else if (L->Window != NULL) {
+		/* Does it belong to a GZZ window and is it
+	           the outer window of that GZZ window? */
+		if (0  != (((struct Window *)L->Window)->Flags & WFLG_GIMMEZEROZERO) &&
+	            L  ==  ((struct Window *)L->Window)->BorderRPort->Layer            )
+		{
+	          /* simply refresh that window's frame */
 
-		BeginUpdate(L);
-	        RefreshWindowFrame((struct Window *)L->Window);
-		EndUpdate(L, TRUE);
+		  BeginUpdate(L);
+	          RefreshWindowFrame((struct Window *)L->Window);
+		  EndUpdate(L, TRUE);
 
-	        L->Flags &= ~LAYERREFRESH;
+	          L->Flags &= ~LAYERREFRESH;
+		}
+		else
+	          WindowNeedsRefresh((struct Window *)L->Window,
+	                             IntuitionBase);
 	      }
-	      else
-	        WindowNeedsRefresh((struct Window *)L->Window,
-	                           IntuitionBase);
 	    }
 
 	    L = L->front;
