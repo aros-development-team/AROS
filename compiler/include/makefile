@@ -18,7 +18,6 @@ $(INCDIR)/%.h: %.h
 setup: make-dirs os-include
 
 make-dirs:
-<<<<<<< makefile
 	@for dir in $(INCDIR)         \
 		$(INCDIR)/aros        \
 		$(INCDIR)/clib        \
