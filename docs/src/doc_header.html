@@ -29,6 +29,23 @@ since 12. October 1999.
 <H2>NEWS</H2>
 
 <TABLE>
+<TR><TD VALIGN=TOP>18.2.2000</TD><TD>
+To avoid infringing patents, the menu code for AROS has been changed.
+Menus now look more modern plus they open under the mouse (like a context
+menu). For the desperate, the old look is still available :-)<P>
+
+Also, Michael Schulz has committed a big chunk of code for AROS
+i386/native. There is now a VGA.HIDD, AROS can open a workbench
+screen. There are still some bugs to be ruled out, but it looks
+<STRONG>very</STRONG> promising.<P>
+
+Lastly for today, Stefan Berger has committed about 20 new applications
+from fish disks (cfn, aroach, windowtool, touch, shuffle, memomaster,
+memeter, lyr-o-mat, gooddouble, eval, egypt and memsnap). Some still
+don't do something useful but they show that porting apps to AROS is
+really simple.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>15.2.2000</TD><TD>
 A longstanding bug with the dates in the ToC has been fixed (it's not
 perfect but better than before).
@@ -48,15 +65,6 @@ became smaller last week) and the code is in <TT>AROS-contrib</TT>.
 <TR><TD VALIGN=TOP>8.2.2000</TD><TD>
 There is progress on the AROS i386/native front. A very basic VGA.HIDD
 has been written plus some additional stuff (timer, trackdisk, etc).
-</TD></TR>
-
-<TR><TD VALIGN=TOP>7.2.2000</TD><TD>
-Code for Menus has been comitted. Unlike on the Amiga, Menus are handled
-by a normal task which gets all input events as long as the user presses
-the right mousebutton. Therefore, menus don't block, they are very easily
-enhanced and the input handler is much more simple. And if blocking menus
-ever become an issue, this can added on a per-program basis by looking for
-RMB down/up.
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
