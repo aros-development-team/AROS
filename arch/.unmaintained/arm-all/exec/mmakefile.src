@@ -1,0 +1,87 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR		:= $(OSGENDIR)/exec
+OS_INCLUDES	:= -I$(GENINCDIR)
+CFLAGS2 	:= $(CFLAGS) -g -I.. -I$(TOP)/rom/exec
+CFLAGS3 	:= $(OS_INCLUDES) -fomit-frame-pointer -O6
+AFLAGS2 	:= $(AFLAGS) -I.. -I$(TOP)/rom/exec -I$(GENINCDIR)
+TESTS		:=
+
+
+FILES :=  \
+	cause \
+	disable \
+	detect_memory \
+	detect_memory_handlers \
+	enable \
+	idletask \
+	offsets \
+	preparecontext \
+	rawputchar \
+	setsr \
+	set_sp \
+	stackswap \
+	switchtouser \
+	sys_dispatch \
+	sys_swi_handler \
+	switch \
+	tools \
+	tools_asm
+
+FINAL := \
+	coldreboot \
+	addintserver \
+	cause \
+	supervisor \
+	userstate \
+	superstate \
+	switchtouser \
+	traps
+
+COREFILES := \
+	init \
+	core
+
+FINAL_COREFILES := \
+	init \
+	execstubs \
+	core \
+	detect_memory
+
+
+#MM
+exec-generic-arm : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
+	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o)
+	@$(NOP)
+
+#MM
+setup-exec-generic-arm :
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
+	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
+	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
+
+
+#MM
+includes-arm :
+	@$(NOP)
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(OBJDIR)/offsets.o : offsets.c
+	%compile_q opt=$(CFLAGS3)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OBJDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS2)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+
+%common
