@@ -42,6 +42,10 @@ while [ $# -ne 0 ] ; do
     esac
 done
 
+if [ "x$dest" = "x" ]; then
+    dest="`echo $csrcs | cut '-d ' -f1 | sed 's/.c$/.o/'`"
+fi
+
 if [ $debug -ne 0 ]; then
     echo "dest=$dest"
     echo "mode=$mode"
