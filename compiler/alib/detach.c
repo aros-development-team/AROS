@@ -25,7 +25,7 @@ AROS_UFPA(char *,argstr,A0),
 AROS_UFPA(ULONG,argsize,D0),
 AROS_UFPA(struct ExecBase *,sysbase,A6));
 
-extern int             __detacher_must_wait_for_signal __attribute__((weak));
+extern LONG            __detacher_must_wait_for_signal __attribute__((weak));
 extern struct Process *__detacher_process              __attribute__((weak));
 
 AROS_UFH3(LONG, detach_entry,
@@ -79,7 +79,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
         CloseLibrary((struct Library *)DOSBase);
 
 	if (__detacher_must_wait_for_signal)
-	    Wait(SIGBREAKF_CTRL_F);
+	    Wait(__detacher_must_wait_for_signal);
 
 	return newproc ? RETURN_OK : RETURN_FAIL;
     }
@@ -92,5 +92,5 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
            AROS_UFCA(struct ExecBase *,SysBase,A6));
 }
 
-int             __detacher_must_wait_for_signal __attribute__((weak)) = 0;
+LONG            __detacher_must_wait_for_signal __attribute__((weak)) = 0;
 struct Process *__detacher_process              __attribute__((weak)) = NULL;
