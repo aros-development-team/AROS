@@ -31,16 +31,20 @@ struct Popimage_DATA
 
 IPTR Popimage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Popimage_DATA   *data;
-    struct TagItem  	    *tag, *tags;
-    //Object *image;
-
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-			       ButtonFrame,
-			       InnerSpacing(4,4),
-			       MUIA_Background, MUII_ButtonBack,
-			       MUIA_InputMode, MUIV_InputMode_RelVerify,
-			       TAG_MORE, msg->ops_AttrList);
+    struct Popimage_DATA *data;
+    struct TagItem       *tag, *tags;
+    
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        ButtonFrame,
+        InnerSpacing(4,4),
+        MUIA_Background, MUII_ButtonBack,
+        MUIA_InputMode,  MUIV_InputMode_RelVerify,
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
     
@@ -116,27 +120,36 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 	get(obj,MUIA_Imagedisplay_Spec, &img_spec);
 
     	data->wnd = WindowObject,
-	  MUIA_Window_Title, (IPTR)data->wintitle,
-          MUIA_Window_Activate, TRUE,
-	    MUIA_Window_IsSubWindow, TRUE,
-	    MUIA_Window_LeftEdge, _left(obj) + x,
-	    MUIA_Window_TopEdge, _bottom(obj) + y + 1,
-    	    WindowContents, VGroup,
-		Child, data->imageadjust = MUI_NewObject(
-		    MUIC_Imageadjust,
-		    MUIA_CycleChain, 1,
-		    MUIA_Imageadjust_Spec, img_spec,
-		    MUIA_Imageadjust_Type, data->adjust_type,
-		    TAG_DONE),
-		Child, HGroup,
-	            MUIA_Group_SameWidth, TRUE,
-		    Child, ok_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Ok"),
-		    Child, HVSpace,
-		    Child, HVSpace,
-		    Child, cancel_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel"),
-		    End,
-		End,
-	    End;
+            MUIA_Window_Title,       (IPTR) data->wintitle,
+            MUIA_Window_Activate,           TRUE,
+            MUIA_Window_IsSubWindow,        TRUE,
+            MUIA_Window_LeftEdge,           _left(obj) + x,
+            MUIA_Window_TopEdge,            _bottom(obj) + y + 1,
+            
+            WindowContents, (IPTR) VGroup,
+                Child, (IPTR) data->imageadjust = MUI_NewObject
+                (
+                    MUIC_Imageadjust,
+                    MUIA_CycleChain,              1,
+                    MUIA_Imageadjust_Spec, (IPTR) img_spec,
+                    MUIA_Imageadjust_Type,        data->adjust_type,
+                    TAG_DONE
+                ),
+                Child, (IPTR) HGroup,
+                    MUIA_Group_SameWidth, TRUE,
+                    Child, (IPTR) ok_button = MUI_MakeObject
+                    (
+                        MUIO_Button, (IPTR) "_Ok"
+                    ),
+                    Child, (IPTR) HVSpace,
+                    Child, (IPTR) HVSpace,
+                    Child, (IPTR) cancel_button = MUI_MakeObject
+                    (
+                        MUIO_Button, (IPTR) "_Cancel"
+                    ),
+                End,
+            End,
+        End;
 
 	if (data->wnd)
 	{
@@ -145,15 +158,24 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 
 	    DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
 
-	    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 6,
-		     MUIM_Application_PushMethod, (IPTR)obj, 2,
-		     MUIM_Popimage_CloseWindow, TRUE);
-	    DoMethod(cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)_app(obj), 6,
-		     MUIM_Application_PushMethod, (IPTR)obj, 2,
-		     MUIM_Popimage_CloseWindow, FALSE);
-	    DoMethod(data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)_app(obj), 6,
-		     MUIM_Application_PushMethod, (IPTR)obj, 2,
-		     MUIM_Popimage_CloseWindow, FALSE);
+	    DoMethod
+            (
+                ok_button, MUIM_Notify, MUIA_Pressed, FALSE, 
+                (IPTR) _app(obj), 6, MUIM_Application_PushMethod, 
+                (IPTR) obj, 2, MUIM_Popimage_CloseWindow, TRUE
+            );
+	    DoMethod
+            (
+                cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, 
+                (IPTR) _app(obj), 6, MUIM_Application_PushMethod, 
+                (IPTR) obj, 2, MUIM_Popimage_CloseWindow, FALSE
+            );
+	    DoMethod
+            (
+                data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+                (IPTR) _app(obj), 6, MUIM_Application_PushMethod, 
+                (IPTR) obj, 2, MUIM_Popimage_CloseWindow, FALSE
+            );
 	}
     }
 
