@@ -105,6 +105,13 @@
     task->tc_IDNestCnt=-1;
     task->tc_TDNestCnt=-1;
 
+    task->tc_State = TS_ADDED;
+    task->tc_Flags = 0;
+    
+    task->tc_SigWait = 0;
+    task->tc_SigRecvd = 0;
+    task->tc_SigExcept = 0;
+
     /* Signals default to all system signals allocated. */
     if(task->tc_SigAlloc == 0)
 	task->tc_SigAlloc = SysBase->TaskSigAlloc;
@@ -118,13 +125,14 @@
     if(task->tc_TrapCode == NULL)
 	task->tc_TrapCode = SysBase->TaskTrapCode;
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE) || 1
+    if (task->tc_ExceptCode == NULL)
+        task->tc_ExceptCode=SysBase->TaskExceptCode;
+
     /*
 	If you can't to store the registers on the signal stack, you
 	must set this flag.
     */
     task->tc_Flags |= TF_ETASK;
-#endif
 
     /* Allocate the ETask structure if requested */
     if (task->tc_Flags & TF_ETASK)
@@ -257,7 +265,7 @@
 	if(SysBase->TDNestCnt>=0||SysBase->IDNestCnt>0)
 	    /* No. Store it for later. */
 	    SysBase->AttnResched|=0x80;
-	else
+
 	{
 	    /* Switches are allowed. Move the current task away. */
 	    SysBase->ThisTask->tc_State=TS_READY;
@@ -277,8 +285,8 @@
 /* Default finaliser. */
 void AROS_SLIB_ENTRY(TaskFinaliser,Exec)(void)
 {
-    /* I need the global SysBase variable here - there's no local way to get it. */
-    extern struct ExecBase *SysBase;
+    /* Get SysBase */
+    AROS_GET_SYSBASE
 
     /* Get rid of current task. */
     RemTask(SysBase->ThisTask);
