@@ -2,13 +2,14 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = addclass activatewindow closewindow disposeobject drawborder \
+FILES = intuition_init intuition_functable intui_x11 \
+	addclass activatewindow closewindow disposeobject drawborder \
 	drawimage freeclass getattr makeclass modifyidcmp modifyprop \
-	newobjecta openwindow printitext refreshgadgets refreshglist \
-	removeclass setattrsa setwindowtitles sizewindow
+	newobjecta openwindow openwindowtaglist printitext \
+	refreshgadgets refreshglist removeclass setattrsa setwindowtitles \
+	sizewindow
 
-all: setup $(OSGENDIR)/intuition_init.o $(OSGENDIR)/intuition_functable.o \
-	$(OSGENDIR)/intui_x11.o \
+all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
