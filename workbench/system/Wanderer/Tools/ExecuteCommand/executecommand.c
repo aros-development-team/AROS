@@ -133,8 +133,6 @@ IPTR ExecuteCommand__OM_NEW
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Weight,         0,
                         
-                        Child, (IPTR) HVSpace,
-                        Child, (IPTR) HVSpace,
                         Child, (IPTR) executeButton = SimpleButton(_(MSG_BUTTON_EXECUTE)),
                         Child, (IPTR) cancelButton  = SimpleButton(_(MSG_BUTTON_CANCEL)),
                     End,
