@@ -19,6 +19,8 @@
 #   include <exec/alerts.h>
 #endif
 
+#include <string.h>
+
 #ifndef DEBUG
 #   define DEBUG 0
 #endif
@@ -239,7 +241,6 @@
 #undef MUNGE_BLOCK
 
 #if MDEBUG
-
 /* Fill the memory block pointed by <ptr> of size <size> with <fill>
  */
 #   define MUNGE_BLOCK(ptr, fill, size) do {		\
