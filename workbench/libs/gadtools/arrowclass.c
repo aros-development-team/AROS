@@ -156,7 +156,7 @@ STATIC IPTR arrow_new(Class * cl, Object * o, struct opSet *msg)
     atags[1].ti_Data = (IPTR)frame;
     atags[2].ti_Data = (IPTR)msg->ops_AttrList;
     
-    o = (Object *)DoSuperMethod(cl, o, OM_NEW, atags, NULL);
+    o = (Object *)DoSuperMethod(cl, o, OM_NEW, (IPTR) atags, NULL);
     if (o)
     {
     	struct ArrowData *data = INST_DATA(cl, o);

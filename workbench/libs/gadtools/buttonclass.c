@@ -78,7 +78,7 @@ STATIC IPTR button_new(Class * cl, Object * obj, struct opSet *msg)
     tags[0].ti_Data = (IPTR) frame;
     tags[1].ti_Tag = TAG_MORE;
     tags[1].ti_Data = (IPTR) msg->ops_AttrList;
-    obj = (Object *) DoSuperMethod(cl, obj, OM_NEW, tags, msg->ops_GInfo);
+    obj = (Object *) DoSuperMethod(cl, obj, OM_NEW, (IPTR) tags, (IPTR) msg->ops_GInfo);
     if (!obj) {
 	DisposeObject(frame);
 	return NULL;
@@ -104,7 +104,7 @@ STATIC IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
 	tags[0].ti_Tag = GA_Disabled;
 	tags[0].ti_Data = tag->ti_Data;
 	tags[1].ti_Tag = TAG_DONE;
-	DoSuperMethod(cl, obj, OM_SET, tags, msg->ops_GInfo);
+	DoSuperMethod(cl, obj, OM_SET, (IPTR) tags, (IPTR) msg->ops_GInfo);
 	retval = TRUE;
     }
 
@@ -113,7 +113,7 @@ STATIC IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
     if ((retval) && (OCLASS(obj) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
-	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+	    DoMethod(obj, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rport, GREDRAW_UPDATE);
 	    ReleaseGIRPort(rport);
 	    retval = FALSE;
 	}

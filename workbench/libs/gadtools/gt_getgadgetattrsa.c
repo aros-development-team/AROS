@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include <proto/exec.h>
 #include <exec/ports.h>
 #include "gadtools_intern.h"
@@ -53,8 +51,6 @@
 
     INTERNALS
 
-    HISTORY
-
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -66,7 +62,7 @@
     if (gad == NULL || taglist == NULL)
         return 0L;
 
-    while ((tag = NextTagItem((const struct TagItem **)&mytags)))
+    while ((tag = NextTagItem(&mytags)))
         if (GetAttr(tag->ti_Tag, (Object *)gad, (IPTR *)tag->ti_Data))
 	    count++;
 

@@ -72,9 +72,9 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     tags[3].ti_Data = (IPTR)msg->ops_AttrList;
     
     /* Get old values */
-    DoSuperMethod(cl, o, OM_GET, PGA_Total, 	&(tags[0].ti_Data));
-    DoSuperMethod(cl, o, OM_GET, PGA_Top, 	&(tags[1].ti_Data));
-    DoSuperMethod(cl, o, OM_GET, PGA_Visible, 	&(tags[2].ti_Data));
+    DoSuperMethod(cl, o, OM_GET, PGA_Total, 	(IPTR) &(tags[0].ti_Data));
+    DoSuperMethod(cl, o, OM_GET, PGA_Top, 	(IPTR) &(tags[1].ti_Data));
+    DoSuperMethod(cl, o, OM_GET, PGA_Visible, 	(IPTR) &(tags[2].ti_Data));
 
     D(bug("scroller_set: Old Total %ld Top %ld Visible %ld\n",
 		tags[0].ti_Data,
@@ -83,7 +83,7 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 
     tstate = msg->ops_AttrList;
     
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
     	
     	switch (tag->ti_Tag)
@@ -164,9 +164,9 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 		
     	} /* switch (tag->ti_Tag) */
     	
-    } /* while ((tag = NextTagItem((const struct TagItem **)&tstate))) */
+    } /* while ((tag = NextTagItem(&tstate))) */
 
-    DoSuperMethod(cl, o, OM_SET, tags, msg->ops_GInfo);
+    DoSuperMethod(cl, o, OM_SET, (IPTR) tags, (IPTR) msg->ops_GInfo);
 
     return (retval);
 }
@@ -334,7 +334,7 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
 		    struct RastPort *rp = ObtainGIRPort(gi);
 		    if (rp)
 		    {
-			DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+			DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 			ReleaseGIRPort(rp);
 		    } /* if */
 		} /* if */

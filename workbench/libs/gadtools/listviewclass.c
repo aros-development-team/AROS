@@ -427,7 +427,7 @@ STATIC VOID ScrollEntries(Object *o, struct LVData *data, WORD old_top, WORD new
     	
     	if ( (rp = ObtainGIRPort(gi)) )
     	{
-    	    DoMethod(o, GM_RENDER, gi, rp, redraw_type);
+    	    DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, redraw_type);
     	    
     	    ReleaseGIRPort(rp);
     	}
@@ -490,12 +490,12 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     BOOL 		scroll_entries = FALSE;
     BOOL 		refresh_all = FALSE;
     
-    WORD 		new_top, old_top;
+    WORD 		new_top = 0, old_top = 0;
     
     EnterFunc(bug("Listview::Set: Data 0x%lx\n",data));
 
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -630,7 +630,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		        	data->ld_FirstDamaged = old_selected - data->ld_Top;
 	    			data->ld_NumDamaged = 1;
 
-				DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+				DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 			    }
 
 			    /* rerender new selected if it is visible */
@@ -642,7 +642,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		        	data->ld_FirstDamaged = data->ld_Selected - data->ld_Top;
 	    			data->ld_NumDamaged = 1;
 
-				DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+				DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 			    }
 			    
 			    ReleaseGIRPort(rp);
@@ -732,7 +732,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     {
     	if ((rp = ObtainGIRPort(msg->ops_GInfo)))
 	{
-   	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_REDRAW);
+   	    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_REDRAW);
  
 	    ReleaseGIRPort(rp);
 	}
@@ -914,7 +914,7 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 			 {TAG_DONE		    }
 		    };
 
-		    DoMethod(o, OM_SET, set_tags, msg->gpi_GInfo);		    
+		    DoMethod(o, OM_SET, (IPTR) set_tags, (IPTR) msg->gpi_GInfo);		    
 		}
 		
 	        clickpos = 0;
@@ -933,7 +933,7 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 			 {TAG_DONE		    }
 		    };
 
-		    DoMethod(o, OM_SET, set_tags, msg->gpi_GInfo);		    		
+		    DoMethod(o, OM_SET, (IPTR) set_tags, (IPTR) msg->gpi_GInfo);		    		
 		}
 		
 	        clickpos = shown - 1;
@@ -958,7 +958,7 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 	    		data->ld_NumDamaged = 1;
 
 			data->ld_Flags |= LVFLG_FORCE_SELECT_STATE;
-			DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+			DoMethod(o, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 
 			/* Rerender old active if it was shown in the listview */
 			if (    (oldpos >= data->ld_Top) 
@@ -969,7 +969,7 @@ STATIC IPTR listview_input(Class *cl, Object *o, struct gpInput *msg)
 	    		    data->ld_FirstDamaged = oldpos - data->ld_Top;
 	    		    data->ld_NumDamaged = 1;
 
-			    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+			    DoMethod(o, GM_RENDER, (IPTR) msg->gpi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 			}
 
 			ReleaseGIRPort(rp);
@@ -1010,7 +1010,7 @@ STATIC IPTR listview_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 	    data->ld_FirstDamaged = data->ld_Selected - data->ld_Top;
 	    data->ld_NumDamaged = 1;
 
-	    DoMethod(o, GM_RENDER, msg->gpgi_GInfo, rp, GREDRAW_UPDATE);
+	    DoMethod(o, GM_RENDER, (IPTR) msg->gpgi_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 	
 	    ReleaseGIRPort(rp);
 	}

@@ -135,7 +135,7 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, o, (Msg)msg);
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch (tag->ti_Tag)
 	{
@@ -168,7 +168,7 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
 		
 	} /* switch (tag->ti_Tag) */
 	
-    } /* while ((tag = NextTagItem((const struct TagItem **)&taglist))) */
+    } /* while ((tag = NextTagItem(&taglist))) */
 
     if (G(o)->Width == 0)
         G(o)->Width = CHECKBOX_WIDTH;
@@ -183,7 +183,7 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
 	rp = ObtainGIRPort(msg->ops_GInfo);
 	if (rp)
 	{
-	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+	    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 	    ReleaseGIRPort(rp);
 	    retval = FALSE;
 	}
