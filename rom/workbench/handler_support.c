@@ -11,8 +11,9 @@
 
 BOOL __StartHandler(struct WorkbenchBase *WorkbenchBase)
 {
-    struct Process *proc = NULL;
-
+    struct Task    *thisTask = FindTask(NULL);
+    struct Process *proc     = NULL;
+    
     /*
         Protect against a race-conditition when starting the handler. It's 
         possible that multiple tasks are trying to start it at the same time.
@@ -60,7 +61,7 @@ BOOL __StartHandler(struct WorkbenchBase *WorkbenchBase)
         && WorkbenchBase->wb_HandlerError == 0
     )
     {
-        Switch();
+        SetTaskPri(thisTask, thisTask->tc_Node.ln_Pri);
     }
     
     ReleaseSemaphore(&WorkbenchBase->wb_HandlerSemaphore);
