@@ -59,7 +59,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  SetRGB32CM(cm, n, r << 28, g << 28, b << 28);
+  SetRGB32CM(cm, n, r * 0x11111111, g * 0x11111111, b * 0x11111111);
 
   AROS_LIBFUNC_EXIT
   
