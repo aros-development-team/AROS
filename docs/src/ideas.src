@@ -126,5 +126,25 @@ layer below the select handler and would translate it to a real select()
 because the buffer mechanism of the select handler is part of the Unix kernel
 anyway; so a write would block when the kernel buffers are full, as usual.
 \end{new}
+
+\item
+\begin{new}{18.11.1997}
+By Aaron Digulla:
+I'm thinking about something called "cache memory". It should use all free
+memory to store "nice to have" data like for read ahead or write through
+caches for disks and harddisk or a printer spooler.
+
+This memory is allocated by special functions. It doesn't appear in the
+"memory used" list but is added to the amount of free memory. Besides
+allocation and freeing there are two special cases. The simple one is that
+some other application needs the RAM, so parts of the cache have to be
+purged. The other one is to avoid memory fragmentation. It's not possible
+or useful to use all the free memory for caching. So the cache should
+always be one large block divided up in several smaller chunks. If an
+application needs memory, parts of the cache have to be freed *or* they
+have to be copied in unused chunks (eg. it's still faster to copy 512 bytes
+than to read them back from HD or a printer spooler should not throw the
+spooled data away).
+\end{new}
 \end{itemize}
 \end{new}
