@@ -273,14 +273,14 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
             }
             else
             {
-                ShowError(MSG(MSG_CANT_OPEN_STREAM));
+                ShowError(_(MSG_CANT_OPEN_STREAM));
                 rc = FALSE;
             }
         }
         else
         {
             // Unable to write - this is not run time critical; continue code flow
-            ShowError(MSG(MSG_CANT_WRITE_PREFFILE));
+            ShowError(_(MSG_CANT_WRITE_PREFFILE));
         }
         
         // CloseIFF() in iffparse.library 39 accepts NULL, but earlier versions doesn't
@@ -297,7 +297,7 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
     else // AllocIFF()
     {
         // Do something more here - if IFF allocation has failed, something isn't right
-        ShowError(MSG(MSG_CANT_ALLOCATE_IFFPTR));
+        ShowError(_(MSG_CANT_ALLOCATE_IFFPTR));
         rc = FALSE;
     }
 
@@ -312,7 +312,7 @@ BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
 
     if (!(iffHandle = AllocIFF()))
     {
-        ShowError(MSG(MSG_CANT_ALLOCATE_IFFPTR));
+        ShowError(_(MSG_CANT_ALLOCATE_IFFPTR));
         return(FALSE);
     }
 
@@ -360,14 +360,14 @@ BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
         }
         else
         {
-            ShowError(MSG(MSG_CANT_OPEN_STREAM));
+            ShowError(_(MSG_CANT_OPEN_STREAM));
         }
         
         Close((BPTR) iffHandle->iff_Stream);
     }
     else
     {
-        ShowError(MSG(MSG_CANT_READ_PREFFILE));
+        ShowError(_(MSG_CANT_READ_PREFFILE));
         CloseIFF(iffHandle);
     }
 
