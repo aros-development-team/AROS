@@ -175,6 +175,8 @@ int doJoin(STRPTR *files, BPTR destfile)
 		break;
 	    }
 	}
+	
+	MatchEnd(ap);
     }
 
     FreeVec(ap);
