@@ -108,4 +108,8 @@ void CreateClipRectsTop(struct Layer_Info * li, BOOL notdisplayed);
 void CreateClipRectsOther(struct Layer * L);
 void LayerSplitsLayer(struct Layer * L_active, struct Layer * L_passive, BOOL notdisplayed);
 
+struct ClipRect * CopyClipRectInRegion(struct Layer *,
+                                       struct ClipRect *,
+                                       struct Region *);
+
 #endif /* _LAYERS_INTERN_H */

@@ -79,7 +79,7 @@
       l->ClipRect = l->_cliprects;
       l->_cliprects = NULL;
       l->ClipRegion = NULL;
-      return;
+      return OldRegion;
     }
   }
 
@@ -94,10 +94,11 @@
   /* backup the old cliprects */
   l->_cliprects = l->ClipRect;
 
-  
+  l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, region);  
+
+  /* right now I am assuming that everything went alright */
 
   return OldRegion;
-  
 
   AROS_LIBFUNC_EXIT
 } /* InstallClipRegion */
