@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,11 +11,6 @@
 #endif
 
 #include <clib/potgo_protos.h>
-
-#if defined(_AMIGA) && defined(__GNUC__)
-#include <inline/potgo.h>
-#else
 #include <defines/potgo.h>
-#endif
 
 #endif /* PROTO_POTGO_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,11 +11,6 @@
 #endif
 
 #include <clib/ramdrive_protos.h>
-
-#if defined(_AMIGA) && defined(__GNUC__)
-#include <inline/ramdrive.h>
-#else
 #include <defines/ramdrive.h>
-#endif
 
 #endif /* PROTO_RAMDRIVE_H */

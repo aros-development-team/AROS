@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,11 +11,6 @@
 #endif
 
 #include <clib/battmem_protos.h>
-
-#if defined(_AMIGA) && defined(__GNUC__)
-#include <inline/battmem.h>
-#else
 #include <defines/battmem.h>
-#endif
 
 #endif /* PROTO_BATTMEM_H */
