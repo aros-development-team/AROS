@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 FILES := funcs
 
-#MM includes : workbench-libs-oss-unix-includes
+#MM- includes : workbench-libs-oss-unix-includes
 
 #MM workbench-libs-oss-unix-includes : \
 #MM     kernel-exec-includes \
@@ -17,5 +17,7 @@ FILES := funcs
     uselibs="amiga rom m hiddstubs"
 
 %rule_compile basename=funcs targetdir=$(GENDIR)/$(CURDIR) compiler=host
+
+%rule_ref basename=funcs cflags="$(strip $(CFLAGS))" targetdir=$(GENDIR)/$(CURDIR) compiler=host
 
 %common
