@@ -393,9 +393,9 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     setPath(NULL);
 
     if (strcmp(FindTask(NULL)->tc_Node.ln_Name, "Boot Shell") == 0)
-        SetPrompt("%N>");
+        SetPrompt("%N> ");
 
-    if(SHArg(COMMAND))
+    if(SHArg(COMMAND) && SHArg(COMMAND)[0])
     {
 	struct Redirection rd;
  	struct CommandLine cl = {SHArgLine(),
@@ -1004,6 +1004,9 @@ BOOL appendString(struct CSource *cs, STRPTR fromStr, LONG size)
 
 void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 {
+
+    if (!cli->cli_Module) return;
+    
     if(ss->residentCommand)
     {
 	struct Segment *residentSeg = (struct Segment *)BADDR(commandSeg);
@@ -1167,6 +1170,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	SetSignal(0, SIGBREAKF_CTRL_C);
 
 	cli->cli_Module = seglist;
+
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
 
