@@ -681,10 +681,10 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 			if (!oarg->defvalue)
 			    Warn ("Missing value for DEF argument %s\n", oarg->node.name);
 			else
-			    Var_Set (oarg->node.name, oarg->defvalue);
+			    Var_SetLocal (oarg->node.name, oarg->defvalue);
 		    }
 		    else
-			Var_Set (oarg->node.name, arg->value);
+			Var_SetLocal (oarg->node.name, arg->value);
 		}
 	    }
 
@@ -725,7 +725,7 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	    body = HTML_ReadBody (in, data, block->node.name, 1);
 
-	    Var_SetConst ("@body", body->buffer+1);
+	    Var_SetLocal ("@body", body->buffer);
 
 	    ForeachNode (&block->args, oarg)
 	    {
@@ -737,12 +737,12 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 			Warn ("Missing value for BDEF argument %s\n", oarg->node.name);
 		    else
 		    {
-			Var_Set (oarg->node.name, oarg->defvalue);
+			Var_SetLocal (oarg->node.name, oarg->defvalue);
 		    }
 		}
 		else
 		{
-		    Var_Set (oarg->node.name, arg->value);
+		    Var_SetLocal (oarg->node.name, arg->value);
 		}
 	    }
 
@@ -835,6 +835,14 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 	case T_TEXT:
 	    {
 		String s = Var_Subst (str->buffer);
+
+		if (!s)
+		{
+		    Str_SetLine (in, line);
+		    Str_PushError (in, "Error expanding {%s}", str->buffer);
+		    return T_ERROR;
+		}
+
 		Str_Puts (out, s->buffer, data);
 		VS_Delete (s);
 	    }
@@ -899,17 +907,91 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		else if (!strcmp (tag->node.name, "SET"))
 		{
 		    HTMLTagArg * arg;
+		    String	 value;
 
 		    ForeachNode (&tag->args, arg)
 		    {
-			Var_Set (arg->node.name, arg->value);
+			value = Var_Subst (arg->value);
+
+			if (!value)
+			{
+			    Str_SetLine (in, line);
+			    Str_PushError (in, "Can't expand value {%s}", arg->value);
+			    return T_ERROR;
+			}
+
+			Var_Set (arg->node.name, value->buffer);
+			VS_Delete (value);
 		    }
+		}
+		else if (!strcmp (tag->node.name, "BLOCK"))
+		{
+		    HTMLTagArg * name = GetHead (&tag->args);
+		    String	 body;
+
+		    if (!name)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Missing name for BLOCK");
+			return T_ERROR;
+		    }
+
+		    body = HTML_ReadBody (in, data, "BLOCK", 1);
+
+		    if (!body)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Error reading body for BLOCK %s", name->node.name);
+			return T_ERROR;
+		    }
+
+		    Var_Set (name->node.name, body->buffer);
+		    VS_Delete (body);
+		}
+		else if (!strcmp (tag->node.name, "EXPAND"))
+		{
+		    HTMLTagArg * textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
+		    String	 text1, text2;
+
+		    if (!textarg)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Missing argument TEXT for EXPAND");
+			return T_ERROR;
+		    }
+
+		    text1 = Var_Subst (textarg->value);
+
+		    if (!text1)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Can't expand TEXT {%s}", textarg->value);
+			return T_ERROR;
+		    }
+
+		    text2 = Var_Subst (text1->buffer);
+
+		    if (!text1)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Can't expand TEXT {%s}", text1->buffer);
+			return T_ERROR;
+		    }
+
+		    Str_Puts (out, text2->buffer, data);
+		    VS_Delete (text1);
+		    VS_Delete (text2);
+		}
+		else if (!strcmp (tag->node.name, "PRINTVARS"))
+		{
+		    Var_PrintAll ();
 		}
 		else if (!strcmp (tag->node.name, "INCLUDE"))
 		{
 		    HTMLTagArg	* file;
 		    StdioStream * ss;
 		    int 	  rc;
+		    String	  name;
 
 		    file = (HTMLTagArg *) FindNodeNC (&tag->args, "FILE");
 
@@ -925,11 +1007,19 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			return T_ERROR;
 		    }
 
-		    ss = StdStr_New (file->value, "r");
+		    name = Var_Subst (file->value);
+
+		    if (!name)
+		    {
+			Str_PushError (in, "Can't expand value {%s} for argument FILE in INCLUDE", file->value);
+			return T_ERROR;
+		    }
+
+		    ss = StdStr_New (name->buffer, "r");
 
 		    if (!ss)
 		    {
-			Str_PushError (in, "Unable to open %s", file);
+			Str_PushError (in, "Unable to open %s", name->buffer);
 			return T_ERROR;
 		    }
 
@@ -939,9 +1029,91 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 
 		    if (rc != T_OK)
 		    {
-			Str_PushError (in, "Error parsing %s", file);
+			Str_PushError (in, "Error parsing %s", name->buffer);
 			return T_ERROR;
 		    }
+
+		    VS_Delete (name);
+		}
+		else if (!strcmp (tag->node.name, "TEMPLATE"))
+		{
+		    HTMLTagArg	 * namearg;
+		    StringStream * strstr;
+		    StdioStream  * stdstr;
+		    int 	   rc;
+		    String	   name;
+		    String	   body;
+
+		    namearg = (HTMLTagArg *) FindNodeNC (&tag->args, "NAME");
+
+		    if (!namearg)
+		    {
+			Str_PushError (in, "Missing argument NAME in TEMPLATE");
+			return T_ERROR;
+		    }
+
+		    if (!namearg->value)
+		    {
+			Str_PushError (in, "Missing value for argument NAME in TEMPLATE");
+			return T_ERROR;
+		    }
+
+		    name = Var_Subst (namearg->value);
+
+		    if (!name)
+		    {
+			Str_PushError (in, "Can't expand value {%s} for argument NAME in TEMPLATE", namearg->value);
+			return T_ERROR;
+		    }
+
+		    body = HTML_ReadBody (in, data, "TEMPLATE", 0);
+
+		    if (!body)
+		    {
+			Str_PushError (in, "Can't read body TEMPLATE %s", name->buffer);
+			return T_ERROR;
+		    }
+
+		    Var_PushLevel ();
+
+		    strstr = StrStr_New (body->buffer);
+
+		    if (!strstr)
+		    {
+			Str_PushError (in, "Out of memory");
+			return T_ERROR;
+		    }
+
+		    rc = HTML_Parse ((MyStream *)strstr, out, data);
+
+		    StrStr_Delete (strstr);
+
+		    if (rc != T_OK)
+		    {
+			Str_PushError (in, "Error parsing body of TEMPLATE");
+			return T_ERROR;
+		    }
+
+		    stdstr = StdStr_New (name->buffer, "r");
+
+		    if (!stdstr)
+		    {
+			Str_PushError (in, "Unable to open %s", name->buffer);
+			return T_ERROR;
+		    }
+
+		    rc = HTML_Parse ((MyStream *)stdstr, out, data);
+
+		    StdStr_Delete (stdstr);
+		    Var_FreeLevel (Var_PopLevel ());
+
+		    if (rc != T_OK)
+		    {
+			Str_PushError (in, "Error parsing %s", name->buffer);
+			return T_ERROR;
+		    }
+
+		    VS_Delete (name);
 		}
 		else if (!strcmp (tag->node.name, "ENV")
 		    || !strcmp (tag->node.name, "/ENV"))
