@@ -13,6 +13,7 @@
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
+#include <exec/libraries.h>
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
 #include <string.h>
@@ -27,6 +28,7 @@
 #undef kprintf /* This can't be used in the code here */
 
 extern void *ExecFunctions[];
+
 //extern struct ExecBase *SysBase; /* Get rid of this */
 extern struct Library * PrepareAROSSupportBase (void);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
@@ -45,6 +47,7 @@ static APTR allocmem(struct MemHeader *mh, ULONG size)
     mh->mh_First->mc_Next = NULL;
     mh->mh_Free = mh->mh_First->mc_Bytes
 	= ((struct MemChunk *)ret)->mc_Bytes - size;
+
 
     return ret;
 }
@@ -70,6 +73,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 	__AROS_INITVEC(SysBase, i);
 	__AROS_SETVECADDR(SysBase, i, ExecFunctions[i-1]);
     }
+
     AROS_UFC1(void, AROS_SLIB_ENTRY(CacheClearU,Exec),
 	AROS_UFCA(struct ExecBase *, SysBase, A6));
 
@@ -127,7 +131,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->TaskSigAlloc = 0xFFFF;
     SysBase->TaskTrapAlloc = 0;
 
-    SysBase->DebugAROSBase = PrepareAROSSupportBase ();
-    
+    SysBase->DebugAROSBase = PrepareAROSSupportBase();
+
     return SysBase;
 }
