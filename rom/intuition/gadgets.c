@@ -31,9 +31,9 @@
 #warning FIXME: printgadgetlabel() has to be reworked!
 void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
 {
-    struct RastPort *rp = msg->gpr_RPort;
-    struct IBox container;
-    UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+    struct RastPort 	*rp = msg->gpr_RPort;
+    struct IBox 	container;
+    UWORD 		*pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
 
     GetGadgetIBox(o, msg->gpr_GInfo, &container);
     
@@ -574,12 +574,21 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
 
 /**********************************************************************************************/
 
-void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase *IntuitionBase)
+void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, WORD y1,
+			   WORD x2, WORD y2, struct IntuitionBase *IntuitionBase)
 {
-    UWORD pattern[] = { 0x8888, 0x2222 };
+    UWORD		pen;
+    UWORD 		pattern[] = { 0x8888, 0x2222 };
 
+    if (dri)
+    {
+        pen = dri->dri_Pens[SHADOWPEN];
+    } else {
+        pen = 1;
+    }
+    
     SetDrMd( rp, JAM1 );
-    SetAPen( rp, 1 );
+    SetAPen( rp, pen );
     SetAfPt( rp, pattern, 1);
 
     /* render disable pattern */

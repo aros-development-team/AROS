@@ -413,11 +413,11 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 
 	    if ((rp = ObtainGIRPort(&gi)))
 	    {
-		RenderDisabledPattern(rp, bbox.Left,
-	    				  bbox.Top,
-					  bbox.Left + bbox.Width - 1,
-					  bbox.Top + bbox.Height - 1,
-					  IntuitionBase);
+		RenderDisabledPattern(rp, dri, bbox.Left,
+	    				       bbox.Top,
+					       bbox.Left + bbox.Width - 1,
+					       bbox.Top + bbox.Height - 1,
+					       IntuitionBase);
 					  
 	        ReleaseGIRPort(rp);
 	    }
@@ -717,11 +717,11 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 		
 		CalcBBox (window, gadget, &bbox);
  
-		RenderDisabledPattern(rp, bbox.Left,
-	    				  bbox.Top,
-					  bbox.Left + bbox.Width - 1,
-					  bbox.Top + bbox.Height - 1,
-					  IntuitionBase);	    
+		RenderDisabledPattern(rp, dri, bbox.Left,
+	    				       bbox.Top,
+					       bbox.Left + bbox.Width - 1,
+					       bbox.Top + bbox.Height - 1,
+					       IntuitionBase);	    
 	    }
 	    
 	    ReleaseGIRPort(rp);

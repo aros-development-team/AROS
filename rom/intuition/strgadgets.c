@@ -356,6 +356,8 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     }
     pens[CURSORPEN] = dri->dri_Pens[FILLPEN];
     
+    FreeScreenDrawInfo(win->WScreen, dri);
+    
     return;
 }
 
@@ -1048,11 +1050,15 @@ VOID UpdateStrGadget(struct Gadget	*gad,
 
     if (gad->Flags & GFLG_DISABLED )
     {
-        RenderDisabledPattern(rp, bbox.Left,
-				  bbox.Top,
-				  bbox.Left + bbox.Width - 1,
-				  bbox.Top + bbox.Height - 1,
-				  IntuitionBase );
+        struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
+
+        RenderDisabledPattern(rp, dri, bbox.Left,
+				       bbox.Top,
+				       bbox.Left + bbox.Width - 1,
+				       bbox.Top + bbox.Height - 1,
+				       IntuitionBase );
+				       
+	if (dri) FreeScreenDrawInfo(win->WScreen, dri);
     }
     
     ReleaseGIRPort(rp);

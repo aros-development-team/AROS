@@ -181,15 +181,20 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 	}
 
 	break;
+	
     } /* Highlight after contents have been drawn */
 
     if ( gadget->Flags & GFLG_DISABLED )
     {
-        RenderDisabledPattern(rp, bbox.Left,
-				  bbox.Top,
-				  bbox.Left + bbox.Width - 1,
-	    			  bbox.Top + bbox.Height - 1,
-				  IntuitionBase );
+        struct DrawInfo *dri = GetScreenDrawInfo(window->WScreen);
+	
+        RenderDisabledPattern(rp, dri, bbox.Left,
+				       bbox.Top,
+				       bbox.Left + bbox.Width - 1,
+	    			       bbox.Top + bbox.Height - 1,
+				       IntuitionBase );
+
+	if (dri) FreeScreenDrawInfo(window->WScreen, dri);
     }
 
     ReleaseGIRPort(rp);

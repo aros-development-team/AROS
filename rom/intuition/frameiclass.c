@@ -39,6 +39,7 @@
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
+#include "gadgets.h"
 #endif
 
 /****************************************************************************/
@@ -184,7 +185,7 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	UWORD *pens = default_pens;
 	UWORD left, top;
 	UWORD shine, shadow;
-	BOOL selected;
+	BOOL  selected;
 
 	/* set up our rendering pens */
 	if (msg->imp_DrInfo)
@@ -212,14 +213,14 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 
 	switch(msg->imp_State)
 	{
-	case IDS_SELECTED:
-	case IDS_INACTIVESELECTED:
-	    selected = TRUE;
-	    break;
+	    case IDS_SELECTED:
+	    case IDS_INACTIVESELECTED:
+		selected = TRUE;
+		break;
 
-	default:
-	    selected = FALSE;
-	    break;
+	    default:
+		selected = FALSE;
+		break;
 	} /* switch */
 
 	/*
@@ -257,74 +258,75 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 
 	switch(fid->fid_FrameType)
 	{
-	case FRAME_DEFAULT:
-	    DrawFrame(
-		cl,
-		msg->imp_RPort,
-		shine, shadow,
-		left, top,
-		IM(o)->Width, IM(o)->Height,
-		FALSE
-	    );
-	    break;
+	    case FRAME_DEFAULT:
+		DrawFrame(
+		    cl,
+		    msg->imp_RPort,
+		    shine, shadow,
+		    left, top,
+		    IM(o)->Width, IM(o)->Height,
+		    FALSE
+		);
+		break;
 
-	case FRAME_BUTTON:
-	    DrawFrame(
-		cl,
-		msg->imp_RPort,
-		shine, shadow,
-		left, top,
-		IM(o)->Width, IM(o)->Height,
-		TRUE
-	    );
-	    break;
+	    case FRAME_BUTTON:
+		DrawFrame(
+		    cl,
+		    msg->imp_RPort,
+		    shine, shadow,
+		    left, top,
+		    IM(o)->Width, IM(o)->Height,
+		    TRUE
+		);
+		break;
 
-	case FRAME_RIDGE:
-	    /* render outer pen-inverted thick bevel */
-	    DrawFrame(
-		cl,
-		msg->imp_RPort,
-		shine, shadow,
-		left, top,
-		IM(o)->Width, IM(o)->Height,
-		TRUE
-	    );
+	    case FRAME_RIDGE:
+		/* render outer pen-inverted thick bevel */
+		DrawFrame(
+		    cl,
+		    msg->imp_RPort,
+		    shine, shadow,
+		    left, top,
+		    IM(o)->Width, IM(o)->Height,
+		    TRUE
+		);
 
-	    /* render inner thick bevel */
-	    DrawFrame(
-		cl,
-		msg->imp_RPort,
-		shadow, shine,
-		left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
-		IM(o)->Width - fid->fid_HOffset, IM(o)->Height - fid->fid_VOffset,
-		TRUE
-	    );
-	    break;
+		/* render inner thick bevel */
+		DrawFrame(
+		    cl,
+		    msg->imp_RPort,
+		    shadow, shine,
+		    left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
+		    IM(o)->Width - fid->fid_HOffset, IM(o)->Height - fid->fid_VOffset,
+		    TRUE
+		);
+		break;
 
-	case FRAME_ICONDROPBOX: {
-	    WORD hoffset = fid->fid_HOffset * 2 / 3;
-	    WORD voffset = fid->fid_VOffset * 2 / 3;
-	    
-	    /* render outer pen-inverted thick bevel */
-	    DrawFrame(
-		cl,
-		msg->imp_RPort,
-		shine, shadow,
-		left, top,
-		IM(o)->Width, IM(o)->Height,
-		TRUE
-	    );
+	    case FRAME_ICONDROPBOX: {
+		WORD hoffset = fid->fid_HOffset * 2 / 3;
+		WORD voffset = fid->fid_VOffset * 2 / 3;
 
-	    /* render inner thick bevel */
-	    DrawFrame(
-		cl,
-		msg->imp_RPort,
-		shadow, shine,
-		left + hoffset, top + voffset,
-		IM(o)->Width - hoffset * 2, IM(o)->Height - voffset * 2,
-		TRUE
-	    );
-	    break; }
+		/* render outer pen-inverted thick bevel */
+		DrawFrame(
+		    cl,
+		    msg->imp_RPort,
+		    shine, shadow,
+		    left, top,
+		    IM(o)->Width, IM(o)->Height,
+		    TRUE
+		);
+
+		/* render inner thick bevel */
+		DrawFrame(
+		    cl,
+		    msg->imp_RPort,
+		    shadow, shine,
+		    left + hoffset, top + voffset,
+		    IM(o)->Width - hoffset * 2, IM(o)->Height - voffset * 2,
+		    TRUE
+		);
+		break; }
+		
 	} /* switch */
 
 	if(fid->fid_EdgesOnly == FALSE)
@@ -337,13 +339,30 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	    {
 		SetABPenDrMd(msg->imp_RPort, pens[BACKGROUNDPEN], pens[BACKGROUNDPEN], JAM1);
 	    } /* if */
+
 	    RectFill(msg->imp_RPort,
 		left + fid->fid_HOffset,
 		top  + fid->fid_VOffset,
 		left + IM(o)->Width  - fid->fid_HOffset - 1,
 		top  + IM(o)->Height - fid->fid_VOffset - 1);
+
 	} /* if */
 
+	switch(msg->imp_State)
+	{
+	    case IDS_DISABLED:
+	    case IDS_INACTIVEDISABLED:
+	    case IDS_SELECTEDDISABLED:
+	        RenderDisabledPattern(msg->imp_RPort,
+				      msg->imp_DrInfo,
+				      left,
+				      top,
+				      left + IM(o)->Width - 1,
+				      top + IM(o)->Height - 1,
+				      IntuitionBase);
+	        break;
+	}
+	
 	retval = 1UL;
     }
     else
@@ -361,11 +380,11 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 /* frame attribute setting method */
 static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 {
-    struct FrameIData *fid = INST_DATA(cl, o);
+    struct FrameIData 	*fid = INST_DATA(cl, o);
 
-    struct TagItem *tstate = msg->ops_AttrList;
-    struct TagItem *tag;
-    ULONG retval = 0UL;
+    struct TagItem 	*tstate = msg->ops_AttrList;
+    struct TagItem 	*tag;
+    ULONG 		retval = 0UL;
 
     while ((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
