@@ -16,8 +16,8 @@
 #include <exec/nodes.h>
 #include <exec/types.h>
 
-#include "hardware.h"
 #include "bitmap.h"
+#include "hardware.h"
 #include "mouse.h"
 
 #define IID_Hidd_VesaGfx  "hidd.gfx.vesa"
@@ -34,7 +34,7 @@ struct VesaGfx_staticdata
     OOP_Class 	    	    *offbmclass;
     OOP_Object      	    *vesagfxhidd;
     OOP_Object      	    *pcihidd;
-    struct bitmap_data      *visible;
+    struct BitmapData       *visible;
     VOID	    	    (*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	    	    callbackdata;
     struct MouseData 	    mouse;
