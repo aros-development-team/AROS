@@ -39,6 +39,8 @@ struct MUI_GroupsPData
     Object *font_title_string;
     Object *normal_popframe;
     Object *virtual_popframe;
+    Object *title_position_cycle;
+    Object *title_color_cycle;
 };
 
 static CONST_STRPTR positions_labels[] =
@@ -81,9 +83,9 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    Child, HVSpace,
 		    Child, HVSpace,
 		    Child, MakeLabel("Position:"),
-		    Child, MUI_MakeObject(MUIO_Cycle, "Position:", positions_labels),
+		    Child, d.title_position_cycle = MUI_MakeObject(MUIO_Cycle, "Position:", positions_labels),
 	            Child, MakeLabel("Color:"),
-	    	    Child, MUI_MakeObject(MUIO_Cycle, "Color:", color_labels),
+	    	    Child, d.title_color_cycle = MUI_MakeObject(MUIO_Cycle, "Color:", color_labels),
    		    Child, MakeLabel("Font:"),
    		    Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
@@ -170,6 +172,12 @@ static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
 	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
 		       MUICFG_Group_VSpacing));
 
+/* Title (Cycles) */
+    set(data->title_position_cycle, MUIA_Cycle_Active,
+	DoMethod(msg->configdata, MUIM_Configdata_GetULong, MUICFG_GroupTitle_Position));
+    set(data->title_color_cycle, MUIA_Cycle_Active,
+	DoMethod(msg->configdata, MUIM_Configdata_GetULong, MUICFG_GroupTitle_Color));
+
     return 1;    
 }
 
@@ -201,6 +209,12 @@ static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
 	     xget(data->spacing_horiz_slider, MUIA_Numeric_Value));
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Group_VSpacing,
 	     xget(data->spacing_vert_slider, MUIA_Numeric_Value));
+
+/* Title (Cycles) */
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_GroupTitle_Position,
+	     xget(data->title_position_cycle, MUIA_Cycle_Active));
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_GroupTitle_Color,
+	     xget(data->title_color_cycle, MUIA_Cycle_Active));
 
     return TRUE;
 }
