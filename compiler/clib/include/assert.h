@@ -2,12 +2,13 @@
 #define _ASSERT_H
 
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file assert.h
     Lang: english
 */
+
 #ifdef assert
 #undef assert
 #endif

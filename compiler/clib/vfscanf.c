@@ -1,10 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Scan a stream and write the result in the parameters
     Lang: english
 */
+
 /* Original source from libnix */
 #define AROS_ALMOST_COMPATIBLE
 
