@@ -115,7 +115,7 @@ BEGIN {
 	printf ("    0, 0, /* Left, Top */\n") >> fout;
 	printf ("    %s_WIDTH, %s_HEIGHT, /* Width, Height */\n", NAME, NAME) >> fout;
 	printf ("    %d, /* Depth */\n", depth) >> fout;
-	printf ("    %sData, /* ImageData */\n", name) >> fout;
+	printf ("    (UWORD *)%sData, /* ImageData */\n", name) >> fout;
 	printf ("    0x%02X, /* PlanePick */\n", pick) >> fout;
 	printf ("    0x00, /* PlaneOnOff */\n") >> fout;
 	printf ("    NULL /* NextImage */\n") >> fout;
