@@ -335,7 +335,7 @@ static ULONG Text_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     setup_text(data, obj);
 
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     return TRUE;
 }
 
@@ -346,7 +346,7 @@ static ULONG Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
 
-    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 
     if (data->ztext)
     {
@@ -362,7 +362,7 @@ static ULONG Text_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 **************************************************************************/
 static ULONG Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_TextData *data = INST_DATA(cl, obj);
+    //struct MUI_TextData *data = INST_DATA(cl, obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
 	return FALSE;
@@ -375,7 +375,7 @@ static ULONG Text_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 **************************************************************************/
 static ULONG Text_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
-    struct MUI_TextData *data = INST_DATA(cl, obj);
+    //struct MUI_TextData *data = INST_DATA(cl, obj);
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
@@ -516,8 +516,8 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 **************************************************************************/
 static ULONG Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
-    struct MUI_TextData *data = INST_DATA(cl, obj);
-    STRPTR id;
+    //struct MUI_TextData *data = INST_DATA(cl, obj);
+    //STRPTR id;
 
 #if 0
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
@@ -535,8 +535,8 @@ static ULONG Text_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
 **************************************************************************/
 static ULONG Text_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    STRPTR id;
-    STRPTR s;
+    //STRPTR id;
+    //STRPTR s;
 
 #if 0
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
@@ -559,9 +559,9 @@ static ULONG Text_GoActive(struct IClass * cl, Object * o, Msg msg)
   struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
   if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
 
-  DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+  DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
-  DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+  DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
   data->update = 1;
   MUI_Redraw(o, MADF_DRAWUPDATE);
@@ -576,9 +576,9 @@ static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
   struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, o);
   if (!(data->mtd_Flags & MTDF_EDITABLE)) return DoSuperMethodA(cl,o,msg);
 
-  DoMethod(_win(o), MUIM_Window_RemEventHandler, &data->ehn);
+  DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
   data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-  DoMethod(_win(o), MUIM_Window_AddEventHandler, &data->ehn);
+  DoMethod(_win(o), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
   data->update = 1;
   MUI_Redraw(o, MADF_DRAWUPDATE);
@@ -748,7 +748,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
     if (msg->imsg)
     {
 	UWORD code = msg->imsg->Code;
-	UWORD qual = msg->imsg->Qualifier;
+	//UWORD qual = msg->imsg->Qualifier;
 	WORD x = msg->imsg->MouseX;
 	WORD y = msg->imsg->MouseY;
 

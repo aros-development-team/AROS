@@ -33,7 +33,7 @@ struct MUI_ScrollbarData
 static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_PropData *data;
-    struct TagItem *tags,*tag;
+    //struct TagItem *tags,*tag;
     int horiz = GetTagData(MUIA_Group_Horiz, 0, msg->ops_AttrList);
     int usewinborder = GetTagData(MUIA_Prop_UseWinBorder, 0, msg->ops_AttrList);
     Object *prop = MUI_NewObject(MUIC_Prop,MUIA_Prop_Horiz, horiz, TAG_MORE, msg->ops_AttrList);
@@ -50,15 +50,15 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	but = ImageObject, MUIA_Background, MUII_BACKGROUND, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowLeft:MUII_ArrowUp, End;
 	if (but)
 	{
-	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, prop, 2, MUIM_Prop_Decrease, 1);
-	    DoMethod(obj, OM_ADDMEMBER, but);
+	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR)prop, 2, MUIM_Prop_Decrease, 1);
+	    DoMethod(obj, OM_ADDMEMBER, (IPTR)but);
         }
 
 	but = ImageObject, MUIA_Background, MUII_BACKGROUND, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowRight:MUII_ArrowDown, End;
 	if (but)
 	{
-	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, prop, 2, MUIM_Prop_Increase, 1);
-	    DoMethod(obj, OM_ADDMEMBER, but);
+	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR)prop, 2, MUIM_Prop_Increase, 1);
+	    DoMethod(obj, OM_ADDMEMBER, (IPTR)but);
         }
     }   else
     {

@@ -65,7 +65,7 @@ static ULONG String_New(struct IClass *cl, Object * obj, struct opSet *msg)
 **************************************************************************/
 static ULONG String_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 {
-    struct MUI_StringData *data = INST_DATA(cl, obj);
+    //struct MUI_StringData *data = INST_DATA(cl, obj);
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 

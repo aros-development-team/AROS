@@ -53,7 +53,7 @@ static IPTR Scale_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -79,7 +79,7 @@ static IPTR Scale_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -170,7 +170,7 @@ static IPTR Scale_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_ScaleData *data = INST_DATA(cl,obj);
-    ULONG val;
+    //ULONG val;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
     D(bug("muimaster.library/scale.c: Draw Scale Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
@@ -178,7 +178,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (data->horiz)
     {
 	int  i;
-	int  subdiv;
+	//int  subdiv;
 	char buf[255];
 	int  k;
 	BOOL drawpct;
@@ -197,7 +197,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 	    for (j = 0; j <= i; j++)
 	    {
-		int pct = j * 100 / i;
+		//int pct = j * 100 / i;
 
 #ifdef _AROS
 		snprintf(buf, 255, "%d%%", j);

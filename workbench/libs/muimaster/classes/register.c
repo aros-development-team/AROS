@@ -389,7 +389,7 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     muiAreaData(obj)->mad_HardIBottom 	= REGISTER_FRAMEY;
     muiAreaData(obj)->mad_Flags     	|= (MADF_INNERLEFT | MADF_INNERTOP | MADF_INNERRIGHT | MADF_INNERBOTTOM);
         
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     
     return TRUE;
 }
@@ -401,7 +401,7 @@ static ULONG Register_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
 
-    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -462,7 +462,7 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     WORD i;
-    WORD minwidth;
+    //WORD minwidth;
     WORD extra_space;
     WORD fitwidth;
     WORD x;
@@ -499,7 +499,7 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 **************************************************************************/
 static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    //struct MUI_RegisterData *data = INST_DATA(cl, obj);
     
     DoSuperMethodA(cl,obj,(Msg)msg);
 
