@@ -27,7 +27,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name,       D1),
-	AROS_LHA(LONG,   accessMode, D2),
+	AROS_LHA(LONG,         accessMode, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 14, Dos)
@@ -68,6 +68,9 @@
     struct FileHandle *ret;
     BPTR con = NULL, ast = NULL;
     LONG error;
+
+    /* Sanity check */
+    if (name == NULL) return NULL;
 
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);

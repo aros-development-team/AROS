@@ -62,7 +62,10 @@
     struct FileHandle *ret;
     BPTR con, ast;
     LONG error;
-
+    
+    /* Sanity check */
+    if (name == NULL) return NULL;
+    
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
 
