@@ -63,7 +63,7 @@ struct IOExtTD *ioreq = ph->bd->ioreq;
 	ioreq->iotd_Req.io_Command = HD_SCSICMD;
 	ioreq->iotd_Req.io_Data = &scsicmd;
 	ioreq->iotd_Req.io_Length = sizeof(struct SCSICmd);
-	if (DoIO(&ioreq->iotd_Req))
+	if (DoIO((struct IORequest *)ioreq))
 		return FALSE;
 	w2strcpy(name, &data[27], 40);
 	return TRUE;
@@ -514,7 +514,7 @@ ULONG i;
 			else
 			{	
 				d_de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
-				i = getOffset(table);
+				i = getOffset(table->ph);
 				if (
 						(d_de->de_SizeBlock != de->de_SizeBlock) ||
 						(d_de->de_Reserved  != de->de_Reserved) ||
@@ -594,7 +594,7 @@ ULONG i;
 				params[1] = (IPTR)table->hd->devname;
 				params[2] = (IPTR)table->hd->unit;
 				params[3] = 0;
-				i = getOffset(ph->table);
+				i = getOffset(ph->root);
 				nde->de_LowCyl += i;
 				nde->de_HighCyl += i;
 				dn = MakeDosNode(params);
@@ -638,39 +638,42 @@ WORD reboot=0;
 	table = (struct PartitionTableNode *)ptlist->lh_Head;
 	while (table->ln.ln_Succ)
 	{
-	LONG flag;
-
-		ph = (struct PartitionHandle *)table->ph->table->list.lh_Head;
-		while (ph->ln.ln_Succ)
+		if (table->type != PHPTT_UNKNOWN)
 		{
-			if (existsAttr(table->pattrlist, PTA_AUTOMOUNT))
+			ph = (struct PartitionHandle *)table->ph->table->list.lh_Head;
+			while (ph->ln.ln_Succ)
 			{
-				GetPartitionAttrsA(ph, PT_AUTOMOUNT, &flag, TAG_DONE);
-				if (flag)
+				if (existsAttr(table->pattrlist, PTA_AUTOMOUNT))
 				{
-					if (existsAttr(table->pattrlist, PTA_NAME))
-					{
-					UBYTE name[32];
-					struct DosEnvec de;
+				LONG flag;
 
-						GetPartitionAttrsA(ph, PT_NAME, name, PT_DOSENVEC, &de, TAG_DONE);
-						cm = checkMount(table, name, &de);
-						if (cm == 1)
-							mount(table, ph, name, &de);
-						else if (cm == 2)
-							kprintf("may reboot\n");
-						else if (cm == 3)
-							kprintf("have to reboot\n");
+					GetPartitionAttrsA(ph, PT_AUTOMOUNT, &flag, TAG_DONE);
+					if (flag)
+					{
+						if (existsAttr(table->pattrlist, PTA_NAME))
+						{
+						UBYTE name[32];
+						struct DosEnvec de;
+	
+							GetPartitionAttrsA(ph, PT_NAME, name, PT_DOSENVEC, &de, TAG_DONE);
+							cm = checkMount(table, name, &de);
+							if (cm == 1)
+								mount(table, ph, name, &de);
+							else if (cm == 2)
+								kprintf("may reboot\n");
+							else if (cm == 3)
+								kprintf("have to reboot\n");
+							else
+								kprintf("mount %s not needed\n", name);
+							if (reboot<cm)
+								reboot = cm;
+						}
 						else
-							kprintf("mount %s not needed\n", name);
-						if (reboot<cm)
-							reboot = cm;
+							kprintf("Partition with no name is automountable\n");
 					}
-					else
-						kprintf("Partition with no name is automountable\n");
 				}
+				ph = (struct PartitionHandle *)ph->ln.ln_Succ;
 			}
-			ph = (struct PartitionHandle *)ph->ln.ln_Succ;
 		}
 		table = (struct PartitionTableNode *)table->ln.ln_Succ;
 	}
