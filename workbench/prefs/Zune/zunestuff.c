@@ -42,7 +42,7 @@ Object *MakeButton(STRPTR str)
 *****************************************************************/
 LONG xget(Object * obj, ULONG attr)
 {
-    LONG x;
+    LONG x = 0;
     get(obj, attr, &x);
     return x;
 }

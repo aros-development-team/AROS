@@ -88,13 +88,13 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 
 	    if (!OpenIFF(iff, IFFF_READ))
 	    {
-		StopChunk( iff, 'PREF', 'MUIC');
+		StopChunk( iff, MAKE_ID('P','R','E','F'), MAKE_ID('M','U','I','C'));
 
 		while (!ParseIFF(iff, IFFPARSE_SCAN))
 		{
 		    struct ContextNode *cn;
 		    if (!(cn = CurrentChunk(iff))) continue;
-		    if (cn->cn_ID == 'MUIC') DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
+		    if (cn->cn_ID == MAKE_ID('M','U','I','C')) DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
 		}
 
 		CloseIFF(iff);
@@ -107,7 +107,7 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 
 static int SavePrefsHeader(struct IFFHandle *iff)
 {
-    if (!PushChunk( iff, 0, 'PRHD', IFFSIZE_UNKNOWN))
+    if (!PushChunk( iff, 0, MAKE_ID('P','R','H','D'), IFFSIZE_UNKNOWN))
     {
 	struct PrefHeader ph;
 	ph.ph_Version = 0;
@@ -132,11 +132,11 @@ static void SavePrefs(STRPTR filename, Object *obj)
 
 	    if (!OpenIFF(iff, IFFF_WRITE))
 	    {
-		if (!PushChunk(iff, 'PREF', ID_FORM, IFFSIZE_UNKNOWN))
+		if (!PushChunk(iff, MAKE_ID('P','R','E','F'), ID_FORM, IFFSIZE_UNKNOWN))
 		{
 		    if (SavePrefsHeader(iff))
 		    {
-		    	DoMethod(obj,MUIM_Dataspace_WriteIFF, iff, 0, 'MUIC');
+		    	DoMethod(obj,MUIM_Dataspace_WriteIFF, iff, 0, MAKE_ID('M','U','I','C'));
 		    }
 		    PopChunk(iff);
 		}
