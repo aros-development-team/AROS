@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <string.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
@@ -46,9 +47,9 @@
 
 ******************************************************************************/
 { 
-    long pid = (long)FindTask(0L);
+    long  pid = (long)FindTask(0L);
     char *c = template + strlen(template);
-    BPTR lock;
+    BPTR  lock;
     
     while (*--c == 'X')
     {
