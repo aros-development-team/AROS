@@ -9,7 +9,6 @@ FILES	:= test
 
 EXEDIR := $(ZUNEDIR)/Tests
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-USER_INCLUDES := -I../libs/muimaster
 
 USE_CLIB_SHARED := yes
 USE_AMIGALIB    := yes
