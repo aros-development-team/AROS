@@ -7,7 +7,8 @@ include $(TOP)/config/make.cfg
 # so I write the file manually.
 
 USER_INCLUDES := -I.
-#USER_INCLUDES := -I.
+
+X11KEYMAPTABLE_FILE := $(DEVSDIR)/Keymaps/X11/keycode2rawkey.table
 
 FILES	   := x11 support x11gfx onbitmap offbitmap functable endtag x11_init support x11kbd x11mouse
 
@@ -21,7 +22,7 @@ hidd-graphics-linklib-quick : $(LIB)
 	@$(NOP)
 
 #MM
-hidd-graphics-linklib : $(LIB) setup
+hidd-graphics-linklib : $(LIB) setup x11keymaptable 
 hidd-graphics-linklib : $(LIB)
 	@$(NOP)
 
@@ -35,6 +36,29 @@ clean ::
 #MM
 setup :
 	%mkdirs_q $(OBJDIR)
+
+#->8----- stegerg: someone please check if this is okay ------------------------------
+
+#MM x11keymaptable
+x11keymaptable : setup-x11keymaptable $(ARCHDIR)/tools/makexkeytable $(X11KEYMAPTABLE_FILE)
+	@$(SNOP)
+
+#MM change-x11keymaptable
+change-x11keymaptable : setup-x11keymaptable $(ARCHDIR)/tools/makexkeytable
+	$(ARCHDIR)/tools/makexkeytable -o $(X11KEYMAPTABLE_FILE)
+	
+$(X11KEYMAPTABLE_FILE) :
+	$(ARCHDIR)/tools/makexkeytable -o $(X11KEYMAPTABLE_FILE)
+	
+setup-x11keymaptable :
+	%mkdirs_q $(DEVSDIR)/Keymaps $(DEVSDIR)/Keymaps/X11
+		
+#->8----- stegerg: someone please check if this is okay ------------------------------
+		
+		
+		
+$(ARCHDIR)/tools/makexkeytable: makexkeytable.c
+	$(CC) -I/usr/X11/include -L/usr/X11/lib -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
