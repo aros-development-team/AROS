@@ -316,8 +316,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIV_Imageadjust_Type_All:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, (IPTR)labels_all,
-				       Child, HCenter((pattern_group = ColGroup(6), End)),
-				       Child, HCenter((vector_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((vector_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
 				       Child, (IPTR)bitmap_group,
@@ -326,7 +326,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIV_Imageadjust_Type_Background:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, (IPTR)labels_bg,
-				       Child, HCenter((pattern_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)bitmap_group,
 				       TAG_MORE, (IPTR)msg->ops_AttrList);
@@ -334,8 +334,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIV_Imageadjust_Type_Image:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, (IPTR)labels_image,
-				       Child, HCenter((pattern_group = ColGroup(6), End)),
-				       Child, HCenter((vector_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((vector_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
 				       TAG_MORE, (IPTR)msg->ops_AttrList);
