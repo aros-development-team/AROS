@@ -50,30 +50,40 @@ void writestubs(void)
     
     for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
-	fprintf(out,
-		"\n"
-		"%s %s(",
-		funclistit->type, funclistit->name);
-	for (arglistit = funclistit->arguments;
-	     arglistit!=NULL;
-	     arglistit = arglistit->next)
+        if (funclistit->lvo >= firstlvo)
 	{
-	    if (arglistit != funclistit->arguments)
-		fprintf(out, ", ");
-	    fprintf(out, "%s %s", arglistit->type, arglistit->name);
+	    fprintf(out,
+		    "\n"
+		    "%s %s(",
+		    funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+	    {
+		if (arglistit != funclistit->arguments)
+		    fprintf(out, ", ");
+		fprintf(out, "%s %s", arglistit->type, arglistit->name);
+	    }
+	    fprintf(out,
+		    ")\n"
+		    "{\n"
+		    "    return AROS_LC%d(%s, %s,\n",
+		    funclistit->argcount, funclistit->type, funclistit->name
+	    );
+	    for (arglistit = funclistit->arguments;
+		 arglistit!=NULL;
+		 arglistit = arglistit->next
+	    )
+		fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
+			arglistit->type, arglistit->name, arglistit->reg
+		);
+	    
+	    fprintf(out, "                    %s *, %s, %u, %s);\n}\n",
+		    libbasetypeextern, libbase, funclistit->lvo, basename
+	    );
 	}
-	fprintf(out,
-		")\n"
-		"{\n"
-		"    return AROS_LC%d(%s, %s,\n",
-		funclistit->argcount, funclistit->type, funclistit->name);
-	for (arglistit = funclistit->arguments;
-	     arglistit!=NULL;
-	     arglistit = arglistit->next)
-	    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
-		    arglistit->type, arglistit->name, arglistit->reg);
-	fprintf(out, "                    %s *, %s, %u, %s);\n}\n", libbasetypeextern,
-		libbase, funclistit->lvo, basename);
     }
     fclose(out);
 }
