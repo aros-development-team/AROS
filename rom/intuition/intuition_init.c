@@ -2,11 +2,17 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.10  1996/09/21 14:18:48  digulla
+    Revision 1.11  1996/10/01 16:01:32  digulla
+    Don't flush the library on expunge if it's in ROM (because the user cannot
+    	load it anymore).
+    Don't close anything as long as there are still processes which have me
+    	open.
+
+    Revision 1.10  1996/09/21 14:18:48	digulla
     Create a screen with OpenScreen()
     Hand IntuitionBase to ROOTCLASS by UserData
     Don't close any libs on failure (the open-code tries to open more on the next
-    	try)
+	try)
 
     Revision 1.9  1996/09/17 18:46:42  digulla
     Added comment to express the experimental state of inputDevice at this place.
@@ -248,8 +254,15 @@ __AROS_LH0(BPTR, expunge,
 {
     __AROS_FUNC_INIT
 
-    BPTR ret;
+    /* Test for openers. */
+    if(IntuitionBase->LibNode.lib_OpenCnt)
+    {
+	/* Set the delayed expunge flag and return. */
+	IntuitionBase->LibNode.lib_Flags|=LIBF_DELEXP;
+	return 0;
+    }
 
+    /* Free unecessary memory */
     if (GetPrivIBase(IntuitionBase)->WorkBench)
 	CloseScreen (GetPrivIBase(IntuitionBase)->WorkBench);
 
@@ -259,27 +272,19 @@ __AROS_LH0(BPTR, expunge,
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
 
-    /* Test for openers. */
-    if(IntuitionBase->LibNode.lib_OpenCnt)
-    {
-	/* Set the delayed expunge flag and return. */
-	IntuitionBase->LibNode.lib_Flags|=LIBF_DELEXP;
-	return 0;
-    }
-
+    /* Let the driver do the same */
     intui_expunge (IntuitionBase);
 
+#ifdef DISK_BASED /* Don't remove a ROM library */
     /* Get rid of the library. Remove it from the list. */
     Remove(&IntuitionBase->LibNode.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret=0L;
 
     /* Free the memory. */
     FreeMem((char *)IntuitionBase-IntuitionBase->LibNode.lib_NegSize,
 	    IntuitionBase->LibNode.lib_NegSize+IntuitionBase->LibNode.lib_PosSize);
+#endif
 
-    return ret;
+    return 0L;
     __AROS_FUNC_EXIT
 }
 
