@@ -233,7 +233,7 @@ endif
 %define common
 # Delete generated makefiles
 clean ::
-	$(RM) mmakefile mmakefile.bak
+	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
 
 %end
 
@@ -242,7 +242,7 @@ clean ::
 %define include_deps deps=$(DEPS)/M nodepstargets=
 # Include these files but only if the current target is neither
 # setup nor clean.
-ifeq (,$(filter clean% setup% includes% %(nodepstargets),$(TARGET)))
+ifeq (,$(filter clean% %clean %clean% setup% includes% %(nodepstargets),$(TARGET)))
 -include %(deps)
 endif
 %end
@@ -1066,3 +1066,270 @@ $(OBJDIR)/%.d : %.c
 %include_deps
 %end
 
+
+#------------------------------------------------------------------------------
+# NOTE: The following are all part of Iain's build changes, please don't use
+# or change anything below this line until you know what you are doing. This
+# is so that I don't conflict with the semantics of any of the above macros.
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+#
+%define safe_define var=/A value=/M
+ifndef %(var)
+%(var) := %(value)
+endif
+%end
+
+#------------------------------------------------------------------------------
+# Set up for compiling machine dependant files. This requires that $(CPU),
+# and $(ARCHDIRS) are set correctly before calling this macro. This should
+# be done in make.cfg anyway.
+#
+# BTW There is no need to specify $(TOP)/$(CURDIR) for %.s or %.S.
+# Note you must run %make_vpath setup before you do this.
+
+%define make_vpath
+_ARCH := $(foreach d,$(ARCHDIRS),arch/$(d))
+_DIRS := $(foreach d,$(_ARCH) cpu/$(CPU),$(TOP)/$(d)/$(CURDIR))
+vpath %.c
+vpath %.s
+vpath %.S
+
+vpath %.c $(_DIRS) $(TOP)/$(CURDIR)
+vpath %.s $(_DIRS) $(TOP)/$(CURDIR)
+vpath %.S $(_DIRS) $(TOP)/$(CURDIR)
+-include $(foreach d,$(_DIRS),$(d)/makefile.inc)
+
+$(TOP)/%/makefile.inc : $(TOP)/%/makefile.src
+	@$(GENMF) $(TOP)/config/make.tmpl < $< > $@
+
+%end
+
+#------------------------------------------------------------------------------
+# Do some setup common to all compiling directories.
+#
+#
+%define make_common_setup
+%safe_define var=OBJDIR value="$(GENDIR)/$(CURDIR)"
+
+%end
+#------------------------------------------------------------------------------
+# Setup things for running vpath style directories.
+#
+#
+%define make_vpath_setup
+
+%end
+
+#------------------------------------------------------------------------------
+#
+#
+#
+%define copy_includes namespace=amiga path=. dir=include
+
+INCL_FILES_1 := $(subst %(dir),$(INCDIR)/%(path),$(INCLUDE_FILES))
+INCL_FILES_2 := $(subst %(dir),$(GENINCDIR)/%(path),$(INCLUDE_FILES))
+
+includes-copy : setup $(INCL_FILES_1) $(INCL_FILES_2)
+
+$(INCDIR)/%(path)/%.h : %(dir)/%.h
+	@$(CP) $< $@
+
+$(GENINCDIR)/%(path)/%.h : %(dir)/%.h
+	@$(CP) $< $@
+
+setup ::
+	%mkdirs_q $(INCDIR)/%(path) $(GENINCDIR)/%(path)
+
+%end
+
+# This is an unholy hack, and shall be removed...
+%define copy_includes_half namespace=amiga path=. dir=include
+
+INCL_FILES_1 := $(subst %(dir),$(INCDIR)/%(path),$(INCLUDE_FILES))
+
+includes-copy : setup $(INCL_FILES_1)
+
+$(INCDIR)/%(path)/%.h : %(dir)/%.h
+	@$(CP) $< $@
+
+setup ::
+	%mkdirs_q $(INCDIR)/%(path)
+
+%end
+
+#------------------------------------------------------------------------------
+# Same as copy_includes, except that the includes are in the current
+# directory.
+#
+%define copy_includes_cwd namespace=amiga path=/A
+
+INCL_FILES_1 := $(foreach f,$(INCLUDE_FILES),$(INCDIR)/%(path)/$(f))
+INCL_FILES_2 := $(foreach f,$(INCLUDE_FILES),$(GENINCDIR)/%(path)/$(f))
+
+includes-copy : $(INCL_FILES_1) $(INCL_FILES_2)
+
+$(INCDIR)/%(path)/%.h : %.h
+	@$(CP) $< $@
+
+$(GENINCDIR)/%(path)/%.h : %.h
+	@$(CP) $< $@
+
+%end
+
+#------------------------------------------------------------------------------
+# Do the early stuff needed for compiling. This must be run before you
+# do make_vpath otherwise any rules defined in the included makefiles will
+# be invalid.
+
+%define make_linklib_setup mmake=/A
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
+#MM
+%(mmake)-quick : %(mmake)
+#MM
+%(mmake)-clean : clean
+
+%make_common_setup
+%make_vpath_setup
+
+%end
+
+#------------------------------------------------------------------------------
+# Generate a link library from a collection of files.
+#
+
+%define make_linklib dflags=$(CFLAGS)
+OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+CFLAGS  := $(USER_CFLAGS) $(TARGET_CFLAGS) -I$(AROS_INCLUDES)
+LDFLAGS := $(USER_LDFLAGS) $(TARGET_CFLAGS)
+
+linklibs-$(LIB): setup $(LIBDIR)/lib$(LIB).a
+	@$(NOP)
+
+$(LIBDIR)/lib$(LIB).a : $(OBJS)
+	%mklib_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=%(dflags)
+
+setup ::
+	%mkdirs_q $(OBJDIR) $(LIBDIR)
+
+clean ::
+	-@$(RM) $(OBJDIR)
+
+%end
+
+#------------------------------------------------------------------------------
+# Standard Binary Commands, such as you would find in C:, SYS:Tools/, etc.
+# This assumes a one to one mapping between source code and executable. If
+# you have a program that has multiple source files, it will need to be in
+# a separate directory. In that case see make_prog_multi
+#
+
+%define make_prog_single dir=/A
+%make_prog_common dir=%(dir)
+
+%(dir)/% : $(OBJDIR)/%.o
+	%link_q cmd=$(STATIC_LD) opt=$(LDFLAGS)
+
+%end
+
+#------------------------------------------------------------------------------
+# Standard Binary Programs: Multiple source files to one output.
+#
+%define make_prog_multi dir=/A target=/A
+%make_prog_common dir=%(dir)
+
+%(target) : %(dir)/% : $(OBJS)
+	%link_q cmd=$(STATIC_LD) opt=$(LDFLAGS) from=$^
+
+%end
+
+#------------------------------------------------------------------------------
+# Common code for building programs
+#
+%define make_prog_common dflags=$(CFLAGS) dir=/A
+CFLAGS  := $(USER_CFLAGS) $(TARGET_CFLAGS) $(STATIC_CFLAGS) -I$(AROS_INCLUDES) -D__AROS -D__AROS__
+LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
+
+OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=%(dflags)
+
+%(dir)/% : $(STARTUP) $(DEPLIBS)
+
+setup ::
+	%mkdirs_q $(OBJDIR) %(dir)
+
+clean ::
+	-@$(RM) $(OBJDIR)
+
+%end
+
+#------------------------------------------------------------------------------
+# Common code that is used to build statically linked programs
+#
+%define make_prog_setup mmake=/A
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
+#MM
+%(mmake)-clean : clean
+#MM
+%(mmake)-quick : %(mmake)
+
+%make_common_setup
+%make_vpath_setup
+%make_use_linklibs
+
+%end
+
+#------------------------------------------------------------------------------
+#   Allow us to use standard link libraries without needing to worry about
+#   what they are called, and things like linker flags. This may need to
+#   be changed later on to support that kind of thing.
+#
+
+%define make_use_linklibs libs=LIBS deps=DEPLIBS prelibs= postlibs= startup=$(LIBDIR)/startup.o
+%(libs) := -L$(LIBDIR) %(prelibs)
+%(deps) :=
+STARTUP := %(startup)
+
+ifdef USE_AROSLIB
+%(libs) := $(%(libs)) -larossupport
+%(deps) := $(%(deps)) $(LIBDIR)/libarossupport.a
+endif
+ifdef USE_AMIGALIB
+%(libs) := $(%(libs)) -lamiga
+%(deps) := $(%(deps)) $(LIBDIR)/libamiga.a
+endif
+ifdef USE_ZLIB
+%(libs) := $(%(libs)) -larosz
+%(deps) := $(%(deps)) $(LIBDIR)/libarosz.a
+endif
+ifdef USE_CLIB
+%(libs) := $(%(libs)) -larosc
+%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+endif
+ifdef USE_MLIB
+%(libs) := $(%(libs)) -larosm
+%(deps) := $(%(deps)) $(LIBDIR)/libarosm.a
+endif
+%(libs) := $(%(libs)) %(postlibs)
+%end
+
+#------------------------------------------------------------------------------
+#   Hey! iaint says don't add things here, add them before my other message.
+#   The reason is that I'm trying to work out which of macros are still
+#   needed, and because of this, I'm trying to keep my additions separate
+#   from all the others.
