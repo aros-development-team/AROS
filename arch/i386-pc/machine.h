@@ -78,7 +78,6 @@ struct JumpVec
 /* Prototypes */
 extern void _aros_not_implemented ();
 extern void aros_not_implemented ();
-extern void assert();
 
 /*
     How much stack do we need ? Lots :-) ?
