@@ -28,7 +28,7 @@
 
 #include "muimaster_intern.h"
 
-/*  #define MYDEBUG 1 */
+//#define MYDEBUG 1
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -61,14 +61,11 @@ extern struct Library *MUIMasterBase;
 
 /*-------------*/
 
-#define ZTC_STYLE_BOLD      (1<<0)
-#define ZTC_STYLE_ITALIC    (1<<1)
-#define ZTC_STYLE_UNDERLINE (1<<2)
-#define ZTC_STYLE_NORMAL    (1<<3)
+enum { ZTCB_BOLD = 0, ZTCB_ITALIC, ZTCB_UNDERLINE };
 
-#define ITALIC_RATIO 5
-
-#define NEED_LONG_UNDERLINE 10000
+#define ZTCF_BOLD      (1<<ZTCB_BOLD)
+#define ZTCF_ITALIC    (1<<ZTCB_ITALIC)
+#define ZTCF_UNDERLINE (1<<ZTCB_UNDERLINE)
 
 /*-------------*/
 
@@ -159,7 +156,7 @@ ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, 
     buf = dup_content;
 
     zc.pen = -1;
-    zc.style = ZTC_STYLE_NORMAL;
+    zc.style = 0;
     zc.align = ZTL_LEFT;
     zc.imspec = NULL;
     zc.obj = NULL;
@@ -354,10 +351,10 @@ static STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, STRPTR
 	case 'c': zc->align = ztl->align = ZTL_CENTER; break;
 	case 'r': zc->align = ztl->align = ZTL_RIGHT;  break;
 	case 'l': zc->align = ztl->align = ZTL_LEFT; break;
-	case 'n': zc->style = ZTC_STYLE_NORMAL; break;
-	case 'u': zc->style |= ZTC_STYLE_UNDERLINE; break;
-	case 'b': zc->style |= ZTC_STYLE_BOLD; break;
-	case 'i': zc->style |= ZTC_STYLE_ITALIC; break;
+	case 'n': zc->style = 0; break;
+	case 'u': zc->style |= ZTCF_UNDERLINE; break;
+	case 'b': zc->style |= ZTCF_BOLD; break;
+	case 'i': zc->style |= ZTCF_ITALIC; break;
 	case 'I': /* image spec */
 	{
 	    char *t;
@@ -465,7 +462,7 @@ static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, 
         {
 	    ULONG styleback = zc->style;
 	    zune_text_chunk_new(zc);
-	    zc->style |= ZTC_STYLE_UNDERLINE;
+	    zc->style |= ZTCF_UNDERLINE;
 	    zc->text_start = s;
 	    zc->text = ++s;
 	    zune_text_chunk_new(zc);
@@ -480,7 +477,7 @@ static ZTextLine *zune_text_parse_line (STRPTR *s_ptr, struct zune_context *zc, 
 	    ULONG styleback = zc->style;
 	    /* underline next char */
 	    zune_text_chunk_new(zc);
-	    zc->style |= ZTC_STYLE_UNDERLINE;
+	    zc->style |= ZTCF_UNDERLINE;
 	    zc->text_start = ++s;
 	    zc->text = ++s;
 	    zune_text_chunk_new(zc);
@@ -567,6 +564,8 @@ void zune_text_get_bounds (ZText *text, Object *obj)
 /* Drawing                                                  */
 /************************************************************/
 
+// problem is cheight being seldom 0
+
 void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 {
     struct RastPort *rp;
@@ -577,6 +576,8 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
     ZTextChunk *chunk_node;
 
     if (!text || !obj) return;
+
+    D(bug("zune_text_draw(%p) %d %d %d [ys=%d]\n", obj, left, right, top, text->yscroll));
 
     rp = _rp(obj);
     SetFont(rp,_font(obj));
@@ -591,7 +592,7 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 	if (line_node->align == ZTL_CENTER) x = (left + right + 1 - line_node->lwidth) / 2;
 	else if (line_node->align == ZTL_RIGHT) x = right - line_node->lwidth + 1;
 	else x = left;
-	D(bug("zune_text_draw(%x,%d,%d,%d, align=%d) : x = %d\n", obj, left, right, line_node->lwidth, line_node->align, x));
+/*  	D(bug("zune_text_draw(%x,%d,%d,%d, align=%d) : x = %d\n", obj, left, right, line_node->lwidth, line_node->align, x)); */
 	x += text->xscroll;
 
 	for (chunk_node = (ZTextChunk *)line_node->chunklist.mlh_Head; chunk_node->node.mln_Succ ; chunk_node = (ZTextChunk*)chunk_node->node.mln_Succ)
@@ -627,16 +628,23 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 	    {
 	    	ULONG newstyle = FS_NORMAL;
 
-		if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
-		if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
-		if (chunk_node->style & ZTC_STYLE_ITALIC) newstyle |= FSF_ITALIC;
+		if (chunk_node->style & ZTCF_BOLD) newstyle |= FSF_BOLD;
+		if (chunk_node->style & ZTCF_UNDERLINE) newstyle |= FSF_UNDERLINED;
+		if (chunk_node->style & ZTCF_ITALIC) newstyle |= FSF_ITALIC;
                 if (newstyle != style)
 		{
 		    SetSoftStyle(rp, newstyle, 0xff);
 		    style = newstyle;
 		}
-/*  _font(obj)->tf_Baseline +  */
-	    	Move(rp,x,_font(obj)->tf_Baseline + (line_node->lheight - chunk_node->cheight) / 2 + top);
+		if (chunk_node->cheight == 0)
+		    Move(rp,x,_font(obj)->tf_Baseline + top);
+		else
+		    Move(rp,x,_font(obj)->tf_Baseline + (line_node->lheight - chunk_node->cheight) / 2 + top);
+#if 0
+		D(bug("zune_text_draw(%p) Moved to %d (baseline=%d, lh=%d, ch=%d, top=%d)\n",
+		      obj, _font(obj)->tf_Baseline + (line_node->lheight - chunk_node->cheight) / 2 + top,
+		      _font(obj)->tf_Baseline, line_node->lheight, chunk_node->cheight, top));
+#endif
 		if (chunk_node->dripen != -1)
 		{
 		    SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
@@ -686,9 +694,9 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 	    if (!str) str = "";
 
 
-	    if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
-	    if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
-	    if (chunk_node->style & ZTC_STYLE_ITALIC) newstyle |= FSF_ITALIC;
+	    if (chunk_node->style & ZTCF_BOLD) newstyle |= FSF_BOLD;
+	    if (chunk_node->style & ZTCF_UNDERLINE) newstyle |= FSF_UNDERLINED;
+	    if (chunk_node->style & ZTCF_ITALIC) newstyle |= FSF_ITALIC;
 	    if (newstyle != style)
 	    {
 		SetSoftStyle(rp, newstyle, 0xff);
@@ -776,9 +784,9 @@ void zune_text_draw_single (ZText *text, Object *obj, WORD left, WORD right, WOR
 	    offx = TextLength(_rp(obj),str,xpos);
 	    cursor_width = TextLength(rp,&chunk_node->str[xpos],1);
 
-	    if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
-	    if (chunk_node->style & ZTC_STYLE_UNDERLINE) newstyle |= FSF_UNDERLINED;
-	    if (chunk_node->style & ZTC_STYLE_ITALIC) newstyle |= FSF_ITALIC;
+	    if (chunk_node->style & ZTCF_BOLD) newstyle |= FSF_BOLD;
+	    if (chunk_node->style & ZTCF_UNDERLINE) newstyle |= FSF_UNDERLINED;
+	    if (chunk_node->style & ZTCF_ITALIC) newstyle |= FSF_ITALIC;
 	    if (newstyle != style)
 	    {
 		SetSoftStyle(rp, newstyle, 0xff);
