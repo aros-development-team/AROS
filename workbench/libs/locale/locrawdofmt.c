@@ -114,7 +114,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 #else
 
 #ifdef __mc68000__
-    register APTR pdata __asm(A3) = hook->h_Data;
+    register APTR pdata asm("a3") = hook->h_Data;
 #else
     char *pdata = hook->h_Data;
 #endif
