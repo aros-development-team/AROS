@@ -5,7 +5,7 @@ CFLAGS	 = -g -Wall -O -I..
 DEPLIBS  = ../toollib/libtoollib.a
 LIBS	 = -L../toollib -ltoollib
 
-OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o
+OBJS	 = parse_html.o html.o main.o var.o db.o html_filter.o expr.o
 
 FOBJS	 = format.o db.o var.o
 
@@ -19,6 +19,9 @@ format : $(FOBJS)
 
 htmlparsetest : test_parse_html.o $(DEPLIBS)
 	$(CC) $(CFLAGS) test_parse_html.o -o $@ $(LIBS)
+
+exprtest : test_expr.o $(DEPLIBS)
+	$(CC) $(CFLAGS) test_expr.o -o $@ $(LIBS)
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@
