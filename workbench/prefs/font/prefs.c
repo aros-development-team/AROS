@@ -44,7 +44,7 @@ BOOL FP_Read(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT]);
 /* Setup ********************************************************************/
 static void FontPrefs_Clear(struct FontPrefs *fp[FP_COUNT])
 {
-    memset(fp, NULL, FP_COUNT * sizeof(void *));
+    memset(fp, 0, FP_COUNT * sizeof(void *));
 }
 
 static BOOL FontPrefs_Allocate(struct FontPrefs *fp[FP_COUNT])
@@ -154,7 +154,7 @@ static void convertEndian(struct FontPrefs *fontPrefs)
 
     for (a = 0; a <= 2; a++)
     {
-        fontPrefs->fp_Reserved[a] = AROS_BE2LONG(fontPrefs->fp_Reserved);
+        fontPrefs->fp_Reserved[a] = AROS_BE2LONG(fontPrefs->fp_Reserved[2]);
     }
     
     fontPrefs->fp_Reserved2 = AROS_BE2WORD(fontPrefs->fp_Reserved2);
@@ -239,7 +239,7 @@ BOOL FP_Write(CONST_STRPTR filename, struct FontPrefs *fp[FP_COUNT])
                 PushChunk(iffHandle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN);
     
                 header.ph_Version = PHV_CURRENT;
-                header.ph_Type = NULL;
+                header.ph_Type    = 0;
     
                 PushChunk(iffHandle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* IFFSIZE_UNKNOWN? */
     
