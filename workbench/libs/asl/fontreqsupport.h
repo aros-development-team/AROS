@@ -33,4 +33,8 @@ void FOSetSizeString(LONG size, struct LayoutData *ld, struct AslBase_intern *As
 VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase);
 LONG FOGetDrawMode(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetDrawMode(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase);
+UBYTE FOGetStyle(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FOSetStyle(struct LayoutData *ld, UBYTE style, struct AslBase_intern *AslBase);
+
+
 

@@ -111,7 +111,7 @@ static IPTR aslprop_set(Class * cl, Object * o, struct opSet * msg)
     
     data = INST_DATA(cl, o);
     
-    while((ti = NextTagItem((const struct TagItem **)&tstate)))
+    while((ti = NextTagItem(&tstate)))
     {
         switch(ti->ti_Tag)
 	{

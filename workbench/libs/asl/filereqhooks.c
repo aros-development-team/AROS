@@ -223,7 +223,7 @@ AROS_UFH3(VOID, FRTagHook,
     ifreq = (struct IntFileReq *)pta->pta_IntReq;
 
     tstate = pta->pta_Tags;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	tidata = tag->ti_Data;
 	

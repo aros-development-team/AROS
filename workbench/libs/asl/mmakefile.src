@@ -20,7 +20,7 @@ FILES := basicfuncs specialreq \
          fontreqhooks fontreqsupport \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
-	 fontpreviewclass \
+	 fontpreviewclass fontstyleclass \
 	 gadgets coolimagedata locale 
 
 FUNCS := allocfilerequest	\

@@ -25,7 +25,7 @@
 #define FOREQ_COOL_BUTTONS 		1
 
 #define FOREQ_FIRST_OBJECT(x) 	    	((x)->NameListview)
-#define FOREQ_LAST_OBJECT(x) 	    	((x)->DrawModeGadget)
+#define FOREQ_LAST_OBJECT(x) 	    	((x)->StyleGadget)
 
 struct FOUserData
 {
@@ -38,6 +38,8 @@ struct FOUserData
     Object  	    	    	*Preview;
     Object  	    	    	*DrawModeLabel;
     Object  	    	    	*DrawModeGadget;
+    Object  	    	    	*StyleLabel;
+    Object  	    	    	*StyleGadget;
     
     struct ScrollerGadget 	NameScrollGad;
     struct ScrollerGadget   	SizeScrollGad;
