@@ -42,14 +42,14 @@ extern struct Library *MUIMasterBase;
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static ULONG  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
+static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_NumericData *data;
     struct TagItem *tags, *tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
-	return NULL;
+	return 0;
 
     data = INST_DATA(cl, obj);
     data->format = "%ld";
@@ -352,21 +352,6 @@ static ULONG Numeric_Increase(struct IClass *cl, Object * obj, struct MUIP_Numer
 **************************************************************************/
 static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_Numeric_ScaleToValue *msg)
 {
-#if 0
-    DOUBLE val;
-    struct MUI_NumericData *data = INST_DATA(cl, obj);
-    LONG min, max;
-
-    min = (data->flags & NUMERIC_REVERSE) ? data->max : data->min;
-    max = (data->flags & NUMERIC_REVERSE) ? data->min : data->max;
-
-    val = min + msg->scale * (max - min) / (DOUBLE)(msg->scalemax - msg->scalemin);
-
-    if (val >= 0.0) val += 0.5; else val -= 0.5;
-    val = CLAMP(val, data->min, data->max);
-    
-    return (ULONG)((LONG)val);
-#else
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG min, max;
     LONG val;
@@ -375,19 +360,18 @@ static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_N
     min = (data->flags & NUMERIC_REVERSE) ? data->max : data->min;
     max = (data->flags & NUMERIC_REVERSE) ? data->min : data->max;
 
-    val = msg->scale * (max - min);
-    d = msg->scalemax - msg->scalemin;
+    val  = CLAMP(msg->scale - msg->scalemin, msg->scalemin, msg->scalemax);
+    d    = msg->scalemax -  msg->scalemin;
 
-    if (val > 0) val += d/2;
-    else val -= d/2;
-		val /= d;
-
-		val += min;
-
-    val = CLAMP(val, data->min, data->max);
+#warning FIXME: watch out for overflow here.
+    val  = val * (max - min);
     
-    return (ULONG)((LONG)val);
-#endif
+    if (d)
+        val /= d;
+    
+    val += min;
+    
+    return val;
 }
 
 /**************************************************************************
