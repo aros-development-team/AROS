@@ -29,7 +29,7 @@ enum
 
 int main(int argc, char **argv)
 {
-	int i;
+	int i = 0;
 	IPTR args[NOOFARGS] = {(IPTR)FALSE,
 	                       NULL,
 	                       NULL,
@@ -83,7 +83,9 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 		IORequests[0]=NULL;
 	} else {
 		printf("Opened device. Now waiting for %d secs.\n",delay);
-		Delay(50*delay);
+		if (0 != delay) {
+			Delay(50*delay);
+		}
 		IORequests[0]->IOSer.io_Command = SDCMD_SETPARAMS;
 
 		IORequests[0]->io_Baud = baudrate;
@@ -93,6 +95,7 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 			printf("An error occured while setting the baudrate!\n");
 		} else {
 			char buffer[] = "Hello, this is AROS's serial device.\n";
+			int len;
 			printf("Writing to serial device.\n");
 			IORequests[0]->IOSer.io_Command = CMD_WRITE;
 			IORequests[0]->IOSer.io_Flags = 0;
@@ -100,6 +103,27 @@ VOID do_auto(struct MsgPort * prt, ULONG unitnum, ULONG baudrate, ULONG delay)
 			IORequests[0]->IOSer.io_Data = buffer;
 
 			DoIO((struct IORequest *)IORequests[0]);
+			printf("Now please enter something! Waiting for a while!\n");
+			len = 0;
+			while (len < 1000 * 1000 * 10)
+				len++;
+			//Delay(50);
+
+			IORequests[0]->IOSer.io_Command = SDCMD_QUERY;
+
+			DoIO((struct IORequest *)IORequests[0]);
+			printf("Status bits: 0x%x\n",IORequests[0]->io_Status);
+			printf("Number of bytes in buffer: %d\n",(int)IORequests[0]->IOSer.io_Actual);
+
+			if (0 != (len = (int)IORequests[0]->IOSer.io_Actual)) {
+				IORequests[0]->IOSer.io_Command = CMD_READ;
+				IORequests[0]->IOSer.io_Flags = IOF_QUICK;
+				IORequests[0]->IOSer.io_Length = len;
+				IORequests[0]->IOSer.io_Data = buffer;
+
+				DoIO((struct IORequest *)IORequests[0]);
+				printf("Received the following string: %s\n",buffer);
+			}
 			printf("Ending now.\n");
 		}
 		CloseDevice((struct IORequest *)IORequests[0]);
