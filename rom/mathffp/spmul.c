@@ -2,9 +2,11 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.3  1997/07/03 18:35:06  bergers
+    Revision 1.4  1997/07/04 05:59:52  bergers
     *** empty log message ***
 
+    Revision 1.3  1997/07/03 18:35:06  bergers
+    Replaced multiple addition by multiplication -> faster now
 
     Revision 1.2  1997/06/25 21:36:44  bergers
     *** empty log message ***
@@ -71,11 +73,10 @@
 {
   char Exponent = ((char) fnum1 & FFPExponent_Mask) +
                   ((char) fnum2 & FFPExponent_Mask) - 0x41;
-  ULONG Mant1H = (ULONG(fnum1 & FFPMantisse_Mask) >> 20);
-  ULONG Mant2H = (ULONG(fnum2 & FFPMantisse_Mask) >> 20);
-  ULONG Mant1L = (ULONG(fnum1 & FFPMantisse_Mask) >> 8) & 0x00000fff;
-  ULONG Mant2L = (ULONG(fnum2 & FFPMantisse_Mask) >> 8) & 0x00000fff;
-  ULONG Testbit = 0x80000000;
+  ULONG Mant1H = ( (ULONG) (fnum1 & FFPMantisse_Mask)) >> 20;
+  ULONG Mant2H = ( (ULONG) (fnum2 & FFPMantisse_Mask)) >> 20;
+  ULONG Mant1L = (((ULONG) (fnum1 & FFPMantisse_Mask)) >> 8) & 0x00000fff;
+  ULONG Mant2L = (((ULONG) (fnum2 & FFPMantisse_Mask)) >> 8) & 0x00000fff;
   LONG Res;
 
   Res  =  (Mant1H * Mant2H) <<  8;

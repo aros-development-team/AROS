@@ -67,6 +67,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
 {
     AROS_LIBFUNC_INIT
 
+    SysBase = sysBase;
+
     Disable();
     if (!driver_init (LIBBASE))
     {

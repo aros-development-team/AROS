@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
+    Revision 1.3  1997/07/03 18:35:06  bergers
+    Replaced multiple addition by multiplication -> faster now
+
     Desc:
     Lang:
 */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/07/04 05:59:52  bergers
+    *** empty log message ***
+
     Revision 1.2  1997/06/25 21:36:43  bergers
     *** empty log message ***
 
@@ -45,9 +48,12 @@
 
 struct MathBase
 {
-    struct Library LibNode;
+    struct Library    LibNode;
+    struct ExecBase * sysbase;	
 };
 
+#undef SysBase
+#define SysBase ((struct MathBase *)MathBase -> sysbase)
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse    */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent    */
