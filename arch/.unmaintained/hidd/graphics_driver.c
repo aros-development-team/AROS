@@ -1614,6 +1614,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
         /* No layer, probably a screen, but may be a user inited bitmap */
 	Object *bm_obj;
 	
+
 	bm_obj = OBTAIN_HIDD_BM(bm);
 	if (NULL == bm_obj)
 	    return;
@@ -1624,7 +1625,6 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 	
 	RELEASE_HIDD_BM(bm_obj, bm);
 	    
-
     }
     else
     {
@@ -1664,7 +1664,6 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 		{
 		
 		    /* Set clip rectangle */
-		    
 		    HIDD_GC_SetClipRect(gc
 		    	, intersect.MinX
 			, intersect.MinY
@@ -1681,7 +1680,6 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 		    );
 		    
 		    HIDD_GC_UnsetClipRect(gc);
-		
 		
 		}
 		else
@@ -1703,7 +1701,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 			bm_rel_miny = intersect.MinY - CR->bounds.MinY;
 			bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
 			bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
-			
+
 		    	HIDD_GC_SetClipRect(gc
 		    		, bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
 				, bm_rel_miny
@@ -1711,6 +1709,33 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 				, bm_rel_maxy
 			);
 			
+			
+if ((ULONG)HIDD_BM_OBJ(CR->BitMap) < 1000) {
+kprintf("Drawline to offscreen CR->BitMap: %p, %d, %d, %d, %d: CR: %d %d %d %d\n"
+	, CR->BitMap
+	, CR->BitMap->BytesPerRow
+	, CR->BitMap->Rows
+	, CR->BitMap->Flags
+	, CR->BitMap->Depth
+	, CR->bounds.MinX
+	, CR->bounds.MinY
+	, CR->bounds.MaxX
+	, CR->bounds.MaxY
+);
+
+{
+int i;
+for (i =0; i < 8; i ++)
+	kprintf("plane[%d]: %p\n"
+	   , i, CR->BitMap->Planes[i] );
+
+}
+/*			kprintf("Drawline to hidden CR %p, obj %p, class p  gc %p\n"
+				, CR, HIDD_BM_OBJ(CR->BitMap)
+				// , OCLASS(HIDD_BM_OBJ(CR->BitMap))->ClassNode.ln_Name
+				, gc
+			);
+*/}
 			HIDD_BM_DrawLine(HIDD_BM_OBJ(CR->BitMap)
 				, gc
 				, bm_rel_minx - (layer_rel_x - rp->cp_x) + ALIGN_OFFSET(CR->bounds.MinX)
@@ -1718,7 +1743,6 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 				, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
 				, bm_rel_miny - (layer_rel_y - y)
 			);
-				
 				
 			HIDD_GC_UnsetClipRect(gc);
 		    }
@@ -1742,7 +1766,7 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 		struct GfxBase * GfxBase)
 {
 
-#if 0
+#if 1
     struct Rectangle rr;
     Object *gc;
     struct Layer *L = rp->Layer;
@@ -1755,17 +1779,9 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
     
     rr.MinX = center_x - rx;
     rr.MinY = center_y - ry;
-    rr.MaxX = center_x - rx;
-    rr.Maxy
+    rr.MaxX = center_x + rx;
+    rr.MaxY = center_y + ry;
 
-    
-    if (rp->cp_y > y) {
-	rr.MinY = y;
-	rr.MaxY = rp->cp_y;
-    } else {
-    	rr.MinY = rp->cp_y;
-	rr.MaxY = y;
-    }
     
     if (NULL == L)
     {
@@ -1777,15 +1793,14 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 	    return;
 	    
 	/* No need for clipping */
-	HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
-	
+	HIDD_BM_DrawEllipse(bm_obj, gc
+		, center_x, center_y
+		, rx, ry
+	);
 	
 	RELEASE_HIDD_BM(bm_obj, bm);
 	    
-
-    }
-    else
-    {
+    } else {
         struct ClipRect *CR = L->ClipRect;
 	WORD xrel = L->bounds.MinX;
         WORD yrel = L->bounds.MinY;
@@ -1815,9 +1830,7 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 		
 		layer_rel_x = intersect.MinX - L->bounds.MinX;
 		layer_rel_y = intersect.MinY - L->bounds.MinY;
-		
-		
-		
+
 	        if (NULL == CR->lobs)
 		{
 		
@@ -1830,12 +1843,12 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 			, intersect.MaxY
 		    );
 		    
-		    HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+		    HIDD_BM_DrawEllipse(HIDD_BM_OBJ(bm)
 		    	, gc
-			, rp->cp_x + xrel
-			, rp->cp_y + yrel
-			, x + xrel
-			, y + yrel
+			, center_x + xrel
+			, center_y + yrel
+			, rx
+			, ry
 		    );
 		    
 		    HIDD_GC_UnsetClipRect(gc);
@@ -1869,12 +1882,12 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 				, bm_rel_maxy
 			);
 			
-			HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+			HIDD_BM_DrawEllipse(HIDD_BM_OBJ(CR->BitMap)
 				, gc
-				, bm_rel_minx - (layer_rel_x - rp->cp_x) + ALIGN_OFFSET(CR->bounds.MinX)
-				, bm_rel_miny - (layer_rel_y - rp->cp_y)
-				, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
-				, bm_rel_miny - (layer_rel_y - y)
+				, bm_rel_minx - (layer_rel_x - center_x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - center_y)
+				, rx
+				, ry
 			);
 				
 				
@@ -2693,6 +2706,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 			            HIDD_BM_PIXTAB(nbm)[i] = black_pixel;
 			    	}
 			    }
+kprintf("ALLOCBITMAP, DISPLAYABLE: %p\n", nbm);
 				
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
@@ -2710,6 +2724,27 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 			    */
 
 			    HIDD_BM_PIXTAB(nbm) = HIDD_BM_PIXTAB(friend);
+kprintf("ALLOCBITMAP, NON DISPLAYABLE : %p\n", nbm);
+
+#if 0
+kprintf("bm: %p, %d, %d, %d, %d\n"
+	, nbm
+	, nbm->BytesPerRow
+	, nbm->Rows
+	, nbm->Flags
+	, nbm->Depth
+);
+
+{
+int i;
+for (i =0; i < 8; i ++)
+	kprintf("plane[%d]: %p\n"
+	   , i, nbm->Planes[i] );
+
+}
+#endif
+
+// kill(getpid(), 19);
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
 			}
@@ -3477,6 +3512,7 @@ void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
     {
     	FreeMem(HIDD_BM_PIXTAB(bm), AROS_PALETTE_MEMSIZE);
     }
+kprintf("Freed bitmap %p\n", bm);
     FreeMem(bm, sizeof (struct BitMap));
 }
 
