@@ -1720,7 +1720,7 @@ else
     %(mmake)-uninstall_command := true
 endif
 
-#MM- %(mmake)-quick : %(mmake)-build_and_install-quick %(postinstall)
+#MM- %(mmake)-quick : %(mmake)-configure %(postconfigure) %(mmake)-build_and_install-quick %(postinstall)
 
 #MM
 %(mmake)-build_and_install-quick : $(GENDIR)/$(CURDIR)/.configured
@@ -1741,6 +1741,9 @@ endif
 ifneq ($(DEBUG),yes)
     %(mmake)-s_flag = -s
 endif
+
+#MM
+%(mmake)-configure : $(GENDIR)/$(CURDIR)/.configured
 
 ifeq (%(host),yes)
 $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
