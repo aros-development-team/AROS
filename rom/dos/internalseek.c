@@ -45,10 +45,11 @@ LONG InternalSeek
     /* Send the request. */
     DosDoIO( &iofs.IOFS );
 
-    SetIoErr( iofs.io_DosError );
-
     if( iofs.io_DosError )
+    {
+        SetIoErr( iofs.io_DosError );
 	return -1;
+    }
     else
 	return (LONG) iofs.io_Union.io_SEEK.io_Offset;
 }
