@@ -14,7 +14,7 @@
 #include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <aros/libcall.h>
 #include <unistd.h>
 #include <fcntl.h>
