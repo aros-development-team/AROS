@@ -52,29 +52,31 @@ AROS_UFH3
         {
             // FIXME: not a very good way to detect it...
             /* It's a disk/volume/root -------------------------------------*/
-            if (strcasecmp(label, "Ram Disk") == 0)
+            if (label != NULL)
             {
-                icon = GetIconTags
+                if (strcasecmp(label, "Ram Disk") == 0)
+                {
+                    icon = GetIconTags
+                    (
+                        NULL, 
+                        ICONGETA_GetDefaultName, (IPTR) "RAM", 
+                        TAG_MORE,                (IPTR) iim->iim_Tags
+                    );
+                }
+                else if
                 (
-                    NULL, 
-                    ICONGETA_GetDefaultName, (IPTR) "RAM", 
-                    TAG_MORE,                (IPTR) iim->iim_Tags
-                );
+                       strcasecmp(label, "System") == 0 
+                    || strcasecmp(label, "Home")   == 0
+                )
+                {
+                    icon = GetIconTags
+                    (
+                        NULL, 
+                        ICONGETA_GetDefaultName, (IPTR) "Harddisk", 
+                        TAG_MORE,                (IPTR) iim->iim_Tags       
+                    );
+                }
             }
-            else if
-            (
-                   strcasecmp(label, "System") == 0 
-                || strcasecmp(label, "Home")   == 0
-            )
-            {
-                icon = GetIconTags
-                (
-                    NULL, 
-                    ICONGETA_GetDefaultName, (IPTR) "Harddisk", 
-                    TAG_MORE,                (IPTR) iim->iim_Tags       
-                );
-            }
-                
             // FIXME: return specific icons for CD, harddisk, floppy, etc
             
             if (icon == NULL)
