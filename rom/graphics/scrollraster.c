@@ -7,8 +7,9 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-extern driver_ScrollRaster (struct RastPort *, long, long, long, long, long,
-	long, struct GfxBase *);
+extern void driver_ScrollRaster (struct RastPort *,
+	long, long, long, long, long, long,
+	struct GfxBase *);
 
 /*****************************************************************************
 
