@@ -14,7 +14,8 @@ LLINK		:= ld -r
 BLINK		:= ld -e startup_32 -Ttext 0x100000 -Map $(OBJDIR)/aros.map
 LINKLIBS	:= \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a \
-	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a
+	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a \
+	$(LIBDIR)/libboot.a
 
 #MM boot-native-i386 : setup header-native-i386 \
 #MM		kernel-aros-linklib
