@@ -10,11 +10,6 @@
 #include <exec/memory.h>
 #include "graphics_intern.h"
 
-#undef DEBUG
-#define DEBUG 1
-#include <aros/debug.h>
-
-
 
 /*****************************************************************************
 
@@ -66,26 +61,17 @@
     struct TextFontExtension *tfe;
     struct TagItem def_tags = { TAG_DONE, 0};
     
-    kprintf("ExtendFont(font=%p, tags=%p)\n", font, fontTags);
-	
     if (font == NULL)
 	return FALSE;
 
-kprintf("Looking for extension\n");
 	
     /* Does the font allready have an extension ? */
     
     tfe = tfe_hashlookup(font, GfxBase);
     if (tfe)
     {    
-	kprintf("Extension found\n");
 	return TRUE;
     }
-
-    /* Allocing these on the stack is no problem,
-    cause we shall clone them, anyway */
-
-    kprintf("Building extension\n");
 
     /* Try to build an extension */
     if (!fontTags)
