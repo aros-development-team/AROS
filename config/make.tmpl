@@ -52,7 +52,7 @@
 
 #------------------------------------------------------------------------------
 # Link a specified number of objects to an executable
-%define link_q cmd=$(AROS_LD) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS)
+%define link_q cmd=$(AROS_CC) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS)
 	@$(ECHO) "Linking %(to)..."
 	@$(IF) %(cmd) %(opt) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
 		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
@@ -75,7 +75,7 @@
 #
 %define link_module_q err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@if $(AROS_LD) $(NOSTARTUP_LDFLAGS) %(ldflags) \
+	@if $(AROS_CC) $(NOSTARTUP_LDFLAGS) %(ldflags) \
 	    $(GENMAP) %(objdir)/%(module).map \
 	    %(objs) %(libs) %(endtag) \
 	    -o $@ 2>&1 > %(objdir)/%(err); \
@@ -911,7 +911,7 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o \
 $(BD_OBJS$(BDID)) \
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 	@$(ECHO) "Linking $@"
-	@$(COLLECT-AROS) -Ur -o $@ $^
+	@$(AROS_LD) -Ur -o $@ $^
 	@$(OBJCOPY) $@ `$(NM_PLAIN) $@ | $(AWK) '$$3 ~ /^__.*_(LIST|END)__$$/ {print "-L " $$3;}'`
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
@@ -1207,8 +1207,11 @@ ifneq ($(filter $(TARGET),%(mmake)-linklib %(mmake)-kobj),)
 %rule_link_linklib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))"
 
-$(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : $(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
-	@$(LD) -r -o $@ $^
+$(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : \
+$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
+	@$(ECHO) "Linking $@"
+	$(AROS_LD) -Ur -o $@ $^
+	$(OBJCOPY) $@ `$(NM_PLAIN) $@ | $(AWK) '$$3 ~ /^__.*_(LIST|END)__$$/ {print "-L " $$3;}'`
 endif
 
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-linklib %(mmake)-kobj" deps=$(BD_DEPS$(BDID))
