@@ -123,6 +123,10 @@ static HIDDT_Pixel MNAME(getpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	    pixel = *(ULONG *)mem;
 	    break;
 	    
+	default:
+	    pixel = 0;
+	    break;
+	    
     }
     
     return pixel;
@@ -702,6 +706,112 @@ static VOID MNAME(puttemplate)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 				     msg->width,
 				     msg->height,
 				     msg->inverttemplate);
+	    break;
+
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    	    break;
+	    
+    } /* switch(data->bytesperpix) */
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    LOCK_FRAMEBUFFER(XSD(cl));    
+    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
+    UNLOCK_FRAMEBUFFER(XSD(cl));
+#endif
+	    
+}
+
+/*** BitMap::PutPattern() **********************************************/
+
+static VOID MNAME(putpattern)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+
+    switch(data->bytesperpix)
+    {
+	case 1:
+	    HIDD_BM_PutMemPattern8(o,
+	    	    	    	   msg->gc,
+				   msg->pattern,
+				   msg->patternsrcx,
+				   msg->patternsrcy,
+				   msg->patternheight,
+				   msg->patterndepth,
+				   msg->patternlut,
+				   msg->invertpattern,
+				   msg->mask,
+				   msg->maskmodulo,
+				   msg->masksrcx,
+				   data->VideoData,
+				   data->bytesperline,
+				   msg->x,
+				   msg->y,
+				   msg->width,
+				   msg->height);
+	    break;
+
+	case 2:
+	    HIDD_BM_PutMemPattern16(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	case 3:
+	    HIDD_BM_PutMemPattern24(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
+	    break;
+
+	case 4:
+	    HIDD_BM_PutMemPattern32(o,
+	    	    	    	    msg->gc,
+				    msg->pattern,
+				    msg->patternsrcx,
+				    msg->patternsrcy,
+				    msg->patternheight,
+				    msg->patterndepth,
+				    msg->patternlut,
+				    msg->invertpattern,
+				    msg->mask,
+				    msg->maskmodulo,
+				    msg->masksrcx,
+				    data->VideoData,
+				    data->bytesperline,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height);
 	    break;
 
 	default:

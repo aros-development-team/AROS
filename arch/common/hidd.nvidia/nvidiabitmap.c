@@ -1416,6 +1416,115 @@ static VOID bm__puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     UNLOCK_BITMAP
 }
 
+static VOID bm__putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
+{
+    nvBitMap *bm = OOP_INST_DATA(cl, o);
+
+    LOCK_BITMAP
+    
+    IPTR VideoData = bm->framebuffer;
+
+    if (bm->fbgfx)
+    {
+	VideoData += (IPTR)sd->Card.FrameBuffer;
+	if (sd->gpu_busy)
+	{
+	    LOCK_HW
+	    NVSync(sd);
+	    UNLOCK_HW
+	}
+    }	
+
+
+    switch(bm->bpp)
+    {
+	case 1:
+	    {
+		struct pHidd_BitMap_PutMemPattern8 __m = {
+				sd->mid_PutMemPattern8,
+				msg->gc,
+				msg->pattern,
+				msg->patternsrcx,
+				msg->patternsrcy,
+				msg->patternheight,
+				msg->patterndepth,
+				msg->patternlut,
+				msg->invertpattern,
+				msg->mask,
+				msg->maskmodulo,
+				msg->masksrcx,
+				(APTR)VideoData,
+				bm->pitch,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+	case 2:
+	    {
+		struct pHidd_BitMap_PutMemPattern16 __m = {
+				sd->mid_PutMemPattern16,
+				msg->gc,
+				msg->pattern,
+				msg->patternsrcx,
+				msg->patternsrcy,
+				msg->patternheight,
+				msg->patterndepth,
+				msg->patternlut,
+				msg->invertpattern,
+				msg->mask,
+				msg->maskmodulo,
+				msg->masksrcx,
+				(APTR)VideoData,
+				bm->pitch,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+	case 4:
+	    {
+		struct pHidd_BitMap_PutMemPattern32 __m = {
+				sd->mid_PutMemPattern32,
+				msg->gc,
+				msg->pattern,
+				msg->patternsrcx,
+				msg->patternsrcy,
+				msg->patternheight,
+				msg->patterndepth,
+				msg->patternlut,
+				msg->invertpattern,
+				msg->mask,
+				msg->maskmodulo,
+				msg->masksrcx,
+				(APTR)VideoData,
+				bm->pitch,
+				msg->x,
+				msg->y,
+				msg->width,
+				msg->height
+		}, *m = &__m;
+
+		OOP_DoMethod(o, (OOP_Msg)m);
+	    }
+	    break;
+
+    } /* switch(bm->bpp) */
+
+    UNLOCK_BITMAP
+}
+
+
 static BOOL bm__obtaindirectaccess(OOP_Class *cl, OOP_Object *o,
 		struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
@@ -1457,7 +1566,7 @@ static VOID bm__releasedirectaccess(OOP_Class *cl, OOP_Object *o,
 /* Class related functions */
 
 #define NUM_ROOT_METHODS    3
-#define	NUM_BM_METHODS	    15
+#define	NUM_BM_METHODS	    16
 
 OOP_Class *init_onbitmapclass(struct staticdata *sd)
 {
@@ -1484,6 +1593,7 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
 	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
 	{ OOP_METHODDEF(bm__puttemplate), moHidd_BitMap_PutTemplate },
+	{ OOP_METHODDEF(bm__putpattern), moHidd_BitMap_PutPattern },
 	{ OOP_METHODDEF(bm__obtaindirectaccess), moHidd_BitMap_ObtainDirectAccess },
 	{ OOP_METHODDEF(bm__releasedirectaccess), moHidd_BitMap_ReleaseDirectAccess },
 	{ NULL, 0 }
@@ -1521,6 +1631,9 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
     	sd->mid_PutMemTemplate8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
     	sd->mid_PutMemTemplate16= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
     	sd->mid_PutMemTemplate32= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
+    	sd->mid_PutMemPattern8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern8);
+    	sd->mid_PutMemPattern16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
+    	sd->mid_PutMemPattern32 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
 	
 	if (cl)
 	{
@@ -1539,7 +1652,7 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 }
 
 #define NUM_OFFROOT_METHODS	3
-#define	NUM_OFFBM_METHODS	14
+#define	NUM_OFFBM_METHODS	16
 
 OOP_Class *init_offbitmapclass(struct staticdata *sd)
 {
@@ -1565,6 +1678,8 @@ OOP_Class *init_offbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
 	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
 	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
+	{ OOP_METHODDEF(bm__puttemplate), moHidd_BitMap_PutTemplate },
+	{ OOP_METHODDEF(bm__putpattern), moHidd_BitMap_PutPattern },
 	{ OOP_METHODDEF(bm__obtaindirectaccess), moHidd_BitMap_ObtainDirectAccess },
 	{ OOP_METHODDEF(bm__releasedirectaccess), moHidd_BitMap_ReleaseDirectAccess },
 	{ NULL, 0 }
