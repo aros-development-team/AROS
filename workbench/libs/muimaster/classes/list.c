@@ -663,7 +663,7 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			set(obj, MUIA_List_VertProp_Entries, data->entries_num);
 		    } else
 		    {
-		    	D(bug("Bug: confirm_entries != MUIA_NList_Entries!\n"));
+		    	D(bug("Bug: confirm_entries != MUIA_List_Entries!\n"));
 		    }
 		    break;
 
@@ -1016,6 +1016,9 @@ static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *
 	    MUIA_List_First,0,
 	    MUIA_List_Active, MUIV_List_Active_Off,
 	    TAG_DONE);
+
+	data->update = 1;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
     }
 
     return 0;
@@ -1130,6 +1133,9 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
 		break;
     }
 
+    if (pos < 0 || pos >= data->entries_num)
+	return 0;
+
     new_act = data->entries_active;
 
     if (pos == new_act && new_act == data->entries_num - 1)
@@ -1144,6 +1150,9 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
 	MUIA_List_Entries, data->confirm_entries_num,
 	pos == data->entries_active?MUIA_List_Active:TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
 	TAG_DONE);
+
+    data->update = 1;
+    MUI_Redraw(obj,MADF_DRAWUPDATE);
 
     return 0;
 }
