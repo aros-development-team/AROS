@@ -2,28 +2,15 @@
 
 include $(TOP)/config/make.cfg
 
-MODNAME := Aboutmui
-MODTYPE := mui
+#MM- workbench-libs-aboutmui : setup includes linklibs \
+#MM	includes-generate
 
-INIT_FILE := aboutmui
-FILES := 
-
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_CLIB_STATIC := yes
-USE_MLIB        := yes
-
-USE_LIBDEFS := no
-
-USER_INCLUDES := -I.
 USER_CFLAGS := -DHAVE_COOLIMAGES
 
-#MM- workbench-libs-aboutmui : setup includes linklibs \
-#MM	includes-generate workbench-libs-aboutmui-module
-
-%make_module_setup mmake=workbench-libs-aboutmui
-
-%make_module mmake=workbench-libs-aboutmui
+%build_module_macro mmake=workbench-libs-aboutmui \
+  modname=Aboutmui modtype=mui \
+  initfile=aboutmui \
+  conffile=lib.conf \
+  uselibs="amiga mui arosc m"
 
 %common
-%include_deps
