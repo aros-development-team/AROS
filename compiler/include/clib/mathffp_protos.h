@@ -9,61 +9,67 @@
     Lang: english
 */
 
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
 
-AROS_LP1(FLOAT, SPAbs,
-    AROS_LPA(FLOAT, fnum1, D0),
-    struct MathffpBase *, MathffpBase, 9, Mathffp)
+/*
+    Prototypes
+*/
+AROS_LP1(LONG, SPAbs,
+    AROS_LPA(LONG, fnum1, D0),
+    struct MathffpBase *, MathBase, 9, Mathffp)
 
-AROS_LP2(FLOAT, SPAdd,
-    AROS_LPA(FLOAT, fnum1, D1),
-    AROS_LPA(FLOAT, fnum2, D0),
-    struct MathffpBase *, MathffpBase, 11, Mathffp)
+AROS_LP2(LONG, SPAdd,
+    AROS_LPA(LONG, fnum1, D1),
+    AROS_LPA(LONG, fnum2, D0),
+    struct MathffpBase *, MathBase, 11, Mathffp)
 
-AROS_LP1(FLOAT, SPCeil,
-    AROS_LPA(FLOAT, y, D0),
-    struct MathffpBase *, MathffpBase, 16, Mathffp)
+AROS_LP1(LONG, SPCeil,
+    AROS_LPA(LONG, y, D0),
+    struct MathffpBase *, MathBase, 16, Mathffp)
 
-AROS_LP2(FLOAT, SPCmp,
-    AROS_LPA(FLOAT, fnum1, D0),
-    AROS_LPA(FLOAT, fnum2, D1),
-    struct MathffpBase *, MathffpBase, 7, Mathffp)
+AROS_LP2(LONG, SPCmp,
+    AROS_LPA(LONG, fnum1, D0),
+    AROS_LPA(LONG, fnum2, D1),
+    struct MathffpBase *, MathBase, 7, Mathffp)
 
-AROS_LP2(FLOAT, SPDiv,
-    AROS_LPA(FLOAT, fnum1, D1),
-    AROS_LPA(FLOAT, fnum2, D0),
-    struct MathffpBase *, MathffpBase, 14, Mathffp)
+AROS_LP2(LONG, SPDiv,
+    AROS_LPA(LONG, fnum1, D1),
+    AROS_LPA(LONG, fnum2, D0),
+    struct MathffpBase *, MathBase, 14, Mathffp)
 
 AROS_LP1(LONG, SPFix,
-    AROS_LPA(FLOAT, fnum, D0),
-    struct MathffpBase *, MathffpBase, 5, Mathffp)
+    AROS_LPA(LONG, fnum, D0),
+    struct MathffpBase *, MathBase, 5, Mathffp)
 
-AROS_LP1(FLOAT, SPFloor,
-    AROS_LPA(FLOAT, y, D0),
-    struct MathffpBase *, MathffpBase, 15, Mathffp)
+AROS_LP1(LONG, SPFloor,
+    AROS_LPA(LONG, y, D0),
+    struct MathffpBase *, MathBase, 15, Mathffp)
 
-AROS_LP1(FLOAT, SPFlt,
+AROS_LP1(LONG, SPFlt,
     AROS_LPA(LONG, inum, D0),
-    struct MathffpBase *, MathffpBase, 6, Mathffp)
+    struct MathffpBase *, MathBase, 6, Mathffp)
 
-AROS_LP2(FLOAT, SPMul,
-    AROS_LPA(FLOAT, fnum1, D1),
-    AROS_LPA(FLOAT, fnum2, D0),
-    struct MathffpBase *, MathffpBase, 13, Mathffp)
+AROS_LP2(LONG, SPMul,
+    AROS_LPA(LONG, fnum1, D1),
+    AROS_LPA(LONG, fnum2, D0),
+    struct MathffpBase *, MathBase, 13, Mathffp)
 
-AROS_LP1(FLOAT, SPNeg,
-    AROS_LPA(FLOAT, fnum1, D0),
-    struct MathffpBase *, MathffpBase, 10, Mathffp)
+AROS_LP1(LONG, SPNeg,
+    AROS_LPA(LONG, fnum1, D0),
+    struct MathffpBase *, MathBase, 10, Mathffp)
 
-AROS_LP2(FLOAT, SPSub,
-    AROS_LPA(FLOAT, fnum1, D1),
-    AROS_LPA(FLOAT, fnum2, D0),
-    struct MathffpBase *, MathffpBase, 12, Mathffp)
+AROS_LP2(LONG, SPSub,
+    AROS_LPA(LONG, fnum1, D0),
+    AROS_LPA(LONG, fnum2, D1),
+    struct MathffpBase *, MathBase, 12, Mathffp)
 
 AROS_LP1(LONG, SPTst,
-    AROS_LPA(FLOAT, fnum, D1),
-    struct MathffpBase *, MathffpBase, 8, Mathffp)
+    AROS_LPA(LONG, fnum, D1),
+    struct MathffpBase *, MathBase, 8, Mathffp)
 
 #endif /* CLIB_MATHFFP_PROTOS_H */
