@@ -227,7 +227,7 @@ static void WaitForIO (void)
 	if (selecterr < 0 && err == EINTR)
 	    continue;
 
-	if (selecterr != 0)
+	if (selecterr >= 0)
 	{
 	    ForeachNodeSafe (&waitList, msg, nextmsg)
 	    {
@@ -414,7 +414,7 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, UnixIO),
 	newtask = ml->ml_ME[0].me_Addr;
 
 	newtask->tc_Node.ln_Type = NT_TASK;
-	newtask->tc_Node.ln_Pri  = 55;
+	newtask->tc_Node.ln_Pri  = -10;
 	newtask->tc_Node.ln_Name = "UnixIO.task";
 
 	newtask->tc_SPReg   = (APTR)((ULONG)ml->ml_ME[1].me_Addr + STACKSIZE);
