@@ -34,6 +34,7 @@
 #include "slidersp.h"
 #include "scrollbarsp.h"
 #include "listviewsp.h"
+#include "stringsp.h"
 #include "zunestuff.h"
 
 struct Library *MUIMasterBase;
@@ -265,6 +266,7 @@ struct page_entry main_page_entries[] =
     { "Sliders",    NULL, NULL, &_MUIP_Sliders_desc    },
     { "Scrollbars", NULL, NULL, &_MUIP_Scrollbars_desc },
     { "Listviews",  NULL, NULL, &_MUIP_Listviews_desc  },
+    { "Strings",    NULL, NULL, &_MUIP_Strings_desc    },
     { NULL,         NULL, NULL, NULL                   },
 };
 
