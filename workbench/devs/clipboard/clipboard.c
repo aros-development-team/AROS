@@ -22,6 +22,7 @@
 #include <exec/initializers.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include <proto/alib.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
