@@ -317,9 +317,10 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	if (    w->Flags & WFLG_CLOSEGADGET 
 	     || w->Flags & WFLG_DEPTHGADGET
 	     || w->Flags & WFLG_HASZOOM
+	     || w->Flags & WFLG_DRAGBAR /* To assure w->BorderTop being set correctly */
 	)
 	{
-	/* If any of titlebar gadgets are present, me might as well just
+	/* If any of titlebar gadgets are present, me might just as well
 	insert a dragbar too */
 	       
 	    w->Flags |= WFLG_DRAGBAR;
