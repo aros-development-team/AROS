@@ -159,19 +159,19 @@ Therefore ASM must be used. */
 	AROS_LHA(libBaseType,libBase,A6) \
     )
 
-#   define AROS_LH1(rettype,name,libBaseType,a1,libBase,offset,libName) \
+#   define AROS_LH1(rettype,name,a1,libBaseType,libBase,offset,libName) \
     rettype SAVEDS ASM name (\
 	a1, \
 	AROS_LHA(libBaseType,libBase,A6) \
     )
 
-#   define AROS_LH2(rettype,name,libBaseType,a1,a2,libBase,offset,libName) \
+#   define AROS_LH2(rettype,name,a1,a2,libBaseType,libBase,offset,libName) \
     rettype SAVEDS ASM name (\
 	a1, \
 	AROS_LHA(libBaseType,libBase,A6) \
     )
 
-#   define AROS_LH3(rettype,name,libBaseType,a1,a2,a3,libBase,offset,libName) \
+#   define AROS_LH3(rettype,name,a1,a2,a3,libBaseType,libBase,offset,libName) \
     rettype SAVEDS ASM name (\
 	a1, \
 	AROS_LHA(libBaseType,libBase,A6) \
