@@ -9,8 +9,9 @@
 
 void readref(void)
 {
-    struct functionlist *funclistit = NULL;
-    char *begin, *end, *line;
+    struct functionlist *funclistit = NULL, *methlistit = NULL;
+    struct functionlist *list = NULL; /* will be either funclistit or methlistit */
+    char *begin, *end, *line, *sep;
     unsigned int len;
 
     if (!fileopen(reffile))
@@ -21,7 +22,7 @@ void readref(void)
 
     while ((line=readline())!=NULL)
     {
-	static char infunction=0;
+	static char infunction = 0, inmethod = 0;
 	static struct arglist **arglistptr;
 	
 	if (strlen(line)>0)
@@ -71,19 +72,58 @@ void readref(void)
 		}
 		while (isspace(*(end-1))) end--;
 		*end = '\0';
-
-		for (funclistit = funclist;
-		     funclistit!=NULL && strcmp(funclistit->name, begin)!=0;
-		     funclistit = funclistit->next)
-		    ;
-
-		if (funclistit==NULL)
-		    infunction = 0;
-		else
+                
+                sep = strchr(begin, '$');
+                
+                if 
+                (
+                       (modtype == MCC || modtype == MUI || modtype == MCP)
+                    && sep != NULL
+                    && strncmp(modulename, begin, sep - begin) == 0
+                )
 		{
-		    infunction = 1;
-		    arglistptr = &(funclistit->arguments);
-		}
+                    struct functionlist *method;
+                    
+                    infunction = 1; 
+                    
+                    method = malloc(sizeof(struct functionlist));
+                    method->next = NULL;
+                    method->name = strdup(sep + 1); 
+                    method->type = NULL; /* not known yet */
+                    method->argcount = 0;
+                    method->arguments = NULL;
+                    method->lvo = 0; /* not used */
+                    
+                    if (methlistit != NULL)
+                        methlistit->next = method;
+                        
+                    methlistit = method;
+                    
+                    if (methlist == NULL )
+                        methlist = methlistit;
+                    
+                    arglistptr = &(methlistit->arguments);
+                    list = methlistit;
+                }
+                else
+                {
+                    for (funclistit = funclist;
+                         funclistit!=NULL && strcmp(funclistit->name, begin)!=0;
+                         funclistit = funclistit->next)
+                        ;
+    
+                    if (funclistit==NULL)
+                    {
+                        infunction = 0;
+                    }
+                    else
+                    {
+                        infunction = 1;
+                        
+                        arglistptr = &(funclistit->arguments);
+                        list = funclistit;
+                    }
+                }
 	    }
 	    else if (infunction)
 	    {
@@ -111,7 +151,7 @@ void readref(void)
 			if (*(end-1)!='[')
 			{
 			    fprintf(stderr, "Argument \"%s\" not understood for function %s\n",
-				    begin, funclistit->name);
+				    begin, list->name);
 			    exit(20);
 			}
 			end--;
@@ -131,30 +171,41 @@ void readref(void)
 			free(name);
 		    else
 		    {
-			switch (libcall)
-			{
-			case STACK:
-			    assert(*arglistptr==NULL);
-			    *arglistptr = malloc(sizeof(struct arglist));
-			    (*arglistptr)->next = NULL;
-			    (*arglistptr)->reg = "";
-			    funclistit->argcount++;
-			    break;
-			    
-			case REGISTER:
-			    if (*arglistptr==NULL)
-			    {
-				fprintf(stderr, "Error: not enough register specified for function \"%s\"\n",
-					funclistit->name);
-				exit(20);
-			    }
-			    break;
-			    
-			default:
-			    fprintf(stderr, "Internal error: unhandled libcall type in readref\n");
-			    exit(20);
-			    break;
-			}
+			if (list == funclistit)
+                        {
+                            switch (libcall)
+                            {
+                            case STACK:
+                                assert(*arglistptr==NULL);
+                                *arglistptr = malloc(sizeof(struct arglist));
+                                (*arglistptr)->next = NULL;
+                                (*arglistptr)->reg = "";
+                                funclistit->argcount++;
+                                break;
+                                
+                            case REGISTER:
+                                if (*arglistptr==NULL)
+                                {
+                                    fprintf(stderr, "Error: not enough register specified for function \"%s\"\n",
+                                            funclistit->name);
+                                    exit(20);
+                                }
+                                break;
+                                
+                            default:
+                                fprintf(stderr, "Internal error: unhandled libcall type in readref\n");
+                                exit(20);
+                                break;
+                            }
+                        }
+                        else /* method */
+                        {
+                            *arglistptr = malloc(sizeof(struct arglist));
+                            (*arglistptr)->next = NULL;
+                            (*arglistptr)->reg = "";
+                            methlistit->argcount++;
+                        }
+                        
 			(*arglistptr)->name = name;
 			(*arglistptr)->type = strdup(begin);
 			arglistptr = &((*arglistptr)->next);
@@ -170,10 +221,13 @@ void readref(void)
 		    }
 		    begin++;
 		    while (isspace(*begin)) begin++;
-		    end = begin+strlen(begin)-strlen(funclistit->name);
-		    while (isspace(*(end-1))) end--;
+		    if (list == funclistit)
+                        end = begin+strlen(begin)-strlen(list->name);
+		    else /* methlistit */
+                        end = begin+strlen(begin)-(strlen(list->name)+strlen(modulename)+1);
+                    while (isspace(*(end-1))) end--;
 		    *end = '\0';
-		    funclistit->type = strdup(begin);
+		    list->type = strdup(begin);
 		}
 	    }
 	}
