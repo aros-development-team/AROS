@@ -5,6 +5,7 @@
 
 #include <string.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
