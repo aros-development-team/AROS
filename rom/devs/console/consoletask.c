@@ -21,9 +21,11 @@
 
 #include <devices/input.h>
 
-#if 0
+#if 1
+#define size_t sys_size_t
 #include <sys/types.h>
 #include <signal.h>
+#undef size_t
 #endif
 
 #include "console_gcc.h"
