@@ -190,7 +190,7 @@ struct Preferences
 /* European sizes */
 #define EURO_A0		0x50	/* A0: 841 x 1189 */
 #define EURO_A1		0x60	/* A1: 594 x 841  */
-^#define EURO_A2		0x70	/* A2: 420 x 594  */
+#define EURO_A2		0x70	/* A2: 420 x 594  */
 #define EURO_A3		0x80	/* A3: 297 x 420  */
 #define EURO_A4		0x90	/* A4: 210 x 297  */
 #define EURO_A5		0xA0	/* A5: 148 x 210  */
