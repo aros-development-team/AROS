@@ -92,6 +92,20 @@
 #   define IntDrawInfo DrawInfo
 #endif
 
+// FIXME: do we want these MOS extensions?
+// FIXME: what are the correct values?
+#define ICF_OPAQUEMOVE          (1<<30)
+#define ICF_PRIVILEDGEDREFRESH  (1<<29)
+#define ICF_OFFSCREENLAYERS     (1<<28)
+
+/* features */
+#ifdef __MORPHOS__
+#   define USE_OPAQUESIZE 1
+#else
+#   define USE_OPAQUESIZE 0
+#endif
+
+
 #ifdef __MORPHOS__
 void    dprintf(char *, ...) __attribute__ ((format (printf, 1, 2)));
 void * memclr(APTR, ULONG);
@@ -839,6 +853,8 @@ it's depth arranged */
 #define WMFLG_MENUHELP           (1 << 2)
 #define WMFLG_POINTERDELAY       (1 << 3)
 #define WMFLG_TABLETMESSAGES     (1 << 4)
+
+// FIXME: ehm... this one should die a horrible death!
 #define WMFLG_IAMMUI             (1 << 5)
 
 struct IntScreenBuffer
