@@ -203,6 +203,11 @@
 {
     AROS_LIBFUNC_INIT
 
+#ifdef __mc68000___
+    register APTR __PutChData asm("a3") = PutChData;
+#   define PutChData __PutChData
+#endif
+
     int in_va_list = 0;
 
     /* As long as there is something to format left */
