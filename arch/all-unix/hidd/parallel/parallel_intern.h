@@ -51,6 +51,8 @@ struct HIDDParallelUnitData
     
     ULONG 		unitnum;
     int			filedescriptor;
+
+    BOOL                stopped;
     
     struct MsgPort	*replyport_read;
     struct Interrupt 	*softint_read;
