@@ -44,4 +44,16 @@ struct IControlPrefs {
 #define ICF_MENUSNAP	  (1<<3)
 #define ICF_MODEPROMOTE   (1<<4)
 
+// FIXME: do we want these MOS extensions?
+// FIXME: what are the correct values?
+#define ICF_OPAQUEMOVE          (1<<30)
+#define ICF_PRIVILEDGEDREFRESH  (1<<29)
+#define ICF_OFFSCREENLAYERS     (1<<28)
+#define ICF_DEFPUBSCREEN        (1<<27)
+#define ICF_SCREENACTIVATION    (1<<26)
+
+/* AROS extension */
+#define ICF_3DMENUS     	(1<<16)
+#define ICF_POPUPMENUS	    	(1<<15)
+
 #endif /* PREFS_ICONTROL_H */
