@@ -36,10 +36,11 @@ endif
 
 DEP_LIBS= $(LIBAMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
+    $(LIBDIR)/libamiga.a \
     $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
-	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
+	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -lamiga -laros
 
 # BEGIN_DESC{localmakevar}
 # \item{SUBDIRS} Contains the names of directories in which Make will recurse
@@ -213,14 +214,13 @@ AmigaOS :
 #	has been recompiled.
 #
 # END_DESC{internaltarget}
-$(LIBAMIGAOS) : $(wildcard $(OSGENDIR)/*.o) \
-	    $(wildcard $(GENDIR)/alib/*.o)
+$(LIBAMIGAOS) : $(wildcard $(OSGENDIR)/*.o) $(LIBDIR)/libamiga.a
 	@echo "Recreating library"
 ifeq ("$(SHARED_AR)","")
 	@$(AR) $@ $?
 	$(RANLIB) $@
 else
-	@$(SHARED_AR) $@ $^
+	@$(SHARED_AR) $@ $^ -L$(LIBDIR) -lamiga
 endif
 
 CLIBDIR=$(TOP)/compiler/include/clib
