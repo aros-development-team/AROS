@@ -1211,7 +1211,7 @@ static LONG create_object
             zerofill((STRPTR)block->data,dev->bsize);
             block->data->fb_type    =EC(BT_STRUCT);
             block->data->fb_own     =EC(*blocknr);
-            block->data->fb_protect =EC(protect^0xf);
+            block->data->fb_protect =EC(protect); // ^0xf);
 #warning TODO: set creation date
             block->data->fb_nexthash=next;
             block->data->fb_parent  =EC(pnum);
@@ -1476,7 +1476,7 @@ static LONG examine_fib(struct ffsbase *ffsbase, struct dev *dev, ULONG block, s
 	    ead->ed_Ticks=EC(file->data->fb_ticks);
 	    
 	case ED_PROTECTION:
-	    ead->ed_Prot=EC(file->data->fb_protect)^0xf;
+	    ead->ed_Prot=EC(file->data->fb_protect);//^0xf;
 	    
 	case ED_SIZE:
 	    ead->ed_Size=EC(file->data->fb_size);
