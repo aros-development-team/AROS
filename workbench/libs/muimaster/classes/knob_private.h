@@ -3,6 +3,7 @@
 
 struct Knob_DATA
 {
+    struct MUI_EventHandlerNode  ehn;
     DOUBLE prevangle;
 };
 
