@@ -67,6 +67,8 @@ CONST char keymapname[] = KMNAME;
 #define ST KCF_STRING
 #define NOP KCF_NOP
 
+#define EUR 0xA4 /* ISO 8859-15: Euro = 164 = 0xA4) */
+
 CONST UBYTE lokeymaptypes[] =
 {
     S, 		/* 00 */
@@ -263,7 +265,7 @@ CONST IPTR lokeymap[] =
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
     BYTES('@', '@', 'Q', 'q'), 		/* 10 */
     BYTES('W', 'w', 'W', 'w'),		/* 11 */
-    BYTES('E', 'e', 'E', 'e'), 		/* 12 */
+    BYTES(EUR, EUR, 'E', 'e'), 		/* 12 */
     BYTES('R', 'r', 'R', 'r'), 		/* 13 */
     BYTES('T', 't', 'T', 't'),		/* 14 */
     BYTES('Z', 'z', 'Z', 'z'),		/* 15 */
