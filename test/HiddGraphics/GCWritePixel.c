@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     ULONG  width    = 320;
     ULONG  height   = 200;
     ULONG  depth    = 8;
-    ULONG  format   = vHIDD_BitMap_Format_Planar;
+    ULONG  format   = vHidd_BitMap_Format_Planar;
 
     WORD x;
     char wait;
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
         rda = ReadArgs("HIDD/K,WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S,DISPLAYABLE=DP/S", (IPTR *)&args, NULL);
         if (rda != NULL)
         {
-            if(args.chunky      != 0) format           = vHIDD_BitMap_Format_Chunky;
+            if(args.chunky      != 0) format           = vHidd_BitMap_Format_Chunky;
             if(args.displayable != 0) args.displayable = (ULONG) TRUE;
 
             HIDDGraphicsBase = OpenLibrary(args.hiddName, 0);
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
                                 {TAG_DONE, 0UL}
                             };
         
-                            gc = HIDD_Gfx_NewGC(gfxHidd, vHIDD_Gfx_GCType_Quick, gc_tags);
+                            gc = HIDD_Gfx_NewGC(gfxHidd, gc_tags);
                             if(gc)
                             {
                                 SetAttrsTags(gc, aHidd_GC_Foreground, 15, TAG_END);
@@ -176,13 +176,13 @@ int main(int argc, char **argv)
                                 for(x = 10; x < 30; x++)
                                 {
                                     SetAttrsTags(gc, aHidd_GC_ColorMask, ~0, TAG_END);
-                                    HIDD_GC_WritePixel(gc, x, 10);
+                                    HIDD_BM_DrawPixel(gc, x, 10);
 
                                     SetAttrsTags(gc, aHidd_GC_ColorMask, ~0 - 7, TAG_END);
-                                    HIDD_GC_WritePixel(gc, x, 12);
+                                    HIDD_BM_DrawPixel(gc, x, 12);
 
                                     SetAttrsTags(gc, aHidd_GC_ColorMask, 0, TAG_END);
-                                    HIDD_GC_WritePixel(gc, x, 14);
+                                    HIDD_BM_DrawPixel(gc, x, 14);
                                 }
 
                                 printf("Press enter to continue");

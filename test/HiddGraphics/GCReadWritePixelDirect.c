@@ -101,8 +101,8 @@ int main(int argc, char **argv)
     AttrBase HiddGfxAttrBase;
     AttrBase HiddBitMapAttrBase;
 
-    struct pHidd_GC_ReadPixel        msg_ReadPixel;
-    struct pHidd_GC_WritePixelDirect msg_WritePixel;
+    struct pHidd_BitMap_GetPixel  msg_ReadPixel;
+    struct pHidd_BitMap_PutPixel  msg_WritePixel;
 
     Object   *gfxHidd;
     Object   *bitMap;
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
     ULONG  width    = 320;
     ULONG  height   = 200;
     ULONG  depth    = 8;
-    ULONG  format   = vHIDD_BitMap_Format_Planar;
+    ULONG  format   = vHidd_BitMap_Format_Planar;
 
     WORD  x, y;
     ULONG val;
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         rda = ReadArgs("HIDD/K,WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S,DISPLAYABLE=DP/S", (IPTR *)&args, NULL);
         if (rda != NULL)
         {
-            if(args.chunky      != 0) format           = vHIDD_BitMap_Format_Chunky;
+            if(args.chunky      != 0) format           = vHidd_BitMap_Format_Chunky;
             if(args.displayable != 0) args.displayable = (ULONG) TRUE;
 
             HIDDGraphicsBase = OpenLibrary(args.hiddName, 0);
@@ -173,12 +173,12 @@ int main(int argc, char **argv)
                                 {TAG_DONE, 0UL}
                             };
         
-                            gc = HIDD_Gfx_NewGC(gfxHidd, vHIDD_Gfx_GCType_Quick, gc_tags);
+                            gc = HIDD_Gfx_NewGC(gfxHidd, gc_tags);
                             if(gc)
                             {
                                 msg_WritePixel.val = 0;
-                                msg_WritePixel.mID = GetMethodID(IID_Hidd_GC, moHidd_GC_WritePixelDirect);
-                                msg_ReadPixel.mID  = GetMethodID(IID_Hidd_GC, moHidd_GC_ReadPixel);
+                                msg_WritePixel.mID = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutPixel);
+                                msg_ReadPixel.mID  = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_GetPixel);
 
                                 for(x = 0; x < 30; x++)
                                 {

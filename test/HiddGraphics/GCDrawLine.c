@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     ULONG  width    = 320;
     ULONG  height   = 200;
     ULONG  depth    = 8;
-    ULONG  format   = vHIDD_BitMap_Format_Planar;
+    ULONG  format   = vHidd_BitMap_Format_Planar;
     ULONG  linePat;
     char   wait;
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
         rda = ReadArgs("HIDD/K,WIDTH/N/K,HEIGHT/N/K,DEPTH/N/K,CHUNKY/S,DISPLAYABLE=DP/S", (IPTR *)&args, NULL);
         if (rda != NULL)
         {
-            if(args.chunky      != 0) format           = vHIDD_BitMap_Format_Chunky;
+            if(args.chunky      != 0) format           = vHidd_BitMap_Format_Chunky;
             if(args.displayable != 0) args.displayable = (ULONG) TRUE;
 
             HIDDGraphicsBase = OpenLibrary(args.hiddName, 0);
@@ -167,25 +167,25 @@ int main(int argc, char **argv)
                                 {TAG_DONE, 0UL}
                             };
         
-                            gc = HIDD_Gfx_NewGC(gfxHidd, vHIDD_Gfx_GCType_Quick, gc_tags);
+                            gc = HIDD_Gfx_NewGC(gfxHidd, gc_tags);
                             if(gc)
                             {
                                 SetAttrsTags(gc, aHidd_GC_Foreground, ~0, TAG_END);
 
-                                HIDD_GC_DrawLine(gc, 160, 100, 160,  20);
-                                HIDD_GC_DrawLine(gc, 160, 100, 260, 100);
-                                HIDD_GC_DrawLine(gc, 160, 100, 160, 180);
-                                HIDD_GC_DrawLine(gc, 160, 100,  60, 100);
+                                HIDD_BM_DrawLine(gc, 160, 100, 160,  20);
+                                HIDD_BM_DrawLine(gc, 160, 100, 260, 100);
+                                HIDD_BM_DrawLine(gc, 160, 100, 160, 180);
+                                HIDD_BM_DrawLine(gc, 160, 100,  60, 100);
 
                                 SetAttrsTags(gc, aHidd_GC_LinePattern, 0xF0F0, TAG_END);
                                 GetAttr(gc, aHidd_GC_LinePattern, &linePat);
                                 printf("Line pattern: %lx\n", linePat);
-                                HIDD_GC_DrawLine(gc,   0,  10, 30,  10);
+                                HIDD_BM_DrawLine(gc,   0,  10, 30,  10);
 
                                 SetAttrsTags(gc, aHidd_GC_LinePattern, 0x5252, TAG_END);
                                 GetAttr(gc, aHidd_GC_LinePattern, &linePat);
                                 printf("Line pattern: %lx\n", linePat);
-                                HIDD_GC_DrawLine(gc,   0,  14, 30,  14);
+                                HIDD_BM_DrawLine(gc,   0,  14, 30,  14);
 
                                 printf("Press enter to continue");
                                 scanf("%c", &wait);

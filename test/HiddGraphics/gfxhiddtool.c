@@ -94,7 +94,7 @@ Object * NewGC(Object *hiddGfx, ULONG gcType, struct TagItem *tagList)
     if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_NewGC);
         
     p.mID      = mid;
-    p.gcType   = gcType;
+/*    p.gcType   = gcType;*/
     p.attrList = tagList;
 
     return((Object *) DoMethod(hiddGfx, (Msg) &p));

@@ -146,7 +146,7 @@ int main(int argc, char **argv)
                                 {TAG_DONE, 0UL}
                             };
 
-                            gc = HIDD_Gfx_NewGC(gfxHidd, vHIDD_Gfx_GCType_Quick, gc_tags);
+                            gc = HIDD_Gfx_NewGC(gfxHidd, gc_tags);
                             if(gc)
                             {
                                 printf("GC created:\n");
