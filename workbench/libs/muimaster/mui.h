@@ -482,6 +482,10 @@ struct MUI_PenSpec {
 #include "classes/iconlistview.h"
 #endif
 
+#ifndef _MUI_CLASSES_BALANCE_H
+#include "classes/balance.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
 **************************************************************************/
