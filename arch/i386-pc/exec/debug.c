@@ -16,6 +16,7 @@ ULONG	GetL(char*);
 UWORD	GetW(char*);
 UBYTE	GetB(char*);
 ULONG	strcmp(const char*,const char*);
+int	get_irq_list(char *buf);
 
 #   define GetHead(l)       (void *)(((struct List *)l)->lh_Head->ln_Succ \
 				? ((struct List *)l)->lh_Head \
@@ -136,6 +137,16 @@ ULONG	strcmp(const char*,const char*);
 	    {
 		kprintf("0x%08.8lx : %s\n",node,node->ln_Name);
 	    }
+	}
+	else if (strcmp(comm,"SI")==0)
+	{
+	    char buf[512];
+	    
+	    kprintf("Available interrupts:\n");
+	    
+	    get_irq_list(&buf);
+
+	    kprintf(buf);
 	}
 	/* ShowResources command */
 	else if (strcmp(comm,"SR")==0)
