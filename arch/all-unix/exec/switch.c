@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <stdio.h>
 
+extern sigset_t sig_int_mask;
+
 AROS_LH0(void, Switch,
     struct ExecBase *, SysBase, 9, Exec)
 {
@@ -31,9 +33,7 @@ AROS_LH0(void, Switch,
     {
 	if( SysBase->IDNestCnt >= 0 )
 	{
-		sigset_t set;
-		sigfillset(&set);
-		sigprocmask(SIG_UNBLOCK, &set, NULL);
+		sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
 	}
 		
 	/*      Its quite possible that they have interrupts Disabled(),

@@ -36,7 +36,31 @@ static struct Task * lastTask;
 /* Try and emulate the Amiga hardware interrupts */
 static int sig2tab[NSIG];
 sigset_t sig_int_mask;	/* Mask of signals that Disable() block */
-int supervisor;
+int supervisor, intrap;
+
+/*
+    These tables are used to map signals to interrupts
+    and trap. There are two tables for the two different kinds
+    of events. We also remove all the signals in sig2trap from
+    the interrupt disable mask.
+*/
+static const int sig2int[][2] =
+{
+    { SIGALRM, INTB_VERTB },
+    { SIGUSR1, INTB_SOFTINT },
+    { SIGIO,   INTB_DSKBLK }
+};
+
+static const int sig2trap[][2] =
+{
+    { SIGBUS,   2 },
+    { SIGSEGV,  3 },
+    { SIGILL,   4 },
+#ifdef SIGEMT
+    { SIGEMT,   13 },
+#endif
+    { SIGFPE,   13 }
+};
 
 /* This is from sigcore.h - it brings in the definition of the
    systems initial signal handler, which simply calls
@@ -51,11 +75,9 @@ GLOBAL_SIGNAL_INIT
 static void sighandler(int sig, sigcontext_t * sc)
 {
     struct IntVector *iv;
-    /* SP_TYPE *sp; */
 
     if(sig == SIGINT)
     {
-	fprintf(stderr, "\n\nAbout to die, bye bye...\n");
 	exit(0);
     }
 
@@ -153,6 +175,15 @@ static void traphandler(int sig, sigcontext_t *sc)
     int trapNum = sig2tab[sig];
     struct Task *this;
 
+    /* Something VERY bad has happened */
+    if( intrap )
+    {
+	fprintf(stderr, "Double TRAP! Aborting!\n");
+	fflush(stderr);
+	abort();
+    }
+    intrap++;
+
     if( supervisor )
     {
 	fprintf(stderr,"Illegal Supervisor %d - Inside TRAP\n", supervisor);
@@ -163,52 +194,39 @@ static void traphandler(int sig, sigcontext_t *sc)
     this = SysBase->ThisTask;
     AROS_UFC1(void, this->tc_TrapCode,
 	AROS_UFCA(ULONG, trapNum, D0));
+
+    intrap--;
 }
 #endif
 
 /* Set up the kernel. */
 void InitCore(void)
 {
-    static const int sig2int[][2] =
-    {
-	{ SIGALRM, INTB_VERTB },
-	{ SIGUSR1, INTB_SOFTINT },
-	{ SIGIO,   INTB_DSKBLK }
-    };
-
-#if 0
-    static const int sig2trap[][2] =
-    {
-	{ SIGBUS,   2 },
-	{ SIGSEGV,  3 },
-	{ SIGILL,   4 },
-	{ SIGEMT,   13 }
-    };
-#endif
 
     struct itimerval interval;
     int i;
     struct sigaction sa;
 
     /* We only want signal that we can handle at the moment */
-
     sigfillset(&sa.sa_mask);
     sigfillset(&sig_int_mask);
-    sa.sa_flags = SA_RESTART;
 #ifdef __linux__
+    sa.sa_flags = SA_RESTART;
     sa.sa_restorer = NULL;
 #endif
 
     /* Initialize the translation table */
     bzero(sig2tab, sizeof(sig2tab));
+    supervisor = 0;
+    intrap = 0;
 
-#if 0
+#if 1
     /* These ones we consider as processor traps */
-    sa.sa_handler = (SIGHANDLER_T)TRAPHANDLER;
+    //sa.sa_handler = (SIGHANDLER_T)TRAPHANDLER;
     for(i=0; i < (sizeof(sig2trap) / sizeof(sig2trap[0])); i++)
     {
 	sig2tab[sig2trap[i][0]] = sig2trap[i][1];
-	sigaction( sig2trap[i][0], &sa, NULL);
+	// sigaction( sig2trap[i][0], &sa, NULL);
 	sigdelset( &sig_int_mask, sig2trap[i][0] );
     }
 #endif
