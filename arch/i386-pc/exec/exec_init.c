@@ -111,11 +111,8 @@ AROS_UFH5S(void, IntServer,
 {
     struct Interrupt * irq;
 
-    kprintf("O");
-
     ForeachNode(intList, irq)
     {
-	kprintf("!");
 	if( AROS_UFC4(int, irq->is_Code,
 		AROS_UFCA(struct Custom *, custom, A0),
 		AROS_UFCA(APTR, irq->is_Data, A1),
