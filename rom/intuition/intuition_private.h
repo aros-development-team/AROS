@@ -15,13 +15,6 @@
 #include <aros/libcall.h>
 #endif
 
-#if defined(_AMIGA) && defined(__GNUC__)
-#   ifndef NO_INLINE_STDARG
-#	define NO_INLINE_STDARG
-#   endif
-#   include "intuition_pinlines.h"
-#endif
-
 /*
     Prototypes
 */
