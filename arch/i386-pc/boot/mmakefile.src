@@ -40,14 +40,14 @@ $(LIB) : $(LIBOBJS)
 
 $(OSGENDIR)/boot/bootsect : bootsect.asm $(GENINCDIR)/aros/boot.h
 	%mkdirs_q $(OBJDIR)
-	$(CC) $(OS_INCLUDES) -E -traditional $< -o bootsect.s
+	$(CAT) $< | $(CC) $(OS_INCLUDES) -E -traditional - -o bootsect.s
 	$(AS86) -o bootsect.o bootsect.s
 	$(LD86) -s -o $@ bootsect.o
 	$(RM) bootsect.s bootsect.o
 
 $(OSGENDIR)/boot/setup : setup.asm $(GENINCDIR)/aros/boot.h
 	%mkdirs_q $(OBJDIR)
-	$(CC) $(OS_INCLUDES) -E -traditional $< -o setup.s
+	$(CAT) $< | $(CC) $(OS_INCLUDES) -E -traditional - -o setup.s
 	$(AS86) -o setup.o setup.s
 	$(LD86) -s -o $@ setup.o
 	$(RM) setup.s setup.o
