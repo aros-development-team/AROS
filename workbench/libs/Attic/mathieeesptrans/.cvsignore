@@ -1,8 +1,0 @@
-*functable.c
-*endtag.c
-functions.[ch]
-libdefs.h
-makefile
-mmakefile
-*.err
-*.map
