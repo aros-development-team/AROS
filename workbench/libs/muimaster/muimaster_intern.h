@@ -83,9 +83,10 @@ struct MUIMasterBase_intern
     struct Library		*gadtoolsbase;
     struct Library  	    	*iffparsebase;
     struct Library  	    	*diskfontbase;
-    
+    struct Library  	    	*iconbase;
+
 /*  struct Library  	    	*datatypesbase; */
-    
+
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
 
     struct IClass **Classes;
@@ -135,6 +136,9 @@ struct MUIMasterBase_intern
 
 #undef DiskfontBase
 #define DiskfontBase  	(MUIMB(MUIMasterBase)->diskfontbase)
+
+#undef IconBase
+#define IconBase  	(MUIMB(MUIMasterBase)->iconbase)
 
 /*
 #undef DataTypesBase

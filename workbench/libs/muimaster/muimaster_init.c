@@ -119,7 +119,12 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	DiskfontBase = OpenLibrary("diskfont.library", 37);
     if (!DiskfontBase)
     	return FALSE;
-    
+
+    if (!IconBase)
+    	IconBase = OpenLibrary("icon.library", 37); /* V44 really */
+    if (!IconBase)
+    	return FALSE;
+
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
     InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -186,6 +191,9 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     
     CloseLibrary(DiskfontBase);
     DiskfontBase = NULL;
+    
+    CloseLibrary(IconBase);
+    IconBase = NULL;
 }
 
 /****************************************************************************************/
