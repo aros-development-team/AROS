@@ -1,6 +1,14 @@
 #ifndef _SIGCORE_H
 #define _SIGCORE_H
 
+/*
+    (C) 1995-98 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: Macros to handle unix signals
+    Lang: english
+*/
+
 #include <signal.h>
 #include "etask.h"
 
