@@ -165,6 +165,7 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
 	return NULL;
     }
     retval->dd_RastPort = rp;
+    rp->longreserved[0] = (IPTR) retval;
 
     return retval;
 }
@@ -196,18 +197,30 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     BOOL retval = True;
     struct gfx_driverdata * dd, * old;
 
-    old = GetDriverData (rp);
-    if (rp != old->dd_RastPort)
+    if (!rp)
     {
-        dd = InitDriverData(rp, GfxBase);
-	if (old->dd_Window)
-	    dd->dd_Window = old->dd_Window;
-	else
-	    retval = False;
-	if (old->dd_GC)
-	    dd->dd_GC = old->dd_GC;
-	else
-	    retval = False;
+    	retval = False;
+    }
+    else
+    {
+	old = GetDriverData(rp);
+	if (!old)
+	{
+	    old = InitDriverData(rp, GfxBase);
+	    return False;
+	}
+	else if (rp != old->dd_RastPort)
+	{
+    	    dd = InitDriverData(rp, GfxBase);
+	    if (old->dd_Window)
+		dd->dd_Window = old->dd_Window;
+	    else
+		retval = False;
+	    if (old->dd_GC)
+		dd->dd_GC = old->dd_GC;
+	    else
+		retval = False;
+	}
     }
     return retval;
 }
@@ -396,13 +409,20 @@ Pixmap ConvertAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
     {
 	/* Singlecolored AreaPtrn */
 	height = 1<<(rp->AreaPtSz);
-
+	if (height == 1)
+    	    pattern = AllocMem(2*2*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
         pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
 
 	for (y=0; y<height; y++)
 	{
 	    pattern[2*y] = (char)( (rp->AreaPtrn[y]) & (255) );
 	    pattern[2*y+1] = (char)( ( (rp->AreaPtrn[y]) & (255<<8) ) >> 8);
+	}
+	if (height == 1)
+	{
+	    pattern[2] = pattern[0];
+	    pattern[3] = pattern[1];
+	    height = 2;
 	}
 LX11
         stipple = XCreateBitmapFromData (sysDisplay
@@ -870,7 +890,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     unsigned long pixel;
     ULONG t;
 
-    CorrectDriverData (rp, GfxBase);
+    if(!CorrectDriverData (rp, GfxBase))
+	return ((ULONG)-1L);
 LX11
     XSync (sysDisplay, False);
     SIGID ();
@@ -900,7 +921,8 @@ UX11
 LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+    if(!CorrectDriverData (rp, GfxBase))
+	return ((ULONG)-1L);
 LX11
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
