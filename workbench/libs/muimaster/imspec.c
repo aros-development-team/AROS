@@ -1749,7 +1749,11 @@ struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
 
 struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec)
 {
-    struct MUI_ImageSpec *nspec = mui_alloc_struct(struct MUI_ImageSpec);
+    struct MUI_ImageSpec *nspec;
+    
+    if (!spec) return NULL;
+    
+    nspec = mui_alloc_struct(struct MUI_ImageSpec);
     if (nspec) memcpy(nspec,spec,sizeof(struct MUI_ImageSpec));
     return nspec;
 }
