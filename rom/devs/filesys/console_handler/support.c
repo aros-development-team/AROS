@@ -397,6 +397,13 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 	D(bug("scan_input: check char %d\n",c));
 	switch(c)
 	{
+	    case 3:
+	    case 4:
+	    case 5:
+	    case 6:
+	        result = INP_CTRL_C - 3 + (WORD)c;
+		break;
+		
 	    case 8:
 	        result = INP_BACKSPACE;
 		break;
