@@ -82,7 +82,8 @@ struct DosLibrary
     struct MsgPort	 * dl_LDDemonPort;
     struct Process	 * dl_LDDemonTask;
     ULONG		   dl_LDReturn;
-
+    BPTR    	    	   dl_SYSLock;
+    
 #if 0
     ULONG		   dl_ProcCnt;
 #endif
