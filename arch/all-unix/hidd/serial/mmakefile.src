@@ -12,6 +12,6 @@ USER_CFLAGS := -DAROS_USE_OOP
   genfunctable=yes \
   compiler=host
 
-#MM- workbench-hidd-unix-serial : kernel-unixio
+#MM workbench-hidd-unix-serial : kernel-unixio
 
 %common
