@@ -76,6 +76,26 @@ ask or say, contact coordinator \email{digulla@aros.fh-konstanz.de}.
 \incverb{status.inc}
 }
 
+\begin{new}{9.10.1997}
+\subsection{AROS on m68k Status}
+
+Here is a list of programs which have been tries on Amiga-Linux/m68k:
+
+\begin{itemize}
+\item \filename{C:Date},
+\filename{C:Avail},
+\filename{C:Version},
+\filename{C:Assign},
+\filename{C:Info},
+\filename{C:Status} and
+\filename{C:SetPatch} (It doesn't install any patches, though :-) ). All
+of them work, others don't, yet.
+\item zoo (packer) works, LhA and LZX not yet.
+\item TeX: bibtex and bm2font work.
+\item OMA2.0 assembler works. Linker hasn't been tried yet.
+\end{itemize}
+\end{new}
+
 \section{Snapshots}
 
 \largepic{A snapshot of the window of demowin}{pics/demowin.gif}
