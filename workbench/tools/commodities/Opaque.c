@@ -80,7 +80,7 @@ static struct NewBroker nb =
    NULL,
    NBU_NOTIFY | NBU_UNIQUE, 
    0,
-   0,
+   -120,
    NULL,                             
    0 
 };
@@ -112,7 +112,7 @@ STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
     STRPTR string;
 
     if(catalogPtr)
-        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+        string = (STRPTR)GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
     else
         string = CatCompArray[id].cca_Str;
 
