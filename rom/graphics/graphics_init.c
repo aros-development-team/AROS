@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/13 14:00:53  digulla
+    Added calls to driver
+    Init local SysBase
+    Replaced __AROS_LA with __AROS_LHA
+
     Revision 1.1  1996/08/12 14:27:50  digulla
     Base of graphics library
 
@@ -15,6 +20,7 @@
 #include <clib/exec_protos.h>
 #include <aros/libcall.h>
 #include <dos/dos.h>
+#include <exec/execbase.h>
 #include <graphics/gfxbase.h>
 #include "graphics_intern.h"
 
@@ -24,6 +30,11 @@ static const APTR inittabl[4];
 static void *const Graphics_functable[];
 struct GfxBase *Graphics_init();
 extern const char Graphics_end;
+
+extern int  driver_init (struct GfxBase *);
+extern int  driver_open (struct GfxBase *);
+extern void driver_close (struct GfxBase *);
+extern void driver_expunge (struct GfxBase *);
 
 int Graphics_entry(void)
 {
@@ -58,11 +69,16 @@ static const APTR inittabl[4]=
 };
 
 __AROS_LH2(struct GfxBase *, init,
- __AROS_LA(struct GfxBase *, GfxBase, D0),
- __AROS_LA(BPTR,               segList,   A0),
+ __AROS_LHA(struct GfxBase *, GfxBase, D0),
+ __AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Graphics)
 {
     __AROS_FUNC_INIT
+
+    SysBase = sysBase;
+
+    if (!driver_init (GfxBase))
+	return NULL;
 
     /* You would return NULL if the init failed */
     return GfxBase;
@@ -70,13 +86,16 @@ __AROS_LH2(struct GfxBase *, init,
 }
 
 __AROS_LH1(struct GfxBase *, open,
- __AROS_LA(ULONG, version, D0),
+ __AROS_LHA(ULONG, version, D0),
 	   struct GfxBase *, GfxBase, 1, Graphics)
 {
     __AROS_FUNC_INIT
 
     /* Keep compiler happy */
     version=0;
+
+    if (!driver_open (GfxBase))
+	return NULL;
 
     /* I have one more opener. */
     GfxBase->LibNode.lib_OpenCnt++;
@@ -95,6 +114,8 @@ __AROS_LH0(BPTR, close,
     /* I have one fewer opener. */
     if(!--GfxBase->LibNode.lib_OpenCnt)
     {
+	driver_close (GfxBase);
+
 	/* Delayed expunge pending? */
 	if(GfxBase->LibNode.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
@@ -118,6 +139,8 @@ __AROS_LH0(BPTR, expunge,
 	GfxBase->LibNode.lib_Flags|=LIBF_DELEXP;
 	return 0;
     }
+
+    driver_expunge (GfxBase);
 
     /* Get rid of the library. Remove it from the list. */
     Remove(&GfxBase->LibNode.lib_Node);
