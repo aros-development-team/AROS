@@ -16,10 +16,12 @@
 #include <devices/inputevent.h>
 #include <aros/asmcall.h>
 #include <stdlib.h> /* atol() */
+#include <stdio.h>  /* snprintf() */
 #include "intuition_intern.h"
 #include "strgadgets.h"
 
 #undef DEBUG
+#define SDEBUG 0
 #define DEBUG 0
 #	include <aros/debug.h>
 
@@ -36,6 +38,8 @@ AROS_UFP3(STATIC ULONG, GlobalEditFunc,
     AROS_UFPA(struct SGWork *,		sgw,		A2),
     AROS_UFPA(ULONG *, 			command,	A1)
 );
+
+VOID UpdateStringInfo(struct Gadget *);
 
 struct RPPres
 {
@@ -67,86 +71,155 @@ struct RPPres
 #undef MIN
 #define MIN(a, b) ((a < b) ? a : b)
 
-/*****************
-**  UpdateDisp  **
-*****************/
+
+/*******************
+**  MaxDispPos()  **
+*******************/
+STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
+		struct RastPort *rp, struct IntuitionBase *IntuitionBase)
+{
+
+    WORD numfit, max_disppos, numchars;
+    struct TextExtent te;
+    BOOL cursor_at_end;
+    
+    cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
+
+    EnterFunc(bug("MaxDispPos(current length: %d)\n", strinfo->NumChars));
+    
+    if (cursor_at_end) /* Cursor at end of string ? */
+    {
+    	D(bug("Making cursor last char\n"));
+    	numchars = strinfo->NumChars + 1; /* Take cursor into account */
+
+/*    	This has allready been done by UpdateDisp() which called us
+	strinfo->Buffer[strinfo->NumChars] = 0x20; 
+
+*/
+    }
+    else
+    {
+    
+    	numchars = strinfo->NumChars;
+    }
+    
+    
+    /* Find the amount of characters that fit into the bbox, counting
+    ** from the last character in the buffer and forward,
+    */
+    numfit = TextFit(rp,
+    	&(strinfo->Buffer[numchars - 1]),
+    	numchars, &te, NULL,
+    	-1, bbox->Width, rp->Font->tf_YSize);
+
+    			
+    max_disppos = numchars - numfit;
+    
+    if ((max_disppos > 0) && (!cursor_at_end))
+    	max_disppos --;
+    
+
+    D(bug("Numchars w/cursor: %d, Numfit: %d, maxdisppos=%d\n", numchars, numfit, max_disppos));
+
+    ReturnInt("MaxDispPos", WORD, max_disppos);
+}
+
+/*******************
+**  UpdateDisp()  **
+*******************/
 void UpdateDisp(struct Gadget 		*gad,
 		struct BBox		*bbox,
 		struct RastPort		*rp,
 		struct IntuitionBase	*IntuitionBase)
 {
    
-/*    WORD biggest_valid_disppos; */
-    /* dispcount of the charcter at end of a string */
-/*    UWORD end_dispcount; */
+
     struct TextExtent te;
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
     STRPTR dispstr;
+    
+    EnterFunc(bug("UpdateDisp(gad=%p, bbox=%p, rp=%p)\n",
+    	gad, bbox, rp));
 
     /* If the cursor is at the trailing \0, insert a SPACE instead */
     if (strinfo->BufferPos == strinfo->NumChars)
     	strinfo->Buffer[strinfo->NumChars] = 0x20;
+    	
+    /* In this function we check if the cursor has gone outside
+    ** of the visible area (because of application setting
+    ** strinfo->BufferPos or strinfo->DispPos to a different value, or
+    ** because of user input).
+    ** This is made a bit difficult by the rule (R), that there
+    ** should NOT be available space on the right, and characters
+    ** scrolled out at the left, at the same time.
+    ** We have 3 possible scenarios:
+    ** 1) Cursor to the left of DispPos:
+    **    Set DispPos to the lowest of BufferPos and the
+    **	  maximum allowed disppos (according to (R) ).
+    ** 2) Cursor to the right of visible area:
+    **    Set dispose sou that the cursor is the last visible character.
+    **    This afheres to (R).
+    ** 3) Cursor inside visible area. Do a check on rule (R),
+    **    and if DispPos > max allowed, then adjust it down,
+    **    so that the last character in the buffer becomes last character
+    **	  displayed. (The cursor will still be visible after adjustion)
+    */
 
+
+    /* 1) Cursor to the left of visible area */
     if (strinfo->BufferPos < strinfo->DispPos)
-    	strinfo->DispPos = strinfo->BufferPos;
-    else if (strinfo->BufferPos > strinfo->DispPos)
     {
-    	UWORD strsize = TextLength(rp,
-    				strinfo->Buffer + strinfo->DispPos,
-    				strinfo->BufferPos - strinfo->DispPos + 1);
+    	WORD max_disppos;
+    	
+    	max_disppos = MaxDispPos(strinfo, bbox, rp, IntuitionBase);
+    	strinfo->DispPos = MIN(strinfo->BufferPos, max_disppos);
+    }
+    else /* Cursor equal to the right of disppos [ 2) or 3) ] */
+    {
+    	UWORD strsize;
+
+	/* How many pixels are there from current 1st displayed to the cursor ? */    	
+    	strsize = TextLength(rp,
+    		strinfo->Buffer + strinfo->DispPos,
+    		strinfo->BufferPos - strinfo->DispPos + 1);
     	    
+    	/* 2) More than fits into the gadget ? */
 	if (strsize > bbox->Width)
 	{
+	    /* Compute new DispPos such that the cursor is at the right */
     	    strinfo->DispPos = strinfo->BufferPos
     	    		- TextFit(rp, 
     				&(strinfo->Buffer[strinfo->BufferPos]),
     			   	strinfo->NumChars, &te, NULL, -1,
     			   	bbox->Width, rp->Font->tf_YSize)
     			+ 1;
-	    D(bug("ed: disppos to %d, because cursor was out of visible area\n",
-		strinfo->DispPos));
+	    
+	    D(bug("cursor right of visible area, new disppos: %d\n", strinfo->DispPos));
 	}
+	else /* 3). Cursor inside gadget */
+	{
+    	    WORD max_disppos;
+    	
+    	    max_disppos = MaxDispPos(strinfo, bbox, rp, IntuitionBase);
+    	    if (strinfo->DispPos > max_disppos)
+	    	strinfo->DispPos = max_disppos;
+
+	} /* if (cursor inside or to the right of visible area )*/
+	
     }   
     
-    /* Check if there is there is free space in the gad but chars 
-    ** scrolled out.
-    */
-/*    end_dispcount = TextFit(rp,
-    	&(strinfo->Buffer[strinfo->NumChars - 1]),
-    	strinfo->NumChars, &te, NULL,
-    	-1, bbox->Width, rp->Font->tf_YSize);
-
-    if (strinfo->BufferPos == strinfo->NumChars)
-    	end_dispcount --;
-    			
-    D(bug("ud: Space available in strgad: %d\n", end_dispcount));
-    			
-    biggest_valid_disppos = strinfo->NumChars - end_dispcount;
-    
-    D(bug("ud: Biggest valid disppos: %d\n", biggest_valid_disppos));
-    if (strinfo->DispPos > 0)
-    {
-    	if (strinfo->DispPos > biggest_valid_disppos)
-    	{
-    	    strinfo->DispPos = biggest_valid_disppos;
-    	}
-    }
-*/    
     /* Update the DispCount */
     /* It might be necessary with special handling for centre aligned gads */
     dispstr = &(strinfo->Buffer[strinfo->DispPos]);
-    strinfo->DispCount = TextFit(rp,
-    			dispstr,
-    			strinfo->NumChars - strinfo->DispPos,
-    			&te,
-    			NULL,
-    			1,
-    			gad->Width,
-    			rp->Font->tf_YSize);
+    strinfo->DispCount = TextFit(rp, dispstr,
+    		strinfo->NumChars - strinfo->DispPos,
+    		&te, NULL, 1,
+    		gad->Width,
+    		rp->Font->tf_YSize);
 
     /* 0-terminate string */			
     strinfo->Buffer[strinfo->NumChars] = 0x00;
-    return;
+    ReturnVoid("UpdateDisp");
 }
 
 /******************
@@ -173,16 +246,15 @@ STATIC UWORD GetTextLeft(struct Gadget		*gad,
         text_left = bbox->Left;
         break;
 
-    case GACT_STRINGCENTER:
-       	D(bug("GACT_STRINGCENTER not implemented yet\n"));
-       	break;
+    case GACT_STRINGCENTER: {
+    	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+        text_left = bbox->Left + ((bbox->Width - textwidth) / 2);
+       	} break;
 
-    case GACT_STRINGRIGHT:
-    	text_left =  bbox->Left 
-    		   + (  bbox->Width  - 1
-    		   	- TextLength(rp, dispstr, dispstrlen)
-    		     );
-    	break;
+    case GACT_STRINGRIGHT: {
+    	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+    	text_left =  bbox->Left + (bbox->Width - 1 - textwidth);
+    	} break;
     }
     return (text_left);
 }
@@ -211,9 +283,11 @@ STATIC UWORD GetTextRight(struct Gadget		*gad,
     	text_right =  bbox->Left + TextLength(rp, dispstr, dispstrlen);
         break;
 
-    case GACT_STRINGCENTER:
-       	D(bug("GACT_STRINGCENTER not implemented yet\n"));
-       	break;
+    case GACT_STRINGCENTER: {
+    	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+    	
+    	text_right = bbox->Left + bbox->Width - 1 - ((bbox->Width - textwidth) / 2);
+       	} break;
 
     case GACT_STRINGRIGHT:
         text_right = bbox->Left + bbox->Width  - 1;
@@ -232,10 +306,6 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
 {   
 
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
-
-    D(bug("GetPensAndFont(gad=%p, pens=%p, win=%s, screen=%s)\n",
-    	gad, pens, win->Title, win->WScreen->Title));
-
     
     if (gad->Flags & GFLG_STRINGEXTEND)
     {
@@ -259,7 +329,6 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     	    pens[STRBACKPEN]	= strext->Pens[1];
 	}
 	
-	D(bug("gpaf: strext exists\n"));
     }
     else
     {
@@ -286,9 +355,7 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     }
     pens[CURSORPEN] = dri->dri_Pens[FILLPEN];
     
-    D(bug("gpaf: c=%d, t=%d, b=%d\n",
-    	pens[CURSORPEN], pens[STRTEXTPEN], pens[STRBACKPEN]));
-    ReturnVoid("GetPensAndFont");
+    return;
 }
 
 /*********************
@@ -307,10 +374,15 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     struct StringExtend *strext = NULL;
     ULONG command = 0;
 
-    D(bug("HandleStrInput(gad=%p, ginfo=%p, ievent=%p)\n",
+    EnterFunc(bug("HandleStrInput(gad=%p, ginfo=%p, ievent=%p)\n",
     	gad, ginfo, ievent));
+    	
+    D(bug("Gadget text: %s\n", strinfo->Buffer));
+    	
     if (!ginfo)
     	ReturnInt("HandleStrInput", ULONG, 0UL);
+    	
+    UpdateStringInfo(gad);
     	
     /* Initialize SGWork */
     sgw.Gadget		= gad;
@@ -332,8 +404,11 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     	D(bug("hsi: Extended gadget\n"));
     	strext = strinfo->Extension;
     	if (strext->WorkBuffer)
+    	{
     	    sgw.WorkBuffer = strext->WorkBuffer;
-    	    
+    	    /* The edit hook gets *copy* of the current buffer contents */
+    	    strcpy(sgw.WorkBuffer, strinfo->Buffer);
+    	 }   
     	sgw.Modes = strext->InitialModes;
     }
 
@@ -354,12 +429,13 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     if (!command)
     	ReturnInt("HandleStrInput", ULONG , 0UL);
     	
-    /* Call the global edititng hook */
+    /* Call the global editing hook */
     globhook.h_Entry	= (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
     globhook.h_SubEntry = NULL;
     globhook.h_Data	= IntuitionBase;
     
-    D(bug("hsi: calling global hook\n"));
+    D(bug("calling global hook, Buffer=%s, WorkBuffer=%s\n",
+    	strinfo->Buffer, sgw.WorkBuffer));
     CallHookPkt(&globhook, &sgw, &command);
     
     /* If there is a local edit hook, run it */
@@ -367,7 +443,7 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     {
     	if (strext->EditHook)
     	{
-    	    D(bug("hsi: calling local hook\n"));    	
+    	    D(bug("calling local edit hook\n"));    	
     	    CallHookPkt(strext->EditHook, &sgw, &command);
     	}
     }
@@ -384,6 +460,7 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     	strinfo->BufferPos = sgw.BufferPos;
     	strinfo->NumChars  = sgw.NumChars;
     	strinfo->LongInt   = sgw.LongInt;
+    	
     }
 
     if (sgw.Actions & SGA_BEEP)
@@ -442,8 +519,10 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     
     UWORD mousex = sgw->IEvent->ie_position.ie_xy.ie_x;
     
-    D(bug("DoSGHClick(sgw=%p)\n", sgw));
+    EnterFunc(bug("DoSGHClick(sgw=%p)\n", sgw));
     
+    D(bug("Gadget text: %s\n", sgw->WorkBuffer));
+
     rp	    =  sgw->GadgetInfo->gi_RastPort;
     oldfont = rp->Font;    
     gad     = sgw->Gadget;
@@ -477,6 +556,8 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     D(bug("sghclick: text_left=%d, text_right=%d\n", text_left, text_right));    
     D(bug("sghclick: disppos=%d, dispcount=%d, cursor=%d\n",
     	strinfo->DispPos, strinfo->DispCount, sgw->BufferPos));
+    D(bug("Gadget text: %s\n", sgw->WorkBuffer));
+
     /* Check if mouseclick is inside displayed text */
     if ((mousex >= text_left) && (mousex <= text_right))
     {
@@ -514,6 +595,8 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     sgw->EditOp = EO_MOVECURSOR;
     
     SetFont(rp, oldfont);
+    
+    D(bug("Gadget text: %s\n", sgw->WorkBuffer));
 
     ReturnInt ("DoSGHClick", ULONG, 1);
 }
@@ -561,14 +644,14 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     LONG numchars;
     ULONG qual;
     
+    EnterFunc(bug("DoSGHKey(sgw=%p)\n", sgw));
+    
     gad = sgw->Gadget;
     strinfo = sgw->StringInfo;
     
     numchars = intui_RawKeyConvert(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
     if (numchars == -1)
     	return (FALSE);
-    	
-    D(bug("sghkey: RawKeyConvert successfull\n"));
     	
     letter = keybuf[0];
     qual = sgw->IEvent->ie_Qualifier;
@@ -709,15 +792,19 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     	    
     	    	if (sgw->BufferPos < strinfo->MaxChars - 1)
     	    	    sgw->BufferPos ++;
+    	    	    
     	    }
     	    else 
     	    {
-    	        /* Insert mode. Check if there is space for one more character */
-    	        if (sgw->NumChars < strinfo->MaxChars)
+    	        /* Insert mode. Check if there is space for one more character 
+    	        ** NOTE: MaxChars inludes traing \0, so therefore the '- 1'
+    	        */
+    	        if (sgw->NumChars < (strinfo->MaxChars - 1))
     	    	{
 		    register UWORD i;
 		
 		    D(bug("sghkey: inserting char at pos %d\n", sgw->BufferPos));
+		    /* Move characters to the right of insertion point one step to the right */
 		    for (i = sgw->NumChars; i > sgw->BufferPos; i --)
 	 	    {
 		    	sgw->WorkBuffer[i] = sgw->WorkBuffer[i - 1];
@@ -728,6 +815,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 		    sgw->EditOp = EO_INSERTCHAR;
 		    sgw->NumChars ++;
 		    sgw->BufferPos ++;
+		    
     	    	}
     	    	else
     	        {
@@ -736,17 +824,20 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     	    } /* if (Replace or Insert mode) */
         } /* If (user pressed valid letter) */
     } /* if (key or scancode) */
-    
-    /* Integer value changed ? */
-    if (    (gad->Activation & GACT_LONGINT)
-    	 && ((sgw->EditOp == EO_INSERTCHAR) || (sgw->EditOp == EO_REPLACECHAR)) )
+
+    /* Null-terminate the new string */
+    sgw->WorkBuffer[sgw->NumChars] = 0;
+    	
+    /* Integer gadget ? */
+    if (gad->Activation & GACT_LONGINT)
     {
     	sgw->LongInt = atol(sgw->WorkBuffer);
+    	D(bug("Updated string number to %d\n", sgw->LongInt));
     }
     
     if (sgw->EditOp != EO_NOOP)	
     	sgw->Actions |= (SGA_USE|SGA_REDISPLAY);	     
-    return (1);   
+    ReturnInt ("DoSGHKey", ULONG, 1);   
 }
 
 
@@ -784,7 +875,7 @@ VOID RefreshStrGadget(struct Gadget	*gad,
 		struct IntuitionBase	*IntuitionBase)
 {
 
-    D(bug("RefreshStrGadget(gad=%p, win=%s)\n", gad, win->Title));
+    EnterFunc(bug("RefreshStrGadget(gad=%p, win=%s)\n", gad, win->Title));
 	
     if (gad->GadgetRender)
     {
@@ -799,6 +890,30 @@ VOID RefreshStrGadget(struct Gadget	*gad,
     ReturnVoid("RefreshStrGadget");
 }		
 
+
+/*************************
+**  UpdateStringInfo()  **
+*************************/
+VOID UpdateStringInfo(struct Gadget *gad)
+{
+    /* Updates the stringinfo in case user has set some fields */
+    
+    struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
+    EnterFunc(bug("UpdateStringInfo(gad=%p)\n", gad));
+
+    if (gad->Activation & GACT_LONGINT)
+    {
+        /* NOTE: The max number of chars written INCLUDES trailing \0 */
+    	snprintf(strinfo->Buffer, strinfo->MaxChars, "%d", strinfo->LongInt);
+    }
+    
+    strinfo->NumChars = strlen(strinfo->Buffer);
+    
+    D(bug("String contains buffer %s of length %d\n",
+    	strinfo->Buffer, strinfo->NumChars));
+    
+    ReturnVoid("UpdateStringInfo");
+}
 
 /***********************
 **  UpdateStrGadget  **
@@ -823,25 +938,19 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     
     UWORD pens[NUMPENS];
     
-    D(bug("UpdateStrGadget(gad=%p, win=%s)\n", gad, win->Title));
+    EnterFunc(bug("UpdateStrGadget(current text=%s)\n", strinfo->Buffer));
 
     CalcBBox(win, gad, &bbox);
-    /* Update the strinfo->Disp* fields in case application has set
-    ** strinfo->BufferPos;
-    ** Assures (BufferPos - DispPos < DispCount)
-    */
-
-    D(bug("Calling UpdateDisp: disppos=%d, dispcount=%d, cursor=%d\n",
-    	strinfo->DispPos, strinfo->DispCount, strinfo->BufferPos));
+    
+    /* Update the stringinfo struct in case of user change */
+    UpdateStringInfo(gad);
+    
+    /* Update the DispPos and DispCount fields so that the gadget renders properly */
     UpdateDisp(gad, &bbox, rp, IntuitionBase);
 
-    D(bug("usg: DispPos update: dispos=%d, dispcount=%d, cursor=%d\n",
-    	strinfo->DispPos, strinfo->DispCount, strinfo->BufferPos)); 
     	
     dispstr = strinfo->Buffer + strinfo->DispPos;
     dispstrlen = MIN(strinfo->DispCount, strinfo->NumChars - strinfo->DispPos);
-            
-
 
     /* Preserve rastport stuff */
     PreserveRP(rp, rppres);
@@ -852,7 +961,6 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     SetAPen(rp, pens[STRBACKPEN]);
     SetDrMd(rp, JAM1);
 
-    D(bug("usg: Filling background with pen %d\n", pens[STRBACKPEN]));
     RectFill(rp,
     	bbox.Left,
     	bbox.Top,
@@ -860,8 +968,6 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     	bbox.Top  + bbox.Height - 1);
 
     text_left = GetTextLeft(gad, &bbox, rp, IntuitionBase);
-    
-    		
     
     
     /* Write the text into the gadget */
