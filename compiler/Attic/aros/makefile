@@ -23,7 +23,8 @@ $(OBJDIR)/rt_stubs.o: rt_stubs.s
 $(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o \
 	    $(OBJDIR)/strlen.o $(OBJDIR)/strcpy.o $(OBJDIR)/qsort.o \
 	    $(OBJDIR)/kprintf.o $(OBJDIR)/nastyfreemem.o \
-	    $(OBJDIR)/rt.o $(OBJDIR)/rt_stubs.o $(OBJDIR)/purify.o
+	    $(OBJDIR)/rt.o $(OBJDIR)/rt_stubs.o $(OBJDIR)/purify.o \
+	    $(OBJDIR)/stricmp.o
 	$(AR) $@ $?
 	$(RANLIB) $@
 

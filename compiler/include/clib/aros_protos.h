@@ -35,6 +35,7 @@ extern struct ExecBase * Sysbase;
 */
 ULONG CalcChecksum (APTR mem, ULONG size);
 int   STRCMP	   (const UBYTE *, const UBYTE *);
+int   STRICMP	   (const UBYTE *, const UBYTE *);
 int   kprintf	   (const UBYTE *, ...);
 void  NastyFreeMem (void *, ULONG);
 
