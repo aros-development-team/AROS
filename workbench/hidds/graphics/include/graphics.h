@@ -1803,6 +1803,8 @@ enum
     aoHidd_Sync_VSyncEnd,	/* [I.G] ULONG - rows to the end of the horizontal synf */
     aoHidd_Sync_VTotal,		/* [I.G] ULONG - number of rows in the screen includeing vsync 	*/
     
+    aoHidd_Sync_Description,	/* [I.G] STRPTR - guess what */
+    
     num_Hidd_Sync_Attrs
     
 };
@@ -1829,6 +1831,8 @@ enum
 #define aHidd_Sync_VSyncStart	(HiddSyncAttrBase + aoHidd_Sync_VSyncStart)
 #define aHidd_Sync_VSyncEnd	(HiddSyncAttrBase + aoHidd_Sync_VSyncEnd)
 #define aHidd_Sync_VTotal	(HiddSyncAttrBase + aoHidd_Sync_VTotal)
+
+#define aHidd_Sync_Description	(HiddSyncAttrBase + aoHidd_Sync_Description)
 
 #define IS_SYNC_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddSyncAttrBase) < num_Hidd_Sync_Attrs)

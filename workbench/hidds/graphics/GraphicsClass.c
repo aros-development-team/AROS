@@ -2093,6 +2093,13 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 	return FALSE;
     }
     
+    if (GOT_SYNC_ATTR(Description))
+    {
+    	strlcpy(data->description,
+	    	(STRPTR)attrs[SYAO(Description)],
+		sizeof(data->description));
+    }
+    
     /* Check that we have HDisp and VDisp */
     if (SYNC_DISP_AF != (SYNC_DISP_AF & ATTRCHECK(sync)))
     {

@@ -64,6 +64,7 @@ struct sync_data {
     ULONG lower_margin;
     ULONG vsync_length;
     
+    UBYTE description[32];
 };
 
 
