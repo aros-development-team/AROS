@@ -79,22 +79,13 @@
 	}
     }
 
-    /* now add 'rectangle' to 'region'
-     */
     if (region->RegionRectangle) {
-	/* adjust Region bounds */
-	if (region->bounds.MinX > rectangle->MinX) {
+	/* calculate xoffset, yoffset
+	 */
+	if (region->bounds.MinX > rectangle->MinX)
 	    xoffset = region->bounds.MinX - rectangle->MinX;
-	    region->bounds.MinX += xoffset;
-	}
-	if (region->bounds.MinY > rectangle->MinY) {
+	if (region->bounds.MinY > rectangle->MinY)
 	    yoffset = region->bounds.MinY - rectangle->MinY;
-	    region->bounds.MinY += yoffset;
-	}
-	if (region->bounds.MaxX < rectangle->MaxX)
-	    region->bounds.MaxX = rectangle->MaxX;
-	if (region->bounds.MaxY < rectangle->MaxY)
-	    region->bounds.MaxY = rectangle->MaxY;
 
 	/* adjust RegionRectangle bounds */
 	if (xoffset || yoffset) {
@@ -105,6 +96,15 @@
 		rr->bounds.MaxY += yoffset;
 	    }
 	}
+
+	/* adjust Region bounds
+	 */
+	if (xoffset) region->bounds.MinX = rectangle->MinX;
+	if (yoffset) region->bounds.MinY = rectangle->MinY;
+        if (region->bounds.MaxX < rectangle->MaxX)
+	  region->bounds.MaxX = rectangle->MaxX;
+	if (region->bounds.MaxY < rectangle->MaxY)
+	  region->bounds.MaxY = rectangle->MaxY;
     } else {
 	region->bounds.MinX = rectangle->MinX;
 	region->bounds.MinY = rectangle->MinY;
@@ -112,19 +112,21 @@
 	region->bounds.MaxY = rectangle->MaxY;
     }
 
-    /* set new RegionRectangle bounds */
+    /* adjust new Rectangle bounds
+     */
     nrect->bounds.MinX -= region->bounds.MinX;
     nrect->bounds.MinY -= region->bounds.MinY;
     nrect->bounds.MaxX -= region->bounds.MinX;
     nrect->bounds.MaxY -= region->bounds.MinY;
 
-    /* add new RegionRectangle */
+    /* add new Rectangle to Region
+     */
     rr = region->RegionRectangle;
     region->RegionRectangle = nrect;
     nrect->Prev = NULL;
     nrect->Next = rr;
     if (rr)
-	rr->Prev = nrect;
+      rr->Prev = nrect;
 
     return TRUE;
 
