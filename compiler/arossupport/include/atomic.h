@@ -75,13 +75,13 @@ do                                                           \
     };                                                       \
                                                              \
     if (sizeof(var) == sizeof(BYTE))                         \
-        __AROS_ATOMIC_ ## __instr__ ## _B((var) , ## args);     \
+        __AROS_ATOMIC_ ## __instr__ ## _B((var) , ## args);  \
     else                                                     \
     if (sizeof(var) == sizeof(WORD))                         \
-        __AROS_ATOMIC_ ## __instr__ ## _W((var) , ## args);     \
+        __AROS_ATOMIC_ ## __instr__ ## _W((var) , ## args);  \
     else                                                     \
     if (sizeof(var) == sizeof(LONG))                         \
-        __AROS_ATOMIC_ ## __instr__ ## _L((var) , ## args);     \
+        __AROS_ATOMIC_ ## __instr__ ## _L((var) , ## args);  \
 } while (0)
 
 #define AROS_ATOMIC_INC(var)       __AROS_ATOMIC(INC, (var))
