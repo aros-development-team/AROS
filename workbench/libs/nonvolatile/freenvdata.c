@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*****************************************************************************
@@ -47,10 +44,6 @@ AROS_LH1(VOID, FreeNVData,
     GetCopyNV(), GetNVInfo(), GetNVList()
 
     INTERNALS
-
-    HISTORY
-
-    November 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 

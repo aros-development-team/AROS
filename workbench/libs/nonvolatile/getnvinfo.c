@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 #include <dos/dosextens.h>
 
@@ -53,10 +50,6 @@ AROS_LH1(struct NVInfo *, GetNVInfo,
     FreeNVData(), StoreNV(), <libraries/nonvolatile.h>
 
     INTERNALS
-
-    HISTORY
-
-    April 2000,  SDuvan  --  implemented
 
 ******************************************************************************/
 
