@@ -429,6 +429,8 @@ AROS_LH1(void, beginio,
        */
       ioreq->IOPar.io_Actual = 0;
 
+      Disable();
+
       PU->pu_Status |= STATUS_READS_PENDING;
       D(bug("Queuing the read request.\n"));
       /*
@@ -441,6 +443,7 @@ AROS_LH1(void, beginio,
         PutMsg(&PU->pu_QReadCommandPort,
                &ioreq->IOPar.io_Message);
 
+      Enable();
       /*
       ** As I am returning immediately I will tell that this
       ** could not be done QUICK   
@@ -453,6 +456,8 @@ AROS_LH1(void, beginio,
     case CMD_WRITE:
       /* Write data to the ParallelUnit */
       ioreq->IOPar.io_Actual = 0;
+  
+      Disable();
 
       /* Check whether I can write some data immediately */
       if (0 == (PU->pu_Status & STATUS_WRITES_PENDING))
@@ -536,6 +541,8 @@ AROS_LH1(void, beginio,
         */
         ioreq->IOPar.io_Flags &= ~IOF_QUICK;
       }
+      
+      Enable();
     break;
 
     case CMD_CLEAR:

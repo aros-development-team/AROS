@@ -447,6 +447,8 @@ AROS_LH1(void, beginio,
        */
       ioreq->IOSer.io_Actual = 0;      
 
+      Disable();
+
       if (SU->su_InputFirst != SU->su_InputNextPos &&
           0 == (SU->su_Status & STATUS_READS_PENDING)    )
       {
@@ -501,6 +503,9 @@ AROS_LH1(void, beginio,
       D(bug("Setting STATUS_READS_PENDING\n"));
   
       SU->su_Status |= STATUS_READS_PENDING;
+
+      Enable();
+
       D(bug("The read request could not be satisfied! Queuing it.\n"));
       /*
       **  Everything that falls down here could not be completely
@@ -521,6 +526,8 @@ AROS_LH1(void, beginio,
     case CMD_WRITE:
       /* Write data to the SerialUnit */
       ioreq->IOSer.io_Actual = 0;
+
+      Disable();
 
       /* Check whether I can write some data immediately */
       if (0 == (SU->su_Status & STATUS_WRITES_PENDING))
@@ -604,6 +611,9 @@ AROS_LH1(void, beginio,
         */
         ioreq->IOSer.io_Flags &= ~IOF_QUICK;
       }
+
+      Enable();
+
     break;
 
     case CMD_CLEAR:
