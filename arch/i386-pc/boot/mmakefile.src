@@ -33,12 +33,11 @@ BOOT_TAR_FILES := \
     C/AddBuffers C/AddDatatypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
     C/ChangeTaskPri C/ConClip C/Copy C/Date C/Delete C/Dir C/Echo C/Else \
     C/EndCli C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote C/Format \
-    C/Get C/Getenv C/IPrefs C/If C/Info C/Install C/Join C/Lab C/List \
-    C/LoadWB C/Lock C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt \
-    C/Protect C/Quit C/Reboot C/Relabel C/Rename C/RequestChoice \
-    C/RequestFile C/Resident C/Run C/Search C/Set C/SetClock C/SetDate \
-    C/Setenv C/Skip C/Sort C/Stack C/Status C/Touch C/Type C/Unalias C/Unset \
-    C/Unsetenv C/Version C/Wait C/Which C/Why C/install-i386-pc \
+    C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List C/LoadWB C/Lock \
+    C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
+    C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
+    C/SetDate C/Setenv C/Skip C/Sort C/Stack C/Status C/Touch C/Type C/Unalias \
+    C/Unset C/Unsetenv C/Version C/Wait C/Which C/Why C/install-i386-pc \
     C/Partition \
     Classes/DataTypes/ascii.datatype \
     Classes/DataTypes/binary.datatype \
@@ -132,7 +131,7 @@ bootdisk-pc-i386: $(OSGENDIR)/boot/aros.bin
 $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence
 $(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz install
 $(OSGENDIR)/boot/aros.bin: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
-	$(COPYTOAFS) $@ --size floppy1440 $(BOOT_DEST_DIR)
+	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
 	./install $@
 
 $(BOOT_DEST_DIR)/S/Startup-Sequence:
