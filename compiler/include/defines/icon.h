@@ -35,6 +35,11 @@
     AROS_LCA(UBYTE  *, typeName, A1), \
     struct Library *, IconBase, 16, Icon)
 
+#define FreeDiskObject(diskobj) \
+    AROS_LC1(void, FreeDiskObject, \
+    AROS_LCA(struct DiskObject *, diskobj, A0), \
+    struct Library *, IconBase, 15, Icon)
+
 #define FreeFreeList(freelist) \
     AROS_LC1(void, FreeFreeList, \
     AROS_LCA(struct FreeList *, freelist, A0), \
@@ -65,6 +70,12 @@
     AROS_LC1(BOOL, PutDefDiskObject, \
     AROS_LCA(struct DiskObject *, diskObject, A0), \
     struct Library *, IconBase, 21, Icon)
+
+#define PutDiskObject(name, diskobj) \
+    AROS_LC2(BOOL, PutDiskObject, \
+    AROS_LCA(UBYTE             *, name, A0), \
+    AROS_LCA(struct DiskObject *, diskobj, A1), \
+    struct Library *, IconBase, 14, Icon)
 
 
 #endif /* DEFINES_ICON_H */

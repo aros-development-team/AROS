@@ -38,6 +38,10 @@ AROS_LP2(UBYTE *, FindToolType,
     AROS_LPA(UBYTE  *, typeName, A1),
     struct Library *, IconBase, 16, Icon)
 
+AROS_LP1(void, FreeDiskObject,
+    AROS_LPA(struct DiskObject *, diskobj, A0),
+    struct Library *, IconBase, 15, Icon)
+
 AROS_LP1(void, FreeFreeList,
     AROS_LPA(struct FreeList *, freelist, A0),
     struct Library *, IconBase, 9, Icon)
@@ -62,6 +66,11 @@ AROS_LP2(BOOL, MatchToolValue,
 AROS_LP1(BOOL, PutDefDiskObject,
     AROS_LPA(struct DiskObject *, diskObject, A0),
     struct Library *, IconBase, 21, Icon)
+
+AROS_LP2(BOOL, PutDiskObject,
+    AROS_LPA(UBYTE             *, name, A0),
+    AROS_LPA(struct DiskObject *, diskobj, A1),
+    struct Library *, IconBase, 14, Icon)
 
 
 #endif /* CLIB_ICON_PROTOS_H */
