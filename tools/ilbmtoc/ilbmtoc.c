@@ -35,13 +35,15 @@
 
 /* For this tool it does not really matter if the following types
    have a bigger sizeof() than on Amiga */
-   
+
+#ifndef __AROS__
 typedef unsigned long 	ULONG;
 typedef long	    	LONG;
 typedef unsigned short  UWORD;
 typedef short 	    	WORD;
 typedef short	    	BOOL;
 typedef unsigned char 	UBYTE;
+#endif
 
 /****************************************************************************************/
 
