@@ -64,10 +64,10 @@ AROS_UFH3(struct CPUBase *, AROS_SLIB_ENTRY(init,BASENAME),
 {
     AROS_USERFUNC_INIT
 
-    struct intel_mp_confblock       *mpcfb;
-    struct CPU_Definition           *AvailCPUs;
-    struct i386_compat_intern       *BootCPU_intern;
-    struct  ACPIBase                *ACPIBase;
+    struct intel_mp_confblock       *mpcfb = NULL;
+    struct CPU_Definition           *AvailCPUs = NULL;
+    struct i386_compat_intern       *BootCPU_intern = NULL;
+    struct  ACPIBase                *ACPIBase = NULL;
     CPUBase = NULL;
 
     UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
@@ -93,7 +93,7 @@ AROS_UFH3(struct CPUBase *, AROS_SLIB_ENTRY(init,BASENAME),
         if ( mpcfb )
         {
             kprintf(DEBUG_NAME_STR ": Found SMP 1.4 MP table = 0x%p\n", mpcfb);
-            AllocAbs( 4096, &mpcfb);
+            AllocAbs( 4096, mpcfb);
 	        if (mpcfb->mpcf_physptr) AllocAbs( 4096, mpcfb->mpcf_physptr );
             kprintf(DEBUG_NAME_STR ": SMP Table(s) protected\n");
         }
