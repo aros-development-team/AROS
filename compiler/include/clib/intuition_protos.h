@@ -178,6 +178,30 @@ __AROS_LP8(void, ModifyProp,
     __AROS_LCA(unsigned long     , vertBody, D4), \
     struct IntuitionBase *, IntuitionBase, 26, Intuition)
 
+__AROS_LP9(void, NewModifyProp,
+    __AROS_LPA(struct Gadget    *, gadget, A0),
+    __AROS_LPA(struct Window    *, window, A1),
+    __AROS_LPA(struct Requester *, requester, A2),
+    __AROS_LPA(unsigned long     , flags, D0),
+    __AROS_LPA(unsigned long     , horizPot, D1),
+    __AROS_LPA(unsigned long     , vertPot, D2),
+    __AROS_LPA(unsigned long     , horizBody, D3),
+    __AROS_LPA(unsigned long     , vertBody, D4),
+    __AROS_LPA(long              , numGad, D5),
+    struct IntuitionBase *, IntuitionBase, 78, Intuition)
+#define NewModifyProp(gadget, window, requester, flags, horizPot, vertPot, horizBody, vertBody, numGad) \
+    __AROS_LC9(void, NewModifyProp, \
+    __AROS_LCA(struct Gadget    *, gadget, A0), \
+    __AROS_LCA(struct Window    *, window, A1), \
+    __AROS_LCA(struct Requester *, requester, A2), \
+    __AROS_LCA(unsigned long     , flags, D0), \
+    __AROS_LCA(unsigned long     , horizPot, D1), \
+    __AROS_LCA(unsigned long     , vertPot, D2), \
+    __AROS_LCA(unsigned long     , horizBody, D3), \
+    __AROS_LCA(unsigned long     , vertBody, D4), \
+    __AROS_LCA(long              , numGad, D5), \
+    struct IntuitionBase *, IntuitionBase, 78, Intuition)
+
 __AROS_LP3(APTR, NewObjectA,
     __AROS_LPA(struct IClass  *, classPtr, A0),
     __AROS_LPA(UBYTE          *, classID, A1),
