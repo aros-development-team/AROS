@@ -3,19 +3,16 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS   := -DMYDEBUG
 
-FILES := jpegclass libfunc stubs
-FUNCS := obtainengine
+FILES := jpegclass stubs
 
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
 #MM workbench-datatypes-jpg : includes linklibs linklibs-jpg
 
 USER_CFLAGS := -DAROS_LC_SETFUNCS
 
-%build_module_macro mmake=workbench-datatypes-jpeg modname=jpeg \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="jpeg amiga rom m"
+%build_module mmake=workbench-datatypes-jpeg \
+    modname=jpeg modtype=datatype \
+    files=$(FILES) uselibs="jpeg amiga rom m"
 
 $(MOD_DIR)/jpeg.readme : jpeg.readme
 	@$(CP) $< $@
-
-%common
