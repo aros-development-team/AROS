@@ -71,18 +71,19 @@ struct arosc_privdata
     ULONG acpd_usercount;
 
     /* __upath */
-    char *acpd_apathbuf; /* Buffer that holds the AROS path converted from the
-                            equivalent *nix path.  */
+    char *acpd_apathbuf;  /* Buffer that holds the AROS path converted from the
+                             equivalent *nix path.  */
     int   acpd_doupath;  /* BOOL - does the conversion need to be done?  */
-    
+
     /* spawn* */
     char *acpd_joined_args;
-    
+    int   acpd_spawned;
+
     /* strerror */
     char acpd_fault_buf[100];
 
     /* __arosc_nixmain */
-    int acpd_do_not_clone_vars;
+    int acpd_do_not_substitute_argv0;
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())

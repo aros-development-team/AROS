@@ -203,7 +203,13 @@ int arosc_internalinit(void)
 
     privdata = oldprivdata = GetIntETask(me)->iet_acpd;
 
-    if (!oldprivdata || (oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr))
+    D(bug("\nEntering arosc_internalinit(): me->name = %s\n", me->pr_Task.tc_Node.ln_Name));
+    D(bug("arosc_internalinit(): oldprivdata = %p\n", oldprivdata));
+    if
+    (
+        !oldprivdata ||
+	(!oldprivdata->acpd_spawned && oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr)
+    )
     {
         D(bug("arosc_internalinit(): AllocMem()\n"));
         privdata = AllocMem(sizeof *privdata, MEMF_CLEAR|MEMF_ANY);
@@ -214,6 +220,7 @@ int arosc_internalinit(void)
             return RETURN_FAIL;
         }
 
+        D(bug("arosc_internalinit(): newprivdata = %p\n", privdata));
         privdata->acpd_oldprivdata = oldprivdata;
 	privdata->acpd_process_returnaddr = me->pr_ReturnAddr;
 
@@ -247,6 +254,7 @@ int arosc_internalexit(void)
         FreeMem(privdata, sizeof(*privdata));
     }
 
+    D(bug("Exiting arosc_internalexit(): me->name = %s\n\n", FindTask(NULL)->tc_Node.ln_Name));
     return 0;
 }
 
