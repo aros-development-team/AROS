@@ -138,7 +138,7 @@ unsigned int sum=0,count=0;
 
 int affs_mount(void) {
 
-	if ((current_drive>0x80) && (current_slice != 0x30))
+	if ((current_drive & 0x80) && (current_slice != 0x30))
 		return 0;
 	fsysb = (struct FSysBuffer *)FSYS_BUF;
 	devread(0, 0, 512, (char *)&fsysb->buffer1);
@@ -156,7 +156,7 @@ int affs_mount(void) {
 			return 0;
 		}
 	}
-	devread(part_length/2, 0, 512, (char *)&fsysb->rootblock);
+	devread((part_length-1+2)/2, 0, 512, (char *)&fsysb->rootblock);
 	if (
 			(AROS_BE2LONG(fsysb->rootblock.p_type) != T_SHORT) ||
 			(AROS_BE2LONG(fsysb->rootblock.s_type) != ST_ROOT) ||
@@ -320,7 +320,7 @@ grub_error_t findBlock(char *name, struct DirHeader *dirh) {
 char dname[32];
 char *nbuf;
 
-	devread(part_length/2, 0, 512, (char *)dirh);
+	devread((part_length-1+2)/2, 0, 512, (char *)dirh);
 	name++;
 	while (*name)
 	{
