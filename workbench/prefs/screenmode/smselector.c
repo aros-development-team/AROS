@@ -173,7 +173,6 @@ IPTR ScreenModeSelector__OM_SET(Class *CLASS, Object *self, struct opSet *messag
 		    data->ids_array[i] != tag->ti_Data && data->ids_array[i] != INVALID_ID;
 		    i++
 		);
-		kprintf("-- %ld - %d\n", tag->ti_Data, i);
 		
 		if (data->ids_array[i] == INVALID_ID)
 		    tag->ti_Data = INVALID_ID;
