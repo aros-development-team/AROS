@@ -1227,6 +1227,7 @@ LX11
     }
     
     XSetForeground(data->display, data->gc, GC_FG(gc));
+    XSetFunction(data->display, data->gc, GC_DRMD(gc));
 	
     XDrawLine(data->display, DRAWABLE(data), data->gc
 	, msg->x1, msg->y1
