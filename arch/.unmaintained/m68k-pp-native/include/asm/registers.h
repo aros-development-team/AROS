@@ -159,6 +159,10 @@
 #define CAPT_F          (1<<1)
 #define COMP_F          (1<<0)
 
+/*
+ * UART 1 & 2
+ */
+
 #define USTCNT1		0xfffff900
 #define UBAUD1          0xfffff902
 #define URX1            0xfffff904
@@ -172,6 +176,83 @@
 #define UTX2            0xfffff916
 #define UMISC2          0xfffff918
 #define NIPR2           0xfffff91a
+
+/*
+ * Flags for USTCNT1/2 register
+ */
+#define UEN_F		(1 << 15)
+#define RXEN_F		(1 << 14)
+#define TXEN_F		(1 << 13)
+#define CLKM_F		(1 << 12)
+#define PEN_F		(1 << 11)
+#define ODD_F		(1 << 10)
+#define STOP_F		(1 <<  9)
+#define EITHER8OR7_F	(1 <<  8)
+#define ODEN_F		(1 <<  7)
+#define CTSD_F		(1 <<  6)
+#define RXFE_F		(1 <<  5)
+#define RXHE_F		(1 <<  4)
+#define RXRE_F		(1 <<  3)
+#define TXEE_F		(1 <<  2)
+#define TXHE_F		(1 <<  1)
+#define TXAE_F		(1 <<  0)
+
+/*
+ * Flags for UBAUD1/2 register
+ */
+#define UCLKDIR_F	(1 << 13)
+#define BAUD_SRC_F	(1 << 11)
+
+/*
+ * Flagss for URX1/2 register
+ */
+#define FIFO_FULL_F	(1 << 15)
+#define FIFO_HALF_F	(1 << 14)
+#define DATA_READY_F	(1 << 13)
+#define OLD_DATA_F	(1 << 12)
+#define OVRUN_F		(1 << 11)
+#define FRAME_ERROR_F	(1 << 10)
+#define BREAK_F		(1 <<  9)
+#define PARITY_ERROR_F	(1 <<  8)
+
+/*
+ * Flags for URX1/2 register
+ */
+#define FIFO_EMPTY_F	(1 << 15)
+#define FIFO_HALF_F	(1 << 14)
+#define TX_AVAIL_F	(1 << 13)
+#define SEND_BREAK_F	(1 << 12)
+#define NOCTS1_F	(1 << 11)
+#define BUSY_F		(1 << 10)
+#define CTS1_STAT_F	(1 <<  9)
+#define CTS1_DELTA_F	(1 <<  8)
+
+/*
+ * Flags for the UMISC1/2 register
+ */
+#define BAUD_TEST_F	(1 << 15)
+#define CLKSRC_F	(1 << 14)
+#define FORCE_PERR_F	(1 << 13)
+#define LOOP_F		(1 << 12)
+#define BAUD_RESET_F	(1 << 11)
+#define IRTEST_F	(1 << 10)
+#define RTS1_CONT_F	(1 <<  7)
+#define RTS1_F		(1 <<  6)
+#define IRDAEN_F	(1 <<  5)
+#define IRDA_LOOP_F	(1 <<  4)
+#define RXPOL_F		(1 <<  3)
+#define TXPOL_F		(1 <<  2)
+
+
+/*
+ * Offsets
+ */
+#define O_USTCNT	0
+#define O_UBAUD		2
+#define O_URX		4
+#define O_UTX		6
+#define O_UMISC		8
+#define O_NIPR		10
 
 /*
  * LCD Controller Registers
