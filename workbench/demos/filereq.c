@@ -58,16 +58,16 @@ struct Library *AslBase = NULL;
 
 struct TagItem frtags[] =
 {
-    ASL_Hail,	    (ULONG)"The RKM file requester",
-    ASL_Height,     MYHEIGHT,
-    ASL_Width,	    MYWIDTH,
-    ASL_LeftEdge,   MYLEFTEDGE,
-    ASL_TopEdge,    MYTOPEDGE,
-    ASL_OKText,     (ULONG)"O KAY",
-    ASL_CancelText, (ULONG)"not OK",
-    ASL_File,	    (ULONG)"asl.library",
-    ASL_Dir,	    (ULONG)"libs:",
-    TAG_DONE
+    { ASL_Hail,	      (ULONG)"The RKM file requester" },
+    { ASL_Height,     MYHEIGHT },
+    { ASL_Width,      MYWIDTH },
+    { ASL_LeftEdge,   MYLEFTEDGE },
+    { ASL_TopEdge,    MYTOPEDGE },
+    { ASL_OKText,     (ULONG)"O KAY" },
+    { ASL_CancelText, (ULONG)"not OK" },
+    { ASL_File,	      (ULONG)"asl.library" },
+    { ASL_Dir,	      (ULONG)"libs:" },
+    { TAG_DONE,       NULL }
 };
 
 void main(int argc, char **argv)
