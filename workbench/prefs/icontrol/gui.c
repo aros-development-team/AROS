@@ -17,7 +17,7 @@
 
 /*********************************************************************************************/
 
-#include <zune/preferenceswindow.h>
+#include <zune/prefswindow.h>
 
 #include "menupopup3d_image.c"
 #include "menupopupclassic_image.c"
@@ -333,7 +333,7 @@ error:
 
 /*********************************************************************************************/
 
-IPTR IPWindow__MUIM_PreferencesWindow_Test
+IPTR IPWindow__MUIM_PrefsWindow_Test
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -350,7 +350,7 @@ IPTR IPWindow__MUIM_PreferencesWindow_Test
 
 /*********************************************************************************************/
 
-IPTR IPWindow__MUIM_PreferencesWindow_Revert
+IPTR IPWindow__MUIM_PrefsWindow_Revert
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -365,7 +365,7 @@ IPTR IPWindow__MUIM_PreferencesWindow_Revert
 
 /*********************************************************************************************/
 
-IPTR IPWindow__MUIM_PreferencesWindow_Save
+IPTR IPWindow__MUIM_PrefsWindow_Save
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -384,7 +384,7 @@ IPTR IPWindow__MUIM_PreferencesWindow_Save
 
 /*********************************************************************************************/
 
-IPTR IPWindow__MUIM_PreferencesWindow_Use
+IPTR IPWindow__MUIM_PrefsWindow_Use
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -402,7 +402,7 @@ IPTR IPWindow__MUIM_PreferencesWindow_Use
 
 /*********************************************************************************************/
 
-IPTR IPWindow__MUIM_PreferencesWindow_Cancel
+IPTR IPWindow__MUIM_PrefsWindow_Cancel
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -500,20 +500,20 @@ BOOPSI_DISPATCHER(IPTR, IPWindow_Dispatcher, CLASS, self, message)
         case OM_NEW: 
             return IPWindow__OM_NEW(CLASS, self, (struct opSet *) message);
         
-        case MUIM_PreferencesWindow_Test:   
-            return IPWindow__MUIM_PreferencesWindow_Test(CLASS, self, message);
+        case MUIM_PrefsWindow_Test:   
+            return IPWindow__MUIM_PrefsWindow_Test(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Revert:
-            return IPWindow__MUIM_PreferencesWindow_Revert(CLASS, self, message);
+        case MUIM_PrefsWindow_Revert:
+            return IPWindow__MUIM_PrefsWindow_Revert(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Save:
-            return IPWindow__MUIM_PreferencesWindow_Save(CLASS, self, message);
+        case MUIM_PrefsWindow_Save:
+            return IPWindow__MUIM_PrefsWindow_Save(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Use:
-            return IPWindow__MUIM_PreferencesWindow_Use(CLASS, self, message);
+        case MUIM_PrefsWindow_Use:
+            return IPWindow__MUIM_PrefsWindow_Use(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Cancel:
-            return IPWindow__MUIM_PreferencesWindow_Cancel(CLASS, self, message);
+        case MUIM_PrefsWindow_Cancel:
+            return IPWindow__MUIM_PrefsWindow_Cancel(CLASS, self, message);
         
    	case MUIM_IPWindow_Open:
 	    return IPWindow__MUIM_IPWindow_Open(CLASS, self, message);
@@ -540,7 +540,7 @@ static BOOL IPWindow_Initialize()
 {
     IPWindow_CLASS = MUI_CreateCustomClass
     (
-        NULL, MUIC_PreferencesWindow, NULL, 
+        NULL, MUIC_PrefsWindow, NULL, 
         sizeof(struct IPWindow_DATA), IPWindow_Dispatcher
     );
 
@@ -646,7 +646,7 @@ void MakeGUI(void)
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_DEFAULT, (IPTR) wnd, 1, MUIM_IPWindow_Default);    
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_LASTSAVED, (IPTR) wnd, 1, MUIM_IPWindow_LastSaved);    
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, (IPTR) wnd, 1, MUIM_PreferencesWindow_Revert);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, (IPTR) wnd, 1, MUIM_PrefsWindow_Revert);
 
 }
 

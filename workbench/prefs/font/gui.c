@@ -18,7 +18,7 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
-#include <zune/preferenceswindow.h>
+#include <zune/prefswindow.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -241,7 +241,7 @@ error:
     return NULL;
 }
 
-IPTR FPWindow__MUIM_PreferencesWindow_Test
+IPTR FPWindow__MUIM_PrefsWindow_Test
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -254,7 +254,7 @@ IPTR FPWindow__MUIM_PreferencesWindow_Test
     return NULL;
 }
 
-IPTR FPWindow__MUIM_PreferencesWindow_Revert
+IPTR FPWindow__MUIM_PrefsWindow_Revert
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -267,7 +267,7 @@ IPTR FPWindow__MUIM_PreferencesWindow_Revert
     return NULL;
 }
 
-IPTR FPWindow__MUIM_PreferencesWindow_Save
+IPTR FPWindow__MUIM_PrefsWindow_Save
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -283,7 +283,7 @@ IPTR FPWindow__MUIM_PreferencesWindow_Save
     return NULL;
 }
 
-IPTR FPWindow__MUIM_PreferencesWindow_Use
+IPTR FPWindow__MUIM_PrefsWindow_Use
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -299,7 +299,7 @@ IPTR FPWindow__MUIM_PreferencesWindow_Use
     return NULL;
 }
 
-IPTR FPWindow__MUIM_PreferencesWindow_Cancel
+IPTR FPWindow__MUIM_PrefsWindow_Cancel
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -356,20 +356,20 @@ BOOPSI_DISPATCHER(IPTR, FPWindow_Dispatcher, CLASS, self, message)
         case OM_NEW: 
             return FPWindow__OM_NEW(CLASS, self, (struct opSet *) message);
         
-        case MUIM_PreferencesWindow_Test:   
-            return FPWindow__MUIM_PreferencesWindow_Test(CLASS, self, message);
+        case MUIM_PrefsWindow_Test:   
+            return FPWindow__MUIM_PrefsWindow_Test(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Revert:
-            return FPWindow__MUIM_PreferencesWindow_Revert(CLASS, self, message);
+        case MUIM_PrefsWindow_Revert:
+            return FPWindow__MUIM_PrefsWindow_Revert(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Save:
-            return FPWindow__MUIM_PreferencesWindow_Save(CLASS, self, message);
+        case MUIM_PrefsWindow_Save:
+            return FPWindow__MUIM_PrefsWindow_Save(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Use:
-            return FPWindow__MUIM_PreferencesWindow_Use(CLASS, self, message);
+        case MUIM_PrefsWindow_Use:
+            return FPWindow__MUIM_PrefsWindow_Use(CLASS, self, message);
         
-        case MUIM_PreferencesWindow_Cancel:
-            return FPWindow__MUIM_PreferencesWindow_Cancel(CLASS, self, message);
+        case MUIM_PrefsWindow_Cancel:
+            return FPWindow__MUIM_PrefsWindow_Cancel(CLASS, self, message);
         
         case MUIM_FPWindow_Import:
             return FPWindow__MUIM_FPWindow_Import(CLASS, self, message);
@@ -391,7 +391,7 @@ BOOL FPWindow_Initialize()
 {
     FPWindow_CLASS = MUI_CreateCustomClass
     (
-        NULL, MUIC_PreferencesWindow, NULL, 
+        NULL, MUIC_PrefsWindow, NULL, 
         sizeof(struct FPWindow_DATA), FPWindow_Dispatcher
     );
 
