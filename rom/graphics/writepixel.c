@@ -174,7 +174,7 @@
 
     /* if it is an old window... */
     if (bm->Flags & BMF_AROS_OLDWINDOW)
-      return driver_WritePixel (rp, x, y, GfxBase);
+         return driver_WritePixel (rp, x, y, GfxBase);
 
     i = y * Width + (x >> 3);
     Mask = (1 << (7-(x & 0x07)));
