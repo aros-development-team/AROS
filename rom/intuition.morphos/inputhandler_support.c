@@ -1043,7 +1043,7 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struc
 struct Gadget *FindCycleGadget(struct Window *win, struct Requester *req,
                                struct Gadget *gad, WORD direction)
 {
-    struct Gadget *g, *gg, *prev, *first;
+    struct Gadget *g = NULL, *gg, *prev, *first;
 
     D(bug("FindCycleGadget: win = %p  req %p gad = %p  direction = %d\n", win, req, gad, direction));
 
