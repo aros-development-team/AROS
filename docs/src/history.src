@@ -4,6 +4,7 @@
 \section{Project History}
 
 \begin{itemize}
+\item 23.10.1997 BOOPSI.library and HIDD.class have been committed.
 \item 17.10.1997 AROS has two new mailing lists: \shell{aros-gfx}
     and \shell{aros-user}.
 \item 15.10.1997 AROS has it's own domain now ! Use
@@ -26,7 +27,7 @@ The source is 6.5MB right now.
 
 \begin{itemize}
 \item Bugfixes (Do I really need to mention this every time ? ;-)
-\item New libs: layers, expansion, asl
+\item New libs: layers, expansion, asl, boopsi
 \item The following items are complete: iffparse, mathffp, mathieeesingbas,
     utility
 \item The following items are in work: alib_stdio, arp, asl, battclock,
@@ -39,6 +40,7 @@ The source is 6.5MB right now.
 \item A new standard: HIDD - Hardware Independend Device Driver
 \item AROS has its own build tool now: MetaMake
 \item AROS runs now on Linux/m68k. First Amiga programs can be run.
+\item listview, checkbox and mutualexclude BOOPSI and GadTools classes have been added
 \end{itemize}
 \end{new}
 
