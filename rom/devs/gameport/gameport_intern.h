@@ -11,7 +11,7 @@
 /* Must always be a multiple of 3 since one event consists of code, x and y */
 
 #define  GP_NUMELEMENTS 	(100 * 3)
-#define  GP_BUFFERSIZE  	(sizeof (UWORD) * GP_NUMELEMENTS) 
+#define  GP_BUFFERSIZE  	(sizeof (WORD) * GP_NUMELEMENTS) 
 
 #define  GP_NUNITS        	2 /* Number of units supported by gameport.device */
 
@@ -35,7 +35,7 @@ struct GameportBase
 					   		   are pending requests */
     struct Interrupt  		gp_VBlank;        	/* Gameport VBlank server */
 
-    UWORD  			*gp_eventBuffer;
+    WORD  			*gp_eventBuffer;
     UWORD   			gp_writePos;
 
     ULONG   			gp_nTicks;          	/* Bookkeeping of frames */
@@ -55,8 +55,8 @@ typedef struct GPUnit
     UWORD  			gpu_unitNum;
     UBYTE  			gpu_flags;           	/* For unit flags definitions, see below */
 
-    UWORD  			gpu_lastX;
-    UWORD  			gpu_lastY;
+    WORD  			gpu_lastX;
+    WORD  			gpu_lastY;
 
     struct GamePortTrigger 	gpu_trigger;
 } GPUnit;
