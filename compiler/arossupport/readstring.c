@@ -90,10 +90,12 @@
 
 	    if (buffer)
 	    {
-		strcpy (tmp, buffer);
+		memcpy (tmp, buffer, maxsize);
 		FreeVec (buffer);
 	    }
 
+    	    maxsize += 16;
+	    
 	    buffer = tmp;
 	}
 
