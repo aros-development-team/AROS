@@ -97,23 +97,6 @@ struct TagItem FileTags[] =
     { TAG_DONE            , NULL  }
 };
 
-
-/* Temporary to avoid bugs in ASL library */
-struct TagItem frTags[] =
-{
-    { ASL_Hail,	  (ULONG)"" },
-    { ASL_Height,     400 },
-    { ASL_Width,      240 },
-    { ASL_LeftEdge,   20 },
-    { ASL_TopEdge,    20 },
-    { ASL_OKText,     (ULONG)"OKAY" },
-    { ASL_CancelText, (ULONG)"Not OK" },
-    //  { ASL_File,	  (ULONG)"asl.library" },
-    //	{ ASL_Dir,	  (ULONG)"Sys:" },
-    { TAG_DONE,       NULL }
-};
-
-
 struct Library *AslBase;
 
 int main(int argc, char *argv[])
@@ -168,7 +151,7 @@ int main(int argc, char *argv[])
                                                               FileTags);
             if(FileReq != NULL)
             {
-                Success = AslRequest(FileReq, frTags); /* Temporary tags */
+                Success = AslRequest(FileReq, NULL); 
 
                 if(Success != FALSE)
                 {
