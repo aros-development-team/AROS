@@ -6,7 +6,12 @@
     Lang: english
 */
 
+#include <proto/exec.h>
+#include <proto/intuition.h>
+
+#include "mui.h"
 #include "muimaster_intern.h"
+#include "support.h"
 
 /*****************************************************************************
 
@@ -45,6 +50,15 @@ __asm BOOL MUI_DeleteCustomClass(register __a0 struct MUI_CustomClass *mcc)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+
+    if (mcc && FreeClass(mcc->mcc_Class))
+    {
+	CloseLibrary(mcc->mcc_Module);
+	mui_free(mcc);
+	return TRUE;
+    }
+
+    return FALSE;
 
     AROS_LIBFUNC_EXIT
 

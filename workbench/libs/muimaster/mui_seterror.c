@@ -46,6 +46,8 @@ __asm LONG MUI_SetError(register __d0 LONG num)
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+    return 0;
+
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_SetError */

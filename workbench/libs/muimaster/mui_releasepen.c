@@ -6,7 +6,12 @@
     Lang: english
 */
 
+#include <proto/graphics.h>
+
+#include "mui.h"
 #include "muimaster_intern.h"
+
+#define MUIPEN_HIMASK 0xFFFF0000   /* ??? */
 
 /*****************************************************************************
 
@@ -47,6 +52,12 @@ __asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+
+    if (pen == -1)
+        return;
+
+    if ((pen & MUIPEN_HIMASK) == MUIPEN_HIMASK)
+        ReleasePen(mri->mri_Colormap, pen);
 
     AROS_LIBFUNC_EXIT
 

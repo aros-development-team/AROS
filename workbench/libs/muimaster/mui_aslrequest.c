@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <proto/asl.h>
+
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -46,6 +48,8 @@ __asm BOOL MUI_AslRequest(register __a0 APTR requester, register __a1 struct Tag
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+
+    return AslRequest(requester,tagList);
 
     AROS_LIBFUNC_EXIT
 
