@@ -1,23 +1,8 @@
 The root directory of AROS contains this:
 
-AFD-COPYRIGHT - AROS' copyright message
+_gdbinit - Init file for the GNU Debugger gdb.
 
-BUGS - Known bugs of AROS
-
-INSTALL - A short description on how to compile AROS the first time
-
-INSTALL.amiga - A short description on how to compile AROS on Amiga
-
-README - A readme with a short introduction about AROS
-
-apps/ - This directory contains the source for applications for AROS.
-	Applications are programs and packages which are not in the basic
-	installation which is in \filename{workbench/}.
-
-arosshell.c - The main code for the shell which allows you to execute AROS
-	commands as you are used to it on your beloved Amiga. Also a very
-	small demo of how it works and also probably the smallest demo
-	that does something useful.
+aclocal.m4 - Local macros for GNU autoconf.
 
 bin/ - This directory contains all generated files under the name of
 	your OS (eg. \filename{AROS/bin/linux/}). This directory is called
@@ -38,53 +23,46 @@ config/ - This directory contains the dirty stuff. Code which makes AROS
 	Anything is allowed inside this directory in order to make AROS
 	work on as many hardwares as possible.
 
-configure - This is a small script which examines your system and
-	creates a file named \filename{AROS/config/host.cfg} which is used by
-	the makefiles.
+configure - This is a script which examines your system and creates a file
+	named \filename{AROS/config/host.cfg} which is used by the makefiles. 
+	Run autoconf if it doesn't exist.
 
-crypt.c - This is a small program which allows you to create a password if
-	you want to use the CVS server (prefered). See the section about
-	\lref{CVS}{CVS} for how it works.
+configure.in - Source file. Run autoconf to convert this into a configure
+	script.
 
-dist/ - \shell{make dist} will put an archive with all files for
-	developers and users in this directory. Make sure the version in
-	make.cfg is set to the correct value because it will be used to
-	determine the name of the archive.
+docs/ - The source for the documentation.
 
-docs/ - The source and the formatted docs (currently only in HTML
-	format).
+license.html - Our copyright license
 
 local/ - This directory and it's contents are ignored by AROS. You can
 	put alpha stuff here if you want to avoid CVS complaining about
 	it.
-
-mmakefile - This is the magic file which holds the whole thing together.
-	It has the following rules:
-
-	\filtermakefile{$(TOP)/mmakefile,target}
 
 make.defaults - File with options for the make. If you want to change
 	an option, create a file \filename{make.opts} and put your changes
 	there. The most simple method is just to copy \filename{make.defaults}
 	to \filename{make.opts}.
 
+make.defaults.in - This file is used by configure to create
+	\filename{make.defaults}.
+
+mmake.config - Config file for MetaMake
+
+mmake.config.in - This file is used by configure to create 
+	\filename{mmake.config}.
+
+mmakefile - This is the magic file which holds the whole thing together.
+	It has the following rules:
+
+	\filtermakefile{$(TOP)/mmakefile,target}
+
 rom/ - Things which are internal parts of the OS.
 
 scripts/ - Scripts which are used to generate code.
 
-autogen.sh - Execute this shell-script to prepare for compilation of AROS.
-	It checks for needed tools and tries to build them.
-	Run it when you have installed a completely new tree or sources
-	in the \filename{tools/} directory have changed.
-	This script also generates and runs \filename{configure} from
-	\filename{configure.in}.
+test/ - Testsuite for AROS.
 
 tools/ - This contains build tools.
-
-test/ - Testcode, which is more complex.
-
-tpl.c - Template file for AROS system library functions. Each function
-	gets it's own file.
 
 workbench/ - The disk-based part of AROS.
 
