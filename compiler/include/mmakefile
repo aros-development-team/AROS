@@ -1,8 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-AMIGADIR := $(TOP)/amiga
-
 INCLUDES      := $(wildcard *.h */*.h)
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
