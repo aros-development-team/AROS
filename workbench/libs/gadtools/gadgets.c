@@ -490,18 +490,24 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     
     struct TagItem stags[] =
     {
-    	{GA_Disabled	, FALSE		},
-    	{GA_RelVerify	, TRUE		},	/* Georg S.: was false */
-    	{GA_Immediate	, TRUE		},	/* Georg S.: was false */
-    	{GTSL_Min	, 0		},
-    	{GTSL_Max	, 15		},
-    	{GTSL_Level	, 0		},
-    	{PGA_Freedom	, FREEHORIZ	},
-	{PGA_Borderless	, TRUE		},
-	{PGA_NewLook	, FALSE		},
-	{GA_Bounds	, (IPTR)&bbox	},
-	{GA_FollowMouse	, TRUE		},
-    	{TAG_MORE	, (IPTR)NULL	}
+    	{GA_Disabled	    , FALSE		},
+    	{GA_RelVerify	    , TRUE		},	/* Georg S.: was false */
+    	{GA_Immediate	    , TRUE		},	/* Georg S.: was false */
+    	{GTSL_Min	    , 0		    	},
+    	{GTSL_Max	    , 15		},
+    	{GTSL_Level	    , 0		    	},
+    	{PGA_Freedom	    , FREEHORIZ	    	},
+	{PGA_Borderless	    , TRUE		},
+#ifdef __MORPHOS__
+	{PGA_NewLook	    , FALSE		},
+#else
+	{PGA_NewLook	    , TRUE		},
+#endif
+	{GA_Bounds	    , (IPTR)&bbox	},
+	{GA_FollowMouse	    , TRUE		},
+	{PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE },
+	{PGA_RenderBehaviour, PG_BEHAVIOUR_NICE },
+    	{TAG_MORE	    , (IPTR)NULL	}
     };
     
     struct TagItem ltags[] = 
@@ -588,7 +594,7 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
     FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERPROPSPACINGY * 2;
 
     /* Create slider gadget */
-    stags[11].ti_Data = (IPTR)stdgadtags;
+    stags[13].ti_Data = (IPTR)stdgadtags;
     slidergad = NewObjectA(slidercl, NULL, stags);
 
     if (!slidergad)
@@ -730,19 +736,25 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
     struct TagItem *tag, stags[] =
     {
-    	{GTSC_Top	, 0		},
-    	{GTSC_Total	, 0		},
-    	{GTSC_Visible	, 2		},
-    	{PGA_Freedom	, FREEHORIZ	},
-    	{GA_Disabled	, FALSE		},
-    	{GA_RelVerify	, TRUE		},
-    	{GA_Immediate	, TRUE		},
-	{GTA_GadgetKind	, SCROLLER_KIND	},
-	{PGA_Borderless	, TRUE		},
-	{PGA_NewLook	, FALSE		},
-	{GA_Bounds	, (IPTR) &bbox	},
-	{GA_FollowMouse	, TRUE		},
-	{TAG_MORE	, (IPTR)NULL	}
+    	{GTSC_Top	    , 0		    	},
+    	{GTSC_Total	    , 0		    	},
+    	{GTSC_Visible	    , 2		    	},
+    	{PGA_Freedom	    , FREEHORIZ	    	},
+    	{GA_Disabled	    , FALSE		},
+    	{GA_RelVerify	    , TRUE		},
+    	{GA_Immediate	    , TRUE		},
+	{GTA_GadgetKind	    , SCROLLER_KIND	},
+	{PGA_Borderless	    , TRUE		},
+#ifdef __MORPHOS__
+	{PGA_NewLook	    , FALSE		},
+#else
+	{PGA_NewLook	    , TRUE		},
+#endif
+	{GA_Bounds	    , (IPTR) &bbox	},
+	{GA_FollowMouse	    , TRUE		},
+	{PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE },
+	{PGA_RenderBehaviour, PG_BEHAVIOUR_NICE },
+	{TAG_MORE	    , (IPTR)NULL	}
     };
     
     struct TagItem *scr_dim_tagitem;
@@ -797,7 +809,7 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 
     DEBUG_CREATESCROLLER(bug("makescroller: left %ld top %ld width %ld height %ld\n", bbox.Left, bbox.Top, bbox.Width, bbox.Height));
 
-    stags[12].ti_Data = (IPTR)stdgadtags;
+    stags[14].ti_Data = (IPTR)stdgadtags;
     
     /* Substract the arrow's total size from the sroller's size */
 
