@@ -77,8 +77,8 @@
 		{ TAG_DONE  	    	    		    	    	}
     	    };
 
-	    gc_tags[0].ti_Data = BM_PIXEL(rp->BitMap, apen & PEN_MASK);
-	    gc_tags[1].ti_Data = BM_PIXEL(rp->BitMap, bpen & PEN_MASK);
+	    gc_tags[0].ti_Data = rp->BitMap ? BM_PIXEL(rp->BitMap, apen & PEN_MASK) : apen;
+	    gc_tags[1].ti_Data = rp->BitMap ? BM_PIXEL(rp->BitMap, bpen & PEN_MASK) : bpen;
 
 	    if (drawMode & JAM2)
 	    {
