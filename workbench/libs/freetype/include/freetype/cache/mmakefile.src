@@ -1,0 +1,8 @@
+include $(TOP)/config/make.cfg
+
+#MM
+contrib-freetype-includes : includes-copy
+
+INCLUDE_FILES := $(wildcard *.h)
+
+%copy_includes path=freetype/cache dir=
