@@ -182,6 +182,7 @@ void par_Init(struct Window *win, struct PartitionTableNode *table) {
 
 	findPartitions(win, table);
 	setPCPGadgetAttrs(win, table);
+	viewPartitionData(win, table, 0);
 	SetGadgetAttrs(ptgad, win, NULL, PTCT_PartitionTable, table, TAG_DONE);
 }
 
@@ -212,11 +213,11 @@ ULONG size;
 		)/1024*(de->de_SizeBlock<<2);
 	getSizeStr(str, size);
 	pcpnametags[0].ti_Data = TRUE;
-	pcpnametags[1].ti_Data = (ULONG)"";
-	pcpsizetags[1].ti_Data = (ULONG)str;
+	pcpnametags[1].ti_Data = (STACKIPTR)"";
+	pcpsizetags[1].ti_Data = (STACKIPTR)str;
 	pcpbootabletags[0].ti_Data = TRUE;
 	pcpbootpritags[0].ti_Data = TRUE;
-	pcpfilesystemtags[1].ti_Data = (ULONG)"";
+	pcpfilesystemtags[1].ti_Data = (STACKIPTR)"";
 	SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ADD_PARTITION-ID_PCP_FIRST_GADGET].gadget,
@@ -310,16 +311,16 @@ ULONG disabled = pn ? FALSE : TRUE;
 	}
 	else
 		*str = 0;
-	pcpsizetags[1].ti_Data = (ULONG)str;
-	pcpnametags[0].ti_Data = existsAttr(table->pattrlist, PTA_NAME)? FALSE: TRUE;
-	pcpnametags[1].ti_Data = (ULONG)(pn ? (ULONG)pn->ln.ln_Name : (ULONG)str);
+	pcpsizetags[1].ti_Data = (STACKIPTR)str;
+	pcpnametags[0].ti_Data = (existsAttr(table->pattrlist, PTA_NAME) && pn) ? FALSE: TRUE;
+	pcpnametags[1].ti_Data = (STACKIPTR)(pn ? pn->ln.ln_Name : str);
 	if (existsAttr(table->pattrlist, PTA_BOOTABLE))
 	{
 
-		pcpbootabletags[0].ti_Data = FALSE;
-		pcpbootabletags[1].ti_Data = pn->flags & PNF_BOOTABLE ? TRUE : FALSE;
-		pcpbootpritags[0].ti_Data = pn->flags &PNF_BOOTABLE ? FALSE : TRUE;
-		pcpbootpritags[1].ti_Data = pn->de.de_BootPri;
+		pcpbootabletags[0].ti_Data = pn ? FALSE : TRUE;
+		pcpbootabletags[1].ti_Data = (pn && (pn->flags & PNF_BOOTABLE)) ? TRUE : FALSE;
+		pcpbootpritags[0].ti_Data = !pcpbootabletags[1].ti_Data;
+		pcpbootpritags[1].ti_Data = pn ? pn->de.de_BootPri : 0;
 	}
 	else
 	{
@@ -331,10 +332,10 @@ ULONG disabled = pn ? FALSE : TRUE;
 	struct PartitionTypeNode *ptypenode;
 
 		ptypenode = getPartitionTypeNode(table, &pn->type);
-		pcpfilesystemtags[1].ti_Data =  (ULONG)ptypenode->ln.ln_Name;
+		pcpfilesystemtags[1].ti_Data =  (STACKIPTR)ptypenode->ln.ln_Name;
 	}
 	else
-		pcpfilesystemtags[1].ti_Data =  (ULONG)str;
+		pcpfilesystemtags[1].ti_Data =  (STACKIPTR)str;
 	SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_PARTITION-ID_PCP_FIRST_GADGET].gadget,
@@ -447,6 +448,7 @@ struct PartitionNode *pn;
 						PT_DOSENVEC, &pn->de,
 						PT_TYPE, &pn->type,
 						PT_POSITION, pn->pos,
+						PT_NAME, pn->ln.ln_Name,
 						TAG_DONE
 					);
 				changed = TRUE;
@@ -744,12 +746,16 @@ ULONG pos;
 		pn->ln.ln_Name = AllocVec(100, MEMF_PUBLIC | MEMF_CLEAR);
 		if (pn->ln.ln_Name)
 		{
-
 			pn->pos = pos;
 			pn->ln.ln_Pri = table->maxpartitions-1-pos;
 			CopyMem(de, &pn->de, sizeof(struct DosEnvec));
+			pn->de.de_TableSize = DE_DOSTYPE;
+			pn->de.de_MaxTransfer = 0xFFFFFF;
+			pn->de.de_Mask = 0xFFFFFFFE;
+			pn->de.de_Reserved = 2;
+			pn->de.de_BufMemType = MEMF_ANY;
 			if (existsAttr(table->pattrlist, PTA_NAME))
-				sprintf(pn->ln.ln_Name, "DH0");
+				strcpy(pn->ln.ln_Name, "DH0");
 			else
 				setPartitionName(pn);
 			Enqueue(&table->pl, &pn->ln);
