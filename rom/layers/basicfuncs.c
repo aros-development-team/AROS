@@ -100,7 +100,44 @@ AROS_UFH4(void, _BltCRtoRP,
 /*                               LAYERINFO                                 */
 /***************************************************************************/
 
-/* Will be filled in a bit later... */
+/*-------------------------------------------------------------------------*/
+/*
+ * Allocate LayerInfo_extra and initialize its list.
+ */
+AROS_UFH2(BOOL, _AllocExtLayerInfo,
+    AROS_UFHA(struct Layer_Info *, li,         A0),
+    AROS_UFHA(struct LayersBase *, LayersBase, A6))
+{
+    if(++li->fatten_count != 0)
+	return TRUE;
+
+    if(!(li->LayerInfo_extra = AllocMem(sizeof(struct LayerInfo_extra),MEMF_PUBLIC|MEMF_CLEAR)))
+	return FALSE;
+
+    NewList((struct List *)&((struct LayerInfo_extra *)li->LayerInfo_extra)->lie_ResourceList);
+
+    return TRUE;
+}
+
+/*
+ * Free LayerInfo_extra.
+ */
+void _FreeExtLayerInfo(struct Layer_Info *li, struct LayersBase *LayersBase)
+{
+    DB2(bug("FreeExtLayerInfo($%lx)...", li));
+
+    if(--li->fatten_count >= 0)
+	return;
+
+    if(li->LayerInfo_extra == NULL)
+	return;
+
+    FreeMem(li->LayerInfo_extra, sizeof(struct LayerInfo_extra));
+
+    li->LayerInfo_extra = NULL;
+
+    DB2(bug("done\n"));
+}
 
 /***************************************************************************/
 /*                                RECTANGLE                                */
