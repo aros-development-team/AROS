@@ -24,7 +24,7 @@ struct libraryset
 extern int set_call_funcs(const void *set[], int direction, int test_fail);
 extern
 AROS_UFP3(int, set_call_libfuncs,
-	  AROS_UFPA(void**, set, A0),
+	  AROS_UFPA(const void**, set, A0),
 	  AROS_UFPA(int, order, D0),
 	  AROS_UFPA(void*, libbase, A6)
 	 );
