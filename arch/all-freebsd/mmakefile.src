@@ -6,37 +6,32 @@ DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 OS_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 
-#MM AROS-freebsd : setup setup-freebsd includes compiler kernel workbench demos shell
-AROS-freebsd:
-	@$(NOP)
+#MM- AROS-freebsd : setup setup-freebsd includes compiler kernel workbench \
+#MM 	demos games shell
 
-#MM kernel-freebsd : kernel-aros-linklib kernel-boopsi-linklib
-#MM kernel-freebsd : kernel-boot-linklib kernel-devs kernel-dos-linklib
-#MM kernel-freebsd : kernel-exec-linklib kernel-expansion-linklib 
-#MM kernel-freebsd : kernel-filesys kernel-hidd kernel-battclock-linklib
-#MM kernel-freebsd : kernel-graphics-linklib kernel-intuition-linklib
-#MM kernel-freebsd : kernel-mathffp-linklib kernel-mathieeesingbas-linklib
-#MM kernel-freebsd : kernel-timer-linklib kernel-utility-linklib
-kernel-freebsd :
-	@$(NOP)
+#MM- kernel-freebsd : \
+#MM	kernel-aros-linklib kernel-battclock-freebsd kernel-boopsi-linklib \
+#MM	kernel-boot-linklib kernel-devs \
+#MM	kernel-dos-freebsd kernel-exec-freebsd \
+#MM	kernel-expansion-linklib kernel-filesys kernel-hidd-freebsd \
+#MM	kernel-graphics-freebsd kernel-intuition-freebsd \
+#MM	kernel-keymap-linklib \
+#MM	kernel-mathffp-linklib kernel-mathieeesingbas-linklib \
+#MM	kernel-timer-linklib kernel-utility-freebsd kernel-oop-linklib
 
 # Setup the CLIB metatargets...
-#MM setup-clib-freebsd : setup-clib-freebsd-i386
-setup-clib-freebsd :
-	@$(NOP)
+#MM- setup-clib-freebsd : setup-clib-freebsd-i386
 
 #MM
 kernel :
 	@$(NOP)
 
-#MM
+#MM setup-freebsd : setup-exec-freebsd setup-dos-unix \
+#MM	setup-battclock-unix setup-x11
 setup-freebsd : 
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
 	%add_objects rom/boot/strap_emul
 
-# These are the targets to get mmake to do what I want...
-#MM setup-freebsd : setup-exec-freebsd setup-dos-unix
-#MM setup-freebsd : setup-battclock-unix setup-x11
 
 #MM setup-exec-freebsd : setup-exec-unix setup-exec-i386
 setup-exec-freebsd : $(TOP)/config/unix/exec/sigcore.h
@@ -49,51 +44,38 @@ $(GENINCDIR)/sigcore.h : $(TOP)/config/freebsd/exec/sigcore.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $^ $@
 
-#MM kernel-exec-freebsd-i386 : exec-i386 exec-unix
-kernel-exec-freebsd-i386 : $(OSGENDIR)/exec/init.o
-	@$(NOP)
-
-#MM kernel-dos-freebsd-i386 : dos-unix
-kernel-dos-freebsd-i386 :
-	@$(NOP)
-
-#MM kernel-battclock-freebsd-i386 : battclock-unix
-kernel-battclock-freebsd-i386 :
-
-#MM kernel-graphics-freebsd-i386 : graphics-x11 kernel-graphics-linklib
-kernel-graphics-freebsd-i386 :
-	@$(NOP)
-
-#MM kernel-intuition-freebsd-i386 : intuition-x11 kernel-intuition-linklib
-kernel-intuition-freebsd-i386 :
-	@$(NOP)
-
-#MM kernel-hidd-freebsd-i386 : kernel-hidd-linklib
-kernel-hidd-freebsd-i386 :
-	@$(NOP)
-
-#MM kernel-boot-freebsd-i386 : kernel-boot-linklib
-kernel-boot-freebsd-i386 :
-	@$(NOP)
-
-#MM check : check-exec-unix
-check :
-	@$(NOP)
-
-#MM clib-freebsd : clib-freebsd-$(CPU)
-clib-freebsd :
-	@$(NOP)
-
-#MM includes-freebsd : includes-copy includes-freebsd-$(CPU)
-includes-freebsd:
-	@$(NOP)
-
-#MM workbench-freebsd : workbench-complete
-workbench-freebsd:
-	@$(NOP)
+#MM- kernel-exec-freebsd : exec-freebsd exec-i386 exec-unix \
+#MM	kernel-exec-linklib
 
 #MM
-clean :: 
+exec-freebsd : $(OSGENDIR)/exec/init.o
+
+#MM- setup-dos-freebsd : setup-dos-unix
+
+#MM- kernel-dos-freebsd : dos-unix kernel-dos-linklib
+
+#MM- setup-battclock-freebsd : setup-battclock-unix
+
+#MM- kernel-graphics-freebsd : graphics-x11 kernel-graphics-linklib
+
+#MM- kernel-intuition-freebsd : intuition-x11 kernel-intuition-linklib
+
+#MM- kernel-hidd-freebsd : kernel-hidd-linklib
+
+#MM- kernel-utility-freebsd : kernel-utility-linklib
+
+#MM- kernel-battclock-freebsd : battclock-unix kernel-battclock-linklib
+
+#MM- check : check-exec-unix
+
+#MM- clib-freebsd : clib-freebsd-i386
+
+#MM- includes-freebsd : includes-copy includes-freebsd-i386
+
+#MM- workbench-freebsd : workbench-complete
+
+#MM
+clean ::
 	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
 
 $(OSGENDIR)/%.o : %.c
