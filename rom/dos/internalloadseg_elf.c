@@ -195,8 +195,13 @@ BPTR InternalLoadSeg_ELF (BPTR file,
 
   /* Check file type and the CPU the file is for */
   if (eh.type != ET_REL || (eh.machine != EM_386 && eh.machine != EM_68K))
+  {
+kprintf("error object_wrong_type 1\n"
+"type = %x (should be %x)\n"
+"machine = %x (should be %x or %x)\n",
+eh.type, ET_REL, eh.machine, EM_386, EM_68K);
     ERROR (ERROR_OBJECT_WRONG_TYPE);
-
+}
   /* Get memory for section headers */
   shtab = AllocVec (eh.shentsize * eh.shnum, MEMF_ANY);
 
@@ -233,8 +238,11 @@ BPTR InternalLoadSeg_ELF (BPTR file,
   }
 
   if (t == eh.shnum)
-    ERROR (ERROR_OBJECT_WRONG_TYPE);
+  {
 
+kprintf("error object_wrong_type 2\n");
+    ERROR (ERROR_OBJECT_WRONG_TYPE);
+}
   /* Allocate memory for the symbol table */
   symtab = AllocVec (sh->size, MEMF_ANY);
 
@@ -386,6 +394,8 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     {
       kprintf ("Symbol %s is undefined\n",
                 &strtab[symtab[i].name]);
+
+kprintf("error object_wrong_type 3\n");
       ERROR (ERROR_OBJECT_WRONG_TYPE);
     }
   }
@@ -491,8 +501,11 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
       case SHT_RELA:
       case SHT_REL: /* Relocation table */
           if (loaded == NULL)
+	  {
+kprintf("error object_wrong_type 4\n");
             ERROR (ERROR_OBJECT_WRONG_TYPE);
-
+    	  }
+	  
           /* Get memory for the relocation table */
           reltab = AllocVec (sh->size, MEMF_ANY);
 
