@@ -1,27 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.8  1997/01/27 00:22:41  ldp
-    Include proto instead of clib
-
-    Revision 1.7  1996/10/24 15:51:27  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.6  1996/10/23 14:05:18  aros
-    Missing include
-
-    Revision 1.5  1996/09/13 17:57:09  digulla
-    Use IPTR
-
-    Revision 1.4  1996/09/12 14:52:04  digulla
-    Use correct way to access external names (was missing)
-
-    Revision 1.3  1996/08/13 15:35:11  digulla
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:28  digulla
-    Added standard header for all files
 
     Desc:
     Lang:
@@ -73,7 +52,7 @@ const struct Resident resident=
 
 const char name[]="dummy.library";
 
-const char version[]="$VER: dummy 1.0 (28.3.96)\n\015";
+const char version[]="$VER: dummylib 41.1 (28.3.96)\n\015";
 
 const APTR inittabl[4]=
 {
