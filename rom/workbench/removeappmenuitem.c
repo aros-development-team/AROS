@@ -12,7 +12,7 @@
 
     NAME */
 
-	#include <proto/wb.h>
+	#include <proto/workbench.h>
 	
 	AROS_LH1(BOOL	, RemoveAppMenuItem,
 /*  SYNOPSIS */

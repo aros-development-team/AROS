@@ -360,9 +360,6 @@ $(OBJDIR)/%.d : %.c
 
 #------------------------------------------------------------------------------
 %define genromlib flags=$(CFLAGS) cc=$(CC)
-ifndef INCLUDE_PREFIX
-INCLUDE_PREFIX := $(LIBNAME)
-endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
@@ -461,9 +458,6 @@ $(OBJDIR)/%.d : %.c
 #------------------------------------------------------------------------------
 # version of genromlib that allows you to use archtools
 %define genromlib_arch flags=$(CFLAGS) cc=$(CC) files=$(FILES) archive=$(ARCHIVE)
-ifndef INCLUDE_PREFIX
-INCLUDE_PREFIX := $(LIBNAME)
-endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
@@ -564,9 +558,6 @@ $(OBJDIR)/%.d : %.c
 #------------------------------------------------------------------------------
 # version of genromlib that allows you to use cpak
 %define genromlib_f flags=$(CFLAGS) cc=$(CC) files=$(FILES) functions=$(FUNCTIONS)
-ifndef INCLUDE_PREFIX
-INCLUDE_PREFIX := $(LIBNAME)
-endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
@@ -671,9 +662,6 @@ $(OBJDIR)/%.d : %.c
 #------------------------------------------------------------------------------
 # version of genromlib that allows you to use cpak and generates inline
 %define genromlib_finline flags=$(CFLAGS) cc=$(CC) files=$(FILES) functions=$(FUNCTIONS)
-ifndef INCLUDE_PREFIX
-INCLUDE_PREFIX := $(LIBNAME)
-endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
@@ -776,7 +764,7 @@ $(OBJDIR)/%.d : %.c
 %end
 
 #------------------------------------------------------------------------------
-%define genlibincludes name=$(INCLUDE_PREFIX) functions=$(ALL_FUNCTIONS)
+%define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
 			    $(INCDIR)/clib/%(name)_protos.h \
@@ -799,7 +787,7 @@ $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
 %end
 
 #------------------------------------------------------------------------------
-%define genlibincludes_arch name=$(INCLUDE_PREFIX) archive=$(ARCHIVE)
+%define genlibincludes_arch name=$(LIBNAME) archive=$(ARCHIVE)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
 			    $(INCDIR)/pragmas/%(name)_pragmas.h \
@@ -832,7 +820,7 @@ $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 
 
 #------------------------------------------------------------------------------
-%define genlibincludesinline name=$(INCLUDE_PREFIX) functions=$(ALL_FUNCTIONS)
+%define genlibincludesinline name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
 #MM includes-generate : setup-clib
 includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
 			    $(INCDIR)/clib/%(name)_protos.h \
@@ -933,10 +921,6 @@ SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
 OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 
-ifndef INCLUDE_PREFIX
-INCLUDE_PREFIX := $(LIBNAME)
-endif
-
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
@@ -1000,10 +984,6 @@ ENDFUNC       := $(OBJDIR)/$(END_FILE).o
 SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
 OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
-
-ifndef INCLUDE_PREFIX
-INCLUDE_PREFIX := $(LIBNAME)
-endif
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."

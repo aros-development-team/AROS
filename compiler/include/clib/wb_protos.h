@@ -1,5 +1,5 @@
-#ifndef _INLINE_WB_H
-#define _INLINE_WB_H
+#ifndef CLIB_WB_PROTOS_H
+#define CLIB_WB_PROTOS_H
 
 /*
     (C) 2000 AROS - The Amiga Research OS
@@ -9,6 +9,6 @@
     Lang: english
 */
 
-#include <inline/workbench.h>
+#include <clib/workbench_protos.h>
 
-#endif /* _INLINE_WB_H */
+#endif /* CLIB_WB_PROTOS_H */

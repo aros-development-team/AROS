@@ -38,10 +38,6 @@ BEGIN {
 		libexit = ".library";
 	    }
 	}
-	else if ($2 == "INCLUDE_PREFIX" )
-	{
-	    incname = $3;
-	}
     }
 
     verbose_pattern = libbase"[ \\t]*,[ \\t]*[0-9]+[ \\t]*,[ \\t]*"basename;
@@ -49,10 +45,9 @@ BEGIN {
     close (file);
 
     BASENAME=toupper(basename);
-    INCNAME=toupper(incname);
 
-    print "#ifndef DEFINES_"INCNAME"_PROTOS_H"
-    print "#define DEFINES_"INCNAME"_PROTOS_H"
+    print "#ifndef DEFINES_"BASENAME"_PROTOS_H"
+    print "#define DEFINES_"BASENAME"_PROTOS_H"
     print ""
     print "/*"
     print "    Copyright (C) 1995-1998 AROS - The Amiga Research OS"
@@ -143,5 +138,5 @@ BEGIN {
     narg=0;
 }
 END {
-    print "#endif /* DEFINES_"INCNAME"_PROTOS_H */"
+    print "#endif /* DEFINES_"BASENAME"_PROTOS_H */"
 }

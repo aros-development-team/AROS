@@ -1,20 +1,14 @@
-/*
-    (C) 1995-97 AROS - The Amiga Research OS
-    $Id$
-*/
 #ifndef PROTO_WB_H
 #define PROTO_WB_H
 
-#ifndef AROS_SYSTEM_H
-#include <aros/system.h>
-#endif
+/*
+    (C) 2000 AROS - The Amiga Research OS
+    $Id$
 
-#include <clib/wb_protos.h>
+    Desc: Wrapper for naming anomaly workbench.library <-> wb.h
+    Lang: english
+*/
 
-#if defined(_AMIGA) && defined(__GNUC__)
-#include <inline/wb.h>
-#else
-#include <defines/wb.h>
-#endif
+#include <proto/workbench.h>
 
 #endif /* PROTO_WB_H */

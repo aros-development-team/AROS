@@ -89,7 +89,6 @@ endif
 
 # Uncomment NO_FUNCTABLE line if you don't want the function table made
 # NO_FUNCTABLE := 1
-INCLUDE_PREFIX := wb
 %genromlib_finline
 
 

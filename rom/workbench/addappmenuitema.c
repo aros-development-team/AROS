@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/wb.h>
+	#include <proto/workbench.h>
 
 	AROS_LH5(struct AppMenuItem *, AddAppMenuItemA,
 /*  SYNOPSIS */

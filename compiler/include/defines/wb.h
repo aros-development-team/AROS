@@ -1,5 +1,5 @@
-#ifndef _INLINE_WB_H
-#define _INLINE_WB_H
+#ifndef DEFINES_WB_H
+#define DEFINES_WB_H
 
 /*
     (C) 2000 AROS - The Amiga Research OS
@@ -9,6 +9,6 @@
     Lang: english
 */
 
-#include <inline/workbench.h>
+#include <defines/workbench.h>
 
-#endif /* _INLINE_WB_H */
+#endif /* DEFINES_WB_H */

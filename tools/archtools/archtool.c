@@ -280,7 +280,6 @@ enum liboption
 struct libconf
 {
   char *libname;
-  char *incname;
   char *basename;
   char *libbase;
   char *libbasetype;
@@ -332,15 +331,6 @@ char **words = NULL;
           sprintf( lc->libbasetype, "%sBase",words[1]);
           lc->libbasetype[0] = toupper(lc->libbasetype[0]);
         }
-        if( lc->incname == NULL )
-        {
-          lc->incname = strdup(words[1]);
-        }
-      }
-      else if( strcmp(words[0],"incname")==0 )
-      {
-        free(lc->incname);
-        lc->incname = strdup(words[1]);
       }
       else if( strcmp(words[0],"libname")==0 )
       {
@@ -498,11 +488,6 @@ return 0;
 # libname <string> - Set libname to <string>. This is the name of the
 #		library (ie. you can open it with <string>.library).
 #		It will show up in the version string, too.
-# incname <string> - Set includename to <string> (for type=library).
-#		This is the name of the includes prefix (ie. you have eg.
-#		include/clib/<string>_protos.h).
-#		If not given (should be the default, except workbench/wb)
-#		it defaults to <name>.
 # basename <string> - Set basename to <string>. The basename is used in
 #		the AROS-LHx macros in the location part (last parameter)
 #		and to specify defaults for libbase and libbasetype
@@ -645,7 +630,6 @@ time_t t;
   fprintf( fd, "#define VERSION_STRING   \"$VER: %s %d.%d (%s)\\r\\n\"\n", lc->libname, lc->version, lc->revision , date );
   fprintf( fd, "#define LIBEND           %s_end\n", lc->basename );
   fprintf( fd, "#define LIBFUNCTABLE     %s_functable\n", lc->basename );
-  fprintf( fd, "#define INCLUDE_PREFIX   %s\n", lc->incname );
   fprintf( fd, "#define COPYRIGHT_STRING \"%s\"\n", lc->copyright );
   fprintf( fd, "#endif /* %s */\n", lc->define );
 
@@ -1912,7 +1896,7 @@ int genclib(int argc, char **argv)
 FILE *fd, *fdo = NULL, *headerstempl;
 char *filename, *newname;
 struct libconf *lc;
-char *upperincname;
+char *upperbasename;
 char *line = 0;
 char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
@@ -1942,10 +1926,10 @@ int firstlvo;
     fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
     return(-1);
   }
-  filename = malloc( (strlen(argv[1])+strlen(lc->incname)+16) * sizeof(char) );
-  sprintf( filename, "%s/clib/%s_protos.h", argv[1], lc->incname );
-  newname = malloc( (strlen(argv[1])+strlen(lc->incname)+20) * sizeof(char) );
-  sprintf( newname, "%s/clib/%s_protos.h.new", argv[1], lc->incname );
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( filename, "%s/clib/%s_protos.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( newname, "%s/clib/%s_protos.h.new", argv[1], lc->libname );
   fdo = fopen(newname,"w");
   if(!fdo)
   {
@@ -1953,10 +1937,10 @@ int firstlvo;
     return(-1);
   }
 
-  upperincname = strdup( lc->incname );
-  strupper( upperincname );
-  fprintf( fdo, "#ifndef CLIB_%s_PROTOS_H\n", upperincname );
-  fprintf( fdo, "#define CLIB_%s_PROTOS_H\n\n", upperincname );
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo, "#ifndef CLIB_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo, "#define CLIB_%s_PROTOS_H\n\n", upperbasename );
   fprintf( fdo, "/*\n" );
   fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
@@ -2135,7 +2119,7 @@ int firstlvo;
 
     free(line);
   }
-  fprintf( fdo, "\n#endif /* CLIB_%s_PROTOS_H */\n", upperincname );
+  fprintf( fdo, "\n#endif /* CLIB_%s_PROTOS_H */\n", upperbasename );
   fclose(fdo);
   fclose(fd);
   moveifchanged(filename,newname);
@@ -2160,10 +2144,10 @@ struct libconf *lc;
   lc = calloc( 1, sizeof(struct libconf) );
   if(parse_libconf(NULL,lc))
     return(-1);
-  filename = malloc( (strlen(argv[1])+strlen(lc->incname)+20) * sizeof(char) );
-  sprintf( filename, "%s/pragmas/%s_pragmas.h", argv[1], lc->incname );
-  newname = malloc( (strlen(argv[1])+strlen(lc->incname)+24) * sizeof(char) );
-  sprintf( newname, "%s/pragmas/%s_pragmas.h.new", argv[1], lc->incname );
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( filename, "%s/pragmas/%s_pragmas.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+24) * sizeof(char) );
+  sprintf( newname, "%s/pragmas/%s_pragmas.h.new", argv[1], lc->libname );
   fdo = fopen(newname,"w");
   if(!fdo)
   {
@@ -2171,7 +2155,7 @@ struct libconf *lc;
     return(-1);
   }
 
-  fprintf( fdo, "#include <clib/%s_protos.h>\n", lc->incname );
+  fprintf( fdo, "#include <clib/%s_protos.h>\n", lc->libname );
   fclose(fdo);
   moveifchanged(filename,newname);
   free(lc);
@@ -2186,7 +2170,7 @@ int genproto(int argc, char **argv)
 FILE *fdo = NULL;
 char *filename, *newname;
 struct libconf *lc;
-char *upperincname;
+char *upperbasename;
 
   if(argc != 2)
   {
@@ -2201,10 +2185,10 @@ char *upperincname;
     lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
     sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
   }
-  filename = malloc( (strlen(argv[1])+strlen(lc->incname)+10) * sizeof(char) );
-  sprintf( filename, "%s/proto/%s.h", argv[1], lc->incname );
-  newname = malloc( (strlen(argv[1])+strlen(lc->incname)+14) * sizeof(char) );
-  sprintf( newname, "%s/proto/%s.h.new", argv[1], lc->incname );
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+10) * sizeof(char) );
+  sprintf( filename, "%s/proto/%s.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+14) * sizeof(char) );
+  sprintf( newname, "%s/proto/%s.h.new", argv[1], lc->libname );
   fdo = fopen(newname,"w");
   if(!fdo)
   {
@@ -2212,10 +2196,10 @@ char *upperincname;
     return(-1);
   }
 
-  upperincname = strdup( lc->incname );
-  strupper( upperincname );
-  fprintf( fdo, "#ifndef PROTO_%s_H\n", upperincname );
-  fprintf( fdo, "#define PROTO_%s_H\n\n", upperincname );
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo, "#ifndef PROTO_%s_H\n", upperbasename );
+  fprintf( fdo, "#define PROTO_%s_H\n\n", upperbasename );
   fprintf( fdo, "/*\n" );
   fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
@@ -2224,20 +2208,20 @@ char *upperincname;
   fprintf( fdo, "#ifndef AROS_SYSTEM_H\n" );
   fprintf( fdo, "#   include <aros/system.h>\n" );
   fprintf( fdo, "#endif\n\n" );
-  fprintf( fdo, "#include <clib/%s_protos.h>\n\n", lc->incname );
+  fprintf( fdo, "#include <clib/%s_protos.h>\n\n", lc->libname );
   fprintf( fdo, "#if defined(_AMIGA) && defined(__GNUC__)\n" );
-  fprintf( fdo, "#   include <inline/%s.h>\n", lc->incname );
+  fprintf( fdo, "#   include <inline/%s.h>\n", lc->libname );
   fprintf( fdo, "#else\n" );
-  fprintf( fdo, "#   include <defines/%s.h>\n", lc->incname );
+  fprintf( fdo, "#   include <defines/%s.h>\n", lc->libname );
   fprintf( fdo, "#endif\n\n" );
   if(lc->option & o_hasrt)
   {
-    fprintf( fdo, "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperincname );
-    fprintf( fdo, "#   define ENABLE_RT_%s 1\n", upperincname );
+    fprintf( fdo, "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
+    fprintf( fdo, "#   define ENABLE_RT_%s 1\n", upperbasename );
     fprintf( fdo, "#   include <aros/rt.h>\n" );
     fprintf( fdo, "#endif\n\n" );
   }
-  fprintf( fdo, "#endif /* PROTO_%s_H */\n", upperincname );
+  fprintf( fdo, "#endif /* PROTO_%s_H */\n", upperbasename );
   fclose(fdo);
   moveifchanged(filename,newname);
   free(lc);
@@ -2252,7 +2236,7 @@ int geninline(int argc, char **argv)
 FILE *fd, *fdo = NULL, *headerstempl;
 char *filename, *newname;
 struct libconf *lc;
-char *upperbasename, *upperincname;
+char *upperbasename;
 char *line = 0;
 char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
@@ -2281,10 +2265,10 @@ int firstlvo;
     fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
     return(-1);
   }
-  filename = malloc( (strlen(argv[1])+strlen(lc->incname)+11) * sizeof(char) );
-  sprintf( filename, "%s/inline/%s.h", argv[1], lc->incname );
-  newname = malloc( (strlen(argv[1])+strlen(lc->incname)+15) * sizeof(char) );
-  sprintf( newname, "%s/inline/%s.h.new", argv[1], lc->incname );
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+11) * sizeof(char) );
+  sprintf( filename, "%s/inline/%s.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+15) * sizeof(char) );
+  sprintf( newname, "%s/inline/%s.h.new", argv[1], lc->libname );
   fdo = fopen(newname,"w");
   if(!fdo)
   {
@@ -2294,10 +2278,8 @@ int firstlvo;
 
   upperbasename = strdup( lc->basename );
   strupper( upperbasename );
-  upperincname = strdup( lc->incname );
-  strupper( upperincname );
-  fprintf( fdo, "#ifndef _INLINE_%s_H\n", upperincname );
-  fprintf( fdo, "#define _INLINE_%s_H\n\n", upperincname );
+  fprintf( fdo, "#ifndef _INLINE_%s_H\n", upperbasename );
+  fprintf( fdo, "#define _INLINE_%s_H\n\n", upperbasename );
   fprintf( fdo, "/*\n" );
   fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
@@ -2510,7 +2492,7 @@ int firstlvo;
 
     free(line);
   }
-  fprintf( fdo, "\n#endif /* _INLINE_%s_H */\n", upperincname );
+  fprintf( fdo, "\n#endif /* _INLINE_%s_H */\n", upperbasename );
   fclose(fdo);
   fclose(fd);
   moveifchanged(filename,newname);
@@ -2528,7 +2510,7 @@ int genincludes(int argc, char **argv)
 FILE *fd, *fdo[NUM_INCLUDES], *headerstempl;
 char *filename[NUM_INCLUDES], *newname[NUM_INCLUDES];
 struct libconf *lc;
-char *upperbasename, *upperincname;
+char *upperbasename;
 char *line = 0;
 char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
@@ -2558,30 +2540,30 @@ int firstlvo;
     fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
     return(-1);
   }
-  filename[0] = malloc( (strlen(argv[1])+strlen(lc->incname)+16) * sizeof(char) );
-  sprintf( filename[0], "%s/clib/%s_protos.h", argv[1], lc->incname );
-  newname[0] = malloc( (strlen(argv[1])+strlen(lc->incname)+20) * sizeof(char) );
-  sprintf( newname[0], "%s/clib/%s_protos.h.new", argv[1], lc->incname );
+  filename[0] = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( filename[0], "%s/clib/%s_protos.h", argv[1], lc->libname );
+  newname[0] = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( newname[0], "%s/clib/%s_protos.h.new", argv[1], lc->libname );
 
-  filename[1] = malloc( (strlen(argv[1])+strlen(lc->incname)+12) * sizeof(char) );
-  sprintf( filename[1], "%s/defines/%s.h", argv[1], lc->incname );
-  newname[1] = malloc( (strlen(argv[1])+strlen(lc->incname)+16) * sizeof(char) );
-  sprintf( newname[1], "%s/defines/%s.h.new", argv[1], lc->incname );
+  filename[1] = malloc( (strlen(argv[1])+strlen(lc->libname)+12) * sizeof(char) );
+  sprintf( filename[1], "%s/defines/%s.h", argv[1], lc->libname );
+  newname[1] = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( newname[1], "%s/defines/%s.h.new", argv[1], lc->libname );
 
-  filename[2] = malloc( (strlen(argv[1])+strlen(lc->incname)+10) * sizeof(char) );
-  sprintf( filename[2], "%s/proto/%s.h", argv[1], lc->incname );
-  newname[2] = malloc( (strlen(argv[1])+strlen(lc->incname)+14) * sizeof(char) );
-  sprintf( newname[2], "%s/proto/%s.h.new", argv[1], lc->incname );
+  filename[2] = malloc( (strlen(argv[1])+strlen(lc->libname)+10) * sizeof(char) );
+  sprintf( filename[2], "%s/proto/%s.h", argv[1], lc->libname );
+  newname[2] = malloc( (strlen(argv[1])+strlen(lc->libname)+14) * sizeof(char) );
+  sprintf( newname[2], "%s/proto/%s.h.new", argv[1], lc->libname );
 
-  filename[3] = malloc( (strlen(argv[1])+strlen(lc->incname)+11) * sizeof(char) );
-  sprintf( filename[3], "%s/inline/%s.h", argv[1], lc->incname );
-  newname[3] = malloc( (strlen(argv[1])+strlen(lc->incname)+15) * sizeof(char) );
-  sprintf( newname[3], "%s/inline/%s.h.new", argv[1], lc->incname );
+  filename[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+11) * sizeof(char) );
+  sprintf( filename[3], "%s/inline/%s.h", argv[1], lc->libname );
+  newname[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+15) * sizeof(char) );
+  sprintf( newname[3], "%s/inline/%s.h.new", argv[1], lc->libname );
 
-  filename[4] = malloc( (strlen(argv[1])+strlen(lc->incname)+20) * sizeof(char) );
-  sprintf( filename[4], "%s/pragmas/%s_pragmas.h", argv[1], lc->incname );
-  newname[4] = malloc( (strlen(argv[1])+strlen(lc->incname)+24) * sizeof(char) );
-  sprintf( newname[4], "%s/pragmas/%s_pragmas.h.new", argv[1], lc->incname );
+  filename[4] = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( filename[4], "%s/pragmas/%s_pragmas.h", argv[1], lc->libname );
+  newname[4] = malloc( (strlen(argv[1])+strlen(lc->libname)+24) * sizeof(char) );
+  sprintf( newname[4], "%s/pragmas/%s_pragmas.h.new", argv[1], lc->libname );
 
   for( i=0 ; i<NUM_INCLUDES ; i++ )
   {
@@ -2597,22 +2579,20 @@ int firstlvo;
 
   upperbasename = strdup( lc->basename );
   strupper( upperbasename );
-  upperincname = strdup( lc->incname );
-  strupper( upperincname );
-  fprintf( fdo[0], "#ifndef CLIB_%s_PROTOS_H\n", upperincname );
-  fprintf( fdo[0], "#define CLIB_%s_PROTOS_H\n\n", upperincname );
+  fprintf( fdo[0], "#ifndef CLIB_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo[0], "#define CLIB_%s_PROTOS_H\n\n", upperbasename );
   fprintf( fdo[0], "/*\n" );
   fprintf( fdo[0], "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo[0], "    *** Automatic generated file. Do not edit ***\n" );
   fprintf( fdo[0], "    Desc: Prototypes for %s.", lc->basename );
-  fprintf( fdo[1], "#ifndef DEFINES_%s_PROTOS_H\n", upperincname );
-  fprintf( fdo[1], "#define DEFINES_%s_PROTOS_H\n\n", upperincname );
+  fprintf( fdo[1], "#ifndef DEFINES_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo[1], "#define DEFINES_%s_PROTOS_H\n\n", upperbasename );
   fprintf( fdo[1], "/*\n" );
   fprintf( fdo[1], "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo[1], "    *** Automatic generated file. Do not edit ***\n" );
   fprintf( fdo[1], "    Desc: Prototypes for %s.", lc->basename );
-  fprintf( fdo[2], "#ifndef PROTO_%s_H\n", upperincname );
-  fprintf( fdo[2], "#define PROTO_%s_H\n\n", upperincname );
+  fprintf( fdo[2], "#ifndef PROTO_%s_H\n", upperbasename );
+  fprintf( fdo[2], "#define PROTO_%s_H\n\n", upperbasename );
   fprintf( fdo[2], "/*\n" );
   fprintf( fdo[2], "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo[2], "    *** Automatic generated file. Do not edit ***\n" );
@@ -2621,26 +2601,26 @@ int firstlvo;
   fprintf( fdo[2], "#ifndef AROS_SYSTEM_H\n" );
   fprintf( fdo[2], "#   include <aros/system.h>\n" );
   fprintf( fdo[2], "#endif\n\n" );
-  fprintf( fdo[2], "#include <clib/%s_protos.h>\n\n", lc->incname );
+  fprintf( fdo[2], "#include <clib/%s_protos.h>\n\n", lc->libname );
   fprintf( fdo[2], "#if defined(_AMIGA) && defined(__GNUC__)\n" );
-  fprintf( fdo[2], "#   include <inline/%s.h>\n", lc->incname );
+  fprintf( fdo[2], "#   include <inline/%s.h>\n", lc->libname );
   fprintf( fdo[2], "#else\n" );
-  fprintf( fdo[2], "#   include <defines/%s.h>\n", lc->incname );
+  fprintf( fdo[2], "#   include <defines/%s.h>\n", lc->libname );
   fprintf( fdo[2], "#endif\n\n" );
   if(lc->option & o_hasrt)
   {
-    fprintf( fdo[2], "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperincname );
-    fprintf( fdo[2], "#   define ENABLE_RT_%s 1\n", upperincname );
+    fprintf( fdo[2], "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
+    fprintf( fdo[2], "#   define ENABLE_RT_%s 1\n", upperbasename );
     fprintf( fdo[2], "#   include <aros/rt.h>\n" );
     fprintf( fdo[2], "#endif\n\n" );
   }
-  fprintf( fdo[3], "#ifndef _INLINE_%s_H\n", upperincname );
-  fprintf( fdo[3], "#define _INLINE_%s_H\n\n", upperincname );
+  fprintf( fdo[3], "#ifndef _INLINE_%s_H\n", upperbasename );
+  fprintf( fdo[3], "#define _INLINE_%s_H\n\n", upperbasename );
   fprintf( fdo[3], "/*\n" );
   fprintf( fdo[3], "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
   fprintf( fdo[3], "    *** Automatic generated file. Do not edit ***\n" );
   fprintf( fdo[3], "    Desc: Inlines for %s.", lc->basename );
-  fprintf( fdo[4], "#include <clib/%s_protos.h>\n", lc->incname );
+  fprintf( fdo[4], "#include <clib/%s_protos.h>\n", lc->libname );
   switch( lc->type )
   {
     case t_resource:
@@ -2907,10 +2887,10 @@ int firstlvo;
 
     free(line);
   }
-  fprintf( fdo[0], "\n#endif /* CLIB_%s_PROTOS_H */\n", upperincname );
-  fprintf( fdo[1], "\n#endif /* DEFINES_%s_PROTOS_H */\n", upperincname );
-  fprintf( fdo[2], "#endif /* PROTO_%s_H */\n", upperincname );
-  fprintf( fdo[3], "\n#endif /* _INLINE_%s_H */\n", upperincname );
+  fprintf( fdo[0], "\n#endif /* CLIB_%s_PROTOS_H */\n", upperbasename );
+  fprintf( fdo[1], "\n#endif /* DEFINES_%s_PROTOS_H */\n", upperbasename );
+  fprintf( fdo[2], "#endif /* PROTO_%s_H */\n", upperbasename );
+  fprintf( fdo[3], "\n#endif /* _INLINE_%s_H */\n", upperbasename );
   fclose(fd);
   for(i=0;i<NUM_INCLUDES;i++)
   {
