@@ -327,6 +327,7 @@ struct IFS_MOUNT_MODE
 #define FSA_LOCK_RECORD     39
 #define FSA_UNLOCK_RECORD   40
 #endif
+
 #define FSA_PARENT_DIR      41
 #define FSA_PARENT_DIR_POST 42
 struct IFS_PARENT_DIR
@@ -335,6 +336,18 @@ struct IFS_PARENT_DIR
        NULL, if we are at the root directory already */
     char * io_DirName;
 };
+
+/*
+    Allows us to change a console between raw and cooked mode.
+*/
+#define FSA_CONSOLE_MODE    43
+struct IFS_CONSOLE_MODE
+{
+    LONG	io_ConsoleMode;
+};
+#define FCM_COOKED	0
+#define FCM_RAW		1
+
 
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
    and may be or'ed. Note that not all filesystems support all flags. */
@@ -417,6 +430,7 @@ struct IOFileSys
         struct IFS_FORMAT          io_FORMAT;         /* FSA_FORMAT */
         struct IFS_MOUNT_MODE      io_MOUNT_MODE;     /* FSA_MOUNT_MODE */
         struct IFS_PARENT_DIR      io_PARENT_DIR;     /* FSA_PARENT_DIR */
+	struct IFS_CONSOLE_MODE	   io_CONSOLE_MODE;   /* FSA_CONSOLE_MODE */
     } io_Union;
 };
 #if 0
