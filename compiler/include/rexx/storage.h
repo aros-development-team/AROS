@@ -45,6 +45,7 @@ struct RexxMsg
 #define ARG0(msg) ((UBYTE *)msg->rm_Args[0])
 #define ARG1(msg) ((UBYTE *)msg->rm_Args[1])
 #define ARG2(msg) ((UBYTE *)msg->rm_Args[2])
+#define RXARG(msg,n) ((UBYTE *)msg->rm_Args[n])
 
 /* The command for in rm_Action */
 #define RXCOMM   0x01000000
