@@ -119,6 +119,8 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 	    {
 		tempMsg->cxm_Type = CXM_IEVENT;
 		tempMsg->cxm_Data = AllocCxStructure(CX_INPUTEVENT, 0, CxBase);
+		tempMsg->cxm_Message.mn_ReplyPort = &GPB(CxBase)->cx_MsgPort;
+		tempMsg->cxm_Message.mn_Length = sizeof(CxMsg);
 		
 		if (tempMsg->cxm_Data == NULL)
 		{
