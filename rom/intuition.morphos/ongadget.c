@@ -74,9 +74,7 @@ AROS_LH3(void, OnGadget,
     }
     else
     {
-        Forbid();
-        gadget->Flags &= ~GFLG_DISABLED;
-        Permit();
+        AROS_ATOMIC_ANDW(gadget->Flags, ~GFLG_DISABLED);
     }
 
     RefreshGList (gadget, window, requester, 1);

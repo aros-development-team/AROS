@@ -10,6 +10,9 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+#ifndef AROS_ATOMIC_H
+#   include <aros/atomic.h>
+#endif
 #ifndef EXEC_EXECBASE_H
 #   include <exec/execbase.h>
 #endif

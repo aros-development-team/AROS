@@ -220,10 +220,8 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
 
         if (oldactive && oldactive != window)
         {
-            Forbid();
-            oldactive->Flags &= ~WFLG_WINDOWACTIVE;
-            Permit();
-
+            AROS_ATOMIC_ANDL(oldactive->Flags, ~WFLG_WINDOWACTIVE);
+         
             int_refreshwindowframe(oldactive, REFRESHGAD_BORDER, 0, IntuitionBase);
             if (!window || oldactive->WScreen != window->WScreen)
                 RenderScreenBar(oldactive->WScreen, FALSE, IntuitionBase);
