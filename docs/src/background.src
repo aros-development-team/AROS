@@ -73,6 +73,8 @@ ask or say, contact coordinator \email{digulla@aros.fh-konstanz.de}.
 \if{html}{
 \section{The current status}
 
+This status was generated \today.
+
 \incverb{status.inc}
 }
 
