@@ -92,7 +92,7 @@ AROS_LIBFUNC_INIT
 QUAD Res, tmp, Exponent64, ld_M;
 LONG Exponent;
   /* check for negative sign */
-  if ( is_lessSC(y, 0x0, 0x0, 0x0UUL) /* y<0 */)
+  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL) /* y<0 */)
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     Set_Value64C(Res, IEEEDPNAN_Hi,
@@ -125,7 +125,7 @@ LONG Exponent;
   AND64QC(tmp, IEEEDPMantisse_Mask_Hi,
                IEEEDPMantisse_Mask_Lo,
                IEEEDPMantisse_Mask_64);
-  OR64QC(tmp, 0x3fe00000, 0x0, 0x3fe0000000000000UUL);
+  OR64QC(tmp, 0x3fe00000, 0x0, 0x3fe0000000000000ULL);
   ld_M = intern_IEEEDPLd( (struct MathIeeeDoubTransBase *)
                                            MathIeeeDoubTransBase,
                           tmp );
@@ -133,7 +133,7 @@ LONG Exponent;
   ** log(fnum1) =  --------
   **                 ld e
   */
-  Set_Value64C(tmp, 0x3fe62e42, 0xfefa39ef, 0x3fe62e42fefa39efUUL ); /* ln 2*/
+  Set_Value64C(tmp, 0x3fe62e42, 0xfefa39ef, 0x3fe62e42fefa39efULL ); /* ln 2*/
   return IEEEDPMul( IEEEDPAdd(ld_M, Exponent64), tmp);
 AROS_LIBFUNC_EXIT
 } /* IEEEDPLog */

@@ -24,7 +24,7 @@
       AROS_LHAQUAD(LONG, y, D0, D1),
 
 /*  LOCATION */
-      struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 18, Mathieeedoubbas)
+      struct MathIeeeDoubTransBase *, MathIeeeDoubTransBase, 18, Mathieeedoubtrans)
 
 /*  FUNCTION
         Convert IEEE single to IEEE double precision
@@ -63,7 +63,7 @@ QUAD Res, tmpQ;
   if (0 == y)
   {
     SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    Set_Value64C(Res,0x0,0x0,0x0UUL);
+    Set_Value64C(Res,0x0,0x0,0x0ULL);
     return Res;
   }
 

@@ -71,16 +71,16 @@ AROS_LIBFUNC_INIT
   QUAD Res, tmp;
 
   /* y^x is illegal if y<0 and x is not an integer-value */
-  if (is_lessSC(y, 0x0, 0x0, 0x0UUL) &&
+  if (is_lessSC(y, 0x0, 0x0, 0x0ULL) &&
       is_neq(x, IEEEDPCeil(x))            )
   {
-    Set_Value64C(Res, 0x0, 0x0, 0x0UUL);
+    Set_Value64C(Res, 0x0, 0x0, 0x0ULL);
     return Res;
   }
 
-  if (is_eqC(y, 0x0, 0x0, 0x0UUL))
+  if (is_eqC(y, 0x0, 0x0, 0x0ULL))
   {
-    Set_Value64C(Res, 0x3ff00000, 0x0, 0x3ff0000000000000UUL);
+    Set_Value64C(Res, 0x3ff00000, 0x0, 0x3ff0000000000000ULL);
     return Res;
   }
   Set_Value64(tmp, y);
@@ -95,22 +95,22 @@ AROS_LIBFUNC_INIT
   /* if y < 0 and x was and even integer, the result is positive, otherwise
   ** it is negative.
   */
-  if ( is_lessSC(y, 0x0, 0x0, 0x0UUL) &&
+  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL) &&
        TRUE == intern_IEEEDPisodd(x) )
     OR64QC(Res, IEEEDPSign_Mask_Hi,
                 IEEEDPSign_Mask_Lo,
                 IEEEDPSign_Mask_64);
 
-  if (is_eqC(Res, 0x0, 0x0, 0x0UUL))
+  if (is_eqC(Res, 0x0, 0x0, 0x0ULL))
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, 0x0, 0x0, 0x0UUL);
+    Set_Value64C(Res, 0x0, 0x0, 0x0ULL);
     return Res;
   }
 
   SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
 
-  if (is_lessSC(Res, 0x0, 0x0, 0x0UUL))
+  if (is_lessSC(Res, 0x0, 0x0, 0x0ULL))
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   Set_Value64(tmp, Res);
@@ -121,8 +121,8 @@ AROS_LIBFUNC_INIT
   if ( is_eqC(Res, IEEEDPPInfty_Hi,
                    IEEEDPPInfty_Lo,
                    IEEEDPPInfty_64) )
-    /* don`t touch the Negative_Bit now!*/
-    SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
+  /* don`t touch the Negative_Bit now!*/
+  SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
 
   return Res;
 AROS_LIBFUNC_EXIT

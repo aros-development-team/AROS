@@ -88,17 +88,17 @@ QUAD y2;
                    IEEEDPPInfty_64))
    {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    if ( is_lessSC(y, 0x0, 0x0, 0x0UUL))
+    if ( is_lessSC(y, 0x0, 0x0, 0x0ULL))
       OR64QC(Res, IEEEDPSign_Mask_Hi,
                   IEEEDPSign_Mask_Lo,
                   IEEEDPSign_Mask_64);
     return Res;
   }
 
-  if ( is_lessC(y2, 0x40320000, 0x0, 0x4032000000000000UUL) )
+  if ( is_lessC(y2, 0x40320000, 0x0, 0x4032000000000000ULL) )
   {
     QUAD One, ResTmp;
-    Set_Value64C(One, 0x3ff00000, 0x0, 0x3ff0000000000000UUL);
+    Set_Value64C(One, 0x3ff00000, 0x0, 0x3ff0000000000000ULL);
     ResTmp = IEEEDPDiv(One, Res);
     OR64QC(ResTmp, IEEEDPSign_Mask_Hi,
                    IEEEDPSign_Mask_Lo,
@@ -107,10 +107,10 @@ QUAD y2;
     Res = IEEEDPAdd(Res, ResTmp);
   }
   /* Res = Res / 2 */
-  ADD64QC(Res, 0xFFF00000, 0x0, 0xFFF0000000000000UUL);
+  ADD64QC(Res, 0xFFF00000, 0x0, 0xFFF0000000000000ULL);
 
   /* at this point Res has to be positive to be valid */
-  if ( is_leqSC(Res, 0x0, 0x0, 0x0UUL))
+  if ( is_leqSC(Res, 0x0, 0x0, 0x0ULL))
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     AND64QC(y, IEEEDPSign_Mask_Hi,
@@ -119,7 +119,7 @@ QUAD y2;
     return y;
   }
 
-  if ( is_lessSC(y, 0x0, 0x0, 0x0UUL))
+  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL))
   {
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     OR64QC(Res, IEEEDPSign_Mask_Hi,

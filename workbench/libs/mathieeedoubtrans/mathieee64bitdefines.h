@@ -18,6 +18,16 @@
 #    define Set_Low32of64(Dest,Src)   ((Dest).low) = Src
 #endif
 
+#if defined AROS_64BIT_TYPE || defined __GNUC__
+#define QuadData(Const64_Hi, Const64_Lo, Const64) \
+     Const64
+#else
+#define QuadData(Const64_Hi, Const64_Lo, Const64) \
+     Const64_Hi, Const64_Lo  
+#endif
+
+
+
 /* XOR */
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
@@ -51,7 +61,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define OR64Q(Dest64, Var64) \
-  Dest64 |= Var2_64 ;
+  Dest64 |= Var64 ;
 #else
 #define OR64Q(Dest64, Var64) \
   Set_High32of64(Dest64, (Get_High32of64(Dest64) | Get_High32of64(Var64))); \
@@ -89,7 +99,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define AND64Q(Dest64, Var64) \
-  Dest64 &= Var2_64 ;
+  Dest64 &= Var64 ;
 #else
 #define AND64Q(Dest64, Var64) \
   Set_High32of64(Dest64, (Get_High32of64(Dest64) & Get_High32of64(Var64))); \
@@ -356,7 +366,7 @@
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
 #define is_lessC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
-  ((UQUAD)Dest < (UQUAD)Const64)
+  ((UQUAD)Var1_64 < (UQUAD)Const64)
 #else
 #define is_lessC(Var1_64, Const64_Hi, Const64_Lo, Const64 ) \
   ( ((ULONG)Get_High32of64(Var1_64) <  (ULONG)Const64_Hi)  || \

@@ -76,25 +76,25 @@ QUAD y2;
               (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo),
               (IEEEDPMantisse_Mask_64 + IEEEDPExponent_Mask_64));
 
-  if ( is_geqC(y2, 0x40320000, 0x0, 0x4032000000000000) )
+  if ( is_geqC(y2, 0x40320000, 0x0, 0x4032000000000000ULL) )
   {
   /* tanh( x > 18 ) =  1
   ** tanh( x <-18 ) = -1
   */
-    if ( is_lessSC(y, 0x0, 0x0, 0x0UUL))
+    if ( is_lessSC(y, 0x0, 0x0, 0x0ULL))
     {
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      Set_Value64C(Res, 0xbfefffff, 0xffffffff, 0xbfefffffffffffffUUL);
+      Set_Value64C(Res, 0xbfefffff, 0xffffffff, 0xbfefffffffffffffULL);
     }
     else
-      Set_Value64C(Res, 0x3fefffff, 0xffffffff, 0x3fefffffffffffffUUL);
+      Set_Value64C(Res, 0x3fefffff, 0xffffffff, 0x3fefffffffffffffULL);
 
     return Res;
   }
   /* tanh(-x) = -tanh(x) */
   {
   QUAD One, tmp1, tmp2;
-  Set_Value64C(One, 0x3ff00000, 0x0, 0x3ff0000000000000UUL);
+  Set_Value64C(One, 0x3ff00000, 0x0, 0x3ff0000000000000ULL);
 
   Res = IEEEDPExp(y2);
   tmp1 = IEEEDPDiv(One, Res);
@@ -106,9 +106,9 @@ QUAD y2;
                    IEEEDPAdd(Res, tmp1) );
         }
   /* Result is zero */
-  if (is_eqC(Res, 0x0, 0x0, 0x0UUL) )
+  if (is_eqC(Res, 0x0, 0x0, 0x0ULL) )
   {
-    if (is_lessSC(y, 0x0, 0x0, 0x0UUL))
+    if (is_lessSC(y, 0x0, 0x0, 0x0ULL))
       SetSR(Zero_Bit | Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     else
       SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -116,7 +116,7 @@ QUAD y2;
   }
 
   /* Argument is negative -> result is negative */
-  if ( is_lessSC(y, 0x0, 0x0, 0x0UUL))
+  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL))
   {
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     OR64QC(Res, IEEEDPSign_Mask_Hi,

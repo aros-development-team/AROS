@@ -90,21 +90,21 @@ QUAD Res;
   }
 
   /* does adding of 1/(e^x) still change the result? */
-  if ( is_lessC(y, 0x40320000, 0x0, 0x4032000000000000UUL ))
+  if ( is_lessC(y, 0x40320000, 0x0, 0x4032000000000000ULL ))
   {
     QUAD One;
-    Set_Value64C(One, 0x3ff00000, 0x0, 0x3ff0000000000000UUL);
+    Set_Value64C(One, 0x3ff00000, 0x0, 0x3ff0000000000000ULL);
 
     Res = IEEEDPAdd(Res, IEEEDPDiv(One, Res));
   }
   /* Res = Res / 2 */
-  ADD64QC(Res, 0xFFF00000, 0x0, 0xFFF0000000000000UUL);
+  ADD64QC(Res, 0xFFF00000, 0x0, 0xFFF0000000000000ULL);
 
-  if ( is_eqC   (Res, 0x0, 0x0, 0x0UUL) ||
-       is_lessSC(Res, 0x0, 0x0, 0x0UUL) )
+  if ( is_eqC   (Res, 0x0, 0x0, 0x0ULL) ||
+       is_lessSC(Res, 0x0, 0x0, 0x0ULL) )
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, 0x0, 0x0, 0x0UUL);
+    Set_Value64C(Res, 0x0, 0x0, 0x0ULL);
     return Res;
   }
   return Res;
