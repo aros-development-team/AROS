@@ -325,6 +325,19 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
 	data->mad_SelBack = zune_image_spec_to_structure(MUII_SelectedBack);
 
+    /* In Soliton MUIA_Selected was setted to MUIV_InputMode_RelVerify (=1) for MUIA_Input_Mode
+    ** MUIV_InputMode_RelVerify which is wrong of course but MUI seems to filter this out
+    ** so we have to do it also
+    */
+    if (data->mad_InputMode == MUIV_InputMode_RelVerify)
+    {
+#ifdef MYDEBUG
+    	if (data->mad_Flags & MADF_SELECTED)
+	    D(bug("MUIA_Selected was set in OM_NEW, although being in MUIV_InputMode_RelVerify\n"));
+#endif
+    	data->mad_Flags &= ~MADF_SELECTED;
+    }
+
     if ((data->mad_Frame != 0) && (data->mad_FrameTitle))
     {
     	char *frame_title = mui_alloc(strlen(data->mad_FrameTitle)+1);
