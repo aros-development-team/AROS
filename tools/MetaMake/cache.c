@@ -34,6 +34,9 @@ Boston, MA 02111-1307, USA.  */
 #include <assert.h>
 #include <unistd.h>
 #include <stdlib.h>
+#ifndef PATH_MAX
+#include <limits.h>
+#endif
 
 #include "cache.h"
 #include "mem.h"
