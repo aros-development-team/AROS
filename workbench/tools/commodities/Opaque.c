@@ -33,6 +33,11 @@ UBYTE version[] = "$VER: Opaque 0.2 (13.10.2001)";
 #define ARG_PRI   0
 #define NUM_ARGS  1
 
+#define ACTIONTYPE_DRAGGING 1
+#define ACTIONTYPE_RESIZING 2
+
+#define SYSGADTYPE(gad) ((gad)->GadgetType & GTYP_SYSTYPEMASK)
+
 /* Libraries to open */
 struct LibTable
 {
@@ -73,8 +78,8 @@ static struct Task *maintask;
 static struct RDArgs *myargs;
 static CxObj *cxbroker, *cxcust;
 static ULONG cxmask, actionmask;
-static WORD  winoffx, winoffy;
-static UBYTE actionsig;
+static WORD  winoffx, winoffy, winwidth, winheight;
+static UBYTE actionsig, actiontype;
 static BOOL quitme, disabled;
 
 static LONG args[NUM_ARGS];
@@ -206,7 +211,7 @@ static void GetArguments(void)
 
 static void OpaqueAction(CxMsg *msg,CxObj *obj)
 {
-    static BOOL dragging = FALSE;
+    static BOOL opaque_active = FALSE;
     
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
     struct Screen *scr;
@@ -223,7 +228,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 		    scr = IntuitionBase->ActiveScreen;
 		}
 		
-	        if (!dragging && scr)
+	        if (!opaque_active && scr)
 		{
 		    struct Layer *lay = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
 		    struct Window *win = NULL;
@@ -237,12 +242,12 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 			
 			for(gad = win->FirstGadget; gad; gad = gad->NextGadget)
 			{
-			    /* FIXME: does not handle app made dragging gadgets in
+			    /* FIXME: does not handle app made dragging/resize gadgets in
 			       GZZ innerlayer or boopsi gadgets with special GM_HITTEST
 			       method correctly! */
 			       
 			    if ((!(gad->Flags & GFLG_DISABLED)) &&
-			        ((gad->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING))
+			        ((SYSGADTYPE(gad) == GTYP_WDRAGGING) || (SYSGADTYPE(gad) == GTYP_SIZING)))
 			    {
 				WORD x = gad->LeftEdge;
 				WORD y = gad->TopEdge;
@@ -259,8 +264,10 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 				    (win->MouseX < x + w) &&
 				    (win->MouseY < y + h))
 				{
-				    /* found dragging gadget */
+				    /* found dragging or resize gadget */
 				    newwin = win;
+				    actiontype = (SYSGADTYPE(gad) == GTYP_WDRAGGING) ? ACTIONTYPE_DRAGGING :
+				    	    	    	    	    	    	       ACTIONTYPE_RESIZING;
 				    break;
 				}
 			    }
@@ -273,27 +280,29 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
 		    
 		    if (win)
 		    {				   
-			dragging = TRUE;
+			opaque_active = TRUE;
 			if (IntuitionBase->ActiveWindow != win) ActivateWindow(win);
 			actionwin = win;
-			winoffx = win->WScreen->MouseX - win->LeftEdge;
-			winoffy = win->WScreen->MouseY - win->TopEdge;
+			winoffx   = win->WScreen->MouseX - win->LeftEdge;
+			winoffy   = win->WScreen->MouseY - win->TopEdge;
+			winwidth  = win->Width;
+			winheight = win->Height;
 			DisposeCxMsg(msg);
 		    }
 		    
-		} /* if (!dragging && scr) */
+		} /* if (!opaque_active && scr) */
 		break;
 		
 	    case SELECTUP:
-	        if (dragging)
+	        if (opaque_active)
 		{
-		    dragging = FALSE;
+		    opaque_active = FALSE;
 		    DisposeCxMsg(msg);
 		}
 		break;
 		
 	    case IECODE_NOBUTTON:
-	        if (dragging)
+	        if (opaque_active)
 		{
 		    Signal(maintask, actionmask);
 		}
@@ -336,11 +345,29 @@ static void InitCX(void)
 
 static void HandleAction(void)
 {
-    WORD newx = actionwin->WScreen->MouseX - winoffx; 
-    WORD newy = actionwin->WScreen->MouseY - winoffy;
-    
-//    MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge);
-    ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
+   
+    if (actiontype == ACTIONTYPE_DRAGGING)
+    {
+    	WORD newx = actionwin->WScreen->MouseX - winoffx; 
+    	WORD newy = actionwin->WScreen->MouseY - winoffy;
+
+    	/* MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge); */
+     	ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
+    }
+    else
+    {
+    	LONG neww = winwidth  + actionwin->WScreen->MouseX - actionwin->LeftEdge - winoffx;
+    	LONG newh = winheight + actionwin->WScreen->MouseY - actionwin->TopEdge  - winoffy;
+	
+	neww = (neww < actionwin->MinWidth ) ? actionwin->MinWidth  : (neww > (UWORD)actionwin->MaxWidth)  ? actionwin->MaxWidth  : neww;
+	newh = (newh < actionwin->MinHeight) ? actionwin->MinHeight : (newh > (UWORD)actionwin->MaxHeight) ? actionwin->MaxHeight : newh;
+	
+	if ((neww != actionwin->Width) || (newh != actionwin->Height))
+	{
+	    /* SizeWindow(actionwin, neww - actionwin->Width, newh - actionwin->Height); */
+    	    ChangeWindowBox(actionwin, actionwin->LeftEdge, actionwin->TopEdge, neww, newh);
+	}
+    }
 }
 
 /************************************************************************************/
