@@ -4,43 +4,84 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include "collect-aros.h"
 
 extern int gensets(FILE *in, FILE *out);
 
-char *joinargs(char *argv[])
+void fatalerror(int status)
 {
-    char *ret;
-    int size, cnt;
-
-    for
-    (
-    	cnt=1, size = 0;
-	argv[cnt];
-	cnt++
-    )
-    size += strlen(argv[cnt])+1;
-
-    ret = malloc(size);
-    if (!ret)
+    if (status)
     {
-    	perror("Internal error");
-	exit(1);
+    	if (errno) perror("Internal Error");
+	exit(status);
     }
+}
 
-    ret[0]='\0';
+void *xmalloc(size_t size)
+{
+    void *ret = malloc(size);
 
-    for
-    (
-    	cnt=1, size = 0;
-	argv[cnt];
-	cnt++
-    )
-    {
-   	strcat(ret, " " );
-    	strcat(ret, argv[cnt]);
-    }
+    fatalerror(!ret);
 
     return ret;
+}
+
+FILE *xpopen(char *command)
+{
+    FILE *ret = popen(command, "r");
+
+    fatalerror(!ret);
+
+    return ret;
+}
+
+char *xtempnam(void)
+{
+    char *ret = tempnam("/tmp", NULL);
+
+    fatalerror(!ret);
+
+    return ret;
+}
+
+void xsystem(char *command)
+{
+    fatalerror(WEXITSTATUS(system(command)));
+}
+
+FILE *xfopen(char *name, char *mode)
+{
+    FILE *ret = fopen(name, mode);
+
+    fatalerror(!ret);
+
+    return ret;
+}
+
+void docommand(char *path, char *argv[])
+{
+    extern char **environ; /*this is specially needed by collect2,
+                            so that it can find 'ld' in the PATH */
+    pid_t pid=vfork();
+    int status;
+
+    fatalerror(pid==-1);
+
+    if (!pid)
+    {
+    	if (execve(path, argv, environ))
+	   perror("Internal error");
+
+	errno = 0; /* the parent process is going to exit too
+	            and we don't want it to complain again about the error. */
+
+	_exit(1); /* we can't use exit because it would close the /O channels  of the parent process */
+    }
+
+    waitpid(pid, &status, 0);
+
+    fatalerror(WEXITSTATUS(status));
 }
 
 char *joinstrings(char *first, ...)
@@ -61,12 +102,7 @@ char *joinstrings(char *first, ...)
 
     va_end(strings);
 
-    str = malloc(size+1);
-    if (!str)
-    {
-    	perror("Internal error");
-	exit(1);
-    }
+    str = xmalloc(size+1);
 
     str[0]='\0';
 
@@ -82,27 +118,27 @@ char *joinstrings(char *first, ...)
     return str;
 }
 
-#define ERROR(num, action) \
-do \
-{  \
-    ret = num;  \
-    action;     \
-    goto err;   \
-} while(0)
+char *tempoutname = NULL;
+char *setsfilename = NULL;
+
+void exitfunc(void)
+{
+    remove(setsfilename);
+    remove(tempoutname);
+}
 
 int main(int argc, char *argv[])
 {
-    int cnt, ret;
-    char *tempoutname;
-    char *setsfilename;
+    int cnt, ret = 0;
     char *output;
     char *command;
-    char *arguments;
+    char **ldargs;
     FILE *pipe;
     FILE *setsfile = NULL;
 
-    /* Get the output file name */
+    atexit(exitfunc);
 
+    /* Get the output file name */
     output = "a.out";
     for (cnt = 1; argv[cnt]; cnt++)
     {
@@ -110,49 +146,48 @@ int main(int argc, char *argv[])
      	    output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
     }
 
+    tempoutname  = xtempnam();
+    setsfilename = joinstrings(tempoutname, "-set.c", NULL);
+
+    /* disabled: for some strange reasons this doesn't always work...
     arguments = joinargs(argv);
-
-    if
-    (
-    	!(tempoutname = tempnam("/tmp", NULL)) ||
-	!(setsfilename  = joinstrings(tempoutname, "-set.c", NULL))
-    )
-    ERROR(1, perror("Internal Error"));
-
     command = joinstrings("ld -r ", arguments, NULL);
     printf(">>>1<<< %s\n", command);
 
+
     if ((ret=WEXITSTATUS(system(command))))
     	ERROR(ret, );
+    */
 
-    free(command);
-    command=joinstrings(" nm ", output, NULL);
+    ldargs = xmalloc(sizeof(char *) * (argc+2));
 
-    if
-    (
-    	!(pipe   = popen(command, "r")) ||
-	!(setsfile = fopen(setsfilename, "w"))
-    )
-    ERROR(1, perror("Internal Error"));
+    ldargs[0] = "collect2";
+    ldargs[1] = "-r";
+
+    for (cnt = 1; cnt < argc; cnt++)
+    	ldargs[cnt+1] = argv[cnt];
+
+    ldargs[cnt+1] = NULL;
+
+    docommand(COLLECT2PATH, ldargs);
+
+    command = joinstrings(NMPATH " ", output, NULL);
+
+    pipe     = xpopen(command);
+    setsfile = xfopen(setsfilename, "w");
 
     ret = gensets(pipe, setsfile);
     fclose(setsfile);
 
-   if (ret)
+    if (ret)
     {
 	free(command);
-	command = joinstrings("gcc -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, " ", setsfilename, NULL);
-	printf(">>>2<<< %s\n", command);
-	if ((ret=WEXITSTATUS(system(command))))
-	    ERROR(ret, );
-	if ((ret=WEXITSTATUS(system(joinstrings("mv -f ", tempoutname, " ", output, NULL)))))
-	    ERROR(ret, );
+	command = joinstrings(GCCPATH " -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, " ", setsfilename, NULL);
+	xsystem(command);
+	xsystem(joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL));
     }
 
-
-err:
-    if (setsfile)
-    	remove(setsfilename);
-
-    return ret;
+    return 0;
 }
+
+
