@@ -253,9 +253,7 @@
 	    {
 		/* BCPL string */
 		case 'b':
-    __asm__ __volatile__ ("nop\n");
 		    buf = BADDR(fetch_arg(DataStream, BPTR));
-    __asm__ __volatile__ ("nop\n"); 
 
 		    /* Set width */
 		    width = *buf++;
