@@ -457,6 +457,7 @@ enum
     moHidd_BitMap_DrawPixel,
     moHidd_BitMap_PutImage,
     moHidd_BitMap_PutAlphaImage,
+    moHidd_BitMap_PutAlphaTemplate,
     moHidd_BitMap_GetImage,
     moHidd_BitMap_GetPixel,
     moHidd_BitMap_DrawLine,
@@ -658,6 +659,17 @@ struct pHidd_BitMap_PutAlphaImage
     ULONG	    modulo;
     WORD	    x, y;
     WORD	    width, height;
+};
+
+struct pHidd_BitMap_PutAlphaTemplate
+{
+    OOP_MethodID    mID;
+    OOP_Object	    *gc;
+    UBYTE 	    *alpha;
+    ULONG	    modulo;
+    WORD	    x, y;
+    WORD	    width, height;
+    BOOL    	    invertalpha;
 };
 
 struct pHidd_BitMap_DrawRect
@@ -1183,6 +1195,7 @@ ULONG       HIDD_BM_DrawPixel       	(OOP_Object *obj, OOP_Object *gc, WORD x, W
 VOID        HIDD_BM_GetImage	    	(OOP_Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID	    HIDD_BM_PutImage 	    	(OOP_Object *obj, OOP_Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID	    HIDD_BM_PutAlphaImage 	(OOP_Object *obj, OOP_Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height);
+VOID	    HIDD_BM_PutAlphaTemplate 	(OOP_Object *obj, OOP_Object *gc, UBYTE *alpha, ULONG modulo, WORD x, WORD y, WORD width, WORD height, BOOL invertalpha);
 VOID        HIDD_BM_DrawLine        	(OOP_Object *obj, OOP_Object *gc, WORD x1, WORD y1, WORD x2, WORD y2);
 VOID        HIDD_BM_DrawRect        	(OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
 VOID        HIDD_BM_FillRect        	(OOP_Object *obj, OOP_Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
