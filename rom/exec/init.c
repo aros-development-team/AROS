@@ -45,7 +45,7 @@ extern const struct Resident emul_handler_resident;
 extern const struct Resident Console_resident;
 extern void InitCore(void);
 
-#define MEMSIZE 1024*1024*3
+#define MEMSIZE 1024*1024
 /*#define STATIC_MEMORY */ /* So that gdb can disassemble it */
 static struct MemHeader mh;
 #ifdef STATIC_MEMORY
