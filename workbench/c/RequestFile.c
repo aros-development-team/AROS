@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
     Buffer = (char *)AllocVec(MAX_PATH_LEN, MEMF_ANY | MEMF_CLEAR);
     if (Buffer != NULL)
     {
-        rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
+        rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
         if(rda != NULL)
         {
             FileTags[ARG_DRAWER].ti_Data        = (ULONG)args[ARG_DRAWER];

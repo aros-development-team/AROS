@@ -17,7 +17,7 @@
 #define NUM_ARGS    1
 
 static struct RDArgs *MyArgs;
-static LONG Args[NUM_ARGS];
+static IPTR Args[NUM_ARGS];
 static char s[256];
 
 static void Cleanup(char *msg)

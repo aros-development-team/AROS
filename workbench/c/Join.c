@@ -97,7 +97,7 @@ int main( void )
 {
     struct RDArgs  *rda = NULL ;
 
-    LONG    args[ARG_COUNT] = { NULL , NULL };
+    IPTR    args[ARG_COUNT] = { NULL , NULL };
     STRPTR *files;
     STRPTR  destination;
     BPTR    destfile = NULL;

@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     {
 	rda->RDA_ExtHelp = (STRPTR)exthelp;
 
-	rdargs = ReadArgs(ARG_TEMPLATE, (LONG *)args, rda);
+	rdargs = ReadArgs(ARG_TEMPLATE, (IPTR *)args, rda);
 	if( rdargs != NULL )
 	{
 	    if( args[ARG_PROCESS] != 0 )

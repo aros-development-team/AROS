@@ -82,7 +82,7 @@ struct IntuitionBase 	*IntuitionBase;
 struct Library      	*DiskfontBase;
 
 static struct RDArgs 	*myargs;
-static LONG 	    	args[NOOFARGS];
+static IPTR 	    	args[NOOFARGS];
 static char 	    	s[256];
 static char 	    	*fontname;
 static LONG 	    	fontsize;

@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     if((rda = AllocDosObject(DOS_RDARGS, NULL)))
     {
 	rda->RDA_ExtHelp = (STRPTR)exthelp;
-	if((rd = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL)))
+	if((rd = ReadArgs(ARG_TEMPLATE, args, NULL)))
 	{
 	    /* Firstly, find out the volume */
 	    dp = GetDeviceProc((STRPTR)args[ARG_DRIVE], NULL);
