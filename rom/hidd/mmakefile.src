@@ -2,62 +2,34 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR	:= $(GENDIR)/$(CURDIR)
-LIB	:= $(LIBDIR)/libhiddcl.a
+
+#specify includes to copy
 
 MY_INCLS := $(wildcard include/*.h)
 DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
-INIT_FILE := hiddclass
-END_FILE  := hidd_end
-FILES	:= 
 
-# Replacement is probably of limited use in this directory, but I'll
-# support it nonetheless.
-ALL_FILES := $(FILES)
-%prepare_replace rom/hidd
-%filter_replace FILES
+#All modules must be in single files.
+MODULES	:= hiddclass inithidds
 
-%prepare_shlib hiddcl $(SHARED_HIDDCLASS)
+#One lib pr. module. Lib follows naming of modules.
+LIBS := $(foreach f, $(MODULES), $(LIBDIR)/lib$(f).a)
 
-# ***** NATIVE SECTION *****
-ifeq ($(FLAVOUR),native)
-
-# Note this bit hasn't been written yet...
-
-LIBS := -L$(LIBDIR) -lhiddcl
-LIBLIST := hiddcl amiga
-LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
-
-OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-
-$(OSMODDIR)/hidd.class: $(OBJS)
-	@$(ECHO) "Building $(notdir $@)..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(ENDFUNC) $(LIBS) \
-	    -o $@ 2>&1 |tee hiddcl.map
-	@$(IF) $(TEST) ! -s hiddcl.map; then $(RM) hiddcl.map; else true; fi
-	@$(STRIP) $@
-
-else
-
-OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-
-# ****** END Not-Native
-endif
+OBJS := $(foreach f, $(MODULES), $(OBJDIR)/$(f).o)
 
 #MM kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
 kernel-hidd:
 	@$(NOP)
 
 #MM
-kernel-hidd-linklib : show-flags $(LIB)
+kernel-hidd-linklib : show-flags $(LIBS)
 	@$(NOP)
 
-DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+DEPS := $(foreach f, $(MODULES), $(OBJDIR)/$(f).d)
 
-$(LIB): $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
+$(LIBDIR)/lib%.a : $(OBJDIR)/%.o
+	$(CC) $(ILDFLAGS) $< -o $@
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
@@ -77,20 +49,17 @@ setup-includes :
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
-$(OBJDIR)/%.o : %.c
+$(OBJDIR)/%.o : %.c 
 	%compile_q 
 
-%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
-
-%ctoasm_q
-
-%additional_objs_rule
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
+	
+	
 
 %common
 %include_deps
