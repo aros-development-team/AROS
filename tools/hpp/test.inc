@@ -1,7 +1,7 @@
 <REM Test include file>
 <EDEF NAME="filename" BEGIN="<B><I><TT>" END="</TT></I></B>">
 <EDEF NAME="code" BEGIN="<PRE>" END="</PRE>">
-<EDEF NAME="stdfunc" BEGIN="<FONT COLOR="orange"><B>" END="</B></FONT>">
+<EDEF NAME="stdfunc" BEGIN="<FONT COLOR="red"><B>" END="</B></FONT>">
 <EDEF NAME="ckeyword" BEGIN="<FONT COLOR="black"><B>" END="</B></FONT>">
 <EDEF NAME="cppkeyword" BEGIN="<FONT COLOR="green"><B>" END="</B></FONT>">
 <EDEF NAME="ccomment" BEGIN="<FONT COLOR="green"><I>" END="</I></FONT>">
