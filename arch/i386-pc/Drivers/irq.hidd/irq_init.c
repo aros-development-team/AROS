@@ -50,7 +50,7 @@ struct irqbase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef SysBase
