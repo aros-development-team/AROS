@@ -8,7 +8,6 @@
     Desc: MethodIDs and AttrIDs for the AROS checkbox class.
     Lang: english
 */
-
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -19,8 +18,14 @@
 #   include <libraries/gadtools.h>
 #endif
 
+
+/* Use that #define instead of a string. */
 #define AROSCHECKBOXCLASS "checkbox.aros"
 
+
+/* Tags to be passed to AROSCHECKBOXCLASS. */
 #define AROSCB_Checked GTCB_Checked
+  /* [ISG] (BOOL) Set/Get the state of the checkmark. */
 
 #endif /* GADGETS_AROSCHECKBOX_H */
+
