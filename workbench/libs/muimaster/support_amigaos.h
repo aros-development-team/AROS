@@ -39,6 +39,10 @@
 
 #define AROS_LONG2BE(x) (x)
 
+#ifndef M_PI
+#define M_PI PI
+#endif
+
 char *StrDup(const char *x);
 int snprintf(char *buf, int size, const char *fmt, ...);
 int strlcat(char *buf, char *src, int len);
