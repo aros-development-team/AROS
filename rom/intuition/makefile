@@ -68,6 +68,7 @@ FUNCTIONS = \
 	screentofront \
 	setattrsa \
 	setdefaultpubscreen \
+	setgadgetattrsa \
 	setpointer \
 	setwindowtitles \
 	sizewindow \
