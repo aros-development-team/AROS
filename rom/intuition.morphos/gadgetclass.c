@@ -86,7 +86,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
     IPTR  tidata;
     ULONG retval = 0UL; /* set to non-zero to signal visual changes */
 
-    while ( (tag = NextTagItem((struct TagItem **)&tstate)) )
+    while ( (tag = NextTagItem(&tstate)) )
     {
         tidata = tag->ti_Data;
 
@@ -383,6 +383,10 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 
     } /* while NextTagItem */
 
+#if 0
+    /* This seems to be wrong here. Instead buttongclass is where
+       something like this happens, so look there (stegerg) */
+
     if ((msg->MethodID == OM_NEW) &&
             (EG(o)->Flags & GFLG_GADGIMAGE) &&
             (EG(o)->GadgetRender != NULL))
@@ -390,6 +394,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
         if (EG(o)->Width  == 0) EG(o)->Width  = IM(EG(o)->GadgetRender)->Width;
         if (EG(o)->Height == 0) EG(o)->Height = IM(EG(o)->GadgetRender)->Height;
     }
+#endif 
 
     return retval;
 }
