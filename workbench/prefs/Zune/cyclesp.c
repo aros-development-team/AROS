@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -68,7 +66,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_CyclesPData *data;
     struct MUI_CyclesPData d;
     
-    obj = (Object *)DoSuperNew(cl, obj,
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 			       MUIA_Group_Horiz, FALSE,
 			       Child, HGroup,
 			       GroupFrameT("Cycle Gadget Design"),
