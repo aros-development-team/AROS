@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 INCDIR		:= $(BINDIR)/include
-INCLUDES	:= $(wildcard *.h */*.h)
+INCLUDES	:= $(wildcard *.h sys/*.h)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 
 #MM includes-copy : setup-includes

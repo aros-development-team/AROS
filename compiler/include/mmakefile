@@ -1,9 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-INCLUDES      := $(wildcard *.h */*.h)
-DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
-GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 INCSUBDIRS :=	aros \
 		clib \
 		defines \
@@ -22,6 +19,10 @@ INCSUBDIRS :=	aros \
 		proto \
 		utility \
 		workbench
+
+INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h))
+DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 # The includes target points back to config/$(ARCH)/mmakefile:
 #MM includes : setup-includes includes-$(ARCH)
