@@ -33,7 +33,13 @@
 
 #undef GfxBase
 #undef UtilityBase
-#define SysBase LIBBASE->lb_SysBase
+
+#ifdef CREATE_ROM
+#	define SysBase LIBBASE->lb_SysBase
+#else
+	struct ExecBase * SysBase; /* global variable */
+	struct GfxBase * GfxBase; /* unfortunatley need it for AROS to link!!*/
+#endif
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
 {
@@ -44,6 +50,11 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
 
   if (NULL == LIBBASE->lb_GfxBase)
     LIBBASE->lb_GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
+
+#ifndef CREATE_ROM
+  SysBase = lh->lb_SysBase;
+  GfxBase = lh->lb_GfxBase;
+#endif
 
   if (NULL == LIBBASE->lb_UtilityBase)
      LIBBASE->lb_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",0);
