@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -7,10 +7,10 @@
 */
 
 #define USE_BOOPSI_STUBS
-#include "datatypes_intern.h"
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include <clib/boopsistubs.h>
+#include "datatypes_intern.h"
 
 
 /*****************************************************************************

@@ -1,14 +1,14 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: English
 */
 
-#include "datatypes_intern.h"
 #include <proto/intuition.h>
 #include <intuition/classusr.h>
+#include "datatypes_intern.h"
 
 /*****************************************************************************
 

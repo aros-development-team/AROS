@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -8,6 +8,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/iffparse.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
 #include "datatypes_intern.h"	/* Must be after <intuition/intuition.h> */
