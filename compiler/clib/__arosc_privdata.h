@@ -80,6 +80,9 @@ struct arosc_privdata
     
     /* strerror */
     char acpd_fault_buf[100];
+
+    /* __arosc_nixmain */
+    int acpd_do_not_clone_vars;
 };
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
