@@ -1336,8 +1336,8 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
             {
               /* a superbitmap layer */
               BltBitMap(CR->BitMap,
-                        Rect.MinX - CR->bounds.MinX + L->Scroll_X,
-                        Rect.MinY - CR->bounds.MinY,
+                        Rect.MinX - CR->bounds.MinX - L->Scroll_X,
+                        Rect.MinY - CR->bounds.MinY - L->Scroll_Y,
                         bm,
                         Rect.MinX - xleft,
                         Rect.MinY - yup,
@@ -1485,8 +1485,8 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
                         Rect.MinX - xleft,
                         Rect.MinY - yup,
                         CR->BitMap,
-                        Rect.MinX - L->bounds.MinX + L->Scroll_X,
-                        Rect.MinY - L->bounds.MinY + L->Scroll_Y,
+                        Rect.MinX - L->bounds.MinX - L->Scroll_X,
+                        Rect.MinY - L->bounds.MinY - L->Scroll_Y,
                         Rect.MaxX - Rect.MinX + 1,
                         Rect.MaxY - Rect.MinY + 1,
                         0x0c0,
@@ -2057,8 +2057,8 @@ ULOCK_HIDD(bm);
           {
             /* with superbitmap */
 	    found_offscreen = TRUE;
-            i =  COORD_TO_BYTEIDX(x + L->Scroll_X, y + L->Scroll_Y, Width);
-            Mask = XCOORD_TO_MASK(x + L->Scroll_X);
+            i =  COORD_TO_BYTEIDX(x - L->Scroll_X, y - L->Scroll_Y, Width);
+            Mask = XCOORD_TO_MASK(x - L->Scroll_X);
           }
           
         }       
@@ -2190,8 +2190,8 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
        The coordinate x,y is relative to the layer.
     */
     struct ClipRect * CR = L -> ClipRect;
-    WORD YRel = L->bounds.MinY + L->Scroll_Y;
-    WORD XRel = L->bounds.MinX + L->Scroll_X;
+    WORD YRel = L->bounds.MinY - L->Scroll_Y;
+    WORD XRel = L->bounds.MinX - L->Scroll_X;
 
     /* Is this pixel inside the layer ?? */
     if (x > (L->bounds.MaxX - XRel + 1) ||
@@ -2285,8 +2285,8 @@ ULOCK_HIDD(bm);
           {
  	    found_offscreen = TRUE;
             /* with superbitmap */
-            i = COORD_TO_BYTEIDX(x + L->Scroll_X, y + L->Scroll_Y, Width);
-            Mask = XCOORD_TO_MASK(x + L->Scroll_X);
+            i = COORD_TO_BYTEIDX(x - L->Scroll_X, y - L->Scroll_Y, Width);
+            Mask = XCOORD_TO_MASK(x - L->Scroll_X);
           }
           
         }       
