@@ -48,9 +48,9 @@ struct AroscUserData
     void *stdfiles[3];
 
     /* these fields are initialized internally and passed to the program */
-    unsigned short int *const ctype_b;
-    int *const ctype_toupper;
-    int *const ctype_tolower;
+    unsigned short int *ctype_b;
+    int *ctype_toupper;
+    int *ctype_tolower;
 
     /*more stuff*/
     struct MinList atexit_list;

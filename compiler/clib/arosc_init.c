@@ -187,10 +187,9 @@ int arosc_internalinit(struct AroscUserData *userdata)
     AROSC_USERDATA(0) = userdata;
 
     /* passes these value to the program */
-#warning HACK: needed to add a cast to non-const, because icc does not allow to change const variables
-    (unsigned short int *)(userdata->ctype_b)       = __ctype_b;
-    (int *)(userdata->ctype_toupper) = __ctype_toupper;
-    (int *)(userdata->ctype_tolower) = __ctype_tolower;
+    userdata->ctype_b       = __ctype_b;
+    userdata->ctype_toupper = __ctype_toupper;
+    userdata->ctype_tolower = __ctype_tolower;
 
     if (userdata->olduserdata)
         userdata->umask = userdata->olduserdata->umask;
