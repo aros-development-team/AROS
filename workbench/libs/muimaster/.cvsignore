@@ -21,3 +21,4 @@ zunemaster.library
 zunemaster.library*
 ppc-amigaos-objs
 project.index
+include-generated
