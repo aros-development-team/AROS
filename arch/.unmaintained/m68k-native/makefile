@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
+MACHINE_H = $(INCDIR)/aros/machine.h
+
 ifeq ($(FLAVOUR),native)
 FILES = \
 	disable \
@@ -39,17 +41,17 @@ FILES = \
 	initcore
 endif
 
-all: setup $(TOP)/compiler/include/aros/machine.h machine.i \
+all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
-$(TOP)/compiler/include/aros/machine.h: machine.h
-	cp machine.h $(TOP)/compiler/include/aros
+$(MACHINE_H): machine.h
+	$(CP) $< $@
 
 clean:
-	$(RM) $(TOP)/compiler/include/aros/machine.h
+	$(RM) $(MACHINE_H) machine.i geninc
 
 config:
 	@echo "Configuring for a m68k CPU..."

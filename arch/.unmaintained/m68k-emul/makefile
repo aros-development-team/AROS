@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 SPECIAL_CFLAGS = -I $(TOP)/exec
 
-MACHINE_H = $(TOP)/compiler/include/aros/machine.h
+MACHINE_H = $(INCDIR)/aros/machine.h
 
 FILES = \
 	supervisor \
@@ -42,7 +42,7 @@ $(MACHINE_H): machine.h
 	$(CP) $< $@
 
 clean:
-	$(RM) $(MACHINE_H)
+	$(RM) $(MACHINE_H) machine.i geninc
 
 config:
 	@echo "Configuring for an m68k CPU..."
