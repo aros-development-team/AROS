@@ -18,9 +18,14 @@
 #include <proto/layers.h>
 #include <graphics/rastport.h>
 #include <graphics/text.h>
+#include <graphics/gfxmacros.h>
+
+/**********************************************************************************************/
 
 #define EG(o) ((struct ExtGadget *)o)
 #define IM(o) ((struct Image *)o)
+
+/**********************************************************************************************/
 
 /* print the label of a gadget object */
 #warning FIXME: printgadgetlabel() has to be reworked!
@@ -92,24 +97,18 @@ void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg)
     }
 }
 
+/**********************************************************************************************/
+
 /* Calculate the size of the Bounding Box of the gadget */
 void CalcBBox (struct Window * window, struct Gadget * gadget,
 	struct BBox * bbox)
 {
-   /* 
 
-    #define ADDREL(flag,field)  ((gadget->Flags & (flag)) ? window->field : 0)
-
-    bbox->Left	 = ADDREL(GFLG_RELRIGHT,Width-1)   + gadget->LeftEdge;
-    bbox->Top	 = ADDREL(GFLG_RELBOTTOM,Height-1) + gadget->TopEdge;
-    bbox->Width  = ADDREL(GFLG_RELWIDTH,Width)     + gadget->Width;
-    bbox->Height = ADDREL(GFLG_RELHEIGHT,Height)   + gadget->Height;
-    
-    */
-    
    GetDomGadgetIBox(gadget, window->WScreen, window, NULL, (struct IBox *)bbox);
    
 } /* CalcBBox */
+
+/**********************************************************************************************/
 
 /* Figure out the size of the gadget rectangle, taking relative
  * positioning into account.
@@ -138,6 +137,8 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
     
 }
 
+/**********************************************************************************************/
+
 ULONG LabelWidth (struct RastPort * rp, STRPTR label, ULONG len,
 		struct IntuitionBase * IntuitionBase)
 {
@@ -157,6 +158,8 @@ ULONG LabelWidth (struct RastPort * rp, STRPTR label, ULONG len,
 
     return totalwidth;
 }
+
+/**********************************************************************************************/
 
 void RenderLabel (struct RastPort * rp, STRPTR label, ULONG len,
 		struct IntuitionBase * IntuitionBase)
@@ -193,6 +196,7 @@ void RenderLabel (struct RastPort * rp, STRPTR label, ULONG len,
     }
 }
 
+/**********************************************************************************************/
 
 VOID drawrect(struct RastPort *rp
 	, WORD x1, WORD y1
@@ -213,6 +217,8 @@ VOID drawrect(struct RastPort *rp
     
     return;
 }
+
+/**********************************************************************************************/
 
 void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
                      struct Requester *req, struct IBox *box)
@@ -272,6 +278,8 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
     } /* switch (gadgettype) */
 }
 
+/**********************************************************************************************/
+
 WORD GetGadgetLeft(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
@@ -280,6 +288,8 @@ WORD GetGadgetLeft(struct Gadget *gad, struct Screen *scr, struct Window *win, s
     
     return gad->LeftEdge + ADDREL(gad, GFLG_RELRIGHT, (&box), Width - 1);
 }
+
+/**********************************************************************************************/
 
 WORD GetGadgetTop(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
@@ -290,6 +300,8 @@ WORD GetGadgetTop(struct Gadget *gad, struct Screen *scr, struct Window *win, st
     return gad->TopEdge + ADDREL(gad, GFLG_RELBOTTOM, (&box), Height - 1);
 }
 
+/**********************************************************************************************/
+
 WORD GetGadgetWidth(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
@@ -299,6 +311,8 @@ WORD GetGadgetWidth(struct Gadget *gad, struct Screen *scr, struct Window *win, 
     return gad->Width + ADDREL(gad, GFLG_RELWIDTH, (&box), Width);
 }
 
+/**********************************************************************************************/
+
 WORD GetGadgetHeight(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
 {
     struct IBox box;
@@ -307,6 +321,8 @@ WORD GetGadgetHeight(struct Gadget *gad, struct Screen *scr, struct Window *win,
     
     return gad->Height + ADDREL(gad, GFLG_RELHEIGHT, (&box), Height);
 }
+
+/**********************************************************************************************/
 
 /* gadget box in screen coords */
 void GetScrGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
@@ -337,6 +353,8 @@ void GetScrGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win
     box->Height = gad->Height + ADDREL(gad, GFLG_RELHEIGHT, (&domain), Height);
 }
 
+/**********************************************************************************************/
+
 /* gadget box relative to upper left window edge */
 void GetWinGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box)
@@ -358,6 +376,8 @@ void GetWinGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win
     }
 }
 
+/**********************************************************************************************/
+
 /* gadget box in domain coords */
 void GetDomGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		      struct Requester *req, struct IBox *box)
@@ -371,7 +391,7 @@ void GetDomGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win
     box->Top  -= domain.Top;
 }
 
-
+/**********************************************************************************************/
 
 /* gadget bounds in screen coords */
 void GetScrGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
@@ -416,6 +436,8 @@ void GetScrGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
     GetScrGadgetIBox(gad, scr, win, req, box);
 }
 
+/**********************************************************************************************/
+
 /* gadget bounds relative to upper left window edge */
 void GetWinGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		        struct Requester *req, struct IBox *box)
@@ -437,6 +459,8 @@ void GetWinGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
     }
 }
 
+/**********************************************************************************************/
+
 /* gadget bounds in domain coords */
 void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
 		        struct Requester *req, struct IBox *box)
@@ -449,6 +473,8 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
     box->Left -= domain.Left;
     box->Top  -= domain.Top;
 }
+
+/**********************************************************************************************/
 
 void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
 {
@@ -543,3 +569,26 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
     /* ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock); */
 }
 
+/**********************************************************************************************/
+
+void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase *IntuitionBase)
+{
+    UWORD pattern[] = { 0x8888, 0x2222 };
+
+    SetDrMd( rp, JAM1 );
+    SetAPen( rp, 1 );
+    SetAfPt( rp, pattern, 1);
+
+    /* render disable pattern */
+    RectFill(rp, x1, y1, x2, y2);
+    
+    SetAfPt (rp, NULL, 0);
+    
+}
+
+/**********************************************************************************************/
+/**********************************************************************************************/
+/**********************************************************************************************/
+/**********************************************************************************************/
+/**********************************************************************************************/
+/**********************************************************************************************/

@@ -82,7 +82,7 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 		      struct Requester *req, struct IBox *box);
 		      
 void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase);
-
+void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase *IntuitionBase);
 
 #endif /* _GADGETS_H_ */
 
