@@ -1,0 +1,61 @@
+;
+MSG_CANT_OPEN_LIB (//)
+Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR (//)
+Can't lock public screen!
+;
+MSG_CANT_GET_DRI (//)
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI (//)
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET (//)
+Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS (//)
+Can't create menus!
+;
+MSG_CANT_CREATE_WIN (//)
+Can't create window!
+;
+MSG_WINTITLE (//)
+Clock
+;
+MSG_OK (//)
+Ok
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_ANALOG (//)
+A\0Analog
+;
+MSG_MEN_PROJECT_DIGITAL (//)
+D\0Digital
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_MEN_SETTINGS (//)
+Settings
+;
+MSG_MEN_SETTINGS_DATE (//)
+ \0Date
+;
+MSG_MEN_SETTINGS_SECONDS (//)
+ \0Seconds
+;
+MSG_MEN_SETTINGS_DIGITALFORMAT (//)
+ \0Digital Format
+;
+MSG_MEN_SETTINGS_ALARM (//)
+M\0Alarm
+;
+MSG_MEN_SETTINGS_SETALARM (//)
+ \0Set Alarm...
+;
+MSG_MEN_SETTINGS_SAVE (//)
+ \0Save Settings
+;
