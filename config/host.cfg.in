@@ -41,6 +41,8 @@ CAT		:= @CAT@
 BISON		:= @BISON@
 PNGTOPNM    	:= @PNGTOPNM@
 PPMTOILBM   	:= @PPMTOILBM@
+SED		:= @SED@
+CHMOD		:= @CHMOD@
 
 GUI_LIBDIR	:= @aros_gui_libdir@
 GUI_LDFLAGS	:= @aros_gui_ldflags@
