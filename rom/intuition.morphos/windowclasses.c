@@ -1389,8 +1389,8 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
                             break;
                     }
 #else
-                    new_width   = scr->MouseX - data->LeftEdge + data->mouseoffsetx;
-                    new_height  = scr->MouseY - data->TopEdge  + data->mouseoffsety;
+                    new_width   = data->Width + scr->MouseX - data->mouseoffsetx;
+                    new_height  = data->Height + scr->MouseY - data->mouseoffsety;
 #endif
                     if (new_width < 0)
                         new_width = 1;
