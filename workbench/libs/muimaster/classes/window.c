@@ -506,6 +506,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	case	IDCMP_REFRESHWINDOW:
 		if (data->wd_Flags & MUIWF_RESIZING)
 		{
+		    LONG left,top,right,bottom;
 		    if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
 		    {
 			MUI_EndRefresh(&data->wd_RenderInfo, 0);
@@ -516,6 +517,11 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    _height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
 		    DoMethod(data->wd_RootObject, MUIM_Layout);
 		    DoMethod(data->wd_RootObject, MUIM_Show);
+		    left = data->wd_RenderInfo.mri_Window->BorderLeft;
+		    top = data->wd_RenderInfo.mri_Window->BorderTop,
+		    right = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - 1;
+		    bottom = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - 1,
+		    EraseRect(data->wd_RenderInfo.mri_Window->RPort,left,top,right,bottom);
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 		} else
 		{
