@@ -228,11 +228,8 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     struct MUI_ImageData *data = INST_DATA(cl, obj);
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    
-//    msg->MinMaxInfo->MinWidth;
-//    msg->MinMaxInfo->MinHeight;
-
-
+    msg->MinMaxInfo->MinWidth += zune_imspec_get_minwidth(data->img);
+    msg->MinMaxInfo->MinHeight += zune_imspec_get_minheight(data->img);
    
     msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
     msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
