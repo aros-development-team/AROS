@@ -920,7 +920,7 @@ readcache (Project * prj)
 
 	stat ("", &st);
 
-	prj->topdir->time = st.st_mtime;
+	prj->topdir->time = 0; /* Force a check the first time */
     }
 
     if (fh)
