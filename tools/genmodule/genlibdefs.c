@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     else if (strcmp(argv[2],"mcc")==0)
     {
 	modtype = MCC;
-	firstlvo = 5;
+	firstlvo = 6;
     }
     else
     {
