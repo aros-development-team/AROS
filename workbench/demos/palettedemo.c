@@ -84,6 +84,10 @@ int main(int argc, char **argv)
 			 WA_Top, 0,
 			 WA_Width, 600,
 			 WA_Height, 300,
+			 WA_MinWidth, 100,
+			 WA_MinHeight, 100,
+			 WA_MaxWidth, 10000,
+			 WA_MaxHeight, 10000,
 			 WA_Title, "Try resize to another aspect ratio",
 			 WA_IDCMP, 
 			 	  IDCMP_GADGETUP 
@@ -143,13 +147,16 @@ int main(int argc, char **argv)
     	    	    	RefreshGList((struct Gadget *)palette, window, NULL, 2);
     	    	    	
     	    		HandleEvents(window); 
-    	    		
-    	    		if (prop)
-    	    		    DisposeObject(prop);
-    	    		if (palette)
-    	    		    DisposeObject(palette);
-    	    	    }
-    	    	    CloseWindow(window);
+    	    	
+		    }
+		    
+		    CloseWindow(window);
+		    
+    	    	    if (prop)
+		        DisposeObject(prop);
+    	    	    if (palette)
+    	    		DisposeObject(palette);
+
     	    	} /* if (window opened) */
 
     	    	UnlockPubScreen(NULL, scr);
