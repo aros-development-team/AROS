@@ -10,4 +10,6 @@
 #MM	    workbench-datatypes-bmp \
 #MM	    workbench-datatypes-picture \
 #MM         workbench-datatypes-ppm \
-#MM         workbench-datatypes-ilbm
+#MM         workbench-datatypes-ilbm \
+#MM	    workbench-datatypes-sound \
+#MM	    workbench-datatypes-8svx
