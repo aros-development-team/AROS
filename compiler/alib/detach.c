@@ -72,68 +72,51 @@ AROS_UFHA(char *,argstr,A0),
 AROS_UFHA(ULONG,argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
 {
-    static BOOL firsttime = TRUE;
-    static BPTR mysegment = NULL;
-
-    struct DosLibrary *DOSBase;
+    struct DosLibrary           *DOSBase;
+    struct CommandLineInterface *cli;
+    struct Process              *newproc;
+    BPTR                         mysegment = NULL;
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
     if (!DOSBase) return RETURN_FAIL;
 
-    if (firsttime)
+    cli = Cli();
+    /*
+        We cannot be started from WorkBench
+    */
+    if (!cli) return RETURN_FAIL;
+
+    mysegment = cli->cli_Module;
+    cli->cli_Module = NULL;
+
+    if (!__detached_name)
+      __detached_name = FindTask(NULL)->tc_Node.ln_Name;
+
     {
-	struct CommandLineInterface *cli = Cli();
-
-        firsttime = FALSE;
-
-        /*
- 	     We cannot be started from WorkBench
-	*/
-        if (!cli) return RETURN_FAIL;
-
-	mysegment = cli->cli_Module;
-        cli->cli_Module = NULL;
-
-        if (!__detached_name)
-          __detached_name = FindTask(NULL)->tc_Node.ln_Name;
-    }
-
-    if (mysegment)
-    {
-        struct Process *newproc;
-
-	struct TagItem tags[] =
+        struct TagItem tags[] =
         {
 	    { NP_Seglist,   (IPTR)mysegment       },
+	    { NP_Entry,     (IPTR)entry           },
 	    { NP_Name,      (IPTR)__detached_name },
 	    { NP_Arguments, (IPTR)argstr          },
 	    { NP_Cli,       TRUE                  },
             { TAG_DONE,     0                     }
         };
 
-        mysegment = NULL;
-
 	__detacher_process = (struct Process *)FindTask(NULL);
 
 	/* CreateNewProc() will take care of freeing the seglist */
 	newproc = CreateNewProc(tags);
-
-        CloseLibrary((struct Library *)DOSBase);
-
-	if (__detacher_must_wait_for_signal)
-	    Wait(__detacher_must_wait_for_signal);
-
-        __detacher_process = NULL;
-
-	return newproc ? RETURN_OK : RETURN_FAIL;
     }
 
     CloseLibrary((struct Library *)DOSBase);
 
-    return AROS_UFC3(LONG, entry,
-           AROS_UFCA(char *,argstr,A0),
-           AROS_UFCA(ULONG,argsize,D0),
-           AROS_UFCA(struct ExecBase *,SysBase,A6));
+    if (newproc && __detacher_must_wait_for_signal)
+        Wait(__detacher_must_wait_for_signal);
+
+    __detacher_process = NULL;
+
+    return newproc ? RETURN_OK : RETURN_FAIL;
 }
 
 LONG            __detacher_must_wait_for_signal __attribute__((weak)) = 0;
