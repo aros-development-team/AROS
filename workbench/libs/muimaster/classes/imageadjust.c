@@ -24,6 +24,8 @@
 
 #include <string.h>
 
+#define MYDEBUG 1
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -35,17 +37,18 @@ struct MUI_ImageadjustData
     Object *bitmap_string;
 
     Object *pattern_image[18];
-    int last_pattern_selected;
+    ULONG last_pattern_selected;
     struct Hook pattern_select_hook;
 
     Object *vector_image[24];
-    int last_vector_selected;
+    ULONG last_vector_selected;
     struct Hook vector_select_hook;
 
     Object *external_list;
     struct Hook external_display_hook;
 
     char *imagespec;
+    LONG adjust_type;
 };
 
 #ifndef __AROS__
@@ -224,7 +227,10 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 
 	case	'5':
 		set(data->bitmap_string,MUIA_String_Contents,s+2);
-		set(obj,MUIA_Group_ActivePage,3);
+		if (data->adjust_type == MUIV_Imageadjust_Type_All)
+		    set(obj,MUIA_Group_ActivePage,4);
+		else
+		    set(obj,MUIA_Group_ActivePage,2);
 		break;
 		
 	case    '6':
@@ -247,100 +253,170 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageadjustData   *data;
     struct TagItem  	    *tag, *tags;
-    static const char *labels[] = {"Pattern","Vector", "Color", "Bitmap", "External",NULL};
-    Object *pattern_group;
-    Object *vector_group;
-    Object *bitmap_string;
-    Object *external_list;
-    char *spec=NULL;
+    static const char *labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", NULL};
+    static const char *labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
+    static const char *labels_bg[] = {"Pattern", "Color", "Bitmap", NULL};
+    static const char *labels_color[] = {"Color", NULL};
+    Object *pattern_group = NULL;
+    Object *vector_group = NULL;
+    Object *bitmap_string = NULL;
+    Object *external_list = NULL;
+    char *spec = NULL;
     int i;
+    LONG adjust_type;
+    Object *color_group = NULL;
+    Object *external_group = NULL;
+    Object *bitmap_group = NULL;
 
-    obj = (Object *)DoSuperNew(cl, obj,
-    	MUIA_Register_Titles, labels,
-	Child, pattern_group = ColGroup(6), End,
-	Child, vector_group = ColGroup(6), End,
-	Child, HVSpace,
-	Child, PopaslObject,
-	    MUIA_Popstring_String, bitmap_string = StringObject, StringFrame, End,
-	    MUIA_Popstring_Button, PopButton(MUII_PopFile),
-	    End,
-	Child, ListviewObject,
+    adjust_type = GetTagData(MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
+			     msg->ops_AttrList);
+
+    color_group = HVSpace;
+
+    if (adjust_type == MUIV_Imageadjust_Type_All ||
+	adjust_type == MUIV_Imageadjust_Type_Image)
+    {
+	external_group = ListviewObject,
 	    MUIA_Listview_List, external_list = ListObject,
-		InputListFrame,
-		MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
-		MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-		End,
+	    InputListFrame,
+	    MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+	    MUIA_List_DestructHook, MUIV_List_DestructHook_String,
 	    End,
-	TAG_MORE, msg->ops_AttrList);
+	    End;
+    }
+    
+    if (adjust_type == MUIV_Imageadjust_Type_All ||
+	adjust_type == MUIV_Imageadjust_Type_Background)
+    {
+	bitmap_group = PopaslObject,
+	    MUIA_Popstring_String, bitmap_string =
+	    StringObject, StringFrame, MUIA_CycleChain, 1, End,
+	    MUIA_Popstring_Button, PopButton(MUII_PopFile),
+	    End;
+    }
+
+    switch (adjust_type)
+    {
+	case MUIV_Imageadjust_Type_All:
+	    obj = (Object *)DoSuperNew(cl, obj,
+				       MUIA_Register_Titles, labels_all,
+				       Child, HCenter((pattern_group = ColGroup(6), End)),
+				       Child, HCenter((vector_group = ColGroup(6), End)),
+				       Child, (IPTR)color_group,
+				       Child, (IPTR)external_group,
+				       Child, (IPTR)bitmap_group,
+				       TAG_MORE, msg->ops_AttrList);
+	    break;
+	case MUIV_Imageadjust_Type_Background:
+	    obj = (Object *)DoSuperNew(cl, obj,
+				       MUIA_Register_Titles, labels_bg,
+				       Child, HCenter((pattern_group = ColGroup(6), End)),
+				       Child, (IPTR)color_group,
+				       Child, (IPTR)bitmap_group,
+				       TAG_MORE, msg->ops_AttrList);
+	    break;
+	case MUIV_Imageadjust_Type_Image:
+	    obj = (Object *)DoSuperNew(cl, obj,
+				       MUIA_Register_Titles, labels_image,
+				       Child, HCenter((pattern_group = ColGroup(6), End)),
+				       Child, HCenter((vector_group = ColGroup(6), End)),
+				       Child, (IPTR)color_group,
+				       Child, (IPTR)external_group,
+				       TAG_MORE, msg->ops_AttrList);
+	    break;
+	case MUIV_Imageadjust_Type_Pen:
+	    obj = (Object *)DoSuperNew(cl, obj,
+				       MUIA_Register_Titles, labels_color,
+				       Child, (IPTR)color_group,
+				       TAG_MORE, msg->ops_AttrList);
+	    break;
+    }
+
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
+    data->adjust_type = adjust_type;
 
-    data->last_pattern_selected = -1;
-    data->pattern_select_hook.h_Data = data;
-    data->pattern_select_hook.h_Entry = (HOOKFUNC)Pattern_Select_Function;
-
-    for (i=0;i<18;i++)
+    if (adjust_type != MUIV_Imageadjust_Type_Pen)
     {
-    	data->pattern_image[i] = ImageObject,
-    	    ButtonFrame,
-	    MUIA_Image_Spec, i + MUII_BACKGROUND,
-	    MUIA_InputMode, MUIV_InputMode_Immediate,
-	    MUIA_Image_FreeVert, TRUE,
-	    MUIA_Image_FreeHoriz, TRUE,
-	    MUIA_FixWidth, 20,
-	    End;
+	data->last_pattern_selected = -1;
+	data->pattern_select_hook.h_Data = data;
+	data->pattern_select_hook.h_Entry = (HOOKFUNC)Pattern_Select_Function;
 
-	if (data->pattern_image[i])
+	for (i=0;i<18;i++)
 	{
-	    DoMethod(pattern_group,OM_ADDMEMBER,(IPTR)data->pattern_image[i]);
-	    DoMethod(data->pattern_image[i],MUIM_Notify,MUIA_Selected,TRUE,(IPTR)obj,3,MUIM_CallHook,(IPTR)&data->pattern_select_hook,i);
+	    data->pattern_image[i] = ImageObject,
+		ButtonFrame,
+		MUIA_CycleChain, 1,
+		InnerSpacing(4,4),
+		MUIA_Image_Spec, i + MUII_BACKGROUND,
+		MUIA_InputMode, MUIV_InputMode_Immediate,
+		MUIA_Image_FreeHoriz, TRUE,
+		MUIA_Image_FreeVert, TRUE,
+		MUIA_FixWidth, 16,
+		MUIA_FixHeight, 16,
+		End;
+
+	    if (data->pattern_image[i])
+	    {
+		DoMethod(pattern_group,OM_ADDMEMBER,(IPTR)data->pattern_image[i]);
+		DoMethod(data->pattern_image[i],MUIM_Notify,MUIA_Selected,TRUE,(IPTR)obj,3,MUIM_CallHook,(IPTR)&data->pattern_select_hook,i);
+	    }
 	}
-    }
 
-    data->last_vector_selected = -1;
-    data->vector_select_hook.h_Data = data;
-    data->vector_select_hook.h_Entry = (HOOKFUNC)Vector_Select_Function;
-
-    for (i=0;i<24;i++)
-    {
-    	char spec[10];
-    #ifdef __AROS__
-    	sprintf(spec,"1:%d",i);
-    #else
-    	sprintf(spec,"1:%ld",i);
-    #endif
-    	data->vector_image[i] = ImageObject,
-    	    ButtonFrame,
-	    MUIA_Image_Spec, spec,
-	    MUIA_InputMode, MUIV_InputMode_Immediate,
-	    MUIA_Weight, 0,
-	    End;
-
-	if (data->vector_image[i])
+	if (adjust_type != MUIV_Imageadjust_Type_Background)
 	{
-	    DoMethod(vector_group,OM_ADDMEMBER,(IPTR)data->vector_image[i]);
-	    DoMethod(data->vector_image[i],MUIM_Notify,MUIA_Selected,TRUE,(IPTR)obj,3,MUIM_CallHook,(IPTR)&data->vector_select_hook,i);
-	}
-    }
+	    data->last_vector_selected = -1;
+	    data->vector_select_hook.h_Data = data;
+	    data->vector_select_hook.h_Entry = (HOOKFUNC)Vector_Select_Function;
 
-    data->bitmap_string = bitmap_string;
-    
+	    for (i=0;i<24;i++)
+	    {
+		char spec[10];
+#ifdef __AROS__
+		sprintf(spec,"1:%d",i);
+#else
+		sprintf(spec,"1:%ld",i);
+#endif
+		data->vector_image[i] = ImageObject,
+		    ButtonFrame,
+		    MUIA_CycleChain, 1,
+		    MUIA_Image_Spec, spec,
+		    MUIA_InputMode, MUIV_InputMode_Immediate,
+		    MUIA_Weight, 0,
+		    End;
+
+		if (data->vector_image[i])
+		{
+		    DoMethod(vector_group,OM_ADDMEMBER,(IPTR)data->vector_image[i]);
+		    DoMethod(data->vector_image[i],MUIM_Notify,MUIA_Selected,TRUE,(IPTR)obj,3,MUIM_CallHook,(IPTR)&data->vector_select_hook,i);
+		}
+	    }
+	} /* if (adjust_type != MUIV_Imageadjust_Type_Background) */
+
+	if (adjust_type != MUIV_Imageadjust_Type_Image)
+	    data->bitmap_string = bitmap_string;
+
+    } /* if (adjust_type != MUIV_Imageadjust_Type_Pen) */
+
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Imageadjust_Spec:
-		    spec = (char*)tag->ti_Data;
-		    break;
+		spec = (char*)tag->ti_Data;
+		break;
 	}
     }
 
-    data->external_list = external_list;
-    data->external_display_hook.h_Entry = (HOOKFUNC)Imageadjust_External_Display;
-    set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
-
+    if (adjust_type != MUIV_Imageadjust_Type_Background &&
+	adjust_type != MUIV_Imageadjust_Type_Pen)
+    {
+	data->external_list = external_list;
+	data->external_display_hook.h_Entry = (HOOKFUNC)Imageadjust_External_Display;
+	set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
+    }
     /* Because we have many childs, we disbale the forwarding of the notify method */
     DoMethod(obj, MUIM_Group_DoMethodNoForward, MUIM_Notify, MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);
 
@@ -388,11 +464,25 @@ STATIC IPTR Imageadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_ImageadjustData *data = INST_DATA(cl, obj);
+    struct pages {
+	LONG type;
+	LONG pos[5];
+    };
+
+    static struct pages titi[] = 
+    {
+	{ MUIV_Imageadjust_Type_Pen, { 2, -1, -1, -1, -1} },
+	{ MUIV_Imageadjust_Type_Background, { 0, 2, 4, -1, -1} },
+	{ MUIV_Imageadjust_Type_Image, { 0, 1, 2, 3, -1} },
+	{ MUIV_Imageadjust_Type_All, { 0, 1, 2, 3, 4} },
+    };
 
     switch (msg->opg_AttrID)
     {
     	case	MUIA_Imageadjust_Spec:
     		{
+		    int i;
+
     		    LONG act;
 		    if (data->imagespec)
 		    {
@@ -401,18 +491,24 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		    }
 
 		    get(obj,MUIA_Group_ActivePage,&act);
+		    
+		    for (i = 0; i < 4; i++)
+		    {
+			if (titi[i].type == data->adjust_type)
+			    break;
+		    }
+
+		    act = titi[i].pos[act];
+
 		    switch (act)
 		    {
 		    	case	0: /* Pattern */
 				if ((data->imagespec = AllocVec(40,0)))
 				{
 				    if (data->last_pattern_selected != -1)
-				    #ifdef __AROS__
-					sprintf(data->imagespec,"0:%d",data->last_pattern_selected+128);
-				    #else
 					sprintf(data->imagespec,"0:%ld",data->last_pattern_selected+128);
-    	    	    	    	    #endif
-				    else strcpy(data->imagespec,"0:128");
+				    else
+					strcpy(data->imagespec,"0:128");
 				}
 		    		break;
 
@@ -420,16 +516,13 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(20,0)))
 				{
 				    if (data->last_vector_selected != -1)
-				    #ifdef __AROS__
-					sprintf(data->imagespec,"1:%d",data->last_vector_selected);
-				    #else
 					sprintf(data->imagespec,"1:%ld",data->last_vector_selected);
-				    #endif
-				    else strcpy(data->imagespec,"0:128");
+				    else
+					strcpy(data->imagespec,"0:128");
 				}
 				break;
 
-			case    3: /* Bitmap */
+			case    4: /* Bitmap */
 				{
 				    char *str;
 				    get(data->bitmap_string,MUIA_String_Contents,&str);
