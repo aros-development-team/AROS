@@ -23,7 +23,7 @@ FILES = alib_util callhook coercemethod createextio createport createstdio  \
 	createtask deleteextio deleteport deletestdio deletetask	    \
 	domethod dosupermethod fastrand hookentry liballocpooled	    \
 	libcreatepool libdeletepool libfreepooled newlist rangerand	    \
-	setsuperattrs
+	setsuperattrs arosinquiretags
 
 # ***** Not Native ***************
 else
