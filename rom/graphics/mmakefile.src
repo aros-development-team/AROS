@@ -164,6 +164,7 @@ FUNCTIONS := \
 	ucopperlistinit \
 	unlocklayerrom \
 	waitblit \
+	waitbovp \
 	waittof \
 	weightamatch \
 	writechunkypixels \
