@@ -1,15 +1,9 @@
 /*
-    (C) 1998-99 AROS - The Amiga Research OS
+    Copyright © 1998-2004, The AROS Development Team. All rights reserved. 
     $Id$
 
-    Desc: Clipboard device
-    Lang: English
+    Clipboard device.
 */
-
-/* HISTORY:  230498  SDuvan  Began work
- *           310598  SDuvan  Finished overall structure(?)
- *           210399  SDuvan  Removed special support for PRIMARY_CLIP unit.
- */
 
 /****************************************************************************************/
 
