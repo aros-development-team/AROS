@@ -98,8 +98,6 @@
   struct RastPort * rp;
   struct Region * layershape;
 
-kprintf("%s entered!\n",__FUNCTION__);
-
   while (TAG_DONE != tagList[i].ti_Tag)
   {
     switch (tagList[i].ti_Tag)
@@ -148,16 +146,10 @@ kprintf("%s entered!\n",__FUNCTION__);
   }
   
   if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
-  {
-//    kprintf("%s: LAYERSUPER but no bitmap!\n",__FUNCTION__);
     return NULL;
-  }
     
   if (!layershape)
-  {
-//    kprintf("No layer shape!\n");
     return NULL;
-  }
 
   if (!parent)
     parent = li->check_lp;
@@ -253,7 +245,6 @@ kprintf("%s entered!\n",__FUNCTION__);
 
       if (li->top_layer == infrontof)
       {
-kprintf("Creating a layer on top! pri=%d\n",l->priority);
         li->top_layer = l;
         l->front  = NULL;
         l->back   = infrontof;
@@ -286,12 +277,11 @@ kprintf("Creating a layer on top! pri=%d\n",l->priority);
      */
     if (l->front)
     {
-#warning Write a function to duplicate a region.
-         OrRegionRegion(l->front->VisibleRegion, l->VisibleRegion);
+      _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
       ClearRegionRegion(l->front->shape, l->VisibleRegion);
     }
     else
-      OrRegionRegion(li->check_lp->shape, l->VisibleRegion);
+      _SetRegion(li->check_lp->shape, l->VisibleRegion);
 
     if (IS_VISIBLE(l))
     {
@@ -308,7 +298,7 @@ kprintf("Creating a layer on top! pri=%d\n",l->priority);
       while (1)
       {
         if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
-          _BackupPartsOfLayer(_l, l->shape, 0, FALSE);
+          _BackupPartsOfLayer(_l, l->shape, 0, FALSE, LayersBase);
         else
           ClearRegionRegion(l->shape, _l->VisibleRegion);
         
@@ -328,8 +318,6 @@ kprintf("Creating a layer on top! pri=%d\n",l->priority);
   else
     goto failexit;
 
-//  kprintf("Leaving %s l=%p\n",__FUNCTION__,l);
-  
   UnlockLayers(li);
   
   return l;
@@ -345,14 +333,9 @@ failexit:
   }
 
   if (rp)
-  {
     FreeRastPort(rp);
-  }
 
-//  kprintf("Leaving %s - faiure!\n",__FUNCTION__);
-  
   return NULL;
-
 
   AROS_LIBFUNC_EXIT
 } /* CreateBehindHookLayer */

@@ -88,8 +88,13 @@
        */
       if (NULL != l->ClipRect)
       {
-	if (LAYERSMART == (l->Flags & (LAYERSMART|LAYERSUPER)))
-          CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
+	if (IS_SMARTREFRESH(l))
+	  _CopyClipRectsToClipRects(l,
+	                            l->ClipRect,
+	                            l->_cliprects,
+	                            0,
+	                            FALSE,
+	                            TRUE);
 	else
           _FreeClipRectListBM(l, l->ClipRect);
       }
@@ -108,12 +113,37 @@
       l->_cliprects = NULL;
     else
     {
+      struct Region r;
+      r.RegionRectangle = NULL; // min. initialization!
 
       /* convert the region to a list of ClipRects */
       /* backup the old cliprects */
       l->_cliprects = l->ClipRect;
 
-//      l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, region);  
+      region->bounds.MinX += l->bounds.MinX;
+      region->bounds.MinY += l->bounds.MinY;
+      region->bounds.MaxX += l->bounds.MinX;
+      region->bounds.MaxY += l->bounds.MinY;
+
+      _SetRegion(region, &r);
+      AndRegionRegion(l->VisibleRegion, &r);
+
+      l->ClipRect = _CreateClipRectsFromRegion(&r,
+                                               l,
+                                               FALSE,
+                                               region);
+                                               
+      _CopyClipRectsToClipRects(l,
+                                l->_cliprects,
+                                l->ClipRect,
+                                0,
+                                FALSE,
+                                FALSE);
+
+      region->bounds.MinX -= l->bounds.MinX;
+      region->bounds.MinY -= l->bounds.MinY;
+      region->bounds.MaxX -= l->bounds.MinX;
+      region->bounds.MaxY -= l->bounds.MinY;
 
       /* right now I am assuming that everything went alright */
     }

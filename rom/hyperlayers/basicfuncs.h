@@ -138,10 +138,12 @@ void InstallClipRegionClipRects(struct Layer_Info * LI);
 int _BackupPartsOfLayer(struct Layer * l, 
                         struct Region * hide_region,
                         int dx,
-                        int backupsimplerefresh);
+                        int backupsimplerefresh,
+                        struct LayersBase *);
 
 int _ShowPartsOfLayer(struct Layer * l, 
-                      struct Region * show_region);
+                      struct Region * show_region,
+                      struct LayersBase *);
 
 int _ShowLayer(struct Layer * l);
 
@@ -152,3 +154,10 @@ struct Layer * _FindFirstFamilyMember(struct Layer * l);
 void _BackFillRegion(struct Layer * l, 
                      struct Region * r,
                      int addtodamagelist);
+
+struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
+                                             struct Layer * l,
+                                             int invisible,
+                                             struct Region *inverter);
+
+int _SetRegion(struct Region *, struct Region *);

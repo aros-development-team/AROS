@@ -63,7 +63,6 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * _l, * lparent;
-  struct ClipRect * cr, *_cr;
   /*
    * all children must have been destroyed before.
    */
@@ -80,9 +79,10 @@
     
   if (IS_VISIBLE(l))
   { 
-    struct Region * r = NewRegion();
+    struct Region r;
+    r.RegionRectangle = NULL; // min. initialization
 
-    OrRegionRegion(l->VisibleRegion, r);
+    _SetRegion(l->VisibleRegion, &r);
     _l = l->back;
     lparent = l->parent;
 
@@ -93,11 +93,13 @@
      */
     while (1)
     {
-      ClearRegion(_l->VisibleRegion);
-      if (IS_VISIBLE(_l)  && DO_OVERLAP(&r->bounds, &_l->shape->bounds))
-        _ShowPartsOfLayer(_l, r);
+      if (IS_VISIBLE(_l)  && DO_OVERLAP(&r.bounds, &_l->shape->bounds))
+      {
+        ClearRegion(_l->VisibleRegion);
+        _ShowPartsOfLayer(_l, &r, LayersBase);
+      }
       else
-        OrRegionRegion(r,_l->VisibleRegion);
+        _SetRegion(&r,_l->VisibleRegion);
 
       if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
         AndRegionRegion(_l->VisibleRegion, l->shape);
@@ -115,12 +117,12 @@
        * have to take it out.
        */
       if (IS_VISIBLE(_l))
-        ClearRegionRegion(_l->shape, r);
+        ClearRegionRegion(_l->shape, &r);
 
       _l = _l->back;
     }
 
-    DisposeRegion(r);
+    ClearRegion(&r);
 
     if (!IS_EMPTYREGION(l->shape))
     {
@@ -133,19 +135,10 @@ kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
       kprintf("NOTHING TO CLEAR!\n");
   }
   
-  /*
-   * Free all cliprects.
-   */
-  cr = l->ClipRect;
-  while (cr)
-  {
-    if (cr->BitMap)
-      FreeBitMap(cr->BitMap);
-    _cr =cr->Next;
-    FreeMem(cr, sizeof(struct ClipRect));
-    cr = _cr;
-  }
   
+  /*
+   * Take the layer out of the list
+   */
   if (l->front)
     l->front->back = l->back;
   else
@@ -156,11 +149,7 @@ kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
   
   UnlockLayers(l->LayerInfo);
 
-  DisposeRegion(l->DamageList);
-  DisposeRegion(l->VisibleRegion);
-  DisposeRegion(l->shape);
-
-  FreeMem(l, sizeof(struct Layer));
+  _FreeLayer(l);
 
   return TRUE;
   
