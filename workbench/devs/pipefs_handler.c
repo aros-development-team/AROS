@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.17  2001/08/23 23:14:27  falemagn
+    Corrected a stupid bug that led to a crash if a pipe couldn't be found
+
     Revision 1.16  2001/08/21 19:17:18  falemagn
     Fixed the sheduling policy: before a reader/writer would have never let any other reader/writer read/write from/to the pipe until it had finished its job. Fixed now.
 
@@ -599,7 +602,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 	}
     }
 
-    if ((BYTE)fn->type > 0 && mode&(FMF_WRITE|FMF_READ))
+    if (fn && fn->type > 0 && mode&(FMF_WRITE|FMF_READ))
     {
 	kprintf("The file is a directory, cannot be open for reading/writing\n");
 	*err = ERROR_OBJECT_WRONG_TYPE;
