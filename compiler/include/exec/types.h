@@ -154,6 +154,11 @@
     typedef UBYTE * STRPTR;	/* Pointer to string (NULL terminated) */
 #endif
 
+#ifndef __typedef_TEXT
+#   define __typedef_TEXT
+    typedef unsigned char TEXT;
+#endif
+
 #ifndef __typedef_BOOL
 #   define __typedef_BOOL
     typedef short   BOOL;	/* A Boolean value */
