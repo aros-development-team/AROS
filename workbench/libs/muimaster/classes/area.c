@@ -351,6 +351,12 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->mad_ehn.ehn_Object   = obj;
     data->mad_ehn.ehn_Class    = cl;
 
+    data->mad_hiehn.ehn_Events   = 0;
+    data->mad_hiehn.ehn_Priority = -10;
+    data->mad_hiehn.ehn_Flags    = MUI_EHF_HANDLEINPUT;
+    data->mad_hiehn.ehn_Object   = obj;
+    data->mad_hiehn.ehn_Class    = 0;
+
     D(bug("muimaster.library/area.c: Area Object created at 0x%lx\n",obj));
 
     return (ULONG)obj;
@@ -1008,6 +1014,11 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
     }
+
+    /* Those are filled by RequestIDCMP() */
+    if (data->mad_hiehn.ehn_Events)
+	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_hiehn);
+
     setup_control_char (data, obj, cl);
 //    setup_cycle_chain (data, obj);
 
@@ -1071,6 +1082,10 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
 	data->mad_Timer.ihn_Millis = 0;
     }
+
+    /* Remove the handler if it is added */
+    if (data->mad_hiehn.ehn_Events)
+	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_hiehn);
 
     /* Remove the event handler if it has been added */
     if (data->mad_ehn.ehn_Events)

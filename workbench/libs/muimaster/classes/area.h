@@ -24,6 +24,7 @@ struct MUI_AreaData
     BYTE               mad_subheight;      /* frame & innerspacing add. height */
     ULONG              mad_Flags;          /* see definitions below */
     /* ... private data follows ... */
+    /* START PRIV */
     WORD               mad_InputMode;      /* how to react to events */
     WORD               mad_Frame;          /* frame setting -- private */
     STRPTR             mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
@@ -47,8 +48,9 @@ struct MUI_AreaData
     TEXT               mad_ControlChar;   /* key shortcut */
     LONG               mad_ClickX;        /* x position of the initial SELECTDOWN click */
     LONG               mad_ClickY;        /* y position of the intiial SELECTDOWN click */
-
     struct ZMenu      *mad_ContextZMenu;
+    struct MUI_EventHandlerNode mad_hiehn; /* Eventhandler to simulate MUIM_HandleInput */
+    /* EBD PRIV */
 };
 
 
@@ -57,29 +59,29 @@ struct MUI_AreaData
 
 #define MADF_DRAWOBJECT        (1<< 0) /* completely redraw yourself */
 #define MADF_DRAWUPDATE        (1<< 1) /* only update yourself */
-#define MADF_FIXHEIGHT         (1<< 2)
-#define MADF_FIXWIDTH          (1<< 3)
-#define MADF_MAXHEIGHT         (1<< 4)
-#define MADF_MAXWIDTH          (1<< 5)
-#define MADF_FILLAREA          (1<< 6)
-#define MADF_INNERLEFT         (1<< 7)
-#define MADF_INNERRIGHT        (1<< 8)
-#define MADF_INNERTOP          (1<< 9)
-#define MADF_INNERBOTTOM       (1<< 10)
-#define MADF_FRAMEPHANTOM      (1<< 11)
-#define MADF_SELECTED          (1<< 12)
-#define MADF_PRESSED           (1<< 13)
-#define MADF_SHOWME            (1<< 14)
-#define MADF_SHOWSELSTATE      (1<< 15)
-#define MADF_CANDRAW           (1<< 16)
-#define MADF_SETUP             (1<< 17)
-#define MADF_MAXSIZE           (1<< 18)
+#define MADF_FIXHEIGHT         (1<< 2) /* PRIV */
+#define MADF_FIXWIDTH          (1<< 3) /* PRIV */
+#define MADF_MAXHEIGHT         (1<< 4) /* PRIV */
+#define MADF_MAXWIDTH          (1<< 5) /* PRIV */
+#define MADF_FILLAREA          (1<< 6) /* PRIV */
+#define MADF_INNERLEFT         (1<< 7) /* PRIV */
+#define MADF_INNERRIGHT        (1<< 8) /* PRIV */
+#define MADF_INNERTOP          (1<< 9) /* PRIV */
+#define MADF_INNERBOTTOM       (1<< 10) /* PRIV */
+#define MADF_FRAMEPHANTOM      (1<< 11) /* PRIV */
+#define MADF_SELECTED          (1<< 12) /* PRIV */
+#define MADF_PRESSED           (1<< 13) /* PRIV */
+#define MADF_SHOWME            (1<< 14) /* PRIV */
+#define MADF_SHOWSELSTATE      (1<< 15) /* PRIV */
+#define MADF_CANDRAW           (1<< 16) /* PRIV */
+#define MADF_SETUP             (1<< 17) /* PRIV */
+#define MADF_MAXSIZE           (1<< 18) /* PRIV */
 #define MADF_DRAWALL           (1<< 19)
-#define MADF_CYCLECHAIN        (1<< 20)
-#define MADF_ACTIVE            (1<< 21)
-#define MADF_DRAGGABLE         (1<< 22)
-#define MADF_DRAGGING          (1<< 23)
-#define MADF_DROPABLE          (1<< 24)
+#define MADF_CYCLECHAIN        (1<< 20) /* PRIV */
+#define MADF_ACTIVE            (1<< 21) /* PRIV */
+#define MADF_DRAGGABLE         (1<< 22) /* PRIV */
+#define MADF_DRAGGING          (1<< 23) /* PRIV */
+#define MADF_DROPABLE          (1<< 24) /* PRIV */
 
 #define MADF_INVIRTUALGROUP	(1<<29) /* PRIV UNDOC: The object is inside a virtual group */
 #define MADF_ISVIRTUALGROUP	(1<<30) /* PRIV UNDOC: The object is a virtual group */
