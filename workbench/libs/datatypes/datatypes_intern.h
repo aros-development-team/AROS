@@ -2,7 +2,7 @@
 #define DATATYPES_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal datatypes.library definitions.
@@ -144,16 +144,6 @@ struct DataTypesBase
     /* Align to long word */
     UWORD dtb_Pad1;
     
-    /* libraries used by datatypes system */
-    struct ExecBase *dtb_SysBase;
-    struct Library  *dtb_DOSBase;
-    struct Library  *dtb_IntuitionBase;
-    struct Library  *dtb_GfxBase;
-    struct Library  *dtb_LayersBase;
-    struct Library  *dtb_UtilityBase;
-    struct Library  *dtb_IFFParseBase;
-    struct Library  *dtb_RexxSysBase;
-    struct Library  *dtb_LocaleBase;
     struct Catalog  *dtb_LibsCatalog;
     
     /* remember seglist */
@@ -221,23 +211,6 @@ BOOL InstallClass(struct Library *DataTypesBase);
 BOOL TryRemoveClass(struct Library *DataTypesBase);
 
 
-typedef struct IntuitionBase IntuiBase;
-
-#ifndef GLOBAL_INTUIBASE
-#undef IntuitionBase
-#define IntuitionBase ((struct DataTypesBase *)DataTypesBase)->dtb_IntuitionBase
-#endif
-
 #define GPB(x) ((struct DataTypesBase *)x)
-
-
-#define UtilityBase ((struct DataTypesBase *)DataTypesBase)->dtb_UtilityBase
-#define DOSBase ((struct DataTypesBase *)DataTypesBase)->dtb_DOSBase
-/* We cannot define this t */
-/* #define IntuitionBase ((struct DataTypesBase *)DataTypesBase)->dtb_IntuitionBase */
-#define SysBase ((struct LibHeader *)DataTypesBase)->lh_SysBase
-#define IFFParseBase ((struct DataTypesBase *)DataTypesBase)->dtb_IFFParseBase
-#define LocaleBase (GPB(DataTypesBase)->dtb_LocaleBase)
-#define GfxBase (GPB(DataTypesBase)->dtb_GfxBase)
 
 #endif /* DATATYPES_INTERN_H */

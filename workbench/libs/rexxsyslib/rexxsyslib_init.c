@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RexxSys initialization code.
@@ -15,9 +15,6 @@
 
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
-
-#undef SysBase
-#define SysBase LC_SYSBASE_FIELD(LIBBASE)
 
 AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {

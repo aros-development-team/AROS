@@ -62,39 +62,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     EasyHook(proppurgehook,        PropPurgeFunc      );
     EasyHook(exitcontexthook,      ExitContextFunc    );
 
-    DOSBase = OpenLibrary (DOSNAME, 39);
-    if (!DOSBase)
-	return FALSE;
-
-    UtilityBase = OpenLibrary (UTILITYNAME, 39);
-    if (!UtilityBase)
-	return FALSE;
-
-    return TRUE;
-}
-
-AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
-{
-    /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
-    */
-
-    if (DOSBase)
-    {
-	CloseLibrary (DOSBase);
-	DOSBase = NULL;
-    }
-    
-    if (UtilityBase)
-    {
-	CloseLibrary (UtilityBase);
-	UtilityBase = NULL;
-    }
-
     return TRUE;
 }
 
 ADD2INITLIB(Init, 0);
-ADD2EXPUNGELIB(Expunge, 0);

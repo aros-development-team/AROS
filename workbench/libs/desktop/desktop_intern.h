@@ -43,14 +43,6 @@ struct DesktopBase
 {
     struct LibHeader db_LibHeader;
 
-    struct Library *db_DOSBase;
-    struct IntuitionBase *db_IntuitionBase;
-    struct Library *db_GfxBase;
-    struct Library *db_LayersBase;
-    struct Library *db_UtilityBase;
-    struct Library *db_MUIMasterBase;
-    struct Library *db_IconBase;
-
     struct Library *db_InputBase;
     struct IORequest *db_InputIO;
 
@@ -104,15 +96,7 @@ AROS_LC2(ULONG, add, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopB
 #    define asl(a, b) \
 AROS_LC2(ULONG, asl, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopBase *,DesktopBase,6,Desktop)
 
-#    define SysBase ((struct LibHeader *)DesktopBase)->lh_SysBase
-#    define DOSBase ((struct DesktopBase *)DesktopBase)->db_DOSBase
-#    define GfxBase ((struct DesktopBase *)DesktopBase)->db_GfxBase
-#    define IntuitionBase ((struct DesktopBase *)DesktopBase)->db_IntuitionBase
-#    define LayersBase ((struct DesktopBase *)DesktopBase)->db_LayersBase
-#    define UtilityBase ((struct DesktopBase *)DesktopBase)->db_UtilityBase
-#    define MUIMasterBase ((struct DesktopBase *)DesktopBase)->db_MUIMasterBase
 #    define InputBase ((struct DesktopBase *)DesktopBase)->db_InputBase
-#    define IconBase ((struct DesktopBase *)DesktopBase)->db_IconBase
 #    define IconContainer ((struct DesktopBase *)DesktopBase)->db_IconContainer
 #    define IconContainerObserver ((struct DesktopBase *)DesktopBase)->db_IconContainerObserver
 #    define DiskIcon ((struct DesktopBase *)DesktopBase)->db_DiskIcon

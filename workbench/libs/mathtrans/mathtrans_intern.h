@@ -38,7 +38,6 @@
 #include <proto/mathtrans.h>
 #include <libraries/mathffp.h>
 
-extern struct ExecBase * SysBase;
 extern struct MathBase * MathBase;
 /*
     This is the MathTransBase structure. It is documented here because it is

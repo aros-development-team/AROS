@@ -162,6 +162,9 @@ const struct IntFontReq def_fontreq =
     
 };
 
+/* coolimages may fail to open */
+LONG CoolImagesBase_version = -1;
+
 /*****************************************************************************************/
 
 VOID InitReqInfo(struct AslBase_intern *);
@@ -170,7 +173,7 @@ VOID InitReqInfo(struct AslBase_intern *);
 
 AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
 {
-    D(bug("Inside InitBase\n"));
+    D(bug("Inside InitBase of asl.library\n"));
 
     D(bug("SysBase: %p lh_SysBase %p\n", SysBase, LIBBASE->lh.lh_SysBase));
     
@@ -179,56 +182,6 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
     InitSemaphore(&LIBBASE->ReqListSem);
 
     InitReqInfo(LIBBASE);
-
-    if (!DOSBase)
-	DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-    if (!DOSBase)
-	return FALSE;
-
-    if (!GfxBase)
-	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
-    if (!GfxBase)
-	return FALSE;
-
-    if (!LayersBase)
-	LayersBase = OpenLibrary("layers.library", 37);
-    if (!LayersBase)
-	return FALSE;
-
-    if (!DiskfontBase)
-    	DiskfontBase = OpenLibrary("diskfont.library", 37);
-    if (!DiskfontBase)
-    	return FALSE;
-    
-    if (!CyberGfxBase)
-        CyberGfxBase = OpenLibrary("cybergraphics.library",0);
-    /* We can live without cybergraphics.library so don't abort if opening fails */
-    	
-    if (!UtilityBase)
-	UtilityBase = OpenLibrary("utility.library", 37);
-    if (!UtilityBase)
-	return FALSE;
-
-    if (!GadToolsBase)
-        GadToolsBase = OpenLibrary("gadtools.library", 37);
-    if (!GadToolsBase)
-        return FALSE;
-	
-    if (!IntuitionBase)
-	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-    if (!IntuitionBase)
-	return FALSE;
-
-    if (!LocaleBase)
-    	LocaleBase = OpenLibrary("locale.library", 38);
-    /* We can live without locale.library so don't abort if opening fails */
-
-#if USE_SHARED_COOLIMAGES
-    if (!CoolImagesBase)
-    	CoolImagesBase = OpenLibrary("coolimages.library", 1);
-    
-     /* We can live without coolimages.library so don't abort if opening fails */  
-#endif
 
     if (!LIBBASE->aslpropclass)
         LIBBASE->aslpropclass = makeaslpropclass(LIBBASE);
@@ -336,68 +289,6 @@ AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
 	LIBBASE->aslcolorpickerclass = NULL;
     }
 	
-#if USE_SHARED_COOLIMAGES
-    if (CoolImagesBase)
-    {
-	CloseLibrary(CoolImagesBase);
-	CoolImagesBase = NULL;
-    }
-#endif
-    
-    if (LocaleBase)
-    {
-	CloseLibrary(LocaleBase);
-	LocaleBase = NULL;
-    }
-	
-    if (DiskfontBase)
-    {
-	CloseLibrary(DiskfontBase);
-	DiskfontBase = NULL;
-    }
-    
-    if (GadToolsBase)
-    {
-	CloseLibrary(GadToolsBase);
-	GadToolsBase = NULL;
-    }
-	
-    if (UtilityBase)
-    {
-	CloseLibrary(UtilityBase);
-	UtilityBase = NULL;
-    }
-		
-    if (CyberGfxBase)
-    {
-	CloseLibrary(CyberGfxBase);
-	CyberGfxBase = NULL;
-    }
-	
-    if (LayersBase)
-    {
-	CloseLibrary(LayersBase);
-	LayersBase = NULL;
-    }
-	
-    if (GfxBase)
-    {
-	CloseLibrary((struct Library *)GfxBase);
-	GfxBase = NULL;
-    }
-	
-    if (DOSBase)
-    {
-	CloseLibrary((struct Library *)DOSBase);
-	DOSBase = NULL;
-    }
-	
-    if (IntuitionBase)
-    {
-	CloseLibrary((struct Library *)IntuitionBase);
-	IntuitionBase = NULL;
-    }
-    
     return TRUE;
 }
 

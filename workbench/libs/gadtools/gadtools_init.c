@@ -77,31 +77,6 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 	at the same time. Take care.
     */
 
-    if (!IntuitionBase)
-	IntuitionBase = (IntuiBase *)OpenLibrary(INTUITIONNAME, 36);
-    if (!IntuitionBase)
-	return FALSE;
-
-    if (!DOSBase)
-	DOSBase = OpenLibrary(DOSNAME, 37);
-    if (!DOSBase)
-	return FALSE;
-
-    if (!GfxBase)
-	GfxBase = (GraphicsBase *)OpenLibrary(GRAPHICSNAME, 37);
-    if (!GfxBase)
-	return FALSE;
-
-    if (!LayersBase)
-	LayersBase = OpenLibrary("layers.library", 37);
-    if (!LayersBase)
-	return FALSE;
-
-    if (!UtilityBase)
-	UtilityBase = OpenLibrary(UTILITYNAME, 37);
-    if (!UtilityBase)
-	return FALSE;
-
     if (!LIBBASE->bevel)
 	LIBBASE->bevel = (struct Image *)makebevelobj(GadToolsBase);
     if (!LIBBASE->bevel)
@@ -168,26 +143,6 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 	FreeClass(LIBBASE->paletteclass);
     LIBBASE->paletteclass = NULL;
 	    
-    if (UtilityBase)
-	CloseLibrary(UtilityBase);
-    UtilityBase = NULL;
-
-    if (LayersBase)
-	CloseLibrary(LayersBase);
-    LayersBase = NULL;
-	
-    if (GfxBase)
-	CloseLibrary((struct Library *)GfxBase);
-    GfxBase = NULL;
-
-    if (DOSBase)
-	CloseLibrary(DOSBase);
-    DOSBase = NULL;
-
-    if (IntuitionBase)
-	CloseLibrary((struct Library *)IntuitionBase);
-    IntuitionBase = NULL;
-
     return TRUE;
 }
 

@@ -270,8 +270,6 @@ struct CIPtr
 struct IFFParseBase_intern
 {
     struct LibHeader  libheader;
-    struct Library  * dosbase;
-    struct Library  * utilitybase;
 
     struct Hook       stophook;
     struct Hook       prophook;
@@ -285,12 +283,6 @@ struct IFFParseBase_intern
 };
 
 #define IPB(ipb)        ((struct IFFParseBase_intern *)ipb)
-#undef SysBase
-#define SysBase (((struct LibHeader *)IFFParseBase)->lh_SysBase)
-#undef DOSBase
-#define DOSBase (IPB(IFFParseBase)->dosbase)
-#undef UtilityBase
-#define UtilityBase (IPB(IFFParseBase)->utilitybase)
 
 //void	dprintf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	dprintf(const char *, ...);

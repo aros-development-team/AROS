@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LocDateToStr - locale.library's private replacement
@@ -230,6 +230,3 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     AROS_LIBFUNC_EXIT
     
 } /* LocDateToStr */
-
-#undef LocaleBase
-#undef YEAR_FORMAT

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -36,17 +36,12 @@ void AsyncLayouter(void)
     struct DTSpecialInfo *dtsi;
     Object *object;
     
-/* Use the global, used to be __dt_GlobalSysBase */
-#undef SysBase
-    
     struct Process *MyProc = (struct Process *)FindTask(NULL);
     
     WaitPort(&MyProc->pr_MsgPort);
     lm = (struct LayoutMessage *)GetMsg(&MyProc->pr_MsgPort);
     
     dtb = lm->lm_dtb;
-    
-#define SysBase dtb->dtb_SysBase
     
     object = lm->lm_object;
     dtsi = ((struct Gadget *)object)->SpecialInfo;
@@ -88,9 +83,6 @@ void AsyncLayouter(void)
    
     FreeVec(lm);
 }
-
-#undef SysBase
-#define SysBase GPB(DataTypesBase)->dtb_SysBase
 
 
 /*****************************************************************************

@@ -24,8 +24,6 @@
 
 /****************************************************************************************/
 
-struct DosLibrary *DOSBase;
-
 AROS_UFH3(int, CleanMem,
     AROS_UFHA(struct MemHandlerData *, mhdata, A0),
     AROS_UFHA(LIBBASETYPEPTR, LIBBASE, A1),
@@ -42,18 +40,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     NEWLIST(&LIBBASE->diskfontlist);
     NEWLIST(&LIBBASE->fontsdirentrylist);
     InitSemaphore(&LIBBASE->fontssemaphore);
-
-    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-    if (!DOSBase)
-	return FALSE;
-
-    GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
-    if (!GfxBase)
-	return FALSE;
-
-    UtilityBase = OpenLibrary("utility.library", 37);
-    if (!UtilityBase)
-	return FALSE;
 
     /* Insert the fonthooks into the DiskfontBase */
 
@@ -85,18 +71,6 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     
     CleanUpFontsDirEntryList(LIBBASE);
     
-    if (UtilityBase)
-	CloseLibrary(UtilityBase);
-    UtilityBase = NULL;
-
-    if (GfxBase)
-	CloseLibrary((struct Library *)GfxBase);
-    GfxBase = NULL;
-
-    if (DOSBase)
-	CloseLibrary((struct Library *)DOSBase);
-    DOSBase = NULL;
-
     D(bug("diskfont.library expunged\n"));
 
     return TRUE;

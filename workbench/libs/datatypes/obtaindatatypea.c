@@ -6,6 +6,8 @@
 #include "datatypes_intern.h"
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/iffparse.h>
+#include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <dos/dos.h>
 #include <datatypes/datatypesclass.h>

@@ -31,13 +31,6 @@ struct DiskObject *__GetDefaultIconFromType_WB(LONG type, struct TagItem *tags, 
 #define GetDefaultIconFromName(name, tags) (__GetDefaultIconFromName_WB((name), (tags), IconBase))
 #define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
 
-/*** Identification hook ****************************************************/
-#define SysBase       ((struct ExecBase *) iim->iim_SysBase)
-#define DOSBase       ((struct DosLibrary *) iim->iim_DOSBase)
-#define UtilityBase   (iim->iim_UtilityBase)
-#define IconBase      (iim->iim_IconBase)
-#define DataTypesBase (hook->h_Data)
-
 AROS_UFH3
 (
     struct DiskObject *, FindDefaultIcon,
@@ -250,12 +243,6 @@ AROS_UFH3
     
     return icon;
 }
-
-#undef SysBase
-#undef DOSBase
-#undef UtilityBase
-#undef IconBase
-#undef DataTypesBase
 
 /*** Support functions ******************************************************/
 BOOL __FindDeviceName_WB

@@ -10,11 +10,12 @@ FUNCS := arexxdispatch closeportrsrc
 #MM     kernel-dos-includes \
 #MM     workbench-libs-rexxsyslib-includes \
 #MM     includes-copy
-#MM- workbench-libs-rexxsupport : linklibs
+#MM- workbench-libs-rexxsupport : linklibs \
+#MM      workbench-libs-rexxsyslib
 
 %build_module mmake=workbench-libs-rexxsupport \
     modname=rexxsupport modtype=library \
     files="rexxsupport_init $(FUNCS) $(FILES)" \
-    uselibs="amiga rom"
+    uselibs="rexxsyslib amiga rom"
 
 %common

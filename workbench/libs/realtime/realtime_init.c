@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Realtime.library initialization code.
@@ -51,18 +51,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     RealTimeBase->rtb_TickErr = 0;	/* How may such a thing be measured? */
 
-    GPB(RealTimeBase)->rtb_UtilityBase = OpenLibrary("utility.library", 41);
-    if (GPB(RealTimeBase)->rtb_UtilityBase == NULL)
-    {
-	return FALSE;
-    }
-
-    GPB(RealTimeBase)->rtb_DOSBase = OpenLibrary("dos.library", 41);
-    if (GPB(RealTimeBase)->rtb_DOSBase == NULL)
-    {
-	return FALSE;
-    }
-
     /* I use a process here just to be able to use CreateNewProc() so
        I don't have to fiddle with stack order and such... */
     {
@@ -100,15 +88,11 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 	Never break the Forbid() or strange things might happen.
     */
 
-    CloseLibrary(GPB(RealTimeBase)->rtb_UtilityBase);
-
     FreeTimer(RealTimeBase);
 
     /* Shut down the pulse message task -- must be done AFTER freeing the
        timer! */
     Signal(RealTimeBase->rtb_PulseTask, SIGBREAKF_CTRL_C);
-
-    CloseLibrary((struct Library *)GPB(RealTimeBase)->rtb_DOSBase);
 
     return TRUE;
 }

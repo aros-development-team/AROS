@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LocStrToDateGetCharFunc - locale.library's private replacement
@@ -11,6 +11,7 @@
 
 #include <exec/types.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/locale.h>
 #include "locale_intern.h"
 

@@ -59,10 +59,6 @@ struct IntLocaleBase
     struct LocaleBase        lb_LocaleBase;
     struct ExecBase         *lb_SysBase;
     BPTR                     lb_SegList;
-    struct DosLibrary       *lb_DosBase;
-    struct Library          *lb_IFFParseBase;
-    struct Library          *lb_UtilityBase;
-    struct Library          *lb_RexxSysBase;
 
     struct IntLocale	    *lb_DefaultLocale;
     struct IntLocale	    *lb_CurrentLocale;
@@ -155,13 +151,6 @@ struct IntCatalog
 #define IntLB(lb)      ((struct IntLocaleBase *)(lb))
 #define IntL(locale)   ((struct IntLocale *)(locale))
 #define IntCat(cat)    ((struct IntCatalog *)(cat))
-
-/* Global Library bases in our library base */
-#define SysBase     (((struct IntLocaleBase *)LocaleBase)->lb_SysBase)
-#define DOSBase     (((struct IntLocaleBase *)LocaleBase)->lb_DosBase)
-#define IFFParseBase (((struct IntLocaleBase *)LocaleBase)->lb_IFFParseBase)
-#define UtilityBase (((struct IntLocaleBase *)LocaleBase)->lb_UtilityBase)
-#define RexxSysBase (((struct IntLocaleBase *)LocaleBase)->lb_RexxSysBase)
 
 #if REPLACEMENTFUNCS_LOCK_LOCALE
 #define REPLACEMENT_LOCK    ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock)

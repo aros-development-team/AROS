@@ -18,7 +18,6 @@
 
 #include "desktop_intern.h"
 #include LC_LIBDEFS_FILE
-#include "initstruct.h"
 #include "support.h"
 
 #include "observer.h"
@@ -48,8 +47,6 @@
 #include "abstracticoncontainer.h"
 
 #include "desktop_intern_protos.h"
-
-#include <stddef.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -110,34 +107,6 @@ AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
     {
     // Any of these could potentially break the Forbid(),
     // so we have a semaphore
-        DesktopBase->db_DOSBase = OpenLibrary("dos.library", 0);
-        if (!DesktopBase->db_DOSBase)
-            return FALSE;
-
-        DesktopBase->db_GfxBase = OpenLibrary("graphics.library", 0);
-        if (!DesktopBase->db_GfxBase)
-            return FALSE;
-
-        DesktopBase->db_IntuitionBase = OpenLibrary("intuition.library", 0);
-        if (!DesktopBase->db_IntuitionBase)
-            return FALSE;
-
-        DesktopBase->db_LayersBase = OpenLibrary("layers.library", 0);
-        if (!DesktopBase->db_LayersBase)
-            return FALSE;
-
-        DesktopBase->db_UtilityBase = OpenLibrary("utility.library", 0);
-        if (!DesktopBase->db_UtilityBase)
-            return FALSE;
-
-        DesktopBase->db_IconBase = OpenLibrary("icon.library", 0);
-        if (!DesktopBase->db_IconBase)
-            return FALSE;
-
-        DesktopBase->db_MUIMasterBase = OpenLibrary("muimaster.library", 0);
-        if (!DesktopBase->db_MUIMasterBase)
-            return FALSE;
-
         DesktopBase->db_InputIO =
             AllocVec(sizeof(struct IORequest), MEMF_ANY);
         if (OpenDevice
@@ -507,21 +476,6 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     if (DesktopBase->db_InputBase)
         CloseDevice(&DesktopBase->db_InputIO);
-
-    if (DesktopBase->db_MUIMasterBase)
-        CloseLibrary(DesktopBase->db_MUIMasterBase);
-    if (DesktopBase->db_IconBase)
-        CloseLibrary(DesktopBase->db_IconBase);
-    if (DesktopBase->db_UtilityBase)
-        CloseLibrary(DesktopBase->db_UtilityBase);
-    if (DesktopBase->db_LayersBase)
-        CloseLibrary(DesktopBase->db_LayersBase);
-    if (DesktopBase->db_IntuitionBase)
-        CloseLibrary(DesktopBase->db_IntuitionBase);
-    if (DesktopBase->db_GfxBase)
-        CloseLibrary(DesktopBase->db_GfxBase);
-    if (DesktopBase->db_DOSBase)
-        CloseLibrary(DesktopBase->db_DOSBase);
 
     return TRUE;
 }
