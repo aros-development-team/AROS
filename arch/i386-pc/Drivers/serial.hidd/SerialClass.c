@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
+#include <aros/config.h>
 #include <exec/libraries.h>
 
 #include <utility/tagitem.h>
@@ -45,6 +46,11 @@ static OOP_Object *hiddserial_newunit(OOP_Class *cl, OOP_Object *obj, struct pHi
   EnterFunc(bug("HIDDSerial::NewSerial()\n"));
 
   D(bug("Request for unit number %d\n",msg->unitnum));
+
+#if (AROS_SERIAL_DEBUG > 0)
+    if (msg->unitnum == (AROS_SERIAL_DEBUG-1))
+	ReturnPtr("HIDDSerial::NewSerial", Object *, su);
+#endif
 
   switch (msg->unitnum)
   {
