@@ -59,11 +59,11 @@ popd
 
 STOP_TIME=$(date -u +"%H:%M")
 
-#-- Upload -------------------------------------------------------------------
+#-- Upload (backup and distribution) -----------------------------------------
 UPLOAD_START_TIME=$(date -u +"%H:%M")
 
-# Backup
 rsync -avz -e "ssh -i .ssh/id_dsa.aros-nightly-backup" Archive/ aroskity@thenostromo.com:nightly/
+rsync -avz -e "ssh -i .ssh/id_dsa.aros-nightly-upload" Archive/ chodorowski@aros.sf.net:aros/uploads/nightly/
 
 UPLOAD_STOP_TIME=$(date -u +"%H:%M")
 
@@ -111,5 +111,5 @@ if [ ! -z $failed ]; then
 fi
 mail_stop
 
-# Prune old nightly builds
-find Archive/ -maxdepth 1 -ctime +2 | xargs rm -rf
+#-- Remove uploaded files ----------------------------------------------------
+rm -rf Archive/*
