@@ -194,7 +194,7 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
  */
     if (flags & MADF_DRAWOBJECT)
     {
-	DoMethod(_parent(obj),MUIM_DrawBackground, data->left, data->top,
+	DoMethod(obj, MUIM_DrawParentBackground, data->left, data->top,
 		 data->framewidth, data->tab_height - 1, data->left, data->top, 0);
     }
     else
@@ -207,7 +207,7 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 	old_top = _top(obj) + ri->y1;
 	old_width = ri->x2 - ri->x1 + 5;
 	old_height = data->tab_height - 1;
-	DoMethod(_parent(obj),MUIM_DrawBackground, old_left, old_top,
+	DoMethod(obj, MUIM_DrawParentBackground, old_left, old_top,
 		 old_width, old_height, old_left, old_top, 0);
 	SetDrMd(_rp(obj), JAM1);
 	SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
