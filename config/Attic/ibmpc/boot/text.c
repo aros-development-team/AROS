@@ -1,8 +1,9 @@
-#define MAXROW 30
 #define C_BLINK 0x80
 #define C_BGCOLOR 0x70
 #define C_FGCOLOR 0x0f
 #define VGA_BASE (void *)0xb8000
+#define KERNEL_DATA ((unsigned char *)0x98000)
+#define MAXROW KERNEL_DATA[22]
 
 int c_row = 0, c_col = 0, c_atr = 0x0f;
 
@@ -38,13 +39,14 @@ unsigned char *p;
       {
         p[i*2] = p[i*2+160];
         p[i*2+1] &= C_BGCOLOR;
-        p[i*2+1] |= (c_atr & (C_FGCOLOR|C_BLINK));
+        p[i*2+1] |= (p[i*2+161] & (C_FGCOLOR|C_BLINK));
       }
     }
     p = VGA_BASE + 80*2*(MAXROW-1);
     for(i=0;i<80;i++)
-      p[i*2] = 0;
+      p[i*2] &= C_BGCOLOR;
     c_col = 0;
+    c_row--;
   }
 }
 
@@ -82,6 +84,7 @@ unsigned char *p;
     for(i=0;i<160;i++)
       p[i] = 0;
     c_col = 0;
+    c_row--;
   }
 }
 

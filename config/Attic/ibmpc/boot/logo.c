@@ -4,9 +4,10 @@
 */
 #include "text.h"
 
-#define LOGOLENGTH 211
-int logodata[LOGOLENGTH][2] = {
-{7,279},
+#define LOGOLENGTH 213
+unsigned char logodata[LOGOLENGTH][2] = {
+{7,255},
+{7,24},
 {0,5},
 {7,10},
 {0,4},
@@ -216,18 +217,25 @@ int logodata[LOGOLENGTH][2] = {
 {4,5},
 {7,75},
 {4,2},
-{7,315}
+{7,255},
+{7,60}
 };
 
 void showlogo(void)
 {
 int i,j;
-cls();
+unsigned char *p = (void *)0xb8001;
+
+  cls();
+
   for(i=0;i<LOGOLENGTH;i++)
   {
-    setbg(logodata[i][0]);
     for(j=0;j<logodata[i][1];j++)
-      putc(' ');
+    {
+      *p = logodata[i][0]<<4;
+      p += 2;
+    }
   }
+
 }
 

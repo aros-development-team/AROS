@@ -1,9 +1,8 @@
 #ifndef _TEXT_H
 #define _TEXT_H
 
-/* Maximal number of rows of vga text display */
-#define MAXROW 30
-
+#define KERNEL_DATA ((unsigned char *)0x98000)
+#define MAXROW KERNEL_DATA[22]
 extern int c_row, c_col, c_atr;
 
 /* All printing functions to vga text display do auto-wrap and scrolling */

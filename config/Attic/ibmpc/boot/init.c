@@ -24,11 +24,11 @@
 #include "text.h"
 #include "logo.h"
 
-#define KERNEL_DATA (void *)0x98000
+
 void show_status(void)
 {
 unsigned char *p;
-int d;
+int d,i;
 
   p = KERNEL_DATA;
   puts_fg("\nAROS detected Hardware\nProcessortype: 80");
@@ -38,6 +38,35 @@ int d;
   d = (p[3]<<8) + p[2];
   puti_fg(d);
   puts_fg("kB\n");
+  puts_fg("Video: (");
+  d = p[21];
+  puti_fg(d);
+  puts_fg("x");
+  d = p[22];
+  puti_fg(d);
+  puts_fg(")\n");
+  puts_fg("Pointing device: ");
+  if(p[0x1ff] == 0xaa)
+    puts_fg("installed\n");
+  else
+    puts_fg("not installed\n");
+  puts_fg("HD Drive tables:\nhd0(0x80): 0x");
+  for(i=0;i<0x10;i++)
+  {
+    d = p[0x80+i];
+    if( d < 16 )
+      putc_fg('0');
+    putx_fg(d);
+  }
+  puts_fg("\nhd1(0x90): 0x");
+  for(i=0;i<0x10;i++)
+  {
+    d = p[0x90+i];
+    if( d < 16 )
+      putc_fg('0');
+    putx_fg(d);
+  }
+  putc_fg('\n');
 
 }
 

@@ -34,7 +34,7 @@
 
 *****************************************************************************/
 
-#define __ASSEBLY__
+#define __ASSEMBLY__
 #include <aros/config.h>
 #include <asm/segments.h>
 
