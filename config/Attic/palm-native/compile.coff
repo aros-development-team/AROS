@@ -1,0 +1,3 @@
+mmake .AROS-palm-1
+sh copy.coff
+mmake .AROS-palm
