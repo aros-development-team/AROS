@@ -119,8 +119,13 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Semaphore_desc,
     &_MUI_Dataspace_desc,
     &_MUI_Bitmap_desc,
-    &_MUI_Bodychunk_desc
-
+    &_MUI_Bodychunk_desc,
+    &_MUI_Cycle_desc,
+    &_MUI_Popstring_desc,
+    &_MUI_Popasl_desc,
+    &_MUI_Listview_desc,
+    &_MUI_List_desc,
+    &_MUI_Popasl_desc
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)
@@ -217,7 +222,6 @@ struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMas
 	    return builtin_to_public_class(builtin,MUIMasterBase);
 	}
     }
-
     return NULL;
 }
 
