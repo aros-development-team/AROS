@@ -97,7 +97,7 @@ struct Locale
 #define CT_7WED 3
 #define CT_7THU 4
 #define CT_7FRI 5
-#define DT_7SAT 6
+#define CT_7SAT 6
 
 /* loc_MonPositiveSpaceSep and loc_MonNegativeSpaceSep */
 #define SS_NOSPACE 0
