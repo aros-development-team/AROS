@@ -1128,7 +1128,7 @@ void writeArchiveHeader (FILE * fh, Archive * arch)
 {
     HeaderLine * line;
 
-    fprintf (fh, "#include \"libdefs.h\"\n\n");
+    fprintf (fh, "#ifndef LC_LIBDEFS_FILE\n#define LC_LIBDEFS_FILE \"libdefs.h\"\n#endif\n#include LC_LIBDEFS_FILE\n\n");
     ForeachNode (&arch->header, line)
     {
 	fprintf (fh, "%s\n", line->node.name);
@@ -1191,7 +1191,10 @@ int i;
   fprintf( out, "#ifndef NULL\n" );
   fprintf( out, "#define NULL ((void *)0)\n" );
   fprintf( out, "#endif\n\n" );
-  fprintf( out, "#include \"libdefs.h\"\n" );
+  fprintf( out, "#ifndef LC_LIBDEFS_FILE\n" );
+  fprintf( out, "#define LC_LIBDEFS_FILE \"libdefs.h\"\n" );
+  fprintf( out, "#endif\n" );
+  fprintf( out, "#include LC_LIBDEFS_FILE\n" );
   if(lc->option & o_nolibheader)
   {
     fprintf( out, "extern void AROS_SLIB_ENTRY(open,BASENAME) (void);\n" );
