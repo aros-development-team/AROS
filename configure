@@ -63,9 +63,9 @@ case "$type" in
 	    # How to generate dependency files
 	    MKDEPEND="makedepend -D__GNUC__ -D__mc68000__ -D__linux__"
 	    # Command to generate shared libs
-	    SHARED_AR="gcc -shared -Xlinker -T -Xlinker $(TOP)/config/linux/m68k/script.so"
+	    SHARED_AR="gcc -shared -Xlinker -T -Xlinker \$(TOP)/config/linux/m68k/script.so -o"
 	    # Required to link shared libraries in at runtime
-	    SHELL_LDFLAGS="-Xlinker -rpath -Xlinker ./lib -Xlinker -T -Xlinker $(TOP)/config/linux/m68k/script.normal"
+	    SHELL_LDFLAGS="-Xlinker -rpath -Xlinker ./lib -Xlinker -T -Xlinker \$(TOP)/config/linux/m68k/script.normal"
 	else
 	    CPU="i386"
 	    MKDEPEND="makedepend -D__GNUC__ -Di386 -D__linux__"
