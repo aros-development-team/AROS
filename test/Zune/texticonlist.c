@@ -22,6 +22,7 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
+#include <proto/cybergraphics.h>
 #include <clib/alib_protos.h>
 
 #include <aros/debug.h>
@@ -87,6 +88,49 @@ struct TextIconEntry
     UBYTE   	    	    dirty;
 };
 
+struct MyColor
+{
+    ULONG   pixel;
+    ULONG   rgbpixel;
+    UBYTE   alloced;
+};
+
+#define COLOR_COLUMN_BACKGROUND     	    	0
+#define COLOR_COLUMN_BACKGROUND_SORTED	    	1
+#define COLOR_COLUMN_BACKGROUND_LASSO	    	2
+#define COLOR_COLUMN_BACKGROUND_LASSO_SORTED	3
+
+#define COLOR_SELECTED_BACKGROUND   	    	4
+#define COLOR_SELECTED_BACKGROUND_SORTED    	5
+#define COLOR_SELECTED_BACKGROUND_LASSO     	6
+#define COLOR_SELECTED_BACKGROUND_LASSO_SORTED	7
+
+#define NUM_COLORS  8
+
+static const ULONG rgb_colors[NUM_COLORS] =
+{
+    0xFFFFFF,
+    0xF0F0F0,
+    0xE4E7Ef,
+    0xDEE1E9,
+    0x0A246A,
+    0x0A246A,
+    0x324882,
+    0x324882    
+};
+
+static const ULONG pen_colors[NUM_COLORS] =
+{
+    MPEN_SHINE,
+    MPEN_SHINE,
+    MPEN_BACKGROUND,
+    MPEN_BACKGROUND,
+    MPEN_FILL,
+    MPEN_FILL,
+    MPEN_FILL,
+    MPEN_FILL
+};
+
 struct TextIconList_DATA
 {
     APTR    	    	    	pool;
@@ -102,8 +146,9 @@ struct TextIconList_DATA
     struct RastPort 	    	temprp;
     struct Rectangle	    	view_rect;
     struct Rectangle	    	header_rect;
-    struct Rectangle	    	lasso_rect;
+    struct Rectangle	    	lasso_rect, old_lasso_rect;
     struct Rectangle	    	*update_rect1, *update_rect2;
+    struct MyColor  	    	colors[NUM_COLORS];
     LONG    	    	    	num_entries;
     LONG    	    	    	num_selected;
     LONG    	    	    	active_entry;
@@ -125,6 +170,7 @@ struct TextIconList_DATA
     BOOL    	    	    	is_shown;
     BOOL    	    	    	lasso_active;
     BOOL    	    	    	lasso_paint;
+    BOOL    	    	    	truecolor;
     
     struct MUI_EventHandlerNode ehn;    
     struct MUI_InputHandlerNode thn;
@@ -480,6 +526,10 @@ static BOOL GetColumnCoords(struct TextIconList_DATA *data, LONG index, LONG *x1
     LONG i;
     BOOL retval = FALSE;
     LONG x = data->view_rect.MinX - data->view_x + LINE_SPACING_LEFT;
+    LONG firstvis, lastvis;
+    
+    firstvis = FirstVisibleColumnNumber(data);
+    lastvis = LastVisibleColumnNumber(data);
     
     for(i = 0; i < NUM_COLUMNS; i++)
     {
@@ -493,8 +543,8 @@ static BOOL GetColumnCoords(struct TextIconList_DATA *data, LONG index, LONG *x1
 	if (idx == index)
 	{
 	    retval = TRUE;
-	    *x1 = x - ((i == 0) ? LINE_SPACING_LEFT : 0);
-	    *x2 = x + w - ((i == NUM_COLUMNS - 1) ? 0 : 1);
+	    *x1 = x - ((i == firstvis) ? LINE_SPACING_LEFT : 0);
+	    *x2 = x + w - 1 + ((i == lastvis) ? LINE_SPACING_RIGHT : 0);
 	    break;	    
 	}
 	
@@ -698,6 +748,36 @@ static BOOL OrRectOutlineRegion(struct Region *reg, struct Rectangle *rect)
     return result;
 }
 
+static void MyRectFill(struct TextIconList_DATA *data, struct RastPort *rp,
+    	    	       LONG x1, LONG y1, LONG x2, LONG y2, LONG mycol)
+{
+    if (x1 > x2)
+    {
+    	x1 ^= x2;
+	x2 ^= x1;
+	x1 ^= x2;
+    }
+
+    if (y1 > y2)
+    {
+    	y1 ^= y2;
+	y2 ^= y1;
+	y1 ^= y2;
+    }
+    
+    SetDrMd(rp, JAM1);
+    
+    if (data->truecolor && CyberGfxBase)
+    {
+    	FillPixelArray(rp, x1, y1, x2 - x1 + 1, y2 - y1 + 1, data->colors[mycol].rgbpixel);
+    }
+    else
+    {
+    	SetAPen(rp, data->colors[mycol].pixel);
+	RectFill(rp, x1, y1, x2, y2);
+    }
+}
+
 static void RenderHeaderField(Object *obj, struct TextIconList_DATA *data,
     	    	    	    struct Rectangle *rect, LONG index)
 {
@@ -843,8 +923,11 @@ static void RenderEntryField(Object *obj, struct TextIconList_DATA *data,
     
     selected = (entry && data->column_clickable[index]) ? entry->selected : FALSE;
 
-    SetABPenDrMd(_rp(obj), _pens(obj)[selected ? MPEN_FILL : data->lasso_paint ? MPEN_BACKGROUND : MPEN_SHINE], 0, JAM1);
-    RectFill(_rp(obj), rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+    fit = selected ? COLOR_SELECTED_BACKGROUND : COLOR_COLUMN_BACKGROUND;
+    if (index == data->sort_column) fit++;
+    if (data->lasso_paint) fit += 2;
+    
+    MyRectFill(data, _rp(obj), rect->MinX, rect->MinY, rect->MaxX, rect->MaxY, fit);
     
     rect->MinX += ENTRY_SPACING_LEFT;
     rect->MaxX -= ENTRY_SPACING_RIGHT;
@@ -973,6 +1056,106 @@ static void RenderAllEntries(Object *obj, struct TextIconList_DATA *data)
     	RenderEntry(obj, data, first + i);
     }
     
+}
+
+
+static void RethinkLasso(Object *obj, struct TextIconList_DATA *data)
+{
+    struct TextIconEntry *entry;
+    
+    LONG ny1 = data->lasso_rect.MinY;
+    LONG ny2 = data->lasso_rect.MaxY;
+    LONG oy1 = data->old_lasso_rect.MinY;
+    LONG oy2 = data->old_lasso_rect.MaxY;
+    LONG y1, y2;
+    LONG x1, x2;
+    LONG numdirty = 0;
+    BOOL lasso_hot;
+    
+    if (!data->num_entries) return;
+    
+    if (ny1 > ny2)
+    {
+    	ny1 ^= ny2;
+	ny2 ^= ny1;
+	ny1 ^= ny2;
+    }
+    
+    if (oy1 > oy2)
+    {
+    	oy1 ^= oy2;
+	oy2 ^= oy1;
+	oy1 ^= oy2;    
+    }
+    
+    ny1 /= data->lineheight;
+    ny2 /= data->lineheight;
+    oy1 /= data->lineheight;
+    oy2 /= data->lineheight;
+    
+    y1 = (ny1 < oy1) ? ny1 : oy1;
+    y2 = (ny2 > oy2) ? ny2 : oy2;
+    
+    if (y1 < 0)
+    {
+    	y1 = 0;
+    }
+    else if (y1 >= data->num_entries)
+    {
+    	y1 = data->num_entries - 1;
+    }
+    
+    if (y2 < 0)
+    {
+    	y2 = 0;
+    }
+    else if (y2 >= data->num_entries)
+    {
+    	y2 = data->num_entries - 1;
+    }
+    
+    GetColumnCoords(data, INDEX_NAME, &x1, &x2);
+    x1 += data->view_x - data->view_rect.MinX;
+    x2 += data->view_x - data->view_rect.MinX;
+    
+    lasso_hot = ((data->lasso_rect.MinX >= x1) && (data->lasso_rect.MinX <= x2)) ||
+    	    	((data->lasso_rect.MaxX >= x1) && (data->lasso_rect.MaxX <= x2)) ||
+		((data->lasso_rect.MinX < x1) && (data->lasso_rect.MaxX > x2)) ||
+		((data->lasso_rect.MaxX < x1) && (data->lasso_rect.MinX > x2));
+    
+    entry = GetEntryFromIndex(data, y1);
+    while(entry && entry->node.mln_Succ && (y1 <= y2))
+    {
+    	BOOL select;
+	
+    	select = (y1 >= ny1) && (y1 <= ny2) && lasso_hot;
+	if (select != entry->selected)
+	{
+	    if (select)
+	    {
+	    	AddTail((struct List *)&data->selection_list, (struct Node *)&entry->selection_node);
+		data->num_selected++;
+	    }
+	    else
+	    {
+	    	Remove((struct Node *)&entry->selection_node);
+		data->num_selected--;
+	    }
+	    entry->selected = select;
+	    entry->dirty = TRUE;
+	    numdirty++;
+	}
+	
+    	entry = (struct TextIconEntry *)entry->node.mln_Succ;
+	y1++;
+    }
+    
+    if (numdirty)
+    {
+    	data->update = UPDATE_DIRTY_ENTRIES;
+	MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+        
 }
 
 /**************************************************************************
@@ -1146,16 +1329,50 @@ static IPTR TextIconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 static IPTR TextIconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct TextIconList_DATA *data = INST_DATA(cl, obj);
- 
+    LONG    	    	      i;
+    
     if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
-
+    
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
     InitRastPort(&data->temprp);
     SetFont(&data->temprp, _font(obj));
+    data->truecolor = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH) >= 15;
     
     data->lineheight = LINE_EXTRAHEIGHT + _font(obj)->tf_YSize;
     data->is_setup = TRUE;
+    
+    for(i = 0; i < NUM_COLORS; i++)
+    {
+ 	data->colors[i].rgbpixel = rgb_colors[i];
+	data->colors[i].pixel = data->colors[i].rgbpixel;
+	
+	if (!data->truecolor || !CyberGfxBase)
+	{
+	    ULONG r = (rgb_colors[i] & 0x00FF0000) >> 16;
+	    ULONG g = (rgb_colors[i] & 0x0000FF00) >> 8;
+	    ULONG b = (rgb_colors[i] & 0x000000FF);
+	    
+	    LONG pen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+	    	    	    	     r * 0x01010101,
+				     g * 0x01010101,
+				     b * 0x01010101,
+				     OBP_FailIfBad, FALSE,
+				     OBP_Precision, PRECISION_GUI,
+				     TAG_DONE);
+
+    	    if (pen >= 0)
+	    {
+	    	data->colors[i].pixel = pen;
+		data->colors[i].alloced = TRUE;
+	    }
+	    else
+	    {
+	    	data->colors[i].pixel = _pens(obj)[pen_colors[i]];
+	    	data->colors[i].alloced = FALSE;
+	    }			     
+	}
+    }
     
     if (data->show_header)
     {
@@ -1253,11 +1470,21 @@ static IPTR TextIconList_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *
 static IPTR TextIconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct TextIconList_DATA *data = INST_DATA(cl, obj);
-
+    LONG    	    	      i;
+    
     DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 
     DeinitRastPort(&data->temprp);
         
+    for(i = 0; i < NUM_COLORS; i++)
+    {
+    	if (data->colors[i].alloced)
+	{
+	    ReleasePen(_screen(obj)->ViewPort.ColorMap, data->colors[i].pixel);
+	    data->colors[i].alloced = FALSE;
+	}
+    }
+    
     data->is_setup = FALSE;
     
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -1304,13 +1531,20 @@ static void DrawLassoOutline(Object *obj, struct TextIconList_DATA *data)
     struct Rectangle lasso;
     
     GetAbsoluteLassoRect(data, &lasso);
-    
+
+#if 1
+    MyRectFill(data, _rp(obj), lasso.MinX, lasso.MinY, lasso.MaxX, lasso.MinY, COLOR_SELECTED_BACKGROUND);
+    MyRectFill(data, _rp(obj), lasso.MaxX, lasso.MinY, lasso.MaxX, lasso.MaxY, COLOR_SELECTED_BACKGROUND);
+    MyRectFill(data, _rp(obj), lasso.MinX, lasso.MaxY, lasso.MaxX, lasso.MaxY, COLOR_SELECTED_BACKGROUND);
+    MyRectFill(data, _rp(obj), lasso.MinX, lasso.MinY, lasso.MinX, lasso.MaxY, COLOR_SELECTED_BACKGROUND);    
+#else    
     SetABPenDrMd(_rp(obj), _pens(obj)[MPEN_SHADOW], 0, JAM1);
     Move(_rp(obj), lasso.MinX, lasso.MinY);
     Draw(_rp(obj), lasso.MaxX, lasso.MinY);
     Draw(_rp(obj), lasso.MaxX, lasso.MaxY);
     Draw(_rp(obj), lasso.MinX, lasso.MaxY);
     Draw(_rp(obj), lasso.MinX, lasso.MinY);
+#endif
 }
 
 /**************************************************************************
@@ -1683,8 +1917,12 @@ static IPTR TextIconList_AutoScroll(struct IClass *cl, Object *obj, Msg msg)
 
 	if ((new_view_x != data->view_x) || (new_view_y != data->view_y))
 	{
+	    data->old_lasso_rect = data->lasso_rect;
+	    	    
 	    data->lasso_rect.MaxX += new_view_x - data->view_x;
 	    data->lasso_rect.MaxY += new_view_y - data->view_y;
+
+	    RethinkLasso(obj, data);
 	    
 	    SetAttrs(obj, MUIA_TextIconList_Left, new_view_x,
 			  MUIA_TextIconList_Top, new_view_y,
@@ -1784,6 +2022,25 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 				} /* if (data->column_clickable[col]) */
 				else
 				{
+				    if (!shift_qual && data->num_selected)
+				    {
+				    	struct TextIconEntry *entry;
+
+					ForeachNode(&data->entries_list, entry)
+					{
+					    if (entry->selected)
+					    {
+					    	Remove((struct Node *)&entry->selection_node);
+					    	entry->selected = FALSE;
+						entry->dirty = TRUE;
+					    }
+					}
+
+					data->num_selected = 0;
+					data->update = UPDATE_DIRTY_ENTRIES;
+					MUI_Redraw(obj, MADF_DRAWUPDATE);
+				    }
+
 				    data->lasso_rect.MinX = mx - data->view_rect.MinX + data->view_x;
 				    data->lasso_rect.MinY = my - data->view_rect.MinY + data->view_y;
 				    data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
@@ -1931,6 +2188,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			    	      MUIA_TextIconList_Top, new_view_y,
 				      TAG_DONE);
 		    }
+		    		    
 		} /* if (data->inputstate == INPUTSTATE_PAN) */
 		else if (data->inputstate == INPUTSTATE_COL_RESIZE)
 		{
@@ -1999,6 +2257,7 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 		    data->click_x = mx;
 		    data->click_y = my;
 		    
+		    data->old_lasso_rect = data->lasso_rect;
 		    GetAbsoluteLassoRect(data, &old_lasso);
 		    data->lasso_rect.MaxX = mx - data->view_rect.MinX + data->view_x;
 		    data->lasso_rect.MaxY = my - data->view_rect.MinY + data->view_y;
@@ -2025,6 +2284,8 @@ static IPTR TextIconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 			MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 		    }
 		    
+		    RethinkLasso(obj, data);
+
 		    if ((mx >= data->view_rect.MinX) &&
 		        (my >= data->view_rect.MinY) &&
 			(mx <= data->view_rect.MaxX) &&
