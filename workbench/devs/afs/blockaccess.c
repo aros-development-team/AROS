@@ -67,12 +67,15 @@ void sendDeviceCmd(struct afsbase *afsbase, struct Volume *volume, UWORD command
 
 ULONG readDisk(struct afsbase *afsbase, struct Volume *volume, ULONG start, ULONG count, APTR mem, ULONG cmd) {
 ULONG retval;
+QUAD offset;
 
 	D(bug("afs.handler:    readDisk: reading block %ld\n",start));
 	volume->iorequest->iotd_Req.io_Command=cmd;
 	volume->iorequest->iotd_Req.io_Length=count*BLOCK_SIZE(volume);
 	volume->iorequest->iotd_Req.io_Data=mem;
-	volume->iorequest->iotd_Req.io_Offset=(start+volume->startblock)*BLOCK_SIZE(volume);	// bootblock is first disk on device and we always get offsets from start
+	offset=(start+volume->startblock)*BLOCK_SIZE(volume);
+	volume->iorequest->iotd_Req.io_Offset=0xFFFFFFFF & offset;
+	volume->iorequest->iotd_Req.io_Actual=offset>>32;
 	retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
 	if (retval)
 		showError(afsbase, ERR_READWRITE);
@@ -147,7 +150,7 @@ struct BlockCache *blockbuffer;
 
 	if ((blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum))) {
 		if (blockbuffer->acc_count==1)		//do we have to read that block ?
-			if (readDisk(afsbase, volume,blocknum,1,blockbuffer->buffer,CMD_READ))
+			if (readDisk(afsbase, volume,blocknum,1,blockbuffer->buffer, volume->cmdread))
 				blockbuffer=0;
 	}
 	return blockbuffer;
@@ -155,6 +158,6 @@ struct BlockCache *blockbuffer;
 
 LONG writeBlock(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *blockbuffer) {
 
-	readDisk(afsbase, volume, blockbuffer->blocknum,1,blockbuffer->buffer,CMD_WRITE);
+	readDisk(afsbase, volume, blockbuffer->blocknum,1,blockbuffer->buffer,volume->cmdwrite);
 	return DOSTRUE;
 }
