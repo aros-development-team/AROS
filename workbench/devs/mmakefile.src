@@ -5,10 +5,11 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 %define_libs
 
-DEVS := $(DEVSDIR)/ram.handler \
-	$(DEVSDIR)/nil.handler \
-	$(DEVSDIR)/ffs.handler \
-	$(DEVSDIR)/fdsk.device
+DEVS := $(DEVSDIR)/ram.handler    \
+	$(DEVSDIR)/nil.handler    \
+	$(DEVSDIR)/ffs.handler    \
+ 	$(DEVSDIR)/rootfs.handler \
+	$(DEVSDIR)/fdsk.device    \
 
 #MM workbench-devs : setup includes
 workbench-devs : $(DEVS) $(DEVSDIR)/Mountlist
@@ -42,4 +43,4 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common
-%include_deps $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d $(OBJDIR)/ffs_handler.d $(OBJDIR)/fdsk_device.d
+%include_deps $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d $(OBJDIR)/ffs_handler.d $(OBJDIR)/rootfs_handler.d $(OBJDIR)/fdsk_device.d
