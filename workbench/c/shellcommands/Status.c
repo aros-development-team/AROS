@@ -139,10 +139,16 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 	ci = (struct CLIInfo *)FindName(cliList, command);
 
 	if(ci != NULL)
+	{
 	    if(ci->ci_Process->pr_TaskNum != 0)
+	    {
 		PrintF(DOSBase," %ld\n", ci->ci_Process->pr_TaskNum);
+	    }
+	}
 	else
+	{
 	    retval = RETURN_WARN;
+	}
 
 	ReleaseSemaphore(&root->rn_RootLock);
     }
@@ -161,9 +167,13 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 	ReleaseSemaphore(&root->rn_RootLock);
 
 	if(process != NULL)
+	{
 	    printProcess(DOSBase, full, tcb, process);
+	}
 	else
+	{
 	    PrintF(DOSBase,"Process %ld does not exist\n", (int)processNum);
+	}
     }
     else
     {
@@ -191,7 +201,8 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
 
 
 /* Print the information for a certain cli process */
-static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, struct Process *process)
+static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
+			 struct Process *process)
 {
     struct CommandLineInterface *cli = BADDR(process->pr_CLI);
 
@@ -203,7 +214,8 @@ static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, struct
 
     if(tcb || full)
     {
-	PrintF(DOSBase,"stk %lu, pri %lu ", (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
+	PrintF(DOSBase,"stk %lu, pri %lu ",
+	       (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
