@@ -13,7 +13,7 @@ SYS_INCLUDES	:= @aros_target_incl@
 
 TARGET_CC	:= @TARGET_CC@
 TARGET_AS	:= @TARGET_AS@
-STATIC_LD	:= @STATIC_LD@
+TARGET_LD	:= @TARGET_LD@
 SHARED_LD	:= @SHARED_LD@
 KERNEL_LD	:= @KERNEL_LD@
 GENMAP		:= @aros_target_genmap@
@@ -21,12 +21,9 @@ TARGET_OBJCOPY	:= @aros_target_objcopy@
 TARGET_STRIP	:= @aros_target_strip@
 TARGET_OBJDUMP	:= @aros_target_objdump@
 
-TARGET_CFLAGS	:= @aros_target_cflags@
-TARGET_AFLAGS	:= @aros_target_aflags@
-TARGET_LDFLAGS	:= @aros_target_ldflags@
-STATIC_CFLAGS	:= @aros_static_cflags@
-STATIC_AFLAGS	:= @aros_static_aflags@
-STATIC_LDFLAGS	:= @aros_static_ldflags@
+CONFIG_CFLAGS	:= @aros_config_cflags@
+CONFIG_AFLAGS	:= @aros_config_aflags@
+CONFIG_LDFLAGS	:= @aros_config_ldflags@
 SHARED_CFLAGS	:= @aros_shared_cflags@
 SHARED_AFLAGS	:= @aros_shared_aflags@
 SHARED_LDFLAGS	:= @aros_shared_ldflags@
@@ -34,5 +31,9 @@ KERNEL_LDFLAGS	:= @aros_kernel_ldflags@
 DEBUG_CFLAGS	:= @aros_debug_cflags@
 DEBUG_AFLAGS	:= @aros_debug_aflags@
 DEBUG_LDFLAGS	:= @aros_debug_ldflags@
+
+NOSTARTUP_LDFLAGS := @NOSTARTUP_LDFLAGS@
+NIX_LDFLAGS       := @NIX_LDFLAGS@
+DETACH_LDFLAGS    := @DETACH_LDFLAGS@
 
 COMPILER_LIBS   := @aros_compiler_libs@
