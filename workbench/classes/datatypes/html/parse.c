@@ -316,7 +316,7 @@ int create_hash_table( u_short hashlist[], void *namelist, int num, int size, in
 		{
 			for( j=i+1; j<num; j++ )
 			{
-				// printf("Hash of %2d=%04x %2d=%04x\n", i, hashlist[i], j, hashlist[j]);
+			        /* printf("Hash of %2d=%04x %2d=%04x\n", i, hashlist[i], j, hashlist[j]); */
 				if( hashlist[i] == hashlist[j] )
 					printf("Duplicate Tag Hash at %d <-> %d !!!\n", i, j);
 			}
@@ -338,9 +338,9 @@ static void warnlog( parse_struct *pdata, string format, ... )
 
 	va_start( args, format );
 	D( printf("*** line %2d: %s\n", pdata->linenum, format); )
-	//fprintf( stderr, "*** line %2d: ", pdata->linenum );
-	//vfprintf( stderr, format, args );
-	//fprintf( stderr, "\n");
+	/*fprintf( stderr, "*** line %2d: ", pdata->linenum );
+	vfprintf( stderr, format, args );
+	fprintf( stderr, "\n");*/
 
 	poolpos = pdata->warnpoolpos;
 	poolsize = pdata->warnpoolend - poolpos;
