@@ -38,6 +38,11 @@ struct PartitionHandle {
 	struct DosEnvec de; /* info about HD/partition */
 };
 
+struct PartitionType {
+	UBYTE id[32];
+	UWORD id_len;
+};
+
 /* partition table types */
 #define PHPTT_UNKNOWN (0)
 #define PHPTT_RDB     (1)
@@ -58,29 +63,33 @@ struct PartitionHandle {
 
 /* Tags for partitions */
 #define PT_DOSENVEC PTT_DOSENVEC
-#define PT_TYPE     PTT_TYPE
-#define PT_POSITION (32) /* 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
-#define PT_ACTIVE   (33) /* MBR: set/get partition as active */
-#define PT_NAME     (34) /* name of partition */
+#define PT_TYPE     PTT_TYPE /* arg is of struct PartitionType */
+#define PT_POSITION  (32)  /* 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
+#define PT_ACTIVE    (33)  /* MBR: set/get partition as active */
+#define PT_NAME      (34)  /* name of partition */
+#define PT_BOOTABLE  (35)  /* partition is bootable */
+#define PT_AUTOMOUNT (36)  /* partition will be auto mounted */
 
 /* partition table attributes */
-#define PTTA_DOSENVEC         0 /* seems to be obsolete because only LowCyl,
+#define PTTA_DOSENVEC         1 /* seems to be obsolete because only LowCyl,
                                    HighCyl, Surfaces, BlocksPerTrack,
                                    SizeBlock are of interrest in a table */
-#define PTTA_GEOMETRY         1 /* because of above comment ... */
+#define PTTA_GEOMETRY         2 /* because of above comment ... */
 #define PTTA_TYPE           100 /* partition table type */
 #define PTTA_RESERVED       101 /* reserved blocks */
 #define PTTA_MAX_PARTITIONS 102 /* max numbers of partitions in table */
 
 /* partition attributes */
-#define PTA_DOSENVEC   0 /* whole struct DosEnvec support */
-#define PTA_GEOMETRY   1 /* only geometry info in DosEnvec
+#define PTA_DOSENVEC   1 /* whole struct DosEnvec support */
+#define PTA_GEOMETRY   2 /* only geometry info in DosEnvec
                             (LowCyl, HighCyl, Surfaces, BlocksPerTrack,
                              SizeBlock) */
-#define PTA_TYPE     100 /* type of partition */
-#define PTA_POSITION 101 /* position of table within partition table */
-#define PTA_ACTIVE   102 /* make partition active (whatever that means ;) */
-#define PTA_NAME     103 /* device name support */
+#define PTA_TYPE      100 /* type of partition */
+#define PTA_POSITION  101 /* position of table within partition table */
+#define PTA_ACTIVE    102 /* make partition active (whatever that means ;) */
+#define PTA_NAME      103 /* device name support */
+#define PTA_BOOTABLE  104
+#define PTA_AUTOMOUNT 105
 
 struct PartitionBase {
 	struct LibHeader lh;
