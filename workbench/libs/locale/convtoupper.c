@@ -58,9 +58,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
-    return AROS_UFC2(ULONG, IntL(locale)->il_LanguageFunctions[1],
-	AROS_UFCA(ULONG, character, D0),
-	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
+    return AROS_CALL1(ULONG, IntL(locale)->il_LanguageFunctions[1],
+	AROS_LCA(ULONG, character, D0),
+	struct LocaleBase *, LocaleBase);
 
     AROS_LIBFUNC_EXIT
 } /* ConvToUpper */
