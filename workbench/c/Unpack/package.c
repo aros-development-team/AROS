@@ -42,7 +42,7 @@ LONG PKG_Read( APTR pkg, APTR buffer, LONG length )
 UBYTE /* version */ PKG_ReadHeader( APTR pkg )
 {
     UBYTE data[4] = { 0, 0, 0, 0 };
-    LONG  actual  = PKG_Read( pkg, data, 4 );
+    /*LONG  actual  = */ PKG_Read( pkg, data, 4 );
     
     /* FIXME: error handling? naaaah... :S */
     

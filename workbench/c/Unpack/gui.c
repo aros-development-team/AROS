@@ -28,27 +28,27 @@ BOOL GUI_Open()
         background = OpenWindowTags
         (
             NULL,
-            WA_Left, 0,
-            WA_Top,  0,
-            WA_Width, screen->Width,
-            WA_Height, screen->Height,
+            WA_Left,       0,
+            WA_Top,        0,
+            WA_Width,      screen->Width,
+            WA_Height,     screen->Height,
             WA_Borderless, TRUE,
-            TAG_DONE, NULL
+            TAG_DONE
         );
         
         window = OpenWindowTags
         ( 
             NULL,
-            WA_Title,         "Unpacking...",
-            WA_InnerWidth,    width,
-            WA_InnerHeight,   height,
-            WA_Left,          screen->Width / 2 - width / 2,
-            WA_Top,           screen->Height / 2 - height / 2,
-            WA_GimmeZeroZero, TRUE,
-            WA_Activate,      TRUE,
-            WA_DragBar,       TRUE,
-            WA_CustomScreen,  screen,
-            TAG_DONE,          NULL
+            WA_Title,         (IPTR) "Unpacking...",
+            WA_InnerWidth,           width,
+            WA_InnerHeight,          height,
+            WA_Left,                 screen->Width / 2 - width / 2,
+            WA_Top,                  screen->Height / 2 - height / 2,
+            WA_GimmeZeroZero,        TRUE,
+            WA_Activate,             TRUE,
+            WA_DragBar,              TRUE,
+            WA_CustomScreen,  (IPTR) screen,
+            TAG_DONE
         );        
         
         if( background != NULL && window != NULL )
