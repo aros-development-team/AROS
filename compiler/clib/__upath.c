@@ -37,7 +37,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         upath - Unix-style path to translate into an AmigaDOS-style equivalent.
 
     RESULT
-        A pointer to a string containing the AmigaDOS-style path, or NULL in 
+        A pointer to a string containing the AmigaDOS-style path, or NULL in
         case of error.
 
 	The pointer is valid only until next call to this function, so if
@@ -90,6 +90,156 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     return newpath;
 }
 
+/*****************************************************************************
+
+    NAME */
+#include "__upath.h"
+
+
+	const char *__path_a2u(
+
+/*  SYNOPSIS */
+        const char *apath)
+
+/*  FUNCTION
+        Translates an AmigaDOS-style path into an unix one.
+
+    INPUTS
+        apath - AmigaDOS-style path to translate into an unix-style equivalent.
+
+    RESULT
+        A pointer to a string containing the unix-style path, or NULL in
+        case of error.
+
+	The pointer is valid only until next call to this function, so if
+	you need to call this function recursively, you must save the string
+	pointed to by the pointer before calling this function again.
+
+    NOTES
+        This function is for private usage by system code. Do not use it
+        elsewhere.
+
+    INTERNALS
+
+    SEE ALSO
+
+******************************************************************************/
+{
+    const char *old_apath = apath;
+    char ch, *upath, *old_upath;
+    size_t size = 0;
+    int run;
+    register enum
+    {
+        S_START0,
+        S_START,
+        S_VOLUME,
+        S_PARENT,
+        S_SLASH
+    } state;
+
+    /* Safety check.  */
+    if (apath == NULL)
+    {
+        errno = EFAULT;
+        return NULL;
+    }
+
+    while ((ch = *apath++))
+    {
+         if (ch == '/')
+	     size += 3;
+	 else
+	     size += 1;
+    }
+
+    if (size == 0)
+        return "";
+
+    old_upath = realloc_nocopy(__apathbuf, 1 + size + 1);
+    if (old_upath == NULL)
+    {
+	errno = ENOMEM;
+	return NULL;
+    }
+
+    upath = ++old_upath;
+    apath = old_apath;
+
+    run = 1;
+    state = S_START0;
+    while (run)
+    {
+        register char ch = apath[0];
+
+        switch (state)
+	{
+	    case S_START0:
+	        if (ch == '/')
+		    state = S_PARENT;
+		else
+		if (ch == ':')
+		    state = S_VOLUME;
+		else
+		if (ch == '\0')
+		    run = 0;
+		else
+ 		    upath++[0] = ch;
+
+		break;
+
+	    case S_START:
+	        if (ch == '/')
+		    state = S_SLASH;
+		else
+		if (ch == '\0')
+		    run = 0;
+		else
+		    upath++[0] = ch;
+
+		break;
+
+	    case S_VOLUME:
+	        (--old_upath)[0] = '/';
+		state = S_SLASH;
+		continue;
+
+		break;
+
+	    case S_SLASH:
+	        upath++[0] = '/';
+
+		if (ch == '/')
+		    state = S_PARENT;
+		else
+		{
+		    state = S_START;
+		    continue;
+		}
+
+		break;
+
+	    case S_PARENT:
+	        upath[0] = '.'; upath[1] = '.'; upath[2] = '/'; upath += 3;
+
+		if (ch != '/')
+		{
+		    state = S_START;
+		    continue;
+		}
+
+		break;
+        }
+
+	upath[0] = '\0';
+	apath++;
+    }
+
+    upath[0] = '\0';
+    return __apathbuf = old_upath;
+}
+
+
 static const char *__path_devstuff_u2a(const char *path)
 {
     /*
@@ -130,21 +280,19 @@ static const char *__path_devstuff_u2a(const char *path)
     return NULL;
 }
 
-typedef enum
-{
-    S_START0,
-    S_START,
-    S_DOT1,
-    S_DOT2,
-    S_SLASH,
-    S_COLUMN
-} path_state;
-
 static void __path_normalstuff_u2a(const char *path, char *buf)
 {
-    register char       dir_sep = '\0';
-    register int        makevol = 0;
-    register path_state state   = S_START0;
+    register char dir_sep = '\0';
+    register int  makevol = 0;
+    register enum
+    {
+        S_START0,
+        S_START,
+        S_DOT1,
+        S_DOT2,
+        S_SLASH,
+        S_COLUMN
+    } state = S_START0;
 
     int run = 1;
 
@@ -259,19 +407,21 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 
     if (makevol)
         buf++[0] = ':';
-	
+
     buf[0] = '\0';
 }
+
 
 #ifdef BUILD_TEST
 
 #include <stdio.h>
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+    if (argc != 3)
         return 20;
 
-    return printf("%s\n", __path_u2a(argv[1]));
+    printf("%s\n", __path_u2a(argv[1]));
+    printf("%s\n", __path_a2u(argv[2]));
 }
 #endif
 
