@@ -372,15 +372,8 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
    ChunkyBuffer[j]=((RGBBuffer[j*3] & 0xE0)>>5) | ((RGBBuffer[j*3+1] & 0xE0)>>2) | (RGBBuffer[j*3+2] & 0xC0);
   }
 
-#ifdef _AROS
-  for(j=0;j<Width;j++)
-  {
-    SetAPen(&rp, ChunkyBuffer[j]);
-    WritePixel(&rp, j, i);
-  }
-#else
   WriteChunkyPixels(&rp, 0, i, Width-1, i, ChunkyBuffer, Width);
-#endif
+
  }
 
  D(bug("ppm.datatype/OM_NEW: C2P done\n"));
