@@ -7,6 +7,9 @@
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include <string.h>
+
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -57,8 +60,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    CONST_STRPTR    s2;
-    STRPTR          s3;
+    ULONG len = strlen(name);
+    STRPTR s2;
     struct DosList *dl;
 
     dl = (struct DosList *)AllocMem(sizeof(struct DosList),
@@ -66,31 +69,25 @@
 
     if (dl != NULL)
     {
-	s2 = name;
-
-	while (*s2++)
-	    ;
-
-	/* Use MEMF_CLEAR to make sure that "real" BSTR:s also are always
-	   ended with a 0 byte */
-	s3 = (STRPTR)AllocVec(s2 - name + 1, MEMF_PUBLIC | MEMF_CLEAR);
-
-	if (s3 != NULL)
+#ifdef AROS_FAST_BPTR
+	s2 = (STRPTR)AllocVec(len+1, MEMF_PUBLIC | MEMF_CLEAR);
+	dl->dol_OldName = MKBADDR(s2);
+#else
+	/* Binary compatibility for BCPL string.
+	 * First byte is the length then comes the string.
+	 * For ease of use a zero is put at the end so it can be used as a
+	 * C string
+	 */
+	s2 = (STRPTR)AllocVec(len+2, MEMF_PUBLIC | MEMF_CLEAR);
+	dl->dol_OldName = MKBADDR(s2);
+	if (s2 != NULL)
+	    *s2++ = (UBYTE)(len > 255 ? 255 : len);
+#endif
+	if (s2 != NULL)
 	{
-	    int i;		/* Loop variable */
-	    int length = s2 - name > 255 ? 255 : s2 - name - 1;
-
-	    /* Compatibility */
-	    /* sheutlin: therefore don't! use AROS_BSTR macros */
-	    dl->dol_OldName = MKBADDR(s3);
-	    *s3++ = length;
-	    for (i = 0; i < length; i++)
-	    {
-		*s3++ = name[i];
-	    }
-	    dl->dol_DevName = dl->dol_OldName+1;
+	    strcpy(s2, name);
+	    dl->dol_DevName = s2;
 	    dl->dol_Type = type;
-
 	    return dl;
 	}
 	else
