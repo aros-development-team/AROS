@@ -69,16 +69,27 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    
     IPTR result;
-    struct opSet *ops;
+    
+    if (window || requester)
+    {
+	struct opSet *ops;
 
-    if ((ops = AllocVec(sizeof(struct opSet), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
-	return(0L);
-    ops->MethodID = OM_SET;
-    ops->ops_AttrList = tagList;
-    result = DoGadgetMethodA(gadget, window, requester, (Msg)ops);
-    FreeVec(ops);
-
-    return(result);
+	if ((ops = AllocVec(sizeof(struct opSet), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
+	    return(0L);
+	ops->MethodID = OM_SET;
+	ops->ops_AttrList = tagList;
+	result = DoGadgetMethodA(gadget, window, requester, (Msg)ops);
+	FreeVec(ops);
+    }
+    else
+    {
+        result = SetAttrsA((Object *)gadget, tagList);
+    }
+   
+    return result;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* SetGadgetAttrsA */
