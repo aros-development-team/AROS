@@ -304,9 +304,11 @@ void internal_ClipBlit(struct RastPort * srcRP,
       while (NULL != srcCR)
       {
         /* only do this if the source is not a simple layer and does
-           not have a certain bit set in this ClipRect  */
+           not have a certain bit set in this ClipRect or
+           is not hidden  */
         if (!(0 != (srcLayer->Flags & LAYERSIMPLE) &&
-              0 != (srcCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS)))
+             (NULL != srcCR->lobs ||
+              0 != (srcCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS))))
         { 
           ULONG crX0, crX1, crY0, crY1;
           /* cr?? have to be coordinates related to the rastport */
@@ -448,9 +450,11 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
       while (NULL != destCR)
       {
         /* if the layer is a simple layer and the cliprect's flag
-           has a certain bit set, then do nothing here! */ 
-        if (!(0 != (destLayer->Flags & LAYERSIMPLE) && 
-              0 != (destCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS))) 
+           has a certain bit set or the CR is hidden, then do 
+           nothing here! */ 
+        if (!(0    != (destLayer->Flags & LAYERSIMPLE) && 
+             (NULL !=  destCR   ->lobs ||
+              0    != (destCR   ->Flags & CR_NEEDS_NO_CONCEALED_RASTERS)))) 
 	{
           struct Rectangle destRect2;
           LONG DestOffsetX, DestOffsetY;
