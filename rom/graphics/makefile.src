@@ -11,20 +11,20 @@ else
 SPECIAL_CFLAGS=-I/usr/include
 endif
 
-LIBNAME = graphics
+LIBNAME := graphics
 
-OBJDIR=$(OSGENDIR)/$(LIBNAME)
-LIB=$(LIBDIR)/lib$(LIBNAME).so
+OBJDIR:=$(OSGENDIR)/$(LIBNAME)
+LIB:=$(LIBDIR)/lib$(LIBNAME).so
 
 %prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
 
-INIT_FILE = $(LIBNAME)_init
+INIT_FILE := $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable intregions
+FILES := $(LIBNAME)_functable intregions
 
-END_FILE = $(LIBNAME)_endtag
+END_FILE := $(LIBNAME)_endtag
 
-FUNCTIONS = \
+FUNCTIONS := \
 	addfont \
 	allocbitmap \
 	allocraster \
@@ -82,13 +82,13 @@ FUNCTIONS = \
 	writepixelarray8 \
 	xorrectregion
 
-PRE_FUNCS = $(FUNCTIONS)
+PRE_FUNCS := $(FUNCTIONS)
 %prepare_replace rom/graphics
-%filter_replace $(FUNCTIONS)
-ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
+%filter_replace FUNCTIONS
+ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 
-DEPS=$(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f).d)
-OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+DEPS:=$(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f).d)
+OBJS:=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 

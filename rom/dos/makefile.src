@@ -6,30 +6,30 @@ include $(TOP)/config/make.cfg
 
 # Use OS's own includes over the ones from AROS
 ifeq ("$(SHARED_DOS)","yes")
-SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+SPECIAL_CFLAGS := $(SHARED_CFLAGS) -I/usr/include
 else
-SPECIAL_CFLAGS=-I/usr/include
+SPECIAL_CFLAGS := -I/usr/include
 endif
 
 LIBNAME = dos
 
-EXEDIR=$(BINDIR)/test
-TESTOBJDIR = $(GENDIR)/rom/dos
-OBJDIR=$(OSGENDIR)/$(LIBNAME)
-LIB=$(LIBDIR)/lib$(LIBNAME).so
+EXEDIR	   := $(BINDIR)/test
+TESTOBJDIR := $(GENDIR)/rom/dos
+OBJDIR	   := $(OSGENDIR)/$(LIBNAME)
+LIB	   := $(LIBDIR)/lib$(LIBNAME).so
 
 %define_libs
 
 %prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
 
-INIT_FILE = $(LIBNAME)_init
+INIT_FILE := $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable lddemon errorlist loadseg_elf doname \
+FILES := $(LIBNAME)_functable lddemon errorlist loadseg_elf doname \
 	loadseg_aout loadseg_aos
 
-END_FILE = $(LIBNAME)_endtag
+END_FILE := $(LIBNAME)_endtag
 
-FUNCTIONS = \
+FUNCTIONS := \
 	abortpkt addbuffers adddosentry addpart addprocess addsegment	     \
 	allocdosobject assignadd assignlate	       \
 	assignlock assignpath attemptlockdoslist changemode checksignal cli  \
@@ -60,57 +60,57 @@ FUNCTIONS = \
 	vfwritef vprintf waitforchar waitpkt write writechars \
 	dosgetstring
 
-PRE_FILES = $(FILES)
-PRE_FUNCS = $(FUNCTIONS)
+PRE_FILES := $(FILES)
+PRE_FUNCS := $(FUNCTIONS)
 %prepare_replace rom/dos
-%filter_replace $(FILES)
-%filter_replace $(FUNCTIONS)
+%filter_replace FILES
+%filter_replace FUNCTIONS
 
-DEPS = $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
-ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 
-OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-all: setup $(LIB)
+all : setup $(LIB)
 
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean::
+clean ::
 	$(RM) $(OBJDIR) *.err $(LIB)
 
 TESTS = datetostr strtodate splitname readargs
 
-test: setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
+test : setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
 $(LIB) : $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
 
-$(EXEDIR)/%: %.c $(DEPLIBS)
+$(EXEDIR)/% : %.c $(DEPLIBS)
 	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS)"
 
 setup-test :
 	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/%.o : %.c
 	%compile_q
 
 dos_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Dos
 
-$(LIBNAME)_endtag.c: $(TOP)/scripts/makeendtag.awk
+$(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
 	%mkendtag_q Dos
 
-$(OBJDIR)/$(LIBNAME)_init.o: libdefs.h
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
 %additional_objs_rule
 
 %libdefs_rule
 
-$(OBJDIR)/%.d: %.c
+$(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 %common

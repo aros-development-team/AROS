@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 SUBDIRS=filesys
 
-FILES = console cdinputhandler rawkeyconvert
+FILES := console cdinputhandler rawkeyconvert
 
 all: setup $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 	%subdirs_q target=all

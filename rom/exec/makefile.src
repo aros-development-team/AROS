@@ -24,19 +24,19 @@ INIT_FILE = execstrap_init
 # Other support files:
 FILES =
 
-FUNCTIONS = \
-	initcode initstruct makelibrary makefunctions findresident          \
-	initresident setintvector addintserver remintserver allocmem        \
-	freemem availmem allocentry freeentry typeofmem addmemlist          \
+FUNCTIONS := \
+	initcode initstruct makelibrary makefunctions findresident	    \
+	initresident setintvector addintserver remintserver allocmem	    \
+	freemem availmem allocentry freeentry typeofmem addmemlist	    \
 	addmemhandler remmemhandler insert addhead addtail remove remhead   \
 	remtail enqueue findname setsignal allocsignal freesignal addport   \
 	remport waitport findport createmsgport deletemsgport putmsg getmsg \
-	replymsg doio sendio checkio waitio abortio createiorequest         \
+	replymsg doio sendio checkio waitio abortio createiorequest	    \
 	deleteiorequest addresource remresource openresource addlibrary     \
-	remlibrary oldopenlibrary closelibrary setfunction sumlibrary       \
-	openlibrary taggedopenlibrary adddevice remdevice opendevice        \
-	closedevice findtask rawdofmt allocvec freevec initsemaphore        \
-	attemptsemaphore findsemaphore addsemaphore remsemaphore            \
+	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
+	openlibrary taggedopenlibrary adddevice remdevice opendevice	    \
+	closedevice findtask rawdofmt allocvec freevec initsemaphore	    \
+	attemptsemaphore findsemaphore addsemaphore remsemaphore	    \
 	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
 	allocpooled freepooled \
 	cacheclearu cachepredma cachepostdma \
@@ -47,31 +47,31 @@ else
 
 %prepare_shlib exec $(SHARED_EXEC)
 
-FILES = init execfunctions traphandler
+FILES := init execfunctions traphandler
 
-FUNCTIONS = \
+FUNCTIONS := \
 	allocmem freemem addhead addtask remtask wait signal allocsignal    \
 	freesignal alert freeentry remove remhead enqueue addmemhandler     \
-	setexcept setsignal settaskpri findtask findname getmsg putmsg      \
-	replymsg addtail waitport allocate addport remport findport         \
+	setexcept setsignal settaskpri findtask findname getmsg putmsg	    \
+	replymsg addtail waitport allocate addport remport findport	    \
 	addmemlist createmsgport deletemsgport createiorequest deallocate   \
-	availmem deleteiorequest allocvec freevec allocabs allocentry       \
-	createpool deletepool allocpooled remmemhandler initstruct          \
-	initsemaphore attemptsemaphore obtainsemaphore                      \
-	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore       \
-	procure vacate addlibrary remlibrary makefunctions makelibrary      \
-	sumlibrary openlibrary closelibrary setfunction oldopenlibrary      \
-	copymemquick copymem freepooled remsemaphore addsemaphore           \
+	availmem deleteiorequest allocvec freevec allocabs allocentry	    \
+	createpool deletepool allocpooled remmemhandler initstruct	    \
+	initsemaphore attemptsemaphore obtainsemaphore			    \
+	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore	    \
+	procure vacate addlibrary remlibrary makefunctions makelibrary	    \
+	sumlibrary openlibrary closelibrary setfunction oldopenlibrary	    \
+	copymemquick copymem freepooled remsemaphore addsemaphore	    \
 	releasesemaphorelist obtainsemaphorelist typeofmem rawdofmt insert  \
 	remtail findsemaphore addresource remresource openresource adddevice\
 	remdevice opendevice closedevice doio sendio checkio abortio waitio \
 	initresident addintserver remintserver setintvector alloctrap \
-	childfree childorphan childstatus childwait coldreboot debug        \
+	childfree childorphan childstatus childwait coldreboot debug	    \
 	findresident freetrap initcode sumkickdata obtainquickvector \
 	supervisor superstate userstate stackswap \
 	cachecleare cacheclearu cachecontrol cachepredma cachepostdma \
 	cause disable dispatch enable forbid preparecontext permit switch \
-	coldreboot setsr getcc reschedule exception
+	setsr getcc reschedule exception
 
 # ***** END ***************
 endif
@@ -82,10 +82,10 @@ ALL_FILES := $(FILES)
 ALL_FUNCTIONS := $(FUNCTIONS)
 
 %prepare_replace rom/exec
-%filter_replace $(FUNCTIONS)
-%filter_replace $(FILES)
+%filter_replace FUNCTIONS
+%filter_replace FILES
 
-DEPS = $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 
 .PHONY: all clean setup
 
@@ -93,8 +93,8 @@ DEPS = $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 ifeq ($(FLAVOUR),native)
 
 LIBS = -L$(LIBDIR) -lexec -larossupport -larosc
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 
 all: setup $(LIB) $(OSMODDIR)/exec.strap
 
@@ -122,7 +122,7 @@ $(LIB): $(OBJS)
 # ***** Not Native ***************
 else
 
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
@@ -134,8 +134,8 @@ $(LIB): $(OBJS)
 endif
 
 setup :
-	%mkdirs_q $(OBJDIR) $(OSMODDIR)
 	@echo "CFLAGS=$(CFLAGS)"
+	%mkdirs_q $(OBJDIR) $(OSMODDIR)
 
 clean::
 	$(RM) $(OBJDIR) *.err $(LIB)

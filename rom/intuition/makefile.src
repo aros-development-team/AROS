@@ -94,11 +94,11 @@ FUNCTIONS = \
 
 PRE_FUNCS = $(FUNCTIONS)
 %prepare_replace rom/intuition
-%filter_replace $(FUNCTIONS
+%filter_replace FUNCTIONS
 
 ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
-DEPS=$(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f).d)
-OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+DEPS:=$(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f).d)
+OBJS:=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
