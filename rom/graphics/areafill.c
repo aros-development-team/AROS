@@ -7,6 +7,11 @@
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxbase.h>
+#include <string.h>
+
+#include <aros/debug.h>
+
+#include "graphics_intern.h"
 
 /*
   The algorithm was taken from: 

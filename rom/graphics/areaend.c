@@ -208,6 +208,7 @@
               BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
               
             areafillellipse(rp,
+	    		    &bounds,
                             CurVctr,
                             BytesPerRow,
                             GfxBase);

@@ -220,7 +220,8 @@ BOOL areafillpolygon(struct RastPort  * rp,
                      struct GfxBase   * GfxBase);
 
 void areafillellipse(struct RastPort   * rp,
-                     WORD              * CurVctr,
+		     struct Rectangle  * bounds,
+                     UWORD              * CurVctr,
                      UWORD               BytesPerRow,
                      struct GfxBase    * GfxBase);
                      
