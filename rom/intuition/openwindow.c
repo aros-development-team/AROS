@@ -286,7 +286,7 @@
     
 #define IW(x) ((struct IntWindow *)x)
 
-    w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
+    w  = AllocMem (sizeof(struct IntWindow), MEMF_CLEAR);
     
 /* nlorentz: For now, creating a rastport becomes the responsibility of
    intui_OpenWindow(). This is because intui_OpenWindow() in
@@ -548,3 +548,167 @@ exit:
     ReturnPtr ("OpenWindow", struct Window *, w);
     AROS_LIBFUNC_EXIT
 } /* OpenWindow */
+
+
+
+/**********************************************************************************/
+
+int intui_OpenWindow (struct Window * w,
+	struct IntuitionBase * IntuitionBase,
+	struct BitMap        * SuperBitMap,
+	struct Hook          * backfillhook)
+{
+    /* Create a layer for the window */
+    LONG layerflags = 0;
+    
+    EnterFunc(bug("intui_OpenWindow(w=%p)\n", w));
+    
+    D(bug("screen: %p\n", w->WScreen));
+    D(bug("bitmap: %p\n", w->WScreen->RastPort.BitMap));
+    
+    /* Just insert some default values, should be taken from
+       w->WScreen->WBorxxxx */
+    
+    /* Set the layer's flags according to the flags of the
+    ** window
+    */
+    
+    /* refresh type */
+    if (0 != (w->Flags & WFLG_SIMPLE_REFRESH))
+      layerflags |= LAYERSIMPLE;
+    else
+      if (0!= (w->Flags & WFLG_SUPER_BITMAP))
+        layerflags |= (LAYERSMART|LAYERSUPER);
+      else
+        layerflags |= LAYERSMART;
+        
+    if (0 != (w->Flags & WFLG_BACKDROP))   
+      layerflags |= LAYERBACKDROP;
+
+    D(bug("Window dims: (%d, %d, %d, %d)\n",
+    	w->LeftEdge, w->TopEdge, w->Width, w->Height));
+    	
+    /* A GimmeZeroZero window??? */
+    if (0 != (w->Flags & WFLG_GIMMEZEROZERO))
+    {
+      /* 
+        A GimmeZeroZero window is to be created:
+          - the outer window will be a simple refresh layer
+          - the inner window will be a layer according to the flags
+        What is the size of the inner/outer window supposed to be???
+        I just make it that the outer window has the size of what is requested
+      */
+      
+
+      /* First create outer window */
+      struct Layer * L = CreateUpfrontHookLayer(
+                             &w->WScreen->LayerInfo
+                           , w->WScreen->RastPort.BitMap
+                           , w->LeftEdge
+                           , w->TopEdge
+                           , w->LeftEdge + w->Width - 1
+                           , w->TopEdge  + w->Height - 1
+                           , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
+                           , LAYERS_NOBACKFILL
+                           , SuperBitMap);
+                           
+      /* Could the layer be created. Nothing bad happened so far, so simply leave */
+      if (NULL == L)
+        ReturnBool("intui_OpenWindow", FALSE);
+				      
+      /* install it as the BorderRPort */
+      w->BorderRPort = L->rp;
+
+      /* This layer belongs to a window */
+      L->Window = (APTR)w;
+     
+      w->GZZWidth = w->Width  - w->BorderLeft - w->BorderRight;
+      w->GZZHeight= w->Height - w->BorderTop  - w->BorderBottom;
+
+      /* Now comes the inner window */
+      w->WLayer = CreateUpfrontHookLayer( 
+                   &w->WScreen->LayerInfo
+	  	  , w->WScreen->RastPort.BitMap
+		  , w->LeftEdge + w->BorderLeft  
+		  , w->TopEdge  + w->BorderTop
+		  , w->LeftEdge + w->BorderLeft + w->GZZWidth - 1
+		  , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
+		  , layerflags
+		  , backfillhook
+		  , SuperBitMap);
+
+      /* could this layer be created? If not then delete the outer window and exit */
+      if (NULL == w->WLayer)
+      {
+        DeleteLayer(0, L);
+        ReturnBool("intui_OpenWindow", FALSE);
+      }	
+      	  
+      /* That should do it, I guess... */
+    }
+    else
+    {
+      w->WLayer = CreateUpfrontHookLayer( 
+                   &w->WScreen->LayerInfo
+	  	  , w->WScreen->RastPort.BitMap
+		  , w->LeftEdge
+		  , w->TopEdge
+		  , w->LeftEdge + w->Width - 1
+		  , w->TopEdge  + w->Height - 1
+		  , layerflags
+		  , backfillhook
+		  , SuperBitMap);
+
+      /* Install the BorderRPort here! see GZZ window above  */
+      if (NULL != w->WLayer)
+      {
+        /* 
+           I am installing a totally new RastPort here so window and frame can
+           have different fonts etc. 
+        */
+        w->BorderRPort = AllocMem(sizeof(struct RastPort), MEMF_CLEAR);
+        if (w->BorderRPort)
+        {
+          InitRastPort(w->BorderRPort);
+          w->BorderRPort->Layer  = w->WLayer;
+          w->BorderRPort->BitMap = w->WLayer->rp->BitMap;
+        }
+        else
+        {
+          /* no memory for RastPort! Simply close the window */
+          intui_CloseWindow(w, IntuitionBase);
+    	  ReturnBool("intui_OpenWindow", FALSE);
+        }
+      }		  
+    }
+
+    D(bug("Layer created: %p\n", w->WLayer));
+    D(bug("Window created: %p\n", w));
+    
+    /* common code for GZZ and regular windows */
+    
+    if (w->WLayer)
+    {
+        /* Layer gets pointer to the window */
+        w->WLayer->Window = (APTR)w;
+	/* Window needs a rastport */
+	w->RPort = w->WLayer->rp;
+	
+	/* installation of the correct BorderRPort already happened above !! */
+	 
+	if (createsysgads(w, IntuitionBase))
+	{
+
+    	    ReturnBool("intui_OpenWindow", TRUE);
+
+	}
+	intui_CloseWindow(w, IntuitionBase);
+	
+    } /* if (layer created) */
+    
+    ReturnBool("intui_OpenWindow", FALSE);
+}
+
+
+
+
