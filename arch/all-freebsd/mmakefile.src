@@ -59,7 +59,7 @@ exec-freebsd : $(OSGENDIR)/exec/init.o
 
 #MM- setup-battclock-freebsd : setup-battclock-unix
 
-#MM- kernel-graphics-freebsd : graphics-$(GFXSYSTEM) kernel-graphics-linklib
+#MM- kernel-graphics-freebsd : graphics-$(GFXSYSTEM) hidd-graphics-x11 kernel-graphics-linklib
 
 #MM- kernel-intuition-freebsd : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 
