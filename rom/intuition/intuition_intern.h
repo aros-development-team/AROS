@@ -180,6 +180,7 @@ extern void intui_WindowToFront (struct Window * window);
 extern void intui_WindowToBack (struct Window * window);
 extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 extern void intui_SizeWindow (struct Window * win, long dx, long dy);
+extern void intui_RefreshWindowFrame(struct Window *win);
 
 /* Miscellaneous prototypes */
 void easyrequest_freelabels(STRPTR *gadgetlabels);
