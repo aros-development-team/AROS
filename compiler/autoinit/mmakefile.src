@@ -1,0 +1,23 @@
+#   $Id$
+#
+#   Generate the libautoinit.a
+#
+include $(TOP)/config/make.cfg
+
+LIB	:= autoinit
+
+FILES	:= \
+	arosc \
+	dos \
+	functions \
+	libraries
+
+#MM- linklibs: linklibs-autoinit
+#MM linklibs-autoinit : includes
+
+%make_linklib_setup mmake=linklibs-autoinit
+
+%make_linklib
+
+%common
+%include_deps
