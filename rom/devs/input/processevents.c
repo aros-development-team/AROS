@@ -243,6 +243,15 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    if (kbdio->io_Error != 0)
 	    	continue;
 	    
+	    #define KEY_QUALIFIERS (IEQUALIFIER_LSHIFT     | IEQUALIFIER_RSHIFT   | \
+				    IEQUALIFIER_CAPSLOCK   | IEQUALIFIER_CONTROL  | \
+				    IEQUALIFIER_RALT       | IEQUALIFIER_LALT     | \
+				    IEQUALIFIER_RCOMMAND   | IEQUALIFIER_RCOMMAND | \
+				    IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
+
+	    InputDevice->ActQualifier &= ~KEY_QUALIFIERS;
+	    InputDevice->ActQualifier |= (((struct InputEvent *)kbdio->io_Data)->ie_Qualifier & KEY_QUALIFIERS);
+	     
 	    /* Add event to queue */
 	    AddEQTail((struct InputEvent *)kbdio->io_Data, InputDevice);
 	    /* New event from keyboard device */
@@ -262,6 +271,48 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    GetMsg(gpdmp); /* Only one message */
 	    if (gpdio->io_Error != 0)
 	    	continue;
+	    
+	    /* FIXME: Maybe this should be done in gameport.device */
+
+	#if 0
+	    /* this should work once qualifiers are handled by gameport.device */
+		 
+	    #define MOUSE_QUALIFIERS (IEQUALIFIER_LEFTBUTTON | IEQUALIFIER_RBUTTON | \
+	    			      IEQUALIFIER_MIDBUTTON)
+	
+	    InputDevice->ActQualifier &= ~MOUSE_QUALIFIERS;
+	    InputDevice->ActQualifier |= (((struct InputEvent *)gpdio->io_Data)->ie_Qualifier & MOUSE_QUALIFIERS);
+	#else
+	    
+	    switch( ((struct InputEvent *)gpdio->io_Data)->ie_Code )
+	    {
+	        case SELECTDOWN:
+		    InputDevice->ActQualifier |= IEQUALIFIER_LEFTBUTTON;
+		    break;
+		    
+		case SELECTUP:
+		    InputDevice->ActQualifier &= ~IEQUALIFIER_LEFTBUTTON;
+		    break;
+
+	        case MIDDLEDOWN:
+		    InputDevice->ActQualifier |= IEQUALIFIER_MIDBUTTON;
+		    break;
+		    
+		case MIDDLEUP:
+		    InputDevice->ActQualifier &= ~IEQUALIFIER_MIDBUTTON;
+		    break;
+
+	        case MENUDOWN:
+		    InputDevice->ActQualifier |= IEQUALIFIER_RBUTTON;
+		    break;
+		    
+		case MENUUP:
+		    InputDevice->ActQualifier &= ~IEQUALIFIER_RBUTTON;
+		    break;
+		    
+	    } /* switch( ((struct InputEvent *)gpdio->io_Data)->ie_Code) */
+	    
+	#endif
 	    
 	    /* Add event to queue */
 	    AddEQTail((struct InputEvent *)gpdio->io_Data, InputDevice);
