@@ -6,6 +6,46 @@
     $Id$
 */
 
+/*** Sysiclass **************************************************************/
+/*= SYSIA_Which ============================================================*/
+#define ICONIFYIMAGE             (0x12L)
+#define LOCKIMAGE                (0x13L)
+#define MUIIMAGE                 (0x14L)
+#define POPUPIMAGE               (0x15L)
+#define SNAPSHOTIMAGE            (0x16L)
+#define JUMPIMAGE                (0x17L)
+#define MENUTOGGLEIMAGE          (0x19L)
+#define SUBMENUIMAGE             (0x1AL)
+
+/*** Window attributes ******************************************************/
+/*= WA_ExtraTitlebarGadgets ================================================*/
+/*- Flags ------------------------------------------------------------------*/
+#define ETG_ICONIFY              (0x01L)
+#define ETG_LOCK                 (0x02L)
+#define ETG_MUI                  (0x04L)
+#define ETG_POPUP                (0x08L)
+#define ETG_SNAPSHOT             (0x10L)
+#define ETG_JUMP                 (0x20L)
+
+/*- Gadget ID offsets ------------------------------------------------------*/
+#define ETD_Iconify              (0)
+#define ETD_Lock                 (1)
+#define ETD_MUI                  (2)
+#define ETD_PopUp                (3)
+#define ETD_Snapshot             (4)
+#define ETD_Jump                 (5)
+
+/*- Gadget IDs -------------------------------------------------------------*/
+#define ETI_BASE                 (0xFFD0)
+#define ETI_Iconify              (ETI_BASE + ETD_Iconify)
+#define ETI_Lock                 (ETI_BASE + ETD_Lock)
+#define ETI_MUI                  (ETI_BASE + ETD_MUI)
+#define ETI_PopUp                (ETI_BASE + ETD_PopUp)
+#define ETI_Snapshot             (ETI_BASE + ETD_Snapshot)
+#define ETI_Jump                 (ETI_BASE + ETD_Jump)
+
+
+
 /*** Defines for WindowAction() *********************************************/
 /*= Commands ===============================================================*/
 #define WAC_BASE                 (0x0001)
