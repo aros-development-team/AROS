@@ -1064,7 +1064,8 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
     BOOL enabled = ((item->Flags & ITEMENABLED) &&
     		   (mhd->activemenu->Flags & MENUENABLED) &&
     		   ((itemtype == ITEM_ITEM) || (mhd->activeitem->Flags & ITEMENABLED))); 
-		   
+    BOOL item_supports_disable = FALSE;
+    
     SetDrMd(rp, JAM1);
     if (item->Flags & ITEMTEXT)
     {
@@ -1073,14 +1074,27 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 	PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
     } else {
     	struct Image *im = (struct Image *)item->ItemFill;
+	LONG state = IDS_NORMAL;
 	
-	DrawImageState(rp, im, offx + item->LeftEdge, offy + item->TopEdge, IDS_NORMAL, mhd->dri);
+	if (!enabled && (im->Depth == CUSTOMIMAGEDEPTH))
+	{
+	    IPTR val = 0;
+	    
+	    GetAttr(IA_SupportsDisable, (Object *)im, &val);
+	    if (val)
+	    {
+	        item_supports_disable = TRUE;
+		state = IDS_DISABLED;
+	    }
+	}
+
+	DrawImageState(rp, im, offx + item->LeftEdge, offy + item->TopEdge, state, mhd->dri);
     }
     
     RenderCheckMark(item, itemtype, mhd, IntuitionBase);
     RenderAmigaKey(item, itemtype, mhd, IntuitionBase);
     
-    if (!enabled)
+    if (!enabled && !item_supports_disable)
     {
         RenderDisabledPattern(rp, offx + item->LeftEdge,
 				  offy + item->TopEdge,
@@ -1206,7 +1220,7 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
 	
 	x1 = item->LeftEdge + offx + item->Width - AMIGAKEY_BORDER_SPACING -
 	     mhd->amigakey->Width - AMIGAKEY_KEY_SPACING - commkeywidth;
-	y1 = item->TopEdge  + offy + (item->Height - mhd->amigakey->Height) / 2;
+	y1 = item->TopEdge  + offy + (item->Height - mhd->amigakey->Height + 1) / 2;
 	x2 = x1 + mhd->amigakey->Width  - 1;
 	y2 = y1 + mhd->amigakey->Height - 1;
     
