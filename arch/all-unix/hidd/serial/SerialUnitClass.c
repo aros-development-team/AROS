@@ -20,6 +20,7 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <proto/alib.h>
+#include <proto/intuition.h>
 #include <exec/libraries.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
