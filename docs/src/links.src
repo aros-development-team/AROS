@@ -28,9 +28,9 @@ or
 with
 \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10.readme}.
 (\execverb{getfilesize $(TOP)/dist/AROSdev-1.10.readme},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.10.readme})
+ \execverb{getfiledate $(TOP)/dist/AROSdev-1.10.readme}).
 
-Also available is the latest beta for linux binary as
+Also available is the latest beta as binary for linux as
 \link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.11b.tgz}
 (\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.11b.tgz},
  \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.11b.tgz})
@@ -42,7 +42,7 @@ with
 \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.11b.readme}
 (\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.11b.readme},
  \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.11b.readme})
-and the source as
+and the source of the beta as
 \link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.11b.tgz}
 (\execverb{getfilesize $(TOP)/dist/AROSdev-1.11b.tgz},
  \execverb{getfiledate $(TOP)/dist/AROSdev-1.11b.tgz})
