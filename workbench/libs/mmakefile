@@ -30,7 +30,8 @@
 #MM     workbench-libs-nonvolatile \
 #MM     workbench-libs-nvdisk \
 #MM     workbench-libs-muimaster \
-#MM     workbench-libs-coolimages
+#MM     workbench-libs-coolimages \
+#MM     workbench-libs-freetype-complete
 
 #MM- includes : \
 #MM     workbench-libs-amigaguide-includes \
