@@ -370,7 +370,7 @@ LONG VARARGS68K _ZuneMaster_MUI_SetError(struct ZuneMasterIFace *iface, LONG num
 
 struct IClass *VARARGS68K _ZuneMaster_MUI_GetClass(struct ZuneMasterIFace *iface, CONST_STRPTR classname)
 {
-    return LIB_MUI_GetClass(classname);
+    return LIB_MUI_GetClass((STRPTR)classname);
 }
 
 VOID VARARGS68K _ZuneMaster_MUI_FreeClass(struct ZuneMasterIFace *iface, struct IClass * classptr)
