@@ -63,7 +63,7 @@ SORT		:= @SORT@
 UNIQ		:= @UNIQ@
 LITE		:= @LITE@
 
-ARCH		:= $(TARGET_ARCH)
+ARCH		:= $(AROS_TARGET_ARCH)
 CPU		:= $(TARGET_CPU)
 GFXSYSTEM	:= gfxhidd
 CC		:= $(TARGET_CC)
