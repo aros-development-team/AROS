@@ -51,8 +51,7 @@ UBYTE processArguments(void)
 
     if(argArray[ARG_FROM] != NULL)
     {
-        if(!(FP_Read((CONST_STRPTR) argArray[ARG_FROM], fp_Current)))
-            return(APP_FAIL);
+        if (!(FP_LoadFrom((CONST_STRPTR) argArray[ARG_FROM]))) return APP_FAIL;
 
      /* If USE or SAVE is set, write the FROM file to ENV: and/or ENVARC: and then quit. Is this
         what the "Classic" Font Preferences does? Look it up! (As a side note, if FILE is not
@@ -66,16 +65,19 @@ UBYTE processArguments(void)
             if (argArray[ARG_SAVE] && !FP_Save()) return APP_FAIL;
             
             /* Don't launch the rest of the program, just exit */
-            return(APP_STOP);
+            return APP_STOP;
         }
     }
     else
-        if(!(FP_Read("ENV:sys/font.prefs", fp_Current)))
-            return(APP_FAIL);
-
-    // What is "EDIT" supposed to do? Look it up!
-    if(argArray[ARG_EDIT])
+    {
+        if (!FP_Load()) return APP_FAIL;
+    }
+    
+    // FIXME: What is "EDIT" supposed to do? Look it up!
+    if (argArray[ARG_EDIT])
+    {
         kprintf("EDIT keyword set!\n");
-
+    }
+    
     return APP_RUN;
 }
