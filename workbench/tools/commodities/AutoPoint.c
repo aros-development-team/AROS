@@ -77,15 +77,15 @@ struct Library       *IconBase;
 
 static struct NewBroker nb =
 {
-   NB_VERSION,
-   "AutoPoint", 
-   "Automatic window activator", 
-   "Activates the window under the mouse",
-   NBU_NOTIFY | NBU_UNIQUE,
-   0,
-   0,
-   NULL,                             
-   0 
+    NB_VERSION,
+    "AutoPoint", 
+    "Automatic window activator", 
+    "Activates the window under the mouse",
+    NBU_NOTIFY | NBU_UNIQUE,
+    0,
+    0,
+    NULL,                             
+    0
 };
 
 
@@ -251,10 +251,11 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 	    ActivateWindow(apInfo.ai_thisWindow);
 
 	if(apInfo.ai_thisWindow != NULL)
-	    kprintf("Activated window %s\n", apInfo.ai_thisWindow->Title);
+	    D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
 	else
-	    kprintf("No window active. %s\n", IntuitionBase->ActiveWindow->Title);
-
+	    D(bug("No window active. %s\n",
+		  IntuitionBase->ActiveWindow->Title));
+	
 	return;
     }
 
@@ -274,7 +275,7 @@ static void handleCx(APState *as)
         
     while(!quit)
     {
-	signals = Wait((1 << nb.nb_Port->mp_SigBit)  | SIGBREAKF_CTRL_C);
+	signals = Wait((1 << nb.nb_Port->mp_SigBit) | SIGBREAKF_CTRL_C);
 	
 	if(signals & (1 << nb.nb_Port->mp_SigBit))
 	{
@@ -303,7 +304,7 @@ static void handleCx(APState *as)
 		
 		ReplyMsg((struct Message *)msg);
 		
-	    } /* while((msg = (CxMsg *)GetMsg(cxport))) */
+	    } /* while((msg = (CxMsg *)GetMsg(cs->cs_msgPort))) */
 	}	    
 	
 	if(signals & SIGBREAKF_CTRL_C)
@@ -326,5 +327,6 @@ int main(int argc, char **argv)
 	error = RETURN_FAIL;
     
     freeResources(&aState);
+
     return error;
 }
