@@ -20,7 +20,7 @@ fetch()
     local ret=true
     
     trap 'rm -f "$destination/$file".tmp; exit' SIGINT SIGKILL SIGTERM
-
+    
     case $protocol in
         http | ftp)    
             if ! wget -c "$origin/$file" -O "$destination/$file".tmp; then
@@ -31,8 +31,14 @@ fetch()
             rm -f "$destination/$file".tmp
 	    ;;
 	"")
-	    if ! cp "$origin/$file" "$destination/$file"; then
-	        ret=false;
+	    if test "$origin" = "$destination";  then
+	        ! test -f "$origin/$file" && ret=false
+	    else
+	        if ! cp "$origin/$file" "$destination/$file".tmp; then
+		    ret=false
+		else
+		    mv "$destination/$file".tmp "$destination/$file"
+		fi
 	    fi
 	    ;;
 	*)
@@ -49,37 +55,44 @@ fetch_multiple()
 {
     local origins="$1" file="$2" destination="$3"
     
-    local ret=false
-    
     for origin in $origins; do
         echo "Trying $origin/$file..."
-        if fetch "$origin" "$file" "$destination"; then
-	    ret=true
-	    break
-	fi
+        fetch "$origin" "$file" "$destination" && return  0
     done
 	
-    $ret
+    return 1
 }
 
 fetch_cached()
-{
-    local origins="$1" file="$2" destination="$3"
+{ 
+    local origins="$1" file="$2" suffixes="$3" destination="$4" foundvar="$5"
     
-    echo -n "Checking whether \`$file' is already in \`$destination'..."
+    export $foundvar=
     
-    if ! test -e "$destination/$file"; then
-        echo " NO."
-	if ! test -e "$destination"; then
-	    echo "\`$destination' does not exist yet. Making it."
-	    mkdir -p "$destination"
-	fi
-	echo "Fetching \`$file'."
-        fetch_multiple "$origins" "$file" "$destination"
-    else
-        echo " YES."
-        true
+    test -e "$destination" -a ! -d "$destination" && \
+        echo "\`$destination' is not a diretory." && return 1
+
+    if ! test -e "$destination"; then
+	echo "\`$destination' does not exist. Making it."
+	! mkdir -p "$destination" && return 1
     fi
+
+    if test -n "$suffixes"; then
+        for sfx in $suffixes; do
+	    fetch_multiple "$destination" "$file".$sfx "$destination" && \
+	        export $foundvar="$file".$sfx && return 0
+        done
+       
+	for sfx in $suffixes; do
+	    fetch_multiple "$origins" "$file".$sfx "$destination" && \
+	        export $foundvar="$file".$sfx && return 0
+        done    
+    else
+        fetch_multiple "$destination $origins" "$file" "$destination" && \
+	    export $foundvar="$file" && return 0
+    fi
+    
+    return 1
 }
 
 error()
@@ -200,25 +213,14 @@ archive_origins=${archive_origins:-.}
 destination=${destination:-.}
 patches_origins=${patches_origins:-.}
 
-if test -n "$archive_suffixes"; then        
-    archive1="$archive"
-    archive=
-    
-    for sfx in $archive_suffixes; do
-        archive2=${archive1}.$sfx
-    
-        fetch_cached "$archive_origins" "$archive2" "$destination" && archive="$archive2" && break
-    done
-else
-    ! fetch_cached "$archive_origins" "$archive" "$destination" && archive=
-fi
-
-test -z "$archive" && error "Error while fetching the archive \`$archive'."
+fetch_cached "$archive_origins" "$archive" "$archive_suffixes" "$destination" archive2
+test -z "$archive2" && error "Error while fetching the archive \`$archive'."
+archive="$archive2"
 
 for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
     if test "x$patch" != "x"; then
-        if ! fetch_cached "$patches_origins" "$patch" "$destination"; then
+        if ! fetch_cached "$patches_origins" "" "$patch" "$destination"; then
             error "Error while fetching the patch \`$patch'."
         fi
     fi
