@@ -51,7 +51,7 @@
     EXAMPLE
 	//  Add a bootable disk to the system. This will start a
 	//  file handler process immediately.
-	
+
 	if( AddDosNode( 0, ADNF_STARTPROC, MakeDosNode( paramPacket )))
 	{
 	    // AddDosNode() ok
@@ -98,11 +98,11 @@
 		}
 		else
 		{
-		    handler = &(BADDR(deviceNode->dn_Handler))[1];
+		    handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
 		}
 
-		fssm = BADDR(deviceNode->dn_Startup);
-		iofs->io_Union.io_OpenDevice.io_DeviceName = &(BADDR(fssm->fssm_Device))[1];
+		fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
+		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
 		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
 
