@@ -819,7 +819,7 @@ endif
 #MM
 %(mmake)-includes-libdefs : $(BD_LIBDEFSINC$(BDID))
 
-ifneq ($(findstring $(TARGET),%(mmake) %(mmake)-linklib %(mmake)-quick),) # Avoid conflicts
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-linklib %(mmake)-quick),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID))))
 endif
@@ -841,7 +841,7 @@ endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(findstring $(TARGET),%(mmake) %(mmake)-quick %(mmake)-linklib),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-linklib),) # Only for this target these deps are wanted
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
 
