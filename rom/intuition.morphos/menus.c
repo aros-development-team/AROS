@@ -146,7 +146,8 @@ UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
                        struct IntuitionBase *IntuitionBase)
 {
     struct MenuItem *item, *sub;
-    UWORD menunum, itemnum, subnum;
+    UWORD menunum, itemnum = 0, subnum = 0;
+#   warning FIXME: are the defaults above ok? they used to be random
     BOOL found = FALSE;
 
     DEBUG_FINDMENUSHORTCUT(dprintf("FindMenuShortCut: Menu 0x%lx key 0x%lx <%c> do_click_op 0x%lx\n",menu,key,key,do_click_op));
@@ -154,10 +155,6 @@ UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
     key = ToUpper(key);
 
     DEBUG_FINDMENUSHORTCUT(dprintf("FindMenuShortCut: Upperkey 0x%lx <%c>\n",key));
-
-#warning FIXME: are these defaults ok? they used to be random
-    itemnum = 0;
-    subnum = 0;
 
     for(menunum = 0; menu; menu = menu->NextMenu, menunum ++)
     {
