@@ -1,0 +1,1495 @@
+2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5d of cxref released.
+
+2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated to version 1.5d.
+
+	* FAQ: Small updates.
+
+	* cxref.c: Update the help message version number.
+
+	* parse.y:
+	Use the YYTRANSLATE() macro when printing the debugging output.
+
+2002-04-21  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Bug fix for 'make install'.
+
+2002-04-14  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Add a missing ';' that the latest version of Bison detected.
+
+	* Makefile.in:
+	Change the rule for compiling .c to .o for versions of make that don't understand '%.o:%.c'.
+
+2002-03-31  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* INSTALL, Makefile.in:
+	Include a DESTDIR in the Makefiles to allow installing in a different place to the compile options.
+
+2002-02-17  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	More fixes to allow configure/build outside of cxref source tree.
+
+2002-02-03  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Add flex specific command line options if using flex.
+
+	* parse.l:
+	Add some missing rules to stop flex warning message with -s option.
+	Re-indent some of the code for neatness.
+
+	* parse.l: Handle the GCC floating point hex extension.
+
+2002-01-26  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l:
+	Keep the sign of negative numbers when reporting the value of #define statements.
+
+2002-01-19  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* INSTALL: Reference the --help option to configure.
+
+	* cxref-cc: Bug fix for IFS handling.
+
+2002-01-13  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c, warn-raw.c:
+	If a function is included from a header file make it clear in the output.
+
+2002-01-07  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c:
+	Fix bug with referencing wrong source HTML file for global variables.
+
+2001-11-04  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: More fixes for the -R/ bug.
+
+2001-10-27  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Remove two instances of $< that caused problems with non-GNU make programs.
+
+2001-09-06  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Fix bug that stopped -R/ from working.
+
+2001-08-23  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Handle the GNU C __builtin_va_arg extension.
+
+2001-08-17  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* sgml.c: Fix bad SGML output (&nbsp; instead of &nbs;).
+
+2001-08-11  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Handle the gcc-3.0 __builtin_va_list type.
+
+2001-06-30  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ-html.pl, README.html: Fixup to make the files HTML 3.2 compliant.
+
+	* html.c: Remove any ^L characters when writing out HTML source files.
+	Fix bad HTML output (&nbsp; instead of &nbs;).
+	Don't replace " with &quot; (not valid in HTML 3.2).
+
+Sat Apr 28 15:45:00 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5c of cxref released.
+
+Sat Apr 28 15:43:17 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated to version 1.5c.
+
+	* parse.y: Fix problem with not allocating enough memory.
+
+Sun Mar 18 10:29:25 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in, configure.in:
+	Allow the cxref programs to be compiled in a directory different from the source.
+
+Sat Jan  6 13:05:13 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* preproc.c, rtf.c, sgml.c, warn-raw.c, xref.c, cxref.c, func.c, html.c, latex.c:
+	Remove some gcc compilation warnings.
+
+Sat Aug 19 15:44:44 2000  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Added more useful debugging messages.
+
+Sat Jul  8 15:07:40 2000  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c:
+	Disallow files from being cross referenced if they are outside the root directory.
+
+Mon Mar 13 19:40:31 2000  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Optimise the lex source for run-time speed.
+
+Sat Jan 29 14:46:42 2000  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Allow bracketed function declarations.
+
+	* parse.l: Fix typo with COMMENT / WARN_COMMENT #define.
+
+Tue Nov 16 19:19:50 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l:
+	Modify SeenComment() function. Add the __restrict keyword (ignore it). Include string.h.
+
+	* autoconfig.h.in: Initial revision
+
+	* comment.c, cxref.h: Modify SeenComment() function.
+
+	* cxref.c: Updated the version number.
+
+Sun Sep 26 10:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5b of cxref released.
+
+Sun Sep 26 08:55:24 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Update to version 1.5b.
+
+Sun Aug 22 08:16:24 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Add CFLAGS and LDFLAGS to the Makefile.in.
+
+Wed Jul 21 18:26:21 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c, preproc.c:
+	Increase the length of the buffer to the getcwd() function call.
+
+Sun Jul 11 10:09:53 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Ensure that the lexer is reset to the initial state.
+
+	* cxref.c: Don't call yyrestart() before the first file.
+
+Fri Jul  2 18:26:13 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* preproc.c:
+	Use what the programmer said for deciding if an include file is global or local.
+
+Fri Jun 25 18:12:41 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c: Fix a stupid bug with dereferencing a NULL pointer.
+
+	* xref.c:
+	Fix the problem if NAME_MAX is not defined even if PATH_MAX is.
+
+Sun Jun 20 09:55:27 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* xref.c, cxref.c, cxref.h: Speed up the cross referencing.
+
+Sat Jun 19 16:52:02 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c:
+	Fix the bug with the +html+ style comments in the source HTML output.
+
+Fri Jun 18 19:15:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5a of cxref released.
+
+Fri Jun 18 18:12:18 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated to version 1.5a.
+
+Thu Jun 17 18:00:39 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Allow the GNU extension to case statements.
+
+	* parse.l: Fix problems with C++ style comments after #defines.
+
+Wed Jun 16 18:51:45 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse-yy.h: Turn on the debugging by default.
+
+	* cxref.c: Fix the CanonicaliseName() function (again).
+
+Tue Jun  8 18:41:51 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Bug fix in the CanonicaliseName function.
+
+Fri Jun  4 16:19:06 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c:
+	Make sure that the source file has the correct relative path from the cxref file.
+
+Thu May 27 16:44:39 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.tex:
+	Changed to LaTeX2e documentclass instead of documentstyle.
+
+Wed May 26 18:34:31 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Fix the CanonicaliseName() function.
+
+Thu May 20 19:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y, parse.l: Handle more GNU extensions.
+
+Sat May 15 19:00:11 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l, preproc.c, cxref.h:
+	Remove the problem of #line directives confusing the parser.
+
+Sat May 15 16:58:57 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* latex.c, rtf.c, sgml.c, cxref.c, html.c:
+	Add the cxref and cpp command lines to the output files (not RTF).
+
+Wed May 12 18:54:34 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* INSTALL: Add the --with-cxref-cpp option.
+
+Sat May  8 14:16:31 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in: Add a --with-cxref-cpp option.
+
+Fri May  7 18:38:35 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* xref.c:
+	Increase the size of the statically allocated memory for filenames, function names and typenames.
+
+Thu Apr 15 18:08:44 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Remove the generated lex and yacc parsers in the clean target.
+
+Tue Apr 13 19:08:01 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Removed some potentially problematic options to Lex/Yacc commands.
+
+Fri Mar 26 19:51:08 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: Added the -isystem gcc option hint.
+
+Fri Mar 19 17:37:52 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* xref.c, parse.l, rtf.c, sgml.c, warn-raw.c, html.c, latex.c:
+	Allow the '$' charcter to be used in function and variable names.
+
+Sun Mar 14 09:41:22 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* latex.c: Fix a bug with verbatim comments.
+
+Fri Mar  5 20:01:55 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* rtf.c, sgml.c, html.c, latex.c:
+	Fix a bug with the include/exclude directives at the start of comments.
+
+Sun Feb 21 12:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5 of cxref released.
+
+Sun Feb 21 11:47:58 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated to version 1.5.
+
+Sat Feb  6 14:53:05 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: Added a reference to the fixheader Perl script.
+
+Thu Jan 28 19:23:01 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Use the -html-src option for the README.
+
+Thu Jan 28 19:19:36 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c: Use a table for the struct/union output in HTML 3.2.
+
+Wed Jan 27 19:19:31 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Fix a problem with common comments and type casting.
+
+Tue Jan 26 19:40:13 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c, cxref.c, README.tex, README.man, README.sgml, README.html, Makefile.in, README:
+	Produce an HTML version of the source file with links into it.
+
+Sun Jan 24 16:53:50 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* warn-raw.c, func.c, preproc.c, type.c, var.c, Makefile.in, cxref.h, datatype.h:
+	Store the line numbers of the definitions as we see them.
+
+	* cxref.c: Don't allow -delete or a filename in the .cxref file.
+
+	* README.tex, README.sgml, README.html, README.man, README:
+	Some simple documentation changes.
+
+Mon Jan 18 17:49:48 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* preproc.c, var.c, parse.y:
+	Stop comments from header files from leaking into the main source file.
+
+Sun Jan 17 09:40:47 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* INSTALL: Add information about the --enable-us-paper option.
+
+Sat Jan 16 12:20:04 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Fix problem with using gcc instead of cxref-cpp.
+	Add a new install target for Win32.
+
+Sat Jan 16 11:11:42 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in, Makefile.in: Initial revision
+
+	* memory.c: Modify for use with autoconf and configure.
+
+	* INSTALL: Add information about using autoconf and configure.
+
+Mon Jan 11 19:34:07 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* rtf.c: Fix the verbatim comments.
+
+Mon Dec 28 14:26:26 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* rtf.c: Make the RTF output work as required.
+
+Sun Dec 27 12:41:15 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: Use gcc instead of cxref-cpp if new enough.
+
+Tue Dec 22 17:10:10 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: Put in information about using cxref with cygwin on win32.
+
+	* memory.c: Allow the file to compile with the win32 cygwin library.
+
+Tue Dec 22 15:23:38 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.sgml: Initial revision
+
+	* README.man, README.tex, README.html, README:
+	Updated the documentation to include the new output formats.
+
+	* rtf.c, sgml.c: Initial revision
+
+	* comment.c: Handle verbatim comments better.
+
+	* warn-raw.c: Abstract out the output specific comment handling.
+
+	* latex.c: Some tidying up to make more like the HTML with tables.
+
+	* html.c: Add in new HTML-3.2 option.
+
+	* cxref.h: Add in RTF and SGML formats.
+
+	* cxref.c: Add in RTF and SGML and allow two types of HTML.
+
+	* Makefile.config, Makefile: Add in RTF and SGML formats.
+
+	* INSTALL: Note the changes to the Makefile.
+
+Sat Dec 12 17:08:58 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ-html.pl: Fix a problem with '&' in the FAQ.html output.
+
+Sat Dec  6 14:30:00 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.4c of cxref not released
+
+Sun Dec  6 14:28:54 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated to version 1.4c.
+
+Tue Nov 24 18:54:43 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: A new FAQ question/answer.
+
+Tue Nov 17 20:05:12 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Fix the CanonicaliseName() function.
+
+Fri Oct 23 18:50:59 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c:
+	Have a different, more specialised, format for the HTML. [WineDoc side branch]
+
+	* func.c, file.c: Output some parser information. [WineDoc side branch]
+
+	* cxref.c: Use block comments by default. [WineDoc side branch]
+
+	* comment.c:
+	Allow both types of comments for functions. [WineDoc side branch]
+
+Fri Oct 23 18:21:44 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* comment.c:
+	Strip leading and trailing whitespace from function argument comments.
+
+	* parse.l: Added in the char_varying() data type.
+
+Fri Oct  9 18:43:16 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y:
+	Allow a typename to be used as the name for a structure in a field_list.
+
+	* parse.l: Add in the gnu typeof() and __FUNCTION__ extensions.
+
+	* cxref-cc: More useful error messages.
+
+Tue Jun 23 18:11:10 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* memory.c: Added Solaris x86 to the USE_STD_ARG list.
+
+Tue Jun 16 18:31:40 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ-html.pl: Do not make quoted URLs into real links.
+
+Sun May 31 07:57:09 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Fix a bug with cwd=rootdir.
+
+Sat May 16 10:56:51 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Allow orphaned ';' in structure definitions.
+
+Wed Apr 22 17:47:42 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Make more AIX friendly.
+
+Sat Apr 18 19:30:00 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.4b of cxref released
+
+Sat Apr 18 19:29:31 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README, README.tex, README.man, README.html, NEWS:
+	Updated to version 1.4b.
+
+	* parse.y:
+	Fixed properly the problem with comments for pointer to function variables.
+
+Sat Apr 18 18:46:06 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* latex.c, html.c: Small fix to comment handling.
+
+Sat Apr 18 13:29:04 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* comment.c:
+	Use a lot less memory by not using the private memory heap.
+	Fixed SplitComment() that was giving wrong results for some comments.
+	Allow the comment to be deleted to tidy up at the end.
+
+	* parse.y:
+	Change to the way that common comments are stored due to comment.c changes.
+
+	* parse.l: Small change to comment.c function interface.
+
+	* cxref.h: Add a function to free the memory used in comment.c.
+
+	* cxref.c: Ensure that there are no mallocs not freed on exit.
+	Fix the bug in the -I option mangling based on -R and cwd.
+
+Tue Apr 14 18:55:55 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile:
+	Don't create directories to install into if they already exist.
+
+	* cxref.c: Be more careful over the exit status of the child process.
+
+	* parse.l: Added __typeof and __alignof.
+
+	* install.sh:
+	Fixed a problem with installing cxref-query and making directories.
+
+Sat Apr  4 09:27:27 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: Fix some typos and make easier for FAQ-html.pl to work with.
+
+	* FAQ-html.pl: Add links for internal references and external URLs.
+
+Thu Mar 26 22:05:20 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c:
+	Modify the -I options if they refer to sub-directories of the current dir or -R option dir.
+
+Mon Mar 16 19:44:56 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y, warn-raw.c, html.c, latex.c:
+	Allow empty structures or unions to be defined.
+
+Mon Mar 16 19:16:20 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref-cc:
+	Made all the output come out on stderr, handle '-' as filename with a warning.
+
+Sun Mar  1 16:11:58 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y:
+	Added a fix for function prototypes declared using a typedef.
+
+Thu Feb 26 19:55:54 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y:
+	Make sure that comments for pointer to function typedefs and variables are included.
+
+	* preproc.c:
+	Make sure that the pathname gets updated if we find out later what it really is.
+
+	* comment.c:
+	Ensure that the file comment comes from the file in question and not an included file.
+
+	* cxref.c:
+	Allow the argument '-R.' to be ignored and not acted on incorrectly.
+
+Wed Feb 11 19:44:08 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Change int to pid_t.
+
+Tue Jan 20 18:51:24 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Save some memory when parsing comments.
+
+Thu Nov 20 20:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4a of cxref released
+
+Thu Nov 20 20:16:22 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated to version 1.4a.
+
+	* comment.c:
+	Made lines containing only whitespace be replaced by a newline.
+
+	* parse.l, README.tex, cxref.c, README.html, README.man, README:
+	Added in a -no-comments option.
+
+	* Makefile: Fixed more SUN make problems.
+
+	* latex.c, parse.y, warn-raw.c, html.c:
+	Stop wwwoffle crashing on (pointless) unamed structs within structure defintions.
+
+Tue Aug 26 16:42:32 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c:
+	Fix incorrect parsing of .cxref file when there is a legally recognised space.
+
+Mon Aug 25 09:24:14 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.config, install.sh, memory.c:
+	Changes to work with Ultrix (install -c and USE_STD_ARG).
+
+Sun Aug 24 15:29:16 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* comment.c:
+	Do not try to access a NULL pointer for comments that are empty.
+
+Sat Aug 23 15:21:09 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Improved the CanonicaliseName() function.
+
+Wed Aug  6 17:45:33 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Allow blank lines and comments in the .cxref file.
+	Fixed string handling / memory bug.
+
+	* comment.c: Fixed string handling / memory bug.
+
+	* README.man, README.tex, README, README.html:
+	Allow blank lines and comments in the .cxref file.
+
+Wed Jul 30 16:50:06 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Better handling of multi-line preprocessor directives.
+
+Mon Jul 28 18:17:24 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Made the Makefile work with SUN make.
+
+Fri Jul 25 19:10:34 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* preproc.c: Clean up properly in ResetPreProcAnalyser().
+
+	* parse.y:
+	Handle 'volatile const' and 'const volatile' and clean up properly in RestParser().
+
+	* latex.c, html.c, warn-raw.c: Cope with functions that are declared as external.
+
+Fri Jul 18 19:21:56 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Fixed bug in -CPP option.
+
+Sat Jul  5 18:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4 of cxref released
+
+Sat Jul  5 18:22:27 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Updated for version 1.4.
+
+Sun Jun 22 10:09:28 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Fixed a bug in the allclean target.
+
+	* parse.y: Bug fix for a GNU C extension.
+
+	* cxref.c: Bug fix for reading the .cxref file.
+
+Sun Jun 22 10:07:12 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.tex, README, README.html, README.man, FAQ:
+	Added in a description of the cxref-cc script.
+
+	* cxref-cc: Initial revision
+
+Thu Jun 19 17:40:22 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c:
+	Added a new option -Rdirname to specify the source code tree root directory.
+	Added in the reading of options from a .cxref file.
+
+	* preproc.c, cxref.h:
+	Moved the CanonicaliseName() function from preproc.c to cxref.c and made it global.
+
+	* README.html, README.man, README.tex, FAQ, README:
+	Added documentation about the -R option and the .cxref file.
+
+Wed Jun 18 18:54:33 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile:
+	Changed the installed cxref to not have a path hard-coded to cxref-cpp (using execvp).
+
+Sat Jun 14 16:35:42 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* var.c, warn-raw.c, parse.y, latex.c, parse.l, html.c, datatype.h, func.c:
+	Handle the functions and variables that are included into a file from a header
+	file as if they were actually in the file.
+	But only if the result of compilation of the file is to put them into the object
+	file, so not inline functions or extern variables.
+
+Fri Jun 13 18:32:17 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ: Added in a section 0 pointing to the cxref home-page.
+
+Mon May 26 15:30:51 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* preproc.c, cxref.h, parse.l:
+	Cope with comments trailing #include statements now that cxref-cpp has been fixed.
+
+Mon May 26 11:23:42 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c, latex.c, README.man, README.tex, README.c, README.html, README:
+	Added in a way to allow extended markup (HTML or LaTeX) inside of comments.
+
+Sun May 25 16:59:16 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.html, html.c, FAQ-html.pl:
+	Used 'weblint' and 'htmlchek' to check the conformance of the HTML output and fixed most deviations.
+
+Sun May 25 10:03:36 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Fixed the reported parse bugs
+	 - initialised declarator using GNU extension,
+	 - type name / identifier confusion.
+
+Sun May 18 15:41:42 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y:
+	Re-ordered the statements into a logical rather than alphabetical order.
+
+Sun May 18 10:05:52 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* latex.c, xref.c, html.c, README.tex, cxref.c, cxref.h, README.html, README.man, README:
+	Added an option to allow files to be deleted from the cross reference output.
+
+Sat May 17 15:06:01 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l, preproc.c, cxref.h:
+	Made fuller use of the CPP changes for included files.
+
+	* cxref.c: Made fuller use of the CPP changes for included files.
+	Moved CurFile to cxref.c from file.c.
+
+	* file.c: Moved CurFile to cxref.c from file.c.
+
+Fri May 16 19:06:19 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c, FAQ, README, README.tex, README.html, README.man:
+	Added in a way of passing extra arguments to the pre-processor.
+
+Sun May 11 15:24:04 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* comment.c: Do not Malloc the string returned from SplitComment.
+
+	* xref.c, warn-raw.c, var.c, slist.c, type.c, preproc.c, parse.y,
+	  parse.l, html.c, latex.c, func.c, datatype.h, file.c, cxref.c, cxref.h:
+	Major changes to the internals of the program:
+	  Changed StringList and StringList2 to be pointers.
+	  Added more options to the AddToStringList() functions.
+	  Lists of xrefs use StringList2 with separate function and filename.
+	  Added in constructors and destructors for the main datatypes.
+	  Added in functions to reset the lexer/parser/analysers when finished.
+
+	* memory.c: Improved the debugging information.
+
+	* Makefile: Handle missing sub-directories gracefully.
+
+Sun Apr 27 17:09:25 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* comment.c:
+	Tidy up the comment string once it is collected, not in the lexer.
+
+	* preproc.c, cxref.h:
+	Changed the way that the lexer interfaces to cpp for the include files.
+
+	* parse.l:
+	Added new comment options; -verbatim-comments and -block-comments.
+	Changed the way that the lexer interfaces to cpp for the include files.
+
+	* html.c, latex.c, cxref.c:
+	Added new comment options; -verbatim-comments and -block-comments.
+
+	* README.man: Describe the new comment options.
+
+	* README, README.html, README.tex:
+	Changed the description of the modifications to cpp
+	and describe the new comment options.
+
+	* Makefile: Make use of the new cpp option for #includes.
+
+Fri Apr 25 18:39:19 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.html, README.tex, README: Changed over to cpp-2.7.2.
+
+Wed Apr 23 20:00:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3a of cxref completed.
+
+Wed Apr 23 19:46:48 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Added a fix for type cast inside of an array declaration.
+
+Thu Mar  6 18:40:22 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Added the sys/wait.h include file.
+
+	* Makefile:
+	Fixed a bug in the allclean target added when removing 'make -C'.
+
+Fri Feb  7 19:20:37 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* func.c, cxref.c: Fixed minor memory handling problems.
+
+	* parse.y:
+	Fixed a problem with function prototypes having pointer to pointer to function arguments.
+
+Fri Jan 24 20:33:33 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Removed all of the GNU Make features.
+
+Thu Jan  9 17:48:23 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* memory.c: Stdarg is needed for other UNIXes.
+
+Sat Jan  4 15:54:31 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* install.sh: Made the exit status work correctly now.
+
+Sun Dec 15 18:09:43 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* install.sh: Initial revision
+
+	* Makefile, Makefile.config:
+	Added an installation configuration option.
+
+Fri Dec 13 20:03:19 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile:
+	The program was installed to a INSTDIR/bin/cxref-cpp but cxref-inst looked at INSTDIR/cxref-cpp.
+
+Sun Dec  8 10:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3 of cxref released
+
+Sun Dec  8 10:11:12 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Added news of version 1.3 changes.
+
+Sun Dec  8 10:07:45 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.config: Changed the INSTDIR to install the manual pages.
+
+	* Makefile: Added the manual pages.
+
+	* README.man: Initial revision
+
+Sat Dec  7 20:36:38 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l: Added C++ style comments
+	More GNU extensions
+	   __extension__ keyword is ignored, and expression is parsed
+	   __typeof__ keyword returns a type name of __typeof__
+	   Varargs macros allowed
+
+	* parse.y:
+	Made the parser work on the source conde in the Linux kernel:
+	   Added lots more GNU extensions
+	   Fixed more problems with type names and identifiers clashing
+	   Changed the way that integer types are handled to allow for any number of types
+	   Concatenate the value of expressions so that constant expressions e.g. for array sizes are expressed.
+
+Sat Dec  7 14:08:39 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.config:
+	Stop flex from including #line directives taht confuse cxref.
+
+Tue Nov 26 17:50:52 1996  Andrew M. Bishop  <amb@gedanken>
+
+	* cxref.c:
+	Wrote a new popen/pclose that uses execlp instead of system, requires arguments to be kept as a list.
+
+Sat Nov 16 16:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Beta Version 1.3 of cxref released
+
+Sat Nov 16 16:19:15 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Added news of version 1.3 (beta) changes.
+
+Sat Nov 16 15:29:51 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.el: Added compatability for newer Emacs cc-mode.
+
+Sat Nov  2 17:38:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y:
+	Fixed problems with implicit integer types and type qualifiers.
+
+Sat Nov  2 17:21:02 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* warn-raw.c:
+	Really moved type comment to match html.c/latex.c (earlier attempt was wrong).
+
+Sat Nov  2 14:44:01 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.tex, README.html, README:
+	Removed references to using cxref without cxref-cpp, and improved cxref-cpp section.
+
+	* README.c:
+	Improved README.c, added cross-referenceable items, removed references to cxref-cpp.
+
+	* Makefile: Use -xref option on README.c and fix parse-yacc.h target.
+
+Wed Oct 30 20:34:03 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile:
+	Provide the yacc and lex output .[ch] files for people without bison/flex.
+
+Tue Oct 29 19:53:55 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.y: Slight change to error message for when parser fails.
+
+	* cxref.c: Slight change to error message for when cpp dies.
+
+	* Makefile.config: Initial revision
+
+	* Makefile: Automated makefile, uses separate configuration file.
+
+	* INSTALL: New automated makefiles require new instructions.
+
+Sun Oct 27 15:50:42 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Tidied up the usage information, made it 80 chars wide,
+	included author's name, e-mail address, web page, version number.
+
+	* warn-raw.c:
+	Added ';' in struct listings, moved type comment to match html.c/latex.c.
+
+	* latex.c: Added ';' in struct listings.
+
+	* html.c:
+	Added ';' in struct listings, changed order of tags to satisfy weblint,
+	replaced <menu> with <ul> added HTML-2.0 DTD at the top.
+
+Sun Oct 20 16:50:10 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.tex, README.html, README:
+	Added a 'Further Information' section and general updating.
+
+	* FAQ-html.pl: Initial revision
+
+	* FAQ: More information in section 4 and general updating.
+
+Sat Oct  5 12:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.2b of cxref released
+
+Sat Oct  5 12:15:21 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Added news of version 1.2b changes.
+
+Sun Sep 29 14:53:59 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.h, var.c: Tidy up the scope variables after each file.
+
+	* cxref.c:
+	Added warning about -warn-xref option without and -xref option.
+	Tidy up the scope variables after each file.
+
+	* warn-raw.c:
+	Check for both -warn-xref and -xref options before printing a warning.
+
+	* html.c: Stopped the appendix from appearing in the wrong place.
+
+Sun Sep 15 16:05:37 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* warn-raw.c, latex.c, html.c:
+	Changed the output format to put comments for a nested struct/union after the variable name.
+
+	* type.c:
+	Typedefs of function types recognised as such so they can be used in prototypes.
+	Comments in nested structure/union type defintions now get picked up correctly.
+
+	* cxref.h:
+	Typedefs of function types recognised as such so they can be used in prototypes.
+
+	* parse.y:
+	Typedefs of function types recognised as such so they can be used in prototypes.
+	Function defintions from header files handled safely.
+
+	* xref.c: Bug that caused dangling (illegal) cross references fixed.
+
+	* file.c, func.c, datatype.h:
+	Function prototypes within function definitions now cause no loss of references.
+
+Sun Aug 18 16:52:16 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c:
+	Recognise an abnormal termination of cxref-cpp (or whatever) and stop processing the file.
+
+Sat Aug 17 12:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.2a of cxref released
+
+Sat Aug 17 11:56:46 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* NEWS: Added news of version 1.2a changes.
+
+	* func.c: Better handling of K&R function definitions.
+
+	* parse.l: Added more GCC extensions.
+	Change the way identifiers and type names are distinguished.
+
+	* parse.y: Now have feedback to lexical analyser.
+	Use an array to store current variable name to handle nested definitions.
+	Added the rest of the integer types.
+	Removed the reduce/reduce conflict.
+
+Sat Jul  6 20:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.2 of cxref released
+
+Sat Jul  6 19:56:15 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* NEWS: New news added, reformatted, and spell-checked.
+
+	* FAQ: Initial revision
+
+	* README, README.html, README.tex: Reformatted, and spell-checked.
+
+Sat Jul  6 19:05:47 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* html.c: Added heading for source files section.
+
+Sat Jul  6 17:01:16 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* parse.y: Lots of changes, in particular:
+	   Handle parse errors safely, do not exit but go on to the next file.
+	   Complete rewrite of function declaration code, fixed scope and K&R problems.
+	   Copes with variable types better than it used to.
+	   Extern variables allowed within functions (EXTERN_F type).
+	   Renamed some of the local variables, and changed their behaviour to accomplish the above.
+	There remain 3 reduce/reduce conflicts that do not (seem to) affect the program output.
+
+	* INSTALL: Removed the reference to the %expect in parse.y.
+
+Thu Jul  4 20:02:27 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* func.c: Bug with ellipses in function definition.
+
+Tue Jul  2 20:52:59 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* latex.c, warn-raw.c, html.c:
+	Change the output to handle the EXTERN_F scope type.
+
+	* cxref.c: Fixed bug in -CPP option handling.
+
+Sat Jun 29 16:43:38 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* Makefile:
+	Don't assume that . is on the path, so use ./cxref not just cxref and use $(MAKE) for subdirectories.
+
+Sat Jun 29 16:28:52 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* xref.c, cxref.h:
+	Defined the scope type EXTERN_F for variables declared extern within a function.
+	The outputs need to be modified to reflect this, as does the parser and cross-referencer.
+
+Thu Jun 27 20:10:03 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* comment.c: Fixed bugs in the SplitComment() function.
+
+Sun Jun 16 18:59:47 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* parse.l:
+	Better handling of whitespace in comments and make better use of current parse file variable.
+
+Sun Jun 16 16:44:28 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* var.c:
+	Remove the fixed limit on the number of levels of scope variables.
+
+	* type.c:
+	Fixed bug where 1st and not matching '}' was searched for in typedef definition.
+
+	* func.c:
+	Use file name from parser, not locally generated for prototypes.
+	Better handling of traditional function declarations.
+	Changed the way that function internal comments are handled.
+
+	* cxref.h: Changed some function prototypes in func.c.
+
+	* comment.c:
+	Changed the way that function internal comments are handled.
+
+Tue Jun 11 18:12:41 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* parse-yy.h, parse.l:
+	Add support for line numbers and file names in the parser.
+
+	* parse.y:
+	Gracefully handle yacc parse errors, print line numbers and file names, don't exit.
+	Parse labeled statements with a ';' in a non-ANSI but common way.
+
+Sun Jun  9 18:22:33 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* warn-raw.c: Minor improvement to the output for raw mode.
+
+	* cxref.c:
+	Gracefully handle yacc parse errors, move on to the next file.
+
+Sat Jun  8 16:54:32 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* latex.c: Added cxref.sty,
+	Combined the AddLatexAppendix() function into the WriteLatexDocument() function,
+	Merged the WriteLatexPreamble() and WriteLatexPostamble() functions into WriteLatexTemplate(),
+	Removed the code in latex() that tried to convert '-' into an en-dash,
+	Create directories that are needed for the output files to write into.
+
+	* html.c:
+	Combined the AddHTMLAppendix() function into the WriteHTMLDocument() function,
+	Create directories that are needed for the output files to write into.
+
+	* func.c:
+	Fixed bug where option_xref==0 still listed out the functions called (syntax error).
+
+	* README, README.tex, README.html:
+	Updated the README as a result of adding cxref.sty, also minor tweaks.
+
+	* Makefile: Added doc/cxref.sty to the files included in latex-style.c.
+
+	* INSTALL:
+	Added a description of the change that needs to be made in doc/page.sty for US paper.
+
+Wed May 22 19:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.1 of cxref released
+
+Wed May 22 17:55:53 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* parse.y:
+	A large number of changes to get the program to provide better
+	debugging output and parse new GNU C language extensions.
+	   Better debugging options for the parser, by adding extra levels of
+	    debugging, and a wrapper function that intercepts yylex() calls.
+	   Allows the asm() GNU extension.
+	   Bit-fields now parsed correctly.
+	   Enum typedefs allowed to have a trailing comma.
+	   Function definitions with no return type are now recognised as int
+	    and those with no arguments recognised as void.
+
+	* parse.l:
+	A large number of changes to get the program to work on other systems
+	and parse new GNU C language extensions.
+	   Code fixed to work with a POSIX lex program (no YY_START or <*>).
+	   Code handles carriage returns in strange places.
+	   GNU __attribute__ & __extension__ compiler directives handled better.
+	   Allows the asm() GNU extension.
+	   Re-ordered the code, and added comments for each section.
+
+	* NEWS: Initial revision
+
+Mon May 20 18:54:01 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* preproc.c:
+	Fixed bug in SeenInclude where a #include "..." inside a #include <...> didn't work.
+
+	* parse-yy.h: Added better YACC debugging support.
+
+	* Makefile: Made latex-style.c be ANSI compatible.
+
+	* cxref.c: Fixed stupid bug, added better YACC debugging support.
+
+Sat May 18 19:40:50 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* README: Changed the title to version 1.1.
+
+	* INSTALL: Added a few more references to the cpp/README.
+
+Sun Feb 25 09:50:47 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* INSTALL: Initial revision
+
+Sat Feb 24 16:30:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.0 of cxref released
+
+Sat Feb 24 14:54:19 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* INSTALL: Initial revision
+
+	* xref.c, warn-raw.c, var.c, type.c, slist.c, preproc.c, parse.y, parse.l, parse-yy.h, memory.h, memory.c, latex.c, html.c, func.c, file.c, datatype.h, cxref.h, cxref.el, cxref.c, comment.c, README.tex, README.html, README, Makefile:
+	Version 1.0 Released (First release version).
+
+Sun Feb  4 15:41:31 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* xref.c: Re-ordered the cross referencing.
+
+	* memory.h: Added a SafeCalloc() function.
+
+	* memory.c:
+	Added a SafeCalloc() function and slight mod to DEBUG macros.
+
+	* cxref.h: Error in XREF_* macro definitions.
+
+	* Makefile: Added default values for CC & CFLAGS, added cxref-query.
+
+Tue Nov 28 19:31:20 1995  Andrew Bishop  (amb@dan)
+
+	* warn-raw.c:
+	Fixed bug where variable or function is global and is referenced in the file and invalid warning was printed.
+
+Fri Nov 24 20:51:40 1995  Andrew Bishop  (amb@dan)
+
+	* parse.l:
+	Made push past work for 'int foo[2]={1,2}; /* */' where the yacc grammar did not ask for ';'.
+
+Fri Nov 24 19:21:36 1995  Andrew Bishop  (amb@dan)
+
+	* xref.c:
+	Fixed bug where functions referenced from a file do not get cross-referenced.
+	Tidied up the function cross referencing, rationalising the functions needed.
+	Fixed the extern variable fixup where unknown definitions were ignored.
+	Changed the variable xref file for variables referenced from files.
+	Changed the type definition xref file for not typedef types.
+
+Mon Nov 20 19:09:06 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile:
+	Added 'program' as the default target and put 'program' and 'docs' as dependencies of 'all'.
+
+Sun Nov 19 15:33:28 1995  Andrew Bishop  (amb@dan)
+
+	* warn-raw.c:
+	Fixed bugs with referencing null pointer if some comments are missing.
+
+Wed Nov 15 19:15:01 1995  Andrew Bishop  (amb@dan)
+
+	* parse.y: Added long long types, removed spaces from ends of lines.
+
+	* latex.c: Added hard-space to the tables to stop latex2e breaking.
+
+	* cxref.h: Made work on Solaris 2.3
+
+	* Makefile: Stopped using echo -n for latex-style.c (fails on SVR4).
+
+Tue Oct 17 20:18:25 1995  Andrew Bishop  (amb@dan)
+
+	* latex.c, cxref.c, README.tex, README.html, README:
+	Added support for LaTeX2e version.
+
+Mon Oct  9 19:19:33 1995  Andrew Bishop  (amb@dan)
+
+	* latex.c:
+	Fixed some problems with the latex() function that converts illegal symbols to a legel format.
+
+Thu Aug 24 20:41:11 1995  Andrew Bishop  (amb@dan)
+
+	* parse.y, type.c: Fixed bug where 'See Also' for typedefs failed.
+
+Tue Aug 22 20:03:42 1995  Andrew Bishop  (amb@dan)
+
+	* cxref.c: Fixed bug with -xref options.
+
+Sat Aug 12 16:27:07 1995  Andrew Bishop  (amb@dan)
+
+	* cxref.el: Split up the "$Header$" string in the cxref-file-comment.
+
+Thu Aug 10 20:09:43 1995  Andrew Bishop  (amb@dan)
+
+	* cxref.el: Changed the cxref-endline-comment to use c-mode functions.
+
+Sat Aug  5 16:03:11 1995  Andrew Bishop  (amb@dan)
+
+	* html.c, latex.c: Bug with cross reference of extern variables.
+
+Sat Aug  5 15:44:49 1995  Andrew Bishop  (amb@dan)
+
+	* xref.c, warn-raw.c, func.c, cxref.h, cxref.c:
+	Added -xref[...] options.
+	used #defines for -xref[...], -warn[..] and -index[...] options.
+
+	* README.tex, README.html, README:
+	Added details of the -xref[...] options.
+
+	* datatype.h, parse-yy.h, parse.y, memory.c, type.c:
+	Fixed xref warnings.
+
+Mon Jul 31 20:54:56 1995  Andrew Bishop  (amb@dan)
+
+	* warn-raw.c, type.c, datatype.h:
+	Typedef, references to other types was bogus.
+
+	* latex.c, html.c: Variable and Typedef bugs.
+
+	* Makefile: Changed the readme target.
+
+	* README.tex, README.html, README: Miscellaneous improvements.
+
+Sun Jul 30 17:53:01 1995  Andrew Bishop  (amb@dan)
+
+	* README.html, README.tex: Initial revision
+
+	* README: Spelling, grammar and syntax changes.
+
+	* README.c: Changed the example include files to be system ones.
+
+	* Makefile:
+	Added a readme target to make README_c.tex and README.c.html.
+
+Sat Jul 29 20:08:53 1995  Andrew Bishop  (amb@dan)
+
+	* xref.c: Fixed references to external variables.
+
+	* warn-raw.c: Added a FilePart output function.
+	Renamed the #defines for option_warn options.
+
+	* latex.c, html.c:
+	Added functions and variables referenced to the file section.
+	Added a FilePart output function and added functions and variables referenced in this file section.
+
+	* README:
+	Renamed a4.sty to page.sty, added cxref.el, improved xref section.
+
+	* Makefile: Renamed a4.sty to page.sty.
+
+	* cxref.el: Initial revision
+
+Tue Jul 25 20:48:11 1995  Andrew Bishop  (amb@dan)
+
+	* README: Removed examples to README.c.
+	* README.c: Initial revision
+
+	* cxref.c: Examples of the trailing and leading comments implemented.
+
+	* cxref.h: Two function prototypes removed.
+	* func.c, type.c:
+	Implement the push through of comments, no spare comment needed and function removed.
+	* comment.c: Implement the push through of comments.
+	* parse.y, parse.l: Implement the push through of comments.
+
+	* file.c: Fix a bug of freeing some data that is not mallocated.
+
+	* html.c: Rationalise the usage of the html() function and fix it.
+
+Sun Jul 23 16:23:36 1995  Andrew Bishop  (amb@dan)
+
+	* parse.l: Handles trailing comments for #define / #include.
+	* cxref.h, datatype.h, parse-yy.h, memory.h:
+	Modified comment to trailing style for #define / #include.
+
+	* README:
+	Add explanation of new comment styles and Author / copyright info.
+
+	* func.c: Option to have return value comment inline.
+
+	* parse.y: Improved error function (reports EOF).
+
+Wed Jul 12 19:02:56 1995  Andrew Bishop  (amb@dan)
+
+	* html.c: Fixed stupid HTML bug with '<' and '>' special characters.
+
+	* Makefile: Changed the rule for all etc (from ':' to '').
+
+Sat Jul  8 14:37:30 1995  Andrew Bishop  (amb@dan)
+
+	* html.c: Improved HTML.
+
+Mon Jul  3 17:38:06 1995  Andrew Bishop  (amb@dan)
+
+	* type.c: Big Bug fixes.
+
+Sun Jul  2 17:59:59 1995  Andrew Bishop  (amb@dan)
+
+	* latex.c: Added changes to mirror html.c.
+
+	* html.c: Initial revision
+
+Sun Jul  2 16:00:20 1995  Andrew Bishop  (amb@dan)
+
+	* cxref.h, cxref.c: Added HTML option.
+
+	* latex.c: Renamed the appendix file.
+
+	* Makefile, README: Added HTML option.
+
+Sat Jul  1 16:29:46 1995  Andrew Bishop  (amb@dan)
+
+	* xref.c, warn-raw.c: Handles struct and union non-typedefs.
+
+	* type.c: Typedef cross referencing, struct and union non-typedefs.
+
+	* parse.y: Handles repeated comments, struct and union non-typedefs.
+
+	* parse.l: Handles bogus comment styles.
+
+	* latex.c: Typedef cross referencing, Type option.
+
+	* datatype.h: Typedef cross referencing.
+
+	* cxref.h: New prototypes.
+
+	* cxref.c: New options.
+
+	* comment.c: Handles repeated comments, can discard partial comments if bogus.
+
+	* Makefile: Added LaTeX style sheets, more verbose output.
+
+Wed Jun 28 20:20:09 1995  Andrew Bishop  (amb@dan)
+
+	* README: Updated with new command line options.
+
+Wed May  3 20:30:04 1995  Andrew Bishop  (amb@dan)
+
+	* xref.c: New index and warn options.
+
+	* warn-raw.c: New warn option.
+
+	* var.c: Now includes scope.c.
+
+	* type.c: Bug fix.
+
+	* parse.y: Better type handling.
+
+	* parse.l: Better handling of comments and #defines.
+
+	* latex.c: New index and warn options and general tidying up and improvements.
+
+	* cxref.h, cxref.c: New index and warn options.
+
+	* comment.c: Change for all-comments option (first comment is for file) and tidy up.
+
+	* Makefile: Removed scope.c.
+
+        Beta testing of this version now.
+
+Wed Apr 26 21:57:27 1995  Andrew Bishop  (amb@dan)
+
+	* cxref.c:
+	Handle -all-comments option and discard all '-...' arguments.
+
+Wed Apr 26 21:45:21 1995  Andrew Bishop  (amb@dan)
+
+	* type.c: Better handling of comments and multi-file fixed.
+
+	* Makefile: Bug fixes for local cpp.
+
+	* cxref.c: Handle -all-comments option and discard all '-...' arguments.
+
+	* func.c: Handle spare_arg_commment better, variable refs for file.
+
+	* parse.y: Many changes, better handling of pointer to functions etc.
+
+	* var.c: Mult-file fixed.
+
+	* parse.l: New -all-comments option and #define values.
+
+	* latex.c: New output stuff and much better LaTeX, using environments etc.).
+
+	* warn-raw.c: New outputs.
+
+	* xref.c: Output list of typedefs and better handling of function/variable refs.
+
+	* scope.c: Removed stray variable CurFile.
+
+	* cxref.h: Value of #defines function proto.
+
+	* preproc.c: Value of simple #defines.
+
+	* datatype.h, file.c: Variable refs for file, value for #defines and visible for variables.
+
+	* comment.c: handle -all-comments option.
+
+Sun Apr 23 15:08:36 1995  Andrew Bishop  (amb@dan)
+
+	* README: Minor change to reflect the new cross referencing.
+
+	* Makefile: Add the option to use a local copy of cpp and added the two new files.
+
+	* memory.h: Added note about how the memory is used in the program.
+
+	* parse.l: Changed some of the memory handling to reduce usage.
+
+	* parse-yy.h: Changed to YYDEBUG = true.
+
+	* warn-raw.c, xref.c: Function and Variable references and StringLists.
+
+	* cxref.c: Handles Makefile option of which cpp.
+
+	* latex.c: Have variable and function references.
+
+	* parse.y: Multiple changes, to handle function calls, references, typedefs, prototypes and definitions better.
+		   New error message when YYDEBUG is set.
+		   Scoping for variables.
+
+	* datatype.h: New datatypes for string lists.
+
+	* cxref.h: New functions in new files.
+
+	* comment.c: No change.
+
+	* file.c: Use StringLists and have function references.
+
+	* func.c: Use StringLists and have variable and function references.
+
+	* preproc.c, type.c, var.c: Use StringLists.
+
+	* scope.c, slist.c: Initial revision
+
+Wed Apr  5 20:08:54 1995  Andrew Bishop  (amb@dan)
+
+	* warn-raw.c, var.c, type.c, preproc.c, parse.l, parse-yy.h, memory.h, memory.c, latex.c, func.c, file.c, datatype.h, cxref.h, cxref.c, comment.c, Makefile:
+	Second Beta Version, to allow RPC to test it fully.
+
+	* README: Initial revision
+
+Mon Apr  3 20:22:00 1995  Andrew Bishop  (amb@dan)
+
+	* xref.c, warn-raw.c, var.c, type.c, preproc.c, parse.y, parse.l, parse-yy.h, memory.h, memory.c, latex.c, func.c, file.c, datatype.h, cxref.h, cxref.c, comment.c, Makefile:
+	Stable Version for beta testing.
+
+Sat Mar 25 16:15:54 1995  Andrew Bishop  (amb@dan)
+
+	* parse.y, parse.l, cpp.l, xref.c, warn-raw.c, var.c, type.c, preproc.c, parse-yy.h, memory.h, memory.c, latex.c, func.c, file.c, datatype.h, cxref.h, cxref.c, comment.c, Makefile:
+	Initial revision
+

@@ -1,0 +1,34 @@
+                IMPROVEMENTS IN CXREF VERSION 1.6 (or later)
+                ============================================
+
+
+Better RCS / CVS Formatting
+
+> Format the RCS / CVS $Log$
+> Format the RCS / CVS Revision 1.1  2002/12/22 13:53:04  verhaegs
+> Format the RCS / CVS Initial revision
+> Format the RCS / CVS and $Revision$ keywords similar to the way that the
+> $Header$ one is currently formatted.
+
+
+Output format options
+
+> Options to allow a finer choice of the output that is produced, for example
+> function calls but not called, variables used but not visible etc., controlled
+> by an options file.
+
+
+Output documents
+
+> Beautification of the LaTeX and HTML documents by adding a title page.
+
+
+HTML hotlinks
+
+> Hotlinks from variable definitions / function definitions to the types that
+> they are.
+
+
+Internationalisation
+
+> Fetch titles and others strings used for HTML and LaTeX from a table.

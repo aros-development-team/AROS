@@ -1,0 +1,282 @@
+2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5d of cxref released.
+
+2002-04-21  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Bug fix for 'make install'.
+
+2002-04-14  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Change the rule for compiling .c to .o for versions of make that don't understand '%.o:%.c'.
+
+	* Makefile.in:
+	Include a DESTDIR in the Makefiles to allow installing in a different place to the compile options.
+
+2002-02-17  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	More fixes to allow configure/build outside of cxref source tree.
+
+	* configure.in: Allow gcc-3.x to be used in place of cxref-cpp.
+
+2002-01-19  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Allow for gcc 3.x style -Afoo=bar options as well as existing -Afoo(bar) options.
+
+2001-12-16  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Added in a #include of alloca.h if HAVE_ALLOCA_H is autoconfigured.
+
+2001-12-09  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in:
+	When the user does not have gcc try and guess what to do.
+
+Sat Apr 28 15:45:00 2001  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5c of cxref released.
+
+Tue Nov 16 19:06:51 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* autoconfig.h.in: Initial revision
+
+Sun Sep 26 10:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5b of cxref released.
+
+Sun Aug 22 08:16:39 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Add CFLAGS and LDFLAGS to the Makefile.in.
+
+Fri Jun 18 19:15:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5a of cxref released.
+
+Sat May  8 14:16:37 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in: Add a --with-cxref-cpp option.
+
+Sun Feb 21 12:00:00 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5 of cxref released.
+
+Sat Jan 16 12:20:10 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in: Add a new install target for Win32.
+
+Sat Jan 16 11:11:56 1999  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in, Makefile.in: Initial revision
+
+	* version.c: Change the version string to include cxref.
+
+	* tm.h, config.h: Modify for use with autoconf and configure.
+
+	* README: Add information about using autoconf and configure.
+
+	* version.c: Initial revision
+
+Sun Dec 27 12:23:27 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* config-cpp: Use gcc instead of cxref-cpp if new enough.
+
+Sat Dec  6 14:30:00 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.4c of cxref not released
+
+Wed Apr 22 17:48:19 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* config.h: Fixed previous AIX change.
+
+Sat Apr 18 19:30:00 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.4b of cxref released
+
+Sat Apr 18 18:57:52 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* config.h: Made a change for AIX.
+
+Wed Jan  7 19:24:36 1998  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* config.h:
+	Fix a bug that stops compilation on Linux with libc version 6.
+
+Thu Nov 20 20:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4a of cxref released
+
+Thu Nov 20 19:55:34 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile: Fixed more SUN make problems.
+
+Sat Jul  5 18:30:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.4 of cxref released
+
+Mon May 26 15:11:14 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Submitted my changes to a future version gcc that are needed for cxref.
+	This means that I have seen the future of cccp.c and included a couple of fixes.
+	The option of mine is the '-dI' option to output the #includes.
+
+Sun Apr 27 17:00:31 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.man, cccp.c:
+	Removed all features except those that could be put in the standard GCC.
+
+Fri Apr 25 18:36:28 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.man, README, config.h, Makefile, cccp.c:
+	Changed over to cpp-2.7.2, patched in all the cpp-2.6.3 hacks.
+
+	* cccp.c: Initial revision (new version based on gcc-2.7.2).
+
+Wed Apr 23 20:00:00 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3a of cxref completed.
+
+Wed Apr 23 19:47:27 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* config.h: Added extra #defines in the NEED_SVR4_STRINGS case.
+
+Tue Mar 25 18:43:06 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c: Added a check for FreeBSD for the use of sys_errlist.
+
+Mon Jan  6 20:37:26 1997  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Changed the behaviour on system include files with ../ in the path.
+
+Sun Dec  8 10:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.3 of cxref released
+
+Sun Dec  8 10:07:57 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README.man: Initial revision
+
+Sun Dec  8 09:15:31 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Fixed a bug in the code to canonicalise the path name of included files.
+
+Sat Nov 16 16:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Beta Version 1.3 of cxref released
+
+Sat Nov 16 16:03:01 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* config-cpp:
+	Made the output more verbose and fixed error in bzero determination.
+
+Sat Nov  2 14:23:09 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* tm.h, config.h: Initial revision
+
+	* Makefile, config-cpp, README:
+	Replaced the configured tm.h and config.h with a generic one.
+
+	* cccp.c:
+	Allow #define replacements for bzero,bcmp,bcopy and index,rindex to work.
+
+Tue Oct 29 19:51:40 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* README:
+	New automated makefiles require new instructions in case of failure.
+
+	* config-cpp: Initial revision
+
+	* Makefile: Automated makefile, uses two separate configuration files.
+
+Sun Oct 27 15:02:23 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	A CXREF_CPP_PREDEFINES when compiling will override CPP_PREDEFINES from header files.
+
+Sat Oct  5 12:30:00 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+        Version 1.2b of cxref released
+
+Sun Aug 18 16:13:44 1996  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Added a second set of file name mangling to stop some multi-directory reference failures.
+
+Sat Jul  6 20:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.2 of cxref released
+
+Sat Jul  6 19:44:25 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* README: Reformatted, and spell-checked.
+
+Sun Jun 30 19:49:15 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* cccp.c:
+	Changed filname handling so that foo/../ and ./ are removed from include file names,
+	and only system files and those starting with / are output as in the original source.
+
+Wed May 22 19:00:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.1 of cxref released
+
+Sat May 18 19:31:21 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* README:
+	Added quite a bit more information about configuring the cxref-cpp program
+	and testing it once made.
+
+	* Makefile: Removed the example INCLUDE_DIR[123] for SUNs.
+
+Sat Feb 24 16:30:00 1996  Andrew M. Bishop  (amb@gedanken)
+
+        Version 1.0 of cxref released
+
+Sat Feb 24 14:50:32 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* Makefile: Version 1.0 Released (First release version).
+
+Sat Jan 20 21:06:25 1996  Andrew M. Bishop  (amb@gedanken)
+
+	* Makefile: Added a default CC and CFLAGS.
+
+Wed Nov 15 19:06:50 1995  Andrew Bishop  (amb@dan)
+
+	* README: Added more explanation about the new config file structure.
+
+	* Makefile:
+	Added includes for Solaris 2 and modified config file structure.
+
+Wed Aug  2 19:55:12 1995  Andrew Bishop  (amb@dan)
+
+	* README: More explanations.
+
+	* Makefile: Changed INCLUDE_DIR* and tidied up some targets.
+
+Tue Aug  1 20:26:16 1995  Andrew Bishop  (amb@dan)
+
+	* cccp.c: Improved comments in code.
+
+Tue Jul 25 20:38:05 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile: Changed the clean target to use -f.
+
+Sun Jul 23 16:23:59 1995  Andrew Bishop  (amb@dan)
+
+	* cccp.c: Passes through trailing comments for #define / #include.
+
+Tue Apr 25 19:10:11 1995  Andrew Bishop  (amb@dan)
+
+	* cccp.c:
+	Some hacks for include files, no full path and better guess of system / local.
+
+Mon Apr 24 18:23:12 1995  Andrew Bishop  (amb@dan)
+
+	* Makefile, README, cccp.c:
+	Initial revision

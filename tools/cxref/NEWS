@@ -1,0 +1,284 @@
+Version 1.5d of cxref released : Sun May 05 12:00:00 2002
+---------------------------------------------------------
+
+Bug fixes
+  Fixes to HTML and SGML outputs (invalid character entities). Fix bug that
+  stopped -R/ from working.  Fix links to HTML source files in certain cases.
+  Keep the sign of negative numbers in #define output.  Improve the lex code
+  (flex -s).  Add some missing ';' to yacc code.  Fix the bison debugging
+  output.  Change the use of IFS in cxref-ccc script.
+
+Configure/Make changes
+  Fix Makefile to compile using non-GNU make programs.
+  Add flex specific options to the Makefile if using it.
+  Fixes for build/configure outside the source tree.
+  Include DESTDIR in the Makefile to help installation.
+  Configure makes a guess what to do with cxref-cpp if gcc is not installed.
+
+GCC changes
+  Accept the gcc-3.0 __builtin_va_list type as-if it were a valid C type.
+  Handle the GCC __builtin_va_arg extension keyword.
+  Handle the GCC floating point hex extension data format.
+  Allow the use of gcc-3.x instead of the cxref-cpp program.
+
+
+*NOTE* The notes for version 1.5c below apply also.
+
+
+Version 1.5c of cxref released : Sat Apr 28 16:45:00 2001
+---------------------------------------------------------
+
+Bug fixes
+  Better Comment handling.  Allow the __restrict keyword.  Allow bracketed
+  function declarations.  Remove gcc compilation warnings.  Allow the
+  configure script to be run from a different directory.
+
+Optimisation
+  Speed up the lex code.
+
+
+*NOTE* The notes for version 1.5b below apply also.
+
+
+Version 1.5b of cxref released : Sun Sep 26 10:00:00 1999
+---------------------------------------------------------
+
+Bug fixes
+  Comments that use the '+html+' convention appear correctly in the HTML source
+  output.  More configurable Makefile (CFLAGS and LDFLAGS options to configure).
+  Increase the length of static arrays for getcwd().  Fix NAME_MAX compilation
+  problem.  Fix deferencing NULL pointer problem.
+
+Optimisation
+  Speed up the cross referencing, especially for the first pass with no outputs.
+
+
+*NOTE* The notes for version 1.5a below apply also.
+
+
+Version 1.5a of cxref released : Fri Jun 18 19:15:00 1999
+---------------------------------------------------------
+
+Bug fixes
+  Fix the "+html+" etc in comments.  Make verbatim comments work in LaTeX
+  output.  Allow $ in function and variable names.  Allow the configure to force
+  cxref-cpp instead of gcc.  Tidy the Makefiles.  Increase the size of
+  statically allocated arrays in cross referencing.  Remove the problem of #line
+  directives causing confusion.  Handle more GNU C extensions.  Fix references
+  to the source file from the HTML.  Handle C++ comments following #defines.
+
+Output
+  The full cxref and cpp command lines are displayed as comments in output files.
+
+
+*NOTE* The notes for version 1.5 below apply also.
+
+
+Version 1.5 of cxref released : Sun Feb 21 12:00:00 1999
+--------------------------------------------------------
+
+Bug fixes
+  Fix the FAQ to HTML converter.  Stop comments in header files leaking out.
+
+Configuration
+  Use the GNU autoconf program to create a configure script.
+  Now uses gcc instead of cxref-cpp if it is new enough (version >= 2.8.0).
+  Now compiles and runs under MS Win32 with the cygwin library.
+
+Output
+  Added SGML (Linuxdoc DTD) output.
+  Added RTF (Rich Text Format) output.
+  Added HTML 3.2 output (with tables).
+  Added an HTML version of the source file with links into it.
+
+Tools
+  Provided a Perl script to automatically determine required header files.
+
+
+*NOTE* The -html and -latex options are deprecated, use -html20 and -latex209
+       for the previous functionality.
+
+
+Version 1.4c of cxref not released : Sat Dec 6 14:30:00 1998
+------------------------------------------------------------
+
+Bug fixes
+  Miscellaneous parsing of C source code.  Command line file/pathname parsing.
+  More GNU extensions.  More support for other operating systems.  FAQ updates.
+
+
+Version 1.4b of cxref released : Sat Apr 18 19:30:00 1998
+---------------------------------------------------------
+
+The patches that made it onto the cxref bug-fix web-page.
+  cxref-cpp fails to compile with new Linux.  Memory hungry comment parsing.
+  Missing comments on function pointer typedefs, missing directory on some
+  included files.  Allow empty structure/unions to be defined.  Fix includes
+  that use absolute path to subdir of -R root.
+
+Other bugs
+  Fix the install.sh program.  Added __typeof and __alignof.  Be more careful
+  about the child exit status.  Improve cxref-cc error messages.
+
+Make the comment handling a lot more memory efficient.
+Ensure that there is never any memory that is not freed at the end.
+
+
+Version 1.4a of cxref released : Thu Nov 20 20:30:00 1997
+---------------------------------------------------------
+
+The patches that made it onto the cxref bug-fix web-page.
+  bug in -CPP option, 'volatile const' and 'const volatile' types, stopped
+  crashes due to NULL pointer access, made the makefile work better on certain
+  UNIX versions.
+
+Added a -no-comments option.
+Make the comment mangler better so that lines with just whitespace are emptied.
+
+Allow blank lines and comments in the .cxref file.
+
+
+Version 1.4 of cxref released : Sat Jul 5 18:30:00 1997
+-------------------------------------------------------
+
+Included a shell script to replace gcc to compile and cross-reference in one go.
+Added in the option to change directory before running cxref.
+Added a config file called .cxref that can contain command line arguments.
+
+Changed the way that included variables and functions are dealt with.
+  Functions and variables that are included as static or global so that they
+  would be in the object file when compiled are listed as belonging to the file
+  with a pointer to the header file that they were included from.
+
+Added in a way to allow extended markup (HTML or LaTeX) inside comments.
+
+Major re-write of the internals to increase maintainability & readability.
+
+Added in -verbatim-comments to preserve formatting of comments in output.
+Added in -block-comments to strip leading character from boxed comments.
+Added an option to allow files to be deleted from the cross reference output.
+
+Changed over to GCC V 2.7.2, reduced the patch size by moving stuff to cxref.
+Added in a new command line option to pass extra arguments to the pre-processor.
+
+Fixed the rest of the bug reports that made it onto the cxref bug-fix web-page.
+
+
+Version 1.3a of cxref unreleased : Wed Apr 23 20:00:00 1997
+-----------------------------------------------------------
+
+The patches that made it onto the cxref bug-fix web-page.
+
+
+Version 1.3 of cxref released : Sun Dec 8 10:30:00 1996
+-------------------------------------------------------
+
+Added manual pages for the programs.
+
+Use the Linux Kernel source code to test the parser.
+ Added more GNU C extensions.
+ Fixed more errors in type names used as identifiers.
+
+Added the ability to parse C++ comments (not for documenting).
+
+
+Version 1.3-beta of cxref released : Sat Nov 16 16:30:00 1996
+-------------------------------------------------------------
+
+This is a consolidation of versions 1.2, 1.2a, 1.2b plus trivial changes.
+
+Fixed some remaining problems with implicit integer types and type qualifiers.
+
+HTML output conforms to HTML 2.0 standard, and passes weblint test.
+HTML, LaTeX and raw outputs have ';'s added in structure defintions.
+
+Updated FAQ, added FAQ -> html conversion script, updated README, README.html
+ and README.tex, added TODO.
+
+The cxref-cpp program now does not need machine specific hand customisation.
+
+Improved the Makefiles to simplify the installation:
+ Fully automatic configuring of cxref-cpp, all build options in a single
+ Makefile configuration file, installation included.
+
+
+Version 1.2b of cxref released : Sat Oct 5 13:30:00 1996
+---------------------------------------------------------
+
+Function definitions included from header files do not cause cxref to core dump.
+Removed dangling cross-references for referenced vars/funcs in the output.
+Function prototypes within function definitions do not cause loss of references.
+Typedefs of function types now recognised when used as prototypes.
+Comments for nested struct/union types now work and the output format changed.
+The option -warn-xref depends on -xref, warns user if used wrongly but works OK.
+The index in the cxref.html file is now always at the end in the correct place.
+The LaTeX output is centred on the page correctly.
+
+The cxref-cpp program no longer aborts on certain files in multi-directory
+ source trees, and if the preprocessor does abort then cxref tidies up cleanly.
+
+The cxref-query program no longer core dumps on certain cross-references.
+
+
+Version 1.2a of cxref released : Sat Aug 17 13:00:00 1996
+---------------------------------------------------------
+
+Bug fixes in the parser for obscure C syntax:
+ Type names used as identifiers, pointer to function used as a function
+ argument, some K&R style function definitions, complete set of integer type
+ names, more GCC extensions.
+
+
+Version 1.2 of cxref released : Sat Jul  6 20:00:00 1996
+--------------------------------------------------------
+
+A FAQ is provided with common questions and answers to provide help.
+
+Major revision of parsing code, especially for function definitions.
+Labeled statements do not need a ';' (e.g. default in switch statement).
+Better handling of traditional style function definitions
+Variables declared extern within a function recognised and referenced.
+Numerous minor bugs in parsing corrected.
+
+Line number and file name information available in case of parse error.
+Parse errors are handled gracefully, the program does not just exit.
+
+Create sub-directories of the output directory as needed.
+Better handling of include pathnames in cxref-cpp, for subdirectories.
+
+Added a cxref.sty LaTeX style file instead of at the top of the main file.
+The output files are not compatible with Version 1.1 output files.
+
+
+Version 1.1 of cxref released : Wed May 22 19:00:00 1996
+--------------------------------------------------------
+
+Fixed a number of bugs in the 'front-end' of the program.
+
+Makefile changed to make ANSI compatible latex-style.c source file.
+
+Lexical analyser code fixed to work with a POSIX lex program.
+GNU __attribute__ & __extension__ compiler directives handled better.
+
+Better debugging options for the parser.
+Bit-fields now parsed correctly and recognised as such in output.
+Enum typedefs allowed to have a trailing comma.
+Function definitions with no return type are now recognised as int and those
+with no arguments recognised as void.
+Allows the asm() GNU extension.
+
+Fixed a problem with #include confusion with mix of global and local files.
+
+
+Version 1.0 of cxref released : Sat Feb 24 16:30:00 1996
+--------------------------------------------------------
+
+A program that can automatically generate documentation and cross references for
+a C program.
+
+The input is any C program with appropriate comments and the output is LaTeX or
+HTML files.
+
+The documentation for the program is produced from comments in the code that are
+appropriately formatted.  The cross referencing comes from the code itself and
+requires no extra work.

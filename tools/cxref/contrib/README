@@ -1,0 +1,152 @@
+                        Cxref 1.5 - Contributed files
+                        =============================
+
+These are some miscellaneous files that are useful with cxref but do not form
+part of the program itself.  Those that were not written by myself have the
+author or contributor noted in the description.
+
+
+cxref.el
+--------
+
+An Emacs lisp file that will add comments into C source files in the correct
+format for cxref to understand.
+
+
+cflow.el
+--------
+
+(By Paul Barham Paul.Barham@cl.cam.ac.uk)
+
+An Emacs lisp file that can be used to convert the cxref.function file into a
+hierarchy of function calls that can be browsed.
+
+
+fixheader
+---------
+
+A Perl script that can be used to find the header files that are missing from a
+header file that cxref cannot parse or remove unneeded header files from source
+files.
+
+Usage: fixheader filename [filename ...] [-v] [-o]
+                 [-Odirname] [-Nbasename] [-Rdirname]
+                 [-Ddefine] [-Udefine] [-Iinclude]
+
+The -v flag gives a verbose output showing what it is doing (recommended).
+The -o flag produces an output file from the input file with modifications.
+The other flags are the same as for cxref itself.
+
+This should be considered as experimental at the moment, it works on the cxref
+source code, but has not been tested very extensively beyond that.
+
+
+cxref_includes
+--------------
+
+A perl script that will run cxref on all of the include files that are
+referenced in the cxref.include file that was written out by running cxref on
+the source files.
+
+Usage: cxref_includes cxref.include
+
+
+knr2ansi.pl
+-----------
+
+A perl script to be run on a C source file that will produce a set of function
+prototypes for the functions in the file.
+
+
+xrefgraph.py
+------------
+
+(By Tom Holroyd <tomh@po.crl.go.jp>)
+
+> I've been making neat call graphs using cxref and AT&T's recently
+> OpenSourced Graphviz package.  It's great for getting the idea of a
+> program's structure (works best for small to medium sized programs,
+> though, unless you print it on BIG paper).
+
+> Two notes. First, this is very simple, and several things could be done
+> with it, especially in the area of node and edge labels.  But you might
+> enjoy playing with it and possibly making cxref output the .dot files
+> directly (although postprocessing the -raw output may have some
+> advantages).  Second, the -k option gets rid of unknown functions since
+> lots of stdio stuff can clutter the graph.  But it's nice to include
+> *some* of them, like malloc() and free() -- so to make the graph I
+> attached, I also included a dummy file with black definitions of those
+> functions.  That's sort of a hack, and some sort of switch to
+> include/exclude functions or classes of function might work too (in cxref
+> or in the script).
+
+
+xrgr.pl
+-------
+
+(By Jamie Honan <jhonan@optushome.com.au>)
+
+> It reads cxref.function files and produces
+> graphpviz dot files, similar to xrefgraph.py.
+> 
+> It has a lot more doco, parameters, will work more correctly with
+> static functions and passing addresses of functions. It also allows
+> you to view specific functions and files, and call trees associated
+> with those functions and files.
+
+See the README.xgr file for more details.
+
+
+daVinci_include.pl & daVinci_function.pl
+----------------------------------------
+
+Perl scripts that will generate call graphs and file include graphs for the
+daVinci graph drawing package.
+
+The daVinci webpage is http://www.informatik.uni-bremen.de/~davinci/ and it
+describes the program as:
+
+: daVinci is a X-Window visualization tool for drawing directed graphs
+: automatically in high quality.  daVinci is developed by Michael Fröhlich (until
+: November 1997) and Mattias Werner from the Group of Prof. Dr. Bernd
+: Krieg-Brückner at University of Bremen, Germany. 
+
+
+tree.pl
+-------
+
+(By Ian Gilmour <ian.gilmour@ffei.co.uk>)
+
+> Here's a simple perl script I've knocked up to give a v. simple call tree
+> diagram on a simple terminal.
+
+> Usage: $0 cxref_function_file root_function max_level
+> max_level +ve for functions called by specified function
+> max_level -ve for functions that call specified function
+
+
+cxref.spec
+----------
+
+(By Matthew L Daniel <mdaniel@scdi.com>)
+
+> The cxref.spec is an RPM spec file for building binary packages. If
+> you'll drop that into the root of your tarball, your users can use the
+> command: "rpm -tb cxref-1.5c.tgz" to create RPMs on their system.
+
+
+cxref-1.5c-webcpp.patch
+-----------------------
+
+(By Uwe Koloska <koloska@voiceinterconnect.de>)
+
+> The first thing I have changed is a patch, that uses webcpp
+>    http://webcpp.sf.net
+> for highlighting the source code.  For this you need a modified version of
+> webcpp, that adds the anchors into the html-files. The patch is submitted to
+> the webcpp patch manager at sourceforge.
+
+The patch was originally written for version 1.5c, but also works for version
+1.5d.  The current version of webcpp (0.6.8) does not contain the patch that is
+needed to work with cxref which is why this cxref patch is here and not included
+in the source code.
