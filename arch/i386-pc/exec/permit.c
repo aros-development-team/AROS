@@ -72,7 +72,7 @@ void Exec_Permit_Supervisor();
 	should allow it.
     */
 
-    AROS_ATOMIC_DECB(SysBase->TDNestCnt);
+    AROS_ATOMIC_DEC(SysBase->TDNestCnt);
     
     if(    ( SysBase->TDNestCnt < 0 )
 	&& ( SysBase->IDNestCnt < 0 )

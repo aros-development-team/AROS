@@ -100,7 +100,7 @@ static void sighandler(int sig, sigcontext_t * sc)
     }
 #endif
 
-    AROS_ATOMIC_INCL(supervisor);
+    AROS_ATOMIC_INC(supervisor);
 
     if (sigactive[sig])
     {
@@ -141,7 +141,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	   happening by doing this manual Disable()ing/Enable()ing,
 	   ie. inc/dec of SysBase->IDNestCnt. */
 	   
-	AROS_ATOMIC_INCB(SysBase->IDNestCnt);
+	AROS_ATOMIC_INC(SysBase->IDNestCnt);
 	
 	AROS_UFC5(void, iv->iv_Code,
 	    AROS_UFCA(ULONG, 0, D1),
@@ -151,7 +151,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
 	
-	AROS_ATOMIC_DECB(SysBase->IDNestCnt);
+	AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     }
 
     /* Has an interrupt told us to dispatch when leaving */
@@ -164,7 +164,7 @@ static void sighandler(int sig, sigcontext_t * sc)
     #if AROS_NESTING_SUPERVISOR
     	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif
-    	AROS_ATOMIC_ANDW(SysBase->AttnResched, ~0x8000);
+    	AROS_ATOMIC_AND(SysBase->AttnResched, ~0x8000);
 
 	/* Save registers for this task (if there is one...) */
 	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
@@ -210,7 +210,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 
     /* Leave the interrupt. */
 
-    AROS_ATOMIC_DECL(supervisor);
+    AROS_ATOMIC_DEC(supervisor);
 
     sigactive[sig] = FALSE;
     

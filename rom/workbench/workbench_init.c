@@ -125,7 +125,7 @@ ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
         )
         {
             /* Prevent expunging while the handler is running */
-            AROS_ATOMIC_INCW(WorkbenchBase->LibNode.lib_OpenCnt);
+            AROS_ATOMIC_INC(WorkbenchBase->LibNode.lib_OpenCnt);
         }
         else
         {

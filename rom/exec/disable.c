@@ -79,7 +79,7 @@
        initial (enabled) value of IDNestCnt is -1
     */
     
-    AROS_ATOMIC_INCB(SysBase->IDNestCnt);
+    AROS_ATOMIC_INC(SysBase->IDNestCnt);
     
     /*
 	We have to disable interrupts, however some silly person

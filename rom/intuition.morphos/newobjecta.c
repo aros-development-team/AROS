@@ -101,7 +101,7 @@ AROS_LH3(APTR, NewObjectA,
     /* Make sure the class doesn't go away while we create the object */
     if (classPtr)
     {
-        AROS_ATOMIC_INCL(classPtr->cl_ObjectCount);
+        AROS_ATOMIC_INC(classPtr->cl_ObjectCount);
     }
 
     ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
@@ -118,7 +118,7 @@ AROS_LH3(APTR, NewObjectA,
     object = (Object *) CoerceMethodA (classPtr, (Object *)classPtr, (Msg)&method);
 
     /* Release the lock on the class. Rootclass also has increased this count. */
-    AROS_ATOMIC_DECL(classPtr->cl_ObjectCount);
+    AROS_ATOMIC_DEC(classPtr->cl_ObjectCount);
     
     DEBUG_NEWOBJECT(dprintf("NewObject[%x]: return 0x%lx\n", &method, object));
 

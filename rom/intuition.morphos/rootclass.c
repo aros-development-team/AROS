@@ -80,7 +80,7 @@ AROS_UFH3(IPTR, rootDispatcher,
         {
             _OBJ(o)->o_Class = objcl;
             
-            AROS_ATOMIC_INCL(objcl->cl_ObjectCount);
+            AROS_ATOMIC_INC(objcl->cl_ObjectCount);
             
             retval = (IPTR) BASEOBJECT(o);
         }
@@ -91,7 +91,7 @@ AROS_UFH3(IPTR, rootDispatcher,
            is already cleared! */
         objcl = OCLASS(o);
         
-        AROS_ATOMIC_DECL(OCLASS(o)->cl_ObjectCount);
+        AROS_ATOMIC_DEC(OCLASS(o)->cl_ObjectCount);
         
         FreeMem
         (

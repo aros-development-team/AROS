@@ -72,7 +72,7 @@
 
     AROS_LIBFUNC_INIT
 
-    AROS_ATOMIC_INCB(SysBase->TDNestCnt);
+    AROS_ATOMIC_INC(SysBase->TDNestCnt);
 
     AROS_LIBFUNC_EXIT
 } /* Forbid() */

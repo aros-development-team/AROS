@@ -68,9 +68,9 @@
 	should allow it.
     */
 #if 1
-    AROS_ATOMIC_DECB(SysBase->TDNestCnt);
+    AROS_ATOMIC_DEC(SysBase->TDNestCnt);
 #else
-    AROS_ATOMIC_DECB(SysBase->TDNestCnt);
+    AROS_ATOMIC_DEC(SysBase->TDNestCnt);
     
     if(    ( SysBase->TDNestCnt < 0 )
 	&& ( SysBase->IDNestCnt < 0 )

@@ -79,7 +79,7 @@
        initial (enabled) value of IDNestCnt is -1
     */
     
-    AROS_ATOMIC_DECB(SysBase->IDNestCnt);
+    AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     
     if( SysBase->IDNestCnt < 0)
     {

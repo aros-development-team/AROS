@@ -21,7 +21,7 @@ AROS_LH0(void, Disable,
 
 	__asm__ __volatile__ ("cli");
 
-    AROS_ATOMIC_INCB(SysBase->IDNestCnt);
+    AROS_ATOMIC_INC(SysBase->IDNestCnt);
 
     AROS_LIBFUNC_EXIT
 }

@@ -29,7 +29,7 @@ AROS_LH0(void, Disable,
 
     sigprocmask(SIG_BLOCK, &sig_int_mask, NULL);
     
-    AROS_ATOMIC_INCB(SysBase->IDNestCnt);
+    AROS_ATOMIC_INC(SysBase->IDNestCnt);
     
     if (SysBase->IDNestCnt < 0)
     {

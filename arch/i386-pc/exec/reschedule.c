@@ -67,7 +67,7 @@ void Exec_Permit_Supervisor();
 
     UBYTE flag = SysBase->AttnResched;	    	/* Save state of scheduling attention */
     
-    AROS_ATOMIC_ORW(SysBase->AttnResched, 0x80);/* Set scheduling attention */
+    AROS_ATOMIC_OR(SysBase->AttnResched, 0x80);/* Set scheduling attention */
     
     if (SysBase->TDNestCnt < 0)		    	/* If task switching enabled */
     {
