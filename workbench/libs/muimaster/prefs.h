@@ -101,11 +101,12 @@ struct ZunePrefsNew
     ZuneKeySpec muikeys[MUIKEY_COUNT];
 
     /* Zune registers */
-    RegisterLook register_look;
+    RegisterLook register_look; /* yet unused, remove this comment when handled */
+    BOOL         register_truncate_titles; /* ok, waiting for prefs editor */
 
     /* Buttons */
-    WORD     radiobutton_hspacing; /* yet unused, remove this comment when handled */
-    WORD     radiobutton_vspacing; /* yet unused, remove this comment when handled */
+    WORD     radiobutton_hspacing; /* ok, waiting for prefs editor */
+    WORD     radiobutton_vspacing; /* ok, waiting for prefs editor */
 
     /* Cycles */
     CycleMenuPosition cycle_menu_position; /* yet unused, remove this comment when handled */
@@ -114,19 +115,22 @@ struct ZunePrefsNew
     BOOL     cycle_menu_recessed_entries; /* yet unused, remove this comment when handled */
 
     /* Strings */
+/* old zune used struct MUI_PenSpec, new will probably differ -dlc */
+#if FIXME_WHICH_STORAGE
     struct MUI_PenSpec string_bg_active; /* yet unused, remove this comment when handled */
     struct MUI_PenSpec string_text_active; /* yet unused, remove this comment when handled */
     struct MUI_PenSpec string_bg_inactive; /* yet unused, remove this comment when handled */
     struct MUI_PenSpec string_text_inactive; /* yet unused, remove this comment when handled */
+#endif
 
     /* Lists */
     WORD     list_linespacing; /* yet unused, remove this comment when handled */
 
     /* Navigation */
     BOOL                 dragndrop_left_button; /* yet unused, remove this comment when handled */
-    STRPTR               dragndrop_left_modifier; /* yet unused, remove this comment when handled */
+    ZuneKeySpec          dragndrop_left_modifier; /* yet unused, remove this comment when handled */
     BOOL                 dragndrop_middle_button; /* yet unused, remove this comment when handled */
-    STRPTR               dragndrop_middle_modifier; /* yet unused, remove this comment when handled */
+    ZuneKeySpec          dragndrop_middle_modifier; /* yet unused, remove this comment when handled */
     LONG                 dragndrop_autostart; /* yet unused, remove this comment when handled */
     DNDLook              dragndrop_look; /* yet unused, remove this comment when handled */
     BalancingLook        balancing_look; /* yet unused, remove this comment when handled */
