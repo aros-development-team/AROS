@@ -90,5 +90,6 @@ int fstat(int fd, struct stat *sb);
 
 mode_t umask(mode_t numask);
 int chmod(const char *path, mode_t mode);
+int fchmod(int fildes, mode_t mode);
 
 #endif /* _SYS_STAT_H */
