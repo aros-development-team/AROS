@@ -2,10 +2,15 @@
 #define DOS_DOS_H
 
 #ifndef EXEC_TYPES_H
-#include <exec/types.h>
+#   include <exec/types.h>
 #endif
 #ifndef AROS_MACHINE_H
-#include <aros/machine.h>
+#   include <aros/machine.h>
+#endif
+
+#ifndef __typedef_BPTR
+#   define __typedef_BPTR
+    typedef AROS_BPTR_TYPE BPTR;
 #endif
 
 #define DOSNAME "dos.library"
