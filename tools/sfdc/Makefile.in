@@ -1,0 +1,62 @@
+
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+bindir		= @bindir@
+mandir		= @mandir@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+
+POD2TEXT	= @POD2TEXT@
+POD2MAN		= @POD2MAN@
+
+VERSION		= @VERSION@
+DATE		= @DATE@
+
+MAIN		= main.pl
+CLASSES		= $(wildcard [A-Z]*.pl)
+PODS		= SFDCompile.pod
+EXECUTABLE	= sfdc
+MAN		= sfdc.1
+TXT		= sfdc.txt
+
+
+all:	$(EXECUTABLE) $(MAN) $(TXT)
+
+clean:
+	$(RM) $(EXECUTABLE) $(MAN) $(TXT) config.log \
+	      $(EXECUTABLE)-$(VERSION).tar.gz $(EXECUTABLE).lha
+
+distclean:	clean
+	$(RM) config.status Makefile
+
+install:	all
+	$(INSTALL) --directory $(bindir) $(mandir)/man1
+	$(INSTALL_PROGRAM) $(EXECUTABLE) $(bindir)
+	$(INSTALL_DATA) $(MAN) $(mandir)/man1
+
+tgz:		all gg-sfdc.spec
+	cvs diff >/dev/null || (echo "Not checked in!"; exit 10)
+	mkdir $(EXECUTABLE)-$(VERSION)
+	cd $(EXECUTABLE)-$(VERSION) && cvs export -Dtoday sfdc
+	mv $(EXECUTABLE)-$(VERSION)/sfdc/* $(EXECUTABLE)-$(VERSION)
+	cp gg-sfdc.spec $(EXECUTABLE)-$(VERSION)
+	rmdir $(EXECUTABLE)-$(VERSION)/sfdc
+	tar cfvz $(EXECUTABLE)-$(VERSION).tar.gz $(EXECUTABLE)-$(VERSION)
+	$(RM) -r $(EXECUTABLE)-$(VERSION)
+
+lha:		all tgz
+	$(RM) $(EXECUTABLE).lha
+	lha -ao5 $(EXECUTABLE).lha $(EXECUTABLE) $(EXECUTABLE).readme \
+		$(MAN) $(TXT) $(EXECUTABLE)-$(VERSION).tar.gz
+
+$(EXECUTABLE):	$(MAIN) $(CLASSES) $(PODS)
+	sed "s/SFDC_VERSION/$(VERSION)/g" $^ | sed "s/SFDC_DATE/$(DATE)/g" >$@
+	chmod +x $@
+
+$(MAN):	$(EXECUTABLE)
+	$(POD2MAN) $^ -o $@
+
+$(TXT):	$(EXECUTABLE)
+	$(POD2TEXT) -c $^ -o $@

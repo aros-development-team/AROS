@@ -1,0 +1,24 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT(sfdc, 1.1, martin@blom.org)
+
+VERSION=1.1
+DATE=2003-12-22
+AC_SUBST(VERSION)
+AC_SUBST(DATE)
+
+# Checks for programs.
+AC_CHECK_PROGS( PERL,     perl,     AC_ERROR("Perl is required") )	 
+AC_CHECK_PROGS( POD2TEXT, pod2text, AC_ERROR("pod2text is required") )
+AC_CHECK_PROGS( POD2MAN,  pod2man,  AC_ERROR("pod2man is required") )
+AC_PROG_INSTALL
+	 
+# Checks for libraries.
+
+# Checks for header files.
+
+# Checks for typedefs, structures, and compiler characteristics.
+
+# Checks for library functions.
+
+AC_CONFIG_FILES([Makefile gg-sfdc.spec])
+AC_OUTPUT
