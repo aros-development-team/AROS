@@ -49,8 +49,8 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	graphics-gfxhidd			\
 #MM	kernel-graphics-native-i386 		\
 #MM	kernel-intuition-native			\
-#MM	kernel-cgfx-linklib			\
-#MM	kernel-workbench-native		\
+#MM	kernel-cgfx-native-i386			\
+#MM	kernel-workbench-native			\
 #MM	kernel-filesys-native-i386		\
 #MM	Drivers-native-irq			\
 #MM	Drivers-native-kbd			\
@@ -166,7 +166,7 @@ kernel-intuition-native-i386 :
 kernel-filesys-native-i386 :
 	%add_objects rom/boot/libcon
 
-#MM kernel-cgfx-native-i386 :
+#MM kernel-cgfx-native-i386 : kernel-cgfx-linklib
 kernel-cgfx-native-i386 :
 	%add_objects rom/boot/libcybergraphics
 
