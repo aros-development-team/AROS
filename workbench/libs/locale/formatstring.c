@@ -101,8 +101,8 @@ char HEXarray [] = "0123456789ABCDEF";
         {
           AROS_UFC3(VOID, putCharFunc->h_Entry,
             AROS_UFCA(struct Hook *,   putCharFunc,                A0),
-            AROS_UFCA(char,            fmtTemplate[template_pos],  A1),
-            AROS_UFCA(struct Locale *, locale,                     A2));
+            AROS_UFCA(struct Locale *, locale,                     A2),
+            AROS_UFCA(char,            fmtTemplate[template_pos],  A1));
         }
 
         /*
@@ -162,7 +162,7 @@ char HEXarray [] = "0123456789ABCDEF";
         */
         template_pos++;
 
-        //kprintf("FOUND_FORMAT: template_pos: %d\n",template_pos);
+        kprintf("FOUND_FORMAT: template_pos: %d\n",template_pos);
         /*
         ** Does the user want the '%' to be printed?
         */
@@ -172,8 +172,8 @@ char HEXarray [] = "0123456789ABCDEF";
           {
             AROS_UFC3(VOID, putCharFunc->h_Entry,
               AROS_UFCA(struct Hook *  , putCharFunc,                A0),
-              AROS_UFCA(char,            fmtTemplate[template_pos],  A1),
-              AROS_UFCA(struct Locale *, locale,                     A2));
+              AROS_UFCA(struct Locale *, locale,                     A2),
+              AROS_UFCA(char,            fmtTemplate[template_pos],  A1));
           }
           template_pos++;
         }
@@ -207,7 +207,7 @@ char HEXarray [] = "0123456789ABCDEF";
           ** arg_pos 
           */
           
-          //kprintf("next char: %c\n",fmtTemplate[template_pos]);
+          kprintf("next char: %c\n",fmtTemplate[template_pos]);
           
           if ('0' <= fmtTemplate[template_pos] &&
               '9' >= fmtTemplate[template_pos])
@@ -529,15 +529,15 @@ char HEXarray [] = "0123456789ABCDEF";
               for(i = width + minus; i < minwidth; i++)
                 AROS_UFC3(VOID, putCharFunc->h_Entry,
                   AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                  AROS_UFCA(char,            fill                , A1),
-                  AROS_UFCA(struct Locale *, locale              , A2)
+                  AROS_UFCA(struct Locale *, locale              , A2),
+                  AROS_UFCA(char,            fill                , A1)
                 );
 
             if (minus)
               AROS_UFC3(VOID, putCharFunc->h_Entry,
                 AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                AROS_UFCA(char,            '-'                 , A1),
-                AROS_UFCA(struct Locale *, locale              , A2)
+                AROS_UFCA(struct Locale *, locale              , A2),
+                AROS_UFCA(char,            '-'                 , A1)
               );
             
             /* Print body up to width */
@@ -545,8 +545,8 @@ char HEXarray [] = "0123456789ABCDEF";
             {
               AROS_UFC3(VOID, putCharFunc->h_Entry,
                 AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                AROS_UFCA(char,            *buffer++           , A1),
-                AROS_UFCA(struct Locale *, locale              , A2)
+                AROS_UFCA(struct Locale *, locale              , A2),
+                AROS_UFCA(char,            *buffer++           , A1)
               );
             }
             
@@ -555,8 +555,8 @@ char HEXarray [] = "0123456789ABCDEF";
               for (i = width+minus; i < minwidth; i++)
                 AROS_UFC3(VOID, putCharFunc->h_Entry,
                   AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                  AROS_UFCA(char,            fill                , A1),
-                  AROS_UFCA(struct Locale *, locale              , A2)
+                  AROS_UFCA(struct Locale *, locale              , A2),
+                  AROS_UFCA(char,            fill                , A1)
                 );
           }
 
