@@ -31,7 +31,7 @@ makedirs:
 # Create the tools that are used to build AROS.
 tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 	$(FLEXCAT) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
-	$(COLLECT-AROS) $(ADFLIB) $(CREATEHDFILE) $(AFSLIB) $(COPYTOAFS) \
+	$(COLLECT-AROS) $(ADFLIB) $(AFSLIB) $(COPYTOAFS) \
 	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA) $(SFDC)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
@@ -57,10 +57,6 @@ $(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools
 $(ADFLIB) : $(wildcard $(TOP)/tools/adflib/*.[ch])
 	@$(ECHO) Building adflib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/adflib -f Makefile.aros TOP=$(TOP)
-
-$(CREATEHDFILE) : $(TOP)/tools/disktool/createhdfile.c
-	@$(ECHO) Building createhdfile...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/disktool TOP=$(TOP)
 
 $(AFSLIB) : $(wildcard $(TOP)/workbench/devs/afs/*.[ch])
 	@$(ECHO) Building afslib...
