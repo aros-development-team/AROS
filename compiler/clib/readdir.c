@@ -59,6 +59,7 @@
 	09.06.2001 falemagn created
 ******************************************************************************/
 {
+    int const max = MAXFILENAMELENGTH > NAME_MAX ? NAME_MAX : MAXFILENAMELENGTH;
     fdesc *desc;
 
     if (!dir)
@@ -74,21 +75,35 @@
     	return NULL;
     }
 
-    if (ExNext(desc->fh, dir->priv))
+    if (dir->pos == 0)
     {
-	int max = MAXFILENAMELENGTH > NAME_MAX ? NAME_MAX : MAXFILENAMELENGTH;
-	strncpy
-	(
-	    dir->ent.d_name,
-	    ((struct FileInfoBlock *)dir->priv)->fib_FileName,
-	    max
-        );
-
-        return &(dir->ent);
+        dir->ent.d_name[0]='.';
+    	dir->ent.d_name[1]='\0';
     }
+    else
+    if (dir->pos == 1)
+    {
+    	dir->ent.d_name[0]='.';
+    	dir->ent.d_name[1]='.';
+    	dir->ent.d_name[2]='\0';
+    }
+    else
+    if (!ExNext(desc->fh, dir->priv))
+    {
+	dir->pos--;
+	if (IoErr() != ERROR_NO_MORE_ENTRIES)
+    	    errno = IoErr2errno(IoErr());
 
-    if (IoErr() != ERROR_NO_MORE_ENTRIES)
-    	errno = IoErr2errno(IoErr());
+    	return NULL;
+    }
+    else
+    strncpy
+    (
+	dir->ent.d_name,
+	((struct FileInfoBlock *)dir->priv)->fib_FileName,
+	max
+    );
 
-    return NULL;
+    dir->pos++;
+    return &(dir->ent);
 }

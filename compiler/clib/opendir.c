@@ -100,6 +100,7 @@
     }
 
     dir->fd = fd;
+    dir->pos = 0;
     dir->ent.d_name[NAME_MAX] = '\0';
 
     return dir;
