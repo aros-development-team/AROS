@@ -886,8 +886,17 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if (data->mad_TitleText)
 	{
-	    top += data->mad_TitleText->height / 2;
-	    height -= data->mad_TitleText->height / 2;
+            switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
+            {
+		case GROUP_TITLE_POSITION_ABOVE:
+		    top += data->mad_TitleText->height;
+		    height -= data->mad_TitleText->height;
+		    break;
+		case GROUP_TITLE_POSITION_CENTERED:
+		    top += data->mad_TitleText->height / 2 + 2;
+		    height -= data->mad_TitleText->height / 2 + 2;
+		    break;
+	    }
 	    /* TODO: Fill the Area not covered here */
 	}
 
@@ -920,8 +929,8 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    struct TextFont *obj_font = _font(obj);
 	    struct Region *region;
 
-	    int x;
-	    int width;
+	    int x, top;
+	    int width, height;
 
 	    width = data->mad_TitleText->width;
 	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_3D)
@@ -931,8 +940,12 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
             {
 		case GROUP_TITLE_POSITION_ABOVE:
+		    top = _top(obj) + data->mad_TitleText->height - 2;
+		    height = _height(obj) - (data->mad_TitleText->height - 2);
 		    break;
 		case GROUP_TITLE_POSITION_CENTERED:
+		    top = _top(obj) + data->mad_TitleText->height / 2;
+		    height = _height(obj) - data->mad_TitleText->height / 2;
 		    break;
 		default:
 		    break;
@@ -958,17 +971,13 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		textdrawclip = MUI_AddClipRegion(muiRenderInfo(obj),region);
 	    }
 	    
-	    zframe->draw[state](muiRenderInfo(obj), _left(obj),
-				_top(obj) + data->mad_TitleText->height / 2,
-				_width(obj),
-				_height(obj) - data->mad_TitleText->height / 2);
+	    zframe->draw[state](muiRenderInfo(obj), _left(obj), top, _width(obj), height);
 
 	    if (region)
 	    {
 	    	MUI_RemoveClipRegion(muiRenderInfo(obj),textdrawclip);
 /*		DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
 	    }
-
 
 	    /* Title text drawing */
 	    _font(obj) = zune_font_get(obj,MUIV_Font_Title);
