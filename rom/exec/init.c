@@ -326,21 +326,12 @@ int main(int argc,char *argv[])
 
     debugmem ();
 
-    {
-	struct Library * lib;
+    (void) InitResident((struct Resident *)&Utility_resident,0);
 
-	lib = (struct Library *)InitResident((struct Resident *)&Utility_resident,0);
-	/* if (lib) AddLibrary(lib); */
+    DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
-	DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
-
-	/* if (DOSBase) AddLibrary((struct Library *)DOSBase); */
-
-	lib = (struct Library *)InitResident((struct Resident *)&Graphics_resident,0);
-	/* if (lib) AddLibrary(lib); */
-	lib = (struct Library *)InitResident((struct Resident *)&Intuition_resident,0);
-	/* if (lib) AddLibrary(lib); */
-    }
+    (void) InitResident((struct Resident *)&Graphics_resident,0);
+    (void) InitResident((struct Resident *)&Intuition_resident,0);
 
     {
 	struct consolebase

@@ -2,10 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.12  1997/01/27 00:36:23  ldp
+    Revision 1.13  1997/01/27 13:16:15  digulla
+    The library/device is already added in InitResident(). Don't add it twice.
+
+    Revision 1.12  1997/01/27 00:36:23	ldp
     Polish
 
-    Revision 1.11  1997/01/16 17:42:13  digulla
+    Revision 1.11  1997/01/16 17:42:13	digulla
     Polish
 
 
@@ -110,8 +113,6 @@ struct ExecBase *,sysbase,0,Dos)
 	Wait(SIGF_DOS);
 	library=(struct Library *)DOSBase->dl_LDPtr;
 	ReleaseSemaphore(&DOSBase->dl_LDSigSem);
-	if(library!=NULL)
-	    AddLibrary(library);
     }
     if(library!=NULL)
     {
@@ -151,8 +152,6 @@ AROS_LH4(BYTE,OpenDevice,
 	Wait(SIGF_DOS);
 	device=(struct Device *)DOSBase->dl_LDPtr;
 	ReleaseSemaphore(&DOSBase->dl_LDSigSem);
-	if(device!=NULL)
-	    AddDevice(device);
     }
     if(device!=NULL)
     {
