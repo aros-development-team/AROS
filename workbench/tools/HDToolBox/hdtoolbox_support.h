@@ -17,10 +17,11 @@ ULONG getNodeNum(struct Node *);
 ULONG countNodes(struct List *);
 LONG RequestList(struct List *, ULONG *);
 void typestrncpy(STRPTR, STRPTR, ULONG);
-ULONG typestrtol(STRPTR, STRPTR *);
+UWORD ownsprintf(STRPTR, STRPTR, ...);
 void getSizeStr(STRPTR, ULONG);
 LONG GetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
 LONG SetPartitionAttrsA(struct PartitionHandle *, LONG, ...);
 LONG GetPartitionTableAttrsA(struct PartitionHandle *, LONG, ...);
 BOOL existsAttr(ULONG *, ULONG);
+UBYTE getBitNum(ULONG);
 #endif

@@ -171,14 +171,14 @@ struct IntuiMessage *msg;
 
 void typestrncpy(STRPTR dst, STRPTR src, ULONG len) {
 
-	while ((len) && *src)
+	while (len)
 	{
 		if (isprint(*src))
 			*dst++ = *src++;
 		else
 		{
 			*dst++ = '\\';
-			sprintf(dst,"%d", *src++);
+			sprintf(dst,"%o", *src++);
 			while (*dst)
 				dst++;
 		}
@@ -186,32 +186,39 @@ void typestrncpy(STRPTR dst, STRPTR src, ULONG len) {
 	}
 }
 
-ULONG typestrtol(STRPTR src, STRPTR *err) {
-ULONG type=0;
-UBYTE i;
+UWORD ownsprintf(STRPTR dst, STRPTR fmt, ...) {
+UWORD count=0;
 
-	for (i=0;(i<4) && (*src);i++)
+	while (*fmt)
 	{
-		type = type<<8;
-		if (*src == '\\')
+		if (*fmt == '\\')
 		{
-		ULONG val;
-
-			src++;
-			val = strtol(src, (char **)err, 0);
-			if ((*err == src) || (val>255))
+			*fmt++;
+			if (isdigit(*fmt))
 			{
-				*err = src;
-				return 0;
+			ULONG val=0;
+
+				for(;;)
+				{
+					val += (*fmt-'0');
+					fmt++;
+					if (!isdigit(*fmt))
+						break;
+					val *= 8;
+				}
+				*dst++ = (UBYTE)val;
+				count++;
 			}
-			src = *err;
-			type |= (0xFF & val);
+			else
+				kprintf("%s-%ld: unknown escape sequence\n", __FILE__, __LINE__);
 		}
 		else
-			type |= *src++;
+		{
+			*dst++ = *fmt++;
+			count++;
+		}
 	}
-	*err = 0;
-	return type;
+	return count;
 }
 
 /* size in kB */
@@ -255,3 +262,19 @@ BOOL existsAttr(ULONG *attrlist, ULONG attr) {
 	}
 	return FALSE;
 }
+
+UBYTE getBitNum(ULONG val) {
+UBYTE count=0;
+
+	if (val==0)
+		return 0xFF;
+	for (;;)
+	{
+		val >>= 1;
+		if (val==0)
+			break;
+		count++;
+	}
+	return count;
+}
+
