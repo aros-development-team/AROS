@@ -30,6 +30,7 @@
 
 /* Define all classes as built in...should be moved out to config.h like file */
 #define ZUNE_BUILTIN_ABOUTMUI 1
+#define ZUNE_BUILTIN_BALANCE 1
 #define ZUNE_BUILTIN_BOOPSI 1
 #define ZUNE_BUILTIN_COLORADJUST 1
 #define ZUNE_BUILTIN_COLORFIELD 1
