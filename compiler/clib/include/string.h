@@ -47,6 +47,8 @@ char * stpcpy (char * dest, const char * src);
 size_t strlcpy(char *dst, const char *src, size_t size);
 size_t strlcat(char *dst, const char *src, size_t size);
 
+void swab(const void *src, void *dst, size_t len);
+
 int    strcoll (const char *s1, const char *s2);
 
 size_t strxfrm (char * restrict s1, const char * restrict s2, size_t n);

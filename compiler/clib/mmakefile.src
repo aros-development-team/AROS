@@ -80,7 +80,8 @@ COMMON	:= \
 	strspn \
 	strstr \
 	strtod \
-	strtok 
+	strtok \
+	swab
 
 
 #   - Shared are in either the shared linklib, or the arosc.library module
