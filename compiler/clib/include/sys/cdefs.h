@@ -72,16 +72,6 @@
 /* FreeBSD's, it's basically yet another IDSTRING like thing. */
 #define __FBSDID(id)     __IDSTRING(__CONCAT(__rcsid_,__LINE__),id)
 
-/* __CONCAT is defined on Linux in cdefs.h */
-#if !defined(__CONCAT)
-#   if defined(__STDC__) || defined(__cplusplus)
-#       define      __CONCAT1(a,b)  a ## b
-#       define      __CONCAT(a,b)   __CONCAT1(a,b)
-#   else
-#       define      __CONCAT(a,b)       a/**/b
-#   endif
-#endif
-
 /*****************************************************************************
     IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT etc
 
