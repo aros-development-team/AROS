@@ -46,5 +46,6 @@ subdirs:
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
+ifneq ($(FLAVOUR),native)
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
-
+endif
