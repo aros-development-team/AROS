@@ -94,7 +94,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(GENMAP) $(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
 	@$(IF) $(TEST) -s undefdsyms.list ; then \
