@@ -1,0 +1,21 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+LIB           := bz2
+INCLUDE_FILES := bzlib.h
+FILES         := blocksort huffman crctable randtable compress decompress bzlib
+
+USER_CFLAGS   := -DBZ_NO_STDIO
+
+#MM- linklibs : linklibs-bz2
+#MM linklibs-bz2 : includes
+#MM includes-copy
+
+%copy_includes_cwd path=.
+
+%make_linklib_setup mmake=linklibs-bz2
+%make_linklib
+
+%common
+%include_deps
