@@ -36,6 +36,8 @@ VOID test_blttemplate( struct Window *w);
 VOID test_bltpattern(struct Window *w);
 VOID test_bltmask(struct Window *w);
 VOID test_flood(struct Window *w);
+VOID test_readpixel(struct Window *w);
+
 VOID handleevents(struct Window *win);
 
 int main(int argc, char **argv)
@@ -68,9 +70,9 @@ int main(int argc, char **argv)
 
 #endif	       
 			/* Wait forever */
+			test_readpixel(w1);
 			handleevents(w1);
-/*			test_flood(w1);
-*/
+
 #ifdef USE_TWO_WINDOWS		
 			CloseWindow(w2);
 		    }
@@ -109,7 +111,11 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
 			  WA_CloseGadget,	TRUE,
+			  
+			  
+
 			  WA_Title,		"X11 gfxhidd demo",
+
                           TAG_END);
 
   printf("Window opened\n");
@@ -127,6 +133,9 @@ struct Screen * openscreen(void)
                           TAG_END);
 
 
+#if 0
+   screen = LockPubScreen(NULL);
+#endif
 
 /*  screen->RastPort.longreserved[0] = window->RPort->longreserved[0];
 
@@ -136,6 +145,21 @@ struct Screen * openscreen(void)
 }
 
 
+VOID test_readpixel(struct Window *w)
+{
+    ULONG i;
+    
+    for (i = 0; i < 16; i ++) {
+    	UBYTE pen;
+    	SetAPen(w->RPort, i);
+	WritePixel(w->RPort, 70, 70);
+	
+	pen = ReadPixel(w->RPort, 70, 70);
+	
+	printf("Wrote pen %ld, read pen %d\n", i, pen);
+    
+    }
+}
 
 VOID test_flood(struct Window *w)
 {
