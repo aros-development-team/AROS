@@ -11,6 +11,7 @@
 #include <proto/intuition.h>
 
 #ifdef _AROS
+#include <aros/asmcall.h>
 #include <proto/muimaster.h>
 #endif
 
@@ -27,6 +28,29 @@ static char *StrDup(char *x)
     return dup;
 }
 
+#ifdef _AROS
+AROS_UFH2S(void, cpy_func,
+    AROS_UFHA(UBYTE, chr, D0),
+    AROS_UFHA(STRPTR *, strPtrPtr, A3))
+{
+    AROS_USERFUNC_INIT
+    
+    *(*strPtrPtr)++ = chr;
+    
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH2S(void, len_func,
+    AROS_UFHA(UBYTE, chr, D0),
+    AROS_UFHA(LONG *, lenPtr, A3))
+{
+    AROS_USERFUNC_INIT
+    
+    *lenPtr++;
+    
+    AROS_USERFUNC_EXIT
+}
+#endif
 
 /*****************************************************************************
 
@@ -96,8 +120,8 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
     }
 
 #ifdef _AROS
-#warning FIXME: Also should calc the correct size
-    reqtxt_len = 4096;
+    reqtxt_len = 0;
+    RawDoFmt(format,params,(VOID_FUNC)AROS_ASMSYMNAME(len_func),&reqtxt_len);
 #else
     reqtxt_len = 0;
     RawDoFmt(format,params,(void(*)())&len_func,&reqtxt_len);
@@ -106,7 +130,11 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
     if (!(reqtxt = AllocVec(reqtxt_len+1,0))) return 0; /* Return cancel if something failed */
 
 #ifdef _AROS
-    vsprintf(reqtxt,format,params);
+    {
+    	char *reqtxtptr = reqtxt;
+	
+	RawDoFmt(format,params,(VOID_FUNC)AROS_ASMSYMNAME(cpy_func),&reqtxtptr);
+    }  
 #else
     RawDoFmt(format,params,(void(*)())&cpy_func,reqtxt);
 #endif
