@@ -1,0 +1,145 @@
+/*
+  Comment
+*/
+#Archive
+#Header
+#include <stdio.h>
+#include <stdlib.h>
+#/Header
+
+#Function LHA float SPSquare
+#Parameter float fnum1 D0
+#LibOffset 99
+
+#AutoDoc
+#Function
+Sqaure a floating point number
+fnum = fnum1 * fnum1;
+#/Function
+
+#Inputs
+#Item fnum1  - ffp number
+#/Inputs
+
+#Result
+fnum1^2
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
+#/Result
+
+#Internals
+ALGORITHM:
+#Item fnum = fnum1 * fnum1.
+#/Internals
+#/AutoDoc
+
+#Code
+{
+  return SPMul(fnum1, fnum1);
+}
+#/Code
+#/Function
+
+
+#Function LHA float SPAdd
+#Parameter float fnum1 D1
+#Parameter float fnum2 D0
+#LibOffset 11
+
+#AutoDoc
+#Function Calculate the sum of two ffp numbers
+
+#Inputs
+#Item fnum1  - ffp number to add
+#Item fnum2  - ffp number to add
+#/Inputs
+
+#Result
+sum of fnum1 and fnu2
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is too large or too small for ffp format
+#/Result
+#Internals
+ALGORITHM:
+Adapt the exponent of the ffp-number with the smaller
+exponent to the ffp-number with the larger exponent.
+Therefore rotate the mantisse of the ffp-number with the
+smaller exponents by n bits, where n is the absolute value
+of the difference of the exponents.
+The exponent of the target ffp-number is set to the larger
+exponent plus 1.
+Additionally rotate both numbers by one bit to the right so
+you can catch a result >1 in the MSB.
+If the signs of the two numbers are equal then simply add
+the two mantisses. The result of the mantisses will be
+[0.5 .. 2[. Check the MSB. If zero, then the result is < 1
+and therefore subtract 1 from the exponent. Normalize the
+mantisse of the result by rotating it one bit to the left.
+Check the mantisse for 0.
+If the signs of the two numbers are different then subtract
+the ffp-number with the neagtive sign from the other one.
+The result of the mantisse will be [-1..1[. If the MSB of
+the result is set, then the result is below zero and therefore
+you have to calculate the absolute value of the mantisse.
+Check the mantisse for zero. Normalize the mantisse by
+rotating it to the left and decreasing the exponent for every
+rotation.
+Test the exponent of the result for an overflow.
+That`s it!
+#/Internals
+#/AutoDoc
+
+#Code
+{
+  LONG Res;
+  ULONG Mant1, Mant2;
+  char Shift;
+  char Exponent;
+  return Res;
+}
+#/Code
+#/Function
+
+
+#Function LHA float SPSub
+#Parameter float fnum1 D0
+#LibOffset 12
+
+#AutoDoc
+#Function
+Subtract two floating point numbers
+fnum = fnum2 - fnum1;
+#/Function
+
+#Inputs
+#Item fnum1  - ffp number
+#Item fnum2  - ffp number
+#/Inputs
+
+#Result
+-fnum1
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
+#/Result
+
+#Internals
+ALGORITHM:
+#Item fnum = fnum2 + (-fnum1).
+#/Internals
+#/AutoDoc
+
+#Code
+{
+  return SPAdd(fnum2, -fnum1);
+}
+#/Code
+#/Function
+
+#/Archive
+

@@ -1,0 +1,11 @@
+genfunctable
+genautodocs
+*.o
+*.adoc
+functable.c
+spmerged.arch
+spadd.c
+spdiv.c
+spmul.c
+spneg.c
+spsub.c
