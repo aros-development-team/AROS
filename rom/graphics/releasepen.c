@@ -39,9 +39,9 @@
         n  - The number of the pen
 
     RESULT
-        An exclusive pen is deallocated for other appilcations to use.
+        An exclusive pen is deallocated for other applications to use.
         A shared pen is only completely deallocated if no other
-        application is not using it anymore.
+        application is using it anymore.
 
     NOTES
 
