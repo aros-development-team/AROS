@@ -8,47 +8,68 @@
 /*****************************************************************************
 
     NAME
-	
-	    List
+
+        List
 
     FORMAT
-	
-	    List [<directory>]
-		
-	SYNOPSIS
-	
-	    DIR/M
-	   
-	LOCATION
-	
-	    Workbench:C/
-	   
-	FUNCTION
-	
-	    Lists detailed information about the files and directories contained
-		within the current directory or in the directory specified by DIR.
 
-    INPUTS
-	
-	    DIR - The directory to list. If left out, the current directory
-		      will be listed.
-	   
-	RESULT
-	
-	    Standard DOS return codes.
-	   
-	EXAMPLE
-	
-	BUGS
-	
-    SEE ALSO
-	
-	    Dir
+        List [<directory>]
 		
-	INTERNALS
-	
-	HISTORY
-	
+    TEMPLATE
+
+        DIR/M
+
+    LOCATION
+
+        Workbench:C/
+	   
+    FUNCTION
+
+        Lists detailed information about the files and directories in the 
+        current directory or in the directory specified by DIR.
+
+        The information for each file or directory is presented on a separate 
+        line, containing the following information:
+         
+        name
+        size (in bytes)
+        protection bits
+        date and time
+        
+    INPUTS
+
+        DIR - The directory to list. If left out, the current directory
+              will be listed.
+
+    RESULT
+
+        Standard DOS return codes.
+
+    EXAMPLE
+
+        1> List C:
+        Directory "C:" on Wednesday 12-Dec-99
+        AddBuffers                  444 --p-rwed 02-Sep-99 11:51:31
+        Assign                     3220 --p-rwed 02-Sep-99 11:51:31
+        Avail                       728 --p-rwed 02-Sep-99 11:51:31
+        Copy                       3652 --p-rwed 02-Sep-99 11:51:31
+        Delete                     1972 --p-rwed 02-Sep-99 11:51:31
+        Execute                    4432 --p-rwed 02-Sep-99 11:51:31
+        List                       5108 --p-rwed 02-Sep-99 11:51:31
+        Installer                109956 ----rwed 02-Sep-99 11:51:31
+        Which                      1068 --p-rwed 02-Sep-99 11:51:31
+        9 files - 274 blocks used        
+        
+    BUGS
+
+    SEE ALSO
+
+        Dir
+
+    INTERNALS
+
+    HISTORY
+
 ******************************************************************************/
 
 #include <clib/macros.h>
@@ -63,12 +84,9 @@
 
 static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
 
-
 #define TEMPLATE "DIR/M"
 #define ARG_DIR 0
 #define ARG_NUM 1
-
-
 
 int printdirheader(STRPTR dirname)
 {
