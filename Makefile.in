@@ -15,11 +15,11 @@ endif
 
 mmake:
 	cd tools/MetaMake; ./configure
-	make -C tools/MetaMake
+	$(MAKE) -C tools/MetaMake
 	cp tools/MetaMake/mmake .
 
 genmf:
-	make -C tools/genmf
+	$(MAKE) -C tools/genmf
 
 clean:
 	$(MMAKE) AROS.clean
