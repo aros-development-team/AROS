@@ -19,6 +19,7 @@
 #include <intuition/sghooks.h>
 #include <aros/asmcall.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "intuition_intern.h"
 #include "strgadgets.h"
@@ -76,15 +77,25 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
 	{
 
 	case STRINGA_LongVal:		/* [ISGNU] */
-	    data->StrInfo.LongInt = (LONG)tidata;
-	    EG(o)->Activation |= GACT_LONGINT;
-	    retval = 1UL;
-	    notify = TRUE;
+	    if (msg->MethodID != OM_NEW)
+	    {
+	    	/* OM_NEW STRINGA_LongVal is handled in strg_new! */
+		
+		data->StrInfo.LongInt = (LONG)tidata;
+
+       	        snprintf(data->StrInfo.Buffer, data->StrInfo.MaxChars, "%d", data->StrInfo.LongInt);
+
+		EG(o)->Activation |= GACT_LONGINT;
+		retval = 1UL;
+		notify = TRUE;
+	    }
 	    break;
 
 	case STRINGA_TextVal:		/* [ISGNU] */
 	    if (msg->MethodID != OM_NEW)
 	    {
+	        /* OM_NEW STRINGA_TextVal is handled in strg_new! */
+		
 		strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
 		EG(o)->Activation &= ~GACT_LONGINT;
 		retval = 1UL;
@@ -224,11 +235,13 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-	WORD maxchars;
-	STRPTR textval;
-
+	WORD 		maxchars;
+	STRPTR 		textval;
+	struct TagItem	*ti;
+	
 	struct StrGData *data = INST_DATA(cl, o);
 	/*
+	
 	  The instance object is cleared memory!
 	  memset(data, 0, sizeof (struct StrGData));
 	*/
@@ -267,10 +280,21 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
 	if (textval)
 	{
 	    strcpy(data->StrInfo.Buffer, textval);
-	    D(bug("strgclass:Initializing string gadget to value %s\n", textval));
+	    D(bug("strgclass:Initializing string gadget to text value %s\n", textval));
 	    EG(o)->Activation &= ~GACT_LONGINT;
 	}
+	ti = FindTagItem(STRINGA_LongVal, msg->ops_AttrList);
+	if (ti != NULL)
+	{
+	    LONG val = (LONG)ti->ti_Data;
 
+	    data->StrInfo.LongInt = val;
+    	    snprintf(data->StrInfo.Buffer, data->StrInfo.MaxChars, "%d", val);
+	    
+	    D(bug("strgclass:Initializing string gadget to integer value %d\n", val));	
+	    EG(o)->Activation |= GACT_LONGINT;
+	}
+	
 	EG(o)->SpecialInfo = &(data->StrInfo);
 	EG(o)->Flags |= GFLG_STRINGEXTEND;
 	data->StrInfo.Extension = &(data->StrExtend);
