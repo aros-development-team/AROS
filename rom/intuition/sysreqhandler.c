@@ -76,35 +76,36 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    LONG result = -3;
+    LONG result = -2;
     struct IntuiMessage *msg;
 
     if (WaitInput)
 	WaitPort(window->UserPort);
-    while (result == -3)
+
+    while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
     {
-	msg = (struct IntuiMessage *)GetMsg(window->UserPort);
-	if (msg)
+	switch (msg->Class)
 	{
-	    switch (msg->Class)
+	case IDCMP_GADGETUP:
+	    result = ((struct Gadget *)msg->IAddress)->GadgetID;
+	    break;
+	    
+	default:
+	    if (result == -2)
 	    {
-	    case IDCMP_GADGETUP:
-		result = ((struct Gadget *)msg->IAddress)->GadgetID;
-		break;
-	    default:
-		if (msg->Class |
+		if (msg->Class &
 		    ((struct EasyRequestUserData *)window->UserData)->IDCMP)
 		{
 		    if (IDCMPFlagsPtr)
-			*IDCMPFlagsPtr |= msg->Class;
+			*IDCMPFlagsPtr = msg->Class;
 		    result = -1;
 		}
-		break;
 	    }
-	    ReplyMsg((struct Message *)msg);
-	} else
-	    result = -2;
-    }
+	    break;
+	}
+	ReplyMsg((struct Message *)msg);
+
+    } /* while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort))) */
 
     return result;
     AROS_LIBFUNC_EXIT

@@ -23,37 +23,43 @@
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
 
-
-#define HSPACE 4
-#define HBORDER 4
-#define VSPACE 2
-#define VBORDER 2
-
+#define OUTERSPACING_X 		4
+#define OUTERSPACING_Y 		4
+#define GADGETGADGETSPACING 	8
+#define TEXTGADGETSPACING 	4
+#define TEXTBOXBORDER_X 	16
+#define TEXTBOXBORDER_Y 	4
+#define BUTTONBORDER_X 		8
+#define BUTTONBORDER_Y 		4
 
 struct reqdims
 {
     UWORD width;       /* width of the requester */
     UWORD height;      /* height of the requester */
     UWORD fontheight;  /* height of the default font */
+    UWORD fontxheight; /* extra height */
     int   gadgets;     /* number of gadgets */
     UWORD gadgetwidth; /* width of a gadget */
 };
 
 
-STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext);
-STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args);
-BOOL buildeasyreq_calculatedims(struct reqdims *dims,
+static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext,struct IntuitionBase *IntuitionBase);
+static STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args,struct IntuitionBase *IntuitionBase);
+static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 				struct Screen *scr,
 				STRPTR formattedtext,
-				STRPTR *gadgetlabels);
-struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
+				STRPTR *gadgetlabels,
+				struct IntuitionBase *IntuitionBase);
+static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 					STRPTR *gadgetlabels,
-					struct Screen *scr);
-void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
+					struct Screen *scr,
+					struct IntuitionBase *IntuitionBase);
+static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 		       struct Window *win, struct Screen *scr,
-		       struct Gadget *gadgets);
+		       struct Gadget *gadgets,
+		       struct IntuitionBase *IntuitionBase);
 
-int charsinstring(STRPTR string, char c);
+static int charsinstring(STRPTR string, char c);
 
 /*****************************************************************************
 
@@ -142,17 +148,19 @@ int charsinstring(STRPTR string, char c);
 
     /* create everything */
     gadgetlabels = buildeasyreq_makelabels(&dims,
-					   easyStruct->es_GadgetFormat);
+					   easyStruct->es_GadgetFormat,
+					   IntuitionBase);
     if (gadgetlabels)
     {
 	formattedtext = buildeasyreq_formattext(easyStruct->es_TextFormat,
-						Args);
+						Args,
+						IntuitionBase);
 	if (formattedtext)
 	{
 	    if (buildeasyreq_calculatedims(&dims, scr,
-					   formattedtext, gadgetlabels))
+					   formattedtext, gadgetlabels, IntuitionBase))
 	    {
-		gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr);
+		gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr, IntuitionBase);
 		if (gadgets)
 		{
 		    requserdata = AllocVec(sizeof(struct EasyRequestUserData),
@@ -180,7 +188,7 @@ int charsinstring(STRPTR string, char c);
 			    requserdata->Gadgets = gadgets;
 			    requserdata->NumGadgets = dims.gadgets;
 			    buildeasyreq_draw(&dims, formattedtext,
-					      req, scr, gadgets);
+					      req, scr, gadgets, IntuitionBase);
 			    FreeVec(formattedtext);
 			    return req;
 			}
@@ -206,9 +214,10 @@ int charsinstring(STRPTR string, char c);
 UWORD BgPattern[2]  = { 0xAAAA, 0x5555 };
 
 /* draw the contents of the requester */
-void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
-		       struct Window *req, struct Screen *scr,
-		       struct Gadget *gadgets)
+static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
+		       	      struct Window *req, struct Screen *scr,
+		              struct Gadget *gadgets,
+		              struct IntuitionBase *IntuitionBase)
 {
     struct DrawInfo *dri;
     struct Image *frame;
@@ -223,19 +232,19 @@ void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 		 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
 		 JAM1);
     SetAfPt(req->RPort, BgPattern, 1);
-    RectFill(req->RPort, scr->WBorLeft,
-			 scr->WBorTop + dims->fontheight - 1,
-			 req->Width - scr->WBorRight - 1,
-			 req->Height - scr->WBorBottom - 1);
+    RectFill(req->RPort, req->BorderLeft,
+			 req->BorderTop,
+			 req->Width - req->BorderRight,
+			 req->Height - req->BorderBottom);
     SetAfPt(req->RPort, NULL, 0);
 
     /* draw textframe */
     frame = (struct Image *)NewObject(NULL, FRAMEICLASS,
-	IA_Left, scr->WBorLeft + HSPACE,
-	IA_Top, scr->WBorTop + dims->fontheight - 1 + VSPACE,
-	IA_Width, req->Width - scr->WBorLeft - scr->WBorRight - HSPACE * 2,
-	IA_Height, req->Height - scr->WBorTop - scr->WBorBottom -
-		   dims->fontheight * 2 - VSPACE * 3 - VBORDER * 2 + 1,
+	IA_Left, req->BorderLeft + OUTERSPACING_X,
+	IA_Top, req->BorderTop + OUTERSPACING_Y,
+	IA_Width, req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2,
+	IA_Height, req->Height - req->BorderTop - req->BorderBottom -
+		   dims->fontheight - OUTERSPACING_Y * 2 - TEXTGADGETSPACING - BUTTONBORDER_Y * 2,
 	IA_Recessed, TRUE,
 	IA_EdgesOnly, FALSE,
 	TAG_DONE);
@@ -259,9 +268,9 @@ void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 	else
 	    length = strlen(text);
 	Move(req->RPort,
-	     scr->WBorLeft + HSPACE + HBORDER,
-	     scr->WBorTop + dims->fontheight * currentline - 1 +
-	       VSPACE + VBORDER + req->RPort->Font->tf_Baseline);
+	     req->BorderLeft + OUTERSPACING_X + TEXTBOXBORDER_X,
+	     req->BorderTop + (dims->fontheight + dims->fontxheight) * (currentline - 1) +
+	       OUTERSPACING_Y + TEXTBOXBORDER_Y + req->RPort->Font->tf_Baseline);
 	Text(req->RPort, text, length);
 	text += length;
 	if (text[0] == '\n')
@@ -277,7 +286,9 @@ void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 
 
 /* create an array of gadgetlabels */
-STRPTR *buildeasyreq_makelabels(struct reqdims *dims, STRPTR labeltext)
+static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
+				       STRPTR labeltext,
+				       struct IntuitionBase *IntuitionBase)
 {
     STRPTR *gadgetlabels;
     STRPTR label;
@@ -320,7 +331,9 @@ STRPTR *buildeasyreq_makelabels(struct reqdims *dims, STRPTR labeltext)
 
 
 /* format the supplied text string by using the supplied args */
-STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args)
+static STRPTR buildeasyreq_formattext(STRPTR textformat,
+				      APTR args,
+				      struct IntuitionBase *IntuitionBase)
 {
     int len;
     STRPTR buffer;
@@ -341,10 +354,11 @@ STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args)
 
 
 /* calculate dimensions of the requester */
-BOOL buildeasyreq_calculatedims(struct reqdims *dims,
-				struct Screen *scr,
-				STRPTR formattedtext,
-				STRPTR *gadgetlabels)
+static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
+				       struct Screen *scr,
+				       STRPTR formattedtext,
+				       STRPTR *gadgetlabels,
+				       struct IntuitionBase *IntuitionBase)
 {
     STRPTR textline;
     int textlines, line; /* number of lines in es_TextFormat */
@@ -353,10 +367,22 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 
     /* calculate height of requester */
     dims->fontheight = scr->RastPort.Font->tf_YSize;
+    dims->fontxheight = dims->fontheight - scr->RastPort.Font->tf_Baseline;
+    if (dims->fontxheight < 1) dims->fontxheight = 1;
+    
     textlines = charsinstring(formattedtext, '\n') + 1;
-    dims->height = (textlines + 2) * dims->fontheight +
-		   scr->WBorTop + scr->WBorBottom - 1 +
-		   VSPACE * 3 + VBORDER * 4;
+    dims->height = scr->WBorTop + dims->fontheight + 1 + 
+                   OUTERSPACING_Y +
+		   TEXTBOXBORDER_Y +
+                   textlines * (dims->fontheight + dims->fontxheight) - dims->fontxheight +
+		   TEXTBOXBORDER_Y +
+		   TEXTGADGETSPACING +
+		   BUTTONBORDER_Y +
+		   dims->fontheight +
+		   BUTTONBORDER_Y +
+		   OUTERSPACING_Y +
+		   scr->WBorBottom;
+
     if (dims->height > scr->Height)
 	return FALSE;
 
@@ -380,7 +406,7 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 	    textboxwidth = linewidth;
 	textline = textline + linelen + 1;
     }
-    textboxwidth += HBORDER * 2;
+    textboxwidth += TEXTBOXBORDER_X * 2;
 
     /* calculate width of gadgets */
     dims->gadgetwidth = 0;
@@ -394,11 +420,12 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 	    dims->gadgetwidth = gadgetwidth;
 	currentgadget++;
     }
-    dims->gadgetwidth += HBORDER * 2 + HSPACE;
-    gadgetswidth = (dims->gadgetwidth + HSPACE) * dims->gadgets - HSPACE;
-
+    dims->gadgetwidth += BUTTONBORDER_X * 2;
+    gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * dims->gadgets - GADGETGADGETSPACING;
+    
     /* calculate width of requester */
-    dims->width = MAX(textboxwidth, gadgetswidth) + HSPACE * 2;
+    dims->width = MAX(textboxwidth, gadgetswidth) + OUTERSPACING_X * 2 +
+                  scr->WBorLeft + scr->WBorRight;
     if (dims->width > scr->Width)
 	return FALSE;
 
@@ -408,9 +435,10 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 
 
 /* make all the gadgets */
-struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
-					STRPTR *gadgetlabels,
-					struct Screen *scr)
+static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
+					       STRPTR *gadgetlabels,
+					       struct Screen *scr,
+					       struct IntuitionBase *IntuitionBase)
 {
     struct Gadget *gadgetlist, *thisgadget = NULL;
     struct Image *gadgetframe;
@@ -427,12 +455,12 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     if (!gadgetframe)
 	return NULL;
 
-    restwidth = dims->width - scr->WBorLeft - scr->WBorRight - HSPACE * 2;
+    restwidth = dims->width - scr->WBorLeft - scr->WBorRight - OUTERSPACING_X * 2;
     if (dims->gadgets == 1)
-	xoffset = scr->WBorLeft + HSPACE + (restwidth - dims->gadgetwidth) / 2;
+	xoffset = scr->WBorLeft + OUTERSPACING_X + (restwidth - dims->gadgetwidth) / 2;
     else
     {
-	xoffset = scr->WBorLeft + HSPACE;
+	xoffset = scr->WBorLeft + OUTERSPACING_X;
 	restwidth -= dims->gadgets * dims->gadgetwidth;
     }
 
@@ -454,8 +482,8 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 		GA_Width,	dims->gadgetwidth,
 		GA_Top, 	dims->height -
 				scr->WBorBottom - dims->fontheight
-				- VSPACE - VBORDER * 2,
-		GA_Height,	dims->fontheight + VBORDER * 2,
+				- OUTERSPACING_Y - BUTTONBORDER_Y * 2,
+		GA_Height,	dims->fontheight + BUTTONBORDER_Y * 2,
 		GA_Text,	(IPTR)gadgetlabels[currentgadget],
 		GA_Image,	(IPTR)gadgetframe,
 		GA_RelVerify,	TRUE,
@@ -485,7 +513,7 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 /***** Support Functions *****/
 
 /* count the occurences of a specified character in a string */
-int charsinstring(STRPTR string, char c)
+static int charsinstring(STRPTR string, char c)
 {
     int count = 0;
 
