@@ -149,10 +149,12 @@ do_patch()
 patch_cached()
 {
     local location="$1" patch="$2";
-
-    if ! test -f ${location}/.${patch}.applied;  then
+    
+    local patchname=`echo $patch | cut -d: -f1`
+    
+    if ! test -f ${location}/.${patchname}.applied;  then
         if do_patch "$location" "$patch"; then
-	    echo yes > ${location}/.${patch}.applied
+	    echo yes > ${location}/.${patchname}.applied
 	    true
 	else
 	    false
