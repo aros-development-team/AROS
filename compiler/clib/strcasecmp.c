@@ -1,30 +1,22 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1996/08/29 15:12:47  digulla
-    Added STRICMP() - Compare two strings ignoring case
 
-    Revision 1.1  1996/08/01 18:46:31  digulla
-    Simple string compare function
-
-    Desc:
-    Lang:
+    Desc: C function stricmp() and strcasecmp()
+    Lang: english
 */
-#include <aros/system.h>
-#include <clib/aros_protos.h>
 #include <ctype.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+	#include <string.h>
 
-	int STRICMP (
+	int strcasecmp (
 
 /*  SYNOPSIS */
-	const UBYTE * str1,
-	const UBYTE * str2)
+	const char * str1,
+	const char * str2)
 
 /*  FUNCTION
 	Calculate str1 - str2 ignoring case.
@@ -71,5 +63,9 @@
 
     /* Now return the difference. */
     return diff;
-} /* STRICMP */
+} /* strcasecmp */
 
+int stricmp (const char * s1, const char * s2)
+{
+    return strcasecmp (s1, s2);
+}

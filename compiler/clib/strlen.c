@@ -1,24 +1,19 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1996/09/21 15:47:34  digulla
-    Use Amiga types
 
-    Revision 1.2  1996/08/01 17:40:46  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: ANSI C function strlen()
+    Lang: english
 */
+#include <string.h>
 #include <exec/types.h>
 
-ULONG StrLen (const UBYTE * ptr)
+size_t strlen (const char * ptr)
 {
-    int len=0;
+    const char * start = ptr;
 
-    while (*ptr++) len++;
+    while (*ptr) ptr ++;
 
-    return len;
+    return (IPTR)ptr - (IPTR)start;
 }
 

@@ -1,26 +1,21 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1996/08/01 18:46:31  digulla
-    Simple string compare function
 
-    Desc:
-    Lang:
+    Desc: ANSI C function strcmp()
+    Lang: english
 */
-#include <aros/system.h>
-#include <clib/aros_protos.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+	#include <string.h>
 
-	int STRCMP (
+	int strcmp (
 
 /*  SYNOPSIS */
-	const UBYTE * str1,
-	const UBYTE * str2)
+	const char * str1,
+	const char * str2)
 
 /*  FUNCTION
 	Calculate str1 - str2.
@@ -67,5 +62,5 @@
 
     /* Now return the difference. */
     return diff;
-} /* STRCMP */
+} /* strcmp */
 

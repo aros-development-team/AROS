@@ -2,14 +2,21 @@ TOP=..
 
 include $(TOP)/make.cfg
 
+INCLUDES=-Iinclude
+
 OBJDIR=$(GENDIR)/clib
 
-FILES = ctype printf
+FILES = ctype printf strcmp stricmp strlen strcpy qsort \
+	strdup malloc free
 
-all: setup $(LIBDIR)/libarosc.a
+all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
-setup :
+setup:
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+
+$(OBJDIR)/links:
+	$(TOP)/scripts/makelinks include $(BINDIR)/include "*.h"
+	touch $(OBJDIR)/links
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libc.a

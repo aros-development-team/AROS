@@ -2,6 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/19 16:56:28  aros
+    Moved all ANSI C function to here and wrote all neccessary header files.
+    Now we have a real basis for our own C lib.
+    Added the functions malloc(), free() and strcasecmp()
+    Made all functions ANSI C compliant
+
     Revision 1.3  1996/09/21 15:47:52  digulla
     Use Amiga types
     Full ANSI prototypes
@@ -13,6 +19,8 @@
     Lang:
 */
 #include <exec/types.h>
+#include <sys/types.h>
+#include <stdlib.h>
 
 static inline const char *med3 (const char *, const char *, const char *, int (*)());
 static inline void	 swapfunc (char *, char *, int, int);
@@ -64,7 +72,7 @@ med3(const char *a, const char *b, const char *c, int (*cmp)(const void *, const
 }
 
 void
-QSort(VOID *a, ULONG n, ULONG es, int (*cmp)(const VOID *, const VOID *))
+qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
 {
 	char *pa, *pb, *pc, *pd, *pl, *pm, *pn;
 	int d, r, swaptype, swap_cnt;
@@ -132,12 +140,12 @@ loop:	SWAPINIT(a, es);
 	r = min(pd - pc, pn - pd - es);
 	vecswap(pb, pn - r, r);
 	if ((r = pb - pa) > es)
-		QSort(a, r / es, es, cmp);
+		qsort(a, r / es, es, cmp);
 	if ((r = pd - pc) > es) {
 		/* Iterate rather than recurse to save stack space */
 		a = pn - r;
 		n = r / es;
 		goto loop;
 	}
-/*		QSort(pn - r, r / es, es, cmp);*/
+/*		qsort(pn - r, r / es, es, cmp);*/
 }

@@ -1,27 +1,21 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1996/10/02 16:38:25  digulla
-    Use Prototypes
 
-    Revision 1.3  1996/09/21 15:47:34  digulla
-    Use Amiga types
-
-    Revision 1.2  1996/08/01 17:40:46  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: ANSI C function strcpy()
+    Lang: english
 */
-#include <exec/types.h>
-#include <clib/aros_protos.h>
+#include <string.h>
 
-UBYTE * StrCpy (UBYTE * dest, const UBYTE * src)
+char * strcpy (char * dest, const char * src)
 {
-    UBYTE * ptr = dest;
+    char * ptr = dest;
 
-    while ((*ptr++ = *src ++));
+    while ((*ptr = *src))
+    {
+	ptr ++;
+	src ++;
+    }
 
     return dest;
 }

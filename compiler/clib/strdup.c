@@ -1,42 +1,33 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1996/09/21 15:40:51  digulla
-    Duplicate strings
 
-    Revision 1.1  1996/08/01 18:46:31  digulla
-    Simple string compare function
-
-    Desc:
-    Lang:
+    Desc: ANSI C function strdup()
+    Lang: english
 */
-#include <exec/memory.h>
-#include <clib/exec_protos.h>
-#include <clib/aros_protos.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/aros_protos.h>
+	#include <string.h>
+	#include <memory.h>
 
-	UBYTE * StrDup (
+	char * strdup (
 
 /*  SYNOPSIS */
-	const UBYTE * orig)
+	const char * orig)
 
 /*  FUNCTION
-	Create a copy of a string. The copy must be freed with FreeVec().
+	Create a copy of a string. The copy can be freed with free() or will
+	be freed when then program ends.
 
     INPUTS
 	str1 - Strings to duplicate
 
     RESULT
-	A copy of the string which must be freed with FreeVec().
+	A copy of the string which can be freed with free().
 
     NOTES
-	This function is not part of a library and may thus be called
-	any time.
 
     EXAMPLE
 
@@ -51,10 +42,10 @@
 
 ******************************************************************************/
 {
-    UBYTE * copy;
-    UBYTE * ptr;
+    char * copy;
+    char * ptr;
 
-    if ((copy = AllocVec (StrLen (orig)+1, MEMF_ANY)))
+    if ((copy = malloc (strlen (orig)+1)))
     {
 	ptr = copy;
 
@@ -62,5 +53,5 @@
     }
 
     return copy;
-} /* StrDup */
+} /* strdup */
 
