@@ -9,7 +9,7 @@
 #include <exec/errors.h>
 #include <proto/exec.h>
 
-/*****i***********************************************************************
+/*****************************************************************************
 
     NAME */
 #include <devices/timer.h>
@@ -54,7 +54,6 @@
 
     ULONG unitNum;
     BOOL replyit = FALSE;
-    struct timerequest *tr;
 
     timereq->tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     unitNum = (ULONG)timereq->tr_node.io_Unit;
