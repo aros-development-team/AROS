@@ -107,6 +107,8 @@
 	    struct ClipRect * CR;
 
     	    CR = L->ClipRect; /* must not read this before LockLayer!! */
+	    
+	#if 0 /* stegerg: seems to have been crap idea/test. Where the hell did I get this from??? */
 	    /*
 	    ** Set rport->Layer to NULL, so that the hook function does not
 	    ** need to clone the rport and set clonerp->Layer to NULL in
@@ -116,7 +118,8 @@
 	    */
 	    
 	    rport->Layer = NULL;
-	    
+	#endif
+	
 	    /* process all ClipRects of this layer */
 	    while (NULL != CR)
 	    {
@@ -199,10 +202,13 @@
 	      
 	    } /* foreach cliprect */
 
+	#if 0 /* stegerg: seems to have been crap idea/test. Where the hell did I get this from??? */
+
 	    /* Restore RastPort->Layer which was set to NULL further above */
 	    
 	    rport->Layer = L;
-	    
+	#endif
+	
 	} /* if (rect in screen coords interesects layer coords) */
 
 	UnlockLayer(L);
