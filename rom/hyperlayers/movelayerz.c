@@ -173,55 +173,58 @@ int _MoveLayerToFront(struct Layer * l,
 
   _l = lbehind;
 
-  /*
-   * Now I have to move the layer family in front of layer lbehind.
-   * Nothing changes for the layers in front of layer lbehind, but on
-   * the layers behind (including first->front) I must back up some of 
-   * their parts that the new family might be hiding no.
-   * Once I step on the layer that was behind the layer l
-   * I can stop because those layers are already hidden well
-   * enough.
-   */
-  do
-  {
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&backupr->bounds, &_l->visibleshape->bounds))
-      _BackupPartsOfLayer(_l, backupr, 0, FALSE, LayersBase);
-    else
-      ClearRegionRegion(backupr, _l->VisibleRegion);
 
-    _l = _l->back;
-  }
-  while (_l != l->back /* this is l->back now since the family has
+  if (backupr)
+  {
+    /*
+     * Now I have to move the layer family in front of layer lbehind.
+     * Nothing changes for the layers in front of layer lbehind, but on
+     * the layers behind (including first->front) I must back up some of 
+     * their parts that the new family might be hiding no.
+     * Once I step on the layer that was behind the layer l
+     * I can stop because those layers are already hidden well
+     * enough.
+     */
+    do
+    {
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&backupr->bounds, &_l->visibleshape->bounds))
+        _BackupPartsOfLayer(_l, backupr, 0, FALSE, LayersBase);
+      else
+        ClearRegionRegion(backupr, _l->VisibleRegion);
+
+      _l = _l->back;
+    }
+    while (_l != l->back /* this is l->back now since the family has
                           been unlinked already!*/ );
 
-  if (TRUE == backupr_allocated)
-    DisposeRegion(backupr);
-  
-  /*
-   * Now I must make the layer family of l visible 
-   * (lfirst to and including l)
-   */
-  _l = first;
+    if (TRUE == backupr_allocated)
+      DisposeRegion(backupr);
+
+    /*
+     * Now I must make the layer family of l visible 
+     * (lfirst to and including l)
+     */
+    _l = first;
     
-  while (1)
-  {
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->visibleshape->bounds, &r.bounds))
+    while (1)
     {
-      ClearRegion(_l->VisibleRegion);
-      _ShowPartsOfLayer(_l, &r, LayersBase);
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->visibleshape->bounds, &r.bounds))
+      {
+        ClearRegion(_l->VisibleRegion);
+        _ShowPartsOfLayer(_l, &r, LayersBase);
+      }
+      else
+        _SetRegion(&r, _l->VisibleRegion);      
+
+      if (_l == l)
+        break;
+
+      if (IS_VISIBLE(_l))
+        ClearRegionRegion(_l->visibleshape, &r);
+
+      _l = _l->back;
     }
-    else
-      _SetRegion(&r, _l->VisibleRegion);      
-
-    if (_l == l)
-      break;
-
-    if (IS_VISIBLE(_l))
-      ClearRegionRegion(_l->visibleshape, &r);
-
-    _l = _l->back;
   }
-
   ClearRegion(&r);
 
   /*
