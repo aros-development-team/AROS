@@ -74,16 +74,39 @@ struct BitMapHeader
 struct ILBMImage
 {
     struct BitMapHeader bmh;
+    struct BitMapHeader planarbmh;
     unsigned char   	*planarbuffer, *chunkybuffer;
     LONG    	    	cmapentries, bpr, totdepth;
     UBYTE   	    	rgb[256][3];
+    UBYTE   	    	remaptable[256];
 };
 
 /****************************************************************************************/
 
-static char 	     	    *filename, *outfilename;
+struct Palette
+{
+    UWORD numentries;
+    UBYTE rgb[256][3];
+};
+
+/****************************************************************************************/
+
+struct Palette std4colpal =
+{
+    4,
+    {
+	{0xB3, 0xB3, 0xB3},
+	{0x00, 0x00, 0x00},
+	{0xFF, 0xFF, 0xFF},
+	{0x66, 0x88, 0xBB}
+    }
+};
+
+/****************************************************************************************/
+
+static char 	     	    *filename, *outfilename, *infilename;
 static unsigned char	    *filebuffer, *body;
-static FILE 	     	    *file, *outfile;
+static FILE 	     	    *file, *outfile, *infile;
 static long 	     	    filesize, bodysize, bodysize_packed;
 static long 	     	    filepos;
 static struct ILBMImage     img1, img2;
@@ -148,6 +171,7 @@ static void cleanup(char *msg, int rc)
     freeimage(&img2);
     
     if (outfile) fclose(outfile);
+    if (infile) fclose(infile);
     
     exit(rc);
 }
@@ -158,17 +182,29 @@ static void getarguments(int argc, char **argv)
 {
     WORD i;
     
-    if (argc != 2)
+    if ((argc != 4) && (argc != 5))
     {
     	fprintf(stderr, "Wrong number of arguments\n");
     }
     
     if (argc < 2)
     {
-    	cleanup("Usage: ilbmtoicon filename", 1);
+    	cleanup("Usage: ilbmtoicon icondescription ilbmimage1 [ilbmimage2] filename", 1);
     }
     
-    outfilename = argv[1];
+    if (argc == 4)
+    {
+    	infilename   = argv[1];
+    	image1option = argv[2];
+	outfilename  = argv[3];
+    }
+    else if (argc == 5)
+    {
+    	infilename   = argv[1];
+    	image1option = argv[2];
+	image2option = argv[3];
+	outfilename  = argv[4];
+    }
 }
 
 /****************************************************************************************/
@@ -280,8 +316,6 @@ struct keyword
 }
 keywordtable[] =
 {
-    {KEYWORD_STRING  	, "IMAGE1"  	    , &image1option 	    , NULL  	    	},
-    {KEYWORD_STRING 	, "IMAGE2"  	    , &image2option 	    , NULL  	    	},
     {KEYWORD_STRING 	, "DEFAULTTOOL"     , &defaulttooloption    , NULL  	    	},
     {KEYWORD_STRING 	, "DRAWERDATA"      , &drawerdataoption     , NULL  	    	},
     {KEYWORD_CYCLE 	, "TYPE"    	    , &typeoption   	    , typecycles    	},
@@ -406,14 +440,16 @@ static void parseiconsource(void)
 {
     char s[256];
     
-    while(fgets(s, sizeof(s), stdin))
+    infile = fopen(infilename, "r");
+    if (infile)
     {
-    	parseline(s);
-    }
-    
-    if (image1option == NULL)
-    {
-    	cleanup("IMAGE1 argument is required in .info.src file!", 1);
+	while(fgets(s, sizeof(s), infile))
+	{
+    	    parseline(s);
+	}
+
+	fclose(infile);
+	infile = 0;
     }
 }
 
@@ -501,7 +537,7 @@ static void openimage(struct ILBMImage *img)
     
     if (filesize < 12) cleanup("Bad file size!", 1);
     
-    fprintf(stderr, "Filesize is %d\n", filesize);
+    //fprintf(stderr, "Filesize is %d\n", filesize);
     
     fseek(file, 0, SEEK_SET);
     
@@ -549,7 +585,7 @@ static void scanimage(struct ILBMImage *img)
 	id   = getlong();
 	size = getlong();
 
-	fprintf(stderr, "Chunk: %c%c%c%c  Size: %d\n", id >> 24, id >> 16, id >> 8, id, size);
+	//fprintf(stderr, "Chunk: %c%c%c%c  Size: %d\n", id >> 24, id >> 16, id >> 8, id, size);
 		
 	switch(id)
 	{
@@ -579,10 +615,11 @@ static void scanimage(struct ILBMImage *img)
 		
 		img->bpr = ((img->bmh.bmh_Width + 15) & ~15) / 8;
 		
-		fprintf(stderr, "BMHD: %d x %d x %d (%d)\n", img->bmh.bmh_Width,
+		/*fprintf(stderr, "BMHD: %d x %d x %d (%d)\n", img->bmh.bmh_Width,
 		    	    	    	    	    	     img->bmh.bmh_Height,
 							     img->bmh.bmh_Depth,
-							     img->totdepth);
+							     img->totdepth);*/
+		img->planarbmh = img->bmh;
 		break;
 	
 	    case ID_CMAP:   
@@ -801,7 +838,7 @@ static void p2c(unsigned char *source, unsigned char *dest, LONG width, LONG hei
     {
     	for(x = 0; x < width; x++)
 	{
-	    LONG mask   = 1 << (7 - (x & 7));
+	    LONG mask   = 0x80 >> (x & 7);
 	    LONG offset = x / 8;
 	    unsigned char chunkypix = 0;
 	    
@@ -817,6 +854,39 @@ static void p2c(unsigned char *source, unsigned char *dest, LONG width, LONG hei
     }
     
     
+}
+
+/****************************************************************************************/
+
+static void c2p(unsigned char *source, unsigned char *dest, LONG width, LONG height, LONG planes)
+{
+    LONG alignedwidth, x, y, p, bpr, bpl;
+    
+    alignedwidth = (width + 15) & ~15;
+    bpr = alignedwidth / 8;
+    bpl = bpr * planes;
+    
+    for(y = 0; y < height; y++)
+    {
+	for(x = 0; x < width; x++)
+	{
+	    LONG mask   = 0x80 >> (x & 7);
+	    LONG offset = x / 8;
+	    unsigned char chunkypix = source[x];
+
+	    for(p = 0; p < planes; p++)
+	    {
+		if (chunkypix & (1 << p))
+	    	    dest[p * bpr + offset] |= mask;
+		else
+		    dest[p * bpr + offset] &= ~mask;
+	    }
+	}
+
+    	source += width;
+    	dest += bpl;
+    }
+ 
 }
 
 /****************************************************************************************/
@@ -847,6 +917,88 @@ static void convertbody(struct ILBMImage *img)
 	img->totdepth,
 	img->bmh.bmh_Depth,
 	img->bmh.bmh_Width);
+}
+
+/****************************************************************************************/
+
+static UBYTE findcolor(struct Palette *pal, ULONG r, ULONG g, ULONG b)
+{
+    ULONG dist, bestdist = 0xFFFFFFFF;
+    UBYTE i, besti = 0;
+    
+    for(i = 0; i < pal->numentries; i++)
+    {
+    	LONG r1, g1, b1, r2, g2, b2, dr, dg, db;
+	
+	r1 = (LONG)r;
+	g1 = (LONG)g;
+	b1 = (LONG)b;
+	
+	r2 = (LONG)pal->rgb[i][0];
+	g2 = (LONG)pal->rgb[i][1];
+    	b2 = (LONG)pal->rgb[i][2];
+	
+	dr = r1 - r2;
+	dg = g1 - g2;
+	db = b1 - b2;
+	
+	dist = (dr * dr) + (dg * dg) + (db * db);
+	if (dist < bestdist)
+	{
+	    bestdist = dist;
+	    besti = i;
+	}
+	
+    }
+    
+    return besti;
+}
+
+/****************************************************************************************/
+
+static void remapplanar(struct ILBMImage *img, struct Palette *pal)
+{
+    UBYTE *remapbuffer;
+    LONG i, x, y, highestcol = 0, newdepth = 0;
+    
+    remapbuffer = malloc(img->bmh.bmh_Width * img->bmh.bmh_Height);
+    if (!remapbuffer) cleanup("Error allocating remap buffer!", 1);
+    
+    for(i = 0; i < img->cmapentries; i++)
+    {
+    	img->remaptable[i] = findcolor(pal, img->rgb[i][0], img->rgb[i][1], img->rgb[i][2]);
+    }
+    
+    for(i = 0; i < img->bmh.bmh_Width * img->bmh.bmh_Height; i++)
+    {
+    	remapbuffer[i] = img->remaptable[img->chunkybuffer[i]];
+
+    	if (remapbuffer[i] > highestcol)
+	    highestcol = remapbuffer[i];
+    }
+    
+    for(i = highestcol; i; i >>= 1) newdepth++;
+    if (newdepth == 0) newdepth = 1;
+    
+    if (newdepth > img->totdepth)
+    {
+	free(img->planarbuffer);
+	
+	img->planarbuffer = malloc(img->bpr * img->bmh.bmh_Height * newdepth);
+	if (!img->planarbuffer)
+	{
+	    free(remapbuffer);
+	    cleanup("Error re-allocating planar buffer!", 1);	
+    	}
+    }
+    
+    img->planarbmh.bmh_Depth = newdepth;
+    
+    memset(img->planarbuffer, 0, img->bpr * img->bmh.bmh_Height * newdepth);
+    
+    c2p(remapbuffer, img->planarbuffer, img->bmh.bmh_Width, img->bmh.bmh_Height, newdepth);
+    
+    free(remapbuffer);
 }
 
 /****************************************************************************************/
@@ -1156,11 +1308,11 @@ static void writeimage(struct ILBMImage *img)
 
     SET_WORD(leftedge, 0);
     SET_WORD(topedge, 0);
-    SET_WORD(width, img->bmh.bmh_Width);
-    SET_WORD(height, img->bmh.bmh_Height);
-    SET_WORD(depth, img->bmh.bmh_Depth);
+    SET_WORD(width, img->planarbmh.bmh_Width);
+    SET_WORD(height, img->planarbmh.bmh_Height);
+    SET_WORD(depth, img->planarbmh.bmh_Depth);
     SET_LONG(imagedata, BOOL_YES);
-    SET_BYTE(planepick, 1 << img->bmh.bmh_Depth);
+    SET_BYTE(planepick, (1 << img->planarbmh.bmh_Depth) - 1);
     SET_BYTE(planeonoff, 0);
     SET_LONG(nextimage, 0);
 
@@ -1169,17 +1321,17 @@ static void writeimage(struct ILBMImage *img)
     	cleanup("Error writing image structure to outfile!", 1);
     }
  
-    for(d = 0; d < img->bmh.bmh_Depth; d++)
+    for(d = 0; d < img->planarbmh.bmh_Depth; d++)
     {
     	UBYTE *dat = img->planarbuffer + img->bpr * d;
 	
-	for(y = 0; y < img->bmh.bmh_Height; y++)
+	for(y = 0; y < img->planarbmh.bmh_Height; y++)
 	{
 	    if(fwrite(dat, 1, img->bpr, outfile) != img->bpr)
 	    {
      	    	cleanup("Error writing image data to outfile!", 1);
 	    }
-	    dat += (img->totdepth * img->bpr);
+	    dat += (img->planarbmh.bmh_Depth * img->bpr);
 	}
     }
           
@@ -1504,12 +1656,21 @@ static void writeicon(void)
 
 /****************************************************************************************/
 
+static void remapicon(void)
+{
+    remapplanar(&img1, &std4colpal);
+    if (image2option) remapplanar(&img2, &std4colpal);
+}
+
+/****************************************************************************************/
+
 int main(int argc, char **argv)
 {
     getarguments(argc, argv);
     parseiconsource();
     loadimage(image1option, &img1);
     if (image2option) loadimage(image2option, &img2);
+    remapicon();
     writeicon();
     
     cleanup(0, 0);
