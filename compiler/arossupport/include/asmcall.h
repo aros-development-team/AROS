@@ -71,6 +71,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #   define AROS_ASMSYMNAME(n)     n
 #endif
 
+#if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS))
 /* Function headers for user functions */
 #define AROS_UFH0(t,n) \
     __AROS_UFH_PREFIX t n (void)
@@ -543,6 +544,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_UFCA(a14),\
     __AROS_UFCA(a15)\
     ))
+#endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
 
 /* Prototypes for user functions */
 #   define AROS_UFP0(t,n) \
