@@ -70,7 +70,8 @@ CLASSESOBJS= \
   objs/classes/iconlistview.o \
   objs/classes/image.o \
   objs/classes/imageadjust.o \
-	objs/classes/imagedisplay.o \
+  objs/classes/imagedisplay.o \
+  objs/classes/levelmeter.o \
   objs/classes/list.o \
   objs/classes/listview.o \
   objs/classes/mccprefs.o \
@@ -362,6 +363,9 @@ objs/classes/imageadjust.o: classes/imageadjust.c
 
 objs/classes/imagedisplay.o: classes/imagedisplay.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/imagedisplay.c objname=$@
+
+objs/classes/levelmeter.o: classes/levelmeter.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/levelmeter.c objname=$@
 
 objs/classes/list.o: classes/list.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/list.c objname=$@
