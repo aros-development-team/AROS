@@ -40,13 +40,18 @@ struct ide_Unit
     struct ideBase      *au_Device;         /* ide.device */
     ULONG           	(*au_ReadSub)();    /* Read function (ATA/ATAPI) */
     ULONG               (*au_WriteSub)();   /* Write function (ATA/ATAPI) */
-
+    ULONG               (*au_SeekSub)();    /* Seek function (ATA/ATAPI) */
+    ULONG               (*au_EjectSub)();   /* Eject media function */
+    ULONG               (*au_ScsiSub)();    /* SCSI direct */
+    
     struct Interrupt    *au_RemoveInt;      /* Remove interrupt */
     struct List         au_SoftList;        /* List of remove ints */
 
     /* Drive information */    
 
     char                au_ModelID[32];     /* Model name */
+    char                au_RevNumber[4];    /* Version number */
+    char                au_SerNumber[12];   /* Serial number */
     ULONG               au_Blocks;          /* Total number of blocks */
     ULONG               au_SectSize;        /* Sector size in bytes */
     UBYTE               au_Heads;           /* Number of heads */
@@ -209,11 +214,6 @@ struct ideBase
 #define NSCMD_DEVICEQUERY   0x4000
 
 /**** ATAPI packets ***********************************************************/
-
-#define ATAPI_READ10    0x28
-#define ATAPI_WRITE10   0x2a
-#define ATAPI_SEEK10    0x2b
-#define ATAPI_STARTSTOP 0x1b
 
 struct atapi_Read10
 {

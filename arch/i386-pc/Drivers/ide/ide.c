@@ -18,19 +18,20 @@
 #include <exec/resident.h>
 #include <exec/tasks.h>
 #include <hardware/intbits.h>
-//#include <devices/cd.h>
-#include "include/hardblocks.h"
 #include <devices/timer.h>
 #include <devices/trackdisk.h>
-//#include <devices/scsicmds.h>
-#include "include/scsidisk.h"
 #include <proto/exec.h>
 #include <proto/expansion.h>
 #include <proto/timer.h>
 
+#include "include/cd.h"
+#include "include/scsicmds.h"
+#include "include/scsidisk.h"
+//#include "include/hardblocks.h"
+
 #include "ide_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef kprintf
@@ -196,6 +197,8 @@ AROS_LH2(struct ideBase *,  init,
                         {
                             IBase->ide_BoardAddr[cunit] = Ports[i];
                             IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
+                            D(bug("ide_init: device (%x) found at port 0%x\n",
+                                                    (UBYTE)devID, Ports[i]));
                         }
                         /* Check for SLAVE drive */
                         if (!devID)
@@ -210,7 +213,7 @@ AROS_LH2(struct ideBase *,  init,
                              * list of available devices */
                             IBase->ide_BoardAddr[cunit] = Ports[i];
                             IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
-                            D(bug("ide_init: device (%x) found at port 0%x",
+                            D(bug("ide_init: device (%x) found at port 0%x\n",
                                                     (UBYTE)devID, Ports[i]));
                         }
                     }
@@ -864,6 +867,8 @@ void cmd_TestChanged(struct IORequest *iorq, struct ide_Unit *unit, struct TaskD
                 }
                 unit->au_ChangeNum++;
 
+                D(bug("(0%x:%x):Media changed\n", unit->au_PortAddr, unit->au_DevMask));
+
                 Forbid();
 
                 if (unit->au_RemoveInt)
@@ -940,7 +945,7 @@ void cmd_DevQuery(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData
     ioStd(iorq)->io_Actual = sizeof(struct nsdqr);
 }
 
-void (*map64[])(struct IORequest *, struct ide_Unit *, struct TaskData *) =
+void (*map64[])() =
 {
     cmd_Read64,         // NSCMD_TD_READ64
     cmd_Write64,        // NSCMD_TD_WRITE64
@@ -948,7 +953,7 @@ void (*map64[])(struct IORequest *, struct ide_Unit *, struct TaskData *) =
     cmd_Write64,        // NSCMD_TD_FORMAT64
 };
 
-void (*map32[])(struct IORequest *, struct ide_Unit *, struct TaskData *) =
+void (*map32[])() =
 {
     cmd_Invalid,        // CMD_INVALID
     cmd_Reset,          // CMD_RESET
@@ -1125,9 +1130,16 @@ void strcp(char *dest, char *src, int num)
     while (num)
     {
         *(char*)dest++ = *(char*)(src+1);
-	*(char*)dest++ = *(char*)src++;
-	src++;
-	num -= 2;
+	    *(char*)dest++ = *(char*)src++;
+	    src++;
+	    num -= 2;
+    }
+    dest--;
+    /* Now, go back till got something other than \0 or space */
+    while ((*dest == 0) || (*dest == ' '))
+    {
+        /* Replace it with '\0' */
+        *(char*)dest-- = 0;
     }
 }
 
@@ -1144,10 +1156,11 @@ void UnitInfo(struct ide_Unit *unit)
     {
         /* Copy name/version/serial */
         strcp(&unit->au_ModelID[0], &id.idev_ModelNumber[0], 32);
-        strcp(&unit->au_ModelID[32], &id.idev_RevisionNumber[0], 4);
-        strcp(&unit->au_ModelID[36], &id.idev_SerialNumber[0], 8);
+        strcp(&unit->au_RevNumber[0], &id.idev_RevisionNumber[0], 4);
+        strcp(&unit->au_SerNumber[0], &id.idev_SerialNumber[0], 8);
 
-        D(bug("0x0%x: %s\n", unit->au_PortAddr, &unit->au_ModelID[0]));
+        D(bug("0x0%x: %s,%s,%s\n", unit->au_PortAddr, &unit->au_ModelID[0],
+                                &unit->au_RevNumber[0], &unit->au_SerNumber[0]));
         
         /* Get Disk geometry */
         unit->au_Heads      = id.idev_Heads;
@@ -1224,26 +1237,26 @@ void ResumeError(ULONG port, struct ide_Unit *unit);
 
 ULONG atapi_ErrCmd()
 {
-    return 1; //CDERR_ABORTED;
+    return CDERR_ABORTED;
 }
 
 ULONG ErrorMap[] = {
-        1,  // CDERR_NotSpecified,      // NO SENSE
-        2,  // CDERR_NoSecHdr,          // RECOVERED ERROR
-        3,  // CDERR_NoDisk,            // NOT READY
-        4,  // CDERR_NoSecHdr,          // MEDIUM ERROR
-        5,  // CDERR_NoSecHdr,          // HARDWARE ERROR
-        6,  // CDERR_NOCMD,             // ILLEGAL REQUEST
-        7,  // CDERR_NoDisk,            // UNIT ATTENTION
-        8,  // CDERR_WriteProt,         // DATA PROTECT
-        9,  // CDERR_NotSpecified,      // Reserved
-        10, // CDERR_NotSpecified,      // Reserved
-        11, // CDERR_NotSpecified,      // Reserved
-        12, // CDERR_ABORTED,           // ABORTED COMMAND
-        13, // CDERR_NotSpecified,      // Reserved
-        14, // CDERR_NotSpecified,      // Reserved
-        15, // CDERR_NoSecHdr,          // MISCOMPARE
-        16  // CDERR_NotSpecified       // Reserved
+        CDERR_NotSpecified,         // NO SENSE
+        CDERR_NoSecHdr,             // RECOVERED ERROR
+        CDERR_NoDisk,               // NOT READY
+        CDERR_NoSecHdr,             // MEDIUM ERROR
+        CDERR_NoSecHdr,             // HARDWARE ERROR
+        CDERR_NOCMD,                // ILLEGAL REQUEST
+        CDERR_NoDisk,               // UNIT ATTENTION
+        CDERR_WriteProt,            // DATA PROTECT
+        CDERR_NotSpecified,         // Reserved
+        CDERR_NotSpecified,         // Reserved
+        CDERR_NotSpecified,         // Reserved
+        CDERR_ABORTED,              // ABORTED COMMAND
+        CDERR_NotSpecified,         // Reserved
+        CDERR_NotSpecified,         // Reserved
+        CDERR_NoSecHdr,             // MISCOMPARE
+        CDERR_NotSpecified          // Reserved
 };
 
 ULONG atapi_EndCmd(struct ide_Unit *unit, ULONG port)
@@ -1283,7 +1296,7 @@ ULONG atapi_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, U
     
     *cnt = 0;
     port = unit->au_PortAddr;
-    cmd.opcode  = ATAPI_READ10;
+    cmd.opcode  = SCSI_READ10;
     cmd.LBA[0]  = block >> 24;
     cmd.LBA[1]  = block >> 16;
     cmd.LBA[2]  = block >> 8;
@@ -1325,7 +1338,7 @@ ULONG atapi_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, 
     
     *cnt = 0;
     port = unit->au_PortAddr;
-    cmd.opcode  = ATAPI_WRITE10;
+    cmd.opcode  = SCSI_WRITE10;
     cmd.LBA[0]  = block >> 24;
     cmd.LBA[1]  = block >> 16;
     cmd.LBA[2]  = block >> 8;
@@ -1367,7 +1380,7 @@ ULONG atapi_Seek(ULONG block, struct ide_Unit *unit)
     struct atapi_Seek10     cmd = {};
     
     port = unit->au_PortAddr;
-    cmd.opcode  = ATAPI_SEEK10;
+    cmd.opcode  = SCSI_SEEK10;
     cmd.LBA[0]  = block >> 24;
     cmd.LBA[1]  = block >> 16;
     cmd.LBA[2]  = block >> 8;
@@ -1390,7 +1403,7 @@ ULONG atapi_Eject(struct ide_Unit *unit)
     struct atapi_StartStop  cmd = {};
 
     port = unit->au_PortAddr;
-    cmd.opcode  = ATAPI_STARTSTOP;
+    cmd.opcode  = SCSI_STARTSTOP;
     cmd.immed   = 1;    /* Immediate command */
     cmd.flgs    = ATAPI_SS_EJECT;
     
