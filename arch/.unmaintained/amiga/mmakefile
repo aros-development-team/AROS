@@ -1,23 +1,28 @@
 # $Id$
 
-#Not working yet: demos (chip keyword problems etc)
-
-#MM AROS-amiga : setup includes compiler arosboot kernel workbench demos games
+# (bernie) removed targets to speed up things: setup includes compiler arosboot
+#MM AROS-amiga : kernel workbench demos games
 AROS-amiga :
 	@$(NOP)
 
-# (bernie) hidd-graphics metatarget removed from below line because of missing lib.conf file
-#MM kernel-amiga : kernel-hidd kernel-exec kernel-aros kernel-utility kernel-alerthook-module
+# hidd-graphics target removed from below line because of missing lib.conf file
+#MM kernel-amiga : kernel-hidd kernel-exec kernel-aros kernel-utility
+#MM kernel-amiga : kernel-alerthook-module kernel-boopsi-module
+#MM kernel-amiga : kernel-devs kernel-expansion-module kernel-keymap-module
 kernel-amiga :
 	@$(NOP)
 
-# (bernie) replaced workbench-c workbench-libs workbench-classes workbench-s workbench-locale
-#MM workbench-amiga : workbench-complete
+#MM workbench-amiga : workbench-c workbench-devs workbench-libs workbench-classes
+#MM workbench-amiga : workbench-s workbench-locale
 workbench-amiga :
 	@$(NOP)
 
-#MM workbench-libs-amiga : workbench-libs-diskfont workbench-libs-gadtools
-#MM workbench-libs-amiga : workbench-libs-icon workbench-libs-iffparse
+#MM workbench-libs-amiga : workbench-libs-asl workbench-libs-diskfont
+#MM workbench-libs-amiga : workbench-libs-gadtools workbench-libs-icon
+#MM workbench-libs-amiga : workbench-libs-iffparse
+#MM workbench-libs-amiga : workbench-libs-mathtrans
+#MM workbench-libs-amiga : workbench-libs-mathieeedoubbas
+#MM workbench-libs-amiga : workbench-libs-mathieeedoubtrans
 workbench-libs-amiga :
 	@$(NOP)
 
@@ -26,7 +31,7 @@ workbench-classes-amiga :
 	@$(NOP)
 
 #MM apps-amiga :
-apps-amiga :
+apps-amiga : fish Moria3D
 	@$(NOP)
 
 #MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga
