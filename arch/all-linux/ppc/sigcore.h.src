@@ -1,10 +1,10 @@
+#ifndef _SIGCORE_H
+#define _SIGCORE_H
+
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#ifndef _SIGCORE_H
-#define _SIGCORE_H
 
 #include <signal.h>
 #include "etask.h"
@@ -18,36 +18,19 @@
 
 /* sigcontext_t is the type of the signals' context. Linux offers no way
    to get this context in a legal way, so I have to use tricks. */
-
 typedef @sigcontext@ sigcontext_t;
+typedef @sighandler@ SignalHandler;
  
 /* name and type of the signal handler */
 #define SIGHANDLER	linux_sighandler
-#if defined(__GLIBC__) && (__GLIBC__ >= 2)
-#  define SIGHANDLER_T  __sighandler_t
-#else
-#  define SIGHANDLER_T  SignalHandler
-#endif
+#define SIGHANDLER_T  SignalHandler
 
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc);    \
 								\
-	extern void SIGHANDLER (int sig, long sigcode, sigcontext_t * scp);  \
-								\
-	void call_inthandlers(int sig) {			\
-	    struct IntVector *iv;				\
-								\
-	    iv = &SysBase->IntVects[sig2tab[sig]];		\
-	    if (iv->iv_Code)					\
-	    {							\
-		AROS_UFC5(void,iv->iv_Code,			\
-		    AROS_UFCA(ULONG, 0, D1),			\
-		    AROS_UFCA(ULONG, 0, A0),			\
-		    AROS_UFCA(APTR,iv->iv_Data,A1),		\
-		    AROS_UFCA(APTR,iv->iv_Code,A5),		\
-		    AROS_UFCA(struct ExecBase *,SysBase,A6)	\
-		);						\
-	    }							\
+	static void SIGHANDLER (int sig)			\
+	{							\
+	    sighandler (sig, (sigcontext_t *)(&sig+1));		\
 	}
 
 /* Type of the values which can be stored on the stack. A variable
