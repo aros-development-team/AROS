@@ -56,6 +56,17 @@ setup :
 clean ::
 	$(RM) $(OBJDIR) *.err
 
+# (bernie) this hack disables optimization on classes.c to fix a problem in the
+# current Amiga version of gcc and egcs. Using inline asm macros to perform
+# shared library calls sometimes leads the optimizer to a dead-end situation
+# where one of the registers involved in the inline asm macro gets spilled on
+# the frame.
+#
+ifeq ($(ARCH),amiga)
+$(OBJDIR)/helpfuncs.o : helpfuncs.c
+	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
+endif
+
 $(OBJDIR)/%.o : %.c
 	%compile_q
 
