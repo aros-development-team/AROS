@@ -268,7 +268,7 @@ nlorentz@online.no
 Some events are lost, especially when there is rendering going
 on.
 
-BUG000040
+BUG000040 fixed
 nlorentz@online.no
 String gadgets get coordinates relative to screen, but should
 get relative to window.
@@ -345,4 +345,14 @@ memory leak, not inside AROS itself, but in Linux
 (Ie. "ps aux"). This is most probably a memoryleak
 in x11gfx.hidd: Somewhere XGetImage() is called,
 but XFreeImage() or similar is not called.
+
+BUG000051
+nlorentz@online.no
+Events sometimes come "too late" from X.
+Ie, for example when you start a program in arosshell, you have
+to press enter several times before the prograp
+starts, and then all the keypresses comes from X11 at once.
+This is indirectly caused by input.device's timer
+(If the timer disabled, it will work normally).
+Probably the timer somehow effects unixio HIDD.
 
