@@ -35,20 +35,6 @@
 
 #define STATIC_MID static OOP_MethodID mid
 
-/* A small utility function for using varargs when setting attrs */
-
-#warning OOP_SetAttrsTags is defined in inline/oop.h
-
-#ifndef OOP_SetAttrsTags
-IPTR OOP_SetAttrsTags(OOP_Object *obj, IPTR tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = OOP_SetAttrs(obj, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
-
-}
-#endif
-
 /***************************************************************/
 
 OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
@@ -170,6 +156,35 @@ VOID HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem * tags)
 
     p.mID         = mid;
     p.taglist     = tags;
+
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+/***************************************************************/
+
+VOID HIDD_SerialUnit_Start(OOP_Object *obj)
+{
+    STATIC_MID;
+    struct pHidd_SerialUnit_Start p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Start);
+
+    p.mID         = mid;
+
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+
+/***************************************************************/
+
+VOID HIDD_SerialUnit_Stop(OOP_Object *obj)
+{
+    STATIC_MID;
+    struct pHidd_SerialUnit_Stop p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Stop);
+
+    p.mID         = mid;
 
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
