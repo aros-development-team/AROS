@@ -25,7 +25,7 @@
 	AROS_LH2(BPTR, Lock,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name,       D1),
+	AROS_LHA(CONST_STRPTR, name,       D1),
 	AROS_LHA(LONG,   accessMode, D2),
 
 /*  LOCATION */
