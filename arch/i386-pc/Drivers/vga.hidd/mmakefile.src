@@ -20,7 +20,7 @@ clean ::
 	-$(RM) $(OBJDIR) libdefs.h *.err
 
 #MM
-setup :
+setup-pc-i386 :
 	%mkdirs_q $(OBJDIR)
 
 $(OBJDIR)/%.o : %.S
