@@ -340,7 +340,10 @@ struct MUI_PenSpec
 };
 
 
-struct MUI_FrameSpec;
+struct MUI_FrameSpec
+{
+    char buf[32];
+};
 
 struct MUI_RGBcolor
 {
@@ -539,6 +542,18 @@ struct MUI_RGBcolor
 
 #ifndef _MUI_CLASSES_MCCPREFS_H
 #include "classes/mccprefs.h"
+#endif
+
+#ifndef _MUI_CLASSES_FRAMEADJUST_H
+#include "classes/frameadjust.h"
+#endif
+
+#ifndef _MUI_CLASSES_FRAMEDISPLAY_H
+#include "classes/framedisplay.h"
+#endif
+
+#ifndef _MUI_CLASSES_POPFRAME_H
+#include "classes/popframe.h"
 #endif
 
 /**************************************************************************

@@ -20,6 +20,8 @@ CLASSES := \
     cycle \
     dataspace \
     family \
+    frameadjust \
+    framedisplay \
     gauge \
     group \
     iconlist \
@@ -36,6 +38,7 @@ CLASSES := \
     penadjust \
     pendisplay \
     popasl \
+    popframe \
     popimage \
     popobject \
     poppen \
