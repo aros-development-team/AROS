@@ -17,8 +17,6 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <proto/diskfont.h>
-#include <proto/dos.h>
 
 extern struct Library *MUIMasterBase;
 #include "muimaster_intern.h"
@@ -28,76 +26,10 @@ extern struct Library *MUIMasterBase;
 #include "imspec.h"
 #include "menu.h"
 #include "prefs.h"
+#include "font.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
-
-
-/* Returns a given text font, if necessary it opens the font, should be after MUIM_Setup */
-static struct TextFont *zune_font_get(Object *obj, LONG preset)
-{
-    struct MUI_GlobalInfo *mgi = muiGlobalInfo(obj);
-    struct MUI_RenderInfo *mri = muiRenderInfo(obj);
-
-    if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
-    {
-    	CONST_STRPTR name;
-	if (preset > 0) return NULL;
-
-	/* font already loaded, just return it */
-	if (mri->mri_Fonts[-preset])
-	{
-/*  	    D(bug("zune_font_get : return mri_Fonts[-preset]=%lx\n", ri->mri_Fonts[-preset])); */
-	    return mri->mri_Fonts[-preset];
-	}
-
-	/* font name given, load it */
-        name = mgi->mgi_Prefs->fonts[-preset];
-/*  	D(bug("zune_font_get : preset=%d, name=%s\n", preset, name)); */
-	if (name)
-	{
-	    struct TextAttr ta;
-	    if ((ta.ta_Name = (char*)AllocVec(strlen(name)+10,0)))
-	    {
-	    	char *p;
-	    	LONG size;
-
-	    	strcpy(ta.ta_Name,name);
-	    	StrToLong(FilePart(ta.ta_Name),&size);
-	    	ta.ta_YSize = size;
-		ta.ta_Style = 0;
-		ta.ta_Flags = 0;
-
-		if ((p = PathPart(ta.ta_Name)))
-		    strcpy(p,".font");
-/*  		D(bug("zune_font_get : OpenDiskFont(%s)\n", ta.ta_Name)); */
-		mri->mri_Fonts[-preset] = OpenDiskFont(&ta);
-
-		FreeVec(ta.ta_Name);
-	    }
-	    
-	}
-	else /* fallback to window normal font */
-	{
-	    if (preset != MUIV_Font_Normal) /* avoid infinite recursion */
-	    {
-		return zune_font_get(obj, MUIV_Font_Normal);
-	    }
-	}
-
-	/* no font loaded, fallback to screen font */
-	if (!mri->mri_Fonts[-preset])
-	{
-	    struct TextAttr scr_attr;
-	    scr_attr = *(_screen(obj)->Font);
-	    scr_attr.ta_Flags = 0;
-/*  	    D(bug("zune_font_get : OpenDiskFont(%s) (screen font)\n", scr_attr.ta_Name)); */
-	    mri->mri_Fonts[-preset] = OpenDiskFont(&scr_attr);
-	}
-	return mri->mri_Fonts[-preset];
-    }
-    return (struct TextFont *)preset;
-}
 
 /*
 Area.mui/MUIA_Background            done
@@ -106,7 +38,7 @@ Area.mui/MUIA_ContextMenu           done
 Area.mui/MUIA_ContextMenuTrigger
 Area.mui/MUIA_ControlChar           done
 Area.mui/MUIA_CycleChain            done
-Area.mui/MUIA_Disabled
+Area.mui/MUIA_Disabled              done
 Area.mui/MUIA_Draggable             done
 Area.mui/MUIA_Dropable              done
 Area.mui/MUIA_ExportID
@@ -154,9 +86,9 @@ Area.mui/MUIM_CreateShortHelp
 Area.mui/MUIM_DeleteBubble
 Area.mui/MUIM_DeleteShortHelp
 Area.mui/MUIM_DragBegin
-Area.mui/MUIM_DragDrop
+Area.mui/MUIM_DragDrop              done
 Area.mui/MUIM_DragFinish
-Area.mui/MUIM_DragQuery
+Area.mui/MUIM_DragQuery             done
 Area.mui/MUIM_DragReport
 Area.mui/MUIM_Draw                  done
 Area.mui/MUIM_DrawBackground        done
@@ -173,7 +105,9 @@ static const int __revision = 1;
 //#ifdef DEBUG
 //static STRPTR zune_area_to_string (Object *area);
 //#endif
-static void area_update_data(Object *obj, struct MUI_AreaData *data);
+static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
+				   struct MUI_FrameSpec_intern *frame,
+				   struct ZuneFrameGfx *zframe);
 static void setup_control_char (struct MUI_AreaData *data, Object *obj,
 				struct IClass *cl);
 static void cleanup_control_char (struct MUI_AreaData *data, Object *obj);
@@ -566,7 +500,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case    MUIA_Selected:
-		D(bug(" Area_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(data->mad_Flags & MADF_SHOWSELSTATE)));
+		/*  D(bug(" Area_Set(%p) : MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(data->mad_Flags & MADF_SHOWSELSTATE))); */
 		if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
 		else data->mad_Flags &= ~MADF_SELECTED;
 /*  		if (data->mad_Flags & MADF_SHOWSELSTATE) */
@@ -719,8 +653,12 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
+    struct ZuneFrameGfx *zframe;
+    struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
 
-    area_update_data(obj, data);
+    zframe = zune_zframe_get(frame);
+
+    area_update_innersizes(obj, data, frame, zframe);
     
     msg->MinMaxInfo->MinWidth = _subwidth(obj);
     if (data->mad_TitleText)
@@ -879,12 +817,12 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data)
     if (!background)
     {
 	/* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
-	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__));
+/*  	D(bug(" Area_Draw(%p):%ld: MUIM_DrawBackground\n", obj, __LINE__)); */
 	DoMethod(obj, MUIM_DrawBackground, left, top, width, height, left, top, data->mad_Flags);
     }
     else
     {
-	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__));
+/*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
 	zune_imspec_draw(background, data->mad_RenderInfo,
 			 left, top, width, height, left, top, 0);
     }
@@ -897,6 +835,7 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data)
 static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
 {
     struct ZuneFrameGfx *zframe;
+    struct MUI_FrameSpec_intern *frame;
     int state;
     APTR textdrawclip;
     struct TextFont *obj_font;
@@ -905,7 +844,8 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     int width, height;
 
     /* on selected state, will get the opposite frame */
-    state = muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].state;
+    frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    state = frame->state;
     if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
 	state ^= 1;
 
@@ -916,6 +856,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     if (!data->mad_TitleText)
     {
 	zframe->draw(muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj));
+	area_update_innersizes(obj, data, frame, zframe);
 	return;
     }
 
@@ -1004,6 +945,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);
 
     _font(obj) = obj_font;
+    area_update_innersizes(obj, data, frame, zframe);
 }
 
 /**************************************************************************
@@ -1016,7 +958,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 /*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 
-    D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n",obj, msg->flags,_flags(obj)));
+/*      D(bug(" Area_Draw(%p) msg=0x%08lx flags=0x%08lx\n",obj, msg->flags,_flags(obj))); */
 
     if (msg->flags & MADF_DRAWALL)
 	msg->flags |= MADF_DRAWOBJECT;
@@ -1092,13 +1034,13 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
 
     if ((msg->flags & MADF_SELECTED) && (msg->flags & MADF_SHOWSELSTATE) && data->mad_SelBack)
     { 
-	D(bug("Area_DrawBackground(%p): selected bg\n", obj));
+/*  	D(bug("Area_DrawBackground(%p): selected bg\n", obj)); */
     	bg = data->mad_SelBack;
 	state = IDS_SELECTED;
     }
     else
     {
-	D(bug("Area_DrawBackground(%p): normal bg\n", obj));
+/*  	D(bug("Area_DrawBackground(%p): normal bg\n", obj)); */
 	bg = data->mad_Background;
 	state = IDS_NORMAL;
     }
@@ -1109,19 +1051,19 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
     	get(obj, MUIA_Parent, &parent);
     	if (parent)
 	{
-	    D(bug("Area_DrawBackground(%p): to parent\n", obj));
+/*  	    D(bug("Area_DrawBackground(%p): to parent\n", obj)); */
 	    DoMethodA(parent, (Msg)msg);
 	}
     	else
 	{
-	    D(bug("Area_DrawBackground(%p): MUIM_Window_DrawBackground\n", obj));
+/*  	    D(bug("Area_DrawBackground(%p): MUIM_Window_DrawBackground\n", obj)); */
 	    DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
 		     msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
 	}
     	return TRUE;
     }
 
-    D(bug("Area_DrawBackground(%p): draw bg\n", obj));
+/*      D(bug("Area_DrawBackground(%p): draw bg\n", obj)); */
     zune_imspec_draw(bg, data->mad_RenderInfo,
 		     msg->left, msg->top, msg->width, msg->height,
 		     msg->xoffset, msg->yoffset, state);
@@ -1173,10 +1115,13 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
 static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
+    struct ZuneFrameGfx *zframe;
+    struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
 
     muiRenderInfo(obj) = msg->RenderInfo;
 
-    area_update_data(obj,data);
+    zframe = zune_zframe_get(frame);
+    area_update_innersizes(obj, data, frame, zframe);
 
     if (data->mad_Flags & MADF_OWNBG)
     {
@@ -1445,12 +1390,12 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    get(obj, MUIA_Selected, &selected);
 	    if (selected)
 	    {
-		D(bug("handle_press(%p) : nnset MUIA_Selected FALSE\n", obj));
+/*  		D(bug("handle_press(%p) : nnset MUIA_Selected FALSE\n", obj)); */
 		nnset(obj, MUIA_Selected, FALSE);
 	    }
-	    D(bug("handle_press(%p) : set MUIA_Selected TRUE\n", obj));
+/*  	    D(bug("handle_press(%p) : set MUIA_Selected TRUE\n", obj)); */
 	    set(obj, MUIA_Selected, TRUE);
-	    D(bug("handle_press(%p) : done\n", obj));
+/*  	    D(bug("handle_press(%p) : done\n", obj)); */
 	    break;
 	}
 	case MUIV_InputMode_Toggle:
@@ -1867,12 +1812,15 @@ static ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFin
  * Because of BYTE storage, all values are clamped to 0..127
  * Inner dimensions being clamped to 0..32, it shouldnt cause too much harm
  */
-static void area_update_data(Object *obj, struct MUI_AreaData *data)
+static void area_update_innersizes(Object *obj, struct MUI_AreaData *data,
+				   struct MUI_FrameSpec_intern *frame,
+				   struct ZuneFrameGfx *zframe)
 {
-    struct ZuneFrameGfx *zframe;
-    struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
 
-    zframe = zune_zframe_get(frame);
+/*      if (xget(obj, MUIA_UserData) == 42) */
+/*      { */
+/*  	D(bug("area_update_innersizes(%p) : ileft=%ld itop=%ld\n", obj, zframe->ileft, zframe->itop)); */
+/*      } */
 
     if (data->mad_Flags & MADF_FRAMEPHANTOM)
     {
@@ -1914,7 +1862,7 @@ static void area_update_data(Object *obj, struct MUI_AreaData *data)
 	data->mad_subheight = CLAMP(data->mad_addtop + frame->innerBottom  + zframe->ibottom, 0, 127);
     }
 
-/*      D(bug("area_update_data(%x,%d) => addleft/top=%d/%d, subwidth/height=%d/%d\n", */
+/*      D(bug("area_update_innersizes(%x,%d) => addleft/top=%d/%d, subwidth/height=%d/%d\n", */
 /*  	  obj, data->mad_Frame, data->mad_addleft, data->mad_addtop, data->mad_subwidth, data->mad_subheight)); */
 }
 
