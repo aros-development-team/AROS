@@ -1,8 +1,7 @@
-\chapter{}
-
-This is a WWW frontend for the AROS jobserver. Below, you can see a list
-of jobs and their respective status. To change the status, enter your EMail
-address, click on the new status and press submit below.
-
-\execverb{cat jobtable.html}
-
+\if{html}
+{
+    \chapter{Jobserver}
+    \include{jobserv-free.src}
+    \include{jobserv-done.src}
+    \include{jobserv-work.src}
+}
