@@ -372,7 +372,7 @@ dos00010;2;matthias;Write UnLock
 dos00011;2;matthias;Write DupLock
 dos00012;2;matthias;Write Examine
 dos00013;2;bergers;Write ExNext
-dos00014;0;digulla;Write Info
+dos00014;2;SDuvan;Write Info
 dos00015;2;matthias;Write CreateDir
 dos00016;2;matthias;Write CurrentDir
 dos00017;2;matthias;Write IoErr
