@@ -52,6 +52,20 @@
   }
 #endif
 
+/* NOT */
+
+#if defined AROS_64BIT_TYPE || defined __GNUC__
+#define NOT64(Dest64, Src64) \
+  Dest64 = ~Src64 ; 
+#else
+#define NOT64(Dest64, Src64) \
+  { \
+    Set_High32of64(Dest64, ~Get_High32of64(Src64)); \
+    Set_Low32of64( Dest64, ~Get_Low32of64 (Src64)); \
+  }
+#endif
+
+
 /* OR */
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
@@ -245,11 +259,12 @@
    Dest64 = (QUAD)Src64 >> n;
 #else
 #define SHRS64(Dest64, Src64, n) \
+ { \
    if( n < 32) \
    { \
-     Set_Low32of64 (Dest64, (LONG)Get_Low32of64(Src64)  >> (n) |       \
-                                  Get_High32of64(Src64) << ((n)-32) ); \
-     Set_High32of64(Dest64, (LONG)Get_High32of64(Src64) >> n        ); \
+     Set_Low32of64 (Dest64,  (ULONG)Get_Low32of64(Src64)  >> (n) |     \
+                                    Get_High32of64(Src64) << ((n)-32)); \
+     Set_High32of64(Dest64,  ((LONG)Get_High32of64(Src64) >> (n))    ); \
    } \
    else \
      if (n < 64) \
@@ -261,7 +276,8 @@
        { \
        Set_High32of64(Dest64, (LONG)Get_High32of64(Src64) >>  32      ); \
        Set_Low32of64 (Dest64, (LONG)Get_High32of64(Src64) >>  32      ); \
-       } 
+       } \
+ } 
 #endif
 
 /* Set_Value */
