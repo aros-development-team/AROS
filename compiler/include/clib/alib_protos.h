@@ -21,9 +21,6 @@
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
-#ifndef  DOS_DOS_H
-#   include <dos/dos.h>
-#endif
 #ifndef LIBRARIES_COMMODITIES_H
 #   include <libraries/commodities.h>
 #endif
@@ -88,23 +85,6 @@ APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
 void LibDeletePool (APTR poolHeader);
 APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
-
-/* AROS enhancements */
-BOOL ReadByte	 (BPTR fh, UBYTE  * dataptr);
-BOOL ReadWord	 (BPTR fh, UWORD  * dataptr);
-BOOL ReadLong	 (BPTR fh, ULONG  * dataptr);
-BOOL ReadFloat	 (BPTR fh, FLOAT  * dataptr);
-BOOL ReadDouble  (BPTR fh, DOUBLE * dataptr);
-BOOL ReadString  (BPTR fh, STRPTR * dataptr);
-BOOL ReadStruct  (BPTR fh, APTR   * dataptr, IPTR * desc);
-BOOL WriteByte	 (BPTR fh, UBYTE  data);
-BOOL WriteWord	 (BPTR fh, UWORD  data);
-BOOL WriteLong	 (BPTR fh, ULONG  data);
-BOOL WriteFloat  (BPTR fh, FLOAT  data);
-BOOL WriteDouble (BPTR fh, DOUBLE data);
-BOOL WriteString (BPTR fh, STRPTR data);
-BOOL WriteStruct (BPTR fh, APTR   data, IPTR * desc);
-void FreeStruct  (APTR s,  IPTR * desc);
 
 AROS_UFH3(IPTR, HookEntry,
     AROS_UFHA(struct Hook *, hook,  A0),
