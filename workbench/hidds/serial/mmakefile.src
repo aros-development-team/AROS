@@ -17,8 +17,7 @@ OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 FILES       := 
 	       
-	       
-EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
+#EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
 
 
 STUBS       := $(LIBNAME)_stubs
@@ -30,35 +29,16 @@ DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
 GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
 
-ifeq ($(FLAVOUR),native)
-DEPLIBS := $(LIBDIR)/libhiddserialstubs.a
-else
-DEPLIBS := $(LIBDIR)/libhiddserialstubs.a
-endif
-
-LIBS := -lhiddserialstubs
-
-
-#Generate the shared object
-#%genwblib   <--------------------- COMMENTED OUT !!!
-
-
 # Allways generate module in Sys:Hidds/
 
-#MM- workbench-complete : workbench-hidds
-#MM- workbench-hidds : hidd-serial-module
-#MM workbench-hidd-setup :
-workbench-hidd-setup : setup
+
+#MM workbench-hidd-serial-setup :
+workbench-hidd-serial-setup :
 	%mkdirs_q $(OBJDIR)
 
-#MM hidd-serial-linklib : workbench-hidd-setup includes hidd-serial-$(ARCH)-$(CPU)
-#hidd-serial-linklib : $(LIB) $(STUB_FILE)   <--------------------- COMMENTED OUT !!!
-hidd-serial-linklib : $(STUB_FILE)
+#MM workbench-hidd-serial-stubs : workbench-hidd-serial-setup
+workbench-hidd-serial-stubs : $(STUB_FILE)
 	@$(NOP)
-
-#MM hidd-serial-module : workbench-hidd-setup includes hidd-serial-$(ARCH)-$(CPU)
-#hidd-serial-module : $(SLIB) $(STUB_FILE)   <--------------------- COMMENTED OUT !!!
-hidd-serial-module : $(STUB_FILE)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
@@ -71,13 +51,13 @@ hidd-serial-module : $(STUB_FILE)
 
 
 
-#MM hidd-serial-module-quick : kernel-oop-$(ARCH)-$(CPU)
-hidd-serial-module-quick : $(LIB) $(SLIB)
-	@$(NOP)
+##MM hidd-serial-module-quick : kernel-oop-$(ARCH)-$(CPU)
+#hidd-serial-module-quick : $(LIB) $(SLIB)
+#	@$(NOP)
 
-#MM hidd-serial-includes-quick : hidd-oop-$(ARCH)-$(CPU)
-hidd-serial-includes-quick : setup-includes includes-copy 
-	$(NOP)
+##MM hidd-serial-includes-quick : hidd-oop-$(ARCH)-$(CPU)
+#hidd-serial-includes-quick : setup-includes includes-copy 
+#	$(NOP)
 
 # --- QUICK HACKS END ---
 

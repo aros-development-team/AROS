@@ -91,6 +91,8 @@ enum
     moHidd_SerialUnit_SetBaudrate,
     moHidd_SerialUnit_SetParameters,
     moHidd_SerialUnit_SendBreak,
+    moHidd_SerialUnit_Start,
+    moHidd_SerialUnit_Stop,
     moHidd_SerialUnit_GetCapabilities,
     moHidd_SerialUnit_NumMethods	// always keep this the last one!
 };
@@ -138,6 +140,18 @@ struct pHidd_SerialUnit_GetCapabilities
     struct TagItem 	* taglist;
 };
 
+struct pHidd_SerialUnit_Start
+{
+    OOP_MethodID        mID;
+};
+
+struct pHidd_SerialUnit_Stop
+{
+    OOP_MethodID        mID;
+};
+
+
+
 /* some tags for HIDD_SerialUnit_SetParameters() */
 
 #define TAG_PARITY	0x01
@@ -170,6 +184,8 @@ ULONG    HIDD_SerialUnit_Write	(OOP_Object *obj, UBYTE * data, ULONG length);
 BOOL     HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate);
 BOOL     HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem *tags);
 BYTE     HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration);
+VOID     HIDD_SerialUnit_Stop(OOP_Object * obj);
+VOID     HIDD_SerialUnit_Start(OOP_Object * obj);
 VOID     HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem *tags);
 
 #endif /* HIDD_SERIAL_H */
