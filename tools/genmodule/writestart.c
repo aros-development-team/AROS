@@ -197,7 +197,6 @@ void writestart(struct config *cfg)
 		"DECLARESET(CLOSELIB)\n"
 		"DECLARESET(OPENDEV)\n"
 		"DECLARESET(CLOSEDEV)\n"
-		"DECLARESET(SYSINIT)\n"
 		"\n"
 		"#ifdef SysBase\n"
 		"#undef SysBase\n"
@@ -218,11 +217,11 @@ void writestart(struct config *cfg)
 	);
 	if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
 	    fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
-	fprintf(out, "    if ( set_call_libfuncs(SETNAME(SYSINIT), 1, sysBase) ");
+	fprintf(out, "    if ( ");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
-	    fprintf(out, "&& set_open_libraries() ");
+	    fprintf(out, "set_open_libraries() && ");
 	fprintf(out,
-		"&& set_call_funcs(SETNAME(INIT), 1, 1) )\n"
+		"set_call_funcs(SETNAME(INIT), 1, 1) )\n"
 		"    {\n"
 		"        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
 		"\n"
@@ -459,7 +458,6 @@ void writestart(struct config *cfg)
 		"DEFINESET(CLOSELIB)\n"
 		"DEFINESET(OPENDEV)\n"
 		"DEFINESET(CLOSEDEV)\n"
-		"DEFINESET(SYSINIT)\n"
 		"\n"
 	);
     }
