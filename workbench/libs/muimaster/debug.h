@@ -25,6 +25,7 @@
 
 #define bug kprintf
 #define ASSERT(x) x
+#define ASSERT_VALID_PTR(x) x
 
 #ifdef MYDEBUG
 void kprintf(char *string, ...);
