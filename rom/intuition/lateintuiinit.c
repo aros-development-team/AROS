@@ -60,7 +60,8 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    
+
+    UWORD pens[] = { ~0 };
 
     struct TagItem screenTags[] =
     {
@@ -70,6 +71,7 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	{ SA_Width, 	800			},
 	{ SA_Height,	600			},	
 	{ SA_PubName,   (IPTR)"Workbench"       },
+	{ SA_Pens,      (IPTR) pens             },
 	{ TAG_END, 0 }
     };
     
