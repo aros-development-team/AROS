@@ -22,9 +22,15 @@ struct libraryset
     void  (*preclosefunc)(void);
 };
 
+struct ExecBase;
+
 extern int set_call_funcs(void *set[], int order);
-extern int set_open_libraries(void);
-extern void set_close_libraries(void);
+extern AROS_UFH1(int, set_open_libraries,
+		 AROS_UFHA(struct ExecBase *, sysBase, A6)
+		);
+extern AROS_UFH1(void, set_close_libraries,
+		 AROS_UFHA(struct ExecBase *, sysBase, A6)
+		);
 extern
 AROS_UFH3(int, set_call_libfuncs,
 	  AROS_UFHA(void**, set, A0),

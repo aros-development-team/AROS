@@ -84,7 +84,7 @@ AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
     SysBase = sysBase;
     aroscbase->seglist=segList;
 
-    if (set_open_libraries())
+    if (set_open_libraries(sysBase))
         return NULL;
 
     /* You would return NULL here if the init failed. */
@@ -161,7 +161,7 @@ AROS_LH0(BPTR, expunge, struct aroscbase *, aroscbase, 3, arosc)
     /* Get returncode here - FreeMem() will destroy the field. */
     ret=aroscbase->seglist;
 
-    set_close_libraries();
+    set_close_libraries(SysBase);
 
     /* Free the memory. */
     FreeMem((char *)aroscbase-aroscbase->library.lib_NegSize,
