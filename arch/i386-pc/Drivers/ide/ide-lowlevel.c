@@ -389,61 +389,11 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    if (CHSCapacity > MAXCapacity) MAXCapacity = CHSCapacity;
    if (LBACapacity > MAXCapacity) MAXCapacity = LBACapacity;
 
-   /* Now we read the partition table, and guess the geometry used */
-   MBRCyls = MBRHeads = MBRSecs = 0;
-   mbr = AllocMem(512,MEMF_PUBLIC | MEMF_CLEAR);
-   if (mbr)
+   /* If cylcount is larger than 1024, attempt to adjust */
+   while ((unit->au_Cylinders > 1024)&(unit->au_Heads<255))
    {
-      ULONG count,i,ESecs,ECyls,temp;
-
-      /* Read the MBR Sector */
-      count = ReadBlocks(0,1,mbr,unit,&temp);
-      if (!count)
-      {
-         /* Do we have a valid MBR signature? */
-         if ( (mbr[0x1fe] == 0x55) && (mbr[0x1ff] == 0xaa) )
-         {
-            /* Walk the partition table */
-            for (i=0;i<=3;i++)
-            {
-               count = 0x1be + (i*16);
-               pe = (struct PartEntry *)(&mbr[count]);
-               ESecs = pe->EndS &0x3f;
-               ECyls = ((pe->EndS & 0xc0) << 2) + pe->EndC;
-
-               if (ECyls > MBRCyls) MBRCyls = ECyls;
-               if (pe->EndH > MBRHeads) MBRHeads = pe->EndH;
-               if (ESecs > MBRSecs) MBRSecs = ESecs;
-            }
-            /* Adjust for counting from 0 */
-            MBRCyls++;
-            MBRHeads++;
-            MBRCapacity = MBRCyls*MBRHeads*MBRSecs;
-
-            D(bug("-MBR says the CHS is %d/%d/%d (%d sectors, %d MB)\n",MBRCyls,MBRHeads,MBRSecs,MBRCapacity,MBRCapacity/2048));
-
-            /* Do the values from MBR appear valid? */
-            if ((MBRHeads != 0) && (MBRSecs != 0))
-            {
-               /* If so, adjust the values used */
-               unit->au_Heads = MBRHeads;
-               unit->au_SectorsT = MBRSecs;
-               unit->au_SectorsC = MBRSecs * MBRHeads;
-               unit->au_Cylinders = MAXCapacity / unit->au_SectorsC;
-               unit->au_Blocks = unit->au_SectorsC * unit->au_Cylinders;
-            }
-         }
-         else
-         {
-            /* No valid MBR signature found. Assume new HDD, and use own method */
-            if (MAXCapacity != unit->au_Blocks)
-            {
-               unit->au_Cylinders = MAXCapacity / unit->au_SectorsC;
-               unit->au_Blocks = unit->au_SectorsC * unit->au_Cylinders;
-            }
-         }
-         FreeMem(mbr,512);
-      }
+       unit->au_Cylinders = (unit->au_Cylinders) >> 1;
+       unit->au_Heads = (unit->au_Heads) << 1;
    }
 
    /* Whew, finally done here */
