@@ -11,6 +11,7 @@
 #include <graphics/rpattr.h>
 #include <cybergraphx/cybergraphics.h>
 
+#include "inputhandler_actions.h"
 #include "intuition_intern.h"
 
 #define IW(x)   ((struct IntWindow *)(x))
