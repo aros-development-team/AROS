@@ -60,7 +60,6 @@ char *get_line(FILE *fd)
 int count,len;
 char *line;
 char buffer;
-char *ln;
 
   len = 0;
   do
@@ -73,11 +72,11 @@ char *ln;
   line = malloc( (len+1) * sizeof(char) );
   fread (line,1,len,fd);
   line[len]=0;
-  ln = &line[len-1];
-  while(isspace(*ln)&& ln>=line)
+  len--;
+  while(isspace(line[len])&& len>=0)
   {
-    *ln = 0;
-    ln--;
+    line[len] = 0;
+    len--;
   }
 
 return line;
@@ -114,8 +113,6 @@ int num,len;
     fprintf( stderr, "Passed invalid NULL pointer to get_words()!\n" );
     exit(-1);
   }
-#warning FIXME: next lines cause segfault in realloc(NULL,) later
-/*
   array = *outarray;
   if( array )
   {
@@ -126,7 +123,6 @@ int num,len;
     }
     free(*outarray);
   }
-*/
   array = NULL;
   num = 0;
   word = line;
@@ -716,15 +712,21 @@ int numparams=0;
         fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
         fprintf( fdo, "%s\n", code );
         in_function = 0;
-        free(code);
-        for( i=0; i<=numparams; i++ )
+        for( i=0 ; i < numparams ; i++ )
         {
-            free(name[i]);
+          free(name[i]);
+          free(type[i]);
+          free(reg[i]);
         }
         free(name);
+        free(type);
+        free(reg);
+        free(code);
         free(macro[0]);
         free(macro[1]);
         name = NULL;
+        type = NULL;
+        reg = NULL;
         code = NULL;
       }
       if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
@@ -917,7 +919,7 @@ int numfuncs = 4;
           in_function = 0;
         else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
         {
-          num = get_words(line,&words);
+          get_words(line,&words);
           num = atoi(words[1]);
           if( num>numfuncs )
           {
@@ -941,6 +943,7 @@ int numfuncs = 4;
     fclose(fd);
   }
   moveifchanged("functable.c","functable.c.new");
+  free(lc);
 
 return 0;
 }
@@ -1040,8 +1043,20 @@ int numparams=0;
       }
       else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
+        for( i=0 ; i < numparams ; i++ )
+        {
+          free(name[i]);
+          free(type[i]);
+          free(reg[i]);
+        }
+        free(name);
+        free(type);
+        free(reg);
         free(macro[0]);
         free(macro[1]);
+        name = NULL;
+        type = NULL;
+        reg = NULL;
         in_function = 0;
       }
       else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
@@ -1135,8 +1150,6 @@ int numparams = 0;
       {
       char *filename;
 
-        if(fdo)
-          fclose(fdo);
         filename = malloc( (strlen(name[0])+6)*sizeof(char) );
         sprintf( filename, "%s.adoc", name[0] );
         in_autodoc = 1;
@@ -1157,7 +1170,10 @@ int numparams = 0;
         fprintf( fdo, " )\n" );
       }
       else if( strcmp(word,"/AutoDoc")==0 && in_autodoc && !in_afunc )
+      {
+        fclose(fdo);
         in_autodoc = 0;
+      }
       else if( strcmp(word,"Function")==0 )
       {
         if( in_archive && !in_function && !in_autodoc && !in_code )
@@ -1190,7 +1206,18 @@ int numparams = 0;
       else if( strcmp(word,"/Function")==0 )
       {
         if( in_function && !in_autodoc )
+        {
+          for( i=0 ; i < numparams ; i++ )
+          {
+            free(name[i]);
+            free(type[i]);
+          }
+          free(name);
+          free(type);
+          name = NULL;
+          type = NULL;
           in_function = 0;
+        }
         else if( in_afunc )
           in_afunc = 0;
       }
@@ -1237,8 +1264,6 @@ int numparams = 0;
       fprintf( fdo, "%s\n", line );
     free(line);
   }
-  if(fdo)
-    fclose(fdo);
   fclose(fd);
 
 return 0;
@@ -1480,7 +1505,7 @@ int replace_function;
     free(line);
   }
   rewind(fd2);
-  /* Append not replaces functions */
+  /* Append non-replaced functions */
   num = 0;
   in_archive = 0;
   in_header = 0;
@@ -1711,9 +1736,21 @@ int firstlvo;
             fprintf( fdo, "\tAROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
           fprintf( fdo, "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
         }
-        in_function = 0;
+        for( i=0 ; i < numparams ; i++ )
+        {
+          free(name[i]);
+          free(type[i]);
+          free(reg[i]);
+        }
+        free(name);
+        free(type);
+        free(reg);
         free(macro[0]);
         free(macro[1]);
+        name = NULL;
+        type = NULL;
+        reg = NULL;
+        in_function = 0;
       }
       else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
@@ -1755,6 +1792,7 @@ int firstlvo;
   moveifchanged(filename,newname);
   free(newname);
   free(filename);
+  free(lc);
 
 return 0;
 }
@@ -1926,8 +1964,20 @@ int firstlvo;
           }
           fprintf( fdo, "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
         }
+        for( i=0 ; i < numparams ; i++ )
+        {
+          free(name[i]);
+          free(type[i]);
+          free(reg[i]);
+        }
+        free(name);
+        free(type);
+        free(reg);
         free(macro[0]);
         free(macro[1]);
+        name = NULL;
+        type = NULL;
+        reg = NULL;
         in_function = 0;
       }
       else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
@@ -1968,6 +2018,7 @@ int firstlvo;
   fclose(fdo);
   fclose(fd);
   moveifchanged(filename,newname);
+  free(lc);
   free(newname);
   free(filename);
 
@@ -2033,6 +2084,7 @@ char *upperbasename;
   fprintf( fdo, "#endif /* PROTO_%s_H */\n", upperbasename );
   fclose(fdo);
   moveifchanged(filename,newname);
+  free(lc);
   free(newname);
   free(filename);
 
@@ -2207,21 +2259,22 @@ int firstlvo;
           fprintf( fdo, "\\\n\t, %s_BASE_NAME)\n", upperbasename );
           if( numparams!=0 )
           {
+          char *tagsname;
             num = get_words(type[numparams],&words);
             if(num == 3 && strcmp(words[0],"struct")==0 && strcmp(words[1],"TagItem")==0 && strcmp(words[2],"*")==0 )
             {
               len = strlen(name[0]);
               if(name[0][len-1]=='A')
               {
-                word = strdup(name[0]);
-                word[len-1] = 0;
+                tagsname = strdup(name[0]);
+                tagsname[len-1] = 0;
               }
               else
               {
-                word = malloc( (len+5) * sizeof(char) );
-                sprintf( word, "%sTags", name[0] );
+                tagsname = malloc( (len+5) * sizeof(char) );
+                sprintf( tagsname, "%sTags", name[0] );
               }
-              fprintf( fdo, "\n#ifndef NO_INLINE_STDARG\n#define %s(", word );
+              fprintf( fdo, "\n#ifndef NO_INLINE_STDARG\n#define %s(", tagsname );
               for( i=1 ; i<numparams ; i++ )
                 fprintf( fdo, "%s, ", reg[i] );
               fprintf( fdo, "tags...) \\\n\t({ULONG _tags[] = { tags }; %s(", name[0] );
@@ -2229,10 +2282,22 @@ int firstlvo;
                 fprintf( fdo, "(%s), ", reg[i] );
               fprintf( fdo, "(struct TagItem *)_tags);})\n" );
               fprintf( fdo, "#endif /* !NO_INLINE_STDARG */\n\n" );
-              free(word);
+              free(tagsname);
             }
           }
         }
+        for( i=0 ; i < numparams ; i++ )
+        {
+          free(name[i]);
+          free(type[i]);
+          free(reg[i]);
+        }
+        free(name);
+        free(type);
+        free(reg);
+        name = NULL;
+        type = NULL;
+        reg = NULL;
         in_function = 0;
       }
       else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
@@ -2274,6 +2339,7 @@ int firstlvo;
   fclose(fdo);
   fclose(fd);
   moveifchanged(filename,newname);
+  free(lc);
   free(newname);
   free(filename);
 
@@ -2569,21 +2635,22 @@ int firstlvo;
 
           if( numparams!=0 )
           {
+          char *tagsname;
             num = get_words(type[numparams],&words);
             if(num == 3 && strcmp(words[0],"struct")==0 && strcmp(words[1],"TagItem")==0 && strcmp(words[2],"*")==0 )
             {
               len = strlen(name[0]);
               if(name[0][len-1]=='A')
               {
-                word = strdup(name[0]);
-                word[len-1] = 0;
+                tagsname = strdup(name[0]);
+                tagsname[len-1] = 0;
               }
               else
               {
-                word = malloc( (len+5) * sizeof(char) );
-                sprintf( word, "%sTags", name[0] );
+                tagsname = malloc( (len+5) * sizeof(char) );
+                sprintf( tagsname, "%sTags", name[0] );
               }
-              fprintf( fdo[3], "\n#ifndef NO_INLINE_STDARG\n#define %s(", word );
+              fprintf( fdo[3], "\n#ifndef NO_INLINE_STDARG\n#define %s(", tagsname );
               for( i=1 ; i<numparams ; i++ )
                 fprintf( fdo[3], "%s, ", reg[i] );
               fprintf( fdo[3], "tags...) \\\n\t({ULONG _tags[] = { tags }; %s(", name[0] );
@@ -2591,13 +2658,25 @@ int firstlvo;
                 fprintf( fdo[3], "(%s), ", reg[i] );
               fprintf( fdo[3], "(struct TagItem *)_tags);})\n" );
               fprintf( fdo[3], "#endif /* !NO_INLINE_STDARG */\n\n" );
-              free(word);
+              free(tagsname);
             }
           }
         }
         in_function = 0;
+        for( i=0 ; i < numparams ; i++ )
+        {
+          free(name[i]);
+          free(type[i]);
+          free(reg[i]);
+        }
+        free(name);
+        free(type);
+        free(reg);
         for(i=0;i<4;i++)
           free(macro[i]);
+        name = NULL;
+        type = NULL;
+        reg = NULL;
       }
       else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
@@ -2645,6 +2724,7 @@ int firstlvo;
     free(newname[i]);
     free(filename[i]);
   }
+  free(lc);
 
 return 0;
 }
