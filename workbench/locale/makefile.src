@@ -1,0 +1,18 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+SUBDIRS=countries
+LOCALEDIR=$(BINDIR)/Locale
+
+all: setup
+	%subdirs_q target=all
+
+setup :
+	%mkdirs_q $(LOCALEDIR)
+
+clean::
+	%subdirs_q Cleaning clean
+
+%common

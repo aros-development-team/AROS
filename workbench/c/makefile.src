@@ -13,10 +13,6 @@ OBJDIR = $(GENDIR)/workbench/c
 
 %define_libs
 
-#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport
-#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
-
 FILES = \
 	addbuffers \
 	ask \
@@ -52,7 +48,7 @@ all: setup $(EXES)
 setup :
 	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
-clean:
+clean::
 	-$(RM) $(EXES)
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
@@ -64,4 +60,5 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
+%common
 %include_deps

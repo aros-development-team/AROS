@@ -1,12 +1,17 @@
 # $Id$
 TOP=../..
 
-SPECIAL_CFLAGS = -I/usr/include
+ifeq ("$(SHARED_INTUITION)","yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS=-I/usr/include
+endif
 
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(OSGENDIR)/intuition
-LIB=$(LIBDIR)/libintuition.so
+
+%prepare_shlib intuition $(SHARED_INTUITION)
 
 FILES = intuition_init intuition_functable gadgets \
 	boolgadgets propgadgets boopsigadgets \
@@ -90,13 +95,11 @@ setup :
 	%mkdirs_q $(OBJDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean:
+clean::
 	$(RM) $(OBJDIR) *.err $(LIB)
 
-CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
-
 $(OBJDIR)/%.o: %.c
-	%compile_q opt=$(CFLAGS2)
+	%compile_q
 
 intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
@@ -105,4 +108,5 @@ intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
+%common
 %include_deps

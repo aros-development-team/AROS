@@ -42,11 +42,11 @@ endif
 FUNCTIONS := \
 	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
 	tolower toupper getuniqueid date2amiga amiga2date allocatetagitems  \
-	freetagitems clonetagitems gettagdata packbooltags taginarray       \
-	refreshtagitemclones maptags addnamedobject allocnamedobjecta       \
-	attemptremnamedobject findnamedobject namedobjectname               \
+	freetagitems clonetagitems gettagdata packbooltags taginarray	    \
+	refreshtagitemclones maptags addnamedobject allocnamedobjecta	    \
+	attemptremnamedobject findnamedobject namedobjectname		    \
 	releasenamedobject remnamedobject freenamedobject packstructuretags \
-	unpackstructuretags checkdate filtertagitems filtertagchanges       \
+	unpackstructuretags checkdate filtertagitems filtertagchanges	    \
 	smult32 umult32 smult64 umult64 sdivmod32 udivmod32
 
 # BEGIN_DESC{localmakevar}
@@ -115,16 +115,22 @@ $(LIB): $(OBJS)
 
 # ***** Not Native ***************
 else
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_UTILITY)","yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS=-I/usr/include
+endif
 
-LIB=$(LIBDIR)/libutility.so
+%prepare_shlib utility $(SHARED_UTILITY)
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
 $(LIB) : $(OBJS)
-	@echo "Recreating $@..."
-	@$(SHARED_AR) $@ $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
 
 # ***** END ***************
 endif
@@ -134,30 +140,22 @@ setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean:
+clean::
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<"
-	@$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%compile_q
 
 utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
-	gawk -f $(TOP)/scripts/makefunctable.awk \
-	    --assign lib=Utility \
-	    $^
+	%mkfunctable_q Utility
 
 $(OBJDIR)/utility_init.o: libdefs.h
 
-libdefs.h: lib.conf $(TOP)/scripts/genlibdefs.gawk
-	gawk -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
+%libdefs_rule
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<"
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	%mkdepend_q
 
-ifneq ($(TARGET),clean)
-include $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
-endif
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)

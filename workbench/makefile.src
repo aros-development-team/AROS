@@ -1,0 +1,20 @@
+# $Id$
+TOP=..
+
+include $(TOP)/config/make.cfg
+
+SUBDIRS=c demos devs libs locale
+
+all: $(SDIR)/Startup-Sequence
+	%subdirs_q target=all
+
+clean::
+	%subdirs_q Cleaning target=clean
+
+$(SDIR)/Startup-Sequence : s/Startup-Sequence
+	$(CP) $^ $@
+
+setup:
+	@true
+
+%common

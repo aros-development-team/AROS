@@ -60,7 +60,7 @@ setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean:
+clean::
 	$(RM) $(OBJDIR) *.err $(LIB)
 
 TESTS = datetostr strtodate splitname readargs
@@ -71,10 +71,8 @@ $(LIB) : $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
 
-TEST_LDFLAGS = $(ILDFLAGS) -DTEST $(COMMON_CFLAGS)
-
 $(EXEDIR)/%: %.c $(DEPLIBS)
-	%link_q opt=$(TEST_LDFLAGS)
+	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS)"
 
 setup-test :
 	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
@@ -89,8 +87,5 @@ dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
-#	 @if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-#	 @echo "Makedepend $(CURDIR)/$<..."
-#	 @$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
-
+%common
 %include_deps

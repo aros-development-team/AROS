@@ -1,0 +1,17 @@
+mf.local
+objs
+bin
+vc
+parse_expr.i
+parse_expr.asm
+parse_expr.s
+vbcci386
+vbccsi386
+*.err
+log
+vbcc.log
+obj-gcc
+bin-gcc
+obj-vcc*
+bin-vcc*
+makefile

@@ -46,7 +46,7 @@ make-dirs :
 	%mkdirs_q $(OBJDIR) $(INCDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean:
+clean::
 	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libarossupport.a
 
 $(OBJDIR)/%.o: %.c
@@ -74,4 +74,5 @@ $(LIB) : $(OBJS)
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q flags=$(CFLAGS2)
 
+%common
 %include_deps

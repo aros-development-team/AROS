@@ -29,7 +29,7 @@ $(LIBDIR)/libmalloc.a : pthreads/malloc/libmalloc.a
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
-clean:
+clean::
 	-$(RM) $(OSGENDIR) *.err
 
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS)
@@ -37,15 +37,8 @@ CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS)
 $(OSGENDIR)/%.o: %.c
 	%compile_q opt=$(CFLAGS2)
 
-#	 @echo "Compiling $(CURDIR)/$<..."
-#	 @$(CC) $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
-#	 @if test ! -s $*.err; then rm $*.err ; else true ; fi
-
 $(OSGENDIR)/%.d: %.c
 	%mkdepend_q flags=$(CFLAGS2)
 
-#	 @if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-#	 @echo "Makedepend $(CURDIR)/$<..."
-#	 @$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
-
+%common
 %include_deps

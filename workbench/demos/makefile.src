@@ -1,0 +1,67 @@
+# $Id$
+TOP=../..
+
+SPECIAL_CFLAGS = -D__AROS -I$(TOP)/workbench/libs
+
+include $(TOP)/config/make.cfg
+
+#CC=$(PURIFY) $(SYS_CC)
+EXEDIR=$(BINDIR)/Demos
+
+OBJDIR = $(GENDIR)/workbench/demos
+
+%define_libs
+
+FILES = helloworld \
+	librarytest \
+	demowin \
+	simpleimage \
+	intuitext \
+	compleximage \
+	shadowborder \
+	readicon \
+	sift \
+	regiontest \
+	inquire
+
+IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
+IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
+
+EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
+
+all: setup data $(EXES) $(EXEDIR)/forkbomb
+
+data: $(IMAGEFILES)
+
+images/%.h : images/%.dat images/datfilt.awk
+	cd images ; gawk -f datfilt.awk $(<F)
+
+setup :
+	%mkdirs_q $(EXEDIR) $(OBJDIR)
+
+clean::
+	-$(RM) $(EXES)
+
+$(EXEDIR)/forkbomb : forkbomb
+	$(CP) $< $@
+
+$(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
+	%link_q
+
+$(OBJDIR)/librarytest.o: librarytest.c $(TOP)/workbench/libs/dummylib_gcc.h
+	%compile_q opt=$(APPCFLAGS)
+
+$(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
+	%link_q
+
+$(OBJDIR)/%.o: %.c
+	%compile_q opt=$(APPCFLAGS)
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q
+
+$(OBJDIR)/librarytest.d: librarytest.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

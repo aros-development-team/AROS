@@ -14,29 +14,25 @@ STARTUP = $(LIBDIR)/startup.o
 
 %define_libs
 
-#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport -larosc
-#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
-
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
 # Some files are excluded from the native build, because they are already
 # handled by the inlines.
 FILES = alib_util callhook coercemethod createextio createport createstdio  \
-	createtask deleteextio deleteport deletestdio deletetask            \
-	domethod dosupermethod fastrand hookentry liballocpooled            \
-	libcreatepool libdeletepool libfreepooled newlist rangerand         \
+	createtask deleteextio deleteport deletestdio deletetask	    \
+	domethod dosupermethod fastrand hookentry liballocpooled	    \
+	libcreatepool libdeletepool libfreepooled newlist rangerand	    \
 	setsuperattrs
 
 # ***** Not Native ***************
 else
 
-FILES = alib_util allocnamedobject callhook coercemethod createextio        \
+FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
 	createport createstdio createtask deleteextio deleteport deletestdio\
-	deletetask dogadgetmethod domethod dosupermethod easyrequest        \
-	fastrand hookentry liballocpooled libcreatepool libdeletepool       \
-	libfreepooled newlist newobject openscreentags openwindowtags       \
+	deletetask dogadgetmethod domethod dosupermethod easyrequest	    \
+	fastrand hookentry liballocpooled libcreatepool libdeletepool	    \
+	libfreepooled newlist newobject openscreentags openwindowtags	    \
 	rangerand setattrs setsuperattrs
 
 # ***** END ***************
@@ -50,7 +46,7 @@ all: setup $(LIB) $(STARTUP)
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 
-clean:
+clean::
 	-$(RM) $(OBJDIR) *.err $(LIB) $(STARTUP)
 
 test: $(EXEDIR)/betest $(EXEDIR)/wstest $(EXEDIR)/rstest
@@ -78,4 +74,5 @@ $(LIB): $(OBJS)
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
+%common
 %include_deps

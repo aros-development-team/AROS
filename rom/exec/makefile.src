@@ -125,7 +125,7 @@ setup :
 	%mkdirs_q $(OBJDIR) $(OSMODDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean:
+clean::
 	$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c
@@ -134,4 +134,5 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
+%common
 %include_deps

@@ -1,0 +1,41 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+OBJDIR = $(GENDIR)/devs
+
+%define_libs
+
+DEVS = $(DEVSDIR)/ram.handler \
+	$(DEVSDIR)/nil.handler \
+	$(DEVSDIR)/ffs.handler \
+	$(DEVSDIR)/fdsk.device
+
+all: setup \
+	$(DEVS) \
+	$(DEVSDIR)/Mountlist
+
+setup:
+	%mkdirs_q $(OBJDIR) $(DEVSDIR)
+
+clean::
+	-$(RM) $(DEVSDIR)
+
+$(DEVSDIR)/Mountlist : Mountlist
+	$(CP) $< $@
+
+$(OBJDIR)/%.o: %.c
+	%compile_q
+
+$(DEVSDIR)/%.handler: $(OBJDIR)/%_handler.o
+	%link_q startup=
+
+$(DEVSDIR)/%.device: $(OBJDIR)/%_device.o
+	%link_q startup=
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q
+
+%common
+%include_deps $(OBJDIR)/ram_handler.d $(OBJDIR)/nil_handler.d $(OBJDIR)/ffs_handler.d $(OBJDIR)/fdsk_device.d

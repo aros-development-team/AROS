@@ -9,46 +9,25 @@ SUBDIRS=$(KERNEL) $(ARCH)
 CONFIG_H = $(INCDIR)/aros/config.h
 
 all: setup
-	$(MAKE) subdirs TARGET=all
+	%subdirs_q target=all
 
 setup : make-dirs $(CONFIG_H)
-	$(MAKE) subdirs TARGET=setup
+	%subdirs_q "Setting up" setup
 
 make-dirs:
 	%mkdirs_q $(INCDIR)/aros
 
-#	 @if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros; else true; fi
-
-subdirs :
-	%subdirs_q
-
-#	 @for dir in $(SUBDIRS) ; do \
-#	     echo "Making $(TARGET) in $(CURDIR)/$$dir..." ; \
-#	     if ( cd $$dir ; \
-#		 $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-#		 TARGET=$(TARGET) $(TARGET) ) ; \
-#	     then true ; else exit 1 ; fi ; \
-#	 done
-
 $(CONFIG_H): $(TOP)/configure
 	sh $(TOP)/configure -h $@
 
-clean:
+clean::
 	-$(RM) ./machine
-	@for dir in $(SUBDIRS) ; do \
-	    echo "Cleaning in $(CURDIR)/$$dir..." ; \
-	    cd $$dir ; \
-	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		TARGET=clean clean ; \
-	done
+	%subdirs_q "Cleaning" clean
 	$(RM) host.cfg $(CONFIG_H) $(INCDIR)/aros
 
 machine:
 	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
 	./machine
 
-#ifeq ("$(TARGET)","clean")
-#include $(TOP)/config/host.cfg
-#endif
-
+%common
 %include_deps $(TOP)/config/host.cfg

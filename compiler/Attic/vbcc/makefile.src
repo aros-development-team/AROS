@@ -9,10 +9,6 @@ OBJDIR = $(GENDIR)/compiler/vbcc
 
 %define_libs
 
-#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport  #-lm
-#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
-
 BASIC_FILES = main vars declaration parse_expr type_expr ic machine \
 	    statements preproc
 CC_FILES = opt av rd regs flow cse cp loop alias
@@ -62,7 +58,7 @@ $(EXEDIR)/vbccs$(KERNEL) : $(CCS_OBJS) $(DEPLIBS)
 setup :
 	%mkdirs_q $(OBJDIR) $(OBJDIR)-vc $(EXEDIR)
 
-clean :
+clean ::
 	$(RM) $(EXES) $(OBJDIR)
 
 $(OBJDIR)/%.o: %.c
@@ -71,13 +67,11 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/machine.o: ./machines/$(KERNEL)/machine.c
 	%compile_q opt=$(APPCFLAGS)
 
-APPCFLAGS2 = -DNO_OPTIMIZER $(APPCFLAGS)
-
 $(OBJDIR)/regss.o: regs.c
-	%compile_q opt=$(APPCFLAGS2)
+	%compile_q opt="-DNO_OPTIMIZER $(APPCFLAGS)"
 
 $(OBJDIR)/opts.o: opt.c
-	%compile_q opt=$(APPCFLAGS2)
+	%compile_q opt="-DNO_OPTIMIZER $(APPCFLAGS)"
 
 $(OBJDIR)/machine.d: ./machines/$(KERNEL)/machine.c
 	%mkdepend_q flags=$(APPCFLAGS)
@@ -85,4 +79,5 @@ $(OBJDIR)/machine.d: ./machines/$(KERNEL)/machine.c
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q flags=$(APPCFLAGS)
 
+%common
 %include_deps

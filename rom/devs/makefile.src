@@ -1,0 +1,27 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+SUBDIRS=filesys
+
+FILES = console cdinputhandler rawkeyconvert
+
+all: setup $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+	%subdirs_q target=all
+
+clean::
+	$(RM) $(OSGENDIR)
+	%subdirs_q Cleaning clean
+
+setup:
+	%mkdirs_q $(OSGENDIR)
+
+$(OSGENDIR)/%.o: %.c
+	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
+
+$(OSGENDIR)/%.d: %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)

@@ -1,0 +1,22 @@
+# $Id$
+TOP=..
+
+include $(TOP)/config/make.cfg
+
+ifeq ($(FLAVOUR),native)
+# Only exec, for the moment.
+SUBDIRS=aros exec utility alerthook
+else
+SUBDIRS=exec utility dos graphics intuition devs
+endif
+
+all:
+	%subdirs_q target=all
+
+clean::
+	%subdirs_q "Cleaning" clean
+
+setup:
+	@true
+
+%common

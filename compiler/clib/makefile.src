@@ -12,10 +12,6 @@ LIB = $(LIBDIR)/libarosc.a
 
 %define_libs
 
-#LIBS = -L$(LIBDIR) -larosc -lamiga -larossupport -larosc
-#DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
-#	 $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a
-
 FILES = \
 	__assert \
 	__getfilenode4fd \
@@ -129,7 +125,7 @@ update-includes:
 	@cd include ; \
 	$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/include" all
 
-clean:
+clean::
 	-$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c
@@ -138,13 +134,8 @@ $(OBJDIR)/%.o: %.c
 $(LIB): $(OBJS)
 	%mklib_q
 
-#	 $(AR) $@ $?
-#	 $(RANLIB) $@
-
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q flags=$(APPCFLAGS)
 
-#	 @if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-#	 $(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
-
+%common
 %include_deps

@@ -1,12 +1,19 @@
 # $Id$
 TOP=../..
 
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_GRAPHICS)","yes")
+SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
+else
 SPECIAL_CFLAGS=-I/usr/include
+endif
 
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(OSGENDIR)/graphics
 LIB=$(LIBDIR)/libgraphics.so
+
+%prepare_shlib graphics $(SHARED_GRAPHICS)
 
 FILES = graphics_init graphics_functable intregions
 FUNCTIONS = \
@@ -68,32 +75,25 @@ OBJS=$(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 all: setup $(LIB)
 
 $(LIB) : $(OBJS)
-	@echo "Recreating $@..."
-	@$(SHARED_AR) $@ $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
 
 setup :
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	%mkdirs_q $(OBJDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
-clean:
-	$(RM) $(OBJDIR) *.err
+clean::
+	$(RM) $(OBJDIR) *.err $(LIB)
 
 $(OBJDIR)/%.o: %.c
-	@echo "Compiling $(CURDIR)/$<"
-	@$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	%compile_q
 
 graphics_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
-	gawk -f $(TOP)/scripts/makefunctable.awk \
-	    --assign lib=Graphics \
-	    $^
+	%mkfunctable_q Graphics
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	@echo "Makedepend $(CURDIR)/$<"
-	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	%mkdepend_q
 
-ifneq ($(TARGET),clean)
-include $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
-endif
+%common
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

@@ -1,0 +1,31 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+SUBDIRS=icon iffparse
+
+OBJDIR = $(GENDIR)/workbench/libs
+FILES = dummy
+
+all: setup $(foreach f,$(FILES),$(SLIBDIR)/$f.library)
+	%subdirs_q target=all
+
+setup :
+	%mkdirs_q $(SLIBDIR) $(OBJDIR)
+
+clean::
+	-$(RM) $(SLIBDIR)/dummy.library $(OBJDIR)
+	%subdirs_q "Cleaning" clean
+
+$(SLIBDIR)/%.library: $(OBJDIR)/%lib.o
+	%link_q
+
+$(OBJDIR)/%lib.o: %lib.c
+	%compile_q
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f)lib.d)

@@ -48,7 +48,7 @@ setup :
 $(MACHINE_H): machine.h
 	cp $< $@
 
-clean:
+clean::
 	$(RM) $(MACHINE_H) machine.i geninc
 
 machine.i: geninc.c
@@ -68,4 +68,5 @@ $(OSGENDIR)/%.o: %.c
 $(OSGENDIR)/%.d: %.c $(MACHINE_H)
 	%mkdepend_q
 
+%common
 %include_deps
