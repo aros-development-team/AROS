@@ -54,7 +54,7 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1(Unsetenv, 41.0,
 AROS_SHA(STRPTR, ,NAME, ,NULL))

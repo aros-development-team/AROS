@@ -13,7 +13,7 @@
 #include <dos/dos.h>
 #include <proto/utility.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 static int stripwhites(char * buffer);
 static char * skipwhites(char * buffer);

@@ -49,7 +49,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH0(EndCli, 41.3)
 {

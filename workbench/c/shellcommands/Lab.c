@@ -61,7 +61,7 @@
 #include <dos/dosextens.h>
 #include <dos_commanderrors.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH0(Lab,41.1)
 {

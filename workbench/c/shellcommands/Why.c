@@ -51,7 +51,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH0(Why, 41.3)
 {

@@ -62,7 +62,7 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1H(FailAt, 41.1,             "Set the return code failure limit of the current script",
 AROS_SHAH(LONG *, , RCLIM,/M, NULL, "The new return code limit"))

@@ -50,7 +50,7 @@
 #include <dos/rdargs.h>
 #include <dos_commanderrors.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1(Quit, 41.1,
 AROS_SHA(LONG *, ,RC,/N,NULL))

@@ -41,7 +41,7 @@
 #include <dos/rdargs.h>
 #include <proto/dos.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 #define  MINIMUM_STACK_SIZE   2048     /* This is a wild guess and depends on
 					  (among other things) how much stack

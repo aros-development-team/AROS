@@ -65,7 +65,7 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1(Prompt,41.1,
 AROS_SHA(STRPTR, ,PROMPT, , "%N.%S> "))

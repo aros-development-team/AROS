@@ -11,7 +11,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH1(CD, 41.1,
 AROS_SHA(STRPTR, ,DIR, ,NULL))

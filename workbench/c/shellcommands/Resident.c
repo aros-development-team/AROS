@@ -9,7 +9,7 @@
 
 #include <string.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 struct SegNode
 {

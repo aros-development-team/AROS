@@ -15,7 +15,7 @@
 
 #define SH_GLOBAL_SYSBASE 1
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 
 

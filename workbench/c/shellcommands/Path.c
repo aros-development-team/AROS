@@ -10,7 +10,7 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH5(Path, 41.1,
 AROS_SHA(STRPTR *, ,PATH,/M,NULL),

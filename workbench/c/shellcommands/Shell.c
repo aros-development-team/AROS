@@ -108,7 +108,7 @@
 
 #define SH_GLOBAL_SYSBASE 1
 #define SH_GLOBAL_DOSBASE 1
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 #define SET_HOMEDIR 1
 

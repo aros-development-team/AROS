@@ -59,7 +59,7 @@
 #include <dos_commanderrors.h>
 #include <dos/stdio.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 AROS_SH2(Skip, 41.1,
 AROS_SHA(STRPTR, , LABEL,  , NULL),

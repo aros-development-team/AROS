@@ -69,7 +69,7 @@
 #include <exec/types.h>
 #include <strings.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 #define BUFFER_SIZE 160
 

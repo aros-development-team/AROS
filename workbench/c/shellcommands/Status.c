@@ -94,7 +94,7 @@
 #include <strings.h>
 #include <stdio.h>
 
-#include "shcommands.h"
+#include <aros/shcommands.h>
 
 static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb, struct Process *process);
 static void PrintF(struct DosLibrary *DOSBase, STRPTR format, ...);
