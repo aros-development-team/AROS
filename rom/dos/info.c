@@ -25,9 +25,18 @@
 
 /*  FUNCTION
 
+    Get information about a volume in the system.
+
     INPUTS
 
+    lock            --  a lock on any file on the volume for which information
+                        should be supplied
+    parameterBlock  --  pointer to an InfoData structure
+
     RESULT
+
+    Boolean indicating success or failure. If TRUE (success) the
+    'parameterBlock' is filled with information on the volume.
 
     NOTES
 
@@ -37,6 +46,8 @@
 
     SEE ALSO
 
+    <dos/dos.h>
+
     INTERNALS
 
     HISTORY
@@ -45,8 +56,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-
-#warning Add documentation
 
     struct IOFileSys iofs;
 
@@ -60,7 +69,7 @@
 
     SetIoErr(iofs.io_DosError);
 
-    if(iofs.io_DosError != 0)
+    if (iofs.io_DosError != 0)
     {
 	return DOSFALSE;
     }
