@@ -9,18 +9,22 @@
 #include <devices/input.h>
 #include <devices/timer.h>
 #include <devices/keyboard.h>
+#include <devices/gameport.h>
 #include <intuition/intuition.h>
 #include <aros/asmcall.h>
 
 #include "input_intern.h"
 
-#define SEND_KBD_REQUEST(kbdio, kbdie)			\
-    kbdio->io_Command = KBD_READEVENT;			\
-    kbdio->io_Data = (APTR)kbdie;			\
-    kbdio->io_Length = sizeof (struct InputEvent);	\
-    SendIO((struct IORequest *)kbdio)
+#define SEND_INPUT_REQUEST(io, ie, cmd)	\
+    io->io_Command = cmd;			\
+    io->io_Data = (APTR)ie;			\
+    io->io_Length = sizeof (struct InputEvent);	\
+    SendIO((struct IORequest *)io)
+    
+#define SEND_KBD_REQUEST(kbdio, kbdie)	SEND_INPUT_REQUEST(kbdio, kbdie, KBD_READEVENT)
+#define SEND_GPD_REQUEST(gpdio, gpdie) SEND_INPUT_REQUEST(gpdio, gpdie, GPD_READEVENT)
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /**********************
@@ -52,18 +56,22 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
     return;
 }
 
+
 /***********************************
 ** Input device task entry point  **
 ***********************************/
 void ProcessEvents (struct IDTaskParams *taskparams)
 {
     struct inputbase *InputDevice = taskparams->InputDevice;
-    ULONG commandsig, kbdsig, wakeupsigs;
+    ULONG commandsig, kbdsig, wakeupsigs, gpdsig;
     struct MsgPort *timermp;
     struct timerequest *timerio;
-    struct MsgPort *kbdmp;
-    struct IOStdReq *kbdio;
-    struct InputEvent *kbdie;
+
+
+    struct MsgPort *kbdmp, *gpdmp;
+    struct IOStdReq *kbdio, *gpdio;
+    struct InputEvent *kbdie, *gpdie;
+    
     
     struct Library *TimerBase;
     
@@ -76,7 +84,8 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     NEWLIST( &(InputDevice->CommandPort->mp_MsgList) );
 
     
-    /* Opening the timer device */
+    /************** Open timer.device *******************/
+    
     timermp = CreateMsgPort();
     if (!timermp)
     	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
@@ -90,7 +99,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     
     TimerBase = (struct Library *)timerio->tr_node.io_Device;
 
-    /* Open the keyboard.device */
+    /************** Open keyboard.device *******************/
     kbdmp = CreateMsgPort();
     if (!kbdmp)
     	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
@@ -107,13 +116,37 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     if (!kbdie)
         Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
 	
+
+    /************** Open gameport.device *******************/
+    gpdmp = CreateMsgPort();
+    if (!gpdmp)
+    	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+    	
+    gpdio = (struct IOStdReq *)CreateIORequest(gpdmp, sizeof(struct IOStdReq));
+    if (!gpdio)
+        Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+
+    if ( 0 != OpenDevice("gameport.device", 0, (struct IORequest *)gpdio, 0))
+    	Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
+    
+    
+    gpdie = AllocMem(sizeof (struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!gpdie)
+        Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+
+
+	
     /* Send an initial request to the keyboard device */
+
     SEND_KBD_REQUEST(kbdio, kbdie);
+    
+    /* .. and to the gameport.device */
+    SEND_GPD_REQUEST(gpdio, gpdie);
     
     commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
     
     kbdsig = 1 << kbdmp->mp_SigBit;
-    
+    gpdsig = 1 << gpdmp->mp_SigBit;
 
     /* Tell the task that created us, that we are finished initializing */
     Signal(taskparams->Caller, taskparams->Signal);
@@ -121,7 +154,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     {
 
 //	D(bug("id : waiting for wakeup-call\n"));
-	wakeupsigs = Wait (commandsig|kbdsig);
+	wakeupsigs = Wait (commandsig | kbdsig | gpdsig);
 	D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n"
 		, wakeupsigs, commandsig, kbdsig));
 	
@@ -184,19 +217,40 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    if (kbdio->io_Error != 0)
 	    	continue;
 	    
+	    /* Add event to queue */
 	    AddEQTail((struct InputEvent *)kbdio->io_Data, InputDevice);
 	    /* New event from keyboard device */
     	    D(bug("id: Keyboard event\n"));
-	    /* Add event to queue */
     	    	
-    	    D(bug("id: Forwarding events\n"));
     	    	
+    	    D(bug("id: Events forwarded\n"));
     	    	/* Forward event (and possible others in the queue) */
 	    ForwardQueuedEvents(InputDevice);
     	    D(bug("id: Events forwarded\n"));
 
 	    /* Wit for some more events */
 	    SEND_KBD_REQUEST(kbdio, kbdie);
+	}
+	else if (wakeupsigs & gpdsig)
+	{
+	    GetMsg(gpdmp); /* Only one message */
+	    if (gpdio->io_Error != 0)
+	    	continue;
+	    
+	    /* Add event to queue */
+	    AddEQTail((struct InputEvent *)gpdio->io_Data, InputDevice);
+	    /* New event from keyboard device */
+    	    D(bug("id: Gameport event\n"));
+    	    	
+    	    	
+    	    D(bug("id: Forwarding events\n"));
+    	    	/* Forward event (and possible others in the queue) */
+	    ForwardQueuedEvents(InputDevice);
+    	    D(bug("id: Events forwarded\n"));
+
+	    /* Wit for some more events */
+	    SEND_GPD_REQUEST(gpdio, gpdie);
+	
 	}
 	
     } /* Forever */
