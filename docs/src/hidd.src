@@ -3,6 +3,10 @@
 
 \section{Introduction}
 
+\bold{This is a *preliminary* document. It's neither complete nor
+correct. It's purpose is to offer a basis for discussion not to put
+things into concrete}
+
 The AmigaOS is built on the Amigas' custom chips. This is a fact which is
 eventually discovered when you hit the rather tight limits they impose
 and try to circumvent them by adding new hardware. For the new hardware,
@@ -347,21 +351,17 @@ Subtypes of serial HIDDs are |HIDDV_RS232| and |HIDDV_RS488|, for
 example.
 
 \begin{taglist}
-\item{HIDDA_Serial_BPSRate,ULONG,ISG} The bits
-per second or a logical BPS rate (1: 300baud, 2: 600baud,
-3: 1200baud, 4: 2400baud, 5: 4800, 6: 9600, 7: 19200, 8: 38400,
-9: 57600, 10: 64000, 11: 76800, 12: 112000(?), 13: 200kbaud,
-14: 400kbaud, 15: 1Mbaud, 16: 2MBaud, 17: 4MBaud, 18: 10MBaud,
-19: 20MBaud, 20: 40MBaud, 21: 100MBaud, etc, upto 50).
+\item{HIDDA_Serial_BPSRate,ULONG,ISG} The bits per second or a logical BPS
+rate (300baud, 600baud, 1200baud, 2400baud, 4800, 9600, 19200, 31500
+(MIDI), 38400, etc.) The logical BPS rates have the bit 31 set.
 
 When you query the list of available modes, you will get an |HIDDT_Limit|
-for this attribute. If the maximum of the limit is 50 of less, it means
-that the device supports only fixed BPS rates. If the maximum is above
-this, this means that the device supports variable BPS rates. If you use
-a logical BPS rate, you must make sure that you don't exceed the maximum.
-For example, some device might support any BPS rate between 5000bps and
-100000bps. This means that only the logical BPS rates between 6 and 11
-(including both) are available.
+for this attribute. If the limits have bit 31 set, the device supports only
+fixed BPS rates. If the limits don't have this bit set, this means that the
+device supports variable BPS rates. If you use a logical BPS rate, you must
+make sure that you don't exceed the limits. For example, some device might
+support any BPS rate between 5000bps and 100000bps. This means that only
+the logical BPS rates between 9600 and 74k (including both) are available.
 
 Also note that a HIDD might not support every BPS rate in the range. There
 might be arbitrary steps, so you must set the BPS rate and then read it
@@ -380,6 +380,21 @@ would be 24 and two stopbits is 32).
 
 \subsection{Keyboard HIDD}
 
+\begin{methods}
+\item{ULONG HIDDM_QueryKeys (ULONG ** keyptr)} Ask for all really
+available keys on this keyboard. The method will fill in a pointer to
+a read-only array and return the number of elements in that array.
+You must not free this array nor write to it.
+
+\item{ULONG HIDDM_QueryKeyStates (ULONG ** keyptr)} Ask for all currently
+pressed keys on this keyboard. The method will fill in a pointer to
+an array and return the number of elements in that array.
+
+\item{ULONG HIDDM_FreeKeyStates (ULONG * keyptr)} Free the result of
+a |HIDDM_QueryKeyStates()|.
+
+\end{methods}
+
 \begin{taglist}
 \item{HIDDA_Keyboard_Type,ULONG,ISG} If the Keyboard HIDD can work with more
 then one type of keyboard, you can specify the type here or if the HIDD
@@ -396,13 +411,15 @@ message to this port. The message looks like this:
 typedef struct
 {
     struct Message ke_Message;
-    UWORD	   ke_Key[1];
+    ULONG	   ke_Key[1];
 }
 HIDDT_Keyboard_Event;
 \end{code}
 
 |ke_Key[]| contains the X11 code for the key. See
 \filename{/usr/include/X11/keysymdef.h} for available keycodes.
+If the key has been pressed, bit 31 will be set. If the key has
+been released, bit 31 will be cleared.
 
 If the user pressed more then one key, the other keys are in
 |ke_Key[1]|, |ke_Key[2]|, etc. The number of keys in the message
@@ -436,6 +453,18 @@ of the command (including both |Command| and |Length|).
 
 The result of |HIDDM_Graphics_Cmd()| depends on the command
 which is to be executed.
+
+\item{IPTR HIDDM_Graphics_MCmd,UWORD length,UWORD length1, UWORD cmd1,
+...)} This is like |HIDDM_Graphics_Cmd()| but executes more than one
+command at once. |length| is the size of all commands plus all parameters.
+The format of the separate commands is the same as in
+|HIDDM_Graphics_Cmd()|.
+
+\item{IPTR HIDDM_Graphics_MQCmd,UWORD length,UWORD length1, UWORD cmd1,
+...)} This is like |HIDDM_Graphics_QCmd()| but executes more than one
+command at once. |length| is the size of all commands plus all parameters.
+The format of the separate commands is the same as in
+|HIDDM_Graphics_QCmd()|.
 
 \end{methods}
 
