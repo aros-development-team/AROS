@@ -207,7 +207,7 @@ static int LoadText(struct Text_Data *td, STRPTR filename, BPTR file)
 **************************************************************************/
 static int LoadTextAsIFF(struct Text_Data *td, STRPTR filename, struct IFFHandle *iff)
 {
-    StopChunk(iff, 'FTXT', 'CHRS');
+    StopChunk(iff, MAKE_ID('F','T','X','T'), MAKE_ID('C','H','R','S'));
 
     td->buffer_allocated_len = 0;
     td->buffer_allocated = 0;
@@ -224,7 +224,7 @@ static int LoadTextAsIFF(struct Text_Data *td, STRPTR filename, struct IFFHandle
 	if (!cn)
 	    continue;
 
-	if (cn->cn_ID == 'CHRS')
+	if (cn->cn_ID == MAKE_ID('C','H','R','S'))
 	{
 	    LONG pre_size = td->buffer_allocated_len;
 	    LONG add_size = cn->cn_Size;
