@@ -23,12 +23,11 @@ struct arosc_userdata * __get_arosc_userdata(void)
 {
     #ifdef DO_STATIC
 
-    static struct arosc_privdata acpd_static =
-    {
-        .acpd_acud.acud_ctype_b       = &__ctype_b_array[128],
-        .acpd_acud.acud_ctype_toupper = &__ctype_toupper_array[128],
-        .acpd_acud.acud_ctype_tolower = &__ctype_tolower_array[128],
-    };
+    static struct arosc_privdata acpd_static;
+
+    acpd_static.acpd_acud.acud_ctype_b       = &__ctype_b_array[128];
+    acpd_static.acpd_acud.acud_ctype_toupper = &__ctype_toupper_array[128];
+    acpd_static.acpd_acud.acud_ctype_tolower = &__ctype_tolower_array[128];
 
     return &acpd_static.acpd_acud;
 
