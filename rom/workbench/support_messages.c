@@ -63,41 +63,43 @@ VOID __DestroyWBS_WB
 }
 
 /*== WBHandlerMessage ======================================================*/
-struct WBHandlerMessage *__CreateWBHM_WB
+struct IntWBHandlerMessage *__CreateIWBHM_WB
 (
-    enum WBHM_Type type, struct WorkbenchBase *WorkbenchBase
+    enum WBHM_Type type, struct MsgPort *replyport, 
+    struct WorkbenchBase *WorkbenchBase
 )
 {
-    struct WBHandlerMessage *message = (struct WBHandlerMessage *) AllocMessage(WBHM_SIZE);
+    struct IntWBHandlerMessage *message = (struct IntWBHandlerMessage *)AllocMessage(sizeof(struct IntWBHandlerMessage));
     
     if (message != NULL)
     {
-        message->wbhm_Type = type;
+        message->iwbhm_wbhm.wbhm_Type                 = type;
+	message->iwbhm_wbhm.wbhm_Message.mn_ReplyPort = replyport;
     }
     
     return message;
 }
 
-VOID __DestroyWBHM_WB
+VOID __DestroyIWBHM_WB
 (
-    struct WBHandlerMessage *message, struct WorkbenchBase *WorkbenchBase
+    struct IntWBHandlerMessage *message, struct WorkbenchBase *WorkbenchBase
 )
 {
     if (message != NULL)
     {
-        switch (message->wbhm_Type)
+        switch (message->iwbhm_wbhm.wbhm_Type)
         {
             case WBHM_TYPE_OPEN:
-                if (message->wbhm_Data.Open.Name != NULL) 
+                if (message->iwbhm_wbhm.wbhm_Data.Open.Name != NULL) 
                 {
-                    FreeVec((APTR) message->wbhm_Data.Open.Name);
+                    FreeVec((APTR) message->iwbhm_wbhm.wbhm_Data.Open.Name);
                 }
                 break;
                 
             case WBHM_TYPE_UPDATE:
-                if (message->wbhm_Data.Update.Name != NULL)
+                if (message->iwbhm_wbhm.wbhm_Data.Update.Name != NULL)
                 {
-                    FreeVec((APTR) message->wbhm_Data.Update.Name);
+                    FreeVec((APTR) message->iwbhm_wbhm.wbhm_Data.Update.Name);
                 }
                 break;
                 

@@ -336,19 +336,27 @@ static void __HandleIntuition_WB
     struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
 )
 {
-    struct WBHandlerMessage *handlermsg;
+    struct IntWBHandlerMessage *iwbhm;
     
     if (message->Class == IDCMP_WBENCHMESSAGE)
     {
-        if      (message->Code == WBENCHOPEN)  handlermsg = CreateWBHM(WBHM_TYPE_SHOW);
-        else if (message->Code == WBENCHCLOSE) handlermsg = CreateWBHM(WBHM_TYPE_HIDE);
-        else                                   handlermsg = NULL;
+        switch (message->Code)
+	{
+	    case WBENCHOPEN:
+	        iwbhm = CreateIWBHM(WBHM_TYPE_SHOW, NULL);
+		break;
+	    case WBENCHCLOSE:
+	        iwbhm = CreateIWBHM(WBHM_TYPE_HIDE, hc->hc_RelayReplyPort);
+		break;
+            default:
+	        iwbhm = NULL;
+	}
         
-        if (handlermsg != NULL)
+        if (iwbhm != NULL)
         {
-            PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) handlermsg);
+            PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *)iwbhm);
         }
     }
     
-    ReplyMsg((struct Message *) message); // FIXME: shouldn't reply right away in case of WBENCHCLOSE ?
+    ReplyMsg((struct Message *) message);
 }
