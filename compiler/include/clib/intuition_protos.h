@@ -24,6 +24,44 @@ __AROS_LP1(void, AddClass,
     __AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 114, Intuition)
 
+__AROS_LP8(BOOL, AutoRequest,
+    __AROS_LPA(struct Window    *, window, A0),
+    __AROS_LPA(struct IntuiText *, body, A1),
+    __AROS_LPA(struct IntuiText *, posText, A2),
+    __AROS_LPA(struct IntuiText *, negText, A3),
+    __AROS_LPA(unsigned long     , pFlag, D0),
+    __AROS_LPA(unsigned long     , nFlag, D1),
+    __AROS_LPA(unsigned long     , width, D2),
+    __AROS_LPA(unsigned long     , height, D3),
+    struct IntuitionBase *, IntuitionBase, 58, Intuition)
+#define AutoRequest(window, body, posText, negText, pFlag, nFlag, width, height) \
+    __AROS_LC8(BOOL, AutoRequest, \
+    __AROS_LCA(struct Window    *, window, A0), \
+    __AROS_LCA(struct IntuiText *, body, A1), \
+    __AROS_LCA(struct IntuiText *, posText, A2), \
+    __AROS_LCA(struct IntuiText *, negText, A3), \
+    __AROS_LCA(unsigned long     , pFlag, D0), \
+    __AROS_LCA(unsigned long     , nFlag, D1), \
+    __AROS_LCA(unsigned long     , width, D2), \
+    __AROS_LCA(unsigned long     , height, D3), \
+    struct IntuitionBase *, IntuitionBase, 58, Intuition)
+
+__AROS_LP1(void, BeginRefresh,
+    __AROS_LPA(struct Window *, window, A0),
+    struct IntuitionBase *, IntuitionBase, 59, Intuition)
+#define BeginRefresh(window) \
+    __AROS_LC1(void, BeginRefresh, \
+    __AROS_LCA(struct Window *, window, A0), \
+    struct IntuitionBase *, IntuitionBase, 59, Intuition)
+
+__AROS_LP1(void, ClearMenuStrip,
+    __AROS_LPA(struct Window *, window, A0),
+    struct IntuitionBase *, IntuitionBase, 9, Intuition)
+#define ClearMenuStrip(window) \
+    __AROS_LC1(void, ClearMenuStrip, \
+    __AROS_LCA(struct Window *, window, A0), \
+    struct IntuitionBase *, IntuitionBase, 9, Intuition)
+
 __AROS_LP1(BOOL, CloseScreen,
     __AROS_LPA(struct Screen *, screen, A0),
     struct IntuitionBase *, IntuitionBase, 11, Intuition)
@@ -76,6 +114,16 @@ __AROS_LP4(void, DrawImage,
     __AROS_LCA(long             , topOffset, D1), \
     struct IntuitionBase *, IntuitionBase, 19, Intuition)
 
+__AROS_LP2(void, EndRefresh,
+    __AROS_LPA(struct Window *, window, A0),
+    __AROS_LPA(BOOL           , complete, D0),
+    struct IntuitionBase *, IntuitionBase, 61, Intuition)
+#define EndRefresh(window, complete) \
+    __AROS_LC2(void, EndRefresh, \
+    __AROS_LCA(struct Window *, window, A0), \
+    __AROS_LCA(BOOL           , complete, D0), \
+    struct IntuitionBase *, IntuitionBase, 61, Intuition)
+
 __AROS_LP1(BOOL, FreeClass,
     __AROS_LPA(struct IClass *, classPtr, A0),
     struct IntuitionBase *, IntuitionBase, 119, Intuition)
@@ -114,6 +162,20 @@ __AROS_LP1(void, GetDefaultPubScreen,
     __AROS_LCA(UBYTE *, nameBuffer, A0), \
     struct IntuitionBase *, IntuitionBase, 97, Intuition)
 
+__AROS_LP4(LONG, GetScreenData,
+    __AROS_LPA(APTR           , buffer, A0),
+    __AROS_LPA(unsigned long  , size, D0),
+    __AROS_LPA(unsigned long  , type, D1),
+    __AROS_LPA(struct Screen *, screen, A1),
+    struct IntuitionBase *, IntuitionBase, 71, Intuition)
+#define GetScreenData(buffer, size, type, screen) \
+    __AROS_LC4(LONG, GetScreenData, \
+    __AROS_LCA(APTR           , buffer, A0), \
+    __AROS_LCA(unsigned long  , size, D0), \
+    __AROS_LCA(unsigned long  , type, D1), \
+    __AROS_LCA(struct Screen *, screen, A1), \
+    struct IntuitionBase *, IntuitionBase, 71, Intuition)
+
 __AROS_LP1(struct DrawInfo *, GetScreenDrawInfo,
     __AROS_LPA(struct Screen *, screen, A0),
     struct IntuitionBase *, IntuitionBase, 115, Intuition)
@@ -121,6 +183,14 @@ __AROS_LP1(struct DrawInfo *, GetScreenDrawInfo,
     __AROS_LC1(struct DrawInfo *, GetScreenDrawInfo, \
     __AROS_LCA(struct Screen *, screen, A0), \
     struct IntuitionBase *, IntuitionBase, 115, Intuition)
+
+__AROS_LP1(LONG, IntuiTextLength,
+    __AROS_LPA(struct IntuiText *, iText, A0),
+    struct IntuitionBase *, IntuitionBase, 55, Intuition)
+#define IntuiTextLength(iText) \
+    __AROS_LC1(LONG, IntuiTextLength, \
+    __AROS_LCA(struct IntuiText *, iText, A0), \
+    struct IntuitionBase *, IntuitionBase, 55, Intuition)
 
 __AROS_LP1(ULONG, LockIBase,
     __AROS_LPA(ULONG, What, D0),
@@ -297,6 +367,14 @@ __AROS_LP4(void, RefreshGList,
     __AROS_LCA(struct Requester *, requester, A2), \
     __AROS_LCA(long              , numGad, D0), \
     struct IntuitionBase *, IntuitionBase, 72, Intuition)
+
+__AROS_LP1(void, RefreshWindowFrame,
+    __AROS_LPA(struct Window *, window, A0),
+    struct IntuitionBase *, IntuitionBase, 76, Intuition)
+#define RefreshWindowFrame(window) \
+    __AROS_LC1(void, RefreshWindowFrame, \
+    __AROS_LCA(struct Window *, window, A0), \
+    struct IntuitionBase *, IntuitionBase, 76, Intuition)
 
 __AROS_LP1(void, RemoveClass,
     __AROS_LPA(struct IClass *, classPtr, A0),

@@ -8,17 +8,22 @@ include $(TOP)/make.cfg
 FILES = intuition_init intuition_functable intui_x11 gadgets \
 	boolgadgets propgadgets
 FUNCTIONS = \
-	addclass \
 	activatewindow \
+	addclass \
+	autorequest \
+	beginrefresh \
+	clearmenustrip \
 	closescreen \
 	closewindow \
 	disposeobject \
 	drawborder \
 	drawimage \
+	endrefresh \
 	freeclass \
 	freescreendrawinfo \
 	getattr \
 	getdefaultpubscreen \
+	getscreendata \
 	getscreendrawinfo \
 	lockibase \
 	lockpubscreen \
@@ -34,6 +39,7 @@ FUNCTIONS = \
 	printitext \
 	refreshgadgets \
 	refreshglist \
+	refreshwindowframe \
 	removeclass \
 	setattrsa \
 	setdefaultpubscreen \

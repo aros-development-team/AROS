@@ -396,7 +396,7 @@ long StateToQualifier (unsigned long state)
 	result |= IEQUALIFIER_MIDBUTTON;
 
     return (result);
-}
+} /* StateToQualifier */
 
 long XKeyToAmigaCode (XKeyEvent * xk)
 {
@@ -423,7 +423,7 @@ long XKeyToAmigaCode (XKeyEvent * xk)
     result |= xk->keycode & 0xffff;
 
     return (result);
-}
+} /* XKeyToAmigaCode */
 
 void intui_SizeWindow (struct Window * win, long dx, long dy)
 {
@@ -511,39 +511,16 @@ ende:
 */
 
     return (t);
-}
+} /* intui_RawKeyConvert */
 
-
-#ifdef TODO
-void RefreshWindowFrame (w)
-WIN * w;
+void intui_BeginRefresh (struct IntWindow * win,
+	struct IntuitionBase * IntuitionBase)
 {
-    __SetSizeHints (w);
-}
+   /* Restrict rendering to a region */
+   XSetRegion (sysDisplay, GetGC(win->iw_Window.RPort), win->iw_Region);
+} /* intui_BeginRefresh */
 
-int IntuiTextLength (itext)
-struct IntuiText * itext;
-{
-    return (100);
-}
-
-void ClearMenuStrip (win)
-WIN * win;
-{
-    return;
-}
-
-void BeginRefresh (win)
-WIN * win;
-{
-   /* Region aufpropfen */
-   XSetRegion (sysDisplay, win->RPort->gc, win->region);
-}
-
-
-void EndRefresh (win, free)
-WIN * win;
-BOOL free;
+void intui_EndRefresh (struct IntWindow * win, BOOL free)
 {
    Region region;
    XRectangle rect;
@@ -551,9 +528,9 @@ BOOL free;
    /* Zuerst alte Region freigeben (Speicher sparen) */
    if (free)
    {
-      XDestroyRegion (win->region);
+      XDestroyRegion (win->iw_Region);
 
-      win->region = XCreateRegion ();
+      win->iw_Region = XCreateRegion ();
    }
 
    /* Dann loeschen wir das ClipRect wieder indem wir ein neues
@@ -562,41 +539,15 @@ BOOL free;
 
    rect.x      = 0;
    rect.y      = 0;
-   rect.width  = win->Width;
-   rect.height = win->Height;
+   rect.width  = win->iw_Window.Width;
+   rect.height = win->iw_Window.Height;
 
    XUnionRectWithRegion (&rect, region, region);
 
    /* und setzen */
-   XSetRegion (sysDisplay, win->RPort->gc, region);
-}
+   XSetRegion (sysDisplay, GetGC(win->iw_Window.RPort), region);
+} /* intui_EndRefresh */
 
-int AutoRequest (win, body, pos, neg, f_pos, f_neg, width, height)
-WIN * win;
-struct IntuiText * body, * pos, * neg;
-ULONG f_pos, f_neg;
-SHORT width, height;
-{
-    return (TRUE);
-}
-
-void GetScreenData (scr, size, type, screen)
-struct Screen * scr, * screen;
-long size, type;
-{
-    if (type != WBENCHSCREEN)
-    {
-	movmem (scr, screen, size);
-    }
-    else
-    {
-	WB.Width = DisplayWidth(sysDisplay, sys_screen);
-	WB.Height = DisplayHeight (sysDisplay, sys_screen);
-	movmem (scr, &WB, size);
-    }
-}
-
-#endif
 
 #define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ? w->field : 0)
 #define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT,w,Width)   + gad->LeftEdge)
