@@ -13,10 +13,7 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <workbench/icon.h>
-#ifdef __AROS__
 #include <workbench/workbench.h>
-#warning workbench/workbench.h should be included also in workbench/icon.h
-#endif
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
