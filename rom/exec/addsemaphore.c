@@ -49,10 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Intialize semaphore */
-#if 0 /* already done in InitSemaphore() */
-    sigSem->ss_Link.ln_Type=NT_SIGNALSEM;
-#endif
+    /* Initialize semaphore */
     InitSemaphore(sigSem);
 
     /* Arbitrate for the semaphore list */
