@@ -158,7 +158,9 @@ struct AppGUIData * createGadgets(struct Screen *publicScreen, APTR visualInfo)
 {
  UBYTE a = 0;
  UWORD width = 0, maxWidth = 0;
- struct AppGUIData *appGUIData;
+ 
+ static struct AppGUIData static_appGUIData;
+ struct AppGUIData *appGUIData = &static_appGUIData;
  struct Gadget *gList = NULL;   // Gadget list; better set it to NULL, just in case
  struct Gadget *gadget;
  struct NewGadget newGadget;
