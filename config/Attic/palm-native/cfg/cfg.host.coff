@@ -48,7 +48,7 @@ BISON		:= bison
 # TARGET SECTION
 # -------------------------------------------------------------------------- 
 TARGET_ARCH	:= palm
-TARGET_CPU	:= m68k
+TARGET_CPU	:= m68000
 FLAVOUR		:= palmnative
 SHARED_MOD	:= yes
 SYS_INCLUDES	:= /usr/include
