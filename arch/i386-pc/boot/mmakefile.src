@@ -26,7 +26,7 @@ BOOT_TAR_FILES := \
 	Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
 	Demos \
 	Devs \
-	Fonts/fixed \
+	Fonts/fixed/8 Fonts/arial/11 Fonts/ttcourier/12 \
 	Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
 	Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
 	Libs/locale.library Libs/mathieeedoubbas.library Libs/mathieeedoubtrans.library \
