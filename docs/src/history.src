@@ -14,7 +14,7 @@ NOTE: This is beta. If you want this code, then have a look at our
 \item Added conditional build (see make.defaults)
 \item Much faster linking on Unix
 \item Makefiles are generated from templates
-\item AROS has Ressource Tracking now :-)
+\item AROS has Resource Tracking now :-)
 \end{itemize}
 
 Things we currently work on:
@@ -104,7 +104,7 @@ clean" because some headers have been added.
 \begin{itemize}
 \item The demo "\filename{openwin}" gets more and more complex
 
-\item First steps to introduce Ressource Tracking and Purify into the AmigaOS
+\item First steps to introduce Resource Tracking and Purify into the AmigaOS
 
 \item Intuition supports now Gadgets (well, only |GTYP_BOOLGADGET|
 for now)

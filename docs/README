@@ -14,7 +14,7 @@ New this time:
 - Added conditional muild (see make.defaults)
 - Much faster linking on Unix
 - Makefiles are generated from templates
-- AROS has Ressource Tracking now :-)
+- AROS has Resource Tracking now :-)
 
 HOW TO USE THIS
 ---------------
