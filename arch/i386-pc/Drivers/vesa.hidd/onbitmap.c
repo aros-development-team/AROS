@@ -93,13 +93,19 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	    
 	data->bytesperpix = multi;
 	data->data = &XSD(cl)->data;
-	data->bytesperline = data->data->bytesperline;
 	data->mouse = &XSD(cl)->mouse;
-	data->VideoData = data->data->framebuffer;
 
+    #if BUFFERED_VRAM
+	data->bytesperline = width * multi;
+    	data->VideoData = AllocVec(width * height * multi, MEMF_PUBLIC | MEMF_CLEAR);
+    #else
+	data->bytesperline = data->data->bytesperline;
+	data->VideoData = data->data->framebuffer;
+    #endif
+    
 	/* We should be able to get modeID from the bitmap */
 	OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-	if (modeid != vHidd_ModeID_Invalid)
+	if ((modeid != vHidd_ModeID_Invalid) && (data->VideoData))
 	{
 	    /*
 	       Because of not defined BitMap_Show method show 
@@ -123,7 +129,13 @@ STATIC VOID MNAME(dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
     EnterFunc(bug("VesaGfx.BitMap::Dispose()\n")); 
+
+#if BUFFERED_VRAM
+    if (data->VideoData)
+    	FreeVec(data->VideoData);
+#endif
     OOP_DoSuperMethod(cl, o, msg);
+
     ReturnVoid("VesaGfx.BitMap::Dispose");
 }
 
@@ -171,7 +183,9 @@ OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
     OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_vesagfxonbmclass(xsd=%p)\n", xsd));
+    
     D(bug("Metattrbase: %x\n", MetaAttrBase));
+    
     if(MetaAttrBase)
     {
 	D(bug("Got attrbase\n"));
@@ -203,13 +217,18 @@ OOP_Class *init_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
 void free_vesagfxonbmclass(struct VesaGfx_staticdata *xsd)
 {
     EnterFunc(bug("free_vesagfxonbmclass(xsd=%p)\n", xsd));
+    
     if(xsd)
     {
 	OOP_RemoveClass(xsd->onbmclass);
+	
 	if(xsd->onbmclass)
 	    OOP_DisposeObject((OOP_Object *) xsd->onbmclass);
+	    
 	xsd->onbmclass = NULL;
+	
 	OOP_ReleaseAttrBases(attrbases);
     }
+    
     ReturnVoid("free_vesagfxonbmclass");
 }

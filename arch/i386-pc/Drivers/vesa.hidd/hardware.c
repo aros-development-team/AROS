@@ -13,8 +13,10 @@
 #include <aros/bootloader.h>
 #include <proto/bootloader.h>
 
-#include "hardware.h"
+
+#include "bitmap.h"
 #include "vesagfxclass.h"
+#include "hardware.h"
 
 #undef SysBase
 extern struct ExecBase *SysBase;
@@ -77,3 +79,38 @@ BOOL initVesaGfxHW(struct HWData *data)
     bug("[Vesa] HwInit: No Vesa information from the bootloader. Failing\n");
     return FALSE;
 }
+
+
+#if BUFFERED_VRAM
+void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2)
+{
+    UBYTE *src, *dst;
+    ULONG srcmod, dstmod;
+    LONG x, y, w, h;
+
+    x1 *= data->bytesperpix;
+    x2 *= data->bytesperpix; x2 += data->bytesperpix - 1;
+    
+    x1 &= ~3;
+    x2 = (x2 & ~3) + 3;
+    w = (x2 - x1) + 1;
+    h = (y2 - y1) + 1;
+    
+    srcmod = (data->bytesperline - w);
+    dstmod = (data->data->bytesperline - w);
+   
+    src = data->VideoData + y1 * data->bytesperline + x1;
+    dst = data->data->framebuffer + y1 * data->data->bytesperline + x1;
+    
+    for(y = 0; y < h; y++)
+    {
+    	for(x = 0; x < w / 4; x++)
+	{
+	    *((ULONG *)dst)++ = *((ULONG *)src)++;
+	}
+	src += srcmod;
+	dst += dstmod;
+    }
+    
+}
+#endif

@@ -3,7 +3,8 @@
 
 #include <exec/types.h>
 
-struct HWData {
+struct HWData
+{
     APTR	framebuffer;
     ULONG	fbsize;
     ULONG	width;
@@ -21,5 +22,9 @@ struct HWData {
 };
 
 BOOL initVesaGfxHW(struct HWData *);
+
+#if BUFFERED_VRAM
+void vesaRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
+#endif
 
 #endif
