@@ -13,17 +13,7 @@ AROS : checkerr
 	@$(NOP)
 
 #MM
-setup : $(CPAK) $(ARCHTOOL) $(FLEXCAT)
-
-
-$(CPAK):
-	$(MAKE) -C tools/cpak TOP=$(TOP)
-
-$(ARCHTOOL):
-	$(MAKE) -C tools/archtools TOP=$(TOP)
-
-$(FLEXCAT):
-	$(MAKE) -C tools/FlexCat TOP=$(TOP)
+setup :
 
 #MM- install : install-$(ARCH)-$(CPU)
 

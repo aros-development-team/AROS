@@ -1,61 +1,109 @@
+#   Copyright (C) 2000 AROS
+#   $Id$
 #
-#	Copyright (C) 1995-1998 AROS
-#	$Id$
+#   Desc: host.cfg - an autoconf output file for make variables.
 #
-#	Desc: Makefile configuration for AROS (from autoconf)
-#
-ARCH	:= @aros_arch@
-CPU	:= @aros_cpu@
-HOST_ARCH := @host_arch@
-HOST_CPU  := @host_cpu@
-FLAVOUR := @aros_flavour@
-SHELL	:= @aros_shell@
-GFXSYSTEM := @aros_gfxsystem@
 
-SYS_CC	:= @aros_cc@
-SYS_AS	:= @aros_as@
-HOST_CC := @aros_host_cc@
-HOST_AS := @aros_host_as@
+# -------------------------------------------------------------------------- 
+# HOST SECTION
+# --------------------------------------------------------------------------
+HOST_ARCH	:= @aros_host_arch@
+HOST_CPU	:= @aros_host_cpu@
 
-COMMON_CFLAGS	:= @aros_common_cflags@
-COMMON_AFLAGS	:= @aros_common_aflags@
-APP_CFLAGS	:= @aros_appcflags@
-ILDFLAGS	:= @aros_ildflags@
-SYS_INCLUDES	:= @aros_sysincludes@
-GENMAP		:= @aros_genmap@
+HOST_CC		:= @aros_host_cc@
+HOST_LD		:= @aros_host_ld@
+HOST_CFLAGS	:= @aros_host_cflags@
+HOST_LDFLAGS	:= @aros_host_ldflags@
+HOST_DEBUG	:= @aros_host_debug@
+HOST_MKDEP	:= @aros_host_mkdep@
+MKARGS		:= @aros_host_mkargs@
+
+HOST_AR		:= @HOST_AR@
+HOST_RANLIB	:= @HOST_RANLIB@
+
+MMAKE		:= @MMAKE@
+AWK		:= @AWK@
+RM		:= @RM@
+CP		:= @CP@
+MV		:= @MV@
+ECHO		:= @ECHO@
+MKDIR		:= @MKDIR@
+TOUCH		:= @TOUCH@
+PYTHON		:= @PYTHON@
+GNUPLOT		:= @GNUPLOT@
+NOP		:= @NOP@
+FOR		:= @FOR@
+IF		:= @IF@
+TEST		:= @TEST@
+
+# -------------------------------------------------------------------------- 
+# TARGET SECTION
+# -------------------------------------------------------------------------- 
+TARGET_ARCH	:= @aros_target_arch@
+TARGET_CPU	:= @aros_target_cpu@
+FLAVOUR		:= @aros_flavour@
+SHARED_MOD	:= @aros_shared_default@
+SYS_INCLUDES	:= @aros_target_incl@
+
+TARGET_CC	:= @TARGET_CC@
+TARGET_AS	:= @TARGET_AS@
+STATIC_LD	:= @STATIC_LD@
+SHARED_LD	:= @SHARED_LD@
+KERNEL_LD	:= @KERNEL_LD@
+GENMAP		:= @aros_target_genmap@
+
+TARGET_CFLAGS	:= @aros_target_cflags@
+TARGET_AFLAGS	:= @aros_target_aflags@
+TARGET_LDFLAGS	:= @aros_target_ldflags@
+STATIC_CFLAGS	:= @aros_static_cflags@
+STATIC_AFLAGS	:= @aros_static_aflags@
+STATIC_LDFLAGS	:= @aros_static_ldflags@
+SHARED_CFLAGS	:= @aros_shared_cflags@
+SHARED_AFLAGS	:= @aros_shared_aflags@
+SHARED_LDFLAGS	:= @aros_shared_ldflags@
+KERNEL_LDFLAGS	:= @aros_kernel_ldflags@
 DEBUG_CFLAGS	:= @aros_debug_cflags@
+DEBUG_AFLAGS	:= @aros_debug_aflags@
+DEBUG_LDFLAGS	:= @aros_debug_ldflags@
+
 GUI_LIBDIR	:= @aros_gui_libdir@
 GUI_LDFLAGS	:= @aros_gui_ldflags@
 GUI_LIBFLAGS	:= @aros_gui_libflags@
 GUI_INCDIR	:= @aros_gui_incdir@
-GUI_CCFLAGS	:= @aros_gui_ccflags@
-SHELL_LDFLAGS	:= @aros_shell_ldflags@
+GUI_CFLAGS	:= @aros_gui_ccflags@
 
-ARCHDIR  := $(TOP)/bin/$(ARCH)-$(CPU)
-TOOLDIR  := $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
+AR		:= @AR@
+RANLIB		:= @RANLIB@
+NM		:= @NM@
+STRIP		:= @STRIP@
+OBJCOPY		:= @OBJCOPY@
+OBJDUMP		:= @OBJDUMP@
 
-RANLIB	 := @RANLIB@
-AWK	 := @AWK@
-RM	 := @RM@
-CP	 := @CP@
-MV	 := @MV@
-ECHO	 := @ECHO@
-MKDIR	 := @MKDIR@
-TOUCH	 := @TOUCH@
-AR	 := @AR@
-SORT	 := @SORT@
-UNIQ	 := @UNIQ@
-FOR	 := @FOR@
-IF	 := @IF@
-NOP	 := @NOP@
-CAT	 := @CAT@
-TEST	 := @TEST@
-STRIP	 := @STRIP@
-CHECKUDS := @aros_check_uds@
-LITE	 := @LITE@
-MKDEPEND := $(TOP)/scripts/mkdep
-MMAKE    := $(TOOLDIR)/mmake
-ARCHTOOL := $(TOOLDIR)/archtool
-CPAK     := $(TOOLDIR)/cpak
-GENMF    := $(TOOLDIR)/genmf
-FLEXCAT  := $(TOOLDIR)/FlexCat
+# -------------------------------------------------------------------------- 
+# COMPATABILITY SECTION - WILL BE REMOVED IN THE FUTURE
+# --------------------------------------------------------------------------
+
+SORT		:= @SORT@
+UNIQ		:= @UNIQ@
+LITE		:= @LITE@
+
+ARCH		:= $(TARGET_ARCH)
+CPU		:= $(TARGET_CPU)
+GFXSYSTEM	:= gfxhidd
+CC		:= $(TARGET_CC)
+AS		:= $(TARGET_AS)
+SYS_CC		:= $(TARGET_CC)
+SYS_AS		:= $(TARGET_AS)
+COMMON_CFLAGS	:= $(TARGET_CFLAGS)
+COMMON_AFLAGS	:= $(TARGET_AFLAGS)
+APP_CFLAGS	:=
+ILDFLAGS	:= $(TARGET_LDFLAGS)
+SHELL_LDFLAGS	:= $(KERNEL_LDFLAGS)
+CHECKUDS	:= $(NM)
+
+# These should never have been in this file in the first place,
+# they belong in config/make.cfg
+ARCHDIR		:= $(TOP)/bin/$(ARCH)-$(CPU)
+MKDEPEND	:= $(TOP)/scripts/mkdep
+TOOLDIR		:= $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)/tools
+GENMF		:= $(TOOLDIR)/genmf

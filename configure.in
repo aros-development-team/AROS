@@ -4,18 +4,28 @@ dnl
 dnl Desc: Autoconf source for configuration file
 dnl Lang: english
 
+#TODO
+# method of getting shared/non-shared ld/ar tool for target.
+# ar, ranlib, strip, nm for target
+
+
+# ------------------------------------------------------------------------
+# Here starts the first section of the configure.in file.
+# ------------------------------------------------------------------------
+
 AC_INIT(mmakefile)
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 
-dnl Check what host we are running on.
-dnl If a target is not suggested, we use this one.
+# Check what host we are running on.
+# If a target is not suggested, we use this one.
 AC_CANONICAL_HOST
 
-dnl Check for the AROS style target. We simply don't call
-dnl AC_CANONICAL_SYSTEM for now.
-dnl
-dnl Don't strip the version of the target yet, it might be
-dnl useful on some systems.
+# The AROS target is slightly different to the normal GNU style
+# format. We don't have the middle part, and we reverse the order
+# of the $(CPU) and $(OS) bits.
+#
+# Don't strip the version of the target yet, it might be
+# useful on some systems.
 
 AC_MSG_CHECKING([for AROS style target])
 AC_CACHE_VAL(aros_cv_target,[aros_cv_target=$target])
@@ -23,369 +33,342 @@ target=`eval echo '$''{'aros_cv_target'}'`
 
 if test $target = "NONE" ; then
     target=$host_os-$host_cpu
-    cross_compile=false
+    cross_compile=no
 else
-    cross_compile=true
+    cross_compile=yes
 fi
 AC_MSG_RESULT($target)
 
-# Specify alternate system include path.
-AC_MSG_CHECKING(for the system include path)
-AC_ARG_ENABLE(includes,
-[  --enable-includes=dir   Alternate system include directory],
-[aros_sysincludes=$enable_includes], [aros_sysincludes=/usr/include])
-
-AC_CACHE_VAL(aros_cv_includepath,[aros_cv_includepath=$aros_sysincludes])
-aros_sysincludes=`eval echo '$''{'aros_cv_includepath'}'`
-
-AC_MSG_RESULT($aros_sysincludes)
-
-
-dnl Specify an alternate location for the cross-compiling binutils
-AC_MSG_CHECKING(for the special binutils path)
-AC_ARG_ENABLE(crosspath,
-[ --enable-crosspath=path Specify path to cross compiling tools],
-[ aros_crosspath=$enable_crosspath ], [ aros_crosspath=none ])
-
-AC_CACHE_VAL(aros_cv_crosspath,[aros_cv_crosspath=$aros_crosspath])
-aros_crosspath=`eval echo '$''{'aros_cv_crosspath'}'`
-
-AC_MSG_RESULT($aros_crosspath)
-
-dnl Gfx system used for gfx output: x11 or HIDD. defaults to HIDD
-AC_MSG_CHECKING(for using gfxhidd for gfx output)
-
-dnl Get cache value
-AC_CACHE_VAL(aros_cv_gfxhidd,[true])
-
-dnl Get command line parameter if available
-AC_ARG_ENABLE(gfxhidd,
-[  --enable-gfxhidd	Use Graphics HIDD system for graphics output],
-[
-  dnl Command line parameter overrides cache
-  aros_gfxhidd=$enable_gfxhidd
-],
-[
-  dnl Take cache value or 'yes' if empty
-  aros_gfxhidd=${aros_cv_gfxhidd-yes}
-])
-
-dnl Set new value for cache
-aros_cv_gfxhidd=$aros_gfxhidd
-
-AC_MSG_RESULT($aros_gfxhidd)
-
-dnl We use the cache to keep the values of the above in case we rerun
-dnl configure later without arguments
-dnl Check for a compiler.
-AC_PROG_CC
-
-dnl Check what programs we have available, also look for X
-AC_PATH_X
-AC_PROG_AWK
-AC_PROG_MMAKE
-
-dnl Do the defaults for the substituted variables.
-aros_cc="$CC"
-aros_as="$CC"
-aros_host_cc="gcc"              # this is for creating locally run programs
-aros_host_as="gcc"              # ditto, but probably not needed
-aros_common_cflags=""
-aros_flavour="emulation"
-aros_shell_ldflags=""
-aros_genmap="-Xlinker -Map -Xlinker"
-aros_ildflags="-nostartfiles -nostdlib"
-aros_debug_cflags="-g -O0 -DADEBUG=1"
-aros_mkdepend="makedepend"
-aros_gfxsystem="x11"
-
-dnl These two are not defined unless you use them. This way they
-dnl don't get written to the output file.
-#aros_shared_ar
-#aros_shared_cflags
-
-dnl Default binutils programs have a _prog and _args
-nm_prog="nm"
-nm_args="-ul"
-strip_prog="true"       # Alternatively you could use "strip" here
-strip_args=""
-
-dnl Start with the host O/S - These should only be build options.
-dnl You MUST not change any options which are relevant to the
-dnl target. That should be done down below...
-dnl
-dnl Of special interest is makedepend, if your makedepend is called
-dnl something different, you should specify it here, but you shouldn't
-dnl give it any args yet (unless they are necessary to run it).
-dnl
-dnl Note that if you change $aros_cc or $aros_as you should append to the
-dnl variable, not overwrite it, otherwise you will loose the CC changes.
-
-case "$host_os" in
-    linux*)
-	aros_shared_ar="gcc"
-	aros_common_aflags="-x assembler-with-cpp"
-	aros_cc="$aros_cc -pipe"
-	aros_as="$aros_as -pipe"
-	;;
-    freebsd*)
-	# Only do this if we are not cross compiling...
-	if test "x$cross_compile" = "xfalse" ; then
-	    nm_args="-u"        # FreeBSD nm doesn't do -l
-	fi
-	aros_cc="$aros_cc -pipe"
-	aros_as="$aros_as -pipe"
-	aros_common_aflags="-x assembler-with-cpp"
-	aros_shared_ar="gcc"
-	;;
-    amiga*)
-	SORT=/gg/bin/sort
-	TEST=/gg/bin/test
-	UNIQ=/gg/bin/uniq
-	FOR=for
-	TOUCH=/gg/bin/touch
-	aros_common_aflags="-x assembler-with-cpp"
-	;;
-    *)
-	AC_MSG_ERROR([Unsupported host architecture $host])
-	;;
-esac
-
-dnl Set the ARCH field - this may be changed by a --enable-target argument
+# Parse the target field into something useful.
 changequote(<<,>>)
 target_os=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\1/'`
 target_cpu=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\2/'`
 changequote([,])
 
-dnl Set up the system for the target that AROS is being built for. Really
-dnl You should append to the variables here.
+dnl --------------------------------------------------------------------
+dnl Host Configuration Section
+dnl --------------------------------------------------------------------
+dnl
+dnl The idea here is to find out all the information we need about the
+dnl host. This means things like tools for building directory structures
+dnl copying files around and the like. 
 
-case "$target_os" in
-    linux*)
-	aros_arch="linux"
-	aros_common_cflags="-Wall -O0"
-	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
-	case "$target_cpu" in
-	*m68k*)
-	    aros_flavour="emulcompat"
-	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
-	    aros_shared_ar="$aros_shared_ar -shared -Wl,-T,\$(TOP)/config/linux/m68k/script.so -o"
-	    aros_shell_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
-	    aros_cpu="m68k"
-	    ;;
-	*i?86*)
-	    aros_flavour="emulation"
-	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386 -D__linux__"
-	    aros_shared_ar="$aros_shared_ar -shared -o"
-	    aros_shell_ldflags="-Xlinker -rpath -Xlinker ./lib"
-	    aros_cpu="i386"
-	    ;;
-	*)
-	    echo "Unknown CPU for Linux --- $target_cpu"
-	    ;;
-	esac
-	aros_shared_cflags="-fPIC"
-	aros_shared_default="yes"
-	;;
+# The first step is to find the host binaries.
+# Check for a compiler.
+AC_PROG_CC
 
-    native*)
-	aros_arch="native"
-	aros_common_cflags="-Wall -O2"
-	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
-	case "$target_cpu" in
-	*i?86*)
-	    aros_flavour="standalone"
-	    aros_mkdepend="aros_mkdepend -D__GNUC__ -Di386"
-	    aros_shared_ar="$aros_shared_ar -shared -o"
-	    aros_shell_ldflags=""
-	    aros_cpu="i386"
-	    aros_shared_default="no"
-	    ;;
-	*)
-	    echo "Unknown CPU for native --- $target_cpu"
-	    ;;
-	esac
-	;;
+# Check for X and a few other programs.
+AC_PROG_AWK
+AROS_PROG(MMAKE,mmake)
 
-    freebsd*)
-	aros_arch="freebsd"
-	aros_cpu="i386"
-	aros_flavour="emulation"
-	aros_common_cflags="-Wall -O2"
-	aros_ildflags="-nostartfiles -nostdlib -Wl,-r,-n,-e,_entry"
-	aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386"
-	aros_genmap="-Xlinker -Map -Xlinker" # FreeBSD doesn't support maps
-	aros_shared_ar="$aros_shared_ar -shared -o"
-	aros_shared_cflags="-fPIC"
-	aros_shared_default="yes"
-	strip_args="-x"
+# Perform some default variable assignments. Note all of these will be
+# Regenerated from the script, so there is no need to cache them.
+aros_host_cc="$CC"
+aros_host_ld="$CC"
+aros_host_cflags=
+aros_host_ldflags=
+aros_host_debug="-g -O0"
+aros_host_mkdep="\$(TOP)/scripts/mkdep"
+aros_host_mkargs="--no-print-directory"
+aros_host_incl="/usr/include"
 
-	# If we have bash, use that, otherwise, /bin/sh
-	AC_PATH_PROG(aros_shell,bash,[/bin/sh])
-	;;
-
-    amiga*)
-	aros_arch="amiga"
-	case "$target_cpu" in
-	*m68k*)
-	    aros_cpu="m68k"
-	    aros_flavour="nativecompat"
-	    # strip_prog=strip	# We actually strip binaries here
-
-	    aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -m68881 -fomit-frame-pointer -fbuiltin -ffreestanding"
-	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
-	    aros_common_aflags="-m68060 -x assembler-with-cpp"
-	    aros_shared_default="no"
-	    ;;
-	*ppc*)
-	    aros_cpu="ppc"
-	    aros_flavour="native"
-	    strip_prog=strip	# We actually strip binaries here
-
-	    aros_common_cflags="-Wall -Wno-uninitialized -O2 -mpowerpc -mcpu=603e -fomit-frame-pointer -fbuiltin -ffreestanding"
-	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
-	    aros_common_aflags="-m603e -x assembler-with-cpp"
-	    aros_shared_default="no"
-	    ;;
-	*)
-	    echo "Unknown CPU for Amiga --- $target_cpu"
-	    ;;
-	esac
-	;;
-    *)
-	AC_MSG_ERROR([Unsupported target architecture '$target'])
-	;;
-esac
-
-
-dnl Now we simplify the host_os and host_cpu for the local tools when
-dnl cross-compiling or sharing the tree with different architectures.
+# This is the main host configuration section. It is where the host
+# can change the values of any variables it needs to change. We do
+# not look at anything that compiles to the target yet, we'll get
+# to that later.
 
 case "$host_os" in
     linux*)
-	host_arch="linux"
+	aros_host_arch="linux"
+	aros_host_cc="$aros_host_cc -pipe"
 	case "$host_cpu" in
-	*m68k*)
-	    host_cpu="m68k"
-	    ;;
-	*i?86*)
-	    host_cpu="i386"
-	    ;;
-	*)
-	    echo "Unknown CPU for Linux --- $host_cpu"
-	    ;;
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *m68k*)
+		aros_host_cpu="m68k"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+        ;;
+
+    freebsd*)
+	aros_host_cc="$aros_host_cc -pipe"
+	aros_host_arch="freebsd"
+	aros_host_cpu="i386"
+	;;
+
+    amiga*)
+	aros_host_arch="amiga"
+	SORT="/gg/bin/sort"
+	TEST="/gg/bin/test"
+	UNIQ="/gg/bin/uniq"
+	FOR="for"
+	TOUCH="/gg/bin/touch"
+	case "$host_cpu" in
+	    *m68k*)
+		aros_host_cpu="m68k"
+		;;
+	    *powerpc*)
+		aros_host_cpu="ppc"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+        ;;
+    *)
+	AC_MSG_ERROR([Unsupported host architecture $host])
+	;;
+esac
+
+AROS_PROG(HOST_AR,[ar],[cru])
+AROS_PROG(HOST_RANLIB,ranlib)
+
+AROS_PROG(RM,[rm],[-rf])
+AROS_PROG(CP,[cp])
+AROS_PROG(MV,[mv])
+AROS_PROG(ECHO,[echo])
+AROS_PROG(MKDIR,[mkdir],[-p])
+AROS_PROG(TOUCH,[touch])
+AROS_PROG(SORT,[sort])
+AROS_PROG(UNIQ,[uniq])
+AROS_PROG(NOP,[true])
+AROS_PROG(LITE,[lite])
+AROS_PROG(PYTHON,[python])
+AROS_PROG(GNUPLOT,[gnuplot])
+
+FOR=for
+IF=if
+TEST=test
+AC_SUBST(FOR)
+AC_SUBST(IF)
+AC_SUBST(TEST)
+
+dnl --------------------------------------------------------------------
+dnl Target Configuration Section
+dnl --------------------------------------------------------------------
+dnl
+dnl The target configuration section is responsible for setting up all
+dnl the paths for includes, and tools required to build AROS to some
+dnl particular target.
+
+# Find all the tools we need to compile. This could be cross-compiling
+# though! If that is the case we use the GNU form of the target and
+# simply add this to the front of the binary name. This is rather simple,
+# but it should work under most circumstances.
+#
+# The default tools are to use the same as the host, but only if the
+# host and target CPU are the same. With GCC this is normally enough.
+#
+
+if test "$cross_compile" = "no" ; then 
+    aros_target_cc="$aros_host_cc"
+    aros_target_as="$aros_host_cc"
+    aros_shared_ld="$aros_host_ld"
+    aros_static_ld="$aros_host_ld"
+    aros_kernel_ld="$aros_host_ld"
+
+    aros_target_mkdep="$aros_host_mkdep"
+    aros_target_incl_def="$aros_host_incl"
+else
+    AC_MSG_ERROR([cross compiling is not yet supported])
+fi
+
+# The default tools.
+aros_target_ar="ar"
+aros_target_ar_flags="cr"
+aros_target_nm="nm"
+aros_target_nm_flags="-ul"
+aros_target_objcopy="objcopy"
+aros_target_objdump="objdump"
+aros_target_ranlib="ranlib"
+aros_target_strip="true"
+
+# It is necessary to clear the include and link paths for target
+# commands. This should help clear up problems when cross compiling.
+# XXX We don't do this yet.
+aros_target_cflags="-Wall -O0"
+aros_target_aflags="-Wall -x assembler-with-cpp"
+aros_target_ldflags="-nostartfiles -nostdlib -Wl,-i"
+
+aros_shared_default=yes
+
+aros_shared_cflags="-fPIC"
+aros_shared_aflags=""
+aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+aros_static_cflags=""
+aros_static_aflags=""
+aros_static_ldflags=""
+aros_kernel_ldflags="-Wl,-rpath,./lib"
+
+# These are the flags to pass when compiling debugged programs
+aros_debug_cflags="-g -O0 -DADEBUG=1"
+aros_debug_aflags=""
+aros_debug_ldflags="-g"
+aros_target_genmap="-Wl,-Map -Xlinker"
+
+# This is the target configuration switch.
+
+case "$target_os" in
+    linux*)
+	aros_target_arch="linux"
+	case "$target_cpu" in
+	    *m68k*)
+		aros_cpu="m68k"
+		aros_flavour="emulcompat"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
+		aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
+		aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
+		;;
+	    *i?86*)
+		aros_cpu="i386"
+		aros_flavour="emulation"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
+		;;
+	    *)
+		AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
+		;;
+	esac
+    ;;
+
+    native)
+	aros_target_arch="native"
+	aros_target_cflags="-Wall -O2"
+	aros_shared_default="no"
+
+	case "$target_cpu" in
+	    *i?86*)
+		aros_target_cpu="i386"
+		aros_flavour="standalone"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_kernel_ldflags=""
+		;;
+	    *)
+		AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
+		;;
 	esac
 	;;
 
     freebsd*)
-	host_arch="freebsd"
-	host_cpu="i386"
+	aros_target_arch="freebsd"
+	aros_target_cpu="i386"
+	aros_flavour="emulation"
+	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+	strip_args="-x"
 	;;
 
     amiga*)
-	host_arch="amiga"
-	case "$host_cpu" in
-	*m68k*)
-	    host_cpu="m68k"
-	    ;;
-	*powerpc*)
-	    host_cpu="ppc"
-	    ;;
-	*)
-	    echo "Unknown CPU for Amiga --- $host_cpu"
-	    ;;
-	esac
+	aros_target_arch="amiga"
+	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
+	aros_shared_default="no"
+
+	aros_target_cflags="-Wall -O2 -fomit-frame-pointer -fbuiltin -ffreestanding"
+
+	case "$target_cpu" in
+	    *m68k*)
+		aros_target_cpu="m68k"
+		aros_flavour="nativecompat"
+		aros_target_cflags="$aros_target_cflags -m68020 -m68881"
+		aros_target_aflags="$aros_target_aflags -m68060"
+		;;
+	    *ppc*)
+		aros_cpu="ppc"
+		aros_flavour="native"
+		aros_target_strip="strip"
+		aros_target_cflags="$aros_target_cflags -mpowerpc -mcpu=603e"
+		aros_target_aflags="$aros_target_aflags -m603e"
+		;;
+	    *)
+		AC_MSG_ERROR("Unknown CPU for Amiga $target_cpu")
+		;;
+        esac
 	;;
+
     *)
-	AC_MSG_ERROR([Unsupported target architecture '$host'])
+	AC_MSG_ERROR([Unsupported target architecture $target])
 	;;
 esac
 
-dnl What gfxsystem to use
+# Find the tools that we need for the target - this could be quite
+# expensive, but we shall try it anyway.
+AROS_TOOL_CC(TARGET_CC,$aros_target_cc)
+AROS_TOOL_CC(TARGET_AS,$aros_target_as)
+AROS_TOOL_CC(SHARED_LD,$aros_shared_ld)
+AROS_TOOL_CC(STATIC_LD,$aros_static_ld)
+AROS_TOOL_CC(KERNEL_LD,$aros_kernel_ld)
 
-echo "GFXHIDD: $aros_gfxhidd"
-case "$aros_gfxhidd" in
-    yes) aros_gfxsystem="gfxhidd" ;;
-    no)	 aros_gfxsystem="x11" ;;
-    *)	 aros_gfxsystem="x11" ;;
-esac
-    
-dnl if test "$aros_gfxhidd"="yes" ; then
-dnl      aros_gfxsystem="gfxhidd"
-dnl fi    
+AROS_TOOL(AR,$aros_target_ar,$aros_target_ar_flags)
+AROS_TOOL(RANLIB,$aros_target_ranlib,$aros_target_ranlib_flags)
+AROS_TOOL(NM,$aros_target_nm,$aros_target_nm_flags)
+AROS_TOOL(STRIP,$aros_target_strip,$aros_target_strip_flags)
+AROS_TOOL(OBJDUMP,$aros_target_objdump)
+AROS_TOOL(OBJCOPY,$aros_target_objcopy)
 
-dnl This allows us to see if a program has been defined, if so use
-dnl that version, otherwise use a version with a specific path.
-AC_DEFUN(AROS_DEFPROG,[
-if test -z "$$1"; then
-    $1="$2"
-fi
-AC_SUBST($1)])
+# Find X
+AC_PATH_X
 
-dnl AROS_CROSSPROG(var,prog,default,extra)
-dnl Will check the value of $aros_crosspath for a cross-compiling file
-dnl and will not allow it to be in the normal path. Will also add the
-dnl args in extra to the command if they exist.
-dnl
-AC_DEFUN(AROS_CROSSPROG,[
-if test -z "$$1"; then
-    AC_PATH_PROG($1, $2, $3, $aros_crosspath )
-    ifelse($4, ,, $1="$$1 $4")
-fi
-AC_SUBST($1)])
+# Find the system include path. We can suggest that an alternative is
+# used if we don't get it correct. The default is to use /usr/include.
+# Which is set in the aros_target_incl_def variable.
 
-dnl These are the default programs that we use, we define
-dnl these only if somebody hasn't determined one before...
+AROS_CACHE_CHECK(for the system include path,target_incl,[
+AC_ARG_ENABLE(includes,
+[  --enable-includes=dir  Alternative system include directory],
+[aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
+])
 
-AROS_DEFPROG(RM,[rm -rf])
-AROS_DEFPROG(CP,[cp])
-AROS_DEFPROG(MV,[mv])
-AROS_DEFPROG(ECHO,[echo])
-AROS_DEFPROG(MKDIR,[mkdir -p])
-AROS_DEFPROG(TOUCH,[touch])
-AROS_DEFPROG(SORT,[sort])
-AROS_DEFPROG(UNIQ,[uniq])
-AROS_DEFPROG(FOR,[for])
-AROS_DEFPROG(IF,[if])
-AROS_DEFPROG(NOP,[true])
-AROS_DEFPROG(CAT,[cat])
-AROS_DEFPROG(TEST,[test])
-AROS_DEFPROG(aros_mkdepend,[makedepend])
-AROS_DEFPROG(aros_shell,[/bin/sh])
+dnl --------------------------------------------------------------------
+dnl Configuration Output Section
+dnl --------------------------------------------------------------------
 
-AC_PATH_PROG(LITE,lite)
-
-dnl The following are dependant upon whether we are cross-compiling
-AROS_CROSSPROG(STRIP,strip,$strip_prog,$strip_args)
-AROS_CROSSPROG(AR,ar,[ar],[r])
-AROS_CROSSPROG(RANLIB,ranlib,[ranlib])
-AROS_CROSSPROG(aros_check_uds,nm,$nm_prog,$nm_args)
-
+# Generic
 AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
-AC_SUBST(aros_cc)
-AC_SUBST(aros_as)
+
+# Host related
+AC_SUBST(aros_host_arch)
+AC_SUBST(aros_host_cpu)
 AC_SUBST(aros_host_cc)
-AC_SUBST(aros_host_as)
-AC_SUBST(host_arch)
-AC_SUBST(host_cpu)
-AC_SUBST(aros_common_cflags)
-AC_SUBST(aros_common_aflags)
+AC_SUBST(aros_host_ld)
+AC_SUBST(aros_host_cflags)
+AC_SUBST(aros_host_ldflags)
+AC_SUBST(aros_host_debug)
+AC_SUBST(aros_host_mkdep)
+AC_SUBST(aros_host_mkargs)
+
+# Target Related
+AC_SUBST(aros_target_arch)
+AC_SUBST(aros_target_cpu)
+AC_SUBST(aros_target_incl)
+AC_SUBST(aros_shared_default)
+
+AC_SUBST(aros_target_cflags)
+AC_SUBST(aros_target_aflags)
+AC_SUBST(aros_target_ldflags)
+AC_SUBST(aros_static_cflags)
+AC_SUBST(aros_static_aflags)
+AC_SUBST(aros_static_ldflags)
+AC_SUBST(aros_shared_cflags)
+AC_SUBST(aros_shared_aflags)
+AC_SUBST(aros_shared_ldflags)
+AC_SUBST(aros_kernel_ldflags)
 AC_SUBST(aros_debug_cflags)
-AC_SUBST(aros_appcflags)
-AC_SUBST(aros_ildflags)
-AC_SUBST(aros_shell_ldflags)
-AC_SUBST(aros_sysincludes)
-AC_SUBST(aros_genmap)
+AC_SUBST(aros_debug_aflags)
+AC_SUBST(aros_debug_ldflags)
+AC_SUBST(aros_target_genmap)
+
 AC_SUBST(aros_gui_libdir)
 AC_SUBST(aros_gui_ldflags)
 AC_SUBST(aros_gui_libflags)
 AC_SUBST(aros_gui_incdir)
 AC_SUBST(aros_gui_ccflags)
-AC_SUBST(aros_gfxsystem)
-AC_SUBST(aros_shared_default)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
@@ -398,14 +381,6 @@ nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB" ;;
 esac
-
-if test -z "$aros_common_aflags" ; then
-    aros_common_aflags="${aros_common_cflags}"
-fi
-
-if test -z "$aros_appcflags" ; then
-    aros_appcflags="${aros_common_cflags}"
-fi
 
 if test -z "$aros_gui_basedir" ; then
     dnl Use X as the default GUI
@@ -440,8 +415,8 @@ else
     fi
 fi
 
-if test ! -d bin/${aros_arch}-${aros_cpu}/AROS/include/aros ; then
-    ${MKDIR} bin/${aros_arch}-${aros_cpu}/AROS/include/aros
+if test ! -d bin/${aros_target_arch}-${aros_target_cpu}/AROS/include/aros ; then
+    ${MKDIR} bin/${aros_target_arch}-${aros_target_cpu}/AROS/include/aros
 fi
 
 AC_OUTPUT(Makefile config/config.h config/host.cfg mmake.config
@@ -449,16 +424,19 @@ AC_OUTPUT(Makefile config/config.h config/host.cfg mmake.config
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
+
+#XXX compatability...
+aros_shared_ar="$aros_shared_ld $aros_shared_ldflags -o"
+
 if test -n "$aros_shared_cflags" ; then
     echo "SHARED_CFLAGS := $aros_shared_cflags" >> config/host.cfg
     echo "SHARED_AR := $aros_shared_ar" >> config/host.cfg
 fi
 
-# We make sure that we don't change config.h unless it has really changed.
 # Sometimes, configure will not create config/config.h; in that case,
 # assume that it has not changed.
 if test -f config/config.h ; then
-    out=bin/$aros_arch-$aros_cpu/AROS/include/aros/config.h
+    out=bin/$aros_target_arch-$arosi_target_cpu/AROS/include/aros/config.h
     if cmp -s "$out" "config/config.h"; then
         echo "config/config.h is unchanged."
         rm $out
@@ -470,4 +448,3 @@ if test -f config/config.h ; then
         mv config/config.h $out
     fi
 fi
-

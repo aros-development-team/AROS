@@ -7,51 +7,79 @@ default: all
 TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
 
-all: makedirs mmake
-	$(MMAKE) AROS.AROS
+all: makedirs tools mmake
+	@$(MMAKE) AROS.AROS
 
 docs: mmake
-	$(MMAKE) AROS.docs
+	@$(MMAKE) AROS.docs
 
 all-docs: mmake
-	$(MMAKE) AROS.all-docs
+	@$(MMAKE) AROS.all-docs
 
 makedirs:
 	@$(RM) $(TOP)/errors
-	@$(FOR) dir in $(BINDIR) $(GENDIR) $(TOOLDIR) ; do \
+	@$(FOR) dir in $(AROSDIR) $(GENDIR) $(TOOLDIR) ; do \
 	    $(IF) [ ! -d $$dir ]; then \
-		$(ECHO) "mkdir $$dir" ; \
+		$(MECHO) $(MKDIR) "$$dir" ; \
 		$(MKDIR) "$$dir" ; \
 	    else true ; fi ; \
 	done
-	@$(IF) [ ! -f $(BINDIR)/.gdbinit ]; then \
-	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
+	@$(IF) [ ! -f $(AROSDIR)/.gdbinit ]; then \
+	    $(CP) $(TOP)/_gdbinit $(AROSDIR)/.gdbinit ; \
 	else true ; fi
+
+# Create the tools that are used to build AROS.
+
+tools : $(TOOLLIB) $(GENMF) $(MODTOOL) $(CPAK) $(ARCHTOOL) $(FLEXCAT)
+
+$(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
+
+$(GENMF) : $(TOP)/tools/genmf/genmf.c
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf TOP=$(TOP)
+
+$(MODTOOL) : $(TOOLLIB) $(wildcard $(TOP)/tools/modtool/*.[ch])
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/modtool TOP=$(TOP)
+
+$(CPAK) : $(TOP)/tools/cpak/cpak.c
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/cpak TOP=$(TOP)
+
+$(ARCHTOOL) : $(TOP)/tools/archtools/archtool.c
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/archtools TOP=$(TOP)
+
+$(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
+
+# MetaMake apparently requires a slighty different compilation. Probably
+# because it is sort-of an external package as well.
 
 mmake : tools/MetaMake/Makefile $(MMAKE)
 
-tools/MetaMake/configure : tools/MetaMake/configure.in
-	cd tools/MetaMake ; autoconf
+$(TOP)/tools/MetaMake/configure : $(TOP)/tools/MetaMake/configure.in
+	cd $(TOP)/tools/MetaMake ; autoconf
 
-tools/MetaMake/Makefile.in : tools/MetaMake/Makefile.am
-	cd tools/MetaMake ; automake
+$(TOP)/tools/MetaMake/Makefile.in : $(TOP)/tools/MetaMake/Makefile.am
+	cd $(TOP)/tools/MetaMake ; automake
 
-tools/MetaMake/Makefile : tools/MetaMake/configure \
-		tools/MetaMake/Makefile.in
-	cd tools/MetaMake ; ./configure --prefix=$(TOOLDIR)
+$(TOP)/tools/MetaMake/Makefile : $(TOP)/tools/MetaMake/configure \
+		$(TOP)/tools/MetaMake/Makefile.in
+	cd $(TOP)/tools/MetaMake ; ./configure --prefix=$(TOOLDIR)
 
-$(MMAKE): tools/MetaMake/mmake.c $(GENMF)
-	$(MAKE) -C tools/MetaMake
-	cp tools/MetaMake/mmake $(MMAKE)
-
-$(GENMF): tools/genmf/genmf.c
-	$(MAKE) -C tools/genmf TOP=$(TOP)
+$(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
+	$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake
+	cp $(TOP)/tools/MetaMake/mmake $(MMAKE)
 
 install:
 	$(MMAKE) AROS.install
 
 clean:
-	$(MMAKE) AROS.clean
+	@$(MMAKE) AROS.clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/cpak clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
 
-.PHONY: default all makedirs docs clean install
+.PHONY: default all makedirs tools docs clean install
 
