@@ -16,6 +16,8 @@
 #include <proto/dos.h>
 #include <proto/icon.h>
 
+#include <clib/alib_protos.h>   /* StrDup() */
+
 #include <string.h>
 
 #include <zune/iconimage.h>
@@ -45,22 +47,39 @@ STRPTR __MSG(struct Catalog *catalog, ULONG id)
 #define MSG(id) __MSG(catalog,id)
 
 
-
 /*** Instance data **********************************************************/
 
 struct AboutWindow_DATA
 {
+    /*- Private ------------------------------------------------------------*/
     struct Catalog *awd_Catalog;
-    Object         *awd_Root,
+    
+    /*- Protected ----------------------------------------------------------*/
+    Object         *awd_RootGroup,
                    *awd_ImageGroup,
-                   *awd_Image,
-                   *awd_Version,
-                   *awd_Copyright,
+                   *awd_ImageObject,
+                   *awd_VersionObject,
+                   *awd_CopyrightObject,
                    *awd_DescriptionGroup,
-                   *awd_Description;
+                   *awd_DescriptionObject;
+                   
+    /*- Public -------------------------------------------------------------*/
+    STRPTR          awd_Title,
+                    awd_VersionNumber,
+                    awd_VersionDate,
+                    awd_VersionExtra,
+                    awd_Copyright,
+                    awd_Description;
 };
 
+#define IGNORE ((APTR)(1UL))
+
 /*** Utility ****************************************************************/
+IPTR DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
+{
+  return DoSuperMethod(cl, obj, OM_NEW, (IPTR) &tag1, NULL);
+}
+
 STRPTR Section2Name(struct Catalog *catalog, ULONG section)
 {
     switch (section)
@@ -182,33 +201,29 @@ IPTR AboutWindow$OM_NEW
     struct IClass *CLASS, Object *self, struct opSet *message 
 )
 {
-    struct AboutWindow_DATA *data             = NULL; 
-    struct TagItem          *tag              = NULL, 
-                            *tstate           = message->ops_AttrList;    
-    struct Catalog          *catalog          = NULL;
-    Object                  *root             = NULL,
-                            *imageGroup       = NULL,
-                            *image            = NULL,
-                            *version          = NULL,
-                            *copyright        = NULL,
-                            *descriptionGroup = NULL,
-                            *description      = NULL;
+    struct AboutWindow_DATA *data              = NULL; 
+    struct TagItem          *tag               = NULL, 
+                            *tstate            = message->ops_AttrList;    
+    struct Catalog          *catalog           = NULL;
+    Object                  *rootGroup         = NULL,
+                            *imageGroup        = NULL,
+                            *imageObject       = NULL,
+                            *versionObject     = NULL,
+                            *copyrightObject   = NULL,
+                            *descriptionGroup  = NULL,
+                            *descriptionObject = NULL;
     
-    STRPTR                   authors          = NULL, 
-                             sponsors         = NULL;
-    
-    STRPTR                   pages[]          = { NULL, NULL, NULL }; 
-    UBYTE                    nextPage         = 0;
-    
-    struct TagItem *tags = TAGLIST
-    (
-        MUIA_Window_Activate,        TRUE,
-        MUIA_Window_NoMenus,         TRUE,
-        MUIA_Window_Height,          MUIV_Window_Height_Visible(25),
-        MUIA_Window_Width,           MUIV_Window_Width_Visible(25),
-        WindowContents,              NULL,
-        TAG_MORE,             (IPTR) message->ops_AttrList
-    );
+    STRPTR                   title             = NULL,
+                             versionNumber     = NULL,
+                             versionDate       = NULL,
+                             versionExtra      = NULL,
+                             description       = NULL,
+                             copyright         = NULL,
+                             
+                             authors           = NULL, 
+                             sponsors          = NULL;
+    STRPTR                   pages[]           = { NULL, NULL, NULL }; 
+    UBYTE                    nextPage          = 0;
     
     /* Initialize locale */
     catalog = OpenCatalogA
@@ -222,7 +237,37 @@ IPTR AboutWindow$OM_NEW
         switch (tag->ti_Tag)
         {
             case MUIA_AboutWindow_Image:
-                image = (Object *) tag->ti_Data;
+                imageObject = (Object *) tag->ti_Data;
+                break;
+            
+            case MUIA_AboutWindow_Title:
+                title = StrDup((STRPTR) tag->ti_Data);
+                if (title == NULL) title = IGNORE;
+                break;
+                
+            case MUIA_AboutWindow_Version_Number:
+                versionNumber = StrDup((STRPTR) tag->ti_Data);
+                if (versionNumber == NULL) versionNumber = IGNORE;
+                break;
+                
+            case MUIA_AboutWindow_Version_Date:
+                versionDate = StrDup((STRPTR) tag->ti_Data);
+                if (versionDate == NULL) versionDate = IGNORE;
+                break;
+                
+            case MUIA_AboutWindow_Version_Extra:
+                versionExtra = StrDup((STRPTR) tag->ti_Data);
+                if (versionExtra == NULL) versionExtra = IGNORE;
+                break;
+                
+            case MUIA_AboutWindow_Copyright:
+                copyright = StrDup((STRPTR) tag->ti_Data);
+                if (copyright == NULL) copyright = IGNORE;
+                break;
+                
+            case MUIA_AboutWindow_Description:
+                description = StrDup((STRPTR) tag->ti_Data);
+                if (description == NULL) description = IGNORE;
                 break;
             
             case MUIA_AboutWindow_Authors:
@@ -241,7 +286,7 @@ IPTR AboutWindow$OM_NEW
     }
     
     /* Setup image */
-    if (image == NULL)
+    if (imageObject == NULL)
     {
         TEXT path[1024], program[1024]; path[0] = '\0'; program[0] = '\0';
         
@@ -249,7 +294,7 @@ IPTR AboutWindow$OM_NEW
         if (GetProgramName(program, 1024))
         {
             strlcat(path, program, 1024);
-            image = IconImageObject,
+            imageObject = IconImageObject,
                 MUIA_IconImage_File, path,
             End;
         }
@@ -268,76 +313,89 @@ IPTR AboutWindow$OM_NEW
         nextPage++;
     }
     
-    
-    tags[4].ti_Data = (IPTR) root = VGroup,
-        GroupSpacing(6),
+    self = (Object *) DoSuperNew
+    (
+        CLASS, self,
         
-        Child, imageGroup = HGroup,
-            Child, HVSpace,
-            Child, image,
-            Child, HVSpace,
-        End,
-        Child, version = TextObject,
-            MUIA_Text_PreParse, MUIX_C,
-            MUIA_Text_Contents, NULL,
-        End,
-        Child, copyright = TextObject,
-            MUIA_Text_PreParse, MUIX_C,
-            MUIA_Text_Contents, NULL,
-        End,
-        Child, descriptionGroup = VGroup,
-            Child, VSpace(6),
-            Child,  description = TextObject,
-                MUIA_Text_PreParse, MUIX_I MUIX_C,
+        MUIA_Window_Activate, TRUE,
+        MUIA_Window_NoMenus,  TRUE,
+        MUIA_Window_Height,   MUIV_Window_Height_Visible(25),
+        MUIA_Window_Width,    MUIV_Window_Width_Visible(25),
+        
+        WindowContents, VGroup,
+            GroupSpacing(6),
+            
+            Child, imageGroup = HGroup,
+                Child, HVSpace,
+                Child, imageObject,
+                Child, HVSpace,
+            End,
+            Child, versionObject = TextObject,
+                MUIA_Text_PreParse, MUIX_C,
                 MUIA_Text_Contents, NULL,
             End,
+            Child, copyrightObject = TextObject,
+                MUIA_Text_PreParse, MUIX_C,
+                MUIA_Text_Contents, NULL,
+            End,
+            Child, descriptionGroup = VGroup,
+                Child, VSpace(6),
+                Child,  descriptionObject = TextObject,
+                    MUIA_Text_PreParse, MUIX_I MUIX_C,
+                    MUIA_Text_Contents, NULL,
+                End,
+            End,
+            Child, VSpace(6),
+            Child, RegisterGroup(pages),
+                Child, VGroup,
+                    Child, ScrollgroupObject,
+                        MUIA_Scrollgroup_Contents, VGroupV,
+                            TextFrame,
+                            
+                            Child, TextObject,
+                                MUIA_Text_PreParse, MUIX_L,
+                                MUIA_Text_Contents, authors,
+                            End,
+                            Child, HVSpace,
+                        End,
+                    End,
+                End,
+                Child, VGroup,
+                    Child, ScrollgroupObject,
+                        MUIA_Scrollgroup_Contents, VGroupV,
+                            TextFrame,
+                            
+                            Child, TextObject,
+                                MUIA_Text_PreParse, MUIX_L,
+                                MUIA_Text_Contents, sponsors,
+                            End,
+                            Child, HVSpace,
+                        End,
+                    End,
+                End,
+            End, 
         End,
-        Child, VSpace(6),
-        Child, RegisterGroup(pages),
-            Child, VGroup,
-                Child, ScrollgroupObject,
-                    MUIA_Scrollgroup_Contents, VGroupV,
-                        TextFrame,
-                        
-                        Child, TextObject,
-                            MUIA_Text_PreParse, MUIX_L,
-                            MUIA_Text_Contents, authors,
-                        End,
-                        Child, HVSpace,
-                    End,
-                End,
-            End,
-            Child, VGroup,
-                Child, ScrollgroupObject,
-                    MUIA_Scrollgroup_Contents, VGroupV,
-                        TextFrame,
-                        
-                        Child, TextObject,
-                            MUIA_Text_PreParse, MUIX_L,
-                            MUIA_Text_Contents, sponsors,
-                        End,
-                        Child, HVSpace,
-                    End,
-                End,
-            End,
-        End, 
-    End;
+        
+        TAG_MORE, (IPTR) message->ops_AttrList
+    );
     
-    if (tags[3].ti_Data == NULL) goto error;
-    message->ops_AttrList = tags;
-          
-    self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
     if (self == NULL) goto error;
     
     data = INST_DATA(CLASS, self);
-    data->awd_Catalog          = catalog;
-    data->awd_Root             = root;
-    data->awd_ImageGroup       = imageGroup;
-    data->awd_Image            = image;
-    data->awd_Version          = version;
-    data->awd_Copyright        = copyright;
-    data->awd_DescriptionGroup = descriptionGroup;
-    data->awd_Description      = description;
+    data->awd_Catalog           = catalog;
+    data->awd_RootGroup         = rootGroup;
+    data->awd_ImageGroup        = imageGroup;
+    data->awd_ImageObject       = imageObject;
+    data->awd_VersionObject     = versionObject;
+    data->awd_CopyrightObject   = copyrightObject;
+    data->awd_DescriptionGroup  = descriptionGroup;
+    data->awd_DescriptionObject = descriptionObject;
+    data->awd_Title             = title;
+    data->awd_VersionNumber     = versionNumber;
+    data->awd_VersionDate       = versionDate;
+    data->awd_VersionExtra      = versionExtra;
+    data->awd_Copyright         = copyright;
+    data->awd_Description       = description;
     
     if (authors != NULL) FreeVec(authors);
     if (sponsors != NULL) FreeVec(sponsors);
@@ -368,76 +426,212 @@ IPTR AboutWindow$MUIM_Window_Setup
     struct AboutWindow_DATA *data    = INST_DATA(CLASS, self);
     struct Catalog          *catalog = data->awd_Catalog;
     STRPTR                   string  = NULL;
+    Object                  *object  = NULL;
     IPTR                     rc      = NULL;
-    ULONG                    length;
-    STRPTR                   buffer  = NULL;
     
     rc = DoSuperMethodA(CLASS, self, message);
     if (rc == NULL) return rc;
 
-    /* Setup window title */
-    get(self, MUIA_Window_Title, &string);
-    if (string == NULL)
+    /*= Setup window title =================================================*/
     {
-        get(_app(self), MUIA_Application_Title, &string);
-        length = strlen(string) + strlen(MSG(MSG_ABOUT)) + 2; /* space + newline */
-        buffer = AllocVec(length, MEMF_ANY);
+        STRPTR buffer = NULL;
+        ULONG  length = 0;
         
-        if (buffer != NULL)
+        string = data->awd_Title;
+        if (string == NULL)
         {
-            buffer[0] = '\0';
-            strlcat(buffer, MSG(MSG_ABOUT), length);
-            strlcat(buffer, " ", length);
-            strlcat(buffer, string, length);
+            get(self, MUIA_AboutWindow_Title, &string);
             
-            set(self, MUIA_Window_Title, buffer);
-            
-            FreeVec(buffer);
+            if (string != IGNORE)
+            {
+                if (string == NULL)
+                {
+                    get(_app(self), MUIA_Application_Title, &string);
+                }
+                
+                if (string != NULL)
+                {
+                    length = strlen(string) + strlen(MSG(MSG_ABOUT)) + 2; /* space + newline */
+                    buffer = AllocVec(length, MEMF_ANY);
+                    
+                    if (buffer != NULL)
+                    {
+                        buffer[0] = '\0';
+                        strlcat(buffer, MSG(MSG_ABOUT), length);
+                        strlcat(buffer, " ", length);
+                        strlcat(buffer, string, length);
+                        
+                        set(self, MUIA_Window_Title, buffer);
+                        
+                        FreeVec(buffer);
+                    }
+                }
+            }
+        }
+    }
+    
+    /*= Setup image ========================================================*/
+    if (data->awd_ImageObject == NULL)
+    {
+        DoMethod(data->awd_RootGroup, OM_REMMEMBER, data->awd_ImageGroup);
+    }
+    
+    /*= Setup version ======================================================*/ 
+    /* 
+        The version string will have the format:
+        MUIX_B"<title>"MUIX_N" <version> (<date>) [<extra>]" 
+    */
+    {
+        STRPTR title         = data->awd_Title,
+               versionNumber = data->awd_VersionNumber,
+               versionDate   = data->awd_VersionDate,
+               versionExtra  = data->awd_VersionExtra,
+               buffer        = NULL;
+        ULONG  length        = 0;
+        
+        /*- Setup default values -------------------------------------------*/
+        if (title == NULL)
+        {
+            get(_app(self), MUIA_Application_Title, &title);
         }
         
+        if (versionNumber == NULL)
+        {
+            get(_app(self), MUIA_Application_Version_Number, &versionNumber);
+        }
+        
+        if (versionDate == NULL)
+        {
+            get(_app(self), MUIA_Application_Version_Date, &versionDate);
+        }
+        
+        if (versionExtra == NULL)
+        {
+            get(_app(self), MUIA_Application_Version_Extra, &versionExtra);
+        }
+        
+        /* Simplify later checks a little */
+        if (title         == IGNORE) title         = NULL;
+        if (versionNumber == IGNORE) versionNumber = NULL;
+        if (versionDate   == IGNORE) versionDate   = NULL;
+        if (versionExtra  == IGNORE) versionExtra  = NULL;
+        
+        /*- Calculate length -----------------------------------------------*/
+        if (title != NULL)
+        {
+            length += strlen(MUIX_B) + strlen(title) + strlen(MUIX_N) + 1;
+        }
+        
+        if (versionNumber != NULL)
+        {
+            length += 1 /* space */ + strlen(versionNumber);
+        }
+        
+        if (versionDate != NULL)
+        {
+            length += 1 /* space */ + 1 /* ( */ + strlen(versionDate) + 1 /* ) */;
+        }
+        
+        if (versionExtra != NULL)
+        {
+            length += 1 /* space */ + 1 /* [ */ + strlen(versionExtra) + 1 /* ] */;
+        }
+        
+        /*- Setup version object -------------------------------------------*/
+        if (length > 0)
+        {
+            /*- Allocate memory ------------------------------------------------*/
+            buffer = AllocVec(length, MEMF_ANY);
+            
+            if (buffer != NULL)
+            {
+                buffer[0] = '\0';
+                
+                /*- Generate text ----------------------------------------------*/
+                if (title != NULL)
+                {
+                    strlcat(buffer, MUIX_B, length);
+                    strlcat(buffer, title, length);
+                    strlcat(buffer, MUIX_N, length);
+                }
+                
+                if (versionNumber != NULL)
+                {
+                    strlcat(buffer, " ", length);
+                    strlcat(buffer, versionNumber, length);
+                }
+                
+                if (versionDate != NULL)
+                {
+                    strlcat(buffer, " (", length);
+                    strlcat(buffer, versionDate, length);
+                    strlcat(buffer, ")", length);
+                }
+                
+                if (versionExtra != NULL)
+                {
+                    strlcat(buffer, " [", length);
+                    strlcat(buffer, versionExtra, length);
+                    strlcat(buffer, "]", length);
+                }
+                
+                set(data->awd_VersionObject, MUIA_Text_Contents, buffer);
+                FreeVec(buffer); /* don't need it anymore */
+            }
+            else
+            {
+                DoMethod
+                (
+                    data->awd_RootGroup, OM_REMMEMBER, data->awd_VersionObject
+                );
+            }
+        }
+    }
+        
+    /*= Setup copyright ====================================================*/
+    if (data->awd_Copyright == NULL)
+    {
+        get(_app(self), MUIA_Application_Copyright, &data->awd_Copyright);
     }
     
-    /* Setup image */
-    if (data->awd_Image == NULL)
+    if (data->awd_Copyright != IGNORE && data->awd_Copyright != NULL)
     {
-        DoMethod(data->awd_Root, OM_REMMEMBER, data->awd_ImageGroup, TAG_DONE);
-    }
-    
-    /* Setup version */
-    get(_app(self), MUIA_Application_Version, &string);
-    if (string != NULL)
-    {
-        set(data->awd_Version, MUIA_Text_Contents, string);
+        set(data->awd_CopyrightObject, MUIA_Text_Contents, data->awd_Copyright);
     }
     else
     {
-        DoMethod(data->awd_Root, OM_REMMEMBER, data->awd_Version, TAG_DONE);
+        DoMethod(data->awd_RootGroup, OM_REMMEMBER, data->awd_CopyrightObject);
     }
     
-    /* Setup copyright */
-    get(_app(self), MUIA_Application_Copyright, &string);
-    if (string != NULL)
+    /*= Setup description ==================================================*/
+    if (data->awd_Description == NULL)
     {
-        set(data->awd_Copyright, MUIA_Text_Contents, string);
-    }
-    else
-    {
-        DoMethod(data->awd_Root, OM_REMMEMBER, data->awd_Copyright, TAG_DONE);
+        get(_app(self), MUIA_Application_Description, &data->awd_Description);
     }
     
-    /* Setup description */
-    get(_app(self), MUIA_Application_Description, &string);
-    if (string != NULL)
+    if (data->awd_Description != IGNORE && data->awd_Description != NULL)
     {
-        set(data->awd_Description, MUIA_Text_Contents, string);
+        set
+        (
+            data->awd_DescriptionObject, 
+            MUIA_Text_Contents, data->awd_Description
+        );
     }
     else
     {
         DoMethod
         (
-            data->awd_Root, OM_REMMEMBER, data->awd_DescriptionGroup, TAG_DONE
+            data->awd_RootGroup, OM_REMMEMBER, data->awd_DescriptionGroup
         );
     }
+    
+    /* We no longer need to know whether to IGNORE or not */
+    if (data->awd_Title == IGNORE) data->awd_Title = NULL;
+    if (data->awd_VersionNumber == IGNORE) data->awd_VersionNumber = NULL;
+    if (data->awd_VersionDate == IGNORE) data->awd_VersionDate = NULL;
+    if (data->awd_VersionExtra == IGNORE) data->awd_VersionExtra = NULL;
+    if (data->awd_Copyright == IGNORE) data->awd_Copyright = NULL;
+    if (data->awd_Description == IGNORE) data->awd_Description = NULL;
     
     return rc;
 }
@@ -447,8 +641,19 @@ IPTR AboutWindow$OM_DISPOSE
     struct IClass *CLASS, Object *self, Msg message 
 )
 {
-    struct AboutWindow_DATA *data = INST_DATA(CLASS, self);
-
+    struct AboutWindow_DATA *data   = INST_DATA(CLASS, self);
+    UBYTE                    i;
+    APTR                     ptrs[] = 
+    {
+        data->awd_Title, data->awd_VersionNumber, data->awd_VersionDate,
+        data->awd_VersionExtra, data->awd_Copyright, data->awd_VersionExtra
+    };
+    
+    for (i = 0; i < (sizeof(ptrs) / sizeof(APTR)); i++)
+    {
+        if (ptrs[i] != NULL) FreeVec(ptrs[i]);
+    }
+    
     if (data->awd_Catalog != NULL) CloseCatalog(data->awd_Catalog);
     
     return DoSuperMethodA(CLASS, self, message);
