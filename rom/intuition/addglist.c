@@ -75,7 +75,7 @@
 	count ++;
     }
 
-    for (last=gadget; last->NextGadget; last=last->NextGadget);
+    for (last=gadget; last->NextGadget && --numGad; last=last->NextGadget);
 
     last->NextGadget = pred->NextGadget;
     pred->NextGadget = gadget;
