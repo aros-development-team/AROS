@@ -4,9 +4,11 @@
 
 # The "kernel" dependency in "AROS-amiga" wraps back onto this target:
 #MM- kernel-amiga : \
-#MM	kernel-hidd kernel-aros \
+#MM	kernel-hidd \
+#MM	kernel-aros \
 #MM	kernel-exec-module \
 #MM	kernel-alerthook-module \
+#MM	kernel-layers-module \
 #MM	kernel-boopsi-module \
 #MM	kernel-utility-module \
 #MM	kernel-expansion-module \
@@ -51,31 +53,23 @@
 #MM	setup-layers-amiga \
 #MM	setup-hidd-graphics-amiga
 
+#MM- setup-clib-amiga : setup-clib-amiga-$(CPU)
 #MM- setup-exec-amiga : setup-exec-amiga-$(CPU)
-
-#MM- exec-amiga : exec-amiga-$(CPU)
-
+#MM- setup-hidd-amiga : setup-hidd-amiga-$(CPU)
+#MM- setup-hidd-graphics-amiga : setup-hidd-graphics-amiga-$(CPU)
+#MM- setup-layers-amiga : setup-layers-amiga-$(CPU)
 #MM- setup-utility-amiga : setup-utility-amiga-$(CPU)
 
+#MM- clib-amiga : clib-amiga-$(CPU)
+#MM- exec-amiga : exec-amiga-$(CPU)
+#MM- layers-amiga : layers-amiga-$(CPU)
 #MM- utility-amiga : utility-amiga-$(CPU)
 
-#MM- setup-layers-amiga : setup-layers-amiga-$(CPU)
-
-#MM- layers-amiga : layers-amiga-$(CPU)
-
-#MM- setup-hidd-amiga : setup-hidd-amiga-$(CPU)
-
 #MM- hidd-amiga-$(CPU) : hidd-amiga-$(CPU)
-
-#MM- setup-hidd-graphics-amiga : setup-hidd-graphics-amiga-$(CPU)
 
 ##MM- check :
 #check :
 #	@$(NOP)
-
-#MM- setup-clib-amiga : setup-clib-amiga-$(CPU)
-
-#MM- clib-amiga : clib-amiga-$(CPU)
 
 #MM- includes-amiga : includes-copy includes-amiga-$(CPU)
 
