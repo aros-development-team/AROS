@@ -71,36 +71,28 @@
                   (( z & IEEESPExponent_Mask)) -
                   0x3f800000 );
 
-  if (0 == y)
+  if (0 == y || 0 == z)
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask) );
   }
   
-  if (0 == z)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask) );
-  }
-
   Res  =  (Mant1H * Mant2H) <<  8;
   Res += ((Mant1H * Mant2L) >>  4);
   Res += ((Mant1L * Mant2H) >>  4);
   Res += ((Mant1L * Mant2L) >> 16);
 
+  /* Bit 32 is not set */
+  if ((LONG)Res > 0)
+    Res += Res;
+  else
+    Exponent += 0x00800000;
+
   /* Correction for precision */
   if ((char) Res < 0)
     Res += 0x100;
-
-  /* Bit 32 is not set */
-  if ((LONG)Res > 0)
-    Res >>= 7;
-  else
-  {
-    Exponent += 0x00800000;
-    Res >>= 8;
-  }
-
+ 
+  Res >>= 8;
   Res &= IEEESPMantisse_Mask;
 
   Res |= ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask) );
@@ -108,7 +100,7 @@
   if ( Exponent < 0)
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0x7f800000;
+    return (0x7f800000 | (Res & IEEESPSign_Mask) );
   }
 
   Res |= Exponent;
@@ -117,5 +109,4 @@
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;
-
 } /* IEEESPMul */

@@ -7,7 +7,9 @@ SUBDIRS= \
 	diskfont \
 	gadtools \
 	icon \
-	iffparse
+	iffparse \
+	mathtrans \
+	mathieeesptrans
 
 OBJDIR = $(GENDIR)/workbench/libs
 FILES = dummy
