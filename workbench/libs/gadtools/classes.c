@@ -225,7 +225,7 @@ struct TextData {
     UWORD maxnumberlength;
     WORD gadgetkind;
     LONG  (*dispfunc)(struct Gadget *, WORD);
-
+    UBYTE labelplace;
     
 };
 
@@ -371,7 +371,8 @@ Object *text_new(Class * cl, Object * o, struct opSet *msg)
     	data->font 	= NULL;
     	data->maxnumberlength = 0; /* This means "no limit" */
     	data->dispfunc = (APTR)GetTagData(GTA_Text_DispFunc, NULL, msg->ops_AttrList);
-    	
+    	data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, msg->ops_AttrList);
+	
     	/* Open font to use for gadget */
     	
     	/* We will *ALWAYS* have a valid DrawInfo struct */
@@ -410,7 +411,7 @@ Object *text_new(Class * cl, Object * o, struct opSet *msg)
     	} else {
 	    STRPTR text;
 	    
-	    if ((text = GetTagData(GTTX_Text, NULL, msg->ops_AttrList)))
+	    if ((text = (STRPTR)GetTagData(GTTX_Text, NULL, msg->ops_AttrList)))
 	    {
 	        data->toprint = (IPTR)text;
 	    }
@@ -486,6 +487,11 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     struct RastPort *rp = msg->gpr_RPort;
     
     EnterFunc(bug("Text::Render()\n"));
+
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+    {
+	renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+    }
     
     if (data->toprint || (data->gadgetkind != TEXT_KIND))
     {
@@ -1203,6 +1209,7 @@ struct ScrollerData
 {
     Object *frame;
     WORD gadgetkind;
+    UBYTE labelplace;
 };
 
 /**********************
@@ -1377,6 +1384,7 @@ Object *scroller_new(Class * cl, Object * o, struct opSet *msg)
 	if (data->frame)
 	{
 	    scroller_set(cl, o, msg);
+	    data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, ((struct opSet *)msg)->ops_AttrList);
 	} else {
 	    CoerceMethod(cl, o, OM_DISPOSE);
 	    o = NULL;
@@ -1443,7 +1451,8 @@ STATIC IPTR scroller_render(Class *cl, Object *o, struct gpRender *msg)
 		G(o)->TopEdge  - BORDERPROPSPACINGY,
 		IDS_NORMAL,
 		msg->gpr_GInfo->gi_DrInfo);
-   
+
+        renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);   
     }
     
     retval = DoSuperMethodA(cl, o, (Msg)msg);
@@ -1530,10 +1539,10 @@ AROS_UFH3S(IPTR, dispatch_scrollerclass,
 
 struct StringData
 {
-    LONG 	labelplace;
     Object	*frame;
     struct TextFont *font;
     WORD	gadgetkind;
+    UBYTE	labelplace;
 };
 /***********************
 **  String::SetNew()  **
@@ -1595,7 +1604,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    case GTST_EditHook:	tags[3].ti_Data = tidata; break;
     	    
     	    case GA_LabelPlace:
-    	    	labelplace = (LONG)tidata;
+    	    	labelplace = tidata;
     	    	break;
     	    case GA_DrawInfo:
     	    	dri = (struct DrawInfo *)tidata;
@@ -1791,7 +1800,6 @@ AROS_UFH3S(IPTR, dispatch_stringclass,
 
 struct LVData
 {
-    LONG	ld_LabelPlace;
     struct Hook *ld_CallBack;
     struct List	*ld_Labels;
     struct DrawInfo *ld_Dri;
@@ -1816,6 +1824,7 @@ struct LVData
     WORD	ld_NumEntries;
 
     UBYTE	ld_Flags;
+    UBYTE	ld_LabelPlace;
 };
 
 /* This one goes into cl->cl_UserData */
@@ -2667,6 +2676,9 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 }  /* dispatch_Gtlvclass */
 
 
+#undef GadToolsBase
+
+#define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
 /*************************** CHECKBOX_KIND *****************************/
 
@@ -2710,8 +2722,30 @@ AROS_UFH3S(IPTR, dispatch_checkboxclass,
 /*************************** CYCLE_KIND *****************************/
 
 struct CycleData {
-    UBYTE dummy;
+    UBYTE labelplace;
 };
+
+
+/*************************
+**  Cycle::Render()     **
+*************************/
+STATIC IPTR cycle_render(Class *cl, Object *o, struct gpRender *msg)
+{
+    struct CycleData *data;
+    IPTR retval;
+    
+    data = INST_DATA(cl, o);
+    
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+    {
+       renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
+    }
+    
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    
+    ReturnInt("Cycle::Render", IPTR, retval);
+}
+
 
 AROS_UFH3S(IPTR, dispatch_cycleclass,
 	  AROS_UFHA(Class *, cl, A0),
@@ -2720,8 +2754,18 @@ AROS_UFH3S(IPTR, dispatch_cycleclass,
 )
 {
     IPTR retval = 0UL;
-
+	    
     switch (msg->MethodID) {
+    case OM_NEW:
+    	if ((retval = DoSuperMethodA(cl, obj, msg)))
+	{
+	    struct CycleData *data;
+
+	    data = INST_DATA(cl, retval);	    
+	    data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, ((struct opSet *)msg)->ops_AttrList);
+	}
+	break;
+	
     case OM_GET:
 	switch (OPG(msg)->opg_AttrID)
 	{
@@ -2737,6 +2781,10 @@ AROS_UFH3S(IPTR, dispatch_cycleclass,
 	}
 	break;
 
+    case GM_RENDER:
+    	retval = cycle_render(cl, obj, (struct gpRender *)msg);
+	break;
+	
     default:
 	retval = DoSuperMethodA(cl, obj, msg);
 	break;
