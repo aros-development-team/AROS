@@ -44,7 +44,7 @@
 /****************************************************************************************/
 
 /* #define USE_WRITEMASK */
-#define USE_SIMPLEREFRESH
+#define USE_SIMPLEREFRESH 0
 
 #define DEFAULT_TABSIZE 8
 
@@ -704,15 +704,15 @@ static void SetWinTitle(void)
 
 static void MakeWin(void)
 {	
-    if (!(win = OpenWindowTags(0, WA_PubScreen		, (IPTR)scr		, 
+    if (!(win = OpenWindowTags(NULL, WA_PubScreen	, (IPTR)scr	        , 
 				  WA_Left		, 0			, 
 				  WA_Top		, scr->BarHeight + 1	, 
 				  WA_Width		, 600			, 
 				  WA_Height		, 300			, 
 				  WA_AutoAdjust		, TRUE			,
-				#ifdef USE_SIMPLEREFRESH
-				  WA_SimpleRefresh	, TRUE			, 
-				#endif
+			          USE_SIMPLEREFRESH ? 
+                                  WA_SimpleRefresh  :
+                                  TAG_IGNORE            , TRUE			, 
 				  WA_CloseGadget	, TRUE			, 
 				  WA_DepthGadget	, TRUE			, 
 				  WA_DragBar		, TRUE			, 
@@ -734,9 +734,7 @@ static void MakeWin(void)
 					    		  IDCMP_MOUSEMOVE     |
 							  IDCMP_VANILLAKEY    |
 							  IDCMP_INTUITICKS    |
-					  		#ifdef USE_SIMPLEREFRESH
-					    		  IDCMP_REFRESHWINDOW |
-					  		#endif
+                               (USE_SIMPLEREFRESH != 0) * IDCMP_REFRESHWINDOW |
 					    		  IDCMP_RAWKEY        |
 							  IDCMP_MENUPICK	, 
 				  TAG_DONE)))
