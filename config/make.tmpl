@@ -608,8 +608,8 @@ BDID := $(BDTARGETID)
 
 ifneq (%(install_target),)
     %(mmake)-install_command := \
-    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" exec_prefix="$(%(mmake)-prefix)" \
-    prefix="$(%(mmake)-prefix)" -C $(GENDIR)/$(CURDIR) %(install_target)
+    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-exec-prefix) \
+    $(%(mmake)-prefix) -C $(GENDIR)/$(CURDIR) %(install_target)
 endif
 
 #MM
@@ -641,9 +641,12 @@ ifneq (%(libdir),)
     %(mmake)-libdir := --libdir=%(libdir)
 endif
 ifneq (%(prefix),)
-    %(mmake)-prefix := --prefix=%(prefix)
+    %(mmake)-prefix      := --prefix=%(prefix)
+    %(mmake)-exec-prefix := --prefix=%(prefix)
 else
-    %(mmake)-prefix := --prefix=$(CONTRIBDIR)
+    %(mmake)-prefix      := --prefix=$(CONTRIBDIR)
+    %(mmake)-exec-prefix := --prefix=$(CONTRIBDIR)
+    
     ifeq ($(%(mmake)-bindir),)
         %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
         %(mmake)-PROGDIR := $(CONTRIBDIR)
