@@ -19,7 +19,6 @@
 
 #include <string.h>
 
-#   include <aros/debug.h>
 
 /*** Prototypes *************************************************************/
 BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, struct DosLibrary *DOSBase);
@@ -42,124 +41,120 @@ AROS_UFH3
     struct DiskObject *icon = NULL;
     
     /* Identify object -----------------------------------------------------*/
-    if (DataTypesBase == NULL)
+    if (iim->iim_FIB->fib_DirEntryType == ST_ROOT)
     {
-        // FIXME: implement a primitive identification here?
-        return NULL;
+        /* It's a disk/volume/root -------------------------------------*/
+        TEXT device[MAXFILENAMELENGTH];
+        
+        if
+        (
+            FindDeviceName
+            (
+                device, MAXFILENAMELENGTH, 
+                iim->iim_FIB->fib_FileName
+            )
+        )
+        {
+            if (strlen(device) == 4) 
+            {
+                if (strcasecmp(device, "RAM:") == 0)
+                {
+                    icon = GetDefaultIconFromName("RAM", iim->iim_Tags);
+                }
+                else if (strncasecmp(device, "DF", 2) == 0)
+                {
+                    icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
+                }
+                else if (strncasecmp(device, "CD", 2) == 0)
+                {
+                    icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
+                }
+                else if
+                (
+                       strncasecmp(device, "DH",  2) == 0 
+                    || strncasecmp(device, "HD",  2) == 0
+                    || strncasecmp(device, "EMU", 3) == 0
+                )
+                {
+                    icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
+                }
+            }
+            else if (strcasecmp(device, "HOME:") == 0)
+            {
+                icon = GetDefaultIconFromName("Home", iim->iim_Tags);
+                
+                /* Fall back to generic harddisk icon */
+                if (icon ==  NULL)
+                {
+                    icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
+                }
+            }
+            
+        }
+        
+        /* Fall back to generic disk icon */
+        if (icon == NULL)
+        {
+            icon = GetDefaultIconFromType(WBDISK, iim->iim_Tags);
+        }
+        
+        if (icon != NULL)
+        {
+            /* Force the icon type, in case we have a broken icon */
+            icon->do_Type = WBDISK;
+        }
+    }
+    else if (iim->iim_FIB->fib_DirEntryType > 0)
+    {
+        /* It's a directory --------------------------------------------*/
+        /* Check if it is a trashcan directory */
+        if (iim->iim_ParentLock != NULL)
+        {
+            /* Is iim_ParentLock a root? */
+            BPTR root = ParentDir(iim->iim_ParentLock);
+            
+            if (root == NULL)
+            {
+                /* Yes, it's a root. See if it contains our trashcan. */
+                BPTR cd   = CurrentDir(iim->iim_ParentLock);
+                BPTR lock = Lock("Trashcan", ACCESS_READ);
+                
+                if (lock != NULL)
+                {
+                    if (SameLock(iim->iim_FileLock, lock) == LOCK_SAME)
+                    {
+                        icon = GetDefaultIconFromType(WBGARBAGE, iim->iim_Tags);
+                    }
+                
+                    UnLock(lock);
+                }
+                
+                CurrentDir(cd);
+            }
+            else
+            {
+                UnLock(root);
+            }
+        }
+        
+        /* Fall back to generic drawer icon */
+        if (icon == NULL)
+        {
+            icon = GetDefaultIconFromType(WBDRAWER, iim->iim_Tags);
+        }
+        
+        if (icon != NULL)
+        {
+            /* Force the icon type, in case we have a broken icon */
+            icon->do_Type = WBDRAWER;
+        }
     }
     else
     {
-        if (iim->iim_FIB->fib_DirEntryType == ST_ROOT)
+        /* It's a file -----------------------------------------------------*/
+        if (DataTypesBase != NULL)
         {
-            /* It's a disk/volume/root -------------------------------------*/
-            TEXT device[MAXFILENAMELENGTH];
-            
-            if
-            (
-                FindDeviceName
-                (
-                    device, MAXFILENAMELENGTH, 
-                    iim->iim_FIB->fib_FileName
-                )
-            )
-            {
-                if (strlen(device) == 4) 
-                {
-                    if (strcasecmp(device, "RAM:") == 0)
-                    {
-                        icon = GetDefaultIconFromName("RAM", iim->iim_Tags);
-                    }
-                    else if (strncasecmp(device, "DF", 2) == 0)
-                    {
-                        icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
-                    }
-                    else if (strncasecmp(device, "CD", 2) == 0)
-                    {
-                        icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
-                    }
-                    else if
-                    (
-                           strncasecmp(device, "DH",  2) == 0 
-                        || strncasecmp(device, "HD",  2) == 0
-                        || strncasecmp(device, "EMU", 3) == 0
-                    )
-                    {
-                        icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
-                    }
-                }
-                else if (strcasecmp(device, "HOME:") == 0)
-                {
-                    icon = GetDefaultIconFromName("Home", iim->iim_Tags);
-                    
-                    /* Fall back to generic harddisk icon */
-                    if (icon ==  NULL)
-                    {
-                        icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
-                    }
-                }
-                
-            }
-            
-            /* Fall back to generic disk icon */
-            if (icon == NULL)
-            {
-                icon = GetDefaultIconFromType(WBDISK, iim->iim_Tags);
-            }
-            
-            if (icon != NULL)
-            {
-                /* Force the icon type, in case we have a broken icon */
-                icon->do_Type = WBDISK;
-            }
-        }
-        else if (iim->iim_FIB->fib_DirEntryType > 0)
-        {
-            /* It's a directory --------------------------------------------*/
-            /* Check if it is a trashcan directory */
-            if (iim->iim_ParentLock != NULL)
-            {
-                /* Is iim_ParentLock a root? */
-                BPTR root = ParentDir(iim->iim_ParentLock);
-                
-                if (root == NULL)
-                {
-                    /* Yes, it's a root. See if it contains our trashcan. */
-                    BPTR cd   = CurrentDir(iim->iim_ParentLock);
-                    BPTR lock = Lock("Trashcan", ACCESS_READ);
-                    
-                    if (lock != NULL)
-                    {
-                        if (SameLock(iim->iim_FileLock, lock) == LOCK_SAME)
-                        {
-                            icon = GetDefaultIconFromType(WBGARBAGE, iim->iim_Tags);
-                        }
-                    
-                        UnLock(lock);
-                    }
-                    
-                    CurrentDir(cd);
-                }
-                else
-                {
-                    UnLock(root);
-                }
-            }
-            
-            /* Fall back to generic drawer icon */
-            if (icon == NULL)
-            {
-                icon = GetDefaultIconFromType(WBDRAWER, iim->iim_Tags);
-            }
-            
-            if (icon != NULL)
-            {
-                /* Force the icon type, in case we have a broken icon */
-                icon->do_Type = WBDRAWER;
-            }
-        }
-        else
-        {
-            /* It's a file -------------------------------------------------*/
+            /* Use datatypes to identify the file --------------------------*/
             struct DataType *dt = ObtainDataType
             (
                 DTST_FILE, iim->iim_FileLock, TAG_DONE
@@ -175,7 +170,7 @@ AROS_UFH3
                     && dth->dth_ID      == ID_EXECUTABLE
                 )
                 {
-                    /* It's a exutable file --------------------------------*/
+                    /* It's a executable file ------------------------------*/
                     icon = GetDefaultIconFromType(WBTOOL, iim->iim_Tags);
                     
                     if (icon != NULL)
@@ -239,6 +234,33 @@ AROS_UFH3
                 }
             }
         }
+        else
+        {
+            /* Fallback to a more primitive identification -----------------*/
+            if ((iim->iim_FIB->fib_Protection & FIBF_EXECUTE) == 0)
+            {
+                /* It's an executable files --------------------------------*/
+                icon = GetDefaultIconFromType(WBTOOL, iim->iim_Tags);
+                
+                if (icon != NULL)
+                {
+                    /* Force the icon type, in case we have a broken icon */
+                    icon->do_Type = WBTOOL;
+                }
+            }
+            else
+            {
+                /* It's a project file of some kind ------------------------*/
+                icon = GetDefaultIconFromType(WBPROJECT, iim->iim_Tags);
+                
+                if (icon != NULL)
+                {
+                    /* Force the icon type, in case we have a broken icon */
+                    icon->do_Type = WBPROJECT;
+                }
+            }
+        }
+        
     }
     
     return icon;
