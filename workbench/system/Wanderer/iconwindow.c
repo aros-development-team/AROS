@@ -14,9 +14,6 @@
 
 #include "iconwindow.h"
 
-extern STRPTR rootBG, dirsBG;
-
-
 /*** Instance Data **********************************************************/
 struct IconWindow_DATA
 {
@@ -35,23 +32,25 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     struct Hook *action_hook;
     int is_root, is_backdrop;
     Object *iconlist;
-
+    CONST_STRPTR background;
+    
     /* More than one GetTagData is not really efficient but since this is called very unoften... */
     is_backdrop = GetTagData(MUIA_IconWindow_IsBackdrop, 0, message->ops_AttrList);
     is_root = GetTagData(MUIA_IconWindow_IsRoot, 0, message->ops_AttrList);
     action_hook = (struct Hook*) GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
-
+    background = (CONST_STRPTR) GetTagData(MUIA_IconWindow_Background, 0, message->ops_AttrList);
+    
     if (is_root)
     {
         iconlist = IconVolumeListObject,
-            MUIA_Background, (IPTR) rootBG, 
+            MUIA_Background, (IPTR) background,
         End;
     }
     else
     {
         STRPTR drw = (STRPTR) GetTagData(MUIA_IconWindow_Drawer,(IPTR)NULL,message->ops_AttrList);
         iconlist = IconDrawerListObject,
-            MUIA_Background,            (IPTR) dirsBG,
+            MUIA_Background,            (IPTR) background,
             MUIA_IconDrawerList_Drawer, (IPTR) drw, 
         End;
     }
@@ -123,6 +122,10 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
+            case MUIA_IconWindow_Background:
+                SET(data->iconlist, MUIA_Background, tag->ti_Data);
+                break;
+                
             case MUIA_IconWindow_IsBackdrop:
                 if ((!!tag->ti_Data) != data->is_backdrop)
                 {
@@ -175,6 +178,10 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     
     switch (message->opg_AttrID)
     {
+        case MUIA_IconWindow_Background:
+            *store = XGET(data->iconlist, MUIA_Background);
+            break;
+            
         case MUIA_IconWindow_Drawer:
             *store = !data->is_root
                 ? XGET(data->iconlist, MUIA_IconDrawerList_Drawer)

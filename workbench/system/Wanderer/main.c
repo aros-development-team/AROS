@@ -13,7 +13,6 @@
 #include <proto/muimaster.h>
 
 #include "wanderer.h"
-#include "prefs.h"
 
 /* global variables */
 Object *app;
@@ -39,18 +38,13 @@ VOID DoDetach(VOID)
 
 int main(void)
 {
-    LoadPrefs();
-
     app = WandererObject, End;
+    
     if (app != NULL)
     {
-	DoDetach();
-	DoMethod(app, MUIM_Application_Execute);
-        
+	DoMethod(app, MUIM_Application_Execute);        
 	MUI_DisposeObject(app);
     }
-
-    FreePrefs();
     
     return 0;
 }
