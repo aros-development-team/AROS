@@ -9,7 +9,7 @@
 /*****************************************************************************
 
     NAME */
-    
+
 #define AROS_ALMOST_COMPATIBLE 1
 #include <proto/exec.h>
 #include <exec/libraries.h>
@@ -33,7 +33,7 @@ static Object *obtainconunit(struct ConsoleBase *ConsoleDevice);
 static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
 /* Prototype necessary for Linux-M68k w/ bin. compat. */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+#if ((AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && !defined(_AMIGA))
 struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
                                            struct cdihData * cdihData);
 #endif
@@ -68,7 +68,7 @@ struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
 			    console_lib.fd and clib/console_protos.h
 
 *****************************************************************************/
-  
+
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,ConsoleDevice)
@@ -76,57 +76,57 @@ struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
 #undef ConsoleDevice
 #define ConsoleDevice (cdihdata->consoleDevice)
 
-    
+
     struct InputEvent *ie;
     BOOL send_message = FALSE;
-    
+
     struct cdihMessage *message = cdihdata->cdihMsg;
 D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
-    
+
     for (ie = events; ie; ie = ie->ie_NextEvent)
     {
-	
+
 	/* A rawkey event ? */
     	if (ie->ie_Class == IECLASS_RAWKEY)
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;
-	    
+
 	    D(bug("Got RAWKEY event\n"));
 	    /* find and prevent deletion of unit */
 	    unit = obtainconunit(ConsoleDevice);
 	    if (unit)
 	    {
 	    	LONG actual;
-		
-	   
+
+
 	   	D(bug("Event should be passed to unit %p\n", unit));
 	    	/* Convert it to ANSI chars */
 	    	actual = RawKeyConvert(ie
 				,message->inputBuf
 				,MSGBUFSIZE
 				,NULL);
-				
+
 		D(bug("RawKeyConvert returned %ld\n", actual));
-				
-		if (actual != -1)		
+
+		if (actual != -1)
 	    	{
-		    
+
 		    D(bug("Event decoded into %s\n", message->inputBuf));
 		    message->numBytes	= actual;
 		    message->unit 	= unit;
-		    
+
 		    send_message = TRUE;
 
 		}
-		
+
 		/* deletion of unit is now allowed */
 		releaseconunit(unit, ConsoleDevice);
-	    
+
 	    } /* if (RAWKEY event was meant for a console window) */
-	    
+
 	} /* if (IECLASS_RAWKEY event) */
-	
+
 	if (send_message)
 	{
 	    /* This function might be called by any task, not only
@@ -134,24 +134,24 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 	       we initialize the replyport's task eac time.
 	    */
 	    struct MsgPort *replyport;
-	    
+
 	    replyport = message->msg.mn_ReplyPort;
-	    
+
 	    replyport->mp_SigTask = FindTask(NULL);
 	    PutMsg(cdihdata->inputPort, (struct Message *)message);
-	    
+
 	    /* Wait for reply */
 	    WaitPort(replyport);
-	    
+
 	    /* Remove it from the replyport's msgqueue */
 	    GetMsg(replyport);
-	    
+
 	    send_message = FALSE;
-	    
+
 	}
-	
+
     } /* for (each event in the chain) */
-    
+
 
     ReturnPtr("CDIndputHandler",  struct InputEvent *, events);
 
@@ -169,37 +169,37 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 /* Obtains a conunit object, and locks it, so that it's
    not deleted while we work on it
 */
-   
+
 static Object *obtainconunit(struct ConsoleBase *ConsoleDevice)
 {
     struct Window *activewin;
     Object *o, *ostate;
     ULONG lock;
     struct Node *node;
-    
+
     D(bug("obtainconunit()\n"));
-    
+
     ForeachNode(&ConsoleDevice->unitList, node)
     {
     	D(bug("Node: %p\n", node));
     }
-    
+
     /* Lock the console list */
     ObtainSemaphoreShared(&ConsoleDevice->unitListLock);
-    
+
     /* What is the currently active window ? */
     D(bug("Obtaining IBase\n"));
     lock = LockIBase(0UL);
-    
+
     activewin = IntuitionBase->ActiveWindow;
-    
+
     UnlockIBase(lock);
     D(bug("Released IBase, active win=%p\n", activewin));
-    
+
     /* Try to find the correct unit object for taht window */
     ostate = (Object *)ConsoleDevice->unitList.mlh_Head;
 
-    D(bug("Searching for con unit\n"));    
+    D(bug("Searching for con unit\n"));
     while ((o = NextObject(&ostate)))
     {
     	D(bug("Trying unit %p, win=%p\n", o, CU(o)->cu_Window));
@@ -210,16 +210,16 @@ static Object *obtainconunit(struct ConsoleBase *ConsoleDevice)
 	    /* Delay deltion of this console object */
 	    ICU(o)->conFlags |= CF_DELAYEDDISPOSE;
 	    break;
-	    
+
 	}
-    
+
     }
-    
-    
-    
+
+
+
     /* Unlock the console list */
     ReleaseSemaphore(&ConsoleDevice->unitListLock);
-     
+
     ReturnPtr ("obtainconunit", Object *, o);
 }
 
@@ -227,22 +227,22 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice)
 {
     /* Lock all units */
     ObtainSemaphore(&ConsoleDevice->unitListLock);
-    
+
     /* Needn't prevent the unit from being disposed anymore */
     ICU(o)->conFlags &= ~CF_DELAYEDDISPOSE;
-    
+
     /* If unit is sceduled for deletion, then delete it */
     if (ICU(o)->conFlags & CF_DISPOSE)
     {
 	ULONG mID = OM_REMOVE;
-	
+
     	/* Remove from list */
 	DoMethodA(o, (Msg)&mID);
-	
+
 	/* Delete it */
     	DisposeObject(o);
-    }	
-    
+    }
+
     ReleaseSemaphore(&ConsoleDevice->unitListLock);
 }
 
@@ -252,14 +252,14 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice)
 /* This function should be executed on te console.device task's context only,
    so that the inputport is set correctly
 */
-   
+
 struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
 {
     struct Interrupt *cdihandler;
-    
+
     struct cdihData *cdihdata;
-    
-    
+
+
     D(bug("initCDIH(ConsoleDevice=%p)\n", ConsoleDevice));
 
     cdihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
@@ -272,7 +272,7 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
 	    if (cdihdata->inputPort)
 	    {
 	    	struct cdihMessage *msg;
-		
+
 	    	msg = AllocMem(sizeof (struct cdihMessage), MEMF_PUBLIC|MEMF_CLEAR);
 		if (msg)
 		{
@@ -280,26 +280,26 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
 	    	    port = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
 	    	    if (port)
 	    	    {
-		    
+
 		 	/* Initialize port */
 	    	    	port->mp_Flags   = PA_SIGNAL;
 	    	    	port->mp_SigBit  = SIGB_INTUITION;
-		
+
 		    	/* The task of the replyport must be initialized each time used,
 		    	   because the CDInputHandler might be called by an app
 		    	*/
-		
+
 	    	    	NEWLIST( &(port->mp_MsgList) );
-		
+
 	    	    	cdihdata->cdihReplyPort = port;
-	    	
+
 
 		    	/* Initialize Message struct */
 			cdihdata->cdihMsg = msg;
 			msg->msg.mn_ReplyPort = cdihdata->cdihReplyPort;
 			msg->msg.mn_Length = sizeof (struct cdihMessage);
-			
-			
+
+
 			/* Initialize Interrupt struct */
 		    	cdihandler->is_Code = (APTR)AROS_SLIB_ENTRY(CDInputHandler, Console);
 		    	cdihandler->is_Data = cdihdata;
@@ -311,7 +311,7 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
 		    	ReturnPtr ("initCDIH", struct Interrupt *, cdihandler);
 		    }
 		    FreeMem(cdihdata->cdihMsg, sizeof (struct cdihMessage));
-			
+
 		}
 		DeleteMsgPort(cdihdata->inputPort);
 	    }
@@ -330,15 +330,15 @@ VOID cleanupCDIH(struct Interrupt *cdihandler, struct ConsoleBase *ConsoleDevice
 {
 
     struct cdihData *cdihdata;
-    
+
     cdihdata = (struct cdihData *)cdihandler->is_Data;
 
     FreeMem(cdihdata->cdihReplyPort, sizeof (struct MsgPort));
-    
+
     FreeMem(cdihdata->cdihMsg, sizeof (struct cdihMessage));
-    
+
     DeleteMsgPort(cdihdata->inputPort);
-    
+
     FreeMem(cdihandler->is_Data, sizeof (struct cdihData));
     FreeMem(cdihandler, sizeof (struct Interrupt));
 
