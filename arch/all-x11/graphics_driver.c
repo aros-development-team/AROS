@@ -255,6 +255,36 @@ int GetSysScreen (void)
     return sysScreen;
 }
 
+void UpdateAreaPtrn (struct RastPort * rp)
+{
+    if (rp->AreaPtrn != NULL)
+    {
+        /* Just a default pattern for now :-( */
+        Pixmap stipple;
+        #define stipple_bitmap_width 4
+        #define stipple_bitmap_height 4
+        static char stipple_bitmap_bits[] = {
+          0x0c,0x0c,0x03,0x03};
+
+        XSetFillStyle (sysDisplay
+            , GetGC(rp)
+            , FillStippled
+        );
+        stipple=XCreateBitmapFromData (sysDisplay
+            , GetXWindow (rp)
+            , stipple_bitmap_bits
+            , stipple_bitmap_width
+            , stipple_bitmap_height
+        );
+        XSetStipple( sysDisplay, GetGC (rp), stipple);
+    }
+    else
+        XSetFillStyle (sysDisplay
+            , GetGC (rp)
+            , FillSolid
+        );
+}
+
 void UpdateLinePtrn (struct RastPort * rp)
 {
     XGCValues gcval;
@@ -372,6 +402,8 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
+    UpdateAreaPtrn (rp);
+
     if (rp->DrawMode & COMPLEMENT)
     {
 	ULONG pen;
