@@ -24,6 +24,7 @@ struct MUI_AboutmuiData
     Object *app;
 };
 
+#if 0
 static const unsigned long colors[] = {
 	0xECECECEC, 0xF5F5F5F5, 0xFEFEFEFE,
 	0x83838383, 0xB4B4B4B4, 0xF3F3F3F3,
@@ -857,6 +858,7 @@ static const unsigned char body[] = {
 	0x3E, 0x02, 0xBF, 0xFF, 0xEF, 0xF3, 0xA9, 0x38, 
 	0x00, 0x03, 0xD0, 0xFC, 0x03, 
 };
+#endif
 
 static void CloseAboutWindowFunc(const struct Hook *hook, Object *app, APTR msg)
 {
@@ -880,6 +882,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
     	MUIA_Window_Title, "About Zune",
 	WindowContents, VGroup,
+#if 0
 	    Child, MUI_NewObject(MUIC_Bodychunk,
 	    	MUIA_Bodychunk_Body, body,
 	    	MUIA_Bodychunk_Compression, 1,
@@ -894,6 +897,7 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		TextFrame,
 		InnerSpacing(0,0),
 	    	TAG_DONE),
+#endif
 	    Child, TextObject,
 			       MUIA_Text_PreParse, MUIX_C,
 			       MUIA_Text_Contents, about_text,
