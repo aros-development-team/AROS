@@ -64,6 +64,12 @@ AROS_LP5(UWORD, AddGList,
     AROS_LPA(struct Requester *, requester, A2),
     struct IntuitionBase *, IntuitionBase, 73, Intuition)
 
+AROS_LP3(APTR, AllocRemember,
+    AROS_LPA(struct Remember **, rememberKey, A0),
+    AROS_LPA(ULONG             , size, D0),
+    AROS_LPA(ULONG             , flags, D1),
+    struct IntuitionBase *, IntuitionBase, 66, Intuition)
+
 AROS_LP8(BOOL, AutoRequest,
     AROS_LPA(struct Window    *, window, A0),
     AROS_LPA(struct IntuiText *, body, A1),
@@ -163,6 +169,11 @@ AROS_LP1(BOOL, FreeClass,
     AROS_LPA(struct IClass *, classPtr, A0),
     struct IntuitionBase *, IntuitionBase, 119, Intuition)
 
+AROS_LP2(void, FreeRemember,
+    AROS_LPA(struct Remember **, rememberKey, A0),
+    AROS_LPA(LONG              , reallyForget, D0),
+    struct IntuitionBase *, IntuitionBase, 68, Intuition)
+
 AROS_LP2(void, FreeScreenDrawInfo,
     AROS_LPA(struct Screen   *, screen, A0),
     AROS_LPA(struct DrawInfo *, drawInfo, A1),
@@ -258,6 +269,18 @@ AROS_LP3(APTR, NewObjectA,
 AROS_LP1(struct RastPort *, ObtainGIRPort,
     AROS_LPA(struct GadgetInfo *, gInfo, A0),
     struct IntuitionBase *, IntuitionBase, 93, Intuition)
+
+AROS_LP3(void, OffGadget,
+    AROS_LPA(struct Gadget    *, gadget, A0),
+    AROS_LPA(struct Window    *, window, A1),
+    AROS_LPA(struct Requester *, requester, A2),
+    struct IntuitionBase *, IntuitionBase, 29, Intuition)
+
+AROS_LP3(void, OnGadget,
+    AROS_LPA(struct Gadget    *, gadget, A0),
+    AROS_LPA(struct Window    *, window, A1),
+    AROS_LPA(struct Requester *, requester, A2),
+    struct IntuitionBase *, IntuitionBase, 31, Intuition)
 
 AROS_LP1(struct Screen *, OpenScreen,
     AROS_LPA(struct NewScreen *, newScreen, A0),

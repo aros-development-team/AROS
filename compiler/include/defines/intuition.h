@@ -37,6 +37,13 @@
     AROS_LCA(struct Requester *, requester, A2), \
     struct IntuitionBase *, IntuitionBase, 73, Intuition)
 
+#define AllocRemember(rememberKey, size, flags) \
+    AROS_LC3(APTR, AllocRemember, \
+    AROS_LCA(struct Remember **, rememberKey, A0), \
+    AROS_LCA(ULONG             , size, D0), \
+    AROS_LCA(ULONG             , flags, D1), \
+    struct IntuitionBase *, IntuitionBase, 66, Intuition)
+
 #define AutoRequest(window, body, posText, negText, pFlag, nFlag, width, height) \
     AROS_LC8(BOOL, AutoRequest, \
     AROS_LCA(struct Window    *, window, A0), \
@@ -152,6 +159,12 @@
     AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 119, Intuition)
 
+#define FreeRemember(rememberKey, reallyForget) \
+    AROS_LC2(void, FreeRemember, \
+    AROS_LCA(struct Remember **, rememberKey, A0), \
+    AROS_LCA(LONG              , reallyForget, D0), \
+    struct IntuitionBase *, IntuitionBase, 68, Intuition)
+
 #define FreeScreenDrawInfo(screen, drawInfo) \
     AROS_LC2(void, FreeScreenDrawInfo, \
     AROS_LCA(struct Screen   *, screen, A0), \
@@ -263,6 +276,20 @@
     AROS_LC1(struct RastPort *, ObtainGIRPort, \
     AROS_LCA(struct GadgetInfo *, gInfo, A0), \
     struct IntuitionBase *, IntuitionBase, 93, Intuition)
+
+#define OffGadget(gadget, window, requester) \
+    AROS_LC3(void, OffGadget, \
+    AROS_LCA(struct Gadget    *, gadget, A0), \
+    AROS_LCA(struct Window    *, window, A1), \
+    AROS_LCA(struct Requester *, requester, A2), \
+    struct IntuitionBase *, IntuitionBase, 29, Intuition)
+
+#define OnGadget(gadget, window, requester) \
+    AROS_LC3(void, OnGadget, \
+    AROS_LCA(struct Gadget    *, gadget, A0), \
+    AROS_LCA(struct Window    *, window, A1), \
+    AROS_LCA(struct Requester *, requester, A2), \
+    struct IntuitionBase *, IntuitionBase, 31, Intuition)
 
 #define OpenScreen(newScreen) \
     AROS_LC1(struct Screen *, OpenScreen, \
