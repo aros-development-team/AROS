@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/01/21 12:35:22  bergers
+    No more debugging output.
+
     Revision 1.7  2000/01/11 16:05:00  bergers
     Update. Move some code from intuition_driver to this directoy.
 
@@ -75,16 +78,18 @@
   if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
     LockLayerRom(window->BorderRPort->Layer);
 
+
   /* I don't think I ever have to update the BorderRPort's layer */
   if (FALSE == BeginUpdate(window->WLayer))
   {
     EndUpdate(window->WLayer, FALSE);
-kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
+//kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
     return;
   }
-  
+
   /* let the user know that we're currently doing a refresh */
   window->Flags |= WFLG_WINDOWREFRESH;
+
 
   AROS_LIBFUNC_EXIT
 } /* BeginRefresh */
