@@ -23,11 +23,18 @@ Object *MUI_NewObject(char *classname, int tag,...)
 struct Library *MUIMasterBase;
 struct MUIMasterBase_intern MUIMasterBase_instance;
 
+__saveds void repeat_function(void)
+{
+    printf("MUI_Timer\n");
+}
+
 void main(void)
 {
     Object *app;
     Object *wnd;
     Object *quit_button;
+    Object *repeat_button;
+    struct Hook hook;
 
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
 
@@ -42,6 +49,8 @@ void main(void)
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     __zune_prefs_init(&__zprefs);
 
+    hook.h_Entry = (HOOKFUNC)repeat_function;
+
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
     	    MUIA_Window_Title, "test",
@@ -53,7 +62,7 @@ void main(void)
 		    GroupFrameT("A horizontal group"),
 		    Child, ColGroup(2),
 			GroupFrameT("A column group"),
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button1", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button2", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button3", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button4", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
@@ -92,6 +101,7 @@ void main(void)
 
     	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
 	set(wnd,MUIA_Window_Open,TRUE);
 
 	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
