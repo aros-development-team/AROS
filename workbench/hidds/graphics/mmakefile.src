@@ -1,0 +1,173 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+# a make.tmpl for a hiddclass would be useful
+
+CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
+
+OBJDIR	    := $(GENDIR)/$(CURDIR)
+#OS_INCLUDES := -I$(GENINCDIR)
+
+# Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
+USER_INCLUDES := -I.
+
+# will be expand to LIBNAME.LIBPOST i.e. graphics.hidd
+LIBNAME     := graphics
+ULIBNAME    := Graphics
+LIBPOST     := hidd
+
+FILES       := GraphicsClass BM_Class functable
+
+INIT_FILE   := $(LIBNAME)_init
+END_FILE    := $(LIBNAME)_end
+
+MY_INCLS    := $(wildcard include/*.h)
+DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+ifeq ($(FLAVOUR),native)
+DEPLIBS := arossupport arosc
+else
+DEPLIBS :=
+endif
+
+# Replacement is probably of limited use in this directory, but I'll
+# support it nonetheless.
+ALL_FILES := $(FILES)
+%prepare_replace rom/hidd
+%filter_replace FILES
+
+%prepare_shlib hiddgraphicscl $(SHARED_HIDDCLASS)
+
+ifndef INITFUNC
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+endif
+ifndef ENDFUNC
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
+endif
+ifndef OSMODULE
+OSMODULE := $(LIBNAME).$(LIBPOST)
+endif
+
+OBJS     := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+ALL_OBJS := $(OBJS) $(ENDFUNC)
+
+$(HIDDSDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
+	  $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	  $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+		-o $@ 2>&1 | tee $(OSMODULE).err
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+ifeq ($(FLAVOUR),native)
+	@strip $@
+else
+	@strip -x $@
+endif
+
+
+#MM kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd:
+	@$(NOP)
+
+#MM hidd-graphics-linklib : setup includes hidd-graphics-$(ARCH)-$(CPU)
+hidd-graphics-linklib : show-flags $(LIB)
+	@$(NOP)
+
+#MM hidd-graphics-module : setup includes hidd-graphics-$(ARCH)-$(CPU)
+hidd-graphics-module : show-flags $(HIDDSDIR)/$(OSMODULE)
+
+# --- QUICK HACKS BEGIN --- 
+# These are hacks for faster execution of "mmake" and "make". Use them
+# only if you know set the setup is correct and do not add them as targets
+# in other makefiles.
+#
+# Usage: 
+#   mmake AROS.hidd-graphics-quick
+#   make -f TOP=/dh1/AROS CURDIR=workbench/hidds/graphics mmakefile hidd-graphics-quick
+
+#MM hidd-graphics-module-quick : kernel-oop-$(ARCH)-$(CPU)
+hidd-graphics-module-quick : show-flags $(LIB) $(HIDDSDIR)/$(OSMODULE)
+	@$(NOP)
+
+#MM hidd-graphics-includes-quick : hidd-oop-$(ARCH)-$(CPU)
+hidd-graphics-includes-quick : setup-includes includes-copy 
+	$(NOP)
+
+# --- QUICK HACKS END ---
+
+DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+
+$(LIB): libdefs.h $(ALL_OBJS)
+	%mklib_q from=$(ALL_OBJS)
+	@$(RM) $(RMLIB)
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+	@$(NOP)
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+
+# Rule to create a .library in the local dir
+libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
+	@$(ECHO) "Generating $@..."
+	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+
+$(END_FILE).c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+# scripts/genfunctable.awk needs at least one function because a hidd
+# does not have functions the table is currently gerated with $(EDHO)
+functable.c : libdefs.h
+	@$(ECHO) "#ifndef LIBCORE_COMPILER_H"  > $@
+	@$(ECHO) "#   include <libcore/compiler.h>"  >> $@
+	@$(ECHO) "#endif"  >> $@
+	@$(ECHO) "#ifndef NULL"  >> $@
+	@$(ECHO) "#define NULL ((void *)0)"  >> $@
+	@$(ECHO) "#endif"  >> $@
+	@$(ECHO) ""  >> $@
+	@$(ECHO) '#include "libdefs.h"'  >> $@
+	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);" >> $@
+	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);"  >> $@
+	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);"  >> $@
+	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);"  >> $@
+	@$(ECHO) ""  >> $@
+	@$(ECHO) "void *const LIBFUNCTABLE[]="  >> $@
+	@$(ECHO) "{"  >> $@
+	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),"  >> $@
+	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),"  >> $@
+	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),"  >> $@
+	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),"  >> $@
+	@$(ECHO) "    (void *)-1L"  >> $@
+	@$(ECHO) "};"  >> $@
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+
+$(OBJDIR)/%.o : %.c
+	%compile_q 
+
+%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
+
+%ctoasm_q
+
+%additional_objs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+%common
+%include_deps
