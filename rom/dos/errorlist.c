@@ -2,6 +2,9 @@
     (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2001/03/10 22:44:41  stegerg
+    update to make localized dos strings work.
+
     Revision 1.7  2001/03/09 23:45:48  stegerg
     catalog for dos.library strings. fixed most error strings
     (the name of the ERROR_ defines is sometimes misleading).
@@ -31,6 +34,8 @@
 #include <dos/dosasl.h>
 #include <dos/dosextens.h>
 #include "dos_intern.h"
+
+#include <proto/dos.h>
 
 struct EString EString[]=
 {
@@ -99,3 +104,4 @@ struct EString EString[]=
                                 "command files only" },
 { 0,				"undefined error" }
 };
+

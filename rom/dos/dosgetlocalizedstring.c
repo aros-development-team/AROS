@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: DosGetString() - Support for localized strings.
@@ -13,17 +13,18 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(STRPTR, DosGetString,
+	AROS_LH1(STRPTR, DosGetLocalizedString,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, stringNum, D0),
 
 /* LOCATION */
-	struct DosLibrary *, DOSBase, 163, Dos)
+	struct DosLibrary *, DOSBase, 154, Dos)
 
 /*  FUNCTION
-	Internal DOS function, will return the string corresponding to
-	the number stringNum. 
+	Internal DOS function, will return the localized string corresponding to
+	the number stringNum. But only once IPrefs has installed locale.library's
+	replacement function. Until then this function will just return NULL.
 
     INPUTS
 	stringNum   -   The number of the string you want.
@@ -41,10 +42,10 @@
     BUGS
 
     SEE ALSO
-    	DosGetLocalizedString()
+    	DosGetString()
 	
     INTERNALS
-	This is dosPrivate5()
+	This is dosPrivate4()
 
     HISTORY
 
@@ -53,26 +54,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *, DOSBase)
 
-    STRPTR retval;
-
-    retval = DosGetLocalizedString(stringNum);
-
-    if (!retval)
-    {
-    	struct EString *es = EString;
-	
-	while(es->Number)
-	{
-	    if(es->Number == stringNum)
-	    {
-		retval = es->String;
-		break;
-	    }
-	    es++;
-	}
-    }
-    
-    return retval;
+    return NULL;
     
     AROS_LIBFUNC_EXIT
     
