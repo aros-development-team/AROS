@@ -24,7 +24,7 @@ MSG_CANT_CREATE_WIN
 Kann Fenster nicht erzeugen!
 ;
 MSG_WINTITLE
-Landes-Voreinsteller (Locale)
+Seriell-Voreinsteller (Serial)
 ;
 MSG_MEN_PROJECT
 Projekt
@@ -57,10 +57,10 @@ MSG_MEN_SETTINGS_CREATEICONS
 I\0Piktogramme erzeugen?
 ;
 MSG_ASL_OPEN_TITLE
-Laden Locale-Vorgaben
+Laden Seriell-Vorgaben
 ;
 MSG_ASL_SAVE_TITLE
-Speichern Locale-Vorgaben
+Speichern Seriell-Vorgaben
 ;
 MSG_OK
 Ok
@@ -78,7 +78,7 @@ MSG_GAD_BAUDRATE
 Baudrate
 ;
 MSG_GAD_PARITY
-Paritaet
+Parität
 ;
 MSG_GAD_STOPBITS
 Stopbits
@@ -87,10 +87,10 @@ MSG_GAD_DATABITS
 Datenbits
 ;
 MSG_GAD_INPUTBUFFERSIZE
-Eingabepuffergroesse
+Eingabepuffergröße
 ;
 MSG_GAD_OUTPUTBUFFERSIZE
-Ausgabepuffergroesse
+Ausgabepuffergröße
 ;
 MSG_PARITY_NONE
 Keine
