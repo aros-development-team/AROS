@@ -23,6 +23,8 @@
 #define AROS_SERIAL_DEBUG		@aros_serial_debug@
 #define AROS_IDE_DRIVER                 @aros_ide_driver@
 
+#define AROS_PALM_DEBUG_HACK	    	@aros_palm_debug_hack@
+
 #define AROS_MUNGWALL_DEBUG 	    	@aros_mungwall_debug@
 #define AROS_STACK_DEBUG    	    	@aros_stack_debug@
 
