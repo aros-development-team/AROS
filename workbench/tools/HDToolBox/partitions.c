@@ -473,8 +473,8 @@ struct PartitionNode *pn;
 					SetPartitionAttrsA
 					(
 						pn->ph,
-						PT_DOSENVEC, &pn->de,
 						PT_TYPE, &pn->type,
+						PT_NAME, pn->ln.ln_Name,
 						TAG_DONE
 					);
 					changed = TRUE;
@@ -482,15 +482,17 @@ struct PartitionNode *pn;
 			}
 			if (pn->flags & PNF_FLAGS_CHANGED)
 			{
-			LONG flag=FALSE;
+			LONG flag;
 
-				if (pn->flags & PNF_BOOTABLE)
-					flag = TRUE;
-				SetGadgetAttrsA(pn->ph, PT_BOOTABLE, flag, TAG_DONE);
-				flag = FALSE;
-				if (pn->flags & PNF_AUTOMOUNT)
-					flag = TRUE;
-				SetGadgetAttrsA(pn->ph, PT_AUTOMOUNT, flag, TAG_DONE);
+				flag = (pn->flags & PNF_BOOTABLE) ? TRUE : FALSE;
+				SetPartitionAttrsA(pn->ph, PT_BOOTABLE, flag, TAG_DONE);
+				flag = (pn->flags & PNF_AUTOMOUNT) ? TRUE : FALSE;
+				SetPartitionAttrsA(pn->ph, PT_AUTOMOUNT, flag, TAG_DONE);
+				changed = TRUE;
+			}
+			if (pn->flags & PNF_DE_CHANGED)
+			{
+				SetPartitionAttrsA(pn->ph, PT_DOSENVEC, &pn->de, TAG_DONE);
 				changed = TRUE;
 			}
 		}
@@ -554,7 +556,7 @@ ULONG block;
 	{
 		/* set new starting sector */
 		pn->de.de_LowCyl = value;
-		pn->flags |= PNF_CHANGED;
+		pn->flags |= PNF_CHANGED | PNF_DE_CHANGED;
 	}
 	viewPartitionData(mainwin, table, pn);
 }
@@ -577,7 +579,7 @@ ULONG block;
 			if (validValue(table, pn, block))
 			{
 				pn->de.de_HighCyl = value;
-				pn->flags |= PNF_CHANGED;
+				pn->flags |= PNF_CHANGED | PNF_DE_CHANGED;
 			}
 		}
 	}
@@ -604,7 +606,7 @@ ULONG block;
 		if (validValue(table, pn, block))
 		{
 			pn->de.de_HighCyl = pn->de.de_LowCyl+value-1;
-			pn->flags |= PNF_CHANGED;
+			pn->flags |= PNF_CHANGED | PNF_DE_CHANGED;
 		}
 	}
 	viewPartitionData(mainwin, table, pn);
@@ -766,3 +768,21 @@ ULONG pos;
 	}
 	return 0;
 }
+
+void changeBootPri(struct Window *win, struct PartitionNode *pn, LONG val) {
+
+	if ((val<=127) && (val>=-128))
+	{
+		pn->de.de_BootPri = val;
+		pn->flags |= PNF_CHANGED | PNF_DE_CHANGED;
+	}
+	viewPartitionData(win, pn->root, pn);
+}
+
+void changeName(struct Window *win, struct PartitionNode *pn, STRPTR name) {
+
+	strcpy(pn->ln.ln_Name, name);
+	pn->flags |= PNF_CHANGED;
+	viewPartitionData(win, pn->root, pn);
+}
+
