@@ -2,11 +2,12 @@
 #define	_GRP_H_
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <sys/types.h>
+#include <sys/cdefs.h>
 
 struct group
 {
@@ -15,5 +16,11 @@ struct group
     gid_t   gr_gid;       /* Group ID */
     char  **gr_mem;       /* Group members */
 };
+
+__BEGIN_DECLS
+
+struct group *getgrgid(gid_t gid);
+
+__END_DECLS
 
 #endif /* _GRP_H_ */

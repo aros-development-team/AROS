@@ -161,6 +161,8 @@ SHARED	:= \
 	gettimeofday \
         getuid \
         geteuid \
+        getgrgid \
+        getpwuid \
 	gmtime \
 	isatty \
 	jrand48 \

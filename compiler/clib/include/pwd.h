@@ -7,6 +7,7 @@
 */
 
 #include <sys/types.h>
+#include <sys/cdefs.h>
 
 struct passwd
 {
@@ -18,5 +19,11 @@ struct passwd
   char  *pw_dir;     /* Home directory  */
   char  *pw_shell;   /* Shell */
 };
+
+__BEGIN_DECLS
+
+struct passwd *getpwuid(uid_t uid);
+
+__END_DECLS
 
 #endif /* _PWD_H_ */

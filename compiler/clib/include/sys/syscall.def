@@ -173,4 +173,5 @@ SYSTEM_CALL (spawnv)
 SYSTEM_CALL (chown)
 SYSTEM_CALL (spawnvp)
 SYSTEM_CALL (readlink)
-
+SYSTEM_CALL (getpwuid)
+SYSTEM_CALL (getgrgid)
