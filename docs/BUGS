@@ -369,3 +369,15 @@ BUG000052
 nlorentz@online.no
 Buttons in mxgads are no longer highlighted when pressed.
 
+BUG000053
+bergers@aros.org
+Games/Mine doesn't run any more. Crashes immediately.
+
+BUG000054
+bergers@aros.org
+There seems to be a problem when colors are changed with the background when
+a window is moved. Probably also the same problem that causes the lines to
+be drawn into the window in fish/304_clines.
+
+BUG000055
+newshell draws the window but then segfaults
