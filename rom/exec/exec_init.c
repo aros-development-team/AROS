@@ -141,6 +141,13 @@ AROS_UFH5S(void, IntServer,
     AROS_USERFUNC_EXIT
 }
 
+
+#ifndef HAS_OWN_DISPATCHER
+/*
+ * Some implementations might bring along their own dispatcher
+ * and they will have to implement it somewhere else
+ * and also add it to the system at another place.
+ */
 AROS_UFH4(int, Dispatcher,
     AROS_UFHA(struct Custom *, custom, A0),
     AROS_UFHA(APTR, is_Data, A1),
@@ -180,6 +187,8 @@ AROS_UFH4(int, Dispatcher,
 
     AROS_USERFUNC_EXIT
 } /* Dispatcher */
+#endif
+
 
 AROS_UFH1(void, idleCount,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -368,6 +377,7 @@ sysBase->VBlankFrequency = 50;
 	    }
     }
 
+#ifndef HAS_OWN_DISPATCHER
     {
 	/* Install the task dispatcher */
 	struct Interrupt *is;
@@ -380,6 +390,7 @@ sysBase->VBlankFrequency = 50;
 	is->is_Code = (void (*)())&Dispatcher;
 	AddIntServer(INTB_VERTB,is);
     }
+#endif
 
     /* We now start up the interrupts */
     Enable();
