@@ -789,7 +789,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 				    {
 				    	/* Abort async CMD_READ from console.device */
 					
-					if (!CheckIO(ioReq(fh->conreadio))) AbortIO( oReq(fh->conreadio));
+					if (!CheckIO(ioReq(fh->conreadio))) AbortIO(ioReq(fh->conreadio));
 	    	    	    	    	WaitIO(ioReq(fh->conreadio));					
 				    }
 				    
