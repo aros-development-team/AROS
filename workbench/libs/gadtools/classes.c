@@ -99,24 +99,6 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
     return retval;
 }
 
-IPTR button_render(Class * cl, Object * obj, struct gpRender * msg)
-{
-    struct ButtonData *data = INST_DATA(cl, obj);
-
-    /* Let our superclass render first */
-    if (!DoSuperMethodA(cl, obj, (Msg) msg))
-	return FALSE;
-
-    /* Draw disabled pattern */
-    if ((G(obj)->Flags & GFLG_DISABLED))
-	drawdisabledpattern(GadToolsBase,
-			  msg->gpr_RPort, data->dri->dri_Pens[SHADOWPEN],
-			    G(obj)->LeftEdge, G(obj)->TopEdge,
-			    G(obj)->Width, G(obj)->Height);
-
-    return TRUE;
-}
-
 
 AROS_UFH3(static IPTR, dispatch_buttonclass,
 	  AROS_UFHA(Class *, cl, A0),
@@ -151,10 +133,6 @@ AROS_UFH3(static IPTR, dispatch_buttonclass,
 	    *(OPG(msg)->opg_Storage) = 0UL;
 	    retval = 0UL;
 	}
-	break;
-
-    case GM_RENDER:
-	retval = button_render(cl, obj, (struct gpRender *) msg);
 	break;
 
     default:

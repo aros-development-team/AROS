@@ -41,12 +41,12 @@ struct GadToolsBase_intern; /* prerefrence */
 /* Internal prototypes */
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 			    struct NewGadget *ng);
+void freeitext(struct GadToolsBase_intern *GadToolsBase,
+               struct IntuiText *itext);
 void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
                       struct RastPort *rport,
                       WORD left, WORD top, WORD width, WORD height,
                       struct TagItem *taglist);
-void drawdisabledpattern(struct GadToolsBase_intern *GadToolsBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
-
 Class *makebuttonclass(struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,

@@ -119,7 +119,6 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
         tags[4].ti_Data = stdgadtags[TAG_Height].ti_Data;
     else
         stdgadtags[TAG_Width].ti_Data = MX_WIDTH;
-    tags[5].ti_Data = stdgadtags[TAG_LabelPlace].ti_Data;
     switch (stdgadtags[TAG_LabelPlace].ti_Data & 0x1f)
     {
     case PLACETEXT_LEFT:
@@ -151,7 +150,17 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
         case PLACETEXT_BELOW:
             stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Below;
             break;
+        default:
+            freeitext(GadToolsBase,
+                      (struct IntuiText *)stdgadtags[TAG_IText].ti_Data);
+            stdgadtags[TAG_IText].ti_Data = (IPTR)NULL;
+            break;
         }
+    } else
+    {
+        freeitext(GadToolsBase,
+                  (struct IntuiText *)stdgadtags[TAG_IText].ti_Data);
+        stdgadtags[TAG_IText].ti_Data = (IPTR)NULL;
     }
 
     while (labellist[labels])

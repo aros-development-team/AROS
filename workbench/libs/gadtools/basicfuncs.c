@@ -23,20 +23,15 @@
 
 
 
-UWORD disabledpattern[2] = {0x4444, 0x1111};
-
-/* draws a disabled pattern */
-void drawdisabledpattern(struct GadToolsBase_intern *GadToolsBase,
-			 struct RastPort *rport, UWORD pen,
-			 WORD left, WORD top, UWORD width, UWORD height)
+void freeitext(struct GadToolsBase_intern *GadToolsBase,
+               struct IntuiText *itext)
 {
-    SetABPenDrMd(rport, pen, 0, JAM1);
-    rport->AreaPtrn = disabledpattern;
-    rport->AreaPtSz = 1;
-    RectFill(rport, left, top, left+width-1, top+height-1);
+    if (!itext)
+        return;
+    FreeVec(itext->ITextFont->ta_Name);
+    FreeVec(itext->ITextFont);
+    FreeVec(itext);
 }
-
-
 
 struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 			    struct NewGadget *ng)
