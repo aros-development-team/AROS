@@ -1415,7 +1415,6 @@ void _BackFillRegion(struct Layer * l,
 {
   struct RegionRectangle * RR;
 
-#if 0  
   if (TRUE == addtodamagelist)
   {
     RR  = r->RegionRectangle;
@@ -1428,21 +1427,32 @@ void _BackFillRegion(struct Layer * l,
       {
         struct Rectangle rect = RR->bounds;
 
-kprintf("%s: adding to damagelist!\n",__FUNCTION__);
+//kprintf("%s: adding to damagelist!\n",__FUNCTION__);
       
         /* Region coords are screen relative, but damagelist coords are layer relative! */
       
-        _TranslateRect(&rect, -l->bounds.MinX, -l->bounds.MinY);
+        _TranslateRect(&rect, 
+                       r->bounds.MinX - l->bounds.MinX,
+                       r->bounds.MinY - l->bounds.MinY);
+#if 0
+kprintf("%s: Adding %d/%d-%d/%d to damagelist!\t",
+        __FUNCTION__,
+        rect.MinX,
+        rect.MinY,
+        rect.MaxX,
+        rect.MaxY
+        );
+#endif
+        OrRectRegion(l->DamageList, &rect);
 
-#warning Deactivated!
-//        OrRectRegion(l->DamageList, &rect);
-      
+        _TranslateRect(&rect, 
+                       -r->bounds.MinX + l->bounds.MinX,
+                       -r->bounds.MinY + l->bounds.MinY);
 
         RR = RR->Next;
       }
     }
   }
-#endif
 
   AndRegionRegion(l->VisibleRegion, r);
 
