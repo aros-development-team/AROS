@@ -534,9 +534,7 @@ GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
 endif
 
 ifneq ($(findstring %(modtype),mcc mui mcp),)
-GENFILES_TMP += %(objdir)/%(modname)_stubs.c \
-                %(objdir)/%(modname)_mcc_query.c \
-                %(objdir)/%(modname)_mcc_init.c
+GENFILES_TMP += %(objdir)/%(modname)_stubs.c
 endif
 
 $(GENFILES_TMP) : %(conffile) $(GENMODULE) %(reffile)
@@ -759,7 +757,7 @@ BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_INCLUDE$(BDID)) -I$(BD_OBJDIR$(BDID)) -
 endif
 
 # Add additional files depending the module type
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),library device mcc mui mcp resource),)
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library device mcc mui mcp resource gadget),)
     $(error unhandled MODTYPE %(modtype))
 endif
 ifeq ($(BD_MODTYPE$(BDID)),library)
@@ -792,17 +790,12 @@ endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
   BD_MODDIR$(BDID)       := $(BD_PREFIX$(BDID))/$(AROS_DIR_CLASSES)/Zune
-  BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o \
-                            $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init.o
   BD_LINKLIBGENFILES$(BDID):= 
-  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query \
-  		targetdir=$(BD_OBJDIR$(BDID)) \
-		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
-		compiler=%(compiler)
-  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init \
-  		targetdir=$(BD_OBJDIR$(BDID)) \
-		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
-		compiler=%(compiler)
+endif
+
+ifeq ($(BD_MODTYPE$(BDID)),gadget)
+  BD_MODDIR$(BDID)       := $(BD_PREFIX$(BDID))/$(AROS_DIR_CLASSES)/Gadgets
+  BD_LINKLIBGENFILES$(BDID):= 
 endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource mcc mcp),)
