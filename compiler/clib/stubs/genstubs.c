@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
 	    printf(STUBCODE,
 	           names[n], "aroscbase",
 	           &(__AROS_GETJUMPVEC(0, n+1+LIB_RESERVED)->vec));
+	    printf("\n");
 
 	    return 0;
 	}
