@@ -24,7 +24,7 @@
 #    include "input_intern.h"
 #endif
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /****************************************************************************************/
@@ -208,7 +208,7 @@ AROS_LH3(void, open,
 
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
-        D(bug("input.device/open: IORequest structure passed to OpenDevice is too small\n"));
+        bug("[InputDev] Open: IORequest structure passed to OpenDevice is too small\n");
         ioreq->io_Error = IOERR_OPENFAIL;
 	return;
     }
