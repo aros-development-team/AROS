@@ -83,8 +83,8 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
 
-  if (bitScaleArgs->bsa_SrcBitMap->Pad  != 0  || 
-      bitScaleArgs->bsa_DestBitMap->Pad != 0 || 
+  if (bitScaleArgs->bsa_SrcBitMap->pad  != 0  || 
+      bitScaleArgs->bsa_DestBitMap->pad != 0 || 
       bitScaleArgs->bsa_SrcBitMap->Flags  & BMF_AROS_HIDD || 
       bitScaleArgs->bsa_DestBitMap->Flags & BMF_AROS_HIDD)
   {

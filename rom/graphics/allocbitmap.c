@@ -152,7 +152,7 @@
     if (
 	depth > 8
 	|| (flags & BMF_DISPLAYABLE)
-/*	|| (friend_bitmap && friend_bitmap->Pad != 0) */
+/*	|| (friend_bitmap && friend_bitmap->pad != 0) */
 	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
     	#warning Should	we also check for BMF_MINPLANES ?
 	|| (flags & BMF_SPECIALFMT) /* Cybergfx bitmap */
@@ -387,7 +387,7 @@
 	    nbm->Rows	     = sizey;
 	    nbm->Flags	     = flags;
 	    nbm->Depth	     = depth;
-	    nbm->Pad	     = 0;
+	    nbm->pad	     = 0;
 
 	    for (plane=0; plane<depth; plane++)
 	    {

@@ -36,7 +36,7 @@ struct BitMap
     UWORD    Rows;
     UBYTE    Flags;
     UBYTE    Depth;
-    UWORD    Pad;
+    UWORD    pad;
     PLANEPTR Planes[8];
 };
 
