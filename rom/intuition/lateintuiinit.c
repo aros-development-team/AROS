@@ -15,6 +15,7 @@
 
 #include <aros/config.h>
 
+#define NO_PATTERN 0
 
 static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 
@@ -96,7 +97,9 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 
 	    /* ...and make it the default */
 	    SetDefaultPubScreen(NULL);
+#if !NO_PATTERN
 	    MakeWBPattern(screen, IntuitionBase);
+#endif
 	    return TRUE;
 	}
     }
@@ -105,6 +108,8 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 
     AROS_LIBFUNC_EXIT
 } /* LateIntuiInit */
+
+#if !NO_PATTERN
 
 #define PATTERN_WIDTH 128
 #define PATTERN_HEIGHT 128
@@ -633,3 +638,6 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	Alert(AT_DeadEnd);
     }
 }
+
+#endif
+
