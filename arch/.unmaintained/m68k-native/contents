@@ -1,6 +1,3 @@
-initcore.c - Non-functional initialisation of exec signal handling core
-	This will be replaced with true trap and interrupt handlers.
-
 machine.h - Constants which allow Exec to adjust to
 	the local hardware.
 
