@@ -368,16 +368,16 @@
 	    /* Print '-' (if there is one and the pad character is no space) */
 	    if(minus&&fill!=' ')
 		AROS_UFC2(void, PutChProc,
-		   AROS_UFCA(STRPTR, '-'      , D0),
-		   AROS_UFCA(APTR  , PutChData, A3)
+		   AROS_UFCA(UBYTE, '-'      , D0),
+		   AROS_UFCA(APTR , PutChData, A3)
 		);
 #endif
 	    /* Pad left if not left aligned */
 	    if(!left)
 		for(i=width+minus;i<minwidth;i++)
 		    AROS_UFC2(void, PutChProc,
-		       AROS_UFCA(int , fill     , D0),
-		       AROS_UFCA(APTR, PutChData, A3)
+		       AROS_UFCA(UBYTE, fill     , D0),
+		       AROS_UFCA(APTR , PutChData, A3)
 		    );
 
 	    /* Print '-' (if there is one and the pad character is a space) */
@@ -387,8 +387,8 @@
 	    if(minus)
 #endif
 		AROS_UFC2(void, PutChProc,
-		   AROS_UFCA(char, '-'      , D0),
-		   AROS_UFCA(APTR, PutChData, A3)
+		   AROS_UFCA(UBYTE, '-'      , D0),
+		   AROS_UFCA(APTR , PutChData, A3)
 		);
 
 	    /* Print body upto width */
@@ -398,7 +398,7 @@
 		   AROS_UFCA(UBYTE, *buf      , D0),
 		   AROS_UFCA(APTR , PutChData , A3)
 		);
-		
+
 		buf++;
 	    }
 
@@ -406,25 +406,25 @@
 	    if(left)
 		for(i=width+minus;i<minwidth;i++)
 		    /* Pad right with '0'? Sigh - if the user wants to! */
- 		    AROS_UFC2(void, PutChProc,
-		       AROS_UFCA(int , fill      , D0),
-		       AROS_UFCA(APTR, PutChData , A3)
+		    AROS_UFC2(void, PutChProc,
+		       AROS_UFCA(UBYTE, fill      , D0),
+		       AROS_UFCA(APTR , PutChData , A3)
 		    );
-		    
+
 	}else
 	{
 	    /* No '%' sign? Put the formatstring out */
-  	    AROS_UFC2(void, PutChProc,
-	 	AROS_UFCA(STRPTR, *FormatString,  D0),
-		AROS_UFCA(APTR  , PutChData    , A3)
+	    AROS_UFC2(void, PutChProc,
+		AROS_UFCA(UBYTE, *FormatString, D0),
+		AROS_UFCA(APTR ,  PutChData   , A3)
 	    );
 	    FormatString++;
 	}
     }
     /* All done. Put the terminator out. */
     AROS_UFC2(void, PutChProc,
-	AROS_UFCA(STRPTR, '\0'      , D0),
-	AROS_UFCA(APTR  , PutChData , A3)
+	AROS_UFCA(UBYTE, '\0'     , D0),
+	AROS_UFCA(APTR , PutChData, A3)
     );
 
 
