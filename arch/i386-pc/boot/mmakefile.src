@@ -69,7 +69,7 @@ $(OBJDIR)/%.d : %.c
 #MM kernel-link-native : setup Drivers-native
 kernel-link-native : $(OSGENDIR)/boot/kernel
 
-OBJS := $(foreach f,$(ADDITIONAL_OBJS) $(FILES),$(OSGENDIR)/boot/$(f).o) \
+OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) \
 	$(OSGENDIR)/graphics/graphics_driver.o \
 	$(OSGENDIR)/intuition/intuition_driver.o
 
