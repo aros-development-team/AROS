@@ -2,3 +2,4 @@ Makefile
 autoconfig.h
 config.log
 config.status
+configure.lineno
