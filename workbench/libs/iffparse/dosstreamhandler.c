@@ -6,6 +6,7 @@
     Lang: English.
 */
 #define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /********************/
@@ -28,14 +29,7 @@ ULONG DOSStreamHandler
     switch (cmd->sc_Command)
     {
     case IFFCMD_READ:
-#if DEBUG
-#ifdef _AROS
-	VPrintf ("   Reading %ld bytes\n", &cmd->sc_NBytes);
-#else
-	dprintf ("   Reading %ld bytes\n", cmd->sc_NBytes);
-#endif
-	Flush (Output ());
-#endif
+	D(bug("   Reading %ld bytes\n", cmd->sc_NBytes));
 
 	error =
 	(
@@ -68,14 +62,7 @@ ULONG DOSStreamHandler
 	break;
 
     case IFFCMD_SEEK:
-#if DEBUG
-#ifdef _AROS
-	VPrintf ("   Seeking %ld bytes\n", &cmd->sc_NBytes);
-#else
-	dprintf ("   Seeking %ld bytes\n", cmd->sc_NBytes);
-#endif
-	Flush (Output ());
-#endif
+	D(bug("   Seeking %ld bytes\n", cmd->sc_NBytes));
 
 	error =
 	(
