@@ -162,7 +162,7 @@ patch_cached()
     
     local patchname=`echo $patch | cut -d: -f1`
     
-    if test "$patchname" != ""; then
+    if test "x$patchname" != "x"; then
         if ! test -f ${location}/.${patchname}.applied;  then
             if do_patch "$location" "$patch"; then
 	        echo yes > ${location}/.${patchname}.applied
@@ -174,12 +174,12 @@ patch_cached()
     fi
 }
 
-if test "$1" == ""; then
+if test "x$1" == "x"; then
     usage "$0"
 fi
 
-while  test "$1" != ""; do
-    if test "$2" == "" -o "${1:0:1}" == "-" -a  "${2:0:1}" == "-"; then
+while  test "x$1" != "x"; do
+    if test "x$2" == "x" -o "x${1:0:1}" == "x-" -a  "x${2:0:1}" == "x-"; then
         usage "$0"
     fi
     
@@ -206,7 +206,7 @@ fi
 
 for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
-    if test "$patch" != ""; then
+    if test "x$patch" != "x"; then
         if ! fetch_cached "$patches_origins" "$patch" "$destination"; then
             error "Error while fetching the patch \`$patch'."
         fi
