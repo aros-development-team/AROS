@@ -103,7 +103,7 @@ struct GfxBase
     UWORD  control_delta_ntsc;
 
     struct MonitorSpec     * current_monitor;
-    struct List              Monitor_List;
+    struct List              MonitorList;
     struct MonitorSpec     * default_monitor;
     struct SignalSemaphore * MonitorListSemaphore;
 
