@@ -5,3 +5,5 @@ src2html*
 decode.lite
 jobserv-test.lite
 old
+*.inc
+.lrefs
