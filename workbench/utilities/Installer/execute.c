@@ -1489,13 +1489,75 @@ void *params;
 			  }
 			  break;
 
+      case _FILEONLY	: /* Return the file part of a pathname */
+			  if ( current->next != NULL )
+			  {
+			    current = current->next;
+			    ExecuteCommand();
+			    if ( current->arg != NULL )
+			    {
+			      char *tempnam;
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+			        string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				if( ( clip = get_var_arg( current->arg ) ) == NULL)
+				  string = strdup( current->arg );
+				else
+				  string = strip_quotes( clip );
+			      }
+			      tempnam = FilePart( string );
+			      i = strlen( tempnam );
+			      clip = malloc( sizeof(char) * i + 3);
+			      clip[0] = '"';
+			      strcpy( &clip[1], tempnam);
+			      clip[ i + 1 ] = '"';
+			      clip[ i + 2 ] = 0;
+			      current->parent->arg = clip;
+			      free( string );
+			    }
+			  }
+			  break;
+
+      case _PATHONLY	: /* Return the path part of a pathname */
+			  if ( current->next != NULL )
+			  {
+			    char *tempnam;
+
+			    current = current->next;
+			    ExecuteCommand();
+			    if ( current->arg != NULL )
+			    {
+			      if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
+			      {
+			        string = strip_quotes( current->arg );
+			      }
+			      else
+			      {
+				if( ( clip = get_var_arg( current->arg ) ) == NULL)
+				  string = strdup( current->arg );
+				else
+				  string = strip_quotes( clip );
+			      }
+			      tempnam = PathPart( string );
+			      clip = malloc( sizeof(char) * (tempnam - string + 3) );
+			      clip[0] = '"';
+			      strncpy( &clip[1], string, tempnam - string );
+			      clip[ tempnam - string + 1 ] = '"';
+			      clip[ tempnam - string + 2 ] = 0;
+			      current->parent->arg = clip;
+			      free( string );
+			    }
+			  }
+			  break;
 
       /* Here are all unimplemented commands */
       case _COPYFILES	:
       case _COPYLIB	:
       case _EARLIER	:
       case _EXPANDPATH	:
-      case _FILEONLY	:
       case _FOREACH	:
       case _GETASSIGN	:
       case _GETDEVICE	:
@@ -1506,7 +1568,6 @@ void *params;
       case _GETVERSION	:
       case _ICONINFO	:
       case _MAKEASSIGN	:
-      case _PATHONLY	:
       case _PATMATCH	:
       case _PROTECT	:
       case _REXX	:
