@@ -190,7 +190,7 @@ void UpdateDisp(struct Gadget 		*gad,
     strinfo->DispCount = TextFit(rp, dispstr,
     		strinfo->NumChars - strinfo->DispPos,
     		&te, NULL, 1,
-    		gad->Width,
+    		bbox->Width,
     		rp->Font->tf_YSize);
 
     /* 0-terminate string */			
