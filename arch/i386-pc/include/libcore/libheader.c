@@ -69,7 +69,7 @@
 #   define LC_LIBBASESIZE  sizeof (struct LibHeader)
 #endif
 
-#define	TEXT_SECTION __attribute__((section(".text"))
+#define	TEXT_SECTION __attribute__((section(".text")))
 
 /* -----------------------------------------------------------------------
     entry:
