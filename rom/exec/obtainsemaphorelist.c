@@ -23,14 +23,21 @@
 	struct ExecBase *, SysBase, 97, Exec)
 
 /*  FUNCTION
-	This function obtains all semaphores in the list at once.
-	Note that this doesn't include arbitration for the list as
-	a whole - you will have to arbitrate for the whole list yourself.
+	This function takes a list of semaphores and locks all of them at
+	once. It is only possible for one task to attempt to lock all the
+	semaphores at once (since it uses the ss_MultipleLink field), so
+	you will need to protect the entire list (with another semaphore
+	perhaps?).
+
+	If somebody attempts to lock more than one semaphore on this list
+	with ObtainSemaphore() it is possible for a deadlock to occur due
+	to two tasks waiting for a semaphore that the other has obtained.
 
     INPUTS
 	sigSem - pointer to list full of semaphores
 
     RESULT
+	The entire semaphore list will be locked.
 
     NOTES
 
@@ -47,25 +54,89 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct Node *n;
 
-#warning !!!!!!!!!! ObtainSemaphoreList must be rewritten !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    struct SignalSemaphore *ss;
+    struct Task * const me = FindTask(NULL);
+    WORD failedObtain = 0;
 
     /*
-	There's no arbitration needed - the first semaphore in the list
-	list arbitrates for the full list.
-	Get first element in the list.
-    */
-    n=sigSem->lh_Head;
+     *	The algorithm here is to attempt to lock all the semaphores in the
+     *	list, and if any fail, to post a SemaphoreRequest for the
+     *	semaphore.
+     *
+     *	If we succeed in locking them all, we can return successfully,
+     *	otherwise we must wait for the remaining semaphores to become
+     *	available.
+     *
+     *	Note that we sleep on each un-obtained semaphore as we pass through
+     *	the list. This way by the time we get to the end of the list we can
+     *	be sure that we have obtained all the semaphores. It is possible
+     *	that whilst we are waiting for one semaphore, one later in the list
+     *	will be granted to us. In that case we do not have to wait for it.
+     */
+     
+    Forbid();
 
-    /* And follow it. */
-    while(n->ln_Succ!=NULL)
+    ForeachNode(sigSem,(struct Node *)ss)
     {
-	/* Free the semaphore */
-	ReleaseSemaphore((struct SignalSemaphore *)n);
-
-	/* Get next element */
-	n=n->ln_Succ;
+	/* QueueCount == -1 means unlocked */
+	ss->ss_QueueCount++;
+	if(ss->ss_QueueCount != 0)
+	{
+	    /*
+	     *	Locked, post a wait message. We use the field
+	     *	ss_MultipleLink, which is why this function requires an
+	     *	external arbitrator.
+	     */
+	    ss->ss_MultipleLink.sr_Waiter = me;
+	    AddTail
+	    (
+		(struct List *)&ss->ss_WaitQueue,
+		(struct Node *)&ss->ss_MultipleLink
+	    );
+	    failedObtain++;
+	}
+	else
+	{
+	    /* We have it... */
+	    ss->ss_NestCount++;
+	    ss->ss_Owner = me;
+	}
     }
+
+    if(failedObtain > 0)
+    {
+	ss = sigSem->lh_Head;
+
+	while(ss->ss_Link.ln_Succ != NULL)
+	{
+	    if(ss->ss_Owner != me)
+	    {
+		/*
+		 *  Somebody else has this one. Wait, then check again.
+		 *  Check again because the signal could have been for a
+		 *  different semaphore in the list we are waiting for.
+		 */
+		Wait(SIGF_SINGLE);
+	    }
+	    else
+	    {
+		/* We got it, go on to the next one */
+		ss = ss->ss_Link.ln_Succ;
+		failedObtain--;
+	    }
+	}
+    }
+
+#ifndef NO_CONSISTENCY_CHECKS
+    if(failedObtain != 0)
+    {
+	kprintf("\n\nObtainSemaList: Obtained count mismatch %d\n", failedObtain);
+	Alert(AN_BadSemaphore);
+    }
+#endif
+
+    Permit();
+
     AROS_LIBFUNC_EXIT
-} /* ReleaseSemaphoreList */
+} /* ObtainSemaphoreList */
