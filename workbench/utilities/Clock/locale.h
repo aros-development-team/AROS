@@ -8,7 +8,7 @@
 
 #include <exec/types.h>
 
-#define CATCOMP_ARRAY
+#define CATCOMP_NUMBERS
 #include "clock_strings.h"
 
 /*** Prototypes *************************************************************/
