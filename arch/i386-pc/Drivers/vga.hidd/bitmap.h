@@ -58,4 +58,6 @@ VOID bitmap_putpixel(Class *, Object *, struct pHidd_BitMap_PutPixel *);
 HIDDT_Pixel bitmap_getpixel(Class *, Object *, struct pHidd_BitMap_GetPixel *);
 ULONG bitmap_drawpixel(Class *, Object *, struct pHidd_BitMap_DrawPixel *);
 
+void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
+
 #endif /* _BITMAP_H */
