@@ -49,7 +49,6 @@ struct MUI_StringData {
     struct Hook *msd_EditHook;
     Object      *msd_AttachedList;
     LONG         msd_RedrawReason;
-    LONG         msd_MaxLen;
 
     /* Fields mostly ripped from rom/intuition/strgadgets.c */
     STRPTR Buffer;      /* char container                   */
@@ -95,32 +94,49 @@ enum {
     DO_UNKNOWN,
 };
 
+
+/**************************************************************************
+ Buffer_SetNewContents
+ Allocate memory for buffer
+**************************************************************************/
+static BOOL Buffer_Alloc (struct MUI_StringData *data)
+{
+    data->Buffer = (STRPTR)AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
+    if (NULL == data->Buffer)
+    {
+	bug("MUIC_String: Can't allocate %ld bytes\n",
+	    data->BufferSize * sizeof(char));
+	return FALSE;
+    }
+    return TRUE;
+}
+
 /**************************************************************************
  Buffer_SetNewContents
  Initialize buffer with a string, replace former content if any
 **************************************************************************/
-static void Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str)
+static BOOL Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str)
 {
+    if (NULL == data->Buffer)
+	return FALSE;
+
     if (NULL == str)
     {
+	data->Buffer[0] = 0;
 	data->NumChars = 0;
     }
     else
     {
 	data->NumChars = strlen(str);
-	if (data->BufferSize <= data->NumChars)
-	{
-	    if (data->Buffer)
-		FreeVec(data->Buffer);
-	    data->BufferSize = (data->NumChars + 8) * 2;
-	    data->Buffer = (STRPTR)AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
-	    if (NULL == data->Buffer)
-		return;
-	}
-	strcpy(data->Buffer, str);
+	if (data->NumChars >= data->BufferSize)
+	    data->NumChars = data->BufferSize - 1;
+
+	strncpy(data->Buffer, str, data->BufferSize);
+	data->Buffer[data->BufferSize - 1] = 0;
     }
     data->BufferPos = data->NumChars;
     data->DispPos = 0;
+    return TRUE;
 }
 
 /**************************************************************************
@@ -129,33 +145,18 @@ static void Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
 **************************************************************************/
 static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
 {
-    STRPTR new_buf = NULL;
     STRPTR dst;
 
     if (data->Buffer == NULL)
 	return FALSE;
 
-    // buffer realloc needed ?
-    if (data->NumChars + 2 > data->BufferSize)
-    {
-	ULONG new_size = (data->NumChars + 8) * 2;
-	new_buf = (STRPTR)AllocVec(new_size * sizeof(char), MEMF_ANY);
-	if (new_buf == NULL) return FALSE;
-	data->BufferSize = new_size;
-	strncpy(new_buf, data->Buffer, data->BufferPos);
-	dst = &new_buf[data->BufferPos + 1];
-    }
-    else
-	dst = &data->Buffer[data->BufferPos + 1];
+    if (data->NumChars + 1 >= data->BufferSize)
+	return FALSE;
+
+    dst = &data->Buffer[data->BufferPos + 1];
 
     memmove(dst, &data->Buffer[data->BufferPos],
 	    data->NumChars - data->BufferPos);
-
-    if (new_buf != NULL)
-    {
-	FreeVec(data->Buffer);
-	data->Buffer = new_buf;
-    }
 
     dst[data->NumChars - data->BufferPos] = 0;
     dst[-1] = code;
@@ -344,7 +345,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
 
     data->msd_Align = MUIV_String_Format_Left;
-    data->msd_MaxLen = 80;
+    data->BufferSize = 80;
     Buffer_SetNewContents(data, "");
 
     /* parse initial taglist */
@@ -385,14 +386,14 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_String_MaxLen:
-		data->msd_MaxLen = (LONG)tag->ti_Data;
-		if (data->msd_MaxLen < 1)
-		    data->msd_MaxLen = 1;
+		data->BufferSize = tag->ti_Data;
+		if (data->BufferSize < 1)
+		    data->BufferSize = 1;
 		break;
 	}
     }
 
-    if (str != NULL)
+    if (Buffer_Alloc(data))
 	Buffer_SetNewContents(data, str);
 
     if (NULL == data->Buffer)
@@ -423,6 +424,8 @@ static IPTR String_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->Buffer)
 	FreeVec(data->Buffer);
+
+    D(bug("String_Dispose %p\n", obj));
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -526,7 +529,7 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	}
 	
 	case MUIA_String_MaxLen:
-	    STORE = (IPTR) data->msd_MaxLen;
+	    STORE = (IPTR) data->BufferSize;
 	    return 1;
 
 	case MUIA_String_AdvanceOnCR:
@@ -1013,7 +1016,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 {
     struct MUI_StringData *data = (struct MUI_StringData*)INST_DATA(cl, obj);
 
-    D(bug("code=%d qual=%d\n", code, qual));
+    D(bug("String_HandleVanillakey: code=%d qual=%d\n", code, qual));
 
     if (0 == code)
 	return 0;
