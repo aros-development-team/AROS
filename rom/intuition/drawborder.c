@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/04/03 20:03:07  stegerg
+    for first coordinate in Border->XY it must use
+    Move() and not Draw().
+
     Revision 1.8  1998/10/20 16:45:54  hkiel
     Amiga Research OS
 
@@ -35,6 +39,7 @@
 */
 #include "intuition_intern.h"
 #include <proto/graphics.h>
+#include <proto/dos.h>
 
 /*****************************************************************************
 
@@ -125,32 +130,37 @@
     drmd = GetDrMd (rp);
 
     /* For all borders... */
-    for ( ; border; border=border->NextBorder)
+    for ( ; border; border = border->NextBorder)
     {
 	/* Change RastPort to the colors/mode specified */
 	SetAPen (rp, border->FrontPen);
 	SetBPen (rp, border->BackPen);
 	SetDrMd (rp, border->DrawMode);
 
-	/* Move to initial position */
-	Move (rp
-	    , x = border->LeftEdge + leftOffset
-	    , y = border->TopEdge + topOffset
-	);
+	/* Get base coords */
+		
+	x = border->LeftEdge + leftOffset;
+	y = border->TopEdge + topOffset;
 
 	/* Start of vector offsets */
 	ptr = border->XY;
 
-	for (t=0; t<border->Count; t++)
+	for (t = 0; t < border->Count; t++)
 	{
 	    /* Add vector offset to current position */
 	    xoff = *ptr ++;
 	    yoff = *ptr ++;
-
-	    /* Stroke */
-	    Draw (rp, x + xoff, y + yoff);
+	    
+	    if (t == 0)
+	    {
+	        Move (rp, x + xoff, y + yoff);
+	    } else {
+    	    	/* Stroke */
+	        Draw (rp, x + xoff, y + yoff);
+	    }
 	}
-    }
+	
+    } /* for ( ; border; border = border->NextBorder) */
 
     /* Restore RastPort */
     SetAPen (rp, apen);
