@@ -558,7 +558,7 @@ int main(int argc, char **argv)
     STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
     LONG           error          = RETURN_OK;
 
-    kprintf("Executing shell\n");
+    P(kprintf("Executing shell\n"));
 
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
 
@@ -776,7 +776,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	    rd->oldIn = SelectInput(rd->newIn);
 	}
 
-	kprintf("Calling executeLine()\n");
+	P(kprintf("Calling executeLine()\n"));
 
 	/* OK, we've got a command. Let's execute it! */
 	executeLine(rd->commandStr, filtered.CS_Buffer, rd);
@@ -1462,7 +1462,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
 	
-	kprintf("Returned from command %s\n", command);
+	P(kprintf("Returned from command %s\n", command));
 	unloadCommand(cli->cli_Module, &ss);
 	
 	cli->cli_Result2 = IoErr();
@@ -1513,7 +1513,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 
     // P(Delay(1*8));
 
-    kprintf("Done with the command...\n");
+    P(kprintf("Done with the command...\n"));
         
     return error;
 }
