@@ -577,7 +577,7 @@ time_t t;
   else if (lc->type == t_hidd)
   {
     fprintf( fd, "#define NAME_STRING      \"%s.hidd\"\n", lc->libname );
-    fprintf( fd, "#define NT_TYPE          NT_LIBRARY\n" );
+    fprintf( fd, "#define NT_TYPE          NT_HIDD\n" );
   }
   else if (lc->type == t_gadget)
   {
