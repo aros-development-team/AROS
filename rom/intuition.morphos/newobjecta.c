@@ -111,6 +111,7 @@ AROS_LH3(APTR, NewObjectA,
     /* Make sure the class doesn't go away while we create the object */
     if (classPtr)
     {
+        #warning "Use atomic macros for this once we have some"
         Forbid();
         ++classPtr->cl_ObjectCount;
         Permit();
@@ -130,6 +131,7 @@ AROS_LH3(APTR, NewObjectA,
     object = (Object *) CoerceMethodA (classPtr, (Object *)classPtr, (Msg)&method);
 
     /* Release the lock on the class. Rootclass also has increased this count. */
+    #warning "Use atomic macros for this once we have some"
     Forbid();
     --classPtr->cl_ObjectCount;
     Permit();
