@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for the locale.library.
     Lang: english
 */
 
+#ifndef LOCALE_INTERN_H
+#define LOCALE_INTERN_H
 
 #ifndef EXEC_EXECBASE_H
 #include <exec/execbase.h>
@@ -56,6 +58,7 @@ struct IntLocaleBase
 {
     struct LocaleBase        lb_LocaleBase;
     struct ExecBase         *lb_SysBase;
+    BPTR                     lb_SegList;
     struct DosLibrary       *lb_DosBase;
     struct Library          *lb_IFFParseBase;
     struct Library          *lb_UtilityBase;
@@ -178,6 +181,10 @@ struct IntCatalog
 void dispose_catalog(struct IntCatalog * cat,
                      struct LocaleBase * LocaleBase);
 
+void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *);
+
 void InstallPatches(void);
 
 extern const struct Locale defLocale;
+
+#endif /* LOCALE_INTERN_H */

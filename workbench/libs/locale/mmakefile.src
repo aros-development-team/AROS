@@ -18,7 +18,9 @@ FUNCS := \
 
 #MM- workbench-libs-locale : includes linklibs
 
-%build_module_macro mmake=workbench-libs-locale modname=locale modtype=library \
-  funcs=$(FUNCS) files=$(FILES) uselibs=rom conffile=lib.conf
+%build_module mmake=workbench-libs-locale \
+    modname=locale modtype=library \
+    files="locale_init $(FUNCS) $(FILES)" \
+    uselibs=rom
 
 %common
