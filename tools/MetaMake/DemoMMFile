@@ -1,6 +1,6 @@
 # This is an example MetaMake file
 
-# This are lines which MetaMake will examine. The rest of the file is
+# Thess are lines which MetaMake will examine. The rest of the file is
 # ignored. The '-' means that Demo is a virtual target (ie. one which
 # doesn't exist in the makefile and for which MetaMake mustn't call
 # the maketool). The '\' at the end of the line means that this rule
