@@ -18,7 +18,10 @@
 # # The following program will print the credits in the same
 # # format as the input file is in.
 #
-# from docs.src.credits import credits
+# import sys, os.path
+# sys.path.append (os.path.join (AROSDIR, 'docs', 'src'))
+#
+# from credits import credits
 #
 # for area, names in credits:
 #     print '\n' + area + ':'
