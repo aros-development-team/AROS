@@ -23,7 +23,6 @@ FILES := \
 #MM linklibs-reqtoolsstubs : includes
 
 %make_linklib_setup mmake=linklibs-reqtoolsstubs
-%make_vpath
 %make_linklib
 
 %common
