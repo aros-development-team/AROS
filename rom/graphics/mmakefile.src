@@ -121,6 +121,7 @@ FUNCTIONS := \
 	setrast \
 	setrgb32 \
 	setrgb32cm \
+	setrgb4 \
 	setrgb4cm \
 	setrpattrsa \
 	setwritemask \
