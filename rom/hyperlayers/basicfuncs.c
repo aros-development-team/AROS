@@ -1052,22 +1052,28 @@ int _BackupPartsOfLayer(struct Layer * l,
 
   ClearRegionRegion(hide_region,l->VisibleRegion);
   r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
+  
+  if (r)
+  {
+     newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
+     DisposeRegion(r);
 
-  newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
-  DisposeRegion(r);
+     if (newcr)
+     {
+         _CopyClipRectsToClipRects(l,
+                                   l->ClipRect /* source */,
+                                   newcr  /* destination */,
+		                   0,
+                                   dx,
+                                   backupsimplerefresh,
+                                   TRUE,
+                                   TRUE,
+			           LayersBase);
 
-  _CopyClipRectsToClipRects(l,
-                            l->ClipRect /* source */,
-                            newcr  /* destination */,
-			    0,
-                            dx,
-                            backupsimplerefresh,
-                            TRUE,
-                            TRUE,
-			    LayersBase);
-
-  l->ClipRect = newcr;
-
+          l->ClipRect = newcr;
+     }
+  }
+  
   /*
    * Reinstall the clipping region. This causes the
    * whole visible area of the layer to be copied
