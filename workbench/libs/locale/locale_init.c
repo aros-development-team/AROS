@@ -25,7 +25,7 @@ struct LocaleBase *globallocalebase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     struct IntLocale *def;
 
@@ -61,7 +61,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     return FALSE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 

@@ -28,7 +28,7 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     /*
       This function is single-threaded by exec by calling Forbid.
@@ -94,12 +94,12 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
     return error;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
-    AROS_SET_LIBFUNC_INIT;
+    AROS_SET_LIBFUNC_INIT
     
     /*
 	This function is single-threaded by exec by calling Forbid.
@@ -112,7 +112,7 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 
     return TRUE;
     
-    AROS_SET_LIBFUNC_EXIT;
+    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(Init, 0);
