@@ -20,6 +20,7 @@ Assign FONTS:   SYS:Fonts
 Assign HELP:    LOCALE:Help DEFER
 Assign THEMES:  SYS:Themes
 Assign THEME:   THEMES:Mason
+Assign IMAGES:  SYS:Images
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
 
