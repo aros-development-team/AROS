@@ -9,10 +9,13 @@
     Lang: english
 */
 #ifndef EXEC_NODES_H
-#   include "exec/nodes.h"
+#   include <exec/nodes.h>
 #endif
 #ifndef EXEC_LISTS_H
-#   include "exec/lists.h"
+#   include <exec/lists.h>
+#endif
+#ifndef EXEC_PORTS_H
+#   include <exec/ports.h>
 #endif
 
 
