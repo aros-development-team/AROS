@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <workbench/icon.h>
 #include <utility/tagitem.h>
@@ -19,7 +20,7 @@
 /*  SYNOPSIS */
         AROS_LHA(struct DiskObject *, icon,   A0),
         AROS_LHA(struct Screen *,     screen, A1),
-        AROS_LHA(struct Tagitem *,    tags,   A2),
+        AROS_LHA(struct TagItem *,    tags,   A2),
 
 /*  LOCATION */
         struct Library *, IconBase, 32, Icon)
