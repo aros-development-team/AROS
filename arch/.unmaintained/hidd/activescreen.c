@@ -41,7 +41,6 @@ static BOOL send_activescreen_msg( Object *bmobj, struct ExecBase *SysBase)
     /* Allocate a new message */
     struct activescreen_msg *msg;
     
-    
     msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
     if (NULL == msg)
     	return FALSE;

@@ -63,7 +63,7 @@
 
 #define OBTAIN_HIDD_BM(bitmap)	\
 	( ( IS_HIDD_BM(bitmap))	\
-		? HIDD_BM_OBJ(bitmap)		\
+		? HIDD_BM_OBJ(bitmap)	\
 		: get_planarbm_object((bitmap), GfxBase) ) 
 		
 #define RELEASE_HIDD_BM(bm_obj, bitmap)	\
@@ -417,9 +417,13 @@ void driver_expunge (struct GfxBase * GfxBase)
 	    
 	/* Try to free some other stuff */
 	
+	if (SDD(GfxBase)->framebuffer)
+	    DisposeObject(SDD(GfxBase)->framebuffer);
+
+#if 0	
 	if (SDD(GfxBase)->activescreen_inited)
 	    cleanup_activescreen_stuff(GfxBase);
-
+#endif
 	if (SDD(GfxBase)->dispinfo_db)
 	    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
 
@@ -441,7 +445,30 @@ void driver_expunge (struct GfxBase * GfxBase)
 }
 
 /* Called after DOS is up & running */
-
+static Object *create_framebuffer(struct GfxBase *GfxBase)
+{
+    struct TagItem fbtags[] = {
+    	{ aHidd_BitMap_FrameBuffer,	TRUE	},
+	{ aHidd_BitMap_ModeID,		0	},
+	{ TAG_DONE, 0 }
+    };
+    
+    HIDDT_ModeID hiddmode;
+    Object *fb = NULL;
+    
+    /* Get the highest available resolution at the best possible depth */
+    hiddmode = get_best_resolution_and_depth(GfxBase);
+    if (vHidd_ModeID_Invalid == hiddmode) {
+    	kprintf("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n");
+    } else {
+    	/* Create the framebuffer object */
+	fbtags[1].ti_Data = hiddmode;
+	fb = HIDD_Gfx_NewBitMap(SDD(GfxBase)->gfxhidd, fbtags);
+	
+    }
+    
+    return fb;
+}
 
 BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 {
@@ -449,11 +476,12 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     /* Supplied data is really the librarybase of a HIDD */
     STRPTR gfxhiddname = (STRPTR)data;
     struct TagItem tags[] = {
+#if 0    
     	{ aHidd_Gfx_ActiveBMCallBack,		(IPTR)activatebm_callback	},
     	{ aHidd_Gfx_ActiveBMCallBackData,	(IPTR)GfxBase			},
+#endif    
     	{ TAG_DONE, 0UL },
     };    
-    
     EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", gfxhiddname));
     
     /* Create a new GfxHidd object */
@@ -486,12 +514,11 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 		/* Move the modes into the displayinfo DB */
 		SDD(GfxBase)->dispinfo_db = build_dispinfo_db(GfxBase);
 		if (NULL != SDD(GfxBase)->dispinfo_db) {
-
-	            SDD(GfxBase)->activescreen_inited = init_activescreen_stuff(GfxBase);
-		    if (SDD(GfxBase)->activescreen_inited) {
+		     SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
+		     if (NULL != SDD(GfxBase)->framebuffer) {
 		        ReturnBool("driver_LateGfxInit", TRUE);
 		    }
-
+			
 		    destroy_dispinfo_db(SDD(GfxBase)->dispinfo_db, GfxBase);
 		    SDD(GfxBase)->dispinfo_db = NULL;
 		}
@@ -732,7 +759,7 @@ static LONG fillrect_pendrmd(struct RastPort *rp
 	{ aHidd_GC_Foreground, pix },
 	{ TAG_DONE, 0}
     };
-    
+
     
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
@@ -794,6 +821,7 @@ void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
     {
     	drmd = vHidd_GC_DrawMode_Copy;
     }
+    
 
     fillrect_pendrmd(rp, x1, y1, x2, y2, pix, drmd, GfxBase);
 	
@@ -2375,189 +2403,184 @@ struct BitMap *driver_AllocScreenBitMap(ULONG modeid, struct GfxBase *GfxBase)
     return nbm;
 }
 
-struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
-	ULONG flags, struct BitMap * friend, HIDDT_ModeID hiddmode, struct GfxBase * GfxBase)
-{
-    struct BitMap * nbm;
-    
-/*
-    kprintf("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
-    	sizex, sizey, depth, flags, friend);
-*/
-
-    nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
-    if (NULL != nbm) {
-    	
-	    Object *bm_obj;
-	    Object *gfxhidd;
-	    
-	    struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
 
 #define SET_TAG(tags, idx, tag, val)	\
     tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
 
 #define SET_BM_TAG(tags, idx, tag, val)	\
     SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
-    
-	    
-	    SET_BM_TAG( bm_tags, 0, Width,  sizex	);
-	    SET_BM_TAG( bm_tags, 1, Height, sizey	);
-	    
-	    if ((flags & BMF_DISPLAYABLE) && vHidd_ModeID_Invalid != hiddmode) {
-		/* Use the hiddmode instead of depth/friend */
-		SET_BM_TAG(bm_tags, 2, ModeID, hiddmode);
-		SET_BM_TAG(bm_tags, 3, Displayable, TRUE);
-		SET_TAG(bm_tags, 4, TAG_DONE, 0);
-	    } else {
-		
-		if (NULL != friend) {
-		    if (IS_HIDD_BM(friend))
-			SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend));
-		} else {
-		    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
-	        }
 
-		if (flags & BMF_SPECIALFMT) {
-	    	    HIDDT_StdPixFmt stdpf;
-		
-		    stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
-		    SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
-		} else {
-	    	    SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
-		}
-
-		SET_TAG(bm_tags, 4, TAG_DONE, 0);
-	    }
-	    
-	    gfxhidd  = SDD(GfxBase)->gfxhidd;
-
-	    /* Create HIDD bitmap object */
-	    if (NULL != gfxhidd) {
-		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
-		if (NULL != bm_obj)
-		{
-		
-		    Object *pf;
-		    Object *colmap;
-		    HIDDT_ColorModel colmod;
-
-		    
-		    /* 	It is possible that the HIDD had to allocate
-		   	a larger depth than that supplied, so
-		   	we should get back the correct depth.
-		   	This is because layers.library might
-		   	want to allocate offscreen bimaps to
-		   	store obscured areas, and then those
-		   	offscreen bitmaps should be of the same depth as
-		   	the onscreen ones.
-		    */
-		   
-		    GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-		   
-		    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-		    GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
-		    
-		    GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
-	    	    
-		    	/* Store it in plane array */
-		    HIDD_BM_OBJ(nbm) = bm_obj;
-		    HIDD_BM_COLMOD(nbm) = colmod;
-		    HIDD_BM_COLMAP(nbm) = colmap;
-		    nbm->Rows   = sizey;
-		    nbm->BytesPerRow = WIDTH_TO_BYTES(sizex);
-		    nbm->Depth  = depth;
-		    nbm->Flags  = flags | BMF_AROS_HIDD;
-		    
-		    /* If this is a displayable bitmap, create a color table for it */
-
-		    if (flags & BMF_DISPLAYABLE) {
-		        /* Allcoate a pixtab */
-			HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
-			if (NULL != HIDD_BM_PIXTAB(nbm)) {
-			    /* Set this palette to all black by default */
-			    
-			    HIDDT_Color col;
-			    ULONG i;
-			    
-			    col.red     = 0;
-			    col.green   = 0;
-			    col.blue    = 0;
-			    col.alpha   = 0;
-			
-			    if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
-			
-			    	ULONG numcolors;
-			
-			    	numcolors = 1L << depth;
-			    	if (numcolors > AROS_PALETTE_SIZE)
-			    	    numcolors = AROS_PALETTE_SIZE;
-			    	
-			    	/* Set palette to all black */
-			    	for (i = 0; i < numcolors; i ++) {
-			    	    HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
-				    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
-			        }
-			    }
-
-			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
-			    
-			    
-			} /* if (pixtab successfully allocated) */
-			
-			
-		    }
-		    else
-		    {
-		    	if (friend)
-			{
-#warning Here we assume that the friend bitmap is a HIDD bitmap		    
-			    /* We got a friend bitmap. We inherit its colormap
-			       !!! NOTE !!! If this is used after the friend bitmap is freed
-			       it means trouble, as the colortab mem
-			       will no longer be valid
-			    */
-
-			    HIDD_BM_COLMAP(nbm) = HIDD_BM_COLMAP(friend);
-			    HIDD_BM_PIXTAB(nbm) = HIDD_BM_PIXTAB(friend);
-
-#if 0
-kprintf("ALLOCBITMAP, NON DISPLAYABLE : %p\n", nbm);
-
-kprintf("bm: %p, %d, %d, %d, %d\n"
-	, nbm
-	, nbm->BytesPerRow
-	, nbm->Rows
-	, nbm->Flags
-	, nbm->Depth
-);
-
+struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
+	ULONG flags, struct BitMap * friend, HIDDT_ModeID hiddmode, struct GfxBase * GfxBase)
 {
-int i;
-for (i =0; i < 8; i ++)
-	kprintf("plane[%d]: %p\n"
-	   , i, nbm->Planes[i] );
+    struct BitMap * nbm;
+    struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
+    
+/*
+    kprintf("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
+    	sizex, sizey, depth, flags, friend);
+*/
 
-}
-#endif
+	    
+    SET_BM_TAG( bm_tags, 0, Width,  sizex	);
+    SET_BM_TAG( bm_tags, 1, Height, sizey	);
+	    
+    if (flags & BMF_DISPLAYABLE) {
+	/* Use the hiddmode instead of depth/friend */
+	if  (vHidd_ModeID_Invalid == hiddmode)
+    	    ReturnPtr("driver_AllocBitMap(Invalid modeID)", struct BitMap *, NULL);
+	    
+	SET_BM_TAG(bm_tags, 2, ModeID, hiddmode);
+	SET_BM_TAG(bm_tags, 3, Displayable, TRUE);
+	SET_TAG(bm_tags, 4, TAG_DONE, 0);
+    } else {
 
+	if (NULL != friend) {
+	    if (IS_HIDD_BM(friend))
+	    SET_BM_TAG(bm_tags, 2, Friend, HIDD_BM_OBJ(friend));
+	} else {
+	    SET_TAG(bm_tags, 2, TAG_IGNORE, 0);
+	}
 
-			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
-			    
-			}
-		    }
-		    
-		    DisposeObject(bm_obj);
-	    
-	    
-		} /* if (bitmap object allocated) */
-		
-	    } /* if (gfxhidd) */
-	    
-	    
-	
-	FreeMem(nbm, sizeof (struct BitMap));
-	
+	if (flags & BMF_SPECIALFMT) {
+	    HIDDT_StdPixFmt stdpf;
+
+	    stdpf = cyber2hidd_pixfmt(DOWNSHIFT_PIXFMT(flags), GfxBase);
+	    SET_BM_TAG(bm_tags, 3, StdPixFmt, stdpf);
+	} else {
+	    SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
+	}
+
+	SET_TAG(bm_tags, 4, TAG_DONE, 0);
     }
+
+    nbm = AllocMem (sizeof (struct BitMap), MEMF_ANY|MEMF_CLEAR);
+    if (NULL != nbm) {
+    
+    	Object *bm_obj;
+    	Object *gfxhidd;
+    	
+    	gfxhidd  = SDD(GfxBase)->gfxhidd;
+
+    	/* Create HIDD bitmap object */
+    	if (NULL != gfxhidd) {
+    	    bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
+    	    if (NULL != bm_obj)
+    	    {
+    	    
+    		Object *pf;
+    		Object *colmap;
+    		HIDDT_ColorModel colmod;
+    		BOOL ok = FALSE;
+		IPTR width, height;
+
+    		
+    		/*  It is possible that the HIDD had to allocate
+    		    a larger depth than that supplied, so
+    		    we should get back the correct depth.
+    		    This is because layers.library might
+    		    want to allocate offscreen bimaps to
+    		    store obscured areas, and then those
+    		    offscreen bitmaps should be of the same depth as
+    		    the onscreen ones.
+    		*/
+    	       
+		GetAttr(bm_obj, aHidd_BitMap_Width, &width);
+		GetAttr(bm_obj, aHidd_BitMap_Height, &height);
+    		GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+		
+    	       
+    		GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+    		GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
+    		
+    		GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
+    		
+    		    /* Store it in plane array */
+    		HIDD_BM_OBJ(nbm) = bm_obj;
+    		HIDD_BM_COLMOD(nbm) = colmod;
+    		HIDD_BM_COLMAP(nbm) = colmap;
+    		nbm->Rows   = height;
+    		nbm->BytesPerRow = WIDTH_TO_BYTES(width);
+    		nbm->Depth  = depth;
+    		nbm->Flags  = flags | BMF_AROS_HIDD;
+    		
+    		/* If this is a displayable bitmap, create a color table for it */
+
+    		if (flags & BMF_DISPLAYABLE) {
+    		    /* Allcoate a pixtab */
+    		    HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
+    		    if (NULL != HIDD_BM_PIXTAB(nbm)) {
+    			/* Set this palette to all black by default */
+    			
+    			HIDDT_Color col;
+    			ULONG i;
+    			
+    			col.red     = 0;
+    			col.green   = 0;
+    			col.blue    = 0;
+    			col.alpha   = 0;
+    		    
+    			if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
+    		    
+    			    ULONG numcolors;
+    		    
+    			    numcolors = 1L << depth;
+    			    if (numcolors > AROS_PALETTE_SIZE)
+    				numcolors = AROS_PALETTE_SIZE;
+    			    
+    			    /* Set palette to all black */
+    			    for (i = 0; i < numcolors; i ++) {
+    				HIDD_BM_SetColors(HIDD_BM_OBJ(nbm), &col, i, 1);
+    				HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
+    			    }
+    			}
+    			ok = TRUE;
+
+    		    } /* if (pixtab successfully allocated) */
+    		}
+    		else
+    		{
+    		    if (friend)
+    		    {
+    			/* We got a friend bitmap. We inherit its colormap
+    			   !!! NOTE !!! If this is used after the friend bitmap is freed
+    			   it means trouble, as the colortab mem
+    			   will no longer be valid
+    			*/
+    			if (IS_HIDD_BM(nbm)) {
+
+    			    HIDD_BM_COLMAP(nbm) = HIDD_BM_COLMAP(friend);
+    			    HIDD_BM_COLMOD(nbm) = HIDD_BM_COLMOD(friend);
+    			    HIDD_BM_PIXTAB(nbm) = HIDD_BM_PIXTAB(friend);
+    			    
+    			    ok = TRUE;
+    			}
+
+    			
+    		    }
+    		}
+    		
+    		if (ok) {
+		    if (flags & BMF_CLEAR) {
+		    	BltBitMap(nbm
+				, 0, 0
+				, nbm
+				, 0, 0
+				, width, height
+				, 0x00
+				, 0xFF
+				, NULL
+			);
+		    }
+    		    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
+    		}
+    		
+    		DisposeObject(bm_obj);
+    	    } /* if (bitmap object allocated) */
+    	    
+    	} /* if (gfxhidd) */
+    	FreeMem(nbm, sizeof (struct BitMap));
+    } /* if (nbm) */
 
 
     ReturnPtr("driver_AllocBitMap", struct BitMap *, NULL);
@@ -2568,8 +2591,8 @@ for (i =0; i < 8; i ++)
 
 /* General functions for moving blocks of data to or from HIDDs, be it pixelarrays
   or bitmaps. They use a callback-function to get data from amiga/put data to amiga bitmaps/pixelarrays
-  
-*/	
+*/
+
 static VOID amiga2hidd_fast(APTR src_info
 	, Object *hidd_gc
 	, LONG x_src , LONG	y_src
@@ -3101,11 +3124,14 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    	HIDD_BM_SetColors(HIDD_BM_OBJ(bm), &hidd_col, color, 1);
 
 /*
-kprintf("SetRGB32: col %d (%x %x %x %x) mapped to %x\n"
+ kprintf("SetRGB32: bm %p, hbm %p, col %d (%x %x %x %x) mapped to %x\n"
+		, bm
+		, HIDD_BM_OBJ(bm)
 		, color
 		, hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
 		, hidd_col.pixval);
-*/		
+		
+*/
 	HIDD_BM_PIXTAB(bm)[color] = hidd_col.pixval;
    }
 	
@@ -4500,6 +4526,65 @@ BOOL driver_MouseCoordsRelative(struct GfxBase *GfxBase)
 	
     return TRUE;
 }
+
+BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *GfxBase)
+{
+
+    Object *cmap, *pf;
+    HIDDT_ColorModel colmod;
+    Object *fb;
+    BOOL ok = FALSE;
+    ULONG showflags = 0;
+    
+    if ( BMF_DISPLAYABLE != (bm->Flags & BMF_DISPLAYABLE)) {
+    	kprintf("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n");
+	return FALSE;
+    }
+    
+    if ( SDD(GfxBase)->frontbm == bm) {
+    	kprintf("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bm);
+	return TRUE;
+    }
+    
+    if (copyback) {
+    	showflags |= fHidd_Gfx_Show_CopyBack;
+    }
+    
+    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, HIDD_BM_OBJ(bm), showflags);
+    if (NULL == fb) {
+    	kprintf("!!! SetFrontBitMap: HIDD_Gfx_Show() FAILED !!!\n");
+    } else {
+
+	 /* Set this as the active screen */
+    	if (NULL != SDD(GfxBase)->frontbm && copyback) {
+    	    struct BitMap *oldbm;
+    	    /* Put back the old values into the old bitmap */
+	    oldbm = SDD(GfxBase)->frontbm;
+	    HIDD_BM_OBJ(oldbm)		= SDD(GfxBase)->bm_bak;
+	    HIDD_BM_COLMOD(oldbm)	= SDD(GfxBase)->colmod_bak;
+	    HIDD_BM_COLMAP(oldbm)	= SDD(GfxBase)->colmap_bak;
+	}
+    
+	SDD(GfxBase)->frontbm		= bm;
+	SDD(GfxBase)->bm_bak		= HIDD_BM_OBJ(bm);
+	SDD(GfxBase)->colmod_bak	= HIDD_BM_COLMOD(bm);
+	SDD(GfxBase)->colmap_bak	= HIDD_BM_COLMAP(bm);
+    
+	    
+	/* Insert the framebuffer in its place */
+	GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+	GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+	    
+	HIDD_BM_OBJ(bm)		= fb;
+	HIDD_BM_COLMOD(bm)	= colmod;
+	HIDD_BM_COLMAP(bm)	= cmap;
+	
+	ok = TRUE;
+    }
+    return ok;
+}
+
 /***********************************************/
 /* CYBERGFX CALLS                            ***/
 

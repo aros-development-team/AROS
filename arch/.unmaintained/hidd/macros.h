@@ -3,7 +3,8 @@
    HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
    if it is a HIDD bitmap
 */
-#define HIDD_BM_OBJ(bitmap)	  	((Object *)(bitmap)->Planes[0])
+
+#define HIDD_BM_OBJ(bitmap)		((Object *)(bitmap)->Planes[0]) 
 #define HIDD_BM_COLMAP(bitmap)		((Object *)(bitmap)->Planes[2])
 #define HIDD_BM_COLMOD(bitmap)		((HIDDT_ColorModel)(bitmap)->Planes[3])
 #define HIDD_BM_PIXTAB(bitmap)		((HIDDT_Pixel *)(bitmap)->Planes[4])

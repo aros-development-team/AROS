@@ -904,3 +904,49 @@ BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
     }
     return iscyber;
 }
+
+
+HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase)
+{
+    HIDDT_ModeID ret = vHidd_ModeID_Invalid;
+    Object *gfxhidd;
+    HIDDT_ModeID *modes, *m;
+    struct TagItem querytags[] = { { TAG_DONE, 0UL } };
+    
+    gfxhidd = SDD(GfxBase)->gfxhidd;
+    
+    /* Query the gfxhidd for all modes */
+    modes = HIDD_Gfx_QueryModeIDs(gfxhidd, querytags);
+    if (NULL != modes) {
+	ULONG best_resolution = 0;
+	ULONG best_depth = 0;
+	
+	for (m = modes; vHidd_ModeID_Invalid != *m; m ++) {
+    	    Object *sync, *pf;
+	    IPTR depth;
+	    HIDD_Gfx_GetMode(gfxhidd, *m, &sync, &pf);
+	    
+	    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    if (depth >= best_depth) {
+	    	IPTR width, height;
+		ULONG res;
+		
+		GetAttr(sync, aHidd_Sync_HDisp, &width);
+		GetAttr(sync, aHidd_Sync_VDisp, &height);
+		
+		res = width * height;
+		if (res > best_resolution) {
+		    ret = *m;
+		}
+		
+	    	best_depth = depth;
+	    }
+	    
+	}
+	
+	HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
+    }
+    
+    return ret;
+    
+}

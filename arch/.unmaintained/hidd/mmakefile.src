@@ -7,7 +7,6 @@ INT_INCLUDES	:= -I$(TOP)/rom/intuition
 DEPS		:= $(OSGENDIR)/graphics/graphics_driver.d	\
 		   $(OSGENDIR)/graphics/dispinfo.d		\
 		   $(OSGENDIR)/graphics/objcache.d		\
-		   $(OSGENDIR)/graphics/activescreen.d		\
 		   $(OSGENDIR)/intuition/intuition_driver.d
 
 # Need include path /usr/include before AROS includes for FreeBSD's stderr
@@ -21,7 +20,7 @@ INT_CFLAGS	:= $(SHARED_CFLAGS) $(INT_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
 #MM- kernel-graphics-linklib : hidd-graphics-linklib
 
 #MM
-graphics-gfxhidd : $(OSGENDIR)/graphics/graphics_driver.o $(OSGENDIR)/graphics/objcache.o $(OSGENDIR)/graphics/activescreen.o $(OSGENDIR)/graphics/dispinfo.o
+graphics-gfxhidd : $(OSGENDIR)/graphics/graphics_driver.o $(OSGENDIR)/graphics/objcache.o $(OSGENDIR)/graphics/dispinfo.o
 
 	@$(NOP)
 
@@ -32,14 +31,13 @@ intuition-gfxhidd : $(OSGENDIR)/intuition/intuition_driver.o
 #MM
 setup-gfxhidd :
 	%mkdirs_q $(OSGENDIR)/graphics $(OSGENDIR)/intuition
-	%add_objects rom/graphics/graphics_driver rom/intuition/intuition_driver rom/graphics/objcache rom/graphics/activescreen rom/graphics/dispinfo
+	%add_objects rom/graphics/graphics_driver rom/intuition/intuition_driver rom/graphics/objcache rom/graphics/dispinfo
 
 #MM
 clean ::
 	-$(RM) $(OSGENDIR)/graphics/graphics_driver.o \
 	    $(OSGENDIR)/graphics/intuition_driver.o \
 	    $(OSGENDIR)/graphics/objcache.o \
-	    $(OSGENDIR)/graphics/activescreen.o \
 	    $(OSGENDIR)/graphics/dispinfo.o \
 	    *.err
 

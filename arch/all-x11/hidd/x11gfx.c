@@ -72,6 +72,9 @@ struct gfx_data
     int		depth;
     Colormap	colmap;
     Cursor	cursor;
+    
+    /* Frame buffer window */
+    Window	fbwin;
    
 };
 
@@ -235,11 +238,12 @@ LX11
 UX11
 	
 	D(bug("X11Gfx::New(): Got object from super\n"));
+#if 0	
 ObtainSemaphore(&XSD(cl)->sema);
 	XSD(cl)->activecallback = (VOID (*)())GetTagData(aHidd_Gfx_ActiveBMCallBack, (IPTR)NULL, msg->attrList);
 	XSD(cl)->callbackdata = (APTR)GetTagData(aHidd_Gfx_ActiveBMCallBackData, (IPTR)NULL, msg->attrList);
 ReleaseSemaphore(&XSD(cl)->sema);
-	
+#endif	
 	data->display = XSD(cl)->display;
 	
     }
@@ -265,7 +269,7 @@ static VOID gfx_dispose(Class *cl, Object *o, Msg msg)
 static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {
 
-    BOOL displayable;
+    BOOL displayable, framebuffer;
     
     struct pHidd_Gfx_NewBitMap p;
     
@@ -294,9 +298,13 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    if (displayable) {
+    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+    if (framebuffer) {
     	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
+    } else if (displayable) {
+    	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
+	tags[5].ti_Data	= (IPTR)XSD(cl)->offbmclass;
     } else {
     	/* When do we create an x11 offscreen bitmap ?
 	    - For 1-plane bitmaps.
@@ -389,13 +397,80 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
     return;
 }
 
+#if 0
+static BOOL gfx_setcursor(Class *cl, Object *o, struct pHidd_Gfx_SetCursor *msg)
+{
+    LONG x, y;
+    BOOL ok = FALSE;
+    struct MsgPort *port;
+    struct HIDDGraphicsData *data;
+    
+    data = INST_DATA(cl, o);
+    /* We do NOT support setting of the cursor image and cursor on/off */
+    
+    x = GetTagData(tHidd_Cursor_X, 0, msg->cursorTags);
+    y = GetTagData(tHidd_Cursor_Y, 0, msg->cursorTags);
+    
+    /* Pass a message to the X11 HIDD that we want to set the cursor position */
+    port = CreateMsgPort();
+    if (NULL != port) {
+    	struct notfy_msg *msg;
+	msg = AllocMem(sizeof (*msg), MEMF_PUBLIC|MEMF_CLEAR);
+	if (NULL != msg) {
+	    IPTR window;
+	    msg->xdisplay = data->display;
+	    msg->xwindow  = data->fbwin;
+	    msg->notify_type = NOTY_SETCURSOR;
+	    msg->notify.cursor.x = x;
+	    msg->notify.cursor.y = y;
+	    msg->execmsg.mn_ReplyPort = port;
+	    
+	    PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
+	    
+	    WaitPort(port);
+	    GetMsg(port);
+	    
+	    FreeMem(msg, sizeof (*msg));
+	}
+    	DeleteMsgPort(port);
+    }
+    return ok;    
+}
+
+#endif
+
+static Object *gfxhidd_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
+{
+    Object *fb;
+    fb = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    if (NULL != fb) {
+    	IPTR width, height, modeid, win;
+	Object *pf, *sync;
+	struct gfx_data *data;
+	
+	data = INST_DATA(cl, o);
+	
+	GetAttr(msg->bitMap, aHidd_BitMap_ModeID, &modeid);
+	HIDD_Gfx_GetMode(o, (HIDDT_ModeID)modeid, &sync, &pf);
+	
+	GetAttr(sync, aHidd_Sync_HDisp, &width);
+	GetAttr(sync, aHidd_Sync_VDisp, &height);
+	
+	GetAttr(fb, aHidd_X11BitMap_Drawable, &win);
+LX11	
+	XResizeWindow(data->display, (Window)win, width, height);
+UX11	
+    }
+    return fb;
+}
+
 #undef XSD
 #define XSD(cl) xsd
 
 /********************  init_gfxclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_GFXHIDD_METHODS 1
+#define NUM_GFXHIDD_METHODS 2
 
 Class *init_gfxclass (struct x11_staticdata *xsd)
 {
@@ -411,7 +486,8 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
     
     struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
-    	{(IPTR (*)())gfxhidd_newbitmap,	moHidd_Gfx_NewBitMap},
+    	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap		},
+    	{(IPTR (*)())gfxhidd_show,		moHidd_Gfx_Show			},
 	{NULL, 0UL}
     };
     

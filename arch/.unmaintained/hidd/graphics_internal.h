@@ -21,13 +21,16 @@
 HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
 UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
 
+#if 0
 VOID activatebm_callback(APTR data, Object *bmobj, BOOL activated);
 BOOL init_activescreen_stuff(struct GfxBase *GfxBase);
 VOID cleanup_activescreen_stuff(struct GfxBase *GfxBase);
+#endif
 
 APTR build_dispinfo_db(struct GfxBase *GfxBase);
 VOID destroy_dispinfo_db(APTR dispinfo_db, struct GfxBase *GfxBase);
 HIDDT_ModeID get_hiddmode_for_amigamodeid(ULONG modeid, struct GfxBase *GfxBase);
+HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase);
 
 
 /* A Pointer to this struct is stored in each RastPort->longreserved[0] */
@@ -62,14 +65,26 @@ VOID release_cache_object(ObjectCache *objectCache, Object *object, struct GfxBa
 struct shared_driverdata
 {
     Object *gfxhidd;
+    
     struct Library *oopbase;
     ObjectCache *gc_cache;
     ObjectCache *planarbm_cache;
     
+    Object	*framebuffer;
+    
+    Object	*bm_bak;
+    Object	*colmap_bak;
+    HIDDT_ColorModel colmod_bak;
+    
+    
+    /* The frontmost screen's bitmap */
+    struct BitMap *frontbm;
+    
     /* Has the code to handle active screens been activated ? */
+#if 0    
     BOOL activescreen_inited;
+#endif    
     APTR dispinfo_db; /* Display info database */
-    struct List *queried_modes; /* gfxmodes gotten from the hidd */
 };
 
 #include "macros.h"
