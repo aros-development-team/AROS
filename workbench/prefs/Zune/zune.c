@@ -544,7 +544,7 @@ int main(void)
 {
     int  retval = RETURN_OK;
     struct RDArgs *rda;
-    IPTR args[] = { NULL };
+    IPTR args[] = { 0 };
     enum { ARG_APPNAME = 0 };
 
     rda = ReadArgs("APPNAME", args, NULL);

@@ -74,7 +74,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, (IPTR) HGroup,
             GroupFrameT("Cycle Gadget Design"),
             Child, (IPTR) HVSpace,
-            Child, (IPTR) d.cycle_popimage =
+            Child, (IPTR) (d.cycle_popimage =
             MUI_NewObject
             (
                 MUIC_Popimage,
@@ -86,7 +86,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 MUIA_Imagedisplay_FreeVert,  FALSE,
                 MUIA_Window_Title,           (IPTR) "Cycle",
                 TAG_DONE
-            ),
+            )),
             Child, (IPTR) HVSpace,
         End, /* Cycle Gadget Design */
         Child, (IPTR) HGroup,
@@ -96,11 +96,11 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, (IPTR) ColGroup(2),
                     MUIA_Group_VertSpacing, 2,
                     Child, (IPTR) Label("Position:"),
-                    Child, (IPTR) d.menu_position_cycle = MakeCycle("Position:", positions_labels),
+                    Child, (IPTR) (d.menu_position_cycle = MakeCycle("Position:", positions_labels)),
                     Child, (IPTR) Label("Level:"),
-                    Child, (IPTR) d.menu_level_slider = MakeLevelSlider(),
+                    Child, (IPTR) (d.menu_level_slider = MakeLevelSlider()),
                     Child, (IPTR) Label("Speed:"),
-                    Child, (IPTR) d.menu_speed_slider = MakeSpeedSlider(),
+                    Child, (IPTR) (d.menu_speed_slider = MakeSpeedSlider()),
                 End,
                 Child, (IPTR) VSpace(0),
             End, /* Popup Menu Control */
@@ -111,25 +111,25 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Group_SameWidth, TRUE,
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.menu_popframe = MakePopframe(),
+                        Child, (IPTR) (d.menu_popframe = MakePopframe()),
                         Child, (IPTR) CLabel("Frame"),
                     End, /* VGroup */
                     Child, (IPTR) VGroup,
                         MUIA_Group_VertSpacing, 1,
-                        Child, (IPTR) d.background_menu_popimage = MUI_NewObject
+                        Child, (IPTR) (d.background_menu_popimage = MUI_NewObject
                         (
                             MUIC_Popimage,
                             MUIA_CycleChain,          1,
                             MUIA_Window_Title, (IPTR) "Adjust Background",
                             TAG_DONE
-                        ),
+                        )),
                         Child, (IPTR) CLabel("Background"),
                     End, /* VGroup */
                 End, /* HGroup */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) HSpace(0),
                     Child, (IPTR) Label1("Recessed Entries:"),
-                    Child, (IPTR) d.recessed_entries_checkmark = MakeCheck(NULL),
+                    Child, (IPTR) (d.recessed_entries_checkmark = MakeCheck(NULL)),
                 End, /* HGroup recessed CM */
             End, /* Popup Menu Design */
         End, /* HGroup Popup Menu */			       

@@ -111,12 +111,12 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	            Child, (IPTR) ColGroup(4),
 	                MUIA_Group_SameHeight, TRUE,
 	                Child, (IPTR) FreeLabel("up"),
-	                Child, (IPTR) d.arrow_up_popimage = MakeArrowPopimage("Arrow up"),
-	                Child, (IPTR) d.arrow_down_popimage = MakeArrowPopimage("Arrow down"),
+	                Child, (IPTR) (d.arrow_up_popimage = MakeArrowPopimage("Arrow up")),
+	                Child, (IPTR) (d.arrow_down_popimage = MakeArrowPopimage("Arrow down")),
 	                Child, (IPTR) FreeLLabel("down"),
 	                Child, (IPTR) FreeLabel("left"),
-	                Child, (IPTR) d.arrow_left_popimage = MakeArrowPopimage("Arrow left"),
-	                Child, (IPTR) d.arrow_right_popimage = MakeArrowPopimage("Arrow right"),
+	                Child, (IPTR) (d.arrow_left_popimage = MakeArrowPopimage("Arrow left")),
+	                Child, (IPTR) (d.arrow_right_popimage = MakeArrowPopimage("Arrow right")),
 	                Child, (IPTR) FreeLLabel("right"),
                     End, /* ColGroup(6) */
   	            Child, (IPTR) MakeSpacer(),
@@ -128,13 +128,13 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        GroupFrameT("Bar"),
 	        Child, (IPTR) HGroup,
 	            Child, (IPTR) Label("Gadget Type:"),
-	            Child, (IPTR) d.gadget_type_cycle = MakeCycle("Gadget Type:", gadget_type_labels),
+	            Child, (IPTR) (d.gadget_type_cycle = MakeCycle("Gadget Type:", gadget_type_labels)),
                 End, /* HGroup Gadget Type */
 	        Child, (IPTR) HGroup,
 	            MUIA_Group_SameWidth, TRUE,
 	            Child, (IPTR) VGroup,
 	                MUIA_Group_VertSpacing, 1,
-	                Child, (IPTR) d.knob_popimage = MUI_NewObject
+	                Child, (IPTR) (d.knob_popimage = MUI_NewObject
                         (
                             MUIC_Popimage,
                             MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Image,
@@ -143,12 +143,12 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                             MUIA_Imagedisplay_FreeVert, FALSE,
                             MUIA_Window_Title, (IPTR)"Scroller",
                             TAG_DONE
-                        ),
+                        )),
 	                Child, (IPTR) CLabel("Knob"),
                     End, /* VGroup Knob */
 	            Child, (IPTR) VGroup,
 	                MUIA_Group_VertSpacing, 1,
-	                Child, (IPTR) d.background_popimage = MakeBackgroundPopimage(),
+	                Child, (IPTR) (d.background_popimage = MakeBackgroundPopimage()),
 	                Child, (IPTR) CLabel("Background"),
                     End, /* VGroup Background */
                 End, /* HGroup Images */
@@ -157,14 +157,14 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, (IPTR) VGroup,
 	    Child, (IPTR) VGroup,
 	        GroupFrameT("Frame"),
-	        Child, (IPTR) d.popframe = MakePopframe(),
+	        Child, (IPTR) (d.popframe = MakePopframe()),
 	        End, /* Frame VGroup*/
 	    Child, (IPTR) ColGroup(3),
 	        GroupFrameT("Arrangement"),
 		MUIA_CycleChain, 1,
-		Child, (IPTR) d.pos_radios[0] = MakeSingleRadio(),
-		Child, (IPTR) d.pos_radios[1] = MakeSingleRadio(),
-	        Child, (IPTR) d.pos_radios[2] = MakeSingleRadio(),
+		Child, (IPTR) (d.pos_radios[0] = MakeSingleRadio()),
+		Child, (IPTR) (d.pos_radios[1] = MakeSingleRadio()),
+	        Child, (IPTR) (d.pos_radios[2] = MakeSingleRadio()),
 		Child, (IPTR) MakeScrollbar(MUIV_Scrollbar_Type_Top),
 		Child, (IPTR) MakeScrollbar(MUIV_Scrollbar_Type_Sym),
 		Child, (IPTR) MakeScrollbar(MUIV_Scrollbar_Type_Bottom),
@@ -179,13 +179,13 @@ static IPTR ScrollbarsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     DoMethod(d.gadget_type_cycle, MUIM_Notify, MUIA_Cycle_Active, 2, (IPTR) obj,
 	     6, MUIM_MultiSet, MUIA_Disabled, FALSE,
-	     (IPTR) d.background_popimage, (IPTR) d.knob_popimage, NULL);
+	     (IPTR) d.background_popimage, (IPTR) d.knob_popimage, (IPTR) NULL);
     DoMethod(d.gadget_type_cycle, MUIM_Notify, MUIA_Cycle_Active, 0, (IPTR) obj,
 	     6, MUIM_MultiSet, MUIA_Disabled, TRUE,
-	     (IPTR) d.background_popimage, (IPTR) d.knob_popimage, NULL);
+	     (IPTR) d.background_popimage, (IPTR) d.knob_popimage, (IPTR) NULL);
     DoMethod(d.gadget_type_cycle, MUIM_Notify, MUIA_Cycle_Active, 1, (IPTR) obj,
 	     6, MUIM_MultiSet, MUIA_Disabled, TRUE,
-	     (IPTR) d.background_popimage, (IPTR) d.knob_popimage, NULL);
+	     (IPTR) d.background_popimage, (IPTR) d.knob_popimage, (IPTR) NULL);
 
     DoMethod(d.pos_radios[0], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 	     (IPTR) d.pos_radios[1], 3, MUIM_NoNotifySet, MUIA_Selected, FALSE);
