@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/23 19:58:24  SDuvan
+    Use SetIoErr() instead of poking
+
     Revision 1.7  1998/10/20 16:44:53  hkiel
     Amiga Research OS
 
@@ -24,7 +27,7 @@
     Added standard header for all files
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include "dos_intern.h"
@@ -46,7 +49,7 @@
 	Sets to dos error code for the current process.
 
     INPUTS
-	result - new error code
+	result -- new error code
 
     RESULT
 	Old error code.
@@ -74,11 +77,13 @@
     LONG old;
 
     /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     /* Nothing spectacular */
-    old=me->pr_Result2;
-    me->pr_Result2=result;
+    old = me->pr_Result2;
+    me->pr_Result2 = result;
+
     return old;
+
     AROS_LIBFUNC_EXIT
 } /* SetIoErr */
