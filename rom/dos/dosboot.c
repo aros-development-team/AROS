@@ -316,7 +316,7 @@ BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
     }
     
     strcpy( buffer, deviceName );        
-    strcat( buffer, ":s/hidd.prefs" );
+    strcat( buffer, ":S/Startup-Sequence" );
        
     if( (lock = Lock( buffer, SHARED_LOCK )) == 0 )
     {
