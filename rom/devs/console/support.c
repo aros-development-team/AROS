@@ -129,9 +129,10 @@ static const UBYTE str_swm[] = {0x3E, 0x37, 0x68 }; /* Set autowrap mode */
 static const UBYTE str_rwm[] = {0x3E, 0x37, 0x6C }; /* Reset autowrap mode */
 static const UBYTE str_dsr[] = {0x36, 0x6E };       /* device status report */
 static const UBYTE str_con[] = {' ', 'p'};    	    /* cursor visible */
+static const UBYTE str_con2[] = {'1', ' ', 'p'};    /* cursor visible */
 static const UBYTE str_cof[] = {'0', ' ', 'p'};     /* cursor invisible */
 
-#define NUM_SPECIAL_COMMANDS 9
+#define NUM_SPECIAL_COMMANDS 10
 static const struct special_cmd_descr
 {
     BYTE	Command;
@@ -147,6 +148,7 @@ static const struct special_cmd_descr
     {C_RESET_AUTOWRAP_MODE, 	(STRPTR)str_rwm, 3 },
     {C_DEVICE_STATUS_REPORT, 	(STRPTR)str_dsr, 2 },
     {C_CURSOR_VISIBLE,		(STRPTR)str_con, 2 },
+    {C_CURSOR_VISIBLE,          (STRPTR)str_con2, 3 },
     {C_CURSOR_INVISIBLE,	(STRPTR)str_cof, 3 }
 
 };
