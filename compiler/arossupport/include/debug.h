@@ -148,26 +148,36 @@
  */
 #define THIS_FILE __FILE__
 
-#define ASSERT(x) ( (x) ? 0 :					\
+#define ASSERT(x) do {						\
+	(x) ? 0 :						\
 	( DBPRINTF("\x07%s:%ld: assertion failed: %s\n",	\
-	THIS_FILE, __LINE__, #x) ) );
+	THIS_FILE, __LINE__, #x) );				\
+} while(0)
 
-#define ASSERT_VALID_PTR(x) ( (((LONG)(x) > 1024) &&		\
+#define ASSERT_VALID_PTR(x) do {				\
+	(((LONG)(x) > 1024) &&					\
 	TypeOfMem((APTR)(x))) ? 0 :				\
 	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%lx\n",	\
-	THIS_FILE, __LINE__, #x, (APTR)(x)) ) );
+	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
+} while(0)
 
-#define ASSERT_VALID_PTR_OR_NULL(x) ( ((((APTR)(x)) == NULL) ||	\
+#define ASSERT_VALID_PTR_OR_NULL(x) do {			\
+	((((APTR)(x)) == NULL) ||				\
 	(((LONG)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
 	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%lx\n",	\
-	THIS_FILE, __LINE__, #x, (APTR)(x)) ) );
+	THIS_FILE, __LINE__, #x, (APTR)(x)) );			\
+} while(0)
 
-#define ASSERT_VALID_TASK(t) ( ASSERT_VALID_PTR(t) &&		\
-	(((t)->tc_Node.ln_Type == NT_TASK) ||			\
-	(t)->tc_Node.ln_Type == NT_PROCESS) );
+#define ASSERT_VALID_TASK(t) do {				\
+	ASSERT_VALID_PTR(t);					\
+	ASSERT((((t)->tc_Node.ln_Type == NT_TASK) ||			\
+	(t)->tc_Node.ln_Type == NT_PROCESS));			\
+} while(0)
 
-#define ASSERT_VALID_PROCESS(p) ( ASSERT_VALID_PTR(p) &&	\
-	(((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS) );
+#define ASSERT_VALID_PROCESS(p) do {				\
+	ASSERT_VALID_PTR(p);					\
+	ASSERT((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS);	\
+} while(0)
 
 #else /* !ADEBUG */
 
@@ -194,7 +204,7 @@
    on 64 bit machines it will be 16, and it would even work on 128 bit machines
    because I guess there MEMCHUNK_TOTAL will be 32 */
    
-#define MUNGWALL_SIZE (32 * 3)
+#define MUNGWALL_SIZE (32 * 1)
 
 #if AROS_SIZEOFULONG == 4
 #    define MEMFILL_FREE	0xDEADBEEFL
@@ -212,29 +222,36 @@
 
 #if MDEBUG
 
-/* Fill the block pointed by <ptr> of size <size> with <fill>
+/* Fill the memory block pointed by <ptr> of size <size> with <fill>
  */
-#   define MUNGE_BLOCK(ptr, size, fill)			\
-    {							\
+#   define MUNGE_BLOCK(ptr, fill, size) do {		\
 	ULONG *__p = (ULONG *)(ptr);			\
-	ULONG __s = size / AROS_SIZEOFULONG;		\
-	while (__s--) *__p++ = fill;			\
-    }
-#   define CHECK_WALL(ptr, size)			\
-    {							\
-	ULONG *__p = (ULONG *)(ptr);			\
-	ULONG __s = size / AROS_SIZEOFULONG;		\
+	ULONG __s = (size) / sizeof(ULONG);		\
+	while (__s--) *__p++ = (fill);			\
+} while(0)
+
+/* Build a wall over the memory block <ptr> of size <size> with <fill> bricks.
+ */
+#   define BUILD_WALL(ptr, fill, size) do {		\
+	memset((ptr), (fill), (size));			\
+} while(0)
+
+/* Check the integrity of the wall <ptr> of size <size> bytes containing <fill>.
+ */
+#   define CHECK_WALL(ptr, fill, size) do {		\
+	UBYTE *__p = (ULONG *)(ptr);			\
+	size_t __s = (size);				\
 	while (__s--)					\
 	{						\
-	    if(*__p != MEMFILL_WALL)			\
+	    if(*__p != (fill))				\
 	    {						\
 		struct Task *__t = FindTask(NULL);	\
-		kprintf("\x07" "Broken wall detected in " __FUNCTION__ " at 0x%x, Task: 0x%x, Name: %s\n",	\
+		kprintf("\x07" "Broken wall detected in " __FUNCTION__ " at 0x%x, Task: 0x%x, Name: %s\n", \
 			__p, __t, __t->tc_Node.ln_Name);\
 	    }						\
 	    __p++;					\
 	}						\
-    }
+} while(0)
 
 #else
 
