@@ -16,7 +16,12 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(INCDIR)/sigcore.h
 	   
 #MM- AROS-native : setup setup-native includes compiler kernel boot-native \
-#MM	    Drivers-native kernel-link-native binary-native-i386
+#MM	    Drivers-native create-mf-inc-again kernel-link-native binary-native-i386
+
+#MM create-mf-inc-again
+create-mf-inc-again :
+	@make -f $(TOP)/config/mmakefile setup
+
 
 # Kernel
 #MM- kernel-native : kernel-exec-native \
@@ -38,6 +43,9 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM	    kernel-misc-linklib kernel-misc-native-i386 \
 #MM	    kernel-graphics-linklib graphics-gfxhidd kernel-graphics-native-i386 \
 #MM	    kernel-cgfx-linklib
+
+
+
 
 # Setup
 #MM- setup-native : setup-exec-native-$(CPU) \
