@@ -842,8 +842,8 @@ graphics00125;2;digulla;Write EraseRect
 graphics00126;2;nlorentz;Write ExtendFont
 graphics00127;2;nlorentz;Write StripFont
 graphics00128;0;digulla;Write CalcIVG
-graphics00129;0;digulla;Write AttachPalExtra
-graphics00130;0;bergers;Write ObtainBestPenA
+graphics00129;1;bergers;Write AttachPalExtra
+graphics00130;1;bergers;Write ObtainBestPenA
 graphics00131;2;bergers;Write SetRGB
 graphics00132;2;digulla;Write GetAPen
 graphics00133;2;digulla;Write GetBPen
