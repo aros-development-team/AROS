@@ -601,18 +601,27 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 /***************
 **  DoSGHKey  **
 ***************/
-#define CURSOR_RIGHT	'C'
-#define CURSOR_LEFT	'D'
-#define SHIFT_CLEFT	" @"
-#define SHIFT_CRIGHT	" A"
-#define HELP		"?~"
-#define BACKSPACE	0x08
-#define TAB		0x09
-#define ENTER		0x0A
-#define RETURN		0x0D
-#define DELETE		0x7F
 
-#define CSI		155
+#if 0
+ #define CURSOR_RIGHT	'C'
+ #define CURSOR_LEFT	'D'
+ #define SHIFT_CLEFT	" @"
+ #define SHIFT_CRIGHT	" A"
+ #define HELP		"?~"
+ #define BACKSPACE	0x08
+ #define TAB		0x09
+ #define ENTER		0x0A
+ #define RETURN		0x0D
+ #define DELETE		0x7F
+ #define CSI		155
+#else
+ #define HELP		95
+ #define BACKSPACE	65
+ #define TAB		66
+ #define ENTER		67
+ #define RETURN		68
+ #define DELETE		70
+#endif
 
 VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
 {
@@ -644,114 +653,117 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     strinfo = sgw->StringInfo;
     
     numchars = MapRawKey(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
+
     if (numchars == -1)
     	return (FALSE);
-
-    if (numchars == 0)
-    	return (FALSE);
-    	
-    letter = keybuf[0];
+ 
+    	   
     qual = sgw->IEvent->ie_Qualifier;
     
     #define SHIFT (IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT)
-    D(bug("sghkey: converted to letter %d\n", letter));
-    if (letter == CSI)
+    D(bug("sghkey: converted %d to letter %d\n",sgw->IEvent->ie_Code,letter));
+
+    sgw->EditOp = EO_NOOP;
+    
+    if (numchars == 0)
     {
-    	D(bug("sghkey: <CSI> found\n"));
-    	letter = keybuf[1];
-   	D(bug("sghkey: Keybuf=%s\n", keybuf + 1));
-    	if (letter == CURSOR_LEFT)
-    	{
+    	/* RAW Keys */
+	
+	letter = sgw->IEvent->ie_Code;
+
+	if ((letter == CURSORLEFT) && (!(qual & SHIFT)))
+	{
     	    D(bug("sghkey: CURSOR_LEFT\n"));
     	    if (sgw->BufferPos > 0)
     	    {
-    	    	sgw->EditOp = EO_MOVECURSOR;
-    	    	sgw->BufferPos --;
+    		sgw->EditOp = EO_MOVECURSOR;
+    		sgw->BufferPos --;
     	    }
-    	}
-    	else if (letter == CURSOR_RIGHT)
-    	{
-    	    
+	}
+	else if ((letter == CURSORRIGHT) && (!(qual & SHIFT)))
+	{
+
     	    D(bug("sghkey: CURSOR_RIGHT\n"));
     	    if (sgw->BufferPos < sgw->NumChars)
     	    {
-    	    	sgw->EditOp = EO_MOVECURSOR;
-    	    	sgw->BufferPos ++;
-    	    	     
+    		sgw->EditOp = EO_MOVECURSOR;
+    		sgw->BufferPos ++;
+
     	    }
-    	}
-    	else if (strcmp(keybuf + 1, SHIFT_CLEFT) == 0)
-    	{
+	}
+	else if ((letter == CURSORLEFT) && (qual & SHIFT))
+	{
     	    if (sgw->BufferPos > 0)
     	    {
-    	    	sgw->BufferPos = 0;
-    	    	sgw->EditOp = EO_MOVECURSOR;
+    		sgw->BufferPos = 0;
+    		sgw->EditOp = EO_MOVECURSOR;
     	    }
-    	}
-    	else if (strcmp(keybuf + 1, SHIFT_CRIGHT) == 0)
-    	{
+	}
+	else if ((letter == CURSORRIGHT) && (qual & SHIFT))
+	{
     	    if (sgw->BufferPos < sgw->NumChars)
     	    {
-    	    	sgw->BufferPos = sgw->NumChars;
-    	    	sgw->EditOp = EO_MOVECURSOR;
+    		sgw->BufferPos = sgw->NumChars;
+    		sgw->EditOp = EO_MOVECURSOR;
     	    }
-    	}
-    	else if (strcmp(keybuf + 1, HELP) == 0)
-    	{
-    	}
-    	
-    }
-    else if (letter == BACKSPACE)
-    {
-    	if (sgw->BufferPos != 0)
-    	{
-    	    UWORD first = sgw->BufferPos;
-    	    UWORD last  = sgw->NumChars - 1;
-    	    UWORD steps;
-    	    if (qual &  SHIFT)
+	}
+	else if (letter == HELP)
+	{	
+	}
+	else if (letter == BACKSPACE)
+	{
+    	    if (sgw->BufferPos != 0)
     	    {
-    	    	steps = sgw->BufferPos;
-    	    	
-    	    	sgw->BufferPos = 0;
-    	    	sgw->NumChars -= steps;
+    		UWORD first = sgw->BufferPos;
+    		UWORD last  = sgw->NumChars - 1;
+    		UWORD steps;
+    		if (qual &  SHIFT)
+    		{
+    	    	    steps = sgw->BufferPos;
+
+    	    	    sgw->BufferPos = 0;
+    	    	    sgw->NumChars -= steps;
+    		}
+    		else
+    		{
+    	      	    sgw->NumChars --;
+    	      	    sgw->BufferPos --;
+    	      	    steps = 1;
+    		} 	
+    		MoveCharsLeft(sgw->WorkBuffer, first, last, steps);
+    		sgw->EditOp = EO_DELBACKWARD;
     	    }
-    	    else
+	}
+	else if (letter == DELETE)
+	{
+    	    /* Check whether cursor is at the trailing 0 */
+    	    if (sgw->BufferPos != sgw->NumChars)
     	    {
-    	      	sgw->NumChars --;
-    	      	sgw->BufferPos --;
-    	      	steps = 1;
-    	    } 	
-    	    MoveCharsLeft(sgw->WorkBuffer, first, last, steps);
-    	    sgw->EditOp = EO_DELBACKWARD;
-    	}
-    }
-    else if (letter == DELETE)
-    {
-    	/* Check whether cursor is at the trailing 0 */
-    	if (sgw->BufferPos != sgw->NumChars)
-    	{
-    	    if (qual & SHIFT)
-    	    {
-    	    	sgw->WorkBuffer[sgw->BufferPos] = 0;
-    	    	sgw->NumChars = sgw->BufferPos;
-	    }
-	    else
-	    {
-    	    	MoveCharsLeft(sgw->WorkBuffer, sgw->BufferPos + 1, sgw->NumChars - 1, 1);
-    	    	sgw->NumChars --;
+    		if (qual & SHIFT)
+    		{
+    	    	    sgw->WorkBuffer[sgw->BufferPos] = 0;
+    	    	    sgw->NumChars = sgw->BufferPos;
+		}
+		else
+		{
+    	    	    MoveCharsLeft(sgw->WorkBuffer, sgw->BufferPos + 1, sgw->NumChars - 1, 1);
+    	    	    sgw->NumChars --;
+    		}
+    		sgw->EditOp = EO_DELFORWARD;
     	    }
-    	    sgw->EditOp = EO_DELFORWARD;
-    	}
+	}
+	else if (letter == ENTER || letter == RETURN)
+	{
+    	    D(bug("sghkey: ENTER\n"));
+    	    sgw->EditOp  = EO_ENTER;
+    	    sgw->Actions = (SGA_USE|SGA_END);
+	}
     }
-    else if (letter == ENTER || letter == RETURN)
+    else if (numchars > 0)
     {
-    	D(bug("sghkey: ENTER\n"));
-    	sgw->EditOp  = EO_ENTER;
-    	sgw->Actions = (SGA_USE|SGA_END);
-    }
-    else
-    {
-    
+        /* ANSI key */
+	
+	letter = keybuf[0];
     	/* Validity check of letter */
     	if (gad->Activation & GACT_LONGINT)
     	{
