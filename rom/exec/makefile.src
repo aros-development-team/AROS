@@ -47,7 +47,7 @@ else
 
 %prepare_shlib exec $(SHARED_EXEC)
 
-FILES := init execfunctions traphandler
+FILES := init execfunctions traphandler exec_util
 
 FUNCTIONS := \
 	allocmem freemem addhead addtask remtask wait signal allocsignal    \
@@ -129,6 +129,11 @@ all: setup $(LIB)
 $(LIB): $(OBJS)
 	%mklib_q
 	@$(RM) $(RMLIB)
+
+CFLAGS2 := $(CFLAGS) -I$(TOP)/config/unix/exec -I.
+
+$(OBJDIR)/init.o: init.c
+	%compile_q opt=$(CFLAGS2)
 
 # ***** END ***************
 endif

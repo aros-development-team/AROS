@@ -38,6 +38,9 @@
 #include "memory.h"
 #include <aros/machine.h>
 #include <aros/asmcall.h>
+#include "exec_util.h"
+#include "etask.h"
+#include "sigcore.h"
 #undef kprintf
 
 extern void *ExecFunctions[];
@@ -305,6 +308,31 @@ printf ("SysBase = %p\n", SysBase);
 	t->tc_SigAlloc=0xffff;
 	t->tc_SPLower = NULL;	    /* This is the system's stack */
 	t->tc_SPUpper = (APTR)~0UL; /* all available addresses are ok */
+	t->tc_Flags |= TF_ETASK;
+	if (t->tc_Flags & TF_ETASK)
+	{
+	    t->tc_UnionETask.tc_ETask = AllocTaskMem (t
+		, sizeof (struct IntETask)
+		, MEMF_ANY|MEMF_CLEAR
+	    );
+
+	    if (!t->tc_UnionETask.tc_ETask)
+	    {
+		fprintf (stderr, "Not enough memory for first task\n");
+		exit (20);
+	    }
+
+	    GetIntETask (t)->iet_Context = AllocTaskMem (t
+		, SIZEOF_ALL_REGISTERS
+		, MEMF_PUBLIC|MEMF_CLEAR
+	    );
+
+	    if (!GetIntETask (t)->iet_Context)
+	    {
+		fprintf (stderr, "Not enough memory for first task\n");
+		exit (20);
+	    }
+	}
 	SysBase->ThisTask=t;
     }
     {

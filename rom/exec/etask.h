@@ -19,4 +19,7 @@ struct IntETask
     APTR	 iet_Context;	/* Structure to store CPU registers */
 };
 
+#define GetIntETask(task) ((struct IntETask *)(((struct Task *) \
+			    (task))->tc_UnionETask.tc_ETask))
+
 #endif /* _ETASK_H */

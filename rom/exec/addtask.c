@@ -12,6 +12,7 @@
 #include <proto/exec.h>
 #include "exec_pdefs.h"
 #include "etask.h"
+#include "exec_util.h"
 
 #include "exec_debug.h"
 #ifndef DEBUG_AddTask
@@ -77,7 +78,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    APTR sp;
+    /* APTR sp; */
 
     D(bug("Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
 	, task
@@ -105,23 +106,33 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     if(task->tc_TrapCode==NULL)
 	task->tc_TrapCode=&AROS_SLIB_ENTRY(TrapHandler,Exec);
 
+#if AROS_FLAVOUR!=AROS_FLAVOUR_NATIVE
+    /*
+	If you can't to store the registers on the signal stack, you
+	must set this flag.
+    */
+    task->tc_Flags |= TF_ETASK;
+#endif
+
     /* Allocate the ETask structure if requested */
     if (task->tc_Flags & TF_ETASK)
     {
-	task->tc_UnionETask.tc_ETask = AllocMem (sizeof (struct IntETask),
-		MEMF_ANY|MEMF_CLEAR);
+	task->tc_UnionETask.tc_ETask = AllocTaskMem (task
+	    , sizeof (struct IntETask)
+	    , MEMF_ANY|MEMF_CLEAR
+	);
 
 	if (!task->tc_UnionETask.tc_ETask)
 	    return NULL;
     }
 
     /* Get new stackpointer. */
-    sp=task->tc_SPReg;
-    if(task->tc_SPReg==NULL)
+    /* sp=task->tc_SPReg; */
+    if (task->tc_SPReg==NULL)
 #if AROS_STACK_GROWS_DOWNWARDS
-	sp=(UBYTE *)task->tc_SPUpper-SP_OFFSET;
+	task->tc_SPReg = (UBYTE *)(task->tc_SPUpper) - SP_OFFSET;
 #else
-	sp=(UBYTE *)task->tc_SPLower-SP_OFFSET;
+	task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
 #endif
 
     /* Default finalizer? */
@@ -129,10 +140,14 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 	finalPC=&KillCurrentTask;
 
     /* Init new context. */
-    sp=PrepareContext(sp,initialPC,finalPC);
+    if (!PrepareContext (task, initialPC, finalPC))
+    {
+	FreeTaskMem (task, task->tc_UnionETask.tc_ETask);
+	return NULL;
+    }
 
     /* store sp */
-    task->tc_SPReg=sp;
+    /* task->tc_SPReg=sp; */
 
     /* Set the task flags for switch and launch. */
     if(task->tc_Switch)
