@@ -242,7 +242,7 @@ ssize_t     write(int fd, const void *buf, size_t nbytes);
 #endif
 
 #if __POSIX_VISIBLE >= 199506 || __XSI_VISIBLE
-/* NOTIMPL int         fsync(int fd); */
+int         fsync(int fd);
 int         ftruncate(int fd, off_t length);
 #endif
 
