@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Keyboard device
@@ -554,12 +554,15 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    /* Key released ? ... */
 	    if(code & KEYUPMASK)
 	    {
+    	    #if 1
+    	    	/* stegerg: on PC keyboards caps lock also generates up events */
+    	    	if (trueCode != AKC_CAPS_LOCK)
+    	    #endif
 		kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
 	    }
 	    else  /* ... or pressed? */
 	    {
-		/* No CAPS_LOCK releases are reported */
-		if(trueCode == AKC_CAPS_LOCK)
+    	    	if (trueCode == AKC_CAPS_LOCK)
 		{
 		    kbUn->kbu_Qualifiers ^= IEQUALIFIER_CAPSLOCK;
 		}
