@@ -12,7 +12,7 @@ include $(TOP)/config/make.cfg
 AROS : checkerr
 
 #MM
-shell : $(BINDIR)/arosshell 
+shell : $(BINDIR)/arosshell
 
 #MM
 setup :
@@ -66,6 +66,16 @@ DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
 else
 DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
 endif
+ifeq ("$(SHARED_BOOPSI)","yes")
+DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so
+else
+DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
+endif
+ifeq ("$(SHARED_HIDDCLASS)","yes")
+DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddcl.so
+else
+DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddcl.a
+endif
 
 DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
@@ -77,12 +87,15 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_INTUITION) \
     $(DEPLIB_GRAPHICS) \
     $(DEPLIB_MATHFFP) \
+    $(DEPLIB_BOOPSI) \
+    $(DEPLIB_HIDDCLASS) \
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
-	-lintuition -lgraphics -ldos -lexec -lconsole -lutility \
+	-lintuition -lgraphics -ldos -lexec -lconsole \
+	-lhiddcl -lboopsi -lutility \
 	-laros -lmathffp \
 	-lamiga -larossupport
 
