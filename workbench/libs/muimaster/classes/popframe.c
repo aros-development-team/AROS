@@ -35,6 +35,7 @@ IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         InnerSpacing(4,4),
         MUIA_Background, MUII_ButtonBack,
         MUIA_InputMode,  MUIV_InputMode_RelVerify,
+	MUIA_Draggable, TRUE,
         
         TAG_MORE, (IPTR) msg->ops_AttrList
     );

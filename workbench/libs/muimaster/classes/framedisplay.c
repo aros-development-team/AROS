@@ -149,6 +149,27 @@ IPTR Framedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
     return 1;
 }
 
+IPTR Framedisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    struct MUI_FrameSpec *dummy;
+
+    if (msg->obj == obj)
+	return MUIV_DragQuery_Refuse;
+    if (!get(msg->obj, MUIA_Framedisplay_Spec, &dummy))
+	return MUIV_DragQuery_Refuse;
+    return MUIV_DragQuery_Accept;
+}
+
+IPTR Framedisplay__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+{
+    struct MUI_FrameSpec *spec;
+
+    get(msg->obj, MUIA_Framedisplay_Spec, &spec);
+    set(obj, MUIA_Framedisplay_Spec, (IPTR)spec);
+    return 0;
+}
+
+
 #if ZUNE_BUILTIN_FRAMEDISPLAY
 BOOPSI_DISPATCHER(IPTR, Framedisplay_Dispatcher, cl, obj, msg)
 {
@@ -159,6 +180,8 @@ BOOPSI_DISPATCHER(IPTR, Framedisplay_Dispatcher, cl, obj, msg)
 	case OM_GET:         return Framedisplay__OM_GET(cl, obj, (APTR)msg);
 	case MUIM_AskMinMax: return Framedisplay__MUIM_AskMinMax(cl,obj,(APTR)msg);
 	case MUIM_Draw:      return Framedisplay__MUIM_Draw(cl,obj,(APTR)msg);
+	case MUIM_DragQuery: return Framedisplay__MUIM_DragQuery(cl,obj,(APTR)msg);
+	case MUIM_DragDrop:  return Framedisplay__MUIM_DragDrop(cl,obj,(APTR)msg);
         default:             return DoSuperMethodA(cl, obj, msg);
     }
 }

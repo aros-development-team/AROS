@@ -253,6 +253,39 @@ IPTR Imagedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
     return 1;
 }
 
+IPTR Imagedisplay__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
+{
+    IPTR dummy;
+
+    if (msg->obj == obj)
+	return MUIV_DragQuery_Refuse;
+    if (get(msg->obj, MUIA_Imagedisplay_Spec, &dummy)
+	|| get(msg->obj, MUIA_Pendisplay_Spec, &dummy))
+	return MUIV_DragQuery_Accept;
+    return MUIV_DragQuery_Refuse;
+}
+
+IPTR Imagedisplay__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
+{
+    IPTR spec;
+
+    if (get(msg->obj, MUIA_Imagedisplay_Spec, &spec))
+    {
+	set(obj, MUIA_Imagedisplay_Spec, spec);
+    }
+    else if (get(msg->obj, MUIA_Pendisplay_Spec, &spec))
+    {
+	char buf[67];
+
+	strcpy(buf, "2:");
+	strncpy(buf + 2, (const char *)spec, 64);
+	buf[66] = 0;
+	set(obj, MUIA_Imagedisplay_Spec, (IPTR)buf);
+    }
+    return 0;
+}
+
+
 #if ZUNE_BUILTIN_IMAGEDISPLAY
 BOOPSI_DISPATCHER(IPTR, Imagedisplay_Dispatcher, cl, obj, msg)
 {
@@ -268,6 +301,8 @@ BOOPSI_DISPATCHER(IPTR, Imagedisplay_Dispatcher, cl, obj, msg)
 	case MUIM_Show:      return Imagedisplay__MUIM_Show(cl,obj,(APTR)msg);
 	case MUIM_Hide:      return Imagedisplay__MUIM_Hide(cl,obj,(APTR)msg);
 	case MUIM_Draw:      return Imagedisplay__MUIM_Draw(cl,obj,(APTR)msg);
+	case MUIM_DragQuery: return Imagedisplay__MUIM_DragQuery(cl,obj,(APTR)msg);
+	case MUIM_DragDrop:  return Imagedisplay__MUIM_DragDrop(cl,obj,(APTR)msg);
         default:             return DoSuperMethodA(cl, obj, msg);
     }    
 }
