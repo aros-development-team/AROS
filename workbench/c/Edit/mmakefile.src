@@ -8,7 +8,7 @@ FILES := ClipLoc Cursor DiskIO Edit Events Gui Jed \
     	 Macros Memory Prefs Project Search UndoRedo \
 	 Utility
 
-EXEDIR := $(AROSDIR)/Utilities
+EXEDIR := $(CONTRIBDIR)/aminet
 EXE := $(EXEDIR)/JanoEditor
 
 USE_AROSLIB := yes
