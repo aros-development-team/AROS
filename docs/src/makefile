@@ -96,7 +96,7 @@ src2html : conv/src2html
 	cp $< $@
 
 $(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
-	    includes src2html
+	    includes src2html keywords.db files.db
 	export TOP="$(TOP)" ; \
 	$(SRC2HTML) ; \
 	$(SRC2HTML) ; \
