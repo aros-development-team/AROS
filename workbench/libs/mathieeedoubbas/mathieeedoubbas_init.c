@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Init of mathieeedoubbas.library
@@ -24,10 +24,10 @@
 /* */
 #define SetFunc(a,b) SetFunction((struct Library *)lh, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,MathIeeeDoubBas))
 
-extern MathIeeeDoubBas_FPU_IEEEDPFix(); 
-extern MathIeeeDoubBas_FPU_IEEEDPFlt();
-extern MathIeeeDoubBas_FPU_IEEEDPMul(); 
-extern MathIeeeDoubBas_FPU_IEEEDPDiv();
+extern int MathIeeeDoubBas_FPU_IEEEDPFix(); 
+extern int MathIeeeDoubBas_FPU_IEEEDPFlt();
+extern int MathIeeeDoubBas_FPU_IEEEDPMul(); 
+extern int MathIeeeDoubBas_FPU_IEEEDPDiv();
 
 struct ExecBase * SysBase; /* global variable */
 
