@@ -180,6 +180,20 @@ AROS_LP7(void, ScrollRaster,
     AROS_LCA(long             , yMax, D5), \
     struct GfxBase *, GfxBase, 66, Graphics)
 
+AROS_LP4(void, SetABPenDrMd,
+    AROS_LPA(struct RastPort *, rp, A1),
+    AROS_LPA(ULONG            , apen, D0),
+    AROS_LPA(ULONG            , bpen, D1),
+    AROS_LPA(ULONG            , drawMode, D2),
+    struct GfxBase *, GfxBase, 149, Graphics)
+#define SetABPenDrMd(rp, apen, bpen, drawMode) \
+    AROS_LC4(void, SetABPenDrMd, \
+    AROS_LCA(struct RastPort *, rp, A1), \
+    AROS_LCA(ULONG            , apen, D0), \
+    AROS_LCA(ULONG            , bpen, D1), \
+    AROS_LCA(ULONG            , drawMode, D2), \
+    struct GfxBase *, GfxBase, 149, Graphics)
+
 AROS_LP2(void, SetAPen,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(unsigned long    , pen, D0),
