@@ -57,33 +57,29 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(file);
-
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
     /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
 
     /* Prepare I/O request. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-    iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
-    iofs->IOFS.io_Command=FSA_SET_FILE_SIZE;
-    iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_SET_FILE_SIZE.io_Offset  =(QUAD)offset;
-    iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode=mode;
+    InitIOFS(&iofs, FSA_SET_FILE_SIZE, DOSBase);
+
+    iofs.IOFS.io_Device = fh->fh_Device;
+    iofs.IOFS.io_Unit   = fh->fh_Unit;
+
+    iofs.io_Union.io_SET_FILE_SIZE.io_Offset   = (QUAD)offset;
+    iofs.io_Union.io_SET_FILE_SIZE.io_SeekMode = mode;
 
     /* Send the request. */
-    DoIO(&iofs->IOFS);
+    DoIO(&iofs.IOFS);
     
-    /* Set error code and return */
-    if((me->pr_Result2=iofs->io_DosError))
+    SetIoErr(iofs.io_DosError);
+
+    if(iofs.io_DosError != 0)
         return -1;    
     else
-        return (LONG)iofs->io_Union.io_SET_FILE_SIZE.io_Offset;
+        return (LONG)iofs.io_Union.io_SET_FILE_SIZE.io_Offset;
     
     AROS_LIBFUNC_EXIT
 } /* SetFileSize */

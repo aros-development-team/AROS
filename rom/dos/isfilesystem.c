@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Check if a device is a filesystem.
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
@@ -59,10 +59,11 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to process structure */
-    struct Process *me = (struct Process *)FindTask(NULL);
     struct DosList *dl;
     STRPTR devicename_copy;
     STRPTR colon;
+
+    struct Process *me = (struct Process *)FindTask(NULL);
     
     BOOL success = TRUE;
     
@@ -77,68 +78,65 @@
 	    CopyMem(devicename, devicename_copy, stringlen);
 	   	
 	    success = FALSE;
-	    	
+	    
 	    dl = LockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
 	    dl = FindDosEntry(dl, devicename_copy, LDF_DEVICES);
 
-	    if (dl != NULL)
+	    if(dl != NULL)
 	    {
 		switch(dl->dol_Type)
 		{
-		    case DLT_DEVICE:
+		case DLT_DEVICE:
+		    {
+			/* Space for I/O request. Use stackspace for now. */
+			struct IOFileSys iofs;
+			
+			/* Prepare I/O request. */
+			InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
+			
+			iofs.IOFS.io_Device = dl->dol_Device;
+			iofs.IOFS.io_Unit   = dl->dol_Unit;
+			
+			/* Send the request. */
+			DoIO(&iofs.IOFS);
+			
+			/* Set return code */
+			if(!iofs.io_DosError)
 			{
-        		    /* Get pointer to I/O request. Use stackspace for now. */
-        		    struct IOFileSys io,*iofs=&io;
-
-        		    /* Prepare I/O request. */
-        		    iofs->IOFS.io_Message.mn_Node.ln_Type	= NT_REPLYMSG;
-        		    iofs->IOFS.io_Message.mn_ReplyPort  	= &me->pr_MsgPort;
-        		    iofs->IOFS.io_Message.mn_Length     	= sizeof(struct IOFileSys);
-        		    iofs->IOFS.io_Device 			= dl->dol_Device;
-        		    iofs->IOFS.io_Unit  			= dl->dol_Unit;
-        		    iofs->IOFS.io_Command			= FSA_IS_FILESYSTEM;
-        		    iofs->IOFS.io_Flags  			= 0;
-
-        		    /* Send the request. */
-        		    DoIO(&iofs->IOFS);
-
-        		    /* Set return code */
-        		    if(!iofs->io_DosError) {
-        			success = iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
-			    }
-			 }
-			 break;
-		     
-		     case DLT_VOLUME:
-		     case DLT_DIRECTORY:	/* normal assign */
-		         success = TRUE;
-			 break;
-		
-		     case DLT_LATE:
-		     case DLT_NONBINDING:
-		         {
-			     APTR old_windowptr = me->pr_WindowPtr;
-			     BPTR lock;
-			     
-			     me->pr_WindowPtr = (APTR)-1;
-			     
-			     if ((lock = Lock(devicename_copy, ACCESS_READ)))
-			     {
-			         success = TRUE;
-				 UnLock(lock);
-			     }
-			     
-			     me->pr_WindowPtr = old_windowptr;
-			     
-			 }
-			 break;
-			 
+			    success = iofs.io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
+			}
+		    }
+		    break;
+		    
+		case DLT_VOLUME:
+		case DLT_DIRECTORY:	/* normal assign */
+		    success = TRUE;
+		    break;
+		    
+		case DLT_LATE:
+		case DLT_NONBINDING:
+		    {
+			APTR old_windowptr = me->pr_WindowPtr;
+			BPTR lock;
+			
+			me->pr_WindowPtr = (APTR)-1;
+			
+			if ((lock = Lock(devicename_copy, ACCESS_READ)))
+			{
+			    success = TRUE;
+			    UnLock(lock);
+			}
+			
+			me->pr_WindowPtr = old_windowptr;
+		    }
+		    break;
+		    
 		} /* switch(dl->dol_Type) */
-		 
+		
 	    } /* if (dl != NULL) */
-
+	    
 	    /* All Done. */
-
+	    
 	    UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
 	    
 	    FreeVec(devicename_copy);
@@ -148,6 +146,6 @@
     } /* if (colon != NULL) */
     
     return success;
-
+    
     AROS_LIBFUNC_EXIT
 } /* IsFilesystem */

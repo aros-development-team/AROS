@@ -56,27 +56,21 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /*
-	Fairly simple, create a packet, and send it to the
-	required handler. Lets just hope it understands it.
-
-    */
     struct IOFileSys     iofs;
     struct FileHandle   *fha = (struct FileHandle *)BADDR(fh);
-    struct Process      *me = (struct Process *)FindTask(NULL);
 
-    iofs.IOFS.io_Message.mn_Node.ln_Type = NT_MESSAGE;
-    iofs.IOFS.io_Message.mn_ReplyPort = &me->pr_MsgPort;
-    iofs.IOFS.io_Message.mn_Length = sizeof(iofs);
+    InitIOFS(&iofs, FSA_CONSOLE_MODE, DOSBase);
+
     iofs.IOFS.io_Device = fha->fh_Device;
-    iofs.IOFS.io_Unit = fha->fh_Unit;
-    iofs.IOFS.io_Command = FSA_CONSOLE_MODE;
-    iofs.IOFS.io_Flags = 0;
+    iofs.IOFS.io_Unit   = fha->fh_Unit;
+
     iofs.io_Union.io_CONSOLE_MODE.io_ConsoleMode = mode;
 
     DoIO(&iofs.IOFS);
 
-    return iofs.io_DosError;
+    SetIoErr(iofs.io_DosError);
+
+    return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* SetMode */

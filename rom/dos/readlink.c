@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Read the soft link information.
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 #include <dos/filesystem.h>
@@ -62,37 +62,33 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Process *pr = (struct Process *)FindTask(NULL);
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
     struct FileHandle *fh = BADDR(lock);	
     ULONG error = 0;
 
-    iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort	  = &pr->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length       = sizeof(struct IOFileSys);
-    iofs->IOFS.io_Flags 	= 0;
-    iofs->IOFS.io_Device	= fh->fh_Device;
-    iofs->IOFS.io_Unit		= fh->fh_Unit;
-    iofs->IOFS.io_Command	= FSA_OPEN;
+    InitIOFS(&iofs, FSA_OPEN, DOSBase);
+    iofs.IOFS.io_Device	= fh->fh_Device;
+    iofs.IOFS.io_Unit   = fh->fh_Unit;
 
-    iofs->io_Union.io_OPEN.io_FileMode = FMF_READ;
+    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
 
-    if( (error = DoName(iofs, path, DOSBase)) == 0 )
+    if( (error = DoName(&iofs, path, DOSBase)) == 0 )
     {
-	iofs->IOFS.io_Command = FSA_READ_SOFTLINK;
+	iofs.IOFS.io_Command = FSA_READ_SOFTLINK;
 
-	iofs->io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
-    	iofs->io_Union.io_READ_SOFTLINK.io_Size   = size;
+	iofs.io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
+    	iofs.io_Union.io_READ_SOFTLINK.io_Size   = size;
 
-    	DoIO(&iofs->IOFS);
+    	DoIO(&iofs.IOFS);
 
-	error = iofs->io_DosError;
+	error = iofs.io_DosError;
 
-	iofs->IOFS.io_Command = FSA_CLOSE;
-	DoIO(&iofs->IOFS);
+	iofs.IOFS.io_Command = FSA_CLOSE;
+	DoIO(&iofs.IOFS);
 
-	SetIoErr( error );
+	SetIoErr(error);
     }
+
     return (!error);
 
     AROS_LIBFUNC_EXIT

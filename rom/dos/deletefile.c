@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Delete a file or directory.
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -35,7 +35,7 @@
 	name	   - NUL terminated name.
 
     RESULT
-	!=0 if the file is gone, 0 if is still there.
+	!= 0 if the file is gone, 0 if is still there.
 	IoErr() gives additional information in that case.
 
     NOTES
@@ -57,24 +57,16 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
-
     /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
 
     /* Prepare I/O request. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
-    iofs->IOFS.io_Flags=0;
-    iofs->IOFS.io_Command=FSA_DELETE_OBJECT;
+    InitIOFS(&iofs, FSA_DELETE_OBJECT, DOSBase);
 
-    DoName(iofs,name,DOSBase);
-    SetIoErr(iofs->io_DosError);
-
-    if (iofs->io_DosError)
+    if(DoName(&iofs, name, DOSBase) == 0)
+	return DOSTRUE;
+    else
 	return DOSFALSE;
-    return DOSTRUE;
+
     AROS_LIBFUNC_EXIT
 } /* DeleteFile */

@@ -58,24 +58,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *, DOSBase)
 
-    struct Process  *me = (struct Process *)FindTask(NULL);
-    struct DevProc  *dp = GetDeviceProc(name, NULL);
     struct IOFileSys iofs;
 
-    if(dp == NULL)
+    InitIOFS(&iofs, FSA_INHIBIT, DOSBase);
+
+    iofs.IOFS.io_Device = GetDevice(name, NULL, DOSBase);
+
+    if(iofs.IOFS.io_Device == NULL)
 	return DOSFALSE;
 
-    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(dp->dvp_Lock))->fh_Device;
-    iofs.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    iofs.IOFS.io_Message.mn_ReplyPort	 = &me->pr_MsgPort;
-    iofs.IOFS.io_Message.mn_Length	 = sizeof(struct IOFileSys);
-    iofs.IOFS.io_Flags = 0;
-    iofs.IOFS.io_Command = FSA_INHIBIT;
     iofs.io_Union.io_INHIBIT.io_Inhibit = onoff == DOSTRUE ? TRUE : FALSE;
 
-    DoIO((struct IORequest *)&iofs);
-
-    FreeDeviceProc(dp);
+    DoIO(&iofs.IOFS);
 
     return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
 

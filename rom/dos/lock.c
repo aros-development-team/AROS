@@ -65,44 +65,47 @@
 
     struct FileHandle *ret;
 
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
-
     /* Create filehandle */
-    ret=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
-    if(ret!=NULL)
+    ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
+
+    if(ret != NULL)
     {
 	/* Get pointer to I/O request. Use stackspace for now. */
-	struct IOFileSys io,*iofs=&io;
+	struct IOFileSys iofs;
 
 	/* Prepare I/O request. */
-	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-	iofs->IOFS.io_Flags=0;
-	iofs->IOFS.io_Command=FSA_OPEN;
+	InitIOFS(&iofs, FSA_OPEN, DOSBase);
+
 	/* io_Args[0] is the name which is set by DoName(). */
 	switch(accessMode)
 	{
-	    case EXCLUSIVE_LOCK:
-		iofs->io_Union.io_OPEN.io_FileMode=FMF_LOCK|FMF_READ;
-		break;
-	    case SHARED_LOCK:
-		iofs->io_Union.io_OPEN.io_FileMode=FMF_READ;
-		break;
-	    default:
-		iofs->io_Union.io_OPEN.io_FileMode=accessMode;
-		break;
+	case EXCLUSIVE_LOCK:
+	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
+	    break;
+	    
+	case SHARED_LOCK:
+	    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
+	    break;
+	    
+	default:
+	    iofs.io_Union.io_OPEN.io_FileMode = accessMode;
+	    break;
 	}
-	if(!DoName(iofs,name,DOSBase))
+	
+	if(!DoName(&iofs, name, DOSBase))
 	{
-	    ret->fh_Device=iofs->IOFS.io_Device;
-	    ret->fh_Unit  =iofs->IOFS.io_Unit;
+	    ret->fh_Device = iofs.IOFS.io_Device;
+	    ret->fh_Unit   = iofs.IOFS.io_Unit;
+
 	    return MKBADDR(ret);
 	}
-	FreeDosObject(DOS_FILEHANDLE,ret);
-    }else
+
+	FreeDosObject(DOS_FILEHANDLE, ret);
+    }
+    else
 	SetIoErr(ERROR_NO_FREE_STORE);
+
     return 0;
+
     AROS_LIBFUNC_EXIT
 } /* Lock */

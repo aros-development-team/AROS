@@ -1,10 +1,11 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new directory.
-    Lang: english
+    Lang: English
 */
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
@@ -32,7 +33,7 @@
 	exclusive lock on the new diretory is returned.
 
     INPUTS
-	name	   - NUL terminated name.
+	name  -- NUL terminated name.
 
     RESULT
 	Exclusive lock to the new directory or 0 if couldn't be created.
@@ -59,33 +60,33 @@
 
     struct FileHandle *ret;
 
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
-
     /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
 
     /* Allocate memory for lock */
-    ret=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
-    if(ret!=NULL)
+    ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
+
+    if(ret != NULL)
     {
 	/* Prepare I/O request. */
-	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-	iofs->IOFS.io_Flags=0;
-	iofs->IOFS.io_Command=FSA_CREATE_DIR;
-	/* io_Args[0] is the name which is set by DoName(). */
-	iofs->io_Union.io_CREATE_DIR.io_Protection=0UL;
-	if(!DoName(iofs,name,DOSBase))
+	InitIOFS(&iofs, FSA_CREATE_DIR, DOSBase);
+
+	iofs.io_Union.io_CREATE_DIR.io_Protection = 0;
+
+	if(!DoName(&iofs, name, DOSBase))
 	{
-	    ret->fh_Unit  =iofs->IOFS.io_Unit;
-	    ret->fh_Device=iofs->IOFS.io_Device;
+	    ret->fh_Unit   = iofs.IOFS.io_Unit;
+	    ret->fh_Device = iofs.IOFS.io_Device;
 	    return MKBADDR(ret);
 	}
-	FreeDosObject(DOS_FILEHANDLE,ret);
-    }else
-	me->pr_Result2=ERROR_NO_FREE_STORE;
+	
+	FreeDosObject(DOS_FILEHANDLE, ret);
+    }
+    else
+	SetIoErr(ERROR_NO_FREE_STORE);
+
     return 0;
+
     AROS_LIBFUNC_EXIT
 } /* CreateDir */
+

@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Format a device.
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
@@ -59,43 +59,33 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
-    struct DosList *dl;
-    BOOL success=0;
+    BOOL            success = 0;
 
-    dl=LockDosList(LDF_DEVICES|LDF_READ);
-    dl=FindDosEntry(dl,devicename,LDF_DEVICES);
-    if(dl!=NULL)
-    {
+    /* Get space for I/O request. Use stackspace for now. */
+    struct IOFileSys iofs;
+    
+    /* Prepare I/O request. */
+    InitIOFS(&iofs, FSA_FORMAT, DOSBase);
+    
+    iofs.IOFS.io_Device = GetDevice(devicename, &iofs.IOFS.io_Unit,
+				    DOSBase);
+    
+    if(iofs.IOFS.io_Device == NULL)
+	return 0;
+    
+    iofs.io_Union.io_FORMAT.io_VolumeName = volumename;
+    iofs.io_Union.io_FORMAT.io_DosType = dostype;
+    
+    /* Send the request. */
+    DoIO(&iofs.IOFS);
+    
+    /* Set error code */
+    if(iofs.io_DosError == 0)
+	success = 1;
+    else
+	SetIoErr(iofs.io_DosError);
 
-	/* Get pointer to I/O request. Use stackspace for now. */
-	struct IOFileSys io,*iofs=&io;
-
-	/* Prepare I/O request. */
-	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-	iofs->IOFS.io_Device =dl->dol_Device;
-	iofs->IOFS.io_Unit   =dl->dol_Unit;
-	iofs->IOFS.io_Command=FSA_FORMAT;
-	iofs->IOFS.io_Flags  =0;
-	iofs->io_Union.io_FORMAT.io_VolumeName=volumename;
-	iofs->io_Union.io_FORMAT.io_DosType=dostype;
-
-	/* Send the request. */
-	DoIO(&iofs->IOFS);
-
-	/* Set error code */
-	if(!iofs->io_DosError)
-	    success=1;
-	else
-	    SetIoErr(iofs->io_DosError);
-    }else
-	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-
-    /* All Done. */
-    UnLockDosList(LDF_DEVICES|LDF_READ);
     return success;
+
     AROS_LIBFUNC_EXIT
 } /* Format */

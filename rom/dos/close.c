@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/11/15 20:16:07  SDuvan
+    Simplified and unified
+
     Revision 1.8  1998/10/20 16:44:29  hkiel
     Amiga Research OS
 
@@ -27,7 +30,7 @@
     Added standard header for all files
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
@@ -54,13 +57,13 @@
 	return an error. The file is closed in any case.
 
     INPUTS
-	file   - filehandle
+	file  --  filehandle
 
     RESULT
-	0 if there was an error. !=0 on success.
+	0 if there was an error. != 0 on success.
 
     NOTES
-	This function is identical to Lock().
+	This function is identical to UnLock().
 
     EXAMPLE
 
@@ -93,7 +96,7 @@
 	Free a lock created with Lock().
 
     INPUTS
-	lock - The lock to free
+	lock -- The lock to free
 
     RESULT
 
@@ -119,40 +122,36 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(file);
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
-
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    /* Get space for I/O request. Use stack for now. */
+    struct IOFileSys iofs;
 
     /* The returncode defaults to OK. */
-    BOOL ret=1;
+    BOOL ret = 1;
 
     /* 0 handles are OK */
-    if(!file)
+    if(file == NULL)
 	return ret;
 
     /* If the filehandle has a pending write on it Flush() the buffer. */
-    if(fh->fh_Flags&FHF_WRITE)
-	ret=Flush(file);
+    if(fh->fh_Flags & FHF_WRITE)
+	ret = Flush(file);
 
     /* Prepare I/O request. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
-    iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit	 =fh->fh_Unit;
-    iofs->IOFS.io_Command=FSA_CLOSE;
-    iofs->IOFS.io_Flags  =0;
+    InitIOFS(&iofs, FSA_CLOSE, DOSBase);
+
+    iofs.IOFS.io_Device = fh->fh_Device;
+    iofs.IOFS.io_Unit	= fh->fh_Unit;
 
     /* Send the request. No errors possible. */
-    (void)DoIO(&iofs->IOFS);
+    DoIO(&iofs.IOFS);
 
-    FreeDosObject(DOS_FILEHANDLE,fh);
+    /* Free the filehandle which was allocated in Open(), CreateDir()
+       and such. */
+    FreeDosObject(DOS_FILEHANDLE, fh);
 
-    /* All done. */
     return ret;
+
     AROS_LIBFUNC_EXIT
 } /* Close */

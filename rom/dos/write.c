@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Write data to a file.
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include <dos/filesystem.h>
@@ -52,8 +52,6 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -61,13 +59,10 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
-    struct FileHandle *fh=(struct FileHandle *)BADDR(file);
-
-    /* Get pointer to process structure */
-    struct Process *me=(struct Process *)FindTask(NULL);
+    struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
     /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys io,*iofs=&io;
+    struct IOFileSys iofs;
 
     ASSERT_VALID_PTR(fh);
     ASSERT_VALID_PTR(fh->fh_Device);
@@ -75,24 +70,23 @@
     ASSERT_VALID_PTR(buffer);
 
     /* Prepare I/O request. */
-    iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
-    iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit	 =fh->fh_Unit;
-    iofs->IOFS.io_Command=FSA_WRITE;
-    iofs->IOFS.io_Flags  =0;
-    iofs->io_Union.io_WRITE.io_Buffer=(APTR)buffer;
-    iofs->io_Union.io_WRITE.io_Length=length;
+    InitIOFS(&iofs, FSA_WRITE, DOSBase);
+    
+    iofs.IOFS.io_Device = fh->fh_Device;
+    iofs.IOFS.io_Unit   = fh->fh_Unit;
+
+    iofs.io_Union.io_WRITE.io_Buffer = (APTR)buffer;
+    iofs.io_Union.io_WRITE.io_Length = length;
 
     /* Send the request. */
-    DoIO(&iofs->IOFS);
+    DoIO(&iofs.IOFS);
 
-    /* Set error code and return */
+    SetIoErr(iofs.io_DosError);
 
-    if((me->pr_Result2=iofs->io_DosError))
+    if(iofs.io_DosError != 0)
 	return -1;
     else
-	return iofs->io_Union.io_WRITE.io_Length;
+	return iofs.io_Union.io_WRITE.io_Length;
+
     AROS_LIBFUNC_EXIT
 } /* Write */

@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a hard- or softlink.
-    Lang: english
+    Lang: English
 */
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>

@@ -56,18 +56,21 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     LONG error;
     struct Device *olddev, *newdev;
-    struct Process *me=(struct Process *)FindTask(NULL);
-    struct IOFileSys io;
+
+    struct IOFileSys iofs;
+
+    /* Prepare I/O request. */
+    InitIOFS(&iofs, FSA_RENAME, DOSBase);
 
     error = DevName(oldName, &olddev, DOSBase);
-    if(error)
+    if(error != 0)
     {
 	SetIoErr(error);
 	return DOSFALSE;
     }
 
     error = DevName(newName, &newdev, DOSBase);
-    if(error)
+    if(error != 0)
     {
 	SetIoErr(error);
 	return DOSFALSE;
@@ -79,18 +82,14 @@
 	return DOSFALSE;
     }
 
-    /* Prepare I/O request. */
-    io.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    io.IOFS.io_Message.mn_ReplyPort = &me->pr_MsgPort;
-    io.IOFS.io_Message.mn_Length = sizeof(struct IOFileSys);
-    io.IOFS.io_Flags = 0;
-    io.IOFS.io_Command = FSA_RENAME;
-    io.io_Union.io_RENAME.io_Filename = oldName;
-    io.io_Union.io_RENAME.io_NewName = newName;
-    DoName(&io,oldName,DOSBase);
+    iofs.io_Union.io_RENAME.io_Filename = oldName;
+    iofs.io_Union.io_RENAME.io_NewName = newName;
 
-    SetIoErr(io.io_DosError);
-    if(io.io_DosError)
+    DoName(&iofs, oldName, DOSBase);
+
+    SetIoErr(iofs.io_DosError);
+
+    if(iofs.io_DosError)
     {
 	return DOSFALSE;
     }
