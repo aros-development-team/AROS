@@ -89,7 +89,7 @@ void setScreenColors(struct Screen *scr, UBYTE *colorMap, UBYTE depth,
 	       (15 & (colorMap[i*3+2]>>4));
 
       /*Store the color table*/
-   /* LoadRGB4(&(scr->ViewPort),destColorMap,numColors); */
+   LoadRGB4(&(scr->ViewPort),destColorMap,numColors);
 
       /*Return the number of colors*/
    *colors=numColors;
