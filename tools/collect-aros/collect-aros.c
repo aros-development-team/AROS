@@ -1,7 +1,7 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    
+
     Desc: AROS linker wrapper that handles symbol sets
     Lang: english
     Original Author: falemagn
@@ -16,7 +16,6 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "collect-aros.h"
 
 extern int gensets(FILE *in, FILE *out);
 
@@ -75,8 +74,8 @@ FILE *xfopen(char *name, char *mode)
 
 void docommand(char *path, char *argv[])
 {
-    extern char **environ; /*this is specially needed by collect2,
-                            so that it can find 'ld' in the PATH */
+    extern char **environ; 
+
     pid_t pid=vfork();
     int status;
 
@@ -224,8 +223,7 @@ int main(int argc, char *argv[])
     if (ret)
     {
 	free(command);
-	command = joinstrings(GCCPATH " -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, 
-" ", setsfilename, NULL);
+	command = joinstrings(GCCPATH " -static -nostartfiles -nostdlib -Wl,-r -o ", tempoutname, " ", output, " ", setsfilename, NULL);
 	xsystem(command);
 	free(command);
 	command = joinstrings(MVPATH " -f ", tempoutname, " ", output, NULL);
@@ -233,7 +231,7 @@ int main(int argc, char *argv[])
     }
 
     free(command);
-    command = joinstrings(NMPATH " -ul ", output, NULL);
+    command = joinstrings(NMPATH " -C -ul ", output, NULL);
 
     pipe = xpopen(command);
 
