@@ -1825,7 +1825,7 @@ char *zune_image_spec_duplicate(IPTR in)
     {
 	if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
 	{
-	    sprintf(spec_buf,"O:%ld",in);
+	    sprintf(spec_buf,"0:%ld",in);
 	    spec = spec_buf;
 	} else spec = (char*)in;
     }
