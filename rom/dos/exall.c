@@ -127,19 +127,33 @@
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys iofs;
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_EXAMINE_ALL, DOSBase);
+    if (control->eac_MatchString || control->eac_MatchFunc)
+    {
+    	#warning "Hack because of problem with our filesystem API regarding"
+	#warning "ExAll handling. Filesystems don't get passed matchstring/matchfunc"
+	#warning "so they cannot handle it. As workaround for now we force emulation"
+	#warning "of ExAll() if any of matchstring/matchfunc is set."
+	#warning "It would be better to pass ExAllControl structure to filesystems."
+	#warning "Ie. change filesystem API. Also because of eac_LastKey!!!"
+	
+    	iofs.io_DosError = ERROR_ACTION_NOT_KNOWN;
+    }
+    else
+    {
+	/* Prepare I/O request. */
+	InitIOFS(&iofs, FSA_EXAMINE_ALL, DOSBase);
 
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
+	iofs.IOFS.io_Device = fh->fh_Device;
+	iofs.IOFS.io_Unit   = fh->fh_Unit;
 
-    iofs.io_Union.io_EXAMINE_ALL.io_ead  = buffer;
-    iofs.io_Union.io_EXAMINE_ALL.io_Size = size;
-    iofs.io_Union.io_EXAMINE_ALL.io_Mode = data;
+	iofs.io_Union.io_EXAMINE_ALL.io_ead  = buffer;
+	iofs.io_Union.io_EXAMINE_ALL.io_Size = size;
+	iofs.io_Union.io_EXAMINE_ALL.io_Mode = data;
 
-    /* Send the request. */
-    DosDoIO(&iofs.IOFS);
-
+	/* Send the request. */
+	DosDoIO(&iofs.IOFS);
+    }
+    
     if
     (
         iofs.io_DosError == ERROR_NOT_IMPLEMENTED ||
@@ -208,6 +222,10 @@
 
 	    	while (ExNext(lock, fib))
 	    	{
+		    if (control->eac_MatchString &&
+			!MatchPatternNoCase(control->eac_MatchString, fib->fib_FileName))
+			continue;
+
 		    next = (STRPTR)curr + sizes[data];
 
 		    if (next>end)
@@ -251,6 +269,13 @@
 		    	case 0:
 			    curr->ed_Next = (struct ExAllData *)(((IPTR)next + AROS_PTRALIGN - 1) & ~(AROS_PTRALIGN - 1));
 		    }
+
+		    if (control->eac_MatchFunc &&
+			!AROS_UFC3(LONG, control->eac_MatchFunc,
+				   AROS_UFCA(struct Hook *, control->eac_MatchFunc, A0),
+				   AROS_UFCA(struct ExAllData *, buffer, A2),
+				   AROS_UFCA(LONG *, &data, A1)))
+			continue;
 
 		    last = curr;
 		    curr = curr->ed_Next;
