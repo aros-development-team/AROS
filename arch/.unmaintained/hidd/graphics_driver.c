@@ -292,7 +292,7 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     struct TagItem tags[] = { {TAG_DONE, 0UL} };    
     Object *gfxhidd;
     
-    EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", hiddbase));
+    EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", gfxhiddname));
     
     /* Create a new GfxHidd object */
 	
@@ -3156,8 +3156,8 @@ VOID template_to_buf(struct template_info *ti
 		*buf = 1UL;
 	    else
 		*buf = 0UL;
- D(bug("%d", *buf));
-	    buf ++;
+/* D(bug("%d", *buf));
+*/	    buf ++;
 
 	    /* Last pixel in this byte ? */
 	    if (((x + x_src) & 0x07) == 0x07)
@@ -3166,8 +3166,8 @@ VOID template_to_buf(struct template_info *ti
 	    }
 		
 	}
-	D(bug("\n"));
-	srcptr += ti->modulo;
+/*	D(bug("\n"));
+*/	srcptr += ti->modulo;
     }
     
     D(bug("srcptr is %p\n", srcptr));
@@ -3302,9 +3302,8 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 		    LONG clipped_xsrc;
 		    
 		    /* This is the tricky one: render into offscreen cliprect bitmap */
-
 		    clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
-		    clipped_source = clipped_source + (((clipped_xsrc - 1) >> 4) + 1);
+		    clipped_source = source + (((clipped_xsrc - 1) >> 4) + 1);
 		    clipped_xsrc &= 0x0F;
 
 		    blttemplate_amiga(clipped_source
