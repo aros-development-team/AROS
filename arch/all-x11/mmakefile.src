@@ -5,8 +5,10 @@ GFX_INCLUDES	:= -I/usr/include -I$(TOP)/rom/graphics
 INT_INCLUDES	:= -I/usr/include -I$(TOP)/rom/intuition
 DEPS		:= $(OSGENDIR)/graphics/graphics_driver.d \
 		   $(OSGENDIR)/intuition/intuition_driver.d
-GFX_CFLAGS	:= $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS) $(GFX_INCLUDES)
-INT_CFLAGS	:= $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS) $(INT_INCLUDES)
+
+# Need include path /usr/include before AROS includes for FreeBSD's stderr
+GFX_CFLAGS	:= $(SHARED_CFLAGS) $(GFX_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
+INT_CFLAGS	:= $(SHARED_CFLAGS) $(INT_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
 
 
 #MM

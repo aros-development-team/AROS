@@ -10,6 +10,8 @@ TESTS		:=
 
 #MM
 clib-linux-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+#MM
+clib-freebsd-i386 : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 
 #MM
 setup :
