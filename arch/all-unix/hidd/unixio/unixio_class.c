@@ -17,15 +17,16 @@
 #include <exec/alerts.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
-#include <intuition/classusr.h>
-#include <intuition/classes.h>
 #include <hidd/unixio.h>
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>
+#include <hardware/custom.h>
 
+#include <oop/root.h>
+#include <oop/meta.h>
+#include <oop/hiddmeta.h>
 #include <proto/exec.h>
-#include <proto/intuition.h>	/* for DoSuperMethodA() */
-#include <proto/boopsi.h>
+#include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
 
@@ -42,6 +43,7 @@
 #ifdef _AROS
 #include <aros/asmcall.h>
 
+#define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 #endif /* _AROS */
@@ -64,7 +66,7 @@ const struct Resident UnixIO_resident =
     RTF_COLDSTART,
     41,
     NT_UNKNOWN,
-    91, /* Has to be after BOOPSI */
+    91, /* Has to be after OOP */
     (UBYTE *)name,
     (UBYTE *)version,
     (APTR)&AROS_SLIB_ENTRY(init,UnixIO)
@@ -103,7 +105,7 @@ struct UnixIOData
 struct uio_data
 {
     struct Library		* ud_UtilityBase;
-    struct Library		* ud_BOOPSIBase;
+    struct Library		* ud_OOPBase;
     struct ExecBase		* ud_SysBase;
 
     struct Task 		* ud_WaitForIO;
@@ -130,6 +132,9 @@ AROS_UFH5 (void, SigIO_IntServer,
     Signal (ud -> ud_WaitForIO, SIGBREAKF_CTRL_C);
 }
 
+/******************
+**  UnixIO task  **
+******************/
 static void WaitForIO (void)
 {
     struct uio_data * ud = FindTask(NULL)->tc_UserData;
@@ -260,91 +265,99 @@ reply:
     } /* Forever */
 }
 
-#define BOOPSIBase	(((struct uio_data *)cl->cl_UserData)->ud_BOOPSIBase)
-#define UtilityBase	(((struct uio_data *)cl->cl_UserData)->ud_UtilityBase)
+#define OOPBase	(((struct uio_data *)cl->UserData)->ud_OOPBase)
+#define UtilityBase	(((struct uio_data *)cl->UserData)->ud_UtilityBase)
 
 /* This is the dispatcher for the UnixIO HIDD class. */
 
-AROS_UFH3(static IPTR, dispatch_unixioclass,
-    AROS_UFHA(Class *,  cl,     A0),
-    AROS_UFHA(Object *, o,      A2),
-    AROS_UFHA(Msg,      msg,    A1)
-)
+
+/********************
+**  UnixIO::New()  **
+********************/
+static Object *unixio_new(Class *cl, Object *o, struct P_Root_New *msg)
+{
+    EnterFunc(bug("UnixIO::New(cl=%s)\n", cl->ClassNode.ln_Name));
+    D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
+    o =(Object *)DoSuperMethod(cl, o, (Msg)msg);
+    if (o)
+    {
+	struct UnixIOData *id;
+	ULONG dispose_mid;
+	
+	id = INST_DATA(cl, o);
+	D(bug("inst: %p, o: %p\n", id, o));
+	
+	id->uio_ReplyPort = CreatePort (NULL, 0);
+	if (id->uio_ReplyPort)
+	{
+	    D(bug("Port created\n"));
+	    ReturnPtr("UnixIO::New", Object *, o);
+    	}
+	dispose_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+	CoerceMethod(cl, o, (Msg)&dispose_mid);
+    }
+    ReturnPtr("UnixIO::New", Object *, NULL);
+}
+
+/***********************
+**  UnixIO::Dispose()  **
+***********************/
+static IPTR unixio_dispose(Class *cl, Object *o, Msg msg)
+{
+    struct UnixIOData *id = INST_DATA(cl, o);
+    
+    if (id -> uio_ReplyPort)
+	DeletePort (id->uio_ReplyPort);
+	
+    return DoSuperMethod(cl, o, msg);
+}
+
+/*********************
+**  UnixIO::Wait()  **
+*********************/
+static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
 {
     IPTR retval = 0UL;
-    struct UnixIOData *id = NULL;
-    struct uio_data *ud = (struct uio_data *)cl->cl_UserData;
+    struct UnixIOData *id = INST_DATA(cl, o);
+    struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
+    struct MsgPort * port = id -> uio_ReplyPort;
+    struct uio_data *ud = (struct uio_data *)cl->UserData;
 
-    /* Don't try and get instance data if we don't have an object. */
-    if(    msg->MethodID != OM_NEW
-	&& msg->MethodID != HIDDM_Class_Get
-	&& msg->MethodID != HIDDM_Class_MGet
-      )
-	id = INST_DATA(cl, o);
-
-    /* We now dispatch the actual methods */
-    switch(msg->MethodID)
+    if (umsg && port)
     {
-    case OM_NEW:
-	retval = DoSuperMethodA(cl, o, msg);
-	if(!retval)
-	    break;
+	port->mp_Flags = PA_SIGNAL;
+	port->mp_SigTask = FindTask (NULL);
 
-	id = INST_DATA(cl, retval);
-	if(id != NULL)
-	{
-	    id -> uio_ReplyPort = CreatePort (NULL, 0);
-	}
-	break;
+	umsg->Message.mn_ReplyPort = port;
+	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
+	umsg->mode = ((struct uioMsg *)msg)->um_Mode;
 
-    case HIDDM_UnixIO_Wait:
-	{
-	    struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
-	    struct MsgPort * port = id -> uio_ReplyPort;
+	D(bug("Sending msg fd=%ld mode=%ld\n", umsg->fd, umsg->mode));
+	PutMsg (ud->ud_Port, (struct Message *)umsg);
+	WaitPort (port);
+	GetMsg (port);
 
-	    if (umsg && port)
-	    {
-		port->mp_Flags = PA_SIGNAL;
-		port->mp_SigTask = FindTask (NULL);
+	D(bug("Get msg fd=%ld mode=%ld res=%ld\n", umsg->fd, umsg->mode, umsg->result));
+	retval = umsg->result;
+    }
+    else
+	retval = ENOMEM;
 
-		umsg->Message.mn_ReplyPort = port;
-		umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
-		umsg->mode = ((struct uioMsg *)msg)->um_Mode;
-
-		D(bug("Sending msg fd=%ld mode=%ld\n", umsg->fd, umsg->mode));
-		PutMsg (ud->ud_Port, (struct Message *)umsg);
-		WaitPort (port);
-	        GetMsg (port);
-
-		D(bug("Get msg fd=%ld mode=%ld res=%ld\n", umsg->fd, umsg->mode, umsg->result));
-		retval = umsg->result;
-	    }
-	    else
-		retval = ENOMEM;
-
-	    if (umsg)
-		FreeMem (umsg, sizeof (struct uioMessage));
-	}
-	break;
-
-    case OM_DISPOSE:
-        if (id -> uio_ReplyPort)
-            DeletePort (id -> uio_ReplyPort);
-	retval = DoSuperMethodA(cl, o, msg);
-	break;
-
-    default:
-	/* No idea, send it to the superclass */
-	retval = DoSuperMethodA(cl, o, msg);
-	break;
-    } /* switch(msg->MethodID) */
-
+    if (umsg)
+	FreeMem (umsg, sizeof (struct uioMessage));
+	
     return retval;
 }
 
+
+
 /* This is the initialisation code for the HIDD class itself. */
-#undef BOOPSIBase
+#undef OOPBase
 #undef UtilityBase
+
+
+#define NUM_ROOT_METHODS 2
+#define NUM_UNIXIO_METHODS 1
 
 AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
@@ -352,15 +365,36 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
-    struct Library  * BOOPSIBase;
+    struct Library  * OOPBase;
     struct IClass   * cl;
     struct uio_data * ud;
     struct Task     * newtask,
-		    * task2;
+		    * task2 = NULL; /* keep compiler happy */
     struct newMemList nml;
     struct MemList  * ml;
     struct Interrupt * is;
+    
+    struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
+    {
+    	{ (IPTR (*)())unixio_new,	MIDX_Root_New		},
+    	{ (IPTR (*)())unixio_dispose,	MIDX_Root_Dispose	},
+    	{ NULL, 0UL }
+    };
 
+    struct MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
+    {
+    	{ (IPTR (*)())unixio_wait,	HIDDMIDX_UnixIO_Wait		},
+    	{ NULL, 0UL }
+    };
+    
+    struct InterfaceDescr ifdescr[] =
+    {
+    	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
+	{unixio_mdescr, IID_UnixIO, NUM_UNIXIO_METHODS},
+	{NULL, NULL, 0UL}
+    };
+
+    
     /*
 	We map the memory into the shared memory space, because it is
 	to be accessed by many processes, eg searching for a HIDD etc.
@@ -377,8 +411,8 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
 
     ud->ud_SysBase = SysBase;
 
-    BOOPSIBase = ud->ud_BOOPSIBase = OpenLibrary("boopsi.library", 0);
-    if(ud->ud_BOOPSIBase == NULL)
+    OOPBase = ud->ud_OOPBase = OpenLibrary("oop.library", 0);
+    if(ud->ud_OOPBase == NULL)
     {
 	FreeMem(ud, sizeof(struct uio_data));
 	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown);
@@ -460,14 +494,61 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     SetIntVector(INTB_DSKBLK,is);
 
     /* Create the class structure for the "unixioclass" */
-    if((cl = MakeClass(UNIXIOCLASS, HIDDCLASS, NULL, sizeof(struct UnixIOData), 0)))
+    
     {
-	cl->cl_Dispatcher.h_Entry = (APTR)dispatch_unixioclass;
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_Dispatcher.h_Data = cl;
-	cl->cl_UserData = (IPTR)ud;
+        ULONG __OOPI_Meta = GetAttrBase(IID_Meta);
+	
+        struct TagItem tags[] =
+    	{
+            {A_Class_SuperID,		(IPTR)CLID_Hidd},
+	    {A_Class_InterfaceDescr,	(IPTR)ifdescr},
+	    {A_Class_ID,		(IPTR)CLID_UnixIO_Hidd},
+	    {A_Class_InstSize,		(IPTR)sizeof (struct UnixIOData) },
+	    {TAG_DONE, 0UL}
+    	};
 
-	AddClass(cl);
+    	cl = NewObjectA(NULL, CLID_HIDDMeta, tags);
+    
+    	if(cl)
+    	{
+	    cl->UserData = (APTR)ud;
+
+	    AddClass(cl);
+        }
     }
     return NULL;
+}
+
+
+
+/************
+**  Stubs  **
+************/
+
+#define OOPBase ( ((struct uio_data *)OCLASS(o)->UserData)->ud_OOPBase )
+
+IPTR HIDD_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
+{
+     static ULONG mid = NULL;
+     struct uioMsg p;
+     
+     if (!mid)
+     	mid = GetMethodID(IID_UnixIO, HIDDMIDX_UnixIO_Wait);
+     p.um_MethodID = mid;
+     p.um_Filedesc = fd;
+     p.um_Mode	   = mode;
+     
+     return DoMethod((Object *)o, (Msg)&p);
+}
+
+
+/* The below function is merely a hack to avoid
+   name conflicts inside intuition_driver.c
+*/
+
+#undef OOPBase
+HIDD *New_UnixIO(struct Library *OOPBase)
+{
+   struct TagItem tags[] = {{ TAG_END, 0 }};
+   return (HIDD)NewObjectA (NULL, CLID_UnixIO_Hidd, (struct TagItem *)tags);
 }

@@ -10,16 +10,23 @@
 */
 
 #ifndef HIDD_HIDD_H
-#include <hidd/hidd.h>
+#   include <hidd/hidd.h>
+#endif
+#ifndef EXEC_LIBRARIES_H
+#   include <exec/libraries.h>
 #endif
 
-#define UNIXIOCLASS		"unixioclass"
+#define CLID_UnixIO_Hidd	"unixioclass"
+#define IID_UnixIO	"I_UnixIO"
 
-#define HIDDM_UnixIO_Wait   (HIDDM_UncommonMethodBase + 1)  /* LONG M ( uioMsg *)		*/
-#define HIDDM_UnixIO_Select (HIDDM_UncommonMethodBase + 2)  /* for async IO, unused		*/
 
-/* obsolete */
-#define HIDDM_WaitForIO     HIDDM_UnixIO_Wait
+enum {
+    HIDDMIDX_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
+    HIDDMIDX_UnixIO_Select,	/* for async IO, unused		*/
+    
+    NUM_M_UnixIO
+    
+};
 
 struct uioMsg
 {
@@ -32,4 +39,11 @@ struct uioMsg
 #define HIDDV_UnixIO_Read       0x1
 #define HIDDV_UnixIO_Write      0x2
 
+/* Stubs */
+IPTR HIDD_UnixIO_Wait(HIDD *h, ULONG fd, ULONG mode);
+HIDD *New_UnixIO(struct Library * /* OOPBase */);
+
+
 #endif /* HIDD_UNIXIO_H */
+
+
