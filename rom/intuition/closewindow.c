@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.25  2000/06/06 17:35:24  stegerg
+    now opening/closeing windows works also on the input.device task. This
+    is needed for things like boopsi popup gadget where one often uses a
+    window for the popup menu.
+
     Revision 1.24  2000/05/30 17:18:25  stegerg
     the descendant/parent list of windows was still not okay although it
     was already fixed several times, including by me. And this stupid
@@ -95,6 +100,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include "inputhandler.h"
 #include <proto/exec.h>
 #include <proto/graphics.h>
 
@@ -106,6 +112,16 @@
 #   define DEBUG 1
 #endif
 #	include <aros/debug.h>
+
+/******************************************************************************/
+
+#define IW(x) ((struct IntWindow *)x)    
+#define MUST_UNLOCK_SCREEN(window,screen) (((GetPrivScreen(screen)->pubScrNode != NULL) && \
+    		       (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE)
+		       
+void LateCloseWindow(struct MsgPort *userport,
+		     struct Screen *screen, BOOL do_unlockscreen,
+		     struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
 
@@ -152,10 +168,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-#define IW(x) ((struct IntWindow *)x)    
     struct DeferedActionMessage *msg;
     
-    
+    struct IIHData *iihd;
     
     struct MsgPort *userport;
     struct Screen *screen;
@@ -163,10 +178,11 @@
     
     D(bug("CloseWindow (%p)\n", window));
 
+    iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    
     screen = window->WScreen;
-    do_unlockscreen = ((GetPrivScreen(screen)->pubScrNode != NULL) &&
-    		       (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE;
-
+    do_unlockscreen = MUST_UNLOCK_SCREEN(window, screen);
+    
     /* We take a very simple approach to avoid race conditions with the
        intuition input handler running one input.device 's task:
        We just send it a msg about closing the window
@@ -183,20 +199,34 @@
     userport = window->UserPort;
 
     SendDeferedActionMsg(msg, IntuitionBase);
+
+    /* Attention: a window can also be created on the input device task context,
+       usually (only?) for things like popup gadgets. */
+       
+    if (msg->Task != iihd->InputDeviceTask)
+    {
+
+	/* We must use a bit hacky way to wait for intuition
+	  to close the window. Since there may be no userport
+	  at this point, we can't wait for a message so we must wait for a
+	  system signal instead
+	*/
+
+	Wait(SIGF_INTUITION);
+        LateCloseWindow(userport, screen, do_unlockscreen, IntuitionBase);
+    }
     
-    /* Obviously this should be done on the application's context.
-       (DeleteMsgPort() calls FreeSignal()
-    */
     
-    
-    /* We must use a bit hacky way to wait for intuition
-      to close the window. Since there may be no userport
-      at this point, we can't wait for a message so we must wait for a
-      system signal instead
-    */
-    
-    Wait(SIGF_INTUITION);
-    
+    ReturnVoid ("CloseWindow");
+    AROS_LIBFUNC_EXIT
+} /* CloseWindow */
+
+/******************************************************************************/
+
+void LateCloseWindow(struct MsgPort *userport,
+		     struct Screen *screen, BOOL do_unlockscreen,
+		     struct IntuitionBase *IntuitionBase)
+{
     if (do_unlockscreen) UnlockPubScreen(NULL, screen);
 
     /* As of now intuition has removed us from th list of
@@ -213,27 +243,34 @@
 
 	/* Delete message port */
 	DeleteMsgPort (userport);
-    }
-    
-
-    ReturnVoid ("CloseWindow");
-    AROS_LIBFUNC_EXIT
-} /* CloseWindow */
+    }    
+}		     
 
 
+/******************************************************************************/
 
 /* This is called from the intuition input handler */
 VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase)
 {
-#define IW(x) ((struct IntWindow *)x)    
-
     /* Free everything except the applications messageport */
     ULONG lock;
     
-    struct Window *window = msg->Window, *win2;
-
-
+    struct Window *window, *win2;
+    struct Screen *screen;
+    struct MsgPort *userport;
+    struct IIHData *iihd;
+    BOOL do_unlockscreen;
+    
     D(bug("CloseWindow (%p)\n", window));
+
+    window = msg->Window;
+    
+    /* Need this in case of a window created under the input.device task context */
+    screen = window->WScreen;
+    userport = window->UserPort;
+    do_unlockscreen = MUST_UNLOCK_SCREEN(window, screen);
+    
+    iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     lock = LockIBase (0);
     
@@ -304,12 +341,16 @@ VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *Int
     if (IW(window)->closeMessage)
 	FreeMem(IW(window)->closeMessage, sizeof (struct DeferedActionMessage));
 
-    
     /* Free memory for the window */
     FreeMem (window, sizeof(struct IntWindow));
     
-    /* All done. signal caller task that it may proceed */
-    Signal(msg->Task, SIGF_INTUITION);
+    if (msg->Task != iihd->InputDeviceTask)
+    {
+	/* All done. signal caller task that it may proceed */
+	Signal(msg->Task, SIGF_INTUITION);
+    } else {
+        LateCloseWindow(userport, screen, do_unlockscreen, IntuitionBase);
+    }
     
     return;
     
@@ -325,23 +366,23 @@ void intui_CloseWindow (struct Window * w,
     disposesysgads(w, IntuitionBase);
     if (0 == (w->Flags & WFLG_GIMMEZEROZERO))
     {
-      /* not a GZZ window */
-      if (w->WLayer)
-      	DeleteLayer(0, w->WLayer);
-      DeinitRastPort(w->BorderRPort);
-      FreeMem(w->BorderRPort, sizeof(struct RastPort));
+	/* not a GZZ window */
+	if (w->WLayer)
+      	    DeleteLayer(0, w->WLayer);
+	DeinitRastPort(w->BorderRPort);
+	FreeMem(w->BorderRPort, sizeof(struct RastPort));
     }
     else
     {
       /* a GZZ window */
       /* delete inner window */
       if (NULL != w->WLayer)
-        DeleteLayer(0, w->WLayer);
+          DeleteLayer(0, w->WLayer);
       
       /* delete outer window */
       if (NULL != w->BorderRPort && 
           NULL != w->BorderRPort->Layer)
-        DeleteLayer(0, w->BorderRPort->Layer);      
+          DeleteLayer(0, w->BorderRPort->Layer);      
     }
 }
 
