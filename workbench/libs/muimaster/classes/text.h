@@ -15,7 +15,9 @@ struct MUI_TextData {
     LONG ypos;
     struct MUI_EventHandlerNode ehn;
 
-    LONG update; /* type of update 1 - everything */
+    LONG update; /* type of update 1 - everything, 2 - insert char, no scroll */
+    LONG update_arg1;
+    LONG update_arg2;
 };
 
 #define MTDF_SETMIN    (1<<0)

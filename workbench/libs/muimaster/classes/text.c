@@ -346,6 +346,8 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if ((msg->flags & MADF_DRAWUPDATE) && !data->update)
 	return 0;
 
+    if (!(msg->flags & MADF_DRAWUPDATE)) data->update = 0;
+
     if (msg->flags & MADF_DRAWUPDATE && data->update == 1)
     {
 	DoMethod(obj,MUIM_DrawBackground, _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
@@ -356,19 +358,31 @@ static ULONG Text_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 
-    get(_win(obj),MUIA_Window_ActiveObject,&act);
-
-    if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
+    if (data->update == 2)
     {
-	zune_text_draw_cursor(data->ztext, obj,
+    	/* Note, scrolling won't work, if there would be a background, different then a plain pen */
+        ScrollRaster(_rp(obj), -data->update_arg2, 0, data->update_arg1 + _mleft(obj), _mtop(obj), _mright(obj),_mtop(obj) + _font(obj)->tf_YSize);
+
+	zune_text_draw_single(data->ztext, obj,
+		   _mleft(obj), _mright(obj),
+		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2,
+		   data->xpos - 1,data->ypos, FALSE);
+    } else
+    {
+        get(_win(obj),MUIA_Window_ActiveObject,&act);
+
+        if (act == obj && (data->mtd_Flags & MTDF_EDITABLE))
+        {
+	    zune_text_draw_cursor(data->ztext, obj,
 		   _mleft(obj), _mright(obj),
 		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2,
 		   data->xpos,data->ypos);
-    } else
-    {
-	zune_text_draw(data->ztext, obj,
+        } else
+        {
+	    zune_text_draw(data->ztext, obj,
 		   _mleft(obj), _mright(obj),
 		   _mtop(obj) + (_mheight(obj) - data->ztext->height) / 2);
+	}
     }
 
     MUI_RemoveClipping(muiRenderInfo(obj), clip);
@@ -551,7 +565,12 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    chunk->cwidth += char_width;
 	    line->lwidth += char_width;
 
-	    zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
+	    if (!zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj)))
+	    {
+	    	data->update_arg1 = offx;
+	    	data->update_arg2 = char_width;
+		return 2;
+	    }
         }
     }
     return 1;
