@@ -480,16 +480,22 @@ AROS_LH1(LONG, abortio,
 /* Wait for interrupt */
 int td_waitint(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 {
+struct Task *sigtask;
+int err = TDERR_NotSpecified;
+
 	TDBase->io_msg = &iotd->iotd_Req.io_Message;
+	sigtask = TDBase->io_msg->mn_ReplyPort->mp_SigTask;
+	TDBase->io_msg->mn_ReplyPort->mp_SigTask = FindTask(NULL);
 	TDBase->iotime = 150;	// Each IO command has 1s to complete before error occurs
 									// atdisk.c says 3 seconds (sheutlin)
 	Wait(1 << iotd->iotd_Req.io_Message.mn_ReplyPort->mp_SigBit);
 	if (TDBase->iotime)
 	{
 		TDBase->iotime = 0;
-		return 0;
+		err = 0;
 	}
-	return TDERR_NotSpecified;
+	TDBase->io_msg->mn_ReplyPort->mp_SigTask = sigtask;
+	return err;
 }
 
 // Send byte to drive. Returns DriveInUse error if busy, 0 otherwise

@@ -13,7 +13,7 @@ struct TrackDiskBase
     struct Device           td_device;
     struct ExecBase         *sysbase;	/* Useless for native but... */
     struct SignalSemaphore  io_lock;	/* Lock IO acces to floppy */
-	struct Message          *io_msg;	/* Messege that is processed in interrupt*/
+	struct Message          *io_msg;	/* Message that is processed in interrupt*/
 	struct Message			io_msg_fill;
     struct TDU      *units[4];	/* Up to four units allowed */
     UBYTE			DOR;		/* Digital Output Register */
