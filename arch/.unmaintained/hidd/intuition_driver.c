@@ -178,7 +178,7 @@ int intui_OpenWindow (struct Window * w,
           - the outer window will be a simple refresh layer
           - the inner window will be a layer according to the flags
         What is the size of the inner/outer window supposed to be???
-        I just make it that the inner window has the size of what is requested
+        I just make it that the outer window has the size of what is requested
       */ 
        
       /* First create outer window */
@@ -187,8 +187,8 @@ int intui_OpenWindow (struct Window * w,
                            , w->WScreen->RastPort.BitMap
                            , w->LeftEdge
                            , w->TopEdge
-                           , w->LeftEdge + w->Width  + w->BorderLeft + w->BorderRight
-                           , w->TopEdge  + w->Height + w->BorderTop  + w->BorderBottom
+                           , w->LeftEdge + w->Width
+                           , w->TopEdge  + w->Height
                            , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
                            , LAYERS_NOBACKFILL
                            , SuperBitMap);
@@ -200,14 +200,17 @@ int intui_OpenWindow (struct Window * w,
       /* install it as the BorderRPort */
       w->BorderRPort = L->rp;
        
+      w->GZZWidth = w->Width  - w->BorderLeft - w->BorderRight;
+      w->GZZHeight= w->Height - w->BorderTop  - w->BorderBottom;
+
       /* Now comes the inner window */
       w->WLayer = CreateUpfrontHookLayer( 
                    &w->WScreen->LayerInfo
 	  	  , w->WScreen->RastPort.BitMap
-		  , w->LeftEdge + w->BorderLeft
+		  , w->LeftEdge + w->BorderLeft  
 		  , w->TopEdge  + w->BorderTop
-		  , w->LeftEdge + w->Width - 1
-		  , w->TopEdge  + w->Height - 1
+		  , w->LeftEdge + w->GZZWidth
+		  , w->TopEdge  + w->GZZHeight
 		  , layerflags
 		  , LAYERS_BACKFILL
 		  , SuperBitMap);
