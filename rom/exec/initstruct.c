@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/21 20:53:16  aros
+    Changed BIG_ENDIAN to AROS_BIG_ENDIAN
+
     Revision 1.6  1996/10/19 17:07:26  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -145,7 +148,7 @@
 		    to align the action byte with a LONG instruction before
 		    this.
 		*/
-#if BIG_ENDIAN
+#if AROS_BIG_ENDIAN
 		offset=*(ULONG *)it&0xffffff;
 #else
 		offset=*(ULONG *)it>>8;

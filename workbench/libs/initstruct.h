@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/21 20:53:17  aros
+    Changed BIG_ENDIAN to AROS_BIG_ENDIAN
+
     Revision 1.3  1996/10/19 17:07:29  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -38,7 +41,7 @@ typedef LONG type_L;
 #define I_CPY(n,t)        CODE_##t|((n)-1)
 #define I_REP(n,t)        0x40|CODE_##t|((n)-1)
 #define I_CPYO(n,t,o)     0x80|CODE_##t|((n)-1), (o)
-#if BIG_ENDIAN
+#if AROS_BIG_ENDIAN
 #define I_CPYO24(n,t,o)   (0xc0|CODE_##t|((n)-1))<<24|(o)
 #else
 #define I_CPYO24(n,t,o)   0xc0|CODE_##t|((n)-1)|(o)<<8

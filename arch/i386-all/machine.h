@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/21 20:53:17  aros
+    Changed BIG_ENDIAN to AROS_BIG_ENDIAN
+
     Revision 1.6  1996/10/19 17:12:24  aros
     This file is now linked to aros/machine.h
     Changed the #define to reflect this
@@ -31,8 +34,8 @@
 
 #define SP_OFFSET 0
 #define STACK_GROWS_DOWNWARDS 1
-#ifndef BIG_ENDIAN
-#define BIG_ENDIAN 0
+#ifndef AROS_BIG_ENDIAN
+#define AROS_BIG_ENDIAN 0
 #endif
 #define SIZEOFULONG	4
 
