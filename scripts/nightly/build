@@ -28,6 +28,29 @@ if [ $? != 0 ]; then
     exit 5
 fi
 
+#-- Generate ChangeLogs -----------------------------------------------------------
+alias cvs2cl='$ROOT/Scripts/cvs2cl.pl --xml --xml-encoding iso-8859-15 --noxmlns'
+ChangeLog()
+{
+    module=$1
+    dir=$2
+    
+    oldpwd=$PWD
+    printi "Generating ChangeLog for the" $module "module"
+    cd $dir
+    cvs2cl -l "-d'>$VERSION'" -f $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml
+    
+    if [ -e $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml ]; then
+        md5sum $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml > $ARCHIVE_BASE/$BASENAME-ChangeLog-$module.xml.md5
+    fi
+    
+    cd $PWD
+}
+
+ChangeLog AROS    $SOURCE_AROS
+ChangeLog contrib $SOURCE_CONTRIB
+ChangeLog docs    $SOURCE_DOCS
+
 #-- Build packages -----------------------------------------------------------
 failed=()
 succeeded=()
@@ -61,7 +84,7 @@ STOP_TIME=$(date -u +"%H:%M")
 
 #-- Fix permissions ----------------------------------------------------------
 chmod -R o-wx,g+wr Archive/
-find Archive/ -type d | xargs chmod a+s,g+x,o+x
+find Archive/ -type d | xargs chmod a+s,g+rwx,o+x
 
 #-- Upload (backup and distribution) -----------------------------------------
 UPLOAD_START_TIME=$(date -u +"%H:%M")
