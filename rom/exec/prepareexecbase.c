@@ -16,21 +16,19 @@
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
 #include <string.h>
-#include <utility/name.h>
 
 #include <proto/exec.h>
-#include <proto/utility.h>
 
 #include "libdefs.h"
 #include "memory.h"
 #include "exec_intern.h"
 
 #define EXEC_NUMVECT    135
+#undef kprintf /* This can't be used in the code here */
 
 extern void *ExecFunctions[];
-extern struct ExecBase *SysBase; /* Get rid of this */
-extern void kprintf(const char *, ...);
-extern struct AROSSupportBase AROSSupportBase;
+//extern struct ExecBase *SysBase; /* Get rid of this */
+extern struct Library * PrepareAROSSupportBase (void);
 extern struct Resident Exec_resident; /* Need this for lib_IdString */
 extern void AROS_SLIB_ENTRY(CacheClearU,Exec)();
 
@@ -60,10 +58,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     neg = AROS_ALIGN(LIB_VECTSIZE * EXEC_NUMVECT);
 
     SysBase = (struct ExecBase *)
-	    ((UBYTE *)allocmem(mh, neg + sizeof(struct IntExecBase)) + neg);
+	    ((UBYTE *)allocmem(mh, neg + sizeof(struct ExecBase)) + neg);
 
     /* Zero out the memory. Makes below a bit smaller. */
-    memset(SysBase, 0, sizeof(struct IntExecBase));
+    memset(SysBase, 0, sizeof(struct ExecBase));
 
     for(i=1; i <= EXEC_NUMVECT; i++)
     {
@@ -121,30 +119,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     SysBase->Quantum = 4;
 
-    AROS_PrepareExecBase ((struct IntExecBase *)SysBase);
-
+    SysBase->DebugAROSBase = PrepareAROSSupportBase ();
+    
     return SysBase;
 }
 
-void AROS_PrepareExecBase (struct IntExecBase * IntSysBase)
-{
-    IntSysBase->DebugAROSBase = (struct Library *)&AROSSupportBase;
-    AROSSupportBase.kprintf = (void *)kprintf;
-}
-
-void AROS_InitDebugging (struct ExecBase * SysBase, struct Library * UtilityBase)
-{
-    struct IntExecBase * IntSysBase = (struct IntExecBase *)SysBase;
-
-    IntSysBase->DebugUtilityBase = UtilityBase;
-
-    /* Init IntSysBase->DebugConfig. There are two problems here:
-       1. When is this function here called ? It can only be called after
-          UtilityBase has been initialized but someone might have wanted
-	  to call D(rbug()) already. Or I would have to duplicate the code
-	  from utility.library :-/
-       2. How can I read a config file at this time ? Is it safe to call
-          fgets() ? Probably not: If AROS is running native, there is no
-	  fgets().
-     */
-}
