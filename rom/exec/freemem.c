@@ -27,7 +27,6 @@
 
 #include <aros/debug.h>
 
-
 /*****************************************************************************
 
     NAME */
@@ -91,30 +90,54 @@
     memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
 
 #if AROS_MUNGWALL_DEBUG
-	/* Add the size of mung walls and extra MemChunk room (for orig
-	allocsize)  around the block */
-	memoryBlock -= MUNGWALL_SIZE + MEMCHUNK_TOTAL;
-	byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
+	/* Add the size of mung walls and mungwall header */
+	memoryBlock -= MUNGWALL_SIZE + MUNGWALLHEADER_SIZE;
+	byteSize += MUNGWALL_SIZE * 2 + MUNGWALLHEADER_SIZE;
 #endif
 
     byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
 
 #if AROS_MUNGWALL_DEBUG
-	if (*(ULONG *)memoryBlock != origsize)
+    {
+    	struct MungwallHeader *header;
+	
+	header = (struct MungwallHeader *)memoryBlock;
+	
+	if (header->mwh_magicid != MUNGWALL_HEADER_ID)
 	{
 	    struct Task *__t = FindTask(NULL);	\
-	    kprintf("\x07FreeMem size mismatches AllocMem size " __FUNCTION__ " mem = %x  allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n",	\
-		    memoryBlock + MUNGWALL_SIZE + MEMCHUNK_TOTAL,
+	    kprintf("\x07MUNGWALL_HEADER_ID mismatch (" __FUNCTION__ ") mem = %x  allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n",	\
+		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
 		    *(ULONG *)memoryBlock,
 		    origsize,
 		    __t,
 		    __t->tc_Node.ln_Name);\
 	}
 	
-	CHECK_WALL((UBYTE *)memoryBlock + MEMCHUNK_TOTAL, 0xDB, MUNGWALL_SIZE);
-	CHECK_WALL((UBYTE *)memoryBlock + MEMCHUNK_TOTAL + MUNGWALL_SIZE + origsize, 0xDB,
+	if (header->mwh_allocsize != origsize)
+	{
+	    struct Task *__t = FindTask(NULL);	\
+	    kprintf("\x07FreeMem size mismatches AllocMem size (" __FUNCTION__ ") mem = %x  allocsize = %d  freesize = %d   Task: 0x%x, Name: %s\n",	\
+		    memoryBlock + MUNGWALL_SIZE + MUNGWALLHEADER_SIZE,
+		    *(ULONG *)memoryBlock,
+		    origsize,
+		    __t,
+		    __t->tc_Node.ln_Name);\
+	}
+	
+	CHECK_WALL((UBYTE *)memoryBlock + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE);
+	CHECK_WALL((UBYTE *)memoryBlock + MUNGWALLHEADER_SIZE + MUNGWALL_SIZE + origsize, 0xDB,
 		MUNGWALL_SIZE + AROS_ROUNDUP2(origsize, MEMCHUNK_TOTAL) - origsize);
 
+    	/* Remove from AROSSupportBase->AllocMemList */
+	
+	if ((header->mwh_node.mln_Pred != (struct MinNode *)0x44332211) ||
+	    (header->mwh_node.mln_Succ != (struct MinNode *)0xCCBBAA99))
+	{
+	    /* Reason for above checks: see allocmem.c */
+    	    Remove((struct Node *)&header->mwh_node);
+    	}
+	
 	/* Fill block with weird stuff to esploit bugs in applications
 	 *
 	 * DOH! There's some _BAD_ code around that assumes memory can still be
@@ -128,6 +151,8 @@
 	 * if ((SysBase->TDNestCnt < 0) && (SysBase->IDNestCnt < 0))
 	 *	MUNGE_BLOCK(memoryBlock, MEMFILL_FREE, byteSize);
 	 */
+	
+    }
 #endif
 
     /* Start and end(+1) of the block */
