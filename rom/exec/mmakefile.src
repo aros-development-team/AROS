@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 # I need the private includes (for SIZEOF_ALL_REGISTERS)
-USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter/usr/include
+USER_CFLAGS := -I. -I$(GENINCDIR) -idirafter /usr/include
 
 LIBNAME  := exec
 ULIBNAME := Exec
