@@ -300,7 +300,7 @@ static IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     	    potptr
     	);
     }
-    
+
     /* The two last tests below may be redundant */
     if (rerender && (OM_NEW != msg->MethodID) && (NULL != msg->ops_GInfo))
     {
