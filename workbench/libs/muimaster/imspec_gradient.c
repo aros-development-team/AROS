@@ -63,9 +63,9 @@ STATIC VOID TrueDitherV
     LONG step_g = (delta_g << SHIFT)/max_delta_y;
     LONG step_b = (delta_b << SHIFT)/max_delta_y;
 
-    LONG red   = (start_rgb[0] << SHIFT) + (y1 - oy1)*step_r;
-    LONG green = (start_rgb[1] << SHIFT) + (y1 - oy1)*step_g;
-    LONG blue  = (start_rgb[2] << SHIFT) + (y1 - oy1)*step_b;
+    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + (y1 - oy1)*step_r;
+    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + (y1 - oy1)*step_g;
+    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + (y1 - oy1)*step_b;
 
     LONG y;
 
@@ -99,9 +99,14 @@ STATIC VOID TrueDitherH
     LONG step_g = (delta_g << SHIFT)/max_delta_x;
     LONG step_b = (delta_b << SHIFT)/max_delta_x;
 
-    LONG red   = (start_rgb[0] << SHIFT) + (x1 - ox1)*step_r;
-    LONG green = (start_rgb[1] << SHIFT) + (x1 - ox1)*step_g;
-    LONG blue  = (start_rgb[2] << SHIFT) + (x1 - ox1)*step_b;
+    /* 1 << (SHIFT - 1) is 0.5 in fixed point math. We add it to the variable
+       so that, at the moment in which the variable is converted to integer,
+       rounding is done properly. That is, a+x, with 0 < x < 0.5, is rounded
+       down to a, and a+x, with 0.5 <= x < 1, is rounded up to a+1. */
+
+    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + (x1 - ox1)*step_r;
+    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + (x1 - ox1)*step_g;
+    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + (x1 - ox1)*step_b;
 
     LONG x;
 
