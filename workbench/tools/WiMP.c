@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Window Manipulation Program
@@ -30,7 +30,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.5 (26.12.2000)\n";
+static const char version[] = "$VER: WiMP 0.5 (05.01.2001)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -622,21 +622,17 @@ return;
 VOID open_infowindow()
 {
   InfoWindow = OpenWindowTags ( NULL
-	, WA_Title,	    TITLE_TXT
-	, WA_Left,	    0
-	, WA_Top,	    0
-	, WA_Width,	    580
-	, WA_Height,	    250
-	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
-			    | IDCMP_CLOSEWINDOW
-	, WA_Flags,	    WFLG_DRAGBAR
-			    | WFLG_DEPTHGADGET
-			    | WFLG_CLOSEGADGET
-			    | WFLG_NOCAREREFRESH
-			    | WFLG_SIMPLE_REFRESH
-			    | WFLG_ACTIVATE
-			    | WFLG_GIMMEZEROZERO
-	, WA_SimpleRefresh, TRUE
+	, WA_Title,	TITLE_TXT
+	, WA_Left,	0
+	, WA_Top,	0
+	, WA_Width,	580
+	, WA_Height,	250
+	, WA_IDCMP,	IDCMP_CLOSEWINDOW
+	, WA_Flags,	WFLG_DRAGBAR
+			| WFLG_DEPTHGADGET
+			| WFLG_CLOSEGADGET
+			| WFLG_ACTIVATE
+			| WFLG_GIMMEZEROZERO
 	, TAG_END
     );
     iw_sigbit = 1 << InfoWindow->UserPort->mp_SigBit;
@@ -678,23 +674,34 @@ char tmp[1024];
 
   SetAPen(iw_rp,1);
   sprintf(tmp,"Window: %p \"%s\"",win,win->Title);	WPRINT(  1 );
-  sprintf(tmp,"LeftEdge     = %d", win->LeftEdge);	WPRINT(  3 );
-  sprintf(tmp,"TopEdge      = %d", win->TopEdge);	WPRINT(  4 );
-  sprintf(tmp,"Width        = %d", win->Width);		WPRINT(  5 );
-  sprintf(tmp,"Height       = %d", win->Height);	WPRINT(  6 );
-  sprintf(tmp,"MinWidth     = %d", win->MinWidth);	WPRINT(  7 );
-  sprintf(tmp,"MinHeight    = %d", win->MinHeight);	WPRINT(  8 );
-  sprintf(tmp,"MaxWidth     = %d", win->MaxWidth);	WPRINT(  9 );
-  sprintf(tmp,"MaxHeight    = %d", win->MaxHeight);	WPRINT( 10 );
-  sprintf(tmp,"Flags        = 0x%08lx", win->Flags);	WPRINT( 11 );
-  sprintf(tmp,"Title        = \"%s\"", win->Title);	WPRINT( 12 );
-  sprintf(tmp,"ReqCount     = %d", win->ReqCount);	WPRINT( 13 );
+
+  sprintf(tmp,"NextWindow   = %p", win->NextWindow);	WPRINT(  3 );
+  sprintf(tmp,"LeftEdge     = %d", win->LeftEdge);	WPRINT(  4 );
+  sprintf(tmp,"TopEdge      = %d", win->TopEdge);	WPRINT(  5 );
+  sprintf(tmp,"Width        = %d", win->Width);		WPRINT(  6 );
+  sprintf(tmp,"Height       = %d", win->Height);	WPRINT(  7 );
+  sprintf(tmp,"MinWidth     = %d", win->MinWidth);	WPRINT(  8 );
+  sprintf(tmp,"MinHeight    = %d", win->MinHeight);	WPRINT(  9 );
+  sprintf(tmp,"MaxWidth     = %d", win->MaxWidth);	WPRINT( 10 );
+  sprintf(tmp,"MaxHeight    = %d", win->MaxHeight);	WPRINT( 11 );
+  sprintf(tmp,"Flags        = 0x%08lx", win->Flags);	WPRINT( 12 );
+  sprintf(tmp,"IDCMPFlags   = 0x%08lx", win->IDCMPFlags); WPRINT( 13 );
+  sprintf(tmp,"Title        = \"%s\"", win->Title);	WPRINT( 14 );
+  sprintf(tmp,"ReqCount     = %d", win->ReqCount);	WPRINT( 15 );
   sprintf(tmp,"WScreen      = %p \"%s\"", win->WScreen,
-				win->WScreen->Title);	WPRINT( 14 );
-  sprintf(tmp,"BorderLeft   = %d", win->BorderLeft);	WPRINT( 15 );
-  sprintf(tmp,"BorderTop    = %d", win->BorderTop);	WPRINT( 16 );
-  sprintf(tmp,"BorderRight  = %d", win->BorderRight);	WPRINT( 17 );
-  sprintf(tmp,"BorderBottom = %d", win->BorderBottom);	WPRINT( 18 );
+				win->WScreen->Title);	WPRINT( 16 );
+  sprintf(tmp,"BorderLeft   = %d", win->BorderLeft);	WPRINT( 17 );
+  sprintf(tmp,"BorderTop    = %d", win->BorderTop);	WPRINT( 18 );
+  sprintf(tmp,"BorderRight  = %d", win->BorderRight);	WPRINT( 19 );
+  sprintf(tmp,"BorderBottom = %d", win->BorderBottom);	WPRINT( 20 );
+  if(IS_CHILD(win))
+  {
+    sprintf(tmp,"Parent       = %p", win->Parent);	WPRINT( 21 );
+  }
+  if(HAS_CHILDREN(win))
+  {
+    sprintf(tmp,"Descendant   = %p", win->Descendant);	WPRINT( 22 );
+  }
 
 return;
 }
@@ -726,6 +733,7 @@ char tmp[1024];
   sprintf(tmp,"Flags        = 0x%08x", scr->Flags);		WPRINT(  7 );
   sprintf(tmp,"Title        = \"%s\"", scr->Title);		WPRINT(  8 );
   sprintf(tmp,"DefaultTitle = \"%s\"", scr->DefaultTitle);	WPRINT(  9 );
+  sprintf(tmp,"FirstWindow  = %p", scr->FirstWindow);		WPRINT( 10 );
 
 return;
 }
