@@ -64,7 +64,10 @@ BPTR LoadSeg_AOS(BPTR file)
   UBYTE name_buf[255];
   register int i;
   BPTR last_p = 0;
+#if DEBUG
   static STRPTR segtypes[] = { "CODE", "DATA", "BSS", };
+#endif
+
 
 #define ERROR(a)    { *error=a; goto end; }
   LONG *error=&((struct Process *)FindTask(NULL))->pr_Result2;
