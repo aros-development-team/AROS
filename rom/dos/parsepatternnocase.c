@@ -1,20 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:27  ldp
-    Polish
-
-    Revision 1.3  1996/12/09 13:53:37  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:34  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:46  digulla
-    A couple of new DOS functions from M. Fleischer
 
     Desc:
     Lang: english
@@ -23,6 +9,7 @@
 #include <proto/utility.h>
 #include <dos/dos.h>
 #include <dos/dosasl.h>
+#include <dos/dosextens.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -33,9 +20,9 @@
 	AROS_LH3(LONG, ParsePatternNoCase,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, Source,      D1),
-	AROS_LHA(STRPTR, Dest,        D2),
-	AROS_LHA(LONG,   DestLength,  D3),
+	AROS_LHA(STRPTR, Source,     D1),
+	AROS_LHA(STRPTR, Dest,       D2),
+	AROS_LHA(LONG,   DestLength, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 161, Dos)
@@ -68,7 +55,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     STRPTR stack, end;
-    UBYTE a, b, t;
+    UBYTE a;
     LONG iswild=0;
 
     LONG *result=&((struct Process *)FindTask(NULL))->pr_Result2;
@@ -80,8 +67,7 @@
     {
         PUT(0);
         return 0;
-    }else
-        PUT(MP_OR);
+    }
 
     while(*Source)
     {
@@ -89,108 +75,123 @@
         {
             case '#':
                 iswild=1;
-                if(*Source=='?')
-                {
-                    Source++;
-                    PUT(MP_ALL);
-                }else
-                {
-                    PUT(MP_MULT);
-                    *--stack=MP_MULT_END;
-                    continue;
+		switch(*Source)
+		{
+		    case '?':
+			Source++;
+			PUT(P_ANY);
+			break;
+		    case ')':
+		    case '\0':
+			ERROR(ERROR_BAD_TEMPLATE);
+			break;
+		    default:
+			PUT(P_REPBEG);
+			*--stack=P_REPEND;
+			continue;
                 }
                 break;
             case '~':
-                iswild=1;
-                PUT(MP_NOT);
-                *--stack=MP_NOT_END;
-                continue;
+		switch(*Source)
+		{
+		    case '\0':
+			a=Source[-1];
+			PUT(ToUpper(a));
+			break;
+		    case ')':
+			ERROR(ERROR_BAD_TEMPLATE);
+			break;
+		    default:
+			iswild=1;
+			PUT(P_NOT);
+			*--stack=P_NOTEND;
+			continue;
+		}
+		break;
             case '?':
                 iswild=1;
-                PUT(MP_SINGLE);
-                break;
+                PUT(P_SINGLE);
+                continue;
             case '(':
-                PUT(MP_OR);
-                *--stack=MP_OR_END;
+                PUT(P_ORSTART);
+                *--stack=P_OREND;
                 continue;
             case '|':
                 iswild=1;
-                if(stack!=end&&*stack!=MP_OR_END)
-                    ERROR(ERROR_BAD_TEMPLATE);
-                PUT(MP_OR_NEXT);
-                break;
+		if(stack==end)
+		    ERROR(ERROR_BAD_TEMPLATE);
+		while(!(*stack==P_OREND||stack==end))
+		   PUT(*stack++);
+                PUT(P_ORNEXT);
+                continue;
             case ')':
-                if(stack==end||*stack!=MP_OR_END)
-                    ERROR(ERROR_BAD_TEMPLATE);
-                PUT(*stack++);
+                while(!(stack==end||*stack==P_OREND))
+		    PUT(*stack++);
+		if(stack==end)
+		    ERROR(ERROR_BAD_TEMPLATE)
+		else
+		    PUT(*stack++);
                 break;
             case '[':
+		iswild=1;
                 if(*Source=='~')
-                {
-                    Source++;
-                    PUT(MP_NOT_SET);
+		{
+		    Source++;
+                    PUT(P_NOTCLASS);
                 }else
-                    PUT(MP_SET);
-                a=*Source++;
-                if(!a)
-                    ERROR(ERROR_BAD_TEMPLATE);
-                do
-                {
-                    if(Source[0]=='-'&&Source[1]!=']')
-                    {
-                        Source++;
-                        b=*Source++;
-                        if(!b)
-                            ERROR(ERROR_BAD_TEMPLATE);
-                        if(b>a)
-                            t=a, a=b, b=t;
-                        PUT(MP_DASH);
-                        if(b>=0x81&&b<=0x8e)
-                        {
-                            PUT(MP_ESCAPE);
-                            b-=0x80;
-                        }
-                        PUT(ToLower(b));
-                    }
-                    if(a>=0x81&&a<=0x8e)
-                    {
-                        PUT(MP_ESCAPE);
-                        a-=0x80;
-                    }
-                    PUT(ToLower(a));
-                    a=*Source++;
-                    if(!a)
-                        ERROR(ERROR_BAD_TEMPLATE);
-                }while(a!=']');
-                PUT(MP_SET_END);
+                    PUT(P_CLASS);
+		a=*Source++;
+		if(!a)
+		    ERROR(ERROR_BAD_TEMPLATE);
+		do
+		{
+		    if(a=='\'')
+			a=*Source++;
+		    PUT(ToUpper(a));
+		    a=*Source++;
+		    if(!a)
+			ERROR(ERROR_BAD_TEMPLATE);
+		}while(a!=']');
+		PUT(P_CLASS);
                 break;
             case '*':
                 if(DOSBase->dl_Flags&RNF_WILDSTAR)
                 {
-                    PUT(MP_ALL);
+		    iswild=1;
+                    PUT(P_ANY);
                 }else
                     PUT('*');
                 break;
+	    case '%':
+		continue;
             case '\'':
-                if(!*Source++)
-                    ERROR(ERROR_BAD_TEMPLATE);
+		switch(*Source)
+		{
+		    case '*':
+		    case '?':
+		    case '(':
+		    case '|':
+		    case ')':
+		    case '~':
+		    case '[':
+		    case ']':
+		    case '%':
+		    case '\'':
+			Source++;
+		    default:
+			break;
+		}
                 /* Fall through */
             default:
                 a=Source[-1];
-                if(a>=0x81&&a<=0x8e)
-                {
-                    PUT(MP_ESCAPE);
-                    a-=0x80;
-                }
-                PUT(ToLower(a));
+                PUT(ToUpper(a));
                 break;
         }
-        while(stack!=end&&*stack!=MP_OR_END)
-            PUT(*stack++);
+	while(stack!=end&&*stack!=P_OREND)
+	    PUT(*stack++);
     }
     if(stack!=end)
-        ERROR(ERROR_BAD_TEMPLATE);
-    PUT(MP_OR_END);
+	ERROR(ERROR_BAD_TEMPLATE);
     PUT(0);
     return iswild;
     AROS_LIBFUNC_EXIT

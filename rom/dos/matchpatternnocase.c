@@ -1,20 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:26  ldp
-    Polish
-
-    Revision 1.3  1996/12/09 13:53:34  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.2  1996/10/24 15:50:33  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/11 12:54:46  digulla
-    A couple of new DOS functions from M. Fleischer
 
     Desc:
     Lang: english
@@ -23,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <dos/dosextens.h>
+#include <dos/dosasl.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -80,46 +67,46 @@
     for(;;)
         switch(*pat)
         {
-            case MP_MULT: /* _#(_a) */
+            case P_REPBEG: /* _#(_a), _#a_ or _#[_a] */
                 PUSH(0,++pat,str);
                 level=1;
                 for(;;)
                 {
                     c=*pat++;
-                    if(c==MP_MULT)
+                    if(c==P_REPBEG)
                         level++;
-                    else if(c==MP_MULT_END)
+                    else if(c==P_REPEND)
                         if(!--level)
                             break;
                 }
                 break;
-            case MP_MULT_END: /* #(a_)_ */
+            case P_REPEND: /* #(a_)_ */
                 level=1;
                 for(;;)
                 {
                     c=*--pat;
-                    if(c==MP_MULT_END)
+                    if(c==P_REPEND)
                         level++;
-                    else if(c==MP_MULT)
+                    else if(c==P_REPBEG)
                         if(!--level)
                             break;
                 }
                 break;
-            case MP_NOT: /* _~(_a) */
+            case P_NOT: /* _~(_a) */
                 s=++pat;
                 level=1;
                 for(;;)
                 {
                     c=*s++;
-                    if(c==MP_NOT)
+                    if(c==P_NOT)
                         level++;
-                    else if(c==MP_NOT_END)
+                    else if(c==P_NOTEND)
                         if(!--level)
                             break;
                 }
                 PUSH(1,s,str);
                 break;
-            case MP_NOT_END: /* ~(a_)_ */
+            case P_NOTEND: /* ~(a_)_ */
                 cnt2=macnt;
                 cur2=macur;
                 do
@@ -142,40 +129,40 @@
                 if(t&&*str)
                 { PUSH(1,pat,str+1); }
                 break;
-            case MP_OR: /* ( */
+            case P_ORSTART: /* ( */
                 s=++pat;
                 level=1;
                 for(;;)
                 {
                     c=*s++;
-                    if(c==MP_OR)
+                    if(c==P_ORSTART)
                         level++;
-                    else if(c==MP_OR_NEXT)
+                    else if(c==P_ORNEXT)
                     {
                         if(level==1)
                         { PUSH(0,s,str); }
-                    }else if(c==MP_OR_END)
+                    }else if(c==P_OREND)
                         if(!--level)
                             break;
                 }
                 break;
-            case MP_OR_NEXT: /* | */
+            case P_ORNEXT: /* | */
                 pat++;
                 level=1;
                 for(;;)
                 {
                     c=*pat++;
-                    if(c==MP_OR)
+                    if(c==P_ORSTART)
                         level++;
-                    else if(c==MP_OR_END)
+                    else if(c==P_OREND)
                         if(!--level)
                             break;
                 }
                 break;
-            case MP_OR_END: /* ) */
+            case P_OREND: /* ) */
                 pat++;
                 break;
-            case MP_SINGLE: /* ? */
+            case P_SINGLE: /* ? */
                 pat++;
                 if(*str)
                     str++;
@@ -186,40 +173,35 @@
                     { PUSH(1,pat,str+1); }
                 }
                 break;
-            case MP_SET: /* [ */
+            case P_CLASS: /* [ */
                 pat++;
                 for(;;)
                 {
                     a=b=*pat++;
-                    if(a==MP_SET_END)
+                    if(a==P_CLASS)
                     {
                         POP(t,pat,str);
                         if(t&&*str)
                         { PUSH(1,pat,str+1); }
                         break;
                     }
-                    if(a==MP_ESCAPE)
-                        a=b=*pat++ +0x80;
-                    else if(a==MP_DASH)
+                    if(*pat=='-')
                     {
-                        a=*pat++;
-                        if(a==MP_ESCAPE)
-                            a=*pat++ +0x80;
-                        b=*pat++;
-                        if(b==MP_ESCAPE)
-                            b=*pat++ +0x80;
+                        b=*++pat;
+			if(b==P_CLASS)
+			    b=255;
                     }
-                    c=ToLower(*str);
+		    c=ToUpper(*str);
                     if(c>=a&&c<=b)
                     {
                         str++;
-                        while(*pat++!=MP_SET_END)
+                        while(*pat++!=P_CLASS)
                             ;
                         break;
                     }
                 }
                 break;
-            case MP_NOT_SET: /* [~ */
+            case P_NOTCLASS: /* [~ */
                 if(!*str)
                 {
                     POP(t,pat,str);
@@ -231,23 +213,18 @@
                 for(;;)
                 {
                     a=b=*pat++;
-                    if(a==MP_SET_END)
+                    if(a==P_CLASS)
                     {
                         str++;
                         break;
                     }
-                    if(a==MP_ESCAPE)
-                        a=b=*pat++ +0x80;
-                    else if(a==MP_DASH)
+                    if(*pat=='-')
                     {
-                        a=*pat++;
-                        if(a==MP_ESCAPE)
-                            a=*pat++ +0x80;
-                        b=*pat++;
-                        if(b==MP_ESCAPE)
-                            b=*pat++ +0x80;
+			b=*++pat;
+			if(b==P_CLASS)
+                            b=255;
                     }
-                    c=ToLower(*str);
+		    c=ToUpper(*str);
                     if(c>=a&&c<=b)
                     {
                         POP(t,pat,str);
@@ -257,7 +234,7 @@
                     }
                 }
                 break;
-            case MP_ALL: /* #? */
+            case P_ANY: /* #? */
                 /* This often used pattern has extra treatment to be faster */
                 if(*str)
                 { PUSH(0,pat,str+1); }
@@ -275,19 +252,8 @@
                     { PUSH(1,pat,str+1); }
                 }
                 break;
-            case MP_ESCAPE:
-                pat++;
-                if(0x80+*pat++==*str)
-                    str++;
-                else
-                {
-                    POP(t,pat,str);
-                    if(t&&*str)
-                    { PUSH(1,pat,str+1); }
-                }
-                break;
             default:
-                if(*pat++==ToLower(*str))
+                if(*pat++==ToUpper(*str))
                     str++;
                 else
                 {
