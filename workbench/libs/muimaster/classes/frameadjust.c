@@ -86,7 +86,7 @@ static void SliderFunc(struct Hook *hook, Object *obj, struct SliderFuncMsg *msg
     }
 
     zune_frame_intern_to_spec(&data->fs_intern, fs);
-    set(data->FD_display, MUIA_Framedisplay_Spec, fs);
+    set(data->FD_display, MUIA_Framedisplay_Spec, (IPTR)fs);
 }
 
 
@@ -105,7 +105,7 @@ static void FramesFunc(struct Hook *hook, Object *obj, struct FramesFuncMsg *msg
     data->fs_intern.type = msg->type;
     data->fs_intern.state = msg->state;
     zune_frame_intern_to_spec(&data->fs_intern, fs);
-    set(data->FD_display, MUIA_Framedisplay_Spec, fs);
+    set(data->FD_display, MUIA_Framedisplay_Spec, (IPTR)fs);
 }
 
 static Object *MakeFrameDisplay(int i, int state)

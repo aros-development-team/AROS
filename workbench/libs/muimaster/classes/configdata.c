@@ -538,8 +538,6 @@ static IPTR Configdata_SetFramespec(struct IClass *cl, Object * obj,
 static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_SetFont *msg)
 {
-    int i;
-
     if (!msg->font || !*msg->font)
     {
 /*  	D(bug("Configdata_SetFont(%p) : id %08lx, val invalid\n", */

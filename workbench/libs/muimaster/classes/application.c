@@ -1180,10 +1180,10 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     };
     char cmd[255];
 
-    snprintf(cmd, 255, "Zune %s", data->app_Base ? data->app_Base : "");
+    snprintf(cmd, 255, "Zune %s", data->app_Base ? data->app_Base : (STRPTR)"");
 
     if (SystemTagList(cmd, tags) == -1)
-    {	
+    {
 	return 0;
     }
 
