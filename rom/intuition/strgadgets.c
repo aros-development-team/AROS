@@ -451,9 +451,9 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
 
 	if (gad->Activation & GACT_LONGINT)
 	{
-	   kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); 	
+	   /* kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); */
 	} else {
-	   kprintf("strinfo->Buffer = \"%s\"\n",strinfo->Buffer);
+	   /* kprintf("strinfo->Buffer = \"%s\"\n",strinfo->Buffer); */
 	}
     }
 
@@ -654,7 +654,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     
     gad = sgw->Gadget;
     strinfo = sgw->StringInfo;
-    
+
     numchars = MapRawKey(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
 
     if (numchars == -1)
