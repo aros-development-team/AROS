@@ -86,14 +86,14 @@ Object *ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
     
         return HGroup,
             ButtonFrame,
-            MUIA_VertWeight,         0,
-            MUIA_Background,         MUII_ButtonBack,
-            MUIA_InputMode,          MUIV_InputMode_RelVerify,
-            MUIA_Group_Spacing,      0,
-            MUIA_Group_SameHeight,   TRUE,
+            MUIA_VertWeight,               0,
+            MUIA_Background,               MUII_ButtonBack,
+            MUIA_InputMode,                MUIV_InputMode_RelVerify,
+            MUIA_Group_Spacing,            0,
+            MUIA_Group_SameHeight,         TRUE,
             controlChar      ? 
             MUIA_ControlChar : 
-            TAG_IGNORE,              controlChar,
+            TAG_IGNORE,             (IPTR) controlChar,
             
             Child, ImageObject,
                 MUIA_Image_Spec, (IPTR) imageSpec,
