@@ -4,15 +4,28 @@ include $(TOP)/config/make.cfg
 LANGUAGES = dansk deutsch español français italiano nederlands norsk \
 	    piglatin polski português suomi svenska magyar
 
-MODULES := $(foreach f,$(LANGUAGES),$(AROS_LOCALE)/Languages/$(f).language)
-MODTYPE := language
+MODDIR  := $(AROS_LOCALE)/Languages
+OBJDIR  := $(GENDIR)/$(CURDIR)
+MODULES := $(addprefix $(MODDIR)/,$(addsuffix .language,$(LANGUAGES)))
+OBJS    := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(LANGUAGES)))
+DEPS    := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(LANGUAGES)))
 
 #MM- workbench-locale : workbench-locale-languages
-#MM workbench-locale-languages : includes linklibs
-workbench-locale-languages : setup $(MODULES)
+#MM workbench-locale-languages : includes linklibs \
+#MM   workbench-locale-languages-setup
 
-%make_module_setup mmake=workbench-locale-languages
-%make_module_single mmake=workbench-locale-languages
+#MM workbench-locale-languages-setup
+
+workbench-locale-languages : $(MODULES)
+
+%rule_makedirs dirs="$(OBJDIR) $(MODDIR)" \
+  setuptarget=workbench-locale-languages-setup
+
+%rule_compile basename=% targetdir=$(OBJDIR)
+
+$(MODDIR)/%.language : $(OBJDIR)/%.o
+	%link_module_q err="$(notdir $(basename $<)).err" objs=$< module="$(notdir $@)"
+
+%include_deps deps=$(DEPS)
 
 %common
-%include_deps $(foreach f,$(LANGUAGES),$(OBJDIR)/$(f).d)
