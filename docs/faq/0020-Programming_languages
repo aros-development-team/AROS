@@ -1,15 +1,19 @@
 <section title="What programming languages are available ?">
 
-<p>Currently, all development is done in ANSI C. We just use some tools
-to automatically generate the C header files (clib, protos, pragmas, fds)
-and AutoDocs from the sources and <a href="mmake.html">MetaMake</a>
-to build everything.</p>
+<P>Most development for AROS is done using ANSI C by crosscompiling 
+the sources under a different OS, eg. Linux, FreeBSD or NetBSD. There
+is currently no native C compiler that can be run under AROS, but 
+there are plans to port one. This however will probably take some time,
+so don't hold your breath. ;-)<P>
 
-<p>There are some plans to port at least a C compiler to AROS, so we
-could compile code inside of AROS instead of cross compiling but that
-will take some time. For example, we need some extensions to C (namely the
-Macro Varargs of GCC) to make TagLists work. Then some people are
-investigating to port a BASIC dialect to AROS and Aaron Digulla
-wants Python. These are still future plans, though.</p>
+<P>The languages that <B>are</B> available natively are 
+<A HREF="http://www.python.org/">Python</A> and 
+<A HREF="http://wouter.fov120.com/false/">False</A>. False can be 
+classified as an <I>exotic</I> language, so it will most likely not
+be used for serious development, although it can be lots of fun. :-)
+Python is a scripting language which has become quite popular, because
+of it's nice design and features (object-oriented programming, module
+system, many useful modules included, clean syntax, ...). The current
+version of Python for AROS is 2.1.1. 
 
 </section>
