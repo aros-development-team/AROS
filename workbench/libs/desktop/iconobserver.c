@@ -33,87 +33,65 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval=0;
     struct IconObserverClassData *data;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
     UBYTE *name=NULL, *directory=NULL;
     BOOL selected=FALSE;
     UBYTE *comment;
     BOOL script, pure, archived, readable, writeable, executable, deleteable;
 
-    tag=FindTagItem(IOA_Selected, msg->ops_AttrList);
-    if(tag)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        selected=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Name, msg->ops_AttrList);
-    if(tag)
-    {
-        name=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Directory, msg->ops_AttrList);
-    if(tag)
-    {
-        directory=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Comment, msg->ops_AttrList);
-    if(tag)
-    {
-        comment=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Script, msg->ops_AttrList);
-    if(tag)
-    {
-        script=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Pure, msg->ops_AttrList);
-    if(tag)
-    {
-        pure=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Archived, msg->ops_AttrList);
-    if(tag)
-    {
-        archived=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Readable, msg->ops_AttrList);
-    if(tag)
-    {
-        readable=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Writeable, msg->ops_AttrList);
-    if(tag)
-    {
-        writeable=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Executable, msg->ops_AttrList);
-    if(tag)
-    {
-        executable=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IOA_Deleteable, msg->ops_AttrList);
-    if(tag)
-    {
-        deleteable=tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
+        switch (tag->ti_Tag)
+        {
+            case IOA_Selected:
+                selected = (BOOL) tag->ti_Data;
+                break;
+                
+            case IOA_Name:
+                name = (UBYTE *) tag->ti_Data;
+                break;
+            
+            case IOA_Directory:
+                directory = (UBYTE *) tag->ti_Data;
+                break;
+            
+            case IOA_Comment:
+                comment = (UBYTE *) tag->ti_Data;
+                break;
+            
+            case IOA_Script:
+                script = (BOOL) tag->ti_Data;
+                break;
+            
+            case IOA_Pure:
+                pure = (BOOL) tag->ti_Data;
+                break;
+                
+            case IOA_Archived:
+                archived = (BOOL) tag->ti_Data;
+                break;
+            
+            case IOA_Readable:
+                readable = (BOOL) tag->ti_Data;
+                break;
+                
+            case IOA_Writeable:
+                writeable = (BOOL) tag->ti_Data;
+                break;
+            
+            case IOA_Executable:
+                executable = (BOOL) tag->ti_Data;
+                break;
+            
+            case IOA_Deleteable:
+                deleteable = (BOOL) tag->ti_Data;
+                break;
+            
+            default:
+                continue; /* Don't supress non-processed tags */
+        }
+        
+        tag->ti_Tag = TAG_IGNORE;              
     }
 
     retval=DoSuperMethodA(cl, obj, (Msg)msg);
