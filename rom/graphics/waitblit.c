@@ -49,7 +49,8 @@
 
 
 #warning TODO: Write graphics/WaitBlit()
-    aros_print_not_implemented ("WaitBlit");
+
+/*    aros_print_not_implemented ("WaitBlit"); */
 
 /*    driver_WaitBlit (GfxBase); */
 
