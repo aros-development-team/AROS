@@ -35,7 +35,7 @@ AROS_LP2(PLANEPTR, AllocRaster,
     struct GfxBase *, GfxBase, 82, Graphics)
 
 AROS_LP2(void, AndRectRegion,
-    AROS_LPA(struct Region *, region, A0),
+    AROS_LPA(struct Region    *, region, A0),
     AROS_LPA(struct Rectangle *, rectangle, A1),
     struct GfxBase *, GfxBase, 84, Graphics)
 
@@ -83,7 +83,7 @@ AROS_LP11(LONG, BltBitMap,
     struct GfxBase *, GfxBase, 5, Graphics)
 
 AROS_LP2(BOOL, ClearRectRegion,
-    AROS_LPA(struct Region *, region, A0),
+    AROS_LPA(struct Region    *, region   , A0),
     AROS_LPA(struct Rectangle *, rectangle, A1),
     struct GfxBase *, GfxBase, 87, Graphics)
 
@@ -211,7 +211,7 @@ AROS_LP1(struct TextFont *, OpenFont,
     struct GfxBase *, GfxBase, 12, Graphics)
 
 AROS_LP2(BOOL, OrRectRegion,
-    AROS_LPA(struct Region *, region, A0),
+    AROS_LPA(struct Region    *, region,    A0),
     AROS_LPA(struct Rectangle *, rectangle, A1),
     struct GfxBase *, GfxBase, 85, Graphics)
 
@@ -286,6 +286,14 @@ AROS_LP2(void, SetRast,
     AROS_LPA(ULONG            , pen, D0),
     struct GfxBase *, GfxBase, 39, Graphics)
 
+AROS_LP5(void, SetRGB32,
+    AROS_LPA(struct ViewPort *, vp, A0),
+    AROS_LPA(ULONG            , n, D0),
+    AROS_LPA(ULONG            , r, D1),
+    AROS_LPA(ULONG            , g, D2),
+    AROS_LPA(ULONG            , b, D3),
+    struct GfxBase *, GfxBase, 142, Graphics)
+
 AROS_LP2(void, SetRPAttrsA,
     AROS_LPA(struct RastPort *, rp, A0),
     AROS_LPA(struct TagItem  *, tags, A1),
@@ -328,8 +336,18 @@ AROS_LP3(LONG, WritePixel,
     AROS_LPA(LONG             , y, D1),
     struct GfxBase *, GfxBase, 54, Graphics)
 
+AROS_LP7(LONG, WritePixelArray8,
+    AROS_LPA(struct RastPort *, rp, A0),
+    AROS_LPA(ULONG            , xstart, D0),
+    AROS_LPA(ULONG            , ystart, D1),
+    AROS_LPA(ULONG            , xstop, D2),
+    AROS_LPA(ULONG            , ystop, D3),
+    AROS_LPA(UBYTE           *, array, A2),
+    AROS_LPA(struct RastPort *, temprp, A1),
+    struct GfxBase *, GfxBase, 131, Graphics)
+
 AROS_LP2(BOOL, XorRectRegion,
-    AROS_LPA(struct Region *, region, A0),
+    AROS_LPA(struct Region    *, region,    A0),
     AROS_LPA(struct Rectangle *, rectangle, A1),
     struct GfxBase *, GfxBase, 93, Graphics)
 

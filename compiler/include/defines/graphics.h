@@ -33,7 +33,7 @@
 
 #define AndRectRegion(region, rectangle) \
     AROS_LC2(void, AndRectRegion, \
-    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Region    *, region, A0), \
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 84, Graphics)
 
@@ -88,7 +88,7 @@
 
 #define ClearRectRegion(region, rectangle) \
     AROS_LC2(BOOL, ClearRectRegion, \
-    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Region    *, region   , A0), \
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 87, Graphics)
 
@@ -242,7 +242,7 @@
 
 #define OrRectRegion(region, rectangle) \
     AROS_LC2(BOOL, OrRectRegion, \
-    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Region    *, region,    A0), \
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 85, Graphics)
 
@@ -329,6 +329,15 @@
     AROS_LCA(ULONG            , pen, D0), \
     struct GfxBase *, GfxBase, 39, Graphics)
 
+#define SetRGB32(vp, n, r, g, b) \
+    AROS_LC5(void, SetRGB32, \
+    AROS_LCA(struct ViewPort *, vp, A0), \
+    AROS_LCA(ULONG            , n, D0), \
+    AROS_LCA(ULONG            , r, D1), \
+    AROS_LCA(ULONG            , g, D2), \
+    AROS_LCA(ULONG            , b, D3), \
+    struct GfxBase *, GfxBase, 142, Graphics)
+
 #define SetRPAttrsA(rp, tags) \
     AROS_LC2(void, SetRPAttrsA, \
     AROS_LCA(struct RastPort *, rp, A0), \
@@ -378,9 +387,20 @@
     AROS_LCA(LONG             , y, D1), \
     struct GfxBase *, GfxBase, 54, Graphics)
 
+#define WritePixelArray8(rp, xstart, ystart, xstop, ystop, array, temprp) \
+    AROS_LC7(LONG, WritePixelArray8, \
+    AROS_LCA(struct RastPort *, rp, A0), \
+    AROS_LCA(ULONG            , xstart, D0), \
+    AROS_LCA(ULONG            , ystart, D1), \
+    AROS_LCA(ULONG            , xstop, D2), \
+    AROS_LCA(ULONG            , ystop, D3), \
+    AROS_LCA(UBYTE           *, array, A2), \
+    AROS_LCA(struct RastPort *, temprp, A1), \
+    struct GfxBase *, GfxBase, 131, Graphics)
+
 #define XorRectRegion(region, rectangle) \
     AROS_LC2(BOOL, XorRectRegion, \
-    AROS_LCA(struct Region *, region, A0), \
+    AROS_LCA(struct Region    *, region,    A0), \
     AROS_LCA(struct Rectangle *, rectangle, A1), \
     struct GfxBase *, GfxBase, 93, Graphics)
 
