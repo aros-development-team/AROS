@@ -522,6 +522,9 @@ struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD dire
 
 /*********************************************************************/
 
+/**********************
+**  FixWindowCoords  **
+**********************/
 void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WORD *height)
 {
     struct Screen *scr = win->WScreen;
@@ -545,7 +548,123 @@ void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WOR
 }
 
 /*********************************************************************/
-/*********************************************************************/
+
+/*************************
+**  WindowNeedsRefresh	**
+*************************/
+void WindowNeedsRefresh(struct Window * w, 
+                        struct IntuitionBase * IntuitionBase )
+{
+  /* Supposed to send a message to this window, saying that it needs a
+     refresh. I will check whether there is no such a message queued in
+     its messageport, though. It only needs one such message! 
+  */
+  struct IntuiMessage * IM;
+  BOOL found = FALSE;
+
+  if (NULL == w->UserPort)
+    return;
+  
+  
+  /* Refresh the window's gadgetry ... 
+     ... stegerg: and in the actual implementation
+     call RefershWindowFrame first, as the border gadgets don´t
+     cover the whole border area.*/
+
+  
+  if (FALSE != BeginUpdate(w->WLayer))
+  {
+  
+    if (!(w->Flags & WFLG_GIMMEZEROZERO))
+    {
+      RefreshWindowFrame(w);
+    }
+  
+    /* refresh all gadgets except border gadgets, because they
+       were already refreshed in refreshwindowframe */
+    int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
+  }
+
+  EndUpdate(w->WLayer, FALSE);
+  
+  /* Can use Forbid() for this */
+  
+  Forbid();
+  
+  IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+  /* reset the flag in the layer */
+  w->WLayer->Flags &= ~LAYERREFRESH;
+
+  ForeachNode(&w->UserPort->mp_MsgList, IM)
+  {
+    /* Does the window already have such a message? */
+    if (IDCMP_REFRESHWINDOW == IM->Class)
+    {
+kprintf("Window %s already has a refresh message pending!!\n",w->Title);
+      found = TRUE;break;
+    }
+  }
+  
+  Permit();
+
+kprintf("Sending a refresh message to window %s!!\n",w->Title);
+  if (!found)
+  {
+    IM = alloc_intuimessage(w, IntuitionBase);
+    if (NULL != IM)
+    {
+      IM->Class = IDCMP_REFRESHWINDOW;
+      send_intuimessage(IM, w, IntuitionBase);
+    }
+  }
+}
+
+/***********************
+**  FindActiveWindow  **
+***********************/
+struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
+				struct IntuitionBase *IntuitionBase)
+{
+    /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
+    struct Screen *scr;
+    struct Layer *l;
+    struct Window *new_w = NULL;
+    ULONG lock;
+    
+    *swallow_event = FALSE;
+
+    lock = LockIBase(0UL);
+    scr = IntuitionBase->ActiveScreen;
+    UnlockIBase(lock);
+    
+    /* What layer ? */
+    D(bug("Click at (%d,%d)\n",ie->ie_X,ie->ie_Y));
+    LockLayerInfo(&scr->LayerInfo);
+
+    l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
+
+    UnlockLayerInfo(&scr->LayerInfo);
+
+    if (NULL == l)
+    {
+	D(bug("iih: Click not inside layer\n"));
+    }
+    else
+    {
+	new_w = (struct Window *)l->Window;
+	if (!new_w)
+	{
+	    D(bug("iih: Selected layer is not a window\n"));
+	}
+
+    	D(bug("Found layer %p\n", l));
+
+    }
+
+    return new_w;
+}
+
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
