@@ -56,9 +56,11 @@ static struct IntuiMessage *SendIDCMPUpdate(
 	imsg = AllocMem(sizeof(struct ExtIntuiMessage), MEMF_CLEAR);
 	if( imsg != NULL )
 	{
+	    /* Add the newly created message to start of list of messages */
 	    imsg->SpecialLink = msg->opu_GInfo->gi_Window->MessageKey;
-	    msg->opu_GInfo->gi_Window->MessageKey = imsg->SpecialLink;
+	    msg->opu_GInfo->gi_Window->MessageKey = imsg;
 	    imsg->ExecMessage.mn_ReplyPort = msg->opu_GInfo->gi_Window->WindowPort;
+	    
 	}
     }
 
