@@ -55,7 +55,7 @@
 {
     GETUSER;
 
-    char *name, *value = NULL, *ptr;
+    char *name = NULL, *value = NULL, *ptr;
     int res = -1;
 
     if (!string)
