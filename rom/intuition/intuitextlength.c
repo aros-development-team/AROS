@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/02/18 23:18:01  hkiel
+    Added return value
+
     Revision 1.6  1998/10/20 16:45:58  hkiel
     Amiga Research OS
 
@@ -75,7 +78,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct RastPort * rp;
     struct TextFont * newfont;
-    LONG width;
+    LONG width=0;
 
     rp = CreateRastPort ();
 
@@ -99,6 +102,8 @@
 
 	FreeRastPort (rp);
     }
+
+    return width;
 
     AROS_LIBFUNC_EXIT
 } /* IntuiTextLength */
