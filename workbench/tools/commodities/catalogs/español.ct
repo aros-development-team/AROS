@@ -1,0 +1,253 @@
+## version $VER: Commodities.catalog 1.0 (17.08.2003)
+## language español
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+¡No puedo abrir %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+¡No puedo lockar la pantalla publica!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+¡No puedo encontrar VisualInfo!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+¡No puedo crear los gadgets!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+¡No puedo crear los menus!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+!No puedo layout los menus!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+¡No puedo abrir la ventana!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+¡No puedo reservar memory para la aplicacion\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+¡No puedo crear el MessagePort!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+¡No puedo crear el objeto CxBroker!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+¡No puedo crear el objeto CxCustom!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+Vale
+; Ok
+;
+MSG_MEN_PROJECT
+Proyecto
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Salir
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commodities Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Controla system commodities
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_LISTVIEW
+Commodities disponibles
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Informacion
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Muestra
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Oculta
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Quita
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+activo
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+inactivo
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+System Screen Blanker
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Ennegrece pantalla cuando el system esta inactivo
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+ClickToFront
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Poner la ventana al primer plano con un mouse click
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Opacar ventanas
+; Opaque windows
+;
+MSG_OPAQUE_CXDESCR
+Mover ventanas en tiempo real
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Foco automatico
+; Automatic window activator
+;
+MSG_AUTOPOINT_CXDESCR
+Activa la ventana debajo de la mouse
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+System Programm Starter
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Lanza programas del menu
+; Program launch commodity
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Asigna funciones a teclas
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Asignar funciones a teclas
+; Attach Special Functions To Keys
+;
+MSG_FKEY_WINTITLE
+FKey: Hot Key = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Teclas definidas
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+_Nueva tecla
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+_Borrar tecla
+; _Delete Key
+;
+MSG_FKEY_COMMAND
+Comando
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Parametros del comando
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Circula ventanas
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Circula pantallas
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Agrandar ventana
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Empqueñecer ventana
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Conmutar dimension de la ventana
+; Toggle Window Size
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Rellenar texto
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Lanza programa
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Lanza ARexx-Script
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT
+Proyecto
+; Project
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+S\0Grabar teclas
+; S\0Save Defined Keys
+;
+MSG_FKEY_MEN_PROJECT_HIDE
+H\0Ocultar
+; H\0Hide
+;
+MSG_FKEY_MEN_PROJECT_ICONIFY
+I\0Iconify
+; I\0Iconify
+;
+MSG_FKEY_MEN_PROJECT_QUIT
+Q\0Salir
+; Q\0Quit
+;
