@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Resident CLI command
+    Lang: English
+*/
+
 #define AROS_ALMOST_COMPATIBLE
 
 #include <proto/dos.h>
