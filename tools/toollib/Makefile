@@ -36,7 +36,8 @@ error.o: /usr/include/stdlib.h /usr/include/alloca.h
 hash.o: /usr/include/string.h /usr/include/features.h
 hash.o: /usr/include/sys/cdefs.h /usr/include/stddef.h /usr/include/stdlib.h
 hash.o: /usr/include/errno.h /usr/include/linux/errno.h
-hash.o: /usr/include/asm/errno.h /usr/include/alloca.h ../toollib/hash.h
+hash.o: /usr/include/asm/errno.h /usr/include/alloca.h /usr/include/ctype.h
+hash.o: /usr/include/endian.h /usr/include/bytesex.h ../toollib/hash.h
 hash.o: ../toollib/toollib.h /usr/include/sys/types.h
 hash.o: /usr/include/linux/types.h /usr/include/linux/posix_types.h
 hash.o: /usr/include/asm/posix_types.h /usr/include/asm/types.h
@@ -51,7 +52,7 @@ mystream.o: /usr/include/linux/posix_types.h /usr/include/asm/posix_types.h
 mystream.o: /usr/include/asm/types.h /usr/include/sys/bitypes.h
 mystream.o: /usr/include/stdarg.h /usr/include/stdlib.h /usr/include/errno.h
 mystream.o: /usr/include/linux/errno.h /usr/include/asm/errno.h
-mystream.o: /usr/include/alloca.h ../toollib/callback.h
+mystream.o: /usr/include/alloca.h ../toollib/callback.h ../toollib/error.h
 stdiocb.o: /usr/include/string.h /usr/include/features.h
 stdiocb.o: /usr/include/sys/cdefs.h /usr/include/stddef.h ../toollib/error.h
 stdiocb.o: ../toollib/toollib.h /usr/include/sys/types.h
