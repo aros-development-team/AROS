@@ -30,7 +30,7 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.2 (14.12.2000)\n";
+static const char version[] = "$VER: WiMP 0.3 (17.12.2000)\n";
 
 #define AROS_ALMOST_COMPATIBLE
 
@@ -80,10 +80,26 @@ ULONG lock;
 
 enum {None_type,Window_type,Screen_type,Max_type};
 
+#define ID_SHOW 10
+struct NewGadget showgad =
+{
+    520, 130, 50, 20,
+    "Show", NULL,
+    ID_SHOW, PLACETEXT_IN, NULL, NULL
+};
+
+#define ID_HIDE 11
+struct NewGadget hidegad =
+{
+    470, 130, 50, 20,
+    "Hide", NULL,
+    ID_HIDE, PLACETEXT_IN, NULL, NULL
+};
+
 #define ID_ZIP 12
 struct NewGadget zipgad =
 {
-    479, 130, 30, 20,
+    420, 130, 50, 20,
     "Zip", NULL,
     ID_ZIP, PLACETEXT_IN, NULL, NULL
 };
@@ -91,7 +107,7 @@ struct NewGadget zipgad =
 #define ID_ACTIVATE 13
 struct NewGadget activategad =
 {
-    409, 130, 70, 20,
+    340, 130, 80, 20,
     "Activate", NULL,
     ID_ACTIVATE, PLACETEXT_IN, NULL, NULL
 };
@@ -99,15 +115,15 @@ struct NewGadget activategad =
 #define ID_ORIGIN 14
 struct NewGadget origingad =
 {
-    289, 130, 120, 20,
-    "Move To Origin", NULL,
+    210, 130, 130, 20,
+    "Move to Origin", NULL,
     ID_ORIGIN, PLACETEXT_IN, NULL, NULL
 };
 
 #define ID_BACK 15
 struct NewGadget backgad =
 {
-    220, 130, 69, 20,
+    140, 130, 70, 20,
     "To Back", NULL,
     ID_BACK, PLACETEXT_IN, NULL, NULL
 };
@@ -115,7 +131,7 @@ struct NewGadget backgad =
 #define ID_FRONT 16
 struct NewGadget frontgad =
 {
-    150, 130, 70, 20,
+    60, 130, 80, 20,
     "To Front", NULL,
     ID_FRONT, PLACETEXT_IN, NULL, NULL
 };
@@ -123,7 +139,7 @@ struct NewGadget frontgad =
 #define ID_KILL 17
 struct NewGadget killgad =
 {
-    110, 130, 40, 20,
+    10, 130, 50, 20,
     "Kill", NULL,
     ID_KILL, PLACETEXT_IN, NULL, NULL
 };
@@ -131,15 +147,15 @@ struct NewGadget killgad =
 #define ID_RESCUE 18
 struct NewGadget rescuegad =
 {
-    10, 150, 130, 20,
-    "Rescue Windows", NULL,
+    110, 150, 150, 20,
+    "Rescue all Windows", NULL,
     ID_RESCUE, PLACETEXT_IN, NULL, NULL
 };
 
 #define ID_UPDATE 19
 struct NewGadget updategad =
 {
-    10, 130, 100, 20,
+    10, 150, 100, 20,
     "Update List", NULL,
     ID_UPDATE, PLACETEXT_IN, NULL, NULL
 };
@@ -147,9 +163,17 @@ struct NewGadget updategad =
 #define ID_LISTVIEW 20
 struct NewGadget listviewgad =
 {
-    10, 30, 500, 100,
+    10, 30, 561, 100,
     "Screen/Window List", NULL,
     ID_LISTVIEW, PLACETEXT_ABOVE, NULL, NULL
+};
+
+#define ID_ABOUT 21
+struct NewGadget aboutgad =
+{
+    520, 150, 50, 20,
+    "About", NULL,
+    ID_ABOUT, PLACETEXT_IN, NULL, NULL
 };
 
 #define NUMLVNODES  3
@@ -158,10 +182,12 @@ APTR vi;
 struct Gadget *glist = NULL;
 struct Gadget *screenlistg = NULL;
 struct Gadget *actiong = NULL;
-#define ACTIONGLENW 6
-#define ACTIONGLENS 2
+#define ACTIONGLENW 8
+#define ACTIONGLENS 4
 UWORD actionmenu[] =
 {
+	FULLMENUNUM(1,9,NOSUB),
+	FULLMENUNUM(1,8,NOSUB),
 	FULLMENUNUM(1,7,NOSUB),
 	FULLMENUNUM(1,6,NOSUB),
 	FULLMENUNUM(1,5,NOSUB),
@@ -185,12 +211,15 @@ static struct NewMenu nm[] =
     {NM_ITEM, "To Origin"},
     {NM_ITEM, "Activate"},
     {NM_ITEM, "Zip"},
+    {NM_ITEM, "Hide"},
+    {NM_ITEM, "Show"},
   {NM_TITLE, "Generic"},
     {NM_ITEM, "Rescue All"},
   {NM_END}
 };
 
 #define EASYTRUE 1
+const STRPTR TITLE_TXT		= "WiMP - The Window Manipulation Program";
 const STRPTR CLOSESCREEN_TXT	= "Do you really want to Close the selected Screen?";
 const STRPTR CLOSEWINDOW_TXT	= "Do you really want to Close the selected Window?";
 const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\nCopyright 2000 by Henning Kiel\nhkiel@aros.org\n\nThis program is part of AROS";
@@ -207,20 +236,25 @@ char *string;
 
   NewList(list);
 
+  /* Get Intuition's first Screen */
   lock = LockIBase(0);
   scr = IntuitionBase->FirstScreen;
   UnlockIBase(lock);
+
+  /* Traverse through all Screens */
   while( scr )
   {
-    sprintf(tmp,"Screen:   %p %4dx%4d @%4d.%4d \"%s\",\"%s\"",scr,scr->Width,scr->Height,scr->LeftEdge,scr->TopEdge,scr->Title,scr->DefaultTitle);
+    sprintf(tmp,"Screen:   %p %4dx%4d @%4d.%4d   \"%s\",\"%s\"",scr,scr->Width,scr->Height,scr->LeftEdge,scr->TopEdge,scr->Title,scr->DefaultTitle);
     string = strdup(tmp);
     node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
     AddTail(list, node);
     SetNodeName(node, string);
+
+    /* Traverse through all Windows of current Screen */
     win = scr->FirstWindow;
     while( win )
     {
-      sprintf(tmp,"  Window: %p %4dx%4d @%4d,%4d \"%s\"",win,win->Width,win->Height,win->LeftEdge,win->TopEdge,win->Title);
+      sprintf(tmp,"  Window: %p %4dx%4d @%4d,%4d %c \"%s\"",win,win->Width,win->Height,win->LeftEdge,win->TopEdge,(IsWindowVisible(win)?' ':'H'),win->Title);
       string = strdup(tmp);
       node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
       AddTail(list, node);
@@ -258,151 +292,10 @@ struct Gadget *gt_init()
     return gad;
 }
 
-VOID update_actionglist()
-{
-struct Gadget *gad;
-int i, type, max;
-
-  getsw(&type);
-  gad = actiong;
-
-  if( type == Screen_type )
-  {
-    max = ACTIONGLENS;
-  }
-  else if( type == None_type )
-  {
-    max = ACTIONGLENW;
-  }
-  else
-  {
-    max = 0;
-  }
-  for ( i = ACTIONGLENW ; i > 0 ; i-- )
-  {
-    if ( i > max )
-    {
-      OnGadget(gad,Window,NULL);
-      OnMenu(Window,actionmenu[i-1]);
-    }
-    else
-    {
-      OffGadget(gad,Window,NULL);
-      OffMenu(Window,actionmenu[i-1]);
-    }
-    gad = gad->NextGadget;
-  }
-}
-
-VOID makemenus()
-{
-    menus = CreateMenusA(nm,NULL);
-    LayoutMenusA(menus, vi, NULL);
-    SetMenuStrip(Window, menus);
-}
-
-struct Gadget *makegadgets(struct Gadget *gad)
-{
-    listviewgad.ng_VisualInfo = vi;
-    updategad.ng_VisualInfo = vi;
-    rescuegad.ng_VisualInfo = vi;
-    killgad.ng_VisualInfo = vi;
-    frontgad.ng_VisualInfo = vi;
-    backgad.ng_VisualInfo = vi;
-    origingad.ng_VisualInfo = vi;
-    activategad.ng_VisualInfo = vi;
-    zipgad.ng_VisualInfo = vi;
-    
-    initlvnodes(&lv_list);
-    gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
-    		GTLV_Labels,		(IPTR)&lv_list,
-    		GTLV_ShowSelected,	NULL,
-    		GTLV_ReadOnly,		FALSE,
-		TAG_DONE);
-    screenlistg = gad;
-
-    gad = CreateGadget(BUTTON_KIND, gad, &updategad,
-		TAG_DONE);
-
-    gad = CreateGadget(BUTTON_KIND, gad, &rescuegad,
-		TAG_DONE);
-
-    gad = CreateGadget(BUTTON_KIND, gad, &killgad,
-		TAG_DONE);
-    actiong = gad;
-
-    gad = CreateGadget(BUTTON_KIND, gad, &frontgad,
-		TAG_DONE);
-
-    gad = CreateGadget(BUTTON_KIND, gad, &backgad,
-		TAG_DONE);
-
-    gad = CreateGadget(BUTTON_KIND, gad, &origingad,
-		TAG_DONE);
-
-    gad = CreateGadget(BUTTON_KIND, gad, &activategad,
-		TAG_DONE);
-
-    gad = CreateGadget(BUTTON_KIND, gad, &zipgad,
-		TAG_DONE);
-
-    if (!gad) {
-        FreeGadgets(glist);
-        printf("GTDemo: Error creating gadgets\n");
-    }
-    return gad;
-}
-
-VOID open_lib()
-{
-  IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library",0L);
-  GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0L);
-  GadToolsBase = OpenLibrary("gadtools.library",0L);
-}
-
-VOID open_window()
-{
-  Window = OpenWindowTags ( NULL
-	, WA_Title,	    "WiMP"
-	, WA_Left,	    0
-	, WA_Top,	    0
-	, WA_Width,	    520
-	, WA_Height,	    180
-	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
-			    | IDCMP_MOUSEBUTTONS
-			    | IDCMP_GADGETUP
-			    | IDCMP_MENUPICK
-			    | IDCMP_CLOSEWINDOW
-	, WA_Flags,	    WFLG_DRAGBAR
-			    | WFLG_DEPTHGADGET
-			    | WFLG_CLOSEGADGET
-			    | WFLG_NOCAREREFRESH
-			    | WFLG_SMART_REFRESH
-			    | WFLG_ACTIVATE
-	, WA_SimpleRefresh, TRUE
-	, TAG_END
-    );
-}
-
-VOID close_window()
-{
-  CloseWindow(Window);
-  FreeGadgets(glist);
-  FreeVisualInfo(vi);
-  UnlockPubScreen(NULL, Screen);
-}
-
-VOID close_lib()
-{
-  CloseLibrary((struct Library *)IntuitionBase);
-  CloseLibrary((struct Library *)GfxBase);
-  CloseLibrary(GadToolsBase);
-}
-
 IPTR getsw(int *type)
 {
 IPTR gadget;
-IPTR xptr = NULL;
+IPTR xptr = 0;
 
   GT_GetGadgetAttrs(screenlistg,Window,NULL,
       GTLV_Selected, (IPTR)&gadget,
@@ -440,19 +333,173 @@ IPTR xptr = NULL;
   }
 }
 
+VOID update_actionglist()
+{
+struct Gadget *gad;
+int i, type, max;
+
+  getsw(&type);
+  gad = actiong;
+
+  if( type == Screen_type )
+  {
+    max = ACTIONGLENS;
+  }
+  else if( type == None_type )
+  {
+    max = ACTIONGLENW;
+  }
+  else
+  {
+    max = 0;
+  }
+  for ( i = ACTIONGLENW ; i > 0 ; i-- )
+  {
+    if ( i > max )
+    {
+      OnGadget(gad,Window,NULL);
+      OnMenu(Window,actionmenu[i-1]);
+    }
+    else
+    {
+      OffGadget(gad,Window,NULL);
+      OffMenu(Window,actionmenu[i-1]);
+    }
+    gad = gad->NextGadget;
+  }
+return;
+}
+
+VOID makemenus()
+{
+    menus = CreateMenusA(nm,NULL);
+    LayoutMenusA(menus, vi, NULL);
+    SetMenuStrip(Window, menus);
+}
+
+struct Gadget *makegadgets(struct Gadget *gad)
+{
+int i;
+struct NewGadget *buttons[] =
+{
+  &aboutgad,
+  &updategad,
+  &rescuegad,
+  &killgad,
+  &frontgad,
+  &backgad,
+  &origingad,
+  &activategad,
+  &zipgad,
+  &hidegad,
+  &showgad
+};
+#define BUTTONALEN	4
+#define BUTTONBLEN	7
+#define BUTTONLEN	(BUTTONALEN+BUTTONBLEN)
+
+  listviewgad.ng_VisualInfo = vi;
+  for ( i = 0 ; i < BUTTONLEN ; i++ )
+  {
+    buttons[i]->ng_VisualInfo = vi;
+  }
+    
+  initlvnodes(&lv_list);
+  gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
+		GTLV_Labels,		(IPTR)&lv_list,
+		GTLV_ShowSelected,	NULL,
+		GTLV_ReadOnly,		FALSE,
+		TAG_DONE);
+  screenlistg = gad;
+
+  for ( i = 0 ; i < BUTTONALEN ; i++ )
+  {
+    gad = CreateGadget(BUTTON_KIND, gad, buttons[i],
+		TAG_DONE);
+  }
+  actiong = gad;
+
+  for ( ; i < BUTTONLEN ; i++ )
+  {
+    gad = CreateGadget(BUTTON_KIND, gad, buttons[i],
+		TAG_DONE);
+  }
+
+  if (!gad)
+  {
+    FreeGadgets(glist);
+    printf("GTDemo: Error creating gadgets\n");
+  }
+
+return gad;
+}
+
+VOID open_lib()
+{
+  IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library",0L);
+  GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0L);
+  GadToolsBase = OpenLibrary("gadtools.library",0L);
+}
+
+VOID open_window()
+{
+  Window = OpenWindowTags ( NULL
+	, WA_Title,	    TITLE_TXT
+	, WA_Left,	    0
+	, WA_Top,	    0
+	, WA_Width,	    580
+	, WA_Height,	    180
+	, WA_IDCMP,	    IDCMP_REFRESHWINDOW
+			    | IDCMP_MOUSEBUTTONS
+			    | IDCMP_GADGETUP
+			    | IDCMP_MENUPICK
+			    | IDCMP_CLOSEWINDOW
+	, WA_Flags,	    WFLG_DRAGBAR
+			    | WFLG_DEPTHGADGET
+			    | WFLG_CLOSEGADGET
+			    | WFLG_NOCAREREFRESH
+			    | WFLG_SMART_REFRESH
+			    | WFLG_ACTIVATE
+	, WA_SimpleRefresh, TRUE
+	, TAG_END
+    );
+}
+
+VOID close_window()
+{
+  CloseWindow(Window);
+  FreeGadgets(glist);
+  FreeVisualInfo(vi);
+  UnlockPubScreen(NULL, Screen);
+}
+
+VOID close_lib()
+{
+  CloseLibrary((struct Library *)IntuitionBase);
+  CloseLibrary((struct Library *)GfxBase);
+  CloseLibrary(GadToolsBase);
+}
+
 VOID rescue_all()
 {
 struct Screen *scr;
 struct Window *win;
 
+  /* Get Intuition's first Screen */
   lock = LockIBase(0);
   scr = IntuitionBase->FirstScreen;
   UnlockIBase(lock);
+
+  /* Traverse through all Screens */
   while( scr )
   {
     win = scr->FirstWindow;
+    /* Traverse through all Windows of current Screen */
     while( win )
     {
+      /* Move Window onto the Screen if outside */
+      /* TODO:	calculate reasonable values:
+		eg. this way only the Close Gadget my be visible :-( */
       if(  win->LeftEdge < 0
 	|| win->TopEdge  < 0
 	|| win->LeftEdge > scr->Width
@@ -468,8 +515,16 @@ struct Window *win;
 
 VOID update_list()
 {
+  /* Detach List from Gadget */
+  GT_SetGadgetAttrs(screenlistg,Window,NULL,
+      GTLV_Labels, (IPTR)~0,
+      TAG_DONE);
+
+  /* Recalculate List */
   freelvnodes(&lv_list);
   initlvnodes(&lv_list);
+
+  /* Attach List to Gadget */
   GT_SetGadgetAttrs(screenlistg,Window,NULL,
       GTLV_Labels, (IPTR)&lv_list,
       GTLV_Selected, (IPTR)~0,
@@ -504,7 +559,7 @@ int quit=0;
 
   es.es_StructSize = sizeof(es);
   es.es_Flags	= 0;
-  es.es_Title	= "WiMP - The Window Manipulation Program";
+  es.es_Title	= TITLE_TXT;
 
   while(quit==0)
   {
@@ -645,6 +700,20 @@ int quit=0;
 				}
 				update_list();
 				break;
+			  case 8: /* Hide */
+				object = getsw(&type);
+				if(type==Window_type)
+				{
+				  HideWindow((struct Window *)object);
+				}
+				break;
+			  case 9: /* Show */
+				object = getsw(&type);
+				if(type==Window_type)
+				{
+				  ShowWindow((struct Window *)object);
+				}
+				break;
 			}
 			break;
 		    case 2: /* Generic */
@@ -676,6 +745,30 @@ int quit=0;
 		switch (((struct Gadget *) msg->IAddress)->GadgetID)
 		{
 		  case ID_UPDATE:
+			update_list();
+			break;
+
+		  case ID_ABOUT:
+			es.es_TextFormat = ABOUT_TXT;
+			es.es_GadgetFormat = CONTINUE_TXT;
+			EasyRequest(Window,&es,NULL,NULL,NULL);
+			break;
+
+		  case ID_SHOW:
+			object = getsw(&type);
+			if(type==Window_type)
+			{
+			  ShowWindow((struct Window *)object);
+			}
+			update_list();
+			break;
+
+		  case ID_HIDE:
+			object = getsw(&type);
+			if(type==Window_type)
+			{
+			  HideWindow((struct Window *)object);
+			}
 			update_list();
 			break;
 
