@@ -243,6 +243,9 @@ static int MySysErrorHandler (Display * display)
     return 0;
 }
 
+/* Semaphore needed to lock creation of the X11 event task */
+static struct SignalSemaphore x11EventTaskSema;
+
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
     int t;
@@ -260,9 +263,12 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 
 #warning FIXME: this is a hack
     IntuiBase = IntuitionBase;
+    
+    InitSemaphore(&x11EventTaskSema);
 
     return True;
 }
+
 
 
 int intui_open (struct IntuitionBase * IntuitionBase)
@@ -285,18 +291,25 @@ int intui_open (struct IntuitionBase * IntuitionBase)
 	    DisplayHeight (GetSysDisplay (), GetSysScreen ());
     }
     
-    if (!GetPrivIBase(IntuitionBase)->DriverData) /* First time opened ? */
+    /* To avoid a race condition problem where two X11 event tasks are created, we
+       semaphore protect it
+    */
+    
+    if (AttemptSemaphore(&x11EventTaskSema))
     {
     	inputDevice = FindTask("input.device");
 
-    	
         /* Create the X11 event task */
     	GetPrivIBase(IntuitionBase)->DriverData = (APTR)CreateX11EventTask(IntuitionBase);
     	if (GetPrivIBase(IntuitionBase)->DriverData)
     	{
     	    success = TRUE;
+
     	}
-    	
+	else
+	{
+	     ReleaseSemaphore(&x11EventTaskSema);
+	}
 
     } /* if (first time opened) */
     else
