@@ -48,7 +48,7 @@ struct Clock_DATA
 
 /*** Methods ****************************************************************/
 
-IPTR Clock$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
+IPTR Clock__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data;
     struct TagItem  	*ti;
@@ -95,13 +95,13 @@ IPTR Clock$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
-IPTR Clock$OM_DISPOSE(Class *cl, Object *obj, Msg msg)
+IPTR Clock__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
     return DoSuperMethodA(cl, obj, msg);
 }
 
 
-IPTR Clock$OM_SET(Class *cl, Object *obj, struct opSet *msg)
+IPTR Clock__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
     struct ClockData  	  old_clockdata;
@@ -157,7 +157,7 @@ IPTR Clock$OM_SET(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
-IPTR Clock$OM_GET(Class *cl, Object *obj, struct opGet *msg)
+IPTR Clock__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
     IPTR    	      retval = TRUE;
@@ -197,7 +197,7 @@ IPTR Clock$OM_GET(Class *cl, Object *obj, struct opGet *msg)
 }
 
 
-IPTR Clock$MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Clock__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
     
@@ -216,7 +216,7 @@ IPTR Clock$MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 
-IPTR Clock$MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
  
@@ -240,7 +240,7 @@ IPTR Clock$MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 }
 
 
-IPTR Clock$MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Clock__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl, obj, (Msg)msg);
     
@@ -306,7 +306,7 @@ static void DrawThinHand(struct RastPort *rp, WORD cx, WORD cy, DOUBLE angle, WO
     Draw(rp, x, y);
 }
 
-IPTR Clock$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
     struct RastPort 	 *obj_rp;
@@ -524,7 +524,7 @@ IPTR Clock$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
-IPTR Clock$MUIM_Clock_Timer(Class *cl, Object *obj, Msg msg)
+IPTR Clock__MUIM_Clock_Timer(Class *cl, Object *obj, Msg msg)
 {
     struct Clock_DATA *data;
     struct ClockData 	  cd;

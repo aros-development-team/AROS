@@ -51,7 +51,7 @@ struct PreferencesWindow_DATA
 
 /*** Methods ****************************************************************/
 
-IPTR PreferencesWindow$OM_NEW
+IPTR PreferencesWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -183,7 +183,7 @@ error:
     return NULL;
 }
 
-IPTR PreferencesWindow$OM_DISPOSE
+IPTR PreferencesWindow__OM_DISPOSE
 (
     Class *CLASS, Object *self, Msg message 
 )

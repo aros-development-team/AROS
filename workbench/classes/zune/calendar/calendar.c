@@ -54,7 +54,7 @@ STRPTR def_daylabels[] =
 
 /*** Methods ****************************************************************/
 
-IPTR Calendar$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
+IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data;
     struct TagItem       *ti;
@@ -114,7 +114,7 @@ IPTR Calendar$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
-IPTR Calendar$OM_DISPOSE(Class *cl, Object *obj, Msg msg)
+IPTR Calendar__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -144,7 +144,7 @@ LONG NumMonthDays(struct ClockData *cd)
     return monthday;
 }
 
-IPTR Calendar$OM_SET(Class *cl, Object *obj, struct opSet *msg)
+IPTR Calendar__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     struct ClockData	 old_clockdata;
@@ -227,7 +227,7 @@ IPTR Calendar$OM_SET(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
-IPTR Calendar$OM_GET(Class *cl, Object *obj, struct opGet *msg)
+IPTR Calendar__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     IPTR    	    	 retval = TRUE;
@@ -268,7 +268,7 @@ IPTR Calendar$OM_GET(Class *cl, Object *obj, struct opGet *msg)
 }
 
 
-IPTR Calendar$MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     struct RastPort 	 rp;
@@ -314,7 +314,7 @@ IPTR Calendar$MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 
-IPTR Calendar$MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Calendar__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
  
@@ -324,7 +324,7 @@ IPTR Calendar$MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 }
 
 
-IPTR Calendar$MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Calendar__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
 
@@ -342,7 +342,7 @@ IPTR Calendar$MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 }
 
 
-IPTR Calendar$MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     struct Region   	*region;
@@ -545,7 +545,7 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
 
 
-IPTR Calendar$MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
     
