@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: SetLocale CLI command
+    Lang: English              
+ */
+
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <libraries/locale.h>
