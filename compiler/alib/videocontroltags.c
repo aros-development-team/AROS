@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of graphics.library/VideoControl()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE ULONG
 #include <graphics/view.h>
 #include <utility/tagitem.h>

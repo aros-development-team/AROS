@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: amiga.lib function CallHook() which doesn't use utility.library

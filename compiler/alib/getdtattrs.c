@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of datatypes.library/GetDTAttrsA()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE ULONG
 #include <intuition/classusr.h>
 #include <utility/tagitem.h>

@@ -1,10 +1,11 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of dos.library/NewLoadSeg()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE BPTR
 #include <dos/bptr.h>
 #include <utility/tagitem.h>

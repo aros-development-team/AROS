@@ -1,10 +1,11 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of amigaguide.library/OpenAmigaGuideA()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE AMIGAGUIDECONTEXT
 #include <utility/tagitem.h>
 

@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BOOPSI functions DoMethodA() and DoMethod()
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <intuition/classes.h>
 #include <proto/alib.h>

@@ -1,10 +1,11 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of workbench.library/OpenWorkbenchObjectA()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE BOOL
 #include <dos/bptr.h>
 #include <utility/tagitem.h>

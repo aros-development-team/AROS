@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1997-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a gadtools menu
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE struct Menu *
 
 #include "alib_intern.h"

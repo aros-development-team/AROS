@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BOOPSI functions DoSuperMethodA() and DoSuperMethod()
     Lang: english 
 */
+
 #include <intuition/classes.h>
 #include <stdarg.h>
 #include <proto/alib.h>

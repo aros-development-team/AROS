@@ -1,10 +1,11 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of dos.library/CreateNewProc()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE struct Process *
 #include <dos/dosextens.h>
 #include <utility/tagitem.h>

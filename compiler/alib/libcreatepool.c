@@ -1,11 +1,9 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     Original version from libnix
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #define AROS_ALMOST_COMPATIBLE
 #include "pool.h"
 
