@@ -7,6 +7,7 @@
 */
 #include "graphics_intern.h"
 #include <proto/oop.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 

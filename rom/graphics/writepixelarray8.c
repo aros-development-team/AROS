@@ -5,12 +5,14 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH7(LONG, WritePixelArray8,
 

@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <proto/layers.h>
+#include <proto/exec.h>
 #include <graphics/clip.h>
 
 /*****************************************************************************

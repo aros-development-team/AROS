@@ -5,6 +5,7 @@
     Desc: Graphics function SetChipRev()
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************

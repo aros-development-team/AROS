@@ -1,6 +1,10 @@
 #ifndef DISPINFO_H
 #define DISPINFO_H
 
+#ifndef PROTO_GRAPHICS_H
+#include <proto/graphics.h>
+#endif
+
 /****************************************************************************************/
 
 /* stegerg: check */

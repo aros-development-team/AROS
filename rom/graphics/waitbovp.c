@@ -5,6 +5,7 @@
     Desc: Graphics function WaitBOVP()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/view.h>
 
 /*****************************************************************************

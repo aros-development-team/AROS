@@ -5,6 +5,7 @@
     Desc: Graphics function VideoControl()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/view.h>
 #include <utility/tagitem.h>
 

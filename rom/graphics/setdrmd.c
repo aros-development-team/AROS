@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 #include <proto/oop.h>
 
 /*****************************************************************************
