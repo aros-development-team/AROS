@@ -174,6 +174,7 @@ static IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     struct TagItem *tag, *tstate;
     struct PropGData *data;
     BOOL set_flag = FALSE;
+    BOOL rerender = FALSE;
     
     data = INST_DATA(cl, o);
     tstate = msg->ops_AttrList;
@@ -187,19 +188,19 @@ static IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
 		NotifyTop(cl, o, msg->ops_GInfo, tag->ti_Data, TRUE);
 		/* Set this afterwards, since NotifyTop checks top != data->top */
 		data->top = tag->ti_Data;
- 	    	set_flag= TRUE;
+ 	    	set_flag= TRUE; rerender = TRUE;
 		retval = 1UL;
 		break;
     	
     	    case PGA_Visible:
 		data->visible = tag->ti_Data;
-		set_flag = TRUE;
+		set_flag = TRUE; rerender = TRUE;
 		retval = 1UL;
 		break;
     	    
 	    case PGA_Total:
 		data->total = tag->ti_Data;
-    		set_flag = TRUE;
+    		set_flag = TRUE; rerender = TRUE;
 		retval = 1UL;
 
 		break;
@@ -213,21 +214,25 @@ static IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
 	    
 	    case PGA_HorizPot:
 	    	data->propinfo.HorizPot	= (UWORD)tag->ti_Data;
+		rerender = TRUE;
 	    	retval = 1UL;
 	    	break;
 
 	    case PGA_HorizBody:
 	    	data->propinfo.HorizBody= (UWORD)tag->ti_Data;
+		rerender = TRUE;
 	    	retval = 1UL;
 	    	break;
 
 	    case PGA_VertPot:
 	    	data->propinfo.VertPot	= (UWORD)tag->ti_Data;
+		rerender = TRUE;
 	    	retval = 1UL;
 	    	break;
 
 	    case PGA_VertBody:
 	    	data->propinfo.VertBody = (UWORD)tag->ti_Data;
+		rerender = TRUE;
 	    	retval = 1UL;
 	    	break;
 		
@@ -294,6 +299,19 @@ static IPTR set_propgclass(Class *cl, Object *o,struct opSet *msg)
     	    bodyptr,
     	    potptr
     	);
+    }
+    
+    /* The two last tests below may be redundant */
+    if (rerender && (OM_NEW != msg->MethodID) && (NULL != msg->ops_GInfo))
+    {
+        struct RastPort *rp;
+	
+	rp = ObtainGIRPort(msg->ops_GInfo);
+    	if (NULL != rp)
+	{
+	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_REDRAW);
+	    ReleaseGIRPort(rp);
+	}
     }
 
     return (retval);
