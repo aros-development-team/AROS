@@ -4,6 +4,7 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
     file3="";
     fnhtml="";
     toc=0;
+    printf ("") > "html.lab";
 }
 /\\chapter/ {
     if (match($0,/\\chapter{[^}]*}/))
@@ -40,6 +41,15 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	checkfile();
 	print "<H3><A HREF=\""fnhtml"#"toc"."subsection"\">"chapter"."section"."subsection" "substr($0,RSTART+12,RLENGTH-13)"</A></H3>";
 	toc++;
+    }
+}
+/\\label/ {
+    if (match($0,/\\label{[^}]*}/))
+    {
+	label=substr($0,RSTART+7,RLENGTH-8);
+	fn=FILENAME;
+	sub(/.src$/,".html",fn);
+	print label " " fn >> "html.lab";
     }
 }
 END {
