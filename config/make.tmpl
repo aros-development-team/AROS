@@ -1329,6 +1329,19 @@ ifdef USE_ZLIB
 %(libs) := $(%(libs)) -larosz
 %(deps) := $(%(deps)) $(LIBDIR)/libarosz.a
 endif
+ifdef USE_COOLIMAGESLIB
+%(libs) := $(%(libs)) -lcoolimages
+%(deps) := $(%(deps)) $(LIBDIR)/libcoolimages.a
+endif
+ifdef USE_BGUILIB
+%(libs) := $(%(libs)) -lbgui
+%(deps) := $(%(deps)) $(LIBDIR)/libbgui.a
+endif
+ifdef USE_REQTOOLSLIB
+%(libs) := $(%(libs)) -lreqtoolsstubs
+%(deps) := $(%(deps)) $(LIBDIR)/libreqtoolsstubs.a
+endif
+
 ifdef USE_CLIB
 %(libs) := $(%(libs)) -larosc
 %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
@@ -1341,18 +1354,6 @@ endif
 ifdef USE_MLIB
 %(libs) := $(%(libs)) -larosm
 %(deps) := $(%(deps)) $(LIBDIR)/libarosm.a
-endif
-ifdef USE_BGUILIB
-%(libs) := $(%(libs)) -lbgui
-%(deps) := $(%(deps)) $(LIBDIR)/libbgui.a
-endif
-ifdef USE_REQTOOLSLIB
-%(libs) := $(%(libs)) -lreqtoolsstubs
-%(deps) := $(%(deps)) $(LIBDIR)/libreqtoolsstubs.a
-endif
-ifdef USE_COOLIMAGESLIB
-%(libs) := $(%(libs)) -lcoolimages
-%(deps) := $(%(deps)) $(LIBDIR)/libcoolimages.a
 endif
 
 #this MUST be always linked
