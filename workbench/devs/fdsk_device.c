@@ -423,12 +423,13 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
     
     D(bug("fdsk_device/read: offset = %d  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
     
+#if 0
     if(iotd->iotd_SecLabel)
     {
         D(bug("fdsk_device/read: iotd->iotd_SecLabel is != NULL -> returning IOERR_NOCMD\n"));
 	return IOERR_NOCMD;
     }
-    
+#endif
     
     if(Seek(unit->file, iotd->iotd_Req.io_Offset, OFFSET_BEGINNING) == -1)
     {
@@ -473,10 +474,10 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
 {
     STRPTR 	buf;
     LONG 	size, subsize;
-    
+#if 0
     if(iotd->iotd_SecLabel)
 	return IOERR_NOCMD;
-	
+#endif
     if(Seek(unit->file, iotd->iotd_Req.io_Offset, OFFSET_BEGINNING) == -1)
 	return TDERR_SeekError;
 	
