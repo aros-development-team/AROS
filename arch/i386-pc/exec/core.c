@@ -7,6 +7,7 @@
 */
 
 #include "core.h"
+#include "traps.h"
 //#include "include/machine.i"
 #include <asm/io.h>
 #include <exec/types.h>
@@ -19,6 +20,7 @@ struct view { unsigned char sign; unsigned char attr; };
 extern unsigned int cached_irq_mask;
 extern unsigned long io_apic_irqs;
 extern struct irqDescriptor irq_desc[];
+void handle_IRQ_event(unsigned int irq, struct pt_regs * regs, struct irqServer * is);
 
 /*
  * Build all interrupt assemble code needed. We use some very ugly macros
@@ -28,7 +30,7 @@ extern struct irqDescriptor irq_desc[];
 BUILD_COMMON_IRQ()
 
 #define BI(x,y) \
-	BUILD_IRQ(##x##y)
+	BUILD_IRQ(x##y)
 
 #define BUILD_16_IRQS(x) \
 	BI(x,0) BI(x,1) BI(x,2) BI(x,3) \
@@ -197,16 +199,16 @@ void disable_irq(unsigned int irq)
 
 void enable_irq(unsigned int irq)
 {
-	switch (irq_desc[irq].id_depth) {
+    switch (irq_desc[irq].id_depth)
+    {
+	case 0: break;
 	case 1:
-		irq_desc[irq].id_status &= ~IRQ_DISABLED;
-		irq_desc[irq].id_handler->ic_enable(irq);
-		/* fall throught */
+	    irq_desc[irq].id_status &= ~IRQ_DISABLED;
+	    irq_desc[irq].id_handler->ic_enable(irq);
+	    /* fall throught */
 	default:
 		irq_desc[irq].id_depth--;
-		break;
-	case 0:
-	}
+    }
 }
 
 /*
@@ -262,7 +264,7 @@ static struct irqServer VBlank = { VBL_handler, "VBlank", NULL };
 #define HZ	50
 #define LATCH	((1193180 + 25)/50)
 
-void irqSet(int irq, struct intServer *is)
+void irqSet(int irq, struct irqServer *is)
 {
     if (is)
     {
@@ -280,12 +282,16 @@ void irqSetup()
     cached_irq_mask = 0xffff;
     io_apic_irqs = 0;
 
+#if 0
     asm("rep\n\tstosb"
         :
         :"eax"(0),          /* FIll with 0 */
          "D"(&irq_desc),    /* irq_desc table */
          "ecx"(512/4));
-    
+#else
+    bzero(&irq_desc, 512);
+#endif
+
     for (i = 0; i<NR_IRQS; i++)
     {
         irq_desc[i].id_handler = &i8259_controller;
