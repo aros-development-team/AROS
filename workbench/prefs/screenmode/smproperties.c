@@ -73,9 +73,12 @@ Object *ScreenModeProperties__OM_NEW(Class *CLASS, Object *self, struct opSet *m
         goto err;
     
     data = INST_DATA(CLASS, self);    
-    data->width  = width;
-    data->height = height;
-    data->depth  = depth;
+    
+    data->width      = width;
+    data->height     = height;
+    data->depth      = depth;
+    data->def_width  = def_width;
+    data->def_height = def_height;
     
     DoMethod
     (
@@ -223,6 +226,8 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 		        SetAttrs(data->width, no_notify, TRUE, MUIA_Numeric_Value, width, TAG_DONE);
 		    else
 		        DoMethod(data->width, MUIM_Numeric_SetDefault);
+		    
+		    nnset(data->def_width, MUIA_Selected, width == -1);
 		}
 		break;
 		
@@ -234,6 +239,8 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 		        SetAttrs(data->height, no_notify, TRUE, MUIA_Numeric_Value, height, TAG_DONE);
 		    else
 		        DoMethod(data->height, MUIM_Numeric_SetDefault);
+		    
+		    nnset(data->def_height, MUIA_Selected, height == -1);
 		}
 		break;
 	    
@@ -264,11 +271,17 @@ IPTR ScreenModeProperties__OM_GET(Class *CLASS, Object *self, struct opGet *mess
             break;
         
 	case MUIA_ScreenModeProperties_Width:
-	    *message->opg_Storage = XGET(data->width, MUIA_Numeric_Value);
+	    if (XGET(data->def_width, MUIA_Selected) == TRUE)
+	        *message->opg_Storage = -1;
+	    else
+	        *message->opg_Storage = XGET(data->width, MUIA_Numeric_Value);
             break;
         
 	case MUIA_ScreenModeProperties_Height:
-	    *message->opg_Storage = XGET(data->height, MUIA_Numeric_Value);
+	    if (XGET(data->def_height, MUIA_Selected) == TRUE)
+	        *message->opg_Storage = -1;
+	    else
+	        *message->opg_Storage = XGET(data->height, MUIA_Numeric_Value);
             break;
         
 	case MUIA_ScreenModeProperties_Depth:
