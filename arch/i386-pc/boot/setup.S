@@ -92,6 +92,8 @@ start_sys_seg:
     0x080   0x10    hd0 drive table
     0x090   0x10    hd1 drive table
 
+    Things that are set up later...
+
     0x0a0   B	    X86 model: 3=386, 4=486...
     0x0a2   B       Model
     0x0a3   B       Mask
@@ -104,131 +106,7 @@ start_sys_seg:
     0x1ff   B	    Pointing device indicator. 0xaa - device installed
 */
 
-start_of_setup:
-
-! Detect CPU type. 0=8088 1=v20 2=80186 3=80286...
-
-		mov	ax,-1
-		mov	(0xa8),ax
-		mov	(0xaa),ax
-
-		pushf
-		cli
-		push	dx
-		push	ax
-		push	cx
-		mov	cl,#0x20	! 80186+ masks bits 5-7 at shifts,
-		mov	al,#0x01	! then shr arg,0x20 = nop. For older
-		shr	al,cl		! cpus al=0
-		test	al,al
-		jnz	detect_186
-		mov	al,#0x40
-		mul	al,al		! V30 don't clear ZF after multily
-		jz	detect_v30
-detect_086:	xor	dl,dl		! 8086 or 8088
-		jmp	detect_e1
-detect_v30:	mov	dl,#0x00	! V20 or V30
-		jmp	detect_e1
-detect_186:	push	sp		! 80286+ remembers sp before push
-		pop	ax		! older cpus - after
-		cmp	ax,sp
-		je	detect_286
-		mov	dl,#0x01	! 80186 or 80188
-		jmp	detect_e1
-detect_286:	pushf
-		pushf
-		pop	ax
-		or	ah,#0x40	! 80286 can't change NT flag in
-		push	ax		! real mode, 80386+ can do it
-		popf
-		pushf
-		pop	ax
-		popf
-		test	ah,#0x40
-		jnz	detect_386
-		mov	dl,#0x02	! 80286
-detect_e1:	jmp	detect_e2
-
-detect_386:	mov	cx,sp		! Don't cause exception 0x11
-		and	sp,#-4
-		pushfd			! Test AC flag (bit 18). It can be
-		pushfd			! changed in 80486+
-		pop	eax
-		btc	eax,#0x12
-		setc	dh
-		push	eax
-		popfd
-		pushfd
-		pop	eax
-		popfd
-		mov	sp,cx
-		shl	eax,#0x0e
-		sbb	dh,#0
-		jnz	detect_486
-		mov	dl,#0x03	! 80386
-detect_e2:	jmp	detect_end
-detect_486:	pushfd
-		pushfd			! Check ID flag (bit 21)
-		pop	eax
-		btc	eax,#0x15
-		setc	dh		! It can be changed in some 486 and
-		push	eax		! all 80586+ - this cpus support
-		popfd			! cpuid instruction
-		pushfd
-		pop	eax
-		popfd
-		shl	eax,#0x0b
-		sbb	dh,#0
-		jnz	detect_pid
-found_486:	mov	dl,#0x04	! 80486
-		jmp	detect_end
-
-detect_pid:	pushad
-		xor	eax,eax		! Check number of cpuid commands
-		.byte	0x0f,0xa2	! CPUID instruction
-
-		mov	(0xa8),eax	! Store CPUID level
-		mov	(0xb0),ebx	! Store Vendor ID first 4 chars
-		mov	(0xb4),edx	! the same, middle 4 chars
-		mov	(0xb8),ecx	! last 4 chars
-		
-		test	eax,eax		! Is this a 486?
-		jz	found_486
-		
-		xor	eax,eax		! Get CPU type
-		inc	eax
-		.byte	0x0f,0xa2
-		
-		mov	cl,al
-		and	ah,#0x0f	! Processor family
-		mov	(0xa0),ah
-		and	al,#0xf0	! Processor model
-		shr	al,#4
-		mov	(0xa2),al
-		and	cl,#0x0f	! Revision
-		mov	(0xa3),cl
-		mov	(0xac),edx	! Capabilities
-		mov	dl,(0xa0)
-
-detect_end:	pop	cx
-		pop	ax
-		mov	al,dl
-		cbw
-		pop	dx
-		popf
-
-! Detection is done. Now we have CPU info in ax
-
-		mov	(0x00),ax	! Store CPU info
-		mov	(0xa0),al
-		cmp	ax,#3
-		jae	cpu_ok
-		push	cs
-		pop	dx
-		mov	si,#bad_cpu
-		call	prtstr
-cpu_hlt:	jmp	cpu_hlt
-cpu_ok:
+start_of_setup:	/* I have removed cpu detection routine... it caused problems */
 
 ! Reset HDD controler
 
@@ -484,7 +362,7 @@ prtchr:		push	ax
 #include "video.S"
 		
 ! Even aligment
-		.byte	0
+
 		.align	16
 !
 ! Descriptor tables
@@ -503,6 +381,16 @@ gdt:
 		.word	0x9200		! data read/write
 		.word	0x00cf
 
+		.word	0xffff		!
+		.word	0x0000		! The same two for user segments
+		.word	0xfa00		!
+		.word	0x00cf		!
+
+		.word	0xffff
+		.word	0x0000
+		.word	0xf200
+		.word	0x00cf
+
 idt_48:
 		.word	0		! idt limit = 0
 		.word	0,0		! idt base = 0
@@ -511,11 +399,6 @@ gdt_48:
 		.word	3*8-1		! limit=24 -> 3 entries
 		.long	0x98200 + gdt
 
-bad_cpu:
-		.byte	13,10
-		.ascii	"AROS needs 80386 CPU or better."
-		.byte	13,10,0
-		
 .text
 endtext:
 .data

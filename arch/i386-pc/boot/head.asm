@@ -16,7 +16,7 @@
 
     0x00000008 - 0x00000808	int vectors
     0x00000900 - 0x00000b00	data from setup
-    0x00000b00 - 0x00000b18	Global Descriptor Table - 3 entries
+    0x00000b00 - 0x00000fff	Global Descriptor Table - 5 entries
     0x00001000 - ....		Kernel
     ....       - 0x0009f000	Temporary stack frame for startup code.
     0x0009f000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
@@ -133,6 +133,8 @@ copy_idts_2:	movl	%eax,(%edi)
 		xchg	%ah,%al
 		outb	%al,$0x40
 
+		call	checkCPUtype
+
 /* Call C-code kernel */
 
 		call	main
@@ -177,7 +179,7 @@ start:		cld
 /* Store new address */
 
 		movl	%edi,(gdt_base)
-		movl	$0x00000006,%ecx	/* 0x18/4 -> 3 GDT entries */
+		movl	$0x0000000a,%ecx	/* 0x18/4 -> 3 GDT entries */
 		cld
 		rep
 		movsl
@@ -237,6 +239,8 @@ copy_idts:	movl	%eax,(%edi)
 		xchg	%ah,%al 	/* BIOS did it for us */
 		outb	%al,$0x40	/* It was a bit dangerous ... */
 
+		call	checkCPUtype
+
 /* OK, head has finished its job. Go to the exec now */
 /* In future there will be "jmp ..." instead of "call" */
 
@@ -294,6 +298,121 @@ Set_cursor:	ret
 		popl	%edx
 		popl	%ebp
 		ret
+
+/* Detecting CPU type - this code has bee taken directly from linux sources */
+
+
+/*
+ * References to members of the boot_cpu_data structure.
+ */
+
+#define CPU_PARAMS	0x000009a0
+#define X86		CPU_PARAMS+0
+#define X86_VENDOR	CPU_PARAMS+1
+#define X86_MODEL	CPU_PARAMS+2
+#define X86_MASK	CPU_PARAMS+3
+#define X86_HARD_MATH	CPU_PARAMS+6
+#define X86_CPUID	CPU_PARAMS+8
+#define X86_CAPABILITY	CPU_PARAMS+12
+#define X86_VENDOR_ID	CPU_PARAMS+16
+
+checkCPUtype:
+
+	movl $-1,X86_CPUID		#  -1 for no CPUID initially
+
+/* check if it is 486 or 386. */
+/*
+ * XXX - this does a lot of unnecessary setup.  Alignment checks don't
+ * apply at our cpl of 0 and the stack ought to be aligned already, and
+ * we don't need to preserve eflags.
+ */
+
+	movl $3,X86		# at least 386
+	pushfl			# push EFLAGS
+	popl %eax		# get EFLAGS
+	movl %eax,%ecx		# save original EFLAGS
+	xorl $0x40000,%eax	# flip AC bit in EFLAGS
+	pushl %eax		# copy to EFLAGS
+	popfl			# set EFLAGS
+	pushfl			# get new EFLAGS
+	popl %eax		# put it in eax
+	xorl %ecx,%eax		# change in flags
+	andl $0x40000,%eax	# check if AC bit changed
+	je is386
+
+	movl $4,X86		# at least 486
+	movl %ecx,%eax
+	xorl $0x200000,%eax	# check ID flag
+	pushl %eax
+	popfl			# if we are on a straight 486DX, SX, or
+	pushfl			# 487SX we can't change it
+	popl %eax
+	xorl %ecx,%eax
+	pushl %ecx		# restore original EFLAGS
+	popfl
+	andl $0x200000,%eax
+	je is486
+
+	/* get vendor info */
+	xorl %eax,%eax			# call CPUID with 0 -> return vendor ID
+	cpuid
+	movl %eax,X86_CPUID		# save CPUID level
+	movl %ebx,X86_VENDOR_ID		# lo 4 chars
+	movl %edx,X86_VENDOR_ID+4	# next 4 chars
+	movl %ecx,X86_VENDOR_ID+8	# last 4 chars
+
+	orl %eax,%eax			# do we have processor info as well?
+	je is486
+
+	movl $1,%eax		# Use the CPUID instruction to get CPU type
+	cpuid
+	movb %al,%cl		# save reg for future use
+	andb $0x0f,%ah		# mask processor family
+	movb %ah,X86
+	andb $0xf0,%al		# mask model
+	shrb $4,%al
+	movb %al,X86_MODEL
+	andb $0x0f,%cl		# mask mask revision
+	movb %cl,X86_MASK
+	movl %edx,X86_CAPABILITY
+
+is486:
+	movl %cr0,%eax		# 486 or better
+	andl $0x80000011,%eax	# Save PG,PE,ET
+	orl $0x50022,%eax	# set AM, WP, NE and MP
+	jmp 2f
+
+is386:	pushl %ecx		# restore original EFLAGS
+	popfl
+	movl %cr0,%eax		# 386
+	andl $0x80000011,%eax	# Save PG,PE,ET
+	orl $2,%eax		# set MP
+2:	movl %eax,%cr0
+	call check_x87
+	xorl %eax,%eax
+	lldt %ax
+	cld			# gcc2 wants the direction flag cleared at all times
+	ret
+
+/*
+ * We depend on ET to be correct. This checks for 287/387.
+ */
+check_x87:
+	movb $0,X86_HARD_MATH
+	clts
+	fninit
+	fstsw %ax
+	cmpb $0,%al
+	je 1f
+	movl %cr0,%eax		/* no coprocessor: have to set bits */
+	xorl $4,%eax		/* set EM */
+	movl %eax,%cr0
+	ret
+	.align 0
+1:	movb $1,X86_HARD_MATH
+	.byte 0xDB,0xE4		/* fsetpm for 287, ignored by 387 */
+	ret
+
 
 gdt:
 	.word	0
