@@ -5,6 +5,7 @@
 
 #include <exec/types.h>
 #include <proto/graphics.h>
+#include <proto/muimaster.h>
 
 #include <string.h>
 #include <stdlib.h>

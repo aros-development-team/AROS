@@ -11,6 +11,7 @@
 #include <aros/debug.h>
 #include <aros/asmcall.h>
 
+#include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>

@@ -5,6 +5,7 @@
 
 #include <proto/graphics.h>
 #include <proto/layers.h>
+#include <proto/muimaster.h>
 
 #include "support.h"
 

@@ -20,6 +20,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/commodities.h>
+#include <proto/muimaster.h>
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"

@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <proto/muimaster.h>
+
 #include "mui.h"
 #include "muimaster_intern.h"
 

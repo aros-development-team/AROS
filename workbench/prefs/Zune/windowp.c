@@ -14,10 +14,10 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 #ifdef __AROS__
 #include <proto/alib.h>
-#include <proto/intuition.h>
 //#define DEBUG 1
 //#include <aros/debug.h>
 #endif

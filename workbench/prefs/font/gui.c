@@ -16,6 +16,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/muimaster.h>
 
 #include <zune/preferenceswindow.h>
 

@@ -20,6 +20,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/iffparse.h>
+#include <proto/muimaster.h>
 
 #ifdef __AROS__
 /*  #define DEBUG 1 */

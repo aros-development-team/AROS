@@ -18,6 +18,7 @@
 #include <proto/iffparse.h>
 #include <proto/dos.h>
 #include <proto/commodities.h>
+#include <proto/muimaster.h>
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"

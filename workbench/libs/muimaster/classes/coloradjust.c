@@ -20,6 +20,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/colorwheel.h>
+#include <proto/muimaster.h>
 
 #include <string.h>
 

@@ -123,6 +123,10 @@
 #include <proto/timer.h>
 #endif
 
+#ifndef PROTO_MUIMASTER_H
+#include <proto/muimaster.h>
+#endif
+
 /*********************************************************************************************/
 
 #include "vars.h"

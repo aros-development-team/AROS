@@ -6,6 +6,7 @@
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 #include <proto/utility.h>
+#include <proto/muimaster.h>
 
 #ifdef HAVE_COOLIMAGES
 #include <libraries/coolimages.h>
