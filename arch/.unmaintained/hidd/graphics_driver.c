@@ -1947,7 +1947,7 @@ void blit_glyph_fast(struct RastPort *rp, OOP_Object *fontbm, WORD xsrc
 #define CTF(x) ((struct ColorTextFont *)x)
 
 void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
-		struct GfxBase * GfxBase)
+		  struct GfxBase * GfxBase)
 {
 
 #warning Does not handle color textfonts
@@ -1995,6 +1995,9 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     tf = rp->Font;
     
     /* Check if font has character data as a HIDD bitmap */
+
+    ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
+
     hn = tfe_hashlookup(tf, GfxBase);
     if (NULL != hn)
     {
@@ -2013,6 +2016,8 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 	    tfe_hashadd(hn, tf, NULL, GfxBase);
 	}
     }
+
+    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     if (NULL != hn)
 	fontbm = hn->font_bitmap;
