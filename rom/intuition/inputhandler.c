@@ -1132,27 +1132,40 @@ void windowneedsrefresh(struct Window * w,
      its messageport, though. It only needs one such message! 
   */
   struct IntuiMessage * IM;
+  BOOL found = FALSE;
+  
+  /* Only Disble()/Enable() can be used to protect message queues */
+  
+  Disable();
+  
   IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
 
   /* reset the flag in the layer */
   w->WLayer->Flags &= ~LAYERREFRESH;
 
-  while (NULL != IM)
+  while ((NULL != IM) && !found)
   {
     /* Does the window already have such a message? */
     if (IDCMP_REFRESHWINDOW == IM->Class)
     {
 kprintf("Window %s already has a refresh message pending!!\n",w->Title);
-      return;
+      found = TRUE;
     }
     IM = (struct IntuiMessage *)IM->ExecMessage.mn_Node.ln_Succ;
   }
+  
+  Enable();
 
 kprintf("Sending a refresh message to window %s!!\n",w->Title);
-  
-  IM = alloc_intuimessage(IntuitionBase);
-  IM->Class = IDCMP_REFRESHWINDOW;
-  send_intuimessage(IM, w, IntuitionBase);
+  if (!found)
+  {
+    IM = alloc_intuimessage(IntuitionBase);
+    if (NULL != IM)
+    {
+      IM->Class = IDCMP_REFRESHWINDOW;
+      send_intuimessage(IM, w, IntuitionBase);
+    }
+  }
 }
 
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase)
