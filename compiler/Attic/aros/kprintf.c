@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/16 14:02:56  digulla
+    Fixed some bugs.
+    The v*printf() routines of linux have bugs that make them write into arbitrary
+    	memory.
+
     Revision 1.1  1996/08/15 13:24:20  digulla
     New function: kprintf() allows to print a text which is always shown to the
     user no matter what.
@@ -60,45 +65,72 @@ extern struct DosBase * DOSBase;
 
 ******************************************************************************/
 {
-    va_list args;
-    ULONG   vpargs[10];
-    int     t;
+    va_list	 args;
+    ULONG	 vpargs[10];
+    int 	 t;
     const char * ptr;
-    int     ret;
+    int 	 ret;
 
-    va_start (args, fmt);
-
-    for (t=0,ptr=fmt; t<10; )
+    if (0) /* DOSBase && Output ()) */
     {
-	while (*ptr)
+	va_start (args, fmt);
+
+	for (t=0,ptr=fmt; *ptr && t<10; )
 	{
-	    if (*ptr == '%')
+	    while (*ptr)
 	    {
-		while (isdigit(*ptr) || *ptr=='.' || *ptr=='-')
+		if (*ptr == '%')
+		{
 		    ptr ++;
 
-		switch (*ptr)
-		{
-		case '%': break;
-		case 'l':
-		    if (ptr[1] == 'd' || tolower(ptr[1]) == 'x')
+		    while (isdigit(*ptr) || *ptr=='.' || *ptr=='-')
 			ptr ++;
 
-		    vpargs[t ++] = va_arg (args, ULONG);
-		    break;
-		default:
-		    vpargs[t ++] = va_arg (args, int); break;
-		    break;
+		    switch (*ptr)
+		    {
+		    case '%': break;
+		    case 's':
+			vpargs[t] = (ULONG) va_arg (args, char *);
+			if (!vpargs[t])
+			    vpargs[t] = (ULONG) "(null)";
+
+			t ++;
+			break;
+
+		    case 'l':
+			if (ptr[1] == 'd' || tolower(ptr[1]) == 'x')
+			    ptr ++;
+
+			vpargs[t ++] = va_arg (args, ULONG);
+			break;
+		    default:
+			vpargs[t ++] = va_arg (args, int); break;
+			break;
+		    }
 		}
+
+		ptr ++;
 	    }
-
-	    ptr ++;
 	}
-    }
-    ret = VPrintf ((char *)fmt, vpargs);
-    Flush (Output ());
 
-    va_end (args);
+	ret = VPrintf ((char *)fmt, vpargs);
+	Flush (Output ());
+
+	va_end (args);
+    }
+    else
+    {
+	char buffer[1024];
+
+	va_start (args, fmt);
+
+	/* stderr stuerzt irgendwann ab :( */
+	ret = vsnprintf (buffer, sizeof (buffer), fmt, args);
+	fputs (buffer, stderr);
+	fflush (stderr);
+
+	va_end (args);
+    }
 
     return ret;
 } /* kprintf */
