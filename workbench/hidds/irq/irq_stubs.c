@@ -31,13 +31,16 @@
 #undef OOPBase
 #define OOPBase (OOP_OOPBASE(obj))
 
-#define STATIC_MID static OOP_MethodID mid
-
+#ifdef AROS_CREATE_ROM
+# define STATIC_MID OOP_MethodID mid = 0;
+#else
+# define STATIC_MID static OOP_MethodID mid;
+#endif
 /***************************************************************/
 
 BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_Id id)
 {
-    STATIC_MID;
+    STATIC_MID
     struct pHidd_IRQ_AddHandler p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
