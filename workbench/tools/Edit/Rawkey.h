@@ -4,7 +4,7 @@
 #ifndef	RAWKEY_H
 #define	RAWKEY_H
 
-#ifdef _AROS
+#ifdef __AROS__
 #include <devices/rawkeycodes.h>
 #endif
 

@@ -156,7 +156,7 @@ void handle_kbd(Project p)
 					edit = new;
 			}
 			else split_curline( p ); return;
-#ifdef _AROS
+#ifdef __AROS__
 		case PGDOWN_KEY: pg_updown(p, 1); return;
 		case PGUP_KEY:   pg_updown(p, -1); return;
 
