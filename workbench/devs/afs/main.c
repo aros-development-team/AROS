@@ -46,7 +46,7 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 	id->id_NumBlocks=volume->rootblock*2-volume->bootblocks;
 	id->id_NumBlocksUsed=volume->usedblockscount;
 	id->id_BytesPerBlock=volume->flags==0 ? BLOCK_SIZE(volume)-24 : BLOCK_SIZE(volume);
-	id->id_DiskType=volume->dostype;
+	id->id_DiskType=volume->dostype | volume->flags;
 	id->id_VolumeNode=0;		/* I think this is useless in AROS */
 	id->id_InUse=(LONG)TRUE;	/* if we are here the device should be in use! */
 	return 0;
