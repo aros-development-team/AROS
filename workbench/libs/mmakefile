@@ -23,6 +23,7 @@
 #MM         workbench-libs-mathieeedoubtrans \
 #MM         workbench-libs-partition \
 #MM         workbench-libs-reqtools \
+#MM         workbench-libs-rexxsupport \
 #MM	    workbench-libs-rexxsyslib \
 #MM         workbench-libs-realtime \
 #MM         workbench-libs-nonvolatile \
