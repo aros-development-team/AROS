@@ -90,11 +90,14 @@ int main(int argc, char **argv)
 			 	| IDCMP_MOUSEMOVE
 			 	| IDCMP_MOUSEBUTTONS
 			 	| IDCMP_REFRESHWINDOW
+				| IDCMP_CLOSEWINDOW
+				| IDCMP_NEWSIZE
 			 	| IDCMP_RAWKEY,
-			 	
-			 WA_SimpleRefresh, TRUE,
-			 WA_DragBar, TRUE,
-			 WA_CloseGadget, TRUE,
+			 WA_SimpleRefresh,	TRUE,
+			 WA_DragBar,		TRUE,
+			 WA_CloseGadget,	TRUE,
+			 WA_SizeGadget,		TRUE,
+			 WA_DepthGadget,	TRUE,
 			 TAG_DONE);
 
 
@@ -103,11 +106,11 @@ int main(int argc, char **argv)
     		    D(bug("Window opened\n"));
 
     	    	    palette = NewObject(NULL, AROSPALETTECLASS,
-    	    		GA_Left,		10,
+    	    		GA_Left,		window->BorderLeft + 5,
+    	    		GA_Top,			window->BorderTop * 2 + 5,
+    	    		GA_RelWidth,		-(window->BorderLeft + window->BorderRight + 10),
+    	    		GA_RelHeight,		-(window->BorderTop * 2 + window->BorderBottom + 30),
     	    		GA_RelVerify,		TRUE,
-    	    		GA_Top,			20,
-    	    		GA_RelWidth,		-40,
-    	    		GA_RelHeight,		-70,
     	    		GA_ID,			GID_PALETTE,
     	    		AROSA_Palette_Depth,	3,
     	    		AROSA_Palette_IndicatorWidth,	40,
@@ -118,9 +121,9 @@ int main(int argc, char **argv)
 		    prop = NewObject(NULL, PROPGCLASS,
 		    	GA_RelVerify,	TRUE,
 		    	GA_Left,	10,
-		    	GA_RelBottom,	-40,
-		    	GA_RelWidth,	-40,
-		    	GA_Height,	30,
+		    	GA_RelBottom,	-(window->BorderBottom + 22),
+    	    		GA_RelWidth,	-(window->BorderLeft + window->BorderRight + 10),
+		    	GA_Height,	18,
 		    	GA_Previous,	palette,
 		    	GA_ID,		GID_PROP,
 		    	PGA_Total,	8,
@@ -128,7 +131,6 @@ int main(int argc, char **argv)
 		    	PGA_Top,	2,
 		    	PGA_Freedom,	FREEHORIZ,
 		    	TAG_DONE);
-		    	
 
     	    	    if (palette && prop)
     	    	    {
@@ -146,8 +148,6 @@ int main(int argc, char **argv)
     	    		    DisposeObject(prop);
     	    		if (palette)
     	    		    DisposeObject(palette);
-    	    		
-
     	    	    }
     	    	    CloseWindow(window);
     	    	} /* if (window opened) */
@@ -217,6 +217,7 @@ VOID HandleEvents(struct Window *win)
 	    	break;
 	    	
 	    case IDCMP_RAWKEY:
+	    case IDCMP_CLOSEWINDOW:
 	    	terminated = TRUE;
 	    	break;
 		    					
