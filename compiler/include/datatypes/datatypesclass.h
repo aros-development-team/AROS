@@ -380,6 +380,11 @@ struct dtTrigger
 #define  STM_STOP            14
 #define  STM_RESUME          15
 #define  STM_LOCATE          16
+/* 17 is reserved for help */
+#define  STM_SEARCH          18
+#define  STM_SEARCH_NEXT     19
+#define  STM_SEARCH_PREV     20
+
 
 #define  STM_USER            100
 
