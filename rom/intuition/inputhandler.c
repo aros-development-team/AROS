@@ -1129,7 +1129,17 @@ D(bug("Window: %p\n", w));
 		case IMCODE_CLOSEWINDOW: {
 		    struct closeMessage *cmsg = (struct closeMessage *)im;
 		    
-		    L = cmsg->Window->WLayer->back;
+		    if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		    {
+		      /* not a GGZ window */
+		      L = targetlayer->back;
+		    }
+		    else
+		    {
+		      /* a GZZ window */
+		      L = targetlayer->back->back;
+		    }
+		      
 		    if (NULL != L)
 		      CheckLayersBehind = TRUE;
 		    int_closewindow(cmsg, IntuitionBase);
