@@ -4,6 +4,10 @@
 #ifndef	RAWKEY_H
 #define	RAWKEY_H
 
+#ifdef _AROS
+#include <devices/rawkeycodes.h>
+#endif
+
 /* Standard qualifiers */
 #define	ALTKEYS			(ALTLEFT | ALTRIGHT)
 #define	SHIFTKEYS		(IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)
