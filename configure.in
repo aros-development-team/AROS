@@ -194,7 +194,7 @@ case "$target_os" in
 	aros_common_cflags="-Wall -O2"
 	aros_ildflags="-nostartfiles -nostdlib -Wl,-r,-n,-e,_entry"
 	aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386"
-	aros_genmap="-Xlinker -assert -Xlinker" # FreeBSD doesn't support maps
+	aros_genmap="-Xlinker -Map -Xlinker" # FreeBSD doesn't support maps
 	aros_shared_ar="$aros_shared_ar -shared -o"
 	aros_shared_cflags="-fPIC"
 	strip_args="-x"
