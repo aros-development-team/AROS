@@ -22,7 +22,12 @@
 
 #ifndef __typedef_APTR
 #   define __typedef_APTR
-    typedef void *				APTR;	/* memory pointer */
+    typedef void *				APTR;		/* memory pointer */
+#endif
+
+#ifndef __typedef_CONST_APTR
+#   define __typedef_CONST_APTR
+    typedef const void *			CONST_APTR;	/* const memory pointer */
 #endif
 
 /* An integer which can store a pointer */
@@ -156,7 +161,7 @@
 
 #ifndef __typedef_CONST_STRPTR
 #   define __typedef_CONST_STRPTR
-    typedef const UBYTE * CONST_STRPTR;
+    typedef const UBYTE * CONST_STRPTR;	/* Pointer to constant string (NULL terminated) */
 #endif
 
 #ifndef __typedef_TEXT
