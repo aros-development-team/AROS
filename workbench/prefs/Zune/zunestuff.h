@@ -18,10 +18,10 @@ Object *MakeBackgroundPopimage(void);
 Object *MakePopframe(void);
 
 #ifndef __GNUC__
-LONG xget(Object * obj, ULONG attr);
+LONG XGET(Object * obj, ULONG attr);
 #endif
 
-#define getstring(obj) (char*)xget(obj,MUIA_String_Contents)
+#define getstring(obj) (char*)XGET(obj,MUIA_String_Contents)
 #define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
 
 struct MUI_CustomClass;
