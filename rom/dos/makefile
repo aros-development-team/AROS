@@ -56,7 +56,9 @@ setup :
 clean:
 	$(RM) $(OSGENDIR) *.err $(LIBDIR)/libdos.a
 
-test: setup-test $(EXEDIR)/datetostr $(EXEDIR)/strtodate
+TESTS = datetostr strtodate splitname
+
+test: setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
 $(EXEDIR)/%: %.c $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -DTEST $(COMMON_CFLAGS) $(LIBDIR)/startup.o \
