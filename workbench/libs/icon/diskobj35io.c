@@ -63,7 +63,7 @@ LONG MyDOSStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStr
 	    break;
 	    
 	case IFFCMD_READ:
-k	    error = (FRead((BPTR)iff->iff_Stream, cmd->sc_Buf, 1, cmd->sc_NBytes)) != cmd->sc_NBytes;
+	    error = (FRead((BPTR)iff->iff_Stream, cmd->sc_Buf, 1, cmd->sc_NBytes)) != cmd->sc_NBytes;
 	    break;
 	    
 	case IFFCMD_WRITE:
