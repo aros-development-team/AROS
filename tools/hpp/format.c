@@ -9,7 +9,6 @@
 enum modes
 {
     m_space = 0,
-    m_prespace,
     m_punct,
     m_comment,
     m_html_comment,
@@ -23,7 +22,6 @@ enum modes
 
 static const char * ModeDelim[] =
 {
-    "",
     "",
     "cpunctuation",
     "ccomment",
@@ -55,6 +53,7 @@ emit_html_char (int c, FILE * out)
     case '\\': fputs ("&#92;", out); break;
     case '{': fputs ("&#123;", out); break;
     case '}': fputs ("&#125;", out); break;
+    case ' ': fputs ("&nbsp;", out); break;
     default: fputc (c, out); break;
     }
 }
@@ -75,7 +74,7 @@ main (int argc, char ** argv)
     char * outformat;
     char * infilename;
     int    t;
-    enum modes mode = m_prespace;
+    enum modes mode = m_space;
     String ident;
     char * data;
     int    column;
@@ -202,19 +201,15 @@ main (int argc, char ** argv)
 	    }
 	    break;
 
+	case '\n':
+	    NEWMODE(m_space);
+	    fputs ("<BR>\n", stdout);
+	    column = 1;
+	    break;
+
 	case ' ':
-#if 0
-	    if (mode != m_prespace)
-	    {
-		NEWMODE(m_space);
-		putchar (c);
-	    }
-	    else
-#endif
-	    {
-		fputs ("&nbsp;", stdout);
-		column ++;
-	    }
+	    NEWMODE(m_space);
+	    emit_html_char (c, stdout);
 	    break;
 
 	case '\t':
@@ -273,7 +268,7 @@ main (int argc, char ** argv)
 
 		    while (cc--)
 		    {
-			putchar (*ptr);
+			emit_html_char (*ptr, stdout);
 			ptr ++;
 		    }
 
@@ -294,7 +289,7 @@ rem_again:
 			}
 			else
 			{
-			    putchar ('/');
+			    emit_html_char ('/', stdout);
 			    goto rem_again;
 			}
 		    }
@@ -304,10 +299,7 @@ rem_again:
 		    }
 		    else if (!htmlmode)
 		    {
-			if (c == ' ')
-			    fputs ("&nbsp;", stdout);
-			else
-			    emit_html_char (c, stdout);
+			emit_html_char (c, stdout);
 		    }
 		    else
 			putchar (c);
@@ -316,16 +308,10 @@ rem_again:
 	    else
 	    {
 		NEWMODE(m_punct);
-		putchar ('/');
+		emit_html_char ('/', stdout);
+		column ++;
 		ungetc (c, in);
 	    }
-	    break;
-
-	case '\n':
-	    NEWMODE(m_space);
-	    fputs ("<BR>\n", stdout);
-	    NEWMODE(m_prespace);
-	    column = 1;
 	    break;
 
 	case '"':
@@ -348,10 +334,6 @@ rem_again:
 		    }
 		    emit_html_char (c, stdout);
 		    column ++;
-		}
-		else if (c == ' ')
-		{
-		    fputs ("&nbsp;", stdout);
 		}
 		else if (c == '"')
 		{
@@ -404,7 +386,7 @@ rem_again:
 
 	    if (!strcmp (ident->buffer, "#include"))
 	    {
-		putchar (' ');
+		emit_html_char (' ', stdout);
 		VS_Clear (ident);
 
 		while ((c = getc (in)) != EOF)
@@ -443,7 +425,7 @@ rem_again:
 	    {
 		char buffer[64];
 
-		putchar (' ');
+		emit_html_char (' ', stdout);
 		VS_Clear (ident);
 
 		while ((c = getc (in)) != EOF)
@@ -525,7 +507,7 @@ rem_again:
 	    else if (isdigit (c))
 	    {
 		NEWMODE(m_value);
-		putchar (c);
+		emit_html_char (c, stdout);
 
 		while ((c = getc (in)) != EOF)
 		{
@@ -543,11 +525,11 @@ rem_again:
 			break;
 		    }
 
-		    putchar (c);
+		    emit_html_char (c, stdout);
 		}
 	    }
 	    else
-		putchar (c);
+		emit_html_char (c, stdout);
 
 	    break;
 
