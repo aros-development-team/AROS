@@ -45,7 +45,7 @@ PowerPC, Alpha, Sparc, HPPA and more.
 \item should be binary compatible on Amiga and source compatible on any
 other hardware
 
-\item can run as a standalone version which boots directly from harddisk,
+\item can run as a standalone version which boots directly from hard disk,
 as an emulation which opens a window on an existing OS to develop software
 and run Amiga and native applications at the same time and as a link
 library which allows to create native applications with the comfort of the
