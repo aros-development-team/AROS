@@ -14,7 +14,7 @@ sdk:
 	$(CP) -a $(LIBDIR)/* $(SDKLIBDIR)
 	$(CP) -a $(TOP)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
 	$(CP) -a scripts $(SDKDIR)
-	$(CP) AROS-SDK-Install $(SDKDIR)
+	$(CP) AROS-SDK-Install $(TOP)/LICENSE $(TOP)/ACKNOWLEDGEMENTS $(SDKDIR)
 
 #MM
 setup ::
