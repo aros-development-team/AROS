@@ -75,6 +75,7 @@ extern void aros_print_not_implemented(char *);
        required for a correctly operating system (ouch bad choice of
        words). Only complain if the function is used.
     */
+#warning TODO: Write exec/CacheControl()
     aros_print_not_implemented("CacheControl");
     return 0;
 

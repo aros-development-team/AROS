@@ -45,6 +45,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
+#warning TODO: Write exec/ChildOrphan()
     aros_print_not_implemented ("ChildOrphan");
 
     AROS_LIBFUNC_EXIT

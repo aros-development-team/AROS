@@ -68,6 +68,7 @@ extern void aros_print_not_implemented(char *);
 {
     AROS_LIBFUNC_INIT
 
+#warning TODO: Write exec/CachePreDMA()
     aros_print_not_implemented("CachePreDMA");
     return NULL;
 

@@ -48,6 +48,7 @@
     AROS_LIBBASE_EXT_DECL(struct ExpansionBase *,ExpansionBase)
     extern void aros_print_not_implemented (char *);
 
+#warning TODO: Write expansion/WriteExpansionByte()
     aros_print_not_implemented ("WriteExpansionByte");
 
     AROS_LIBFUNC_EXIT

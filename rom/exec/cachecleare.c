@@ -77,10 +77,8 @@ extern void aros_print_not_implemented(char *);
 {
     AROS_LIBFUNC_INIT
 
-    /* Hmm, what to do? */
-#ifdef DEBUG
+#warning TODO: Write exec/CacheClearE()
     aros_print_not_implemented("CacheClearE");
-#endif
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */

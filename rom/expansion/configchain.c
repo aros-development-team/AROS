@@ -46,6 +46,7 @@
     AROS_LIBBASE_EXT_DECL(struct ExpansionBase *,ExpansionBase)
     extern void aros_print_not_implemented (char *);
 
+#warning TODO: Write expansion/ConfigChain()
     aros_print_not_implemented ("ConfigChain");
 
     AROS_LIBFUNC_EXIT

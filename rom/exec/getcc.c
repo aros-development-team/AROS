@@ -53,6 +53,7 @@ extern void aros_print_not_implemented(char *);
 	you own registers and assemble them into the form of the MC680x0
 	condition codes.
     */
+#warning TODO: Write exec/GetCC()
     aros_print_not_implemented("GetCC");
     return ~0;
 

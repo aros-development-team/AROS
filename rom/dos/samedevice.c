@@ -47,6 +47,7 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     extern void aros_print_not_implemented (char *);
 
+#warning TODO: Write dos/SameDevice()
     aros_print_not_implemented ("SameDevice");
 
     return DOSFALSE;

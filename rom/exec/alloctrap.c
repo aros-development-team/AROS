@@ -45,6 +45,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
+#warning TODO: Write exec/AllocTrap()
     aros_print_not_implemented ("AllocTrap");
 
     return -1L;

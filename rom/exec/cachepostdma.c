@@ -62,6 +62,7 @@ extern void aros_print_not_implemented(char *);
 {
     AROS_LIBFUNC_INIT
 
+#warning TODO: Write exec/CachePostDMA()
     aros_print_not_implemented("CachePostDMA");
 
     AROS_LIBFUNC_EXIT

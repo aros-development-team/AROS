@@ -47,6 +47,7 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     extern void aros_print_not_implemented (char *);
 
+#warning TODO: Write dos/EndNotify()
     aros_print_not_implemented ("EndNotify");
 
     AROS_LIBFUNC_EXIT
