@@ -14,7 +14,8 @@ FILES  := test      	    \
 	  poplist   	    \
 	  popscreen 	    \
 	  crawling	    \
-	  levelmeter
+	  levelmeter	    \
+	  knob
 
 EXEDIR := $(AROSDIR)/test/Zune
 
