@@ -94,7 +94,13 @@ int main (void)
     printf ("#define AT_DeadEnd    0x%08X\n", AT_DeadEnd);
     printf ("#define AN_StackProbe 0x%08X\n", AN_StackProbe);
 
+    printf ("#define ln_Succ       %d\n", offsetof (struct Node, ln_Succ));
+    printf ("#define ln_Pred       %d\n", offsetof (struct Node, ln_Pred));
     printf ("#define ln_Pri        %d\n", offsetof (struct Node, ln_Pri));
+
+    printf ("#define lh_Head       %d\n", offsetof (struct List, lh_Head));
+    printf ("#define ln_TailPred   %d\n", offsetof (struct List, lh_TailPred));
+
 
 #ifdef UseExecstubs
     printf ("#define UseExecstubs 1\n");
