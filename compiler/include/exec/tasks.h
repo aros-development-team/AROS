@@ -78,7 +78,7 @@ struct Task
 struct StackSwapStruct
 {
     APTR  stk_Lower;   /* Lowest byte of stack */
-    ULONG stk_Upper;   /* Upper end of stack (size + Lowest) */
+    APTR  stk_Upper;   /* Upper end of stack (size + Lowest) */
     APTR  stk_Pointer; /* Stack pointer at switch point */
 };
 
@@ -102,7 +102,7 @@ struct StackSwapStruct
 #define TS_ADDED	1
 #define TS_RUN		2
 #define TS_READY	3
-#define TS_WAIT 4
+#define TS_WAIT		4
 #define TS_EXCEPT	5
 #define TS_REMOVED	6
 
@@ -126,6 +126,7 @@ struct StackSwapStruct
 /* Extended Task structure */
 struct ETask
 {
+    struct Message et_Message;
     APTR	   et_Parent;	    /* Pointer to task */
     ULONG	   et_UniqueID;
     struct MinList et_Children;     /* List of children */
