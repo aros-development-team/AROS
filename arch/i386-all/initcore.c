@@ -16,12 +16,15 @@ int supervisor;
 static void signals(int sig)
 {
     struct IntVector *iv;
-    supervisor++;
-    if (supervisor != 1)
+
+    if (supervisor)
     {
 	fprintf (stderr, "Illegal supervisor %d\n", supervisor);
 	fflush (stderr);
+	return;
     }
+
+    supervisor++;
     iv=&SysBase->IntVects[sig2inttabl[sig]];
     if (iv->iv_Code)
     {
@@ -47,7 +50,9 @@ void InitCore(void)
     };
     struct itimerval interval;
     int i;
-    struct sigaction sa={ signals, ~0ul, SA_RESTART, NULL };
+    struct sigaction sa={ signals, 0, SA_RESTART, NULL };
+
+    sigfillset (&sa.sa_mask);
 
     for(i=0;i<sizeof(sig2int)/sizeof(sig2int[0]);i++)
     {
@@ -55,8 +60,10 @@ void InitCore(void)
 	sigaction(sig2int[i][0],&sa,NULL);
     }
 
+printf ("InitCore\n");
+
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
-    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/5;
+    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
 
     setitimer (ITIMER_REAL, &interval, NULL);
 }
