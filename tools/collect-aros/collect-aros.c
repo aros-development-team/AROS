@@ -9,11 +9,11 @@
 
 extern int gensets(FILE *in, FILE *out);
 
-void fatalerror(int status)
+void fatalerror_1(int status)
 {
     if (status)
     {
-    	if (errno) perror("Internal Error");
+    	if (errno) perror("collect-aros");
 	exit(status);
     }
 }
