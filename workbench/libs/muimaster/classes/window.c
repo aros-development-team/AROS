@@ -2698,7 +2698,7 @@ static IPTR Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		STORE = FALSE;
 	    return(TRUE);
         case MUIA_Window_Window:
-            STORE = (data->wd_Flags & MUIWF_OPENED) ? ((IPTR)data->wd_RenderInfo.mri_Window) : FALSE;
+            STORE = (IPTR)data->wd_RenderInfo.mri_Window;
             return 1;
 	case MUIA_Window_ActiveObject:
 	    if ((data->wd_ActiveObject != NULL)
@@ -2818,11 +2818,7 @@ static IPTR Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_
     }
 }
 
-/*
- * Called before window is opened or resized. It determines its bounds,
- * so you can call WindowSelectDimensions() to find the final dims.
- */
-static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
+static void SetRootObjInnerSpacing(Object *obj, struct MUI_WindowData *data)
 {
     UWORD wd_innerLeft, wd_innerRight, wd_innerTop, wd_innerBottom;
 
@@ -2860,7 +2856,15 @@ static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
     {
     	muiAreaData(data->wd_RootObject)->mad_InnerBottom = wd_innerBottom;
     }
+}
 
+/*
+ * Called before window is opened or resized. It determines its bounds,
+ * so you can call WindowSelectDimensions() to find the final dims.
+ */
+static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
+{
+    SetRootObjInnerSpacing(obj, data);
     /* inquire about sizes */
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (IPTR)&data->wd_MinMax);
 /*      D(bug("*** root minmax = %ld,%ld => %ld,%ld\n", data->wd_MinMax.MinWidth, */
@@ -3047,38 +3051,66 @@ static IPTR Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Win
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     LONG left,top,width,height;
     BOOL resized;
+    Object *current_obj;
 
-    if (!(data->wd_Flags & MUIWF_OPENED)) return 0;
+    if (!(data->wd_Flags & MUIWF_OPENED))
+	return 0;
 
-    DoHideMethod(data->wd_RootObject);
-    DeinstallBackbuffer(cl, obj);
-    HideRenderInfo(&data->wd_RenderInfo);
+    current_obj = msg->originator;
 
-    /* inquire about sizes */
-    WindowMinMax(obj,data);
+    // typically originator is a group which has been added/removed a child
+    // calculate minmax of current obj
+    // if new minmax can accomodate current obj size, stop
+    // else try with its parent
+    // the resulting object will get a new layout
+    // it currently produces some redundant AskMinMax but allows
+    // to not always relayout the whole window
+
+    D(bug("RecalcDisplay on %p\n", current_obj));
+    while (current_obj != NULL)
+    {
+	DoMethod(current_obj, MUIM_AskMinMax, (IPTR)&muiAreaData(current_obj)->mad_MinMax);
+	__area_finish_minmax(current_obj, &muiAreaData(current_obj)->mad_MinMax);
+
+	D(bug("size w = %d, h = %d\n", _width(current_obj), _height(current_obj)));
+	D(bug("new w = %d-%d, h = %d-%d\n", _minwidth(current_obj), _maxwidth(current_obj),
+	      _minheight(current_obj), _maxheight(current_obj)));
+
+	if (!_between(_minwidth(current_obj), _width(current_obj), _maxwidth(current_obj))
+	    || !_between(_minheight(current_obj), _height(current_obj), _maxheight(current_obj)))
+	{
+	    current_obj = _parent(current_obj);
+	    D(bug("RecalcDisplay, try parent %p\n", current_obj));
+	}
+	else
+	{
+	    D(bug("found it\n"));
+	    break;
+	}
+    }
+
+    if (!current_obj)
+	current_obj = data->wd_RootObject;
+
+    WindowMinMax(obj, data);
+    DoHideMethod(current_obj);
     /* resize window ? */
     WindowSelectDimensions(data);
     resized = WindowResize(data);
 
-    InstallBackbuffer(cl, obj);
-
-    WindowShow(cl, obj);
-
-#if 0
-    if (msg->originator && !resized)
     {
-	left = _left(msg->originator);
-	top = _top(msg->originator);
-	width = _width(msg->originator);
-	height = _height(msg->originator);
-
-/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
-	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-			 left, top, width, height, left, top, 0);
-	MUI_Redraw(msg->originator, MADF_DRAWALL);
+	struct Window *win = data->wd_RenderInfo.mri_Window;
+	_left(data->wd_RootObject) = win->BorderLeft;
+	_top(data->wd_RootObject)  = win->BorderTop;
+	_width(data->wd_RootObject) = data->wd_Width;
+	_height(data->wd_RootObject) = data->wd_Height;
     }
+    DoMethod(current_obj, MUIM_Layout);
+    DoShowMethod(current_obj);
+
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+	MUI_Redraw(current_obj, MADF_DRAWOBJECT);
     else
-#endif
     {
 	left = data->wd_RenderInfo.mri_Window->BorderLeft;
 	top = data->wd_RenderInfo.mri_Window->BorderTop;
@@ -3087,20 +3119,9 @@ static IPTR Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Win
 	height = data->wd_RenderInfo.mri_Window->Height
 	    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-/*  	D(bug("zune_imspec_draw %s %d : %d %d %d %d\n", __FILE__, __LINE__, */
-/*  	      left, top, width, height)); */
-
-	if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
-	    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
-	else
-	{
-//	    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-//		  __LINE__, data->wd_Background, left, top, width,
-//		  height, left, top));
-	    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-			     left, top, width, height, left, top, 0);
-	    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-	}
+	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+			 left, top, width, height, left, top, 0);
+	MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     }
 
     ActivateObject(data);
