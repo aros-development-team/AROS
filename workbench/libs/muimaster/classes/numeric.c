@@ -341,17 +341,16 @@ static ULONG  Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Num
 **************************************************************************/
 static ULONG  Numeric_ValueToScale(struct IClass *cl, Object * obj, struct MUIP_Numeric_ValueToScale *msg)
 {
-    DOUBLE val;
+    LONG val;
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG min, max;
 
     min = (data->flags & NUMERIC_REVERSE) ? msg->scalemax : msg->scalemin;
     max = (data->flags & NUMERIC_REVERSE) ? msg->scalemin : msg->scalemax;
 
-    val = min + data->value
-	* (max - min) / (DOUBLE)(data->max - data->min);
+    val = min + ((data->value - data->min) * (max - min) +  (data->max - data->min)/2) / (data->max - data->min);
     val = CLAMP(val, min, max);
-    return (ULONG)((LONG)(val + 0.5));
+    return val;
 }
 
 /**************************************************************************
