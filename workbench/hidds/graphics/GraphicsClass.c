@@ -1650,15 +1650,25 @@ const HIDDT_PixelFormat stdpfs[] =
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
 	  8, 8, 1
-	, 0UL, 0UL, 0UL, 0UL
+#if AROS_BIG_ENDIAN	  
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
 	, 0, 0, 0, 0
+#else
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
+	, 0, 0, 0, 0
+#endif	
 	, 0x000000FF, 0
 	, vHidd_StdPixFmt_LUT8
 	, PF_GRAPHTYPE(Palette, Chunky)
     }, {
     	  1, 1, 1
-	, 0UL, 0UL, 0UL, 0UL
+#if AROS_BIG_ENDIAN	  
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
 	, 0, 0, 0, 0
+#else
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
+	, 0, 0, 0, 0
+#endif	
 	, 0x0000000F, 0
 	, vHidd_StdPixFmt_Plane
 	, PF_GRAPHTYPE(Palette, Planar)
@@ -1874,7 +1884,8 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG ATTRCHE
 #define PF_TRUECOLOR_AF ( PFAF(RedMask)  | PFAF(GreenMask)  | PFAF(BlueMask)  | PFAF(AlphaMask) | \
 			  PFAF(RedShift) | PFAF(GreenShift) | PFAF(BlueShift) | PFAF(AlphaShift))
 			  
-#define PF_PALETTE_AF ( PFAF(CLUTMask) | PFAF(CLUTShift) )
+#define PF_PALETTE_AF ( PFAF(CLUTMask) | PFAF(CLUTShift) | PFAF(RedMask) | PFAF(GreenMask) | \
+			PFAF(BlueMask) )
 		       
 #define PFAO(x) (aoHidd_PixFmt_ ## x)
   
@@ -1932,6 +1943,11 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG ATTRCH
 	    /* set palette stuff */
 	    pf->clut_mask	= attrs[PFAO(CLUTMask)];
 	    pf->clut_shift	= attrs[PFAO(CLUTShift)];
+
+	    pf->red_mask	= attrs[PFAO(RedMask)];
+	    pf->green_mask	= attrs[PFAO(GreenMask)];
+	    pf->blue_mask	= attrs[PFAO(BlueMask)];
+
 	    break;
     } /* shift (colormodel) */
     

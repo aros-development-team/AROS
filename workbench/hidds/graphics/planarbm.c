@@ -60,6 +60,9 @@ static OOP_Object *planarbm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
       	    { aHidd_PixFmt_StdPixFmt,	   0				}, /* 4 */
       	    { aHidd_PixFmt_CLUTShift,	   0				}, /* 5 */
 	    { aHidd_PixFmt_CLUTMask,	   0x000000FF			}, /* 6 */
+	    { aHidd_PixFmt_RedMask,	   0x00FF0000			}, /* 7 */
+	    { aHidd_PixFmt_GreenMask,	   0x0000FF00			}, /* 8 */
+	    { aHidd_PixFmt_BlueMask,	   0x000000FF			}, /* 9 */
 	    { aHidd_PixFmt_BitMapType,	   vHidd_BitMapType_Planar	},
 	    { TAG_DONE, 0UL }
     };
@@ -250,6 +253,9 @@ BOOL planarbm_setbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_PlanarBM_SetB
     	{ aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Planar		},	/* 4 */
     	{ aHidd_PixFmt_CLUTShift,	0UL				},	/* 5 */
     	{ aHidd_PixFmt_CLUTMask,	0x000000FF			},	/* 6 */
+	{ aHidd_PixFmt_RedMask,	  	0x00FF0000			}, 	/* 7 */
+	{ aHidd_PixFmt_GreenMask,	0x0000FF00			}, 	/* 8 */
+	{ aHidd_PixFmt_BlueMask,	0x000000FF			}, 	/* 9 */
     	{ TAG_DONE, 0UL }	/* 7 */
     };
     struct TagItem bmtags[] = {
