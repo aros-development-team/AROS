@@ -14,17 +14,69 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <libraries/asl.h>
-#include <libraries/mui.h>
+#include <libraries/gadtools.h>
 #include <gadgets/colorwheel.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
-#include <proto/muimaster.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <aros/debug.h>
 
+#ifdef _AROS
 #include <libraries/mui.h>
+#include <proto/muimaster.h>
+#include <aros/debug.h>
+#else
+#include "mui.h"
+struct Library *MUIMasterBase;
+#endif
+
+
+#ifndef _AROS
+/* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
+#include "muimaster_intern.h"
+int openmuimaster(void)
+{
+    static struct MUIMasterBase_intern MUIMasterBase_instance;
+    MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
+
+    MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
+    MUIMasterBase_instance.dosbase = (APTR)OpenLibrary("dos.library",37);
+    MUIMasterBase_instance.utilitybase = (APTR)OpenLibrary("utility.library",37);
+    MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
+    MUIMasterBase_instance.gfxbase = (APTR)OpenLibrary("graphics.library",37);
+    MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
+    MUIMasterBase_instance.intuibase = (APTR)OpenLibrary("intuition.library",37);
+    MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
+    MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
+    MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
+    MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
+    MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
+    MUIMasterBase_instance.iconbase = OpenLibrary("icon.library",44);
+    InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
+
+    return 1;
+}
+void closemuimaster(void)
+{
+}
+#undef SysBase
+#undef IntuitionBase
+#undef GfxBase
+#undef LayersBase
+#undef UtilityBase
+#else
+int openmuimaster(void)
+{
+    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+    return 0;
+}
+void closemuimaster(void)
+{
+    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+}
+#endif
+
 
 static struct NewMenu nm[] =
 {
@@ -101,30 +153,6 @@ ULONG xget(Object *obj, Tag attr)
   GetAttr(attr, obj, &storage);
   return storage;
 }
-#if 0
-/* IconList callbacks */
-void volume_doubleclicked(void)
-{
-    char buf[200];
-    struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-    DoMethod(volume_iconlist, MUIM_IconList_NextSelected, &ent);
-    if ((int)ent == MUIV_IconList_NextSelected_End) return;
-
-    strcpy(buf,ent->label);
-    strcat(buf,":");
-    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
-}
-
-void drawer_doubleclicked(void)
-{
-    static char buf[1024];
-    struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-
-    DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
-    if ((int)ent == MUIV_IconList_NextSelected_End) return;
-    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
-}
-#endif
 
 /**************************************************************************
  This is a custom class inheriting from the WindowClass.
@@ -237,10 +265,14 @@ struct MUI_CustomClass *CL_IconWindow;
 **************************************************************************/
 static struct Hook hook_standard;
 
+#ifndef _AROS
+__asm __saveds void hook_func_standard(register __a0 struct Hook *h, register __a2 void *dummy, register __a1 **funcptr)
+#else
 AROS_UFH3(void, hook_func_standard,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(void *, dummy, A2),
     AROS_UFHA(void **, funcptr, A1))
+#endif
 {
 	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
 
@@ -255,10 +287,14 @@ AROS_UFH3(void, hook_func_standard,
 **************************************************************************/
 static struct Hook hook_action;
 
+#ifndef _AROS
+__asm __saveds void hook_func_action(register __a0 struct Hook *h, register __a2 Object *obj, register __a1 struct IconWindow_ActionMsg *msg)
+#else
 AROS_UFH3(void, hook_func_action,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
     AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1))
+#endif
 {
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
@@ -308,7 +344,9 @@ int main(void)
     hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
     hook_action.h_Entry = (HOOKFUNC)hook_func_action;
 
-    MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
+    openmuimaster();
+
+/*    MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);*/
 
     if (!MUIMasterBase)
 	return 20;
@@ -351,7 +389,7 @@ int main(void)
     }
 
     MUI_DeleteCustomClass(CL_IconWindow);
-    CloseLibrary(MUIMasterBase);
-
+/*    CloseLibrary(MUIMasterBase);*/
+    closemuimaster();
     return 0;
 }
