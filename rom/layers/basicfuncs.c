@@ -387,12 +387,15 @@ struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li)
 
 struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
 {
-  struct ClipRect * CR =  LI->FreeClipRects;
+  struct ClipRect * CR;
+  
+  
+  ObtainSemaphore(&LI->Lock);
+  CR =  LI->FreeClipRects;
 
   if (NULL != CR)
   {
    /* I want to access the list of free ClipRects alone */
-    ObtainSemaphore(&LI->Lock);
     LI->FreeClipRects = CR->Next;
     ReleaseSemaphore(&LI->Lock);
 
@@ -402,6 +405,8 @@ struct ClipRect * _AllocClipRect(struct Layer_Info * LI)
     CR->BitMap = NULL;
     return CR;
   }
+  
+  ReleaseSemaphore(&LI->Lock);
   CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_PUBLIC|MEMF_CLEAR);
   return CR;
 }
