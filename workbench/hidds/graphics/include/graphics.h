@@ -62,12 +62,12 @@ enum
 {
     /* Methods for a graphics hidd */
 
-    moHidd_Gfx_NewGC = 0,       /* Its only allowd to use these methods   */
-    moHidd_Gfx_DisposeGC,       /* to create and to dispose a GC and      */
-    moHidd_Gfx_NewBitMap,       /* bitmap because only the graphics-hidd  */
-    moHidd_Gfx_DisposeBitMap,   /* class knows which gc- and bitmap-class */
-				/* works together.                        */
-				
+    moHidd_Gfx_NewGC = 0,      
+    moHidd_Gfx_DisposeGC,      
+    moHidd_Gfx_NewBitMap,      
+    moHidd_Gfx_DisposeBitMap,  
+			
+			
     
     moHidd_Gfx_QueryModeIDs,
     moHidd_Gfx_ReleaseModeIDs,
@@ -77,12 +77,14 @@ enum
     moHidd_Gfx_CheckMode,
     
     moHidd_Gfx_GetPixFmt,
-    moHidd_Gfx_SetCursor,
+    
+    moHidd_Gfx_SetCursorShape,
+    moHidd_Gfx_SetCursorPos,
+    moHidd_Gfx_SetCursorVisible,
     
     moHidd_Gfx_SetMode,
     moHidd_Gfx_Show,
-    
-    
+    moHidd_Gfx_CopyBox,
     
     num_Hidd_Gfx_Methods
 };
@@ -94,14 +96,15 @@ enum {
     aoHidd_Gfx_ActiveBMCallBack,
     aoHidd_Gfx_ActiveBMCallBackData,
 #endif    
-    aoHidd_Gfx_DPMSLevel,	/* [ISG] (ULONG) - DPMS level	*/
+    aoHidd_Gfx_DPMSLevel,		/* [ISG] (ULONG) - DPMS level	*/
     
     /* Used in gfxmode registering */
-    aoHidd_Gfx_PixFmtTags,	/* [I..] (struct TagItem)	*/
-    aoHidd_Gfx_SyncTags,	/* [I..] (struct TagItem)	*/
-    aoHidd_Gfx_ModeTags,	/* [I..] (struct TagItem)	*/
+    aoHidd_Gfx_PixFmtTags,		/* [I..] (struct TagItem)	*/
+    aoHidd_Gfx_SyncTags,		/* [I..] (struct TagItem)	*/
+    aoHidd_Gfx_ModeTags,		/* [I..] (struct TagItem)	*/
     
-    aoHidd_Gfx_NumSyncs,	/* [..G] (ULONG) - The number of different syncs the gfxcard can do */
+    aoHidd_Gfx_NumSyncs,		/* [..G] (ULONG) - The number of different syncs the gfxcard can do */
+    aoHidd_Gfx_SupportsHWCursor,	/* [..G] (BOOL) - if the hidd supports hardware cursors */
     
     num_Hidd_Gfx_Attrs
 };
@@ -118,6 +121,7 @@ enum {
 #define aHidd_Gfx_SyncTags		(HiddGfxAttrBase + aoHidd_Gfx_SyncTags			)
 #define aHidd_Gfx_ModeTags		(HiddGfxAttrBase + aoHidd_Gfx_ModeTags			)
 #define aHidd_Gfx_NumSyncs		(HiddGfxAttrBase + aoHidd_Gfx_NumSyncs			)
+#define aHidd_Gfx_SupportsHWCursor	(HiddGfxAttrBase + aoHidd_Gfx_SupportsHWCursor		)
 
 #define IS_GFX_ATTR(attr, idx)	\
 	( ( ( idx ) = (attr) - HiddGfxAttrBase) < num_Hidd_Gfx_Attrs)
@@ -227,15 +231,37 @@ struct pHidd_Gfx_GetPixFmt {
     HIDDT_StdPixFmt stdPixFmt;
 };
 
-struct pHidd_Gfx_SetCursor {
+struct pHidd_Gfx_SetCursorShape {
     MethodID mID;
-    struct TagItem *cursorTags;
+    Object *shape;
+};
+
+struct pHidd_Gfx_SetCursorPos {
+    MethodID mID;
+    LONG	x;
+    LONG	y;
+};
+
+struct pHidd_Gfx_SetCursorVisible {
+    MethodID mID;
+    BOOL	visible;
 };
 
 struct pHidd_Gfx_Show {
     MethodID mID;
     Object *bitMap;
     ULONG flags;
+};
+
+struct pHidd_Gfx_CopyBox
+{
+    MethodID    mID;
+    Object	*src;
+    Object	*gc;
+    WORD        srcX, srcY;
+    Object      *dest;
+    WORD        destX, destY;
+    UWORD       width, height;
 };
 
 /* Flags */
@@ -387,7 +413,6 @@ enum {
     /* Methods for a bitmap */
 
     moHidd_BitMap_SetColors = 0,
-    moHidd_BitMap_CopyBox,
     moHidd_BitMap_PutPixel,
     moHidd_BitMap_DrawPixel,
     moHidd_BitMap_PutImage,
@@ -420,6 +445,7 @@ enum {
     moHidd_BitMap_ReleaseDirectAccess,
     
     moHidd_BitMap_PrivateSet,
+    
     num_Hidd_BitMap_Methods
 };
 
@@ -540,15 +566,6 @@ struct pHidd_BitMap_DrawLine
     WORD        x1 ,y1, x2, y2;
 };
 
-struct pHidd_BitMap_CopyBox
-{
-    MethodID    mID;
-    Object	*gc;
-    WORD        srcX, srcY;
-    Object      *dest;
-    WORD        destX, destY;
-    UWORD       width, height;
-};
 
 struct pHidd_BitMap_GetImage
 {
@@ -779,18 +796,20 @@ VOID     HIDD_Gfx_DisposeGC    (Object *hiddGfx, Object *gc);
 Object * HIDD_Gfx_NewBitMap    (Object *hiddGfx, struct TagItem *tagList);
 VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
 
-
-
 HIDDT_ModeID *HIDD_Gfx_QueryModeIDs(Object *hiddGfx, struct TagItem *queryTags);
 VOID HIDD_Gfx_ReleaseModeIDs(Object *hiddGfx, HIDDT_ModeID *modeIDs);
 Object *HIDD_Gfx_GetPixFmt(Object *obj, HIDDT_StdPixFmt pixFmt);
 BOOL HIDD_Gfx_CheckMode(Object *obj, HIDDT_ModeID modeID, Object *sync, Object *pixFmt);
 BOOL HIDD_Gfx_GetMode(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
 HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **syncPtr, Object **pixFmtPtr);
-BOOL HIDD_Gfx_SetCursor(Object *obj, struct TagItem *cursorTags);
+
+BOOL HIDD_Gfx_SetCursorShape(Object *obj, Object *shape);
+BOOL HIDD_Gfx_SetCursorPos(Object *obj, LONG x, LONG y);
+VOID HIDD_Gfx_SetCursorVisible(Object *obj, BOOL visible);
 
 Object *HIDD_Gfx_Show(Object *obj, Object *bitMap, ULONG flags);
 BOOL HIDD_Gfx_SetMode(Object *obj, HIDDT_ModeID modeID);
+VOID  HIDD_Gfx_CopyBox(Object *obj, Object *src, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, Object *gc);
 
 VOID HIDD_GC_SetClipRect(Object *gc, LONG x1, LONG y1, LONG x2, LONG y2);
 VOID HIDD_GC_UnsetClipRect(Object *gc);
@@ -804,7 +823,6 @@ BOOL	 HIDD_BM_SetColors	(Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG 
 ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, HIDDT_Pixel pixel);
 HIDDT_Pixel    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
 ULONG    HIDD_BM_DrawPixel       (Object *obj, Object *gc, WORD x, WORD y);
-VOID     HIDD_BM_CopyBox         (Object *obj, Object *gc, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
 VOID     HIDD_BM_GetImage	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID	 HIDD_BM_PutImage 	 (Object *obj, Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
 VOID     HIDD_BM_DrawLine        (Object *obj, Object *gc, WORD x1, WORD y1, WORD x2, WORD y2);

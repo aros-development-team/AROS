@@ -24,6 +24,16 @@
 #define USE_FAST_GETPIXEL		1
 #define COPYBOX_CHECK_FOR_ALIKE_PIXFMT	1
 
+#define HBM(x) ((struct HIDDBitMapData *)x)
+
+#define PUTPIXEL(o, msg)	\
+    HBM(o)->putpixel(OCLASS(o), o, msg)
+
+#define GETPIXEL(o, msg)	\
+    HBM(o)->getpixel(OCLASS(o), o, msg)
+
+#define DRAWPIXEL(o, msg)	\
+    HBM(o)->drawpixel(OCLASS(o), o, msg)
     
 #define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
 #define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
@@ -117,14 +127,15 @@ struct HIDDGraphicsData
 	*/
 	struct SignalSemaphore pfsema;
 	struct MinList pflist;
-	
+
+#if 0	
 	/* Software cursor stuff */
 	Object *curs_bm;
 	BOOL curs_on;
 	ULONG curs_x;
 	ULONG curs_y;
 	Object *curs_backup;
-	
+#endif	
 	Object *framebuffer;
 	
 	Object *shownbm;

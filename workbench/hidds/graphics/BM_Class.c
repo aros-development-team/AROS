@@ -50,16 +50,6 @@ static struct ABDescr attrbases[] = {
 	|| (y) > GC_CLIPY2(gc) )
 
 
-#define HBM(x) ((struct HIDDBitMapData *)x)
-
-#define PUTPIXEL(o, msg)	\
-    HBM(o)->putpixel(OCLASS(o), o, msg)
-
-#define GETPIXEL(o, msg)	\
-    HBM(o)->getpixel(OCLASS(o), o, msg)
-
-#define DRAWPIXEL(o, msg)	\
-    HBM(o)->drawpixel(OCLASS(o), o, msg)
     
 /*** BitMap::New() ************************************************************/
 
@@ -659,251 +649,6 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
     ReturnVoid("BitMap::DrawLine ");
 }
 
-
-/*** BitMap::CopyBox() *****************************************************
-
-    NAME
-        CopyBox
-
-    SYNOPSIS
-        DoMethod(src, WORD srcX, WORD srcY,
-                      Object *dest, WORD destX, WORD destY,
-                      UWORD sizeX, UWORD sizeY);
-
-   FUNCTION
-        Copy a rectangular area from the drawing area src to the drawing
-        area stored in dest (which may be src). The source area is not
-        changed (except when both rectangles overlap). The mode of the GC
-        dest determines how the copy takes place.
-
-        In quick mode, the following restrictions are not checked: It's not
-        checked whether the source or destination rectangle is completely
-        inside the valid area or whether the areas overlap. If they
-        overlap, the results are unpredictable. Also drawing modes are
-        ignored. If the two bitmaps in the GCs have a different depth,
-        copying might be slow.
-
-        When copying bitmaps between two different HIDDs, the following
-        pseudo algorithm is executed: First the destination HIDD is queried
-        whether it does understand the format of the source HIDD. If it
-        does, then the destination HIDD does the copying. If it doesn't,
-        then the source is asked whether it understands the destination
-        HIDDs' format. If it does, then the source HIDD will do the
-        copying. If it doesn't, then the default CopyArea of the graphics
-        HIDD base class will be invoked which copies the bitmaps pixel by
-        pixel with BitMap::GetPixel() and BitMap::DrawPixel().
-
-    INPUTS
-        src           - source bitmap object
-        srcX, srcY    - upper, left corner of the area to copy in the source
-        dest          - destination bitmap object
-        destX, destY  - upper, left corner in the destination to copy the area
-        width, height - width and height of the area in hidd units
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        GROUP=HIDD_BltBitMap
-
-    INTERNALS
-
-    TODO
-
-    HISTORY
-***************************************************************************/
-
-static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *msg)
-{
-    UWORD x, y;
-    WORD  srcX = msg->srcX, destX = msg->destX;
-    WORD  memSrcX = srcX, memDestX = destX;
-    WORD  srcY = msg->srcY, destY = msg->destY;
-    ULONG memFG;
-    
-    HIDDT_PixelFormat *srcpf, *dstpf;
-    struct HIDDBitMapData *data;
-    Object *dest;
-    
-    
-    Object *gc;
-#if USE_FAST_GETPIXEL
-    struct pHidd_BitMap_GetPixel get_p;
-#endif
-
-#if USE_FAST_DRAWPIXEL
-    struct pHidd_BitMap_DrawPixel draw_p;
-    
-    draw_p.mID	= CSD(cl)->drawpixel_mid;
-    draw_p.gc	= msg->gc;
-#endif
-
-#if USE_FAST_GETPIXEL
-    get_p.mID	= CSD(cl)->getpixel_mid;
-#endif
-    
-    dest = msg->dest;
-
-    EnterFunc(bug("BitMap::CopyBox()"));
-    
-    /* Get the source pixel format */
-    data = INST_DATA(cl, obj);
-    srcpf = (HIDDT_PixelFormat *)data->prot.pixfmt;
-    
-/* kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
-	, cl->ClassNode.ln_Name, OCLASS(obj)->ClassNode.ln_Name);
-*/
-{
-ULONG sw, sh, dw, dh;
-kprintf("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
-    , obj, msg->dest, msg->width, msg->height);
-    
-GetAttr(obj, aHidd_BitMap_Width, &sw);
-GetAttr(obj, aHidd_BitMap_Height, &sh);
-GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
-GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
-kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
-}
-    GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
-    
-    /* Compare graphtypes */
-    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
-    	/* It is ok to do a direct copy */
-    } else {
-    	/* Find out the gfx formats */
-	if (  IS_PALETTIZED(srcpf) && IS_TRUECOLOR(dstpf)) {
-	
-	} else if (IS_TRUECOLOR(srcpf) && IS_PALETTIZED(dstpf)) {
-	
-	} else if (IS_PALETTE(srcpf) && IS_STATICPALETTE(dstpf)) {
-	
-	} else if (IS_STATICPALETTE(srcpf) && IS_PALETTE(dstpf)) {
-	
-	}
-    }
-    
-    gc = msg->gc;
-    
-    memFG = GC_FG(msg->gc);
-    
-    /* All else have failed, copy pixel by pixel */
-
-
-    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
-    	if (IS_TRUECOLOR(srcpf)) {
-// kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
-	    for(y = 0; y < msg->height; y++) {
-		HIDDT_Color col;
-		
-		srcX  = memSrcX;
-		destX = memDestX;
-
-/* if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
-    kprintf("[%d,%d] ", memSrcX, memDestX);
-*/    
-		for(x = 0; x < msg->width; x++) {
-		    HIDDT_Pixel pix;
-		    
-#if USE_FAST_GETPIXEL
-		    get_p.x = srcX ++;
-		    get_p.y = srcY;
-		    pix = GETPIXEL(obj, &get_p);
-#else
-		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
-#endif
-
-#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
-		    if (srcpf == dstpf) {
-			GC_FG(gc) = pix;
-		    } else {
-#endif
-		    HIDD_BM_UnmapPixel(obj, pix, &col);
-		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
-#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
-		    }
-#endif
-
-// #if 0
-
-#if USE_FAST_DRAWPIXEL
-		    draw_p.x = destX ++;
-		    draw_p.y = destY;
-		    DRAWPIXEL(dest, &draw_p);
-#else
-		    
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
-#endif
-
-// #endif
-		}
-/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
-    kprintf("[%d,%d] ", srcY, destY);
-*/            	srcY++; destY++;
-	    }
-	    
-        } else {
-	     /* Two palette bitmaps.
-	        For this case we do NOT convert through RGB,
-		but copy the pixel indexes directly
-	     */
-// kprintf("COPY FROM PALETTE TO PALETTE\n");
-#warning This might not work very well with two StaticPalette bitmaps
-	    for(y = 0; y < msg->height; y++) {
-		srcX  = memSrcX;
-		destX = memDestX;
-		
-		for(x = 0; x < msg->width; x++) {
-		    GC_FG(gc) = HIDD_BM_GetPixel(obj, srcX++, srcY);
-		    
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
-		    
-		}
-            	srcY++; destY++;
-	    }
-	     
-	}
-
-    } else {
-    	/* Two unlike bitmaps */
-	if (IS_TRUECOLOR(srcpf)) {
-#warning Implement this
-	     kprintf("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n");
-	} else if (IS_TRUECOLOR(dstpf)) {
-	    /* Get the colortab */
-	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)data->colmap)->colors;
-// kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
-
-	    
-	    for(y = 0; y < msg->height; y++) {
-		
-		srcX  = memSrcX;
-		destX = memDestX;
-		for(x = 0; x < msg->width; x++) {
-		    register HIDDT_Pixel pix;
-		    register HIDDT_Color *col;
-		    
-		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
-		    col = &ctab[pix];
-	
-		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
-		    
-		}
-            	srcY++; destY++;
-	    }
-	
-	}
-	
-    }
-    
-    GC_FG(gc) = memFG;
-    ReturnVoid("BitMap::CopyBox");
-}
 
 
 
@@ -1654,16 +1399,57 @@ static VOID bitmap_getimage(Class *cl, Object *o, struct pHidd_BitMap_GetImage *
     return;
 }
 
+static LONG inline getpixfmtbpp(Class *cl, Object *o, HIDDT_StdPixFmt stdpf)
+{
+    Object *pf;
+    struct HIDDBitMapData *data;
+    IPTR bpp = -1;
+    
+    data = INST_DATA(cl, o);
+    
+    switch (stdpf) {
+    	case vHidd_StdPixFmt_Native:
+	    GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bpp);
+	    break;
+	    
+	case vHidd_StdPixFmt_Native32:
+	    bpp = sizeof (HIDDT_Pixel);
+	    break;
+	    
+	default:
+	    pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, stdpf);
+	    if (NULL == pf) {
+		kprintf("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", stdpf);
+	    } else {
+		GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
+	    }
+	    break;
+    }
+    return bpp;
+}
+
 static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     WORD x, y;
-    ULONG *pixarray = (ULONG *)msg->pixels;
+    UBYTE *pixarray = (UBYTE *)msg->pixels;
     ULONG old_fg;
+    LONG bpp;
+    struct HIDDBitMapData *data;
     
     Object *gc = msg->gc;
+    Object *pf;
+    
+    data = INST_DATA(cl, o);
     
     EnterFunc(bug("BitMap::PutImage(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
+    
+    
+    bpp = getpixfmtbpp(cl, o, msg->pixFmt);
+    if (-1 == bpp) {
+	kprintf("!!! INVALID PIXFMT IN BitMap::PutImage(): %d !!!\n", msg->pixFmt);
+	return;
+    }
     
     
     /* Preserve old fg pen */
@@ -1674,8 +1460,16 @@ static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     {
     	for (x = 0; x < msg->width; x ++)
     	{
-	   
-	    GC_FG(gc) = *pixarray ++;
+	    register HIDDT_Pixel pix;
+	    switch (bpp) {
+	    	case 1: pix = *((UBYTE *)pixarray) & 0x000000FF; pixarray ++; break;
+		case 2: pix = *((UWORD *)pixarray) & 0x0000FFFF; pixarray += 2; break;
+		case 3: kprintf("PUTIMAGE: 3  BYTESPERPIX NOT HANDLED YET\n");
+		case 4: pix = *((ULONG *)pixarray); pixarray += 4; break;
+		  
+	    }
+	    
+	    GC_FG(gc) = pix;
 
 	    HIDD_BM_DrawPixel(o, gc, x + msg->x , y + msg->y);
 	}
@@ -1964,7 +1758,7 @@ static BOOL bitmap_setbitmaptags(Class *cl, Object *o, struct pHidd_BitMap_SetBi
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 25
+#define NUM_BITMAP_METHODS 24
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -1982,7 +1776,6 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	},
         {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	},
         {(IPTR (*)())bitmap_drawline		, moHidd_BitMap_DrawLine	},
-        {(IPTR (*)())bitmap_copybox		, moHidd_BitMap_CopyBox		},
         {(IPTR (*)())bitmap_drawrect		, moHidd_BitMap_DrawRect	},
         {(IPTR (*)())bitmap_fillrect 		, moHidd_BitMap_FillRect	},
         {(IPTR (*)())bitmap_drawellipse		, moHidd_BitMap_DrawEllipse	},

@@ -208,18 +208,54 @@ HIDDT_ModeID HIDD_Gfx_NextModeID(Object *obj, HIDDT_ModeID modeID, Object **sync
 
 /***************************************************************/
 
-BOOL HIDD_Gfx_SetCursor(Object *obj, struct TagItem *cursorTags)
+BOOL HIDD_Gfx_SetCursorShape(Object *obj, Object *shape)
 {
     static MethodID mid = 0;
-    struct pHidd_Gfx_SetCursor p;
+    struct pHidd_Gfx_SetCursorShape p;
 
-    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursor);
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorShape);
+        
+    p.mID = mid;
+    p.shape = shape;
+
+    return (BOOL)DoMethod(obj, (Msg) &p);
+    
+}
+
+/***************************************************************/
+
+BOOL HIDD_Gfx_SetCursorPos(Object *obj, LONG x, LONG y)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_SetCursorPos p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorPos);
         
     p.mID = mid;
     
-    p.cursorTags = cursorTags;
-
+    p.x = x;
+    p.y = y;
+    
     return (BOOL)DoMethod(obj, (Msg) &p);
+    
+}
+
+/***************************************************************/
+
+VOID HIDD_Gfx_SetCursorVisible(Object *obj, BOOL visible)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_SetCursorVisible p;
+
+    if(!mid) mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetCursorVisible);
+        
+    p.mID = mid;
+    
+    p.visible = visible;
+
+    DoMethod(obj, (Msg) &p);
+    
+    return;
     
 }
 
@@ -259,6 +295,27 @@ Object *HIDD_Gfx_Show(Object *obj, Object *bitMap, ULONG flags)
     
 }
 
+/***************************************************************/
+VOID HIDD_Gfx_CopyBox(Object *obj, Object *src, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, Object *gc)
+{
+    static MethodID mid = 0;
+    struct pHidd_Gfx_CopyBox p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_Gfx_CopyBox);
+        
+    p.mID    = mid;
+    p.src    = src;
+    p.srcX   = srcX;
+    p.srcY   = srcY;
+    p.dest   = dest;
+    p.destX  = destX;
+    p.destY  = destY;
+    p.width  = width;
+    p.height = height;
+    p.gc     = gc;
+
+    DoMethod(obj, (Msg) &p);
+}
 /***************************************************************/
 
 BOOL HIDD_BM_SetColors (Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
@@ -344,26 +401,6 @@ VOID HIDD_BM_DrawLine(Object *obj, Object *gc, WORD x1, WORD y1, WORD x2, WORD y
 }
 /***************************************************************/
 
-VOID HIDD_BM_CopyBox(Object *obj, Object *gc, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height)
-{
-    static MethodID mid = 0;
-    struct pHidd_BitMap_CopyBox p;
-    
-    if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_CopyBox);
-        
-    p.mID    = mid;
-    p.gc     = gc;
-    p.srcX   = srcX;
-    p.srcY   = srcY;
-    p.dest   = dest;
-    p.destX  = destX;
-    p.destY  = destY;
-    p.width  = width;
-    p.height = height;
-
-    DoMethod(obj, (Msg) &p);
-}
-/***************************************************************/
 
 VOID HIDD_BM_DrawRect (Object *obj, Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY)
 {

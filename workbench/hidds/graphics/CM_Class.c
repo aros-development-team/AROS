@@ -98,7 +98,7 @@ static VOID colormap_dispose(Class *cl, Object *o, Msg msg)
 	FreeMem(data->clut.colors, data->clut.entries * sizeof (HIDDT_Color));
 
 	/* To detect use of allready freed mem */
-	data->clut.colors = NULL;
+	data->clut.colors = 0xDEADBEEF;
     }
 	     
     DoSuperMethod(cl, o, msg);
@@ -159,6 +159,7 @@ static BOOL colormap_setcolors(Class *cl, Object *o, struct pHidd_ColorMap_SetCo
     col = &data->clut.colors[msg->firstColor];
     pf = (HIDDT_PixelFormat *)msg->pixFmt;
     for (i = 0; i < msg->numColors; i ++) {
+    
     	/* Set the color */
 	*col = msg->colors[i];
 	

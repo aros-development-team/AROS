@@ -37,7 +37,6 @@ static BOOL register_modes(Class *cl, Object *o, struct TagItem *modetags);
 static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, Class *cl);
 static VOID free_mode_db(struct mode_db *mdb, Class *cl);
 static Object *create_and_init_object(Class *cl, UBYTE *data, ULONG datasize, struct class_static_data *csd);
-static VOID draw_cursor(struct HIDDGraphicsData *data, BOOL draw, struct class_static_data *csd);
 
 static struct pfnode *find_pixfmt(struct MinList *pflist
 	, HIDDT_PixelFormat *tofind
@@ -45,9 +44,8 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
 
 static Object *find_stdpixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *csd);
-static VOID copy_bm_and_colmap(struct HIDDGraphicsData *data, Object *src_bm
-	, Object *dst_bm, Object *dims_bm
-	, struct class_static_data *csd);
+static VOID copy_bm_and_colmap(Class *cl, Object *o,  Object *src_bm
+	, Object *dst_bm, Object *dims_bm);
 
 /*static AttrBase HiddGCAttrBase;*/
 
@@ -166,6 +164,15 @@ static VOID root_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		*msg->storage = data->mdb.num_syncs;
 		break;
 	    }
+	    case aoHidd_Gfx_SupportsHWCursor:
+	    	found = TRUE;
+	    	*msg->storage = FALSE;
+		break;
+
+	    case aoHidd_Gfx_IsWindowed:
+	    	found = TRUE;
+	    	*msg->storage = FALSE;
+		break;
 	    
 	    default:	/* Keep compiler happy */
 		break;
@@ -915,152 +922,17 @@ static BOOL hiddgfx_getmode(Class *cl, Object *o, struct pHidd_Gfx_GetMode *msg)
     return ok;
 }
 
-/*** HIDDGfx::SetCursor() ********************************************/
-static BOOL hiddgfx_setcursor(Class *cl, Object *o, struct pHidd_Gfx_SetCursor *msg)
-{
-    /* Parse the cursor tags */
-    struct TagItem *tag, *tstate;
-    
-    struct HIDDGraphicsData *data;
-    BOOL on;
-    LONG xpos, ypos;
-    Object *bitmap;
-    BOOL update_curs = FALSE;
-    BOOL bitmap_changed = FALSE;
-    Object *new_backup = NULL;
-        
-    data = INST_DATA(cl, o);
-    on 		= data->curs_on;
-    bitmap	= data->curs_bm;
-    xpos	= data->curs_x;
-    ypos	= data->curs_y; 
-    
-    
-    for (tstate = msg->cursorTags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
-	switch (tag->ti_Tag) {
-	    case tHidd_Cursor_BitMap:
-		bitmap = (Object *)tag->ti_Data;
-		break;
-
-	    case tHidd_Cursor_XPos:
-		xpos = (LONG)tag->ti_Data;
-		break;
-
-	    case tHidd_Cursor_YPos:
-		ypos = (LONG)tag->ti_Data;
-		break;
-
-	    case tHidd_Cursor_On:
-		on = (BOOL)tag->ti_Data;
-		break;
-	 }
-    }
-    
-    /* Look for changes */
-    if (bitmap != data->curs_bm) {
-	/* Bitmap changed. */
-	if (NULL == bitmap) {
-	    /* Erase the old cursor */
-	    on = FALSE;
-	    update_curs = TRUE;
-	    bitmap_changed = TRUE;
-	    
-	    
-	} else {
-	    IPTR curs_width, curs_height, curs_depth;
-	    IPTR mode_width, mode_height, mode_depth;
-	    Object *curs_pf, *mode_sync,* mode_pf;
-	    struct TagItem bmtags[] = {
-		{ aHidd_BitMap_Displayable,	FALSE	},
-		{ aHidd_BitMap_Width,		0	},
-		{ aHidd_BitMap_Height,		0	},
-		{ aHidd_BitMap_PixFmt,		0	},
-		{ TAG_DONE, 0UL }
-	    };
-	    
-	    GetAttr(bitmap, aHidd_BitMap_Width,	 &curs_width);
-	    GetAttr(bitmap, aHidd_BitMap_Height, &curs_height);
-	    GetAttr(bitmap, aHidd_BitMap_PixFmt, (IPTR *)&curs_pf);
-	    
-	    GetAttr(curs_pf, aHidd_PixFmt_Depth, &curs_depth);
-	    
-	    HIDD_Gfx_GetMode(o, data->curmode, &mode_sync, &mode_pf);
-	    GetAttr(mode_sync, aHidd_Sync_HDisp, &mode_width);
-	    GetAttr(mode_sync, aHidd_Sync_VDisp, &mode_height);
-	    GetAttr(mode_pf, aHidd_PixFmt_Depth, &mode_depth);
-
-	    /* Disallow very large cursors, and cursors with higher
-	       depth than the framebuffer bitmap */
-	    if (    ( curs_width  > (mode_width  / 2) )
-		 || ( curs_height > (mode_height / 2) )
-		 || ( curs_depth  > mode_depth) ) {
-		 return FALSE;
-	    }
-	    
-	    /* Create new backup bitmap */
-	    bmtags[1].ti_Data = curs_width;
-	    bmtags[2].ti_Data = curs_height;
-	    bmtags[3].ti_Data = (IPTR)curs_pf;
-	    new_backup = NewObject(
-		  curs_depth >= 8 ? CSD(cl)->chunkybmclass : CSD(cl)->planarbmclass
-		, NULL
-		, bmtags
-	    );
-	    
-	    if (NULL == new_backup)
-		return FALSE;
-
-	    if (on)
-		update_curs = TRUE;
-		
-	    bitmap_changed = TRUE;
-	}
-    }
-    
-    if (on != data->curs_on) {
-	update_curs = TRUE;
-    }
-    
-    if (xpos != data->curs_x || ypos != data->curs_y) {
-	update_curs = TRUE;
-    }
-    
-    /* Do we want to erase the old cursor ? */
-    if (data->curs_bm && data->curs_on && update_curs) {
-	draw_cursor(data, FALSE, CSD(cl));
-	if (bitmap_changed) {
-	    if (NULL != data->curs_backup) {
-		DisposeObject(data->curs_backup);
-		data->curs_backup = NULL;
-	    }
-	}
-    }
-
-    data->curs_bm	= bitmap;
-    data->curs_on	= on;
-    data->curs_x	= xpos;
-    data->curs_y	= ypos;
-    
-    if (data->curs_bm && data->curs_on && update_curs) {
-	if (bitmap_changed) {
-	    data->curs_backup = new_backup;
-	}
-	draw_cursor(data, TRUE, CSD(cl));
-    }
-    
-    return TRUE;
-}
 
 /*** HIDDGfx::SetMode() ************************************************/
 
 static BOOL hiddgfx_setmode(Class *cl, Object *o, struct pHidd_Gfx_SetMode *msg)
 {
+#if 0    
     struct HIDDGraphicsData *data;
     Object *sync, *pf;
     
     data = INST_DATA(cl, o);
 
-#if 0    
     /* Check if we have a valid modeid */
     if (HIDD_Gfx_GetMode(o, msg->modeID, &sync, &pf)) {
 
@@ -1084,6 +956,46 @@ static BOOL hiddgfx_setmode(Class *cl, Object *o, struct pHidd_Gfx_SetMode *msg)
 
 /*** HIDDGfx::Show() **************************************************/
 
+static VOID copy_bm_and_colmap(Class *cl, Object *o,  Object *src_bm
+	, Object *dst_bm, Object *dims_bm)
+{
+    struct TagItem gctags[] = {
+    	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
+	{ TAG_DONE, 0UL }
+    };
+    struct HIDDGraphicsData *data;
+    IPTR width, height;
+    ULONG i, numentries;
+    Object *src_colmap;
+    
+    data = INST_DATA(cl, o);
+    /* Copy the displayable bitmap into the framebuffer */
+    GetAttr(dims_bm, aHidd_BitMap_Width,	&width);
+    GetAttr(dims_bm, aHidd_BitMap_Height,	&height);
+    
+    /* We have to copy the colormap into the framebuffer bitmap */
+    GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)&src_colmap);
+    GetAttr(src_colmap, aHidd_ColorMap_NumEntries, &numentries);
+
+	
+    for (i = 0; i < numentries; i ++) {
+    	HIDDT_Color col;
+	HIDD_CM_GetColor(src_colmap, i, &col);
+	HIDD_BM_SetColors(dst_bm, &col, i, 1);
+    }    
+
+    
+    SetAttrs(data->gc, gctags);
+    HIDD_Gfx_CopyBox(o
+    	, src_bm
+	, 0, 0
+    	, dst_bm
+	, 0, 0
+	, width, height
+	, data->gc
+    );
+}
+
 static Object *hiddgfx_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
 {
     struct HIDDGraphicsData *data;
@@ -1096,47 +1008,276 @@ static Object *hiddgfx_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
     /* We have to do some consistency checking */
     GetAttr(bm, aHidd_BitMap_Displayable, &displayable);
 
-kprintf("----------- Gfx:Show(bm=%p): displayable.: %d\n", bm, displayable);
     
     if (!displayable)
     	/* We cannot show a non-displayable bitmap */
 	return NULL;
 	
-    /* Check that the gfx mode seems reasonable */
-    if (NULL == data->framebuffer) {
-    	struct TagItem fbtags[] = {
-	    { aHidd_BitMap_ModeID,	0UL	},
-	    { aHidd_BitMap_FrameBuffer,	TRUE	},
-	    { TAG_DONE, 0UL }
-	};
-
-	GetAttr(bm, aHidd_BitMap_ModeID, &fbtags[0].ti_Data);
+    if (NULL == data->framebuffer)
+	return NULL;
 	
-    	/* No framebuffer has been created, we need to create one. */
-	
-
-kprintf("---------- Gfx::Show() CREATING FRAMEBUFFER\n");
-	data->framebuffer = HIDD_Gfx_NewBitMap(o, fbtags);
-	if (NULL == data->framebuffer)
-	    return NULL;
-	
-    }
-    
     if (NULL != data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack)) {
-    	
-kprintf("---------- Gfx::Show() RESTORING FRAMEBUFFER DATA\n");
     	/* Copy the framebuffer data back into the old shown bitmap */
-	copy_bm_and_colmap(data, data->framebuffer, data->shownbm, data->shownbm, CSD(cl));
+	copy_bm_and_colmap(cl, o, data->framebuffer, data->shownbm, data->shownbm);
     }
-    
-kprintf("---------- Gfx::Show() COPYING IN NEW BITMAP\n");
-    copy_bm_and_colmap(data, bm, data->framebuffer, bm, CSD(cl));
+
+    copy_bm_and_colmap(cl, o, bm, data->framebuffer, bm);
     data->shownbm = bm;
     
 
     return data->framebuffer;
-   
 }
+
+/*** HIDDGfx::SetCursor() ********************************************/
+static BOOL hiddgfx_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+{
+    /* We have no clue how to render the cursor */
+    return FALSE;
+}
+
+/*** HIDDGfx::CopyBox() *****************************************************
+
+    NAME
+        CopyBox
+
+    SYNOPSIS
+        DoMethod(src, WORD srcX, WORD srcY,
+                      Object *dest, WORD destX, WORD destY,
+                      UWORD sizeX, UWORD sizeY);
+
+   FUNCTION
+        Copy a rectangular area from the drawing area src to the drawing
+        area stored in dest (which may be src). The source area is not
+        changed (except when both rectangles overlap). The mode of the GC
+        dest determines how the copy takes place.
+
+        In quick mode, the following restrictions are not checked: It's not
+        checked whether the source or destination rectangle is completely
+        inside the valid area or whether the areas overlap. If they
+        overlap, the results are unpredictable. Also drawing modes are
+        ignored. If the two bitmaps in the GCs have a different depth,
+        copying might be slow.
+
+        When copying bitmaps between two different HIDDs, the following
+        pseudo algorithm is executed: First the destination HIDD is queried
+        whether it does understand the format of the source HIDD. If it
+        does, then the destination HIDD does the copying. If it doesn't,
+        then the source is asked whether it understands the destination
+        HIDDs' format. If it does, then the source HIDD will do the
+        copying. If it doesn't, then the default CopyArea of the graphics
+        HIDD base class will be invoked which copies the bitmaps pixel by
+        pixel with BitMap::GetPixel() and BitMap::DrawPixel().
+
+    INPUTS
+        src           - source bitmap object
+        srcX, srcY    - upper, left corner of the area to copy in the source
+        dest          - destination bitmap object
+        destX, destY  - upper, left corner in the destination to copy the area
+        width, height - width and height of the area in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_BltBitMap
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID hiddgfx_copybox(Class *cl, Object *obj, struct pHidd_Gfx_CopyBox *msg)
+{
+    UWORD x, y;
+    WORD  srcX = msg->srcX, destX = msg->destX;
+    WORD  memSrcX = srcX, memDestX = destX;
+    WORD  srcY = msg->srcY, destY = msg->destY;
+    ULONG memFG;
+    
+    HIDDT_PixelFormat *srcpf, *dstpf;
+    Object *dest, *src;
+    
+    Object *gc;
+#if USE_FAST_GETPIXEL
+    struct pHidd_BitMap_GetPixel get_p;
+#endif
+
+#if USE_FAST_DRAWPIXEL
+    struct pHidd_BitMap_DrawPixel draw_p;
+    
+    draw_p.mID	= CSD(cl)->drawpixel_mid;
+    draw_p.gc	= msg->gc;
+#endif
+
+#if USE_FAST_GETPIXEL
+    get_p.mID	= CSD(cl)->getpixel_mid;
+#endif
+    
+    dest = msg->dest;
+    src  = msg->src;
+
+    /* Get the source pixel format */
+    srcpf = (HIDDT_PixelFormat *)HBM(src)->prot.pixfmt;
+    
+/* kprintf("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OCLASS: %s\n", srcpf, obj
+	, cl->ClassNode.ln_Name, OCLASS(obj)->ClassNode.ln_Name);
+*/
+#if 0
+{
+ULONG sw, sh, dw, dh;
+kprintf("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
+    , obj, msg->dest, msg->width, msg->height);
+    
+GetAttr(obj, aHidd_BitMap_Width, &sw);
+GetAttr(obj, aHidd_BitMap_Height, &sh);
+GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
+GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
+kprintf("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh);
+}
+#endif
+
+    dstpf = (HIDDT_PixelFormat *)HBM(dest)->prot.pixfmt;
+    
+    /* Compare graphtypes */
+    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
+    	/* It is ok to do a direct copy */
+    } else {
+    	/* Find out the gfx formats */
+	if (  IS_PALETTIZED(srcpf) && IS_TRUECOLOR(dstpf)) {
+	
+	} else if (IS_TRUECOLOR(srcpf) && IS_PALETTIZED(dstpf)) {
+	
+	} else if (IS_PALETTE(srcpf) && IS_STATICPALETTE(dstpf)) {
+	
+	} else if (IS_STATICPALETTE(srcpf) && IS_PALETTE(dstpf)) {
+	
+	}
+    }
+    
+    gc = msg->gc;
+    
+    memFG = GC_FG(msg->gc);
+    
+    /* All else have failed, copy pixel by pixel */
+
+
+    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
+    	if (IS_TRUECOLOR(srcpf)) {
+// kprintf("COPY FROM TRUECOLOR TO TRUECOLOR\n");
+	    for(y = 0; y < msg->height; y++) {
+		HIDDT_Color col;
+		
+		srcX  = memSrcX;
+		destX = memDestX;
+
+/* if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
+    kprintf("[%d,%d] ", memSrcX, memDestX);
+*/    
+		for(x = 0; x < msg->width; x++) {
+		    HIDDT_Pixel pix;
+		    
+#if USE_FAST_GETPIXEL
+		    get_p.x = srcX ++;
+		    get_p.y = srcY;
+		    pix = GETPIXEL(src, &get_p);
+#else
+		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
+#endif
+
+#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+		    if (srcpf == dstpf) {
+			GC_FG(gc) = pix;
+		    } else {
+#endif
+		    HIDD_BM_UnmapPixel(src, pix, &col);
+		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
+#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+		    }
+#endif
+
+// #if 0
+
+#if USE_FAST_DRAWPIXEL
+		    draw_p.x = destX ++;
+		    draw_p.y = destY;
+		    DRAWPIXEL(dest, &draw_p);
+#else
+		    
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+#endif
+
+// #endif
+		}
+/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
+    kprintf("[%d,%d] ", srcY, destY);
+*/            	srcY++; destY++;
+	    }
+	    
+        } else {
+	     /* Two palette bitmaps.
+	        For this case we do NOT convert through RGB,
+		but copy the pixel indexes directly
+	     */
+// kprintf("COPY FROM PALETTE TO PALETTE\n");
+#warning This might not work very well with two StaticPalette bitmaps
+	    for(y = 0; y < msg->height; y++) {
+		srcX  = memSrcX;
+		destX = memDestX;
+		
+		for(x = 0; x < msg->width; x++) {
+		    GC_FG(gc) = HIDD_BM_GetPixel(src, srcX++, srcY);
+		    
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		    
+		}
+            	srcY++; destY++;
+	    }
+	     
+	}
+
+    } else {
+    	/* Two unlike bitmaps */
+	if (IS_TRUECOLOR(srcpf)) {
+#warning Implement this
+	     kprintf("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n");
+	} else if (IS_TRUECOLOR(dstpf)) {
+	    /* Get the colortab */
+	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)HBM(src)->colmap)->colors;
+// kprintf("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
+
+	    
+	    for(y = 0; y < msg->height; y++) {
+		
+		srcX  = memSrcX;
+		destX = memDestX;
+		for(x = 0; x < msg->width; x++) {
+		    register HIDDT_Pixel pix;
+		    register HIDDT_Color *col;
+		    
+		    pix = HIDD_BM_GetPixel(src, srcX++, srcY);
+		    col = &ctab[pix];
+	
+		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		    
+		}
+            	srcY++; destY++;
+	    }
+	
+	}
+	
+    }
+    
+    GC_FG(gc) = memFG;
+}
+
 
 /*** HIDDGfx::RegisterPixFmt() ********************************************/
 
@@ -1150,7 +1291,6 @@ static Object *hiddgfx_registerpixfmt(Class *cl, Object *o, struct pHidd_Gfx_Reg
     Object *retpf = NULL;
     
     data = INST_DATA(cl, o);
-    
     if (!parse_pixfmt_tags(msg->pixFmtTags, &cmp_pf, 0, CSD(cl))) {
     	kprintf("!!! FAILED PARSING TAGS IN Gfx::RegisterPixFmt() !!!\n");
 	return FALSE;
@@ -1301,7 +1441,7 @@ static Object *hiddgfx_getpixfmt(Class *cl, Object *o, struct pHidd_Gfx_GetPixFm
 #define UtilityBase (csd->utilitybase)
 
 #define NUM_ROOT_METHODS	3
-#define NUM_GFXHIDD_METHODS	15
+#define NUM_GFXHIDD_METHODS	16
 
 Class *init_gfxhiddclass (struct class_static_data *csd)
 {
@@ -1328,9 +1468,10 @@ Class *init_gfxhiddclass (struct class_static_data *csd)
         {(IPTR (*)())hiddgfx_registerpixfmt, 	moHidd_Gfx_RegisterPixFmt	},
         {(IPTR (*)())hiddgfx_releasepixfmt, 	moHidd_Gfx_ReleasePixFmt	},
 	{(IPTR (*)())hiddgfx_getpixfmt, 	moHidd_Gfx_GetPixFmt		},
-	{(IPTR (*)())hiddgfx_setcursor, 	moHidd_Gfx_SetCursor		},
+	{(IPTR (*)())hiddgfx_setcursorshape, 	moHidd_Gfx_SetCursorShape	},
 	{(IPTR (*)())hiddgfx_setmode,		moHidd_Gfx_SetMode		},
 	{(IPTR (*)())hiddgfx_show, 		moHidd_Gfx_Show			},
+	{(IPTR (*)())hiddgfx_copybox, 		moHidd_Gfx_CopyBox		},
         {NULL, 0UL}
     };
     
@@ -1823,113 +1964,6 @@ static struct pfnode *find_pixfmt(struct MinList *pflist
     return NULL;
 }
 
-static VOID draw_cursor(struct HIDDGraphicsData *data, BOOL draw, struct class_static_data *csd)
-{
-    IPTR width, height;
-    IPTR fb_width, fb_height;
-    ULONG x, y;
-    LONG w2end;
-    LONG h2end;
-    
-    struct TagItem gctags[] = {
-	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy	},
-	{ TAG_DONE, 0UL }
-    };
-    
-    GetAttr(data->curs_bm, aHidd_BitMap_Width,  &width);
-    GetAttr(data->curs_bm, aHidd_BitMap_Height, &height);
-    
-    GetAttr(data->framebuffer, aHidd_BitMap_Width,  &fb_width);
-    GetAttr(data->framebuffer, aHidd_BitMap_Height, &fb_height);
-    
-    /* Do some clipping */
-    x = data->curs_x;
-    y = data->curs_y;
-    
-    w2end = fb_width  - 1 - data->curs_x;
-    h2end = fb_height - 1 - data->curs_y;
-    
-    if (w2end <= 0 || h2end <= 0) /* Cursor outside framebuffer */
-	return;
-
-    if (w2end < width)
-	width -= (width - w2end);
-	
-    if (h2end < height)
-	height -= (height - h2end);
-    
-    SetAttrs(data->gc, gctags);
-    
-    if (draw) {
-	/* Backup under the new cursor image */
-	HIDD_BM_CopyBox(data->framebuffer
-	    , data->gc
-	    , data->curs_x
-	    , data->curs_y
-	    , data->curs_backup
-	    , 0, 0
-	    , width, height
-	);
-	
-	/* Render the cursor image */
-	HIDD_BM_CopyBox(data->curs_bm
-	    , data->gc
-	    , 0, 0
-	    , data->framebuffer
-	    , data->curs_x, data->curs_y
-	    , width, height
-	);
-	
-    } else {
-	/* Erase the old cursor image */
-	HIDD_BM_CopyBox(data->framebuffer
-	    , data->gc
-	    , 0, 0
-	    , data->framebuffer
-	    , data->curs_x
-	    , data->curs_y
-	    , width, height
-	);
-    }
-    return;
-}
-
-static VOID copy_bm_and_colmap(struct HIDDGraphicsData *data, Object *src_bm
-	, Object *dst_bm, Object *dims_bm
-	, struct class_static_data *csd)
-{
-    struct TagItem gctags[] = {
-    	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
-	{ TAG_DONE, 0UL }
-    };
-    IPTR width, height;
-    ULONG i, numentries;
-    Object *src_colmap;
-    
-    /* Copy the displayable bitmap into the framebuffer */
-    GetAttr(dims_bm, aHidd_BitMap_Width,	&width);
-    GetAttr(dims_bm, aHidd_BitMap_Height,	&height);
-    
-    /* We have to copy the colormap into the framebuffer bitmap */
-    GetAttr(src_bm, aHidd_BitMap_ColorMap, (IPTR *)&src_colmap);
-    GetAttr(src_colmap, aHidd_ColorMap_NumEntries, &numentries);
-    
-    for (i = 0; i < numentries; i ++) {
-    	HIDDT_Color col;
-	HIDD_CM_GetColor(src_colmap, i, &col);
-	HIDD_BM_SetColors(data->framebuffer, &col, i, 1);
-    }    
-    
-    SetAttrs(data->gc, gctags);
-/* kprintf("---------- Gfx::Show() COPYING FROM BM %p TO %p\n"
-	, bm, data->framebuffer);
-*/	
-    HIDD_BM_CopyBox(src_bm, data->gc, 0, 0
-    	, dst_bm
-	, 0, 0
-	, width, height
-    );
-}
 
 
 #undef OOPBase

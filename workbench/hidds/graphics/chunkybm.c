@@ -32,6 +32,7 @@ static struct ABDescr attrbases[] = {
     { NULL, NULL }
 };
 
+
 static Object *chunkybm_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     struct chunkybm_data *data;
@@ -45,14 +46,9 @@ static Object *chunkybm_new(Class *cl, Object *o, struct pRoot_New *msg)
     Object *pf;
     ULONG bytesperpixel;
     
-   
-
-kprintf("ChunkyBM::New(): GETTING GFXHIDD\n");
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     if (NULL == o)
     	return NULL;
-
-kprintf("ChumkBM::New(): RETURNED FROM SUPER: %p\n", o);
 	
     /* Initialize the instance data to 0 */
     data = INST_DATA(cl, o);
@@ -67,13 +63,10 @@ kprintf("ChumkBM::New(): RETURNED FROM SUPER: %p\n", o);
     data->bytesperpixel = bytesperpixel;
     data->bytesperrow	= data->bytesperpixel * width;
 
-kprintf("ChunkBM:New(): dims: %dx%d, bpp: %d, bpr: %d\n"
-    , width, height, bytesperpixel, data->bytesperrow);
-    
     data->buffer = AllocVec(height * data->bytesperrow, MEMF_ANY|MEMF_CLEAR);
     if (NULL == data->buffer)
     	ok = FALSE;
-kprintf("ChunkyBM::New(): BUFFER ALLOCATED: %p\n", data->buffer);
+
     /* free all on error */
     
     if(ok == FALSE)
@@ -116,7 +109,10 @@ static VOID chunkybm_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel
     dest = data->buffer + msg->x * data->bytesperpixel + msg->y * data->bytesperrow;
     switch(data->bytesperpixel)
     {
-	case 1: *((UBYTE *) dest)   = (UBYTE) msg->pixel; break;
+	case 1:
+		*((UBYTE *) dest)   = (UBYTE) msg->pixel;
+		break;
+		
 	case 2: *((UWORD *) dest)   = (UWORD) msg->pixel; break;
 	case 3:	dest[0] = (UBYTE)(msg->pixel >> 16) & 0x000000FF;
 		dest[1] = (UBYTE)(msg->pixel >> 8) & 0x000000FF;
@@ -154,7 +150,8 @@ static ULONG chunkybm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 
     switch(data->bytesperpixel)
     {
-	case 1: retval = (HIDDT_Pixel) *((UBYTE *) src); break;
+	case 1: retval = (HIDDT_Pixel) *((UBYTE *) src);
+	break;
 	case 2: retval = (HIDDT_Pixel) *((UWORD *) src); break;
 	case 3: retval = (HIDDT_Pixel) (src[0] << 16) + (src[1] << 8) + src[2]; break;
 	//(*((UBYTE *) src++) << 16) | *((UWORD *) src)); break;
