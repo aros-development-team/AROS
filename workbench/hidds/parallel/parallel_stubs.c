@@ -142,3 +142,16 @@ VOID HIDD_ParallelUnit_Stop (OOP_Object *obj)
     ((VOID) OOP_DoMethod(obj, (OOP_Msg) &p));
 }
 
+/***************************************************************/
+
+UWORD HIDD_ParallelUnit_GetStatus(OOP_Object *obj)
+{
+    STATIC_MID;
+    struct pHidd_ParallelUnit_GetStatus p;
+
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_GetStatus);
+
+    p.mID         = mid;
+
+    return ((UWORD)OOP_DoMethod(obj, (OOP_Msg) &p));
+}

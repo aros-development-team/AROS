@@ -78,6 +78,7 @@ enum
     moHidd_ParallelUnit_Write,
     moHidd_ParallelUnit_Start,
     moHidd_ParallelUnit_Stop,
+    moHidd_ParallelUnit_GetStatus,
     moHidd_ParallelUnit_NumMethods	// always keep this the last one!
 };
 
@@ -110,6 +111,11 @@ struct pHidd_ParallelUnit_Stop
     OOP_MethodID	mID;
 };
 
+struct pHidd_ParallelUnit_GetStatus
+{
+    OOP_MethodID	mID;
+};
+
 /* Predeclarations of stubs in libhiddparallelstubs.h */
 
 OOP_Object * HIDD_Parallel_NewUnit	(OOP_Object *obj, ULONG unitnum);
@@ -119,5 +125,6 @@ BOOL     HIDD_ParallelUnit_Init		(OOP_Object *obj, VOID * DataReceived, VOID * D
 ULONG    HIDD_ParallelUnit_Write	(OOP_Object *obj, UBYTE * data, ULONG length);
 VOID     HIDD_ParallelUnit_Start        (OOP_Object *obj);
 VOID     HIDD_ParallelUnit_Stop         (OOP_Object *obj);
+UWORD    HIDD_ParallelUnit_GetStatus    (OOP_Object *obj);
 
 #endif /* HIDD_PARALLEL_H */
