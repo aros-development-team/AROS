@@ -63,8 +63,8 @@ AC_PROG_AWK
 dnl Do the defaults for the substituted variables.
 aros_cc="$CC"
 aros_as="$CC"
-aros_host_cc="gcc"		# this is for creating locally run programs
-aros_host_as="gcc"		# ditto, but probably not needed
+aros_host_cc="gcc"              # this is for creating locally run programs
+aros_host_as="gcc"              # ditto, but probably not needed
 aros_common_cflags=""
 aros_flavour="emulation"
 aros_shell_ldflags=""
@@ -81,7 +81,7 @@ dnl don't get written to the output file.
 dnl Default binutils programs have a _prog and _args
 nm_prog="nm"
 nm_args="-ul"
-strip_prog="true"	# Alternatively you could use "strip" here
+strip_prog="true"       # Alternatively you could use "strip" here
 strip_args=""
 
 dnl Start with the host O/S - These should only be build options.
@@ -105,7 +105,7 @@ case "$host_os" in
     freebsd*)
 	# Only do this if we are not cross compiling...
 	if test "x$cross_compile" = "xfalse" ; then
-	    nm_args="-u"	# FreeBSD nm doesn't do -l
+	    nm_args="-u"        # FreeBSD nm doesn't do -l
 	fi
 	aros_cc="$aros_cc -pipe"
 	aros_as="$aros_as -pipe"
@@ -115,7 +115,7 @@ case "$host_os" in
 	SORT=/gg/bin/sort
 	TEST=/gg/bin/test
 	aros_common_aflags="-x assembler-with-cpp"
-	;;	    
+	;;
     *)
 	AC_MSG_ERROR([Unsupported host architecture $host])
 	;;
@@ -132,13 +132,13 @@ dnl You should append to the variables here.
 
 case "$target_os" in
     linux*)
-    	aros_arch="linux"
+	aros_arch="linux"
 	aros_flavour="emulation"
 	aros_common_cflags="-Wall -O0"
 	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
 	case "$target_cpu" in
 	*m68k*)
-    	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
+	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -Wl,-T,\$(TOP)/config/linux/m68k/script.so -o"
 	    aros_shell_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
 	    aros_cpu="m68k"
@@ -146,7 +146,7 @@ case "$target_os" in
 	*i?86*)
 	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386 -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -o"
-	    aros_shell_ldflags="-Wl,-rpath,./lib"
+	    aros_shell_ldflags="-Xlinker -rpath -Xlinker ./lib"
 	    aros_cpu="i386"
 	    ;;
 	*)
@@ -155,9 +155,9 @@ case "$target_os" in
 	esac
 	aros_shared_cflags="-fPIC"
 	;;
-	
+
     freebsd*)
-    	aros_arch="freebsd"
+	aros_arch="freebsd"
 	aros_cpu="i386"
 	aros_flavour="emulation"
 	aros_common_cflags="-Wall -O2"
@@ -165,13 +165,13 @@ case "$target_os" in
 	aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386"
 	aros_genmap="-Xlinker -assert -Xlinker" # FreeBSD doesn't support maps
 	strip_args="-x"
-	
+
 	# If we have bash, use that, otherwise, /bin/sh
 	AC_PATH_PROG(aros_shell,bash,[/bin/sh])
 	;;
 
     amiga*)
-    	aros_arch="amiga"
+	aros_arch="amiga"
 	aros_cpu="m68k"
 	aros_flavour="native"
 	strip_prog=strip	# We actually strip binaries here
@@ -181,7 +181,7 @@ case "$target_os" in
 	aros_common_aflags="-m68060 -x assembler-with-cpp"
 	;;
     *)
-    	AC_MSG_ERROR([Unsupported target architecture '$target'])
+	AC_MSG_ERROR([Unsupported target architecture '$target'])
 	;;
 esac
 
@@ -258,7 +258,7 @@ dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
 emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION" ;;
 standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE" ;;
-native)		aros_flavour_uc="AROS_FLAVOUR_NATIVE" ;;
+native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE" ;;
 nativecompat)	aros_flavour_uc="AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB" ;;

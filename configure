@@ -1136,8 +1136,8 @@ done
 
 aros_cc="$CC"
 aros_as="$CC"
-aros_host_cc="gcc"		# this is for creating locally run programs
-aros_host_as="gcc"		# ditto, but probably not needed
+aros_host_cc="gcc"              # this is for creating locally run programs
+aros_host_as="gcc"              # ditto, but probably not needed
 aros_common_cflags=""
 aros_flavour="emulation"
 aros_shell_ldflags=""
@@ -1151,7 +1151,7 @@ aros_mkdepend="makedepend"
 
 nm_prog="nm"
 nm_args="-ul"
-strip_prog="true"	# Alternatively you could use "strip" here
+strip_prog="true"       # Alternatively you could use "strip" here
 strip_args=""
 
 
@@ -1165,7 +1165,7 @@ case "$host_os" in
     freebsd*)
 	# Only do this if we are not cross compiling...
 	if test "x$cross_compile" = "xfalse" ; then
-	    nm_args="-u"	# FreeBSD nm doesn't do -l
+	    nm_args="-u"        # FreeBSD nm doesn't do -l
 	fi
 	aros_cc="$aros_cc -pipe"
 	aros_as="$aros_as -pipe"
@@ -1175,7 +1175,7 @@ case "$host_os" in
 	SORT=/gg/bin/sort
 	TEST=/gg/bin/test
 	aros_common_aflags="-x assembler-with-cpp"
-	;;	    
+	;;
     *)
 	{ echo "configure: error: Unsupported host architecture $host" 1>&2; exit 1; }
 	;;
@@ -1189,13 +1189,13 @@ target_cpu=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\2/'`
 
 case "$target_os" in
     linux*)
-    	aros_arch="linux"
+	aros_arch="linux"
 	aros_flavour="emulation"
 	aros_common_cflags="-Wall -O0"
 	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
 	case "$target_cpu" in
 	*m68k*)
-    	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
+	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -Wl,-T,\$(TOP)/config/linux/m68k/script.so -o"
 	    aros_shell_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
 	    aros_cpu="m68k"
@@ -1203,7 +1203,7 @@ case "$target_os" in
 	*i?86*)
 	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386 -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -o"
-	    aros_shell_ldflags="-Wl,-rpath,./lib"
+	    aros_shell_ldflags="-Xlinker -rpath -Xlinker ./lib"
 	    aros_cpu="i386"
 	    ;;
 	*)
@@ -1212,9 +1212,9 @@ case "$target_os" in
 	esac
 	aros_shared_cflags="-fPIC"
 	;;
-	
+
     freebsd*)
-    	aros_arch="freebsd"
+	aros_arch="freebsd"
 	aros_cpu="i386"
 	aros_flavour="emulation"
 	aros_common_cflags="-Wall -O2"
@@ -1222,12 +1222,12 @@ case "$target_os" in
 	aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386"
 	aros_genmap="-Xlinker -assert -Xlinker" # FreeBSD doesn't support maps
 	strip_args="-x"
-	
+
 	# If we have bash, use that, otherwise, /bin/sh
 	# Extract the first word of "bash", so it can be a program name with args.
 set dummy bash; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1228: checking for $ac_word" >&5
+echo "configure:1231: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_aros_shell'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1259,7 +1259,7 @@ fi
 	;;
 
     amiga*)
-    	aros_arch="amiga"
+	aros_arch="amiga"
 	aros_cpu="m68k"
 	aros_flavour="native"
 	strip_prog=strip	# We actually strip binaries here
@@ -1269,7 +1269,7 @@ fi
 	aros_common_aflags="-m68060 -x assembler-with-cpp"
 	;;
     *)
-    	{ echo "configure: error: Unsupported target architecture '$target'" 1>&2; exit 1; }
+	{ echo "configure: error: Unsupported target architecture '$target'" 1>&2; exit 1; }
 	;;
 esac
 
@@ -1357,7 +1357,7 @@ fi
 # Extract the first word of "lite", so it can be a program name with args.
 set dummy lite; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1358: checking for $ac_word" >&5
+echo "configure:1361: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_LITE'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1391,7 +1391,7 @@ if test -z "$STRIP"; then
     # Extract the first word of "strip", so it can be a program name with args.
 set dummy strip; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1392: checking for $ac_word" >&5
+echo "configure:1395: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_STRIP'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1428,7 +1428,7 @@ if test -z "$AR"; then
     # Extract the first word of "ar", so it can be a program name with args.
 set dummy ar; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1429: checking for $ac_word" >&5
+echo "configure:1432: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_AR'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1465,7 +1465,7 @@ if test -z "$RANLIB"; then
     # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1466: checking for $ac_word" >&5
+echo "configure:1469: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_RANLIB'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1502,7 +1502,7 @@ if test -z "$aros_check_uds"; then
     # Extract the first word of "nm", so it can be a program name with args.
 set dummy nm; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1503: checking for $ac_word" >&5
+echo "configure:1506: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_path_aros_check_uds'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1560,7 +1560,7 @@ fi
 case "$aros_flavour" in
 emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION" ;;
 standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE" ;;
-native)		aros_flavour_uc="AROS_FLAVOUR_NATIVE" ;;
+native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE" ;;
 nativecompat)	aros_flavour_uc="AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB" ;;
