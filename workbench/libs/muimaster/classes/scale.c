@@ -173,7 +173,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     ULONG val;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
-    D(bug("muimaster.library/gauge.c: Draw Scale Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+    D(bug("muimaster.library/scale.c: Draw Scale Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
     if (data->horiz)
     {
