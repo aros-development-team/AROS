@@ -28,6 +28,8 @@ FUNCS := \
 
 #MM- workbench-libs-mathieeedoubtrans : setup includes
 
+USER_LDFLAGS:=--verbose
+
 %build_module_macro mmake=workbench-libs-mathieeedoubtrans \
  modname=mathieeedoubtrans modtype=library \
  files=$(FILES) funcs=$(FUNCS) \
