@@ -170,7 +170,7 @@ struct hunk
         AROS_LCA(ULONG, size,  D0), \
         AROS_LCA(ULONG, flags, D1), \
         struct ExecBase *, SysBase  \
-    )
+    )				    
 
 
 #define MyFree(addr, size)          \
@@ -481,8 +481,9 @@ static int relocate
 	    case R_PPC_ADDR16_HA:
 		{
 		    unsigned short *c = (unsigned short *) p;
-		    *c = (s + rel->addend) >> 16;
-		    if ((*c & 0x8000) != 0)
+		    ULONG temp = s + rel->addend;
+		    *c = temp >> 16;
+		    if ((temp & 0x8000) != 0)
 			(*c)++;
 		}
 		break;
@@ -643,7 +644,20 @@ error:
     hunks = 0;
 
 end:
-
+    
+#if defined(__ppc__) || defined(__powerpc__)
+    if (hunks)
+    {
+	struct hunk *hunk = BPTR2HUNK(hunks);
+	CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+	while (hunk->next)
+	{
+	    hunk = BPTR2HUNK(hunk->next);
+	    CacheClearE(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+	}
+    }
+#endif
+    
     /* deallocate the symbol tables */
     for (i = 0; i < eh.shnum; i++)
     {
