@@ -21,13 +21,6 @@
 #   ifndef _AMIGA /* One define for each system */
 #	define _AMIGA
 #   endif
-#else
-#   ifndef _AROS
-#       define _AROS
-#   endif
-#   ifndef __AROS__
-#       define __AROS__
-#   endif
 #endif
 
 /*
