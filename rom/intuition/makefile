@@ -2,7 +2,8 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = closewindow modifyidcmp openwindow
+FILES = activatewindow closewindow drawborder drawimage modifyidcmp \
+	openwindow printitext setwindowtitles sizewindow
 
 all: setup $(OSGENDIR)/intuition_init.o $(OSGENDIR)/intuition_functable.o \
 	$(OSGENDIR)/intui_x11.o \
