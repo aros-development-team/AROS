@@ -2,14 +2,6 @@
 #include <gfx.h>
 
 extern void main_init(void * memory, ULONG memSize);
-extern void forever(void);
-
-extern void _sys_dispatch(void);
-extern void _sys_trap1_handler(void);
-
-void _Init_IRQVectors(void);
-
-
 
 void aros_reset(void)
 {
@@ -44,19 +36,6 @@ void aros_reset(void)
 	WREG_B(LOTCR) = 0x4e; // 0xfffffa2b
 
 	/*
-	 * Set timer 1
-	 */
-	WREG_W(TCTL1)  = 0x13;  // enable timer + interrupt request on compare
-	WREG_W(TCMP1)  = 0x411a;
-
-#if 0
-	/*
-	 * Set timer 2
-	 */
-	WREG_W(TCTL2)  = 0x11;  // enable timer + interrupt request on compare
-	WREG_W(TCMP2)  = 0x0f00;
-#endif
-	/*
 	 * Allow the interrupt for timer 1 & 2 to go through!
 	 * Disable interrupts by manipulating SR.
 	 */
@@ -68,39 +47,8 @@ void aros_reset(void)
 	 */
 	WREG_B(IVR) = 0x40;
 
-	_Init_IRQVectors();
-
 	/*
 	 * First parameter is memory start, 2nd is size of memory.
 	 */
 	main_init((void *)0x400,0x90000-0x400);
-}
-
-void _Init_IRQVectors(void)
-{
-	WREG_L(IRQ_LEVEL6) = (ULONG)_sys_dispatch;
-	WREG_L(IRQ_LEVEL5) = (ULONG)_sys_dispatch;
-	WREG_L(IRQ_LEVEL4) = (ULONG)_sys_dispatch;
-	WREG_L(IRQ_LEVEL3) = (ULONG)_sys_dispatch;
-	WREG_L(IRQ_LEVEL2) = (ULONG)_sys_dispatch;
-	WREG_L(IRQ_LEVEL1) = (ULONG)_sys_dispatch;
-
-	/*
-	 * Initialize the trap #1 handler. It will 
-	 * handle all traps use in AROS.
-	 * Cannot use the other traps since POSE
-	 * intercepts them.
-	 */
-	WREG_L(TRAP_1) = (ULONG)_sys_trap1_handler;
-
-	/*
-	 * Set the IRQ 4 (etc.) handler
-	 */
-	WREG_L(0x100) = (ULONG)_sys_dispatch;
-	WREG_L(0x104) = (ULONG)_sys_dispatch;
-	WREG_L(0x108) = (ULONG)_sys_dispatch;
-	WREG_L(0x10c) = (ULONG)_sys_dispatch;
-	WREG_L(0x110) = (ULONG)_sys_dispatch; //; this seems to be IRQ 4 according to the emulator
-	WREG_L(0x114) = (ULONG)_sys_dispatch;
-	WREG_L(0x118) = (ULONG)_sys_dispatch;
 }
