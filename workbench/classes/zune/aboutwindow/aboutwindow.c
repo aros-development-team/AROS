@@ -18,6 +18,8 @@
 
 #include <clib/alib_protos.h>   /* StrDup() */
 
+#include <exec/memory.h>
+
 #include <string.h>
 
 #include <zune/iconimage.h>
