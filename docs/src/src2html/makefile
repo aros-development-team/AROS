@@ -50,7 +50,7 @@ depend :
 # DO NOT DELETE
 gram.o: error.h emit.h util.h 
 scan.o: util.h
-emit.o: -linux/2.7.2.1/include/stdarg.h hash.h error.h
+emit.o: hash.h error.h
 emit.o: exec.h util.h
 emit_html.o: gram.h emit.h 
 varstr.o: varstr.h 
