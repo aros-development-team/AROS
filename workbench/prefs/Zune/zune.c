@@ -6,6 +6,7 @@
 */
 
 #include <string.h>
+#include <stdio.h>
 
 #include <exec/memory.h>
 
@@ -35,10 +36,10 @@
 
 struct Library *MUIMasterBase;
 
-void load_prefs(void);
-void save_prefs(BOOL envarc);
+void load_prefs(CONST_STRPTR name);
+void save_prefs(CONST_STRPTR name, BOOL envarc);
 void test_prefs(void);
-void restore_prefs(void);
+void restore_prefs(CONST_STRPTR name);
 
 #ifndef __AROS__
 
@@ -208,6 +209,7 @@ static Object *saveas_menuitem;
 static Object *aboutzune_menuitem;
 static Object *quit_menuitem;
 static Object *LastSavedConfigdata = NULL;
+static STRPTR appname = NULL;
 
 static Object *main_wnd;
 static Object *main_page_list;
@@ -325,7 +327,7 @@ void main_page_active(void)
 *****************************************************************/
 void main_save_pressed(void)
 {
-    save_prefs(TRUE);
+    save_prefs(appname, TRUE);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -334,7 +336,7 @@ void main_save_pressed(void)
 *****************************************************************/
 void main_use_pressed(void)
 {
-    save_prefs(FALSE);
+    save_prefs(appname, FALSE);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -351,7 +353,7 @@ void main_test_pressed(void)
 *****************************************************************/
 void main_cancel_pressed(void)
 {
-    restore_prefs();
+    restore_prefs(appname);
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
@@ -485,9 +487,11 @@ void deinit_gui(void)
 /****************************************************************
  Load the given prefs
 *****************************************************************/
-void load_prefs(void)
+void load_prefs(CONST_STRPTR name)
 {
-    Object *configdata = MUI_NewObjectA(MUIC_Configdata, NULL);
+    Object *configdata = MUI_NewObject(MUIC_Configdata,
+				       MUIA_Configdata_ApplicationBase, name,
+				       TAG_DONE);
     if (configdata)
     {
 	int i;
@@ -512,27 +516,32 @@ void test_prefs(void)
 {
     Object *cfg;
 
-    save_prefs(FALSE);
+    save_prefs(appname, FALSE);
 /*      load_prefs(); */
     cfg = MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, app, TAG_DONE);
     set(app, MUIA_Application_Configdata, cfg);
 }
 
-void restore_prefs(void)
+void restore_prefs(CONST_STRPTR name)
 {
-    DoMethod(LastSavedConfigdata, MUIM_Configdata_Save, (IPTR)"ENV:zune/global.prefs");
+    char buf[255];
+
+    snprintf(buf, 255, "ENV:zune/%s.prefs", name);
+    DoMethod(LastSavedConfigdata, MUIM_Configdata_Save, (IPTR)buf);
 }
 
 /****************************************************************
  Saves the done prefs
 *****************************************************************/
-void save_prefs(BOOL envarc)
+void save_prefs(CONST_STRPTR name, BOOL envarc)
 {
-    Object *configdata = MUI_NewObjectA(MUIC_Configdata, NULL);
-
+    Object *configdata = MUI_NewObject(MUIC_Configdata,
+				       MUIA_Configdata_ApplicationBase, name,
+				       TAG_DONE);
     if (configdata)
     {
 	int i;
+	char buf[255];
 
 /*  	D(bug("zune::save_prefs: created configdata %p\n", configdata)); */
 
@@ -546,9 +555,11 @@ void save_prefs(BOOL envarc)
 
 	if (envarc)
 	{
-	    DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"ENVARC:zune/global.prefs");
+	    snprintf(buf, 255, "ENVARC:zune/%s.prefs", name);
+	    DoMethod(configdata, MUIM_Configdata_Save, (IPTR)buf);
 	}
-	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)"ENV:zune/global.prefs");
+	snprintf(buf, 255, "ENV:zune/%s.prefs", name);
+	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)buf);
 
     	MUI_DisposeObject(configdata);
 /*  	D(bug("zune::save_prefs: disposed configdata %p\n", configdata)); */
@@ -579,25 +590,47 @@ void loop(void)
 *****************************************************************/
 int main(void)
 {
-    if (open_libs())
+    int  retval = RETURN_OK;
+    struct RDArgs *rda;
+    IPTR args[] = { NULL };
+    enum { ARG_APPNAME = 0 };
+
+    rda = ReadArgs("APPNAME", args, NULL);
+
+    if(rda != NULL)
     {
-	if (open_classes())
+	appname = (STRPTR)args[ARG_APPNAME];
+	if (!appname)
+	    appname = "global";
+
+	if (open_libs())
 	{
-	    if (init_gui())
+	    if (open_classes())
 	    {
-		load_prefs();
-		set(main_wnd, MUIA_Window_Open, TRUE);
-		if (xget(main_wnd,MUIA_Window_Open))
+		if (init_gui())
 		{
-		    loop();
+		    load_prefs((STRPTR)args[ARG_APPNAME]);
+		    set(main_wnd, MUIA_Window_Open, TRUE);
+		    if (xget(main_wnd,MUIA_Window_Open))
+		    {
+			loop();
+		    }
+		    if (LastSavedConfigdata)
+			MUI_DisposeObject(LastSavedConfigdata);
+		    deinit_gui();
 		}
-		if (LastSavedConfigdata)
-		    MUI_DisposeObject(LastSavedConfigdata);
-		deinit_gui();
+		close_classes();
 	    }
-	    close_classes();
+	    close_libs();
 	}
-	close_libs();
     }
-    return 0;
+    else
+    {
+	PrintFault(IoErr(), "Zune");
+	retval = RETURN_FAIL;
+    }
+    
+    FreeArgs(rda);
+
+    return retval;
 }
