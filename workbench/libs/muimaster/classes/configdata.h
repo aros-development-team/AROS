@@ -140,6 +140,7 @@
 #define MUICFG_String_Cursor            0x400
 #define MUICFG_String_MarkedBackground  0x401
 #define MUICFG_String_MarkedText        0x402
+#define MUICFG_Register_TruncateTitles  0x403
 
 
 /*** Methods ****************************************************************/
