@@ -82,10 +82,6 @@ AROS_LH1(BOOL, FreeClass,
     MakeClass(), "Basic Object-Oriented Programming System for Intuition"
     and "boopsi Class Reference" Dokument.
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -93,25 +89,30 @@ AROS_LH1(BOOL, FreeClass,
 
 #if INTERNAL_BOOPSI
 
+    BOOL retval = FALSE;
+    
     SANITY_CHECKR(classPtr,FALSE)
+    
+    ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
-    /* Make sure no one creates another object from this class. For private
-    classes, this call does nothing. */
+    /*
+        Make sure no one creates another object from this class. For private
+        classes, this call does nothing.
+    */
     RemoveClass (classPtr);
 
-    Forbid();
     if (!classPtr->cl_SubclassCount && !classPtr->cl_ObjectCount)
     {
         classPtr->cl_Super->cl_SubclassCount --;
-        Permit();
-
+        
         FreeMem (classPtr, sizeof (Class));
 
-        return TRUE;
+        retval = TRUE;
     }
-    Permit();
 
-    return FALSE;
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+    
+    return retval;
 #else
 
 /* call boopsi.library function */
