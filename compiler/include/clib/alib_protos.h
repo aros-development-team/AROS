@@ -144,7 +144,7 @@ AROS_UFP3(IPTR, HookEntry,
     va_start (args, arg);                       \
 						\
     if ((msg = GetMsgFromStack (arg, args)))    \
-    {						\
+    {
 #   define AROS_SLOWSTACKMETHODS_ARG(arg) msg
 #   define AROS_SLOWSTACKMETHODS_POST		\
 	FreeMsgFromStack (msg);                 \
