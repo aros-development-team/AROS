@@ -85,7 +85,7 @@ typos and if you really, really, really can't find anything, then you
 got my email.
 
 \begin{emph}
-It seems that the protocol for CVS has changed. Version of CVS
+It seems that the login command for CVS has changed. Version of CVS
 upto 1.8.1 and earlier need not have ":pserver:" before the login name,
 but later versions require it. If you have problems to login, try to omit
 ":pserver:" or prepend it. If CVS wants it, you will get an error reading
