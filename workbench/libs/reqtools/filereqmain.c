@@ -870,12 +870,23 @@ skipfile:
 		    break;
 		    
 		case IDCMP_GADGETUP:
+#ifdef _AROS
+		    /* AROS gadtools library gadgets are boopsi gadgets, so checking
+		       for GTYP_STRGADGET does not work*/
+		    if ((code == KEYB_SHORTCUT) && ((gad->GadgetID == PATSTR) ||
+		    				    (gad->GadgetID == DRAWERSTR) ||
+						    (gad->GadgetID == FILESTR)) )
+
+		    
+#else
 		    if (((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET)
 			&& (code == KEYB_SHORTCUT))
+#endif
 		    {
 			doactgad = FALSE;
 			continue;
 		    }
+
 fakegadgetup:
 		    id = gad->GadgetID;
 dogadgetup:
@@ -1353,18 +1364,18 @@ iterate:
 
     } while (reqmsg && !glob->newdir);
 
-#ifndef _AROS
-#warning Disabled this gadget activation here, as in Intuition this functions is slow (why? ask stegerg)
     if (doactgad)
     {
+#ifndef _AROS
+#warning Disabled this gadget activation here, as in Intuition this functions is slow (why? ask stegerg)
 	ActivateGadget (glob->activegadget, glob->reqwin, NULL);
+#endif
 	if (!(glob->reqwin->IDCMPFlags & IDCMP_RAWKEY))
 	{
 	    /* Add RAWKEY IDCMP only after initialzing and refreshing the window */
 	    ModifyIDCMP (glob->reqwin, IDCMP_RAWKEY|REQ_IDCMP);
 	}
     }
-#endif
 
     return ((ULONG)CALL_HANDLER);
 }
