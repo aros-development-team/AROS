@@ -227,7 +227,7 @@ print "Working on " part_name "..."
 		    }
 
 		    printf ("/*\n") > file;
-		    print "    (C) 1997 AROS - The Amiga Research OS" >> file
+		    print "        Copyright © 1995-2001, The AROS Development Team. All rights reserved." >> file
 		    printf ("    %sId$\n", "$") >> file;
 		    printf ("\n") >> file;
 		    printf ("    Desc:\n") >> file;
