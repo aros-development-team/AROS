@@ -35,5 +35,6 @@ void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
 STRPTR GetFile(void);
+void About(void);
 
 /****************************************************************************************/

@@ -18,8 +18,11 @@
 #include "strings.h"
 
 #include "global.h"
+#include "version.h"
 
 #include <string.h>
+
+const char *versionstring = VERSIONSTR;
 
 /*********************************************************************************************/
 
@@ -140,6 +143,26 @@ STRPTR GetFile(void)
     } /* if (AslBase) */
     
     return retval;
+}
+
+/*********************************************************************************************/
+
+void About(void)
+{
+    struct EasyStruct   es;
+    
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = 0;
+    es.es_Title        = MSG(MSG_ABOUT_TITLE);
+    es.es_TextFormat   = MSG(MSG_ABOUT);
+    es.es_GadgetFormat = MSG(MSG_CONTINUE);
+ 
+    EasyRequest(win, &es, NULL, (IPTR)VERSION,
+				(IPTR)REVISION,
+				(IPTR)DATESTR, 
+				(IPTR)"2005",
+				(IPTR)"AROS");
+
 }
 
 /*********************************************************************************************/

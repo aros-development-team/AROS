@@ -1407,6 +1407,7 @@ static BOOL HandleWin(void)
 			switch((ULONG)GTMENUITEM_USERDATA(item))
 			{
 			    case MSG_MEN_PROJECT_ABOUT:
+				About();
 				break;
 
 			    case MSG_MEN_PROJECT_QUIT:
