@@ -15,9 +15,6 @@
 /**************************************
 		Includes
 **************************************/
-#ifndef AROS_SYSTEM_H
-#   include <aros/system.h>
-#endif
 #ifndef EXEC_NODES_H
 #   include <exec/nodes.h>
 #endif

@@ -13,7 +13,7 @@
 
     NAME */
 #include <intuition/classusr.h>
-#include <proto/alib.h>
+#include <proto/intuition.h>
 
 	ULONG SetSuperAttrs (
 

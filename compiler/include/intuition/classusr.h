@@ -13,13 +13,22 @@
 #   include <utility/hooks.h>
 #endif
 
-typedef ULONG  Object;
-typedef UBYTE *ClassID;
+#ifndef __typedef_Object
+#   define __typedef_Object
+    typedef ULONG  Object;
+#endif
+#ifndef __typedef_ClassID
+#   define __typedef_ClassID
+    typedef UBYTE *ClassID;
+#endif
 
-typedef struct
-{
-    ULONG MethodID;
-} *Msg;
+#ifndef __typedef_Msg
+#   define __typedef_Msg
+    typedef struct
+    {
+	ULONG MethodID;
+    } *Msg;
+#endif
 
 #define ROOTCLASS     "rootclass"
 #define IMAGECLASS    "imageclass"
@@ -38,10 +47,10 @@ typedef struct
 #define POINTERCLASS  "pointerclass"
 
 #define OM_Dummy     0x0100
-#define OM_NEW       (OM_Dummy + 1)
+#define OM_NEW	     (OM_Dummy + 1)
 #define OM_DISPOSE   (OM_Dummy + 2)
-#define OM_SET       (OM_Dummy + 3)
-#define OM_GET       (OM_Dummy + 4)
+#define OM_SET	     (OM_Dummy + 3)
+#define OM_GET	     (OM_Dummy + 4)
 #define OM_ADDTAIL   (OM_Dummy + 5)
 #define OM_REMOVE    (OM_Dummy + 6)
 #define OM_NOTIFY    (OM_Dummy + 7)
@@ -51,7 +60,7 @@ typedef struct
 
 struct opSet
 {
-    ULONG               MethodID;
+    ULONG		MethodID;
     struct TagItem    * ops_AttrList;
     struct GadgetInfo * ops_GInfo;
 };
@@ -65,16 +74,16 @@ struct opGet
 
 struct opAddTail
 {
-    ULONG         MethodID;
+    ULONG	  MethodID;
     struct List * opat_List;
 };
 
 struct opUpdate
 {
-    ULONG               MethodID;
+    ULONG		MethodID;
     struct TagItem    * opu_AttrList;
     struct GadgetInfo * opu_GInfo;
-    ULONG               opu_Flags;    /* see below */
+    ULONG		opu_Flags;    /* see below */
 };
 
 /* opu_Flags */

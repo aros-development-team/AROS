@@ -7,12 +7,14 @@
 */
 #include <intuition/classes.h>
 #include <stdarg.h>
+#include <proto/alib.h>
 #include "alib_intern.h"
 
 /******************************************************************************
 
     NAME */
-#include <proto/alib.h>
+#include <intuition/classusr.h>
+#include <proto/intuition.h>
 
 	IPTR DoSuperMethodA (
 

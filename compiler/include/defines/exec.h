@@ -7,8 +7,8 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
-#ifndef DOS_DOS_H
-#   include <dos/dos.h>
+#ifndef DOS_BPTR_H
+#   include <dos/bptr.h>
 #endif
 
 /*

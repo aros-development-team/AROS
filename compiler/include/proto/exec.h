@@ -17,9 +17,4 @@
 #include <defines/exec.h>
 #endif
 
-/* Common support functions */
-#ifndef PROTO_ALIB_H
-#include <proto/alib.h>
-#endif
-
 #endif /* PROTO_EXEC_H */

@@ -8,11 +8,13 @@
 #include <intuition/classes.h>
 #include <stdarg.h>
 #include "alib_intern.h"
+#include <proto/alib.h>
 
 /******************************************************************************
 
     NAME */
-#include <proto/alib.h>
+#include <intuition/classusr.h>
+#include <proto/intuition.h>
 
 	IPTR CoerceMethodA (
 

@@ -12,12 +12,12 @@
 #ifndef  EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifndef INTUITION_CLASSUSR_H
+/* #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
-#endif
+#endif */
 #ifndef LIBRARIES_COMMODITIES_H
 #   include <libraries/commodities.h>
 #endif
@@ -29,16 +29,11 @@ struct MsgPort;
 struct IORequest;
 struct Task;
 struct InputEvent;
+struct Hook;
 
 /*
     Prototypes
 */
-IPTR DoMethodA (Object * obj, Msg message);
-IPTR DoMethod (Object * obj, ULONG MethodID, ...);
-IPTR DoSuperMethodA (Class  * cl, Object * obj, Msg message);
-IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
-IPTR CoerceMethodA (Class * cl, Object * obj, Msg msg);
-IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
 

@@ -23,6 +23,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/arossupport.h>
+#include <proto/alib.h>
 #include "etask.h"
 
 #define RT_VERSION	1	/* Current version of RT */

@@ -18,9 +18,6 @@
 #ifndef AROS_CONFIG_H
 #   include <aros/config.h>
 #endif
-#ifndef AROS_SYSTEM_H
-#   include <aros/system.h>
-#endif
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
