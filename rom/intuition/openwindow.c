@@ -133,7 +133,7 @@
     w->NextWindow = w->Descendant = w->WScreen->FirstWindow;
     w->WScreen->FirstWindow = w;
 
-    if (newWindow->Flags & ACTIVATE)
+    if (newWindow->Flags & WFLG_ACTIVATE)
 	IntuitionBase->ActiveWindow = w;
 
     UnlockIBase (lock);
