@@ -451,30 +451,30 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 	    arosmb->magic = MBRAM_VALID;
 	    arosmb->flags = 0L;
 	    mbinfo = (struct multiboot *)addr;
-	    if (mbinfo->flags && MB_FLAGS_MEM)
+	    if (mbinfo->flags & MB_FLAGS_MEM)
 	    {
 		arosmb->flags |= MB_FLAGS_MEM;
 		arosmb->mem_lower = mbinfo->mem_lower;
 		arosmb->mem_upper = mbinfo->mem_upper;
 	    }
-	    if (mbinfo->flags && MB_FLAGS_LDRNAME)
+	    if (mbinfo->flags & MB_FLAGS_LDRNAME)
 	    {
 		arosmb->flags |= MB_FLAGS_LDRNAME;
 		snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
 	    }
-	    if (mbinfo->flags && MB_FLAGS_CMDLINE)
+	    if (mbinfo->flags & MB_FLAGS_CMDLINE)
 	    {
 		arosmb->flags |= MB_FLAGS_CMDLINE;
 		snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
 	    }
-	    if (mbinfo->flags && MB_FLAGS_MMAP)
+	    if (mbinfo->flags & MB_FLAGS_MMAP)
 	    {
 		arosmb->flags |= MB_FLAGS_MMAP;
 		arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
 		arosmb->mmap_len = mbinfo->mmap_length;
 		memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
 	    }
-	    if (mbinfo->flags && MB_FLAGS_DRIVES)
+	    if (mbinfo->flags & MB_FLAGS_DRIVES)
 	    {
 		if (mbinfo->drives_length > 0)
 		{
@@ -484,12 +484,13 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 		    memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
 		}
 	    }
-	    if (mbinfo->flags && MB_FLAGS_GFX)
+	    if (mbinfo->flags & MB_FLAGS_GFX)
 	    {
 		arosmb->flags |= MB_FLAGS_GFX;
 		arosmb->vbe_mode = mbinfo->vbe_mode;
 		memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
-	    }
+
+            }
 	}
     }
 
