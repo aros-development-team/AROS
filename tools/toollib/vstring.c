@@ -147,7 +147,7 @@ strdupsub (const char * str, int begin, int len)
 	    n = len;
     }
 
-    nstr = xmalloc (n);
+    nstr = xmalloc (n+1);
 
     strncpy (nstr, str + begin, n);
     nstr[n] = 0;
