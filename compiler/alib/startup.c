@@ -9,6 +9,7 @@
 #include <setjmp.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
+#include <exec/semaphores.h>
 #include <workbench/startup.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -28,6 +29,8 @@ asm("
 extern struct ExecBase * SysBase;
 extern struct WBStartup *WBenchMsg;
 extern int main (int argc, char ** argv);
+
+extern struct SignalSemaphore __startup_memsem;
 extern APTR __startup_mempool; /* malloc() and free() */
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
@@ -61,8 +64,10 @@ AROS_UFH3(LONG, entry,
 
 
     __startup_error = RETURN_FAIL;
-
+    
     SysBase = sysbase;
+
+    InitSemaphore(&__startup_memsem);
 
     if (!(DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39)))
 	return -1;
@@ -248,6 +253,7 @@ struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
 
+struct SignalSemaphore __startup_memsem;
 APTR __startup_mempool = NULL;
 jmp_buf __startup_jmp_buf;
 LONG __startup_error;
