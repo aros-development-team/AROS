@@ -88,6 +88,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 	fprintf(stderr, "Illegal Supervisor %d\n", supervisor);
 	fflush(stderr);
 #endif
+SysBase->ThisTask->tc_Flags &= ~2;
+
 	return;
     }
 
@@ -138,6 +140,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 	/* Get the registers of the old task */
 	RESTOREREGS(SysBase->ThisTask,sc);
 
+//kprintf("!!!\n");
+
 	/* Make sure that the state of the interrupts is what the task
 	   expects.
 	*/
@@ -156,6 +160,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    Enable();
 	}
 
+
 #if DEBUG_TT
 	if (lastTask != SysBase->ThisTask)
 	{
@@ -164,6 +169,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 	}
 #endif
     }
+
+SysBase->ThisTask->tc_Flags &= ~2;
 
     /* Leave the interrupt. */
     supervisor--;
