@@ -126,7 +126,18 @@
 	    /* Free the RasInfo of the viewport */
 	    FreeMem(screen->ViewPort.RasInfo, sizeof (struct RasInfo));
 	    
+	    /* !!! Setting a new front bitmap MUST be done before freeing the old one */
+	    if (NULL != IntuitionBase->FirstScreen) {
+	    	/* We MUST pas FALSE in the "copyback" parameter
+		   since the old screen bitmap has been deleted
+		*/
+	    	SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, FALSE);
+		
+	    } else {
+	    	SetFrontBitMap(NULL, FALSE);
+	    }
 	    /* Free the screen's bitmap */
+
 	    FreeBitMap(screen->RastPort.BitMap);
 
 	    /* Free the RastPort's contents */
@@ -144,12 +155,6 @@
 	    /* Free the memory */
 	    FreeMem(screen, sizeof (struct IntScreen));
 	    
-	    if (NULL != IntuitionBase->FirstScreen) {
-	    	/* We MUST pas FALSE in the "copyback" parameter
-		   since the old screen bitmap has been deleted
-		*/
-	    	SetFrontBitMap(IntuitionBase->FirstScreen->RastPort.BitMap, FALSE);
-	    }
 
 	    ReturnBool("CloseScreen",TRUE);
 	}
