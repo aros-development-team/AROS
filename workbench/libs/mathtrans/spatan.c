@@ -73,6 +73,7 @@
 
   /* atan(x>= 128) = pi/2 - 1/x */
   if ((BYTE) fnumabs >= 0x48)
+  {
     if (fnumabs == fnum1) /* arg has ppositive sign */
     {
       SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
@@ -83,6 +84,7 @@
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return (SPSub(SPDiv(fnumabs,one),pio2)) | FFPSign_Mask;
     }
+  }
 
   /* atan(x >= 64) = pi/2 - 1/x +1/(3*x^3) */
 
