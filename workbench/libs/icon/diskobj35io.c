@@ -88,11 +88,11 @@ LONG MyDOSStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStr
 
 /****************************************************************************************/
 
-static char *Decode35(unsigned char *buffer, unsigned char *outbuffer, long numbytes, long bits, long entries)
+static char *Decode35(UBYTE *buffer, UBYTE *outbuffer, LONG numbytes, LONG bits, LONG entries)
 {
     int cop = 0, loop = 0, numbits = 0, mask, curentry = 0;
-    unsigned long bitbuf = 0;
-    unsigned char byte;
+    ULONG bitbuf = 0;
+    UBYTE byte;
 
     mask = (1<<bits)-1;
 
@@ -105,12 +105,15 @@ static char *Decode35(unsigned char *buffer, unsigned char *outbuffer, long numb
         	bitbuf = (bitbuf<<8)|*(buffer++); --numbytes;
         	numbits += 8;
 	    }
+	    
 	    byte = (bitbuf>>(numbits-8))&0xFF;
 	    numbits -= 8;
+	    
 	    if(byte <= 127)     cop = byte+1;
 	    else if(byte > 128) loop = 256-byte+1;
 	    else                continue;
 	}
+	
 	if(cop) ++loop;
 
 	if(numbits < bits)
@@ -118,16 +121,21 @@ static char *Decode35(unsigned char *buffer, unsigned char *outbuffer, long numb
 	    bitbuf = (bitbuf<<8)|*(buffer++); --numbytes;
 	    numbits += 8;
 	}
+	
 	byte = (bitbuf>>(numbits-bits))&mask;
+	
 	while(loop && (curentry < entries))
 	{
 	    *outbuffer++ = byte;
 	    ++curentry;
 	    --loop;
 	}
+	
 	if(cop) --cop;
+	
 	numbits -= bits;
     }
+    
     return curentry != entries ? "error decoding new icon data" : 0;
 }
 
@@ -229,7 +237,7 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 	    	UWORD 	    	    	 i, r, g, b;
 	
 	    	src = imgpal + 3 * numcols;
-	    	dst = imgpal + sizeof(struct ColorRegister) * numcols;
+	    	dst = (struct ColorRegister *)(imgpal + sizeof(struct ColorRegister) * numcols);
 	    
 		for (i = 0; i < numcols; i++)
 		{
@@ -432,6 +440,291 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 
 /****************************************************************************************/
 
+/* Encode35() based on ModifyIcon source by Dirk Stöcker */
+
+/****************************************************************************************/
+
+static UBYTE *Encode35(ULONG depth, UBYTE *dtype, LONG *dsize, ULONG size, UBYTE *src)
+{
+    int   i, j, k;
+    ULONG bitbuf, numbits;
+    UBYTE *buf;
+    LONG  ressize, numcopy, numequal;
+
+    buf = AllocVec(size * 2, MEMF_ANY);
+    if (!buf) return NULL;
+
+    numcopy = 0;
+    numequal = 1;
+    bitbuf = 0;
+    numbits = 0;
+    ressize = 0;
+    k = 0; /* the really output pointer */
+
+    for(i = 1; numequal || numcopy;)
+    {
+	if(i < size && numequal && (src[i-1] == src[i]))
+	{
+	    ++numequal; ++i;
+	}
+	else if(i < size && numequal*depth <= 16)
+	{
+	    numcopy += numequal; numequal = 1; ++i;
+	}
+	else
+	{
+	    /* care for end case, where it maybe better to join the two */
+	    if(i == size && numcopy + numequal <= 128 && (numequal-1)*depth <= 8)
+	    {
+        	numcopy += numequal; numequal = 0;
+	    }
+
+	    if(numcopy)
+	    {
+        	if((j = numcopy) > 128) j = 128;
+
+        	bitbuf = (bitbuf<<8) | (j-1);
+        	numcopy -= j;
+	    }
+	    else
+	    {
+        	if((j = numequal) > 128) j = 128;
+
+        	bitbuf = (bitbuf<<8) | (256-(j-1));
+        	numequal -= j;
+        	k += j-1;
+        	j = 1;
+	    }
+
+	    buf[ressize++] = (bitbuf >> numbits);
+
+	    while(j--)
+	    {
+        	numbits += depth;
+        	bitbuf = (bitbuf<<depth) | src[k++];
+
+        	if(numbits >= 8)
+        	{
+        	    numbits -= 8;
+        	    buf[ressize++] = (bitbuf >> numbits);
+        	}
+	    }
+
+	    if(i < size && !numcopy && !numequal)
+	    {
+        	numequal = 1; ++i;
+	    }
+	}
+    }
+
+    if(numbits)
+        buf[ressize++] = bitbuf << (8-numbits);
+
+    if(ressize > size) /* no RLE */
+    {
+        ressize = size;
+        *dtype = 0;
+        for(i = 0; i < size; ++i)
+	    buf[i]= src[i];
+    }
+    else
+        *dtype = 1;
+
+    *dsize = ressize;
+
+    return buf;
+}
+
+/****************************************************************************************/
+
+static BOOL WriteImage35(struct IFFHandle *iff, struct Icon35 *icon35,
+    	    	    	 struct Image35 *img, struct IconBase *IconBase)
+{
+    struct FileImageChunk   ic;
+    UBYTE   	    	    *imagedata, *pal = NULL;
+    LONG    	    	    imagesize, palsize = 0;
+    UBYTE   	    	    imagepacked, palpacked = 0;
+    UBYTE   	    	    imageflags;
+    BOOL    	    	    ok = FALSE;
+    
+    imageflags = img->flags;
+    
+    if (img->palette && (img->flags & IMAGE35F_HASPALETTE))
+    {
+    	pal = Encode35(8, &palpacked, &palsize, img->numcolors * 3, img->palette);
+	if (!pal) return FALSE;
+    }
+    else
+    {
+    	imageflags &= ~IMAGE35F_HASPALETTE;
+    }
+    
+    imagedata = Encode35(img->depth, &imagepacked, &imagesize,
+    	    	    	 icon35->width * icon35->height, img->imagedata);
+		    
+    if (!imagedata)
+    {
+    	if (pal) FreeVec(pal);
+	return FALSE;
+    }
+    
+    ic.TransparentColor     = img->transparentcolor;
+    ic.NumColors    	    = img->numcolors - 1;
+    ic.Flags	    	    = imageflags;
+    ic.ImageFormat  	    = imagepacked;
+    ic.PaletteFormat	    = palpacked;
+    ic.Depth	    	    = img->depth;
+    ic.NumImageBytes[0]	    = (imagesize - 1) / 256;
+    ic.NumImageBytes[1]     = (imagesize - 1) & 255;
+    ic.NumPaletteBytes[0]   = (palsize - 1) / 256;
+    ic.NumPaletteBytes[1]   = (palsize - 1) & 255;
+    
+    if (!PushChunk(iff, ID_ICON, ID_IMAG, IFFSIZE_UNKNOWN))
+    {
+    	ok = TRUE;
+
+    	if (WriteChunkBytes(iff, &ic, sizeof(ic)) != sizeof(ic))
+	{
+	    ok = FALSE;
+	}
+
+	if (ok)
+	{
+	    if (WriteChunkBytes(iff, imagedata, imagesize) != imagesize)
+	    {
+	    	ok = FALSE;
+	    }
+	}
+
+    	if (ok && pal)
+	{
+	    if (WriteChunkBytes(iff, pal, palsize) != palsize)
+	    {
+	    	ok = FALSE;
+	    }
+	}
+	
+	
+	PopChunk(iff);
+	
+    } /* if (!PushChunk(iff, ID_ICON, ID_IMAG, IFFSIZE_UNKNOWN)) */
+    
+    FreeVec(imagedata);
+    if (pal) FreeVec(pal);
+    
+    return ok;
+}
+
+/****************************************************************************************/
+
+BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
+    	    	 void *stream, struct IconBase *IconBase)
+{
+    struct IFFHandle 	    *iff;
+    struct Hook     	     iffhook;
+    struct FileFaceChunk     fc;
+    BOOL    	    	     ok = FALSE;
+    
+    D(bug("WriteIcon35\n"));
+    
+    if (icon->icon35.img1.imagedata == NULL) return TRUE;
+    if (icon->icon35.img1.palette == NULL) return FALSE;
+    
+    iffhook.h_Entry    = (HOOKFUNC)HookEntry;
+    iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
+    
+    if ((iff = AllocIFF()))
+    {
+    	D(bug("WriteIcon35. AllocIFF okay\n"));
+ 
+    	iff->iff_Stream = (IPTR)stream;
+	
+	InitIFF(iff, IFFF_RSEEK, &iffhook);
+	
+	if (!OpenIFF(iff, IFFF_WRITE))
+	{
+    	    D(bug("WriteIcon35. OpenIFF okay\n"));
+	    
+	    if (!PushChunk(iff, ID_ICON, ID_FORM, IFFSIZE_UNKNOWN))
+	    {
+   	    	D(bug("WriteIcon35. PushChunk(ID_ICON, ID_FORM) okay\n"));
+		
+		if (!PushChunk(iff, ID_ICON, ID_FACE, sizeof(struct FileFaceChunk)))
+		{
+		    WORD cmapentries;
+   	    	
+		    D(bug("WriteIcon35. PushChunk(ID_ICON, ID_FACE) okay\n"));
+		    
+		    fc.Width  = icon->icon35.width - 1;
+		    fc.Height = icon->icon35.height - 1;
+		    fc.Flags  = icon->icon35.flags;
+		    fc.Aspect = icon->icon35.aspect;
+		    
+		    cmapentries = icon->icon35.img1.numcolors;
+		    
+		    if (icon->icon35.img2.imagedata &&
+		        icon->icon35.img2.palette &&
+			(icon->icon35.img2.flags & IMAGE35F_HASPALETTE))
+		    {
+		    	if (icon->icon35.img2.numcolors > cmapentries)
+			{
+			    cmapentries = icon->icon35.img2.numcolors;
+			}
+		    }
+		    
+		    cmapentries = cmapentries * 3 - 1;
+		    
+		    fc.MaxPaletteBytes[0] = cmapentries / 256;
+		    fc.MaxPaletteBytes[1] = cmapentries & 255;
+		    
+		    if (WriteChunkBytes(iff, &fc, sizeof(fc)) == sizeof(fc))
+		    {
+		    	D(bug("WriteIcon35. WriteChunkBytes of FACE chunk ok.\n"));
+			
+			PopChunk(iff);
+			
+			if (WriteImage35(iff, &icon->icon35, &icon->icon35.img1, IconBase))
+			{
+		    	    D(bug("WriteIcon35. WriteImage35() of 1st image ok.\n"));
+			    
+			    if (icon->icon35.img2.imagedata)
+			    {
+			    	if (WriteImage35(iff, &icon->icon35, &icon->icon35.img2, IconBase))
+				{
+		    	    	    D(bug("WriteIcon35. WriteImage35() of 2nd image ok.\n"));
+				    
+				    ok = TRUE;
+				}
+				
+			    } /* if (icon->icon35.img2.imagedata) */
+			    else
+			    {
+			    	ok = TRUE;
+			    }
+			    
+			} /* if (WriteImage35(iff, &icon->icon35, &icon->icon35.img1, IconBase)) */
+			
+		    } /* if (WriteChunkBytes(iff, &fc, sizeof(fc)) == sizeof(fc)) */
+		    else
+		    {
+		    	PopChunk(iff);
+		    }
+		       
+		} /* if (!PushChunk(iff, ID_ICON, ID_FACE, sizeof(struct FileFaceChunk))) */
+		
+	    	PopChunk(iff);
+		
+	    } /* if (!PushChunk(iff, ID_ICON, ID_FORM, IFFSIZE_UNKNOWN)) */
+	    
+ 	} /* if (!OpenIFF(iff, IFFF_READ)) */
+	
+    } /* if ((iff = AllocIFF())) */
+        
+    return ok;   
+}
+
+/****************************************************************************************/
+
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     if (icon->icon35.img1.imagedata) FreeVec(icon->icon35.img1.imagedata);
@@ -441,9 +734,6 @@ VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase)
        were allocated together in one AllocVec() call */
     
 }
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
-/****************************************************************************************/
+
 /****************************************************************************************/
 
