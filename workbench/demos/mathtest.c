@@ -94,8 +94,8 @@ int main(int argc, char ** argv)
 /*
     CHECK (IEEESPTan,   (SPOne),      0xUL);
 */
-    CHECK (IEEESPSinh,  (SPOne),      0x40681e7bUL);
-    CHECK (IEEESPCosh,  (SPOne),      0x4070c7d1UL);
+    CHECK (IEEESPSinh,  (SPTwo),      0x40681e7bUL);
+    CHECK (IEEESPCosh,  (SPTwo),      0x4070c7d1UL);
 /*
     CHECK (IEEESPTanh,  (SPOne),     0xc2f7d640UL);
     CHECK (IEEESPExp,   (SPTwo),     0xec732543UL);
