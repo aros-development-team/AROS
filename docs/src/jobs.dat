@@ -92,7 +92,7 @@ c00003;1;;Write C:Assign
 c00004;2;matthias;Write C:Avail
 c00005;2;iaint;Write C:Break
 c00006;2;matthias;Write C:Cd
-c00007;2;hkiel;Write Copy
+c00007;2;hkiel;Write C:Copy
 c00008;1;laguest;Write C:CPU
 c00009;2;srittau;Write C:Date
 c00010;1;laguest;Write C:Delete
@@ -104,7 +104,7 @@ c00015;2;SDuvan;Write C:EndSkip
 c00016;1;validus@kamper.digimag.net;Write C:Eval
 c00017;1;matthias;Write C:Execute
 c00018;2;iaint;Write C:Fault
-c00019;1;laguest;Write Filenote
+c00019;2;laguest;Write C:Filenote
 c00020;2;laguest;Write C:Get
 c00021;2;laguest;Write C:GetEnv
 c00022;2;SDuvan;Write C:If
@@ -126,7 +126,7 @@ c00037;1;laguest;Write C:Rename
 c00038;2;laguest;Write C:RequestChoice
 c00039;2;laguest;Write C:RequestFile
 c00040;1;matthias;Write C:Run
-c00041;1;drieling;Write C:Search
+c00041;2;Neil Cafferkey;Write C:Search
 c00042;2;laguest;Write C:Set
 c00043;2;srittau;Write C:SetClock
 c00044;2;SDuvan;Write C:SetDate
@@ -142,7 +142,7 @@ c00053;2;laguest;Write C:UnSet
 c00054;2;laguest;Write C:UnSetEnv
 c00055;1;srittau;Write C:Version
 c00056;2;hkiel;Write C:Wait
-c00057;1;SDuvan;Write C:Which
+c00057;2;SDuvan;Write C:Which
 c00058;2;srittau;Write C:Why
 colorwheel00000;2;lbischoff;Write ConvertHSBToRGB
 colorwheel00001;2;lbischoff;Write ConvertRGBToHSB
@@ -785,15 +785,15 @@ graphics00110;2;bergers;Write GfxLookUp
 graphics00111;0;digulla;Write VideoControl
 graphics00112;0;digulla;Write OpenMonitor
 graphics00113;0;digulla;Write CloseMonitor
-graphics00114;0;digulla;Write FindDisplayInfo
-graphics00115;0;digulla;Write NextDisplayInfo
-graphics00116;0;digulla;Write GetDisplayInfoData
+graphics00114;2;nlorentz;Write FindDisplayInfo
+graphics00115;2;nlorentz;Write NextDisplayInfo
+graphics00116;1;nlorentz;Write GetDisplayInfoData
 graphics00117;2;SDuvan;Write FontExtent
 graphics00118;2;nlorentz;Write ReadPixelLine
 graphics00119;2;nlorentz;Write WritePixelLine
 graphics00120;2;nlorentz;Write ReadPixelArray
 graphics00121;2;nlorentz;Write WritePixelArray
-graphics00122;0;digulla;Write GetVPModeID
+graphics00122;2;nlorentz;Write GetVPModeID
 graphics00123;0;digulla;Write ModeNotAvailable
 graphics00124;2;nlorentz;Write WeighTAMatch
 graphics00125;2;digulla;Write EraseRect
@@ -801,7 +801,7 @@ graphics00126;2;nlorentz;Write ExtendFont
 graphics00127;2;nlorentz;Write StripFont
 graphics00128;0;digulla;Write CalcIVG
 graphics00129;2;bergers;Write AttachPalExtra
-graphics00130;1;bergers;Write ObtainBestPenA
+graphics00130;2;bergers,stegerg;Write ObtainBestPenA
 graphics00131;2;bergers;Write SetRGB
 graphics00132;2;digulla;Write GetAPen
 graphics00133;2;digulla;Write GetBPen
@@ -826,13 +826,13 @@ graphics00151;2;digulla;Write SetWriteMask
 graphics00152;2;bergers;Write SetMaxPen
 graphics00153;2;bergers;Write SetRGB
 graphics00154;2;bergers;Write ScrollRasterBF
-graphics00155;1;bergers;Write FindColor
+graphics00155;2;bergers;Write FindColor
 graphics00156;0;bergers;Write AllocSpriteDataA
 graphics00157;0;bergers;Write ChangeExtSpriteA
 graphics00158;0;bergers;Write FreeSpriteData
 graphics00159;2;digulla;Write SetRPAttrsA
 graphics00160;2;bergers;Write GetRPAttrsA
-graphics00161;0;digulla;Write BestModeIDA
+graphics00161;1;nlorentz;Write BestModeIDA
 graphics00162;2;nlorentz;Write WriteChunkyPixels
 graphics00163;2;hkiel;Implement AreaPtrn
 graphics00164;2;hkiel;Implement multicolored AreaPtrn
@@ -1212,13 +1212,14 @@ mathtrans00015;2;bergers;Write SPAcos
 mathtrans00016;2;bergers;Write SPLog
 misc00000;2;SDuvan;Write AllocMiscResource
 misc00001;2;SDuvan;Write FreeMiscResource
-nonvolatile00000;1;SDuvan;Write GetCopyNV
-nonvolatile00001;1;SDuvan;Write FreeNVData
-nonvolatile00002;1;SDuvan;Write StoreNV
-nonvolatile00003;1;SDuvan;Write DeleteNV
-nonvolatile00004;1;SDuvan;Write GetNVInfo
-nonvolatile00005;1;SDuvan;Write GetNVList
-nonvolatile00006;1;SDuvan;Write SetNVProtection
+nonvolatile00000;2;SDuvan;Write GetCopyNV
+nonvolatile00001;2;SDuvan;Write FreeNVData
+nonvolatile00002;2;SDuvan;Write StoreNV
+nonvolatile00003;2;SDuvan;Write DeleteNV
+nonvolatile00004;2;SDuvan;Write GetNVInfo
+nonvolatile00005;2;SDuvan;Write GetNVList
+nonvolatile00006;2;SDuvan;Write SetNVProtection
+nvdisk00000;2;SDuvan;Write Nonvolatile disk based implementation
 potgo00000;0;digulla;Write AllocPotBits
 potgo00001;0;digulla;Write FreePotBits
 potgo00002;0;digulla;Write WritePotgo
