@@ -585,8 +585,8 @@ ULOCK_HIDD(bm);
 		    {
 #warning setbitmapfast should handle drawmodes (JAM1, JAM2,..)
 			setbitmapfast(CR->BitMap
-		    		, intersect.MinX // - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				, intersect.MinY // - CR->bounds.MinY
+		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, GetAPen(rp)
@@ -1581,8 +1581,8 @@ ULOCK_HIDD(bm);
 		    else
 		    {
 		    	setbitmapfast(CR->BitMap
-		    		, intersect.MinX // - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				, intersect.MinY // - CR->bounds.MinY
+		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, color
@@ -1892,7 +1892,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     if (nbm)
     {
     	
-	/* This lock is used to ensure that only one Htask acesses a public HIDD BM at a time */
+	/* This lock is used to ensure that only one task acesses a public HIDD BM at a time */
 	BM_LOCK(nbm) = AllocMem(sizeof (struct SignalSemaphore), MEMF_PUBLIC);
 	if (BM_LOCK(nbm))
 	{
@@ -1955,98 +1955,177 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     ReturnPtr("driver_AllocBitMap", struct BitMap *, NULL);
 }
 
+enum { SB_SINGLEMASK, SB_PREPOSTMASK, SB_FULL };
 static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen)
 {
-    LONG modulo;
     LONG num_whole;
+    UBYTE sb_type;
+    
     UBYTE plane;
-    UBYTE i;
     UBYTE pre_pixels_to_set,
-    	  post_pixels_to_set; /* pixels to clear in pre and post byte */
+    	  post_pixels_to_set,
+	  pre_and_post; /* number pixels to clear in pre and post byte */
  
     UBYTE prebyte_mask, postbyte_mask;
     
-    pre_pixels_to_set  = 7 - (x_start & 0x07);
-    post_pixels_to_set = (x_start + xsize - 1) & 0x07;
-    num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
+/*    kprintf("x_start: %d, y_start: %d, xsize: %d, ysize: %d, pen: %d\n",
+    	x_start, y_start, xsize, ysize, pen);
+*/	
 
-    num_whole >>= 3; /* number of bytes */
-
-    modulo = bm->BytesPerRow - num_whole;
+    pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
+    post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
     
-    if (pre_pixels_to_set == 0)
+
+    pre_and_post = pre_pixels_to_set + post_pixels_to_set;
+    
+    if (pre_and_post > xsize)
     {
-        num_whole --;
-	prebyte_mask = 0xFF;
+	UBYTE start_bit, stop_bit;
+	/* Check whether the pixels are kept within a byte */
+	sb_type = SB_SINGLEMASK;
+    	pre_pixels_to_set  = MIN(pre_pixels_to_set,  xsize);
+	
+	/* Mask out the needed bits */
+	start_bit =  7 - (x_start & 0x07) + 1;
+	stop_bit = 7 - ((x_start + xsize - 1) & 0x07);
+
+/* kprintf("start_bit: %d, stop_bit: %d\n", start_bit, stop_bit);
+*/	
+	prebyte_mask = ((1L << start_bit) - 1) - ((1L << stop_bit) - 1) ;
+/* kprintf("prebyte_mask: %d\n", prebyte_mask);
+
+kprintf("SB_SINGLE\n");
+*/
+    }
+    else if (pre_and_post == xsize)
+    {
+    	/* We have bytes within to neighbour pixels */
+	sb_type = SB_PREPOSTMASK;
+	prebyte_mask  = 0xFF >> (8 - pre_pixels_to_set);
+	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
+    
+/* kprintf("SB_PREPOSTMASK\n");
+*/
     }
     else
     {
+
 	/* Say we want to clear two pixels in last byte. We want the mask
 	MSB 00000011 LSB
 	*/
-	prebyte_mask = 0;
-	for (i = 0; i < pre_pixels_to_set; i ++ )
-	{
-	    prebyte_mask <<= 1;
-    	    prebyte_mask |=  1;
-    	}
-	modulo ++;
-    }
+	sb_type = SB_FULL;
+	prebyte_mask = 0xFF >> (8 - pre_pixels_to_set);
     
-    if (post_pixels_to_set == 0)
-    {
-        num_whole --;
-	prebyte_mask = 0xFF;
-    }
-    else
-    {
 	/* Say we want to set two pixels in last byte. We want the mask
 	MSB 11000000 LSB
 	*/
-	postbyte_mask = 0;
-	for (i = 0; i < post_pixels_to_set; i ++ )
-	{
-	    postbyte_mask <<= 1;
-    	    postbyte_mask |=  1;
-	}
-    	postbyte_mask <<= (7 - post_pixels_to_set);
-	modulo ++;
+	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
+	
+        	/* We have at least one whole byte of pixels */
+	num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
+	num_whole >>= 3; /* number of bytes */
+	
+/* kprintf("SB_FULL\n");
+*/
     }
+	
+/*
+kprintf("pre_pixels_to_set: %d, post_pixels_to_set: %d, numwhole: %d\n"
+	, pre_pixels_to_set, post_pixels_to_set, num_whole);
     
-    
+kprintf("prebyte_mask: %d, postbyte_mask: %d, numwhole: %d\n", prebyte_mask, postbyte_mask, num_whole);
+*/    
     for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
     {
     
         LONG y;
 	UBYTE pixvals;
-    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + (x_start >> 3);
+	UBYTE prepixels_set, prepixels_clr;
+	UBYTE postpixels_set, postpixels_clr;
+    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + COORD_TO_BYTEIDX(x_start, y_start, bm->BytesPerRow);
 	
-	/* Set or clear current bit of val ? */
+	
+	/* Set or clear current bit of pixval ? */
 	if (pen & (1L << plane))
 	    pixvals = 0xFF;
 	else
 	    pixvals = 0x00;
 	
-	/* Set the pre and postmask */
-	prebyte_mask  = (pixvals & prebyte_mask)  | (~prebyte_mask);  
-	postbyte_mask = (pixvals & postbyte_mask) | (~prebyte_mask);
-	
-	for (y = y_start; y < ysize; y ++)
+	/* Set the pre and postpixels */
+	switch (sb_type)
 	{
-	    LONG x;
-	    /* Clear the first nonwhole byte */
-	    *curbyte ++ &= prebyte_mask;
-	    
-	    for (x = 0; x < num_whole; x ++)
-	    {
-	        *curbyte ++ = pixvals;
-	    }
-	    /* Clear the last nonwhole byte */
-	    *curbyte++ &= postbyte_mask;
-	    
-	    curbyte += modulo;
-	}
+	    case SB_FULL:
+		prepixels_set  = (pixvals & prebyte_mask);
+		postpixels_set = (pixvals & postbyte_mask);
 	
+
+		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
+		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    LONG x;
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    for (x = 0; x < num_whole; x ++)
+		    {
+			*ptr ++ = pixvals;
+		    }
+		    /* Clear the last nonwhole byte */
+		    *ptr |= postpixels_set;
+		    *ptr ++ &= postpixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	    case SB_PREPOSTMASK:
+	
+		prepixels_set  = (pixvals & prebyte_mask);
+		postpixels_set = (pixvals & postbyte_mask);
+	
+
+		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
+		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    /* Clear the last nonwhole byte */
+		    *ptr |= postpixels_set;
+		    *ptr ++ &= postpixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	    case SB_SINGLEMASK:
+	
+		prepixels_set  = (pixvals & prebyte_mask);
+		prepixels_clr  = (pixvals & prebyte_mask) | (~prebyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	} /* switch() */
     }
     return;
     
@@ -3219,7 +3298,7 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
     /* Find the exact startbit */
     x_src &= 0x07;
     
-
+kprintf("DRMD: %d, APEN: %d, BPEN: %d\n", drmd, apen, bpen);
     for (y = 0; y < ysize; y ++)
     {
 	UBYTE *byteptr = srcptr;
@@ -3227,24 +3306,21 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 	{
 	    UBYTE pen;
 	    UBYTE mask = XCOORD_TO_MASK( x + x_src );
+	    
 	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
 	    BOOL set_pixel = FALSE;
-	    
+
+/*if (is_set)
+kprintf("X");		    
+else	    
+kprintf("0");
+*/
 	    if (drmd & INVERSVID)
 	    {
 	    	is_set = ((is_set == TRUE) ? FALSE : TRUE);
 	    }
-	    if (drmd & JAM1)
-	    {
-	    	/* Only use apen if pixel is set */
-		if (is_set)
-		{
-		    pen = apen;
-		    set_pixel = TRUE;
-		}
-		    
-	    }
-	    else if (drmd & JAM2)
+	    
+	    if (drmd & JAM2)
 	    {
 	    	/* Use apen if pixel is et, bpen otherwise */
 		if (is_set)
@@ -3269,8 +3345,19 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 
 		
 	    }
+	    else /* JAM 1 */
+	    {
+	    	/* Only use apen if pixel is set */
+		if (is_set)
+		{
+		    pen = apen;
+		    set_pixel = TRUE;
+		}
+		    
+	    }
 	    if (set_pixel)
 	    {
+ kprintf("X");		    
 		setbitmappixel(dest
 			, x + x_dest
 			, y + y_dest
@@ -3278,13 +3365,15 @@ static VOID blttemplate_amiga(PLANEPTR source, LONG x_src, LONG modulo, struct B
 			, dest_depth, 0xFF
 		);
 	    }
-
+else
+kprintf("0");
 	
 	    /* Last pixel in this byte ? */
 	    if (((x + x_src) & 0x07) == 0x07)
 	    	byteptr ++;
 		
 	}
+kprintf("\n");	
 	srcptr += modulo;
     }
     return;
