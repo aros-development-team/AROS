@@ -111,7 +111,7 @@ struct BadBlockNode *bn;
 			return bn;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 struct PartitionHandle *PartitionRDBNewHandle
@@ -152,7 +152,7 @@ struct PartitionHandle *ph;
 			FreeMem(ph, sizeof(struct PartitionHandle));
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 struct FileSysNode *PartitionRDBNewFileSys
@@ -176,7 +176,7 @@ struct FileSysNode *fn;
 			return fn;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 ULONG PartitionRDBCalcFSSize
@@ -284,7 +284,7 @@ UBYTE i;
 				if (readBlock(PartitionBase, root, block, buffer)==0)
 				{
 					bn = PartitionRDBNewBadBlock(PartitionBase, root, (struct BadBlockBlock *)buffer);
-					if (bn)
+					if (bn != NULL)
 					{
 						AddTail(&data->badblocklist, &bn->ln);
 						block = AROS_BE2LONG(bn->bbb.bbb_Next);
@@ -304,7 +304,7 @@ UBYTE i;
 				if (readBlock(PartitionBase, root, block, buffer)==0)
 				{
 					ph = PartitionRDBNewHandle(PartitionBase, root, (struct PartitionBlock *)buffer);
-					if (ph)
+					if (ph != NULL)
 					{
 						AddTail(&root->table->list, &ph->ln);
 						block = AROS_BE2LONG(((struct PartitionBlock *)ph->data)->pb_Next);
@@ -324,7 +324,7 @@ UBYTE i;
 				if (readBlock(PartitionBase, root, block, buffer)==0)
 				{
 					fn = PartitionRDBNewFileSys(PartitionBase, root, (struct FileSysHeaderBlock *)buffer);
-					if (fn)
+					if (fn != NULL)
 					{
 						AddTail(&data->fsheaderlist, &fn->ln);
 						PartitionRDBReadFileSys(PartitionBase, root, fn, (struct LoadSegBlock *)buffer);
@@ -509,7 +509,7 @@ ULONG block;
 #else
 	kprintf("RDB-write: block=%ld, type=RDSK\n", data->rdbblock);
 #endif
-	return 1;
+	return 0;
 }
 
 LONG PartitionRDBCreatePartitionTable
@@ -727,10 +727,8 @@ struct PartitionHandle *PartitionRDBAddPartition
 		struct TagItem *taglist
 	)
 {
-struct TagItem *tag;
 
-	tag = findTagItem(PT_DOSENVEC, taglist);
-	if (tag)
+	if (findTagItem(PT_DOSENVEC, taglist) != NULL)
 	{
 	struct PartitionBlock *pblock;
 	struct PartitionHandle *ph;
@@ -777,7 +775,7 @@ struct TagItem *tag;
 			FreeMem(ph, sizeof(struct PartitionHandle));
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 void PartitionRDBDeletePartition
@@ -794,7 +792,7 @@ ULONG PartitionRDBPartitionTableAttrs[]=
 {
 	PTTA_GEOMETRY,
 	PTTA_RESERVED,
-	NULL
+	0
 };
 
 ULONG *PartitionRDBQueryPartitionTableAttrs(struct Library *PartitionBase)
@@ -809,7 +807,7 @@ ULONG PartitionRDBPartitionAttrs[]=
 	PTA_NAME,
 	PTA_BOOTABLE,
 	PTA_AUTOMOUNT,
-	NULL
+	0
 };
 
 ULONG *PartitionRDBQueryPartitionAttrs(struct Library *PartitionBase)
@@ -817,6 +815,22 @@ ULONG *PartitionRDBQueryPartitionAttrs(struct Library *PartitionBase)
 	return PartitionRDBPartitionAttrs;
 }
 
+ULONG PartitionRDBDestroyPartitionTable
+	(
+		struct Library *PartitionBase,
+		struct PartitionHandle *root
+	)
+{
+struct RDBData *data;
+UBYTE buffer[512];
+
+	data = root->table->data;
+	CopyMem(&data->rdb, buffer, sizeof(struct RigidDiskBlock));
+	((struct RigidDiskBlock *)buffer)->rdb_ID = 0;
+	if (writeBlock(PartitionBase, root, data->rdbblock, buffer))
+		return 1;
+	return 0;
+}
 
 struct PTFunctionTable PartitionRDB =
 {
@@ -834,6 +848,7 @@ struct PTFunctionTable PartitionRDB =
 	PartitionRDBGetPartitionAttrs,
 	PartitionRDBSetPartitionAttrs,
 	PartitionRDBQueryPartitionTableAttrs,
-	PartitionRDBQueryPartitionAttrs
+	PartitionRDBQueryPartitionAttrs,
+	PartitionRDBDestroyPartitionTable
 };
 
