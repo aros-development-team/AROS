@@ -186,6 +186,7 @@ struct CheckData
 
 #define CF_Checked 0x0001
 
+
 BOOL check_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
     struct CheckData *data = INST_DATA(cl, obj);
@@ -252,7 +253,7 @@ IPTR check_set(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval = 0UL;
     struct CheckData *data = INST_DATA(cl, obj);
-    struct TagItem *tag, tags[2];
+    struct TagItem *tag;
     struct RastPort *rport;
 
     tag = FindTagItem(GTCB_Checked, msg->ops_AttrList);
@@ -268,12 +269,13 @@ IPTR check_set(Class *cl, Object *obj, struct opSet *msg)
     tag = FindTagItem(GA_Disabled, msg->ops_AttrList);
     if (tag)
     {
-	tags[0].ti_Tag = GA_Disabled;
-	tags[0].ti_Data = tag->ti_Data;
-	tags[1].ti_Tag = TAG_DONE;
-	DoSuperMethod(cl, obj, OM_SET,tags,msg->ops_GInfo);
-	retval = TRUE;
+        struct TagItem tags[] = { {GA_Disabled, 0UL}, {TAG_DONE, 0UL} };
+
+        tags[0].ti_Data = tag->ti_Data;
+        DoSuperMethod(cl, obj, OM_SET, tags, msg->ops_GInfo);
+        retval = TRUE;
     }
+
     if ((retval) && (((Class *)(*(obj - sizeof(Class *)))) == cl))
     {
 	rport = ObtainGIRPort(msg->ops_GInfo);
@@ -331,38 +333,24 @@ IPTR check_handleinput(Class *cl, Object *obj, struct gpInput *msg)
 
     if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE)
     {
-        struct gpHitTest htmsg;
-
 	if (msg->gpi_IEvent->ie_Code == SELECTUP)
 	{
-	    htmsg.MethodID = GM_HITTEST;
-	    htmsg.gpht_GInfo = msg->gpi_GInfo;
-	    htmsg.gpht_Mouse.X = msg->gpi_Mouse.X;
-	    htmsg.gpht_Mouse.Y = msg->gpi_Mouse.Y;
-	    if (DoMethodA(obj, (Msg)&htmsg) != GMR_GADGETHIT)
-	        retval = GMR_NOREUSE;
-	    else
-	    {
-		if (data->flags & CF_Checked)
-		    data->flags &= ~CF_Checked;
-		else
-		    data->flags |= CF_Checked;
-		*msg->gpi_Termination = IDCMP_GADGETUP;
-		retval = GMR_NOREUSE | GMR_VERIFY;
-	    }
-	} else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
-	{
-	    int state;
+            if (G(obj)->Flags & GFLG_SELECTED)
+            {
+                /* mouse is over gadget */
+                if (data->flags & CF_Checked)
+                    data->flags &= ~CF_Checked;
+                else
+                    data->flags |= CF_Checked;
+                *msg->gpi_Termination = IDCMP_GADGETUP;
+                retval = GMR_NOREUSE | GMR_VERIFY;
+            } else
+                /* mouse is not over gadget */
+                retval = GMR_NOREUSE;
+        } else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
+        {
+            struct gpHitTest htmsg;
 
-	    if (data->flags & CF_Checked)
-	        state = IDS_SELECTED;
-	    else
-	        state = IDS_NORMAL;
-
-	    if ((msg->gpi_Mouse.X < 0) ||
-		(msg->gpi_Mouse.Y < 0) ||
-		(msg->gpi_Mouse.X > G(obj)->Width-1) ||
-		(msg->gpi_Mouse.Y > G(obj)->Height-1))
 	    htmsg.MethodID = GM_HITTEST;
 	    htmsg.gpht_GInfo = msg->gpi_GInfo;
 	    htmsg.gpht_Mouse.X = msg->gpi_Mouse.X;
@@ -374,6 +362,12 @@ IPTR check_handleinput(Class *cl, Object *obj, struct gpInput *msg)
 		    rport = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rport)
 		    {
+                        int state;
+
+                        if (data->flags & CF_Checked)
+                            state = IDS_SELECTED;
+                        else
+                            state = IDS_NORMAL;
 			DrawImageState(rport, data->image,
 				       G(obj)->LeftEdge, G(obj)->TopEdge,
 				       state, data->dri);
@@ -387,7 +381,13 @@ IPTR check_handleinput(Class *cl, Object *obj, struct gpInput *msg)
 		{
 		    rport = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rport)
-		    {
+                    {
+                        int state;
+
+                        if (data->flags & CF_Checked)
+                            state = IDS_NORMAL;
+                        else
+                            state = IDS_SELECTED;
 			DrawImageState(rport, data->image,
 				       G(obj)->LeftEdge, G(obj)->TopEdge,
 				       state, data->dri);
@@ -487,10 +487,6 @@ AROS_UFH3(static IPTR, dispatch_checkclass,
 			   x, data->dri);
 	    ReleaseGIRPort(rport);
 	}
-	break;
-
-    case GM_HITTEST:
-	retval = GMR_GADGETHIT;
 	break;
 
     case GM_RENDER:
