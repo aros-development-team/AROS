@@ -7,7 +7,7 @@ clean ::
 
 #MM
 machine :
-	$(HOST_CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
+	$(HOST_CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -I$(AROS_INCLUDES) -o machine machine.c
 	./machine
 
 #MM- AROS : kernel
