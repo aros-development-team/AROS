@@ -35,32 +35,56 @@
 #include <libcore/libheader.c>
 
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
-    kprintf( "Workbench: InitLib() called.\n" );
-    if( !(WorkbenchBase->wb_UtilityBase = OpenLibrary( UTILITYNAME, 37L )) ) {
-        kprintf( "Workbench: Failed opening utility.library!\n" );
-        return FALSE;
-    }
-
-    if( !(WorkbenchBase->wb_DOSBase = OpenLibrary( DOSNAME, 37L )) ) {
-        kprintf( "Workbench: Failed opening utility.library!\n" );
-        return FALSE;
-    }
+    /* Make sure that the libraries are opened in L_OpenLib() */
+    WorkbenchBase->wb_UtilityBase   = NULL;
+    WorkbenchBase->wb_IntuitionBase = NULL;
+    WorkbenchBase->wb_DOSBase       = NULL;
+    /* TODO: Icon.library, ...? */
 
     /* Initialize our private lists. */
     NEWLIST( &(WorkbenchBase->wb_AppWindows) );
     NEWLIST( &(WorkbenchBase->wb_AppIcons) );
     NEWLIST( &(WorkbenchBase->wb_AppMenuItems) );
-    NEWLIST( &(WorkbenchBase->wb_Listeners) );
+    NEWLIST( &(WorkbenchBase->wb_HiddenDevices) );
 
     return TRUE;
 } /* L_InitLib */
+
+ULONG SAVEDS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
+    if( WorkbenchBase->wb_UtilityBase == NULL ) {
+        if( !(WorkbenchBase->wb_UtilityBase = OpenLibrary( UTILITYNAME, 37L )) ) {
+            D(bug( "Workbench: Failed to open utility.library!\n" ));
+            return FALSE;
+        }
+    }
+
+    if( WorkbenchBase->wb_IntuitionBase == NULL ) {
+        if( !(WorkbenchBase->wb_IntuitionBase = OpenLibrary( INTUITIONNAME, 37L )) ) {
+            D(bug( "Workbench: Failed to open intuition.library!\n" ));
+            return FALSE;
+        }
+    }
+
+    if( WorkbenchBase->wb_DOSBase == NULL ) {
+        if( !(WorkbenchBase->wb_DOSBase = OpenLibrary( DOSNAME, 37L )) ) {
+            D(bug( "Workbench: Failed to open dos.library!\n" ));
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+} /* L_OpenLib */
 
 void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
     if( (WorkbenchBase->wb_UtilityBase) ) {
         CloseLibrary( WorkbenchBase->wb_UtilityBase );
     }
 
+    if( (WorkbenchBase->wb_IntuitionBase) ) {
+        CloseLibrary( WorkbenchBase->wb_IntuitionBase );
+    }
+
     if( (WorkbenchBase->wb_DOSBase) ) {
         CloseLibrary( WorkbenchBase->wb_DOSBase );
     }
-}
+} /* L_ExpungeLib */
