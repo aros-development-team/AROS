@@ -45,8 +45,8 @@ struct MinList debug_seglist, free_debug_segnodes;
         name - NUL terminated name of the file.
 
     RESULT
-        Handle to the loaded executable or 0 if the load failed.
-q        IoErr() gives additional information in that case.
+        Handle to the loaded executable or NULL if the load failed.
+        IoErr() gives additional information in that case.
 
     NOTES
         This function is built on top of InternalLoadSeg()
