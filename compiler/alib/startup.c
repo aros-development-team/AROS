@@ -33,9 +33,9 @@ extern int main (int argc, char ** argv);
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
-typedef void (* fptr)(void);
-extern fptr __INIT_LIST__[];
-extern fptr __EXIT_LIST__[];
+DECLARESET(INIT);
+DECLARESET(EXIT);
+DECLARESET(LIBS);
 
 /*
     This won't work for normal AmigaOS because you can't expect SysBase to be
@@ -57,20 +57,25 @@ AROS_UFH3(LONG, entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
-    char * args = NULL,	** argv, * ptr;
+    char * args = NULL,	** argv = NULL, * ptr = NULL;
     int    argc, argmax;
     LONG   namlen = 64;
     int    done = 0;
     struct Process *myproc;
 
-    __startup_error = RETURN_FAIL;
-
     SysBase = sysbase;
 
-    if (!(DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39)))
-	return -1;
+    if
+    (
+        (__startup_error = set_open_libraries(SETNAME(LIBS))) ||
+        (__startup_error = set_call_funcs(SETNAME(INIT), 1))
+    )
+    {
+	set_call_funcs(SETNAME(EXIT), -1);
+	set_close_libraries(SETNAME(LIBS));
 
-	call_funcs(__INIT_LIST__, 1);
+	return __startup_error;
+    }
 
     myproc = (struct Process *)FindTask(NULL);
 
@@ -206,6 +211,7 @@ AROS_UFH3(LONG, entry,
     }
     else
     {
+
 	/* Workbench startup. Get WBenchMsg and pass it to main() */
 
 	WaitPort(&myproc->pr_MsgPort);
@@ -225,16 +231,15 @@ error:
 	if (argv) {
 	    if (argv[0])
 		FreeVec(argv[0]);
-	    FreeMem(argv, sizeof (char *) * argmax);
+	   FreeMem(argv, sizeof (char *) * argmax);
 	}
 
 	if (args)
 	    FreeMem(args, argsize+1);
     }
 
-	call_funcs(__EXIT_LIST__, -1);
-
-    CloseLibrary((struct Library *)DOSBase);
+    set_call_funcs(SETNAME(EXIT), -1);
+    set_close_libraries(SETNAME(LIBS));
 
     /* Reply startup message to Workbench.
      * We Forbid() to avoid being UnLoadSeg()ed before we're really finished.
@@ -248,32 +253,14 @@ error:
     return __startup_error;
 } /* entry */
 
-static void call_funcs(fptr list[], int order)
-{
-	int n;
-
-	if (order>=0)
-	{
-		n = 1;
-		while(list[n])
-			list[n++]();
-   	}
-	else
-	{
-		n = ((int *)list)[0];
-
-		while (n)
-			list[n--]();
-	}
-}
 
 struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
 struct WBStartup *WBenchMsg;
 jmp_buf __startup_jmp_buf;
 LONG __startup_error;
-fptr __INIT_LIST__[] __attribute__((weak))={0,0};
-fptr __EXIT_LIST__[] __attribute__((weak))={0,0};
+DEFINESET(INIT);
+DEFINESET(EXIT);
+DEFINESET(LIBS);
 
 /*	Stub function for GCC __main().
 
@@ -286,4 +273,3 @@ void __main(void)
 {
 /* Do nothing. */
 }
-
