@@ -11,7 +11,7 @@ LIB	:= $(LIBDIR)/libtrackdisk.a
 %define_libs
 
 #MM
-kernel-devs-$(ARCH)-$(CPU) : $(LIB)
+kernel-devs-native-i386 : $(LIB)
 	@$(NOP)
 
 $(LIB) : $(OBJS)
