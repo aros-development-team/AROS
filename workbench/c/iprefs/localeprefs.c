@@ -21,8 +21,6 @@ void LocalePrefs_Handler(STRPTR filename)
     
     D(bug("In IPrefs:LocalePrefs_Handler\n"));
     
-    Delay(2 * 50); // FIXME: remove this
-    
     if ((new = OpenLocale(filename)))
     {
     	D(bug("In IPrefs:LocalePrefs_Handler. OpenLocale(\"%s\") okay\n", filename));
