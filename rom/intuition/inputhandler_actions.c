@@ -121,11 +121,23 @@ void CheckLayers(struct Screen *screen, struct IntuitionBase *IntuitionBase)
 void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
                                  struct IntuitionBase *IntuitionBase)
 {
+    struct Rectangle *clipto = NULL;
+    struct Rectangle  final_innerrect;
+    
     /* Erase the old frame on the right/lower side if
        new size is bigger than old size
     */
 
     D(bug("********* WindowSizeWillChange ******** dx = %d  dy = %d\n", dx, dy));
+
+    if (AVOID_WINBORDERERASE)
+    {
+	final_innerrect.MinX = targetwindow->BorderLeft;
+	final_innerrect.MinY = targetwindow->BorderTop;
+	final_innerrect.MaxX = targetwindow->Width  + dx - 1 - targetwindow->BorderRight;
+	final_innerrect.MaxY = targetwindow->Height + dy - 1 - targetwindow->BorderBottom;    
+	clipto = &final_innerrect;
+    }
 
     if ( ((dx > 0) && (targetwindow->BorderRight  > 0)) ||
         ((dy > 0) && (targetwindow->BorderBottom > 0)) )
@@ -142,7 +154,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
         ** install the regular cliprects of the layer
         ** first. Otherwise the frame might not get cleared correctly.
         */
-
+    	
         LockLayer(0, L);
 
         oldclipregion = InstallClipRegion(L, NULL);
@@ -160,11 +172,14 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
             rect.MaxX = targetwindow->Width - 1;
             rect.MaxY = targetwindow->Height - 1;
 
-            EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-            OrRectRegion(L->DamageList, &rect);
-
+    	    OrRectRegion(L->DamageList, &rect);
             L->Flags |= LAYERREFRESH;
+
+    	    if (!AVOID_WINBORDERERASE || AndRectRect(&rect, &final_innerrect, &rect))
+	    {
+            	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+	    }
+
         }
 
         if ((dy > 0) && (targetwindow->BorderBottom > 0))
@@ -175,13 +190,15 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
             rect.MaxX = targetwindow->Width - 1;
             rect.MaxY = targetwindow->Height - 1;
 
-            EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
-            OrRectRegion(L->DamageList, &rect);
-
+	    OrRectRegion(L->DamageList, &rect);
             L->Flags |= LAYERREFRESH;
-        }
 
+    	    if (!AVOID_WINBORDERERASE || AndRectRect(&rect, &final_innerrect, &rect))
+	    {
+            	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+    	    }
+            
+        }
 
         /*
         ** Reinstall the clipregions rectangles if there are any.
@@ -201,7 +218,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
     /* Before resizing the layers eraserect the area of all
        GFLG_REL??? gadgets and add the area to the damagelist */
 
-    EraseRelGadgetArea(targetwindow, FALSE, IntuitionBase);
+    EraseRelGadgetArea(targetwindow, clipto, FALSE, IntuitionBase);
 
 }
 
@@ -235,7 +252,17 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
     /* Add the new area of all GFLG_REL??? gadgets to the damagelist, but
        don't EraseRect() as the gadgets will be re-rendered at their new
        position anyway */
-    EraseRelGadgetArea(targetwindow, TRUE, IntuitionBase);
+       
+    {
+    	struct Rectangle innerrect;
+	
+	innerrect.MinX = targetwindow->BorderLeft;
+	innerrect.MinY = targetwindow->BorderTop;
+	innerrect.MaxX = targetwindow->Width - 1 - targetwindow->BorderRight;
+	innerrect.MaxY = targetwindow->Height - 1 - targetwindow->BorderBottom;
+	
+    	EraseRelGadgetArea(targetwindow, AVOID_WINBORDERERASE ? &innerrect : NULL, TRUE, IntuitionBase);
+    }
 
     /* If new size is smaller than old size add right/bottom
        frame to damagelist */
@@ -360,6 +387,7 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
                  targetwindow,
                  IntuitionBase);
 #endif
+
 }
 
 /*******************************************************************************************************/

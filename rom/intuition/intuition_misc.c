@@ -79,6 +79,7 @@ void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_MetaDrag = IEQUALIFIER_LCOMMAND;    
     GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags = ICF_3DMENUS |
     	    	    	    	    	    	    	  ICF_OFFSCREENLAYERS |
+							  ICF_AVOIDWINBORDERERASE |
     	    	    					  ICF_MODEPROMOTE | 
     	    	    					  ICF_MENUSNAP |
 							  ICF_STRGAD_FILTER |

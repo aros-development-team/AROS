@@ -462,7 +462,8 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 
 /**********************************************************************************************/
 
-void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
+void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
+    	    	    	BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
 {
     struct Gadget   *gad;
     struct Region   *old_clipregion = NULL; /* shut up the compiler */
@@ -484,6 +485,7 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
     else
     {
         num_loops = 2;
+	clipto = NULL; /* Don't do any border clipping for GZZ windows */
     }
 
     for(i = 0; i < num_loops; i++, rp = rp2)
@@ -540,8 +542,6 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
                         rect.MaxX = box.Left + box.Width  - 1;
                         rect.MaxY = box.Top  + box.Height - 1;
 
-                        if (!onlydamagelist) EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-
                         if (!(lay->Flags & LAYERSUPER))
                         {
                             DEBUG_ERASERELGADGETAREA(dprintf("EraseRelGadgetArea: gad 0x%lx add (%d,%d)-(%d,%d)\n", gad, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY));
@@ -549,6 +549,15 @@ void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct Intuitio
                             OrRectRegion(lay->DamageList, &rect);
                             lay->Flags |= LAYERREFRESH;
                         }
+
+                        if (!onlydamagelist)
+			{
+    	    	    	    if (!clipto || AndRectRect(&rect, clipto, &rect))
+	    	    	    {
+ 			    	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+			    }
+			}
+
                     }
 
                 }
