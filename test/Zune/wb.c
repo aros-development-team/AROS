@@ -362,6 +362,10 @@ int main(void)
     app = ApplicationObject,
  	MUIA_Application_Menustrip, MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
     	SubWindow, root_iconwnd = IconWindowObject,
+	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0),
+	    MUIA_Window_LeftEdge, 0,
+	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
+	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
             MUIA_IconWindow_IsRoot, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
 	    End,
