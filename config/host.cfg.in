@@ -64,30 +64,25 @@ endif
 OBJCOPY		:= @OBJCOPY@
 OBJDUMP		:= @OBJDUMP@
 
+# --------------------------------------------------------------------------
+# MAGIC: This is needed here for MetaMake to work. mmake will read the
+# configured version of this file to find out a number of variables.
+# --------------------------------------------------------------------------
+HOSTDIR         := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+TOOLDIR         := $(HOSTDIR)/tools
+GENMF           := $(TOOLDIR)/genmf.py
+
 # -------------------------------------------------------------------------- 
 # COMPATABILITY SECTION - WILL BE REMOVED IN THE FUTURE
 # --------------------------------------------------------------------------
 
-SORT		:= @SORT@
-UNIQ		:= @UNIQ@
-
-ARCH		:= $(AROS_TARGET_ARCH)
-CPU		:= $(AROS_TARGET_CPU)
+ARCH            := $(AROS_TARGET_ARCH)
+CPU             := $(AROS_TARGET_CPU)
 GFXSYSTEM	:= gfxhidd
 CC		:= $(TARGET_CC)
 AS		:= $(TARGET_AS)
-SYS_CC		:= $(TARGET_CC)
-SYS_AS		:= $(TARGET_AS)
 COMMON_CFLAGS	:= $(TARGET_CFLAGS)
 COMMON_AFLAGS	:= $(TARGET_AFLAGS)
-APP_CFLAGS	:=
 ILDFLAGS	= $(TARGET_LDFLAGS)
-SHELL_LDFLAGS	:= $(KERNEL_LDFLAGS)
 CHECKUDS	:= $(NM)
 
-# These should never have been in this file in the first place,
-# they belong in config/make.cfg
-ARCHDIR		:= $(TOP)/bin/$(ARCH)-$(CPU)
-MKDEPEND	:= $(TOP)/scripts/mkdep
-TOOLDIR		:= $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)/tools
-GENMF		:= $(TOOLDIR)/genmf.py
