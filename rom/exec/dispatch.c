@@ -14,7 +14,6 @@
 
 #include <aros/asmcall.h>
 
-#include <stdio.h>
 /*****i***********************************************************************
 
     NAME */
@@ -70,57 +69,53 @@
     /* Get the task which is ready to run */
     if(( task = (struct Task *)RemHead(&SysBase->TaskReady)))
     {
-		if(this->tc_Flags & TF_SWITCH)
-		{
-			AROS_UFC1(void, this->tc_Switch,
-			AROS_UFCA(struct ExecBase *, SysBase, A6));
-		}
-
-		this->tc_TDNestCnt = SysBase->TDNestCnt;
-		this->tc_IDNestCnt = SysBase->IDNestCnt;
-		
-		/*  Oh dear, the previous task has just vanished...
-			you should have called Switch() instead :-)
-		
-			We don't change the state of the old task, otherwise it
-			may never get freed.(See RemTask() for details).
-		
-			We especially don't add it to the ReadyList !
-		*/
-		task->tc_State = TS_RUN;
-		
-		SysBase->TDNestCnt = task->tc_TDNestCnt;
-		SysBase->IDNestCnt = task->tc_IDNestCnt;
-		
-		SysBase->ThisTask = task;
-
-		/* Check the stack of the task we are about to launch */
-
-    	if( task->tc_SPReg <= task->tc_SPLower
-	    	|| task->tc_SPReg >= task->tc_SPUpper )
-    	{
-			/* POW! */
-			Alert(AT_DeadEnd|AN_StackProbe);
-    	}
-		
-		if(task->tc_Flags & TF_LAUNCH)
-		{
-			AROS_UFC1(void, task->tc_Launch,
-			AROS_UFCA(struct ExecBase *, SysBase, A6));
-		}
-		
-		/* Increase the dispatched counter */
-		SysBase->DispCount++;
-    }
-	else
+	if(this->tc_Flags & TF_SWITCH)
 	{
-		fprintf(stderr,"Eh? No task to Dispatch()\n");
-		fflush(stderr);
+	    AROS_UFC1(void, this->tc_Switch,
+	    AROS_UFCA(struct ExecBase *, SysBase, A6));
 	}
 
-    /*
+	this->tc_TDNestCnt = SysBase->TDNestCnt;
+	this->tc_IDNestCnt = SysBase->IDNestCnt;
+		
+	/*  Oh dear, the previous task has just vanished...
+	    you should have called Switch() instead :-)
+		
+	    We don't change the state of the old task, otherwise it
+	    may never get freed.(See RemTask() for details).
+		
+	    We especially don't add it to the ReadyList !
+	*/
+	task->tc_State = TS_RUN;
+		
+	SysBase->TDNestCnt = task->tc_TDNestCnt;
+	SysBase->IDNestCnt = task->tc_IDNestCnt;
+		
+	SysBase->ThisTask = task;
+
+	/* Check the stack of the task we are about to launch */
+
+	if( task->tc_SPReg <= task->tc_SPLower
+	    || task->tc_SPReg >= task->tc_SPUpper )
+	{
+	    /* POW! */
+	    Alert(AT_DeadEnd|AN_StackProbe);
+	}
+		
+	if(task->tc_Flags & TF_LAUNCH)
+	{
+	    AROS_UFC1(void, task->tc_Launch,
+	    AROS_UFCA(struct ExecBase *, SysBase, A6));
+	}
+		
+	/* Increase the dispatched counter */
+	SysBase->DispCount++;
+    }
     else
     {
+	kprintf("Eh? No tasks left to Dispatch()\n");
+
+    /*
 	We have reached a point where there are no ready tasks.
 	What can you do? Well you can basically go into some kind of
 	loop that can be interrupted easily. If you do this however
@@ -139,8 +134,8 @@
 	get to here.
 
 		SysBase->IdleCount++;
-    }
     */
+    }
 
     /* Aha, the task pointed to be SysBase->ThisTask is correct. */
 
