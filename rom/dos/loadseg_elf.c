@@ -225,15 +225,6 @@ BPTR LoadSeg_ELF (BPTR file)
 	hunks[t] instead of hunks[t-mint] */
     hunks -= mint;
 
-    /* Find the basic size for each hunk */
-    for (t=1; t<eh.shnum; t++)
-    {
-	sh = (struct sheader *)(shtab + t*eh.shentsize);
-
-	if (sh->type == SHT_PROGBITS || sh->type == SHT_NOBITS)
-	    hunks[t].size = sh->size;
-    }
-
     /* Load names of sections */
     if (eh.shstrndx)
     {
@@ -256,6 +247,23 @@ BPTR LoadSeg_ELF (BPTR file)
 		t += strlen (&shstrtab[t]) + 1;
 	    }
 	} */
+    }
+
+    /* Find the basic size for each hunk */
+    for (t=1; t<eh.shnum; t++)
+    {
+	sh = (struct sheader *)(shtab + t*eh.shentsize);
+
+	if (sh->type == SHT_PROGBITS || sh->type == SHT_NOBITS)
+	{
+	    /* Don't load debug hunks */
+	    /* if (!strncmp (".stab", &shstrtab[sh->name], 5)
+		|| !strcmp (".comment", &shstrtab[sh->name])
+	    )
+		sh->size = 0; */
+
+	    hunks[t].size = sh->size;
+	}
     }
 
     /* Look for names of symbols */
@@ -335,13 +343,16 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 		)
 	    )
 	    {
-		kprintf ("    Symbol at 0x%p: %s\n"
-		    , hunks[symtab[i].shindex].memory + symtab[i].value
-		    , &strtab[symtab[i].name]
-		);
+		if (!strcmp ("entry", &strtab[symtab[i].name]))
+		{
+		    kprintf ("    Symbol at 0x%p: %s\n"
+			, hunks[symtab[i].shindex].memory + symtab[i].value
+			, &strtab[symtab[i].name]
+		    );
 
-		/* Print only the first symbol */
-		break;
+		    /* Print only this symbol */
+		    break;
+		}
 	    }
 	}
     }
@@ -353,6 +364,9 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
     {
 	sh = (struct sheader *)(shtab + t*eh.shentsize);
 
+	if (!sh->size)
+	    continue;
+
 	switch(sh->type)
 	{
 	case SHT_PROGBITS: /* Code */
@@ -362,11 +376,11 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 	    loaded = hunks[t].memory;
 
 	    if (strtab
-		&& (
+	       /* && (
 		    !strcmp (".text", &shstrtab[sh->name])
 		    || !strcmp (".rodata", &shstrtab[sh->name])
 		    || !strcmp (".data", &shstrtab[sh->name])
-		)
+		) */
 	    )
 	    {
 		kprintf ("    Section at 0x%p ... 0x%p: %s\n"
