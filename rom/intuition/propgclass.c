@@ -194,6 +194,8 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     struct BBox		old_knobbox;
     UWORD		newtop;
     BOOL 		set_flag = FALSE;
+    BOOL		was_disabled = FALSE;
+    BOOL		full_redraw = FALSE;
     BOOL		old_knobbox_ok = FALSE;
 
     IPTR 		retval;
@@ -201,7 +203,11 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     data = INST_DATA(cl, o);
     tstate = msg->ops_AttrList;
     
+    was_disabled = (G(o)->Flags & GFLG_DISABLED) ? TRUE : FALSE;
+    
     retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
+    
+    if ( ((G(o)->Flags & GFLG_DISABLED) ? TRUE : FALSE) != was_disabled ) full_redraw = TRUE;
     
     if (msg->ops_GInfo)
     {
@@ -215,7 +221,7 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
     	switch (tag->ti_Tag)
-    	{
+    	{		
     	    case PGA_Top:
 	    	newtop = (UWORD)tag->ti_Data;
 		/* This will be poked into data->top later below, because the
@@ -347,7 +353,7 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     }
 
     /* The two last tests below may be redundant */
-    if (retval && (OM_NEW != msg->MethodID) && (NULL != msg->ops_GInfo))
+    if ((retval || full_redraw) && (OM_NEW != msg->MethodID) && (NULL != msg->ops_GInfo))
     {
         struct RastPort *rp;
 	
@@ -355,7 +361,7 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     	if (NULL != rp)
 	{
 	    data->old_knobbox = old_knobbox_ok ? &old_knobbox : 0;
-	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_UPDATE);
+	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, full_redraw ? GREDRAW_REDRAW : GREDRAW_UPDATE);
 	    ReleaseGIRPort(rp);
 	}
     }
