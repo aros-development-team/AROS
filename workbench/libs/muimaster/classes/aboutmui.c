@@ -917,14 +917,8 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-#ifndef _AROS
-__asm IPTR Aboutmui_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Aboutmui_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Aboutmui_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

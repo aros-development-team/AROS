@@ -376,20 +376,11 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
     return TRUE;
 }
 
-#ifndef _AROS
-__asm IPTR Rectangle_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR, Rectangle_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Rectangle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	/* Whenever an object shall be created using NewObject(), it will be
-	** sent a OM_NEW method.
-	*/
 	case OM_NEW: return Rectangle_New(cl, obj, (struct opSet *) msg);
 	case OM_DISPOSE: return Rectangle_Dispose(cl, obj, msg);
 	case OM_GET: return Rectangle_Get(cl, obj, (struct opGet *)msg);
