@@ -414,8 +414,8 @@ aros_mungwall_debug="1"
 aros_stack_debug="1"
 aros_modules_debug="1"
 
-# Collect-aros stuff: "-i" to ignore missing symbols
-ignore_missing_symbols=""
+# Collect-aros stuff: "-ius" to ignore undefined symbols
+ignore_undefined_symbols=""
 
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
@@ -719,7 +719,7 @@ case "$target_os" in
 		aros_mungwall_debug="0"
 		aros_modules_debug="0"
 		gcc_target_cpu="mc68000"
-		ignore_missing_symbols="-i"
+		ignore_undefined_symbols="-ius"
 		;;
 	   *)
 		AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
@@ -1043,8 +1043,8 @@ AC_SUBST(aros_mungwall_debug)
 AC_SUBST(aros_stack_debug)
 AC_SUBST(aros_modules_debug)
 
-# Collect-aros stuff: "-i" to ignore missing symbols
-AC_SUBST(ignore_missing_symbols)
+# Collect-aros stuff: "-ius" to ignore undefined symbols
+AC_SUBST(ignore_undefind_symbols)
 
 # C compiler related
 AC_SUBST(gcc_target_cpu)
