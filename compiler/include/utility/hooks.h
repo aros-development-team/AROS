@@ -2,19 +2,18 @@
 #define UTILITY_HOOKS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Amiga include file utility/hooks.h
-    Lang: english
 */
 
 #ifndef EXEC_TYPES_H
-#include <exec/types.h>
+#   include <exec/types.h>
 #endif
-
 #ifndef EXEC_NODES_H
-#include <exec/nodes.h>
+#   include <exec/nodes.h>
+#endif
+#ifndef AROS_ASMCALL_H
+#   include <aros/asmcall.h>
 #endif
 
 /* A callback Hook */
