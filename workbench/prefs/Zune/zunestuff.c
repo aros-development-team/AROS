@@ -27,19 +27,6 @@ Object *MakeButton(CONST_STRPTR str)
     return obj;
 }
 
-
-/****************************************************************
- Easy getting an attributes value
-*****************************************************************/
-#ifdef __AROS__
-LONG xget(Object * obj, ULONG attr)
-{
-    LONG x = 0;
-    get(obj, attr, &x);
-    return x;
-}
-#endif
-
 Object *MakeSpacingSlider (void)
 {
     Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 9);
