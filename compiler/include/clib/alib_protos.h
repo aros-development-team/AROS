@@ -32,7 +32,9 @@ struct IORequest;
 struct Task;
 struct InputEvent;
 struct Hook;
-
+struct NamedObject;
+struct Catalog;
+struct Locale;
 /*
     Prototypes
 */
@@ -71,6 +73,13 @@ void LibDeletePool (APTR poolHeader);
 APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
 
+/* Utility Support */
+struct NamedObject *AllocNamedObject(STRPTR name, ULONG tag1, ...);
+
+/* Locale Support */
+struct Catalog *OpenCatalog(struct Locale *locale, STRPTR name, ULONG tag1, ...);
+
+/* Hook Support */
 AROS_UFP3(IPTR, HookEntry,
     AROS_UFPA(struct Hook *, hook,  A0),
     AROS_UFPA(APTR,          obj,   A2),

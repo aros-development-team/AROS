@@ -8,6 +8,34 @@
 #   include <aros/libcall.h>
 #endif
 
+#ifdef AddClass
+#   undef AddClass
+#endif
+#ifdef DisposeObject
+#   undef DisposeObject
+#endif
+#ifdef FreeClass
+#   undef FreeClass
+#endif
+#ifdef GetAttr
+#   undef GetAttr
+#endif
+#ifdef MakeClass
+#   undef MakeClass
+#endif
+#ifdef NewObjectA
+#   undef NewObjectA
+#endif
+#ifdef NextObject
+#   undef NextObject
+#endif
+#ifdef RemoveClass
+#   undef RemoveClass
+#endif
+#ifdef SetAttrsA
+#   undef SetAttrsA
+#endif
+
 /*
     Defines
 */
@@ -63,10 +91,10 @@
 
 #define BuildEasyRequestArgs(RefWindow, easyStruct, IDCMP, Args) \
     AROS_LC4(struct Window *, BuildEasyRequestArgs, \
-    AROS_LCA(struct Window *, RefWindow, A0), \
+    AROS_LCA(struct Window     *, RefWindow, A0), \
     AROS_LCA(struct EasyStruct *, easyStruct, A1), \
-    AROS_LCA(ULONG, IDCMP, D0), \
-    AROS_LCA(APTR, Args, A3), \
+    AROS_LCA(ULONG              , IDCMP, D0), \
+    AROS_LCA(APTR               , Args, A3), \
     struct IntuitionBase *, IntuitionBase, 99, Intuition)
 
 #define ChangeWindowBox(window, left, top, width, height) \
@@ -140,12 +168,12 @@
     AROS_LCA(struct DrawInfo *, drawInfo,   A2), \
     struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
-#define EasyRequestArgs(window, easyStruct, idcmpPtr, args) \
+#define EasyRequestArgs(Window, easyStruct, IDCMP_ptr, ArgList) \
     AROS_LC4(LONG, EasyRequestArgs, \
-    AROS_LCA(struct Window     *, window, A0), \
+    AROS_LCA(struct Window     *, Window, A0), \
     AROS_LCA(struct EasyStruct *, easyStruct, A1), \
-    AROS_LCA(ULONG             *, idcmpPtr, A2), \
-    AROS_LCA(APTR               , args, A3), \
+    AROS_LCA(ULONG             *, IDCMP_ptr, A2), \
+    AROS_LCA(APTR               , ArgList, A3), \
     struct IntuitionBase *, IntuitionBase, 98, Intuition)
 
 #define EndRefresh(window, complete) \
@@ -179,13 +207,13 @@
     AROS_LCA(struct DrawInfo *, drawInfo, A1), \
     struct IntuitionBase *, IntuitionBase, 116, Intuition)
 
-#define FreeSysRequest(window) \
+#define FreeSysRequest(Window) \
     AROS_LC1(void, FreeSysRequest, \
-    AROS_LCA(struct Window *, window, A0), \
+    AROS_LCA(struct Window *, Window, A0), \
     struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
-#define GetAttr(attrID, object, storagePtr) \
-    AROS_LC3(ULONG, GetAttr, \
+#define oldGetAttr(attrID, object, storagePtr) \
+    AROS_LC3(ULONG, oldGetAttr, \
     AROS_LCA(ULONG   , attrID, D0), \
     AROS_LCA(Object *, object, A0), \
     AROS_LCA(IPTR *  , storagePtr, A1), \
@@ -404,8 +432,8 @@
     AROS_LCA(struct Screen *, screen, A0), \
     struct IntuitionBase *, IntuitionBase, 42, Intuition)
 
-#define SetAttrsA(object, tagList) \
-    AROS_LC2(ULONG, SetAttrsA, \
+#define oldSetAttrsA(object, tagList) \
+    AROS_LC2(ULONG, oldSetAttrsA, \
     AROS_LCA(APTR            , object, A0), \
     AROS_LCA(struct TagItem *, tagList, A1), \
     struct IntuitionBase *, IntuitionBase, 108, Intuition)
@@ -447,11 +475,11 @@
     AROS_LCA(LONG           , dy, D1), \
     struct IntuitionBase *, IntuitionBase, 48, Intuition)
 
-#define SysReqHandler(window, IDCMPFlagsPtr, WaitInput) \
+#define SysReqHandler(Window, IDCMPFlagsPtr, WaitInput) \
     AROS_LC3(LONG, SysReqHandler, \
-    AROS_LCA(struct Window *, window, A0), \
-    AROS_LCA(ULONG *, IDCMPFlagsPtr, A1), \
-    AROS_LCA(BOOL, WaitInput, D0), \
+    AROS_LCA(struct Window  *, Window, A0), \
+    AROS_LCA(ULONG   *,        IDCMPFlagsPtr, A1), \
+    AROS_LCA(BOOL            , WaitInput, D0), \
     struct IntuitionBase *, IntuitionBase, 100, Intuition)
 
 #define UnlockIBase(ibLock) \

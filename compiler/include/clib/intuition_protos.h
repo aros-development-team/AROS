@@ -97,6 +97,13 @@ AROS_LP1(void, BeginRefresh,
     AROS_LPA(struct Window *, window, A0),
     struct IntuitionBase *, IntuitionBase, 59, Intuition)
 
+AROS_LP4(struct Window *, BuildEasyRequestArgs,
+    AROS_LPA(struct Window     *, RefWindow, A0),
+    AROS_LPA(struct EasyStruct *, easyStruct, A1),
+    AROS_LPA(ULONG              , IDCMP, D0),
+    AROS_LPA(APTR               , Args, A3),
+    struct IntuitionBase *, IntuitionBase, 99, Intuition)
+
 AROS_LP5(void, ChangeWindowBox,
     AROS_LPA(struct Window *, window, A0),
     AROS_LPA(LONG           , left, D0),
@@ -159,10 +166,10 @@ AROS_LP6(void, DrawImageState,
     struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
 AROS_LP4(LONG, EasyRequestArgs,
-    AROS_LPA(struct Window     *, window, A0),
+    AROS_LPA(struct Window     *, Window, A0),
     AROS_LPA(struct EasyStruct *, easyStruct, A1),
-    AROS_LPA(ULONG             *, idcmpPtr, A2),
-    AROS_LPA(APTR               , args, A3),
+    AROS_LPA(ULONG             *, IDCMP_ptr, A2),
+    AROS_LPA(APTR               , ArgList, A3),
     struct IntuitionBase *, IntuitionBase, 98, Intuition)
 
 AROS_LP2(void, EndRefresh,
@@ -191,7 +198,11 @@ AROS_LP2(void, FreeScreenDrawInfo,
     AROS_LPA(struct DrawInfo *, drawInfo, A1),
     struct IntuitionBase *, IntuitionBase, 116, Intuition)
 
-AROS_LP3(ULONG, GetAttr,
+AROS_LP1(void, FreeSysRequest,
+    AROS_LPA(struct Window *, Window, A0),
+    struct IntuitionBase *, IntuitionBase, 62, Intuition)
+
+AROS_LP3(ULONG, oldGetAttr,
     AROS_LPA(ULONG   , attrID, D0),
     AROS_LPA(Object *, object, A0),
     AROS_LPA(IPTR *  , storagePtr, A1),
@@ -377,7 +388,7 @@ AROS_LP1(void, ScreenToFront,
     AROS_LPA(struct Screen *, screen, A0),
     struct IntuitionBase *, IntuitionBase, 42, Intuition)
 
-AROS_LP2(ULONG, SetAttrsA,
+AROS_LP2(ULONG, oldSetAttrsA,
     AROS_LPA(APTR            , object, A0),
     AROS_LPA(struct TagItem *, tagList, A1),
     struct IntuitionBase *, IntuitionBase, 108, Intuition)
@@ -413,6 +424,12 @@ AROS_LP3(void, SizeWindow,
     AROS_LPA(LONG           , dx, D0),
     AROS_LPA(LONG           , dy, D1),
     struct IntuitionBase *, IntuitionBase, 48, Intuition)
+
+AROS_LP3(LONG, SysReqHandler,
+    AROS_LPA(struct Window  *, Window, A0),
+    AROS_LPA(ULONG   *,        IDCMPFlagsPtr, A1),
+    AROS_LPA(BOOL            , WaitInput, D0),
+    struct IntuitionBase *, IntuitionBase, 100, Intuition)
 
 AROS_LP1(void, UnlockIBase,
     AROS_LPA(ULONG, ibLock, A0),
