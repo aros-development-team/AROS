@@ -104,13 +104,45 @@ struct iDev
     UWORD           idev_DMATime;           /* 52    DMA Timing */
     UWORD           idev_NextAvail;         /* 53    Next bytes available? */
     UWORD           ideva_Cylinders;	    /* 54    Number of logical cylinders */
-    UWORD           ideva_Heads;	    /* 55    Number of logical heads */
-    UWORD           ideva_Sectors;	    /* 56    Number of logical sectors */
+    UWORD           ideva_Heads;	    	/* 55    Number of logical heads */
+    UWORD           ideva_Sectors;	    	/* 56    Number of logical sectors */
     UWORD           ideva_Capacity1;	    /* 57    Current capacity in sectors */
     UWORD           ideva_Capacity2;        /* 58    Current capacity */
     UWORD           ideva_MultSect;         /* 59    Multiple sector settings */
     ULONG           ideva_LBASectors;       /* 60-61 LBA reported sectors */
     UWORD           ideva_Rsrvd4[194];
+};
+
+#define IB_NA_LOGICAL	0
+#define IB_NA_TRANSMODE	1
+
+#define IF_NA_LOGICAL	(1L << IB_NA_LOGICAL)
+#define IF_NA_TRANSMODE (1L << IB_NA_TRANSMODE)
+
+struct PartEntry
+{
+	UBYTE Status;				/* Bootable = 0x80 */
+	UBYTE StartH;				/* Start: Head */
+	UBYTE StartS;				/* Start: 0:5 Sectors 6:7 Cyls MSB */
+	UBYTE StartC;				/* Start: Cyls LBS */
+    UBYTE PartType;				/* Partition type code */
+    UBYTE EndH;					/* End: Head */
+    UBYTE EndS;					/* End: 0:5 Sectors 6:7 Cyls MSB */
+    UBYTE EndC;					/* End: Cyls LSB */
+    ULONG LBAStart;				/* LBA Starting sector */
+    ULONG LBACount;				/* LBA Ending sector */
+} __attribute__((packed));		/* This HAS to be packed */
+
+#define IDE_DEVTYPE_NONE    0x00
+#define IDE_DEVTYPE_UNKNOWN 0x01
+#define IDE_DEVTYPE_ATA     0x02
+#define IDE_DEVTYPE_ATAPI   0x80
+
+struct ide_Bus 
+{
+        UWORD    ib_Port;      /* Base address of the IDE port */
+        UBYTE    ib_Dev0;      /* Device 0 type */
+        UBYTE    ib_Dev1;      /* Device 1 type */
 };
 
 /* Unit flags */
@@ -174,20 +206,22 @@ struct ideBase
 
 /* ATA Commands */
 #define ATA_IDENTDEV    0xec
-#define ATA_READ	0x20
+#define ATA_READ		0x20
 #define ATA_WRITE       0x30
 #define ATA_SEEK        0x70
-#define ATA_NOP		0x00
+#define ATA_NOP			0x00
 #define ATA_MEDIAEJECT  0xed
 #define ATA_RECALIBRATE 0x10
 
-#define ATAB_LBA	9
+#define ATAB_SLAVE      4
+#define ATAB_LBA		6
 #define ATAB_ATAPI      7
 #define ATAB_DATAREQ    3
 #define ATAB_ERROR      0
 #define ATAB_BUSY       7
 
-#define ATAF_LBA	(1L << ATAB_LBA)
+#define ATAF_SLAVE      0x10
+#define ATAF_LBA		0x40
 #define ATAF_ATAPI      0x80
 #define ATAF_DATAREQ    0x08
 #define ATAF_ERROR      0x01
@@ -205,11 +239,58 @@ struct ideBase
 #define ATAPIF_READ     0x02
 #define ATAPIF_WRITE    0x00
 
+#define APCMD_TESTCHANGED   0x001d
+#define APCMD_UNITPARAMS    0x001e
+
+/* Flags for idev_Features */
+#define ATAB_FEAT_DMA      8   // Supports DMA
+#define ATAB_FEAT_LBA      9   // Supports LBA adressing
+#define ATAB_FEAT_IORDYDIS 10  // IORDY can be disabled
+#define ATAB_FEAT_IORDYSUP 11  // IORDY might be supported
+
+#define ATAF_FEAT_DMA      (1L << ATAB_FEAT_DMA)
+#define ATAF_FEAT_LBA      (1L << ATAB_FEAT_LBA)
+#define ATAF_FEAT_IORDYDIS (1L << ATAB_FEAT_IORDYDIS)
+#define ATAF_FEAT_IORDYSUP (1L << ATAB_FEAT_IORDYSUP)
+
+/* Flags for idev_NextAvail */
+#define ATAB_AVAIL_TCHS    0   // ideva_CHS is available
+#define ATAB_AVAIL_TMODE   1   // Transfermode words are valid
+
+#define ATAF_AVAIL_TCHS    (1L << ATAB_AVAIL_TCHS)
+#define ATAF_AVAIL_TMODE   (1L << ATAB_AVAIL_TMODE)
+
 #define ide_out(value, offset, port)    outb(value, offset + port)
 #define ide_in(offset, port)            inb(offset + port)
 
-#define APCMD_TESTCHANGED   0x001d
-#define APCMD_UNITPARAMS    0x001e
+/* Function prototypes */
+ULONG               TestDevice(struct timerequest *, ULONG, ULONG);
+ULONG               TestMirror(ULONG);
+void                ScanBus(struct ide_Bus *);
+struct ide_Unit     *InitUnit(ULONG, struct ideBase *);
+void                UnitInfo(struct ide_Unit *);
+void                PerformIO(struct IORequest *, struct ide_Unit *, struct TaskData *);
+ULONG               ReadBlocks(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULONG *act);
+ULONG               WriteBlocks(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULONG *act);
+ULONG               SendPacket(struct ide_Unit *, ULONG, APTR);
+ULONG               WaitBusySlow(ULONG, struct ide_Unit *);
+
+/* HW function prototypes */
+ULONG ata_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULONG *act);
+ULONG ata_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULONG *act);
+ULONG ata_Seek(ULONG block, struct ide_Unit *unit);
+ULONG ata_Eject(struct ide_Unit *unit);
+ULONG ata_Identify(APTR buffer, struct ide_Unit *unit);
+
+ULONG atapi_TestUnit(struct ide_Unit *unit);
+ULONG atapi_Read(ULONG, ULONG, APTR, struct ide_Unit *, ULONG *);
+ULONG atapi_Write(ULONG, ULONG, APTR, struct ide_Unit *, ULONG *);
+ULONG atapi_Seek(ULONG, struct ide_Unit *);
+ULONG atapi_Eject(struct ide_Unit *);
+
+/* Globals */
+static const char name[];
+
 
 /**** ATAPI packets ***********************************************************/
 

@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(TOP)/rom/devs
 
 DEVS    := $(DEVSDIR)/ide.device
-FILES	:= ide ide_asm
+FILES	:= ide ide-lowlevel
 OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libide.a
 AFLAGS2 := $(AFLAGS) -I.. -I../.. -I$(GENINCDIR)
@@ -12,7 +12,7 @@ AFLAGS2 := $(AFLAGS) -I.. -I../.. -I$(GENINCDIR)
 %define_libs
 
 #MM
-kernel-devs-native-i386 : $(LIB) ide.s
+kernel-devs-native-i386 : $(LIB)
 	@$(NOP)
 
 $(LIB) : $(OBJS)
@@ -37,9 +37,6 @@ $(OSGENDIR)/%.o : %.S
 
 $(OSGENDIR)/%.d : %.c
 	%mkdepend_q
-
-ide.s: ide.c
-	%ctoasm_q
 
 %common
 %include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
