@@ -17,6 +17,7 @@ FUNCS := \
     removeappwindow \
     removeappwindowdropzone \
     unregisterworkbench \
+    updateworkbenchobjecta \
     wbinfo \
     workbenchcontrola
 
