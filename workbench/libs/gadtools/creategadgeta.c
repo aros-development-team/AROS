@@ -66,7 +66,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    struct Gadget 	*gad = NULL, *gad2;
+    struct Gadget 	*gad = NULL;
     struct TagItem 	stdgadtags[] =
     {
         {GA_Left	, 0L			},
@@ -269,7 +269,7 @@
     if (gad)
     {
 #if 0
-    	gad2 = gad;
+        struct Gadget *gad2 = gad;
 	while (gad2)
 	{
 	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: created gadget 0x%lx\n", gad2));

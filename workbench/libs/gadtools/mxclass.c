@@ -65,7 +65,7 @@ STATIC VOID mx_setnew(Class *cl, Object *o, struct opSet *msg)
     struct MXData  *data = INST_DATA(cl, o);
     struct TagItem *tag, *taglist = msg->ops_AttrList;
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch (tag->ti_Tag)
 	{
@@ -194,7 +194,7 @@ STATIC IPTR mx_set(Class *cl, Object *o, struct opSet *msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, o, (Msg)msg);
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch (tag->ti_Tag)
 	{

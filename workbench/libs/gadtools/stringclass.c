@@ -63,7 +63,7 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     };
     
     LONG 		labelplace = GV_LabelPlace_Left;
-    struct DrawInfo 	*dri;
+    struct DrawInfo 	*dri = NULL;
     struct TextAttr 	*tattr = NULL;
     LONG 		gadgetkind = STRING_KIND;
     
@@ -72,7 +72,7 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     EnterFunc(bug("String::SetNew()\n"));
     
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -111,6 +111,7 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    case GA_LabelPlace:
     	    	labelplace = tidata;
     	    	break;
+                
     	    case GA_DrawInfo:
     	    	dri = (struct DrawInfo *)tidata;
     	    	break;
@@ -123,7 +124,7 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     
     tags[4].ti_Data = (IPTR)msg->ops_AttrList;
 
-    retval = DoSuperMethod(cl, o, msg->MethodID, tags, msg->ops_GInfo);
+    retval = DoSuperMethod(cl, o, msg->MethodID, (IPTR) tags, (IPTR) msg->ops_GInfo);
    
     D(bug("Returned from supermethod: %p\n", retval));
     
@@ -171,7 +172,7 @@ STATIC IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    	
     	    	sftags[0].ti_Data = (IPTR)data->font;
 
-    	    	DoSuperMethod(cl, (Object *)retval, OM_SET, sftags, NULL);
+    	    	DoSuperMethod(cl, (Object *)retval, OM_SET, (IPTR) sftags, NULL);
     	    }
     	}
     }

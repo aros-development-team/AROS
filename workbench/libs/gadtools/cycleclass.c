@@ -193,7 +193,7 @@ STATIC IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 
     result = DoSuperMethodA(cl, o, (Msg)msg);
 
-    while((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while((tag = NextTagItem(&taglist)))
     {
         switch(tag->ti_Tag)
         {
@@ -251,8 +251,8 @@ STATIC IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 
 STATIC IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
 {
-    struct CycleData *data = INST_DATA(cl, o);
-    IPTR    	    retval;
+    struct CycleData *data   = INST_DATA(cl, o);
+    IPTR    	      retval = FALSE;
     
     switch (msg->opg_AttrID)
     {

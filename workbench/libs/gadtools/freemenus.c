@@ -79,7 +79,7 @@
 		if (*--p)
 		{
 			DEBUG_FREEMENUS(bug("FreeMenus: Free Image 0x%lx\n", *p));
-			DisposeObject(*p);
+			DisposeObject((APTR) *p);
 		}
 	}
 	DEBUG_FREEMENUS(bug("FreeMenus: Free MenuMem 0x%lx\n", p));

@@ -66,7 +66,7 @@ STATIC VOID notifylevel(Class *cl, Object *o, WORD level, struct GadgetInfo *gin
     };
 
     ntags[0].ti_Data = (IPTR)level;
-    DoSuperMethod(cl, o, OM_NOTIFY, ntags, ginfo, 0);
+    DoSuperMethod(cl, o, OM_NOTIFY, (IPTR) ntags, (IPTR) ginfo, 0);
     
     return;
 }
@@ -92,7 +92,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     dosuper_tags = msg->ops_AttrList;
 
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -133,7 +133,7 @@ STATIC IPTR slider_set(Class * cl, Object * o, struct opSet * msg)
     	retval = 1UL;
     }
         
-    ReturnInt ("Slider::Set", IPTR, DoSuperMethod(cl, o, OM_SET, dosuper_tags, msg->ops_GInfo));
+    ReturnInt ("Slider::Set", IPTR, DoSuperMethod(cl, o, OM_SET, (IPTR) dosuper_tags, (IPTR) msg->ops_GInfo));
 }
 
 /**********************************************************************************************/
@@ -254,7 +254,7 @@ STATIC IPTR slider_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	LONG top;
     	
     	/* Get the PGA_Top attribute */
-    	DoSuperMethod(cl, o, OM_GET, PGA_Top, &top);
+    	DoSuperMethod(cl, o, OM_GET, PGA_Top, (IPTR) &top);
     	
     	/* Level changed ? */
     	if (data->level - data->min != top)

@@ -76,7 +76,7 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     
     tstate = msg->ops_AttrList;
     
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -178,7 +178,7 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     if ((retval) && (OCLASS(o) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
-	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+	    DoMethod(o, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rport, GREDRAW_UPDATE);
 	    ReleaseGIRPort(rport);
 	    retval = FALSE;
 	}
@@ -470,7 +470,7 @@ AROS_UFH3S(IPTR, dispatch_textclass,
 		    struct RastPort *rp = ObtainGIRPort(gi);
 		    if (rp)
 		    {
-			DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+			DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_REDRAW);
 			ReleaseGIRPort(rp);
 		    } /* if */
 		} /* if */
