@@ -133,8 +133,6 @@ Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
 {
     Class *cl = NULL, *cl2;
 
-    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
     ForeachNode(&MUIMB(mb)->BuiltinClasses, cl2)
     {
         if (!strcmp(cl2->cl_ID, classid))
@@ -144,34 +142,12 @@ Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
 	}
     }
 
-    ReleaseSemaphore(&MUIMB(mb)->ZuneSemaphore);
-
     return cl;
-}
-
-VOID ZUNE_AddBuiltinClass(Class *cl, struct Library *mb)
-{
-    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
-    AddTail((struct List *)&MUIMB(mb)->BuiltinClasses, (struct Node *)cl);
-    cl->cl_Flags |= CLF_INLIST;
-
-    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-}
-
-VOID ZUNE_RemoveBuiltinClass(Class *cl, struct Library *mb)
-{
-    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
-    Remove((struct Node *)cl);
-
-    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 }
 
 Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
 {
     Class *cl;
-
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
