@@ -12,6 +12,8 @@
 #include <exec/types.h>
 #include <exec/nodes.h>
 
+#define NUM_MODES 3
+
 struct vgaModeDesc
 {
     char		*name;		/* Mode name */

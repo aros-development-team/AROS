@@ -41,7 +41,7 @@ struct vgabase
     BPTR	seglist;
 };
 
-extern struct vgaModeDesc vgaDefMode;
+extern struct vgaModeDesc vgaDefMode[];
 
 #include <libcore/libheader.c>
 
@@ -58,6 +58,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct vga_staticdata *xsd;
     struct vgaModeEntry *entry;
+    int i;
     xsd = AllocMem( sizeof (struct vga_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
     if (xsd)
     {
@@ -67,17 +68,18 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	InitSemaphore(&xsd->HW_acc);
 	NEWLIST(&xsd->modelist);
 
-	/* Insert first and default videomode */
+	/* Insert default videomodes */
 	
-	entry = AllocMem(sizeof(struct vgaModeEntry),MEMF_CLEAR|MEMF_PUBLIC);
-
-	if (entry)
+	for (i=0; i<NUM_MODES; i++)
 	{
-	    entry->Desc=&vgaDefMode;
-	    ADDHEAD(&xsd->modelist,entry);
-	};
-
-	D(bug("Added default mode: %s\n", entry->Desc->name));
+	    entry = AllocMem(sizeof(struct vgaModeEntry),MEMF_CLEAR|MEMF_PUBLIC);
+	    if (entry)
+	    {
+		entry->Desc=&(vgaDefMode[i]);
+		ADDHEAD(&xsd->modelist,entry);
+		D(bug("Added default mode: %s\n", entry->Desc->name));
+	    }
+	}
 	
         xsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	if (xsd->oopbase)

@@ -119,29 +119,34 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		/* Find out the best video mode */
 		ForeachNode(&XSD(cl)->modelist,mode)
 		{
-#warning TODO: Write function able to determine best displaymode
-		    sel = mode;
+		    if ((mode->Desc->Width == data->width) &&
+			(mode->Desc->Height == data->height) &&
+			(mode->Desc->Depth == data->bpp))
+			sel = mode;
 		}
 
-		ObtainSemaphore(&XSD(cl)->HW_acc);
+		if (sel)
+		{
+		    ObtainSemaphore(&XSD(cl)->HW_acc);
 
-		/* Now, when the best display mode is chosen, we can build it */
-		vgaInitMode(sel->Desc, data->Regs);
-		vgaLoadPalette(data->Regs,(unsigned char *)NULL);
+		    /* Now, when the best display mode is chosen, we can build it */
+		    vgaInitMode(sel->Desc, data->Regs);
+		    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
 
-		/*
-		   Because of not defined BitMap_Show method show 
-		   bitmap immediately
-		*/
+		    /*
+		       Because of not defined BitMap_Show method show 
+		       bitmap immediately
+		    */
 		
-		vgaRestore(data->Regs);
-		vgaUpdateVideo(data);
+		    vgaRestore(data->Regs);
+		    vgaUpdateVideo(data);
 
-		ReleaseSemaphore(&XSD(cl)->HW_acc);
+		    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-		set_pixelformat(o, XSD(cl));
+		    set_pixelformat(o, XSD(cl));
 
-		ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+		    ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+		}
 		
 	    } /* if got data->VideoData */
 	    

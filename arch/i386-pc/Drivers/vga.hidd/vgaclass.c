@@ -49,14 +49,26 @@ struct vga_data
     int	i;	//dummy!!!!!!!!!
 };
 
-/* Default graphics mode */
+/* Default graphics modes */
 
 struct vgaModeDesc
-    vgaDefMode={"640x480x4 @ 60Hz",	/* Default AROS gfx mode */
-		640,480,4,0,		/* One could try to create new, */
-		0,			/* enhanced gfx mode */
+    vgaDefMode[NUM_MODES]={
+		{"640x480x4 @ 60Hz",	// h: 31.5 kHz v: 60Hz
+		640,480,4,0,
+		0,
 		640,664,760,800,0,
-		480,491,493,525};
+		480,491,493,525},
+		{"768x576x4 @ 50Hz",	// h: 32.5 kHz v: 54Hz
+		768,576,4,1,
+		0,
+		768,795,805,872,0,
+		576,577,579,600},
+		{"800x600x4 @ 50Hz",	// h: 31.5 kHz v: 52Hz
+		800,600,4,1,
+		0,
+		800,826,838,900,0,
+		600,601,603,617}
+		};
 
 /*********************
 **  GfxHidd::New()  **

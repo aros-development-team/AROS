@@ -12,9 +12,9 @@ static VOID set_pixelformat(Object *bm, struct vga_staticdata *xsd)
     pf->green_mask	= 0x0000ff00;
     pf->blue_mask	= 0x00ff0000;
     
-    pf->red_shift	= 0;
-    pf->green_shift	= 8;
-    pf->blue_shift	= 16;
+    pf->red_shift	= 24;
+    pf->green_shift	= 16;
+    pf->blue_shift	= 8;
 }
 
 /**************  BitMap::Set()  *********************************/
@@ -196,7 +196,7 @@ static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_Get
 
     for (i=0; i < depth; i++)
     {
-        if (*ptr & pix)
+        if ((*ptr & pix)!=0)
     	    pixel |= (1 << i);
 	ptr = (char *)(ptr + size);
     }

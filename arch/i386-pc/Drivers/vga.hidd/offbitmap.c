@@ -107,8 +107,8 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 	    if (data->Regs)
 	    {
-		ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
 		set_pixelformat(o, XSD(cl));
+		ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
 	    }
 	} /* if got data->VideoData */
 

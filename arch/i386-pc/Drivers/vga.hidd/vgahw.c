@@ -285,7 +285,6 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     regs->Attribute[17] = 0xFF;
 
     regs->NoClock = mode->clock;
-    regs->MiscOutReg |= (regs->NoClock & 0x03) << 2;
 
     /*
 	compute correct Hsync & Vsync polarity 
@@ -303,6 +302,8 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 	else
 		regs->MiscOutReg = 0x23;	/* +hsync +vsync */
     }
+
+    regs->MiscOutReg |= (regs->NoClock & 0x03) << 2;
     
     /*
 	Time Sequencer
