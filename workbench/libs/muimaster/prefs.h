@@ -13,6 +13,10 @@
 #include <libraries/commodities.h>
 #endif
 
+#ifndef LIBRARIES_MUI_H
+#include "mui.h"
+#endif
+
 typedef enum CycleMenuPosition {
     CYCLE_MENU_POSITION_CENTERED,
     CYCLE_MENU_POSITION_TOP,
