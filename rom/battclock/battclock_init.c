@@ -30,7 +30,7 @@ extern void AROS_SLIB_ENTRY(ReadBattClock,Battclock)();
 extern void AROS_SLIB_ENTRY(ResetBattClock,Battclock)();
 extern void AROS_SLIB_ENTRY(WriteBattClock,Battclock)();
 
-static int battclock_entry(void)
+int battclock_entry(void)
 {
     return -1;
 }
