@@ -7,13 +7,13 @@
 */
 
 
-#define size_t aros_size_t
-#include <hidd/unixio.h>
-#include <hidd/hidd.h>
-
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+
+#define size_t aros_size_t
+#include <hidd/unixio.h>
+#include <hidd/hidd.h>
 
 #include <oop/ifmeta.h>
 
