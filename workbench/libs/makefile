@@ -9,7 +9,7 @@ else
 SUBDIRS=icon iffparse
 endif
 
-OBJDIR = $(GENDIR)/libs
+OBJDIR = $(GENDIR)/workbench/libs
 FILES = dummy
 
 all: setup $(foreach f,$(FILES),$(SLIBDIR)/$f.library)
