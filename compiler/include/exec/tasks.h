@@ -67,6 +67,12 @@ struct Task
 	    ((struct ETask *)(((struct Task *)t)->tc_UnionETask.tc_ETask))-> \
 		et_TrapAble : \
 	    ((struct Task *)t)->tc_UnionETask.tc_ETrap.tc_ETrapAble)
+#define GetETask(t) \
+	((((struct Task *)t)->tc_Flags & TF_ETASK) ? \
+	    ((struct ETask *)(((struct Task *)t)->tc_UnionETask.tc_ETask)) \
+	    : NULL \
+	)
+
 
 /* Stack swap structure as passed to StackSwap() */
 struct StackSwapStruct
