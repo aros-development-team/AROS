@@ -57,25 +57,28 @@
     struct IntuiActionMessage 	*msg;
     BOOL 			success = FALSE;
     
-    if (((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) ||
-        ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
+    if (gadget && (window || requester))
     {
-	msg = AllocIntuiActionMsg(AMCODE_ACTIVATEGADGET, window, IntuitionBase);
-
-	if (NULL != msg)
+	if (((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) ||
+            ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
 	{
-	    msg->iam_ActivateGadget.Gadget = gadget;
-	    
-	    SetSignal(0,SIGF_INTUITION);
-	    SendIntuiActionMsg(msg, IntuitionBase);
-	    Wait(SIGF_INTUITION);
+	    msg = AllocIntuiActionMsg(AMCODE_ACTIVATEGADGET, window, IntuitionBase);
 
-	    success = (BOOL)msg->Code;
+	    if (NULL != msg)
+	    {
+		msg->iam_ActivateGadget.Gadget = gadget;
 
-	    FreeIntuiActionMsg(msg, IntuitionBase);
-	}   
+		SetSignal(0,SIGF_INTUITION);
+		SendIntuiActionMsg(msg, IntuitionBase);
+		Wait(SIGF_INTUITION);
+
+		success = (BOOL)msg->Code;
+
+		FreeIntuiActionMsg(msg, IntuitionBase);
+	    }   
+	}
     }
-          
+    
     return success;
 
     AROS_LIBFUNC_EXIT
