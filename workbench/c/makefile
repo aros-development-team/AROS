@@ -3,6 +3,7 @@ TOP=..
 include $(TOP)/make.cfg
 
 OBJDIR = $(GENDIR)/exe
+LIBS = -L$(LIBDIR) -laros
 
 EXES = $(EXEDIR)/helloworld \
 	$(EXEDIR)/newshell \
@@ -34,16 +35,16 @@ $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
 $(EXEDIR)/dir: $(OBJDIR)/dir.o $(LIBDIR)/libaros.a
-	$(CC) $(ILDFLAGS) $^ -o $@ -L$(LIBDIR) -laros
+	$(CC) $(ILDFLAGS) $^ -o $@ $(LIBS)
 
 $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o
-	$(CC) $(ILDFLAGS) $^ -o $@
+	$(CC) $(ILDFLAGS) $^ -o $@ $(LIBS)
 
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
 	$(CC) $(CFLAGS) -I $(TOP)/libs -c $< -o $@
 
 $(EXEDIR)/%: $(OBJDIR)/%.o
-	$(CC) $(ILDFLAGS) $< -o $@
+	$(CC) $(ILDFLAGS) $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
