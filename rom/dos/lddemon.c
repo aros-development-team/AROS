@@ -17,7 +17,7 @@
 
 static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)
 {
-    BPTR seglist;
+    BPTR seglist = NULL;
     struct Process *me=(struct Process *)FindTask(NULL);
     struct DosList *dl1, *dl2;
     struct Process *caller=DOSBase->dl_LDCaller;
@@ -116,7 +116,8 @@ struct ExecBase *,sysbase,0,Dos)
     }
     if(library!=NULL)
     {
-	if(library->lib_Version>=version)
+	library=(struct Library *)FindName(&SysBase->LibList,libName);
+	if(library && library->lib_Version>=version)
 	    library=AROS_LVO_CALL1(struct Library *,
 		AROS_LCA(ULONG,version,D0),
 		struct Library *,library,1,
@@ -153,7 +154,8 @@ AROS_LH4(BYTE,OpenDevice,
 	device=(struct Device *)DOSBase->dl_LDPtr;
 	ReleaseSemaphore(&DOSBase->dl_LDSigSem);
     }
-    if(device!=NULL)
+    if(device!=NULL&&
+       (device=(struct Device *)FindName(&SysBase->DeviceList,devName)))
     {
 	iORequest->io_Error=0;
 	iORequest->io_Device=device;
