@@ -19,8 +19,8 @@ LONG entry(struct ExecBase *sysbase)
     DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",39);
     if(DOSBase!=NULL)
     {
-        error=tinymain();
-        CloseLibrary((struct Library *)DOSBase);
+	error=tinymain();
+	CloseLibrary((struct Library *)DOSBase);
     }
     return error;
 }
@@ -31,23 +31,23 @@ static LONG tinymain(void)
     struct RDArgs *rda;
     BPTR dir;
     LONG error=0;
-    
+
     rda=ReadArgs("DEVICE/A,DIR/A",(ULONG *)args,NULL);
     if(rda!=NULL)
     {
-        dir=Lock(args[1],SHARED_LOCK);
-        if(dir)
-        {
-            STRPTR s=args[0];
-            while(*s)
-                if(*s++==':')
-                    s[-1]=0;
-            AssignLock(args[0],dir);
-        }
+	dir=Lock(args[1],SHARED_LOCK);
+	if(dir)
+	{
+	    STRPTR s=args[0];
+	    while(*s)
+		if(*s++==':')
+		    s[-1]=0;
+	    AssignLock(args[0],dir);
+	}
 	FreeArgs(rda);
     }else
 	error=RETURN_FAIL;
     if(error)
-	PrintFault(IoErr(),"MakeDir");
+	PrintFault(IoErr(),"Assign");
     return error;
 }
