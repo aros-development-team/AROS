@@ -13,6 +13,7 @@
 #define timeval     linux_timeval
 #include <sys/time.h>
 #undef timeval
+#include <sys/mman.h>
 #else
 #include <sys/time.h>
 #endif
@@ -257,6 +258,20 @@ printf ("SysBase = %p\n", SysBase);
 	SysBase->TDNestCnt = 0;
 	SysBase->AttnResched = 0;
     }
+
+#ifndef _AMIGA
+    if (mmap((APTR)0, getpagesize(), PROT_READ|PROT_WRITE,
+        MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0) != (APTR)0)
+      {
+        perror("mmap: Can't map page zero");
+        exit(10);
+      }
+    *(APTR *)4 = SysBase;
+    if (mprotect((APTR)0, getpagesize(), PROT_READ)) {
+        perror("mprotect");
+        exit(10);
+    }
+#endif
 
     {
 	/* Add boot task */
