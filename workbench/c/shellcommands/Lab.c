@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -69,6 +69,8 @@ AROS_SH0(Lab,41.1)
 
     struct CommandLineInterface *cli = Cli();
 
+    (void)Lab_version;
+
     if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
 	return RETURN_OK;	/* Normal operation: do nothing! */
@@ -76,6 +78,7 @@ AROS_SH0(Lab,41.1)
     else
     {
 	PrintFault(ERROR_SCRIPT_ONLY, "Lab");
+
 	return RETURN_ERROR;
     }
 

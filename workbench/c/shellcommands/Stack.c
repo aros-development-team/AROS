@@ -55,25 +55,31 @@ AROS_SHA(LONG *, , SIZE,/N,NULL))
     int            retval = RETURN_OK;
     struct CommandLineInterface *cli = Cli();
 
+    (void)Stack_version;
+
     /* We must be a Shell to do this operation */
-    if(cli == NULL)
+    if (cli == NULL)
+    {
 	return RETURN_FAIL;
+    }
 
-   /* Write out current stack size */
-   if(SHArg(SIZE) == NULL)
-   {
-       LONG currentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
-
-       VPrintf("Current stack size is %ld bytes\n",
-	       (IPTR *)&currentstack);
-   }
-   /* Set new stack size */
-   else
-   {
+    /* Write out current stack size */
+    if (SHArg(SIZE) == NULL)
+    {
+	LONG currentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+	
+	VPrintf("Current stack size is %ld bytes\n",
+		(IPTR *)&currentstack);
+    }
+    /* Set new stack size */
+    else
+    {
 	LONG  newSize = *SHArg(SIZE);
-
-	if(newSize > MINIMUM_STACK_SIZE)
+	
+	if (newSize > MINIMUM_STACK_SIZE)
+	{
 	    cli->cli_DefaultStack = (newSize + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
+	}
 	else
 	{
 	    PutStr("Requested size is too small.\n");

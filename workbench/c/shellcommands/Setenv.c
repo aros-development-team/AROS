@@ -1,9 +1,9 @@
   /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Setenv CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -87,6 +87,8 @@ AROS_SHA(STRPTR, ,NAME,     , NULL),
 AROS_SHA(STRPTR, ,STRING, /F, NULL))
 {
     AROS_SHCOMMAND_INIT
+
+    (void)Setenv_version;
 
     if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {

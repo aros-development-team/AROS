@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Why CLI command
@@ -58,8 +58,10 @@ AROS_SH0(Why, 41.3)
     AROS_SHCOMMAND_INIT
 
     struct CommandLineInterface *cli;
-    LONG lasterror;
-    int error = RETURN_OK;
+    LONG  lasterror;
+    int   error = RETURN_OK;
+    
+    (void)Why_version;
 
     if ((cli = Cli()) != NULL)
     {

@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Set CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -93,6 +93,8 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
     LONG              VarLength;
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
+
+    (void)Set_version;
 
     if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {

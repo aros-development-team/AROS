@@ -109,6 +109,8 @@ AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
 
     LONG rc = RETURN_FAIL;
 
+    (void)NewShell_version;
+
     if (win)
     {
 	struct TagItem tags[] =

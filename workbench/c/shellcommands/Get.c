@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Get CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -76,17 +76,16 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     char            Var_Value[BUFFER_SIZE];
     IPTR            Display_Args[1];
 
-    Var_Length = GetVar(SHArg(NAME),
-            &Var_Value[0],
-            BUFFER_SIZE,
-            GVF_LOCAL_ONLY
-    );
+    (void)Get_version;
+
+    Var_Length = GetVar(SHArg(NAME), &Var_Value[0], BUFFER_SIZE,
+			GVF_LOCAL_ONLY);
 
     if (Var_Length != -1)
     {
         Display_Args[0] = (IPTR)Var_Value;
         VPrintf("%s\n", Display_Args);
-
+	
         return RETURN_OK;
     }
 

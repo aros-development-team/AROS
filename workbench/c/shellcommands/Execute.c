@@ -27,15 +27,21 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     BPTR from;
     struct CommandLineInterface *cli = Cli();
 
+    (void)Execute_version;
+
     if (!cli)
+    {
         return RETURN_ERROR;
+    }
 
     from = Open(SHArg(NAME), FMF_READ);
+
     if (!from)
     {
 	IPTR data[] = { (IPTR)SHArg(NAME) };
 	VFPrintf(Error(), "EXECUTE: can't open %s\n", data);
 	PrintFault(IoErr(), NULL);
+
 	return RETURN_FAIL;
     }
 
@@ -50,8 +56,8 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 	          ((struct Process *)FindTask(NULL))->pr_TaskNum,
 		  ds.ds_Days, ds.ds_Minute, ds.ds_Tick);
 
-
 	tmpfile = Open(tmpname, FMF_WRITE|FMF_READ|FMF_CREATE|FMF_CLEAR);
+
 	if (tmpfile)
 	{
 	    LONG c;
@@ -59,15 +65,16 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 	    while((c = FGetC(from)) != -1 && FPutC(tmpfile, c) != -1);
 
 	    c = IoErr();
-
 	    Close(from);
 
 	    if (c)
 	    {
-		FPuts(Error(), "EXECUTE: error while creating temporary file\n");
+		FPuts(Error(),
+		      "EXECUTE: error while creating temporary file\n");
 		PrintFault(c, NULL);
 		Close(tmpfile);
 		DeleteFile(tmpname);
+
 		return RETURN_FAIL;
 	    }
 
@@ -84,6 +91,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 		PrintFault(c, NULL);
 		Close(tmpfile);
 		DeleteFile(tmpname);
+
 		return RETURN_FAIL;
 	    }
 
@@ -112,6 +120,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 	    FPuts(Error(), "EXECUTE: error while creating temporary file\n");
 	    PrintFault(c, NULL);
 	    Close(from);
+
 	    return RETURN_FAIL;
 	}
     }

@@ -115,6 +115,8 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
     struct UtilityBase *UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
     struct CommandLineInterface *cli = Cli();
 
+    (void)If_version;
+
     if (!UtilityBase)
         return RETURN_FAIL;
 

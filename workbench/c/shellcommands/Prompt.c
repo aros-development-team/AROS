@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Prompt CLI command
@@ -72,9 +72,12 @@ AROS_SHA(STRPTR, ,PROMPT, , "%N.%S> "))
 {
     AROS_SHCOMMAND_INIT
 
-    if(SetPrompt(SHArg(PROMPT)) == DOSFALSE)
+    (void)Prompt_version;
+
+    if (SetPrompt(SHArg(PROMPT)) == DOSFALSE)
     {
 	PrintFault(IoErr(), "Prompt");
+
 	return RETURN_ERROR;
     }
 

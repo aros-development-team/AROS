@@ -30,6 +30,8 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 {
     AROS_SHCOMMAND_INIT
 
+    (void)Resident_version;
+
     if (SHArg(FILE) || SHArg(NAME))
     {
 	STRPTR name, file;
@@ -221,9 +223,13 @@ static STRPTR StrDup(struct ExecBase *SysBase, STRPTR str)
 
     return ret;
 }
-static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name, LONG uc)
+
+
+static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name,
+				  LONG uc)
 {
     struct SegNode *sn = AllocVec(sizeof (struct SegNode), MEMF_ANY);
+
     if (sn)
     {
         sn->data[0] = (IPTR) StrDup(SysBase, name);

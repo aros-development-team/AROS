@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -59,13 +59,16 @@ AROS_SH0(EndIf,41.1)
 
     struct CommandLineInterface *cli = Cli();
 
-    if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
+    (void)EndIf_version;
+
+    if ((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {
 	return RETURN_OK;	/* Normal operation: do nothing! */
     }
     else
     {
 	PrintFault(ERROR_SCRIPT_ONLY, "EndIf");
+
 	return RETURN_ERROR;
     }
 

@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Unsetenv CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -60,6 +60,8 @@ AROS_SH1(Unsetenv, 41.0,
 AROS_SHA(STRPTR, ,NAME, ,NULL))
 {
     AROS_SHCOMMAND_INIT
+
+    (void)Unsetenv_version;
 
     if (SHArg(NAME) != NULL)
     {

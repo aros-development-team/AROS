@@ -60,6 +60,8 @@ AROS_SHA(LONG *, ,RC,/N,NULL))
     struct CommandLineInterface *cli = Cli();
     int retval = RETURN_OK;
 
+    (void)Quit_version;
+
     if(cli && !cli->cli_Interactive)
     {
         struct FileHandle *fh = BADDR(cli->cli_CurrentInput);

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Alias CLI command
@@ -102,15 +102,18 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
     char             Buffer1[BUFFER_SIZE];
     char             Buffer2[BUFFER_SIZE];
 
-    if(SHArg(NAME) != NULL || SHArg(STRING) != NULL)
+    (void)Alias_version;
+
+    if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {
         /* Make sure we get to here is either arguments are
          * provided on the command line.
          */
-        if(SHArg(NAME) != NULL && SHArg(STRING) == NULL)
+        if (SHArg(NAME) != NULL && SHArg(STRING) == NULL)
         {
             Success = GetVar(SHArg(NAME), &Buffer[0],
 		             BUFFER_SIZE, GVF_LOCAL_ONLY | LV_ALIAS);
+
             if (Success == FALSE)
             {
                 Return_Value = RETURN_WARN;
@@ -128,7 +131,8 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
             /* Add the new local variable to the list. */
             Success = SetVar(SHArg(NAME), SHArg(STRING),
                              -1, GVF_LOCAL_ONLY | LV_ALIAS);
-            if(Success == FALSE)
+
+            if (Success == FALSE)
             {
                 PrintFault(IoErr(), "Alias");
                 Return_Value = RETURN_ERROR;
@@ -143,7 +147,7 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
 	ForeachNode((struct List *)&(AliasProc->pr_LocalVars),
 	 	    (struct Node *)AliasNode)
         {
-	    if(AliasNode->lv_Node.ln_Type == LV_ALIAS)
+	    if (AliasNode->lv_Node.ln_Type == LV_ALIAS)
 	    {
 		/* Get a clean variable with no excess
 		 * characters.
