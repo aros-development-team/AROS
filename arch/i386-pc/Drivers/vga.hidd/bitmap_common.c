@@ -164,6 +164,7 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
     struct bitmap_data *data = INST_DATA(cl, o);
     HIDDT_Pixel fg;
     unsigned char *ptr;
+    ULONG drmd;
 
 #ifdef OnBitmap
     int pix;
@@ -171,8 +172,35 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
     unsigned char *ptr2;
 #endif /* OnBitmap */
 
+    drmd=GC_DRMD(msg->gc);
+
     fg = msg->pixel;
     ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
+    
+    // handle different DrawModes
+    
+    switch (drmd)
+    {
+	case vHidd_GC_DrawMode_Clear:	// Clear bitmap.
+	    fg = 0;
+	    break.;
+	
+	case vHidd_GC_DrawMode_And:	// src AND dst
+	    fg &= *ptr;
+	    break;
+	
+	case vHidd_GC_DrawMode_Xor:	// src XOR dst
+	    fg ^= *ptr;
+	    break;
+	
+	case vHidd_GC_DrawMode_Invert:	// NOT dst
+	    fg = (~fg) & 0x0f;
+	    break;
+	
+	case vHidd_GC_DrawMode_Copy:
+	default:			// no modification - put dst
+    }
+    	                
     *ptr = (char) fg;
 
 #ifdef OnBitmap
