@@ -54,15 +54,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
     
-    return driver_WritePixelArray(src
-    	, srcx, srcy
-	, srcmod
-	, rp
-	, destx, desty
-	, width, height
-	, srcformat
-	, CyberGfxBase
-    );
+    if (width && height)
+    {
+	return driver_WritePixelArray(src
+    	    , srcx, srcy
+	    , srcmod
+	    , rp
+	    , destx, desty
+	    , width, height
+	    , srcformat
+	    , CyberGfxBase
+	);
+    }
+    else return 0;
 
     AROS_LIBFUNC_EXIT
 } /* WritePixelArray */
