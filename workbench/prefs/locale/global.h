@@ -172,6 +172,9 @@
 
 /*********************************************************************************************/
 
+#define CONFIGNAME_ENV	    	"ENV:Sys/locale.prefs"
+#define CONFIGNAME_ENVARC   	"ENVARC:Sys/locale.prefs"
+
 #define PAGECMD_INIT         	1
 #define PAGECMD_LAYOUT       	2
 #define PAGECMD_GETMINWIDTH  	3
@@ -259,7 +262,7 @@ STRPTR MSG(ULONG id);
 
 /* prefs.c */
 
-void InitPrefs(void);
+void InitPrefs(STRPTR filename, BOOL use, BOOL save);
 void CleanupPrefs(void);
 BOOL LoadCountry(STRPTR name, struct CountryPrefs *country);
 BOOL LoadPrefs(STRPTR filename);

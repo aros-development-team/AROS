@@ -8,6 +8,6 @@
 
 
 #define VERSION 	1
-#define REVISION 	0
-#define DATESTR 	"25.02.2001"
-#define VERSIONSTR	"$VER: Locale 1.0 (" DATESTR ")"
+#define REVISION 	1
+#define DATESTR 	"26.02.2001"
+#define VERSIONSTR	"$VER: Locale 1.1 (" DATESTR ")"
