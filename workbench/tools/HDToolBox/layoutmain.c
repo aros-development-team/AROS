@@ -91,7 +91,7 @@ struct creategadget maingadgets[]=
 	{
 		BUTTON_KIND,
 		{
-			80,140,180,20,
+			70,140,190,20,
 			"Change Drive Type", NULL,
 			ID_MAIN_CHANGE_DRIVE_TYPE, PLACETEXT_IN, NULL, NULL
 		},
@@ -100,7 +100,7 @@ struct creategadget maingadgets[]=
 	{
 		BUTTON_KIND,
 		{
-			80,165,180,20,
+			70,165,190,20,
 			"Modify Bad Block List", NULL,
 			ID_MAIN_MODIFY_BBL, PLACETEXT_IN, NULL, NULL
 		},
@@ -109,7 +109,7 @@ struct creategadget maingadgets[]=
 	{
 		BUTTON_KIND,
 		{
-			80,190,180,20,
+			70,190,190,20,
 			"Low Level Format Drive", NULL,
 			ID_MAIN_LL_FORMAT, PLACETEXT_IN, NULL, NULL
 		},
@@ -118,7 +118,7 @@ struct creategadget maingadgets[]=
 	{
 		BUTTON_KIND,
 		{
-			380,140,180,20,
+			380,140,190,20,
 			"Partition Drive", NULL,
 			ID_MAIN_PARTITION_DRIVE, PLACETEXT_IN, NULL, NULL
 		},
@@ -127,7 +127,7 @@ struct creategadget maingadgets[]=
 	{
 		BUTTON_KIND,
 		{
-			380,165,180,20,
+			380,165,190,20,
 			"Verify Data on Drive", NULL,
 			ID_MAIN_VERIFY_DD, PLACETEXT_IN, NULL, NULL
 		},
@@ -136,7 +136,7 @@ struct creategadget maingadgets[]=
 	{
 		BUTTON_KIND,
 		{
-			380,190,180,20,
+			380,190,190,20,
 			"Save Changes to Drive", NULL,
 			ID_MAIN_SAVE_CHANGES, PLACETEXT_IN, NULL, NULL
 		},
