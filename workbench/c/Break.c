@@ -103,7 +103,7 @@ int main(void)
 
 	if((rd = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL)))
 	{
-	    pr = FindCliProc(args[ARG_PROCESS]);
+	    pr = FindCliProc(*(IPTR *)args[ARG_PROCESS]);
 	    if( pr != NULL )
 	    {
 		/* Figure out the mask of flags to send. */
