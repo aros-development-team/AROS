@@ -89,6 +89,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
         dri = GetScreenDrawInfo(window->WScreen);
         if (dri)
         {
+            LOCK_REFRESH(window->WScreen);
             LOCKGADGET
 #if 1
             if ((rp->Layer==NULL) ||
@@ -332,6 +333,8 @@ int_refreshglist(window->FirstGadget,
 
             UnlockLayer(rp->Layer);
             UNLOCKGADGET
+
+            UNLOCK_REFRESH(window->WScreen);
 
             FreeScreenDrawInfo(window->WScreen, (struct DrawInfo *)dri);
 
