@@ -9,7 +9,7 @@ EXEDIR      := $(AROSDIR)/Prefs
 EXE 	    := $(EXEDIR)/Font
 
 USE_AROSLIB := yes
-USE_CLIB := yes
+USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_COOLIMAGESLIB := no
