@@ -1,11 +1,13 @@
 /*
-    (C) 1997 - 2000 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
 #include <proto/intuition.h>
+#include <exec/memory.h>
 #include <intuition/classusr.h>
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
