@@ -612,7 +612,7 @@ int main(void)
 	SubWindow, execute_wnd = WindowObject,
 	    MUIA_Window_Title, "Execute a file",
 	    WindowContents, VGroup,
-		Child, Label("Enter command and its arguments:"),
+		Child, TextObject, MUIA_Text_Contents,"Enter command and its arguments:",End,
 		Child, HGroup,
 		    Child, Label("Command:"),
 		    Child, PopaslObject,
