@@ -39,9 +39,9 @@
 
 struct Conductor
 {
-    struct  Node     *cdt_Link;
+    struct  Node     cdt_Link;
     UWORD             cdt_Reserved0;
-    struct  MinList  *cdt_Players;        /* The players linked to this
+    struct  MinList  cdt_Players;        /* The players linked to this
 					     conductor */
     ULONG             cdt_ClockTime;
     ULONG             cdt_StartTime;
