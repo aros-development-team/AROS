@@ -578,107 +578,112 @@ char cstr[32];
 	}
 }
 
-int affs_dir(char *dirname) {
-struct CacheBlock *buffer1;
-struct CacheBlock *buffer2;
-char *current = dirname;
-char filename[128];
-char *fname = filename;
-int i,block;
+int affs_dir(char *dirname)
+{
+    struct CacheBlock *buffer1;
+    struct CacheBlock *buffer2;
+    char *current = dirname;
+    char filename[128];
+    char *fname = filename;
+    int i,block;
 
-	if (print_possibilities)
+    if (print_possibilities)
+    {
+	while (*current)
+	    current++;
+	while (*current != '/')
+	    current--;
+	current++;
+	while (*current)
 	{
-		while (*current)
-			current++;
-		while (*current != '/')
-			current--;
-		current++;
-		while (*current)
+	    *fname++ = *current;
+	    *current++ = 0;
+	}
+	*fname=0;
+	errnum = findBlock(dirname, &buffer1);
+	if (errnum)
+	    return 0;
+	if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == IDNAME_RIGIDDISK)
+	{
+	    block = AROS_BE2LONG(rdsk(buffer1)->rdb_PartitionList);
+	    while (block != -1)
+	    {
+		buffer1 = getBlock(block);
+		checkPossibility(filename, part(buffer1)->pb_DriveName);
+		block = AROS_BE2LONG(part(buffer1)->pb_Next);
+	    }
+	    if (*filename == 0)
+		if (print_possibilities>0)
+		    print_possibilities = -print_possibilities;
+	}
+	else if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == T_SHORT)
+	{
+	    LockBuffer(buffer1);
+	    for (i=0;i<72;i++)
+	    {
+		block = dirHeader(buffer1)->hashtable[i];
+		while (block)
 		{
-			*fname++ = *current;
-			*current++ = 0;
-		}
-		*fname=0;
-		errnum = findBlock(dirname, &buffer1);
-		if (errnum)
+		    buffer2 = getBlock(AROS_BE2LONG(block));
+		    if (calcChkSum(128, buffer2->blockbuffer))
+		    {
+			errnum = ERR_FSYS_CORRUPT;
 			return 0;
-		if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == IDNAME_RIGIDDISK)
-		{
-			block = AROS_BE2LONG(rdsk(buffer1)->rdb_PartitionList);
-			while (block != -1)
-			{
-				buffer1 = getBlock(block);
-				checkPossibility(filename, part(buffer1)->pb_DriveName);
-				block = AROS_BE2LONG(part(buffer1)->pb_Next);
-			}
-			if (*filename == 0)
-				if (print_possibilities>0)
-					print_possibilities = -print_possibilities;
-		}
-		else if (AROS_BE2LONG(dirHeader(buffer1)->p_type) == T_SHORT)
-		{
-			LockBuffer(buffer1);
-			for (i=0;i<72;i++)
-			{
-				block = dirHeader(buffer1)->hashtable[i];
-				while (block)
-				{
-					buffer2 = getBlock(AROS_BE2LONG(block));
-					if (calcChkSum(128, buffer2->blockbuffer))
-					{
-						errnum = ERR_FSYS_CORRUPT;
-						return 0;
-					}
-					if (AROS_BE2LONG(dirHeader(buffer2)->p_type) != T_SHORT)
-					{
-						errnum = ERR_BAD_FILETYPE;
-						return 0;
-					}
-					checkPossibility(filename, dirHeader(buffer2)->name);
-					block = dirHeader(buffer2)->hashchain;
-				}
-			}
-			UnLockBuffer(buffer1);
-			if (*filename == 0)
-				if (print_possibilities>0)
-					print_possibilities = -print_possibilities;
-		}	
-		else
-		{
+		    }
+		    if (AROS_BE2LONG(dirHeader(buffer2)->p_type) != T_SHORT)
+		    {
 			errnum = ERR_BAD_FILETYPE;
 			return 0;
+		    }
+		    checkPossibility(filename, dirHeader(buffer2)->name);
+		    block = dirHeader(buffer2)->hashchain;
 		}
-		while (*current != '/')
-			current--;
-		current++;
-		fname = filename;
-		while (*fname)
-			*current++ = *fname++;
-#warning "TODO: add some more chars until posibilities differ"
+	    }
+	    UnLockBuffer(buffer1);
+	    if (*filename == 0)
 		if (print_possibilities>0)
-			errnum = ERR_FILE_NOT_FOUND;
-		return (print_possibilities<0);
-	}
+		    print_possibilities = -print_possibilities;
+	}	
 	else
 	{
-		errnum = findBlock(dirname, &buffer2);
-		if (errnum)
-			return 0;
-		if (AROS_BE2LONG(fileHeader(buffer2)->s_type)!=ST_FILE)
-		{
-			errnum = ERR_BAD_FILETYPE;
-			return 0;
-		}
-		fsysb->file.header_block = AROS_BE2LONG(fileHeader(buffer2)->own_key);
-		fsysb->file.current.block = AROS_BE2LONG(fileHeader(buffer2)->own_key);
-		fsysb->file.current.filekey = 71;
-		fsysb->file.current.byte = 0;
-		fsysb->file.current.offset = 0;
-		fsysb->file.filesize = AROS_BE2LONG(fileHeader(buffer2)->bytesize);
-		filepos = 0;
-		filemax = fsysb->file.filesize;
-		return 1;
+	    errnum = ERR_BAD_FILETYPE;
+	    return 0;
 	}
+	while (*current != '/')
+	    current--;
+	current++;
+	fname = filename;
+	while (*fname)
+	    *current++ = *fname++;
+#warning "TODO: add some more chars until posibilities differ"
+	if (print_possibilities>0)
+	    errnum = ERR_FILE_NOT_FOUND;
+	return (print_possibilities<0);
+    }
+    else
+    {
+	while (*current && !isspace(*current))
+	    *fname++ = *current++;
+	*fname = 0;
+	    
+	errnum = findBlock(filename, &buffer2);
+	if (errnum)
+	    return 0;
+	if (AROS_BE2LONG(fileHeader(buffer2)->s_type)!=ST_FILE)
+	{
+	    errnum = ERR_BAD_FILETYPE;
+	    return 0;
+	}
+	fsysb->file.header_block = AROS_BE2LONG(fileHeader(buffer2)->own_key);
+	fsysb->file.current.block = AROS_BE2LONG(fileHeader(buffer2)->own_key);
+	fsysb->file.current.filekey = 71;
+	fsysb->file.current.byte = 0;
+	fsysb->file.current.offset = 0;
+	fsysb->file.filesize = AROS_BE2LONG(fileHeader(buffer2)->bytesize);
+	filepos = 0;
+	filemax = fsysb->file.filesize;
+	return 1;
+    }
 }
 #endif
 
