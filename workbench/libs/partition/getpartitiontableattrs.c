@@ -4,11 +4,12 @@
 
 */
 #include "partition_support.h"
+#include "platform.h"
 
 #ifndef DEBUG
 #define DEBUG 1
 #endif
-#include <aros/debug.h>
+#include "debug.h"
 
 /*****************************************************************************
 
