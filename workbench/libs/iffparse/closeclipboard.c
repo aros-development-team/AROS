@@ -56,7 +56,7 @@
 	ClosePort (&(clipHandle->cbh_CBport), IPB(IFFParseBase));
 	ClosePort (&(clipHandle->cbh_SatisfyPort), IPB(IFFParseBase));
 
-	CloseDevice((struct IORequest *)&(clipHandle->cbh_Req));
+        CloseDevice((struct IORequest *)&(clipHandle->cbh_Req));
 
 	/*
 	    Free the IO request is just a question of freiing the memory

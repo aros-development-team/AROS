@@ -10,6 +10,8 @@
 
 #include <aros/debug.h>
 
+#define DEBUG_STREAM(x)
+
 /***********************/
 /* Port initialization */
 /***********************/
@@ -61,15 +63,18 @@ ULONG ClipStreamHandler
     struct IFFStreamCmd * cmd
 )
 {
-    #define CLIPSCANBUFSIZE 500
+      #define CLIPSCANBUFSIZE 10000000 //500
     LONG error = NULL;
 
     /* Buffer neede for reading rest of clip in IFFCMD_CLEANUP. Eats some stack */
-    UBYTE  buf[CLIPSCANBUFSIZE];
+//	UBYTE  buf[CLIPSCANBUFSIZE];
 
     struct IOClipReq *req;
 
     req = &( ((struct ClipboardHandle*)iff->iff_Stream)->cbh_Req);
+
+    DEBUG_STREAM(dprintf("ClipStream: iff %p cmd %d buf %p bytes %d\n",
+			 iff, cmd->sc_Command, cmd->sc_Buf, cmd->sc_NBytes));
 
     switch (cmd->sc_Command)
     {
@@ -107,21 +112,22 @@ ULONG ClipStreamHandler
 	    break;
 
 	case IFFCMD_CLEANUP:
-	    /* Read past end of clip if we are in read mode */
-
-	    req->io_Command = CMD_READ;
-	    req->io_Data    = buf;
-	    req->io_Length  =  CLIPSCANBUFSIZE;
-
-
 	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_READ)
 	    {
+		/* Read past end of clip if we are in read mode */
+		req->io_Command = CMD_READ;
+		req->io_Data    = NULL;
+		req->io_Length  =  CLIPSCANBUFSIZE;
+
 		/* Read until there is not more left */
-		while (req->io_Actual)
-		    DoIO((struct IORequest*)req);
+		do
+                {
+                    DoIO((struct IORequest*)req);
+		}
+		while (req->io_Actual==req->io_Length);
 
 	    }
-	    
+
 	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_WRITE)
 	    {
 	        req->io_Command = CMD_UPDATE;
@@ -130,6 +136,8 @@ ULONG ClipStreamHandler
 	    break;
 
     }
+
+    DEBUG_STREAM(dprintf("ClipStream: error %ld\n", error));
 
     return (error);
 }

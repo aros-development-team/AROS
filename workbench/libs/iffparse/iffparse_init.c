@@ -115,6 +115,7 @@ AROS_LH2(struct IFFParseBase_intern *, init,
     EasyHook(bufhook,              BufStreamHandler   );
     EasyHook(collectionpurgehook,  CollectionPurgeFunc);
     EasyHook(proppurgehook,        PropPurgeFunc      );
+    EasyHook(exitcontexthook,      ExitContextFunc    );
 
     /* You would return NULL here if the init failed. */
     return LIBBASE;

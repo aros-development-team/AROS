@@ -6,8 +6,8 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifndef PROTO_ALIB_H
-#   include <proto/alib.h>
+#ifndef CLIB_ALIB_PROTOS_H
+#   include <clib/alib_protos.h>
 #endif
 #ifndef PROTO_EXEC_H
 #   include <proto/exec.h>
@@ -61,6 +61,7 @@ LONG InvokeHandlers  (struct IFFHandle *, LONG, LONG, struct IFFParseBase_intern
 LONG SeekStream      (struct IFFHandle *, LONG, struct IFFParseBase_intern *);
 
 /* Some system entry & exit handlers (hook funcs) ß*/
+LONG ExitContextFunc(struct Hook *, APTR, APTR);
 LONG StopFunc	    (struct Hook *, APTR, APTR);
 LONG PropFunc	    (struct Hook *, struct IFFHandle *, APTR);
 LONG CollectionFunc (struct Hook *, struct IFFHandle *, APTR);
@@ -276,6 +277,7 @@ struct IFFParseBase_intern
     struct Hook       bufhook;
     struct Hook       collectionpurgehook;
     struct Hook       proppurgehook;
+    struct Hook       exitcontexthook;
 };
 
 #define IPB(ipb)        ((struct IFFParseBase_intern *)ipb)

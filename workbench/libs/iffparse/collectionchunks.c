@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -57,13 +59,27 @@
     LONG count;
     LONG err;
 
+#if DEBUG
+    LONG * lptr = propArray;
+    bug ("CollectionChunks (iff=%p, [\n", iff);
+    for (count = 0; count < numPairs; count++)
+    {
+	bug ("    {%c%c%c%c,%c%c%c%c}, ",
+	    *lptr>>24, *lptr>>16, *lptr>>8, *lptr,
+	    lptr[1]>>24, lptr[1]>>16, lptr[1]>>8, lptr[1]
+	);
+	lptr += 2;
+    }
+    bug ("    ])\n");
+#endif
+
     for (count = 0; count < numPairs; count ++ )
     {
-	if ((err = CollectionChunk(iff, propArray[0], propArray [1])))
+	if ((err = CollectionChunk(iff, propArray[0], propArray[1])))
 	    return (err);
-	propArray = &propArray[2];
+	propArray += 2;
     }
-    return (NULL);
 
+    ReturnInt("CollectionChunks",LONG,0L);
     AROS_LIBFUNC_EXIT
 } /* CollectionChunks */
