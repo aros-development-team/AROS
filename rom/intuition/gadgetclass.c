@@ -334,6 +334,14 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	}
     }
 
+    if ((msg->MethodID == OM_NEW) &&
+    	(EG(o)->Flags & GFLG_GADGIMAGE) &&
+	(EG(o)->GadgetRender != NULL))
+    {
+    	if (EG(o)->Width  == 0) EG(o)->Width  = IM(EG(o)->GadgetRender)->Width;
+	if (EG(o)->Height == 0) EG(o)->Height = IM(EG(o)->GadgetRender)->Height; 
+    }
+    
     return retval;
 }
 
