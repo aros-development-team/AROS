@@ -56,22 +56,7 @@
 
     ASSERT_VALID_PTR(region);
 
-    if (!region->RegionRectangle)
-        return;
-
-    NextChunk = Chunk(region->RegionRectangle)->FirstChunk;
-
-    while(NextChunk)
-    {
-        struct RegionRectangleExtChunk *OldChunk = NextChunk;
-
-        NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next;
-
-        if (NextChunk)
-            NextChunk = Chunk(NextChunk->Rects);
-
-        _DisposeRegionRectangleExtChunk(OldChunk);
-    }
+    _DisposeRegionRectangleList(region->RegionRectangle, GfxBase);
 
     InitRegion(region);
 

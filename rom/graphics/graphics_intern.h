@@ -66,7 +66,7 @@ struct RegionRectangleExtChunk
 
 #define RRE(x)     ((struct RegionRectangleExt *)(x))
 #define Counter(x) (RRE(x)->Counter)
-#define Chunk(x)   ((struct RegionRectangleExtChunk *)&RRE(x)[-Counter(x)])
+#define Chunk(x)   ((x) ? ((struct RegionRectangleExtChunk *)&RRE(x)[-Counter(x)]) : NULL)
 
 /* Internal GFXBase struct */
 struct GfxBase_intern
