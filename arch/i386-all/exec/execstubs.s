@@ -21,7 +21,7 @@
 */
 
 #define NUM_REGS    7
-#define FIRST_ARG   ((NUM_REGS+1)*4)
+#define FIRST_ARG   ((NUM_REGS+2)*4)
 #define SECOND_ARG  (FIRST_ARG+4)
 
 #define PUSH			      \
@@ -43,21 +43,29 @@
 	popl  %eax
 
 #define STUB_ARG0(name)               \
+	pushl %ebp		    ; \
+	movl  %esp,%ebp		    ; \
 	PUSH			    ; \
 	call  name		    ; \
 	POP			    ; \
+	leave
 	ret
 
 #define STUB_ARG1(name)               \
+	pushl %ebp		    ; \
+	movl  %esp,%ebp		    ; \
 	PUSH			    ; \
 	movl  FIRST_ARG(%esp),%eax  ; \
 	pushl %eax		    ; \
 	call  name		    ; \
 	addl  $4,%esp		    ; \
 	POP			    ; \
+	leave			    ; \
 	ret
 
 #define STUB_ARG2(name)               \
+	pushl %ebp		    ; \
+	movl  %esp,%ebp		    ; \
 	PUSH			    ; \
 	movl  SECOND_ARG(%esp),%eax ; \
 	pushl %eax		    ; \
@@ -66,6 +74,7 @@
 	call  name		    ; \
 	addl  $8,%esp		    ; \
 	POP			    ; \
+	leave			    ; \
 	ret
 
 /* To save typing work */
@@ -92,11 +101,6 @@ cname:				    ; \
 	.balign 4
 
 	/* Call functions and preserve registers */
-#if 0
-	STUB0(AROS_CDEFNAME(os_disable),AROS_CSYMNAME(_os_disable))
-	STUB0(AROS_CDEFNAME(os_enable),AROS_CSYMNAME(_os_enable))
-#endif
-
 #ifdef  UseExecstubs
 	STUB1(AROS_SLIB_ENTRY(Forbid,Exec),AROS_CSYMNAME(_Exec_Forbid))
 	STUB1(AROS_SLIB_ENTRY(Permit,Exec),AROS_CSYMNAME(_Exec_Permit))
@@ -108,55 +112,3 @@ cname:				    ; \
 	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),AROS_CSYMNAME(_Exec_ObtainSemaphoreShared))
 #endif
 
-#if 0
-	.globl	AROS_SLIB_ENTRY(Switch,Exec)
-	.type	AROS_SLIB_ENTRY(Switch,Exec),@function
-AROS_SLIB_ENTRY(Switch,Exec):
-	/* Make room for Dispatch() address. */
-	subl	$4,%esp
-
-	/* Preserve registers */
-	PUSH
-
-	movl	SECOND_ARG(%esp),%ebx
-
-#if 1
-	/* If current state is TS_RUN and TF_EXCEPT is 0...
-	    The andb will clear all bits except TF_EXCEPT when it is
-	    set and then the cmpw will fail if the bit it set.
-	*/
-	movl	ThisTask(%ebx),%ecx
-	movw	tc_Flags(%ecx),%eax
-	andb	$TF_EXCEPT,%al
-	cmpw	$TS_RUN*256,%ax
-	jne	1f  /* %ax != TS_RUN*256 */
-
-	/* ...move task to the ready list */
-	movb	$TS_READY,tc_State(%ecx)
-	leal	Enqueue(%ebx),%edx
-	pushl	%ebx
-	pushl	%ecx
-	leal	TaskReady(%ebx),%eax
-	pushl	%eax
-	call	*%edx
-	addl	$12,%esp
-
-1:
-#else
-/* ??? This code doesn't work. Eventually the TaskReady list will be
-   overwritten with NULL and crash. */
-	pushl	%ebx
-	call	AROS_CSYMNAME(_Switch)
-	addl	$4,%esp
-
-	movl	SECOND_ARG(%esp),%ebx
-#endif
-
-	/* Prepare dispatch */
-	leal	AROS_SLIB_ENTRY(Dispatch,Exec),%ecx
-	movl	%ecx,(NUM_REGS*4)(%esp)
-
-	/* restore registers and dispatch */
-	POP
-	ret
-#endif
