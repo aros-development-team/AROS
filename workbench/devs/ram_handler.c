@@ -9,6 +9,7 @@
 
 #define  AROS_ALMOST_COMPATIBLE
 
+#define  DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/errors.h>
@@ -1163,7 +1164,7 @@ static LONG open_(struct rambase *rambase, struct filehandle **handle,
 		}
 		else if (dir->type == ST_USERDIR)
 		{
-		    kprintf("Notifying OPEN at dir %s\n", dir->name);
+		    D(kprintf("Notifying OPEN at dir %s\n", dir->name));
 		    Notify_directoryChange(rambase, NOTIFY_Open, dir);
 		}
 
@@ -1779,7 +1780,7 @@ void deventry(struct rambase *rambase)
 	{
 	    struct NotifyMessage *nMessage;
 	    
-	    kprintf("Got replied notify message\n");
+	    D(kprintf("Got replied notify message\n"));
 
 	    while ((nMessage = (struct NotifyMessage *)GetMsg(rambase->notifyPort)) != NULL)
 	    {
@@ -2126,8 +2127,8 @@ void processFSM(struct rambase *rambase)
 		    iofs->io_Union.io_NOTIFY.io_NotificationRequest;
 		struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 		
-		kprintf("Adding notification for entity (nr = %s)\n",
-			nr->nr_Name);
+		D(kprintf("Adding notification for entity (nr = %s)\n",
+			  nr->nr_Name));
 		
 		ok = Notify_addNotification(rambase, fh->node, nr);
 
@@ -2136,7 +2137,7 @@ void processFSM(struct rambase *rambase)
 		    error = ERROR_NO_FREE_STORE;
 		}
 		
-		kprintf("Notification now added!\n");
+		D(kprintf("Notification now added!\n"));
 	    }
 	    break;
 	    
@@ -2296,16 +2297,14 @@ void Notify_fileChange(struct rambase *rambase, NType type, struct fnode *file)
 	    
 	    fullName = getName(rambase, (struct dnode *)file, "");
 
-	    kprintf("Found full name: %s\n", fullName);
+	    D(kprintf("Found full name: %s\n", fullName));
 
 	    receivers = HashTable_find(rambase, rambase->notifications, 
 				       fullName);      
 
-	    kprintf("Called HashTable_find()\n");
-
 	    if (receivers != NULL)
 	    {
-		kprintf("Found notification for created file!\n");
+		D(kprintf("Found notification for created file!\n"));
 
 		while (!IsListEmpty(receivers))
 		{
@@ -2356,16 +2355,14 @@ void Notify_directoryChange(struct rambase *rambase, NType type,
 
 	    fullName = getName(rambase, dir, "");
 
-	    kprintf("Found full name: %s\n", fullName);
+	    D(kprintf("Found full name: %s\n", fullName));
 
 	    receivers = HashTable_find(rambase, rambase->notifications, 
 				       fullName);      
 
-	    kprintf("Called HashTable_find()\n");
-
 	    if (receivers != NULL)
 	    {
-		kprintf("Found notification for created directory!\n");
+		D(kprintf("Found notification for created directory!\n"));
 
 		while (!IsListEmpty(receivers))
 		{
@@ -2379,7 +2376,7 @@ void Notify_directoryChange(struct rambase *rambase, NType type,
 	    FreeVec(fullName);
 	}
 
-	kprintf("Notifying receivers!\n");
+	D(kprintf("Notifying receivers!\n"));
 	Notify_notifyTasks(rambase, &dir->receivers);
 	break;
 
@@ -2389,7 +2386,6 @@ void Notify_directoryChange(struct rambase *rambase, NType type,
 	       this file to the hash table */
 	    struct List *receivers = (struct List *)&dir->receivers;
 
-	    kprintf("Notifying receivers!\n");
 	    Notify_notifyTasks(rambase, &dir->receivers);
 
 	    /* Move the Notification request to the hash table as we're going
@@ -2425,8 +2421,6 @@ void Notify_notifyTasks(struct rambase *rambase, struct MinList *notifications)
     {
 	struct NotifyRequest *nr = rr->nr;
 
-	kprintf("Found receiver %p\n", rr);
-
 	if (nr->nr_Flags & NRF_SEND_MESSAGE &&
 	    !(nr->nr_Flags & NRF_WAIT_REPLY && nr->nr_Flags & NRF_NOT_REPLIED))
 	{
@@ -2447,14 +2441,10 @@ void Notify_notifyTasks(struct rambase *rambase, struct MinList *notifications)
 	}
 	else if (nr->nr_Flags & NRF_SEND_SIGNAL)
 	{
-	    // kprintf("Sending signal to task %p\n",
-	    //	       nr->nr_stuff.nr_Signal.nr_Task);
 	    Signal(nr->nr_stuff.nr_Signal.nr_Task,
 		   1 << nr->nr_stuff.nr_Signal.nr_SignalNum);
 	}
     }
-
-    // kprintf("Leaving notifytasks\n");
 }
 
 
@@ -2483,7 +2473,7 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 
     /* First: Check if the file is opened */
 
-    kprintf("Checking existence of %s\n", name);
+    D(kprintf("Checking existence of %s\n", name));
 
     if (findname(rambase, &name, &dnTemp) == 0)
     {
@@ -2529,8 +2519,6 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 	
 	rr->nr = nr;
 
-	kprintf("Calling HashTable_insert() for key = %s\n", nr->nr_FullName);
-
 	HashTable_insert(rambase, ht, nr->nr_FullName, rr);
 
 	return TRUE;
@@ -2548,8 +2536,6 @@ void Notify_removeNotification(struct rambase *rambase,
     struct List *receivers;
     BOOL  fromTable = FALSE;
 
-    kprintf("Removing: %s\n", name);
-
     if (findname(rambase, &name, &dn) == 0)
     {
 	receivers = (struct List *)&dn->receivers;
@@ -2561,7 +2547,7 @@ void Notify_removeNotification(struct rambase *rambase,
 
 	if (receivers == NULL)
 	{
-	    kprintf("This should not happen! -- buggy application...\n");
+	    kprintf("Ram: This should not happen! -- buggy application...\n");
 	    return;
 	}
 
@@ -2628,8 +2614,6 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 
     /* First, calculate the size of the complete filename */
 
-    kprintf("Initial part: %s %s.\n", name, dn->name);
-
     if (strchr(name, ':') != NULL)
     {
 	return getAbsoluteName(rambase, name);
@@ -2642,13 +2626,8 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
     while (findname(rambase, &slash, &dnTemp) == 0)
     {
 	slash = nextSlash;
-	// kprintf("Name part %s\n", dnTemp->name);
-
 	length += 1 + strlen(dnTemp->name);	    /* Add '/' byte */
     }
-
-    // kprintf("Total length: %u\n", length);
-
 
     /* The MEMF_CLEAR is necessary for the while loop below to work */
     fullName = AllocVec(length, MEMF_PUBLIC | MEMF_CLEAR);
@@ -2670,8 +2649,6 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 	{
 	    *fullName = '/';
 	}
-
-	kprintf("Name = %s, %c\n", name, name[temp - 1]);
     }
 
     fullName -= strlen(name);
@@ -2696,8 +2673,6 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 	    fullName[partLen] = '/';      /* Replace 0 with '/' */
 	}
     }
-
-    // kprintf("Got the full name: %s\n", fullName);
 
     return fullName;
 }
@@ -2770,11 +2745,7 @@ void HashTable_insert(struct rambase *rambase, HashTable *ht, void *key,
     ULONG      pos;
     HashNode *hn;
 
-    // kprintf("Calling hash function\n");
-
     pos = ht->hash(key) % ht->size;
-
-    // kprintf("Calling find.\n");
 
     hn = find(ht, key, &ht->array[pos]);
 
@@ -2821,9 +2792,7 @@ void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key)
 	if (ht->compare(key, hn->key) == 0)
 	{
 	    Remove(&hn->node);
-	    kprintf("Calling delete function\n");
 	    ht->delete(rambase, hn->key, (void *)&hn->requests);
-	    kprintf("Freeing Hashnode\n");
 	    FreeVec(hn);
 	    break;
 	}
