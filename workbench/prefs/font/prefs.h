@@ -13,8 +13,8 @@
 
 /*** Prototypes *************************************************************/
 /* Setup ********************************************************************/
-BOOL Prefs_Initialize(void);
-void Prefs_Deinitialize(void);
+BOOL FP_Initialize(void);
+void FP_Deinitialize(void);
 void initDefaultPrefs(struct FontPrefs **fontPrefsPtr);
 
 /* File IO (high-level) *****************************************************/
