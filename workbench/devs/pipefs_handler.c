@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.11  2001/07/16 18:20:44  falemagn
-    Supports directory creation now
+    Revision 1.12  2001/07/16 19:22:41  falemagn
+    The FSA_CREATE_DIRECTORY actoon didn't return a valid filehandle: FIXED. Implemented deleting.
 
     Revision 1.10  2001/07/16 15:21:32  falemagn
     File types weren't reported correctly
@@ -351,6 +351,7 @@ AROS_LH1(void, beginio,
 	case FSA_WRITE:
 	case FSA_CLOSE:
 	case FSA_CREATE_DIR:
+        case FSA_DELETE_OBJECT:
 	    error = SendRequest(pipefsbase, iofs);
 	    enqueued = !error;
 	    break;
@@ -366,7 +367,6 @@ AROS_LH1(void, beginio,
         case FSA_CREATE_HARDLINK:
         case FSA_CREATE_SOFTLINK:
         case FSA_RENAME:
-        case FSA_DELETE_OBJECT:
             error = ERROR_NOT_IMPLEMENTED;
             break;
 
@@ -647,7 +647,7 @@ AROS_UFH3(LONG, pipefsproc,
 		    kprintf("Command is OPEN\n");
 
 		    /*
-		       I woould have liked to put this AFTER GetFile(),
+		       I would have liked to put this AFTER GetFile(),
 		       but then it would have been really difficult to
 		       undo what's done in GetFile() if the following AllocVec()
 		       failed...
@@ -951,6 +951,7 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    if
 		    (
+		    	!(un       = AllocVec(sizeof(*un), MEMF_PUBLIC)) ||
                         !(dn       = AllocVec(sizeof(*dn), MEMF_PUBLIC)) ||
 			!(dn->name = StrDup(pipefsbase, filename))
 		    )
@@ -967,9 +968,57 @@ AROS_UFH3(LONG, pipefsproc,
 		    NEWLIST(&dn->files);
 		    DateStamp(&dn->datestamp);
 
+		    un->fn   = (struct dilenode *)dn;
+		    un->mode = 0;
+		    msg->iofs->IOFS.io_Unit = (struct Unit *)un;
+
 		    SendBack(msg, 0);
 		    continue;
 		}
+		case FSA_DELETE_OBJECT:
+		{
+		    STRPTR filename    = SkipColon(msg->iofs->io_Union.io_DELETE_OBJECT.io_Filename);
+		    struct dirnode *dn = (struct dirnode *)fn;
+
+		    kprintf("Command is FSA_DELETE_OBJECT\n");
+		    kprintf("Current directory is %S\n", fn->name);
+		    kprintf("User wants to delete the object %S\n", filename);
+
+		    fn = FindFile(&dn, filename);
+		    if (!fn)
+		    {
+		        kprintf("The object doesn't exist\n");
+			SendBack(msg, ERROR_OBJECT_NOT_FOUND);
+			continue;
+		    }
+		    if (fn->type == ST_ROOT)
+		    {
+		        kprintf("The object is the root directory. Cannot be deleted\n");
+			SendBack(msg, ERROR_OBJECT_WRONG_TYPE);
+			continue;
+		    }
+		    if (fn->numusers)
+		    {
+		        kprintf("The object is in use, cannot be deleted\n");
+			SendBack(msg, ERROR_OBJECT_IN_USE);
+			continue;
+		    }
+		    if (fn->type > 0 && !IsListEmpty(&((struct dirnode *)fn)->files))
+		    {
+		        kprintf("The object is a directory, but is not empty, thus cannot be deleted\n");
+			SendBack(msg, ERROR_DIRECTORY_NOT_EMPTY);
+			continue;
+		    }
+
+		    kprintf("Removing the object from it's parent directory\n");
+
+		    Remove((struct Node *)fn);
+		    FreeVec(fn->name);
+		    FreeVec(fn);
+
+		    SendBack(msg, 0);
+		    continue;
+      		}
 		case FSA_WRITE:
 		    kprintf("Command is FSA_WRITE. ");
 		    if (!un->mode & FMF_WRITE)
