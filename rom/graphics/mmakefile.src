@@ -52,6 +52,7 @@ FUNCTIONS := \
 	areaend \
 	areamove \
 	askfont \
+	attemptlocklayerrom \
 	bitmapscale \
 	bltbitmap \
 	bltbitmaprastport \
@@ -111,6 +112,7 @@ FUNCTIONS := \
 	lategfxinit \
 	loadrgb32 \
 	loadrgb4 \
+	locklayerrom \
 	move \
 	newregion \
 	openfont \
@@ -148,6 +150,7 @@ FUNCTIONS := \
 	textfit \
 	textlength \
 	ucopperlistinit \
+	unlocklayerrom \
 	waittof \
 	weightamatch \
 	writechunkypixels \
