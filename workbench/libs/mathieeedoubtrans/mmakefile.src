@@ -28,6 +28,7 @@ FILES := \
 	intern_ieeedpld
 
 FUNCTIONS := \
+	ieeedpatan \
 	ieeedpcosh \
 	ieeedpexp \
 	ieeedpfieee \
@@ -43,7 +44,7 @@ FUNCTIONS := \
 
 %genlib
 
-# MM workbench-libs-mathieeedoubtrans : setup includes linklibs
+#MM workbench-libs-mathieeedoubtrans : setup includes linklibs
 workbench-libs-mathieeedoubtrans : show-flags $(SLIB)
 
 #MM setup
