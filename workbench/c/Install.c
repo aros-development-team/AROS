@@ -22,6 +22,7 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <exec/ports.h>
+#include <aros/macros.h>
 
 struct Volume {
 	STRPTR drivename;
