@@ -593,9 +593,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
             /* Now we will clear FAST memory. */
 	    /* Disabled due to taking to much time on P4 machines */
-#if 0
+	    rkprintf("Clearing FastMem...");
+
 	    bzero((void *)0x01000000, extmem - 0x01000000);
-#endif
         }
 
         /*
@@ -614,10 +614,10 @@ void exec_cinit(unsigned long magic, unsigned long addr)
          * We will leave area 0x90000 - 0xa0000 uncleared as there is
          * temporary system stack!
          */
-#if 0
+	rkprintf("Clearing ChipMem...\n");
+	
 	bzero((void *)0x2000, 0x90000-0x2000);
 	bzero(&_end, locmem -(ULONG)&_end);
-#endif
     }
     else
     {
