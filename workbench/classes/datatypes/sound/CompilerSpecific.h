@@ -124,11 +124,15 @@
 	/* GCC produces code which calls these two functions
 	 * to initialize and copy structures and arrays.
 	 */
+#ifdef __AROS__
+#include <string.h>
+#else
 	void INLINE STDARGS bzero (char *buf, int len)
 		{ while (len--) *buf++ = 0; }
 
 	void INLINE STDARGS bcopy (char *src, char *dest, int len)
 		{ while (len--) *dest++ = *src++; }
+#endif
 
 #else
 #ifdef __STORM__
