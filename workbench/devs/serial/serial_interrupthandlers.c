@@ -5,140 +5,131 @@
 #include <proto/dos.h>
 #include <exec/types.h>
 #include <exec/interrupts.h>
+#include <hidd/serial.h>
 #include "serial_intern.h"
 
-/****************************************************************************
-  The RBF interrupthandler is called whenever there is a byte/
-  are bytes on the serial port to be picked up.
-****************************************************************************/
+#define DEBUG 0
+#include <aros/debug.h>
 
-AROS_UFH1(void, RBF_InterruptHandler,
-  AROS_UFHA(struct serialbase *, sb, A1))
+extern struct serialbase * pubSerialBase;
+
+ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
 {
-  BYTE * UARTBuffer;
-  UWORD index;
-  UWORD length;
-  struct SerialUnit * SU = sb->FirstUnit;
+  struct SerialUnit * SU = pubSerialBase->FirstUnit;
+  ULONG index = 0;
 
-  BYTE DummyInput = 0x12;
-  
-  /* There's one problem with this interrupthandler:
-     It is only meant for one UART and not for more. So 
-     in this routine it will have to handle all of the
-     installed and used UARTs.
-   */
-  while(NULL != SU)
+  D(bug("!Received %d bytes on unit %d (%s)\n",length,unitnum,data));
+
+  while (NULL != SU)
   {
-    /* The following function should read at least one byte from the
-       serial port and pass it to this function */
+    if (SU->su_UnitNum == unitnum)
+      break;
+    SU = SU->su_Next;
+  }
   
-    UARTBuffer = &DummyInput;
-    length = 1;
-    index = 0;
-    /* The buffer in the HIDD MUST be preallocated as nobody ever
-       may allocated memory in a interrupt!!!
-    */
-    // UARTBuffer = HIDD_READ_UART_BYTEARRAY(SU->su_Hidd,&length);
-    
-    /* Now let me see what I have to do with these data ... */
+  if (NULL != SU)
+  {
     if (0 != (SU->su_Status & STATUS_READS_PENDING))
     {
       struct IOStdReq * ioreq;
-      while (TRUE)
-      {
-        /*  I can copy the (remaining) data into a request buffer.
-        **  This loop will possibly be executed several times 
-         */
-        BYTE * outBuf;
-        UWORD indexOutBuf;
-        ioreq = (struct IOStdReq *)SU->su_ActiveRead;
-        if (NULL == ioreq)
-        {
-          break;
-        }
-        
-        outBuf = ioreq->io_Data;
-        indexOutBuf = ioreq->io_Actual;
-        /* I copy as many bytes as I can into this request */
-        if (-1 == ioreq->io_Length)
-        {
-          /* Copy until a 0 comes up */
-          while (index < length)
-          {
-            outBuf[indexOutBuf] = UARTBuffer[index];
-            
-            if (0 == outBuf[indexOutBuf])
-            {
-              /* this request is done, so I answer the message */
+      ioreq = (struct IOStdReq *)SU->su_ActiveRead;
 
-              /* the final 0 has been found */
-              ioreq->io_Actual = indexOutBuf;
-
-              ReplyMsg((struct Message *)ioreq);
-              
-              /* get the next request... */
-              ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
-              SU->su_ActiveRead = (struct Message *)ioreq;
-              
-              break;
-            }
-            indexOutBuf++;
-            index ++;
-          } /* while */
-          
-          /* is the buffer completely copied now? */
-          if (index == length)
-            break;
-        } /* if (...) */
-      } /* while (TRUE) */
-      
       if (NULL == ioreq)
       {
-        /* there's no more IORequest waiting, so I fill the buffer with
-           the remaining data */
+        ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
+        SU->su_ActiveRead = (struct Message *)ioreq;
+        D(bug("Something is wrong!"));
+      }
+      
+      while (NULL != ioreq)
+      {
         /*
-          There are also no more reads pending
+        ** Copy the remaining data into a request buffer.
+        ** This loop woll possibly execute several times
         */
-        SU->su_Status &= ~STATUS_READS_PENDING;
+        UBYTE * destBuf;
+        UWORD indexDestBuf;
+        D(bug("Have a IORequest for Serial device!\n"));
+        
+        destBuf = ioreq->io_Data;
+        indexDestBuf = ioreq->io_Actual;
+        /*
+        ** I copy as many bytes as I can into this request
+        */
         while (index < length)
         {
-          /* Check whether the buffer is not full, yet */
-          if (0 == (SU->su_Status & STATUS_BUFFEROVERFLOW ))    
-          {
-            UWORD tmp = (SU->su_InputNextPos + 1) % SU->su_InBufLength;
-            SU->su_InputBuffer[SU->su_InputNextPos] = UARTBuffer[index];
-            index++;
+          destBuf[indexDestBuf] = data[index];
             
-            /* andvance the circular index su_InputNextPos */
-            if (tmp != SU->su_InputFirst)
-              SU->su_InputNextPos = tmp;
-            else
-            {
-              /* Buffer full !!! */
-              SU->su_Status |= STATUS_BUFFEROVERFLOW;
-              break;
-            }    
-          }
-          else
+          index++;
+          indexDestBuf++;
+
+          D(bug("io_Length %d:  io_Actual: %d\n",ioreq->io_Length,indexDestBuf));
+
+          if ((-1 == ioreq->io_Length && 0 == destBuf[indexDestBuf-1]) ||
+              (indexDestBuf == ioreq->io_Length))
           {
-            /* Buffer full!!! */
-            SU->su_Status |= STATUS_BUFFEROVERFLOW;
-            break;
+            /*
+            ** this request is done, I answer the message
+            */
+            ioreq->io_Actual = indexDestBuf;
+            ReplyMsg((struct Message *)ioreq);
+              
+            /*
+            ** Get the next request ...
+            */
+            ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
+            SU->su_ActiveRead = (struct Message *)ioreq;
+            break;    
           }
         }
+        
+        if (index == length && NULL != ioreq)
+        {
+          ioreq->io_Actual = indexDestBuf;
+          break;
+        }
+      }
+      if (NULL == ioreq)
+        SU->su_Status &= ~STATUS_READS_PENDING;
+      
+    }
+  } /* if (NULL != su) */   
+
+  if (index < length)
+  {
+    /*
+    ** there's no more IORequest, so I have to copy into the
+    ** genearal buffer
+    */
+ 
+    D(bug("Copying data into general buffer\n"));
+
+    SU->su_Status &= ~STATUS_READS_PENDING;
+    while (index < length)
+    {
+      if (0 == (SU->su_Status & STATUS_BUFFEROVERFLOW))
+      {
+        UWORD tmp = (SU->su_InputNextPos + 1) % SU->su_InBufLength;
+        SU->su_InputBuffer[SU->su_InputNextPos] = data[index];
+        index++;
+            
+        /*
+        ** I am advancing the circular index su_InputNextPos
+        */
+        if (tmp != SU->su_InputFirst)
+        {  
+          SU->su_InputNextPos = tmp;
+        }
+        else
+        {
+          SU->su_Status |= STATUS_BUFFEROVERFLOW;
+          break;
+        }
+            
       }
     }
-    SU = SU->su_Next;
-  } /* while (NULL != SU) */
+  }
+  
+  return length;
 }
 
-
-AROS_UFH1(void, TBE_InterruptHandler,
-  AROS_UFHA(struct serialbase *, sb, A1))
-{
-  /* There's one problem with this interrupthandler:
-     It is only meant for one UART and not for more. So 
-     in this routine it will have to handle all of the
-     installed and used UARTs.
-   */
-}

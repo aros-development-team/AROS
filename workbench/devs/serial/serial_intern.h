@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.4  2000/01/09 21:35:13  bergers
+    Update on serial device.
+
     Revision 1.3  1999/03/08 13:07:51  bergers
     Update.
 
@@ -39,6 +42,10 @@
 #ifndef DEVICES_SERIAL_H
 #   include <devices/serial.h>
 #endif
+#ifndef OOP_OOP_H
+#   include <oop/oop.h>
+#endif
+
 
 /* Size of the serial device's stack */
 #define IDTASK_STACKSIZE 20000
@@ -57,6 +64,7 @@ struct Task *CreateSerialTask(APTR taskparams, struct serialbase *SerialDevice);
 BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * IOStdReq);
 BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * IOStdReq);
 
+ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
 
 extern struct ExecBase * SysBase;
 
@@ -73,12 +81,17 @@ struct serialbase
     
     struct SerialUnit *FirstUnit;
     ULONG              Status;
+    
+    struct Library    *SerialHidd;
+    struct Library    *oopBase;
+    
+    Object            *SerialObject;
 };
 
 
 struct SerialUnit
 {
-  struct Unit         su_Unit;
+  Object            * su_Unit;
 
   struct SerialUnit * su_Next;
   
@@ -109,8 +122,6 @@ struct SerialUnit
                                       // Next Pos is the Position in the buffer
                                       // where the NEXT byte will go into.
   UWORD               su_InBufLength;
-  // Pointer to the HIDD
-  APTR                su_HIDD;
 };
 
 /* a few flags for the status */
@@ -137,6 +148,12 @@ struct SerialUnit
     #undef SysBase
 #endif
 //#define SysBase SerialDevice->sysBase
+
+#ifdef OOPBase
+    #undef OOPBase
+#endif
+
+#define OOPBase		(((struct serialbase *)SerialDevice)->oopBase)
 
 #endif /* SERIAL_INTERN_H */
 

@@ -9,7 +9,7 @@ DEVS    := $(DEVSDIR)/serial.device
 INIT    := serial_init
 FILES	:= serial_support serial_interrupthandlers
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-%define_libs
+LIBS    := $(LIBS) -lhiddserialstubs
 
 #MM workbench-devs : setup includes linklibs workbench-devs-$(ARCH)-$(CPU)
 workbench-devs : show-flags $(OBJDIR)/$(INIT).o $(OBJS) $(DEVS)

@@ -7,6 +7,8 @@
 
 #include "serial_intern.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
 
 /**************************************************************************
   Copy data from the buffer where it is collected to the destination buffer
@@ -19,7 +21,9 @@ BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * ioreq)
 {
   UWORD count = 0;
   UWORD index = SU->su_InputFirst;
-  BYTE * Buffer = ioreq->io_Data;
+  UBYTE * Buffer = ioreq->io_Data;
+  
+  D(bug("su_InputNextPos: %d  su_InputFirst: %d\n",SU->su_InputNextPos, index));
   
   while (count < ioreq->io_Length &&
          SU->su_InputNextPos != index)
@@ -39,6 +43,9 @@ BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * ioreq)
   /* move the index of the first valid byte for the next read */
   SU->su_InputFirst = index;
   ioreq->io_Actual = count;
+  
+  SU->su_Status &= ~STATUS_BUFFEROVERFLOW;
+
   if (count == ioreq->io_Length)
     return TRUE;
   
@@ -83,6 +90,8 @@ BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * ioreq)
   }
   /* move the index of the first valid byte for the next read */
   SU->su_InputFirst = index;
+
+  SU->su_Status &= ~STATUS_BUFFEROVERFLOW;
 
   /* whatever is in end represents "satisfied request"(TRUE) or
      "unsatisfied request" (FALSE) */
