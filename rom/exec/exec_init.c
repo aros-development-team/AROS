@@ -78,7 +78,7 @@ struct Library * PrepareAROSSupportBase (void)
     AROSSupportBase.rkprintf = (void *)rkprintf;
 
 #warning FIXME Add code to read in the debug options
-	
+
     return (struct Library *)&AROSSupportBase;
 }
 
@@ -246,6 +246,9 @@ SysBase->VBlankFrequency = 50;
 	    kprintf("Not enough memory for first task\n");
 	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
+
+	/* Initialise the ETask data. */
+	InitETask(t, t->tc_UnionETask.tc_ETask);
 
 	GetIntETask(t)->iet_Context = AllocTaskMem(t
 	    , SIZEOF_ALL_REGISTERS
