@@ -19,7 +19,7 @@ LIB	    := $(LIBDIR)/lib$(LIBNAME).so
 
 INIT_FILE   := $(LIBNAME)_init
 
-FILES	    := $(LIBNAME)_functable lddemon errorlist internalloadseg_elf doname \
+FILES	    := $(LIBNAME)_functable lddemon errorlist internalloadseg_elf devname doname \
 	       internalloadseg_aout internalloadseg_aos dosboot
 
 END_FILE    := $(LIBNAME)_endtag
