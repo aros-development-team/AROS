@@ -77,7 +77,7 @@ struct __MUIBuiltinClass {
 #endif
 /* END PRIV */
 
-#if !defined(MUIMASTER_NO_INLINE_STDARG) && \
+#if defined(MUIMASTER_YES_INLINE_STDARG) && \
     !defined(NO_INLINE_STDARG)           && \
     !defined(__SASC)
 
