@@ -2,7 +2,7 @@
 #define _BOOPSI_PRIVATE_H
 
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: Private prototypes for boopsi.library
