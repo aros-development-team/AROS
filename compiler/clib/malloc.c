@@ -41,7 +41,8 @@ APTR __startup_mempool;
 	the memory will be freed for you when the application exits.
 
     NOTES
-        This function must not be used in a shared library.
+        This function must not be used in a shared library or in a threaded
+	application.
 
     EXAMPLE
 
@@ -57,39 +58,20 @@ APTR __startup_mempool;
 
 ******************************************************************************/
 {
-    struct memheader
-    {
-        struct SignalSemaphore *memsem;
-        APTR                    mempool;
-        size_t                  memsize;
-    };
-
     GETUSER;
 
     UBYTE *mem = NULL;
     AROS_GET_SYSBASE_OK
 
-    ObtainSemaphore(&__startup_memsem);
-
     /* Allocate the memory */
-    mem = AllocPooled(__startup_mempool,
-		      size + AROS_ALIGN(sizeof(struct memheader)));
+    mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
     if (mem)
     {
-	struct memheader *mh = (struct memheader *)mem;
-
-	mh->memsem  = &__startup_memsem;
-	mh->mempool = __startup_mempool;
-	mh->memsize = size;
-
-	mem += AROS_ALIGN(sizeof(struct memheader));
+	*((size_t *)mem) = size;
+	mem += AROS_ALIGN(sizeof(size_t));
     }
     else
-    {
         errno = ENOMEM;
-    }
-
-    ReleaseSemaphore(&__startup_memsem);
 
     return mem;
 
@@ -100,7 +82,6 @@ int __init_memstuff(void)
 {
     GETUSER;
     AROS_GET_SYSBASE_OK
-    InitSemaphore(&__startup_memsem);
     __startup_mempool = CreatePool(MEMF_ANY, 4096L, 2000L);
 
     if (!__startup_mempool)
@@ -116,7 +97,7 @@ void __exit_memstuff(void)
 {
     GETUSER;
     AROS_GET_SYSBASE_OK
-    
+
     if (__startup_mempool)
     {
 	DeletePool(__startup_mempool);

@@ -10,7 +10,6 @@
 #include <proto/exec.h>
 
 #ifndef _CLIB_KERNEL_
-extern struct SignalSemaphore __startup_memsem;
 extern APTR __startup_mempool;
 #endif
 
@@ -36,7 +35,8 @@ extern APTR __startup_mempool;
 	None.
 
     NOTES
-        This function must not be used in a shared library
+        This function must not be used in a shared library or in a threaded
+	application.
 
     EXAMPLE
 
@@ -52,24 +52,18 @@ extern APTR __startup_mempool;
 
 ******************************************************************************/
 {
-    struct memheader
-    {
-        struct SignalSemaphore *memsem;
-        APTR                    mempool;
-        size_t                  memsize;
-    };
-
     if (memory)
     {
-    	struct memheader       *mh     = (struct memheader *)(((UBYTE *)memory) - AROS_ALIGN(sizeof(struct memheader)));
-	struct SignalSemaphore *memsem;
-        AROS_GET_SYSBASE_OK
-	ObtainSemaphore(mh->memsem);
+        GETUSER;
+	AROS_GET_SYSBASE_OK
+	
+	unsigned char *mem;
+	size_t         size;
 
-	memsem = mh->memsem;
+        mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
+	size = *((size_t *)mem) + AROS_ALIGN(sizeof(size_t));
 
-	FreePooled (mh->mempool, mh, mh->memsize + AROS_ALIGN(sizeof(struct memheader)));
-        ReleaseSemaphore(memsem);
+	FreePooled (__startup_mempool, mem, size);
     }
 
 } /* free */
