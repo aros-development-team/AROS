@@ -29,6 +29,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define IW(x) ((struct IntWindow *)(x))
+
+inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w,
+			      struct IntuitionBase *IntuitionBase);
+
 /***************
 **  InitIIH   **
 ***************/
@@ -136,6 +141,29 @@ static BOOL InsideGadget(struct Window *win, struct Gadget *gad,
     
     return rc; 
 }
+
+
+/******************************
+ **  NotifyDepthArrangement  **
+ *****************************/
+
+static void NotifyDepthArrangement(struct Window *w,
+				   struct IntuitionBase *IntuitionBase)
+{
+    if(w->MoreFlags & WMFLG_NOTIFYDEPTH)
+    {
+	struct IntuiMessage *im = alloc_intuimessage(IntuitionBase);
+	
+	if(!im)
+	    return;
+	
+	im->Code = CWCODE_DEPTH;
+	im->Class = IDCMP_CHANGEWINDOW;
+	
+	send_intuimessage(im, w, IntuitionBase);
+    }    
+}
+
 
 /*************************
 **  Locked_DoMethodA	**
@@ -265,8 +293,6 @@ static struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *g
     
     return gadget;
 }
-
-#define IW(x) ((struct IntWindow *)(x))
 
 /***************************
 **  HandleIntuiReplyPort  **
@@ -1119,6 +1145,8 @@ D(bug("Window: %p\n", w));
 		    }
 		  }
 		} 
+		
+		NotifyDepthArrangement(targetwindow, IntuitionBase);
 		FreeMem(am, sizeof(struct DeferedActionMessage));
 	    break; }
 
@@ -1164,7 +1192,7 @@ D(bug("Window: %p\n", w));
 		  }
 		}
 
-
+		NotifyDepthArrangement(targetwindow, IntuitionBase);
 		FreeMem(am, sizeof(struct DeferedActionMessage));
 	    break; }
 
@@ -1220,6 +1248,7 @@ D(bug("Window: %p\n", w));
                  //CheckLayersInFront = TRUE;
                  L = targetlayer;
 
+		 NotifyDepthArrangement(targetwindow, IntuitionBase);
                  FreeMem(am, sizeof(struct DeferedActionMessage));
             break; }
 
@@ -1707,9 +1736,10 @@ D(bug("Window: %p\n", w));
 }
 
 
-inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase)
+inline VOID send_intuimessage(struct IntuiMessage *imsg,
+			      struct Window *w,
+			      struct IntuitionBase *IntuitionBase)
 {
-
     /* Mark the message as taken */    
 
     /* Reply the message to intuition */
@@ -1720,7 +1750,8 @@ inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struc
     PutMsg(w->UserPort, (struct Message *)imsg);
 }
 
-inline VOID free_intuimessage(struct IntuiMessage *imsg,  struct IntuitionBase *IntuitionBase)
+inline VOID free_intuimessage(struct IntuiMessage *imsg,
+			      struct IntuitionBase *IntuitionBase)
 {
     FreeMem(imsg, sizeof (struct ExtIntuiMessage));
 }
