@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -48,22 +49,25 @@
     struct LocalContextItem * node,
 			    * nextnode;
 
-    /*
-	We should free the LCIs of the default context-node
-	( CollectionItems and such )
-    */
-    cn = (struct IntContextNode*)RootChunk (iff);
-
-    node = (struct LocalContextItem*)cn->cn_LCIList.mlh_Head;
-
-    while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
+    if (iff != NULL)
     {
-	PurgeLCI (node, IPB(IFFParseBase));
+	/*
+	    We should free the LCIs of the default context-node
+	    ( CollectionItems and such )
+	*/
+	cn = (struct IntContextNode*)RootChunk (iff);
 
-	node = nextnode;
+	node = (struct LocalContextItem*)cn->cn_LCIList.mlh_Head;
+
+	while ((nextnode = (struct LocalContextItem*)node->lci_Node.mln_Succ))
+	{
+	    PurgeLCI (node, IPB(IFFParseBase));
+
+	    node = nextnode;
+	}
+
+	FreeMem (iff, sizeof (struct IntIFFHandle));
     }
-
-    FreeMem (iff, sizeof (struct IntIFFHandle));
-
+    
     AROS_LIBFUNC_EXIT
 } /* FreeIFF */

@@ -60,6 +60,8 @@
     LONG placeleft;
     LONG byteswritten;
 
+    DEBUG_WRITECHUNKBYTES(dprintf("WriteChunkBytes: iff 0x%lx buf 0x%lx size %d\n",
+			    iff, buf, numBytes));
 
     /* Get the top contextnode */
     cn = TopChunk(iff);

@@ -60,6 +60,9 @@
 
     struct MinList *lcilist;
 
+    DEBUG_STOREITEMINCONTEXT(dprintf("StoreItemInContext: iff 0x%lx item 0x%lx context 0x%lx\n",
+			    iff, localItem, contextNode));
+
     lcilist = &( GetIntCN(contextNode)->cn_LCIList );
 
     /* Check if there are other similar LCIs stored */

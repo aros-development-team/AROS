@@ -64,6 +64,9 @@
     struct LocalContextItem *lci_node,
 			    *lci_nextnode;
 
+    DEBUG_FINDLOCALITEM(dprintf("FindLocalItem: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s) ident 0x%08lx (%.4s)\n",
+			    iff, type, &type, id, &id, ident, &ident));
+
     D(bug("FindLocalItem (iff=%p, type=%c%c%c%c, id=%c%c%c%c, ident=%c%c%c%c)\n",
 	iff,
 	type>>24, type>>16, type>>8, type,

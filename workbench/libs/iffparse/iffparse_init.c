@@ -11,6 +11,13 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <utility/utility.h>
+
+#ifdef __MORPHOS__
+/* For HookEntry */
+#include <intuition/classusr.h>
+#define CLIB_ALIB_PROTOS_H
+#endif
+
 #include "initstruct.h"
 #include "iffparse_intern.h"
 #include <aros/debug.h>
@@ -21,7 +28,7 @@
 #define INIT	AROS_SLIB_ENTRY(init,IFFParse)
 
 #ifdef __MORPHOS__
-unsigned long __amigappc__ = 1;
+unsigned long __abox__ = 1;
 #endif
 
 struct inittable;
@@ -51,7 +58,7 @@ ULONG HookEntry(void)
     Msg msg=(Msg) REG_A1;
     Object *obj=(Object*) REG_A2;
     
-    return h->h_SubEntry(h,obj,msg);
+    return ((ULONG(*)(APTR,APTR,APTR))h->h_SubEntry)(h,obj,msg);
 }
 
 static struct EmulLibEntry    HookEntry_Gate=
@@ -67,7 +74,7 @@ const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&LIBEND,
 #ifdef __MORPHOS__
-    RTF_PPC | RTF_AUTOINIT,
+    RTF_PPC | RTF_EXTENDED |RTF_AUTOINIT,
 #else
     RTF_AUTOINIT,
 #endif
@@ -77,6 +84,11 @@ const struct Resident resident=
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
+#ifdef __MORPHOS__
+    ,
+    REVISION_NUMBER,	/* Revision */
+    NULL /* Tags */
+#endif
 };
 
 const char name[]=NAME_STRING;

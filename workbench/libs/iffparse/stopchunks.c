@@ -56,6 +56,9 @@
     LONG count;
     LONG err;
 
+    DEBUG_STOPCHUNKS(dprintf("StopChunks: iff 0x%lx array 0x%lx num %d\n",
+			    iff, propArray, numPairs));
+
     for (count = 0; count < numPairs; count ++ )
     {
 	if ((err = StopChunk(iff, propArray[0], propArray[1])))

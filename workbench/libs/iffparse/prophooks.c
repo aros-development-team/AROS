@@ -159,8 +159,8 @@ LONG PropFunc
     }
 
 
-    /* Store the new item IN ROOT, so it may be found with FindProp() */
-    err = StoreLocalItem(iff,lci,IFFSLI_ROOT);
+    /* Store the new item IN PROP, so it may be found with FindProp() */
+    err = StoreLocalItem(iff,lci,IFFSLI_PROP/*IFFSLI_ROOT*/);
 
     if (err)
     {
