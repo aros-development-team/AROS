@@ -9,6 +9,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include <libraries/bootmenu.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/exec.h>
@@ -20,22 +21,34 @@ int main(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
 {
     LONG            rc = RETURN_FAIL;
 
-    BPTR sseq = Open("S:Startup-Sequence", FMF_READ);
     BPTR cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
 
     if (cis)
     {
+	struct BootMenuBase *bootmenubase;
+	BOOL opensseq = TRUE;
+    	BPTR sseq = NULL;
 	struct TagItem tags[] =
         {
-            { SYS_Asynch,      TRUE       },
-	    { SYS_Background,  FALSE      },
-	    { SYS_Input,       (IPTR)cis  },
-	    { SYS_Output,      (IPTR)NULL },
-	    { SYS_Error,       (IPTR)NULL },
-	    { SYS_ScriptInput, (IPTR)sseq },
+            { SYS_Asynch,      TRUE       }, /* 0 */
+	    { SYS_Background,  FALSE      }, /* 1 */
+	    { SYS_Input,       (IPTR)cis  }, /* 2 */
+	    { SYS_Output,      (IPTR)NULL }, /* 3 */
+	    { SYS_Error,       (IPTR)NULL }, /* 4 */
+	    { SYS_ScriptInput, (IPTR)NULL }, /* 5 */
 	    { TAG_DONE,       0           }
         };
-
+	bootmenubase = (struct BootMenuBase *)OpenLibrary("bootmenu.library", 41);
+	if (bootmenubase != NULL)
+	{
+	    opensseq = bootmenubase->bcfg.startup_sequence;
+	    CloseLibrary((struct Library *)bootmenubase);
+	}
+	if (opensseq)
+	{
+	    sseq = Open("S:Startup-Sequence", FMF_READ);
+	    tags[5].ti_Data = (IPTR)sseq;
+	}
         rc = SystemTagList("", tags);
 	if (rc != -1)
 	{
@@ -44,6 +57,8 @@ int main(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
 	}
 	else
 	    rc = RETURN_FAIL;
+	if (sseq != NULL)
+	    Close(sseq);
     }
     else
     {
@@ -51,7 +66,6 @@ int main(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
     }
 
     Close(cis);
-    Close(sseq);
 
     return rc;
 }
