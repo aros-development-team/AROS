@@ -5,6 +5,9 @@
     Desc: Header for dos.library
     Lang: english
 */
+
+#define AROS_ALMOST_COMPATIBLE /* NEWLIST */
+
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
@@ -109,14 +112,32 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    I can't allocate a timerequest/MsgPort pair here anyway,
 	    because I need a separate one for each caller to Delay()
 	*/
-	Forbid();
-	LIBBASE->dl_TimerBase = (struct Device *)
-	    FindName(&SysBase->DeviceList, "timer.device");
 
-	if(LIBBASE->dl_TimerBase != NULL)
+        struct MsgPort timermp;
+	
+	timermp.mp_Node.ln_Succ = NULL;
+	timermp.mp_Node.ln_Pred = NULL;
+	timermp.mp_Node.ln_Type = NT_MSGPORT;
+	timermp.mp_Node.ln_Pri  = 0;
+	timermp.mp_Node.ln_Name = NULL;
+	timermp.mp_Flags 	= PA_SIGNAL;
+	timermp.mp_SigBit 	= SIGB_SINGLE;
+	timermp.mp_SigTask	= FindTask(NULL);
+	NEWLIST(&timermp.mp_MsgList);
+	
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Succ = NULL;
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Pred = NULL;
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Pri  = 0;
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Node.ln_Name = NULL;
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_ReplyPort    = &timermp;	
+	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Length       = sizeof(struct timerequest);
+
+	SetSignal(0, SIGF_SINGLE);
+	
+	if(OpenDevice("timer.device", UNIT_VBLANK, &LIBBASE->dl_TimerIO.tr_node, 0) == 0)
 	{
-	    LIBBASE->dl_TimerBase->dd_Library.lib_OpenCnt++;
-	    Permit();
+	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
 	    *dosPtr = LIBBASE;
 	    AddLibrary((struct Library *)LIBBASE);
@@ -135,7 +156,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    */
 	    RemTask(NULL);
 	}
-	Permit();
 	Alert(AT_DeadEnd | AG_OpenDev | AN_DOSLib | AO_TimerDev);
 	CloseLibrary(LIBBASE->dl_UtilityBase);
     }
