@@ -1,0 +1,22 @@
+## version $VER: Installer.catalog 1.0 (21.1.2005)
+## language magyar
+## codeset 0
+;
+MSG_OK
+Rendben
+;
+MSG_CANCEL
+Mégsem
+;
+MSG_MESSAGE
+Üzenet
+;
+MSG_PROMPT
+Prompt
+;
+MSG_YES
+Igen
+;
+MSG_NO
+Nem
+;
