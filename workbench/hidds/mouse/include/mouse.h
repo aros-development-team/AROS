@@ -59,4 +59,4 @@ enum {
    vHidd_Mouse_Button3
 };
 
-#endif HIDD_MOUSE_H
+#endif /* HIDD_MOUSE_H */
