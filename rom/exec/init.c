@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.15  1996/10/10 13:23:23  digulla
+    Enable timer (50Hz)
+    Allow AROS to run without X11
+
     Revision 1.14  1996/10/04 17:10:04  digulla
     Create SysBase with version
 
@@ -120,13 +124,10 @@ extern struct Task * inputDevice;
 
 static void idleTask (void)
 {
-    /* If the idle task ever gets CPU time the emulation is finished */
-/* exit(returncode); */
     while (1)
     {
-#if !ENABLE_TIMER
-	Signal (inputDevice, SIGBREAKF_CTRL_F);
-#endif
+	if (inputDevice)
+	    Signal (inputDevice, SIGBREAKF_CTRL_F);
 
 	Switch (); /* Rescedule */
     }
@@ -143,15 +144,16 @@ static void boot(void)
     RemTask(NULL);
 }
 
-#if ENABLE_TIMER
 static void timer (int dummy)
 {
-    /* Let input.device live */
-    Signal (inputDevice, SIGBREAKF_CTRL_F);
-
     signal (SIGALRM, timer);
+    if(SysBase->TDNestCnt>=0&&
+    	SysBase->ThisTask->tc_Node.ln_Pri<=
+    	((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+	Switch ();
+    else
+	SysBase->AttnResched|=0x80;
 }
-#endif
 
 static APTR allocmem(ULONG size)
 {
@@ -304,14 +306,21 @@ int main(int argc,char *argv[])
     Enable();
     Permit();
 
-    AddLibrary((struct Library *)InitResident((struct Resident *)&Utility_resident,0));
+    {
+	struct Library * lib;
 
-    DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
+	lib = (struct Library *)InitResident((struct Resident *)&Utility_resident,0);
+    	if (lib) AddLibrary(lib);
 
-    AddLibrary((struct Library *)DOSBase);
+    	DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
-    AddLibrary((struct Library *)InitResident((struct Resident *)&Graphics_resident,0));
-    AddLibrary((struct Library *)InitResident((struct Resident *)&Intuition_resident,0));
+    	if (DOSBase) AddLibrary((struct Library *)DOSBase);
+
+	lib = (struct Library *)InitResident((struct Resident *)&Graphics_resident,0);
+    	if (lib) AddLibrary(lib);
+	lib = (struct Library *)InitResident((struct Resident *)&Intuition_resident,0);
+    	if (lib) AddLibrary(lib);
+    }
 
     {
 	struct consolebase
@@ -353,8 +362,8 @@ int main(int argc,char *argv[])
 	struct TagItem bootprocess[]=
 	{
 	    { NP_Entry, (IPTR)boot },
-	    { NP_Input, MKBADDR(fh_stdin) },
-	    { NP_Output, MKBADDR(fh_stdout) },
+	    { NP_Input, (IPTR)MKBADDR(fh_stdin) },
+	    { NP_Output, (IPTR)MKBADDR(fh_stdout) },
 	    { NP_Name, (IPTR)"Boot process" },
 	    { NP_StackSize, 20000 }, /* linux's printf needs that much. */
 	    { NP_Cli, 1 },
@@ -379,7 +388,6 @@ int main(int argc,char *argv[])
 
 	CreateNewProc(bootprocess);
 
-#if ENABLE_TIMER
 	{
 	    struct itimerval interval;
 	    int rc;
@@ -392,7 +400,6 @@ int main(int argc,char *argv[])
 
 	    rc = setitimer (ITIMER_REAL, &interval, NULL);
 	}
-#endif
     }
 
     RemTask(NULL); /* get rid of Boot task */
