@@ -1084,7 +1084,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     if (0 != (L->Flags & LAYERSIMPLE) &&
         TRUE == UpdateDamageList)
     {
-      struct Rectangle blank;
+//      struct Rectangle blank;
       /* the following could possibly lead to problems when the region
          R is moved to negative coordinates. Maybe and maybe not.
       */
@@ -4086,8 +4086,6 @@ static VOID pattern_to_buf(struct pattern_info *pi
     struct RastPort *rp = pi->rp;
     ULONG apen = GetAPen(rp);
     ULONG bpen = GetBPen(rp);
-    
-    ULONG drmd = GetDrMd(rp);
     UBYTE *apt = (UBYTE *)rp->AreaPtrn;
     
     LONG pattern_x, pattern_y;
