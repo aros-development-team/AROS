@@ -242,12 +242,13 @@ static void WaitForIO (void)
 	ForeachNode (&waitList, msg)
 	{
 	    D(bug("%d, ", msg->fd));
-	    if (msg->mode == vHidd_UnixIO_Read)
+	    if (msg->mode & vHidd_UnixIO_Read)
 	    {
 		FD_SET (msg->fd, &rfds);
 		rp = &rfds;
 	    }
-	    else
+	    
+	    if (msg->mode & vHidd_UnixIO_Write)
 	    {
 		FD_SET (msg->fd, &wfds);
 		wp = &wfds;

@@ -181,7 +181,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
               error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                                           data->filedescriptor,
                                           data->replyport_read,
-                                          vHidd_UnixIO_Read,
+                                          vHidd_UnixIO_RW,
                                           SysBase);
               goto exit;
 
@@ -294,6 +294,7 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
               msg->Outbuffer,
               msg->Length);
 
+#if 0
   if (len < msg->Length)
   {
 
@@ -306,6 +307,7 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
                                 SysBase);
 
   }
+#endif
 
   ReturnInt("SerialUnit::Write()",ULONG, len);
 }
@@ -603,6 +605,7 @@ AROS_UFH3(void, serialunit_receive_data,
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
+#if 0
   /*
   ** I want to be notified when the next data are coming in.
   */
@@ -611,6 +614,7 @@ AROS_UFH3(void, serialunit_receive_data,
                               data->replyport_read,
                               vHidd_UnixIO_Read,
                               SysBase);
+#endif
   AROS_USERFUNC_EXIT
 }
 

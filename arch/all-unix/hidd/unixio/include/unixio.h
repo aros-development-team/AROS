@@ -67,6 +67,7 @@ struct uioMsgAbortAsyncIO
 /* UnixIO HIDD Values */
 #define vHidd_UnixIO_Read       0x1
 #define vHidd_UnixIO_Write      0x2
+#define vHidd_UnixIO_RW         (vHidd_UnixIO_Read | vHidd_UnixIO_Write)
 #define vHidd_UnixIO_Abort	0x4
 
 /* Stubs */
