@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include <oop/oop.h>
 
 /*****************************************************************************
@@ -57,10 +58,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
+    IPTR iswindowed;
     
-    return driver_MouseCoordsRelative(GfxBase);
-
+    OOP_GetAttr(SDD(GfxBase)->gfxhidd, aHidd_Gfx_IsWindowed, &iswindowed);
     
+    return iswindowed ? FALSE : TRUE;
 
     AROS_LIBFUNC_EXIT
+    
 } /* LateGfxInit */

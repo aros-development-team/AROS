@@ -56,7 +56,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    driver_SetPointerShape(shape, width, height, xoffset, yoffset, GfxBase);
+    D(bug("!!! SetPointerShape NOT YET IMPLEMENTED !!!\n"));
 
     AROS_LIBFUNC_EXIT
 } /* SetPointerShape */

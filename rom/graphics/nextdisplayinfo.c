@@ -6,6 +6,8 @@
     Lang: english
 */
 #include <graphics/displayinfo.h>
+#include <hidd/graphics.h>
+#include "dispinfo.h"
 
 /*****************************************************************************
 
@@ -49,7 +51,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_NextDisplayInfo(last_ID, GfxBase);
+    OOP_Object *sync, *pixfmt;
+    
+    HIDDT_ModeID hiddmode;
+    ULONG id;
+    
+    hiddmode = AMIGA_TO_HIDD_MODEID(last_ID);
+    
+    /* Get the next modeid */
+    hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt);
+    
+    id = HIDD_TO_AMIGA_MODEID(hiddmode);
+    
+    return id;
 
     AROS_LIBFUNC_EXIT
 } /* NextDisplayInfo */

@@ -7,6 +7,8 @@
 */
 #include <graphics/view.h>
 #include <graphics/modeid.h>
+#include <hidd/graphics.h>
+#include "dispinfo.h"
 
 /*****************************************************************************
 
@@ -51,8 +53,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    return driver_GetVPModeID(vp, GfxBase);
-
+    ULONG modeid;
+    
+    D(bug(" GetVPModeID returning %x\n", vp->ColorMap->VPModeID));
+    modeid = vp->ColorMap->VPModeID;
+    
+    D(bug("RETURNING\n"));
+    
+    return modeid;
 
     AROS_LIBFUNC_EXIT
 } /* GetVPModeID */

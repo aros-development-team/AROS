@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include <proto/oop.h>
 
 /*****************************************************************************
 
@@ -47,7 +48,24 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetAPen (rp, pen, GfxBase);
+    struct gfx_driverdata *dd;
+
+    if (CorrectDriverData (rp, GfxBase))
+    {
+	dd = GetDriverData(rp);
+	if (dd)
+	{
+            struct TagItem col_tags[]=
+	    {
+		{ aHidd_GC_Foreground, 0},
+		{ TAG_DONE	    	}
+	    };
+
+	    col_tags[0].ti_Data = BM_PIXEL(rp->BitMap, pen & PEN_MASK);
+	    OOP_SetAttrs( dd->dd_GC, col_tags );
+
+	}
+    }
 
     rp->FgPen = pen;
     rp->linpatcnt = 0;

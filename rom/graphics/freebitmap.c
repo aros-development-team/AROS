@@ -53,7 +53,13 @@
 
     if (bm->Pad != 0 || (bm->Flags & BMF_AROS_HIDD))
     {
-	driver_FreeBitMap (bm, GfxBase);
+	HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, (OOP_Object *)HIDD_BM_OBJ(bm));
+
+	if (bm->Flags & BMF_DISPLAYABLE)
+	{
+    	    FreeVec(HIDD_BM_PIXTAB(bm));
+	}
+	FreeMem(bm, sizeof (struct BitMap));
     }
     else
     {

@@ -47,15 +47,16 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+
     ULONG oldPen;
 
     oldPen = rp->AOlPen;
-
-    driver_SetOutlinePen (rp, pen, GfxBase);
 
     rp->AOlPen = pen;
     rp->Flags |= AREAOUTLINE;
 
     return oldPen;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* SetOutlinePen */

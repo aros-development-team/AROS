@@ -6,9 +6,11 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include <oop/oop.h>
 
 /*****************************************************************************
@@ -57,7 +59,79 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    return driver_SetFrontBitMap(bitmap, copyback, GfxBase);
+    #warning THIS IS NOT THREADSAFE
+    
+    /* To make this threadsafe we have to lock
+       all gfx access in all the rendering calls
+    */
+    OOP_Object      	*cmap, *pf;
+    HIDDT_ColorModel 	colmod;
+    OOP_Object      	*fb;
+    BOOL    	    	ok = FALSE;
+    ULONG   	    	showflags = 0;
+
+    if (bitmap && (BMF_DISPLAYABLE != (bitmap->Flags & BMF_DISPLAYABLE)))
+    {
+    	D(bug("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));
+	return FALSE;
+    }
+    
+    if ( SDD(GfxBase)->frontbm == bitmap)
+    {
+    	D(bug("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bitmap));
+	return TRUE;
+    }
+    
+    if (copyback)
+    {
+    	showflags |= fHidd_Gfx_Show_CopyBack;
+    }
+    
+    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, (bitmap ? HIDD_BM_OBJ(bitmap) : NULL), showflags);
+    
+    if (NULL == fb)
+    {
+    	D(bug("!!! SetFrontBitMap: HIDD_Gfx_Show() FAILED !!!\n"));
+    }
+    else
+    {
+	Forbid();
+	
+	 /* Set this as the active screen */
+    	if (NULL != SDD(GfxBase)->frontbm)
+	{
+    	    struct BitMap *oldbm;
+    	    /* Put back the old values into the old bitmap */
+	    oldbm = SDD(GfxBase)->frontbm;
+	    HIDD_BM_OBJ(oldbm)		= SDD(GfxBase)->bm_bak;
+	    HIDD_BM_COLMOD(oldbm)	= SDD(GfxBase)->colmod_bak;
+	    HIDD_BM_COLMAP(oldbm)	= SDD(GfxBase)->colmap_bak;
+	}
+	
+    
+	SDD(GfxBase)->frontbm		= bitmap;
+	SDD(GfxBase)->bm_bak		= bitmap ? HIDD_BM_OBJ(bitmap) : NULL;
+	SDD(GfxBase)->colmod_bak	= bitmap ? HIDD_BM_COLMOD(bitmap) : NULL;
+	SDD(GfxBase)->colmap_bak	= bitmap ? HIDD_BM_COLMAP(bitmap) : NULL;
+    
+	if (bitmap)
+	{
+	    /* Insert the framebuffer in its place */
+	    OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+	    OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+	    HIDD_BM_OBJ(bitmap)	= fb;
+	    HIDD_BM_COLMOD(bitmap)	= colmod;
+	    HIDD_BM_COLMAP(bitmap)	= cmap;
+	}
+	Permit();
+	
+	ok = TRUE;
+    }
+    
+    return ok;
 
     AROS_LIBFUNC_EXIT
+    
 } /* AllocScreenBitMap */

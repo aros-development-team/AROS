@@ -6,7 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
-#include <graphics/rastport.h>
+#include <proto/oop.h>
 
 /*****************************************************************************
 
@@ -48,7 +48,37 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetDrMd (rp, drawMode, GfxBase);
+    struct TagItem drmd_tags[] =
+    {
+	{ aHidd_GC_ColorExpansionMode	, 0UL 	    	    	 },
+	{ aHidd_GC_DrawMode 	    	, vHidd_GC_DrawMode_Copy },
+	{ TAG_DONE  	    	    	    	    	    	 }
+    };
+    struct gfx_driverdata *dd;
+    
+    if (CorrectDriverData (rp, GfxBase))
+    {	
+	if (drawMode & JAM2)
+	{
+    	    drmd_tags[0].ti_Data = vHidd_GC_ColExp_Opaque;
+	}	
+	else if (drawMode & COMPLEMENT)
+	{
+	    drmd_tags[1].ti_Data = vHidd_GC_DrawMode_Invert;
+	}
+	else if ((drawMode & (~INVERSVID)) == JAM1)
+	{
+    	    drmd_tags[0].ti_Data = vHidd_GC_ColExp_Transparent;
+	}
+
+    	#warning Handle INVERSVID by swapping apen and bpen ?
+
+	dd = GetDriverData(rp);
+	if (dd)
+	{
+    	    OOP_SetAttrs(dd->dd_GC, drmd_tags);
+	}
+    }
 
     rp->DrawMode = drawMode;
     rp->linpatcnt = 0;

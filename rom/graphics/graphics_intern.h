@@ -42,11 +42,15 @@
 #ifndef GRAPHICS_VIEW_H
 #   include <graphics/view.h>
 #endif
+#ifndef HIDD_GRAPHICS_H
+#   include <hidd/graphics.h>
+#endif
 
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <graphics/scale.h>
 #include "fontsupport.h"
+#include "objcache.h"
 
 #define REGIONS_USE_MEMPOOL 	1
 
@@ -79,13 +83,84 @@ typedef WORD PalExtra_AllocList_Type;
 #define PALEXTRA_REFCNT(pe,n) 	    (((PalExtra_RefCnt_Type *)(pe)->pe_RefCnt)[(n)])
 #define PALEXTRA_ALLOCLIST(pe,n)    (((PalExtra_AllocList_Type *)(pe)->pe_AllocList)[(n)])
 
+struct class_static_data
+{
+    struct Library  *oopbase;
+    struct Library  *utilitybase;
+    struct GfxBase  *gfxbase;
+    struct ExecBase *sysbase;
+    
+    OOP_AttrBase    hiddFakeFBAttrBase;
+    
+    OOP_Class 	    *fakegfxclass;
+    OOP_Class 	    *fakefbclass;
+    OOP_Class 	    *fakedbmclass;
+    
+    OOP_Object      *fakegfxobj;
+};
+
+struct shared_driverdata
+{
+    OOP_Object      	     *gfxhidd;
+    OOP_Object      	     *gfxhidd_orig;
+    OOP_Object      	     *gfxhidd_fake;
+    
+    ObjectCache     	     *gc_cache;
+    ObjectCache     	     *planarbm_cache;
+    
+    OOP_Object	    	     *framebuffer;
+    
+    OOP_Object	    	     *bm_bak;
+    OOP_Object	    	     *colmap_bak;
+    HIDDT_ColorModel 	     colmod_bak;
+    
+    OOP_AttrBase    	     hiddBitMapAttrBase;
+    OOP_AttrBase    	     hiddGCAttrBase;
+    OOP_AttrBase    	     hiddSyncAttrBase;
+    OOP_AttrBase    	     hiddPixFmtAttrBase;
+    OOP_AttrBase    	     hiddPlanarBMAttrBase;
+    OOP_AttrBase    	     hiddGfxAttrBase;
+    OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
+    
+    /* The frontmost screen's bitmap */
+    struct BitMap   	     *frontbm;
+
+    /* Does the gfx hidd support hardware pointers ? */    
+    BOOL    	    	     has_hw_cursor;
+
+    /* This is used if the gfx hidd does not support hardware mouse pointers */
+    OOP_Object      	     *pointerbm;
+    LONG    	    	     pointer_x;
+    LONG    	    	     pointer_y;
+    
+    struct class_static_data fakegfx_staticdata;
+    BOOL    	    	     fakegfx_inited;
+    
+#if 0    
+    /* Has the code to handle active screens been activated ? */
+    BOOL    	    	     activescreen_inited;
+#endif    
+    APTR    	    	     dispinfo_db; /* Display info database */
+};
+
+#define SDD(base)   	    ((struct shared_driverdata *)&PrivGBase(base)->shared_driverdata)
+#define __IHidd_BitMap      SDD(GfxBase)->hiddBitMapAttrBase
+#define __IHidd_GC          SDD(GfxBase)->hiddGCAttrBase
+#define __IHidd_Sync        SDD(GfxBase)->hiddSyncAttrBase
+#define __IHidd_PixFmt      SDD(GfxBase)->hiddPixFmtAttrBase
+#define __IHidd_PlanarBM    SDD(GfxBase)->hiddPlanarBMAttrBase
+#define __IHidd_Gfx         SDD(GfxBase)->hiddGfxAttrBase
+#define __IHidd_FakeGfxHidd SDD(GfxBase)->hiddFakeGfxHiddAttrBase
+
+
 /* Internal GFXBase struct */
 struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
+    struct Library  	    	*oopbase;
     /* Driver data shared between all rastports (allocated once) */
-    APTR			*shared_driverdata;
+    struct shared_driverdata	shared_driverdata;
 
 
 #define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
@@ -107,6 +182,8 @@ struct GfxBase_intern
 /* Macros */
 
 #define PrivGBase(x)   	    	((struct GfxBase_intern *)x)
+
+#define OOPBase     	    	(PrivGBase(GfxBase)->oopbase)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) - 1) >> 3) + 1)
 #define WIDTH_TO_WORDS(width) 	((( (width) - 1) >> 4) + 1)
