@@ -10,7 +10,6 @@ TESTS		:=
 
 
 FILES := coldreboot \
-	addintserver \
 	addtask \
 	rawputchar \
 	remtask \
