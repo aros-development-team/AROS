@@ -92,6 +92,7 @@ cname:				    ; \
 	.balign 4
 
 	/* Call functions and preserve registers */
+#if 0
 	STUB0(AROS_CDEFNAME(os_disable),AROS_CSYMNAME(_os_disable))
 	STUB0(AROS_CDEFNAME(os_enable),AROS_CSYMNAME(_os_enable))
 
@@ -99,12 +100,13 @@ cname:				    ; \
 	STUB1(AROS_SLIB_ENTRY(Permit,Exec),AROS_CSYMNAME(_Permit))
 	STUB1(AROS_SLIB_ENTRY(Disable,Exec),AROS_CSYMNAME(_Disable))
 	STUB1(AROS_SLIB_ENTRY(Enable,Exec),AROS_CSYMNAME(_Enable))
+#endif
 
 	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec),AROS_CSYMNAME(_ObtainSemaphore))
 	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_ReleaseSemaphore))
 	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec),AROS_CSYMNAME(_ObtainSemaphoreShared))
 
-#if 1
+#if 0
 	.globl	AROS_SLIB_ENTRY(Switch,Exec)
 	.type	AROS_SLIB_ENTRY(Switch,Exec),@function
 AROS_SLIB_ENTRY(Switch,Exec):

@@ -1,90 +1,31 @@
 # $Id$
 TOP=../..
-CURDIR=config/i386
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
-CLIBDIR = $(GENDIR)/compiler/clib
-CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
+SUBDIRS= clib exec
 
 MACHINE_H = $(INCDIR)/aros/machine.h
 
-FILES = \
-	cache \
-	disable \
-	dispatch \
-	enable \
-	exception \
-	execstubs \
-	forbid \
-	getcc \
-	initcore \
-	permit \
-	preparecontext \
-	runprocess \
-	setsr \
-	special \
-	stackswap \
-	superstate \
-	supervisor \
-	switch \
-	userstate
+all: setup $(MACHINE_H) subdirs
 
-CLIBFILES = \
-	longjmp \
-	setjmp
+setup: machine.i
+	%mkdirs_q $(INCDIR)
+	%subdirs_q "Setting up" setup
 
-CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
-DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
-
-TESTS = stackswap runprocess coretest
-
-all: setup $(MACHINE_H) machine.i \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
-
-setup :
-	%mkdirs_q $(OSGENDIR) $(CLIBDIR)
-	@echo "CFLAGS=$(CFLAGS)"
-
-$(MACHINE_H): machine.h
+$(MACHINE_H) : machine.h
 	cp $< $@
 
 clean::
-	$(RM) $(MACHINE_H) machine.i geninc $(TESTS)
+	%subdirs_q "Cleaning" clean
+	$(RM) $(MACHINE_H) $(TESTS) machine.i geninc
 
 machine.i: geninc.c
 	@echo "Creating geninc..."
 	@$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
 
-check : test
-
-test : $(TESTS)
-
-% : %.c
-	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
-
-coretest : core.c sigcore.h
-	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
-
-runprocess : runprocess.c stackswap.c
-	$(CC) -DTEST -DNO_MAIN -I/usr/include $(CFLAGS) -c stackswap.c -o ss.o
-	$(CC) -DTEST -I/usr/include $(CFLAGS) $< ss.o -o $@
-	@$(RM) ss.o
-
-$(CLIBDIR)/%.o: %.s machine.i
-	%assemble_q
-
-$(OSGENDIR)/%.o: %.s machine.i
-	%assemble_q
-
-$(OSGENDIR)/%.o: %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OSGENDIR)/%.d: %.c $(MACHINE_H)
-	%mkdepend_q
+subdirs:
+	%subdirs_q target=all
 
 %common
-%include_deps

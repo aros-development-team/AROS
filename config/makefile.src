@@ -16,7 +16,6 @@ all: setup
 		--assign TOP="$(TOP)" --assign GENDIR="$(GENDIR)" \
 		$(GENDIR)/config.files
 	%subdirs_q target=all
-	%subdirs_q dirs=$(ARCH) target=stage2
 
 setup : make-dirs $(CONFIG_H)
 	%subdirs_q "Setting up" setup

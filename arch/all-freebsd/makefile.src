@@ -14,15 +14,12 @@ DIRS= unix x11
 DEPS = $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 SUBDIRS= $(foreach f,$(DIRS),../$(f))
 
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+all: setup $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+	%subdirs_q target=all top=..
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	%subdirs_q target=setup top=..
-
-stage2:
-	%subdirs_q target=all top=..
 
 clean::
 	-$(RM) $(OSGENDIR) *.err
