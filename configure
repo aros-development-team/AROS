@@ -1063,7 +1063,7 @@ ac_objext=$ac_cv_objext
 
 
 # Check for awk and a few other programs.
-for ac_prog in gawk mawk nawk awk
+for ac_prog in mawk gawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -2385,7 +2385,7 @@ case "$target_os" in
 
     pc)
 	aros_target_arch="pc"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -funroll-loops -DADEBUG=1 -DMDEBUG=1"
+	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -DADEBUG=1 -DMDEBUG=1"
 	aros_shared_default="no"
 	case "$target_cpu" in
 	    *i?86*)
@@ -2406,7 +2406,7 @@ case "$target_os" in
 
     prep)
 	aros_target_arch="prep"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -funroll-loops -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
+	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_object_format="elf32ppc"
