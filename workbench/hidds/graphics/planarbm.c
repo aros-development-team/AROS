@@ -527,7 +527,7 @@ static VOID planarbm_blitcolorexpansion(OOP_Class *cl, OOP_Object *o,
     WORD    	    	    x, y, d;
     UBYTE   	    	    **plane;
     UBYTE   	    	    *mask;
-    ULONG   	    	    planeoffset, maskoffset;
+    ULONG   	    	    planeoffset /*, maskoffset*/;
     ULONG   	    	    cemd, fg, bg;
     BOOL    	    	    opaque;
     OOP_Object      	    *gc = msg->gc;

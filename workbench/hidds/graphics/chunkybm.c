@@ -43,9 +43,11 @@ static OOP_Object *chunkybm_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     struct chunkybm_data    *data;
     
     ULONG   	    	    width, height;
-    
+
+#if 0
     UBYTE   	    	    alignoffset	= 15;
     UBYTE   	    	    aligndiv	= 2;
+#endif
     
     BOOL    	    	    ok = TRUE;
     OOP_Object      	    *pf;
@@ -155,7 +157,7 @@ static VOID chunkybm_putpixel(OOP_Class *cl, OOP_Object *o,
 static ULONG chunkybm_getpixel(OOP_Class *cl, OOP_Object *o,
     	    	    	       struct pHidd_BitMap_GetPixel *msg)
 {
-    HIDDT_Pixel     	    retval;
+    HIDDT_Pixel     	    retval = 0;
     UBYTE   	    	    *src;
     struct chunkybm_data    *data;
     
