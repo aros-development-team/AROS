@@ -1723,6 +1723,129 @@ static void draw_thick_line(struct RastPort *rp,int x1, int y1, int x2, int y2)
     Draw(rp,x2+1,y2);
 }
 
+#define VECTOR_DRAW_FUNC(x) (((void (*)(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)(x))))
+
+
+#define SPACING 1
+#define HSPACING 1
+#define VSPACING 1
+
+void arrowup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom,cx,i;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    left += HSPACING; top += VSPACING;
+    width -= HSPACING * 2;
+    height -= VSPACING * 2;
+	    
+    right = left + width - 1;
+    bottom = top + height - 1;
+
+    cx = (width + 1) / 2;
+	    	    
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+	    
+    for(i = 0; i < cx; i++)
+    {
+    	RectFill(rport, left + i,
+			top + (cx - i - 1) * height / cx,
+			left + i,
+			bottom - i * height / cx / 2);
+    	RectFill(rport, right - i,
+			top + (cx - i - 1) * height / cx,
+			right - i,
+			bottom - i * height / cx / 2);
+    }
+}
+
+void arrowdown_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom,cx,i;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    left += HSPACING; top += VSPACING;
+    width -= HSPACING * 2;
+    height -= VSPACING * 2;
+	    
+    right = left + width - 1;
+    bottom = top + height - 1;
+
+    cx = (width + 1) / 2;
+	    	    
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+	    
+    for(i = 0; i < cx; i++)
+    {
+    	RectFill(rport, left + i,
+			top + i * height / cx / 2,
+			left + i,
+			bottom - (cx - i - 1) * height / cx);
+    	RectFill(rport, right - i,
+			top + i * height / cx / 2,
+			right -  i,
+			bottom - (cx - i - 1) * height / cx);
+    }
+}
+
+void arrowleft_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom,cy,i;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    left += HSPACING; top += VSPACING;
+    width -= HSPACING * 2;
+    height -= VSPACING * 2;
+	    
+    right = left + width - 1;
+    bottom = top + height - 1;
+	    
+    cy = (height + 1) / 2;
+	    
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+	    
+    for(i = 0; i < cy; i++)
+    {
+    	RectFill(rport, left + (cy - i - 1) * width / cy,
+			top + i,
+			right - i * width / cy / 2,
+			top + i);
+	RectFill(rport, left + (cy - i - 1) * width / cy,
+			bottom - i,
+			right - i * width / cy / 2,
+			bottom - i);
+    }
+}
+
+void arrowright_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int right,bottom,cy,i;
+    struct RastPort *rport = mri->mri_RastPort;
+
+    left += HSPACING; top += VSPACING;
+    width -= HSPACING * 2;
+    height -= VSPACING * 2;
+	    
+    right = left + width - 1;
+    bottom = top + height - 1;
+	    
+    cy = (height + 1) / 2;
+	    
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+	    
+    for(i = 0; i < cy; i++)
+    {
+    	RectFill(rport, left + i * width / cy / 2,
+			top + i,
+			right - (cy - i - 1) * width / cy,
+			top + i);
+	RectFill(rport, left + i * width / cy / 2,
+			bottom - i,
+			right - (cy - i - 1) * width / cy,
+			bottom - i);
+    }    
+}
+
 void checkbox_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
 {
     int h_spacing = width / 4;
@@ -1743,6 +1866,24 @@ void checkbox_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG l
 	draw_thick_line(mri->mri_RastPort, left + 1, bottom, right - 1, top);
     }
 }
+
+struct vector_image
+{
+    int minwidth;
+    int minheight;
+    void *draw_func;
+};
+
+static struct vector_image vector_table[] =
+{
+    {10,8,arrowup_draw},
+    {10,8,arrowdown_draw},
+    {8,10,arrowleft_draw},
+    {8,10,arrowright_draw},
+    {16,10,checkbox_draw},
+};
+
+#define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
 
 const static UWORD pattern[] = {
     0x5555,
@@ -1815,18 +1956,16 @@ static struct MUI_ImageSpec *get_vector_imspec(LONG vect)
 {
     struct MUI_ImageSpec *spec;
 
-    if (vect == CHECKBOX_IMAGE)
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
     {
-	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
-	{
-	    UWORD color;
-	    spec->type = IST_VECTOR;
-	    spec->vectortype = vect;
-	    spec->vector_draw = checkbox_draw;
-	}
-	return spec;
+	UWORD color;
+	spec->type = IST_VECTOR;
+	spec->vectortype = vect;
+
+	if (vect >= 0 && vect < VECTOR_TABLE_ENTRIES)
+	    spec->vector_draw = vector_table[vect].draw_func;
     }
-    return NULL;
+    return spec;
 }
 
 static struct MUI_ImageSpec *get_color_imspec(ULONG r, ULONG g, ULONG b)
@@ -2014,18 +2153,24 @@ void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri
 /* This is very very uneligant but only a test */
 int zune_imspec_get_minwidth(struct MUI_ImageSpec *spec)
 {
-    if (spec->type == IST_VECTOR && spec->vectortype == 4)
+    if (spec->type == IST_VECTOR)// && spec->vectortype == 4)
     {
-	return 16;
+	if (spec->vectortype >= 0 && spec->vectortype < VECTOR_TABLE_ENTRIES)
+	{
+	    return vector_table[spec->vectortype].minwidth;
+	}
     }
     return 0;
 }
 
 int zune_imspec_get_minheight(struct MUI_ImageSpec *spec)
 {
-    if (spec->type == IST_VECTOR && spec->vectortype == 4)
+    if (spec->type == IST_VECTOR)// && spec->vectortype == 4)
     {
-	return 10;
+	if (spec->vectortype >= 0 && spec->vectortype < VECTOR_TABLE_ENTRIES)
+	{
+	    return vector_table[spec->vectortype].minheight;
+	}
     }
     return 0;
 }
