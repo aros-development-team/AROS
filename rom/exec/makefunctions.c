@@ -71,7 +71,8 @@
 	{
 	    /* Decrement vector pointer by one and install vector */
 	    __AROS_INITVEC(target,n);
-	    __AROS_SETVECADDR(target,n,funcDispBase+*fp);
+	    if (*fp)
+		__AROS_SETVECADDR(target,n,funcDispBase+*fp);
 
 	    /* Use next array entry */
 	    fp++;
@@ -88,7 +89,8 @@
 	{
 	    /* Decrement vector pointer by one and install vector */
 	    __AROS_INITVEC(target,n);
-	    __AROS_SETVECADDR(target,n,*fp);
+	    if (*fp)
+		__AROS_SETVECADDR(target,n,*fp);
 
 	    /* Use next array entry */
 	    fp++;

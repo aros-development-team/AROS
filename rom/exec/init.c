@@ -231,7 +231,8 @@ printf ("SysBase = %p\n", SysBase);
 	for (i=1; i<=NUMVECT; i++)
 	{
 	    __AROS_INITVEC (SysBase, i);
-	    __AROS_SETVECADDR (SysBase, i, ExecFunctions[i-1]);
+	    if (ExecFunctions[i-1])
+		__AROS_SETVECADDR (SysBase, i, ExecFunctions[i-1]);
 	}
 
 	SysBase->LibNode.lib_Node.ln_Name = "exec.library";
