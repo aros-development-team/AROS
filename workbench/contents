@@ -1,0 +1,12 @@
+c/ - This directory contains a couple of applications for AROS
+	and some demos.
+
+demos/ - Some demos for AROS (former tests).
+
+devs/ - Disk-based devices, eg. \filename{RAM:} and
+	\filename{NIL:}.
+
+libs/ - Disk-based shared libraries.
+
+s/ - This directory contains the Startup-Sequence.
+
