@@ -12,7 +12,7 @@ So IFMeta classes are more flexible, but HIDDMeta
 classes are faster, and should be used for the HIDDs.
 
 How to create a class is best shown through an example.
-Here is a Timer class with three simple methods,
+Here is a Timer class with two simple methods,
 Start and Stop.
 Note, this example doesn't show the New and Dispose
 methods and DoSuperMethod() usage, but it is exactly the same as in BOOPSI,
