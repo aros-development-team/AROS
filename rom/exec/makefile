@@ -8,9 +8,7 @@ SPECIAL_CFLAGS=-I/usr/include
 include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
-LIBS = -L$(LIBDIR) -larosc
-
-FILES = execstrap_res execstrap_init execstrap_end
+FILES = execstrap_init
 
 FUNCTIONS = \
 	initcode initstruct makelibrary makefunctions findresident initresident \
@@ -37,8 +35,6 @@ FUNCTIONS = \
 ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 
 else
-LIBS =
-
 FILES = init execfunctions
 
 FUNCTIONS = \
@@ -85,6 +81,8 @@ FUNCTIONS = \
 endif
 
 ifeq ($(FLAVOUR),native)
+LIBS = -L$(LIBDIR) -larosc
+
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
