@@ -19,7 +19,7 @@ INIT_FILE = intuition_init
 FILES = intuition_functable gadgets \
 	boolgadgets propgadgets boopsigadgets \
 	imageclass frameiclass sysiclass icclass buttongclass gadgetclass \
-	frbuttonclass propgclass
+	frbuttonclass propgclass notify
 
 END_FILE = intuition_endtag
 
