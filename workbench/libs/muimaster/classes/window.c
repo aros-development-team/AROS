@@ -818,10 +818,10 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			left = data->wd_RenderInfo.mri_Window->BorderLeft;
 			top = data->wd_RenderInfo.mri_Window->BorderTop,
 			width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
-			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
+			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-			zune_draw_image(&data->wd_RenderInfo, data->wd_Background, 
-				 left, top, width, height, left, top, 0);
+//			zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
+//				 left, top, width, height, left, top, 0);
 		    }
 
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
