@@ -181,9 +181,17 @@ extern struct IntuitionBase * IntuitionBase;
     AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 
 
+/* stegerg: one can have sysgadgets outside of window border! All sysgadgets in window
+            border must have set GACT_???BORDER and, if they are in a gzz window, also
+	    GTYP_GZZGADGET */
+	    
 #define IS_BORDER_GADGET(gad) \
-	(((gad->GadgetType) & GTYP_SYSGADGET) \
+	(((gad->GadgetType) & GTYP_GZZGADGET) \
 	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
+	
+/*#define IS_BORDER_GADGET(gad) \
+	(((gad->GadgetType) & GTYP_SYSGADGET) \
+	|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER))) */
 
 #define SET_GI_RPORT(gi, w, gad)	\
 	(gi)->gi_RastPort = (IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : (w)->RPort)
