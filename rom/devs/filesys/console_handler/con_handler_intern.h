@@ -18,6 +18,20 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#define CONTASK_STACKSIZE 8192
+#define CONTASK_PRIORITY 0
+
+#define CONSOLEBUFFER_SIZE 256
+#define INPUTBUFFER_SIZE 256
+#define CMD_HISTORY_SIZE 32
+
+struct conTaskParams
+{
+    struct conbase *conbase;
+    struct Task	*parentTask;
+    struct IOFileSys *iofs;
+    ULONG initSignal;
+};
 
 struct conbase
 {
@@ -31,11 +45,40 @@ struct conbase
 
 struct filehandle
 {
-    struct IOStdReq	*conio;
-    struct MsgPort	*conmp;
+    struct IOStdReq	*conreadio;
+    struct IOStdReq	conwriteio;
+    struct MsgPort	*conreadmp;
+    struct MsgPort	*conwritemp;
     struct Window	*window;
+    struct Task 	*contask;
+    struct MsgPort      *contaskmp;
+    struct MinList	pendingReads;
+    struct MinList	pendingWrites;
+    UBYTE		*wintitle;
+    WORD		conbufferpos;
+    WORD		conbuffersize;
+    WORD		inputstart; 	/* usually 0, but needed for multi-lines (CONTROL RETURN) */
+    WORD		inputpos; 	/* cursor pos. inside line */
+    WORD		inputsize; 	/* length of input string */
+    WORD		canreadsize;
+    WORD		historysize;
+    WORD		historypos;
+    WORD		historyviewpos;
+    WORD		usecount;
+    UWORD		flags;
+
+    UBYTE		consolebuffer[CONSOLEBUFFER_SIZE + 2];
+    UBYTE		inputbuffer[INPUTBUFFER_SIZE + 2];
+    UBYTE		historybuffer[CMD_HISTORY_SIZE][INPUTBUFFER_SIZE + 1];
+
 };
 
+/* filehandle flags */
+
+#define FHFLG_READPENDING  1
+#define FHFLG_WRITEPENDING 2
+#define FHFLG_CANREAD      4
+#define FHFLG_WAIT	   8 	/* filename contained WAIT */
 
 typedef struct IntuitionBase IntuiBase;
 
@@ -52,6 +95,6 @@ typedef struct IntuitionBase IntuiBase;
 #endif
 #define IntuitionBase conbase->intuibase
 
-
+VOID conTaskEntry(struct conTaskParams *param);
 
 #endif /* __CON_HANDLER_INTERN_H */
