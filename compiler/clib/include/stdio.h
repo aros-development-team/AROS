@@ -83,6 +83,8 @@ extern char * fgets (char * buffer, int size, FILE * stream);
 extern int feof (FILE * stream);
 extern int ferror (FILE * stream);
 extern int fileno (FILE * stream);
+extern FILE *feropen (const char *path,	const char *mode, FILE *stream);
+
 extern void clearerr (FILE * stream);
 extern size_t fread (void *ptr, size_t size, size_t nmemb, FILE * stream);
 extern size_t fwrite (void *ptr, size_t size, size_t nmemb, FILE * stream);
