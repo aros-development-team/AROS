@@ -83,10 +83,12 @@
     DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
-    SetIoErr(iofs.io_DosError);
 
     if(iofs.io_DosError != 0)
+    {
+        SetIoErr(iofs.io_DosError);
 	return -1;
+    }
     else
 	return iofs.io_Union.io_READ.io_Length;
 
