@@ -15,9 +15,15 @@
 
 void Exec_Permit_Supervisor();
 
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
+
 AROS_LH0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
 {
+#undef Exec
     AROS_LIBFUNC_INIT
 
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
