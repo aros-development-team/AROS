@@ -65,6 +65,7 @@
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <utility/tagitem.h>
 
 #define ARG_TEMPLATE	"DRIVE/A,ON/S,OFF/S,PASSKEY"
 #define ARG_DRIVE	0

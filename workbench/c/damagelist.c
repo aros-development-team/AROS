@@ -177,7 +177,7 @@ static void Action(void)
     FreeRastPort(rp);
 }
 
-void main(void)
+int main(void)
 {
     OpenLibs();
     GetArguments();

@@ -65,6 +65,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <dos/rdargs.h>
+#include <utility/tagitem.h>
 
 
 static const char version[] = "$VER: Copy 41.0 (29.08.1998)\n";

@@ -184,7 +184,7 @@ struct LocaleBase *LocaleBase       = NULL;
 struct Library *GadToolsBase        = NULL;
 struct Library *CxBase              = NULL;
 struct Library *IconBase            = NULL;
-struct Library *UtilityBase         = NULL;
+struct UtilityBase *UtilityBase     = NULL;
 struct IntuitionBase *IntuitionBase = NULL;
 
 
@@ -277,7 +277,7 @@ BOOL getResources(struct ExchangeState *ec)
 
     /* First, open necessary libraries */
     
-    UtilityBase = OpenLibrary("utility.library", 40);
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 40);
     
     if(UtilityBase == NULL)
 	return FALSE;
@@ -618,10 +618,10 @@ void freeResources(struct ExchangeState *ec)
     // DeleteMsgPort(ec->hotkeyPort);
     DeleteMsgPort(ec->ec_msgPort);
 
-    CloseLibrary(UtilityBase);
+    CloseLibrary((struct Library *)UtilityBase);
     CloseLibrary((struct Library *)IntuitionBase);
     CloseLibrary(GadToolsBase);
-    CloseLibrary(LocaleBase);
+    CloseLibrary((struct Library *)LocaleBase);
     CloseLibrary(CxBase);
 }
 

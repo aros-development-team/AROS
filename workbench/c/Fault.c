@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <stdio.h> /* for sprintf() */
 #include <string.h>
+#include <utility/tagitem.h>
 
 #define ARG_TEMPLATE	"/N/M"
 #define ARG_CODE	0

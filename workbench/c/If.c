@@ -107,10 +107,10 @@ int main(int argc, char **argv)
 		    NULL };
 
     struct RDArgs *rda;
-    struct Library *UtilityBase;
+    struct UtilityBase *UtilityBase;
 
 
-    UtilityBase = OpenLibrary("utility.library", 41);
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 41);
 
     if(UtilityBase == NULL)
 	return RETURN_FAIL;
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 
     FreeArgs(rda);
 
-    CloseLibrary(UtilityBase);
+    CloseLibrary((struct Library *)UtilityBase);
 
     return RETURN_OK;
 }

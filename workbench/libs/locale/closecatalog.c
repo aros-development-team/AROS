@@ -66,7 +66,7 @@
           Remove(&catalog->cat_Link);
           ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
 
-          dispose_catalog((struct IntCatalog *)catalog, (struct Library *)LocaleBase);
+          dispose_catalog((struct IntCatalog *)catalog, LocaleBase);
           FreeVec(IntCat(catalog)->ic_Name);
           FreeVec(catalog->cat_Language);
           FreeMem(catalog, sizeof(struct IntCatalog));

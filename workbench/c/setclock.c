@@ -55,6 +55,7 @@
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
 #include <devices/timer.h>
+#include <utility/tagitem.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>

@@ -60,6 +60,7 @@
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <utility/tagitem.h>
 
 #define ARG_TEMPLATE	"RCLIM/N"
 #define ARG_RCLIM	0

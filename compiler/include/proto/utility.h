@@ -10,7 +10,7 @@
 #endif
 
 #ifndef UtilityBase
-  extern struct Library * UtilityBase;
+  extern struct UtilityBase * UtilityBase;
 #endif
 
 #include <clib/utility_protos.h>

@@ -53,6 +53,7 @@
 #include <dos/var.h>
 #include <exec/memory.h>
 #include <exec/types.h>
+#include <utility/tagitem.h>
 
 #define ARG_TEMPLATE    "NAME"
 #define ARG_NAME        0

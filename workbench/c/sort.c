@@ -305,7 +305,7 @@ int main (int argc, char **argv)
   ULONG error = 0;
 
 #if 1
-  LocaleBase = OpenLibrary("locale.library", 0);
+  LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 0);
   if (!LocaleBase)
   {
     printf("Sort needs locale.library!\n");

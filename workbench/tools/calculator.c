@@ -160,7 +160,7 @@ static void Cleanup(char *msg)
     
     if (MyArgs) FreeArgs(MyArgs);
     
-    if (LocaleBase) CloseLibrary(LocaleBase);
+    if (LocaleBase) CloseLibrary((struct Library *)LocaleBase);
     if (GadToolsBase) CloseLibrary(GadToolsBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
     if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
@@ -191,7 +191,7 @@ static void OpenLibs(void)
 	Cleanup("Can't open gadtools.library V39!");
     }
     
-    LocaleBase = OpenLibrary("locale.library",39);
+    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library",39);
 }
 
 static void GetArguments(void)

@@ -55,6 +55,7 @@
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <utility/tagitem.h>
 
 #define ARG_TEMPLATE	"PRI=PRIORITY/A/N,PROCESS/K/N"
 #define ARG_PRI		0

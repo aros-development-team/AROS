@@ -16,7 +16,7 @@
 
 static const char version[] = "$VER: mount 41.1 (19.2.1997)\n";
 
-static struct Library *UtilityBase;
+static struct UtilityBase *UtilityBase;
 
 LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 {
@@ -231,7 +231,7 @@ int main (int argc, char ** argv)
     struct Process *me=(struct Process *)FindTask(NULL);
     LONG error=0;
 
-    UtilityBase=OpenLibrary("utility.library",0);
+    UtilityBase=(struct UtilityBase *)OpenLibrary("utility.library",0);
     if(UtilityBase!=NULL)
     {
 	rda=ReadArgs("DEVICE/M,FROM/K",(ULONG *)args,NULL);
@@ -259,7 +259,7 @@ int main (int argc, char ** argv)
 	    FreeArgs(rda);
 	}else
 	    error=IoErr();
-        CloseLibrary(UtilityBase);
+        CloseLibrary((struct Library *)UtilityBase);
     }else
 	error=ERROR_OBJECT_NOT_FOUND;
     if(error)

@@ -110,4 +110,4 @@ struct IntCatalog
 
 
 void dispose_catalog(struct IntCatalog * cat,
-                     struct Library * LocaleBase);
+                     struct LocaleBase * LocaleBase);

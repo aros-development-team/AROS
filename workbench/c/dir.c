@@ -21,7 +21,7 @@
 
 static const char version[] = "$VER: dir 41.11 (26.10.1997)\n";
 
-struct Library *UtilityBase;
+struct UtilityBase *UtilityBase;
 
 struct table
 {
@@ -248,7 +248,7 @@ int main (int argc, char ** argv)
     struct RDArgs *rda;
     LONG error=0;
 
-    UtilityBase=OpenLibrary(UTILITYNAME,39);
+    UtilityBase=(struct UtilityBase *)OpenLibrary(UTILITYNAME,39);
 
     if (!UtilityBase)
 	return RETURN_ERROR;

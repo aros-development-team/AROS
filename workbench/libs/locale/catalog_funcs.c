@@ -6,7 +6,7 @@
 ** itself.
 */
 void dispose_catalog(struct IntCatalog * cat,
-                     struct Library * LocaleBase)
+                     struct LocaleBase * LocaleBase)
 {
   while (NULL != cat->ic_First)
   {

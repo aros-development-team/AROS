@@ -94,7 +94,7 @@
 
 #include <aros/debug.h>
 
-struct Library *UtilityBase;
+struct UtilityBase *UtilityBase;
 
 static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
@@ -545,7 +545,7 @@ int main(int argc, char **argv)
     STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
     LONG           error          = RETURN_OK;
 
-    UtilityBase = OpenLibrary("utility.library", 39);
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
 
     if(UtilityBase != NULL)
     {
@@ -586,7 +586,7 @@ int main(int argc, char **argv)
 	    error = RETURN_FAIL;
 	}
 
-        CloseLibrary(UtilityBase);
+        CloseLibrary((struct Library *)UtilityBase);
     }
     else
     {
@@ -1234,7 +1234,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	   Stricmp("EndShell", commandName) == 0)
 	{
 	    FreeArgs(rda);
-	    CloseLibrary(UtilityBase);
+	    CloseLibrary((struct Library *)UtilityBase);
 	    P(kprintf("Shutting down the shell\n"));
 
 	    /* For now, we don't deal with (closing) redirections or freeing
