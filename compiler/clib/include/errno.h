@@ -1,5 +1,5 @@
-#ifndef _ERRNO_H
-#define _ERRNO_H
+#ifndef _ERRNO_H_
+#define _ERRNO_H_
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
@@ -140,4 +140,4 @@
 #include <libraries/arosc.h>
 #endif
 
-#endif /* errno */
+#endif /* _ERRNO_H_ */
