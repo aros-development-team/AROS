@@ -134,18 +134,7 @@ void CreateClipRectsAll(struct Layer_Info * li, struct Layer * L)
                           (= just being added(created) to the list of layers.
                     FALSE if Layer L_passive is already displayed.
  */
-
-void LayerSplitsLayer(struct Layer * L_active, 
-                      struct Layer * L_passive,  
-                      BOOL notdisplayed)
-{
-  LONG x0 = L_active->bounds.MinX;
-  LONG y0 = L_active->bounds.MinY;
-  LONG x1 = L_active->bounds.MaxX;
-  LONG y1 = L_active->bounds.MaxY;
-  struct BitMap * bm = L_active->rp->BitMap;
-
-  struct ClipRect *(* FunctionArray[])() = {
+static  struct ClipRect *(* FunctionArray[])() = {
                 	(void *)&Case_0,
                  	(void *)&Case_1,
                  	(void *)&Case_2,
@@ -162,6 +151,17 @@ void LayerSplitsLayer(struct Layer * L_active,
                  	(void *)&Case_13,
                  	(void *)&Case_14,
                  	(void *)&Case_15};
+
+void LayerSplitsLayer(struct Layer * L_active, 
+                      struct Layer * L_passive,  
+                      BOOL notdisplayed)
+{
+  LONG x0 = L_active->bounds.MinX;
+  LONG y0 = L_active->bounds.MinY;
+  LONG x1 = L_active->bounds.MaxX;
+  LONG y1 = L_active->bounds.MaxY;
+  struct BitMap * bm = L_active->rp->BitMap;
+
 
   /* first check whether L_active overlaps L_passive at all */
 
