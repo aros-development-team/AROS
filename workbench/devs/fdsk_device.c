@@ -554,7 +554,7 @@ AROS_UFH3(LONG, unitentry,
 #warning FIXME: Next line will produce a segfault -- uninitialized variable iotd
 	iotd->iotd_Req.io_Error = error(IoErr());
 */
-        D(bug("fdsk_device/unitentry: open failed :-( Replying startup msg.\n"));
+        D(bug("fdsk_device/unitentry: open failed ioerr = %d:-( Replying startup msg.\n", IoErr()));
 
 	Forbid();
 	ReplyMsg(&unit->msg);
