@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -539,27 +538,27 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 
     if (dn && !dn->parent && strcmp(filename, "//unnamedpipe//") == 0)
     {
-	return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, err);
+        return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, err);
     }
 
     fn = FindFile(pipefsbase, &dn, filename);
     if (!fn)
     {
-	D(bug("The file couldn't be found.\n"));
-
-	if (dn && mode&FMF_CREATE)
-	{
-	    D(bug("But the user wants it to be created.\n"));
-
-	    return NewFileNode(pipefsbase, FilePart(filename), 0, dn, err);
-	}
+        D(bug("The file couldn't be found.\n"));
+        
+        if (dn && mode&FMF_CREATE)
+        {
+            D(bug("But the user wants it to be created.\n"));
+            
+            return NewFileNode(pipefsbase, FilePart(filename), 0, dn, err);
+        }
     }
 
     if (fn && fn->type > 0 && mode&(FMF_WRITE|FMF_READ))
     {
-	D(bug("The file is a directory, cannot be open for reading/writing\n"));
-	*err = ERROR_OBJECT_WRONG_TYPE;
-	return NULL;
+        D(bug("The file is a directory, cannot be open for reading/writing\n"));
+        *err = ERROR_OBJECT_WRONG_TYPE;
+        return NULL;
     }
 
     return fn;
