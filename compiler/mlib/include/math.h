@@ -96,6 +96,8 @@ extern double scalb(double x, double fn);
 extern double sinh(double x);
 extern double sqrt(double x);
 
+#include <float.h> /* For DBL_MAX */
+
 #ifndef HUGE
 #define HUGE		DBL_MAX
 #endif
