@@ -247,7 +247,7 @@ kprintf("NewDTObjectA: 15\n");
 kprintf("NewDTObjectA: 16\n");    
 	    
 	    dt_sprintf(DataTypesBase, libname,"datatypes/%s.datatype", BaseName);
-kprintf("NewDTObjectA: 17: libname = %s\n", BaseName);    
+kprintf("NewDTObjectA: 17: libname = %s\n", libname);    
 	    
 	    if(!(DTClassBase = OpenLibrary(libname, 0)))
 		SetIoErr(DTERROR_UNKNOWN_DATATYPE);
