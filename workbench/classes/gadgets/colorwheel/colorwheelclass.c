@@ -6,11 +6,15 @@
     Lang: english
 */
 
+#include <exec/types.h>
+
+#ifdef _AROS
 #define USE_BOOPSI_STUBS
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/colorwheel.h>
+#include <proto/exec.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <intuition/cghooks.h>
@@ -34,6 +38,55 @@
 
 #include <clib/boopsistubs.h>
 
+#else
+
+#include <intuition/classes.h>
+#include <intuition/classusr.h>
+#include <intuition/cghooks.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/imageclass.h>
+#include <gadgets/colorwheel.h>
+#include <gadgets/gradientslider.h>
+#include <utility/tagitem.h>
+#include <gadgets/colorwheel.h>
+
+#include <inline/utility.h>
+#include <inline/intuition.h>
+#include <inline/graphics.h>
+#include <inline/colorwheel.h>
+#include <inline/exec.h>
+
+#include "BoopsiStubs.h"
+#include "colorwheel_intern.h"
+
+#define ColorWheelBase ((struct ColorWheelBase_intern *)(cl->cl_UserData))
+
+#endif
+
+#if FIXED_MATH
+#include "fixmath.h"
+#endif
+
+/****************************************************************************/
+
+#ifndef _AROS
+
+#if 0
+#undef SysBase
+void kprintf( STRPTR FormatStr, ... )
+{
+	TEXT	PutChData[64];
+	STRPTR	p = PutChData;
+	struct Library *SysBase = (*(struct Library **)4L);
+	RawDoFmt(FormatStr, ((STRPTR)(&FormatStr))+4, (void (*)())"\x16\xc0\x4e\x75", PutChData);
+	
+	do RawPutChar( *p );
+	while( *p++ );
+}
+#define SysBase		CWB(cl->cl_UserData)->sysbase
+#endif
+
+#endif
 
 /***************************************************************************************************/
 
@@ -48,7 +101,7 @@ STATIC VOID notify_all(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim
         {WHEEL_Hue		, data->hsb.cw_Hue		},
 	{WHEEL_Saturation	, data->hsb.cw_Saturation	},
 #if 0
-	{WHEEL_Brightness	, data->hsb.cw_Brightness	},
+//	{WHEEL_Brightness	, data->hsb.cw_Brightness	},
 	{WHEEL_Red		, data->rgb.cw_Red		},
 	{WHEEL_Green		, data->rgb.cw_Green		},
 	{WHEEL_Blue		, data->rgb.cw_Blue		},
@@ -80,7 +133,7 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
 
     disabled = (EG(o)->Flags & GFLG_DISABLED) != 0L;
     
-    if (msg->MethodID != OM_NEW) retval = DoSuperMethodA(cl, o, msg);
+    if (msg->MethodID != OM_NEW) retval = DoSuperMethodA(cl, o, (Msg)msg);
     
     if (data->gradobj)
     {
@@ -90,6 +143,7 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
 	   colorwheel.gadget assumes a maxval of 0xFFFF (default) */
 	   
 	GetAttr(GRAD_CurVal, data->gradobj, &gradval);
+	
 	gradval = 0xFFFF - gradval;
 	
 	old_brightness = ((ULONG)gradval) * 0x10000 + (ULONG)gradval;
@@ -99,7 +153,7 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
-    	   	
+    	
     	switch (tag->ti_Tag)
     	{
 	    case GA_Disabled:
@@ -223,7 +277,7 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	{
 	    struct TagItem fitags[]=
 	    {
-               {IA_EdgesOnly	, FALSE		},
+               {IA_EdgesOnly	, TRUE		},
 	       {IA_FrameType	, FRAME_BUTTON	},
                {TAG_DONE			}
 	    };
@@ -232,7 +286,7 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	}
 	
 	if (data->scr)
-	{
+	{	    
 	    data->hsb.cw_Hue        = 0;
 	    data->hsb.cw_Saturation = 0xFFFFFFFF;
 	    data->hsb.cw_Brightness = 0xFFFFFFFF;
@@ -246,8 +300,10 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	    data->maxpens  =           GetTagData(WHEEL_MaxPens       , 256	      , msg->ops_AttrList);
 	    
     	    colorwheel_set(cl, o, msg);
-
-    	    allocPens(data, ColorWheelBase);    	    
+    	    
+    	    allocPens(data,ColorWheelBase);
+    	    
+    	    InitRastPort( &data->trp );    
 	} else {
 	    CoerceMethod(cl, o, OM_DISPOSE);
 	    o = NULL;
@@ -340,7 +396,7 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     switch (redraw)
     {
     	case GREDRAW_REDRAW:
-    	    RenderWheel(data, rp, &gbox, ColorWheelBase);
+    	    RenderWheel(data, rp, &gbox,ColorWheelBase);
 	    RenderKnob(data, rp, &gbox, FALSE, ColorWheelBase);
 	    break;
 	    
@@ -365,15 +421,29 @@ STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
 {
     struct ColorWheelData 	*data = INST_DATA(cl, o);
     
-    if (data->rgblinebuffer) FreeVec(data->rgblinebuffer);
+    if (data->rgblinebuffer)
+    	FreeVec(data->rgblinebuffer);
+
     if (data->bm)
     {
         WaitBlit();
+        
+        if (data->mask)
+        {        	
+            FreeVec( data->mask );
+	}	
+        
 	FreeBitMap(data->bm);
     }
-    freePens(data, ColorWheelBase);
+
+    if (data->savebm)
+    	FreeBitMap(data->savebm );
+
+    freePens(data,ColorWheelBase);
     
-    DoSuperMethodA(cl, o, msg);
+    DeinitRastPort( &data->trp );
+    
+    DoSuperMethodA(cl, o, (Msg)msg);
 }
 
 /***************************************************************************************************/
@@ -391,12 +461,17 @@ STATIC IPTR colorwheel_hittest(Class *cl, Object *o, struct gpHitTest *msg)
         WORD mousex = msg->gpht_Mouse.X - (data->wheelcx - data->wheelrx);
 	WORD mousey = msg->gpht_Mouse.Y - (data->wheelcy - data->wheelry);
 	
-	kprintf("checking %d,%d %d,%d,\n", mousex, mousey, data->wheelrx, data->wheelry);
+	D(bug("checking %d,%d %d,%d,\n", mousex, mousey, data->wheelrx, data->wheelry));
 	
 	if (CalcWheelColor(mousex,
 			   mousey,
-			   (DOUBLE)data->wheelrx,
-			   (DOUBLE)data->wheelry,
+			   #if FIXED_MATH
+			   data->wheelrx,
+			   data->wheelry,
+			   #else
+			   (double)data->wheelrx,
+			   (double)data->wheelry,
+			   #endif
 			   &hue,
 			   &sat))
 	{
@@ -424,8 +499,13 @@ STATIC IPTR colorwheel_goactive(Class *cl, Object *o, struct gpInput *msg)
 	
 	CalcWheelColor(mousex,
 		       mousey,
-		       (DOUBLE)data->wheelrx,
-		       (DOUBLE)data->wheelry, 
+		       #if FIXED_MATH
+			   data->wheelrx,
+			   data->wheelry,
+			   #else
+		       (double)data->wheelrx,
+		       (double)data->wheelry, 
+		       #endif
 		       &data->hsb.cw_Hue,
 		       &data->hsb.cw_Saturation);
 		       
@@ -476,8 +556,13 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 			CalcWheelColor(mousex,
 				       mousey,
-				       (DOUBLE)data->wheelrx,
-				       (DOUBLE)data->wheelry, 
+				       #if FIXED_MATH
+					   data->wheelrx,
+					   data->wheelry,
+			   		   #else
+				       (double)data->wheelrx,
+				       (double)data->wheelry, 
+				       #endif
 				       &data->hsb.cw_Hue,
 				       &data->hsb.cw_Saturation);
 
@@ -508,24 +593,24 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***************************************************************************************************/
 
+#ifdef _AROS
 AROS_UFH3S(IPTR, dispatch_colorwheelclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)
 )
+#else
+IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
+#endif
 {
     IPTR retval = 0UL;
     
     switch(msg->MethodID)
     {
-	case OM_NEW:
-	    retval = (IPTR)colorwheel_new(cl, o, (struct opSet *)msg);
+	case GM_HANDLEINPUT:
+	    retval = colorwheel_handleinput(cl, o, (struct gpInput *)msg);
 	    break;
 	
-	case OM_DISPOSE:
-	    colorwheel_dispose(cl, o, msg);
-	    break;
-	    
 	case GM_RENDER:
 	    colorwheel_render(cl, o, (struct gpRender *)msg);
 	    break;
@@ -537,22 +622,26 @@ AROS_UFH3S(IPTR, dispatch_colorwheelclass,
 	case GM_GOACTIVE:
 	    retval = colorwheel_goactive(cl, o, (struct gpInput *)msg);
 	    break;
-
-	case GM_HANDLEINPUT:
-	    retval = colorwheel_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-
+	
 	case OM_SET:
 	case OM_UPDATE:
 	    retval = colorwheel_set(cl, o, (struct opSet *)msg);
 	    break;
-
+	    
+	case OM_NEW:
+	    retval = (IPTR)colorwheel_new(cl, o, (struct opSet *)msg);
+	    break;
+	
+	case OM_DISPOSE:
+	    colorwheel_dispose(cl, o, msg);
+	    break;
+	
 	case OM_GET:
 	    retval = colorwheel_get(cl, o, (struct opGet *)msg);
 	    break;
 	    
 	default:
-	    retval = DoSuperMethodA(cl, o, msg);
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
 	    break;
 	    
     } /* switch */

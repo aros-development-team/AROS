@@ -15,8 +15,10 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifdef _AROS
 #ifndef LIBCORE_BASE_H
 #   include <libcore/base.h>
+#endif
 #endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
@@ -27,14 +29,35 @@
 #ifndef GADGETS_COLORWHEEL_H
 #   include <gadgets/colorwheel.h>
 #endif
+#ifndef DOS_DOS_H
+#	include <dos/dos.h>
+#endif
 
+#ifdef _AROS
 #ifndef AROS_DEBUG_H
 #include <aros/debug.h>
+#endif
+#endif
+
+#define FIXED_MATH		1
+
+#if FIXED_MATH
+#include "fixmath.h"
 #endif
 
 #include "libdefs.h"
 
 /***************************************************************************************************/
+
+#ifndef _AROS
+#define DeinitRastPort(x)
+#define EnterFunc(x)
+#define bug
+#define D(x)
+#define ReturnPtr(a,b,c) return c
+#define ReturnInt(a,b,c) return c
+#define ReturnVoid(a) return
+#endif
 
 #define SysBase 		(((struct LibHeader *) ColorWheelBase)->lh_SysBase)
 
@@ -63,6 +86,9 @@ struct ColorWheelData
     
     struct DrawInfo		*dri;
     struct BitMap		*bm;
+    PLANEPTR			 mask;
+    struct BitMap		*savebm;
+    struct RastPort		 trp;
     Object			*frame;
     LONG			*rgblinebuffer;
     WORD 			rgblinebuffer_size;
@@ -74,12 +100,13 @@ struct ColorWheelData
     WORD			wheelry;
     WORD			knobsavex;
     WORD			knobsavey;
-    BYTE			wheeldrawn;
-    BOOL			free_donation;
-    LONG			range;
-    LONG			levels;
+    BOOL			wheeldrawn;
+    WORD			pens_donated;
+    WORD			numpens;
+    WORD			range;
+    WORD			levels;
+    UBYTE			*pens;
 };
-
 
 struct ColorWheelBase_intern
 {
@@ -93,14 +120,18 @@ struct ColorWheelBase_intern
     struct GfxBase		*gfxbase;
     struct Library		*cybergfxbase;
     struct Library		*utilitybase;
-    
+    struct Library		*layersbase;    
 };
 
 /***************************************************************************************************/
 
 struct IClass *InitColorWheelClass (struct ColorWheelBase_intern *ColorWheelBase);
 
-BOOL CalcWheelColor(LONG x, LONG y, DOUBLE cx, DOUBLE cy, ULONG *hue, ULONG *sat);
+#if FIXED_MATH
+BOOL CalcWheelColor(LONG x, LONG y, LONG cx, LONG cy, ULONG *hue, ULONG *sat);
+#else
+BOOL CalcWheelColor(LONG x, LONG y, double cx, double cy, ULONG *hue, ULONG *sat);
+#endif
 VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *box,
 		 struct ColorWheelBase_intern *ColorWheelBase);
 VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
@@ -110,7 +141,6 @@ void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct ColorWheelBase_intern *ColorWheelBase);
 void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
 void freePens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
-
 
 /***************************************************************************************************/
 
@@ -125,22 +155,25 @@ typedef struct IntuitionBase IntuiBase;
 /***************************************************************************************************/
 
 #undef CWB
-#define CWB(b) 		((struct ColorWheelBase_intern *)b)
+#define CWB(b) 			((struct ColorWheelBase_intern *)b)
 #undef UtilityBase
-#define UtilityBase 	CWB(ColorWheelBase)->utilitybase
+#define UtilityBase 		CWB(ColorWheelBase)->utilitybase
 
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
-#define IntuitionBase	CWB(ColorWheelBase)->intuibase
+#define IntuitionBase		CWB(ColorWheelBase)->intuibase
 #endif
 
 #undef GfxBase
-#define GfxBase		CWB(ColorWheelBase)->gfxbase
+#define GfxBase			CWB(ColorWheelBase)->gfxbase
 
-#define CyberGfxBase    CWB(ColorWheelBase)->cybergfxbase
+#define CyberGfxBase    	CWB(ColorWheelBase)->cybergfxbase
 
 #undef SysBase
-#define SysBase		CWB(ColorWheelBase)->sysbase
+#define SysBase			CWB(ColorWheelBase)->sysbase
+
+#undef LayersBase
+#define LayersBase		CWB(ColorWheelBase)->layersbase
 
 #endif /* COLORWHEEL_INTERN_H */
