@@ -950,7 +950,7 @@ VOID	HIDD_BM_FillMemRect24 (OOP_Object *obj
 	, WORD maxX
 	, WORD maxY
 	, ULONG dstMod
-	, UWORD fill
+	, ULONG fill
 )
 {
     STATIC_MID;
