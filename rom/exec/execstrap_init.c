@@ -14,7 +14,7 @@
 
 #include "exec_extfuncs.h"
 
-#define DEBUG 0
+#define DEBUG 2
 #include <aros/debug.h>
 #undef kprintf
 
@@ -67,16 +67,11 @@ struct Resident resident =
 const char name[] = "exec.strap";
 const char version[] = "$VER: exec.strap 41.6 (27.02.97)";
 
-/*
-    Debug functions need SysBase as a global var. Not really legal, as we are
-    supposed to be ROM-code compatible.
-*/
-struct ExecBase *SysBase;
-
 int start(void)
 {
     ULONG x, y;
     UWORD *color00 = (void *)0xdff180;
+    struct ExecBase *SysBase;
     UWORD cpuflags;
 
     SysBase = *(void **)4;
