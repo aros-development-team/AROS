@@ -39,7 +39,30 @@ extern struct Library *MUIMasterBase;
 #define MYDEBUG 0
 #include "debug.h"
 
-extern struct Library *MUIMasterBase;
+
+struct MUI_TextData {
+    ULONG  mtd_Flags;
+    STRPTR contents;
+    STRPTR preparse;
+    TEXT   hichar;
+    ZText *ztext;
+    LONG xpos;
+    LONG ypos;
+    struct MUI_EventHandlerNode ehn;
+
+    LONG update; /* type of update 1 - everything, 2 - insert char, no scroll */
+    LONG update_arg1;
+    LONG update_arg2;
+};
+
+#define MTDF_SETMIN    (1<<0)
+#define MTDF_SETMAX    (1<<1)
+#define MTDF_SETVMAX   (1<<2)
+#define MTDF_HICHAR    (1<<3)
+#define MTDF_HICHARIDX (1<<4)
+#define MTDF_EDITABLE  (1<<5)
+#define MTDF_MULTILINE (1<<6)
+#define MTDF_ADVANCEONCR (1<<7)
 
 static const int __version = 1;
 static const int __revision = 1;
@@ -217,6 +240,16 @@ static ULONG Text_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     {
 	case	MUIA_Text_Contents:
 	case	MUIA_String_Contents:
+		if (data->mtd_Flags & MTDF_EDITABLE && data->ztext)
+		{
+		    /* Convert the ztext to plain chars */
+		    char *new_cont = zune_text_iso_string(data->ztext);
+		    if (new_cont)
+		    {
+		    	if (data->contents) FreeVec(data->contents);
+		    	data->contents = new_cont;
+		    }
+		}
 		STORE = (ULONG)data->contents;
 		return 1;
 

@@ -54,6 +54,7 @@ enum {
 };
 
 ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg);
+char *zune_text_iso_string(ZText *text);
 void zune_text_destroy (ZText *text);
 void zune_text_get_bounds (ZText *text, Object *obj);
 void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top);

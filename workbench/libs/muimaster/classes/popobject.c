@@ -121,13 +121,13 @@ AROS_UFH3(ULONG,Open_Function,
 
     if (data->strobj_hook)
     {
-	if (!(CallHookPkt(data->strobj_hook,obj,string)))
+	if (!(CallHookPkt(data->strobj_hook,data->object,string)))
 	    return 0;
     }
 
     if (data->window_hook)
     {
-	CallHookPkt(data->strobj_hook,obj,data->wnd);
+	CallHookPkt(data->strobj_hook,data->object,data->wnd);
     }
 
     SetAttrs(data->wnd,
@@ -157,7 +157,7 @@ AROS_UFH3(ULONG,Close_Function,
     {
 	set(data->wnd,MUIA_Window_Open,FALSE);
 	if (data->objstr_hook && suc)
-	    CallHookPkt(data->objstr_hook,obj,string);
+	    CallHookPkt(data->objstr_hook,data->object,string);
     }
     return 0;
 }
