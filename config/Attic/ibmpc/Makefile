@@ -21,8 +21,6 @@ MAKE	=	make
 IMAGE	=	$(TOPDIR)/bin/Image
 
 BUILD	=	$(TOPDIR)/boot/tools/build
-CPAK	=	$(TOP)/tools/cpak/cpak
-ARCHTOOL=	$(TOP)/tools/archtools/archtool
 BOOTSECT=	$(TOPDIR)/bin/bootsect
 SETUP	=	$(TOPDIR)/bin/setup
 KERNEL	=	$(TOPDIR)/bin/kernel
@@ -45,6 +43,8 @@ all:	$(IMAGE)
 	@echo
 	@$(BUILD) $(BOOTSECT) $(SETUP) $(KERNEL) >$(IMAGE)
 	@echo
+
+install :
 	@echo Writting Image on floppy...
 	@echo
 	@dd if=$(IMAGE) of=/dev/fd0
