@@ -13,6 +13,7 @@ STARTUP 	:= $(LIBDIR)/startup.o
 FILES		:= \
 	alib_util \
 	allocaslrequesttags \
+	allocdosobjecttags \
 	allocnamedobject \
 	allocspritedata \
 	argarraydone \
@@ -30,6 +31,7 @@ FILES		:= \
 	createextio \
 	creategadget \
 	createmenus \
+	createnewproctags \
 	createport \
 	createstdio \
 	createtask \
@@ -60,6 +62,7 @@ FILES		:= \
 	libdeletepool \
 	libfreepooled \
 	newlist \
+	newloadsegtags \
 	newobject \
 	obtainbestpen \
 	opencatalog \
@@ -72,6 +75,7 @@ FILES		:= \
 	setsuperattrs \
 	setwindowpointer \
 	sprintf \
+	systemtags \
 	timedelay \
 	videocontroltags
 
