@@ -125,22 +125,5 @@ $(LIBDIR)/startup.o : startup.c
 $(LIBDIR)/detach.o : detach.c
 	%compile_q
 	
-# Tests - these probably won't work at the moment.
-ifeq (1,0)
-#MM
-check : $(EXEDIR)/betest $(EXEDIR)/wstest $(EXEDIR)/rstest
-
-TEST_ILDFLAGS := -DTEST $(ILDFLAGS)
-
-$(EXEDIR)/rstest : readstruct.c $(LIBDIR)/startup.o $(DEPLIBS)
-	%link_q opt=$(TEST_ILDFLAGS)
-
-$(EXEDIR)/wstest : writestruct.c $(LIBDIR)/startup.o $(DEPLIBS)
-	%link_q opt=$(TEST_ILDFLAGS)
-
-$(EXEDIR)/betest : betest.c $(LIBDIR)/startup.o $(DEPLIBS)
-	%link_q opt=$(TEST_ILDFLAGS)
-endif
-
 %common
 %include_deps
