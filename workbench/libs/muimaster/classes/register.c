@@ -36,9 +36,6 @@ extern struct Library *MUIMasterBase;
 #define REGISTER_FRAMEX 4
 #define REGISTER_FRAMEY 4
 
-#define MAX(a,b) (((a) > (b)) ? (a) : (b))
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
-
 struct RegisterTabItem
 {
     STRPTR  text;    /* strlen(text) - valide between new/delete */
