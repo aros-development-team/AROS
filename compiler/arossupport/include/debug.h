@@ -153,4 +153,6 @@
 #define aros_print_not_implemented(name) \
 	kprintf("The function %s is not implemented.\n", name);
 
+#define ALIVE kprintf("%s - %s line %d\n",__FILE__,__FUNCTION__,__LINE__);
+
 #endif /* AROS_DEBUG_H */
