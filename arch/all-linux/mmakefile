@@ -4,8 +4,9 @@
 AROS-linux :
 	@$(NOP)
 
-#MM kernel : kernel-exec kernel-aros kernel-dos kernel-graphics kernel-intuition kernel-utility
-kernel :
+#MM kernel-linux : kernel-exec kernel-aros kernel-dos kernel-graphics kernel-intuition
+#MM kernel-linux : kernel-utility kernel-mathffp kernel-mathieeesingbas
+kernel-linux :
 	@$(NOP)
 
 #MM apps-linux : Moria3D games
@@ -60,6 +61,6 @@ setup-clib-linux :
 clib-linux :
 	@$(NOP)
 
-#MM includes : includes-copy includes-linux-$(CPU)
-includes:
+#MM includes-linux : includes-copy includes-linux-$(CPU)
+includes-linux :
 	@$(NOP)
