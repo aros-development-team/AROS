@@ -68,10 +68,13 @@
 	intiff->iff_BufferStartDepth = 0;
 
 	/* Initialize the context-stack list */
-	NewList( (struct List*)&(intiff->iff_CNStack) );
+	NewList ((struct List*)&(intiff->iff_CNStack));
 
 
 	/* Initialize the default context node */
+	NewList ((struct List*)&(intiff->iff_DefaultCN.cn_LCIList));
+
+	/* And add it to the stack */
 	AddHead
 	(
 	    (struct List*)&(intiff->iff_CNStack),
