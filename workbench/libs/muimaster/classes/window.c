@@ -153,6 +153,18 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     if (!(flags & WFLG_SIZEBRIGHT))
         flags |= WFLG_SIZEBBOTTOM;
 
+    /* The following calculations are not very correct, the size and dragbar
+    ** are ignored also the current overscan view */
+    if (data->wd_X == MUIV_Window_LeftEdge_Centered)
+    {
+    	data->wd_X = (data->wd_RenderInfo.mri_Screen->Width - data->wd_Width)/2;
+    }
+
+    if (data->wd_Y == MUIV_Window_TopEdge_Centered)
+    {
+    	data->wd_Y = (data->wd_RenderInfo.mri_Screen->Height - data->wd_Height)/2;
+    }
+
     win = OpenWindowTags(NULL,
         WA_Left,         (IPTR)data->wd_X,
         WA_Top,          (IPTR)data->wd_Y,
@@ -440,6 +452,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 	case	IDCMP_CLOSEWINDOW:
 		set(oWin, MUIA_Window_CloseRequest, TRUE);
+		nnset(oWin, MUIA_Window_CloseRequest, FALSE); /* I'm not sure here but zune keeps track of old values inside notifyclass */
 		break;
     }
 
@@ -684,7 +697,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	case	MUIKEY_GADGET_NEXT:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);break;
 	case	MUIKEY_GADGET_PREV:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);break;
 	case	MUIKEY_GADGET_OFF:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);break;
-	case	MUIKEY_WINDOW_CLOSE:set(win, MUIA_Window_CloseRequest, TRUE);break;
+	case	MUIKEY_WINDOW_CLOSE:set(win, MUIA_Window_CloseRequest, TRUE);nnset(win, MUIA_Window_CloseRequest, FALSE);break;
 	case	MUIKEY_WINDOW_NEXT:break;
 	case	MUIKEY_WINDOW_PREV:break;
 	case	MUIKEY_HELP:break;
@@ -909,6 +922,8 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 /* default to min size */
     data->wd_AltDim.Width = MUIV_Window_AltWidth_MinMax(0);
     data->wd_AltDim.Height = MUIV_Window_AltHeight_MinMax(0);
+    data->wd_X = MUIV_Window_LeftEdge_Centered;
+    data->wd_Y = MUIV_Window_TopEdge_Centered;
 
     /* parse initial taglist */
 
@@ -1021,7 +1036,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		window_set_active_object(data, obj, tag->ti_Data);
 		break;
 	    case MUIA_Window_CloseRequest:
-		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, MUIWF_CLOSEREQUESTED);
+		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_CLOSEREQUESTED);
 		break;
 	    case MUIA_Window_DefaultObject:
 		data->wd_DefaultObject = (APTR)tag->ti_Data;
@@ -1222,6 +1237,8 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     window_minmax(data);
     window_select_dimensions(data);
 
+    
+
     data->wd_UserPort = muiGlobalInfo(obj)->mgi_UserPort;
 
     /* open window here ... */
@@ -1247,21 +1264,18 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 static ULONG window_Close(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-/*      int i; */
 
-/* remove from window */
-/*  g_print("HIDE\n"); */
+    /* remove from window */
     DoMethod(data->wd_RootObject, MUIM_Hide);
-/*      for (i = 0; i < MUII_Count; i++) */
-/*  	zune_imspec_hide(__zprefs.images[i]); */
+/*    for (i = 0; i < MUII_Count; i++) */
+/*        zune_imspec_hide(__zprefs.images[i]); */
     HideRenderInfo(&data->wd_RenderInfo);
 
-/* close here ... */
+    /* close here ... */
     UndisplayWindow(data);
     data->wd_Flags &= ~MUIWF_OPENED;
 
-/*  g_print("CLEANUP\n"); */
-/* free display dependant data */
+    /* free display dependant data */
     DoMethod(data->wd_RootObject, MUIM_Cleanup);
     DoMethod(obj, MUIM_Window_Cleanup);
 

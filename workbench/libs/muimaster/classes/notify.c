@@ -212,7 +212,7 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag, BOOL no
 		destobj = obj;
 		break;
 	    case MUIV_Notify_Window:
-//		destobj = _win(obj);
+		destobj = _win(obj);
 		break;
 	    default:
 		destobj = nnode->nn_DestObj;
