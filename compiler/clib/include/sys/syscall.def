@@ -112,4 +112,5 @@ SYSTEM_CALL (chmod)
 SYSTEM_CALL (localtime)
 SYSTEM_CALL (time)
 SYSTEM_CALL (gmtime)
-
+SYSTEM_CALL (perror)
+SYSTEM_CALL (ctime)
