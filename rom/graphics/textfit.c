@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort   *, rp, A1),
-	AROS_LHA(STRPTR             , string, A0),
+	AROS_LHA(CONST_STRPTR       , string, A0),
 	AROS_LHA(ULONG              , strLen, D0),
 	AROS_LHA(struct TextExtent *, textExtent, A2),
 	AROS_LHA(struct TextExtent *, constrainingExtent, A3),
