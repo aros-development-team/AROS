@@ -16,6 +16,9 @@
 #include <hidd/pci.h>
 #include <hidd/graphics.h>
 
+#include <string.h>
+
+
 #include "nv.h"
 #include "riva_hw.h"
 
@@ -54,9 +57,9 @@ OOP_Class *nv_init_offbmclass(struct nv_staticdata *nsd);
 
 struct nvbase
 {
-    struct Library library;
+    struct Library   library;
     struct ExecBase *sysbase;
-    BPTR	seglist;
+    BPTR             seglist;
 };
 
 #include <libcore/libheader.c>
@@ -81,26 +84,16 @@ struct nvbase
 #define bb	( MAKE_RGB15(0x080808) )
 
 UWORD default_cursor[] = {
-    ii,WW,00,00,00,00,00,00,00,00,00
-,
-    bb,ii,WW,WW,00,00,00,00,00,00,00
-,
-    00,bb,ii,ii,WW,WW,00,00,00,00,00
-,
-    00,bb,ii,ii,ii,ii,WW,WW,00,00,00
-,
-    00,00,bb,ii,ii,ii,ii,ii,WW,WW,00
-,
-    00,00,bb,ii,ii,ii,ii,ii,ii,ii,00
-,
-    00,00,00,bb,ii,ii,ii,WW,00,00,00
-,
-    00,00,00,bb,ii,ii,bb,ii,WW,00,00
-,
-    00,00,00,00,bb,ii,00,bb,ii,WW,00
-,
-    00,00,00,00,bb,ii,00,00,bb,ii,WW
-,
+    ii,WW,00,00,00,00,00,00,00,00,00,
+    bb,ii,WW,WW,00,00,00,00,00,00,00,
+    00,bb,ii,ii,WW,WW,00,00,00,00,00,
+    00,bb,ii,ii,ii,ii,WW,WW,00,00,00,
+    00,00,bb,ii,ii,ii,ii,ii,WW,WW,00,
+    00,00,bb,ii,ii,ii,ii,ii,ii,ii,00,
+    00,00,00,bb,ii,ii,ii,WW,00,00,00,
+    00,00,00,bb,ii,ii,bb,ii,WW,00,00,
+    00,00,00,00,bb,ii,00,bb,ii,WW,00,
+    00,00,00,00,bb,ii,00,00,bb,ii,WW,
     00,00,00,00,00,00,00,00,00,bb,ii
 };
 
@@ -253,18 +246,18 @@ int findCard(struct nv_staticdata *nsd)
 
 	struct TagItem tags[] = {
 		{ tHidd_PCI_VendorID,	VENDOR_NVIDIA },
-		{ tHidd_PCI_Class,					3 },
-		{ tHidd_PCI_SubClass,				0 },
-		{ tHidd_PCI_Interface,				0 },
+		{ tHidd_PCI_Class,                  3 },
+		{ tHidd_PCI_SubClass,		    0 },
+		{ tHidd_PCI_Interface,		    0 },
 
 		{TAG_DONE,0}};
 
 	struct TagItem tags_sgs[] = {
 		{ tHidd_PCI_VendorID,	VENDOR_NVIDIA_SGS },
 		{ tHidd_PCI_DeviceID,	   DEVICE_RIVA128 },
-		{ tHidd_PCI_Class,						3 },
-		{ tHidd_PCI_SubClass,					0 },
-		{ tHidd_PCI_Interface,					0 },
+		{ tHidd_PCI_Class,			3 },
+		{ tHidd_PCI_SubClass,			0 },
+		{ tHidd_PCI_Interface,			0 },
 
 		{TAG_DONE,0}};
 
@@ -278,44 +271,44 @@ int findCard(struct nv_staticdata *nsd)
 	{
 		UWORD d = (*ptr)->DeviceID;
 		
-		if (is(d,TNT)				|| 
-			is(d,TNT2)				||
-			is(d,UTNT2)				||
-			is(d,VTNT2)				||
-			is(d,UVTNT2)			||
-			is(d,ITNT2)				||
-			is(d,GEFORCE_SDR)		||
-			is(d,GEFORCE_DDR)		||
-			is(d,QUADRO)			||
-			is(d,GEFORCE2_MX)		||
-			is(d,GEFORCE2_MX2)		||
-			is(d,QUADRO2_MXR)		||
-			is(d,GEFORCE2_GTS)		||
-			is(d,GEFORCE2_GTS2)		||
-			is(d,GEFORCE2_ULTRA)	||
-			is(d,QUADRO2_PRO)		||
-			is(d,GEFORCE4_MX460)	||
-			is(d,GEFORCE4_MX440)	||
-			is(d,GEFORCE4_MX420)	||
-			is(d,GEFORCE4_440GO)	||
-			is(d,GEFORCE4_420GO)	||
-			is(d,GEFORCE4_420GO32)	||
-			is(d,QUADRO4_500)		||
-			is(d,GEFORCE4_440GO64)	||
-			is(d,QUADRO4_200)		||
-			is(d,QUADRO4_550)		||
-			is(d,QUADRO4_500GOGL)	||
-			is(d,GEFORCE2_IGPU)		||
-			is(d,GEFORCE3)			||
-			is(d,GEFORCE3_200)		||
-			is(d,GEFORCE3_500)		||
-			is(d,QUADRO_DCC)		||
-			is(d,GEFORCE4_4600)		||
-			is(d,GEFORCE4_4400)		||
-			is(d,GEFORCE4_4200)		||
-			is(d,QUADRO4_900)		||
-			is(d,QUADRO4_750)		||
-			is(d,QUADRO4_700))
+		if (is (d, TNT)
+                 || is (d, TNT2)
+                 || is (d, UTNT2)
+                 || is (d, VTNT2)
+                 || is (d, UVTNT2)
+                 || is (d, ITNT2)
+                 || is (d, GEFORCE_SDR)
+                 || is (d, GEFORCE_DDR)
+                 || is (d, QUADRO)
+                 || is (d, GEFORCE2_MX)
+                 || is (d, GEFORCE2_MX2)
+                 || is (d, QUADRO2_MXR)
+                 || is (d, GEFORCE2_GTS)
+                 || is (d, GEFORCE2_GTS2)
+                 || is (d, GEFORCE2_ULTRA)
+                 || is (d, QUADRO2_PRO)
+                 || is (d, GEFORCE4_MX460)
+                 || is (d, GEFORCE4_MX440)
+                 || is (d, GEFORCE4_MX420)
+                 || is (d, GEFORCE4_440GO)
+                 || is (d, GEFORCE4_420GO)
+                 || is (d, GEFORCE4_420GO32)
+                 || is (d, QUADRO4_500)
+                 || is (d, GEFORCE4_440GO64)
+                 || is (d, QUADRO4_200)
+                 || is (d, QUADRO4_550)
+                 || is (d, QUADRO4_500GOGL)
+                 || is (d, GEFORCE2_IGPU)
+                 || is (d, GEFORCE3)
+                 || is (d, GEFORCE3_200)
+                 || is (d, GEFORCE3_500)
+                 || is (d, QUADRO_DCC)
+                 || is (d, GEFORCE4_4600)
+                 || is (d, GEFORCE4_4400)
+                 || is (d, GEFORCE4_4200)
+                 || is (d, QUADRO4_900)
+                 || is (d, QUADRO4_750)
+                 || is (d, QUADRO4_700))
 		{
 			D(bug("found in VENDOR_NVIDIA!\n"));
 			
@@ -377,14 +370,14 @@ int findCard(struct nv_staticdata *nsd)
 		
 		nsd->riva.Architecture = arch;
 		nsd->riva.EnableIRQ = 0;
-		nsd->riva.PRAMDAC = (unsigned *)(mmio + 0x00680000);
-		nsd->riva.PFB = (unsigned *)(mmio + 0x00100000);
-		nsd->riva.PFIFO = (unsigned *)(mmio + 0x00002000);
-		nsd->riva.PGRAPH = (unsigned *)(mmio + 0x00400000);
-		nsd->riva.PEXTDEV = (unsigned *)(mmio + 0x00101000);
-		nsd->riva.PTIMER = (unsigned *)(mmio + 0x00009000);
-		nsd->riva.PMC = (unsigned *)(mmio + 0x00000000);
-		nsd->riva.FIFO = (unsigned *)(mmio + 0x00800000);
+		nsd->riva.PRAMDAC   = (unsigned *)(mmio + 0x00680000);
+		nsd->riva.PFB       = (unsigned *)(mmio + 0x00100000);
+		nsd->riva.PFIFO     = (unsigned *)(mmio + 0x00002000);
+		nsd->riva.PGRAPH    = (unsigned *)(mmio + 0x00400000);
+		nsd->riva.PEXTDEV   = (unsigned *)(mmio + 0x00101000);
+		nsd->riva.PTIMER    = (unsigned *)(mmio + 0x00009000);
+		nsd->riva.PMC       = (unsigned *)(mmio + 0x00000000);
+		nsd->riva.FIFO      = (unsigned *)(mmio + 0x00800000);
 
 		nsd->riva.PCIO = (U008 *)(mmio + 0x00601000);
 		nsd->riva.PDIO = (U008 *)(mmio + 0x00681000);
