@@ -40,38 +40,39 @@ FILES	  := cliprectfunctions \
 	basicfuncs 
 	
 FUNCTIONS := \
-	beginupdate			\
-	behindlayer			\
-	createbehindhooklayer		\
-	createbehindlayer		\
-	createupfronthooklayer		\
-	createupfrontlayer		\
-	deletelayer			\
-	disposelayerinfo		\
-	dohookcliprects                 \
-	endupdate			\
-	fattenlayerinfo			\
-	initlayers			\
-	installclipregion		\
-	installlayerhook		\
-	installlayerinfohook		\
-	locklayer			\
-	locklayerinfo			\
-	locklayers			\
-	movelayer			\
-	movelayerinfrontof		\
-	movesizelayer			\
-	newlayerinfo			\
-	scrolllayer			\
-        sizelayer			\
-	swapbitsrastportcliprect        \
-	thinlayerinfo			\
-	unlocklayer			\
-	unlocklayerinfo 		\
-	unlocklayers			\
-	upfrontlayer			\
+	beginupdate \
+	behindlayer \
+	createbehindhooklayer \
+	createbehindlayer \
+	createupfronthooklayer \
+	createupfrontlayer \
+	deletelayer \
+	disposelayerinfo \
+	dohookcliprects \
+	endupdate \
+	fattenlayerinfo \
+	initlayers \
+	installclipregion \
+	installlayerhook \
+	installlayerinfohook \
+	locklayer \
+	locklayerinfo \
+	locklayers \
+	movelayer \
+	movelayerinfrontof \
+	movesizelayer \
+	newlayerinfo \
+	scrolllayer \
+	sizelayer \
+	sortlayercr \
+	swapbitsrastportcliprect \
+	thinlayerinfo \
+	unlocklayer \
+	unlocklayerinfo \
+	unlocklayers \
+	upfrontlayer \
 	whichlayer
-
+	
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
 #	the linking process. You should not include the paths in this
