@@ -29,6 +29,7 @@
 
 #include "bitmap.h"
 
+#include "assert.h"
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
 #if 0
@@ -101,7 +102,7 @@ static OOP_Object *offbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	}
 	
 
-	assert (width != 0 && height != 0 && depth != 0);
+//	assert (width != 0 && height != 0 && depth != 0);
 	
 	/* 
 	   We must only create depths that are supported by the friend drawable
