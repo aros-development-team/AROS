@@ -223,7 +223,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
        destination is really a directory. We can use the same routine
        for both cases! */
     
-    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN,
+    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath),
 				       MEMF_ANY | MEMF_CLEAR);
     
     if(ap == NULL)
@@ -238,28 +238,32 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
     
     fileStart = pathName + strlen(pathName);
     
-    /* Notify the Match functions that we have a buffer */
-    ap->ap_Strlen = MAX_PATH_LEN;
-
     for(i = 0; from[i] != NULL; i++)
     {
 	for(match = MatchFirst(from[i], ap); match == 0; match = MatchNext(ap))
 	{
+	    BOOL ok;
+	    BPTR olddir;
+	    
 	    /* Check for identical 'from' and 'to'? */
 		
 	    if(destIsDir)
 	    {
 		/* Clear former filename */
 		*fileStart = 0;
-		AddPart(pathName, FilePart(ap->ap_Buf), MAX_PATH_LEN);
+		AddPart(pathName, ap->ap_Info.fib_FileName, MAX_PATH_LEN);
 	    }
 	    
 	    if(!quiet)
 	    {
-		printf("Renaming %s as %s\n", ap->ap_Buf, pathName);
+		printf("Renaming %s as %s\n", ap->ap_Info.fib_FileName, pathName);
 	    }
 	    
-	    if(!Rename(ap->ap_Buf, pathName))
+	    olddir = CurrentDir(ap->ap_Current->an_Lock);	    
+	    ok = Rename(ap->ap_Info.fib_FileName, pathName);
+	    CurrentDir(olddir);
+	    
+	    if(!ok)
 	    {
 		MatchEnd(ap);
 		PrintFault(IoErr(), "Rename");
