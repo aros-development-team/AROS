@@ -11,11 +11,15 @@
  *           210399  SDuvan  Removed special support for PRIMARY_CLIP unit.
  */
 
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE 1
 #include "clipboard_intern.h"
 #include <exec/resident.h>
 #include <devices/clipboard.h>
+#include <devices/newstyle.h>
 #include <exec/io.h>
+#include <exec/initializers.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
@@ -35,19 +39,23 @@
 #include  "clipboard_gcc.h"
 #endif
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
-#define ioClip(x)  ((struct IOClipReq *)x)
-#define min(x,y)   (((x) < (y)) ? (x) : (y))
+#define NEWSTYLE_DEVICE 1
 
-#define CBUn    (((struct ClipboardUnit *)ioreq->io_Unit))
+#define ioClip(x)  	((struct IOClipReq *)x)
+#define min(x,y)   	(((x) < (y)) ? (x) : (y))
 
-/*****************************************************************************************/
+#define CBUn    	(((struct ClipboardUnit *)ioreq->io_Unit))
+
+/****************************************************************************************/
 
 static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
 static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
 static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
 static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
+
+/****************************************************************************************/
 
 static const char name[];
 static const char version[];
@@ -65,7 +73,7 @@ LONG  AROS_SLIB_ENTRY(abortio, Clipboard)();
 
 static const char end;
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 int AROS_SLIB_ENTRY(entry, Clipboard)(void)
 {
@@ -110,7 +118,26 @@ static void *const functable[] =
     (void *)-1
 };
 
-/*****************************************************************************************/
+/****************************************************************************************/
+
+#if NEWSTYLE_DEVICE
+
+static const UWORD SupportedCommands[] =
+{
+    CMD_READ,
+    CMD_WRITE,
+    CMD_UPDATE,
+    CBD_CHANGEHOOK,
+    CBD_POST,
+    CBD_CURRENTREADID,
+    CBD_CURRENTWRITEID,    
+    NSCMD_DEVICEQUERY,
+    0
+};
+
+#endif
+
+/****************************************************************************************/
 
 AROS_LH2(struct ClipboardBase *,  init,
  AROS_LHA(struct ClipboardBase *, CBBase, D0),
@@ -131,7 +158,7 @@ AROS_LH2(struct ClipboardBase *,  init,
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 /* Putchar procedure needed by RawDoFmt() */
 
@@ -144,7 +171,7 @@ AROS_UFH2(void, putchr,
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 void cb_sprintf(struct ClipboardBase *CBBase, UBYTE *buffer,
 		UBYTE *format, ...)
@@ -152,7 +179,7 @@ void cb_sprintf(struct ClipboardBase *CBBase, UBYTE *buffer,
     RawDoFmt(format, &format+1, (VOID_FUNC)putchr, &buffer);
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 AROS_LH3(void, open,
  AROS_LHA(struct IORequest *, ioreq, A1),
@@ -175,6 +202,13 @@ AROS_LH3(void, open,
     if(unitnum > 255)
     {
 	ioClip(ioreq)->io_Error = IOERR_OPENFAIL;
+	return;
+    }
+
+    if (ioreq->io_Message.mn_Length < sizeof(struct IOClipReq))
+    {
+        D(bug("clipboard.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+        ioreq->io_Error = IOERR_OPENFAIL;
 	return;
     }
 
@@ -366,7 +400,7 @@ AROS_LH3(void, open,
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IORequest *,     ioreq,  A1),
@@ -395,7 +429,7 @@ AROS_LH1(BPTR, close,
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct ClipboardBase *, CBBase, 3, Clipboard)
 {
@@ -430,7 +464,7 @@ AROS_LH0(BPTR, expunge, struct ClipboardBase *, CBBase, 3, Clipboard)
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 AROS_LH0I(int, null, struct ClipboardBase *, KBBase, 4, Clipboard)
 {
@@ -439,7 +473,7 @@ AROS_LH0I(int, null, struct ClipboardBase *, KBBase, 4, Clipboard)
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 AROS_LH1(void, beginio,
 	 AROS_LHA(struct IORequest *, ioreq, A1),
@@ -451,128 +485,152 @@ AROS_LH1(void, beginio,
 
     switch (ioreq->io_Command)
     {
-    case CBD_CHANGEHOOK:
-
-	D(bug("clipboard.device/Command: CBD_CHANGEHOOK\n"));
-
-	ObtainSemaphore(&CBBase->cb_SignalSemaphore);
-
-	/* io_Length is used as a means of specifying if the hook
-	   should be added or removed. */
-	switch(ioClip(ioreq)->io_Length)
-	{
-	case 0:
-	    Remove((struct Node *)(ioClip(ioreq)->io_Data));
-	    break;
-
-	case 1:
-	    Insert((struct List *)&CBBase->cb_HookList,
-		   (struct Node *)ioClip(ioreq)->io_Data, NULL);
-	    break;
-
-	default:
-	    ioreq->io_Error = IOERR_BADLENGTH;
-	    break;
-	}
-	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-	break;
-
-
-    case CMD_WRITE:
-
-	D(bug("clipboard.device/Command: CMD_WRITE\n"));
-
-	writeCb(ioreq, CBBase);
-	break;
-
-    case CMD_READ:
-
-	D(bug("clipboard.device/Command: CMD_READ\n"));
-
-	/* Get new ID if this is the beginning of a read operation */
-	if(ioClip(ioreq)->io_ClipID == 0)
-	{
-	    D(bug("clipboard.device/CMD_READ: Trying to get unit lock. Calling ObtainSemaphore.\n"));
-
-	    ObtainSemaphore(&CBUn->cu_UnitLock);
-	    CBUn->cu_ReadID++;
-	    ioClip(ioreq)->io_ClipID = CBUn->cu_ReadID;
-
-	    D(bug("clipboard.device/CMD_READ: Got unit lock.\n"));
-
-	    CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_OLDFILE);
-	}
-
-	/* If the last write was actually a POST, we must tell the POSTer to
-	   WRITE the clip immediately, and we will wait until he have done
-	   so.*/
-
-	if(CBUn->cu_WriteID == CBUn->cu_PostID)
-	{
-	    struct Task *me = FindTask(NULL);
-
-	    /* If it's the poster reading, we would get a deadlock... The
-	       poster should not read if the posted clip may be the active
-	       one. That is, he should always check if the posted clip is
-	       active using CMD_CURRENTREADID. */
-
-	    if(CBUn->cu_Poster == me)
+#if NEWSTYLE_DEVICE
+        case NSCMD_DEVICEQUERY:
+	    if(ioClip(ioreq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
 	    {
-		ReleaseSemaphore(&CBUn->cu_UnitLock);
-		ioreq->io_Error = IOERR_ABORTED;
+		ioreq->io_Error = IOERR_BADLENGTH;
+	    }
+	    else
+	    {
+	        struct NSDeviceQueryResult *d;
+
+    		d = (struct NSDeviceQueryResult *)ioClip(ioreq)->io_Data;
+		
+		d->DevQueryFormat 	 = 0;
+		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
+		d->DeviceType 	 	 = NSDEVTYPE_CLIPBOARD;
+		d->DeviceSubType 	 = 0;
+		d->SupportedCommands 	 = (UWORD *)SupportedCommands;
+
+		ioClip(ioreq)->io_Actual = sizeof(struct NSDeviceQueryResult);
+	    }
+	    break;
+#endif
+
+	case CBD_CHANGEHOOK:
+
+	    D(bug("clipboard.device/Command: CBD_CHANGEHOOK\n"));
+
+	    ObtainSemaphore(&CBBase->cb_SignalSemaphore);
+
+	    /* io_Length is used as a means of specifying if the hook
+	       should be added or removed. */
+	    switch(ioClip(ioreq)->io_Length)
+	    {
+	    case 0:
+		Remove((struct Node *)(ioClip(ioreq)->io_Data));
+		break;
+
+	    case 1:
+		Insert((struct List *)&CBBase->cb_HookList,
+		       (struct Node *)ioClip(ioreq)->io_Data, NULL);
+		break;
+
+	    default:
+		ioreq->io_Error = IOERR_BADLENGTH;
 		break;
 	    }
+	    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
+	    break;
 
 
-	    /* Make sure WE are signalled. */
-	    CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort->mp_SigTask = me;
+	case CMD_WRITE:
 
-	    PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
-	    WaitPort(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort);
-	}
+	    D(bug("clipboard.device/Command: CMD_WRITE\n"));
 
-	readCb(ioreq, CBBase);
+	    writeCb(ioreq, CBBase);
+	    break;
 
-	break;
+	case CMD_READ:
+
+	    D(bug("clipboard.device/Command: CMD_READ\n"));
+
+	    /* Get new ID if this is the beginning of a read operation */
+	    if(ioClip(ioreq)->io_ClipID == 0)
+	    {
+		D(bug("clipboard.device/CMD_READ: Trying to get unit lock. Calling ObtainSemaphore.\n"));
+
+		ObtainSemaphore(&CBUn->cu_UnitLock);
+		CBUn->cu_ReadID++;
+		ioClip(ioreq)->io_ClipID = CBUn->cu_ReadID;
+
+		D(bug("clipboard.device/CMD_READ: Got unit lock.\n"));
+
+		CBUn->cu_clipFile = Open(CBUn->cu_clipFilename, MODE_OLDFILE);
+	    }
+
+	    /* If the last write was actually a POST, we must tell the POSTer to
+	       WRITE the clip immediately, and we will wait until he have done
+	       so.*/
+
+	    if(CBUn->cu_WriteID == CBUn->cu_PostID)
+	    {
+		struct Task *me = FindTask(NULL);
+
+		/* If it's the poster reading, we would get a deadlock... The
+		   poster should not read if the posted clip may be the active
+		   one. That is, he should always check if the posted clip is
+		   active using CMD_CURRENTREADID. */
+
+		if(CBUn->cu_Poster == me)
+		{
+		    ReleaseSemaphore(&CBUn->cu_UnitLock);
+		    ioreq->io_Error = IOERR_ABORTED;
+		    break;
+		}
 
 
-    case CMD_UPDATE:
-	D(bug("clipboard.device/Command: CMD_UPDATE\n"));
+		/* Make sure WE are signalled. */
+		CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort->mp_SigTask = me;
 
-        updateCb(ioreq, CBBase);
-	break;
+		PutMsg(CBUn->cu_PostPort, (struct Message *)&CBUn->cu_Satisfy);
+		WaitPort(CBUn->cu_Satisfy.sm_Msg.mn_ReplyPort);
+	    }
 
+	    readCb(ioreq, CBBase);
 
-    case CBD_POST:
-	D(bug("clipboard.device/Command: CBD_POST\n"));
-	ObtainSemaphore(&CBUn->cu_UnitLock);
-
-	CBUn->cu_WriteID++;
-	CBUn->cu_PostID = CBUn->cu_WriteID;
-	CBUn->cu_PostPort = (struct MsgPort *)ioClip(ioreq)->io_Data;
-	CBUn->cu_Poster = FindTask(NULL);
-	
-	ReleaseSemaphore(&CBUn->cu_UnitLock);
-	break;
+	    break;
 
 
-    case CBD_CURRENTREADID:
-	D(bug("clipboard.device/Command: CBD_CURRENTREADID\n"));
-	ioClip(ioreq)->io_ClipID = CBUn->cu_PostID;
-	break;
+	case CMD_UPDATE:
+	    D(bug("clipboard.device/Command: CMD_UPDATE\n"));
+
+            updateCb(ioreq, CBBase);
+	    break;
 
 
-    case CBD_CURRENTWRITEID:
-	D(bug("clipboard.device/Command: CBD_CURRENTWRITEID\n"));
-	ioClip(ioreq)->io_ClipID = CBUn->cu_WriteID;
-	break;
+	case CBD_POST:
+	    D(bug("clipboard.device/Command: CBD_POST\n"));
+	    ObtainSemaphore(&CBUn->cu_UnitLock);
+
+	    CBUn->cu_WriteID++;
+	    CBUn->cu_PostID = CBUn->cu_WriteID;
+	    CBUn->cu_PostPort = (struct MsgPort *)ioClip(ioreq)->io_Data;
+	    CBUn->cu_Poster = FindTask(NULL);
+
+	    ReleaseSemaphore(&CBUn->cu_UnitLock);
+	    break;
 
 
-    default:
-	D(bug("clipboard.device/Command: <UNKNOWN> (%d = 0x%x)\n", ioreq->io_Command));
-	ioreq->io_Error = IOERR_NOCMD;
-	break;
-    }
+	case CBD_CURRENTREADID:
+	    D(bug("clipboard.device/Command: CBD_CURRENTREADID\n"));
+	    ioClip(ioreq)->io_ClipID = CBUn->cu_PostID;
+	    break;
+
+
+	case CBD_CURRENTWRITEID:
+	    D(bug("clipboard.device/Command: CBD_CURRENTWRITEID\n"));
+	    ioClip(ioreq)->io_ClipID = CBUn->cu_WriteID;
+	    break;
+
+
+	default:
+	    D(bug("clipboard.device/Command: <UNKNOWN> (%d = 0x%x)\n", ioreq->io_Command));
+	    ioreq->io_Error = IOERR_NOCMD;
+	    break;
+	    
+    } /* switch (ioreq->io_Command) */
 
     /* If the quick bit is not set, send the message to the port */
     if(!(ioreq->io_Flags & IOF_QUICK))
@@ -581,7 +639,7 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *,      ioreq, A1),
@@ -595,7 +653,7 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
@@ -638,7 +696,7 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
@@ -703,7 +761,7 @@ static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     ioClip(ioreq)->io_Actual = ioClip(ioreq)->io_Length;
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 {
@@ -753,6 +811,8 @@ static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 
 }
 
-/*****************************************************************************************/
+/****************************************************************************************/
 
 static const char end = 0;
+
+/****************************************************************************************/

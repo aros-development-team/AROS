@@ -6,12 +6,16 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE 1
 
 #include <exec/resident.h>
 #include <exec/interrupts.h>
 #include <exec/semaphores.h>
+#include <exec/initializers.h>
 #include <devices/parallel.h>
+#include <devices/newstyle.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/input.h>
@@ -31,6 +35,12 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
+#define NEWSTYLE_DEVICE 1
+
+/****************************************************************************************/
+
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
@@ -47,12 +57,15 @@ LONG AROS_SLIB_ENTRY(abortio,Parallel)();
 
 static const char end;
 
+/****************************************************************************************/
 
 int AROS_SLIB_ENTRY(entry,Parallel)(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
 }
+
+/****************************************************************************************/
 
 const struct Resident Parallel_resident=
 {
@@ -95,6 +108,26 @@ struct ExecBase * SysBase;
 
 struct parallelbase * pubParallelBase;
 
+/****************************************************************************************/
+
+#if NEWSTYLE_DEVICE
+
+static const UWORD SupportedCommands[] =
+{
+    CMD_READ,
+    CMD_WRITE,
+    CMD_CLEAR,
+    CMD_RESET,
+    CMD_FLUSH,
+    PDCMD_QUERY,
+    PDCMD_SETPARAMS,
+    NSCMD_DEVICEQUERY,
+    0
+};
+
+#endif
+
+/****************************************************************************************/
 
 AROS_LH2(struct parallelbase *, init,
  AROS_LHA(struct parallelbase *, ParallelDevice, D0),
@@ -138,6 +171,7 @@ AROS_LH2(struct parallelbase *, init,
 }
 
 
+/****************************************************************************************/
 
 
 AROS_LH3(void, open,
@@ -151,6 +185,13 @@ AROS_LH3(void, open,
   struct ParallelUnit * PU = NULL;
 
   D(bug("parallel device: Open unit %d\n",unitnum));
+
+  if (ioreq->io_Message.mn_Length < sizeof(struct IOExtPar))
+  {
+      D(bug("parallel.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+      ioreq->io_Error = IOERR_OPENFAIL;
+      return;
+  }
 
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
@@ -248,6 +289,7 @@ AROS_LH3(void, open,
 }
 
 
+/****************************************************************************************/
 
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IORequest *, ioreq, A1),
@@ -289,6 +331,7 @@ AROS_LH1(BPTR, close,
   AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 
 AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
@@ -312,6 +355,7 @@ AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 
 AROS_LH0I(int, null, 
@@ -321,6 +365,8 @@ AROS_LH0I(int, null,
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 AROS_LH1(void, beginio,
@@ -344,6 +390,37 @@ AROS_LH1(void, beginio,
 
   switch (ioreq->IOPar.io_Command)
   {
+#if NEWSTYLE_DEVICE
+  case NSCMD_DEVICEQUERY:
+    if(ioreq->IOPar.io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+    {
+      ioreq->IOPar.io_Error = IOERR_BADLENGTH;
+    }
+    else
+    {
+      struct NSDeviceQueryResult *d;
+
+      d = (struct NSDeviceQueryResult *)ioreq->IOPar.io_Data;
+
+      d->DevQueryFormat 	= 0;
+      d->SizeAvailable 	 	= sizeof(struct NSDeviceQueryResult);
+      d->DeviceType 	 	= NSDEVTYPE_PARALLEL;
+      d->DeviceSubType 	 	= 0;
+      d->SupportedCommands 	= (UWORD *)SupportedCommands;
+
+      ioreq->IOPar.io_Actual = sizeof(struct NSDeviceQueryResult);
+      ioreq->IOPar.io_Error  = 0;
+
+      /*
+      ** The request could be completed immediately.
+      ** Check if I have to reply the message
+      */
+      if (0 == (ioreq->IOPar.io_Flags & IOF_QUICK))
+        ReplyMsg(&ioreq->IOPar.io_Message);
+    }
+    break;
+#endif
+ 
     /*******************************************************************/
     case CMD_READ:
       /*
@@ -586,7 +663,7 @@ AROS_LH1(void, beginio,
 
     default:
       /* unknown command */
-      ioreq->IOPar.io_Error = ParErr_InvParam;
+      ioreq->IOPar.io_Error = IOERR_NOCMD;
       
       /*
       ** The request could be completed immediately.
@@ -603,6 +680,8 @@ AROS_LH1(void, beginio,
 
   AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *, ioreq, A1),
@@ -638,4 +717,8 @@ AROS_LH1(LONG, abortio,
   AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 static const char end=0;
+
+/****************************************************************************************/

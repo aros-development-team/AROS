@@ -5,10 +5,36 @@
     Desc: BeginIO - Start up a timer.device request.
     Lang: english
 */
+
 #include "timer_intern.h"
+#include <devices/newstyle.h>
 #include <exec/errors.h>
+#include <exec/initializers.h>
 #include <proto/exec.h>
 #include <aros/debug.h>
+
+/****************************************************************************************/
+
+#define NEWSTYLE_DEVICE 1
+
+#define ioStd(x)  	((struct IOStdReq *)x)
+
+/****************************************************************************************/
+
+#if NEWSTYLE_DEVICE
+
+static const UWORD SupportedCommands[] =
+{
+    TR_GETSYSTIME,
+    TR_SETSYSTIME,
+    TR_ADDREQUEST,
+    NSCMD_DEVICEQUERY,
+    0
+};
+
+#endif
+
+/****************************************************************************************/
 
 static void addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
 
@@ -59,10 +85,41 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
     BOOL replyit = FALSE;
 
     timereq->tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    timereq->tr_node.io_Error = 0;
+    
     unitNum = (ULONG)timereq->tr_node.io_Unit;
 
     switch(timereq->tr_node.io_Command)
     {
+#if NEWSTYLE_DEVICE
+        case NSCMD_DEVICEQUERY:
+#warning In timer.device this is maybe a bit problematic, as the timerequest structure does not have io_Data and io_Length members
+
+	    if (timereq->tr_node.io_Message.mn_Length < sizeof(struct IOStdReq))
+	    {
+		timereq->tr_node.io_Error = IOERR_BADLENGTH;
+	    }
+	    else if(ioStd(timereq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+	    {
+		timereq->tr_node.io_Error = IOERR_BADLENGTH;
+	    }
+	    else
+	    {
+	        struct NSDeviceQueryResult *d;
+
+    		d = (struct NSDeviceQueryResult *)ioStd(timereq)->io_Data;
+		
+		d->DevQueryFormat 	 = 0;
+		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
+		d->DeviceType 	 	 = NSDEVTYPE_TIMER;
+		d->DeviceSubType 	 = 0;
+		d->SupportedCommands 	 = (UWORD *)SupportedCommands;
+
+		ioStd(timereq)->io_Actual = sizeof(struct NSDeviceQueryResult);
+	    }
+	    break;
+#endif
+
 	case TR_GETSYSTIME:
 	    GetSysTime(&timereq->tr_time);
 
@@ -142,6 +199,7 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
 	    replyit = TRUE;
 	    timereq->tr_node.io_Error = IOERR_NOCMD;
 	    break;
+	    
     } /* switch(command) */
 
     if(replyit)

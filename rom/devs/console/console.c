@@ -6,6 +6,8 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE 1
 
 #include <proto/exec.h>
@@ -15,8 +17,10 @@
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
+#include <exec/initializers.h>
 #include <devices/inputevent.h>
 #include <devices/conunit.h>
+#include <devices/newstyle.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <intuition/classusr.h>
@@ -35,6 +39,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
+#define NEWSTYLE_DEVICE 1
+
+/****************************************************************************************/
 
 static const char name[];
 static const char version[];
@@ -54,11 +63,15 @@ extern struct InputEvent * AROS_SLIB_ENTRY(CDInputHandler,Console) ();
 extern LONG AROS_SLIB_ENTRY(RawKeyConvert,Console) ();
 static const char end;
 
+/****************************************************************************************/
+
 int AROS_SLIB_ENTRY(entry,Console)(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
 }
+
+/****************************************************************************************/
 
 const struct Resident Console_resident=
 {
@@ -99,7 +112,21 @@ static void *const functable[]=
     (void *)-1
 };
 
-/* init */
+/****************************************************************************************/
+
+#if NEWSTYLE_DEVICE
+
+static const UWORD SupportedCommands[] =
+{
+    CMD_READ,
+    CMD_WRITE,
+    NSCMD_DEVICEQUERY,
+    0
+};
+
+#endif
+
+/****************************************************************************************/
 
 AROS_LH2(struct ConsoleBase *, init,
  AROS_LHA(struct ConsoleBase *, ConsoleDevice, D0),
@@ -123,7 +150,7 @@ AROS_LH2(struct ConsoleBase *, init,
     AROS_LIBFUNC_EXIT
 }
 
-/* open */
+/****************************************************************************************/
 
 AROS_LH3(void, open,
  AROS_LHA(struct IOStdReq *, ioreq, A1),
@@ -140,6 +167,12 @@ AROS_LH3(void, open,
     flags=0;
     
     EnterFunc(bug("OpenConsole()\n"));
+
+    if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
+    {
+        D(bug("console.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+        goto open_fail;
+    }
     
     if (!ConsoleDevice->gfxBase)
     {
@@ -307,7 +340,7 @@ open_fail:
     AROS_LIBFUNC_EXIT
 }
 
-/* close */
+/****************************************************************************************/
 
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IORequest *, ioreq, A1),
@@ -331,7 +364,7 @@ AROS_LH1(BPTR, close,
     AROS_LIBFUNC_EXIT
 }
 
-/* expunge */
+/****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
 {
@@ -343,12 +376,16 @@ AROS_LH0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0I(int, null, struct ConsoleBase *, ConsoleDevice, 4, Console)
 {
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOStdReq *, ioreq, A1),
@@ -366,6 +403,30 @@ AROS_LH1(void, beginio,
 
     switch (ioreq->io_Command)
     {
+#if NEWSTYLE_DEVICE
+        case NSCMD_DEVICEQUERY:
+	    if(ioreq->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+	    {
+		ioreq->io_Error = IOERR_BADLENGTH;
+	    }
+	    else
+	    {
+	        struct NSDeviceQueryResult *d;
+
+    		d = (struct NSDeviceQueryResult *)ioreq->io_Data;
+		
+		d->DevQueryFormat 	 = 0;
+		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
+		d->DeviceType 	 	 = NSDEVTYPE_CONSOLE;
+		d->DeviceSubType 	 = 0;
+		d->SupportedCommands 	 = (UWORD *)SupportedCommands;
+
+		ioreq->io_Actual = sizeof(struct NSDeviceQueryResult);
+	    }
+	    break;
+#endif
+	    
+
     	case CMD_WRITE: {
 	    ULONG towrite;
 
@@ -403,7 +464,8 @@ AROS_LH1(void, beginio,
 	default:
 	    error = IOERR_NOCMD;
 	    break;
-    }
+	    
+    } /* switch (ioreq->io_Command) */
 
     if (!done_quick)
     {
@@ -426,6 +488,8 @@ AROS_LH1(void, beginio,
     ReturnVoid("BeginIO");
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *, ioreq, A1),
@@ -465,4 +529,8 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 static const char end=0;
+
+/****************************************************************************************/

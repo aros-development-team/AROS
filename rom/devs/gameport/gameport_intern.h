@@ -9,61 +9,61 @@
 
 
 /* Must always be a multiple of 3 since one event consists of code, x and y */
-#define  GP_NUMELEMENTS (100 * 3)
-#define  GP_BUFFERSIZE  (sizeof (UWORD) * GP_NUMELEMENTS) 
 
-#define  GP_NUNITS        2	/* Number of units supported by
-				   gameport.device */
+#define  GP_NUMELEMENTS 	(100 * 3)
+#define  GP_BUFFERSIZE  	(sizeof (UWORD) * GP_NUMELEMENTS) 
 
-#define  GP_MAXUNIT 1                   /* Highest possible gameport unit */
+#define  GP_NUNITS        	2 /* Number of units supported by gameport.device */
+
+#define  GP_MAXUNIT 		1 /* Highest possible gameport unit */
 
 struct GameportBase
 {
-    struct Device      gp_device;
-    struct ExecBase   *gp_sysBase;
-    struct Library    *gp_LowLevelBase;
+    struct Device      		gp_device;
+    struct ExecBase   		*gp_sysBase;
+    struct Library    		*gp_LowLevelBase;
 
-    BPTR               gp_seglist;
+    BPTR               		gp_seglist;
     
-    struct MinList          gp_PendingQueue;  /* IOrequests (GPD_READEVENT)
-						 not done quick */
-    struct SignalSemaphore  gp_QueueLock;
-    struct SignalSemaphore  gp_Lock;
+    struct MinList          	gp_PendingQueue; 	/* IOrequests (GPD_READEVENT)
+						    	   not done quick */
+    struct SignalSemaphore  	gp_QueueLock;
+    struct SignalSemaphore  	gp_Lock;
 
-    struct Interrupt  gp_Interrupt;     /* Interrupt to invoke in case of
-					   keypress (or releases) and there
-					   are pending requests */
-    struct Interrupt  gp_VBlank;        /* Gameport VBlank server */
+    struct Interrupt  		gp_Interrupt;     	/* Interrupt to invoke in case of
+					   		   keypress (or releases) and there
+					   		   are pending requests */
+    struct Interrupt  		gp_VBlank;        	/* Gameport VBlank server */
 
-    UWORD  *gp_eventBuffer;
-    UWORD   gp_writePos;
+    UWORD  			*gp_eventBuffer;
+    UWORD   			gp_writePos;
 
-    ULONG   gp_nTicks;          /* Bookkeeping of frames */
+    ULONG   			gp_nTicks;          	/* Bookkeeping of frames */
     
-    Object	   *gp_Hidd;	/* Hidd object to use */
-    struct Library *gp_OOPBase;
+    Object	   		*gp_Hidd;		/* Hidd object to use */
+    struct Library 		*gp_OOPBase;
     
-    UBYTE   gp_cTypes[GP_NUNITS];
+    UBYTE   			gp_cTypes[GP_NUNITS];
 };
 
 
 typedef struct GPUnit
 {
-    UWORD  gpu_readPos;		/* Position in the key buffer */
-    UWORD  gpu_Qualifiers;      /* Known qualifiers at this moment */
+    UWORD  			gpu_readPos;		/* Position in the key buffer */
+    UWORD  			gpu_Qualifiers;      	/* Known qualifiers at this moment */
 
-    UWORD  gpu_unitNum;
-    UBYTE  gpu_flags;           /* For unit flags definitions, see below */
+    UWORD  			gpu_unitNum;
+    UBYTE  			gpu_flags;           	/* For unit flags definitions, see below */
 
-    UWORD  gpu_lastX;
-    UWORD  gpu_lastY;
+    UWORD  			gpu_lastX;
+    UWORD  			gpu_lastY;
 
-    struct GamePortTrigger gpu_trigger;
+    struct GamePortTrigger 	gpu_trigger;
 } GPUnit;
 
-#define GBUB_PENDING 0		/* Unit has pending request for gameport
-				   events */
-#define GBUF_PENDING 0x01
+#define GBUB_PENDING 		0			/* Unit has pending request for gameport
+				   			   events */
+#define GBUF_PENDING 		0x01
 
 
 #define expunge() \

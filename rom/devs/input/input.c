@@ -6,11 +6,15 @@
     Lang: english
 */
 
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE 1
 #include <exec/resident.h>
 #include <exec/interrupts.h>
+#include <exec/initializers.h>
 #include <devices/inputevent.h>
 #include <devices/input.h>
+#include <devices/newstyle.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/input.h>
@@ -23,6 +27,12 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
+
+/****************************************************************************************/
+
+#define NEWSTYLE_DEVICE 1
+
+/****************************************************************************************/
 
 static const char name[];
 static const char version[];
@@ -41,11 +51,15 @@ LONG AROS_SLIB_ENTRY(abortio,Input)();
 extern UWORD AROS_SLIB_ENTRY(PeekQualifier,Input) ();
 static const char end;
 
+/****************************************************************************************/
+
 int AROS_SLIB_ENTRY(entry,Input)(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
 }
+
+/****************************************************************************************/
 
 const struct Resident Input_resident=
 {
@@ -85,6 +99,24 @@ static void *const functable[]=
     (void *)-1
 };
 
+/****************************************************************************************/
+
+#if NEWSTYLE_DEVICE
+
+static const UWORD SupportedCommands[] =
+{
+    IND_ADDHANDLER,
+    IND_REMHANDLER,
+    IND_WRITEEVENT,
+    IND_SETTHRESH,
+    IND_SETPERIOD,
+    NSCMD_DEVICEQUERY,
+    0
+};
+
+#endif
+
+/****************************************************************************************/
 
 AROS_LH2(struct inputbase *, init,
  AROS_LHA(struct inputbase *, InputDevice, D0),
@@ -111,6 +143,8 @@ AROS_LH2(struct inputbase *, init,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH3(void, open,
  AROS_LHA(struct IORequest *, ioreq, A1),
  AROS_LHA(ULONG,              unitnum, D0),
@@ -123,6 +157,12 @@ AROS_LH3(void, open,
 
     D(bug("id: open()\n"));
 
+    if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
+    {
+        D(bug("input.device/open: IORequest structure passed to OpenDevice is too small\n"));
+        ioreq->io_Error = IOERR_OPENFAIL;
+	return;
+    }
 
     /* Keep compiler happy */
     unitnum=0;
@@ -205,6 +245,8 @@ AROS_LH3(void, open,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IORequest *, ioreq, A1),
 	   struct inputbase *, InputDevice, 2, Input)
@@ -217,6 +259,8 @@ AROS_LH1(BPTR, close,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
 {
     AROS_LIBFUNC_INIT
@@ -227,12 +271,16 @@ AROS_LH0(BPTR, expunge, struct inputbase *, InputDevice, 3, Input)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0I(int, null, struct inputbase *, InputDevice, 4, Input)
 {
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 AROS_LH1(void, beginio,
@@ -251,17 +299,40 @@ AROS_LH1(void, beginio,
 
     switch (ioreq->io_Command)
     {
-    case IND_ADDHANDLER:
-    case IND_REMHANDLER:
-    case IND_WRITEEVENT:
-    case IND_SETTHRESH:
-    case IND_SETPERIOD:
-        done_quick = FALSE;
-    	break;
-    
-    default:
-	error = IOERR_NOCMD;
-	break;
+#if NEWSTYLE_DEVICE
+        case NSCMD_DEVICEQUERY:
+	    if(ioStd(ioreq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+	    {
+		ioreq->io_Error = IOERR_BADLENGTH;
+	    }
+	    else
+	    {
+	        struct NSDeviceQueryResult *d;
+
+    		d = (struct NSDeviceQueryResult *)ioStd(ioreq)->io_Data;
+		
+		d->DevQueryFormat 	 = 0;
+		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
+		d->DeviceType 	 	 = NSDEVTYPE_INPUT;
+		d->DeviceSubType 	 = 0;
+		d->SupportedCommands 	 = (UWORD *)SupportedCommands;
+
+		ioStd(ioreq)->io_Actual   = sizeof(struct NSDeviceQueryResult);
+	    }
+	    break;
+#endif
+
+	case IND_ADDHANDLER:
+	case IND_REMHANDLER:
+	case IND_WRITEEVENT:
+	case IND_SETTHRESH:
+	case IND_SETPERIOD:
+            done_quick = FALSE;
+    	    break;
+
+	default:
+	    error = IOERR_NOCMD;
+	    break;
     }
     
     if (!done_quick)
@@ -287,6 +358,8 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *, ioreq, A1),
 	   struct inputbase *, InputDevice, 6, Input)
@@ -297,4 +370,8 @@ AROS_LH1(LONG, abortio,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 static const char end=0;
+
+/****************************************************************************************/

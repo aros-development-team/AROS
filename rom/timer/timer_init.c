@@ -4,6 +4,9 @@
 
     Desc: Timer startup and device commands
 */
+
+/****************************************************************************************/
+
 #define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
@@ -12,6 +15,7 @@
 #include <exec/devices.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
+#include <exec/initializers.h>
 #include <devices/timer.h>
 #include <hidd/timer.h>
 #include <exec/resident.h>
@@ -26,6 +30,8 @@
 
 #include "timer_intern.h"
 #include "libdefs.h"
+
+/****************************************************************************************/
 
 static const char name[];
 static const char version[];
@@ -49,10 +55,14 @@ extern void AROS_SLIB_ENTRY(CmpTime,Timer)();
 extern void AROS_SLIB_ENTRY(ReadEClock,Timer)();
 extern void AROS_SLIB_ENTRY(GetSysTime,Timer)();
 
+/****************************************************************************************/
+
 int timer_entry(void)
 {
     return -1;
 }
+
+/****************************************************************************************/
 
 const struct Resident Timer_resident =
 {
@@ -95,6 +105,8 @@ static const void * const functable[] =
     &AROS_SLIB_ENTRY(GetSysTime,Timer),
     (void *)-1
 };
+
+/****************************************************************************************/
 
 AROS_LH2(struct TimerBase *, init,
     AROS_LHA(struct TimerBase *, TimerBase, D0),
@@ -159,6 +171,8 @@ AROS_LH2(struct TimerBase *, init,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH3(void, open,
     AROS_LHA(struct timerequest *,  tr, A1),
     AROS_LHA(ULONG,		    unitNum, D0),
@@ -167,28 +181,37 @@ AROS_LH3(void, open,
 {
     AROS_LIBFUNC_INIT
 
+    if (tr->tr_node.io_Message.mn_Length < sizeof(struct timerequest))
+    {
+        D(bug("timer.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+        tr->tr_node.io_Error = IOERR_OPENFAIL;
+	return;
+    }
+
     TimerBase->tb_Device.dd_Library.lib_OpenCnt++;
     TimerBase->tb_Device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
     tr->tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
 
     switch(unitNum)
     {
-    case UNIT_VBLANK:
-    case UNIT_WAITUNTIL:
-	tr->tr_node.io_Error = 0;
-	tr->tr_node.io_Unit = (struct Unit *)unitNum;
-	tr->tr_node.io_Device = (struct Device *)TimerBase;
-	break;
+	case UNIT_VBLANK:
+	case UNIT_WAITUNTIL:
+	    tr->tr_node.io_Error = 0;
+	    tr->tr_node.io_Unit = (struct Unit *)unitNum;
+	    tr->tr_node.io_Device = (struct Device *)TimerBase;
+	    break;
 
-    case UNIT_MICROHZ:
-    case UNIT_ECLOCK:
-    case UNIT_WAITECLOCK:
-    default:
-	tr->tr_node.io_Error = IOERR_OPENFAIL;
+	case UNIT_MICROHZ:
+	case UNIT_ECLOCK:
+	case UNIT_WAITECLOCK:	
+	default:
+	    tr->tr_node.io_Error = IOERR_OPENFAIL;
     }
 
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH1(BPTR, close,
     AROS_LHA(struct timerequest *, tr, A1),
@@ -198,10 +221,13 @@ AROS_LH1(BPTR, close,
 
     tr->tr_node.io_Device = (struct Device *)-1;
     tr->tr_node.io_Unit = 0;
+    
     return 0;
 
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct TimerBase *, TimerBase, 3, Timer)
 {
@@ -210,9 +236,14 @@ AROS_LH0(BPTR, expunge, struct TimerBase *, TimerBase, 3, Timer)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 AROS_LH0(int, null, struct TimerBase *, TimerBase, 4, Timer)
 {
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/****************************************************************************************/
+
