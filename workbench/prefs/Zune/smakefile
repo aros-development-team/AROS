@@ -7,10 +7,13 @@
 
 CCFLAGS = gst=/libs/muimaster/all.gst code=far noversion IDIR=/libs/muimaster/include IDIR=/libs/muimaster
 
-OBJS=prefsio.o windowp.o zune.o zunestuff.o
+OBJS=buttonsp.o prefsio.o windowp.o zune.o zunestuff.o
 
 zune: $(OBJS) /libs/muimaster/muimaster.lib
   sc to zune link $(OBJS) /libs/muimaster/muimaster.lib lib:debug.lib
+
+buttonsp.o: buttonsp.c
+  sc $(CCFLAGS) buttonsp.c
 
 prefsio.o: prefsio.c
   sc $(CCFLAGS) prefsio.c
