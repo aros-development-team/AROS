@@ -31,31 +31,12 @@
 
 /*** POSIX includes **********************************************************/
 
+#warning FIXME: Get the right includes for the prototypes of the functions.
+
 #include <sys/types.h>
-#include <sys/socket.h>
+/*#include <sys/socket.h>
 #include <sys/time.h>
-
+*/
 /*****************************************************************************/
-
-struct SocketBase {
-    struct Library       library;
-    BPTR                 sb_SegList;
-
-    struct ExecBase     *sb_SysBase;
-    struct UtilityBase  *sb_UtilityBase;
-};
-
-/*****************************************************************************/
-
-#undef BSDSB
-#define BSDSB(b)    ((struct SocketBase *)b)
-
-#undef SysBase
-#define SysBase     (BSDSB(SocketBase)->sb_SysBase)
-
-#undef UtilityBase
-#define UtilityBase (BSDSB(SocketBase)->sb_UtilityBase)
-
-/****************************************************************************************/
 
 #endif /* BSDSOCKET_INTERN_H */
