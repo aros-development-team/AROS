@@ -1,7 +1,11 @@
 	.section entrycodes,"aw",@progbits
-	.dc.l  0xfff0                 // initial value for SSP
+
+	// For the following structur have a look at the POSE source
+	// code SrcShared/Palm/Platform/Core/System/IncsPrv/MemoryPrv.h
+
+	.dc.l  0xfffc                 // initial value for SSP
 	.dc.l  hardware_reset_init_1  // where the startup code is at.
-	.dc.l  0xfeedbeef
+	.dc.l  0xfeedbeef             // signature
 	.dc.w  0x01                   // hdrVersion
 	.dc.w  0x00                   // flags
 	.dc.b  'A','R','O','S',' ','f','o','r'
@@ -25,9 +29,9 @@
 
 
 	.section entrycodes_bigrom,"aw",@progbits
-	.dc.l  0xfff0                 // initial value for SSP
+	.dc.l  0xfffc                 // initial value for SSP
 	.dc.l  hardware_reset_init_1  // where the startup code is at.
-	.dc.l  0xfeedbeef
+	.dc.l  0xfeedbeef             // signature
 	.dc.w  0x01                   // hdrVersion
 	.dc.w  0x00                   // flags
 	.dc.b  'A','R','O','S',' ','f','o','r'
