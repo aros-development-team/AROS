@@ -66,15 +66,7 @@
         }
 	else
 	/* Else check if the rectangle contains the region */
-        if
-        (
-            !(
-                MinX(Reg) == OldBounds.MinX &&
-                MinY(Reg) == OldBounds.MinY &&
-                MaxX(Reg) == OldBounds.MaxX &&
-                MaxY(Reg) == OldBounds.MaxY
-            )
-        )
+        if (!_AreRectsEqual(Bounds(Reg), &OldBounds))
         {
 	    /* The region is not completely contained in the rectangle */
 
