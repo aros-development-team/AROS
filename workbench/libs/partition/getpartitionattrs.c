@@ -3,6 +3,7 @@
     $Id$
 
 */
+#include "partition_support.h"
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -12,6 +13,9 @@
 /*****************************************************************************
 
     NAME */
+#include <utility/tagitem.h>
+#include <libraries/partition.h>
+
    AROS_LH2(LONG, GetPartitionAttrs,
 
 /*  SYNOPSIS */

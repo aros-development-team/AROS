@@ -3,10 +3,14 @@
     $Id$
 
 */
+#include "partition_support.h"
 
 /*****************************************************************************
 
     NAME */
+#include <utility/tagitem.h>
+#include <libraries/partition.h>
+
    AROS_LH2(LONG, SetPartitionAttrs,
 
 /*  SYNOPSIS */

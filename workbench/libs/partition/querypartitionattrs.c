@@ -3,10 +3,13 @@
     $Id$
 
 */
+#include "partition_support.h"
 
 /*****************************************************************************
 
     NAME */
+#include <libraries/partition.h>
+
    AROS_LH1(ULONG *, QueryPartitionAttrs,
 
 /*  SYNOPSIS */

@@ -3,10 +3,17 @@
     $Id$
 
 */
+#include <proto/exec.h>
+#include <exec/memory.h>
+
+#include "partition_intern.h"
+#include "partition_support.h"
 
 /*****************************************************************************
 
     NAME */
+#include <libraries/partition.h>
+
    AROS_LH1(void, CloseRootPartition,
 
 /*  SYNOPSIS */

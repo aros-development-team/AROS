@@ -3,10 +3,15 @@
     $Id$
 
 */
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include "partition_support.h"
 
 /*****************************************************************************
 
     NAME */
+#include <libraries/partition.h>
+
    AROS_LH2(LONG, CreatePartitionTable,
 
 /*  SYNOPSIS */
