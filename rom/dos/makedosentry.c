@@ -61,7 +61,7 @@
 	s2=name;
 	while(*s2++)
 	    ;
-	s3=(STRPTR)AllocMem(s2-name+1,MEMF_PUBLIC);
+	s3=(STRPTR)AllocVec(s2-name+1,MEMF_PUBLIC);
 	if(s3!=NULL)
 	{
 	    /* Compatibility */
