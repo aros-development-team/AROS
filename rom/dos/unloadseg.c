@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <exec/types.h>
@@ -51,14 +52,31 @@ extern void Exec_FreeMem();
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
 
-  if (seglist)
-    return InternalUnLoadSeg(seglist, __AROS_GETVECADDR(SysBase, 35));
+    if (seglist)
+    {
+#if AROS_MODULES_DEBUG
+        extern struct MinList debug_seglist;
+        struct debug_segnode *segnode;
 
-  return FALSE;
+        ForeachNode(&debug_seglist, segnode)
+        {
+            if (segnode->seglist == seglist)
+            {
+                REMOVE(segnode);
+                FreeMem(segnode, sizeof(struct debug_segnode));
 
-  AROS_LIBFUNC_EXIT
+                break;
+            }
+        }
+#endif
+        return InternalUnLoadSeg(seglist, __AROS_GETVECADDR(SysBase, 35));
+    }
+
+    return FALSE;
+
+    AROS_LIBFUNC_EXIT
 } /* UnLoadSeg */
