@@ -13,7 +13,19 @@
 
 #include <proto/exec.h>
 
-#if defined(__linux__) && defined(__mc68000__)
+#include <aros/machine.h>
+
+#if (AROS_BIG_ENDIAN == 0)
+#define SWAP(x) ((((ULONG)x >> 24) & 0x000000ff) |\
+		 (((ULONG)x >> 8 ) & 0x0000ff00) |\
+		 (((ULONG)x << 8 ) & 0x00ff0000) |\
+		 (((ULONG)x << 24) & 0xff000000)    )
+#else
+#define SWAP(x) x
+#endif
+
+#if defined(__linux__) 
+//&& defined(__mc68000__)
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
@@ -128,6 +140,33 @@ int main(int argc, char **argv)
     struct ExecBase *SysBase;
     struct termios t;
     int psize = 0;
+    int i = 0, x;
+    BOOL mapSysBase = FALSE;
+
+    while (i < argc)
+    {
+      if (!strcmp(argv[i], "--memsize"))
+      {
+        i++;
+        x = 0;
+        memSize = 0;
+        while ((argv[i])[x] >= '0' && (argv[i])[x] <= '9')
+        {
+          memSize = memSize * 10 + (argv[i])[x] - '0';
+          x++;
+printf("%d\n",x);
+        }
+        i++;
+      }
+      else
+      if (!strcmp(argv[i], "--mapsysbase"))
+      {
+        mapSysBase = TRUE;
+        i++;
+      }
+      else
+        i++;
+    }
 
     /*
     First up, set up the memory.
@@ -137,32 +176,43 @@ int main(int argc, char **argv)
     to make that invalid to trap NULL dereference errors.
 
     */
+/*
 #if defined(__linux__) && defined(__mc68000__)
-    psize = getpagesize();
-    space = mmap((APTR)0, (memSize << 20), PROT_READ|PROT_WRITE,
-		 MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0);
-    if (space != (UBYTE *)-1)
+*/
+    if (TRUE == mapSysBase)
     {
+      psize = getpagesize();
+      space = mmap((APTR)0, (memSize << 20), PROT_READ|PROT_WRITE,
+  		   MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0);
+      if (space != (UBYTE *)-1)
+      {
 	int size = psize/sizeof(ULONG);
 	memory = (UBYTE *)((ULONG)space + psize);
 	while(--size)
 	    *((ULONG *)space)++ = 0xDEADBEEF;
-    }
-    else
-    {
+      }
+      else
+      {
 	perror("mmap");
 	exit(20);
+      }
     }
+    else
+/*
 #else
-    /* We allocate memSize megabytes */
-    memory = malloc((memSize << 20));
-    if( !memory )
+*/
     {
+      /* We allocate memSize megabytes */
+      memory = malloc((memSize << 20));
+      if( !memory )
+      {
 	 /*fprintf(stderr, "Cannot allocate any memory!\n");*/
 	 exit(20);
+      }
     }
+/*
 #endif
-
+*/
     /* Prepare the first mem header */
     mh = (struct MemHeader *)memory;
     mh->mh_Node.ln_Type = NT_MEMORY;
@@ -211,15 +261,21 @@ int main(int argc, char **argv)
     /* On Linux/m68k where we can run old Amiga binaries, we should
        put SysBase at location 4. On other systems, DON'T DO THIS.
     */
+/*
 #if defined(__linux__) && defined(__mc68000__)
-    *(APTR *)4 = SysBase;
-    if (mprotect((APTR)0, psize, PROT_READ))
+*/
+    if (TRUE == mapSysBase)
     {
+      *(APTR *)4 = SWAP(SysBase);
+      if (mprotect((APTR)0, psize, PROT_READ))
+      {
 	perror("mprotect");
 	exit(10);
+      }
     }
+/*
 #endif
-
+*/
     /* We might also be interested in using the BS key instead of the
        delete key, this will do that
     */
