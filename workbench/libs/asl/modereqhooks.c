@@ -34,6 +34,9 @@
 #include "layout.h"
 #include "coolimages.h"
 
+#define CATCOMP_NUMBERS
+#include "asl_strings.h"
+
 #define SDEBUG 0
 #define DEBUG 0
 
@@ -133,7 +136,8 @@ AROS_UFH3(VOID, SMTagHook,
 		break;
 		
 	    case ASLSM_UserData:
-		((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tidata;		break;
+		((struct ScreenModeRequester *)pta->pta_Req)->sm_UserData = (APTR)tidata;
+		break;
 
 	    case ASLSM_InitialAutoScroll:
 	        ismreq->ism_AutoScroll = tidata ? TRUE : FALSE;
@@ -271,7 +275,8 @@ AROS_UFH3(ULONG, SMGadgetryHook,
 struct ButtonInfo
 {
     WORD 			gadid;  
-    char 			*text;
+    STRPTR 			text;
+    LONG    	    	    	deftextid;
     const struct CoolImage 	*coolimage;
     Object 			**objvar;
 };
@@ -285,8 +290,8 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     STRPTR 		str[6];
     struct ButtonInfo 	bi[NUMBUTS] =
     {
-        { ID_BUTOK	, GetIR(ismreq)->ir_PositiveText , &cool_monitorimage, &udata->OKBut	 },
-	{ ID_BUTCANCEL  , GetIR(ismreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
+        { ID_BUTOK	, GetIR(ismreq)->ir_PositiveText , MSG_MODEREQ_POSITIVE_GAD, &cool_monitorimage, &udata->OKBut	 },
+	{ ID_BUTCANCEL  , GetIR(ismreq)->ir_NegativeText , MSG_MODEREQ_NEGATIVE_GAD, &cool_cancelimage , &udata->CancelBut  }
     };
     Object 		*gad;
     LONG		error;
@@ -306,6 +311,8 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     w = 0;
     for(i = 0; i < NUMBUTS; i++)
     {
+    	if(!bi[i].text) bi[i].text = GetString(bi[i].deftextid, GetIR(ismreq)->ir_Catalog, AslBase);
+	
         x = TextLength(&ld->ld_DummyRP, bi[i].text, strlen(bi[i].text));
 
 #if SREQ_COOL_BUTTONS
@@ -452,34 +459,23 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     }	 
     
     /* make labels */
-        
-    i = 0;
-    if (ismreq->ism_Flags & ISMF_DOOVERSCAN)   str[i++] = ismreq->ism_OverscanText;
-    if (ismreq->ism_Flags & ISMF_DOWIDTH)      str[i++] = ismreq->ism_WidthText;
-    if (ismreq->ism_Flags & ISMF_DOHEIGHT)     str[i++] = ismreq->ism_HeightText;
-    if (ismreq->ism_Flags & ISMF_DODEPTH)      str[i++] = ismreq->ism_ColorsText;
-    if (ismreq->ism_Flags & ISMF_DOAUTOSCROLL) str[i++] = ismreq->ism_AutoScrollText;
 
-    x = ld->ld_WBorLeft + OUTERSPACINGX;
-    y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
-    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
-
-    if (i)
+    if (ismreq->ism_Flags & (ISMF_DOOVERSCAN | ISMF_DOWIDTH | ISMF_DOHEIGHT | ISMF_DODEPTH | ISMF_DOAUTOSCROLL))
     {
         #define FSET(x) ((ismreq->ism_Flags & x) ? TRUE : FALSE)
 	
         struct LabelInfo
 	{
-	    BOOL doit;
-	    char *text;
+	    BOOL   doit;
+	    STRPTR text;
 	    Object **objvar;
 	} li [] =
 	{
-	    {FSET(ISMF_DOOVERSCAN)  , ismreq->ism_OverscanText  , &udata->OverscanLabel  },
-	    {FSET(ISMF_DOWIDTH)     , ismreq->ism_WidthText     , &udata->WidthLabel     },
-	    {FSET(ISMF_DOHEIGHT)    , ismreq->ism_HeightText    , &udata->HeightLabel    },
-	    {FSET(ISMF_DODEPTH)     , ismreq->ism_ColorsText    , &udata->DepthLabel     },
-	    {FSET(ISMF_DOAUTOSCROLL), ismreq->ism_AutoScrollText, &udata->AutoScrollLabel}
+	    {FSET(ISMF_DOOVERSCAN)  , (STRPTR)MSG_MODEREQ_OVERSCAN_LABEL  , &udata->OverscanLabel  },
+	    {FSET(ISMF_DOWIDTH)     , (STRPTR)MSG_MODEREQ_WIDTH_LABEL     , &udata->WidthLabel     },
+	    {FSET(ISMF_DOHEIGHT)    , (STRPTR)MSG_MODEREQ_HEIGHT_LABEL    , &udata->HeightLabel    },
+	    {FSET(ISMF_DODEPTH)     , (STRPTR)MSG_MODEREQ_COLORS_LABEL    , &udata->DepthLabel     },
+	    {FSET(ISMF_DOAUTOSCROLL), (STRPTR)MSG_MODEREQ_AUTOSCROLL_LABEL, &udata->AutoScrollLabel}
 	}; 
 
         #undef FSET
@@ -487,7 +483,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
         struct TagItem label_tags[] =
 	{
 	    {GA_Left		, 0			},
-	    {GA_RelBottom	, y			},
+	    {GA_RelBottom	, 0			},
 	    {GA_Width		, 0			},
 	    {GA_Height		, udata->ButHeight	},
 	    {GA_Text		, 0			},
@@ -496,9 +492,26 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_Disabled	, TRUE			},
 	    {TAG_DONE					}
 	};
+        WORD i2;
+	
+	for(i = 0, i2 = 0; i < 5; i++)
+	{
+	    if (li[i].doit)
+	    {
+	    	li[i].text = GetString((LONG)li[i].text, GetIR(ismreq)->ir_Catalog, AslBase);
+		str[i2++] = li[i].text;
+	    }
+	}
+	
+	x = ld->ld_WBorLeft + OUTERSPACINGX;
+	y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
+    	    (udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
 
-	w = labelwidth = BiggestTextLength(str, i, &(ld->ld_DummyRP), AslBase);
+
+	w = labelwidth = BiggestTextLength(str, i2, &(ld->ld_DummyRP), AslBase);
             
+	label_tags[1].ti_Data = y;
+	
 	for(i = 0; i < 5;i++)
 	{
 	    if (!li[i].doit) continue;
@@ -542,7 +555,21 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		{TAG_DONE						  }
 		
 	    };
-
+	    static LONG labelids[] =
+	    {
+		MSG_MODEREQ_OVERSCAN_TEXT,
+		MSG_MODEREQ_OVERSCAN_GRAPHICS,
+		MSG_MODEREQ_OVERSCAN_EXTREME,
+		MSG_MODEREQ_OVERSCAN_MAXIMUM,
+	    };
+	    
+    	    STRPTR *labels = (STRPTR *)&ismreq->ism_Overscan1Text;
+	    
+    	    for(i = 0; i < 4; i++)
+	    {
+	    	labels[i] = GetString(labelids[i], GetIR(ismreq)->ir_Catalog, AslBase);
+	    }
+	    
 	    i = CYCLEEXTRAWIDTH +  BiggestTextLength(&ismreq->ism_Overscan1Text,
 	    					     4,
 						     &(ld->ld_DummyRP),
@@ -641,6 +668,9 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		cycle_tags[3].ti_Data = ismreq->ism_AutoScroll;
 		cycle_tags[4].ti_Data = y;
 		
+		ismreq->ism_AutoScrollOFFText = GetString(MSG_MODEREQ_AUTOSCROLL_OFF, GetIR(ismreq)->ir_Catalog, AslBase);
+		ismreq->ism_AutoScrollONText  = GetString(MSG_MODEREQ_AUTOSCROLL_ON , GetIR(ismreq)->ir_Catalog, AslBase);
+		
 		i = CYCLEEXTRAWIDTH + BiggestTextLength(&ismreq->ism_AutoScrollOFFText,
 						        2,
 							&(ld->ld_DummyRP),
@@ -655,8 +685,8 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	}
 	
-    } /* if (i) */
-    
+    } /* if (ismreq->ism_Flags & (ISMF_DOOVERSCAN | ISMF_DOWIDTH | ISMF_DOHEIGHT | ISMF_DODEPTH | ISMF_DOAUTOSCROLL)) */
+        
     w = OUTERSPACINGX + labelwidth + LABELSPACINGX + maxcyclewidth + OUTERSPACINGX;
     if (w > ld->ld_MinWidth) ld->ld_MinWidth = w;
     
@@ -666,26 +696,28 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct NewMenu nm[] =
 	{
-	    {NM_TITLE, ismreq->ism_Menu_Control													},
-	     {NM_ITEM, ismreq->ism_Item_Control_LastMode + 2	, ismreq->ism_Item_Control_LastMode	, 0, 0, (APTR)SMMEN_LASTMODE		},
-	     {NM_ITEM, ismreq->ism_Item_Control_NextMode + 2	, ismreq->ism_Item_Control_NextMode	, 0, 0, (APTR)SMMEN_NEXTMODE 		},
+	    {NM_TITLE, (STRPTR)MSG_MODEREQ_MEN_CONTROL													},
+	     {NM_ITEM, (STRPTR)MSG_MODEREQ_MEN_CONTROL_LASTMODE     , 0, 0, 0, (APTR)SMMEN_LASTMODE	},
+	     {NM_ITEM, (STRPTR)MSG_MODEREQ_MEN_CONTROL_NEXTMODE     , 0, 0, 0, (APTR)SMMEN_NEXTMODE 	},
 	     {NM_ITEM, NM_BARLABEL														},
-	     {NM_ITEM, ismreq->ism_Item_Control_PropertyList + 2, ismreq->ism_Item_Control_PropertyList	, 0, 0, (APTR)SMMEN_PROPERTYLIST	},
-	     {NM_ITEM, ismreq->ism_Item_Control_Restore + 2	, ismreq->ism_Item_Control_Restore	, 0, 0, (APTR)SMMEN_RESTORE		},
+	     {NM_ITEM, (STRPTR)MSG_MODEREQ_MEN_CONTROL_PROPERTIES   , 0, 0, 0, (APTR)SMMEN_PROPERTYLIST	},
+	     {NM_ITEM, (STRPTR)MSG_MODEREQ_MEN_CONTROL_RESTORE	    , 0, 0, 0, (APTR)SMMEN_RESTORE	},
 	     {NM_ITEM, NM_BARLABEL														},
-	     {NM_ITEM, ismreq->ism_Item_Control_OK + 2		, ismreq->ism_Item_Control_OK		, 0, 0, (APTR)SMMEN_OK			},
-	     {NM_ITEM, ismreq->ism_Item_Control_Cancel + 2	, ismreq->ism_Item_Control_Cancel	, 0, 0, (APTR)SMMEN_CANCEL		},
+	     {NM_ITEM, (STRPTR)MSG_MODEREQ_MEN_CONTROL_OK   	    , 0, 0, 0, (APTR)SMMEN_OK		},
+	     {NM_ITEM, (STRPTR)MSG_MODEREQ_MEN_CONTROL_CANCEL	    , 0, 0, 0, (APTR)SMMEN_CANCEL	},
 	    {NM_END																}
 	};
 
 	struct TagItem menu_tags[] =
 	{
-	    {GTMN_NewLookMenus  , TRUE  	    	    },
-	    {GTMN_TextAttr	, GetIR(ismreq)->ir_TextAttr },
-	    {TAG_DONE   	    	    	    	    }
+	    {GTMN_NewLookMenus  , TRUE  	    	    	    },
+	    {GTMN_TextAttr	, (IPTR)GetIR(ismreq)->ir_TextAttr  },
+	    {TAG_DONE   	    	    	    	    	    }
 	};
 	    
 	
+	LocalizeMenus(nm, GetIR(ismreq)->ir_Catalog, AslBase);
+
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   
