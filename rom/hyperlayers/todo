@@ -7,10 +7,3 @@
 - optimization: do not copy a bitmap that has the same size and
                 offset as the target bitmap but rather move
                 only the pointer (if possible).
-
-- New features: let shape be changed:   ChangeLayerShape(newshape) 
-                     much code similar to MoveSizeLayer() !!!
-                     -> write common code routine!
-                scale a layer and its contents:
-                     ScaleLayer(factor,numerator,denominator, fixx, fixy) (see ScalerDiv) 
-                     use BitMapScale()
