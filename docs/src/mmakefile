@@ -162,28 +162,28 @@ $(DEST)jobserv-showfree.html : support.lib
 $(DEST)jobserv-showwork.html : support.lib
 $(DEST)jobserv-showdone.html : support.lib
 
-$(JOBDEST)jobserv-add.html : page_header.html jobserv-add.body \
+$(JOBDEST)jobserv-add.html : page_header_nc.html jobserv-add.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Add jobs/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(JOBDEST)jobserv-free.html : page_header.html jobserv-free.body \
+$(JOBDEST)jobserv-free.html : page_header_nc.html jobserv-free.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Free jobs/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(JOBDEST)jobserv-work.shtml : page_header.html jobserv-work.body \
+$(JOBDEST)jobserv-work.shtml : page_header_nc.html jobserv-work.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Jobs which are in work/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 
-$(JOBDEST)jobserv-done.shtml : page_header.html jobserv-done.body \
+$(JOBDEST)jobserv-done.shtml : page_header_nc.html jobserv-done.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Finished jobs/" | \
