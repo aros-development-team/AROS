@@ -239,6 +239,7 @@ void main(void)
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
     __zune_prefs_init(&__zprefs);
+    InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
 
 #ifdef __MAXON__
     KeymapBase = MUIMasterBase_instance.keymapbase;
@@ -294,6 +295,7 @@ void main(void)
 			End,
     	    	    End,
     	    	Child, RegisterGroup(pages),
+		    MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
 		    Child, HGroup,
 		        GroupFrameT("A horizontal group"),
 		        Child, ColGroup(2),
