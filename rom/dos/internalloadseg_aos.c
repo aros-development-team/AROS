@@ -17,10 +17,10 @@
 #include <aros/asmcall.h>
 #include <aros/machine.h>
 #include "dos_intern.h"
-///* iaint: This is really pissing me off...
+/* iaint: This is really pissing me off...
 #undef DEBUG
 #define DEBUG 1
-//*/
+*/
 #include <aros/debug.h>
 
 
