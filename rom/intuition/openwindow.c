@@ -146,7 +146,6 @@
     if (!intui_OpenWindow (w, IntuitionBase, newWindow->BitMap))
 	goto failexit;
 
-
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
    which now is ready for us to use. */
    driver_init_done = TRUE;
@@ -159,6 +158,7 @@
 	SetFont (rp, GfxBase->DefaultFont);
 
     D(bug("set fonts\n"));
+
 
     SetAPen (rp, newWindow->DetailPen);
     SetBPen (rp, newWindow->BlockPen);
@@ -175,6 +175,8 @@
     w->Parent = NULL;
     w->NextWindow = w->Descendant = w->WScreen->FirstWindow;
     w->WScreen->FirstWindow = w;
+    
+    w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
     if (newWindow->Flags & WFLG_ACTIVATE)
 	IntuitionBase->ActiveWindow = w;
@@ -189,7 +191,6 @@
     /* !!! This does double refreshing as the system gadgets also are refreshed
        in the above RfreshGadgets() call */
     RefreshWindowFrame(w);
-
     goto exit;
 
 failexit:
