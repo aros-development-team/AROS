@@ -26,8 +26,14 @@ void chkabort(void) { return; }     /* really */
 
 struct Library *AslBase = NULL;
 
+struct TextAttr mytextattr = 
+{
+    "arial.font", 13, 0, 0
+};
+
 struct TagItem fotags1[] =
 {
+    {ASLFO_TextAttr, (IPTR)&mytextattr},
     {ASLFO_TitleText	, (IPTR)"ASL Font requester"   },
     {TAG_DONE	    	    	    	    	       }
 };

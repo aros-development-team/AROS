@@ -85,8 +85,14 @@ struct DisplayMode custommode =
 };
 struct List customlist;
 
+struct TextAttr mytextattr = 
+{
+    "arial.font", 13, 0, 0
+};
+
 struct TagItem smtags[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"Custom Positive and Negative text" },
     { ASLSM_PositiveText,       (IPTR)"Use Screenmode" },
     { ASLSM_NegativeText,       (IPTR)"Forget it" },
@@ -96,6 +102,7 @@ struct TagItem smtags[] =
 
 struct TagItem smtags2[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"DoOverscanType" },
     { ASLSM_DoOverscanType,     TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
@@ -104,6 +111,7 @@ struct TagItem smtags2[] =
 
 struct TagItem smtags3[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"DoWidth" },
     { ASLSM_DoWidth,            TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
@@ -112,6 +120,7 @@ struct TagItem smtags3[] =
 
 struct TagItem smtags4[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"DoHeight" },
     { ASLSM_DoHeight,		TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
@@ -120,6 +129,7 @@ struct TagItem smtags4[] =
 
 struct TagItem smtags5[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"DoDepth" },
     { ASLSM_DoDepth,		TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
@@ -128,6 +138,7 @@ struct TagItem smtags5[] =
 
 struct TagItem smtags6[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"DoAutoScroll" },
     { ASLSM_DoAutoScroll,	TRUE},
     { ASLSM_CustomSMList,	(IPTR)&customlist	},
@@ -137,6 +148,7 @@ struct TagItem smtags6[] =
 
 struct TagItem smtags7[] =
 {
+    { ASLSM_TextAttr, 	    	(IPTR)&mytextattr},
     { ASLSM_TitleText,	        (IPTR)"DoAll" },
     { ASLSM_DoOverscanType,	TRUE},
     { ASLSM_DoWidth,		TRUE},
