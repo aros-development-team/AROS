@@ -67,7 +67,11 @@
     src = (UBYTE *)source;
     dst = (UBYTE *)dest;
      
+#if 0 /* stegerg: this is the wrong way round??? */
     mis =(IPTR)src&(sizeof(LONG)-1);
+#else
+    mis = (sizeof(LONG) - 1) - (((IPTR)src - 1) & (sizeof(LONG) - 1));
+#endif
     if(mis>size)
 	mis=size;
     size-=mis;
@@ -117,7 +121,9 @@
 	    }while(--high);
 
 	/* Get the rest. */
+	
 	size&=sizeof(LONG)-1;
+
 	src=(UBYTE *)s;
 	dst=(UBYTE *)d;
     }
