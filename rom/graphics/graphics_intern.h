@@ -50,7 +50,7 @@
 extern struct GfxBase * GfxBase;
 
 
-#define SIZERECTBUF 256
+#define SIZERECTBUF 128
 
 struct RegionRectangleExt
 {
