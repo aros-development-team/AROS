@@ -4,7 +4,7 @@ DESTDIR   := $(BINDIR)/Locale/Catalogs
 
 CATALOGS  := svenska français
 CATDESC   := preferenceswindow
-CATSUBDIR := Sys/Zune
+CATSUBDIR := System/Classes/Zune
 CATNAME   := PreferencesWindow
 INCLUDE   := ../strings
 
