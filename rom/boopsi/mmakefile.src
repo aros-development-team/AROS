@@ -35,7 +35,7 @@ LIBNAME  := boopsi
 ULIBNAME := BOOPSI
 
 OSMODULE  := boopsi.library
-FILES	  := rootclass icclass
+FILES	  := rootclass icclass modelclass
 FUNCTIONS := addclass disposeobject donotify findclass freeclass freeicdata \
 	     getattr makeclass newobjecta nextobject removeclass setattrsa
 
