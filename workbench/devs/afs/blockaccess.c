@@ -10,9 +10,11 @@
 
 #include <proto/exec.h>
 
+#include <aros/asmcall.h>
 #include <exec/memory.h>
 #include <exec/io.h>
 #include <devices/trackdisk.h>
+#include <hardware/intbits.h>
 
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -127,7 +129,17 @@ UQUAD offset;
 	if (retval)
 		showError(afsbase, ERR_READWRITE, retval);
 	if (volume->istrackdisk)
-		sendDeviceCmd(afsbase, volume,TD_MOTOR);
+	{
+		if (volume->moff_time)
+		{
+			volume->moff_time=100;
+		}
+		else
+		{
+			volume->moff_time=100;
+			AddIntServer(INTB_VERTB, &volume->vbl_int);
+		}
+	}
 	return retval;
 }
 
@@ -257,3 +269,24 @@ LONG writeBlock
 		);
 	return DOSTRUE;
 }
+
+#undef SysBase
+
+AROS_UFH4(int, timercode,
+    AROS_UFHA(struct Custom *, custom, A0),
+    AROS_UFHA(struct Volume *, volume, A1),
+    AROS_UFHA(APTR, is_Code, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+	AROS_USERFUNC_INIT
+	if (--volume->moff_time == 0)
+	{
+		volume->iorequest->iotd_Req.io_Command=TD_MOTOR;
+		volume->iorequest->iotd_Req.io_Length=0;
+		DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+		RemIntServer(INTB_VERTB, &volume->vbl_int);
+	}
+	return 0;
+	AROS_USERFUNC_EXIT
+}
+

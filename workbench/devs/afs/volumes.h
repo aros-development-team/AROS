@@ -41,7 +41,9 @@ struct Volume {
 	ULONG lastaccess;					// last marked block
 
 	UWORD bootblocks;
+	UBYTE moff_time;					/* time to wait until motor is turned off */
 	UBYTE flags;
+	struct Interrupt vbl_int;
 };
 
 struct Volume *initVolume(struct afsbase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
