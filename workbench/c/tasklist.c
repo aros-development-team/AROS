@@ -24,6 +24,7 @@ struct task
     WORD state;
     IPTR stacksize;
     IPTR stackused;
+    WORD pri;
 };
 
 static int addtask(struct Task *task, struct task **t, STRPTR *e)
@@ -31,6 +32,7 @@ static int addtask(struct Task *task, struct task **t, STRPTR *e)
     STRPTR s1,s2;
     (*t)->address=task;
     (*t)->type=task->tc_Node.ln_Type;
+    (*t)->pri =(WORD)task->tc_Node.ln_Pri;
     (*t)->state=task->tc_State;
     (*t)->stacksize=(STRPTR)task->tc_SPUpper-(STRPTR)task->tc_SPLower;
 #if AROS_STACK_GROWS_DOWNWARDS
@@ -112,19 +114,20 @@ int main(int argc, char *argv[])
         tasks=buffer;
         if(fillbuffer(&tasks,size))
         {
-            FPuts(Output(),"address\t\ttype\tstate\tstack\tused\tname\n");
+            FPuts(Output(),"address\t\ttype\tpri\tstate\tstack\tused\tname\n");
             for(tasks2=buffer;tasks2<tasks;tasks2++)
             {
-                IPTR args[6];
+                IPTR args[7];
                 args[0]=(IPTR)tasks2->address;
                 args[1]=(IPTR)(tasks2->type==NT_TASK?"task":
                 	       tasks2->type==NT_PROCESS?"process":"CLI");
-                args[2]=(IPTR)(tasks2->state==TS_RUN?"running":
+                args[2]=tasks2->pri;
+                args[3]=(IPTR)(tasks2->state==TS_RUN?"running":
                 	       tasks2->state==TS_READY?"ready":"waiting");
-                args[3]=tasks2->stacksize;
-                args[4]=tasks2->stackused;
-                args[5]=tasks2->name!=NULL?(IPTR)tasks2->name:0;
-                VPrintf("0x%08.lx\t%s\t%s\t%ld\t%ld\t%s\n",args);
+                args[4]=tasks2->stacksize;
+                args[5]=tasks2->stackused;
+                args[6]=tasks2->name!=NULL?(IPTR)tasks2->name:0;
+                VPrintf("0x%08.lx\t%s\t%ld\t%s\t%ld\t%ld\t%s\n",args);
             }
             FreeVec(buffer);
             return 0; 
