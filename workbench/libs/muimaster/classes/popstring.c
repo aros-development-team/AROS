@@ -16,6 +16,9 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+/*  #define MYDEBUG 0 */
+#include "debug.h"
+
 extern struct Library *MUIMasterBase;
 
 struct Popstring_DATA
@@ -26,6 +29,7 @@ struct Popstring_DATA
     Object *button;
     int open;
     int toggle;
+    struct MUI_EventHandlerNode ehn;
 };
 
 
@@ -54,6 +58,12 @@ IPTR Popstring__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->button = button;
     data->string = string;
+
+    data->ehn.ehn_Events   = IDCMP_RAWKEY;
+    data->ehn.ehn_Priority = 0;
+    data->ehn.ehn_Flags    = 0;
+    data->ehn.ehn_Object   = obj;
+    data->ehn.ehn_Class    = cl;
 
     /* parse initial taglist */
 
@@ -88,6 +98,38 @@ IPTR Popstring__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+IPTR Popstring__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+{
+    struct Popstring_DATA *data = INST_DATA(cl, obj);
+
+    if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
+	return FALSE;
+
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+
+    return TRUE;
+}
+
+IPTR Popstring__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    struct Popstring_DATA *data = INST_DATA(cl, obj);
+
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+IPTR Popstring__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+{
+    if (msg->muikey == MUIKEY_POPUP)
+    {
+	D(bug("Popstring__MUIM_HandleEvent %p got MUIKEY_POPUP\n", obj));
+	DoMethod(obj, MUIM_Popstring_Open);
+	return MUI_EventHandlerRC_Eat;
+    }
+    return 0;
 }
 
 IPTR Popstring__MUIM_Popstring_Close(struct IClass *cl, Object *obj, struct MUIP_Popstring_Close *msg)
@@ -131,10 +173,20 @@ BOOPSI_DISPATCHER(IPTR, Popstring_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:               return Popstring__OM_NEW(cl, obj, (struct opSet *)msg);
-	case OM_SET:               return Popstring__OM_SET(cl, obj, (struct opSet *)msg);
-	case MUIM_Popstring_Close: return Popstring__MUIM_Popstring_Close(cl, obj, (struct MUIP_Popstring_Close*)msg);
-	case MUIM_Popstring_Open:  return Popstring__MUIM_Popstring_Open(cl, obj, (struct MUIP_Popstring_Open*)msg);
+	case OM_NEW:
+	    return Popstring__OM_NEW(cl, obj, (APTR)msg);
+	case OM_SET:
+	    return Popstring__OM_SET(cl, obj, (APTR)msg);
+        case MUIM_Setup:
+	    return Popstring__MUIM_Setup(cl, obj, (APTR)msg);
+        case MUIM_Cleanup:
+	    return Popstring__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent:
+	    return Popstring__MUIM_HandleEvent(cl, obj, (APTR)msg);
+	case MUIM_Popstring_Close:
+	    return Popstring__MUIM_Popstring_Close(cl, obj, (APTR)msg);
+	case MUIM_Popstring_Open:
+	    return Popstring__MUIM_Popstring_Open(cl, obj, (APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
