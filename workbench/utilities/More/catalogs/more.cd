@@ -66,7 +66,7 @@ MSG_ASL_SAVE_TITLE (//)
 Select File to Save to
 ;
 MSG_ABOUT (//)
-More V%ld.%ld\n (%s)\nCopyright (C) %s by %s
+More V%ld.%ld\n (%s)\nCopyright © %s by %s
 ;
 MSG_ABOUT_TITLE (//)
 More
