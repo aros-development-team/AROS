@@ -88,18 +88,18 @@ CONST UBYTE lokeymaptypes[] =
     N, 		/* 0E undef */
     S|A, 	/* 0F NUM 0 */
 
-    V,	 	/* 10 a */
+    D|V, 	/* 10 a */
     V,	 	/* 11 z */
-    V,	 	/* 12 e */
+    D|V, 	/* 12 e */
     V,	 	/* 13 r */
     V,	 	/* 14 t */
     V,	 	/* 15 z */
-    V,	 	/* 16 u */
-    V,	 	/* 17 i */
-    V,	 	/* 18 o */
+    D|V, 	/* 16 u */
+    D|V, 	/* 17 i */
+    D|V, 	/* 18 o */
     V,	 	/* 19 p */
 
-    S|A,        /* 1A dead key ^" */
+    D|S|A,      /* 1A dead key ^" */
     S|A, 	/* 1B $ £ */
     N, 	        /* 1C undefined */
     N,    	/* 1D NUM 1 */
@@ -145,7 +145,7 @@ CONST UBYTE lokeymaptypes[] =
 
 CONST UBYTE hikeymaptypes[] =
 {
-    A, 		/* 40 SPACE */
+    D|A,	/* 40 SPACE */
     N, 		/* 41 BACKSPACE */
     ST|S,	/* 42 TAB */
     N,		/* 43 ENTER */
@@ -230,6 +230,111 @@ CONST UBYTE hikeymaptypes[] =
 #define BYTES(b0, b1, b2, b3) \
 	(((UBYTE)b3)<<24) | (((UBYTE)b2)<<16) | (((UBYTE)b1)<<8) | (((UBYTE)b0)<<0)
 
+/* dead symbols
+  1= ´
+  2 = `
+  3 = ^
+  4 = ~
+  5 = " 
+
+*/
+
+CONST UBYTE a_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x16,
+    0, 0xE6,
+    0, 0xC6,
+    0, 0x01,
+    0, 0x01,
+    0, 0x81,
+    0, 0x81,
+    
+    'a', 0xE1, 0xE0, 0xE2, 0xE3, 0xE4,
+    
+    'A', 0xC1, 0xC0, 0xC2, 0xC3, 0xC4
+};
+
+CONST UBYTE e_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x16,
+    0, EUR,
+    0, '¢',
+    0, 0x05,
+    0, 0x05,
+    0, 0x85,
+    0, 0x85,
+    
+    'e', 0xE9, 0xE8, 0xEA, 'e', 0xEB,
+    
+    'E', 0xC9, 0xC8, 0xCA, 'E', 0xCB   
+};
+
+CONST UBYTE u_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x16,
+    0, 0xB5,
+    0, 0xB5,
+    0, 0x15,
+    0, 0x15,
+    0, 0x95,
+    0, 0x95,
+    
+    'u', 0xFA, 0xF9, 0xFB, 'u', 0xFC,
+    
+    'U', 0xDA, 0xD9, 0xDB, 'U', 0xDC
+};
+
+CONST UBYTE i_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x16,
+    0, 0xA1,
+    0, 0xA6,
+    0, 0x09,
+    0, 0x09,
+    0, 0x89,
+    0, 0x89,
+    
+    'i', 0xED, 0xEC, 0xEE, 'i', 0xEF,
+    
+    'I', 0xCD, 0xCC, 0xCE, 'I', 0xCF
+};
+
+CONST UBYTE o_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x16,
+    0, 0xF8,
+    0, 0xD8,
+    0, 0x0F,
+    0, 0x0F,
+    0, 0x8F,
+    0, 0x8F,
+    
+    'o', 0xF3, 0xF2, 0xF4, 0xF5, 0xF6,
+    
+    'O', 0xD3, 0xD2, 0xD4, 0xD5, 0xD6
+};
+
+CONST UBYTE space_descr[] =
+{
+    DPF_MOD, 0x4,
+    0, 0XA0,
+
+    ' ', 0xB4, '`','^','~',0xA8
+};
+
+CONST UBYTE KEY1A_descr[] =
+{
+    DPF_DEAD, 3,
+    DPF_DEAD, 5,
+    DPF_DEAD, 5,
+    DPF_DEAD, 5
+};
+
 CONST IPTR lokeymap[] =
 {
     BYTES('¬', '¬', '~', '²'), 		/* 00 Left of 1 Key */
@@ -248,18 +353,18 @@ CONST IPTR lokeymap[] =
     BYTES('|', '|', '|', '|'),		/* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),			/* 0E undefined */
     BYTES('0', '0', '0', '0'), 		/* 0F NUM 0 */
-    BYTES('Æ', 'æ', 'A', 'a'), 		/* 10 */
+    DEAD(a_descr), 		    	/* 10 */ /* old: BYTES('Æ', 'æ', 'A', 'a'), */
     BYTES('<', '«', 'Z', 'z'),		/* 11 */
-    BYTES('¢', EUR, 'E', 'e'), 		/* 12 */
+    DEAD(e_descr), 		    	/* 12 */ /* old: BYTES('¢', EUR, 'E', 'e'), */
     BYTES('®', '¶', 'R', 'r'), 		/* 13 */
     BYTES('T', 't', 'T', 't'),		/* 14 */
     BYTES('¥', 'y', 'Y', 'y'),		/* 15 */
-    BYTES('U', 'u', 'U', 'u'), 		/* 16 */
-    BYTES('I', 'i', 'I', 'i'), 		/* 17 */
-    BYTES('Ø', 'ø', 'O', 'o'), 		/* 18 */
+    DEAD(u_descr), 		    	/* 16 */ /* old: BYTES('U', 'u', 'U', 'u'), */
+    DEAD(i_descr), 		    	/* 17 */ /* old: BYTES('I', 'i', 'I', 'i'), */
+    DEAD(o_descr),  	 		/* 18 */ /* old: BYTES('Ø', 'ø', 'O', 'o'), */
     BYTES('Þ', 'þ', 'P', 'p'), 		/* 19 */
     
-    BYTES('°', '°', '"', '^'),		/* 1A */
+    DEAD(KEY1A_descr),		    	/* 1A */ /* old: BYTES('°', '°', '"', '^'), */
     BYTES('£', '¤', '£', '$'),		/* 1B */
     BYTES(0, 0, 0, 0),			/* 1C undefined */
     BYTES('1', '1', '1', '1'),		/* 1D NUM 1*/
@@ -306,7 +411,7 @@ CONST IPTR lokeymap[] =
 
 CONST IPTR hikeymap[] =
 {
-    BYTES(' ', ' ', ' ', ' '),	/* 40 */
+    DEAD(space_descr),	    	/* 40 */
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
     STRING(tab_descr),		/* 42 TAB */
     BYTES(13, 13, 13, 13),	/* 43 ENTER */
