@@ -2,12 +2,14 @@
 include $(TOP)/config/make.cfg
 
 #MM
-workbench-s : $(SDIR)/Startup-Sequence
+workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/gfxhidd.prefs
 	@$(NOP)
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
 	$(CP) $^ $@
-
+	
+$(SDIR)/gfxhidd.prefs	:
+	@$(ECHO) "x11gfx.hidd" > $@
 #MM
 setup :
 	@$(IF) $(TEST) ! -d $(SDIR) ; then \
