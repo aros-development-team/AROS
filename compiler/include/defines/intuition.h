@@ -392,6 +392,14 @@
     AROS_LCA(UBYTE *, name, A0), \
     struct IntuitionBase *, IntuitionBase, 90, Intuition)
 
+#define SetGadgetAttrsA(gadget, window, requester, tagList) \
+    AROS_LC4(ULONG, SetGadgetAttrsA, \
+    AROS_LCA(struct Gadget *,    gadget,    A0), \
+    AROS_LCA(struct Window *,    window,    A1), \
+    AROS_LCA(struct Requester *, requester, A2), \
+    AROS_LCA(struct TagItem *,   tagList,   A3), \
+    struct IntuitionBase *, IntuitionBase, 110, Intuition)
+
 #define SetPointer(window, pointer, height, width, xOffset, yOffset) \
     AROS_LC6(void, SetPointer, \
     AROS_LCA(struct Window *, window, A0), \

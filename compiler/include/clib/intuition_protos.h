@@ -366,6 +366,13 @@ AROS_LP1(void, SetDefaultPubScreen,
     AROS_LPA(UBYTE *, name, A0),
     struct IntuitionBase *, IntuitionBase, 90, Intuition)
 
+AROS_LP4(ULONG, SetGadgetAttrsA,
+    AROS_LPA(struct Gadget *,    gadget,    A0),
+    AROS_LPA(struct Window *,    window,    A1),
+    AROS_LPA(struct Requester *, requester, A2),
+    AROS_LPA(struct TagItem *,   tagList,   A3),
+    struct IntuitionBase *, IntuitionBase, 110, Intuition)
+
 AROS_LP6(void, SetPointer,
     AROS_LPA(struct Window *, window, A0),
     AROS_LPA(UWORD         *, pointer, A1),
