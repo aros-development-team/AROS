@@ -96,6 +96,7 @@ FILES := \
     menu \
     penspec \
     support \
+    support_aros \
     support_classes \
     textengine 
     	    
