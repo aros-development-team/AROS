@@ -31,7 +31,9 @@
 
     NOTES
       This function is mega-deprecated. Since all AROS drivers
-      
+      use IORequests to perform operations the driver will most
+      probably not ever use or look at a packet. Also there might 
+      not even be a packet at all except for if SendPkt was used.
 
     EXAMPLE
 
