@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Library header for keymap
@@ -78,6 +78,12 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     LIBBASE->DefaultKeymap = &def_km;
 
+    /* Initialise the keymap.resource */
+    LIBBASE->KeymapResource.kr_Node.ln_Type = NT_RESOURCE;
+    LIBBASE->KeymapResource.kr_Node.ln_Name = "keymap.resource";
+    NEWLIST( &(LIBBASE->KeymapResource.kr_List) );
+    AddResource(&LIBBASE->KeymapResource);
+
     /* You would return NULL if the init failed */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
@@ -91,23 +97,12 @@ AROS_LH1(struct LIBBASETYPE *, open,
     
     /* Keep compiler happy */
     version=0;
-    
 
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
     LIBBASE->LibNode.lib_Flags&=~LIBF_DELEXP;
     
     /* Initialize and add the keymap.resource */
-    
-    if (!LIBBASE->KeymapResource)
-    	LIBBASE->KeymapResource = AllocMem(sizeof (struct KeyMapResource), MEMF_PUBLIC);
-    	
-    if (!LIBBASE->KeymapResource)
-    	return (NULL);
-    
-    LIBBASE->KeymapResource->kr_Node.ln_Type = NT_RESOURCE;
-    LIBBASE->KeymapResource->kr_Node.ln_Name = "keymap.resource";
-    NEWLIST( &(LIBBASE->KeymapResource->kr_List) );
     
     if (!LIBBASE->DefKeymapNode)
     	LIBBASE->DefKeymapNode = AllocMem(sizeof (struct KeyMapNode), MEMF_PUBLIC);
@@ -119,11 +114,13 @@ AROS_LH1(struct LIBBASETYPE *, open,
     
     LIBBASE->DefKeymapNode->kn_Node.ln_Name = "default keymap";
 
-    /* The resource hasn't been added yet, so I don't have to arbitrate */    
-    AddTail( &(LIBBASE->KeymapResource->kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
+    /*
+	We are being called under Forbid(), so I don't have to arbitrate
+	That notwithstanding, if keymap resource or exec library loading
+	ever become semaphore based, there may be some problems.
+     */
+    AddTail( &(LIBBASE->KeymapResource.kr_List), &(LIBBASE->DefKeymapNode->kn_Node));
 
-    AddResource(LIBBASE->KeymapResource);
-    
     /* You would return NULL if the open failed. */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
