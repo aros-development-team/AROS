@@ -45,7 +45,7 @@ const struct Resident Console_resident=
     (APTR)&end,
     RTF_AUTOINIT,
     1,
-    NT_LIBRARY,
+    NT_DEVICE,
     0,
     (char *)name,
     (char *)&version[6],
