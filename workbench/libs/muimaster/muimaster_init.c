@@ -125,6 +125,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     if (!IconBase)
     	return FALSE;
 
+    if (!CyberGfxBase)
+    	CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+    /* continue even if cybergraphics.library is not available */
+    
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
     InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -194,6 +198,9 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     
     CloseLibrary(IconBase);
     IconBase = NULL;
+    
+    CloseLibrary(CyberGfxBase);
+    CyberGfxBase = NULL;
 }
 
 /****************************************************************************************/
