@@ -367,8 +367,10 @@ LONG ASM SAVEDS PaletteRequestA (
 	glob->shareidcmp = FALSE;
 
     if (!(glob->scr = GetReqScreen (&glob->newpalwin, &glob->prwin, glob->scr, pubname)))
-	return (-1);
-	
+    {
+	FreeAll (glob);
+    	return (-1);
+    }
     glob->vp = &glob->scr->ViewPort;
     glob->cm = glob->vp->ColorMap;
 
