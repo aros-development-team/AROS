@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -13,6 +17,7 @@
 
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/icon.h>
 #include <proto/utility.h>
 
 #include "presentation.h"
@@ -54,8 +59,6 @@ IPTR iconObserverNew(Class *cl, Object *obj, struct opSet *msg)
 	retval=DoSuperMethodA(cl, obj, (Msg)msg);
 	if(retval)
 	{
-		ULONG pah;
-
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
 		data->selected=selected;
@@ -114,6 +117,16 @@ IPTR iconObserverGet(Class *cl, Object *obj, struct opGet *msg)
 IPTR iconObserverDispose(Class *cl, Object *obj, Msg msg)
 {
 	IPTR retval;
+	struct IconObserverClassData *data;
+
+	data=(struct IconObserverClassData*)INST_DATA(cl, obj);
+
+	FreeDiskObject(_diskobject(_presentation(obj)));
+// note:
+//	IconObserverClassData.name is part of the ExAllBuffer and is freed
+//   by this object's parent
+//  IconObserverClassData.directory belongs to this object's parent, and
+//  is freed by it
 
 	retval=DoSuperMethodA(cl, obj, msg);
 

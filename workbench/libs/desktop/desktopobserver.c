@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -146,14 +150,9 @@ IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 		iconTags[2].ti_Tag=TAG_END;
 		iconTags[2].ti_Data=0;
 
-kprintf("creating type of DISK : %s\n", iconTags[1].ti_Data);
-
-kprintf("diskobject type: %d\n", msg->wsr_ResultsArray[i].sr_DiskObject->do_Type);
-
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{
 			case WBDISK:
-				kprintf("creating type of DISK\n");
 				kind=CDO_DiskIcon;
 				break;
 			case WBDRAWER:
@@ -181,8 +180,12 @@ kprintf("diskobject type: %d\n", msg->wsr_ResultsArray[i].sr_DiskObject->do_Type
 
 		newIcon=CreateDesktopObjectA(kind, iconTags);
 
+		FreeVec(iconTags);
+
 		DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
 	}
+
+	FreeVec(msg->wsr_ResultsArray);
 
 	return retval;
 }

@@ -1,3 +1,7 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -5,6 +9,7 @@
 #include <exec/types.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <intuition/imageclass.h>
 #include <libraries/mui.h>
 
 #include "support.h"
@@ -12,6 +17,7 @@
 #include "desktop_intern.h"
 
 #include <proto/dos.h>
+#include <proto/icon.h>
 #include <proto/input.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
@@ -268,6 +274,22 @@ IPTR iconNotify(Class *cl, Object *obj, struct MUIP_Notify *msg)
 	return retval;
 }
 
+IPTR iconDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
+{
+	IPTR retval;
+	struct IconClassData *data;
+	struct TagItem tags[1]=
+	{
+		{TAG_END, 0}
+	};
+
+	data=(struct IconClassData*)INST_DATA(cl, obj);
+
+	retval=DoSuperMethodA(cl, obj, msg);
+
+	return retval;
+}
+
 AROS_UFH3(IPTR, iconDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
 	AROS_UFHA(Object *, obj, A2),
@@ -300,6 +322,9 @@ AROS_UFH3(IPTR, iconDispatcher,
 			break;
 		case MUIM_Notify:
 			retval=iconNotify(cl, obj, (struct MUIP_Notify*)msg);
+			break;
+		case MUIM_Draw:
+			retval=iconDraw(cl, obj, (struct MUIP_Draw*)msg);
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, msg);

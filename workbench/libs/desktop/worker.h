@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef WORKER_H
 #define WORKER_H
 
@@ -51,6 +56,7 @@ struct WorkerScanRequest
 	BOOL   wsr_More;
 	ULONG wsr_Results;
 	struct SingleResult *wsr_ResultsArray;
+	STRPTR wsr_ExAllBuffer;
 };
 
 #endif

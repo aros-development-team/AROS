@@ -271,8 +271,6 @@ ULONG iconConLayout(Class *cl, Object *obj, Msg msg)
 		}
 	}
 
-//	layoutGroup(data);
-
 	return retval;
 }
 
@@ -319,15 +317,6 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 
 	DoMethod(msg->opam_Object, MUIM_Show);
 
-//	data->clippingRectangle.MinX=_mleft(obj);
-//	data->clippingRectangle.MinY=_mtop(obj);
-//	data->clippingRectangle.MaxX=_mleft(obj)+_mwidth(obj);
-//	data->clippingRectangle.MaxY=_mtop(obj)+_mheight(obj);
-
-//	clippingRegion=NewRegion();
-//	OrRectRegion(clippingRegion, &data->clippingRectangle);
-//	InstallClipRegion(_window(obj)->WLayer, clippingRegion);
-
 	MUI_Redraw(msg->opam_Object, MADF_DRAWOBJECT);
 
 	AddTail((struct List*)&data->memberList, (struct Node*)mn);
@@ -335,18 +324,12 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	SetAttrs(data->horizProp, MUIA_Prop_Entries, data->virtualWidth, TAG_END);
 	SetAttrs(data->vertProp, MUIA_Prop_Entries, data->virtualHeight, TAG_END);
 
-//	InstallClipRegion(_window(obj)->WLayer, NULL);
-
 	return retval;
 }
 
 void redrawRectangle(ULONG x1, ULONG y1, ULONG x2, ULONG y2, Object *obj, struct IconContainerClassData *data)
 {
 	struct MemberNode *mn;
-
-//	printf("redrawRectangle: %d, %d, %d, %d\n", x1,x2,y1,y2);
-
-//	BeginRefresh(_window(obj));
 
 	mn=(struct MemberNode*)data->memberList.mlh_Head;
 	while(mn->m_Node.mln_Succ)
@@ -370,8 +353,6 @@ void redrawRectangle(ULONG x1, ULONG y1, ULONG x2, ULONG y2, Object *obj, struct
 
 		mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 	}
-
-//	EndRefresh(_window(obj), TRUE);
 }
 
 IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
@@ -379,6 +360,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 	struct IconContainerClassData *data;
 	struct MemberNode *mn;
 	IPTR retval=1;
+	APTR clip=NULL;
 
 	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
 
@@ -386,6 +368,8 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 	if(msg->flags & MADF_DRAWOBJECT)
 	{
+		clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj)-1, _mheight(obj)-1);
+
 		if(data->widthAdjusted!=0)
 		{
 			SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
@@ -462,6 +446,8 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 			}
 
+			clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+
 			ScrollRaster(_rp(obj), 0, scrollAmountY, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 
 			// redraw in gap
@@ -478,7 +464,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			if(scrollAmountX>0)
 			{
 				// scroll right, displays shifts left, redraw gap at right
-				redrawX1=_mright(obj)-abs(scrollAmountX);
+				redrawX1=_mright(obj)-abs(scrollAmountX)+1;
 				redrawX2=_mright(obj);
 
 			}
@@ -486,7 +472,7 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 			{
 				// scroll left, display shifts right, redraw gap at left
 				redrawX1=_mleft(obj);
-				redrawX2=_mleft(obj)+abs(scrollAmountX);
+				redrawX2=_mleft(obj)+abs(scrollAmountX)-1;
 			}
 
 			redrawY1=_mtop(obj);
@@ -501,11 +487,12 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 				MUI_Layout(mn->m_Object, _left(mn->m_Object)-scrollAmountX-_mleft(obj), _top(mn->m_Object)-scrollAmountY-_mtop(obj), _width(mn->m_Object), _height(mn->m_Object), 0);
 
-
 				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
 			}
 
-			ScrollRaster(_rp(obj), scrollAmountX, 0, _mleft(obj), _mtop(obj), _mwidth(obj)+_mleft(obj), _mheight(obj)+_mtop(obj));
+			clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj)-1, _mtop(obj)-1, _mwidth(obj)+2, _mheight(obj)+2);
+
+			ScrollRaster(_rp(obj), scrollAmountX, 0, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 
 			// redraw in gap
 			redrawRectangle(redrawX1, redrawY1, redrawX2, redrawY2, obj, data);
@@ -514,6 +501,9 @@ IPTR iconConDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 		}
 	}
+
+	if(clip)
+		MUI_RemoveClipping(muiRenderInfo(obj), clip);
 
 	return retval;
 }

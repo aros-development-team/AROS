@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define DEBUG 1
 #include <aros/debug.h>
 
@@ -39,8 +44,7 @@ void scan(struct ScannerWorkerContext *swc)
 	{
 		ead=swc->swc_Buffer;
 		sr=(struct SingleResult*)AllocVec(swc->swc_EAC->eac_Entries*sizeof(struct SingleResult), MEMF_ANY);
-//		for(i=0; i<swc->swc_EAC->eac_Entries; i++)
-		while(ead)
+		for(i=0; i<swc->swc_EAC->eac_Entries; i++)
 		{
 			sr[i].sr_Name=ead->ed_Name;
 
@@ -52,12 +56,12 @@ void scan(struct ScannerWorkerContext *swc)
 
 			sr[i].sr_DiskObject=GetDiskObjectNew(fullPath);
 			ead=ead->ed_Next;
-			i++;
+
+			FreeVec(fullPath);
 		}
 	}
 
-//	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_Results=swc->swc_EAC->eac_Entries-1;
-	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_Results=i;
+	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_Results=swc->swc_EAC->eac_Entries;
 	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_ResultsArray=sr;
 	((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_More=swc->swc_More;
 }
@@ -68,6 +72,8 @@ void startScan(struct ScannerWorkerContext *swc)
 	UWORD bufferSize=100;
 	BOOL success;
 
+	// a pointer to this buffer is given to the iconobserver class and
+	// will be freed when the class is destroyed
 	swc->swc_Buffer=(STRPTR)AllocVec(SCAN_BUFFER, MEMF_ANY);
 	swc->swc_DirLock=((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_DirLock;
 	swc->swc_EAC=(struct ExAllControl*)AllocDosObject(DOS_EXALLCONTROL, NULL);
@@ -104,6 +110,14 @@ void stopScan(struct ScannerWorkerContext *swc)
 	ExAllEnd(swc->swc_DirLock, (struct ExAllData*)swc->swc_Buffer, SCAN_BUFFER, ED_OWNER, swc->swc_EAC);
 }
 
+void destroyScanWorker(struct ScannerWorkerContext *swc)
+{
+	UnLock(swc->swc_DirLock);
+	FreeDosObject(DOS_EXALLCONTROL, swc->swc_EAC);
+	FreeVec(swc->swc_DirName);
+	FreeVec(swc);
+}
+
 ULONG workerEntry(void)
 {
 	BOOL running=TRUE;
@@ -138,6 +152,7 @@ ULONG workerEntry(void)
 					{
 						((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_More=FALSE;
 						running=FALSE;
+						destroyScanWorker(swc);
 					}
 					break;
 				}
@@ -148,12 +163,14 @@ ULONG workerEntry(void)
 					{
 						((struct WorkerScanRequest*)swc->swc_CurrentRequest)->wsr_More=FALSE;
 						running=FALSE;
+						destroyScanWorker(swc);
 					}
 					break;
 
 				case WM_STOP:
 					if(msg)
 						swc->swc_Context.stop(swc);
+					destroyScanWorker(swc);
 					running=FALSE;
 					break;
 
@@ -162,8 +179,6 @@ ULONG workerEntry(void)
 			}
 
 			ReplyMsg((struct Message*)msg);
-			msg=NULL;
-
 		}
 	}
 
