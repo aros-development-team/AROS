@@ -33,7 +33,7 @@ char *REGARGS GetStr (struct Catalog *cat, char *idstr)
 //ULONG catalogtags[] = { OC_Version, 38, TAG_END };
 #define catalogtags	NULL
 
-#undef ThisProcess()
+#undef ThisProcess
 #define ThisProcess()		((struct Process *)FindTask(NULL))
 
 /****************************************************************************************/
