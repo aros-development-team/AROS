@@ -1718,3 +1718,41 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 {
     return;
 }
+
+LONG driver_WritePixelLine8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG width,
+			    UBYTE * array, struct RastPort * temprp,
+			    struct GfxBase *GfxBase)
+{
+    return 0;
+}
+
+LONG driver_ReadPixelLine8 (struct RastPort * rp, ULONG xstart,
+			    ULONG ystart, ULONG width,
+			    UBYTE * array, struct RastPort * temprp,
+			    struct GfxBase *GfxBase)
+{
+
+    return 0;
+}
+
+VOID driver_WriteChunkyPixels(struct RastPort * rp, ULONG xstart, ULONG ystart,
+		ULONG xstop, ULONG ystop, UBYTE * array,
+		LONG bytesperrow, struct GfxBase *GfxBase)
+{
+    return;
+    
+}
+
+VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
+	LONG xDest, LONG yDest, LONG xSize, LONG ySize, struct GfxBase *GfxBase)
+{
+    return;
+}
+
+LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
+	    ULONG ystart, ULONG xstop, ULONG ystop, UBYTE * array,
+	    struct RastPort * temprp, struct GfxBase * GfxBase)
+{
+    return 0;
+}
