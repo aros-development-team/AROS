@@ -466,9 +466,9 @@ static VOID OTAG_CalcMetrics(struct GlyphMap **gm, struct TextFont *tf)
 	index = (i <= hichar) ? i : 256;
 	
 	g = gm[index];
-	if (!g) g = gm[256];
+	if (!g && (i != 32)) g = gm[256];
 	
-	if (g && (i != 32))
+	if (g)
 	{
 	    charkern [i - lochar] = ((WORD)g->glm_BlackLeft) - g->glm_X0;	
 	    charspace[i - lochar] = g->glm_X1 - (WORD)g->glm_BlackLeft;
