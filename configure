@@ -192,7 +192,7 @@ case "$1" in
     fi
 
     if [ -d config ]; then
-	cd config ; make TOP=.. CURDIR=./config config
+	cd config ; make TOP=.. CURDIR=./config setup
     fi
     ;;
 "-h" )
