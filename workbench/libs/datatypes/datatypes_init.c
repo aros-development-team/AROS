@@ -105,7 +105,7 @@ static BOOL openlibs(struct DataTypesBase *DataTypesBase)
 
     if (DataTypesBase->dtb_WorkbenchBase == NULL)
     {
-	DataTypesBase->dtb_IconBase = OpenLibrary("workbench.library", 37);
+	DataTypesBase->dtb_WorkbenchBase = OpenLibrary("workbench.library", 37);
     }
 
     if (DataTypesBase->dtb_WorkbenchBase == NULL)
