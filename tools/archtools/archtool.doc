@@ -53,7 +53,7 @@ Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>
   -M mergearchs
      Usage: archtool -M <outarch> <inarch>...
   -c genlibdefs
-     Usage: archtool -c [lib.conf]
+     Usage: archtool -c [-o libdefs.h] [lib.conf]
   -d gendefines
      Usage: archtool -d <incdir> <archfile>
   -C genclib
@@ -102,7 +102,10 @@ reoccurring functions will be relaced by last occurrence.
 
  7) Generate libdefs.h
 This module generates "libdefs.h" file out of "lib.conf" file.
-If an argument is specified this name will be taken as config file.
+The name of the output include file can be given with the -o switch.
+Any other argument is taken as the name of the config file.
+By default a libdefs.h file will be generated and the config file is
+lib.conf.
 
  8) Generate defines/<basename>.h
 This module generates the include files in <incdir>/defines/
