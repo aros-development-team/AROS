@@ -262,7 +262,7 @@ static void WaitForIO (void)
 	D(bug("\n"));
 
         tv.tv_sec  = 0;
-	tv.tv_usec = 100000;
+	tv.tv_usec = 0; /* stegerg: CHECKME, was 100000 */
 
 	errno = 0; /* set errno to zero before select() call */
 	selecterr = select (maxfd+1, rp, wp, ep, &tv);
