@@ -105,7 +105,7 @@ Example:</p>
 
 <p>To check: You should get <shell>xx1LtbDbOY4/E</shell> if you call crypt with
 <shell>crypt test xx</shell>. If that doesn't work, download <a
-href="pubkey.ask">my public PGP key</a> (Shift-Click on the link to download)
+href="pubkey.asc">my public PGP key</a> (Shift-Click on the link to download)
 and send me a PGP encoded mail with your password and I'll encrypt and add it.
 Also note that I need your real name so I can tell the world what you
 did for AROS on our Web site.</p>
