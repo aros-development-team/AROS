@@ -1,13 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- includes-linux-ppc : includes-common-ppc
 #MM- kernel-linux-ppc : kernel-linux kernel-ppc
 #MM- kernel-link-linux-ppc : kernel-link-emul
 
 #MM- kernel-exec-includes-linux-ppc : kernel-exec-includes-unix
 
-#MM- includes-copy-linux-ppc : includes-copy-ppc
-
-#MM- workbech-linux-ppc : workbench-linux
-
-##MM- setup-linux-ppc : setup-linux
+#MM- workbench-linux-ppc : \
+#MM      workbench-linux
