@@ -29,7 +29,7 @@ int main(void)
 	    MUIA_Window_Activate,        TRUE,
             
     	    WindowContents, (IPTR) VGroup,
-                Child, (IPTR) (b1 = ImageButton("Test", "THEME:Images/Gadgets/Preferences/Test.png")),
+                Child, (IPTR) (b1 = ImageButton("Test", "THEME:Images/Gadgets/Prefs/Test")),
                 Child, (IPTR) HGroup,
                     Child, (IPTR) (b2 = SimpleButton("Disable")),
                     Child, (IPTR) (b3 = SimpleButton("Enable")),
