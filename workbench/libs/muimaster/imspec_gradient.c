@@ -152,12 +152,16 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
     struct myrgb startRGB,endRGB;
     int diffR, diffG, diffB;
 
+    int r,t; /* some helper variables to short the code */
     int l,y,c,x;
     int x1,y1; /* The intersection point */
+    int incr_y1; /* increment of y1 */
     int xs,ys,xw,yw;
     int xadd,ystart,yadd;
-    double vx = -cosarc;
-    double vy = sinarc;
+//    double vx = -cosarc;
+//    double vy = sinarc;
+    int vx = (int)(-cosarc*0xff);
+    int vy = (int)(sinarc*0xff);
 
     int width = xb - xt + 1;
     int height = yb - yt + 1;
@@ -225,30 +229,61 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
 	ystart = 0;
     }
 
+    r = -vy*(yw*xs-xw*ys); 
+    t = -yw*vx + xw*vy;
+
+    /* The formular as shown above is
+     * 
+     * 	 y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
+     * 
+     * We see that only yw*(vy*x-vx*y) changes during the loop.
+     * 
+     * We write
+     *   
+     *   Current Pixel: y1(x,y) = (r + yw*(vy*x-vx*y))/t = r/t + yw*(vy*x-vx*y)/t
+     *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t 
+     *
+     *   t*(y1(x+xadd,y) - y1(x,y)) = yw*(vy*(x+xadd)-vx*y) - yw*(vy*x-vx*y) = yw*vy*xadd;
+     * 
+     */
+
+    incr_y1 = yw*vy*xadd;
+
     for (l = 0, y = ystart; l < height; l++, y+=yadd)
     {
 	UBYTE *bufptr = buf;
+
+	/* Calculate initial y1 accu, can be brought out of the loop as well (x=0). It's probably a
+         * a good idea to add here also a value of (t-1)/2 to ensure the correct rounding
+	 * This (and for r) is also a place were actually a overflow can happen |yw|=16 |y|=16. So for
+         * vx nothing is left, currently 9 bits are used for vx or vy */
+	int y1_mul_t_accu = r - yw*vx*y;
+
 	for (c = 0, x = 0; c < width; c++, x+=xadd)
 	{
 	    int red,green,blue;
-	    int e,f;
 
 	    /* Calculate the intersection of two lines, this is not the fastet way to do but
 	     * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
-             * and making it incremental) */
-	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
-
-	    e = y1;
-	    f =  height;
+             * and making it incremental)...update: it's now incremental and no FFP is used
+             * but it probably can be optimized more by removing some more of the divisions and
+             * further specialize the stuff here (use of three accus). */
+/*	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
+	    y1 = y1_mul_t_accu / t;
 					
-	    red = startRGB.red + (int)(diffR*e/f);
-	    green = startRGB.green + (int)(diffG*e/f);
-	    blue = startRGB.blue + (int)(diffB*e/f);
+	    red = startRGB.red + (int)(diffR*y1/height);
+	    green = startRGB.green + (int)(diffG*y1/height);
+	    blue = startRGB.blue + (int)(diffB*y1/height);
 
+	    /* By using full 32 bits this can be made faster as well */
 	    *bufptr++ = red;
 	    *bufptr++ = green;
 	    *bufptr++ = blue;
+
+	    y1_mul_t_accu += incr_y1;
 	}
+	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
+         * to WritePixelArray() can be made also faster */
 	WritePixelArray(buf,0,0,width*3 /* srcMod */,
 			rp,xt,yt+l,width,1,RECTFMT_RGB);
     }
