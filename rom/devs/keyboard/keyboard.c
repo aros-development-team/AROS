@@ -542,6 +542,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     int    i;			/* Loop variable */
     struct InputEvent *event;   /* Temporary variable */
     BOOL   moreevents = TRUE;
+    BOOL   activate_resetphase = FALSE;
     
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
 
@@ -627,9 +628,8 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
 	}
 
-	if(code == 0x78)
-	    KBBase->kb_ResetPhase = TRUE;
-	
+	if(code == 0x78) activate_resetphase = TRUE;
+
 	/* No more keys in buffer? */
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
 	{
@@ -644,10 +644,12 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     D(bug("Done writing events!"));
     event->ie_NextEvent = NULL;
 
-    if(KBBase->kb_ResetPhase)
+    if(activate_resetphase && !KBBase->kb_ResetPhase)
     {
 	struct Interrupt *node;
 
+    	KBBase->kb_ResetPhase = TRUE;
+	
 	if(!IsListEmpty(&KBBase->kb_ResetHandlerList))
 	{
 	    /* We may want to install a timer here so that ColdReboot()
