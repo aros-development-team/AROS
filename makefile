@@ -222,7 +222,7 @@ subdirs:
 		    $$dir/makefile.src > $$dir/makefile || exit 1 ; \
 	    fi ; \
 	    if ( cd $$dir && \
-		$(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
+		$(MAKE) $(MFLAGS) TOP=".." CURDIR="$$dir" \
 		TARGET=$(TARGET) $(TARGET) ) ; \
 	    then true ; else exit 1 ; fi ; \
 	done
