@@ -1906,6 +1906,21 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_RefWindow:
 		data->wd_RefWindow = (Object *)tag->ti_Data;
 		break;
+
+	    case MUIA_Window_WandererBackdrop:
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
+		_handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_DRAGBAR);
+		_handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_SIZEGADGET);
+		_handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_CLOSEGADGET);
+		_handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_DEPTHGADGET);
+		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
+		data->wd_ReqWidth = (LONG)MUIV_Window_Width_Screen(100);
+		/* won't take the barlayer into account */
+		data->wd_ReqHeight = (LONG)MUIV_Window_Height_Screen(100);
+		data->wd_X = (LONG)0;
+		/* place the window below the bar layer */
+		data->wd_Y = (LONG)MUIV_Window_TopEdge_Delta(0);
+		break;
 	}
     }
 
