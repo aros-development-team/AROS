@@ -1,0 +1,15 @@
+<section title="What programming languages are available ?">
+
+<p>Currently, all development is done in ANSI C. We just use some tools
+to automatically generate the C header files (clib, protos, pragmas, fds)
+and AutoDocs from the sources and <a href="mmake.html">MetaMake</a>
+to build everything.</p>
+
+<p>There are some plans to port at least a C compiler to AROS, so we
+could compile code inside of AROS instead of cross compiling but that
+will take some time. For example, we need some extensions to C (namely the
+Macro Varargs of GCC) to make TagLists work. Then some people are
+investigating to port a BASIC dialect to AROS and Aaron Digulla
+wants Python. These are still future plans, though.</p>
+
+</section>
