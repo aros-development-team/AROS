@@ -19,6 +19,8 @@ CLASSES   := application \
 	     rectangle \
 	     register \
 	     scrollbar \
+	     scrollbutton \
+	     scrollgroup \
 	     slider \
 	     string \
 	     text \
