@@ -15,12 +15,12 @@
 
 /* This function type has these parameters so that gcc doesn't complain
    about fprintf being declared with a signature incompatible with the 
-   one of the builtin fprinf function.  */
+   one of the builtin fprintf function.  */
 typedef int intfunc(void *, const char *, ...);
 
 #define MAKE_FAKE_FUNC(sym)                         \
     AROS_MAKE_ASM_SYM(intfunc, sym, sym, 0xBADBAD); \
-    AROS_EXPORT_ASM_SYM(sym);
+    AROS_EXPORT_ASM_SYM(sym)
     
 MAKE_FAKE_FUNC(ferror);
 MAKE_FAKE_FUNC(fflush);
