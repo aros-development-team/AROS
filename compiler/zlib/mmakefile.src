@@ -34,7 +34,6 @@ TARGET_CFLAGS	+= -DAROS -DNO_ERRNO_H
 %copy_includes_cwd path=.
 
 %make_linklib_setup mmake=linklibs-arosz
-%make_vpath
 %make_linklib
 
 %common
