@@ -18,6 +18,10 @@
 #ifndef GRAPHICS_GFX_H
 #   include <graphics/gfx.h>
 #endif
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
+#endif
+
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
@@ -113,14 +117,14 @@ cliprects */
 #define ALIGN_OFFSET(x) ((x) & 0x0F)
 
 
-#define LA_PRIORITY	100
-#define LA_HOOK		101
-#define LA_SUPERBITMAP	102
-#define LA_CHILDOF	103
-#define LA_INFRONTOF	104
-#define LA_BEHIND	105
-#define LA_VISIBLE	106
-#define LA_SHAPE	107
+#define LA_Priority	WA_Priority
+#define LA_Hook		WA_BackFill
+#define LA_SuperBitMap	WA_SuperBitMap
+#define LA_ChildOf	WA_Parent
+#define LA_InFrontOf	WA_InFrontOf
+#define LA_Behind	WA_Behind
+#define LA_Visible	WA_Visible
+#define LA_Shape	WA_Shape
 
 #define ROOTPRIORITY		0
 #define BACKDROPPRIORITY	10
