@@ -55,6 +55,12 @@ BEGIN {
 
     close (file);
 
+    if (!jobs)
+    {
+	print "No jobs found" > "/dev/stderr";
+	exit (10);
+    }
+
     print "There is a total of " jobs " functions.<BR>\n"
     printf ("%4d (%.2f%%) are still todo.<BR>\n",        free, free*100.0/jobs);
     printf ("%4d (%.2f%%) are currently in work.<BR>\n", work, work*100.0/jobs);
