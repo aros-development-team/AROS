@@ -89,7 +89,7 @@ int main( void )
     
     application = ApplicationObject,
         SubWindow, (IPTR)window = FPWindowObject,
-        EndBoopsi,
+        End,
     End;
 
     if (application != NULL)

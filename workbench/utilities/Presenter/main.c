@@ -26,7 +26,7 @@ int main( void )
             MUIA_Window_Activate,        TRUE,
             
             WindowContents, (IPTR) ImageSequenceObject,
-            EndBoopsi,
+            End,
         End,
     End;
 
