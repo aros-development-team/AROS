@@ -14,13 +14,16 @@
 extern struct DosLibrary *DOSBase;
 struct IntuitionBase * IntuitionBase;
 
+#define CANNOT_OPEN_INTUITION	"Cannot open intuition.library\n"
+#define CANNOT_LOAD_SHELL	"Unable to load c/shell\n"
+
 int main(void)
 {
     BPTR segs;
 
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary ("intuition.library",39)) )
     {
-	Write (Output (), "Cannot open intuition.library\n", 32);
+	Write (Output (), CANNOT_OPEN_INTUITION, sizeof(CANNOT_OPEN_INTUITION)-1);
 	return 20;
     }
 
@@ -35,7 +38,7 @@ int main(void)
     }
     else
     {
-	printf ("Unable to load c/shell\n");
+	Write (Output (), CANNOT_LOAD_SHELL, sizeof(CANNOT_LOAD_SHELL)-1);
     }
 
     CloseLibrary ((struct Library *)IntuitionBase);
