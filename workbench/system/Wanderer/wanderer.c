@@ -25,7 +25,6 @@
 
 #include <aros/detach.h>
 
-#include "detach.h"
 #include "iconwindow.h"
 #include "wandererprefs.h"
 #include "wanderer.h"
