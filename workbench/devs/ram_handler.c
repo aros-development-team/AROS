@@ -760,7 +760,7 @@ static void delete(struct rambase *rambase, struct fnode *file)
     Strfree(rambase, file->name);
     Strfree(rambase, file->comment);
     Remove((struct Node *)file);
-    
+
     if (file->type == ST_LINKDIR)
     {
 	/* It is a link. Remove it from the chain. */
@@ -1410,8 +1410,8 @@ static const ULONG sizes[]=
 };
 
 
-static LONG examine(struct fnode *file, 
-                    struct ExAllData *ead, 
+static LONG examine(struct fnode *file,
+                    struct ExAllData *ead,
                     ULONG  size, 
                     ULONG  type,
                     LONG   *dirpos)
@@ -1507,7 +1507,7 @@ static LONG examine(struct fnode *file,
 	    {
 		return ERROR_BUFFER_OVERFLOW;
 	    }
-	    
+
 	    if (!(*next++ = *name++))
 	    {
 		break;
@@ -1535,7 +1535,7 @@ static LONG examine_next(struct rambase *rambase,
     {
 	return ERROR_NO_MORE_ENTRIES;
     }
-        
+
     FIB->fib_OwnerUID	    = 0;
     FIB->fib_OwnerGID	    = 0;
     
@@ -1756,6 +1756,8 @@ void deventry(struct rambase *rambase)
 {
     ULONG notifyMask;
     ULONG fileOpMask;
+    struct Message *msg;
+
     /*
 	Init device port. AllocSignal() cannot fail because this is a
 	freshly created task with all signal bits still free.
@@ -1763,6 +1765,9 @@ void deventry(struct rambase *rambase)
 
     rambase->port->mp_SigBit = AllocSignal(-1);
     rambase->port->mp_Flags  = PA_SIGNAL;
+
+    /* Check if there are pending messages that we missed */
+    if ((msg = GetMsg(rambase->port))) PutMsg(rambase->port, msg);
 
     Notify_initialize(rambase);
 
@@ -1775,11 +1780,11 @@ void deventry(struct rambase *rambase)
 	ULONG flags;
 
 	flags = Wait(fileOpMask | notifyMask);
-	
+
 	if (flags & notifyMask)
 	{
 	    struct NotifyMessage *nMessage;
-	    
+
 	    D(kprintf("Got replied notify message\n"));
 
 	    while ((nMessage = (struct NotifyMessage *)GetMsg(rambase->notifyPort)) != NULL)
@@ -1788,7 +1793,7 @@ void deventry(struct rambase *rambase)
 		FreeVec(nMessage);
 	    }
 	}
-	
+
 	if (flags & fileOpMask)
 	{
 	    processFSM(rambase);
@@ -1803,13 +1808,13 @@ void processFSM(struct rambase *rambase)
     struct dnode      *dir;
 
     LONG   error = 0;
-    
+
 
     /* Get and process the messages. */
     while ((iofs = (struct IOFileSys *)GetMsg(rambase->port)) != NULL)
     {
 	// kprintf("Ram.handler initialized %u\n", iofs->IOFS.io_Command);
-	
+
 	switch (iofs->IOFS.io_Command)
 	{
 	case FSA_OPEN:
@@ -1856,7 +1861,7 @@ void processFSM(struct rambase *rambase)
 			 iofs->io_Union.io_READ.io_Buffer,
 			 &iofs->io_Union.io_READ.io_Length);
 	    break;
-	    
+
 	case FSA_WRITE:
 	    /*
 	      write a number of bytes to a file
@@ -2048,7 +2053,7 @@ void processFSM(struct rambase *rambase)
 		  STRPTR name;   filename
 		  STRPTR comment; NUL terminated C string or NULL.
 		*/
-		
+
 		STRPTR realName = fixName(iofs->io_Union.io_SET_COMMENT.io_Filename);
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
