@@ -1,0 +1,6 @@
+include $(TOP)/config/make.cfg
+
+##MM- compiler-boost : compiler-boost-copy
+##MM- includes : compiler-boost-copy
+
+%copy_dir_recursive mmake=compiler-boost-copy dst=$(AROS_INCLUDES)/boost
