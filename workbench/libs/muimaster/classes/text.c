@@ -208,16 +208,16 @@ static void setup_text (struct MUI_TextData *data, Object *obj)
 				    ZTEXT_ARG_HICHAR, data->hichar);
     else if (data->mtd_Flags & MTDF_HICHARIDX)
     {
-	STRPTR s;
+//	STRPTR s;
 	data->ztext = zune_text_new(data->preparse, data->contents,
 				    ZTEXT_ARG_HICHARIDX, data->hichar);
-	s = strchr(data->preparse, data->hichar);
-	if (s == NULL)
-	    s = strchr(data->contents, data->hichar);
-	if (s && s[1])
-	{
-	    set(obj, MUIA_ControlChar, s[1]);
-	}
+//	s = strchr(data->preparse, data->hichar);
+//	if (s == NULL)
+//	    s = strchr(data->contents, data->hichar);
+//	if (s && s[1])
+//	{
+//	    set(obj, MUIA_ControlChar, s[1]);
+//	}
     }
     else
 	data->ztext = zune_text_new(data->preparse, data->contents,
