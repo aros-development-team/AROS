@@ -4,13 +4,13 @@
 #
 #	Desc: Makefile configuration for AROS (from autoconf)
 #
-ARCH := @aros_arch@
-CPU  := @aros_cpu@
+ARCH	:= @aros_arch@
+CPU	:= @aros_cpu@
 FLAVOUR := @aros_flavour@
-SHELL := @aros_shell@
+SHELL	:= @aros_shell@
 
-SYS_CC := @aros_cc@
-SYS_AS := @aros_as@
+SYS_CC	:= @aros_cc@
+SYS_AS	:= @aros_as@
 HOST_CC := @aros_host_cc@
 HOST_AS := @aros_host_as@
 
@@ -26,24 +26,25 @@ GUI_LDFLAGS	:= @aros_gui_ldflags@
 GUI_LIBFLAGS	:= @aros_gui_libflags@
 GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CCFLAGS	:= @aros_gui_ccflags@
+SHELL_LDFLAGS	:= @aros_shell_ldflags@
 
-RANLIB := @RANLIB@
-AWK := @AWK@
-RM := @RM@
-CP := @CP@
-MV := @MV@
-ECHO := @ECHO@
-MKDIR := @MKDIR@
-TOUCH := @TOUCH@
-AR := @AR@
-SORT := @SORT@
-UNIQ := @UNIQ@
-FOR := @FOR@
-IF := @IF@
-NOP := @NOP@
-CAT := @CAT@
-TEST := @TEST@
-STRIP := @STRIP@
+RANLIB	 := @RANLIB@
+AWK	 := @AWK@
+RM	 := @RM@
+CP	 := @CP@
+MV	 := @MV@
+ECHO	 := @ECHO@
+MKDIR	 := @MKDIR@
+TOUCH	 := @TOUCH@
+AR	 := @AR@
+SORT	 := @SORT@
+UNIQ	 := @UNIQ@
+FOR	 := @FOR@
+IF	 := @IF@
+NOP	 := @NOP@
+CAT	 := @CAT@
+TEST	 := @TEST@
+STRIP	 := @STRIP@
 CHECKUDS := @aros_check_uds@
 MKDEPEND := @aros_mkdepend@
-LITE := @LITE@
+LITE	 := @LITE@
