@@ -24,6 +24,11 @@ typedef	_AROS_WINT_T_	wint_t;
 #undef	_AROS_WINT_T_
 #endif
 
+#ifdef  _AROS_VA_LIST_
+typedef _AROS_VA_LIST_  va_list;
+#undef  _AROS_VA_LIST_
+#endif
+
 /* Users are not allowed to access this type. */
 typedef union
 {
