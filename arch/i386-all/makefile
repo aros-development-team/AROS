@@ -21,7 +21,7 @@ clean:
 	$(RM) $(OSGENDIR) $(LIBDIR)/libkernel.a
 
 $(OSGENDIR)/%.o: %.s
-	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(AS) $(AFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OSGENDIR)/%.o: %.c

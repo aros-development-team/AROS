@@ -17,7 +17,7 @@ $(OBJDIR)/%.o: %.c
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(OBJDIR)/rt_stubs.o: rt_stubs.s
-	$(SYS_CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
+	$(SYS_AS) $(AFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
 $(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o \
