@@ -1,11 +1,13 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Classes for window decor stuff, like dragbar, close etc.
     
     Lang: english
 */
+
+/***********************************************************************************/
 
 #include <string.h>
 
@@ -1193,7 +1195,11 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    
 	    switch (EG(o)->GadgetType & GTYP_SYSTYPEMASK)
 	    {
-		case GTYP_CLOSE: {
+	    #if 0
+	    	/* Intuition now handles this itself in inputhandler_support.c:
+		   HandleCustomGadgetRetVal() */
+		case GTYP_CLOSE:
+		{
 		    /* Send an IDCMP_CLOSEWINDOW message to the application */
 		    /* Get an empty intuimessage */
 		    
@@ -1203,9 +1209,12 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 				      msg->gpi_GInfo->gi_Window,
 				      IntuitionBase);
 				      		    
-		    break; }
-		    
-		case GTYP_WDEPTH: {
+		    break;
+		}
+	    #endif
+	        
+		case GTYP_WDEPTH:
+		{
 		    struct Window *w = msg->gpi_GInfo->gi_Window;
 		    
 		    if (NULL == w->WLayer->front)
@@ -1218,7 +1227,8 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    	/* Send window to front */
 			WindowToFront(w);
 		    }		    
-		    break; }
+		    break;
+		}
 		
 		case GTYP_WZOOM:
 		    ZipWindow(msg->gpi_GInfo->gi_Window);
@@ -1228,15 +1238,15 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    if (msg->gpi_GInfo->gi_Screen == IntuitionBase->FirstScreen)
 		    {
 		        ScreenToBack(msg->gpi_GInfo->gi_Screen);
-		    } else {
+		    }
+		    else
+		    {
 		        ScreenToFront(msg->gpi_GInfo->gi_Screen);
 		    }
 		    break;
 		    
 	    } /* switch (EG(o)->GadgetType & GTYP_SYSTYPEMASK) */
-	    
-	    retval &= ~GMR_VERIFY;
-	    
+	    	    
 	} /* if (verified button press) */
 	
     } /* if (gadget no longer active) */

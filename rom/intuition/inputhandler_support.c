@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for Intuition's InputHandler
@@ -246,6 +246,10 @@ BOOL ih_fire_intuimessage(struct Window * w,
 	    case IDCMP_INACTIVEWINDOW:
 	        ie->ie_Class = IECLASS_INACTIVEWINDOW;
 		break;
+	
+	    case IDCMP_CLOSEWINDOW:
+	    	ie->ie_Class = IECLASS_CLOSEWINDOW;
+		break;
 				
 	    case IDCMP_MENUHELP:
 	        ie->ie_Class = IECLASS_MENUHELP;
@@ -288,10 +292,6 @@ BOOL ih_fire_intuimessage(struct Window * w,
 
 		case IDCMP_INACTIVEWINDOW:
 		    ie->ie_Class = IECLASS_INACTIVEWINDOW;
-		    break;
-		    
-		case IDCMP_CLOSEWINDOW:
-		    ie->ie_Class = IECLASS_CLOSEWINDOW;
 		    break;
 		    
 		case IDCMP_GADGETUP:
@@ -431,15 +431,35 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 	if (retval & GMR_REUSE)
 	    *reuse_event = TRUE;
 
-	if (    (retval & GMR_VERIFY)
-	     && (gadget->Activation & GACT_RELVERIFY))
+	if (retval & GMR_VERIFY)
 	{
-	    ih_fire_intuimessage(gi->gi_Window,
-	    		      	 IDCMP_GADGETUP,
-			      	 termination & 0x0000FFFF,
-			      	 gadget,
-			      	 IntuitionBase);
-	}
+	    switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
+	    {
+	    	case GTYP_CLOSE:
+		    ih_fire_intuimessage(gi->gi_Window,
+	    		      		 IDCMP_CLOSEWINDOW,
+			      		 0,
+			      		 gi->gi_Window,
+			      		 IntuitionBase);
+		    break;
+		    
+		    
+	    	case 0:
+		default: 
+		    /* Not a system gadget */	
+		   if (gadget->Activation & GACT_RELVERIFY)
+		   {
+		       ih_fire_intuimessage(gi->gi_Window,
+	    		      		    IDCMP_GADGETUP,
+			      		    termination & 0x0000FFFF,
+			      		    gadget,
+			      		    IntuitionBase);
+		   }
+		   break;
+		   		
+	    } /* switch(gad->GadgetType & GTYP_SYSTYPEMASK) */
+	    	    
+	} /* if (retval & GMR_VERIFY) */
 
 	gpgi.MethodID = GM_GOINACTIVE;
 	gpgi.gpgi_GInfo = gi;
@@ -465,7 +485,7 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 	if (gadget)
 	{
 	    gadget = DoActivateGadget(gi->gi_Window, gadget, IntuitionBase);
-	} /* if (gadget) */
+	}
 	
     } /* if (retval != GMR_MEACTIVE) */
     else
