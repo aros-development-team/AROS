@@ -48,6 +48,8 @@
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 /****************************************************************************************/
 
@@ -379,8 +381,19 @@ extern struct ExecBase * SysBase;
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
 
+#ifdef __MORPHOS__
+#define DeinitRastPort(x) ((void)0)
 
+#define DoMethod(MyObject, tags...) \
+	({ULONG _tags[] = { tags }; DoMethodA((MyObject), (APTR)_tags);})
 
+#define CoerceMethod(MyClass, MyObject, tags...) \
+	({ULONG _tags[] = { tags }; CoerceMethodA((MyClass), (MyObject), (APTR)_tags);})
+
+#define DoSuperMethod(MyClass, MyObject, tags...) \
+	({ULONG _tags[] = { tags }; DoSuperMethodA((MyClass), (MyObject), (APTR)_tags);})
+
+#endif /*MorphOS*/
 
 
 #endif /* GADTOOLS_INTERN_H */

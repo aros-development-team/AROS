@@ -2,7 +2,11 @@ include $(TOP)/config/make.cfg
 
 INCSUBDIRS :=	aros \
 		exec \
-		libcore
+		libcore \
+        gadgets \
+        intuition \
+        libraries \
+		proto
 		
 
 INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.*))

@@ -356,7 +356,7 @@ STATIC IPTR text_render(Class *cl, Object *o, struct gpRender *msg)
 	/* Create the text */
 	str = textbuf;
 
-	RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)puttostr, &str);
+	RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
 
 	D(bug("Text formatted into: %s\n", textbuf));
 	numchars = strlen(textbuf);

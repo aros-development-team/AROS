@@ -20,6 +20,7 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 #include <aros/debug.h>
+#include <intuition/gadgetclass.h>
 #include "gadtools_intern.h"
 
 /**********************************************************************************************/

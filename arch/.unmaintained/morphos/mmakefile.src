@@ -2,4 +2,8 @@ include $(TOP)/config/make.cfg
 
 #MM- AROS-morphos : includes-morphos setup-morphos setup-clib workbench-morphos
 
-#MM- workbench-morphos: workbench-libs-locale-module-quick workbench-libs-iffparse-module-quick workbench-libs-commodities-module-quick
+#MM- workbench-morphos: \
+#MM		workbench-libs-locale-module-quick \
+#MM		workbench-libs-iffparse-module-quick \
+#MM		workbench-libs-commodities-module-quick \
+#MM		workbench-libs-gadtools-module-quick \
