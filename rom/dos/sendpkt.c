@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -9,6 +9,7 @@
 #include "dos_intern.h"
 #include <dos/dosextens.h>
 #include <dos/notify.h>
+#include <exec/initializers.h>
 
 /* TODO: This can be done much better! */
 #ifndef AROS_FAST_BPTR
@@ -736,7 +737,20 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    break;
 	    
 	case ACTION_CHANGE_SIGNAL:  // No associated function
-	    /* TODO */
+	    {
+	    	struct MsgPort *msgport;
+		struct Task    *task;
+		
+		fh = (struct FileHandle *)dp->dp_Arg1;
+    	    	msgport = (struct MsgPort *)dp->dp_Arg2;
+		task = msgport ? msgport->mp_SigTask : NULL;
+		
+		iofs->IOFS.io_Device = fh->fh_Device;
+		iofs->IOFS.io_Unit   = fh->fh_Unit;
+
+		iofs->IOFS.io_Command = FSA_CHANGE_SIGNAL;
+		iofs->io_Union.io_CHANGE_SIGNAL.io_Task = task;
+	    }
 	    break;
 	    
 	case ACTION_WAIT_CHAR:      // WaitForChar()	
