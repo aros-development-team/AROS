@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <toollib/error.h>
 #include "var.h"
+#include "parse.h"
+#include "expr.h"
 
 #define DEBUG_SET	0
 #define DEBUG_LEVEL	0
@@ -45,9 +47,9 @@ ExprCB (const char ** args, int dummy, CBD data)
     }
 
 #ifdef HAVE_VSNPRINT
-    vsnprint (buffer, sizeof (buffer), "%d", value);
+    snprintf (buffer, sizeof (buffer), "%d", value);
 #else
-    vsprint (buffer, "%d", value);
+    sprintf (buffer, "%d", value);
 #endif
 
     return VS_New (buffer);
