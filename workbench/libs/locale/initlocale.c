@@ -16,6 +16,7 @@
 #include <proto/exec.h>
 #include <proto/locale.h>
 #include <aros/asmcall.h>
+#include <aros/libcall.h>
 
 #include <aros/debug.h>
 
@@ -23,11 +24,12 @@
 
 #define	DEBUG_INITLOCALE(x)	;
 
-extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
+AROS_LD4(ULONG, strcompare,
     AROS_UFPA(STRPTR, string1, A1),
     AROS_UFPA(STRPTR, string2, A2),
     AROS_UFPA(ULONG, length, D0),
-    AROS_UFPA(ULONG, how, D1)
+    AROS_UFPA(ULONG, how, D1),
+    struct LocaleBase *, LocaleBase, 22, english
 );
 
 extern void *__eng_functable[];
@@ -55,12 +57,13 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 
     DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n",il));
 
+    bug("OOO\n");
+
     while(lang == NULL && i < 10)
     {
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
 
 	/* Is this english? If not try and load the language */
-	
     #ifdef __MORPHOS__  /*I had some ugly problems with the macros adding a space before _Gate so I had to do it this way*/
     if( NULL != lName &&
     	    AROS_UFC4(ULONG, &LIB_strcompare_Gate,
@@ -69,6 +72,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 		AROS_UFCA(ULONG, 7, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
     #else
+    asm __volatile__ ("NOP\n;");
     if( NULL != lName &&
     	    AROS_CALL4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
 		AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
@@ -78,6 +82,8 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
                 struct LocaleBase *, LocaleBase) != 0)
     #endif
 	{
+    asm __volatile__ ("NOP\n;");
+    	    #warning FIXME: watch out for buffer overflows here!
 	    strcpy(fileBuf, lName);
 	    strcat(fileBuf, ".language");
 	    
@@ -140,9 +146,11 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	    
     	    /* If it is still no good, then we have no hope */
 	}
+	bug("I = %d\n", i);
 	i++;
     }
 
+    bug("FOOO\n");
     if (lang == NULL)
     {
     	strcpy(il->LanguageName, defLocale.loc_LanguageName);
