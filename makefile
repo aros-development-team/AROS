@@ -40,7 +40,7 @@ endif
 DEP_LIBS= $(LIBAMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
     $(LIBDIR)/libamiga.a \
-    $(LIBDIR)/libarossupport.a
+    $(LIBDIR)/libarossupport.a \
     $(SHELL_DEPLIB_DOS)
 
 LIBS=-L$(LIBDIR) \
