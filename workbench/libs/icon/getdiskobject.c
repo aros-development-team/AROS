@@ -17,7 +17,7 @@
 	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
-	struct IconBase *, IconBase, 13, Icon)
+	struct Library *, IconBase, 13, Icon)
 
 /*  FUNCTION
 
@@ -38,7 +38,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IconBase *, IconBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
     return GetIconTagList(name, NULL);
     
