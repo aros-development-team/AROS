@@ -105,12 +105,28 @@
         	    break;
 
         	case AREAINFOFLAG_CLOSEDRAW:
-        	    /* 2 indicates that this Polygon is closed with this coordinate */
-        	    Draw(rp, CurVctr[0], CurVctr[1]);
+        	    /* this indicates that this Polygon is closed with this coordinate */
+        	    /*
+        	     * Must draw from lower y's to higher ones otherwise
+        	     * the fill algo does not work nicely.
+        	     */
+#if 1
+        	    if (rp->cp_y > CurVctr[1]) {
+        	      Draw(rp, CurVctr[0], CurVctr[1]);
+        	    } else {
+        	      int _x = rp->cp_x;
+        	      int _y = rp->cp_y;
+        	      rp->cp_x = CurVctr[0];
+        	      rp->cp_y = CurVctr[1];
+        	      Draw(rp, _x, _y);
+        	      rp->cp_x = _x;
+        	      rp->cp_y = _y;
+        	    }
+#endif
         	    CurVctr = &CurVctr[2];
         	    CurFlag = &CurFlag[1];
         	    /* 
-        	       no need to set the bundaries here like in case 0x00 as
+        	       no need to set the bundaries here like in case above as
         	       this coord closes the polygon and therefore is the same
         	       one as the first coordinate of the polygon. 
         	    */
@@ -173,7 +189,23 @@
 
         	case AREAINFOFLAG_DRAW:
         	    /* Draw a line to new position */
-        	    Draw(rp, CurVctr[0], CurVctr[1]);
+#if 1
+        	    /*
+        	     * Must draw from lower y's to higher ones otherwise
+        	     * the fill algo does not work nicely.
+        	     */
+        	    if (rp->cp_y > CurVctr[1]) {
+        	      Draw(rp, CurVctr[0], CurVctr[1]);
+        	    } else {
+        	      int _x = rp->cp_x;
+        	      int _y = rp->cp_y;
+        	      rp->cp_x = CurVctr[0];
+        	      rp->cp_y = CurVctr[1];
+        	      Draw(rp, _x, _y);
+        	      rp->cp_x = _x;
+        	      rp->cp_y = _y;
+        	    }
+#endif
         	    if (bounds.MinX > CurVctr[0])
         	        bounds.MinX = CurVctr[0];
         	    if (bounds.MaxX < CurVctr[0])
