@@ -371,13 +371,17 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_Resolution.Y = 44;
 	screen->DInfo.dri_Flags = 0;
 
-	if (screen->Screen.Font)
-	    screen->DInfo.dri_Font = OpenFont(screen->Screen.Font);
+	if (ns.Font)
+	    screen->DInfo.dri_Font = OpenFont(ns.Font);
 
 	if (!screen->DInfo.dri_Font)
 	    screen->DInfo.dri_Font = GfxBase->DefaultFont;
 
-	SetFont (&screen->Screen.RastPort, screen->DInfo.dri_Font);
+	SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
+
+	AskFont(&screen->Screen.RastPort, &screen->textattr); 
+        screen->Screen.Font = &screen->textattr;
+	
 
         D(bug("fonts set\n"));	    
 
