@@ -262,7 +262,7 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	data->knob_left = _mleft(obj);
     }
 
-    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
+    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0,0,0);
 
     zune_imspec_draw(data->knob_bg, muiRenderInfo(obj),
 		     data->knob_left, data->knob_top, data->knob_width, data->knob_height,
