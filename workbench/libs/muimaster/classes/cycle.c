@@ -40,6 +40,7 @@ struct MUI_CycleData
     Object  	    	    	 *imgobj;   
     struct MUI_EventHandlerNode   ehn;
     struct Hook     	    	  pressedhook;
+    struct MUI_ImageSpec_intern  *popbg;
     struct Window   	    	 *popwin;
     WORD    	    	    	  popitemwidth;
     WORD    	    	    	  popitemheight;
@@ -300,6 +301,13 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
     	data->popwin = NULL;
     }
     
+    if (data->popbg)
+    {
+    	zune_imspec_hide(data->popbg);
+    	zune_imspec_cleanup(data->popbg);
+	data->popbg = NULL;
+    }
+    
     get(data->pageobj, MUIA_Group_ChildList, (IPTR *)&childlist);
 
     cstate = (Object *)childlist->mlh_Head;
@@ -354,18 +362,47 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
     
     if (which == data->activepopitem)
     {
+    	WORD off = 0;
+	
+    	if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
+	{
+            SetAPen(data->popwin->RPort, _pens(obj)[MPEN_SHADOW]);
+	    RectFill(data->popwin->RPort, x1, y1, x1, y2);
+	    RectFill(data->popwin->RPort, x1 + 1, y1, x2 - 1, y1);
+    	    SetAPen(data->popwin->RPort, _pens(obj)[MPEN_SHINE]);
+	    RectFill(data->popwin->RPort, x2, y1, x2, y2);
+	    RectFill(data->popwin->RPort, x1 + 1, y2, x2 - 1, y2);
+	    
+	    off = 1;
+	}
+	
     	SetAPen(data->popwin->RPort, _pens(obj)[MPEN_FILL]);
-	RectFill(data->popwin->RPort, x1, y1, x2, y2);
+	RectFill(data->popwin->RPort, x1 + off, y1 + off, x2 - off, y2 - off);
     }
     else
     {
-    	/* FIXME: Render with popup background */
-    	SetAPen(data->popwin->RPort, 0);
-	RectFill(data->popwin->RPort, x1, y1, x2, y2);
+    	if (data->popbg)
+	{
+	    zune_imspec_draw(data->popbg, muiRenderInfo(obj),
+	    	    	     x1, y1, x2 - x1 + 1, y2 - y1 + 1,
+			     x1, y1, 0);
+	}
+	else
+	{
+    	    SetAPen(data->popwin->RPort, 0);
+	    RectFill(data->popwin->RPort, x1, y1, x2, y2);
+	}
     }
     
-    SetAPen(data->popwin->RPort, _pens(obj)[MPEN_TEXT]);    
-    zune_text_draw(text, obj, x1, x2, y1 + POPITEM_EXTRAHEIGHT / 2);
+    SetAPen(data->popwin->RPort, _pens(obj)[MPEN_TEXT]);
+    
+    y1 += POPITEM_EXTRAHEIGHT / 2;
+    if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
+    {
+    	y1++;
+    }
+    
+    zune_text_draw(text, obj, x1, x2, y1);
     
     _rp(obj) = saverp;
     
@@ -386,8 +423,6 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
-    	if (_width(child) > data->popitemwidth) data->popitemwidth = _width(child);
-	if (_height(child) > data->popitemheight) data->popitemheight = _height(child);
 	set(child, MUIA_UserData, 0);
     }
     
@@ -396,17 +431,28 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 
     data->popitemwidth  += POPITEM_EXTRAWIDTH;
     data->popitemheight += POPITEM_EXTRAHEIGHT;
+
+    if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
+    {
+    	data->popitemwidth += 2;
+	data->popitemheight += 2;
+    }
     
     zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp]);
     
-    data->popitemoffx = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerLeft;
-    data->popitemoffy = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerTop;
+    data->popitemoffx = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerLeft +
+    	    	    	zframe->ileft;
+			
+    data->popitemoffy = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerTop +
+    	    	    	zframe->itop;
     
     winw = data->popitemwidth + data->popitemoffx + 
-    	   muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerRight;
+    	   muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerRight +
+	   zframe->iright;
 	   
     winh = data->popitemheight * data->entries_num + data->popitemoffy +
-    	   muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerBottom;
+    	   muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerBottom +
+	   zframe->ibottom;
     
     if ((winw > _screen(obj)->Width) || (winh > _screen(obj)->Height))
     {
@@ -431,6 +477,9 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     	KillPopupWin(obj, data);
 	return FALSE;
     }
+    
+    data->popbg = zune_imspec_setup(MUII_PopupBack, muiRenderInfo(obj));
+    if (data->popbg) zune_imspec_show(data->popbg, obj);
     
     winx = _window(obj)->LeftEdge + _mleft(data->pageobj) - 
     	   data->popitemoffx - POPITEM_EXTRAWIDTH / 2;
@@ -468,12 +517,29 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     zframe->draw(muiRenderInfo(obj), 0, 0, winw, winh);    
 
     /* FIXME: Render with popup background */
-    SetAPen(rp, 0);
-    RectFill(rp, zframe->ileft, zframe->itop,
-    	    	 winw - 1 - zframe->iright, winh - 1 - zframe->ibottom);
-		 
+    
+    if (data->popbg)
+    {
+	zune_imspec_draw(data->popbg, muiRenderInfo(obj),
+		 zframe->ileft, zframe->itop,
+		 winw - zframe->ileft - zframe->iright,
+		 winh - zframe->itop - zframe->ibottom,
+		 zframe->ileft, zframe->itop, 0);
+    }
+    else
+    {
+	SetAPen(rp, 0);
+	RectFill(rp, zframe->ileft, zframe->itop,
+    	    	     winw - 1 - zframe->iright, winh - 1 - zframe->ibottom);
+    }
+     
     x = data->popitemoffx;
     y = data->popitemoffy + POPITEM_EXTRAHEIGHT / 2;
+    
+    if(muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_recessed_entries)
+    {
+	y++;
+    }
     
     i = 0;
     cstate = (Object *)childlist->mlh_Head;
