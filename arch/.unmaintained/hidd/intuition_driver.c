@@ -337,15 +337,26 @@ void intui_RefreshWindowFrame(struct Window *w)
 void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
+    if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
+    {
+      MoveSizeLayer(window->BorderRPort->Layer,
+    		   (x - window->TopEdge),
+    		   (y - window->LeftEdge),
+    		   (width - window->Width),
+    		   (height - window->Height) );
+      RefreshWindowFrame(window);
+                    
+    }
     MoveSizeLayer(window->WLayer,
     		  (x - window->TopEdge),
     		  (y - window->LeftEdge),
     		  (width - window->Width),
     		  (height - window->Height) );
-    window->LeftEdge = x;
+
+    window->LeftEdge= x;
     window->TopEdge = y;
-    window->Width = width;
-    window->Height = height;
+    window->Width   = width;
+    window->Height  = height;
 
     RefreshWindowFrame(window);
 }
