@@ -105,7 +105,8 @@ static void Action(void)
         task = (struct Task *)SysBase->TaskWait.lh_Head;
 	
     } /* for(i = 0; i < 2;i++) */
-
+    bug("\n");
+    CheckTaskStack(FindTask(NULL));
     bug("\n------------------------------------------------------------------------------\n\n");
     
     Enable();
