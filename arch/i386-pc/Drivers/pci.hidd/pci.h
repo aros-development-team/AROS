@@ -158,10 +158,6 @@
 
 /***** PCI system HIDD *******************/
 
-/* IDs */
-#define IID_Hidd_PCIBus        "hidd.bus.pci"
-#define CLID_Hidd_PCIBus       "hidd.bus.pci"
-
 /* misc */
 
 struct pci_staticdata
