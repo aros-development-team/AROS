@@ -55,10 +55,33 @@ void writemccinit(void)
     {
         fprintf(out, "%s\n", linelistit->line);
     }
-      
+    
+    if (datastruct != NULL)
+    {
+        struct linelist *line = NULL;
+        
+        fprintf
+        (
+            out,
+            "\n"
+            "/*** Instance data structure ********************************************/\n"
+            "struct %s_DATA\n"
+            "{\n",
+            modulename
+        );
+        
+        for (line = datastruct; line != NULL; line = line->next)
+        {
+            fprintf(out, "    %s\n", line->line);
+        }
+        
+        fprintf(out, "};\n");
+    }
+    
     fprintf
     (
         out,
+        "\n"
         "\n"
         "/*** Variables **************************************************************/\n"
         "struct ExecBase        *SysBase;\n"
@@ -155,7 +178,19 @@ void writemccinit(void)
         "    MUIMasterBase = OpenLibrary( \"muimaster.library\", 0 );\n"
         "    if( MUIMasterBase == NULL ) return FALSE;\n"
         "    \n"
-        "    MCC = MUI_CreateCustomClass( LIBBASE, \"%s\", NULL, 0, %s_Dispatcher );\n"
+        "    MCC = MUI_CreateCustomClass( LIBBASE, \"%s\", NULL, ",
+        superclass
+    );
+    
+    if (datastruct == NULL)
+        fprintf(out, "0");
+    else
+        fprintf(out, "sizeof(struct %s_DATA)", modulename);
+    
+    fprintf
+    (
+        out,
+        ", %s_Dispatcher );\n"
         "    if( MCC == NULL ) return FALSE;\n"
         "    \n"
         "    return TRUE;\n"
@@ -170,7 +205,7 @@ void writemccinit(void)
         "\n"
         "ADD2INITLIB( MCC_Startup, 0 );\n"
         "ADD2EXPUNGELIB( MCC_Shutdown, 0 );\n",
-        superclass, modulename            
+        modulename            
     );
     
     fclose(out);

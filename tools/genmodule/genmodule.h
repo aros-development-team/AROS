@@ -46,6 +46,12 @@ extern struct functionlist *funclist;
  */
 extern struct functionlist *methlist;
 
+/* In datastruct we will keep the lines that define the class instancedata
+ * struct.
+ */
+
+extern struct linelist *datastruct;
+
 /* In forcelist a list of basenames is present that need to be present in the
  * static link library so that certain libraries are opened by a program
  */
@@ -67,6 +73,7 @@ extern struct linelist *cdeflines, *protolines;
 
 void readconfig(void);
 void readref(void);
+void readrefmcc(void);
 void writeincproto(int dummy);
 void writeincclib(int dummy);
 void writeincdefines(int dummy);
