@@ -44,7 +44,7 @@ const struct Resident AFS_resident=
 	RTC_MATCHWORD,
 	(struct Resident *)&AFS_resident,
 	(APTR)&afshandlerend,
-	RTF_AUTOINIT,
+	RTF_COLDSTART | RTF_AFTERDOS | RTF_AUTOINIT,
 	41,
 	NT_DEVICE,
 	-122,
@@ -147,23 +147,20 @@ AROS_LH3(void, open,
 	AROS_LIBFUNC_INIT
 
 	unitnum = flags = 0;
-	if (afsbase->device.dd_Library.lib_OpenCnt == NULL)
+	afsbase->device.dd_Library.lib_OpenCnt++;
+	afsbase->rport.mp_SigTask=FindTask(NULL);
+	iofs->IOFS.io_Command = -1;
+	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
+	WaitPort(&afsbase->rport);
+	(void)GetMsg(&afsbase->rport);
+	if (iofs->io_DosError == NULL)
 	{
-		afsbase->device.dd_Library.lib_OpenCnt++;
-		afsbase->rport.mp_SigTask=FindTask(NULL);
-		iofs->IOFS.io_Command = -1;
-		PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
-		WaitPort(&afsbase->rport);
-		(void)GetMsg(&afsbase->rport);
-		if (iofs->io_DosError == NULL)
-		{
-			iofs->IOFS.io_Device = &afsbase->device;
-			afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-			iofs->IOFS.io_Error = 0;
-			return;
-		}
-		afsbase->device.dd_Library.lib_OpenCnt--;
+		iofs->IOFS.io_Device = &afsbase->device;
+		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+		iofs->IOFS.io_Error = 0;
+		return;
 	}
+	afsbase->device.dd_Library.lib_OpenCnt--;
 	iofs->IOFS.io_Error = IOERR_OPENFAIL;
 	AROS_LIBFUNC_EXIT	
 }
