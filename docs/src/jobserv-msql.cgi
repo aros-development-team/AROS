@@ -14,8 +14,15 @@ printf ("Content-type: text/html\n\n");
 debugenv(0,$argc,$argv);
 
 $login=getenv("REMOTE_USER");
+$query_string = getenv ("QUERY_STRING");
+$args = split ($query_string, "=");
+$query = urlDecode ($args[1]);
 
-$res = msqlQuery ($sock, "select comment from jobs where status = 2 and email = '" + $login + "' order by comment");
+printf ("You have issued the following command:<P>\n", $res);
+
+printf ("<PRE>%s</PRE><P>\n", $query);
+
+$res = msqlQuery ($sock, $query);
 
 if ($res < 0)
 {
@@ -24,35 +31,25 @@ if ($res < 0)
     exit (10);
 }
 
-printf ("These %d jobs were finished by you:<P>\n", $res);
-
 $query = msqlStoreResult ();
 
-printf ("<TABLE>\n");
-printf ("<TR><TH>Job</TH><TH>Job</TH><TH>Job</TH></TR>\n");
+printf ("This is the result:<P>\n");
 
 $row = msqlFetchRow ($query);
 
-$col = 0;
+printf ("<TABLE>\n");
+
 while ( # $row != 0 )
 {
-    if ($col == 0)
+    $t = 0;
+    printf ("<TR>");
+    while ($t < #$row)
     {
-	printf ("<TR>");
+	printf ("<TD>%s</TD>", $row[$t]);
+	$t = $t + 1;
     }
-    printf ("<TD>%s</TD>\n", $row[0]);
+    printf ("</TR>\n");
     $row = msqlFetchRow ($query);
-    $col = $col + 1;
-    if ($col == 3)
-    {
-	printf ("</TR>");
-	$col = 0;
-    }
-}
-
-if ($col != 0)
-{
-    printf ("</TR>");
 }
 
 printf ("</TABLE>\n");

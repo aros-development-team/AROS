@@ -100,10 +100,12 @@ jobserver : jobserver-setup \
 	    $(JOBDEST)jobserv-free.html \
 	    $(JOBDEST)jobserv-work.html \
 	    $(JOBDEST)jobserv-done.html \
+	    $(JOBDEST)jobserv-msql.html \
 	    $(JOBDEST)cgi-bin/jobserv-add.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-free.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-work.cgi \
 	    $(JOBDEST)cgi-bin/jobserv-done.cgi \
+	    $(JOBDEST)cgi-bin/jobserv-msql.cgi \
 	    $(JOBDEST)cgi-bin/jobserv.cgi \
 	    $(JOBDEST)cgi-bin/support.lib \
 	    $(JOBDEST)index.html \
@@ -163,6 +165,13 @@ $(JOBDEST)jobserv-done.html: page_header.html jobserv-done.body \
 	    page_footer_nolinks.html
 	cat $^ | \
 	    sed "s/\\\\thischapter/Finished jobs/" | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(JOBDEST)jobserv-msql.html: page_header.html jobserv-msql.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/mSQL interface/" | \
 	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 

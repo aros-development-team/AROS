@@ -1,0 +1,72 @@
+Enter the mSQL command below:
+
+<FORM ACTION="/~digulla/jobserver/cgi-bin/jobserv-msql.cgi" METHOD="PUT">
+<TEXTAREA NAME="msql" ROWS="10" COLS="80"></TEXTAREA><P>
+<INPUT TYPE="submit" VALUE="Go">
+<INPUT TYPE="reset" VALUE="Clear">
+</FORM><P>
+
+The jobserver consists of the following tables:
+
+<UL>
+    <LI> <B><TT>jobs</TT><B><P>
+    Fields:
+    <UL>
+	<LI> <TT>jobid</TT> (eg. intuition00105)
+	<LI> <TT>status</TT> (0 = free, 1 = in work, 2 = done)
+	<LI> <TT>email</TT> (login of the user. The name should really
+		be login instead of email.)
+	<LI> <TT>comment</TT> (eg. Write xyz)
+    </UL>
+</UL>
+
+Here is a list of the most useful queries. You don't need to copy
+case when entering them (ie. SELECT is the same as select).
+
+<UL>
+<LI><SAMP>
+SELECT * FROM jobs WHERE email='digulla'
+</SAMP>
+
+would show all infos about all jobs which were added, allocated and
+finished by me.
+
+<LI><SAMP>
+SELECT status,comment FROM jobs WHERE email='digulla'
+</SAMP>
+
+would do the same but only the status and the comment of the jobs
+would be listed.
+
+<LI><SAMP>
+SELECT * FROM jobs WHERE email='digulla' ORDER BY status,comment
+</SAMP>
+
+would return an ordered list.
+
+<LI><SAMP>
+INSERT INTO jobs(jobid,email,comment)
+ VALUES('new00001','digulla','Demo job')
+</SAMP>
+
+would add a new entry to the table. The jobid would be new00001, the email
+(login) digulla and the comment "Demo job".
+
+<LI><SAMP>
+DELETE FROM jobs WHERE jobid='new00001'
+</SAMP>
+
+would delete the job added with the rule right before.
+
+<LI><SAMP>
+UPDATE jobs SET email='digulla',status=2 WHERE email<>'digulla'
+</SAMP>
+
+would mark all jobs as completed by me (except those which are added or
+allocated by me) ;-)
+
+</UL>
+
+For a complete descriptions of mSQL commands and options, have a look
+at the <A HREF="http://Hughes.com.au/library/msql2/manual/">mSQL 2.0
+Manual</A> at <A HREF="http://Hughes.com.au/">Hughes Technologies</A>.

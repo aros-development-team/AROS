@@ -2,44 +2,22 @@ Please enter the infos of the new job:<P>
 
 <FORM ACTION="/~digulla/jobserver/cgi-bin/jobserv-add.cgi" METHOD="PUT">
 <TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
-</TABLE><P>
-<TABLE>
-<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=50 MAXLENGTH=50><BR></TD></TR>
-<TR><TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=50 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
+<TR><TD ALIGN="right">Jobid =</TD><TD><INPUT TYPE="text" NAME="jobid" SIZE=20 MAXLENGTH=50><BR></TD>
+<TD ALIGN="right">Comment =</TD><TD><INPUT TYPE="text" NAME="comment" SIZE=30 MAXLENGTH=256><BR></TD></TR>
 </TABLE><P>
 
 <INPUT TYPE="submit" value="Add">
