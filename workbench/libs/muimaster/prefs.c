@@ -47,8 +47,6 @@ static char *g_strdup(char *x)
 #define g_free(x) FreeVec(x);
 #endif
 
-struct ZunePrefs __zprefs;
-
 static struct TextAttr defaultFont =
     { "topaz.font", 8, FS_NORMAL, 0 };
 

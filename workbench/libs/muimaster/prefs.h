@@ -142,7 +142,6 @@ struct ZunePrefs {
 #endif
 };
 
-extern struct ZunePrefs __zprefs;
 //extern GdkColor __mpens[];
 
 void __zune_prefs_init    (struct ZunePrefs *prefs);
