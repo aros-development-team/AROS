@@ -10,7 +10,6 @@
 #include <exec/resident.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
-#include <workbench/icon.h>
 #include <utility/utility.h>
 #include "initstruct.h"
 #include "iffparse_intern.h"
@@ -49,9 +48,9 @@ const struct Resident resident=
     (ULONG *)inittabl
 };
 
-const char name[]=ICONNAME;
+const char name[]=IFFPARSENAME;
 
-const char version[]="$VER: icon 1.0 (28.3.96)\n\015";
+const char version[]="$VER: iffparse 41.1 (10.2.97)\n\015";
 
 const APTR inittabl[4]=
 {
