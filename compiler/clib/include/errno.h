@@ -5,7 +5,7 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
-    Desc: ANSI-C header file string.h
+    Desc: ANSI-C header file errno.h
     Lang: english
 */
 
