@@ -66,7 +66,40 @@ AROS_LH3(ULONG, SetIPrefs,
             DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE\n"));
             if (length > sizeof(struct IScreenModePrefs))
                 length = sizeof(struct IScreenModePrefs);
+	    
+	    if (memcmp(&GetPrivIBase(IntuitionBase)->ScreenModePrefs, data,
+	               sizeof(struct IScreenModePrefs)) == 0)
+	        break;
+		
             CopyMem(data, &GetPrivIBase(IntuitionBase)->ScreenModePrefs, length);
+	    
+	    if (GetPrivIBase(IntuitionBase)->WorkBench)
+	    {
+	        BOOL try = TRUE, closed;
+		
+	        UnlockIBase(lock);
+		
+		while (try && !(closed = CloseWorkBench()))
+		{
+                    struct EasyStruct es =
+                    {
+                        sizeof(struct EasyStruct),
+                        0,
+                        "System Request",
+                        "Intuition is attempting to reset the screen,\n"
+			"please close all windows except Wanderer's ones.",
+                        "Retry|Cancel"
+                    };
+
+                    try = EasyRequestArgs(NULL, &es, NULL, NULL) == 1;
+		}
+		
+		if (closed)
+		    OpenWorkBench();
+		
+		return TRUE;
+	    }
+	    
             break;
 	    
 	default:
