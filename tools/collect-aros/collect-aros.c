@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 	    if (argv[cnt][1]=='o')
      	        output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
             else
-	    /* Incremental linking is required */
+	    /* Incremental linking is requested */
             if (argv[cnt][0]=='r')
 	        incremental = 1;
 	}
