@@ -96,13 +96,15 @@ FUNCTIONS	:= \
 	writepixelarray8 \
 	xorrectregion
 
+FSRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+
 PRE_FUNCS := $(FUNCTIONS)
 %prepare_replace rom/graphics
 %filter_replace FUNCTIONS
 ALL_FILES := $(INIT_FILE) $(FILES) $(ADDITIONAL_OBJS) $(END_FILE)
 
-DEPS := $(foreach f,$(INIT_FILE) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
-OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+DEPS  := $(foreach f,$(INIT_FILE) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
+OBJS  := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM
 kernel-graphics-linklib : show-flags $(LIB)
@@ -122,6 +124,16 @@ kernel-graphics :
 #MM
 setup :
 	%mkdirs_q $(OBJDIR)
+
+#MM includes-generate : setup-clib
+includes-generate : setup $(TOP)/compiler/include/clib/graphics_protos.h \
+	    $(TOP)/compiler/include/defines/graphics.h
+
+$(TOP)/compiler/include/clib/graphics_protos.h : $(FSRCS)
+	@$(SCRIPTDIR)/genshared -clib -prefix $(TOP)/compiler/include $(FSRCS)
+
+$(TOP)/compiler/include/defines/graphics.h : $(FSRCS)
+	@$(SCRIPTDIR)/genshared -defines -prefix $(TOP)/compiler/include $(FSRCS)
 
 #MM
 clean ::
