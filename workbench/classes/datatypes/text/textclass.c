@@ -179,13 +179,13 @@ static int LoadText(struct Text_Data *td, STRPTR filename, BPTR file)
 {
     if ((td->title = StrCopy(filename)))
     {
-	D(bug("Get the file size\n"));
+	D(bug("text.datatype/LoadText: Get the file size\n"));
 	if ((td->buffer_allocated_len = GetFileSize(file)) >= 0)
 	{
-	    D(bug("Allocated\n"));
+	    D(bug("text.datatype/LoadText: Allocated\n"));
 	    if ((td->buffer_allocated = AllocVec(td->buffer_allocated_len + 1, MEMF_PUBLIC)))
 	    {
-		D(bug("Read\n"));
+		D(bug("text.datatype/LoadText: Read\n"));
 		if ((Read(file, td->buffer_allocated, td->buffer_allocated_len) == td->buffer_allocated_len))
 		{
 		    td->buffer_allocated[td->buffer_allocated_len] = 10;
@@ -314,7 +314,7 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 
     PrepareMark(td, &mark_x1, &mark_y1, &mark_x2, &mark_y2, &mark_line1, &mark_line2);
 
-    D(bug(" DrawText()\n"));
+    D(bug("text.datatype/DrawText: DrawText()\n"));
 
     GetRPAttrs(rp,
 	       RPTAG_APen, &apen,
@@ -1266,7 +1266,7 @@ static void ClearSelected(struct Text_Data *td, struct RastPort *rp)
     else
 	refresh = FALSE;
 
-    D(bug("ClearSelected rp=0x%lx  %ld\n", rp, refresh));
+    D(bug("text.datatype/ClearSelected: ClearSelected rp=0x%lx  %ld\n", rp, refresh));
 
     td->mark_x1 = -1;
     td->mark_x2 = -1;
@@ -1392,7 +1392,7 @@ static void CopyText(struct Text_Data *td)
 **************************************************************************/
 static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 {
-    D(bug("Printing Text...\n"));
+    D(bug("text.datatype/PrintText: Printing Text...\n"));
 
     if (printer_io)
     {
@@ -1446,7 +1446,7 @@ static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 
     }	/* if (printer_io) */
 
-    D(bug("Printing Text finished...\n"));
+    D(bug("text.datatype/PrintText: Printing Text finished...\n"));
 }
 
 #ifndef COMPILE_DATATYPE
@@ -1652,7 +1652,7 @@ ULONG asyncmethodfunc(void)
     msg = amsg->amm_Msg;
     ReplyMsg(&amsg->amm_ExecMessage);
 
-    D(bug("Recieved object : %lx, msg : %lx\n",obj,msg));
+    D(bug("text.datatype/asyncmethodfunc: Recieved object : %lx, msg : %lx\n",obj,msg));
 
     return DoMethodA(obj,msg);
 }
@@ -1759,7 +1759,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 		    else
 			type = DTF_MISC;
 
-		    D(bug("Handle: 0x%lx    type: %lx\n", handle, dt->dtn_Header->dth_Flags));
+		    D(bug("text.datatype/DT_NewMethod: Handle: 0x%lx    type: %lx\n", handle, dt->dtn_Header->dth_Flags));
 
 		    td->oldmarkactivation = 0;
 		    if (GetVar("TEXTDT_MENUMARKING", buf, sizeof(buf), LV_VAR) > 0)
@@ -1780,11 +1780,11 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 		    case DTF_BINARY:
 		    case DTF_ASCII:
 			{
-			    D(bug("Loading the text %s\n", name));
+			    D(bug("text.datatype/DT_NewMethod: Loading the text %s\n", name));
 
 			    if (LoadText(td, name, (BPTR) handle))
 			    {
-				D(bug("Text loaded\n"));
+				D(bug("text.datatype/DT_NewMethod: Text loaded\n"));
 				return g;
 			    }
 			}
@@ -1825,49 +1825,49 @@ STATIC ULONG DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg
     switch (msg->opg_AttrID)
     {
     case TDTA_Buffer:
-	D(bug("Get: Tag ID: TDTA_Buffer 0x%lx\n", td->buffer_allocated));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: TDTA_Buffer 0x%lx\n", td->buffer_allocated));
 	*msg->opg_Storage = (ULONG) td->buffer_allocated;
 
 	break;
 
     case TDTA_BufferLen:
-	D(bug("Get: Tag ID: TDTA_BufferLen  %ld\n", td->buffer_allocated_len));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: TDTA_BufferLen  %ld\n", td->buffer_allocated_len));
 	*msg->opg_Storage = (ULONG) td->buffer_allocated_len;
 
 	break;
 
     case TDTA_LineList:
-	D(bug("Get: Tag ID: TDTA_LineList\n"));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: TDTA_LineList\n"));
 	*msg->opg_Storage = (ULONG) & td->line_list;
 	break;
 
     case TDTA_WordWrap:
-	D(bug("Get: Tag ID: TDTA_WordWrap\n"));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: TDTA_WordWrap\n"));
 	*msg->opg_Storage = FALSE;
 	break;
 
     case DTA_TextAttr:
-	D(bug("Get: Tag ID: DTA_TextAttr (%s)\n", td->attr.ta_Name));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: DTA_TextAttr (%s)\n", td->attr.ta_Name));
 	*msg->opg_Storage = (ULONG) & td->attr;
 	break;
 
     case DTA_TextFont:
-	D(bug("Get: Tag ID: DTA_TextFont\n"));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: DTA_TextFont\n"));
 	*msg->opg_Storage = (ULONG) td->font;
 	break;
 
     case DTA_ObjName:
-	D(bug("Get: Tag ID: DTA_ObjName\n"));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: DTA_ObjName\n"));
 	*msg->opg_Storage = (ULONG) td->title;
 	break;
 
     case DTA_Methods:
-	D(bug("Get: Tag ID: DTA_Methods\n"));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: DTA_Methods\n"));
 	*msg->opg_Storage = (ULONG) supported_methods;
 	break;
 
     default:
-	D(bug("Get: Tag ID: 0x%lx\n", msg->opg_AttrID));
+	D(bug("text.datatype/DT_GetMethod: Tag ID: 0x%lx\n", msg->opg_AttrID));
 	return DoSuperMethodA(cl, (Object *) g, (Msg) msg);
     }
     return 1;
@@ -1888,47 +1888,47 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 
     ULONG retval = 0;
 
-    D(bug("Set: GInfo: 0x%lx\n", msg->ops_GInfo));
+    D(bug("text.datatype/DT_SetMethod: GInfo: 0x%lx\n", msg->ops_GInfo));
 
     while ((ti = NextTagItem(&tl)))
     {
 	switch (ti->ti_Tag)
 	{
 	case GA_Width:
-	    D(bug("Set: GA_Width  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_Width  %ld\n", ti->ti_Data));
 	    break;
 
 	case GA_Height:
-	    D(bug("Set: GA_Height  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_Height  %ld\n", ti->ti_Data));
 	    break;
 
 	case GA_Left:
-	    D(bug("Set: GA_Left  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_Left  %ld\n", ti->ti_Data));
 	    break;
 
 	case GA_Top:
-	    D(bug("Set: GA_Top  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_Top  %ld\n", ti->ti_Data));
 	    break;
 
 	case GA_RelWidth:
-	    D(bug("Set: GA_RelWidth  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_RelWidth  %ld\n", ti->ti_Data));
 	    break;
 
 	case GA_RelHeight:
-	    D(bug("Set: GA_RelHeight  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_RelHeight  %ld\n", ti->ti_Data));
 	    break;
 
 	case GA_ID:
-	    D(bug("Set: GA_ID  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: GA_ID  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_TextAttr:
-	    D(bug("Set: DTA_TextAttr  0x%lx  %s\n", ti->ti_Data, ((struct TextAttr *) ti->ti_Data)->ta_Name));
+	    D(bug("text.datatype/DT_SetMethod: DTA_TextAttr  0x%lx  %s\n", ti->ti_Data, ((struct TextAttr *) ti->ti_Data)->ta_Name));
 	    break;
 
 	case DTA_TopVert:
 	    {
-		D(bug("Set: DTA_TopVert  %ld\n", ti->ti_Data));
+		D(bug("text.datatype/DT_SetMethod: DTA_TopVert  %ld\n", ti->ti_Data));
 		top_vert = ti->ti_Data;
 		if (top_vert < 0)
 		    top_vert = 0;
@@ -1940,7 +1940,7 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 
 	case DTA_TopHoriz:
 	    {
-		D(bug("Set: DTA_TopHoriz  %ld\n", ti->ti_Data));
+		D(bug("text.datatype/DT_SetMethod: DTA_TopHoriz  %ld\n", ti->ti_Data));
 		top_horiz = ti->ti_Data;
 		if (top_horiz < 0)
 		    top_horiz = 0;
@@ -1951,69 +1951,69 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 	    break;
 
 	case DTA_VisibleVert:
-	    D(bug("Set: DTA_VisibleVert  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_VisibleVert  %ld\n", ti->ti_Data));
 	    td->vert_visible = ti->ti_Data;
 	    redraw_all = TRUE;
 	    break;
 
 	case DTA_TotalVert:
-	    D(bug("Set: DTA_TotalVert  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_TotalVert  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_NominalVert:
-	    D(bug("Set: DTA_NominalVert  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_NominalVert  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_VertUnit:
-	    D(bug("Set: DTA_VertUnit  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_VertUnit  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_VisibleHoriz:
-	    D(bug("Set: DTA_VisibleHoriz  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_VisibleHoriz  %ld\n", ti->ti_Data));
 	    td->horiz_visible = ti->ti_Data;
 	    redraw_all = TRUE;
 	    break;
 
 	case DTA_TotalHoriz:
-	    D(bug("Set: DTA_TotalHoriz  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_TotalHoriz  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_NominalHoriz:
-	    D(bug("Set: DTA_NominalHoriz  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_NominalHoriz  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_HorizUnit:
-	    D(bug("Set: DTA_HorizUnit  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_HorizUnit  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_Title:
-	    D(bug("Set: DTA_Title  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_Title  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_Busy:
-	    D(bug("Set: DTA_Busy  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_Busy  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_Sync:
-	    D(bug("Set: DTA_Sync  %ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_Sync  %ld\n", ti->ti_Data));
 	    break;
 
 	case DTA_LayoutProc:
-	    D(bug("Set: DTA_LayoutProc  0x%lx\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: DTA_LayoutProc  0x%lx\n", ti->ti_Data));
 	    break;
 
 	case TDTA_Buffer:
-	    D(bug("Set: TDTA_Buffer  0x%lx\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: TDTA_Buffer  0x%lx\n", ti->ti_Data));
 	    td->buffer_allocated = (STRPTR) ti->ti_Data;
 	    break;
 
 	case TDTA_BufferLen:
-	    D(bug("Set: TDTA_BufferLen  0x%ld\n", ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: TDTA_BufferLen  0x%ld\n", ti->ti_Data));
 	    td->buffer_allocated_len = (ULONG) ti->ti_Data;
 	    break;
 
 	default:
-	    D(bug("Set: 0x%lx  %ld\n", ti->ti_Tag, ti->ti_Data));
+	    D(bug("text.datatype/DT_SetMethod: 0x%lx  %ld\n", ti->ti_Tag, ti->ti_Data));
 	    break;
 
 	} /* switch (ti->ti_Tag) */
@@ -2051,7 +2051,7 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
     }
 
     retval += DoSuperMethodA(cl, (Object *) g, (Msg) msg);
-    D(bug(" Set retval: %ld\n", retval));
+    D(bug("text.datatype/DT_SetMethod: retval: %ld\n", retval));
     return retval;
 }
 
@@ -2060,7 +2060,7 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
     struct DTSpecialInfo *si = (struct DTSpecialInfo *) g->SpecialInfo;
 
-    D(bug(" gpr_Redraw: %ld  si->si_Flags: %lx\n", msg->gpr_Redraw, si->si_Flags));
+    D(bug("text.datatype/DT_Render: gpr_Redraw: %ld  si->si_Flags: %lx\n", msg->gpr_Redraw, si->si_Flags));
 
     if (!(si->si_Flags & DTSIF_LAYOUT))
     {
@@ -2084,7 +2084,7 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	    td->horiz_visible = vh;
 	    td->vert_visible = vv;
 
-	    D(bug(" in Render: %ld  %ld\n", vh, vv));
+	    D(bug("text.datatype/DT_Render: in Render: %ld  %ld\n", vh, vv));
 
 	    if (msg->gpr_Redraw == GREDRAW_REDRAW)
 	    {
@@ -2094,7 +2094,7 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	    {
 		if (msg->gpr_Redraw == GREDRAW_UPDATE)
 		{
-		    D(bug("Update: %ld\n", td->update_type));
+		    D(bug("text.datatype/DT_Render: Update: %ld\n", td->update_type));
 		    switch (td->update_type)
 		    {
 		    case 1:
@@ -2285,7 +2285,7 @@ STATIC VOID DT_Write(struct IClass * cl, struct Gadget * g, struct dtWrite * msg
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
 
-    D(bug("%ld\n", msg->dtw_Mode));
+    D(bug("text.datatype/DT_Write: %ld\n", msg->dtw_Mode));
 
     if (msg->dtw_Mode == DTWM_RAW && msg->dtw_FileHandle)
     {
@@ -2501,28 +2501,28 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
     switch (*msg)
     {
     case OM_NEW:
-	D(bug("Dispatcher called (MethodID: OM_NEW)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method OM_NEW\n"));
 	return (ULONG) DT_NewMethod(cl, o, (struct opSet *) msg);
 
     case OM_DISPOSE:
-	D(bug("Dispatcher called (MethodID: OM_DISPOSE)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method OM_DISPOSE\n"));
 	DT_DisposeMethod(cl, o, (Msg) msg);
 	break;
 
     case OM_UPDATE:
-	D(bug("Dispatcher called (MethodID: OM_UPDATE)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method OM_UPDATE\n"));
 
     case OM_SET:
 	if (*msg == OM_SET)
-	    D(bug("Dispatcher called (MethodID: OM_SET)\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method OM_SET\n"));
 	return DT_SetMethod(cl, (struct Gadget *) o, (struct opSet *) msg);
 
     case OM_GET:
-	D(bug("Dispatcher called (MethodID: OM_GET)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method OM_GET\n"));
 	return DT_GetMethod(cl, (struct Gadget *) o, (struct opGet *) msg);
 
     case GM_RENDER:
-	D(bug("Dispatcher called (MethodID: GM_RENDER)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method GM_RENDER\n"));
 	return DT_Render(cl, (struct Gadget *) o, (struct gpRender *) msg);
 
     case GM_LAYOUT:
@@ -2530,7 +2530,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	    struct Gadget *g = (struct Gadget *) o;
 	    ULONG retval = 0;
 
-	    D(bug("Dispatcher called (MethodID: GM_LAYOUT)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method GM_LAYOUT\n"));
 
 	    notifyAttrChanges(o, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
 			      GA_ID, g->GadgetID,
@@ -2543,11 +2543,11 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	break;
 
     case GM_GOACTIVE:
-	D(bug("Dispatcher called (MethodID: GM_GOACTIVE)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method GM_GOACTIVE\n"));
 	return (ULONG) DT_HandleInputMethod(cl, (struct Gadget *) o, (struct gpInput *) msg);
 
     case GM_HANDLEINPUT:
-	D(bug("Dispatcher called (MethodID: GM_HANLDEINPUT)!\n"));
+	D(bug("text.datatype/DT_Dispatcher: Method GM_HANLDEINPUT\n"));
 	return (ULONG) DT_HandleInputMethod(cl, (struct Gadget *) o, (struct gpInput *) msg);
 
     case DTM_CLEARSELECTED:
@@ -2555,7 +2555,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	    struct RastPort *rp;
 	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
 
-	    D(bug("Dispatcher called (MethodID: DTM_CLEARSELECTED)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method DTM_CLEARSELECTED\n"));
 
 	    rp = ObtainGIRPort(((struct dtGeneral *) msg)->dtg_GInfo);
 	    ClearSelected(td, rp);
@@ -2569,7 +2569,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	{
 	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
 
-	    D(bug("Dispatcher called (MethodID: DTM_COPY)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method DTM_COPY\n"));
 
 	    CopyText(td);
 	    return 1;
@@ -2577,20 +2577,20 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 
     case DTM_SELECT:
 	{
-	    D(bug("Dispatcher called (MethodID: DTM_SELECT)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method DTM_SELECT\n"));
 	}
 	break;
 
     case DTM_WRITE:
 	{
-	    D(bug("Dispatcher called (MethodID: DTM_WRITE)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method DTM_WRITE\n"));
 	    DT_Write(cl, (struct Gadget *) o, (struct dtWrite *) msg);
 	}
 	break;
 
     case DTM_PRINT:
 	{
-	    D(bug("Dispatcher called (MethodID: DTM_PRINT)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method DTM_PRINT\n"));
 	    DT_Print(cl, (struct Gadget *) o, (struct dtPrint *) msg);
 	}
 	break;
@@ -2600,7 +2600,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
    	    struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, o);
 	    ULONG function = ((struct dtTrigger*)msg)->dtt_Function;
 
-	    D(bug("Dispatcher called (MethodID: DTM_TRIGGER)!\n"));
+	    D(bug("text.datatype/DT_Dispatcher: Method DTM_TRIGGER\n"));
 
 	    if (function == STM_ACTIVATE_FIELD)
 	    {
@@ -2633,22 +2633,22 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 	break;
 
 	case DTTM_GET_STRING:
-		D(bug("Dispatcher called (MethodID: DTTM_GET_STRING)!\n"));
+		D(bug("text.datatype/DT_Dispatcher: Method DTTM_GET_STRING\n"));
 		DT_GetString(cl,o,(struct dttGetString *) msg);
 		break;
 
 	case DTTM_SEARCH_NEXT:
-		D(bug("Dispatcher called (MethodID: DTTM_SEARCH_NEXT)!\n"));
+		D(bug("text.datatype/DT_Dispatcher: Method DTTM_SEARCH_NEXT\n"));
 		DT_SearchString(cl,o,1,(struct dttSearchText *) msg);
 		break;
 
 	case DTTM_SEARCH_PREV:
-		D(bug("Dispatcher called (MethodID: DTTM_SEARCH_PREV)!\n"));
+		D(bug("text.datatype/DT_Dispatcher: Method DTTM_SEARCH_PREV\n"));
 		DT_SearchString(cl,o,-1,(struct dttSearchText *) msg);
 		break;
 
     default:
-	D(bug("Dispatcher called (MethodID: %ld=0x%lx)!\n", *msg, *msg));
+	D(bug("text.datatype/DT_Dispatcher: Method %ld=0x%lx\n", *msg, *msg));
 	return DoSuperMethodA(cl, o, (Msg) msg);
     }
 
