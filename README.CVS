@@ -1,10 +1,19 @@
 To use the AROS CVS Server:
 
+Changes since the last version: It seems that with a CVS later than 1.8.1,
+you must always prepend :pserver: (even for the login !).
+
 1. Create a passwort with "crypt":
 
     > make crypt
     > crypt my_password
     Encrypting my_password: cbEVHg0j9uNRs
+
+1b) If you have an Amiga and you have AmiTCP (you can get a Demo from
+AmiNET), you can use that one to generate a password. To use the CVS
+server, you must have some way to connect to the Internet, anyway, so it
+might be a good idea to install AmiTCP (no idea if Miami works, too.
+Anyone ?).
 
 2. Mail that password to
 
@@ -14,18 +23,25 @@ To use the AROS CVS Server:
     Please add <my_login, eg. digulla> <password, eg. cbEVHg0j9uNRs>
 
 3. Wait until I confirm this. While you wait, look for CVS 1.8.1 and
-install it.
+install it. If you have an Amiga, install ADE. They have a working
+CVS (Thanks Lennard).
 
 4. When you got my reply and you have CVS 1.8.1, use this to login:
 
-    > cvs -d user@wi-pc44.fh-konstanz.de:/home/AROS/CVS login
+    > cvs -d :pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS login
 
 where "user" is your login, eg. digulla:
 
-    > cvs -d digulla@wi-pc44.fh-konstanz.de:/home/AROS/CVS login
+    > cvs -d :pserver:digulla@wi-pc44.fh-konstanz.de:/home/AROS/CVS login
 
 This asks you for your password. Type it in and if there is no error
 displayed, you are connected.
+
+NOTE: It seems that the protocol for CVS has changed. Version of CVS
+upto 1.8.1 and earlier need not have ":pserver:" before the login name,
+but later versions require it. If you have problems to login, try to omit
+":pserver:" or prepend it. If CVS wants it, you will get an error reading
+"cvs login: can only use pserver method with `login' command".
 
 5. Now you can use _any_ CVS command as if the main source tree was
 on your local host. To get a complete copy of the current tree, use:
@@ -33,14 +49,6 @@ on your local host. To get a complete copy of the current tree, use:
     > cvs -d :pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS checkout AROS
 
 (don´t forget to substitute user by your login !)
-
-!!! NOTE !!! IMPORTANT !!!
-
-You must use "user@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
-login but ":pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS" to
-use CVS (or in other words: after login, you must prepend ":pserver:"
-to the argument of the -d option. This tells CVS that your are logged
-in.
 
 6. What can I do now ? Well, you can edit any file or create any number
 of new files. To send me your changes, you must commit them, namely with:
