@@ -11,16 +11,15 @@
 
 #define SHArg(name) ((SHA_##name##_type)__shargs[SHA_##name])
 
-#define __SHA_ENUM(type, abbr, name, modf, def) SHA_##name
-#define __SHA_DEF(type, abbr, name, modf, def) (IPTR)(def)
-#define __SHA_OPT(type, abbr, name, modf, def) \
+#define __SHA_ENUM(type, abbr, name, modf, def, help) SHA_##name
+#define __SHA_DEF(type, abbr, name, modf, def, help) (IPTR)(def)
+#define __SHA_OPT(type, abbr, name, modf, def, help) \
      stringify(abbr) stringify(name) stringify(modf)
-#define __SHA_TYPEDEF(type, abbr, name, modf, def) \
+#define __SHA_TYPEDEF(type, abbr, name, modf, def, help) \
      typedef type SHA_##name##_type
 
 
-
-#define __AROS_SH_ARGS(name, version, numargs, defl, templ)    \
+#define __AROS_SH_ARGS(name, version, numargs, defl, templ, help) \
 static ULONG name##_main(IPTR *, struct ExecBase *SysBase,     \
                          struct DosLibrary *);                 \
 AROS_UFH3(LONG, entry,                                         \
@@ -33,7 +32,8 @@ AROS_UFH3(LONG, entry,                                         \
 							       \
     LONG __retcode = RETURN_FAIL;                              \
     IPTR __shargs[numargs] = defl;                             \
-    struct RDArgs *__rda = NULL;                               \
+    struct RDArgs *__rda  = NULL;                              \
+    struct RDArgs *__rda2 = NULL;                              \
     struct DosLibrary *DOSBase =                               \
         (struct DosLibrary *) OpenLibrary(DOSNAME, 37);        \
                                                                \
@@ -42,8 +42,19 @@ AROS_UFH3(LONG, entry,                                         \
         SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);              \
 	goto __exit;                                           \
     }                                                          \
-                                                               \
-    __rda = ReadArgs(templ, __shargs, NULL);                   \
+							       \
+    if (help[0])                                               \
+    {                                                          \
+        __rda2 = AllocDosObject(DOS_RDARGS, NULL);             \
+	if (!__rda2)                                           \
+	{                                                      \
+            PrintFault(IoErr(), stringify(name));              \
+	    goto __exit;                                       \
+	}                                                      \
+	__rda2->RDA_ExtHelp = help;                            \
+    }                                                          \
+							       \
+    __rda = ReadArgs(templ, __shargs, __rda2);                 \
 					                       \
     if (!__rda)                                                \
     {                                                          \
@@ -55,6 +66,7 @@ AROS_UFH3(LONG, entry,                                         \
     							       \
 __exit:                                                        \
     if (__rda) FreeArgs(__rda);                                \
+    if (help[0] && __rda2) FreeDosObject(DOS_RDARGS, __rda2);  \
     if (DOSBase) CloseLibrary((struct Library *)DOSBase);      \
                                                                \
     return __retcode;                                          \
@@ -79,33 +91,36 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
 
 #define __DEF(x...) {x}
 
-#define AROS_SH0(name, version)                   \
-    __AROS_SH_ARGS(name, version, 1, {0}, "")     \
-    {                                             \
+#define __AROS_SH0(name, version, help)             \
+    __AROS_SH_ARGS(name, version, 1, {0}, "", help) \
+    {                                               \
 
-#define AROS_SH1(name, version, a1)               \
+#define __AROS_SH1(name, version, help, a1)       \
     __AROS_SH_ARGS(name, version, 1,              \
                             __DEF(__SHA_DEF(a1)), \
-                            __SHA_OPT(a1))        \
+                            __SHA_OPT(a1),        \
+			    help)                 \
     {                                             \
 	__SHA_TYPEDEF(a1);                        \
 	enum {__SHA_ENUM(a1)};
 
-#define AROS_SH2(name, version, a1, a2)                          \
+#define __AROS_SH2(name, version, help, a1, a2)                  \
     __AROS_SH_ARGS(name, version, 2,                             \
                             __DEF(__SHA_DEF(a1), __SHA_DEF(a2)), \
-                            __SHA_OPT(a1) "," __SHA_OPT(a2))     \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2),     \
+                            help)                                \
     {                                                            \
 	__SHA_TYPEDEF(a1);                                       \
 	__SHA_TYPEDEF(a2);                                       \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)};
 
-#define AROS_SH3(name, version, a1, a2, a3)                     \
+#define __AROS_SH3(name, version, help, a1, a2, a3)             \
     __AROS_SH_ARGS(name, version, 3,                            \
                             __DEF(__SHA_DEF(a1), __SHA_DEF(a2), \
                             __SHA_DEF(a3)),                     \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
-	  	            __SHA_OPT(a3))                      \
+	  	            __SHA_OPT(a3),                      \
+			    help)                               \
     {                                                           \
 	__SHA_TYPEDEF(a1);                                      \
 	__SHA_TYPEDEF(a2);                                      \
@@ -113,12 +128,13 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)                    \
 	      __SHA_ENUM(a3)};
 
-#define AROS_SH4(name, version, a1, a2, a3, a4)                 \
+#define __AROS_SH4(name, version, help, a1, a2, a3, a4)         \
     __AROS_SH_ARGS(name, version, 4,                            \
                             __DEF(__SHA_DEF(a1), __SHA_DEF(a2)  \
                             __SHA_DEF(a3), __SHA_DEF(a4)),      \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
-		            __SHA_OPT(a3) "," __SHA_OPT(a4))    \
+		            __SHA_OPT(a3) "," __SHA_OPT(a4),     \
+			    help)                               \
     {                                                           \
 	__SHA_TYPEDEF(a1);                                      \
 	__SHA_TYPEDEF(a2);                                      \
@@ -127,14 +143,15 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
         enum {__SHA_ENUM(a1), __SHA_ENUM(a2)                    \
 	      __SHA_ENUM(a3), __SHA_ENUM(a4)};
 
-#define AROS_SH5(name, version, a1, a2, a3, a4, a5)             \
+#define __AROS_SH5(name, version, help, a1, a2, a3, a4, a5)     \
     __AROS_SH_ARGS(name, version, 5,                            \
                             __DEF(__SHA_DEF(a1), __SHA_DEF(a2), \
                             __SHA_DEF(a3), __SHA_DEF(a4),       \
 		            __SHA_DEF(a5)),                     \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) "," \
                             __SHA_OPT(a3) "," __SHA_OPT(a4) "," \
-		            __SHA_OPT(a5))                      \
+		            __SHA_OPT(a5),                      \
+			    help)                               \
     {                                                           \
 	__SHA_TYPEDEF(a1);                                      \
 	__SHA_TYPEDEF(a2);                                      \
@@ -144,7 +161,7 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
 	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),   \
 	      __SHA_ENUM(a4), __SHA_ENUM(a5)};
 
-#define AROS_SH10(name, version, a1, a2, a3, a4, a5,             \
+#define __AROS_SH10(name, version, help, a1, a2, a3, a4, a5,     \
                                  a6, a7, a8, a9, a10)            \
     __AROS_SH_ARGS(name, version, 10,                            \
                             __DEF(__SHA_DEF(a1), __SHA_DEF(a2),  \
@@ -156,7 +173,8 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
                             __SHA_OPT(a3) "," __SHA_OPT(a4) ","  \
 		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","  \
 			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","  \
-			    __SHA_OPT(a9) "," __SHA_OPT(a10))    \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10),    \
+			    help)                                \
     {                                                            \
 	__SHA_TYPEDEF(a1);                                       \
 	__SHA_TYPEDEF(a2);                                       \
@@ -173,7 +191,7 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
 	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),    \
 	      __SHA_ENUM(a10)};
 
-#define AROS_SH11(name, version, a1, a2, a3, a4, a5,             \
+#define __AROS_SH11(name, version, help, a1, a2, a3, a4, a5,     \
                                  a6, a7, a8, a9, a10,            \
 				 a11)                            \
     __AROS_SH_ARGS(name, version, 11,                            \
@@ -181,14 +199,14 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
                             __SHA_DEF(a3), __SHA_DEF(a4),        \
 		            __SHA_DEF(a5), __SHA_DEF(a6),        \
 			    __SHA_DEF(a7), __SHA_DEF(a8),        \
-			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a9), __SHA_DEF(a10),       \
 			    __SHA_DEF(a11)),                     \
                             __SHA_OPT(a1) "," __SHA_OPT(a2) ","  \
                             __SHA_OPT(a3) "," __SHA_OPT(a4) ","  \
 		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","  \
 			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","  \
 			    __SHA_OPT(a9) "," __SHA_OPT(a10) "." \
-			    __SHA_OPT(a11))                      \
+			    __SHA_OPT(a11), help)                \
     {                                                            \
 	__SHA_TYPEDEF(a1);                                       \
 	__SHA_TYPEDEF(a2);                                       \
@@ -207,6 +225,44 @@ static ULONG name##_main(IPTR *__shargs, struct ExecBase *SysBase,   \
 	      __SHA_ENUM(a10), __SHA_ENUM(a11)};
 
 
-#define AROS_SHA(type, abbr, name, modf, def) type,abbr,name,modf,def
+#define AROS_SHA(type, abbr, name, modf, def) type,abbr,name,modf,def,""
+#define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def,"\t" __SHA_OPT(type,abbr,name,modf,def,help) "\t\t" help "\n"
 
-#endif
+#define __AROS_SHA(type, abbr, name, modf, def, help) type,abbr,name,modf,def,help
+
+#define AROS_SH11(name, version, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
+        __AROS_SH11(name, version, "", __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11))
+#define AROS_SH10(name, version, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)\
+        __AROS_SH10(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10))
+#define AROS_SH9(name, version, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
+        __AROS_SH9(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9))
+#define AROS_SH8(name, version, a1, a2, a3, a4, a5, a6, a7, a8) \
+        __AROS_SH8(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8))
+#define AROS_SH7(name, version, a1, a2, a3, a4, a5, a6, a7) \
+        __AROS_SH7(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7))
+#define AROS_SH6(name, version, a1, a2, a3, a4, a5, a6) \
+        __AROS_SH6(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6))
+#define AROS_SH5(name, version, a1, a2, a3, a4, a5) \
+        __AROS_SH5(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5))
+#define AROS_SH4(name, version, a1, a2, a3, a4) \
+        __AROS_SH4(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4))
+#define AROS_SH3(name, version, a1, a2, a3) \
+        __AROS_SH3(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3))
+#define AROS_SH2(name, version, a1, a2) \
+        __AROS_SH2(name, version, "",  __AROS_SHA(a1), __AROS_SHA(a2))
+#define AROS_SH1(name, version, a1) \
+        __AROS_SH1(name, version, "",  __AROS_SHA(a1))
+#define AROS_SH0(name, version) \
+        __AROS_SH0(name, version, "")
+
+#define __SH_HELP(name, help) stringify(name) ": " help "\n"
+#define __SHA_HELP(type, abbr, name, modf, def, help) help
+
+#define AROS_SH1H(name, version, help, a1) \
+        __AROS_SH1(name, version, __SH_HELP(name, help) __SHA_HELP(a1),  __AROS_SHA(a1))
+#define AROS_SH0H(name, version, help) \
+        __AROS_SH0(name, version, __SH_HELP(name, help))
+
+#endif /* !SHCOMMANDS_NOTEMBEDDED_H */
+
+
