@@ -21,12 +21,15 @@
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
+#define LC_RESIDENTNAME		X11Gfx_resident
+#define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
+#define LC_RESIDENTPRI		9
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
 #define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->library)
 
-#define LC_NO_OPENLIB
-#define LC_NO_CLOSELIB
+#define LC_NO_INITLIB
+#define LC_NO_EXPUNGELIB
 
 /* to avoid removing the gfxhiddclass from memory add #define NOEXPUNGE */
 
@@ -39,52 +42,63 @@
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
 
     if (!lh->oopbase)
     	lh->oopbase = OpenLibrary(AROSOOP_NAME, 37);
     if (!lh->oopbase)
-	return (NULL);
+	return 0;
 
 
     if (!lh->utilitybase)
 	lh->utilitybase = OpenLibrary("utility.library", 0);
     if (!lh->utilitybase)
-	return(NULL);
+	return 0;
 
 
     /* Create HIDD classes */
     if (!lh->gfxclass)
     	lh->gfxclass = init_gfxclass(lh);
     if (!lh->gfxclass)
-    	return (NULL);
+    	return 0;
     
     if (!lh->gcclass)
     	lh->gcclass = init_gcclass(lh);
     if (!lh->gcclass)
-    	return (NULL);
+    	return 0;
     	
     if (!lh->bitmapclass)
     	lh->bitmapclass = init_bitmapclass(lh);
     if (!lh->bitmapclass)
-    	return (NULL);
+    	return 0;
 	
+
     return TRUE;
         
 }
 
 
-void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
+void  SAVEDS STDARGS LC_BUILDNAME(L_CloseLib) (LC_LIBHEADERTYPEPTR lh)
 {
     if (lh->bitmapclass)
-	cleanup_class(lh->bitmapclass, lh);
+    {
+	free_bitmapclass( lh );
+	lh->bitmapclass = NULL;
+    }
 	    
     if (lh->gcclass)
-	cleanup_class(lh->gcclass, lh);
-	    
+    {
+	free_gcclass( lh );
+	lh->gcclass = NULL;
+    }
+        
     if (lh->gfxclass)
-	cleanup_class(lh->gfxclass, lh);
+    {
+	free_gfxclass( lh );
+	lh->gfxclass = NULL;
+    }
+	
 	
     if (lh->utilitybase)
     {

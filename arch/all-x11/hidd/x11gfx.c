@@ -6,8 +6,12 @@
     Lang: English.
 */
 
-#include "x11gfx_intern.h"
+
 #include <stddef.h>
+#include <stdio.h>
+
+#include <X11/Xlib.h>
+
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -20,16 +24,11 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 
-#define DEBUG 0
+#include "x11gfx_intern.h"
+
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
-
-
-
-
-AROS_LH0(Class *, getclass, struct x11gfxbase *, LIBBASE, 5, BASENAME)
-{
-     return LIBBASE->gfxclass;
-}
 
 
 #undef SysBase
@@ -61,23 +60,59 @@ struct gfx_data
 /*********************
 **  GfxHidd::New()  **
 *********************/
+
+static int MyErrorHandler (Display * display, XErrorEvent * errevent)
+{
+    char buffer[256];
+
+    XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
+    fprintf (stderr
+	, "XError %d (Major=%d, Minor=%d)\n%s\n"
+	, errevent->error_code
+	, errevent->request_code
+	, errevent->minor_code
+	, buffer
+    );
+    fflush (stderr);
+
+    return 0;
+}
+
+static int MySysErrorHandler (Display * display)
+{
+    perror ("X11-Error");
+    fflush (stderr);
+
+    return 0;
+}
+
 static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
+
+    EnterFunc(bug("X11Gfx::New()\n"));
 
     o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
     {
     	if (o)
 	{
 	    /* Do GfxHidd initalization here */
+    XSetErrorHandler (MyErrorHandler);
+    XSetIOErrorHandler (MySysErrorHandler);
 	
 	}
     }
-    return o;
+    ReturnPtr("X11Gfx::New", Object *, o);
 }
 
-/**************************
-**  GfxHidd::CreateGC()  **
-**************************/
+/********** GfxHidd::NewBitMap()  ****************************/
+static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMap *msg)
+{
+    EnterFunc(bug("X11Gfx::NewBitMap()\n"));
+    
+    ReturnPtr("X11Gfx::NewBitMap", Object *, NewObject(X11GfxBase->bitmapclass, NULL, msg->attrList));
+}
+/**********  GfxHidd::CreateGC()  ****************************/
+
 static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 {
 
@@ -99,99 +134,12 @@ static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 }
 
 
-/*****************************/
-
-/* Private instance data for GC class */
-struct gc_data
-{
-    ULONG dummy;
-};
-
-/****************
-**  GC::New()  **
-****************/
-static Object *gc_new(Class *cl, Object *o, struct pRoot_New *msg)
-{
-    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
-    if (o)
-    {
-        
-    }
-    return o;
-
-}
-
-
-/********************************************************/
-
-/* Private instance data for GC class */
-struct bitmap_data
-{
-    LONG width, height;
-    UBYTE depth;
-};
-
-#define IS_BITMAP_ATTR(attr, idx) ((idx = attr - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
-
-
-/********************
-**  BitMap::New()  **
-********************/
-static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
-{
-    struct bitmap_data *data;
-    struct TagItem *tag, *tstate;
-    
-    o  = (Object *) DoSuperMethod(cl, o, (Msg)msg);
-
-    if(!o)
-    	return NULL;
-	
-    data = INST_DATA(cl, o);
-    
-    tstate = msg->attrList;
-    while((tag = NextTagItem(&tstate)))
-    {
-	ULONG idx;
-	
-	if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
-	{
-	    switch(idx)
-	    {
-		case aoHidd_BitMap_Width:
-		    data->width = tag->ti_Data;
-		    break;
-		case aoHidd_BitMap_Height:
-		    data->height = tag->ti_Data;
-		    break;
-		case aoHidd_BitMap_Depth:
-		    data->depth = tag->ti_Data;
-		    break;
-		    
-		default:
-		   D(bug("  unknown attribute %li\n", tag->ti_Data));
-		   break;
-	    } /* switch tagidx */
-	    
-	} /* if (bitmap tag) */
-	
-    } /* while tags  */
-    
-
-    return o;
-
-}
-
-/********************************************************/
-
 #undef X11GfxBase
 
-/**********************
-**  init_gfxclass()  **
-**********************/
+/********************  init_gfxclass()  *********************************/
 
 #define NUM_ROOT_METHODS 1
-#define NUM_GFXHIDD_METHODS 1
+#define NUM_GFXHIDD_METHODS 2
 
 Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 {
@@ -206,6 +154,7 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
     struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
     	{(IPTR (*)())gfxhidd_newgc,	moHidd_Gfx_NewGC},
+    	{(IPTR (*)())gfxhidd_newbitmap,	moHidd_Gfx_NewBitMap},
 	{NULL, 0UL}
     };
     
@@ -217,7 +166,7 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 	{NULL, NULL, 0}
     };
     
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+    AttrBase MetaAttrBase = ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
@@ -227,144 +176,45 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
 	{TAG_DONE, 0UL}
     };
 
-    D(bug("GfxHiddClass init\n"));
-
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
+    EnterFunc(bug("GfxHiddClass init\n"));
     
-    if(cl)
+    if (MetaAttrBase)
     {
-	D(bug("GfxHiddClass ok\n"));
-	cl->UserData = (APTR)X11GfxBase;
 
-	AddClass(cl);
+    	cl = NewObject(NULL, CLID_HiddMeta, tags);
+    
+    	if(cl)
+    	{
+	    D(bug("GfxHiddClass ok\n"));
+	    cl->UserData = (APTR)X11GfxBase;
+
+	    AddClass(cl);
+	}
+	
+	/* Don't need this anymore */
+	ReleaseAttrBase(IID_Meta);
     }
     return cl;
 }
 
 
-/*********************
-**  init_gcclass()  **
-*********************/
 
-#undef NUM_ROOT_METHODS
-#define NUM_ROOT_METHODS 1
 
-#define NUM_GC_METHODS 0
-
-Class *init_gcclass(struct x11gfxbase *X11GfxBase)
+/*************** free_gfxclass()  **********************************/
+VOID free_gfxclass(struct x11gfxbase *X11GfxBase)
 {
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{(IPTR (*)())gc_new,	moRoot_New},
-	{NULL, 0UL}
-    };
+    EnterFunc(bug("free_gfxclass(X11GfxBase=%p)\n", X11GfxBase));
 
-    struct MethodDescr gc_descr[NUM_GC_METHODS + 1] = 
+    if(X11GfxBase)
     {
-	{NULL, 0UL}
-    };
-    
-    
-    struct InterfaceDescr ifdescr[] =
-    {
-    	{root_descr,	IID_Root,		NUM_ROOT_METHODS},
-    	{gc_descr, 	IID_Hidd_GC,		NUM_GC_METHODS},
-	{NULL, NULL, 0}
-    };
-    
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
+
+        RemoveClass(X11GfxBase->gfxclass);
 	
-    struct TagItem tags[] =
-    {
-	{aMeta_SuperID,			(IPTR)CLID_Root},
-	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{aMeta_InstSize,		(IPTR)sizeof (struct gc_data) },
-	{TAG_DONE, 0UL}
-    };
-    
-    Class *cl;
+        if(X11GfxBase->gfxclass) DisposeObject((Object *) X11GfxBase->gfxclass);
+        X11GfxBase->gfxclass = NULL;
 
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
-    
-    if (cl)
-    {
-	D(bug("GC class ok\n"));
-	cl->UserData = (APTR)X11GfxBase;
-	
-	/* Get attrbase for the GC interface */
-	HiddGCAttrBase = GetAttrBase(IID_Hidd_GC);
-
-	AddClass(cl);
     }
 
-    return cl;
+    ReturnVoid("free_gfxclass");
 }
 
-/*************************
-**  init_bitmapclass()  **
-*************************/
-#define NUM_BITMAP_METHODS 0
-
-#undef NUM_ROOT_METHODS
-#define NUM_ROOT_METHODS 1
-
-Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
-{
-    struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{(IPTR (*)())bitmap_new,	moRoot_New},
-	{NULL, 0UL}
-    };
-
-    struct MethodDescr gc_descr[NUM_BITMAP_METHODS + 1] = 
-    {
-	{NULL, 0UL}
-    };
-    
-    
-    struct InterfaceDescr ifdescr[] =
-    {
-    	{root_descr,	IID_Root,		NUM_ROOT_METHODS},
-    	{gc_descr, 	IID_Hidd_BitMap,	NUM_BITMAP_METHODS},
-	{NULL, NULL, 0}
-    };
-    
-    AttrBase MetaAttrBase = GetAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{aMeta_SuperID,			(IPTR)CLID_Root},
-	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{aMeta_InstSize,		(IPTR)sizeof (struct bitmap_data) },
-	{TAG_DONE, 0UL}
-    };
-    
-    Class *cl;
-
-    cl = NewObject(NULL, CLID_HiddMeta, tags);
-    
-    if (cl)
-    {
-	D(bug("GC class ok\n"));
-	cl->UserData = (APTR)X11GfxBase;
-	
-	/* Get attrbase for the GC interface */
-	HiddBitMapAttrBase = GetAttrBase(IID_Hidd_GC);
-
-	AddClass(cl);
-    }
-
-    return cl;
-}
-
-/**********************
-**  cleanup_class()  **
-**********************/
-VOID cleanup_class(Class *class, struct x11gfxbase *X11GfxBase)
-{
-    RemoveClass(class);
-    
-    DisposeObject((Object *)class);
-}
-
-const char X11Gfx_end = 0;

@@ -21,6 +21,19 @@
 #   include <oop/oop.h>
 #endif
 
+#include <X11/Xlib.h>
+struct bitmap_data
+{
+    Window 	xwindow;
+    Display   * sysdisplay;
+    int		sysscreen;
+    Cursor	syscursor;
+    long 	maxpen;
+    unsigned long sysplanemask;
+    Colormap	colmap;
+    int		depth;
+};
+
 
 
 /* Library stuff */
@@ -40,10 +53,13 @@ struct x11gfxbase
 };
 
 
-Class *init_gfxclass (struct x11gfxbase *x11gfxbase);
-Class *init_gcclass(struct x11gfxbase *X11GfxBase);
-Class *init_bitmapclass(struct x11gfxbase *X11GfxBase);
-VOID cleanup_class(Class *class, struct x11gfxbase *X11GfxBase);
+Class *init_gfxclass   ( struct x11gfxbase *x11gfxbase );
+Class *init_gcclass    ( struct x11gfxbase *X11GfxBase );
+Class *init_bitmapclass( struct x11gfxbase *X11GfxBase );
+
+VOID free_gcclass	( struct x11gfxbase *X11GfxBase );
+VOID free_bitmapclass	( struct x11gfxbase *X11GfxBase );
+VOID free_gfxclass	( struct x11gfxbase *X11GfxBase );
 
 
 #define expunge() \
