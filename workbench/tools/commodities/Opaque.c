@@ -3,11 +3,13 @@
 #include <graphics/gfx.h>
 #include <graphics/gfxbase.h>
 #include <libraries/commodities.h>
+#include <libraries/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/layers.h>
 #include <proto/commodities.h>
+#include <proto/locale.h>
 #include <proto/alib.h>
 
 #include <aros/debug.h>
@@ -16,23 +18,46 @@
 #include <stdlib.h>
 
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#define CATCOMP_ARRAY
+
+#include "commodities_strings.h"
+
 /************************************************************************************/
+
+UBYTE version[] = "$VER: Opaque 0.2 (13.10.2001)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
 #define ARG_PRI   0
 #define NUM_ARGS  1
 
-struct IntuitionBase *IntuitionBase;
-struct Library *LayersBase;
-struct Library *CxBase;
+/* Libraries to open */
+struct LibTable
+{
+ APTR   lT_Library;
+ STRPTR lT_Name;
+ ULONG  lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,      "intuition.library",    39L},
+ { &LayersBase,         "layers.library",       39L},
+ { &CxBase,             "commodities.library",  39L},
+ { NULL }
+};
+
+struct IntuitionBase *IntuitionBase = NULL;
+struct Library *LayersBase = NULL;
+struct Library *CxBase = NULL;
 
 static struct NewBroker nb =
 {
    NB_VERSION,
-   "Opaque", 
-   "Opaque 0.01", 
-   "Realtime moving of windows", 
+   NULL,
+   NULL,
+   NULL,
    NBU_NOTIFY | NBU_UNIQUE, 
    0,
    0,
@@ -40,6 +65,7 @@ static struct NewBroker nb =
    0 
 };
 
+static struct Catalog *catalogPtr;
 static struct MsgPort *cxport;
 static struct Window *actionwin;
 static struct Task *maintask;
@@ -56,30 +82,63 @@ static char s[256];
 
 /************************************************************************************/
 
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+    STRPTR string;
+
+    if(catalogPtr)
+        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    else
+        string = CatCompArray[id].cca_Str;
+
+    return(string);
+}
+
+/************************************************************************************/
+
 static void Cleanup(char *msg)
 {
     struct Message *cxmsg;
+    struct LibTable *tmpLibTable = libTable;
     
     if (msg)
     {
-	printf("Opaque: %s\n",msg);
+	printf("%s", msg);
     }
 
-    if (cxbroker) DeleteCxObjAll(cxbroker);
-    if (cxport)
+    if(CxBase)
     {
-        while((cxmsg = GetMsg(cxport)))
+	if (cxbroker) DeleteCxObjAll(cxbroker);
+	if (cxport)
 	{
-	    ReplyMsg(cxmsg);
+	    while((cxmsg = GetMsg(cxport)))
+	    {
+		ReplyMsg(cxmsg);
+	    }
+
+	    DeleteMsgPort(cxport);
 	}
-        DeleteMsgPort(cxport);
     }
-    
+
     if (myargs) FreeArgs(myargs);
 
-    if (CxBase) CloseLibrary(CxBase);
-    if (LayersBase) CloseLibrary(LayersBase);
-    if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
+    if(LocaleBase)
+    {
+	CloseCatalog(catalogPtr);
+	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
+	kprintf("Closed locale.library!\n");
+    }
+    
+    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
+    {
+	if((*(struct Library **)tmpLibTable->lT_Library))
+	{
+	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
+	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	}
+
+	tmpLibTable++;
+    }
 
     if (actionsig) FreeSignal(actionsig);
     
@@ -107,19 +166,27 @@ static void Init(void)
 
 static void OpenLibs(void)
 {
-    if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",39)))
-    {
-	Cleanup("Can't open intuition.library V39!");
-    }
+    struct LibTable *tmpLibTable = libTable;
+    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
 
-    if (!(LayersBase = OpenLibrary("layers.library",39)))
+    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
-	Cleanup("Can't open layers.library V39!");
+	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
     }
+    else
+	kprintf("Warning: Can't open locale.library V40!\n");
 
-    if (!(CxBase = OpenLibrary("commodities.library",39)))
+    while(tmpLibTable->lT_Library)
     {
-	Cleanup("Can't open commodities.library V39!");
+	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+        {
+	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+	    Cleanup(tmpString);
+        }
+	else
+	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
+
+	tmpLibTable++;
     }
 }
 
@@ -243,7 +310,7 @@ static void InitCX(void)
 {
     if (!(cxport = CreateMsgPort()))
     {
-        Cleanup("Can't create MsgPort!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
     }
     
     nb.nb_Port = cxport;
@@ -252,12 +319,12 @@ static void InitCX(void)
     
     if (!(cxbroker = CxBroker(&nb, 0)))
     {
-        Cleanup("Can't create CxBroker object!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
     }
     
     if (!(cxcust = CxCustom(OpaqueAction, 0)))
     {
-        Cleanup("Can't create CxCustom object!\n");
+        Cleanup(getCatalog(catalogPtr, MSG_CANT_CREATE_CUSTOM));
     }
     
     AttachCxObj(cxbroker, cxcust);
@@ -336,6 +403,11 @@ int main(void)
 {
     Init();
     OpenLibs();
+
+    nb.nb_Name = getCatalog(catalogPtr, MSG_OPAQUE_CXNAME);
+    nb.nb_Title = getCatalog(catalogPtr, MSG_OPAQUE_CXTITLE);
+    nb.nb_Descr = getCatalog(catalogPtr, MSG_OPAQUE_CXDESCR);
+
     GetArguments();
     InitCX();
     HandleAll();

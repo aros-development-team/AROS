@@ -48,6 +48,9 @@
     HISTORY
 
     06.03.2000  SDuvan   implemented
+    13.10.2001  petah    Commodity is fully localized. Some extra safety
+                         checks have been added to the cleanup function. A
+                         version string has been added. (0.2)
 
 ******************************************************************************/
 
@@ -55,6 +58,7 @@
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <libraries/commodities.h>
+#include <libraries/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -62,12 +66,17 @@
 #include <proto/commodities.h>
 #include <proto/input.h>
 #include <proto/alib.h>
+#include <proto/locale.h>
+
+#include <stdio.h>
 
 #define  DEBUG 0
 #include <aros/debug.h>
 
 
 /***************************************************************************/
+
+UBYTE version[] = "$VER: ClickToFront 0.2 (13.10.2001)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,QUALIFIER/K,DOUBLE/S"
 
@@ -77,13 +86,36 @@
 #define  NUM_ARGS       3
 
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#define CATCOMP_ARRAY
+
+#include "commodities_strings.h"
+
+/* Libraries to open */
+struct LibTable
+{
+ APTR   lT_Library;
+ STRPTR lT_Name;
+ ULONG  lT_Version;
+}
+libTable[] =
+{
+ { &IntuitionBase,	"intuition.library",	39L},
+ { &LayersBase,		"layers.library",	39L},
+ { &CxBase,		"commodities.library",	39L},
+ { NULL }
+};
+
 struct IntuitionBase  *IntuitionBase = NULL;
 struct Library        *LayersBase = NULL;
 struct Library        *CxBase = NULL;
 struct Library        *IconBase = NULL;
 struct Library        *InputBase = NULL;
 
-struct IORequest       inputIO;
+struct Catalog        *catalogPtr;
+
+struct IOStdReq       *inputIO;
 BOOL                   inputOpen = FALSE;
 
 
@@ -91,9 +123,9 @@ BOOL                   inputOpen = FALSE;
 static struct NewBroker nb =
 {
     NB_VERSION,
-    "ClickToFront", 
-    "ClickToFront:",
-    "Click windows to front",
+    NULL,
+    NULL,
+    NULL,
     NBU_NOTIFY | NBU_UNIQUE,
     0,
     0,
@@ -132,59 +164,106 @@ static CF cfInfo =
     0
 };
 
+struct IORequest apa;
 
 static void freeResources(CFState *cs);
 static BOOL initiate(int argc, char **argv, CFState *cs);
 static void getQualifier(STRPTR qualString);
 static void clicktoFront(CxMsg *msg, CxObj *co);
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
+
+
+STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+{
+    STRPTR string;
+
+    if(catalogPtr)
+        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    else
+        string = CatCompArray[id].cca_Str;
+
+    return(string);
+}
 
 
 static BOOL initiate(int argc, char **argv, CFState *cs)
 {
     CxObj *customObj;
+    struct LibTable *tmpLibTable = libTable;
+    UBYTE tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
+    BYTE a;
 
     memset(cs, 0, sizeof(CFState));
-    memset(&inputIO, 0, sizeof(struct IORequest));
 
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",
-							39);
-    if(IntuitionBase == NULL)
-	return FALSE;
+    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40L)))
+    {
+	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+	kprintf("Library locale.library opened!\n");
+    }
+    else
+        kprintf("Warning: Can't open locale.library V40!\n");
 
-    LayersBase = OpenLibrary("layers.library", 39);
-    if(LayersBase == NULL)
-	return FALSE;
-    
-    CxBase = OpenLibrary("commodities.library", 39);
-    if(CxBase == NULL)
-	return FALSE;
+    while(tmpLibTable->lT_Library)
+    {
+	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+	{
+	    sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+	    printf("%s", tmpString);
+	    return FALSE;
+	}
+	else
+	    kprintf("Library %s opened!\n", tmpLibTable->lT_Name);
 
+	tmpLibTable++;
+    }
+
+    nb.nb_Name = getCatalog(catalogPtr, MSG_CLICK2FNT_CXNAME);
+    nb.nb_Title = getCatalog(catalogPtr, MSG_CLICK2FNT_CXTITLE);
+    nb.nb_Descr = getCatalog(catalogPtr, MSG_CLICK2FNT_CXDESCR);
 
     cs->cs_msgPort = CreateMsgPort();
     if(cs->cs_msgPort == NULL)
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
 	return FALSE;
+    }
     
     nb.nb_Port = cs->cs_msgPort;
     
     cs->cs_broker = CxBroker(&nb, 0);
     if(cs->cs_broker == NULL)
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_BROKER));
 	return FALSE;
+    }
     
     customObj = CxCustom(clicktoFront, 0);
     if(customObj == NULL)
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_CREATE_MSGPORT));
 	return FALSE;
+    }
 
     AttachCxObj(cs->cs_broker, customObj);
     ActivateCxObj(cs->cs_broker, TRUE);
 
     cfInfo.ci_thisWindow = IntuitionBase->ActiveWindow;
 
-    if(OpenDevice("input.device", 0, &inputIO, 0) != 0)
+    if(!(inputIO = CreateIORequest(cs->cs_msgPort, sizeof(struct IOStdReq))))
+    {
+	printf("%s", getCatalog(catalogPtr, MSG_CANT_ALLOCATE_MEM));
 	return FALSE;
+    }
+
+    if((a = OpenDevice("input.device", 0, inputIO, 0)) != 0)
+    {
+	sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), "input.device", 0L);
+	return FALSE;
+    }
 
     inputOpen = TRUE;
 
-    InputBase = (struct Library *)inputIO.io_Device;
+    InputBase = (struct Library *)inputIO->io_Device;
 
     if(Cli() != NULL)
     {
@@ -223,6 +302,11 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 
 	    ArgArrayDone();
 	}
+	else
+	{
+	 sprintf(tmpString, getCatalog(catalogPtr, MSG_CANT_OPEN_LIB), "icon.library", 39L);
+	 printf("%s", tmpString);
+	}
 	
 	CloseLibrary(IconBase);
     }
@@ -252,9 +336,11 @@ static void getQualifier(STRPTR qualString)
 static void freeResources(CFState *cs)
 {
     struct Message *cxm;
-    
-    if(cs->cs_broker != NULL)
-	DeleteCxObjAll(cs->cs_broker);
+    struct LibTable *tmpLibTable = libTable;
+
+    if(CxBase)    
+	if(cs->cs_broker != NULL)
+	    DeleteCxObjAll(cs->cs_broker);
 
     if(cs->cs_msgPort != NULL)
     {
@@ -263,19 +349,30 @@ static void freeResources(CFState *cs)
 
         DeleteMsgPort(cs->cs_msgPort);
     }
+
+    if(inputIO)
+	DeleteIORequest(inputIO);
     
-
     if(inputOpen)
-	CloseDevice(&inputIO);
+	CloseDevice(inputIO);
 
-    if(IntuitionBase != NULL)
-	CloseLibrary((struct Library *)IntuitionBase);
+    if(LocaleBase)
+    {
+	CloseCatalog(catalogPtr);
+	CloseLibrary((struct Library *)LocaleBase); /* Passing NULL is valid */
+	kprintf("Closed locale.library!\n");
+    }
 
-    if(LayersBase != NULL)
-	CloseLibrary(LayersBase);
+    while(tmpLibTable->lT_Name) /* Check for name rather than pointer */
+    {
+	if((*(struct Library **)tmpLibTable->lT_Library))
+	{
+	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
+	    kprintf("Closed %s!\n", tmpLibTable->lT_Name);
+	}
 
-    if(CxBase != NULL)
-	CloseLibrary(CxBase);
+	tmpLibTable++;
+    }
 }
 
 

@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile to make More.
+#   Makefile to make the StartMenu commodity.
 
 include $(TOP)/config/make.cfg
 
