@@ -42,6 +42,9 @@
 #ifndef INTUITION_PREFERENCES_H
 #   include <intuition/preferences.h>
 #endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
 
 #ifdef AROS_ALMOST_COMPATIBLE
 #define INTUITIONNAME "intuition.library"
