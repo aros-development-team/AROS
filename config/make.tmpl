@@ -255,10 +255,13 @@ $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfun
 
 #------------------------------------------------------------------------------
 # Generate endskip variable
-%define mkendtag_q lib=dummy base=dummy to=$@
-	@$(ECHO) "Regenerating %(to)..."
-	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-	    -v lib="%(lib)" -v base="%(base)"
+%define mkendtag_q
+$(END_FILE).c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+$(ENDFUNC) : $(END_FILE).c libdefs.h
+%compile_q path=""
 %end
 
 #------------------------------------------------------------------------------
@@ -316,14 +319,14 @@ endif
 ifndef LIB
 LIB := $(LIBDIR)/lib$(LIBNAME).a
 endif
+ifndef OBJDIR
+OBJDIR := $(GENDIR)/$(CURDIR)
+endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
 ifndef END_FILE
 END_FILE := $(OBJDIR)/endtag
-endif
-ifndef OBJDIR
-OBJDIR := $(GENDIR)/$(CURDIR)
 endif
 ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
@@ -370,9 +373,7 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_q
 
-$(OBJDIR)/endtag.c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -392,7 +393,7 @@ ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
 ifndef END_FILE
-END_FILE := endtag
+END_FILE := $(OBJDIR)/endtag
 endif
 ifndef OBJDIR
 OBJDIR := $(GENDIR)/$(CURDIR)
@@ -401,7 +402,7 @@ ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
 ifndef ENDFUNC
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
+ENDFUNC := $(END_FILE).o
 endif
 ifndef OSMODULE
 OSMODULE := $(LIBNAME).library
@@ -415,7 +416,7 @@ ifndef DEPLIBS
 DEPLIBS :=
 endif
 ifndef DEPS
-DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
 endif
 ALL_OBJS := $(SYS_OBJS) $(OBJS) $(ENDFUNC)
 
@@ -461,9 +462,7 @@ endif
 
 %mkfunctable_q
 
-$(END_FILE).c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -480,20 +479,20 @@ $(OBJDIR)/%.d : %.c
 #------------------------------------------------------------------------------
 # version of genromlib that allows you to use archtools
 %define genromlib_arch flags=$(CFLAGS) cc=$(CC) files=$(FILES) archive=$(ARCHIVE)
+ifndef OBJDIR
+OBJDIR := $(GENDIR)/$(CURDIR)
+endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
 ifndef END_FILE
-END_FILE := endtag
-endif
-ifndef OBJDIR
-OBJDIR := $(GENDIR)/$(CURDIR)
+END_FILE := $(OBJDIR)/endtag
 endif
 ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
 ifndef ENDFUNC
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
+ENDFUNC := $(END_FILE).o
 endif
 ifndef OSMODULE
 OSMODULE := $(LIBNAME).library
@@ -511,7 +510,7 @@ ifndef DEPLIBS
 DEPLIBS :=
 endif
 ifndef DEPS
-DEPS := $(foreach f,$(INIT_FILE) functions $(FILES) $(END_FILE),$(OBJDIR)/$(f).d)
+DEPS := $(foreach f,$(INIT_FILE) functions $(FILES) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
 endif
 ALL_OBJS := $(SYS_OBJS) $(OBJS) $(OBJDIR)/functions.o $(ENDFUNC)
 
@@ -550,9 +549,7 @@ ifndef NO_FUNCTABLE
 %mkfunctable_arch archive=%(archive)
 endif
 
-$(END_FILE).c : libdefs.h
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -651,9 +648,7 @@ endif
 %mkfunctable_q
 endif
 
-$(END_FILE).c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -888,20 +883,9 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 $(OBJDIR)/%.o : %.c
 %compile_q
 
-$(END_FILE).c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
-
-$(ENDFUNC) : $(END_FILE).c
-%compile_q
-
 %mkfunctable_arch
 
-$(OBJDIR)/$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
-	@$(ECHO) "Regenerating $@..."
-	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-		-v lib=$(ULIBNAME) \
-		-v base=$(BASENAME)
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -925,15 +909,15 @@ endif
 
 SLIB	      := $(DESTDIR)/$(LIBNAME).$(LIBPOST)
 LIB	      := $(LIBDIR)/lib$(LIBNAME).a
-INIT_FILE     := $(LIBNAME)_init
-END_FILE      := $(LIBNAME)_endtag
 OBJDIR	      := $(GENDIR)/$(CURDIR)
+INIT_FILE     := $(LIBNAME)_init
+END_FILE      := $(OBJDIR)/endtag
 INITFUNC      := $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC       := $(OBJDIR)/$(END_FILE).o
+ENDFUNC       := $(END_FILE).o
 SYS_FILES     := $(SYS_FILES) $(INIT_FILE) functable
 OBJS	      := $(foreach f,$(FILES) functions $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
-DEPS          := $(foreach f,$(INIT_FILE) functable functions $(FILES) $(END_FILE),$(OBJDIR)/$(f).d)
+DEPS          := $(foreach f,$(INIT_FILE) functable functions $(FILES) $(notdir $(END_FILE)),$(OBJDIR)/$(f).d)
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
@@ -967,11 +951,7 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_q
 
-$(END_FILE).c : $(TOP)/scripts/makeendtag.awk
-	@$(ECHO) "Regenerating $@..."
-	@$(AWK) -f $(TOP)/scripts/makeendtag.awk \
-		-v lib=$(ULIBNAME) \
-		-v base=$(BASENAME)
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 
@@ -999,20 +979,20 @@ endif
 ifndef LIB
 LIB := $(LIBDIR)/lib$(LIBNAME).a
 endif
+ifndef OBJDIR
+OBJDIR := $(GENDIR)/$(CURDIR)
+endif
 ifndef INIT_FILE
 INIT_FILE := $(LIBNAME)_init
 endif
 ifndef END_FILE
-END_FILE := $(LIBNAME)_end
-endif
-ifndef OBJDIR
-OBJDIR := $(GENDIR)/$(CURDIR)
+END_FILE := $(OBJDIR)/endtag
 endif
 ifndef INITFUNC
 INITFUNC := $(OBJDIR)/$(INIT_FILE).o
 endif
 ifndef ENDFUNC
-ENDFUNC := $(OBJDIR)/$(END_FILE).o
+ENDFUNC := $(END_FILE).o
 endif
 SYS_FILES := $(SYS_FILES) $(INIT_FILE) functable
 ifndef OBJS
@@ -1020,7 +1000,7 @@ OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 endif
 SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 ifndef DEPS
-DEPS := $(foreach f, $(INIT_FILE) functable $(FILES) $(FUNCTIONS) $(END_FILE), $(OBJDIR)/$(f).d)
+DEPS := $(foreach f, $(INIT_FILE) functable $(FILES) $(FUNCTIONS) $(notdir $(END_FILE)), $(OBJDIR)/$(f).d)
 endif
 
 DESTDIRS := $(DESTDIRS) $(DESTDIR)
@@ -1046,7 +1026,7 @@ setup :
 	done
 
 clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h $(END_FILE) $(EXTRA_CLEAN) \
+	$(RM) $(OBJDIR) *.err libdefs.h $(EXTRA_CLEAN) \
 	    $(LIB) $(SLIB)
 
 $(OBJDIR)/%.o : %.c
@@ -1061,9 +1041,7 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_arch archive=
 
-$(END_FILE).c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 $(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
 

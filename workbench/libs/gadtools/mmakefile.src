@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I..
+USER_INCLUDES	:= -I.. -I.
 
 LIBNAME 	:= gadtools
 ULIBNAME	:= GadTools
@@ -67,4 +67,4 @@ $(OBJDIR)/%.d : %.c
 #endif
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
