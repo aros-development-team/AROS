@@ -25,7 +25,7 @@
 	AROS_LH1(STRPTR, PathPart,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, path, D1),
+	AROS_LHA(CONST_STRPTR, path, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 146, Dos)
