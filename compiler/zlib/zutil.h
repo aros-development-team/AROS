@@ -103,7 +103,7 @@ extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
 #endif
 
 /*AROSFIXME */
-#if defined(AMIGA) || defined(AROS)
+#if defined(AMIGA) || defined(__AROS__)
 #  define OS_CODE  0x01
 #endif
 
