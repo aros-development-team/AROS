@@ -107,8 +107,12 @@ AROS_UFH3(LONG, __startup_entry,
     set_close_libraries();
 
     /* Reply startup message to Workbench */
-    if (WBenchMsg) ReplyMsg((struct Message *) WBenchMsg);
-
+    if (WBenchMsg) 
+    {
+        Forbid(); /* make sure we're not UnLoadseg()ed before we're really done */
+        ReplyMsg((struct Message *) WBenchMsg);
+    }
+    
     CloseLibrary((struct Library *)DOSBase);
 
     return __startup_error;
