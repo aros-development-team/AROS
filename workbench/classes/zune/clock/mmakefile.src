@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 FILES         := clock
 INCLUDE_FILES := clock.h
 
+#MM- workbench-classes-zune : workbench-classes-zune-clock 
 #MM workbench-classes-zune-clock : includes
 %build_module \
     mmake=workbench-classes-zune-clock \

@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 FILES         := calendar
 INCLUDE_FILES := calendar.h
 
+#MM- workbench-classes-zune : workbench-classes-zune-calendar
 #MM workbench-classes-zune-calendar : includes
 %build_module \
     mmake=workbench-classes-zune-calendar \
