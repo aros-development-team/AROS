@@ -158,7 +158,7 @@ struct NewGadget gt_skipgad = {
 
 #define ID_HELPGAD 102
 struct NewGadget gt_helpgad = {
-  165,200, 74,30,
+  165,200, 74,25,
   "Help", NULL,
   ID_HELPGAD, PLACETEXT_IN, NULL, NULL
 };
@@ -263,6 +263,7 @@ struct TagItem ti2[] = {
   gt_mxgad.ng_VisualInfo = vi;
   gt_abortgad.ng_VisualInfo = vi;
   gt_skipgad.ng_VisualInfo = vi;
+  gt_helpgad.ng_VisualInfo = vi;
 
   gad = CreateContext( &glist );
   if(gad==NULL)
@@ -844,8 +845,8 @@ char c;
       } /* while((imsg = GT_GetIMsg( GuiWin->UserPort )) */
       
     } while( !finish );
-    RemoveGList(GuiWin,glist,-1);
     RemoveGList(GuiWin,stdglist,-1);
+    RemoveGList(GuiWin,glist,-1);
     GT_RefreshWindow(GuiWin,NULL);
 #else
     Delay( 100 );
