@@ -27,6 +27,13 @@
 
 extern struct Library *MUIMasterBase;
 
+
+struct TrackingNode
+{
+    struct MinNode tn_Node;
+    Object        *tn_Application;
+};
+
 struct MUI_ApplicationData
 {
     struct MUI_GlobalInfo   app_GlobalInfo;
@@ -58,6 +65,8 @@ struct MUI_ApplicationData
     BOOL            	    app_SingleTask;
     BOOL    	    	    app_Active;
     BYTE    	    	    app_BrokerPri;
+    struct TrackingNode     app_TrackingNode;
+    BOOL                    app_is_TNode_in_list;
 };
 
 struct timerequest_ext
@@ -413,6 +422,12 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
 
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    data->app_TrackingNode.tn_Application = obj;
+    Enqueue((struct List *)&MUIMB(MUIMasterBase)->Applications, (struct Node *)&data->app_TrackingNode);
+    data->app_is_TNode_in_list = TRUE;
+    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
     return (ULONG)obj;
 }
 
@@ -424,6 +439,13 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+
+    if (data->app_is_TNode_in_list)
+    {
+	ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+	Remove((struct Node *)&data->app_TrackingNode);
+	ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    }
 
     if (data->app_WindowFamily)
     {
