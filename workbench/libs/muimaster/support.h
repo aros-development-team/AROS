@@ -9,8 +9,10 @@
 #include "intuition/classusr.h"
 #endif
 
+#ifdef _AROS
 #ifndef AROS_ASMCALL_H
 #include <aros/asmcall.h>
+#endif
 #endif
 
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)

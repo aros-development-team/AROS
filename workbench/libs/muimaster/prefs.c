@@ -25,8 +25,9 @@
 #include <proto/graphics.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
-extern struct Library *MUIMasterBase;
 #endif
+
+extern struct Library *MUIMasterBase;
 
 #include "muimaster_intern.h"
 #include "mui.h"

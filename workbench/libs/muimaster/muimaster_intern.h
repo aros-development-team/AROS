@@ -81,6 +81,8 @@ struct MUIMasterBase_intern
 #undef MUIMB
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
+#ifdef _AROS
+
 #undef SysBase
 #define SysBase     	(MUIMB(MUIMasterBase)->sysbase)
 
@@ -95,6 +97,25 @@ struct MUIMasterBase_intern
 
 #undef IntuitionBase
 #define IntuitionBase  	(MUIMB(MUIMasterBase)->intuibase)
+
+#else
+
+#undef SysBase
+#define SysBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->sysbase)
+
+#undef UtilityBase
+#define UtilityBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->utilitybase)
+
+#undef AslBase
+#define AslBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->aslbase)
+
+#undef GfxBase
+#define GfxBase     	(((struct MUIMasterBase_intern *)MUIMasterBase)->gfxbase)
+
+#undef IntuitionBase
+#define IntuitionBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->intuibase)
+
+#endif
 
 /****************************************************************************************/
 
