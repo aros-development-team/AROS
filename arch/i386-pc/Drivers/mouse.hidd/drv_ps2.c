@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: PS/2 mouse driver.
@@ -156,16 +156,16 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             
             UBYTE mousecode = kbd_read_input();
 //            if (0xfa == mousecode)
-//	    if ((0xfa == mousecode) && (data->u.ps2.expected_mouse_acks))
-            /* Check whether we are excepting ACK */
-            if (data->u.ps2.expected_mouse_acks)
+//            /* Check whether we are excepting ACK */
+//            if (data->u.ps2.expected_mouse_acks)
+	    if ((AUX_ACK == mousecode) && (data->u.ps2.expected_mouse_acks))
             {
-                if (mousecode == AUX_ACK)
-                {
+                //if (mousecode == AUX_ACK)
+                //{
                     D(bug("                             Got a mouse ACK!\n"));
-                    data->u.ps2.expected_mouse_acks--;
-                }
-                else data->u.ps2.expected_mouse_acks = 0;
+                //    data->u.ps2.expected_mouse_acks--;
+                //}
+                //else data->u.ps2.expected_mouse_acks = 0;
             }
 #if 1
             else if (mousecode == AUX_RECONNECT)
