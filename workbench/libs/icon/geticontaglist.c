@@ -51,7 +51,7 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
 
     struct TagItem  *tag, *tagp;
-    struct DiskObject *dob;
+    struct DiskObject *dob = NULL;
     int type = -1;
     char *def_name = NULL;
     int fail = 1;
