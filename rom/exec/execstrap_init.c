@@ -9,6 +9,7 @@
 #include <exec/resident.h>
 #include <exec/nodes.h>
 #include <exec/execbase.h>
+#include <hardware/cia.h>
 
 #include <proto/exec.h>
 
@@ -30,7 +31,7 @@ extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
 /*
     TODO:
 
-    Check for the right mouse button, and disable AROSfA if depressed.
+    - Fix functions. :)
 */
 
 int start(void)
@@ -38,7 +39,14 @@ int start(void)
     struct ExecBase *SysBase;
     register ULONG x, y;
     UWORD *color00 = (void *)0xdff180;
+    UBYTE *ciapra = (void *)0xbfe001;
     UWORD cpuflags;
+
+    if(*ciapra & CIAF_GAMEPORT0)
+    {
+	/* If left mouse button pressed: don't start this time */
+	return 0;
+    }
 
     if(SysBase->LibNode.lib_Version < 37)
     {
@@ -46,9 +54,7 @@ int start(void)
 	return 0;
     }
 
-    /*
-	High-tech display tricks (blue effects) :-)
-    */
+    /* High-tech display tricks (blue effects) :-) */
     for (x=0; x<1000; x++)
     {
 	for (y = 200; y; y--) *color00 = 0x00f;
