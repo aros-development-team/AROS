@@ -320,15 +320,15 @@ DevCMD00085;0;;Write NA - CMD_RESET
 DevCMD00086;0;;Write NA - CMD_START
 DevCMD00087;0;;Write NA - CMD_STOP
 DevCMD00088;0;;Write NA - CMD_WRITE
-DevCMD00090;0;;Write PD - CMD_CLEAR
-DevCMD00091;0;;Write PD - CMD_FLUSH
-DevCMD00092;0;;Write PD - CMD_READ
-DevCMD00093;0;;Write PD - CMD_RESET
-DevCMD00094;0;;Write PD - CMD_START
-DevCMD00095;0;;Write PD - CMD_STOP
-DevCMD00096;0;;Write PD - CMD_WRITE
-DevCMD00098;0;;Write PDCMD_QUERY
-DevCMD00099;0;;Write PDCMD_SETPARAMS
+DevCMD00090;1;bergers;Write PD - CMD_CLEAR
+DevCMD00091;1;bergers;Write PD - CMD_FLUSH
+DevCMD00092;1;bergers;Write PD - CMD_READ
+DevCMD00093;1;bergers;Write PD - CMD_RESET
+DevCMD00094;1;bergers;Write PD - CMD_START
+DevCMD00095;1;bergers;Write PD - CMD_STOP
+DevCMD00096;1;bergers;Write PD - CMD_WRITE
+DevCMD00098;1;bergers;Write PDCMD_QUERY
+DevCMD00099;1;bergers;Write PDCMD_SETPARAMS
 DevCMD00100;0;;Write PRD - CMD_FLUSH
 DevCMD00101;0;;Write PRD - CMD_INVALID
 DevCMD00102;0;;Write PRD - CMD_RESET
@@ -381,12 +381,12 @@ DevFCT00061;0;;Write CSD - OpenDevice
 DevFCT00081;0;;Write NA - AbortIO
 DevFCT00082;0;;Write NA - OpenDevice
 DevFCT00089;0;;Write NA - CloseDevice
-DevFCT00097;0;;Write PD - OpenDevice
+DevFCT00097;1;bergers;Write PD - OpenDevice
 DevFCT00110;0;;Write PRD - PWrite
-DevFCT00111;0;;Write SD - AbortIO
-DevFCT00112;0;;Write SD - BeginIO
-DevFCT00113;0;;Write SD - CloseDevice
-DevFCT00121;0;;Write SD - OpenDevice
+DevFCT00111;1;bergers;Write SD - AbortIO
+DevFCT00112;1;bergers;Write SD - BeginIO
+DevFCT00113;1;bergers;Write SD - CloseDevice
+DevFCT00121;1;bergers;Write SD - OpenDevice
 DevFCT00125;0;;Write TR - AbortIO
 disk00000;0;digulla;Write AllocUnit
 disk00001;0;digulla;Write FreeUnit
@@ -408,7 +408,7 @@ dos00004;2;matthias;Write Input
 dos00005;2;matthias;Write Output
 dos00006;2;matthias;Write Seek
 dos00007;2;matthias;Write DeleteFile
-dos00008;0;bergers;Write Rename
+dos00008;0;;Write Rename
 dos00009;2;matthias;Write Lock
 dos00010;2;matthias;Write UnLock
 dos00011;2;matthias;Write DupLock
@@ -438,10 +438,10 @@ dos00034;1;turrican;Write SendPkt
 dos00035;1;turrican;Write WaitPkt
 dos00036;1;turrican;Write ReplyPkt
 dos00037;1;turrican;Write AbortPkt
-dos00038;0;bergers;Write LockRecord
-dos00039;2;bergers;Write LockRecords
-dos00040;2;bergers;Write UnLockRecord
-dos00041;2;bergers;Write UnLockRecords
+dos00038;0;;Write LockRecord
+dos00039;0;;Write LockRecords
+dos00040;0;;Write UnLockRecord
+dos00041;0;;Write UnLockRecords
 dos00042;2;matthias;Write SelectInput
 dos00043;2;matthias;Write SelectOutput
 dos00044;2;matthias;Write FGetC
@@ -454,7 +454,7 @@ dos00050;2;matthias;Write FPuts
 dos00051;1;turrican;Write VFWritef
 dos00052;2;matthias;Write VFPrintf
 dos00053;2;matthias;Write Flush
-dos00054;1;bergers;Write SetVBuf
+dos00054;0;;Write SetVBuf
 dos00055;2;matthias;Write DupLockFromFH
 dos00056;2;matthias;Write OpenFromLock
 dos00057;2;bergers;Write ParentOfFH
@@ -498,7 +498,7 @@ dos00094;2;matthias;Write AssignLock
 dos00095;2;turrican;Write AssignLate
 dos00096;2;turrican;Write AssignPath
 dos00097;2;turrican;Write AssignAdd
-dos00098;0;bergers;Write RemAssignList
+dos00098;0;;Write RemAssignList
 dos00099;2;iaint;Write GetDeviceProc
 dos00100;2;iaint;Write FreeDeviceProc
 dos00101;2;matthias;Write LockDosList
@@ -697,8 +697,8 @@ expansion00020;2;iaint;Write AddDosNode
 gadtools00000;1;srittau;Write CreateGadgetA
 gadtools00001;2;srittau;Write FreeGadgets
 gadtools00002;2;srittau;Write GT_SetGadgetAttrsA
-gadtools00003;1;bergers;Write CreateMenusA
-gadtools00004;1;bergers;Write FreeMenus
+gadtools00003;2;bergers;Write CreateMenusA
+gadtools00004;2;bergers;Write FreeMenus
 gadtools00005;1;bergers;Write LayoutMenuItemsA
 gadtools00006;1;bergers;Write LayoutMenusA
 gadtools00007;1;srittau;Write GT_GetIMsg
@@ -743,9 +743,9 @@ graphics00026;2;bergers;Write AreaEllipse
 graphics00027;2;digulla;Write LoadRGB4
 graphics00028;2;digulla;Write InitRastPort
 graphics00029;2;bergers;Write InitVPort
-graphics00030;0;bergers;Write MrgCop
-graphics00031;0;bergers;Write MakeVPort
-graphics00032;0;bergers;Write LoadView
+graphics00030;0;;Write MrgCop
+graphics00031;0;;Write MakeVPort
+graphics00032;0;;Write LoadView
 graphics00033;0;digulla;Write WaitBlit
 graphics00034;2;digulla;Write SetRast
 graphics00035;2;digulla;Write Move
@@ -758,7 +758,7 @@ graphics00041;1;bergers;Write QBlit
 graphics00042;2;bergers;Write InitArea
 graphics00043;2;bergers;Write SetRGB
 graphics00044;1;bergers;Write QBSBlit
-graphics00045;2;bergers;Write BltClear
+graphics00045;1;bergers;Write BltClear
 graphics00046;2;digulla;Write RectFill
 graphics00047;2;nlorentz;Write BltPattern
 graphics00048;2;digulla;Write ReadPixel
@@ -778,8 +778,8 @@ graphics00061;2;digulla;Write ScrollRaster
 graphics00062;0;digulla;Write WaitBOVP
 graphics00063;2;bergers;Write GetSprite
 graphics00064;2;bergers;Write FreeSprite
-graphics00065;0;bergers;Write ChangeSprite
-graphics00066;0;bergers;Write MoveSprite
+graphics00065;0;;Write ChangeSprite
+graphics00066;0;;Write MoveSprite
 graphics00067;2;bergers;Write LockLayerRom
 graphics00068;2;bergers;Write UnlockLayerRom
 graphics00069;2;bergers;Write SyncSBitMap
@@ -806,7 +806,7 @@ graphics00089;2;bergers;Write FreeCprList
 graphics00090;2;bergers;Write GetColorMap
 graphics00091;2;bergers;Write FreeColorMap
 graphics00092;2;bergers;Write GetRGB
-graphics00093;0;bergers;Write ScrollVPort
+graphics00093;0;;Write ScrollVPort
 graphics00094;2;bergers;Write UCopperListInit
 graphics00095;2;bergers;Write FreeGBuffers
 graphics00096;2;nlorentz;Write BltBitMapRastPort
@@ -855,7 +855,7 @@ graphics00138;2;digulla;Write SetABPenDrMd
 graphics00139;2;bergers;Write GetRGB
 graphics00140;2;nlorentz;Write AllocBitMap
 graphics00141;2;nlorentz;Write FreeBitMap
-graphics00142;0;bergers;Write GetExtSpriteA
+graphics00142;0;free;Write GetExtSpriteA
 graphics00143;0;digulla;Write CoerceMode
 graphics00144;0;digulla;Write ChangeVPBitMap
 graphics00145;0;bergers;Write ReleasePen
@@ -880,8 +880,8 @@ graphics00163;2;hkiel;Implement AreaPtrn
 graphics00164;2;hkiel;Implement multicolored AreaPtrn
 HID00001;0;;Write Alarm.hidd
 HID00002;0;;Write Timer.hidd
-HID00003;0;;Write Serial.hidd
-HID00004;0;;Write Parallel.hidd
+HID00003;1;bergers;Write Serial.hidd
+HID00004;1;bergers;Write Parallel.hidd
 HID00005;0;;Write Keyboard.hidd
 HID00006;0;;Write Sound.hidd
 HID00007;0;;Write IRQ.hidd
@@ -982,8 +982,8 @@ intuition00012;2;digulla;Write DoubleClick
 intuition00013;2;digulla;Write DrawBorder
 intuition00014;2;digulla;Write DrawImage
 intuition00015;0;digulla;Write EndRequest
-intuition00016;0;digulla;Write GetDefPrefs
-intuition00017;0;bergers;Write GetPrefs
+intuition00016;1;bergers;Write GetDefPrefs
+intuition00017;1;bergers;Write GetPrefs
 intuition00018;2;SDuvan;Write InitRequester
 intuition00019;2;hkiel;Write ItemAddress
 intuition00020;2;digulla;Write ModifyIDCMP
@@ -1015,7 +1015,7 @@ intuition00045;2;bergers;Write ViewPortAddress
 intuition00046;2;digulla;Write WindowToBack
 intuition00047;2;digulla;Write WindowToFront
 intuition00048;2;hkiel;Write WindowLimits
-intuition00049;0;digulla;Write SetPrefs
+intuition00049;1;bergers;Write SetPrefs
 intuition00050;2;digulla;Write IntuiTextLength
 intuition00051;2;hkiel;Write WBenchToBack
 intuition00052;2;hkiel;Write WBenchToFront
@@ -1034,15 +1034,15 @@ intuition00064;2;digulla;Write LockIBase
 intuition00065;2;digulla;Write UnlockIBase
 intuition00066;2;digulla;Write GetScreenData
 intuition00067;2;digulla;Write RefreshGList
-intuition00068;2;digulla;Write AddGList
-intuition00069;2;digulla;Write RemoveGList
+intuition00068;2;bergers;Write AddGList
+intuition00069;2;bergers;Write RemoveGList
 intuition00070;2;digulla;Write ActivateWindow
 intuition00071;2;nlorentz;Write RefreshWindowFrame
 intuition00072;1;nlorentz;Write ActivateGadget
 intuition00073;2;digulla;Write NewModifyProp
 intuition00074;0;digulla;Write QueryOverscan
 intuition00075;2;bergers;Write MoveWindowInFrontOf
-intuition00076;2;digulla;Write ChangeWindowBox
+intuition00076;2;bergers;Write ChangeWindowBox
 intuition00077;2;nlorentz;Write SetEditHook
 intuition00078;2;stegerg;Write SetMouseQueue
 intuition00079;2;bergers;Write ZipWindow
@@ -1184,15 +1184,15 @@ mathieeedoubbas00003;2;bergers;Write IEEEDPTst
 mathieeedoubbas00004;2;bergers;Write IEEEDPAbs
 mathieeedoubbas00005;2;bergers;Write IEEEDPNeg
 mathieeedoubbas00006;2;bergers;Write IEEEDPAdd
-mathieeedoubbas00007;1;juddc;Write IEEEDPSub
-mathieeedoubbas00008;1;juddc;Write IEEEDPMul
-mathieeedoubbas00009;1;juddc;Write IEEEDPDiv
+mathieeedoubbas00007;0;;Write IEEEDPSub
+mathieeedoubbas00008;0;;Write IEEEDPMul
+mathieeedoubbas00009;0;;Write IEEEDPDiv
 mathieeedoubbas00010;2;bergers;Write IEEEDPFloor
 mathieeedoubbas00011;2;bergers;Write IEEEDPCeil
 mathieeedoubtrans00000;2;bergers;Write IEEEDPAtan
 mathieeedoubtrans00001;2;bergers;Write IEEEDPSin
 mathieeedoubtrans00002;2;bergers;Write IEEEDPCos
-mathieeedoubtrans00003;1;juddc;Write IEEEDPTan
+mathieeedoubtrans00003;0;;Write IEEEDPTan
 mathieeedoubtrans00004;2;bergers;Write IEEEDPSincos
 mathieeedoubtrans00005;2;bergers;Write IEEEDPSinh
 mathieeedoubtrans00006;2;bergers;Write IEEEDPCosh

@@ -118,7 +118,7 @@ static VOID hiddserial_disposeunit(Class *cl, Object *obj, struct pHidd_Serial_D
 #define OOPBase     (csd->oopbase)
 #define UtilityBase (csd->utilitybase)
 
-#define NUM_SERIALHIDD_METHODS 2
+#define NUM_SERIALHIDD_METHODS moHidd_Serial_NumMethods
 
 Class *init_serialhiddclass (struct class_static_data *csd)
 {

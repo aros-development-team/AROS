@@ -410,7 +410,7 @@ AROS_UFH3(void, serialunit_write_more_data,
 
 
 #define NUM_ROOT_METHODS 2
-#define NUM_SERIALUNIT_METHODS 4
+#define NUM_SERIALUNIT_METHODS moHidd_SerialUnit_NumMethods
 
 Class *init_serialunitclass (struct class_static_data *csd)
 {

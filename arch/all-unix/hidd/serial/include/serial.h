@@ -33,16 +33,17 @@
 
 enum
 {
-    /* Methods for a graphics hidd */
+    /* Methods for a serial hidd */
 
     moHidd_Serial_NewUnit = 0,       
-    moHidd_Serial_DisposeUnit
+    moHidd_Serial_DisposeUnit,
+    moHidd_Serial_NumMethods		// always keep this the last one!
 };
 
 
 
 
-/* messages for a graphics hidd */
+/* messages for a serial hidd */
 
 struct pHidd_Serial_NewUnit
 {
@@ -67,7 +68,8 @@ enum
     moHidd_SerialUnit_Init,
     moHidd_SerialUnit_Write,
     moHidd_SerialUnit_SetBaudrate,
-    moHidd_SerialUnit_SendBreak
+    moHidd_SerialUnit_SendBreak,
+    moHidd_SerialUnit_NumMethods	// always keep this the last one!
 };
 
 
