@@ -5,11 +5,31 @@ USER_INCLUDES = -I..
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/workbench/libs/icon
+# BEGIN_DESC{makefile}
+# This is the makefile for icon.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
 
-%define_libs postlibs=-lamiga
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
 
-FILES = icon_init icon_functable basicfuncs diskobjio
+# Main function for icon.library. Need this apart as an anchor for the link:
+INIT_FILE = icon_init
+
+FILES = icon_functable basicfuncs diskobjio
+
+# Guarantee that this will go at the end of the file:
+END_FILE = icon_endtag
+
 FUNCTIONS = \
 	addfreelist \
 	bumprevision \
@@ -24,19 +44,59 @@ FUNCTIONS = \
 	putdefdiskobject \
 	putdiskobject
 
+OBJDIR=$(GENDIR)/workbench/libs/icon
+
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
 
 all: setup $(SLIBDIR)/icon.library
 
-$(SLIBDIR)/icon.library: $(DEPLIBS) $(OBJS)
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Generate a map file
+MAPGEN = -Xlinker -M
+
+# Strip resulting binary
+STRIP = strip
+
+# ***** Not Native ***************
+else
+
+MAPGEN =
+STRIP = true
+
+# ***** END ***************
+endif
+
+%define_libs postlibs=-lamiga -licon
+
+# The filename of the linklib
+LIB=$(LIBDIR)/libicon.a
+
+.PHONY: asm
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+
+$(SLIBDIR)/icon.library: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
 	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) $(OBJS) $(LIBS) -o $@
+	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee iconlib.map
+	@if test ! -s iconlib.map; then rm iconlib.map ; else true ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB): $(OBJS)
+	@echo "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
 
 setup :
 	%mkdirs_q $(OBJDIR) $(SLIBDIR)
 
 clean::
-	$(RM) $(OBJDIR) *.err
+	$(RM) $(OBJDIR) *.err *.s
 
 $(OBJDIR)/%.o: %.c
 	%compile_q
@@ -44,6 +104,9 @@ $(OBJDIR)/%.o: %.c
 icon_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Icon
+
+icon_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Icon
 
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
@@ -53,4 +116,4 @@ $(OBJDIR)/icon_init.o: libdefs.h
 %libdefs_rule
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

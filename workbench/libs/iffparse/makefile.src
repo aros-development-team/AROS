@@ -5,13 +5,32 @@ USER_INCLUDES = -I..
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/workbench/libs/iffparse
+# BEGIN_DESC{makefile}
+# This is the makefile for iffparse.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
 
-%define_libs
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
 
-FILES = iffparse_init iffparse_functable basicfuncs bufferingfuncs \
+# Main function for iffparse.library. Need this apart as an anchor for the link:
+INIT_FILE = iffparse_init
+
+FILES = iffparse_functable basicfuncs bufferingfuncs \
 	clipboardfuncs collectionhooks prophooks stophook \
 	dosstreamhandler
+
+# Guarantee that this will go at the end of the file:
+END_FILE = iffparse_endtag
 
 FUNCTIONS = \
 	allociff \
@@ -56,24 +75,69 @@ FUNCTIONS = \
 	writechunkbytes \
 	writechunkrecords
 
+OBJDIR=$(GENDIR)/workbench/libs/iffparse
+
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
+
 all: setup $(SLIBDIR)/iffparse.library
 
-$(SLIBDIR)/iffparse.library: $(DEPLIBS) \
-	    $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
-	%link_q
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Generate a map file
+MAPGEN = -Xlinker -M
+
+# Strip resulting binary
+STRIP = strip
+
+# ***** Not Native ***************
+else
+
+MAPGEN =
+STRIP = true
+
+# ***** END ***************
+endif
+
+%define_libs prelibs=-liffparse
+
+# The filename of the linklib
+LIB=$(LIBDIR)/libiffparse.a
+
+.PHONY: asm
+asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+
+$(SLIBDIR)/iffparse.library: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee iffparselib.map
+	@if test ! -s iffparselib.map; then rm iffparselib.map ; else true ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB): $(OBJS)
+	@echo "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
 
 setup :
 	%mkdirs_q $(OBJDIR) $(SLIBDIR)
 
 clean::
-	$(RM) $(OBJDIR) *.err
+	$(RM) $(OBJDIR) *.err *.s
 
 $(OBJDIR)/%.o: %.c
 	%compile_q
 
 iffparse_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
-	%mkfunctable IFFParse
+	%mkfunctable_q IFFParse
+
+iffparse_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q IFFParse
 
 $(OBJDIR)/iffparse_init.o: libdefs.h
 
@@ -83,4 +147,4 @@ $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
