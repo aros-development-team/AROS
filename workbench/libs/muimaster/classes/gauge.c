@@ -145,37 +145,65 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
     int info_changed = 0;
     int need_redraw = 0;
-    
+
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Gauge_Current:
-		    data->current = tag->ti_Data;
-		    info_changed = 1;
-		    need_redraw = 1;
+		    if (data->current != tag->ti_Data)
+		    {
+		        data->current = tag->ti_Data;
+		        info_changed = 1;
+		        need_redraw = 1;
+		    }
+		    else
+		    {
+		        tag->ti_Tag = TAG_IGNORE;
+		    }
 		    break;
 	    case    MUIA_Gauge_Divide:
-	    	    data->divide = tag->ti_Data;
-		    info_changed = 1;
-		    need_redraw = 1;
+		    if (data->current != tag->ti_Data)
+		    {
+		        data->divide = tag->ti_Data;
+		        info_changed = 1;
+		        need_redraw = 1;
+		    }
+		    else
+		    {
+		        tag->ti_Tag = TAG_IGNORE;
+		    }
 		    break;
 	    case    MUIA_Gauge_InfoText:
-	    	    if (data->dupinfo)
-	    	    {
-			if (data->info) FreeVec(data->info);
-			data->info = StrDup((STRPTR)tag->ti_Data);
-		    } else
+	    	    if (strcmp(data->info, (STRPTR)tag->ti_Data))
 		    {
-			data->info = (STRPTR)tag->ti_Data;
+		        if (data->dupinfo)
+	    	        {
+			    if (data->info) FreeVec(data->info);
+			    data->info = StrDup((STRPTR)tag->ti_Data);
+		        } else
+		        {
+			    data->info = (STRPTR)tag->ti_Data;
+		        }
+		        need_redraw = info_changed = 1;
+	 	    }
+		    else
+		    {
+		        tag->ti_Tag = TAG_IGNORE;
 		    }
-		    need_redraw = info_changed = 1;
 		    break;
 	    case    MUIA_Gauge_Max:
-	    	    data->max = tag->ti_Data;
-		    need_redraw = 1;
+	    	    if (data->max != tag->ti_Data)
+		    {
+	    	        data->max = tag->ti_Data;
+		        need_redraw = 1;
+		    }
+		    else
+		    {
+		        tag->ti_Tag = TAG_IGNORE;
+		    }
 		    break;
     	}
     }
