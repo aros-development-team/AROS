@@ -555,6 +555,12 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
     if (muiNotifyData(obj)->mnd_GlobalInfo)
     {
         /* Only childs of groups can have parents */
+	
+	if ((_flags(obj) & MADF_INVIRTUALGROUP) || (data->flags & GROUP_VIRTUAL))
+	{
+	    _flags(msg->opam_Object) |= MADF_INVIRTUALGROUP;
+	}
+
         muiNotifyData(msg->opam_Object)->mnd_ParentObject = obj;
 	DoMethod(msg->opam_Object, MUIM_ConnectParent, (IPTR)obj);
     }
@@ -584,6 +590,8 @@ static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *ms
     {
 	DoMethod(msg->opam_Object, MUIM_DisconnectParent);
         muiNotifyData(msg->opam_Object)->mnd_ParentObject = NULL;
+	
+	_flags(msg->opam_Object) &= ~MADF_INVIRTUALGROUP;
     }
 
     data->num_childs--;
