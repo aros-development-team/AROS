@@ -302,7 +302,7 @@ static IPTR RT_ShowErrorVec (RTData * rtd, int rtt, MemoryResource * rt,
 	switch (ret)
 	{
 	case RT_SEARCH_FOUND:
-	    if (rt->Node.Flags & RTNF_DONT_FREE)
+	    if (rt && rt->Node.Flags & RTNF_DONT_FREE)
 	    {
 		kprintf ("RT%s: Try to free read-only resource: Vec-Memory\n"
 			"    %s at %s:%d\n"
