@@ -31,7 +31,13 @@ struct MUI_ImagedisplayData
 {
     char *spec;
     struct MUI_ImageSpec_intern *img;
+    ULONG flags;
+    WORD defwidth;
+    WORD defheight;
 };
+
+#define MIF_FREEVERT         (1<<0)
+#define MIF_FREEHORIZ        (1<<1)
 
 
 /**************************************************************************
@@ -48,6 +54,7 @@ static IPTR Imagedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);
+    data->flags = MIF_FREEHORIZ | MIF_FREEVERT;
 
     /* parse initial taglist */
 
@@ -57,7 +64,20 @@ static IPTR Imagedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case MUIA_Imagedisplay_Spec:
 		data->spec = zune_image_spec_duplicate(tag->ti_Data);
-	    break;
+		break;
+	    case MUIA_Imagedisplay_FreeHoriz:
+		/* MUI implements some tag for optionnally prevent rescaling
+		 * of displayed image - without affecting imagedisplay resize -
+		 * see MUIPrefs/Buttons/Checkmarks/Look for nonrescaled image,
+		 * and try a popimage for yourself to see that by default they
+		 * get rescaled. It's not the same effect as MUI_Image_FreeHoriz.
+		 * -dlc 20030323
+		 */
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEHORIZ);
+		break;
+	    case MUIA_Imagedisplay_FreeVert:
+		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEVERT);
+		break;
     	}
     }
 
@@ -232,13 +252,45 @@ static IPTR Imagedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *m
     DoSuperMethodA(cl,obj,(Msg)msg);
 
     if (!(msg->flags & MADF_DRAWOBJECT))
-                return 0;
+	return 0;
 
     if (data->img)
     {
+	WORD left, top, width, height;
+
+	left = _mleft(obj);
+	top = _mtop(obj);
+	width = _mwidth(obj);
+	height = _mheight(obj);
+
+	if (!(data->flags & MIF_FREEVERT) || !(data->flags & MIF_FREEHORIZ))
+	{
+	    struct MUI_MinMax minmax;
+
+	    zune_imspec_askminmax(data->img, &minmax);
+	    data->defwidth = minmax.DefWidth;
+	    data->defheight = minmax.DefHeight;
+
+	    if (!(data->flags & MIF_FREEVERT) && (height > data->defheight))
+	    {
+		WORD freespace = height - data->defheight;
+
+		top += freespace / 2;
+		height = data->defheight;
+	    }
+
+	    if (!(data->flags & MIF_FREEHORIZ) && (width > data->defwidth))
+	    {
+		WORD freespace = width - data->defwidth;
+
+		left += freespace / 2;
+		width = data->defwidth;
+	    }
+	}
+
 	zune_imspec_draw(data->img, muiRenderInfo(obj),
-			_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
-			0, 0, IDS_NORMAL);
+			 left, top, width, height,
+			 0, 0, IDS_NORMAL);
     }
 
     return 1;
