@@ -25,7 +25,7 @@ MSG_TAB
 Tabulator:
 ;
 MSG_SEPARATORS
-Separators:
+Trenner:
 ;
 MSG_TXTFONT
 Textschrift:
@@ -34,7 +34,7 @@ MSG_SCRFONT
 Hauptschrift:
 ;
 MSG_PUBSCREEN
-Schirm Auflösung:
+Bildschirmauflösung:
 ;
 MSG_BACKDROP
 Editorfenster als Hintergrund
@@ -43,7 +43,7 @@ MSG_LEFTMARGIN
 Linksbündig
 ;
 MSG_AUTOINDENT
-Automatische Einrückung
+Automatisch einrücken
 ;
 MSG_EXTEND
 Erweiterter Ziffernblock
@@ -55,28 +55,28 @@ MSG_USEPREFS
 Benutzen
 ;
 MSG_DISCARDPREFS
-Abbruch
+Verwerfen
 ;
 MSG_USEDEF
 Voreinstellung benutzen
 ;
 MSG_CHOOSEIT
-Benutzer wahl...
+Auswählen...
 ;
 MSG_CLONEPARENT
 Klone vorhergehendes
 ;
 MSG_COLOR_BACK
-Background
+Hintergrund
 ;
 MSG_COLOR_TEXT
-Standard text
+Normaler Text
 ;
 MSG_COLOR_FILLTXT
 Selected fill text
 ;
 MSG_COLOR_FILLSEL
-Selected text
+Ausgewählter Text
 ;
 MSG_COLOR_MARGINBACK
 Margin background
