@@ -17,7 +17,7 @@ DESTDIR	    := $(HIDDSDIR)
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 
 FILES       := GraphicsClass BM_Class GC_Class  \
-               GC_WritePixelDirect GC_ReadPixel
+               planarbm chunkybm
 	       
 EXTRA_LIBS  := -L$(LIBDIR) -lhidd$(LIBNAME)stubs
 
