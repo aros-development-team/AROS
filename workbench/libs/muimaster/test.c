@@ -251,7 +251,7 @@ void main(void)
     Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
     Object *country_radio[2];
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio","IconList",NULL};
     static char **radio_entries1 = pages;
     static char *radio_entries2[] = {"Paris","Pataya","London","New-York","Reykjavik",NULL};
 
@@ -528,6 +528,13 @@ End,
 	                    Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
 	                    End,
 	                End,
+
+/* iconlist */
+	            Child, HGroup,
+	            	Child, MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
+	            	Child, MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
+	            	End,
+
 	            End,
 	         
 #endif
