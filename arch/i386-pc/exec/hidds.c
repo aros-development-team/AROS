@@ -23,8 +23,16 @@
 
 #include <hidd/hidd.h>
 #include <hidd/serial.h>
+#include <aros/debug.h>
+
+#include <string.h>
+#include <stdio.h>
 
 #define ioStd(x) ((struct IOStdReq *)x)
+
+void BlackPrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase);
+void WhitePrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase);
+
 
 void hidd_demo()
 {
@@ -101,7 +109,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
     {
         struct IntuitionBase *IntuitionBase;
         struct GfxBase *GfxBase;
-        struct Window * win;
+        struct Window * win = NULL;
         int x = 100;
         int y = 100;
 
@@ -127,15 +135,18 @@ kprintf("ibase = %lx\n", IntuitionBase);
 	    win = OpenWindowTagList(0, tags);
 	}
 
-        DrawEllipse(win->RPort,160,120,80,80);
-        DrawEllipse(win->RPort,185,90,15,15);
-        DrawEllipse(win->RPort,135,90,15,15);
-        
-        Move(win->RPort,125,140);
-        Draw(win->RPort,140,150);
-        Draw(win->RPort,180,150);
-        Draw(win->RPort,195,140);
+    	if (win)
+	{
+            DrawEllipse(win->RPort,160,120,80,80);
+            DrawEllipse(win->RPort,185,90,15,15);
+            DrawEllipse(win->RPort,135,90,15,15);
 
+            Move(win->RPort,125,140);
+            Draw(win->RPort,140,150);
+            Draw(win->RPort,180,150);
+            Draw(win->RPort,195,140);
+    	}
+	
 #if !AROS_BOCHS_HACK
 	/* This is slow like hell under Bochs */
 	        	
