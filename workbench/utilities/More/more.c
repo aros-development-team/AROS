@@ -111,7 +111,7 @@ static ULONG winmask;
 static LONG filelen, num_lines, max_textlen;
 static LONG search_startline, found_line = -1;
 
-static LONG Args[NUM_ARGS];
+static IPTR Args[NUM_ARGS];
 
 /*******************************************************************************/
 
