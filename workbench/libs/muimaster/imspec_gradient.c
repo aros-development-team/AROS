@@ -55,7 +55,7 @@ STATIC VOID TrueDitherV
     ULONG *start_rgb, ULONG *end_rgb
 )
 {
-    LONG max_delta_y = oy2 - oy1;
+    LONG max_delta_y = (oy2 - oy1 > 0) ? oy2 - oy1 : 1;
     LONG width       = x2  - x1 + 1;
 
     LONG delta_r = end_rgb[0] - start_rgb[0];
@@ -91,7 +91,7 @@ STATIC VOID TrueDitherH
     ULONG *start_rgb, ULONG *end_rgb
 )
 {
-    LONG max_delta_x = ox2 - ox1;
+    LONG max_delta_x = (ox2 - ox1 > 0) ? ox2 - ox1 : 1;
     LONG height      = y2  - y1 + 1;
 
     LONG delta_r = end_rgb[0] - start_rgb[0];
@@ -276,8 +276,8 @@ VOID zune_gradient_draw
     {
         case 0:
         {
-            LONG oy1 = _mtop(spec->u.gradient.obj), oy2 = _mbottom(spec->u.gradient.obj);
-            LONG delta_oy = oy2 - oy1;
+            LONG oy1 = _top(spec->u.gradient.obj), oy2 = _bottom(spec->u.gradient.obj);
+            LONG delta_oy = (oy2 - oy1 > 0) ? oy2 - oy1 : 1;
             LONG hh = (delta_oy + 1)*2;
             LONG mid_y;
 
@@ -331,8 +331,8 @@ VOID zune_gradient_draw
         }
         case 90:
         {
-            LONG ox1 = _mleft(spec->u.gradient.obj), ox2 = _mright(spec->u.gradient.obj);
-            LONG delta_ox = ox2 - ox1;
+            LONG ox1 = _left(spec->u.gradient.obj), ox2 = _right(spec->u.gradient.obj);
+            LONG delta_ox = (ox2 - ox1 > 0) ? ox2 - ox1 : 1;
             LONG ww = (delta_ox + 1)*2;
             LONG mid_x;
 
@@ -445,10 +445,23 @@ BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
 
 }
 
-VOID zune_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
+VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf)
 {
-    sprintf(buf, "7:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+    sprintf(buf, "7:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+                 spec->u.gradient.angle,
+                 spec->u.gradient.start_rgb[0]*0x01010101,
+                 spec->u.gradient.start_rgb[1]*0x01010101,
+                 spec->u.gradient.start_rgb[2]*0x01010101,
+                 spec->u.gradient.end_rgb[0]*0x01010101,
+                 spec->u.gradient.end_rgb[1]*0x01010101,
+                 spec->u.gradient.end_rgb[2]*0x01010101);
+}
+
+VOID zune_tiled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
+                                    STRPTR buf)
+{
+    sprintf(buf, "8:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
                  spec->u.gradient.angle,
                  spec->u.gradient.start_rgb[0]*0x01010101,
                  spec->u.gradient.start_rgb[1]*0x01010101,
