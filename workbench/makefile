@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 SUBDIRS=             libs
 else
-SUBDIRS=c demos devs libs
+SUBDIRS=c demos devs libs locale
 endif
 
 all: $(SDIR)/Startup-Sequence
