@@ -212,35 +212,34 @@ endif
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir=
+%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
 
 ifeq (%(targetdir),)
-%(basename).o : %(basename).c
-	%compile_q opt=%(cflags)
+  TMP_TARGETBASE := %(basename)
+else
+  TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
+endif
+
+ifeq ($(findstring %(compiler),host target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (%(compiler),host)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
+endif
+
+$(TMP_TARGETBASE).o : %(basename).c
+	%compile_q opt=%(cflags) cmd=$(TMP_CMD)
 
 ifeq (%(dflags),)
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
+else
+$(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
+endif
 %(basename).d : %(basename).c
-	%mkdepend_q flags=%(cflags)
-else
-%(basename).d : %(basename).c
-	%mkdepend_q flags=%(dflags)
-endif
-
-else
-
-%(targetdir)/$(notdir %(basename)).o : %(basename).c
-	%compile_q opt=%(cflags)
-
-ifeq (%(dflags),)
-%(targetdir)/$(notdir %(basename)).d : %(basename).c
-	%mkdepend_q flags=%(cflags)
-else
-%(targetdir)/$(notdir %(basename)).d : %(basename).c
-	%mkdepend_q flags=%(dflags)
-endif
-
-endif
-
+	%mkdepend_q flags=$(TMP_DFLAGS)
 %end
 #------------------------------------------------------------------------------
 
@@ -255,15 +254,26 @@ endif
 # - cflags (default $(CFLAGS)): the C flags to use for compilation
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile_shared basename=/A cflags=$(CFLAGS) targetdir=
+%define rule_compile_shared basename=/A cflags=$(CFLAGS) targetdir= compiler=target
 
 ifeq (%(targetdir),)
-%(basename).so : %(basename).c
-	%compile_q opt="$(SHARED_CFLAGS) %(cflags)"
+  TMP_TARGETBASE := %(basename)
 else
-%(targetdir)/$(notdir %(basename)).so : %(basename).c
-	%compile_q opt="$(SHARED_CFLAGS) %(cflags)"
+  TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
 endif
+
+ifeq ($(findstring %(compiler),host target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(TMP_TARGETBASE).so : TMP_CMD:=$(TARGET_CC)
+endif
+ifeq (%(compiler),host)
+$(TMP_TARGETBASE).so : TMP_CMD:=$(HOST_CC)
+endif
+
+$(TMP_TARGETBASE).so : %(basename).c
+	%compile_q opt="$(SHARED_CFLAGS) %(cflags)" cmd=$(TMP_CMD)
 %end
 #------------------------------------------------------------------------------
 
@@ -424,7 +434,8 @@ endif
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
   linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
   reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref \
-  linklibname=$(BD_MODNAME$(BDID)) uselibs=
+  linklibname=$(BD_MODNAME$(BDID)) uselibs= \
+  compiler=target
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
 
@@ -487,7 +498,8 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
   BD_LINKLIBGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit \
   		targetdir=$(BD_OBJDIR$(BDID)) \
-		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+		compiler=%(compiler)
 endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
@@ -499,10 +511,12 @@ ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
   BD_LINKLIBGENFILES$(BDID):= 
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query \
   		targetdir=$(BD_OBJDIR$(BDID)) \
-		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+		compiler=%(compiler)
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init \
   		targetdir=$(BD_OBJDIR$(BDID)) \
-		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+		compiler=%(compiler)
 endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
@@ -511,7 +525,8 @@ ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc),)
   BD_LINKLIBDEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_LINKLIBOBJS$(BDID))) 
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs \
   		targetdir=$(BD_OBJDIR$(BDID)) \
-		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+		compiler=%(compiler)
 endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
@@ -555,10 +570,16 @@ ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
 endif
 
-%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
 %rule_ref     basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags="-I$(BD_OBJDIR$(BDID))/dummyinc $(strip $(BD_CFLAGS$(BDID)))"
-%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end targetdir=$(BD_OBJDIR$(BDID)) \
+ 	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
 endif
 
 # Some include files need to be generated before the .c can be parsed.
@@ -619,7 +640,7 @@ endif
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= linklibfiles= cflags=$(CFLAGS) dflags= \
   objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK) \
-  genshlinklib=no genfunctable= genincludes=
+  genshlinklib=no genfunctable= genincludes= compiler=target
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick"
 
@@ -803,10 +824,18 @@ ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID))))
 endif
 
-%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_compile basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_compile basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_compile basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
+%rule_compile basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
+%rule_compile basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
+%rule_compile basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) \
+	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
+	      compiler=%(compiler)
 endif
 
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
@@ -902,10 +931,14 @@ endif
 
 BD_SHOBJS$(BDID) := $(patsubst %.o,%.so,$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))) $(ADD_SOBJS)
 
-%rule_compile_shared basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) 
-%rule_compile_shared basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
-%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
-%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
+%rule_compile_shared basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler) 
+%rule_compile_shared basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) \
+		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler)
+%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) \
+		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler)
+%rule_compile_shared basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) \
+		     cflags=$(BD_CFLAGS$(BDID)) compiler=%(compiler)
 
 %rule_link_shlib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs=$(BD_SHOBJS$(BDID))
