@@ -9,7 +9,7 @@ FILES = background devinfo devinf_inside devinf_outside \
 AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/exec/*.c \
 	$(TOP)/dos/*.c $(TOP)/intuition/*.c $(TOP)/graphics/*.c \
 	$(TOP)/utility/*.c $(TOP)/alib/*.c $(TOP)/aros/*.c \
-	$(TOP)/devs/*.c)
+	$(TOP)/devs/*.c $(TOP)/clib/*.c)
 
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 

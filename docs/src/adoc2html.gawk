@@ -12,6 +12,7 @@ BEGIN {
 	    print "\n"file >> stderr;
 	fflush(stderr);
 
+	LIBS["clib"]="ANSI C linklib";
 	LIBS["alib"]="amiga.lib";
 	LIBS["devs"]="Devices";
 	LIBS["aros"]="AROS";
