@@ -10,7 +10,7 @@
 
 extern void cleanup();
 extern void end_alloc();
-extern void outofmem( void * );
+extern void outofmem(void *);
 
 #endif /* _CLEANUP_H */
 

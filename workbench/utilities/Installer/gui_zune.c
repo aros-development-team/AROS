@@ -58,7 +58,7 @@ enum
 void AddContents(Object *obj)
 {
     DoMethod(root, MUIM_Group_InitChange);
-    if(intermediate != NULL)
+    if (intermediate != NULL)
     {
 	DoMethod(root, OM_REMMEMBER, (IPTR)intermediate);
 	MUI_DisposeObject(intermediate);
@@ -176,7 +176,7 @@ Object *btok, *btcancel;
     DoMethod(reqroot, OM_REMMEMBER, (IPTR)wc);
     MUI_DisposeObject(wc);
 
-    if(quit)
+    if (quit)
     {
 	error = USERABORT;
 	grace_exit = TRUE;
@@ -466,7 +466,7 @@ void show_parseerror(char * msg, int errline)
  */
 void show_working(char *msg)
 {
-    if(intermediate != NULL)
+    if (intermediate != NULL)
     {
 	DelContents(intermediate);
     }
@@ -879,7 +879,7 @@ int i, m;
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != NULL )
     {
 	Write(preferences.transcriptstream, "Ask Question: Result was \"", 26);
 	Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
@@ -903,12 +903,12 @@ long int i, min, max;
 char minmax[MAXARGSIZE];
 
     retval = GetPL( pl, _DEFAULT ).intval;
-    if( GetPL( pl, _RANGE ).used == 1 )
+    if ( GetPL( pl, _RANGE ).used == 1 )
     {
 	min = GetPL( pl, _RANGE ).intval;
 	max = GetPL( pl, _RANGE ).intval2;
 	/* Wrong order ? Change order */
-	if( max < min )
+	if ( max < min )
 	{
 	    i = min;
 	    min = max;
@@ -926,7 +926,7 @@ char minmax[MAXARGSIZE];
 
 
     TRANSSCRIPT();
-    if( get_var_int( "@user-level" ) > _NOVICE )
+    if ( get_var_int( "@user-level" ) > _NOVICE )
     {
     char *out;
     BOOL running = TRUE;
@@ -999,7 +999,7 @@ char minmax[MAXARGSIZE];
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != NULL )
     {
     char tmpbuf[MAXARGSIZE];
 	Write(preferences.transcriptstream, "Ask Number: Result was \"", 24);
@@ -1020,7 +1020,7 @@ char *request_string(struct ParameterList *pl)
 char *retval, *string = NULL;
 int i;
 
-    if( GetPL(pl, _DEFAULT).used == 1 )
+    if ( GetPL(pl, _DEFAULT).used == 1 )
     {
 	string = StrDup(GetPL(pl, _DEFAULT).arg[0]);
     }
@@ -1029,7 +1029,7 @@ int i;
 	string = StrDup(EMPTY_STRING);
     }
     TRANSSCRIPT();
-    if( get_var_int( "@user-level" ) > _NOVICE )
+    if ( get_var_int( "@user-level" ) > _NOVICE )
     {
     char *out;
     BOOL running = TRUE;
@@ -1098,7 +1098,7 @@ int i;
     }
     retval = addquotes(string);
     FreeVec(string);
-    if( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != NULL )
     {
 	Write(preferences.transcriptstream, "Ask String: Result was ", 23);
 	Write(preferences.transcriptstream, retval, strlen(retval));
@@ -1114,8 +1114,8 @@ return retval;
 long int request_choice(struct ParameterList *pl)
 {
 long int retval;
-char **mxlabels;
-int i, max;
+char **mxlabels = NULL;
+int i, max = 0;
 
     NeedPROMPT(pl);
 
@@ -1125,7 +1125,7 @@ int i, max;
     {
 	max = GetPL(pl, _CHOICES).intval;
 
-	if( max > 32 )
+	if ( max > 32 )
 	{ 
 	    error = SCRIPTERROR;
 	    traperr("More than 32 choices given!\n", NULL);
@@ -1134,7 +1134,7 @@ int i, max;
 	mxlabels = AllocVec((max+1)*sizeof(STRPTR), MEMF_PUBLIC);
 	outofmem(mxlabels);
 
-	for( i = 0 ; i < max ; i++ )
+	for ( i = 0 ; i < max ; i++ )
 	{
 	    mxlabels[i] = StrDup(GetPL(pl, _CHOICES).arg[i]);
 	}
@@ -1208,13 +1208,13 @@ int i, max;
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != NULL )
     {
 	Write(preferences.transcriptstream, "Ask Choice: Result was \"", 24);
 	Write(preferences.transcriptstream, mxlabels[retval], strlen(mxlabels[retval]));
 	Write(preferences.transcriptstream, "\".\n\n", 4);
     }
-    for( i = 0 ; i < max ; i++ )
+    for ( i = 0 ; i < max ; i++ )
     {
 	FreeVec(mxlabels[i]);
     }
@@ -1231,7 +1231,7 @@ char *request_dir(struct ParameterList *pl)
 {
 char *retval, *string;
 
-    if( GetPL(pl, _DEFAULT).used == 0 )
+    if ( GetPL(pl, _DEFAULT).used == 0 )
     {
 	error = SCRIPTERROR;
 	traperr("No default specified!", NULL);
@@ -1253,7 +1253,7 @@ char *request_disk(struct ParameterList *pl)
 {
 char *retval, *string;
 
-    if( GetPL(pl, _DEST).used == 0 )
+    if ( GetPL(pl, _DEST).used == 0 )
     {
 	error = SCRIPTERROR;
 	traperr("No dest specified!", NULL);
@@ -1275,7 +1275,7 @@ char *request_file(struct ParameterList *pl)
 {
 char *retval, *string;
 
-    if( GetPL(pl, _DEFAULT).used == 0 )
+    if ( GetPL(pl, _DEFAULT).used == 0 )
     {
 	error = SCRIPTERROR;
 	traperr("No default specified!", NULL);
@@ -1296,8 +1296,8 @@ return retval;
 long int request_options(struct ParameterList *pl)
 {
 long int retval;
-char **mxlabels;
-int i, max;
+char **mxlabels = NULL;
+int i, max = 0;
 Object *marks[33];
 Object *labels[33];
 long int val;
@@ -1311,7 +1311,7 @@ BOOL j;
     {
 	max = GetPL(pl, _CHOICES).intval;
 
-	if( max > 32 )
+	if ( max > 32 )
 	{ 
 	    error = SCRIPTERROR;
 	    traperr("More than 32 choices given!\n", NULL);
@@ -1320,14 +1320,14 @@ BOOL j;
 	mxlabels = AllocVec((max+1)*sizeof(STRPTR), MEMF_PUBLIC);
 	outofmem(mxlabels);
 
-	for( i = 0 ; i < max ; i++ )
+	for ( i = 0 ; i < max ; i++ )
 	{
 	    mxlabels[i] = StrDup(GetPL(pl, _CHOICES).arg[i]);
 	    marks[i] = MUI_MakeObject(MUIO_Checkmark, (IPTR)mxlabels[i]);
 	    labels[i] = LLabel(mxlabels[i]);
 
 	    set(marks[i], MUIA_CycleChain, TRUE);
-	    if( (retval & 1<<i) != 0 )
+	    if ( (retval & 1<<i) != 0 )
 		set(marks[i], MUIA_Selected, TRUE);
 	}
 	mxlabels[i] = NULL;
@@ -1367,7 +1367,7 @@ BOOL j;
 
 	if (wc)
 	{
-	    for( i = 0 ; i < max ; i++ )
+	    for ( i = 0 ; i < max ; i++ )
 	    {
 		DoMethod(levelmx, OM_ADDMEMBER, (IPTR)marks[i]);
 		DoMethod(levelmx, OM_ADDMEMBER, (IPTR)labels[i]);
@@ -1400,10 +1400,10 @@ BOOL j;
 		WaitCTRL(sigs);
 	    }
 	    retval = 0;
-	    for( i = 0 ; i < max ; i++ )
+	    for ( i = 0 ; i < max ; i++ )
 	    {
 		GetAttr(MUIA_Selected, marks[i], &val);
-		if(val)
+		if (val)
 		{
 		    retval |= 1<<i;
 		}
@@ -1414,15 +1414,15 @@ BOOL j;
 	FreeVec(out);
 	disable_skip(FALSE);
     }
-    if( preferences.transcriptstream != NULL )
+    if ( preferences.transcriptstream != NULL )
     {
 	Write(preferences.transcriptstream, "Ask Options: Result was \"", 24);
 	j = FALSE;
-	for( i = 0 ; i < max ; i++ )
+	for ( i = 0 ; i < max ; i++ )
 	{
-	    if( (retval & (1<<i)) != 0 )
+	    if ( (retval & (1<<i)) != 0 )
 	    {
-		if( j )
+		if ( j )
 		{
 		    Write(preferences.transcriptstream, "\", \"", 4);
 		}
@@ -1432,7 +1432,7 @@ BOOL j;
 	}
 	Write(preferences.transcriptstream, "\".\n\n", 4);
     }
-    for( i = 0 ; i < max ; i++ )
+    for ( i = 0 ; i < max ; i++ )
     {
 	FreeVec(mxlabels[i]);
     }

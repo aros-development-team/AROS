@@ -19,50 +19,50 @@ extern InstallerPrefs preferences;
 extern int error;
 
 
-void free_script( ScriptArg *first )
+void free_script(ScriptArg *first)
 {
-  if ( first != NULL )
-  {
-    free_script( first->cmd );
-    free_script( first->next );
-    FreeVec( first->arg );
-    FreeVec( first );
-  }
+    if (first != NULL)
+    {
+	free_script(first->cmd);
+	free_script(first->next);
+	FreeVec(first->arg);
+	FreeVec(first);
+    }
 }
 
-void cleanup( )
+void cleanup()
 {
-  if ( preferences.transcriptstream != NULL )
-  {
-    Close( preferences.transcriptstream );
-  }
+    if (preferences.transcriptstream != NULL)
+    {
+	Close(preferences.transcriptstream);
+    }
 
-  free_script( script.cmd );
-  free_varlist();
-  deinit_gui();
-  Locale_Deinitialize();
+    free_script(script.cmd);
+    free_varlist();
+    deinit_gui();
+    Locale_Deinitialize();
 }
 
-void end_malloc( )
+void end_malloc()
 {
-end_alloc();
+    end_alloc();
 }
 
-void end_alloc( )
+void end_alloc()
 {
 #ifdef DEBUG
-  fprintf( stderr, "Couldn't allocate memory!\n");
+    fprintf(stderr, "Couldn't allocate memory!\n");
 #endif /* DEBUG */
-  cleanup();
-  exit(-1);
+    cleanup();
+    exit(-1);
 }
 
-void outofmem( void * ptr )
+void outofmem(void * ptr)
 {
-  if ( ptr == NULL )
-  {
-    error = OUTOFMEMORY;
-    traperr( "Out of memory!\n", NULL );
-  }
+    if (ptr == NULL)
+    {
+	error = OUTOFMEMORY;
+	traperr("Out of memory!\n", NULL);
+    }
 }
 

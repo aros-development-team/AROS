@@ -8,10 +8,10 @@
 #ifndef _PROCEDURE_H
 #define _PROCEDURE_H
 
-extern struct ProcedureList *find_proc( char * );
-extern long int set_procedure( char **, int, ScriptArg * );
+extern struct ProcedureList *find_proc(char *);
+extern long int set_procedure(char **, int, ScriptArg *);
 extern void free_proclist();
-extern void link_function( char *, long int );
+extern void link_function(char *, long int);
 
 #endif /* _PROCEDURE_H */
 
