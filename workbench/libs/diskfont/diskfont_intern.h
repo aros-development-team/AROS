@@ -7,7 +7,7 @@
 #ifndef   PROTO_EXEC_H
 #	include  <proto/exec.h>
 #endif
-#ifndef		EXEC_LIBRARIES_H
+#ifndef 	EXEC_LIBRARIES_H
 #	include <exec/libraries.h>
 #endif
 #ifndef   DISKFONT_DISKFONT_H
@@ -19,10 +19,10 @@
 #ifndef   EXEC_LISTS_H
 #	include  <exec/lists.h>
 #endif
-#ifndef		AROS_ASMCALL_H
-#	include	<aros/asmcall.h>
+#ifndef 	AROS_ASMCALL_H
+#	include <aros/asmcall.h>
 #endif
-#ifndef		UTILITY_HOOKS_H
+#ifndef 	UTILITY_HOOKS_H
 #	include <utility/hooks.h>
 #endif
 
@@ -45,8 +45,8 @@
 /* Flags for the FontInfoNode->Flags field */
 
 
-#define FDF_REUSENAME   (1 << 0)
-#define FDF_REUSETAGS   (1 << 1)
+#define FDF_REUSENAME	(1 << 0)
+#define FDF_REUSETAGS	(1 << 1)
 
 /* Possible returnvalues for AvailFonts hooks
 ( or an or'ed combination of these )
@@ -63,13 +63,13 @@
 
 
 /* The different AvailFonts hook commands */
-	
-#define FHC_AF_INIT         	0
-#define FHC_AF_READFONTINFO 	1
-#define FHC_AF_CLEANUP      	2
-#define FHC_AF_GETDATE      	3
+
+#define FHC_AF_INIT		0
+#define FHC_AF_READFONTINFO	1
+#define FHC_AF_CLEANUP		2
+#define FHC_AF_GETDATE		3
 #define FHC_ODF_INIT			4
-#define FHC_ODF_CLEANUP			5
+#define FHC_ODF_CLEANUP 		5
 #define FHC_ODF_GETMATCHINFO	6
 #define FHC_ODF_OPENFONT		7
 
@@ -77,19 +77,19 @@
 #define CACHE_IDSTR "AROS_FC"
 
 /* Path to the cachefile */
-#define CACHE_FILE "SYS:Fonts/cachefile"
-#define FONTSDIR "SYS:Fonts/"
+#define CACHE_FILE "FONTS:cachefile"
+#define FONTSDIR "FONTS:"
 /* Structure for storing TAvailFonts elements */
 struct FontInfoNode
 {
     struct MinNode NodeHeader;
-  
-    struct TAvailFonts  TAF;
-    
+
+    struct TAvailFonts	TAF;
+
     /* or-ed combo of FDF_REUSENAME and FDF_REUSETAGS  */
     UBYTE   Flags;
-  
-    STRPTR 			NameInBuf;
+
+    STRPTR			NameInBuf;
     UWORD			NameLength; /* !!!! Includes 0 terminator */
     struct TagItem	*TagsInBuf;
 	UWORD			NumTags;
@@ -121,11 +121,11 @@ struct FontHookCommand
 
 	/* Used both by OpenDiskFont and AvailFonts for returning font descriptions from th hook */
 	struct TTextAttr	fhc_DestTAttr;
-	
+
 	/* Used by OpenDiskFont only */
-	struct TTextAttr 	*fhc_ReqAttr;
-	struct TextFont		*fhc_TextFont;
-	
+	struct TTextAttr	*fhc_ReqAttr;
+	struct TextFont 	*fhc_TextFont;
+
     /* This field can be filled out by the hook. It will not be changed outside the hook */
     APTR				fhc_UserData;
 
@@ -152,14 +152,14 @@ struct CopyState
 {
     /* What node was currently being written when buffer was full ? */
     struct FontInfoNode      *BufferFullNode;
-    
+
     /* What state were we in when the buffer was full ? */
     UWORD		BufferFullState;
 
     /* Pointer into where we should start simulating copying into the buffer
     for reading bytes needed
     */
-    APTR                BufferFullPtr;
+    APTR		BufferFullPtr;
 };
 
 
@@ -173,23 +173,23 @@ struct CopyState
 struct DiskfontBase_intern; /* prerefrence */
 
 AROS_UFP3(IPTR, MemoryFontFunc,
-    AROS_UFPA(struct Hook *,				h, 				A0),
-    AROS_UFPA(struct FontHookCommand *,		fhc,			A2),
-    AROS_UFPA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
+    AROS_UFPA(struct Hook *,                            h,                              A0),
+    AROS_UFPA(struct FontHookCommand *,         fhc,                    A2),
+    AROS_UFPA(struct DiskfontBase_intern *,     DiskfontBase,   A1)
 );
 
 AROS_UFP3(IPTR, DiskFontFunc,
-    AROS_UFPA(struct Hook *,				h, 				A0),
-    AROS_UFPA(struct FontHookCommand *,		fhc,			A2),
-    AROS_UFPA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
+    AROS_UFPA(struct Hook *,                            h,                              A0),
+    AROS_UFPA(struct FontHookCommand *,         fhc,                    A2),
+    AROS_UFPA(struct DiskfontBase_intern *,     DiskfontBase,   A1)
 );
 
 BOOL  ScanFontInfo(ULONG, struct MinList *, struct DiskfontBase_intern *);
 
 
 BOOL  CopyDescrToBuffer (UBYTE *, ULONG, ULONG, struct MinList *, struct CopyState *, struct DiskfontBase_intern *);
-ULONG CountBytesNeeded  (UBYTE *, ULONG, struct CopyState *, 	struct DiskfontBase_intern *);
-VOID  UpdatePointers    (UBYTE *, ULONG, struct MinList *, 		struct DiskfontBase_intern *);
+ULONG CountBytesNeeded	(UBYTE *, ULONG, struct CopyState *,    struct DiskfontBase_intern *);
+VOID  UpdatePointers	(UBYTE *, ULONG, struct MinList *,              struct DiskfontBase_intern *);
 
 
 
