@@ -1890,179 +1890,14 @@ VOID free_gfxhiddclass(struct class_static_data *csd)
 
 /****************************************************************************************/
 
-const HIDDT_PixelFormat stdpfs[] = 
-{
-    {   
-	  24, 24, 3
-    #if AROS_BIG_ENDIAN	  
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
-	, 8, 16, 24, 0
-    #else
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
-	, 24, 16, 8, 0
-    #endif	
-	, 0, 0
-	, vHidd_StdPixFmt_RGB24
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  24, 24, 3
-    #if AROS_BIG_ENDIAN	  
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
-	, 24, 16, 8, 0
-    #else
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
-	, 8, 16, 24, 0
-    #endif	
-	, 0, 0
-	, vHidd_StdPixFmt_BGR24
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  16, 16, 2
-    #if AROS_BIG_ENDIAN
-	, 0x0000F800, 0x000007E0, 0x0000001F, 0x00000000
-	, 16, 21, 27, 0
-    #else
-	, 0x0000001F, 0x000007E0, 0x0000F800, 0x00000000
-	, 27, 21, 16, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_RGB16
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  16, 16, 2
-    #if AROS_BIG_ENDIAN
-	, 0x0000001F, 0x000007E0, 0x0000F800, 0x00000000
-	, 27, 21, 16, 0
-    #else
-	, 0x0000F800, 0x000007E0, 0x0000001F, 0x00000000
-	, 16, 21, 27, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_BGR16
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  15, 16, 2
-    #if AROS_BIG_ENDIAN
-	, 0x00007C00, 0x000003E0, 0x0000001F, 0x00000000
-	, 17, 22, 27, 0
-    #else
-	, 0x0000001F, 0x000003E0, 0x00007C00, 0x00000000
-	, 27, 22, 17, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_RGB15
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  15, 16, 2
-    #if AROS_BIG_ENDIAN
-	, 0x0000001F, 0x000003E0, 0x00007C00, 0x00000000
-	, 27, 22, 17, 0
-    #else
-	, 0x00007C00, 0x000003E0, 0x0000001F, 0x00000000
-	, 17, 22, 27, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_BGR15
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  32, 32, 4
-    #if AROS_BIG_ENDIAN
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
-	, 8, 16, 24, 0
-    #else	
-	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
-	, 16, 8, 0, 24
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_ARGB32
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  32, 32, 4
-    #if AROS_BIG_ENDIAN
-	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
-	, 16, 8, 0, 24
-    #else	
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
-	, 8, 16, 24, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_BGRA32
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  32, 32, 4
-    #if AROS_BIG_ENDIAN	  
-	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
-	, 0, 8, 16, 24
-    #else
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
-	, 24, 16, 8, 0
-    #endif	
-	, 0, 0
-	, vHidd_StdPixFmt_RGBA32
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  24, 24, 4
-    #if AROS_BIG_ENDIAN
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
-	, 8, 16, 24, 0
-    #else	
-	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x00000000
-	, 16, 8, 0, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_0RGB32
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  24, 24, 4
-    #if AROS_BIG_ENDIAN
-	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x00000000
-	, 16, 8, 0, 0
-    #else	
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
-	, 8, 16, 24, 0
-    #endif
-	, 0, 0
-	, vHidd_StdPixFmt_BGR032
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  24, 24, 4
-    #if AROS_BIG_ENDIAN	  
-	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x00000000
-	, 0, 8, 16, 0
-    #else
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
-	, 24, 16, 8, 0
-    #endif	
-	, 0, 0
-	, vHidd_StdPixFmt_RGB032
-	, PF_GRAPHTYPE(TrueColor, Chunky)
-    }, {
-	  8, 8, 1
-    #if AROS_BIG_ENDIAN	  
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
-	, 0, 0, 0, 0
-    #else
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
-	, 0, 0, 0, 0
-    #endif	
-	, 0x000000FF, 0
-	, vHidd_StdPixFmt_LUT8
-	, PF_GRAPHTYPE(Palette, Chunky)
-    }, {
-    	  1, 1, 1
-    #if AROS_BIG_ENDIAN	  
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
-	, 0, 0, 0, 0
-    #else
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
-	, 0, 0, 0, 0
-    #endif	
-	, 0x0000000F, 0
-	, vHidd_StdPixFmt_Plane
-	, PF_GRAPHTYPE(Palette, Planar)
-    }
-    
-};
+/* Since the shift/mask values of a pixel format are designed for pixel
+   access, not byte access, they are endianess dependant */
+   
+#if AROS_BIG_ENDIAN
+#include "stdpixfmts_be.h"
+#else
+#include "stdpixfmts_le.h"
+#endif
 
 /****************************************************************************************/
 
@@ -2364,6 +2199,11 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
     
     SET_PF_COLMODEL(  pf, attrs[PFAO(ColorModel)]);
     SET_PF_BITMAPTYPE(pf, attrs[PFAO(BitMapType)]);
+    
+    if (ATTRCHECK(pixfmt) & PFAF(SwapPixelBytes))
+    {
+    	SET_PF_SWAPPIXELBYTES_FLAG(pf, attrs[PFAO(SwapPixelBytes)]);
+    }
     
     /* Set the colormodel specific stuff */
     switch (HIDD_PF_COLMODEL(pf))
