@@ -96,7 +96,7 @@ static void readsectionconfig(void)
 	    const char *names[] = 
             {
                 "basename", "libbase", "libbasetype", "libbasetypeextern", 
-                "version", "date", "libcall", "forcebase" 
+                "version", "date", "libcall", "forcebase", "superclass" 
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -189,6 +189,10 @@ static void readsectionconfig(void)
 		(*forcelistptr)->basename = strdup(s);
 		forcelistptr = &(*forcelistptr)->next;
 		break;
+                
+            case 9: /* superclass */
+                superclass = strdup(s);
+                break;
 	    }
 	}
 	else /* Line starts with ## */
