@@ -138,7 +138,7 @@ struct TDU
 #define FD_LOCK         0x94    /* Fifo config lock */
 #define FD_RSEEK_OUT        0x8f    /* seek out (i.e. to lower tracks) */
 #define FD_RSEEK_IN     0xcf    /* seek in (i.e. to higher tracks) */
-#definf FD_PDMODE       0x17    /* Configure powerdown mode */
+#define FD_PDMODE       0x17    /* Configure powerdown mode */
 
 /* This part SHOULD BE somewhere else!!! */
 
