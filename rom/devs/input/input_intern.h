@@ -4,6 +4,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  2000/05/28 21:33:52  stegerg
+    handle IND_SETTHRESH and IND_SETPERIOD.
+    implemented key repeat. Actually still treats
+    all keys (except qualifier keys) as repeatable.
+
     Revision 1.6  2000/02/26 13:20:15  iaint
     Changed the stacksize to be at least AROS_STACKSIZE. This is very important - some of these were allocating stacks that were probably less than the amount required to perform signal processing in emulated systems.
 
@@ -45,11 +50,19 @@
 #ifndef DEVICES_INPUTEVENT_H
 #   include <devices/inputevent.h>
 #endif
+#ifndef DEVICES_TIMER_H
+#   include <devices/timer.h>
+#endif
 
 /* Size of the input device's stack */
 #define IDTASK_STACKSIZE (AROS_STACKSIZE + 10240)
 /* Priority of the input.device task */
 #define IDTASK_PRIORITY 20
+
+/* Default key repeat threshold/interval in 1/50 secs */
+
+#define DEFAULT_KEY_REPEAT_THRESHOLD 25
+#define DEFAULT_KEY_REPEAT_INTERVAL  2
 
 /* Predeclaration */
 struct inputbase;
@@ -68,7 +81,8 @@ VOID ProcessEvents(struct IDTaskParams *taskparams);
 struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice);
 VOID AddEQTail(struct InputEvent *ie, struct inputbase *InputDevice);
 struct InputEvent *GetEventsFromQueue(struct inputbase *InputDevice);
-
+BOOL IsQualifierKey(UWORD key);
+BOOL IsRepeatableKey(UWORD key);
 
 struct inputbase
 {
@@ -79,11 +93,14 @@ struct inputbase
     /* The stuff below will never get deallocated, since
     ** input device is never removed, once it's initialized.
     */
-    struct Task *InputTask;
-    struct MsgPort *CommandPort;
-    struct MinList HandlerList;
-    struct InputEvent *EventQueueHead;
-    struct InputEvent *EventQueueTail;
+    struct Task 	*InputTask;
+    struct MsgPort 	*CommandPort;
+    struct MinList 	HandlerList;
+    struct InputEvent 	*EventQueueHead;
+    struct InputEvent 	*EventQueueTail;
+    struct timeval	KeyRepeatThreshold;
+    struct timeval	KeyRepeatInterval;
+    
     UWORD ActQualifier;
 };
 

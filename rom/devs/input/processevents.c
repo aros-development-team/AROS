@@ -31,6 +31,16 @@
 	timerio->tr_time.tv_micro = 100000;		\
 	SendIO((struct IORequest *)timerio)
 
+#define SEND_KEYTIMER_REQUEST(timerio,time)		\
+	timerio->tr_node.io_Command = TR_ADDREQUEST;	\
+	timerio->tr_time = time;			\
+	SendIO((struct IORequest *)timerio)
+
+#define ABORT_KEYTIMER_REQUEST \
+	if (!CheckIO(&keytimerio->tr_node)) AbortIO(&keytimerio->tr_node); \
+	WaitIO(&keytimerio->tr_node); \
+	SetSignal(0, keytimersig); 
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -70,14 +80,14 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
 void ProcessEvents (struct IDTaskParams *taskparams)
 {
     struct inputbase *InputDevice = taskparams->InputDevice;
-    ULONG commandsig, kbdsig, wakeupsigs, gpdsig, timersig;
-    struct MsgPort *timermp;
-    struct timerequest *timerio;
+    ULONG commandsig, kbdsig, wakeupsigs, gpdsig, timersig, keytimersig;
+    struct MsgPort *timermp, *keytimermp;
+    struct timerequest *timerio, *keytimerio;
 
 
     struct MsgPort *kbdmp, *gpdmp;
     struct IOStdReq *kbdio, *gpdio;
-    struct InputEvent *kbdie, *gpdie;
+    struct InputEvent *kbdie, *gpdie, keyrepeatie;
     
     struct Library *TimerBase;
     
@@ -90,6 +100,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     };
 
     BYTE controllerType = GPCT_MOUSE;
+    BYTE keyrepeat_state = 0;
     
     /* Initializing command msgport */
     InputDevice->CommandPort->mp_Flags	 = PA_SIGNAL;
@@ -102,12 +113,15 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     
     /************** Open timer.device *******************/
     
-    timermp = CreateMsgPort();
-    if (!timermp)
+    timermp    = CreateMsgPort();
+    keytimermp = CreateMsgPort();
+    
+    if (!timermp || !keytimermp)
     	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
     	
-    timerio = (struct timerequest *)CreateIORequest(timermp, sizeof(struct timerequest));
-    if (!timerio)
+    timerio    = (struct timerequest *)CreateIORequest(timermp   , sizeof(struct timerequest));
+    keytimerio = (struct timerequest *)CreateIORequest(keytimermp, sizeof(struct timerequest));
+    if (!timerio || !keytimerio)
         Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
 
     if ( 0 != OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)timerio, 0))
@@ -115,6 +129,9 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     
     TimerBase = (struct Library *)timerio->tr_node.io_Device;
 
+    *keytimerio = *timerio;
+    keytimerio->tr_node.io_Message.mn_ReplyPort = keytimermp;
+    
     /************** Open keyboard.device *******************/
     kbdmp = CreateMsgPort();
     if (!kbdmp)
@@ -173,16 +190,17 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     
     commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
     
-    kbdsig = 1 << kbdmp->mp_SigBit;
-    gpdsig = 1 << gpdmp->mp_SigBit;
-    timersig = 1 << timermp->mp_SigBit;
-
+    kbdsig      = 1 << kbdmp->mp_SigBit;
+    gpdsig      = 1 << gpdmp->mp_SigBit;
+    timersig    = 1 << timermp->mp_SigBit;
+    keytimersig = 1 << keytimermp->mp_SigBit;
+    
     /* Tell the task that created us, that we are finished initializing */
     Signal(taskparams->Caller, taskparams->Signal);
     for (;;)
     {
 
-	wakeupsigs = Wait (commandsig | kbdsig | gpdsig | timersig);
+	wakeupsigs = Wait (commandsig | kbdsig | gpdsig | timersig | keytimersig);
 	D(bug("Wakeup sig: %x, cmdsig: %x, kbdsig: %x\n, timersig: %x"
 		, wakeupsigs, commandsig, kbdsig, timersig));
 	
@@ -194,16 +212,19 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    
 	    GetMsg(timermp);
 
-	    timer_ie.ie_Class = IECLASS_TIMER;
-	    timer_ie.ie_NextEvent = NULL;
+	    timer_ie.ie_NextEvent 	 = NULL;
+	    timer_ie.ie_Class 		 = IECLASS_TIMER;
+	    timer_ie.ie_SubClass 	 = 0;
+	    timer_ie.ie_Code 		 = 0;
+	    timer_ie.ie_Qualifier 	 = 0;
+	    timer_ie.ie_position.ie_addr = 0;
 	    
 	    /* Add a timestamp to the event */
 	    GetSysTime( &(timer_ie.ie_TimeStamp ));
 	    
 	    AddEQTail(&timer_ie, InputDevice);
 	    ForwardQueuedEvents(InputDevice);
-	    
-	    
+	    	    
 	    SEND_TIMER_REQUEST(timerio);
 	}
 	
@@ -249,6 +270,14 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 		    ForwardQueuedEvents(InputDevice);
 		} break;
     	    	
+		case IND_SETTHRESH:
+		    InputDevice->KeyRepeatThreshold = ((struct timerequest *)ioreq)->tr_time;
+		    break;
+		    
+		case IND_SETPERIOD:
+		    InputDevice->KeyRepeatInterval  = ((struct timerequest *)ioreq)->tr_time;
+		    break;
+		    
 		} /* switch (IO command) */
 		
     		ReplyMsg((struct Message *)ioreq);
@@ -257,6 +286,28 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    
 	} /* if (IO command received) */
 
+	if (wakeupsigs & keytimersig)
+	{
+	    struct InputEvent ie;
+	    
+	    GetMsg(keytimermp);
+	    
+	    keyrepeat_state = 2;
+
+	    ie = keyrepeatie; /* InputHandlers can change inputevents, so send a clone!! */	
+	    ie.ie_NextEvent = NULL; /* !! */
+	    ie.ie_Qualifier |= IEQUALIFIER_REPEAT;
+	    GetSysTime(&ie.ie_TimeStamp);	    
+
+	    AddEQTail(&ie, InputDevice);
+
+	    /* Forward event (and possible others in the queue) */
+	    ForwardQueuedEvents(InputDevice);
+
+	    SEND_KEYTIMER_REQUEST(keytimerio, InputDevice->KeyRepeatInterval);
+	        
+	} /* if (wakeupsigs & keytimersig) */
+	
 	if (wakeupsigs & kbdsig)
 	{
 	    GetMsg(kbdmp); /* Only one message */
@@ -270,11 +321,32 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 			IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
 		    
 	    InputDevice->ActQualifier &= ~KEY_QUALIFIERS;
-	    InputDevice->ActQualifier |= (((struct InputEvent *)kbdio->io_Data)->ie_Qualifier & KEY_QUALIFIERS);
+	    InputDevice->ActQualifier |= (kbdie->ie_Qualifier & KEY_QUALIFIERS);
 	    
 	    /* Add event to queue */
-	    AddEQTail((struct InputEvent *)kbdio->io_Data, InputDevice);
+	    AddEQTail(kbdie, InputDevice);
 
+	    if (!IsQualifierKey(kbdie->ie_Code))
+	    {
+	        if (keyrepeat_state > 0)
+		{
+		    ABORT_KEYTIMER_REQUEST;
+		    keyrepeat_state = 0;
+		}
+
+		if (!(kbdie->ie_Code & IECODE_UP_PREFIX))
+		{
+		    if (IsRepeatableKey(kbdie->ie_Code))
+		    {
+		        keyrepeatie = *kbdie;
+
+			SEND_KEYTIMER_REQUEST(keytimerio, InputDevice->KeyRepeatThreshold);
+			keyrepeat_state = 1;
+
+		    }
+		}
+	    } /* if (!IsQualifierKey(kbdie->ie_Code)) */
+	    
 	    /* New event from keyboard device */
     	    D(bug("id: Keyboard event\n"));
 	    D(bug("id: Events forwarded\n"));
@@ -285,7 +357,8 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    
 	    /* Wit for some more events */
 	    SEND_KBD_REQUEST(kbdio, kbdie);
-	}
+	    
+	} /* if (wakeupsigs & kbdsig) */
 	
 	if (wakeupsigs & gpdsig)
 	{

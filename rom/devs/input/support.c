@@ -93,3 +93,36 @@ struct Task *CreateInputTask(APTR taskparams, struct inputbase *InputDevice)
 
 }
 
+/*********************
+**  IsQualifierKey  **
+*********************/
+BOOL IsQualifierKey(UWORD key)
+{
+    BOOL result = FALSE;
+    
+    key &= ~IECODE_UP_PREFIX;
+     
+    if ((key >= 0x60) && (key <= 0x67))
+    {
+        result = TRUE;
+    }
+    
+    return result;
+}
+
+/************************
+**  IsKeyRepeatable()  **
+************************/
+BOOL IsRepeatableKey(UWORD key)
+{
+    BOOL result = TRUE;
+    
+    key &= ~IECODE_UP_PREFIX;
+     
+    if (IsQualifierKey(key))
+    {
+        result = FALSE;
+    }
+    
+    return TRUE;
+}

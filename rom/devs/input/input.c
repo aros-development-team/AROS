@@ -99,7 +99,12 @@ AROS_LH2(struct inputbase *, init,
     InputDevice->seglist = segList;
     
     NEWLIST( &(InputDevice->HandlerList) );
-
+    
+    InputDevice->KeyRepeatThreshold.tv_secs  = DEFAULT_KEY_REPEAT_THRESHOLD / 50;
+    InputDevice->KeyRepeatThreshold.tv_micro = (DEFAULT_KEY_REPEAT_THRESHOLD % 50) * 1000000L / 50;
+    InputDevice->KeyRepeatInterval.tv_secs   = DEFAULT_KEY_REPEAT_INTERVAL / 50;
+    InputDevice->KeyRepeatInterval.tv_micro  = (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000L / 50;
+    
     InputDevice->device.dd_Library.lib_OpenCnt=1;
 
     return (InputDevice);
@@ -249,9 +254,11 @@ AROS_LH1(void, beginio,
     case IND_ADDHANDLER:
     case IND_REMHANDLER:
     case IND_WRITEEVENT:
+    case IND_SETTHRESH:
+    case IND_SETPERIOD:
         done_quick = FALSE;
     	break;
-    	
+    
     default:
 	error = IOERR_NOCMD;
 	break;
