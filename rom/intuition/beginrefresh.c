@@ -46,15 +46,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning BeginRefresh: Remove this ObtainSem, if LOCK_REFRESH macro in inputhandler_actions.c is
-#warning               changed to do ObtainSem(GadgetLock) + LockLayers()
-
-    ObtainSemaphore(&GetPrivScreen(window->WScreen)->RefreshLock);
+#if USE_LOCKLAYERINFO_AS_REFRESHLOCK
+    LockLayerInfo(&window->WScreen->LayerInfo);
+#else
+    #warning BeginRefresh: Remove this ObtainSem, if LOCK_REFRESH macro in inputhandler_actions.c is
+    #warning               changed to do ObtainSem(GadgetLock) + LockLayers()
     
+    ObtainSemaphore(&GetPrivScreen(window->WScreen)->RefreshLock);
+#endif    
+
+#if !USE_LOCKLAYERINFO_AS_REFRESHLOCK       
     /* lock all necessary layers. We have to use LockLayerInfo first because
        for a GZZ window 2 layers are locked. */
-       
     LockLayerInfo(window->WLayer->LayerInfo);
+#endif
        
     LockLayerRom(window->WLayer);
 
@@ -62,8 +67,10 @@
     if (IS_GZZWINDOW(window))
         LockLayerRom(window->BorderRPort->Layer);
 
+#if !USE_LOCKLAYERINFO_AS_REFRESHLOCK       
     /* The layerinfo lock can be released when the layers are locked */    
     UnlockLayerInfo(window->WLayer->LayerInfo);
+#endif
     
     /* I don't think I ever have to update the BorderRPort's layer */
     if (FALSE == BeginUpdate(window->WLayer))

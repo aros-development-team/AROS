@@ -67,6 +67,8 @@
 
 #define INTERNAL_BOOPSI  1
 
+#define USE_LOCKLAYERINFO_AS_REFRESHLOCK 1
+
 /* ObtainGIRPort must install a 0 clipregion and
    set scrollx/scrolly of layer to 0. Since this
    will be restored only when ReleaseGIRPort is
@@ -158,8 +160,10 @@ struct IntScreen
     /* Private fields */
     struct DrawInfo 		DInfo;
     struct TextAttr 		textattr;
+#if !USE_LOCKLAYERINFO_AS_REFRESHLOCK
     struct SignalSemaphore	RefreshLock; /* to avoid refreshing trouble when apps
     						and Intuition try to do it at the same time */
+#endif
     UWORD  			Pens[NUMDRIPENS];
     struct PubScreenNode 	* pubScrNode;
     Object 			* depthgadget;

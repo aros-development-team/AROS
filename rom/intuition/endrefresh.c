@@ -50,7 +50,7 @@
     /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
     if (window->Flags & WFLG_WINDOWREFRESH)
         EndUpdate(window->WLayer, complete);
-
+    
     /* reset all bits indicating a necessary or ongoing refresh */
     window->Flags &= ~WFLG_WINDOWREFRESH;
 
@@ -64,10 +64,14 @@
 
     UnlockLayerRom(window->WLayer);
 
-#warning EndRefresh: Remove this ReleaseSem, if UNLOCK_REFRESH macro in inputhandler_actions.c is
-#warning             changed to do ReleaseSem(GadgetLock) + UnLockLayers()
+#if USE_LOCKLAYERINFO_AS_REFRESHLOCK
+    UnlockLayerInfo(&window->WScreen->LayerInfo);
+#else
+    #warning EndRefresh: Remove this ReleaseSem, if UNLOCK_REFRESH macro in inputhandler_actions.c is
+    #warning             changed to do ReleaseSem(GadgetLock) + UnLockLayers()
 
     ReleaseSemaphore(&GetPrivScreen(window->WScreen)->RefreshLock);
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* EndRefresh */
