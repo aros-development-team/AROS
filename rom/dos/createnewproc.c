@@ -113,6 +113,14 @@ void internal_ChildFree(APTR tid);
     /* C has no exceptions. This is a simple replacement. */
 #define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
 #define ENOMEM_IF(a) if(a) goto enomem /* Throw out of memory. */
+
+    /* Inherit the parent process' stacksize if possible */
+    {
+	struct CommandLineInterface *cli = Cli();
+
+	if(cli != NULL && cli->cli_DefaultStack > AROS_STACKSIZE)
+	    defaults[9].ti_Data = cli->cli_DefaultStack;
+    }
     
     ApplyTagChanges(defaults, tags);
 
