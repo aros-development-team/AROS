@@ -638,6 +638,7 @@ unsigned char get_lcr(struct HIDDSerialUnitData * data)
     break;
     
     default:
+    break;
   }
   
   if (TRUE == data->parity)
