@@ -62,6 +62,7 @@ COMMON	:= \
 	strcat \
 	strchr \
 	strcmp \
+        strcoll \
 	strcpy \
 	strcspn \
 	strdup \
