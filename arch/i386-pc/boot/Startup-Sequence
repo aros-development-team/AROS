@@ -15,7 +15,7 @@ Mount PIPEFS:
 ;-----------------------------------------------
 ; Copy System to RAM:
 CD RAM:
-SYS:contrib/gnu/gzip -dc SYS:AROS.tgz | SYS:contrib/aminet/untar IN: >NIL:
+SYS:contrib/gnu/gzip -dc SYS:AROS.tgz | SYS:contrib/aminet/untar IN:
 
 Assign SYS: RAM:
 Assign C: SYS:C
