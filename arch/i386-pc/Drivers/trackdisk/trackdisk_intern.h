@@ -13,7 +13,8 @@ struct TrackDiskBase
     struct Device           td_device;
     struct ExecBase         *sysbase;	/* Useless for native but... */
     struct SignalSemaphore  io_lock;	/* Lock IO acces to floppy */
-	struct Message          *io_msg;	/* Messege that is processed */
+	struct Message          *io_msg;	/* Messege that is processed in interrupt*/
+	struct Message			io_msg_fill;
     struct TDU      *units[4];	/* Up to four units allowed */
     UBYTE			DOR;		/* Digital Output Register */
 	UBYTE			comsize;	/* RAW command size */
@@ -28,9 +29,14 @@ struct TDU
     struct	TDU_PublicUnit pub;
     UBYTE 	unitnum;		/* Unit number */
     UBYTE 	unittype;		/* Unit type from BIOS setup */
+
     APTR	dma_buffer;		/* Buffer for DMA transfers */
-    UBYTE	head;			/* Active head */
+	UBYTE	lastcyl;		/* last read cyl */
+	UBYTE	lasthd;			/* last read head */
+	UBYTE	flags;			/* 0x01=Write track */
 };
+
+#define TDUF_WRITE	(1<<0)
 
 /*
    Drive parameters.

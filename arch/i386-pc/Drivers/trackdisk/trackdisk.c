@@ -36,11 +36,11 @@
 void td_floppyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void td_floppytimer(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
-int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
-				struct TrackDiskBase *TDBase);
+int td_update(struct IOExtTD *, struct TrackDiskBase *);
+int td_read(struct IOExtTD *, struct TrackDiskBase *);
+int td_write(struct IOExtTD *, struct TrackDiskBase *);
 
-int td_recalibrate(unsigned char unitn, char type, int sector, struct IOExtTD *iotd,
-				struct TrackDiskBase *TDBase);
+int td_recalibrate(unsigned char , char , int , struct IOExtTD *,struct TrackDiskBase *);
 
 int td_dinit(struct TrackDiskBase *TDBase);
 
@@ -207,31 +207,34 @@ ULONG *pp;
 	/* If there is defined a drive */
     	if (((drives>>(4*i))&15)!=0)
     	{
-	    /* Get mem for it */
-	    unit=(struct TDU*)AllocMem(sizeof(struct TDU), MEMF_CLEAR|MEMF_PUBLIC);
-    	    if (!unit)	/* PANIC! No memory for units! */
-    	        Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
-    	    unit->pub.tdu_StepDelay=4;	/* Standard values here */
-    	    unit->pub.tdu_SettleDelay=16;
-    	    unit->pub.tdu_RetryCount=3;
-    	    unit->unitnum=i;
-    	    unit->unittype=(drives>>(4*i))&15;
+	   	/* Get mem for it */
+	   	unit=(struct TDU*)AllocMem(sizeof(struct TDU), MEMF_CLEAR|MEMF_PUBLIC);
+    	   if (!unit)	/* PANIC! No memory for units! */
+    	   	Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
+    	   unit->pub.tdu_StepDelay=4;	/* Standard values here */
+    	   unit->pub.tdu_SettleDelay=16;
+    	   unit->pub.tdu_RetryCount=3;
+    	   unit->unitnum=i;
+    	   unit->unittype=(drives>>(4*i))&15;
     	
-    	    /* Alloc memory for track buffering */
-    	    unit->dma_buffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
-    	    if (!unit->dma_buffer)
+    	   /* Alloc memory for track buffering */
+    	   unit->dma_buffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
+    	   if (!unit->dma_buffer)
     	    	Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
-    	    /* If buffer doesn't fit into DMA page realloc it */
-    	    if (( (((ULONG)unit->dma_buffer+DP_SECTORS*512)&0xffff0000) -
+    	   /* If buffer doesn't fit into DMA page realloc it */
+    	   if (( (((ULONG)unit->dma_buffer+DP_SECTORS*512)&0xffff0000) -
     	    	   ((ULONG)unit->dma_buffer&0xffff0000) )!=0)
-    	    {
+    	   {
     	    	APTR buffer;
     	    	buffer=AllocMem(DP_SECTORS*512,MEMF_CLEAR|MEMF_CHIP);
     	    	if (!buffer)
     	    	    Alert(AT_DeadEnd|AO_TrackDiskDev|AG_NoMemory);
     	    	FreeMem(unit->dma_buffer,DP_SECTORS*512);
-    	    	unit->dma_buffer=buffer;
-    	    }
+				unit->dma_buffer=buffer;
+    	   }
+			unit->flags=0;
+			unit->lastcyl=-1;
+			unit->lasthd=-1;
 			if (ExpansionBase)
 			{
 				pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
@@ -373,23 +376,45 @@ AROS_LH1(void, beginio,
     switch (iotd->iotd_Req.io_Command)
     {
 		/* Do nothing for these two */
-        case CMD_UPDATE:
-        case CMD_CLEAR:
-            iotd->iotd_Req.io_Error=0;
-            break;
+      case CMD_UPDATE:
+			/* Lock TDBase */
+			ObtainSemaphore(&TDBase->io_lock);
+			iotd->iotd_Req.io_Error = td_update(iotd, TDBase);
+			ReleaseSemaphore(&TDBase->io_lock);
+			break;
+
+      case CMD_CLEAR:
+			/* Lock TDBase */
+			ObtainSemaphore(&TDBase->io_lock);
+			unit=(struct TDU*)iotd->iotd_Req.io_Unit;
+			unit->lastcyl = -1;
+			unit->lasthd = -1;
+			unit->flags &= ~TDUF_WRITE;
+			iotd->iotd_Req.io_Error=0;
+			ReleaseSemaphore(&TDBase->io_lock);
+         break;
+
+		case TD_CHANGESTATE:
+         ObtainSemaphore(&TDBase->io_lock);
+			iotd->iotd_Req.io_Actual=td_getDiskChange(iotd, TDBase);
+			iotd->iotd_Req.io_Error=0;
+			ReleaseSemaphore(&TDBase->io_lock);
+			break;
+
 		/* Turn drive motor on and off */
-        case TD_MOTOR:
-            ObtainSemaphore(&TDBase->io_lock);
-            iotd->iotd_Req.io_Length&=1;
+      case TD_MOTOR:
+         ObtainSemaphore(&TDBase->io_lock);
+         iotd->iotd_Req.io_Length&=1;
 			unit=(struct TDU*)iotd->iotd_Req.io_Unit;
 			iotd->iotd_Req.io_Actual=(TDBase->DOR>>(unit->unitnum+4))&1;
 			TDBase->DOR&=~(1<<(unit->unitnum+4));
 			TDBase->DOR|=iotd->iotd_Req.io_Length<<(unit->unitnum+4);
 			TDBase->DOR|=0xc;
 			fd_outb(TDBase->DOR,FD_DOR);
-			ReleaseSemaphore(&TDBase->io_lock);
 			iotd->iotd_Req.io_Error=0;
+			ReleaseSemaphore(&TDBase->io_lock);
 			break;
+
 		/* Seek the drive */
 		case TD_SEEK:
 			/* Lock TDBase */
@@ -409,18 +434,14 @@ AROS_LH1(void, beginio,
 		case CMD_READ:
 			/* Lock TDBase */
 			ObtainSemaphore(&TDBase->io_lock);
-			unit=(struct TDU*)iotd->iotd_Req.io_Unit;
-			err = td_readwrite('r', unit, iotd, TDBase);
-			iotd->iotd_Req.io_Error = err;
+			iotd->iotd_Req.io_Error = td_read(iotd, TDBase);
 			ReleaseSemaphore(&TDBase->io_lock);
 			break;
 			
 		case CMD_WRITE:
 			/* Lock TDBase */
 			ObtainSemaphore(&TDBase->io_lock);
-			unit=(struct TDU*)iotd->iotd_Req.io_Unit;
-			err = td_readwrite('w', unit, iotd, TDBase);
-			iotd->iotd_Req.io_Error = err;
+			iotd->iotd_Req.io_Error = td_write(iotd, TDBase);
 			ReleaseSemaphore(&TDBase->io_lock);
 			break;
 		
@@ -673,68 +694,98 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct IOExtTD *i
 	return err;
 }
 
-// Read (mode = 'r') / Write (mode = 'w') command
-int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
-				struct TrackDiskBase *TDBase)
-{
-	int unit_num = unit->unitnum;
-	int wait_first;
-	int rwcnt = 3;	// Read/Write retries
-	int skcnt = 3;	// Seek retries
-	int err;		// Error
-	char *buf;
+/************************************************
+ Name  : td_checkDisk
+ Descr.: checks for disk in drive
+ Input : unit - unit of drive
+ Output: 0 - disk in drive
+         1 - no disk in drive
+ Note  : motor must be turned on before calling
+         this function; motor remains on when a
+         disk is in drive - it is turned off
+         otherwise
+ SideEffect: trackbuffer will be marked as invalid
+             if a media change was recognized
+*************************************************/
+int td_checkDisk(struct TDU *unit, struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
+int actual;
+unsigned char DOR;
 
-	int cyl, hd, sec;	// C/H/S for operation
-
-	/* Calculate C/H/S */
-
-	sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
-	cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
-	sec %= 2*DP_SECTORS;	// sector on track (on both sides)
-	hd = sec / DP_SECTORS;	// head number
-	sec %= DP_SECTORS;		// real sector number
-	sec ++;		// Sector are numbered from 1 to DP_SECTORS
-	
-	/* If mode write then copy Data to DMA buffer */
-	if (mode == 'w')
+	actual=fd_inb(FD_DIR) & (1<<7) ? 1 : 0;
+	if (actual)
 	{
-		/* Issue Sense Drive Status command to check whether write is possible */
-		TDBase->comsize = 2;
-		TDBase->rawcom[0] = FD_GETSTATUS;
-		TDBase->rawcom[1] = unit_num;
-		td_sendcommand(TDBase);
-		td_readstatus(TDBase,1);
-		if (TDBase->result[0] & 0x40)
+		/* a disk has been removed */
+		td_recalibrate(unit->unitnum, 0, 0, iotd, TDBase);
+		td_recalibrate(unit->unitnum, 0, DP_SECTORS*2, iotd, TDBase);
+		/* is a disk in drive ? */
+		fd_outb(0x0c | unit->unitnum | (0x10 << unit->unitnum), FD_DOR);	/* Motor ON, use DMA */
+		actual=fd_inb(FD_DIR) & (1<<7) ? 1 : 0;
+		if (actual)
 		{
-			/* If disk is write protected return error */
-			return TDERR_WriteProt;
-		}
-		CopyMem(iotd->iotd_Req.io_Data, unit->dma_buffer, iotd->iotd_Req.io_Length);
+			/* no disk, turn motor off */
+			DOR = fd_inb(FD_DOR);
+			DOR &= ~(0x10 << unit->unitnum);
+			fd_outb(DOR, FD_DOR);
+		}	
+#warning This doesn't look good if the track wasn't written
+		unit->lastcyl=-1;
+		unit->lasthd=-1;
+		unit->flags &= ~TDUF_WRITE;
 	}
+	return actual;
+}
+
+int td_getDiskChange(struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
+struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
+unsigned char DOR;
+int actual;
+	
+	TDBase->timeout[unit->unitnum] = 255;	/* Lock the motor */
+	fd_outb(0x0c | unit->unitnum | (0x10 << unit->unitnum), FD_DOR);	/* Motor ON, use DMA */
+	actual=td_checkDisk(unit, iotd, TDBase);
+	if (!actual)
+	{
+		/* turn motor off */
+		DOR = fd_inb(FD_DOR);
+		DOR &= ~(0x10 << unit->unitnum);
+		fd_outb(DOR, FD_DOR);
+	}
+	TDBase->timeout[unit->unitnum] = TOFF;
+	return actual;
+}
+
+int td_readwritetrack(struct TDU *unit, char cyl, char hd, char mode,
+							struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
+int wait_first;
+int rwcnt = 3;	// Read/Write retries
+int skcnt = 3;	// Seek retries
+char *buf;
+int err;		// Error
+
 	/* Check whether we need to wait 500ms after seek */
-	wait_first = TDBase->timeout[unit_num];
+	wait_first = TDBase->timeout[unit->unitnum];
 	
 	/* Enable drive & motor */
-	TDBase->timeout[unit_num] = 255;	/* Lock the motor */
-	fd_outb(0x0c | unit_num | (0x10 << unit_num), FD_DOR);	/* Motor ON, use DMA */
-	
+	TDBase->timeout[unit->unitnum] = 255;	/* Lock the motor */
+	fd_outb(0x0c | unit->unitnum | (0x10 << unit->unitnum), FD_DOR);	/* Motor ON, use DMA */
+
 	/* Program data rate */
 	fd_outb(0, FD_DCR);	// 500kbit/s only!
 	do
 	{
 		/* Seek drive */
-		err = td_recalibrate(unit_num, 0, (cyl*DP_SECTORS) << 1, iotd, TDBase);
+		err = td_recalibrate(unit->unitnum, 0, (cyl*DP_SECTORS) << 1, iotd, TDBase);
 		if (!err)
 		{
 			if (!wait_first)
 			{
 				/* Set timeout to 250... int handler will decrease it every tick */
-				TDBase->timeout[unit_num] = 250;
-				do {} while (TDBase->timeout[unit_num] > 225);
+				TDBase->timeout[unit->unitnum] = 250;
+				do {} while (TDBase->timeout[unit->unitnum] > 225);
 				/* Set wait_first to non zero value */
 				wait_first = 1;
 			}
-			TDBase->timeout[unit_num] = 255;
+			TDBase->timeout[unit->unitnum] = 255;
 			rwcnt = 3;	// Max 3 retries of read/write
 
 			do
@@ -745,19 +796,19 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 				clear_dma_ff(TD_DMA);
 				// Should place some cache flush in future (when cache implemented)
 				set_dma_addr(TD_DMA, (ULONG)(unit->dma_buffer));
-				set_dma_count(TD_DMA, iotd->iotd_Req.io_Length);
-				set_dma_mode(TD_DMA, (mode == 'r') ? DMA_MODE_READ : DMA_MODE_WRITE);
+				set_dma_count(TD_DMA, DP_SECTORS*512);
+				set_dma_mode(TD_DMA, (mode == FD_READ) ? DMA_MODE_READ : DMA_MODE_WRITE);
 				enable_dma(TD_DMA);
 				/* Issue read/write command */
 				TDBase->comsize = 9;
 				buf = TDBase->rawcom;
-				*buf++ = (mode == 'r') ? FD_READ : FD_WRITE;	// Command
-				*buf++ = unit_num | (hd << 2);	// Drive Select
+				*buf++ = mode;							// Command
+				*buf++ = unit->unitnum | (hd << 2);	// Drive Select
 				*buf++ = cyl;					// Cylinder
 				*buf++ = hd;					// Head
-				*buf++ = sec;					// Sector
-				*buf++ = DP_SSIZE;				// Sector size
-				*buf++ = sec;					// End sector - the same as sec field for a while
+				*buf++ = 1;						// Sector
+				*buf++ = DP_SSIZE;			// Sector size
+				*buf++ = DP_SECTORS;			// End sector - the same as sec field for a while
 				*buf++ = DP_GAP1;				// Gap length
 				*buf++ = -1;					// DTL
 				/* Command prepared, now send it */
@@ -771,13 +822,7 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 					/* Check if everything went OK */
 					if (!(TDBase->result[0] & 0xc0))
 					{
-						/* Everything OK. Now, if it was reading copy dma buffer to
-						 * proper place */
-						if (mode == 'r')
-						{
-							CopyMem(unit->dma_buffer, iotd->iotd_Req.io_Data, iotd->iotd_Req.io_Length);
-						}
-						TDBase->timeout[unit_num] = TOFF;
+						TDBase->timeout[unit->unitnum] = TOFF;
 						return 0;
 					}
 				}
@@ -799,11 +844,140 @@ int td_readwrite(char mode, struct TDU *unit, struct IOExtTD *iotd,
 				}
 			} while (--rwcnt);
 		}
-		td_recalibrate(unit_num, 1, 0, iotd, TDBase);
+		td_recalibrate(unit->unitnum, 1, 0, iotd, TDBase);
 	} while(--skcnt);	
 		
-	TDBase->timeout[unit_num] = TOFF;
+	TDBase->timeout[unit->unitnum] = TOFF;
 	return err;
+}
+
+int td_update(struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
+struct TDU *unit = (struct TDU *)iotd->iotd_Req.io_Unit;
+int err;		// Error
+
+	if (unit->flags & TDUF_WRITE)
+	{
+		if (td_getDiskChange(iotd, TDBase))
+			return TDERR_DiskChanged;	/* No disk in drive */
+		err=td_readwritetrack(unit, unit->lastcyl, unit->lasthd, FD_WRITE, iotd, TDBase);
+		if (err)
+			return err;
+		unit->flags &= ~TDUF_WRITE;
+	}
+	return 0;
+}
+
+int td_readtrack(struct IOExtTD *iotd, UBYTE cyl, UBYTE hd, struct TrackDiskBase *TDBase) {
+struct TDU *unit = (struct TDU *)iotd->iotd_Req.io_Unit;
+int err;		// Error
+
+	if (td_getDiskChange(iotd, TDBase))
+		return TDERR_DiskChanged;	/* No disk in drive */
+	if ((unit->lastcyl!=cyl) || (unit->lasthd!=hd))
+	{
+		err=td_update(iotd, TDBase);
+		if (err)
+			return err;
+		err=td_readwritetrack(unit, cyl, hd, FD_READ, iotd, TDBase);
+		if (err)
+			return err;
+		unit->lastcyl=cyl;
+		unit->lasthd=hd;
+	}
+	return 0;
+}
+
+int td_read(struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
+struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
+int cyl, hd, sec;	// C/H/S for operation
+ULONG length=0;
+ULONG size;
+int err;		// Error
+
+	sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
+	cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
+	sec %= 2*DP_SECTORS;	// sector on track (on both sides)
+	hd = sec / DP_SECTORS;	// head number
+	sec %= DP_SECTORS;		// real sector number
+	while (length<iotd->iotd_Req.io_Length)
+	{
+		size = (DP_SECTORS*512) - (sec*512);
+		if (size>iotd->iotd_Req.io_Length)
+			size=iotd->iotd_Req.io_Length;
+		err=td_readtrack(iotd, (UBYTE)cyl, (UBYTE)hd, TDBase);
+		if (err)
+			return err;
+		CopyMem(unit->dma_buffer+(sec*512), iotd->iotd_Req.io_Data+length, size);
+		length += size;
+		sec = 0;
+		if (hd)
+		{
+			hd=0;
+			cyl++;
+		}
+		else
+			hd=1;
+	}
+	return 0;
+}
+
+int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
+struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
+int cyl, hd, sec;	// C/H/S for operation
+ULONG length=0;
+ULONG size;
+int err;		// Error
+
+	/* Issue Sense Drive Status command to check whether write is possible */
+	TDBase->comsize = 2;
+	TDBase->rawcom[0] = FD_GETSTATUS;
+	TDBase->rawcom[1] = unit->unitnum;
+	td_sendcommand(TDBase);
+	td_readstatus(TDBase,1);
+	if (TDBase->result[0] & 0x40)
+	{
+		/* If disk is write protected return error */
+		return TDERR_WriteProt;
+	}
+	sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
+	cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
+	sec %= 2*DP_SECTORS;	// sector on track (on both sides)
+	hd = sec / DP_SECTORS;	// head number
+	sec %= DP_SECTORS;		// real sector number
+
+	while (length<iotd->iotd_Req.io_Length)
+	{
+		size = (DP_SECTORS*512) - (sec*512);
+		if (size>iotd->iotd_Req.io_Length)
+			size=iotd->iotd_Req.io_Length;
+		if (size<(DP_SECTORS*512))
+		{
+			/* read new track only if we don't
+				want to write a full track
+			*/
+			err=td_readtrack(iotd, (UBYTE)cyl, (UBYTE)hd, TDBase);
+			if (err)
+				return err;
+		}
+		else
+		{
+			err=td_update(iotd, TDBase);
+			if (err)
+				return err;
+			unit->lastcyl=(UBYTE)cyl;
+			unit->lasthd=(UBYTE)hd;
+		}
+		CopyMem(iotd->iotd_Req.io_Data+length, unit->dma_buffer+(sec*size), size);
+		sec = 0;
+		if (hd)
+		{
+			hd=0;
+			cyl++;
+		}
+		else
+			hd=1;
+	}
+	return 0;
 }
 
 #ifdef SysBase
