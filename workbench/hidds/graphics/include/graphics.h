@@ -21,13 +21,19 @@
 #include <utility/utility.h>
 
 
-#define CLID_Hidd_Gfx           "hidd.graphics.base.graphics"
-#define CLID_Hidd_BitMap        "hidd.graphics.base.bitmap"
-#define CLID_Hidd_GC		"hidd.graphics.base.gc"
+#define CLID_Hidd_Gfx           "hidd.graphics.graphics"
+#define CLID_Hidd_BitMap        "hidd.graphics.bitmap"
+#define CLID_Hidd_GC		"hidd.graphics.gc"
 
 #define IID_Hidd_Gfx      "hidd.graphics.graphics"
 #define IID_Hidd_BitMap   "hidd.graphics.bitmap"
 #define IID_Hidd_GC       "hidd.graphics.gc"
+
+/* Some "example" hidd bitmaps */
+
+#define CLID_Hidd_PlanarBM "hidd.graphics.bitmap.planarbm"
+#define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"
+
 
 typedef struct Object *HIDDT_BitMap;
 typedef struct Object *HIDDT_GC;
