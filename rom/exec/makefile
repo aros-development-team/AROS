@@ -6,10 +6,17 @@ SPECIAL_CFLAGS=-I/usr/include
 
 include $(TOP)/config/make.cfg
 
+# ***** Native ***************
 ifeq ($(FLAVOUR),native)
-OBJDIR=$(OSGENDIR)
 
-FILES = execstrap_init
+OBJDIR=$(OSGENDIR)/exec
+LIB=$(LIBDIR)/libexec.a
+
+# Main function for exec.strap. Need this apart as an anchor for the link:
+INITFUNC = execstrap_init
+
+# Other support files:
+FILES = 
 
 FUNCTIONS = \
 	initcode initstruct makelibrary makefunctions findresident	    \
@@ -31,8 +38,11 @@ FUNCTIONS = \
 # These are in config/$(KERNEL).
 ASMFUNCTIONS = forbid disable getcc cacheclearu cachepredma cachepostdma
 
+# ***** Not Native ***************
 else
+
 OBJDIR=$(OSGENDIR)/exec
+
 ifeq ("$(SHARED_EXEC)","yes")
 LIB=$(LIBDIR)/libexec.so
 RMLIB=$(LIBDIR)/libexec.a
@@ -40,95 +50,90 @@ else
 LIB=$(LIBDIR)/libexec.a
 RMLIB=$(LIBDIR)/libexec.so
 endif
+
 SHARED_AR=$(AR)
 
 FILES = init execfunctions
 
 FUNCTIONS = \
-	allocmem freemem addhead \
-	addtask remtask wait \
-	signal allocsignal freesignal \
-	alert freeentry remove \
-	remhead enqueue addmemhandler \
-	setexcept setsignal settaskpri \
-	findtask findname getmsg \
-	putmsg replymsg addtail \
-	waitport allocate addport \
-	remport findport addmemlist \
-	createmsgport deletemsgport \
-	createiorequest deallocate \
-	availmem deleteiorequest allocvec \
-	freevec allocabs allocentry \
-	createpool deletepool allocpooled \
-	remmemhandler initstruct \
-	initsemaphore attemptsemaphore \
-	obtainsemaphore obtainsemaphoreshared \
-	attemptsemaphoreshared releasesemaphore \
-	procure vacate \
-	addlibrary remlibrary \
-	makefunctions makelibrary \
-	sumlibrary openlibrary \
-	closelibrary setfunction \
-	oldopenlibrary copymemquick \
-	copymem freepooled \
-	remsemaphore addsemaphore \
-	releasesemaphorelist obtainsemaphorelist \
-	typeofmem rawdofmt insert \
-	remtail findsemaphore \
-	addresource \
-	remresource openresource \
-	adddevice remdevice opendevice \
-	closedevice doio sendio \
-	checkio abortio waitio \
-	initresident cause \
-	addintserver \
-	remintserver setintvector \
-	alloctrap childfree childorphan childstatus childwait coldreboot \
-	debug findresident freetrap initcode sumkickdata obtainquickvector
+	allocmem freemem addhead addtask remtask wait signal allocsignal    \
+	freesignal alert freeentry remove remhead enqueue addmemhandler     \
+	setexcept setsignal settaskpri findtask findname getmsg putmsg      \
+	replymsg addtail waitport allocate addport remport findport         \
+	addmemlist createmsgport deletemsgport createiorequest deallocate   \
+	availmem deleteiorequest allocvec freevec allocabs allocentry       \
+	createpool deletepool allocpooled remmemhandler initstruct          \
+	initsemaphore attemptsemaphore obtainsemaphore                      \
+	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore       \
+	procure vacate addlibrary remlibrary makefunctions makelibrary      \
+	sumlibrary openlibrary closelibrary setfunction oldopenlibrary      \
+	copymemquick copymem freepooled remsemaphore addsemaphore           \
+	releasesemaphorelist obtainsemaphorelist typeofmem rawdofmt insert  \
+	remtail findsemaphore addresource remresource openresource adddevice\
+	remdevice opendevice closedevice doio sendio checkio abortio waitio \
+	initresident cause addintserver remintserver setintvector alloctrap \
+	childfree childorphan childstatus childwait coldreboot debug        \
+	findresident freetrap initcode sumkickdata obtainquickvector
+
+# ***** END ***************
 endif
 
+.PHONY: all clean setup
+
+# ***** Native ***************
 ifeq ($(FLAVOUR),native)
-LIBS = -L$(LIBDIR) -laros -larosc
 
-all: setup $(OSMODDIR)/exec.strap
+LIBS = -L$(LIBDIR) -lexec -laros -larosc
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASMFUNCTIONS),$(OBJDIR)/$(f).o)
 
-$(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-			$(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
-			$(foreach f,$(ASMFUNCTIONS),$(OBJDIR)/$(f).o) \
-			$(LIBDIR)/libaros.a $(LIBDIR)/libarosc.a
-	$(CC) $(ILDFLAGS)  -Xlinker -M \
-	$(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OBJDIR)/$(f).o) \
-	$(foreach f,$(ASMFUNCTIONS),$(OBJDIR)/$(f).o) \
-	$(LIBS) -o $@ 2>&1|tee execstrap.err
-	@if test ! -s execstrap.err; then rm execstrap.err ; else true ; fi
+all: setup $(LIB) $(OSMODDIR)/exec.strap
+
+$(OSMODDIR)/exec.strap: $(LIB) $(LIBDIR)/libaros.a $(LIBDIR)/libarosc.a
+	@echo "Compiling $@..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M \
+	 $(OBJDIR)/$(INITFUNC).o \
+	 $(LIBS) -o $@ 2>&1|tee execstrap.map
+	@if test ! -s execstrap.map; then rm execstrap.map ; else true ; fi
 	@strip $@
 
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
+.PHONY: asm
 asm: $(foreach f,$(FUNCTIONS),$(f).s) all
 
 %.s: %.c
+	@echo "Generating $@..."
 	$(CC) -S $(CFLAGS) $< -c -o $@
+
+# Collect all (asm-)functions in a linklib for fast linking:
+$(LIB): $(OBJS)
+	@echo "Adding functions to $@..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+# ***** Not Native ***************
 else
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
+
+$(LIB): $(OBJS)
+	@echo "Recreating $@..."
+	$(SHARED_AR) $@ $(OBJS)
+	$(RM) $(RMLIB)
+
+# ***** END ***************
 endif
 
 setup :
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 	@if [ ! -d $(OSMODDIR) ]; then $(MKDIR) $(OSMODDIR) ; else true ; fi
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
-
-$(LIB): $(OBJS)
-	@echo "Recreating $@..."
-	@$(SHARED_AR) $@ $(OBJS)
-	@$(RM) $(RMLIB)
 
 $(OBJDIR)/%.o: %.c
 	@echo "Compiling $(CURDIR)/$<"
