@@ -118,8 +118,10 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct Con
 static const UBYTE str_slm[] = {0x32, 0x30, 0x68 }; /* Set linefeed mode    */
 static const UBYTE str_rnm[] = {0x32, 0x30, 0x6C }; /* Reset newline mode   */
 static const UBYTE str_dsr[] = {0x36, 0x6E };       /* device status report */
+static const UBYTE str_con[] = {' ', 'p'};    	    /* cursor visible */
+static const UBYTE str_cof[] = {'0', ' ', 'p'};     /* cursor invisible */
 
-#define NUM_SPECIAL_COMMANDS 3
+#define NUM_SPECIAL_COMMANDS 5
 static const struct special_cmd_descr
 {
     BYTE	Command;
@@ -129,7 +131,9 @@ static const struct special_cmd_descr
 
     {C_SET_LF_MODE, 		(STRPTR)str_slm, 3 },
     {C_RESET_NEWLINE_MODE,	(STRPTR)str_rnm, 3 },
-    {C_DEVICE_STATUS_REPORT, 	(STRPTR)str_dsr, 2 }
+    {C_DEVICE_STATUS_REPORT, 	(STRPTR)str_dsr, 2 },
+    {C_CURSOR_VISIBLE,		(STRPTR)str_con, 2 },
+    {C_CURSOR_INVISIBLE,	(STRPTR)str_cof, 3 }
 
 };
 
@@ -175,7 +179,9 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
     "Scroll Down",	/* C_SCROLL_DOWN,	*/
     "Cursor Tab Ctrl",	/*C_CURSOR_TAB_CTRL,	*/
     "Cursor Backtab",	/* C_CURSOR_BACKTAB	*/
-    "Select Graphic Rendation"
+    "Select Graphic Rendation",
+    "Cursor Visible",	/* C_CURSOR_VISIBLE     */
+    "Cursor Invisible"	/* C_CURSOR_INVISIBLE   */
 };
 #endif
 
@@ -246,11 +252,6 @@ static BOOL string2command( BYTE 	*cmd_ptr
 	    }
 	}
 	
-	
-	/* A parameter command ? (Ie. one of the commands that takes parameters) */
-	if (!found)
-	    found = getparamcommand(cmd_ptr, &csi_str, csi_toparse, p_tab, unit, ConsoleDevice);
-
 	if (!found)
 	{
 	    BYTE i;
@@ -276,6 +277,10 @@ static BOOL string2command( BYTE 	*cmd_ptr
 	    } /* for (each special command) */
 	    
 	}
+
+	/* A parameter command ? (Ie. one of the commands that takes parameters) */
+	if (!found)
+	    found = getparamcommand(cmd_ptr, &csi_str, csi_toparse, p_tab, unit, ConsoleDevice);
 	
     } /* if (CSI was found) */
     
@@ -453,30 +458,6 @@ struct cmd_params
 };
 
 
-#define SAVEPARAM()						\
-    	    num_params ++;					\
-	    if (num_params > MAX_COMMAND_PARAMS)		\
-	    {							\
-	    	done = TRUE;					\
-		break;						\
-	    }							\
-	    							\
-	    if (!next_can_be_param)				\
-	    {							\
-		done = TRUE;					\
-		break;						\
-	    }							\
-	    							\
-	    params.tab[p_tab_idx].paramno = num_params - 1;	\
-    	    params.tab[p_tab_idx].val = *write_str;		\
-	    							\
-	    p_tab_idx ++;					\
-								\
-	    next_can_be_param = FALSE;				\
-	    next_can_be_separator = TRUE;			\
-	    next_can_be_commandid = TRUE;
-
-
 static BOOL getparamcommand(BYTE 	*cmd_ptr
 		, UBYTE 		**writestr_ptr
 		, LONG 			toparse
@@ -494,9 +475,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     */
     
     struct cmd_params params;
-    
-    UBYTE p_tab_idx = 0;
-    
+        
     BYTE cmd = -1;
     BYTE cmd_next_idx = 0; /* Index to byte after the command */
     
@@ -510,10 +489,11 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	 
     BOOL next_can_be_separator = TRUE,
     	next_can_be_param = TRUE,
-	next_can_be_commandid = TRUE;
+	next_can_be_commandid = TRUE,
+	last_was_param = FALSE;
 
     UBYTE num_separators_found = 0;
-    
+       
     while (!done)
     {
     	/* In case it's a parameter */
@@ -521,7 +501,6 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	if (toparse <= 0)
     	    done = TRUE;
 
-    	
     	switch (*write_str)
     	{
     	case 0x40:
@@ -547,7 +526,6 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
     	    UBYTE idx = *write_str - FIRST_CSI_CMD;
 	    UBYTE maxparams = csi2command[idx].MaxParams;
 	    
-
 	    if (next_can_be_commandid)
 	    {
 #warning Should also do a MinParams compare    	    
@@ -569,10 +547,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 		}
     	    }
 	    
-	    /* Even if we have founf a command ID, this could actually
-	      be a parameter of a longer command */
-	      
-	    SAVEPARAM();
+	    done = TRUE;
     	    
 
     	} break;
@@ -589,14 +564,53 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	    next_can_be_separator = FALSE;
 	    next_can_be_param = TRUE;
 	    next_can_be_commandid = FALSE;
+	    last_was_param = FALSE;
 	    
 	    num_separators_found ++;
 	    
     	    break;
-    	    
+    	
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	    if (!next_can_be_param)
+	    {
+	    	/* Error */
+		done = TRUE;
+		break;
+	    }
+
+	    if (!last_was_param)
+	    {
+		num_params++;
+		if (num_params > MAX_COMMAND_PARAMS)
+		{
+		    done = TRUE;
+		    break;
+		}
+		params.tab[num_params - 1].paramno = num_params - 1;
+		params.tab[num_params - 1].val = 0;
+		
+		last_was_param = TRUE;
+	     }
+
+    	    params.tab[num_params - 1].val *= 10;
+	    params.tab[num_params - 1].val += (*write_str) - '0';
+
+	    next_can_be_separator = TRUE;
+	    next_can_be_commandid = TRUE;
+	    break;
+	    
     	default:
-	    /* Have we reached the max limit ? */
-	    SAVEPARAM();
+	    /* Error */
+	    done = TRUE;
     	    break;
 
     	} /* switch */
@@ -615,7 +629,7 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	/* Continue parsing on the first byte after the command */
     	*writestr_ptr += cmd_next_idx;
     }
-    
+        
     if (found)
     {
         UBYTE i;
