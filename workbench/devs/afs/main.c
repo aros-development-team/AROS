@@ -30,18 +30,18 @@ ULONG error=0;								//global errors (ERROR_xyz)
  Input : id - InfoData structure to fill
  Output: (currently) DOSTRUE
 ********************************************/
-int getDiskInfo(struct Volume *volume, struct InfoData *id) {
+LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 
 	id->id_NumSoftErrors=0;
 	id->id_UnitNumber=volume->unit;
-	id->id_DiskState=ID_VALIDATED;
+	id->id_DiskState=volume->usedblockscount ? ID_VALIDATED : ID_VALIDATING;
 	id->id_NumBlocks=volume->rootblock*2-volume->bootblocks;
 	id->id_NumBlocksUsed=volume->usedblockscount;
 	id->id_BytesPerBlock=volume->flags==0 ? BLOCK_SIZE(volume)-24 : BLOCK_SIZE(volume);
 	id->id_DiskType=volume->dostype;
 	id->id_VolumeNode=0;		/* I think this is useless in AROS */
 	id->id_InUse=(LONG)TRUE;	/* if we are here the device should be in use! */
-	return DOSTRUE;
+	return 0;
 }
 
 ULONG flush(struct Volume *volume) {
@@ -379,6 +379,13 @@ LONG retval;
 						iofs->io_Union.io_RELABEL.io_NewName
 					);
 					break;
+			case FSA_DISK_INFO :
+				error=getDiskInfo
+					(
+						((struct AfsHandle *)iofs->IOFS.io_Unit)->volume,
+						iofs->io_Union.io_INFO.io_Info
+					);
+				break;
 			default :
 				D(bug("afs.handler: unknown fsa %d\n", iofs->IOFS.io_Command));
 				retval=DOSFALSE;
