@@ -293,9 +293,9 @@ UX11
 
 #define NUM_ROOT_METHODS   4
 #if USE_X11_DRAWFUNCS
-#   define NUM_BITMAP_METHODS 14
+#   define NUM_BITMAP_METHODS 13
 #else
-#   define NUM_BITMAP_METHODS 12
+#   define NUM_BITMAP_METHODS 11
 #endif
 
 
@@ -320,7 +320,6 @@ Class *init_offbmclass(struct x11_staticdata *xsd)
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
     	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
     	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
     	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},

@@ -63,6 +63,9 @@ static struct ABDescr attrbases[] =
 #define DEBUG 0
 #include <aros/debug.h>
  
+static void init_empty_cursor(Window w
+	, GC c
+	, struct x11_staticdata *xsd);
 
 /*********** BitMap::New() *************************************/
 
@@ -279,8 +282,11 @@ LX11
 		    );
 
 UX11		
-	    	if (data->gc)
-		    ok = TRUE;		    
+	    	if (data->gc) {
+		    ok = TRUE;
+		    init_empty_cursor(DRAWABLE(data), data->gc, XSD(cl));
+	    
+		}	    
 		else
 		    ok = FALSE;
 		
@@ -321,6 +327,10 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
+    
+    /* Someone is trying to dispose the framefuffer. This should really
+    never happen in AROS. */
+    kill(getpid(), 19);
     
     if (data->gc)
     {
@@ -420,9 +430,9 @@ UX11
 #define NUM_ROOT_METHODS   4
 
 #if USE_X11_DRAWFUNCS
-#   define NUM_BITMAP_METHODS 14
+#   define NUM_BITMAP_METHODS 13
 #else
-#   define NUM_BITMAP_METHODS 12
+#   define NUM_BITMAP_METHODS 11
 #endif
 
 
@@ -448,7 +458,6 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
     	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
     	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
     	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
     	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
     	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
@@ -541,4 +550,84 @@ void free_onbmclass(struct x11_staticdata *xsd)
     }
 
     ReturnVoid("free_onbmclass");
+}
+
+static void init_empty_cursor(Window w
+	, GC gc
+	, struct x11_staticdata *xsd)
+{
+    Pixmap p, mask; 
+    int width, height;
+    
+    width = height = 1;
+LX11    
+    p = XCreatePixmap( xsd->display
+	, w
+	, width
+	, height
+	, 1
+    );
+UX11    
+
+
+    if (0 != p) {
+LX11    
+	mask = XCreatePixmap( xsd->display
+		, w
+		, width
+		, height
+		, 1
+    	);
+	XFlush(xsd->display);
+	
+UX11    
+	if (0 != mask) {
+	    /* Define cursor for window */
+	    XColor fg, bg;
+	    Cursor c;
+	    int x, y;
+
+LX11
+	    XSetForeground(xsd->display, gc, 0);
+	    XSetFunction(xsd->display, gc, GXcopy);	    
+#if 0	    
+	    XFillRectangle(xsd->display, p, gc, 1, 1, 1, 1);
+	    for (y = 0; y < height; y ++) {
+	    	for (x = 0; x < width; x ++) {
+		    XDrawPoint(xsd->display, mask, gc, x, y);
+		}
+	    }
+#endif	    
+UX11	    
+	    fg.pixel	= BlackPixel(xsd->display, DefaultScreen(xsd->display));
+	    fg.red	= 0x0000;
+	    fg.green	= 0x0000;
+	    fg.blue	= 0x0000;
+	    fg.flags	= DoRed | DoGreen | DoBlue;
+
+	    bg.pixel	= WhitePixel(xsd->display, DefaultScreen(xsd->display));
+	    bg.red	= 0xFFFF;
+	    bg.green	= 0xFFFF;
+	    bg.blue	= 0xFFFF;
+	    bg.flags	= DoRed | DoGreen | DoBlue;
+LX11
+	    c = XCreatePixmapCursor(xsd->display, p, mask
+	    	, &fg, &bg, 0, 0
+	    );
+UX11	    
+	    if (0 != c) {
+LX11	    
+	    	XDefineCursor(xsd->display, w, c);
+UX11		
+	    }
+LX11	    
+	    XFreePixmap(xsd->display, mask);
+UX11	    
+	}
+LX11	
+	XFreePixmap(xsd->display, p);
+UX11
+    }
+ 
+ 	
 }

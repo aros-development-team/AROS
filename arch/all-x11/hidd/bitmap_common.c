@@ -1105,60 +1105,6 @@ UX11
 #define DEBUG 0
 #include <aros/debug.h>
 
-/*********  BitMap::CopyBox()  *************************************/
-static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
-{
-    ULONG mode;
-    Drawable dest;
-    struct bitmap_data *data = INST_DATA(cl, o);
-    
-
-    mode = GC_DRMD(msg->gc)
-    EnterFunc(bug("X11Gfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
-    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
-	
-    if (o != msg->dest)
-    {
-
-    	GetAttr(msg->dest, aHidd_X11BitMap_Drawable, (IPTR *)&dest);
-	
-	if (0 == dest)
-	{
-	    /* The destination object is no X11 bitmap, onscreen nor offscreen.
-	       Let the superclass do the copying in a more general way
-	    */
-	    DoSuperMethod(cl, o, (Msg)msg);
-	    return;
-	}
-	
-    }
-    else
-    {
-    	dest = DRAWABLE(data);
-    }
-
-LX11
-
-    XSetFunction(data->display, data->gc, mode);
-
-    XCopyArea(data->display
-    	, DRAWABLE(data)	/* src	*/
-	, dest			/* dest */
-	, data->gc
-	, msg->srcX
-	, msg->srcY
-	, msg->width
-	, msg->height
-	, msg->destX
-	, msg->destY
-    );
-	
-    XFlush(data->display);
-UX11    
-    ReturnVoid("X11Gfx.BitMap::CopyBox");
-}
-
-
 /*** BitMap::Get() *******************************************/
 
 static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)

@@ -346,8 +346,10 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 	    
 	} else {
 	    /* Let the superclass allocate if it is a standard pixelformat thus do nothing */
+	    
 	    kprintf("!!! COULD NOT CREATE OFSCREEN X11 BITMAP FOR SUPPLIED ATTRS !!!\n");
-	    *((ULONG *)0) = 0;
+	    
+//	    *((ULONG *)0) = 0;
 	}
     }
     
@@ -386,6 +388,10 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = (IPTR)TRUE;
 		break;
 		
+	    case aoHidd_Gfx_SupportsHWCursor:
+	    	*msg->storage = (IPTR)FALSE;
+		break;
+		
 	    default:
 	    	DoSuperMethod(cl, o, (Msg)msg);
 		break;
@@ -397,47 +403,6 @@ static VOID gfx_get(Class *cl, Object *o, struct pRoot_Get *msg)
     return;
 }
 
-#if 0
-static BOOL gfx_setcursor(Class *cl, Object *o, struct pHidd_Gfx_SetCursor *msg)
-{
-    LONG x, y;
-    BOOL ok = FALSE;
-    struct MsgPort *port;
-    struct HIDDGraphicsData *data;
-    
-    data = INST_DATA(cl, o);
-    /* We do NOT support setting of the cursor image and cursor on/off */
-    
-    x = GetTagData(tHidd_Cursor_X, 0, msg->cursorTags);
-    y = GetTagData(tHidd_Cursor_Y, 0, msg->cursorTags);
-    
-    /* Pass a message to the X11 HIDD that we want to set the cursor position */
-    port = CreateMsgPort();
-    if (NULL != port) {
-    	struct notfy_msg *msg;
-	msg = AllocMem(sizeof (*msg), MEMF_PUBLIC|MEMF_CLEAR);
-	if (NULL != msg) {
-	    IPTR window;
-	    msg->xdisplay = data->display;
-	    msg->xwindow  = data->fbwin;
-	    msg->notify_type = NOTY_SETCURSOR;
-	    msg->notify.cursor.x = x;
-	    msg->notify.cursor.y = y;
-	    msg->execmsg.mn_ReplyPort = port;
-	    
-	    PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
-	    
-	    WaitPort(port);
-	    GetMsg(port);
-	    
-	    FreeMem(msg, sizeof (*msg));
-	}
-    	DeleteMsgPort(port);
-    }
-    return ok;    
-}
-
-#endif
 
 static Object *gfxhidd_show(Class *cl, Object *o, struct pHidd_Gfx_Show *msg)
 {
@@ -464,13 +429,85 @@ UX11
     return fb;
 }
 
+
+/*********  Gfx::CopyBox()  *************************************/
+static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
+{
+    ULONG mode;
+    Drawable src = 0, dest = 0;
+    struct gfx_data *data;
+    struct bitmap_data *bmdata;
+    
+    data = INST_DATA(cl, o);
+    
+    mode = GC_DRMD(msg->gc);
+    
+    GetAttr(msg->src,  aHidd_X11BitMap_Drawable, (IPTR *)&src);
+    GetAttr(msg->dest, aHidd_X11BitMap_Drawable, (IPTR *)&dest);
+	
+    if (0 == dest || 0 == src)
+    {
+	/* The destination object is no X11 bitmap, onscreen nor offscreen.
+	    Let the superclass do the copying in a more general way
+	*/
+	DoSuperMethod(cl, o, (Msg)msg);
+	return;
+    }
+
+LX11
+
+    /* This may seem ugly, but we know nobody has subclassed
+       the x11 class, since it's private
+    */
+    bmdata = INST_DATA(XSD(cl)->onbmclass, msg->src);
+
+    XSetFunction(data->display, bmdata->gc, mode);
+    
+
+    XCopyArea(data->display
+    	, src			/* src	*/
+	, dest			/* dest */
+	, bmdata->gc
+	, msg->srcX
+	, msg->srcY
+	, msg->width
+	, msg->height
+	, msg->destX
+	, msg->destY
+    );
+	
+    XFlush(data->display);
+UX11    
+    return;
+}
+
+static BOOL gfxhidd_setcursorshape(Class *cl, Object *o, Msg msg)
+{
+    /* Dummy implementation */
+    return TRUE;
+}
+
+static BOOL gfxhidd_setcursorpos(Class *cl, Object *o, Msg msg)
+{
+    /* Dummy implementation */
+    return TRUE;
+}
+
+
+static VOID gfxhidd_setcursorvisible(Class *cl, Object *o, Msg msg)
+{
+    /* Dummy implementation */
+    return;
+}
+
+
 #undef XSD
 #define XSD(cl) xsd
 
 /********************  init_gfxclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_GFXHIDD_METHODS 2
+#define NUM_GFXHIDD_METHODS 6
 
 Class *init_gfxclass (struct x11_staticdata *xsd)
 {
@@ -488,6 +525,10 @@ Class *init_gfxclass (struct x11_staticdata *xsd)
     {
     	{(IPTR (*)())gfxhidd_newbitmap,		moHidd_Gfx_NewBitMap		},
     	{(IPTR (*)())gfxhidd_show,		moHidd_Gfx_Show			},
+    	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox		},
+    	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape	},
+    	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos		},
+    	{(IPTR (*)())gfxhidd_setcursorvisible,	moHidd_Gfx_SetCursorVisible	},
 	{NULL, 0UL}
     };
     
