@@ -25,8 +25,7 @@
 
 #include "baseredef.h"
 
-/*global errors (dos error code ERROR_xyz) */
-ULONG error=0;
+ULONG error;
 
 /*******************************************
  Name  : AFS_work
@@ -34,7 +33,7 @@ ULONG error=0;
  Input : proc - our process structure
  Output: -
 ********************************************/
-void AFS_work(struct afsbase *afsbase) {
+void AFS_work(struct AFSBase *afsbase) {
 struct IOFileSys *iofs;
 struct AfsHandle *afshandle;
 LONG retval;
@@ -44,7 +43,7 @@ LONG retval;
 	for (;;) {
 		while ((iofs=(struct IOFileSys *)GetMsg(&afsbase->port))!=NULL)
 		{
-			D(bug("afs.handler: got command %ld\n",iofs->IOFS.io_Command));
+			D(bug("[afs] got command %ld\n",iofs->IOFS.io_Command));
 			error=0;
 			afshandle = (struct AfsHandle *)iofs->IOFS.io_Unit;
 			switch (iofs->IOFS.io_Command)
@@ -72,7 +71,7 @@ LONG retval;
 				{
 					struct Volume *volume;
 					volume=((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
-					if (volume->locklist)
+					if (volume->locklist != NULL)
 					{
 						error = ERROR_OBJECT_IN_USE;
 					}
@@ -110,11 +109,7 @@ LONG retval;
 							);
 						break;
 					case FSA_CLOSE :
-						closef
-							(
-								afsbase,
-								afshandle
-							);
+						closef(afsbase, afshandle);
 						break;
 					case FSA_READ :
 						iofs->io_Union.io_READ.io_Length=readf
@@ -144,11 +139,11 @@ LONG retval;
 							);
 						break;
 					case FSA_SET_FILE_SIZE :
-						D(bug("afs.handler: set file size nsy\n"));
+						D(bug("[afs] set file size nsy\n"));
 						error=ERROR_ACTION_NOT_KNOWN;
 						break;
 					case FSA_FILE_MODE :
-						D(bug("afs.handler: set file mode nsy\n"));
+						D(bug("[afs] set file mode nsy\n"));
 						error=ERROR_ACTION_NOT_KNOWN;
 						break;
 					case FSA_EXAMINE :
@@ -168,6 +163,7 @@ LONG retval;
 								afsbase,
 								afshandle,
 								iofs->io_Union.io_EXAMINE_ALL.io_ead,
+								iofs->io_Union.io_EXAMINE_ALL.io_eac,
 								iofs->io_Union.io_EXAMINE_ALL.io_Size,
 								iofs->io_Union.io_EXAMINE_ALL.io_Mode
 							);
@@ -200,17 +196,17 @@ LONG retval;
 							);
 						break;
 					case FSA_CREATE_HARDLINK :
-						D(bug("afs.handler: create hardlinks nsy\n"));
+						D(bug("[afs] create hardlinks nsy\n"));
 						iofs->IOFS.io_Unit=0;
 						error=ERROR_ACTION_NOT_KNOWN;
 						break;
 					case FSA_CREATE_SOFTLINK :
-						D(bug("afs.handler: create softlinks nsy\n"));
+						D(bug("[afs] create softlinks nsy\n"));
 						iofs->IOFS.io_Unit=0;
 						error=ERROR_ACTION_NOT_KNOWN;
 						break;
 					case FSA_READ_SOFTLINK :
-						D(bug("afs.handler: read softlinks nsy\n"));
+						D(bug("[afs] read softlinks nsy\n"));
 						error=ERROR_ACTION_NOT_KNOWN;
 						break;
 					case FSA_RENAME :
@@ -249,7 +245,7 @@ LONG retval;
 							);
 						break;
 					case FSA_SET_OWNER :
-						D(bug("afs.handler: set owner nsy\n"));
+						D(bug("[afs] set owner nsy\n"));
 						error=ERROR_ACTION_NOT_KNOWN;
 						break;
 					case FSA_SET_DATE :
@@ -289,13 +285,10 @@ LONG retval;
 							break;
 					case FSA_DISK_INFO :
 						error=getDiskInfo
-							(
-								afshandle->volume,
-								iofs->io_Union.io_INFO.io_Info
-							);
+							(afshandle->volume, iofs->io_Union.io_INFO.io_Info);
 						break;
 					default :
-						D(bug("afs.handler: unknown fsa %d\n", iofs->IOFS.io_Command));
+						D(bug("[afs] unknown fsa %d\n", iofs->IOFS.io_Command));
 						retval=DOSFALSE;
 						error=ERROR_ACTION_NOT_KNOWN;
 					}
@@ -304,7 +297,7 @@ LONG retval;
 				{
 					switch (iofs->IOFS.io_Command)
 					{
-					case FSA_OPEN : //locateObject, findupdate, findinput
+					case FSA_OPEN : /* locateObject, findupdate, findinput */
 					case FSA_CLOSE :
 					case FSA_READ :
 					case FSA_WRITE :
@@ -333,14 +326,14 @@ LONG retval;
 						error = ERROR_NO_DISK;
 						break;
 					default :
-						D(bug("afs.handler: unknown fsa %d\n", iofs->IOFS.io_Command));
+						D(bug("[afs] unknown fsa %d\n", iofs->IOFS.io_Command));
 						retval= DOSFALSE;
 						error = ERROR_ACTION_NOT_KNOWN;
 					}
 				}
 			}
 			checkCache(afsbase, afshandle->volume->blockcache);
-			iofs->io_DosError=error;
+			iofs->io_DosError = error;
 			ReplyMsg(&iofs->IOFS.io_Message);
 		}
 		checkDeviceFlags(afsbase);

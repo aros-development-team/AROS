@@ -20,11 +20,10 @@ LONG mediumPresent(struct IOHandle *ioh) {
 /*******************************************
  Name  : newMedium
  Descr.: build infos for a new medium
- Input : afsbase -
-         volume  -
+ Input : volume  -
  Output: 0 for success; error code otherwise
 ********************************************/
-LONG newMedium(struct afsbase *afsbase, struct Volume *volume) {
+LONG newMedium(struct AFSBase *afsbase, struct Volume *volume) {
 struct BlockCache *blockbuffer;
 UWORD i;
 LONG error;
@@ -80,8 +79,7 @@ LONG error;
  Name  : initVolume
  Descr.: maybe a better name would be mountVolume
          allocate resources for a new mounted device
- Input : afsbase     - 
-         device      - device pointer
+ Input : device      - device pointer
          blockdevice - name of blockdevice
          unit        - unit number of blockdevice
          devicedef   - medium geometry data
@@ -91,7 +89,7 @@ LONG error;
 ********************************************/
 struct Volume *initVolume
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Device *device,
 		STRPTR blockdevice,
 		ULONG unit,
@@ -101,7 +99,7 @@ struct Volume *initVolume
 {
 struct Volume *volume;
 
-	volume=AllocMem(sizeof(struct Volume),MEMF_PUBLIC | MEMF_CLEAR);
+	volume = AllocMem(sizeof(struct Volume),MEMF_PUBLIC | MEMF_CLEAR);
 	if (volume != NULL)
 	{
 		volume->device = device;
@@ -145,8 +143,8 @@ struct Volume *volume;
 					*error = 0;
 				if ((*error == 0) || (*error == ERROR_NOT_A_DOS_DISK))
 				{
-					D(bug("afs.handler: initVolume: BootBlocks=%d\n",volume->bootblocks));
-					D(bug("afs.handler: initVolume: RootBlock=%ld\n",volume->rootblock));
+					D(bug("[afs] initVolume: BootBlocks=%d\n",volume->bootblocks));
+					D(bug("[afs] initVolume: RootBlock=%ld\n",volume->rootblock));
 					volume->ah.header_block = volume->rootblock;
 					return volume;
 				}
@@ -172,11 +170,10 @@ struct Volume *volume;
  Name  : uninitVolume
  Descr.: maybe a better name would be unmountVolume
          free resources allocated by initVolume
- Input : afsbase - 
-         volume  - volume to unmount
+ Input : volume  - volume to unmount
  Output: -
 ********************************************/
-void uninitVolume(struct afsbase *afsbase, struct Volume *volume) {
+void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
 
 	osMediumFree(afsbase, volume, TRUE);
 	if (volume->blockcache)

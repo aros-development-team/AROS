@@ -9,12 +9,12 @@
 #include "os.h"
 #include "volumes.h"
 
-ULONG	countUsedBlocks(struct afsbase *, struct Volume *);
-ULONG createNewBitmapBlocks(struct afsbase *, struct Volume *);
-LONG setBitmapFlag(struct afsbase *, struct Volume *, LONG);
-LONG invalidBitmap(struct afsbase *, struct Volume *);
-LONG validBitmap(struct afsbase *, struct Volume *);
-LONG markBlock(struct afsbase *, struct Volume *, ULONG, ULONG);
-ULONG allocBlock(struct afsbase *, struct Volume *);
+ULONG	countUsedBlocks(struct AFSBase *, struct Volume *);
+ULONG createNewBitmapBlocks(struct AFSBase *, struct Volume *);
+LONG setBitmapFlag(struct AFSBase *, struct Volume *, LONG);
+LONG invalidBitmap(struct AFSBase *, struct Volume *);
+LONG validBitmap(struct AFSBase *, struct Volume *);
+LONG markBlock(struct AFSBase *, struct Volume *, ULONG, ULONG);
+ULONG allocBlock(struct AFSBase *, struct Volume *);
 
 #endif

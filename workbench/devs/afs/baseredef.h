@@ -18,6 +18,5 @@
 #define SysBase afsbase->sysbase
 #define DOSBase afsbase->dosbase
 #define IntuitionBase afsbase->intuitionbase
-
 #endif
 

@@ -17,13 +17,13 @@
 struct BlockCache {};
 struct Volume {};
 
-LONG osMediumInit(struct afsbase *, struct Volume *, struct BlockCache *);
-void osMediumFree(struct afsbase *, struct Volume *, LONG);
-ULONG readDisk(struct afsbase *, struct Volume *, ULONG, ULONG, APTR);
-ULONG writeDisk(struct afsbase *, struct Volume *, ULONG, ULONG, APTR);
-ULONG flush(struct afsbase *, struct Volume *);
-struct IOHandle *openBlockDevice(struct afsbase *, struct IOHandle *);
-void closeBlockDevice(struct afsbase *, struct IOHandle *);
-void check64BitSupport(struct afsbase *, struct Volume *);
+LONG osMediumInit(struct AFSBase *, struct Volume *, struct BlockCache *);
+void osMediumFree(struct AFSBase *, struct Volume *, LONG);
+ULONG readDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
+ULONG writeDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
+ULONG flush(struct AFSBase *, struct Volume *);
+struct IOHandle *openBlockDevice(struct AFSBase *, struct IOHandle *);
+void closeBlockDevice(struct AFSBase *, struct IOHandle *);
+void check64BitSupport(struct AFSBase *, struct Volume *);
 
 #endif

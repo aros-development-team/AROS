@@ -23,7 +23,7 @@ typedef unsigned long  BPTR;
 #define FALSE 0L
 #define TRUE  1L
 
-struct afsbase {};
+struct AFSBase {};
 struct Device {};
 struct DeviceList {};
 struct DosEnvec {};
@@ -127,6 +127,12 @@ struct ExAllData {
 	UBYTE *ed_Comment;
 	UWORD  ed_OwnerUID;
 	UWORD  ed_OwnerGID;
+};
+struct ExAllControl {
+	ULONG eac_Entries;
+	ULONG eac_LastKey;
+	UBYTE *eac_MatchString;
+	struct Hook *eac_MatchFunc;
 };
 
 /* dos/dosextens.h */

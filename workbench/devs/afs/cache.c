@@ -18,14 +18,13 @@
 /********************************************************
  Name  : initCache
  Descr.: initialzes block cache for a volume
- Input : afsbase -
-         volume  - the volume to initialzes cache for
+ Input : volume  - the volume to initialzes cache for
          numBuffers - number of buffers for cache
  Output: first buffer (main cache pointer)
 *********************************************************/
 struct BlockCache *initCache
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG numBuffers
 	)
@@ -34,28 +33,23 @@ struct BlockCache *head;
 struct BlockCache *cache;
 ULONG i;
 
-	if (
-			(
-				head=AllocVec
-					(
-						numBuffers*
-						(
-							sizeof(struct BlockCache)+BLOCK_SIZE(volume)
-						)
-						,MEMF_PUBLIC | MEMF_CLEAR
-					)
-			)
-		)
+	head = AllocVec
+		(
+			numBuffers*(sizeof(struct BlockCache)+BLOCK_SIZE(volume)),
+			MEMF_PUBLIC | MEMF_CLEAR
+		);
+	if (head != NULL)
 	{
-		cache=head;
-		for (i=0;i<(numBuffers-1);i++) {
-			cache->buffer=(ULONG *)((ULONG)cache+sizeof(struct BlockCache));
-			cache->next=
-				(struct BlockCache *)((ULONG)cache->buffer+BLOCK_SIZE(volume));
-			cache=cache->next;
+		cache = head;
+		for (i=0; i<(numBuffers-1); i++)
+		{
+			cache->buffer = (ULONG *)((char *)cache+sizeof(struct BlockCache));
+			cache->next =
+				(struct BlockCache *)((char *)cache->buffer+BLOCK_SIZE(volume));
+			cache = cache->next;
 		}
-		cache->buffer=(ULONG *)((ULONG)cache+sizeof(struct BlockCache));
-		cache->next=0;
+		cache->buffer = (ULONG *)((char *)cache+sizeof(struct BlockCache));
+		cache->next = 0;
 	}
 	D(bug
 		(
@@ -66,48 +60,48 @@ ULONG i;
 	return head;
 }
 
-void freeCache(struct afsbase *afsbase, struct BlockCache *cache) {
-	if (cache)
+void freeCache(struct AFSBase *afsbase, struct BlockCache *cache) {
+	if (cache != NULL)
 		FreeVec(cache);
 }
 
 void flushCache(struct BlockCache *cache) {
 
-	while (cache) {
-		cache->volume=0;
-		cache->blocknum=0;
-		cache->acc_count=0;
+	while (cache != NULL)
+	{
+		cache->volume = 0;
+		cache->blocknum = 0;
+		cache->acc_count = 0;
 		//if (cache->flags & BCF_WRITE) writeBlock(...)
-		cache->flags=0;
-		cache=cache->next;
+		cache->flags = 0;
+		cache = cache->next;
 	}
 }
 
 struct BlockCache *getFreeCacheBlock
-	(
-		struct afsbase *afsbase,
-		struct Volume *volume,
-		ULONG blocknum
-	)
+	(struct AFSBase *afsbase, struct Volume *volume, ULONG blocknum)
 {
 struct BlockCache *cache;
 struct BlockCache *smallest=NULL;
 
-	D(bug("afs.handler:    getFreeCacheBlock: getting cacheblock %ld\n",blocknum));
-	cache=volume->blockcache;
+	D(bug("[afs]    getFreeCacheBlock: getting cacheblock %ld\n",blocknum));
+	cache = volume->blockcache;
 	while (cache != NULL)
 	{
-		if (cache->blocknum==blocknum)
+		if (cache->blocknum == blocknum)
 		{
 			if (!(cache->flags & BCF_USED))
 			{
-				D(bug("afs.handler:    getFreeCacheBlock: already cached %ld\n",cache->acc_count));
+				D(bug("[afs]    getFreeCacheBlock: already cached %ld\n", cache->acc_count));
 				cache->acc_count += 1;
 				return cache;
 			}
 			else
 			{
-				if (blocknum!=volume->rootblock) {		// should only occur while using setBitmap() ->that's ok (see setBitmap())
+				if (blocknum != volume->rootblock)
+				{
+					/*	should only occur while using setBitmap()
+						->that's ok (see setBitmap()) */
 					D(bug("Concurrent access on block %ld!\n",blocknum));
 				}
 			}
@@ -116,35 +110,34 @@ struct BlockCache *smallest=NULL;
 		{
 			if (smallest != NULL)
 			{
-				if (smallest->acc_count>cache->acc_count)
-					smallest=cache;
+				if (smallest->acc_count > cache->acc_count)
+					smallest = cache;
 			}
 			else
 			{
-				smallest=cache;
+				smallest = cache;
 			}
 		}
-		cache=cache->next;
+		cache = cache->next;
 	}
-	// block not cached
+	/* block not cached */
 	if (smallest != NULL)
 	{
-		smallest->acc_count=1;
-		smallest->blocknum=blocknum;
-		smallest->volume=volume;
+		smallest->acc_count = 1;
+		smallest->blocknum = blocknum;
+		smallest->volume = volume;
 	}
 	else
 		showText(afsbase, "Oh, ohhhhh, where is all the cache gone? BUG!!!");
 	return smallest;
 }
 
-void checkCache(struct afsbase *afsbase, struct BlockCache *bc) {
+void checkCache(struct AFSBase *afsbase, struct BlockCache *bc) {
 
-	while (bc)
+	while (bc != NULL)
 	{
 		if (bc->flags & BCF_USED)
 		{
-			kprintf("not released block: %ld!\n", bc->blocknum);
 			showText(afsbase, "not released block: %ld!", bc->blocknum);
 		}
 		bc = bc->next;
@@ -152,35 +145,31 @@ void checkCache(struct afsbase *afsbase, struct BlockCache *bc) {
 }
 
 #ifdef DEBUG
-void umpBlock(struct afsbase *afsbase, struct BlockCache *block) {
+void umpBlock(struct AFSBase *afsbase, struct BlockCache *block) {
 UWORD i,j;
 
-	for (i=0;i<=31;i++) {
+	for (i=0; i<=31; i++) {
 		D(bug("0x%x: ",i*16));
-		for (j=0;j<=3;j++)
-			D(bug(" %x",OS_BE2LONG(block->buffer[i*4+j])));
+		for (j=0; j<=3; j++)
+			D(bug(" %x", OS_BE2LONG(block->buffer[i*4+j])));
 		D(bug("\n"));
 	}
 }
 #endif
 
 struct BlockCache *getBlock
-	(
-		struct afsbase *afsbase,
-		struct Volume *volume,
-		ULONG blocknum
-	)
+	(struct AFSBase *afsbase, struct Volume *volume, ULONG blocknum)
 {
 struct BlockCache *blockbuffer;
 
-	blockbuffer=getFreeCacheBlock(afsbase, volume, blocknum);
+	blockbuffer = getFreeCacheBlock(afsbase, volume, blocknum);
 	if (blockbuffer != NULL)
 	{
-		if (blockbuffer->acc_count==1)
+		if (blockbuffer->acc_count == 1)
 		{
-			if (readDisk(afsbase, volume, blocknum, 1, blockbuffer->buffer))
+			if (readDisk(afsbase, volume, blocknum, 1, blockbuffer->buffer) != 0)
 			{
-				blockbuffer=NULL;
+				blockbuffer = NULL;
 			}
 		}
 	}
@@ -189,7 +178,7 @@ struct BlockCache *blockbuffer;
 
 LONG writeBlock
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		struct BlockCache *blockbuffer
 	)

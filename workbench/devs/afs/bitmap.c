@@ -18,15 +18,14 @@
 /**********************************************
  Name  : countUsedBlocksInBitmap
  Descr.: count used blocks in a bitmap block
- Input : afsbase -
-         volume  -
+ Input : volume  -
          block   - bitmap block to count in
          maxcount- max blocks marked in a bitmap block
  Output: nr of used blocks
 ***********************************************/
 ULONG countUsedBlocksInBitmap
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG block,
 		ULONG maxcount
@@ -91,11 +90,10 @@ struct BlockCache *blockbuffer;
 /**************************************
  Name  : countUsedBlocks
  Descr.: count used blocks of a volume
- Input : afsbase -
-         volume  -
+ Input : volume  -
  Output: nr of used blocks of the volume
 ***************************************/
-ULONG countUsedBlocks(struct afsbase *afsbase, struct Volume *volume) {
+ULONG countUsedBlocks(struct AFSBase *afsbase, struct Volume *volume) {
 UWORD i;
 ULONG blocks;
 ULONG maxinbitmap;
@@ -104,22 +102,17 @@ ULONG count=0;
 struct BlockCache *blockbuffer;
 
 	blocks=volume->countblocks-volume->bootblocks; /* blocks to count */
-	maxinbitmap=(volume->SizeBlock-1)*32;          /* max blocks marked in a bitmapblock */
+	maxinbitmap = (volume->SizeBlock-1)*32;        /* max blocks marked in a bitmapblock */
 	/* check bitmap blocks stored in rootblock */
 	for (i=0;i<=24;i++)
 	{
 		if (maxinbitmap>blocks)
-			maxinbitmap=blocks;
+			maxinbitmap = blocks;
 		if (volume->bitmapblockpointers[i])
 		{
 			count +=
 				countUsedBlocksInBitmap
-					(
-						afsbase,
-						volume,
-						volume->bitmapblockpointers[i],
-						maxinbitmap
-					);
+					(afsbase, volume, volume->bitmapblockpointers[i], maxinbitmap);
 			blocks -= maxinbitmap;
 		}
 		if (blocks == 0)
@@ -128,7 +121,7 @@ struct BlockCache *blockbuffer;
 	/* check extension blocks if neccessary */
 	if (blocks != 0)
 	{
-		curblock=volume->bitmapextensionblock;
+		curblock = volume->bitmapextensionblock;
 		while (curblock != 0)
 		{
 			
@@ -174,7 +167,7 @@ struct BlockCache *blockbuffer;
 	return count;
 }
 
-ULONG createNewBitmapBlocks(struct afsbase *afsbase, struct Volume *volume) {
+ULONG createNewBitmapBlocks(struct AFSBase *afsbase, struct Volume *volume) {
 struct BlockCache *bitmapblock,*extensionblock;
 ULONG i, blocks, maxinbitmap;
 
@@ -244,10 +237,10 @@ ULONG i, blocks, maxinbitmap;
 	return DOSTRUE;
 }
 
-LONG setBitmapFlag(struct afsbase *afsbase, struct Volume *volume, LONG flag) {
+LONG setBitmapFlag(struct AFSBase *afsbase, struct Volume *volume, LONG flag) {
 struct BlockCache *blockbuffer;
 
-	D(bug("[afs.handler] setBitmapFlag()\n"));
+	D(bug("[afs] setBitmapFlag()\n"));
 	blockbuffer = getBlock(afsbase, volume, volume->rootblock);
 	if (blockbuffer == NULL)
 		return DOSFALSE;
@@ -263,23 +256,25 @@ struct BlockCache *blockbuffer;
 	return DOSTRUE;
 }
 
-LONG invalidBitmap(struct afsbase *afsbase, struct Volume *volume) {
+LONG invalidBitmap(struct AFSBase *afsbase, struct Volume *volume) {
 
 	volume->lastextensionblock = 0;
 	volume->lastposition = 0;
 	volume->bstartblock = volume->bootblocks;	/* reserved */
 	volume->bitmapblock = getBlock(afsbase, volume, volume->bitmapblockpointers[volume->lastposition]);
-	if (volume->bitmapblock == NULL)
-		return DOSFALSE;
-	volume->bitmapblock->flags |= BCF_USED;
-	if (!setBitmapFlag(afsbase, volume, 0)) {
+	if (volume->bitmapblock != NULL)
+	{
+		volume->bitmapblock->flags |= BCF_USED;
+		if (setBitmapFlag(afsbase, volume, 0))
+		{
+			return DOSTRUE;
+		}
 		volume->bitmapblock->flags &= ~BCF_USED;
-		return DOSFALSE;
 	}
-	return DOSTRUE;
+	return DOSFALSE;
 }
 
-LONG validBitmap(struct afsbase *afsbase, struct Volume *volume) {
+LONG validBitmap(struct AFSBase *afsbase, struct Volume *volume) {
 
 	if (volume->bitmapblock->flags & BCF_WRITE)
 	{
@@ -305,7 +300,7 @@ LONG validBitmap(struct afsbase *afsbase, struct Volume *volume) {
 **************************************************/
 LONG gotoBitmapBlock
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG block,
 		ULONG *longnr,
@@ -399,10 +394,10 @@ ULONG bblock,togo,maxinbitmap;
 	return TRUE;
 }
 
-LONG markBlock(struct afsbase *afsbase, struct Volume *volume, ULONG block, ULONG mode) {
+LONG markBlock(struct AFSBase *afsbase, struct Volume *volume, ULONG block, ULONG mode) {
 ULONG bitnr, longnr,null=0;
 
-	D(bug("[afs.handler]    markBlock: block=%ld mode=%ld\n",block,mode));
+	D(bug("[afs]    markBlock: block=%ld mode=%ld\n",block,mode));
 	if (block>=volume->countblocks)
 		null = null/null;
 	if (!gotoBitmapBlock(afsbase, volume, block, &longnr, &bitnr))
@@ -442,7 +437,7 @@ ULONG bitnr, longnr,null=0;
 
 ULONG findFreeBlock
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG togo,
 		ULONG longnr,
@@ -504,7 +499,7 @@ ULONG bits,trash,lg;
 	return 0;
 }
 
-ULONG getFreeBlock(struct afsbase *afsbase, struct Volume *volume) {
+ULONG getFreeBlock(struct AFSBase *afsbase, struct Volume *volume) {
 ULONG block,longnr,bitnr,lg,maxbitcount;
 
 	D(bug("[afshandler] %s: enter\n", __FUNCTION__));
@@ -556,13 +551,13 @@ ULONG block,longnr,bitnr,lg,maxbitcount;
 	return block;
 }
 
-ULONG allocBlock(struct afsbase *afsbase, struct Volume *volume) {
+ULONG allocBlock(struct AFSBase *afsbase, struct Volume *volume) {
 ULONG block;
 
 	block = getFreeBlock(afsbase, volume);
 	if (block != 0)
 	{
-		D(bug("[afs.handler]    allocBlock: found a free block on %ld\n", block));
+		D(bug("[afs]    allocBlock: found a free block on %ld\n", block));
 		if (!markBlock(afsbase, volume,block,0))
 			block = 0;
 	}

@@ -4,7 +4,7 @@
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #include "os.h"
@@ -21,19 +21,17 @@
 
 extern ULONG error;
 
-
 /********************************************
  Name  : setHeaderData
  Descr.: set actual date for an object
- Input : afsbase     -
-         volume      - 
+ Input : volume      - 
          blockbuffer - header block of object
          ds          - datestamp to set
  Output: 0 for success; error code otherwise
 *********************************************/
 ULONG setHeaderDate
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		struct BlockCache *blockbuffer,
 		struct DateStamp *ds
@@ -42,25 +40,19 @@ ULONG setHeaderDate
 
 	D(bug
 		(
-			"afs.handler: setHeaderDate: for headerblock %ld\n",
+			"[afs] setHeaderDate: for headerblock %ld\n",
 			blockbuffer->blocknum)
 		);
-	blockbuffer->buffer[BLK_DAYS(volume)]=OS_LONG2BE(ds->ds_Days);
-	blockbuffer->buffer[BLK_MINS(volume)]=OS_LONG2BE(ds->ds_Minute);
-	blockbuffer->buffer[BLK_TICKS(volume)]=OS_LONG2BE(ds->ds_Tick);
-	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=OS_LONG2BE
-		(
-			0-calcChkSum(volume->SizeBlock,blockbuffer->buffer)
-		);
-	writeBlock(afsbase, volume,blockbuffer);
-	blockbuffer=getBlock
-		(
-			afsbase,
-			volume,
-			OS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)])
-		);
-	if (!blockbuffer)
+	blockbuffer->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds->ds_Days);
+	blockbuffer->buffer[BLK_MINS(volume)] = OS_LONG2BE(ds->ds_Minute);
+	blockbuffer->buffer[BLK_TICKS(volume)] = OS_LONG2BE(ds->ds_Tick);
+	blockbuffer->buffer[BLK_CHECKSUM] = 0;
+	blockbuffer->buffer[BLK_CHECKSUM] =
+		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
+	writeBlock(afsbase, volume, blockbuffer);
+	blockbuffer = getBlock
+		(afsbase, volume, OS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
+	if (blockbuffer == NULL)
 		return ERROR_UNKNOWN;
 	return writeHeader(afsbase, volume, blockbuffer);
 }
@@ -69,15 +61,14 @@ ULONG setHeaderDate
 /********************************************
  Name  : setDate
  Descr.: set actual date for an object
- Input : afsbase -
-         ah      - filehandle name is relative to
+ Input : ah      - filehandle name is relative to
          name    - name of object 
          ds      - datestamp to set
  Output: 0 for success; error code otherwise
 *********************************************/
 ULONG setDate
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
 		STRPTR name,
 		struct DateStamp *ds
@@ -86,25 +77,24 @@ ULONG setDate
 ULONG block;
 struct BlockCache *blockbuffer;
 
-	D(bug("afs.handler: setData()\n"));
-	blockbuffer=findBlock(afsbase, ah, name, &block);
-	if (!blockbuffer)
+	D(bug("[afs] setData()\n"));
+	blockbuffer = findBlock(afsbase, ah, name, &block);
+	if (blockbuffer == NULL)
 		return error;
-	return setHeaderDate(afsbase, ah->volume,blockbuffer,ds);
+	return setHeaderDate(afsbase, ah->volume, blockbuffer, ds);
 }
 
 /********************************************
  Name  : setProtect
  Descr.: set protection bits for an object
- Input : afsbase -
-         ah      - filehandle name is relative to
+ Input : ah      - filehandle name is relative to
          name    - name of object
          mask    - protection bit mask
  Output: 0 for success; error code otherwise
 *********************************************/
 ULONG setProtect
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
 		STRPTR name,
 		ULONG mask
@@ -113,42 +103,36 @@ ULONG setProtect
 ULONG block;
 struct BlockCache *blockbuffer;
 
-	D(bug("afs.handler: setProtect(ah,%s,%ld)\n",name,mask));
-	blockbuffer=findBlock(afsbase, ah, name, &block);
-	if (!blockbuffer)
+	D(bug("[afs] setProtect(ah,%s,%ld)\n", name, mask));
+	blockbuffer = findBlock(afsbase, ah, name, &block);
+	if (blockbuffer == NULL)
 		return error;
-	blockbuffer->buffer[BLK_PROTECT(ah->volume)]=OS_LONG2BE(mask);
+	blockbuffer->buffer[BLK_PROTECT(ah->volume)] = OS_LONG2BE(mask);
 	return writeHeader(afsbase, ah->volume, blockbuffer);
 }
 
 /********************************************
  Name  : setComment
  Descr.: set comment for an object
- Input : afsbase -
-         ah      - filehandle name is relative to
+ Input : ah      - filehandle name is relative to
          name    - name of object
          comment - comment to set
  Output: 0 for success; error code otherwise
 *********************************************/
 ULONG setComment
-	(
-		struct afsbase *afsbase,
-		struct AfsHandle *ah,
-		STRPTR name,
-		STRPTR comment
-	)
+	(struct AFSBase *afsbase, struct AfsHandle *ah, STRPTR name, STRPTR comment)
 {
 ULONG block;
 struct BlockCache *blockbuffer;
 
-	D(bug("afs.handler: setComment(ah,%s,%s)\n",name,comment));
-	blockbuffer=findBlock(afsbase, ah, name, &block);
-	if (!blockbuffer)
+	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
+	blockbuffer = findBlock(afsbase, ah, name, &block);
+	if (blockbuffer == NULL)
 		return error;
 	StrCpyToBstr
 		(
 			comment,
-			(APTR)((ULONG)blockbuffer->buffer+(BLK_COMMENT_START(ah->volume)*4))
+			(APTR)((char *)blockbuffer->buffer+(BLK_COMMENT_START(ah->volume)*4))
 		);
 	return writeHeader(afsbase, ah->volume, blockbuffer);
 }
@@ -166,7 +150,7 @@ struct BlockCache *blockbuffer;
 ************************************************/
 void unLinkBlock
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		struct BlockCache *lastentry,
 		struct BlockCache *entry
@@ -174,58 +158,59 @@ void unLinkBlock
 {
 ULONG key;
 
-	D(bug("afs.handler: unlinkBlock: unlinking %ld\n",entry->blocknum));
-	// find the "member" where entry is linked
-	// ->linked into hashchain or hashtable
-	key=BLK_HASHCHAIN(volume);
+	D(bug("[afs] unlinkBlock: unlinking %ld\n", entry->blocknum));
+	/* find the "member" where entry is linked
+		->linked into hashchain or hashtable */
+	key = BLK_HASHCHAIN(volume);
 	if (OS_BE2LONG(lastentry->buffer[key])!=entry->blocknum)
-		for (key=BLK_TABLE_START;key<=BLK_TABLE_END(volume);key++)
-			if (OS_BE2LONG(lastentry->buffer[key])==entry->blocknum)
+	{
+		for (key = BLK_TABLE_START; key<=BLK_TABLE_END(volume); key++)
+		{
+			if (OS_BE2LONG(lastentry->buffer[key]) == entry->blocknum)
 				break;
-	lastentry->buffer[key]=entry->buffer[BLK_HASHCHAIN(volume)];	//unlink block
-	lastentry->buffer[BLK_CHECKSUM]=0;
-	lastentry->buffer[BLK_CHECKSUM]=OS_LONG2BE
-		(
-			0-calcChkSum(volume->SizeBlock, lastentry->buffer)
-		);
+		}
+	}
+	/* unlink block */
+	lastentry->buffer[key] = entry->buffer[BLK_HASHCHAIN(volume)];
+	lastentry->buffer[BLK_CHECKSUM] = 0;
+	lastentry->buffer[BLK_CHECKSUM] =
+		OS_LONG2BE(0-calcChkSum(volume->SizeBlock, lastentry->buffer));
 }
 
 /********************************************
  Name  : deleteObject
  Descr.: delete an object
- Input : afsbase -
-         ah      - filehandle name is relative to
+ Input : ah      - filehandle name is relative to
          name    - name of object to delete
  Output: 0 for success; error code otherwise
 *********************************************/
-ULONG deleteObject(struct afsbase *afsbase, struct AfsHandle *ah, STRPTR name) {
+ULONG deleteObject(struct AFSBase *afsbase, struct AfsHandle *ah, STRPTR name) {
 ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
 
-	D(bug("afs.handler: delete(ah,%s)\n",name));
-	blockbuffer=findBlock(afsbase, ah, name, &lastblock);
+	D(bug("[afs] delete(ah,%s)\n", name));
+	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
 	if (blockbuffer == NULL)
 		return error;
-	if (findHandle(ah->volume, blockbuffer->blocknum))
+	if (findHandle(ah->volume, blockbuffer->blocknum) != NULL)
 		return ERROR_OBJECT_IN_USE;
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)
 		return ERROR_DELETE_PROTECTED;
 	/* if we try to delete a directory
-      check if it is empty
-	*/
+      check if it is empty */
 	if (
 			OS_BE2LONG
-				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_USERDIR
+				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)]) == ST_USERDIR
 		)
 	{
-		for (key=BLK_TABLE_START;key<=BLK_TABLE_END(ah->volume);key++)
+		for (key=BLK_TABLE_START; key<=BLK_TABLE_END(ah->volume); key++)
 		{
-			if (blockbuffer->buffer[key])
+			if (blockbuffer->buffer[key] != 0)
 				return ERROR_DIRECTORY_NOT_EMPTY;
 		}
 	}
 	blockbuffer->flags |= BCF_USED;
-	priorbuffer=getBlock(afsbase, ah->volume, lastblock);
+	priorbuffer = getBlock(afsbase, ah->volume, lastblock);
 	if (priorbuffer == NULL)
 	{
 		blockbuffer->flags &= ~BCF_USED;
@@ -234,42 +219,37 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	if (calcChkSum(ah->volume->SizeBlock, priorbuffer->buffer))
 	{
 		blockbuffer->flags &= ~BCF_USED;
-		showError(afsbase, ERR_CHECKSUM,priorbuffer->blocknum);
+		showError(afsbase, ERR_CHECKSUM, priorbuffer->blocknum);
 		return ERROR_UNKNOWN;
 	}
 	priorbuffer->flags |= BCF_USED;
-	unLinkBlock(afsbase, ah->volume,priorbuffer, blockbuffer);
+	unLinkBlock(afsbase, ah->volume, priorbuffer, blockbuffer);
 	invalidBitmap(afsbase, ah->volume);
-	writeBlock(afsbase, ah->volume,priorbuffer);
+	writeBlock(afsbase, ah->volume, priorbuffer);
 	markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
 	if (
 			OS_BE2LONG
-				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)])==ST_FILE
+				(blockbuffer->buffer[BLK_SECONDARY_TYPE(ah->volume)]) == ST_FILE
 		)
 	{
 		for (;;)
 		{
-			D(bug("afs.handler:   extensionblock=%ld\n",blockbuffer->blocknum));
+			D(bug("[afs]   extensionblock=%ld\n", blockbuffer->blocknum));
 			for
 				(
-					key=BLK_TABLE_END(ah->volume);
-					(key>=BLK_TABLE_START) && (blockbuffer->buffer[key]);
+					key = BLK_TABLE_END(ah->volume);
+					(key >= BLK_TABLE_START) && (blockbuffer->buffer[key]!=0);
 					key--
 				)
 			{
 				markBlock
-					(
-						afsbase,
-						ah->volume,
-						OS_BE2LONG(blockbuffer->buffer[key]),
-						-1
-					);
+					(afsbase, ah->volume, OS_BE2LONG(blockbuffer->buffer[key]), -1);
 			}
 			if (blockbuffer->buffer[BLK_EXTENSION(ah->volume)] == 0)
 				break;
-			// get next extensionblock
+			/* get next extensionblock */
 			blockbuffer->flags &= ~BCF_USED;
-			blockbuffer=getBlock
+			blockbuffer = getBlock
 				(
 					afsbase,
 					ah->volume,
@@ -310,7 +290,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 *********************************************/
 struct BlockCache *linkNewBlock
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		struct BlockCache *dir,
 		struct BlockCache *file
@@ -320,37 +300,38 @@ ULONG key; /* parent; */
 UBYTE buffer[32];
 STRPTR name;
 
-	file->buffer[BLK_PARENT(volume)]=OS_LONG2BE(dir->blocknum);
-	D(bug("afs.handler: linkNewBlock: linking block %ld\n",file->blocknum));
-	name=(STRPTR)((ULONG)file->buffer+(BLK_FILENAME_START(volume)*4));
+	file->buffer[BLK_PARENT(volume)] = OS_LONG2BE(dir->blocknum);
+	D(bug("[afs] linkNewBlock: linking block %ld\n", file->blocknum));
+	name = (STRPTR)((char *)file->buffer+(BLK_FILENAME_START(volume)*4));
 	StrCpyFromBstr(name, buffer);
-	key=getHashKey(buffer,volume->SizeBlock-56,volume->dosflags)+BLK_TABLE_START;
+	key = getHashKey
+		(buffer, volume->SizeBlock-56, volume->dosflags)+BLK_TABLE_START;
 	/* sort in ascending order */
 	if (
-			(dir->buffer[key]) &&
-			(OS_BE2LONG(dir->buffer[key])<file->blocknum))
+			(dir->buffer[key] != 0) &&
+			(OS_BE2LONG(dir->buffer[key]) < file->blocknum))
 	{
-		dir=getBlock(afsbase, volume, OS_BE2LONG(dir->buffer[key]));
-		if (!dir)
-			return 0;
-		key=BLK_HASHCHAIN(volume);
+		dir = getBlock(afsbase, volume, OS_BE2LONG(dir->buffer[key]));
+		if (dir == NULL)
+			return NULL;
+		key = BLK_HASHCHAIN(volume);
 		while (
-					(dir->buffer[key]) &&
-					(OS_BE2LONG(dir->buffer[key])<file->blocknum)
+					(dir->buffer[key] != 0) &&
+					(OS_BE2LONG(dir->buffer[key]) < file->blocknum)
 				)
 		{
-			dir=getBlock(afsbase, volume, OS_BE2LONG(dir->buffer[key]));
-			if (!dir)
-				return 0;
+			dir = getBlock(afsbase, volume, OS_BE2LONG(dir->buffer[key]));
+			if (dir == NULL)
+				return NULL;
 		}
 	}
-	file->buffer[BLK_HASHCHAIN(volume)]=dir->buffer[key];
-	dir->buffer[key]=OS_LONG2BE(file->blocknum);
-	file->buffer[BLK_CHECKSUM]=0;
-	file->buffer[BLK_CHECKSUM]=
+	file->buffer[BLK_HASHCHAIN(volume)] = dir->buffer[key];
+	dir->buffer[key] = OS_LONG2BE(file->blocknum);
+	file->buffer[BLK_CHECKSUM] = 0;
+	file->buffer[BLK_CHECKSUM] =
 		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
-	dir->buffer[BLK_CHECKSUM]=0;
-	dir->buffer[BLK_CHECKSUM]=
+	dir->buffer[BLK_CHECKSUM] = 0;
+	dir->buffer[BLK_CHECKSUM] =
 		OS_LONG2BE(0-calcChkSum(volume->SizeBlock,dir->buffer));
 	return dir;
 }
@@ -361,8 +342,7 @@ STRPTR name;
          last component before "/" or ":" of
          name refers to or cacheblock of ah
          if there is no such component
- Input : afsbase   - 
-         ah        - filehandle name is relative to
+ Input : ah        - filehandle name is relative to
          name      - name of object
          entryname - will be filled with a copy
                      of the last component of
@@ -372,7 +352,7 @@ STRPTR name;
 *********************************************/
 struct BlockCache *getDirBlockBuffer
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
 		STRPTR name,
 		STRPTR entryname
@@ -382,29 +362,28 @@ ULONG block,len;
 STRPTR end;
 UBYTE buffer[256];
 
-	end=PathPart(name);
-	CopyMem(name,buffer,end-name);
-	buffer[end-name]=0;
-	if (end[0]=='/')
+	end = PathPart(name);
+	CopyMem(name, buffer, end-name);
+	buffer[end-name] = 0;
+	if (end[0] == '/')
 		end++;
-	len=StrLen(name)+name-end;
-	CopyMem(end, entryname, len);	//skip backslash or colon
-	entryname[len]=0;
-	return findBlock(afsbase, ah,buffer,&block);
+	len = StrLen(name)+name-end;
+	CopyMem(end, entryname, len);	/* skip backslash or colon */
+	entryname[len] = 0;
+	return findBlock(afsbase, ah, buffer, &block);
 }
 
 /********************************************
  Name  : renameObject
  Descr.: rename an object
- Input : afsbase -
-         dirah   - filehandle names are relative to
+ Input : dirah   - filehandle names are relative to
          oname   - object to rename
          newname - new name of the object
  Output: 0 for success; error code otherwise
 *********************************************/
 ULONG renameObject
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
 		STRPTR oname,
 		STRPTR newname
@@ -414,71 +393,65 @@ struct BlockCache *lastlink,*oldfile, *dirblock;
 ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
 
-	D(bug("afs.handler: rename(%ld,%s,%s)\n",dirah->header_block,oname,newname));
-	dirblock=getDirBlockBuffer(afsbase, dirah, newname, newentryname);
-	if (!dirblock)
+	D(bug("[afs] rename(%ld,%s,%s)\n", dirah->header_block, oname, newname));
+	dirblock = getDirBlockBuffer(afsbase, dirah, newname, newentryname);
+	if (dirblock == NULL)
 		return error;
-	dirblocknum=dirblock->blocknum;
-	D(bug("afs.handler:    dir is on block %ld\n",dirblocknum));
-	if (getHeaderBlock(afsbase, dirah->volume,newentryname,dirblock,&block))
+	dirblocknum = dirblock->blocknum;
+	D(bug("[afs]    dir is on block %ld\n", dirblocknum));
+	if (getHeaderBlock(afsbase, dirah->volume, newentryname, dirblock, &block) != NULL)
 	{
 		dirblock->flags &= ~BCF_USED;
 		return ERROR_OBJECT_EXISTS;
 	}
-	oldfile=findBlock(afsbase, dirah, oname, &lastblock);
-	if (!oldfile)
+	oldfile = findBlock(afsbase, dirah, oname, &lastblock);
+	if (oldfile == NULL)
 		return error;
 	oldfile->flags |= BCF_USED;
-	// do we move a directory?
-	if (
-			OS_BE2LONG
-				(
-					oldfile->buffer
-						[BLK_SECONDARY_TYPE(dirah->volume)]
-				)==ST_USERDIR
-		)
+	/* do we move a directory? */
+	if (OS_BE2LONG(oldfile->buffer[BLK_SECONDARY_TYPE(dirah->volume)])==ST_USERDIR)
 	{
-		// is newdirblock child of olock&oname
-		dirblock=getBlock(afsbase, dirah->volume,dirblocknum);
-		if (!dirblock)
+		/* is newdirblock child of olock/oname */
+		dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
+		if (dirblock == NULL)
 		{
 			oldfile->flags &= ~BCF_USED;
 			return ERROR_UNKNOWN;
 		}
-		while ((block=OS_BE2LONG(dirblock->buffer[BLK_PARENT(dirah->volume)])))
+		while ((block = OS_BE2LONG(dirblock->buffer[BLK_PARENT(dirah->volume)])))
 		{
-			if (block==oldfile->blocknum)
+			if (block == oldfile->blocknum)
 			{
 				oldfile->flags &= ~BCF_USED;
 				return ERROR_OBJECT_IN_USE;
 			}
-			dirblock=getBlock(afsbase, dirah->volume,block);
-			if (!dirblock)
+			dirblock = getBlock(afsbase, dirah->volume, block);
+			if (dirblock == NULL)
 			{
 				oldfile->flags &= ~BCF_USED;
 				return ERROR_UNKNOWN;
 			}
 		}
 	}
-	lastlink=getBlock(afsbase, dirah->volume, lastblock);
-	if (!lastlink)
+	lastlink = getBlock(afsbase, dirah->volume, lastblock);
+	if (lastlink == NULL)
 	{
 		oldfile->flags &= ~BCF_USED;
 		return ERROR_UNKNOWN;
 	}
 	lastlink->flags |= BCF_USED;
-	unLinkBlock(afsbase, dirah->volume,lastlink, oldfile);
+	unLinkBlock(afsbase, dirah->volume, lastlink, oldfile);
 	/* rename in same dir ? */
-	if (lastlink->blocknum==dirblocknum)
+	if (lastlink->blocknum == dirblocknum)
 	{
-	/* use same buffers! */
-		dirblock=lastlink;
+		/* use same buffers! */
+		dirblock = lastlink;
 	}
  	/* otherwise we use different blocks */
 	else
 	{
-		dirblock=getBlock(afsbase, dirah->volume, dirblocknum);
-		if (!dirblock)
+		dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
+		if (dirblock == NULL)
 		{
 			oldfile->flags &= ~BCF_USED;
 			lastlink->flags &= ~BCF_USED;
@@ -489,20 +462,14 @@ UBYTE newentryname[34];
 			(
 				OS_BE2LONG
 					(
-						dirblock->buffer
-							[
-								BLK_SECONDARY_TYPE(dirah->volume)
-							]
-					)!=ST_USERDIR
+						dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+					) != ST_USERDIR
 			) &&
 			(
 				OS_BE2LONG
 					(
-						dirblock->buffer
-							[
-								BLK_SECONDARY_TYPE(dirah->volume)
-							]
-					)!=ST_ROOT
+						dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]
+					) != ST_ROOT
 			)
 		)
 	{
@@ -513,10 +480,10 @@ UBYTE newentryname[34];
 	StrCpyToBstr
 		(
 			newentryname,
-			(APTR)((ULONG)oldfile->buffer+(BLK_FILENAME_START(dirah->volume)*4))
+			(APTR)((char *)oldfile->buffer+(BLK_FILENAME_START(dirah->volume)*4))
 		);
-	dirblock=linkNewBlock(afsbase, dirah->volume,dirblock,oldfile);
-	if (!dirblock)
+	dirblock = linkNewBlock(afsbase, dirah->volume, dirblock, oldfile);
+	if (dirblock == NULL)
 	{
 		oldfile->flags &= ~BCF_USED;
 		lastlink->flags &= ~BCF_USED;
@@ -561,8 +528,7 @@ UBYTE newentryname[34];
 /********************************************
  Name  : createNewEntry
  Descr.: create a new object on disk
- Input : afsbase    -
-         volume     -
+ Input : volume     -
          entrytype  - ST_USERDIR/ST_FILE/...
          entryname  - name of object
          dirblock   - pointer to struct BlockCache
@@ -575,7 +541,7 @@ UBYTE newentryname[34];
 *********************************************/
 struct BlockCache *createNewEntry
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG entrytype,
 		STRPTR entryname,
@@ -587,66 +553,66 @@ struct BlockCache *newblock;
 struct DateStamp ds;
 ULONG i;
 
-	D(bug("afs.handler: createNewEntry(%ld, %s)\n", dirblock->blocknum, entryname));
+	D(bug("[afs] createNewEntry(%ld, %s)\n", dirblock->blocknum, entryname));
 	dirblock->flags |= BCF_USED;
-	if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i))
+	if (getHeaderBlock(afsbase, volume, entryname, dirblock, &i) != NULL)
 	{
 		dirblock->flags &= ~BCF_USED;
 		error = ERROR_OBJECT_EXISTS;
-		return 0;
+		return NULL;
 	}
 	error = 0;
 	if (!invalidBitmap(afsbase, volume))
 	{
 		dirblock->flags &= ~BCF_USED;
-		return 0;
+		return NULL;
 	}
-	i=allocBlock(afsbase, volume);
-	if (i==0)
+	i = allocBlock(afsbase, volume);
+	if (i == 0)
 	{
 		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
-		error=ERROR_DISK_FULL;
-		return 0;
+		error = ERROR_DISK_FULL;
+		return NULL;
 	}
-	newblock=getFreeCacheBlock(afsbase, volume,i);
-	if (!newblock)
+	newblock = getFreeCacheBlock(afsbase, volume, i);
+	if (newblock == NULL)
 	{
 		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
-		error=ERROR_UNKNOWN;
-		return 0;
+		error = ERROR_UNKNOWN;
+		return NULL;
 	}
 	newblock->flags |= BCF_USED;
-	newblock->buffer[BLK_PRIMARY_TYPE]=OS_LONG2BE(T_SHORT);
-	for (i=BLK_BLOCK_COUNT;i<=BLK_COMMENT_END(volume);i++)
-		newblock->buffer[i]=0;
-	newblock->buffer[BLK_PROTECT(volume)]=OS_LONG2BE(protection);
+	newblock->buffer[BLK_PRIMARY_TYPE] = OS_LONG2BE(T_SHORT);
+	for (i=BLK_BLOCK_COUNT; i<=BLK_COMMENT_END(volume); i++)
+		newblock->buffer[i] = 0;
+	newblock->buffer[BLK_PROTECT(volume)] = OS_LONG2BE(protection);
 	DateStamp(&ds);
-	newblock->buffer[BLK_DAYS(volume)]=OS_LONG2BE(ds.ds_Days);
-	newblock->buffer[BLK_MINS(volume)]=OS_LONG2BE(ds.ds_Minute);
-	newblock->buffer[BLK_TICKS(volume)]=OS_LONG2BE(ds.ds_Tick);
+	newblock->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
+	newblock->buffer[BLK_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
+	newblock->buffer[BLK_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
 	StrCpyToBstr
 		(
 			entryname,
-			(APTR)((ULONG)newblock->buffer+(BLK_FILENAME_START(volume)*4))
+			(APTR)((char *)newblock->buffer+(BLK_FILENAME_START(volume)*4))
 		);
-	for (i=BLK_FILENAME_END(volume)+1;i<BLK_HASHCHAIN(volume);i++)
-		newblock->buffer[i]=0;
-	newblock->buffer[BLK_PARENT(volume)]=OS_LONG2BE(dirblock->blocknum);
-	newblock->buffer[BLK_EXTENSION(volume)]=0;
-	newblock->buffer[BLK_SECONDARY_TYPE(volume)]=OS_LONG2BE(entrytype);
-	newblock->buffer[BLK_OWN_KEY]=OS_LONG2BE(newblock->blocknum);
+	for (i=BLK_FILENAME_END(volume)+1; i<BLK_HASHCHAIN(volume); i++)
+		newblock->buffer[i] = 0;
+	newblock->buffer[BLK_PARENT(volume)] = OS_LONG2BE(dirblock->blocknum);
+	newblock->buffer[BLK_EXTENSION(volume)] = 0;
+	newblock->buffer[BLK_SECONDARY_TYPE(volume)] = OS_LONG2BE(entrytype);
+	newblock->buffer[BLK_OWN_KEY] = OS_LONG2BE(newblock->blocknum);
 	dirblock->flags &= ~BCF_USED;
-	dirblock=linkNewBlock(afsbase, volume,dirblock,newblock);
-	if (!dirblock)
+	dirblock = linkNewBlock(afsbase, volume, dirblock, newblock);
+	if (dirblock == NULL)
 	{
-		markBlock(afsbase, volume,newblock->blocknum,-1);
+		markBlock(afsbase, volume, newblock->blocknum, -1);
 		newblock->flags &= ~BCF_USED;
-		newblock->acc_count=0;
-		newblock->volume=0;
+		newblock->acc_count = 0;
+		newblock->volume = 0;
 		validBitmap(afsbase, volume);
-		return 0;
+		return NULL;
 	}
 	/*
 		if crash after this block not yet linked->block
@@ -664,8 +630,7 @@ ULONG i;
 /********************************************
  Name  : createDir
  Descr.: create a directory object
- Input : afsbase    - 
-         dirah      - filehandle filename is relative to
+ Input : dirah      - filehandle filename is relative to
          filename   - path to the new directory
          protection - protection bit mask
  Output: pointer to struct AfsHandle;
@@ -673,31 +638,25 @@ ULONG i;
 *********************************************/
 struct AfsHandle *createDir
 	(
-		struct afsbase *afsbase,
+		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
 		STRPTR filename,
 		ULONG protection
 	)
 {
-struct AfsHandle *ah=0;
+struct AfsHandle *ah = NULL;
 struct BlockCache *dirblock;
 char dirname[34];
 
-	D(bug("afs.handler: createDir(ah,%s,%ld)\n",filename,protection));
-	if ((dirblock=getDirBlockBuffer(afsbase, dirah, filename, dirname)))
+	D(bug("[afs] createDir(ah,%s,%ld)\n", filename, protection));
+	dirblock = getDirBlockBuffer(afsbase, dirah, filename, dirname);
+	if (dirblock != NULL)
 	{
-		D(bug("afs.handler:    dir is on block %ld\n",dirblock->blocknum));
-		dirblock=createNewEntry
-			(
-				afsbase,
-				dirah->volume,
-				ST_USERDIR,
-				dirname,
-				dirblock,
-				protection
-			);
-		if (dirblock)
-			ah=getHandle(afsbase, dirah->volume,dirblock, FMF_READ);
+		D(bug("[afs]    dir is on block %ld\n", dirblock->blocknum));
+		dirblock = createNewEntry
+			(afsbase, dirah->volume, ST_USERDIR, dirname, dirblock, protection);
+		if (dirblock != NULL)
+			ah = getHandle(afsbase, dirah->volume, dirblock, FMF_READ);
 	}
 	return ah;
 }

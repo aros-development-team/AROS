@@ -28,7 +28,7 @@ extern const char version[];
 extern const APTR inittab[4];
 extern void *const afsfunctable[];
 extern const UBYTE afsdatatable;
-extern struct afsbase *AROS_SLIB_ENTRY(init,afsdev)();
+extern struct AFSBase *AROS_SLIB_ENTRY(init,afsdev)();
 extern void AROS_SLIB_ENTRY(open,afsdev)();
 extern BPTR AROS_SLIB_ENTRY(close,afsdev)();
 extern BPTR AROS_SLIB_ENTRY(expunge,afsdev)();
@@ -63,7 +63,7 @@ static const char version[]="$VER: afs-handler 41.0 (2001-01-17)\n";
 
 static const APTR inittab[4]=
 {
-	(APTR)sizeof(struct afsbase),
+	(APTR)sizeof(struct AFSBase),
 	(APTR)afsfunctable,
 	(APTR)&afsdatatable,
 	&AROS_SLIB_ENTRY(init,afsdev)
@@ -82,8 +82,8 @@ void *const afsfunctable[]=
 
 const UBYTE afsdatatable = 0;
 
-AROS_UFH3(struct afsbase *, AROS_SLIB_ENTRY(init,afsdev),
- AROS_UFHA(struct afsbase *, afsbase, D0),
+AROS_UFH3(struct AFSBase *, AROS_SLIB_ENTRY(init,afsdev),
+ AROS_UFHA(struct AFSBase *, afsbase, D0),
  AROS_UFHA(BPTR,             segList, A0),
  AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
@@ -99,7 +99,7 @@ AROS_UFH3(struct afsbase *, AROS_SLIB_ENTRY(init,afsdev),
 	if (afsbase->dosbase != NULL)
 	{
 		afsbase->intuitionbase = (struct IntuitionBase *)OpenLibrary("intuition.library",39);
-		if (afsbase->intuitionbase)
+		if (afsbase->intuitionbase != NULL)
 		{
 			NEWLIST(&afsbase->device_list);
 			NEWLIST(&afsbase->port.mp_MsgList);
@@ -149,7 +149,7 @@ AROS_LH3(void, open,
  AROS_LHA(struct IOFileSys *, iofs, A1),
  AROS_LHA(ULONG,              unitnum, D0),
  AROS_LHA(ULONG,              flags, D1),
-           struct afsbase *, afsbase, 1,afsdev)
+           struct AFSBase *, afsbase, 1,afsdev)
 {
 	AROS_LIBFUNC_INIT
 	struct Volume *volume;
@@ -196,13 +196,14 @@ AROS_LH3(void, open,
 	AROS_LIBFUNC_EXIT	
 }
 
-AROS_LH0(BPTR, expunge, struct afsbase *, afsbase, 3, afsdev)
+AROS_LH0(BPTR, expunge, struct AFSBase *, afsbase, 3, afsdev)
 {
 	AROS_LIBFUNC_INIT
 
 	BPTR retval;
 
-	if (afsbase->device.dd_Library.lib_OpenCnt) {
+	if (afsbase->device.dd_Library.lib_OpenCnt != 0)
+	{
 		afsbase->device.dd_Library.lib_Flags |= LIBF_DELEXP;
 		return 0;
 	}
@@ -212,7 +213,7 @@ AROS_LH0(BPTR, expunge, struct afsbase *, afsbase, 3, afsdev)
 	CloseLibrary((struct Library *)IntuitionBase);
 	CloseLibrary((struct Library *)DOSBase);
 	Remove(&afsbase->device.dd_Library.lib_Node);
-	retval=afsbase->seglist;
+	retval = afsbase->seglist;
 	FreeMem
 	(
 		(char *)afsbase-afsbase->device.dd_Library.lib_NegSize,
@@ -226,12 +227,12 @@ AROS_LH0(BPTR, expunge, struct afsbase *, afsbase, 3, afsdev)
 
 AROS_LH1(BPTR, close,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-      struct afsbase *, afsbase, 2, afsdev)
+      struct AFSBase *, afsbase, 2, afsdev)
 {
 	AROS_LIBFUNC_INIT
 	struct Volume *volume;
 
-	afsbase->rport.mp_SigTask=FindTask(NULL);
+	afsbase->rport.mp_SigTask = FindTask(NULL);
 /*	iofs->IOFS.io_Command = -2;
 	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&afsbase->rport);
@@ -245,7 +246,7 @@ AROS_LH1(BPTR, close,
 		Remove(&volume->ln);
 		uninitVolume(afsbase, volume);
 		iofs->IOFS.io_Device=(struct Device *)-1;
-		if (!--afsbase->device.dd_Library.lib_OpenCnt)
+		if (--afsbase->device.dd_Library.lib_OpenCnt == 0)
 		{
 			/* Delayed expunge pending? */
 			if (afsbase->device.dd_Library.lib_Flags & LIBF_DELEXP)
@@ -263,7 +264,7 @@ AROS_LH1(BPTR, close,
 	AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct afsbase *, afsbase, 4, afsdev)
+AROS_LH0I(int, null, struct AFSBase *, afsbase, 4, afsdev)
 {
 	AROS_LIBFUNC_INIT
 	return 0;
@@ -272,7 +273,7 @@ AROS_LH0I(int, null, struct afsbase *, afsbase, 4, afsdev)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-           struct afsbase *, afsbase, 5, afsdev)
+           struct AFSBase *, afsbase, 5, afsdev)
 {
 	AROS_LIBFUNC_INIT
 	/* WaitIO will look into this */
@@ -286,7 +287,7 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IOFileSys *, iofs, A1),
-           struct afsbase *, afsbase, 6, afsdev)
+           struct AFSBase *, afsbase, 6, afsdev)
 {
 	AROS_LIBFUNC_INIT
 	return 0;

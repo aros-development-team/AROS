@@ -10,9 +10,9 @@
 #include "filehandles.h"
 
 LONG sameLock(struct AfsHandle *, struct AfsHandle *);
-ULONG examine(struct afsbase *, struct AfsHandle *, struct ExAllData *, ULONG, ULONG, ULONG *);
-ULONG examineAll(struct afsbase *, struct AfsHandle *, struct ExAllData *, ULONG, ULONG);
-ULONG examineNext(struct afsbase *, struct AfsHandle *, struct FileInfoBlock *);
+ULONG examine(struct AFSBase *, struct AfsHandle *, struct ExAllData *, ULONG, ULONG, ULONG *);
+ULONG examineAll(struct AFSBase *, struct AfsHandle *, struct ExAllData *, struct ExAllControl *, ULONG, ULONG);
+ULONG examineNext(struct AFSBase *, struct AfsHandle *, struct FileInfoBlock *);
 
 #endif
 
