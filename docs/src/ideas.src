@@ -146,5 +146,44 @@ have to be copied in unused chunks (eg. it's still faster to copy 512 bytes
 than to read them back from HD or a printer spooler should not throw the
 spooled data away).
 \end{new}
+
+\item
+\begin{new}{19.1.1998}
+By Paulo F. Zemek:
+The Amiga
+has the Smart refreshed windows that uses an own bitmap an the Simple, that
+need to be refreshed because uses the screen bitmap. I want a Double
+Buffered one. A simple refresh window where you allocates a bitmap and a
+rastport for it, and this will be send to window on Refresh (or in window's
+BackFill Hook) and when the Draw of All Buttons are finished, so you don't
+get "flickering" (I don't know the correct word) on the graphic, and uses
+almost the same memory of a Smart one.
+
+\item
+By Paulo F. Zemek:
+The amiga need a function for opening windows into other windows like on
+windows. The "Requester" do this, but stops the functionality of the
+window, and don't have all Attributes of a real window. This or something
+like this is needed for buttons what are over others, so the graphic of the
+"bottom" one will not pass over the front one. And can be created new
+functions for opening Windows/Screens, so you can convert a window into a
+screen, create Public Windows and open other windows on it...
+
+[Aaron Digulla: This is dangerous; it uses a lot of memory, adds many
+IDCMP event loops and the same effect can be achieved when using
+clip regions; all we have to do is to make the gadgets public, which render a
+window, plus maybe a BOOPSI subwindow class which installs a clip region
+in another window.]
+
+\item
+By Paulo F. Zemek:
+exec.library can have an EnqueueTail, and this
+is easy to do, so the Enqueue already exists.
+
+\item
+By Paulo F. Zemek:
+Intuition should not sent more than one REFRESH message to a window (ie.
+if there is already one in the queue, then it should be removed first).
+\end{new}
 \end{itemize}
 \end{new}
