@@ -55,6 +55,8 @@
 	, xDest, yDest
 	, xSize, ySize
 	, minterm
+	, GfxBase
+	
     );
 
     AROS_LIBFUNC_EXIT

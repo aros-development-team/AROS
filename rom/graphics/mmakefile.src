@@ -53,6 +53,7 @@ FUNCTIONS := \
 	askfont \
 	bitmapscale \
 	bltbitmap \
+	bltbitmaprastport \
 	bltclear \
 	clearrectregion \
 	clearregion \
