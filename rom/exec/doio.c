@@ -56,7 +56,7 @@
     iORequest->io_Message.mn_Node.ln_Type=0;
 
     /* Call BeginIO() vector */
-    AROS_LVO_CALL1(void,
+    AROS_LVO_CALL1NR(
 	AROS_LCA(struct IORequest *,iORequest,A1),
 	struct Device *,iORequest->io_Device,5,
     );

@@ -1040,9 +1040,25 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_GETVECADDR(basename,offset))(basename))
 #endif
 
+#ifndef AROS_LVO_CALL0NR
+#define AROS_LVO_CALL0NR(basetype,basename,offset,system) \
+    (((__AROS_LC_PREFIX void(*)(__AROS_LP_BASE(basetype,basename)))\
+    __AROS_GETVECADDR(basename,offset))(basename))
+#endif
+
 #ifndef AROS_LVO_CALL1
 #define AROS_LVO_CALL1(t,a1,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LP_BASE(bt,bn)))\
+    __AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    bn))
+#endif
+
+#ifndef AROS_LVO_CALL1NR
+#define AROS_LVO_CALL1NR(a1,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX void(*)(\
     __AROS_LPA(a1),\
     __AROS_LP_BASE(bt,bn)))\
     __AROS_GETVECADDR(bn,o))(\
@@ -1062,9 +1078,35 @@ typedef unsigned long (*ULONG_FUNC)();
     bn))
 #endif
 
+#ifndef AROS_LVO_CALL2NR
+#define AROS_LVO_CALL2NR(a1,a2,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX void(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LP_BASE(bt,bn)))\
+    __AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    bn))
+#endif
+
 #ifndef AROS_LVO_CALL3
 #define AROS_LVO_CALL3(t,a1,a2,a3,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LP_BASE(bt,bn)))\
+    __AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    bn))
+#endif
+
+#ifndef AROS_LVO_CALL3NR
+#define AROS_LVO_CALL3NR(a1,a2,a3,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX void(*)(\
     __AROS_LPA(a1),\
     __AROS_LPA(a2),\
     __AROS_LPA(a3),\
@@ -1092,9 +1134,43 @@ typedef unsigned long (*ULONG_FUNC)();
     bn))
 #endif
 
+#ifndef AROS_LVO_CALL4NR
+#define AROS_LVO_CALL4NR(a1,a2,a3,a4,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX void(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LP_BASE(bt,bn)))\
+    __AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    bn))
+#endif
+
 #ifndef AROS_LVO_CALL5
 #define AROS_LVO_CALL5(t,a1,a2,a3,a4,a5,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LP_BASE(bt,bn)))\
+    __AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    bn))
+#endif
+
+#ifndef AROS_LVO_CALL5NR
+#define AROS_LVO_CALL5NR(a1,a2,a3,a4,a5,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX void(*)(\
     __AROS_LPA(a1),\
     __AROS_LPA(a2),\
     __AROS_LPA(a3),\
