@@ -150,7 +150,7 @@ static uid_t __id_a2u(UWORD id)
         case 0:
             return (UWORD)-2;
 
-        efault:
+        default:
             return id;
     }
 }
