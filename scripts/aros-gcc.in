@@ -1,5 +1,2 @@
 #!/bin/sh
-AROS_TARGET_LINKERPATH='@aros_target_ld@' AROS_TARGET_NMPATH='@aros_target_nm@' \
-AROS_TARGET_OBJDUMPPATH='@aros_target_objdump@' \
-AROS_TARGET_STRIPPATH='@aros_target_strip@' \
 @aros_target_cc@ -specs=@TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/gen/config/specs "$@"
