@@ -1,0 +1,40 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES	:= -I..
+
+LIBNAME 	:= gadtools
+ULIBNAME	:= GadTools
+FILES		:= $(LIBNAME)_functable basicfuncs classes gadgets
+FUNCTIONS	:= \
+	createcontext \
+	creategadgeta \
+	createmenusa \
+	drawbevelboxa \
+	freegadgets \
+	freevisualinfo \
+	getvisualinfoa \
+	gt_beginrefresh \
+	gt_endrefresh \
+	gt_filterimsg \
+	gt_getgadgetattrsa \
+	gt_getimsg \
+	gt_postfilterimsg \
+	gt_refreshwindow \
+	gt_replyimsg \
+	gt_setgadgetattrsa \
+	layoutmenuitemsa \
+	layoutmenusa
+
+%define_libs prelibs=-l$(LIBNAME)
+
+#MM workbench : setup includes linklibs
+workbench : show-flags $(SLIB)
+
+#MM clean
+#MM setup
+
+%genlib_old
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)

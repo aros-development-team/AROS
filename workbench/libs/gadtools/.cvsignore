@@ -3,3 +3,4 @@ makefile
 gadtools_functable.c
 gadtools_endtag.c
 *.map
+mmakefile

@@ -1,0 +1,84 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES = -I..
+
+LIBNAME 	:= iffparse
+ULIBNAME	:= IFFParse
+
+# BEGIN_DESC{makefile}
+# This is the makefile for iffparse.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
+
+FILES := $(LIBNAME)_functable basicfuncs bufferingfuncs \
+	clipboardfuncs collectionhooks prophooks stophook \
+	dosstreamhandler
+
+FUNCTIONS := \
+	allociff \
+	alloclocalitem \
+	closeclipboard \
+	closeiff \
+	collectionchunk \
+	collectionchunks \
+	currentchunk \
+	entryhandler \
+	exithandler \
+	findcollection \
+	findlocalitem \
+	findprop \
+	findpropcontext \
+	freeiff \
+	freelocalitem \
+	goodid \
+	goodtype \
+	idtostr \
+	iffparse_init \
+	initiff \
+	initiffasclip \
+	initiffasdos \
+	localitemdata \
+	openclipboard \
+	openiff \
+	parentchunk \
+	parseiff \
+	popchunk \
+	propchunk \
+	propchunks \
+	pushchunk \
+	readchunkbytes \
+	readchunkrecords \
+	setlocalitempurge \
+	stopchunk \
+	stopchunks \
+	stoponexit \
+	storeitemincontext \
+	storelocalitem \
+	writechunkbytes \
+	writechunkrecords
+
+%define_libs prelibs=-l$(LIBNAME)
+
+%genlib_old
+
+#MM workbench : setup includes linklibs
+workbench : show-flags $(SLIB)
+
+#MM clean
+#MM setup
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
