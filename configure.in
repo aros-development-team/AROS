@@ -52,14 +52,26 @@ aros_crosspath=`eval echo '$''{'aros_cv_crosspath'}'`
 
 AC_MSG_RESULT($aros_crosspath)
 
-#Gfx system used for gfx output: x11 or HIDD. defaults to X11
+dnl Gfx system used for gfx output: x11 or HIDD. defaults to X11
 AC_MSG_CHECKING(for using gfxhidd for gfx output)
+
+dnl Get cache value
+AC_CACHE_VAL(aros_cv_gfxhidd,[true])
+
+dnl Get command line parameter if available
 AC_ARG_ENABLE(gfxhidd,
 [  --enable-gfxhidd	Use Graphics HIDD system for graphics output],
-[aros_gfxhidd=$enable_gfxhidd], [aros_gfxhidd=no])
+[
+  dnl Command line parameter overrides cache
+  aros_gfxhidd=$enable_gfxhidd
+],
+[
+  dnl Take cache value or 'no' if empty
+  aros_gfxhidd=${aros_cv_gfxhidd-no}
+])
 
-# AC_CACHE_VAL(aros_cv_gfxhidd,[aros_cv_gfxhidd=$aros_gfxhidd])
-# aros_gfxhidd=`eval echo '$''{'aros_cv_gfxhidd'}'`
+dnl Set new value for cache
+aros_cv_gfxhidd=$aros_gfxhidd
 
 AC_MSG_RESULT($aros_gfxhidd)
 
