@@ -22,7 +22,7 @@
 
 struct x11mouse_data
 {
-    VOID (*mouse_callback)(APTR, ULONG, ULONG);
+    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
     APTR callbackdata;
 };
 
@@ -41,18 +41,15 @@ static ULONG xbutton2hidd(XButtonEvent *xb)
     switch (xb->button)
     {
 	case Button1:
-	    button = 0;
+	    button = vHidd_Mouse_Button1;
 	    break;
-/* !!! For now we don't care about the middle mousebutton
-
-	
+/*	
 	case Button2:
-	    button = 1;
+	    button = vHidd_Mouse_Button2;
 	    break;
-*/
-	    
+*/	    
 	case Button3:
-	    button = 1;
+	    button = vHidd_Mouse_Button3;
 	    break;
 	
     }
@@ -115,29 +112,37 @@ static VOID x11mouse_handleevent(Class *cl, Object *o, struct pHidd_X11Mouse_Han
 
     struct x11mouse_data *data = INST_DATA(cl, o);
     
+    struct pHidd_Mouse_Event e;
+
+    
     XButtonEvent *xb = &(msg->event->xbutton);
     
+
+    e.x = xb->x;
+    e.y = xb->y;
+   
     
     if (msg->event->type == ButtonRelease)
     {
-        data->mouse_callback(data->callbackdata
-		, xbutton2hidd(xb)
-		, vHidd_Mouse_Release);
-		
-
+    	e.button = xbutton2hidd(xb);
+	e.type =  vHidd_Mouse_Release;
+	 
+        data->mouse_callback(data->callbackdata, &e);
     }
     else if (msg->event->type == ButtonPress)
     {
-        data->mouse_callback(data->callbackdata
-			, xbutton2hidd(xb)
-			, vHidd_Mouse_Press);
+    	e.button = xbutton2hidd(xb);
+	e.type =  vHidd_Mouse_Press;
+	
+        data->mouse_callback(data->callbackdata, &e);
     }
     else if (msg->event->type == MotionNotify)
     {
-#warning TODO
-/*    
-        data->mousecallback(data->
-*/    }
+    	e.button = vHidd_Mouse_NoButton;
+	e.type = vHidd_Mouse_Motion;
+	
+        data->mouse_callback(data->callbackdata, &e);
+    }
     
     return;
 }
@@ -196,7 +201,7 @@ Class *init_mouseclass (struct x11_staticdata *xsd)
 	    
 	    if (obtainattrbases(attrbases, OOPBase))
 	    {
-		D(bug("MousHiddClass ok\n"));
+		D(bug("MouseHiddClass ok\n"));
 		
 	    	AddClass(cl);
 	    }

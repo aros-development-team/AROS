@@ -38,10 +38,25 @@ enum {
 
 /* Parameter values for the IRQ handler */
 
-enum {
-   vHidd_Mouse_Press,
-   vHidd_Mouse_Release
+struct pHidd_Mouse_Event
+{
+    UWORD button;
+    UWORD x;
+    UWORD y;
+    UWORD type; /* See below */
 };
 
+enum {
+   vHidd_Mouse_Press,
+   vHidd_Mouse_Release,
+   vHidd_Mouse_Motion
+};
+
+enum {
+   vHidd_Mouse_NoButton,
+   vHidd_Mouse_Button1,
+   vHidd_Mouse_Button2,
+   vHidd_Mouse_Button3
+};
 
 #endif HIDD_MOUSE_H
