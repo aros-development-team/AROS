@@ -2167,7 +2167,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
 
 VOID driver_UnLockBitMap(APTR handle, struct Library *CyberGfxBase)
 {
-    HIDD_BM_ReleaseDirectAccess((OOP_Object *)handle);
+    if (handle) HIDD_BM_ReleaseDirectAccess((OOP_Object *)handle);
 }
 
 VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Library *CyberGfxBase)
