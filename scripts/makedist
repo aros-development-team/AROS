@@ -42,7 +42,7 @@ if [ ! -f "$dstdir/AROS-lx86-bin-$rel.tgz" ]; then
     (
 	cd AROS && \
 	autoconf && \
-	./configure --enable-gfxhidd && \
+	./configure && \
 	make
     ) >& "$dstdir/AROS-lx86-bin-$rel.log"
     if [ $? -ne 0 ]; then
@@ -69,7 +69,7 @@ if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
 
 	cd AROS && \
 	autoconf && \
-	./configure --enable-gfxhidd --target=native-i386 && \
+	./configure --target=pc-i386 && \
 	make
     ) >& "$dstdir/AROS-ibmpc-bin-$rel.log"
     if [ $? -ne 0 ]; then
@@ -83,14 +83,14 @@ if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
 	) 1>&2
 	fail=1
     else
-	mv AROS/bin/native-i386/AROS AROS/bin/native-i386/AROS.bak
-	mkdir -p AROS/bin/native-i386/AROS
-	cp AROS/bin/native-i386/gen/rom/boot/aros.bin AROS/bin/native-i386/AROS/Image
-	cp AROS/bin/native-i386/gen/rom/boot/aros.map AROS/bin/native-i386/AROS/Image.map
+	mv AROS/bin/pc-i386/AROS AROS/bin/pc-i386/AROS.bak
+	mkdir -p AROS/bin/pc-i386/AROS
+	cp AROS/bin/pc-i386/gen/rom/boot/aros.bin AROS/bin/pc-i386/AROS/Image
+	cp AROS/bin/pc-i386/gen/rom/boot/aros.map AROS/bin/pc-i386/AROS/Image.map
 	cp AROS/docs/README.native-i386 AROS/bin/native-i386/AROS/
-	tar czf "$dstdir/AROS-ibmpc-bin-$rel.tgz" AROS/bin/native-i386/AROS
-	rm -rf AROS/bin/native-i386/AROS
-	mv AROS/bin/native-i386/AROS.bak AROS/bin/native-i386/AROS
+	tar czf "$dstdir/AROS-ibmpc-bin-$rel.tgz" AROS/bin/pc-i386/AROS
+	rm -rf AROS/bin/pc-i386/AROS
+	mv AROS/bin/pc-i386/AROS.bak AROS/bin/pc-i386/AROS
     fi
 fi
 
@@ -113,7 +113,7 @@ if [ ! -f "$dstdir/AROS-DiskImage-$rel.log" ]; then
 	) 1>&2
 	fail=1
     else
-	cp bin/native-i386/gen/contrib-disks/*.img "$dstdir"
+	cp bin/pc-i386/gen/contrib-disks/*.img "$dstdir"
     fi
 fi
 
