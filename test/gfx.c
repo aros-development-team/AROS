@@ -52,7 +52,9 @@ void main(void)
         AreaDraw(rp,110,100);
         AreaDraw(rp,10,50);
         AreaEnd(rp);
-        
+
+        AreaEllipse(rp, 110, 30, 50, 20);
+        AreaEnd(rp);        
 /*
         Move(rp,0,0);
         Draw(rp,0,100);
