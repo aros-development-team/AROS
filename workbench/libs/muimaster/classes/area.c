@@ -1074,11 +1074,12 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	area_update_innersizes(obj, data, frame, zframe);
     }
 
-    obj_font = _font(obj);
-    _font(obj) = zune_font_get(obj,MUIV_Font_Title);
-
     if (data->mad_TitleText && !(data->mad_Flags & MADF_FRAMEPHANTOM))
     {
+	/* save object font, replace with title font */
+	obj_font = _font(obj);
+	_font(obj) = zune_font_get(obj, MUIV_Font_Title);
+
 	switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
 	{
 	    case GROUP_TITLE_POSITION_ABOVE:
@@ -1108,7 +1109,11 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	Area_Draw__handle_frame(obj, data, zframe, frame_top);
     }
 
-    _font(obj) = obj_font;
+    /* restore object font */
+    if (data->mad_TitleText && !(data->mad_Flags & MADF_FRAMEPHANTOM))
+    {
+	_font(obj) = obj_font;
+    }
 
 /*    MUI_RemoveClipping(muiRenderInfo(obj), areaclip);*/
 
@@ -1285,11 +1290,11 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	if (_parent(obj) != NULL && _parent(obj) != _win(obj))
 	    data->mad_Font = _font(_parent(obj));
 	else
-	    data->mad_Font = zune_font_get(obj,MUIV_Font_Normal);
+	    data->mad_Font = zune_font_get(obj, MUIV_Font_Normal);
     }
     else
     {
-	data->mad_Font = zune_font_get(obj,data->mad_FontPreset);
+	data->mad_Font = zune_font_get(obj, data->mad_FontPreset);
     }
 
     if (data->mad_FrameTitle)
