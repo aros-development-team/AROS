@@ -57,6 +57,10 @@
 #define ABOUT_ON_INSTALLER "About Installer"
 #define ABOUT_INSTALLER                 \
 " This is AROS Installer V%d.%d\n"      \
+" Copyright © 1995-2001,\n"		\
+" The AROS Development Team.\n"	\
+" All rights reserved.\n"		\
+"\n"					\
 " It is intended to be compatible to\n" \
 "\n"                                    \
 "   Installer V43.3\n"                  \

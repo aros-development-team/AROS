@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Installer V43.3
@@ -9,7 +9,7 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 43.3 (09.07.2000)\n";
+static const char version[] = "$VER: Installer 43.3 (28.10.2001)\n";
 
 
 /* External variables */
