@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: InitLocale() load locale preferences from a file.
@@ -17,6 +17,8 @@
 #include <aros/asmcall.h>
 
 #include <aros/debug.h>
+
+#include <string.h>
 
 extern AROS_UFP4(ULONG, AROS_SLIB_ENTRY(strcompare, english), 
     AROS_UFPA(STRPTR, string1, A0),
@@ -54,13 +56,16 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	/* Is this english? If not try and load the language */
 	if( NULL != lName && 
     	    AROS_UFC4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
-		AROS_UFCA(STRPTR, "english.", A0),
+		AROS_UFCA(STRPTR, "english", A0),
 		AROS_UFCA(STRPTR, lName, A1),
-		AROS_UFCA(ULONG, 8, D0),
+		AROS_UFCA(ULONG, 7, D0),
 		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
 	{
+	    strcpy(fileBuf, lName);
+	    strcat(fileBuf, ".language");
+	    
     	    /* Try and open the specified language */
-    	    lang = OpenLibrary(lName, 0);
+    	    lang = OpenLibrary(fileBuf, 0);
 
     	    if(lang == NULL)
     	    {
@@ -68,19 +73,33 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     		    Ok, so the language didn't open, lets try for
     		    LOCALE:Languages/xxx.language
 		*/
-		CopyMem("LOCALE:Languages/", fileBuf, 18);
-		AddPart(fileBuf, FilePart(lName), 512);
+		
+		strcpy(fileBuf, "LOCALE:Languages/");
+		AddPart(fileBuf, lName, 512);
+		strcat(fileBuf, ".language");
+		
 		lang = OpenLibrary(fileBuf, 0);
 	    }
+	    
     	    if(lang == NULL)
     	    {
 		/*
     		    Ok, so we are still NULL, lets then try for
     		    PROGDIR:Languages/xxx.language
 		*/
-		CopyMem("PROGDIR:Languages/", fileBuf, 19);
-		AddPart(fileBuf, FilePart(lName), 512);
+		strcpy(fileBuf, "PROGDIR:Languages/");
+		AddPart(fileBuf, lName, 512);
+		strcat(fileBuf, ".language");
+
+		lang = OpenLibrary(fileBuf, 0);
 	    }
+	    
+	    if (lang)
+	    {
+	    	strncpy(il->LanguageName, FilePart(fileBuf), 30);
+		il->il_Locale.loc_LanguageName = &il->LanguageName[0];
+	    }
+	    
     	    /* If it is still no good, then we have no hope */
 	}
 	i++;
@@ -103,14 +122,12 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     if(lang != NULL)
     {
 	mask = AROS_LC0(ULONG, mask, struct Library *, lang, 5, Language);
-    	il->il_Locale.loc_LanguageName =
-	    il->il_Locale.loc_PrefLanguages[i-1];
     }
     else
 	mask = 0;
 
     /* CONST: If we add any more functions we need to increase this number */   
-    for(i=0; i < 17; i++)
+    for(i = 0; i < 17; i++)
     {
 	if(mask & (1<<i))
 	{
@@ -136,13 +153,17 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     This is mainly a separate procedure to get rid of the indentation.
 */
 
-void InitLocale(struct IntLocale *locale, struct LocalePrefs *lp, struct LocaleBase *LocaleBase) 
+void InitLocale(STRPTR filename, struct IntLocale *locale,
+    	    	struct LocalePrefs *lp, struct LocaleBase *LocaleBase) 
 {
     struct CountryPrefs *cp;
-    int i;
+    int i, i2;
 
     cp = &lp->lp_CountryData;
 
+    strncpy(locale->LocaleName, FilePart(filename), 30);
+    locale->il_Locale.loc_LocaleName = &locale->LocaleName[0];
+    
     /*
 	We can copy 300 bytes straight away since
 	the prefered languages are all in a row.
@@ -150,9 +171,12 @@ void InitLocale(struct IntLocale *locale, struct LocalePrefs *lp, struct LocaleB
     CopyMem(lp->lp_PreferredLanguages[0],
 	    locale->PreferredLanguages[0], 300);
 
-    for(i=0; i < 10; i++)
+    for(i = 0, i2 = 0; i < 10; i++)
     {
-	locale->il_Locale.loc_PrefLanguages[i] = locale->PreferredLanguages[i];
+	if (locale->PreferredLanguages[i][0])
+	{
+	    locale->il_Locale.loc_PrefLanguages[i2++] = locale->PreferredLanguages[i];
+    	}
     }
 
     /*
