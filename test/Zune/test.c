@@ -25,6 +25,7 @@ Object *wheel;
 Object *r_slider;
 Object *g_slider;
 Object *b_slider;
+Object *scrollbar;
 
 ULONG xget(Object *obj, Tag attr)
 {
@@ -57,6 +58,13 @@ AROS_UFH0(void, slider_function)
     cw.cw_Blue = (blue<<24)|(blue<<16)|(blue<<8)|blue;
 
     nnset(wheel, WHEEL_RGB, &cw);
+}
+
+AROS_UFH0(void, scrollbar_function)
+{
+    ULONG val = xget(scrollbar,MUIA_Prop_First);
+
+    printf("scrollbar first = %ld\n", val);
 }
 
 /* The custom class */
@@ -107,11 +115,12 @@ void main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
 
-    static char *pages[] = {"Groups","Colorwheel",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group",NULL};
     
     struct Hook hook;
     struct Hook hook_wheel;
     struct Hook hook_slider;
+    struct Hook hook_scrollbar;
     
     MUIMasterBase = OpenLibrary("muimaster.library", 0);
     if (!MUIMasterBase)
@@ -124,13 +133,13 @@ void main(void)
     hook.h_Entry = (HOOKFUNC)repeat_function;
     hook_wheel.h_Entry = (HOOKFUNC)wheel_function;
     hook_slider.h_Entry = (HOOKFUNC)slider_function;
+    hook_scrollbar.h_Entry = (HOOKFUNC)scrollbar_function;
 
     context_menu = MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
-		MUIA_Menuitem_Title, "Project",
-		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "About...", MUIA_Menuitem_Shortcut, "?", End,
- 		MUIA_Family_Child, MenuitemObject, MUIA_Menuitem_Title, ~0, End,
-		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Quit", MUIA_Menuitem_Shortcut, "Q", End,
+		MUIA_Menuitem_Title, "Menutest",
+		MUIA_Family_Child, about_item = MenuitemObject, MUIA_Menuitem_Title, "First Test Entry", End,
+		MUIA_Family_Child, quit_item = MenuitemObject, MUIA_Menuitem_Title, "Second Test Entry", End,
 		End,
 	    End;
 
@@ -182,9 +191,6 @@ void main(void)
 		            MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
 		            MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
 		            WHEEL_Screen         , NULL,         /* the screen pointer  */
-			#ifdef _AROS
-			    WHEEL_BevelBox, TRUE,
-			#endif
 		            GA_Left     , 0,
 		            GA_Top      , 0, /* MUI will automatically     */
 		            GA_Width    , 0, /* fill in the correct values */
@@ -200,6 +206,18 @@ void main(void)
 		        Child, g_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        Child, b_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 255, End,
 		        End,
+		    Child, ScrollgroupObject,
+			MUIA_Scrollgroup_Contents, VGroup,
+			    Child, TextObject,
+				TextFrame,
+				MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",
+				End,
+			    Child, HGroup,
+				Child, MUI_MakeObject(MUIO_Button,"Button9"),
+				Child, MUI_MakeObject(MUIO_Button,"Button10"),
+				End,
+			    End,
+		    	End,
 		    End,
 
 		Child, RectangleObject,
