@@ -202,7 +202,7 @@ STATIC IPTR Popimage_CloseWindow(struct IClass *cl, Object *obj,
 	char *spec;
 	get(data->imageadjust, MUIA_Imageadjust_Spec, &spec);
 /*  	D(bug("popimage: got %s\n", spec)); */
-	set(obj, MUIA_Imagedisplay_Spec, spec);
+	set(obj, MUIA_Imagedisplay_Spec, (IPTR)spec);
     }
 
     DoMethod(_app(obj), OM_REMMEMBER, (IPTR)data->wnd);

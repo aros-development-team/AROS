@@ -231,7 +231,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 		break;
 
 	case	'5':
-		set(data->bitmap_string,MUIA_String_Contents,s+2);
+		set(data->bitmap_string,MUIA_String_Contents,(IPTR)s+2);
 		Bitmap_Function(NULL, obj, &data);
 		if (data->adjust_type == MUIV_Imageadjust_Type_All)
 		    set(obj,MUIA_Group_ActivePage,4);
@@ -440,7 +440,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	data->external_list = external_list;
 	data->external_display_hook.h_Entry = HookEntry;
 	data->external_display_hook.h_SubEntry = (HOOKFUNC)Imageadjust_External_Display;
-	set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
+	set(data->external_list,MUIA_List_DisplayHook, (IPTR)&data->external_display_hook);
     }
     /* Because we have many childs, we disable the forwarding of the notify method */
     DoMethod(obj, MUIM_Group_DoMethodNoForward, MUIM_Notify, MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);

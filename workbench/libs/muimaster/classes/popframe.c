@@ -195,7 +195,7 @@ STATIC IPTR Popframe_CloseWindow(struct IClass *cl, Object *obj,
 	STRPTR spec;
 	get(data->frameadjust, MUIA_Frameadjust_Spec, &spec);
 /*  	D(bug("popframe: got %s\n", spec)); */
-	set(obj, MUIA_Framedisplay_Spec, spec);
+	set(obj, MUIA_Framedisplay_Spec, (IPTR)spec);
     }
 
     DoMethod(_app(obj), OM_REMMEMBER, (IPTR)data->wnd);

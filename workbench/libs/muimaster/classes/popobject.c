@@ -161,8 +161,8 @@ static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->close_hook.h_Data = data;
 
     SetAttrs(obj,
-	MUIA_Popstring_OpenHook, &data->open_hook,
-	MUIA_Popstring_CloseHook, &data->close_hook,
+	MUIA_Popstring_OpenHook, (IPTR)&data->open_hook,
+	MUIA_Popstring_CloseHook, (IPTR)&data->close_hook,
 	MUIA_Popstring_Toggle, TRUE,
 	TAG_DONE);
 
