@@ -575,11 +575,7 @@ a short overview of what they are and what you can do with them.
 \item{config/m68k-emul/} Untested assembler code for machines which have an
 	680x0 CPU but which are not Amigas (Mac, for example).
 
-\item{config/m68k-native/} Untested assembler code for Amiga hardwares.
-	Untested means: They might work but I haven't tried. They should be
-	a good basis for beginning the work to make AROS run on an Amiga
-	but you should first have a look at \filename{AROS/config/i386-emul/}
-	which is the most up-to-date version.
+\item{config/m68k-native/} Assembler code for Amiga hardwares.
 
 \item{configure} This is a small script which examines your system and
 	creates a file named \filename{AROS/config/host.cfg} which is used by
