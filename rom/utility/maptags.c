@@ -1,6 +1,6 @@
 /*
     (C) 1995-97 AROS - The Amiga Research OS
-    $Id$	  $Log
+    $Id$
 
     Desc:
     Lang: english
