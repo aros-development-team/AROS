@@ -44,12 +44,12 @@
 AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* move whole user context to user stack */
 	movem.l	%d0-%d7/%a0-%a6,-(%sp)
-	move.l	64(%sp),%a4
+	move.l	64(%sp),%a6
 
 	jbsr	AROS_CSYMNAME(disable)
 
 	/* get current task and store sp there */
-	move.l	ThisTask(%a4),%a2
+	move.l	ThisTask(%a6),%a2
 	move.l	%sp,tc_SPReg(%a2)
 
 	/* call the switch routine if necessary */
@@ -60,22 +60,22 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 
 	/* store IDNestCnt */
 .noswch:
-	move.b	IDNestCnt(%a4),tc_IDNestCnt(%a2)
-	move.b	#-1,IDNestCnt(%a4)
+	move.b	IDNestCnt(%a6),tc_IDNestCnt(%a2)
+	move.b	#-1,IDNestCnt(%a6)
 
 	/* get address of ready list */
-	lea.l	TaskReady(%a4),%a0
+	lea.l	TaskReady(%a6),%a0
 	move.l  (%a0),%a2
 	move.l	(%a2),%a1
 	move.l	%a1,(%a0)
 	move.l	%a0,4.w(%a1)
 
-	move.l	%a2,ThisTask(%a4)
+	move.l	%a2,ThisTask(%a6)
 	
 	/* and use it as new current task */
 	move.b	#TS_RUN,%d0
 	move.b	%d0,tc_State(%a2)
-	move.b	tc_IDNestCnt(%a2),IDNestCnt(%a4)
+	move.b	tc_IDNestCnt(%a2),IDNestCnt(%a6)
 
 	/* call the launch routine if necessary */
 	btst	#TB_LAUNCH,tc_Flags(%a2)
@@ -101,10 +101,10 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	beq	.noexpt
 
 	/* Raise a task exception in Disable()d state. */
-	move.l	%a4,-(%sp)
-	jsr	Disable(%a4)
-	jsr	Exception(%a4)
-	jsr	Enable(%a4)
+	move.l	%a6,-(%sp)
+	jsr	Disable(%a6)
+	jsr	Exception(%a6)
+	jsr	Enable(%a6)
 	addq.w	#4,%sp
 
 	/* restore context. */
