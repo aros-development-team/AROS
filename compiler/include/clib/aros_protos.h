@@ -13,6 +13,9 @@
 #endif
 
 #ifdef DEBUG_FreeMem
+#   ifndef CLIB_EXEC_PROTOS_H
+#	include <clib/exec_protos.h>
+#   endif
 #   if DEBUG_FreeMem
 #	undef FreeMem
 #	define FreeMem NastyFreeMem
