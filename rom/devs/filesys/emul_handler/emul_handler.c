@@ -52,8 +52,8 @@
 #include <sys/time.h>
 #undef timeval
 
-/* Underlying OS's rename() Clib function */
-#include "/usr/include/stdio.h"
+/* Underlying OS's rename() Clib function prototype */
+#include <stdio.h>
 //extern int rename(const char *old, const char *new);
 
 
