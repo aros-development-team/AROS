@@ -6,25 +6,16 @@ ilbmtoicon
   
 usage
 
-  ilbmtoicon < DESCRIPTIONFILE outfile
+  ilbmtoicon DESCRIPTIONFILE ILBMIMAGE1 [ILBMIMAGE2] outfile
   
 icondescription file
 
   Is a text file which should be named ICONNAME.info.src.
+  If the specified file does not exist this is silently ignored.
+  
   It can contain the following options in the form of
   KEYWORD = KEYVALUE. 
   
-   IMAGE1 = <string>
-   
-     IFF ILBM filename to be used as first icon image.
-     Required.
-     
-   IMAGE2 = <string>
-   
-     IFF ILBM filename to be used for second icon image.
-     Optional.
-     
-     
    TYPE = (DISK|DRAWER|TOOL|PROJECT|GARBAGE|DEVICE|KICK|APPICON)
    
      Icon type. Optional. Default is TOOL.
