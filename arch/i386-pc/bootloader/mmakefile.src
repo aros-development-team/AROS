@@ -1,12 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-%build_module_macro mmake=kernel-bootloader-pc-i386 \
-  modname=bootloader modtype=resource \
-  funcs=getbootinfo \
-  conffile=lib.conf genincludes=yes
+%build_module mmake=kernel-bootloader-pc-i386 \
+    modname=bootloader modtype=resource \
+    files="bootloader_init getbootinfo"
 
 #MM kernel-bootloader-pc-i386 : includes
 #MM kernel-bootloader-pc-i386-kobj : includes
 
-%common
