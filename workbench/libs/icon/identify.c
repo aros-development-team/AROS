@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <workbench/workbench.h>
@@ -31,6 +33,84 @@ struct DiskObject *__GetDefaultIconFromType_WB(LONG type, struct TagItem *tags, 
 #define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
 
 /*** Functions **************************************************************/
+LONG __FindType_WB(BPTR lock, struct Library *IconBase) 
+{
+    LONG                  type = -1;
+    struct FileInfoBlock *fib  = AllocDosObject(DOS_FIB, TAG_DONE);
+    
+    if (fib != NULL)
+    {
+        if (Examine(lock, fib))
+        {
+            /* Identify object ---------------------------------------------*/
+            if (fib->fib_DirEntryType == ST_ROOT)
+            {
+                /* It's a disk/volume/root ---------------------------------*/
+                type = WBDISK;
+            }
+            else if (fib->fib_DirEntryType > 0)
+            {
+                /* It's a directory ----------------------------------------*/
+                type = WBDRAWER;
+            }
+            else
+            {
+                /* It's a file ---------------------------------------------*/
+                if (DataTypesBase != NULL)
+                {
+                    /* Use datatypes to identify the file ------------------*/
+                    struct DataType *dt = ObtainDataType
+                    (
+                        DTST_FILE, lock, TAG_DONE
+                    );
+                    
+                    if (dt != NULL)
+                    {
+                        struct DataTypeHeader *dth = dt->dtn_Header;
+                        
+                        if
+                        (
+                               dth->dth_GroupID == GID_SYSTEM 
+                            && dth->dth_ID      == ID_EXECUTABLE
+                        )
+                        {
+                            /* It's a executable file */
+                            type = WBTOOL;
+                        }
+                        else
+                        {
+                            /* It's a project file of some kind */
+                            type = WBPROJECT;
+                        }
+                        
+                        ReleaseDataType(dt);
+                    }
+                }
+                
+                if (type == -1)
+                {
+                    /* Fallback to a more primitive identification ---------*/
+                    if ((fib->fib_Protection & FIBF_EXECUTE) == 0)
+                    {
+                        type = WBTOOL;
+                    }
+                    else
+                    {
+                        type = WBPROJECT;
+                    }
+                }
+                
+            }
+        }
+        
+        FreeDosObject(DOS_FIB, fib);
+    }
+    
+    bug("FindType: return %d (WBTOOL=%d, WBPROJ=%d)\n", type, WBTOOL, WBPROJECT);
+    
+    return type;
+}
+
 struct DiskObject *__FindDefaultIcon_WB
 (
     struct IconIdentifyMsg *iim, struct Library *IconBase
@@ -98,7 +178,7 @@ struct DiskObject *__FindDefaultIcon_WB
         
         if (icon != NULL)
         {
-            /* Force the icon type, in case we have a broken icon */
+            /* Force the icon type */
             icon->do_Type = WBDISK;
         }
     }
@@ -143,7 +223,7 @@ struct DiskObject *__FindDefaultIcon_WB
         
         if (icon != NULL)
         {
-            /* Force the icon type, in case we have a broken icon */
+            /* Force the icon type */
             icon->do_Type = WBDRAWER;
         }
     }
@@ -173,7 +253,7 @@ struct DiskObject *__FindDefaultIcon_WB
                     
                     if (icon != NULL)
                     {
-                        /* Force the icon type, in case we have a broken icon */
+                        /* Force the icon type */
                         icon->do_Type = WBTOOL;
                     }
                 }
@@ -214,7 +294,7 @@ struct DiskObject *__FindDefaultIcon_WB
                     
                     if (icon != NULL)
                     {
-                        /* Force the icon type, in case we have a broken icon */
+                        /* Force the icon type */
                         icon->do_Type = WBPROJECT;
                     }
                 }
@@ -233,7 +313,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 
                 if (icon != NULL)
                 {
-                    /* Force the icon type, in case we have a broken icon */
+                    /* Force the icon type */
                     icon->do_Type = WBTOOL;
                 }
             }
@@ -244,7 +324,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 
                 if (icon != NULL)
                 {
-                    /* Force the icon type, in case we have a broken icon */
+                    /* Force the icon type */
                     icon->do_Type = WBPROJECT;
                 }
             }
