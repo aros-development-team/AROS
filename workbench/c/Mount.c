@@ -249,16 +249,16 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size)
 	    s2++;
 	}
 
-	if (s2 == buffer || s2[-1] != ':')
+	if (s2 == (STRPTR)buffer || s2[-1] != ':')
 	{
 	    return 1;
 	}
 
 	*--s2 = 0;
 
-	if (!Strnicmp(name, buffer, s2 - buffer) &&
-	   (!name[s2 - buffer] || (name[s2 - buffer] == ':' ||
-				   !name[s2 - buffer + 1])))
+	if (!Strnicmp(name, buffer, s2 - (STRPTR)buffer) &&
+	   (!name[s2 - (STRPTR)buffer] || (name[s2 - (STRPTR)buffer] == ':' ||
+				   !name[s2 - (STRPTR)buffer + 1])))
 	{
 	    rd = ReadArgs((STRPTR)options, (IPTR *)args, &rda);
 
