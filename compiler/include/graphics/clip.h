@@ -24,6 +24,7 @@
 
 #define NEWLOCKS
 
+
 struct Layer
 {
     struct Layer     * front;
@@ -61,10 +62,13 @@ struct Layer
     WORD Width;
     WORD Height;
 
-    UBYTE reserved2[18];
+    UBYTE SuperSaveClipRectCounter;
+    UBYTE reserved2[17];
 
     struct Region * DamageList;
 };
+
+#define MAXSUPERSAVECLIPRECTS	20	/* Max. number of cliprects that are kept preallocated in the list */
 
 struct ClipRect
 {
