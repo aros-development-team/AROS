@@ -56,6 +56,10 @@ struct IIHData
     WORD                     LastMouseY;
     WORD                     DeltaMouseX;
     WORD                     DeltaMouseY;
+    UWORD                    MouseBoundsLeft;
+    UWORD                    MouseBoundsTop;
+    UWORD                    MouseBoundsRight;
+    UWORD                    MouseBoundsBottom;
     UWORD                    ActQualifier;
     UWORD                    PrevKeyMouseState;
     UWORD                    ActKeyMouseState;
