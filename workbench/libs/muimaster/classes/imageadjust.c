@@ -18,13 +18,9 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
-
 #include <string.h>
 
-#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -527,7 +523,7 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 			    {
 				D(bug("imageadjust: penspec = %s\n", penspec));
 				if ((data->imagespec = AllocVec(strlen((STRPTR)penspec)+3, 0)))
-				    sprintf(data->imagespec, "2:%s", penspec);
+				    sprintf(data->imagespec, "2:%s", penspec->ps_buf);
 			    }
 			}
 			break;
