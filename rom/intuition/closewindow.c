@@ -216,7 +216,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
                      struct IntuitionBase *IntuitionBase)
 {
     /* Free everything except the applications messageport */
-    struct Window   *window, *win2e;
+    struct Window   *window, *win2;
     struct Screen   *screen;
     struct MsgPort  *userport;
     struct IIHData  *iihd;
