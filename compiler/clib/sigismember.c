@@ -9,7 +9,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef AROS_NO_SIGNAL_H
+
 #include <signal.h>
 
 	int sigismember (
@@ -47,5 +47,3 @@
 	
 	return -1;
 } /* sigismember */
-
-#endif

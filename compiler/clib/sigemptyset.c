@@ -9,7 +9,7 @@
 /*****************************************************************************
 
     NAME */
-#ifndef AROS_NO_SIGNAL_H
+
 #include <signal.h>
 #include <string.h>
 
@@ -45,5 +45,3 @@
 
 	return -1; /* return failure */
 } /* sigemptyset */
-
-#endif
