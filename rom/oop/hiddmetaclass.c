@@ -93,9 +93,9 @@ static Object *hiddmeta_new(Class *cl, Object *o, struct P_Root_New *msg)
     ** so we can easily exit cleanly if some info is missing
     */
     
-    domethod	  = (IPTR (*)())GetTagData(A_Class_DoMethod,	  NULL, msg->AttrList);
-    coercemethod  = (IPTR (*)())GetTagData(A_Class_CoerceMethod,  NULL, msg->AttrList);
-    dosupermethod = (IPTR (*)())GetTagData(A_Class_DoSuperMethod, NULL, msg->AttrList);
+    domethod	  = (IPTR (*)())GetTagData(A_Meta_DoMethod,	  NULL, msg->AttrList);
+    coercemethod  = (IPTR (*)())GetTagData(A_Meta_CoerceMethod,  NULL, msg->AttrList);
+    dosupermethod = (IPTR (*)())GetTagData(A_Meta_DoSuperMethod, NULL, msg->AttrList);
 
     
     /* We are sure we have enough args, and can let rootclass alloc the instance data */
@@ -395,17 +395,17 @@ Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
 {
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-    	{ (IPTR (*)())hiddmeta_new,		MIDX_Root_New		},
+    	{ (IPTR (*)())hiddmeta_new,		MO_Root_New		},
 	{  NULL, 0UL }
     };
     
     struct MethodDescr meta_mdescr[NUM_META_METHODS + 1] =
     {
-    	{ (IPTR (*)())hiddmeta_allocdisptabs,	MIDX_meta_allocdisptabs	},
-    	{ (IPTR (*)())hiddmeta_freedisptabs,	MIDX_meta_freedisptabs	},
-    	{ (IPTR (*)())hiddmeta_getifinfo,	MIDX_meta_getifinfo	},
-    	{ (IPTR (*)())hiddmeta_iterateifs,	MIDX_meta_iterateifs	},
-    	{ (IPTR (*)())hiddmeta_findmethod,	MIDX_meta_findmethod	},
+    	{ (IPTR (*)())hiddmeta_allocdisptabs,	MO_meta_allocdisptabs	},
+    	{ (IPTR (*)())hiddmeta_freedisptabs,	MO_meta_freedisptabs	},
+    	{ (IPTR (*)())hiddmeta_getifinfo,	MO_meta_getifinfo	},
+    	{ (IPTR (*)())hiddmeta_iterateifs,	MO_meta_iterateifs	},
+    	{ (IPTR (*)())hiddmeta_findmethod,	MO_meta_findmethod	},
 	{  NULL, 0UL }
     };
     
@@ -419,17 +419,17 @@ Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperPtr,		(IPTR)BASEMETAPTR},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_HIDDMeta},
-	{A_Class_InstSize,		(IPTR)sizeof (struct hiddmeta_data) },
+        {A_Meta_SuperPtr,		(IPTR)BASEMETAPTR},
+	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_HIDDMeta},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct hiddmeta_data) },
 	{TAG_DONE, 0UL}
     };
     
     Class *cl;
     EnterFunc(bug("init_hiddmetaclass()\n"));
 
-    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

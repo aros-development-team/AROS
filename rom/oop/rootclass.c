@@ -64,25 +64,25 @@ static Object *basemeta_new(Class *cl, Object *o, struct P_Root_New *msg)
 	    switch (TagIdx(tag->ti_Tag))
 	    {
 	    
-	    case AIDX_Class_SuperID:
+	    case AO_Meta_SuperID:
 		/* ID of superclass */
 		superid = (STRPTR)tag->ti_Data;
 	        D(bug("Got superID: %s\n", superid));
 		break;
 		    
-	    case AIDX_Class_InterfaceDescr:
+	    case AO_Meta_InterfaceDescr:
 	        D(bug("Got ifdescr\n"));
 		/* What interfaces does the class support ? */
 		ifdescr = (struct InterfaceDescr *)tag->ti_Data;
 		break;
 		    
-	    case AIDX_Class_ID:
+	    case AO_Meta_ID:
 		/* The new class' ID */
 		clid = (STRPTR)tag->ti_Data;
 	        D(bug("Got classID: %s\n", clid));
 		break;
 		    
-	    case AIDX_Class_SuperPtr:
+	    case AO_Meta_SuperPtr:
 	        D(bug("Got superPtr\n"));
 		/* If the super class is private, than we must have
 		   a pointer to it.
@@ -90,7 +90,7 @@ static Object *basemeta_new(Class *cl, Object *o, struct P_Root_New *msg)
 		superptr = (struct metadata *)tag->ti_Data;
 		break;
 		
-	    case AIDX_Class_InstSize:
+	    case AO_Meta_InstSize:
 	        /* Instance data size for the new class */
 	        instsize = (ULONG)tag->ti_Data;
 		break;
@@ -125,7 +125,7 @@ static Object *basemeta_new(Class *cl, Object *o, struct P_Root_New *msg)
     if (o)
     {
 
-	ULONG dispose_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+	ULONG dispose_mid = GetMethodID(IID_Root, MO_Root_Dispose);
 
         D(bug("Instance allocated\n"));
 	
@@ -438,22 +438,22 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
     bmo->inst.iftable[1] = bmo->inst.metaif;
     
     /* initialize interfaces */
-    bmo->inst.rootif[MIDX_Root_New].MethodFunc     = (IPTR (*)())basemeta_new;
-    bmo->inst.rootif[MIDX_Root_Dispose].MethodFunc = (IPTR (*)())basemeta_dispose;
+    bmo->inst.rootif[MO_Root_New].MethodFunc     = (IPTR (*)())basemeta_new;
+    bmo->inst.rootif[MO_Root_Dispose].MethodFunc = (IPTR (*)())basemeta_dispose;
 
-    bmo->inst.rootif[MIDX_Root_New].mClass     	= BASEMETAPTR;
-    bmo->inst.rootif[MIDX_Root_Dispose].mClass  = BASEMETAPTR;
+    bmo->inst.rootif[MO_Root_New].mClass     	= BASEMETAPTR;
+    bmo->inst.rootif[MO_Root_Dispose].mClass  = BASEMETAPTR;
     
     /* Initialize meta interface */
-    bmo->inst.metaif[MIDX_meta_allocdisptabs].MethodFunc 	= (IPTR (*)())NULL;
-    bmo->inst.metaif[MIDX_meta_freedisptabs].MethodFunc		= (IPTR (*)())NULL;
-    bmo->inst.metaif[MIDX_meta_getifinfo].MethodFunc		= (IPTR (*)())basemeta_getifinfo;
-    bmo->inst.metaif[MIDX_meta_iterateifs].MethodFunc 		= (IPTR (*)())basemeta_iterateifs;
+    bmo->inst.metaif[MO_meta_allocdisptabs].MethodFunc 	= (IPTR (*)())NULL;
+    bmo->inst.metaif[MO_meta_freedisptabs].MethodFunc		= (IPTR (*)())NULL;
+    bmo->inst.metaif[MO_meta_getifinfo].MethodFunc		= (IPTR (*)())basemeta_getifinfo;
+    bmo->inst.metaif[MO_meta_iterateifs].MethodFunc 		= (IPTR (*)())basemeta_iterateifs;
     
-    bmo->inst.metaif[MIDX_meta_allocdisptabs].mClass 	= BASEMETAPTR;
-    bmo->inst.metaif[MIDX_meta_freedisptabs].mClass 	= BASEMETAPTR;
-    bmo->inst.metaif[MIDX_meta_getifinfo].mClass 	= BASEMETAPTR;
-    bmo->inst.metaif[MIDX_meta_iterateifs].mClass 	= BASEMETAPTR;
+    bmo->inst.metaif[MO_meta_allocdisptabs].mClass 	= BASEMETAPTR;
+    bmo->inst.metaif[MO_meta_freedisptabs].mClass 	= BASEMETAPTR;
+    bmo->inst.metaif[MO_meta_getifinfo].mClass 	= BASEMETAPTR;
+    bmo->inst.metaif[MO_meta_iterateifs].mClass 	= BASEMETAPTR;
     
     /* Meta interface ID gets initialized to 1 */
     success = init_mi_methodbase(IID_Meta, &mbase, OOPBase);
@@ -563,11 +563,11 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     
     /* Initialize methodtable */
     
-    rco->inst.rootif[MIDX_Root_New].MethodFunc		= (IPTR (*)())root_new;
-    rco->inst.rootif[MIDX_Root_New].mClass		= rootclass;
+    rco->inst.rootif[MO_Root_New].MethodFunc		= (IPTR (*)())root_new;
+    rco->inst.rootif[MO_Root_New].mClass		= rootclass;
     
-    rco->inst.rootif[MIDX_Root_Dispose].MethodFunc	= (IPTR (*)())root_dispose;
-    rco->inst.rootif[MIDX_Root_Dispose].mClass 		= rootclass;
+    rco->inst.rootif[MO_Root_Dispose].MethodFunc	= (IPTR (*)())root_dispose;
+    rco->inst.rootif[MO_Root_Dispose].mClass 		= rootclass;
 
     /* Important: IID_Root interface ID MUST be the first one
        initialized, so that it gets the value 0UL. This is

@@ -21,13 +21,13 @@ extern ULONG __OOPI_Proxy;
 
 
 enum {
-    AIDX_Proxy_RealObject = 0, /* The object we are a proxy for */
-    AIDX_Proxy_Port,
+    AO_Proxy_RealObject = 0, /* The object we are a proxy for */
+    AO_Proxy_Port,
     NUM_A_Proxy
 };
 
-#define A_Proxy_RealObject	(ProxyBase + AIDX_Proxy_RealObject)
-#define A_Proxy_Port		(ProxyBase + AIDX_Proxy_Port)
+#define A_Proxy_RealObject	(ProxyBase + AO_Proxy_RealObject)
+#define A_Proxy_Port		(ProxyBase + AO_Proxy_Port)
 
 
 #endif /* OOP_PROXY_H */

@@ -22,12 +22,12 @@
 
 enum
 {
-   MIDX_meta_allocdisptabs = NUM_M_Meta,
-   MIDX_meta_freedisptabs,
-   MIDX_meta_iterateifs,
-   MIDX_meta_findmethod,
-   MIDX_meta_findinterface,
-   MIDX_meta_getifinfo,
+   MO_meta_allocdisptabs = NUM_M_Meta,
+   MO_meta_freedisptabs,
+   MO_meta_iterateifs,
+   MO_meta_findmethod,
+   MO_meta_findinterface,
+   MO_meta_getifinfo,
    
    NUMTOTAL_M_Meta
 };

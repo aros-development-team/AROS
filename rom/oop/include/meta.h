@@ -25,25 +25,25 @@ enum
 };
 
 enum {
-    AIDX_Class_SuperID = 0,
-    AIDX_Class_InterfaceDescr,
-    AIDX_Class_ID,
-    AIDX_Class_SuperPtr,
-    AIDX_Class_InstSize,
-    AIDX_Class_DoMethod,
-    AIDX_Class_CoerceMethod,
-    AIDX_Class_DoSuperMethod,
+    AO_Meta_SuperID = 0,
+    AO_Meta_InterfaceDescr,
+    AO_Meta_ID,
+    AO_Meta_SuperPtr,
+    AO_Meta_InstSize,
+    AO_Meta_DoMethod,
+    AO_Meta_CoerceMethod,
+    AO_Meta_DoSuperMethod,
     
-    NUM_A_Class
+    NUM_A_Meta
 };
 
-#define A_Class_SuperID 	(MetaBase + AIDX_Class_SuperID)
-#define A_Class_InterfaceDescr	(MetaBase + AIDX_Class_InterfaceDescr)
-#define A_Class_ID 		(MetaBase + AIDX_Class_ID)
-#define A_Class_SuperPtr	(MetaBase + AIDX_Class_SuperPtr)
-#define A_Class_InstSize	(MetaBase + AIDX_Class_InstSize)
-#define A_Class_DoMethod	(MetaBase + AIDX_Class_DoMethod)
-#define A_Class_CoerceMethod	(MetaBase + AIDX_Class_CoerceMethod)
-#define A_Class_DoSuperMethod	(MetaBase + AIDX_Class_DoSuperMethod)
+#define A_Meta_SuperID 		(MetaBase + AO_Meta_SuperID)
+#define A_Meta_InterfaceDescr	(MetaBase + AO_Meta_InterfaceDescr)
+#define A_Meta_ID 		(MetaBase + AO_Meta_ID)
+#define A_Meta_SuperPtr		(MetaBase + AO_Meta_SuperPtr)
+#define A_Meta_InstSize		(MetaBase + AO_Meta_InstSize)
+#define A_Meta_DoMethod		(MetaBase + AO_Meta_DoMethod)
+#define A_Meta_CoerceMethod	(MetaBase + AO_Meta_CoerceMethod)
+#define A_Meta_DoSuperMethod	(MetaBase + AO_Meta_DoSuperMethod)
 
 #endif /* OOP_META_H */

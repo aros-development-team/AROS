@@ -27,14 +27,14 @@ extern ULONG __OOPI_Interface;
 
 
 enum {
-    AIDX_Interface_TargetObject= 0,
-    AIDX_Interface_InterfaceID,
+    AO_Interface_TargetObject= 0,
+    AO_Interface_InterfaceID,
     
     NUM_A_Interface
 };
 
-#define A_Interface_TargetObject 	(InterfaceBase + AIDX_Interface_TargetObject)
-#define A_Interface_InterfaceID		(InterfaceBase + AIDX_Interface_InterfaceID)
+#define A_Interface_TargetObject 	(InterfaceBase + AO_Interface_TargetObject)
+#define A_Interface_InterfaceID		(InterfaceBase + AO_Interface_InterfaceID)
 
 
 typedef struct InterfaceStruct 

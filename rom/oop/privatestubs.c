@@ -23,7 +23,7 @@ BOOL meta_allocdisptabs(Object *o, Class *super, struct InterfaceDescr *ifdescr)
     struct P_meta_allocdisptabs p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MIDX_meta_allocdisptabs);
+    	mid = GetMethodID(IID_Meta, MO_meta_allocdisptabs);
     
     p.mid = mid;
     p.superclass = super;
@@ -38,7 +38,7 @@ VOID meta_freedisptabs(Object *o)
     struct P_meta_freedisptabs p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MIDX_meta_freedisptabs);
+    	mid = GetMethodID(IID_Meta, MO_meta_freedisptabs);
 	
     p.mid = mid;
     
@@ -55,7 +55,7 @@ struct IFMethod *meta_iterateifs(Object *o, IPTR *iterval_ptr, STRPTR *interface
     struct P_meta_iterateifs p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MIDX_meta_iterateifs);
+    	mid = GetMethodID(IID_Meta, MO_meta_iterateifs);
 	
     p.mid		= mid;
     p.iterval_ptr	= iterval_ptr;
@@ -72,7 +72,7 @@ struct IFMethod *meta_getifinfo(Object *o, STRPTR interface_id, ULONG *num_metho
     struct P_meta_getifinfo p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MIDX_meta_getifinfo);
+    	mid = GetMethodID(IID_Meta, MO_meta_getifinfo);
 	
     p.mid		= mid;
     p.interface_id	= interface_id;
@@ -90,7 +90,7 @@ struct IFMethod *meta_findmethod(Object *o, MethodID method_to_find, struct Libr
     struct P_meta_findmethod p;
     
     if (!mid)
-    	mid = GetMethodID(IID_Meta, MIDX_meta_findmethod);
+    	mid = GetMethodID(IID_Meta, MO_meta_findmethod);
 	
     p.mid		= mid;
     p.method_to_find	= method_to_find;

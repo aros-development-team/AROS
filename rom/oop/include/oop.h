@@ -82,7 +82,7 @@ struct InterfaceDescr
 {
     struct MethodDescr *MethodTable;
     STRPTR InterfaceID;
-    ULONG NumMethods; /* Max method idx */
+    ULONG NumMethods; /* Number of methods in the methodtable */
 };
 
 struct MethodDescr

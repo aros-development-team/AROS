@@ -37,8 +37,8 @@ system simple.
 
 enum
 {
-    MIDX_Timer_Start	= 0,
-    MIDX_Timer_Stop,
+    MO_Timer_Start	= 0,
+    MO_Timer_Stop,
     
     NUM_M_Timer	/* number of methods in the Timer interface */
     
@@ -47,7 +47,7 @@ enum
 
 enum
 {
-    AIDX_Timer_Elapsed = 0,
+    AO_Timer_Elapsed = 0,
     
     NUM_A_Timer	/* number of attrs in the timer interface */
 };
@@ -91,8 +91,8 @@ Class *make_timerclass()
 
     struct MethodDescr methods[NUM_TIMER_METHODS + 1] =
     {
-	{(IPTR (*)())timer_start,		MIDX_Timer_Start},
-	{(IPTR (*)())timer_stop,		MIDX_Timer_Stop},
+	{(IPTR (*)())timer_start,		MO_Timer_Start},
+	{(IPTR (*)())timer_stop,		MO_Timer_Stop},
 	{NULL, 0UL} /* must be null-terminated */
 
     };
@@ -105,10 +105,10 @@ Class *make_timerclass()
 
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)CLID_Root},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_Timer},
-	{A_Class_InstSize,		(IPTR)sizeof (struct timer_data)},
+        {A_Meta_SuperID,		(IPTR)CLID_Root},
+	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_Timer},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct timer_data)},
 	{TAG_DONE, 0UL}
     };
     
@@ -149,7 +149,7 @@ VOID Timer_Start(Object *timer)
 	   numeric method ID.
 	*/
 	
-    	mid = GetMethodID(IID_Timer, MIDX_Timer_Start);
+    	mid = GetMethodID(IID_Timer, MO_Timer_Start);
     }
 
     DoMethod(timer, (Msg)&mid);

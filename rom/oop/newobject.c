@@ -17,7 +17,7 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH3(APTR, NewObjectA,
+	AROS_LH3(APTR, NewObject,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct IClass  *, classPtr, A0),
@@ -93,7 +93,7 @@
     
     D(bug("Creating new instance\n"));
 
-    p.MID = GetMethodID(IID_Root, MIDX_Root_New);
+    p.MID = GetMethodID(IID_Root, MO_Root_New);
     p.AttrList = tagList;
     
     D(bug("mid=%ld\n", p.MID));
@@ -110,4 +110,4 @@
     
     
     AROS_LIBFUNC_EXIT
-} /* NewObjectA */
+} /* NewObject */

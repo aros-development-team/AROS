@@ -38,7 +38,7 @@ int main (int argc, char ** argv)
     }
 
 
-    hidd = NewObjectA (NULL, CLID_UnixIO_Hidd, tags);
+    hidd = NewObject (NULL, CLID_UnixIO_Hidd, tags);
 
     if (!hidd)
     {
@@ -51,7 +51,7 @@ int main (int argc, char ** argv)
     }
 
     fd = 0;
-    uio_msg.um_MethodID = GetMethodID(IID_UnixIO, HIDDMIDX_UnixIO_Wait);
+    uio_msg.um_MethodID = GetMethodID(IID_UnixIO, HIDDMO_UnixIO_Wait);
     uio_msg.um_Filedesc = fd;
     uio_msg.um_Mode	= HIDDV_UnixIO_Read;
     ret = DoMethod(hidd, (Msg)&uio_msg);

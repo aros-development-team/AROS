@@ -21,10 +21,10 @@
 
 enum
 {
-    MIDX_Root_New = 0,
-    MIDX_Root_Dispose,
-    MIDX_Root_Set,
-    MIDX_Root_Get,
+    MO_Root_New = 0,
+    MO_Root_Dispose,
+    MO_Root_Set,
+    MO_Root_Get,
     
     NUM_M_Root
 };

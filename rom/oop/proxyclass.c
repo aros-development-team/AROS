@@ -86,7 +86,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     if (o)
     {
         struct ProxyData *data;
-	ULONG disp_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+	ULONG disp_mid = GetMethodID(IID_Root, MO_Root_Dispose);
 	    
 	data = (struct ProxyData *)INST_DATA(cl, o);
 	
@@ -190,8 +190,8 @@ Class *init_proxyclass(struct Library *OOPBase)
 
     struct MethodDescr root_methods[] =
     {
-	{(IPTR (*)())_Root_New,			MIDX_Root_New},
-	{(IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose},
+	{(IPTR (*)())_Root_New,			MO_Root_New},
+	{(IPTR (*)())_Root_Dispose,		MO_Root_Dispose},
 	{ NULL, 0UL }
     };
     
@@ -204,11 +204,11 @@ Class *init_proxyclass(struct Library *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)CLID_Root},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_Proxy},
-	{A_Class_InstSize,		(IPTR)sizeof (struct ProxyData) },
-	{A_Class_DoMethod,		(IPTR)_Proxy_DoMethod},
+        {A_Meta_SuperID,		(IPTR)CLID_Root},
+	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_Proxy},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct ProxyData) },
+	{A_Meta_DoMethod,		(IPTR)_Proxy_DoMethod},
 	{TAG_DONE, 0UL}
     };
 
@@ -217,7 +217,7 @@ Class *init_proxyclass(struct Library *OOPBase)
     
     EnterFunc(bug("InitProxyClass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

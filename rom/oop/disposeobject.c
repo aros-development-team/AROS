@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    ULONG mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+    ULONG mid = GetMethodID(IID_Root, MO_Root_Dispose);
     
     EnterFunc(bug("DisposeObject(classID=%s)\n",
     		OCLASS(obj)->ClassNode.ln_Name));

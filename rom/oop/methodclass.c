@@ -80,18 +80,18 @@ static Object *method_new(Class *cl, Object *o, struct P_Root_New *msg)
 	{
 	    switch (TagIdx(tag->ti_Tag))
 	    {
-	    	case AIDX_Method_TargetObject:
+	    	case AO_Method_TargetObject:
 		    /* The object from which we get the method */
 		    m_obj = (Object *)tag->ti_Data;
 		    break;
 		
 		
-		case AIDX_Method_Message:
+		case AO_Method_Message:
 		     /* The message to pass with the method */
 		     m_msg = (Msg)tag->ti_Data;
 		     break;
 		
-		case AIDX_Method_MethodID:
+		case AO_Method_MethodID:
 		    /* The ID of the method to pass */
 		    mid = (ULONG)tag->ti_Data;
 		    break;
@@ -173,8 +173,8 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())method_new,	MIDX_Root_New},
-	{(IPTR (*)())method_dispose,	MIDX_Root_Dispose},
+	{(IPTR (*)())method_new,	MO_Root_New},
+	{(IPTR (*)())method_dispose,	MO_Root_Dispose},
 	{ NULL, 0UL }
     };
     
@@ -186,11 +186,11 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)NULL},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_Method},
-	{A_Class_InstSize,		(IPTR)sizeof (struct method_data)},
-	{TAG_DONE, 0UL}
+        {A_Meta_SuperID,		(IPTR)NULL},
+	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_Method},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct method_data)},
+	{TAG_DONE,  0UL}
     };
 
     
@@ -198,7 +198,7 @@ Class *init_methodclass(struct IntOOPBase *OOPBase)
     
     EnterFunc(bug("init_methodclass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
     if (cl)
     {
     	D(bug("Method class successfully created\n"));

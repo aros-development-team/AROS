@@ -115,9 +115,9 @@ static Object *ifmeta_new(Class *cl, Object *o, struct P_Root_New *msg)
 	
 	inst = (struct ifmeta_inst *)o;
 	
-	domethod 	= (IPTR (*)())GetTagData(A_Class_DoMethod, 	NULL, msg->AttrList);
-	coercemethod 	= (IPTR (*)())GetTagData(A_Class_CoerceMethod, 	NULL, msg->AttrList);
-	dosupermethod	= (IPTR (*)())GetTagData(A_Class_DoSuperMethod, NULL, msg->AttrList);
+	domethod 	= (IPTR (*)())GetTagData(A_Meta_DoMethod, 	NULL, msg->AttrList);
+	coercemethod 	= (IPTR (*)())GetTagData(A_Meta_CoerceMethod, 	NULL, msg->AttrList);
+	dosupermethod	= (IPTR (*)())GetTagData(A_Meta_DoSuperMethod, NULL, msg->AttrList);
 	
 
         D(bug("Instance allocated %p\n", inst));
@@ -215,7 +215,7 @@ static BOOL ifmeta_allocdisptabs(Class *cl, Object *o, struct P_meta_allocdispta
 	    
 	    D(bug("Adding superclass' methods\n"));
 	    
-	    ii_msg.mid = GetMethodID(IID_Meta, MIDX_meta_iterateifs);
+	    ii_msg.mid = GetMethodID(IID_Meta, MO_meta_iterateifs);
 	    
 	    ii_msg.iterval_ptr		= &iterval;
 	    ii_msg.interface_id_ptr	= &interface_id;
@@ -485,17 +485,17 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 {
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1]=
     {
-    	{ (IPTR (*)())ifmeta_new,	MIDX_Root_New		},
+    	{ (IPTR (*)())ifmeta_new,	MO_Root_New		},
 	{  NULL, 0UL }
     };
 
     struct MethodDescr meta_mdescr[NUM_META_METHODS + 1]=
     {
-    	{ (IPTR (*)())ifmeta_allocdisptabs,	MIDX_meta_allocdisptabs	},
-    	{ (IPTR (*)())ifmeta_freedisptabs,	MIDX_meta_freedisptabs	},
-    	{ (IPTR (*)())ifmeta_getifinfo,		MIDX_meta_getifinfo	},
-    	{ (IPTR (*)())ifmeta_iterateifs,	MIDX_meta_iterateifs	},
-    	{ (IPTR (*)())ifmeta_findmethod,	MIDX_meta_findmethod	},
+    	{ (IPTR (*)())ifmeta_allocdisptabs,	MO_meta_allocdisptabs	},
+    	{ (IPTR (*)())ifmeta_freedisptabs,	MO_meta_freedisptabs	},
+    	{ (IPTR (*)())ifmeta_getifinfo,		MO_meta_getifinfo	},
+    	{ (IPTR (*)())ifmeta_iterateifs,	MO_meta_iterateifs	},
+    	{ (IPTR (*)())ifmeta_findmethod,	MO_meta_findmethod	},
 	{  NULL, 0UL }
     };
     
@@ -613,7 +613,7 @@ static ULONG calc_ht_entries(struct ifmeta_inst *cl
 	    
 	    D(bug("Checking for interface %s\n", ifDescr->InterfaceID));
 	    
-	    gii_msg.mid = GetMethodID(IID_Meta, MIDX_meta_getifinfo);
+	    gii_msg.mid = GetMethodID(IID_Meta, MO_meta_getifinfo);
 	    gii_msg.interface_id = ifDescr->InterfaceID;
 	    gii_msg.num_methods_ptr = &num_methods;
 	    

@@ -76,7 +76,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	data = INST_DATA(cl, o);
     	D(bug("got instdata\n"));
 
-	disp_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+	disp_mid = GetMethodID(IID_Root, MO_Root_Dispose);
     	D(bug("got dispmid\n"));
 	/* Clear so we can test what resources are allocated in Dispose() */
 	D(bug("Object created, o=%p, data=%p\n", o, data));
@@ -202,7 +202,7 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
     ObtainSemaphoreShared(&data->ObjectListLock);
     /* Search for object */
     so = (struct ServerObjectNode *)FindName(&data->ObjectList, msg->ObjectID);
-   ReleaseSemaphore(&data->ObjectListLock);
+    ReleaseSemaphore(&data->ObjectListLock);
 
     if (so)
     {
@@ -216,7 +216,7 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
 	
 	Object *proxy;
 	
-	proxy = NewObjectA(NULL, CLID_Proxy, proxy_tags);
+	proxy = NewObject(NULL, CLID_Proxy, proxy_tags);
 	if (proxy)
 	{
 	    ReturnPtr("Server::FindObject", Object *, proxy);
@@ -259,17 +259,17 @@ Class *init_serverclass(struct Library *OOPBase)
 
     struct MethodDescr root_methods[] =
     {
-	{(IPTR (*)())_Root_New,			MIDX_Root_New},
-	{(IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose},
+	{(IPTR (*)())_Root_New,			MO_Root_New},
+	{(IPTR (*)())_Root_Dispose,		MO_Root_Dispose},
 	{ NULL, 0UL }
     };
     
     struct MethodDescr server_methods[] =
     {
-	{(IPTR (*)())_Server_AddObject,		MIDX_Server_AddObject},
-	{(IPTR (*)())_Server_RemoveObject,	MIDX_Server_RemoveObject},
-	{(IPTR (*)())_Server_FindObject,	MIDX_Server_FindObject},
-	{(IPTR (*)())_Server_Run,		MIDX_Server_Run},
+	{(IPTR (*)())_Server_AddObject,		MO_Server_AddObject},
+	{(IPTR (*)())_Server_RemoveObject,	MO_Server_RemoveObject},
+	{(IPTR (*)())_Server_FindObject,	MO_Server_FindObject},
+	{(IPTR (*)())_Server_Run,		MO_Server_Run},
 	{ NULL, 0UL }
     };
     
@@ -282,10 +282,10 @@ Class *init_serverclass(struct Library *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)CLID_Root},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_Server},
-	{A_Class_InstSize,		(IPTR)sizeof (struct ServerData)},
+        {A_Meta_SuperID,		(IPTR)CLID_Root},
+	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_Server},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct ServerData)},
 	{TAG_DONE, 0UL}
     };
 
@@ -294,7 +294,7 @@ Class *init_serverclass(struct Library *OOPBase)
     
     EnterFunc(bug("InitServerClass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;

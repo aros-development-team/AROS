@@ -24,16 +24,16 @@ extern ULONG __OOPI_Method;
 #define CallMethod(m) ( (m)->MethodFunc((m)->MClass, (m)->TargetObject, (m)->Message) )
 
 enum {
-    AIDX_Method_TargetObject= 0,
-    AIDX_Method_Message,
-    AIDX_Method_MethodID,
+    AO_Method_TargetObject= 0,
+    AO_Method_Message,
+    AO_Method_MethodID,
     
     NUM_A_Method
 };
 
-#define A_Method_TargetObject 	(MethodBase + AIDX_Method_TargetObject)
-#define A_Method_Message	(MethodBase + AIDX_Method_Message)
-#define A_Method_MethodID 	(MethodBase + AIDX_Method_MethodID)
+#define A_Method_TargetObject 	(MethodBase + AO_Method_TargetObject)
+#define A_Method_Message	(MethodBase + AO_Method_Message)
+#define A_Method_MethodID 	(MethodBase + AO_Method_MethodID)
 
 typedef struct
 {

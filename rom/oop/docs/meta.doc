@@ -9,14 +9,14 @@
 Attrs:
 
 NAME
-	A_Class_ID		[I],	STRPTR
+	A_Meta_ID		[I],	STRPTR
 	
 FUNCTION
 	Specifies the class ID for the class.
 	
 ---------------------------
 NAME
-	A_Class_SuperID		[I],	STRPTR
+	A_Meta_SuperID		[I],	STRPTR
 
 FUNCTION
 	ID of public class that will be superclass of class to be created.
@@ -25,14 +25,14 @@ FUNCTION
 			
 ---------------------------
 NAME
-	A_Class_SuperPtr	[I],	Class *
+	A_Meta_SuperPtr	[I],	Class *
 
 FUNCTION
 	Pointer to private class that will be superclass to
 	class created.
 	
 NAME
-	A_Class_InstSize	[I],	ULONG
+	A_Meta_InstSize	[I],	ULONG
 
 FUNCTION
 	Size of the instance data for this class.
@@ -41,7 +41,7 @@ FUNCTION
 	
 ---------------------------
 NAME
-	A_Class_InterfaceDescr	[I],	struct InterfaceDescr *
+	A_Meta_InterfaceDescr	[I],	struct InterfaceDescr *
 	
 	Pointer to an array struct InterfaceDescr.
 	This array has to be nullterminated. Each 
@@ -89,10 +89,10 @@ EXAMPLE
 	
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)CLID_Hidd},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_UnixIO_Hidd},
-	{A_Class_InstSize,		(IPTR)sizeof (struct UnixIOData) },
+        {A_Meta_SuperID,		(IPTR)CLID_Hidd},
+	{A_Meta_InterfaceDescr,	(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_UnixIO_Hidd},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct UnixIOData) },
 	{TAG_DONE, 0UL}
     };
     

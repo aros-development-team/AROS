@@ -174,8 +174,8 @@ Class *init_interfaceclass(struct Library *OOPBase)
 
     struct MethodDescr methods[] =
     {
-	{(IPTR (*)())interface_new,		MIDX_Root_New},
-	{(IPTR (*)())interface_dispose,		MIDX_Root_Dispose},
+	{(IPTR (*)())interface_new,		MO_Root_New},
+	{(IPTR (*)())interface_dispose,		MO_Root_Dispose},
 	{ NULL, 0UL }
     };
     
@@ -187,10 +187,10 @@ Class *init_interfaceclass(struct Library *OOPBase)
     
     struct TagItem tags[] =
     {
-        {A_Class_SuperID,		(IPTR)NULL},
-	{A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	{A_Class_ID,			(IPTR)CLID_Interface},
-	{A_Class_InstSize,		(IPTR)sizeof (struct interface_data)},
+        {A_Meta_SuperID,		(IPTR)NULL},
+	{A_Meta_InterfaceDescr,		(IPTR)ifdescr},
+	{A_Meta_ID,			(IPTR)CLID_Interface},
+	{A_Meta_InstSize,		(IPTR)sizeof (struct interface_data)},
 	{TAG_DONE, 0UL}
     };
 
@@ -199,7 +199,7 @@ Class *init_interfaceclass(struct Library *OOPBase)
     
     EnterFunc(bug("init_interfaceclass()\n"));
     
-    cl = (Class *)NewObjectA(NULL, CLID_IFMeta, tags);
+    cl = (Class *)NewObject(NULL, CLID_IFMeta, tags);
     if (cl)
     {
         cl->UserData = OOPBase;
