@@ -20,10 +20,10 @@ LIBBASETYPE; /* Pre-Declaration if necessary */
 #endif
 
 /* Declare functions for FuncTab[] */
-AROS_LP3 (ULONG, EXF_TestRequest,
-    AROS_LPA (UBYTE *, title_d1, D1),
-    AROS_LPA (UBYTE *, body,     D2),
-    AROS_LPA (UBYTE *, gadgets,  D3),
+AROS_LD3 (ULONG, EXF_TestRequest,
+    AROS_LDA (UBYTE *, title_d1, D1),
+    AROS_LDA (UBYTE *, body,     D2),
+    AROS_LDA (UBYTE *, gadgets,  D3),
     LIBBASETYPEPTR, LIBBASE, 5, BASENAME
 );
 
