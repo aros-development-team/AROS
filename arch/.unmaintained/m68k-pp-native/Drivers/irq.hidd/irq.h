@@ -55,4 +55,7 @@ VOID free_irqclass  ( struct irq_staticdata * );
 #define UtilityBase	((struct Library *)ISD(cl)->utilitybase)
 #define SysBase		(ISD(cl)->sysbase)
 
+void init_Servers(struct irq_staticdata *isd);
+
+
 #endif /* _HIDD_IRQ_H */
