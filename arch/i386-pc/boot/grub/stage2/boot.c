@@ -91,48 +91,9 @@ load_image (char *kernel, char *arg, kernel_t suggested_type,
     }
   /* Handle graphics request for multiboot kernels */
   if (type == KERNEL_TYPE_MULTIBOOT &&
-      mb_header_flags & MULTIBOOT_VIDEO_MODE &&
       mbi.flags & MB_INFO_VIDEO_INFO)
     {
       mbi.vbe_mode = 0x03;
-
-      if (pu.mb->mode_type == 0)
-       {
-         unsigned short fallback = 0xFFFF;
-
-         for (mode_list
-                = (unsigned short *) VBE_FAR_PTR (vbe_info_block.video_mode);
-              *mode_list != 0xFFFF;
-              mode_list++)
-           {
-             if (get_vbe_mode_info (*mode_list, &mode_info_block) != 0x004F
-                 || (mode_info_block.mode_attributes & 0x0091) != 0x0091)
-               continue;
-
-             if (fallback == 0xFFFF) fallback = *mode_list;
-
-             if (pu.mb->width == mode_info_block.x_resolution &&
-                 pu.mb->height == mode_info_block.y_resolution &&
-                 pu.mb->depth == mode_info_block.bits_per_pixel )
-               {
-                 mbi.vbe_mode = *mode_list;
-                 break;
-               }
-           }
-
-         if (*mode_list == 0xFFFF && fallback != 0xFFFF)
-           mbi.vbe_mode = fallback;
-
-       }
-
-      if (debug)
-       {
-         grub_printf ("%s mode requested: %dx%dx%d\n",
-                      (pu.mb->mode_type == 0 ? "VBE graphics" : "Text"),
-                      pu.mb->width, pu.mb->height, pu.mb->depth);
-         grub_printf ("Mode selected: 0x%x\n", mbi.vbe_mode);
-       }
-
     }
 
   /* sets the header pointer to point to the beginning of the
