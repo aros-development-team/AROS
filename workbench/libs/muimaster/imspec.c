@@ -1697,6 +1697,8 @@ typedef enum {
     IST_LINK,
 } ImageSpecType;
 
+#define CHECKBOX_IMAGE 4
+
 struct MUI_ImageSpec
 {
     ImageSpecType type;
@@ -1708,8 +1710,39 @@ struct MUI_ImageSpec
 
     char *filename;
     struct dt_node *dt;
+
+    LONG vectortype;
+    void (*vector_draw)(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state);
 };
 
+static void draw_thick_line(struct RastPort *rp,int x1, int y1, int x2, int y2)
+{
+    Move(rp,x1,y1);
+    Draw(rp,x2,y2);
+    Move(rp,x1+1,y1);
+    Draw(rp,x2+1,y2);
+}
+
+void checkbox_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    int h_spacing = width / 4;
+    int v_spacing = height / 4;
+    int bottom = top + height - 1;
+    int right = left + width - 1;
+
+    /* Draw checkmark (only if image is in selected state) */
+
+    if (state)
+    {
+	left += h_spacing;right -= h_spacing;width -= h_spacing * 2;
+	top += v_spacing;bottom -= v_spacing;height -= v_spacing * 2;
+
+        SetAPen(mri->mri_RastPort, mri->mri_Pens[MPEN_TEXT]);
+
+	draw_thick_line(mri->mri_RastPort, left, top + height / 3 , left, bottom);
+	draw_thick_line(mri->mri_RastPort, left + 1, bottom, right - 1, top);
+    }
+}
 
 const static UWORD pattern[] = {
     0x5555,
@@ -1774,6 +1807,24 @@ static struct MUI_ImageSpec *get_pattern_imspec(LONG in)
 	    spec->pattern = in - MUII_SHADOWBACK;
 	}
     	return spec;
+    }
+    return NULL;
+}
+
+static struct MUI_ImageSpec *get_vector_imspec(LONG vect)
+{
+    struct MUI_ImageSpec *spec;
+
+    if (vect == CHECKBOX_IMAGE)
+    {
+	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+	{
+	    UWORD color;
+	    spec->type = IST_VECTOR;
+	    spec->vectortype = vect;
+	    spec->vector_draw = checkbox_draw;
+	}
+	return spec;
     }
     return NULL;
 }
@@ -1869,6 +1920,14 @@ struct MUI_ImageSpec *zune_image_spec_to_structure(IPTR in, Object *obj)
              	    return get_pattern_imspec(pat);
 		}
 
+	case	'1':
+		{
+		    LONG vect;
+		    StrToLong(s+2,&vect);
+		    return get_vector_imspec(vect);
+		}
+		break;
+
 	case	'2':
 		{
 		    ULONG r,g,b;
@@ -1910,6 +1969,7 @@ static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec)
 
 void zune_imspec_free(struct MUI_ImageSpec *spec)
 {
+    
 }
 
 void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
@@ -2017,6 +2077,13 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
 		if (img->dt)
 		{
 		    dt_put_on_rastport_tiled(img->dt, mri->mri_RastPort, left, top, right, bottom, xoffset - left, yoffset - top);
+		}
+		break;
+
+	case	IST_VECTOR:
+		if (img->vector_draw)
+		{
+		    img->vector_draw(mri, img, left, top, width, height,!!(flags & IMSPECF_SELECTED));
 		}
 		break;
     }
