@@ -1,6 +1,10 @@
 #ifndef _MUI_CLASSES_WINDOW_H
 #define _MUI_CLASSES_WINDOW_H
 
+#ifndef _DRAGNDROP_H
+#include "dragndrop.h"
+#endif
+
 /* this is for the cycle list */
 struct ObjNode
 {
@@ -20,7 +24,7 @@ struct MUI_WindowData
     struct MinList wd_CCList;       /* control chars */
     ULONG          wd_Events;       /* events received */
     ULONG          wd_CrtFlags;     /* window creation flags, see below */
-    struct ObjNode *wd_ActiveObject; /* the active object */
+    struct ObjNode *wd_ActiveObject; /* the active object embeded in the cyclechain */
     APTR           wd_DefaultObject;
     ULONG          wd_ID;
     STRPTR         wd_Title;
@@ -36,6 +40,10 @@ struct MUI_WindowData
     UWORD          wd_innerRight;
     UWORD          wd_innerTop;
     UWORD          wd_innerBottom;
+
+    Object *       wd_DragObject; /* the object which is being dragged */
+    struct DragNDrop *wd_dnd;
+    struct MUI_DragImage *wd_DragImage;
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -200,12 +208,14 @@ struct  MUIP_Window_ToFront                 { ULONG MethodID; };
 
 #define MUIM_Window_AddControlCharHandler 0x8042c34d
 #define MUIM_Window_RemControlCharHandler 0x8042c34e
+#define MUIM_Window_DragObject            0x8042c34f /* ZV1 */
 
 struct  MUIP_Window_Cleanup       { ULONG MethodID; }; /* Custom Class */
 struct  MUIP_Window_Setup         { ULONG MethodID; }; /* Custom Class */
 
 struct  MUIP_Window_AddControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; }; /* Custom Class */
 struct  MUIP_Window_RemControlCharHandler   { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; }; /* Custom Class */
+struct  MUIP_Window_DragObject { ULONG MethodID; Object *obj; LONG touchx; LONG touchy; ULONG flags; };
 
 /* Attributes */
 

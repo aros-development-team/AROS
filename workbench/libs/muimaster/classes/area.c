@@ -77,7 +77,7 @@ Area.mui/MUIA_ContextMenuTrigger
 Area.mui/MUIA_ControlChar           done
 Area.mui/MUIA_CycleChain            done
 Area.mui/MUIA_Disabled
-Area.mui/MUIA_Draggable
+Area.mui/MUIA_Draggable             done
 Area.mui/MUIA_Dropable
 Area.mui/MUIA_ExportID
 Area.mui/MUIA_FillArea              done
@@ -231,6 +231,9 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 	    case MUIA_FillArea:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
+		break;
+	    case MUIA_Draggable:
+		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_DRAGGABLE);
 		break;
 	    case MUIA_FixHeight:
 		data->mad_Flags |= MADF_FIXHEIGHT;
@@ -913,39 +916,6 @@ static void cleanup_control_char (struct MUI_AreaData *data, Object *obj)
     }
 }
 
-#if 0
-static void
-setup_cycle_chain (struct MUI_AreaData *data, Object *obj)
-{
-    if (_flags(obj) & MADF_CYCLECHAIN
-	&& (data->mad_InputMode != MUIV_InputMode_None))
-    {
-/*  g_print("append %p to cc\n", obj); */
-#if 0
-	muiWindowData(_win(obj))->wd_CycleChain =
-	    g_list_append(muiWindowData(_win(obj))->wd_CycleChain,
-			  obj);
-#endif
-    }
-}
-#endif
-
-#if 0
-static void
-cleanup_cycle_chain (struct MUI_AreaData *data, Object *obj)
-{
-    if (_flags(obj) & MADF_CYCLECHAIN
-	&& (data->mad_InputMode != MUIV_InputMode_None))
-    {
-#if 0
-	muiWindowData(_win(obj))->wd_CycleChain =
-	    g_list_remove(muiWindowData(_win(obj))->wd_CycleChain,
-			  obj);
-#endif
-    }
-}
-#endif
-
 /**************************************************************************
  First method to be called after an OM_NEW, it is the place
  for all initializations depending on the environment, but not
@@ -1230,10 +1200,7 @@ static void handle_release(struct IClass *cl, Object *obj)
 
 }
 
-#if defined(_AROS) || defined(_AMIGA)
-
-static ULONG
-event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
+static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     BOOL in = _between(_left(obj), imsg->MouseX, _right(obj))
@@ -1245,8 +1212,11 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		if (in)
 		{
 		    set(_win(obj), MUIA_Window_ActiveObject, obj);
+		    data->mad_ClickX = imsg->MouseX;
+		    data->mad_ClickY = imsg->MouseY;
 		    if ((data->mad_InputMode != MUIV_InputMode_Toggle) && (data->mad_Flags & MADF_SELECTED))
 			break;
+		    nnset(obj,MUIA_Timer,0);
 		    handle_press(cl, obj);
 		    if (data->mad_InputMode == MUIV_InputMode_RelVerify)
 		    {
@@ -1282,171 +1252,51 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
     return 0;
 }
 
-static ULONG
-event_motion(Class *cl, Object *obj, struct IntuiMessage *imsg)
+static ULONG event_motion(Class *cl, Object *obj, struct IntuiMessage *imsg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
     if (imsg->Qualifier & IEQUALIFIER_LEFTBUTTON)
     {
-	if (data->mad_InputMode == MUIV_InputMode_RelVerify)
-	{
-	    BOOL in = _between(_left(obj), imsg->MouseX, _right(obj))
+	BOOL in = _between(_left(obj), imsg->MouseX, _right(obj))
 	           && _between(_top(obj),  imsg->MouseY, _bottom(obj));
-	    if (!in && (data->mad_Flags & MADF_SELECTED)) /* going out */
-	    {
-		set(obj, MUIA_Selected, FALSE);
-	    }
-	    else if (in && !(data->mad_Flags & MADF_SELECTED)) /* going in */
-	    {
-		set(obj, MUIA_Selected, TRUE);
-#if 0
-		/*
-		 * going in when no timer has been set yet
-		 */
-		if (!data->mad_Timeout_id && !data->mad_PreTimeout_id)
-		{
-		    nnset(obj, MUIA_Timer, 0);
-		    set(obj, MUIA_Timer, 1);
-		    data->mad_PreTimeout_id =
-			g_timeout_add(500, add_intuiticks_client, obj);
-		}
-#endif
-	    }
-	}
-    }
-    else /* move while key pressed -> go to normal */
-    {
 
-/* commented because there is no key release event on most hardware,
- * so release has to be done immediately after press.
- * Reuse this if you hack something based on timers, polling key state :)
- * This is a difference with the miga version because Ami has key release
- */
-	/* normal draw
-	 */
-/*  	DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn); */
-/*  	data->mad_ehn.ehn_Events &= ~GDK_POINTER_MOTION_MASK; */
-/*  	DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn); */
-/*  	handle_release(cl, obj); */
-    }
-    return MUI_EventHandlerRC_Eat;
-}
-
-#else
-
-static ULONG
-event_button_press(struct IClass *cl, Object *obj, GdkEventButton *evb)
-{
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-/*  g_print("event_button_press obj %p\n", obj); */
-    if (_between(_left(obj), evb->x, _right(obj))
-	&& _between(_top(obj), evb->y, _bottom(obj)))
-    {
-	set(_win(obj), MUIA_Window_ActiveObject, obj);
-
-	switch (evb->button)
+	if (in)
 	{
-	    case 1:
-		if (data->mad_InputMode != MUIV_InputMode_Toggle
-		    && data->mad_Flags & MADF_SELECTED)
-		    break;
-
-		handle_press(cl, obj);
+	    if ((data->mad_Flags & MADF_DRAGGABLE) && ((abs(data->mad_ClickX-imsg->MouseX) >= 3) || (abs(data->mad_ClickY-imsg->MouseY)>=3))) /* should be user configurable */
+	    {
 		if (data->mad_InputMode == MUIV_InputMode_RelVerify)
-		{
-/*  		g_print("catching motions\n"); */
-		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
-		    data->mad_ehn.ehn_Events |= GDK_BUTTON1_MOTION_MASK;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
-		}
-		break;
-
-	    case 3:
-		handle_popupmenu(cl, obj);
-		break;
-	}
-	return MUI_EventHandlerRC_Eat;
-    }
-    else
-    {
-	return 0;
-    }
-}
-
-static ULONG
-event_button_release(struct IClass *cl, Object *obj, GdkEventButton *evb)
-{
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-    /* this object was grabbing events */
-    if (data->mad_ehn.ehn_Events & GDK_BUTTON1_MOTION_MASK)
-    {
-	if (evb->button == 1)
-	{
-	    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
-	    data->mad_ehn.ehn_Events &= ~GDK_BUTTON1_MOTION_MASK;
-	    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
-	    if (!(_between(_left(obj), evb->x, _right(obj))
-		  && _between(_top(obj), evb->y, _bottom(obj))))
+		    set(obj, MUIA_Selected, FALSE);
 		nnset(obj, MUIA_Pressed, FALSE);
-	    handle_release(cl, obj);
+
+		if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+		data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+		DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+		if (data->mad_Timer.ihn_Millis)
+		{
+		   DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+		   data->mad_Timer.ihn_Millis = 0;
+		}
+
+	    	DoMethod(obj,MUIM_DoDrag, data->mad_ClickX - _left(obj), data->mad_ClickY - _top(obj), 0);
+		return MUI_EventHandlerRC_Eat;
+	    }
 	}
-    }
-    return MUI_EventHandlerRC_Eat;
-}
 
-static ULONG
-event_motion(struct IClass *cl, Object *obj, GdkEventMotion *evm)
-{
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
-
-    if (evm->state & GDK_BUTTON1_MASK)
-    {
 	if (data->mad_InputMode == MUIV_InputMode_RelVerify)
 	{
-	    BOOL in = _between(_left(obj), evm->x, _right(obj))
-		&& _between(_top(obj), evm->y, _bottom(obj));
 	    if (!in && (data->mad_Flags & MADF_SELECTED)) /* going out */
 	    {
 		set(obj, MUIA_Selected, FALSE);
 	    }
 	    else if (in && !(data->mad_Flags & MADF_SELECTED)) /* going in */
 	    {
-		set(obj, MUIA_Selected, TRUE);
-		/*
-		 * going in when no timer has been set yet
-		 */
-		if (!data->mad_Timeout_id && !data->mad_PreTimeout_id)
-		{
-		    nnset(obj, MUIA_Timer, 0);
-		    set(obj, MUIA_Timer, 1);
-		    data->mad_PreTimeout_id =
-			g_timeout_add(500, add_intuiticks_client, obj);
-		}
+	        set(obj, MUIA_Selected, TRUE);
 	    }
 	}
     }
-    else /* move while key pressed -> go to normal */
-    {
-
-/* commented because there is no key release event on most hardware,
- * so release has to be done immediately after press.
- * Reuse this if you hack something based on timers, polling key state :)
- * This is a difference with the miga version because Ami has key release
- */
-	/* normal draw
-	 */
-/*  	DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn); */
-/*  	data->mad_ehn.ehn_Events &= ~GDK_POINTER_MOTION_MASK; */
-/*  	DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn); */
-/*  	handle_release(cl, obj); */
-    }
     return MUI_EventHandlerRC_Eat;
 }
-
-#endif
 
 /**************************************************************************
  ...
@@ -1574,8 +1424,56 @@ static ULONG Area_Timer(struct IClass *cl, Object *obj, Msg msg)
     data->mad_Timer.ihn_Millis = 50;
     DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->mad_Timer);
 
-    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
+    if (data->mad_Flags & MADF_SELECTED)
+	set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
     return 0;
+}
+
+/**************************************************************************
+ MUIM_DoDrag
+**************************************************************************/
+static ULONG Area_DoDrag(struct IClass *cl, Object *obj, struct MUIP_DoDrag *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    DoMethod(_win(obj), MUIM_Window_DragObject, obj, msg->touchx, msg->touchy, msg->flags);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_CreateDragImage
+**************************************************************************/
+static ULONG Area_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
+{
+    struct MUI_DragImage *img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage),MEMF_CLEAR);
+    if (img)
+    {
+	LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
+
+    	img->width = _width(obj);
+    	img->height = _height(obj);
+    	if ((img->bm = AllocBitMap(img->width,img->height,depth,BMF_MINPLANES,_screen(obj)->RastPort.BitMap)))
+    	{
+    	    /* Render the stuff now */
+    	}
+
+    	img->touchx = msg->touchx;
+    	img->touchy = msg->touchy;
+    	img->flags = 0;
+    }
+    return (ULONG)img;
+}
+
+/**************************************************************************
+ MUIM_DeleteDragImage
+**************************************************************************/
+static ULONG Area_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
+{
+    if (msg->di)
+    {
+	if (msg->di->bm) FreeBitMap(msg->di->bm);
+	FreeVec(msg->di);
+    }
+    return NULL;
 }
 
 
@@ -1674,6 +1572,14 @@ AROS_UFH3S(IPTR, Area_Dispatcher,
 	case MUIM_HandleEvent: return Area_HandleEvent(cl, obj, (APTR)msg);
 	case MUIM_ContextMenuBuild: return Area_ContextMenuBuild(cl, obj, (APTR)msg);
 	case MUIM_Timer: return Area_Timer(cl,obj,msg);
+	case MUIM_DragQuery: return FALSE;
+	case MUIM_DragBegin: return FALSE;
+	case MUIM_DragDrop: return FALSE;
+	case MUIM_DragFinish: return FALSE;
+	case MUIM_DragReport: return FALSE;
+	case MUIM_DoDrag: return Area_DoDrag(cl, obj, (APTR)msg);
+	case MUIM_CreateDragImage: return Area_CreateDragImage(cl, obj, (APTR)msg);
+	case MUIM_DeleteDragImage: return Area_DeleteDragImage(cl, obj, (APTR)msg);
 
 	case MUIM_Export: return Area_Export(cl, obj, (APTR)msg);
 	case MUIM_Import: return Area_Import(cl, obj, (APTR)msg);
