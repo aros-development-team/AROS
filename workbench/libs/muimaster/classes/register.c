@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,7 +41,7 @@ struct RegisterTabItem
     WORD    y1, y2;  /* tab y input sensitive interval - valid between setup/cleanup */
 };
 
-struct MUI_RegisterData
+struct Register_DATA
 {
     struct MUI_EventHandlerNode ehn;
     struct RegisterTabItem     *items;
@@ -71,7 +69,7 @@ struct MUI_RegisterData
 /**************************************************************************
  Layout Tab Items
 **************************************************************************/
-static void LayoutTabItems(Object *obj, struct MUI_RegisterData *data)
+static void LayoutTabItems(Object *obj, struct Register_DATA *data)
 {
     WORD extra_space;
     WORD fitwidth;
@@ -121,7 +119,7 @@ static void LayoutTabItems(Object *obj, struct MUI_RegisterData *data)
 **************************************************************************/
 static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
     struct RegisterTabItem *ri = &data->items[item];
     struct TextExtent extent;
     WORD fitlen;  /* text len fitting in alloted space */
@@ -237,7 +235,7 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
 **************************************************************************/
 static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
     WORD tabx;
 
 /*
@@ -331,7 +329,7 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 /**************************************************************************
  Set the coordinates
 **************************************************************************/
-static void SetHardCoord(Object *obj, struct MUI_RegisterData *data)
+static void SetHardCoord(Object *obj, struct Register_DATA *data)
 {
     struct MUI_AreaData *adata = muiAreaData(obj);
 
@@ -343,12 +341,9 @@ static void SetHardCoord(Object *obj, struct MUI_RegisterData *data)
 /*      D(bug("Hardcoord %p top=%ld bottom=%ld\n", obj, adata->mad_HardITop, adata->mad_HardIBottom)); */
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_RegisterData *data;
+    struct Register_DATA *data;
     int i;
     IPTR tmp;
 
@@ -412,24 +407,18 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Register_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Register__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
 
     if (data->items) FreeVec(data->items);
     
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);   
+    struct Register_DATA *data = INST_DATA(cl, obj);   
     WORD    	    i, h = 0;
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
@@ -491,24 +480,18 @@ static ULONG Register_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static ULONG Register_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Register__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Register__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 /*      D(bug("Register_AskMinMax1 : %ld, %ld, %ld\n", */
@@ -535,12 +518,9 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Layout
-**************************************************************************/
-static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
+IPTR Register__MUIM_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
     ULONG retval = 1;
     IPTR active;
 
@@ -569,12 +549,9 @@ static ULONG Register_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout 
     return retval;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Register__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-/*    struct MUI_RegisterData *data = INST_DATA(cl, obj);*/
+/*    struct Register_DATA *data = INST_DATA(cl, obj);*/
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -583,12 +560,9 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Register__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
 
     /* Before all the current page is drawn erase the part of the area covered
      * by tabs which is not erased (between _left(obj) and _mleft(obj) and so on */
@@ -634,12 +608,9 @@ static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_HandleEvent
-**************************************************************************/
-static ULONG Register_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Register__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct MUI_RegisterData *data = INST_DATA(cl, obj);
+    struct Register_DATA *data = INST_DATA(cl, obj);
     WORD i, x, y;
     
     if (msg->muikey != MUIKEY_NONE)
@@ -691,25 +662,23 @@ BOOPSI_DISPATCHER(IPTR, Register_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Register_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Register_Dispose(cl, obj, msg);
-	case MUIM_Setup: return Register_Setup(cl, obj, (struct MUIP_Setup *)msg);
-    	case MUIM_Cleanup: return Register_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
-	case MUIM_AskMinMax: return Register_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
-    	case MUIM_Layout: return Register_Layout(cl, obj, (struct MUIP_Layout *)msg);
-    	case MUIM_Show: return Register_Show(cl, obj, (struct MUIP_Show *)msg);
-	case MUIM_Draw: return Register_Draw(cl, obj, (struct MUIP_Draw *)msg);
-	case MUIM_HandleEvent: return Register_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
+	case OM_NEW:           return Register__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:       return Register__OM_DISPOSE(cl, obj, msg);
+	case MUIM_Setup:       return Register__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+    	case MUIM_Cleanup:     return Register__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+	case MUIM_AskMinMax:   return Register__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
+    	case MUIM_Layout:      return Register__MUIM_Layout(cl, obj, (struct MUIP_Layout *)msg);
+    	case MUIM_Show:        return Register__MUIM_Show(cl, obj, (struct MUIP_Show *)msg);
+	case MUIM_Draw:        return Register__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+	case MUIM_HandleEvent: return Register__MUIM_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
+        default:               return DoSuperMethodA(cl, obj, msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Register_desc = { 
+const struct __MUIBuiltinClass _MUI_Register_desc =
+{ 
     MUIC_Register, 
     MUIC_Group, 
-    sizeof(struct MUI_RegisterData), 
+    sizeof(struct Register_DATA), 
     (void*)Register_Dispatcher 
 };
