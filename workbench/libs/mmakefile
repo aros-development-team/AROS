@@ -7,24 +7,25 @@
 # machine, and you want to save yourself some typing.
 #MM- workbench-libs-complete : \
 #MM	    workbench-libs-amigaguide \
-#MM         workbench-libs-asl \
-#MM         workbench-libs-commodities \
-#MM         workbench-libs-camd \
-#MM         workbench-libs-datatypes \
-#MM         workbench-libs-diskfont \
-#MM         workbench-libs-gadtools \
-#MM         workbench-libs-icon \
-#MM         workbench-libs-iffparse \
-#MM         workbench-libs-locale \
-#MM         workbench-libs-lowlevel \
-#MM         workbench-libs-mathieeesingtrans \
-#MM         workbench-libs-mathtrans \
-#MM         workbench-libs-mathieeedoubbas \
-#MM         workbench-libs-mathieeedoubtrans \
-#MM         workbench-libs-partition \
-#MM         workbench-libs-reqtools \
-#MM         workbench-libs-rexxsupport \
+#MM     workbench-libs-asl \
+#MM     workbench-libs-commodities \
+#MM     workbench-libs-camd \
+#MM     workbench-libs-datatypes \
+#MM     workbench-libs-diskfont \
+#MM     workbench-libs-gadtools \
+#MM     workbench-libs-icon \
+#MM     workbench-libs-iffparse \
+#MM     workbench-libs-locale \
+#MM     workbench-libs-lowlevel \
+#MM     workbench-libs-mathieeesingtrans \
+#MM     workbench-libs-mathtrans \
+#MM     workbench-libs-mathieeedoubbas \
+#MM     workbench-libs-mathieeedoubtrans \
+#MM     workbench-libs-partition \
+#MM     workbench-libs-reqtools \
+#MM     workbench-libs-rexxsupport \
 #MM	    workbench-libs-rexxsyslib \
-#MM         workbench-libs-realtime \
-#MM         workbench-libs-nonvolatile \
-#MM         workbench-libs-nvdisk
+#MM     workbench-libs-realtime \
+#MM     workbench-libs-nonvolatile \
+#MM     workbench-libs-nvdisk \
+#MM     workbench-libs-muimaster
