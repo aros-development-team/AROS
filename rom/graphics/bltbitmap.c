@@ -268,7 +268,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         }
 
 	/* If the size is illegal or we need not copy anything, return */
-	if (ySize <= 0 || xSize <= 0 || !mask || !minterm)
+	if (ySize <= 0 || xSize <= 0 || !mask)
 	    return 0;
 
 	planecnt = 0;
