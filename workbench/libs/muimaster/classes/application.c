@@ -10,9 +10,11 @@
 #include <devices/timer.h>
 
 #include <clib/alib_protos.h>
+#include <libraries/commodities.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/commodities.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -28,29 +30,34 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ApplicationData
 {
-    struct MUI_GlobalInfo app_GlobalInfo;
-    APTR           app_WindowFamily; /* delegates window list */
-    struct MinList app_IHList;
-    struct MinList app_MethodQueue;
-    struct SignalSemaphore app_MethodSemaphore;
-    struct MinList app_ReturnIDQueue;
-    APTR           app_RIDMemChunk;
-    STRPTR         app_Author;
-    STRPTR         app_Base;
-    STRPTR         app_Copyright;
-    STRPTR         app_Description;
-    STRPTR         app_HelpFile;
-    STRPTR         app_Title;
-    STRPTR         app_Version;
-    ULONG          app_SleepCount;
-    BOOL           app_ForceQuit;
-    BOOL           app_Iconified;
-    BOOL           app_SingleTask;
-    struct MsgPort *app_TimerPort;
-    struct timerequest *app_TimerReq;
-    ULONG	   app_TimerOutstanding;
-    Object        *app_Menustrip;
-    ULONG          app_MenuAction; /* Remember last action */
+    struct MUI_GlobalInfo   app_GlobalInfo;
+    APTR            	    app_WindowFamily; /* delegates window list */
+    struct MinList  	    app_IHList;
+    struct MinList  	    app_MethodQueue;
+    struct SignalSemaphore  app_MethodSemaphore;
+    struct MinList  	    app_ReturnIDQueue;
+    struct Hook     	    *app_BrokerHook;
+    struct MsgPort  	    *app_BrokerPort;
+    struct MsgPort  	    *app_TimerPort;
+    struct timerequest      *app_TimerReq;
+    CxObj   	    	    *app_Broker;
+    Object          	    *app_Menustrip;
+    APTR            	    app_RIDMemChunk;
+    STRPTR          	    app_Author;
+    STRPTR          	    app_Base;
+    STRPTR          	    app_Copyright;
+    STRPTR          	    app_Description;
+    STRPTR          	    app_HelpFile;
+    STRPTR          	    app_Title;
+    STRPTR          	    app_Version;
+    ULONG           	    app_SleepCount;
+    ULONG	    	    app_TimerOutstanding;
+    ULONG           	    app_MenuAction; /* Remember last action */
+    BOOL            	    app_ForceQuit;
+    BOOL            	    app_Iconified;
+    BOOL            	    app_SingleTask;
+    BOOL    	    	    app_Active;
+    BYTE    	    	    app_BrokerPri;
 };
 
 struct timerequest_ext
@@ -72,13 +79,13 @@ struct timerequest_ext
  */
 
 /*
-MUIA_Application_Active [ISG]             needs Commodities
+MUIA_Application_Active [ISG]             done
 MUIA_Application_Author [I.G]             done
 MUIA_Application_Base [I.G]               done
-MUIA_Application_Broker [..G]             needs Commodities
-MUIA_Application_BrokerHook [ISG]         needs Commodities
-MUIA_Application_BrokerPort [..G]         needs Commodities
-MUIA_Application_BrokerPri [I.G]          needs Commodities
+MUIA_Application_Broker [..G]             done
+MUIA_Application_BrokerHook [ISG]         done
+MUIA_Application_BrokerPort [..G]         done
+MUIA_Application_BrokerPri [I.G]          done
 MUIA_Application_Commands [ISG]           needs Arexx
 MUIA_Application_Copyright [I.G]          done
 MUIA_Application_Description [I.G]        done
@@ -98,7 +105,7 @@ MUIA_Application_RexxString [.S.]         needs Arexx
 MUIA_Application_SingleTask [I..]         todo
 MUIA_Application_Sleep [.S.]              todo
 MUIA_Application_Title [I.G]              done
-MUIA_Application_UseCommodities [I..]     needs Commodities
+MUIA_Application_UseCommodities [I..]     done
 MUIA_Application_UseRexx [I..]            needs Arexx
 MUIA_Application_Version [I.G]            done
 MUIA_Application_Window [I..]             done
@@ -287,13 +294,15 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
     }
-
+    
     InitSemaphore(&data->app_MethodSemaphore);
 
     muiNotifyData(obj)->mnd_GlobalInfo = &data->app_GlobalInfo;
 
     /* parse initial taglist */
 
+    data->app_Active = 1;
+    
     for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
@@ -329,6 +338,19 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIA_Application_Menustrip:
 	    data->app_Menustrip = (Object*)tag->ti_Data;
 	    break;
+	    	    
+	case MUIA_Application_BrokerPri:
+	    data->app_BrokerPri = (BYTE)tag->ti_Data;
+	    break;
+	    
+	case MUIA_Application_BrokerHook:
+	    data->app_BrokerHook = (struct Hook *)tag->ti_Data;
+	    break;
+	    
+	case MUIA_Application_Active:
+	    data->app_Active = tag->ti_Data ? TRUE : FALSE;
+	    break;
+	    
 	}
     }
 
@@ -336,6 +358,33 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
 	return 0;
+    }
+
+    if (CxBase && GetTagData(MUIA_Application_UseCommodities, TRUE, msg->ops_AttrList))
+    {
+    	data->app_BrokerPort = CreateMsgPort();
+	
+	if (data->app_BrokerPort)
+	{
+    	    struct NewBroker nb;
+
+	    nb.nb_Version   	    = NB_VERSION;
+	    nb.nb_Name      	    = data->app_Title ? data->app_Title : (STRPTR)"Unnamed";
+	    nb.nb_Title     	    = data->app_Title ? data->app_Title : (STRPTR)"Unnamed";
+	    nb.nb_Descr     	    = data->app_Description ? data->app_Description : (STRPTR)"?";
+	    nb.nb_Unique    	    = 0;
+	    nb.nb_Flags     	    = COF_SHOW_HIDE;
+	    nb.nb_Pri 	    	    = data->app_BrokerPri;
+	    nb.nb_Port      	    = data->app_BrokerPort;
+	    nb.nb_ReservedChannel   = 0;
+	    
+	    data->app_Broker = CxBroker(&nb, 0);
+	    
+	    if (data->app_Broker)
+	    {
+	    	if (data->app_Active) ActivateCxObj(data->app_Broker, 1);
+	    }
+	}
     }
 
     DoMethod(obj, MUIM_Notify, MUIA_Application_Iconified, TRUE,
@@ -361,6 +410,25 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_Menustrip)
 	MUI_DisposeObject(data->app_Menustrip);
 
+    /* free commodities stuff */
+    
+    if (data->app_Broker)
+    {
+    	DeleteCxObjAll(data->app_Broker);
+    }
+    
+    if (data->app_BrokerPort)
+    {
+    	struct Message *msg;
+	
+	while((msg = GetMsg(data->app_BrokerPort)))
+	{
+	    ReplyMsg(msg);
+	}
+	
+	DeleteMsgPort(data->app_BrokerPort);
+    }
+    
     /* free timer stuff */
     if (data->app_TimerReq)
     {
@@ -430,6 +498,19 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Application_MenuAction:
 		    data->app_MenuAction = tag->ti_Data;
 		    break;
+		    
+	    case    MUIA_Application_BrokerHook:
+	    	    data->app_BrokerHook = (struct Hook *)tag->ti_Data;
+		    break;
+		    
+	    case    MUIA_Application_Active:
+	    	    data->app_Active = tag->ti_Data ? TRUE : FALSE;
+		    if (data->app_Broker)
+		    {
+		    	ActivateCxObj(data->app_Broker, data->app_Active);
+		    }
+		    break;
+		    
 	}
     }
 
@@ -458,40 +539,55 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 	STORE = __revision;
 	return(TRUE);
     case MUIA_Application_Author:
-	STORE = (ULONG)data->app_Author;
+	STORE = (IPTR)data->app_Author;
 	return(TRUE);
     case MUIA_Application_Base:
-	STORE = (ULONG)data->app_Base;
+	STORE = (IPTR)data->app_Base;
 	return(TRUE);
     case MUIA_Application_Copyright:
-	STORE = (ULONG)data->app_Copyright;
+	STORE = (IPTR)data->app_Copyright;
 	return(TRUE);
     case MUIA_Application_Description:
-	STORE = (ULONG)data->app_Description;
+	STORE = (IPTR)data->app_Description;
 	return(TRUE);
     case MUIA_Application_DoubleStart:
 	return(TRUE);
     case MUIA_Application_ForceQuit:
-	STORE = (ULONG)data->app_ForceQuit;
+	STORE = (IPTR)data->app_ForceQuit;
 	return(TRUE);
     case MUIA_Application_HelpFile:
-	STORE = (ULONG)data->app_HelpFile;
+	STORE = (IPTR)data->app_HelpFile;
 	return(TRUE);
     case MUIA_Application_Iconified:
-	STORE = (ULONG)data->app_Iconified;
+	STORE = (IPTR)data->app_Iconified;
 	return(TRUE);
     case MUIA_Application_Title:
-	STORE = (ULONG)data->app_Title;
+	STORE = (IPTR)data->app_Title;
 	return(TRUE);
     case MUIA_Application_Version:
-	STORE = (ULONG)data->app_Version;
+	STORE = (IPTR)data->app_Version;
 	return(TRUE);
     case    MUIA_Application_WindowList: return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
     case MUIA_Application_Menustrip:
-	STORE = (ULONG)data->app_Menustrip;
+	STORE = (IPTR)data->app_Menustrip;
 	return 1;
     case MUIA_Application_MenuAction:
-	STORE = (ULONG)data->app_MenuAction;
+	STORE = (IPTR)data->app_MenuAction;
+	return 1;
+    case MUIA_Application_BrokerPort:
+    	STORE = (IPTR)data->app_BrokerPort;
+	return 1;
+    case MUIA_Application_BrokerPri:
+    	STORE = (IPTR)data->app_BrokerPri;
+	return 1;
+    case MUIA_Application_BrokerHook:
+    	STORE = (IPTR)data->app_BrokerHook;
+	return 1;
+    case MUIA_Application_Broker:
+    	STORE = (IPTR)data->app_Broker;
+	return 1;
+    case MUIA_Application_Active:
+    	STORE = data->app_Active;
 	return 1;
     }
 
@@ -625,14 +721,16 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct RIDNode *rid;
     ULONG          retval = 0;
-    ULONG          signal;
+    ULONG          signal, signalmask;
     ULONG	   handler_mask = 0; /* the mask of the signal handlers */
     struct MinNode *mn;
 
     struct MinNode ihn_Node;
 
+    signal = msg->signal;
+    
     /* if user didn't handle ctrl-c himself, quit */
-    if (*msg->signal & SIGBREAKF_CTRL_C)
+    if (signal & SIGBREAKF_CTRL_C)
 	return MUIV_Application_ReturnID_Quit;
 
     /* process all pushed methods */
@@ -646,8 +744,10 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	handler_mask |= ihn->ihn_Flags;
     }
 
-    signal = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
-    if (*msg->signal & signal)
+    signalmask = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
+    if (data->app_Broker) signalmask |= (1L << data->app_BrokerPort->mp_SigBit);
+    
+    if (signal & signalmask)
     {
     	if (signal & (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)))
     	{
@@ -677,7 +777,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    ** we use RemHead() because the handler can remove it itself and so
 	    ** a FreeVec() could happen in MUIM_Application_RemInputHandler which would
 	    ** destroy the the ln->Succ of course */
-	    while (n = RemHead(&list))
+	    while ((n = RemHead(&list)))
 	    {
 		struct timerequest_ext *time_ext = (struct timerequest_ext *)n;
 		struct MUI_InputHandlerNode *ihn = time_ext->ihn;
@@ -688,6 +788,41 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    }
 	}
 
+    	if (signal & (1L << data->app_BrokerPort->mp_SigBit))
+	{
+	    CxMsg *msg;
+	    
+	    while((msg = (CxMsg *)GetMsg(data->app_BrokerPort)))
+	    {
+	    	switch(CxMsgType(msg))
+		{
+		    case CXM_COMMAND:
+	    		switch(CxMsgID(msg))
+			{
+			    case CXCMD_DISABLE:
+		    		set(obj, MUIA_Application_Active, FALSE);
+				break;
+
+			    case CXCMD_ENABLE:
+		    		set(obj, MUIA_Application_Active, TRUE);
+				break;
+
+			    case CXCMD_KILL:
+		    		SetSignal(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
+				break;
+			}
+			break;
+		}
+		
+		if (data->app_BrokerHook)
+		{
+		    CallHookPkt(data->app_BrokerHook, obj, msg);
+		}
+		
+	    	ReplyMsg((struct Message *)msg);
+	    }
+	}
+	
 	if (signal & handler_mask)
 	{
 	    for (mn = data->app_IHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -699,7 +834,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	}
     }
 
-    *msg->signal = signal | SIGBREAKF_CTRL_C;
+    *msg->signal = signalmask | SIGBREAKF_CTRL_C;
 
     /* set return code */
     if ((rid = (struct RIDNode *)RemHead((struct List *)&data->app_ReturnIDQueue)))
