@@ -287,6 +287,7 @@ clib00169;1;bergers;Write sigpending
 clib00170;1;bergers;Write sigprocmask
 clib00171;1;bergers;Write sigsuspend
 clib00172;2;hkiel;Write stpsym
+clib00173;2;hkiel;Write stccpy
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
