@@ -1,11 +1,13 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: RemAssignList() - Remove an entry from a multi-dir assign.
-    Lang: english
+    Lang: English
 */
+
 #include "dos_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
@@ -50,8 +52,6 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -61,8 +61,10 @@
     struct DosList *dl = NULL;
     BOOL res = DOSFALSE;
 
-    dl = LockDosList(LDF_ASSIGNS|LDF_WRITE);
-    while((dl = FindDosEntry(dl, name, LDF_ASSIGNS)))
+    D(bug("RemAssignList: name = \"%s\", lock = $%lx\n", name, lock));
+    dl = LockDosList(LDF_ASSIGNS | LDF_WRITE);
+
+    while (!res && (dl = FindDosEntry(dl, name, LDF_ASSIGNS)))
     {
 	struct AssignList *al, *lastal = NULL;
 
@@ -73,7 +75,7 @@
 	    member to remove. Initially check the inline lock.
 	*/
 
-	if(SameLock(dl->dol_Lock, lock) == LOCK_SAME)
+	if (SameLock(dl->dol_Lock, lock) == LOCK_SAME)
 	{
 	    /*
 		This is a bit tricky, me move the first element
@@ -87,18 +89,20 @@
 	}
 	else
 	{
-	    while(al)
+	    while (al)
 	    {
-		if(SameLock(al->al_Lock, lock) == LOCK_SAME)
+		if (SameLock(al->al_Lock, lock) == LOCK_SAME)
 		{
 		    /* Remove this element. Singly linked list */
-		    if(lastal == NULL)
+		    if (lastal == NULL)
 		    {
 			/* First element of list... */
 			dl->dol_misc.dol_assign.dol_List = al->al_Next;
 		    }
 		    else
+		    {
     			lastal->al_Next = al->al_Next;
+		    }
 
 		    UnLock(al->al_Lock);
 		    FreeVec(al);
@@ -114,7 +118,8 @@
 	} /* in the assignlist */
 
     } /* the assign exists */
-    UnLockDosList(LDF_ASSIGNS|LDF_WRITE);
+
+    UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
 
     return res;
 

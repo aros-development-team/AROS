@@ -61,8 +61,9 @@ extern struct EString EString[];
 
 struct vfp
 {
-    BPTR file;
-    LONG count;
+    BPTR               file;
+    LONG               count;
+    struct DosLibrary *DOSBase;
 };
 
 #define FPUTC(f,c) \
@@ -70,8 +71,10 @@ struct vfp
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
 
-LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name, struct DosLibrary * DOSBase);
-LONG DevName(CONST_STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
+LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
+	    struct DosLibrary *DOSBase);
+LONG DevName(CONST_STRPTR name, struct Device **devptr,
+	     struct DosLibrary *DOSBase);
 
 inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
 		     struct DosLibrary *DOSBase);
@@ -101,16 +104,6 @@ BOOL patternMatch(STRPTR pat, STRPTR str, BOOL useCase,
 /* Pattern parsing function used by ParsePattern() and ParsePatternNoCase() */
 LONG patternParse(STRPTR Source, STRPTR Dest, LONG DestLength, BOOL useCase,
 		  struct DosLibrary *DOSBase);
-
-/*
-BOOL writeFullPath(struct AnchorPath * AP);
-LONG followpattern(struct AnchorPath * AP, 
-                   struct AChain * AC,
-                   struct DosLibrary * DOSBase);
-LONG createresult(struct AnchorPath * AP,
-                  struct AChain * AC,
-                  struct DosLibrary * DOSBase);
-*/
 
 /* match_misc.c */
 
