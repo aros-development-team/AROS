@@ -104,7 +104,7 @@ static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
        new size is bigger than old size
     */
 
-    D(bug("********* WindowSizeWillChange ********\n"));
+    D(bug("********* WindowSizeWillChange ******** dx = %d  dy = %d\n", dx, dy));
 
     if ( ((dx > 0) && (targetwindow->BorderRight  > 0)) ||
 	 ((dy > 0) && (targetwindow->BorderBottom > 0)) )
@@ -142,6 +142,7 @@ static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
             EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
 	    OrRectRegion(L->DamageList, &rect);
+
 	    L->Flags |= LAYERREFRESH;
         }
 
@@ -156,6 +157,7 @@ static void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
             EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 
 	    OrRectRegion(L->DamageList, &rect);
+
 	    L->Flags |= LAYERREFRESH;
         }
 
@@ -732,7 +734,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
                 }
                 SizeLayer(NULL, targetlayer, size_dx, size_dy);
 
-		WindowSizeHasChanged(targetwindow, am->dx, am->dy, TRUE, IntuitionBase);				
+		WindowSizeHasChanged(targetwindow, size_dx, size_dy, TRUE, IntuitionBase);				
 
                 /* 
                    Only if the window is smaller now there can be damage
