@@ -86,7 +86,7 @@ LONG tmp;
   /* should be (char(Res))-- , but gcc on Linux screws up the result! */
 
   tmp = Res & 0xFFFFFF00;
-  (char)Res--;
+  Res -= sizeof(char);
   Res = Res | tmp;
 
   if ( 0 == Res || (char)Res < 0 )
