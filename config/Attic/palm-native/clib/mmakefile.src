@@ -5,32 +5,9 @@ COMMONOBJDIR    := $(GENDIR)/compiler/clib
 OBJDIR		:= $(COMMONOBJDIR)/static
 SOBJDIR		:= $(COMMONOBJDIR)/shared
 
-COMMONFILES     := \
-	memcpy \
-	strtod \
-	strtol \
-	strtoul 
-
-SFILES := \
-	__isinf \
-	__vcformat \
-	__vcscan \
-	difftime \
-	drand48 \
-	erand48 \
-	atof \
-	isinf \
-	sscanf \
-	strtol \
-	strtod \
-	strtoul
-
 ASMFILES  := setjmp longjmp
 
-OBJS  := $(foreach f, $(SFILES)     , $(SOBJDIR)/$(f).o)
-OBJS  += $(foreach f, $(SFILES)     , $(OBJDIR)/$(f).o)
-OBJS  += $(foreach f, $(ASMFILES)   , $(COMMONOBJDIR)/$(f).o)
-OBJS  += $(foreach f, $(COMMONFILES), $(COMMONOBJDIR)/$(f).o)
+OBJS  := $(foreach f, $(ASMFILES)   , $(COMMONOBJDIR)/$(f).o)
 
 AFLAGS2         := $(AFLAGS) -I..
 
@@ -41,10 +18,12 @@ clib-palm : $(OBJS)
 #MM
 setup-clib-palm-m68000 :
 	%mkdirs_q $(OBJDIR) $(SOBJDIR)
-	%add_objects   $(foreach f,$(COMMONFILES), compiler/clib/$(f))
-	%exclude_files $(foreach f,$(COMMONFILES), compiler/clib/$(f))
-	%add_objects   $(foreach f,$(SFILES)     , compiler/clib/$(f))
-	%exclude_files $(foreach f,$(SFILES)     , compiler/clib/$(f))
+
+
+#	%add_objects   $(foreach f,$(COMMONFILES), compiler/clib/$(f))
+#	%exclude_files $(foreach f,$(COMMONFILES), compiler/clib/$(f))
+#	%add_objects   $(foreach f,$(SFILES)     , compiler/clib/$(f))
+#	%exclude_files $(foreach f,$(SFILES)     , compiler/clib/$(f))
 
 
 #MM
