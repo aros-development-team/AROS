@@ -6,7 +6,7 @@
 
 usage()
 {
-    error "Usage: $1 -a archive [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
+    error "Usage: $1 -a archive [-as archive_suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
 fetch()
@@ -174,18 +174,16 @@ patch_cached()
     fi
 }
 
-if test "x$1" == "x"; then
-    usage "$0"
-fi
 
 while  test "x$1" != "x"; do
-    if test "x$2" == "x" -o "x${1:0:1}" == "x-" -a  "x${2:0:1}" == "x-"; then
+    if test "x${1:0:1}" == "x-" -a  "x${2:0:1}" == "x-"; then
         usage "$0"
     fi
     
     case "$1" in
         -ao) archive_origins="$2";;
 	 -a) archive="$2";;
+	-as) archive_suffixes="$2";;
 	 -d) destination="$2";;
 	-po) patches_origins="$2";;
 	 -p) patches="$2";;
@@ -195,14 +193,27 @@ while  test "x$1" != "x"; do
     shift
     shift
 done
-	
+
+test -z "$archive" && usage "$0"
+
 archive_origins=${archive_origins:-.}
 destination=${destination:-.}
 patches_origins=${patches_origins:-.}
-        
-if ! fetch_cached "$archive_origins" "$archive" "$destination"; then
-    error "Error while fetching the archive \`$archive'."
+
+if test -n "$archive_suffixes"; then        
+    archive1="$archive"
+    archive=
+    
+    for sfx in $archive_suffixes; do
+        archive2=${archive1}.$sfx
+    
+        fetch_cached "$archive_origins" "$archive2" "$destination" && archive="$archive2" && break
+    done
+else
+    ! fetch_cached "$archive_origins" "$archive" "$destination" && archive=
 fi
+
+test -z "$archive" && error "Error while fetching the archive \`$archive'."
 
 for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
