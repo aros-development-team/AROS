@@ -403,7 +403,8 @@ struct Volume *volume;
 					}
 					else
 					{
-						showError(afsbase, ERR_DEVICE);
+						*error = ERROR_OBJECT_NOT_FOUND;
+						showError(afsbase, ERR_DEVICE, volume->blockdevice);
 					}
 					DeleteIORequest((struct IORequest *)volume->iorequest);
 				}
