@@ -143,6 +143,23 @@ AROS_LP1(ULONG, GetOutlinePen,
     AROS_LPA(struct RastPort *, rp, A0),
     struct GfxBase *, GfxBase, 146, Graphics)
 
+AROS_LP2(void, GfxAssociate,
+    AROS_LPA(void *, pointer, A0),
+    AROS_LPA(struct ExtendedNode *, node, A1),
+    struct GfxBase *, GfxBase, 112, Graphics)
+
+AROS_LP1(void, GfxFree,
+    AROS_LPA(struct ExtendedNode *, node, A0),
+    struct GfxBase *, GfxBase, 111, Graphics)
+
+AROS_LP1(struct ExtendedNode *, GfxLookUp,
+    AROS_LPA(void *, pointer, A0),
+    struct GfxBase *, GfxBase, 117, Graphics)
+
+AROS_LP1(struct ExtendedNode *, GfxNew,
+    AROS_LPA(ULONG, node_type, D0),
+    struct GfxBase *, GfxBase, 110, Graphics)
+
 AROS_LP1(BOOL, InitRastPort,
     AROS_LPA(struct RastPort *, rp, A1),
     struct GfxBase *, GfxBase, 33, Graphics)

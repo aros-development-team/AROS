@@ -161,6 +161,27 @@
     AROS_LCA(struct RastPort *, rp, A0), \
     struct GfxBase *, GfxBase, 146, Graphics)
 
+#define GfxAssociate(pointer, node) \
+    AROS_LC2(void, GfxAssociate, \
+    AROS_LCA(void *, pointer, A0), \
+    AROS_LCA(struct ExtendedNode *, node, A1), \
+    struct GfxBase *, GfxBase, 112, Graphics)
+
+#define GfxFree(node) \
+    AROS_LC1(void, GfxFree, \
+    AROS_LCA(struct ExtendedNode *, node, A0), \
+    struct GfxBase *, GfxBase, 111, Graphics)
+
+#define GfxLookUp(pointer) \
+    AROS_LC1(struct ExtendedNode *, GfxFree, \
+    AROS_LCA(void *, pointer, A0), \
+    struct GfxBase *, GfxBase, 117, Graphics)
+
+#define GfxNew(node_type) \
+    AROS_LC1(struct ExtendedNode *, GfxNew, \
+    AROS_LCA(ULONG, node_type, D0), \
+    struct GfxBase *, GfxBase, 110, Graphics)
+   
 #define InitRastPort(rp) \
     AROS_LC1(BOOL, InitRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
