@@ -19,6 +19,7 @@
 #   include <exec/nodes.h>
 #endif
 
+#pragma pack(2)
 
 /**************************************
 	       Structures
@@ -41,6 +42,7 @@ struct MinList
 		   * mlh_TailPred;
 };
 
+#pragma pack()
 
 /**************************************
 	       Makros

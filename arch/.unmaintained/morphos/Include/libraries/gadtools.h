@@ -22,6 +22,7 @@
 #   include <utility/tagitem.h>
 #endif
 
+#pragma pack(2)
 
 /* Name of the gadtools.library as constant. This is an AROS extension. */
 #define GADTOOLSNAME "gadtools.library"
@@ -267,5 +268,7 @@ struct LVDrawMsg
 #define LVR_SELECTED         1
 #define LVR_NORMALDISABLED   2
 #define LVR_SELECTEDDISABLED 8
+
+#pragma pack()
 
 #endif /* LIBRARIES_GADTOOLS_H */
