@@ -538,7 +538,7 @@ dos00109;2;matthias;Write FreeDosEntry
 dos00110;2;matthias;Write IsFileSystem
 dos00111;2;matthias;Write Format
 dos00112;0;digulla;Write Relabel
-dos00113;0;digulla;Write Inhibit
+dos00113;1;SDuvan;Write Inhibit
 dos00114;2;matthias;Write AddBuffers
 dos00115;2;digulla;Write CompareDates
 dos00116;2;matthias;Write DateToStr
