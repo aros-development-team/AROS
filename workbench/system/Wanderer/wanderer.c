@@ -20,16 +20,22 @@
 #include <string.h>
 #include <stdio.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include "iconwindow.h"
 #include "wanderer.h"
 
 VOID LoadPrefs(VOID);
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
+
 extern Object *app;
 extern Object *root_iconwnd;
 extern Object *root_menustrip;
-extern struct Hook hook_standard;
+struct Hook hook_standard;
+struct Hook hook_action;
+
 
 char *GetScreenTitle(void)
 {
@@ -55,15 +61,15 @@ enum
 static struct NewMenu nm[] =
 {
   {NM_TITLE, "Wanderer"              },
-    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE|CHECKED, NULL, (void*)MEN_WANDERER_BACKDROP},
-    {NM_ITEM,  "Execute Command...", "E", NULL,               NULL, (void*)MEN_WANDERER_EXECUTE},
+    {NM_ITEM,  "Backdrop",           "B", CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WANDERER_BACKDROP},
+    {NM_ITEM,  "Execute Command...", "E", 0,               0, (APTR) MEN_WANDERER_EXECUTE},
     /*{NM_ITEM,  "Redraw All" },
     {NM_ITEM,  "Update All" },
     {NM_ITEM,  "Last Message" },*/
-    {NM_ITEM,  "Shell",              "W", NULL,               NULL, (void*)MEN_WANDERER_SHELL},
-    {NM_ITEM,  "GUI Settings...",        NULL, NULL,          NULL, (void*)MEN_WANDERER_GUISETTINGS},
-    {NM_ITEM,  "About...",           "?", NULL,               NULL, (void*)MEN_WANDERER_ABOUT},
-    {NM_ITEM,  "Quit...",            "Q", NULL,               NULL, (void*)MEN_WANDERER_QUIT},
+    {NM_ITEM,  "Shell",              "W", 0,               0, (APTR) MEN_WANDERER_SHELL},
+    {NM_ITEM,  "GUI Settings...",        NULL, 0,          0, (APTR) MEN_WANDERER_GUISETTINGS},
+    {NM_ITEM,  "About...",           "?", 0,               0, (APTR) MEN_WANDERER_ABOUT},
+    {NM_ITEM,  "Quit...",            "Q", 0,               0, (APTR) MEN_WANDERER_QUIT},
 
   /*{NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "New Drawer", "N"},
@@ -86,16 +92,16 @@ static struct NewMenu nm[] =
       {NM_SUB, "Date", NULL, CHECKIT, 1 + 2 + 4},*/
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "Open", "O", NULL, NULL, (void*) MEN_ICON_OPEN},
+    {NM_ITEM,  "Open", "O", 0, 0, (APTR) MEN_ICON_OPEN},
 /*    {NM_ITEM,  "Close","C" },
     {NM_ITEM,  "Rename...", "R"},*/
-    {NM_ITEM,  "Information...", "I", NULL, NULL, (void*) MEN_ICON_INFORMATION},
+    {NM_ITEM,  "Information...", "I", 0, 0, (APTR) MEN_ICON_INFORMATION},
 /*    {NM_ITEM,  "Snapshot", "S" },
     {NM_ITEM,  "Unsnapshot", "U" },
     {NM_ITEM,  "Leave Out", "L" },
     {NM_ITEM,  "Put Away", "P" },*/
     {NM_ITEM, NM_BARLABEL},
-    {NM_ITEM,  "Delete...", NULL, NULL, NULL, (void*) MEN_ICON_DELETE},
+    {NM_ITEM,  "Delete...", NULL, 0, 0, (APTR) MEN_ICON_DELETE},
 /*    {NM_ITEM,  "Format Disk..." },
     {NM_ITEM,  "Empty Trash..." },
 
@@ -104,8 +110,6 @@ static struct NewMenu nm[] =
   {NM_END}*/
 
 };
-
-struct Hook hook_action;
 
 /**************************************************************************
  Open the execute window. Simliar to above but you can also set the
@@ -210,7 +214,7 @@ void icon_information()
                 
                 do
                 {
-                    DoMethod(iconList, MUIM_IconList_NextSelected, &entry);
+                    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
                     if ((int)entry == MUIV_IconList_NextSelected_End) break;
                     kprintf("*** selected: %s\n", entry->filename);
                     
@@ -256,7 +260,7 @@ void icon_delete(void)
                 
                 do
                 {
-                    DoMethod(iconList, MUIM_IconList_NextSelected, &entry);
+                    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
                     if ((int)entry == MUIV_IconList_NextSelected_End) break;
                     kprintf("*** selected: %s\n", entry->filename);
                     
@@ -312,7 +316,7 @@ AROS_UFH3(void, hook_func_action,
 	struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 	Object *drawerwnd;
 
-	DoMethod(msg->iconlist, MUIM_IconList_NextSelected, &ent);
+	DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
 	if ((int)ent == MUIV_IconList_NextSelected_End) return;
 
 	if (msg->isroot)
@@ -356,10 +360,10 @@ AROS_UFH3(void, hook_func_action,
 		/* Create a new icon drawer window with the correct drawer being set */
 		drawerwnd = IconWindowObject,
 		    MUIA_UserData, 1,
-		    MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+		    MUIA_Window_Menustrip, (IPTR) menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL),
 		    MUIA_IconWindow_IsRoot, FALSE,
-		    MUIA_IconWindow_ActionHook, &hook_action,
-		    MUIA_IconWindow_Drawer, buf,
+		    MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
+		    MUIA_IconWindow_Drawer, (IPTR) buf,
 		End;
 
 		if (drawerwnd)
@@ -369,13 +373,17 @@ AROS_UFH3(void, hook_func_action,
 
 		    /* We simply close the window here in case somebody like to to this...
 		     * the memory is not freed until wb is closed however */
-		    DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+		    DoMethod
+                    (
+                        drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                        (IPTR) drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE
+                    );
 
 		    /* If "Execute Command" entry is clicked open the execute window */
 		    DoAllMenuNotifies(menustrip,drw);
 
 		    /* Add the window to the application */
-		    DoMethod(app,OM_ADDMEMBER,drawerwnd);
+		    DoMethod(app, OM_ADDMEMBER, (IPTR) drawerwnd);
 
 		    /* And now open it */
 		    DoMethod(drawerwnd, MUIM_IconWindow_Open);
@@ -401,8 +409,8 @@ AROS_UFH3(void, hook_func_action,
 		UnLock(file);
 	    }
 	}
-    } else
-    if (msg->type == ICONWINDOW_ACTION_CLICK)
+    } 
+    else if (msg->type == ICONWINDOW_ACTION_CLICK)
     {
 	if (!msg->click->shift)
 	{
@@ -420,8 +428,8 @@ AROS_UFH3(void, hook_func_action,
 		}
 	    }
 	}
-    } else
-    if (msg->type == ICONWINDOW_ACTION_ICONDROP)
+    } 
+    else if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
 	Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
 	Object *child;
@@ -435,7 +443,7 @@ AROS_UFH3(void, hook_func_action,
 
 		do
 		{
-		    DoMethod(iconlist, MUIM_IconList_NextSelected, &ent);
+		    DoMethod(iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
 		    if ((int)ent == MUIV_IconList_NextSelected_End) break;
 
 		    Printf("%s\n",ent->filename);
@@ -443,6 +451,21 @@ AROS_UFH3(void, hook_func_action,
 	    }
 	}
     }
+}
+
+
+
+AROS_UFH3
+(
+    void, hook_func_standard,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(void *, dummy, A2),
+    AROS_UFHA(void **, funcptr, A1)
+)
+{
+    void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+
+    if (func) func((ULONG *)(funcptr + 1));
 }
 
 /**************************************************************************
@@ -462,9 +485,16 @@ VOID DoMenuNotify(Object* strip, int id, void *function, void *arg)
     entry = FindMenuitem(strip,id);
     if (entry)
     {
-	DoMethod(entry, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, entry, 4, MUIM_CallHook, &hook_standard, function, arg);
+	DoMethod
+        (
+            entry, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, 
+            (IPTR) entry, 4, MUIM_CallHook, (IPTR) &hook_standard,
+            (IPTR) function, (IPTR) arg
+        );
     }
-}VOID DoAllMenuNotifies(Object *strip, char *path)
+}
+
+VOID DoAllMenuNotifies(Object *strip, char *path)
 {
     Object *item;
 
@@ -481,7 +511,13 @@ VOID DoMenuNotify(Object* strip, int id, void *function, void *arg)
     
     if ((item = FindMenuitem(strip,MEN_WANDERER_BACKDROP)))
     {
-	DoMethod(item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 7, MUIM_Application_PushMethod, app, 4, MUIM_CallHook, &hook_standard, wanderer_backdrop, strip);
+	DoMethod
+        (
+            item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, 
+            (IPTR) app, 7, MUIM_Application_PushMethod, 
+            (IPTR) app, 4, MUIM_CallHook, (IPTR) &hook_standard, 
+            (IPTR) wanderer_backdrop, (IPTR) strip
+        );
     }
 }
 
@@ -503,11 +539,34 @@ struct Wanderer_DATA
 /*** Methods ****************************************************************/
 Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
+        
+        MUIA_Application_Title,       (IPTR) "Wanderer",
+	MUIA_Application_Base,        (IPTR) "WANDERER",
+	MUIA_Application_Version,     (IPTR) "$VER: Wanderer 0.1 (10.12.02)", // FIXME
+	MUIA_Application_Description, (IPTR) "File manager",
+	MUIA_Application_SingleTask,         TRUE,
+    	
+        SubWindow, (IPTR) root_iconwnd = IconWindowObject,
+	    MUIA_UserData, 1,
+	    MUIA_Window_Menustrip,      (IPTR) root_menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL),
+	    MUIA_Window_ScreenTitle,    (IPTR) GetScreenTitle(),
+            MUIA_IconWindow_IsRoot,            TRUE,
+	    MUIA_IconWindow_IsBackdrop,        TRUE,
+	    MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
+        End,
+        
+        TAG_MORE, (IPTR) message->ops_AttrList
+    );
     
     if (self != NULL)
     {
         SETUP_INST_DATA;
+        
+        hook_standard.h_Entry = (HOOKFUNC) hook_func_standard;
+        hook_action.h_Entry   = (HOOKFUNC) hook_func_action;
 
         if (!(data->notify_port = CreateMsgPort()))
         {
@@ -531,7 +590,7 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         bug("Wanderer: notify signal %ld\n", data->notify_ihn.ihn_Signals);
         data->notify_ihn.ihn_Object = self;
         data->notify_ihn.ihn_Method = MUIM_Wanderer_HandleNotify;
-        DoMethod(self, MUIM_Application_AddInputHandler, &data->notify_ihn);
+        DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->notify_ihn);
     
     
         /* The second one is a timer handler */
@@ -543,14 +602,14 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->timer_ihn.ihn_Object = self;
         data->timer_ihn.ihn_Method = MUIM_Wanderer_HandleTimer;
     
-        DoMethod(self, MUIM_Application_AddInputHandler, &data->timer_ihn);
+        DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->timer_ihn);
     
         /* third one for prefs change notifies */
         data->pnotify_ihn.ihn_Signals = 1UL<<data->pnotify_port->mp_SigBit;
         bug("Wanderer: pnotify signal %ld\n", data->pnotify_ihn.ihn_Signals);
         data->pnotify_ihn.ihn_Object = self;
         data->pnotify_ihn.ihn_Method = MUIM_Wanderer_HandlePrefsNotify;
-        DoMethod(self, MUIM_Application_AddInputHandler, &data->pnotify_ihn);
+        DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->pnotify_ihn);
     
         data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
         data->pnr.nr_Flags                = NRF_SEND_MESSAGE;
@@ -579,9 +638,9 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
             They only have been added if the creation of the msg port was
 	    successful
         */
-	DoMethod(self, MUIM_Application_RemInputHandler, &data->timer_ihn);
-	DoMethod(self, MUIM_Application_RemInputHandler, &data->notify_ihn);
-        DoMethod(self, MUIM_Application_RemInputHandler, &data->pnotify_ihn);
+	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->timer_ihn);
+	DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->notify_ihn);
+        DoMethod(self, MUIM_Application_RemInputHandler, (IPTR) &data->pnotify_ihn);
 	
         UnregisterWorkbench(data->notify_port);
 	
@@ -594,6 +653,30 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
+IPTR Wanderer__MUIM_Application_Execute
+(
+    Class *CLASS, Object *self, Msg message 
+)
+{
+    SETUP_INST_DATA;
+    
+    DoMethod
+    (
+        root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+        (IPTR) app, 3, MUIM_CallHook, (IPTR) &hook_standard, (IPTR) wanderer_quit
+    );
+
+    /* If "Execute Command" entry is clicked open the execute window */
+    DoAllMenuNotifies(root_menustrip, "RAM:");
+
+    /* open root window */
+    DoMethod(root_iconwnd, MUIM_IconWindow_Open);
+    
+    DoSuperMethodA(CLASS, self, message);
+    
+    return TRUE;
+}
+
 IPTR Wanderer__MUIM_Wanderer_HandleTimer(Class *CLASS, Object *self, Msg message)
 {
     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
@@ -601,7 +684,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer(Class *CLASS, Object *self, Msg message
     char *scr_title = GetScreenTitle();
 
     while ((child = NextObject(&cstate)))
-	set(child, MUIA_Window_ScreenTitle, scr_title);
+	set(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
     return 0; /* irrelevant */
 }
 
@@ -715,10 +798,10 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify(Class *CLASS, Object *self, Msg messag
                         /* Create a new icon drawer window with the correct drawer being set */
                         Object *drawerwnd = IconWindowObject,
                             MUIA_UserData, 1,
-                            MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+                            MUIA_Window_Menustrip, (IPTR) menustrip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) nm, (IPTR) NULL),
                             MUIA_IconWindow_IsRoot, FALSE,
-                            MUIA_IconWindow_ActionHook, &hook_action,
-                            MUIA_IconWindow_Drawer, buf,
+                            MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
+                            MUIA_IconWindow_Drawer, (IPTR) buf,
                         End;
         
                         if (drawerwnd)
@@ -728,13 +811,17 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify(Class *CLASS, Object *self, Msg messag
         
                             /* We simply close the window here in case somebody like to to this...
                              * the memory is not freed until wb is closed however */
-                            DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+                            DoMethod
+                            (
+                                drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+                                (IPTR) drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE
+                            );
         
                             /* If "Execute Command" entry is clicked open the execute window */
                             DoAllMenuNotifies(menustrip,drw);
         
                             /* Add the window to the application */
-                            DoMethod(self,OM_ADDMEMBER,drawerwnd);
+                            DoMethod(self, OM_ADDMEMBER, (IPTR) drawerwnd);
         
                             /* And now open it */
                             DoMethod(drawerwnd, MUIM_IconWindow_Open);
@@ -769,11 +856,12 @@ IPTR Wanderer__MUIM_Wanderer_HandlePrefsNotify(Class *CLASS, Object *self, Msg m
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_6
 (
     Wanderer, NULL, MUIC_Application, NULL,
     OM_NEW,                          struct opSet *,
     OM_DISPOSE,                      Msg,
+    MUIM_Application_Execute,        Msg,
     MUIM_Wanderer_HandleTimer,       Msg,
     MUIM_Wanderer_HandleNotify,      Msg,
     MUIM_Wanderer_HandlePrefsNotify, Msg
