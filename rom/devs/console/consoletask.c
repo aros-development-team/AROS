@@ -134,16 +134,19 @@ printstring(cdihmsg->inputBuf, cdihmsg->numBytes, ConsoleDevice);
 		*/
 		if (checkconunit(cdihmsg->unit, ConsoleDevice))
 		{
-		    struct IOStdReq *req;
+		    struct IOStdReq *req, *nextreq;
 		    ULONG tocopy;
-		    
+
+#if 0	/* stegerg: this must be done by the guy using console.device, for
+           example CON: */
+	   	    
 		    /* Echo the newly received characters to the console */
 		    writeToConsole((struct ConUnit *)cdihmsg->unit
 		    	, cdihmsg->inputBuf
 			, cdihmsg->numBytes
 			, ConsoleDevice
 		    );
-		    
+#endif		    
 		    /* Copy received characters to the console unit input buffer.
 		       If the buffer is full, then console input will be lost
 		    */
@@ -157,7 +160,7 @@ printstring(cdihmsg->inputBuf, cdihmsg->numBytes, ConsoleDevice);
 		    ICU(cdihmsg->unit)->numStoredChars += tocopy;
 		    
 		    /* See if there are any queued io read requests that wants to be replied */
-		    ForeachNode(&ConsoleDevice->readRequests, req)
+		    ForeachNodeSafe(&ConsoleDevice->readRequests, req, nextreq)
 		    {
 
 		     	if ((APTR)req->io_Unit == (APTR)cdihmsg->unit)
@@ -165,6 +168,7 @@ printstring(cdihmsg->inputBuf, cdihmsg->numBytes, ConsoleDevice);
 			    /* Paranoia */
 			    if (0 != ICU(req->io_Unit)->numStoredChars)
 			    {
+			        Remove((struct Node *)req);
 			     	answer_read_request(req, ConsoleDevice);
 			    }
 			}
@@ -286,7 +290,12 @@ static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *Consol
     req->io_Error = 0;
     /* All done. Just reply the request */
 
-    Remove((struct Node *)req);
+    /* stegerg: the caller of answer_read_request is responsible for the Remove,
+                because the Remove must be used only if the req was in
+		the readrequests list
+      Remove((struct Node *)req);
+      
+    */
 
    
 /* kprintf("receiving task=%s, sigbit=%d\n, mode=%d"
@@ -294,8 +303,8 @@ static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *Consol
 	, req->io_Message.mn_ReplyPort->mp_SigBit
 	, req->io_Message.mn_ReplyPort->mp_Flags
 );
+*/
+    ReplyMsg((struct Message *)req);
 
-    req->io_Flags |= IOF_QUICK;
-*/    ReplyMsg((struct Message *)req);
     return;
 }
