@@ -39,9 +39,6 @@
 
 extern struct Library *MUIMasterBase;
 
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
 #ifndef NO_ICON_POSITION
 #define NO_ICON_POSITION (0x8000000) /* belongs to workbench/workbench.h */
 #endif

@@ -46,8 +46,6 @@ struct MUI_CycleData
 
 };
 
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
 void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 {
     struct MUI_CycleData    *data;

@@ -16,6 +16,10 @@
 #include "intuition/classusr.h"
 #endif
 
+#ifndef CLIB_MACROS_H
+#include <clib/macros.h>
+#endif
+
 #ifdef _AROS
 #ifndef AROS_ASMCALL_H
 #include <aros/asmcall.h>

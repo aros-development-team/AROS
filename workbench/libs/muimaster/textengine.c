@@ -47,8 +47,6 @@ static struct MinNode *List_First(APTR list)
     return ((struct MinList*)list)->mlh_Head;
 }
 
-#define MAX(a,b) ((a)>(b)?(a):(b))
-
 /* A bit of explanation:
  * The most important thing, after the datastructure, is the bounds
  * calculation (especially chunk width).
