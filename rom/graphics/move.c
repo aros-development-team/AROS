@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$	$Log
 
     Desc: Graphics function Move()
@@ -49,10 +49,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_Move (rp, x, y, GfxBase);
-
     rp->cp_x = x;
     rp->cp_y = y;
 
     AROS_LIBFUNC_EXIT
+    
 } /* Move */

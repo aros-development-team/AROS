@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -60,8 +60,6 @@ static const char THIS_FILE[] = __FILE__;
     {
         ULONG count;
 	
-	driver_LoadRGB32 (vp, table, GfxBase);
-
         /* table is terminated by a count value of 0 */
 	
 	while ((count = (*table) >> 16))
@@ -74,11 +72,11 @@ static const char THIS_FILE[] = __FILE__;
 
 	    for (t = 0; t < count; t++)
 	    {
-		SetRGB32CM (vp->ColorMap,
-	    		    t + first,
-			    table[0],
-			    table[1],
-			    table[2]);
+		SetRGB32 (vp,
+	    		  t + first,
+			  table[0],
+			  table[1],
+			  table[2]);
 
 		table += 3;
 	    }

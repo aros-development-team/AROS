@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$    $Log
 
     Desc: Graphics function PolyDraw()
@@ -47,7 +47,24 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_PolyDraw (rp, count, polyTable, GfxBase);
+    LONG i;
+    WORD x, y;
+    
+    if (count < 2) return;
+    
+    x = *polyTable++;
+    y = *polyTable++;
+    
+    Move(rp, x, y);
+    
+    for(i = 1; i < count; i++)
+    {
+    	x = *polyTable++;
+	y = *polyTable++;
+
+	Draw(rp, x, y);
+    }
 
     AROS_LIBFUNC_EXIT
+    
 } /* PolyDraw */

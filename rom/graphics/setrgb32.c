@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Set one color register for this Viewport
@@ -67,11 +67,6 @@
     if (vp->ColorMap) SetRGB32CM(vp->ColorMap, n, r, g, b);
     
     driver_SetRGB32 (vp, n, r, g, b, GfxBase);
-
-    /* alternative solution
-    if (NULL != vp)
-      SetRGB4(vp,n,r >> 28,g >> 28,b >> 28);
-    */
 
     AROS_LIBFUNC_EXIT
     

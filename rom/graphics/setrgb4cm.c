@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function SetRGB4CM()
@@ -62,4 +62,5 @@
   SetRGB32CM(cm, n, r << 28, g << 28, b << 28);
 
   AROS_LIBFUNC_EXIT
+  
 } /* SetRGB4CM */

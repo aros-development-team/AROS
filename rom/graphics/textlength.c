@@ -1,11 +1,14 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$	 $Log
 
     Desc: Graphics function TextLength()
     Lang: english
 */
 #include "graphics_intern.h"
+
+#undef NUMCHARS
+#define NUMCHARS(tf) ((tf->tf_HiChar - tf->tf_LoChar) + 2)
 
 /*****************************************************************************
 
@@ -48,7 +51,39 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_TextLength (rp, string, count, GfxBase);
+    struct TextFont *tf = rp->Font;
+    WORD    	    strlen;
 
+    if (tf->tf_Flags & FPF_PROPORTIONAL)
+    {
+    	WORD  idx;
+	WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is the default glyph */
+	UBYTE c;
+	
+	for(strlen = 0; count; count--)
+	{
+	    c = *string++;
+	    
+	    if ( c < tf->tf_LoChar || c > tf->tf_HiChar)
+	    {
+		idx = defaultidx;
+	    }
+	    else
+	    {
+		idx = c - tf->tf_LoChar;
+	    }
+	    	    
+   	    strlen += ((WORD *)tf->tf_CharKern)[idx];
+	    strlen += ((WORD *)tf->tf_CharSpace)[idx];
+	}
+    }
+    else
+    {
+    	strlen = count * tf->tf_XSize;
+    }
+
+    return strlen;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* TextLength */

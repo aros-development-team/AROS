@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -45,7 +45,22 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_LoadRGB4 (vp, colors, count, GfxBase);
+    LONG t;
+
+    ASSERT_VALID_PTR(vp);
+    ASSERT_VALID_PTR(colors);
+    
+    for (t = 0; t < count; t ++ )
+    {
+    	ULONG red   = (colors[t] & 0xF00) >> 8;
+	ULONG green = (colors[t] & 0x0F0) >> 4;
+	ULONG blue  = (colors[t] & 0x00F);
+	
+	SetRGB32(vp, t, red   * 0x11111111,
+	    	    	green * 0x11111111,
+			blue  * 0x11111111);        
+    }
 
     AROS_LIBFUNC_EXIT
+    
 } /* LoadRGB4 */

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Calculate the size a text needs in a specific rastport.
@@ -56,7 +56,8 @@
     textExtent->te_Extent.MinX = 0;
     textExtent->te_Extent.MinY = -rp->Font->tf_Baseline;
     textExtent->te_Extent.MaxX = textExtent->te_Width - 1;
-    textExtent->te_Extent.MaxY = rp->Font->tf_YSize - rp->Font->tf_Baseline;
+    textExtent->te_Extent.MaxY = textExtent->te_Height - 1 - rp->Font->tf_Baseline;
 
     AROS_LIBFUNC_EXIT
-} /* Text */
+    
+} /* TextExtent */

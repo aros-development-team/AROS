@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$	  $Log
 
     Desc: Graphics function SetFont()
@@ -52,12 +52,11 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetFont (rp, textFont, GfxBase);
-
     rp->Font	   = textFont;
     rp->TxWidth    = textFont->tf_XSize;
     rp->TxHeight   = textFont->tf_YSize;
     rp->TxBaseline = textFont->tf_Baseline;
 
     AROS_LIBFUNC_EXIT
+    
 } /* SetFont */

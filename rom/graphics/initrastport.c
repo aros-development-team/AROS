@@ -1,5 +1,5 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$	$Log
 
     Desc: Graphics function InitRastPort()
@@ -94,7 +94,8 @@ static const struct RastPort defaultRastPort =
 
     SetFont (rp, GfxBase->DefaultFont);
 
-    return driver_InitRastPort (rp, GfxBase);
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
+    
 } /* InitRastPort */
