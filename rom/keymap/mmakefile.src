@@ -7,12 +7,9 @@ include $(TOP)/config/make.cfg
 FILES := defaultkeymap support
 FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
 
-#MM- kernel-keymap-linklib : includes linklibs
-#MM- kernel-keymap-kobj : includes linklibs
+#MM kernel-keymap-includes : \
+#MM     kernel-exec-includes
 
-%build_module_macro mmake=kernel-keymap \
+%build_module mmake=kernel-keymap \
   modname=keymap modtype=library \
-  funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf
-
-%common
+  files="keymap_init $(FUNCS) $(FILES)"
