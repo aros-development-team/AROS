@@ -142,6 +142,7 @@ struct MUI_DragImage
 #define MUIA_ExportID (TAG_USER|0x0042d76e) /* V4  isg ULONG */
 #endif /* MUI_OBSOLETE */		
 
+struct MUI_ImageSpec_intern;
 
 struct MUI_AreaData
 {
@@ -160,20 +161,21 @@ struct MUI_AreaData
     /* START PRIV */
     WORD               mad_InputMode;      /* how to react to events */
     WORD               mad_Frame;          /* frame setting -- private */
-    STRPTR             mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
+    CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
-    STRPTR  	       mad_HardWidthTxt;
-    STRPTR  	       mad_HardHeightTxt;
-    struct MUI_ImageSpec *mad_Background;  /* bg setting */
-    struct MUI_ImageSpec *mad_SelBack;     /* selected state background */
+    CONST_STRPTR       mad_HardWidthTxt;
+    CONST_STRPTR       mad_HardHeightTxt;
+    struct MUI_ImageSpec_intern *mad_Background;  /* bg setting */
+    struct MUI_ImageSpec_intern *mad_SelBack;     /* selected state background */
+    CONST_STRPTR       mad_BackgroundSpec;
     WORD               mad_HardILeft;      /* hardcoded inner values */
     WORD               mad_HardIRight;
     WORD               mad_HardITop;
     WORD               mad_HardIBottom;
     UWORD              mad_HorizWeight;    /* weight values for layout */
     UWORD              mad_VertWeight;
-    STRPTR             mad_ShortHelp;      /* bubble help */
+    CONST_STRPTR       mad_ShortHelp;      /* bubble help */
     struct MUI_EventHandlerNode mad_ehn;
     struct MUI_InputHandlerNode mad_Timer; /* MUIA_Timer */
     ULONG              mad_Timeval;       /* just to trigger notifications */
@@ -186,7 +188,6 @@ struct MUI_AreaData
     struct ZMenu      *mad_ContextZMenu;
     struct MUI_EventHandlerNode mad_hiehn; /* Eventhandler to simulate MUIM_HandleInput */
 
-    char *mad_BackgroundSpec;
     LONG               mad_DisableCount; /* counts number of disables */
     /* END PRIV */
 };
