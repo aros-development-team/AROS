@@ -23,17 +23,30 @@
 #include "graphics_intern.h"
 #include "graphics_internal.h"
 
-#define NOTNULLMASK 0x10000000
+/* stegerg: check */
 
-#define MAJOR_ID_SHIFT 26
-#define MINOR_ID_SHIFT 20
+/* #define NOTNULLMASK 0x10000000 --> trouble with more than 4 gfxmodes: 4 << 26 = 0x10000000 */
+#define NOTNULLMASK 0x80000000
+
+#define MAJOR_ID_MSB   30
+#define MAJOR_ID_LSB   26
+#define MAJOR_ID_SHIFT MAJOR_ID_LSB
+#define MAJOR_ID_MASK  (((1 << (MAJOR_ID_MSB - MAJOR_ID_LSB + 1)) - 1) << MAJOR_ID_LSB)
+
+#define MINOR_ID_MSB   25
+#define MINOR_ID_LSB   20
+#define MINOR_ID_SHIFT MINOR_ID_LSB
+#define MINOR_ID_MASK  (((1 << (MINOR_ID_MSB - MINOR_ID_LSB + 1)) - 1) << MINOR_ID_LSB)
 
 #define NUM2MAJORID(num) ((num)  << MAJOR_ID_SHIFT)
-#define MAJORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MAJOR_ID_SHIFT)
+/*#define MAJORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MAJOR_ID_SHIFT)*/
+#define MAJORID2NUM(modeid) ( ((modeid) & MAJOR_ID_MASK) >> MAJOR_ID_SHIFT)
 
 #define NUM2MINORID(num) ((num)  << MINOR_ID_SHIFT)
-#define MINORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MINOR_ID_SHIFT)
+/*#define MINORID2NUM(modeid) ( ((modeid) & ~NOTNULLMASK) >> MINOR_ID_SHIFT)*/
+#define MINORID2NUM(modeid) ( ((modeid) & MINOR_ID_MASK) >> MINOR_ID_SHIFT)
 
+/* stegerg: end check */
 
 
 /* This macro assures that a modeid is never 0 by setting the MSB to 1.
@@ -177,8 +190,14 @@ ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase)
 	    /* More gfxmodes availavle ? */
 	    if (majoridx < db->nummodes) {
 	    	/* Yes. compute new id */
-		id = GENERATE_MODEID(majoridx, minoridx);
-	    }
+		
+		/* stegerg: check */
+		
+		/* was: id = GENERATE_MODEID(majoridx, minoridx); */
+		id = GENERATE_MODEID(majoridx, 0);
+		
+		/* stegerg: end check */
+	    }	    
 	    
 	} else {
 	    /* Yes. compute new id */
@@ -216,8 +235,7 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
     minoridx = MINORID2NUM(id);
     
     /* Here we obly check if the mode is really available */
-    
-    
+        
     ObtainSemaphoreShared(&db->sema);
     
     if (majoridx < db->nummodes) {
@@ -230,7 +248,7 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
 	
 	/* Check that the pixfmt is available */
 	if (minoridx < numpfs) {
-	
+
 	    /* We simply return the modeid, and use this to lookup in GetDisplayInfoData() */
 	    ret = (DisplayInfoHandle)GENERATE_MODEID(majoridx, minoridx);
 	}
@@ -239,7 +257,6 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
     
     ReleaseSemaphore(&db->sema);
 
-kprintf("FindDisplayInfo() returning %x\n", ret);    
     return ret;
     
     
@@ -382,7 +399,7 @@ ObtainSemaphoreShared(&db->sema);
 	    
 	    /* Set the propertyflags */
 	    
-	    di->PropertyFlags = DIPF_IS_FOREIGN;
+	    di->PropertyFlags = DIPF_IS_FOREIGN | DIPF_IS_WB;
 	    
 	    /* We simulate AGA. This field is really obsolete */
 	    di->PaletteRange = 4096;
