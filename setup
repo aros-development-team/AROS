@@ -1,8 +1,8 @@
 #!/bin/sh
 # Short script to check for used tools and generate them if necessary
 
-echo "Welcome for AROS configuration."
-
+echo "Welcome for AROS setup."
+echo
 echo Checking for AROS Tools...
 cd tools
 
@@ -106,6 +106,4 @@ echo
 echo "You have installed all necessary tools to compile AROS now."
 echo
 echo "Type '$MMAKE AROS' to start building the tree."
-echo
-echo "If you want to change the configuration, feel free to call $0 again."
 echo
