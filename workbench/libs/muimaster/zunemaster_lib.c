@@ -48,6 +48,30 @@ LONG ReturnError(void)
 
 /************************************************************************/
 
+/* MUI private functions */
+
+__asm void MUI_Priv1(register __a6 struct Library *MUIMasterBase)
+{
+	D(bug("MUI_Priv1() called"));
+}
+
+__asm void MUI_Priv2(register __a6 struct Library *MUIMasterBase)
+{
+	D(bug("MUI_Priv2() called"));
+}
+
+__asm void MUI_Priv3(register __a6 struct Library *MUIMasterBase)
+{
+	D(bug("MUI_Priv3() called"));
+}
+
+__asm void MUI_Priv4(register __a6 struct Library *MUIMasterBase)
+{
+	D(bug("MUI_Priv4() called"));
+}
+
+/************************************************************************/
+
 /* Some functions which are somewhere else */
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase);
@@ -210,6 +234,10 @@ static const APTR LibVectors[] = {
   (APTR) MUI_DeleteCustomClass,
   (APTR) MUI_MakeObjectA,
   (APTR) MUI_Layout,
+  (APTR) MUI_Priv1,
+  (APTR) MUI_Priv2,
+  (APTR) MUI_Priv3,
+  (APTR) MUI_Priv4,
   (APTR) MUI_ObtainPen,
   (APTR) MUI_ReleasePen,
   (APTR) MUI_AddClipping,

@@ -41,6 +41,7 @@ Object *MUI_MakeObjectA(LONG type,ULONG *params)(D0,A0)
 ==varargs
 Object *MUI_MakeObject(LONG type,...)(D0,A0)
 BOOL MUI_Layout(Object *obj,LONG left,LONG top,LONG width,LONG height,ULONG flags)(A0,D0,D1,D2,D3,D4)
+==reserve 4
 LONG MUI_ObtainPen(struct MUI_RenderInfo *mri,struct MUI_PenSpec *spec,ULONG flags)(A0,A1,D0)
 VOID MUI_ReleasePen(struct MUI_RenderInfo *mri,LONG pen)(A0,D0)
 APTR MUI_AddClipping(struct MUI_RenderInfo *mri,WORD left,WORD top,WORD width,WORD height)(A0,D0,D1,D2,D3)
