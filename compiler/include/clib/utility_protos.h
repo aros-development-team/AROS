@@ -108,23 +108,23 @@ __AROS_LP2(LONG, SMult64,
     __AROS_LCA(long, arg2, D1), \
     struct UtilityBase *, UtilityBase, 33, Utility)
 
-__AROS_LP2I(LONG, Stricmp,
+__AROS_LP2(LONG, Stricmp,
     __AROS_LPA(STRPTR, string1, A0),
     __AROS_LPA(STRPTR, string2, A1),
     struct UtilityBase *, UtilityBase, 27, Utility)
 #define Stricmp(string1, string2) \
-    __AROS_LC2I(LONG, Stricmp, \
+    __AROS_LC2(LONG, Stricmp, \
     __AROS_LCA(STRPTR, string1, A0), \
     __AROS_LCA(STRPTR, string2, A1), \
     struct UtilityBase *, UtilityBase, 27, Utility)
 
-__AROS_LP3I(LONG, Strnicmp,
+__AROS_LP3(LONG, Strnicmp,
     __AROS_LPA(STRPTR, string1, A0),
     __AROS_LPA(STRPTR, string2, A1),
     __AROS_LPA(LONG,   length,  D0),
     struct UtilityBase *, UtilityBase, 28, Utility)
 #define Strnicmp(string1, string2, length) \
-    __AROS_LC3I(LONG, Strnicmp, \
+    __AROS_LC3(LONG, Strnicmp, \
     __AROS_LCA(STRPTR, string1, A0), \
     __AROS_LCA(STRPTR, string2, A1), \
     __AROS_LCA(LONG,   length,  D0), \
