@@ -9,6 +9,7 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 #include <proto/exec.h>
 
 AROS_LH0(void, Disable,
@@ -20,7 +21,7 @@ AROS_LH0(void, Disable,
 
 	__asm__ __volatile__ ("cli");
 
-    SysBase->IDNestCnt++;
+    AROS_ATOMIC_INCB(SysBase->IDNestCnt);
 
     AROS_LIBFUNC_EXIT
 }
