@@ -1,0 +1,10 @@
+## version $VER: loadresource.catalog 1.0 (25.01.2005)
+## language magyar
+## codeset 0
+;
+; Translated by Miklós Németh
+;
+MSG_ERROR_OPEN_LIBRARY
+Nem tudtam megnyitni: %s!
+; Couldn't open library %s.
+;
