@@ -1,0 +1,30 @@
+#   $Id$
+#
+#
+#
+include $(TOP)/config/make.cfg
+
+LIB :=	reqtoolsstubs
+
+FILES := \
+	rtallocrequest \
+	rtchangereqattr \
+	rtfilerequest \
+	rtezrequest \
+	rtezrequesttags \
+	rtgetstring \
+	rtgetlong \
+	rtfontrequest \
+	rtpaletterequest \
+	rtreqhandler \
+	rtscreenmoderequest \
+    
+#MM- linklibs : linklibs-reqtoolsstubs
+#MM linklibs-reqtoolsstubs : includes
+
+%make_linklib_setup mmake=linklibs-reqtoolsstubs
+%make_vpath
+%make_linklib
+
+%common
+%include_deps
