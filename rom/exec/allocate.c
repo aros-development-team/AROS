@@ -81,12 +81,15 @@ AROS_LH2(APTR, Allocate,
     AROS_LIBFUNC_INIT
     struct MemChunk *p1, *p2;
 
+    ASSERT_VALID_PTR(freeList);
+
+
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
 	return NULL;
 
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
-    byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
+    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
 
     /* Is there enough free memory in the list? */
     if(freeList->mh_Free<byteSize)
@@ -96,7 +99,7 @@ AROS_LH2(APTR, Allocate,
 	The free memory list is only single linked, i.e. to remove
 	elements from the list I need the node as well as it's
 	predessor. For the first element I can use freeList->mh_First
-	instead of a real predessor.
+	instead of a real predecessor.
     */
     p1=(struct MemChunk *)&freeList->mh_First;
     p2=p1->mc_Next;
@@ -133,6 +136,11 @@ AROS_LH2(APTR, Allocate,
 	    }
 	    /* Adjust free memory count and return */
 	    freeList->mh_Free-=byteSize;
+
+	    /* Fill the block with weird stuff to exploit bugs in applications */
+	    MUNGE_BLOCK(p2,byteSize,MEMFILL_ALLOC)
+
+	    /* Return allocated block to caller */
 	    return p2;
 	}
 

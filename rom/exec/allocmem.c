@@ -11,6 +11,7 @@
 #include <aros/asmcall.h>
 #include <aros/rt.h>
 #include <aros/machine.h>
+#include <aros/macros.h>
 #include "memory.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -84,8 +85,13 @@
     if(!byteSize)
 	goto end;
 
-    /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
-    byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
+    /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
+    byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
+
+#if MDEBUG
+    /* Make room for safety walls around allocated block */
+    byteSize += MUNGWALL_SIZE * 2;
+#endif /* MDEBUG */
 
     /* Protect memory list against other tasks */
     Forbid();
@@ -268,6 +274,24 @@ end:
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);
 #endif
+
+#if MDEBUG
+    if (res)
+    {
+	/* Initialize walls */
+	MUNGE_BLOCK(res, MUNGWALL_SIZE, MEMFILL_WALL)
+	MUNGE_BLOCK(res + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE, MEMFILL_WALL)
+
+	/* move over the block between the walls */
+	res += MUNGWALL_SIZE;
+	byteSize -= MUNGWALL_SIZE * 2;
+	if (!(requirements & MEMF_CLEAR))
+	{
+	    /* Fill the block with weird stuff to exploit bugs in applications */
+	    MUNGE_BLOCK(res, byteSize, MEMFILL_ALLOC)
+	}
+    }
+#endif /* MDEBUG */
 
     ReturnPtr ("AllocMem", APTR, res);
     AROS_LIBFUNC_EXIT

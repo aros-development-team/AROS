@@ -24,12 +24,6 @@
 #endif
 #include <aros/debug.h>
 
-#define NASTY_FREEMEM	0	/* Delete contents of free'd memory ? */
-
-#if NASTY_FREEMEM
-extern void PurgeChunk (ULONG *, ULONG);
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -85,10 +79,33 @@ extern void PurgeChunk (ULONG *, ULONG);
 
     /* Align size to the requirements */
     byteSize+=(IPTR)memoryBlock&(MEMCHUNK_TOTAL-1);
-    byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
+    byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
 
     /* Align the block as well */
-    memoryBlock=(APTR)((IPTR)memoryBlock&~(MEMCHUNK_TOTAL-1));
+    memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
+
+#if MDEBUG
+	/* Add the size of mung walls around the block */
+	memoryBlock -= MUNGWALL_SIZE;
+	byteSize += MUNGWALL_SIZE * 2;
+
+	CHECK_WALL(memoryBlock, MUNGWALL_SIZE);
+	CHECK_WALL(memoryBlock + byteSize - MUNGWALL_SIZE, MUNGWALL_SIZE);
+
+	/* Fill block with weird stuff to esploit bugs in applications
+	 *
+	 * DOH! There's some _BAD_ code around that assumes memory can still be
+	 * accessed after freeing by just preventing task switching. In AROS,
+	 * RemTask(NULL) suffers of this problem because DOS processes are
+	 * created with their TCB placed in the tc_MemEntry list. The workaround
+	 * is to avoid munging when FreeMem() is called with task switching disabled.
+	 */
+	/* DOH! it doesn't work even this way. What's wrong???
+	 * 
+	 * if ((SysBase->TDNestCnt < 0) && (SysBase->IDNestCnt < 0))
+	 *	MUNGE_BLOCK(memoryBlock, byteSize, MEMFILL_FREE)
+	 */
+#endif
 
     /* Start and end(+1) of the block */
     p3=(struct MemChunk *)memoryBlock;
@@ -122,9 +139,6 @@ extern void PurgeChunk (ULONG *, ULONG);
 	    /* No chunk in list? Just insert the current one and return. */
 	    if(p2==NULL)
 	    {
-#if NASTY_FREEMEM
-		PurgeChunk ((ULONG *)p3, byteSize);
-#endif
 		p3->mc_Bytes=byteSize;
 		p3->mc_Next=NULL;
 		p1->mc_Next=p3;
@@ -201,10 +215,8 @@ extern void PurgeChunk (ULONG *, ULONG);
 		p4+=p2->mc_Bytes;
 		p2=p2->mc_Next;
 	    }
+
 	    /* relink the list and return. */
-#if NASTY_FREEMEM
-	    PurgeChunk ((ULONG *)p3, p4-(UBYTE *)p3);
-#endif
 	    p3->mc_Next=p2;
 	    p3->mc_Bytes=p4-(UBYTE *)p3;
 	    mh->mh_Free+=byteSize;
