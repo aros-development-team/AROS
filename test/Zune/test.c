@@ -50,6 +50,9 @@ Object *filename_string;
 Object *save_button;
 Object *list2;
 
+Object *drawer_iconlist;
+Object *volume_iconlist;
+
 ULONG xget(Object *obj, Tag attr)
 {
   ULONG storage;
@@ -173,6 +176,29 @@ AROS_UFH0(void, add_child_function)
     DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
 }
 
+/* IconList callbacks */
+void volume_doubleclicked(void)
+{
+    char buf[200];
+    struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+    DoMethod(volume_iconlist, MUIM_IconList_NextSelected, &ent);
+    if ((int)ent == MUIV_IconList_NextSelected_End) return;
+
+    strcpy(buf,ent->label);
+    strcat(buf,":");
+    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
+}
+
+void drawer_doubleclicked(void)
+{
+    static char buf[1024];
+    struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+
+    DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
+    if ((int)ent == MUIV_IconList_NextSelected_End) return;
+    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
+}
+
 /* The custom class */
 
 struct DropText_Data
@@ -241,7 +267,7 @@ int main(void)
     Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
     Object *country_radio[2];
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio","Icon List",NULL};
     static char **radio_entries1 = pages;
     static char *radio_entries2[] = {"Paris","Pataya","London","New-York","Reykjavik",NULL};
 
@@ -444,6 +470,11 @@ int main(void)
 		            Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
 	                    End,
 		        End,
+		    /* iconlist */
+	            Child, HGroup,
+	            	Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
+	            	Child, drawer_iconlist = MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
+	            	End,
 		   End,
 
 		Child, RectangleObject,
@@ -525,6 +556,10 @@ int main(void)
 	/* radio */
 	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
+
+        /* iconlist */
+        DoMethod(volume_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, volume_iconlist, 3, MUIM_CallHook, &hook_standard, volume_doubleclicked);
+        DoMethod(drawer_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard, drawer_doubleclicked);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
@@ -975,7 +1010,7 @@ Child, VGroup,
     Child, SimpleButton("blabla"),   
     Child, SimpleButton("blabla"),   
     Child, SimpleButton("blabla"),   
-    End,   
+    End,
 
 Child, ScrollgroupObject, MUIA_Scrollgroup_Contents, VGroupV,   
     GroupFrameT("virtvir"),   
@@ -1015,7 +1050,7 @@ End,
 			    End,
 		    	End,
 #endif
-/* gauges */ 
+/* gauges */
 		    Child, VGroup,
 
 	                Child, VGroup, GroupFrame,
