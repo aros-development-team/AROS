@@ -12,4 +12,3 @@ mmake
 mmake.cache
 mmake.config
 *.log
-local
