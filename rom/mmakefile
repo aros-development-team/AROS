@@ -19,6 +19,3 @@
 #MM	    kernel-layers-kobj \
 #MM	    kernel-workbench-kobj \
 #MM	    kernel-cgfx-kobj
-
-#MM- kernel-exec-kobj : kernel-$(ARCH)-$(CPU)
-#MM- kernel-dos-kobj : kernel-$(ARCH)-$(CPU)
