@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/12/05 18:54:26  bergers
+    Update for acos, asin.
+
     Revision 1.5  1997/09/28 11:37:08  bergers
     Updated version - again
 
@@ -109,6 +112,17 @@ LONG intern_IEEESPisodd(LONG fnum);
 #define cosf5    0x37d00d01 /*  1/8!   */
 #define cosf6    0xb493f27e /* -1/10!  */
 
+#define pS0      0x3e2aaaaa /*  1.66666666666666657415e-01 */
+#define pS1      0xbea6b090 /* -3.25565818622400915405e-01 */
+#define pS2      0x3e4e0aa8 /*  2.01212532134862925881e-01 */
+#define pS3      0xbd241146 /* -4.00555345006794114027e-02 */
+#define pS4      0x3a4f7f04 /*  7.91534994289814532176e-04 */
+#define pS5      0x3811ef09 /*  3.47933107596021167570e-05 */
+
+#define qS1      0xc019d138 /* -2.40339491173441421878e+00 */
+#define qS2      0x4001572c /*  2.02094576023350569471e+00 */
+#define qS3      0xbf303361 /* -6.88283971605453293030e-01 */
+#define qS4      0x3d9dc62e /*  7.70381505559019352791e-02 */
 
 
 #endif /* __MATHIEEESINGTRANS_INTERN_H__  */
