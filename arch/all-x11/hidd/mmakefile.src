@@ -58,7 +58,7 @@ setup-x11keymaptable :
 	
 	
 		
-$(ARCHDIR)/tools/makexkeytable: makexkeytable.c
+$(GENDIR)/tools/makexkeytable: makexkeytable.c
 	$(CC) $(GUI_CCFLAGS) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
