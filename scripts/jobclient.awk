@@ -4,27 +4,35 @@ BEGIN {
 
     while ((getline < file) > 0)
     {
+	# Comment or empty line
 	if (match($0,/^#/) || $1=="")
 	    continue;
 
-	if (!match ($0,/[a-zA-Z_]+[0-9]+ (FREE|WORK|DONE)/))
-	    continue;
-
-	id=$1; status=$2;
-	getline < file;
-	email=$1;
-	getline text < file;
-
 	for (t=0; t<ARGC; t++)
 	{
-	    if (match (id,ARGV[t]) || match (text,ARGV[t]))
+	    # Does this job match any of the ones we look for ?
+	    if (match ($0,ARGV[t]))
 	    {
-		gsub(text,"\n","\n# ");
-		print "# " text;
-		if (status=="FREE")
-		    print "req " id;
-		if (status=="WORK" || status=="FREE")
-		    print "done " id;
+		# Job is not completed yet ?
+		if ($2!="DONE")
+		{
+		    # Show description of job
+		    if (NF > 3)
+		    {
+			printf ("# ");
+			for (t=4; t<=NF; t++)
+			    printf ("%s ", $t);
+			print ""
+		    }
+
+		    # Show what can be done with the job
+		    if ($2=="FREE")
+			print "req "$1;
+		    if ($2=="WORK" || $2=="FREE")
+			print "done "$1;
+		}
+
+		# Don't try to print the job twice
 		break;
 	    }
 	}
