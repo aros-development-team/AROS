@@ -51,13 +51,27 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_BltPattern(rp
-    	, mask
-	, xMin, yMin
-	, xMax, yMax
-	, byteCnt
-	, GfxBase
-    );
+    if (rp->AreaPtrn)
+    {
+	driver_BltPattern(rp
+    	    , mask
+	    , xMin, yMin
+	    , xMax, yMax
+	    , byteCnt
+	    , GfxBase
+	);
+    }
+    else
+    {
+    	if (mask)
+	{
+	    BltTemplate(mask, 0, byteCnt, rp, xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+	}
+	else
+	{
+	    RectFill(rp, xMin, yMin, xMax, yMax);
+	}
+    }
     
     AROS_LIBFUNC_EXIT
 } /* BltPattern */
