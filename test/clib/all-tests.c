@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include "test.h"
 
 char *tests[] =
@@ -16,7 +17,7 @@ int main() {
     int i, rc;
     char buffer[128];
 
-    mkdir( "T:TestOutput" );
+    mkdir( "T:TestOutput", 0 );
 
     for( i = 0; tests[i] != NULL; i++ )
     {
