@@ -4,7 +4,6 @@ HPP reads normal HTML files, processes some special tags and outputs
 a new file which need not be in HTML.
 
 New tags by HPP:
-
 ------------------------------------------------------------------------------
 <REM remark> and <REM>remark</REM>
 
@@ -187,4 +186,47 @@ gives
 
 <TT>&lt;TT&gt;</TT>
 ------------------------------------------------------------------------------
+<WRITE FILE=name TEXT=text>
 
+Write something into the file.
+
+<WRITE FILE="$filename.toc" TEXT="chapter $ChapterCount. $title>
+------------------------------------------------------------------------------
+<OUTPUT FILE=name>
+
+Close the current output file and continue writing to name.
+------------------------------------------------------------------------------
+
+Builtin variables of HPP:
+
+$today - Today as DD.MM.YYYY
+$filename - The current input filename
+$outputFormat - The current output format (HTML)
+$outputName - The current output filename ("-" if writing to stdout).
+$outputCount - The number of kB (1024bytes) written in the current file.
+
+You can pass addition variables to HPP with -set var=value in the command
+line.
+
+Builtin functions:
+
+$expr(expression) - Expands to the value of expression
+$basename(string) - Strips everything behind the last "." in the string
+	and the dot itself.
+$defined(varname) - Expands to 1 if the variable exists and to 0 otherwise.
+$diffdate(date1,date2) - Expands to the difference date2 - date1. Note
+	that the dates are calculated day+mon*30+year*12*30 (ie. they
+	are not really accurate).
+$upvar(varname) - Expands to the value of the global variable varname.
+	This is useful in macro when a parameter or local variable shadows
+	a global one.
+$strcmp(str1,str2) - Returns 0 if str1==str2, < 0 if str1 < str2 or > 0 if
+	str1 > str2.
+$strcasecmp(str1,str2) - Same as $strcmp() but ignores case.
+
+TODO
+
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
