@@ -52,52 +52,36 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /* Get pointer to filehandle */
+    /* Get pointer to filehandle. */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
-    /* Get pointer to I/O request. Use stackspace for now. */
-    struct IOFileSys iofs;
+    /* If the file is in append mode, seeking is not allowed. */
+    if( fh->fh_Flags & FHF_APPEND )
+    {
+	return InternalSeek( fh, 0, OFFSET_CURRENT, DOSBase );
+    }
 
-    /* If the file is in write mode flush it */
-    if(fh->fh_Flags & FHF_WRITE)
-	Flush(file);
+    /* If the file is in write mode flush it. */
+    if( fh->fh_Flags & FHF_WRITE )
+    {
+	InternalFlush( fh, DOSBase );
+    }
     else
     {
 	if (position || mode != OFFSET_CURRENT)
 	{
 	    /* Read mode. Just reinit the buffers. We can't call
 	       Flush() in this case as that would end up in recursion. */
-	    fh->fh_Pos = fh->fh_End = fh->fh_Buf;
+	    fh->fh_Pos = fh->fh_Buf;
 	}
     }
 
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_SEEK, DOSBase);
-
-    iofs.IOFS.io_Device  = fh->fh_Device;
-    iofs.IOFS.io_Unit    = fh->fh_Unit;
-
-    iofs.io_Union.io_SEEK.io_Offset   = (QUAD)position;
-    iofs.io_Union.io_SEEK.io_SeekMode = mode;
-
-    /* Send the request. */
-    DosDoIO(&iofs.IOFS);
-
-    SetIoErr(iofs.io_DosError);
-
-    if(iofs.io_DosError)
-	return -1;
-    else
-	return (LONG)iofs.io_Union.io_SEEK.io_Offset;
-
+    return InternalSeek( fh, position, mode, DOSBase );
+    
     AROS_LIBFUNC_EXIT
 } /* Seek */

@@ -107,6 +107,17 @@ BOOL patternMatch(STRPTR pat, STRPTR str, BOOL useCase,
 LONG patternParse(STRPTR Source, STRPTR Dest, LONG DestLength, BOOL useCase,
 		  struct DosLibrary *DOSBase);
 
+
+LONG InternalSeek
+( 
+    struct FileHandle *fh, 
+    LONG               position, 
+    LONG               mode, 
+    struct DosLibrary *DOSBase 
+);
+LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase );
+
+                  
 /* match_misc.c */
 
 struct AChain *Match_AllocAChain(LONG extrasize, struct DosLibrary *DOSBase);

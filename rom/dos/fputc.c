@@ -45,22 +45,16 @@
 
     INTERNALS
 
-    HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    /* Get pointer to filehandle */
+    /* Get pointer to filehandle. */
     struct FileHandle *fh = (struct FileHandle *)BADDR(file);
 
-    if (fh == NULL)
-    {
-    	return EOF;
-    }
+    /* Make sure input parameters are sane. */
+    ASSERT_VALID_PTR( fh );
     
     /* Check if file is in write mode */
     if (!(fh->fh_Flags & FHF_WRITE))
@@ -104,34 +98,18 @@
     /* Write data */
     *fh->fh_Pos++ = character;
 
-   /* Check if there is still some space in the buffer */
-    if (fh->fh_Pos >= fh->fh_End || (fh->fh_Flags & FHF_LINEBUF && character=='\n') || fh->fh_Flags & FHF_NOBUF)
+    /* Check if there is still some space in the buffer */
+    if
+    ( 
+	   fh->fh_Pos >= fh->fh_End 
+	|| ( fh->fh_Flags & FHF_LINEBUF && character == '\n' ) 
+	|| fh->fh_Flags & FHF_NOBUF
+    )
     {
-	UBYTE *pos;
-
-	/* Write the data. (In many pieces if the first one isn't enough). */
-	pos = fh->fh_Buf;
-
-	while (pos != fh->fh_Pos)
+	if( !Flush( file ) )
 	{
-	    LONG size;
-
-	    size = Write(file, pos, fh->fh_Pos - pos);
-
-	    /* An error happened? No success. */
-	    if (size < 0)
-	    {
-		fh->fh_Pos = fh->fh_End = fh->fh_Buf;
-		fh->fh_Flags &= ~FHF_WRITE;
-
-		return EOF;
-	    }
-
-	    pos += size;
+	    return EOF;
 	}
-
-	/* Reset buffer */
-	fh->fh_Pos = fh->fh_Buf;
     }
 
     return character;
