@@ -26,8 +26,8 @@ int __isinf(double val)
 {
     int hx,lx;
 
-    hx = (__HI(val)&0x7fffffff);
-    lx = __LO(val);
+    GET_HIGH_WORD(hx,val);
+    GET_LOW_WORD(lx,val);
     hx &= 0x7fffffff;
     hx ^= 0x7ff00000;
     hx |= lx;
