@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <libraries/locale.h>
+#include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
 /* germany.country: Sebastian Rittau, srittau@jroger.in-berlin.de */
@@ -24,7 +25,7 @@ struct CountryPrefs germanyPrefs =
     */
 
     /* Country code (left justify), telephone code, measuring system */
-    'GER\x00', 49, MS_ISO,
+    MAKE_ID('G','E','R',0), 49, MS_ISO,
 
     /* Date time format, date format, time format */
     "%A %e. %B %Y %q:%M",

@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <libraries/locale.h>
+#include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
 /* australia.country: Iain Templeton, iain@ugh.net.au */
@@ -23,7 +24,7 @@ struct CountryPrefs australiaPrefs =
     */
 
     /* Country code, telephone code, measuring system */
-    'AUS\x00', 61, MS_ISO,
+    MAKE_ID('A','U','S',0), 61, MS_ISO,
 
     /* Date time format, date format, time format */
     "%A %B %e %Y %I:%M%p",

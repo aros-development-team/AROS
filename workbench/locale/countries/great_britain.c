@@ -8,6 +8,7 @@
 
 #include <exec/types.h>
 #include <libraries/locale.h>
+#include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
 /* great_britain.country: Iain Templeton, iain@ugh.net.au */
@@ -18,7 +19,7 @@ struct CountryPrefs greatBritainPrefs =
     { 0, 0, 0, 0 },
 
     /* Country code, telephone code, measuring system */
-    'GBR\x00', 44, MS_BRITISH,
+    MAKE_ID('G','B','R',0), 44, MS_BRITISH,
 
     /* Date time format, date format, time format */
     "%A %e %B %Y  %H:%M",
