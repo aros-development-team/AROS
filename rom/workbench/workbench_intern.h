@@ -2,6 +2,9 @@
     (C) 1995-97 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.2  2000/06/28 20:47:26  bernie
+    Add global Workbench reply port for WBStartup messages to WorkbenchBase. Not really operational since it needs the Workbench task running to do something useful.
+
     Revision 1.1  1999/08/14 04:52:35  bergers
     Empty but compilable libarary. None of the functions have been implemented.
 
@@ -42,7 +45,8 @@ struct WorkbenchBase
 {
     struct Library   	LibNode;
     BPTR	     	wb_SegList;
-    struct ExecBase  *	wb_SysBase;
+    struct ExecBase    *wb_SysBase;
+    struct MsgPort     *wb_AppReplyPort;	/* WBStartup messages are replied here */
 };
 
 /*

@@ -29,7 +29,6 @@
 
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
-#define LC_NO_EXPUNGELIB
 #define LC_STATIC_INITLIB
 
 #include <libcore/libheader.c>
@@ -40,5 +39,19 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     SysBase = lh->wb_SysBase;
 
-    return TRUE;
+    if (lh->wb_AppReplyPort = CreateMsgPort())
+    {
+	return TRUE;
+    }
+
+    return FALSE;
 } /* L_InitLib */
+
+
+
+void SAVEDS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
+{
+    if (lh->wb_AppReplyPort)
+	DeleteMsgPort(lh->wb_AppReplyPort);
+}
+
