@@ -77,6 +77,7 @@ TEXT	    ([^\\\|{]|\n)+
 "\\par"           { return PAR; }
 "\\nl"            { return NL; }
 "\\index"         { return INDEX; }
+"\\today"         { return TODAY; }
 
 "\\echo"{ARG}     { char * str = getarg(yytext); fputs (str, stdout); putchar ('\n'); free (str); }
 

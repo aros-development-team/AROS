@@ -226,6 +226,20 @@ void emit (int token, ...)
 	chapter = 0;
 	break;
 
+    case TODAY:
+	{
+	    struct tm tm;
+	    char tmbuf[32];
+	    time_t tt;
+
+	    time (&tt);
+	    tm = *localtime (&tt);
+
+	    strftime (tmbuf, sizeof(tmbuf), "%d. %b %Y", &tm);
+	    fputs (tmbuf, out);
+	}
+	break;
+
     default:
 	switch (token)
 	{
