@@ -317,6 +317,7 @@ static ULONG Numeric_Increase(struct IClass *cl, Object * obj, struct MUIP_Numer
 **************************************************************************/
 static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_Numeric_ScaleToValue *msg)
 {
+#if 0
     DOUBLE val;
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     LONG min, max;
@@ -324,13 +325,34 @@ static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_N
     min = (data->flags & NUMERIC_REVERSE) ? data->max : data->min;
     max = (data->flags & NUMERIC_REVERSE) ? data->min : data->max;
 
-    val = min + msg->scale
-	* (max - min) / (DOUBLE)(msg->scalemax - msg->scalemin);
+    val = min + msg->scale * (max - min) / (DOUBLE)(msg->scalemax - msg->scalemin);
 
     if (val >= 0.0) val += 0.5; else val -= 0.5;
     val = CLAMP(val, data->min, data->max);
     
     return (ULONG)((LONG)val);
+#else
+    struct MUI_NumericData *data = INST_DATA(cl, obj);
+    LONG min, max;
+    LONG val;
+    LONG d;
+
+    min = (data->flags & NUMERIC_REVERSE) ? data->max : data->min;
+    max = (data->flags & NUMERIC_REVERSE) ? data->min : data->max;
+
+    val = msg->scale * (max - min);
+    d = msg->scalemax - msg->scalemin;
+
+    if (val > 0) val += d/2;
+    else val -= d/2;
+		val /= d;
+
+		val += min;
+
+    val = CLAMP(val, data->min, data->max);
+    
+    return (ULONG)((LONG)val);
+#endif
 }
 
 /**************************************************************************
