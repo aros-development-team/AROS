@@ -4,7 +4,6 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 AMIGADIR=$(TOP)/amiga
-INCDIR=$(BINDIR)/include
 
 INCLUDES = $(wildcard *.h */*.h)
 DEST_INCLUDES = $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
