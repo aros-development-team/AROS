@@ -1,11 +1,12 @@
 # $Id$
 TOP=../..
-COMPILE_KERNEL = yes # Must have a value, no matter which one
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_CFLAGS = -I $(TOP)/exec
+SPECIAL_CFLAGS =-I/usr/include -I$(TOP)/exec
 CLIBDIR=$(GENDIR)/clib
+
+MACHINE_H = $(INCDIR)/aros/machine.h
 
 FILES = \
 	supervisor \
@@ -34,7 +35,8 @@ FILES = \
 
 CFILES = setjmp longjmp
 
-all: setup $(TOP)/compiler/include/aros/machine.h machine.i \
+
+all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(CFILES),$(CLIBDIR)/$(f).o)
 
@@ -42,11 +44,11 @@ setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@if [ ! -d $(CLIBDIR) ]; then $(MKDIR) $(CLIBDIR) ; else true ; fi
 
-$(TOP)/compiler/include/aros/machine.h: machine.h
-	cp machine.h $(TOP)/compiler/include/aros
+$(MACHINE_H): machine.h
+	cp $< $@
 
 clean:
-	$(RM) $(TOP)/compiler/include/aros/machine.h
+	$(RM) $(MACHINE_H) machine.i geninc
 
 config:
 	@echo "Configuring for a x86 CPU..."
