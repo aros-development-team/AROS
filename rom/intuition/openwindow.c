@@ -22,6 +22,7 @@
 #   define DEBUG_OpenWindow 0
 #endif
 #undef DEBUG
+#define DEBUG 1
 #if DEBUG_OpenWindow
 #   define DEBUG 1
 #endif
@@ -506,7 +507,7 @@
 				   ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
     
     /* Help stuff */
-    
+   
     if (!have_helpgroup && helpgroupwindow)
     {
         if (IW(helpgroupwindow)->helpflags & HELPF_ISHELPGROUP)
@@ -649,7 +650,7 @@ failexit:
 	if (w->UserPort)
 	    DeleteMsgPort(w->UserPort);
 	
-	FreeMem (w, intui_GetWindowSize ());
+	FreeMem (w, sizeof(struct IntWindow));
 	
 	w = NULL;
     }
@@ -658,7 +659,7 @@ failexit:
     {
         UnlockPubScreen(NULL, nw.Screen);
     }
-    
+   
 exit:
     ReturnPtr ("OpenWindow", struct Window *, w);
     AROS_LIBFUNC_EXIT
