@@ -2,6 +2,8 @@
 TOP=../../..
 COMPILE_KERNEL = yes # Must have a value, no matter which one
 
+USER_INCLUDES = -I/usr/include
+
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/filesys
