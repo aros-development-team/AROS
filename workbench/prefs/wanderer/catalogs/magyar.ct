@@ -1,0 +1,30 @@
+## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## language magyar
+## codeset 0
+;
+;
+MSG_NAME
+Wanderer beállítások
+; Wanderer Preferences
+;
+MSG_BACKGROUNDS
+Hátterek
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Fiókok
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Válaszd ki a Workbench hátterét
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Válaszd ki a fiók hátterét
+; Select Drawer Background
+;
+ 
