@@ -159,21 +159,12 @@ AROS_LH3(void, open,
     /* Keep compiler happy */
     flags   = 0;
 
-    GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
-    GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
-    GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
-    GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
-    GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
-
     /* Erroneous unit? */
     if(unitnum > GP_MAXUNIT)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	return;
     }
-
-    /* Add a VBLANK server to take care of event timing. */
-    AddIntServer(INTB_VERTB, &GPBase->gp_VBlank);
     
     if(GPBase->gp_eventBuffer == NULL)
     {
@@ -193,7 +184,6 @@ AROS_LH3(void, open,
 	return;
     }
 
-    
     if (!GPBase->gp_OOPBase)
     {
 	GPBase->gp_OOPBase = OpenLibrary(AROSOOP_NAME, 0);
@@ -223,6 +213,18 @@ AROS_LH3(void, open,
 	
 /******* nlorentz: End of stuff added by me ********/
 
+    /* Is the vblank server installed? */
+    if(GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
+    {
+	GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
+	GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
+	GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
+	GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
+	GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
+	
+	/* Add a VBLANK server to take care of event timing. */
+	AddIntServer(INTB_VERTB, &GPBase->gp_VBlank);
+    }
 
     /* I have one more opener. */
     GPBase->gp_device.dd_Library.lib_OpenCnt++;
