@@ -17,8 +17,8 @@
 #   include "gadgets.h"
 #endif
 
-#define PSIG_REFRESHALL SIGF_INTUITION
-#define PSIG_DIE SIGF_ABORT
+#define PSIG_REFRESHALL     SIGF_INTUITION
+#define PSIG_DIE    	    SIGF_ABORT
 
 int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox);
 void RefreshPropGadget (struct Gadget * gadget, struct Window * window,

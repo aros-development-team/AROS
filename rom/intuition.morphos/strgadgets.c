@@ -22,9 +22,7 @@
 #include "strgadgets.h"
 
 #ifdef __MORPHOS__
-size_t  stccpy(char     *s1,
-               const char   *s2,
-               size_t       n);
+size_t  stccpy(char *s1, const char *s2, size_t n);
 #endif
 
 #undef DEBUG
@@ -86,10 +84,8 @@ VOID UpdateStringInfo(struct Gadget *);
 
 /*****************************************************************************************/
 
-#define CharXSize(char, rp)         \
-((rp->Font->tf_Flags & FPF_PROPORTIONAL)    \
-? rp->Font->tf_XSize            \
-: TextLength(rp, &(char), 1))
+#define CharXSize(char, rp) ((rp->Font->tf_Flags & FPF_PROPORTIONAL) ?    \
+    	    	    	    rp->Font->tf_XSize : TextLength(rp, &(char), 1))
 
 
 #undef MIN
@@ -106,9 +102,9 @@ STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
                        struct RastPort *rp, struct IntuitionBase *IntuitionBase)
 {
 
-    WORD        numfit, max_disppos, numchars;
+    WORD            	numfit, max_disppos, numchars;
     struct TextExtent   te;
-    BOOL        cursor_at_end;
+    BOOL            	cursor_at_end;
 
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
 
@@ -163,9 +159,9 @@ void UpdateDisp(struct Gadget       *gad,
 {
 
 
-    struct TextExtent   te;
+    struct TextExtent    te;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    STRPTR      dispstr;
+    STRPTR          	 dispstr;
 
     EnterFunc(bug("UpdateDisp(gad=%p, bbox=%p, rp=%p)\n",
                   gad, bbox, rp));
@@ -261,10 +257,10 @@ STATIC UWORD GetTextLeft(struct Gadget      *gad,
     /* Gets left position of text in the string gadget */
 
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD       text_left = 0;
-    STRPTR      dispstr = &(strinfo->Buffer[strinfo->DispPos]);
-    UWORD       dispstrlen;
-    BOOL        cursor_at_end;
+    UWORD           	 text_left = 0;
+    STRPTR          	 dispstr = &(strinfo->Buffer[strinfo->DispPos]);
+    UWORD           	 dispstrlen;
+    BOOL            	 cursor_at_end;
 
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
 
@@ -273,29 +269,29 @@ STATIC UWORD GetTextLeft(struct Gadget      *gad,
     /* Calcluate start offset of gadget text */
     switch (gad->Activation & STRALIGNMASK)
     {
-    case GACT_STRINGLEFT:
-#warning FIXME: is this default: correct?
-    default:
-        text_left = bbox->Left;
-        break;
+	case GACT_STRINGLEFT:
+    	#warning FIXME: is this default: correct?
+	default:
+            text_left = bbox->Left;
+            break;
 
-    case GACT_STRINGCENTER:
-        {
-            WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+	case GACT_STRINGCENTER:
+            {
+        	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
 
-            if (cursor_at_end) textwidth += TextLength(rp, cursorkey, CURSORKEYLEN);
-            text_left = bbox->Left + ((bbox->Width - textwidth) / 2);
-        }
-        break;
+        	if (cursor_at_end) textwidth += TextLength(rp, cursorkey, CURSORKEYLEN);
+        	text_left = bbox->Left + ((bbox->Width - textwidth) / 2);
+            }
+            break;
 
-    case GACT_STRINGRIGHT:
-        {
-            WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+	case GACT_STRINGRIGHT:
+            {
+        	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
 
-            if (cursor_at_end) textwidth += TextLength(rp, cursorkey, CURSORKEYLEN);
-            text_left =  bbox->Left + (bbox->Width - 1 - textwidth);
-        }
-        break;
+        	if (cursor_at_end) textwidth += TextLength(rp, cursorkey, CURSORKEYLEN);
+        	text_left =  bbox->Left + (bbox->Width - 1 - textwidth);
+            }
+            break;
     }
     return (text_left);
 }
@@ -310,10 +306,10 @@ STATIC UWORD GetTextRight(struct Gadget     *gad,
     /* Gets right offset of text in the string gadget */
 
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD       text_right = 0;
-    STRPTR      dispstr = &(strinfo->Buffer[strinfo->DispPos]);
-    UWORD       dispstrlen;
-    BOOL        cursor_at_end;
+    UWORD           	 text_right = 0;
+    STRPTR          	 dispstr = &(strinfo->Buffer[strinfo->DispPos]);
+    UWORD           	 dispstrlen;
+    BOOL            	 cursor_at_end;
 
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
 
@@ -323,23 +319,23 @@ STATIC UWORD GetTextRight(struct Gadget     *gad,
     switch (gad->Activation & STRALIGNMASK)
     {
     case GACT_STRINGLEFT:
-#warning FIXME: is this default: correct?
-    default:
-        text_right =  bbox->Left + TextLength(rp, dispstr, dispstrlen);
-        break;
+    	#warning FIXME: is this default: correct?
+	default:
+            text_right =  bbox->Left + TextLength(rp, dispstr, dispstrlen);
+            break;
 
-    case GACT_STRINGCENTER:
-        {
-            WORD textwidth = TextLength(rp, dispstr, dispstrlen);
+	case GACT_STRINGCENTER:
+            {
+        	WORD textwidth = TextLength(rp, dispstr, dispstrlen);
 
-            if (cursor_at_end) textwidth += TextLength(rp, cursorkey, CURSORKEYLEN);
-            text_right = bbox->Left + bbox->Width - 1 - ((bbox->Width - textwidth) / 2);
-        }
-        break;
+        	if (cursor_at_end) textwidth += TextLength(rp, cursorkey, CURSORKEYLEN);
+        	text_right = bbox->Left + bbox->Width - 1 - ((bbox->Width - textwidth) / 2);
+            }
+            break;
 
-    case GACT_STRINGRIGHT:
-        text_right = bbox->Left + bbox->Width  - 1;
-        break;
+	case GACT_STRINGRIGHT:
+            text_right = bbox->Left + bbox->Width  - 1;
+            break;
     }
     return (text_right);
 }
@@ -354,7 +350,7 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
 {
 
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
-    BOOL docursor = FALSE;
+    BOOL    	     docursor = FALSE;
 
     SetFont(rp, dri->dri_Font);
 
@@ -424,7 +420,9 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
         {
             pens[STRBACKPEN] = 0;
             if (pens[STRTEXTPEN] != 3) docursor = TRUE;
-        } else {
+        }
+	else
+	{
             pens[STRTEXTPEN] = 1;
             pens[STRBACKPEN] = 0;
             docursor = TRUE;
@@ -449,10 +447,10 @@ ULONG HandleStrInput(   struct Gadget       *gad,
                       UWORD         *imsgcode,
                       struct IntuitionBase  *IntuitionBase)
 {
-    struct SGWork   sgw;
+    struct SGWork   	 sgw;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
     struct StringExtend *strext = NULL;
-    ULONG       command = 0;
+    ULONG           	 command = 0;
 
     EnterFunc(bug("HandleStrInput(gad=%p, ginfo=%p, ievent=%p)\n",
                   gad, ginfo, ievent));
@@ -496,16 +494,16 @@ ULONG HandleStrInput(   struct Gadget       *gad,
 
     switch (ievent->ie_Class)
     {
-    case IECLASS_RAWMOUSE:
-        if (ievent->ie_Code == SELECTDOWN)
-        {
-            command = SGH_CLICK;
-            sgw.Actions = SGA_USE | SGA_REDISPLAY;
-            D(bug("HandleStrInput: RAWMOUSE event\n"));
-        }
-        break;
+	case IECLASS_RAWMOUSE:
+            if (ievent->ie_Code == SELECTDOWN)
+            {
+        	command = SGH_CLICK;
+        	sgw.Actions = SGA_USE | SGA_REDISPLAY;
+        	D(bug("HandleStrInput: RAWMOUSE event\n"));
+            }
+            break;
 
-    case IECLASS_RAWKEY:
+	case IECLASS_RAWKEY:
         {
             UBYTE buf;
 
@@ -524,8 +522,9 @@ ULONG HandleStrInput(   struct Gadget       *gad,
                     sgw.Code = (UWORD)buf;
                 }
             }
+	    break;
         }
-        break;
+
     }
 
     if (!command)
@@ -599,10 +598,11 @@ ULONG HandleStrInput(   struct Gadget       *gad,
             {
                 struct gpRender method;
 
-                method.MethodID = GM_RENDER;
-                method.gpr_GInfo = ginfo;
-                method.gpr_RPort = rp;
+                method.MethodID   = GM_RENDER;
+                method.gpr_GInfo  = ginfo;
+                method.gpr_RPort  = rp;
                 method.gpr_Redraw = GREDRAW_UPDATE;
+		
                 Custom_DoMethodA(gad, (Msg)&method);
 
                 ReleaseGIRPort(rp);
@@ -623,17 +623,17 @@ ULONG HandleStrInput(   struct Gadget       *gad,
 STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
-    struct Gadget   *gad;
+    struct Gadget   	*gad;
     struct StringInfo   *strinfo;
-    struct BBox     bbox;
+    struct BBox     	 bbox;
 
-    struct TextFont *oldfont;
-    struct RastPort *rp;
-    struct Window   *window;
+    struct TextFont 	*oldfont;
+    struct RastPort 	*rp;
+    struct Window   	*window;
     struct Requester    *req;
 
-    UWORD       text_left, text_right;
-    WORD        mousex;
+    UWORD           	 text_left, text_right;
+    WORD            	 mousex;
 
     window = sgw->GadgetInfo->gi_Window;
     req = sgw->GadgetInfo->gi_Requester;
@@ -663,6 +663,7 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     if (gad->Flags & GFLG_STRINGEXTEND)
     {
         struct StringExtend *strext = strinfo->Extension;
+	
         if (strext->Font)
         {
             SetFont(rp, strext->Font);
@@ -696,7 +697,7 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
         /* Find new cursor pos. Uses TextFit() to handle proportional fonts. */
 
         struct TextExtent te;
-        STRPTR dispstr = strinfo->Buffer + strinfo->DispPos;
+        STRPTR      	  dispstr = strinfo->Buffer + strinfo->DispPos;
 
         sgw->BufferPos =   strinfo->DispPos
                            + TextFit(rp, dispstr, sgw->NumChars - strinfo->DispPos,
@@ -751,10 +752,10 @@ VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
 STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
-    struct Gadget   *gad;
+    struct Gadget   	*gad;
     struct StringInfo   *strinfo;
-    UBYTE       letter;
-    ULONG       qual;
+    UBYTE           	 letter;
+    ULONG           	 qual;
 
     EnterFunc(bug("DoSGHKey(sgw=%p)\n", sgw));
 
@@ -830,15 +831,16 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     else if (qual & IEQUALIFIER_RCOMMAND)
     {
         /* ANSI key but pressed together with right Amiga key */
-#if 0
+    #if 0
         sgw->EditOp  = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
         sgw->Actions = (SGA_USE|SGA_REUSE|SGA_END);
-#endif
+    #endif
         letter = ToUpper(sgw->Code);
 
-#ifndef __MORPHOS__
+    /* stegerg: URGENTCHECMKE. Why disabled for AROS? */
+    #ifndef __MORPHOS__
         #warning we need to handle RAMIGA-Q,RAMIGA-X here
-#else
+    #else
         if(letter == 'Q')
         {
             sgw->EditOp = EO_RESET;
@@ -873,7 +875,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
                 sgw->EditOp = EO_CLEAR;
             }                                       
         }
-#endif
+    #endif
     }
     else
     {
@@ -882,8 +884,8 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
         letter = sgw->Code;
 
         if ((qual & IEQUALIFIER_CONTROL) &&
-                (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STRGAD_FILTER) &&
-                !(sgw->Modes & SGM_NOFILTER))
+            (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STRGAD_FILTER) &&
+            !(sgw->Modes & SGM_NOFILTER))
         {
             /* ANSI key but pressed together with the control key */
 
@@ -1253,13 +1255,13 @@ AROS_UFH3(ULONG, GlobalEditFunc,
 
     switch (*command)
     {
-    case SGH_CLICK:
-        retcode = DoSGHClick(sgw, (struct IntuitionBase *)hook->h_Data);
-        break;
+	case SGH_CLICK:
+            retcode = DoSGHClick(sgw, (struct IntuitionBase *)hook->h_Data);
+            break;
 
-    case SGH_KEY:
-        retcode = DoSGHKey  (sgw, (struct IntuitionBase *)hook->h_Data);
-        break;
+	case SGH_KEY:
+            retcode = DoSGHKey  (sgw, (struct IntuitionBase *)hook->h_Data);
+            break;
     }
 
     return retcode;
@@ -1274,8 +1276,8 @@ VOID RefreshStrGadget(struct Gadget *gad,
                       struct Requester  *req,
                       struct IntuitionBase  *IntuitionBase)
 {
-    struct GadgetInfo   gi;
-    struct RastPort *rp;
+    struct GadgetInfo    gi;
+    struct RastPort 	*rp;
 
     EnterFunc(bug("RefreshStrGadget(gad=%p, win=%s)\n", gad, win->Title));
 
@@ -1349,19 +1351,15 @@ VOID UpdateStrGadget(struct Gadget  *gad,
                      struct Requester   *req,
                      struct IntuitionBase   *IntuitionBase)
 {
-    struct GadgetInfo   gi;
-    struct BBox     bbox;
-
+    struct GadgetInfo    gi;
+    struct BBox     	 bbox;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD       text_left;
-    UWORD       text_top;
-
-    struct RastPort *rp;
-
-    STRPTR      dispstr;
-    UWORD       dispstrlen;
-
-    UWORD       pens[NUMPENS];
+    UWORD           	 text_left;
+    UWORD           	 text_top;
+    struct RastPort 	*rp;
+    STRPTR          	 dispstr;
+    UWORD           	 dispstrlen;
+    UWORD           	 pens[NUMPENS];
 
     EnterFunc(bug("UpdateStrGadget(current text=%s)\n", strinfo->Buffer));
 
@@ -1421,7 +1419,7 @@ VOID UpdateStrGadget(struct Gadget  *gad,
 
         text_left += TextLength(rp, dispstr, cursoroffset);
 
-#if 1
+    #if 1
         if (strinfo->BufferPos < strinfo->NumChars)
         {
             SetABPenDrMd(rp, pens[STRTEXTPEN], pens[CURSORPEN], JAM2);
@@ -1433,22 +1431,25 @@ VOID UpdateStrGadget(struct Gadget  *gad,
         else
         {
             struct TextExtent   te;
+	    
             SetABPenDrMd(rp, pens[STRTEXTPEN], pens[CURSORPEN], JAM2|INVERSVID);
             TextExtent(rp, cursorkey, CURSORKEYLEN,&te);
+	    
             RectFill(rp,
                 text_left+te.te_Extent.MinX,
                 text_top+te.te_Extent.MinY,
                 text_left+te.te_Extent.MaxX,
                 text_top+te.te_Extent.MaxY);
         }
-#else
+    #else
         Move(rp, text_left, text_top);
         Text(rp,
              ((strinfo->BufferPos < strinfo->NumChars)
               ? dispstr + cursoroffset
               : cursorkey),
              1 );
-#endif
+    #endif
+    
     } /* if (gadget selected => render cursor) */
 
     if (gad->Flags & GFLG_DISABLED )

@@ -15,10 +15,10 @@
 #endif
 
 extern void RefreshBoopsiGadget (struct Gadget * gadget, struct Window * window,
-                                     struct Requester *requester, struct IntuitionBase * IntuitionBase);
+                                 struct Requester *requester, struct IntuitionBase * IntuitionBase);
 
 extern VOID DoGMLayout(struct Gadget *, struct Window *,struct Requester *,
-                           UWORD, BOOL, struct IntuitionBase *);
+                       UWORD, BOOL, struct IntuitionBase *);
 
 #endif /* BOOPSIGADGETS_H */
 

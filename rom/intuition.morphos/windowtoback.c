@@ -12,8 +12,8 @@
 
 struct WindowToBackActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg  msg;
+    struct Window   	  *window;
 };
 
 static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
@@ -79,10 +79,10 @@ AROS_LH1(void, WindowToBack,
 static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
                              struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
-    struct Layer *layer = WLAYER(window);
-    struct Screen *screen = window->WScreen;
-    struct Requester *req;
+    struct Window   	*window = msg->window;
+    struct Layer    	*layer = WLAYER(window);
+    struct Screen   	*screen = window->WScreen;
+    struct Requester 	*req;
 
     DEBUG_WINDOWTOBACK(dprintf("IntWindowToBack: Window 0x%lx\n", window));
     
@@ -90,8 +90,7 @@ static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
     
     if (!(layer->Flags & LAYERBACKDROP))
     {
-        //LOCK_REFRESH(screen);
-        LockLayers(&screen->LayerInfo);
+        LOCK_REFRESH(screen);
 
         for (req = window->FirstRequest; req; req = req->OlderRequest)
         {
@@ -115,8 +114,7 @@ static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
 
         CheckLayers(screen, IntuitionBase);
 
-        UnlockLayers(&screen->LayerInfo);
-        //UNLOCK_REFRESH(screen);
+        UNLOCK_REFRESH(screen);
     }
 
     NotifyDepthArrangement(window, IntuitionBase);

@@ -9,8 +9,8 @@
 
 struct ZipWindowActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg  msg;
+    struct Window   	  *window;
 };
 
 static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
@@ -80,9 +80,9 @@ AROS_LH1(void, ZipWindow,
 static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
                           struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
-    struct IntWindow * w = (struct IntWindow *)window;
-    LONG NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
+    struct Window   	*window = msg->window;
+    struct IntWindow 	*w = (struct IntWindow *)window;
+    LONG    	    	 NewLeftEdge, NewTopEdge, NewWidth, NewHeight;
 
     if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
     
@@ -90,22 +90,22 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
     if (w->ZipLeftEdge != ~0)
     {
         NewLeftEdge    = w->ZipLeftEdge;
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
         w->ZipLeftEdge = w->window.LeftEdge;
-#else
+    #else
         w->ZipLeftEdge = w->window.RelLeftEdge;
-#endif
+    #endif
     }
 
     NewTopEdge = window->TopEdge;
     if (w->ZipTopEdge != ~0)
     {
         NewTopEdge    = w->ZipTopEdge;
-#ifdef __MORPHOS__
+    #ifdef __MORPHOS__
         w->ZipTopEdge = w->window.TopEdge;
-#else
+    #else
         w->ZipTopEdge = w->window.RelTopEdge;
-#endif
+#   endif
     }
 
     NewWidth = window->Width;

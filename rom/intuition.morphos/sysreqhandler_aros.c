@@ -78,99 +78,102 @@ AROS_LH3(LONG, SysReqHandler,
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-	LONG result;
-	struct IntuiMessage *msg;
+    struct IntuiMessage *msg;
+    LONG                 result;
 
-	DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: window 0x%lx IDCMPPtr 0x%lx WaitInput 0x%lx\n",
-	                            (ULONG) window,
-	                            (ULONG) IDCMPFlagsPtr,
-	                            (ULONG) WaitInput));
+    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: window 0x%lx IDCMPPtr 0x%lx WaitInput 0x%lx\n",
+                                (ULONG) window,
+                                (ULONG) IDCMPFlagsPtr,
+                                (ULONG) WaitInput));
 
-	if (window == 0)
-	{
-		result = 0;
-	}
-	else if (window == (struct Window *)1)
-	{
-		result = 1;
-	}
-	else
-	{
-		result = -2;
+    if (window == 0)
+    {
+        result = 0;
+    }
+    else if (window == (struct Window *)1)
+    {
+        result = 1;
+    }
+    else
+    {
+        result = -2;
 
-		if (WaitInput)
-		{
-			WaitPort(window->UserPort);
-		}
-		while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
-		{
-			DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: msg 0x%lx class 0x%lx\n", (ULONG) msg, msg->Class));
-			switch (msg->Class)
-			{
-			/* we don't use VANILLA (filtered from useridcmp!) to get
-			all events we need */
-			case IDCMP_RAWKEY:
-			{
-#define RKBUFLEN 1
-				struct InputEvent ie;
-				char rawbuffer[RKBUFLEN];
-				
-				ie.ie_Class = IECLASS_RAWKEY;
-				ie.ie_SubClass = 0;
-				ie.ie_Code = msg->Code;
-				ie.ie_Qualifier = NULL;
-				ie.ie_EventAddress = (APTR *) *((ULONG *)msg->IAddress);
-				if (KeymapBase && MapRawKey(&ie,rawbuffer,RKBUFLEN,0))
-				{
-					if (msg->Qualifier & IEQUALIFIER_LCOMMAND)
-					{
-						if  (toupper(rawbuffer[0]) == toupper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue))
-						{
-							if (((struct IntRequestUserData *)window->UserData)->NumGadgets > 1)
-							{
-								result = 1;
-							} else {
-								result = 0;
-							}
-						}
+        if (WaitInput)
+        {
+            WaitPort(window->UserPort);
+        }
+        while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
+        {
+            DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: msg 0x%lx class 0x%lx\n", (ULONG) msg, msg->Class));
+            switch (msg->Class)
+            {
+            /* we don't use VANILLA (filtered from useridcmp!) to get
+            all events we need */
+            case IDCMP_RAWKEY:
+            {
+    	    	#define RKBUFLEN 1
+		
+                struct InputEvent ie;
+                char 	    	  rawbuffer[RKBUFLEN];
+                
+                ie.ie_Class 	    = IECLASS_RAWKEY;
+                ie.ie_SubClass      = 0;
+                ie.ie_Code  	    = msg->Code;
+                ie.ie_Qualifier     = NULL;
+                ie.ie_EventAddress  = (APTR *) *((ULONG *)msg->IAddress);
+		
+                if (KeymapBase && MapRawKey(&ie,rawbuffer,RKBUFLEN,0))
+                {
+                    if (msg->Qualifier & IEQUALIFIER_LCOMMAND)
+                    {
+                        if  (toupper(rawbuffer[0]) == toupper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqTrue))
+                        {
+                            if (((struct IntRequestUserData *)window->UserData)->NumGadgets > 1)
+                            {
+                                result = 1;
+                            }
+			    else
+			    {
+                                result = 0;
+                            }
+                        }
 
-						if  (toupper(rawbuffer[0]) == toupper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse))
-						{
-							result = 0;
-						}
-					}
-				}
-			}
-				break;
+                        if  (toupper(rawbuffer[0]) == toupper(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_ReqFalse))
+                        {
+                            result = 0;
+                        }
+                    }
+                }
+                break;
+            }
 
-			case IDCMP_GADGETUP:
-				result = ((struct Gadget *)msg->IAddress)->GadgetID;
-				break;
+            case IDCMP_GADGETUP:
+                result = ((struct Gadget *)msg->IAddress)->GadgetID;
+                break;
 
-			default:
-				DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: unknown IDCMP\n"));
-				if (result == -2)
-				{
-					if (msg->Class &
-					        ((struct IntRequestUserData *)window->UserData)->IDCMP)
-					{
-						if (IDCMPFlagsPtr)
-							*IDCMPFlagsPtr = msg->Class;
-						result = -1;
-					}
-				}
-				break;
-			}
-			ReplyMsg((struct Message *)msg);
+            default:
+                DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: unknown IDCMP\n"));
+                if (result == -2)
+                {
+                    if (msg->Class & ((struct IntRequestUserData *)window->UserData)->IDCMP)
+                    {
+                        if (IDCMPFlagsPtr) *IDCMPFlagsPtr = msg->Class;
+                        result = -1;
+                    }
+                }
+                break;
+            }
+            ReplyMsg((struct Message *)msg);
 
-		} /* while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort))) */
+        } /* while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort))) */
 
-	}
+    } /* real window */
 
-	DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Result 0x%lx\n",result));
+    DEBUG_SYSREQHANDLER(dprintf("SysReqHandler: Result 0x%lx\n",result));
 
-	return result;
-	AROS_LIBFUNC_EXIT
+    return result;
+    
+    AROS_LIBFUNC_EXIT
 } /* SysReqHandler() */

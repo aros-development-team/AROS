@@ -27,7 +27,7 @@ void free_intuimessage(struct IntuiMessage *imsg,
                        struct IntuitionBase *IntuitionBase);
 
 struct IntuiMessage *alloc_intuimessage(struct Window *w,
-                    struct IntuitionBase *IntuitionBase);
+                    	    	    	struct IntuitionBase *IntuitionBase);
 
 BOOL fire_intuimessage(struct Window *w,
                        ULONG Class,
@@ -49,9 +49,9 @@ BOOL ih_fire_intuimessage(struct Window *w,
 /*********************************************************************/
 
 IPTR Locked_DoMethodA (struct Window *w,
-        struct Gadget *g,
-        Msg message,
-        struct IntuitionBase *IntuitionBase);
+        	       struct Gadget *g,
+        	       Msg message,
+        	       struct IntuitionBase *IntuitionBase);
 
 
 /*********************************************************************/
@@ -73,9 +73,9 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
                            struct IntuitionBase *IntuitionBase);
 
 struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi,
-                                struct Gadget *gadget,
-                                ULONG termination,
-                                BOOL *reuse_event, struct IntuitionBase *IntuitionBase);
+                                	struct Gadget *gadget,
+                                	ULONG termination,
+                                	BOOL *reuse_event, struct IntuitionBase *IntuitionBase);
 
 struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
                          struct InputEvent *ie, STACKULONG methodid,
@@ -87,13 +87,13 @@ struct Gadget * FindGadget (struct Screen *scr, struct Window * window,
                             struct IntuitionBase *IntuitionBase);
 
 struct Gadget * FindHelpGadget (struct Window * window, int x, int y,
-                            struct IntuitionBase *IntuitionBase);
+                            	struct IntuitionBase *IntuitionBase);
 
 BOOL InsideGadget(struct Screen *scr, struct Window *win, struct Requester *req,
                   struct Gadget *gad, WORD x, WORD y);
 
 struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req,
-                            struct Gadget *gad, struct IntuitionBase *IntuitionBase);
+                            	struct Gadget *gad, struct IntuitionBase *IntuitionBase);
 
 struct Gadget *FindCycleGadget(struct Window *win, struct Requester *req,
                                struct Gadget *gad, WORD direction);
@@ -107,7 +107,7 @@ void FixWindowCoords(struct Window *win, LONG *left, LONG *top, LONG *width, LON
 void WindowNeedsRefresh(struct Window * w, struct IntuitionBase * IntuitionBase );
 
 struct Window *FindActiveWindow(struct InputEvent *ie,ULONG *stitlebarhit,
-                struct IntuitionBase *IntuitionBase);
+                    	    	struct IntuitionBase *IntuitionBase);
 
 struct Window *FindDesktopWindow(struct Screen *screen,struct IntuitionBase *IntuitionBase);
 
