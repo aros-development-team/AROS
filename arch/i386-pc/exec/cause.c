@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define AROS_ALMOST_COMPATIBLE
+
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
 #include <exec/interrupts.h>
@@ -35,24 +37,43 @@ AROS_LH1(void, Cause,
 
     UBYTE pri;
 
-    Disable();
 
+    Disable();
     /* Check to ensure that this node is not already in a list. */
     if( softint->is_Node.ln_Type != NT_SOFTINT )
     {
         /* Scale the priority down to a number between 0 and 4 inclusive
         We can use that to index into exec's software interrupt lists. */
-        pri = (softint->is_Node.ln_Pri + 0x20) >> 4;
+        pri = (softint->is_Node.ln_Pri + 0x20)>>4;
 
         /* We are accessing an Exec list, protect ourselves. */
-        AddTail((struct List *)&SysBase->SoftInts[pri], (struct Node *)softint);
+        ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
         softint->is_Node.ln_Type = NT_SOFTINT;
         SysBase->SysFlags |= SFF_SoftInt;
 
-	if (!softblock) __asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
-    }
+	if (!softblock)
+            if (get_cs())
+                __asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
+             else
+             {
+             /* Cause() inside supervisor mode. We will call IntServer directly
+                no matter it is normal irq or Supervisor() call */
+             struct IntVector *iv = &SysBase->IntVects[INTB_SOFTINT];
 
+                 if (iv->iv_Code)
+                 {
+                     AROS_UFC5(void, iv->iv_Code,
+                         AROS_UFCA(ULONG, 0, D1),
+                         AROS_UFCA(ULONG, 0, A0),
+                         AROS_UFCA(APTR, NULL, A1),
+                         AROS_UFCA(APTR, iv->iv_Code, A5),
+                         AROS_UFCA(struct ExecBase *, SysBase, A6)
+                     );
+                 }
+             }
+    }
     Enable();
+
 
     AROS_LIBFUNC_EXIT
 } /* Cause() */
@@ -123,7 +144,7 @@ AROS_UFH5(void, SoftIntDispatch,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     struct Interrupt *intr;
-    UBYTE i;
+    BYTE i;
 
     if( SysBase->SysFlags & SFF_SoftInt )
     {
@@ -133,9 +154,9 @@ AROS_UFH5(void, SoftIntDispatch,
         /* Clear the Software interrupt pending flag. */
         SysBase->SysFlags &= ~(SFF_SoftInt);
 
-        for(i=0; i < 4; i++)
+        for(i=4; i>=0; i--)
         {
-            while( (intr = (struct Interrupt *)RemHead((struct List *)&SysBase->SoftInts[i])) )
+            while( (intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List)) )
             {
         	intr->is_Node.ln_Type = NT_INTERRUPT;
 
