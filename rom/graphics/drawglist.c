@@ -120,6 +120,7 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 				                    FALSE);
 				rp_bm.BitMap = CurVSprite->IntVSprite->SaveBuffer;
 
+kprintf("Saving background at %d/%d\n",CurVSprite->X,CurVSprite->Y);
 				ClipBlit(rp,
 				       	 CurVSprite->X,
 				         CurVSprite->Y,
@@ -130,10 +131,9 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 					 CurVSprite->Height,
 					 0x0c0);
 #endif
-#warning Cannot set this flag since for some reason ClipBlit seems not to copy the right stuff. Also see below in the subroutine for EraseRect!!!
 				CurVSprite->Flags |= BACKSAVED;
 			}
-
+			else kprintf("NOT SAVING BACKGROUND!\n");
 
 			if (0 == (CurVSprite->Flags & VSPRITE) &&
 			    BOBSAWAY == (CurVSprite->VSBob->Flags & BOBSAWAY)) {
@@ -209,5 +209,3 @@ void _ClearBobAndFollowClearPath(struct VSprite *, struct RastPort *);
 	AROS_LIBFUNC_EXIT
     
 } /* DrawGList */
-
-

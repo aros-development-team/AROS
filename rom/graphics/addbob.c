@@ -65,6 +65,7 @@
 			_CreateIntVSprite(rp->GelsInfo->gelTail, NULL);
 		}
 		bob->Flags &= 0x00FF;
+		bob->Flags |= BWAITING;
 		AddVSprite (bob->BobVSprite, rp);
 	}
 	
