@@ -71,8 +71,7 @@ FILES	:= \
     touch \
     type \
     wait \
-    rename \
-    why
+    rename
 
 # I'd like to move this into a rule, but it would be far too hard.
 EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
