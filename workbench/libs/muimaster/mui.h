@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,6 +13,8 @@
 #ifndef GRAPHICS_GRAPHICS_H
 #include <graphics/gfx.h>
 #endif
+
+#include "mui_identifiers.h"
 
 #define MUIMASTER_NAME "muimaster.library"
 #define MUIMASTER_VMIN    41
