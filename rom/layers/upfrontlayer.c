@@ -205,7 +205,7 @@
   if (NULL != L->back)
     CreateClipRectsSelf(L->back, FALSE);
 
-  CleanupLayers(LI);
+  /* Here no layer needs to have its cliprect recombined */
 
   /* Ok, I am done now. */
   UnlockLayers(LI);

@@ -523,6 +523,11 @@ void CleanTopLayer(struct Layer_Info * LI)
   }
 }
 
+/*
+
+  CleanupLayers: All layers that are totally visible but might have more
+                 than one cliprect are recombined by this function.
+*/
 
 void CleanupLayers(struct Layer_Info * LI)
 {
@@ -576,6 +581,172 @@ void CleanupLayers(struct Layer_Info * LI)
         }
       
       }
+    }
+    L = L->back;
+  }
+}
+
+
+
+/*
+  Unsplit all layers: Some layers' cliprects have fallen into too many
+  tiny cliprects. But when a layer is deleted those cliprects could 
+  actually be recombined. This is the function to do that.
+*/
+
+void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
+{
+
+  struct Layer * L = LI->top_layer;
+  if (NULL == L)
+    return;
+  /* The following function takes care of the top layer. */
+  CleanTopLayer(LI); 
+
+  L = L->back;
+  while (NULL != L)
+  {
+    /* just in case this flag is set */
+    L->Flags &= ~LAYERUPDATING;
+    if (!(L->bounds.MinX > rect->MaxX ||
+          L->bounds.MaxX < rect->MinX ||
+          L->bounds.MinY > rect->MaxY ||
+          L->bounds.MaxY < rect->MinY   ))
+    {
+      struct ClipRect * CR, * _CR;    
+//kprintf("Found layer to clean!\n");
+      
+      if (LAYERSMART == (L->Flags & (LAYERSMART|LAYERSUPER)))
+      {
+        /* In case of a smart layer the cliprect list must be preserved 
+           as the content of the cliprects' bitmaps is valuable */
+        L->cr = L->ClipRect;
+      }
+      else
+      {
+        /* Otherwise those cliprects are not very valueable as simplelayers
+           don't have anything stored in the cliprects and superbitlayers
+           only contain pointers to the superbitmap */
+        _CR = L->SuperSaveClipRects;
+        if (NULL == _CR)
+        {
+          /* make the used cliprects head of the list */
+          L->SuperSaveClipRects = L->ClipRect;
+        }
+        else
+        {
+          /* search for the end of the save cliprects list */
+          while (NULL != _CR->Next)
+            _CR = _CR->Next;
+          
+          /* connect the current list to the end. */
+          _CR->Next = L->ClipRect;
+        }
+      }
+      
+      /* get one new cliprect */
+      L->ClipRect = _AllocClipRect(L);
+      L->ClipRect->bounds = L->bounds;
+      /* 
+         Create the cliprects of this layer by letting all the other
+         layers split it. This will automatically create the minimum 
+         list of rectangles. 
+      */
+      CreateClipRectsSelf(L, TRUE);
+      /* 
+         Now I can copy all contents from the L->cr list to the 
+         L->ClipRect list.
+      */
+
+      if (LAYERSMART == (L->Flags & (LAYERSMART|LAYERSUPER)))
+      {
+        /* in case of a smart layer the backedup bitmaps' contents
+           must be blitted into the newly created cliprects and
+           the old list of cliprects can be freed.
+           The newly created cliprectlist will have less cliprects
+           than the old on and besides that any cliprect of the old
+           list will fit into a cliprect of the new list which means
+           that contents from old cliprects can be blitted to
+           the new cliprects in one piece.
+        */
+        CR = L->cr;
+        
+        while (NULL != CR)
+        {
+int found = FALSE;
+          if (NULL != CR->BitMap)
+          {
+            _CR = L->ClipRect;
+            /* search for the cliprect where this bitmap info will
+               go into
+            */
+            while (NULL != _CR)
+            {
+              if (!(CR->bounds.MinX > _CR->bounds.MaxX ||
+                    CR->bounds.MaxX < _CR->bounds.MinX ||
+                    CR->bounds.MinY > _CR->bounds.MaxY ||
+                    CR->bounds.MaxY < _CR->bounds.MinY    ))
+              {
+                if (CR->bounds.MinX < _CR->bounds.MinX ||
+                    CR->bounds.MaxX > _CR->bounds.MaxX ||
+                    CR->bounds.MinY < _CR->bounds.MinY ||
+                    CR->bounds.MaxY > _CR->bounds.MaxY )
+                  kprintf("Something's wrong with the cliprects!\n");
+                if (NULL == _CR->BitMap)
+                {
+                  kprintf("%s!! There's something wrong!\n",__FUNCTION__);
+                  break;
+                }
+                else
+                {
+/*
+                  kprintf("Doing a blit to CR (%d,%d)-(%d,%d)!\n",
+                            _CR->bounds.MinX,_CR->bounds.MinY,
+                            _CR->bounds.MaxX,_CR->bounds.MaxY);
+                  kprintf("Doing a blit from CR (%d,%d)-(%d,%d)!\n",
+                            CR->bounds.MinX,CR->bounds.MinY,
+                            CR->bounds.MaxX,CR->bounds.MaxY);
+*/
+/*
+                  kprintf("%d, %d, %d, %d\n",
+                            CR->bounds.MinX - _CR->bounds.MinX,
+                            CR->bounds.MinY - _CR->bounds.MinY,
+                            CR->bounds.MaxX - _CR->bounds.MinX + 1,
+                            CR->bounds.MaxY - _CR->bounds.MinY + 1);
+*/
+                  BltBitMap(CR->BitMap,
+                            CR->bounds.MinX & 0x0f,
+                            0,
+                            _CR->BitMap,
+                            CR->bounds.MinX - _CR->bounds.MinX + (_CR->bounds.MinX & 0x0f),
+                            CR->bounds.MinY - _CR->bounds.MinY,
+                            CR->bounds.MaxX - _CR->bounds.MinX + 1,
+                            CR->bounds.MaxY - _CR->bounds.MinY + 1,
+                            0x0c0,/*copy  */
+                            0xff, 
+                            NULL); 
+found = TRUE;
+                }
+                
+              }
+              _CR = _CR->Next;
+            }
+if (found == FALSE)
+  kprintf("!!!!! Something is wrong. Couldn't find bitmap!\n");  
+            
+            /* free the bitmap */
+            FreeBitMap(CR->BitMap);
+          }
+          
+          /* 
+            Free the cliprect and go to the next cliprect of the old cliprects 
+          */
+          _CR = CR->Next;
+          _FreeClipRect(CR, L);
+          CR = _CR;
+        } /* while (NULL != CR) */
+        L->cr = NULL;
+      }  
     }
     L = L->back;
   }

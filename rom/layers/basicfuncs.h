@@ -113,5 +113,6 @@ void FreeLayerResources(struct Layer_Info *  li,
 
 void CleanTopLayer(struct Layer_Info * LI);
 void CleanupLayers(struct Layer_Info * LI);
+void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect );
 
 /*-----------------------------------END-----------------------------------*/

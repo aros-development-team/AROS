@@ -385,9 +385,15 @@
     while (NULL != CR);
   }
 
-  FreeMem(LD, sizeof(struct Layer));
+  /*
+    Now as this layer is gone other layers that used to be split by it
+    can have their cliprects recombined. As MoveLayer(), SizeLayer() &
+    MoveSizeLayer() are the critical functions and they all call 
+    DeleteLayer() this is the best place to do this. 
+  */
+  UnsplitLayers(LI, &LD->bounds);
 
-  CleanupLayers(LI);
+  FreeMem(LD, sizeof(struct Layer));
 
   /* ok, I'm done */
   UnlockLayers(LI);
