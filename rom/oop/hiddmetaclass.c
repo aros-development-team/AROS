@@ -18,7 +18,7 @@
 #undef SDEBUG
 #undef DEBUG
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define UB(x) ((UBYTE *)x)
