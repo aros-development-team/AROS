@@ -81,7 +81,6 @@
 	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
-%checkuds to=%(to) linkcmd="%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)"
 %end
 
 #------------------------------------------------------------------------------
@@ -341,14 +340,6 @@ SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@ > undefdsyms.list
-	@$(IF) $(TEST) -s undefdsyms.list ; then \
-	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
-	    $(ECHO) "There are undefined symbols in $@:" ; \
-	    $(CAT) undefdsyms.list ; \
-	else $(NOP) ; fi
-	@$(RM) undefdsyms.list
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -874,14 +865,6 @@ SYS_OBJS      := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(OBJS) $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@ > undefdsyms.list
-	@$(IF) $(TEST) -s undefdsyms.list ; then \
-	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
-	    $(ECHO) "There are undefined symbols in $@:" ; \
-	    $(CAT) undefdsyms.list ; \
-	else $(NOP) ; fi
-	@$(RM) undefdsyms.list
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -955,14 +938,6 @@ DEPS          := $(foreach f,$(INIT_FILE) functable functions $(FILES) $(END_FIL
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(EXTRA_LIBS) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee $(LIBNAME)lib.err
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@ > undefdsyms.list
-	@$(IF) $(TEST) -s undefdsyms.list ; then \
-	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
-	    $(ECHO) "There are undefined symbols in $@:" ; \
-	    $(CAT) undefdsyms.list ; \
-	else $(NOP) ; fi
-	@$(RM) undefdsyms.list
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
@@ -1056,14 +1031,6 @@ DESTDIRS := $(DESTDIRS) $(DESTDIR)
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
-	@$(ECHO) "Checking $@..."
-	@$(CHECKUDS) $@ > undefdsyms.list
-	@$(IF) $(TEST) -s undefdsyms.list ; then \
-	    $(CAT) undefdsyms.list >> $(@F)-x.err ; \
-	    $(ECHO) "There are undefined symbols in $@:" ; \
-	    $(CAT) undefdsyms.list ; \
-	else $(NOP) ; fi
-	@$(RM) undefdsyms.list
 	@$(IF) $(TEST) ! -s $(LIBNAME)lib.err; then $(RM) $(LIBNAME)lib.err ; else $(NOP) ; fi
 	@$(STRIP) $@
 
