@@ -41,16 +41,17 @@ struct FileSysNode {
 	ULONG fsblocks;                  /* nr of LSEG blocks for FS */
 };
 
-ULONG calcChkSum(ULONG *ptr, ULONG size) {
-ULONG i;
-ULONG sum=0;
+static ULONG calcChkSum(ULONG *ptr, ULONG size)
+{
+  ULONG i;
+  ULONG sum=0;
 
-	for (i=0;i<size;i++)
-	{
-		sum += AROS_BE2LONG(*ptr);
-		ptr++;
-	}
-	return sum;
+  for (i=0;i<size;i++)
+  {
+    sum += AROS_BE2LONG(*ptr);
+    ptr++;
+  }
+  return sum;
 }
 
 LONG PartitionRDBCheckPartitionTable
