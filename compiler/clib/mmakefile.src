@@ -29,6 +29,7 @@ COMMON	:= \
 	bcmp \
 	bcopy \
 	bzero \
+	ctype \
 	longjmp \
 	memchr \
 	memcmp \
@@ -37,6 +38,7 @@ COMMON	:= \
 	memset \
 	putchar \
 	setjmp \
+	stpblk \
 	stpcpy \
 	strcasecmp \
 	strcat \
@@ -56,8 +58,7 @@ COMMON	:= \
 	strspn \
 	strstr \
 	strtod \
-	strtok \
-	stpblk
+	strtok
 	
 
 #   - Shared are in either the shared linklib, or the arosc.library module
@@ -90,7 +91,6 @@ SHARED	:= \
 	close \
 	closedir \
 	creat \
-	ctype \
 	difftime \
 	drand48 \
 	dup \
