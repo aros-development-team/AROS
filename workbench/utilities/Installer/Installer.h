@@ -6,6 +6,10 @@
 
 #define DEBUG 1
 
+#ifdef ADE
+#define IPTR int
+#endif /* ADE */
+
 #ifdef LINUX
 #define FALSE	0
 #define TRUE	1
@@ -81,6 +85,8 @@ struct ProcedureList
 {
   char * procname;
   ScriptArg * procbody;
+  char ** arglist;
+  int argnum;
 };
 
 struct ParameterList

@@ -11,15 +11,15 @@ extern void end_malloc();
 extern void cleanup();
 
 /* Internal function prototypes */
-struct ScriptArg *find_proc( char * );
-void set_procedure( char *, ScriptArg * );
+struct ProcedureList *find_proc( char * );
+void set_procedure( char **, int, ScriptArg * );
 void free_proclist();
 
 
 int numusrprocs = 0;
 struct ProcedureList *usrprocs = NULL;
 
-struct ScriptArg *find_proc( char *name )
+struct ProcedureList *find_proc( char *name )
 {
 int i;
 
@@ -32,13 +32,15 @@ int i;
     return NULL;
   }
 
-return (usrprocs[i].procbody);
+return &(usrprocs[i]);
 }
 
-void set_procedure( char *name, ScriptArg *cmd )
+void set_procedure( char **args, int num, ScriptArg *cmd )
 {
 int i;
+char *name;
 
+  name = args[0];
   /* Check if name is in preset list */
   for( i = 0 ; i < _MAXCOMMAND && strcmp( name, internal_commands[i].cmdsymbol ) != 0 ; i++ );
   if( i < _MAXCOMMAND )
@@ -67,6 +69,8 @@ int i;
     }
     usrprocs[i].procbody = cmd;
     usrprocs[i].procname = name;
+    usrprocs[i].arglist = &(args[1]);
+    usrprocs[i].argnum = num-1;
   }
 }
 

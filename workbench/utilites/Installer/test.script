@@ -52,8 +52,10 @@
 	 ( confirm ) 
  ) 
 
- ( run "info >t:fred/result"
-	 ( prompt "Running 'info'" ) 
+;( run "info >t:fred/result"
+( run "C:List \"\" SYS:"
+;	 ( prompt "Running 'info'" ) 
+	 ( prompt "Running 'C:List'" )
 	 ( help "This will only work from the CLI!" ) 
 	 ( confirm ) 
  ) 

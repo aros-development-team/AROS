@@ -9,7 +9,7 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 0.1 (18.07.1998)\n";
+static const char version[] = "$VER: Installer 43.3 (18.07.1998)\n";
 
 
 /* External variables */
@@ -27,7 +27,7 @@ extern void end_malloc();
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */
-extern void show_parseerror( int );
+extern void show_parseerror( char *, int );
 extern void final_report();
 #ifndef LINUX
 extern void init_gui();
@@ -40,7 +40,7 @@ int main( int, char ** );
 char *filename = NULL;
 FILE *inputfile;
 char buffer[MAXARGSIZE];
-int error = 0;
+int error = 0, grace_exit = 0;
 
 InstallerPrefs preferences;
 ScriptArg script;
@@ -68,8 +68,8 @@ int nextarg, endoffile, count;
 #endif /* !LINUX */
 
   /* open script file */
-#ifdef DEBUG
 #warning FIXME: get real script name instead of static "test.script"
+#ifdef DEBUG
   free( filename );
   filename = strdup( "test.script" );
 #endif /* DEBUG */
@@ -88,7 +88,8 @@ int nextarg, endoffile, count;
   preferences.debug = TRUE;
   preferences.defusrlevel = 0;
 #else /* DEBUG */
-  preferences.transcriptfile = (char *)args[ARG_LOGFILE];
+  preferences.transcriptfile = ( (char *)args[ARG_LOGFILE] != NULL ) ? (char *)args[ARG_LOGFILE] : "install_log_file";
+  preferences.defusrlevel = _NOVICE;
   if( strcasecmp( "novice", (char *)args[ARG_DEFUSER] ) == 0 )
     preferences.defusrlevel = _NOVICE;
   if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
@@ -202,7 +203,7 @@ int nextarg, endoffile, count;
 
           default	  : /* Plain text or closing bracket is not allowed */
                             fclose( inputfile );
-                            show_parseerror( line );
+                            show_parseerror( "Too many closing brackets!", line );
                             cleanup();
                             exit(-1);
                             break;
@@ -259,11 +260,6 @@ int nextarg, endoffile, count;
 
   /* execute parsed script */
   execute_script( script.cmd, 0 );
-
-  if( preferences.transcriptstream != NULL )
-  {
-    fclose( preferences.transcriptstream );
-  }
 
 #ifdef DEBUG
   dump_varlist();

@@ -5,15 +5,14 @@
 /* External variables */
 extern char buffer[MAXARGSIZE];
 extern FILE *inputfile;
-extern int error, line;
+extern int line;
 extern InstallerPrefs preferences;
 
 /* External function prototypes */
 extern void end_malloc();
-extern void set_procedure( char *, ScriptArg * );
-extern void show_parseerror( int );
+extern void set_procedure( char **, int, ScriptArg * );
+extern void show_parseerror( char *, int );
 extern void cleanup();
-extern void parseerror( char *, int );
 
 /* Internal function prototypes */
 void parse_file( ScriptArg * );
@@ -24,8 +23,8 @@ int line;
 void parse_file( ScriptArg *first )
 {
 ScriptArg *current;
-int count, i, ready;
-char *clip;
+int count, i, j, ready;
+char **mclip;
 
   ready = FALSE;
   current = first;
@@ -35,7 +34,7 @@ char *clip;
     if( count == 0 )
     {
       PrintFault( IoErr(), "Installer" );
-      show_parseerror( line );
+      show_parseerror( "End of File", line );
       cleanup();
       exit(-1);
     }
@@ -95,7 +94,7 @@ char *clip;
                          else
                          {
                            /* This is an empty bracket */
-                           parseerror( "There is an empty bracket in line %d.\n", line );
+                           show_parseerror( "There is an empty bracket.", line );
                            cleanup();
                            exit(-1);
                          }
@@ -109,18 +108,50 @@ char *clip;
                          int masquerade = FALSE;
                            do
                            {
-                             if( masquerade )
+                             if( masquerade == TRUE )
                              {
-#warning TODO: convert "\n" to 0x0a, etc.
-                             }
-                             if( buffer[i] == BACKSLASH && !masquerade )
-                               masquerade = TRUE;
-                             else
+                               switch(buffer[i])
+                               {
+                                 case 'n'	: /* NEWLINE */
+                                                  buffer[i-1] = 0x0a;
+                                                  break;
+                                 case 'r'	: /* RETURN */
+                                                  buffer[i-1] = 0x0d;
+                                                  break;
+                                 case 't'	: /* TAB */
+                                                  buffer[i-1] = 0x09;
+                                                  break;
+                                 case SQUOTE	: /* SQUOTE */
+                                                  buffer[i-1] = SQUOTE;
+                                                  break;
+                                 case DQUOTE	: /* DQUOTE */
+                                                  buffer[i-1] = DQUOTE;
+                                                  break;
+                                 case BACKSLASH	: /* BACKSLASH */
+                                                  buffer[i-1] = BACKSLASH;
+                                                  break;
+#warning TODO: convert missing '\\' masqueraded symbols
+                                 case 'h'	: /* H.TAB */
+                                 case 'v'	: /* V.TAB */
+                                 case 'b'	: /* BACKSPACE */
+                                 case 'f'	: /* FORMFEED */
+                                 case 'x'	: /* HEX number */
+                                 case 'o'	: /* \\ooo OCTAL number ('o' is just to remember) */
+                                 default	:
+                                                  i++;
+                                           break;
+                               }
                                masquerade = FALSE;
-                             i++;
+                             }
+                             else
+                             {
+                               if( buffer[i] == BACKSLASH )
+                                 masquerade = TRUE;
+                               i++;
+                             }
                              if( i == MAXARGSIZE )
                              {
-                               parseerror( "Argument length overflow in line %d!\n" ,line );
+                               show_parseerror( "Argument length overflow!" ,line );
                                cleanup();
                                exit(-1);
                              }
@@ -147,7 +178,7 @@ char *clip;
                            }
                            if( i == MAXARGSIZE )
                            {
-                             parseerror( "Argument length overflow in line %d!\n", line );
+                             show_parseerror( "Argument length overflow!", line );
                              cleanup();
                              exit(-1);
                            }
@@ -187,9 +218,10 @@ char *clip;
                                               }
                                               strncpy( current->arg, buffer, i+1 );
                                             }
-                                            if( current->arg == current->parent->cmd->arg && strcasecmp( buffer, "procedure" ) == 0 )
+                                            if( current == current->parent->cmd && strcasecmp( buffer, "procedure" ) == 0 )
                                             {
                                             ScriptArg *proc;
+                                            int finish;
                                               /* Save procedure in ProcedureList */
                                               proc = malloc( sizeof( ScriptArg ) );
                                               if( proc == NULL )
@@ -211,11 +243,13 @@ char *clip;
                                               proc->cmd->arg = NULL;
                                               proc->cmd->intval = 0;
                                               proc->cmd->ignore = 0;
-                                              /* Procedure name */
-                                              i = 0;
-                                              /* goto 1st argument after keyword "procedure" */
+                                              /* parse procedure name and args */
+                                              mclip = NULL;
+                                              j = 0;
+                                              finish = FALSE;
                                               do
                                               {
+                                                /* goto next argument */
                                                 do
                                                 {
                                                   count = fread( &buffer[0], 1, 1, inputfile );
@@ -225,77 +259,95 @@ char *clip;
                                                   }
                                                   if( buffer[0] == RBRACK )
                                                   {
-                                                    parseerror( "Procedure has no name in line %d!\n", line );
+                                                    if( j > 0 )
+                                                    {
+                                                      show_parseerror( "Procedure has no body!", line );
+                                                    }
+                                                    else
+                                                    {
+                                                      show_parseerror( "Procedure has no name!", line );
+                                                    }
                                                     cleanup();
                                                     exit(-1);
                                                   }
+                                                  if( buffer[0] == SQUOTE ||  buffer[0] == DQUOTE )
+                                                  {
+                                                    show_parseerror( "Procedure has a quoted argument!", line );
+                                                    cleanup();
+                                                    exit(-1);
+                                                  }
+                                                  if( buffer[0] == SEMICOLON && count != 0 )
+                                                  {
+                                                    do
+                                                    {
+                                                      count = fread( &buffer[0], 1, 1, inputfile );
+                                                    } while( buffer[0] != LINEFEED && count != 0 );
+                                                    line++;
+                                                  }
                                                 } while( isspace( buffer[0] ) && count != 0 );
-                                                if( buffer[0] == SEMICOLON && count != 0 )
+                                                  
+                                                if( buffer[0] != LBRACK )
                                                 {
+                                                  i = 0;
+                                                  /* read in string */
                                                   do
                                                   {
-                                                    count = fread( &buffer[0], 1, 1, inputfile );
-                                                  } while( buffer[0] != LINEFEED && count != 0 );
-                                                  line++;
+                                                    i++;
+                                                    count = fread( &buffer[i], 1, 1, inputfile );
+                                                  } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
+                                                  if( i == MAXARGSIZE )
+                                                  {
+                                                    show_parseerror( "Argument length overflow!", line );
+                                                    cleanup();
+                                                    exit(-1);
+                                                  }
+                                                  if( buffer[i] == LINEFEED )
+                                                  {
+                                                    line++;
+                                                  }
+                                                  if( buffer[i] == LBRACK || buffer[i] == RBRACK || buffer[i] == SEMICOLON )
+                                                  {
+#warning FIXME: fseek() does not work!
+                                                    fseek(inputfile, -1 , SEEK_CUR );
+                                                  }
+                                                  buffer[i] = 0;
+                                                  j++;
+                                                  mclip = realloc( mclip, sizeof( char * ) * j );
+                                                  if( mclip == NULL )
+                                                  {
+                                                    end_malloc();
+                                                  }
+                                                  mclip[j-1] = strdup( buffer );
+                                                  if( mclip[j-1] == NULL )
+                                                  {
+                                                    end_malloc();
+                                                  }
                                                 }
                                                 else
                                                 {
-                                                  i++;
+                                                  /* Exit if procedure has no name or name is string/digit or bracket follows */
+                                                  if( j == 0 )
+                                                  {
+                                                    show_parseerror( "Argument to procedure is a command!\n", line );
+                                                    cleanup();
+                                                    exit(-1);
+                                                  }
+                                                  /* Next string is body-command */
+                                                  finish = TRUE;
+                                              /*    fseek(inputfile, -1 , SEEK_CUR );*/
                                                 }
-                                              } while( i == 0 );
-                                              i = 0;
-                                              /* read in name */
-                                              do
-                                              {
-                                                i++;
-                                                count = fread( &buffer[i], 1, 1, inputfile );
-                                              } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
-                                              if( i == MAXARGSIZE )
-                                              {
-                                                parseerror( "Argument length overflow in line %d!\n", line );
-                                                cleanup();
-                                                exit(-1);
-                                              }
-                                              if( buffer[i] == LINEFEED )
-                                              {
-                                                line++;
-                                              }
-                                              if( buffer[i] == SEMICOLON )
-                                              {
-                                                do
-                                                {
-                                                  count = fread( &buffer[i], 1, 1, inputfile );
-                                                } while( buffer[i] != LINEFEED && count != 0 );
-                                                line++;
-                                              }
-                                              if( buffer[i] == LBRACK || buffer[i] == RBRACK )
-                                              {
-#warning FIXME: fseek() does not work!
-                                                fseek(inputfile, -1 , SEEK_CUR );
-                                              }
-                                              buffer[i] = 0;
-                                              /* Exit if procedure has no name or name is string/digit or bracket follows */
-                                              if( buffer[0] == LBRACK || buffer[0] == RBRACK || buffer[0] == SQUOTE || buffer[0] == DQUOTE )
-                                              {
-                                                clip = malloc( MAXARGSIZE );
-                                                if( clip == NULL )
-                                                {
-                                                  end_malloc();
-                                                }
-                                                sprintf( clip, "Invalid procedure name <%s> in line %cd!\n", buffer, '%' );
-                                                parseerror( clip, line );
-                                                free( clip );
-                                                cleanup();
-                                                exit(-1);
-                                              }
-                                              clip = strdup( buffer );
-                                              if( clip == NULL )
-                                              {
-                                                end_malloc();
-                                              }
+                                              } while( !finish );
                                               /* Procedure body */
                                               parse_file( proc->cmd );
-                                              set_procedure( clip, proc->cmd );
+                                              set_procedure( mclip, j, proc );
+                                              do
+                                              {
+                                                count = fread( &buffer[0], 1, 1, inputfile );
+                                                if( buffer[0] == LINEFEED )
+                                                {
+                                                  line++;
+                                                }
+                                              } while( buffer[0] != RBRACK && count != 0 );
                                               buffer[0] = 0;
                                               ready = TRUE;
                                             }
@@ -332,7 +384,7 @@ char *clip;
     if( count == 0 )
     {
       PrintFault( IoErr(), "Installer" );
-      show_parseerror( line );
+      show_parseerror( "End of File", line );
       cleanup();
       exit(-1);
     }

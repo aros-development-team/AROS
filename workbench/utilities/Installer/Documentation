@@ -35,85 +35,107 @@ Executing the script
 --------------------
 Arguments in [...] are optional.
 
-( ( ... ) ... )
-  If first arg in braces is cmd all others have to be cmds, too.
-  Return value is return value of last cmd.
+( (...)... )
+  If the first argument in brackets is a command (...) all others have to
+  be commands, too.
+  The return value is the return value of the last command in the brackets.
   Empty brackets are not allowed.
 
-  If command is not recognized -> SCRIPTERROR -> traperr() -> exit
+  If a command is not recognized an error SCRIPTERROR is produced.
 
 ( abort [<string>...] )
-  Shows strings and executes (onerror...) statements and exit(-1)
+  Shows strings and executes trap or onerror statements if present and
+  exits abnormally.
+  This function never returns.
 
-( and <int> <int> )
+( and	<int> <int> )
+( or	<int> <int> )
+( xor	<int> <int> )
 ( bitand <int> <int> )
-( bitor <int> <int> )
+( bitor  <int> <int> )
 ( bitxor <int> <int> )
-( <> <int> <int> )
-( / <int> <int> )
-( = <int> <int> )
-( < <int> <int> )
-( <= <int> <int> )
-( - <int> <int> )
-( > <int> <int> )
-( >= <int> <int> )
-( or <int> <int> )
+( <>	<int> <int> )
+( <	<int> <int> )
+( <=	<int> <int> )
+( =	<int> <int> )
+( >	<int> <int> )
+( >=	<int> <int> )
+( -	<int> <int> )
+( /	<int> <int> )
 ( shiftleft <int> <int> )
 ( shiftrght <int> <int> )
-( xor <int> <int> )
   These functions return the result of the operations on the two integers.
   For logical operations 1 is returned as TRUE and 0 as FALSE.
-  Traperr() with error=SCRIPTERROR is executed if #args != 2
-  ( / <int> <int> ) checks 2nd arg == zero and executes traperr()
-    with error=BADPARAMETER and exit(-1)
+  ( / <int> <int> ) checks 2nd arg == zero and produces an error BADPARAMETER.
 
 ( cat <any>... )
   Concatenates all args as strings. This function was intended to be the only
-  valid function for converting <int> to <string> (Well, except
-  ( "..." ... ), too )
+  valid function for converting <int> to <string>
+  (Well, except ( "..." ... ), too )
   The return value is the quoted string.
 
 ( complete <int> )
-  Tells the user how much ( in percent ) is already done
+  Tells the user how much ( in percent ) is already done.
   The return value is the percentage.
-  NOTE: We do not check for percentage >100 or <0 !!!
+  NOTE: We do not check for percentage < 0 or > 100 !!!
 
 ( debug <any>... )
   If run from Shell and DEBUG was specified in the command line
   the arguments (strings, integers, variables) will be printf()'ed
   to the shell separated by spaces.
-  The return value is the quoted string of all concatenated arguments
+  The return value is the quoted string of all concatenated arguments.
 
 ( exit [(quiet)] [<string>...] )
   Shows the strings separated by a linefeed and exits normally.
   A summarizing message with information on where the app was installed
   and the log-file can be found will be displayed unless (quiet) is
   specified as a parameter.
+  This function never returns.
 
 ( if <int> <then> [<else>] )
-  <int> is checked for !=0 and returns <then> otherwise <else> or 0
-  if <else> is left out.
+  <int> is checked for !=0 and returns <then> otherwise <else> or 0 if
+  <else> is left out.
   <int>, <then> and <else> may be functions, too.
 
 ( in <base-int> <bit-int>... )
-  This function returns <base-int>'s bits given in <bit-int>... (mask)
+  This function returns <base-int>'s bits given in <bit-int>... (mask).
 
-( bitnot <int> )
 ( not <int> )
-  Returns bitwise/logical negation of argument.
+( bitnot <int> )
+  Returns logical/bitwise negation of argument.
 
 ( + <int>... )
-  Returns the sum of all integers, 0 for no integers.
+  Returns the sum of all integers, 0 for no arguments.
 
 ( * <int>[...] )
   Returns the product of all integers. Needs at least one <int>
 
-( procedure <name> (...) )
+( procedure <name> [<arg>...] (...) )
   Procedures are defined during parsing. The name has to be a non-quoted
   string which must not begin with digits. Consider using a prefix like
   "P_" for your commands to avoid a conflict with future extensions of
   Installer.
-  Though it is ignored at run-time it returns 0.
+  <arg>... is an optional list of variables which will be set when calling
+  the procedure. However, you can call the procedure with less than the
+  specified arguments; in this case the unset variables retain their old
+  values (example from original Installer docs):
+  ( procedure P_ADDMUL arg1 arg2 arg3
+      ( * ( + arg1 arg2 ) arg3 )
+  )
+
+  ( message ( P_ADDMUL 1 2 3 ) )	; shows 9
+  ( message ( P_ADDMUL 4 5 ) )		; shows 27, arg3 stays the same
+
+  Note that there are no local variables, so that a call
+
+  ( P_ADDMUL 1 2 3 )
+
+  is the same as
+
+  ( set arg1 1 arg2 2 arg3 3 )
+  ( P_ADDMUL )
+
+  Though the ( procedure ... ) command is ignored at run-time it returns 0.
 
 ( select <int> [<any>...] )
   Returns the value of the <int>th <any>-item or 0 if <int> < 1 or
@@ -226,11 +248,28 @@ Arguments in [...] are optional.
   Without this function appearing in the script the user level is requested
   straight at the beginning.
 
+( message <string>...
+          [(help <string>... )]
+          [(all)]
+)
+  Displays the strings and offers "Proceed", "Abort" and "Help" buttons.
+  The message is not displayed in NOVICE mode unless (all) is specified.
+  Please, do not confuse the novice user.
+
 ( working <string>... )
   Displays the concatenated strings under a standard line reading
   "Working on Installation". This can be used to tell the user what's
   going on when doing long operations except copying which has its own
   status display.
+
+( textfile )
+# tests with original Installer showed:
+# ( append )s are collected
+# ( include )s are replaced, i.e. only the last ( include ) is taken
+# first (append)s are printed then last (include)
+## Distinguish between overriding and appending parameters and introduce
+## according functions to collect args. Or always append/collect as multiple
+## strings and let function behave as desired.
 
 ( askdir )
  /* Ask user for a directory */
@@ -244,7 +283,6 @@ Arguments in [...] are optional.
 ( askoptions )
  /* Ask user to choose multiple items */
 
-
 (database )
  /* Return information on the hardware Installer is running on */
  "vblank"
@@ -254,11 +292,23 @@ Arguments in [...] are optional.
  "fpu"
  "chiprev"
 
-( onerror )
- /* link onerror to preferences */
+( onerror (...) )
+ Use this function to define code to be executed after an error occurred.
+ This can be used to delete installed stuff if an error occurs or user
+ aborted installation. This function is mutually exclusive with trap command.
 
-( trap )
- /* link trap to preferences */
+( trap <trapflag> (...) )
+ Use this function to set an error handling routine.
+ When an error occurs and ( trap ... ) has been set before, the statements
+ of the trap command are executed. Use this to clean up if an abnormal
+ termination of the script occurs. If no trap is set for a specific errorcode
+ the more general ( onerror ... ) statements are executed if declared before.
+ Error codes:
+   1 := User aborted
+   2 := Ran out of memory
+   3 := Error in script
+   4 := DOS error (more infos in @ioerr , see below )
+   5 := Bad parameter data
 
 ( copyfiles )
 ( copylib )
@@ -278,7 +328,6 @@ Arguments in [...] are optional.
 ( getversion )
 ( makeassign )
 ( makedir )
-( message )
 ( pathonly )
 ( patmatch )
 ( protect )
@@ -287,7 +336,6 @@ Arguments in [...] are optional.
 ( run )
 ( startup )
 ( tackon )
-( textfile )
 ( tooltype )
 
 /* Here are all tags, first the ones which have to be executed */

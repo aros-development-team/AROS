@@ -7,8 +7,8 @@
 extern InstallerPrefs preferences;
 
 /* External function prototypes */
-extern void end_malloc();
 extern void request_userlevel( char * );
+extern void outofmem( void * );
 
 /* Internal function prototypes */
 void *get_variable( char * );
@@ -92,10 +92,7 @@ int i;
     /* Enlarge list for one additional element */
     numvariables++;
     variables = realloc( variables, sizeof(struct VariableList) * numvariables );
-    if( variables == NULL )
-    {
-      end_malloc();
-    }
+    outofmem( variables );
     variables[i].varsymbol = NULL;
     variables[i].vartext = NULL;
   }
@@ -113,20 +110,14 @@ int i;
   if( variables[i].varsymbol == NULL )
   {
     variables[i].varsymbol = strdup( name );
-    if( variables[i].varsymbol == NULL )
-    {
-      end_malloc();
-    }
+    outofmem( variables[i].varsymbol );
   }
 
   /* Duplicate variable text if existent */
   if( text != NULL )
   {
     variables[i].vartext = strdup( text );
-    if( variables[i].vartext == NULL )
-    {
-      end_malloc();
-    }
+    outofmem( variables[i].vartext );
   }
 
   /* Set integer value */

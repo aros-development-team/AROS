@@ -191,4 +191,23 @@
 - added "setposition" "resident" parameters and "iconinfo" function
 - Don't use two lists for variables anymore
 
+0031
+- added "setposition" to code of "range" (two ints) and simplified code
+- made error trapping more consistent
+- fixed bugs for empty strings
+  ( e.g. "(cat)" produces empty string "" now )
+- started converting '\'-sequences in parse
+- fixed some minor bugs
+- "procedure" now supports arguments
+- added outofmem(void*) function to check for failed malloc
+
+0032
+- added preliminary Intuition GUI for "working"
+- added function which breaks string at '\n' into array of strings
+- added preliminary hybrid version of "message", "abort" and "exit"
+- first working version of "run"
+- changed test.script to work with "run"
+  ( pipes: '>' etc. don't work and AROS has no 'info' )
+- "ask[bool|number|string|choice]" now print infos to log file
+
 
