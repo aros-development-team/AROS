@@ -21,20 +21,12 @@ VAR struct Library              *UtilityBase;
 VAR struct Library              *LocaleBase;
 #endif
 
-VAR struct Library              *AslBase;
-VAR struct Library              *GadToolsBase;
-VAR struct Library  	    	*IFFParseBase;
-VAR struct Library  	    	*CyberGfxBase;
 VAR struct Library  	    	*MUIMasterBase;
 VAR struct Device	    	*TimerBase;
 VAR struct MUI_CustomClass  	*calendarmcc;
 VAR struct MUI_CustomClass  	*clockmcc;
 VAR struct MsgPort  	    	*TimerMP;
 VAR struct timerequest	    	*TimerIO;
-VAR struct Screen               *scr;
-VAR struct Window               *win;
-VAR struct DrawInfo             *dri;
-VAR APTR                        vi;
 VAR struct Catalog              *catalog;
 VAR struct ClockData	    	clockdata;
 VAR LONG    	    	    	firstweekday;
