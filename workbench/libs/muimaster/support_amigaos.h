@@ -14,7 +14,10 @@ char *StrDup(char *x);
 int snprintf(char *buf, int size, const char *fmt, ...);
 int strlcat(char *buf, char *src, int len);
 
-#define DeinitRastPort(rp)      /* doesn't exist on AmigaOS */
+/*** AROS Intuition extensions **********************************************/
+#define DeinitRastPort(rp)      
+#define CloneRastPort(rp) (rp)  
+#define FreeRastPort(rp)        
 
 /*** Miscellanous compiler supprot ******************************************/
 #ifdef __MAXON__
