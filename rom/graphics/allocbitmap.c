@@ -128,9 +128,10 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+
     struct BitMap * nbm;
     ULONG attributes;
-    HIDDT_ModeID hiddmode = 0;
+    HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
 
     /*
 	If the depth is too large or the bitmap should be displayable or
@@ -142,9 +143,29 @@
 
     if ((LONG)depth < 0)
     {
-	depth = (ULONG)(-((LONG)depth));
-	hiddmode = (HIDDT_ModeID)friend_bitmap;
+	depth 	      = (ULONG)(-((LONG)depth));
+	hiddmode      = (HIDDT_ModeID)friend_bitmap;
 	friend_bitmap = NULL;
+    }
+    else if (flags & BMF_DISPLAYABLE) 
+    {
+    	/* Make real BMF_DISPLAYABLE bitmap only, if a friend bitmap was
+	   specified which is displayable (ie. a screen bitmap). Because
+	   as the gfxhidd stuff is now, displayable bitmap needs to have
+	   a Display ModeID "known" to them. */
+	   
+    	if (friend_bitmap && IS_HIDD_BM(friend_bitmap) && (friend_bitmap->Flags & BMF_DISPLAYABLE))
+	{
+	    IPTR val;
+	    
+	    OOP_GetAttr(HIDD_BM_OBJ(friend_bitmap), aHidd_BitMap_ModeID, &val);
+	    hiddmode = val;
+	    friend_bitmap = NULL;    
+	}
+	else
+	{
+    	    flags &= ~BMF_DISPLAYABLE;
+	}
     }
 
     ASSERT_VALID_PTR_OR_NULL(friend_bitmap);
@@ -224,11 +245,11 @@
     		if (NULL != bm_obj)
     		{
 
-    		    OOP_Object *pf;
-    		    OOP_Object *colmap = 0;
-    		    HIDDT_ColorModel colmod;
-    		    BOOL ok = FALSE;
-		    IPTR width, height;
+    		    OOP_Object      	*pf;
+    		    OOP_Object      	*colmap = 0;
+    		    HIDDT_ColorModel 	 colmod;
+    		    BOOL    	    	 ok = FALSE;
+		    IPTR    	    	 width, height, val;
 
 
     		    /*  It is possible that the HIDD had to allocate
@@ -245,10 +266,12 @@
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
     		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 
-
-    		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-    		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
-
+    		    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &val);
+		    depth = val;
+		    
+    		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &val);
+    	    	    colmod = val;
+		    
     		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
 
     			/* Store it in plane array */
@@ -277,7 +300,7 @@
     			    /* Set this palette to all black by default */
 
     			    HIDDT_Color col;
-    			    ULONG i;
+    			    ULONG   	i;
 
     			    col.red     = 0;
     			    col.green   = 0;
@@ -290,17 +313,7 @@
 
     				ULONG numcolors;
 
-				#if 1
 				numcolors = 1L << ((depth <= 8) ? depth : 8);
-				#else		
-
-				/* this fails when depth == 32, because numcolors
-				   would then need to have at least 33 bits */
-
-    				numcolors = 1L << depth;
-    				if (numcolors > AROS_PALETTE_SIZE)
-    				    numcolors = AROS_PALETTE_SIZE;
-    				#endif
 
     				/* Set palette to all black */
     				for (i = 0; i < numcolors; i ++)
@@ -373,11 +386,8 @@
     }
     else /* Otherwise init a plain Amiga bitmap */
     {
-        if (flags & BMF_CLEAR)
-          attributes = MEMF_ANY|MEMF_CLEAR;
-        else
-          attributes = MEMF_ANY;
-	nbm = AllocMem (sizeof (struct BitMap), attributes);
+	nbm = AllocMem (sizeof(struct BitMap) + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
+	    	    	MEMF_ANY | MEMF_CLEAR);
 
 	if (nbm)
 	{
