@@ -60,7 +60,7 @@ ifeq ($(FLAVOUR),native)
 LIBS = -L$(LIBDIR) -lexpansion
 
 # The filename of the linklib
-LIB=$(LIBDIR)/libexpanison.a
+LIB=$(LIBDIR)/libexpansion.a
 
 # The names of the linklibs this depends on - should track $(LIBS)
 LIBLIST = expansion
