@@ -24,8 +24,8 @@
 	struct ExecBase *, SysBase, 83, Exec)
 
 /*  FUNCTION
-	Return a pointer to a previously installed resource addressed by name.
-	If this name can't be found NULL is returned.
+	Return a pointer to a previously installed resource addressed by
+	name.  If this name can't be found NULL is returned.
 
     INPUTS
 	libName - Pointer to the resource's name.

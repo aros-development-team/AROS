@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Open a library.
@@ -25,9 +25,10 @@
 	struct ExecBase *, SysBase, 92, Exec)
 
 /*  FUNCTION
-	Opens a library given by name and revision. If the library
-	doesn't exist in memory it is tried to load it from disk.
-	It this fails too, NULL is returned.
+	Opens a library given by name and revision. If the library does not
+	exist in the current system shared library list, the first the
+	system ROMTag module list is tried. If this fails, and the DOS is
+	running, then the library will be loaded from disk.
 
     INPUTS
 	libName - Pointer to the library's name.
@@ -78,15 +79,12 @@
 	}else
 	    library=NULL;
     }
+
     /*
-	else
-	{
-	Under normal circumstances you'd expect the library loading here -
-	but this is only exec which doesn't know anything about the
-	filesystem level. Therefore dos.library has to SetFunction() this vector
-	for the additional functionality.
-	}
-    */
+     *	We cannot handle loading libraries from disk. But this is taken
+     *	care of by dos.library (well lddemon really) replacing this
+     *	function with a SetFunction() call.
+     */
 
     /* All done. */
     Permit();
