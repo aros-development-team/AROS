@@ -1735,6 +1735,21 @@ void arrowup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG le
     int right,bottom,cx,i;
     struct RastPort *rport = mri->mri_RastPort;
 
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+
+    cx = width / 2;
+
+    Move(rport, left + HSPACING + 1, top + height - 1 - VSPACING);
+    Draw(rport, left + width - cx, top + VSPACING);
+    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
+    Draw(rport, left + width - cx - 1, top + VSPACING);
+
+    Move(rport, left + width - 1 - HSPACING - 1, top + height - 1 - VSPACING);
+    Draw(rport, left + cx - 1, top + VSPACING);
+    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
+    Draw(rport, left + cx, top + VSPACING);
+
+#if 0
     left += HSPACING; top += VSPACING;
     width -= HSPACING * 2;
     height -= VSPACING * 2;
@@ -1757,6 +1772,7 @@ void arrowup_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG le
 			right - i,
 			bottom - i * height / cx / 2);
     }
+#endif
 }
 
 void arrowdown_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -1764,6 +1780,21 @@ void arrowdown_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG 
     int right,bottom,cx,i;
     struct RastPort *rport = mri->mri_RastPort;
 
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+
+    cx = width / 2;
+
+    Move(rport, left + HSPACING + 1, top + VSPACING);
+    Draw(rport, left + width - cx, top + height - 1 - VSPACING);
+    Move(rport, left + HSPACING, top + VSPACING);
+    Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
+
+    Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
+    Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
+    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+    Draw(rport, left + cx, top + height - 1 - VSPACING);
+
+#if 0
     left += HSPACING; top += VSPACING;
     width -= HSPACING * 2;
     height -= VSPACING * 2;
@@ -1786,6 +1817,7 @@ void arrowdown_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG 
 			right -  i,
 			bottom - (cx - i - 1) * height / cx);
     }
+#endif
 }
 
 void arrowleft_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -1793,6 +1825,21 @@ void arrowleft_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG 
     int right,bottom,cy,i;
     struct RastPort *rport = mri->mri_RastPort;
 
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+
+    cy = height / 2;
+
+    Move(rport, left + width - 1 - HSPACING, top + VSPACING + 1);
+    Draw(rport, left + HSPACING, top + height - cy);
+    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+    Draw(rport, left + HSPACING, top + height - cy - 1);
+
+    Move(rport, left + width - 1 - HSPACING, top + height - 1- VSPACING - 1);
+    Draw(rport, left + HSPACING, top + cy - 1);
+    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
+    Draw(rport, left + HSPACING, top + cy);
+
+#if 0
     left += HSPACING; top += VSPACING;
     width -= HSPACING * 2;
     height -= VSPACING * 2;
@@ -1815,6 +1862,7 @@ void arrowleft_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG 
 			right - i * width / cy / 2,
 			bottom - i);
     }
+#endif
 }
 
 void arrowright_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -1822,6 +1870,22 @@ void arrowright_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG
     int right,bottom,cy,i;
     struct RastPort *rport = mri->mri_RastPort;
 
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+
+    cy = height / 2;
+
+    Move(rport, left + HSPACING, top + VSPACING + 1);
+    Draw(rport, left + width - 1 - HSPACING, top + height - cy);
+    Move(rport, left + HSPACING, top + VSPACING);
+    Draw(rport, left + width - 1 - HSPACING, top + height - cy - 1);
+
+    Move(rport, left + HSPACING, top + height - 1- VSPACING - 1);
+    Draw(rport, left + width - 1 - HSPACING, top + cy - 1);
+    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
+    Draw(rport, left + width - 1 - HSPACING, top + cy);
+
+
+#if 0
     left += HSPACING; top += VSPACING;
     width -= HSPACING * 2;
     height -= VSPACING * 2;
@@ -1843,7 +1907,8 @@ void arrowright_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG
 			bottom - i,
 			right - (cy - i - 1) * width / cy,
 			bottom - i);
-    }    
+    }
+#endif
 }
 
 void checkbox_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
@@ -1922,6 +1987,43 @@ void mx_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, L
     }
 }
 
+void cycle_draw(struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+    int bottom = top + height - 1;
+    int right = left + width - 1;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+
+    Move(rport,left,top+1);
+    Draw(rport,left,bottom-1);
+    Move(rport,left+1,top);
+    Draw(rport,left+1,bottom);
+    Draw(rport,right-7,bottom);
+    Move(rport,right-7,bottom-1);
+    Draw(rport,right-6,bottom-1);
+    Move(rport,left+2,top);
+    Draw(rport,right-7,top);
+    Move(rport,right-7,top+1);
+    Draw(rport,right-6,top+1);
+
+    /* The small arrow */
+    Move(rport,right - 6 - 3, top+2);
+    Draw(rport,right - 7 + 3, top+2);
+    Move(rport,right - 6 - 2, top+3);
+    Draw(rport,right - 7 + 2, top+3);
+    Move(rport,right - 6 - 1, top+4);
+    Draw(rport,right - 7 + 1, top+4);
+
+    /* The right bar */
+    SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
+    Move(rport,right - 1, top + 1);
+    Draw(rport,right - 1, bottom - 1);
+    SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
+    Move(rport,right, top + 1);
+    Draw(rport,right, bottom - 1);
+}
+
 struct vector_image
 {
     int minwidth;
@@ -1937,6 +2039,7 @@ static struct vector_image vector_table[] =
     {8,10,arrowright_draw},
     {16,10,checkbox_draw},
     {16,10,mx_draw},
+    {16,10,cycle_draw},
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
