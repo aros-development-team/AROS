@@ -199,7 +199,7 @@
 	/*
 	** Set the secondary error value if requested.
 	*/
-	if (Ptr =(ULONG*) GetTagData(GTMN_SecondaryError, NULL, tagList))
+	if ((Ptr =(ULONG*) GetTagData(GTMN_SecondaryError, NULL, tagList)))
 	{
 	    *Ptr = GTMENU_NOMEM;
 	}

@@ -131,7 +131,7 @@ ULONG workerEntry(void)
 	{
 		WaitPort(port);
 
-		while(msg=(struct WorkerMessage*)(GetMsg(port)))
+		while((msg=(struct WorkerMessage*)(GetMsg(port))))
 		{
 			switch(msg->w_Command)
 			{

@@ -78,8 +78,8 @@ IPTR desktopObsSet(Class *cl, Object *obj, struct opSet *msg)
 
 	data=(struct DesktopObserverClassData*)INST_DATA(cl, obj);
 
-	while(tag=NextTagItem(&tstate))
-    {
+	while((tag=NextTagItem(&tstate)))
+	{
 		switch(tag->ti_Tag)
 		{
 			case OA_InTree:

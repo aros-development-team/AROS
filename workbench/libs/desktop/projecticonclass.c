@@ -44,8 +44,8 @@ IPTR projectIconSet(Class *cl, Object *obj, struct opSet *msg)
 
 	data=(struct ProjectIconClassData*)INST_DATA(cl, obj);
 
-	while(tag=NextTagItem(&tstate))
-    {
+	while((tag=NextTagItem(&tstate)))
+	{
 		switch(tag->ti_Tag)
 		{
 			default:
