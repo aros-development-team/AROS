@@ -15,6 +15,12 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+ #define YEAR_FORMAT "%y"
+#else
+ #define YEAR_FORMAT "%Y"
+#endif
+
 extern struct LocaleBase *globallocalebase;
 
 AROS_UFH3(void, LocDateToStrPutCharFunc,
@@ -119,15 +125,15 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     	switch(datetime->dat_Format)
 	{
 	    case FORMAT_INT:
-	    	fstring = "%y-%b-%d";
+	    	fstring = YEAR_FORMAT "-%b-%d";
 		break;
 		
 	    case FORMAT_USA:
-	    	fstring = "%m-%d-%y";
+	    	fstring = "%m-%d-" YEAR_FORMAT;
 		break;
 		
 	    case FORMAT_CDN:
-	    	fstring = "%d-%m-%y";
+	    	fstring = "%d-%m-" YEAR_FORMAT;
 		break;
 		
 	    case FORMAT_DEF:
@@ -135,7 +141,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 		break;
 		
 	    default:
-	    	fstring = "%d-%b-%y";
+	    	fstring = "%d-%b-" YEAR_FORMAT;
 		break;
 		
 	}
@@ -216,3 +222,4 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 } /* LocDateToStr */
 
 #undef LocaleBase
+#undef YEAR_FORMAT
