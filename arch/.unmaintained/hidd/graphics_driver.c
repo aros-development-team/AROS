@@ -543,7 +543,7 @@ ULOCK_HIDD(bm);
 	
 	LockLayerRom(L);
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -577,17 +577,23 @@ ULOCK_HIDD(bm);
 		else
 		{
 		    /* Render into offscreen cliprect bitmap */
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_RectFill(): Superbitmap not handled yet\n");
+		    else
+		    {
 #warning setbitmapfast should handle drawmodes (JAM1, JAM2,..)
-		    setbitmapfast(CR->BitMap
-		    	, intersect.MinX, intersect.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-			, GetAPen(rp)
-		    );
+			setbitmapfast(CR->BitMap
+		    		, intersect.MinX, intersect.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, GetAPen(rp)
+		    	);
+		    }
 		    
 		}
 	    }
-	    CR = CR->Next;
 	}
 	
         UnlockLayerRom(L);
@@ -658,7 +664,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 	toblit.MaxY = (yDest + ySize - 1) + yrel;
 	
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -695,20 +701,25 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 		else
 		{
 		    /* Render into offscreen cliprect bitmap */
-		    BltBitMap(srcBitMap
-		    	, xSrc + xoffset, ySrc + yoffset
-			, CR->BitMap
-		    	, intersect.MinX - CR->bounds.MinX
-			, intersect.MinY - CR->bounds.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-			, minterm, destRP->Mask, NULL
-		    );
-		    
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_BltBitMapRastPort(): Superbitmap not handled yet\n");
+		    else
+		    {
+			BltBitMap(srcBitMap
+		    		, xSrc + xoffset, ySrc + yoffset
+				, CR->BitMap
+		    		, intersect.MinX - CR->bounds.MinX
+				, intersect.MinY - CR->bounds.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, minterm, destRP->Mask, NULL
+		   	);
+		    }
 		    
 		}
 	    }
-	    CR = CR->Next;
 	} /* while */
 	
 	UnlockLayerRom( L );
@@ -1175,6 +1186,11 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
         } 
         else
         {
+	   
+	  /* Cannot get pen from obscured simple refresh CRs */
+	  if (L->Flags & LAYERSIMPLE)
+	  	goto fail_exit;
+		
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
@@ -1258,8 +1274,15 @@ exit:
 
   if (NULL != L) 
     UnlockLayerRom(L);
-
+    
   return penno;
+
+fail_exit:
+
+  if (NULL != L) 
+    UnlockLayerRom(L);
+    
+  return -1;
 
 }
 
@@ -1374,11 +1397,18 @@ ULOCK_HIDD(bm);
         } 
         else
         {
+	  /* For simple layers there is no offscreen bitmap
+	     to render into
+	 */
+	  if (L->Flags & LAYERSIMPLE)
+	  	goto fail_exit;
+		
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
 	   
 
+		
 	  found_offscreen = TRUE;
 	  
           bm = CR -> BitMap;
@@ -1434,6 +1464,7 @@ ULOCK_HIDD(bm);
 
   }
 
+  /* We have allready tested if this is a LAYERSIMPLE layer */
   if (found_offscreen)
   {
 
@@ -1516,7 +1547,7 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 	
 	CR = L->ClipRect;
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -1555,20 +1586,25 @@ ULOCK_HIDD(bm);
 		}
 		else
 		{
-		    setbitmapfast(CR->BitMap
-		    	, intersect.MinX, intersect.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-			, color
-		    );
-		    
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_SetRast(): Superbitmap not handled yet\n");
+		    else
+		    {
+		    	setbitmapfast(CR->BitMap
+		    		, intersect.MinX, intersect.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, color
+		    	);
+		    }
 		    
 		} /* if (intersecton inside hidden cliprect) */
 
 		
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
-	    CR = CR->Next;
 	} /* while (cliprects to examine) */
 	
 	UnlockLayerRom( L );
@@ -2931,7 +2967,7 @@ ULOCK_HIDD(bm);
 	towrite.MaxX = xstop  + xrel;
 	towrite.MaxY = ystop  + yrel;
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -2978,32 +3014,40 @@ ULOCK_HIDD(bm);
 		else
 		{
 		    /* This is the tricky one: render into offscreen cliprect bitmap */
-		    UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
-		    
-		    LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX;
-		    LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
-		    
-		    UBYTE *array_ptr	= array + (array_rel_y * array_width) + array_rel_x;
-		    
-		    ULONG modulo = array_width - inter_width;
-		    
-		    LONG y;
-		    
-		    for (y = 0; y < inter_height; y ++)
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_WritePixelArray8(): Superbitmap not handled yet\n");
+		    else
 		    {
-		    	LONG x;
-		    	for (x = 0; x < inter_width; x ++)
-			{
-			    setbitmappixel(CR->BitMap
-			    	, cr_rel_x + x
-				, cr_rel_y + y
-				
-				, *array_ptr ++
-				, depth
-				, 0xFF /* All planes */
-			    );
-			}
-			array_ptr += modulo;
+			UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
+		    
+		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX;
+		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
+		    
+		    	UBYTE *array_ptr	= array + (array_rel_y * array_width) + array_rel_x;
+		    
+		    	ULONG modulo = array_width - inter_width;
+		    
+		    	LONG y;
+		    
+		    	for (y = 0; y < inter_height; y ++)
+		    	{
+		    	    LONG x;
+		    	    for (x = 0; x < inter_width; x ++)
+			    {
+			    	setbitmappixel(CR->BitMap
+			    		, cr_rel_x + x
+					, cr_rel_y + y
+					, *array_ptr ++
+					, depth
+					, 0xFF /* All planes */
+			   	);
+			    
+			     }
+			     array_ptr += modulo;
+			 }
+			 
 		    }
 		    
 		} /* if (intersecton inside hidden cliprect) */
@@ -3013,7 +3057,6 @@ ULOCK_HIDD(bm);
 		
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
-	    CR = CR->Next;
 	} /* while (cliprects to examine) */
 	
 	UnlockLayerRom( L );
@@ -3084,7 +3127,7 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 	toread.MaxX = xstop  + xrel;
 	toread.MaxY = ystop  + yrel;
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -3122,27 +3165,34 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		else
 		{
 		    /* This is the tricky one: render into offscreen cliprect bitmap */
-		    UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
-		    LONG cr_rel_x = intersect.MinX - CR->bounds.MinX;
-		    LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
-		    
-		    LONG y;
-		    UBYTE *array_ptr = array + (array_rel_y * array_width) + array_rel_x;
-		    ULONG modulo = array_width - inter_width;
-		    
-		    for (y = 0; y < inter_height; y ++)
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_ReadPixelArray8(): Superbitmap not handled yet\n");
+		    else
 		    {
-		    	LONG x;
-		    	for (x = 0; x < inter_width; x ++)
-			{
-			    *array_ptr ++ = getbitmappixel(CR->BitMap
-			    	, cr_rel_x + x
-				, cr_rel_y + y
-				, depth
-				, 0xFF /* All planes */
-			    );
+		    	UBYTE depth = GetBitMapAttr(CR->BitMap, depth);
+		    	LONG cr_rel_x = intersect.MinX - CR->bounds.MinX;
+		    	LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
+		    
+		    	LONG y;
+		    	UBYTE *array_ptr = array + (array_rel_y * array_width) + array_rel_x;
+		    	ULONG modulo = array_width - inter_width;
+		    
+		    	for (y = 0; y < inter_height; y ++)
+		    	{
+		    	    LONG x;
+		    	    for (x = 0; x < inter_width; x ++)
+			    {
+			    	*array_ptr ++ = getbitmappixel(CR->BitMap
+			    		, cr_rel_x + x
+					, cr_rel_y + y
+					, depth
+					, 0xFF /* All planes */
+			    	);
+			    }
+			    array_ptr += modulo;
 			}
-			array_ptr += modulo;
 			
 		    }
 		    
@@ -3153,7 +3203,6 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
 		
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
-	    CR = CR->Next;
 	} /* while (cliprects to examine) */
 	
 	UnlockLayerRom( L );
@@ -3417,7 +3466,7 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 	toblit.MaxX = (xDest + xSize - 1) + xrel;
 	toblit.MaxY = (yDest + ySize - 1) + yrel;
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -3452,32 +3501,38 @@ D(bug("Done Copying template to HIDD offscreen bitmap\n"));
 		}
 		else
 		{
-		    UBYTE *clipped_source;
-		    LONG clipped_xsrc;
-		    
-		    /* This is the tricky one: render into offscreen cliprect bitmap */
-		    clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
-		    clipped_source = source + (((clipped_xsrc - 1) >> 4) + 1);
-		    clipped_xsrc &= 0x0F;
 
-		    blttemplate_amiga(clipped_source
-		    	, clipped_xsrc
-			, srcMod
-			, CR->BitMap
-			, intersect.MinX - CR->bounds.MinX
-			, intersect.MinY - CR->bounds.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-			, destRP, GfxBase
-		    );
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_BltTemplate(): Superbitmap not handled yet\n");
+		    else
+		    {
+		    	UBYTE *clipped_source;
+		    	LONG clipped_xsrc;
 		    
-		    	
+		    	/* This is the tricky one: render into offscreen cliprect bitmap */
+		    	clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
+		    	clipped_source = source + (((clipped_xsrc - 1) >> 4) + 1);
+		    	clipped_xsrc &= 0x0F;
+
+		    	blttemplate_amiga(clipped_source
+		    		, clipped_xsrc
+				, srcMod
+				, CR->BitMap
+				, intersect.MinX - CR->bounds.MinX
+				, intersect.MinY - CR->bounds.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, destRP, GfxBase
+		    	);
+		    
+		    }
 
 		}
 		
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
-	    CR = CR->Next;
 	} /* while (cliprects to examine) */
 	
 	UnlockLayerRom( L );
@@ -3757,7 +3812,7 @@ LOCK_HIDD(bm);
 	toblit.MaxX = xMax + xrel;
 	toblit.MaxY = yMax + yrel;
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -3796,23 +3851,27 @@ D(bug("Done putting to hidd\n"));
 		}
 		else
 		{
-		    bltpattern_amiga( &pi
-		    	, CR->BitMap
-			, xMin, yMin
-			, intersect.MinX - CR->bounds.MinX
-			, intersect.MinY - CR->bounds.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-			, GfxBase
-		    );
-		    
-		    	
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_BltPattern(): Superbitmap not handled yet\n");
+		    else
+		    {
+		    	bltpattern_amiga( &pi
+		    		, CR->BitMap
+				, xMin, yMin
+				, intersect.MinX - CR->bounds.MinX
+				, intersect.MinY - CR->bounds.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, GfxBase
+		        );
+		    }
 
 		}
 		
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
-	    CR = CR->Next;
 	} /* while (cliprects to examine) */
 	
 	UnlockLayerRom( L );
@@ -4000,7 +4059,7 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 	msg.OffsetX = 0;
 	msg.OffsetY = 0;
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -4031,24 +4090,31 @@ ULOCK_HIDD(bm);
 		}
 		else
 		{
-		    if (NULL == fakeRP)
-			fakeRP = CreateRastPort();
-		    if (NULL == fakeRP)
+		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_EraseRect(): Superbitmap not handled yet\n");
+		    else
+		    {
+			if (NULL == fakeRP)
+			    fakeRP = CreateRastPort();
+		    	if (NULL == fakeRP)
+		    	    continue;
 		    
-		    rp->BitMap = CR->BitMap;
+		    	rp->BitMap = CR->BitMap;
 		    
-		    msg.MinX = intersect.MinX - CR->bounds.MinX;
-		    msg.MinY = intersect.MinY - CR->bounds.MinY;
-		    msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
-		    msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
+		    	msg.MinX = intersect.MinX - CR->bounds.MinX;
+		    	msg.MinY = intersect.MinY - CR->bounds.MinY;
+		    	msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
+		    	msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
 		    
-		    calllayerhook(L->BackFill, rp, &msg);
+		    	calllayerhook(L->BackFill, rp, &msg);
+			
+		    }
 
 		}
 
 	    }
-	    CR = CR->Next;
 	    
 	}
 	
@@ -4288,7 +4354,7 @@ LOCK_HIDD(bm);
 	toblit.MaxY = (yDest + ySize - 1) + yrel;
 	
 	
-	while (NULL != CR)
+	for (;NULL != CR; CR = CR->Next)
 	{
 	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
 	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
@@ -4319,20 +4385,26 @@ LOCK_HIDD(bm);
 		else
 		{
 		    /* Render into offscreen cliprect bitmap */
-		    bltmask_amiga( &bmi
-		    	, xSrc + xoffset, ySrc + yoffset
-			, CR->BitMap
-		    	, intersect.MinX - CR->bounds.MinX
-			, intersect.MinY - CR->bounds.MinY
-			, intersect.MaxX - intersect.MinX + 1
-			, intersect.MaxY - intersect.MinY + 1
-			, minterm
-		    );
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("driver_BltMaskBitMapRastPort(): Superbitmap not handled yet\n");
+		    else
+		    {
+		    	bltmask_amiga( &bmi
+		    		, xSrc + xoffset, ySrc + yoffset
+				, CR->BitMap
+		    		, intersect.MinX - CR->bounds.MinX
+				, intersect.MinY - CR->bounds.MinY
+				, intersect.MaxX - intersect.MinX + 1
+				, intersect.MaxY - intersect.MinY + 1
+				, minterm
+		    	);
+		    }
 		    
 		    
 		}
 	    }
-	    CR = CR->Next;
 	}
 	UnlockLayerRom( L );
 	
