@@ -14,7 +14,7 @@
 */
 
 
-#  define  DEBUG  1
+#  define  DEBUG  0
 #  include <aros/debug.h>
 
 #include "dos_intern.h"
@@ -66,7 +66,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     BPTR            shellSeg;
     struct TagItem *newTags;
 
-    if(command != NULL)
+    if (command != NULL)
     {
 	LONG length = strlen(command) + strlen("COMMAND ") + 1;
 
@@ -85,7 +85,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	tags[14].ti_Data = (IPTR)comStr;
     }	
 
-    kprintf("Execcommand: Got commandline... %s\n", comStr);
+    D(bug("Execcommand: Got commandline... %s\n", comStr));
 
     shellSeg = LoadSeg(shell);
     
@@ -106,16 +106,16 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	tags[7].ti_Data = (IPTR)Open("*", MODE_OLDFILE);
     }
 
-    kprintf("Former input: %p, output: %p\n"
+    D(bug("Former input: %p, output: %p\n"
 	    "New    input: %p, output: %p\n", Input(), Output(),
-	    tags[6].ti_Data, tags[7].ti_Data);
+	    tags[6].ti_Data, tags[7].ti_Data));
 
 
     /* Clone tag items so we don't mess up the users memory when filtering
        It's OK if tl == NULL, as this is handled by CloneTagItems() */
     newTags = CloneTagItems(tl);
     
-    if(newTags == NULL)
+    if (newTags == NULL)
     {
 	FreeVec(comStr);
 	SetIoErr(ERROR_NO_FREE_STORE);
@@ -124,13 +124,13 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     
     /* If this is an asynchronous call, we will close the input and output
        streams when exiting this process */
-    if(type == RUN_SYSTEM_ASYNCH)
+    if (type == RUN_SYSTEM_ASYNCH)
     {
 	tags[8].ti_Data  = (IPTR)TRUE;     /* NP_CloseInput  */
 	tags[9].ti_Data  = (IPTR)TRUE;     /* NP_CloseOutput */
     }
     
-    if(type != RUN_SYSTEM_ASYNCH)
+    if (type != RUN_SYSTEM_ASYNCH)
     {
 	/* RUN_EXECUTE means we shall execute this process synchronously */
 	tags[15].ti_Data = (IPTR)TRUE;	   /* NP_Synchronous */
@@ -143,7 +143,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     /* NP_CurrentDir -- if nothing specified, we use the parent's dir --
        This is done in CreateNewProc() too, but we need it here due to our
        filter approach ;-( */
-    if(tags[10].ti_Data == ~0ul)
+    if (tags[10].ti_Data == ~0ul)
     {    
 	BPTR  curDir = CurrentDir(NULL);    /* Get this process' current dir */
 	
@@ -151,18 +151,14 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	CurrentDir(curDir);	            /* ... and replace it */
     }
 
-    kprintf("Calling CreateNewProc()\n");
-    
     process = CreateNewProc(tags);
 
-    kprintf("Process created, pointer = %p\n", process);
-    
     /* For now, we just return a boolean telling whether we could start the
        shell or not. To be able to return the right thing here, we must
        implement ChildStatus() and define a new tag to CreateNewProc();
        something like NP_StatusPtr, a location where the status of the
        child should be saved when the child exits. */
-    if(process == NULL)
+    if (process == NULL)
     {
 	/* If we couldn't create the process, CreateNewProc() will already
 	   have freed our resources (command string, current dir etc.) */

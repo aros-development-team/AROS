@@ -30,7 +30,7 @@ void internal_ChildFree(APTR tid);
 #include <aros/debug.h>
 
 /* Temporary macro */
-#define P(x)   x
+#define P(x)   
 
 /*****************************************************************************
 
