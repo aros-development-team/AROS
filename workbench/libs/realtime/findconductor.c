@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -61,8 +61,20 @@
 {
     AROS_LIBFUNC_INIT
 
-    return (struct Conductor *)FindName((struct List *)&GPB(RTBase)->rtb_ConductorList,
-					name);
+    struct Conductor *conductor = (struct Conductor *)
+	FindName((struct List *)&GPB(RTBase)->rtb_ConductorList, name);
+
+    if (conductor == NULL)
+    {
+	return NULL;
+    }
+
+    if (conductor->cdt_Flags & CONDUCTF_PRIVATE)
+    {
+	return NULL;
+    }
+
+    return conductor;
 
     AROS_LIBFUNC_EXIT
 } /* FindConductor */
