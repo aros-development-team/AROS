@@ -54,7 +54,7 @@
 
     D(bug("DisposeLayerInfo(li @ $%lx)\n", li));
 
-    _FreeExtLayerInfo(li);
+    _FreeExtLayerInfo(li, LayersBase);
 
     FreeMem(li, sizeof(struct Layer_Info));
 

@@ -225,7 +225,7 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
  * node structure. See AddLayersResource for more information on the basic
  * operation.
  */
-BOOL _AllocExtLayerInfo(struct Layer_Info * li)
+BOOL _AllocExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
 {
     if(++li->fatten_count != 0)
 	return TRUE;
@@ -241,7 +241,7 @@ BOOL _AllocExtLayerInfo(struct Layer_Info * li)
 /*
  * Free LayerInfo_extra.
  */
-void _FreeExtLayerInfo(struct Layer_Info * li)
+void _FreeExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
 {
     if(--li->fatten_count >= 0)
 	return;
@@ -249,6 +249,12 @@ void _FreeExtLayerInfo(struct Layer_Info * li)
     if(li->LayerInfo_extra == NULL)
 	return;
 
+    /* Kill Root Layer */
+    
+    if (li->check_lp)
+        DeleteLayer(0UL, li->check_lp);
+    li->check_lp = NULL;
+    
     FreeMem(li->LayerInfo_extra, sizeof(struct LayerInfo_extra));
 
     li->LayerInfo_extra = NULL;
@@ -304,7 +310,7 @@ BOOL SafeAllocExtLI(struct Layer_Info * li,
     if(li->Flags & NEWLAYERINFO_CALLED)
 	return TRUE;
 
-    if(_AllocExtLayerInfo(li))
+    if(_AllocExtLayerInfo(li, LayersBase))
 	return TRUE;
 
     UnlockLayerInfo(li);
@@ -319,7 +325,7 @@ void SafeFreeExtLI(struct Layer_Info * li,
                    struct LayersBase * LayersBase)
 {
     if(!(li->Flags & NEWLAYERINFO_CALLED))
-	_FreeExtLayerInfo(li);
+	_FreeExtLayerInfo(li, LayersBase);
 
     UnlockLayerInfo(li);
 }

@@ -53,7 +53,7 @@
 
     D(bug("FattenLayerInfo(li @ $%lx)\n", li));
 
-    if(!_AllocExtLayerInfo(li))
+    if(!_AllocExtLayerInfo(li, LayersBase))
 	return FALSE;
 
     li->Flags |= NEWLAYERINFO_CALLED;
