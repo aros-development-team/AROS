@@ -385,6 +385,116 @@ void popdrawer_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
     Draw(rport, right, halfy);
 }
 
+void drawer_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void harddisk_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void disk_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void ram_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void volume_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void network_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void assign_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void tape_play_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void tape_playback_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void tape_pause_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void tape_stop_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    RectFill(rport, left + width / 4, top + height / 4, left + 3 * width / 4, top + 3 * height / 4);
+}
+
+void tape_record_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+/* buggy, doesnt draw anything */
+#if 0
+    struct AreaInfo areaInfo = {0};
+    WORD buf[5];
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+    InitArea(&areaInfo, buf, 2);
+    rport->AreaInfo = &areaInfo;
+    AreaEllipse(rport, left + width / 2, top + height / 2,
+		MIN(width, height) / 3, MIN(width, height) / 3);
+    AreaEnd(rport);
+#endif
+}
+
+void tape_up_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
+void tape_down_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG height, LONG state)
+{
+    struct RastPort *rport = mri->mri_RastPort;
+
+    SetAPen(rport, mri->mri_Pens[MPEN_TEXT]);
+}
+
 struct vector_image
 {
     int minwidth;
@@ -398,12 +508,28 @@ static struct vector_image vector_table[] =
     { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowdown_draw },
     { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowleft_draw },
     { 8 + 2 * ARROW_SPACING, 8 + 2 * ARROW_SPACING, arrowright_draw },
-    { 16,10,checkbox_draw },
-    { 10,10,mx_draw },
-    { 15,8,cycle_draw },
-    { 10,11,popup_draw },
-    { 10,11,popfile_draw },
-    { 10,11,popdrawer_draw },
+    { 16, 10, checkbox_draw },
+    { 10, 10, mx_draw },
+    { 15,  8, cycle_draw },
+    { 10, 11, popup_draw },
+    { 10, 11, popfile_draw },
+    { 10, 11, popdrawer_draw },
+
+    { 10, 11, drawer_draw },
+    { 10, 11, harddisk_draw },
+    { 10, 11, disk_draw },
+    { 10, 11, ram_draw },
+    { 10, 11, volume_draw },
+    { 10, 11, network_draw },
+    { 10, 11, assign_draw },
+
+    { 10, 11, tape_play_draw },
+    { 10, 11, tape_playback_draw },
+    { 10, 11, tape_pause_draw },
+    { 10, 11, tape_stop_draw },
+    { 10, 11, tape_record_draw },
+    { 10, 11, tape_up_draw },
+    { 10, 11, tape_down_draw },
 };
 
 #define VECTOR_TABLE_ENTRIES (sizeof(vector_table)/sizeof(vector_table[0]))
