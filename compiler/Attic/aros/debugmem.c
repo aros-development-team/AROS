@@ -56,12 +56,12 @@
 
     for (mh=GetHead(&SysBase->MemList); mh; mh=GetSucc(mh))
     {
-	bug("List %s: %08lX from 0x%p to 0x%p Free=%ld\n",
-	    mh->mh_Node.ln_Name,
-	    mh->mh_Attributes,
-	    mh->mh_Lower,
-	    mh->mh_Upper,
-	    mh->mh_Free
+	bug("List %s: Attr=%08lX from 0x%p to 0x%p Free=%ld\n"
+	    , mh->mh_Node.ln_Name
+	    , mh->mh_Attributes
+	    , mh->mh_Lower
+	    , mh->mh_Upper
+	    , mh->mh_Free
 	);
 
 	for (mc=mh->mh_First; mc; mc=mc->mc_Next)
