@@ -47,7 +47,7 @@ $(OBJDIR)/%.o : %.s
 	%assemble_q
 
 $(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
+	%compile_q opt=$(CFLAGS2) cmd=$(HOST_CC)
 
 $(OBJDIR)/%.d : %.c $(MACHINE_H)
 	%mkdepend_q
