@@ -17,17 +17,35 @@
 
 void LocalePrefs_Handler(STRPTR filename)
 {
-    struct Locale *new, *old;
+    struct Locale  *newloc, *oldloc;
+    struct Catalog *newcat, *oldcat;
+    struct TagItem  tags[] =
+    {
+    	{OC_BuiltInLanguage, (IPTR)"english"},
+	{OC_Version 	   , 0	    	    },
+	{TAG_DONE   	    	    	    }
+    };
     
     D(bug("In IPrefs:LocalePrefs_Handler\n"));
     
-    if ((new = OpenLocale(filename)))
+    if ((newloc = OpenLocale(filename)))
     {
     	D(bug("In IPrefs:LocalePrefs_Handler. OpenLocale(\"%s\") okay\n", filename));
-    	old = LocalePrefsUpdate(new);
+    	oldloc = LocalePrefsUpdate(newloc);
     	D(bug("In IPrefs:LocalePrefs_Handler. New Locale installed\n", filename));
-	if (old) CloseLocale(old);
+	
+	/* Never close old locale */
+	
+	/* if (oldloc) CloseLocale(oldloc); */
     }
+    
+    oldcat = (struct Catalog *)DOSBase->dl_Errors;
+    newcat = OpenCatalogA(NULL, "Sys/dos.catalog", tags);
+    DOSBase->dl_Errors = (struct ErrorString *)newcat;
+    
+    /* Never close old dos.catalog */
+    
+    /* if (oldcat) CloseCatalog(oldcat) */
     
     D(bug("In IPrefs:LocalePrefs_Handler. Done.\n", filename));
 }
