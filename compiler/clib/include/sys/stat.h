@@ -76,6 +76,7 @@ struct stat
 #define	S_ISBLK(m)	((m & 0170000) == 0060000)	/* block special */
 #define	S_ISREG(m)	((m & 0170000) == 0100000)	/* regular file */
 #define	S_ISLNK(m)	((m & 0170000) == 0120000)	/* symbolic link */
+#define S_ISSOCK(m)	((m & 0170000) == 0140000)	/* socket */
 #define	S_ISFIFO(m)	((m & 0170000) == 0010000)	/* fifo */
 
 int mkdir(const char *path, mode_t mode);
