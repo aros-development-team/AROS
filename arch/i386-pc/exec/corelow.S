@@ -147,8 +147,6 @@ restore_all:        RESTORE_REGS
 
 Exec_ExitIntr:      cmpw    $KERNEL_DS,R_ds(%esp)
                     je      restore_all
-                    incb    (0xb8002)
-                    movb    $0x1f,(0xb8003)
 		    cli
                     movl    4,%eax
 		    testw   $0x20,SysFlags(%eax)	/* SFF_SoftInt set? */
@@ -161,12 +159,8 @@ Exec_ExitIntr:      cmpw    $KERNEL_DS,R_ds(%esp)
 Exec_ExitIntr_NoSoftInts:
                     cmpb    $0,TDNestCnt(%eax)
                     jge     restore_all
-                    incb    (0xb8004)
-                    movb    $0x1f,(0xb8005)
                     testw   $0x80,AttnResched(%eax)
                     je      restore_all
-                    incb    (0xb8006)
-                    movb    $0x1f,(0xb8007)
                     jmp     Exec_Schedule_x
 
                     .balign 32,0x90
