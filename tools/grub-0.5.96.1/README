@@ -1,0 +1,68 @@
+This is GNU GRUB, the GRand Unified Bootloader.  GRUB is intended to
+provide important bootloader features that are missing from typical
+personal computer BIOSes:
+
+  - provides fully-featured command line and graphical interfaces
+  - recognizes fdisk partitions and BSD disklabels
+  - can dynamically read Linux ext2fs and ReiserFS, BSD ufs, MS-DOS
+    FAT16 and FAT32, and Minix fs filesystems, plus hardcoded blocklists
+  - can boot Multiboot-compliant kernels (such as GNU Mach), as well
+    as standard Linux and *BSD kernels
+
+See the file NEWS for a description of recent changes to GRUB.
+
+If you are interested in the network support, see the file
+README.netboot under the directory netboot.
+
+See the file INSTALL for instructions on how to build and install the
+GRUB data and program files. See the GRUB manual for details about
+using GRUB as your bootloader. Type "info grub" in the shell prompt.
+
+GNU GRUB has a page on the web. See:
+
+	http://www.gnu.org/software/grub/grub.en.html (English)
+	http://www.gnu.org/software/grub/grub.ja.html (Japanese)
+
+If you have any suggestions or ideas, please send electronic mail to the
+GRUB mailing list <bug-grub@gnu.org>. The archive of the list is
+available at <http://www.mail-archive.com/bug-grub%40gnu.org/>.
+
+When you encounter a problem or a bug, first of all, read the chapter
+"Reporting bugs" in the document. Very often, people ask us their
+questions with little (or no) information about their systems. That's
+quite useless, because we have to *guess* what you did, what was
+displayed and what really happened. Please notice that we may not see
+your computer directly. So, whenever you report a bug, you must include
+enough information so that we can understand what happened and even
+reproduce your problem in our machines.
+
+Once you have realized how to write a bug report, please submit it to
+<bug-grub@gnu.org> with information about your computer and what you did
+_as much as possible_. Excessive information is always better than no
+information.
+
+When you enhance/fix GRUB, please send the patch to <bug-grub@gnu.org>.
+Do not forget to write your changes to ChangeLog; That helps us to
+understand your changes correctly. And it is preferable that your patch
+is the unified format. Just append `-u' option to the command `diff'.
+
+NOTE: you should stick to the GNU Coding Standards. Look at the URL
+<http://www.gnu.org/prep/standards_toc.html> to understand it.
+
+DEVELOPERS: to subscribe to the mailing list, send e-mail to
+<bug-grub-request@gnu.org>.  You can get the latest GRUB CVS tree from
+`:pserver:anoncvs@subversions.gnu.org:/home/cvs', module `grub'.
+Just hit enter when CVS prompts you for a password.
+See <http://www.gnu.org/software/devel.html#CVS> for more details.
+
+If you are really interested in the rapid development, you can subscribe
+to the list <commit-grub@gnu.org>, by sending e-mail with the subject
+"subscribe" to <commit-grub-request@gnu.org>. This list is not for a
+general purpose but will notify you of CVS logs whenever any developer
+checks in patches.
+
+  IMPORTANT SIZE LIMITS:
+
+  - For the FFS stage1.5, if you want to fit into the "bootloader" area
+    of an FFS partition, it cannot be larger than 512 * 14 disk sectors,
+    or 7168 bytes.
