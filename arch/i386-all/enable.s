@@ -81,7 +81,7 @@ en:
 	pushl $0
 	leal 4(%esp),%eax
 	pushl %eax
-	pushl $1
+	pushl $SIG_UNBLOCK
 	call AROS_CSYMNAME(sigprocmask)
 	addl $16,%esp
 	popl %edx

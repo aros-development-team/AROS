@@ -60,7 +60,7 @@ AROS_CDEFNAME(disable):
 	pushl $0
 	leal  4(%esp),%eax
 	pushl %eax
-	pushl $0
+	pushl $SIG_BLOCK
 	call  AROS_CSYMNAME(sigprocmask)
 	addl  $16,%esp
 
