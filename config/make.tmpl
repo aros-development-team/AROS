@@ -1248,10 +1248,10 @@ $(OBJDIR)/functable.o : $(OBJDIR)/functable.c
 
 #------------------------------------------------------------------------------
 # Generate function table with archtool
-%define mkfunctable_arch archive=$(ARCHIVE)
-$(OBJDIR)/functable.c : mmakefile.src %(archive) libdefs.h
+%define mkfunctable_arch
+$(OBJDIR)/functable.c : mmakefile.src libdefs.h
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(ARCHTOOL) -t %(archive)
+	@$(ARCHTOOL) -t
 	@$(MV) functable.c $@
 
 %compilefunctable
@@ -1878,7 +1878,7 @@ $(OBJDIR)/%.o : %.c
 
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
-%mkfunctable_arch archive=
+%mkfunctable_arch
 
 %mkendtag_q
 
