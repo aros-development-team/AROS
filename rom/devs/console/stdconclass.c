@@ -49,8 +49,12 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 	
 	data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
 	if (data->dri)
+	{
+	    CU(o)->cu_BgPen = data->dri->dri_Pens[BACKGROUNDPEN];
+	    CU(o)->cu_FgPen = data->dri->dri_Pens[TEXTPEN];
+	    
 	    ReturnPtr("StdCon::New", Object *, o);
-
+	}
     	CoerceMethodA(cl, o, (Msg)&dispmid);
     }
     ReturnPtr("StdCon::New", Object *, NULL);
@@ -93,7 +97,9 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	D(bug("Writing char %c at (%d, %d)\n",
     		params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
     		
-    	SetAPen(rp, data->dri->dri_Pens[TEXTPEN]);
+	Console_RenderCursor(o);
+
+    	SetAPen(rp, CU(o)->cu_FgPen);
     	SetDrMd(rp, JAM2);
     	Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
     	Text(rp, &params[0], 1);
@@ -110,7 +116,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
         UBYTE oldpen = rp->FgPen;
         
-    	SetAPen( rp, data->dri->dri_Pens[ CU(o)->cu_BgPen ] );
+    	SetAPen( rp, CU(o)->cu_BgPen );
     	RectFill(rp 
     		,CU(o)->cu_XROrigin
     		,CU(o)->cu_YROrigin
@@ -127,9 +133,29 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	break;
 
     case C_BACKSPACE:
+        Console_RenderCursor(o);
     	Console_Left(o, 1);
+	Console_RenderCursor(o);
     	break;
 
+    case C_CURSOR_BACKWARD:
+        Console_RenderCursor(o);
+        Console_Left(o, params[0]);
+	Console_RenderCursor(o);
+	break;
+
+    case C_CURSOR_FORWARD:
+        Console_RenderCursor(o);
+        Console_Right(o, params[0]);
+	Console_RenderCursor(o);
+	break;
+	
+    case C_DELETE_CHAR: /* FIXME: can it have params!? */
+        Console_RenderCursor(o);
+	Console_ClearCell(o, XCCP, YCCP);
+	Console_RenderCursor(o);
+	break;
+	
     case C_HTAB:
     	break;
 	
@@ -183,6 +209,30 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     case C_CURSOR_HTAB:
     	break;
 
+    case C_ERASE_IN_LINE: {
+    	UBYTE param = 1;
+        UBYTE oldpen = rp->FgPen;
+        
+	Console_RenderCursor(o);
+
+    	/* Clear till EOL */
+        
+    	SetAPen( rp, CU(o)->cu_BgPen );
+	SetDrMd( rp, JAM2);
+	
+    	RectFill(rp 
+    		,CU(o)->cu_XROrigin + CU(o)->cu_XCP * CU(o)->cu_XRSize
+    		,CU(o)->cu_YROrigin + CU(o)->cu_YCP * CU(o)->cu_YRSize
+    		,CU(o)->cu_XRExtant
+    		,CU(o)->cu_YROrigin + (CU(o)->cu_YCP + 1) * CU(o)->cu_YRSize - 1);
+
+    		
+    	SetAPen(rp, oldpen);
+    	
+	Console_RenderCursor(o);
+    	
+    } break;
+	
     case C_ERASE_IN_DISPLAY: {
     	UBYTE param = 1;
         UBYTE oldpen = rp->FgPen;
@@ -191,8 +241,12 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	Console_DoCommand(o, C_ERASE_IN_LINE, &param);
     	
     	/* Clear rest of area */
+
+	Console_RenderCursor(o);
         
-    	SetAPen( rp, data->dri->dri_Pens[ CU(o)->cu_BgPen ] );
+    	SetAPen( rp, CU(o)->cu_BgPen );
+	SetDrMd( rp, JAM2);
+	
     	RectFill(rp 
     		,CU(o)->cu_XROrigin
     		,CU(o)->cu_YROrigin + (CU(o)->cu_YCP + 1) * CU(o)->cu_YRSize
@@ -201,6 +255,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     		
     	SetAPen(rp, oldpen);
     	
+	Console_RenderCursor(o);
     	
     } break;
 
@@ -215,7 +270,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     	D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
 		GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), - rp->Font->tf_YSize));
 		
-	SetAPen( rp, 0); //data->dri->dri_Pens[ CU(o)->cu_BgPen ] );
+	SetAPen( rp, CU(o)->cu_BgPen );
 #warning LockLayers problem here ?    
     	ScrollRaster(rp
 		, 0
@@ -255,13 +310,15 @@ static VOID stdcon_rendercursor(Class *cl, Object *o, struct P_Console_RenderCur
      struct RastPort *rp = RASTPORT(o);
      struct stdcondata *data = INST_DATA(cl, o);
      
-     SetAPen(rp, data->dri->dri_Pens[FILLPEN]);
+     /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
+     SetDrMd(rp, COMPLEMENT);
      RectFill(rp
      	, CP_X(o)
 	, CP_Y(o)
-	, CP_X(o) + rp->Font->tf_XSize
+	, CP_X(o) + rp->Font->tf_XSize - 1
 	, CP_Y(o) + rp->Font->tf_YSize - 1
      );
+     SetDrMd(rp, JAM2);
 }
 
 static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *msg)
@@ -270,11 +327,12 @@ static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *m
      struct stdcondata *data = INST_DATA(cl, o);
      
      SetAPen(rp, data->dri->dri_Pens[BACKGROUNDPEN]);
+     SetDrMd(rp, JAM1);
      RectFill(rp
      	, GFX_X(o, msg->X)
 	, GFX_Y(o, msg->Y)
-	, GFX_X(o, msg->X) + rp->Font->tf_XSize
-	, GFX_Y(o, msg->Y) + rp->Font->tf_YSize
+	, GFX_X(o, msg->X) + rp->Font->tf_XSize - 1
+	, GFX_Y(o, msg->Y) + rp->Font->tf_YSize - 1
      );
 }
 
