@@ -42,7 +42,7 @@ struct irq_staticdata
     struct ExecBase	*sysbase;
     OOP_Class		*irqclass;
     
-    struct List		irqlist[vHidd_IRQ_NumIRQ];    
+    struct List		irqlist[16];    
     ULONG		transtable[16];
 };
 

@@ -75,7 +75,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
                 int i;
 		
                 /* Initialize IRQ lists */
-                for (i = 0; i < vHidd_IRQ_NumIRQ; i++)
+                for (i = 0; i < 16; i++)
                 {
                     NEWLIST(&isd->irqlist[i]);
                 }

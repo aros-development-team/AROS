@@ -108,7 +108,7 @@ void init_Servers(struct irq_staticdata *isd)
 	timer->h_Data = &SysBase->IntVects[INTB_VERTB];
 	timer->h_Code = timer_interrupt;
 	
-	Enqueue((struct List *)&isd->irqlist[vHidd_IRQ_Timer], (struct Node *)timer);
+	Enqueue((struct List *)&isd->irqlist[0], (struct Node *)timer);
     }
 }
 
@@ -173,6 +173,7 @@ void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
     HIDDT_IRQ_HwInfo	hwinfo;
     HIDDT_IRQ_Handler	*handler;
     
+#if 0
     switch (cpl)
     {
 	case 0:	/* Timer */
@@ -210,15 +211,17 @@ void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
 	    */
 	    return;
     }
+#endif
     
     hwinfo.Error = 0;	/* No errorcode */
     hwinfo.sysBase = isd->sysbase;
     
     /* Execute all installed handlers */
-    ForeachNode(&isd->irqlist[id], handler)
+    ForeachNode(&isd->irqlist[cpl], handler)
     {
 	handler->h_Code(handler, &hwinfo);
     }
 
     /* Leave the interrupt. */
 }
+
