@@ -12,10 +12,10 @@
 #include "workbench_intern.h"
 
 /*** Prototypes ************************************************************/
+BOOL StartHandler(struct WorkbenchBase *WorkbenchBase);
 
-extern BOOL StartHandler( struct WorkbenchBase *WorkbenchBase );
+void AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
+void RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase);
 
-extern void AddHiddenDevice( struct List *deviceList, STRPTR name );
-extern void RemoveHiddenDevice( struct List *deviceList, STRPTR name );
 
 #endif /* __WORKBENCH_SUPPORT_H__ */
