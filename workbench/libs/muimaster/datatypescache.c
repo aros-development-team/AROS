@@ -23,14 +23,7 @@
 #include <proto/utility.h>
 #include <proto/layers.h>
 
-#ifndef __AROS__
-#include <dos.h>
-#else
-#include <aros/asmcall.h>
-#include <dos/dos.h>
-#endif
-
-/*  #define MYDEBUG 1 */
+/* #define MYDEBUG 1 */
 #include "debug.h"
 #include "support.h"
 #include "muimaster_intern.h"
@@ -375,14 +368,10 @@ static void CopyTiledBitMap(struct BitMap *Src,WORD SrcOffsetX,WORD SrcOffsetY,W
 	}
 }
 
-#ifndef __AROS__
-__asm STATIC void WindowPatternBackFillFunc(register __a0 struct Hook *Hook,register __a2 struct RastPort *RP,register __a1 struct BackFillMsg *BFM)
-#else
 AROS_UFH3S(void, WindowPatternBackFillFunc,
     AROS_UFHA(struct Hook *, Hook, A0),
     AROS_UFHA(struct RastPort *, RP, A2),
     AROS_UFHA(struct BackFillMsg *, BFM, A1))
-#endif
 {
 	WORD OffsetX; // the offset within the tile in x direction
 	WORD OffsetY; // the offset within the tile in y direction
