@@ -43,7 +43,6 @@ void vgaRestore(struct vgaHWRec *);
 void * vgaSave(struct vgaHWRec *);
 int vgaInitMode(struct vgaModeDesc *, struct vgaHWRec *);
 void vgaLoadPalette(struct vgaHWRec *, unsigned char *);
-void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 
 void free_onbmclass(struct vga_staticdata *);
 
