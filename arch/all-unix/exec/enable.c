@@ -16,8 +16,12 @@
 
 extern sigset_t sig_int_mask;	/* mask of sig_t that are ints not traps */
 
+#ifndef UseExecstubs
 AROS_LH0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
+#else
+void _Exec_Enable(struct ExecBase * SysBase)
+#endif
 {
     AROS_LIBFUNC_INIT
 
