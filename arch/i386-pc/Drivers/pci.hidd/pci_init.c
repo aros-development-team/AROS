@@ -68,7 +68,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)
 	    {
-		PCIHWProbe();
+		NEWLIST(&xsd->devs);
+		PCIHWProbe(xsd);
 		return TRUE;
 	    }
 	    CloseLibrary(xsd->oopbase);
