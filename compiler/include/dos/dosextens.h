@@ -219,5 +219,11 @@ struct Segment
 #define CMD_INTERNAL	-2
 #define CMD_DISABLED	-999
 
+struct DevProc {
+    struct MsgPort *dvp_Port;
+    BPTR dvp_Lock;
+    ULONG dvp_Flags;
+    struct DosList *dvp_DevNode;
+};
 
 #endif
