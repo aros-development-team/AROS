@@ -1,9 +1,17 @@
+/*
+    (C) 1999 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Implementation of datatype rootclass
+    Lang: English
+*/
 
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/tasks.h>
 #include <intuition/classes.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/icclass.h>
 #include <intuition/cghooks.h>
 #include <intuition/intuition.h>
 #include <graphics/rastport.h>
@@ -82,9 +90,9 @@ ULONG SetAttributes(struct Library *DTBase, Class *class, Object *object,
 	case DTA_TotalHoriz:    TotHoriz = data;           break;
 	case DTA_HorizUnit:     dtsi->si_HorizUnit = data; break;
 	    
-	case DTA_PrinterProc:   dto->dto_PrinterProc = (struct Process*)data;
+	case DTA_PrinterProc:   dto->dto_PrinterProc = (struct Process *)data;
 	                                                   break;
-	case DTA_LayoutProc:    dto->dto_LayoutProc = (struct Process*)data;
+	case DTA_LayoutProc:    dto->dto_LayoutProc = (struct Process *)data;
 	                                                   break;
 	    
 	case DTA_ObjName:
@@ -190,13 +198,13 @@ ULONG SetAttributes(struct Library *DTBase, Class *class, Object *object,
     if(TopVert != dtsi->si_TopVert)
     {
 	dtsi->si_TopVert = TopVert;
-	result=TRUE;
+	result = TRUE;
     }
 
     if(VisVert != dtsi->si_VisVert)
     {
 	dtsi->si_VisVert = VisVert;
-	result=TRUE;
+	result = TRUE;
     }
 
     if(TotVert != dtsi->si_TotVert)
@@ -352,17 +360,26 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		
 		if(Success)
 		{
-		    SetAttributes((struct Library *)DTBase, class, (Object *)newobject, msg);
+		    SetAttributes((struct Library *)DTBase, class,
+				  (Object *)newobject, msg);
 		    retval = (ULONG)newobject;
 		}
 		else
-		    CoerceMethod(class, (Object*)newobject, OM_DISPOSE);
+		    CoerceMethod(class, (Object *)newobject, OM_DISPOSE);
 	    }
 	    break;
 	} /* case OM_NEW: */
-    case OM_SET:
+
     case OM_UPDATE:
+	/* Avoid update loops */
+	if(DoMethod(object, ICM_CHECKLOOP))
+	    break;
+
+	/* Fall through */
+    case OM_SET:
+	/* Let superclass see the new attributes... */
 	retval  = DoSuperMethodA(class, object, msg);
+	/* ...and set our own new attributes. */
 	retval += SetAttributes((struct Library *)DTBase, class, object, msg);
 	break;
 	
@@ -422,17 +439,19 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	break;
 	
     case GM_HITTEST:
+	/* A datatypes gadget is hit everywhere */
 	retval = GMR_GADGETHIT;
 	break;
 	
     case GM_GOACTIVE:
+	/* Calculate printable dimensions */
 	dto->dto_TotalPHoriz = (dtsi->si_HorizUnit) ?
 	    dtsi->si_HorizUnit*dtsi->si_TotHoriz : dto->dto_Domain.Width;
 	
 	dto->dto_TotalPVert  = (dtsi->si_VertUnit ) ?
 	    dtsi->si_VertUnit*dtsi->si_TotVert : dto->dto_Domain.Height;
 	
-	/* fall through */
+	/* Fall through */
 	
     case GM_HANDLEINPUT:
 	{
@@ -443,7 +462,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		retval=GMR_NOREUSE;
 	    else
 	    {
-		if (!AttemptSemaphoreShared(&dtsi->si_Lock))
+		if(!AttemptSemaphoreShared(&dtsi->si_Lock))
 		    retval = GMR_NOREUSE;
 		else
 		{
@@ -483,7 +502,7 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 					    {
 						if(sdomain)
 						{
-						    dtsi->si_Flags &= ~(DTSIF_HIGHLIGHT);
+						    dtsi->si_Flags &= ~DTSIF_HIGHLIGHT;
 						    
 						    DoMethod(object, DTM_CLEARSELECTED, 
 							     ((struct gpInput *)msg)->gpi_GInfo);
@@ -680,7 +699,9 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		    SetAPen(rp, -1);
 		    
 		    rp->LinePtrn = dto->dto_LinePtrn;
-		    DrawBox((struct Library *)DTBase, rp, (LONG)dto->dto_StartX, (LONG)dto->dto_StartY, (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
+		    DrawBox((struct Library *)DTBase, rp, 
+			    (LONG)dto->dto_StartX, (LONG)dto->dto_StartY,
+			    (LONG)dto->dto_MouseX, (LONG)dto->dto_MouseY);
 		    
 		    if(((struct Gadget *)object)->Flags & GFLG_SELECTED)
 		    {
@@ -714,15 +735,17 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 			DoMethodA(object, (Msg)&dts);
 		    }
 		    
-		    Do_OM_NOTIFY((struct Library *)DTBase, object, ((struct gpInput *)msg)->gpi_GInfo, 0,
-				 GA_ID, (ULONG)((struct Gadget *)object)->GadgetID,
+		    Do_OM_NOTIFY((struct Library *)DTBase, object,
+				 ((struct gpInput *)msg)->gpi_GInfo, 0, GA_ID,
+				 (ULONG)((struct Gadget *)object)->GadgetID,
 				 DTA_Busy, FALSE, TAG_DONE );
 		} /* if(DRAGSELECT) */
 		
 		if (dto->dto_Flags & DTOFLGF_HAS_MOVED)
 		{
-		    Do_OM_NOTIFY((struct Library *)DTBase, object, ((struct gpInput *)msg)->gpi_GInfo, 0,
-				 GA_ID, (ULONG)((struct Gadget *)object)->GadgetID,
+		    Do_OM_NOTIFY((struct Library *)DTBase, object,
+				 ((struct gpInput *)msg)->gpi_GInfo, 0, GA_ID,
+				 (ULONG)((struct Gadget *)object)->GadgetID,
 				 DTA_Sync, TRUE,
 				 DTA_TopVert, dtsi->si_TopVert,
 				 DTA_TopHoriz, dtsi->si_TopHoriz,
@@ -750,6 +773,8 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 
 	break;
 
+    /* GM_LAYOUT and DTM_PROCLAYOUT have the same semantics; DTM_PROCLAYOUT
+       must be in the process context, GM_LAYOUT must not. */
     case GM_LAYOUT:
     case DTM_PROCLAYOUT:
 	{
@@ -777,15 +802,15 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 		}
 	    }
 	    
+	    /* Calculate printable dimensions */
 	    dto->dto_TotalPHoriz = (dtsi->si_HorizUnit) ?
 		dtsi->si_HorizUnit*dtsi->si_TotHoriz : dto->dto_Domain.Width;
-	    
 	    dto->dto_TotalPVert  = (dtsi->si_VertUnit ) ?
 		dtsi->si_VertUnit*dtsi->si_TotVert : dto->dto_Domain.Height;
 	 
 	    retval = TRUE;
 	    
-	}  /* fall through */ /* case DTM_PROCLAYOUT: */
+	}  /* Fall through */ /* case DTM_PROCLAYOUT: */
 	
     case DTM_FRAMEBOX:
 	if(dto->dto_SourceType == DTST_CLIPBOARD)
@@ -890,15 +915,15 @@ ULONG Dispatcher(Class *class, Object *object, Msg msg)
 	if(dto->dto_ObjVersion)
 	    FreeVec(dto->dto_ObjVersion);
 	
+	/* Redirect error to the DataTypes error codes */
 	if(retval == ERROR_OBJECT_NOT_FOUND)
-	    retval=DTERROR_COULDNT_OPEN;
+	    retval = DTERROR_COULDNT_OPEN;
 	
 	SetIoErr(retval);
 	
-        /* fall through */
-	
+        /* Fall through so the superclass can free its resources */
     default:
-	retval = DoSuperMethodA(class,object,msg);
+	retval = DoSuperMethodA(class, object, msg);
 	break;
     }
     
