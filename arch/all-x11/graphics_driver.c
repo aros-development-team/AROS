@@ -255,27 +255,35 @@ int GetSysScreen (void)
     return sysScreen;
 }
 
-void UpdateAreaPtrn (struct RastPort * rp)
+void UpdateAreaPtrn (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     if (rp->AreaPtrn != NULL)
     {
-        /* Just a default pattern for now :-( */
         Pixmap stipple;
-        #define stipple_bitmap_width 4
-        #define stipple_bitmap_height 2
-        static char stipple_bitmap_bits[] = {
-          0x02,0x08};
+        int width, height;
+	char *pattern;
+	int x, y;
+
+	width = 16;
+	height = 1<<(rp->AreaPtSz);
+
+	pattern = AllocMem(2*height*sizeof(char),MEMF_CHIP|MEMF_CLEAR);
+	for (y=0; y<height; y++)
+	    for (x=0; x<width; x++)
+	        if ((rp->AreaPtrn[y]) & (1<<x))
+	    	    pattern[2*y+((x<8)?0:1)] += 1<<(x % 8);
 
         XSetFillStyle (sysDisplay
             , GetGC(rp)
             , FillStippled
         );
-        stipple=XCreateBitmapFromData (sysDisplay
+        stipple = XCreateBitmapFromData (sysDisplay
             , GetXWindow (rp)
-            , stipple_bitmap_bits
-            , stipple_bitmap_width
-            , stipple_bitmap_height
+            , pattern
+            , width
+            , height
         );
+	FreeMem (pattern, 2*height*sizeof(char));
         XSetStipple( sysDisplay, GetGC (rp), stipple);
     }
     else
@@ -407,7 +415,7 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
-    UpdateAreaPtrn (rp);
+    UpdateAreaPtrn (rp, GfxBase);
 
     if (rp->DrawMode & COMPLEMENT)
     {
