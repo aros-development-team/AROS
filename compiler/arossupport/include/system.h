@@ -90,7 +90,7 @@
 #define __noreturn  __attribute__((__noreturn__))
 #define __noeffect  __attribute__((__const__))
 #endif
-#if __GNUC__ == 2 && __GNUC_MINOR__ >= 7
+#if __GNUC__ == 2 && __GNUC_MINOR__ >= 7 || __GNUC__ > 2
 #define __unused    __attribute__((__unused__))
 #define __noreturn  __attribute__((__noreturn__))
 #define __noeffect  __attribute__((__const__))
