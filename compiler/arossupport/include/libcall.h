@@ -1305,311 +1305,311 @@ typedef unsigned long (*ULONG_FUNC)();
 
 /* Declarations for library functions which need the libbase */
 #   define AROS_LD0(t,n,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (__AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) (__AROS_LD_BASE(bt,bn))
 #   define AROS_LD1(t,n,a1,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1),__AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1),__AROS_LD_BASE(bt,bn))
 #   define AROS_LD2(t,n,a1,a2,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2),__AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2),__AROS_LD_BASE(bt,bn))
 #   define AROS_LD3(t,n,a1,a2,a3,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), \
-	__AROS_LHA(a13), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), \
+	__AROS_LDA(a13), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), \
-	__AROS_LHA(a13), \
-	__AROS_LHA(a14), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), \
+	__AROS_LDA(a13), \
+	__AROS_LDA(a14), __AROS_LD_BASE(bt,bn))
 #   define AROS_LD15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), \
-	__AROS_LHA(a13), \
-	__AROS_LHA(a14), \
-	__AROS_LHA(a15), __AROS_LP_BASE(bt,bn))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), \
+	__AROS_LDA(a13), \
+	__AROS_LDA(a14), \
+	__AROS_LDA(a15), __AROS_LD_BASE(bt,bn))
 
 /* Declarations for library functions which don't need the libbase */
 #   define AROS_LD0I(t,n,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (void)
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) (void)
 #   define AROS_LD1I(t,n,a1,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1))
 #   define AROS_LD2I(t,n,a1,a2,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2))
 #   define AROS_LD3I(t,n,a1,a2,a3,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3))
 #   define AROS_LD4I(t,n,a1,a2,a3,a4,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4))
 #   define AROS_LD5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5))
 #   define AROS_LD6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6))
 #   define AROS_LD7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7))
 #   define AROS_LD8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8))
 #   define AROS_LD9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9))
 #   define AROS_LD10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10))
 #   define AROS_LD11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11))
 #   define AROS_LD12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12))
 #   define AROS_LD13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), \
-	__AROS_LHA(a13))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), \
+	__AROS_LDA(a13))
 #   define AROS_LD14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), \
-	__AROS_LHA(a13), \
-	__AROS_LHA(a14))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), \
+	__AROS_LDA(a13), \
+	__AROS_LDA(a14))
 #   define AROS_LD15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
-	__AROS_LHA(a1), \
-	__AROS_LHA(a2), \
-	__AROS_LHA(a3), \
-	__AROS_LHA(a4), \
-	__AROS_LHA(a5), \
-	__AROS_LHA(a6), \
-	__AROS_LHA(a7), \
-	__AROS_LHA(a8), \
-	__AROS_LHA(a9), \
-	__AROS_LHA(a10), \
-	__AROS_LHA(a11), \
-	__AROS_LHA(a12), \
-	__AROS_LHA(a13), \
-	__AROS_LHA(a14), \
-	__AROS_LHA(a15))
+	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s) ( \
+	__AROS_LDA(a1), \
+	__AROS_LDA(a2), \
+	__AROS_LDA(a3), \
+	__AROS_LDA(a4), \
+	__AROS_LDA(a5), \
+	__AROS_LDA(a6), \
+	__AROS_LDA(a7), \
+	__AROS_LDA(a8), \
+	__AROS_LDA(a9), \
+	__AROS_LDA(a10), \
+	__AROS_LDA(a11), \
+	__AROS_LDA(a12), \
+	__AROS_LDA(a13), \
+	__AROS_LDA(a14), \
+	__AROS_LDA(a15))
 
 #define AROS_LHA(type,name,reg) type,name,reg
 #define AROS_LPA(type,name,reg) type,name,reg
