@@ -64,11 +64,25 @@
 	@%(ranlib) %(to)
 %end
 
+# Same but more noisy
+%define mklib ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
+	@$(ECHO) "Creating library %(to)..."
+	%(ar) %(to) %(from)
+	%(ranlib) %(to)
+%end
+
 # Create the dependency file %(to) for %(from) in the directory %(dir)
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
 	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
 	@$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
+%end
+
+# Same but more noisy
+%define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
+	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
+	$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
 %end
 
 # Add section with all necessary libs and dependencies for linking
@@ -161,20 +175,20 @@ endif
 
 # rule to generate libdefs.h
 %define libdefs_rule
-libdefs.h: lib.conf $(TOP)/scripts/genlibdefs.gawk
+libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
 	@echo "Generating $@..."
 	@$(AWK) -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
 %end
 
 # rule to generate asm files from c files (for debugging purposes)
 %define asm_rule
-.PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+.PHONY : asm
+asm : $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
 %end
 
 # generate asm files from c files (for debugging purposes)
 %define ctoasm_q
-%.s: %.c
+%.s : %.c
 	@echo "Generating $(CURDIR)/$@..."
 	@$(CC) -S $(CFLAGS) $< -c -o $@
 %end
@@ -205,14 +219,14 @@ asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
 -include $(GENDIR)/%(module)/mf.inc
 %end
 
-%define filter_replace var=
-%(var) := $(filter-out $(SUPPRESS_FILES),%(var))
+%define filter_replace var=FILES filter=$(SUPPRESS_FILES)
+%(var) := $(filter-out %(filter),$(%(var)))
 %end
 
 # You can use this to prevent objects which weren't compiled correctly by
 # config/$(...) directories to not be compiled by the local makefile.
 %define additional_objs_rule
-$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o):
+$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 	@echo Error: One of the precompiled object files did not exist.
 	@exit 1
 %end
