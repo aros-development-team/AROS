@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function fopen().
+    ANSI C function popen().
 */
 
 #include <utility/tagitem.h>
@@ -103,5 +103,4 @@
     }
 
     return NULL;
-} /* fopen */
-
+} /* popen */
