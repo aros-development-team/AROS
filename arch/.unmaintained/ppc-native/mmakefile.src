@@ -5,7 +5,7 @@ GENINC		:= $(TOOLDIR)/geninc-ppc-native$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
-		   $(INCDIR)/aros/machine.h \
+		   $(AROS_INCLUDES)/aros/machine.h \
 	   
 #MM- AROS-amiga : setup-amiga includes compiler kernel
 
@@ -45,20 +45,20 @@ includes-amiga-ppc : $(INCFILES) machine.i
 clean ::
 	-$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
 
-$(INCDIR)/aros/%.h : %.h
-	%mkdirs_q $(INCDIR)/aros
+$(AROS_INCLUDES)/aros/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/aros
 	$(CP) $< $@
 
-$(INCDIR)/asm/%.h : %.h
-	%mkdirs_q $(INCDIR)/asm
+$(AROS_INCLUDES)/asm/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/asm
 	$(CP) $< $@
 
-$(INCDIR)/exec/%.h : %.h
-	%mkdirs_q $(INCDIR)/exec
+$(AROS_INCLUDES)/exec/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)/exec
 	$(CP) $< $@
 
-$(INCDIR)/%.h : %.h
-	%mkdirs_q $(INCDIR)
+$(AROS_INCLUDES)/%.h : %.h
+	%mkdirs_q $(AROS_INCLUDES)
 	$(CP) $< $@
 
 $(GENINCDIR)/aros/%.h : %.h

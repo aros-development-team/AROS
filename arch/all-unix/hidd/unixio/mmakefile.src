@@ -24,13 +24,13 @@ STUBS := unixio_stubs
 %make_hidd_stubs hidd=unixio parenttarget=kernel-unixio-hidd-setup
 
 MY_INCLS := $(wildcard include/*.h)
-DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
 GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 
 #MM
 includes-copy : $(DEST_INC) $(GEN_INC)
 
-$(INCDIR)/hidd/%.h : include/%.h
+$(AROS_INCLUDES)/hidd/%.h : include/%.h
 	$(CP) include/$(notdir $<) $@
 
 $(GENINCDIR)/hidd/%.h : include/%.h
@@ -38,6 +38,6 @@ $(GENINCDIR)/hidd/%.h : include/%.h
 
 #MM
 setup-includes :
-	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
 
 %common

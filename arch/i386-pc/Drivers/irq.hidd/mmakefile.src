@@ -13,13 +13,13 @@ FILES	    := irqclass servers
   genfunctable=yes
   
 ##MY_INCLS    := $(wildcard include/*.h)
-##DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+##DEST_INC    := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
 ##GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 ##
 ###MM
 ##includes-pc-i386 : $(DEST_INC) $(GEN_INC)
 ##
-##$(INCDIR)/hidd/%.h : include/%.h
+##$(AROS_INCLUDES)/hidd/%.h : include/%.h
 ##	$(CP) include/$(notdir $<) $@
 ##
 ##$(GENINCDIR)/hidd/%.h : include/%.h
@@ -27,7 +27,7 @@ FILES	    := irqclass servers
 ##
 ##MM
 ##setup-includes :
-##	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+##	%mkdirs_q $(GENINCDIR) $(AROS_INCLUDES) $(GENINCDIR)/hidd $(AROS_INCLUDES)/hidd
 
 #MM
 setup-pc-i386 :
