@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := test virttest
+FILES  := test virttest gradient
 
 EXEDIR := $(AROSDIR)/test/Zune
 EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
