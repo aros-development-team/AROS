@@ -30,12 +30,14 @@ int __stat(BPTR lock, struct stat *sb)
     struct FileInfoBlock *fib;
 
     fib = AllocDosObject(DOS_FIB, NULL);
+
     if (!fib)
     {
         errno = IoErr2errno(IoErr());
 
 	return -1;
     }
+
     memset(fib, 0, sizeof(*fib));
 
     if (!Examine(lock, fib))
@@ -49,8 +51,6 @@ int __stat(BPTR lock, struct stat *sb)
     sb->st_dev     = (dev_t)((struct FileHandle *)lock)->fh_Device;
     sb->st_ino     = (ino_t)fib->fib_DiskKey;
     sb->st_size    = (off_t)fib->fib_Size;
-#warning implement st_blksize
-    sb->st_blksize = 1024; /* I'll implement it later */
     sb->st_blocks  = (long)fib->fib_NumBlocks;
     sb->st_atime   =
     sb->st_ctime   =
@@ -60,27 +60,47 @@ int __stat(BPTR lock, struct stat *sb)
     sb->st_gid     = __amiga2unixid(fib->fib_OwnerGID);
     sb->st_mode    = __prot_a2u(fib->fib_Protection);
 
+    {
+	struct InfoData info;
+
+	if (Info(lock, &info))
+	{
+	    sb->st_blksize = info.id_BytesPerBlock;
+	}
+	else
+	{
+	    /* The st_blksize is just a guideline anyway, so we set it
+	       to 1024 in case Info() didn't succeed */
+	    sb->st_blksize = 1024;
+	}
+    }
+
     switch (fib->fib_DirEntryType)
     {
     	case ST_PIPEFILE:
 	    /* don't use S_IFIFO, we don't have a mkfifo() call ! */
 	    sb->st_mode |= S_IFCHR;
 	    break;
+
 	case ST_ROOT:
     	case ST_USERDIR:
 	    sb->st_nlink = 2;
 	    sb->st_mode |= S_IFDIR;
      	    break;
+
 	case ST_SOFTLINK:
 	    sb->st_nlink = 1;
 	    sb->st_mode |= S_IFLNK;
 	    break;
+
     	case ST_LINKDIR:
 	    sb->st_nlink = 3;
 	    sb->st_mode |= S_IFDIR;
 	    break;
+
     	case ST_LINKFILE:
 	    sb->st_nlink = 2;
+
     	case ST_FILE:
 	default:
 	    sb->st_mode |= S_IFREG;
