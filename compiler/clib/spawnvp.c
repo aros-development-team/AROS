@@ -86,6 +86,7 @@
 {
     const char *acommand;
     char *colon;
+    int ret;
 
     if (command == NULL || argv == NULL || argv[0] == NULL)
     {
@@ -95,6 +96,9 @@
     }
 
     acommand = __path_u2a(command);
+    if (acommand)
+        acommand = strdup(acommand);
+
     if (!acommand)
         return -1;
 
@@ -130,7 +134,6 @@
 	    {
 	        BPTR olddir = CurrentDir(dirlock);
 		BPTR seg;
-		int ret;
 
 		seg = LoadSeg(acommand);
 
@@ -140,7 +143,7 @@
 		ret = __spawnv(mode, seg, argv);
 
 		if ((mode != P_WAIT && (ret > 0)) || ret == 0)
-		    return ret;
+		    goto end;
 	    }
 
 	    /* Loop until the program is found and executed */
@@ -151,5 +154,10 @@
         }
     }
 
-    return __spawnv(mode, LoadSeg(acommand), argv);
+    ret = __spawnv(mode, LoadSeg(acommand), argv);
+
+end:
+    free((void *)acommand);
+
+    return ret;
 }
