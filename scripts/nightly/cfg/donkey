@@ -1,4 +1,4 @@
-CFG_PACKAGES=(sources changelogs sdk hosted i386-pc i386-pc-livefloppy documentation)
+CFG_PACKAGES=(sources changelogs sdk hosted i386-pc-livefloppy documentation)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=adam@chodorowski.com
