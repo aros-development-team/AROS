@@ -31,7 +31,7 @@
 /*  FUNCTION
 	"opens" a process by creating a pipe, spawning a new process and invoking
 	the shell.
-	
+
     INPUTS
 	command - Pointer to a null terminated string containing the command
 	          to be executed by the shell.
@@ -80,21 +80,27 @@
 
     if (pipe(pipefds) == 0)
     {
- 	int fdtopass = (mode[0] == 'w');
+ 	int fdtopass = (mode[0] == 'r');
 
         struct TagItem tags[] =
         {
-            { 0           , NULL                                            },
+            { SYS_Input   , NULL                                            },
+	    { SYS_Output  , NULL                                            },
+	    { SYS_Error   , SYS_DupStream                                   },
             { SYS_Asynch  , TRUE                                            },
             { NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },
             { TAG_DONE    , 0                                               }
         };
 
-	tags[0].ti_Tag  = fdtopass ? SYS_Output : SYS_Input;
-	tags[0].ti_Data = (IPTR)__getfdesc(pipefds[fdtopass])->fh;
+	tags[fdtopass].ti_Data     = (IPTR)__getfdesc(pipefds[fdtopass])->fh;
+	tags[1 - fdtopass].ti_Data = SYS_DupStream;
 
 	if (SystemTagList(command, tags) != -1)
 	{
+	    /* Little trick to deallocate memory which otherwise wouldn't get deallocated */
+            __getfdesc(pipefds[fdtopass])->fh = NULL;
+  	    close(pipefds[fdtopass]);
+
             return fdopen(pipefds[1 - fdtopass], NULL);
 	}
 
