@@ -468,7 +468,7 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
     if (fh->conbufferpos < fh->conbuffersize)
     {
         c = fh->consolebuffer[fh->conbufferpos++];
-	(bug("scan_input: check char %d\n",c));
+	D(bug("scan_input: check char %d\n",c));
 	switch(c)
 	{
 	    case 3:
