@@ -1,9 +1,11 @@
+
 #include <libraries/reqtools.h>
 #include <proto/exec.h>
 #include <proto/reqtools.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define PROGNAME "rtpalette"
 
@@ -28,7 +30,7 @@ static void action(void)
 {
     struct TagItem tags[] =
     {
-    	{TAG_DONE								}
+    	{ TAG_DONE }
     };
     
     rtPaletteRequestA("Title", NULL, tags);
@@ -39,5 +41,6 @@ int main(void)
     openlibs();
     action();
     cleanup(0);
+
     return 0;
 }

@@ -17,6 +17,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
+#include <stdlib.h>
+
 
 int main(int argc, char* argv[])
 {

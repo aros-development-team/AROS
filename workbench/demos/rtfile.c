@@ -1,9 +1,11 @@
+
 #include <libraries/reqtools.h>
 #include <proto/exec.h>
 #include <proto/reqtools.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define PROGNAME "rtfile"
 
@@ -32,8 +34,8 @@ static void action(void)
     
     struct TagItem tags[] =
     {
-        {RTFI_Flags	, FREQF_PATGAD	},
-    	{TAG_DONE	    		}
+        { RTFI_Flags, FREQF_PATGAD },
+    	{ TAG_DONE }
     };
     
     if ((req = rtAllocRequestA(RT_FILEREQ, tags)))
@@ -43,10 +45,12 @@ static void action(void)
     }
 }
 
+
 int main(void)
 {
     openlibs();
     action();
     cleanup(0);
+
     return 0;
 }

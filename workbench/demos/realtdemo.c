@@ -22,11 +22,14 @@
 #include <proto/realtime.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+
 
 AROS_UFP3(ULONG, myFunc,
 	  AROS_UFPA(struct Hook *  , hook   , A0),
 	  AROS_UFPA(struct pmTime *, message, A1),
 	  AROS_UFPA(struct Player *, player , A2));
+
 
 int main(int argc, char* argv[])
 {
