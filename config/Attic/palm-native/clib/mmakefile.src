@@ -6,6 +6,7 @@ OBJDIR		:= $(COMMONOBJDIR)/static
 SOBJDIR		:= $(COMMONOBJDIR)/shared
 
 COMMONFILES     := \
+	memcpy \
 	strtod \
 	strtol \
 	strtoul 
@@ -19,6 +20,7 @@ SFILES := \
 	erand48 \
 	atof \
 	isinf \
+	memcpy \
 	sscanf \
 	strtol \
 	strtod \
