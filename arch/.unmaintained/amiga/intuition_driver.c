@@ -64,7 +64,8 @@ int intui_GetWindowSize (void)
 }
 
 int intui_OpenWindow (struct Window * iw,
-	struct IntuitionBase * IntuitionBase)
+	struct IntuitionBase * IntuitionBase,
+	struct BitMap        * SuperBitMap)
 {
     _aros_not_implemented();
     return 0;
