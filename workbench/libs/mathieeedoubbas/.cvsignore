@@ -1,0 +1,5 @@
+libdefs.h
+makefile
+functable.c
+endtag.c
+*.map
