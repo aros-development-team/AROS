@@ -1,1 +1,1 @@
-CFG_PACKAGES=(sources sdk contrib hosted i386-pc documentation)
+CFG_PACKAGES=(sources sdk contrib hosted i386-pc i386-pc-livefloppy documentation)
