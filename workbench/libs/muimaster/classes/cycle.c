@@ -67,21 +67,27 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object  	    	    *pageobj, *imgobj;
     int i;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-		MUIA_Background, MUII_ButtonBack,
-		ButtonFrame,
-		MUIA_InputMode, MUIV_InputMode_RelVerify,
-		MUIA_InnerTop,1,
-		MUIA_InnerBottom,1,
-		MUIA_Group_Horiz, TRUE,
-		Child, imgobj = ImageObject,
-		    MUIA_InnerLeft, 2,
-		    MUIA_Image_Spec, (IPTR)"6:17",
-		    MUIA_Image_FreeVert, TRUE,
-		    End,
-		Child, pageobj = PageGroup,
-		    End,
-		TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        ButtonFrame,
+        MUIA_Background,  MUII_ButtonBack,
+        MUIA_InputMode,   MUIV_InputMode_RelVerify,
+        MUIA_InnerTop,    1,
+        MUIA_InnerBottom, 1,
+        MUIA_Group_Horiz, TRUE,
+        
+        Child, (IPTR) imgobj = ImageObject,
+            MUIA_InnerLeft,             2,
+            MUIA_Image_Spec,     (IPTR) "6:17",
+            MUIA_Image_FreeVert,        TRUE,
+        End,
+        Child, (IPTR) pageobj = PageGroup,
+        End,
+        
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
 
