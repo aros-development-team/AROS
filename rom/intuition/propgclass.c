@@ -99,21 +99,27 @@ STATIC UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
 
 STATIC VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
 {
-    struct opUpdate notifymsg;
-    struct TagItem notifyattrs[3];
+    struct PropGData *data = INST_DATA(cl, o);
+    
+    if (data->top != top) /* A new value for top ? */
+    {
+
+    	struct opUpdate notifymsg;
+    	struct TagItem notifyattrs[3];
     	
-    notifyattrs[0].ti_Tag	= PGA_Top;
-    notifyattrs[0].ti_Data 	= top;
-    notifyattrs[1].ti_Tag	= GA_ID;
-    notifyattrs[1].ti_Data	= EG(o)->GadgetID;
-    notifyattrs[2].ti_Tag	= TAG_END;
+    	notifyattrs[0].ti_Tag	= PGA_Top;
+    	notifyattrs[0].ti_Data 	= top;
+    	notifyattrs[1].ti_Tag	= GA_ID;
+    	notifyattrs[1].ti_Data	= EG(o)->GadgetID;
+    	notifyattrs[2].ti_Tag	= TAG_END;
 	
-    notifymsg.MethodID	    = OM_NOTIFY;
-    notifymsg.opu_AttrList  = notifyattrs;
-    notifymsg.opu_GInfo	    = gi;
-    notifymsg.opu_Flags	    = (final != FALSE) ? 0 : OPUF_INTERIM;
+    	notifymsg.MethodID	    = OM_NOTIFY;
+    	notifymsg.opu_AttrList  = notifyattrs;
+    	notifymsg.opu_GInfo	    = gi;
+    	notifymsg.opu_Flags	    = (final != FALSE) ? 0 : OPUF_INTERIM;
 	
-    DoSuperMethodA(cl, o, (Msg)&notifymsg);
+    	DoSuperMethodA(cl, o, (Msg)&notifymsg);
+    }
     
     return;
 }
