@@ -5,7 +5,10 @@
     Desc:
     Lang: English
 */
+
 #include "dos_intern.h"
+#include <dos/dosextens.h>
+#include <dos/notify.h>
 
 /* TODO: This can be done much better! */
 #ifndef AROS_FAST_BPTR
@@ -29,7 +32,6 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 /*****************************************************************************
 
     NAME */
-#include <dos/dosextens.h>
 #include <proto/dos.h>
 
 	AROS_LH3(void, SendPkt,
@@ -537,7 +539,45 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    break;
 	    
 	case ACTION_MAKE_LINK:      // MakeLink()
-	    /* TODO */
+	    {
+		STRPTR name = BStrtoCStr(dp->dp_Arg2);
+	    
+		if (dp->dp_Arg4 == LINK_SOFT)
+		{
+		    /* We want a soft-link. */
+		    iofs->IOFS.io_Command = FSA_CREATE_SOFTLINK;
+		    iofs->io_Union.io_CREATE_SOFTLINK.io_Reference = (STRPTR)dp->dp_Arg3;
+		}
+		else
+		{
+		    /* We want a hard-link. */
+		    struct FileHandle *fh = (struct FileHandle *)BADDR((BPTR)dp->dp_Arg3);
+		    struct Device *dev;
+		    
+		    /* We check, if name and dest are on the same device. */
+		    if (DevName(name, &dev, DOSBase))
+		    {
+			/* TODO: Simulate packet return */
+			return;
+		    }
+		    
+		    if (dev != fh->fh_Device)
+		    {
+			SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
+			
+			/* TODO: Simulate packet return */
+			return;
+		    }
+		    
+		    iofs->IOFS.io_Command = FSA_CREATE_HARDLINK;
+		    iofs->io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;
+		}
+		
+		oldCurDir = CurrentDir(dp->dp_Arg1);
+		DoNameAsynch(iofs, name, DOSBase);
+		CurrentDir(oldCurDir);
+	    }
+	    
 	    break;
 	    
 	case ACTION_READ_LINK:      // ReadLink()
@@ -549,11 +589,66 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    break;
 	    
 	case ACTION_ADD_NOTIFY:     // StartNotify()
-	    /* TODO */
+	    {
+		struct NotifyRequest *notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
+	        struct FileHandle *dir;
+
+		iofs->IOFS.io_Command = FSA_ADD_NOTIFY;
+		iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
+
+		notify->nr_MsgCount = 0;
+
+		if (strchr(notify->nr_Name, ':') != NULL)
+		{
+		    DoNameAsynch(iofs, notify->nr_Name, DOSBase);
+		}
+		else
+		{
+		    dir = BADDR(CurrentDir(NULL));
+		    CurrentDir(MKBADDR(dir));	/* Set back the current dir */
+		    
+		    if (dir == NULL)
+		    {
+			return;
+		    }
+		    
+		    iofs->IOFS.io_Device = dir->fh_Device;
+		    iofs->IOFS.io_Unit = dir->fh_Unit;
+		    
+		    /* Save device for EndNotify() purposes */
+		    notify->nr_Device = dir->fh_Device;
+	
+		    if (iofs->IOFS.io_Device == NULL)
+		    {
+			return;
+		    }
+		}
+	    }
+
 	    break;
 	    
 	case ACTION_REMOVE_NOTIFY:  // EndNotify()
-	    /* TODO */
+	    {
+		struct NotifyRequest *notify = BADDR(dp->dp_Arg1);
+
+		iofs->IOFS.io_Command = FSA_REMOVE_NOTIFY;
+		iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
+		
+		if (strchr(notify->nr_Name, ':'))
+		{
+		    DoNameAsynch(iofs, notify->nr_Name, DOSBase);
+		}
+		else
+		{
+		    iofs->IOFS.io_Device = (struct Device *)notify->nr_Device;
+		    
+		    if (iofs->IOFS.io_Device == NULL)
+		    {
+			return;
+		    }
+		}
+	    }
+
 	    break;
 	    
 
@@ -601,6 +696,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    break;
 	    
 	case ACTION_FH_FROM_LOCK:   // OpenFromLock()
+	    /* TODO: Have so simulate ReplyMsg() here */
 	    return;
 
 	case ACTION_SET_OWNER:      // SetOwner()
@@ -612,6 +708,9 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    
 	    break;
 
+	case ACTION_CHANGE_MODE:    // ChangeMode()
+	    /* TODO */
+	    break;
 
 	    /* I haven't looked into the following packets in detail */
 	case ACTION_DIE:            // No associated function
@@ -641,6 +740,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    break;
 	    
 	case ACTION_WAIT_CHAR:      // WaitForChar()	
+	    /* TODO */
 	    break;
 
 	default:
@@ -673,7 +773,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
     {
 	cur = me->pr_HomeDir;
 	volname = NULL;
-	pathname = name+8;
+	pathname = name + 8;
     }
     else if (*name == ':')
     {
@@ -695,12 +795,12 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    {
 		volname = (STRPTR)AllocMem(s1-name, MEMF_ANY);
 
-		if (volname==NULL)
+		if (volname == NULL)
 		{
 		    return ERROR_NO_FREE_STORE;
 		}
 
-		CopyMem(name, volname, s1-name-1);
+		CopyMem(name, volname, s1 - name - 1);
 
 		volname[s1 - name - 1] = '\0';
 		pathname = s1;
@@ -738,6 +838,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		{
 		    UnLockDosList(LDF_ALL | LDF_READ);
 		    FreeMem(volname, s1 - name);
+
 		    return ERROR_DEVICE_NOT_MOUNTED;
 	        }
 		
