@@ -1,4 +1,4 @@
-CFLAGS = NOVERS gst=all.gst idlen=40
+CFLAGS = NOVERS gst=all.gst idlen=40 IDIR=include
 LIBCODE =
 
 SUPPORTOBJS = \
@@ -120,7 +120,7 @@ NLISTOBJS= \
 NLISTVIEWOBJS= \
   //classes/nlist/NListview_mcc/NListview.o
 
-all: dirs all.gst test wb
+all: dirs all.gst include zunemaster.library test wb
 
 dirs:
   execute  <<
@@ -139,6 +139,14 @@ dirs:
 
 all.gst: headers.c
   sc headers.c noobjname makegst all.gst
+
+zunemaster.library: objs/zunemaster_lib.o objs/muimaster_init.o
+
+objs/zunemaster_lib.o: zunemaster_lib.c
+  sc $(CFLAGS) zunemaster_lib.c objname=$@
+
+objs/muimaster_init.o: muimaster_init.c
+  sc $(CFLAGS) muimaster_init.c objname=$@
 
 objs/datatypescache.o: datatypescache.c
   sc $(CFLAGS) datatypescache.c objname=$@
@@ -443,11 +451,26 @@ objs/wanderer.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 demos: muimaster.lib
   smake -f //demos/smakefile
 
-include: buildincludes
+include: buildincludes zunemaster_lib.sfd
+  -delete include all
   -makedir include
-  -makedir include/libraries
+  -makedir include/libraries include/clib include/proto include/pragma
   buildincludes >include/libraries/mui.h
-  -delete buildincludes
+  -makedir t:zunemaster
+  copy zunemaster_lib.sfd t:zunemaster
+  execute <<
+    cd t:zunemaster
+    sfd zunemaster_lib.sfd
+<
+  fd2pragma t:zunemaster/fd/zunemaster_lib.fd to include/pragma
+  copy t:zunemaster/protos/zunemaster_protos.h to include/clib
+  fd2pragma t:zunemaster/fd/zunemaster_lib.fd special=35 to include/proto
+  delete t:zunemaster all
+  execute <<
+    echo "\#ifndef PROTO_MUIMASTER_H" >include/proto/muimaster.h
+    echo "\#define PROTO_MUIMASTER_H" >>include/proto/muimaster.h
+    echo "\#endif" >>include/proto/muimaster.h
+<
 
 buildincludes: buildincludes.c
   sc link buildincludes.c
