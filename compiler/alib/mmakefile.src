@@ -64,6 +64,7 @@ FILES	:= \
     libcreatepool \
     libdeletepool \
     libfreepooled \
+    lockbitmaptags \
     newlist \
     newloadsegtags \
     newobject \
