@@ -1,0 +1,114 @@
+# $Id$ 
+include $(TOP)/config/make.cfg
+
+FILES		:= exec/init
+DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
+		    -I/usr/include $(CFLAGS)
+
+#MM AROS-freebsd : setup setup-freebsd includes compiler kernel workbench demos shell
+AROS-freebsd:
+	@$(NOP)
+
+#MM kernel-freebsd : kernel-exec kernel-aros-linklib  kernel-dos kernel-boot-linklib
+#MM kernel-freebsd : kernel-graphics kernel-utility kernel-intuition-linklib
+#MM kernel-freebsd : kernel-mathffp kernel-mathieeesingbas
+#MM kernel-freebsd : kernel-devs kernel-expansion-linklib
+#MM kernel-freebsd : kernel-filesys kernel-boopsi-linklib kernel-hidd
+kernel-freebsd :
+	@$(NOP)
+
+# Setup the CLIB metatargets...
+#MM setup-clib-freebsd : setup-clib-freebsd-i386
+setup-clib-freebsd :
+	@$(NOP)
+
+#MM
+kernel :
+	@$(NOP)
+
+#MM
+setup-freebsd : 
+	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
+	%add_objects rom/boot/strap_emul
+
+# These are the targets to get mmake to do what I want...
+#MM setup-freebsd : setup-exec-freebsd setup-dos-freebsd setup-battclock-freebsd setup-x11
+
+#MM setup-exec-freebsd : setup-exec-unix setup-exec-i386
+setup-exec-freebsd :
+	%add_objects rom/exec/init
+
+#MM kernel-exec-freebsd-i386 : exec-freebsd exec-i386 exec-unix kernel-exec-linklib
+kernel-exec-freebsd-i386 :
+	@$(NOP)
+
+#MM
+exec-freebsd : $(OSGENDIR)/exec/init.o
+
+#MM setup-dos-freebsd : setup-dos-unix
+setup-dos-freebsd :
+	@$(NOP)
+
+#MM kernel-dos-freebsd-i386 : dos-unix kernel-dos-linklib
+kernel-dos-freebsd-i386 :
+	@$(NOP)
+
+#MM setup-battclock-freebsd : setup-battclock-unix
+setup-battclock-freebsd :
+	@$(NOP)
+
+#MM kernel-graphics-freebsd-i386 : graphics-x11 kernel-graphics-linklib
+kernel-graphics-freebsd-i386 :
+	@$(NOP)
+
+#MM kernel-intuition-freebsd-i386 : intuition-x11 kernel-intuition-linklib
+kernel-intuition-freebsd-i386 :
+	@$(NOP)
+
+#MM kernel-hidd-freebsd-i386 : kernel-hidd-linklib
+kernel-hidd-freebsd-i386 :
+	@$(NOP)
+
+#MM kernel-boot-freebsd-i386 : kernel-boot-linklib
+kernel-boot-freebsd-i386 :
+	@$(NOP)
+
+#MM check : check-exec-unix
+check :
+	@$(NOP)
+
+#MM clib-freebsd : clib-freebsd-$(CPU)
+clib-freebsd :
+	@$(NOP)
+
+#MM includes-freebsd : includes-copy includes-freebsd-$(CPU)
+includes-freebsd:
+	@$(NOP)
+
+#MM workbench-freebsd : workbench-c workbench-devs workbench-libs workbench-classes workbench-s
+workbench-freebsd:
+	@$(NOP)
+
+#MM workbench-libs-freebsd : workbench-libs-asl workbench-libs-diskfont
+#MM workbench-libs-freebsd : workbench-libs-gadtools workbench-libs-icon
+#MM workbench-libs-freebsd : workbench-libs-iffparse workbench-libs-mathieeesptrans workbench-libs-mathtrans
+workbench-libs-freebsd :
+	@$(NOP)
+
+#MM workbench-classes-freebsd : workbench-classes-aroscheckbox workbench-classes-aroslist workbench-classes-aroslistview workbench-classes-arosmutualexclude
+workbench-classes-freebsd :
+	@$(NOP)
+
+#MM
+clean :: 
+	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q $(CFLAGS2)
+
+%include_deps
+%common
