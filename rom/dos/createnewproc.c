@@ -115,6 +115,7 @@ void internal_ChildFree(APTR tid);
 #define ENOMEM_IF(a) if(a) goto enomem /* Throw out of memory. */
 
     /* Inherit the parent process' stacksize if possible */
+    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
     {
 	struct CommandLineInterface *cli = Cli();
 
@@ -123,7 +124,7 @@ void internal_ChildFree(APTR tid);
     }
     
     ApplyTagChanges(defaults, tags);
-
+    
     process = (struct Process *)AllocMem(sizeof(struct Process),
 					 MEMF_PUBLIC | MEMF_CLEAR);
     ENOMEM_IF(process == NULL);
@@ -196,18 +197,28 @@ void internal_ChildFree(APTR tid);
 
     if(defaults[2].ti_Data == ~0ul)
     {
-	input = Open("NIL:", MODE_OLDFILE);
-	ERROR_IF(!input);
+	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	{     
+	    input = Open("NIL:", MODE_OLDFILE);
+	    ERROR_IF(!input);
 
-	defaults[2].ti_Data = (IPTR)input;
+	    defaults[2].ti_Data = (IPTR)input;
+	}
+	else
+	    defaults[2].ti_Data = 0;
     }
 
     if(defaults[4].ti_Data == ~0ul)
     {
-	output = Open("NIL:", MODE_NEWFILE);
-	ERROR_IF(!output);
+	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	{
+	    output = Open("NIL:", MODE_NEWFILE);
+	    ERROR_IF(!output);
 
-	defaults[4].ti_Data = (IPTR)output;
+	    defaults[4].ti_Data = (IPTR)output;
+	}
+	else
+	    defaults[4].ti_Data = 0;
     }
 
     if(defaults[8].ti_Data == ~0ul)
