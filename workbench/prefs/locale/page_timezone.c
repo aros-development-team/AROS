@@ -86,9 +86,10 @@ timezone_table[NUM_TIMEZONES] =
 /*********************************************************************************************/
 
 static struct Gadget *gadlist, *textgad, *gad;
+static WORD minwidth, minheight;
 static WORD domleft, domtop, domwidth, domheight;
 static WORD active_timezone;
-static BOOL truecolor, init_done;
+static BOOL init_done;
 
 static UBYTE timezones_chunky[TIMEZONES_SMALL_WIDTH * TIMEZONES_SMALL_HEIGHT];
 static UBYTE earthmap_chunky[EARTHMAP_SMALL_WIDTH * EARTHMAP_SMALL_HEIGHT];
@@ -143,11 +144,6 @@ static UBYTE *unpack_byterun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
 static LONG timezone_init(void)
 {
     WORD i;
-
-    if (CyberGfxBase)
-    {
-    	if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15) truecolor = TRUE;
-    }
 
     if (!truecolor)
     {
@@ -306,9 +302,9 @@ static void RepaintEarthmap(void)
 
 	    WriteChunkyPixels(win->RPort,
 	    	    	      domleft + 1,
-			      domtop + 1,
-			      domleft + domwidth - 1 - 1,
-			      domtop + domheight - 1 - 1,
+			      domtop  + 1,
+			      domleft + 1 + EARTHMAP_SMALL_WIDTH  - 1,
+			      domtop  + 1 + EARTHMAP_SMALL_HEIGHT - 1,
 			      earthmap_chunky_remapped,
 			      EARTHMAP_SMALL_WIDTH);
 	}
@@ -591,14 +587,16 @@ LONG page_timezone_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_LAYOUT:
+	    minwidth  = EARTHMAP_SMALL_WIDTH + 2;
+    	    minheight = EARTHMAP_SMALL_HEIGHT + 2 + dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + SPACE_Y;
 	    break;
 	    
 	case PAGECMD_GETMINWIDTH:
-	    retval = EARTHMAP_SMALL_WIDTH + 2;
+	    retval = minwidth;
 	    break;
 	    
 	case PAGECMD_GETMINHEIGHT:
-	    retval = EARTHMAP_SMALL_HEIGHT + 2 + dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + SPACE_Y;
+	    retval = minheight;
 	    break;
 	    
 	case PAGECMD_SETDOMLEFT:
@@ -610,11 +608,15 @@ LONG page_timezone_handler(LONG cmd, IPTR param)
 	    break;
 	    
 	case PAGECMD_SETDOMWIDTH:
-	    domwidth = param;
+	    /* domwidth = param; */
+	    domwidth = minwidth;
+	    domleft += (param - minwidth ) /2;
 	    break;
 	    
 	case PAGECMD_SETDOMHEIGHT:
-	    domheight = param;
+	    /* domheight = param; */
+	    domheight = minheight;
+	    domtop += (param - minheight) / 2;
 	    break;
 	    
 	case PAGECMD_MAKEGADGETS:

@@ -11,6 +11,11 @@
 
 /****************************************************************************************/
 
+#define IMWIDTH(x)  (((struct Image *)(x))->Width)
+#define IMHEIGHT(x) (((struct Image *)(x))->Height)
+
+/****************************************************************************************/
+
 void InitRegisterTab(struct RegisterTab *reg, struct RegisterTabItem *items)
 {
     reg->items = items;
@@ -29,7 +34,7 @@ void LayoutRegisterTab(struct RegisterTab *reg, struct Screen *scr,
     	    	       struct DrawInfo *dri, BOOL samewidth)
 {
     struct RastPort temprp;
-    WORD    	    i, x, biggest_w = 0;
+    WORD    	    i, x, h, biggest_w = 0;
     
     InitRastPort(&temprp);
     SetFont(&temprp, dri->dri_Font);
@@ -38,7 +43,22 @@ void LayoutRegisterTab(struct RegisterTab *reg, struct Screen *scr,
     reg->fonth = dri->dri_Font->tf_YSize;
     reg->fontb = dri->dri_Font->tf_Baseline;
     
-    reg->height = ((reg->fonth + REGISTERTAB_EXTRA_HEIGHT) + 3) & ~3; /* Multiple of 4 */
+    h = 0;
+    for(i = 0; i < reg->numitems; i++)
+    {
+    	if (reg->items[i].image)
+	{
+	    if (IMHEIGHT(reg->items[i].image) > h) h = IMHEIGHT(reg->items[i].image);
+	}
+    }
+    
+    if (h) h += REGISTERTAB_IMEXTRA_HEIGHT;
+        
+    i = reg->fonth + REGISTERTAB_EXTRA_HEIGHT;
+    h = (i > h) ? i : h;
+    
+    reg->height = (h + 3) & ~3; /* Multiple of 4 */
+    
     reg->height += 4;
     
     reg->slopew = (reg->height - 4) / 2;
@@ -48,6 +68,12 @@ void LayoutRegisterTab(struct RegisterTab *reg, struct Screen *scr,
     	reg->items[i].textlen = strlen(reg->items[i].text);
     	reg->items[i].w = TextLength(&temprp, reg->items[i].text, reg->items[i].textlen);
 	reg->items[i].w += REGISTERTABITEM_EXTRA_WIDTH + reg->slopew * 2;
+	
+	if (reg->items[i].image)
+	{
+	    reg->items[i].w += REGISTERTAB_IMAGE_TEXT_SPACE +
+	    	    	       ((struct Image *)reg->items[i].image)->Width;
+	}
 	
 	if (reg->items[i].w > biggest_w) biggest_w = reg->items[i].w;
     }
@@ -60,23 +86,40 @@ void LayoutRegisterTab(struct RegisterTab *reg, struct Screen *scr,
 	}
     }
 
-   x = REGISTERTAB_SPACE_LEFT;
-   for(i = 0; i < reg->numitems; i++)
-   {
-       reg->items[i].x1 = x;
-       reg->items[i].y1 = 0;
-       reg->items[i].x2 = x + reg->items[i].w - 1;
-       reg->items[i].y2 = reg->height - 1;
-       reg->items[i].h  = reg->items[i].y2 - reg->items[i].y1 + 1;
-       reg->items[i].tx = reg->items[i].w / 2 - TextLength(&temprp, reg->items[i].text, reg->items[i].textlen) / 2;
-       reg->items[i].ty = reg->fontb + reg->items[i].h / 2 - reg->fonth / 2;
-       
-       x += reg->items[i].w - reg->slopew;
-   }
-   
-   reg->width = x + reg->slopew + REGISTERTAB_SPACE_RIGHT;
-    
-   DeinitRastPort(&temprp);
+    x = REGISTERTAB_SPACE_LEFT;
+    for(i = 0; i < reg->numitems; i++)
+    {
+	WORD itemwidth;
+    	WORD to = 0;
+	itemwidth = TextLength(&temprp, reg->items[i].text, reg->items[i].textlen);
+
+	if (reg->items[i].image)
+	{
+	    to = IMWIDTH(reg->items[i].image) + REGISTERTAB_IMAGE_TEXT_SPACE;
+            itemwidth += to;
+    	}
+	
+	reg->items[i].x1 = x;
+	reg->items[i].y1 = 0;
+	reg->items[i].x2 = x + reg->items[i].w - 1;
+	reg->items[i].y2 = reg->height - 1;
+	reg->items[i].h  = reg->items[i].y2 - reg->items[i].y1 + 1;
+    	reg->items[i].ix = (reg->items[i].w - itemwidth) / 2;
+	if (reg->items[i].image)
+	{
+	    reg->items[i].iy = (reg->items[i].h - IMHEIGHT(reg->items[i].image)) / 2;
+	}
+	
+	reg->items[i].tx = reg->items[i].ix + to;
+	reg->items[i].ty = reg->fontb + (reg->items[i].h - reg->fonth) / 2;
+	
+	
+	x += reg->items[i].w - reg->slopew;
+    }
+
+    reg->width = x + reg->slopew + REGISTERTAB_SPACE_RIGHT;
+
+    DeinitRastPort(&temprp);
 }
 
 /****************************************************************************************/
@@ -115,6 +158,11 @@ void RenderRegisterTabItem(struct RastPort *rp, struct RegisterTab *reg, WORD it
     SetAPen(rp, reg->dri->dri_Pens[TEXTPEN]);       
     Move(rp, x + ri->tx, y + ri->ty);
     Text(rp, ri->text, ri->textlen);
+    
+    if (ri->image)
+    {
+    	DrawImageState(rp, ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, dri);
+    }
     
     /* upper / at left side */
     

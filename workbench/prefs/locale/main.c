@@ -207,6 +207,11 @@ static void GetVisual(void)
     
     vi = GetVisualInfoA(scr, NULL);
     if (!vi) Cleanup(MSG(MSG_CANT_GET_VI));
+
+    if (CyberGfxBase)
+    {
+    	truecolor = GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15;
+    }
 }
 
 /*********************************************************************************************/
@@ -221,12 +226,47 @@ static void FreeVisual(void)
 
 static void MakePages(void)
 {
+    static const struct CoolImage *tabimages[] =
+    {
+    	&cool_headimage,
+	&cool_flagimage,
+	&cool_clockimage
+    };
+    ULONG bgcol = 0;
     WORD i;
+    BOOL cool_imageclass_ok = FALSE;
+    
+    if (truecolor)
+    {
+    	cool_imageclass_ok = InitCoolImageClass(CyberGfxBase);
+    	if (cool_imageclass_ok)
+	{
+	    ULONG col[3];
+	    
+	    GetRGB32(scr->ViewPort.ColorMap,
+	    	     dri->dri_Pens[BACKGROUNDPEN],
+		     1,
+		     col);
+		     
+	    bgcol = ((col[0] & 0xFF000000) >> 8) +
+	    	    ((col[1] & 0xFF000000) >> 16) +
+		    ((col[2] & 0xFF000000) >> 24);
+	}
+	
+    }
     
     for(i = 0; i < NUM_PAGES; i++)
     {
     	regitems[i].text = MSG(pagetable[i].nameid);
-	
+	if (cool_imageclass_ok)
+	{
+	    regitems[i].image = NewObject(cool_imageclass, NULL, IA_Width   	 , tabimages[i]->width ,
+	    	    	    	    	    	    	         IA_Height  	 , tabimages[i]->height,
+								 COOLIM_CoolImage, (IPTR)tabimages[i]  ,
+								 COOLIM_BgColor  , bgcol    	       ,
+								 TAG_DONE);
+								 
+	}
 	if (!(pagetable[i].handler(PAGECMD_INIT, 0)))
 	{
 	    Cleanup(MSG(MSG_CANT_CREATE_GADGET));
@@ -246,7 +286,10 @@ static void KillPages(void)
     for(i = 0; i < NUM_PAGES; i++)
     {
  	pagetable[i].handler(PAGECMD_CLEANUP, 0);
+	if (regitems[i].image) DisposeObject(regitems[i].image);
     }
+    
+    CleanupCoolImageClass();
 }
 
 /*********************************************************************************************/
@@ -255,7 +298,6 @@ static void LayoutButtons(void)
 {
     struct RastPort temprp;
     WORD i, w, maxtextlen = 0, maximheight = 0;
-    BOOL truecolor = GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15;
     
     InitRastPort(&temprp);
     SetFont(&temprp, dri->dri_Font);
