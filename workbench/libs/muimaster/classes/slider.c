@@ -122,9 +122,13 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     get(obj,MUIA_Numeric_Min,&min);
     get(obj,MUIA_Numeric_Max,&max);
 
-#   warning this oughta be changed: if max-min is _huge_ it will take a LONG time to complete!
+    if ((max - min) > MUI_MAXMAX)
+    {
+	min = 0;
+	max = MUI_MAXMAX;
+    }
 
-    /* Determine the with of the know */
+    /* Determine the width of the knob */
     for (val=min;val<=max;val++)
     {
 	LONG nw;
