@@ -56,6 +56,8 @@ AROS_UFH3(LONG, entry,
 	 * ptr;
     int    argc,
 	   argmax;
+    LONG   namlen = 64;
+    int    done = 0;
     __startup_error = RETURN_FAIL;
 
     SysBase=sysbase;
@@ -76,10 +78,10 @@ AROS_UFH3(LONG, entry,
 	/* Find out how many arguments we have */
 	for (argmax=1,ptr=args; *ptr; )
 	{
-	    if (*ptr == ' ' || *ptr == '\t')
+	    if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
 	    {
 		/* Skip whitespace */
-		while (*ptr && (*ptr == ' ' || *ptr == '\t'))
+		while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
 		    ptr ++;
 	    }
 
@@ -101,23 +103,23 @@ AROS_UFH3(LONG, entry,
 	    {
 		argmax ++;
 
-		while (*ptr && *ptr != ' ' && *ptr != '\t')
+		while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
 		    ptr ++;
 	    }
 	}
 
-	if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_ANY)) )
+	if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_CLEAR)) )
 	{
 	    goto error;
 	}
 
-	/* Find out how many arguments we have */
+	/* create argv */
 	for (argc=1,ptr=args; *ptr; )
 	{
-	    if (*ptr == ' ' || *ptr == '\t')
+	    if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
 	    {
 		/* Skip whitespace */
-		while (*ptr && (*ptr == ' ' || *ptr == '\t'))
+		while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
 		    ptr ++;
 	    }
 
@@ -139,7 +141,7 @@ AROS_UFH3(LONG, entry,
 	    {
 		argv[argc++] = ptr;
 
-		while (*ptr && *ptr != ' ' && *ptr != '\t')
+		while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
 		    ptr ++;
 
 		/* Not at end of string ? Terminate arg */
@@ -156,9 +158,30 @@ AROS_UFH3(LONG, entry,
 
     DOSBase = (struct DosLibrary *)OpenLibrary (DOSNAME, 39);
 
-    /* Get name of program * /
-    argv[0] = GetProgrammName (); */
-    argv[0] = "dummy";
+    /*
+     * get program name
+     */
+    do {
+	if (!(argv[0] = AllocVec(namlen, MEMF_ANY)))
+	    goto error;
+      
+        if (!(GetProgramName(argv[0], namlen)))
+	{
+	    if (IoErr() == ERROR_LINE_TOO_LONG)
+	    {
+		namlen *= 2;
+		FreeVec(argv[0]);
+	    }
+	    else
+	    {
+		goto error;
+	    }
+	}
+	else
+	{
+	    done = 1;
+	}
+    } while (!done);
 
 #if 0
 kprintf ("arg(%d)=\"%s\", argmax=%d, argc=%d\n", argsize, argstr, argmax, argc);
@@ -180,8 +203,11 @@ for (t=0; t<argc; t++)
 error:
     if (argsize)
     {
-	if (argv)
+	if (argv) {
+	    if (argv[0])
+		FreeVec(argv[0]);
 	    FreeMem (argv, sizeof (char *) * argmax);
+	}
 
 	if (args)
 	    FreeMem (args, argsize+1);
