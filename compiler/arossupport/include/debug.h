@@ -347,8 +347,14 @@
 #define DBG_MAINSYSTEM_INTUITION "intuition"
 #define DBG_INTUITION_SUBSYSTEM_INPUTHANDLER "inputhandler"
 		
+#define AROS_FUNCTION_NOT_IMPLEMENTED(library) \
+    kprintf("The function %s/%s() is not implemented.\n", (library), __FUNCTION__)
+
+#define AROS_METHOD_NOT_IMPLEMENTED(CLASS, name) \
+    kprintf("The method %s::%s() is not implemented.\n", (CLASS), (name))
+
 #define aros_print_not_implemented(name) \
-	kprintf("The function %s is not implemented.\n", name);
+    kprintf("The function %s() is not implemented.\n", (name))
 
 #define ALIVE kprintf("%s - %s line %d\n",__FILE__,__FUNCTION__,__LINE__);
 
