@@ -292,22 +292,15 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 /**************************
 **  GfxHidd::CreateGC()  **
 **************************/
-static Object *gfxhidd_creategc(Class *cl, Object *o, struct pHidd_Gfx_CreateGC *msg)
+static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 {
-#warning FIXME: Better use class posing for this.
 
     Object *gc = NULL;
-    struct TagItem tags[] =
-    {
-        {aHidd_GC_BitMap,	(IPTR)msg->bitMap},
-	{TAG_DONE,		0}
-    };
-    
     
     switch (msg->gcType)
     {
-        case  GCTYPE_QUICK:
-	    gc = NewObject( X11GfxBase->gcclass, NULL, tags);
+        case  vHIDD_Gfx_NewGC_Quick:
+	    gc = NewObject( X11GfxBase->gcclass, NULL, msg->attrList);
 	    break;
 	    
 	default:
@@ -426,7 +419,7 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
     
     struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
-    	{(IPTR (*)())gfxhidd_creategc,	moHidd_Gfx_CreateGC},
+    	{(IPTR (*)())gfxhidd_newgc,	moHidd_Gfx_NewGC},
 	{NULL, 0UL}
     };
     
@@ -499,7 +492,6 @@ Class *init_gcclass(struct x11gfxbase *X11GfxBase)
     {
 	{aMeta_SuperID,			(IPTR)CLID_Root},
 	{aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{aMeta_ID,			(IPTR)CLID_Hidd_QuickGC},
 	{aMeta_InstSize,		(IPTR)sizeof (struct gc_data) },
 	{TAG_DONE, 0UL}
     };
