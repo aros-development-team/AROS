@@ -101,7 +101,6 @@ AROS_SHA(STRPTR, ,STRING,/F,NULL))
     char             Buffer1[BUFFER_SIZE];
     char             Buffer2[BUFFER_SIZE];
 
-    (void)Alias_version;
 
     if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {

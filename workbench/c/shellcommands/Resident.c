@@ -37,7 +37,6 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 {
     AROS_SHCOMMAND_INIT
 
-    (void)Resident_version;
 
     if (SHArg(FILE) || SHArg(NAME))
     {

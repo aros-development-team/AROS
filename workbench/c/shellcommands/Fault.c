@@ -55,7 +55,6 @@ AROS_SHAH(ULONG **, ,NUMBERS,/N/M, NULL, "The error numbers you wish to query"))
 
     ULONG **theNum = SHArg(NUMBERS);
 
-    (void)Fault_version;
 
     if (theNum)
     {

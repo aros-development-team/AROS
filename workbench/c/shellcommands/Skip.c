@@ -70,7 +70,6 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
     struct CommandLineInterface *cli = Cli();
     BOOL                  labelFound = FALSE;
 
-    (void)Skip_version;
 
     if(cli == NULL || cli->cli_CurrentInput == cli->cli_StandardInput)
     {

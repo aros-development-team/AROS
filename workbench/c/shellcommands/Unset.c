@@ -73,7 +73,6 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
 
-    (void)Unset_version;
 
     if (SHArg(NAME) != NULL)
     {

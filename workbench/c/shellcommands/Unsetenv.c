@@ -61,7 +61,6 @@ AROS_SHA(STRPTR, ,NAME, ,NULL))
 {
     AROS_SHCOMMAND_INIT
 
-    (void)Unsetenv_version;
 
     if (SHArg(NAME) != NULL)
     {

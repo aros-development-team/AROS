@@ -16,7 +16,6 @@
 
 #include <aros/shcommands.h>
 
-
 AROS_SH7(Path, 45.2,
 AROS_SHA(STRPTR *, ,PATH,/M,NULL),
 AROS_SHA(BOOL, ,ADD,/S,TRUE),
@@ -38,7 +37,6 @@ AROS_SHA(BOOL, ,HEAD,/S,FALSE))
     PathEntry *cur;
     struct CommandLineInterface *cli = Cli();
 
-    (void)Path_version;
 
     #define PE(x) ((PathEntry *)(BADDR(x)))
 

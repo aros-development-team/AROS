@@ -54,7 +54,6 @@ AROS_SH0(EndCli, 41.3)
 
     struct CommandLineInterface *cli = Cli();
 
-    (void)EndCli_version;
 
     if (cli)
     {

@@ -33,7 +33,6 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 
     #define ERROR(a) { error=a; goto end; }
 
-    (void)Echo_version;
 
     if (SHArg(LEN))
     {

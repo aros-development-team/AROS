@@ -25,7 +25,6 @@ AROS_SHA(STRPTR, ,DIR, ,NULL))
     struct FileInfoBlock *fib;
     LONG error = 0;
 
-    (void)CD_version;
 
     if (SHArg(DIR))
     {
