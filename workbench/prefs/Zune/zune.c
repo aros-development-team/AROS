@@ -80,102 +80,6 @@ void close_muimaster(void)
 
 #endif
 
-
-/* The following two functions should be a method of config data */
-static void LoadPrefs(STRPTR filename, Object *obj)
-{
-    struct IFFHandle *iff;
-    if ((iff = AllocIFF()))
-    {
-	if ((iff->iff_Stream = Open(filename,MODE_OLDFILE)))
-	{
-	    InitIFFasDOS(iff);
-
-	    if (!OpenIFF(iff, IFFF_READ))
-	    {
-		StopChunk( iff, MAKE_ID('P','R','E','F'), MAKE_ID('M','U','I','C'));
-
-		while (!ParseIFF(iff, IFFPARSE_SCAN))
-		{
-		    struct ContextNode *cn;
-		    if (!(cn = CurrentChunk(iff))) continue;
-		    if (cn->cn_ID == MAKE_ID('M','U','I','C')) DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
-		}
-
-		CloseIFF(iff);
-	    }
-	    Close(iff->iff_Stream);
-	}
-	FreeIFF(iff);
-    }
-}
-
-static int SavePrefsHeader(struct IFFHandle *iff)
-{
-    if (!PushChunk( iff, 0, MAKE_ID('P','R','H','D'), IFFSIZE_UNKNOWN))
-    {
-	struct PrefHeader ph;
-	ph.ph_Version = 0;
-	ph.ph_Type = 0;
-	ph.ph_Flags = 0;
-
-	if (WriteChunkBytes(iff, &ph, sizeof(struct PrefHeader)))
-	    if (!PopChunk(iff)) return 1;
-	PopChunk(iff);
-    }
-    return 0;
-}
-
-static void SavePrefs(STRPTR filename, Object *obj)
-{
-    struct IFFHandle *iff;
-    if ((iff = AllocIFF()))
-    {
-    	if (!(iff->iff_Stream = Open(filename,MODE_NEWFILE)))
-    	{
-    	    /* Try to Create the directory where the file is located */
-	    char *path = StrDup(filename);
-	    if (path)
-	    {
-	    	char *path_end = PathPart(path);
-	    	if (path_end != path)
-	    	{
-		    BPTR lock;
-		    *path_end = 0;
-		    if ((lock = CreateDir(path)))
-		    {
-			UnLock(lock);
-			iff->iff_Stream = Open(filename,MODE_NEWFILE);
-		    }
-		}
-	    	FreeVec(path);
-	    }
-    	}
-
-	if (iff->iff_Stream)
-	{
-	    InitIFFasDOS(iff);
-
-	    if (!OpenIFF(iff, IFFF_WRITE))
-	    {
-		if (!PushChunk(iff, MAKE_ID('P','R','E','F'), ID_FORM, IFFSIZE_UNKNOWN))
-		{
-		    if (SavePrefsHeader(iff))
-		    {
-		    	DoMethod(obj,MUIM_Dataspace_WriteIFF, iff, 0, MAKE_ID('M','U','I','C'));
-		    }
-		    PopChunk(iff);
-		}
-
-		CloseIFF(iff);
-	    }
-	    Close(iff->iff_Stream);
-	}
-	FreeIFF(iff);
-    }
-}
-
-
 /****************************************************************
  Open needed libraries
 *****************************************************************/
@@ -420,12 +324,12 @@ void deinit_gui(void)
 *****************************************************************/
 void load_prefs(char *filename)
 {
-    Object *configdata = MUI_NewObjectA(MUIC_Dataspace,NULL);
+    Object *configdata = MUI_NewObjectA(MUIC_Configdata, NULL);
     if (configdata)
     {
 	int i;
 
-	LoadPrefs(filename,configdata);
+	DoMethod(configdata, MUIM_Configdata_Load, (IPTR)filename);
 
         /* Call MUIM_Settingsgroup_ConfigToGadgets for every group */
 	for (i=0;i<MAIN_PAGE_ENTRIES_LEN;i++)
@@ -444,7 +348,7 @@ void load_prefs(char *filename)
 *****************************************************************/
 void save_prefs(char *filename)
 {
-    Object *configdata = MUI_NewObjectA(MUIC_Dataspace,NULL);
+    Object *configdata = MUI_NewObjectA(MUIC_Configdata, NULL);
     if (configdata)
     {
 	int i;
@@ -457,7 +361,7 @@ void save_prefs(char *filename)
 		DoMethod(p->group,MUIM_Settingsgroup_GadgetsToConfig,configdata);
 	}
 
-	SavePrefs(filename,configdata);
+	DoMethod(configdata, MUIM_Configdata_Save, (IPTR)filename);
 
     	MUI_DisposeObject(configdata);
     }
@@ -485,7 +389,7 @@ void loop(void)
 /****************************************************************
  The main entry point
 *****************************************************************/
-void main(void)
+int main(void)
 {
     if (open_libs())
     {
@@ -502,4 +406,5 @@ void main(void)
     	}
 	close_libs();
     }
+    return 0;
 }
