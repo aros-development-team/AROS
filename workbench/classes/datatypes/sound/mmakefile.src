@@ -1,0 +1,15 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := dispatch
+FUNCS := obtainengine
+
+#MM workbench-datatypes-sound : includes linklibs
+
+USER_CFLAGS := -I$(GENDIR)/contrib/AHI/Include/gcc
+
+%build_module_macro mmake=workbench-datatypes-sound modname=sound \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="amiga rom"
+
+%common
