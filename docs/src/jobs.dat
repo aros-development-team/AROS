@@ -1261,11 +1261,11 @@ ramdrive00000;0;digulla;Write KillRAD
 ramdrive00001;0;digulla;Write KillRAD
 realtime00000;2;SDuvan;Write LockRealTime
 realtime00001;2;SDuvan;Write UnlockRealTime
-realtime00002;1;SDuvan;Write CreatePlayerA
-realtime00003;1;SDuvan;Write DeletePlayer
-realtime00004;1;SDuvan;Write SetPlayerAttrsA
-realtime00005;1;SDuvan;Write SetConductorState
-realtime00006;1;SDuvan;Write ExternalSync
+realtime00002;2;SDuvan;Write CreatePlayerA
+realtime00003;2;SDuvan;Write DeletePlayer
+realtime00004;2;SDuvan;Write SetPlayerAttrsA
+realtime00005;2;SDuvan;Write SetConductorState
+realtime00006;2;SDuvan;Write ExternalSync
 realtime00007;2;SDuvan;Write NextConductor
 realtime00008;2;SDuvan;Write FindConductor
 realtime00009;2;SDuvan;Write GetPlayerAttrsA
