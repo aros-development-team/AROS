@@ -1,7 +1,6 @@
 #!/bin/sh
 
-read search
-search=`echo "$search" | cut -d= -f2- | cut -d+ -f1`
+search=`echo "$QUERY_STRING" | cut -d= -f2-`
 
 echo "Content-type: text/html"
 echo ""
