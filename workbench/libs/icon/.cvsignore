@@ -1,7 +1,7 @@
 libdefs.h
 makefile
-icon_functable.c
-icon_endtag.c
+functable.c
+endtag.c
 *.map
 mmakefile
 *.err
