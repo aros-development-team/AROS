@@ -46,7 +46,7 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval=0;
     struct IconClassData *data;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate=msg->ops_AttrList;
     struct DiskObject *diskobject=NULL;
     UBYTE *label=NULL;
     BOOL selected=FALSE;
@@ -58,116 +58,79 @@ IPTR iconNew(Class *cl, Object *obj, struct opSet *msg)
     ULONG size=0;
     Object *desktop=NULL;
 
-    tag=FindTagItem(IA_DiskObject, msg->ops_AttrList);
-    if(tag)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        diskobject=(struct DiskObject*)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
+        switch (tag->ti_Tag)
+        {
+            case IA_DiskObject: 
+                diskobject = (struct DiskObject*) tag->ti_Data;
+                break;
+                
+            case IA_Label:
+                label = (UBYTE*) tag->ti_Data;
+                break;
 
-    tag=FindTagItem(IA_Label, msg->ops_AttrList);
-    if(tag)
-    {
-        label=(UBYTE*)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Selected, msg->ops_AttrList);
-    if(tag)
-    {
-        selected=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Comment, msg->ops_AttrList);
-    if(tag)
-    {
-        comment=(UBYTE*)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Script, msg->ops_AttrList);
-    if(tag)
-    {
-        script=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Pure, msg->ops_AttrList);
-    if(tag)
-    {
-        pure=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Archived, msg->ops_AttrList);
-    if(tag)
-    {
-        archived=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Readable, msg->ops_AttrList);
-    if(tag)
-    {
-        readable=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Writeable, msg->ops_AttrList);
-    if(tag)
-    {
-        writeable=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Executable, msg->ops_AttrList);
-    if(tag)
-    {
-        executable=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Deleteable, msg->ops_AttrList);
-    if(tag)
-    {
-        deleteable=(BOOL)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_ViewMode, msg->ops_AttrList);
-    if(tag)
-    {
-        viewMode=(UBYTE)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Type, msg->ops_AttrList);
-    if(tag)
-    {
-        type=(LONG)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Size, msg->ops_AttrList);
-    if(tag)
-    {
-        size=(ULONG)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_LastModified, msg->ops_AttrList);
-    if(tag)
-    {
-        lastChanged=(struct DateStamp*)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
-    }
-
-    tag=FindTagItem(IA_Desktop, msg->ops_AttrList);
-    if(tag)
-    {
-        desktop=(Object*)tag->ti_Data;
-        tag->ti_Tag=TAG_IGNORE;
+            case IA_Selected:
+                selected = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Comment:
+                comment = (UBYTE*) tag->ti_Data;
+                break;
+                
+            case IA_Script:
+                script = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Pure:
+                pure = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Archived:
+                archived = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Readable:
+                readable = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Writeable:
+                writeable = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Executable:
+                executable = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_Deleteable:
+                deleteable = (BOOL) tag->ti_Data;
+                break;
+                
+            case IA_ViewMode:
+                viewMode = (UBYTE) tag->ti_Data;
+                break;
+                
+            case IA_Type:
+                type = (LONG) tag->ti_Data;
+                break;
+            
+            case IA_Size:
+                size = (ULONG) tag->ti_Data;
+                break;
+                
+            case IA_LastModified:
+                lastChanged = (struct DateStamp *) tag->ti_Data;
+                break;
+                
+            case IA_Desktop:
+                desktop = (Object*) tag->ti_Data;
+                break;
+                
+            default:
+                continue; /* Don't supress non-processed tags */
+        }
+        
+        tag->ti_Tag = TAG_IGNORE;              
     }
 
     retval=DoSuperMethodA(cl, obj, (Msg)msg);
