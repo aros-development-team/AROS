@@ -1,8 +1,24 @@
+# $Id$
+#
+# This script converts autodoc sources into HTML files. Just call it with the
+# names of all source to convert. It will create cross references as
+# neccessary.
+#
 BEGIN {
     stderr="/dev/stderr";
 
+    # Here is a list of special items in the sources which should be
+    # replaced by a link
     special_item["NEWLIST()"]="<A HREF=\"../srcs/include/exec/lists.h\">NEWLIST()</A>";
 
+    # Long names for directories
+    LIBS["clib"]="ANSI C linklib";
+    LIBS["alib"]="amiga.lib";
+    LIBS["devs"]="Devices";
+    LIBS["aros"]="AROS";
+    LIBS["intuition"]="Intuition";
+
+    # Process all files...
     for(t=1; t<ARGC; t++)
     {
 	file=ARGV[t];
@@ -12,107 +28,177 @@ BEGIN {
 #	     print "\n"file >> stderr;
 #	 fflush(stderr);
 
-	LIBS["clib"]="ANSI C linklib";
-	LIBS["alib"]="amiga.lib";
-	LIBS["devs"]="Devices";
-	LIBS["aros"]="AROS";
-	LIBS["intuition"]="Intuition";
-
+	# Clear the name of the resulting output. This will be set
+	# to the correct name when I write the first line into the
+	# file. It will be checked, when I have to write the footer to
+	# avoid to have a file which contains *only* a footer.
 	out="";
+
+	# mode can be head, field or footer. head means that I'm currently
+	# looking for the headers. field means that I found the header
+	# and that I'm currently processing the fields in the header
+	# (eg. NAME, FUNCTION, RETURNS). footer means that I have
+	# processed the header.
 	mode="head";
+
+	# Here I count the lines while I read them. This is used below
+	# the the EXAMPLES section.
 	fnr=0;
 
+	# Read the file line by line
 	while ((getline < file) > 0)
 	{
-	    fnr ++;
+	    fnr ++; # Count the lines.
 
-	    if (mode=="head")
+	    if (mode=="head") # Looking for the header
 	    {
-		if (match($0,/^.\*\*\*\*\*+$/))
+		if (match($0,/^.\*\*\*\*\*+$/)) # Found it ?
 		{
-		    fname="";
-		    lib=file;
-		    gsub(/\/[^/]+$/,"",lib);
-		    gsub(/^.*\//,"",lib);
-		    location=0;
+		    fname=""; # No function name yet
 
+		    # Distinguish to which part of AROS this function
+		    # belongs. To achieve this, I examine the filename.
+		    # It contains the name of the part as the last
+		    # directory in the path.
+		    lib=file;
+		    gsub(/\/[^/]+$/,"",lib); # Strip off the filename
+		    gsub(/^.*\//,"",lib); # Strip off all leading dirs
+
+		    # The filename of the resulting HTML file
 		    out="../html/autodocs/" bn ".html";
+
+		    location=0; # The field LOCATION hasn't been read yet
+
+		    # Emit the header
 		    print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Replacement OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
 		    print "<CENTER><P>(C) 1996 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
+
+		    # Next mode
 		    mode="field";
 		    lastfield="";
 		}
 	    }
-	    else if (mode=="field")
+	    else if (mode=="field") # Reading the header
 	    {
+		# This might be the name of a new field.
 		newfield=$1;
 
+		# If we found something, make sure it's not a comment
+		# If it is a comment, read the next word. This must be
+		# the fields' name.
 		if (newfield!="")
 		{
 		    if (newfield=="#" || newfield=="/*")
 			newfield=$2;
 		}
 
+		# Check if this is a field. We do this by comparing
+		# the name of the field against all known field names.
 		if (newfield=="NAME" || newfield=="SYNOPSIS" || newfield=="LOCATION" ||
 		    newfield=="FUNCTION" || newfield=="INPUTS" || newfield=="RESULT" ||
 		    newfield=="NOTES" || newfield=="EXAMPLE" || newfield=="BUGS" ||
 		    newfield=="SEE" || newfield=="INTERNALS" || newfield=="HISTORY")
 		{
+		    # The last field was an example ? Then it might be
+		    # neccessary to close a pending <PRE>.
 		    if (lastfield=="EXAMPLE")
 		    {
 			if (example_is=="here" || example_is=="example")
 			    printf ("</PRE>") >> out;
 		    }
 		    else if (field=="INPUTS" || field=="HISTORY")
+		    {
+			# If the last field as a list, then we must
+			# close that, too.
 			print "</DL>\n" >> out;
+		    }
 
+		    # To get a nice format, we stuff every field in a HTML
+		    # list.
 		    if (lastfield!="")
 			print "</DL>\n" >> out;
 
-		    mode="field";
+		    mode="field"; # Obsolete ?
+		    # Store the name of the field so we know how to
+		    # terminate it correctly when we encounter the
+		    # next one.
 		    lastfield=newfield;
+
+		    # Set a flag that we are at the top of the field.
+		    # Some fields need this to emit HTML code at the
+		    # beginning.
 		    first=1;
+
+		    # Store the name of the current field
 		    field=newfield;
 
+		    # Emit the header of the field. This includes special
+		    # code for SEE ALSO (that's two words. The code
+		    # above can handle only the first).
 		    if (newfield=="SEE")
 			print "<DL>\n<DT>SEE ALSO\n<DD>" >> out;
 		    else
 			print "<DL>\n<DT>"newfield"\n<DD>" >> out;
 
+		    # Special handling for certain fields.
 		    if (field=="EXAMPLE")
 		    {
+			# Clear the variable with the information about the
+			# kind of example in this file
 			example_is="";
 		    }
-		    else if (field=="INPUTS")
+		    else if (field=="INPUTS" || field=="HISTORY")
+		    {
+			# These fields are lists
 			print "<DL COMPACT>\n" >> out;
-		    else if (field=="HISTORY")
-			print "<DL COMPACT>\n" >> out;
+		    }
 		}
-		else if (match($0,/^.\*\*\*\*\*+\/?$/))
+		else if (match($0,/^.\*\*\*\*\*+\/?$/)) # Is this the end ?
 		{
+		    # If we don't know the name of the function yet, then
+		    # it makes no sense to create an entry in the list
+		    # of functions.
 		    if (fname!="")
 		    {
+			# If no LOCATION field has been encountered, then
+			# I must use the directory in which the function
+			# has been found as a hint to which part this
+			# function belongs.
 			if (!location)
 			{
+			    # Do I have a special name for this part ?
 			    if (!(lib in LIBS) )
 			    {
+				# Print a warning.
 				print "Unknown lib: "lib" in file "file >> stderr;
 			    }
 			    else
+			    {
+				# Print a line for the TOC
 				print out":"fname":"LIBS[lib];
+			    }
 			}
 			else
+			{
+			    # Print a line for the TOC
 			    print out":"fname":"lib;
+			}
 		    }
+
+		    # New mode: Process the footer next (the header is
+		    # complete)
 		    mode="footer";
 		}
 		else
 		{
+		    # Strip off comment characters at the beginning of the
+		    # lines.
 		    if ($1=="#")
 			line=substr($0,2);
 		    else
 			line=$0;
 
+		    # Now do the special processing for each kind of field.
 		    if (field=="NAME")
 		    {
 			if (match(line,/[(]/))
@@ -282,7 +368,10 @@ BEGIN {
 				skip=1;
 			    }
 			    else
+			    {
 				example_is="here";
+				printf ("<PRE>")>>out;
+			    }
 
 			    first = 0;
 			}
@@ -362,27 +451,37 @@ BEGIN {
 		    }
 		    else if (field=="HISTORY")
 		    {
-			if (match(line,/^[ \t]+[0-3][0-9][-.][01][0-9][-.][0-9][0-9][ \t]+/))
+#			 if (match(line,/^[ \t]+[0-3][0-9][-.][01][0-9][-.][0-9][0-9][ \t]+/))
+#			 {
+#			     date=substr(line,RSTART,RLENGTH);
+#			     line=substr(line,RSTART+RLENGTH);
+#			     match(line,/^[^ \t]+/);
+#			     name=substr(line,RSTART,RLENGTH);
+#			     line=substr(line,RSTART+RLENGTH);
+#			     gsub(/^[ \t]+/,"",date);
+#			     gsub(/[ \t]+$/,"",date);
+#
+#			     print "<DT>"date " " name"<DD>" >> out;
+#			 }
+#
+#			 gsub(/&/,"\\&amp;",line);
+#			 gsub(/</,"\\&lt;",line);
+#			 gsub(/>/,"\\&gt;",line);
+#			 gsub(/"/,"\\&quot;",line);
+#
+#			 print line >> out;
+
+			if (first)
 			{
-			    date=substr(line,RSTART,RLENGTH);
-			    line=substr(line,RSTART+RLENGTH);
-			    match(line,/^[^ \t]+/);
-			    name=substr(line,RSTART,RLENGTH);
-			    line=substr(line,RSTART+RLENGTH);
-			    gsub(/^[ \t]+/,"",date);
-			    gsub(/[ \t]+$/,"",date);
+			    cmd="cvs log " file " | gawk -f cvslog2html.gawk";
 
-			    print "<DT>"date " " name"<DD>" >> out;
+			    while ((cmd | getline) > 0)
+				print >> out;
+
+			    close (cmd);
+
+			    first=0;
 			}
-
-			gsub(/&/,"\\&amp;",line);
-			gsub(/</,"\\&lt;",line);
-			gsub(/>/,"\\&gt;",line);
-			gsub(/"/,"\\&quot;",line);
-
-			print line >> out;
-
-			first=0;
 		    }
 		    else
 			print line >> out;
@@ -393,9 +492,14 @@ BEGIN {
 	    }
 	}
 
+	# Anything written to this file ?
 	if (out!="")
+	{
+	    # Then emit the footer
 	    print "</BODY></HTML>" >> out;
+	}
 
+	# Close all files
 	close (out);
 	close (file);
     }
@@ -403,19 +507,26 @@ BEGIN {
 #    printf ("\n") >> stderr;
 }
 
+# Return the filename from a complete path
 function basename(file) {
     return gensub(/.*\/([a-zA-Z0-9_]+)(\.[a-zA-Z0-9_]+)?$/,"\\1",1,file) "";
 }
 
+# Check if a file exists
 function exists(file        ,err) {
+    # Try to read a line from the file
     err=getline < file;
 
-    if (err > 0)
+    # No Error ?
+    if (err >= 0)
     {
-	close (link);
+	# Close the file
+	close (file);
 
+	# The file exists
 	return 1;
     }
 
+    # The file doesn't exist
     return 0;
 }
