@@ -15,9 +15,6 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
-#ifndef LIBCORE_BASE_H
-#   include <libcore/base.h>
-#endif
 
 #ifndef LIBRARIES_AMIGAGUIDE_H
 #   include <libraries/amigaguide.h>
@@ -31,13 +28,12 @@
 
 
 /* Predeclaration */
-LIBBASETYPE;
 
 
 /**************
 **  Defines  **
 **************/
-#define SysBase (((struct LibHeader *) AmigaGuideBase)->lh_SysBase)
+#define SysBase GM_SYSBASE_FIELD(((LIBBASETYPEPTR)AmigaGuideBase))
 
 
 /*****************
@@ -48,11 +44,5 @@ LIBBASETYPE;
 /********************
 **  Library stuff  **
 ********************/
-
-
-LIBBASETYPE
-{
-    struct LibHeader lh;
-};
 
 #endif /* AMIGAGUIDE_INTERN_H */
