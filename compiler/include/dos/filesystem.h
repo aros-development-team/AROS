@@ -359,7 +359,7 @@ struct IFS_CHANGE_SIGNAL
 #define FSA_LOCK_RECORD     39
 struct IFS_RECORD
 {
-    QUAD  io_Offset; 
+    QUAD  io_Offset;
     LONG  io_Size;
     ULONG io_RecordMode;
     ULONG io_Timeout;
@@ -448,6 +448,9 @@ struct IOFileSys
             ULONG  io_Unit;       /* Number of unit to open. */
             IPTR * io_Environ;    /* Pointer to environment array. (see
                                      <dos/filehandler.h> */
+            STRPTR io_DosName     /* The name with wich the filesystem
+	                             is being mounted (the mount point,
+				     one might say) */
         } io_OpenDevice;
 
 	struct {
