@@ -41,9 +41,9 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ButtonsPData *data;
     struct MUI_ButtonsPData d;
     
-    obj = (Object *) DoSuperNew
+    obj = (Object *) DoSuperNewTags
     (
-        cl, obj,
+        cl, obj, NULL,
         
         Child, HGroup,
             Child, VGroup, /* Text Buttons */
