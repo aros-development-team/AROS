@@ -48,7 +48,8 @@ LIBS = -L$(LIBDIR)    \
 	-lgcc1       \
 
 
-all: aros.rom
+#MM rom-pp-m68k
+rom-pp-m68k: clean aros.rom
 
 entrycode.o : entrycode.s
 	@$(ECHO) Assembling $^...
@@ -63,7 +64,9 @@ aros_rom : entrycode.o gfx.o reset.o
 	$(CC) $^ $(OBJS) -o $@ -Wl,-T,linkerscript $(LIBS) -nostdlib
 
 aros.rom : aros_rom
+	@$(ECHO) "Generating $@..."
 	@$(OBJCOPY) -O binary $^ $@ -v -S --pad-to=0x10d00000
+	@$(MKDIR) $(HOME)/.xcopilot
 	@$(RM) $(HOME)/.xcopilot/aros.rom
 	@$(CP) $@ $(HOME)/.xcopilot/aros.rom
 
