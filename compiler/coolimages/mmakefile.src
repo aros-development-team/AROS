@@ -6,24 +6,25 @@ LIB :=	coolimages
 
 INCLUDE_FILES	:= include/coolimages.h
 
-FILES := saveimage \
-    	 loadimage \
-	 useimage \
-	 cancelimage \
-	 dotimage \
-	 warnimage \
-	 diskimage \
-	 switchimage \
-	 monitorimage \
-	 mouseimage \
-	 infoimage \
-	 askimage \
-	 keyimage \
-	 clockimage \
-	 flagimage \
-	 headimage \
-         windowimage \
-	 buttonclass \
+FILES := saveimage  	\
+    	 loadimage  	\
+	 useimage   	\
+	 cancelimage 	\
+	 dotimage   	\
+	 warnimage  	\
+	 diskimage  	\
+	 switchimage 	\
+	 monitorimage 	\
+	 mouseimage 	\
+	 infoimage  	\
+	 askimage   	\
+	 keyimage   	\
+	 clockimage 	\
+	 flagimage  	\
+	 headimage  	\
+         windowimage 	\
+	 kbdimage   	\
+	 buttonclass 	\
 	 imageclass
 
 USER_CFLAGS := -Iinclude
