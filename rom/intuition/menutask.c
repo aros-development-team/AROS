@@ -1065,32 +1065,38 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
     		   (mhd->activemenu->Flags & MENUENABLED) &&
     		   ((itemtype == ITEM_ITEM) || (mhd->activeitem->Flags & ITEMENABLED))); 
     BOOL item_supports_disable = FALSE;
-    
+
     SetDrMd(rp, JAM1);
-    if (item->Flags & ITEMTEXT)
+
+    if (item->ItemFill)
     {
-        struct IntuiText *it = (struct IntuiText *)item->ItemFill;
-
-	PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
-    } else {
-    	struct Image *im = (struct Image *)item->ItemFill;
-	LONG state = IDS_NORMAL;
-	
-	if (!enabled && (im->Depth == CUSTOMIMAGEDEPTH))
+	if (item->Flags & ITEMTEXT)
 	{
-	    IPTR val = 0;
-	    
-	    GetAttr(IA_SupportsDisable, (Object *)im, &val);
-	    if (val)
-	    {
-	        item_supports_disable = TRUE;
-		state = IDS_DISABLED;
-	    }
-	}
+            struct IntuiText *it = (struct IntuiText *)item->ItemFill;
 
-	DrawImageState(rp, im, offx + item->LeftEdge, offy + item->TopEdge, state, mhd->dri);
-    }
-    
+	    PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
+
+	} else {
+    	    struct Image *im = (struct Image *)item->ItemFill;
+	    LONG state = IDS_NORMAL;
+
+	    if (!enabled && (im->Depth == CUSTOMIMAGEDEPTH))
+	    {
+		IPTR val = 0;
+
+		GetAttr(IA_SupportsDisable, (Object *)im, &val);
+		if (val)
+		{
+	            item_supports_disable = TRUE;
+		    state = IDS_DISABLED;
+		}
+	    }
+
+	    DrawImageState(rp, im, offx + item->LeftEdge, offy + item->TopEdge, state, mhd->dri);
+	}
+	
+    } /* if (item->ItemFill) */
+        
     RenderCheckMark(item, itemtype, mhd, IntuitionBase);
     RenderAmigaKey(item, itemtype, mhd, IntuitionBase);
     
@@ -1103,6 +1109,7 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 			      mhd,
 			      IntuitionBase);
     }
+
 }		      
 
 /**************************************************************************************************/
