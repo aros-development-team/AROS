@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function AreaEnd()
@@ -77,8 +77,10 @@
     struct Rectangle bounds;
 
  
+#if 0
     if (0 != (rp->Flags & AREAOUTLINE))
        SetAPen(rp, GetOutlinePen(rp));
+#endif
 
     /* if the last polygon is not closed, then I should do so */
     if ( areainfo->FlagPtr[-1] == 0x03 &&
@@ -154,6 +156,7 @@
                  Blit the area fill pattern through the mask provided
                  by rp->TmpRas.
                 */
+		
                 BltPattern(
                    rp,
                    rp->TmpRas->RasPtr,
@@ -163,6 +166,14 @@
                    bounds.MaxY,
                    BytesPerRow
                 );
+		
+		if  (rp->Flags & AREAOUTLINE)
+		{
+		    SetAPen(rp, GetOutlinePen(rp));
+		    PolyDraw(rp, last_idx - first_idx + 1, &areainfo->VctrTbl[first_idx]);
+		    SetAPen(rp, Rem_APen);		    
+		}
+		
 	      }
 	    }
             /* set first_idx for a possible next polygon to draw */
@@ -227,6 +238,18 @@
                    BytesPerRow
                 );
  
+    	    if (rp->Flags & AREAOUTLINE)
+	    {
+	    	SetAPen(rp, GetOutlinePen(rp));
+		
+        	DrawEllipse(rp,CurVctr[0], 
+                               CurVctr[1],
+                               CurVctr[2],
+                               CurVctr[3]);
+
+    	    	SetAPen(rp, Rem_APen);
+	    }
+	    
             CurVctr = &CurVctr[4];
             CurFlag = &CurFlag[2];
             Count--;
