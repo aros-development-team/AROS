@@ -312,46 +312,52 @@ ULONG source;
 	if (!(extensionbuffer=getBlock(ah->volume,ah->current.block)))
 		return 0;
 	extensionbuffer->flags |=BCF_USED;	// dont overwrite that cache block!
-	while (length) {
+	while (length)
+	{
 		D(bug("afs.handler:   readData: bytes left=%ld\n",length));
 		//block, filekey always point to the next block
 		//so update them if we have read a whole block
-		if (ah->current.filekey<BLK_TABLE_START) {	//next extension block?
+		if (ah->current.filekey<BLK_TABLE_START)	// next extension block?
+		{
 			ah->current.block=AROS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)]);
 			ah->current.filekey=BLK_TABLE_END(ah->volume);
 			extensionbuffer->flags &= ~BCF_USED;		//we can now overwrite that cache block
 			D(bug("afs.handler:   readData: reading extensionblock=%ld\n",ah->current.block));
-			if (ah->current.block) {
+			if (ah->current.block)
+			{
 				if (!(extensionbuffer=getBlock(ah->volume,ah->current.block)))
 					return readbytes;
 				extensionbuffer->flags |= BCF_USED;	//dont overwrite this cache block
 			}
-#ifdef DEBUG
+D(
 			else
-				if (length) D(bug("Shit, out of extensionblocks!\nBytes left: %d\nLast extensionblock: %d",length,extensionbuffer->blocknum));
-#endif
+				if (length) bug("Shit, out of extensionblocks!\nBytes left: %d\nLast extensionblock: %d",length,extensionbuffer->blocknum);
+);
 		}
-#ifdef DEBUG
-if (!extensionbuffer->buffer[ah->current.filekey]) D(bug("Oh, oh! Damaged fileblock pointers!\nBytes left: %d\nExtension block: %d (pos in table is %d)",length,ah->current.block,ah->current.filekey));
-#endif
 		D(bug("afs.handler:   readData: reading datablock %ld\n",AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey])));
-		if (!(databuffer=getBlock(ah->volume,AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey])))) {
+		if (!(databuffer=getBlock(ah->volume,AROS_BE2LONG(extensionbuffer->buffer[ah->current.filekey]))))
+		{
 			extensionbuffer->flags &=~BCF_USED;	//free that block
 			return readbytes;
 		}
 		source=(ULONG)databuffer->buffer+ah->current.byte;
-		if (ah->volume->flags==0) {
+		if (ah->volume->flags==0)
+		{
 			size=AROS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE]);
 			source += (BLK_DATA_START*4);
 		}
 		else
+		{
 			size=BLOCK_SIZE(ah->volume);
+		}
 		size -= ah->current.byte;
-		if (size>length) {
+		if (size>length)
+		{
 			size=length;
 			ah->current.byte += size;
 		}
-		else {
+		else
+		{
 			ah->current.byte=0;
 			ah->current.filekey--;
 		}
@@ -414,16 +420,25 @@ ULONG destination;
 		//block, filekey always point to the last block
 		//so update them if we have read a whole block
 		if (ah->current.filekey<BLK_TABLE_START) {	//next extension block?
-			D(bug("afs.handler:   writeData: need new extensionblock\n"));
-			block=allocBlock(ah->volume);
 			extensionbuffer->flags &= ~BCF_USED;		//we can now overwrite that cache block
-			writeExtensionBlock(ah->volume,extensionbuffer,ah->current.filekey,block);
-			if (!block)
-				return writtenbytes;
-			ah->current.filekey=BLK_TABLE_END(ah->volume);
-			if (!(extensionbuffer=getFreeCacheBlock(ah->volume,block)))
-				return writtenbytes;
-			newFileExtensionBlock(ah->volume,extensionbuffer, ah->header_block);
+			if (extensionbuffer->buffer[BLK_EXTENSION(ah->volume)])
+			{
+				extensionbuffer=getBlock(ah->volume, AROS_BE2LONG(extensionbuffer->buffer[BLK_EXTENSION(ah->volume)]));
+				if (!extensionbuffer)
+					return writtenbytes;
+			}
+			else
+			{
+				D(bug("afs.handler:   writeData: need new extensionblock\n"));
+				block=allocBlock(ah->volume);
+				writeExtensionBlock(ah->volume,extensionbuffer,ah->current.filekey,block);
+				if (!block)
+					return writtenbytes;
+				ah->current.filekey=BLK_TABLE_END(ah->volume);
+				if (!(extensionbuffer=getFreeCacheBlock(ah->volume,block)))
+					return writtenbytes;
+				newFileExtensionBlock(ah->volume,extensionbuffer, ah->header_block);
+			}
 			extensionbuffer->flags |= BCF_USED;	//dont overwrite this cache block
 			ah->current.block=block;
 		}
@@ -467,6 +482,7 @@ ULONG destination;
 				databuffer->buffer[BLK_HEADER_KEY]=AROS_LONG2BE(ah->header_block);
 				databuffer->buffer[BLK_SEQUENCE_NUMBER]=AROS_LONG2BE(((ah->current.offset+writtenbytes)/488)+1);
 				databuffer->buffer[BLK_DATA_SIZE]=0;
+				databuffer->buffer[BLK_NEXT_DATA]=0;
 			}
 		}
 		destination=(ULONG)databuffer->buffer+ah->current.byte;
@@ -486,8 +502,14 @@ ULONG destination;
 		}
 		CopyMem((APTR)((ULONG)buffer+writtenbytes),(APTR)destination,size);
 		if (ah->volume->flags==0) {
-			databuffer->buffer[BLK_DATA_SIZE]=AROS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE])+AROS_LONG2BE(size);
-			databuffer->buffer[BLK_NEXT_DATA]=0;
+			if (ah->current.byte==0)
+			{
+				databuffer->buffer[BLK_DATA_SIZE]=AROS_LONG2BE(BLOCK_SIZE(ah->volume)-(6*4));
+			}
+			else if (AROS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE])<ah->current.byte)
+			{
+				databuffer->buffer[BLK_DATA_SIZE]=AROS_LONG2BE(ah->current.byte);
+			}
 			databuffer->buffer[BLK_CHECKSUM]=0;
 			databuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(ah->volume->SizeBlock,databuffer->buffer));
 		}
