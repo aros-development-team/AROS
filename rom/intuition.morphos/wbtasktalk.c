@@ -31,8 +31,8 @@ ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
         {
             /* Setup our message. */
             imsg->ExecMessage.mn_ReplyPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
-            imsg->Class                   = IDCMP_WBENCHMESSAGE;
-            imsg->Code                    = WBENCHOPEN;
+            imsg->Class                    = IDCMP_WBENCHMESSAGE;
+            imsg->Code                     = WBENCHOPEN;
 
             DEBUG_WORKBENCH(dprintf("TellWBTaskToOpenWindows: Send Msg\n"));
             /* Sends it to the handler asynchron */
@@ -125,8 +125,8 @@ ULONG TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
         {
             /* Setup our message */
             imsg->ExecMessage.mn_ReplyPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
-            imsg->Class = IDCMP_WBENCHMESSAGE;
-            imsg->Code  = WBENCHCLOSE;
+            imsg->Class     	    	   = IDCMP_WBENCHMESSAGE;
+            imsg->Code      	    	   = WBENCHCLOSE;
 
             DEBUG_WORKBENCH(dprintf("TellWBTaskToCloseWindows: Send Msg\n"));
             /* Sends it to the handler asynchron */

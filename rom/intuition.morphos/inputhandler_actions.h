@@ -14,10 +14,10 @@ struct IIHData;
 
 struct IntuiActionMsg
 {
-    struct MinNode node;
-    struct Task *task;
-    void (*handler)(struct IntuiActionMsg *, struct IntuitionBase *);
-    LONG done;
+    struct MinNode    node;
+    struct Task      *task;
+    void    	    (*handler)(struct IntuiActionMsg *, struct IntuitionBase *);
+    LONG    	      done;
 };
 
 void HandleIntuiActions(struct IIHData *iihdata, struct IntuitionBase *IntuitionBase);

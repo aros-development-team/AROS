@@ -82,10 +82,10 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 
 struct SysIData
 {
-    ULONG       type;
     struct DrawInfo *dri;
     struct Image    *frame;
-    UWORD       flags;
+    ULONG            type;
+    UWORD            flags;
 };
 
 #define SYSIFLG_GADTOOLS 1
@@ -111,94 +111,92 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
 BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
     struct SysIData *data = INST_DATA(cl, obj);
-    struct TagItem *taglist, *tag;
+    struct TagItem  *taglist, *tag;
     struct TextFont *reffont = NULL;
-    int size = SYSISIZE_MEDRES;
-    int def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
-    int def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
-    int def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
-
-    BOOL unsupported = FALSE;
-    BOOL set_width = FALSE, set_height = FALSE;
+    int     	     size = SYSISIZE_MEDRES;
+    int     	     def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
+    int     	     def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
+    int     	     def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
+    BOOL    	     unsupported = FALSE;
+    BOOL    	     set_width = FALSE, set_height = FALSE;
 
     taglist = msg->ops_AttrList;
     while ((tag = NextTagItem(&taglist)))
     {
         switch(tag->ti_Tag)
         {
-        case IA_Width:
-            set_width = TRUE;
-            break;
+            case IA_Width:
+        	set_width = TRUE;
+        	break;
 
-        case IA_Height:
-            set_height = TRUE;
-            break;
+            case IA_Height:
+        	set_height = TRUE;
+        	break;
 
-        case SYSIA_DrawInfo:
-            data->dri = (struct DrawInfo *)tag->ti_Data;
-            reffont = data->dri->dri_Font;
-            break;
+            case SYSIA_DrawInfo:
+        	data->dri = (struct DrawInfo *)tag->ti_Data;
+        	reffont = data->dri->dri_Font;
+        	break;
 
-        case SYSIA_Which:
-            data->type = tag->ti_Data;
+            case SYSIA_Which:
+        	data->type = tag->ti_Data;
 
-            D(bug("SYSIA_Which type: %d\n", data->type));
+        	D(bug("SYSIA_Which type: %d\n", data->type));
 
-            switch (tag->ti_Data)
-            {
+        	switch (tag->ti_Data)
+        	{
+    	    	    #warning "if IA_Width, IA_Height was not specified sysiclass should choose size depending on drawinfo (screen resolution)"
 
-#warning if IA_Width, IA_Height was not specified sysiclass should choose size depending on drawinfo (screen resolution)
+        	    case LEFTIMAGE:
+        	    case UPIMAGE:
+        	    case RIGHTIMAGE:
+        	    case DOWNIMAGE:
+        	    case CHECKIMAGE:
+        	    case MXIMAGE:
+        	    case DEPTHIMAGE:
+        	    case SDEPTHIMAGE:
+        	    case ZOOMIMAGE:
+        	    case CLOSEIMAGE:
+        	    case SIZEIMAGE:
+        	    case MENUCHECK:
+        	    case AMIGAKEY:
+        	    case ICONIFYIMAGE:
+        	    case LOCKIMAGE:
+        	    case JUMPIMAGE:
+        	    case MUIIMAGE:
+        	    case POPUPIMAGE:
+        	    case SNAPSHOTIMAGE:
+                	break;
 
-            case LEFTIMAGE:
-            case UPIMAGE:
-            case RIGHTIMAGE:
-            case DOWNIMAGE:
-            case CHECKIMAGE:
-            case MXIMAGE:
-            case DEPTHIMAGE:
-            case SDEPTHIMAGE:
-            case ZOOMIMAGE:
-            case CLOSEIMAGE:
-            case SIZEIMAGE:
-            case MENUCHECK:
-            case AMIGAKEY:
-            case ICONIFYIMAGE:
-            case LOCKIMAGE:
-            case JUMPIMAGE:
-            case MUIIMAGE:
-            case POPUPIMAGE:
-            case SNAPSHOTIMAGE:
-                break;
+        	    default:
+                	unsupported = TRUE;
+                	break;
+        	}
+        	break;
 
-            default:
-                unsupported = TRUE;
-                break;
-            }
-            break;
+            case SYSIA_ReferenceFont:
+        	if (tag->ti_Data) reffont = (struct TextFont *)tag->ti_Data;
+        	break;
 
-        case SYSIA_ReferenceFont:
-            if (tag->ti_Data) reffont = (struct TextFont *)tag->ti_Data;
-            break;
+            case SYSIA_Size:
+        	size = tag->ti_Data;
+        	break;
 
-        case SYSIA_Size:
-            size = tag->ti_Data;
-            break;
+        	/* private tags */
 
-            /* private tags */
+            case SYSIA_WithBorder:
+        	if (tag->ti_Data == FALSE)
+        	{
+                    data->flags |= SYSIFLG_NOBORDER;
+        	}
+        	break;
 
-        case SYSIA_WithBorder:
-            if (tag->ti_Data == FALSE)
-            {
-                data->flags |= SYSIFLG_NOBORDER;
-            }
-            break;
-
-        case SYSIA_Style:
-            if (tag->ti_Data == SYSISTYLE_GADTOOLS)
-            {
-                data->flags |= SYSIFLG_GADTOOLS;
-            }
-            break;
+            case SYSIA_Style:
+        	if (tag->ti_Data == SYSISTYLE_GADTOOLS)
+        	{
+                    data->flags |= SYSIFLG_GADTOOLS;
+        	}
+        	break;
 
         } /* switch(tag->ti_Tag) */
 
@@ -213,128 +211,128 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
     switch(data->type)
     {
-    case LEFTIMAGE:
-    case RIGHTIMAGE:
-    #if USE_AROS_DEFSIZE
-    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-    #else
-        def_low_width = 16;
-        def_med_width = 16;
-        def_high_width = 23;
-        def_low_height = 11;
-        def_med_height = 10;
-        def_high_height = 22;
-    #endif
-        break;
+	case LEFTIMAGE:
+	case RIGHTIMAGE:
+	#if USE_AROS_DEFSIZE
+    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+	#else
+            def_low_width = 16;
+            def_med_width = 16;
+            def_high_width = 23;
+            def_low_height = 11;
+            def_med_height = 10;
+            def_high_height = 22;
+	#endif
+            break;
 
-    case UPIMAGE:
-    case DOWNIMAGE:
-    #if USE_AROS_DEFSIZE
-    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-    #else
-        def_low_width = 13;
-        def_med_width = 18;
-        def_high_width = 23;
-        def_low_height = 11;
-        def_med_height = 11;
-        def_high_height = 22;
-    #endif
-        break;
+	case UPIMAGE:
+	case DOWNIMAGE:
+	#if USE_AROS_DEFSIZE
+    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+	#else
+            def_low_width = 13;
+            def_med_width = 18;
+            def_high_width = 23;
+            def_low_height = 11;
+            def_med_height = 11;
+            def_high_height = 22;
+	#endif
+            break;
 
-    case DEPTHIMAGE:
-    case ZOOMIMAGE:
-    case ICONIFYIMAGE:
-    case LOCKIMAGE:
-    case MUIIMAGE:
-    case POPUPIMAGE:
-    case SNAPSHOTIMAGE:
-    case JUMPIMAGE:
-    #if USE_AROS_DEFSIZE
-    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-    #else
-        def_low_width = 18;
-        def_med_width = 24;
-        def_high_width = 24;
-    #endif
-        if ((data->type == DEPTHIMAGE)||(data->type == ZOOMIMAGE)) IM(obj)->LeftEdge = -1;
-        break;
+	case DEPTHIMAGE:
+	case ZOOMIMAGE:
+	case ICONIFYIMAGE:
+	case LOCKIMAGE:
+	case MUIIMAGE:
+	case POPUPIMAGE:
+	case SNAPSHOTIMAGE:
+	case JUMPIMAGE:
+	#if USE_AROS_DEFSIZE
+    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+	#else
+            def_low_width = 18;
+            def_med_width = 24;
+            def_high_width = 24;
+	#endif
+            if ((data->type == DEPTHIMAGE)||(data->type == ZOOMIMAGE)) IM(obj)->LeftEdge = -1;
+            break;
 
-    case SDEPTHIMAGE:
-    #if USE_AROS_DEFSIZE
-    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-    #else
-        def_low_width = 17;
-        def_med_width = 23;
-        def_high_width = 23;
-    #endif
-        break;
+	case SDEPTHIMAGE:
+	#if USE_AROS_DEFSIZE
+    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+	#else
+            def_low_width = 17;
+            def_med_width = 23;
+            def_high_width = 23;
+	#endif
+            break;
 
-    case CLOSEIMAGE:
-    #if USE_AROS_DEFSIZE
-    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-    #else
-        def_low_width = 15;
-        def_med_width = 20;
-        def_high_width = 20;
-    #endif
-        break;
+	case CLOSEIMAGE:
+	#if USE_AROS_DEFSIZE
+    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+	#else
+            def_low_width = 15;
+            def_med_width = 20;
+            def_high_width = 20;
+	#endif
+            break;
 
-    case SIZEIMAGE:
-    #if USE_AROS_DEFSIZE
-    	def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
-	def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
-    #else
-        def_low_width = 13;
-        def_med_width = 18;
-        def_high_width = 18;
-        def_low_height = 11;
-        def_med_height = 10;
-        def_high_height = 10;
-    #endif
-        break;
+	case SIZEIMAGE:
+	#if USE_AROS_DEFSIZE
+    	    def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+	    def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
+	#else
+            def_low_width = 13;
+            def_med_width = 18;
+            def_high_width = 18;
+            def_low_height = 11;
+            def_med_height = 10;
+            def_high_height = 10;
+	#endif
+            break;
 
-    case MENUCHECK:
-        def_low_width  = reffont->tf_XSize * 3 / 2;
-        def_low_height = reffont->tf_YSize;
-        size = SYSISIZE_LOWRES;
-        break;
-
-    case AMIGAKEY:
-        if (MENUS_AMIGALOOK)
-        {
-            def_low_width  = reffont->tf_XSize * 2;
+	case MENUCHECK:
+            def_low_width  = reffont->tf_XSize * 3 / 2;
             def_low_height = reffont->tf_YSize;
-        }
-        else
-        {
-            def_low_width  = reffont->tf_XSize * 2;
+            size = SYSISIZE_LOWRES;
+            break;
+
+	case AMIGAKEY:
+            if (MENUS_AMIGALOOK)
+            {
+        	def_low_width  = reffont->tf_XSize * 2;
+        	def_low_height = reffont->tf_YSize;
+            }
+            else
+            {
+        	def_low_width  = reffont->tf_XSize * 2;
+        	def_low_height = reffont->tf_YSize + 1;
+            }
+            size = SYSISIZE_LOWRES;
+            break;
+
+	case MXIMAGE:
+            /*
+             * We really need some aspect ratio here..this sucks
+             */
+            def_low_width  = reffont->tf_XSize * 3 - 1;
             def_low_height = reffont->tf_YSize + 1;
-        }
-        size = SYSISIZE_LOWRES;
-        break;
+            size = SYSISIZE_LOWRES;
+            break;
 
-    case MXIMAGE:
-        /*
-         * We really need some aspect ratio here..this sucks
-         */
-        def_low_width  = reffont->tf_XSize * 3 - 1;
-        def_low_height = reffont->tf_YSize + 1;
-        size = SYSISIZE_LOWRES;
-        break;
-
-    case CHECKIMAGE:
-        /*
-         * We really need some aspect ratio here..this sucks
-         */
-        def_low_width  = 26;//reffont->tf_XSize * 2;
-        def_low_height = reffont->tf_YSize + 3;
-        size = SYSISIZE_LOWRES;
-        break;
+	case CHECKIMAGE:
+            /*
+             * We really need some aspect ratio here..this sucks
+             */
+            def_low_width  = 26;//reffont->tf_XSize * 2;
+            def_low_height = reffont->tf_YSize + 3;
+            size = SYSISIZE_LOWRES;
+            break;
 
     } /* switch(data->type) */
 
@@ -353,7 +351,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
     struct SysIData *data;
-    Object *obj;
+    Object  	    *obj;
 
     D(bug("sysi_new()\n"));
     obj = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
@@ -363,13 +361,14 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     D(bug("sysi_new,: obj=%p\n", obj));
 
     data = INST_DATA(cl, obj);
-    data->type = 0L;
-    data->dri = NULL;
+    data->type  = 0L;
+    data->dri   = NULL;
     data->frame = NULL;
     data->flags = 0;
+    
     if (!sysi_setnew(cl, obj, (struct opSet *)msg))
     {
-        ULONG method = OM_DISPOSE;
+        STACKULONG method = OM_DISPOSE;
         CoerceMethodA(cl, obj, (Msg)&method);
         return NULL;
     }
@@ -378,58 +377,58 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 
     switch (data->type)
     {
-    case CHECKIMAGE:
+	case CHECKIMAGE:
         {
             struct TagItem tags[] =
-                {
-                    {
-                        IA_FrameType, FRAME_BUTTON
-                    },
-                    {IA_EdgesOnly, FALSE},
-                    {TAG_MORE, 0L}
-                };
+            {
+                {IA_FrameType, FRAME_BUTTON },
+                {IA_EdgesOnly, FALSE    	},
+                {TAG_MORE	    	    	}
+            };
 
             tags[2].ti_Data = (IPTR)msg->ops_AttrList;
+
             data->frame = NewObjectA(NULL, FRAMEICLASS, tags);
             if (!data->frame)
             {
-                ULONG method = OM_DISPOSE;
+                STACKULONG method = OM_DISPOSE;
                 CoerceMethodA(cl, obj, (Msg)&method);
                 return NULL;
             }
             break;
         }
 
-        /* Just to prevent it from reaching default: */
-    case MXIMAGE:
-    case LEFTIMAGE:
-    case UPIMAGE:
-    case RIGHTIMAGE:
-    case DOWNIMAGE:
+            /* Just to prevent it from reaching default: */
+	case MXIMAGE:
+	case LEFTIMAGE:
+	case UPIMAGE:
+	case RIGHTIMAGE:
+	case DOWNIMAGE:
 
-    case SDEPTHIMAGE:
-    case DEPTHIMAGE:
-    case ZOOMIMAGE:
-    case CLOSEIMAGE:
-    case SIZEIMAGE:
+	case SDEPTHIMAGE:
+	case DEPTHIMAGE:
+	case ZOOMIMAGE:
+	case CLOSEIMAGE:
+	case SIZEIMAGE:
 
-    case MENUCHECK:
-    case AMIGAKEY:
+	case MENUCHECK:
+	case AMIGAKEY:
 
-    case ICONIFYIMAGE:
-    case LOCKIMAGE:
-    case MUIIMAGE:
-    case POPUPIMAGE:
-    case SNAPSHOTIMAGE:
-    case JUMPIMAGE:
-        break;
+	case ICONIFYIMAGE:
+	case LOCKIMAGE:
+	case MUIIMAGE:
+	case POPUPIMAGE:
+	case SNAPSHOTIMAGE:
+	case JUMPIMAGE:
+            break;
 
-    default:
-        {
-            ULONG method = OM_DISPOSE;
-            CoerceMethodA(cl, obj, (Msg)&method);
-        }
-        return NULL;
+	default:
+            {
+        	STACKULONG method = OM_DISPOSE;
+		
+        	CoerceMethodA(cl, obj, (Msg)&method);
+            }
+            return NULL;
     }
 
     return obj;
@@ -454,18 +453,18 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 {
     struct SysIData *data = INST_DATA(cl, obj);
     struct RastPort *rport = msg->imp_RPort;
-    WORD left = IM(obj)->LeftEdge + msg->imp_Offset.X;
-    WORD top = IM(obj)->TopEdge + msg->imp_Offset.Y;
-    UWORD width = IM(obj)->Width;
-    UWORD height = IM(obj)->Height;
-    WORD right = left + width - 1;
-    WORD bottom = top + height - 1;
+    WORD    	     left = IM(obj)->LeftEdge + msg->imp_Offset.X;
+    WORD    	     top = IM(obj)->TopEdge + msg->imp_Offset.Y;
+    UWORD   	     width = IM(obj)->Width;
+    UWORD   	     height = IM(obj)->Height;
+    WORD    	     right = left + width - 1;
+    WORD    	     bottom = top + height - 1;
 
     SetDrMd(rport, JAM1);
 
     switch(data->type)
     {
-    case CHECKIMAGE:
+    	case CHECKIMAGE:
         {
             WORD h_spacing = width / 4;
             WORD v_spacing = height / 4;
@@ -486,21 +485,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 height -= v_spacing * 2;
 
                 SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-#if 0
-                draw_thick_line(cl, rport, left, top + height/2, left + width/3, bottom, 0);
-                draw_thick_line(cl, rport, left + width/3, bottom, right - 2, top, 0);
-                Move(rport, right -1 , top);
-                Draw(rport, right, top);
-#else
                 draw_thick_line(cl, rport, left, top + height / 3 , left, bottom, 0);
                 draw_thick_line(cl, rport, left + 1, bottom, right - 1, top, 0);
-#endif
-
             }
             break;
         }
-    case MXIMAGE:
+	
+    	case MXIMAGE:
         {
             BOOL selected = FALSE;
             WORD col1 = SHINEPEN;
@@ -516,7 +507,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             SetAPen(rport, data->dri->dri_Pens[BACKGROUNDPEN]);
             RectFill(rport, left, top, right, bottom);
 
-#if 0
+    	#if 0
             /* THICK MX IMAGE */
 
             SetAPen(rport, data->dri->dri_Pens[col1]);
@@ -554,7 +545,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                     RectFill(rport, left, top, right, bottom);
                 }
             }
-#else
+    	#else
             /* THIN MX IMAGE */
 
             SetAPen(rport, data->dri->dri_Pens[col1]);
@@ -597,14 +588,14 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
                 }
             }
 
-#endif
+    	#endif
             break;
         }
 
-    case LEFTIMAGE:
+    	case LEFTIMAGE:
         {
             UWORD hspacing,vspacing;
-            WORD cy;
+            WORD  cy;
 
             hspacing = HSPACING;
             vspacing = VSPACING;
@@ -613,6 +604,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 hspacing = HSPACING_MIDDLE;
             }
+	    
             if (width <= 10)
             {
                 hspacing = HSPACING_SMALL;
@@ -622,6 +614,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 vspacing = VSPACING_MIDDLE;
             }
+	    
             if (height <= 10)
             {
                 vspacing = VSPACING_SMALL;
@@ -691,10 +684,10 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case UPIMAGE:
+    	case UPIMAGE:
         {
             UWORD hspacing,vspacing;
-            WORD cx;
+            WORD  cx;
 
             hspacing = HSPACING;
             vspacing = VSPACING;
@@ -703,6 +696,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 hspacing = HSPACING_MIDDLE;
             }
+	    
             if (width <= 10)
             {
                 hspacing = HSPACING_SMALL;
@@ -712,6 +706,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 vspacing = VSPACING_MIDDLE;
             }
+	    
             if (height <= 10)
             {
                 vspacing = VSPACING_SMALL;
@@ -781,10 +776,10 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case RIGHTIMAGE:
+    	case RIGHTIMAGE:
         {
             UWORD hspacing,vspacing;
-            WORD cy;
+            WORD  cy;
 
             hspacing = HSPACING;
             vspacing = VSPACING;
@@ -793,6 +788,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 hspacing = HSPACING_MIDDLE;
             }
+	    
             if (width <= 10)
             {
                 hspacing = HSPACING_SMALL;
@@ -802,6 +798,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 vspacing = VSPACING_MIDDLE;
             }
+	    
             if (height <= 10)
             {
                 vspacing = VSPACING_SMALL;
@@ -872,11 +869,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case DOWNIMAGE:
+    	case DOWNIMAGE:
         {
             UWORD hspacing,vspacing;
-            WORD cx;
-
+            WORD  cx;
+ 
             hspacing = HSPACING;
             vspacing = VSPACING;
 
@@ -884,6 +881,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 hspacing = HSPACING_MIDDLE;
             }
+	    
             if (width <= 10)
             {
                 hspacing = HSPACING_SMALL;
@@ -893,6 +891,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             {
                 vspacing = VSPACING_MIDDLE;
             }
+	    
             if (height <= 10)
             {
                 vspacing = VSPACING_SMALL;
@@ -963,14 +962,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case DEPTHIMAGE:
-    case SDEPTHIMAGE:
+    	case DEPTHIMAGE:
+    	case SDEPTHIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
-            UWORD bg;
-
-            WORD h_spacing;
-            WORD v_spacing;
+            UWORD  bg;
+            WORD   h_spacing;
+            WORD   v_spacing;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
@@ -1071,14 +1069,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-
-
-
-    case CLOSEIMAGE:
+    	case CLOSEIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
-            WORD h_spacing;
-            WORD v_spacing;
+            WORD   h_spacing;
+            WORD   v_spacing;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
@@ -1117,12 +1112,12 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case ZOOMIMAGE:
+    	case ZOOMIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
-            UWORD bg;
-            WORD h_spacing;
-            WORD v_spacing;
+            UWORD  bg;
+            WORD   h_spacing;
+            WORD   v_spacing;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
@@ -1177,14 +1172,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         }
 
 
-    case SIZEIMAGE:
+    	case SIZEIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
-            UWORD bg;
-            WORD h_spacing;
-            WORD v_spacing;
-
-            WORD x, y;
+            UWORD  bg;
+            WORD   h_spacing;
+            WORD   v_spacing;
+            WORD   x, y;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
@@ -1221,6 +1215,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             if (msg->imp_State != IDS_INACTIVENORMAL)
             {
                 SetAPen(rport, pens[SHINEPEN]);
+		
                 for(y = top; y <= bottom; y++)
                 {
                     x = left + (bottom - y) * width / height;
@@ -1238,7 +1233,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case MENUCHECK:
+    	case MENUCHECK:
         {
             UWORD *pens = data->dri->dri_Pens;
 
@@ -1260,12 +1255,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case AMIGAKEY:
+    	case AMIGAKEY:
         {
-            UWORD *pens = data->dri->dri_Pens;
-
+            UWORD   	    *pens = data->dri->dri_Pens;
             struct TextFont *oldfont;
-            UBYTE oldstyle;
+            UBYTE   	     oldstyle;
             
             if (MENUS_AMIGALOOK)
             {
@@ -1343,8 +1337,8 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         }
 
         /* MUI and other non-std images */
-#if 0
-    case MUIIMAGE:
+    #if 0
+    	case MUIIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
             UWORD bg;
@@ -1374,13 +1368,13 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case SNAPSHOTIMAGE:
-    case POPUPIMAGE:
-    case ICONIFYIMAGE:
-    case LOCKIMAGE:
+    	case SNAPSHOTIMAGE:
+    	case POPUPIMAGE:
+    	case ICONIFYIMAGE:
+    	case LOCKIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
-            UWORD bg;
+            UWORD  bg;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
@@ -1453,10 +1447,10 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
             break;
         }
 
-    case JUMPIMAGE:
+    	case JUMPIMAGE:
         {
             UWORD *pens = data->dri->dri_Pens;
-            UWORD bg;
+            UWORD  bg;
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
@@ -1482,7 +1476,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 
             break;
         }
-#endif
+    #endif
     } /* switch (image type) */
 
     return;
@@ -1498,35 +1492,35 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
 {
     AROS_USERFUNC_INIT
 
-    IPTR retval = 0UL;
     struct SysIData *data;
+    IPTR    	     retval = 0UL;
 
     switch (msg->MethodID)
     {
-    case OM_NEW:
-        retval = (IPTR)sysi_new(cl, (Class *)obj, (struct opSet *)msg);
-        break;
+	case OM_NEW:
+            retval = (IPTR)sysi_new(cl, (Class *)obj, (struct opSet *)msg);
+            break;
 
-    case OM_DISPOSE:
-        data = INST_DATA(cl, obj);
-        DisposeObject(data->frame);
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+	case OM_DISPOSE:
+            data = INST_DATA(cl, obj);
+            DisposeObject(data->frame);
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
 
-    case OM_SET:
-        data = INST_DATA(cl, obj);
-        if (data->frame)
-            DoMethodA((Object *)data->frame, msg);
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+	case OM_SET:
+            data = INST_DATA(cl, obj);
+            if (data->frame)
+        	DoMethodA((Object *)data->frame, msg);
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
 
-    case IM_DRAW:
-        sysi_draw(cl, obj, (struct impDraw *)msg);
-        break;
+	case IM_DRAW:
+            sysi_draw(cl, obj, (struct impDraw *)msg);
+            break;
 
-    default:
-        retval = DoSuperMethodA(cl, obj, msg);
-        break;
+	default:
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
     }
 
     return retval;
@@ -1566,19 +1560,19 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
     switch (state)
     {
+	case IDS_NORMAL:
+	case IDS_SELECTED:
+            bg = pens[FILLPEN];
+            break;
 
-    case IDS_NORMAL:
-    case IDS_SELECTED:
-        bg = pens[FILLPEN];
-        break;
-
-    case IDS_INACTIVENORMAL:
-        bg = pens[BACKGROUNDPEN];
-        break;
-    default:
-        bg = pens[BACKGROUNDPEN];
-        break;
+	case IDS_INACTIVENORMAL:
+            bg = pens[BACKGROUNDPEN];
+            break;
+	default:
+            bg = pens[BACKGROUNDPEN];
+            break;
     }
+    
     return bg;
 }
 
@@ -1595,37 +1589,37 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 
     switch(which)
     {
-    case CLOSEIMAGE:
-        /* draw separator line at the right side */
-        SetAPen(rp, pens[SHINEPEN]);
-        RectFill(rp, right, top, right, bottom - 1);
-        SetAPen(rp, pens[SHADOWPEN]);
-        WritePixel(rp, right, bottom);
+	case CLOSEIMAGE:
+            /* draw separator line at the right side */
+            SetAPen(rp, pens[SHINEPEN]);
+            RectFill(rp, right, top, right, bottom - 1);
+            SetAPen(rp, pens[SHADOWPEN]);
+            WritePixel(rp, right, bottom);
 
-        right--;
-        break;
+            right--;
+            break;
 
-    case ZOOMIMAGE:
-    case DEPTHIMAGE:
-    case SDEPTHIMAGE:
-        /* draw separator line at the left side */
-        SetAPen(rp, pens[SHINEPEN]);
-        WritePixel(rp, left, top);
-        SetAPen(rp, pens[SHADOWPEN]);
-        RectFill(rp, left, top + 1, left, bottom);
+	case ZOOMIMAGE:
+	case DEPTHIMAGE:
+	case SDEPTHIMAGE:
+            /* draw separator line at the left side */
+            SetAPen(rp, pens[SHINEPEN]);
+            WritePixel(rp, left, top);
+            SetAPen(rp, pens[SHADOWPEN]);
+            RectFill(rp, left, top + 1, left, bottom);
 
-        left++;
-        break;
+            left++;
+            break;
 
-    case UPIMAGE:
-    case DOWNIMAGE:
-        leftedgegodown = TRUE;
-        break;
+	case UPIMAGE:
+	case DOWNIMAGE:
+            leftedgegodown = TRUE;
+            break;
 
-    case LEFTIMAGE:
-    case RIGHTIMAGE:
-        topedgegoright = TRUE;
-        break;
+	case LEFTIMAGE:
+	case RIGHTIMAGE:
+            topedgegoright = TRUE;
+            break;
     }
 
     if (left == 0) leftedgegodown = TRUE;

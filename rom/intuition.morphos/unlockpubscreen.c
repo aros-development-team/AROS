@@ -51,10 +51,10 @@ AROS_LH2(void, UnlockPubScreen,
  
 *****************************************************************************/
 {
-    struct List *publist;
-
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    struct List *publist;
 
     DEBUG_UNLOCKPUBSCREEN(dprintf("UnlockPubScreen: name <%s> screen %p\n",
                                   name ? name : "NULL", screen));

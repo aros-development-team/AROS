@@ -13,8 +13,8 @@
 
 struct WindowToFrontActionMsg
 {
-    struct IntuiActionMsg msg;
-    struct Window *window;
+    struct IntuiActionMsg    msg;
+    struct Window   	    *window;
 };
 
 static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
@@ -76,10 +76,10 @@ AROS_LH1(void, WindowToFront,
 static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
                               struct IntuitionBase *IntuitionBase)
 {
-    struct Window *window = msg->window;
-    struct Layer *layer = WLAYER(window);
-    struct Screen *screen = window->WScreen;
-    struct Requester *req;
+    struct Window   	*window = msg->window;
+    struct Layer    	*layer = WLAYER(window);
+    struct Screen   	*screen = window->WScreen;
+    struct Requester 	*req;
 
     DEBUG_WINDOWTOFRONT(dprintf("IntWindowToFront: Window 0x%lx\n", window));
 
@@ -87,8 +87,7 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
 
     if (!(layer->Flags & LAYERBACKDROP))
     {
-        LockLayers(&screen->LayerInfo);
-        //LOCK_REFRESH(screen);
+        LOCK_REFRESH(screen);
 
         /* GZZ or regular window? */
         if (BLAYER(window))
@@ -110,8 +109,7 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
 
         CheckLayers(screen, IntuitionBase);
 
-        //UNLOCK_REFRESH(screen);
-        UnlockLayers(&screen->LayerInfo);
+        UNLOCK_REFRESH(screen);
 
     }
 

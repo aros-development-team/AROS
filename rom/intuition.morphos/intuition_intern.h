@@ -138,25 +138,25 @@ void * memclr(APTR, ULONG);
     typeof(b) _b = (b); \
     _a > _b ? _b : _a;})
 
-#define EXTENDWORD(x) x = (LONG)((WORD)x);
-#define EXTENDUWORD(x) x = (ULONG)((UWORD)x);
+#define EXTENDWORD(x) 	    	x = (LONG)((WORD)x);
+#define EXTENDUWORD(x)      	x = (ULONG)((UWORD)x);
 
 /* SANITY CHECK MACRO */
 //#define DEBUG_SANITYCHECK
 
 #ifdef DEBUG_SANITYCHECK
-#define SANITY_CHECK(x) if (!((ULONG)x)) {dprintf("Losing sanity in %s line %d\n",__FILE__,__LINE__); return;};
-#define SANITY_CHECKR(x,v) if (!((ULONG)x)) {dprintf("Losing sanity in %s line %d\n",__FILE__,__LINE__); return v;};
+#define SANITY_CHECK(x)     	if (!((IPTR)x)) {dprintf("Losing sanity in %s line %d\n",__FILE__,__LINE__); return;};
+#define SANITY_CHECKR(x,v)  	if (!((IPTR)x)) {dprintf("Losing sanity in %s line %d\n",__FILE__,__LINE__); return v;};
 #else
-#define SANITY_CHECK(x) if (!((ULONG)x)) return;
-#define SANITY_CHECKR(x,v) if (!((ULONG)x)) return v;
+#define SANITY_CHECK(x)     	if (!((IPTR)x)) return;
+#define SANITY_CHECKR(x,v)  	if (!((IPTR)x)) return v;
 #endif
 
 /* Options */
 
 #define MENUS_BACKFILL  TRUE
 
-#define MENUS_AMIGALOOK                ((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_3DMENUS) == 0)
+#define MENUS_AMIGALOOK        ((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_3DMENUS) == 0)
 /* --- Values --- */
 #define MENULOOK_3D            0
 #define MENULOOK_CLASSIC       1
@@ -190,8 +190,8 @@ void * memclr(APTR, ULONG);
 
 //#define USEWINDOWLOCK
 #ifdef USEWINDOWLOCK
-#define LOCKWINDOW ObtainSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
-#define UNLOCKWINDOW ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
+#define LOCKWINDOW  	    	    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
+#define UNLOCKWINDOW 	    	    	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
 #else
 #define LOCKWINDOW
 #define UNLOCKWINDOW
@@ -200,8 +200,8 @@ void * memclr(APTR, ULONG);
 
 #define USEGADGETLOCK
 #ifdef USEGADGETLOCK
-#define LOCKGADGET ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-#define UNLOCKGADGET ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+#define LOCKGADGET  	    	    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+#define UNLOCKGADGET 	    	    	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 #define LOCKWINDOWLAYERS(w) ;
 #define UNLOCKWINDOWLAYERS(w) ;
 #else
@@ -215,8 +215,8 @@ void * memclr(APTR, ULONG);
         UnlockLayerInfo(&w->WScreen->LayerInfo);
 #endif
 
-#define WLAYER(w) (((struct IntWindow *)(w))->wlayer)
-#define BLAYER(w) (((struct IntWindow *)(w))->borderlayer)
+#define WLAYER(w)   	    	    	    (((struct IntWindow *)(w))->wlayer)
+#define BLAYER(w)   	    	    	    (((struct IntWindow *)(w))->borderlayer)
 
 //#define TIMEVALWINDOWACTIVATION
 
@@ -226,23 +226,23 @@ void * memclr(APTR, ULONG);
 
    Unfortunately this can fail with some programs, like DOpus 4.x text viewer */
 
-#define PROP_RENDER_OPTIMIZATION 0
+#define PROP_RENDER_OPTIMIZATION    	    0
 
-#define SINGLE_SETPOINTERPOS_PER_EVENTLOOP 1
+#define SINGLE_SETPOINTERPOS_PER_EVENTLOOP  1
 
 #ifndef LIFLG_SUPPORTS_OFFSCREEN_LAYERS
    /* Defined in <graphics/layers.h>, but apparently not on MorphOS. */
-#  define LIFLG_SUPPORTS_OFFSCREEN_LAYERS 2
+#  define LIFLG_SUPPORTS_OFFSCREEN_LAYERS   2
 #endif
 
-#define INTUITIONNAME    "intuition.library"
-#define MENUBARLABELCLASS "menubarlabelclass"
+#define INTUITIONNAME       	    	    "intuition.library"
+#define MENUBARLABELCLASS   	    	    "menubarlabelclass"
 
-#define DEFPUBSCREEN TRUE
+#define DEFPUBSCREEN 	    	    	    TRUE
 
-#define USE_NEWDISPLAYBEEP 1
+#define USE_NEWDISPLAYBEEP  	    	    1
 
-#define TITLEBUFFERLEN 255
+#define TITLEBUFFERLEN      	    	    255
 
 #ifdef __MORPHOS__
 #if INCLUDE_VERSION < 50
@@ -264,12 +264,12 @@ void * memclr(APTR, ULONG);
 #define GM_DOMAIN 7
 struct gpDomain
 {
-    STACKULONG      MethodID;   /* GM_DOMAIN */
-    struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
-    struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
-    STACKLONG       gpd_Which;  /* see below */
-    struct IBox         gpd_Domain; /* Resulting domain. */
-    struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
+    STACKULONG           MethodID;   /* GM_DOMAIN */
+    struct GadgetInfo 	*gpd_GInfo;  /* see <intuition/cghooks.h> */
+    struct RastPort   	*gpd_RPort;  /* RastPort to calculate dimensions for. */
+    STACKLONG       	 gpd_Which;  /* see below */
+    struct IBox          gpd_Domain; /* Resulting domain. */
+    struct TagItem  	*gpd_Attrs;  /* Additional attributes. None defined,
                            yet. */
 };
 
@@ -298,10 +298,10 @@ is near screen boundaries and offscreen is disabled. msg = gpInput*/
 
 struct LayerContext
 {
-    struct Region       * clipregion;
-    WORD            scroll_x;
-    WORD            scroll_y;
-    WORD            nestcount;
+    struct Region       *clipregion;
+    WORD            	 scroll_x;
+    WORD            	 scroll_y;
+    WORD            	 nestcount;
 };
 
 
@@ -359,187 +359,187 @@ struct Color32
     ULONG blue;
 };
 
-#define COLORTABLEENTRIES   32  //8
+#define COLORTABLEENTRIES   	32  //8
 
 struct IntScreen;
 
-#define RESOURCELIST_HASHSIZE 256
+#define RESOURCELIST_HASHSIZE 	256
 
-#define RESOURCE_WINDOW 1
+#define RESOURCE_WINDOW     	1
 
 struct HashNode
 {
     struct MinNode node;
-    UWORD         type;
-    APTR          resource;
+    UWORD          type;
+    APTR           resource;
 };
 
 /* IntuitionBase */
 struct IntIntuitionBase
 {
-    struct IntuitionBase    IBase;
+    struct IntuitionBase    	 IBase;
 #ifdef __MORPHOS__
-    WORD                   _MinXMouse,_MaxXMouse;   /* Old 1.3 Base entries*/
-    WORD                   _MinYMouse,_MaxYMouse;   /* Old 1.3 Base entries*/
-    ULONG                  _StartSecs,_StartMicros; /* Old 1.3 Base entries*/
-    char                   *SystemRequestTitle; /* written by locale as it seems..what a crappy interface*/
-    char                   *WorkbenchTitle; /* written by locale as it seems..what a crappy interface*/
+    WORD                    	 _MinXMouse,_MaxXMouse;   /* Old 1.3 Base entries*/
+    WORD                    	 _MinYMouse,_MaxYMouse;   /* Old 1.3 Base entries*/
+    ULONG                   	 _StartSecs,_StartMicros; /* Old 1.3 Base entries*/
+    char                    	*SystemRequestTitle; /* written by locale as it seems..what a crappy interface*/
+    char                    	*WorkbenchTitle; /* written by locale as it seems..what a crappy interface*/
 
     /*
      * savety pad for intuitionbase accesses
      * probably needs to be smarter
      */
-    UBYTE                   Pad[0x800];
+    UBYTE                   	 Pad[0x800];
 #endif
 
     /* Put local shit here, invisible for the user */
-    struct GfxBase         *GfxBase;
-    struct Library         *LayersBase;
-    struct ExecBase        *SysBase;
-    struct UtilityBase     *UtilBase;
-    struct Library         *KeymapBase;
-    struct Library         *DOSBase;
+    struct GfxBase          	*GfxBase;
+    struct Library          	*LayersBase;
+    struct ExecBase         	*SysBase;
+    struct UtilityBase      	*UtilBase;
+    struct Library          	*KeymapBase;
+    struct Library          	*DOSBase;
 #ifdef __MORPHOS__
-    struct Library         *CyberGfxBase;
-    struct Library         *MUIMasterBase;
+    struct Library          	*CyberGfxBase;
+    struct Library          	*MUIMasterBase;
 #endif
-    struct Library         *LocaleBase;
+    struct Library          	*LocaleBase;
 
     
-    struct Library         *InputBase;
-    struct Library         *TimerBase;
-    struct MsgPort         *TimerMP;
-    struct timerequest     *TimerIO;
+    struct Library          	*InputBase;
+    struct Library          	*TimerBase;
+    struct MsgPort          	*TimerMP;
+    struct timerequest      	*TimerIO;
 
-    struct MsgPort         *WorkBenchMP;
-    struct Screen          *WorkBench;
-    struct SignalSemaphore *IBaseLock;
+    struct MsgPort          	*WorkBenchMP;
+    struct Screen           	*WorkBench;
+    struct SignalSemaphore  	*IBaseLock;
 
     /* Intuition input handlers replyport. This one is set
     int rom/inputhandler.c/InitIIH()
     */
-    struct MsgPort         *IntuiReplyPort;
-    struct MinList         *IntuiActionQueue;
-    struct IOStdReq        *InputIO;
-    struct MsgPort         *InputMP;
-    BOOL                    InputDeviceOpen;
-    struct Interrupt       *InputHandler;
+    struct MsgPort          	*IntuiReplyPort;
+    struct MinList          	*IntuiActionQueue;
+    struct IOStdReq         	*InputIO;
+    struct MsgPort          	*InputMP;
+    BOOL                    	 InputDeviceOpen;
+    struct Interrupt        	*InputHandler;
 
-    struct Hook            *GlobalEditHook;
+    struct Hook             	*GlobalEditHook;
     /* The default global edit hook */
-    struct Hook             DefaultEditHook;
+    struct Hook             	 DefaultEditHook;
 
 
-    APTR                    DriverData; /* Pointer which the driver may use */
+    APTR                    	 DriverData; /* Pointer which the driver may use */
 
-    struct Screen          *DefaultPubScreen;
-    struct SignalSemaphore  PubScrListLock;
-    struct MinList          PubScreenList;
-    UWORD                   pubScrGlobalMode;
+    struct Screen           	*DefaultPubScreen;
+    struct SignalSemaphore  	 PubScrListLock;
+    struct MinList          	 PubScreenList;
+    UWORD                   	 pubScrGlobalMode;
 
-    struct SignalSemaphore  GadgetLock;
-    struct SignalSemaphore  MenuLock;
-    struct SignalSemaphore  WindowLock;
-    struct SignalSemaphore  IntuiActionLock;
-    struct SignalSemaphore  InputHandlerLock;
-    struct LayerContext     BackupLayerContext;
+    struct SignalSemaphore  	 GadgetLock;
+    struct SignalSemaphore  	 MenuLock;
+    struct SignalSemaphore   	 WindowLock;
+    struct SignalSemaphore  	 IntuiActionLock;
+    struct SignalSemaphore  	 InputHandlerLock;
+    struct LayerContext     	 BackupLayerContext;
 
-    struct IClass          *dragbarclass;
-    struct IClass          *sizebuttonclass;
-    struct IClass          *propgclass;
+    struct IClass           	*dragbarclass;
+    struct IClass           	*sizebuttonclass;
+    struct IClass           	*propgclass;
 
-    APTR                   *mosmenuclass;
+    APTR                    	*mosmenuclass;
 
-    struct Preferences     *DefaultPreferences;
-    struct Preferences     *ActivePreferences;
+    struct Preferences      	*DefaultPreferences;
+    struct Preferences      	*ActivePreferences;
 
-    struct MsgPort         *MenuHandlerPort;
-    BOOL                    MenusActive;
+    struct MsgPort          	*MenuHandlerPort;
+    BOOL                    	 MenusActive;
 
-    struct TextFont        *ScreenFont;
-    struct TextFont        *TopazFont;
+    struct TextFont         	*ScreenFont;
+    struct TextFont         	*TopazFont;
 
     /* Dos function DisplayError() before intuition.library patched it */
-    APTR                    OldDisplayErrorFunc;
+    APTR                    	 OldDisplayErrorFunc;
 
-    struct SignalSemaphore  ClassListLock;
-    struct MinList          ClassList;
-    struct IClass           RootClass;
+    struct SignalSemaphore  	 ClassListLock;
+    struct MinList          	 ClassList;
+    struct IClass           	 RootClass;
 
 #ifdef __MORPHOS__
-    struct ViewExtra       *ViewLordExtra;
-    LONG                    SpriteNum;
+    struct ViewExtra        	*ViewLordExtra;
+    LONG                    	 SpriteNum;
 #endif
 
 #ifdef SKINS
-    ULONG                  *SmallMenuPool;
+    ULONG                   	*SmallMenuPool;
 #endif
-    ULONG                  *IDCMPPool;
+    ULONG                   	*IDCMPPool;
 
-    struct IScreenModePrefs ScreenModePrefs;
-    struct IIControlPrefs   IControlPrefs;
+    struct IScreenModePrefs 	 ScreenModePrefs;
+    struct IIControlPrefs   	 IControlPrefs;
 #ifdef SKINS
-    struct IAction         *IControlActions;
-    struct IControlExtensions   IControlExtensions;
-    ULONG                   NumIControlActions;
-    struct InputPrefsExt    InputPrefsExt;
+    struct IAction          	*IControlActions;
+    struct IControlExtensions    IControlExtensions;
+    ULONG                   	 NumIControlActions;
+    struct InputPrefsExt    	 InputPrefsExt;
 #endif
-    struct IClass          *pointerclass;
-    Object                 *DefaultPointer;
-    Object                 *BusyPointer;
-    UWORD                   DriPens2[NUMDRIPENS];
-    UWORD                   DriPens4[NUMDRIPENS];
-    UWORD                   DriPens8[NUMDRIPENS];
-    struct Color32          Colors[COLORTABLEENTRIES];
-    ULONG                   DMStartSecs;
-    ULONG                   DMStartMicro;
-    struct IntScreen       *MenuVerifyScreen;
-    ULONG                   PointerDelay;
-
-#ifdef SKINS
-    struct SignalSemaphore  DataTypesSem;
-    struct Library         *DataTypesBase; /* should be opened ONLY by int_InitCustomChanges!*/
-#endif
-
-    ULONG                   LastClickSecs;
-    ULONG                   LastClickMicro; /* for doubleclick to front */
-    ULONG                   DoubleClickCounter;
-    ULONG                   DoubleClickButton;
+    struct IClass           	*pointerclass;
+    Object                  	*DefaultPointer;
+    Object                  	*BusyPointer;
+    UWORD                   	 DriPens2[NUMDRIPENS];
+    UWORD                   	 DriPens4[NUMDRIPENS];
+    UWORD                   	 DriPens8[NUMDRIPENS];
+    struct Color32          	 Colors[COLORTABLEENTRIES];
+    ULONG                    	 DMStartSecs;
+    ULONG                   	 DMStartMicro;
+    struct IntScreen        	*MenuVerifyScreen;
+    ULONG                   	 PointerDelay;
 
 #ifdef SKINS
-    struct Hook             transphook; /* hook for windows with intui transp */
-    struct Hook             notransphook; /* hook for windows with no additional transp (borderless,etc) */
+    struct SignalSemaphore  	 DataTypesSem;
+    struct Library          	*DataTypesBase; /* should be opened ONLY by int_InitCustomChanges!*/
+#endif
+
+    ULONG                   	 LastClickSecs;
+    ULONG                   	 LastClickMicro; /* for doubleclick to front */
+    ULONG                   	 DoubleClickCounter;
+    ULONG                    	 DoubleClickButton;
+
+#ifdef SKINS
+    struct Hook             	 transphook; /* hook for windows with intui transp */
+    struct Hook             	 notransphook; /* hook for windows with no additional transp (borderless,etc) */
 #endif
 
 //#ifdef INTUITION_NOTIFY_SUPPORT   // commented to avoid offset fuckup! - Piru
-    struct Library         *ScreenNotifyBase;
-    struct Library         *NotifyIntuitionBase;
+    struct Library          	*ScreenNotifyBase;
+    struct Library          	*NotifyIntuitionBase;
 //#endif
 
-    struct RastPort         DoGadgetMethodRP;
-    struct GadgetInfo       DoGadgetMethodGI;
+    struct RastPort         	 DoGadgetMethodRP;
+    struct GadgetInfo       	 DoGadgetMethodGI;
 
 #ifdef USEGETIPREFS
-    BOOL                    IPrefsLoaded;
+    BOOL                    	 IPrefsLoaded;
 #endif
 
 #if USE_NEWDISPLAYBEEP
-    LONG                    BeepingScreens;
+    LONG                    	 BeepingScreens;
 #endif
 
-    WORD            prop_clickoffset_x, prop_clickoffset_y;
+    WORD            	    	 prop_clickoffset_x, prop_clickoffset_y;
 
-    struct MinList             ResourceList[RESOURCELIST_HASHSIZE];
+    struct MinList            	 ResourceList[RESOURCELIST_HASHSIZE];
 
     /* Menu Look Settings */
-    int                                FrameSize;
+    int                          FrameSize;
 };
 
 struct SharedPointer
 {
-    struct ExtSprite *sprite;
-    WORD xoffset, yoffset;
-    int ref_count;
+    struct ExtSprite   *sprite;
+    WORD    	    	xoffset, yoffset;
+    int     	    	ref_count;
 };
 
 struct SharedPointer *CreateSharedPointer(struct ExtSprite *, int, int, struct IntuitionBase *);
@@ -547,9 +547,7 @@ void ObtainSharedPointer(struct SharedPointer *, struct IntuitionBase *);
 void ReleaseSharedPointer(struct SharedPointer *, struct IntuitionBase *);
 
 #ifdef INTUITION_NOTIFY_SUPPORT
-void sn_DoNotify(ULONG type,
-                 APTR value,
-                 struct Library *_ScreenNotifyBase);
+void sn_DoNotify(ULONG type, APTR value, struct Library *_ScreenNotifyBase);
 #endif
 
 struct IntScreen
@@ -602,10 +600,10 @@ struct IntScreen
 #define GetPrivScreen(s)    ((struct IntScreen *)s)
 
 /* SpecialFlags */
-#define SF_IsParent (0x0001)
-#define SF_IsChild  (0x0002)
-#define SF_InvisibleBar (0x0004)
-#define SF_AppearingBar (0x0008)
+#define SF_IsParent 	    (0x0001)
+#define SF_IsChild  	    (0x0002)
+#define SF_InvisibleBar     (0x0004)
+#define SF_AppearingBar     (0x0008)
 
 struct IntIntuiMessage
 {
@@ -620,86 +618,86 @@ struct IntIntuiMessage
     APTR                    prevCodeQuals;
 };
 
-#define INT_INTUIMESSAGE(x) ((struct IntIntuiMessage *)(x))
+#define INT_INTUIMESSAGE(x) 	((struct IntIntuiMessage *)(x))
 
 
 
 /*extern struct IntuitionBase * IntuitionBase;*/
 
-#define IW(window) ((struct IntWindow *) (window))    
+#define IW(window)  	    	((struct IntWindow *) (window))    
 
-#define GetPubIBase(ib)   ((struct IntuitionBase *)ib)
-#define GetPrivIBase(ib)  ((struct IntIntuitionBase *)ib)
+#define GetPubIBase(ib)     	((struct IntuitionBase *)ib)
+#define GetPrivIBase(ib)    	((struct IntIntuitionBase *)ib)
 
 #ifdef GfxBase
 #undef GfxBase
 #endif
-#define _GfxBase     (GetPrivIBase(IntuitionBase)->GfxBase)
-#define GfxBase     _GfxBase
+#define _GfxBase     	    	(GetPrivIBase(IntuitionBase)->GfxBase)
+#define GfxBase     	    	_GfxBase
 
 #ifdef LayersBase
 #undef LayersBase
 #endif
-#define _LayersBase     (GetPrivIBase(IntuitionBase)->LayersBase)
-#define LayersBase     _LayersBase
+#define _LayersBase         	(GetPrivIBase(IntuitionBase)->LayersBase)
+#define LayersBase          	_LayersBase
 
 #ifdef SysBase
 #undef SysBase
 #endif
-#define SysBase     (GetPrivIBase(IntuitionBase)->SysBase)
+#define SysBase     	    	(GetPrivIBase(IntuitionBase)->SysBase)
 
 #ifdef UtilityBase
 #undef UtilityBase
 #endif
-#define UtilityBase (GetPrivIBase(IntuitionBase)->UtilBase)
+#define UtilityBase 	    	(GetPrivIBase(IntuitionBase)->UtilBase)
 
 #ifdef __MORPHOS__
 #ifdef CyberGfxBase
 #undef CyberGfxBase
 #endif
-#define CyberGfxBase (GetPrivIBase(IntuitionBase)->CyberGfxBase)
+#define CyberGfxBase 	    	(GetPrivIBase(IntuitionBase)->CyberGfxBase)
 #ifdef MUIMasterBase
 #undef MUIMasterBase
-#define MUIMasterBase (GetPrivIBase(IntuitionBase)->MUIMasterBase)
+#define MUIMasterBase 	    	(GetPrivIBase(IntuitionBase)->MUIMasterBase)
 #endif
 #endif
 
 #ifdef LocaleBase
 #undef LocaleBase
 #endif
-#define LocaleBase (GetPrivIBase(IntuitionBase)->LocaleBase)
+#define LocaleBase  	    	(GetPrivIBase(IntuitionBase)->LocaleBase)
 
 #ifdef KeymapBase
 #undef KeymapBase
 #endif
-#define KeymapBase (GetPrivIBase(IntuitionBase)->KeymapBase)
+#define KeymapBase  	    	(GetPrivIBase(IntuitionBase)->KeymapBase)
 
 #ifdef InputBase
 #undef InputBase
 #endif
-#define InputBase (GetPrivIBase(IntuitionBase)->InputBase)
+#define InputBase   	    	(GetPrivIBase(IntuitionBase)->InputBase)
 
 #ifdef TimerBase
 #undef TimerBase
 #endif
-#define TimerBase (GetPrivIBase(IntuitionBase)->TimerBase)
+#define TimerBase   	    	(GetPrivIBase(IntuitionBase)->TimerBase)
 
 #ifdef TimerMP
 #undef TimerMP
 #endif
-#define TimerMP (GetPrivIBase(IntuitionBase)->TimerMP)
+#define TimerMP     	    	(GetPrivIBase(IntuitionBase)->TimerMP)
 
 #ifdef TimerIO
 #undef TimerIO
 #endif
-#define TimerIO (GetPrivIBase(IntuitionBase)->TimerIO)
+#define TimerIO     	    	(GetPrivIBase(IntuitionBase)->TimerIO)
 
 #ifdef DOSBase
 #undef DOSBase
 #endif
-#define DOSBase (GetPrivIBase(IntuitionBase)->DOSBase)
+#define DOSBase     	    	(GetPrivIBase(IntuitionBase)->DOSBase)
 
-#define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
+#define PublicClassList     	((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
 
 /* Needed for close() */
 #define expunge() \
@@ -710,36 +708,35 @@ AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
             border must have set GACT_???BORDER and, if they are in a gzz window, also
         GTYP_GZZGADGET */
 
-#define IS_GZZ_GADGET(gad) (((gad)->GadgetType) & GTYP_GZZGADGET)
+#define IS_GZZ_GADGET(gad)  	(((gad)->GadgetType) & GTYP_GZZGADGET)
 
-#define IS_BORDER_GADGET(gad) \
-(IS_GZZ_GADGET(gad) \
-|| ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
+#define IS_BORDER_GADGET(gad) 	(IS_GZZ_GADGET(gad) || \
+    	    	    	    	 ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER)))
 
-#define IS_SYS_GADGET(gad) (((gad)->GadgetType) & GTYP_SYSTYPEMASK)
+#define IS_SYS_GADGET(gad)  	(((gad)->GadgetType) & GTYP_SYSTYPEMASK)
 
-#define IS_BOOPSI_GADGET(gad) (((gad)->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
+#define IS_BOOPSI_GADGET(gad) 	(((gad)->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
 
 /*#define IS_BORDER_GADGET(gad) \
     (((gad->GadgetType) & GTYP_SYSGADGET) \
     || ((gad)->Activation & (GACT_RIGHTBORDER|GACT_LEFTBORDER|GACT_TOPBORDER|GACT_BOTTOMBORDER))) */
 
-#define IS_REQ_GADGET(gad) ((gad)->GadgetType & GTYP_REQGADGET)
+#define IS_REQ_GADGET(gad)  	((gad)->GadgetType & GTYP_REQGADGET)
 
-#define IS_SCREEN_GADGET(gad) ((gad)->GadgetType & GTYP_SCRGADGET)
+#define IS_SCREEN_GADGET(gad) 	((gad)->GadgetType & GTYP_SCRGADGET)
 
 #define SET_GI_RPORT(gi, w, req, gad)   \
-(gi)->gi_RastPort = (IS_SCREEN_GADGET(gad) ? \
-((gi)->gi_Screen->BarLayer ? (gi)->gi_Screen->BarLayer->rp : NULL) : \
-(IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : \
-((req) ? ((req)->ReqLayer->rp) : (w)->RPort)) \
+    (gi)->gi_RastPort = (IS_SCREEN_GADGET(gad) ? \
+    ((gi)->gi_Screen->BarLayer ? (gi)->gi_Screen->BarLayer->rp : NULL) : \
+    (IS_BORDER_GADGET(gad) ?  (w)->BorderRPort : \
+    ((req) ? ((req)->ReqLayer->rp) : (w)->RPort)) \
 )
 
 
-#define REFRESHGAD_BOOPSI   1   /* boopsi gadgets */
-#define REFRESHGAD_BORDER   2   /* gadgets in window border */
-#define REFRESHGAD_REL      4   /* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM,GFLG_RELWIDTH, GFLG_RELHEIGHT */
-#define REFRESHGAD_RELS     8   /* GFLG_RELSPECIAL gadgets */
+#define REFRESHGAD_BOOPSI   	1   /* boopsi gadgets */
+#define REFRESHGAD_BORDER   	2   /* gadgets in window border */
+#define REFRESHGAD_REL      	4   /* gadgets with GFLG_RELRIGHT, GFLG_RELBOTTOM,GFLG_RELWIDTH, GFLG_RELHEIGHT */
+#define REFRESHGAD_RELS     	8   /* GFLG_RELSPECIAL gadgets */
 #define REFRESHGAD_TOPBORDER    16  /* used by setwindowtitle */
 #define REFRESHGAD_NOGADTOOLS   32  /* used in some cases for _mustbe_ */
 
@@ -758,7 +755,8 @@ VOID int_RefreshWindowFrame(struct Window *window, LONG mustbe, LONG mustnotbe,
 /* Keep the system gadgets in the same order than the original intuition,
  * some programs make bad asumptions about that...
  */
-enum {
+enum
+{
     DEPTHGAD,
     ZOOMGAD,
     SIZEGAD,
@@ -860,24 +858,24 @@ struct IntWindow
 #endif
 };
 
-#define SPFLAG_ICONIFIED    1
-#define SPFLAG_NOICONIFY    2
-#define SPFLAG_SKININFO     4
-#define SPFLAG_LAYERREFRESH 8
-#define SPFLAG_TRANSPHOOK   16
-#define SPFLAG_LAYERRESIZED 32
-#define SPFLAG_USERPORT     64
-#define SPFLAG_IAMDEAD      128
-#define SPFLAG_CLOSING      256 //used with iamdead
-#define SPFLAG_WANTBUFFER   512
+#define SPFLAG_ICONIFIED    	1
+#define SPFLAG_NOICONIFY    	2
+#define SPFLAG_SKININFO     	4
+#define SPFLAG_LAYERREFRESH 	8
+#define SPFLAG_TRANSPHOOK   	16
+#define SPFLAG_LAYERRESIZED 	32
+#define SPFLAG_USERPORT     	64
+#define SPFLAG_IAMDEAD      	128
+#define SPFLAG_CLOSING      	256 //used with iamdead
+#define SPFLAG_WANTBUFFER   	512
 
-#define HELPF_ISHELPGROUP  1
-#define HELPF_GADGETHELP   2
+#define HELPF_ISHELPGROUP   	1
+#define HELPF_GADGETHELP    	2
 
-#define IS_NOCAREREFRESH(win) (((win)->Flags & WFLG_NOCAREREFRESH) ? TRUE  : FALSE)
-#define IS_DOCAREREFRESH(win) (((win)->Flags & WFLG_NOCAREREFRESH) ? FALSE : TRUE )
-#define IS_SIMPLEREFRESH(win) (((win)->Flags & WFLG_SIMPLE_REFRESH) ? TRUE : FALSE)
-#define IS_GZZWINDOW(win)     (((win)->Flags & WFLG_GIMMEZEROZERO) ? TRUE  : FALSE)
+#define IS_NOCAREREFRESH(win)   (((win)->Flags & WFLG_NOCAREREFRESH) ? TRUE  : FALSE)
+#define IS_DOCAREREFRESH(win) 	(((win)->Flags & WFLG_NOCAREREFRESH) ? FALSE : TRUE )
+#define IS_SIMPLEREFRESH(win) 	(((win)->Flags & WFLG_SIMPLE_REFRESH) ? TRUE : FALSE)
+#define IS_GZZWINDOW(win)     	(((win)->Flags & WFLG_GIMMEZEROZERO) ? TRUE  : FALSE)
 
 
 /* Flag definitions for MoreFlags */
@@ -895,8 +893,8 @@ it's depth arranged */
 
 struct IntScreenBuffer
 {
-struct ScreenBuffer sb;
-BOOL                free_bitmap;
+    struct ScreenBuffer sb;
+    BOOL                free_bitmap;
 };
 
 
@@ -907,24 +905,22 @@ extern int  intui_open (struct IntuitionBase *);
 extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
 extern int intui_GetWindowSize (void);
-extern void intui_WindowLimits (struct Window * window,
-WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
+extern void intui_WindowLimits (struct Window * window, WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight);
 extern void intui_ActivateWindow (struct Window *);
 extern BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
-WORD width, WORD height);
+    	    	    	    	   WORD width, WORD height);
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
 extern void intui_MoveWindow (struct Window * window, WORD dx, WORD dy);
 extern int  intui_OpenWindow (struct Window *, struct IntuitionBase *,
-struct BitMap * SuperBitMap, struct Hook *backfillhook,
-struct Region * shape,
-struct Hook * shapehook,
-struct Layer * parent,
-ULONG  visible);
+    	    	    	      struct BitMap * SuperBitMap, struct Hook *backfillhook,
+    	    	    	      struct Region * shape, struct Hook * shapehook,
+    	    	    	      struct Layer * parent, ULONG visible);
 extern void intui_SetWindowTitles (struct Window *, CONST_STRPTR, CONST_STRPTR);
 extern void intui_RefreshWindowFrame(struct Window *win);
 extern struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase);
 extern void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
-WORD ymin, WORD xmax, WORD ymax, struct IntuitionBase * IntuitionBase);
+    	    	    	    	     WORD ymin, WORD xmax, WORD ymax,
+				     struct IntuitionBase * IntuitionBase);
 
 /* wbtasktalk protos */
 
@@ -960,17 +956,10 @@ void SetPointerColors(struct IntuitionBase *IntuitionBase);
 struct IClass *InitITextIClass (struct IntuitionBase * IntuitionBase);
 struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struct Gadget *gad,
 struct IntuitionBase *IntuitionBase);
-VOID DoGMLayout(struct Gadget       *glist,
-struct Window       *win,
-struct Requester    *req,
-UWORD           numgad,
-BOOL            initial,
-struct IntuitionBase    *IntuitionBase);
-BOOL ih_fire_intuimessage(struct Window * w,
-ULONG Class,
-UWORD Code,
-APTR IAddress,
-struct IntuitionBase *IntuitionBase);
+VOID DoGMLayout(struct Gadget *glist, struct Window *win, struct Requester *req,
+    	    	UWORD numgad, BOOL initial, struct IntuitionBase *IntuitionBase);
+BOOL ih_fire_intuimessage(struct Window * w, ULONG Class, UWORD Code, APTR IAddress,
+    	    	    	  struct IntuitionBase *IntuitionBase);
 void NotifyDepthArrangement(struct Window *w, struct IntuitionBase *IntuitionBase);
 
 #ifdef __MORPHOS__
@@ -987,20 +976,20 @@ IPTR Custom_DoMethodA(struct IntuitionBase *, struct Gadget *, Msg);
 #ifdef DoMethodA
 #undef DoMethodA
 #endif
-#define DoMethodA(x, ...)   (REG_A6=(LONG)IntuitionBase, DoMethodA(x, __VA_ARGS__))
+#define DoMethodA(x, ...)   	    (REG_A6=(LONG)IntuitionBase, DoMethodA(x, __VA_ARGS__))
 #endif
 
-#define Custom_DoMethodA(x, ...) Custom_DoMethodA(IntuitionBase, x, __VA_ARGS__)
+#define Custom_DoMethodA(x, ...)    Custom_DoMethodA(IntuitionBase, x, __VA_ARGS__)
 
-#define HAS_CHILDREN(w) (NULL != w->firstchild)
+#define HAS_CHILDREN(w)     	    (NULL != w->firstchild)
 
 #ifdef __MORPHOS__
-#define DeinitRastPort(rp)  ((void)0)
-#define CreateRastPort()        MyCreateRastPort(IntuitionBase)
-#define CloneRastPort(rp)       MyCloneRastPort(IntuitionBase, rp)
-#define FreeRastPort(rp)        MyFreeRastPort(IntuitionBase, rp)
-#define SetPointerPos(x, y)     MySetPointerPos(IntuitionBase, x, y)
-#define MouseCoordsRelative()   1
+#define DeinitRastPort(rp)  	    ((void)0)
+#define CreateRastPort()            MyCreateRastPort(IntuitionBase)
+#define CloneRastPort(rp)           MyCloneRastPort(IntuitionBase, rp)
+#define FreeRastPort(rp)            MyFreeRastPort(IntuitionBase, rp)
+#define SetPointerPos(x, y)         MySetPointerPos(IntuitionBase, x, y)
+#define MouseCoordsRelative()       1
 #endif
 
 /* Replacement for dos.library/DisplayError() */
@@ -1015,95 +1004,95 @@ AROS_UFPA(APTR  , args      , A1));
 #define dprintf kprintf
 #endif
 
-#define DEBUG_ACTIVATEGADGET(x)     ;
-#define DEBUG_ACTIVATEWINDOW(x)     ;
-#define DEBUG_ADDCLASS(x)       ;
-#define DEBUG_ADDGADGET(x)      ;
-#define DEBUG_ADDGLIST(x)       ;
-#define DEBUG_ALLOCINTUIMESSAGE(x)  ;
-#define DEBUG_ALLOCSCREENBUFFER(x)  ;
-#define DEBUG_ALOHAWORKBENCH(x)     ;
-#define DEBUG_CHANGEWINDOWBOX(x)    ;
-#define DEBUG_CLOSESCREEN(x)        ;
-#define DEBUG_CLOSEWINDOW(x)        ;
-#define DEBUG_CLOSEWORKBENCH(x)     ;
-#define DEBUG_DISPOSEOBJECT(x)      ;
-#define DEBUG_DOGADGETMETHOD(x)     ;
-#define DEBUG_DRAWBORDER(x)     ;
-#define DEBUG_FINDCLASS(x)      ;
-#define DEBUG_FREEICDATA(x)     ;
-#define DEBUG_FREEINTUIMESSAGE(x)   ;
-#define DEBUG_FREESCREENBUFFER(x)   ;
-#define DEBUG_FREESCREENDRAWINFO(x) ;
-#define DEBUG_GADGETMOUSE(x)        ;
-#define DEBUG_GETATTR(x)        ;
+#define DEBUG_ACTIVATEGADGET(x)     	;
+#define DEBUG_ACTIVATEWINDOW(x)     	;
+#define DEBUG_ADDCLASS(x)           	;
+#define DEBUG_ADDGADGET(x)          	;
+#define DEBUG_ADDGLIST(x)           	;
+#define DEBUG_ALLOCINTUIMESSAGE(x)  	;
+#define DEBUG_ALLOCSCREENBUFFER(x)  	;
+#define DEBUG_ALOHAWORKBENCH(x)     	;
+#define DEBUG_CHANGEWINDOWBOX(x)    	;
+#define DEBUG_CLOSESCREEN(x)        	;
+#define DEBUG_CLOSEWINDOW(x)        	;
+#define DEBUG_CLOSEWORKBENCH(x)     	;
+#define DEBUG_DISPOSEOBJECT(x)      	;
+#define DEBUG_DOGADGETMETHOD(x)     	;
+#define DEBUG_DRAWBORDER(x)         	;
+#define DEBUG_FINDCLASS(x)          	;
+#define DEBUG_FREEICDATA(x)         	;
+#define DEBUG_FREEINTUIMESSAGE(x)   	;
+#define DEBUG_FREESCREENBUFFER(x)   	;
+#define DEBUG_FREESCREENDRAWINFO(x) 	;
+#define DEBUG_GADGETMOUSE(x)        	;
+#define DEBUG_GETATTR(x)            	;
 #define DEBUG_GETDEFAULTPUBSCREEN(x)    ;
-#define DEBUG_GETDEFPREFS(x)        ;
-#define DEBUG_GETGADGETIBOX(x)      ;
-#define DEBUG_GETPREFS(x)       ;
-#define DEBUG_GETSCREENDATA(x)      ;
-#define DEBUG_GETSCREENDRAWINFO(x)  ;
-#define DEBUG_HIDEWINDOW(x)     ;
+#define DEBUG_GETDEFPREFS(x)        	;
+#define DEBUG_GETGADGETIBOX(x)      	;
+#define DEBUG_GETPREFS(x)           	;
+#define DEBUG_GETSCREENDATA(x)      	;
+#define DEBUG_GETSCREENDRAWINFO(x)  	;
+#define DEBUG_HIDEWINDOW(x)         	;
 #ifdef __MORPHOS__
-#define DEBUG_INIT(x)           if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_INIT(x)               	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_INIT(x)           ;
+#define DEBUG_INIT(x)               	;
 #endif
-#define DEBUG_OPEN(x)           ;
-#define DEBUG_CLOSE(x)          ;
-#define DEBUG_INPUTEVENT(x)     ;
-#define DEBUG_INTREFRESHGLIST(x)    ;
-#define DEBUG_INTUITEXTLENGTH(x)    ;
-#define DEBUG_LENDMENUS(x)      ;
-#define DEBUG_LOCKPUBSCREEN(x)      ;
-#define DEBUG_MAKECLASS(x)      ;
-#define DEBUG_MODIFYIDCMP(x)        ;
-#define DEBUG_NEWOBJECT(x)      ;
-#define DEBUG_NEXTOBJECT(x)     ;
-#define DEBUG_OBTAINGIRPORT(x)      ;
-#define DEBUG_OFFGADGET(x)      ;
-#define DEBUG_OFFMENU(x)        ;
-#define DEBUG_ONGADGET(x)       ;
-#define DEBUG_ONMENU(x)         ;
-#define DEBUG_OPENSCREEN(x)     ;
-#define DEBUG_OPENSCREENTAGLIST(x)  ;
-#define DEBUG_OPENWINDOW(x)     ;
-#define DEBUG_OPENWINDOWTAGLIST(x)  ;
-#define DEBUG_OPENWORKBENCH(x)      ;
-#define DEBUG_POINTER(x)        ;
-#define DEBUG_PRINTITEXT(x)     ;
-#define DEBUG_QUERYOVERSCAN(x)      ;
-#define DEBUG_REFRESH(x)        ;
-#define DEBUG_RELEASEGIRPORT(x)     ;
-#define DEBUG_REMEMBER(x)       ;
-#define DEBUG_REMOVEGLIST(x)        ;
-#define DEBUG_REPORTMOUSE(x)        ;
-#define DEBUG_REQUEST(x)        ;
-#define DEBUG_SCROLLWINDOWRASTER(x) ;
-#define DEBUG_SENDINTUIMESSAGE(x)   ;
-#define DEBUG_SETATTRS(x)       ;
-#define DEBUG_SETGADGETATTRS(x)     ;
-#define DEBUG_SETPOINTER(x)     ;
+#define DEBUG_OPEN(x)               	;
+#define DEBUG_CLOSE(x)              	;
+#define DEBUG_INPUTEVENT(x)         	;
+#define DEBUG_INTREFRESHGLIST(x)    	;
+#define DEBUG_INTUITEXTLENGTH(x)    	;
+#define DEBUG_LENDMENUS(x)          	;
+#define DEBUG_LOCKPUBSCREEN(x)      	;
+#define DEBUG_MAKECLASS(x)          	;
+#define DEBUG_MODIFYIDCMP(x)        	;
+#define DEBUG_NEWOBJECT(x)          	;
+#define DEBUG_NEXTOBJECT(x)         	;
+#define DEBUG_OBTAINGIRPORT(x)      	;
+#define DEBUG_OFFGADGET(x)          	;
+#define DEBUG_OFFMENU(x)            	;
+#define DEBUG_ONGADGET(x)           	;
+#define DEBUG_ONMENU(x)             	;
+#define DEBUG_OPENSCREEN(x)         	;
+#define DEBUG_OPENSCREENTAGLIST(x)  	;
+#define DEBUG_OPENWINDOW(x)         	;
+#define DEBUG_OPENWINDOWTAGLIST(x)  	;
+#define DEBUG_OPENWORKBENCH(x)      	;
+#define DEBUG_POINTER(x)            	;
+#define DEBUG_PRINTITEXT(x)         	;
+#define DEBUG_QUERYOVERSCAN(x)      	;
+#define DEBUG_REFRESH(x)            	;
+#define DEBUG_RELEASEGIRPORT(x)     	;
+#define DEBUG_REMEMBER(x)           	;
+#define DEBUG_REMOVEGLIST(x)        	;
+#define DEBUG_REPORTMOUSE(x)        	;
+#define DEBUG_REQUEST(x)            	;
+#define DEBUG_SCROLLWINDOWRASTER(x) 	;
+#define DEBUG_SENDINTUIMESSAGE(x)   	;
+#define DEBUG_SETATTRS(x)           	;
+#define DEBUG_SETGADGETATTRS(x)     	;
+#define DEBUG_SETPOINTER(x)         	;
 #ifdef __MORPHOS__
-#define DEBUG_SETIPREFS(x)      if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETIPREFS(x)          	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_SETIPREFS(x)      ;
+#define DEBUG_SETIPREFS(x)          	;
 #endif
 #ifdef __MORPHOS__
-#define DEBUG_SETPREFS(x)       if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
+#define DEBUG_SETPREFS(x)           	if (SysBase->ex_DebugFlags & EXECDEBUGF_INIT) x;
 #else
-#define DEBUG_SETPREFS(x)       ;
+#define DEBUG_SETPREFS(x)           	;
 #endif
-#define DEBUG_SHOWWINDOW(x)     ;
-#define DEBUG_UNLOCKPUBSCREEN(x)    ;
-#define DEBUG_WINDOWLIMITS(x)       ;
-#define DEBUG_WINDOWTOBACK(x)       ;
-#define DEBUG_WINDOWTOFRONT(x)      ;
-#define DEBUG_ZIPWINDOW(x)      ;
-#define DEBUG_VISITOR(x)        ;
-#define DEBUG_WORKBENCH(x)      ;
-#define DEBUG_LOCKPUBSCREENLIST(x)  ;
+#define DEBUG_SHOWWINDOW(x)         	;
+#define DEBUG_UNLOCKPUBSCREEN(x)    	;
+#define DEBUG_WINDOWLIMITS(x)       	;
+#define DEBUG_WINDOWTOBACK(x)       	;
+#define DEBUG_WINDOWTOFRONT(x)      	;
+#define DEBUG_ZIPWINDOW(x)          	;
+#define DEBUG_VISITOR(x)            	;
+#define DEBUG_WORKBENCH(x)          	;
+#define DEBUG_LOCKPUBSCREENLIST(x)  	;
 #define DEBUG_UNLOCKPUBSCREENLIST(x)    ;
-#define DEBUG_RETHINKDISPLAY(x)     ;
+#define DEBUG_RETHINKDISPLAY(x)     	;
 
 #endif /* INTUITION_INTERN_H */

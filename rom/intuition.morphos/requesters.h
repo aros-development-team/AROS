@@ -33,36 +33,36 @@ struct IntRequestUserData
     struct IntDrawInfo         * dri;
     struct Hook                  backfillhook;
     struct HookData              backfilldata;
-    UWORD           NumGadgets;
-    UWORD           NumLines;
-    UWORD           ActiveGad;
-    BOOL            freeitext;
+    UWORD           	    	 NumGadgets;
+    UWORD           	    	 NumLines;
+    UWORD           	    	 ActiveGad;
+    BOOL            	    	 freeitext;
     
-    LONG            wwidth;
-    LONG            wheight;
-    LONG            gadgetswidth;
-    LONG            gadgetsheight;
-    LONG            gadgetsxpos;
-    LONG            gadgetsypos;
-    LONG            gadgetspacing;
-    LONG            textboxwidth;
-    LONG            textboxheight;
-    LONG            textboxxpos;
-    LONG            textboxypos;
-    LONG            logoxpos;
-    LONG            logoypos;
-    LONG            textxpos;
-    LONG            textypos;
+    LONG            	    	 wwidth;
+    LONG            	    	 wheight;
+    LONG            	    	 gadgetswidth;
+    LONG            	    	 gadgetsheight;
+    LONG            	    	 gadgetsxpos;
+    LONG            	    	 gadgetsypos;
+    LONG            	    	 gadgetspacing;
+    LONG            	    	 textboxwidth;
+    LONG            	    	 textboxheight;
+    LONG            	    	 textboxxpos;
+    LONG            	    	 textboxypos;
+    LONG            	    	 logoxpos;
+    LONG            	    	 logoypos;
+    LONG            	    	 textxpos;
+    LONG            	    	 textypos;
 
-    ULONG           logotype;
+    ULONG           	    	 logotype;
 };
 #else
 struct IntRequestUserData
 {
-    ULONG           IDCMP;
-    STRPTR          * GadgetLabels;
+    ULONG           	  IDCMP;
+    STRPTR          	* GadgetLabels;
     struct Gadget       * Gadgets;
-    UWORD           NumGadgets;
+    UWORD           	  NumGadgets;
 };
 #endif
 

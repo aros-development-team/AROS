@@ -13,10 +13,10 @@
 
 struct ICData
 {
-    Object      *ic_Target;
+    Object          *ic_Target;
     struct TagItem  *ic_Mapping;
     struct TagItem  *ic_CloneTags;
-    ULONG        ic_LoopCounter;
+    ULONG            ic_LoopCounter;
 };
 
 #define ICMAGIC 1234
