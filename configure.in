@@ -1119,6 +1119,10 @@ AC_CONFIG_COMMANDS([genshared_executable],
     [chmod a+x ${aros_target_scripts_dir}/genshared],
     [aros_target_scripts_dir=${aros_target_scripts_dir}]
 )
+AC_CONFIG_COMMANDS([genmf_executable],
+    [chmod a+x ${aros_tools_dir}/genmf.py],
+    [aros_tools_dir=${aros_tools_dir}]
+)
 
 AC_CONFIG_FILES(
     Makefile
@@ -1131,6 +1135,7 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/specs:config/specs.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc:scripts/aros-gcc.in
     ${aros_target_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in
+    ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
 )
 
 AC_OUTPUT

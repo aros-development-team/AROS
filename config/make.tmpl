@@ -378,7 +378,7 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
 #------------------------------------------------------------------------------
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
-%define rule_linkmodule module=/A objs=/A endobj=/A err=/A extradeps= uselibs= usehostlibs=
+%define rule_linkmodule module=/A objs=/A endobj=/A err=/A uselibs= usehostlibs=
 
 %(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 	%link_module_q err="%(err)" endtag="%(endobj)" objs="%(objs)" \
@@ -537,7 +537,7 @@ endif
 #------------------------------------------------------------------------------
 # Build programs, for every C file an executable will be built with the same
 # 
-%define build_progs mmake=/A files=$(BD_PROGNAME$(BDID)) \
+%define build_progs mmake=/A files=/A \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
     uselibs= usehostlibs= usestartup=yes detach=no
@@ -797,7 +797,7 @@ endif
 %define build_module_macro mmake=/A modname=/A modtype=/A dir= \
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= linklibfiles= cflags=$(CFLAGS) dflags= \
-  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usehostlibs= \
+  objdir=$(OBJDIR) uselibs= usehostlibs= \
   genfunctable= genincludes= compiler=target
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick %(mmake)-kobj"
@@ -1448,7 +1448,7 @@ $(OBJDIR)/functable.c : mmakefile.src libdefs.h
 # Generate endskip variable
 %define mkendtag_q
 $(END_FILE).c : libdefs.h
-	%mkdir_q $(OBJDIR)
+	%mkdir_q dir=$(OBJDIR)
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
@@ -1519,7 +1519,7 @@ asm : $(foreach f,%(opt),$(f).s) all
 # You should save the values of the variables which you filter in case
 # you need them at a later date.
 #
-%define prepare_replace module=
+%define prepare_replace module=/M
 -include $(GENDIR)/%(module)/mf.inc
 %end
 

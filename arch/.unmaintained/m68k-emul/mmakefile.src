@@ -23,7 +23,7 @@ TESTS =
 all: machine.i subdirs
 
 setup : $(MACHINE_H)
-	%subdirs_q "Setting up" setup
+	%subdirs_q text="Setting up" target=setup
 	%mkdirs_q $(OSGENDIR) $(CLIBDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 

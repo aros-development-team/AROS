@@ -105,6 +105,16 @@ Makefile;
 typedef struct
 {
     Node node;
+
+    char *dir;
+    char *src;
+    char *dest;
+}
+Regenerate;
+
+typedef struct
+{
+    Node node;
     int  updated : 1;
 
     List makefiles;
@@ -1139,7 +1149,7 @@ writecache (Project * prj)
 }
 
 void
-updatemakefile (Project * prj, const char * path)
+updatemakefile (Project * prj, const char * path, List * regeneratefiles)
 {
     char * mf = xmalloc (strlen (path) + 4);
     char * ptr, * dir, * file, * ext;
@@ -1187,40 +1197,39 @@ updatemakefile (Project * prj, const char * path)
     dest = xstrdup (file);
     ext[-1] = '.';
 
-    src = file;
+    src = xstrdup (file);
     if (stat (src, &sst) == -1)
+    {
+	xfree (dest);
+	xfree (mf);
+	xfree (src);
 	return;
+    }
 
     if (stat (dest, &dst) == -1
 	|| sst.st_mtime > dst.st_mtime
 	|| checkdeps (prj, dst.st_mtime)
     )
     {
-	printf ("(Re)generating %s/%s because ", dir, dest);
-	if (stat (dest, &dst) == -1)
-	    printf ("%s doesn't exist\n", dest);
-	else if (sst.st_mtime > dst.st_mtime)
-	    printf ("%s.src is newer\n", dest);
-	else
-	    printf ("config.deps is newer\n");
+	Regenerate *reg = new (Regenerate);
 
-        setvar (prj, "MMSRC", src);
-        setvar (prj, "MMDEST", dest);
-      
-	if (!execute (prj, prj->genmakefilescript,"-","-",""))
-	{
-	    unlink (dest);
-	    error ("Error while regenerating makefile %s", dest);
-	    exit (10);
-	}
+	reg->dir = xstrdup (dir);
+	reg->src = src;
+	reg->dest = dest;
+
+	AddTail (regeneratefiles, reg);
+    }
+    else
+    {
+	xfree (dest);
+	xfree (src);
     }
 
-    xfree (dest);
     xfree (mf);
 }
 
 void
-updatemflist (Project * prj)
+updatemflist (Project * prj, List * regeneratefiles)
 {
     char mfnsrc[256];
     Node * makefile;
@@ -1233,12 +1242,12 @@ updatemflist (Project * prj)
         assert(strlen(mfnsrc)<256);
       
         if (!stat(mfnsrc, &st))
-	    updatemakefile(prj, mfnsrc);
+	    updatemakefile(prj, mfnsrc, regeneratefiles);
     }
 }
 
 void
-buildmflist (Project * prj)
+buildmflist (Project * prj, List * regeneratefiles)
 {
     char * mfn, * mfnsrc;
     struct stat st;
@@ -1430,7 +1439,7 @@ buildmflist (Project * prj)
 	if (foundmf == 2)
 	{
 	    strcpy (path+offset, mfnsrc);
-	    updatemakefile (prj, path);
+	    updatemakefile (prj, path, regeneratefiles);
 	    foundmf --;
 	}
 
@@ -1885,7 +1894,7 @@ checkdeps (Project * prj, time_t desttime)
     {
 	if (dep->time > desttime)
 	{
-printf ("%s is newer\n", dep->node.name);
+/*printf ("%s is newer\n", dep->node.name);*/
 	    newer = 1;
 	    break;
 	}
@@ -1965,6 +1974,57 @@ callmake (Project * prj, const char * tname, const char * mforig)
 }
 
 void
+regeneratemf (Project * prj, List * regeneratefiles)
+{
+    Regenerate * reg,* reg2;
+    char tmpname[20];
+    int fd;
+    FILE *f;
+
+    if (GetHead (regeneratefiles) == NULL)
+	return;
+    
+    strcpy (tmpname, "/tmp/genmfXXXXXX");
+    fd = mkstemp (tmpname);
+    if (fd < 0)
+    {
+	error ("Could not create temporary file %s", tmpname);
+	exit (10);
+    }
+    else
+    {
+	f = fdopen (fd, "w");
+	if (f == NULL)
+	{
+	    error ("Could not open temporary file %s", tmpname);
+	    exit (10);
+	}
+    }
+    
+    ForeachNodeSafe (regeneratefiles, reg, reg2)
+    {
+	fprintf (f, "%s/%s %s/%s\n", reg->dir, reg->src, reg->dir, reg->dest);
+	Remove (reg);
+	xfree (reg->dir);
+	xfree (reg->src);
+	xfree (reg->dest);
+	xfree (reg);
+    }
+
+    fclose (f);
+
+    setvar (prj, "MMLIST", tmpname);
+    if (!execute (prj, prj->genmakefilescript,"-","-",""))
+    {
+	error ("Error regenerating makefile");
+	exit (10);
+    }
+
+    unlink (tmpname);
+}
+
+
+void
 maketarget (char * metatarget)
 {
     char * pname, * tname, * ptr;
@@ -1972,7 +2032,8 @@ maketarget (char * metatarget)
     Target * target, * subtarget;
     Node * node;
     Makefile * makefile;
-
+    List regeneratefiles;
+    
     pname = ptr = metatarget;
     while (*ptr && *ptr != '.')
 	ptr ++;
@@ -2005,8 +2066,10 @@ maketarget (char * metatarget)
     chdir (prj->top);
 
     readvars (prj);
-    updatemflist (prj);
-    buildmflist (prj);
+    NewList (&regeneratefiles);
+    updatemflist (prj, &regeneratefiles);
+    buildmflist (prj, &regeneratefiles);
+    regeneratemf (prj, &regeneratefiles);
     buildtargetlist (prj);
 
     target = FindNode (&prj->targets, tname);
