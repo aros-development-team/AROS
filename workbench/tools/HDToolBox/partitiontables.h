@@ -34,9 +34,10 @@ struct PartitionTableNode {
 
 #define PNF_TABLE_CHANGED (1<<0) /* partition table has been changed */
 
+void findHDs(char *, ULONG);
 struct PartitionTableNode *findPTPH(struct PartitionHandle *);
 void addPartitionTable(struct PartitionNode *);
-void findPartitionTables(struct Window *, char *, int);
+void findPartitionTables(struct Window *, struct List *);
 struct PartitionTableNode *getPartitionTable(struct Window *, int);
 BOOL reallyExit(struct List *);
 void freePartitionTable(struct PartitionTableNode *);
