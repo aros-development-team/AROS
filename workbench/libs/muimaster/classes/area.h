@@ -230,19 +230,6 @@ struct MUI_AreaData
 
 
 enum {
-    MUIV_Font_Inherit = 0,
-    MUIV_Font_Normal = -1,
-    MUIV_Font_List = -2,
-    MUIV_Font_Tiny = -3,
-    MUIV_Font_Fixed = -4,
-    MUIV_Font_Title = -5,
-    MUIV_Font_Big = -6,
-    MUIV_Font_Button = -7,
-    MUIV_Font_Knob = -8,
-    MUIV_Font_NegCount = -9,
-};
-
-enum {
     MUIV_Frame_None = 0,
     MUIV_Frame_Button,
     MUIV_Frame_ImageButton,
