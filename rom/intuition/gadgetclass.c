@@ -82,21 +82,25 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	{
 	case GA_Left:
 	    EG(o)->LeftEdge = (WORD)tidata;
+	    EG(o)->Flags &= ~GFLG_RELRIGHT;
 	    retval = 1UL;
 	    break;
 
 	case GA_Top:
 	    EG(o)->TopEdge = (WORD)tidata;
+	    EG(o)->Flags &= ~GFLG_RELBOTTOM;
 	    retval = 1UL;
 	    break;
 
 	case GA_Width:
 	    EG(o)->Width = (WORD)tidata;
+	    EG(o)->Flags &= ~GFLG_RELWIDTH;
 	    retval = 1UL;
 	    break;
 
 	case GA_Height:
 	    EG(o)->Height = (WORD)tidata;
+	    EG(o)->Flags &= ~GFLG_RELHEIGHT;
 	    retval = 1UL;
 	    break;
 
@@ -121,6 +125,11 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	case GA_RelHeight:
 	    EG(o)->Height = (WORD)tidata;
 	    EG(o)->Flags |= GFLG_RELHEIGHT;
+	    retval = 1UL;
+	    break;
+
+	case GA_RelSpecial:
+	    EG(o)->Flags |= GFLG_RELSPECIAL;
 	    retval = 1UL;
 	    break;
 
@@ -272,13 +281,22 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	    break;
 
 	case GA_ID:
-	    EG(o)->GadgetID = tidata;
+	    /* GA_ID should NOT be set if this is a OM_UPDATE.
+	    ** This is because gadgets should send their GA_ID
+	    ** when doing a OM_NOTIFY, so that the receiver
+	    ** might see who sent the message.
+	    ** But we surely don't want to change the GA_ID
+	    ** of the reciver to that of the sender.
+	    */
+	    if (msg->MethodID != OM_UPDATE)
+	    	EG(o)->GadgetID = tidata;
 	    break;
 
 	case GA_UserData:
 	    EG(o)->UserData = (APTR)tidata;
 	    break;
-	    
+
+	 
 	case ICA_TARGET:
 	    GD(o)->IC.ic_Target = (Object *)tidata;
 	    break;
