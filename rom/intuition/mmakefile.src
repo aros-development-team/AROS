@@ -101,7 +101,7 @@ ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNCS) $(END_FILE),$(OBJDIR)/$(f).d)
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-#MM
+#MM kernel-intuition-linklib : setup includes kernel-intuition-$(ARCH)
 kernel-intuition-linklib : show-flags $(LIB)
 	@$(NOP)
 
@@ -112,8 +112,8 @@ show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 # MetaMake targets
-#MM kernel-intuition : setup includes kernel-intuition-$(ARCH)-$(CPU)
-kernel-intuition :
+#MM kernel-intuition : setup includes kernel-intuition-$(ARCH)
+kernel-intuition : $(SLIB)
 	@$(NOP)
 
 #MM
