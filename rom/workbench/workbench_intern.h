@@ -166,4 +166,17 @@ struct AppMenuItem
     struct MsgPort *ami_MsgPort;
 };
 
+/* Internal WBHM structure, used to hold data which the user doesn't
+   have to know about.  */
+struct IntWBHandlerMessage
+{
+    struct WBHandlerMessage iwbhm_wbhm;
+    union
+    {
+        struct
+        {
+	    struct IntuiMessage *imsg;
+        } Hide;
+    } iwbhm_Data;
+};
 #endif /* __WORKBENCH_INTERN_H__ */
