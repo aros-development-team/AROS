@@ -1,17 +1,5 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
-#    $Log$
-#    Revision 1.5  1996/11/01 02:05:24  aros
-#    Motorola syntax (no more MIT)
-#
-#    Revision 1.4  1996/10/24 15:51:30  aros
-#    Use the official AROS macros over the __AROS versions.
-#
-#    Revision 1.3  1996/10/24 01:38:31  aros
-#    Include machine.i
-#
-#    Revision 1.2  1996/08/01 17:41:34  digulla
-#    Added standard header for all files
 #
 #    Desc:
 #    Lang:
@@ -67,23 +55,33 @@
 #
 #	* A task is in state TS_WAIT if and only if it is part of the waiting
 #	  list.
+#
 #	* It is in state TS_READY if and only if it is part of the ready list.
+#
 #	* SysBase->ThisTask always points to a legal task structure.
+#
 #	* In normal user context SysBase->ThisTask->tc_State is TS_RUN.
+#
 #	  There are two possible exceptions from this rule:
+#
 #	  * In supervisor mode when bit 15 of SysBase->AttnResched is set
 #	    (dispatch pending bit).
 #	    This ends by calling Dispatch() before falling down to user context.
+#
 #	  * In exec code. This ends by calling Switch() before going back to
 #	    user code.
+#
 #	* The task in SysBase->ThisTask is one of the ready tasks with the
 #	  highest priority (round robin). There's an exception from this rule,
 #	  too:
+#
 #	  * If dispatching is disabled and bit 7 of SysBase->AttnResched is set
 #	    (switch pending bit) it is allowed to have a running task with a
 #	    lower priority as a waiting one. This ends by calling Switch() as
 #	    soon as the dispatcher is reactivated.
+#
 #	* The ready list is sorted by priority.
+#
 #	* There is always at least one task willing to run - the busy task.
 #
 #   HISTORY
@@ -115,7 +113,7 @@ _Exec_Dispatch:
 	move.l	(sp)+,-(a5)
 	move.w	(sp)+,-(a5)
 	move.l	(sp)+,-(a5)
-	movem.l	d0-d7/a0-a4/a6,-(a5)
+	movem.l d0-d7/a0-a4/a6,-(a5)
 
 	# get SysBase
 	move.l	_SysBase,a6
@@ -171,7 +169,7 @@ nolnch: move.l	tc_SPReg(a2),a5
 	bne	exc
 
 	# not set. read complete user context
-	movem.l	(a5)+,d0-d7/a0-a4/a6
+	movem.l (a5)+,d0-d7/a0-a4/a6
 	move.l	(a5)+,-(sp)
 	move.w	(a5)+,-(sp)
 	move.l	(a5)+,-(sp)
@@ -203,7 +201,7 @@ usrexc: jsr	Exception(a6)
 	jsr	Enable(a6)
 
 	# restore context
-	movem.l	(sp)+,d0-d7/a0-a4/a6
+	movem.l (sp)+,d0-d7/a0-a4/a6
 	move.l	(sp)+,a5
 	move.w	(sp)+,ccr
 	rts
