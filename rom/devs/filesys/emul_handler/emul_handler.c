@@ -56,7 +56,13 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #undef timeval
+
+#ifdef __linux__
 #include <sys/vfs.h>
+#elif defined(__FreeBSD__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
 
 /* Underlying OS's rename() Clib function prototype */
 #include <stdio.h>
