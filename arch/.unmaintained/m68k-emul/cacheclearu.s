@@ -43,7 +43,6 @@
 	.globl	AROS_SLIB_ENTRY(CacheClearU,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearU,Exec),@function
 AROS_SLIB_ENTRY(CacheClearU,Exec):
-	linkw	%fp,#0
 	movem.l	%d2-%d4,-(%sp)
 	move.l	#123,%d0
 	clr.l	%d1
@@ -51,7 +50,6 @@ AROS_SLIB_ENTRY(CacheClearU,Exec):
 	moveq	#3,%d3
 	clr.l	%d4
 	trap	#0
-	movem.l	-12(%fp),%d2-%d4
-	unlk	%fp
+	movem.l	(%sp)+,%d2-%d4
 	rts
 

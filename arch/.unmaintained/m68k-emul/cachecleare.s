@@ -50,7 +50,7 @@
 
         #include "machine.i"
 
-	FirstArg	= 8
+	FirstArg	= 4+(3*4)
 	address		= FirstArg
 	length		= address+4
 	caches		= length+4
@@ -60,15 +60,13 @@
 	.globl	AROS_SLIB_ENTRY(CacheClearE,Exec)
 	.type	AROS_SLIB_ENTRY(CacheClearE,Exec),@function
 AROS_SLIB_ENTRY(CacheClearE,Exec):
-	linkw	%fp,#0
 	movem.l	%d2-%d4,-(%sp)
 	moveq	#123,%d0
-	move.l	address(%fp),%d1
+	move.l	address(%sp),%d1
 	move.l	#1,%d2
 	move.l	#3,%d3
-	move.l	length(%fp),%d4
+	move.l	length(%sp),%d4
 	trap	#0
-	movem.l	-12(%fp),%d2-%d4
-	unlk	%fp
+	movem.l	(%sp)+,%d2-%d4
 	rts
 
