@@ -13,17 +13,23 @@ endif
 FILES	:=  af_fontdescr_io memoryfontfunc diskfontfunc \
 	    dosstreamhook diskfont_io bullet basicfuncs
 
-# Guarantee that this will go at the end of the file:
 FUNCS	:=  opendiskfont	\
 	    availfonts		\
 	    newfontcontents     \
 	    disposefontcontents \
 	    newscaleddiskfont
 
-#MM- workbench-libs-diskfont : includes linklibs
+#MM workbench-libs-diskfont-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     workbench-libs-bullet-includes \
+#MM     includes-copy
+#MM- workbench-libs-diskfont : linklibs
 
-%build_module_macro mmake=workbench-libs-diskfont modname=diskfont \
-  modtype=library funcs=$(FUNCS) files=$(FILES) \
-  uselibs="arossupport amiga rom m" conffile=lib.conf
+%build_module mmake=workbench-libs-diskfont \
+    modname=diskfont modtype=library \
+    files="diskfont_init $(FUNCS) $(FILES)" \
+    uselibs="arossupport amiga rom m"
 
 %common
