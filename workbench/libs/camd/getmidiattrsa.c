@@ -7,6 +7,7 @@
 */
 
 
+
 #include <proto/utility.h>
 #include <proto/exec.h>
 
@@ -33,6 +34,8 @@
     RESULT
 
     NOTES
+		If you are not the owner of the midinode, you should lock
+		Camd before calling to ensure that it wont go away.
 
     EXAMPLE
 
@@ -57,18 +60,7 @@
 	ULONG *where;
 	ULONG ret=0;
 
-// Topic, what if camd is locked?!
-
-	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
-
-// Topic, perhaps there should be a check inside here to see
-// if the midinode is still alive if the above ObtainSemaphore
-// should be done shared in some way.
-
-// Another solution is to tell the user to lock camd if the
-// caller is not the owner of the midinode, and remove
-// obtain/release here.
-
+	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 
 	while((tag=NextTagItem(&tstate))){
 		ret++;

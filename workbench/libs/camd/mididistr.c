@@ -6,6 +6,7 @@
     Lang: English
 */
 
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
@@ -177,11 +178,10 @@ struct DriverData *GoodPutMidi(
 	struct MyMidiMessage2 msg2;
 	struct MidiLink *midilink2;
 	struct MyMidiNode *mymidinode;
-	ULONG lock;
 
 	if(len==3) return NULL;	//Illegal message.
 
-	lock=ObtainSharedSem(&mycluster->mutex);
+	ObtainSemaphoreShared(&mycluster->semaphore);
 
 	if( ! (IsListEmpty(&mycluster->cluster.mcl_Receivers))){
 
@@ -209,7 +209,7 @@ struct DriverData *GoodPutMidi(
 		}
 	}
 
-	ReleaseSharedSem(&mycluster->mutex,lock);
+	ReleaseSemaphore(&mycluster->semaphore);
 
 	return driverdata;
 }

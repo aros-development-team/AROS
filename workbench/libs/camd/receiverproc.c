@@ -56,7 +56,7 @@ SAVEDS void ReceiverFunc(void){
 #  define SysBase		(((struct CamdBase_intern *)CamdBase)->sysbase)
 
 
-/* CL_Linkages must be locked first. */
+/* CL_Linkages must be locked first (exclusive). */
 
 BOOL CreateReceiverProc(
 	struct DriverData *driverdata,
@@ -68,8 +68,6 @@ BOOL CreateReceiverProc(
 	struct Process *process;
 	char *name;
 
-	D(bug("opening %lx\n",driverdata));
-
 	name=AllocVec(mystrlen(inname)+70,MEMF_ANY | MEMF_PUBLIC);
 	if(name==NULL){
 		if(ErrorCode!=NULL){
@@ -80,6 +78,7 @@ BOOL CreateReceiverProc(
 
 	mysprintf(CamdBase,name,"CAMD ReceiverProc %s %ld",inname,portnum);
 
+	
 	driverdatatemp=driverdata;
 
 	driverdata->isReceiverProcessAlive=0;
@@ -87,8 +86,7 @@ BOOL CreateReceiverProc(
 	process=CreateNewProcTags(
 		NP_Entry,ReceiverFunc,
 		NP_Name,name,
-// Fix priority!
-		NP_Priority,0,
+		NP_Priority,36,
 		TAG_END
 	);
 	if(process==NULL){
@@ -99,7 +97,9 @@ BOOL CreateReceiverProc(
 		return FALSE;
 	}
 
-	while(driverdata->isReceiverProcessAlive!=0) Delay(1);
+	while(driverdata->isReceiverProcessAlive == 0){
+		Delay(1);
+	}
 
 	if(driverdata->isReceiverProcessAlive==2){
 		driverdata->isReceiverProcessAlive=0;

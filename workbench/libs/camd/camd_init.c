@@ -77,7 +77,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR CamdBase)
     if (!DOSBase)
         return FALSE;
 
-    if(InitMiniCamd((struct CamdBase *)LIBBASE)==FALSE){
+    if(InitCamd((struct CamdBase *)LIBBASE)==FALSE){
       return FALSE;
     }
 
@@ -102,7 +102,7 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR CamdBase)
 	    DOSBase = NULL;
     }
 
-    UninitMiniCamd(LIBBASE);
+    UninitCamd(LIBBASE);
 
 }
 

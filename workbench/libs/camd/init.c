@@ -12,10 +12,12 @@
 #include "camd_intern.h"
 
 
-BOOL InitMiniCamd(struct CamdBase *CamdBase){
+BOOL InitCamd(struct CamdBase *CamdBase){
 	struct FileInfoBlock fib;
 	BPTR lock;
 	char temp[256];
+
+	if(InitCamdTimer()==FALSE) return FALSE;
 
 	CB(CamdBase)->CLSemaphore=AllocMem(sizeof(struct SignalSemaphore),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
@@ -49,7 +51,7 @@ BOOL InitMiniCamd(struct CamdBase *CamdBase){
 	return TRUE;
 }
 
-void UninitMiniCamd(struct CamdBase *CamdBase){
+void UninitCamd(struct CamdBase *CamdBase){
 	struct Drivers *driver=CB(CamdBase)->drivers,*temp2;
 	struct Node *node,*temp;
 	struct MidiCluster *midicluster;
@@ -80,10 +82,13 @@ void UninitMiniCamd(struct CamdBase *CamdBase){
 	while(driver!=NULL){
 		temp2=driver->next;
 		(*driver->mididevicedata->Expunge)();
-		FreeDriver(driver,CamdBase);
+		FreeDriverData(driver,CamdBase);
+		CloseMidiDevice(driver->mididevicedata,CamdBase);
 		driver=temp2;
 	}
 
 	FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+
+	UninitCamdTimer();
 }
 

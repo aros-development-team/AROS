@@ -7,6 +7,7 @@
 */
 
 
+
 #include <proto/exec.h>
 
 #include "camd_intern.h"
@@ -53,17 +54,16 @@
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
 
-	ULONG lock;
 	BOOL ret=TRUE;
 	struct MyMidiCluster *mycluster=(struct MyMidiCluster *)midilink->ml_Location;
 	int type=midilink->ml_Node.ln_Type;
 
 	if(type==NT_USER-MLTYPE_Sender){
-		lock=ObtainSharedSem(&mycluster->mutex);
+		ObtainSemaphoreShared(&mycluster->semaphore);
 			if(IsListEmpty(&midilink->ml_Location->mcl_Receivers)) ret=FALSE;
-		ReleaseSharedSem(&mycluster->mutex,lock);
+		ReleaseSemaphore(&mycluster->semaphore);
 	}else{
-		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+		ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 			if(IsListEmpty(&midilink->ml_Location->mcl_Senders)) ret=FALSE;
 		ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 	}

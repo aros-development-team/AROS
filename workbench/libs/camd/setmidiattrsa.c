@@ -38,6 +38,20 @@
 		if supplied.
 
     NOTES
+		- If the midinode is not owned by yourself, please lock
+		  camd to ensure it wont go away.
+
+		- Allthough you are able to modify midinodes owned by
+		  others, please avoid it, its normally "non of your buziness",
+		  and may lead to crashes and other "unexpected" behaviors.
+		  However, if you have full control of the owner of the
+		  midinode (f.ex when both you and the owner belongs to the
+		  same probram and you are absolutely shure you know what
+		  you are doing), there is no problem.
+
+		- Warning! If another task have locked Camd and is waiting
+		  for you to finish, there will be a deadlock if you try
+		  to change priority or change/set cluster.
 
     EXAMPLE
 

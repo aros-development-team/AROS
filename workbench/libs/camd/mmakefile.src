@@ -8,7 +8,7 @@ ULIBNAME  := Camd
 LIBPOST   := library
 DESTDIR   := $(SLIBDIR)
 
-FILES     := camd_init drivers clusters init camdmutex mididistr midifromdriver midimsgtype2 miditodriver receiverproc strings sysexdistr unlinkmidilink getmidilinkfromownernode
+FILES     := camd_init drivers clusters init camdwait mididistr midifromdriver midimsgtype2 miditodriver receiverproc strings sysexdistr unlinkmidilink getmidilinkfromownernode
 
 FUNCTIONS := \
 lockcamd \

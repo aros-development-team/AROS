@@ -51,7 +51,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
-	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
 	return CB(CamdBase)->CLSemaphore;
 
    AROS_LIBFUNC_EXIT

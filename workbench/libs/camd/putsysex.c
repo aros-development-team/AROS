@@ -65,9 +65,8 @@
 	struct MyMidiCluster *mycluster=(struct MyMidiCluster *)midilink->ml_Location;
 	BOOL driversuccess=TRUE;
 	UBYTE *buffer2;
-	ULONG lock;
 
-	lock=ObtainSharedSem(&mycluster->mutex);
+	ObtainSemaphoreShared(&mycluster->semaphore);
 
 	if( ! (IsListEmpty(&midilink->ml_Location->mcl_Receivers))){
 
@@ -97,23 +96,21 @@
 		if(driverdata!=NULL){
 
 			if(driversuccess==FALSE){
-				while(SysEx2Driver(driverdata,buffer)==FALSE) Delay(1);
+				while(SysEx2Driver(driverdata,buffer)==FALSE) CamdWait();
 			}
 
 			// Not a very good way to wait for the data to be sent, but it should
 			// hopefully quite seldom be very important.
-			while(driverdata->issending_sx!=0) Delay(1);
+			while(driverdata->issending_sx!=0) CamdWait();
 
 			ReleaseSemaphore(&driverdata->sysexsemaphore);
 		}
 	}
 
-	ReleaseSharedSem(&mycluster->mutex,lock);
+	ReleaseSemaphore(&mycluster->semaphore);
 
    AROS_LIBFUNC_EXIT
 
 }
-
-
 
 

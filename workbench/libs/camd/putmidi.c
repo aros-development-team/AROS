@@ -72,7 +72,7 @@
 	driverdata=GoodPutMidi(link,msg,OUTBUFFERSIZE-1,CamdBase);
 
 	if(driverdata!=NULL){
-		while(Midi2Driver(driverdata,msg,OUTBUFFERSIZE-1)==NULL) Delay(1);
+		while(Midi2Driver(driverdata,msg,OUTBUFFERSIZE-1)==NULL) CamdWait();
 	}
 
    AROS_LIBFUNC_EXIT
