@@ -63,7 +63,7 @@ BEGIN {
     {
 	if (state==0)
 	{
-	    if (match ($0,"^#?[ \t]*__AROS_LH"))
+	    if (match ($0,"^#?[ \t]*AROS_LH"))
 	    {
 		line=$0;
 		sub(/#?[ \t]*$/,"",line);
@@ -77,7 +77,7 @@ BEGIN {
 	}
 	else if (state == 1)
 	{
-	    if (match ($0,"^#?[ \t]*__AROS_LH"))
+	    if (match ($0,"^#?[ \t]*AROS_LH"))
 	    {
 		line=$0;
 		sub(/[ \t]*$/,"",line);
@@ -111,7 +111,7 @@ BEGIN {
 
     line=f;
     gsub("@1","\n    ",line);
-    gsub("__AROS_LH","__AROS_LP",line);
+    gsub("AROS_LH","AROS_LP",line);
     print line >> out;
 
     printf ("#define %s(", name) >> out;
@@ -125,7 +125,7 @@ BEGIN {
     printf (") \\\n") >> out
     line=f;
     gsub("@1"," \\\n    ",line);
-    gsub("__AROS_LH","__AROS_LC",line);
+    gsub("AROS_LH","AROS_LC",line);
     print "    " line >> out;
     print "" >> out;
 }

@@ -23,7 +23,7 @@ BEGIN {
 /^[ \t]*NAME[ \t]*(\*\/)?[ \t]*$/ {
 	while (getline > 0)
 	{
-	    if (match($0,/^[ \t]*__AROS_LH/))
+	    if (match($0,/^[ \t]*AROS_LH/))
 	    {
 		line=$0;
 		sub(/[ \t]*$/,"",line);
@@ -63,7 +63,7 @@ END {
     for (t=1; t<=maxlvo; t++)
     {
 	if (t in f && !(t in a))
-	    print "void __AROS_SLIB_ENTRY(" f[t] "," lib ") (void);" >> oname;
+	    print "void AROS_SLIB_ENTRY(" f[t] "," lib ") (void);" >> oname;
     }
 
     print "\nvoid *const " lib "_functable[]=\n{" >> oname;
@@ -76,7 +76,7 @@ END {
 
 	if (t in f)
 	{
-	    line=line "__AROS_SLIB_ENTRY(" f[t] "," lib "),";
+	    line=line "AROS_SLIB_ENTRY(" f[t] "," lib "),";
 
 	    if (t in a)
 		line=line " /* " a[t] " " t " */";
