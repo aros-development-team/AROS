@@ -36,7 +36,7 @@ IPTR kickbase(void);
     NAME */
 #include <aros/inquire.h>
 
-	AROS_LH1(ULONG, ArosInquire,
+	AROS_LH1(ULONG, ArosInquireA,
 
 /*  SYNOPSIS */
 
@@ -80,7 +80,7 @@ IPTR kickbase(void);
     struct TagItem *tag;
     ULONG ret = 0;
 
-    D(bug("ArosInquire(taglist=%p)\n", tags));
+    D(bug("ArosInquireA(taglist=%p)\n", tags));
 
     while( (tag = NextTagItem(&tags)))
     {
@@ -137,7 +137,7 @@ IPTR kickbase(void);
     }
 
     return ret;
-} /* ArosInquireTagList */
+} /* ArosInquireA */
 
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
 /* Native AROS support functions */
