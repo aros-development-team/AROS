@@ -67,6 +67,9 @@ fetch_cached()
 { 
     local origins="$1" file="$2" suffixes="$3" destination="$4" foundvar="$5"
     
+    local __dummy__
+    foundvar=${foundvar:-__dummy__}
+    
     export $foundvar=
     
     test -e "$destination" -a ! -d "$destination" && \
@@ -76,8 +79,8 @@ fetch_cached()
 	echo "\`$destination' does not exist. Making it."
 	! mkdir -p "$destination" && return 1
     fi
-
-    if test -n "$suffixes"; then
+    
+    if test "x$suffixes" != "x"; then
         for sfx in $suffixes; do
 	    fetch_multiple "$destination" "$file".$sfx "$destination" && \
 	        export $foundvar="$file".$sfx && return 0
@@ -220,7 +223,7 @@ archive="$archive2"
 for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
     if test "x$patch" != "x"; then
-        if ! fetch_cached "$patches_origins" "" "$patch" "$destination"; then
+        if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
             error "Error while fetching the patch \`$patch'."
         fi
     fi
