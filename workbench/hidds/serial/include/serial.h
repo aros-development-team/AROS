@@ -159,11 +159,11 @@ struct pHidd_SerialUnit_GetStatus
 
 /* some tags for HIDD_SerialUnit_SetParameters() */
 
-#define TAG_PARITY	0x01
-#define TAG_PARITY_OFF	0x02
-#define TAG_STOP_BITS	0x03
-#define TAG_DATALENGTH	0x04
-#define TAG_SET_MCR	0x05
+#define TAG_PARITY	0x1001
+#define TAG_PARITY_OFF	0x1002
+#define TAG_STOP_BITS	0x1003
+#define TAG_DATALENGTH	0x1004
+#define TAG_SET_MCR	0x1005
 
 /* some values for parities */
 
