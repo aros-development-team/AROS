@@ -1,8 +1,9 @@
 BEGIN {
-    file="jobserv-query.lite 'select jobid,status from jobs'";
+    file="jobserv-query.lite 'select jobid,status from jobs order by jobid'";
 
     file | getline cnt;
     pos = 0;
+    jobno = 0;
 
     while ((file | getline) > 0)
     {
@@ -15,6 +16,11 @@ BEGIN {
 	    {
 		match(entry[0],/^[a-zA-Z_]+/);
 		name=substr(entry[0],RSTART,RLENGTH);
+		if (!(name in job) )
+		{
+		    jobname[jobno] = name;
+		    jobno ++;
+		}
 		job[name]++;
 		jobs ++;
 		if (status==1)
@@ -55,8 +61,10 @@ BEGIN {
     printf ("%4d (%.2f%%) are completed.<P>\n",         done, done*100.0/jobs);
 
     print "<TABLE BORDER=OFF><TR><TH>Job</TH><TH>Count</TH><TH>Todo</TH><TH>In work</TH><TH>Completed</TH></TR>"
-    for (name in job)
+    for (t=0; t<jobno; t++)
     {
+	name = jobname[t];
+
 	if (job[name] != jobf[name])
 	    printf ("<TR><TD>%s</TD><TD ALIGN=RIGHT>%d</TD><TD ALIGN=RIGHT>%.2f%%</TD><TD ALIGN=RIGHT>%.2f%%</TD><TD ALIGN=RIGHT>%.2f%%</TD></TR>\n",
 		name,
