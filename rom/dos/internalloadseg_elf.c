@@ -120,7 +120,7 @@ struct relo
 {
     ULONG offset;   /* Address of the relocation relative to the section it refers to */
     ULONG info;     /* Type of the relocation */
-#ifdef __mc68000__
+#if defined(__mc68000__) || defined(__arm__)
     LONG  addend;   /* Constant addend used to compute value */
 #endif
 };
