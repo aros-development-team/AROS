@@ -1,5 +1,6 @@
 #include "exec.h"
 #include "error.h"
+#include "util.h"
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>

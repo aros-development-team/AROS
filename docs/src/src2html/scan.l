@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 #include "util.h"
 #include "emit.h"
 #include "scan.h"

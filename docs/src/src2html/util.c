@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <ctype.h>
 #include <sys/stat.h>
 #include "error.h"
@@ -153,7 +154,7 @@ char * substvar (const char * str)
     return strdup (buffer);
 }
 
-char * basename (const char * path, const char * ext)
+char * xbasename (const char * path, const char * ext)
 {
     const char * ptr = rindex (path, '/');
     char * ptr2;

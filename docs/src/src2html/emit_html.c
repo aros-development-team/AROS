@@ -62,7 +62,7 @@ void emit_html_init (void)
     struct tm tm;
     time_t tt;
 
-    baseoutname = basename (outname, ".html");
+    baseoutname = xbasename (outname, ".html");
 
     newtocname = buildname ("%s.newtoc", baseoutname);
     oldtocname = buildname ("%s.toc", baseoutname);
