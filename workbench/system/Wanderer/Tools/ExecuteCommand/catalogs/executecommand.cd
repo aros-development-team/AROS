@@ -3,7 +3,7 @@ MSG_TITLE (//)
 Execute Command
 ;
 MSG_LABEL_COMMANDLINE (//)
-Command and arguments
+Command and arguments:
 ;
 MSG_BUTTON_EXECUTE (//)
 _Execute

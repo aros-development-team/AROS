@@ -8,8 +8,8 @@ Exekvera kommando
 ; Execute Command
 ;
 MSG_LABEL_COMMANDLINE
-Kommando och argument
-; Command and arguments
+Kommando och argument:
+; Command and arguments:
 ;
 MSG_BUTTON_EXECUTE
 _Exekvera
