@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cp sigcore.h.src sigcore.h
+cp ${1-.}/sigcore.h.src ${2}

@@ -36,8 +36,12 @@ setup-freebsd :
 #MM setup-freebsd : setup-exec-freebsd setup-dos-freebsd setup-battclock-freebsd setup-x11
 
 #MM setup-exec-freebsd : setup-exec-unix setup-exec-i386
-setup-exec-freebsd :
+setup-exec-freebsd : $(TOP)/config/unix/exec/sigcore.h
 	%add_objects rom/exec/init
+
+#MM
+$(TOP)/config/unix/exec/sigcore.h : $(TOP)/config/freebsd/exec/sigcore.h
+	$(CP) $(TOP)/config/freebsd/exec/sigcore.h $(TOP)/config/unix/exec/sigcore.h
 
 #MM kernel-exec-freebsd-i386 : exec-freebsd exec-i386 exec-unix kernel-exec-linklib
 kernel-exec-freebsd-i386 :
