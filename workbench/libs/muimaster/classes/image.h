@@ -20,9 +20,6 @@
 #define MUIA_Image_Spec             (TAG_USER|0x004233d5) /* MUI: V4  i.. char *         */
 #define MUIA_Image_State            (TAG_USER|0x0042a3ad) /* MUI: V4  is. LONG           */
 
-/* We don't have a Imagedisplay on Zune yet (it would be a wrapper to Image anywhy) */
-#define MUIA_Imagedisplay_Spec      (TAG_USER|0x0042a547)
-
 extern const struct __MUIBuiltinClass _MUI_Image_desc; /* PRIV */
 
 #endif
