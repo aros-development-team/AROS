@@ -15,6 +15,9 @@
 #   include <exec/semaphores.h>
 #endif
 
+#include <hardware/acpi/acpi.h>
+#include <hardware/pic/pic.h>
+
 /* ADJUSTABLE SETTINGS --------------- */
 
 #define     MAX_CPU         32
@@ -61,24 +64,14 @@ enum supported_FPU_chips
     FPU_68040               = 2,
 };
 
-struct CPUBase
+/***********/
+
+struct CPUFam_Definition
 {
-    struct  Node                CPUB_Node;
-    struct  ExecBase            *CPUB_SysBase;
-    struct  UtilityBase         *CPUB_UtilBase;
-    struct  ACPIBase            *CPUB_ACPIBase;
-
-    struct SignalSemaphore      CPU_ListLock;                   /* Control access to the cpu list..                         */
-
-    APTR                        *CPUB_Processors;               /* Lists ALL processors in the system                       */
-    APTR                        *CPUB_SMP_Groups;               /* Points to a list of SMP groups                           */
-
-    LONG                        CPUB_BOOT_Physical;
-    LONG                        CPUB_BOOT_Logical;
-
-    BOOL                        CPUB_SMP_Enabled;
-    int                         CPUB_SMP_Config;
-
+    struct MinList          CPUF_FamilyList;
+    APTR                    CPUF_Name;
+    ULONG                   CPUF_FamilyID;
+    APTR                    CPUF_Resource;
 };
 
 struct CPU_Definition       /* each "processor" in the system is allocated one of these blocks */
@@ -115,6 +108,31 @@ struct SMP_Definition       /* each SMP processor group in the system is allocat
     ULONG                   SMP_RecordCount;                    /* No. of records in the SMP config                         */
     ULONG                   SMP_PIC_Mode;
     ULONG                   *SMP_APIC;                          /* Points to the local APIC address                         */
+};
+
+/***********/
+
+struct CPUBase
+{
+    struct  Node                CPUB_Node;
+    struct  ExecBase            *CPUB_SysBase;
+    struct  UtilityBase         *CPUB_UtilBase;
+    struct  ACPIBase            *CPUB_ACPIBase;
+    struct  PICBase             *CPUB_PICBase;
+
+    struct SignalSemaphore      CPUB_ListLock;                   /* Control access to the cpu list..                         */
+
+    struct CPUFam_Definition    *CPUB_ProcFamilies;
+
+    struct CPU_Definition       *CPUB_Processors;               /* Lists ALL processors in the system                       */
+    struct SMP_Definition       *CPUB_SMP_Groups;               /* Points to a list of SMP groups                           */
+
+    LONG                        CPUB_BOOT_Physical;
+    LONG                        CPUB_BOOT_Logical;
+
+    BOOL                        CPUB_SMP_Enabled;
+    int                         CPUB_SMP_Config;
+
 };
 
 #endif /* __AROS_CPU_H__ */
