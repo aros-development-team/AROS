@@ -21,11 +21,11 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(Object *, obj, A0),
-	AROS_LHA(ULONG, left, D0),
-	AROS_LHA(ULONG, top, D1),
-	AROS_LHA(ULONG, width, D2),
+	AROS_LHA(LONG, left, D0),
+	AROS_LHA(LONG, top, D1),
+	AROS_LHA(LONG, width, D2),
 	AROS_LHA(LONG, height, D3),
-	AROS_LHA(ULONG, two, D4),
+	AROS_LHA(ULONG, flags, D4),
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 21, MUIMaster)
