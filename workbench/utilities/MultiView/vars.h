@@ -42,6 +42,7 @@ VAR Object                      *dto_to_vert_ic_obj;
 VAR Object                      *dto_to_horiz_ic_obj;
 VAR Object                      *vert_to_dto_ic_obj;
 VAR Object                      *horiz_to_dto_ic_obj;
+VAR Object  	    	    	*model_to_dto_ic_obj;
 VAR Object                      *gad[NUM_GADGETS];
 VAR Object                      *img[NUM_IMAGES];
 VAR WORD                        prog_exitcode;
