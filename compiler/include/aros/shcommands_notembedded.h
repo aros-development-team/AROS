@@ -133,7 +133,7 @@ __exit:                                                        \
 DEFINE_SysBase_global                                          \
 DEFINE_DOSBase_global                                          \
 							       \
-static UBYTE name##_version[] = "$VER: "                       \
+__unused static const UBYTE name##_version[] = "$VER: "        \
                                  stringify(name) " "           \
 		                 stringify(version) " "        \
 				 "(" __DATE__ ")\n";           \
