@@ -13,6 +13,7 @@
 #include <proto/keymap.h>
 #include <intuition/screens.h>
 #include <intuition/cghooks.h>
+#include <graphics/gfxmacros.h>
 #include <devices/inputevent.h>
 #include <aros/asmcall.h>
 #include <stdlib.h> /* atol() */
@@ -447,7 +448,7 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     	strinfo->BufferPos = sgw.BufferPos;
     	strinfo->NumChars  = sgw.NumChars;
     	strinfo->LongInt   = sgw.LongInt;
-    	
+   kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); 	
     }
 
     if (sgw.Actions & SGA_BEEP)
@@ -785,7 +786,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     	    {
     		if (letter == '-')
     		{
-    	    	    if (sgw->BufferPos != 0)
+    	    	    if ((sgw->BufferPos != 0) || ((sgw->NumChars > 0) && (sgw->WorkBuffer[0] == '-')))
     	    		sgw->EditOp = EO_BADFORMAT;
 
     		}
@@ -793,6 +794,10 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     		{
     	     	    sgw->EditOp = EO_BADFORMAT;
     		}
+		else if (sgw->WorkBuffer[sgw->BufferPos] == '-')
+		{
+		    sgw->EditOp = EO_BADFORMAT;
+		}
     	    }
     	    else /* Integer gadget ? */
     	    {
@@ -853,16 +858,17 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 
     /* Null-terminate the new string */
     sgw->WorkBuffer[sgw->NumChars] = 0;
-    	
+    	    
+    if (sgw->EditOp != EO_NOOP)	
+    	sgw->Actions |= (SGA_USE|SGA_REDISPLAY);	     
+
     /* Integer gadget ? */
-    if (gad->Activation & GACT_LONGINT)
+    if ((sgw->Actions & SGA_USE) && (gad->Activation & GACT_LONGINT))
     {
     	sgw->LongInt = atol(sgw->WorkBuffer);
     	D(bug("Updated string number to %d\n", sgw->LongInt));
     }
-    
-    if (sgw->EditOp != EO_NOOP)	
-    	sgw->Actions |= (SGA_USE|SGA_REDISPLAY);	     
+
     ReturnInt ("DoSGHKey", ULONG, 1);   
 }
 
@@ -936,6 +942,7 @@ VOID UpdateStringInfo(struct Gadget *gad)
     struct StringInfo *strinfo = (struct StringInfo *)gad->SpecialInfo;
     EnterFunc(bug("UpdateStringInfo(gad=%p)\n", gad));
 
+#if 0
     if (gad->Activation & GACT_LONGINT)
     {
    	if ((strinfo->NumChars != 0) || (strinfo->LongInt != 0))
@@ -944,7 +951,8 @@ VOID UpdateStringInfo(struct Gadget *gad)
     	    snprintf(strinfo->Buffer, strinfo->MaxChars, "%d", strinfo->LongInt);
     	} 
     }
-    
+#endif
+
     strinfo->NumChars = strlen(strinfo->Buffer);
 
     if (strinfo->BufferPos > strinfo->NumChars)
@@ -1048,6 +1056,22 @@ VOID UpdateStrGadget(struct Gadget	*gad,
     	    	: (STRPTR)" "),
 	    1 );
     } /* if (gadget selected => render cursor) */
+
+    if (gad->Flags & GFLG_DISABLED )
+    {
+	UWORD pattern[] = { 0x8888, 0x2222 };
+
+	SetDrMd( rp, JAM1 );
+	SetAPen( rp, 1 );
+	SetAfPt( rp, pattern, 1);
+
+	/* render disable pattern */
+	RectFill(rp,
+	    bbox.Left,
+	    bbox.Top,
+	    bbox.Left + bbox.Width - 1,
+	    bbox.Top + bbox.Height - 1 );
+    }
     
     ReleaseGIRPort(rp);
     
