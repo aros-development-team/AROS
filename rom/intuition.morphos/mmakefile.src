@@ -56,8 +56,8 @@ FUNCTIONS := \
 	alohaworkbench \
 	autorequest \
 	beginrefresh \
-	buildeasyrequestargs \
-	buildsysrequest \
+	buildeasyrequestargs_aros \
+	buildsysrequest_aros \
 	changescreenbuffer \
 	changewindowbox \
 	changewindowshape \
@@ -134,7 +134,7 @@ FUNCTIONS := \
 	queryoverscan \
 	refreshgadgets \
 	refreshglist \
-	refreshwindowframe \
+	refreshwindowframe_aros \
 	releasegirport \
 	remakedisplay \
 	removeclass \
