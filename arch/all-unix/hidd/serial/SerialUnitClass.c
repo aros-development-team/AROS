@@ -181,7 +181,13 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
               error = Hidd_UnixIO_AsyncIO(data->unixio_read,
                                           data->filedescriptor,
                                           data->replyport_read,
-                                          vHidd_UnixIO_RW | vHidd_UnixIO_Keep,
+                                          vHidd_UnixIO_Read|vHidd_UnixIO_Keep,
+                                          SysBase);
+
+              error = Hidd_UnixIO_AsyncIO(data->unixio_write,
+                                          data->filedescriptor,
+                                          data->replyport_write,
+                                          vHidd_UnixIO_Write|vHidd_UnixIO_Keep,
                                           SysBase);
               goto exit;
 
@@ -293,6 +299,7 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
   len = write(data->filedescriptor,
               msg->Outbuffer,
               msg->Length);
+
 
 #if 0
   if (len < msg->Length)
@@ -589,10 +596,10 @@ AROS_UFH3(void, serialunit_receive_data,
   struct Message * msg;
 
   /*
-  ** Get the unixio message from my port and free it
+  ** Get the unixio message from my port but don't free it
   */
   msg = GetMsg(data->replyport_read);
-  FreeMem(msg, sizeof(struct uioMessage));
+//  FreeMem(msg, sizeof(struct uioMessage));
 
   /*
   ** Read the data from the port ...
@@ -605,7 +612,6 @@ AROS_UFH3(void, serialunit_receive_data,
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
-#if 0
   /*
   ** I want to be notified when the next data are coming in.
   */
@@ -614,7 +620,6 @@ AROS_UFH3(void, serialunit_receive_data,
                               data->replyport_read,
                               vHidd_UnixIO_RW,
                               SysBase);
-#endif
 
   AROS_USERFUNC_EXIT
 }
@@ -630,10 +635,10 @@ AROS_UFH3(void, serialunit_write_more_data,
   struct Message * msg;
 
   /*
-  ** Get the unixio message from my port and free it
+  ** Get the unixio message from my port but don't free it
   */
   msg = GetMsg(data->replyport_write);
-  FreeMem(msg, sizeof(struct uioMessage));
+//  FreeMem(msg, sizeof(struct uioMessage));
 
   /*
   ** Ask for more data be written to the unit
