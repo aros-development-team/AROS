@@ -5,6 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <aros/build.h>
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/mui.h>
@@ -20,19 +21,11 @@
 
 #include "aboutaros.h"
 #include "locale.h"
+#include "logotype.h"
 
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
 #define REGISTER_BG ((IPTR) "7:V,00000000,82000000,81000000-00000000,62000000,61000000")
 #define LIST_BG     ((IPTR) "2:00000000,62000000,61000000")
-#define LOGOTYPE    "SYS:Images/AROS.png"
-#define LOGOTYPE_ASCII                                 "\n"    \
-"        _______  t!           ___________             \n" \
-"   _____\\_     \\_  _________ _\\    __    \\ ________   \n" \
-"  /     _       /__\\__      \\      /     _/    ___/_  \n" \
-" /      /      /    |/      /     /     _\\_____     \\ \n" \
-" \\____________/     /      /_\\_________/     /      / \n" \
-"           _/       \\_______/         \\____________/  \n" \
-"           \\_________|                                \n" 
           
 /*** Private methods ********************************************************/
 #define MUIM_AboutAROS_ShowLicense (TAG_USER | 0x20000000)
@@ -42,7 +35,6 @@ struct AboutAROS_DATA
 {
     Object *aad_Window;
 };
-
 
 /*** Methods ****************************************************************/
 IPTR AboutAROS__OM_NEW
@@ -62,7 +54,7 @@ IPTR AboutAROS__OM_NEW
     BPTR                   lock;
     
     /* Check if the logotype is available ----------------------------------*/
-    if ((lock = Lock(LOGOTYPE, ACCESS_READ)) != NULL)
+    if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != NULL)
     {
         showLogotype = TRUE;
         UnLock(lock);
@@ -99,7 +91,7 @@ IPTR AboutAROS__OM_NEW
                 
                 Child, showLogotype
                     ? (IPTR) ImageObject,
-                          MUIA_Image_Spec, (IPTR)    "3:"LOGOTYPE,
+                          MUIA_Image_Spec, (IPTR)    "3:"LOGOTYPE_IMAGE,
                       End
                     : (IPTR) TextObject,
                           MUIA_Font,                 MUIV_Font_Fixed,
@@ -117,7 +109,7 @@ IPTR AboutAROS__OM_NEW
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents,        __(MSG_NIGHTLY_BUILD),
+                        MUIA_Text_Contents,        __(MSG_BUILD_TYPE),
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) TextObject,
