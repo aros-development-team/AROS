@@ -21,6 +21,9 @@
 #ifndef SDEBUG
 #   define SDEBUG 0
 #endif
+#ifndef ADEBUG
+#   define ADEBUG 0
+#endif
 
 
 /* Remove all macros. They get new values each time this file is
@@ -36,14 +39,6 @@
 #undef ReturnSpecial
 #undef ReturnBool
 
-/* Sanity check macros */
-#undef DBPRINTF
-#undef THIS_FILE
-#undef ASSERT(x)
-#undef ASSERT_VALID_PTR(x)
-#undef ASSERT_VALID_PTR_OR_NULL(x)
-#undef ASSERT_VALID_TASK(t)
-#undef ASSERT_VALID_PROCESS(p)
 
 /*  Macros for "stair debugging" */
 #undef SDInit
@@ -98,7 +93,6 @@
    	((ULONG)sd_task->tc_UserData) -= SDEBUG_INDENT;		\
    	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); }
 
-
 #else
 
 #   define SDInit()
@@ -106,16 +100,8 @@
 #   define EnterFunc(x) D(x)
 #   define ExitFunc
 
-#endif
+#endif /* SDEBUG */
 
-#if DEBUG
-#   define D(x)     Indent x
-
-#   if DEBUG > 1
-#	define DB2(x)    x
-#   else
-#	define DB2(x)    /* eps */
-#   endif
 
 
 /* Sanity check macros
@@ -134,6 +120,15 @@
  *		memory location, and outputs a debug message
  *		otherwise. A NULL pointer is considered NOT VALID.
  */
+#undef DBPRINTF
+#undef THIS_FILE
+#undef ASSERT(x)
+#undef ASSERT_VALID_PTR(x)
+#undef ASSERT_VALID_PTR_OR_NULL(x)
+#undef ASSERT_VALID_TASK(t)
+#undef ASSERT_VALID_PROCESS(p)
+
+#if ADEBUG
 
 #define DBPRINTF kprintf
 
@@ -163,6 +158,24 @@
 #define ASSERT_VALID_PROCESS(p) ( ASSERT_VALID_PTR(p) &&	\
 	(((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS) );
 
+#else /* !ADEBUG */
+
+#   define ASSERT(x)
+#   define ASSERT_VALID_PTR(x)
+#   define ASSERT_VALID_PTR_OR_NULL(x)
+#   define ASSERT_VALID_TASK(t)
+#   define ASSERT_VALID_PROCESS(p)
+
+#endif /* ADEBUG */
+
+#if DEBUG
+#   define D(x)     Indent x
+
+#   if DEBUG > 1
+#	define DB2(x)    x
+#   else
+#	define DB2(x)    /* eps */
+#   endif
 
     /* return-macros. NOTE: I make a copy of the value in __aros_val, because
        the return-value might have side effects (like return x++;). */
@@ -192,12 +205,6 @@
 #else /* !DEBUG */
 #   define D(x)     /* eps */
 #   define DB2(x)     /* eps */
-
-#   define ASSERT(x)
-#   define ASSERT_VALID_PTR(x)
-#   define ASSERT_VALID_PTR_OR_NULL(x)
-#   define ASSERT_VALID_TASK(t)
-#   define ASSERT_VALID_PROCESS(p)
 
 #   define ReturnVoid(name)                 return
 #   define ReturnPtr(name,type,val)         return val
