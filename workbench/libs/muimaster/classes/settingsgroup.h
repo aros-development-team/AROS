@@ -21,4 +21,6 @@
 struct MUIP_Settingsgroup_ConfigToGadgets  {ULONG MethodID; Object *configdata; };
 struct MUIP_Settingsgroup_GadgetsToConfig  {ULONG MethodID; Object *configdata; };
 
+extern const struct __MUIBuiltinClass _MUI_Settingsgroup_desc; /* PRIV */
+
 #endif
