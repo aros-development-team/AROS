@@ -265,6 +265,20 @@ static ULONG Numeric_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
 		    else
 			DoMethod(obj, MUIM_Numeric_Increase, 1);
 		    return MUI_EventHandlerRC_Eat;
+
+	    case    MUIKEY_DOWN:
+		    if (data->flags & NUMERIC_REVUPDOWN)
+			DoMethod(obj, MUIM_Numeric_Increase, 1);
+		    else
+			DoMethod(obj, MUIM_Numeric_Decrease, 1);
+		    return MUI_EventHandlerRC_Eat;
+
+	    case    MUIKEY_UP:
+		    if (data->flags & NUMERIC_REVUPDOWN)
+			DoMethod(obj, MUIM_Numeric_Decrease, 1);
+		    else
+			DoMethod(obj, MUIM_Numeric_Increase, 1);
+		    return MUI_EventHandlerRC_Eat;
 	    default:
 		    return 0;
 	}
