@@ -153,7 +153,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,
     player->pl_Reserved0 = -1;	          /* AlarmSigBit */
 
 
-    while((tag = NextTagItem(&tl)) != NULL)
+    while((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
     {
 	switch(tag->ti_Tag)
 	{

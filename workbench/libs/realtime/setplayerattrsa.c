@@ -75,7 +75,7 @@
 
     error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
 
-    while ((tag = NextTagItem(&tl)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
     {
 	switch(tag->ti_Tag)
 	{

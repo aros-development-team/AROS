@@ -88,7 +88,7 @@ BOOL WriteTags(BPTR fh, struct TagItem *taglist, struct DiskfontBase_intern *Dis
 
    	D(bug("WriteTags(fh=%p, taglists=%p)\n", fh, taglist));
 
-    for (; (tag = NextTagItem(&taglist)); )
+    for (; (tag = NextTagItem((const struct TagItem **)&taglist)); )
     {
         if (!WriteLong( &DFB(DiskfontBase)->dsh, tag->ti_Tag, fh ))
             goto wt_failure;

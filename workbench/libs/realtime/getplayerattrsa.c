@@ -80,7 +80,7 @@
 
     if(player != NULL)
     {
-	while ((tag = NextTagItem(&tl)) != NULL)
+	while ((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
 	{
 	    switch(tag->ti_Tag)
 	    {

@@ -100,7 +100,7 @@ static VOID hidd_set(Class *cl, Object *o, struct pRoot_Set *msg)
 
     EnterFunc(bug("HIDD::Set(cl=%s)\n", cl->ClassNode.ln_Name));
 
-    while((tag = NextTagItem(&tstate)))
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         ULONG idx;
         

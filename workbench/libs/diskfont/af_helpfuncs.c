@@ -57,7 +57,7 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 
     D(bug("NumTags(taglist=%p)\n", taglist));
 
-    for (; NextTagItem(&taglist); )
+    for (; NextTagItem((const struct TagItem **)&taglist); )
         numtags ++;
 
     numtags ++; /* Count TAG_DONE */
@@ -84,7 +84,7 @@ ULONG CopyTagItems
 
     D(bug("CopyTagItems(desttaglist=%p, sourcetaglist=%p)\n", desttaglist, sourcetaglist));
 
-    for (; (tag = NextTagItem(&sourcetaglist)); )
+    for (; (tag = NextTagItem((const struct TagItem **)&sourcetaglist)); )
     {
         desttaglist->ti_Tag   = tag->ti_Tag;
         desttaglist->ti_Data  = tag->ti_Data;
