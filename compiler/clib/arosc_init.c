@@ -68,8 +68,8 @@ const APTR inittabl[4]=
     &AROS_SLIB_ENTRY(init,arosc)
 };
 
-DECLARESET(INIT);
-DECLARESET(EXIT);
+DECLARESET(CTORS);
+DECLARESET(CTORS);
 
 AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
  AROS_UFHA(struct aroscbase *, aroscbase, D0),
@@ -195,14 +195,14 @@ int arosc_internalinit(struct AroscUserData *userdata)
     else
         userdata->umask = S_IWGRP|S_IWOTH;
 
-    return set_call_funcs(SETNAME(INIT), 1);
+    return set_call_funcs(SETNAME(CTORS), 1);
 }
 
 int arosc_internalexit(void)
 {
     struct AroscUserData *userdata = AROSC_USERDATA(0);
 
-    set_call_funcs(SETNAME(EXIT), -1);
+    set_call_funcs(SETNAME(DTORS), -1);
 
     /*restore the old value */
     AROSC_USERDATA(0) = userdata->olduserdata;
@@ -214,5 +214,5 @@ int arosc_internalexit(void)
 }
 
 
-DEFINESET(INIT);
-DEFINESET(EXIT);
+DEFINESET(CTORS);
+DEFINESET(CTORS);
