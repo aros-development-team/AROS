@@ -22,6 +22,8 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+#include <string.h>
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_BitmapData
