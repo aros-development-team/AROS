@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new process (in an old way).
@@ -82,13 +82,14 @@
     struct Process *pr;
 
     /* Don't forget to find out some extra defaults here */
-    struct TagItem procTags[6] = {
-	{ NP_Seglist,       (IPTR)segList },
-	{ NP_FreeSeglist,   FALSE },
-	{ NP_StackSize,     stackSize },
-	{ NP_Name,          (IPTR)name },
-	{ NP_Priority,      pri },
-	{ TAG_DONE,         0 }
+    struct TagItem procTags[6] =
+    {
+	{ NP_Seglist	, (IPTR)segList },
+	{ NP_FreeSeglist, FALSE     	},
+	{ NP_StackSize	, stackSize 	},
+	{ NP_Name   	, (IPTR)name 	},
+	{ NP_Priority	, pri	     	},
+	{ TAG_DONE  	, 0 	    	}
     };
 
     if((pr = CreateNewProc(procTags)))
