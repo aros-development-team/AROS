@@ -7,8 +7,6 @@
 #include "intuition_intern.h"
 #include <intuition/pointerclass.h>
 
-#define IW(x) ((struct IntWindow *)x)
-
 /*****************************************************************************
  
     NAME */
@@ -50,8 +48,6 @@ AROS_LH6(void, SetPointer,
     ClearPointer()
  
     INTERNALS
- 
-    HISTORY
  
 *****************************************************************************/
 {

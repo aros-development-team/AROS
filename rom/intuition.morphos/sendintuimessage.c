@@ -8,7 +8,6 @@
 #include "intuition_intern.h"
 #include "icclass.h"
 
-#define IW(x) ((struct IntWindow *)x)
 #define DEBUG_SENDINTUIMESSAGE(x)   ;
 /*****************************************************************************
  
@@ -65,9 +64,7 @@ AROS_LH2(void, SendIntuiMessage,
     SEE ALSO
  
     INTERNALS
- 
-    HISTORY
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT

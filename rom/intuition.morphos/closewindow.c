@@ -26,7 +26,6 @@
 
 /******************************************************************************/
 
-#define IW(x) ((struct IntWindow *)x)
 #define MUST_UNLOCK_SCREEN(window,screen) (((GetPrivScreen(screen)->pubScrNode != NULL) && \
 (window->MoreFlags & WMFLG_DO_UNLOCKPUBSCREEN)) ? TRUE : FALSE)
 

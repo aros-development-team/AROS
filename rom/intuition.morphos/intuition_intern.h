@@ -592,6 +592,8 @@ struct IntIntuiMessage
 
 /*extern struct IntuitionBase * IntuitionBase;*/
 
+#define IW(window) ((struct IntWindow *) (window))    
+
 #define GetPubIBase(ib)   ((struct IntuitionBase *)ib)
 #define GetPrivIBase(ib)  ((struct IntIntuitionBase *)ib)
 

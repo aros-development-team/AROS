@@ -26,8 +26,6 @@
 #endif
 #include <aros/debug.h>
 
-#define IW(x) ((struct IntWindow *)(x))
-
 struct CloseScreenActionMsg
 {
     struct IntuiActionMsg msg;
@@ -73,10 +71,6 @@ AROS_LH1(BOOL, CloseScreen,
     SEE ALSO
  
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {

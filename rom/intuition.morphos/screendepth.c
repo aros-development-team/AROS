@@ -68,8 +68,6 @@ AROS_LH3(void, ScreenDepth,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -349,8 +347,6 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
         IntuitionBase->ActiveScreen = IntuitionBase->FirstScreen;
     }
 #endif
-
-#define IW(x) ((struct IntWindow *)(x))
 
     win = NULL;
 #if 0 /* FIXME: backport, disabled */

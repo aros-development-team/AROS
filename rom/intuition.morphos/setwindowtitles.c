@@ -70,10 +70,6 @@ AROS_LH3(void, SetWindowTitles,
  
     INTERNALS
  
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -91,8 +87,6 @@ AROS_LH3(void, SetWindowTitles,
 
     AROS_LIBFUNC_EXIT
 } /* SetWindowTitles */
-
-#define IW(x) ((struct IntWindow *)(x))
 
 static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
                                struct IntuitionBase *IntuitionBase)

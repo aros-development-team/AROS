@@ -14,8 +14,6 @@
 #   include "renderwindowframe.h"
 #endif
 
-#define IW(x) ((struct IntWindow *)x)
-
 /*****************************************************************************
 
     NAME */
@@ -44,10 +42,6 @@ AROS_LH1(void, BeginRefresh,
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {

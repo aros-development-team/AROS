@@ -19,8 +19,6 @@
 
 #include <string.h>
 
-#define IW(x)   ((struct IntWindow *)(x))
-
 #define GADGETCLIPPING
 
 /*****************************************************************************
@@ -51,10 +49,6 @@ AROS_LH1(void, RefreshWindowFrame,
     SEE ALSO
  
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 {

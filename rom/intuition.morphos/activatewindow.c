@@ -19,8 +19,6 @@
 #include "menus.h"
 #include <intuition/pointerclass.h>
 
-#define IW(x) ((struct IntWindow *)x)
-
 struct ActivateWindowActionMsg
 {
     struct IntuiActionMsg msg;
@@ -70,10 +68,6 @@ AROS_LH1(void, ActivateWindow,
     ModiyIDCMP(), OpenWindow(), CloseWindow()
 
     INTERNALS
-
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
 
 *****************************************************************************/
 {
