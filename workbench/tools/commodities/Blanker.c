@@ -297,7 +297,7 @@ static void BlankerAction(CxMsg *msg,CxObj *obj)
             }
 	}
     }
-    else
+    else if ((ie->ie_Class == IECLASS_RAWMOUSE) || (ie->ie_Class == IECLASS_RAWKEY))
     {
 	if (ie->ie_Class != IECLASS_TIMER)
 	{
