@@ -59,9 +59,11 @@ extern void debugmem(void);
 struct AROSSupportBase AROSSupportBase;
 struct ExecBase *SysBase;
 
-void _aros_not_implemented(void)
+void _aros_not_implemented(char *X)
 {
-    kprintf("This function is not implemented.\n");
+    kprintf("Unsupported function at offset -0x%hx in %s\n",
+	    abs(*(WORD *)((&X)[-1]-2)),
+	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
 
 void aros_print_not_implemented(char *name)

@@ -74,7 +74,7 @@ struct JumpVec
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
 /* Prototypes */
-extern void _aros_not_implemented (void);
+extern void _aros_not_implemented (char *);
 
 /* How much stack do we need ? Lots :-) */
 #define AROS_STACKSIZE	20000
