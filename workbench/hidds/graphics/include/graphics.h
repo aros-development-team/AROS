@@ -338,8 +338,12 @@ enum {
     vHidd_StdPixFmt_BGR24,
     vHidd_StdPixFmt_RGB16,
     vHidd_StdPixFmt_BGR16,
+    vHidd_StdPixFmt_RGB16_LE,
+    vHidd_StdPixFmt_BGR16_LE,
     vHidd_StdPixFmt_RGB15,
     vHidd_StdPixFmt_BGR15,
+    vHidd_StdPixFmt_RGB15_LE,
+    vHidd_StdPixFmt_BGR15_LE,
     vHidd_StdPixFmt_ARGB32,
     vHidd_StdPixFmt_RGBA32,
     vHidd_StdPixFmt_BGRA32,
@@ -1000,7 +1004,17 @@ enum {
 #define vHidd_ColorModel_Shift	0
 #define vHidd_BitMapType_Mask 0x000000F0
 #define vHidd_BitMapType_Shift	4
-    
+
+/* stegerg: The SwapPixelBytes flag is used to indicate that
+            one must swap the pixel bytes after reading a pixel
+	    and before writing a pixel when doing some calculations
+	    with the pixfmt's shift/mask values. This is for
+	    pixel format which otherwise cannot be described through
+	    shift/mask values. For example a 0x0RRRRRGG 0xGGGBBBBB 16 bit
+	    pixfmt on a little endian machine, where a WORD-pixel-access
+	    requires the pixel-value to be in 0xGGGBBBBB0RRRRRGG format. */
+	    
+#define vHidd_PixFmt_SwapPixelBytes_Flag 0x00000100
 
 #define HIDD_PF_COLMODEL(pf) ( ((pf)->flags & vHidd_ColorModel_Mask) >> vHidd_ColorModel_Shift )
 #define SET_PF_COLMODEL(pf, cm)	\
@@ -1026,6 +1040,19 @@ enum {
 #define PF_GRAPHTYPE(cmodel, bmtype)	\
     (   (vHidd_ColorModel_ ## cmodel << vHidd_ColorModel_Shift) \
       | (vHidd_BitMapType_ ## bmtype << vHidd_BitMapType_Shift) )
+
+#define SET_PF_SWAPPIXELBYTES_FLAG(pf, on) \
+    do \
+    { \
+    	if (on) \
+	    (pf)->flags |= vHidd_PixFmt_SwapPixelBytes_Flag; \
+	else \
+	    (pf)->flags &= ~vHidd_PixFmt_SwapPixelBytes_Flag; \
+    } while (0)
+    
+#define HIDD_PF_SWAPPIXELBYTES(pf) \
+    ( ( (pf)->flags & vHidd_PixFmt_SwapPixelBytes_Flag) ? 1 : 0 )
+
 enum {
     aoHidd_PixFmt_ColorModel = 0,	/* HIDDT_ColorModel */
     aoHidd_PixFmt_RedShift,
@@ -1043,7 +1070,7 @@ enum {
     aoHidd_PixFmt_CLUTMask,
     aoHidd_PixFmt_CLUTShift,
     aoHidd_PixFmt_BitMapType,		/* HIDDT_BitMapType */
-    
+    aoHidd_PixFmt_SwapPixelBytes,  
     num_Hidd_PixFmt_Attrs
 };
 
@@ -1064,6 +1091,7 @@ enum {
 #define aHidd_PixFmt_CLUTShift		(HiddPixFmtAttrBase + aoHidd_PixFmt_CLUTShift)
 #define aHidd_PixFmt_CLUTMask		(HiddPixFmtAttrBase + aoHidd_PixFmt_CLUTMask)
 #define aHidd_PixFmt_BitMapType		(HiddPixFmtAttrBase + aoHidd_PixFmt_BitMapType)
+#define aHidd_PixFmt_SwapPixelBytes	(HiddPixFmtAttrBase + aoHidd_PixFmt_SwapPixelBytes)
 
 
 #define IS_PIXFMT_ATTR(attr, idx) \
