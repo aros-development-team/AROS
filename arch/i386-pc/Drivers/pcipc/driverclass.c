@@ -143,6 +143,7 @@ void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
 	    OOP_DisposeObject((OOP_Object *)cl);
 	
 	OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
+	OOP_ReleaseAttrBase(IID_Hidd);
     }
 }
 	
@@ -210,6 +211,7 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 		pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 		OOP_DoMethod(pci, (OOP_Msg)&msg);
 		OOP_DisposeObject(pci);
+		psd->driverClass = cl;
 	    }
 	    else
 	    {
