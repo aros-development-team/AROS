@@ -8,6 +8,10 @@
 
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
+#include <hardware/custom.h>
+
+/* Change this to <exec_intern.h> if you move this file... */
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -95,7 +99,8 @@
 
 	/* We are accessing an Exec list, protect ourselves. */
 	Disable();
-	AddTail(&SysBase->SoftInts[pri], softint);
+	AddTail((struct List *)&SysBase->SoftInts[pri],
+		(struct Node *)softint);
 	softint->is_Node.ln_Type = NT_SOFTINT;
 	SysBase->SysFlags |= SFF_SoftInt;
 	Enable();
@@ -128,7 +133,7 @@ AROS_UFH5(ULONG, SoftIntDispatch,
     AROS_UFHA(ULONG_FUNC, intCode, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    struct Interrupt *int;
+    struct Interrupt *intr;
     UBYTE i;
     ULONG res;
 
@@ -148,14 +153,14 @@ AROS_UFH5(ULONG, SoftIntDispatch,
 	for(i=0; i < 4; i++)
 	{
 	    /* There is a possible problem here with list access */
-	    while( (int = RemHead(&SysBase->SoftInts[i])) )
+	    while( (intr = RemHead((struct List *)&SysBase->SoftInts[i])) )
 	    {
-		int->is_Node.ln_Type = NT_INTERRUPT;
+		intr->is_Node.ln_Type = NT_INTERRUPT;
 
 		/* Call the software interrupt. */
-		AROS_UFC3(void, int->is_Code,
-		    AROS_UFCA(IPTR, int->is_Data, A1),
-		    AROS_UFCA(ULONG_FUNC, int->is_Code, A5),
+		AROS_UFC3(void, intr->is_Code,
+		    AROS_UFCA(APTR, intr->is_Data, A1),
+		    AROS_UFCA(ULONG_FUNC, intr->is_Code, A5),
 		    AROS_UFCA(struct ExecBase *, SysBase, A6));
 	    }
 	}
