@@ -38,7 +38,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 {
 
     struct Process *me = PROCESS(FindTask(NULL));
-    
+
     struct TagItem tags[] = { { NP_Seglist    , NULL        },        /* 0 */
 			      { NP_FreeSeglist, (IPTR)TRUE  },        /* 1 */
 			      { NP_Priority   , me->pr_Task.tc_Node.ln_Pri }, /* 2 */
@@ -56,11 +56,11 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 			      { NP_Arguments  , NULL        },        /* 14 */
 			      { NP_Synchronous, (IPTR)FALSE },        /* 15 */
 			      { TAG_END       , NULL        } };
-    
+
     Tag filterList[] = { NP_Seglist, NP_FreeSeglist, NP_Entry,
 			 NP_Input, NP_Output, NP_CloseInput,
 			 NP_CloseOutput, NP_HomeDir, NP_Cli, NULL };
-    
+
     STRPTR          comStr;
     struct Process *process;
     BPTR            shellSeg;
@@ -71,24 +71,24 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	LONG length = strlen(command) + strlen("COMMAND ") + 1;
 
 	comStr = AllocVec(length, MEMF_PUBLIC | MEMF_CLEAR);
-	
+
 	if(comStr == NULL)
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
 
 	    return FALSE;
 	}
-	
+
 	strcpy(comStr, "COMMAND ");
 	strcat(comStr, command);
-	
+
 	tags[14].ti_Data = (IPTR)comStr;
-    }	
+    }
 
     D(bug("Execcommand: Got commandline... %s\n", comStr));
 
     shellSeg = LoadSeg(shell);
-    
+
     tags[0].ti_Data = (IPTR)shellSeg;
 
     /* If this is a synchronous call, we set the process' windowptr
@@ -103,7 +103,16 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 
     if (output == NULL)
     {
-	tags[7].ti_Data = (IPTR)Open("*", MODE_OLDFILE);
+	if (input && IsInteractive(input))
+	{
+	    BPTR olddir = CurrentDir(input);
+	    tags[7].ti_Data = (IPTR)Open("", FMF_WRITE);
+	    CurrentDir(olddir);
+	}
+	else
+	    tags[7].ti_Data = (IPTR)Open("*", FMF_WRITE);
+
+	tags[9].ti_Data  = (IPTR)TRUE;     /* NP_CloseOutput */
     }
 
     D(bug("Former input: %p, output: %p\n"
@@ -114,14 +123,14 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     /* Clone tag items so we don't mess up the users memory when filtering
        It's OK if tl == NULL, as this is handled by CloneTagItems() */
     newTags = CloneTagItems(tl);
-    
+
     if (newTags == NULL)
     {
 	FreeVec(comStr);
 	SetIoErr(ERROR_NO_FREE_STORE);
 	return FALSE;
-    }	    
-    
+    }
+
     /* If this is an asynchronous call, we will close the input and output
        streams when exiting this process */
     if (type == RUN_SYSTEM_ASYNCH)
@@ -129,13 +138,13 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	tags[8].ti_Data  = (IPTR)TRUE;     /* NP_CloseInput  */
 	tags[9].ti_Data  = (IPTR)TRUE;     /* NP_CloseOutput */
     }
-    
+
     if (type != RUN_SYSTEM_ASYNCH)
     {
 	/* RUN_EXECUTE means we shall execute this process synchronously */
 	tags[15].ti_Data = (IPTR)TRUE;	   /* NP_Synchronous */
     }
-    
+
     FilterTagItems(newTags, filterList, TAGFILTER_NOT);
     ApplyTagChanges(tags, newTags);
     FreeTagItems(newTags);
@@ -146,7 +155,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
     if (tags[10].ti_Data == ~0ul)
     {    
 	BPTR  curDir = CurrentDir(NULL);    /* Get this process' current dir */
-	
+
 	tags[10].ti_Data = (IPTR)DupLock(curDir);
 	CurrentDir(curDir);	            /* ... and replace it */
     }
@@ -164,6 +173,6 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	   have freed our resources (command string, current dir etc.) */
 	return FALSE;
     }
-    
+
     return TRUE;
 }
