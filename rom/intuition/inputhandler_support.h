@@ -59,6 +59,12 @@ struct Gadget *FindCycleGadget(struct Window *win, struct Gadget *gad, WORD dire
 void FixWindowCoords(struct Window *win, WORD *left, WORD *top, WORD *width, WORD *height);
 
 /*********************************************************************/
+
+void WindowNeedsRefresh(struct Window * w, struct IntuitionBase * IntuitionBase );
+
+struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
+				struct IntuitionBase *IntuitionBase);
+
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
