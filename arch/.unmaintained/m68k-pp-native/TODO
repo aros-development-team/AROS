@@ -1,9 +1,9 @@
 TODO list for the Palm Port (ROM)
 
-- Rename CREATE_ROM define in all files where used to AROS_CREATE_ROM
-
 - The memory allocation for the Supervisor stack, display memory is
   a mess right now or non-existent.
+   -> Allocate memory for SSP in exec_init.c via AllocMem()
+   
 
 - When processes are closed access to DOSBase (see createnewproc ->
   KillCurrentProcess()) is needed. Since DOSBase cannot be a global 
@@ -14,7 +14,26 @@ TODO list for the Palm Port (ROM)
 - adapting towards i386-native version:
   - all modules should be searched for in the ROM and their information
     about their resident lists should be collected into a list
+    (see i386 native version of exec_init.c)
   - Task switching should be done like in i386 native (same functions etc.)
+
+     Function  |  like i386 version
+   ------------+--------------------
+   Disable     |  yes
+   Enable      |  yes
+   AddTask     |  no -> needs Reschedule()
+   RemTask     |  no -> Copy from i386 version 
+   Switch      |  there's no need for this function in i386
+   Signal      |  no -> copy i386 version!
+   Supervisor  |  yes
+   Superstate  |  yes (untested, could be made simpler)
+   Userstate   |  yes (untested, could be made simpler)
+   Reschedule  |  no (copy from i386 and change asm code)
+   SetExcept   |  no (copy from i386)
+   Dispatch    |  no (not needed in i386 version)
+   Wait        |  no (copy from i386)
+   SetTaskPri  |  no (copy from i386)
+
 
 - IRQ Hidd
 - graphics hidd (black and white support might be difficult to achieve with
