@@ -85,6 +85,11 @@ TESTS = $(TESTDIR)/tasktest \
 # \item{all} Compile the whole project (except the documentation).
 #
 # END_DESC{target}
+#MM AROS : setup includes libs AmigaOS
+#MM clean
+
+AROS : $(BINDIR)/arosshell checkerr
+
 ifeq ($(FLAVOUR),native)
 all: setup subdirs checkerr
 else
@@ -169,6 +174,7 @@ dist-src : .FORCE
 #	are initially neccessary to compile AROS.
 #
 # END_DESC{internaltarget}
+#MM
 setup :
 	@$(RM) $(TOP)/errors
 	@if [ ! -d bin ]; then $(MKDIR) bin ; else true ; fi
@@ -184,7 +190,8 @@ setup :
 	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; else true ; fi
 	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; else true ; fi
 	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; else true ; fi
-	@$(MAKE) $(MFLAGS) subdirs TARGET=setup
+
+	#@$(MAKE) $(MFLAGS) subdirs TARGET=setup
 
 # BEGIN_DESC{target}
 # \item{check} Run tests to check if AROS runs ok on your system.
@@ -241,6 +248,7 @@ subdirs:
 #	first place.
 #
 # END_DESC{internaltarget}
+#MM
 AmigaOS :
 	@$(MAKE) $(MFLAGS) $(LIBAMIGAOS)
 
@@ -347,10 +355,10 @@ $(CLIBDIR)/mathtrans_protos.h: $(wildcard workbench/libs/mathtrans/*.c) scripts/
 	$(GENPROTOS) Mathtrans "$(TOP)" workbench/libs/mathtrans/*.c
 
 $(CLIBDIR)/mathieeesingbas_protos.h: $(wildcard rom/mathieeesingbas/*.c) scripts/genprotos.h
-	$(GENPROTOS) Mathieeespbas "$(TOP)" rom/mathieeesingbas/*.c
+	$(GENPROTOS) Mathieeesingbas "$(TOP)" rom/mathieeesingbas/*.c
 
 $(CLIBDIR)/mathieeesingtrans_protos.h: $(wildcard workbench/libs/mathieeesptrans/*.c) scripts/genprotos.h
-	$(GENPROTOS) Mathieeesptrans "$(TOP)" workbench/libs/mathieeesptrans/*.c
+	$(GENPROTOS) Mathieeesingtrans "$(TOP)" workbench/libs/mathieeesptrans/*.c
 
 $(CLIBDIR)/diskfont_protos.h: $(wildcard workbench/libs/diskfont/*.c) scripts/genprotos.h
 	$(GENPROTOS) Diskfont "$(TOP)" workbench/libs/diskfont/*.c
