@@ -28,8 +28,8 @@
 
 #undef SDEBUG
 #undef DEBUG
-#define SDEBUG 0
-#define DEBUG 0
+// #define SDEBUG 1
+// #define DEBUG 1
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
@@ -194,18 +194,44 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 
 /****************************************************************************************/
 
+struct Window *ConOpenWindowTagListA(struct conbase *conbase,struct NewWindow *nw,Tag tag,...){
+  return OpenWindowTagList(nw,(struct TagItem *)&tag);
+}
+
 LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 {
+    LONG err = 0;
+
+#if 0
     struct TagItem win_tags [] =
     {
 	{WA_PubScreen	,0		},
 	{WA_AutoAdjust	,TRUE		},
 	{TAG_DONE			}
     };
-		
-    LONG err = 0;
-    
     fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
+
+#endif
+
+    if(fh->screentitle==NULL){
+      fh->window = ConOpenWindowTagListA(
+					 conbase,
+					 &fh->nw,
+					 WA_PubScreen	,0,		
+					 WA_AutoAdjust	,TRUE,
+					 TAG_DONE			
+					 );
+    }else{
+      fh->window = ConOpenWindowTagListA(
+					 conbase,
+					 &fh->nw,
+					 WA_PubScreen	,0,		
+					 WA_AutoAdjust	,TRUE,
+					 WA_PubScreenName, fh->screentitle,
+					 TAG_DONE			
+					 );
+    }
+
     if (fh->window)
     {
     	D(bug("contask: window opened\n"));

@@ -71,6 +71,7 @@ struct filehandle
     struct MinList	pendingWrites;
     struct NewWindow	nw;
     UBYTE		*wintitle;
+    UBYTE               *screentitle;
 #if BETTER_WRITE_HANDLING
     LONG		partlywrite_actual;
     LONG		partlywrite_size;
