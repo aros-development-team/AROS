@@ -132,8 +132,8 @@ static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *bootmenubase)
 	    	if (LateIntuiInit(NULL))
 	    	{
 	    	    success = TRUE;
-			}
 		}
+	    }
 	}
 	ReturnBool ("init_gfxhidd", success);
 }
