@@ -183,8 +183,8 @@ UQUAD offset;
 
 	D(bug("afs.handler:    readDisk: reading block %ld\n",start));
 	if (
-			((start>=volume->startblock) && (start<=volume->lastblock)) &&
-			((start+count-1)<=volume->lastblock)
+			((volume->startblock+start)<=volume->lastblock) &&
+			((volume->startblock+start+count-1)<=volume->lastblock)
 		)
 	{
 		volume->iorequest->iotd_Req.io_Command=cmd;
