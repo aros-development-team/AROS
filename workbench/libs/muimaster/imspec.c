@@ -464,8 +464,10 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	case IST_BITMAP:
 	    if (spec->u.bitmap.filename)
 	    {
-		spec->u.bitmap.dt = dt_load_picture(spec->u.bitmap.filename,
-						    mri->mri_Screen);
+		spec->u.bitmap.dt = dt_load_picture
+                (
+                    spec->u.bitmap.filename, mri->mri_Screen
+                );
 	    }
 	    break;
 
