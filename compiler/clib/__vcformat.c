@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Function to format a string like printf().
-    Lang: english
+    Function to format a string like printf().
 */
 
 #define __vcformat __vcformat
@@ -98,9 +97,6 @@ const unsigned char *const __decimalpoint = ".";
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	06.12.1996 digulla copied from libnix
 
 ******************************************************************************/
 {

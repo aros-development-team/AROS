@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strtoull()
-    Lang: english
+    ANSI C function strtoull().
 */
 
 /* This function requires the use of the long long type. */
@@ -81,9 +80,6 @@
         strtoll(), strtoull()
 
     INTERNALS
-
-    HISTORY
-	01.04.2002 iaint    Copied from strtoul.c
 
 ******************************************************************************/
 {

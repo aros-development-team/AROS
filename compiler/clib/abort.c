@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function exit()
-    Lang: english
+    ANSI C function exit().
 */
 
 #include <exec/types.h>
@@ -50,9 +49,6 @@
 	signal(), exit()
 
     INTERNALS
-
-    HISTORY
-	17.12.1996 digulla created
 
 ******************************************************************************/
 {

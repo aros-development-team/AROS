@@ -1,9 +1,8 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright © 2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function stccpy()
-    Lang: english
+    C function stccpy().
 */
 
 /*****************************************************************************
@@ -43,8 +42,6 @@
 	strncpy()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

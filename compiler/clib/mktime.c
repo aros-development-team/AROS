@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Convert a broken-down time into calendar time.
-    Lang: english
+    Convert a broken-down time into calendar time.
 */
 
 static char monthtable[] =
@@ -61,9 +60,6 @@ static char monthtable[] =
 	3. every 400th is one
 
 	4. 1900 was none, 2000 is one
-
-    HISTORY
-	25.11.2001 verhaegs created based on gmtime from digulla 
 
 ******************************************************************************/
 {

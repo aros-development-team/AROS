@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fgetc()
-    Lang: english
+    ANSI C function fgetc().
 */
 
 #include <errno.h>
@@ -45,9 +44,6 @@
 	getc(), fputc(), putc()
 
     INTERNALS
-
-    HISTORY
-	10.12.1996 digulla created
 
 ******************************************************************************/
 {

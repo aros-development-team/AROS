@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Implementation of vscanf()
-    Lang: english
+    Implementation of vscanf().
 */
 
 /*****************************************************************************
@@ -38,9 +37,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	06.12.1996 digulla created
 
 ******************************************************************************/
 {

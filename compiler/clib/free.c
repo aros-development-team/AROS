@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function free()
-    Lang: english
+    ANSI C function free().
 */
 
 #include <exec/memory.h>
@@ -46,9 +45,6 @@ extern APTR __startup_mempool;
 	malloc()
 
     INTERNALS
-
-    HISTORY
-	24-12-95    digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function ftruncate()
-    Lang: English
+    POSIX function ftruncate().
 */
 
 #include <dos/dos.h>
@@ -51,9 +50,6 @@
 	open(), truncate()
 
     INTERNALS
-
-    HISTORY
-	4.5.2001 falemagn created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function memcpy()
-    Lang: english
+    ANSI C function memcpy().
 */
 
 #include <proto/exec.h>
@@ -41,9 +40,6 @@
 	memmove(), memcpy()
 
     INTERNALS
-
-    HISTORY
-	24-12-95    digulla created
 
 ******************************************************************************/
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Scan a stream and write the result in the parameters
-    Lang: english
+    Scan a stream and write the result in the parameters.
 */
 
 /* Original source from libnix */
@@ -68,9 +67,6 @@ static int __ungetc(int c, void *_h);
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	28.01.1997 digulla created
 
 ******************************************************************************/
 {

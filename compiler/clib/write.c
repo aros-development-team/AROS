@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function write()
-    Lang: english
+    ANSI C function write().
 */
 
 #include <errno.h>
@@ -48,9 +47,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	06.12.1996 digulla created
 
 ******************************************************************************/
 {

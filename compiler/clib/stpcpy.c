@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: function stpcpy()
-    Lang: english
 */
 
 /*****************************************************************************
@@ -41,9 +38,6 @@
 	strcpy()
 
     INTERNALS
-
-    HISTORY
-	18.07.2001 stegerg created
 
 ******************************************************************************/
 {

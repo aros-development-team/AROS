@@ -2,8 +2,7 @@
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function sigfillset()
-    Lang: English
+    ANSI C function sigfillset().
 */
 
 /*****************************************************************************
@@ -33,8 +32,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

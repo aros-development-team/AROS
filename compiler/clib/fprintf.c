@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fprintf()
-    Lang: english
+    ANSI C function fprintf().
 */
 
 #include <stdarg.h>
@@ -41,9 +40,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	10.12.1996 digulla created
 
 ******************************************************************************/
 {

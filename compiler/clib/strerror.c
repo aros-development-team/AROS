@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strerror()
-    Lang: english
+    ANSI C function strerror().
 */
 
 #include <errno.h>
@@ -164,8 +163,6 @@ static const char * _errstrings[] =
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

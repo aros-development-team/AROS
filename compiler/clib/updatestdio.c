@@ -2,8 +2,7 @@
     Copyright © 2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function to update stdfiles when changed by dos functions
-    Lang: english
+    C function to update stdfiles when changed by dos functions.
 */
 
 #include "__open.h"

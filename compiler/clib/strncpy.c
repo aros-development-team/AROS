@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strncpy()
-    Lang: english
+    ANSI C function strncpy().
 */
 
 /*****************************************************************************
@@ -43,9 +42,6 @@
 	strncpy(), memcpy(), memmove()
 
     INTERNALS
-
-    HISTORY
-	29.07.1996 digulla created
 
 ******************************************************************************/
 {

@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function setenv()
+    ANSI C function setenv().
 */
 
 #include <proto/dos.h>
@@ -44,9 +44,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	4.19.2001 falemagn created
 
 ******************************************************************************/
 {

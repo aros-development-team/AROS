@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Sleeps for a specified number of seconds.
-    Lang: english
+    Sleeps for a specified number of seconds.
 */
 #include <proto/dos.h>
 
@@ -45,8 +44,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

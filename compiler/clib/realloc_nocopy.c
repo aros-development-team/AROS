@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: ANSI C function realloc()
-    Lang: english
 */
 
 #include <aros/machine.h>
@@ -55,9 +52,6 @@
 	free(), malloc(), calloc(), realloc()
 
     INTERNALS
-
-    HISTORY
-	2002-10-26	falemagn created
 
 ******************************************************************************/
 {

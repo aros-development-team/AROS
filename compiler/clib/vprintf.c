@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Implementation of vprintf()
-    Lang: english
+    Implementation of vprintf().
 */
 
 /*****************************************************************************
@@ -37,9 +36,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	06.12.1996 digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function sigprocmask()
-    Lang: English
+    ANSI C function sigprocmask().
 */
 
 /*****************************************************************************
@@ -34,8 +33,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

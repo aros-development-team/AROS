@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strtoll()
-    Lang: english
+    ANSI C function strtoll().
 */
 
 /* This requires the C99 type long long. */
@@ -80,9 +79,6 @@
         strtoull()
 
     INTERNALS
-
-    HISTORY
-	1.4.2002    iaint   Copied from strtol()
 
 ******************************************************************************/
 {

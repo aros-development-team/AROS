@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function sigpending()
-    Lang: English
+    ANSI C function sigpending().
 */
 
 /*****************************************************************************
@@ -32,8 +31,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

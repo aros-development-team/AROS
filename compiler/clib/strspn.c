@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strspn()
-    Lang: english
+    ANSI C function strspn().
 */
 
 /*****************************************************************************
@@ -47,9 +46,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	11.12.1996 digulla created
 
 ******************************************************************************/
 {

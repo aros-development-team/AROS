@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C functions rand() and srand()
-    Lang: english
+    ANSI C functions rand() and srand().
 */
 
 static unsigned int a = 1;
@@ -38,8 +37,6 @@ static unsigned int a = 1;
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {
@@ -78,8 +75,6 @@ static unsigned int a = 1;
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

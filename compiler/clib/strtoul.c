@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strtoul()
-    Lang: english
+    ANSI C function strtoul().
 */
 
 #include <ctype.h>
@@ -74,9 +73,6 @@
         atoi(), atol(), strtod(), strtol(), strtoul()
 
     INTERNALS
-
-    HISTORY
-	12.12.1996 digulla created
 
 ******************************************************************************/
 {

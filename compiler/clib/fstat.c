@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fstat()
-    Lang: English
+    ANSI C function fstat().
 */
 
 #include <errno.h>

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function fgets()
-    Lang: English
+    ANSI C function fgets().
 */
 
 #include <errno.h>
@@ -59,9 +58,6 @@
 	fopen(), gets(), fputs(), putc()
 
     INTERNALS
-
-    HISTORY
-	10.12.1996 digulla created
 
 ******************************************************************************/
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Format a string and call a usercallback to output each char
-    Lang: english
+    Format a string and call a usercallback to output each char.
 */
 /* Original source from libnix */
 
@@ -48,9 +47,6 @@ static int __putc(int c, BPTR fh);
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	06.12.1996 digulla copied from libnix
 
 ******************************************************************************/
 {

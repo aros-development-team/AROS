@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strcmp()
-    Lang: english
+    ANSI C function strcoll().
 */
 
 /*****************************************************************************
@@ -39,12 +38,10 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     #warning implement strcoll() properly
     
     return strcmp(str1, str2);
-} /* strcmp */
+} /* strcoll */
 

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Convert a time into a string.
-    Lang: english
+    Convert a time into a string.
 */
 
 extern long __gmtoffset;
@@ -81,9 +80,6 @@ extern long __gmtoffset;
 	time(), ctime(), asctime()
 
     INTERNALS
-
-    HISTORY
-	29.01.1997 digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function puts()
-    Lang: english
+    ANSI C function puts().
 */
 
 /*****************************************************************************
@@ -43,9 +42,6 @@
 	fputs(), printf(), fprintf(), putc(), fputc()
 
     INTERNALS
-
-    HISTORY
-	10.12.1996 digulla created after libnix
 
 ******************************************************************************/
  {

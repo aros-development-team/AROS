@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Tell the position in a stream
-    Lang: english
+    Tell the position in a stream.
 */
 
 #include <errno.h>
@@ -43,8 +42,6 @@
 	fopen(), fseek(), fwrite()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function system()
-    Lang: English
+    ANSI C function system().
 */
 
 #include <utility/tagitem.h>
@@ -35,9 +34,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	18.05.2001 Derived from libnix
 
 ******************************************************************************/
 {

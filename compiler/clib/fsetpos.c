@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Change the position in a stream
-    Lang: english
+    Change the position in a stream.
 */
 
 #include <errno.h>
@@ -43,8 +42,6 @@
 	fgetpos()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

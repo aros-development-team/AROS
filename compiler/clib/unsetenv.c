@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function getenv()
-    Lang: English
+    ANSI C function unsetenv().
 */
 
 #include <proto/dos.h>
@@ -38,10 +37,6 @@
     SEE ALSO
 
     INTERNALS
-
-
-    HISTORY
-	04.22.2001 falemagn created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function access()
-    Lang: english
+    POSIX function access().
 */
 
 #include <errno.h>
@@ -54,9 +53,6 @@
 	open(), ftruncate()
 
     INTERNALS
-
-    HISTORY
-	4.5.2001 falemagn created
 
 ******************************************************************************/
 {

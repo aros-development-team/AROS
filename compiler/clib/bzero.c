@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function bzero()
-    Lang: english
+    ANSI C function bzero().
 */
 
 #include <proto/exec.h>
@@ -37,9 +36,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	28-10-96    ldp created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Returns time passed since start of program
-    Lang: english
+    Returns time passed since start of program.
 */
 
 #include <dos/dos.h>
@@ -46,9 +45,6 @@ struct DateStamp __startup_datestamp;
 	time()
 
     INTERNALS
-
-    HISTORY
-	15.12.2000 stegerg created
 
 ******************************************************************************/
 {

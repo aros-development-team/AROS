@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI function freopen()
-    Lang: english
+    ANSI function freopen().
 */
 
 #include <errno.h>
@@ -53,9 +52,6 @@
 	 open(), fclose(), fileno()
 
     INTERNALS
-
-    HISTORY
-	7.06.2001 falemagn created
 
 ******************************************************************************/
 {

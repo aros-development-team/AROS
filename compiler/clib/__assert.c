@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: assert()
-    Lang: english
+    assert()
 */
 #include <assert.h>
 #include <stdio.h>
@@ -43,10 +42,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	13.12.1996 digulla created
-
 ******************************************************************************/
 void __assert (const char * expr, const char * file, unsigned int line)
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function ungetc()
-    Lang: english
+    ANSI C function ungetc().
 */
 
 #include <errno.h>
@@ -50,9 +49,6 @@
 	fgetc(), getc(), fputc(), putc()
 
     INTERNALS
-
-    HISTORY
-	10.12.1996 digulla created
 
 ******************************************************************************/
 {

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Return the number of seconds elapsed between time2 and time1.
-    Lang: english
+    Return the number of seconds elapsed between time2 and time1.
 */
 
 /*****************************************************************************
@@ -47,9 +46,6 @@
 	time(), ctime(), asctime(), localtime()
 
     INTERNALS
-
-    HISTORY
-	15.12.2000 stegerg created
 
 ******************************************************************************/
 {

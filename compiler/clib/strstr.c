@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strstr()
-    Lang: english
+    ANSI C function strstr().
 */
 
 /*****************************************************************************
@@ -47,10 +46,6 @@
 	strchr(), strrchr(), strpbrk()
 
     INTERNALS
-
-    HISTORY
-	11.12.1996 digulla  Copied from libnix. Original code by
-			    Kasper B. Graversen (c) 1996.
 
 ******************************************************************************/
 {

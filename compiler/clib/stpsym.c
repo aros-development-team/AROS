@@ -2,8 +2,7 @@
     Copyright © 2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function stpsym()
-    Lang: English
+    C function stpsym().
 */
 
 #include <ctype.h>
@@ -64,8 +63,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {

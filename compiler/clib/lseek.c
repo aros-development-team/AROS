@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: reposition read/write file offset
-    Lang: english
+    Reposition read/write file offset.
 */
 #include <errno.h>
 #include <dos/dos.h>
@@ -52,9 +51,6 @@
 	fopen(), fwrite()
 
     INTERNALS
-
-    HISTORY
-	15.12.1996 digulla created
 
 ******************************************************************************/
 {

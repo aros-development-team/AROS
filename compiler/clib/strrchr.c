@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strrchr()
-    Lang: english
+    ANSI C function strrchr().
 */
 
 #include <stdio.h>
@@ -53,9 +52,6 @@
 	first finds the end and then walks backwards but that would mean
 	to process some characters twice - if the string doesn't contain
 	c, it would mean to process every character twice.
-
-    HISTORY
-	11.12.1996 digulla created
 
 ******************************************************************************/
 {

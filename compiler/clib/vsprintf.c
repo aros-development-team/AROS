@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function vsprintf()
-    Lang: english
+    C function vsprintf().
 */
 /* Original source from libnix */
 
@@ -51,9 +50,6 @@ static int _vsprintf_uc (int c, char ** str)
 	vsnprintf()
 
     INTERNALS
-
-    HISTORY
-	11.12.1996 digulla created
 
 ******************************************************************************/
 {

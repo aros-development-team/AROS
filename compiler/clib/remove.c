@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function remove()
-    Lang: english
+    ANSI C function remove().
 */
 
 #define remove remove
@@ -42,9 +41,6 @@
     	unlink
 
     INTERNALS
-
-    HISTORY
-	04.04.2001 stegerg created
 
 ******************************************************************************/
 {

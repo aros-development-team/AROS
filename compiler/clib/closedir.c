@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function closedir()
-    Lang: english
+    POSIX function closedir().
 */
 
 #include <stdlib.h>
@@ -42,8 +41,6 @@
 
     INTERNALS
 
-    HISTORY
-	09.06.2001 falemagn created
 ******************************************************************************/
 {
     if (!dir)

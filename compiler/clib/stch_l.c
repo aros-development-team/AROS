@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: SAS C function stch_l()
-    Lang: english
+    SAS C function stch_l().
 */
 
 #include <stdio.h>
@@ -40,12 +39,7 @@
 
     INTERNALS
 
-    HISTORY
-	15.12.2000 stegerg created.
-
 ******************************************************************************/
 {
-
-    return sscanf(in, "%lx", lvalue);
-    
+    return sscanf(in, "%lx", lvalue);   
 } /* stch_l */

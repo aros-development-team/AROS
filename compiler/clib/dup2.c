@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function dup2()
-    Lang: english
+    ANSI C function dup2().
 */
 
 #include <errno.h>
@@ -51,9 +50,6 @@
 	 accept(),  open(),  close(),  fcntl(),  pipe(),  socket()
 
     INTERNALS
-
-    HISTORY
-	27.04.2001 falemagn created
 
 ******************************************************************************/
 {

@@ -2,8 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function strtod()
-    Lang: english
+    ANSI C function strtod().
 */
 
 #ifndef AROS_NOFPU
@@ -52,9 +51,6 @@
         atof(), atoi(), atol(), strtol(), strtoul()
 
     INTERNALS
-
-    HISTORY
-	12.06.1996 hkiel created
 
 ******************************************************************************/
 {

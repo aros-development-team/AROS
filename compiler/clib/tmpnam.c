@@ -2,8 +2,7 @@
     Copyright © 2002, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: C function tmpnam()
-    Lang: English
+    C function tmpnam().
 */
 
 /*****************************************************************************
@@ -32,8 +31,6 @@ char _tmpnam_internal_buffer[L_tmpnam];
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {
