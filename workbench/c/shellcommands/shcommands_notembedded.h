@@ -9,11 +9,19 @@
 #define _stringify(x) #x
 #define stringify(x) _stringify(x)
 
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#    define AMIGANATIVETRICK            \
+     asm("\t.text                 \n"   \
+         "\tmove.l	4.w,a6    \n"   \
+	 "\tjra	_detach_entry(pc) \n"); 
+#else
+#    define AMIGANATIVETRICK
+#endif
+
 #if DEBUG
 #    undef  SH_GLOBAL_SYSBASE
 #    define SH_GLOBAL_SYSBASE 1
 #endif
-
 
 #if SH_GLOBAL_SYSBASE
 #    define DECLARE_SysBase_global extern struct ExecBase *SysBase;
@@ -55,6 +63,7 @@
 
 
 #define __AROS_SH_ARGS(name, version, numargs, defl, templ, help) \
+AMIGANATIVETRICK                                               \
 DECLARE_main(name);                                            \
 DECLARE_SysBase_global                                         \
 DECLARE_DOSBase_global                                         \
