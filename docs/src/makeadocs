@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Small script to check the dates of all sources and compare them to
+# the ones of the HTML pages. If the sources are newer, then they
+# are HTML pages are regenerated.
+#
+
+for src in $* ; do
+    name="`echo $src | cut -d/ -f3- | cut -d. -f1`"
+    name="`basename $name`"
+    html="../html/autodocs/$name.html"
+    log="gen/$name.log"
+
+# echo "Checking $html"
+    if [ ! -e "$html" -o "$src" -nt "$html" ]; then
+	if [ ! -e "$log" -o "$src" -nt "$log" ]; then
+	    echo "Regenerating $log"
+	    cvs log $src | gawk -f cvslog2html.gawk > $log
+	fi
+	echo "Regenerating $html"
+	gawk -f adoc2html.gawk "$src" "$log"
+    fi
+done
