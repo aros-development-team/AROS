@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 
-CFLAGS      := $(CFLAGS) -DAROS_USE_OOP -I.
+USER_CFLAGS := -DAROS_USE_OOP
 
 ILDFLAGS    := -nostartfiles -Xlinker -i -g
 
@@ -17,7 +17,7 @@ ILDFLAGS    := -nostartfiles -Xlinker -r
 endif
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I.
+USER_INCLUDES := -I. -I$(SYS_INCLUDES)
 
 # will be expand to LIBNAME.LIBPOST i.e. parallel.hidd
 LIBNAME     := parallel

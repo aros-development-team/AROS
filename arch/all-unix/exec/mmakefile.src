@@ -11,7 +11,7 @@ OBJS	    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 # You don't need to change anything after here unless you add new
 # directories to the above.
 
-OS_INCLUDES	:= -I$(GENINCDIR)
+OS_INCLUDES	:= -I$(SYS_INCLUDES) -I$(GENINCDIR)
 SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
 CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
 CFILES		:= $(foreach f,$(FILES),$(f).c)
