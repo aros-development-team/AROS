@@ -49,7 +49,7 @@ extern struct forcelist *forcelist;
 extern char *conffile, *gendir, *genincdir, *reffile;
 
 /* global variables that store the configuration of the module */
-enum modtype { UNSPECIFIED, LIBRARY };
+enum modtype { UNSPECIFIED, LIBRARY, MCC };
 extern enum modtype modtype;
 enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 extern enum libcall libcall;

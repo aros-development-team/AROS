@@ -47,6 +47,11 @@ int main(int argc, char **argv)
 	modtype = LIBRARY;
 	firstlvo = 5;
     }
+    else if (strcmp(argv[2],"mcc")==0)
+    {
+	modtype = MCC;
+	firstlvo = 5;
+    }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
