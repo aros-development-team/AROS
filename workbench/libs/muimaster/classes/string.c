@@ -58,7 +58,13 @@ struct MUI_StringData {
     ULONG  MarkPos; 	/* cursor text marking start pos    */
     LONG   DispPos;     /* leftmost visible char            */
     ULONG  DispCount;   /* number of visible chars          */
-
+    
+    ULONG  OldClick_Sec;
+    ULONG  OldClick_Micro;
+    ULONG  NewClick_Sec;
+    ULONG  NewClick_Micro;
+    WORD   MultiClick;
+    
     struct MUI_EventHandlerNode ehn;
     struct MUI_PenSpec_intern inactive_text;
     struct MUI_PenSpec_intern active_text;
@@ -150,6 +156,77 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
     return TRUE;
 }
 
+static WORD Buffer_GetWordStartIndex(struct MUI_StringData *data, WORD startindex)
+{
+    WORD index = startindex;
+    
+    while(index > 0)
+    {	
+    	if (data->Buffer[index - 1] == ' ')
+	{
+	    break;
+	}
+	index--;
+    }
+    
+    return index;
+}
+
+static WORD Buffer_GetWordEndIndex(struct MUI_StringData *data, WORD startindex)
+{
+    WORD index = startindex;
+    
+    while(index < data->NumChars)
+    {	
+    	if (data->Buffer[index] == ' ')
+	{
+	    break;
+	}
+	index++;
+    }
+    
+    return index;
+}
+
+static WORD Buffer_GetPrevWordIndex(struct MUI_StringData *data, WORD startindex)
+{
+    WORD index = startindex;
+    
+    while(index > 0)
+    {
+    	index--;
+	
+    	if ((index == 0) ||
+	    ((data->Buffer[index - 1] == ' ') &&
+	     (data->Buffer[index] != ' ')))
+	{
+	    break;
+	}
+	    
+    }
+    
+    return index;
+}
+
+static WORD Buffer_GetSuccWordIndex(struct MUI_StringData *data, WORD startindex)
+{
+    WORD index = startindex;
+    
+    while(index < data->NumChars)
+    {
+    	index++;
+	
+	if ((index == data->NumChars) ||
+	    ((data->Buffer[index - 1] == ' ') &&
+	     (data->Buffer[index] != ' ')))
+	{
+	    break;
+	}
+    }
+    
+    return index;
+}
+
 static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start, WORD *stop)
 {
     WORD markstart = data->MarkPos;
@@ -161,19 +238,48 @@ static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start, WORD
     markstop  = MIN(markstop, data->NumChars);
     markstop  = MAX(markstop, 0);
  
-    if (markstart == markstop) return FALSE;
-    
     if (markstart > markstop)
     {
     	markstart ^= markstop;
     	markstop  ^= markstart;
     	markstart ^= markstop;	
     }
+ 
+    switch(data->MultiClick)
+    {
+    	case 0:
+	    /* char select */
+	    break;
+	    
+	case 1:
+	    /* word select */
+	    markstart = Buffer_GetWordStartIndex(data, markstart);
+	    markstop = Buffer_GetWordEndIndex(data, markstop);
+	    break;
+	    
+	default:
+	    /* select all */
+	    markstart = 0;
+	    markstop = data->NumChars;
+	    break;
+	    
+    }
     
-    *start = markstart;
-    *stop = markstop;
+    if (markstart == markstop) return FALSE;
+        
+    if (start) *start = markstart;
+    if (stop) *stop = markstop;
+
+kprintf("Buffer_GetMarkedRange: returning %d .. %d\n", markstart, markstop);
     
     return TRUE;
+}
+
+static BOOL Buffer_AnythingMarked(struct MUI_StringData *data)
+{
+    if (!(data->msd_Flags & MSDF_MARKING)) return FALSE;
+
+    return Buffer_GetMarkedRange(data, NULL, NULL);
 }
 
 static BOOL Buffer_KillMarked(struct MUI_StringData *data)
@@ -284,6 +390,8 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
+
+    CurrentTime(&data->OldClick_Sec, &data->OldClick_Micro);
 
     return (IPTR)obj;
 }
@@ -691,14 +799,7 @@ static VOID TextM(Object *obj, struct MUI_StringData *data,
 	textpen = data->active_text.p_pen;
     else
 	textpen = data->inactive_text.p_pen;
-
-    if (markstart > markend)
-    {
-    	markstart ^= markend;
-    	markend   ^= markstart;
-    	markstart ^= markend;
-    }
-    
+   
     //kprintf("TextM: textlen %d  markstart %d  markend %d ... \n", textlen, markstart, markend);
     
     /* <unmarked><marked><unmarked> */
@@ -753,7 +854,8 @@ static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     UWORD   dispstrlen;
     ULONG   textpen;
     UWORD   textleft_save;
-
+    WORD    markstart = 0, markstop = 0;
+    
     D(bug("\nString_Draw(%p) %ldx%ldx%ldx%ld reason=%ld msgflgs=%ld curs=%d "
 	  "displ=%ld len=%ld buf='%s'\n",obj,_mleft(obj),_mtop(obj),
 	  _mwidth(obj),_mheight(obj), data->msd_RedrawReason, msg->flags,
@@ -806,10 +908,11 @@ static IPTR String_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     SetABPenDrMd(_rp(obj), textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
     Move(_rp(obj), text_left, text_top);
 
-    if ((data->msd_Flags & MSDF_MARKING) && (data->MarkPos != data->BufferPos))
+    if ((data->msd_Flags & MSDF_MARKING) && Buffer_GetMarkedRange(data, &markstart, &markstop))
     {
-    	TextM(obj, data, dispstr, dispstrlen, data->MarkPos - data->DispPos,
-	    	    	    	    	     data->BufferPos - data->DispPos);
+   	TextM(obj, data, dispstr, dispstrlen, markstart - data->DispPos,
+	    	    	    	    	      markstop - data->DispPos);
+		    
     }
     else
     {
@@ -1086,15 +1189,11 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 		}
 		break;
 	    case MUIKEY_WORDLEFT:
-		while (data->BufferPos > 0)
+		if (data->BufferPos > 0)
 		{
+		    data->BufferPos = Buffer_GetPrevWordIndex(data, data->BufferPos);
 		    update = 1;
-		    data->BufferPos--;
 		    data->msd_RedrawReason = DO_CURSOR_LEFT;
-		    if (0 == data->BufferPos ||
-			(0x20 == data->Buffer[data->BufferPos - 1] &&
-			 0x20 != data->Buffer[data->BufferPos]))
-			break;
 		}
 		if (cursor_kills_marking)
 		{
@@ -1103,15 +1202,11 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 		}
 		break;
 	    case MUIKEY_WORDRIGHT:
-		while (data->BufferPos < data->NumChars)
+		if (data->BufferPos < data->NumChars)
 		{
+		    data->BufferPos = Buffer_GetSuccWordIndex(data, data->BufferPos);
 		    update = 1;
-		    data->BufferPos++;
-		    data->msd_RedrawReason = DO_CURSOR_RIGHT;
-		    if (data->NumChars == data->BufferPos ||
-			(0x20 == data->Buffer[data->BufferPos - 1] &&
-			 0x20 != data->Buffer[data->BufferPos]))
-			break;
+		    data->msd_RedrawReason = DO_CURSOR_RIGHT;		   
 		}
 		if (cursor_kills_marking)
 		{
@@ -1210,6 +1305,21 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			
 			retval = MUI_EventHandlerRC_Eat;
 
+			CurrentTime(&data->NewClick_Sec, &data->NewClick_Micro);
+			if (DoubleClick(data->OldClick_Sec, data->OldClick_Micro,
+		    	    		data->NewClick_Sec, data->NewClick_Micro))
+			{
+		    	    data->MultiClick++;
+			}
+			else
+			{
+		    	    data->MultiClick = 0;
+			}
+    	    	    	data->OldClick_Sec = data->NewClick_Sec;
+			data->OldClick_Micro = data->NewClick_Micro;
+			
+			kprintf("multiclick %d\n", data->MultiClick);
+			
 			if (!data->is_active)
 			{
 			    data->is_active = TRUE;
@@ -1272,11 +1382,20 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 
 			data->MarkPos = data->BufferPos;
 			
-			if (data->msd_Flags & MSDF_MARKING)
+			if (data->MultiClick == 0)
 			{
-			    data->msd_Flags &= ~MSDF_MARKING;
+			    if (data->msd_Flags & MSDF_MARKING)
+			    {
+				data->msd_Flags &= ~MSDF_MARKING;
+				update = 1;
+			    }
+			}
+			else if (data->MultiClick && Buffer_GetMarkedRange(data, NULL, NULL))
+			{
+			    data->msd_Flags |= MSDF_MARKING;
 			    update = 1;
 			}
+			
 			
 		    } /* is in object */
 		    else if (data->is_active) /* and click not on object */
@@ -1325,8 +1444,24 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 
 			if (data->BufferPos != newpos)
 			{
+			    WORD old_markstart = 0, old_markstop = 0;
+			    WORD markstart = 0, markstop = 0;	    
+			    BOOL was_marked, is_marked;
+			    
+			    was_marked = Buffer_AnythingMarked(data) &&
+			    	    	 Buffer_GetMarkedRange(data, &old_markstart, &old_markstop);
+			    
 			    data->BufferPos = newpos;
-			    update = 1;
+			    
+			    is_marked = Buffer_AnythingMarked(data) &&
+			    	    	Buffer_GetMarkedRange(data, &markstart, &markstop);
+			    
+			    if ((was_marked != is_marked) ||
+			    	(old_markstart != markstart) ||
+				(old_markstop != markstop))
+			    {
+			    	update = 1;
+			    }
 			}
 		    }
 		    else if ((x < text_left) && (data->BufferPos > 0))
@@ -1463,6 +1598,8 @@ static IPTR String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     data->is_active = FALSE;
     data->msd_RedrawReason = WENT_INACTIVE;
+    data->MultiClick = 0;
+    
     // redraw
     set(obj, MUIA_Background,
 	(IPTR)muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
