@@ -47,6 +47,7 @@ asm
 #endif
 
 int             __detached_manages_detach;
+int             __detacher_go_away;
 STRPTR          __detached_name;
 LONG            __detached_return_value;
 struct Process *__detacher_process;
@@ -75,10 +76,15 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     if (!DOSBase) return RETURN_FAIL;
 
     cli = Cli();
-    /*
-        We cannot be started from WorkBench
-    */
-    if (!cli) return RETURN_FAIL;
+    /* Without a CLI detaching makes no sense, just jump to
+       the real program.  */
+    if (!cli)
+    {
+        AROS_UFC3(LONG, SETELEM(__detach_entry, program_entries)[1],
+        AROS_UFHA(char *,argstr,A0),
+        AROS_UFHA(ULONG,argsize,D0),
+        AROS_UFHA(struct ExecBase *,SysBase,A6));
+    }  
 
     mysegment = cli->cli_Module;
     cli->cli_Module = NULL;
@@ -110,7 +116,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	__detached_return_value = RETURN_ERROR;
     }
     else
-        Wait(SIGF_SINGLE);
+        while (!__detacher_go_away) Wait(SIGF_SINGLE);
 
     if (__detached_return_value != RETURN_OK)
     {
@@ -170,6 +176,9 @@ void __Detach(LONG retval)
     if (__detacher_process != NULL)
     {
         __detached_return_value = retval;
+	__detacher_go_away      = TRUE;
+	
+	SetSignal(0, SIGF_SINGLE);
 	/* Tell the detacher process it can now go away */
         Signal(&__detacher_process->pr_Task, SIGF_SINGLE);
 	
