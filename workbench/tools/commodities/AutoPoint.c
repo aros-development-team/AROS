@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AutoPoint commodity -- activates windows under the mouse pointer
@@ -60,6 +60,7 @@
 #include <proto/alib.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #define  DEBUG 0
 #include <aros/debug.h>
