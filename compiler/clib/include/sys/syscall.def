@@ -121,4 +121,5 @@ SYSTEM_CALL (fcntl)
 SYSTEM_CALL (difftime)
 SYSTEM_CALL (ftruncate)
 SYSTEM_CALL (umask)
+SYSTEM_CALL (unsetenv)
 
