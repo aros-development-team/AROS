@@ -324,7 +324,6 @@ aros_modules_debug="1"
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
 
-
 # Check for some includes
 AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
 
@@ -398,7 +397,7 @@ case "$target_os" in
         	AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
         	;;
 	esac 
-	aros_target_genmap="-Wl,-M -Xlinker >" 
+	aros_target_genmap="-Wl,-M -Xlinker >"
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         strip_args="-x"
@@ -600,6 +599,12 @@ AC_ARG_ENABLE(includes,
 [  --enable-includes=dir   Alternative system include directory],
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 
+dnl find out about the target cc's include path
+AC_MSG_CHECKING([for the target compiler's include path])
+aros_target_cc_includes=`dirname \`${aros_target_cc} -print-libgcc-file-name\``/include
+AC_MSG_RESULT("$aros_target_cc_includes")
+
+
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
 AC_ARG_WITH(resolution,[  --with-resolution=XRESxYRESxDEPTH        Default resolution of the initial WorkbenchScreen],resolution=$withval,resolution=none)
@@ -732,6 +737,7 @@ AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_cc)
+AC_SUBST(aros_target_cc_includes)
 AC_SUBST(aros_shared_default)
 
 AC_SUBST(aros_target_cflags)
