@@ -1,43 +1,25 @@
-# $Id$
+#   $Id$
 include $(TOP)/config/make.cfg
 
+MODNAME := keyboard
+MODTYPE := device
+
 USER_INCLUDES := -I$(TOP)/rom/devs
+OBJDIR := $(GENDIR)/keyboard
 
-DEVS    := $(DEVSDIR)/keyboard.device
-FILES	:= keyboard
-OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-LIB	:= $(LIBDIR)/libkeyboard.a
+INIT_FILE := keyboard
+FILES :=
+FUNCS :=
 
-%define_libs
+USE_FUNCTABLE := no
+USE_ENDTAG := no
 
-%make_common_setup
+MAKE_SHLIB := $(SHARED_KEYBOARD)
 
-#MM
-kernel-devs-$(ARCH)-$(CPU) : $(LIB)
-	@$(NOP)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
-kernel-devs : $(DEVS)
-
-#MM
-clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR)
-
-$(DEVSDIR)/keyboard.device : $(OBJDIR)/keyboard.o
-	%link_q startup=
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
+#MM- kernel-devs : kernel-keyboard-linklib
+#MM- kernel-keyboard : setup includes linklibs
+%make_module_setup mmake=kernel-keyboard
+%make_module mmake=kernel-keyboard
 
 %common
-%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%include_deps
