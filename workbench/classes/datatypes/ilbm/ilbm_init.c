@@ -35,8 +35,6 @@ BPTR            SegList;
 #undef SysBase
 
 #undef  SDEBUG
-#undef  DEBUG
-#define DEBUG 1
 #include <aros/debug.h>
 
 /***************************************************************************************************/
