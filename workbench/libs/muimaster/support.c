@@ -142,6 +142,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Imageadjust_desc,
     &_MUI_Popimage_desc,
     &_MUI_Scale_desc,
+    &_MUI_Radio_desc,
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)

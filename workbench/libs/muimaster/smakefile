@@ -63,6 +63,7 @@ CLASSESOBJS= \
   objs/classes/popobject.o \
   objs/classes/popstring.o \
   objs/classes/prop.o \
+  objs/classes/radio.o \
   objs/classes/rectangle.o \
   objs/classes/register.o \
   objs/classes/semaphore.o \
@@ -288,6 +289,9 @@ objs/classes/popobject.o: classes/popobject.c
 
 objs/classes/popstring.o: classes/popstring.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popstring.c objname=$@
+
+objs/classes/radio.o: classes/radio.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/radio.c objname=$@
 
 objs/classes/slider.o: classes/slider.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/slider.c objname=$@
