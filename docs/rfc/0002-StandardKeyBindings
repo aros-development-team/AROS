@@ -1,0 +1,81 @@
+There was some more discussion about this on IRC, so I have updated 
+this document. Changes done since last version:
+o Changed the completion key binding from ALT+TAB to CTRL+SPACE.
+  The reason for this is that ALT+TAB is commonly used the switch
+  windows, a key binding that the user might want. Choosing CTRL+SPACE
+  as a replacement comes from the fact that it is used like a completion
+  key binding in some IDE's, so it's not totally new.
+o Added key bindings for switching screens and windows, inspired by the 
+  ones in AmigaOS. 
+  
+Open issues:
+o For switching screens, does AmigaOS use RAMIGA+M or LAMIGA+M?
+o What should we call the "AMIGA"/"META" keys? Calling them "META" 
+  is more platform independant, but "AMIGA" is more, well, amigaish. 
+  Or perhaps we should call them "AROS"? ;-)
+o Should ALT+TAB be bound to switching windows by default?
+  Doesn't feel very amigaish, and should we not educate new users 
+  into the "Amiga way" of things? 
+
+Todo:
+o Decide on the issues above. :)
+o Since the document probably will become larger, a better structure
+  would be good. Separate into application domains, put rationale for 
+  key bindings in separate section and so on.
+
+
+ARFC-0002: Standard AROS Key Bindings
+-------------------------------------
+
+This document specifies standard key bindings in the AROS user 
+interfaces. More specifically, it currently specifies what default 
+key bindings should be used for switching between gadgets in a GUI and 
+which to use for completion of strings, eg. filenames. In the future, 
+more key bindings could be specified here. 
+
+Ofcourse, all key bindings in the system should be configurable by the 
+user. This document merely specifies the defaults the system should
+come with, and the classes of key bindings that should be available.
+The main idea here is to be orthogonal, consistent and user friendly. 
+Thus, there should be as little exceptions to the general rules as 
+possible, preferably none.
+
+Unless otherwise noted, all key bindings defined here also have an
+alternate form. If the SHIFT key is used in conjuction with the key 
+binding, it should have "opposite" meaning. Eg., if CTRL+TAB means 
+"select next gadget" then CTRL+SHIFT+TAB means "select previous gadget".
+
+The following key bindings have been decided upon:
+    CTRL+TAB        = Select next gadget              (1)
+    TAB             = Select next gadget              (2)
+    CTRL+SPACE      = Completion; show next match     (3)
+    RAMIGA+M        = Switch to next screen
+    RAMIGA+N        = Switch to next window
+    
+(1) These key bindings must always work, and thus it is not allowed for
+    a gadget or application to intercept these input events.
+
+(2) These key bindings should work in most cases, but gadgets or 
+    applications are allowed to intercept these input events for their
+    own use. A typical example would be an editor gadget, where you want
+    to be able to insert tabs (eg. for indenting the text). 
+    
+=== Thus, the user can most of the time use the quicker TAB key binding, 
+    but might sometimes need to use CTRL+TAB. However, since CTRL+TAB 
+    *always* works, the user can always use CTRL+TAB if he/she prefers it
+    for consistency.
+    
+(3) Completion means that the application tries to complete the word based
+    on what the user has written before, by using some sort of database or
+    internal knowledge. Typical examples would be filename completion in 
+    the Shell and file requester string gadgets, URL completion in web
+    browser string gadgets or intelligent completion of function names in 
+    an editor for programmers.
+    
+    The reason for choosing CTRL+SPACE rather than TAB, which is traditionally 
+    used in different shells, is that it would clash with the definitions 
+    above. Also, CTRL+SPACE is already used as a completion key binding in 
+    several IDEs. 
+    
+    Defining CTRL+SPACE as a generic completion key binding that can be used 
+    anywhere leads to a more consistent and more userfriendly user interface. 
