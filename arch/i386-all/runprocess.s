@@ -42,20 +42,24 @@ AROS_SLIB_ENTRY(RunProcess,Dos):
 
 	/* Move upper bounds of the new stack into eax */
 	movl stk_Upper(%ebx),%eax
-	/* Make room for one pointer */
-	addl $-4,%eax
-	/* Push sss onto the new stack */
-	movl %ebx,(%eax)
 
-	/* Make room for another pointer */
-	addl $-4,%eax
+	/* Push arguments for entry onto stack */
+	movl argptr(%esp),%edx
+	movl %edx,-16(%eax)
+	movl argsize(%esp),%edx
+	movl %edx,-12(%eax)
+
+	/* Push sss onto the new stack */
+	movl %ebx,-4(%eax)
+
 	/* Get SysBase */
 	movl DOSBase(%esp),%edx
 	movl dl_SysBase(%edx),%edx
 	/* Push SysBase on the new stack */
-	movl %edx,(%eax)
+	movl %edx,-8(%eax)
 
 	/* Store switch point in sss */
+	addl $-16,%eax
 	movl %eax,stk_Pointer(%ebx)
 
 	/* Push SysBase and sss on our stack */
@@ -64,11 +68,13 @@ AROS_SLIB_ENTRY(RunProcess,Dos):
 	/* Switch stacks */
 	leal StackSwap(%edx),%edx
 	call *%edx
-	/* Clean (new) stack */
+	/* Clean new stack from call to StackSwap */
 	addl $8,%esp
 
 	/* Call the specified routine */
 	call *%edi
+	/* Clean (new) stack, leaving SysBase behind */
+	addl $8,%esp
 
 	/* Store the result of the routine in esi */
 	movl %eax,%esi
@@ -81,7 +87,7 @@ AROS_SLIB_ENTRY(RunProcess,Dos):
 	/* Switch stacks back */
 	leal StackSwap(%edx),%edx
 	call *%edx
-	/* Clean our stack */
+	/* Clean old stack */
 	addl $8,%esp
 
 	/* Put the result in eax where our caller expects it */
