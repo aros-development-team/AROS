@@ -64,7 +64,7 @@ static UBYTE lokeymaptypes[] =
     V,	 	/* 28 l */
     S, 		/* 29 */
     S, 		/* 2A */
-    S, 		/* 2B */
+    V, 		/* 2B */
     N, 		/* 2C */
     N, 		/* 2D */
     N, 		/* 2E */
