@@ -24,12 +24,13 @@ FILES := basicfuncs specialreq \
 	 gadgets coolimagedata locale 
 
 FUNCS := allocfilerequest	\
-	allocaslrequest 	\
-	aslrequest		\
-	freeaslrequest		\
-	freefilerequest 	\
-	requestfile 	    	\
-	abortaslrequest
+	 allocaslrequest 	\
+	 aslrequest		\
+	 freeaslrequest		\
+	 freefilerequest 	\
+	 requestfile 	    	\
+	 abortaslrequest    	\
+	 activateaslrequest 	\
 
 USE_ROMLIB := yes
 USE_MLIB := yes
