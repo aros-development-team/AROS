@@ -1,84 +1,95 @@
 # $Id$
 include $(TOP)/config/make.cfg
-
-USER_INCLUDES := -I.
+include ../../make.cfg
 
 MODNAME := muimaster
 MODTYPE := library
 
-CLASSES   := application \
-    	     area \
-	     bitmap \
-	     bodychunk \
-	     boopsi \
-	     dataspace \
-	     family \
-	     group \
-	     menuitem \
-	     notify \
-	     numeric \
-	     prop \
-	     rectangle \
-	     register \
-	     semaphore \
-	     scrollbar \
-	     scrollbutton \
-	     scrollgroup \
-	     slider \
-	     string \
-	     text \
-	     virtgroup \
-	     window
+CLASSES := \
+    application \
+    area \
+    bitmap \
+    bodychunk \
+    boopsi \
+    dataspace \
+    family \
+    group \
+    menuitem \
+    notify \
+    numeric \
+    prop \
+    rectangle \
+    register \
+    semaphore \
+    scrollbar \
+    scrollbutton \
+    scrollgroup \
+    slider \
+    string \
+    text \
+    virtgroup \
+    window
 	     
-CLASSFILES:= $(foreach f, $(CLASSES), classes/$(f))
+CLASSFILES := $(foreach f, $(CLASSES), classes/$(f))
      
-FILES     := support \
-	     textengine \
-    	     frame \
-	     prefs \
-	     imspec \
-	     dragndrop \
-             menu \
-	     $(CLASSFILES)
+FILES := \
+    support \
+    textengine \
+    frame \
+    prefs \
+    imspec \
+    dragndrop \
+    menu \
+    $(CLASSFILES)
     	    
 FUNCS := \
-	mui_addclipping \
-	mui_addclipregion \
-	mui_allocaslrequest \
-	mui_aslrequest \
-	mui_beginrefresh \
-	mui_createcustomclass \
-	mui_deletecustomclass \
-	mui_disposeobject \
-	mui_endrefresh \
-	mui_error \
-	mui_freeaslrequest \
-	mui_freeclass \
-	mui_getclass \
-	mui_layout \
-	mui_makeobject \
-	mui_newobject \
-	mui_obtainpen \
-	mui_redraw \
-	mui_rejectidcmp \
-	mui_releasepen \
-	mui_removeclipping \
-	mui_removeclipregion \
-	mui_request \
-	mui_requestidcmp \
-	mui_seterror
+    mui_addclipping \
+    mui_addclipregion \
+    mui_allocaslrequest \
+    mui_aslrequest \
+    mui_beginrefresh \
+    mui_createcustomclass \
+    mui_deletecustomclass \
+    mui_disposeobject \
+    mui_endrefresh \
+    mui_error \
+    mui_freeaslrequest \
+    mui_freeclass \
+    mui_getclass \
+    mui_layout \
+    mui_makeobject \
+    mui_newobject \
+    mui_obtainpen \
+    mui_redraw \
+    mui_rejectidcmp \
+    mui_releasepen \
+    mui_removeclipping \
+    mui_removeclipregion \
+    mui_request \
+    mui_requestidcmp \
+    mui_seterror
 
-USE_AMIGALIB := yes
-USE_MUILIB   := yes
+USE_AMIGALIB    := yes
+USE_MUILIB      := yes
 USE_CLIB_STATIC := yes
-USE_MLIB := yes
+USE_MLIB        := yes
 
-#MM- workbench-libs-muimaster : setup includes linklibs  \
-#MM	workbench-libs-muimaster-module
-%make_module_setup mmake=workbench-libs-muimaster
+USER_INCLUDES := -I.
+
+#MM- contrib-zune-libs-muimaster : setup includes linklibs \
+#MM	contrib-zune-libs-muimaster-module
+
+%make_module_setup mmake=contrib-zune-libs-muimaster
+
+MOD_DIR := $(ZUNEDIR)/Libs
+
 %make_module_cpak
-%make_module mmake=workbench-libs-muimaster
+%make_module mmake=contrib-zune-libs-muimaster
 %make_lib_includes
+
+#MM setup
+setup ::
+	%mkdirs_q $(ZUNEDIR)/Libs
 
 %common
 %include_deps
