@@ -3,9 +3,10 @@
 #
 # $Id$
 
-MMAKE = @MMAKE@
+MMAKE=@MMAKE@
 
 ifeq ($(MMAKE),)
+MMAKE=./mmake
 all: mmake genmf
 else
 all: genmf
