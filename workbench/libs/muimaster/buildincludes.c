@@ -69,7 +69,7 @@ static void readfile(FILE *in)
     }
 }
 
-void main(void)
+int main(void)
 {
     int i;
 
@@ -80,4 +80,6 @@ void main(void)
     	readfile(in);
 	fclose(in);
     }
+
+    return 0;
 }
