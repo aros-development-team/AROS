@@ -552,6 +552,10 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
             
             return NewFileNode(pipefsbase, FilePart(filename), 0, dn, err);
         }
+        else
+        {
+            *err = ERROR_OBJECT_NOT_FOUND;
+        }
     }
 
     if (fn && fn->type > 0 && mode&(FMF_WRITE|FMF_READ))
