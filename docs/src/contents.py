@@ -14,7 +14,7 @@ The <description> element is optional. There can be any number of items.
 An item can contain any number of <dir> and <file> elements as long
 as they come before the text.'''
 
-import xmlsupport, sys, os, os.path, string
+import xmlsupport, sys, os, os.path, string, fileinput
 
 def processContents (p, xmlfile, item):
     xmlfile.processRecursive (p, item.content)
@@ -70,7 +70,73 @@ class Item:
 		    sys.stdout.write (dir[0]+'/\n')
 		    dir[1].dump (level+1)
 
+def filterMakefile (p, item, tag):
+    filename = os.path.join (p.contents.basedir, item.files[0])
 
+    words = string.split (tag.content[0].text, ',')
+    parts = []
+    for word in words:
+	parts.append (string.strip (word))
+
+    list = []
+
+    mode = 'search'
+    for line in fileinput.input (filename):
+	if mode == 'search':
+	    if line[:12] == '# BEGIN_DESC':
+		pos = string.index (line, '{')
+		pos2 = string.index (line, '}', pos)
+		part = line[pos+1:pos2]
+		#print part
+		if part in parts:
+		    mode = 'found'
+		    text = ''
+	elif mode == 'found':
+	    if line[:10] == '# END_DESC':
+		list.append ((part, text))
+		mode = 'search'
+	    else:
+		text = text + string.rstrip (line[2:]) + '\n'
+
+    result = xmlsupport.Tag ('p')
+
+    #print 'list:',list
+    dl = None
+
+    for part, text in list:
+	paras = string.split (string.rstrip (text), '\n\n')
+
+	for para in paras:
+	    print `para`
+	    if para[:5] == '\\item':
+		pos = string.index (para, '{')
+		pos2 = string.index (para, '}', pos)
+		name = para[pos+1:pos2]
+		para = string.lstrip (para[pos2+1:])
+		print 'item:',name,`para`
+	
+		liElement = xmlsupport.Tag ('li')
+		itemElement = xmlsupport.Tag ('item')
+		textElement = xmlsupport.Text (para)
+		itemElement.append (xmlsupport.Text (name))
+		liElement.append (itemElement, textElement)
+		
+		if dl:
+		    dl.append (liElement)
+		else:
+		    dl = xmlsupport.Tag ('description')
+		    result.append (dl)
+	    else:
+		dl = None
+		pElement = xmlsupport.Tag ('p')
+		textElement = xmlsupport.Text (para)
+		pElement.append (textElement)
+		
+		result.append (pElement)
+
+    result.dump (0)
+    return result
+    
 def processItem (p, xmlfile, item):
     # Strip whilespace before the first text element
     list = item.content[:]
@@ -106,6 +172,12 @@ def processItem (p, xmlfile, item):
 	del list[0]
 	
     #print '2',list
+    i = 0
+    for child in list:
+	if isinstance (child, xmlsupport.Tag) and child.name == 'filtermakefile':
+	    del list[i]
+	    list.insert (i, filterMakefile (p, result, child))
+	i = i + 1
     result.description = list
     p.contents.items.append (result)
 
