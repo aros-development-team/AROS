@@ -81,7 +81,7 @@ static struct spec_cfg DefImspecValues[] =
     { MUII_PopUp,         MUICFG_Image_PopUp,           "1:7" },
     { MUII_PopFile,       MUICFG_Image_PopFile,         "1:8" },
     { MUII_PopDrawer,     MUICFG_Image_PopDrawer,       "1:9" },
-    { MUII_PropKnob,      MUICFG_Image_PropKnob,        "0:128" },
+    { MUII_PropKnob,      MUICFG_Image_PropKnob,        "0:129" },
     { MUII_Drawer,        MUICFG_Image_Drawer,          "0:128" },
     { MUII_HardDisk,      MUICFG_Image_HardDisk,        "0:128" },
     { MUII_Disk,          MUICFG_Image_Disk,            "0:128" },
@@ -186,6 +186,8 @@ static struct def_ulval DefULValues[] =
     { MUICFG_List_FontLeading, 1 },
     { MUICFG_GroupTitle_Position, GROUP_TITLE_POSITION_CENTERED },
     { MUICFG_GroupTitle_Color, GROUP_TITLE_COLOR_HILITE },
+    { MUICFG_Scrollbar_Type, SCROLLBAR_TYPE_STANDARD },
+    { MUICFG_Scrollbar_Arrangement, SCROLLBAR_ARRANGEMENT_TOP },
     { 0, 0 },
 };
 
@@ -315,7 +317,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Scrollbars ----------*/
 
-    data->prefs.sb_look = SB_LOOK_TOP;
+    data->prefs.scrollbar_type = GetConfigULong(obj, MUICFG_Scrollbar_Type);
+    data->prefs.scrollbar_arrangement = GetConfigULong(obj, MUICFG_Scrollbar_Arrangement);
 
     /*---------- Lists ----------*/
 

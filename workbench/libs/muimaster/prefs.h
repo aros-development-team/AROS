@@ -49,11 +49,17 @@ typedef enum DNDLook {
     DND_LOOK_ALWAYS_GHOSTED,
 } DNDLook;
 
-typedef enum ScrollbarLook {
-    SB_LOOK_TOP,
-    SB_LOOK_MIDDLE,
-    SB_LOOK_BOTTOM,
-} ScrollbarLook;
+typedef enum ScrollbarType {
+    SCROLLBAR_TYPE_STANDARD,
+    SCROLLBAR_TYPE_NEWLOOK,
+    SCROLLBAR_TYPE_CUSTOM,
+} ScrollbarType;
+
+typedef enum ScrollbarArrangement {
+    SCROLLBAR_ARRANGEMENT_TOP,
+    SCROLLBAR_ARRANGEMENT_MIDDLE,
+    SCROLLBAR_ARRANGEMENT_BOTTOM,
+} ScrollbarArrangement;
 
 typedef enum BalancingLook {
     BALANCING_SHOW_FRAMES,
@@ -138,7 +144,8 @@ struct ZunePrefsNew
     struct MUI_PenSpec   active_object_color; /* yet unused, remove this comment when handled */
 
     /* Scrollbars */
-    ScrollbarLook     sb_look; /* yet unused, remove this comment when handled */
+    ScrollbarType        scrollbar_type;
+    ScrollbarArrangement scrollbar_arrangement;
 };
 
 #endif
