@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Intuition private function SetDefaultScreenFont()
-    Lang: english
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -21,10 +21,10 @@
 	struct IntuitionBase *, IntuitionBase, 144, Intuition)
 
 /*  FUNCTION
-        Make a window invisible. 
+        Set the default Font.
 
     INPUTS
-	window - The window to affect. 
+	textfont - The Font to be used.
 
     RESULT
 
