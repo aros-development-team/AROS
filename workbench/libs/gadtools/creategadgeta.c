@@ -64,39 +64,35 @@
     BOOL error = TRUE;
     struct Gadget *gad;
     STRPTR classname;
-    struct
-{IPTR l1; IPTR l2; IPTR l3; IPTR l4; IPTR l5; IPTR l6; IPTR l7; IPTR l8; IPTR l9; IPTR l10; IPTR l11; IPTR l12; IPTR l13;}
-tags =
-{GA_Left, 100, GA_Top, 100, GA_Width, 100, GA_Height, 20, GA_Text,
-(IPTR)"Button", GA_Previous, (IPTR)previous, TAG_END};
 
     return NULL;
 
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
-        return NULL;
+	return NULL;
 
     switch(kind)
     {
     case BUTTON_KIND:
-        classname = BUTTONGCLASS;
-        error = FALSE;
-        break;
+	classname = BUTTONGCLASS;
+	error = FALSE;
+	break;
     }
 
     if (error)
-        return NULL;
+	return NULL;
 
-    gad = (struct Gadget *)NewObjectA(NULL, classname,/* GA_Left, ng->ng_LeftEdge,
-                                                      GA_Top, ng->ng_TopEdge,
-                                                      GA_Width, ng->ng_Width,
-                                                      GA_Height, ng->ng_Height,
-                                                      GA_Text, ng->ng_GadgetText,
-                                                      GA_TextAttr, ng->ng_TextAttr,
-                                                      GA_Previous, previous,
-                                                      TAG_END */ (struct TagItem *)&tags);
+    gad = (struct Gadget *)NewObject(NULL, classname,
+	GA_Left, ng->ng_LeftEdge,
+	GA_Top, ng->ng_TopEdge,
+	GA_Width, ng->ng_Width,
+	GA_Height, ng->ng_Height,
+	GA_Text, ng->ng_GadgetText,
+	GA_TextAttr, ng->ng_TextAttr,
+	GA_Previous, previous,
+	TAG_END);
 
     if (gad)
-        gad->GadgetType |= GTYP_GADTOOLS;
+	gad->GadgetType |= GTYP_GADTOOLS;
 
     return gad;
     AROS_LIBFUNC_EXIT
