@@ -8,16 +8,24 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
-
+#include "text_intern.h"
 #include "compilerspecific.h"
+#if defined(__AROS__) && !defined(__MORPHOS__)
+#include LC_LIBDEFS_FILE
+#else
+#include "libdefs.h"
+#endif
 
-struct IClass 		*dt_class;
-
+#warning "All this global stuff sucks and should be removed"
 struct ExecBase 	*SysBase;
 struct IntuitionBase 	*IntuitionBase;
 struct GfxBase	 	*GfxBase;
 #ifdef __AROS__
+#ifdef __MORPHOS__
+struct Library         *UtilityBase;
+#else
 struct UtilityBase	*UtilityBase;
+#endif
 #else
 struct Library		*UtilityBase;
 #endif
@@ -28,7 +36,7 @@ struct Library 		*DataTypesBase;
 struct Library 		*IFFParseBase;
 
 /* inside textclass.c */
-struct IClass *DT_MakeClass(struct Library *textbase);
+struct IClass *DT_MakeClass(LIBBASETYPEPTR);
 
 #ifdef __AROS__
 #undef	register
@@ -38,13 +46,18 @@ struct IClass *DT_MakeClass(struct Library *textbase);
 #define __a6
 #endif
 
+#undef SysBase
+
 /**************************************************************************************************/
 
-ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
-{
-#ifndef __AROS__
-    SysBase = *(struct ExecBase**)4;
+#ifdef __MORPHOS__
+int __UserLibInit(LIBBASETYPEPTR       LIBBASE )
+#else
+ASM SAVEDS int __UserLibInit( register __a6 LIBBASETYPEPTR     LIBBASE )
 #endif
+{
+
+    SysBase = LIBBASE->sysbase;
 
     if((LayersBase = OpenLibrary("layers.library", 39)))
     {
@@ -57,7 +70,11 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 		    if((DiskfontBase = OpenLibrary("diskfont.library", 37)))
 		    {
 #ifdef __AROS__
+#ifdef __MORPHOS__
+			if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))
+#else
 			if((UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37)))
+#endif
 #else
 			if((UtilityBase = (struct Library *)OpenLibrary("utility.library", 37)))
 #endif
@@ -66,9 +83,9 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 			    {
 				if((IFFParseBase = OpenLibrary("iffparse.library", 37)))
 				{
-				    if((dt_class = DT_MakeClass(libbase)))
+				    if((LIBBASE->class = DT_MakeClass(LIBBASE)))
 				    {
-					AddClass(dt_class);
+					AddClass(LIBBASE->class);
 					
 					return 0;
 				    }
@@ -86,13 +103,17 @@ ASM SAVEDS int __UserLibInit( register __a6 struct Library *libbase )
 
 /**************************************************************************************************/
 
-ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
+#ifdef __MORPHOS__
+void __UserLibCleanup(LIBBASETYPEPTR   LIBBASE )
+#else
+ASM SAVEDS void __UserLibCleanup( register __a6 LIBBASETYPEPTR	LIBBASE )
+#endif
 {
-    if(dt_class)
+    if(LIBBASE->class)
     {
-	RemoveClass(dt_class);
-	FreeClass(dt_class);
-	dt_class = NULL;
+	RemoveClass(LIBBASE->class);
+	FreeClass(LIBBASE->class);
+	LIBBASE->class = NULL;
     }
     
     if(IFFParseBase) CloseLibrary(IFFParseBase);
@@ -107,9 +128,9 @@ ASM SAVEDS void __UserLibCleanup( register __a6 struct Library *libbase )
 
 /**************************************************************************************************/
 
-SAVEDS STDARGS struct IClass *ObtainEngine(void)
+SAVEDS STDARGS struct IClass *ObtainEngine(LIBBASETYPEPTR      LIBBASE)
 {
-    return dt_class;
+    return (LIBBASE->class);
 }
 
 /**************************************************************************************************/

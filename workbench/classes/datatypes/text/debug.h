@@ -3,7 +3,7 @@
 
 /* Debug Macros */
 
-#ifdef __AROS__
+#if defined(__AROS__) && !defined(__MORPHOS__)
 
 #undef DEBUG
 
@@ -16,11 +16,15 @@
 
 #else /* __AROS__ */
 
+#undef bug
+#undef D(x)
+#undef kprintf
+
 #define bug kprintf
 
 #ifdef MYDEBUG
 void kprintf(char *string, ...);
-#define D(x) {kprintf("%s/%ld (%s): ", __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name);(x);};
+#define D(x) {/*bug("%s/%ld (%s): ", __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name);*/ {(x);}};
 #else
 #define D(x) ;
 

@@ -21,17 +21,28 @@
 #define SAVEDS
 #define ASM
 #define STDARGS
+#define VARARGS
+#define __varargs68k
 
 #define getreg(x) 0
 #define putreg(a,b) 
 
 #else
 
-typedef unsigned long IPTR;
+#ifdef __MORPHOS__
+
+#define SAVEDS
+#define ASM
+#define STDARGS
+
+#else
 
 #define SAVEDS  __saveds
 #define ASM     __asm
 #define STDARGS __stdargs
+
+typedef unsigned long IPTR;
+#endif
 
 #if !defined(_DOS_H) && defined(__SASC)
 #include <dos.h>

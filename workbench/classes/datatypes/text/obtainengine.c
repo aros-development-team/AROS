@@ -1,11 +1,18 @@
 #include <exec/libraries.h>
 #include <intuition/classes.h>
-#include <proto/alib.h>
+#include <proto/exec.h>
+#include <aros/libcall.h>
 #include "compilerspecific.h"
 
-#include LC_LIBDEFS_FILE
+#include "text_intern.h"
 
-extern SAVEDS STDARGS struct IClass *ObtainEngine(void);
+#if defined(__AROS__) && !defined(__MORPHOS__)
+#include LC_LIBDEFS_FILE
+#else
+#include "libdefs.h"
+#endif
+
+extern SAVEDS STDARGS struct IClass *ObtainEngine(struct TextBase_intern *libbase);
 
 /***************************************************************************************************/
 
@@ -15,7 +22,7 @@ AROS_LH0(struct IClass *, ObtainEngine,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
-    return ObtainEngine();
+    return ObtainEngine(LIBBASE);
     
     AROS_LIBFUNC_EXIT
 }

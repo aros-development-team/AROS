@@ -1,3 +1,7 @@
+#ifndef LNF_MARKED
+#define LNF_MARKED  (1<<15)
+#endif
+
 
 struct Text_Data
 {
@@ -64,6 +68,18 @@ struct Text_Data
     int		search_line;
     int		search_pos;		/* x position */
     int		search_case;
+
+#ifdef MORPHOS_AG_EXTENSION
+    LONG        links;
+    struct Line *marked_line;
+    struct Line *selected_line;
+    struct Line *last_marked_line;
+    LONG        shinepen, shadowpen;
+    BOOL        link_pressed;
+    Object      *obj;
+    UBYTE       word[128];     /* double clicked word */
+    struct GadgetInfo *ginfo;
+#endif
 };
 
 
