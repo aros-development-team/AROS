@@ -51,7 +51,8 @@
 
     rp->cp_x = x;
     rp->cp_y = y;
-
+    rp->linpatcnt = 15;
+    
     AROS_LIBFUNC_EXIT
     
 } /* Move */
