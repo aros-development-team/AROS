@@ -21,7 +21,7 @@
 
 #include <devices/input.h>
 
-#ifndef __NetBSD__ 
+#if (!defined(__NetBSD__)) && (!defined (__CYGWIN32__))
 #define size_t sys_size_t
 #include <sys/types.h>
 #include <signal.h>
