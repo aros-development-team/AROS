@@ -6,7 +6,6 @@
     Lang: english
 */
 #include "rexxsyslib_intern.h"
-#include <rexx/storage.h>
 
 /*****************************************************************************
 
@@ -41,12 +40,11 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
 
     static struct RexxArg dummy;
     struct RexxArg *ra;
   
-    ra = (struct RexxArg *)(argstring-((void *)dummy.ra_Buff-(void *)&dummy));
+    ra = (struct RexxArg *)(argstring - ((void *)dummy.ra_Buff - (void *)&dummy));
   
     ReturnInt("LengthArgstring", ULONG, ra->ra_Length);
     AROS_LIBFUNC_EXIT

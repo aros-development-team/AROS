@@ -7,7 +7,6 @@
 */
 #include <proto/exec.h>
 #include "rexxsyslib_intern.h"
-#include <rexx/storage.h>
 
 /*****************************************************************************
 
@@ -44,15 +43,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG size = sizeof(struct RexxArg)-8+length+1;
+    /* size is the length of the memory to allocate: size of RexxArg without Buff + length of string + 1 */
+    ULONG size = sizeof(struct RexxArg) - 8 + length + 1;
     struct RexxArg *ra = AllocMem(size, MEMF_PUBLIC|MEMF_CLEAR);
   
     if (ra == NULL) ReturnPtr("CreateArgstring", UBYTE *, NULL);
   
-    ra->ra_Size = length+1;
+    ra->ra_Size = length + 1;
     ra->ra_Length = length;
     CopyMem(string, ra->ra_Buff, length);
-    *(ra->ra_Buff+length) = '\0';
+    *(ra->ra_Buff + length) = '\0';
     
     ReturnPtr("CreateArgString", UBYTE *, ra->ra_Buff);
     AROS_LIBFUNC_EXIT
