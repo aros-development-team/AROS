@@ -75,6 +75,17 @@ AROS_LH1(BOOL , LateIntuiInit,
     IntuitionBase = IntuitionBase;
     data = data;
 
+    GetPrivIBase(IntuitionBase)->DefaultPointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
+    GetPrivIBase(IntuitionBase)->BusyPointer = MakePointerFromPrefs(IntuitionBase, GetPrivIBase(IntuitionBase)->ActivePreferences);
+
+    DEBUG_OPEN(dprintf("LIB_Open: Pointers %p %p\n",
+                       GetPrivIBase(IntuitionBase)->DefaultPointer,
+                       GetPrivIBase(IntuitionBase)->BusyPointer));
+
+    if (!GetPrivIBase(IntuitionBase)->DefaultPointer || !GetPrivIBase(IntuitionBase)->BusyPointer)
+        return FALSE;
+
+
     return TRUE;
 
 #else
