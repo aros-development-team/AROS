@@ -35,16 +35,76 @@
 
 #define END_FIX 1
 
+#define EMPTY1_RED  	    0x99999999
+#define EMPTY1_GREEN	    0x99999999
+#define EMPTY1_BLUE 	    0x99999999
+
+#define EMPTY2_RED  	    0x65656565
+#define EMPTY2_GREEN	    0x65656565
+#define EMPTY2_BLUE 	    0x65656565
+
+#define EMPTY1_DARK_RED     0x66666666
+#define EMPTY1_DARK_GREEN   0x66666666
+#define EMPTY1_DARK_BLUE    0x66666666
+
+#define EMPTY2_DARK_RED     0x42424242
+#define EMPTY2_DARK_GREEN   0x42424242
+#define EMPTY2_DARK_BLUE    0x42424242
+
+#define EMPTY1_SEL_RED	    0x40404040
+#define EMPTY1_SEL_GREEN    0x85858585
+#define EMPTY1_SEL_BLUE     0x99999999
+
+#define EMPTY2_SEL_RED	    0x29292929
+#define EMPTY2_SEL_GREEN    0x56565656
+#define EMPTY2_SEL_BLUE     0x63636363
+
+#define USED_RED    	    0x02020202
+#define USED_GREEN  	    0x75757575
+#define USED_BLUE   	    0x02020202
+
+#define USED_SEL_RED	    0x66666666
+#define USED_SEL_GREEN	    0xc9c9c9c9
+#define USED_SEL_BLUE	    0x66666666
+
+#define PEN_EMPTY1  	0
+#define PEN_EMPTY2  	1
+#define PEN_EMPTY1_SEL  2
+#define PEN_EMPTY2_SEL  3
+#define PEN_EMPTY1_DARK 4
+#define PEN_EMPTY2_DARK 5
+#define PEN_USED    	6
+#define PEN_USED_SEL   	7
+    
+#define NUM_PENS    	8
+
+STATIC CONST ULONG rgbtable[] =
+{
+    EMPTY1_RED	    , EMPTY1_GREEN  	, EMPTY1_BLUE	    ,
+    EMPTY2_RED	    , EMPTY2_GREEN  	, EMPTY2_BLUE	    ,
+    EMPTY1_SEL_RED  , EMPTY1_SEL_GREEN	, EMPTY1_SEL_BLUE   ,
+    EMPTY2_SEL_RED  , EMPTY2_SEL_GREEN	, EMPTY2_SEL_BLUE   ,
+    EMPTY1_DARK_RED , EMPTY1_DARK_GREEN , EMPTY1_DARK_BLUE  ,
+    EMPTY2_DARK_RED , EMPTY2_DARK_GREEN , EMPTY2_DARK_BLUE  ,
+    USED_RED	    , USED_GREEN    	, USED_BLUE 	    ,
+    USED_SEL_RED    , USED_SEL_GREEN	, USED_SEL_BLUE
+};
+
 struct PTableData {
 	struct DrawInfo *dri;
 	struct Image *frame;
 	struct HDTBPartition *table;
 	struct HDTBPartition *active; /* active partition */
 	struct DosEnvec gap;
+	struct ColorMap *cm;
 	ULONG block;
 	ULONG flags;
+	WORD  pens[NUM_PENS];
 	BOOL move;
 	BOOL selected;
+	BOOL multicolor;
+	BOOL firstdraw;
+	BOOL pensallocated;
 };
 
 STATIC UWORD pattern[]=
@@ -53,10 +113,87 @@ STATIC UWORD pattern[]=
 	0x5555, 0x5555
 };
 
+STATIC UWORD pattern2[] =
+{
+    	0xFF00,
+    	0xFF00,
+    	0xFF00,
+    	0xFF00,
+    	0xFF00,
+    	0xFF00,
+    	0xFF00,
+    	0xFF00,
+    	0x00FF,
+    	0x00FF,
+    	0x00FF,
+    	0x00FF,
+    	0x00FF,
+    	0x00FF,
+    	0x00FF,
+    	0x00FF		
+};
+
 #define SetPattern(r,p,s) {r->AreaPtrn = (UWORD *)p; r->AreaPtSz = s;}
 
 Class *ptcl=0;
 
+
+static void PrepareRP(struct RastPort *rp, struct PTableData *data, WORD dptype)
+{
+    if (data->multicolor)
+    {
+    	switch(dptype)
+	{
+	    case DPTYPE_EMPTY:
+	    	SetPattern(rp, pattern2, 4);
+		SetABPenDrMd(rp, data->pens[PEN_EMPTY1], data->pens[PEN_EMPTY2], JAM2);
+		break;
+		
+	    case DPTYPE_EMPTY_SELECTED:
+	    	SetPattern(rp, pattern2, 4);
+		SetABPenDrMd(rp, data->pens[PEN_EMPTY1_SEL], data->pens[PEN_EMPTY2_SEL], JAM2);
+		break;
+		
+	    case DPTYPE_USED:
+	    	SetPattern(rp, NULL, 0);
+		SetABPenDrMd(rp, data->pens[PEN_USED], 0, JAM2);
+		break;
+		
+	    case DPTYPE_USED_SELECTED:
+	    	SetPattern(rp, NULL, 0);
+		SetABPenDrMd(rp, data->pens[PEN_USED_SEL], 0, JAM2);
+	    	break;
+	}	
+    } /* if (data->multicolor) */
+    else
+    {
+    	switch(dptype)
+	{
+	    case DPTYPE_EMPTY:
+	    	SetPattern(rp, NULL, 0);
+		SetABPenDrMd(rp, 0, 0, JAM2);
+		break;
+		
+	    case DPTYPE_EMPTY_SELECTED:
+	    	SetPattern(rp, pattern, 2);
+		SetABPenDrMd(rp, 1, 0, JAM2);
+		break;
+		
+	    case DPTYPE_USED:
+	    	SetPattern(rp, pattern, 2);
+		SetABPenDrMd(rp, 2, 0, JAM2);
+		break;
+		
+	    case DPTYPE_USED_SELECTED:
+	    	SetPattern(rp, pattern, 2);
+		SetABPenDrMd(rp, 3, 0, JAM2);
+	    	break;
+	    	
+	}
+	
+    } /* if (data->multicolor) */
+    
+}
 
 STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg) {
 struct PTableData *data;
@@ -103,6 +240,8 @@ struct TagItem tags[]=
 	data->active = 0;
 	data->move = FALSE;
 	data->selected = FALSE;
+	data->firstdraw = TRUE;
+	
 	return (IPTR)obj;
 }
 
@@ -272,7 +411,7 @@ void DrawFilledBox
 void DrawPartition
 	(
 		struct RastPort *rport,
-		struct DrawInfo *dri,
+		struct PTableData *data,
 		struct Gadget *gadget,
 		struct HDTBPartition *table,
 		struct DosEnvec *pn,
@@ -326,28 +465,9 @@ ULONG skipcyl;
 	start += gadget->LeftEdge;
 	end   += gadget->LeftEdge;
 #endif
-    	switch(drawtype)
-	{
-	    case DPTYPE_EMPTY:
-	    	SetAPen(rport, 0);
-		break;
-	    
-	    case DPTYPE_EMPTY_SELECTED:
-	    	SetAPen(rport, 1);
-		break;
+
+    	PrepareRP(rport, data, drawtype);
 		
-	    case DPTYPE_USED:
-	    	SetAPen(rport, 2);
-		break;
-		
-	    case DPTYPE_USED_SELECTED:
-	    	SetAPen(rport, 3);
-		break;
-	}
-	
-    	SetBPen(rport, 0);
-	SetDrMd(rport, JAM2);
-	
 	if (drawtype == DPTYPE_EMPTY)
 	{
 	    RectFill(rport, start, gadget->TopEdge+1+(gadget->Height/2),
@@ -355,78 +475,18 @@ ULONG skipcyl;
 	}
 	else
 	{
-	    SetPattern(rport, &pattern, 2);
 	    DrawFilledBox
 	    (
 		    rport,
-		    dri,
+		    data->dri,
 		    start, gadget->TopEdge+1+(gadget->Height/2),
 		    end, gadget->TopEdge+(gadget->Height)-2
 	    );
-	    SetPattern(rport, NULL, 0);
 	}
+	
+	SetPattern(rport, NULL, 0);
 }
 
-void ErasePartition
-	(
-		struct RastPort *rport,
-		struct Gadget *gadget,
-		struct HDTBPartition *table,
-		struct DosEnvec *pn
-	)
-{
-ULONG start;
-ULONG end;
-ULONG blocks;
-ULONG spc;
-ULONG cyls;
-ULONG skipcyl;
-
-#if 0
-	blocks =
-		(table->table->de_HighCyl+1)*
-		table->table->de_Surfaces*
-		table->table->de_BlocksPerTrack;
-#else
-	blocks = table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
-	skipcyl = table->table->reserved/blocks;
-	cyls = table->table->de.de_HighCyl-skipcyl;
-#endif
-	spc = pn->de_Surfaces*pn->de_BlocksPerTrack;
-#if 0
-	start = pn->de_LowCyl*spc*gadget->Width/blocks;
-	end = (((pn->de_HighCyl+1)*spc)-1)*gadget->Width/blocks;
-#else
-	start = pn->de_LowCyl;
-	end = pn->de_HighCyl;
-	if (
-			(pn->de_Surfaces!=table->table->de.de_Surfaces) ||
-			(pn->de_BlocksPerTrack!=table->table->de.de_BlocksPerTrack)
-		)
-	{
-		start *= spc/blocks;
-		end   *= spc/blocks;
-	}
-	if (start!=0)
-		start -= skipcyl;
-	if (end !=0)
-		end   -= skipcyl;
-	start = (start*(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls)+1;
-#if END_FIX
-	end  = ((end + 1) *(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls) + 1 - 1;
-#else
-	end  = (end*(gadget->Width - PARTITIONBLOCK_FRAMEWIDTH)/cyls);
-#endif
-	start += gadget->LeftEdge;
-	end   += gadget->LeftEdge;
-#endif
-	EraseRect	
-	(
-		rport,
-		start, gadget->TopEdge+1+(gadget->Height/2),
-		end, gadget->TopEdge+(gadget->Height)-2
-	);
-}
 ULONG getBlock(UWORD mousex, UWORD width, struct HDTBPartition *table) {
 ULONG block;
     	
@@ -484,7 +544,7 @@ WORD	    	 drawtype;
 		    	drawtype = DPTYPE_USED;
 			de = &data->active->de;
 		}
-		DrawPartition(rport, data->dri, (struct Gadget *)obj, data->table, de, drawtype);
+		DrawPartition(rport, data, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	data->active = getActive(data);
 	if ((struct DosEnvec *)data->active == &data->gap)
@@ -504,7 +564,7 @@ WORD	    	 drawtype;
 	data->selected = FALSE;
 	if (data->active && rport)
 	{
-		DrawPartition(rport, data->dri, (struct Gadget *)obj, data->table, de, drawtype);
+		DrawPartition(rport, data, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	
 	if (rport) ReleaseGIRPort(rport);
@@ -537,7 +597,7 @@ WORD drawtype;
 			    	    drawtype = DPTYPE_USED_SELECTED;
 				    de = &data->active->de;
 			    }
-			    DrawPartition(rport, data->dri, (struct Gadget *)obj, data->table, de, drawtype);
+			    DrawPartition(rport, data, (struct Gadget *)obj, data->table, de, drawtype);
 			    
 			    ReleaseGIRPort(rport);
 			}
@@ -703,11 +763,15 @@ struct RastPort *rport;
 							
 							start = start/spc;
 							end = ((end+1)/spc)-1;
-							if (rport) ErasePartition
+							
+							DrawPartition
 							(
 								rport,
+								data,
 								(struct Gadget *)obj,
-								data->table, &data->active->de
+								data->table,
+								&data->active->de,
+								DPTYPE_EMPTY
 							);
 							data->active->de.de_LowCyl=start;
 							data->active->de.de_HighCyl=end;
@@ -715,7 +779,7 @@ struct RastPort *rport;
 							DrawPartition
 							(
 								rport,
-								data->dri,
+								data,
 								(struct Gadget *)obj,
 								data->table,
 								&data->active->de,
@@ -766,6 +830,47 @@ struct HDTBPartition *pn;
 IPTR retval = 0;
 
 	retval = DoSuperMethodA(cl, obj, (Msg)msg);
+	
+	if (data->firstdraw)
+	{
+	    struct TagItem obp_tags[] =
+	    {
+	    	{OBP_Precision, PRECISION_EXACT },
+		{OBP_FailIfBad, TRUE	    	},
+		{TAG_DONE   	    	    	}
+	    };
+	    
+	    WORD i;
+	    
+	    data->firstdraw = FALSE;
+	    	    
+	    data->cm = msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap;
+	    
+	    for(i = 0; i < NUM_PENS; i++)
+	    {
+	    	data->pens[i] = ObtainBestPenA(data->cm,
+		    	    	    	       rgbtable[i * 3],
+					       rgbtable[i * 3 + 1],
+					       rgbtable[i * 3 + 2],
+					       obp_tags);
+		if (data->pens[i] == -1)
+		{
+		    while(--i >= 0)
+		    {
+		    	ReleasePen(data->cm, data->pens[i]);
+		    }
+		    break;
+		}	
+	    }
+	    
+	    if (i == NUM_PENS)
+	    {
+	    	data->multicolor = TRUE;
+    	    	data->pensallocated = TRUE;
+	    }
+	    	    
+	}
+	
 	EraseRect
 	(
 		msg->gpr_RPort,
@@ -774,18 +879,8 @@ IPTR retval = 0;
 		G(obj)->LeftEdge+G(obj)->Width - 1,
 		G(obj)->TopEdge+(G(obj)->Height - 1)
 	);
-	DrawBox
-	(
-		msg->gpr_RPort,
-		data->dri,
-		G(obj)->LeftEdge,
-		G(obj)->TopEdge+(G(obj)->Height/2),
-		G(obj)->LeftEdge+G(obj)->Width - 1,
-		G(obj)->TopEdge+(G(obj)->Height - 1),
-		TRUE
-	);
-	SetPattern(msg->gpr_RPort, &pattern, 2);
-	SetAPen(msg->gpr_RPort, 0);
+	
+	PrepareRP(msg->gpr_RPort, data, DPTYPE_EMPTY);
 	DrawLegend
 	(
 		msg->gpr_RPort,
@@ -796,7 +891,8 @@ IPTR retval = 0;
 		G(obj)->TopEdge+(G(obj)->Height/2)-(G(obj)->Height/4),
 		"Unselected Empty"
 	);
-	SetAPen(msg->gpr_RPort, 1);
+
+	PrepareRP(msg->gpr_RPort, data, DPTYPE_EMPTY_SELECTED);
 	DrawLegend
 	(
 		msg->gpr_RPort,
@@ -807,7 +903,8 @@ IPTR retval = 0;
 		G(obj)->TopEdge+(G(obj)->Height/2)-(G(obj)->Height/4),
 		"Selected Empty"
 	);
-	SetAPen(msg->gpr_RPort, 2);
+
+	PrepareRP(msg->gpr_RPort, data, DPTYPE_USED);
 	DrawLegend
 	(
 		msg->gpr_RPort,
@@ -818,7 +915,9 @@ IPTR retval = 0;
 		G(obj)->TopEdge+(G(obj)->Height/2)-(G(obj)->Height/4),
 		"Unselected Used"
 	);
-	SetAPen(msg->gpr_RPort, 3);
+
+
+	PrepareRP(msg->gpr_RPort, data, DPTYPE_USED_SELECTED);
 	DrawLegend
 	(
 		msg->gpr_RPort,
@@ -829,16 +928,30 @@ IPTR retval = 0;
 		G(obj)->TopEdge+(G(obj)->Height/2)-(G(obj)->Height/4),
 		"Selected Used"
 	);
-#if 0
+
+    	PrepareRP(msg->gpr_RPort, data, DPTYPE_EMPTY);
+	
 	RectFill
 	(
 		msg->gpr_RPort,
 		G(obj)->LeftEdge,
-		G(obj)->TopEdge,
-		G(obj)->LeftEdge+G(obj)->Width+(G(obj)->Height/2),
-		G(obj)->TopEdge+(G(obj)->Height)
+		G(obj)->TopEdge+(G(obj)->Height/2),
+		G(obj)->LeftEdge+G(obj)->Width - 1,
+		G(obj)->TopEdge+(G(obj)->Height - 1)
 	);
-#endif
+    	SetPattern(msg->gpr_RPort, NULL, 0);
+	
+	DrawBox
+	(
+		msg->gpr_RPort,
+		data->dri,
+		G(obj)->LeftEdge,
+		G(obj)->TopEdge+(G(obj)->Height/2),
+		G(obj)->LeftEdge+G(obj)->Width - 1,
+		G(obj)->TopEdge+(G(obj)->Height - 1),
+		TRUE
+	);
+
 	if (data->table)
 	{
 		SetPattern(msg->gpr_RPort, &pattern, 2);
@@ -850,7 +963,7 @@ IPTR retval = 0;
 				DrawPartition
 				(
 					msg->gpr_RPort,
-					data->dri,
+					data,
 					(struct Gadget *)obj,
 					data->table,
 					&pn->de,
@@ -864,7 +977,7 @@ IPTR retval = 0;
 			DrawPartition
 			(
 				msg->gpr_RPort,
-				data->dri,
+				data,
 				(struct Gadget *)obj,
 				data->table,
 				&data->gap,
@@ -879,6 +992,16 @@ IPTR retval = 0;
 STATIC IPTR pt_dispose(Class *cl, Object *obj, Msg msg) {
 struct PTableData *data = INST_DATA(cl, obj);
 
+    	if (data->pensallocated)
+	{
+	    WORD i = 0;
+	    
+	    for(i = 0; i < NUM_PENS; i++)
+	    {
+	    	ReleasePen(data->cm, data->pens[i]);
+	    }
+	}
+	
 	return DoSuperMethodA(cl, obj, msg);
 }
 
