@@ -114,18 +114,6 @@ struct Gadget
 	      *integergad = NULL,
 	      *gad = NULL;
 
-#ifdef USE_INTUITEXT
-struct IntuiText itext = {
-    1,		/* FrontPen */
-    0,		/* BackPen */
-    JAM1,	/* DrawMode */
-    10, 	/* LeftEdge */
-    10, 	/* TopEdge */
-    NULL,	/* ITextFont */
-    NULL,	/* IText */
-    NULL	/* NextText */
-};
-#endif
 
 #define ID_BOOLGADFALSE 0
 struct NewGadget gt_boolgadfalse = {
@@ -408,13 +396,8 @@ int finish = FALSE;
 
     text = StrDup( "Aborting Installation:" );
     outofmem( text );
-#ifdef USE_INTUITEXT
-    itext.IText = text;
-    PrintIText( rp, &itext, 10, 10 );
-#else
     Move( rp, 15, 25 );
     Text( rp, text, strlen(text) );
-#endif
     FreeVec( text );
     out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
     outofmem( out );
@@ -422,13 +405,8 @@ int finish = FALSE;
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
-#ifdef USE_INTUITEXT
-      itext.IText = out[n];
-      PrintIText( rp, &itext, 10, 15*(n+2) );
-#else
       Move( rp, 15, 15*n+45 );
       Text( rp, out[n], strlen(out[n]) );
-#endif
       FreeVec( out[n] );
     }
     FreeVec( out );
@@ -499,13 +477,8 @@ int n, m;
 
   text = StrDup( "Aborting Installation:" );
   outofmem( text );
-#ifdef USE_INTUITEXT
-  itext.IText = text;
-  PrintIText( rp, &itext, 10, 10 );
-#else
   Move( rp, 15, 25 );
   Text( rp, text, strlen(text) );
-#endif
   FreeVec( text );
   out = AllocVec( sizeof( char * ), MEMF_PUBLIC );
   outofmem( out );
@@ -513,13 +486,8 @@ int n, m;
   m = strtostrs( msg, &out );
   for( n = 0 ; n < m ; n++ )
   {
-#ifdef USE_INTUITEXT
-    itext.IText = out[n];
-    PrintIText( rp, &itext, 10, 15*(n+2) );
-#else
     Move( rp, 15, 15*n+45 );
     Text( rp, out[n], strlen(out[n]) );
-#endif
     FreeVec( out[n] );
   }
   FreeVec( out );
@@ -528,13 +496,8 @@ int n, m;
 #endif /* DEBUG */
   text = StrDup( "Done with Installation." );
   outofmem( text );
-#ifdef USE_INTUITEXT
-  itext.IText = text;
-  PrintIText( rp, &itext, 10, 15*(n+2) );
-#else
   Move( rp, 15, 15*n+45 );
   Text( rp, text, strlen(text) );
-#endif
   FreeVec( text );
 #ifdef DEBUG
   printf( "\nDone with installation.\n\n" );
@@ -604,13 +567,8 @@ int n, m;
 
   text = StrDup( "Working on Installation:" );
   outofmem( text );
-#ifdef USE_INTUITEXT
-  itext.IText = text;
-  PrintIText( rp, &itext, 10, 10 );
-#else
   Move( rp, 15, 25 );
   Text( rp, text, strlen(text) );
-#endif
 #ifdef DEBUG
   printf( "%s\n", text );
 #endif /* DEBUG */
@@ -621,13 +579,8 @@ int n, m;
   m = strtostrs( msg, &out );
   for( n = 0 ; n < m ; n++ )
   {
-#ifdef USE_INTUITEXT
-    itext.IText = out[n];
-    PrintIText( rp, &itext, 10, 15*(n+2) );
-#else
     Move( rp, 15, 15*n+45 );
     Text( rp, out[n], strlen(out[n]) );
-#endif
     FreeVec( out[n] );
   }
   FreeVec( out );
@@ -663,13 +616,8 @@ int finish = FALSE;
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
-#ifdef USE_INTUITEXT
-      itext.IText = out[n];
-      PrintIText( rp, &itext, 10, 15*(n+1) );
-#else
       Move( rp, 15, 15*n+30 );
       Text( rp, out[n], strlen(out[n]) );
-#endif
       FreeVec( out[n] );
     }
     FreeVec( out );
@@ -796,13 +744,8 @@ char welcome[1024];
     m = strtostrs( msg, &out );
     for( n = 0 ; n < m ; n++ )
     {
-#ifdef USE_INTUITEXT
-      itext.IText = out[n];
-      PrintIText( rp, &itext, 10, 15*(n+1) );
-#else
       Move( rp, 15, 15*n+30 );
       Text( rp, out[n], strlen(out[n]) );
-#endif
       FreeVec( out[n] );
     }
     FreeVec( out );
@@ -813,13 +756,8 @@ char welcome[1024];
   else
   {
     sprintf( welcome, "Welcome to the %s App installation utility!\n", get_var_arg( "@app-name" ) );
-#ifdef USE_INTUITEXT
-    itext.IText = welcome;
-    PrintIText( rp, &itext, 5, 20 );
-#else
     Move( rp, 15, 25 );
     Text( rp, welcome, strlen(welcome) );
-#endif
 #ifdef DEBUG
     printf( welcome );
 #endif /* DEBUG */
@@ -931,13 +869,8 @@ char welcome[1024];
   if( usrlevel > 0 )
   {
     /* Ask for logfile-creation */
-#ifdef USE_INTUITEXT
-    itext.IText = LOG_QUESTION;
-    PrintIText( rp, &itext, 15, 35 );
-#else
     Move( rp, 15, 50 );
     Text( rp, LOG_QUESTION, strlen(LOG_QUESTION) );
-#endif
 
     mxlabels = AllocVec( 4 * sizeof(STRPTR), MEMF_PUBLIC );
     mxlabels[0] = StrDup( LOG_FILE_TEXT );
@@ -1030,13 +963,8 @@ char welcome[1024];
       freestrlist( mxlabels );
       FreeVec( gt_mxgad.ng_GadgetText );
       gt_mxgad.ng_GadgetText = NULL;
-#ifdef USE_INTUITEXT
-      itext.IText = PRETEND_QUESTION;
-      PrintIText( rp, &itext, 15, 35 );
-#else
       Move( rp, 15, 50 );
       Text( rp, PRETEND_QUESTION, strlen(PRETEND_QUESTION) );
-#endif
 
       mxlabels = AllocVec( 3 * sizeof(STRPTR), MEMF_PUBLIC );
       mxlabels[0] = StrDup( NOPRETEND_TEXT );
@@ -1180,17 +1108,10 @@ int finish = FALSE;
     DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
     DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
 	
-#ifdef USE_INTUITEXT
-    itext.IText = nostring;
-    PrintIText( rp, &itext, 40, 92 );
-    itext.IText = yesstring;
-    PrintIText( rp, &itext, 40, 132 );
-#else
     Move( rp, 50, 107 );
     Text( rp, nostring, strlen(nostring) );
     Move( rp, 50, 147 );
     Text( rp, yesstring, strlen(yesstring) );
-#endif
 
     j = 0;
     for( i = 0 ; i < GetPL( pl, _PROMPT ).intval ; i ++ )
@@ -1204,13 +1125,8 @@ int finish = FALSE;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
-#ifdef USE_INTUITEXT
-	itext.IText = out[n];
-	PrintIText( rp, &itext, 15, 15*j+7 );
-#else
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
-#endif
 	FreeVec( out[n] );
 	j++;
       }
@@ -1359,13 +1275,8 @@ int finish = FALSE;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
-#ifdef USE_INTUITEXT
-	itext.IText = out[n];
-	PrintIText( rp, &itext, 15, 15*j+7 );
-#else
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
-#endif
 	FreeVec( out[n] );
 	j++;
       }
@@ -1532,13 +1443,8 @@ int finish = FALSE;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
-#ifdef USE_INTUITEXT
-	itext.IText = out[n];
-	PrintIText( rp, &itext, 15, 15*j+7 );
-#else
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
-#endif
 	FreeVec( out[n] );
 	j++;
       }
@@ -1693,13 +1599,8 @@ int max, finish = FALSE;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
-#ifdef USE_INTUITEXT
-	itext.IText = out[n];
-	PrintIText( rp, &itext, 15, 15*j+7 );
-#else
 	Move( rp, 18, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
-#endif
 	FreeVec( out[n] );
 	j++;
       }
@@ -1949,13 +1850,8 @@ char **out;
       m = strtostrs( GetPL( pl, _PROMPT ).arg[i], &out );
       for( n = 0 ; n < m ; n++ )
       {
-#ifdef USE_INTUITEXT
-	itext.IText = out[n];
-	PrintIText( rp, &itext, 15, 15*j+7 );
-#else
 	Move( rp, 15, 15*j+22 );
 	Text( rp, out[n], strlen(out[n]) );
-#endif
 	FreeVec( out[n] );
 	j++;
       }
@@ -2100,13 +1996,8 @@ int finish = FALSE;
   RefreshGList(stdglist,GuiWin,NULL,-1);
   GT_RefreshWindow(GuiWin,NULL);
 
-#ifdef USE_INTUITEXT
-  itext.IText = message;
-  PrintIText( rp, &itext, 10, 10 );
-#else
   Move( rp, 15, 25 );
   Text( rp, message, strlen(message) );
-#endif
 
   do
   {
