@@ -35,13 +35,13 @@ BEGIN {
 	{
 	    if (first)
 	    {
-		print "<A NAME=\"bylib\"></A><DT><FONT SIZE=7><B>A.2 Reference by library</B></FONT><DD><DL>"
+		print "<A NAME=\"bylib\"></A><DT><FONT SIZE=\"+2\"><B>A.2 Reference by library</B></FONT><DD><DL>"
 		dl++;
 		first=0;
 		cnt=1;
 	    }
 
-	    print "<FONT SIZE=6>"
+	    print "<FONT SIZE=\"+1\">"
 
 	    if ($2=="Utility functions")
 		print "<A HREF=\"#util\">"
@@ -57,7 +57,7 @@ BEGIN {
 	    for (t=1; t<=length(initials); t++)
 	    {
 		c=substr(initials,t,1);
-		print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=6><B>"c"</B></FONT></A> "
+		print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=\"+1\"><B>"c"</B></FONT></A> "
 	    }
 
 	    print ")</FONT><BR>"
@@ -100,14 +100,14 @@ BEGIN {
 		else
 		    print "<A NAME=\"lib"lib"\"></A>"
 
-		print "<FONT SIZE=6><B>A.2."cnt " " $1"</B></FONT><DD>"
+		print "<FONT SIZE=\"+1\"><B>A.2."cnt " " $1"</B></FONT><DD>"
 		cnt ++;
 
 		initials=libini[lib];
 		for (t=1; t<=length(initials); t++)
 		{
 		    c=substr(initials,t,1);
-		    print "<A HREF=\"#lib"lib c"\"><FONT SIZE=6><B>"c"</B></FONT></A> "
+		    print "<A HREF=\"#lib"lib c"\"><FONT SIZE=\"+1\"><B>"c"</B></FONT></A> "
 		}
 
 		print "<P><DL>"
@@ -130,7 +130,7 @@ BEGIN {
 
 		print "<DT>"
 		print "<A NAME=\"lib"lib char"\"></A>"
-		print "<FONT SIZE=5><B>"char"</B></FONT><DD>"
+		print "<B>"char"</B><DD>"
 
 		print "<TABLE WIDTH=80%>"
 		table=1;
@@ -166,12 +166,12 @@ BEGIN {
     {
 	if ($1=="-")
 	{
-	    print "<DT><A NAME=\"byname\"></A><FONT SIZE=7><B>A.3 Reference by name</B></FONT><DD>"
+	    print "<DT><A NAME=\"byname\"></A><FONT SIZE=\"+2\"><B>A.3 Reference by name</B></FONT><DD>"
 
 	    for (t=1; t<=length($2); t++)
 	    {
 		char=substr($2,t,1);
-		print "<A HREF=\"#name"char"\"><FONT SIZE=6><B>"char"</B></FONT></A> "
+		print "<A HREF=\"#name"char"\"><FONT SIZE=\"+1\"><B>"char"</B></FONT></A> "
 	    }
 
 	    print "<P><DL>"
@@ -204,7 +204,7 @@ BEGIN {
 
 		char = $1;
 
-		print "<DT><A NAME=\"name"char"\"></A><FONT SIZE=5><B>"char"</B></FONT><DD>"
+		print "<DT><A NAME=\"name"char"\"></A><B>"char"</B><DD>"
 		print "<DL>"
 		dl++;
 
