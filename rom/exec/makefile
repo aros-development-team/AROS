@@ -18,10 +18,10 @@ FUNCTIONS = \
 	remport waitport findport createmsgport deletemsgport putmsg getmsg \
 	replymsg doio sendio checkio waitio abortio createiorequest	    \
 	deleteiorequest addresource remresource openresource addlibrary     \
-	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
-	openlibrary taggedopenlibrary adddevice remdevice findtask rawdofmt \
-	allocvec freevec initsemaphore attemptsemaphore findsemaphore	    \
-	addsemaphore remsemaphore obtainsemaphoreshared 		    \
+	remlibrary oldopenlibrary closelibrary setfunction sumlibrary       \
+	openlibrary taggedopenlibrary adddevice remdevice opendevice        \
+	findtask rawdofmt allocvec freevec initsemaphore attemptsemaphore   \
+	findsemaphore addsemaphore remsemaphore obtainsemaphoreshared       \
 	attemptsemaphoreshared
 
 # Functions that are written in asm and need to be linked into exec.strap.
