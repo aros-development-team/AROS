@@ -1,11 +1,11 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Find a CLI process by number
-    Lang: english
+    Lang: English
 */
-#define AROS_ALMOST_COMPATIBLE
+
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
@@ -36,59 +36,44 @@
 	Pointer to the process if found, NULL otherwise.
 
     NOTES
-	Please don't use this function. If you use it, be sure to call
-	Forbid() first.
+
+    The process calling this function doesn't need to do any locking.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	Cli(), Forbid(), MaxCli()
+	Cli(), MaxCli()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
+
+    02.12.2000  SDuvan  --  rewrote to use rootnode rn_TaskArray instead of
+                            hacking the process lists
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    struct Process *proc;
 
-    /* Okay, simple one first: This task */
-    proc = (struct Process *)FindTask(NULL);
-    if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
-	proc->pr_TaskNum &&
-	proc->pr_TaskNum == (LONG)num)
+    struct RootNode *root = DOSBase->dl_Root;
+    struct Process  *cliProc = NULL;
+
+    ObtainSemaphoreShared(&root->rn_RootLock);
+
+    /* This is quite ugly, I know, but the structure of the rn_TaskArray
+       is just brain damaged! We just pick the 'num':th process of the
+       array and return it in case 'num' _might_ exist */
+    if (num < *(ULONG *)BADDR(root->rn_TaskArray))
     {
-	return proc;
+	cliProc = ((struct Process **)BADDR(root->rn_TaskArray))[num];
     }
 
-    /* The ready list */
-    ForeachNode(&SysBase->TaskReady, proc)
-    {
-	if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
-	    proc->pr_TaskNum &&
-	    proc->pr_TaskNum == (LONG)num)
-	{
-	    return proc;
-	}
-    }
+    ReleaseSemaphore(&root->rn_RootLock);
 
-    /* The waiting list */
-    ForeachNode(&SysBase->TaskWait, proc)
-    {
-	if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
-	    proc->pr_TaskNum &&
-	    proc->pr_TaskNum == (LONG)num)
-	{
-	    return proc;
-	}
-    }
-
-    return NULL;
+    return cliProc;
+    
     AROS_LIBFUNC_EXIT
 } /* FindCliProc */
