@@ -37,6 +37,7 @@ VarLevel;
 extern void   Var_Init PARAMS ((void));
 extern void   Var_Exit PARAMS ((void));
 extern void   Var_Set  PARAMS ((const char * name, const char * value));
+extern void   Var_SetLocal PARAMS ((const char * name, const char * value));
 extern void   Var_SetConst PARAMS ((const char * name, const char * value));
 extern char * Var_Get  PARAMS ((const char * name));
 extern void   Var_UnSet PARAMS ((const char * name));
@@ -46,6 +47,7 @@ extern VarLevel * Var_PopLevel PARAMS ((void));
 extern void Var_FreeLevel PARAMS ((VarLevel *));
 extern void Var_Free PARAMS ((Var *));
 extern String Var_Subst PARAMS ((const char * str));
+extern void Var_PrintAll PARAMS ((void));
 
 extern void Func_Add PARAMS ((const char * name, CB cb, CBD cbd));
 extern Function * Func_Find PARAMS ((const char * name));

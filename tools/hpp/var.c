@@ -85,6 +85,36 @@ Var_Set (const char * name, const char * value)
 }
 
 void
+Var_SetLocal (const char * name, const char * value)
+{
+    VarLevel * level = GetHead (&globals);
+    Var      * var;
+
+    if (!level)
+	Var_Set (name, value);
+    else
+    {
+#if DEBUG_SET
+    printf ("Set %s=%s\n", name, value?value:"");
+#endif
+	if ((var = (Var *) FindNodeNC (&level->vars, name)))
+	{
+	    setstr (var->value, value);
+	}
+	else
+	{
+	    var = new (Var);
+
+	    var->node.name = xstrdup (name);
+	    var->value	   = cstrdup (value);
+	    var->freevalue = 0;
+
+	    AddTail (&level->vars, var);
+	}
+    }
+}
+
+void
 Var_SetConst (const char * name, const char * value)
 {
     Var * var;
@@ -188,6 +218,7 @@ Var_Subst (const char * in)
     String varname;
     String args = NULL;
     String ret;
+    int skipbrace;
 
     if (!in)
 	return NULL;
@@ -202,9 +233,12 @@ Var_Subst (const char * in)
 	    in ++;
 
 	    varname = VS_New (NULL);
+	    skipbrace = 0;
 
 	    if (*in == '{')
 	    {
+		in ++;
+
 		while (*in && *in != '}')
 		{
 		    VS_AppendChar (varname, *in);
@@ -216,6 +250,8 @@ Var_Subst (const char * in)
 		    PushError ("Missing '}' in varname");
 		    return NULL;
 		}
+
+		skipbrace = 1;
 	    }
 	    else
 	    {
@@ -266,6 +302,8 @@ Var_Subst (const char * in)
 	    else
 		in = end; /* Don't skip spaces if no function */
 
+	    if (skipbrace)
+		in ++;
 #if 0
     printf ("var=%s\nargs=%s\n", varname->buffer, args?args->buffer: "");
 #endif
@@ -403,4 +441,21 @@ Func_FreeArgs (char ** argv)
 	xfree (argv[t]);
 
     xfree (argv);
+}
+
+void
+Var_PrintAll (void)
+{
+    VarLevel * level;
+    Var      * var;
+
+    ForeachNode (&globals, level)
+    {
+	printf ("----------------\n");
+
+	ForeachNode (&level->vars, var)
+	{
+	    printf ("%s={%s}\n", var->node.name, var->value);
+	}
+    }
 }
