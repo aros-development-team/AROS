@@ -14,18 +14,19 @@ extern int get_var_int( char * );
 extern void set_variable( char *, char *, int );
 #ifdef DEBUG
 extern void dump_varlist();
-#endif
+#endif /* DEBUG */
 
 /* Internal function prototypes */
 int eval_cmd( char * );
 void execute_script( ScriptArg *, int );
 char *strip_quotes( char * );
-
+#ifndef LINUX
+static void callback( char, char ** );
+#endif /* !LINUX */
 
 void execute_script( ScriptArg *commands, int level )
 {
 ScriptArg *current, *dummy = NULL;
-
 
 int cmd_type;
 int slen, i, j;
@@ -64,7 +65,7 @@ void *params;
     cmd_type = eval_cmd( current->arg );
 #ifdef DEBUG
     printf( "%d - <%s>\n", level, current->arg );
-#endif
+#endif /* DEBUG */
     switch( cmd_type )
     {
       case _UNKNOWN	: /* Unknown command */
@@ -80,14 +81,14 @@ void *params;
 #ifdef DEBUG
                             if( current->arg != NULL )
                               printf( "%s\n", current->arg );
-#endif
+#endif /* DEBUG */
                           }
                           /* Execute onerrors		*/
 #define DOTHIS
 #ifdef DOTHIS
 #undef DOTHIS
                           dump_varlist();
-#endif
+#endif /* DEBUG */
 
                           cleanup();
                           exit(-1);
@@ -163,7 +164,7 @@ void *params;
                           }
                           free( current->parent->arg );
                           current->parent->arg = NULL;
-#endif
+#endif /* DEBUG */
                           break;
 
       case _EXIT	: /* Output all strings and exit, print "Done with installation" unless (quiet) is given */
@@ -177,7 +178,7 @@ void *params;
 #ifdef DEBUG
                             if( current->arg != NULL )
                               printf( "%s\n", current->arg );
-#endif
+#endif /* DEBUG */
                             if( current->cmd != NULL )
                               if( eval_cmd( current->cmd->arg ) == _QUIET )
                                 quiet = TRUE;
@@ -188,7 +189,7 @@ void *params;
 #ifdef DOTHIS
 #undef DOTHIS
                           dump_varlist();
-#endif
+#endif /* DOTHIS */
                           cleanup();
                           exit(0);
                           break;
@@ -264,7 +265,7 @@ void *params;
                                     set_variable( current->arg, clip, current->next->intval );
 #ifdef DEBUG
 printf( "%s = %s | %d\n", current->arg, clip, current->next->intval );
-#endif
+#endif /* DEBUG */
                                     free( clip );
                                   }
                                   else
@@ -273,7 +274,7 @@ printf( "%s = %s | %d\n", current->arg, clip, current->next->intval );
                                     set_variable( current->arg, get_var_arg( current->next->arg ), get_var_int( current->next->arg ) );
 #ifdef DEBUG
 printf( "%s = %s | %d\n", current->arg, get_var_arg( current->next->arg ), get_var_int( current->next->arg ) );
-#endif
+#endif /* DEBUG */
                                   }
                                 }
                                 else
@@ -281,7 +282,7 @@ printf( "%s = %s | %d\n", current->arg, get_var_arg( current->next->arg ), get_v
                                     set_variable( current->arg, current->next->arg, current->next->intval );
 #ifdef DEBUG
 printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intval );
-#endif
+#endif /* DEBUG */
                                 }
                                 dummy = current;
                                 current = current->next->next;
@@ -379,7 +380,7 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           clip = strip_quotes( current->arg );
 #ifdef DEBUG
 printf( "<%s>", clip );
-#endif
+#endif /* DEBUG */
 
                           /* Now get arguments into typeless array (void *params) */
                           params = (void *)malloc(sizeof(IPTR));
@@ -414,14 +415,14 @@ printf( "<%s>", clip );
                                 j++;
 #ifdef DEBUG
 printf( ", s=%s", ((char **)params)[i] );
-#endif
+#endif /* DEBUG */
                               }
                               else
                               {
                                 ((char **)params)[i] = (char *)get_variable( current->arg );
 #ifdef DEBUG
 printf( ", var: s=%s d=%d", ((char **)params)[i], *((int **)params)[i] );
-#endif
+#endif /* DEBUG */
                               }
                             }
                             else
@@ -429,7 +430,7 @@ printf( ", var: s=%s d=%d", ((char **)params)[i], *((int **)params)[i] );
                               ((char **)params)[i] = (char *)&(current->intval);
 #ifdef DEBUG
 printf( ", d=%d", *((int **)params)[i] );
-#endif
+#endif /* DEBUG */
                             }
                             i++;
                             params = (void *)realloc( params, sizeof(IPTR)*(i+1) );
@@ -440,20 +441,30 @@ printf( ", d=%d", *((int **)params)[i] );
                           }
 #ifdef DEBUG
 printf( "\n" );
-#endif
+#endif /* DEBUG */
                           /* Call RawDoFmt() with parameter list */
-#warning FIXME: Use RawDoFmt() here
                           /* Store that produced string as return value */
                           free( current->parent->arg );
-#warning FIXME: Put pointer to string here instead of current->parent->cmd->arg
-                          current->parent->arg = malloc( strlen(current->parent->cmd->arg)+1 );
+#warning FIXME: Use RawDoFmt()
+#ifndef LINUX
+                          current->parent->arg = malloc( MAXARGSIZE );
                           if( current->parent->arg == NULL )
                           {
                             end_malloc();
                           }
-                          strcpy( current->parent->arg, current->parent->cmd->arg );
-                          current->parent->intval = 0;
-
+                          RawDoFmt( clip, params, (VOID_FUNC)&callback, &(current->parent->arg) );
+                          printf( "%s\n", current->parent->arg );
+                          printf( "---\n" );
+#else /* !LINUX */
+                          current->parent->arg = malloc( MAXARGSIZE );
+                          if( current->parent->arg == NULL )
+                          {
+                            end_malloc();
+                          }
+                          printf( clip, *((char**)params), *((char**)params+1), *((char**)params+2), *((char**)params+3), *((char**)params+4) );
+                          printf( "---\n" );
+                          sprintf( current->parent->arg, clip, *((char**)params), *((char**)params+1), *((char**)params+2), *((char**)params+3), *((char**)params+4) );
+#endif /* !LINUX */
                           /* Free temporary space */
                           free( clip );
                           if( mclip )
@@ -464,6 +475,23 @@ printf( "\n" );
                             } while ( j != 0 );
                             free( mclip );
                           }
+
+                          /* Add surrounding quotes to string */
+                          slen = strlen( current->parent->arg );
+                          clip = malloc(slen+3);
+                          if( clip == NULL)
+                          {
+                            end_malloc();
+                          }
+                          clip[0] = DQUOTE;
+                          strcpy( (clip) + 1, (current->parent->arg) );
+                          clip[slen+1] = DQUOTE;
+                          clip[slen+2] = 0;
+                          free( current->parent->arg );
+                          current->parent->arg = clip;
+
+                          current->parent->intval = 0;
+
                           break;
 
       case _WELCOME	: /* Display strings instead of "Welcome to the <APPNAME> App installation utility" */
@@ -506,7 +534,7 @@ printf( "\n" );
                           printf( "\n" );
                           /* Return last string or all ? */
 #warning FIXME: Decide what to do
-#endif
+#endif /* DEBUG */
                           break;
 
       case _WORKING	: /* Display strings below "Working on Installation" */
@@ -549,7 +577,7 @@ printf( "\n" );
                           }
                           /* Return last string or all ? */
 #warning FIXME: Decide what to do
-#endif
+#endif /* DEBUG */
                           break;
 
       default		: /* Unimplemented command */
@@ -578,6 +606,12 @@ int i;
   }
 }
 
+#ifndef LINUX
+static void callback( char chr, char ** data )
+{
+  *(*data)++ = chr;
+}
+#endif /* !LINUX */
 
 char *strip_quotes( char *string )
 {

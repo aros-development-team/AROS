@@ -19,6 +19,7 @@
 #ifndef LINUX
 #include <dos/dos.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 #endif /* !LINUX */
 
 

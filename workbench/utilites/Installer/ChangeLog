@@ -84,4 +84,7 @@
   ( to be more precise: strip off first and last chararcter )
 - installer didn't recognize negative numbers :-( Fixed.
 
+0017
+- First try with RawDoFmt() -- not very successful :-(
+
 
