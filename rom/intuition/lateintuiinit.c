@@ -68,15 +68,15 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 
     struct TagItem screenTags[] =
     {
-	{ SA_Depth, 	4			},
-	{ SA_Type,  	WBENCHSCREEN		},
-	{ SA_Title, 	(IPTR)"Workbench"   	},
-	{ SA_Width, 	AROS_DEFAULT_WBWIDTH	},
-	{ SA_Height,	AROS_DEFAULT_WBHEIGHT	},	
-	{ SA_PubName,   (IPTR)"Workbench"       },
-	{ SA_Pens,      (IPTR) pens             },
-	{ SA_SharePens, TRUE			},
-	{ TAG_END, 0 }
+	{ SA_Depth	, AROS_DEFAULT_WBDEPTH	},
+	{ SA_Type	, WBENCHSCREEN		},
+	{ SA_Title	, (IPTR)"Workbench"   	},
+	{ SA_Width	, AROS_DEFAULT_WBWIDTH	},
+	{ SA_Height	, AROS_DEFAULT_WBHEIGHT	},	
+	{ SA_PubName	, (IPTR)"Workbench"     },
+	{ SA_Pens	, (IPTR) pens           },
+	{ SA_SharePens	, TRUE			},
+	{ TAG_END	, 0 }
     };
     if (!GetPrivIBase(IntuitionBase)->WorkBench)
     {

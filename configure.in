@@ -50,6 +50,7 @@ dnl Set the default Workbench resolution
 dnl --------------------------------------------------------------------
 aros_default_wbwidth=800
 aros_default_wbheight=600
+aros_default_wbdepth=4
 
 dnl --------------------------------------------------------------------
 dnl Host Configuration Section
@@ -265,6 +266,7 @@ case "$target_os" in
 		aros_target_cpu="i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
+		aros_default_wbdepth=8
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
@@ -361,9 +363,9 @@ AC_ARG_ENABLE(includes,
 [aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
 ])
 
-dnl Check if user specified --with-resolution=XRESxYRES
+dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
-AC_ARG_WITH(resolution,[  --with-resolution=XRESxYRES        Default resolution of the initial WorkbenchScreen],resolution=$withval,resolution=none)
+AC_ARG_WITH(resolution,[  --with-resolution=XRESxYRESxDEPTH        Default resolution of the initial WorkbenchScreen],resolution=$withval,resolution=none)
 # We require an argument, so map --with/--without ("yes"/"no") to "none" specified
 if test "$resolution" = "yes" ; then
     resolution="none"
@@ -374,17 +376,20 @@ fi
 if test "$resolution" != "none" ; then
     aros_default_wbwidth=`echo $resolution | cut -d'x' -f1`
     aros_default_wbheight=`echo $resolution | cut -d'x' -f2`
+    aros_default_wbdepth=`echo $resolution | cut -d'x' -f3`
 else
     # If "--with-resolution" is not given, check cache...
     AC_CACHE_VAL(aros_cv_default_wbwidth,aros_cv_default_wbwidth=$aros_default_wbwidth)
     AC_CACHE_VAL(aros_cv_default_wbheight,aros_cv_default_wbheight=$aros_default_wbheight)
+    AC_CACHE_VAL(aros_cv_default_wbdepth,aros_cv_default_wbdepth=$aros_default_wbdepth)    
     aros_default_wbwidth=$aros_cv_default_wbwidth
     aros_default_wbheight=$aros_cv_default_wbheight
+    aros_default_wbdepth=$aros_cv_default_wbdepth    
 fi
-AC_MSG_RESULT("$aros_default_wbwidth x $aros_default_wbheight")
+AC_MSG_RESULT("$aros_default_wbwidth x $aros_default_wbheight x $aros_default_wbdepth")
 aros_cv_default_wbwidth=$aros_default_wbwidth
 aros_cv_default_wbheight=$aros_default_wbheight
-
+aros_cv_default_wbdepth=$aros_default_wbdepth
 
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
@@ -397,6 +402,7 @@ AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(aros_default_wbwidth)
 AC_SUBST(aros_default_wbheight)
+AC_SUBST(aros_default_wbdepth)
 AC_SUBST(HAVE_XSHM_SUPPORT)
 
 # Host related

@@ -17,6 +17,7 @@
 
 #define AROS_DEFAULT_WBWIDTH		@aros_default_wbwidth@
 #define AROS_DEFAULT_WBHEIGHT		@aros_default_wbheight@
+#define AROS_DEFAULT_WBDEPTH		@aros_default_wbdepth@
 
 #define USE_XSHM	@HAVE_XSHM_SUPPORT@
 
