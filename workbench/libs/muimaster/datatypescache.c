@@ -66,27 +66,11 @@ static struct MinNode *Node_Next(APTR node)
     return ((struct MinNode*)node)->mln_Succ;
 }
 
-static struct MinNode *Node_Prev(APTR node)
-{
-    if(node == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Pred == NULL) return NULL;
-    if(((struct MinNode*)node)->mln_Pred->mln_Pred == NULL)
-	return NULL;
-    return ((struct MinNode*)node)->mln_Pred;
-}
-
 static struct MinNode *List_First(APTR list)
 {
     if( !((struct MinList*)list)->mlh_Head) return NULL;
     if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
     return ((struct MinList*)list)->mlh_Head;
-}
-
-static struct MinNode *List_Last(APTR list)
-{
-    if( !((struct MinList*)list)->mlh_TailPred) return NULL;
-    if(((struct MinList*)list)->mlh_TailPred->mln_Pred == NULL) return NULL;
-    return ((struct MinList*)list)->mlh_TailPred;
 }
 
 /* A BltBitMaskPort() replacement which blits masks for interleaved bitmaps correctly */
