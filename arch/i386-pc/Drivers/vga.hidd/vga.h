@@ -2,7 +2,7 @@
 #define HIDD_VGA_H
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the vga gfx HIDD.

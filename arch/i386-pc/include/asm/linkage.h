@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef ASM_LINKAGE_H
 #define ASM_LINKAGE_H
 

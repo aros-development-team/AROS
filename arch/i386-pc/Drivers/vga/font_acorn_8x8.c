@@ -1,4 +1,9 @@
-/* Acorn-like font definition, with PC graphics characters */
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Acorn-like font definition, with PC graphics characters.
+*/
 
 unsigned char acorndata_8x8[] = {
 /* 00 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* ^@ */

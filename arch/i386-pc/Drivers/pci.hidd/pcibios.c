@@ -1,6 +1,6 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
-    $Id: 
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: PCI BIOS stuff for standalone i386 AROS
     Lang: english

@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
     Full low-level interrupt core. Provides AmigaOS - like preemptive
     multitasking.
 */

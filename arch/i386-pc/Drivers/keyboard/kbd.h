@@ -2,13 +2,12 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright (C) 1999-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
     Lang: English.
 */
-
 
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef  IDE_INTERN_H
 #define  IDE_INTERN_H
 
