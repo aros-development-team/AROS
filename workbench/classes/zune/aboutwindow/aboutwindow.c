@@ -34,7 +34,7 @@
 #include <aros/debug.h>
 
 /*** Locale functions *******************************************************/
-STRPTR MSG(struct Catalog *catalog, ULONG id)
+CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
     {
@@ -51,7 +51,7 @@ STRPTR MSG(struct Catalog *catalog, ULONG id)
 #define IGNORE ((APTR)(1UL))
 
 /*** Utility ****************************************************************/
-STRPTR Section2Name(struct Catalog *catalog, ULONG section)
+CONST_STRPTR Section2Name(struct Catalog *catalog, ULONG section)
 {
     switch (section)
     {
@@ -75,7 +75,7 @@ BOOL NamesToList
                    *tag          = NULL;
     BOOL            success      = TRUE;
     IPTR            section      = SID_NONE;
-    STRPTR          sectionName;
+    CONST_STRPTR    sectionName;
     BOOL            sectionFirst = TRUE;
     STRPTR          name;
     STRPTR          buffer;
@@ -183,7 +183,7 @@ IPTR AboutWindow__OM_NEW
                              description       = NULL,
                              copyright         = NULL;
                              
-    STRPTR                   pages[]           = { NULL, NULL, NULL }; 
+    CONST_STRPTR             pages[]           = { NULL, NULL, NULL }; 
     UBYTE                    nextPage          = 0;
     
     /* Allocate memory pool ------------------------------------------------*/
@@ -393,13 +393,13 @@ IPTR AboutWindow__MUIM_Window_Setup
         string = data->awd_Title;
         if (string == NULL)
         {
-            get(self, MUIA_AboutWindow_Title, &string);
+            GET(self, MUIA_AboutWindow_Title, (IPTR *) &string);
             
             if (string != IGNORE)
             {
                 if (string == NULL)
                 {
-                    get(_app(self), MUIA_Application_Title, &string);
+                    GET(_app(self), MUIA_Application_Title, (IPTR *) &string);
                 }
                 
                 if (string != NULL)
@@ -445,22 +445,22 @@ IPTR AboutWindow__MUIM_Window_Setup
         /*- Setup default values -------------------------------------------*/
         if (title == NULL)
         {
-            get(_app(self), MUIA_Application_Title, &title);
+            GET(_app(self), MUIA_Application_Title, (IPTR *) &title);
         }
         
         if (versionNumber == NULL)
         {
-            get(_app(self), MUIA_Application_Version_Number, &versionNumber);
+            GET(_app(self), MUIA_Application_Version_Number, (IPTR *) &versionNumber);
         }
         
         if (versionDate == NULL)
         {
-            get(_app(self), MUIA_Application_Version_Date, &versionDate);
+            GET(_app(self), MUIA_Application_Version_Date, (IPTR *) &versionDate);
         }
         
         if (versionExtra == NULL)
         {
-            get(_app(self), MUIA_Application_Version_Extra, &versionExtra);
+            GET(_app(self), MUIA_Application_Version_Extra, (IPTR *) &versionExtra);
         }
         
         /* Simplify later checks a little */
@@ -544,12 +544,12 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup copyright ====================================================*/
     if (data->awd_Copyright == NULL)
     {
-        get(_app(self), MUIA_Application_Copyright, &data->awd_Copyright);
+        GET(_app(self), MUIA_Application_Copyright, (IPTR *) &data->awd_Copyright);
     }
     
     if (data->awd_Copyright != IGNORE && data->awd_Copyright != NULL)
     {
-        set(data->awd_CopyrightObject, MUIA_Text_Contents, data->awd_Copyright);
+        SET(data->awd_CopyrightObject, MUIA_Text_Contents, data->awd_Copyright);
     }
     else
     {
@@ -559,12 +559,12 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup description ==================================================*/
     if (data->awd_Description == NULL)
     {
-        get(_app(self), MUIA_Application_Description, &data->awd_Description);
+        GET(_app(self), MUIA_Application_Description, (IPTR *) &data->awd_Description);
     }
     
     if (data->awd_Description != IGNORE && data->awd_Description != NULL)
     {
-        set
+        SET
         (
             data->awd_DescriptionObject, 
             MUIA_Text_Contents, data->awd_Description
