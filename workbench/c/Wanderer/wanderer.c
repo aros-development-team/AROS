@@ -675,37 +675,9 @@ void execute_cancel(void)
 void shell_open(char **cd_ptr)
 {
     BPTR cd = Lock(*cd_ptr,ACCESS_READ);
-#ifdef __AROS__
-    BPTR win = Open("CON:10/10/640/480/AROS-Shell/CLOSE", MODE_OLDFILE);
-    BPTR from = Open("S:Shell-Startup", MODE_OLDFILE);
-#else
-    BPTR win = Open("CON:10/10/640/480/AROS-Shell/AUTO/CLOSE", MODE_OLDFILE);
-#endif
 
-#ifdef __AROS__
-    if (SystemTags("",
-	SYS_Asynch,     TRUE,
-	SYS_Input,	    (IPTR)win,
-	SYS_Output,	    (IPTR)NULL,
-	SYS_Background, FALSE,
-	SYS_Error,	    (IPTR)NULL,
-	SYS_ScriptInput, (IPTR)from,
-	SYS_UserShell,  TRUE,
-	NP_CurrentDir, cd,
-	TAG_DONE) == -1)
-#else
-    if (SystemTags("newshell",
-	SYS_Asynch,     TRUE,
-	SYS_Input,	    (IPTR)win,
-	SYS_Output,	    (IPTR)NULL,
-	NP_CurrentDir, cd,
-	TAG_DONE) == -1)
-#endif
+    if (SystemTags("NewShell", NP_CurrentDir, cd, TAG_DONE) == -1)
     {
-    	Close(win);
-    #ifdef __AROS__
-    	Close(from);
-    #endif
     	UnLock(cd);
     }
 }
