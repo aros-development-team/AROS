@@ -1,0 +1,59 @@
+
+What are the different files ?
+
+
+
+addclass.c - Function to add a class to the OOP-system. Ie. make the class public.
+
+disposeobject.c - Function to delete an object from storagem when it is
+		 no longer needed.
+
+getattr.c - Function to get one attribute from an object.
+
+getattrbase.c - get the attribute ID base for an interface.
+		The attrbase must allready have between by ObtainAttrBase().
+		
+getmethod.c - get a function pointer to a specific method.
+
+getmethodid.c - get a numeric methodid, for a method in a certain interface
+		represented by a string and an index.
+		
+hash.c - generic hash-table implementation used inside the system.
+hash.h - hash table API.
+
+hiddmetaclass.c - Metaclass implementing single inheritance.
+metaclass.c - Metaclass implementing multiple interfaces.
+newobject.c - Function for instantiating an object/class (classes are also objects).
+obtainattrbase.c - Function for obtaining an Attribute ID base for an interface
+obtainattrbases.c - Function for obtaining several Attribute ID bases
+		    for interfaces.
+		    
+parseattrs.c - Optimized taglist parsing function.
+
+private.h - Declares methods that are private to the oop implementation,
+ 	    ie. they are only used in the implementation itself.
+
+
+privatestubs.c - stubs for private methods, ie. methods that are only
+used in the oop implementation itself.
+
+releaseattrbase.c - Function for releasing an attribute ID base obtained
+		earlier with ObtainAttrBase();
+		
+releaseattrbases.c - Function for releasing a set of attribute ID bases obtained
+		earlier with ObtainAttrBases();
+
+
+removeclass.c - Remove a class from the public class list. The class must
+		have been added earlier with AddClass();
+
+rootclass.c - The root class which is root of all other classes
+              (including metaclasses),
+	      and the basemetaclass, which is root of all
+	      metaclasses.
+	      
+setattrs.c - Function to set an attribute in an object.
+support.c - Various support functions needed for
+             handling dynamic allocation of IDs.
+
+
