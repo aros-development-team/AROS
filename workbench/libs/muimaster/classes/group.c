@@ -114,9 +114,8 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
-#warning FIXME: prefs
-    data->horiz_spacing = 2; //__zprefs.group_hspacing;
-    data->vert_spacing = 2; //__zprefs.group_vspacing;
+    data->horiz_spacing = __zprefs.group_hspacing;
+    data->vert_spacing = __zprefs.group_vspacing;
     data->columns = 1;
     data->rows = 1;
 
@@ -585,11 +584,12 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct Rectangle        group_rect, child_rect;
     int                    page = -1;
 
+    D(bug("muimaster.library/group.c: Draw Group Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
+
     DoSuperMethodA(cl, obj, (Msg)msg);
     if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
 	return TRUE;
 
-    D(bug("muimaster.library/group.c: Draw Group at 0x%lx\n",obj));
 
     /*
      * update is set when changing active page of a page group

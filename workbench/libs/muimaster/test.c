@@ -27,27 +27,54 @@ void main(void)
 {
     Object *app;
     Object *wnd;
+    Object *quit_button;
 
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
 
     MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
     MUIMasterBase_instance.utilitybase = OpenLibrary("utility.library",37);
+    __zune_prefs_init(&__zprefs);
+
+
 
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
     	    MUIA_Window_Title, "test",
     	    WindowContents, VGroup,
-    	    	Child, TextObject, MUIA_Text_Contents, "Hello World!!\nThis is a text object",End,
+    	    	Child, TextObject, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object",End,
+    	    	Child, HGroup,
+    	    	    Child, quit_button = TextObject,
+			ButtonFrame,
+			MUIA_Text_PreParse, "\33c",
+			MUIA_Text_Contents, "Quit",
+			MUIA_InputMode, MUIV_InputMode_RelVerify,
+			End,
+    	    	    End,
     	        End,
     	    End,
     	End;
 
     if (app)
     {
+	ULONG sigs = 0;
+
     	printf("Application Object created at 0x%lx\n",app);
     	printf("Window Object created at 0x%lx\n",wnd);
+
+    	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	set(wnd,MUIA_Window_Open,TRUE);
-	Delay(200);
+
+	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+	{
+	    if (sigs)
+	    {
+		sigs = Wait(sigs | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D);
+		if (sigs & SIGBREAKF_CTRL_C) break;
+		if (sigs & SIGBREAKF_CTRL_D) break;
+	    }
+	}
+
 	MUI_DisposeObject(app);
     }
 }
