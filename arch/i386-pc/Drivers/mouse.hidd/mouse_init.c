@@ -16,7 +16,6 @@
 #include "mouse.h"
 
 #undef SysBase
-#define SysBase (*(struct ExecBase **)4UL)
 
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
