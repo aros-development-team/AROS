@@ -81,6 +81,10 @@ struct MUI_AreaData
 #define MADF_DRAGGING          (1<< 23)
 #define MADF_DROPABLE          (1<< 24)
 
+#define MADF_INVIRTUALGROUP	(1<<29) /* PRIV UNDOC: The object is inside a virtual group */
+#define MADF_ISVIRTUALGROUP	(1<<30) /* PRIV UNDOC: The object is a virtual group */
+
+
 #define DRAW_BG_RECURSIVE (1<<1)
 
 #define _vweight(obj)  (muiAreaData(obj)->mad_VertWeight)

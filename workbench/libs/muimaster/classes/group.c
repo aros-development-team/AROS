@@ -60,6 +60,10 @@ struct MUI_GroupData
     ULONG        horiz_weight_sum;
     ULONG        vert_weight_sum;
     ULONG        update; /* for MUI_Refraw() 1 - do not redraw the frame */
+    struct MUI_EventHandlerNode ehn;
+    LONG virt_offx, virt_offy; /* diplay offsets */
+    LONG virt_mwidth,virt_mheight; /* The complete width */
+    LONG saved_minwidth,saved_minheight;
 };
 
 #define GROUP_HORIZ       (1<<1)
@@ -67,7 +71,7 @@ struct MUI_GroupData
 #define GROUP_SAME_HEIGHT (1<<3)
 #define GROUP_CHANGING    (1<<4)
 #define GROUP_PAGEMODE    (1<<5)
-
+#define GROUP_VIRTUAL     (1<<6)
 
 static const int __version = 1;
 static const int __revision = 1;
@@ -206,6 +210,9 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIA_Group_VertSpacing:
 	    data->vert_spacing = tag->ti_Data;
 	    break;
+	case MUIA_Group_Virtual:
+	    _handle_bool_tag(data->flags, tag->ti_Data, GROUP_VIRTUAL);
+	    break;
 	}
     }
 
@@ -217,6 +224,19 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     D(bug("muimaster.library/group.c: Group Object created at 0x%lx\n",obj));
 
+    if (data->flags & GROUP_VIRTUAL)
+    {
+    	/* This is used by MUI_Render() to determine if group is virtual. It then installs a clip region.
+    	 * Also MUI_Layout() uses this. Probably for speed up reason  */
+	_flags(obj) |= MADF_ISVIRTUALGROUP;
+    }
+
+    /* This is only used for virtual groups */
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS; /* Will be filled on demand */
+    data->ehn.ehn_Priority = 10; /* Will hear the click before all other normal objects */
+    data->ehn.ehn_Flags    = 0;
+    data->ehn.ehn_Object   = obj;
+    data->ehn.ehn_Class    = cl;
     return (ULONG)obj;
 }
 
@@ -296,30 +316,18 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
-    case MUIA_Version:
-	STORE = __version;
-	return(TRUE);
-
-    case MUIA_Revision:
-	STORE = __revision;
-	return(TRUE);
-
-    case MUIA_Group_ActivePage:
-	STORE = data->active_page;
-	return(TRUE);
-
-    case MUIA_Group_ChildList:
-	return GetAttr(MUIA_Family_List, data->family, msg->opg_Storage);
-
-    case MUIA_Group_HorizSpacing:
-	STORE = data->horiz_spacing;
-	return(TRUE);
-
-    case MUIA_Group_VertSpacing:
-	STORE = data->vert_spacing;
-	return(TRUE);
+	case MUIA_Version: STORE = __version; return 1;
+	case MUIA_Revision: STORE = __revision; return 1;
+	case MUIA_Group_ActivePage: STORE = data->active_page; return 1;
+	case MUIA_Group_ChildList: return GetAttr(MUIA_Family_List, data->family, msg->opg_Storage);
+	case MUIA_Group_HorizSpacing: STORE = data->horiz_spacing; return 1;
+	case MUIA_Group_VertSpacing: STORE = data->vert_spacing; return 1;
+	case MUIA_Virtgroup_Left: STORE = data->virt_offx; return 1;
+	case MUIA_Virtgroup_Top: STORE = data->virt_offy; return 1;
+	case MUIA_Virtgroup_Width: STORE = data->virt_mwidth; return 1;
+	case MUIA_Virtgroup_Height: STORE = data->virt_mheight; return 1;
     }
 
     /* seems to be the documented behaviour, however it should be slow! */
@@ -492,11 +500,10 @@ Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
-/*
- * MUIM_Setup
- */
-static ULONG
-mSetup(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ MUIM_Setup
+**************************************************************************/
+static ULONG Group_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     static ULONG          method = MUIM_Cleanup;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -531,20 +538,30 @@ mSetup(struct IClass *cl, Object *obj, Msg msg)
 	    return FALSE;
 	}
     }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+    }
+
     return TRUE;
 }
 
 
-/*
- * MUIM_Cleanup
- */
-static ULONG
-mCleanup(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ MUIM_Cleanup
+**************************************************************************/
+static ULONG Group_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
     struct MinList       *ChildList;
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+    }
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
@@ -558,10 +575,11 @@ mCleanup(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
-/*
- * Draw group frame
- */
-static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+
+/**************************************************************************
+ MUIM_Draw - draw the group
+**************************************************************************/
+static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object                *cstate;
@@ -569,6 +587,7 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MinList        *ChildList;
     struct Rectangle        group_rect, child_rect;
     int                    page = -1;
+    APTR clip;
 
     D(bug("muimaster.library/group.c: Draw Group Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
@@ -589,6 +608,11 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	if (!(msg->flags & MADF_DRAWOBJECT) && !(msg->flags & MADF_DRAWALL))
 	    return TRUE;
     }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
+    } else clip = 0; /* Makes compiler happy */
 
     group_rect = muiRenderInfo(obj)->mri_ClipRect;
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
@@ -624,6 +648,12 @@ static ULONG mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*  	    g_print("set back clip to (%d, %d, %d, %d)\n", */
 /*  		    group_rect.x, group_rect.y, group_rect.width, group_rect.height); */
     }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	MUI_RemoveClipping(muiRenderInfo(obj), clip);
+    }
+
     return TRUE;
 }
 
@@ -893,13 +923,11 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
     END_MINMAX();
 }
 
-/*
- * MUIM_AskMinMax : ask childs about min/max sizes, then
- * either call a hook, or the builtin method, to calculate our minmax
- */
-static ULONG
-mAskMinMax(struct IClass *cl, Object *obj,
-		struct MUIP_AskMinMax *msg)
+/**************************************************************************
+ MUIM_AskMinMax : ask childs about min/max sizes, then
+ either call a hook, or the builtin method, to calculate our minmax
+**************************************************************************/
+static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_LayoutMsg  lm;
@@ -907,11 +935,14 @@ mAskMinMax(struct IClass *cl, Object *obj,
     struct MUI_MinMax childMinMax;
     Object *cstate;
     Object *child;
+    LONG super_minwidth,super_minheight;
 
     /*
      * let our superclass first fill in its size with frame, inner spc etc ...
      */
     DoSuperMethodA(cl, obj, (Msg)msg);
+    super_minwidth = msg->MinMaxInfo->MinWidth;
+    super_minheight = msg->MinMaxInfo->MinHeight;
 
     /*
      * Ask children
@@ -931,12 +962,6 @@ mAskMinMax(struct IClass *cl, Object *obj,
 	DoMethodA(child, (Msg)&childMsg);
 
 	__area_finish_minmax(child, childMsg.MinMaxInfo);
-
-/*  g_print("child minmax (%p/%p): Min=%dx%d Max=%dx%d Def=%dx%d\n", */
-/*  	child, obj, */
-/*  	_minwidth(child), _minheight(child), */
-/*  	_maxwidth(child), _maxheight(child), */
-/*  	_defwidth(child), _defheight(child)); */
     }
 
     /*
@@ -949,7 +974,6 @@ mAskMinMax(struct IClass *cl, Object *obj,
     else if (data->layout_hook)
     {
     	CallHookPkt(data->layout_hook, obj, &lm);
-//	(*(data->layout_hook->h_Entry))(data->layout_hook, obj, &lm);
 
 	if (lm.lm_MinMax.MaxHeight < lm.lm_MinMax.MinHeight)
 	    lm.lm_MinMax.MaxHeight = lm.lm_MinMax.MinHeight;
@@ -982,11 +1006,13 @@ mAskMinMax(struct IClass *cl, Object *obj,
 	}
     }
 
-/*g_print("Group_AskMinMax (%p): Min=%dx%d Max=%dx%d Def=%dx%d\n",
-	obj,
-	msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight,
-	msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight,
-	msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight);*/
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->saved_minwidth = msg->MinMaxInfo->MinWidth;
+	data->saved_minheight = msg->MinMaxInfo->MinHeight;
+	msg->MinMaxInfo->MinWidth = super_minwidth;
+	msg->MinMaxInfo->MinHeight = super_minheight;
+    }
     return 0;
 }
 
@@ -1001,6 +1027,7 @@ mAskMinMax(struct IClass *cl, Object *obj,
     ** Note: Errors during layout are not easy to handle for MUI.
     **       Better avoid them!
     */
+/* Write a proper hook function */
 static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1032,6 +1059,15 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	left = totalBonus / 2;
 	data->horiz_weight_sum = 1;
     }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+    	/* This is alao true for non virtual groups, but if this would be the case
+        ** then there is a bug in the layout function
+        */
+    	if (totalBonus < 0) totalBonus = 0;
+    }
+
     /* max size ?  (too much bonus) */
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
@@ -1087,11 +1123,16 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	    totalBonus -= bonus;
 	}	
     }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth = left - data->horiz_spacing;
+	data->virt_mheight = _mheight(obj);
+    }
 }
 
-
-static void
-group_layout_vert(struct IClass *cl, Object *obj, struct MinList *children)
+/* Write a proper hook function */
+static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object *cstate;
@@ -1117,6 +1158,15 @@ group_layout_vert(struct IClass *cl, Object *obj, struct MinList *children)
 	if (_minheight(child) != _maxheight(child))
 	    data->vert_weight_sum += _vweight(child);
     }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+    	/* This is alao true for non virtual groups, but if this would be the case
+        ** then there is a bug in the layout function
+        */
+    	if (totalBonus < 0) totalBonus = 0;
+    }
+
     if (data->vert_weight_sum == 0) /* fixed height childs */
     {
 	top = totalBonus / 2;
@@ -1178,6 +1228,12 @@ group_layout_vert(struct IClass *cl, Object *obj, struct MinList *children)
 	    data->vert_weight_sum -= _vweight(child);
 	    totalBonus -= bonus;
 	}
+    }
+
+    if (data->flags & GROUP_VIRTUAL)
+    {
+	data->virt_mwidth = _mwidth(obj);
+	data->virt_mheight = top - data->vert_spacing;
     }
 }
 
@@ -1397,6 +1453,7 @@ layout_2d_distribute_space (struct MUI_GroupData *data,
  * for each column, determine its width allocation
  * all column members will have the same width
  */
+/* Write a proper hook function */
 static void group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1447,7 +1504,7 @@ static void group_layout_2d(struct IClass *cl, Object *obj, struct MinList *chil
     }
 }
 
-
+/* Write a proper hook function */
 static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinList *children)
 {
     Object *cstate;
@@ -1468,8 +1525,7 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
 /*
  * Either use a given layout hook, or the builtin method.
  */
-static ULONG
-mLayout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
+static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_LayoutMsg lm;
@@ -1481,13 +1537,17 @@ mLayout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
     }
     else if (data->layout_hook)
     {
- 
 	lm.lm_Type = MUILM_LAYOUT;
 	lm.lm_Layout.Width = _mwidth(obj);
 	lm.lm_Layout.Height = _mheight(obj);
 
-//	(*(data->layout_hook->h_Entry))(data->layout_hook, obj, &lm);
 	CallHookPkt(data->layout_hook, obj, &lm);
+
+	if (data->flags & GROUP_VIRTUAL)
+	{
+	    data->virt_mwidth = lm.lm_Layout.Width;
+	    data->virt_mheight = lm.lm_Layout.Height;
+	}
     }
     else
     {
@@ -1700,6 +1760,84 @@ static ULONG Group_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+
+    if (msg->imsg)
+    {
+	switch (msg->imsg->Class)
+	{
+	    case    IDCMP_MOUSEBUTTONS:
+	            if (msg->imsg->Code == SELECTDOWN)
+	            {
+	            	if (_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj)))
+	            	{
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			    data->ehn.ehn_Events |= IDCMP_INTUITICKS;
+			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			}
+		    } else
+		    {
+			if (data->ehn.ehn_Events & IDCMP_INTUITICKS)
+			{
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			    data->ehn.ehn_Events &= ~IDCMP_INTUITICKS;
+			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			}
+		    }
+		    break;
+
+	    case    IDCMP_INTUITICKS:
+	            if (!(_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj))))
+	            {
+			LONG new_virt_offx = data->virt_offx;
+			LONG new_virt_offy = data->virt_offy;
+
+	            	if (msg->imsg->MouseX < _mleft(obj))
+	            	{
+			    /* scroll left */
+			    if (new_virt_offx >= 4) new_virt_offx -= 4;
+			    else new_virt_offx = 0;
+	            	} else
+	            	{
+			    /* scroll right */
+			    new_virt_offx += 4;
+			    if (new_virt_offx > data->virt_mwidth - _mwidth(obj)) new_virt_offx = data->virt_mwidth - _mwidth(obj);
+	            	}
+
+	            	if (msg->imsg->MouseY < _mtop(obj))
+	            	{
+			    /* scroll top */
+			    if (new_virt_offy >= 4) new_virt_offy -= 4;
+			    else new_virt_offy = 0;
+	            	} else
+	            	{
+			    /* scroll bottom */
+			    new_virt_offy += 4;
+			    if (new_virt_offy > data->virt_mheight - _mheight(obj)) new_virt_offy = data->virt_mheight - _mheight(obj);
+			}
+
+			if (new_virt_offx != data->virt_offx || new_virt_offy != data->virt_offy)
+			{
+			    /* Relayout our self, this will also relayout all the children */
+			    data->virt_offx = new_virt_offx;
+			    data->virt_offy = new_virt_offy;
+			    DoMethod(obj,MUIM_Layout);
+			    /* Needs to be optimized! */
+			    MUI_Redraw(obj,MADF_DRAWOBJECT);
+			}
+	            }
+		    break;
+	}
+    }
+
+    return 0;
+}
+
 #ifndef _AROS
 __asm IPTR Group_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -1717,8 +1855,7 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
     case OM_GET: return Group_Get(cl, obj, (struct opGet *)msg);
     case OM_ADDMEMBER: return Group_AddMember(cl, obj, (APTR)msg);
     case OM_REMMEMBER: return Group_RemMember(cl, obj, (APTR)msg);
-    case MUIM_AskMinMax :
-	return mAskMinMax(cl, obj, (APTR)msg);
+    case MUIM_AskMinMax: return Group_AskMinMax(cl, obj, (APTR)msg);
     case MUIM_Group_ExitChange :
 	return mExitChange(cl, obj, (APTR)msg);
     case MUIM_Group_InitChange :
@@ -1727,14 +1864,10 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mSort(cl, obj, (APTR)msg);
     case MUIM_ConnectParent : return Group_ConnectParent(cl, obj, (APTR)msg);
     case MUIM_DisconnectParent: return Group_DisconnectParent(cl, obj, (APTR)msg);
-    case MUIM_Layout :
-	return mLayout(cl, obj, (APTR)msg);
-    case MUIM_Setup :
-	return mSetup(cl, obj, (APTR)msg);
-    case MUIM_Cleanup :
-	return mCleanup(cl, obj, (APTR)msg);
-    case MUIM_Draw :
-	return mDraw(cl, obj, (APTR)msg);
+    case MUIM_Layout: return Group_Layout(cl, obj, (APTR)msg);
+    case MUIM_Setup: return Group_Setup(cl, obj, (APTR)msg);
+    case MUIM_Cleanup: return Group_Cleanup(cl, obj, (APTR)msg);
+    case MUIM_Draw: return Group_Draw(cl, obj, (APTR)msg);
 //    case MUIM_Group_FindObject :
 //	return mFindObject(cl, obj, (APTR)msg);
     case MUIM_Export :
@@ -1751,6 +1884,7 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	return mSetUDataOnce(cl, obj, (APTR)msg);
     case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
     case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
+    case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
 
     case MUIM_DragQueryExtended: return Group_DragQueryExtended(cl, obj, (APTR)msg);
     }

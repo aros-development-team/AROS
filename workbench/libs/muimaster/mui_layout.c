@@ -8,6 +8,7 @@
 
 #include <intuition/classusr.h>
 #include <clib/alib_protos.h>
+#include <proto/intuition.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
@@ -68,6 +69,16 @@ __asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register
  * Called only by groups, never by windows
  */
 //    ASSERT(parent != NULL);
+
+    if (_flags(parent) & MADF_ISVIRTUALGROUP)
+    {
+	/* I'm not yet sure what to do by virtual groups in virtual groups, eighter add their offsets too or not, will be tested soon */
+	LONG val;
+	get(parent,MUIA_Virtgroup_Left,&val);
+	left -= val;
+	get(parent,MUIA_Virtgroup_Top,&val);
+	top -= val;
+    }
 
     _left(obj) = left + _mleft(parent);
     _top(obj) = top + _mtop(parent);
