@@ -54,7 +54,8 @@
     OOP_Object      	*gc;
     struct Layer    	*L = rp->Layer;
     struct BitMap   	*bm = rp->BitMap;
-
+    LONG    	    	 dx, dy;
+    
     if (!CorrectDriverData (rp, GfxBase))
 	return;
 	
@@ -81,7 +82,19 @@
     	rr.MinY = rp->cp_y;
 	rr.MaxY = y;
     }
-    
+
+    {
+    	struct TagItem gctags[] =
+	{
+	    {aHidd_GC_LinePattern   , rp->LinePtrn  },
+	    {aHidd_GC_LinePatternCnt, rp->linpatcnt },
+	    {TAG_DONE	    	    	    	    }
+	};
+	
+	OOP_SetAttrs( gc, gctags);
+    }
+         
+	
     if (NULL == L)
     {
         /* No layer, probably a screen, but may be a user inited bitmap */
@@ -205,8 +218,15 @@
 	
     } /* if (rp->Layer) */
     
+    dx = abs(rp->cp_x - x);
+    dy = abs(rp->cp_y - y);
+    if (dy > dx) dx = dy;
+    
+    rp->linpatcnt = ((LONG)rp->linpatcnt - dx) & 15;
+
     rp->cp_x = x;
     rp->cp_y = y;
+    
     
     AROS_LIBFUNC_EXIT
     
