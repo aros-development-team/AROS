@@ -145,7 +145,8 @@ int num,len;
       word = &word[len];
     }
   }
-  array[num] = NULL;
+  if (array)
+    array[num] = NULL;
 
   *outarray = array;
 
