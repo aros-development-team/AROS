@@ -203,7 +203,8 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     case FSA_LOCK_RECORD:
     case FSA_UNLOCK_RECORD:
     case FSA_ADD_NOTIFY:
-    case FSA_MAKE_LINK:
+    case FSA_CREATE_HARDLINK:
+    case FSA_CREATE_SOFTLINK:
 	packet->dp_Res1 = iofs->io_DosError == 0;
  	packet->dp_Res2 = iofs->io_DosError;
 	break;
