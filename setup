@@ -18,7 +18,7 @@ else
     echo "Successfully generated tool."
   else
     echo "Failed to generate tools/genmf/genmf !!!"
-    exit -1
+    exit 10
   fi
   cd ..
 fi
@@ -35,7 +35,7 @@ else
     echo "Successfully generated tool."
   else
     echo "Failed to generate tools/cpak/cpak !!!"
-    exit -1
+    exit 10
   fi
   cd ..
 fi
@@ -57,7 +57,7 @@ else
       echo "Successfully generated tool."
     else
       echo "Failed to generate tools/MetaMake/mmake !!!"
-      exit -1
+      exit 10
     fi
     cd ..
   fi
@@ -66,10 +66,10 @@ fi
 
 cd ..
 echo -n "Checking for MetaMake Config File..."
-if [ -e "$HOME/.mmake.config" ] ; then
+if [ -f "$HOME/.mmake.config" ] ; then
   echo "$HOME/.mmake.config"
 else
-  if [ -e "mmake.config" ] ; then
+  if [ -f "mmake.config" ] ; then
     echo "locally installed in mmake.config."
   else
     echo "Not found!"
@@ -79,25 +79,25 @@ else
     read edit
     case "$edit" in
       [yY] | [yY]es )
-        if [ ! -x "$EDITOR" ] ; then
-          echo -n "What is your favourite editor?"
-          read EDITOR
-        fi
-        $EDITOR mmake.config.tmp
-        echo -n "Do you want to copy it into your Home [y/N]?"
-        read tohome
-        case "$tohome" in
-          [yY] | [yY]es )
-            mv mmake.config.tmp $HOME/.mmake.config
-            ;;
-          *)
-            mv mmake.config.tmp mmake.config
-            ;;
-        esac
-        ;;
+	if [ ! -x "$EDITOR" ] ; then
+	  echo -n "What is your favourite editor?"
+	  read EDITOR
+	fi
+	$EDITOR mmake.config.tmp
+	echo -n "Do you want to copy it into your Home [y/N]?"
+	read tohome
+	case "$tohome" in
+	  [yY] | [yY]es )
+	    mv mmake.config.tmp $HOME/.mmake.config
+	    ;;
+	  *)
+	    mv mmake.config.tmp mmake.config
+	    ;;
+	esac
+	;;
       *)
-        mv mmake.config.tmp mmake.config
-        ;;
+	mv mmake.config.tmp mmake.config
+	;;
     esac
   fi
 fi
@@ -107,3 +107,5 @@ echo "You have installed all necessary tools to compile AROS now."
 echo
 echo "Type '$MMAKE AROS' to start building the tree."
 echo
+
+exit 0
