@@ -37,7 +37,7 @@ FUNCTIONS := \
 
 %genlib
 
-# MM workbench-libs-mathieeedoubbas : setup includes linklibs
+#MM workbench-libs-mathieeedoubbas : setup includes linklibs
 workbench-libs-mathieeedoubbas : show-flags $(SLIB)
 
 #MM setup
