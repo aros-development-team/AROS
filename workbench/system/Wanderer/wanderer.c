@@ -628,14 +628,7 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             D(bug("Wanderer: prefs notification setup FAILED\n"));
         }
         
-        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
-    
-        SET(root_iconwnd, MUIA_IconWindow_Background, XGET(data->wd_Prefs, MUIA_WandererPrefs_WorkbenchBackground));
-        DoMethod
-        (
-            data->wd_Prefs, MUIM_Notify, MUIA_WandererPrefs_WorkbenchBackground, MUIV_EveryTime,
-            (IPTR) root_iconwnd, 3, MUIM_Set, MUIA_IconWindow_Background, MUIV_TriggerValue
-        );
+        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling    
     }
     
     return self;

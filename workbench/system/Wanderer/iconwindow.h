@@ -27,7 +27,6 @@ struct IconWindow_ActionMsg
 #define MUIA_IconWindow_ActionHook    (MUIB_IconWindow | 0x00000002) /* I-- */ /* Hook to call when some action happens */
 #define MUIA_IconWindow_IsBackdrop    (MUIB_IconWindow | 0x00000003) /* ISG */ /* is Backdrop window ? */
 #define MUIA_IconWindow_IconList      (MUIB_IconWindow | 0x00000004) /* --G */
-#define MUIA_IconWindow_Background    (MUIB_IconWindow | 0x00000005) /* ISG */
 
 /*** Public Methods *********************************************************/
 #define MUIM_IconWindow_Open          (MUIB_IconWindow | 0x00000000)
