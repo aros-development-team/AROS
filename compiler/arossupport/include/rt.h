@@ -4,6 +4,11 @@
     Resource Tracking
 
 */
+/* FIXME: */
+#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
+#   undef ENABLE_RT
+#endif
+
 #ifndef ENABLE_RT
 #   define ENABLE_RT	0
 #endif
