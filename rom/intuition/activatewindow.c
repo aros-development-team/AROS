@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  1999/10/06 19:55:27  stegerg
+    int_activatewindow may have window = NULL.
+    protect window->Flags modification with Forbid(), Permit()
+
     Revision 1.10  1999/03/26 10:37:44  nlorentz
     Set WFLG_WINDOWACTIVE flag
 
@@ -117,7 +121,7 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
     struct Window *oldactive;
     
 
-    intui_ActivateWindow (window);
+    if (window) intui_ActivateWindow (window);
 
 
     lock = LockIBase(0UL);
@@ -129,17 +133,31 @@ VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBa
 
 	
     IntuitionBase->ActiveWindow = window;
-    window->Flags |= WFLG_WINDOWACTIVE;
 
+    if (window)
+    {
+    	/* App task is allowed to modify window->Flags, for example
+	   set/clear WFLG_RMBTRAP. It is noid said that every compiler
+	   on every machine produces an atomic instruction, so some
+	   kind of semaphore is needed */
+	   
+    	Forbid();
+	window->Flags |= WFLG_WINDOWACTIVE;
+	Permit();
+    }
+    
     UnlockIBase(lock);
     
     if (oldactive)
     {
+        Forbid();
 	oldactive->Flags &= ~WFLG_WINDOWACTIVE;
+	Permit();
+	
 	RefreshWindowFrame(oldactive);
     }    
 
     
-    RefreshWindowFrame(window);
+    if (window) RefreshWindowFrame(window);
 }
 
