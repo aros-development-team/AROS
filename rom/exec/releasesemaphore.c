@@ -116,10 +116,11 @@ void _Exec_ReleaseSemaphore (struct SignalSemaphore * sigSem,
 		ForeachNodeSafe( &sigSem->ss_WaitQueue, sr, srn)
 		{
 		    srn = (struct SemaphoreRequest *)sr->sr_Link.mln_Succ;
-		    Remove((struct Node *)sr);
 
 		    if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
 		    {
+			Remove((struct Node *)sr);
+
 			/* Clear the bit, and update the owner count */
 			(IPTR)sr->sr_Waiter &= ~1;
 			sigSem->ss_NestCount++;
