@@ -18,7 +18,8 @@
     0x00000900 - 0x00000b00	data from setup
     0x00000b00 - 0x00000b18	Global Descriptor Table
     0x00001000 - ....		Kernel
-    ....       - 0x0009fffc	Supervisor stack
+    ....       - 0x0009effc	Supervisor stack
+    0x0009f000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
 
     *** end of SYSTEM USE ONLY area ***
 
@@ -60,7 +61,8 @@ start:		cld
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
-		mov	$0x0009fffc,%esp	/* Put stack in safe place */
+		mov	$0x0009effc,%esp	/* Put stack in safe place */
+						/* skip BIOS ext area */
 
 /* Get GDT and IDT so that you can change them */
 
@@ -143,8 +145,7 @@ dont_copy:	incl	(reload_flag)
     %esp contents in left top corner of screen. It sould be 0009fffc or similar
 */
 
-/*
-		movl	%esp,%edx
+/*		movl	%esp,%edx
 		movl	$0x000b8000,%edi
 		movl	$8,%ecx
 qqq:		roll	$4,%edx
