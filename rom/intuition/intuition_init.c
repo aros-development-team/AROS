@@ -247,9 +247,9 @@ AROS_LH1(struct LIBBASETYPE *, open,
     {
 	if (!(GfxBase = (void *)OpenLibrary (GRAPHICSNAME, 39)) )
 	    return NULL;
+    	
+	GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
     }
-
-    GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
 
     if (!LayersBase)
     {
