@@ -14,3 +14,23 @@ MSG_MENU_PREFS_EXPORT
 E\0Exportera...
 ; E\0Export...
 ;
+MSG_MENU_PREFS_TEST
+T\0Testa
+; T\0Test
+;
+MSG_MENU_PREFS_REVERT
+Å\0Återställ
+; R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+S\0Spara
+; S\0Save
+;
+MSG_MENU_PREFS_USE
+A\0Använd
+; U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+V\0Avbryt
+; C\0Cancel
+;

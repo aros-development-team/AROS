@@ -14,6 +14,7 @@
 #include <proto/locale.h>
 
 #include <utility/tagitem.h>
+#include <libraries/gadtools.h>
 #include <libraries/mui.h>
 #include <zune/prefseditor.h>
 #include <zune/prefswindow.h>
@@ -47,12 +48,12 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 #define __(id) (IPTR) MSG(catalog, (id))
 
 /*** Utility functions ******************************************************/
-Object *makeMenuitem(CONST_STRPTR text)
+Object *MakeMenuitem(CONST_STRPTR text)
 {
     CONST_STRPTR title    = NULL, 
                  shortcut = NULL;
     
-    if (text[1] == '\0')
+    if (text != NM_BARLABEL && text[1] == '\0')
     {
         title    = text + 2;
         shortcut = text;
@@ -80,7 +81,8 @@ Object *SystemPrefsWindow__OM_NEW
     struct SystemPrefsWindow_DATA *data = NULL; 
     struct TagItem *tag        = NULL;    
     struct Catalog *catalog    = NULL;
-    Object         *editor, *importMI, *exportMI;
+    Object         *editor, /* *importMI, *exportMI, */ *testMI, *revertMI, 
+                   *saveMI, *useMI, *cancelMI;
     
     tag = FindTagItem(WindowContents, message->ops_AttrList);
     if (tag != NULL) editor = (Object *) tag->ti_Data;
@@ -103,8 +105,18 @@ Object *SystemPrefsWindow__OM_NEW
             Child, (IPTR) MenuObject,
                 MUIA_Menu_Title, __(MSG_MENU_PREFS),
                 
-                Child, (IPTR) importMI = makeMenuitem(_(MSG_MENU_PREFS_IMPORT)),
-                Child, (IPTR) exportMI = makeMenuitem(_(MSG_MENU_PREFS_EXPORT)),
+                /*
+                Child, (IPTR) importMI = MakeMenuitem(_(MSG_MENU_PREFS_IMPORT)),
+                Child, (IPTR) exportMI = MakeMenuitem(_(MSG_MENU_PREFS_EXPORT)),
+                Child, (IPTR) MakeMenuitem(NM_BARLABEL),
+                */
+                
+                Child, (IPTR) testMI   = MakeMenuitem(_(MSG_MENU_PREFS_TEST)),
+                Child, (IPTR) revertMI = MakeMenuitem(_(MSG_MENU_PREFS_REVERT)),
+                Child, (IPTR) MakeMenuitem(NM_BARLABEL),
+                Child, (IPTR) saveMI   = MakeMenuitem(_(MSG_MENU_PREFS_SAVE)),
+                Child, (IPTR) useMI    = MakeMenuitem(_(MSG_MENU_PREFS_USE)),
+                Child, (IPTR) cancelMI = MakeMenuitem(_(MSG_MENU_PREFS_CANCEL)),
             End,
         End, 
         
@@ -137,6 +149,32 @@ Object *SystemPrefsWindow__OM_NEW
         (
             editor, MUIM_Notify, MUIA_PrefsEditor_Testing, MUIV_EveryTime,
             (IPTR) self, 1, MUIM_SystemPrefsWindow_UpdateButtons
+        );
+
+        DoMethod
+        (
+            testMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Test
+        );
+        DoMethod
+        (
+            revertMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Revert
+        );
+        DoMethod
+        (
+            saveMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Save
+        );
+        DoMethod
+        (
+            useMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Use
+        );
+        DoMethod
+        (
+            cancelMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+            (IPTR) self, 1, MUIM_PrefsWindow_Cancel
         );
     }
     else
