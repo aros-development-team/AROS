@@ -1015,7 +1015,8 @@ STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
     	{SYSIA_DrawInfo, 0},
     	{IA_Left,	0},
     	{IA_Top,	0},
-    	
+	{SYSIA_WithBorder, FALSE},
+	{SYSIA_Style, SYSISTYLE_GADTOOLS},    	
     	{TAG_DONE,}
    };
    struct TagItem atags[] =
