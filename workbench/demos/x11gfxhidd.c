@@ -72,8 +72,8 @@ struct Screen * openscreen(void)
    
   printf("Opening screen\n");
   screen = OpenScreenTags(NULL,
-                          SA_Height, 600,
-                          SA_Width, 800,
+                          SA_Width, 	640,
+                          SA_Height, 	480,
                           TAG_END);
 
   printf("Opening window, screen=%p\n", screen);
@@ -82,13 +82,14 @@ struct Screen * openscreen(void)
 			  WA_IDCMP, IDCMP_RAWKEY,
 			  WA_Left,	100,
 			  WA_Top,	100,
-                          WA_Height, 200,
-                          WA_Width, 200,
+                          WA_Height, 	200,
+                          WA_Width, 	200,
 			  WA_CustomScreen, screen,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
 			  WA_Zoom,		TRUE,
 			  WA_CloseGadget,	TRUE,
+			  WA_Title,		"X11 gfxhidd demo",
                           TAG_END);
 
   printf("Window opened\n");
