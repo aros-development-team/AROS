@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/13 15:35:44  digulla
+    Removed some comments
+    Replied IntuiMessage
+
     Revision 1.1  1996/08/13 13:48:27  digulla
     Small Demo: Open a window, render some gfx and wait for a keypress
 
@@ -91,27 +95,24 @@ static LONG tinymain(void)
 
     rp = win->RPort;
 
-    D("SetAPen\n");
+    Move (rp, 0, 0);
+    Draw (rp, 640, 512);
+
     SetAPen (rp, 1);
     SetDrMd (rp, JAM2);
 
-    D("Move\n");
     Move (rp, 0, 0);
     Draw (rp, 320, 256);
 
-    D("Rectfill 1\n");
     SetAPen (rp, 0);
     RectFill (rp, 100, 10, 110, 20);
 
-    D("Rectfill 2\n");
     SetAPen (rp, 1);
     RectFill (rp, 150, 10, 160, 20);
 
-    D("Rectfill 3\n");
     SetAPen (rp, 2);
     RectFill (rp, 200, 10, 210, 20);
 
-    D("Rectfill 4\n");
     SetAPen (rp, 3);
     RectFill (rp, 250, 10, 260, 20);
 
@@ -129,6 +130,8 @@ static LONG tinymain(void)
 		break;
 
 	    }
+
+	    ReplyMsg ((struct Message *)im);
 	}
 	else
 	{
