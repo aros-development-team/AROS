@@ -1,0 +1,26 @@
+## version $VER: ScreenMode.catalog 1.0 (27.01.2005)
+## language deutsch
+## codeset 0
+;
+;
+MSG_NAME
+Voreinstellungen Bildschirmauflösung
+;
+MSG_WIDTH
+\33lBreite :
+;
+MSG_DEFAULT
+\33l_Standard Vorgaben
+;
+MSG_HEIGHT
+\33lHöhe :
+;
+MSG_DEPTH
+\33lTiefe :
+;
+MSG_AUTOSCROLL
+\33lAutomatisches Rollen
+;
+MSG_SELECT
+Bildschirmauflösung auswählen
+;
