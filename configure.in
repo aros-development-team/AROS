@@ -275,7 +275,7 @@ aros_target_strip="true"
 # It is necessary to clear the include and link paths for target
 # commands. This should help clear up problems when cross compiling.
 # XXX We don't do this yet.
-aros_target_cflags="-Wall -O0 -DADEBUG=1 -DMDEBUG=1"
+aros_target_cflags="-Wall"
 aros_target_aflags="-Wall -x assembler-with-cpp"
 aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
 
@@ -671,14 +671,18 @@ AC_SUBST(aros_stack_debug)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
-emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION" ;;
+emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION"
+		aros_flavour="emulation" ;;
 emulcompat)	aros_flavour_uc="(AROS_FLAVOUR_EMULATION|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="emulation" ;;
-standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE" ;;
-native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE" ;;
+standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE"
+		aros_flavour="standalone";;
+native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE"
+		aros_flavour="native" ;;
 nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="native" ;;
-linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB" ;;
+linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
+		aros_flavour="linklib" ;;
 esac
 
 if test -z "$aros_gui_basedir" ; then
