@@ -81,15 +81,14 @@
 	    int length = s2 - name > 255 ? 255 : s2 - name - 1;
 
 	    /* Compatibility */
+	    /* sheutlin: therefore don't! use AROS_BSTR macros */
 	    dl->dol_OldName = MKBADDR(s3);
-	    AROS_BSTR_setstrlen(s3, length);
-
+	    *s3++ = length;
 	    for (i = 0; i < length; i++)
 	    {
-		AROS_BSTR_putchar(s3, i, name[i]); 
+		*s3++ = name[i];
 	    }
-
-	    dl->dol_DevName = AROS_BSTR_ADDR(dl->dol_OldName);
+	    dl->dol_DevName = dl->dol_OldName+1;
 	    dl->dol_Type = type;
 
 	    return dl;
