@@ -415,6 +415,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_InnerRight,0,
 	MUIA_InnerTop,0,
 	MUIA_InnerBottom,0,
+	MUIA_Font, MUIV_Font_List,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 
@@ -790,6 +791,26 @@ static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 }
 
 /**************************************************************************
+ MUIM_AskMinMax
+ using List_AdjustXYZ will prevent maxXYZ = MUI_MAXMAX
+**************************************************************************/
+static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    DoSuperMethodA(cl, obj, (Msg)msg);
+
+    msg->MinMaxInfo->MinHeight += 3 * _font(obj)->tf_YSize;
+    msg->MinMaxInfo->DefHeight += 8 * _font(obj)->tf_YSize;
+    msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+
+    msg->MinMaxInfo->MinWidth += 44;
+    msg->MinMaxInfo->DefWidth += 104;
+    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    return TRUE;
+}
+
+/**************************************************************************
  MUIM_Layout
 **************************************************************************/
 static ULONG List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
@@ -880,11 +901,15 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     
     DoSuperMethodA(cl, obj, (Msg) msg);
 
+    if (!(msg->flags & MADF_DRAWOBJECT))
+	return 0;
+
     if (msg->flags & MADF_DRAWUPDATE)
     {
     	if (data->update == 1)
 	    DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0, + data->entries_first * data->entry_maxheight,0);
-    } else
+    }
+    else
     {
 	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),0, + data->entries_first * data->entry_maxheight,0);
     }
@@ -1647,6 +1672,7 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case OM_GET: return List_Get(cl,obj,(struct opGet *)msg);
 	case MUIM_Setup: return List_Setup(cl,obj,(struct MUIP_Setup *)msg);
 	case MUIM_Cleanup: return List_Cleanup(cl,obj,(struct MUIP_Cleanup *)msg);
+	case MUIM_AskMinMax: return List_AskMinMax(cl,obj,(struct MUIP_AskMinMax *)msg);
 	case MUIM_Show: return List_Show(cl,obj,(struct MUIP_Show *)msg);
 	case MUIM_Hide: return List_Hide(cl,obj,(struct MUIP_Hide *)msg);
 	case MUIM_Draw: return List_Draw(cl,obj,(struct MUIP_Draw *)msg);
