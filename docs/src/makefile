@@ -16,13 +16,18 @@ SRCS = $(foreach f,$(FILES),$(f).src)
 HTML = $(DEST)index.html $(foreach f,$(FILES),$(DEST)$(f).html)
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
-	$(DEST)cgi-bin/search.cgi
+	$(DEST)cgi-bin/search.cgi \
+	$(DEST)cgi-bin/counter.cgi
 
 $(DEST)srcs:
 	ln -s $(TOP) $(DEST)srcs
 
 $(DEST)cgi-bin/search.cgi : search.cgi
 	cp search.cgi $@
+	chmod 755 $@
+
+$(DEST)cgi-bin/counter.cgi : counter.cgi
+	cp counter.cgi $@
 	chmod 755 $@
 
 $(DEST)filesystems.doc: filesystems.doc
