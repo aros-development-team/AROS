@@ -15,21 +15,23 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
 struct Popobject_DATA
 {
-    int light;
-    int vol;
-    int follow;
-    struct Hook *strobj_hook;
-    struct Hook *objstr_hook;
-    struct Hook *window_hook;
-    struct Hook open_hook;
-    struct Hook close_hook;
-    Object *object;
-    Object *wnd;
+    struct MUI_EventHandlerNode  ehn;
+    int     	    	    	 light;
+    int     	    	    	 vol;
+    int     	    	    	 follow;
+    struct Hook     	    	*strobj_hook;
+    struct Hook     	    	*objstr_hook;
+    struct Hook     	    	*window_hook;
+    struct Hook     	    	 open_hook;
+    struct Hook     	    	 close_hook;
+    Object  	    	    	*object;
+    Object  	    	    	*wnd;
 };
 
 AROS_UFH3(ULONG,Popobject_Open_Function,
@@ -38,20 +40,31 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 	AROS_UFHA(void **, msg,  A1))
 {
     struct Popobject_DATA *data = (struct Popobject_DATA *)hook->h_Data;
-    Object *string = (Object*)msg[0];
+    Object  	    	  *string = (Object*)msg[0];
 
     if (!data->wnd)
     {
+    	static struct TagItem light_tags[] =
+	{
+	    {MUIA_Window_Borderless , TRUE  },
+	    {MUIA_Window_CloseGadget, FALSE },
+	    {MUIA_Window_SizeGadget , FALSE },
+	    {MUIA_Window_DepthGadget, FALSE },
+	    {MUIA_Window_DragBar    , FALSE },
+	    {TAG_DONE	    	    	    }
+	};
+	
 	data->wnd = WindowObject,
-	    MUIA_Window_Borderless, TRUE,
-	    MUIA_Window_CloseGadget, FALSE,
-	    MUIA_Window_SizeGadget, FALSE,
-	    MUIA_Window_DepthGadget, FALSE,
-	    MUIA_Window_DragBar, FALSE,
 	    WindowContents,data->object,
+	    data->light ? TAG_MORE : TAG_IGNORE, (IPTR)light_tags,
 	    End;
+	    
 	if (!data->wnd) return 0;
+	
 	DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
+	
+	DoMethod(data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+	    	 (IPTR)obj, 2, MUIM_Popstring_Close, FALSE);		 
     }
 
     if (data->strobj_hook)
@@ -71,6 +84,13 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 	MUIA_Window_Width, _width(obj),
     	MUIA_Window_Open, TRUE,
     	TAG_DONE);
+
+    if (!(data->ehn.ehn_Events & IDCMP_CHANGEWINDOW))
+    {
+	data->ehn.ehn_Events |= IDCMP_CHANGEWINDOW;
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);	    
+    }
+
     return 1;
 }
 
@@ -81,14 +101,22 @@ AROS_UFH3(ULONG,Popobject_Close_Function,
 	AROS_UFHA(void **, msg,  A1))
 {
     struct Popobject_DATA *data= (struct Popobject_DATA *)hook->h_Data;
-    Object *string = (Object*)msg[0];
-    LONG suc = (LONG)msg[1];
+    Object  	    	  *string = (Object*)msg[0];
+    LONG    	    	   suc = (LONG)msg[1];
 
     if (data->wnd)
     {
 	set(data->wnd,MUIA_Window_Open,FALSE);
+	
 	if (data->objstr_hook && suc)
 	    CallHookPkt(data->objstr_hook,data->object,string);
+
+	if (data->ehn.ehn_Events & IDCMP_CHANGEWINDOW)
+	{
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);	    
+	    data->ehn.ehn_Events &= ~IDCMP_CHANGEWINDOW;
+	}
+
     }
     return 0;
 }
@@ -105,6 +133,17 @@ IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->follow = 1;
     data->vol = 1;
     data->light = 1;
+
+    data->ehn.ehn_Events   = 0;
+    data->ehn.ehn_Priority = 0;
+    data->ehn.ehn_Flags    = 0;
+    data->ehn.ehn_Object   = obj;
+    data->ehn.ehn_Class    = cl;
+
+    data->open_hook.h_Entry  = (HOOKFUNC)Popobject_Open_Function;
+    data->open_hook.h_Data   = data;
+    data->close_hook.h_Entry = (HOOKFUNC)Popobject_Close_Function;
+    data->close_hook.h_Data  = data;
 
     /* parse initial taglist */
 
@@ -142,11 +181,6 @@ IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    data->open_hook.h_Entry = (HOOKFUNC)Popobject_Open_Function;
-    data->open_hook.h_Data = data;
-    data->close_hook.h_Entry = (HOOKFUNC)Popobject_Close_Function;
-    data->close_hook.h_Data = data;
-
     SetAttrs(obj,
 	MUIA_Popstring_OpenHook, (IPTR)&data->open_hook,
 	MUIA_Popstring_CloseHook, (IPTR)&data->close_hook,
@@ -162,13 +196,14 @@ IPTR Popobject__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     if (!data->wnd && data->object)
 	MUI_DisposeObject(data->object);
+	
     return DoSuperMethodA(cl, obj, msg);
 }
 
 IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popobject_DATA *data = INST_DATA(cl, obj);
-    struct TagItem  	    *tag, *tags;
+    struct TagItem  	  *tag, *tags;
 
     /* parse initial taglist */
 
@@ -200,9 +235,22 @@ IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+IPTR Popobject__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    struct Popobject_DATA *data = INST_DATA(cl, obj);
+    
+    if (data->ehn.ehn_Events & IDCMP_CHANGEWINDOW)
+    {
+	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+	data->ehn.ehn_Events &= ~IDCMP_CHANGEWINDOW;    	
+    }
+    
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
 IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
+    IPTR rc = DoSuperMethodA(cl,obj,(Msg)msg);
     if (!rc) return 0;
     return rc;
 }
@@ -212,16 +260,43 @@ IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+IPTR Popobject__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+{
+    struct Popobject_DATA *data = INST_DATA(cl, obj);
+
+    if (data->follow && msg->imsg && data->wnd)
+    {
+    	if (msg->imsg->Class == IDCMP_CHANGEWINDOW)
+	{
+	    struct Window *popwin = NULL;
+	    struct Window *parentwin = _window(obj);
+
+	    get(data->wnd, MUIA_Window_Window, (IPTR *)&popwin);
+	    
+	    if (popwin && parentwin)
+	    {
+	    	ChangeWindowBox(popwin, _left(obj) + parentwin->LeftEdge,
+		    	    	    	_bottom(obj) + parentwin->TopEdge + 1,
+					popwin->Width,
+					popwin->Height);
+	    }
+	}
+    }
+    
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
 
 BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:     return Popobject__OM_NEW(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Popobject__OM_DISPOSE(cl, obj, msg);
-	case OM_SET:     return Popobject__OM_SET(cl, obj, (struct opSet *)msg);
-	case MUIM_Show:  return Popobject__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
-	case MUIM_Hide:  return Popobject__MUIM_Hide(cl, obj, (struct MUIP_Hide*)msg);
+	case OM_NEW:        	return Popobject__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:    	return Popobject__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:        	return Popobject__OM_SET(cl, obj, (struct opSet *)msg);
+	case MUIM_Cleanup:  	return Popobject__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+	case MUIM_Show:     	return Popobject__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
+	case MUIM_Hide:     	return Popobject__MUIM_Hide(cl, obj, (struct MUIP_Hide*)msg);
+	case MUIM_HandleEvent:  return Popobject__MUIM_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
