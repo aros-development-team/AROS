@@ -1,7 +1,7 @@
 #ifndef _SAMPLEFUNCS_H
 #define _SAMPLEFUNCS_H
 /*
-**	$VER: SampleFuncs.h 37.5 (24.1.97)
+**	$VER: SampleFuncs.h 37.11 (24.6.97)
 **
 **	Demo functions for example.library
 **
@@ -10,12 +10,14 @@
 */
 #include "compiler.h"
 
-struct ExampleBase; /* Pre-Declaration */
+#ifndef EXAMPLE_EXAMPLEBASE_H
+struct ExampleBase; /* Pre-Declaration if necessary */
+#endif
 
 AROS_LP3 (ULONG, EXF_TestRequest,
-    AROS_UFHA (UBYTE *, title_d1, D1),
-    AROS_UFHA (UBYTE *, body, D2),
-    AROS_UFHA (UBYTE *, gadgets, D3),
+    AROS_LHA (UBYTE *, title_d1, D1),
+    AROS_LHA (UBYTE *, body, D2),
+    AROS_LHA (UBYTE *, gadgets, D3),
     struct ExampleBase *, ExampleBase, 5, Example
 );
 
