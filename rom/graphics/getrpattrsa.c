@@ -78,7 +78,7 @@
     struct TagItem * tag, *tstate = tags;
     ULONG MaxPen, z;
 
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	switch(tag->ti_Tag)
 	{
