@@ -66,10 +66,12 @@
   l->Flags &= ~LAYERUPDATING;
 
   if (NULL != l->ClipRect)
+  {
     if (IS_SMARTREFRESH(l))
       CopyAndFreeClipRectsClipRects(l,l->ClipRect,l->cr2);
     else
       _FreeClipRectListBM(l,l->ClipRect);
+  }
       
   l->ClipRect = l->cr2;
 

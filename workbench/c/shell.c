@@ -1067,7 +1067,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 
 #undef item
 #undef from
-#undef advance(x)
+#undef advance
 
 #define __extendSize  512	/* How much to increase buffer if it's full */
 
