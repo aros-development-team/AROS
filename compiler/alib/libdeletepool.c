@@ -47,16 +47,16 @@
     {
 	if (poolHeader != NULL)
 	{
-	    ULONG * pool,
+	    ULONG * poolMem,
 		    size;
 
-	    while ((pool = (ULONG *)RemHead (
+	    while ((poolMem = (ULONG *)RemHead (
 		    (struct List *)&poolHeader->PuddleList)
 		)!=NULL
 	    )
 	    {
-		size = *--pool;
-		FreeMem (pool, size);
+		size = *--poolMem;
+		FreeMem (poolMem, size);
 	    }
 
 	    FreeMem (poolHeader, sizeof (POOL));
