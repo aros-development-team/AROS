@@ -18,6 +18,8 @@
 #include "nil_handler_gcc.h"
 #endif
 
+#include <string.h>
+
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
@@ -216,7 +218,7 @@ AROS_LH1(void, beginio,
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
 	    /* No names allowed on NIL: */
-	    if(((STRPTR)iofs->io_Union.io_NamedFile.io_Filename)[0])
+	    if(stricmp(iofs->io_Union.io_NamedFile.io_Filename, "NIL:") != 0)
 	    {
 		error=ERROR_OBJECT_NOT_FOUND;
 		break;
