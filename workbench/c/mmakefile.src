@@ -29,7 +29,6 @@ FILES	    := \
 	shell \
 	tasklist \
 	type \
-	version \
 	wait \
 	why \
 	Alias \
@@ -41,7 +40,8 @@ FILES	    := \
 	RequestChoice \
 	Set \
 	Setenv \
-	Unalias
+	Unalias \
+	Version
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

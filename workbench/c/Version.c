@@ -27,7 +27,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: version 41.4 (05.08.1997)\n";
+static const char version[] = "$VER: Version 41.5 (08.12.1997)\n";
 
 static const char ERROR_HEADER[] = "Version";
 
@@ -50,7 +50,8 @@ struct
     ULONG  days;
 } parsedver = { NULL, 0, 0, 0L };
 
-STRPTR verbuffer;
+/* This points to the full (unparsed) version string. */
+STRPTR verbuffer = NULL;
 
 /**************************** support functions ************************/
 
@@ -63,7 +64,8 @@ int power(int base, int pow)
     return(num);
 }
 
-/* make a string from an unsigned number - returns length of string */
+/* Makes a string from an unsigned number. Returns the actual length of the
+   string. */
 int number2string(unsigned int number, STRPTR string)
 {
     int length = 0;
@@ -92,7 +94,8 @@ int number2string(unsigned int number, STRPTR string)
     return(length);
 }
 
-/* skip all whitespace-characters (SPACE, TAB) */
+/* Return a pointer to a string, stripped by all leading whitespace characters
+   (SPACE, TAB). */
 char *skipwhites(char *buffer)
 {
     for(;; buffer++)
@@ -100,7 +103,8 @@ char *skipwhites(char *buffer)
 	    return(buffer);
 }
 
-/* strip all whitespace-characters from the end of a string */
+/* Strip all whitespace-characters from the end of a string. Note that the
+   buffer passed in will be modified! */
 void stripwhites(char *buffer)
 {
     int len = strlen(buffer);
@@ -117,8 +121,9 @@ void stripwhites(char *buffer)
     buffer[len] = '\0';
 }
 
-/* searches for a given string in a file and stores up to *lenptr characters
-   into the buffer beginning with the first character after the given string */
+/* Searches for a given string in a file and stores up to *lenptr characters
+   into the buffer beginning with the first character after the given string.
+*/
 int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 {
     int error = RETURN_OK;
@@ -133,11 +138,12 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 	pos = 0;
 	while ((len - pos) >= stringlen)
 	{
+            /* Compare the current buffer position with the supplied string. */
 	    if (strncmp(&buffer[pos], string, stringlen) == 0)
 	    {
-		int findstrlen; /* length of the string, after the string to
-				   find */
-		findstrlen = len - pos - stringlen;
+                /* It is equal! Now move the rest of the buffer to the top of
+                   the buffer and fill it up. */
+		int findstrlen = len - pos - stringlen;
 
 		memmove(buffer, &buffer[pos+stringlen], findstrlen);
 		len = Read(file, &buffer[findstrlen], buflen - findstrlen);
@@ -150,6 +156,8 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 	    }
 	    pos++;
 	}
+        /* Move the rest of the buffer that could not be compared (because it
+           is smaller than the string to compare) to the top of the buffer. */
 	if (ready == FALSE)
 	    memmove(buffer, &buffer[len - stringlen], stringlen);
 	else
@@ -172,8 +180,9 @@ int makedatefromstring(char *buffer)
 }
 
 /* Check whether the given string contains a version in the form
-   <version>.<revision> . If not return -1, else fill in parsedver. */
-int makeversionfromstring(char *buffer)
+   <version>.<revision> . If not return FALSE, otherwise fill in parsedver and
+   return TRUE. */
+BOOL makeversionfromstring(char *buffer)
 {
     char numberbuffer[6];
     int pos;
@@ -181,16 +190,16 @@ int makeversionfromstring(char *buffer)
     for (pos = 0;; pos++)
     {
 	if (((pos == 5) && (buffer[pos] != '.')) || (buffer[pos] == '\0'))
-	    return(-1);
+	    return(FALSE);
 	if (buffer[pos] == '.')
 	{
 	    if (pos == 0)
-		return(-1);
+		return(FALSE);
 	    numberbuffer[pos] = '\0';
 	    break;
 	}
 	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
-	    return(-1);
+	    return(FALSE);
 	numberbuffer[pos] = buffer[pos];
     }
     parsedver.version = strtoul(numberbuffer, NULL, 10);
@@ -200,14 +209,14 @@ int makeversionfromstring(char *buffer)
 	if ((pos == 5) && (buffer[pos] != ' ') && (buffer[pos] != '\t') && (buffer[pos] != '\0'))
 	{
 	    parsedver.version = 0;
-	    return(-1);
+	    return(FALSE);
 	}
 	if ((buffer[pos] == ' ') || (buffer[pos] == '\0'))
 	{
 	    if (pos == 0)
 	    {
 		parsedver.version = 0;
-		return(-1);
+		return(FALSE);
 	    }
 	    numberbuffer[pos] = '\0';
 	    break;
@@ -215,16 +224,17 @@ int makeversionfromstring(char *buffer)
 	if ((buffer[pos] < '0') || (buffer[pos] > '9'))
 	{
 	    parsedver.version = 0;
-	    return(-1);
+	    return(FALSE);
 	}
 	numberbuffer[pos] = buffer[pos];
     }
     parsedver.revision = strtoul(numberbuffer, NULL, 10);
 
-    return(RETURN_OK);
+    return(TRUE);
 }
 
-/* fill in parsedver from provided string */
+/* Retrieves version information from string. The data is stored in the
+   global struct parsedver. */
 int makedatafromstring(char *buffer)
 {
     int error = RETURN_OK;
@@ -232,62 +242,55 @@ int makedatafromstring(char *buffer)
 
     for (pos = 0; buffer[pos] != '\0'; pos++)
     {
-	if (buffer[pos] == ' ')
-	{
-	    /* Version is missing in $VER: string */
-	    if (buffer[pos+1] == '(')
-	    {
-		parsedver.name = AllocVec(pos + 1, MEMF_ANY);
-		if (parsedver.name == NULL)
-		{
-		    PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
-		    return(RETURN_FAIL);
-		}
-		CopyMem(buffer, parsedver.name, pos);
-		parsedver.name[pos] = '\0';
-		makedatefromstring(&buffer[pos+1]);
-		break;
-	    /* Version is there */
-	    } else if ((buffer[pos+1] >= '0') && (buffer[pos+1] <='9'))
-	    {
-		/* Is it really a version at the current position? */
-		error = makeversionfromstring(&buffer[pos+1]);
-		if (error == RETURN_OK)
-		{
-		    /* It is! */
-		    parsedver.name = AllocVec(pos + 1, MEMF_ANY);
-		    if (parsedver.name == NULL)
-		    {
-			PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
-			return(RETURN_FAIL);
-		    }
-		    CopyMem(buffer, parsedver.name, pos);
-		    parsedver.name[pos] = '\0';
-		    for (; buffer[pos] != '\0' && buffer[pos] != ' '; pos++);
-		    pos = skipwhites(&buffer[pos]) - buffer;
-		    makedatefromstring(&buffer[pos]);
-		    break;
-		} else if (error != -1)
-		    return(error);
-	    }
-	}
+	if ((buffer[pos] == ' ') &&
+            (buffer[pos+1] >= '0') && (buffer[pos+1] <='9'))
+        {
+            /* Found something, which looks like a version. Now check, if it
+               really is. */
+            if (makeversionfromstring(&buffer[pos+1]))
+            {
+                /* It is! */
+                /* Copy the program-name into a buffer. */
+                parsedver.name = AllocVec(pos + 1, MEMF_ANY);
+                if (parsedver.name == NULL)
+                {
+                    PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
+                    return(RETURN_FAIL);
+                }
+                CopyMem(buffer, parsedver.name, pos);
+                parsedver.name[pos] = '\0';
+
+                /* Now find the date. */
+                for (; buffer[pos] != '\0' && buffer[pos] != ' '; pos++);
+                pos = skipwhites(&buffer[pos]) - buffer;
+                makedatefromstring(&buffer[pos]);
+                break;
+            } else
+            {
+                /* It is not so skip to the first non-numeric character. */
+                pos++;
+                while ((buffer[pos+1] >= '1') && (buffer[pos+1] <'0'))
+                    pos++;
+            }
+        }
     }
-    /* strip any whitespaces at the tail of the program-name */
+    /* Strip any whitespaces from the tail of the program-name. */
     if (parsedver.name != NULL)
 	stripwhites(parsedver.name);
 
     return(error);
 }
 
-/* build information from resident modules */
+/* Retrieve information from resident modules. Returns -1, if the named module
+   was not found. */
 int makeresidentver(STRPTR name)
 {
-    /* !!! */
+    /* !!! not implemented !!! */
     SetIoErr(ERROR_NOT_IMPLEMENTED);
     return(-1);
 }
 
-/* build information from file */
+/* Retrieve information from file. Returns -1, if the file was not found. */
 #define BUFFERSIZE 1024
 int makefilever(STRPTR name)
 {
@@ -341,13 +344,13 @@ int makefilever(STRPTR name)
     return(error);
 }
 
-/* build information from internal kickstart data */
+/* Build information from internal kickstart data. */
 int makekickver()
 {
     int len;
     struct DateTime dt;
 
-    /* make parsedver */
+    /* Fill in struct parsedver. */
     parsedver.version  = SysBase->LibNode.lib_Version;
     parsedver.revision = SysBase->LibNode.lib_Revision;
     parsedver.days = 0L; /* !!! should be the real date !!! */
@@ -360,7 +363,7 @@ int makekickver()
     }
     CopyMem("Kickstart", parsedver.name, KICKSTRLEN);
 
-    /* make string */
+    /* Make string used by output with FULL switch. */
 #define MAXKICKSTRLEN (25 + LEN_DATSTRING)
     verbuffer = AllocVec(MAXKICKSTRLEN, MEMF_ANY);
     if (verbuffer == NULL)
@@ -376,7 +379,7 @@ int makekickver()
     len += number2string(parsedver.revision, &verbuffer[len]);
     verbuffer[len++] = ' ';
     verbuffer[len++] = '(';
-    /* make date */
+    /* Make date for string. */
     dt.dat_Stamp.ds_Days = parsedver.days;
     dt.dat_Stamp.ds_Minute = 0L;
     dt.dat_Stamp.ds_Tick = 0L;
@@ -387,13 +390,14 @@ int makekickver()
     dt.dat_StrTime = NULL;
     DateToStr(&dt);
     len = strlen(verbuffer);
+    /* Fill up string. */
     verbuffer[len] = ')';
     verbuffer[len+1] = '\0';
 
     return(RETURN_OK);
 }
 
-/* determine, which information to build */
+/* Determine, by which means to get the version-string. */
 int makeverstring()
 {
     int error = RETURN_OK;
@@ -404,7 +408,7 @@ int makeverstring()
     } else
     {
 	error = -1;
-	if (args.file == 0L)
+	if (args.file == 0L && error == -1)
 	    error = makeresidentver(args.name);
 	if (args.res == 0L && error == -1)
 	    error = makefilever(args.name);
@@ -418,6 +422,7 @@ int makeverstring()
     return(error);
 }
 
+/* Clean up. */
 void freeverstring()
 {
     FreeVec(verbuffer);
@@ -426,7 +431,7 @@ void freeverstring()
 
 /**************************** output functions **************************/
 
-/* print only the short version string */
+/* Print only the short version string. */
 void printparsedstring()
 {
     IPTR args[3];
@@ -436,7 +441,7 @@ void printparsedstring()
     VPrintf("%s %ld.%ld\n", args);
 }
 
-/* print the full version string */
+/* Print the full version string. */
 void printstring()
 {
     VPrintf("%s\n", (IPTR *)&verbuffer);
@@ -444,8 +449,8 @@ void printstring()
 
 /******************************* main program ****************************/
 
-/* compare the version given as argument with the version from the object
-   return RETURN_WARN, if args-v>object-v, else return RETURN_OK */
+/* Compare the version given as argument with the version from the object.
+   Return RETURN_WARN, if args-v>object-v, otherwise return RETURN_OK. */
 int cmpargsparsed()
 {
     if (args.version != NULL)
@@ -465,7 +470,7 @@ int cmpargsparsed()
     return(RETURN_OK);
 }
 
-/* check whether the arguments are correct */
+/* Check whether the arguments are correct. */
 int verifyargs()
 {
     int error = RETURN_OK;
@@ -492,7 +497,8 @@ int main (int argc, char ** argv)
 
     if (rda != NULL)
     {
-	if ((error = verifyargs()) == RETURN_OK)
+        error = verifyargs();
+	if (error == RETURN_OK)
 	{
 	    error = makeverstring();
 	    if (error == RETURN_OK)
