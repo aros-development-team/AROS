@@ -2903,7 +2903,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 				    
 				/* Set palette to all black */
 			    	for (i = 0; i < numcolors; i ++) {
-				    HIDD_BM_SetColors(nbm, &col, i, 1);
+				    HIDD_BM_SetColors(BM_OBJ(nbm), &col, i, 1);
 				    BM_PIXTAB(nbm)[i] = col.pixval;
 				   
 				}
@@ -2927,7 +2927,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    {
 		    	if (friend)
 			{
-			    ULONG i;
+			    /* ULONG i; */
 #warning Here we assume that the friend bitmap is a HIDD bitmap		    
 			    /* We got a friend bitmap. We inherit its colormap
 			       !!! NOTE !!! If this is used after the friend bitmap is freed
@@ -3598,7 +3598,7 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    
    
    if (vHidd_GT_Palette == graphtype) {
-   	HIDD_BM_SetColors(bm, &hidd_col, color, 1);
+   	HIDD_BM_SetColors(BM_OBJ(bm), &hidd_col, color, 1);
 	BM_PIXTAB(bm)[color] = hidd_col.pixval;
 	
    } else if (vHidd_GT_TrueColor == graphtype) {
@@ -5867,7 +5867,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *, struct Library *CyberGfxBase
 	
 	    } /* while (modes to process( */
 	
-	} /* if (NULL != mlist)
+	} /* if (NULL != mlist) */
 	
     	HIDD_Gfx_FreeModeInfo(gfxhidd, modes);
     } /* if (NULL != modes) */
