@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Obtain the best pen available for a given color
@@ -50,19 +50,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    LONG retval = -1;
-    ULONG index;
-    struct PaletteExtra * pe = cm->PalExtra;
+    struct PaletteExtra *pe = cm->PalExtra;
+    LONG    	    	retval = -1;
+    ULONG   	    	index;
 
     if (NULL != pe)
     {
-	ULONG best_distance = (ULONG)-1;
-
-	struct TagItem defaults[] =
+	struct TagItem  defaults[] =
 	{ 
-	    {OBP_Precision, PRECISION_IMAGE},
-	    {OBP_FailIfBad, FALSE}
+	    {OBP_Precision, PRECISION_IMAGE },
+	    {OBP_FailIfBad, FALSE   	    }
 	};
+	ULONG 	    	best_distance = (ULONG)-1;
+
 
 	/* 
 	** override the defaults if necessary 
@@ -88,12 +88,13 @@
 	while (-1 != (BYTE)index)
 	{
 	    ULONG distance = color_distance(cm,r,g,b,index);
+	    
 	    if (distance < best_distance)
 	    {
         	best_distance = distance;
         	retval        = index;
-        	break;
 	    }
+	    
 	    index = pe->pe_AllocList[index];
 	}
     #warning The color distance calc might be different than in AmigaOS. 
@@ -107,6 +108,7 @@
 	** The autodocs say that.
 	*/
 	if (
+	    (retval == -1) ||
             (PRECISION_EXACT == defaults[0].ti_Data && 0 != best_distance ) ||
             (best_distance * pe->pe_NFree  > 
             (defaults[0].ti_Data * defaults[0].ti_Data) * pe->pe_SharableColors
@@ -119,6 +121,7 @@
 	    ** return -1 if the user specified OBP_FailIfBad = TRUE.
 	    */
 	    LONG tmp = ObtainPen(cm,-1,r,g,b,0);
+	    
 	    if (-1 == tmp)
 	    {
         	/* 
@@ -142,6 +145,7 @@
 	ReleaseSemaphore(&pe->pe_Semaphore);
       
     } /* if (NULL != pe) */
+    
     return retval;
 
     AROS_LIBFUNC_EXIT
