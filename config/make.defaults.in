@@ -7,25 +7,6 @@
 # Instead create a file make.opts in the *same directory* and
 # put the options you need in there.
 
-# Do we build the libraries shared (.so = yes) or static (.a = no)
-SHARED_EXEC		= @aros_shared_default@
-SHARED_DOS		= @aros_shared_default@
-SHARED_UTILITY		= @aros_shared_default@
-SHARED_GRAPHICS		= @aros_shared_default@
-SHARED_INTUITION	= @aros_shared_default@
-SHARED_LAYERS		= @aros_shared_default@
-SHARED_MATHFFP		= @aros_shared_default@
-SHARED_MATHIEEESINGBAS	= @aros_shared_default@
-SHARED_EXPANSION	= @aros_shared_default@
-SHARED_WORKBENCH	= @aros_shared_default@
-SHARED_BOOPSI		= @aros_shared_default@
-SHARED_TIMER		= @aros_shared_default@
-SHARED_BATTCLOCK	= @aros_shared_default@
-SHARED_BOOT		= @aros_shared_default@
-SHARED_AROS		= @aros_shared_default@
-SHARED_OOP		= @aros_shared_default@
-SHARED_CGFX		= @aros_shared_default@
-
 # Include debugging information (so you can use gdb or similar)
 DEBUG = @aros_debug@
 
