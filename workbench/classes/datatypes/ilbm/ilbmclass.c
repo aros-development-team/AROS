@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,6 +14,7 @@
 #include <dos/dostags.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rpattr.h>
+#include <graphics/modeid.h>
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
@@ -97,7 +98,7 @@ static UBYTE *UnpackByteRun1(UBYTE *source, UBYTE *dest, LONG unpackedsize)
 
 /**************************************************************************************************/
 
-static BOOL MakeBitMap(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
+static BOOL ReadBitMapPic(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
     	    	       struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn)
 {
     struct BitMap *bm;
@@ -186,7 +187,7 @@ static BOOL MakeBitMap(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 	    
     } /* switch(file_bmhd->bmh_Compression) */
     
-    SetDTAttrs(o, NULL, NULL, PDTA_BitMap, bm, TAG_DONE);
+    SetDTAttrs(o, NULL, NULL, PDTA_BitMap, (IPTR)bm, TAG_DONE);
 
     FreeVec(body);
     SetIoErr(0);
@@ -199,12 +200,13 @@ static BOOL MakeBitMap(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 const UBYTE bitmask[] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01, 0 };
 
 static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct BitMapHeader *bmhd,
-    	    	       struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn)
+    	    	       struct FileBitMapHeader *file_bmhd, struct ContextNode *body_cn, UBYTE *coltab)
 {
     UBYTE   	*src, *srcline, *srclinestart, *chunkystart, *chunky, *body, *compressed, *uncompressed, *maskptr;
-    int		width, height, numplanes, mask;
+    int		width, height, numplanes, mask, hamrot1, hamrot2;
     LONG    	x, y, p, w16, body_bpr, bodysize;
     ULONG	rgb;
+    UBYTE	r, g, b;
     BOOL	compress;
     
     width  = bmhd->bmh_Width;
@@ -227,7 +229,7 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
     	return FALSE;
     }
     
-    D(bug("ilbm.datatype/ReadRGB: Width %d Height %d Depth %d body_bpr %ld bodysize %ld p %ld body %lx\n", width, height, numplanes, body_bpr, bodysize, p, body));
+    // D(bug("ilbm.datatype/ReadRGB: Width %d Height %d Depth %d body_bpr %ld bodysize %ld p %ld body %lx\n", width, height, numplanes, body_bpr, bodysize, p, body));
 
     if (ReadChunkBytes(handle, body, bodysize) != bodysize)
     {
@@ -236,8 +238,10 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 	return FALSE;
     }
     
+    hamrot1 = 10 - numplanes;
+    hamrot2 = numplanes - 2;
     compress = FALSE;
-    switch(file_bmhd->bmh_Compression)
+    switch( file_bmhd->bmh_Compression )
     {
 	case cmpByteRun1:
 	    compressed = body;
@@ -250,12 +254,13 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 	    {
 		chunky = chunkystart;
 		srclinestart = src;
-		maskptr = (UBYTE *) bitmask;
 		if( compress )
 		{
 		    compressed = UnpackByteRun1(compressed, uncompressed, body_bpr * numplanes);
 		    srclinestart = uncompressed;
 		}
+		r = g = b = 0;
+		maskptr = (UBYTE *) bitmask;
 	    	for(x = 0; x < width; x++)
 		{
 		    mask = *maskptr++;
@@ -273,9 +278,42 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 			srcline += body_bpr;
 		    }
 		    // D(bug("ilbm.datatype/ReadRGB: RGB %06lx mask %02x srcline %lx chunky %lx\n", rgb, mask, srcline, chunky));
-		    *chunky++ = rgb & 0xff;
-		    *chunky++ = (rgb >> 8) & 0xff;
-		    *chunky++ = (rgb >> 16) & 0xff;
+		    if( coltab )
+		    {
+			rgb >>= 14;
+			rgb |= (rgb & 0xff) >> hamrot2;
+			switch( rgb & 0x300 )
+			{
+			    case 0x000:
+				rgb >>= hamrot1;
+				rgb *= 3;
+				*chunky++ = r = coltab[rgb++];
+				*chunky++ = g = coltab[rgb++];
+				*chunky++ = b = coltab[rgb];
+				break;
+			    case 0x100:
+				*chunky++ = r;
+				*chunky++ = g;
+				*chunky++ = b = rgb & 0x0ff;
+				break;
+			    case 0x200:
+				*chunky++ = r = rgb & 0x0ff;
+				*chunky++ = g;
+				*chunky++ = b;
+				break;
+			    case 0x300:
+				*chunky++ = r;
+				*chunky++ = g = rgb & 0x0ff;
+				*chunky++ = b;
+				break;
+			}
+		    }
+		    else
+		    {
+			*chunky++ = rgb & 0xff;
+			*chunky++ = (rgb >> 8) & 0xff;
+			*chunky++ = (rgb >> 16) & 0xff;
+		    }
 		}
 		
 		if( !DoSuperMethod(cl, o,
@@ -307,6 +345,60 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 
 /**************************************************************************************************/
 
+static void CopyColRegs(Object *o, ULONG numcolors, UBYTE *srcstart, BOOL ehb)
+{
+    struct ColorRegister    *colorregs;
+    ULONG    	    	    *cregs;
+
+    SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
+    
+    if (GetDTAttrs(o, PDTA_ColorRegisters   , (IPTR)&colorregs,
+		      PDTA_CRegs    	    , (IPTR)&cregs	,
+		      TAG_DONE	    	    	    	    	 ) == 2)
+    {
+	if (colorregs && cregs)
+	{
+	    LONG	i, j;
+	    int		cnt = 0;
+	    int		r, g, b;
+	    UBYTE	*src;
+	    
+	    if( ehb )
+	    {
+		cnt = 1;
+	    }
+	    for(j = 0; j <= cnt; j++)
+	    {
+		src = srcstart;
+		for(i = 0; i < numcolors; i++)
+		{
+		    r = *src++;
+		    g = *src++;
+		    b = *src++;
+		    if( j )
+		    {
+			r >>= 1;
+			g >>= 1;
+			b >>= 1;
+		    }
+
+		    colorregs->red   = r;
+		    colorregs->green = g;
+		    colorregs->blue  = b;
+		    colorregs++;
+		    
+		    *cregs++ = (ULONG)r * 0x01010101;
+		    *cregs++ = (ULONG)g * 0x01010101;
+		    *cregs++ = (ULONG)b * 0x01010101;
+		}
+	    }
+	}
+    }
+}
+
+/**************************************************************************************************/
+/**************************************************************************************************/
+
 static BOOL ReadILBM(Class *cl, Object *o)
 {
     struct FileBitMapHeader *file_bmhd;
@@ -314,8 +406,6 @@ static BOOL ReadILBM(Class *cl, Object *o)
     struct IFFHandle	    *handle;
     struct StoredProperty   *bmhd_prop, *cmap_prop, *camg_prop;
     struct ContextNode	    *cn;
-    struct ColorRegister    *colorregs;
-    ULONG    	    	    *cregs;
     ULONG   	    	    numcolors;
     IPTR    	    	    sourcetype;
     LONG    	    	    error;
@@ -346,14 +436,14 @@ static BOOL ReadILBM(Class *cl, Object *o)
     if (PropChunks(handle, propchunks, 3) != 0)
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
-	D(bug("ilbm.datatype propchunks\n"));
+	D(bug("ilbm.datatype error propchunks\n"));
 	return FALSE;
     }
    
     if (StopChunk(handle, ID_ILBM, ID_BODY) != 0)
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
-	D(bug("ilbm.datatype stopchunks\n"));
+	D(bug("ilbm.datatype error stopchunks\n"));
 	return FALSE;
     }
     
@@ -361,7 +451,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
     if (error)
     {
     	SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-	D(bug("ilbm.datatype parseiff\n"));
+	D(bug("ilbm.datatype error parseiff\n"));
 	return FALSE;
     }
     
@@ -375,7 +465,7 @@ static BOOL ReadILBM(Class *cl, Object *o)
 	(bmhd_prop == NULL))
     {
     	SetIoErr(ERROR_REQUIRED_ARG_MISSING);
-	D(bug("ilbm.datatype currentchunk\n"));
+	D(bug("ilbm.datatype error currentchunk\n"));
 	return FALSE;
     }
 
@@ -400,47 +490,55 @@ static BOOL ReadILBM(Class *cl, Object *o)
     if ((file_bmhd->bmh_Depth == 24) && (file_bmhd->bmh_Compression <= 1))
     {
 	D(bug("ilbm.datatype/ReadILBM: 24 bit\n"));
-	if( !ReadRGBPic(cl, o, handle, bmhd, file_bmhd, cn) )
+	if( !ReadRGBPic(cl, o, handle, bmhd, file_bmhd, cn, NULL) )
 	{
-	    D(bug("ilbm.datatype readrgbpic\n"));
+	    D(bug("ilbm.datatype error readrgbpic\n"));
 	    return FALSE;
 	}
     }
-    else if ((file_bmhd->bmh_Depth <= 8) && (file_bmhd->bmh_Compression <= 1) && (cmap_prop != NULL))
+    else if ( (file_bmhd->bmh_Depth <= 8) && (file_bmhd->bmh_Compression <= 1) && cmap_prop )
     {
-	D(bug("ilbm.datatype/ReadILBM: %d bit\n", (int)file_bmhd->bmh_Depth));
-	numcolors = cmap_prop->sp_Size / 3;
-    
-	SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors, TAG_DONE);
-	
-	if (GetDTAttrs(o, PDTA_ColorRegisters   , (IPTR *)&colorregs,
-			  PDTA_CRegs    	    , (IPTR *)&cregs	,
-			  TAG_DONE	    	    	    	    	 ) == 2)
+	UBYTE *data;
+	BOOL ham = FALSE;
+	BOOL ehb = FALSE;
+
+	if ( camg_prop && (camg_prop->sp_Size == 4) )
 	{
-	    if (colorregs && cregs)
+	    ULONG mode;
+	    
+	    data = (UBYTE *)camg_prop->sp_Data;
+	    mode = (data[0]<<24) | (data[1]<<16) | (data[2]<<8) | data[3];
+	    if (mode & HAM_KEY)
 	    {
-		UBYTE *src = (UBYTE *)cmap_prop->sp_Data;
-		LONG   i;
-		
-		for(i = 0; i < numcolors; i++)
-		{
-		    colorregs->red   = *src++;
-		    colorregs->green = *src++;
-		    colorregs->blue  = *src++;
-		    
-		    *cregs++ = ((ULONG)colorregs->red)   * 0x01010101;
-		    *cregs++ = ((ULONG)colorregs->green) * 0x01010101;
-		    *cregs++ = ((ULONG)colorregs->blue)  * 0x01010101;
-		    
-		    colorregs++;
-		}
-		
+		ham = TRUE;
+	    }
+	    if (mode & EXTRAHALFBRITE_KEY)
+	    {
+		ehb = TRUE;
+	    }
+	    D(bug("ilbm.datatype/ReadILBM: modeid %08lx%s%s\n", mode, ham ? " HAM" : "", ehb ? " EHB" : ""));
+	}
+
+	numcolors = cmap_prop->sp_Size / 3;
+	D(bug("ilbm.datatype/ReadILBM: %d bit %d colors\n", (int)file_bmhd->bmh_Depth, numcolors));
+	data = (UBYTE *)cmap_prop->sp_Data;
+	CopyColRegs(o, numcolors, data, ehb);
+
+	if ( ham )
+	{
+	    if( !ReadRGBPic(cl, o, handle, bmhd, file_bmhd, cn, (UBYTE *)cmap_prop->sp_Data) )
+	    {
+		D(bug("ilbm.datatype error readrgbpic\n"));
+		return FALSE;
 	    }
 	}
-	if( !MakeBitMap(cl, o, handle, bmhd, file_bmhd, cn) )
+	else
 	{
-	    D(bug("ilbm.datatype makebitmap\n"));
-	    return FALSE;
+	    if( !ReadBitMapPic(cl, o, handle, bmhd, file_bmhd, cn) )
+	    {
+		D(bug("ilbm.datatype error readbitmappic\n"));
+		return FALSE;
+	    }
 	}
     }
     else
