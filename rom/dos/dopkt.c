@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -28,11 +28,17 @@
 
 /*  FUNCTION
 
+    Send a dos packet to a filesystem and wait for the action to complete.
+
     INPUTS
 
     RESULT
 
     NOTES
+
+    Callable from a task.
+
+    This function should NOT be used; it's only here for AmigaOS compatibility.
 
     EXAMPLE
 
@@ -43,8 +49,6 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -55,26 +59,28 @@
      * First I create a regular dos packet and then let 
      * SendPkt rewrite it.
      */
+
     LONG res;
     struct Process   *me = (struct Process *)FindTask(NULL);
     struct DosPacket *dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT,
 							      NULL);
     struct MsgPort   *replyPort;
     struct IOFileSys *iofs;
-
+    
     BOOL i_am_process = TRUE;
     
     if (NULL == dp)
     {
 	return FALSE;
     }
-
+    
     if (NT_PROCESS == me->pr_Task.tc_Node.ln_Type)
     {
 	replyPort = &me->pr_MsgPort;
     }
     else
     {
+	/* Make sure that tasks can use DoPkt(). */
 	replyPort = CreateMsgPort();
 
 	if (NULL == replyPort)
@@ -101,14 +107,14 @@
     SetIoErr(iofs->io_DosError);
 
     res = dp->dp_Res1;
-
+    
     if (FALSE == i_am_process)
     {
 	DeleteMsgPort(replyPort);
     }
     
     FreeDosObject(DOS_STDPKT, dp);
-
+    
     return res;
 
     AROS_LIBFUNC_EXIT
