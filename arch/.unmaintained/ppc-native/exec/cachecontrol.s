@@ -52,6 +52,6 @@
 	.globl	AROS_SLIB_ENTRY(CacheControl,Exec)
 	.type	AROS_SLIB_ENTRY(CacheControl,Exec),@function
 AROS_SLIB_ENTRY(CacheControl,Exec):
-	PROLOG
-	LI	R3,0	/* return 0 */
-	EPILOG
+	subr
+	li	ret,0	/* return 0 */
+	rts

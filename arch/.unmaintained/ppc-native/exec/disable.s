@@ -51,7 +51,8 @@
  	Forbid(), Permit(), Enable(), Wait()
  
     INTERNALS
-	This is literal rewrite of MC68000 version
+	This is literal rewrite of MC68000 version plus code to clear
+	EE bit in MSR
  
     HISTORY
  
@@ -68,14 +69,28 @@
 	.globl	AROS_SLIB_ENTRY(Disable,Exec)
 	.type	AROS_SLIB_ENTRY(Disable,Exec),@function
 AROS_SLIB_ENTRY(Disable,Exec):
-	/* disable interrupts */
-	PROLOG
-	LI	R3,INTEN
-	STW	R3,INTENA
+	subr
+	push	scr
 
+	/* disable amiga chipset interrupts */
+	li	scr,INTEN
+	stw	scr,INTENA
+	/* disable external interrupts in PPC, must be executed in supervisor */
+	lwz	arg0,_disab(0)
+	jsrlvo	Supervisor,base
+	/* we should come back here from _disab */
 	/* increment nesting count and return */
+	lbz	scr,IDNestCnt(base)
+	addi	scr,scr,1
+	stb	scr,IDNestCnt(base)
 
-	LBZ	R4,IDNestCnt(r31)
-	ADDI	R4,R4,1
-	STB	R4,IDNestCnt(r31)
-	EPILOG
+	pop	scr
+	rts
+	
+_disab:
+	mfmsr	scr
+	andi.	scr,scr,0xFFFF7FFF
+	isync
+	mtmsr	scr
+	sync
+	rfi
