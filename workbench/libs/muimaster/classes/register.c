@@ -48,8 +48,8 @@ struct MUI_RegisterData
     struct MUI_EventHandlerNode ehn;
     struct RegisterTabItem     *items;
     char    	    	      **labels;
-    WORD    	    	        numitems;
     WORD    	    	     	active;
+    WORD    	    	        numitems;
     WORD    	    	    	oldactive;
     WORD    	    	     	left;
     WORD    	    	     	top;
@@ -270,6 +270,7 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_RegisterData *data;
     int i;
+    IPTR tmp;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL, MUIA_Group_PageMode, TRUE,
 					MUIA_Background, MUII_RegisterBack,
@@ -289,7 +290,9 @@ static ULONG Register_New(struct IClass *cl, Object *obj, struct opSet *msg)
     for(data->numitems = 0; data->labels[data->numitems]; data->numitems++)
 	;
 
-    get(obj, MUIA_Group_ActivePage, &data->active);
+    get(obj, MUIA_Group_ActivePage, &tmp);
+    data->active = (WORD)tmp;
+
     if (data->active < 0 || data->active >= data->numitems)
     {
 	data->active = 0;
@@ -510,7 +513,7 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 static ULONG Register_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
-    ULONG active;
+    IPTR active;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
