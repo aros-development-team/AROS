@@ -126,6 +126,8 @@ void createupfrontlayer(void)
         printf("Generating a backdrop layer.\n");
         flags = LAYERBACKDROP;
       }
+      
+      flags |= LAYERSMART;
 
       layers[i] = CreateUpfrontLayer(&screen->LayerInfo, 
                                      screen->RastPort.BitMap,
@@ -133,7 +135,7 @@ void createupfrontlayer(void)
                                      y0,
                                      x1,
                                      y1,
-                                     flags, /* LAYER_SMART*/
+                                     flags,
                                      NULL);
       if (layers[i])
         printf("Created layer with ID %d\n",i);
@@ -173,6 +175,8 @@ void createbehindlayer(void)
         printf("Generating a backdrop layer.\n");
         flags = LAYERBACKDROP;
       }
+      
+      flags |= LAYERSMART;
     
       layers[i] = CreateBehindLayer(&screen->LayerInfo, 
                                      screen->RastPort.BitMap,
@@ -180,7 +184,7 @@ void createbehindlayer(void)
                                      y0,
                                      x1,
                                      y1,
-                                     flags, /* LAYER_SMART*/
+                                     flags,
                                      NULL);
       if (layers[i])
          printf("Created layer with ID %d\n",i);
@@ -347,7 +351,7 @@ void GenerateLayers1(void)
                                  10,
                                  100,
                                  100,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   
   /* 
@@ -369,7 +373,7 @@ void GenerateLayers1(void)
                                  50,
                                  150,
                                  150,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   
   /* 
@@ -391,7 +395,7 @@ void GenerateLayers1(void)
                                  20,
                                  120,
                                  70,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   
   /* 
@@ -416,7 +420,7 @@ void GenerateLayers2(void)
                                  10,
                                  100,
                                  100,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   
   /* 
@@ -437,7 +441,7 @@ void GenerateLayers2(void)
                                  50,
                                  120,
                                  120,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
 
   /* 
@@ -458,7 +462,7 @@ void GenerateLayers2(void)
                                  30,
                                  140,
                                  90,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
   /* 
     CHEAT!!!
@@ -478,7 +482,7 @@ void GenerateLayers2(void)
                                  20,
                                  150,
                                  60,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
 
   /*
@@ -518,7 +522,7 @@ void DemoA(void)
                                  10,
                                  100,
                                  100,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   
   /* 
@@ -540,7 +544,7 @@ void DemoA(void)
                                  5,
                                  30,
                                  150,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
   /* 
     CHEAT!!!
@@ -561,7 +565,7 @@ void DemoA(void)
                                  50,
                                  150,
                                  70,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   /* 
     CHEAT!!!
@@ -582,7 +586,7 @@ void DemoA(void)
                                  5,
                                  180,
                                  200,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
   /* 
     CHEAT!!!
@@ -679,7 +683,7 @@ void DemoB(void)
                                  10,
                                  100,
                                  100,
-                                 0, /* LAYER_SMART*/
+                                 LAYERSMART,
                                  NULL);
   
   /* 
@@ -701,7 +705,7 @@ void DemoB(void)
                                  50,
                                  120,
                                  120,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
 
   /* 
@@ -723,7 +727,7 @@ void DemoB(void)
                                  30,
                                  140,
                                  90,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
   /* 
     CHEAT!!!
@@ -745,7 +749,7 @@ void DemoB(void)
                                  20,
                                  150,
                                  60,
-                                 0, // LAYER_SMART
+                                 LAYERSMART,
                                  NULL);
 
   /*
