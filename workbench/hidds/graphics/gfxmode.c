@@ -18,6 +18,7 @@
 
 #include "graphics_intern.h"
 
+#if 0
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
 static AttrBase HiddGfxModeAttrBase;
@@ -28,6 +29,7 @@ static struct ABDescr attrbases[] = {
     { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
     { NULL, 0UL }
 };
+#endif
 
 #define IS_GFXMODE_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddGfxModeAttrBase) < num_Total_GfxMode_Attrs)
@@ -295,9 +297,9 @@ Class *init_gfxmodeclass(struct class_static_data *csd)
     EnterFunc(bug("init_gfxmodeclass(csd=%p)\n", csd));
 
     if(MetaAttrBase) {
-#ifndef AROS_CREATE_ROM_BUG
-	if (ObtainAttrBases(attrbases)) 
-#endif
+//#ifndef AROS_CREATE_ROM_BUG
+//	if (ObtainAttrBases(attrbases)) 
+//#endif
 	{
     	    cl = NewObject(NULL, CLID_HiddMeta, tags);
     	    if(NULL != cl) {
@@ -330,9 +332,9 @@ void free_gfxmodeclass(struct class_static_data *csd)
             csd->gfxmodeclass = NULL;
 	}
     }
-#ifndef AROS_CREATE_ROM_BUG
-    ReleaseAttrBases(attrbases);
-#endif
+//#ifndef AROS_CREATE_ROM_BUG
+//    ReleaseAttrBases(attrbases);
+//#endif
 
     ReturnVoid("free_gfxmodeclass");
 }

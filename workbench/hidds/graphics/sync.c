@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+/****************************************************************************************/
+
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
@@ -18,19 +20,16 @@
 
 #include "graphics_intern.h"
 
-/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+/****************************************************************************************/
 
-static OOP_AttrBase HiddSyncAttrBase;
+#define csd ((struct class_static_data *)cl->UserData)
 
-static struct OOP_ABDescr attrbases[] = {
-    { IID_Hidd_Sync,	&HiddSyncAttrBase	},
-    { NULL, 0UL }
-};
+/****************************************************************************************/
 
 OOP_Object *sync_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct sync_data * data;
-    BOOL ok = FALSE;
+    struct sync_data 	*data;
+    BOOL    	    	ok = FALSE;
     
     DECLARE_ATTRCHECK(sync);
     
@@ -47,41 +46,50 @@ OOP_Object *sync_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     data = OOP_INST_DATA(cl, o);
     
-    if (!parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl) )) {
+    if (!parse_sync_tags(msg->attrList, data, ATTRCHECK(sync), CSD(cl) ))
+    {
 	D(bug("!!! ERROR PARSING SYNC ATTRS IN Sync::New() !!!\n"));
-    } else {
+    }
+    else
+    {
 	ok = TRUE;
     }
     
-    if (!ok) {
+    if (!ok)
+    {
 	OOP_MethodID dispose_mid;
 	
 	dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
 	o = NULL;
     }
+    
     return o;
 }
 
+/****************************************************************************************/
+
 static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct sync_data *data;
-    
-    ULONG idx;
+    struct sync_data 	*data;    
+    ULONG   	    	idx;
     
     data = OOP_INST_DATA(cl, o);
     
-    if (IS_SYNC_ATTR(msg->attrID, idx)) {
-    	switch (idx) {
+    if (IS_SYNC_ATTR(msg->attrID, idx))
+    {
+    	switch (idx)
+	{
 	    case aoHidd_Sync_PixelTime:
 		*msg->storage = (IPTR)data->pixtime;
 		break;
 		
-	    case aoHidd_Sync_PixelClock: {
-#if AROS_NOFPU
-#warning Find code for non-FPU!
+	    case aoHidd_Sync_PixelClock:
+	    {
+    	    #if AROS_NOFPU
+    	    	#warning Find code for non-FPU!
 		*msg->storage = (ULONG)0x12345678;
-#else
+    	    #else
 		DOUBLE pixtime, pixclock;
 		
 		pixtime = (DOUBLE)data->pixtime;
@@ -89,7 +97,7 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		pixtime /= 1000000000000;	/* pixtime is in 10E-12 secs */
 		pixclock = 1 / pixtime;		/* convert to Hz */
 		*msg->storage = (ULONG)pixclock;
-#endif
+    	    #endif
 		break;
 	    }
 		
@@ -156,7 +164,9 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 	}
     
-    } else {
+    }
+    else
+    {
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
     
@@ -164,64 +174,66 @@ static VOID sync_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     
 }
 
-
-/*** init_syncclass *********************************************************/
+/****************************************************************************************/
 
 #undef OOPBase
 #undef SysBase
+
+#undef csd
 
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS 3
 #define NUM_SYNC_METHODS 0
+
+/****************************************************************************************/
+
 OOP_Class *init_syncclass(struct class_static_data *csd)
 {
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
-        {(IPTR (*)())sync_new, 	moRoot_New	},
-        {(IPTR (*)())sync_get,	moRoot_Get	},
-	{ NULL, 0UL }
+        {(IPTR (*)())sync_new, moRoot_New   },
+        {(IPTR (*)())sync_get, moRoot_Get   },
+	{ NULL	    	     , 0UL  	    }
     };
     
-    struct OOP_MethodDescr sync_descr[NUM_SYNC_METHODS + 1] = {
+    struct OOP_MethodDescr sync_descr[NUM_SYNC_METHODS + 1] =
+    {
 	{ NULL, 0UL }
     };
         
     struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr,    IID_Root       	, NUM_ROOT_METHODS},
-        {sync_descr,  	IID_Hidd_Sync	, NUM_SYNC_METHODS},
-        {NULL, NULL, 0}
+        {root_descr , IID_Root      , NUM_ROOT_METHODS	},
+        {sync_descr , IID_Hidd_Sync , NUM_SYNC_METHODS	},
+        {NULL	    , NULL  	    , 0     	    	}
     };
 
     OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
 
     struct TagItem tags[] =
     {
-        {aMeta_SuperID,        (IPTR) CLID_Root},
-        {aMeta_InterfaceDescr, (IPTR) ifdescr},
-        {aMeta_InstSize,       (IPTR) sizeof (struct sync_data)},
-        {TAG_DONE, 0UL}
+        {aMeta_SuperID	    	, (IPTR) CLID_Root  	    	    },
+        {aMeta_InterfaceDescr	, (IPTR) ifdescr    	    	    },
+        {aMeta_InstSize     	, (IPTR) sizeof (struct sync_data)  },
+        {TAG_DONE   	    	, 0UL	    	    	    	    }
     };
     
     OOP_Class *cl = NULL;
 
     EnterFunc(bug("init_syncclass(csd=%p)\n", csd));
 
-    if(MetaAttrBase) {
-#ifndef AROS_CREATE_ROM_BUG
-	if (OOP_ObtainAttrBases(attrbases)) 
-#endif
+    if(MetaAttrBase)
+    {
+    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
+    	if(NULL != cl)
 	{
-
-    	    cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	    if(NULL != cl) {
-        	D(bug("Sync class ok\n"));
-        	csd->syncclass = cl;
-        	cl->UserData     = (APTR) csd;
-            }
+            D(bug("Sync class ok\n"));
+            csd->syncclass = cl;
+            cl->UserData     = (APTR) csd;
         }
+
     } /* if(MetaAttrBase) */
     
     if (NULL == cl)
@@ -230,22 +242,22 @@ OOP_Class *init_syncclass(struct class_static_data *csd)
     ReturnPtr("init_syncclass", OOP_Class *,  cl);
 }
 
-
-/*** free_syncclass *********************************************************/
+/****************************************************************************************/
 
 void free_syncclass(struct class_static_data *csd)
 {
     EnterFunc(bug("free_syncclass(csd=%p)\n", csd));
 
-    if(NULL != csd) {
-	if (NULL != csd->syncclass) {
+    if(NULL != csd)
+    {
+	if (NULL != csd->syncclass)
+	{
 	    OOP_DisposeObject((OOP_Object *) csd->syncclass);
             csd->syncclass = NULL;
 	}
     }
-#ifndef AROS_CREATE_ROM_BUG
-    OOP_ReleaseAttrBases(attrbases);
-#endif
 
     ReturnVoid("free_syncclass");
 }
+
+/****************************************************************************************/
