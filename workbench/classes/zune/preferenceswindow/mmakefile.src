@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES         := preferenceswindow_methods 
+FILES         := preferenceswindow
 INCLUDE_FILES := preferenceswindow.h
 
 #MM workbench-classes-zune-preferenceswindow : includes
