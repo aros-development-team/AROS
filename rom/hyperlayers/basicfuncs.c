@@ -575,11 +575,12 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
     if (FALSE == looped)
     {
       /*
-       * Flip the shape to the visible part
+       * Flip the shape to the opposite part and
+       * limit it to its own shape.
        */
       XorRegionRegion(l->shape,r);
       AndRegionRegion(l->shape,r);
-      if (invisible == TRUE)
+      if (TRUE == invisible)
         invisible = FALSE;
       else
         invisible = TRUE;
@@ -594,8 +595,8 @@ kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
 
 int CopyClipRectsToClipRects(struct Layer * l,
                              struct ClipRect * firstcr,
-                             int backupsimplerefresh,
-                             int dx)
+                             int dx,
+                             int backupsimplerefresh)
 {
   struct BitMap * display_bm = l->rp->BitMap;
   /*
@@ -843,8 +844,8 @@ kprintf("\t %s: l=%p\n",
 #endif
 #warning Write function to copy a region
 
+  ClearRegionRegion(hide_region,l->VisibleRegion);
   OrRegionRegion(l->VisibleRegion, r);
-  ClearRegionRegion(hide_region,r);
   AndRegionRegion(l->shape,r);
   AndRegionRegion(l->parent->shape,r);
 
@@ -852,15 +853,9 @@ kprintf("\t %s: l=%p\n",
   
   DisposeRegion(r);
 
-  CopyClipRectsToClipRects(l,firstcr,backupsimplerefresh,dx);
+  CopyClipRectsToClipRects(l,firstcr,dx,backupsimplerefresh);
 
   l->ClipRect = firstcr;
-
-  /*
-   * The hide region must be subtracted from
-   * the visible region of this layer.
-   */
-  ClearRegionRegion(hide_region, l->VisibleRegion);
 
   return TRUE;
 }
@@ -875,13 +870,13 @@ kprintf("\t %s: l=%p\n",
 int _ShowPartsOfLayer(struct Layer * l, 
                       struct Region * show_region)
 {
-  struct ClipRect * cr, * firstcr, * oldcr;
+  struct ClipRect * firstcr, * oldcr;
   struct Region * r = NewRegion();
   struct BitMap * display_bm = l->rp->BitMap;
   
 //kprintf("%s called for %p\n",__FUNCTION__,l);
 #warning Write function to copy a region
-  OrRegionRegion(show_region,r);
+  OrRegionRegion(show_region,l->VisibleRegion);
   OrRegionRegion(l->VisibleRegion,r);
   AndRegionRegion(l->shape,r);
   AndRegionRegion(l->parent->shape,r);
@@ -907,12 +902,13 @@ int _ShowPartsOfLayer(struct Layer * l,
        * Do the two rectangles overlap?
        */
 #if 0
-kprintf("%s: oldcr: %d/%d - %d/%d\n",
+kprintf("%s: oldcr: %d/%d - %d/%d  lobs: %d\n",
         __FUNCTION__,
         oldcr->bounds.MinX,
         oldcr->bounds.MinY,
         oldcr->bounds.MaxX,
-        oldcr->bounds.MaxY
+        oldcr->bounds.MaxY,
+        oldcr->lobs
         );
 
 #endif
@@ -1186,7 +1182,7 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d\n",
       } /* if rectangles overlap */
       else
       {
-        if (NULL == _cr->BitMap)
+        if (IS_SMARTREFRESH(l) && NULL == _cr->BitMap && NULL != _cr->lobs)
         {
 //kprintf("Alloc bitmap!\n");
            _cr->BitMap = AllocBitMap(
@@ -1209,11 +1205,6 @@ kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d; blitting to %d/%d\n",
 
   l->ClipRect = firstcr;
 
-  /*
-   * The hid region must be subtracted from
-   * the visible region of this layer.
-   */
-  OrRegionRegion(show_region, l->VisibleRegion);
 
   return TRUE;
 }
@@ -1353,10 +1344,9 @@ void _BackFillRegion(struct Layer * l,
       RR = RR->Next;
     }
   }
-#if 0
-  if (l->parent)
-    AndRegionRegion(l->parent->shape, r);
-#endif
+
+  AndRegionRegion(l->VisibleRegion, r);
+
   RR  = r->RegionRectangle;
   /* check if a region is empty */
   while (NULL != RR)

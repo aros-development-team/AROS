@@ -130,6 +130,8 @@ void InstallClipRegionClipRects(struct Layer_Info * LI);
                               ((r1)->MinY > (r2)->MaxY) ||	\
                               ((r1)->MaxX < (r2)->MinX) ||	\
                               ((r1)->MaxY < (r2)->MinY) ))
+
+#define IS_EMPTYREGION(r) ((NULL == r->RegionRectangle))
                               
 int _BackupPartsOfLayer(struct Layer * l, 
                         struct Region * hide_region,

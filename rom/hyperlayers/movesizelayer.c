@@ -116,25 +116,30 @@
     AndRectRegion(newshape, &recth); 
   }
 
-  if (dx)
+  if (0 != dx)
   {
     newshape->bounds.MinX += dx; 
     newshape->bounds.MaxX += dx; 
+
     rectw.MinX += dx;
     rectw.MaxX += dx;
+
     recth.MinX += dx;
     recth.MaxX += dx;
   }
   
-  if (dy)
+  if (0 != dy)
   {
     newshape->bounds.MinY += dy;
     newshape->bounds.MaxY += dy;
+
     rectw.MinY += dy;
     rectw.MaxY += dy;
+
     recth.MinY += dy;
     recth.MaxY += dy;
   }
+
   first = GetFirstFamilyMember(l);
 //kprintf("%s called for layer %p, first = %p!\n",__FUNCTION__,l,first);
   
@@ -316,6 +321,10 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
 
   DisposeRegion(oldshape);
 
+  /*
+   * If the size of the layer became larger clear the
+   * new areas.
+   */
   if (dw > 0 || dh > 0)
   {
     ClearRegion(r);
@@ -325,6 +334,10 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
       OrRectRegion(r, &recth);
     if (!IS_SUPERREFRESH(l))
       _BackFillRegion(l, r, TRUE);
+    else
+    {
+#warning Missing code for super bitmapped layers.
+    }
   }
 
   DisposeRegion(r);

@@ -62,10 +62,9 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * _l;
-  int found = FALSE;
   LONG ret;
 
-kprintf("\t\t%s called!\n",__FUNCTION__);
+//kprintf("\t\t%s called!\n",__FUNCTION__);
   LockLayers(l->LayerInfo);
 
   /*

@@ -85,7 +85,7 @@
     struct Region * r = NewRegion();
 
     OrRegionRegion(l->VisibleRegion, r);
-    
+
     /*
      * Visit all layers behind this layer until my parent comes
      * I also visit my parent. If my parent is invisible I must
@@ -95,8 +95,12 @@
     {
       if (IS_VISIBLE(_l))
       {
+        ClearRegion(_l->VisibleRegion);
         _ShowPartsOfLayer(_l, r);
         AndRegionRegion(_l->VisibleRegion, l->shape);
+      }
+      else
+      {
       }
       
       if (_l == lparent)
@@ -111,7 +115,8 @@
        * visible on the layers behind it. Therefore I
        * have to take it out.
        */
-      ClearRegionRegion(_l->shape, r);
+      if (IS_VISIBLE(_l))
+        ClearRegionRegion(_l->shape, r);
 
       _l = _l->back;
     }
@@ -120,7 +125,7 @@
 
     if (!IS_EMPTYREGION(l->shape))
     {
-kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
+//kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
       if (lparent && 
           (IS_SIMPLEREFRESH(lparent) || (lparent==l->LayerInfo->check_lp)))
         _BackFillRegion(lparent, l->shape, FALSE);

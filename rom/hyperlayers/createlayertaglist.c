@@ -253,7 +253,7 @@ kprintf("%s entered!\n",__FUNCTION__);
 
       if (li->top_layer == infrontof)
       {
-kprintf("Creating a layer on top!\n");
+kprintf("Creating a layer on top! pri=%d\n",l->priority);
         li->top_layer = l;
         l->front  = NULL;
         l->back   = infrontof;
