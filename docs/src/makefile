@@ -42,20 +42,35 @@ clean :
 $(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
 	cat doc_header.html $(DEST)toc.html \
 	    doc_footer.html | sed "s/\\\\today/`date "+%d %b %Y"`/" \
-	    > $(DEST)index.html
+	    > $@
+	chmod a+r $@
 
 $(DEST)toc.html : $(SRCS) tochtml.gawk
 	gawk -f tochtml.gawk $(SRCS) > $@
+	chmod a+r $@
 
 $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	gawk -f src2html.gawk $< > $@
+	chmod a+r $@
 
 autodocs: $(DEST)adoc_index.html
 
-$(DEST)adoc_index.html: $(AUTODOC_SRCS) adoc2html.gawk adocpost.gawk
-	gawk -f adoc2html.gawk $(AUTODOC_SRCS) | sort | \
-	gawk -f adocpost.gawk > $@
+$(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
+	    adoc_footer.html
+	cat adoc_header.html > $@
+	gawk -F: -f adocpost.gawk --assign mode=pre_bylib $(DEST)adoc_index.tmp | \
+	sort | \
+	gawk -F: -f adocpost.gawk --assign mode=post_bylib >> $@
+	gawk -F: -f adocpost.gawk --assign mode=pre_byname $(DEST)adoc_index.tmp | \
+	sort | \
+	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
+	cat adoc_footer.html | sed "s/\\\\today/`date "+%d %b %Y"`/" >> $@
+	chmod a+r $@
+
+$(DEST)adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
+	gawk -f adoc2html.gawk $(AUTODOC_SRCS) > $@
 
 $(DEST)inc_index.html: $(INCLUDE_SRCS)
 	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
+	chmod a+r $@
 

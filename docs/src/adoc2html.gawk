@@ -17,6 +17,8 @@ BEGIN {
 	    {
 		if (match($0,/^.\*\*\*\*\*+$/))
 		{
+		    fname="";
+		    lib="";
 		    out="../html/autodocs/" bn ".html";
 		    print "<HTML><HEAD>\n<TITLE>AROS - The Amiga Replacement OS - AutoDocs</TITLE>\n</HEAD>\n<BODY>\n" > out;
 		    print "<CENTER><P>(C) 1996 AROS - The Amiga Replacement OS</P></CENTER>\n<P><HR></P>\n\n" >> out;
@@ -64,6 +66,13 @@ BEGIN {
 		}
 		else if (match($0,/^.\*\*\*\*\*+\/?$/))
 		{
+		    if (fname!="")
+		    {
+			if (lib=="")
+			    lib = "Utility functions";
+
+			print out":"fname":"lib;
+		    }
 		    mode="footer";
 		}
 		else
@@ -81,7 +90,7 @@ BEGIN {
 			    split(line,a,",");
 			    gsub(/AROS_LH.*[(]/,"",a[1]);
 			    print prefix a[1] " " a[2] "()<BR>" >> out;
-			    print a[2];
+			    fname=a[2];
 			}
 			else if (match(line,"#include"))
 			{
@@ -115,6 +124,7 @@ BEGIN {
 
 			    split(line,a,",");
 			    print "In " a[2] " at offset " a[3] >> out;
+			    lib=a[2];
 			}
 		    }
 		    else if (field=="INPUTS")
