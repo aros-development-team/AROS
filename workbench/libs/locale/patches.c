@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*********************************************************************************************/
@@ -83,7 +80,7 @@ pi [] =
     {LIB_DOS    , 124, LIB_LOCALE, 36}, /* DateToStr */
     {LIB_DOS    , 125, LIB_LOCALE, 37}, /* StrToDate */
     {LIB_DOS    , 154, LIB_LOCALE, 38}, /* DosGetLocalizedString */
-    {NULL   	    	    	     }
+    {0         	    	    	     }
 };
 #endif
 
