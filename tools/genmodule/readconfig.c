@@ -7,7 +7,6 @@
 #include "fileread.h"
 
 static void readsectionconfig(struct config *);
-static void readsectionproto(struct config *);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
 static void readsectionfunctionlist(struct config *);
@@ -26,7 +25,7 @@ void readconfig(struct config *cfg)
     {
 	if (strncmp(line, "##", 2)==0)
 	{
-	    static char *parts[] = {"config", "proto", "cdefprivate", "cdef", "functionlist"};
+	    static char *parts[] = {"config", "cdefprivate", "cdef", "functionlist"};
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
 	    int i, atend = 0;
@@ -60,19 +59,15 @@ void readconfig(struct config *cfg)
 		readsectionconfig(cfg);
 		break;
 		
-	    case 2: /* proto */
-		readsectionproto(cfg);
-		break;
-		
-	    case 3: /* cdefprivate */
+	    case 2: /* cdefprivate */
 		readsectioncdefprivate(cfg);
 		break;
 		
-	    case 4: /* cdef */
+	    case 3: /* cdef */
 		readsectioncdef(cfg);
 		break;
 
-	    case 5: /* functionlist */
+	    case 4: /* functionlist */
 		readsectionfunctionlist(cfg);
 		break;
 	    }
@@ -316,43 +311,6 @@ static void readsectionconfig(struct config *cfg)
 	    cfg->libbasetypeextern = "struct Device";
 	else
 	    cfg->libbasetypeextern = "struct Library";
-    }
-}
-
-static void readsectionproto(struct config *cfg)
-{
-    int atend = 0;
-    char *line, *s;
-    
-    while (!atend)
-    {
-	line = readline();
-	if (line==NULL)
-	    exitfileerror(20, "unexptected end of file in section proto\n");
-
-	if (strncmp(line, "##", 2)!=0)
-	{
-	    addline(&cfg->protolines, line);
-	}
-	else
-	{
-	    s = line+2;
-	    while (isspace(*s)) s++;
-	    if (strncmp(s, "end", 3)!=0)
-		exitfileerror(20, "\"##end proto\" expected\n");
-
-	    s += 3;
-	    while (isspace(*s)) s++;
-	    if (strncmp(s, "proto", 5)!=0)
-		exitfileerror(20, "\"##end proto\" expected\n");
-
-	    s += 5;
-	    while (isspace(*s)) s++;
-	    if (*s!='\0')
-		exitfileerror(20, "unexpected character at position %d\n");
-
-	    atend = 1;
-	}
     }
 }
 

@@ -38,9 +38,8 @@ void writeincproto(struct config *cfg)
 	    cfg->modulenameupper, cfg->modulenameupper,
 	    cfg->modulename,
 	    cfg->libbase, cfg->modulenameupper,
-	    cfg->libbasetypeextern, cfg->libbase);
-    for (linelistit = cfg->protolines; linelistit!=NULL; linelistit = linelistit->next)
-	fprintf(out, "%s\n", linelistit->line);
+	    cfg->libbasetypeextern, cfg->libbase
+    );
     
     fprintf(out,
 	    "#if !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
@@ -48,6 +47,7 @@ void writeincproto(struct config *cfg)
 	    "#endif\n"
 	    "\n"
 	    "#endif /* PROTO_%s_H */\n",
-	    cfg->modulenameupper, cfg->modulename, cfg->modulenameupper);
+	    cfg->modulenameupper, cfg->modulename, cfg->modulenameupper
+    );
     fclose(out);
 }

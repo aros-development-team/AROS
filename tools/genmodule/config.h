@@ -62,7 +62,7 @@ struct config
     struct forcelist *forcelist;
 
     /* Code to add to the generated files */
-    struct linelist *cdeflines, *cdefprivatelines, *protolines;
+    struct linelist *cdeflines, *cdefprivatelines;
 
     /* MCC specific data */
     char *superclass;
