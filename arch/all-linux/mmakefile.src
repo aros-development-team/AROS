@@ -78,7 +78,7 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- setup-battclock-linux : setup-battclock-unix
 
-#MM- kernel-graphics-linux : graphics-$(GFXSYSTEM) kernel-graphics-linklib
+#MM- kernel-graphics-linux : graphics-$(GFXSYSTEM) hidd-graphics-x11 kernel-graphics-linklib
 
 #MM- kernel-intuition-linux : intuition-$(GFXSYSTEM) kernel-intuition-linklib
 

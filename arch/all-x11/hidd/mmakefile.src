@@ -22,8 +22,8 @@ hidd-graphics-linklib-quick : $(LIB)
 	@$(NOP)
 
 #MM
-hidd-graphics-linklib : $(LIB) setup
-hidd-graphics-linklib : $(LIB)
+hidd-graphics-x11 : $(LIB) setup
+hidd-graphics-x11 : $(LIB)
 	@$(NOP)
 
 $(LIB) : $(OBJS)
