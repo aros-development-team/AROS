@@ -12,7 +12,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
 execute ./configure --enable-build-type=nightly --enable-debug=symbols --with-optimization=2
-make    tools mmake sdk
+make    sdk
 
 cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU
 move    AROS-SDK $PACKAGE
