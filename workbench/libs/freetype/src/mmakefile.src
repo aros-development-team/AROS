@@ -38,11 +38,6 @@ FILESDIR := \
       winfonts/winfnt \
       gzip/ftgzip
 
-DIRS := $(sort $(dir $(FILESDIR)))
-vpath %.c $(DIRS)
-
-FILES := $(notdir $(FILESDIR))
-
 USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
 #MM contrib-freetype-linklib : contrib-freetype-includes
@@ -52,7 +47,7 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
     files=$(FILESDIR)
 
 %build_module mmake=contrib-freetype-module modname=freetype2 \
-    modtype=library files="$(FILES) freetype2_init" linklibname=freetype2shared \
+    modtype=library files="$(FILESDIR) freetype2_init" linklibname=freetype2shared \
     linklibfiles=tagcall uselibs="arosc_shared amiga"
  
 %common
