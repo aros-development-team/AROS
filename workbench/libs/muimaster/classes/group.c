@@ -82,6 +82,8 @@ struct MUI_GroupData
     ULONG        num_visible_children; /* for horiz/vert group only */
     ULONG        horiz_weight_sum;
     ULONG        vert_weight_sum;
+    ULONG        samesize_maxmin_horiz;
+    ULONG        samesize_maxmin_vert;
     ULONG        update; /* for MUI_Redraw() 1 - do not redraw the frame, 2 - the virtual pos has changed */
     struct MUI_EventHandlerNode ehn;
     LONG virt_offx, virt_offy; /* diplay offsets */
@@ -372,7 +374,6 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
 		break;
 	    case MUIA_Group_ActivePage:
-		D(bug("Group_Set, activepage=%d\n", tag->ti_Data));
 		change_active_page(cl, obj, (LONG)tag->ti_Data);
 		break;
 	    case MUIA_Group_Forward:
@@ -454,7 +455,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	    tag->ti_Tag = TAG_IGNORE;
 		    break;
     		case MUIA_Selected:
-		    D(bug("Group_Set(%p) MUIA_Selected forwarded\n", obj));
+/*  		    D(bug("Group_Set(%p) MUIA_Selected forwarded\n", obj)); */
 /*  	    	    tag->ti_Tag = TAG_IGNORE; */
 		    break;
 	    }
@@ -535,7 +536,6 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
 /*      D(bug("Group_AddMember(0x%lx, 0x%lx)\n",obj, msg->opam_Object)); */
-
 
     DoMethodA(data->family, (Msg)msg);
     data->num_childs++;
@@ -1088,14 +1088,24 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	}
     }
 
+    data->samesize_maxmin_horiz = maxminwidth;
+/*      D(bug("group_minmax_horiz(%p) : maxminwidth=%d\n", obj, maxminwidth)); */
+
     data->horiz_weight_sum = 0;
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate))) {
+	WORD minwidth;
+
 	if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
 	if (data->flags & GROUP_SAME_WIDTH)
-	    _minwidth(child) = MIN(maxminwidth, w0_maxwidth(child));
-	tmp.MinWidth += _minwidth(child);
+	{
+	    minwidth = MAX(maxminwidth, _minwidth(child));
+	    minwidth = MIN(minwidth, _maxwidth(child));
+	}
+	else
+	    minwidth = _minwidth(child);
+	tmp.MinWidth += minwidth;
 	tmp.DefWidth += w0_defwidth(child);
 	tmp.MaxWidth += w0_maxwidth(child);
 	tmp.MaxWidth = MIN(tmp.MaxWidth, MUI_MAXMAX);
@@ -1148,6 +1158,7 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	}
     }
 
+    data->samesize_maxmin_vert = maxminheight;
     data->vert_weight_sum = 0;
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
@@ -1359,6 +1370,16 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 	}
 /*  	g_print("2d group: mminw=%d mminh=%d\n", maxmin_width, maxmin_height); */
     }
+    if (data->flags & GROUP_SAME_HEIGHT)
+	data->samesize_maxmin_vert = maxmin_height;
+    else
+	data->samesize_maxmin_vert = 0;
+
+    if (data->flags & GROUP_SAME_WIDTH)
+	data->samesize_maxmin_horiz = maxmin_width;
+    else
+	data->samesize_maxmin_horiz = 0;
+
     minmax_2d_rows_pass (data, children, &tmp, maxmin_height, maxdef_height);
     minmax_2d_columns_pass (data, children, &tmp, maxmin_width, maxdef_width);
 
@@ -1498,12 +1519,23 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 // while we're at it
 static void Layout1D_minmax_constraint (
     WORD *sizep, WORD minsize, WORD maxsize, WORD *remainp, WORD *sizegrowp,
-    WORD *sizeshrinkp, ULONG *weightgrowp, ULONG *weightshrinkp, UWORD weight
-    )
+    WORD *sizeshrinkp, ULONG *weightgrowp, ULONG *weightshrinkp, UWORD weight,
+    WORD samesize)
 {
     WORD size = *sizep, remain = *remainp,
 	sizegrow = *sizegrowp, sizeshrink = *sizeshrinkp;
     ULONG weightgrow = *weightgrowp, weightshrink = *weightshrinkp;
+
+/*      D(bug("L1D_minmax_c size=%d min=%d max=%d w=%d ss=%d\n", size, minsize, maxsize, */
+/*  	  weight, samesize)); */
+
+    if ((samesize > 0) && (weight == 0))
+    {
+	remain += size - samesize;
+	size = samesize;
+	sizeshrink -= size;
+	sizegrow -= size;
+    }
 
     if (size <= minsize) // too little
     {
@@ -1520,10 +1552,13 @@ static void Layout1D_minmax_constraint (
 	sizegrow -= size;
     }
 
-    if (size < maxsize)
-	weightgrow += weight;
-    if (size > minsize)
-	weightshrink += weight;
+    if (!((samesize > 0) && (weight == 0)))
+    {
+	if (size < maxsize)
+	    weightgrow += weight;
+	if (size > minsize)
+	    weightshrink += weight;
+    }
 
     *sizep = size; *remainp = remain;
     *sizegrowp = sizegrow; *sizeshrinkp = sizeshrink;
@@ -1541,6 +1576,9 @@ static void Layout1D_redistribution (
     WORD size = *sizep, remain = *remainp,
 	sizegrow = *sizegrowp, sizeshrink = *sizeshrinkp;
     ULONG weightgrow = *weightgrowp, weightshrink = *weightshrinkp;
+
+    if (weight == 0)
+	return;
 
     if ((remain > 0) && (size < maxsize))
     {
@@ -1616,6 +1654,7 @@ static void Layout1D_minmax_constraints_and_redistrib (
     struct MinList *children,
     WORD total_size,
     WORD remainder,
+    WORD samesize,
     BOOL group_horiz
 )
 {
@@ -1651,7 +1690,7 @@ static void Layout1D_minmax_constraints_and_redistrib (
 		&remainder,
 		&size_growables, &size_shrinkables,
 		&weight_growables, &weight_shrinkables,
-		_hweight(child));
+		_hweight(child), samesize);
 
 /*  		D(bug("loop1 on %p : width=%d was %d, rem=%d, A=%d, " */
 /*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
@@ -1668,7 +1707,7 @@ static void Layout1D_minmax_constraints_and_redistrib (
 		&remainder,
 		&size_growables, &size_shrinkables,
 		&weight_growables, &weight_shrinkables,
-		_vweight(child));
+		_vweight(child), samesize);
 		
 /*  		D(bug("loop1 on %p : h=%ld was %d, rem=%d, A=%d, " */
 /*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
@@ -1730,22 +1769,22 @@ static void Layout1D_minmax_constraints_and_redistrib (
 	    
 	} // while child, redistribution
 
-	if (remainder != 0)
-	{
+/*  	if (remainder != 0) */
+/*  	{ */
 /*  	    D(bug("end : rem=%ld, A=%ld, size_grow=%ld, size_shrink=%ld\n", */
 /*  		  remainder, total_size, size_growables, size_shrinkables)); */
-	}
+/*  	} */
 	// dont break here if remainder == 0, some minmax constraints
 	// may not be respected
     } // end for
 
     // to easily spot layout bugs, nothing like a (division by zero) exception
-    if (remainder != 0)
-    {
+/*      if (remainder != 0) */
+/*      { */
 /*  	ASSERT(remainder != 0); */
 /*  	D(bug("gonna crash, remainder = %d\n", remainder)); */
 /*  	remainder /= 0; */
-    }
+/*      } */
 
 }
 
@@ -1821,6 +1860,7 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
 	children,
 	total_size,
 	remainder,
+	(data->flags & GROUP_SAME_HEIGHT) ? data->samesize_maxmin_vert : 0,
 	FALSE);
 
     // do the layout
@@ -1885,7 +1925,10 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
     } // while child, weight constraints
 
     total_size = total_size_backup;
-    remainder = total_size - total_init_size;
+    if (data->horiz_weight_sum > 0)
+	remainder = total_size - total_init_size;
+    else
+	remainder = 0;
 
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -1899,6 +1942,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	children,
 	total_size,
 	remainder,
+	(data->flags & GROUP_SAME_WIDTH) ? data->samesize_maxmin_horiz : 0,
 	TRUE);
 
     // do the layout
@@ -1981,9 +2025,12 @@ static void Layout2D_minmax_constraints_and_redistrib (
     struct layout2d_elem *infos,
     WORD nitems,
     WORD total_size,
+    WORD samesize,
     WORD remainder)
 {
     int j;
+
+/*      D(bug("L2D mc&r n=%d A=%d ss=%d rem=%d\n", nitems, total_size, samesize, remainder)); */
 
     for (j = 0; j < 2; j++)
     {
@@ -1999,12 +2046,20 @@ static void Layout2D_minmax_constraints_and_redistrib (
 	{
 	    old_size = infos[i].dim;
 
+/*  	    D(bug("bef loop1 on %d : size=%d, rem=%d, A=%d, " */
+/*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
+/*  		      i, infos[i].dim, remainder, total_size, */
+/*  		      size_growables, size_shrinkables, infos[i].weight, */
+/*  		      infos[i].min, infos[i].max)); */
+
 	    Layout1D_minmax_constraint(
 		&infos[i].dim, infos[i].min, infos[i].max,
 		&remainder,
 		&size_growables, &size_shrinkables,
 		&weight_growables, &weight_shrinkables,
-		infos[i].weight);
+		infos[i].weight,
+		samesize
+		);
 
 /*  	    D(bug("loop1 on %d : size=%d was %d, rem=%d, A=%d, " */
 /*  		      "sizegrow=%d, sizeshrink=%d w=%d min=%d max=%d\n", */
@@ -2019,6 +2074,11 @@ static void Layout2D_minmax_constraints_and_redistrib (
 	for (i = 0; i < nitems; i++)
 	{
 	    old_size = infos[i].dim;
+
+/*  	    D(bug("bef loop2 on %d : size=%d, rem=%d, A=%d, " */
+/*  		      "size_grow=%d, size_shrink=%d\n", i, */
+/*  		      infos[i].dim, remainder, total_size, */
+/*  		      size_growables, size_shrinkables)); */
 
 	    Layout1D_redistribution(
 		&infos[i].dim, infos[i].min, infos[i].max,
@@ -2152,12 +2212,16 @@ group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
 	data->row_infos,
 	data->rows,
 	total_size_height,
+/*  	(data->flags & GROUP_SAME_HEIGHT) ? data->samesize_maxmin_vert : 0, */
+	0,
 	remainder_height);
 
     Layout2D_minmax_constraints_and_redistrib(
 	data->col_infos,
 	data->columns,
 	total_size_width,
+/*  	(data->flags & GROUP_SAME_WIDTH) ? data->samesize_maxmin_horiz : 0, */
+	0,
 	remainder_width);
 
     layout_2d_distribute_space (data, data->row_infos, data->col_infos,
