@@ -25,8 +25,8 @@
 #include <aros/asmcall.h>
 #endif /* _AROS */
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 struct initbase
@@ -57,7 +57,7 @@ static BOOL init_hiddtype(struct hiddprefs *hp, struct initbase *base);
 
 static const struct hiddprefs hprefs[] =
 {
-    { "Sys:hidds/gfx.hidd", "Sys:s/gfxhidd.prefs", init_gfx },
+    { "Sys:hidds/graphics.hidd", "Sys:s/gfxhidd.prefs", init_gfx },
     { NULL, NULL, 0 }
 }; 
 
@@ -131,17 +131,17 @@ static BOOL init_hiddtype(struct hiddprefs *hp, struct initbase *base)
 	if (fh)
 	{	    
 	    UBYTE hiddfile[BUFSIZE];
-	    UBYTE *append;
+	    UBYTE *append = hiddfile;
 	    
 	    D(bug("Opened file %s\n", hp->prefsfile));
 	    
-	    strcpy(hiddfile, HIDDPATH);
+/*	    strcpy(hiddfile, HIDDPATH);
 	    
-	    /* Find end of hiddfile buffer */
+	     Find end of hiddfile buffer
 	    for (append = hiddfile; *append; append ++)
 		;
 		
-	    /* Get name of HIDD */
+*/	    /* Get name of HIDD */
 	    if (FGets(fh, append, BUFSIZE - sizeof (HIDDPATH) + 1))
 	    {
 		struct Library *subhiddbase;
@@ -188,8 +188,8 @@ static BOOL init_gfx(struct Library *hiddbase, struct initbase *base)
 	    library (although it will probably not be neccesary).
 	*/
 
-    	D(bug("calling private gfx InitGfxHidd()\n"));
-	if (InitGfxHidd(hiddbase))
+    	D(bug("calling private gfx LateGfxInit()\n"));
+	if (LateGfxInit(hiddbase))
 	{
 	    D(bug("success\n"));
 	    success = TRUE;
