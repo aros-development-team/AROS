@@ -64,13 +64,6 @@ static inline unsigned int serial_in_w(struct HIDDSerialUnitData * data,
 /* IO bases for every COM port */
 ULONG bases[] = {USTCNT1, USTCNT2};
 
-static OOP_AttrBase HiddSerialUnitAB;
-
-static struct OOP_ABDescr attrbases[] =
-{
-	{ IID_Hidd_SerialUnit, &HiddSerialUnitAB },
-	{ NULL,	NULL }
-};
 
 /******* SerialUnit::New() ***********************************/
 static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
@@ -85,11 +78,13 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 	while ((tag = NextTagItem((const struct TagItem **)&tstate))) {
 		ULONG idx;
 
+#define csd CSD(cl->UserData)
 		if (IS_HIDDSERIALUNIT_ATTR(tag->ti_Tag, idx)) {
+#undef csd
 			switch (idx)
 			{
 				case aoHidd_SerialUnit_Unit:
-				unitnum = (ULONG)tag->ti_Data;
+					unitnum = (ULONG)tag->ti_Data;
 				break;
 			}
 		}
@@ -98,8 +93,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 	
 	obj = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 
-	if (obj)
-	{
+	if (obj) {
 		WORD dummy;
 		data = OOP_INST_DATA(cl, obj);
     
@@ -483,7 +477,8 @@ OOP_Class *init_serialunitclass (struct class_static_data *csd)
 	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 	D(bug("Class=%p\n", cl));
 	if (cl) {
-		if (OOP_ObtainAttrBases(attrbases)) {
+		__IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
+		if (NULL != __IHidd_SerialUnitAB) {
 			D(bug("SerialUnit Class ok\n"));
 			cl->UserData = (APTR)csd;
 
