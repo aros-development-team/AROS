@@ -30,6 +30,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct AslBase_intern *AslBase);
 void FOSetFontString(STRPTR name, struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FOSetSizeString(LONG size, struct LayoutData *ld, struct AslBase_intern *AslBase);
+VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase);
 
 
 

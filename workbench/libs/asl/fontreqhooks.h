@@ -35,7 +35,8 @@ struct FOUserData
     Object  	    	    	*SizeString;
     Object			*OKBut;
     Object			*CancelBut;
- 
+    Object  	    	    	*Preview;
+    
     struct ScrollerGadget 	NameScrollGad;
     struct ScrollerGadget   	SizeScrollGad;
     
@@ -44,7 +45,8 @@ struct FOUserData
     struct Hook     	    	StringEditHook;
     struct ASLLVFontReqNode 	*ActiveFont;
     struct AvailFontsHeader 	*AFH;
-
+    struct TextFont 	    	*PreviewFont;
+    
     UWORD 			ButWidth;
     UWORD 			ButHeight;    
   

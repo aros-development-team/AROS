@@ -56,9 +56,12 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *, struct AslBase_intern *AslBa
 #define ID_SIZELISTVIEW 2
 #define ID_NAMESTRING  	3
 #define ID_SIZESTRING	4
+#define ID_PREVIEW  	5
 
 #undef NUMBUTS
 #define NUMBUTS     	2L
+
+#define FONTPREVIEWHEIGHT 40
 
 #define CLASS_ASLBASE 	((struct AslBase_intern *)cl->cl_UserData)
 #define HOOK_ASLBASE  	((struct AslBase_intern *)hook->h_Data)
@@ -416,11 +419,6 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 #endif
     
     gadrows = 2; /* button row  */
-//    if (iforeq->ifo_Flags & ISMF_DOOVERSCAN) gadrows++;
-//    if (iforeq->ifo_Flags & ISMF_DOWIDTH) gadrows++;
-//    if (iforeq->ifo_Flags & ISMF_DOHEIGHT) gadrows++;
-//    if (iforeq->ifo_Flags & ISMF_DODEPTH) gadrows++;
-//    if (iforeq->ifo_Flags & ISMF_DOAUTOSCROLL) gadrows++;
     
     ld->ld_MinWidth =  OUTERSPACINGX * 2 +
 		       GADGETSPACINGX * 1 +
@@ -429,7 +427,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ld->ld_MinHeight = OUTERSPACINGY * 2 +
 		       (GADGETSPACINGY + udata->ButHeight) * gadrows +
 		       BORDERLVSPACINGY * 2 +
-		       (ld->ld_Font->tf_YSize + BORDERLVITEMSPACINGY * 2) * FOREQ_MIN_VISIBLELINES -
+		       (ld->ld_Font->tf_YSize + BORDERLVITEMSPACINGY * 2) * FOREQ_MIN_VISIBLELINES +
+		       FONTPREVIEWHEIGHT + GADGETSPACINGY -
 		       GADGETSPACINGY; /* because the string gadgets are attached to listview gadgets */
 
     /* make listview gadgets */
@@ -444,7 +443,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     w = -ld->ld_WBorRight - ld->ld_WBorLeft - OUTERSPACINGX * 2 - PROPSIZE - GADGETSPACINGX - sizelvwidth;
     h = -ld->ld_WBorBottom - ld->ld_WBorTop - OUTERSPACINGY * 2 -
     	udata->ButHeight * gadrows -
-	GADGETSPACINGY * gadrows +
+	GADGETSPACINGY * gadrows -
+	(FONTPREVIEWHEIGHT + GADGETSPACINGY) +
 	GADGETSPACINGY; /* because the string gadgets are attached to listview gadgets */
     
     {
@@ -488,7 +488,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     w = PROPSIZE;
     h = -ld->ld_WBorBottom - ld->ld_WBorTop - OUTERSPACINGY * 2 -
     	udata->ButHeight * gadrows -
-	GADGETSPACINGY * gadrows +
+	GADGETSPACINGY * gadrows -
+	(FONTPREVIEWHEIGHT + GADGETSPACINGY) +
 	GADGETSPACINGY;
     {
 	struct TagItem scroller_tags[] =
@@ -525,12 +526,36 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     connectscrollerandlistview(&udata->NameScrollGad, udata->NameListview, AslBase);
     connectscrollerandlistview(&udata->SizeScrollGad, udata->SizeListview, AslBase);
+
+    /* make preview gadget */
+
+    x = ld->ld_WBorLeft + OUTERSPACINGX;
+    y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
+    	GADGETSPACINGY - FONTPREVIEWHEIGHT;
+    w = -ld->ld_WBorRight - ld->ld_WBorLeft - OUTERSPACINGX * 2;
+
+    {
+    	struct TagItem preview_tags[] =
+	{
+	    {GA_Left	    	, x 	    	    	    	    },
+	    {GA_RelBottom   	, y 	    	    	    	    },
+	    {GA_RelWidth    	, w 	    	    	    	    },
+	    {GA_Height	    	, FONTPREVIEWHEIGHT  	    	    },
+	    {GA_Previous    	, (IPTR)gad 	    	    	    },
+	    {GA_ID  	    	, ID_PREVIEW     	    	    },
+	    {TAG_DONE	    	    	    	    	    	    }
+	};
+
+	udata->Preview = gad = NewObjectA(AslBase->aslfontpreviewclass, NULL, preview_tags);
+	if (!gad) goto failure;
+    }
     
     /* make string gadgets */
 
     x = ld->ld_WBorLeft + OUTERSPACINGX;
     y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
-    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
+    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) -
+	(FONTPREVIEWHEIGHT + GADGETSPACINGY) + 1;
 		
     w = -ld->ld_WBorRight - ld->ld_WBorLeft - OUTERSPACINGX * 2 - GADGETSPACINGX - sizelvwidth;
     
@@ -861,6 +886,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			if ((node = FindListNode(&udata->ActiveFont->SizeList, (WORD)active)))
 			{
 			    FOSetSizeString((LONG)node->ln_Name, ld, AslBase);
+			    FOUpdatePreview(ld, AslBase);
 			    
 			    if (imsg->Code) /* TRUE if double clicked */
 			    {
@@ -886,7 +912,8 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    }
 		    else if ((imsg->Code == 0) || (imsg->Code == 9))
 		    {
-		    	break;
+    	    	    	FOUpdatePreview(ld, AslBase);
+			break;
 		    }
 		    break;
 		
@@ -1010,6 +1037,8 @@ STATIC VOID FOGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     FOFreeFonts(ld, AslBase);
     		
+    if (udata->PreviewFont) CloseFont(udata->PreviewFont);
+    
     if (ld->ld_Window)
     {
 	req->fo_LeftEdge = intreq->ir_LeftEdge = ld->ld_Window->LeftEdge;
@@ -1055,7 +1084,5 @@ bye:
     return retval;
 }
 
-/*****************************************************************************************/
-/*****************************************************************************************/
 /*****************************************************************************************/
 

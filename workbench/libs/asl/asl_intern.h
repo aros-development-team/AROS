@@ -281,6 +281,7 @@ struct AslBase_intern
     Class			*aslbuttonclass;
     Class			*aslstringclass;
     Class			*aslcycleclass;
+    Class   	    	    	*aslfontpreviewclass;
 };
 
 /*****************************************************************************************/
@@ -323,6 +324,7 @@ Class *makeasllistviewclass(struct AslBase_intern *AslBase);
 Class *makeaslbuttonclass(struct AslBase_intern *AslBase);
 Class *makeaslstringclass(struct AslBase_intern *AslBase);
 Class *makeaslcycleclass(struct AslBase_intern *AslBase);
+Class *makeaslfontpreviewclass(struct AslBase_intern *AslBase);
 
 /* gadgets.c */
 

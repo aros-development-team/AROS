@@ -15,6 +15,7 @@
 #include <proto/diskfont.h>
 #include <exec/memory.h>
 #include <exec/initializers.h>
+#include <intuition/imageclass.h>
 #include <dos/dos.h>
 #include <stdio.h>
 #include <string.h>
@@ -252,6 +253,45 @@ void FOFreeFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
+VOID FOUpdatePreview(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;
+    struct IntReq 	    *intreq = ld->ld_IntReq;
+    struct TextAttr 	     ta;
+    struct TextFont 	    *font;
+    IPTR    	    	     val;
+    STRPTR  	    	     name;
+    
+    GetAttr(STRINGA_LongVal, udata->SizeString, &val);
+    ta.ta_YSize = (WORD)val;
+    ta.ta_Flags = 0;
+    ta.ta_Style = 0;
+    
+    GetAttr(STRINGA_TextVal, udata->NameString, (IPTR *)&name);
+    if ((name = VecPooledCloneString(name, ".font", intreq->ir_MemPool, AslBase)))
+    {
+    	ta.ta_Name = name;
+	
+	font = OpenDiskFont(&ta);
+	{
+	    struct TagItem settags[] =
+	    {
+	    	{IA_Font, (IPTR)font},
+		{TAG_DONE   	    }
+	    };
+	    
+	    SetGadgetAttrsA((struct Gadget *)udata->Preview, ld->ld_Window, NULL, settags);
+	}  
+	   
+	if (udata->PreviewFont) CloseFont(udata->PreviewFont);
+	udata->PreviewFont = font;
+	
+    	FreeVecPooled(name, AslBase);
+    }
+}
+
+/*****************************************************************************************/
+
 struct ASLLVFontReqNode *FOGetActiveFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FOUserData 	*udata = (struct FOUserData *)ld->ld_UserData;    
@@ -423,6 +463,8 @@ void FOActivateFont(struct LayoutData *ld, WORD which, LONG size, struct AslBase
 
 	FOSetFontString(fontnode->node.ln_Name, ld, AslBase);	
     }
+
+    FOUpdatePreview(ld, AslBase);
 }
 
 /*****************************************************************************************/
@@ -470,6 +512,9 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
     SetGadgetAttrsA((struct Gadget *)udata->SizeListview, ld->ld_Window, NULL, size_tags);
 
     if (node) FOSetSizeString((LONG)node->ln_Name, ld, AslBase);    
+
+    FOUpdatePreview(ld, AslBase);
+
 }
 
 /*****************************************************************************************/
