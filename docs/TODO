@@ -1,0 +1,4 @@
+- digulla 21.7.1999
+genmf should be able to read several template files. This
+would allow to overide debug rules.
+
