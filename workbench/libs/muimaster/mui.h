@@ -12,6 +12,9 @@
 #ifndef GRAPHICS_GRAPHICS_H
 #   include <graphics/gfx.h>
 #endif
+#ifndef GRAPHICS_RASTPORT_H
+#   include <graphics/rastport.h>
+#endif
 #ifndef LIBRARIES_IFFPARSE_H
 #   include <libraries/iffparse.h>
 #endif
@@ -99,62 +102,6 @@ struct __MUIBuiltinClass {
 #ifndef _MUI_CLASSES_APPLICATION_H
 #include "classes/application.h"
 #endif
-
-/* the following prototypes here are only temporary so it can be compiled without problems */
-#ifndef __AROS__
-
-__asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __d0 WORD left, register __d1 WORD top, register __d2 WORD width, register __d3 WORD height);
-__asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 struct Region *r);
-__asm APTR MUI_AllocAslRequest(register __d0 unsigned long reqType, register __a0 struct TagItem *tagList);
-__asm BOOL MUI_AslRequest(register __a0 APTR requester, register __a1 struct TagItem *tagList);
-__asm BOOL MUI_BeginRefresh(register __a0 struct MUI_RenderInfo *mri, register __d0 ULONG flags);
-__asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library *base, register __a1 char *supername, register __a2 struct MUI_CustomClass *supermcc,register __d0 int datasize,register __a3 APTR dispatcher);
-__asm BOOL MUI_DeleteCustomClass(register __a0 struct MUI_CustomClass *mcc);
-__asm VOID MUI_DisposeObject(register __a0 Object *obj);
-__asm VOID MUI_EndRefresh(register __a0 struct MUI_RenderInfo *mri, register __d0 ULONG flags);
-__asm LONG MUI_Error(VOID);
-__asm VOID MUI_FreeAslRequest(register __a0 APTR requester);
-__asm VOID MUI_FreeClass(register __a0 struct IClass *classptr);
-__asm struct IClass *MUI_GetClass(register __a0 char *classname);
-__asm BOOL MUI_Layout(register __a0 Object *obj, register __d0 LONG left, register __d1 LONG top, register __d2 LONG width, register __d3 LONG height, register __d4 ULONG flags);
-__asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 ULONG *params);
-__asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct TagItem *tags);
-__asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1 struct MUI_PenSpec *spec, register __d0 ULONG flags);
-__asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags);
-__asm VOID MUI_RejectIDCMP(register __a0 Object *obj, register __d0 ULONG flags);
-__asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d0 LONG pen);
-__asm VOID MUI_RemoveClipping(register __a0 struct MUI_RenderInfo *mri, register __a1 APTR handle);
-__asm VOID MUI_RemoveClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 APTR handle);
-__asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register __d2 LONGBITS flags, register __a0 CONST_STRPTR title, register __a1 CONST_STRPTR gadgets, register __a2 CONST_STRPTR format, register __a3 APTR params);
-__asm VOID MUI_RequestIDCMP(register __a0 Object *obj, register __d0 ULONG flags);
-__asm LONG MUI_SetError(register __d0 LONG num);
-
-__inline static Object *MUI_NewObject(char *classname, int tag,...)
-{
-    return MUI_NewObjectA(classname, (struct TagItem*)&tag);
-}
-
-__inline static Object *MUI_MakeObject(LONG type,...)
-{
-    return MUI_MakeObjectA(type, ((ULONG*)&type)+1);
-}
-
-__inline static APTR MUI_AllocAslRequestTags(unsigned long reqType,...)
-{
-    return MUI_AllocAslRequest(reqType, (struct TagItem*)(((ULONG*)&reqType)+1));
-}
-
-__inline static BOOL MUI_AslRequestTags(APTR requester,...)
-{
-    return MUI_AslRequest(requester, (struct TagItem*)(((ULONG*)&requester)+1));
-}
-
-__inline static LONG MUI_Request(APTR app, APTR win, LONGBITS flags, char *title, char *gadgets, char *format, ...)
-{
-    return MUI_RequestA(app,win,flags,title,gadgets,format,(((ULONG*)&format)+1));
-}
-
-#endif /* !__AROS__ */
 
 
 /**************************************************************************
@@ -359,12 +306,12 @@ struct MUI_RGBcolor
 #include "classes/notify.h"
 #endif
 
-#ifndef _MUI_CLASSES_AREA_H
-#include "classes/area.h"
-#endif
-
 #ifndef _MUI_CLASSES_WINDOW_H
 #include "classes/window.h"
+#endif
+
+#ifndef _MUI_CLASSES_AREA_H
+#include "classes/area.h"
 #endif
 
 #ifndef _MUI_CLASSES_GROUP_H
