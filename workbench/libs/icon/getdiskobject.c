@@ -51,12 +51,14 @@ extern const IPTR IconDesc[];
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-    struct DiskObject *dobj, *dup_dobj;
-    BPTR   icon = NULL;
+    ULONG              nameLength = strlen(name);
+    struct DiskObject *dobj       = NULL, 
+                      *dup_dobj   = NULL;
+    BPTR               icon       = NULL;
 
-    if (name[strlen(name) - 1] == ':')
+    if (name[nameLength - 1] == ':')
     {
-        ULONG  length = strlen(name) + 9 /* strlen("Disk.info") */ + 1;
+        ULONG  length = nameLength + 9 /* strlen("Disk.info") */ + 1;
         STRPTR volume = AllocVec(length, MEMF_ANY);
         
         if(volume != NULL)
@@ -74,9 +76,9 @@ extern const IPTR IconDesc[];
             return NULL;
         }
     }
-    else if (strrncasecmp(name, ".info", 5))
+    else
     {
-        ULONG  length = strlen(name) + 5 /* strlen(".info") */ + 1;
+        ULONG  length = nameLength + 5 /* strlen(".info") */ + 1;
         STRPTR file   = AllocVec(length, MEMF_ANY);
         
         if(file != NULL)
