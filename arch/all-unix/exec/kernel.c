@@ -13,7 +13,7 @@
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>
 
-#include "sigcore.h"
+#include <sigcore.h>
 
 #include <stdio.h>
 #include <string.h>

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sigcore.h"
+#include <sigcore.h>
 #define timeval     sys_timeval
 #include <sys/time.h>
 #undef timeval

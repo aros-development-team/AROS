@@ -9,7 +9,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
-#include "sigcore.h"
+#include <sigcore.h>
 #include "etask.h"
 #include "exec_util.h"
 
