@@ -10,7 +10,7 @@
 
 #define MUIC_Scrollbutton "Scrollbutton.mui"
 
-#define ScrollbuttonObject MUI_NewObject(MUIC_Scrollbutton
+#define ScrollbuttonObject MUIOBJMACRO_START(MUIC_Scrollbutton)
 
 #define MUIA_Scrollbutton_NewPosition       (TAG_USER|0x1820a000) /* ..G ULONG (packed two WORDs)*/
 #define MUIA_Scrollbutton_Horiz             (TAG_USER|0x1820a001) /*     WORD */
