@@ -11,17 +11,11 @@
 /* Define if you have the vprintf function.  */
 #undef HAVE_VPRINTF
 
-/* Define PACKAGE as the version of the package.  */
-#define PACKAGE "PACKAGE"
-
 /* Define to `unsigned' if <sys/types.h> doesn't define.  */
 #undef size_t
 
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
-
-/* Define VERSION as the version of the package.  */
-#define VERSION "VERSION"
 
 /* Define to the name of the distribution.  */
 #undef PACKAGE
