@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Varargs version of AllocAslRequestA()

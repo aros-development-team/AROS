@@ -1,5 +1,5 @@
 /*
-    (C) 1998-99 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -25,39 +25,35 @@ extern struct Library *CxBase;
 	             )
 
 /*  FUNCTION
+	A simple way to get a hotkey for your program. The program is
+	posted a message when the user does the specified input action in
+	'description' regardless of whether the program has input focus or
+	not. The key combination event is swallowed, that is not sent any
+	farther in the input system.
 
-    A simple way to get a hotkey for your program. The program is posted
-    a message when the user does the specified input action in
-    'description' regardless of whether the program has input focus or
-    not. The key combination event is swallowed, that is not sent any 
-    farther in the input system.
-
-    It's recommended that the user should be able to specify a program's
-    hotkey with tooltypes, for instance  HOTKEY="alt shift f5".
+	It's recommended that the user should be able to specify a
+	program's hotkey with tooltypes, for instance
+	HOTKEY="alt shift f5".
 
     INPUTS
-
-    description  --  commodities filter description (see commodities.library/
-                     SetFilter())
-    port         --  message port the hotkey messages will be sent to
-    id           --  identifier (see CxSender()) 
+	description  --  commodities filter description (see
+			 commodities.library/SetFilter())
+	port         --  message port the hotkey messages will be sent to
+	id           --  identifier (see CxSender()) 
 
     RESULT
-
-    A pointer to a filter object which represents the HotKey.
+	A pointer to a filter object which represents the HotKey.
 
     NOTES
-
-    Commodities.library must be open at the time of the call.
+	Commodities.library must be open at the time of the call.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-
-    CxFilter(), CxTranslate(), CxSender(), commodities.library/SetFilter(),
-    commodities.library/CxObjError()
+	CxFilter(), CxTranslate(), CxSender(), commodities.library/SetFilter(),
+	commodities.library/CxObjError()
 
     INTERNALS
 

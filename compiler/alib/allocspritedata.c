@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright (C) 2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Varargs version of graphics.library/AllocSpriteDataA()

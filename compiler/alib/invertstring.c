@@ -1,5 +1,5 @@
 /*
-    (C) 1998-99 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -28,49 +28,42 @@ extern struct Library *CxBase;
 	struct KeyMap *km
 	             )
 /*  FUNCTION
-
-    Return a linked list of input events which would produce the string
-    'str' with the keymap 'km'.
+	Return a linked list of input events which would produce the string
+	'str' with the keymap 'km'.
 
     INPUTS
+	str  --  pointer to a (NULL-terminated) string that may contain
+		 * ANSI character codes
+		 * backslash-escaped characters:
+		   \n    --  carriage return
+		   \r    --  carriage return
+		   \t    --  tab
+		   \\    --  backslash
+		 * a description of an input event a la ParseIX() surrounded
+		   by angle brackets
 
-    str  --  pointer to a (NULL-terminated) string that may contain
-             * ANSI character codes
-	     * backslash-escaped characters:
-	       \n    --  carriage return
-	       \r    --  carriage return
-	       \t    --  tab
-	       \\    --  backslash
-	     * a description of an input event a la ParseIX() surrounded
-	       by angle brackets
-
-    km   --  keymap to use for the conversion or NULL to use the default
-             keymap
+	km   --  keymap to use for the conversion or NULL to use the default
+		 keymap
 
     RESULT
-
-    A linked list of input events or NULL if something went wrong.
+	A linked list of input events or NULL if something went wrong.
 
     NOTES
 
     EXAMPLE
-
-    An example string: "Hello <shift alt a>\n"
+	An example string: "Hello <shift alt a>\n"
 
     BUGS
 
     SEE ALSO
-
-    commodities.library/ParseIX(), FreeIEvents()
+	commodities.library/ParseIX(), FreeIEvents()
 
     INTERNALS
-
-    Ought to have an extra \< for < not starting an IX expression.
+	Ought to have an extra \< for < not starting an IX expression.
 
     HISTORY
 
 ******************************************************************************/
-
 {
     AROS_LIBFUNC_INIT
 

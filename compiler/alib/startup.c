@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Common startup code
@@ -33,11 +33,11 @@ extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
 /*
-    This won't work for normal AmigaOS because you can't expect SysBase to
-    be in A6. The correct way is to use *(struct ExecBase **)4 and because
-    gcc emits strings for a certain function _before_ the code the program
-    will crash immediately because the first element in the code won't be
-    valid assembler code.
+    This won't work for normal AmigaOS because you can't expect SysBase to be
+    in A6. The correct way is to use *(struct ExecBase **)4 and because gcc
+    emits strings for a certain function _before_ the code the program will
+    crash immediately because the first element in the code won't be valid
+    assembler code.
 
     970314 ldp: It will now work because of the asm-stub above.
 

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a gadtools gadget

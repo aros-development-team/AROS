@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     Original version from libnix
     $Id$
 
@@ -51,7 +51,7 @@
     {
 	ULONG size;
 
-	if (poolHeader->ThreshSize>memSize)
+	if (poolHeader->ThreshSize > memSize)
 	{
 	    struct MemHeader * a = (struct MemHeader *)poolHeader->PuddleList.mlh_Head;
 
@@ -98,10 +98,14 @@
 		    break;
 		}
 	    }
-/* Twice ??? The memory should have been cleared by AllocMem() already.
+
+	    /*
+		We do have to clear memory here. It may have been dirtied
+		by somebody using it beforehand.
+	    */
 	    if (poolHeader->MemoryFlags & MEMF_CLEAR)
 	    {
-		p = puddle;
+		ULONG *p = puddle;
 
 		memSize  += 7;
 		memSize >>= 3;
@@ -112,7 +116,6 @@
 		    *p++=0;
 		} while (--memSize);
 	    }
-*/
 	}
 	else
 	{

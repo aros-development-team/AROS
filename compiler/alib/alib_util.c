@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: internal utility functions for amiga.lib
@@ -116,7 +116,7 @@
 
     size = 21;
 
-    if ((msg = AllocVec (size * sizeof (ULONG), MEMF_CLEAR))
+    if ((msg = AllocVec (size * sizeof (ULONG), MEMF_CLEAR)))
     {
 	ULONG * ulptr = (ULONG * msg);
 
@@ -266,7 +266,7 @@
     args = ap;
     tag  = firstTag;
 
-    if ((msg = AllocVec (size*sizeof(TagItem), MEMF_ANY))
+    if ((msg = AllocVec (size*sizeof(TagItem), MEMF_ANY)))
     {
 	for (size=0;;size++)
 	{

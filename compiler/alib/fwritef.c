@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Varargs stub for VFWritef()
@@ -10,12 +10,16 @@
 #include <proto/dos.h>
 #include <stdarg.h>
 
-void FWritef(BPTR fh, STRPTR fmt, LONG arg, ...)
+LONG FWritef(BPTR fh, CONST_STRPTR fmt, ...)
 {
-    va_list args;
-    va_start(args,arg);
+    LONG retval;
 
-    VFWritef(fh, fmt, (LONG *)args);
+    va_list args;
+    va_start(args,fmt);
+
+    retval = VFWritef(fh, fmt, (LONG *)args);
 
     va_end(args);
+    
+    return retval;
 }

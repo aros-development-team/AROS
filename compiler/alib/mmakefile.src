@@ -1,101 +1,102 @@
-# $Id$
+#   $Id$
+#
+#   Generate the amiga.lib library (normally called libamiga.a).
+#
 include $(TOP)/config/make.cfg
 
-#USER_DEFINES	 := -D__AROS
-USER_INCLUDES	:= -I$(TOP)/compiler/clib/include
-OBJDIR		:= $(GENDIR)/compiler/alib
-EXEDIR		:= $(BINDIR)/test
-LIB		:= $(LIBDIR)/libamiga.a
-STARTUP 	:= $(LIBDIR)/startup.o
+FILES	:= \
+    alib_util \
+    allocaslrequesttags \
+    allocdosobjecttags \
+    allocnamedobject \
+    allocspritedata \
+    argarraydone \
+    argarrayinit \
+    argint \
+    argstring \
+    arosinquire \
+    aslrequesttags \
+    beginio \
+    bestmodeid \
+    betest \
+    buildeasyrequest \
+    callhook \
+    changeextsprite \
+    coercemethod \
+    createextio \
+    creategadget \
+    createmenus \
+    createnewproctags \
+    createport \
+    createstdio \
+    createtask \
+    deleteextio \
+    deleteport \
+    deletestdio \
+    deletetask \
+    dogadgetmethod \
+    domethod \
+    dosupermethod \
+    drawbevelbox \
+    easyrequest \
+    extendfonttags \
+    fastrand \
+    fprintf \
+    freeievents \
+    fwritef \
+    getextsprite \
+    getrpattrs \
+    getvisualinfo \
+    gt_getgadgetattrs \
+    gt_setgadgetattrs \
+    hookentry \
+    hotkey \
+    invertstring \
+    layoutmenuitems \
+    layoutmenus \
+    liballocpooled \
+    libcreatepool \
+    libdeletepool \
+    libfreepooled \
+    newlist \
+    newloadsegtags \
+    newobject \
+    obtainbestpen \
+    opencatalog \
+    openscreentags \
+    openwindowtags \
+    printf \
+    rangerand \
+    setattrs \
+    setgadgetattrs \
+    setrpattrs \
+    setsuperattrs \
+    setwindowpointer \
+    sprintf \
+    startup \
+    systemtags \
+    timedelay \
+    videocontroltags
 
-%define_libs
 
-FILES		:= \
-	alib_util \
-	allocaslrequesttags \
-	allocdosobjecttags \
-	allocnamedobject \
-	allocspritedata \
-	argarraydone \
-	argarrayinit \
-	argint \
-	argstring \
-	arosinquire \
-	aslrequesttags \
-	beginio \
-	bestmodeid \
-	buildeasyrequest \
-	callhook \
-	changeextsprite \
-	coercemethod \
-	createextio \
-	creategadget \
-	createmenus \
-	createnewproctags \
-	createport \
-	createstdio \
-	createtask \
-	deleteextio \
-	deleteport \
-	deletestdio \
-	deletetask \
-	dogadgetmethod \
-	domethod \
-	dosupermethod \
-	drawbevelbox \
-	easyrequest \
-	extendfonttags \
-	fastrand \
-	freeievents \
-	getextsprite \
-	getrpattrs \
-	getvisualinfo \
-	gt_getgadgetattrs \
-	gt_setgadgetattrs \
-	hookentry \
-	hotkey \
-	invertstring \
-	layoutmenuitems \
-	layoutmenus \
-	liballocpooled \
-	libcreatepool \
-	libdeletepool \
-	libfreepooled \
-	newlist \
-	newloadsegtags \
-	newobject \
-	obtainbestpen \
-	opencatalog \
-	openscreentags \
-	openwindowtags \
-	rangerand \
-	setattrs \
-	setgadgetattrs \
-	setrpattrs \
-	setsuperattrs \
-	setwindowpointer \
-	sprintf \
-	systemtags \
-	timedelay \
-	videocontroltags
+#MM- linklibs: linklibs-amiga linklibs-startup
+#MM linklibs-amiga : includes
+#MM linklibs-startup : includes
 
-%prepare_replace compiler/alib
+%make_linklib_setup mmake=linklibs-amiga
+%make_vpath
 
-OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
-DEPS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).d)
+# The rules to build the startup code.
 
-#MM linklibs : setup includes alib-$(ARCH)
-linklibs : $(LIB) $(STARTUP)
-	@$(NOP)
+linklibs-startup : $(LIBDIR)/startup.o
 
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR)
+%make_linklib
 
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIB) $(STARTUP)
+$(LIBDIR)/startup.o : startup.c
+	%compile_q
 
+# Tests - these probably won't work at the moment.
+ifeq (1,0)
 #MM
 check : $(EXEDIR)/betest $(EXEDIR)/wstest $(EXEDIR)/rstest
 
@@ -109,19 +110,7 @@ $(EXEDIR)/wstest : writestruct.c $(LIBDIR)/startup.o $(DEPLIBS)
 
 $(EXEDIR)/betest : betest.c $(LIBDIR)/startup.o $(DEPLIBS)
 	%link_q opt=$(TEST_ILDFLAGS)
-
-$(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC)
-
-$(LIBDIR)/%.o : %.c
-	%compile_q cmd=$(SYS_CC)
-
-$(LIB) : $(OBJS)
-	%mklib_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
+endif
 
 %common
 %include_deps

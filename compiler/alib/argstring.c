@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -24,22 +24,19 @@ extern struct Library *IconBase;
             
 
 /*  FUNCTION
-
-    Looks for 'entry' in the tooltypes array 'tt'. If not found
-    'defaultstring' is returned, otherwise the string corresponding to
-    'entry' is returned. Say the tooltype Settings=SaveonExit exists within
-    the array, then a pointer to "SaveonExit" is returned when
-    ArgString(tt, "Settings") is done.
+	Looks for 'entry' in the tooltypes array 'tt'. If not found
+	'defaultstring' is returned, otherwise the string corresponding to
+	'entry' is returned. Say the tooltype Settings=SaveonExit exists
+	within the array, then a pointer to "SaveonExit" is returned when
+	ArgString(tt, "Settings") is done.
 
     INPUTS
-
-    tt     --  the tooltype array to search in
-    entry  --  the string to look for in the tooltype array
+	tt     --  the tooltype array to search in
+	entry  --  the string to look for in the tooltype array
 
     RESULT
-
-    Pointer to the string corresponding to 'entry' in the tooltype array, or
-    'defaultstring' if 'entry' was not found.
+	Pointer to the string corresponding to 'entry' in the tooltype
+	array, or 'defaultstring' if 'entry' was not found.
 
     NOTES
 
@@ -48,14 +45,12 @@ extern struct Library *IconBase;
     BUGS
 
     SEE ALSO
-
-    ArgArrayInit()
+	ArgArrayInit()
 
     INTERNALS
 
     HISTORY
-
-    28.04.98  SDuvan  implemented
+	28.04.98  SDuvan  implemented
 
 *****************************************************************************/
 {

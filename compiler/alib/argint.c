@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -25,21 +25,18 @@ extern struct Library *IconBase;
             
 
 /*  FUNCTION
-
-    Returns the value associated with the string 'entry' found in the
-    tooltypes array 'tt'. If no match with entry was found, 'defaultval'
-    is returned.
+	Returns the value associated with the string 'entry' found in the
+	tooltypes array 'tt'. If no match with entry was found,
+	'defaultval' is returned.
 
     INPUTS
-
-    tt          --  the tooltypes array ( returned by ArgArrayInit() )
-    entry       --  entry to look for (in tooltype "entry=value")
-    defaultval  --  value returned if 'entry' was not found
+	tt          --  the tooltypes array ( returned by ArgArrayInit() )
+	entry       --  entry to look for (in tooltype "entry=value")
+	defaultval  --  value returned if 'entry' was not found
 
     RESULT
-
-    (The tooltypes looks like "Entry=Value".)
-    Returns Value if Entry was found; otherwise returns 'defaultval'.
+	(The tooltypes looks like "Entry=Value".) Returns Value if Entry
+	was found; otherwise returns 'defaultval'.
 
     NOTES
 
@@ -48,17 +45,14 @@ extern struct Library *IconBase;
     BUGS
 
     SEE ALSO
-
-    ArgArrayInit()
+	ArgArrayInit()
 
     INTERNALS
-
-    The Amiga documentation says "requires that dos.library V36 or higher
-    is opened". I can't see why.
+	The Amiga documentation says "requires that dos.library V36 or
+	higher is opened". I can't see why.
 
     HISTORY
-
-    29.04.98  SDuvan  implemented
+	29.04.98  SDuvan  implemented
 
 *****************************************************************************/
 {

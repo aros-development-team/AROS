@@ -1,7 +1,7 @@
 #ifndef _ALIB_INTERN_H
 #define _ALIB_INTERN_H
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:

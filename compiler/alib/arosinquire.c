@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Retrieve information about the OS

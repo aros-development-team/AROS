@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -43,8 +43,6 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     va_list args;
     LONG    rc;
 
@@ -55,5 +53,4 @@
     va_end (args);
 
     return rc;
-    AROS_LIBFUNC_EXIT
 } /* EasyRequest */

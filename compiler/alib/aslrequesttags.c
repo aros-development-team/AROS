@@ -48,14 +48,9 @@ extern struct Library *AslBase;
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,AslBase)
-
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
     retval = AslRequest(requester, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
-
-    AROS_LIBFUNC_EXIT
 } /* AslRequestTags */

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create a new Amiga task
@@ -16,7 +16,7 @@ struct newMemList
   struct MemEntry nml_ME[2];
 };
 
-const struct newMemList MemTemplate =
+static const struct newMemList MemTemplate =
 {
     { 0, },
     2,

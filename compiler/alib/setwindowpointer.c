@@ -1,8 +1,8 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright (C) 1997-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Obtain the closes pen to a given colot
+    Desc: Obtain the closes pen to a given color
     Lang: english
 */
 #include <exec/types.h>
