@@ -646,15 +646,22 @@ void execute_ok(void)
     input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
     if (input)
     {
+#ifdef __AROS__
 	if (SystemTags(execute_command,
 	    	SYS_Asynch,	TRUE,
 	    	SYS_Input,  (IPTR)input,
 	    	SYS_Output, (IPTR)NULL,
-#ifdef __AROS__
 	    	SYS_Error,  (IPTR)NULL,
-#endif
 		NP_CurrentDir, lock, /* Will be freed automatical if successful */
 	    	TAG_DONE) == -1)
+#else
+	if (SystemTags(execute_command,
+	    	SYS_Asynch,	TRUE,
+	    	SYS_Input,  (IPTR)input,
+	    	SYS_Output, (IPTR)NULL,
+		NP_CurrentDir, lock, /* Will be freed automatical if successful */
+	    	TAG_DONE) == -1)
+#endif
         {
             UnLock(lock);
             Close(input);
