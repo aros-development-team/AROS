@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -764,7 +762,7 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
-static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+static IPTR List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -792,7 +790,7 @@ static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+static IPTR List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -828,7 +826,7 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+static IPTR List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -852,7 +850,7 @@ static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax *msg)
+static IPTR List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -901,7 +899,7 @@ static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax
 /**************************************************************************
  MUIM_Layout
 **************************************************************************/
-static ULONG List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
+static IPTR List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl,obj,(Msg)msg);
@@ -916,7 +914,7 @@ static ULONG List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 }
 
 
-static ULONG List_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+static IPTR List_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
@@ -929,7 +927,7 @@ static ULONG List_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 }
 
 
-static ULONG List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+static IPTR List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -979,7 +977,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+static IPTR List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     int entry_pos,y;
@@ -1146,7 +1144,7 @@ static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static ULONG List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+static IPTR List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -1216,7 +1214,7 @@ static ULONG List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 /**************************************************************************
  MUIM_List_Clear
 **************************************************************************/
-static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *msg)
+static IPTR List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -1247,7 +1245,7 @@ static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *
 /**************************************************************************
  MUIM_List_Exchange
 **************************************************************************/
-static ULONG List_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exchange *msg)
+static IPTR List_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exchange *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     LONG                 pos1, 
@@ -1296,7 +1294,7 @@ static ULONG List_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exch
 /**************************************************************************
  MUIM_List_Redraw
 **************************************************************************/
-static ULONG List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *msg)
+static IPTR List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -1323,7 +1321,7 @@ static ULONG List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw
 /**************************************************************************
  MUIM_List_Remove
 **************************************************************************/
-static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *msg)
+static IPTR List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     LONG pos,cur;
@@ -1401,7 +1399,7 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
 /**************************************************************************
  MUIM_List_Insert
 **************************************************************************/
-static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg)
+static IPTR List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     LONG pos,count;
@@ -1521,7 +1519,7 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 /**************************************************************************
  MUIM_List_InsertSingle
 **************************************************************************/
-STATIC ULONG List_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingle *msg)
+STATIC IPTR List_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingle *msg)
 {
     return DoMethod(obj,MUIM_List_Insert, (IPTR)&msg->entry, 1, msg->pos);
 }
@@ -1529,7 +1527,7 @@ STATIC ULONG List_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_
 /**************************************************************************
  MUIM_List_InsertSingleAsTree
 **************************************************************************/
-STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingleAsTree *msg)
+STATIC IPTR List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingleAsTree *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct ListEntry *lentry;
@@ -1624,7 +1622,7 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
 /**************************************************************************
  MUIM_List_GetEntry
 **************************************************************************/
-STATIC ULONG List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetEntry *msg)
+STATIC IPTR List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetEntry *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     int pos = msg->pos;
@@ -1643,7 +1641,7 @@ STATIC ULONG List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetE
 /**************************************************************************
  MUIM_List_Construct
 **************************************************************************/
-STATIC ULONG List_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Construct *msg)
+STATIC IPTR List_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Construct *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -1669,7 +1667,7 @@ STATIC ULONG List_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Con
 /**************************************************************************
  MUIM_List_Destruct
 **************************************************************************/
-STATIC ULONG List_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destruct *msg)
+STATIC IPTR List_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destruct *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -1691,7 +1689,7 @@ STATIC ULONG List_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Dest
 /**************************************************************************
  MUIM_List_Compare
 **************************************************************************/
-STATIC ULONG List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare *msg)
+STATIC IPTR List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare *msg)
 {
     //struct MUI_ListData *data = INST_DATA(cl, obj);
     return NULL;
@@ -1700,7 +1698,7 @@ STATIC ULONG List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compa
 /**************************************************************************
  MUIM_List_Display
 **************************************************************************/
-STATIC ULONG List_Display(struct IClass *cl, Object *obj, struct MUIP_List_Display *msg)
+STATIC IPTR List_Display(struct IClass *cl, Object *obj, struct MUIP_List_Display *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
@@ -1720,7 +1718,7 @@ STATIC ULONG List_Display(struct IClass *cl, Object *obj, struct MUIP_List_Displ
 /**************************************************************************
  MUIM_List_SelectChange
 **************************************************************************/
-STATIC ULONG List_SelectChange(struct IClass *cl, Object *obj, struct MUIP_List_SelectChange *msg)
+STATIC IPTR List_SelectChange(struct IClass *cl, Object *obj, struct MUIP_List_SelectChange *msg)
 {
     return 1;
 }
@@ -1755,7 +1753,7 @@ STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_Cr
 /**************************************************************************
  MUIM_List_DeleteImage
 **************************************************************************/
-STATIC ULONG List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
+STATIC IPTR List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct ListImage *li = (struct ListImage *)msg->listimg;
