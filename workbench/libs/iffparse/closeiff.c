@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -46,10 +44,6 @@
 	This function checks that buffers for buffered streams
 	have been freed. This is not very elegant and should have been
 	done at an earlier stadium. It is not a real bug though.
-
-    HISTORY
-  27-11-96    digulla automatically created from
-	  iffparse_lib.fd and clib/iffparse_protos.h
 
 *****************************************************************************/
 {

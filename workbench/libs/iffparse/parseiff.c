@@ -2,6 +2,7 @@
     Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #define DEBUG 0
 #include <aros/debug.h>
 #include "iffparse_intern.h"
@@ -63,10 +64,6 @@
 
 
     INTERNALS
-
-    HISTORY
-  27-11-96    digulla automatically created from
-	  iffparse_lib.fd and clib/iffparse_protos.h
 
 *****************************************************************************/
 {

@@ -2,6 +2,7 @@
     Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -40,10 +41,6 @@
 	StopChunk()
 
     INTERNALS
-
-    HISTORY
-  27-11-96    digulla automatically created from
-	  iffparse_lib.fd and clib/iffparse_protos.h
 
 *****************************************************************************/
 {
