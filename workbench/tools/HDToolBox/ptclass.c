@@ -289,7 +289,7 @@ struct RastPort *rport;
 		rport = ObtainGIRPort(msg->ops_GInfo);
 		if (rport)
 		{
-			DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+			DoMethod(obj, GM_RENDER, (IPTR) msg->ops_GInfo, (IPTR) rport, GREDRAW_UPDATE);
 			ReleaseGIRPort(rport);
 			retval = FALSE;
 		}
@@ -299,7 +299,7 @@ struct RastPort *rport;
 
 STATIC IPTR pt_get(Class *cl, Object *obj, struct opGet *msg) {
 struct PTableData *data=INST_DATA(cl, obj);
-IPTR retval;
+IPTR retval = 0;
 
 	switch (msg->opg_AttrID)
 	{

@@ -645,7 +645,7 @@ int i;
 			char val[32];
 			struct DosEnvec *de;
 			STRPTR *str;
-			ULONG size;
+			ULONG size = 0;
 			ULONG type;
 			get(resizemovegadgets.pt, PTCT_ActiveType, &type);
 			if (type == PTS_PARTITION)
