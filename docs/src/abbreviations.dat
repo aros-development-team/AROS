@@ -9,6 +9,7 @@ battclock;Battery backedup clock
 battmem;Battery backedup memory
 bullet;Bullet.library (Fonts)
 c;CLI Tools
+camd;Camd.library
 cardres;Card.resource
 cia;Cia.resource
 clib;ANSI C link library
