@@ -265,19 +265,40 @@ const char *const Dos_SubstDateTable[]=
 		/* Add the days for all years (without leap years) */
 		days += (year - 1978) * 365;
 
+#if 1
+    	    	/* stegerg: we do *not* want a day to be added for *this*
+		   year, if it is a leap year. Only the previous years
+		   are the ones we want to be taken into account. */
+		   
+    	    	year--;
+#endif
+
 		/* Add leap years */
 		days += ((year / 4) - (year / 100) + (year / 400)
 		    - (494 - 19 + 4));
 
+    	    	//kprintf("strtodate: days1 = %d\n", days);
 		/* Add days of months */
 		days += Dos_DayTable[month-1];
+    	    	//kprintf("strtodate: days2 = %d\n", days);
 
 		/*
 		    In Dos_DayTable, February has 29 days. Correct this in
 		    non-leap years and if the day has not yet been reached.
 		*/
+
+#if 1
+    	    	/* stegerg: if this year is *no* leap year, then Dos_DayTable
+		            is wrong by one day when accessing
+			    Dos_DayTable[March..Dec] */
+			    
+    	    	if (!leap && (month >= 3)) days--;
+#else
 		if (month >= 2 || (leap && month < 2))
 		    days --;
+#endif
+
+    	    	//kprintf("strtodate: days3 = %d\n", days);
 
 	    } /* Normal date */
 
