@@ -78,6 +78,9 @@ static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 
+    if (data->usewinborder)
+	_flags(obj) |= MADF_BORDERGADGET;
+
     return (ULONG)obj;
 }
 
@@ -217,7 +220,11 @@ static ULONG Prop_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (!rc) return 0;
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler,&data->ehn);
-    data->gadgetid = DoMethod(_win(obj),MUIM_Window_AllocGadgetID);
+
+    if (!data->usewinborder)
+    {
+	data->gadgetid = DoMethod(_win(obj),MUIM_Window_AllocGadgetID);
+    }
 
     return 1;
 }
@@ -228,7 +235,10 @@ static ULONG Prop_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 static ULONG Prop_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_PropData *data = INST_DATA(cl, obj);
-    DoMethod(_win(obj),MUIM_Window_FreeGadgetID,data->gadgetid);
+    if (!data->usewinborder)
+    {
+	DoMethod(_win(obj),MUIM_Window_FreeGadgetID,data->gadgetid);
+    }
     DoMethod(_win(obj),MUIM_Window_RemEventHandler,&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -240,9 +250,10 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_PropData *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
-    struct TagItem *tag;
 
-    if ((data->prop_object = NewObject(NULL, "propgclass",
+    if (!data->usewinborder)
+    {
+	if ((data->prop_object = NewObject(NULL, "propgclass",
 			GA_Left, _mleft(obj),
 			GA_Top, _mtop(obj),
 			GA_Width, _mwidth(obj),
@@ -256,8 +267,36 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     			PGA_Borderless, TRUE,
 		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
     			TAG_DONE)))
+	{
+    	    AddGadget(_window(obj),(struct Gadget*)data->prop_object,~0);
+	}
+    } else
     {
-    	AddGadget(_window(obj),(struct Gadget*)data->prop_object,~0);
+    	switch (data->usewinborder)
+    	{
+	    case    MUIV_Prop_UseWinBorder_Right:
+		    data->prop_object = muiRenderInfo(obj)->mri_VertProp;
+		    break;
+
+	    case    MUIV_Prop_UseWinBorder_Bottom:
+		    data->prop_object = muiRenderInfo(obj)->mri_HorizProp;
+		    break;
+    	}
+    	if (data->prop_object)
+    	{
+	    data->gadgetid = ((struct Gadget*)data->prop_object)->GadgetID;
+
+	    SetAttrs(data->prop_object, ICA_TARGET, NULL, TAG_DONE);
+	    if (SetGadgetAttrs((struct Gadget*)data->prop_object,_window(obj),NULL,
+		PGA_Top,data->first,
+		PGA_Visible,data->visible,
+		PGA_Total,data->entries,
+		TAG_DONE))
+	    {
+		RefreshGList((struct Gadget*)data->prop_object, _window(obj), NULL, 1);
+	    }
+	    SetAttrs(data->prop_object, ICA_TARGET, ICTARGET_IDCMP, TAG_DONE);
+	}
     }
 
     return rc;
@@ -269,6 +308,10 @@ static ULONG Prop_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 static ULONG Prop_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_PropData *data = INST_DATA(cl, obj);
+
+    /* No drawings if own border */
+    if (data->usewinborder) return 0;
+
     DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (!(msg->flags & MADF_DRAWOBJECT)) return 1;
@@ -284,11 +327,15 @@ static ULONG Prop_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     struct MUI_PropData *data = INST_DATA(cl, obj);
     if (data->prop_object)
     {
-        struct TagItem *tags,*tag;
-
-    	RemoveGadget(_window(obj),(struct Gadget*)data->prop_object);
-    	DisposeObject(data->prop_object);
-    	data->prop_object = NULL;
+    	if (!data->usewinborder)
+    	{
+	    RemoveGadget(_window(obj),(struct Gadget*)data->prop_object);
+    	    DisposeObject(data->prop_object);
+    	} else
+    	{
+	    data->gadgetid = 0;
+    	}
+	data->prop_object = NULL;
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);

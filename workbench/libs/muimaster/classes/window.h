@@ -159,6 +159,18 @@ struct MUI_RenderInfo
 
     UWORD            mri_BorderTop;     /* The height of the windows top border (the title) */
     UWORD            mri_BorderBottom;  /* The height of the windows bottom bodder */
+    UWORD            mri_BorderLeft;    /* The width of the windows left border */
+    UWORD            mri_BorderRight;   /* The width of the windows right border */
+
+    /* Stuff for Borderscrollers */
+    Object *mri_LeftImage; /* Valid between MUIM_Setup/MUIM_Cleanup */
+    Object *mri_RightImage;
+    Object *mri_UpImage;
+    Object *mri_DownImage;
+    Object *mri_SizeImage;
+
+    Object *mri_VertProp; /* Valid between MUIM_Show/MUIM_Hide */
+    Object *mri_HorizProp;
 };
 
 #define MUIMRI_RECTFILL (1<<0)
