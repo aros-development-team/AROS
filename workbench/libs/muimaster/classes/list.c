@@ -547,8 +547,8 @@ static IPTR List_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->intern_pool) DeletePool(data->intern_pool);
     if (data->entries) FreeVec(data->entries - 1); /* title is currently before all other elements */
-    DoSuperMethodA(cl,obj,msg);
-    return 0;
+    FreeListFormat(data);
+    return DoSuperMethodA(cl,obj,msg);
 }
 
 
@@ -1544,14 +1544,8 @@ STATIC ULONG List_SelectChange(struct IClass *cl, Object *obj, struct MUIP_List_
     return 1;
 }
 
-#ifndef _AROS
-__asm IPTR List_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,List_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
