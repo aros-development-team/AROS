@@ -7,7 +7,7 @@ DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 GEN_INCLUDES	:= $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 #MM
-includes : $(DEST_INCLUDES) $(GEN_INCLUDES)
+includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
 	$(CP) $< $@
