@@ -13,7 +13,7 @@
 #define DEBUG 1
 #endif
 
-#include <aros/debug.h>
+#  include <aros/debug.h>
 
 /*****************************************************************************
 
