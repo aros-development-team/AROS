@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
-EXEDIR      := $(BINDIR)/Demo
+EXEDIR      := $(BINDIR)/Demos
 OBJDIR      := $(GENDIR)/test/HiddGraphics
 
 STARTUP = $(LIBDIR)/startup.o
