@@ -22,6 +22,9 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
 #include "intuition_debug.h"
 
 struct IntIntuitionBase

@@ -1,6 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
-    $VER: demowin.c 1.16 (2.10.96)
+    $VER: demowin.c 1.17 (22.2.97)
 
     Desc: A short demo for the features of Intuition and Graphics
     Lang: english
@@ -31,6 +31,7 @@
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
+#include <devices/keymap.h>
 
 #if 0
 #   define D(x)    x
