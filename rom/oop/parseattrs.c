@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Parse a set of attributes in a single interface
@@ -46,7 +46,7 @@
 		    bytes you can only parse interfaces
 		    with <= 32 attributes with this function.
 		    If you try with more, you will get a
-		    errOOP_ParseAttrs_TooManyAttrs error.
+		    ooperr_ParseAttrs_TooManyAttrs error.
 		    The flags will be set like this if an attr is found:
 		    
 		    attrcheck |= 1L << attribute_offset
@@ -57,7 +57,7 @@
     RESULT
     	0 for success, and an error otherwise.
 	Possible values are:
-		errOOP_ParseAttrs_TooManyAttrs.
+		ooperr_ParseAttrs_TooManyAttrs.
 
     NOTES
 
@@ -82,7 +82,7 @@
     BOOL done = FALSE;
     
     if (numattrs > 32)
-    	return errOOP_ParseAttrs_TooManyAttrs;
+    	return ooperr_ParseAttrs_TooManyAttrs;
 
     /* Parse the taglist. Since we reimplement NexTagItem() instead
        of calling it this hould be really fast. */
