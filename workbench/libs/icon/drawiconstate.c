@@ -84,7 +84,14 @@
 		    cr = (struct ColorRegister *)img->palette;
 		    for(i = 0; i < img->numcolors; i++)
 		    {
-		    	cgfxcoltab[i] = (cr->red << 16) | (cr->green << 8) | cr->blue;
+                        struct ColorRegister color = *cr;
+                        
+                        if (state == IDS_SELECTED)
+                        {
+                            ChangeToSelectedIconColor(&color);
+                        }
+                        
+		    	cgfxcoltab[i] = (color.red << 16) | (color.green << 8) | color.blue;
 			cr++;
 		    }
 		    
