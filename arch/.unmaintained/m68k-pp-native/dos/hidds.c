@@ -29,22 +29,16 @@
 
 void hidd_demo(struct ExecBase * SysBase)
 {
-//    kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
-//    kprintf("display.hidd = %08.8lx\n",OpenLibrary("display.hidd",0));
+    kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
+    kprintf("display.hidd = %08.8lx\n",OpenLibrary("display.hidd",0));
 
-    /* absolutely necessary!!!*/
-    OpenLibrary("graphics.hidd",0); // runs through and seems to get init. ok.
-// *(ULONG *)0x12347=1;
-    OpenLibrary("display.hidd",0);  // seems not to get where it should.
-// *(ULONG *)0x1234F=1;
     OpenLibrary("hidd.gfx.display",0);
     {
 	struct GfxBase *GfxBase;
 	BOOL success = FALSE;
     
-//        kprintf("init_gfx(hiddbase=%s)\n", "hidd.gfx.display");
+        kprintf("init_gfx(hiddbase=%s)\n", "hidd.gfx.display");
 
-// *(ULONG *)0xc0debadf=0;
         GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
         if (GfxBase)
         {
@@ -57,18 +51,13 @@ void hidd_demo(struct ExecBase * SysBase)
 	    kprintf("calling private gfx LateGfxInit()\n");
 	    if (LateGfxInit("hidd.gfx.display"))
 	    {
-		
 	        struct IntuitionBase *IntuitionBase;
-// *(ULONG *)0xc0debad3 = 0;
-//	        kprintf("success\n");
-			    
-// *(ULONG *)0x1235F=1;
 
     	    	kprintf("lategfxinit okay\n");
  
 	        /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
 	        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-kprintf("ibase = %lx\n", IntuitionBase);
+		kprintf("ibase = %lx\n", IntuitionBase);
 	        if (IntuitionBase)
 	        {
 	    	    if (LateIntuiInit(NULL))
@@ -84,7 +73,7 @@ kprintf("ibase = %lx\n", IntuitionBase);
 
 	    if (success == FALSE)
 	    {
-//	    	kprintf("There is something wrong with hidd subsystem...");
+	    	kprintf("There is something wrong with hidd subsystem...");
 		while(1) {};
 	    }
 	
@@ -146,18 +135,17 @@ kprintf("Opening window\n");
 
 kprintf("Window okay: win = %x\n", win);
 
-        DrawEllipse(win->RPort,160,120,80,80);
-        DrawEllipse(win->RPort,185,90,15,15);
-        DrawEllipse(win->RPort,135,90,15,15);
+        DrawEllipse(win->RPort,160/2-35,120/2-4,80/2,80/2);
+        DrawEllipse(win->RPort,185/2-35,90/2-4,15/2,15/2);
+        DrawEllipse(win->RPort,135/2-35,90/2-4,15/2,15/2);
         
-        Move(win->RPort,125,140);
-        Draw(win->RPort,140,150);
-        Draw(win->RPort,180,150);
-        Draw(win->RPort,195,140);
+        Move(win->RPort,125/2-35,140/2-4);
+        Draw(win->RPort,140/2-35,150/2-4);
+        Draw(win->RPort,180/2-35,150/2-4);
+        Draw(win->RPort,195/2-35,140/2-4);
 
-#if !AROS_BOCHS_HACK
 	/* This is slow like hell under Bochs */
-	        	
+
 	if (win)
 	{
 	  while (x < 200)
@@ -184,37 +172,6 @@ kprintf("Window okay: win = %x\n", win);
 	    y--;
 	  }
 	}
-#endif
-
-#if 0
-	if (IntuitionBase)
-	{
-	    ULONG i, dummy;
-
-	    SetSpkFreq (400);
-	    SpkOn();
-	    for (i=0; i<100000000; dummy = i*i, i++);  
-	    SpkOff();
-	    for (i=0; i< 50000000; dummy = i*i, i++); 
-	    
-	    SetSpkFreq (500);
-	    SpkOn();
-	    for (i=0; i<100000000; dummy = i*i, i++);
-	    SpkOff();
-	    for (i=0; i< 50000000; dummy = i*i, i++);
-	    
-	    SetSpkFreq (592);
-	    SpkOn();
-	    for (i=0; i<100000000; dummy = i*i, i++); 
-	    SpkOff();
-	    for (i=0; i< 50000000; dummy = i*i, i++); 
-	    
-	    SetSpkFreq (788);
-	    SpkOn();
-	    for (i=0; i<300000000; dummy = i*i, i++);  
-	    SpkOff();
-	}
-#endif
 
 	if (IntuitionBase)
 	{
