@@ -9,10 +9,10 @@ SUBDIRS=$(KERNEL) $(ARCH)
 CONFIG_H = $(INCDIR)/aros/config.h
 
 all: setup
-	make subdirs TARGET=all
+	$(MAKE) subdirs TARGET=all
 
 setup : make-dirs $(CONFIG_H)
-	make subdirs TARGET=setup
+	$(MAKE) subdirs TARGET=setup
 
 make-dirs:
 	@if [ ! -d $(INCDIR)/aros ]; then $(MKDIR) $(INCDIR)/aros; else true; fi
