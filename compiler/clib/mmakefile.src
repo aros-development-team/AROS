@@ -25,6 +25,7 @@ COMMONFILES := \
 	memcpy \
 	memmove \
 	memset \
+	putchar \
 	strcasecmp \
 	strcat \
 	strchr \
